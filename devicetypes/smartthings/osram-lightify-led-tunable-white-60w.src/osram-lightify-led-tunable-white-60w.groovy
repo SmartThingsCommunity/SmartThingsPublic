@@ -18,6 +18,8 @@ metadata {
         capability "Sensor"
 
         attribute "colorName", "string"
+        // heartbeat is updated at every poll
+        attribute "heartbeat", "string"
 
 
         fingerprint profileId: "0104", inClusters: "0000,0003,0004,0005,0006,0008,0300,0B04,FC0F", outClusters: "0019", manufacturer: "OSRAM", model: "Classic A60 TW"
@@ -93,16 +95,21 @@ def parse(String description) {
         log.trace "descMap : $descMap"
 
         if (descMap.cluster == "0300") {
+            // trigger heartbeat
+            def hb = createEvent(name: "heartbeat", value: "alive", isStateChange: true, displayed:false)
+
             log.debug descMap.value
             def tempInMired = convertHexToInt(descMap.value)
             def tempInKelvin = Math.round(1000000/tempInMired)
             log.trace "temp in kelvin: $tempInKelvin"
-            sendEvent(name: "colorTemperature", value: tempInKelvin, displayed:false)
+            def result = createEvent(name: "colorTemperature", value: tempInKelvin, displayed:false)
+            return [result, hb]
         }
         else if(descMap.cluster == "0008"){
             def dimmerValue = Math.round(convertHexToInt(descMap.value) * 100 / 255)
             log.debug "dimmer value is $dimmerValue"
-            sendEvent(name: "level", value: dimmerValue)
+            def result = createEvent(name: "level", value: dimmerValue)
+            return result
         }
     }
     else {
@@ -189,7 +196,7 @@ def poll(){
 }
 
 def setLevel(value) {
-	state.levelValue = (value==null) ? 100 : value
+    state.levelValue = (value==null) ? 100 : value
     log.trace "setLevel($value)"
     def cmds = []
 
