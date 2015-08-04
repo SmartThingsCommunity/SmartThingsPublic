@@ -14,6 +14,9 @@ metadata {
 		capability "Refresh"
 		capability "Sensor"
 
+		// heartbeat is updated every time device checks in
+		attribute "heartbeat", "string"
+
 		fingerprint profileId: "0104", inClusters: "0000,0003,0004,0005,0006,0B04,0B05", outClusters: "0019"
 	}
 
@@ -62,6 +65,9 @@ def parse(String description) {
 			name = "power"
 			// assume 16 bit signed for encoding and power divisor is 10
 			value = Integer.parseInt(reportValue, 16) / 10
+
+			// trigger heartbeat
+			sendEvent(name: "heartbeat", value: "alive", isStateChange: true, displayed:false)
 		}
 	} else if (description?.startsWith("on/off:")) {
 		log.debug "Switch command"
@@ -100,7 +106,7 @@ def refresh() {
 
 def configure() {
 	[
-		"zdo bind 0x${device.deviceNetworkId} 1 1 6 {${device.zigbeeId}} {}", "delay 200",
-		"zdo bind 0x${device.deviceNetworkId} 1 1 0xB04 {${device.zigbeeId}} {}"
+			"zdo bind 0x${device.deviceNetworkId} 1 1 6 {${device.zigbeeId}} {}", "delay 200",
+			"zdo bind 0x${device.deviceNetworkId} 1 1 0xB04 {${device.zigbeeId}} {}"
 	]
 }
