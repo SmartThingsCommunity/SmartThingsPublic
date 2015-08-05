@@ -60,8 +60,8 @@ def parse(String description) {
 		if (descMap.cluster == "0006" && descMap.attrId == "0000") {
 			name = "switch"
 			value = descMap.value.endsWith("01") ? "on" : "off"
-		} else {
-			def reportValue = description.split(",").find {it.split(":")[0].trim() == "value"}?.split(":")[1].trim()
+		} else if (descMap.cluster.equalsIgnoreCase("0B04") && descMap.attrId.equalsIgnoreCase("050b")) {
+			def reportValue = descMap.value
 			name = "power"
 			// assume 16 bit signed for encoding and power divisor is 10
 			value = Integer.parseInt(reportValue, 16) / 10
