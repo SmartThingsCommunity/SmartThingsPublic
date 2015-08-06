@@ -111,7 +111,7 @@ def refresh() {
 def configure() {
 	def configCmds = [
 			"zdo bind 0x${device.deviceNetworkId} 1 1 6 {${device.zigbeeId}} {}", "delay 200",
-			"zdo bind 0x${device.deviceNetworkId} 1 1 0xB04 {${device.zigbeeId}} {}"
+			"zdo bind 0x${device.deviceNetworkId} 1 1 0xB04 {${device.zigbeeId}} {}", "delay 200"
 	]
 	return configCmds + refresh() // send refresh cmds as part of config
 }
