@@ -14,7 +14,7 @@ metadata {
 		capability "Refresh"
 		capability "Sensor"
 
-		// heartbeat is updated every time device checks in
+		// indicates that device keeps track of heartbeat (in state.heartbeat)
 		attribute "heartbeat", "string"
 
 		fingerprint profileId: "0104", inClusters: "0000,0003,0004,0005,0006,0B04,0B05", outClusters: "0019"
@@ -54,6 +54,10 @@ def parse(String description) {
 	log.debug "Parse description $description"
 	def name = null
 	def value = null
+
+	// save heartbeat (i.e. last time we got a message from device)
+	state.heartbeat = Calendar.getInstance().getTimeInMillis()
+
 	if (description?.startsWith("read attr -")) {
 		def descMap = parseDescriptionAsMap(description)
 		log.debug "Read attr: $description"
@@ -63,11 +67,8 @@ def parse(String description) {
 		} else if (descMap.cluster.equalsIgnoreCase("0B04") && descMap.attrId.equalsIgnoreCase("050b")) {
 			def reportValue = descMap.value
 			name = "power"
-			// assume 16 bit signed for encoding and power divisor is 10
+			//power divisor is 10
 			value = Integer.parseInt(reportValue, 16) / 10
-
-			// trigger heartbeat
-			sendEvent(name: "heartbeat", value: "alive", isStateChange: true, displayed:false)
 		}
 	} else if (description?.startsWith("on/off:")) {
 		log.debug "Switch command"
@@ -101,12 +102,16 @@ def meter() {
 }
 
 def refresh() {
-	"st rattr 0x${device.deviceNetworkId} 1 0xB04 0x50B"
+	sendEvent(name: "heartbeat", value: "alive", displayed:false)
+	[
+			"st rattr 0x${device.deviceNetworkId} 1 0xB04 0x50B"
+	]
 }
 
 def configure() {
-	[
+	def configCmds = [
 			"zdo bind 0x${device.deviceNetworkId} 1 1 6 {${device.zigbeeId}} {}", "delay 200",
 			"zdo bind 0x${device.deviceNetworkId} 1 1 0xB04 {${device.zigbeeId}} {}"
 	]
+	return configCmds + refresh() // send refresh cmds as part of config
 }
