@@ -81,8 +81,20 @@ def doorHandler(evt)
     
 // 	Handle the Various Events and Door/Lock Status
     
+// 	Door has Been OPENED (Normal Door Opening Mode)
+    if (evt.value == "open") { // If a person opens an unlocked door...
+//        log.debug "Cancel the current task. Door is unlocked and somebody just opened it!"
+        contactOpenHandler()
+        unschedule( lockDoor ) // ...we don't need to lock it later.
+        //Check Lock status when door was just opened
+        if (lock.latestValue("lock") == "unlocked") {
+            def msg = "Ohh.. no!!.. Lock status = $ls | Contact status = $cs"
+            log.debug "$msg"
+            pushNotificationHandler(msg)
+        }
+    }
 // 	Door is currently OPEN, Lock was changed from UNLOCKED -> LOCKED (MISTAKE)
-    if ((contact.latestValue("contact") == "open") && (evt.value == "locked")) {   
+    else if ((contact.latestValue("contact") == "open") && (evt.value == "locked")) {   
 //      log.debug "Door is in open status and somebody just locked the lock.  Mistake, unlocking the lock after !"
         runIn( minutesLater2, unlockDoor )   // ...schedule (in minutes) to unlock...  We don't want the door to be closed while the lock is engaged. 
     }
@@ -91,12 +103,6 @@ def doorHandler(evt)
 //      log.debug "Cancel the current task. Door is open and somebody just manually unlocked the lock!"
         unschedule( unlockDoor ) // ...we don't need to unlock it later.
 	}
-// 	Door has Been OPENED, Lock is UNLOCKED (Normal Door Opening Mode)
-    else if ((lock.latestValue("lock") == "unlocked") && (evt.value == "open")) { // If a person opens an unlocked door...
-//        log.debug "Cancel the current task. Door is unlocked and somebody just opened it!"
-        contactOpenHandler()
-        unschedule( lockDoor ) // ...we don't need to lock it later.
-    }
     
 // 	Door is currently CLOSED, Lock was changed from UNLOCKED to LOCKED (NORMAL CLOSING & LOCKING MODE)
 	else if ((contact.latestValue("contact") == "closed") && (evt.value == "locked")) { // If the door is closed and a person manually locks it then...
@@ -120,6 +126,8 @@ def doorHandler(evt)
     // Unexpected Door and/or Lock state(s)
 		def msg = "Ohh.. no!!.. Lock status = $ls | Contact status = $cs"
         log.debug "$msg"
+        pushNotificationHandler(msg)
+        msg = "Event Debug: Name ${evt.name} is ${evt.value} value"
         pushNotificationHandler(msg)
         // Reset Any Orphaned Door Scheduled Events
 		unschedule( lockDoor )
