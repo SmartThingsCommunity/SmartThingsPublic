@@ -28,32 +28,32 @@ import groovy.json.JsonSlurper
 
 preferences {
 	section("Choose which devices to monitor...") {
-        //input "accelerometers", "capability.accelerationSensor", title: "Accelerometers", multiple: true, required: false
+        input "accelerometers", "capability.accelerationSensor", title: "Accelerometers", multiple: true, required: false
         input "alarms", "capability.alarm", title: "Alarms", multiple: true, required: false
-        //input "batteries", "capability.battery", title: "Batteries", multiple: true, required: false
-        //input "beacons", "capability.beacon", title: "Beacons", multiple: true, required: false
-        //input "buttons", "capability.button", title: "Buttons", multiple: true, required: false
-        //input "cos", "capability.carbonMonoxideDetector", title: "Carbon  Monoxide Detectors", multiple: true, required: false
-        //input "colors", "capability.colorControl", title: "Color Controllers", multiple: true, required: false
+        input "batteries", "capability.battery", title: "Batteries", multiple: true, required: false
+        input "beacons", "capability.beacon", title: "Beacons", multiple: true, required: false
+        input "buttons", "capability.button", title: "Buttons", multiple: true, required: false
+        input "cos", "capability.carbonMonoxideDetector", title: "Carbon  Monoxide Detectors", multiple: true, required: false
+        input "colors", "capability.colorControl", title: "Color Controllers", multiple: true, required: false
         input "contacts", "capability.contactSensor", title: "Contact Sensors", multiple: true, required: false
-        //input "doorsControllers", "capability.doorControl", title: "Door Controllers", multiple: true, required: false
-        //input "energyMeters", "capability.energyMeter", title: "Energy Meters", multiple: true, required: false
-        //input "illuminances", "capability.illuminanceMeasurement", title: "Illuminance Meters", multiple: true, required: false
+        input "doorsControllers", "capability.doorControl", title: "Door Controllers", multiple: true, required: false
+        input "energyMeters", "capability.energyMeter", title: "Energy Meters", multiple: true, required: false
+        input "illuminances", "capability.illuminanceMeasurement", title: "Illuminance Meters", multiple: true, required: false
         input "locks", "capability.lock", title: "Locks", multiple: true, required: false
         input "motions", "capability.motionSensor", title: "Motion Sensors", multiple: true, required: false
-        //input "musicPlayers", "capability.musicPlayer", title: "Music Players", multiple: true, required: false
-        //input "powerMeters", "capability.powerMeter", title: "Power Meters", multiple: true, required: false
+        input "musicPlayers", "capability.musicPlayer", title: "Music Players", multiple: true, required: false
+        input "powerMeters", "capability.powerMeter", title: "Power Meters", multiple: true, required: false
         input "presences", "capability.presenceSensor", title: "Presence Sensors", multiple: true, required: false
         input "humidities", "capability.relativeHumidityMeasurement", title: "Humidity Meters", multiple: true, required: false
-        //input "relaySwitches", "capability.relaySwitch", title: "Relay Switches", multiple: true, required: false
-        //input "sleepSensors", "capability.sleepSensor", title: "Sleep Sensors", multiple: true, required: false
-        //input "smokeDetectors", "capability.smokeDetector", title: "Smoke Detectors", multiple: true, required: false
-        //input "peds", "capability.stepSensor", title: "Pedometers", multiple: true, required: false
+        input "relaySwitches", "capability.relaySwitch", title: "Relay Switches", multiple: true, required: false
+        input "sleepSensors", "capability.sleepSensor", title: "Sleep Sensors", multiple: true, required: false
+        input "smokeDetectors", "capability.smokeDetector", title: "Smoke Detectors", multiple: true, required: false
+        input "peds", "capability.stepSensor", title: "Pedometers", multiple: true, required: false
         input "switches", "capability.switch", title: "Switches", multiple: true, required: false
         input "switchLevels", "capability.switchLevel", title: "Switch Levels", multiple: true, required: false
         input "temperatures", "capability.temperatureMeasurement", title: "Temperature Sensors", multiple: true, required: false
         input "thermostats", "capability.thermostat", title: "Thermostats", multiple: true, required: false
-        //input "valves", "capability.valve", title: "Valves", multiple: true, required: false
+        input "valves", "capability.valve", title: "Valves", multiple: true, required: false
         input "waterSensors", "capability.waterSensor", title: "Water Sensors", multiple: true, required: false
     }
 }
@@ -74,77 +74,77 @@ mappings {
 }
 
 def subscribeToEvents() {
-	/*if (accelerometers != null) {
+	if (accelerometers != null) {
 		subscribe(accelerometers, "acceleration", genericHandler)
-	}*/
+	}
 	if (alarms != null) {
 		subscribe(alarms, "alarm", genericHandler)
 	}
-	/*if (batteries != null) {
+	if (batteries != null) {
 		subscribe(batteries, "battery", genericHandler)
-	}*/
-	/*if (beacons != null) {
+	}
+	if (beacons != null) {
 		subscribe(beacons, "presence", genericHandler)
-	}*/
-	/*
+	}
+	
 	if (buttons != null) {
 		subscribe(buttons, "button", genericHandler)
-	}*/
-	/*if (cos != null) {
+	}
+	if (cos != null) {
 		subscribe(cos, "carbonMonoxide", genericHandler)
-	}*/
-	/*if (colors != null) {
+	}
+	if (colors != null) {
 		subscribe(colors, "hue", genericHandler)
 		subscribe(colors, "saturation", genericHandler)
 		subscribe(colors, "color", genericHandler)
-	}*/
+	}
 	if (contacts != null) {
 		subscribe(contacts, "contact", genericHandler)
 	}
-	/*if (doorsControllers != null) {
+	if (doorsControllers != null) {
 		subscribe(doorsControllers, "door", genericHandler)
-	}*/
-	/*if (energyMeters != null) {
+	}
+	if (energyMeters != null) {
 		subscribe(energyMeters, "energy", genericHandler)
-	}*/
-	/*if (illuminances != null) {
+	}
+	if (illuminances != null) {
 		subscribe(illuminances, "illuminance", genericHandler)
-	}*/
+	}
 	if (locks != null) {
 		subscribe(locks, "lock", genericHandler)
 	}
 	if (motions != null) {
 		subscribe(motions, "motion", genericHandler)
 	}
-	/*if (musicPlayers != null) {
+	if (musicPlayers != null) {
 		subscribe(musicPlayers, "status", genericHandler)
 		subscribe(musicPlayers, "level", genericHandler)
 		subscribe(musicPlayers, "trackDescription", genericHandler)
 		subscribe(musicPlayers, "trackData", genericHandler)
 		subscribe(musicPlayers, "mute", genericHandler)
-	}*/
-	/*if (powerMeters != null) {
+	}
+	if (powerMeters != null) {
 		subscribe(powerMeters, "power", genericHandler)
-	}*/
+	}
 	if (presences != null) {
 		subscribe(presences, "presence", genericHandler)
 	}
 	if (humidities != null) {
 		subscribe(humidities, "humidity", genericHandler)
 	}
-	/*if (relaySwitches != null) {
+	if (relaySwitches != null) {
 		subscribe(relaySwitches, "switch", genericHandler)
-	}*/
-	/*if (sleepSensors != null) {
+	}
+	if (sleepSensors != null) {
 		subscribe(sleepSensors, "sleeping", genericHandler)
-	}*/
-	/*if (smokeDetectors != null) {
+	}
+	if (smokeDetectors != null) {
 		subscribe(smokeDetectors, "smoke", genericHandler)
-	}*/
-	/*if (peds != null) {
+	}
+	if (peds != null) {
 		subscribe(peds, "steps", genericHandler)
 		subscribe(peds, "goal", genericHandler)
-	}*/
+	}
 	if (switches != null) {
 		subscribe(switches, "switch", genericHandler)
 	}
@@ -163,9 +163,9 @@ def subscribeToEvents() {
 		subscribe(thermostats, "thermostatFanMode", genericHandler)
 		subscribe(thermostats, "thermostatOperatingState", genericHandler)
 	}
-	/*if (valves != null) {
+	if (valves != null) {
 		subscribe(valves, "contact", genericHandler)
-	}*/
+	}
 	if (waterSensors != null) {
 		subscribe(waterSensors, "water", genericHandler)
 	}
@@ -177,6 +177,7 @@ def getAccessKey() {
 		httpError(404, "Access Key Not Found")
 	} else {
 		[
+			grokerRootUrl: state.grokerRootUrl,
 			accessKey: state.accessKey
 		]
 	}
@@ -212,6 +213,12 @@ def setBucketKey() {
 def setAccessKey() {
 	log.trace "set access key"
 	def newAccessKey = request.JSON?.accessKey
+	def newGrokerRootUrl = request.JSON?.grokerRootUrl
+
+	if (newGrokerRootUrl && newGrokerRootUrl != "" && newGrokerRootUrl != state.grokerRootUrl) {
+		state.grokerRootUrl = "$newGrokerRootUrl"
+		state.isBucketCreated = false
+	}
 
 	if (newAccessKey && newAccessKey != state.accessKey) {
 		state.accessKey = "$newAccessKey"
@@ -224,6 +231,7 @@ def installed() {
 	subscribeToEvents()
 
 	state.isBucketCreated = false
+	state.grookerRootUrl = "https://groker.initialstate.com"
 }
 
 def updated() {
@@ -248,10 +256,11 @@ def createBucket() {
 	def bucketCreateBody = new JsonSlurper().parseText("{\"bucketKey\": \"$bucketKey\", \"bucketName\": \"$bucketName\"}")
 
 	def bucketCreatePost = [
-		uri: 'https://groker.initialstate.com/api/buckets',
+		uri: '${state.grokerRootUrl}/api/buckets',
 		headers: [
 			"Content-Type": "application/json",
-			"X-IS-AccessKey": accessKey
+			"X-IS-AccessKey": accessKey,
+			"Accept-Version": "0.0.1"
 		],
 		body: bucketCreateBody
 	]
@@ -288,11 +297,12 @@ def eventHandler(name, value) {
 
 	def eventBody = new JsonSlurper().parseText("[{\"key\": \"$name\", \"value\": \"$value\"}]")
 	def eventPost = [
-		uri: 'https://groker.initialstate.com/api/events',
+		uri: '${state.grokerRootUrl}/api/events',
 		headers: [
 			"Content-Type": "application/json",
 			"X-IS-BucketKey": "${state.bucketKey}",
-			"X-IS-AccessKey": "${state.accessKey}"
+			"X-IS-AccessKey": "${state.accessKey}",
+			"Accept-Version": "0.0.2"
 		],
 		body: eventBody
 	]
