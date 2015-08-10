@@ -215,7 +215,7 @@ def setAccessKey() {
 	def newAccessKey = request.JSON?.accessKey
 	def newGrokerRootUrl = request.JSON?.grokerRootUrl
 
-	if (newGrokerRootUrl && newGrokerRootUrl != state.grokerRootUrl) {
+	if (newGrokerRootUrl && newGrokerRootUrl != "" && newGrokerRootUrl != state.grokerRootUrl) {
 		state.grokerRootUrl = "$newGrokerRootUrl"
 		state.isBucketCreated = false
 	}
