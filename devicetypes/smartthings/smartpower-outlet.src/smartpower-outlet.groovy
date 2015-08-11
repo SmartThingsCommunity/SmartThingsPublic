@@ -32,20 +32,23 @@ metadata {
 	}
 
 	// UI tile definitions
-	tiles {
-		standardTile("switch", "device.switch", width: 2, height: 2, canChangeIcon: true) {
-			state "off", label: '${name}', action: "switch.on", icon: "st.switches.switch.off", backgroundColor: "#ffffff"
-			state "on", label: '${name}', action: "switch.off", icon: "st.switches.switch.on", backgroundColor: "#79b821"
+	tiles(scale: 2) {
+		multiAttributeTile(name:"switch", type: "lighting", width: 6, height: 4){
+			tileAttribute ("device.switch", key: "PRIMARY_CONTROL") {
+				attributeState "off", label: '${name}', action: "switch.on", icon: "st.switches.switch.off", backgroundColor: "#ffffff"
+				attributeState "on", label: '${name}', action: "switch.off", icon: "st.switches.switch.on", backgroundColor: "#79b821"
+			}
+			tileAttribute ("power", key: "SECONDARY_CONTROL") {
+				attributeState "power", label:'${currentValue} W'
+			}
 		}
-		valueTile("power", "device.power", decoration: "flat") {
-			state "power", label:'${currentValue} W'
-		}
-		standardTile("refresh", "device.power", inactiveLabel: false, decoration: "flat") {
+		
+		standardTile("refresh", "device.power", inactiveLabel: false, decoration: "flat", width: 2, height: 2) {
 			state "default", label:'', action:"refresh.refresh", icon:"st.secondary.refresh"
 		}
-
+		
 		main "switch"
-		details(["switch","power","refresh"])
+		details(["switch","refresh"])
 	}
 }
 

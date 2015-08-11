@@ -33,15 +33,17 @@ metadata {
 	reply "9881002001FF,delay 3000,988100200100,9881002002": "command: 9881, payload: 00200300"
  }
 
- tiles {
-	standardTile("alarm", "device.alarm", width: 2, height: 2) {
-		state "off", label:'off', action:'alarm.siren', icon:"st.alarm.alarm.alarm", backgroundColor:"#ffffff"
-		state "both", label:'alarm!', action:'alarm.off', icon:"st.alarm.alarm.alarm", backgroundColor:"#e86d13"
+ tiles(scale: 2) {
+	multiAttributeTile(name:"alarm", type: "generic", width: 6, height: 4){
+		tileAttribute ("device.alarm", key: "PRIMARY_CONTROL") {
+			attributeState "off", label:'off', action:'alarm.siren', icon:"st.alarm.alarm.alarm", backgroundColor:"#ffffff"
+			attributeState "both", label:'alarm!', action:'alarm.off', icon:"st.alarm.alarm.alarm", backgroundColor:"#e86d13"
+		}
 	}
-	standardTile("test", "device.alarm", inactiveLabel: false, decoration: "flat") {
+	standardTile("test", "device.alarm", inactiveLabel: false, decoration: "flat", width: 2, height: 2) {
 		state "default", label:'', action:"test", icon:"st.secondary.test"
 	}
-	standardTile("off", "device.alarm", inactiveLabel: false, decoration: "flat") {
+	standardTile("off", "device.alarm", inactiveLabel: false, decoration: "flat", width: 2, height: 2) {
 		state "default", label:'', action:"alarm.off", icon:"st.secondary.off"
 	}
 

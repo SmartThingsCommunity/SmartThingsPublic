@@ -31,23 +31,21 @@ metadata {
 			status "battery ${i}%": new physicalgraph.zwave.Zwave().batteryV1.batteryReport(batteryLevel: i).incomingMessage()
 		}
 	}
-	tiles {
-		standardTile("water", "device.water", width: 2, height: 2) {
-			state "dry", icon:"st.alarm.water.dry", backgroundColor:"#ffffff"
-			state "wet", icon:"st.alarm.water.wet", backgroundColor:"#53a7c0"
+	
+	tiles(scale: 2) {
+		multiAttributeTile(name:"water", type: "generic", width: 6, height: 4){
+			tileAttribute ("device.water", key: "PRIMARY_CONTROL") {
+				attributeState "dry", icon:"st.alarm.water.dry", backgroundColor:"#ffffff"
+				attributeState "wet", icon:"st.alarm.water.wet", backgroundColor:"#53a7c0"
+			}
 		}
 		standardTile("temperature", "device.temperature", width: 2, height: 2) {
 			state "normal", icon:"st.alarm.temperature.normal", backgroundColor:"#ffffff"
 			state "freezing", icon:"st.alarm.temperature.freeze", backgroundColor:"#53a7c0"
 			state "overheated", icon:"st.alarm.temperature.overheat", backgroundColor:"#F80000"
 		}
-		valueTile("battery", "device.battery", decoration: "flat", inactiveLabel: false) {
-			state "battery", label:'${currentValue}% battery', unit:""/*, backgroundColors:[
-				[value: 5, color: "#BC2323"],
-				[value: 10, color: "#D04E00"],
-				[value: 15, color: "#F1D801"],
-				[value: 16, color: "#FFFFFF"]
-			]*/
+		valueTile("battery", "device.battery", decoration: "flat", inactiveLabel: false, width: 2, height: 2) {
+			state "battery", label:'${currentValue}% battery', unit:""
 		}
 		main (["water", "temperature"])
 		details(["water", "temperature", "battery"])
