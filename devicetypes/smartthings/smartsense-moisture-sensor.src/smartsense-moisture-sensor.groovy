@@ -39,12 +39,13 @@ metadata {
 		input "tempOffset", "number", title: "Temperature Offset", description: "Adjust temperature by this many degrees", range: "*..*", displayDuringSetup: false
 	}
  
-	tiles {
-		standardTile("water", "device.water", width: 2, height: 2) {
-			state "dry", icon:"st.alarm.water.dry", backgroundColor:"#ffffff"
-			state "wet", icon:"st.alarm.water.wet", backgroundColor:"#53a7c0"
+	tiles(scale: 2) {
+		multiAttributeTile(name:"water", type: "generic", width: 6, height: 4){
+			tileAttribute ("device.water", key: "PRIMARY_CONTROL") {
+				attributeState "dry", icon:"st.alarm.water.dry", backgroundColor:"#ffffff"
+				attributeState "wet", icon:"st.alarm.water.wet", backgroundColor:"#53a7c0"
+			}
 		}
-        
 		valueTile("temperature", "device.temperature", inactiveLabel: false) {
 			state "temperature", label:'${currentValue}°',
 				backgroundColors:[
@@ -57,16 +58,14 @@ metadata {
 					[value: 96, color: "#bc2323"]
 				]
 		}
- 
-		valueTile("battery", "device.battery", decoration: "flat", inactiveLabel: false) {
-			state "battery", label:'${currentValue}% battery'
+		valueTile("battery", "device.battery", decoration: "flat", inactiveLabel: false, width: 2, height: 2) {
+			state "battery", label:'${currentValue}% battery', unit:""
 		}
-        
-        standardTile("refresh", "device.refresh", inactiveLabel: false, decoration: "flat") {
+		standardTile("refresh", "device.refresh", inactiveLabel: false, decoration: "flat", width: 2, height: 2) {
 			state "default", action:"refresh.refresh", icon:"st.secondary.refresh"
 		}
- 
-		main "water", "temperature"
+		
+		main (["water", "temperature"])
 		details(["water", "temperature", "battery", "refresh"])
 	}
 }

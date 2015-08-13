@@ -47,16 +47,19 @@ metadata {
 		input "tempOffset", "number", title: "Temperature Offset", description: "Adjust temperature by this many degrees", range: "*..*", displayDuringSetup: false
 	}
 
-	tiles {
-		standardTile("contact", "device.contact", width: 2, height: 2) {
-			state("open", label:'${name}', icon:"st.contact.contact.open", backgroundColor:"#ffa81e")
-			state("closed", label:'${name}', icon:"st.contact.contact.closed", backgroundColor:"#79b821")
+	tiles(scale: 2) {
+		multiAttributeTile(name:"contact", type: "generic", width: 6, height: 4){
+			tileAttribute ("device.contact", key: "PRIMARY_CONTROL") {
+				attributeState "open", label:'${name}', icon:"st.contact.contact.open", backgroundColor:"#ffa81e"
+				attributeState "closed", label:'${name}', icon:"st.contact.contact.closed", backgroundColor:"#79b821"
+			}
 		}
-		standardTile("acceleration", "device.acceleration") {
+
+		standardTile("acceleration", "device.acceleration", width: 2, height: 2) {
 			state("active", label:'${name}', icon:"st.motion.acceleration.active", backgroundColor:"#53a7c0")
 			state("inactive", label:'${name}', icon:"st.motion.acceleration.inactive", backgroundColor:"#ffffff")
 		}
-		valueTile("temperature", "device.temperature") {
+		valueTile("temperature", "device.temperature", width: 2, height: 2) {
 			state("temperature", label:'${currentValue}°',
 				backgroundColors:[
 					[value: 31, color: "#153591"],
@@ -69,25 +72,15 @@ metadata {
 				]
 			)
 		}
-		valueTile("3axis", "device.threeAxis", decoration: "flat", wordWrap: false) {
+		valueTile("3axis", "device.threeAxis", decoration: "flat", wordWrap: false, width: 2, height: 2) {
 			state("threeAxis", label:'${currentValue}', unit:"", backgroundColor:"#ffffff")
 		}
-		valueTile("battery", "device.battery", decoration: "flat", inactiveLabel: false) {
-			state "battery", label:'${currentValue}% battery', unit:""/*, backgroundColors:[
-				[value: 5, color: "#BC2323"],
-				[value: 10, color: "#D04E00"],
-				[value: 15, color: "#F1D801"],
-				[value: 16, color: "#FFFFFF"]
-			]*/
+		valueTile("battery", "device.battery", decoration: "flat", inactiveLabel: false, width: 2, height: 2) {
+			state "battery", label:'${currentValue}% battery', unit:""
 		}
-		/*
-		valueTile("lqi", "device.lqi", decoration: "flat", inactiveLabel: false) {
-			state "lqi", label:'${currentValue}% signal', unit:""
-		}
-		*/
 
 		main(["contact", "acceleration", "temperature"])
-		details(["contact", "acceleration", "temperature", "3axis", "battery"/*, "lqi"*/])
+		details(["contact", "acceleration", "temperature", "3axis", "battery"])
 	}
 }
 

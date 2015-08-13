@@ -63,12 +63,14 @@ metadata {
 		status "wake up" : "command: 8407, payload: "
 	}
 
-	tiles {
-		standardTile("motion", "device.motion", width: 2, height: 2) {
-			state "active", label:'motion', icon:"st.motion.motion.active", backgroundColor:"#53a7c0"
-			state "inactive", label:'no motion', icon:"st.motion.motion.inactive", backgroundColor:"#ffffff"
+	tiles(scale: 2) {
+		multiAttributeTile(name:"motion", type: "generic", width: 6, height: 4){
+			tileAttribute ("device.motion", key: "PRIMARY_CONTROL") {
+				attributeState "active", label:'motion', icon:"st.motion.motion.active", backgroundColor:"#53a7c0"
+				attributeState "inactive", label:'no motion', icon:"st.motion.motion.inactive", backgroundColor:"#ffffff"
+			}
 		}
-		valueTile("temperature", "device.temperature", inactiveLabel: false) {
+		valueTile("temperature", "device.temperature", inactiveLabel: false, width: 2, height: 2) {
 			state "temperature", label:'${currentValue}°',
 			backgroundColors:[
 				[value: 32, color: "#153591"],
@@ -80,13 +82,13 @@ metadata {
 				[value: 98, color: "#bc2323"]
 			]
 		}
-		valueTile("humidity", "device.humidity", inactiveLabel: false) {
+		valueTile("humidity", "device.humidity", inactiveLabel: false, width: 2, height: 2) {
 			state "humidity", label:'${currentValue}% humidity', unit:""
 		}
-		valueTile("illuminance", "device.illuminance", inactiveLabel: false) {
+		valueTile("illuminance", "device.illuminance", inactiveLabel: false, width: 2, height: 2) {
 			state "luminosity", label:'${currentValue} ${unit}', unit:"lux"
 		}
-		valueTile("battery", "device.battery", inactiveLabel: false, decoration: "flat") {
+		valueTile("battery", "device.battery", inactiveLabel: false, decoration: "flat", width: 2, height: 2) {
 			state "battery", label:'${currentValue}% battery', unit:""
 		}
 
