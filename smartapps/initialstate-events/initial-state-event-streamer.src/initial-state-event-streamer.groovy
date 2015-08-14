@@ -36,7 +36,6 @@ preferences {
         //input "cos", "capability.carbonMonoxideDetector", title: "Carbon  Monoxide Detectors", multiple: true, required: false
         //input "colors", "capability.colorControl", title: "Color Controllers", multiple: true, required: false
         input "contacts", "capability.contactSensor", title: "Contact Sensors", multiple: true, required: false
-        //input "doorsControllers", "capability.doorControl", title: "Door Controllers", multiple: true, required: false
         //input "energyMeters", "capability.energyMeter", title: "Energy Meters", multiple: true, required: false
         //input "illuminances", "capability.illuminanceMeasurement", title: "Illuminance Meters", multiple: true, required: false
         input "locks", "capability.lock", title: "Locks", multiple: true, required: false
@@ -101,9 +100,6 @@ def subscribeToEvents() {
 	if (contacts != null) {
 		subscribe(contacts, "contact", genericHandler)
 	}
-	/*if (doorsControllers != null) {
-		subscribe(doorsControllers, "door", genericHandler)
-	}*/
 	/*if (energyMeters != null) {
 		subscribe(energyMeters, "energy", genericHandler)
 	}*/
