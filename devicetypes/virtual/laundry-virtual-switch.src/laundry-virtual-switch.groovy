@@ -30,8 +30,8 @@ metadata {
 	// UI tile definitions
 	tiles {
 		standardTile("button", "device.switch", width: 2, height: 2, canChangeIcon: false) {
-			state "off", label: 'Off', action: "switch.on", icon: "https://s3.amazonaws.com/smartthings-device-icons/Appliances/appliances8-icn.png", backgroundColor: "#ffffff", nextState: "on"
-			state "on", label: 'Running', action: "switch.off", icon: "https://s3.amazonaws.com/smartthings-device-icons/Appliances/appliances8-icn.png", backgroundColor: "#79b821", nextState: "off"
+			state "off", label: 'Off', action: "switch.on", icon: "https://s3.amazonaws.com/smartthings-device-icons/Appliances/appliances8-icn.png", backgroundColor: "#ffffff"
+			state "on", label: 'Running', action: "switch.off", icon: "https://s3.amazonaws.com/smartthings-device-icons/Appliances/appliances8-icn.png", backgroundColor: "#79b821"
 		}
 		standardTile("refresh", "device.switch", inactiveLabel: false, decoration: "flat") {
 			state "default", label:'', action:"refresh.refresh", icon:"st.secondary.refresh"
