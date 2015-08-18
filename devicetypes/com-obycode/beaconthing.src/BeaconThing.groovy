@@ -16,7 +16,7 @@
 metadata {
 	definition (name: "BeaconThing", namespace: "com.obycode", author: "obycode") {
 		capability "Beacon"
-		capability "Presence"
+		capability "Presence Sensor"
 		capability "Sensor"
 
 		command "setPresence"
