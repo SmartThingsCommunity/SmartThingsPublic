@@ -158,6 +158,7 @@ private boolean shouldProcessMessage(cluster) {
     return !ignoredMessage
 }
 
+//TODO: Not sure why this is here. Clean up if not required during refactor
 private int getHumidity(value) {
 	return Math.round(Double.parseDouble(value))
 }
@@ -313,52 +314,48 @@ def getTemperature(value) {
 		]
 	}
 
-	def refresh()
-	{
+	def refresh() {
 		log.debug "Refreshing Values "
-		[
+		def refreshCmds = [
         
         /* sensitivity - default value (8) */
         
         "zcl mfg-code 0x104E", "delay 200",
         "zcl global write 0xFC02 0 0x20 {02}", "delay 200",
         "send 0x${device.deviceNetworkId} 1 1", "delay 400",
-        
-        "zcl mfg-code 0x104E", "delay 200",
-        "zcl global read 0xFC02 0x0000", "delay 200",
-        "send 0x${device.deviceNetworkId} 1 1","delay 400",
-        
+
 		"st rattr 0x${device.deviceNetworkId} 1 0x402 0", "delay 200",
 		"st rattr 0x${device.deviceNetworkId} 1 1 0x20", "delay 200",
 
         "zcl mfg-code 0x104E", "delay 200",
-        "zcl global read 0xFC02 0x0010", "delay 100",
+        "zcl global read 0xFC02 0x0010",
         "send 0x${device.deviceNetworkId} 1 1","delay 400",
         
         "zcl mfg-code 0x104E", "delay 200",
-        "zcl global read 0xFC02 0x0012", "delay 100",
+        "zcl global read 0xFC02 0x0012",
         "send 0x${device.deviceNetworkId} 1 1","delay 400",
         
         "zcl mfg-code 0x104E", "delay 200",
-        "zcl global read 0xFC02 0x0013", "delay 100",
+        "zcl global read 0xFC02 0x0013",
         "send 0x${device.deviceNetworkId} 1 1","delay 400",
         
         "zcl mfg-code 0x104E", "delay 200",
-        "zcl global read 0xFC02 0x0014", "delay 100",
-        "send 0x${device.deviceNetworkId} 1 1"
+        "zcl global read 0xFC02 0x0014",
+        "send 0x${device.deviceNetworkId} 1 1", "delay 400"
+		]
 
-		] 
+		return refreshCmds + enrollResponse()
 	}
 
 	def configure() {
 
-		String zigbeeId = swapEndianHex(device.hub.zigbeeId)
+		String zigbeeEui = swapEndianHex(device.hub.zigbeeEui)
 		log.debug "Configuring Reporting"
 		
         def configCmds = [
         
         "zdo bind 0x${device.deviceNetworkId} 1 ${endpointId} 1 {${device.zigbeeId}} {}", "delay 200",
-        "zcl global write 0x500 0x10 0xf0 {${zigbeeId}}",
+        "zcl global write 0x500 0x10 0xf0 {${zigbeeEui}}",
 		"send 0x${device.deviceNetworkId} 1 ${endpointId}", "delay 500",
 
 		"zdo bind 0x${device.deviceNetworkId} 1 ${endpointId} 0x20 {${device.zigbeeId}} {}", "delay 200",
@@ -397,11 +394,15 @@ private getEndpointId() {
 
 def enrollResponse() {
 	log.debug "Sending enroll response"
+	String zigbeeEui = swapEndianHex(device.hub.zigbeeEui)
 	[
-
-	"raw 0x500 {01 23 00 00 00}", "delay 200",
-	"send 0x${device.deviceNetworkId} 1 1"
-
+		//Resending the CIE in case the enroll request is sent before CIE is written
+		"zdo bind 0x${device.deviceNetworkId} 1 ${endpointId} 1 {${device.zigbeeId}} {}", "delay 200",
+		"zcl global write 0x500 0x10 0xf0 {${zigbeeEui}}",
+		"send 0x${device.deviceNetworkId} 1 ${endpointId}", "delay 500",
+		//Enroll Response
+		"raw 0x500 {01 23 00 00 00}",
+		"send 0x${device.deviceNetworkId} 1 1", "delay 200"
 	]
 }
 
