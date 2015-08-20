@@ -12,7 +12,7 @@
 
 definition (
 	name: "Laundry Monitor Using Power Meter",
-	namespace: "smartthings",
+	namespace: "danieldeleo",
 	author: "Daniel De Leo",
 	description: "Sends a message and (optionally) turns on or blinks a light to indicate that laundry is done.",
 	category: "Convenience",
