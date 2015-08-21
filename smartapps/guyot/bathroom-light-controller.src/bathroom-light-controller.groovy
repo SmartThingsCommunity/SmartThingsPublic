@@ -94,7 +94,7 @@ def installed() {
 def initialize() {
 	subscribe(contacts, "contact", contactHandler) // subscribe to all contact events from the chosen contact sensors
     subscribe(motions, "motion", motionHandler) // subscribe to all motion events from the chosen motion sensors
-	//subscribe(lights, "switch", lightsHandler)
+	state.timeClosed = now()
 }
 
 /*
@@ -124,7 +124,11 @@ def contactHandler(evt) {
     */
     log.debug "$evt.value"
     if (evt.value == "open") { // if at least one door is open
-        lights.off() // turn off the lights
+        if (lightLocation == "interior") {
+            runIn(5000, lights.off)
+        } else {
+            lights.off() // turn off the lights
+        }
     } else {
     	log.debug "unscheduling"
         // unschedule any events (in this SmartApp those would only be timers to turn off the lights)
@@ -140,11 +144,13 @@ def contactHandler(evt) {
     	}
         if (openContacts.size() == 0) {
             if (lightLocation == "interior") {
+                state.timeClosed = now()
             	// lights were already turned on by the motion sensor, no need to duplicate effort
-            	checkForPresence()
+            	//checkForPresence()
             } else {
+                state.timeClosed = now()
 	        	lights.on()
-                checkForPresence()
+                //checkForPresence()
             }
         }
     }
@@ -167,13 +173,18 @@ def motionHandler(evt) {
 	    }
         if (lightLocation == "interior") {
         	lights.on() // turn on the lights
-            if (openContacts.size() > 0) {
+            if (openContacts.size == 0) {
+                log.debug "unscheduling"
+                // unschedule any events (in this SmartApp those would only be timers to turn off the lights)
+                unschedule()
+            }
+            /*if (openContacts.size() > 0) {
             	runIn(60*3, lightsOut)
             } else {
             	log.debug "unscheduling"
         		// unschedule any events (in this SmartApp those would only be timers to turn off the lights)
     			unschedule()
-        	}
+        	}*/
         } else {
             if (openContacts.size() == 0) {
             	lights.on() // turn on the lights
@@ -182,6 +193,8 @@ def motionHandler(evt) {
     			unschedule()
             }
         }
+    } else if (evt.value == "inactive") {
+        log.debug "$state.timeClosed"
     }
 }
 
@@ -202,7 +215,7 @@ def switchHandler() {
 */
 
 // method to query the motion sensor to make sure someone is inside when doors are closed
-def checkForPresence() {
+/*def checkForPresence() {
 	log.debug "checking for presence"
     runIn(14, offIfEmpty)
 }
@@ -225,4 +238,4 @@ def offIfEmpty() {
 def lightsOut() {
 	log.debug "lights out"
 	lights.off()
-}
+}*/
