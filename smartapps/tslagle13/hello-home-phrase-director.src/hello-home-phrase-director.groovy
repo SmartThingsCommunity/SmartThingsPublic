@@ -105,9 +105,10 @@
     def sunriseOffset = minutesToOffset(sunriseOff)
     def sunsetOffset = minutesToOffset(sunsetOff)
     def zip = settings.zip as String
-    def sunInfo = getSunriseAndSunset(zipCode: zip, sunriseOffset: sunriseOffset, sunsetOffset: sunsetOffset)
-    log.debug "Sunrise at ${sunInfo.sunrise} and sunset at ${sunInfo.sunset}"
     def current = now()
+    def sunInfo = getSunriseAndSunset(zipCode: zip, sunriseOffset: sunriseOffset, sunsetOffset: sunsetOffset)
+
+    log.debug "Sunrise at ${sunInfo.sunrise} and sunset at ${sunInfo.sunset}"
 
     if (sunInfo.sunrise.time < current && sunInfo.sunset.time > current) {
       state.sunMode = "sunrise"
@@ -322,7 +323,8 @@
     }
     def sign = offset < 0 ? "-" : ""
     def hours = offset.abs().intdiv(60)
+    def lead = hours < 10 ?  "0" : ""
     def minutes = offset.abs() % 60
 
-    return "$sign$hours:$minutes"
+    return "$sign$lead$hours:$minutes"
   }
