@@ -13,6 +13,7 @@
  *  for the specific language governing permissions and limitations under the License.
  *  Icon location = http://scripts.3dgo.net/smartthings/icons/
  */
+ 
 metadata {
 	definition (name: "CoopBoss H3Vx", namespace: "JohnRucker", author: "John.Rucker@Solar-Current.com") {
         capability "Refresh"
@@ -49,7 +50,6 @@ metadata {
         attribute "doorCurrent","number"        
 
     	fingerprint profileId: "0104", inClusters: "0000,0101,0402"
-        //fingerprint inClusters: "0000,0001,0003,0402,0500,0020,0B05", outClusters: "0019", manufacturer: "CentraLite", model: "3326"
     
 	}
 
@@ -63,9 +63,7 @@ metadata {
 		input "tempOffsetCoop", "number", title: "Coop Temperature Offset", description: "Adjust temperature by this many degrees", range: "*..*", displayDuringSetup: false
 		input "tempOffsetOutside", "number", title: "Outside Temperature Offset", description: "Adjust temperature by this many degrees", range: "*..*", displayDuringSetup: false        
 	}    
-    
-    
-    
+       
 
 	// UI tile definitions
 	tiles {       
