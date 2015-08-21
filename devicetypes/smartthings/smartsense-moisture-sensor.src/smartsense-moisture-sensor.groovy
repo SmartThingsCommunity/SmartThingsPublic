@@ -22,8 +22,8 @@ metadata {
 		capability "Water Sensor"
         
         command "enrollResponse"
- 
- 
+
+
 		fingerprint inClusters: "0000,0001,0003,0402,0500,0020,0B05", outClusters: "0019", manufacturer: "CentraLite",  model: "3315-S"
 		fingerprint inClusters: "0000,0001,0003,0402,0500,0020,0B05", outClusters: "0019", manufacturer: "CentraLite",  model: "3315"
 		fingerprint inClusters: "0000,0001,0003,0402,0500,0020,0B05", outClusters: "0019", manufacturer: "CentraLite",  model: "3315-Seu"
@@ -290,7 +290,6 @@ def enrollResponse() {
 	String zigbeeEui = swapEndianHex(device.hub.zigbeeEui)
     [
 		//Resending the CIE in case the enroll request is sent before CIE is written
-		"zdo bind 0x${device.deviceNetworkId} 1 ${endpointId} 1 {${device.zigbeeId}} {}", "delay 200",
 		"zcl global write 0x500 0x10 0xf0 {${zigbeeEui}}",
 		"send 0x${device.deviceNetworkId} 1 ${endpointId}", "delay 500",
 		//Enroll Response
