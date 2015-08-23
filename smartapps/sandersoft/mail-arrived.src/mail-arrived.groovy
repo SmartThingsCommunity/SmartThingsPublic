@@ -18,6 +18,7 @@
 import java.text.SimpleDateFormat;
 import java.util.Date;
 
+
 definition(
     name: "Mail Arrived",
     namespace: "SanderSoft",
@@ -40,53 +41,78 @@ preferences {
         }
 	}
     section("Minimum time between actions (optional, defaults to every event)") {
-	input "frequency", "decimal", title: "Minutes", required: false
+	input "mutePeriodMin", "decimal", title: "Minutes", required: true
 	}
-}
-
-private String timeDifference(long timeDifference1) {
-    long timeDifference = timeDifference1/1000;
-    int h = (int) (timeDifference / (3600));
-    int m = (int) ((timeDifference - (h * 3600)) / 60);
-    int s = (int) (timeDifference - (h * 3600) - m * 60);
-    return String.format("%02d:%02d:%02d", h,m,s);
 }
 
 def installed() {
-	subscribe(contact, "contact.closed", eventHandler)
-	subscribe(contact, "contact.open", eventHandler)
+    initialize()
+}
+
+def initialize() {
+	log.trace "Initializing..."
+	subscribe(contact, "contact.open", eventHandlerOpen)
+	subscribe(contact, "contact.closed", eventHandlerClosed)
+//    log.trace "Initiization: state.mailboxMuteTime: $state.mailboxMuteTime"
+//    log.trace "Initiization: state.mailboxOpenTime: $state.mailboxOpenTime"
+	if (state.mailboxMuteTime == null) {
+    	log.trace "Initiization: state.mailboxMuteTime initialized to 0"
+	    state.mailboxMuteTime = 0
+    }
+	if (state.mailboxOpenTime == null) {
+    	log.trace "Initiization: state.mailboxOpenTime initialized to 0"
+	    state.mailbox = 0
+    }
 }
 
 def updated() {
+	log.trace "Unsubscribe"
 	unsubscribe()
-	subscribe(contact, "contact.closed", eventHandler)
-	subscribe(contact, "contact.open", eventHandler)
+	initialize()
 }
 
-def eventHandler(evt) {    
-	if (frequency) {
-    log.trace "Frequency = $frequency"
-		def lastTime = state[evt.deviceId]
-	    log.trace "lastTime = $lastTime"
-		if (lastTime == null || now() - lastTime >= frequency * 60000) {
-			takeAction(evt)
-		}
+// Open Event *******************************************************
+def eventHandlerOpen(evt) {
+	if (inTheMuteZone()==false) {
+        TimeZone.setDefault(TimeZone.getTimeZone('America/New_York'))
+        SimpleDateFormat format = new SimpleDateFormat("EEE, d MMM, hh:mm a")
+		notifications("The MailMan is here at ${format.format(now())}. Yippee!")
+        state.mailboxOpenTime = now()
+    }
+}
+
+// Close Event ******************************************************
+def eventHandlerClosed(evt) {
+	if (inTheMuteZone()==false) {
+        TimeZone.setDefault(TimeZone.getTimeZone('America/New_York'))
+        SimpleDateFormat format = new SimpleDateFormat("EEE, d MMM, hh:mm a")
+        def long timeOpen = (now()-state.mailboxOpenTime)/1000
+        def msg = "Your postal mailbox door was $evt.value after ${timeConversion(timeOpen)}"
+		notifications(msg)
+		state.mailboxMuteTime = now()
+    }
+}
+
+def inTheMuteZone() {
+    def lastTime = state.mailboxMuteTime
+//    log.trace "lastTime: $lastTime Now(): ${now()}"
+    def long zoneDeltaSecs = (now() - (lastTime + (mutePeriodMin*60000)))
+//	log.trace "zoneDeltaSecs: ${zoneDeltaSecs/1000}"
+	def inTheMuteZoneSecs = (zoneDeltaSecs < 0)
+    if  (inTheMuteZoneSecs) {
+        log.trace "In the Mute Zone, waiting for ${(zoneDeltaSecs/1000).abs()}"
+        return true
+    }
+    else {
+        log.trace "Outside the Mute Zone, OK to Notify"
+        return false
 	}
-	else {
-		takeAction(evt)
-	}    
 }
 
-private takeAction(evt) { //Specified contact has an event
-    log.trace "$evt.value"
-    //Set Timezone to New York for me!
-    TimeZone.setDefault(TimeZone.getTimeZone('America/New_York'))
-    def today = new Date()
-    SimpleDateFormat format = new SimpleDateFormat(
-                "EEE, d MMM, hh:mm a");
-	def msg = "Your postal mailbox was $evt.value at ${format.format(today)}"
-	log.trace "$msg"
+    
+def notifications(msg) {
     //Send out Notifications
+    log.trace "Notification Msg: $msg"
 	if (pushNotification) {
 			sendPush(msg)
         }
@@ -96,7 +122,25 @@ private takeAction(evt) { //Specified contact has an event
     if (phone2 != null && phone2 != "") {
         sendSms(phone2,msg)
     	}
-    if (frequency) {
-        state[evt.deviceId] = now()
-    	}
+}
+
+private static String timeConversion(long totalSeconds) {
+
+    final int MINUTES_IN_AN_HOUR = 60;
+    final int SECONDS_IN_A_MINUTE = 60;
+	def HMS = "";
+
+    int seconds = totalSeconds % SECONDS_IN_A_MINUTE;
+    int totalMinutes = totalSeconds / SECONDS_IN_A_MINUTE;
+    int minutes = totalMinutes % MINUTES_IN_AN_HOUR;
+    int hours = totalMinutes / MINUTES_IN_AN_HOUR;
+    if (hours > 0) {
+	    return hours + " hrs " + minutes + " mins " + seconds + " secs";
+    }
+    else if (minutes>0) {
+        return minutes + " mins " + seconds + " secs";
+	}
+    else {
+	    return seconds + " secs";
+    }
 }
