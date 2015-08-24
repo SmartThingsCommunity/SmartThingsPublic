@@ -21,6 +21,7 @@ metadata {
 		capability "Illuminance Measurement"
 		capability "Temperature Measurement"
 		capability "Relative Humidity Measurement"
+		capability "Sensor"
 
 		attribute "localSunrise", "string"
 		attribute "localSunset", "string"
