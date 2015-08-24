@@ -46,7 +46,7 @@ metadata {
 				attributeState "wet", icon:"st.alarm.water.wet", backgroundColor:"#53a7c0"
 			}
 		}
-		valueTile("temperature", "device.temperature", inactiveLabel: false) {
+		valueTile("temperature", "device.temperature", inactiveLabel: false, width: 2, height: 2) {
 			state "temperature", label:'${currentValue}°',
 				backgroundColors:[
 					[value: 31, color: "#153591"],
