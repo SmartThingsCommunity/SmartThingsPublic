@@ -2,10 +2,10 @@ definition(
     name: "Indicator on Schedule",
     namespace: "com.obycode",
     author: "obycode",
-    description: "Turn ooff switch indicators at a given time, and turn them back on later",
+    description: "Turn off switch indicators at a given time, and turn them back on later",
     category: "Convenience",
-    iconUrl: "https://s3.amazonaws.com/smartapp-icons/Meta/light_outlet.png",
-    iconX2Url: "https://s3.amazonaws.com/smartapp-icons/Meta/light_outlet@2x.png"
+    iconUrl: "http://cdn.device-icons.smartthings.com/indicators/never-lit.png",
+    iconX2Url: "http://cdn.device-icons.smartthings.com/indicators/never-lit@2x.png"
 )
 
 preferences {
