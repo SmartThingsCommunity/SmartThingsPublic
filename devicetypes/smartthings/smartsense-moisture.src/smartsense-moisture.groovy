@@ -128,6 +128,15 @@ def zwaveEvent(physicalgraph.zwave.commands.alarmv2.AlarmReport cmd)
 	map
 }
 
+def zwaveEvent(physicalgraph.zwave.commands.basicv1.BasicSet cmd)
+{
+	def map = [:]
+	map.name = "water"
+	map.value = cmd.value ? "wet" : "dry"
+	map.descriptionText = "${device.displayName} is ${map.value}"
+	map
+}
+
 def zwaveEvent(physicalgraph.zwave.Command cmd)
 {
 	log.debug "COMMAND CLASS: $cmd"
