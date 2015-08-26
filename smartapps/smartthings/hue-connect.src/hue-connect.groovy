@@ -114,7 +114,8 @@ def bulbDiscovery()
 	int bulbRefreshCount = !state.bulbRefreshCount ? 0 : state.bulbRefreshCount as int
 	state.bulbRefreshCount = bulbRefreshCount + 1
 	def refreshInterval = 3
-
+	state.inBulbDiscovery = true
+    
 	def options = bulbsDiscovered() ?: []
 	def numFound = options.size() ?: 0
 
@@ -234,7 +235,8 @@ def updated() {
 }
 
 def initialize() {
-	log.debug "Initializing"    
+	log.debug "Initializing"  
+    state.inBulbDiscovery = false
 	if (selectedHue) {
 		addBridge()
         addBulbs()
@@ -257,17 +259,21 @@ def uninstalled(){
 
 // Handles events to add new bulbs
 def bulbListHandler(hub, data) {
-	def bulbs = [:]
-    def logg = ""
-	log.trace "Adding bulbs to state..."
-	state.bridgeProcessedLightList = true
-    def object = new groovy.json.JsonSlurper().parseText(data)   
-	object.each { k,v ->
-		if (v instanceof Map) 
-			bulbs[k] = [id: k, name: v.name, type: v.type, hub:hub]
-	}
-	atomicState.bulbs = bulbs
-	return "${bulbs.size()} bulbs found. $atomicState.bulbs"
+	def msg = "Bulbs list not pressesed. Only while in settings menu."
+	if (state.inBulbDiscovery) {
+        def bulbs = [:]
+        def logg = ""
+        log.trace "Adding bulbs to state..."
+        state.bridgeProcessedLightList = true
+        def object = new groovy.json.JsonSlurper().parseText(data)   
+        object.each { k,v ->
+            if (v instanceof Map) 
+                bulbs[k] = [id: k, name: v.name, type: v.type, hub:hub]
+        }
+        atomicState.bulbs = bulbs
+        msg = "${bulbs.size()} bulbs found. $atomicState.bulbs"
+    }    
+	return msg
 }
 
 def addBulbs() {
