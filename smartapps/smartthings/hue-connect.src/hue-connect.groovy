@@ -259,7 +259,7 @@ def uninstalled(){
 
 // Handles events to add new bulbs
 def bulbListHandler(hub, data) {
-	def msg = "Bulbs list not pressesed. Only while in settings menu."
+	def msg = "Bulbs list not processed. Only while in settings menu."
 	if (state.inBulbDiscovery) {
         def bulbs = [:]
         def logg = ""
