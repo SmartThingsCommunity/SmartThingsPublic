@@ -287,7 +287,8 @@ def isDescriptionPower(descMap) {
 	def powerValue = "undefined"
 	if (descMap.cluster == "0B04") {
 		if (descMap.attrId == "050b") {
-			powerValue = convertHexToInt(descMap.value)
+			if(descMap.value!="ffff")
+				powerValue = convertHexToInt(descMap.value)
 		}
 	}
 	else if (descMap.clusterId == "0B04") {

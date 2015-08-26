@@ -70,9 +70,10 @@ def parse(String description) {
 	log.debug "description is $description"
 
 	def finalResult = zigbee.getKnownDescription(description)
+
 	//TODO: Remove this after getKnownDescription can parse it automatically
-	if (!finalResult)
-		finalResult = zigbee.getPowerDescription(zigbee.parseDescriptionAsMap(description))
+	if (!finalResult && description!="updated")
+		finalResult = getPowerDescription(zigbee.parseDescriptionAsMap(description))
 
 	if (finalResult) {
 		log.info finalResult
@@ -123,4 +124,31 @@ def powerConfig() {
 		"zcl global send-me-a-report 0x0B04 0x050B 0x29 1 600 {05 00}",				//The send-me-a-report is custom to the attribute type for CentraLite
 		"send 0x${device.deviceNetworkId} 1 ${endpointId}", "delay 500"
 	]
+}
+
+private getEndpointId() {
+	new BigInteger(device.endpointId, 16).toString()
+}
+
+//TODO: Remove this after getKnownDescription can parse it automatically
+def getPowerDescription(descMap) {
+	def powerValue = "undefined"
+	if (descMap.cluster == "0B04") {
+		if (descMap.attrId == "050b") {
+			if(descMap.value!="ffff")
+				powerValue = convertHexToInt(descMap.value)
+		}
+	}
+	else if (descMap.clusterId == "0B04") {
+		if(descMap.command=="07"){
+			return	[type: "update", value : "power (0B04) capability configured successfully"]
+		}
+	}
+
+	if (powerValue != "undefined"){
+		return	[type: "power", value : powerValue]
+	}
+	else {
+		return "false"
+	}
 }
