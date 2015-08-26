@@ -17,16 +17,19 @@ definition(
 preferences {
 	section("Connect these virtual switches to the Arduino's relays") {
 		input "switch1", title: "Switch for relay 1", "capability.momentary"
+        //Relay 2 LR Light
         input "switch2", title: "Switch for relay 2", "capability.switch", required: false
+        //Relay 3 LR Fan
         input "switch3", title: "Switch for relay 3", "capability.switch", required: false
         input "switch4", title: "Switch for relay 4", "capability.switch", required: false 
         input "switch5", title: "Switch for relay 5", "capability.switch", required: false
         input "switch6", title: "Switch for relay 6", "capability.switch", required: false
         input "switch7", title: "Switch for relay 7", "capability.switch", required: false
         input "switch8", title: "Switch for relay 8", "capability.switch", required: false 
-	}
+		input "LRSwitch", title: "Livingroom Switch", "capability.switch", required: false
+    }
     section("Which Arduino relay board to control?") {
-		input "arduino", "device.arduinoRelayBoard"
+		input "arduino", "device.arduinoRelayFanControl"
     }    
 }
 
@@ -47,20 +50,10 @@ def subscribe() {
 	// Listen to the virtual switches
 	subscribe(switch1, "momentary.pushed", switchOn1)
 	//subscribe(switch1, "switch.off", switchOff1)
-    subscribe(switch2, "switch", switchOn2)
+    subscribe(switch2, "switch", Relay2)
 	//subscribe(switch2, "switch.off", switchOff2)
-    subscribe(switch3, "speed", switchOn3)
+    subscribe(switch3, "speed", relay3)
 	//subscribe(switch3, "switch", switchOff3)
-    subscribe(switch4, "switch.on", switchOn4)
-	subscribe(switch4, "switch.off", switchOff4)
-    subscribe(switch5, "switch.on", switchOn5)
-	subscribe(switch5, "switch.off", switchOff5)
-    subscribe(switch6, "switch.on", switchOn6)
-	subscribe(switch6, "switch.off", switchOff6)
-    subscribe(switch7, "switch.on", switchOn7)
-	subscribe(switch7, "switch.off", switchOff7)
-    subscribe(switch8, "switch.on", switchOn8)
-	subscribe(switch8, "switch.off", switchOff8)
     //subscribe(contact1, "switch.on", switchOn8)
 	//ubscribe(contact1, "switch.off", switchOff8)
     
@@ -85,6 +78,17 @@ def subscribe() {
     */
     
 }
+
+def relay3(evt)
+{
+	LRSwitch.on()
+    log.debug "Livingroom fan event received: $evt.value"
+	if(evt.value == "off"){arduino.off()}
+    else if(evt.value == "high") {arduino.high()}
+    else if(evt.value == "med") {arduino.med()}
+    else {arduino.low()}
+}
+
 
 def switchOn1(evt)
 {
