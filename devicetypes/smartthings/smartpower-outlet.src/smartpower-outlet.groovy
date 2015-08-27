@@ -136,7 +136,7 @@ def getPowerDescription(descMap) {
 	if (descMap.cluster == "0B04") {
 		if (descMap.attrId == "050b") {
 			if(descMap.value!="ffff")
-				powerValue = convertHexToInt(descMap.value)
+				powerValue = zigbee.convertHexToInt(descMap.value)
 		}
 	}
 	else if (descMap.clusterId == "0B04") {
@@ -149,6 +149,6 @@ def getPowerDescription(descMap) {
 		return	[type: "power", value : powerValue]
 	}
 	else {
-		return "false"
+		return [:]
 	}
 }
