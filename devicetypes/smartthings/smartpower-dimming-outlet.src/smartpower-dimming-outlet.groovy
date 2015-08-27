@@ -287,7 +287,8 @@ def isDescriptionPower(descMap) {
 	def powerValue = "undefined"
 	if (descMap.cluster == "0B04") {
 		if (descMap.attrId == "050b") {
-			powerValue = convertHexToInt(descMap.value)
+			if(descMap.value!="ffff")
+				powerValue = convertHexToInt(descMap.value)
 		}
 	}
 	else if (descMap.clusterId == "0B04") {
@@ -327,10 +328,9 @@ def levelConfig() {
 //min change in value is 05
 def powerConfig() {
 	[
-			//Meter (Power) Reporting
-			"zdo bind 0x${device.deviceNetworkId} 1 ${endpointId} 0x0B04 {${device.zigbeeId}} {}", "delay 200",
-			"zcl global send-me-a-report 0x0B04 0x050B 0x2A 1 600 {05}",
-			"send 0x${device.deviceNetworkId} 1 ${endpointId}", "delay 1500"
+		"zdo bind 0x${device.deviceNetworkId} 1 ${endpointId} 0x0B04 {${device.zigbeeId}} {}", "delay 200",
+		"zcl global send-me-a-report 0x0B04 0x050B 0x29 1 600 {05 00}",				//The send-me-a-report is custom to the attribute type for CentraLite
+		"send 0x${device.deviceNetworkId} 1 ${endpointId}", "delay 500"
 	]
 }
 
