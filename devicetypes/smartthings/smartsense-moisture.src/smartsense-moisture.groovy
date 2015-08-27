@@ -47,6 +47,13 @@ metadata {
 		valueTile("battery", "device.battery", decoration: "flat", inactiveLabel: false, width: 2, height: 2) {
 			state "battery", label:'${currentValue}% battery', unit:""
 		}
+
+		//This tile is a temporary fix so users can select main tiles again
+		standardTile("CONVERTED-MULTI-device.water", "device.water", width: 4, height: 4) {
+			state "dry", icon:"st.alarm.water.dry", backgroundColor:"#ffffff"
+			state "wet", icon:"st.alarm.water.wet", backgroundColor:"#53a7c0"
+		}
+
 		main (["water", "temperature"])
 		details(["water", "temperature", "battery"])
 	}

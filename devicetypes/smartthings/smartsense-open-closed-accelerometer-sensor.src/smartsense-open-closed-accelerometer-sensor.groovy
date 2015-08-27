@@ -66,6 +66,12 @@
 			state "default", action:"refresh.refresh", icon:"st.secondary.refresh"
 		}
 
+		//This tile is a temporary fix so users can select main tiles again
+		standardTile("CONVERTED-MULTI-device.contact", "device.contact", width: 4, height: 4) {
+			state "open", label:'${name}', icon:"st.contact.contact.open", backgroundColor:"#ffa81e"
+			state "closed", label:'${name}', icon:"st.contact.contact.closed", backgroundColor:"#79b821"
+		}
+
 		main (["contact", "acceleration", "temperature"])
 		details(["contact", "acceleration", "temperature", "battery", "refresh"])
 	}
