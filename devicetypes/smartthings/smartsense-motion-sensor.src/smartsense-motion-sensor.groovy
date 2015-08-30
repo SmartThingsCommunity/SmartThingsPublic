@@ -41,13 +41,14 @@ metadata {
 		input "tempOffset", "number", title: "Temperature Offset", description: "Adjust temperature by this many degrees", range: "*..*", displayDuringSetup: false
 	}
 
-	tiles {
-		standardTile("motion", "device.motion", width: 2, height: 2) {
-			state("active", label:'motion', icon:"st.motion.motion.active", backgroundColor:"#53a7c0")
-			state("inactive", label:'no motion', icon:"st.motion.motion.inactive", backgroundColor:"#ffffff")
+	tiles(scale: 2) {
+		multiAttributeTile(name:"motion", type: "generic", width: 6, height: 4){
+			tileAttribute ("device.motion", key: "PRIMARY_CONTROL") {
+				attributeState "active", label:'motion', icon:"st.motion.motion.active", backgroundColor:"#53a7c0"
+				attributeState "inactive", label:'no motion', icon:"st.motion.motion.inactive", backgroundColor:"#ffffff"
+			}
 		}
-        
-    	valueTile("temperature", "device.temperature") {
+		valueTile("temperature", "device.temperature", width: 2, height: 2) {
 			state("temperature", label:'${currentValue}°', unit:"F",
 				backgroundColors:[
 					[value: 31, color: "#153591"],
@@ -60,16 +61,21 @@ metadata {
 				]
 			)
 		}
-        
-         valueTile("battery", "device.battery", decoration: "flat", inactiveLabel: false) {
-			state "battery", label:'${currentValue}% battery'
+		valueTile("battery", "device.battery", decoration: "flat", inactiveLabel: false, width: 2, height: 2) {
+			state "battery", label:'${currentValue}% battery', unit:""
 		}
-        standardTile("refresh", "device.refresh", inactiveLabel: false, decoration: "flat") {
+		standardTile("refresh", "device.refresh", inactiveLabel: false, decoration: "flat", width: 2, height: 2) {
 			state "default", action:"refresh.refresh", icon:"st.secondary.refresh"
 		}
-		
-		main (["motion","temperature"])
-		details(["motion","temperature","battery","refresh"])
+
+		//This tile is a temporary fix so users can select main tiles again
+		standardTile("CONVERTED-MULTI-device.motion", "device.motion", width: 4, height: 4) {
+			state "active", label:'motion', icon:"st.motion.motion.active", backgroundColor:"#53a7c0"
+			state "inactive", label:'no motion', icon:"st.motion.motion.inactive", backgroundColor:"#ffffff"
+		}
+
+		main(["motion", "temperature"])
+		details(["motion", "temperature", "battery", "refresh"])
 	}
 }
 
@@ -137,10 +143,6 @@ private boolean shouldProcessMessage(cluster) {
     return !ignoredMessage
 }
 
-private int getHumidity(value) {
-    return Math.round(Double.parseDouble(value))
-}
- 
 private Map parseReportAttributeMessage(String description) {
 	Map descMap = (description - "read attr - ").split(",").inject([:]) { map, param ->
 		def nameAndValue = param.split(":")
@@ -226,29 +228,30 @@ def getTemperature(value) {
 private Map getBatteryResult(rawValue) {
 	log.debug 'Battery'
 	def linkText = getLinkText(device)
-    
-    log.debug rawValue
-    
-    def result = [
-    	name: 'battery',
-        value: '--'
-    ]
-    
+
+	log.debug rawValue
+
+	def result = [
+		name: 'battery',
+		value: '--'
+	]
+
 	def volts = rawValue / 10
 	def descriptionText
-    
-    if (rawValue == 0) {}
-     else {
-	if (volts > 3.5) {
-		result.descriptionText = "${linkText} battery has too much power (${volts} volts)."
+
+	if (rawValue == 0) {}
+	else {
+		if (volts > 3.5) {
+			result.descriptionText = "${linkText} battery has too much power (${volts} volts)."
+		}
+		else if (volts > 0){
+			def minVolts = 2.1
+			def maxVolts = 3.0
+			def pct = (volts - minVolts) / (maxVolts - minVolts)
+			result.value = Math.min(100, (int) pct * 100)
+			result.descriptionText = "${linkText} battery was ${result.value}%"
+		}
 	}
-	else if (volts > 0){
-		def minVolts = 2.1
-    	def maxVolts = 3.0
-		def pct = (volts - minVolts) / (maxVolts - minVolts)
-		result.value = Math.min(100, (int) pct * 100)
-		result.descriptionText = "${linkText} battery was ${result.value}%"
-	}}
 
 	return result
 }
@@ -280,51 +283,52 @@ private Map getMotionResult(value) {
 	]
 }
 
-def refresh()
-{
+def refresh() {
 	log.debug "refresh called"
-    [
+	def refreshCmds = [
 		"st rattr 0x${device.deviceNetworkId} 1 0x402 0", "delay 200",
-        "st rattr 0x${device.deviceNetworkId} 1 1 0x20"
-		
+		"st rattr 0x${device.deviceNetworkId} 1 1 0x20", "delay 200"
 	]
+
+	return refreshCmds + enrollResponse()
 }
 
 def configure() {
+	String zigbeeEui = swapEndianHex(device.hub.zigbeeEui)
+	log.debug "Configuring Reporting, IAS CIE, and Bindings."
 
-	String zigbeeId = swapEndianHex(device.hub.zigbeeId)
-	log.debug "Confuguring Reporting, IAS CIE, and Bindings."
 	def configCmds = [
-    
-   		"zdo bind 0x${device.deviceNetworkId} 1 ${endpointId} 0x402 {${device.zigbeeId}} {}", "delay 200",
-        "zcl global send-me-a-report 0x402 0 0x29 300 3600 {6400}",
-        "send 0x${device.deviceNetworkId} 1 ${endpointId}", "delay 1500",
-        
-        "zdo bind 0x${device.deviceNetworkId} 1 ${endpointId} 0x20 {${device.zigbeeId}} {}", "delay 200",
-        "zcl global send-me-a-report 1 0x20 0x20 300 3600 {01}", 
-        "send 0x${device.deviceNetworkId} 1 ${endpointId}", "delay 1500",
+		"zcl global write 0x500 0x10 0xf0 {${zigbeeEui}}",
+		"send 0x${device.deviceNetworkId} 1 ${endpointId}", "delay 500",
 
-		"zdo bind 0x${device.deviceNetworkId} 1 ${endpointId} 0x001 {${device.zigbeeId}} {}", "delay 200",
-        "zcl global write 0x500 0x10 0xf0 {${zigbeeId}}", 
-		"send 0x${device.deviceNetworkId} 1 ${endpointId}"
-        
- 
+		"zdo bind 0x${device.deviceNetworkId} 1 ${endpointId} 0x20 {${device.zigbeeId}} {}", "delay 200",
+		"zcl global send-me-a-report 1 0x20 0x20 300 3600 {01}",
+		"send 0x${device.deviceNetworkId} 1 ${endpointId}", "delay 500",
+
+		"zdo bind 0x${device.deviceNetworkId} 1 ${endpointId} 0x402 {${device.zigbeeId}} {}", "delay 200",
+		"zcl global send-me-a-report 0x402 0 0x29 300 3600 {6400}",
+		"send 0x${device.deviceNetworkId} 1 ${endpointId}", "delay 500",
+
+		"zdo bind 0x${device.deviceNetworkId} 1 ${endpointId} 1 {${device.zigbeeId}} {}", "delay 200"
 	]
-    return configCmds + enrollResponse() + refresh() // send refresh cmds as part of config
-}
-
-private getEndpointId() {
-	new BigInteger(device.endpointId, 16).toString()
+    return configCmds + refresh() // send refresh cmds as part of config
 }
 
 def enrollResponse() {
 	log.debug "Sending enroll response"
-    [	
-    	
-	"raw 0x500 {01 23 00 00 00}", "delay 200",
-    "send 0x${device.deviceNetworkId} 1 ${endpointId}"
-        
+	String zigbeeEui = swapEndianHex(device.hub.zigbeeEui)
+	[
+		//Resending the CIE in case the enroll request is sent before CIE is written
+		"zcl global write 0x500 0x10 0xf0 {${zigbeeEui}}",
+		"send 0x${device.deviceNetworkId} 1 ${endpointId}", "delay 500",
+		//Enroll Response
+		"raw 0x500 {01 23 00 00 00}",
+		"send 0x${device.deviceNetworkId} 1 1", "delay 200"
     ]
+}
+
+private getEndpointId() {
+	new BigInteger(device.endpointId, 16).toString()
 }
 
 private hex(value) {

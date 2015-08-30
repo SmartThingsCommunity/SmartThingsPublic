@@ -55,44 +55,50 @@
  		input "tempOffset", "number", title: "Temperature Offset", description: "Adjust temperature by this many degrees", range: "*..*", displayDuringSetup: false
  	}
 
- 	tiles {
- 		standardTile("contact", "device.contact", width: 2, height: 2) {
- 			state("open", label:'${name}', icon:"st.contact.contact.open", backgroundColor:"#ffa81e")
- 			state("closed", label:'${name}', icon:"st.contact.contact.closed", backgroundColor:"#79b821")
- 		}
-		standardTile("acceleration", "device.acceleration") {
-        	state("inactive", label:'${name}', icon:"st.motion.acceleration.inactive", backgroundColor:"#ffffff")
-			state("active", label:'${name}', icon:"st.motion.acceleration.active", backgroundColor:"#53a7c0")
+	tiles(scale: 2) {
+		multiAttributeTile(name:"contact", type: "generic", width: 6, height: 4){
+			tileAttribute ("device.contact", key: "PRIMARY_CONTROL") {
+				attributeState "open", label:'${name}', icon:"st.contact.contact.open", backgroundColor:"#ffa81e"
+				attributeState "closed", label:'${name}', icon:"st.contact.contact.closed", backgroundColor:"#79b821"
+			}
 		}
- 		valueTile("temperature", "device.temperature", inactiveLabel: false) {
- 			state "temperature", label:'${currentValue}°',
- 			backgroundColors:[
- 			[value: 31, color: "#153591"],
- 			[value: 44, color: "#1e9cbb"],
- 			[value: 59, color: "#90d2a7"],
- 			[value: 74, color: "#44b621"],
- 			[value: 84, color: "#f1d801"],
- 			[value: 95, color: "#d04e00"],
- 			[value: 96, color: "#bc2323"]
- 			]
- 		}
-        
-        valueTile("3axis", "device.threeAxis", decoration: "flat", wordWrap: false) {
+
+		standardTile("acceleration", "device.acceleration", width: 2, height: 2) {
+			state("active", label:'${name}', icon:"st.motion.acceleration.active", backgroundColor:"#53a7c0")
+			state("inactive", label:'${name}', icon:"st.motion.acceleration.inactive", backgroundColor:"#ffffff")
+		}
+		valueTile("temperature", "device.temperature", width: 2, height: 2) {
+			state("temperature", label:'${currentValue}°',
+				backgroundColors:[
+					[value: 31, color: "#153591"],
+					[value: 44, color: "#1e9cbb"],
+					[value: 59, color: "#90d2a7"],
+					[value: 74, color: "#44b621"],
+					[value: 84, color: "#f1d801"],
+					[value: 95, color: "#d04e00"],
+					[value: 96, color: "#bc2323"]
+				]
+			)
+		}
+		valueTile("3axis", "device.threeAxis", decoration: "flat", wordWrap: false, width: 2, height: 2) {
 			state("threeAxis", label:'${currentValue}', unit:"", backgroundColor:"#ffffff")
 		}
-        
- 		valueTile("battery", "device.battery", decoration: "flat", inactiveLabel: false) {
- 			state "battery", label:'${currentValue}% battery', unit:""
- 		}
-
- 		standardTile("refresh", "device.refresh", inactiveLabel: false, decoration: "flat") {
+		valueTile("battery", "device.battery", decoration: "flat", inactiveLabel: false, width: 2, height: 2) {
+			state "battery", label:'${currentValue}% battery', unit:""
+		}
+ 		standardTile("refresh", "device.refresh", inactiveLabel: false, decoration: "flat", width: 2, height: 2) {
  			state "default", action:"refresh.refresh", icon:"st.secondary.refresh"
  		}
 
+		//This tile is a temporary fix so users can select main tiles again
+		standardTile("CONVERTED-MULTI-device.contact", "device.contact", width: 4, height: 4) {
+			state "open", label:'${name}', icon:"st.contact.contact.open", backgroundColor:"#ffa81e"
+			state "closed", label:'${name}', icon:"st.contact.contact.closed", backgroundColor:"#79b821"
+		}
 
- 		main (["contact", "acceleration", "temperature"])
- 		details(["contact","acceleration", "temperature", "3axis", "battery", "refresh"])
- 	}
+		main(["contact", "acceleration", "temperature"])
+		details(["contact", "acceleration", "temperature", "3axis", "battery", "refresh"])
+	}
  }
 
  def parse(String description) {
@@ -158,6 +164,7 @@ private boolean shouldProcessMessage(cluster) {
     return !ignoredMessage
 }
 
+//TODO: Not sure why this is here. Clean up if not required during refactor
 private int getHumidity(value) {
 	return Math.round(Double.parseDouble(value))
 }
@@ -313,52 +320,48 @@ def getTemperature(value) {
 		]
 	}
 
-	def refresh()
-	{
+	def refresh() {
 		log.debug "Refreshing Values "
-		[
+		def refreshCmds = [
         
         /* sensitivity - default value (8) */
         
         "zcl mfg-code 0x104E", "delay 200",
         "zcl global write 0xFC02 0 0x20 {02}", "delay 200",
         "send 0x${device.deviceNetworkId} 1 1", "delay 400",
-        
-        "zcl mfg-code 0x104E", "delay 200",
-        "zcl global read 0xFC02 0x0000", "delay 200",
-        "send 0x${device.deviceNetworkId} 1 1","delay 400",
-        
+
 		"st rattr 0x${device.deviceNetworkId} 1 0x402 0", "delay 200",
 		"st rattr 0x${device.deviceNetworkId} 1 1 0x20", "delay 200",
 
         "zcl mfg-code 0x104E", "delay 200",
-        "zcl global read 0xFC02 0x0010", "delay 100",
+        "zcl global read 0xFC02 0x0010",
         "send 0x${device.deviceNetworkId} 1 1","delay 400",
         
         "zcl mfg-code 0x104E", "delay 200",
-        "zcl global read 0xFC02 0x0012", "delay 100",
+        "zcl global read 0xFC02 0x0012",
         "send 0x${device.deviceNetworkId} 1 1","delay 400",
         
         "zcl mfg-code 0x104E", "delay 200",
-        "zcl global read 0xFC02 0x0013", "delay 100",
+        "zcl global read 0xFC02 0x0013",
         "send 0x${device.deviceNetworkId} 1 1","delay 400",
         
         "zcl mfg-code 0x104E", "delay 200",
-        "zcl global read 0xFC02 0x0014", "delay 100",
-        "send 0x${device.deviceNetworkId} 1 1"
+        "zcl global read 0xFC02 0x0014",
+        "send 0x${device.deviceNetworkId} 1 1", "delay 400"
+		]
 
-		] 
+		return refreshCmds + enrollResponse()
 	}
 
 	def configure() {
 
-		String zigbeeId = swapEndianHex(device.hub.zigbeeId)
+		String zigbeeEui = swapEndianHex(device.hub.zigbeeEui)
 		log.debug "Configuring Reporting"
 		
         def configCmds = [
         
         "zdo bind 0x${device.deviceNetworkId} 1 ${endpointId} 1 {${device.zigbeeId}} {}", "delay 200",
-        "zcl global write 0x500 0x10 0xf0 {${zigbeeId}}",
+        "zcl global write 0x500 0x10 0xf0 {${zigbeeEui}}",
 		"send 0x${device.deviceNetworkId} 1 ${endpointId}", "delay 500",
 
 		"zdo bind 0x${device.deviceNetworkId} 1 ${endpointId} 0x20 {${device.zigbeeId}} {}", "delay 200",
@@ -397,11 +400,14 @@ private getEndpointId() {
 
 def enrollResponse() {
 	log.debug "Sending enroll response"
+	String zigbeeEui = swapEndianHex(device.hub.zigbeeEui)
 	[
-
-	"raw 0x500 {01 23 00 00 00}", "delay 200",
-	"send 0x${device.deviceNetworkId} 1 1"
-
+		//Resending the CIE in case the enroll request is sent before CIE is written
+		"zcl global write 0x500 0x10 0xf0 {${zigbeeEui}}",
+		"send 0x${device.deviceNetworkId} 1 ${endpointId}", "delay 500",
+		//Enroll Response
+		"raw 0x500 {01 23 00 00 00}",
+		"send 0x${device.deviceNetworkId} 1 1", "delay 200"
 	]
 }
 
