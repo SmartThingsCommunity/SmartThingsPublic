@@ -283,17 +283,14 @@ def Settings() {
 
     def sendPushMessage = [
         name: 		"sendPushMessage",
-        type: 		"enum", 
-        title: 		"Send a push notification?", 
-        metadata:	[values:["Yes","No"]], 
-        required:	true, 
-        defaultValue: "Yes"
+        type: 		"bool", 
+        title: 		"Send notifications?", 
     ]
     
     def phoneNumber = [
-        name: 		"phoneNumber", 
-        type:		"phone", 
-        title: 		"Send SMS notifications to?", 
+        name: 		"recipients", 
+        type:		"contact", 
+        title: 		"Send notifications too", 
         required: 	false
     ]
     
@@ -499,11 +496,8 @@ def doorCheck(evt){
 }
 
 private sendMessage(msg){
-	if (sendPushMessage == "Yes") {
-		sendPush(msg)
-	}
-	if (phoneNumber != null) {
-		sendSms(phoneNumber, msg)
+	if (sendPushMessage) {
+		sendNotificationToContacts(msg, recipients)
 	}
 }
 
