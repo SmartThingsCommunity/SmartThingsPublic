@@ -289,10 +289,17 @@ def Settings() {
         title: 		"Send notifications?", 
     ]
     
-    def phoneNumber = [
+    def recipients = [
         name: 		"recipients", 
         type:		"contact", 
         title: 		"Send notifications too", 
+        required: 	false
+    ]
+    
+     def phone = [
+        name: 		"phone", 
+        type:		"phone", 
+        title: 		"Send SMS as well?", 
         required: 	false
     ]
     
@@ -326,7 +333,8 @@ def Settings() {
 
 		section( "Notifications" ) {
 			input sendPushMessage
-			input phoneNumber
+			input (recipients) { input phone }
+            
 		}
 		section(title: "More options", hideable: true) {
 			href "timeIntervalInput", title: "Only during a certain time", description: getTimeLabel(starting, ending), state: greyedOutTime(starting, ending), refreshAfterSelection:true
@@ -499,7 +507,15 @@ def doorCheck(evt){
 
 private sendMessage(msg){
 	if (sendPushMessage) {
-		sendNotificationToContacts(msg, recipients)
+    	if (recipients) {
+			sendNotificationToContacts(msg, recipients)
+        }
+        else {
+            sendPush(msg)        
+        	if (phone){
+        		sendSms(phone, msg)
+            } 
+        }    
 	}
 }
 
