@@ -62,8 +62,8 @@
 			tileAttribute ("device.status", key: "PRIMARY_CONTROL") {
 				attributeState "open", label:'${name}', icon:"st.contact.contact.open", backgroundColor:"#ffa81e"
 				attributeState "closed", label:'${name}', icon:"st.contact.contact.closed", backgroundColor:"#79b821"
-				attributeState "garage-open", label:'${name}', icon:"st.doors.garage.garage-open", backgroundColor:"#ffa81e"
-				attributeState "garage-closed", label:'${name}', icon:"st.doors.garage.garage-closed", backgroundColor:"#79b821"
+				attributeState "garage-open", label:'Open', icon:"st.doors.garage.garage-open", backgroundColor:"#ffa81e"
+				attributeState "garage-closed", label:'Closed', icon:"st.doors.garage.garage-closed", backgroundColor:"#79b821"
 			}
 		}
 		standardTile("contact", "device.contact", width: 2, height: 2) {
@@ -333,7 +333,7 @@ def getTemperature(value) {
 		log.debug "Contact"
 		def linkText = getLinkText(device)
 		def descriptionText = "${linkText} was ${value == 'open' ? 'opened' : 'closed'}"
-		sendEvent(name: 'contact', value: value, descriptionText: descriptionText)
+		sendEvent(name: 'contact', value: value, descriptionText: descriptionText, displayed:false)
 		sendEvent(name: 'status', value: value, descriptionText: descriptionText)
 	}
 
@@ -489,7 +489,9 @@ def garageEvent(zValue) {
 		garageValue = 'garage-open'
 	}
 	if (contactValue != null){
-		sendEvent(name: 'contact', value: contactValue, descriptionText: descriptionText)
+		def linkText = getLinkText(device)
+		def descriptionText = "${linkText} was ${contactValue == 'open' ? 'opened' : 'closed'}"
+		sendEvent(name: 'contact', value: contactValue, descriptionText: descriptionText, displayed:false)
 		sendEvent(name: 'status', value: garageValue, descriptionText: descriptionText)
 	}
 }
