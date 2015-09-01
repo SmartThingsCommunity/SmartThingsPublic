@@ -21,6 +21,7 @@ metadata {
 		capability "Battery"
         capability "Temperature Measurement"
 		capability "Refresh"
+		capability "Sensor"
         
         command "enrollResponse"
 
