@@ -9,6 +9,8 @@
  *		--Updated UI to make it look pretty.
  *	2015-06-01
  *  	--Added option for modes to trigger thermostat boost.
+ *  2015-09-01
+ *      -- Added contact book
  *
  *  Source code can be found here: https://github.com/tslagle13/SmartThings/blob/master/smartapps/tslagle13/vacation-lighting-director.groovy
  *
