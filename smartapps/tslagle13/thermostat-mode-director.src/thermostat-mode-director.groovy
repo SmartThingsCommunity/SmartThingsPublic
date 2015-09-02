@@ -622,7 +622,7 @@ def greyedOutTime(starting, ending){
     }
     result
 }
-
+	
 private anyoneIsHome() {
   def result = false
 
@@ -634,7 +634,7 @@ private anyoneIsHome() {
 
   return result
 }
-
+	
 page(name: "timeIntervalInput", title: "Only during a certain time", refreshAfterSelection:true) {
 		section {
 			input "starting", "time", title: "Starting (both are required)", required: false 
