@@ -31,6 +31,15 @@ metadata {
 		status "battery": "battery: 27, batteryDivisor: 0A, rssi: 100, lqi: 64"
 	}
 
+	preferences {
+		section {
+			image(name: 'educationalcontent', multiple: true, images: [
+				"http://cdn.device-gse.smartthings.com/Arrival/Arrival1.png",
+				"http://cdn.device-gse.smartthings.com/Arrival/Arrival2.png"
+				])
+		}
+	}
+
 	tiles {
 		standardTile("presence", "device.presence", width: 2, height: 2, canChangeBackground: true) {
 			state "present", labelIcon:"st.presence.tile.present", backgroundColor:"#53a7c0"

@@ -42,6 +42,15 @@ metadata {
 		reply "zcl on-off off": "on/off: 0"
 	}
 
+	preferences {
+		section {
+			image(name: 'educationalcontent', multiple: true, images: [
+				"http://cdn.device-gse.smartthings.com/Outlet/US/OutletUS1.png",
+				"http://cdn.device-gse.smartthings.com/Outlet/US/OutletUS2.png"
+				])
+		}
+	}
+
 	// UI tile definitions
 	tiles(scale: 2) {
 		multiAttributeTile(name:"switch", type: "lighting", width: 6, height: 4, canChangeIcon: true){
