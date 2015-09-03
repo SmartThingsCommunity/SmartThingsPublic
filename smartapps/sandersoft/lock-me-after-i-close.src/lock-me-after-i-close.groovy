@@ -45,12 +45,17 @@ preferences {
     section("Unlock it if the lock is manually engaged while the door is open...") {
     	input "minutesLater2", "number", title: "Delay (in seconds):", required: true
     }
+    section("Periodically Check Door & Lock Status and Lock Lock if Door Closed and Lock Open...") {
+    input "minutesLater3", "number", title: "Every (in minutes):", required: true
+    }
 }
 def initialize() {
     log.debug "Auto Lock Door initialized."
 	subscribe(contact, "contact", doorHandler, [filterEvents: false])
     subscribe(lock, "lock", doorHandler, [filterEvents: false])
-    subscribe(lock, "unlock", doorHandler, [filterEvents: false])  
+    subscribe(lock, "unlock", doorHandler, [filterEvents: false])
+    log.debug "Rescheduling the DOOR CHECK routine for $minutesLater3 minutes"
+	DoorCheck()
 }
 def installed() {
     initialize()
@@ -59,6 +64,34 @@ def updated() {
     unsubscribe()
     unschedule()
     initialize()
+}
+def DoorCheck()
+{
+	def ls = lock.currentLock
+    def cs = contact.latestValue("contact")    
+    def isLockLocked =    (ls == "locked" || ls == "unknown")   
+    def isContactClosed = (cs == "closed" || cs == "unknown")    
+    log.debug "ContactStatus: $cs LockStatus: $ls isLockedLocked: $isLockLocked isContactClosed: $isContactClosed"
+// 	Handle the Various Events and Door/Lock Status
+    //Set Timezone to New York for me!
+    TimeZone.setDefault(TimeZone.getTimeZone('America/New_York'))
+    SimpleDateFormat format = new SimpleDateFormat(
+                "EEE, d MMM, hh:mm a");
+    //Generate the door history report
+    // Format a message
+    def today = new Date()
+	def msg = "SCHEDULED Door Check at ${format.format(new Date())}"
+    pushNotificationHandler(msg)
+    log.debug $msg
+// 	Door is currently CLOSED, Lock is UNLOCKED
+    if ((isContactClosed) && (!isLockLocked)) { // If the door is closed and door unlocked...
+	    msg = "Door Check: Door is closed and unlocked.  Locking the door!"
+		lockDoor()
+        pushNotificationHandler(msg)
+        log.debug $msg
+    }
+    log.debug "Rescheduling the DOOR CHECK routine for $minutesLater3 minutes"
+    runIn( minutesLater3*60, DoorCheck) // ...schedule (in minutes) to lock.
 }
 
 def lockDoor()
