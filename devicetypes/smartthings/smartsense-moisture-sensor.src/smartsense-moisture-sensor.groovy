@@ -73,12 +73,6 @@ metadata {
 		standardTile("refresh", "device.refresh", inactiveLabel: false, decoration: "flat", width: 2, height: 2) {
 			state "default", action:"refresh.refresh", icon:"st.secondary.refresh"
 		}
-		
-		//This tile is a temporary fix so users can select main tiles again
-		standardTile("CONVERTED-MULTI-device.water", "device.water", width: 4, height: 4) {
-			state "dry", icon:"st.alarm.water.dry", backgroundColor:"#ffffff"
-			state "wet", icon:"st.alarm.water.wet", backgroundColor:"#53a7c0"
-		}
 
 		main (["water", "temperature"])
 		details(["water", "temperature", "battery", "refresh"])

@@ -92,12 +92,6 @@ metadata {
 			state "battery", label:'${currentValue}% battery', unit:""
 		}
 
-		//This tile is a temporary fix so users can select main tiles again
-		standardTile("CONVERTED-MULTI-device.motion", "device.motion", width: 4, height: 4) {
-			state "active", label:'motion', icon:"st.motion.motion.active", backgroundColor:"#53a7c0"
-			state "inactive", label:'no motion', icon:"st.motion.motion.inactive", backgroundColor:"#ffffff"
-		}
-
 		main(["motion", "temperature", "humidity", "illuminance"])
 		details(["motion", "temperature", "humidity", "illuminance", "battery"])
 	}

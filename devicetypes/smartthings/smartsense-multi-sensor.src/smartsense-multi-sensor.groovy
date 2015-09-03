@@ -109,13 +109,6 @@
  			state "default", action:"refresh.refresh", icon:"st.secondary.refresh"
  		}
 
-		//This tile is a temporary fix so users can select main tiles again
-		standardTile("CONVERTED-MULTI-device.status", "device.status", width: 4, height: 4) {
-			state "open", label:'${name}', icon:"st.contact.contact.open", backgroundColor:"#ffa81e"
-			state "closed", label:'${name}', icon:"st.contact.contact.closed", backgroundColor:"#79b821"
-			state "garage-open", label:'${name}', icon:"st.doors.garage.garage-open", backgroundColor:"#ffa81e"
-			state "garage-closed", label:'${name}', icon:"st.doors.garage.garage-closed", backgroundColor:"#79b821"
-		}
 
 		main(["status", "acceleration", "temperature"])
 		details(["status", "acceleration", "temperature", "3axis", "battery", "refresh"])
