@@ -55,7 +55,7 @@ def initialize() {
     subscribe(lock, "lock", doorHandler, [filterEvents: false])
     subscribe(lock, "unlock", doorHandler, [filterEvents: false])
     log.debug "Rescheduling the DOOR CHECK routine for $minutesLater3 minutes"
-	DoorCheck()
+    runIn( minutesLater3*60, DoorCheck) // ...schedule (in minutes) to lock.
 }
 def installed() {
     initialize()
@@ -82,15 +82,14 @@ def DoorCheck()
     def today = new Date()
 	def msg = "SCHEDULED Door Check at ${format.format(new Date())}"
     pushNotificationHandler(msg)
-    log.debug $msg
 // 	Door is currently CLOSED, Lock is UNLOCKED
     if ((isContactClosed) && (!isLockLocked)) { // If the door is closed and door unlocked...
 	    msg = "Door Check: Door is closed and unlocked.  Locking the door!"
 		lockDoor()
         pushNotificationHandler(msg)
-        log.debug $msg
     }
-    log.debug "Rescheduling the DOOR CHECK routine for $minutesLater3 minutes"
+    msg = "Rescheduling the DOOR CHECK routine for $minutesLater3 minutes"
+    pushNotificationHandler(msg)
     runIn( minutesLater3*60, DoorCheck) // ...schedule (in minutes) to lock.
 }
 
@@ -104,7 +103,7 @@ def unlockDoor()
 }
 def doorHandler(evt)
 {
-	def ls = lock.latestValue("lock")
+	def ls = lock.currentLock
     def cs = contact.latestValue("contact")    
     def isLockLocked =    (ls == "locked" || ls == "unknown")   
     def isContactClosed = (cs == "closed" || cs == "unknown")    
@@ -116,15 +115,9 @@ def doorHandler(evt)
     
 // 	Door has Been OPENED (Normal Door Opening Mode)
     if (evt.value == "open") { // If a person opens an unlocked door...
-//        log.debug "Cancel the current task. Door is unlocked and somebody just opened it!"
+//      log.debug "Cancel the current task. Door is unlocked and somebody just opened it!"
         contactOpenHandler()   // update the door open timestamp
-        unschedule( lockDoor ) // ...we don't need to lock it later.
-        if (isLockLocked) {
-			def msg = "Warning: Door Opened with Lock in the Locked Mode"
-            pushNotificationHandler(msg)
-			log.debug $msg
-            unlockDoor() // Open Lock
-        }
+        unschedule( lockDoor ) // ...we don't need to lock it till later.
     }
 // 	Door is currently OPEN, Lock was changed from UNLOCKED -> LOCKED (MISTAKE)
     else if ((!isContactClosed) && (evt.value == "locked")) {   
@@ -157,15 +150,16 @@ def doorHandler(evt)
     }
     else {
     // Unexpected Door and/or Lock state(s)
-		def msg = "Ohh.. no!!.. Unknown Status Conflicts"
-        log.debug "$msg"
-        pushNotificationHandler(msg)
-        msg = "Event Debug: Name ${evt.name} is ${evt.value} value"
+        def today = new Date()
+		def msg = "Ohh.. no!!.. Unknown Door&Lock Status Conflicts! Event=${evt.name} is ${evt.value} value; ls=$ls cs=$cs"
         pushNotificationHandler(msg)
         // Reset Any Orphaned Door Scheduled Events
 		unschedule( lockDoor )
         unschedule( unlockDoor )
 		updateLastRunDT()
+        msg = "SCHEDULING a Verification Door Check in 2 minutes at ${format.format(new Date())}"
+        pushNotificationHandler(msg)
+        runIn(120, DoorCheck) // ...schedule a verification check to lock if needed.
     }
 }
 
