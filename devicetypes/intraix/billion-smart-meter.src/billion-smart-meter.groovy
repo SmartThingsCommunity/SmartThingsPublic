@@ -175,15 +175,17 @@ def configure() {
     meterConfig() + onOffConfig() + refresh()
 }
 
-// Meter reporting, min inteval 1 min and reporting interval if no activity as 4 min
+// Meter reporting, min inteval 3 min and reporting interval if no activity as 4 min
 // min change in value is 01
 def meterConfig() {
     [
-            "zcl global send-me-a-report 0x0702 0x8000 0x41 60 240 {01}",
+            "zcl global send-me-a-report 0x0702 0x8000 0x41 180 240 {01}",
             "send 0x${device.deviceNetworkId} 1 1", "delay 1500",
     ]
 }
 
+// Switch reporting, min interval 5 min and reporting interval if no activity as 10 min
+// min change in value is 01
 def onOffConfig() {
     [
             "zcl global send-me-a-report 6 0 0x10 300 600 {01}",
@@ -191,6 +193,7 @@ def onOffConfig() {
     ]
 }
 
+// Read the meter and on/off cluster attributes
 def refresh() {
     [
             "st rattr 0x${device.deviceNetworkId} 1 6 0", "delay 500",
