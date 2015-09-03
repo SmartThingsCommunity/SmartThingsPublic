@@ -1,7 +1,7 @@
 /**
  *  Bose SoundTouch
  *
- *  Copyright 2015 Henric Andersson
+ *  Copyright 2015 SmartThings
  *
  *  Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except
  *  in compliance with the License. You may obtain a copy of the License at:
@@ -13,54 +13,54 @@
  *  for the specific language governing permissions and limitations under the License.
  *
  */
- 
+
 // Needed to be able to serialize the XmlSlurper data back to XML
 import groovy.xml.XmlUtil
 
 // for the UI
 metadata {
-	definition (name: "Bose SoundTouch", namespace: "smartthings", author: "Henric.Andersson@smartthings.com") {
-    		/**
-             * List our capabilties. Doing so adds predefined command(s) which
-             * belong to the capability.
-             */
-    		capability "Switch" 
-    		capability "Refresh" 
-			capability "Music Player"
-            capability "Polling"
+    definition (name: "Bose SoundTouch", namespace: "smartthings", author: "SmartThings") {
+        /**
+         * List our capabilties. Doing so adds predefined command(s) which
+         * belong to the capability.
+         */
+        capability "Switch"
+        capability "Refresh"
+        capability "Music Player"
+        capability "Polling"
 
-			/**
-             * Define all commands, ie, if you have a custom action not
-             * covered by a capability, you NEED to define it here or
-             * the call will not be made.
-             *
-             * To call a capability function, just prefix it with the name
-             * of the capability, for example, refresh would be "refresh.refresh"
-             */
-			command "preset1" 
-			command "preset2"
-			command "preset3"    
-            command "preset4"           
-			command "preset5"    
-            command "preset6"
-            command "aux"
-            
-            command "everywhereJoin"
-            command "everywhereLeave"
-	}
+        /**
+         * Define all commands, ie, if you have a custom action not
+         * covered by a capability, you NEED to define it here or
+         * the call will not be made.
+         *
+         * To call a capability function, just prefix it with the name
+         * of the capability, for example, refresh would be "refresh.refresh"
+         */
+        command "preset1"
+        command "preset2"
+        command "preset3"
+        command "preset4"
+        command "preset5"
+        command "preset6"
+        command "aux"
 
-	/**
+        command "everywhereJoin"
+        command "everywhereLeave"
+    }
+
+    /**
      * Define the various tiles and the states that they can be in.
      * The 2nd parameter defines an event which the tile listens to,
-     * if received, it tries to map it to a state. 
+     * if received, it tries to map it to a state.
      *
      * You can also use ${currentValue} for the value of the event
      * or ${name} for the name of the event. Just make SURE to use
      * single quotes, otherwise it will only be interpreted at time of
      * launch, instead of every time the event triggers.
      */
-	valueTile("nowplaying", "device.nowplaying", width: 2, height: 1, decoration:"flat") {
-    	state "nowplaying", label:'${currentValue}', action:"refresh.refresh"
+    valueTile("nowplaying", "device.nowplaying", width: 2, height: 1, decoration:"flat") {
+        state "nowplaying", label:'${currentValue}', action:"refresh.refresh"
     }
 
     standardTile("switch", "device.switch", width: 1, height: 1, canChangeIcon: true) {
@@ -88,18 +88,18 @@ metadata {
     valueTile("aux", "device.switch", decoration: "flat", canChangeIcon: false) {
         state "default", label:'Auxillary\nInput', action:"aux"
     }
-    
+
     standardTile("refresh", "device.nowplaying", decoration: "flat", canChangeIcon: false) {
         state "default", label:'', action:"refresh", icon:"st.secondary.refresh"
     }
-    
+
     controlTile("volume", "device.volume", "slider", height:1, width:3, range:"(0..100)") {
-    	state "volume", action:"music Player.setLevel"
+        state "volume", action:"music Player.setLevel"
     }
-    
+
     standardTile("playpause", "device.playpause", decoration: "flat") {
-    	state "pause", label:'', icon:'st.sonos.play-btn', action:'music Player.play'
-    	state "play", label:'', icon:'st.sonos.pause-btn', action:'music Player.pause'
+        state "pause", label:'', icon:'st.sonos.play-btn', action:'music Player.play'
+        state "play", label:'', icon:'st.sonos.pause-btn', action:'music Player.pause'
     }
 
     standardTile("prev", "device.switch", decoration: "flat", canChangeIcon: false) {
@@ -110,28 +110,28 @@ metadata {
     }
 
     valueTile("everywhere", "device.everywhere", width:2, height:1, decoration:"flat") {
-    	state "join", label:"Join\nEverywhere", action:"everywhereJoin"
-    	state "leave", label:"Leave\nEverywhere", action:"everywhereLeave"
+        state "join", label:"Join\nEverywhere", action:"everywhereJoin"
+        state "leave", label:"Leave\nEverywhere", action:"everywhereLeave"
         // Final state is used if the device is in a state where joining is not possible
         state "unavailable", label:"Not Available"
     }
 
-	// Defines which tile to show in the overview
+    // Defines which tile to show in the overview
     main "switch"
-    
+
     // Defines which tile(s) to show when user opens the detailed view
     details ([
-    	"nowplaying", "refresh", 		// Row 1 (112)
-        "prev", "playpause", "next", 	// Row 2 (123)
-        "volume",                		// Row 3 (111)
-        "1", "2", "3", 					// Row 4 (123)
-        "4", "5", "6", 					// Row 5 (123)
-        "aux", "everywhere"])			// Row 6 (122)
+        "nowplaying", "refresh",        // Row 1 (112)
+        "prev", "playpause", "next",    // Row 2 (123)
+        "volume",                       // Row 3 (111)
+        "1", "2", "3",                  // Row 4 (123)
+        "4", "5", "6",                  // Row 5 (123)
+        "aux", "everywhere"])           // Row 6 (122)
 }
 
 /**************************************************************************
  * The following section simply maps the actions as defined in
- * the metadata into onAction() calls. 
+ * the metadata into onAction() calls.
  *
  * This is preferred since some actions can be dealt with more
  * efficiently this way. Also keeps all user interaction code in
@@ -164,7 +164,7 @@ def everywhereLeave() { onAction("eleave") }
 /**
  * Main point of interaction with things.
  * This function is called by SmartThings Cloud with the resulting data from
- * any action (see HubAction()). 
+ * any action (see HubAction()).
  *
  * Conversely, to execute any actions, you need to return them as a single
  * item or a list (flattened).
@@ -176,38 +176,38 @@ def everywhereLeave() { onAction("eleave") }
 def parse(String event) {
     def data = parseLanMessage(event)
     def actions = []
-    
+
     // List of permanent root node handlers
     def handlers = [
-    	"nowPlaying" : "boseParseNowPlaying",
+        "nowPlaying" : "boseParseNowPlaying",
         "volume" : "boseParseVolume",
         "presets" : "boseParsePresets",
         "zone" : "boseParseEverywhere",
     ]
 
-	// No need to deal with non-XML data
+    // No need to deal with non-XML data
     if (!data.headers || !data.headers?."content-type".contains("xml"))
-    	return null
+        return null
 
-	// Move any pending callbacks into ready state
+    // Move any pending callbacks into ready state
     prepareCallbacks()
 
-	def xml = new XmlSlurper().parseText(data.body)
-	// Let each parser take a stab at it
+    def xml = new XmlSlurper().parseText(data.body)
+    // Let each parser take a stab at it
     handlers.each { node,func ->
-    	if (xml.name() == node)
-        	actions << "$func"(xml)
+        if (xml.name() == node)
+            actions << "$func"(xml)
     }
     // If we have callbacks waiting for this...
     actions << processCallbacks(xml)
-    
-    // Be nice and helpful
-	if (actions.size() == 0) {
-    	log.warn "parse(): Unhandled data = " + lan
-        return null
-	}
 
-	// Issue new actions
+    // Be nice and helpful
+    if (actions.size() == 0) {
+        log.warn "parse(): Unhandled data = " + lan
+        return null
+    }
+
+    // Issue new actions
     return actions.flatten()
 }
 
@@ -231,21 +231,21 @@ def installed() {
 def onAction(String user, data=null) {
     log.info "onAction(${user})"
 
-	// Keep IP address current (since device may have changed)
+    // Keep IP address current (since device may have changed)
     state.address = parent.resolveDNI2Address(device.deviceNetworkId)
 
     // Process action
     def actions = null
-	switch (user) {
-    	case "on":
-        	actions = boseSetPowerState(true)
+    switch (user) {
+        case "on":
+            actions = boseSetPowerState(true)
             break
-    	case "off":
-        	boseSetNowPlaying(null, "STANDBY")
-        	actions = boseSetPowerState(false)
+        case "off":
+            boseSetNowPlaying(null, "STANDBY")
+            actions = boseSetPowerState(false)
             break
         case "volume":
-        	actions = boseSetVolume(data)
+            actions = boseSetVolume(data)
             break
         case "aux":
             boseSetNowPlaying(null, "AUX")
@@ -257,43 +257,43 @@ def onAction(String user, data=null) {
         case "4":
         case "5":
         case "6":
-        	actions = boseSetInput(user)
+            actions = boseSetInput(user)
             break
         case "refresh":
-        	boseSetNowPlaying(null, "REFRESH")
-        	actions = [boseRefreshNowPlaying(), boseGetPresets(), boseGetVolume(), boseGetEverywhereState()]
+            boseSetNowPlaying(null, "REFRESH")
+            actions = [boseRefreshNowPlaying(), boseGetPresets(), boseGetVolume(), boseGetEverywhereState()]
             break
         case "play":
-        	actions = [boseSetPlayMode(true), boseRefreshNowPlaying()]
+            actions = [boseSetPlayMode(true), boseRefreshNowPlaying()]
             break
         case "pause":
-        	actions = [boseSetPlayMode(false), boseRefreshNowPlaying()]
+            actions = [boseSetPlayMode(false), boseRefreshNowPlaying()]
             break
         case "previous":
-       		actions = [boseChangeTrack(-1), boseRefreshNowPlaying()]
-        	break
+            actions = [boseChangeTrack(-1), boseRefreshNowPlaying()]
+            break
         case "next":
-	       	actions = [boseChangeTrack(1), boseRefreshNowPlaying()]
-        	break
+            actions = [boseChangeTrack(1), boseRefreshNowPlaying()]
+            break
         case "mute":
-        	actions = boseSetMute(true)
-        	break
+            actions = boseSetMute(true)
+            break
         case "unmute":
-        	actions = boseSetMute(false)
-        	break
+            actions = boseSetMute(false)
+            break
         case "ejoin":
-        	actions = boseZoneJoin()
+            actions = boseZoneJoin()
             break
         case "eleave":
-        	actions = boseZoneLeave()
+            actions = boseZoneLeave()
             break
         default:
-        	log.error "Unhandled action: " + user
+            log.error "Unhandled action: " + user
     }
 
-	// Make sure we don't have nested lists
-	if (actions instanceof List)
-    	return actions.flatten()
+    // Make sure we don't have nested lists
+    if (actions instanceof List)
+        return actions.flatten()
     return actions
 }
 
@@ -309,16 +309,16 @@ def poll() {
  * Joins this speaker into the everywhere zone
  */
 def boseZoneJoin() {
-	def results = []
+    def results = []
     def posts = parent.boseZoneJoin(this)
 
-	for (post in posts) {
-    	if (post['endpoint'])
-			results << bosePOST(post['endpoint'], post['body'], post['host'])
-	}
+    for (post in posts) {
+        if (post['endpoint'])
+            results << bosePOST(post['endpoint'], post['body'], post['host'])
+    }
     sendEvent(name:"everywhere", value:"leave")
-	results << boseRefreshNowPlaying()
-    
+    results << boseRefreshNowPlaying()
+
     return results
 }
 
@@ -326,15 +326,15 @@ def boseZoneJoin() {
  * Removes this speaker from the everywhere zone
  */
 def boseZoneLeave() {
-	def results = []
-	def posts = parent.boseZoneLeave(this)
+    def results = []
+    def posts = parent.boseZoneLeave(this)
 
-	for (post in posts) {
-    	if (post['endpoint'])
-			results << bosePOST(post['endpoint'], post['body'], post['host'])
-	}
+    for (post in posts) {
+        if (post['endpoint'])
+            results << bosePOST(post['endpoint'], post['body'], post['host'])
+    }
     sendEvent(name:"everywhere", value:"join")
-	results << boseRefreshNowPlaying()
+    results << boseRefreshNowPlaying()
 
     return results
 }
@@ -346,7 +346,7 @@ def boseZoneLeave() {
  * cause the zone to collapse (for example, AUX)
  */
 def boseZoneReset() {
-	parent.boseZoneReset()
+    parent.boseZoneReset()
 }
 
 /**
@@ -359,13 +359,13 @@ def boseZoneReset() {
  * @return command
  */
 def boseParseNowPlaying(xmlData) {
-	def result = []
+    def result = []
 
-	// Perform display update, allow it to add additional commands
+    // Perform display update, allow it to add additional commands
     if (boseSetNowPlaying(xmlData)) {
         result << boseRefreshNowPlaying()
     }
-    
+
     return result
 }
 
@@ -376,11 +376,11 @@ def boseParseNowPlaying(xmlData) {
  * @return command
  */
 def boseParseVolume(xmlData) {
-	def result = []
+    def result = []
 
     sendEvent(name:"volume", value:xmlData.actualvolume.text())
     sendEvent(name:"mute", value:(Boolean.toBoolean(xmlData.muteenabled.text()) ? "unmuted" : "muted"))
-    
+
     return result
 }
 
@@ -390,7 +390,7 @@ def boseParseVolume(xmlData) {
  * @param xmlData
  */
 def boseParseEverywhere(xmlData) {
-	// No good way of detecting the correct state right now
+    // No good way of detecting the correct state right now
 }
 
 /**
@@ -400,28 +400,28 @@ def boseParseEverywhere(xmlData) {
  * @return command
  */
 def boseParsePresets(xmlData) {
-	def result = []
-    
+    def result = []
+
     state.preset = [:]
-    
+
     def missing = ["1", "2", "3", "4", "5", "6"]
     for (preset in xmlData.preset) {
-    	def id = preset.attributes()['id']
+        def id = preset.attributes()['id']
         def name = preset.ContentItem.itemName[0].text().replaceAll(~/ +/, "\n")
         if (name == "##TRANS_SONGS##")
             name = "Local\nPlaylist"
         sendEvent(name:"station${id}", value:name)
         missing = missing.findAll { it -> it != id }
-        
+
         // Store the presets into the state for recall later
         state.preset["$id"] = XmlUtil.serialize(preset.ContentItem)
     }
-    
+
     for (id in missing) {
-    	state.preset["$id"] = null
-    	sendEvent(name:"station${id}", value:"Preset $id\n\nNot set")
+        state.preset["$id"] = null
+        sendEvent(name:"station${id}", value:"Preset $id\n\nNot set")
     }
-    
+
     return result
 }
 
@@ -435,25 +435,25 @@ def boseParsePresets(xmlData) {
  * @return true if it would prefer a refresh soon
  */
 def boseSetNowPlaying(xmlData, override=null) {
-	def needrefresh = false
-	def nowplaying = null
-    
+    def needrefresh = false
+    def nowplaying = null
+
     if (xmlData && xmlData.playStatus) {
-    	switch(xmlData.playStatus) {
-        	case "BUFFERING_STATE":
-        		nowplaying = "Please wait\nBuffering..."
-        		needrefresh = true
+        switch(xmlData.playStatus) {
+            case "BUFFERING_STATE":
+                nowplaying = "Please wait\nBuffering..."
+                needrefresh = true
                 break
             case "PLAY_STATE":
-            	sendEvent(name:"playpause", value:"play")
+                sendEvent(name:"playpause", value:"play")
                 break
             case "PAUSE_STATE":
             case "STOP_STATE":
-            	sendEvent(name:"playpause", value:"pause")
+                sendEvent(name:"playpause", value:"pause")
                 break
         }
     }
-    
+
     // If the previous section didn't handle this, take another stab at it
     if (!nowplaying) {
         nowplaying = ""
@@ -480,21 +480,21 @@ def boseSetNowPlaying(xmlData, override=null) {
                 if (xmlData.ContentItem.itemName[0])
                     nowplaying += "[${xmlData.ContentItem.itemName[0].text()}]\n\n"
             case "STORED_MUSIC":
-            	nowplaying += "${xmlData.track.text()}"
+                nowplaying += "${xmlData.track.text()}"
                 if (xmlData.artist)
-                	nowplaying += "\nby\n${xmlData.artist.text()}"
+                    nowplaying += "\nby\n${xmlData.artist.text()}"
                 if (xmlData.album)
                     nowplaying += "\n\n(${xmlData.album.text()})"
-            	break
+                break
             default:
                 if (xmlData != null)
                     nowplaying = "${xmlData.ContentItem.itemName[0].text()}"
-            	else
-                	nowplaying = "Unknown"
+                else
+                    nowplaying = "Unknown"
         }
     }
 
-	// Some last parsing which only deals with actual data from device
+    // Some last parsing which only deals with actual data from device
     if (xmlData) {
         if (xmlData.attributes()['source'] == "STANDBY") {
             log.trace "nowPlaying reports standby: " + XmlUtil.serialize(xmlData)
@@ -502,22 +502,22 @@ def boseSetNowPlaying(xmlData, override=null) {
         } else {
             sendEvent(name:"switch", value:"on")
         }
-		boseSetPlayerAttributes(xmlData)        
+        boseSetPlayerAttributes(xmlData)
     }
 
     // Do not allow a standby device or AUX to be master
     if (!parent.boseZoneHasMaster() && (override ? override : xmlData.attributes()['source']) == "STANDBY")
-    	sendEvent(name:"everywhere", value:"unavailable")
+        sendEvent(name:"everywhere", value:"unavailable")
     else if ((override ? override : xmlData.attributes()['source']) == "AUX")
         sendEvent(name:"everywhere", value:"unavailable")
     else if (boseGetZone()) {
-    	log.info "We're in the zone: " + boseGetZone()
+        log.info "We're in the zone: " + boseGetZone()
         sendEvent(name:"everywhere", value:"leave")
     } else
-    	sendEvent(name:"everywhere", value:"join")
+        sendEvent(name:"everywhere", value:"join")
 
-	sendEvent(name:"nowplaying", value:nowplaying)
-    
+    sendEvent(name:"nowplaying", value:nowplaying)
+
     return needrefresh
 }
 
@@ -531,18 +531,18 @@ def boseSetPlayerAttributes(xmlData) {
     def trackText = ""
     def trackDesc = ""
     def trackData = [:]
-    
+
     switch (xmlData.attributes()['source']) {
-    	case "STANDBY":
-        	trackData["station"] = trackText = trackDesc = "Standby"
-        	break
+        case "STANDBY":
+            trackData["station"] = trackText = trackDesc = "Standby"
+            break
         case "AUX":
-        	trackData["station"] = trackText = trackDesc = "Auxiliary Input"
+            trackData["station"] = trackText = trackDesc = "Auxiliary Input"
             break
         case "AIRPLAY":
-        	trackData["station"] = trackText = trackDesc = "Air Play"
+            trackData["station"] = trackText = trackDesc = "Air Play"
             break
-    	case "SPOTIFY":
+        case "SPOTIFY":
         case "DEEZER":
         case "PANDORA":
         case "IHEART":
@@ -550,25 +550,25 @@ def boseSetPlayerAttributes(xmlData) {
             trackText = trackDesc = "${xmlData.track.text()}"
             trackData["name"] = xmlData.track.text()
             if (xmlData.artist) {
-	            trackText += " by ${xmlData.artist.text()}"
+                trackText += " by ${xmlData.artist.text()}"
                 trackDesc += " - ${xmlData.artist.text()}"
-	            trackData["artist"] = xmlData.artist.text()
+                trackData["artist"] = xmlData.artist.text()
             }
             if (xmlData.album) {
-    	        trackText += " (${xmlData.album.text()})"
-	            trackData["album"] = xmlData.album.text()
+                trackText += " (${xmlData.album.text()})"
+                trackData["album"] = xmlData.album.text()
             }
             break
         case "INTERNET_RADIO":
-        	trackDesc = xmlData.stationName.text()
+            trackDesc = xmlData.stationName.text()
             trackText = xmlData.stationName.text() + ": " + xmlData.description.text()
             trackData["station"] = xmlData.stationName.text()
-        	break
+            break
         default:
             trackText = trackDesc = xmlData.ContentItem.itemName[0].text()
     }
 
-	sendEvent(name:"trackDescription", value:trackDesc, descriptionText:trackText)
+    sendEvent(name:"trackDescription", value:trackDesc, descriptionText:trackText)
 }
 
 /**
@@ -577,7 +577,7 @@ def boseSetPlayerAttributes(xmlData) {
  * @return command
  */
 def boseGetEverywhereState() {
-	return boseGET("/getZone")
+    return boseGET("/getZone")
 }
 
 /**
@@ -591,9 +591,9 @@ def boseGetEverywhereState() {
  *       the second key info.
  */
 def boseKeypress(key) {
-	def press = "<key state=\"press\" sender=\"Gabbo\">${key}</key>"
+    def press = "<key state=\"press\" sender=\"Gabbo\">${key}</key>"
     def release = "<key state=\"release\" sender=\"Gabbo\">${key}</key>"
-    
+
     return [bosePOST("/key", press), bosePOST("/key", release)]
 }
 
@@ -605,23 +605,23 @@ def boseKeypress(key) {
  * @return command
  */
 def boseSetPlayMode(boolean play) {
-	log.trace "Sending " + (play ? "PLAY" : "PAUSE")
-	return boseKeypress(play ? "PLAY" : "PAUSE")
+    log.trace "Sending " + (play ? "PLAY" : "PAUSE")
+    return boseKeypress(play ? "PLAY" : "PAUSE")
 }
 
 /**
- * Sets the volume in a deterministic way. 
+ * Sets the volume in a deterministic way.
  *
  * @param New volume level, ranging from 0 to 100
  *
  * @return command
  */
 def boseSetVolume(int level) {
-	def result = []
-	int vol = Math.min(100, Math.max(level, 0))
+    def result = []
+    int vol = Math.min(100, Math.max(level, 0))
 
-	sendEvent(name:"volume", value:"${vol}")
-    
+    sendEvent(name:"volume", value:"${vol}")
+
     return [bosePOST("/volume", "<volume>${vol}</volume>"), boseGetVolume()]
 }
 
@@ -633,28 +633,28 @@ def boseSetVolume(int level) {
  * @return command
  */
 def boseSetMute(boolean mute) {
-	queueCallback('volume', 'cb_boseSetMute', mute ? 'MUTE' : 'UNMUTE')
+    queueCallback('volume', 'cb_boseSetMute', mute ? 'MUTE' : 'UNMUTE')
     return boseGetVolume()
 }
 
 /**
  * Callback for boseSetMute(), checks current state and changes it
  * if it doesn't match the requested state.
- * 
+ *
  * @param xml The volume XML data
  * @param mute The new state of mute
  *
  * @return command
  */
 def cb_boseSetMute(xml, mute) {
-	def result = []
-	if ((xml.muteenabled.text() == 'false' && mute == 'MUTE') ||
-        (xml.muteenabled.text() == 'true' && mute == 'UNMUTE')) 
+    def result = []
+    if ((xml.muteenabled.text() == 'false' && mute == 'MUTE') ||
+        (xml.muteenabled.text() == 'true' && mute == 'UNMUTE'))
     {
-    	result << boseKeypress("MUTE")
+        result << boseKeypress("MUTE")
     }
     log.trace("muteunmute: " + ((mute == "MUTE") ? "unmute" : "mute"))
-	sendEvent(name:"muteunmute", value:((mute == "MUTE") ? "unmute" : "mute"))
+    sendEvent(name:"muteunmute", value:((mute == "MUTE") ? "unmute" : "mute"))
     return result
 }
 
@@ -664,7 +664,7 @@ def cb_boseSetMute(xml, mute) {
  * @return command
  */
 def boseGetVolume() {
-	return boseGET("/volume")
+    return boseGET("/volume")
 }
 
 /**
@@ -674,10 +674,10 @@ def boseGetVolume() {
  * @return command
  */
 def boseChangeTrack(int direction) {
-	if (direction < 0) {
-    	return boseKeypress("PREV_TRACK")
+    if (direction < 0) {
+        return boseKeypress("PREV_TRACK")
     } else if (direction > 0) {
-    	return boseKeypress("NEXT_TRACK")
+        return boseKeypress("NEXT_TRACK")
     }
     return []
 }
@@ -692,14 +692,14 @@ def boseChangeTrack(int direction) {
  * @note If no presets have been loaded, it will first refresh the presets.
  */
 def boseSetInput(input) {
-	log.info "boseSetInput(${input})"
-	def result = []
-    
+    log.info "boseSetInput(${input})"
+    def result = []
+
     if (!state.preset) {
-    	result << boseGetPresets()
+        result << boseGetPresets()
         queueCallback('presets', 'cb_boseSetInput', input)
     } else {
-    	result << cb_boseSetInput(null, input)
+        result << cb_boseSetInput(null, input)
     }
     return result
 }
@@ -720,10 +720,10 @@ def boseSetInput(input) {
  *       the preset if there is a long delay between the two.
  */
 def cb_boseSetInput(xml, input) {
-	def result = []
-    
+    def result = []
+
     if (input >= "1" && input <= "6" && state.preset["$input"])
-	    result << bosePOST("/select", state.preset["$input"])
+        result << bosePOST("/select", state.preset["$input"])
     else if (input.toLowerCase() == "aux") {
         result << boseKeypress("AUX_INPUT")
     }
@@ -731,7 +731,7 @@ def cb_boseSetInput(xml, input) {
     // Horrible workaround... but we need to delay
     // the update by at least a few seconds...
     result << boseRefreshNowPlaying(3000)
-	return result
+    return result
 }
 
 /**
@@ -746,9 +746,9 @@ def cb_boseSetInput(xml, input) {
  *       is no discreete call.
  */
 def boseSetPowerState(boolean enable) {
-	log.info "boseSetPowerState(${enable})"
+    log.info "boseSetPowerState(${enable})"
     queueCallback('nowPlaying', "cb_boseSetPowerState", enable ? "POWERON" : "POWEROFF")
-	return boseRefreshNowPlaying()
+    return boseRefreshNowPlaying()
 }
 
 /**
@@ -761,13 +761,13 @@ def boseSetPowerState(boolean enable) {
  * @return command
  */
 def cb_boseSetPowerState(xml, state) {
-	def result = []
-	if ( (xml.attributes()['source'] == "STANDBY" && state == "POWERON") ||
-         (xml.attributes()['source'] != "STANDBY" && state == "POWEROFF") ) 
+    def result = []
+    if ( (xml.attributes()['source'] == "STANDBY" && state == "POWERON") ||
+         (xml.attributes()['source'] != "STANDBY" && state == "POWEROFF") )
     {
-    	result << boseKeypress("POWER")
+        result << boseKeypress("POWER")
         if (state == "POWERON") {
-        	result << boseRefreshNowPlaying()
+            result << boseRefreshNowPlaying()
             queueCallback('nowPlaying', "cb_boseConfirmPowerOn", 5)
         }
     }
@@ -786,9 +786,9 @@ def cb_boseSetPowerState(xml, state) {
  * @return command
  */
 def cb_boseConfirmPowerOn(xml, tries) {
-	def result = []
+    def result = []
     log.warn "boseConfirmPowerOn() attempt #" + tries
-	if (xml.attributes()['source'] == "STANDBY" && tries > 0) {
+    if (xml.attributes()['source'] == "STANDBY" && tries > 0) {
         result << boseRefreshNowPlaying()
         queueCallback('nowPlaying', "cb_boseConfirmPowerOn", tries-1)
     }
@@ -803,19 +803,19 @@ def cb_boseConfirmPowerOn(xml, tries) {
  * @return command
  */
 def boseRefreshNowPlaying(delay=0) {
-	if (delay > 0) {
-    	return ["delay ${delay}", boseGET("/now_playing")]
+    if (delay > 0) {
+        return ["delay ${delay}", boseGET("/now_playing")]
     }
-	return boseGET("/now_playing")
+    return boseGET("/now_playing")
 }
 
 /**
  * Requests the list of presets
  *
  * @return command
- */ 
+ */
 def boseGetPresets() {
-	return boseGET("/presets")
+    return boseGET("/presets")
 }
 
 /**
@@ -864,10 +864,10 @@ def bosePOST(String path, String data, String address=null) {
  * @param param Parameters for function (optional)
  */
 def queueCallback(String root, String func, param=null) {
-	if (!state.pending)
-    	state.pending = [:]
+    if (!state.pending)
+        state.pending = [:]
     if (!state.pending[root])
-    	state.pending[root] = []
+        state.pending[root] = []
     state.pending[root] << ["$func":"$param"]
 }
 
@@ -879,16 +879,16 @@ def queueCallback(String root, String func, param=null) {
  * the same loop.
  */
 def prepareCallbacks() {
-	if (!state.pending)
-    	return
+    if (!state.pending)
+        return
     if (!state.ready)
-    	state.ready = [:]
+        state.ready = [:]
     state.ready << state.pending
     state.pending = [:]
 }
 
 /**
- * Executes any ready callback for a specific root node 
+ * Executes any ready callback for a specific root node
  * with associated parameter and then clears that entry.
  *
  * If a callback returns data, it's added to a list of
@@ -901,14 +901,14 @@ def prepareCallbacks() {
  * @return list of commands
  */
 def processCallbacks(xml) {
-	def result = []
-    
+    def result = []
+
     if (!state.ready)
-    	return result
-    
+        return result
+
     if (state.ready[xml.name()]) {
-        state.ready[xml.name()].each { callback -> 
-            callback.each { func, param -> 
+        state.ready[xml.name()].each { callback ->
+            callback.each { func, param ->
                 if (func != "func") {
                     if (param)
                     result << "$func"(xml, param)
@@ -923,25 +923,25 @@ def processCallbacks(xml) {
 }
 
 /**
- * State managament for the Play Everywhere zone. 
+ * State managament for the Play Everywhere zone.
  * This is typically called from the parent.
  *
  * A device is either:
  *
  * null = Not participating
  * server = running the show
- * client = under the control of the server 
+ * client = under the control of the server
  *
  * @param newstate (see above for types)
  */
 def boseSetZone(String newstate) {
-	log.debug "boseSetZone($newstate)"
-	state.zone = newstate
+    log.debug "boseSetZone($newstate)"
+    state.zone = newstate
 
-	// Refresh our state
- 	if (newstate) {
+    // Refresh our state
+    if (newstate) {
         sendEvent(name:"everywhere", value:"leave")
-	} else {
+    } else {
         sendEvent(name:"everywhere", value:"join")
     }
 }
@@ -954,7 +954,7 @@ def boseSetZone(String newstate) {
  * @return state
  */
 def boseGetZone() {
-	return state.zone
+    return state.zone
 }
 
 /**
@@ -967,7 +967,7 @@ def boseGetZone() {
  * @param devID The DeviceID
  */
 def boseSetDeviceID(String devID) {
-	state.deviceID = devID
+    state.deviceID = devID
 }
 
 /**
@@ -976,7 +976,7 @@ def boseSetDeviceID(String devID) {
  * @return deviceID
  */
 def boseGetDeviceID() {
-	return state.deviceID
+    return state.deviceID
 }
 
 /**
@@ -985,5 +985,5 @@ def boseGetDeviceID() {
  * @return IP address
  */
 def getDeviceIP() {
-	return parent.resolveDNI2Address(device.deviceNetworkId)
+    return parent.resolveDNI2Address(device.deviceNetworkId)
 }
