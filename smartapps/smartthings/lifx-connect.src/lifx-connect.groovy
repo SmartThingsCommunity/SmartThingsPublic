@@ -5,18 +5,18 @@
  *
  */
 definition(
-		name: "LIFX",
-		namespace: "lifx",
-		author: "LIFX",
-		description: "Allows you to use LIFX smart light bulbs with SmartThings.",
-		category: "Convenience",
-		iconUrl: "https://cloud.lifx.com/images/lifx.png",
-		iconX2Url: "https://cloud.lifx.com/images/lifx.png",
-		iconX3Url: "https://cloud.lifx.com/images/lifx.png",
-		oauth: true) {
-	appSetting "clientId"
-	appSetting "clientSecret"
-}
+	name: "LIFX (Connect)",
+	namespace: "smartthings",
+	author: "LIFX",
+	description: "Allows you to use LIFX smart light bulbs with SmartThings.",
+	category: "Convenience",
+	iconUrl: "https://cloud.lifx.com/images/lifx.png",
+	iconX2Url: "https://cloud.lifx.com/images/lifx.png",
+	iconX3Url: "https://cloud.lifx.com/images/lifx.png",
+	oauth: true) {
+		appSetting "clientId"
+		appSetting "clientSecret"
+	}
 
 
 preferences {
@@ -110,7 +110,7 @@ def oauthCallback() {
 }
 
 def oauthReceiveToken(redirectUrl = null) {
-	// no idea what redirectUrl is for
+
 	log.debug "receiveToken - params: ${params}"
 	def oauthParams = [ client_id: "${appSettings.clientId}", client_secret: "${appSettings.clientSecret}", grant_type: "authorization_code", code: params.code, scope: params.scope ] // how is params.code valid here?
 	def params = [
@@ -338,7 +338,7 @@ def devicesList(selector = '') {
 }
 
 Map locationOptions() {
-//    poll() // why do we call here?
+
 	def options = [:]
 	def devices = devicesList()
 	devices.each { device ->
