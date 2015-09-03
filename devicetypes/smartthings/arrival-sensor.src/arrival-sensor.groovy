@@ -12,7 +12,7 @@
  *
  */
 metadata {
-	definition (name: "SmartSense Presence", namespace: "smartthings", author: "SmartThings") {
+	definition (name: "Arrival Sensor", namespace: "smartthings", author: "SmartThings") {
 		capability "Tone"
 		capability "Actuator"
 		capability "Signal Strength"
