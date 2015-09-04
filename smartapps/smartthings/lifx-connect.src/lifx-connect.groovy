@@ -62,6 +62,7 @@ def authPage() {
 
 		def options = locationOptions() ?: []
 		def count = options.size()
+		def refreshInterval = 3
 
 		return dynamicPage(name:"Credentials", title:"Select devices...", nextPage:"", refreshInterval:refreshInterval, install:true, uninstall: true) {
 			section("Select your location") {
@@ -372,9 +373,9 @@ def updateDevices() {
 				data["color"] = colorUtil.hslToHex((device.color.hue / 3.6) as int, (device.color.saturation * 100) as int)
 				data["hue"] = device.color.hue / 3.6
 				data["saturation"] = device.color.saturation * 100
-				childDevice = addChildDevice("lifx", "LIFX Color Bulb", device.id, null, data)
+				childDevice = addChildDevice("smartthings", "LIFX Color Bulb", device.id, null, data)
 			} else {
-				childDevice = addChildDevice("lifx", "LIFX White Bulb", device.id, null, data)
+				childDevice = addChildDevice("smartthings", "LIFX White Bulb", device.id, null, data)
 			}
 		}
 	}
