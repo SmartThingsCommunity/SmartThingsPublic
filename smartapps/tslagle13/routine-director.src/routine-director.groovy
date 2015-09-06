@@ -24,7 +24,7 @@
  */
 definition(
     name: "Routine Director",
-    namespace: "tslagle13",
+    namespace: "smartthings",
     author: "Tim Slagle",
     description: "Monitor a set of presence sensors and activate routines based on whether your home is empty or occupied.  Each presence status change will check against the current 'sun state' to run routines based on occupancy and whether the sun is up or down.",
     category: "Convenience",
@@ -89,10 +89,12 @@ def selectRoutines() {
 }
 
 def installed() {
+	log.debug "Updated with settings: ${settings}"
     initialize()
 }
 
 def updated() {
+	log.debug "Updated with settings: ${settings}"
     unsubscribe()
     initialize()
 }
@@ -117,7 +119,7 @@ def checkSun() {
     }
     else {
         state.sunMode = "sunset"
-        runIn(60,"setSunse")
+        runIn(60,"setSunset")
     }
 }
 
@@ -125,12 +127,14 @@ def checkSun() {
 def setSunrise(evt) {
     state.sunMode = "sunrise";
     changeSunMode(newMode);
+    log.debug "Current sun mode is ${state.sunMode}"
 }
 
 //change to sunset mode on sunset event
 def setSunset(evt) {
     state.sunMode = "sunset";
     changeSunMode(newMode)
+    log.debug "Current sun mode is ${state.sunMode}"
 }
 
 //change mode on sun event
