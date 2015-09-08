@@ -16,7 +16,7 @@
 metadata {
 	definition (name: "Lumi Switch 1", namespace: "lumivietnam", author: "Lumi Vietnam") {
 		capability "Actuator"
-		capability "Configuration"
+		//capability "Configuration"
 		capability "Refresh"
 		capability "Sensor"
 		capability "Switch"
@@ -26,7 +26,7 @@ metadata {
         command "on1"
         command "off1"
         
-		fingerprint profileId: "0104", deviceId: "0100", deviceVersion: "1", inClusters: "0000, 0003, 0006", outClusters: "0000", manufacturer: "Lumi Vietnam", model: "LM-SZ1"
+		fingerprint profileId: "0104", deviceId: "0100", inClusters: "0000, 0003, 0006", outClusters: "0000", manufacturer: "Lumi Vietnam", model: "LM-SZ1"
 	}
 
 	simulator {
@@ -84,27 +84,30 @@ def parse(String description) {
 // handle commands
 def configure() {
 	log.debug "Executing 'configure'"
+    //Config binding and report for each endpoint
 	[
-    	"zcl global send-me-a-report 6 0 0x10 0 600 {01}",
-		"send 0x${device.deviceNetworkId} 1 1", "delay 1500"
+   		"zdo bind 0x${device.deviceNetworkId} 1 1 0x0006 {${device.zigbeeId}} {}", "delay 200",
+    	"zcl global send-me-a-report 0x0006 0 0x10 0 600 {01}",
+		"send 0x${device.deviceNetworkId} 1 1"
     ]
 }
 
 def refresh() {
 	log.debug "Executing 'refresh'"
+    //Read Attribute On Off Value
 	[
-        "st rattr 0x${device.deviceNetworkId} 1 6 0", "delay 500"
+        "st rattr 0x${device.deviceNetworkId} 1 0x0006 0"
 	]
 }
 
 def on1() {
 	log.debug "Executing 'on1' 0x${device.deviceNetworkId} endpoint 1"
-    "st cmd 0x${device.deviceNetworkId} 1 6 1 {}"
+    "st cmd 0x${device.deviceNetworkId} 1 0x0006 1 {}"
 }
 
 def off1() {
 	log.debug "Executing 'off1' 0x${device.deviceNetworkId} endpoint 1"
-	"st cmd 0x${device.deviceNetworkId} 1 6 0 {}"
+	"st cmd 0x${device.deviceNetworkId} 1 0x0006 0 {}"
 }
 
 def isKnownDescription(description) {

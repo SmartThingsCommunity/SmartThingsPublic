@@ -16,7 +16,7 @@
 metadata {
 	definition (name: "Lumi Switch 2", namespace: "lumivietnam", author: "Lumi Vietnam") {
 		capability "Actuator"
-		capability "Configuration"
+		//capability "Configuration"
 		capability "Refresh"
 		capability "Sensor"
 		capability "Switch"
@@ -32,7 +32,7 @@ metadata {
         command "onAll"
         command "offAll"
         
-		fingerprint profileId: "0104", deviceId: "0100", deviceVersion: "1", inClusters: "0000, 0003, 0006", outClusters: "0000", manufacturer: "Lumi Vietnam", model: "LM-SZ2"
+		fingerprint profileId: "0104", deviceId: "0100", inClusters: "0000, 0003, 0006", outClusters: "0000", manufacturer: "Lumi Vietnam", model: "LM-SZ2"
 	}
 
 	simulator {
@@ -91,7 +91,7 @@ def parse(String description) {
             	state.sw2 = finalResult.value;    	
                 sendEvent(name: "switch2", value: finalResult.value=="on"?"on2":"off2")
 			}
-            //log.debug "curState sw1: ${state.sw1}, sw2: ${state.sw2}, sw3: ${state.sw3}"
+            //update state for switchAll Tile
             if (state.sw1 == "off" && state.sw2 == "off") {
             	//log.debug "offalll"
             	sendEvent(name: "switchAll", value: "offAll")
@@ -111,53 +111,60 @@ def parse(String description) {
 // handle commands
 def configure() {
 	log.debug "Executing 'configure'"
+    //Config binding and report for each endpoint
 	[
-    	"zcl global send-me-a-report 6 0 0x10 0 600 {01}",
-		"send 0x${device.deviceNetworkId} 1 1", "delay 1500"
+    	"zdo bind 0x${device.deviceNetworkId} 1 1 0x0006 {${device.zigbeeId}} {}", "delay 200",
+    	"zcl global send-me-a-report 0x0006 0 0x10 0 600 {01}",
+		"send 0x${device.deviceNetworkId} 1 1", "delay 500",
+        
+    	"zdo bind 0x${device.deviceNetworkId} 3 1 0x0006 {${device.zigbeeId}} {}", "delay 200",
+    	"zcl global send-me-a-report 0x0006 0 0x10 0 600 {01}",
+		"send 0x${device.deviceNetworkId} 1 3"
     ]
 }
 
 def refresh() {
 	log.debug "Executing 'refresh'"
+    //Read Attribute On Off Value of each endpoint
 	[
-        "st rattr 0x${device.deviceNetworkId} 1 6 0", "delay 500",
-        "st rattr 0x${device.deviceNetworkId} 3 6 0", "delay 500",
+        "st rattr 0x${device.deviceNetworkId} 1 0x0006 0", "delay 200",
+        "st rattr 0x${device.deviceNetworkId} 3 0x0006 0"
 	]
 }
 
 def on1() {
 	log.debug "Executing 'on1' 0x${device.deviceNetworkId} endpoint 1"
-    "st cmd 0x${device.deviceNetworkId} 1 6 1 {}"
+    "st cmd 0x${device.deviceNetworkId} 1 0x0006 1 {}"
 }
 
 def off1() {
 	log.debug "Executing 'off1' 0x${device.deviceNetworkId} endpoint 1"
-	"st cmd 0x${device.deviceNetworkId} 1 6 0 {}"
+	"st cmd 0x${device.deviceNetworkId} 1 0x0006 0 {}"
 }
 
 def on2() {
 	log.debug "Executing 'on2' 0x${device.deviceNetworkId} endpoint 3"
-    "st cmd 0x${device.deviceNetworkId} 3 6 1 {}"
+    "st cmd 0x${device.deviceNetworkId} 3 0x0006 1 {}"
 }
 
 def off2() {
 	log.debug "Executing 'off2' 0x${device.deviceNetworkId} endpoint 3"
-	"st cmd 0x${device.deviceNetworkId} 3 6 0 {}"
+	"st cmd 0x${device.deviceNetworkId} 3 0x0006 0 {}"
 }
 
 def onAll() {
 	log.debug "Executing 'onAll' 0x${device.deviceNetworkId} endpoint 1 3"
 	[
-    	"st cmd 0x${device.deviceNetworkId} 1 6 1 {}", "delay 500",
-        "st cmd 0x${device.deviceNetworkId} 3 6 1 {}", "delay 500"
+    	"st cmd 0x${device.deviceNetworkId} 1 0x0006 1 {}", "delay 200",
+        "st cmd 0x${device.deviceNetworkId} 3 0x0006 1 {}"
     ]
 }
 
 def offAll() {
 	log.debug "Executing 'offAll' 0x${device.deviceNetworkId} endpoint 1 3"
 	[
-    	"st cmd 0x${device.deviceNetworkId} 1 6 0 {}", "delay 500",
-        "st cmd 0x${device.deviceNetworkId} 3 6 0 {}", "delay 500"
+    	"st cmd 0x${device.deviceNetworkId} 1 0x0006 0 {}", "delay 200",
+        "st cmd 0x${device.deviceNetworkId} 3 0x0006 0 {}"
     ]
 }
 
