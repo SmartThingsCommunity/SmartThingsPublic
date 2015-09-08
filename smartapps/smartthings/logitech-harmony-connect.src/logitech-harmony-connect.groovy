@@ -38,7 +38,7 @@
 definition(
     name: "Logitech Harmony (Connect)",
     namespace: "smartthings",
-    author: "Juan Pablo Risso",
+    author: "SmartThings",
     description: "Allows you to integrate your Logitech Harmony account with SmartThings.",
     category: "SmartThings Labs",
     iconUrl: "https://s3.amazonaws.com/smartapp-icons/Partner/harmony.png",
@@ -394,7 +394,9 @@ def discovery() {
 	} catch (java.net.SocketTimeoutException e) {
 		log.warn "Connection to the hub timed out. Please restart the hub and try again."
         state.resethub = true
-	}	
+ 	} catch (e) {
+		log.warn "Hostname in certificate didn't match. Please try again later."
+	}	          
     return null
 }
 
@@ -459,7 +461,9 @@ def activity(dni,mode) {
         	msg = ex
             state.aux = 0 
         }
-    } 
+    } catch(Exception ex) {
+    	msg = ex
+    }
     runIn(10, "poll", [overwrite: true])
     return msg
 }
@@ -517,7 +521,9 @@ def poll() {
                 state.remove("HarmonyAccessToken")        
                 return "Harmony Access token has expired"
             }    
-        }
+		} catch(Exception e) {
+        	log.trace e
+		}
 	}        
 }
 
@@ -550,7 +556,9 @@ def getActivityList() {
         	log.trace e
         } catch (java.net.SocketTimeoutException e) {
         	log.trace e
-        }
+		} catch(Exception e) {
+        	log.trace e
+		}
     }    
 	return activity
 }
@@ -565,9 +573,9 @@ def getActivityName(activity,hubId) {
             httpGet(uri: url, headers: ["Accept": "application/json"]) {response -> 
                 actname = response.data.data.activities[activity].name
             }
-        } catch (groovyx.net.http.HttpResponseException e) {
+		} catch(Exception e) {
         	log.trace e
-        }
+		}
     }    
 	return actname
 }
@@ -585,9 +593,9 @@ def getActivityId(activity,hubId) {
                 		actid = it.key
                 }   
             }
-        } catch (groovyx.net.http.HttpResponseException e) {
+		} catch(Exception e) {
         	log.trace e
-        }
+		}
     }    
 	return actid
 }
@@ -602,9 +610,9 @@ def getHubName(hubId) {
             httpGet(uri: url, headers: ["Accept": "application/json"]) {response -> 
                 hubname = response.data.data.name
             }
-        } catch (groovyx.net.http.HttpResponseException e) {
+		} catch(Exception e) {
         	log.trace e
-        }      
+		}     
     }    
 	return hubname
 }
