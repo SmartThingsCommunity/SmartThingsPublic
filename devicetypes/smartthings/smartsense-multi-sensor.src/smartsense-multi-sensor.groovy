@@ -64,23 +64,21 @@
  			input description: "This feature allows you to correct any temperature variations by selecting an offset. Ex: If your sensor consistently reports a temp that's 5 degrees too warm, you'd enter \"-5\". If 3 degrees too cold, enter \"+3\".", displayDuringSetup: false, type: "paragraph", element: "paragraph"
  			input "tempOffset", "number", title: "Temperature Offset", description: "Adjust temperature by this many degrees", range: "*..*", displayDuringSetup: false
  		}
-		/*
 		section {
  			input("garageSensor", "enum", title: "Do you want to use this sensor on a garage door?", options: ["Yes", "No"], defaultValue: "No", required: false, displayDuringSetup: false)
 		}
-		*/
  	}
 
 	tiles(scale: 2) {
-		multiAttributeTile(name:"contact", type: "generic", width: 6, height: 4){
-			tileAttribute ("device.contact", key: "PRIMARY_CONTROL") {
+		multiAttributeTile(name:"status", type: "generic", width: 6, height: 4){
+			tileAttribute ("device.status", key: "PRIMARY_CONTROL") {
 				attributeState "open", label:'${name}', icon:"st.contact.contact.open", backgroundColor:"#ffa81e"
 				attributeState "closed", label:'${name}', icon:"st.contact.contact.closed", backgroundColor:"#79b821"
 				attributeState "garage-open", label:'Open', icon:"st.doors.garage.garage-open", backgroundColor:"#ffa81e"
 				attributeState "garage-closed", label:'Closed', icon:"st.doors.garage.garage-closed", backgroundColor:"#79b821"
 			}
 		}
-		standardTile("status", "device.contact", width: 2, height: 2) {
+		standardTile("contact", "device.contact", width: 2, height: 2) {
 			state("open", label:'${name}', icon:"st.contact.contact.open", backgroundColor:"#ffa81e")
 			state("closed", label:'${name}', icon:"st.contact.contact.closed", backgroundColor:"#79b821")
 		}
@@ -112,8 +110,8 @@
  		}
 
 
-		main(["contact", "acceleration", "temperature"])
-		details(["contact", "acceleration", "temperature", "3axis", "battery", "refresh"])
+		main(["status", "acceleration", "temperature"])
+		details(["status", "acceleration", "temperature", "3axis", "battery", "refresh"])
 	}
  }
 
