@@ -225,7 +225,7 @@ private restoreStates(sceneId) {
 			if (type == "level") {
 				log.debug "${light.displayName} level is '$level'"
 				if (level != null) {
-					light.setLevel(value)
+					light.setLevel(level)
 				}
 			}
 			else if (type == "color") {
