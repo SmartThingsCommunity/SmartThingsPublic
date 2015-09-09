@@ -62,7 +62,7 @@ def authPage() {
 
 		def options = locationOptions() ?: []
 		def count = options.size()
-		def refreshInterval = 3
+        def refreshInterval = 3
 
 		return dynamicPage(name:"Credentials", title:"Select devices...", nextPage:"", refreshInterval:refreshInterval, install:true, uninstall: true) {
 			section("Select your location") {
