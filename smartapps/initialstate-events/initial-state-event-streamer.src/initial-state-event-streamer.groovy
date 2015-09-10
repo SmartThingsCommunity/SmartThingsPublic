@@ -13,6 +13,7 @@
  *  for the specific language governing permissions and limitations under the License.
  *
  */
+
 definition(
     name: "Initial State Event Streamer",
     namespace: "initialstate.events",
@@ -173,24 +174,24 @@ def subscribeToEvents() {
 
 def getAccessKey() {
 	log.trace "get access key"
-	if (state.accessKey == null) {
+	if (atomicState.accessKey == null) {
 		httpError(404, "Access Key Not Found")
 	} else {
 		[
-			grokerRootUrl: state.grokerRootUrl,
-			accessKey: state.accessKey
+			grokerRootUrl: atomicState.grokerRootUrl,
+			accessKey: atomicState.accessKey
 		]
 	}
 }
 
 def getBucketKey() {
 	log.trace "get bucket key"
-	if (state.bucketKey == null) {
+	if (atomicState.bucketKey == null) {
 		httpError(404, "Bucket key Not Found")
 	} else {
 		[
-			bucketKey: state.bucketKey,
-			bucketName: state.bucketName
+			bucketKey: atomicState.bucketKey,
+			bucketName: atomicState.bucketName
 		]
 	}
 }
@@ -203,10 +204,10 @@ def setBucketKey() {
 	log.debug "bucket name: $newBucketName"
 	log.debug "bucket key: $newBucketKey"
 
-	if (newBucketKey && (newBucketKey != state.bucketKey || newBucketName != state.bucketName)) {
-		state.bucketKey = "$newBucketKey"
-		state.bucketName = "$newBucketName"
-		state.isBucketCreated = false
+	if (newBucketKey && (newBucketKey != atomicState.bucketKey || newBucketName != atomicState.bucketName)) {
+		atomicState.bucketKey = "$newBucketKey"
+		atomicState.bucketName = "$newBucketName"
+		atomicState.isBucketCreated = false
 	}
 }
 
@@ -215,14 +216,14 @@ def setAccessKey() {
 	def newAccessKey = request.JSON?.accessKey
 	def newGrokerRootUrl = request.JSON?.grokerRootUrl
 
-	if (newGrokerRootUrl && newGrokerRootUrl != "" && newGrokerRootUrl != state.grokerRootUrl) {
-		state.grokerRootUrl = "$newGrokerRootUrl"
-		state.isBucketCreated = false
+	if (newGrokerRootUrl && newGrokerRootUrl != "" && newGrokerRootUrl != atomicState.grokerRootUrl) {
+		atomicState.grokerRootUrl = "$newGrokerRootUrl"
+		atomicState.isBucketCreated = false
 	}
 
-	if (newAccessKey && newAccessKey != state.accessKey) {
-		state.accessKey = "$newAccessKey"
-		state.isBucketCreated = false
+	if (newAccessKey && newAccessKey != atomicState.accessKey) {
+		atomicState.accessKey = "$newAccessKey"
+		atomicState.isBucketCreated = false
 	}
 }
 
@@ -230,15 +231,15 @@ def installed() {
 
 	subscribeToEvents()
 
-	state.isBucketCreated = false
-	state.grookerRootUrl = "https://groker.initialstate.com"
+	atomicState.isBucketCreated = false
+	atomicState.grookerRootUrl = "https://groker.initialstate.com"
 }
 
 def updated() {
 	unsubscribe()
 
-	if (state.bucketKey != null && state.accessKey != null) {
-		state.isBucketCreated = false
+	if (atomicState.bucketKey != null && atomicState.accessKey != null) {
+		atomicState.isBucketCreated = false
 	}
 	
 	subscribeToEvents()
@@ -246,17 +247,17 @@ def updated() {
 
 def createBucket() {
 
-	if (!state.bucketName) {
-    	state.bucketName = state.bucketKey
+	if (!atomicState.bucketName) {
+    	atomicState.bucketName = atomicState.bucketKey
     }
-	def bucketName = "${state.bucketName}"
-	def bucketKey = "${state.bucketKey}"
-	def accessKey = "${state.accessKey}"
+	def bucketName = "${atomicState.bucketName}"
+	def bucketKey = "${atomicState.bucketKey}"
+	def accessKey = "${atomicState.accessKey}"
 
 	def bucketCreateBody = new JsonSlurper().parseText("{\"bucketKey\": \"$bucketKey\", \"bucketName\": \"$bucketName\"}")
 
 	def bucketCreatePost = [
-		uri: '${state.grokerRootUrl}/api/buckets',
+		uri: '${atomicState.grokerRootUrl}/api/buckets',
 		headers: [
 			"Content-Type": "application/json",
 			"X-IS-AccessKey": accessKey,
@@ -269,7 +270,7 @@ def createBucket() {
 
 	httpPostJson(bucketCreatePost) {
 		log.debug "bucket posted"
-		state.isBucketCreated = true
+		atomicState.isBucketCreated = true
 	}
 }
 
@@ -287,21 +288,21 @@ def genericHandler(evt) {
 
 def eventHandler(name, value) {
 
-	if (state.accessKey == null || state.bucketKey == null) {
+	if (atomicState.accessKey == null || atomicState.bucketKey == null) {
 		return
 	}
 
-	if (!state.isBucketCreated) {
+	if (!atomicState.isBucketCreated) {
 		createBucket()
 	}
 
 	def eventBody = new JsonSlurper().parseText("[{\"key\": \"$name\", \"value\": \"$value\"}]")
 	def eventPost = [
-		uri: '${state.grokerRootUrl}/api/events',
+		uri: '${atomicState.grokerRootUrl}/api/events',
 		headers: [
 			"Content-Type": "application/json",
-			"X-IS-BucketKey": "${state.bucketKey}",
-			"X-IS-AccessKey": "${state.accessKey}",
+			"X-IS-BucketKey": "${atomicState.bucketKey}",
+			"X-IS-AccessKey": "${atomicState.accessKey}",
 			"Accept-Version": "0.0.2"
 		],
 		body: eventBody
