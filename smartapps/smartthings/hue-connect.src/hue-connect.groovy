@@ -64,9 +64,10 @@ def bridgeDiscovery(params=[:])
 	def options = bridges ?: []
 	def numFound = options.size() ?: 0
 
-	if (numFound == 0 && state.bridgeRefreshCount > 5) {
+	if (numFound == 0 && state.bridgeRefreshCount > 25) {
     	log.trace "Cleaning old bridges memory"
-    	atomicState.bridges = [:]
+    	state.bridges = [:]
+        state.bridgeRefreshCount = 0
     }    
 
 	subscribe(location, null, locationHandler, [filterEvents:false])
@@ -220,7 +221,7 @@ def getHueBulbs() {
 }
 
 def getHueBridges() {
-	atomicState.bridges = atomicState.bridges ?: [:]
+	state.bridges = state.bridges ?: [:]
 }
 
 def getVerifiedHueBridges() {
@@ -258,7 +259,7 @@ def manualRefresh() {
 }
 
 def uninstalled(){
-	atomicState.bridges = [:]
+	state.bridges = [:]
     state.username = null
 }
 
