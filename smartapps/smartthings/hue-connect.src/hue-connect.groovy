@@ -64,9 +64,10 @@ def bridgeDiscovery(params=[:])
 	def options = bridges ?: []
 	def numFound = options.size() ?: 0
 
-	if (numFound == 0 && state.bridgeRefreshCount > 5) {
+	if (numFound == 0 && state.bridgeRefreshCount > 25) {
     	log.trace "Cleaning old bridges memory"
-    	atomicState.bridges = [:]
+    	state.bridges = [:]
+        state.bridgeRefreshCount = 0
     }    
 
 	subscribe(location, null, locationHandler, [filterEvents:false])
@@ -216,11 +217,11 @@ Map bulbsDiscovered() {
 }
 
 def getHueBulbs() {
-	atomicState.bulbs = atomicState.bulbs ?: [:]
+	state.bulbs = state.bulbs ?: [:]
 }
 
 def getHueBridges() {
-	atomicState.bridges = atomicState.bridges ?: [:]
+	state.bridges = state.bridges ?: [:]
 }
 
 def getVerifiedHueBridges() {
@@ -258,7 +259,7 @@ def manualRefresh() {
 }
 
 def uninstalled(){
-	atomicState.bridges = [:]
+	state.bridges = [:]
     state.username = null
 }
 
@@ -275,8 +276,8 @@ def bulbListHandler(hub, data) {
             if (v instanceof Map) 
                 bulbs[k] = [id: k, name: v.name, type: v.type, hub:hub]
         }
-        atomicState.bulbs = bulbs
-        msg = "${bulbs.size()} bulbs found. $atomicState.bulbs"
+        state.bulbs = bulbs
+        msg = "${bulbs.size()} bulbs found. $state.bulbs"
     }    
 	return msg
 }
