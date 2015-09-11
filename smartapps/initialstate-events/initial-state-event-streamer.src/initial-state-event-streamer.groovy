@@ -167,10 +167,6 @@ def subscribeToEvents() {
 	if (waterSensors != null) {
 		subscribe(waterSensors, "water", genericHandler)
 	}
-
-	if (canSchedule()) {
-		runEvery15Minutes(flushBuffer())
-	}
 }
 
 def getAccessKey() {
@@ -234,6 +230,8 @@ def installed() {
 	atomicState.isBucketCreated = false
 	atomicState.grokerSubdomain = "groker"
 	atomicState.eventBuffer = [];
+
+	runEvery15Minutes(flushBuffer)
 
 	log.debug "installed (version $atomicState.version)"
 }
@@ -317,7 +315,8 @@ def genericHandler(evt) {
 // This is a handler function for flushing the event buffer
 // after a specified amount of time to reduce the load on ST servers
 def flushBuffer() {
-	if (atomicState.eventBuffer.size() > 0) {
+	log.trace "About to flush the buffer on schedule"
+	if (atomicState.eventBuffer != null && atomicState.eventBuffer.size() > 0) {
 		shipEvents();
 	}
 }
