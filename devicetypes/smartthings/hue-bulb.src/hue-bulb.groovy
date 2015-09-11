@@ -16,8 +16,8 @@ metadata {
 		capability "Sensor"
 
 		command "setAdjustedColor"
-        command "reset"        
-        command "refresh"
+                command "reset"        
+                command "refresh"
 	}
 
 	simulator {

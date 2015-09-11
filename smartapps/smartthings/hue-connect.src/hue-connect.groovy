@@ -97,11 +97,20 @@ def bridgeLinking()
 
 	def nextPage = ""
 	def title = "Linking with your Hue"
-	def paragraphText = "Press the button on your Hue Bridge to setup a link."
+    def paragraphText
+    def hueimage = null
+	if (selectedHue) {
+		paragraphText = "Press the button on your Hue Bridge to setup a link. "
+        hueimage = "http://huedisco.mediavibe.nl/wp-content/uploads/2013/09/pair-bridge.png"
+    } else {
+    	paragraphText = "You haven't selected a Hue Bridge, please Press \"Done\" and select one before clicking next."
+        hueimage = null
+    }
 	if (state.username) { //if discovery worked
 		nextPage = "bulbDiscovery"
-		title = "Success! - click 'Next'"
+		title = "Success!"
 		paragraphText = "Linking to your hub was a success! Please click 'Next'!"
+        hueimage = null
 	}
 
 	if((linkRefreshcount % 2) == 0 && !state.username) {
@@ -109,14 +118,15 @@ def bridgeLinking()
 	}
 
 	return dynamicPage(name:"bridgeBtnPush", title:title, nextPage:nextPage, refreshInterval:refreshInterval) {
-		section("Button Press") {
+		section("") {
 			paragraph """${paragraphText}"""
+            if (hueimage != null)
+            	image "${hueimage}"
 		}
 	}
 }
 
-def bulbDiscovery()
-{
+def bulbDiscovery() {
 	int bulbRefreshCount = !state.bulbRefreshCount ? 0 : state.bulbRefreshCount as int
 	state.bulbRefreshCount = bulbRefreshCount + 1
 	def refreshInterval = 3
@@ -244,7 +254,7 @@ def initialize() {
 	log.debug "Initializing"  
     state.inBulbDiscovery = false
 	if (selectedHue) {
-		addBridge()
+   		addBridge()
         addBulbs()
         doDeviceSync()
         runEvery5Minutes("doDeviceSync")
@@ -264,8 +274,9 @@ def uninstalled(){
 }
 
 // Handles events to add new bulbs
-def bulbListHandler(hub, data) {
+def bulbListHandler(hub, data = "") {
 	def msg = "Bulbs list not processed. Only while in settings menu."
+    log.trace "Here: $hub, $data"
 	if (state.inBulbDiscovery) {
         def bulbs = [:]
         def logg = ""
@@ -361,21 +372,20 @@ def addBridge() {
 	}
 }
 
-
 def locationHandler(evt) {
-	def description = evt.description   
-    log.trace "Location: $description"    
-    
+	def description = evt.description
+    log.trace "Location: $description"
+
 	def hub = evt?.hubId
- 	def parsedEvent = parseLanMessage(description)    
+ 	def parsedEvent = parseLanMessage(description)
 	parsedEvent << ["hub":hub]
 
-	if (parsedEvent?.ssdpTerm?.contains("urn:schemas-upnp-org:device:basic:1")) { 
+	if (parsedEvent?.ssdpTerm?.contains("urn:schemas-upnp-org:device:basic:1")) {
     	//SSDP DISCOVERY EVENTS
 		log.trace "SSDP DISCOVERY EVENTS"
 		def bridges = getHueBridges()
 		log.trace bridges.toString()
-		if (!(bridges."${parsedEvent.ssdpUSN.toString()}")) { 
+		if (!(bridges."${parsedEvent.ssdpUSN.toString()}")) {
         	//bridge does not exist
 			log.trace "Adding bridge ${parsedEvent.ssdpUSN}"
 			bridges << ["${parsedEvent.ssdpUSN.toString()}":parsedEvent]
@@ -401,13 +411,10 @@ def locationHandler(evt) {
                                 app.updateSetting("selectedHue", newDNI)
                             doDeviceSync()
                         }
-                    }    
+                    }
                 }
             } else {
-            	if (d.getDeviceDataByName("networkAddress"))
-                	networkAddress = d.getDeviceDataByName("networkAddress")
-            	else
-                	networkAddress = d.latestState('networkAddress').stringValue
+            	networkAddress = d.latestState('networkAddress').stringValue
                 log.trace "Host: $host - $networkAddress"
                 if(host != networkAddress) {
                     log.debug "Device's port or ip changed for device $d..."
@@ -415,12 +422,11 @@ def locationHandler(evt) {
                     dstate.port = port
                     dstate.name = "Philips hue ($ip)"
                     d.sendEvent(name:"networkAddress", value: host)
-                    d.updateDataValue("networkAddress", host)
-            	}          
+            	}
             }
 		}
 	}
-	else if (parsedEvent.headers && parsedEvent.body) { 
+	else if (parsedEvent.headers && parsedEvent.body) {
 		log.trace "HUE BRIDGE RESPONSES"
 		def headerString = parsedEvent.headers.toString()
 		if (headerString?.contains("xml")) {
@@ -440,13 +446,22 @@ def locationHandler(evt) {
 			def body = new groovy.json.JsonSlurper().parseText(parsedEvent.body)
 			if (body.success != null) {
 				if (body.success[0] != null) {
-					if (body.success[0].username) 
+					if (body.success[0].username)
 						state.username = body.success[0].username
 				}
 			} else if (body.error != null) {
 				//TODO: handle retries...
 				log.error "ERROR: application/json ${body.error}"
-			} 
+			} else {
+				//GET /api/${state.username}/lights response (application/json)
+				if (!body?.state?.on) { //check if first time poll made it here by mistake
+					def bulbs = getHueBulbs()
+					log.debug "Adding bulbs to state!"
+					body.each { k,v ->
+						bulbs[k] = [id: k, name: v.name, type: v.type, hub:parsedEvent.hub]
+					}
+				}
+			}
 		}
 	} else {
 		log.trace "NON-HUE EVENT $evt.description"
