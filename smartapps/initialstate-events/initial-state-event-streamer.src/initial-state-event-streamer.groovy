@@ -11,8 +11,13 @@
  *  Unless required by applicable law or agreed to in writing, software distributed under the License is distributed
  *  on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the License
  *  for the specific language governing permissions and limitations under the License.
- *
+ *  
+ *  SmartThings data is sent from this SmartApp to Initial State. This is event data only for
+ *  devices for which the user has authorized. Likewise, Initial State's services call this 
+ *  SmartApp on the user's behalf to configure Initial State specific parameters. The ToS and
+ *  Privacy Policy for Initial State can be found here: https://www.initialstate.com/terms
  */
+
 definition(
     name: "Initial State Event Streamer",
     namespace: "initialstate.events",
@@ -32,10 +37,10 @@ preferences {
         input "alarms", "capability.alarm", title: "Alarms", multiple: true, required: false
         input "batteries", "capability.battery", title: "Batteries", multiple: true, required: false
         input "beacons", "capability.beacon", title: "Beacons", multiple: true, required: false
-        //input "buttons", "capability.button", title: "Buttons", multiple: true, required: false
         input "cos", "capability.carbonMonoxideDetector", title: "Carbon  Monoxide Detectors", multiple: true, required: false
         input "colors", "capability.colorControl", title: "Color Controllers", multiple: true, required: false
         input "contacts", "capability.contactSensor", title: "Contact Sensors", multiple: true, required: false
+        input "doorsControllers", "capability.doorControl", title: "Door Controllers", multiple: true, required: false
         input "energyMeters", "capability.energyMeter", title: "Energy Meters", multiple: true, required: false
         input "illuminances", "capability.illuminanceMeasurement", title: "Illuminance Meters", multiple: true, required: false
         input "locks", "capability.lock", title: "Locks", multiple: true, required: false
@@ -86,9 +91,6 @@ def subscribeToEvents() {
 		subscribe(beacons, "presence", genericHandler)
 	}
 	
-	/*if (buttons != null) {
-		subscribe(buttons, "button", genericHandler)
-	}*/
 	if (cos != null) {
 		subscribe(cos, "carbonMonoxide", genericHandler)
 	}
@@ -169,23 +171,23 @@ def subscribeToEvents() {
 
 def getAccessKey() {
 	log.trace "get access key"
-	if (state.accessKey == null) {
+	if (atomicState.accessKey == null) {
 		httpError(404, "Access Key Not Found")
 	} else {
 		[
-			accessKey: state.accessKey
+			accessKey: atomicState.accessKey
 		]
 	}
 }
 
 def getBucketKey() {
 	log.trace "get bucket key"
-	if (state.bucketKey == null) {
+	if (atomicState.bucketKey == null) {
 		httpError(404, "Bucket key Not Found")
 	} else {
 		[
-			bucketKey: state.bucketKey,
-			bucketName: state.bucketName
+			bucketKey: atomicState.bucketKey,
+			bucketName: atomicState.bucketName
 		]
 	}
 }
@@ -198,10 +200,10 @@ def setBucketKey() {
 	log.debug "bucket name: $newBucketName"
 	log.debug "bucket key: $newBucketKey"
 
-	if (newBucketKey && (newBucketKey != state.bucketKey || newBucketName != state.bucketName)) {
-		state.bucketKey = "$newBucketKey"
-		state.bucketName = "$newBucketName"
-		state.isBucketCreated = false
+	if (newBucketKey && (newBucketKey != atomicState.bucketKey || newBucketName != atomicState.bucketName)) {
+		atomicState.bucketKey = "$newBucketKey"
+		atomicState.bucketName = "$newBucketName"
+		atomicState.isBucketCreated = false
 	}
 }
 
@@ -210,48 +212,61 @@ def setAccessKey() {
 	def newAccessKey = request.JSON?.accessKey
 	def newGrokerSubdomain = request.JSON?.grokerSubdomain
 
-	if (newGrokerSubdomain && newGrokerSubdomain != "" && newGrokerSubdomain != state.grokerSubdomain) {
-		state.grokerSubdomain = "$newGrokerSubdomain"
-		state.isBucketCreated = false
+	if (newGrokerSubdomain && newGrokerSubdomain != "" && newGrokerSubdomain != atomicState.grokerSubdomain) {
+		atomicState.grokerSubdomain = "$newGrokerSubdomain"
+		atomicState.isBucketCreated = false
 	}
     
-	if (newAccessKey && newAccessKey != state.accessKey) {
-		state.accessKey = "$newAccessKey"
-		state.isBucketCreated = false
+	if (newAccessKey && newAccessKey != atomicState.accessKey) {
+		atomicState.accessKey = "$newAccessKey"
+		atomicState.isBucketCreated = false
 	}
 }
 
 def installed() {
-
+	atomicState.version = "1.0.17"
 	subscribeToEvents()
 
-	state.isBucketCreated = false
-    state.grokerSubdomain = "groker"
+	atomicState.isBucketCreated = false
+	atomicState.grokerSubdomain = "groker"
+	atomicState.eventBuffer = [];
+
+	runEvery15Minutes(flushBuffer)
+
+	log.debug "installed (version $atomicState.version)"
 }
 
 def updated() {
 	unsubscribe()
 
-	if (state.bucketKey != null && state.accessKey != null) {
-		state.isBucketCreated = false
+	if (atomicState.bucketKey != null && atomicState.accessKey != null) {
+		atomicState.isBucketCreated = false
 	}
 	
 	subscribeToEvents()
+
+	log.debug "updated (version $atomicState.version)"
+}
+
+def uninstalled() {
+	unsubscribe()
+	unschedule()
+	log.debug "uninstalled (version $atomicState.version)"
 }
 
 def createBucket() {
 
-	if (!state.bucketName) {
-    	state.bucketName = state.bucketKey
+	if (!atomicState.bucketName) {
+    	atomicState.bucketName = atomicState.bucketKey
     }
-	def bucketName = "${state.bucketName}"
-	def bucketKey = "${state.bucketKey}"
-	def accessKey = "${state.accessKey}"
+	def bucketName = "${atomicState.bucketName}"
+	def bucketKey = "${atomicState.bucketKey}"
+	def accessKey = "${atomicState.accessKey}"
 
 	def bucketCreateBody = new JsonSlurper().parseText("{\"bucketKey\": \"$bucketKey\", \"bucketName\": \"$bucketName\"}")
 
 	def bucketCreatePost = [
-		uri: "https://${state.grokerSubdomain}.initialstate.com/api/buckets",
+		uri: "https://${atomicState.grokerSubdomain}.initialstate.com/api/buckets",
 		headers: [
 			"Content-Type": "application/json",
 			"X-IS-AccessKey": accessKey
@@ -261,10 +276,20 @@ def createBucket() {
 
 	log.debug bucketCreatePost
 
-	httpPostJson(bucketCreatePost) {
-		log.debug "bucket posted"
-		state.isBucketCreated = true
+	try {
+		// Create a bucket on Initial State so the data has a logical grouping
+		httpPostJson(bucketCreatePost) { resp ->
+			log.debug "bucket posted"
+			if (resp.status >= 400) {
+				log.error "bucket not created successfully"
+			} else {
+				atomicState.isBucketCreated = true
+			}
+		}
+	} catch (e) {
+		log.error "bucket creation error: $e"
 	}
+
 }
 
 def genericHandler(evt) {
@@ -276,33 +301,68 @@ def genericHandler(evt) {
 	}
 	def value = "$evt.value"
 
-	eventHandler(key, value)
-}
-
-def eventHandler(name, value) {
-
-	if (state.accessKey == null || state.bucketKey == null) {
+	if (atomicState.accessKey == null || atomicState.bucketKey == null) {
 		return
 	}
 
-	if (!state.isBucketCreated) {
+	if (!atomicState.isBucketCreated) {
 		createBucket()
 	}
 
-	def eventBody = new JsonSlurper().parseText("[{\"key\": \"$name\", \"value\": \"$value\"}]")
+	eventHandler(key, value)
+}
+
+// This is a handler function for flushing the event buffer
+// after a specified amount of time to reduce the load on ST servers
+def flushBuffer() {
+	log.trace "About to flush the buffer on schedule"
+	if (atomicState.eventBuffer != null && atomicState.eventBuffer.size() > 0) {
+		shipEvents();
+	}
+}
+
+def eventHandler(name, value) {
+	log.debug atomicState.eventBuffer;
+
+	def eventBuffer = atomicState.eventBuffer;
+	def epoch = now() / 1000;
+	eventBuffer << [key: "$name", value: "$value", epoch: "$epoch"]
+	
+	log.debug eventBuffer;
+
+	atomicState.eventBuffer = eventBuffer;
+
+	if (eventBuffer.size() >= 10) {
+		shipEvents();
+	}
+}
+
+// a helper function for shipping the atomicState.eventBuffer to Initial State
+def shipEvents() {
 	def eventPost = [
-		uri: "https://${state.grokerSubdomain}.initialstate.com/api/events",
+		uri: "https://${atomicState.grokerSubdomain}.initialstate.com/api/events",
 		headers: [
 			"Content-Type": "application/json",
-			"X-IS-BucketKey": "${state.bucketKey}",
-			"X-IS-AccessKey": "${state.accessKey}"
+			"X-IS-BucketKey": "${atomicState.bucketKey}",
+			"X-IS-AccessKey": "${atomicState.accessKey}",
+			"Accept-Version": "0.0.2"
 		],
-		body: eventBody
-	]
+		body: atomicState.eventBuffer
+	];
 
-	log.debug eventPost
-
-	httpPostJson(eventPost) {
-		log.debug "event data posted"
+	try {
+		// post the events to initial state
+		httpPostJson(eventPost) { resp ->
+			log.debug "shipped events and got ${resp.status}"
+			if (resp.status >= 400) {
+				log.error "shipping failed... ${resp.data}"
+			} else {
+				// clear the buffer
+				atomicState.eventBuffer = [];
+			}
+		}
+	} catch (e) {
+		log.error "shipping events failed: $e"
 	}
+	
 }
