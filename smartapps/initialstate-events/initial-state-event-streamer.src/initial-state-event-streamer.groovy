@@ -280,7 +280,7 @@ def createBucket() {
 
 	try {
 		// Create a bucket on Initial State so the data has a logical grouping
-		httpPostJson(bucketCreatePost) { resp =>
+		httpPostJson(bucketCreatePost) { resp ->
 			log.debug "bucket posted"
 			if (resp.status >= 400) {
 				log.error "bucket not created successfully"
@@ -353,7 +353,7 @@ def shipEvents() {
 
 	try {
 		// post the events to initial state
-		httpPostJson(eventPost) { resp =>
+		httpPostJson(eventPost) { resp ->
 			log.debug "shipped events and got ${resp.status}"
 			if (resp.status >= 400) {
 				log.error "shipping failed... ${resp.data}"
