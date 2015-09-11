@@ -102,9 +102,6 @@ def subscribeToEvents() {
 	if (contacts != null) {
 		subscribe(contacts, "contact", genericHandler)
 	}
-	if (doorsControllers != null) {
-		subscribe(doorsControllers, "door", genericHandler)
-	}
 	if (energyMeters != null) {
 		subscribe(energyMeters, "energy", genericHandler)
 	}
@@ -182,7 +179,6 @@ def getAccessKey() {
 		httpError(404, "Access Key Not Found")
 	} else {
 		[
-			grokerRootUrl: atomicState.grokerRootUrl,
 			accessKey: atomicState.accessKey
 		]
 	}
@@ -275,8 +271,7 @@ def createBucket() {
 		uri: "https://${atomicState.grokerSubdomain}.initialstate.com/api/buckets",
 		headers: [
 			"Content-Type": "application/json",
-			"X-IS-AccessKey": accessKey,
-			"Accept-Version": "0.0.1"
+			"X-IS-AccessKey": accessKey
 		],
 		body: bucketCreateBody
 	]
