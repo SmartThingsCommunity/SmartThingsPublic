@@ -328,7 +328,6 @@ def setLevel(value) {
 	}
 	else if (device.latestValue("switch") == "off") {
         	cmds << "st cmd 0x${device.deviceNetworkId} 1 8 0 {00 0000}"
-        	cmds << "delay 200"
         	sendEvent(name: "switch", value: "on")
 	}
 
