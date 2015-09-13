@@ -27,12 +27,15 @@ definition(
 
 preferences {
 	section("Sensors to monitor...") {
-		input "sensor", "capability.temperatureMeasurement", title: "Temp Sensor", required: true, multiple: false
+		input "sensor", "capability.temperatureMeasurement", title: "Temp Sensor", required: true
 	}
     section("Set a temperature threshold..."){
     	input "max_", "decimal", title: "Set Max Temp"
         input "min_", "decimal", title: "Set Min Temp"
   	}
+    section("When I arrive..."){
+		input "me_", "capability.presenceSensor", title: "Who?", multiple: true
+	}
     section("Send Notifications?") {
         input("recipients", "contact", title: "Send notifications to")
     }
@@ -51,6 +54,7 @@ def updated() {
 
 def initialize() {
     subscribe(sensor, "temperature", weatherHandler)
+    subscribe(me_, "presence.present", presence)
 }
 
 def weatherHandler(evt) {
@@ -59,4 +63,10 @@ def weatherHandler(evt) {
   } else if (evt.doubleValue < min_) {
   	sendNotificationToContacts("Room too cold! Current ${evt.doubleValue}F!", recipients)
   }
+}
+
+def presence(evt) {
+    def currentState = sensor.currentState("temperature")
+    log.debug "Arrived home [${currentState.value}]"
+    sendNotificationToContacts("Welcome home! Current temperature is ${currentState.value}F!", recipients)
 }
