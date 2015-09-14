@@ -1,7 +1,7 @@
 /**
  *  Quirky/Wink Tripper Contact Sensor
  *
- *  Copyright 2015 Mitch Pond, SmartThings
+ *  Copyright 2015 Mitch Pond
  *
  *  Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except
  *  in compliance with the License. You may obtain a copy of the License at:
@@ -31,11 +31,17 @@ metadata {
 		fingerprint endpointId: "01", profileId: "0104", deviceId: "0402", inClusters: "0000,0001,0003,0500,0020,0B05", outClusters: "0003,0019"
 	}
 
-	// simulator metadata
-	simulator {}
-
 	// UI tile definitions
-	tiles {
+	tiles(scale: 2) {
+    	multiAttributeTile(name:"richcontact", type: "generic", width: 6, height: 4) {
+        	tileAttribute("device.contact", key: "PRIMARY_CONTROL") {
+            	attributeState "open", label: '${name}', icon:"st.contact.contact.open", backgroundColor:"#ffa81e"
+                attributeState "closed", label: '${name}', icon:"st.contact.contact.closed", backgroundColor:"#79b821"
+            }
+            tileAttribute("device.battery", key: "SECONDARY_CONTROL") {
+            	attributeState "battery", label:'${currentValue}% battery', unit:""
+            }
+        }
 		standardTile("contact", "device.contact", width: 2, height: 2, canChangeIcon: true) {
 			state("open", label:'${name}', icon:"st.contact.contact.open", backgroundColor:"#ffa81e")
 			state("closed", label:'${name}', icon:"st.contact.contact.closed", backgroundColor:"#79b821")
@@ -45,13 +51,13 @@ metadata {
 			state "battery", label:'${currentValue}% battery', unit:""
 		}
         
-		standardTile("tamper", "device.tamper") {
-			state "OK", label: "Tamper OK", icon: "st.security.alarm.on", backgroundColor:"#79b821", decoration: "flat"
-			state "tampered", label: "Tampered", action: "resetTamper", icon: "st.security.alarm.off", backgroundColor:"#ffa81e", decoration: "flat"
+		standardTile("tamper", "device.tamper", decoration: "flat", width:2, height: 2) {
+			state "OK", label: "Tamper OK", icon: "st.security.alarm.on", backgroundColor:"#79b821"
+			state "tampered", label: "Tampered", action: "resetTamper", icon: "st.security.alarm.off", backgroundColor:"#ffa81e"
 		}
         
-		main ("contact")
-		details(["contact","battery","tamper"])
+		main ("richcontact")
+		details(["richcontact","tamper"]) //removed "contact", "battery"
 	}
 }
 
@@ -83,7 +89,7 @@ def parse(String description) {
 //Initializes device and sets up reporting
 def configure() {
 	String zigbeeId = swapEndianHex(device.hub.zigbeeId)
-	log.debug "Confuguring Reporting, IAS CIE, and Bindings."
+	log.debug "Configuring Reporting, IAS CIE, and Bindings."
     
 	def cmd = [
 		"zcl global write 0x500 0x10 0xf0 {${zigbeeId}}", "delay 200",
@@ -194,18 +200,18 @@ private parseIasMessage(String description) {
 //**real-world testing with this device shows that 2.4v is about as low as it can go **/
 
 private getBatteryResult(rawValue) {
+	def minVolts = 2.4
+	def maxVolts = 3.0
 	def linkText = getLinkText(device)
-
 	def result = [name: 'battery']
 
 	def volts = rawValue / 10
-	def descriptionText
+	def descriptionText = ''
+    log.debug("${linkText} reports batery voltage at ${volts}") //added logging for voltage level to help determine actual min voltage from users
 	if (volts > 3.5) {
 		result.descriptionText = "${linkText} battery has too much power (${volts} volts)."
 	}
 	else {
-		def minVolts = 2.4
-		def maxVolts = 3.0
 		def pct = (volts - minVolts) / (maxVolts - minVolts)
 		result.value = Math.min(100, (int) pct * 100)
 		result.descriptionText = "${linkText} battery was ${result.value}%"
