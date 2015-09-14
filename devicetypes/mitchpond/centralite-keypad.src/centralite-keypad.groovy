@@ -19,12 +19,9 @@ metadata {
 		capability "Button"
         capability "Configuration"
 		capability "Sensor"
+        capability "Refresh" //TODO: can be removed before publishing
         
-        fingerprint endpointId: "01", profileId: "0104", inClusters: "0000,0001,0003,0020,0402,0500,0B05", outClusters: "0019,0501"
-	}
-
-	simulator {
-		// TODO: define status and reply messages here
+        fingerprint endpointId: "01", profileId: "0104", deviceId: "0401", inClusters: "0000,0001,0003,0020,0402,0500,0B05", outClusters: "0019,0501"
 	}
 
 	tiles {
@@ -32,7 +29,14 @@ metadata {
         valueTile("battery", "device.battery", decoration: "flat") {
 			state "battery", label:'${currentValue}% battery', unit:""
 		}
+        standardTile("refresh", "device.refresh", inactiveLabel: false, decoration: "flat", width: 1, height: 1) { //TODO: remove before publishing
+        	state "default", action:"refresh.refresh", icon:"st.secondary.refresh"
+    	}
+        standardTile("configure", "device.configure", inactiveLabel: false, decoration: "flat", width: 1, height: 1) {
+        	state "default", action:"configuration.configure", icon:"st.secondary.configure"
+    	}
         main ("battery")
+        details (["configure","refresh"])
 	}
 }
 
@@ -74,6 +78,11 @@ def configure() {
 	"st rattr 0x${device.deviceNetworkId} 1 1 0x20"
 	]
     cmd
+}
+
+def refresh() {
+    ["st rattr 0x${zigbee.deviceNetworkId} 0x${zigbee.endpointId} 0 4", "delay 200",
+    "st rattr 0x${zigbee.deviceNetworkId} 0x${zigbee.endpointId} 0 5"]
 }
 
 //Sends IAS Zone Enroll response
@@ -125,6 +134,9 @@ private getBatteryResult(rawValue) {
 
 	return result
 }
+
+
+//------Utility methods------//
 private hex(value) {
 	new BigInteger(Math.round(value).toString()).toString(16)
 }
