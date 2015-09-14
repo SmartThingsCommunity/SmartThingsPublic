@@ -239,6 +239,7 @@ def installed() {
 }
 
 def updated() {
+	atomicState.version = "1.0.18"
 	unsubscribe()
 
 	if (atomicState.bucketKey != null && atomicState.accessKey != null) {
