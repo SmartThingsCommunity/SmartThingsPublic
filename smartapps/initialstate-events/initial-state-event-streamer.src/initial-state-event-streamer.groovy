@@ -226,7 +226,7 @@ def setAccessKey() {
 }
 
 def installed() {
-	atomicState.version = "1.0.17"
+	atomicState.version = "1.0.18"
 	subscribeToEvents()
 
 	atomicState.isBucketCreated = false
