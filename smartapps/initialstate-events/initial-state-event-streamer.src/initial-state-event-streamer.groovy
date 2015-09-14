@@ -205,6 +205,8 @@ def setBucketKey() {
 		atomicState.bucketName = "$newBucketName"
 		atomicState.isBucketCreated = false
 	}
+
+	tryCreateBucket()
 }
 
 def setAccessKey() {
@@ -255,7 +257,12 @@ def uninstalled() {
 	log.debug "uninstalled (version $atomicState.version)"
 }
 
-def createBucket() {
+def tryCreateBucket() {
+	
+	// if the bucket has already been created, no need to continue
+	if (atomicState.isBucketCreated) {
+		return
+	}
 
 	if (!atomicState.bucketName) {
     	atomicState.bucketName = atomicState.bucketKey
@@ -305,13 +312,7 @@ def genericHandler(evt) {
 	}
 	def value = "$evt.value"
 
-	if (atomicState.accessKey == null || atomicState.bucketKey == null) {
-		return
-	}
-
-	if (!atomicState.isBucketCreated) {
-		createBucket()
-	}
+	tryCreateBucket()
 
 	eventHandler(key, value)
 }
@@ -321,7 +322,7 @@ def genericHandler(evt) {
 def flushBuffer() {
 	log.trace "About to flush the buffer on schedule"
 	if (atomicState.eventBuffer != null && atomicState.eventBuffer.size() > 0) {
-		shipEvents()
+		tryShipEvents()
 	}
 }
 
@@ -337,12 +338,18 @@ def eventHandler(name, value) {
 	atomicState.eventBuffer = eventBuffer
 
 	if (eventBuffer.size() >= 10) {
-		shipEvents()
+		tryShipEvents()
 	}
 }
 
 // a helper function for shipping the atomicState.eventBuffer to Initial State
-def shipEvents() {
+def tryShipEvents() {
+
+	// can't ship if access key and bucket key are null, so finish trying
+	if (atomicState.accessKey == null || atomicState.bucketKey == null) {
+		return
+	}
+
 	def eventPost = [
 		uri: "https://${atomicState.grokerSubdomain}.initialstate.com/api/events",
 		headers: [
