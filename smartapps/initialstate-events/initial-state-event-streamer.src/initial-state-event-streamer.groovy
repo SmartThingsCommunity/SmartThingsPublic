@@ -265,9 +265,10 @@ def tryCreateBucket() {
 	
 	// can't ship events if there is no grokerSubdomain
 	if (atomicState.grokerSubdomain == null || atomicState.grokerSubdomain == "") {
+		log.error "streaming url is currently null"
 		return
 	}
-	
+
 	// if the bucket has already been created, no need to continue
 	if (atomicState.isBucketCreated) {
 		return
@@ -356,6 +357,7 @@ def tryShipEvents() {
 
 	// can't ship events if there is no grokerSubdomain
 	if (atomicState.grokerSubdomain == null || atomicState.grokerSubdomain == "") {
+		log.error "streaming url is currently null"
 		return
 	}
 	// can't ship if access key and bucket key are null, so finish trying
