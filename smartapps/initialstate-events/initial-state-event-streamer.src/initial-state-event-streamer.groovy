@@ -229,7 +229,7 @@ def installed() {
 
 	atomicState.isBucketCreated = false
 	atomicState.grokerSubdomain = "groker"
-	atomicState.eventBuffer = [];
+	atomicState.eventBuffer = []
 
 	runEvery15Minutes(flushBuffer)
 
@@ -243,7 +243,7 @@ def updated() {
 		atomicState.isBucketCreated = false
 	}
 	if (atomicState.eventBuffer == null) {
-		atomicState.eventBuffer = [];
+		atomicState.eventBuffer = []
 	}
 
 	subscribeToEvents()
@@ -258,10 +258,10 @@ def uninstalled() {
 def createBucket() {
 
 	if (!atomicState.bucketName) {
-    	atomicState.bucketName = atomicState.bucketKey;
+    	atomicState.bucketName = atomicState.bucketKey
     }
     if (!atomicState.accessKey) {
-    	return;
+    	return
     }
 	def bucketName = "${atomicState.bucketName}"
 	def bucketKey = "${atomicState.bucketKey}"
@@ -321,23 +321,23 @@ def genericHandler(evt) {
 def flushBuffer() {
 	log.trace "About to flush the buffer on schedule"
 	if (atomicState.eventBuffer != null && atomicState.eventBuffer.size() > 0) {
-		shipEvents();
+		shipEvents()
 	}
 }
 
 def eventHandler(name, value) {
-	log.debug atomicState.eventBuffer;
+	log.debug atomicState.eventBuffer
 
-	def eventBuffer = atomicState.eventBuffer;
-	def epoch = now() / 1000;
+	def eventBuffer = atomicState.eventBuffer
+	def epoch = now() / 1000
 	eventBuffer << [key: "$name", value: "$value", epoch: "$epoch"]
 	
-	log.debug eventBuffer;
+	log.debug eventBuffer
 
-	atomicState.eventBuffer = eventBuffer;
+	atomicState.eventBuffer = eventBuffer
 
 	if (eventBuffer.size() >= 10) {
-		shipEvents();
+		shipEvents()
 	}
 }
 
@@ -352,7 +352,7 @@ def shipEvents() {
 			"Accept-Version": "0.0.2"
 		],
 		body: atomicState.eventBuffer
-	];
+	]
 
 	try {
 		// post the events to initial state
@@ -362,7 +362,7 @@ def shipEvents() {
 				log.error "shipping failed... ${resp.data}"
 			} else {
 				// clear the buffer
-				atomicState.eventBuffer = [];
+				atomicState.eventBuffer = []
 			}
 		}
 	} catch (e) {
