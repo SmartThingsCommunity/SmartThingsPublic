@@ -242,22 +242,26 @@ def updated() {
 	if (atomicState.bucketKey != null && atomicState.accessKey != null) {
 		atomicState.isBucketCreated = false
 	}
-	
+	if (atomicState.eventBuffer == null) {
+		atomicState.eventBuffer = [];
+	}
+
 	subscribeToEvents()
 
 	log.debug "updated (version $atomicState.version)"
 }
 
 def uninstalled() {
-	unsubscribe()
-	unschedule()
 	log.debug "uninstalled (version $atomicState.version)"
 }
 
 def createBucket() {
 
 	if (!atomicState.bucketName) {
-    	atomicState.bucketName = atomicState.bucketKey
+    	atomicState.bucketName = atomicState.bucketKey;
+    }
+    if (!atomicState.accessKey) {
+    	return;
     }
 	def bucketName = "${atomicState.bucketName}"
 	def bucketKey = "${atomicState.bucketKey}"
