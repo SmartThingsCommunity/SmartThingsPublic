@@ -99,7 +99,6 @@ def createEvent(physicalgraph.zwave.commands.basicv1.BasicReport cmd, Map item1)
 }
 
 def createEvent(physicalgraph.zwave.commands.switchmultilevelv1.SwitchMultilevelReport cmd, Map item1) {
-	log.debug "basicReport:${cmd.inspect()}"
 	def result = doCreateEvent(cmd, item1)
 	result[0].descriptionText = "${item1.linkText} is ${item1.value}"
 	result[0].handlerName = cmd.value ? "statusOn" : "statusOff"
