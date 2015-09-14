@@ -248,6 +248,9 @@ def updated() {
 	if (atomicState.eventBuffer == null) {
 		atomicState.eventBuffer = []
 	}
+	if (atomicState.grokerSubdomain == null || atomicState.grokerSubdomain == "") {
+		atomicState.grokerSubdomain = "groker"
+	}
 
 	subscribeToEvents()
 
@@ -259,6 +262,11 @@ def uninstalled() {
 }
 
 def tryCreateBucket() {
+	
+	// can't ship events if there is no grokerSubdomain
+	if (atomicState.grokerSubdomain == null || atomicState.grokerSubdomain == "") {
+		return
+	}
 	
 	// if the bucket has already been created, no need to continue
 	if (atomicState.isBucketCreated) {
@@ -346,6 +354,10 @@ def eventHandler(name, value) {
 // a helper function for shipping the atomicState.eventBuffer to Initial State
 def tryShipEvents() {
 
+	// can't ship events if there is no grokerSubdomain
+	if (atomicState.grokerSubdomain == null || atomicState.grokerSubdomain == "") {
+		return
+	}
 	// can't ship if access key and bucket key are null, so finish trying
 	if (atomicState.accessKey == null || atomicState.bucketKey == null) {
 		return
