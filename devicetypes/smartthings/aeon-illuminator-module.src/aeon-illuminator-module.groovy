@@ -12,7 +12,6 @@
  *
  */
 metadata {
-	// Automatically generated. Make future change here.
 	definition (name: "Aeon Illuminator Module", namespace: "smartthings", author: "SmartThings") {
 		capability "Energy Meter"
 		capability "Switch Level"
