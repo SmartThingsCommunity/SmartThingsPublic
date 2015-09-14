@@ -12,6 +12,7 @@
  *
  */
 metadata {
+	// Automatically generated. Make future change here.
 	definition (name: "Aeon Illuminator Module", namespace: "smartthings", author: "SmartThings") {
 		capability "Energy Meter"
 		capability "Switch Level"
@@ -98,6 +99,7 @@ def createEvent(physicalgraph.zwave.commands.basicv1.BasicReport cmd, Map item1)
 }
 
 def createEvent(physicalgraph.zwave.commands.switchmultilevelv1.SwitchMultilevelReport cmd, Map item1) {
+	log.debug "basicReport:${cmd.inspect()}"
 	def result = doCreateEvent(cmd, item1)
 	result[0].descriptionText = "${item1.linkText} is ${item1.value}"
 	result[0].handlerName = cmd.value ? "statusOn" : "statusOff"
@@ -187,6 +189,8 @@ def configure() {
 		zwave.configurationV1.configurationSet(parameterNumber: 101, size: 4, scaledConfigurationValue: 8).format(),   // energy in kWh
 		zwave.configurationV1.configurationSet(parameterNumber: 111, size: 4, scaledConfigurationValue: 300).format(), // every 5 min
 		zwave.configurationV1.configurationSet(parameterNumber: 102, size: 4, scaledConfigurationValue: 0).format(),
-		zwave.configurationV1.configurationSet(parameterNumber: 103, size: 4, scaledConfigurationValue: 0).format()
+		zwave.configurationV1.configurationSet(parameterNumber: 103, size: 4, scaledConfigurationValue: 0).format(),
+        zwave.configurationV1.configurationSet(parameterNumber: 80,  size: 1, scaledConfigurationValue: 2).format()
+
 	])
 }
