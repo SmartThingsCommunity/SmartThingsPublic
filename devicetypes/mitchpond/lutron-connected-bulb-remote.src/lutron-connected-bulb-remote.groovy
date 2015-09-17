@@ -16,7 +16,7 @@ metadata {
 		capability "Button"
 		capability "Configuration"
 
-		fingerprint manufacturer: "Lutron", profileId: "C05E", inClusters: "0000,1000,FF00,FC44", outClusters: "1000,0003,0006,0008,0004,0005,0000,FF00"
+		fingerprint manufacturer: "Lutron", profileId: "C05E", endpointId: "01", inClusters: "0000,1000,FF00,FC44", outClusters: "1000,0003,0006,0008,0004,0005,0000,FF00"
 	}
 
 	// UI tile definitions
@@ -53,25 +53,25 @@ def parse(String description) {
 // Commands to device
 
 def configure() {
-	String zigbeeId = swapEndianHex(device.hub.zigbeeId)
+	String hubZigbeeId = swapEndianHex(device.hub.zigbeeId)
 	[
-    "zdo in-cl-list add {0600}", "delay 150",
-    "zdo bind 0x${device.deviceNetworkId} 1 1 3 {${device.zigbeeId}} {}", "delay 200",
-    "zdo bind 0x${device.deviceNetworkId} 1 1 0x06 {${device.zigbeeId}} {${zigbeeId}}", "delay 200",
-    "zdo bind 0x${device.deviceNetworkId} 1 1 0x08 {${device.zigbeeId}} {}", "delay 200",
-    "zdo bind 0x${device.deviceNetworkId} 1 1 5 {${device.zigbeeId}} {}", "delay 200",
-    "zdo bind 0x${device.deviceNetworkId} 1 1 0 {${device.zigbeeId}} {}", "delay 200",
-    "zdo bind 0x${device.deviceNetworkId} 1 1 0x1000 {${device.zigbeeId}} {}", "delay 200",
-    "zdo bind 0x${device.deviceNetworkId} 1 1 0xfc44 {${device.zigbeeId}} {}", "delay 200",
-    "zdo bind 0x${device.deviceNetworkId} 1 1 0xFF00 {${device.zigbeeId}} {}", "delay 200",
-    "zdo bind 0x${device.deviceNetworkId} 1 1 4 {${device.zigbeeId}} {}", "delay 200",
+    //"zdo bind 0x${device.deviceNetworkId} 1 1 3 {${device.zigbeeId}} {}", "delay 200",
+    "zdo bind 0x${device.deviceNetworkId} 0x01 0xFF 0x0006 {${device.zigbeeId}} {}", "delay 200",
+    "zdo bind 0x${device.deviceNetworkId} 0x01 0xFF 0x0008 {${device.zigbeeId}} {}", "delay 200",
+    //"zdo bind 0x${device.deviceNetworkId} 1 1 0x08 {${device.zigbeeId}} {}", "delay 200",
+    //"zdo bind 0x${device.deviceNetworkId} 1 1 5 {${device.zigbeeId}} {}", "delay 200",
+    //"zdo bind 0x${device.deviceNetworkId} 1 1 0 {${device.zigbeeId}} {}", "delay 200",
+    //"zdo bind 0x${device.deviceNetworkId} 1 1 0x1000 {${device.zigbeeId}} {}", "delay 200",
+    //"zdo bind 0x${device.deviceNetworkId} 1 1 0xfc44 {${device.zigbeeId}} {}", "delay 200",
+    //"zdo bind 0x${device.deviceNetworkId} 1 1 0xFF00 {${device.zigbeeId}} {}", "delay 200",
+    //"zdo bind 0x${device.deviceNetworkId} 1 1 4 {${device.zigbeeId}} {}", "delay 200",
     //"st rattr 0x${device.deviceNetworkId} 1 0x0000 0x0007",
     //"st cmd 0x${device.deviceNetworkId} 1 0xFF00 1 {0000}",
     //"raw 0x0006 {0c 0000 FF}",
-    "zcl global send-me-a-report 0x0006 0x0000 0x10 0 0 {01}", "delay 200",
-    "send 0x${device.deviceNetworkId} 1 1",
-    "zcl global discover 0xFF00 0x00 20","delay 200",
-    "send 0x${device.deviceNetworkId} 1 1"
+    //"zcl global send-me-a-report 0x0006 0x0000 0x10 0 0 {}", "delay 200",
+    //"send 0x${device.deviceNetworkId} 1 1",
+    //"zcl global discover 0xFF00 0x00 20","delay 200",
+    //"send 0x${device.deviceNetworkId} 1 1"
 	]
 
 }

@@ -44,21 +44,31 @@ metadata {
 def parse(String description) {
 	log.debug "Parsing '${description}'"
     
+    
     def results = [];
     
-	// TODO: handle 'battery' attribute
-	// TODO: handle 'button' attribute
+	//------Miscellaneous Zigbee message------//
 	if (description?.startsWith('catchall:')) {
     	//log.debug zigbee.parse(description)
 		results = zigbee.parse(description)
         if (results?.command == 0x07) log.debug 'Heartbeat??'
-        else if (results?.command == 0x00) log.debug 'Received arm request with keycode: '+results.data
+        else if (results?.command == 0x00) {
+        	log.debug 'Received arm request with keycode: '+results.data
+            List cmds = ["st cmd 0x${device.deviceNetworkId} 1 0x501 0x07 {0000}"
+            				//"raw 0x501 {02 00 00}", "delay 200",
+							//"send 0x${device.deviceNetworkId} 1 1"
+                        ]
+            results = cmds?.collect { new physicalgraph.device.HubAction(it) }
+        }
+        else log.trace results?.command
 	}
+    //------IAS Zone Enroll request------//
     else if (description?.startsWith('enroll request')) {
 		List cmds = enrollResponse()
 		log.debug "enroll response: ${cmds}"
 		results = cmds?.collect { new physicalgraph.device.HubAction(it) }
 	}
+    //------Read Attribute response------//
     else if (description?.startsWith('read attr -')) {
 		results = parseReportAttributeMessage(description)
 	}
@@ -67,16 +77,20 @@ def parse(String description) {
 }
 
 def configure() {
-	String zigbeeId = swapEndianHex(device.hub.zigbeeId)
+	String hubZigbeeId = swapEndianHex(device.hub.zigbeeId)
 	def cmd = [
-    "zcl global write 0x500 0x10 0xf0 {${zigbeeId}}", "delay 200",
+    //------IAS Zone/CIE setup------//
+    "zcl global write 0x500 0x10 0xf0 {${hubZigbeeId}}", "delay 200",
 	"send 0x${device.deviceNetworkId} 1 1", "delay 1500",
     
+    //------Set up binding------//
     "zdo bind 0x${device.deviceNetworkId} 1 1 0x500 {${device.zigbeeId}} {}", "delay 500",
     "zdo bind 0x${device.deviceNetworkId} 1 1 0x501 {${device.zigbeeId}} {}", "delay 500",
 	"zdo bind 0x${device.deviceNetworkId} 1 1 1 {${device.zigbeeId}} {}", "delay 500",
 	"st rattr 0x${device.deviceNetworkId} 1 1 0x20"
 	]
+    log.debug location.id
+    //subscribe(location,locationEventParser)
     cmd
 }
 
@@ -94,6 +108,8 @@ def enrollResponse() {
 	]
 }
 
+private armRequestResponse() {}
+
 private parseReportAttributeMessage(String description) {
 	Map descMap = (description - "read attr - ").split(",").inject([:]) { map, param ->
 		def nameAndValue = param.split(":")
@@ -109,6 +125,15 @@ private parseReportAttributeMessage(String description) {
 	}
 
 	return results
+}
+
+private locationEventParser(evt) {
+	if (evt?.name == "intrusionModeChange") {
+    	if (evt.value.startsWith("away")) log.debug "Caught SHM armed/away change."
+        else if (evt.value.startsWith("off")) log.debug "Caught SHM disarm."
+        else if (evt.value.startsWith("stay")) log.debug "Caught SHM armed/stay change."
+        else log.debug "Something else happened..."
+    }
 }
 
 //Converts the battery level response into a percentage to display in ST
