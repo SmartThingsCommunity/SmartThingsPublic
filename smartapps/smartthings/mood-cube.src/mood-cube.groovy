@@ -79,12 +79,9 @@ def scenePage(params=[:]) {
 			href "devicePage", title: "Show Device States", params: [sceneId:sceneId], description: "", state: sceneIsDefined(sceneId) ? "complete" : "incomplete"
 		}
 
-		if (sceneId == currentSceneId) {
-			section {
-				href "saveStatesPage", title: "Record Current Device States", params: [sceneId:sceneId], description: ""
-			}
-		}
-
+        section {
+            href "saveStatesPage", title: "Record Current Device States", params: [sceneId:sceneId], description: ""
+        }
 	}
 }
 
@@ -225,7 +222,7 @@ private restoreStates(sceneId) {
 			if (type == "level") {
 				log.debug "${light.displayName} level is '$level'"
 				if (level != null) {
-					light.setLevel(value)
+					light.setLevel(level)
 				}
 			}
 			else if (type == "color") {

@@ -134,8 +134,7 @@ def setLevel(value) {
 
 def configure() {
 
-	String zigbeeId = swapEndianHex(device.hub.zigbeeId)
-	log.debug "Confuguring Reporting and Bindings."
+	log.debug "Configuring Reporting and Bindings."
 	def configCmds = [	
   
         //Switch Reporting

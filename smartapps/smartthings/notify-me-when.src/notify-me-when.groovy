@@ -23,7 +23,7 @@ definition(
     name: "Notify Me When",
     namespace: "smartthings",
     author: "SmartThings",
-    description: "Get a push notification or text message when any of a variety of SmartThings is activated.  Supports button push, motion, contact, acceleration, moisture and presence sensors as well as switches.",
+    description: "Receive notifications when anything happens in your home.",
     category: "Convenience",
     iconUrl: "https://s3.amazonaws.com/smartapp-icons/Meta/window_contact.png",
     iconX2Url: "https://s3.amazonaws.com/smartapp-icons/Meta/window_contact@2x.png"

@@ -12,7 +12,7 @@
  *
  */
 metadata {
-	definition (name: "SmartSense Presence", namespace: "smartthings", author: "SmartThings") {
+	definition (name: "Arrival Sensor", namespace: "smartthings", author: "SmartThings") {
 		capability "Tone"
 		capability "Actuator"
 		capability "Signal Strength"
@@ -29,6 +29,15 @@ metadata {
 		status "present": "presence: 1"
 		status "not present": "presence: 0"
 		status "battery": "battery: 27, batteryDivisor: 0A, rssi: 100, lqi: 64"
+	}
+
+	preferences {
+		section {
+			image(name: 'educationalcontent', multiple: true, images: [
+				"http://cdn.device-gse.smartthings.com/Arrival/Arrival1.png",
+				"http://cdn.device-gse.smartthings.com/Arrival/Arrival2.png"
+				])
+		}
 	}
 
 	tiles {
