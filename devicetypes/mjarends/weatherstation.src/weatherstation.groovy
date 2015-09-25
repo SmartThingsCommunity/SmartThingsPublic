@@ -10,7 +10,7 @@
 // for the UI
 metadata {
 	// Automatically generated. Make future change here.
-	definition (name: "SmartWeather Station Tile", namespace: "yracine", author: "SmartThings") {
+	definition (name: "SmartWeather Station Tile", namespace: "mjarends", author: "SmartThings") {
 		capability "Illuminance Measurement"
 		capability "Temperature Measurement"
 		capability "Water Sensor"
