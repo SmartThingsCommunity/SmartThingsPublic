@@ -14,12 +14,12 @@
  *
  *  A couple important notes about this app:  
  *
- * 		* First, this app expects that you are using a switch that will send on/off events even when the switch state
+ *      * First, this app expects that you are using a switch that will send on/off events even when the switch state
  *        is not changing.  For example, the first press turns the main lights on and sends an "on" event, but when 
  *        the second "Tap" is pressed, some switches will check the state of the switch, see that it is already on,
  *        and suppress the event.  This is no good.  In this case, you must customize your device type and look for 
  *        the variable "canBeCurrentState" (or something similar) and set it to true.  
- 
+ *
  *      * Second, due to cloud processing, the events are registered painfully slow and if you double tap too fast, 
  *        often times the second event will never even be sent.  This version of the app allows you to specify a 
  *        "window of opportunity" so-to-speak and defaults it to 10 seconds.  The original Double Tap app used 4 
