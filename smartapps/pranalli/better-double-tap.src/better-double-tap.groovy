@@ -10,7 +10,24 @@
  *  on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the License
  *  for the specific language governing permissions and limitations under the License.
  *
- *  Double Tap
+ *  Better Double Tap
+ *
+ *  A couple important notes about this app:  
+ *
+ * 		* First, this app expects that you are using a switch that will send on/off events even when the switch state
+ *        is not changing.  For example, the first press turns the main lights on and sends an "on" event, but when 
+ *        the second "Tap" is pressed, some switches will check the state of the switch, see that it is already on,
+ *        and suppress the event.  This is no good.  In this case, you must customize your device type and look for 
+ *        the variable "canBeCurrentState" (or something similar) and set it to true.  
+ 
+ *      * Second, due to cloud processing, the events are registered painfully slow and if you double tap too fast, 
+ *        often times the second event will never even be sent.  This version of the app allows you to specify a 
+ *        "window of opportunity" so-to-speak and defaults it to 10 seconds.  The original Double Tap app used 4 
+ *        seconds and I just found that to be totally inadequate (unfortunately).  I would recommend setting it even
+ *        higher, I personally use 30 seconds.  The presses cannot be done fast either, I would recommend pressing
+ *        once, counting 2 Mississippi, and then doing the second press.  If timed correctly, it will properly turn
+ *        on/off the linked devices.  This is just what we have to live with until an app like this can be processed
+ *        locally rather than in the cloud.
  *
  *  Author: SmartThings
  *  Tweaked by: Pasquale Ranalli
@@ -29,8 +46,8 @@ preferences {
 	section("When this switch is double-tapped...") {
 		input "master", "capability.switch", title: "Where?"
 	}
-	section("Window of time for double-tap in seconds (default 4)") {
-		input "timing", "4" 
+	section("Window of time for double-tap in seconds (default 10)") {
+		input "timing", "10" 
 	}
 	section("Turn on or off all of these switches as well") {
 		input "switches", "capability.switch", multiple: true, required: false
