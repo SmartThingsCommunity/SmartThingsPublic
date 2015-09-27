@@ -12,17 +12,20 @@
  *  on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the License
  *  for the specific language governing permissions and limitations under the License.
  *
- *  IMPORTANT: This Smart App requires that the Master Switch device is set up such that it will report events even if said events 
- *             are not changing the state of the actual switch.  More specifically, we need to use a device that will report the
- *             "off" event even when the switch is "off".  You may need to utilize a custom device type to enable this capability
- *             as switches/dimmers will often suppress redundant events.  
+ *  IMPORTANT: 
+ *  	This Smart App requires that the Master Switch device is set up such that it will report events even if said events 
+ *  	are not changing the state of the actual switch.  More specifically, we need to use a device that will report the
+ *  	"off" event even when the switch is "off".  You may need to utilize a custom device type to enable this capability
+ *  	as switches/dimmers will often suppress redundant events.  For example, in the Zwave Dimmer device type there is a
+ *		variable called "canBeCurrentState" that needs to be set to true (default is false) in order for this to occur.
  * 
- *  NOTE ABOUT PERFORMANCE: The fact that SmartApps are forced to run through the cloud cause them to perform relatively poorly.  
- * 							Hence, apps like Double Tap are unbearable to use.  This app was created in an effort to provide an 
- * 							alternative to Double Tap (or my version, Better Double Tap) that is 100% reliable.  This app is 
- * 							100% reliable, but keep in mind that due to the need for the event to travel to the cloud first, there
- * 						 	may be a delay (can be upwards of 15 seconds) for the secondary switches to toggle.  Don't fret, I 
- *							promise they will toggle :)  
+ *  ABOUT PERFORMANCE: 
+ *  	The fact that SmartApps are forced to run through the cloud cause them to perform relatively poorly.  
+ * 		Hence, apps like Double Tap are unbearable to use.  This app was created in an effort to provide an 
+ * 		alternative to Double Tap (or my version, Better Double Tap) that is 100% reliable.  This app is 
+ * 		100% reliable, but keep in mind that due to the need for the event to travel to the cloud first, there
+ * 		may be a delay (can be upwards of 15 seconds) for the secondary switches to toggle.  Don't fret, I 
+ *		promise they will toggle :)  
  */
 definition(
     name: "Off as Toggle ",
