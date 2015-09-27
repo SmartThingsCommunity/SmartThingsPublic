@@ -79,14 +79,14 @@ def switchHandler(evt) {
     log.info timing
 
 	// use Event rather than DeviceState because we may be changing DeviceState to only store changed values
-	def recentStates = master.eventsSince(new Date(now() - timing), [all:true, max: 10]).findAll{it.name == "switch"}
-	log.debug "${recentStates?.size()} STATES FOUND, LAST AT ${recentStates ? recentStates[0].dateCreated : ''}"
+	def recentEvents = master.eventsSince(new Date(now() - timing), [all:true, max: 10]).findAll{it.name == "switch"}
+	log.debug "${recentEvents?.size()} STATES FOUND, LAST AT ${recentEvents ? recentEvents[0].dateCreated : ''}"
 
 	if (evt.physical) {
-		if (evt.value == "on" && lastTwoStatesWere("on", recentStates, evt)) {
+        if (evt.value == "on" && lastTwoEventsWere("on", recentEvents, evt)) {
 			log.debug "detected two taps, turn on other light(s)"
 			onSwitches()*.on()
-		} else if (evt.value == "off" && lastTwoStatesWere("off", recentStates, evt)) {
+		} else if (evt.value == "off" && lastTwoEventsWere("off", recentEvents, evt)) {
 			log.debug "detected two taps, turn off other light(s)"
 			offSwitches()*.off()
 		}
@@ -104,7 +104,7 @@ private offSwitches() {
 	(switches + offSwitches).findAll{it}
 }
 
-private lastTwoStatesWere(value, states, evt) {
+private lastTwoEventsWere(value, states, evt) {
 	def result = false
 	if (states) {
 
