@@ -85,7 +85,6 @@
     }
     
     def initialize() {
-    	state.clear()
     	subscribe(people, "presence", presence)
         runIn(60, checkSun)
     	subscribe(location, "sunrise", setSunrise)
