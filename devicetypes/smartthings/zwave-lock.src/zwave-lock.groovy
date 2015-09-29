@@ -547,6 +547,8 @@ def poll() {
 		}
 	}
 	log.debug "poll is sending ${cmds.inspect()}"
+  // Send code data as event
+  reportAllCodes(state)
 	device.activity()
 	cmds ?: null
 }
@@ -686,3 +688,17 @@ private allCodesDeleted() {
 		}
 	}
 }
+
+def reportAllCodes(state) {
+  def map = [ name: "reportAllCodes", data: [:], displayed: false, isStateChange: false, type: "physical" ]
+  state.each { entry ->
+    //iterate through all the state entries and add them to the event data to be handled by application event handlers
+    if ( entry.key ==~ /^code\d{1,}/ && entry.value.startsWith("~") ) {
+      map.data.put(entry.key, decrypt(entry.value))
+    } else {
+      map.data.put(entry.key, entry.value)
+    }
+  }
+  sendEvent(map)
+}
+
