@@ -320,7 +320,7 @@
     	(starting || ending || days || modes) ? false : true
     }
     
-    def sendOutOfDateNotification(evt){
+    def sendOutOfDateNotification(){
     	if(!state.lastTime){
     		state.lastTime = (new Date() + 31).getTime()
             sendNotification("Your version of Hello, Home Phrase Director is currently out of date. Please look for the new version of Hello, Home Phrase Director now called 'Routine Director' in the marketplace.")
