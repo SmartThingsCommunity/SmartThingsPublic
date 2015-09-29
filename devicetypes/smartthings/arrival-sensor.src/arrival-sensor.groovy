@@ -34,8 +34,8 @@ metadata {
 	preferences {
 		section {
 			image(name: 'educationalcontent', multiple: true, images: [
-				"http://cdn.device-gse.smartthings.com/Arrival/Arrival1.png",
-				"http://cdn.device-gse.smartthings.com/Arrival/Arrival2.png"
+				"http://cdn.device-gse.smartthings.com/Arrival/Arrival1.jpg",
+				"http://cdn.device-gse.smartthings.com/Arrival/Arrival2.jpg"
 				])
 		}
 	}

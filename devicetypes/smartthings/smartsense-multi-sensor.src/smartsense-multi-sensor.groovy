@@ -54,10 +54,10 @@
  	preferences {
 		section {
 			image(name: 'educationalcontent', multiple: true, images: [
-				"http://cdn.device-gse.smartthings.com/Multi/Multi1.png",
-				"http://cdn.device-gse.smartthings.com/Multi/Multi2.png",
-				"http://cdn.device-gse.smartthings.com/Multi/Multi3.png",
-				"http://cdn.device-gse.smartthings.com/Multi/Multi4.png"
+				"http://cdn.device-gse.smartthings.com/Multi/Multi1.jpg",
+				"http://cdn.device-gse.smartthings.com/Multi/Multi2.jpg",
+				"http://cdn.device-gse.smartthings.com/Multi/Multi3.jpg",
+				"http://cdn.device-gse.smartthings.com/Multi/Multi4.jpg"
 				])
 		}
 		section {
