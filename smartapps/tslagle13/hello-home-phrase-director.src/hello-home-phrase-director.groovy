@@ -1,4 +1,4 @@
-    /**
+/**
      *  Magic Home
      *
      *  Copyright 2014 Tim Slagle
@@ -85,6 +85,7 @@
     }
     
     def initialize() {
+    	state.clear()
     	subscribe(people, "presence", presence)
         runIn(60, checkSun)
     	subscribe(location, "sunrise", setSunrise)
@@ -198,7 +199,7 @@
     
     //set home mode when house is occupied
     def setHome() {
-    
+    sendOutOfDateNotification()
     log.info("Setting Home Mode!!")
     if(anyoneIsHome()) {
           if(state.sunMode == "sunset"){
@@ -318,4 +319,15 @@
     
     private hideOptionsSection() {
     	(starting || ending || days || modes) ? false : true
+    }
+    
+    def sendOutOfDateNotification(evt){
+    	if(!state.lastTime){
+    		state.lastTime = (new Date() + 31).getTime()
+            sendNotification("Your version of Hello, Home Phrase Director is currently out of date. Please look for the new version of Hello, Home Phrase Director now called 'Routine Director' in the marketplace.")
+        }
+        else if (((new Date()).getTime()) >= state.lastTime){
+        	sendNotification("Your version of Hello, Home Phrase Director is currently out of date. Please look for the new version of Hello, Home Phrase Director now called 'Routine Director' in the marketplace.")
+        	state.lastTime = (new Date() + 31).getTime()
+        }
     }
