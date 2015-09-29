@@ -22,11 +22,6 @@ metadata {
 		fingerprint deviceId: "0x1006", inClusters: "0x25"
 	}
 
-    preferences {
-        input description: "After successful installation, please click the refresh tile to update device status",
-                title: "Instructions", displayDuringSetup: true, type: "paragraph", element: "paragraph"
-    }
-
 	// simulator metadata
 	simulator {
 		status "open": "command: 2503, payload: FF"
@@ -58,6 +53,10 @@ metadata {
 
 }
 
+def updated() {
+	response(refresh())
+}
+
 def parse(String description) {
 	log.trace "parse description : $description"
 	def result = null
@@ -70,7 +69,7 @@ def parse(String description) {
 }
 
 def zwaveEvent(physicalgraph.zwave.commands.basicv1.BasicReport cmd) {
-    def value = cmd.value == "on" || cmd.value == 0xFF ?  "open" : cmd.value == "off" || cmd.value == 0x00 ? "closed" : "unknown"
+    def value = cmd.value == 0xFF ?  "open" : cmd.value == 0x00 ? "closed" : "unknown"
     [name: "contact", value: value, descriptionText: "$device.displayName valve is $value"]
 }
 
@@ -89,7 +88,7 @@ def zwaveEvent(physicalgraph.zwave.commands.deviceresetlocallyv1.DeviceResetLoca
 }
 
 def zwaveEvent(physicalgraph.zwave.commands.switchbinaryv1.SwitchBinaryReport cmd) {
-	def value = cmd.value == "on" || cmd.value == 0xFF ?  "open" : cmd.value == "off" || cmd.value == 0x00 ? "closed" : "unknown"
+	def value = cmd.value == 0xFF ?  "open" : cmd.value == 0x00 ? "closed" : "unknown"
 	[name: "contact", value: value, descriptionText: "$device.displayName valve is $value"]
 }
 
@@ -112,16 +111,14 @@ def close() {
 }
 
 def poll() {
-    delayBetween([
-            zwave.switchBinaryV1.switchBinaryGet().format(),
-            zwave.manufacturerSpecificV1.manufacturerSpecificGet().format()
-    ],100)
+    zwave.switchBinaryV1.switchBinaryGet().format()
 }
 
 def refresh() {
     log.debug "refresh() is called"
-    delayBetween([
-            zwave.switchBinaryV1.switchBinaryGet().format(),
-            zwave.manufacturerSpecificV1.manufacturerSpecificGet().format()
-    ],100)
+    def commands = [zwave.switchBinaryV1.switchBinaryGet().format()]
+    if (getDataValue("MSR") == null) {
+        commands << zwave.manufacturerSpecificV1.manufacturerSpecificGet().format()
+    }
+    delayBetween(commands,100)
 }
