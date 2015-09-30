@@ -24,10 +24,10 @@ metadata {
         command "enrollResponse"
  
  
-		fingerprint inClusters: "0000,0001,0003,0406,0500,0020", manufacturer: "NYCE", model: "3011"
-        fingerprint inClusters: "0000,0001,0003,0500,0020", manufacturer: "NYCE", model: "3011"
-        fingerprint inClusters: "0000,0001,0003,0406,0500,0020", manufacturer: "NYCE", model: "3014"
-        fingerprint inClusters: "0000,0001,0003,0500,0020", manufacturer: "NYCE", model: "3014"
+		fingerprint inClusters: "0000,0001,0003,0406,0500,0020", manufacturer: "NYCE", model: "3011", deviceJoinName: "NYCE Door/Window Sensor"
+        fingerprint inClusters: "0000,0001,0003,0500,0020", manufacturer: "NYCE", model: "3011", deviceJoinName: "NYCE Door/Window Sensor"
+        fingerprint inClusters: "0000,0001,0003,0406,0500,0020", manufacturer: "NYCE", model: "3014", deviceJoinName: "NYCE Tilt Sensor"
+        fingerprint inClusters: "0000,0001,0003,0500,0020", manufacturer: "NYCE", model: "3014", deviceJoinName: "NYCE Tilt Sensor"
 	}
  
 	simulator {
@@ -280,7 +280,7 @@ private List parseIasMessage(String description) {
 }
 
 def configure() {
-	String zigbeeId = swapEndianHex(device.hub.zigbeeId)
+	String zigbeeEui = swapEndianHex(device.hub.zigbeeEui)
 
 	def configCmds = [
 			//battery reporting and heartbeat
@@ -290,7 +290,7 @@ def configure() {
 
 
 			// Writes CIE attribute on end device to direct reports to the hub's EUID
-			"zcl global write 0x500 0x10 0xf0 {${zigbeeId}}", "delay 200",
+			"zcl global write 0x500 0x10 0xf0 {${zigbeeEui}}", "delay 200",
 			"send 0x${device.deviceNetworkId} 1 1", "delay 500",
 	]
 

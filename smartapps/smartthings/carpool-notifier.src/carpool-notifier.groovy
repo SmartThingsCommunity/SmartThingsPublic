@@ -30,7 +30,7 @@ definition(
     name: "Carpool Notifier",
     namespace: "smartthings",
     author: "SmartThings",
-    description: "This SmartApp is designed to send notifications to your carpooling buddies when you arrive to pick them up. What separates this SmartApp from other notification SmartApps is that it will only send a notification if your carpool buddy is not with you. If the person you are picking up is present, and has been for 5 minutes or more, they will get a notification when you become present.",
+    description: "Send notifications to your carpooling buddies when you arrive to pick them up. If the person you are picking up is home, and has been for 5 minutes or more, they will get a notification when you arrive.",
     category: "Green Living",
     iconUrl: "https://s3.amazonaws.com/smartapp-icons/Family/App-IMadeIt.png",
     iconX2Url: "https://s3.amazonaws.com/smartapp-icons/Family/App-IMadeIt@2x.png"

@@ -1,8 +1,19 @@
 /**
- *	CentraLite Switch
+ *  Copyright 2015 SmartThings
+ *
+ *  Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except
+ *  in compliance with the License. You may obtain a copy of the License at:
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ *  Unless required by applicable law or agreed to in writing, software distributed under the License is distributed
+ *  on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the License
+ *  for the specific language governing permissions and limitations under the License.
+ *
+ *	SmartPower Outlet (CentraLite)
  *
  *	Author: SmartThings
- *	Date: 2013-12-02
+ *	Date: 2015-08-23
  */
 metadata {
 	// Automatically generated. Make future change here.
@@ -14,9 +25,12 @@ metadata {
 		capability "Refresh"
 		capability "Sensor"
 
-		// heartbeat is updated every time device checks in
+		// indicates that device keeps track of heartbeat (in state.heartbeat)
 		attribute "heartbeat", "string"
 
+		fingerprint profileId: "0104", inClusters: "0000,0003,0004,0005,0006,0B04,0B05", outClusters: "0019", manufacturer: "CentraLite",  model: "3200", deviceJoinName: "Outlet"
+		fingerprint profileId: "0104", inClusters: "0000,0003,0004,0005,0006,0B04,0B05", outClusters: "0019", manufacturer: "CentraLite",  model: "3200-Sgb", deviceJoinName: "Outlet"
+		fingerprint profileId: "0104", inClusters: "0000,0003,0004,0005,0006,0B04,0B05", outClusters: "0019", manufacturer: "CentraLite",  model: "4257050-RZHAC", deviceJoinName: "Outlet"
 		fingerprint profileId: "0104", inClusters: "0000,0003,0004,0005,0006,0B04,0B05", outClusters: "0019"
 	}
 
@@ -31,82 +45,126 @@ metadata {
 		reply "zcl on-off off": "on/off: 0"
 	}
 
+	preferences {
+		section {
+			image(name: 'educationalcontent', multiple: true, images: [
+				"http://cdn.device-gse.smartthings.com/Outlet/US/OutletUS1.jpg",
+				"http://cdn.device-gse.smartthings.com/Outlet/US/OutletUS2.jpg"
+				])
+		}
+	}
+
 	// UI tile definitions
-	tiles {
-		standardTile("switch", "device.switch", width: 2, height: 2, canChangeIcon: true) {
-			state "off", label: '${name}', action: "switch.on", icon: "st.switches.switch.off", backgroundColor: "#ffffff"
-			state "on", label: '${name}', action: "switch.off", icon: "st.switches.switch.on", backgroundColor: "#79b821"
+	tiles(scale: 2) {
+		multiAttributeTile(name:"switch", type: "lighting", width: 6, height: 4, canChangeIcon: true){
+			tileAttribute ("device.switch", key: "PRIMARY_CONTROL") {
+				attributeState "on", label: '${name}', action: "switch.off", icon: "st.switches.switch.on", backgroundColor: "#79b821", nextState: "turningOff"
+				attributeState "off", label: '${name}', action: "switch.on", icon: "st.switches.switch.off", backgroundColor: "#ffffff", nextState: "turningOn"
+				attributeState "turningOn", label: '${name}', action: "switch.off", icon: "st.switches.switch.on", backgroundColor: "#79b821", nextState: "turningOff"
+				attributeState "turningOff", label: '${name}', action: "switch.on", icon: "st.switches.switch.off", backgroundColor: "#ffffff", nextState: "turningOn"
+			}
+			tileAttribute ("power", key: "SECONDARY_CONTROL") {
+				attributeState "power", label:'${currentValue} W'
+			}
 		}
-		valueTile("power", "device.power", decoration: "flat") {
-			state "power", label:'${currentValue} W'
-		}
-		standardTile("refresh", "device.power", inactiveLabel: false, decoration: "flat") {
+
+		standardTile("refresh", "device.power", inactiveLabel: false, decoration: "flat", width: 2, height: 2) {
 			state "default", label:'', action:"refresh.refresh", icon:"st.secondary.refresh"
 		}
 
 		main "switch"
-		details(["switch","power","refresh"])
+		details(["switch","refresh"])
 	}
 }
 
 // Parse incoming device messages to generate events
 def parse(String description) {
-	log.debug "Parse description $description"
-	def name = null
-	def value = null
-	if (description?.startsWith("read attr -")) {
-		def descMap = parseDescriptionAsMap(description)
-		log.debug "Read attr: $description"
-		if (descMap.cluster == "0006" && descMap.attrId == "0000") {
-			name = "switch"
-			value = descMap.value.endsWith("01") ? "on" : "off"
-		} else if (descMap.cluster.equalsIgnoreCase("0B04") && descMap.attrId.equalsIgnoreCase("050b")) {
-			def reportValue = descMap.value
-			name = "power"
-			// assume 16 bit signed for encoding and power divisor is 10
-			value = Integer.parseInt(reportValue, 16) / 10
+	log.debug "description is $description"
 
-			// trigger heartbeat
-			sendEvent(name: "heartbeat", value: "alive", isStateChange: true, displayed:false)
+	// save heartbeat (i.e. last time we got a message from device)
+	state.heartbeat = Calendar.getInstance().getTimeInMillis()
+
+	def finalResult = zigbee.getKnownDescription(description)
+
+	//TODO: Remove this after getKnownDescription can parse it automatically
+	if (!finalResult && description!="updated")
+		finalResult = getPowerDescription(zigbee.parseDescriptionAsMap(description))
+
+	if (finalResult) {
+		log.info finalResult
+		if (finalResult.type == "update") {
+			log.info "$device updates: ${finalResult.value}"
 		}
-	} else if (description?.startsWith("on/off:")) {
-		log.debug "Switch command"
-		name = "switch"
-		value = description?.endsWith(" 1") ? "on" : "off"
+		else if (finalResult.type == "power") {
+			def powerValue = (finalResult.value as Integer)/10
+			sendEvent(name: "power", value: powerValue)
+			/*
+				Dividing by 10 as the Divisor is 10000 and unit is kW for the device. AttrId: 0302 and 0300. Simplifying to 10
+
+				power level is an integer. The exact power level with correct units needs to be handled in the device type
+				to account for the different Divisor value (AttrId: 0302) and POWER Unit (AttrId: 0300). CLUSTER for simple metering is 0702
+			*/
+		}
+		else {
+			sendEvent(name: finalResult.type, value: finalResult.value)
+		}
 	}
-
-	def result = createEvent(name: name, value: value)
-	log.debug "Parse returned ${result?.descriptionText}"
-	return result
-}
-
-def parseDescriptionAsMap(description) {
-	(description - "read attr - ").split(",").inject([:]) { map, param ->
-		def nameAndValue = param.split(":")
-		map += [(nameAndValue[0].trim()):nameAndValue[1].trim()]
+	else {
+		log.warn "DID NOT PARSE MESSAGE for description : $description"
+		log.debug zigbee.parseDescriptionAsMap(description)
 	}
-}
-
-// Commands to device
-def on() {
-	'zcl on-off on'
 }
 
 def off() {
-	'zcl on-off off'
+	zigbee.off()
 }
 
-def meter() {
-	"st rattr 0x${device.deviceNetworkId} 1 0xB04 0x50B"
+def on() {
+	zigbee.on()
 }
 
 def refresh() {
-	"st rattr 0x${device.deviceNetworkId} 1 0xB04 0x50B"
+	sendEvent(name: "heartbeat", value: "alive", displayed:false)
+	zigbee.onOffRefresh() + zigbee.refreshData("0x0B04", "0x050B")
 }
 
 def configure() {
+	zigbee.onOffConfig() + powerConfig() + refresh()
+}
+
+//power config for devices with min reporting interval as 1 seconds and reporting interval if no activity as 10min (600s)
+//min change in value is 01
+def powerConfig() {
 	[
-			"zdo bind 0x${device.deviceNetworkId} 1 1 6 {${device.zigbeeId}} {}", "delay 200",
-			"zdo bind 0x${device.deviceNetworkId} 1 1 0xB04 {${device.zigbeeId}} {}"
+		"zdo bind 0x${device.deviceNetworkId} 1 ${endpointId} 0x0B04 {${device.zigbeeId}} {}", "delay 200",
+		"zcl global send-me-a-report 0x0B04 0x050B 0x29 1 600 {05 00}",				//The send-me-a-report is custom to the attribute type for CentraLite
+		"send 0x${device.deviceNetworkId} 1 ${endpointId}", "delay 500"
 	]
+}
+
+private getEndpointId() {
+	new BigInteger(device.endpointId, 16).toString()
+}
+
+//TODO: Remove this after getKnownDescription can parse it automatically
+def getPowerDescription(descMap) {
+	def powerValue = "undefined"
+	if (descMap.cluster == "0B04") {
+		if (descMap.attrId == "050b") {
+			if(descMap.value!="ffff")
+				powerValue = zigbee.convertHexToInt(descMap.value)
+		}
+	}
+	else if (descMap.clusterId == "0B04") {
+		if(descMap.command=="07"){
+			return	[type: "update", value : "power (0B04) capability configured successfully"]
+		}
+	}
+
+	if (powerValue != "undefined"){
+		return	[type: "power", value : powerValue]
+	}
+	else {
+		return [:]
+	}
 }
