@@ -6,7 +6,7 @@
  */
 definition(
     name: "WeatherBug Home",
-    namespace: "v1",
+    namespace: "WeatherBug",
     author: "WeatherBug Home",
     description: "WeatherBug Home",
     category: "My Apps",
@@ -135,7 +135,7 @@ def getCurrentReport() {
  *
  * @param id The id of the device to set
  * @return Indication of whether the operation succeeded or failed
- */
+ 
 def setTemperature() {
 	log.debug "device id parameter=" + params.id
 	def device = thermostatDevice.find{ it.id == params.id}
@@ -162,6 +162,7 @@ def setTemperature() {
             Result: null
         ]
 }
+*/
 
 
 def installed() {
