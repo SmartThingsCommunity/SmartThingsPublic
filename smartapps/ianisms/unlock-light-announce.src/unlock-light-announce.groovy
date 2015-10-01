@@ -14,7 +14,6 @@
  *  
  *  Date: 2015-02-23
  */
-import java.util.regex.*
 
 definition(
     name: "Unlock it, Light it, Announce Arrival",
