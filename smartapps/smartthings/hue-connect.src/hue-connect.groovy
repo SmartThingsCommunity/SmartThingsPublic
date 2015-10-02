@@ -722,6 +722,11 @@ private getBridgeIP() {
         if (host == null || host == "") {
             def serialNumber = selectedHue
             def bridge = getHueBridges().find { it?.value?.serialNumber?.equalsIgnoreCase(serialNumber) }?.value
+            if (!bridge) { 
+            	//failed because mac address sent from hub is wrong and doesn't match the hue's real mac address and serial number
+                //in this case we will look up the bridge by comparing the incorrect mac addresses
+            	bridge = getHueBridges().find { it?.value?.mac?.equalsIgnoreCase(serialNumber) }?.value
+            }
             if (bridge?.ip && bridge?.port) {
             	if (bridge?.ip.contains("."))
             		host = "${bridge?.ip}:${bridge?.port}"
