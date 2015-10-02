@@ -30,6 +30,7 @@ preferences {
     section(hideable: true, "Basics") {
         input "enableApp", "boolean", title: "Enable App?", required: true, defaultValue: true
         input "presenceSensors", "capability.presenceSensor", title: "Which presence sensor(s)?", multiple: true
+        input "presenceSensorNamePattern", "text", title: "Presnse sensor name pattern", description: "Ex.: 's for Joe's iPhone will resolve to Joe", multiple: false, required: false, capitalization: "none"
         input "locks", "capability.lock", title: "Which Lock(s)?", multiple: true
         input "doorContacts", "capability.contactSensor", title: "Which Door Contact(s)?", multiple: true
     }
@@ -103,8 +104,13 @@ def appTouch(evt) {
 
 def presence(evt)
 { 
-    state.presence = evt.displayName.toLowerCase().replaceAll("\'s presence sensor", "").replaceAll("\'s cell", "")
+    state.presence = evt.displayName.toLowerCase();
     state.newArrival = true
+    def endIndex = state.presence.length();
+    if(presenceSensorNamePattern) {
+        endIndex = state.presence.indexOf(presenceSensorNamePattern);
+        state.presence = state.presence.substring(0, (endIndex > 0 ? endIndex : state.presence.length()));
+    }
         
     log("presence: arrival of ${state.presence}")
 
