@@ -54,13 +54,15 @@ def switchHandler(evt) {
 
        	boolean isOff = master.latestState("switch").value == "off"
        	log.debug "Master Switch Currently Off: ${isOff}"
+        
+        log.debug "Use on switch selected: ${alsoUseOn}"
 
 		// If the state did not change from the last press, we know this is a redundant event.
         // If the user selected to use the on button also, then we don't care about the current
         // state of the switch and can toggle.  Otherwise, we only toggle if the current switch 
         // state is "off"
        	if ((alsoUseOn || isOff) && !isStateChange) {
-       		log.debug "Current and prior state were off, let's toggle the switches"
+       		log.debug "Criteria met, let's toggle the switches"
       		toggleSwitches()
       	}
 	}	
