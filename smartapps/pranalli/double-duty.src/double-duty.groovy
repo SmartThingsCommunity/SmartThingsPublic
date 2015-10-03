@@ -24,7 +24,7 @@ definition(
 )
 
 preferences {
-	section("The switch whose off button will be re-purposed") {
+	section("The switch whose off button will become a toggle") {
 		input "master", "capability.switch", title: "Where?"
 	}
     section("The switch(es) to be toggled") {
