@@ -698,36 +698,35 @@ void executeCommand() {
     if (deviceId) {
 		def devices = getDevices(capability)
         def command
-        def valueIsParamter = false
-        
+        def valueIsParameter = false        
         switch (attribute) {    	       	
         	case "hue":
         		command = "setHue"
-                valueIsParamter = true
+                valueIsParameter = true
         		break
     		case "saturation":
         		command = "setSaturation"
-                valueIsParamter = true
+                valueIsParameter = true
         		break
     		case "color":
         		command = "setColor"
-                valueIsParamter = true
+                valueIsParameter = true
         		break
 			case "level":
         		command = "setLevel"
-                valueIsParamter = true
+                valueIsParameter = true
         		break            
         	case "heatingSetpoint":
         		command = "setHeatingSetpoint"
-                valueIsParamter = true
+                valueIsParameter = true
         		break    
        		case "coolingSetpoint":
         		command = "setCoolingSetpoint"
-                valueIsParamter = true
+                valueIsParameter = true
         		break
           	case "currentActivity":
         		command = "startActivity"
-                valueIsParamter = true
+                valueIsParameter = true
         		break  
  	  		case "door":
         		command = getDoorControlCommand(value)
@@ -750,9 +749,8 @@ void executeCommand() {
         		command = getContactCommand(value)
         		break
     		default:
-        		result = value
+        		command = value
 		}
-        
         // check that the switch supports the specified command
         // If not, return an error using httpError, providing a HTTP status code.
         devices.each {
@@ -760,7 +758,7 @@ void executeCommand() {
             	if (!it.hasCommand(command)) {
                 	httpError(501, "$command is not a valid command for all devices specified")
             	}                
-                if(valueIsParamter){
+                if(valueIsParameter){
                 	it."$command"(value)
                 }
                 else{
