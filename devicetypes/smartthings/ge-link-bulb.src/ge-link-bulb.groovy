@@ -317,7 +317,7 @@ def setLevel(value) {
     state.trigger = "setLevel"
     state.lvl = "${level}"
 
-    if (dimRate) {
+    if (dimRate && (state?.rate != null)) {
     	cmds << "st cmd 0x${device.deviceNetworkId} 1 8 4 {${level} ${state.rate}}"
     }
     else {
