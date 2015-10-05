@@ -77,23 +77,6 @@ preferences {
     }
 }
 
-def installed() {
-	log.debug "Installed with settings: ${settings}"
-
-	initialize()
-}
-
-def updated() {
-	log.debug "Updated with settings: ${settings}"
-
-	unsubscribe()
-	initialize()
-}
-
-def initialize() {
-	// TODO: subscribe to attributes, devices, locations, etc.
-}
-
 mappings {
   path("/GetCurrentValues") {
     action: [
@@ -111,8 +94,7 @@ mappings {
     ]
   }
 }
-// returns a list like
-// [[name: "kitchen lamp", value: "off"], [name: "bathroom", value: "on"]]
+
 def getCurrentValues() {
     def resp = []    
         
@@ -629,64 +611,9 @@ def getDevices(capability){
 	return result
 }
 
-def getCommand(attribute, value){
-
-	def result
-
-	switch (attribute) {    	   
-    	
-        case "hue":
-        	result = "setHue"
-        	break
-    	case "saturation":
-        	result = "setSaturation"
-        	break
-    	case "color":
-        	result = "setColor"
-        	break
-        case "level":
-        	result = "setLevel"
-        	break            
-        case "heatingSetpoint":
-        	result = "setHeatingSetpoint"
-        	break    
-       case "coolingSetpoint":
-        	result = "setCoolingSetpoint"
-        	break
-            
- 	  case "door":
-        	result = getDoorControlCommand(value)
-        	break    
-      case "lock":
-        	result = getLockCommand(value)
-        	break   
-      case "currentActivity":
-        	result = "startActivity"
-        	break             
-      case "mute":
-        	result = getMuteCommand(value)
-        	break         
-      case "thermostatFanMode":
-        	result = getThermostatFanModeCommand(value)
-        	break         
-       case "thermostatMode":
-        	if (value == "emergency heat") {
-                result = "emergencyHeat"
-           	}
-        	break     
-      case "contact":
-        	result = getContentCommand(value)
-        	break
-    	default:
-        	result = value
-	}
-    
-	return result
-}
-
 def getDoorControlCommand(value){
 	def result
-	switch (attribute) {
+	switch (value) {
         case "closed":
         	result = "close"
         	break
@@ -701,7 +628,7 @@ def getDoorControlCommand(value){
 
 def getLockCommand(value){
 	def result
-	switch (attribute) {
+	switch (value) {
         case "locked":
         	result = "lock"
         	break
@@ -716,7 +643,7 @@ def getLockCommand(value){
 
 def getMuteCommand(value){
 	def result
-	switch (attribute) {
+	switch (value) {
         case "muted":
         	result = "mute"
         	break
@@ -729,9 +656,9 @@ def getMuteCommand(value){
 	return result
 }
 
-def getContentCommand(value){
+def getContactCommand(value){
 	def result
-	switch (attribute) {
+	switch (value) {
         case "closed":
         	result = "close"
         	break
@@ -746,7 +673,7 @@ def getContentCommand(value){
 
 def getThermostatFanModeCommand(value){
 	def result
-	switch (attribute) {
+	switch (value) {
         case "on":
         	result = "fanOn"
         	break
@@ -770,7 +697,62 @@ void executeCommand() {
     def value = request.JSON?.value    
     if (deviceId) {
 		def devices = getDevices(capability)
-        def command = getCommand(attribute, value)
+        def command
+        def valueIsParamter = false
+        
+        switch (attribute) {    	       	
+        	case "hue":
+        		command = "setHue"
+                valueIsParamter = true
+        		break
+    		case "saturation":
+        		command = "setSaturation"
+                valueIsParamter = true
+        		break
+    		case "color":
+        		command = "setColor"
+                valueIsParamter = true
+        		break
+			case "level":
+        		command = "setLevel"
+                valueIsParamter = true
+        		break            
+        	case "heatingSetpoint":
+        		command = "setHeatingSetpoint"
+                valueIsParamter = true
+        		break    
+       		case "coolingSetpoint":
+        		command = "setCoolingSetpoint"
+                valueIsParamter = true
+        		break
+          	case "currentActivity":
+        		command = "startActivity"
+                valueIsParamter = true
+        		break  
+ 	  		case "door":
+        		command = getDoorControlCommand(value)
+        		break    
+      		case "lock":
+        		command = getLockCommand(value)
+        		break           
+      		case "mute":
+        		command = getMuteCommand(value)
+        		break         
+      		case "thermostatFanMode":
+        		command = getThermostatFanModeCommand(value)
+        		break         
+       		case "thermostatMode":
+        		if (value == "emergency heat") {
+                	command = "emergencyHeat"
+           		}
+        		break     
+      		case "contact":
+        		command = getContactCommand(value)
+        		break
+    		default:
+        		result = value
+		}
+        
         // check that the switch supports the specified command
         // If not, return an error using httpError, providing a HTTP status code.
         devices.each {
@@ -778,7 +760,7 @@ void executeCommand() {
             	if (!it.hasCommand(command)) {
                 	httpError(501, "$command is not a valid command for all devices specified")
             	}                
-                if(command != value){
+                if(valueIsParamter){
                 	it."$command"(value)
                 }
                 else{
@@ -789,4 +771,6 @@ void executeCommand() {
     }
 }
 
-// TODO: implement event handlers
+def installed() {}
+
+def updated() {}
