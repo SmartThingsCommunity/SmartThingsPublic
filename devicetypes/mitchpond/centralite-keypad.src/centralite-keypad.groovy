@@ -28,6 +28,8 @@ metadata {
         command "setArmedStay"
         command "setArmedNight"
         command "testCmd"
+        command "sendInvalidKeycodeResponse"
+        command "acknowledgeArmRequest"
         
         fingerprint endpointId: "01", profileId: "0104", deviceId: "0401", inClusters: "0000,0001,0003,0020,0402,0500,0B05", outClusters: "0019,0501", manufacturer: "CentraLite", model: "3400"
 	}
@@ -99,8 +101,7 @@ def parse(String description) {
                 //actually looks like this is being sent as a 'Hey! I'm awake! What's the status?' message. Not per spec...
                 //---------------------------------------//
                     log.debug "${device.displayName} awake and requesting status"
-                    List cmds = sendStatusToDevice();
-                    results = cmds?.collect { new physicalgraph.device.HubAction(it) };
+                    results = sendStatusToDevice();
                     log.trace results
                 }
                 else if (message?.command == 0x00) {
@@ -250,23 +251,26 @@ private Map getTemperatureResult(value) {
 
 //------Command handlers------//
 private handleArmRequest(message){
-	def keycode = new String(message.data[1..-2] as byte[],'UTF-8')
+	def keycode = new String(message.data[2..-2] as byte[],'UTF-8')
     def reqArmMode = message.data[0]
     state.lastKeycode = keycode
 	log.debug "Received arm command with keycode/armMode: ${keycode}/${reqArmMode}"
 
-	//Acknowledge the command. This may not be *technically* correct, but it works
+	/*//Acknowledge the command. This may not be *technically* correct, but it works
     List cmds = [
                  "raw 0x501 {09 01 00 00}", "delay 200",
                  "send 0x${device.deviceNetworkId} 1 1", "delay 500"
                 ]
     def results = cmds?.collect { new physicalgraph.device.HubAction(it) } + createCodeEntryEvent(keycode, reqArmMode)
+    */
+    def results = createCodeEntryEvent(keycode, reqArmMode)
     log.trace "Method: handleArmRequest(message): "+results
     return results
 }
 
 def createCodeEntryEvent(keycode, armMode) {
-	createEvent(name: "codeEntered", value: keycode as String, data: armMode as String, isStateChange: true)
+	createEvent(name: "codeEntered", value: keycode as String, data: armMode as String, 
+    			isStateChange: true, displayed: false)
 }
 
 //
@@ -311,12 +315,22 @@ def setArmedNight() {
     refresh()
 }
 
+def acknowledgeArmRequest(armMode){
+	List cmds = [
+                 "raw 0x501 {09 01 00 0${armMode}}", "delay 200",
+                 "send 0x${device.deviceNetworkId} 1 1", "delay 500"
+                ]
+    def results = cmds?.collect { new physicalgraph.device.HubAction(it) }
+    log.trace "Method: acknowledgeArmRequest(armMode): "+results
+    return results
+}
+
 def sendInvalidKeycodeResponse(){
 	List cmds = ["raw 0x501 {09 01 00 04}", "delay 200",
                  "send 0x${device.deviceNetworkId} 1 1", "delay 500"]
                  
     log.trace 'Method: sendInvalidKeycodeResponse(): '+cmds
-    return cmds?.collect { new physicalgraph.device.HubAction(it) } + sendStatusToDevice()
+    return (cmds?.collect { new physicalgraph.device.HubAction(it) }) + sendStatusToDevice()
 }
 
 def getLastKeycode() {
@@ -349,5 +363,5 @@ private byte[] reverseArray(byte[] array) {
 
 private testCmd(){
 	log.trace "Send test event..."
-	sendEvent(createCodeEntryEvent("1111","00"))
+	sendEvent(createCodeEntryEvent("1111","01"))
 }
