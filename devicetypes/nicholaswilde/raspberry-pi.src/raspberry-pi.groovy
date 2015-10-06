@@ -3,10 +3,11 @@
  *
  *  Copyright 2015 Nicholas Wilde
  *
- *  Monitor your Raspberry Pi using SmartThings and BerryIO <https://github.com/NeonHorizon/berryio>
+ *  Monitor your Raspberry Pi using SmartThings and BerryIO SmartThings <https://github.com/nicholaswilde/berryio-smartthings>
  *
  *  Contributors:
- *  Thanks to Ledridge for the SmartThings addition to BerryIO 
+ *  Thanks to NewHorizons for BerryIO
+ *  Thanks to Ledridge for the SmartThings addition to BerryIO
  *  
  *  Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except
  *  in compliance with the License. You may obtain a copy of the License at:
@@ -106,6 +107,10 @@ metadata {
                 [value: 96, color: "#bc2323"]
             ]
         }
+        standardTile("contact", "device.contact", width: 1, height: 1) {
+			state("closed", label:'${name}', icon:"st.contact.contact.closed", backgroundColor:"#79b821", action: "open")
+			state("open", label:'${name}', icon:"st.contact.contact.open", backgroundColor:"#ffa81e", action: "close")
+		}
         standardTile("restart", "device.restart", inactiveLabel: false, decoration: "flat") {
         	state "default", action:"restart", label: "Restart", displayName: "Restart"
         }
@@ -113,7 +118,7 @@ metadata {
         	state "default", action:"refresh.refresh", icon: "st.secondary.refresh"
         }
         main "button"
-        details(["button", "temperature", "cpuPercentage", "memory" , "diskUsage", "restart", "refresh"])
+        details(["button", "temperature", "cpuPercentage", "memory" , "diskUsage", "contact", "restart", "refresh"])
     }
 }
 
@@ -158,7 +163,17 @@ def parse(String description) {
     	log.debug "disk_usage: ${result.disk_usage.toDouble().round()}"
         sendEvent(name: "diskUsage", value: result.disk_usage.toDouble().round())
     }
-  
+  	if (result.containsKey("gpio_value_17")) {
+    	log.debug "gpio_value_17: ${result.gpio_value_17.toDouble().round()}"
+        if (result.gpio_value_17.contains("0")){
+        	log.debug "gpio_value_17: open"
+            sendEvent(name: "contact", value: "open")
+        } else {
+        	log.debug "gpio_value_17: closed"
+            sendEvent(name: "contact", value: "closed")
+        }
+    }
+  	
 }
 
 // handle commands
