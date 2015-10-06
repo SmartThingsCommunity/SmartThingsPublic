@@ -91,10 +91,10 @@ def codeEntryHandler(evt){
     def data = evt.data as String
     def armMode = ''
     
-    if (data == '00') armMode = 'off'
-    else if (data == '03') armMode = 'away'
-    else if (data == '01') armMode = 'stay'
-    else if (data == '02') armMode = 'stay'	//Currently no separate night mode for SHM, set to 'stay'
+    if (data == '0') armMode = 'off'
+    else if (data == '3') armMode = 'away'
+    else if (data == '1') armMode = 'stay'
+    else if (data == '2') armMode = 'stay'	//Currently no separate night mode for SHM, set to 'stay'
     else {
     	log.error "${app.label}: Unexpected arm mode sent by keypad!: "+data
         return []
@@ -102,7 +102,12 @@ def codeEntryHandler(evt){
     
     if (codeEntered == correctCode) {
     	log.debug "Correct PIN entered. Change SHM state to ${armMode}"
+        keypad.acknowledgeArmRequest(armMode)
         sendSHMEvent(armMode)
     }
-    else device.sendInvalidKeycodeResponse()
+    else {
+    	log.debug "Invalid PIN"
+        //Could also call acknowledgeArmRequest() with a parameter of 4 to report invalid code. May consider this.
+    	keypad.sendInvalidKeycodeResponse()
+    }
 }
