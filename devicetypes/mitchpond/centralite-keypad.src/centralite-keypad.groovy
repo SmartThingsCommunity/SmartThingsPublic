@@ -326,8 +326,10 @@ def acknowledgeArmRequest(armMode){
 }
 
 def sendInvalidKeycodeResponse(){
-	List cmds = ["raw 0x501 {09 01 00 04}", "delay 200",
-                 "send 0x${device.deviceNetworkId} 1 1", "delay 500"]
+	List cmds = [
+    			 "raw 0x501 {09 01 00 04}", "delay 200",
+                 "send 0x${device.deviceNetworkId} 1 1", "delay 500"
+                ]
                  
     log.trace 'Method: sendInvalidKeycodeResponse(): '+cmds
     return (cmds?.collect { new physicalgraph.device.HubAction(it) }) + sendStatusToDevice()
