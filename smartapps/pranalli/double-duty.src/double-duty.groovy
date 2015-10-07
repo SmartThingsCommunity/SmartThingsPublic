@@ -1,5 +1,5 @@
 /**
- *  Double Duty
+ *  Double Duty 
  *
  *  Copyright 2015 Pasquale Ranalli
  *
@@ -17,21 +17,22 @@ definition(
     name: "Double Duty",
     namespace: "pranalli",
     author: "Pasquale Ranalli",
-    description: "This app allows you to use redundant \"off\" and, optionally, \"on\" switch presses to control secondary lights.  You paid a lot for those switches, make them work double duty!",  
+    description: "This app allows you to use redundant \"off\" and/or \"on\" switch presses to control secondary lights.  You paid a lot for those switches, make them work double duty!",  
     category: "Convenience",
     iconUrl: "https://s3.amazonaws.com/smartapp-icons/Meta/light_outlet.png",
     iconX2Url: "https://s3.amazonaws.com/smartapp-icons/Meta/light_outlet@2x.png"
 )
 
 preferences {
-	section("The switch whose off button will become a toggle") {
-		input "master", "capability.switch", title: "Where?"
+	section("The Master switch whose on and/or off buttons will serve as toggles") {
+    	paragraph "NOTE: Plain on/off switches are preferable to dimmers.  Be mindful that dimmers may trigger unexpected toggles when turned off or dimmed to 0 (zero).  You've been warned!"
+		input "master", "capability.switch", title: "Select", required: true
 	}
-    section("The switch(es) to be toggled") {
-		input "switches", "capability.switch", multiple: true, required: false
+    section("Redundant OFF presses will toggle") {
+		input "offSlaves", "capability.switch", multiple: true, required: false, title: "Select"
 	}
-    section("Optional") {
-		input "alsoUseOn", "bool", required: false, defaultValue: false, title: "Also use on button?"
+    section("Redundant ON presses will toggle") {
+		input "onSlaves", "capability.switch", multiple: true, required: false, title: "Select"
 	}
 }
 
@@ -52,26 +53,22 @@ def switchHandler(evt) {
        	boolean isStateChange = evt.isStateChange()
        	log.debug "Master Switch Changed State: ${isStateChange}"
 
-       	boolean isOff = master.latestState("switch").value == "off"
-       	log.debug "Master Switch Currently Off: ${isOff}"
+       	def state = master.latestState("switch").value
+       	log.debug "Master Switch Latest State: ${state}"
         
-        log.debug "Use on switch selected: ${alsoUseOn}"
-
-		// If the state did not change from the last press, we know this is a redundant event.
-        // If the user selected to use the on button also, then we don't care about the current
-        // state of the switch and can toggle.  Otherwise, we only toggle if the current switch 
-        // state is "off"
-       	if ((alsoUseOn || isOff) && !isStateChange) {
-       		log.debug "Criteria met, let's toggle the switches"
-      		toggleSwitches()
+       	if (!isStateChange) {
+       		log.debug "Press is redundant, toggling slaves associated with the \"${state}\" event"
+            state == "on" ? toggleSwitches(onSlaves) : toggleSwitches(offSlaves)
       	}
 	}	
 }
 
-private toggleSwitches() {
+private toggleSwitches(switches) {
 	// If we encounter ANY slave switches that are currently on, then let's send an "off" command
     // so that we can start at a fresh baseline.  This prevents the situation where there is a mixed
     // state of slave switches toggling differently.  
     boolean turnOn = switches.every { it.latestState("switch").value == "off" }
+    log.debug "Sending \"" + (turnOn ? "on" : "off") + "\" command to slaves"
+
     turnOn ? switches*.on() : switches*.off()
 }
