@@ -78,7 +78,7 @@ def alarmStatusHandler(event) {
 
 private sendSHMEvent(String shmState){
 	def event = [name:"alarmSystemStatus", value: shmState, 
-    			displayed: true, description: "System Status is disarmed"]
+    			displayed: true, description: "System Status is ${shmState}"]
     sendLocationEvent(event)
 }
 
