@@ -23,6 +23,7 @@ metadata {
         
         attribute "armMode", "String"
         
+        command "enrollResponse"
         command "setDisarmed"
         command "setArmedAway"
         command "setArmedStay"
@@ -60,6 +61,7 @@ metadata {
         	state "default", action:"configuration.configure", icon:"st.secondary.configure"
     	}
         main ("battery")
+        //TODO: armMode is in here for debug purposes. Remove later.
         details (["temperature","battery","armMode","configure","refresh"])
 	}
 }
@@ -98,7 +100,9 @@ def parse(String description) {
         	if (message?.clusterId == 0x0501) {
                 if (message?.command == 0x07) {
                 //---------------------------------------//
-                //actually looks like this is being sent as a 'Hey! I'm awake! What's the status?' message. Not per spec...
+                //Not sure what the device is doing here. It doesn't look like an ACE client should be sending this.
+                //Plus, the command isn't sent with a payload which doesn't seem to follow the spec.
+                //I'm assuming that they're using it as a sort of heartbeat (??)
                 //---------------------------------------//
                     log.debug "${device.displayName} awake and requesting status"
                     results = sendStatusToDevice();
@@ -127,24 +131,25 @@ def parse(String description) {
 }
 
 def configure() {
+	log.debug "Configure called for device ${device.displayName}."
 	String hubZigbeeId = swapEndianHex(device.hub.zigbeeId)
 	def cmd = [
     //------IAS Zone/CIE setup------//
-    "zcl global write 0x500 0x10 0xf0 {${hubZigbeeId}}", "delay 200",
-	"send 0x${device.deviceNetworkId} 1 1", "delay 500",
+    "zcl global write 0x500 0x10 0xf0 {${hubZigbeeId}}", "delay 100",
+	"send 0x${device.deviceNetworkId} 1 1", "delay 200",
     
     //------Set up binding------//
-    "zdo bind 0x${device.deviceNetworkId} 1 1 0x500 {${device.zigbeeId}} {}", "delay 500",
-    "zdo bind 0x${device.deviceNetworkId} 1 1 0x501 {${device.zigbeeId}} {}", "delay 500",
-	"zdo bind 0x${device.deviceNetworkId} 1 1 1 {${device.zigbeeId}} {}", "delay 500",
-    "zdo bind 0x${device.deviceNetworkId} 1 1 0x402 {${device.zigbeeId}} {}",
+    "zdo bind 0x${device.deviceNetworkId} 1 1 0x500 {${device.zigbeeId}} {}", "delay 200",
+    "zdo bind 0x${device.deviceNetworkId} 1 1 0x501 {${device.zigbeeId}} {}", "delay 200",
+	"zdo bind 0x${device.deviceNetworkId} 1 1 1 {${device.zigbeeId}} {}", "delay 200",
+    "zdo bind 0x${device.deviceNetworkId} 1 1 0x402 {${device.zigbeeId}} {}", "delay 200",
     
     //------Configure temperature reporting------//
-    "zcl global send-me-a-report 0x402 0 0x29 30 3600 {6400}","delay 200",
+    "zcl global send-me-a-report 0x402 0 0x29 30 3600 {6400}","delay 100",
     "send 0x${device.deviceNetworkId} 1 1", "delay 500",
     
     //------Configure battery reporting------//
-    "zcl global send-me-a-report 1 0x20 0x20 3600 21600 {01}", "delay 200",
+    "zcl global send-me-a-report 1 0x20 0x20 3600 21600 {01}", "delay 100",
 	"send 0x${device.deviceNetworkId} 1 1", "delay 500",
 	]
     
@@ -153,8 +158,8 @@ def configure() {
 
 def refresh() {
     List cmds = [
-     			 "st rattr 0x${device.deviceNetworkId} 1 1 0x20", "delay 200",
-     			 "st rattr 0x${device.deviceNetworkId} 1 0x402 0", "delay 500"
+     			 "st rattr 0x${device.deviceNetworkId} 1 1 0x20", "delay 100",
+     			 "st rattr 0x${device.deviceNetworkId} 1 0x402 0", "delay 100"
                 ]
                  
      cmds += sendStatusToDevice()
@@ -164,10 +169,14 @@ def refresh() {
 
 //------Generate IAS Zone Enroll response------//
 def enrollResponse() {
+	String hubZigbeeId = swapEndianHex(device.hub.zigbeeId)
 	log.debug "Sending enroll response"
 	[	
-	"raw 0x500 {01 23 00 00 00}", "delay 200",
-	"send 0x${device.deviceNetworkId} 1 1"
+    //Send CIE in case enroll request sent early.
+    "zcl global write 0x500 0x10 0xf0 {${hubZigbeeId}}",
+	"send 0x${device.deviceNetworkId} 1 1", "delay 100",
+	"raw 0x500 {01 23 00 00 00}",
+	"send 0x${device.deviceNetworkId} 1 1", "delay 100"
 	]
 }
 
@@ -256,13 +265,13 @@ private handleArmRequest(message){
     state.lastKeycode = keycode
 	log.debug "Received arm command with keycode/armMode: ${keycode}/${reqArmMode}"
 
-	/*//Acknowledge the command. This may not be *technically* correct, but it works
-    List cmds = [
-                 "raw 0x501 {09 01 00 00}", "delay 200",
+	//Acknowledge the command. This may not be *technically* correct, but it works
+    /*List cmds = [
+                 "raw 0x501 {09 01 00 0${reqArmMode}}", "delay 200",
                  "send 0x${device.deviceNetworkId} 1 1", "delay 500"
                 ]
     def results = cmds?.collect { new physicalgraph.device.HubAction(it) } + createCodeEntryEvent(keycode, reqArmMode)
-    */
+	*/
     def results = createCodeEntryEvent(keycode, reqArmMode)
     log.trace "Method: handleArmRequest(message): "+results
     return results
@@ -286,12 +295,16 @@ private sendStatusToDevice() {
     else if (armMode == 'armedStay') status = '01'
     else if (armMode == 'armedNight') status = '02'
     
-    List cmds = ["raw 0x501 {09 01 04 ${status}00}", 'delay 200',
-    			 "send 0x${device.deviceNetworkId} 1 1", 'delay 500']
+    List cmds = ["raw 0x501 {09 01 04 ${status}00}",
+    			 "send 0x${device.deviceNetworkId} 1 1", 'delay 100']
                  
     def results = cmds?.collect { new physicalgraph.device.HubAction(it) };
     log.trace 'Method: sendStatusToDevice(): '+results
     return results
+}
+
+def notifyPanelStatusChanged(status) {
+	//TODO: not yet implemented. May not be needed.
 }
 //------------------------//
 
@@ -317,8 +330,8 @@ def setArmedNight() {
 
 def acknowledgeArmRequest(armMode){
 	List cmds = [
-                 "raw 0x501 {09 01 00 0${armMode}}", "delay 200",
-                 "send 0x${device.deviceNetworkId} 1 1", "delay 500"
+                 "raw 0x501 {09 01 00 0${armMode}}",
+                 "send 0x${device.deviceNetworkId} 1 1", "delay 100"
                 ]
     def results = cmds?.collect { new physicalgraph.device.HubAction(it) }
     log.trace "Method: acknowledgeArmRequest(armMode): "+results
@@ -327,16 +340,12 @@ def acknowledgeArmRequest(armMode){
 
 def sendInvalidKeycodeResponse(){
 	List cmds = [
-    			 "raw 0x501 {09 01 00 04}", "delay 200",
-                 "send 0x${device.deviceNetworkId} 1 1", "delay 500"
+    			 "raw 0x501 {09 01 00 04}",
+                 "send 0x${device.deviceNetworkId} 1 1", "delay 100"
                 ]
                  
     log.trace 'Method: sendInvalidKeycodeResponse(): '+cmds
     return (cmds?.collect { new physicalgraph.device.HubAction(it) }) + sendStatusToDevice()
-}
-
-def getLastKeycode() {
-	return state.lastKeycode
 }
 
 //------Utility methods------//
@@ -364,6 +373,11 @@ private byte[] reverseArray(byte[] array) {
 //------------------------//
 
 private testCmd(){
-	log.trace "Send test event..."
-	sendEvent(createCodeEntryEvent("1111","01"))
+	//log.trace zigbee.parse('catchall: 0104 0501 01 01 0140 00 4F2D 01 00 0000 07 00 ')
+    
+    //test exit delay
+    //log.debug device.zigbeeId
+	List cmds = ["raw 0x501 {09 01 04 0000}", 'delay 200',
+    			 "send 0x${device.deviceNetworkId} 1 1", 'delay 500']
+    cmds
 }
