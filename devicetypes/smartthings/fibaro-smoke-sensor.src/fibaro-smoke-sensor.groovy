@@ -177,7 +177,7 @@ def zwaveEvent(physicalgraph.zwave.commands.securityv1.SecurityCommandsSupported
     log.info "Executing zwaveEvent 98 (SecurityV1): 03 (SecurityCommandsSupportedReport) with cmd: $cmd"
     setSecured()
     log.info "checking this MSR : ${getDataValue("MSR")} before sending configuration to device"
-    if (getDataValue("MSR").startsWith("010F-0C02")){
+    if (getDataValue("MSR")?.startsWith("010F-0C02")){
         response(configure()) //configure device using SmartThings default settings
     }
 }
@@ -188,7 +188,7 @@ def zwaveEvent(physicalgraph.zwave.commands.securityv1.NetworkKeyVerify cmd) {
     //after device securely joined the network, call configure() to config device
     setSecured()
     log.info "checking this MSR : ${getDataValue("MSR")} before sending configuration to device"
-    if (getDataValue("MSR").startsWith("010F-0C02")){
+    if (getDataValue("MSR")?.startsWith("010F-0C02")){
         response(configure()) //configure device using SmartThings default settings
     }
 }
@@ -267,17 +267,17 @@ def zwaveEvent(physicalgraph.zwave.commands.wakeupv1.WakeUpNotification cmd) {
     log.info "checking this MSR : ${getDataValue("MSR")} before sending configuration to device"
     def result = [createEvent(descriptionText: "${device.displayName} woke up", isStateChange: false)]
     /* check MSR = "manufacturerId-productTypeId" to make sure configuration commands are sent to the right model */
-    if (!isConfigured() && getDataValue("MSR").startsWith("010F-0C02")) {
-        result += response(configure()) // configure a newly joined device or joined device with preference update
+    if (!isConfigured() && getDataValue("MSR")?.startsWith("010F-0C02")) {
+        result << response(configure()) // configure a newly joined device or joined device with preference update
     } else {
         //Only ask for battery if we havn't had a BatteryReport in a while
         if (!state.lastbatt || (new Date().time) - state.lastbatt > 24*60*60*1000) {
             log.debug("Device has been configured sending >> batteryGet()")
-            result += response(zwave.batteryV1.batteryGet())
-            result += response("delay 1200")  // leave time for device to respond to batteryGet
+            result << response(zwave.securityV1.securityMessageEncapsulation().encapsulate(zwave.batteryV1.batteryGet()).format())
+            result << response("delay 1200")  // leave time for device to respond to batteryGet
         }
         log.debug("Device has been configured sending >> wakeUpNoMoreInformation()")
-        result += response(zwave.wakeUpV1.wakeUpNoMoreInformation()) //tell device back to sleep
+        result << response(zwave.wakeUpV1.wakeUpNoMoreInformation().format()) //tell device back to sleep
     }
     result
 }
@@ -312,8 +312,11 @@ def zwaveEvent(physicalgraph.zwave.commands.manufacturerspecificv2.ManufacturerS
     def result = []
     def msr = String.format("%04X-%04X-%04X", cmd.manufacturerId, cmd.productTypeId, cmd.productId)
     updateDataValue("MSR", msr)
-    result << createEvent(descriptionText: "$device.displayName MSR: $msr", isStateChange: false)
-    result
+    log.debug "After device is securely joined, send commands to update tiles"
+    result << zwave.batteryV1.batteryGet()
+    result << zwave.sensorMultilevelV5.sensorMultilevelGet(sensorType: 0x01)
+    result << zwave.wakeUpV1.wakeUpNoMoreInformation()
+    [[descriptionText:"${device.displayName} MSR report"], response(commands(result, 5000))]
 }
 
 def zwaveEvent(physicalgraph.zwave.commands.associationv2.AssociationReport cmd) {
