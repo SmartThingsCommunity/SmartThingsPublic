@@ -102,12 +102,12 @@ def codeEntryHandler(evt){
     
     if (codeEntered == correctCode) {
     	log.debug "Correct PIN entered. Change SHM state to ${armMode}"
-        keypad.acknowledgeArmRequest(armMode)
+        keypad.acknowledgeArmRequest(data)
         sendSHMEvent(armMode)
     }
     else {
     	log.debug "Invalid PIN"
-        //Could also call acknowledgeArmRequest() with a parameter of 4 to report invalid code. May consider this.
+        //Could also call acknowledgeArmRequest() with a parameter of 4 to report invalid code. Opportunity to simplify code?
     	keypad.sendInvalidKeycodeResponse()
     }
 }
