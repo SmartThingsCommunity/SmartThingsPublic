@@ -23,6 +23,8 @@
 		capability "Refresh"
 		capability "Sensor"
 
+		attribute "IP", "string"
+
 		command "subscribe"
 		command "resubscribe"
 		command "unsubscribe"
@@ -32,18 +34,33 @@
 	simulator {}
 
 	// UI tile definitions
-	tiles {
+    tiles(scale: 2) {
+        multiAttributeTile(name:"rich-control", type: "switch", canChangeIcon: true){
+            tileAttribute ("device.switch", key: "PRIMARY_CONTROL") {
+              attributeState "on", label:'${name}', action:"switch.off", icon:"st.switches.switch.off", backgroundColor:"#79b821", nextState:"turningOff"
+              attributeState "off", label:'${name}', action:"switch.on", icon:"st.switches.switch.on", backgroundColor:"#ffffff", nextState:"turningOn"
+              attributeState "turningOn", label:'${name}', action:"switch.off", icon:"st.switches.switch.off", backgroundColor:"#79b821", nextState:"turningOff"
+              attributeState "turningOff", label:'${name}', action:"switch.on", icon:"st.switches.switch.on", backgroundColor:"#ffffff", nextState:"turningOn"
+            }
+            tileAttribute ("IP", key: "SECONDARY_CONTROL") {
+	            attributeState "IP", label: 'IP: ${currentValue}'
+			}
+        }
+    
 		standardTile("switch", "device.switch", width: 2, height: 2, canChangeIcon: true) {
-			state "on", label:'${name}', action:"switch.off", icon:"st.switches.switch.on", backgroundColor:"#79b821"
-			state "off", label:'${name}', action:"switch.on", icon:"st.switches.switch.off", backgroundColor:"#ffffff"
-		}
-		standardTile("refresh", "device.switch", inactiveLabel: false, decoration: "flat") {
-			state "default", label:'', action:"refresh.refresh", icon:"st.secondary.refresh"
-		}
+			state "on", label:'${name}', action:"switch.off", icon:"st.switches.switch.off", backgroundColor:"#79b821", nextState:"turningOff"
+			state "off", label:'${name}', action:"switch.on", icon:"st.switches.switch.on", backgroundColor:"#ffffff", nextState:"turningOn"
+			state "turningOn", label:'${name}', action:"switch.off", icon:"st.switches.switch.off", backgroundColor:"#79b821", nextState:"turningOff"
+			state "turningOff", label:'${name}', action:"switch.on", icon:"st.switches.switch.on", backgroundColor:"#ffffff", nextState:"turningOn"
+        }
+           
+        standardTile("refresh", "device.switch", inactiveLabel: false, height: 2, width: 2, decoration: "flat") {
+            state "default", label:"", action:"refresh.refresh", icon:"st.secondary.refresh"
+        }        
 
-		main "switch"
-		details (["switch", "refresh"])
-	}
+        main(["switch"])
+        details(["rich-control", "refresh"])
+    }    
 }
 
 // parse events into attributes
@@ -64,25 +81,23 @@ def parse(String description) {
 	def bodyString = msg.body
 	if (bodyString) {
 		def body = new XmlSlurper().parseText(bodyString)
-
 		if (body?.property?.TimeSyncRequest?.text()) {
 			log.trace "Got TimeSyncRequest"
 			result << timeSyncResponse()
 		} else if (body?.Body?.SetBinaryStateResponse?.BinaryState?.text()) {
 			log.trace "Got SetBinaryStateResponse = ${body?.Body?.SetBinaryStateResponse?.BinaryState?.text()}"
 		} else if (body?.property?.BinaryState?.text()) {
-			def value = body?.property?.BinaryState?.text().toInteger() == 1 ? "on" : "off"
-			log.trace "Notify: BinaryState = ${value}"
+			def value = body?.property?.BinaryState?.text().substring(0, 1).toInteger() == 0 ? "off" : "on"
+			log.trace "Notify: BinaryState = ${value}, ${body.property.BinaryState}"
 			result << createEvent(name: "switch", value: value)
 		} else if (body?.property?.TimeZoneNotification?.text()) {
 			log.debug "Notify: TimeZoneNotification = ${body?.property?.TimeZoneNotification?.text()}"
 		} else if (body?.Body?.GetBinaryStateResponse?.BinaryState?.text()) {
-			def value = body?.Body?.GetBinaryStateResponse?.BinaryState?.text().toInteger() == 1 ? "on" : "off"
-			log.trace "GetBinaryResponse: BinaryState = ${value}"
+			def value = body?.Body?.GetBinaryStateResponse?.BinaryState?.text().substring(0, 1).toInteger() == 0 ? "off" : "on"
+			log.trace "GetBinaryResponse: BinaryState = ${value}, ${body.property.BinaryState}"
 			result << createEvent(name: "switch", value: value)
 		}
 	}
-
 	result
 }
 
@@ -205,6 +220,7 @@ def subscribe(ip, port) {
 	def existingPort = getDataValue("port")
 	if (ip && ip != existingIp) {
 		log.debug "Updating ip from $existingIp to $ip"
+        sendEvent(name: "IP", value: convertHexToIP(ip))
 		updateDataValue("ip", ip)
 	}
 	if (port && port != existingPort) {
