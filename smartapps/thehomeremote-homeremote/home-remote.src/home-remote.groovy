@@ -27,53 +27,41 @@ definition(
 
 preferences {
     section() {
-	input "accelerationSensors", "capability.accelerationSensor", title: "Acceleration Sensors", multiple: true, required: false
-	//input "actuators", "capability.actuator", title: "Actuators", multiple: true, required: false
-	input "alarms", "capability.alarm", title: "Alarms", multiple: true, required: false
-	input "batteries", "capability.battery", title: "Batteries", multiple: true, required: false
-	input "beacons", "capability.beacon", title: "Beacons", multiple: true, required: false
-	input "buttonGroup", "capability.button", title: "Buttons", multiple: true, required: false
-	input "carbonMonoxideDetectors", "capability.carbonMonoxideDetector", title: "Carbon Monoxide Detectors", multiple: true, required: false
-	input "colorControls", "capability.colorControl", title: "Color Controls", multiple: true, required: false
-	//input "configurations", "capability.configuration", title: "Configurations", multiple: true, required: false
-	input "contactSensors", "capability.contactSensor", title: "Contact Sensors", multiple: true, required: false
-	input "doorControls", "capability.doorControl", title: "Door Controls", multiple: true, required: false
-	input "energyMeters", "capability.energyMeter", title: "Energy Meters", multiple: true, required: false
-	input "illuminanceMeasurements", "capability.illuminanceMeasurement", title: "Illuminance Measurements", multiple: true, required: false
-	input "imageCaptures", "capability.imageCapture", title: "Image Captures", multiple: true, required: false
-	input "locks", "capability.lock", title: "Locks", multiple: true, required: false
-	input "mediaControllers", "capability.mediaController", title: "Media Controllers", multiple: true, required: false
-	input "momentaries", "capability.momentary", title: "Momentaries", multiple: true, required: false
-	input "motionSensors", "capability.motionSensor", title: "Motion Sensors", multiple: true, required: false
-	input "musicPlayers", "capability.musicPlayer", title: "Music Players", multiple: true, required: false
-	input "notifications", "capability.notification", title: "Notifications", multiple: true, required: false
-	//input "pollings", "capability.polling", title: "Pollings", multiple: true, required: false
-	input "powerMeters", "capability.powerMeter", title: "Power Meters", multiple: true, required: false
-	input "presenceSensors", "capability.presenceSensor", title: "Presence Sensors", multiple: true, required: false
-	//input "refreshes", "capability.refresh", title: "Refreshes", multiple: true, required: false
-	input "relativeHumidityMeasurements", "capability.relativeHumidityMeasurement", title: "Relative Humidity Measurements", multiple: true, required: false
-	input "relaySwitches", "capability.relaySwitch", title: "Relay Switches", multiple: true, required: false
-	//input "sensors", "capability.sensor", title: "Sensors", multiple: true, required: false
-	input "signalStrengths", "capability.signalStrength", title: "Signal Strengths", multiple: true, required: false
-	input "sleepSensors", "capability.sleepSensor", title: "Sleep Sensors", multiple: true, required: false
-	input "smokeDetectors", "capability.smokeDetector", title: "Smoke Detectors", multiple: true, required: false
-	input "speechSyntheses", "capability.speechSynthesis", title: "Speech Syntheses", multiple: true, required: false
-	input "stepSensors", "capability.stepSensor", title: "Step Sensors", multiple: true, required: false
-	input "switches", "capability.switch", title: "Switches", multiple: true, required: false
-	input "switchLevels", "capability.switchLevel", title: "Switch Levels", multiple: true, required: false
-	input "temperatureMeasurements", "capability.temperatureMeasurement", title: "Temperature Measurements", multiple: true, required: false
-	input "thermostats", "capability.thermostat", title: "Thermostats", multiple: true, required: false
-	input "thermostatCoolingSetpoints", "capability.thermostatCoolingSetpoint", title: "Thermostat Cooling Setpoints", multiple: true, required: false
-	input "thermostatFanModes", "capability.thermostatFanMode", title: "Thermostat Fan Modes", multiple: true, required: false
-	input "thermostatHeatingSetpoints", "capability.thermostatHeatingSetpoint", title: "Thermostat Heating Setpoints", multiple: true, required: false
-	input "thermostatModes", "capability.thermostatMode", title: "Thermostat Modes", multiple: true, required: false
-	input "thermostatOperatingStates", "capability.thermostatOperatingState", title: "Thermostat Operating States", multiple: true, required: false
-	input "thermostatSetpoints", "capability.thermostatSetpoint", title: "Thermostat Setpoints", multiple: true, required: false
-	input "threeAxes", "capability.threeAxis", title: "Three Axes", multiple: true, required: false
-	input "tones", "capability.tone", title: "Tones", multiple: true, required: false
-	input "touchSensors", "capability.touchSensor", title: "Touch Sensors", multiple: true, required: false
-	input "valves", "capability.valve", title: "Valves", multiple: true, required: false
-	input "waterSensors", "capability.waterSensor", title: "Water Sensors", multiple: true, required: false
+	input "accelerationSensors", "capability.accelerationSensor",title: "Acceleration Sensors", multiple: true, required: false
+	input "alarms", "capability.alarm",title: "Alarms", multiple: true, required: false
+	input "batteries", "capability.battery",title: "Batteries", multiple: true, required: false
+	input "beacons", "capability.beacon",title: "Beacons", multiple: true, required: false
+	input "buttonGroup", "capability.button",title: "Buttons", multiple: true, required: false
+	input "carbonMonoxideDetectors", "capability.carbonMonoxideDetector",title: "CO Detectors", multiple: true, required: false
+	input "colorControls", "capability.colorControl",title: "Color Lights", multiple: true, required: false
+	input "contactSensors", "capability.contactSensor",title: "Contact Sensors", multiple: true, required: false
+	input "doorControls", "capability.doorControl",title: "Door Controllers", multiple: true, required: false
+	input "energyMeters", "capability.energyMeter",title: "Energy Meters", multiple: true, required: false
+	input "illuminanceMeasurements", "capability.illuminanceMeasurement",title: "Illuminance Sensors", multiple: true, required: false
+	input "imageCaptures", "capability.imageCapture",title: "Cameras", multiple: true, required: false
+	input "locks", "capability.lock",title: "Locks", multiple: true, required: false
+	input "mediaControllers", "capability.mediaController",title: "Media Controllers", multiple: true, required: false
+	input "momentaries", "capability.momentary",title: "Momentary Buttons", multiple: true, required: false
+	input "motionSensors", "capability.motionSensor",title: "Motion Sensors", multiple: true, required: false
+	input "musicPlayers", "capability.musicPlayer",title: "Music Players", multiple: true, required: false
+	input "powerMeters", "capability.powerMeter",title: "Power Meters", multiple: true, required: false
+	input "presenceSensors", "capability.presenceSensor",title: "Presence Sensors", multiple: true, required: false
+	input "relativeHumidityMeasurements", "capability.relativeHumidityMeasurement",title: "Humidity Sensors", multiple: true, required: false
+	input "relaySwitches", "capability.relaySwitch",title: "Relays", multiple: true, required: false
+	input "signalStrengths", "capability.signalStrength",title: "Signal Strengths", multiple: true, required: false
+	input "sleepSensors", "capability.sleepSensor",title: "Sleep Sensors", multiple: true, required: false
+	input "smokeDetectors", "capability.smokeDetector",title: "Smoke Detectors", multiple: true, required: false
+	input "speechSyntheses", "capability.speechSynthesis",title: "Speech Syntheses", multiple: true, required: false
+	input "stepSensors", "capability.stepSensor",title: "Step Sensors", multiple: true, required: false
+	input "switches", "capability.switch",title: "Switches", multiple: true, required: false
+	input "switchLevels", "capability.switchLevel",title: "Dimmers", multiple: true, required: false
+	input "temperatureMeasurements", "capability.temperatureMeasurement",title: "Temperature Sensors", multiple: true, required: false
+	input "thermostats", "capability.thermostat",title: "Thermostats", multiple: true, required: false
+	input "threeAxes", "capability.threeAxis",title: "Three axis Sensors", multiple: true, required: false
+	input "tones", "capability.tone",title: "Tones", multiple: true, required: false
+	input "touchSensors", "capability.touchSensor",title: "Touch Sensors", multiple: true, required: false
+	input "valves", "capability.valve",title: "Valves", multiple: true, required: false
+	input "waterSensors", "capability.waterSensor",title: "Water Sensors", multiple: true, required: false
     }
 }
 
@@ -270,30 +258,6 @@ def getCurrentValues() {
       resp << [id: it.id, capability: "Thermostat", attribute: "thermostatOperatingState", value: it.currentValue("thermostatOperatingState")]
     }
 
-	thermostatCoolingSetpoints.each {
-      resp << [id: it.id, capability: "ThermostatCoolingSetpoint", attribute: "coolingSetpoint", value: it.currentValue("coolingSetpoint")]
-    }
-
-	thermostatFanModes.each {
-      resp << [id: it.id, capability: "ThermostatFanMode", attribute: "thermostatFanMode", value: it.currentValue("thermostatFanMode")]
-    }
-
-	thermostatHeatingSetpoints.each {
-      resp << [id: it.id, capability: "ThermostatHeatingSetpoint", attribute: "heatingSetpoint", value: it.currentValue("heatingSetpoint")]
-    }
-
-	thermostatModes.each {
-      resp << [id: it.id, capability: "ThermostatMode", attribute: "thermostatMode", value: it.currentValue("thermostatMode")]
-    }
-
-	thermostatOperatingStates.each {
-      resp << [id: it.id, capability: "ThermostatOperatingState", attribute: "thermostatOperatingState", value: it.currentValue("thermostatOperatingState")]
-    }
-
-	thermostatSetpoints.each {
-      resp << [id: it.id, capability: "ThermostatSetpoint", attribute: "thermostatSetpoint", value: it.currentValue("thermostatSetpoint")]
-    }
-
 	threeAxes.each {
       resp << [id: it.id, capability: "ThreeAxis", attribute: "threeAxis", value: it.currentValue("threeAxis")]
     }
@@ -488,30 +452,6 @@ def getCurrentValuesWithDisplayName() {
       resp << [id: it.id, displayName: it.displayName, capability: "Thermostat", attribute: "thermostatOperatingState", value: it.currentValue("thermostatOperatingState")]
     }
 
-	thermostatCoolingSetpoints.each {
-      resp << [id: it.id, displayName: it.displayName, capability: "ThermostatCoolingSetpoint", attribute: "coolingSetpoint", value: it.currentValue("coolingSetpoint")]
-    }
-
-	thermostatFanModes.each {
-      resp << [id: it.id, displayName: it.displayName, capability: "ThermostatFanMode", attribute: "thermostatFanMode", value: it.currentValue("thermostatFanMode")]
-    }
-
-	thermostatHeatingSetpoints.each {
-      resp << [id: it.id, displayName: it.displayName, capability: "ThermostatHeatingSetpoint", attribute: "heatingSetpoint", value: it.currentValue("heatingSetpoint")]
-    }
-
-	thermostatModes.each {
-      resp << [id: it.id, displayName: it.displayName, capability: "ThermostatMode", attribute: "thermostatMode", value: it.currentValue("thermostatMode")]
-    }
-
-	thermostatOperatingStates.each {
-      resp << [id: it.id, displayName: it.displayName, capability: "ThermostatOperatingState", attribute: "thermostatOperatingState", value: it.currentValue("thermostatOperatingState")]
-    }
-
-	thermostatSetpoints.each {
-      resp << [id: it.id, displayName: it.displayName, capability: "ThermostatSetpoint", attribute: "thermostatSetpoint", value: it.currentValue("thermostatSetpoint")]
-    }
-
 	threeAxes.each {
       resp << [id: it.id, displayName: it.displayName, capability: "ThreeAxis", attribute: "threeAxis", value: it.currentValue("threeAxis")]
     }
@@ -542,9 +482,6 @@ def getDevices(capability){
     	case "ColorControl":
         	result = colorControls
         	break
-		//case "Configuration":
-		//	result = configurations
-		//  break
     	case "DoorControl":
         	result = doorControls
         	break
@@ -563,15 +500,6 @@ def getDevices(capability){
         case "MusicPlayer":
         	result = musicPlayers
         	break
-    	case "Notification":
-        	result = notifications
-        	break
-        //case "Polling":
-        //	result = pollings
-        //	break
-    	//case "Refresh":
-        //	result = refreshes
-        //	break
         case "RelaySwitch":
         	result = relaySwitches
         	break
@@ -587,7 +515,7 @@ def getDevices(capability){
     	case "Thermostat":
         	result = thermostats
         	break
-        case "ThermostatCoolingSetpoint":
+		case "ThermostatCoolingSetpoint":
         	result = thermostatCoolingSetpoints
         	break
     	case "ThermostatFanMode":
@@ -690,6 +618,7 @@ def getThermostatFanModeCommand(value){
 }
 
 void executeCommand() {
+    // use the built-in request object to get the command parameter
     def deviceId = request.JSON?.deviceId
     def capability = request.JSON?.capability
     def attribute = request.JSON?.attribute 
@@ -711,7 +640,7 @@ void executeCommand() {
         		command = "setColor"
                 valueIsParameter = true
         		break
-            case "level":
+			case "level":
         		command = "setLevel"
                 valueIsParameter = true
         		break            
@@ -727,7 +656,7 @@ void executeCommand() {
         		command = "startActivity"
                 valueIsParameter = true
         		break  
-            case "door":
+ 	  		case "door":
         		command = getDoorControlCommand(value)
         		break    
       		case "lock":
@@ -750,10 +679,10 @@ void executeCommand() {
     		default:
         		command = value
 		}
+        // check that the switch supports the specified command
+        // If not, return an error using httpError, providing a HTTP status code.
         devices.each {
         	if (it.id == deviceId) {
-                // check that the device supports the specified command
-        		// If not, return an error using httpError, providing a HTTP status code.
             	if (!it.hasCommand(command)) {
                 	httpError(501, "$command is not a valid command for all devices specified")
             	}                
