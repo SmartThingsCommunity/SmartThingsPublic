@@ -17,7 +17,7 @@ definition(
     name: "Home Remote",
     namespace: "thehomeremote.homeremote",
     author: "The Home Remote",
-    description: "Web service that to enables communication between the Home Remote app and a SmartThings hub.",
+    description: "Web service that enables communication between the Home Remote app and a SmartThings hub.",
     category: "My Apps",
     iconUrl: "https://s3.amazonaws.com/smartapp-icons/Convenience/Cat-Convenience.png",
     iconX2Url: "https://s3.amazonaws.com/smartapp-icons/Convenience/Cat-Convenience@2x.png",
