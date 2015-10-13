@@ -1,19 +1,5 @@
 /* Philips Hue (via Zigbee)
 
-Capabilities:
-  Actuator
-  Color Control
-  Configuration
-  Polling
-  Refresh
-  Sensor
-  Switch
-  Switch Level
-  Button
-  
-Custom Commands:
-  setAdjustedColor
-  sendResetPacket
     
 */
 
@@ -27,12 +13,10 @@ metadata {
 		capability "Configuration"
 		capability "Polling"
 		capability "Refresh"
-		capability "Sensor"
-        capability "Momentary"
-        capability "Button"
+        
+        attribute "loop", "string"
 
 		command "setAdjustedColor"
-        command "sendResetPacket"
         command "startColorLoop"
         command "stopColorLoop"
         command "identify"
@@ -40,19 +24,22 @@ metadata {
 		fingerprint profileId: "C05E", inClusters: "0000,0003,0004,0005,0006,0008,0300,1000", outClusters: "0019"
 	}
 
-	// simulator metadata
-	simulator {
-		// status messages
-		status "on": "on/off: 1"
-		status "off": "on/off: 0"
-
-		// reply messages
-		reply "zcl on-off on": "on/off: 1"
-		reply "zcl on-off off": "on/off: 0"
-	}
-
 	// UI tile definitions
-	tiles {
+	tiles (scale: 2) {
+    	multiAttributeTile(name: "switch", type: "lighting", width:6, height:4, canChangeIcon: true) {
+        	tileAttribute ("device.switch", key: "PRIMARY_CONTROL") {
+				attributeState "on", label:'${name}', action:"switch.off", icon:"st.lights.philips.hue-single", backgroundColor:"#79b821", nextState:"turningOff"
+				attributeState "off", label:'${name}', action:"switch.on", icon:"st.lights.philips.hue-single", backgroundColor:"#ffffff", nextState:"turningOn"
+				attributeState "turningOn", label:'${name}', action:"switch.off", icon:"st.lights.philips.hue-single", backgroundColor:"#79b821", nextState:"turningOff"
+				attributeState "turningOff", label:'${name}', action:"switch.on", icon:"st.lights.philips.hue-single", backgroundColor:"#ffffff", nextState:"turningOn"
+			}
+        	tileAttribute("device.level", key: "SLIDER_CONTROL") {
+				attributeState "level", action:"switch level.setLevel"
+            }
+            tileAttribute("device.color", key: "COLOR_CONTROL") {
+            	attributeState "color", action:"setAdjustedColor"
+            }
+        }
 		standardTile("switch", "device.switch", width: 1, height: 1, canChangeIcon: true) {
 			state "off", label: '${name}', action: "switch.on", icon: "st.switches.switch.off", backgroundColor: "#ffffff"
 			state "on", label: '${name}', action: "switch.off", icon: "st.switches.switch.on", backgroundColor: "#79b821"
@@ -60,34 +47,16 @@ metadata {
 		standardTile("refresh", "device.switch", inactiveLabel: false, decoration: "flat") {
 			state "default", label:"", action:"refresh.refresh", icon:"st.secondary.refresh"
 		}
-		controlTile("rgbSelector", "device.color", "color", height: 3, width: 3, inactiveLabel: false) {
-			state "color", action:"setAdjustedColor"
-		}
-		controlTile("levelSliderControl", "device.level", "slider", height: 1, width: 2, inactiveLabel: false) {
-			state "level", action:"switch level.setLevel"
-		}
-		valueTile("level", "device.level", inactiveLabel: false, decoration: "flat") {
-			state "level", label: 'Level ${currentValue}%'
-		}
-		controlTile("saturationSliderControl", "device.saturation", "slider", height: 1, width: 2, inactiveLabel: false) {
-			state "saturation", action:"color control.setSaturation"
-		}
-		valueTile("saturation", "device.saturation", inactiveLabel: false, decoration: "flat") {
-			state "saturation", label: 'Sat ${currentValue}    '
-		}
-		controlTile("hueSliderControl", "device.hue", "slider", height: 1, width: 2, inactiveLabel: false) {
-			state "hue", action:"color control.setHue"
-		}
-        standardTile("loopButton", "device.switch", width: 1, height: 1) {
-        	state "on", label: "Color Loop", action: "startColorLoop", icon:"st.Food & Dining.dining18", nextState: "off", backgroundColor: "#ffffff"
-            state "off", label: "Color Loop", action: "stopColorLoop", icon:"st.Food & Dining.dining18", nextState: "on", backgroundColor: "#79b821"
+        standardTile("loopButton", "device.loop", width: 1, height: 1) {
+        	state "off", label: "Color Loop", action: "startColorLoop", icon:"st.Food & Dining.dining18", backgroundColor: "#ffffff"
+            state "on", label: "Color Loop", action: "stopColorLoop", icon:"st.Food & Dining.dining18", backgroundColor: "#79b821"
         } 
-        standardTile("identButton", "device.button", width: 1, height: 1) {
+        standardTile("identify", "device.switch", width: 1, height: 1) {
         	state "default", action: "identify", icon:"st.Food & Dining.dining19", label: "Identify"
         }
 
 		main(["switch"])
-		details(["switch", "levelSliderControl", "rgbSelector", "refresh", "identButton", "loopButton"])
+		details(["switch", "refresh", "identify", "loopButton"])
 	}
     preferences {
     	input "fadeTimeInput", "number", title: "Color fade duration", description: "Enter the length of time to fade (sec)", min: 1
@@ -118,10 +87,7 @@ def configure() {
 
 	String zigbeeId = swapEndianHex(device.hub.zigbeeId)
 	log.debug "Confuguring Reporting and Bindings."
-	def configCmds = [	
-    
-    	"zdo active 0x${device.deviceNetworkId}", "delay 500",
-
+	def configCmds = [
         //Switch Reporting
         "zcl global send-me-a-report 6 0 0x10 0 3600 {01}", "delay 500",
         "send 0x${device.deviceNetworkId} 1 1", "delay 1000",
@@ -145,14 +111,12 @@ def refresh() {
 }
 
 def on() {
-	// just assume it works for now
 	log.debug "on()"
 	sendEvent(name: "switch", value: "on")
 	"st cmd 0x${device.deviceNetworkId} ${endpointId} 6 1 {}"
 }
 
 def off() {
-	// just assume it works for now
 	log.debug "off()"
 	sendEvent(name: "switch", value: "off")
 	"st cmd 0x${device.deviceNetworkId} ${endpointId} 6 0 {}"
@@ -174,15 +138,6 @@ def setAdjustedColor(value) {
 	adjusted.hue = adjustOutgoingHue(value.hue)
 	adjusted.level = null // needed because color picker always sends 100
 	setColor(adjusted)
-}
-
-def sendResetPacket() {
-	//try to figure out a way to do this. Probably not possible without lower level access to the hardware :(
-	log.trace "[RZHB v.16]Sending Touchlink Factory New Reset packet..."
-    //"st cmd 0x${device.deviceNetworkId} ${endpointId} 0x0000 0x00 {}"
-    "plugin zll-commissioning link reset"
-    "zcl identify 1 200"
-
 }
 
 def setColor(value){
@@ -245,10 +200,12 @@ def timedOn() {
 }
 
 def startColorLoop() {
+	sendEvent(name: "loop", value: "on")
 	"st cmd 0x${device.deviceNetworkId} ${endpointId} 0x0300 0x44 {01 02 01 0000 0000}"
 }
 
 def stopColorLoop() {
+	sendEvent(name: "loop", value: "off")
 	"st cmd 0x${device.deviceNetworkId} ${endpointId} 0x0300 0x44 {01 00 00 0000 0000}"
 }
 
