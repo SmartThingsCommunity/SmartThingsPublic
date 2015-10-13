@@ -6,14 +6,14 @@
  *
  *      http://www.apache.org/licenses/LICENSE-2.0
  *
- *  Unless required by applicable law or agreed to in writing, software distributed under the License is distributed
+ *  Ufoofnless required by applicable law or agreed to in writing, software distributed under the License is distributed
  *  on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the License
  *  for the specific language governing permissions and limitations under the License.
  *
  *	Wemo Switch
  *
- *	Author: superuser
- *	Date: 2013-10-11
+ *	Author: Juan Risso (SmartThings)
+ *	Date: 2015-10-11
  */
  metadata {
 	definition (name: "Wemo Switch", namespace: "smartthings", author: "SmartThings") {
@@ -28,6 +28,7 @@
 		command "subscribe"
 		command "resubscribe"
 		command "unsubscribe"
+        command "isOffline"
 	}
 
 	// simulator metadata
@@ -43,7 +44,7 @@
               attributeState "turningOff", label:'${name}', action:"switch.on", icon:"st.switches.switch.on", backgroundColor:"#ffffff", nextState:"turningOn"
             }
             tileAttribute ("IP", key: "SECONDARY_CONTROL") {
-	            attributeState "IP", label: 'IP: ${currentValue}'
+	            attributeState "IP", label: '${currentValue}'
 			}
         }
     
@@ -52,6 +53,7 @@
 			state "off", label:'${name}', action:"switch.on", icon:"st.switches.switch.on", backgroundColor:"#ffffff", nextState:"turningOn"
 			state "turningOn", label:'${name}', action:"switch.off", icon:"st.switches.switch.off", backgroundColor:"#79b821", nextState:"turningOff"
 			state "turningOff", label:'${name}', action:"switch.on", icon:"st.switches.switch.on", backgroundColor:"#ffffff", nextState:"turningOn"
+			state "offline", label:'${name}', icon:"st.switches.switch.off", backgroundColor:"#ff0000"
         }
            
         standardTile("refresh", "device.switch", inactiveLabel: false, height: 2, width: 2, decoration: "flat") {
@@ -80,7 +82,8 @@ def parse(String description) {
 	def result = []
 	def bodyString = msg.body
 	if (bodyString) {
-		def body = new XmlSlurper().parseText(bodyString)
+    	unschedule("isOffline")
+        def body = new XmlSlurper().parseText(bodyString)
 		if (body?.property?.TimeSyncRequest?.text()) {
 			log.trace "Got TimeSyncRequest"
 			result << timeSyncResponse()
@@ -95,6 +98,11 @@ def parse(String description) {
 		} else if (body?.Body?.GetBinaryStateResponse?.BinaryState?.text()) {
 			def value = body?.Body?.GetBinaryStateResponse?.BinaryState?.text().substring(0, 1).toInteger() == 0 ? "off" : "on"
 			log.trace "GetBinaryResponse: BinaryState = ${value}, ${body.property.BinaryState}"
+            log.info "Connection: ${device.currentValue("connection")}"	
+            if (device.currentValue("IP") == "Offline") {
+                def ipvalue = convertHexToIP(getDataValue("ip"))
+                sendEvent(name: "IP", value: ipvalue)
+            }
 			result << createEvent(name: "switch", value: value)
 		}
 	}
@@ -283,9 +291,15 @@ User-Agent: CyberGarage-HTTP/1.0
 """, physicalgraph.device.Protocol.LAN)
 }
 
+def isOffline() {
+	sendEvent(name: "IP", value: "Offline")
+    sendEvent(name: "switch", value: "offline")
+}
 
 def poll() {
 log.debug "Executing 'poll'"
+if (device.currentValue("IP") != "Offline") 
+	runIn(10, isOffline)
 new physicalgraph.device.HubAction("""POST /upnp/control/basicevent1 HTTP/1.1
 SOAPACTION: "urn:Belkin:service:basicevent:1#GetBinaryState"
 Content-Length: 277
