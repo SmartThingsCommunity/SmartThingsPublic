@@ -6,63 +6,51 @@
  *
  *      http://www.apache.org/licenses/LICENSE-2.0
  *
- *  Ufoofnless required by applicable law or agreed to in writing, software distributed under the License is distributed
+ *  Unless required by applicable law or agreed to in writing, software distributed under the License is distributed
  *  on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the License
  *  for the specific language governing permissions and limitations under the License.
  *
- *	Wemo Switch
+ *  Wemo Light Switch
  *
- *	Author: superuser
- *	Date: 2013-10-11
+ *  Author: smartthings
+ *  Date: 2014-02-14
  */
- metadata {
-	definition (name: "Wemo Switch", namespace: "smartthings", author: "SmartThings") {
+
+
+metadata {
+	definition (name: "Wemo Light Switch", namespace: "smartthings", author: "SmartThings") {
 		capability "Actuator"
 		capability "Switch"
 		capability "Polling"
 		capability "Refresh"
 		capability "Sensor"
-
+		
 		attribute "IP", "string"
 
 		command "subscribe"
 		command "resubscribe"
 		command "unsubscribe"
-        command "isOffline"
+		command "get"
 	}
 
 	// simulator metadata
 	simulator {}
 
 	// UI tile definitions
-    tiles(scale: 2) {
-        multiAttributeTile(name:"rich-control", type: "switch", canChangeIcon: true){
-            tileAttribute ("device.switch", key: "PRIMARY_CONTROL") {
-              attributeState "on", label:'${name}', action:"switch.off", icon:"st.switches.switch.off", backgroundColor:"#79b821", nextState:"turningOff"
-              attributeState "off", label:'${name}', action:"switch.on", icon:"st.switches.switch.on", backgroundColor:"#ffffff", nextState:"turningOn"
-              attributeState "turningOn", label:'${name}', action:"switch.off", icon:"st.switches.switch.off", backgroundColor:"#79b821", nextState:"turningOff"
-              attributeState "turningOff", label:'${name}', action:"switch.on", icon:"st.switches.switch.on", backgroundColor:"#ffffff", nextState:"turningOn"
-            }
-            tileAttribute ("IP", key: "SECONDARY_CONTROL") {
-	            attributeState "IP", label: '${currentValue}'
-			}
-        }
-    
+	tiles {
 		standardTile("switch", "device.switch", width: 2, height: 2, canChangeIcon: true) {
-			state "on", label:'${name}', action:"switch.off", icon:"st.switches.switch.off", backgroundColor:"#79b821", nextState:"turningOff"
-			state "off", label:'${name}', action:"switch.on", icon:"st.switches.switch.on", backgroundColor:"#ffffff", nextState:"turningOn"
-			state "turningOn", label:'${name}', action:"switch.off", icon:"st.switches.switch.off", backgroundColor:"#79b821", nextState:"turningOff"
-			state "turningOff", label:'${name}', action:"switch.on", icon:"st.switches.switch.on", backgroundColor:"#ffffff", nextState:"turningOn"
-			state "offline", label:'${name}', icon:"st.switches.switch.off", backgroundColor:"#ff0000"
-        }
-           
-        standardTile("refresh", "device.switch", inactiveLabel: false, height: 2, width: 2, decoration: "flat") {
-            state "default", label:"", action:"refresh.refresh", icon:"st.secondary.refresh"
-        }        
+			state "on", label:'${name}', action:"switch.off", icon:"st.switches.switch.on", backgroundColor:"#79b821", nextState:"turningOff"
+			state "off", label:'${name}', action:"switch.on", icon:"st.switches.switch.off", backgroundColor:"#ffffff", nextState:"turningOn"
+			state "turningOn", label:'${name}', icon:"st.switches.switch.on", backgroundColor:"#79b821"
+			state "turningOff", label:'${name}', icon:"st.switches.switch.off", backgroundColor:"#ffffff"
+		}
+        standardTile("refresh", "device.switch", inactiveLabel: false, decoration: "flat") {
+			state "default", label:'', action:"refresh.refresh", icon:"st.secondary.refresh"
+		}
 
-        main(["switch"])
-        details(["rich-control", "refresh"])
-    }    
+		main "switch"
+		details (["switch", "refresh"])
+	}
 }
 
 // parse events into attributes
@@ -82,33 +70,30 @@ def parse(String description) {
 	def result = []
 	def bodyString = msg.body
 	if (bodyString) {
-    	unschedule("isOffline")
-        def body = new XmlSlurper().parseText(bodyString)
+		def body = new XmlSlurper().parseText(bodyString)
+
 		if (body?.property?.TimeSyncRequest?.text()) {
 			log.trace "Got TimeSyncRequest"
 			result << timeSyncResponse()
 		} else if (body?.Body?.SetBinaryStateResponse?.BinaryState?.text()) {
 			log.trace "Got SetBinaryStateResponse = ${body?.Body?.SetBinaryStateResponse?.BinaryState?.text()}"
 		} else if (body?.property?.BinaryState?.text()) {
-			def value = body?.property?.BinaryState?.text().substring(0, 1).toInteger() == 0 ? "off" : "on"
-			log.trace "Notify: BinaryState = ${value}, ${body.property.BinaryState}"
+			def value = body?.property?.BinaryState?.text().toInteger() == 1 ? "on" : "off"
+			log.trace "Notify: BinaryState = ${value}"
 			result << createEvent(name: "switch", value: value)
 		} else if (body?.property?.TimeZoneNotification?.text()) {
 			log.debug "Notify: TimeZoneNotification = ${body?.property?.TimeZoneNotification?.text()}"
 		} else if (body?.Body?.GetBinaryStateResponse?.BinaryState?.text()) {
-			def value = body?.Body?.GetBinaryStateResponse?.BinaryState?.text().substring(0, 1).toInteger() == 0 ? "off" : "on"
-			log.trace "GetBinaryResponse: BinaryState = ${value}, ${body.property.BinaryState}"
-            log.info "Connection: ${device.currentValue("connection")}"	
-            if (device.currentValue("IP") == "Offline") {
-                def ipvalue = convertHexToIP(getDataValue("ip"))
-                sendEvent(name: "IP", value: ipvalue)
-            }
+			def value = body?.Body?.GetBinaryStateResponse?.BinaryState?.text().toInteger() == 1 ? "on" : "off"
+			log.trace "GetBinaryResponse: BinaryState = ${value}"
 			result << createEvent(name: "switch", value: value)
 		}
 	}
+
 	result
 }
 
+////////////////////////////
 private getTime() {
 	// This is essentially System.currentTimeMillis()/1000, but System is disallowed by the sandbox.
 	((new GregorianCalendar().time.time / 1000l).toInteger()).toString()
@@ -119,11 +104,11 @@ private getCallBackAddress() {
 }
 
 private Integer convertHexToInt(hex) {
-	Integer.parseInt(hex,16)
+    Integer.parseInt(hex,16)
 }
 
 private String convertHexToIP(hex) {
-	[convertHexToInt(hex[0..1]),convertHexToInt(hex[2..3]),convertHexToInt(hex[4..5]),convertHexToInt(hex[6..7])].join(".")
+    [convertHexToInt(hex[0..1]),convertHexToInt(hex[2..3]),convertHexToInt(hex[4..5]),convertHexToInt(hex[6..7])].join(".")
 }
 
 private getHostAddress() {
@@ -143,10 +128,9 @@ private getHostAddress() {
 	return convertHexToIP(ip) + ":" + convertHexToInt(port)
 }
 
-
+////////////////////////////
 def on() {
 	log.debug "Executing 'on'"
-    sendEvent(name: "switch", value: "on")
 def turnOn = new physicalgraph.device.HubAction("""POST /upnp/control/basicevent1 HTTP/1.1
 SOAPAction: "urn:Belkin:service:basicevent:1#SetBinaryState"
 Host: ${getHostAddress()}
@@ -162,11 +146,11 @@ Content-Length: 333
 </SOAP-ENV:Body>
 </SOAP-ENV:Envelope>""", physicalgraph.device.Protocol.LAN)
 }
-
+////////////////////////////
 def off() {
 	log.debug "Executing 'off'"
-	sendEvent(name: "switch", value: "off")
-	def turnOff = new physicalgraph.device.HubAction("""POST /upnp/control/basicevent1 HTTP/1.1
+
+    def turnOff = new physicalgraph.device.HubAction("""POST /upnp/control/basicevent1 HTTP/1.1
 SOAPAction: "urn:Belkin:service:basicevent:1#SetBinaryState"
 Host: ${getHostAddress()}
 Content-Type: text/xml
@@ -182,29 +166,13 @@ Content-Length: 333
 </SOAP-ENV:Envelope>""", physicalgraph.device.Protocol.LAN)
 }
 
-/*def refresh() {
-	log.debug "Executing 'refresh'"
-new physicalgraph.device.HubAction("""POST /upnp/control/basicevent1 HTTP/1.1
-SOAPACTION: "urn:Belkin:service:basicevent:1#GetBinaryState"
-Content-Length: 277
-Content-Type: text/xml; charset="utf-8"
-HOST: ${getHostAddress()}
-User-Agent: CyberGarage-HTTP/1.0
-
-<?xml version="1.0" encoding="utf-8"?>
-<s:Envelope xmlns:s="http://schemas.xmlsoap.org/soap/envelope/" s:encodingStyle="http://schemas.xmlsoap.org/soap/encoding/">
-<s:Body>
-<u:GetBinaryState xmlns:u="urn:Belkin:service:basicevent:1">
-</u:GetBinaryState>
-</s:Body>
-</s:Envelope>""", physicalgraph.device.Protocol.LAN)
-}*/
-
+////////////////////////////
 def refresh() {
-	log.debug "Executing WeMo Switch 'subscribe', then 'timeSyncResponse', then 'poll'"
+	log.debug "Executing WeMo Light Switch 'subscribe', then 'timeSyncResponse', then 'poll'"
 	[subscribe(), timeSyncResponse(), poll()]
 }
 
+////////////////////////////
 def subscribe(hostAddress) {
 log.debug "Executing 'subscribe()'"
 def address = getCallBackAddress()
@@ -228,7 +196,7 @@ def subscribe(ip, port) {
 	def existingPort = getDataValue("port")
 	if (ip && ip != existingIp) {
 		log.debug "Updating ip from $existingIp to $ip"
-        sendEvent(name: "IP", value: convertHexToIP(ip))
+		sendEvent(name: "IP", value: convertHexToIP(ip))
 		updateDataValue("ip", ip)
 	}
 	if (port && port != existingPort) {
@@ -273,7 +241,7 @@ log.debug "Executing 'timeSyncResponse()'"
 new physicalgraph.device.HubAction("""POST /upnp/control/timesync1 HTTP/1.1
 Content-Type: text/xml; charset="utf-8"
 SOAPACTION: "urn:Belkin:service:timesync:1#TimeSync"
-Content-Length: 376
+Content-Length: 375
 HOST: ${getHostAddress()}
 User-Agent: CyberGarage-HTTP/1.0
 
@@ -291,15 +259,9 @@ User-Agent: CyberGarage-HTTP/1.0
 """, physicalgraph.device.Protocol.LAN)
 }
 
-def isOffline() {
-	sendEvent(name: "IP", value: "Offline")
-    sendEvent(name: "switch", value: "offline")
-}
 
 def poll() {
 log.debug "Executing 'poll'"
-if (device.currentValue("IP") != "Offline") 
-	runIn(10, isOffline)
 new physicalgraph.device.HubAction("""POST /upnp/control/basicevent1 HTTP/1.1
 SOAPACTION: "urn:Belkin:service:basicevent:1#GetBinaryState"
 Content-Length: 277
