@@ -4,13 +4,14 @@
  *  Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except
  *  in compliance with the License. You may obtain a copy of the License at:
  *
- *      http://www.apache.org/licenses/LICENSE-2.0
+ *      http://www.apache.org/licenses/LICENSE-2.0 
  *
  *  Unless required by applicable law or agreed to in writing, software distributed under the License is distributed
  *  on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the License
  *  for the specific language governing permissions and limitations under the License.
  *
  *  Author: LGKahn kahn-st@lgk.com
+ *  version 2 user defineable timeout before checking if door opened or closed correctly. Raised default to 25 secs. can reduce to 15 if you have custom simulated door with < 6 sec wait.
  */
  
 definition(
@@ -25,19 +26,24 @@ definition(
 
 preferences {
 	section("Choose the switch/relay that opens closes the garage?"){
-		input "opener", "capability.switch", title: "Physical Garage Opener?"
+		input "opener", "capability.switch", title: "Physical Garage Opener?", required: true
 	}
 	section("Choose the sensor that senses if the garage is open closed? "){
-		input "sensor", "capability.contactSensor", title: "Physical Garage Door Open/Closed?"
+		input "sensor", "capability.contactSensor", title: "Physical Garage Door Open/Closed?", required: true
 	}
     
 	section("Choose the Virtual Garage Door Device? "){
-		input "virtualgd", "capability.doorControl", title: "Virtual Garage Door?"
+		input "virtualgd", "capability.doorControl", title: "Virtual Garage Door?", required: true
 	}
     
 	section("Choose the Virtual Garage Door Device sensor (same as above device)?"){
-		input "virtualgdbutton", "capability.contactSensor", title: "Virtual Garage Door Open/Close Sensor?"
+		input "virtualgdbutton", "capability.contactSensor", title: "Virtual Garage Door Open/Close Sensor?", required: true
 	}
+    
+    section("Timeout before checking if the door opened or closed correctly?"){
+		input "checkTimeout", "number", title: "Door Operation Check Timeout?", required: true, defaultValue: 25
+	}
+    
      section( "Notifications" ) {
         input("recipients", "contact", title: "Send notifications to") {
             input "sendPushMessage", "enum", title: "Send a push notification?", options: ["Yes", "No"], required: false
@@ -74,6 +80,7 @@ def realgdstate = sensor.currentContact
 def virtualgdstate = virtualgd.currentContact
 //log.debug "in updated ... current state=  $realgdstate"
 //log.debug "in updated ... gd state= $virtualgd.currentContact"
+
 
 	unsubscribe()
 	subscribe(sensor, "contact", contactHandler)
@@ -131,6 +138,7 @@ def virtualgdcontactHandler(evt) {
 // how to determine which contact
 def realgdstate = sensor.currentContact
 //log.debug "in virtual gd contact/button handler event = $evt"
+//log.debug "in virtualgd contact handler check timeout = $checkTimeout"
 
   if("open" == evt.value)
     {
@@ -142,7 +150,7 @@ def realgdstate = sensor.currentContact
         log.debug "opening real gd to correspond with button press"
          mysend("Virtual Garage Door Opened syncing with Actual Garage Door!")   
          opener.on()
-         runIn(15, checkIfActuallyOpened)
+         runIn(checkTimeout, checkIfActuallyOpened)
         
       }
      }
@@ -155,7 +163,7 @@ def realgdstate = sensor.currentContact
         log.debug "closing real gd to correspond with button press"
         mysend("Virtual Garage Door Closed syncing with Actual Garage Door!")   
         opener.on()
-        runIn(15, checkIfActuallyClosed)
+        runIn(checkTimeout, checkIfActuallyClosed)
       }
    }
 }
