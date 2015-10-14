@@ -16,19 +16,19 @@
  * Date: 2015-10-11
  */
  metadata {
- definition (name: "Wemo Switch", namespace: "smartthings", author: "SmartThings") {
-     capability "Actuator"
-     capability "Switch"
-     capability "Polling"
-     capability "Refresh"
-     capability "Sensor"
+ 	definition (name: "Wemo Switch", namespace: "smartthings", author: "SmartThings") {
+        capability "Actuator"
+        capability "Switch"
+        capability "Polling"
+        capability "Refresh"
+        capability "Sensor"
 
-     attribute "IP", "string"
+        attribute "IP", "string"
 
-     command "subscribe"
-     command "resubscribe"
-     command "unsubscribe"
-     command "isOffline"
+        command "subscribe"
+        command "resubscribe"
+        command "unsubscribe"
+        command "isOffline"
  }
 
  // simulator metadata
@@ -183,7 +183,7 @@ def off() {
 
 def refresh() {
  	log.debug "Executing WeMo Switch 'subscribe', then 'timeSyncResponse', then 'poll'"
- 	[subscribe(), timeSyncResponse(), poll()]
+ 	[subscribe(), timeSyncResponse(), poll(), parent.doDeviceSync()]
 }
 
 def subscribe(hostAddress) {
