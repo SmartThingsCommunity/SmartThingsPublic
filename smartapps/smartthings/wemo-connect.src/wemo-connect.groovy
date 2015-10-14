@@ -245,7 +245,8 @@ def addSwitches() {
 							"port": selectedSwitch.value.port
 					]
 			])
-			d.sendEvent(name: "ip", value: convertHexToIP(selectedSwitch.value.ip))
+            def ipvalue = convertHexToIP(selectedSwitch.value.ip)
+			d.sendEvent(name: "IP", value: ipvalue, description: "IP changed to ${ipvalue}")
 			log.debug "Created ${d.displayName} with id: ${d.id}, dni: ${d.deviceNetworkId}"
 		} else {
 			log.debug "found ${d.displayName} with id $dni already exists"
@@ -566,18 +567,15 @@ private def parseDiscoveryMessage(String description) {
 			}
 		}
 	}
-
 	device
 }
 
 def doDeviceSync(){
 	log.debug "Doing Device Sync!"
-
 	if(!state.subscribe) {
 		subscribe(location, null, locationHandler, [filterEvents:false])
 		state.subscribe = true
 	}
-
 	discoverAllWemoTypes()
 }
 
@@ -585,17 +583,18 @@ private String convertHexToIP(hex) {
 	[convertHexToInt(hex[0..1]),convertHexToInt(hex[2..3]),convertHexToInt(hex[4..5]),convertHexToInt(hex[6..7])].join(".")
 }
 
-private Boolean canInstallLabs()
-{
+private Integer convertHexToInt(hex) {
+	Integer.parseInt(hex,16)
+}
+
+private Boolean canInstallLabs() {
 	return hasAllHubsOver("000.011.00603")
 }
 
-private Boolean hasAllHubsOver(String desiredFirmware)
-{
+private Boolean hasAllHubsOver(String desiredFirmware) {
 	return realHubFirmwareVersions.every { fw -> fw >= desiredFirmware }
 }
 
-private List getRealHubFirmwareVersions()
-{
+private List getRealHubFirmwareVersions() {
 	return location.hubs*.firmwareVersionString.findAll { it }
 }
