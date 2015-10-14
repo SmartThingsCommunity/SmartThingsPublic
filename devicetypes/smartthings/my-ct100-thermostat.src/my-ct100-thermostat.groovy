@@ -7,6 +7,11 @@
 and color based on temp for both.
 5. add color for battery status.
 
+v 2. some returns between indicators to move things down a line as recommended
+v 3 reintegrate changes smarthigns made in setheatingsetpoint and setcoolingsetpoint functions apparently to get around bugs.
+    these changes were made in the stock ct100 device type.
+
+
 */
 
 metadata {
@@ -317,7 +322,6 @@ def zwaveEvent(physicalgraph.zwave.commands.thermostatoperatingstatev2.Thermosta
 			break
 	}
     
-    zzz
 	def result = createEvent(map)
 	if (result.isStateChange && device.latestValue("thermostatMode") == "auto" && (result.value == "heating" || result.value == "cooling")) {
 		def thermostatSetpoint = device.latestValue("${result.value}Setpoint")
@@ -478,16 +482,17 @@ def nextRefreshQuery(name) {
 	zwave.multiChannelV3.multiChannelCmdEncap(destinationEndPoint:1).encapsulate(cmd).format()
 }
 
+
 def quickSetHeat(degrees) {
 	setHeatingSetpoint(degrees, 1000)
 }
 
 def setHeatingSetpoint(degrees, delay = 30000) {
-	setHeatingSetpoint(degrees.toDouble(), degrees, delay)
+	setHeatingSetpoint(degrees.toDouble(), delay)
 }
 
-def setHeatingSetpoint(Double degrees, Integer Intdegrees, Integer delay = 30000) {
-	log.trace "setHeatingSetpoint($degrees, $Intdegrees, $delay)"
+def setHeatingSetpoint(Double degrees, Integer delay = 30000) {
+	log.trace "setHeatingSetpoint($degrees, $delay)"
 	def deviceScale = state.scale ?: 1
 	def deviceScaleString = deviceScale == 2 ? "C" : "F"
 	def locationScale = getTemperatureScale()
@@ -501,16 +506,11 @@ def setHeatingSetpoint(Double degrees, Integer Intdegrees, Integer delay = 30000
 	} else {
 		convertedDegrees = degrees
 	}
-   // log.debug "setting converted degrees = $convertedDegrees"
-    
- 	sendEvent(name: 'heatingSetpoint', value: Intdegrees as Integer)
- 
+
 	delayBetween([
 		zwave.thermostatSetpointV1.thermostatSetpointSet(setpointType: 1, scale: deviceScale, precision: p, scaledValue: convertedDegrees).format(),
 		zwave.thermostatSetpointV1.thermostatSetpointGet(setpointType: 1).format()
 	], delay)
-    
-      
 }
 
 def quickSetCool(degrees) {
@@ -518,10 +518,10 @@ def quickSetCool(degrees) {
 }
 
 def setCoolingSetpoint(degrees, delay = 30000) {
-	setCoolingSetpoint(degrees.toDouble(),degrees, delay)
+	setCoolingSetpoint(degrees.toDouble(), delay)
 }
 
-def setCoolingSetpoint(Double degrees, Integer Intdegrees, Integer delay = 30000) {
+def setCoolingSetpoint(Double degrees, Integer delay = 30000) {
 	log.trace "setCoolingSetpoint($degrees, $delay)"
 	def deviceScale = state.scale ?: 1
 	def deviceScaleString = deviceScale == 2 ? "C" : "F"
@@ -537,14 +537,10 @@ def setCoolingSetpoint(Double degrees, Integer Intdegrees, Integer delay = 30000
 		convertedDegrees = degrees
 	}
 
-    sendEvent(name: 'coolingSetpoint', value: Intdegrees as Integer)
- 
 	delayBetween([
 		zwave.thermostatSetpointV1.thermostatSetpointSet(setpointType: 2, scale: deviceScale, precision: p,	 scaledValue: convertedDegrees).format(),
 		zwave.thermostatSetpointV1.thermostatSetpointGet(setpointType: 2).format()
 	], delay)
-    
-      
 }
 
 def configure() {
@@ -750,6 +746,7 @@ def heatLevelDown(){
     log.debug "Setting heat set point down to: ${nextLevel}"
     setHeatingSetpoint(nextLevel)
 }
+
 
 
 
