@@ -44,9 +44,9 @@
                  attributeState "turningOff", label:'${name}', action:"switch.on", icon:"st.switches.switch.on", backgroundColor:"#ffffff", nextState:"turningOn"
                  attributeState "offline", label:'${name}', icon:"st.switches.switch.off", backgroundColor:"#ff0000"
  			}
-            tileAttribute ("IP", key: "SECONDARY_CONTROL") {
-             	 attributeState "IP", label: '${currentValue}'
- 			}
+            //tileAttribute ("IP", key: "SECONDARY_CONTROL") {
+            // 	 attributeState "IP", label: '${currentValue}'
+ 			//}
         }
 
         standardTile("switch", "device.switch", width: 2, height: 2, canChangeIcon: true) {
@@ -102,7 +102,7 @@ def parse(String description) {
             log.info "Connection: ${device.currentValue("connection")}"
             if (device.currentValue("IP") == "Offline") {
                 def ipvalue = convertHexToIP(getDataValue("ip"))
-                sendEvent(name: "IP", value: ipvalue, description: "IP changed to ${ipvalue}")
+                sendEvent(name: "IP", value: ipvalue, descriptionText: "IP is ${ipvalue}")
             }
  			result << createEvent(name: "switch", value: value)
  		}
@@ -144,64 +144,62 @@ private getHostAddress() {
 }
 
 def on() {
- 	log.debug "Executing 'on'"
-    sendEvent(name: "switch", value: "on", description: "Switch is ON")
-    def turnOn = new physicalgraph.device.HubAction("""POST /upnp/control/basicevent1 HTTP/1.1
-    SOAPAction: "urn:Belkin:service:basicevent:1#SetBinaryState"
-    Host: ${getHostAddress()}
-    Content-Type: text/xml
-    Content-Length: 333
+log.debug "Executing 'on'"
+def turnOn = new physicalgraph.device.HubAction("""POST /upnp/control/basicevent1 HTTP/1.1
+SOAPAction: "urn:Belkin:service:basicevent:1#SetBinaryState"
+Host: ${getHostAddress()}
+Content-Type: text/xml
+Content-Length: 333
 
-    <?xml version="1.0"?>
-    <SOAP-ENV:Envelope xmlns:SOAP-ENV="http://schemas.xmlsoap.org/soap/envelope/" SOAP-ENV:encodingStyle="http://schemas.xmlsoap.org/soap/encoding/">
-    <SOAP-ENV:Body>
-     <m:SetBinaryState xmlns:m="urn:Belkin:service:basicevent:1">
-    <BinaryState>1</BinaryState>
-     </m:SetBinaryState>
-    </SOAP-ENV:Body>
-    </SOAP-ENV:Envelope>""", physicalgraph.device.Protocol.LAN)
+<?xml version="1.0"?>
+<SOAP-ENV:Envelope xmlns:SOAP-ENV="http://schemas.xmlsoap.org/soap/envelope/" SOAP-ENV:encodingStyle="http://schemas.xmlsoap.org/soap/encoding/">
+<SOAP-ENV:Body>
+ <m:SetBinaryState xmlns:m="urn:Belkin:service:basicevent:1">
+<BinaryState>1</BinaryState>
+ </m:SetBinaryState>
+</SOAP-ENV:Body>
+</SOAP-ENV:Envelope>""", physicalgraph.device.Protocol.LAN)
 }
 
 def off() {
- 	log.debug "Executing 'off'"
- 	sendEvent(name: "switch", value: "off", description: "Switch is OFF")
- 	def turnOff = new physicalgraph.device.HubAction("""POST /upnp/control/basicevent1 HTTP/1.1
-    SOAPAction: "urn:Belkin:service:basicevent:1#SetBinaryState"
-    Host: ${getHostAddress()}
-    Content-Type: text/xml
-    Content-Length: 333
+log.debug "Executing 'off'"
+def turnOff = new physicalgraph.device.HubAction("""POST /upnp/control/basicevent1 HTTP/1.1
+SOAPAction: "urn:Belkin:service:basicevent:1#SetBinaryState"
+Host: ${getHostAddress()}
+Content-Type: text/xml
+Content-Length: 333
 
-    <?xml version="1.0"?>
-    <SOAP-ENV:Envelope xmlns:SOAP-ENV="http://schemas.xmlsoap.org/soap/envelope/" SOAP-ENV:encodingStyle="http://schemas.xmlsoap.org/soap/encoding/">
-    <SOAP-ENV:Body>
-     <m:SetBinaryState xmlns:m="urn:Belkin:service:basicevent:1">
-    <BinaryState>0</BinaryState>
-     </m:SetBinaryState>
-    </SOAP-ENV:Body>
-    </SOAP-ENV:Envelope>""", physicalgraph.device.Protocol.LAN)
-}
-
-def refresh() {
- 	log.debug "Executing WeMo Switch 'subscribe', then 'timeSyncResponse', then 'poll'"
- 	[subscribe(), timeSyncResponse(), poll(), parent.doDeviceSync()]
+<?xml version="1.0"?>
+<SOAP-ENV:Envelope xmlns:SOAP-ENV="http://schemas.xmlsoap.org/soap/envelope/" SOAP-ENV:encodingStyle="http://schemas.xmlsoap.org/soap/encoding/">
+<SOAP-ENV:Body>
+ <m:SetBinaryState xmlns:m="urn:Belkin:service:basicevent:1">
+<BinaryState>0</BinaryState>
+ </m:SetBinaryState>
+</SOAP-ENV:Body>
+</SOAP-ENV:Envelope>""", physicalgraph.device.Protocol.LAN)
 }
 
 def subscribe(hostAddress) {
     log.debug "Executing 'subscribe()'"
     def address = getCallBackAddress()
-    new physicalgraph.device.HubAction("""SUBSCRIBE /upnp/event/basicevent1 HTTP/1.1
-    HOST: ${hostAddress}
-    CALLBACK: <http://${address}/>
-    NT: upnp:event
-    TIMEOUT: Second-5400
-    User-Agent: CyberGarage-HTTP/1.0
+new physicalgraph.device.HubAction("""SUBSCRIBE /upnp/event/basicevent1 HTTP/1.1
+HOST: ${hostAddress}
+CALLBACK: <http://${address}/>
+NT: upnp:event
+TIMEOUT: Second-5400
+User-Agent: CyberGarage-HTTP/1.0
 
 
-    """, physicalgraph.device.Protocol.LAN)
+""", physicalgraph.device.Protocol.LAN)
 }
 
 def subscribe() {
 	subscribe(getHostAddress())
+}
+
+def refresh() {
+ 	log.debug "Executing WeMo Switch 'subscribe', then 'timeSyncResponse', then 'poll'"
+ 	[subscribe(), timeSyncResponse(), poll()]
 }
 
 def subscribe(ip, port) {
@@ -210,7 +208,7 @@ def subscribe(ip, port) {
     if (ip && ip != existingIp) {
     	 def ipvalue = convertHexToIP(getDataValue("ip"))
          log.debug "Updating ip from $existingIp to $ipvalue"
-         sendEvent(name: "IP", value: ipvalue, description: "IP changed to ${ipvalue}")
+         sendEvent(name: "IP", value: ipvalue, descriptionText: "IP changed to ${ipvalue}")
          updateDataValue("ip", ip)
     }
  	if (port && port != existingPort) {
@@ -223,24 +221,24 @@ def subscribe(ip, port) {
 def resubscribe() {
     log.debug "Executing 'resubscribe()'"
     def sid = getDeviceDataByName("subscriptionId")
-    new physicalgraph.device.HubAction("""SUBSCRIBE /upnp/event/basicevent1 HTTP/1.1
-    HOST: ${getHostAddress()}
-    SID: uuid:${sid}
-    TIMEOUT: Second-5400
+new physicalgraph.device.HubAction("""SUBSCRIBE /upnp/event/basicevent1 HTTP/1.1
+HOST: ${getHostAddress()}
+SID: uuid:${sid}
+TIMEOUT: Second-5400
 
 
-    """, physicalgraph.device.Protocol.LAN)
+""", physicalgraph.device.Protocol.LAN)
 }
 
 
 def unsubscribe() {
     def sid = getDeviceDataByName("subscriptionId")
-    new physicalgraph.device.HubAction("""UNSUBSCRIBE publisher path HTTP/1.1
-    HOST: ${getHostAddress()}
-    SID: uuid:${sid}
+new physicalgraph.device.HubAction("""UNSUBSCRIBE publisher path HTTP/1.1
+HOST: ${getHostAddress()}
+SID: uuid:${sid}
 
 
-    """, physicalgraph.device.Protocol.LAN)
+""", physicalgraph.device.Protocol.LAN)
 }
 
 
@@ -269,26 +267,26 @@ def timeSyncResponse() {
 }
 
 def isOffline() {
-	sendEvent(name: "IP", value: "Offline", description: "The device is offline")
-    sendEvent(name: "switch", value: "offline", display: false)
+	sendEvent(name: "IP", value: "Offline", displayed: false)
+    sendEvent(name: "switch", value: "offline", descriptionText: "The device is offline")
 }
 
 def poll() {
     log.debug "Executing 'poll'"
     if (device.currentValue("IP") != "Offline")
     	runIn(10, isOffline)
-    new physicalgraph.device.HubAction("""POST /upnp/control/basicevent1 HTTP/1.1
-    SOAPACTION: "urn:Belkin:service:basicevent:1#GetBinaryState"
-    Content-Length: 277
-    Content-Type: text/xml; charset="utf-8"
-    HOST: ${getHostAddress()}
-    User-Agent: CyberGarage-HTTP/1.0
+new physicalgraph.device.HubAction("""POST /upnp/control/basicevent1 HTTP/1.1
+SOAPACTION: "urn:Belkin:service:basicevent:1#GetBinaryState"
+Content-Length: 277
+Content-Type: text/xml; charset="utf-8"
+HOST: ${getHostAddress()}
+User-Agent: CyberGarage-HTTP/1.0
 
-    <?xml version="1.0" encoding="utf-8"?>
-    <s:Envelope xmlns:s="http://schemas.xmlsoap.org/soap/envelope/" s:encodingStyle="http://schemas.xmlsoap.org/soap/encoding/">
-    <s:Body>
-    <u:GetBinaryState xmlns:u="urn:Belkin:service:basicevent:1">
-    </u:GetBinaryState>
-    </s:Body>
-    </s:Envelope>""", physicalgraph.device.Protocol.LAN)
+<?xml version="1.0" encoding="utf-8"?>
+<s:Envelope xmlns:s="http://schemas.xmlsoap.org/soap/envelope/" s:encodingStyle="http://schemas.xmlsoap.org/soap/encoding/">
+<s:Body>
+<u:GetBinaryState xmlns:u="urn:Belkin:service:basicevent:1">
+</u:GetBinaryState>
+</s:Body>
+</s:Envelope>""", physicalgraph.device.Protocol.LAN)
 }
