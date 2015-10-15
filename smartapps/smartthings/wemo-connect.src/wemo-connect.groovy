@@ -192,7 +192,7 @@ def initialize() {
     
 	runIn(5, "subscribeToDevices") //initial subscriptions delayed by 5 seconds
 	runIn(10, "refreshDevices") //refresh devices, delayed by 10 seconds
-    runEvery15Minutes("refresh")
+    runEvery5Minutes("refresh")
 }
 
 def resubscribe() {
