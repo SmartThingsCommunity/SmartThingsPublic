@@ -246,7 +246,7 @@ def addSwitches() {
 					]
 			])
             def ipvalue = convertHexToIP(selectedSwitch.value.ip)
-			d.sendEvent(name: "IP", value: ipvalue, description: "IP changed to ${ipvalue}")
+			d.sendEvent(name: "IP", value: ipvalue, descriptionText: "IP is ${ipvalue}")
 			log.debug "Created ${d.displayName} with id: ${d.id}, dni: ${d.deviceNetworkId}"
 		} else {
 			log.debug "found ${d.displayName} with id $dni already exists"
