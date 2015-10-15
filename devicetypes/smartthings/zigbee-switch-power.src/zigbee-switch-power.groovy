@@ -25,17 +25,6 @@ metadata {
         fingerprint profileId: "0104", inClusters: "0000, 0003, 0004, 0005, 0006, 0702"
     }
 
-    // simulator metadata
-    simulator {
-        // status messages
-        status "on": "on/off: 1"
-        status "off": "on/off: 0"
-
-        // reply messages
-        reply "zcl on-off on": "on/off: 1"
-        reply "zcl on-off off": "on/off: 0"
-    }
-
     tiles(scale: 2) {
         multiAttributeTile(name:"switch", type: "lighting", width: 6, height: 4, canChangeIcon: true){
             tileAttribute ("device.switch", key: "PRIMARY_CONTROL") {
