@@ -20,7 +20,7 @@ preferences {
 	}
 	section("Turn off when there is no motion and presence") {
 		input "motionSensor", "capability.motionSensor", title: "Choose motion sensor"
-   		input "presenceSensors", "capability.presenceSensor", title: "Choose presence sensors", multiple: true
+   		input "presenceSensors", "capability.presenceSensor", title: "Choose presence sensors", multiple: true, required: false
 	}
 	section("Delay before turning off") {                    
 		input "delayMins", "number", title: "Minutes of inactivity?"
