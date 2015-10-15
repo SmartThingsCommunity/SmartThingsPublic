@@ -180,8 +180,8 @@ Content-Length: 333
 }
 
 def subscribe(hostAddress) {
-    log.debug "Executing 'subscribe()'"
-    def address = getCallBackAddress()
+log.debug "Executing 'subscribe()'"
+def address = getCallBackAddress()
 new physicalgraph.device.HubAction("""SUBSCRIBE /upnp/event/basicevent1 HTTP/1.1
 HOST: ${hostAddress}
 CALLBACK: <http://${address}/>
@@ -267,14 +267,14 @@ def timeSyncResponse() {
 }
 
 def isOffline() {
-	sendEvent(name: "IP", value: "Offline", displayed: false)
+	//sendEvent(name: "IP", value: "Offline", displayed: false)
     sendEvent(name: "switch", value: "offline", descriptionText: "The device is offline")
 }
 
 def poll() {
-    log.debug "Executing 'poll'"
-    if (device.currentValue("IP") != "Offline")
-    	runIn(10, isOffline)
+log.debug "Executing 'poll'"
+if (device.currentValue("IP") != "Offline")
+    runIn(10, isOffline)
 new physicalgraph.device.HubAction("""POST /upnp/control/basicevent1 HTTP/1.1
 SOAPACTION: "urn:Belkin:service:basicevent:1#GetBinaryState"
 Content-Length: 277
