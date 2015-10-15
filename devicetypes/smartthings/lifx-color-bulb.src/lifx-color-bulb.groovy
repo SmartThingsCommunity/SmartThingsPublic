@@ -5,7 +5,7 @@
  *
  */
 metadata {
-	definition (name: "LIFX Color Bulb", namespace: "lifx", author: "Jack Chen") {
+	definition (name: "LIFX Color Bulb", namespace: "smartthings", author: "LIFX") {
 		capability "Actuator"
 		capability "Color Control"
 		capability "Color Temperature"

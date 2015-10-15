@@ -1,3 +1,4 @@
+
 /**
  *  Hue Bulb
  *
@@ -15,8 +16,8 @@ metadata {
 		capability "Sensor"
 
 		command "setAdjustedColor"
-        command "reset"        
-        command "refresh"
+                command "reset"        
+                command "refresh"
 	}
 
 	simulator {
@@ -49,7 +50,6 @@ metadata {
 
 	main(["switch"])
 	details(["switch", "levelSliderControl", "rgbSelector", "refresh", "reset"])
-
 }
 
 // parse events into attributes
@@ -68,13 +68,13 @@ def parse(description) {
 }
 
 // handle commands
-def on(transition = "4") {
-	log.trace parent.on(this,transition)
+def on() {
+	log.trace parent.on(this)
 	sendEvent(name: "switch", value: "on")
 }
 
-def off(transition = "4") {
-	log.trace parent.off(this,transition)
+def off() {
+	log.trace parent.off(this)
 	sendEvent(name: "switch", value: "off")
 }
 
@@ -107,9 +107,9 @@ def setHue(percent) {
 	sendEvent(name: "hue", value: percent)
 }
 
-def setColor(value,alert = "none",transition = 4) {
+def setColor(value) {
 	log.debug "setColor: ${value}, $this"
-	parent.setColor(this, value, alert, transition)
+	parent.setColor(this, value)
 	if (value.hue) { sendEvent(name: "hue", value: value.hue)}
 	if (value.saturation) { sendEvent(name: "saturation", value: value.saturation)}
 	if (value.hex) { sendEvent(name: "color", value: value.hex)}
