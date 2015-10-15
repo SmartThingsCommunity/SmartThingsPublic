@@ -10,10 +10,10 @@
  *  on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the License
  *  for the specific language governing permissions and limitations under the License.
  *
- * 	Billion Smart Meter
+ *  Billion Smart Meter
  *
- * 	Author: Intraix
- * 	Date: 2015-09-03
+ *  Author: Intraix
+ *  Date: 2015-09-03
  */
 metadata {
     definition(name: "Billion Smart Meter", namespace: "intraix", author: "Intraix") {
@@ -89,9 +89,22 @@ def parse(String description) {
     def events = []
 
     if (description?.startsWith("catchall:")) {
-        def msg = zigbee.parse(description)
-        log.trace msg
-        log.trace "data: $msg.data"
+        def descMap = parseCatchAllAsMap(description)
+        log.debug "Catch all parsing: $description"
+        // Command 01 is Read Attributes response and Command 0A is Report Attributes response.
+        if (descMap.command == "01" || descMap.command == "0A") {
+            if (descMap.clusterId == "0006") {
+                // The last byte is the on/off value = 01/00.
+                def value = descMap.raw.endsWith("01") ? "on" : "off"
+                def event = createEvent(name: "switch", value: value)
+                events.add(event)
+            } else if (descMap.clusterId == "0702") {
+                // The last 21 bytes are the energy data payload, which is 42 characters.
+                def payload = descMap.raw.substring(descMap.raw.length() - 42, descMap.raw.length())
+                log.debug "payload is $payload"
+                events.addAll(parseEnergyPayload(payload))
+            }
+        }
     } else if (description?.startsWith("read attr -")) {
         def descMap = parseDescriptionAsMap(description)
         log.debug "Read attr: $description"
@@ -103,42 +116,7 @@ def parse(String description) {
             // Payload length is 21 bytes, which is 42 characters
             def payload = descMap.raw.substring(descMap.raw.length() - 42, descMap.raw.length())
             log.trace "payload is $payload"
-
-            // Decode the various parameters from the payload
-            def voltage = Integer.parseInt(payload.substring(0, 4), 16) / 100
-            log.trace "voltage is $voltage"
-            def voltageEvent = createEvent(name: "voltage", value: voltage)
-            events.add(voltageEvent)
-
-            def current = Integer.parseInt(payload.substring(4, 8), 16) / 100
-            log.trace "current is $current"
-            def currentEvent = createEvent(name: "current", value: current)
-            events.add(currentEvent)
-
-            def frequency = Integer.parseInt(payload.substring(8, 12), 16) / 100
-            log.trace "frequency is $frequency"
-            def frequencyEvent = createEvent(name: "frequency", value: frequency)
-            events.add(frequencyEvent)
-
-            def powerFactor = Integer.parseInt(payload.substring(12, 14), 16) / 100
-            log.trace "powerFactor is $powerFactor"
-            def powerFactorEvent = createEvent(name: "powerFactor", value: powerFactor)
-            events.add(powerFactorEvent)
-
-            def activePower = Integer.parseInt(payload.substring(14, 22), 16) / 100
-            log.trace "activePower is $activePower"
-            def powerEvent = createEvent(name: "power", value: activePower)
-            events.add(powerEvent)
-
-            def apparentPower = Integer.parseInt(payload.substring(22, 30), 16) / 100
-            log.trace "apparentPower is $apparentPower"
-            def apparentPowerEvent = createEvent(name: "apparentPower", value: apparentPower)
-            events.add(apparentPowerEvent)
-
-            def mainEnergy = Integer.parseInt(payload.substring(30, 42), 16) / 1000
-            log.trace "mainEnergy is $mainEnergy"
-            def energyEvent = createEvent(name: "energy", value: mainEnergy)
-            events.add(energyEvent)
+            events.addAll(parseEnergyPayload(payload))
         }
     } else if (description?.startsWith("on/off:")) {
         log.debug "Switch command"
@@ -151,11 +129,77 @@ def parse(String description) {
     return events
 }
 
+
+def parseEnergyPayload(payload) {
+    def events = []
+
+    // Decode the various parameters from the payload
+    def voltage = Integer.parseInt(payload.substring(0, 4), 16) / 100
+    log.trace "voltage is $voltage"
+    def voltageEvent = createEvent(name: "voltage", value: voltage)
+    events.add(voltageEvent)
+
+    def current = Integer.parseInt(payload.substring(4, 8), 16) / 100
+    log.trace "current is $current"
+    def currentEvent = createEvent(name: "current", value: current)
+    events.add(currentEvent)
+
+    def frequency = Integer.parseInt(payload.substring(8, 12), 16) / 100
+    log.trace "frequency is $frequency"
+    def frequencyEvent = createEvent(name: "frequency", value: frequency)
+    events.add(frequencyEvent)
+
+    def powerFactor = Integer.parseInt(payload.substring(12, 14), 16) / 100
+    log.trace "powerFactor is $powerFactor"
+    def powerFactorEvent = createEvent(name: "powerFactor", value: powerFactor)
+    events.add(powerFactorEvent)
+
+    def activePower = Integer.parseInt(payload.substring(14, 22), 16) / 100
+    log.trace "activePower is $activePower"
+    def powerEvent = createEvent(name: "power", value: activePower)
+    events.add(powerEvent)
+
+    def apparentPower = Integer.parseInt(payload.substring(22, 30), 16) / 100
+    log.trace "apparentPower is $apparentPower"
+    def apparentPowerEvent = createEvent(name: "apparentPower", value: apparentPower)
+    events.add(apparentPowerEvent)
+
+    def mainEnergy = Integer.parseInt(payload.substring(30, 42), 16) / 1000
+    log.trace "mainEnergy is $mainEnergy"
+    def energyEvent = createEvent(name: "energy", value: mainEnergy)
+    events.add(energyEvent)
+
+    return events
+}
+
 def parseDescriptionAsMap(description) {
     (description - "read attr - ").split(",").inject([:]) { map, param ->
         def nameAndValue = param.split(":")
         map += [(nameAndValue[0].trim()): nameAndValue[1].trim()]
     }
+}
+
+def parseCatchAllAsMap(description) {
+    def seg = (description - "catchall: ").split(" ")
+    def zigbeeMap = [:]
+    zigbeeMap += [raw: (description - "catchall: ")]
+    zigbeeMap += [profileId: seg[0]]
+    zigbeeMap += [clusterId: seg[1]]
+    zigbeeMap += [sourceEndpoint: seg[2]]
+    zigbeeMap += [destinationEndpoint: seg[3]]
+    zigbeeMap += [options: seg[4]]
+    zigbeeMap += [messageType: seg[5]]
+    zigbeeMap += [dni: seg[6]]
+    zigbeeMap += [isClusterSpecific: Short.valueOf(seg[7], 16) != 0]
+    zigbeeMap += [isManufacturerSpecific: Short.valueOf(seg[8], 16) != 0]
+    zigbeeMap += [manufacturerId: seg[9]]
+    zigbeeMap += [command: seg[10]]
+    zigbeeMap += [direction: seg[11]]
+    zigbeeMap += [data: seg.size() > 12 ? seg[12].split("").findAll { it }.collate(2).collect {
+        it.join('')
+    } : []]
+
+    zigbeeMap
 }
 
 // Commands to device
