@@ -24,6 +24,8 @@ metadata {
 		capability "Polling"
 		capability "Refresh"
 		capability "Sensor"
+		
+		attribute "IP", "string"
 
 		command "subscribe"
 		command "resubscribe"
@@ -194,6 +196,7 @@ def subscribe(ip, port) {
 	def existingPort = getDataValue("port")
 	if (ip && ip != existingIp) {
 		log.debug "Updating ip from $existingIp to $ip"
+		sendEvent(name: "IP", value: convertHexToIP(ip))
 		updateDataValue("ip", ip)
 	}
 	if (port && port != existingPort) {
