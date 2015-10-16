@@ -143,7 +143,7 @@ def bulbDiscovery() {
     if (numFound == 0)
     	app.updateSetting("selectedBulbs", "") 
         
-	if((bulbRefreshCount % 3) == 0) {
+	if((bulbRefreshCount % 5) == 0) {
 		discoverHueBulbs()
 	}
 
@@ -318,11 +318,15 @@ def addBulbs() {
 			def newHueBulb
 			if (bulbs instanceof java.util.Map) {
 				newHueBulb = bulbs.find { (app.id + "/" + it.value.id) == dni }
-				if (newHueBulb?.value?.type?.equalsIgnoreCase("Dimmable light")) {
-					d = addChildDevice("smartthings", "Hue Lux Bulb", dni, newHueBulb?.value.hub, ["label":newHueBulb?.value.name])
-				} else {
-					d = addChildDevice("smartthings", "Hue Bulb", dni, newHueBulb?.value.hub, ["label":newHueBulb?.value.name])
-				}
+                if (newHueBulb != null) {
+                    if (newHueBulb?.value?.type?.equalsIgnoreCase("Dimmable light") ) {
+                        d = addChildDevice("smartthings", "Hue Lux Bulb", dni, newHueBulb?.value.hub, ["label":newHueBulb?.value.name])
+                    } else {
+                        d = addChildDevice("smartthings", "Hue Bulb", dni, newHueBulb?.value.hub, ["label":newHueBulb?.value.name])
+                    }
+                } else {
+                	log.debug "$dni in not longer paired to the Hue Bridge or ID changed"
+                }
 			} else { 
             	//backwards compatable
 				newHueBulb = bulbs.find { (app.id + "/" + it.id) == dni }
