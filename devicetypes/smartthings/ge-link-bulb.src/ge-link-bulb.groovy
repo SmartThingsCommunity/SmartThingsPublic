@@ -180,9 +180,9 @@ def parse(String description) {
 def poll() {
 
     [
-	"st rattr 0x${device.deviceNetworkId} 1 6 0", "delay 500",
-    "st rattr 0x${device.deviceNetworkId} 1 8 0", "delay 500",
-    "st wattr 0x${device.deviceNetworkId} 1 8 0x10 0x21 {${state?.dOnOff ?: '0000'}}"
+	"st rattr 0x${device.deviceNetworkId} ${endpointId} 6 0", "delay 500",
+    "st rattr 0x${device.deviceNetworkId} ${endpointId} 8 0", "delay 500",
+    "st wattr 0x${device.deviceNetworkId} ${endpointId} 8 0x10 0x21 {${state?.dOnOff ?: '0000'}}"
     ]
 
 }
@@ -264,7 +264,7 @@ def updated() {
     	state.dOnOff = "0000"
     }
 
-    "st wattr 0x${device.deviceNetworkId} 1 8 0x10 0x21 {${state.dOnOff}}"
+    "st wattr 0x${device.deviceNetworkId} ${endpointId} 8 0x10 0x21 {${state.dOnOff}}"
 
 
 }
@@ -275,7 +275,7 @@ def on() {
 
     // log.debug "on()"
 	sendEvent(name: "switch", value: "on")
-	"st cmd 0x${device.deviceNetworkId} 1 6 1 {}"
+	"st cmd 0x${device.deviceNetworkId} ${endpointId} 6 1 {}"
 }
 
 def off() {
@@ -284,15 +284,15 @@ def off() {
 
     // log.debug "off()"
 	sendEvent(name: "switch", value: "off")
-	"st cmd 0x${device.deviceNetworkId} 1 6 0 {}"
+	"st cmd 0x${device.deviceNetworkId} ${endpointId} 6 0 {}"
 }
 
 def refresh() {
 
     [
-	"st rattr 0x${device.deviceNetworkId} 1 6 0", "delay 500",
-    "st rattr 0x${device.deviceNetworkId} 1 8 0", "delay 500",
-    "st wattr 0x${device.deviceNetworkId} 1 8 0x10 0x21 {${state?.dOnOff ?: '0000'}}"
+	"st rattr 0x${device.deviceNetworkId} ${endpointId} 6 0", "delay 500",
+    "st rattr 0x${device.deviceNetworkId} ${endpointId} 8 0", "delay 500",
+    "st wattr 0x${device.deviceNetworkId} ${endpointId} 8 0x10 0x21 {${state?.dOnOff ?: '0000'}}"
     ]
     poll()
 
@@ -304,7 +304,7 @@ def setLevel(value) {
 	value = value as Integer
 	if (value == 0) {
 		sendEvent(name: "switch", value: "off")
-		cmds << "st cmd 0x${device.deviceNetworkId} 1 8 0 {0000 ${state.rate}}"
+		cmds << "st cmd 0x${device.deviceNetworkId} ${endpointId} 8 0 {0000 ${state.rate}}"
 	}
 	else if (device.latestValue("switch") == "off") {
 		sendEvent(name: "switch", value: "on")
@@ -318,10 +318,10 @@ def setLevel(value) {
     state.lvl = "${level}"
 
     if (dimRate && (state?.rate != null)) {
-    	cmds << "st cmd 0x${device.deviceNetworkId} 1 8 4 {${level} ${state.rate}}"
+    	cmds << "st cmd 0x${device.deviceNetworkId} ${endpointId} 8 4 {${level} ${state.rate}}"
     }
     else {
-    	cmds << "st cmd 0x${device.deviceNetworkId} 1 8 4 {${level} 1500}"
+    	cmds << "st cmd 0x${device.deviceNetworkId} ${endpointId} 8 4 {${level} 1500}"
     }
 
     log.debug cmds
@@ -335,14 +335,14 @@ def configure() {
 
         //Switch Reporting
         "zcl global send-me-a-report 6 0 0x10 0 3600 {01}", "delay 500",
-        "send 0x${device.deviceNetworkId} 1 1", "delay 1000",
+        "send 0x${device.deviceNetworkId} ${endpointId} 1", "delay 1000",
 
         //Level Control Reporting
         "zcl global send-me-a-report 8 0 0x20 5 3600 {0010}", "delay 200",
-        "send 0x${device.deviceNetworkId} 1 1", "delay 1500",
+        "send 0x${device.deviceNetworkId} ${endpointId} 1", "delay 1500",
 
-        "zdo bind 0x${device.deviceNetworkId} 1 1 6 {${device.zigbeeId}} {}", "delay 1000",
-		"zdo bind 0x${device.deviceNetworkId} 1 1 8 {${device.zigbeeId}} {}", "delay 500",
+        "zdo bind 0x${device.deviceNetworkId} ${endpointId} 1 6 {${device.zigbeeId}} {}", "delay 1000",
+		"zdo bind 0x${device.deviceNetworkId} ${endpointId} 1 8 {${device.zigbeeId}} {}", "delay 500",
 	]
     return configCmds + refresh() // send refresh cmds as part of config
 }
@@ -375,4 +375,8 @@ private byte[] reverseArray(byte[] array) {
         i++;
     }
     return array
+}
+
+private getEndpointId() {
+	new BigInteger(device.endpointId, 16).toString()
 }
