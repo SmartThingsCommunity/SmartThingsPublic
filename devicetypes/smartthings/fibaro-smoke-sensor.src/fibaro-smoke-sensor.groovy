@@ -266,18 +266,20 @@ def zwaveEvent(physicalgraph.zwave.commands.wakeupv1.WakeUpNotification cmd) {
     log.info "Executing zwaveEvent 84 (WakeUpV1): 07 (WakeUpNotification) with cmd: $cmd"
     log.info "checking this MSR : ${getDataValue("MSR")} before sending configuration to device"
     def result = [createEvent(descriptionText: "${device.displayName} woke up", isStateChange: false)]
+    def cmds = []
     /* check MSR = "manufacturerId-productTypeId" to make sure configuration commands are sent to the right model */
     if (!isConfigured() && getDataValue("MSR")?.startsWith("010F-0C02")) {
         result << response(configure()) // configure a newly joined device or joined device with preference update
     } else {
-        //Only ask for battery if we havn't had a BatteryReport in a while
+        //Only ask for battery if we haven't had a BatteryReport in a while
         if (!state.lastbatt || (new Date().time) - state.lastbatt > 24*60*60*1000) {
             log.debug("Device has been configured sending >> batteryGet()")
-            result << response(zwave.securityV1.securityMessageEncapsulation().encapsulate(zwave.batteryV1.batteryGet()).format())
-            result << response("delay 1200")  // leave time for device to respond to batteryGet
+            cmds << zwave.securityV1.securityMessageEncapsulation().encapsulate(zwave.batteryV1.batteryGet()).format()
+            cmds << "delay 1200"
         }
         log.debug("Device has been configured sending >> wakeUpNoMoreInformation()")
-        result << response(zwave.wakeUpV1.wakeUpNoMoreInformation().format()) //tell device back to sleep
+        cmds << zwave.wakeUpV1.wakeUpNoMoreInformation().format()
+        result << response(cmds) //tell device back to sleep
     }
     result
 }
