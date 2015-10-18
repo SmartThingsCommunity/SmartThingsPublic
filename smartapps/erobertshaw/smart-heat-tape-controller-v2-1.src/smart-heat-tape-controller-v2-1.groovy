@@ -186,8 +186,16 @@ def recordWeatherStats(observation){
 
 def setHeatTape(){
 	if(state.snowOnRoof && state.aboveMeltTemperature){
-    	heattape.on()
+        heattape.each { 
+            if( it.currentValue("switch") != "on"){
+                it.on()
+            }
+        }
     }else{
-    	heattape.off()
+    	 heattape.each { 
+            if( it.currentValue("switch") == "on"){
+                it.off()
+            }
+        }
     }
 }
