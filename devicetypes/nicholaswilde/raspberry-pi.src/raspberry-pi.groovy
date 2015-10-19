@@ -42,6 +42,7 @@ metadata {
         capability "Switch"
         capability "Sensor"
         capability "Actuator"
+        capability "Contact Sensor"
         
         attribute "cpuPercentage", "string"
         attribute "memory", "string"
