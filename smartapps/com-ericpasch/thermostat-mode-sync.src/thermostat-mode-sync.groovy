@@ -40,7 +40,7 @@ def rootPage() {
         section("Modes") {
         	if(allModes) {
                 allModes.each { m->
-                    input( name: "baseMode${m}", type: "enum", title: "When hub is ${m}, set...", options: ["Nothing", "Away", "Home"], defaultValue: "baseMode${m}", required: true )
+                    input( name: "mstate_$m", type: "enum", title: "When hub is ${m}, set...", options: ["Nothing", "Away", "Home"], defaultValue: settings."mstate_$m", required: true )
                 }
             }
         }
@@ -59,17 +59,27 @@ def updated() {
 }
 
 def initialize() {
-	subscribe(location, "mode", modeChangeHandler)
+	subscribe(location, modeChangeHandler)
 }
 
 def modeChangeHandler(evt) {
-	def curMode = evt.location.currentMode
+	log.debug "Mode Change Handler"
+    
+	def curMode = location.currentMode
+    def syncMode = settings."mstate_$curMode"
+    
+    log.debug "Base Mode Changed to ${curMode}"
+    log.debug "Sync Thermostat to ${syncMode}"
     
     thermostats.each { t->
-    	if("baseMode${curMode}" == "Away") {
+    	if (syncMode == "Away") {
+        	log.debug "Setting thermostat mode to Away"
         	t.away()
-        } else if("baseMode${curMode}" == "Home") {
+        } else if (syncMode == "Home") {
+        	log.debug "Setting thermostat mode to Home"
          	t.present()
-		}
+		} else {
+        	log.debug "Thermostat mode not updated"
+        }
     }
 }
