@@ -1,5 +1,5 @@
 /**
- *	D-Link DCS-5020L v1.1.0
+ *	D-Link DCS-5020L v1.1.1
  *  Modified from Generic Camera Device v1.0.07102014
  *
  *  Copyright 2014 patrick@patrickstuart.com
@@ -37,7 +37,7 @@ metadata {
     input("CameraIP", "string", title:"Camera IP Address", description: "Please enter your camera's IP Address", required: true, displayDuringSetup: true)
     input("CameraPort", "string", title:"Camera Port", description: "Please enter your camera's Port", defaultValue: 80 , required: true, displayDuringSetup: true)
     input("CameraUser", "string", title:"Camera User", description: "Please enter your camera's username", required: false, displayDuringSetup: true)
-    input("CameraPassword", "string", title:"Camera Password", description: "Please enter your camera's password", required: false, displayDuringSetup: true)
+    input("CameraPassword", "password", title:"Camera Password", description: "Please enter your camera's password", required: false, displayDuringSetup: true)
     input("CameraPreset", "string", title:"Camera Preset", description: "Please enter which preset view you want to use (other than 'Home')", defaultValue: 1 , required: true, displayDuringSetup: true)
 	}
     
