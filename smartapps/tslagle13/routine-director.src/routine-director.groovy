@@ -50,7 +50,7 @@ preferences {
         }
         section("Send Notifications?") {
             input("recipients", "contact", title: "Send notifications to") {
-                input "phone", "phone", title: "Send an SMS to this number?"
+                input "phone", "phone", title: "Send an SMS to this number?", required:false
             }
         }
 
@@ -266,7 +266,9 @@ def sendAway(msg) {
         }
         else {
         	sendPush(msg)
-            sendSms(phone, msg)
+        	if(phone){
+            		sendSms(phone, msg)
+        	}	
         }    
     }
 
@@ -280,7 +282,9 @@ def sendHome(msg) {
         }
         else {
         	sendPush(msg)
-            sendSms(phone, msg)
+                if(phone){
+            		sendSms(phone, msg)
+        	}
         }    
     }
 
