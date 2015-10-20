@@ -33,7 +33,7 @@ def setupPage() {
 	dynamicPage(name: "setupPage",title: "3400-X Keypad Manager", install: true, uninstall: true) {
         section("Settings") {
             // TODO: put inputs here
-            input(name: "keypad", title: "Keypad", type: "device.centraliteKeypad", multiple: false)
+            input(name: "keypad", title: "Keypad", type: "device.centraliteKeypad", multiple: false, required: true)
             input(name: "pin"	, title: "PIN code", type: "number", range: "0000..9999", required: true)
         }
         /*
@@ -65,7 +65,12 @@ def updated() {
 def initialize() {
 	// TODO: subscribe to attributes, devices, locations, etc.
     subscribe(location,"alarmSystemStatus",alarmStatusHandler)
-    subscribe(keypad,"codeEntered",codeEntryHandler)
+    subscribe(keypad,"codeEntered",codeEntryHandler)   
+
+    //initialize keypad to correct state
+    def event = [name:"alarmSystemStatus", value: location.currentState("alarmSystemStatus").value, 
+    			displayed: true, description: "System Status is ${shmState}"]
+    alarmStatusHandler(event)
 }
 
 // TODO: implement event handlers
