@@ -24,6 +24,7 @@ metadata {
 		capability "Battery"
 
 		attribute "tamper", "enum", ["detected", "clear"]
+		attribute "powerSupply", "enum", ["USB Cable", "Battery"]
 
 		fingerprint deviceId: "0x2101", inClusters: "0x5E,0x86,0x72,0x59,0x85,0x73,0x71,0x84,0x80,0x30,0x31,0x70,0x7A", outClusters: "0x5A"
 	}
@@ -63,6 +64,19 @@ metadata {
 		status "wake up" : "command: 8407, payload: "
 	}
 
+	preferences {
+		input description: "Please consult AEOTEC MULTISENSOR 6 operating manual for advanced setting options. You can skip this configuration to use default settings",
+				title: "Advanced Configuration", displayDuringSetup: true, type: "paragraph", element: "paragraph"
+
+		input "motionDelayTime", "enum", title: "Motion Sensor Delay Time",
+				options: ["20 seconds", "40 seconds", "1 minute", "2 minutes", "3 minutes", "4 minutes"], defaultValue: "${motionDelayTime}", displayDuringSetup: true
+
+		input "motionSensitivity", "enum", title: "Motion Sensor Sensitivity", options: ["normal","maximum","minimum"], defaultValue: "${motionSensitivity}", displayDuringSetup: true
+
+		input "reportInterval", "enum", title: "Sensors Report Interval",
+				options: ["8 minutes", "15 minutes", "30 minutes", "1 hour", "6 hours", "12 hours", "18 hours", "24 hours"], defaultValue: "${reportInterval}", displayDuringSetup: true
+	}
+
 	tiles(scale: 2) {
 		multiAttributeTile(name:"motion", type: "generic", width: 6, height: 4){
 			tileAttribute ("device.motion", key: "PRIMARY_CONTROL") {
@@ -85,53 +99,89 @@ metadata {
 		valueTile("humidity", "device.humidity", inactiveLabel: false, width: 2, height: 2) {
 			state "humidity", label:'${currentValue}% humidity', unit:""
 		}
+
 		valueTile("illuminance", "device.illuminance", inactiveLabel: false, width: 2, height: 2) {
-			state "luminosity", label:'${currentValue} ${unit}', unit:"lux"
+			state "illuminance", label:'${currentValue} ${unit}', unit:"lux",
+			backgroundColors:[
+					[value: 0, color: "#000000"],
+					[value: 1, color: "#060053"],
+					[value: 3, color: "#3E3900"],
+					[value: 12, color: "#8E8400"],
+					[value: 24, color: "#C5C08B"],
+					[value: 36, color: "#DAD7B6"],
+					[value: 128, color: "#F3F2E9"],
+					[value: 1000, color: "#FFFFFF"]
+			]
 		}
+
+		valueTile("ultravioletIndex", "device.ultravioletIndex", inactiveLabel: false, width: 2, height: 2) {
+			state "ultravioletIndex", label:'${currentValue} UV index', unit:""
+		}
+
 		valueTile("battery", "device.battery", inactiveLabel: false, decoration: "flat", width: 2, height: 2) {
 			state "battery", label:'${currentValue}% battery', unit:""
 		}
 
-		main(["motion", "temperature", "humidity", "illuminance"])
-		details(["motion", "temperature", "humidity", "illuminance", "battery"])
+		valueTile("powerSupply", "device.powerSupply", height: 2, width: 2, decoration: "flat") {
+			state "powerSupply", label:'${currentValue} powered', backgroundColor:"#ffffff"
+		}
+
+		main(["motion", "temperature", "humidity", "illuminance", "ultravioletIndex"])
+		details(["motion", "temperature", "humidity", "illuminance", "ultravioletIndex", "battery", "powerSupply"])
 	}
 }
 
-def updated()
-{
-	if (state.sec && !isConfigured()) {
-		// in case we miss the SCSR
+def updated() {
+	log.debug "Updated with settings: ${settings}"
+
+	log.debug "${device.displayName} is now ${device.latestValue("powerSupply")}"
+
+	if (device.latestValue("powerSupply") == "USB Cable") {  //case1: USB powered
 		response(configure())
+	} else if (device.latestValue("powerSupply") == "Battery") {  //case2: battery powered
+		// setConfigured("false") is used by WakeUpNotification
+		setConfigured("false") //wait until the next time device wakeup to send configure command after user change preference
+	} else { //case3: power source is not identified, ask user to properly pair the sensor again
+		sendEvent( name: "powerSupply", value: "failed", isStateChange: true, displayed: true,
+				descriptionText: "This sensor failed to update it's power supply source. Unplug and plug-in the USB cable again or reinsert batteries to the sensor")
 	}
 }
 
-def parse(String description)
-{
+def parse(String description) {
+	log.debug "parse() >> description: $description"
 	def result = null
 	if (description.startsWith("Err 106")) {
-		state.sec = 0
+		log.debug "parse() >> Err 106"
 		result = createEvent( name: "secureInclusion", value: "failed", isStateChange: true,
-			descriptionText: "This sensor failed to complete the network security key exchange. If you are unable to control it via SmartThings, you must remove it from your network and add it again.")
+				descriptionText: "This sensor failed to complete the network security key exchange. If you are unable to control it via SmartThings, you must remove it from your network and add it again.")
 	} else if (description != "updated") {
+		log.debug "parse() >> zwave.parse(description)"
 		def cmd = zwave.parse(description, [0x31: 5, 0x30: 2, 0x84: 1])
 		if (cmd) {
 			result = zwaveEvent(cmd)
 		}
 	}
-	log.debug "Parsed '${description}' to ${result.inspect()}"
+	log.debug "After zwaveEvent(cmd) >> Parsed '${description}' to ${result.inspect()}"
 	return result
 }
 
-def zwaveEvent(physicalgraph.zwave.commands.wakeupv1.WakeUpNotification cmd)
-{
+//this notification will be sent only when device is battery powered
+def zwaveEvent(physicalgraph.zwave.commands.wakeupv1.WakeUpNotification cmd) {
 	def result = [createEvent(descriptionText: "${device.displayName} woke up", isStateChange: false)]
-
+	def cmds = []
 	if (!isConfigured()) {
-		// we're still in the process of configuring a newly joined device
 		log.debug("late configure")
-		result += response(configure())
+		result << response(configure())
 	} else {
-		result += response(zwave.wakeUpV1.wakeUpNoMoreInformation())
+		//Only ask for battery if we haven't had a BatteryReport in a while
+		if (!state.lastbatt || (new Date().time) - state.lastbatt > 24*60*60*1000) {
+			log.debug("Device has been configured sending >> batteryGet()")
+			cmds << zwave.securityV1.securityMessageEncapsulation().encapsulate(zwave.batteryV1.batteryGet()).format()
+			cmds << "delay 1200"
+		}
+		log.debug("Device has been configured sending >> wakeUpNoMoreInformation()")
+		cmds << zwave.wakeUpV1.wakeUpNoMoreInformation().format()
+		result << response(cmds)
 	}
 	result
 }
@@ -149,7 +199,25 @@ def zwaveEvent(physicalgraph.zwave.commands.securityv1.SecurityMessageEncapsulat
 }
 
 def zwaveEvent(physicalgraph.zwave.commands.securityv1.SecurityCommandsSupportedReport cmd) {
-	response(configure())
+	log.info "Executing zwaveEvent 98 (SecurityV1): 03 (SecurityCommandsSupportedReport) with cmd: $cmd"
+	state.sec = 1
+}
+
+def zwaveEvent(physicalgraph.zwave.commands.securityv1.NetworkKeyVerify cmd) {
+	state.sec = 1
+	log.info "Executing zwaveEvent 98 (SecurityV1): 07 (NetworkKeyVerify) with cmd: $cmd (node is securely included)"
+	def result = [createEvent(name:"secureInclusion", value:"success", descriptionText:"Secure inclusion was successful", isStateChange: true)]
+	result
+}
+
+def zwaveEvent(physicalgraph.zwave.commands.manufacturerspecificv2.ManufacturerSpecificReport cmd) {
+	log.info "Executing zwaveEvent 72 (ManufacturerSpecificV2) : 05 (ManufacturerSpecificReport) with cmd: $cmd"
+	log.debug "manufacturerId:   ${cmd.manufacturerId}"
+	log.debug "manufacturerName: ${cmd.manufacturerName}"
+	log.debug "productId:        ${cmd.productId}"
+	log.debug "productTypeId:    ${cmd.productTypeId}"
+	def msr = String.format("%04X-%04X-%04X", cmd.manufacturerId, cmd.productTypeId, cmd.productId)
+	updateDataValue("MSR", msr)
 }
 
 def zwaveEvent(physicalgraph.zwave.commands.batteryv1.BatteryReport cmd) {
@@ -165,8 +233,7 @@ def zwaveEvent(physicalgraph.zwave.commands.batteryv1.BatteryReport cmd) {
 	createEvent(map)
 }
 
-def zwaveEvent(physicalgraph.zwave.commands.sensormultilevelv5.SensorMultilevelReport cmd)
-{
+def zwaveEvent(physicalgraph.zwave.commands.sensormultilevelv5.SensorMultilevelReport cmd){
 	def map = [:]
 	switch (cmd.sensorType) {
 		case 1:
@@ -208,7 +275,6 @@ def motionEvent(value) {
 }
 
 def zwaveEvent(physicalgraph.zwave.commands.sensorbinaryv2.SensorBinaryReport cmd) {
-	setConfigured()
 	motionEvent(cmd.sensorValue)
 }
 
@@ -225,47 +291,102 @@ def zwaveEvent(physicalgraph.zwave.commands.notificationv3.NotificationReport cm
 				result << createEvent(name: "tamper", value: "clear", displayed: false)
 				break
 			case 3:
-				result << createEvent(name: "tamper", value: "detected", descriptionText: "$device.displayName was moved")
+				result << createEvent(name: "tamper", value: "detected", descriptionText: "$device.displayName was tampered")
 				break
 			case 7:
 				result << motionEvent(1)
 				break
 		}
 	} else {
+		log.warn "Need to handle this cmd.notificationType: ${cmd.notificationType}"
 		result << createEvent(descriptionText: cmd.toString(), isStateChange: false)
 	}
 	result
 }
 
+def zwaveEvent(physicalgraph.zwave.commands.configurationv2.ConfigurationReport cmd) {
+	def result = []
+	def value
+	if (cmd.configurationValue[0] == 0) {
+		value = "USB Cable"
+		if (!isConfigured()) {
+			log.debug("ConfigurationReport: configuring device")
+			result << response(configure())
+		}
+	}
+	if (cmd.configurationValue[0] == 1) {value = "Battery"}
+	result << createEvent(name: "powerSupply", value: value, displayed: false)
+	result
+}
+
 def zwaveEvent(physicalgraph.zwave.Command cmd) {
+	log.debug "General zwaveEvent cmd: ${cmd}"
 	createEvent(descriptionText: cmd.toString(), isStateChange: false)
 }
 
 def configure() {
 	// This sensor joins as a secure device if you double-click the button to include it
-	if (device.device.rawDescription =~ /98/ && !state.sec) {
-		log.debug "Multi 6 not sending configure until secure"
+	if (!state.sec) {
+		log.debug "${device.displayName} not sending configure until secure"
 		return []
+	} else {
+		log.debug "${device.displayName} is configuring its settings"
+		def request = []
+
+		//1. automatic report flags
+		// param 101 -103 [4 bytes] 128: light sensor, 64 humidity, 32 temperature sensor, 2 ultraviolet sensor, 1 battery sensor -> send command 227 to get all reports
+		request << zwave.configurationV1.configurationSet(parameterNumber: 101, size: 4, scaledConfigurationValue: 227)
+
+		//2. no-motion report x seconds after motion stops (default 20 secs)
+		request << zwave.configurationV1.configurationSet(parameterNumber: 3, size: 2, scaledConfigurationValue: timeOptionValueMap[motionDelayTime] ?: 20)
+
+		//3. motionSensitivity 3 levels: 64-normal (default), 127-maximum, 0-minimum
+		request << zwave.configurationV1.configurationSet(parameterNumber: 6, size: 1,
+				scaledConfigurationValue:
+						motionSensitivity == "normal" ? 64 :
+								motionSensitivity == "maximum" ? 127 :
+										motionSensitivity == "minimum" ? 0 : 64)
+
+		//4. report every x minutes (threshold reports don't work on battery power, default 8 mins)
+		request << zwave.configurationV1.configurationSet(parameterNumber: 111, size: 4, scaledConfigurationValue: timeOptionValueMap[reportInterval] ?: 8*60)
+
+		//5. report automatically on threshold change
+		request << zwave.configurationV1.configurationSet(parameterNumber: 40, size: 1, scaledConfigurationValue: 1)
+
+		//6. query sensor data
+		request << zwave.batteryV1.batteryGet()
+		request << zwave.sensorBinaryV2.sensorBinaryGet(sensorType: 0x0C) //motion
+		request << zwave.sensorMultilevelV5.sensorMultilevelGet(sensorType: 0x01) //temperature
+		request << zwave.sensorMultilevelV5.sensorMultilevelGet(sensorType: 0x03) //illuminance
+		request << zwave.sensorMultilevelV5.sensorMultilevelGet(sensorType: 0x05) //humidity
+		request << zwave.sensorMultilevelV5.sensorMultilevelGet(sensorType: 0x1B) //ultravioletIndex
+
+		setConfigured("true")
+
+		commands(request) + ["delay 10000", zwave.wakeUpV1.wakeUpNoMoreInformation().format()]
 	}
-	log.debug "Multi 6 configure()"
-	def request = [
-		// send no-motion report 20 seconds after motion stops
-		zwave.configurationV1.configurationSet(parameterNumber: 3, size: 2, scaledConfigurationValue: 20),
-
-		// report every 8 minutes (threshold reports don't work on battery power)
-		zwave.configurationV1.configurationSet(parameterNumber: 111, size: 4, scaledConfigurationValue: 8*60),
-
-		// report automatically on threshold change
-		zwave.configurationV1.configurationSet(parameterNumber: 40, size: 1, scaledConfigurationValue: 1),
-
-		zwave.batteryV1.batteryGet(),
-		zwave.sensorBinaryV2.sensorBinaryGet(sensorType: 0x0C),
-    ]
-	commands(request) + ["delay 20000", zwave.wakeUpV1.wakeUpNoMoreInformation().format()]
 }
 
-private setConfigured() {
-	updateDataValue("configured", "true")
+private def getTimeOptionValueMap() { [
+		"20 seconds" : 20,
+		"40 seconds" : 40,
+		"1 minute"   : 60,
+		"2 minutes"  : 2*60,
+		"3 minutes"  : 3*60,
+		"4 minutes"  : 4*60,
+		"5 minutes"  : 5*60,
+		"8 minutes"  : 8*60,
+		"15 minutes" : 15*60,
+		"30 minutes" : 30*60,
+		"1 hours"    : 1*60*60,
+		"6 hours"    : 6*60*60,
+		"12 hours"   : 12*60*60,
+		"18 hours"   : 6*60*60,
+		"24 hours"   : 24*60*60,
+]}
+
+private setConfigured(configure) {
+	updateDataValue("configured", configure)
 }
 
 private isConfigured() {
@@ -281,5 +402,6 @@ private command(physicalgraph.zwave.Command cmd) {
 }
 
 private commands(commands, delay=200) {
+	log.info "sending commands: ${commands}"
 	delayBetween(commands.collect{ command(it) }, delay)
 }
