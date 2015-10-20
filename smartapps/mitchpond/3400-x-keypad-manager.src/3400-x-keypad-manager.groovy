@@ -35,6 +35,7 @@ def setupPage() {
             // TODO: put inputs here
             input(name: "keypad", title: "Keypad", type: "device.centraliteKeypad", multiple: false, required: true)
             input(name: "pin"	, title: "PIN code", type: "number", range: "0000..9999", required: true)
+            paragraph "PIN should be four digits. Shorter PINs will be padded with leading zeroes. (42 becomes 0042)"
         }
         /*
         def routines = location.helloHome?.getPhrases()*.label
@@ -73,6 +74,11 @@ def initialize() {
     alarmStatusHandler(event)
 }
 
+//Returns the PIN padded with zeroes to 4 digits
+private String getPIN(){
+	return settings.pin.value.toString().padLeft(4,'0')
+}
+
 // TODO: implement event handlers
 def alarmStatusHandler(event) {
 	log.debug "Keypad manager caught alarm status change: "+event.value
@@ -92,7 +98,7 @@ def codeEntryHandler(evt){
     log.debug "Caught code entry event! ${evt.value.value}"
     
     def codeEntered = evt.value as String
-    def correctCode = settings.pin.value as String
+    def correctCode = getPIN()
     def data = evt.data as String
     def armMode = ''
     
