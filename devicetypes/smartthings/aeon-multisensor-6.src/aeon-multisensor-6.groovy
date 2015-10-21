@@ -24,6 +24,7 @@ metadata {
 		capability "Battery"
 
 		attribute "tamper", "enum", ["detected", "clear"]
+		attribute "batteryStatus", "string"
 		attribute "powerSupply", "enum", ["USB Cable", "Battery"]
 
 		fingerprint deviceId: "0x2101", inClusters: "0x5E,0x86,0x72,0x59,0x85,0x73,0x71,0x84,0x80,0x30,0x31,0x70,0x7A", outClusters: "0x5A"
@@ -101,17 +102,7 @@ metadata {
 		}
 
 		valueTile("illuminance", "device.illuminance", inactiveLabel: false, width: 2, height: 2) {
-			state "illuminance", label:'${currentValue} ${unit}', unit:"lux",
-			backgroundColors:[
-					[value: 0, color: "#000000"],
-					[value: 1, color: "#060053"],
-					[value: 3, color: "#3E3900"],
-					[value: 12, color: "#8E8400"],
-					[value: 24, color: "#C5C08B"],
-					[value: 36, color: "#DAD7B6"],
-					[value: 128, color: "#F3F2E9"],
-					[value: 1000, color: "#FFFFFF"]
-			]
+			state "illuminance", label:'${currentValue} ${unit}', unit:"lux"
 		}
 
 		valueTile("ultravioletIndex", "device.ultravioletIndex", inactiveLabel: false, width: 2, height: 2) {
@@ -122,18 +113,21 @@ metadata {
 			state "battery", label:'${currentValue}% battery', unit:""
 		}
 
+		valueTile("batteryStatus", "device.batteryStatus", inactiveLabel: false, decoration: "flat", width: 2, height: 2) {
+			state "batteryStatus", label:'${currentValue}', unit:""
+		}
+
 		valueTile("powerSupply", "device.powerSupply", height: 2, width: 2, decoration: "flat") {
 			state "powerSupply", label:'${currentValue} powered', backgroundColor:"#ffffff"
 		}
 
 		main(["motion", "temperature", "humidity", "illuminance", "ultravioletIndex"])
-		details(["motion", "temperature", "humidity", "illuminance", "ultravioletIndex", "battery", "powerSupply"])
+		details(["motion", "temperature", "humidity", "illuminance", "ultravioletIndex", "batteryStatus"])
 	}
 }
 
 def updated() {
 	log.debug "Updated with settings: ${settings}"
-
 	log.debug "${device.displayName} is now ${device.latestValue("powerSupply")}"
 
 	if (device.latestValue("powerSupply") == "USB Cable") {  //case1: USB powered
@@ -142,8 +136,10 @@ def updated() {
 		// setConfigured("false") is used by WakeUpNotification
 		setConfigured("false") //wait until the next time device wakeup to send configure command after user change preference
 	} else { //case3: power source is not identified, ask user to properly pair the sensor again
-		sendEvent( name: "powerSupply", value: "failed", isStateChange: true, displayed: true,
-				descriptionText: "This sensor failed to update it's power supply source. Unplug and plug-in the USB cable again or reinsert batteries to the sensor")
+		log.warn "power source is not identified, check it sensor is powered by USB, if so > configure()"
+		def request = []
+		request << zwave.configurationV1.configurationGet(parameterNumber: 101)
+		response(commands(request))
 	}
 }
 
@@ -173,12 +169,6 @@ def zwaveEvent(physicalgraph.zwave.commands.wakeupv1.WakeUpNotification cmd) {
 		log.debug("late configure")
 		result << response(configure())
 	} else {
-		//Only ask for battery if we haven't had a BatteryReport in a while
-		if (!state.lastbatt || (new Date().time) - state.lastbatt > 24*60*60*1000) {
-			log.debug("Device has been configured sending >> batteryGet()")
-			cmds << zwave.securityV1.securityMessageEncapsulation().encapsulate(zwave.batteryV1.batteryGet()).format()
-			cmds << "delay 1200"
-		}
 		log.debug("Device has been configured sending >> wakeUpNoMoreInformation()")
 		cmds << zwave.wakeUpV1.wakeUpNoMoreInformation().format()
 		result << response(cmds)
@@ -221,6 +211,7 @@ def zwaveEvent(physicalgraph.zwave.commands.manufacturerspecificv2.ManufacturerS
 }
 
 def zwaveEvent(physicalgraph.zwave.commands.batteryv1.BatteryReport cmd) {
+	def result = []
 	def map = [ name: "battery", unit: "%" ]
 	if (cmd.batteryLevel == 0xFF) {
 		map.value = 1
@@ -230,7 +221,11 @@ def zwaveEvent(physicalgraph.zwave.commands.batteryv1.BatteryReport cmd) {
 		map.value = cmd.batteryLevel
 	}
 	state.lastbatt = now()
-	createEvent(map)
+	result << createEvent(map)
+	if (device.latestValue("powerSupply") != "USB Cable"){
+		result << createEvent(name: "batteryStatus", value: "${map.value} % battery", displayed: false)
+	}
+	result
 }
 
 def zwaveEvent(physicalgraph.zwave.commands.sensormultilevelv5.SensorMultilevelReport cmd){
@@ -305,17 +300,23 @@ def zwaveEvent(physicalgraph.zwave.commands.notificationv3.NotificationReport cm
 }
 
 def zwaveEvent(physicalgraph.zwave.commands.configurationv2.ConfigurationReport cmd) {
+	log.debug "ConfigurationReport: $cmd"
 	def result = []
 	def value
-	if (cmd.configurationValue[0] == 0) {
+	if (cmd.parameterNumber == 9 && cmd.configurationValue[0] == 0) {
 		value = "USB Cable"
 		if (!isConfigured()) {
 			log.debug("ConfigurationReport: configuring device")
 			result << response(configure())
 		}
+		result << createEvent(name: "batteryStatus", value: value, displayed: false)
+		result << createEvent(name: "powerSupply", value: value, displayed: false)
+	}else if (cmd.parameterNumber == 9 && cmd.configurationValue[0] == 1) {
+		value = "Battery"
+		result << createEvent(name: "powerSupply", value: value, displayed: false)
+	} else if (cmd.parameterNumber == 101){
+		result << response(configure())
 	}
-	if (cmd.configurationValue[0] == 1) {value = "Battery"}
-	result << createEvent(name: "powerSupply", value: value, displayed: false)
 	result
 }
 
@@ -326,45 +327,49 @@ def zwaveEvent(physicalgraph.zwave.Command cmd) {
 
 def configure() {
 	// This sensor joins as a secure device if you double-click the button to include it
-	if (!state.sec) {
-		log.debug "${device.displayName} not sending configure until secure"
-		return []
-	} else {
-		log.debug "${device.displayName} is configuring its settings"
-		def request = []
+	log.debug "${device.displayName} is configuring its settings"
+	def request = []
 
-		//1. automatic report flags
-		// param 101 -103 [4 bytes] 128: light sensor, 64 humidity, 32 temperature sensor, 2 ultraviolet sensor, 1 battery sensor -> send command 227 to get all reports
-		request << zwave.configurationV1.configurationSet(parameterNumber: 101, size: 4, scaledConfigurationValue: 227)
+	//1. set association groups for hub
+	request << zwave.associationV1.associationSet(groupingIdentifier:1, nodeId:zwaveHubNodeId)
 
-		//2. no-motion report x seconds after motion stops (default 20 secs)
-		request << zwave.configurationV1.configurationSet(parameterNumber: 3, size: 2, scaledConfigurationValue: timeOptionValueMap[motionDelayTime] ?: 20)
+	request << zwave.associationV1.associationSet(groupingIdentifier:2, nodeId:zwaveHubNodeId)
 
-		//3. motionSensitivity 3 levels: 64-normal (default), 127-maximum, 0-minimum
-		request << zwave.configurationV1.configurationSet(parameterNumber: 6, size: 1,
-				scaledConfigurationValue:
-						motionSensitivity == "normal" ? 64 :
-								motionSensitivity == "maximum" ? 127 :
-										motionSensitivity == "minimum" ? 0 : 64)
+	//2. automatic report flags
+	// param 101 -103 [4 bytes] 128: light sensor, 64 humidity, 32 temperature sensor, 2 ultraviolet sensor, 1 battery sensor -> send command 227 to get all reports
+	request << zwave.configurationV1.configurationSet(parameterNumber: 101, size: 4, scaledConfigurationValue: 226) //association group 1
 
-		//4. report every x minutes (threshold reports don't work on battery power, default 8 mins)
-		request << zwave.configurationV1.configurationSet(parameterNumber: 111, size: 4, scaledConfigurationValue: timeOptionValueMap[reportInterval] ?: 8*60)
+	request << zwave.configurationV1.configurationSet(parameterNumber: 102, size: 4, scaledConfigurationValue: 1) //association group 2
 
-		//5. report automatically on threshold change
-		request << zwave.configurationV1.configurationSet(parameterNumber: 40, size: 1, scaledConfigurationValue: 1)
+	//3. no-motion report x seconds after motion stops (default 20 secs)
+	request << zwave.configurationV1.configurationSet(parameterNumber: 3, size: 2, scaledConfigurationValue: timeOptionValueMap[motionDelayTime] ?: 20)
 
-		//6. query sensor data
-		request << zwave.batteryV1.batteryGet()
-		request << zwave.sensorBinaryV2.sensorBinaryGet(sensorType: 0x0C) //motion
-		request << zwave.sensorMultilevelV5.sensorMultilevelGet(sensorType: 0x01) //temperature
-		request << zwave.sensorMultilevelV5.sensorMultilevelGet(sensorType: 0x03) //illuminance
-		request << zwave.sensorMultilevelV5.sensorMultilevelGet(sensorType: 0x05) //humidity
-		request << zwave.sensorMultilevelV5.sensorMultilevelGet(sensorType: 0x1B) //ultravioletIndex
+	//4. motionSensitivity 3 levels: 64-normal (default), 127-maximum, 0-minimum
+	request << zwave.configurationV1.configurationSet(parameterNumber: 6, size: 1,
+			scaledConfigurationValue:
+					motionSensitivity == "normal" ? 64 :
+							motionSensitivity == "maximum" ? 127 :
+									motionSensitivity == "minimum" ? 0 : 64)
 
-		setConfigured("true")
+	//5. report every x minutes (threshold reports don't work on battery power, default 8 mins)
+	request << zwave.configurationV1.configurationSet(parameterNumber: 111, size: 4, scaledConfigurationValue: timeOptionValueMap[reportInterval] ?: 8*60) //association group 1
 
-		commands(request) + ["delay 10000", zwave.wakeUpV1.wakeUpNoMoreInformation().format()]
-	}
+	request << zwave.configurationV1.configurationSet(parameterNumber: 112, size: 4, scaledConfigurationValue: 6*60*60)  //association group 2
+
+	//6. report automatically on threshold change
+	request << zwave.configurationV1.configurationSet(parameterNumber: 40, size: 1, scaledConfigurationValue: 1)
+
+	//7. query sensor data
+	request << zwave.batteryV1.batteryGet()
+	request << zwave.sensorBinaryV2.sensorBinaryGet(sensorType: 0x0C) //motion
+	request << zwave.sensorMultilevelV5.sensorMultilevelGet(sensorType: 0x01) //temperature
+	request << zwave.sensorMultilevelV5.sensorMultilevelGet(sensorType: 0x03) //illuminance
+	request << zwave.sensorMultilevelV5.sensorMultilevelGet(sensorType: 0x05) //humidity
+	request << zwave.sensorMultilevelV5.sensorMultilevelGet(sensorType: 0x1B) //ultravioletIndex
+
+	setConfigured("true")
+
+	commands(request) + ["delay 20000", zwave.wakeUpV1.wakeUpNoMoreInformation().format()]
 }
 
 private def getTimeOptionValueMap() { [
