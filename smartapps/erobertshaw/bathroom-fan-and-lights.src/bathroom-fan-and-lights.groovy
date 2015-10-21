@@ -72,7 +72,7 @@ def primaryMotionDetected(evt) {
 def lastPrimarySensorInactive(){
 	log.debug "Last primary sensor went inactive"
     state.occupied = false
-    runIn(60*2, turnOffPrimaryLightsAndFan)
+    runIn(60*1, turnOffPrimaryLightsAndFan)
 }
 
 def turnOffPrimaryLightsAndFan(){
@@ -87,7 +87,7 @@ def turnOffPrimaryLightsAndFan(){
         }
     }
  
-    runIn(60*5, turnOffFan)
+    runIn(60*9, turnOffFan)
 }
 
 
