@@ -37,16 +37,14 @@ def setupPage() {
             input(name: "pin"	, title: "PIN code", type: "number", range: "0000..9999", required: true)
             paragraph "PIN should be four digits. Shorter PINs will be padded with leading zeroes. (42 becomes 0042)"
         }
-        /*
         def routines = location.helloHome?.getPhrases()*.label
         routines?.sort()
-        section("Actions") {
+        section("Routines", hideable: true, hidden: true) {
         	input(name: "armRoutine", title: "Arm/Away routine", type: "enum", options: routines, required: false)
             input(name: "disarmRoutine", title: "Disarm routine", type: "enum", options: routines, required: false)
             input(name: "stayRoutine", title: "Arm/Stay routine", type: "enum", options: routines, required: false)
-            input(name: "nightRoutine", title: "Arm/Night routine", type: "enum", options: routines, required: false)
+            //input(name: "nightRoutine", title: "Arm/Night routine", type: "enum", options: routines, required: false)
         }
-        */
     }
 }
 
@@ -93,6 +91,12 @@ private sendSHMEvent(String shmState){
     sendLocationEvent(event)
 }
 
+private execRoutine(armMode) {
+	if (armMode == 'away') location.helloHome?.execute(settings.armRoutine)
+    else if (armMode == 'stay') location.helloHome?.execute(settings.stayRoutine)
+    else if (armMode == 'off') location.helloHome?.execute(settings.disarmRoutine)    
+}
+
 def codeEntryHandler(evt){
 	//do stuff
     log.debug "Caught code entry event! ${evt.value.value}"
@@ -115,6 +119,7 @@ def codeEntryHandler(evt){
     	log.debug "Correct PIN entered. Change SHM state to ${armMode}"
         keypad.acknowledgeArmRequest(data)
         sendSHMEvent(armMode)
+		execRoutine(armMode)
     }
     else {
     	log.debug "Invalid PIN"
