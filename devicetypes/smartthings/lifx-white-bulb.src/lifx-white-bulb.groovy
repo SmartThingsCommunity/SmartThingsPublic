@@ -1,5 +1,5 @@
 /**
- *  LIFX Color Bulb
+ *  LIFX White Bulb
  *
  *  Copyright 2015 LIFX
  *
