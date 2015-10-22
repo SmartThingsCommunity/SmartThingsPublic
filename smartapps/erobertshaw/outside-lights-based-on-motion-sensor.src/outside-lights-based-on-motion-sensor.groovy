@@ -1,5 +1,5 @@
 /**
- *  Bathroom fan and lights
+ *  Outside lights based on motion sensor
  *
  *  Copyright 2015 Aperations.com llc
  *
@@ -14,10 +14,10 @@
  *
  */
 definition(
-    name: "Bathroom fan and lights",
+    name: "Outside lights based on motion sensor",
     namespace: "erobertshaw",
     author: "Aperations.com llc",
-    description: "Presence sensor based intelligence for bathroom lights and fans.",
+    description: "Controls outside lights. Considers time of day for light and motion from sensors.",
     category: "Convenience",
     iconUrl: "https://s3.amazonaws.com/smartapp-icons/Convenience/Cat-Convenience.png",
     iconX2Url: "https://s3.amazonaws.com/smartapp-icons/Convenience/Cat-Convenience@2x.png",
@@ -25,18 +25,20 @@ definition(
 
 
 preferences {
-    section("Main room sensor") {
+    section("Outside devices") {
         input "primaryLights", "capability.switch", multiple: true, required: true ,  title: "Primary lights"
-        input "primaryFan", "capability.switch", multiple: true, required: true ,  title: "Primary Fan"
-    	input "primarySensor", "capability.motionSensor", multiple: true, required: true ,  title: "Primary Sensor"
+    	input "primarySensor", "capability.motionSensor", multiple: true, required: true ,  title: "Primary Motion Sensor"
+        input "lightSensor", "capability.illuminanceMeasurement", required: true ,  title: "Light level Sensor"
     }
 }
 
 def installed() {
 	log.debug "Installed with settings: ${settings}"
-
+	
 	initialize()
 }
+
+
 
 def updated() {
 	log.debug "Updated with settings: ${settings}"
@@ -54,7 +56,7 @@ def primaryMotionDetected(evt) {
   if("active" == evt.value) {
     log.debug "active"
     
-    turnOnPrimaryLightsAndFan()
+    turnOnPrimaryLights()
     
   } else if("inactive" == evt.value) {
     log.debug "inactive"
@@ -66,18 +68,18 @@ def primaryMotionDetected(evt) {
     }
     if(lastInactive) lastPrimarySensorInactive();
   }
-  log.debug "Bathroom is occupied: " + state.occupied
+  log.debug "Outside is occupied: " + state.occupied
 }
 
 def lastPrimarySensorInactive(){
 	log.debug "Last primary sensor went inactive"
     state.occupied = false
-    runIn(60*1, turnOffPrimaryLightsAndFan)
+    runIn(60*5, turnOffPrimaryLights)
 }
 
-def turnOffPrimaryLightsAndFan(){
+def turnOffPrimaryLights(){
 	if(state.occupied){
-    	// if sensors re occupied the room - don't turn the lights and fan off :)
+    	// if sensors re occupied - don't turn the lights and fan off :)
         return;
     }
     
@@ -86,24 +88,14 @@ def turnOffPrimaryLightsAndFan(){
         	it.off()
         }
     }
- 
-    runIn(60*9, turnOffFan)
 }
 
 
-def turnOffFan(){
-	if(state.occupied){
-    	// if sensors re occupied the room - don't turn the lights and fan off :)
-        return;
-    }
-    primaryFan.each { 
-    	if( it.currentValue("switch") == "on"){
-        	it.off()
-        }
-    }
-}
 
-def turnOnPrimaryLightsAndFan(){
+def turnOnPrimaryLights(){
+	def lightLevel=lightSensor.currentValue("illuminance")
+	log.debug "light level (LUX): $lightLevel"
+	if( lightLevel > 5) return;
 	state.occupied = true
 	primaryLights.each { 
     	log.debug it
@@ -112,15 +104,5 @@ def turnOnPrimaryLightsAndFan(){
         	it.on()
         }
     }
-    
-    runIn(60*1, turnOnFan)
   
-}
-
-def turnOnFan(){
-  primaryFan.each { 
-  	if( it.currentValue("switch") != "on"){
-    	it.on()
-    }
-  }
 }
