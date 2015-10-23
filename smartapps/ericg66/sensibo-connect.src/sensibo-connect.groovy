@@ -21,9 +21,9 @@ definition(
     author: "Eric Gosselin",
     description: "Connect your Sensibo Pod to SmartThings.",
     category: "Green Living",
-    iconUrl: "http://i130.photobucket.com/albums/p242/brutalboy_photos/Sensibo.png",
-    iconX2Url: "http://i130.photobucket.com/albums/p242/brutalboy_photos/Sensibo2x.png",
-    iconX3Url: "http://i130.photobucket.com/albums/p242/brutalboy_photos/Sensibo3x.png",
+    iconUrl: "http://i130.photobucket.com/albums/p242/brutalboy_photos/on_color_large_sm.png",
+    iconX2Url: "http://i130.photobucket.com/albums/p242/brutalboy_photos/on_color_large2x.png",
+    iconX3Url: "http://i130.photobucket.com/albums/p242/brutalboy_photos/on_color_large3x.png",
     singleInstance: true) 
 
 {
@@ -122,7 +122,7 @@ def installed() {
 
 	initialize()
     
-    runIn(5, "refreshDevices")
+    runIn(3, "refreshDevices")
 }
 
 def updated() {
@@ -132,7 +132,7 @@ def updated() {
 	
     initialize()
     
-    runIn(5, "refreshDevices")
+    runIn(3, "refreshDevices")
 }
 
 def refreshDevices() {
@@ -140,6 +140,7 @@ def refreshDevices() {
 	def devices = getAllChildDevices()
 	devices.each { d ->
 		log.debug "Calling refresh() on device: ${d.id}"
+        
 		d.refresh()
 	}
 }
@@ -166,8 +167,9 @@ def initialize() {
                 	"label" : "Pod ${name.value}",
                     "name" : "Pod ${name.value}"
                     ])
-                //d.setIcon("on","on","st.Weather.weather7")
-                //d.save()
+                d.setIcon("on","on","http://i130.photobucket.com/albums/p242/brutalboy_photos/on_color_large.png")
+                d.setIcon("off","on","http://i130.photobucket.com/albums/p242/brutalboy_photos/on_color_large.png")
+                d.save()
 				log.debug "created ${d.displayName} with id $dni"
 			}
 			else
