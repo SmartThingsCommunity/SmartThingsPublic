@@ -116,7 +116,7 @@ metadata {
 			state "statusText", label:'${currentValue}', backgroundColor:"#ffffff"
         }
         
-		controlTile("coolSliderControl", "device.coolingSetpoint", "slider", height: 2, width: 2, inactiveLabel: false,range:"(15..30)") {
+		controlTile("coolSliderControl", "device.coolingSetpoint", "slider", height: 2, width: 2, inactiveLabel: false,range:"(16..30)") {
 			state "setCoolingSetpoint", label:'Set temperature to', action:"thermostat.setCoolingSetpoint",
 				backgroundColors:[
 					[value: 31, color: "#153591"],
