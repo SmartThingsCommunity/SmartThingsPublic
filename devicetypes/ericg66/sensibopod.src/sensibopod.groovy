@@ -116,14 +116,6 @@ metadata {
 			state "statusText", label:'${currentValue}', backgroundColor:"#ffffff"
         }
         
-        valueTile("fanLevel2", "device.fanLevel", inactiveLabel: false, width: 2, height: 2) {
-			state "fanLevel", label:'${currentValue}', backgroundColor:"#ffffff"
-        }
-        
-        valueTile("mode2", "device.mode", inactiveLabel: false, width: 2, height: 2) {
-			state "mode", label:'${currentValue}', backgroundColor:"#ffffff"
-        }
-
 		controlTile("coolSliderControl", "device.coolingSetpoint", "slider", height: 2, width: 2, inactiveLabel: false,range:"(15..30)") {
 			state "setCoolingSetpoint", label:'Set temperature to', action:"thermostat.setCoolingSetpoint",
 				backgroundColors:[
@@ -136,9 +128,7 @@ metadata {
 					[value: 96, color: "#bc2323"]
 				]
 		}
-        valueTile("coolingSetpoint", "device.coolingSetpoint", inactiveLabel: false, decoration: "flat") {
-			state "setCoolingSetpoint", label:'${currentValue}°', unit:"C"
-		}
+
         valueTile("temperature", "device.temperature", width: 2, height: 2) {
 			state("temperature", label:'Temp: ${currentValue} C', unit:"C",
 				backgroundColors:[
@@ -196,6 +186,7 @@ def refresh()
 {
   log.debug "refresh called"
   poll()
+   
   log.debug "refresh ended"
 }
 
@@ -401,7 +392,7 @@ def parseEventData(Map results)
             def isDisplayed = true
             
             if (name=="temperature" || name=="targetTemperature" || name== "humidity") {
-				isChange = true//isTemperatureStateChange(device, name, value.toString())
+				isChange = true //isTemperatureStateChange(device, name, value.toString())
                 isDisplayed = isChange
                    
 				sendEvent(
@@ -459,7 +450,7 @@ private getThermostatDescriptionText(name, value, linkText)
 	}
     else if (name == "mode")
     {
-        return "thermostat mode is ${value}"
+        return "thermostat mode was ${value}"
     }
     else
     {
