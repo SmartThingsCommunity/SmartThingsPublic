@@ -198,9 +198,9 @@ def initialize() {
 
 	//atomicState.sensibo = [:]
 
-	pollHandler()
+	//pollHandler()
     
-	schedule("0 15 * * * ?", refreshDevices)
+	schedule("0 0/15 * 1/1 * ? *", refreshDevices)
 }
 
 def getPollRateMillis() { return 45 * 1000 }
