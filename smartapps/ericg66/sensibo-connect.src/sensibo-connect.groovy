@@ -121,7 +121,7 @@ def installed() {
 
 	initialize()
     
-    runIn(3, "refreshDevices")
+    runIn(2, "refreshDevices")
 }
 
 def updated() {
@@ -131,7 +131,7 @@ def updated() {
 	
     initialize()
     
-    runIn(3, "refreshDevices")
+    runIn(2, "refreshDevices")
 }
 
 def refreshDevices() {
@@ -199,6 +199,8 @@ def initialize() {
 	//atomicState.sensibo = [:]
 
 	pollHandler()
+    
+	schedule("0 15 * * * ?", refreshDevices)
 }
 
 def getPollRateMillis() { return 45 * 1000 }
