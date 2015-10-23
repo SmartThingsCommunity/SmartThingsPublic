@@ -27,7 +27,6 @@ definition(
     singleInstance: true) 
 
 {
-    appSetting "serverUrl"
     appSetting "apikey"
 }
 
@@ -37,7 +36,7 @@ preferences {
     
 }
 
-def getServerUrl() { return appSettings.serverUrl }
+def getServerUrl() { "https://home.sensibo.com" }
 def getapikey() { apiKey }
 
 def setAPIKey()
