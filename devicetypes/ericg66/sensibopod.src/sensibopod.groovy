@@ -47,6 +47,8 @@ metadata {
         command "levelUpDown"
         command "switchFanLevel"
         command "switchMode"
+        command "raiseSetpoint"
+        command "lowerSetpoint"
 
 	}
 
@@ -97,6 +99,14 @@ metadata {
             state "auto", action:"switchFanLevel", backgroundColor:"#8C8C8D", icon:"http://i130.photobucket.com/albums/p242/brutalboy_photos/fan_auto_2.png" , nextState:"low"
         }
         
+        standardTile("upButtonControl", "device.targetTemperature", inactiveLabel: false, decoration: "flat") {
+			state "setpoint", action:"raiseSetpoint", backgroundColor:"#d04e00", icon:"st.thermostat.thermostat-up"
+		}
+        
+        standardTile("downButtonControl", "device.targetTemperature", inactiveLabel: false, decoration: "flat") {
+			state "setpoint", action:"lowerSetpoint", backgroundColor:"#d04e00", icon:"st.thermostat.thermostat-down"
+		}  
+        
         standardTile("mode", "device.mode",  width: 2, height: 2) {
             state "cool", action:"switchMode", backgroundColor:"#0099FF", icon:"st.thermostat.cool", nextState:"heat"
             state "heat", action:"switchMode", backgroundColor:"#FF3300", icon:"st.thermostat.heat", nextState:"fan"
@@ -116,7 +126,7 @@ metadata {
 			state "statusText", label:'${currentValue}', backgroundColor:"#ffffff"
         }
         
-		controlTile("coolSliderControl", "device.coolingSetpoint", "slider", height: 2, width: 2, inactiveLabel: false,range:"(16..30)") {
+		controlTile("coolSliderControl", "device.coolingSetpoint", "slider", height: 1, width: 2, inactiveLabel: false,range:"(16..30)") {
 			state "setCoolingSetpoint", label:'Set temperature to', action:"thermostat.setCoolingSetpoint",
 				backgroundColors:[
 					[value: 31, color: "#153591"],
@@ -164,7 +174,7 @@ metadata {
 		       
 		main (["on"])
 		//main "switch"
-		details (["richcontact","on","temperature","humidity","switch", "fanLevel","mode","coolSliderControl","refresh"])    
+		details (["richcontact","on","temperature","humidity", "fanLevel","mode","coolSliderControl","upButtonControl","downButtonControl","refresh"])    
         //details (["temperature","humidity","switch","statusText","targetTemperature","refresh", "fanLevel"])
 	}
 }
@@ -180,6 +190,50 @@ def Modes() {
 def levelUpDown(value) {
     //log.trace "levelUpDown called with value $value" // Values are 0 and 1
     //humidity = "10"
+}
+
+void lowerSetpoint() {
+   	log.debug "Lower SetPoint"
+    
+	//def mode = device.currentValue("thermostatMode")
+    def Setpoint = device.currentValue("targetTemperature").toInteger()
+   
+    log.debug "Current target temperature = ${Setpoint}"
+
+    Setpoint--  
+        
+    if (Setpoint < 16)
+    	Setpoint = 16
+
+    if (device.currentState("on").value == "off") { generateSwitchEvent("on") }
+    def result = parent.setACStates(this, device.deviceNetworkId , "on", device.currentState("mode").value, Setpoint, device.currentState("fanLevel").value)
+    generateSetTempEvent(Setpoint)
+        
+    log.debug "New target Temperature = ${Setpoint}"       
+
+	generateStatusEvent()
+}
+
+void raiseSetpoint() {
+   	log.debug "Lower SetPoint"
+    
+	//def mode = device.currentValue("thermostatMode")
+    def Setpoint = device.currentValue("targetTemperature").toInteger()
+   
+    log.debug "Current target temperature = ${Setpoint}"
+
+    Setpoint--  
+        
+    if (Setpoint > 30)
+    	Setpoint = 30
+
+    if (device.currentState("on").value == "off") { generateSwitchEvent("on") }
+    def result = parent.setACStates(this, device.deviceNetworkId , "on", device.currentState("mode").value, Setpoint, device.currentState("fanLevel").value)
+    generateSetTempEvent(Setpoint)
+        
+    log.debug "New target Temperature = ${Setpoint}"       
+
+	generateStatusEvent()
 }
 
 def TempUnit() { 
