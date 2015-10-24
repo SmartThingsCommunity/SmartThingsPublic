@@ -43,6 +43,10 @@ preferences {
     section("Minimum time between actions (optional, defaults to every event)") {
 	input "mutePeriodMin", "decimal", title: "Minutes", required: true
 	}
+    section("Select Time of Day for alerting mailbox eve tnotifications") {
+	input "startTime", "time", title: "Start Time", required: true
+	input "endTime", "time", title: "End Time", required: true
+	}
 }
 
 def installed() {
@@ -50,23 +54,19 @@ def installed() {
 }
 
 def initialize() {
-	log.trace "Initializing..."
 	subscribe(contact, "contact.open", eventHandlerOpen)
 	subscribe(contact, "contact.closed", eventHandlerClosed)
-//    log.trace "Initiization: state.mailboxMuteTime: $state.mailboxMuteTime"
-//    log.trace "Initiization: state.mailboxOpenTime: $state.mailboxOpenTime"
 	if (state.mailboxMuteTime == null) {
-    	log.trace "Initiization: state.mailboxMuteTime initialized to 0"
+//    	log.trace "Initiization: state.mailboxMuteTime initialized to 0"
 	    state.mailboxMuteTime = 0
     }
 	if (state.mailboxOpenTime == null) {
-    	log.trace "Initiization: state.mailboxOpenTime initialized to 0"
+//    	log.trace "Initiization: state.mailboxOpenTime initialized to 0"
 	    state.mailbox = 0
     }
 }
 
 def updated() {
-	log.trace "Unsubscribe"
 	unsubscribe()
 	initialize()
 }
@@ -112,16 +112,26 @@ def inTheMuteZone() {
     
 def notifications(msg) {
     //Send out Notifications
+    def start = timeToday(startTime, location.timeZone)
+	def end = timeToday(endTime, location.timeZone)
+    def timeOfDay = new Date()
+	def between = timeOfDayIsBetween(start, end, timeOfDay, location.timeZone)
     log.trace "Notification Msg: $msg"
-	if (pushNotification) {
-			sendPush(msg)
-        }
-    if (phone1 != null && phone1 != "") {
-        sendSms(phone1,msg)
-        }
-    if (phone2 != null && phone2 != "") {
-        sendSms(phone2,msg)
-    	}
+    if (between) {
+	    log.trace "Notification Msg: $msg"
+        if (pushNotification) {
+                sendPush(msg)
+            }
+        if (phone1 != null && phone1 != "") {
+            sendSms(phone1,msg)
+            }
+        if (phone2 != null && phone2 != "") {
+            sendSms(phone2,msg)
+            }
+	}
+    else {
+        log.trace "Notification Msg NOT SENT: $msg"
+	    }
 }
 
 private static String timeConversion(long totalSeconds) {
