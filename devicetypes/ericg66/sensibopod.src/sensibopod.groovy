@@ -85,9 +85,9 @@ metadata {
             tileAttribute ("statusText", key: "SECONDARY_CONTROL") {
 				attributeState "statusText", label:'${currentValue}'
 			}
-            tileAttribute ("device.level", key: "VALUE_CONTROL") {
-				attributeState "level", action: "levelUpDown"
-	        }
+            //tileAttribute ("device.level", key: "VALUE_CONTROL") {
+			//	attributeState "level", action: "levelUpDown"
+	        //}
   		}
         
         standardTile("fanLevel", "device.fanLevel", width: 2, height: 2) {
