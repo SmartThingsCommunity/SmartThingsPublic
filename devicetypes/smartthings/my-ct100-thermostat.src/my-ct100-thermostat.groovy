@@ -10,6 +10,9 @@ and color based on temp for both.
 v 2. some returns between indicators to move things down a line as recommended
 v 3 reintegrate changes smarthigns made in setheatingsetpoint and setcoolingsetpoint functions apparently to get around bugs.
     these changes were made in the stock ct100 device type.
+v 5 something they did in they new setheat and cool setpoints even in stock delays changing each temp 
+to 30 secs before it registers changed this to 500 ms.
+
 
 
 */
@@ -275,8 +278,10 @@ def zwaveEvent(physicalgraph.zwave.commands.thermostatsetpointv2.ThermostatSetpo
 	if (mode && map1.name.startsWith(mode) || (mode == "emergency heat" && map1.name == "heatingSetpoint")) {
 		def map2 = [ name: "thermostatSetpoint", value: temp, unit: unit ]
 		[ createEvent(map1), createEvent(map2) ]
+      
 	} else {
 		createEvent(map1)
+    
 	}
 }
 
@@ -297,6 +302,7 @@ def zwaveEvent(physicalgraph.zwave.commands.sensormultilevelv2.SensorMultilevelR
 
 def zwaveEvent(physicalgraph.zwave.commands.thermostatoperatingstatev2.ThermostatOperatingStateReport cmd)
 {
+
 	def map = [name: "thermostatOperatingState" ]
 	switch (cmd.operatingState) {
 		case physicalgraph.zwave.commands.thermostatoperatingstatev2.ThermostatOperatingStateReport.OPERATING_STATE_IDLE:
@@ -484,15 +490,15 @@ def nextRefreshQuery(name) {
 
 
 def quickSetHeat(degrees) {
-	setHeatingSetpoint(degrees, 1000)
+	setHeatingSetpoint(degrees, 500)
 }
 
-def setHeatingSetpoint(degrees, delay = 30000) {
+def setHeatingSetpoint(degrees, delay = 500) {
 	setHeatingSetpoint(degrees.toDouble(), delay)
 }
 
-def setHeatingSetpoint(Double degrees, Integer delay = 30000) {
-	log.trace "setHeatingSetpoint($degrees, $delay)"
+def setHeatingSetpoint(Double degrees, Integer delay = 500) {
+	log.debug "setHeatingSetpoint($degrees, $delay)"
 	def deviceScale = state.scale ?: 1
 	def deviceScaleString = deviceScale == 2 ? "C" : "F"
 	def locationScale = getTemperatureScale()
@@ -514,15 +520,15 @@ def setHeatingSetpoint(Double degrees, Integer delay = 30000) {
 }
 
 def quickSetCool(degrees) {
-	setCoolingSetpoint(degrees, 1000)
+	setCoolingSetpoint(degrees, 500)
 }
 
-def setCoolingSetpoint(degrees, delay = 30000) {
+def setCoolingSetpoint(degrees, delay = 500) {
 	setCoolingSetpoint(degrees.toDouble(), delay)
 }
 
-def setCoolingSetpoint(Double degrees, Integer delay = 30000) {
-	log.trace "setCoolingSetpoint($degrees, $delay)"
+def setCoolingSetpoint(Double degrees, Integer delay = 500) {
+	log.debug "setCoolingSetpoint($degrees, $delay)"
 	def deviceScale = state.scale ?: 1
 	def deviceScaleString = deviceScale == 2 ? "C" : "F"
 	def locationScale = getTemperatureScale()
