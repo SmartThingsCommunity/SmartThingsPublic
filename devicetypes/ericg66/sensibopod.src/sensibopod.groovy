@@ -222,7 +222,7 @@ void raiseSetpoint() {
    
     log.debug "Current target temperature = ${Setpoint}"
 
-    Setpoint--  
+    Setpoint++  
         
     if (Setpoint > 30)
     	Setpoint = 30
