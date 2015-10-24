@@ -69,7 +69,7 @@ metadata {
         
     	multiAttributeTile(name:"richcontact", type:"lighting", width:6, height:4) {
    			tileAttribute("device.targetTemperature", key: "PRIMARY_CONTROL") {
-            	attributeState ("targetTemperature", label:'${currentValue} C', 
+            	attributeState ("targetTemperature", label:'${currentValue} '+ TempUnit(), 
                 backgroundColors:[
 					[value: 15, color: "#153591"],
 					[value: 18, color: "#1e9cbb"],
@@ -109,7 +109,7 @@ metadata {
 		}
 
         valueTile("targetTemperature", "device.targetTemperature", inactiveLabel: false, width: 2, height: 2) {
-			state "targetTemperature", label:'${currentValue} C', backgroundColor:"#ffffff"
+			state "targetTemperature", label:'${currentValue} ' + TempUnit(), backgroundColor:"#ffffff"
         }
         
         valueTile("statusText", "statusText", inactiveLabel: false, width: 2, height: 2) {
@@ -130,7 +130,7 @@ metadata {
 		}
 
         valueTile("temperature", "device.temperature", width: 2, height: 2) {
-			state("temperature", label:'Temp: ${currentValue} C', unit:"C",
+			state("temperature", label:'Temp: ${currentValue} ' + TempUnit(), unit:TempUnit(),
 				backgroundColors:[
 					[value: 15, color: "#153591"],
 					[value: 18, color: "#1e9cbb"],
@@ -158,7 +158,7 @@ metadata {
 		}
         
         standardTile("on", "device.on", width: 2, height: 2, canChangeIcon: true) {
-			state "on", label:'${name}', action:"switch.off", icon:"st.switches.switch.on", backgroundColor:"#ffffff"
+			state "on", label:'${name}', action:"switch.off", icon:"st.switches.switch.on", backgroundColor:"#79b821"
 			state "off", label:'${name}', action:"switch.on", icon:"st.switches.switch.off", backgroundColor:"#ffffff"
 		}
 		       
@@ -182,6 +182,10 @@ def levelUpDown(value) {
     //humidity = "10"
 }
 
+def TempUnit() { 
+	return "C"
+}
+
 def refresh()
 {
   log.debug "refresh called"
@@ -193,10 +197,9 @@ def refresh()
 // Set Temperature
 def setCoolingSetpoint(temp) {
 	log.debug "setTemperature"
-    //log.debug device.deviceNetworkId
     
+    if (device.currentState("on").value == "off") { generateSwitchEvent("on") }
     def result = parent.setACStates(this, device.deviceNetworkId , "on", device.currentState("mode").value, temp, device.currentState("fanLevel").value)
-    log.debug result
     generateSetTempEvent(temp)
     
     generateStatusEvent() 
@@ -232,7 +235,7 @@ def generateSwitchEvent(mode) {
 // For Fan Level
 def fanLow() {
 	log.debug "fanLow"
-    //log.debug device.deviceNetworkId
+
     if (device.currentState("on").value == "off") { generateSwitchEvent("on") }
     def result = parent.setACStates(this, device.deviceNetworkId ,"on", device.currentState("mode").value, device.currentState("targetTemperature").value, "low")
     log.debug result
@@ -331,9 +334,6 @@ def modeHeat() {
     generateModeEvent("heat")
     
     generateStatusEvent()
-    
-    //device.setIcon("on","on","st.thermostat.heat")
-    //device.save()
 }
 
 def modeCool() {
@@ -345,9 +345,6 @@ def modeCool() {
     generateModeEvent("cool")
 
     generateStatusEvent() 
-    
-    //device.setIcon("on","on","st.thermostat.cool")
-    //device.save()
 }
 
 def modeFan() {
@@ -366,9 +363,6 @@ def modeFan() {
     generateModeEvent("fan")
    
     generateStatusEvent()
-    
-    //device.setIcon("on","on","st.switches.switch.on")
-    //device.save()
 }
 
 def generateModeEvent(mode) {
@@ -434,7 +428,7 @@ private getThermostatDescriptionText(name, value, linkText)
 {
 	if(name == "temperature")
 	{
-		return "$name was $value C"
+		return "$name was $value " + TempUnit()
 	}
     else if(name == "humidity")
 	{
@@ -442,7 +436,7 @@ private getThermostatDescriptionText(name, value, linkText)
     }
     else if(name == "targetTemperature")
 	{
-		return "latest temperature setpoint was $value C"
+		return "latest temperature setpoint was $value " + TempUnit()
 	}
 	else if(name == "fanLevel")
 	{
@@ -552,9 +546,9 @@ def generateStatusEvent() {
         
     //}
     
-    def statusTextmsg = "Temp: ${temperature} C humidity ${humidity}%"
+    def statusTextmsg = "Temp: ${temperature} ${TempUnit()} humidity ${humidity}%"
     //sendEvent("name":"statusText", "value":statusTextmsg)
     
     //log.debug "Generate Status Event = ${statusText}"
-    sendEvent("name":"statusText", "value":statusTextmsg, "description":statusText, displayed: true, isStateChange: true)
+    sendEvent("name":"statusText", "value":statusTextmsg, "description":"", displayed: false, isStateChange: true)
 }
