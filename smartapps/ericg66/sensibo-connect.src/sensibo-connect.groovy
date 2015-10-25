@@ -121,26 +121,30 @@ def installed() {
 
 	initialize()
     
-    runIn(2, "refreshDevices")
-    
-    runIn(900, "refresh", [overwrite: false])
+    //runIn(2, "refreshDevices")
+    //runEvery15Minutes(refresh)
+    //runIn(900, "refresh", [overwrite: false])
 }
 
 def updated() {
 	log.debug "Updated with settings: ${settings}"
 
-	unsubscribe()
+	unschedule()
 	
     initialize()
     
-    runIn(2, "refreshDevices")
+    //runIn(2, "refreshDevices")
 }
+
 
 def refresh() {
 	log.debug "refresh() called"
 	//reschedule the refreshes
-	runIn(900, "refresh", [overwrite: false])
+	//runIn(900, "refresh", [overwrite: false])
+    
+    unschedule()  
 	refreshDevices()
+    runEvery15Minutes("refreshDevices")
 }
 
 
@@ -210,6 +214,8 @@ def initialize() {
 
 	pollHandler()
     
+    refreshDevices()
+    runEvery15Minutes("refreshDevices")
 	//schedule("0 0/15 * 1/1 * ? *", refreshDevices)
 }
 
@@ -308,9 +314,13 @@ def setACStates(child,String PodUid, on, mode, targetTemperature, fanLevel)
 	if (result) {
 		def tData = atomicState.sensibo[child.device.deviceNetworkId]
 		tData.data.fanLevel = fanLevel
+        tData.data.thermostatFanMode = fanLevel
         tData.data.on = on
         tData.data.mode = mode
-        tData.targetTemperature = targetTemperature
+        tData.data.thermostatMode = mode
+        tData.data.targetTemperature = targetTemperature
+        tData.data.coolingSetpoint = targetTemperature
+        tData.data.heatingSetpoint = targetTemperature
 	}
 
 	return(result)
@@ -345,7 +355,11 @@ def getACState(PodUid)
                    targetTemperature : stat.targetTemperature,
                    fanLevel : stat.fanLevel,
                    mode : stat.mode,
-                   on : OnOff.toString()
+                   on : OnOff.toString(),
+                   thermostatMode: stat.mode,
+                   thermostatFanMode : stat.fanLevel,
+                   coolingSetpoint : stat.targetTemperature,
+                   heatingSetpoint : stat.targetTemperature
 				]
                 
                 log.debug "On: ${data.on} targetTemp: ${data.targetTemperature} fanLevel: ${data.fanLevel} mode: ${data.mode}"
@@ -355,10 +369,14 @@ def getACState(PodUid)
            else
            {
            	  def data = [
-                 targetTemperature : "--",
+                 targetTemperature : "0",
                  fanLevel : "--",
                  mode : "--",
-                 on : "--"
+                 on : "--",
+                 thermostatMode: "--",
+                 thermostatFanMode : "--",
+                 coolingSetpoint : "0",
+                 heatingSetpoint : "0"
 			  ]
               return data
            }
@@ -373,7 +391,11 @@ def getACState(PodUid)
             targetTemperature : "--",
             fanLevel : "--",
             mode : "--",
-            on : "--"
+            on : "--",
+            thermostatMode: "",
+            thermostatFanMode : "--",
+            coolingSetpoint : "0",
+            heatingSetpoint : "0"
 		]
         return data
 	} 
@@ -460,7 +482,10 @@ def pollChildren(PodUid)
                         targetTemperature: setTemp.targetTemperature.join(", "),
                         fanLevel: setTemp.fanLevel.join(", "),
                         mode: setTemp.mode.join(", "),
-                        on: setTemp.on.join(", ")
+                        on: setTemp.on.join(", "),
+                        thermostatMode: setTemp.mode.join(", "),
+                        coolingSetpoint: setTemp.targetTemperature.join(", "),
+                        heatingSetpoint: setTemp.targetTemperature.join(", ")
                        // unit: lunit
 					]
 
