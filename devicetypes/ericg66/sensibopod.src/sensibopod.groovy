@@ -47,8 +47,10 @@ metadata {
         command "levelUpDown"
         command "switchFanLevel"
         command "switchMode"
-        command "raiseSetpoint"
-        command "lowerSetpoint"
+        command "raiseCoolSetpoint"
+        command "lowerCoolSetpoint"
+        command "raiseHeatSetpoint"
+        command "lowerHeatSetpoint"
 
 	}
 
@@ -293,7 +295,7 @@ void lowerCoolSetpoint() {
 }
 
 void raiseCoolSetpoint() {
-   	log.debug "Lower SetPoint"
+   	log.debug "Raise SetPoint"
     
 	//def mode = device.currentValue("thermostatMode")
     def Setpoint = device.currentValue("targetTemperature").toInteger()
