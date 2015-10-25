@@ -99,13 +99,13 @@ metadata {
             state "auto", action:"switchFanLevel", backgroundColor:"#8C8C8D", icon:"http://i130.photobucket.com/albums/p242/brutalboy_photos/fan_auto_2.png" , nextState:"low"
         }
         
-        standardTile("upButtonControl", "device.targetTemperature", inactiveLabel: false, decoration: "flat") {
-			state "setpoint", action:"raiseSetpoint", backgroundColor:"#d04e00", icon:"st.thermostat.thermostat-up"
+        standardTile("upCoolButtonControl", "device.targetTemperature", inactiveLabel: false, decoration: "flat", width: 1, height: 1) {
+			state "setpoint", action:"raiseCoolSetpoint", backgroundColor:"#d04e00", icon:"st.thermostat.thermostat-up",label :"Up"
 		}
         
-        standardTile("downButtonControl", "device.targetTemperature", inactiveLabel: false, decoration: "flat") {
-			state "setpoint", action:"lowerSetpoint", backgroundColor:"#d04e00", icon:"st.thermostat.thermostat-down"
-		}  
+        standardTile("downCoolButtonControl", "device.targetTemperature", inactiveLabel: false, decoration: "flat", width: 1, height: 1) {
+			state "setpoint", action:"lowerCoolSetpoint", backgroundColor:"#d04e00", icon:"st.thermostat.thermostat-down", label :"Down"
+		}
         
         standardTile("mode", "device.mode",  width: 2, height: 2) {
             state "cool", action:"switchMode", backgroundColor:"#0099FF", icon:"st.thermostat.cool", nextState:"heat"
@@ -210,7 +210,7 @@ metadata {
 		main (["on"])
 		//main "switch"
         //"coolSliderControl","heatSliderControl"
-		details (["richcontact","on","temperature","humidity", "fanLevel","mode","upButtonControl","downButtonControl","refresh"])    
+		details (["richcontact","on","temperature","humidity", "fanLevel","mode","upCoolButtonControl","downCoolButtonControl","refresh"])    
         //details (["temperature","humidity","switch","statusText","targetTemperature","refresh", "fanLevel"])
 	}
 }
@@ -267,7 +267,7 @@ def fanCirculate(){
 
 ////
 
-void lowerSetpoint() {
+void lowerCoolSetpoint() {
    	log.debug "Lower SetPoint"
     
 	//def mode = device.currentValue("thermostatMode")
@@ -292,7 +292,7 @@ void lowerSetpoint() {
 	generateStatusEvent()
 }
 
-void raiseSetpoint() {
+void raiseCoolSetpoint() {
    	log.debug "Lower SetPoint"
     
 	//def mode = device.currentValue("thermostatMode")
@@ -562,7 +562,20 @@ def parseEventData(Map results)
             	def mode = (value.toString() != "fan") ?: "auto"
                	
                 isChange = true //isTemperatureStateChange(device, name, value.toString())
-                isDisplayed = isChange
+                isDisplayed = false
+                   
+				sendEvent(
+					name: name,
+					value: value,
+					linkText: linkText,
+					descriptionText: getThermostatDescriptionText(name, value, linkText),
+					handlerName: name,
+					isStateChange: isChange,
+					displayed: isDisplayed)
+            	}
+            else if (name=="coolingSetpoint" || name== "heatingSetpoint") {           	
+                isChange = true //isTemperatureStateChange(device, name, value.toString())
+                isDisplayed = false
                    
 				sendEvent(
 					name: name,
@@ -578,7 +591,7 @@ def parseEventData(Map results)
                 mode = (mode == "low") ? "circulate" : mode
                	
                 isChange = true //isTemperatureStateChange(device, name, value.toString())
-                isDisplayed = isChange
+                isDisplayed = false
                    
 				sendEvent(
 					name: name,
@@ -656,7 +669,7 @@ private getThermostatDescriptionText(name, value, linkText)
     }
     else
     {
-        //return "${name} = ${value}"
+        return "${name} = ${value}"
     }
 }
 
