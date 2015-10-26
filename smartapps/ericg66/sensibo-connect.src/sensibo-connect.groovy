@@ -38,6 +38,7 @@ preferences {
 
 def getServerUrl() { "https://home.sensibo.com" }
 def getapikey() { apiKey }
+private def TemperatureUnit() { return location.temperatureScale }
 
 def setAPIKey()
 {
@@ -301,6 +302,9 @@ def setACStates(child,String PodUid, on, mode, targetTemperature, fanLevel)
 {
 	log.debug "SetACStates ON: $on - MODE: $mode - Temp : $targetTemperature - FAN : $fanLevel"
     
+    //Return false if no values was read from Sensibo API
+    if (on == "--") { return false }
+    
     def OnOff = (on == "on") ? true : false
     //if (on == "on") { OnOff = true } else { OnOff = false}
     
@@ -321,6 +325,7 @@ def setACStates(child,String PodUid, on, mode, targetTemperature, fanLevel)
         tData.data.targetTemperature = targetTemperature
         tData.data.coolingSetpoint = targetTemperature
         tData.data.heatingSetpoint = targetTemperature
+        tData.data.temperatureUnit = TemperatureUnit()
 	}
 
 	return(result)
@@ -359,7 +364,8 @@ def getACState(PodUid)
                    thermostatMode: stat.mode,
                    thermostatFanMode : stat.fanLevel,
                    coolingSetpoint : stat.targetTemperature,
-                   heatingSetpoint : stat.targetTemperature
+                   heatingSetpoint : stat.targetTemperature,
+                   temperatureUnit : TemperatureUnit()
 				]
                 
                 log.debug "On: ${data.on} targetTemp: ${data.targetTemperature} fanLevel: ${data.fanLevel} mode: ${data.mode}"
@@ -376,7 +382,8 @@ def getACState(PodUid)
                  thermostatMode: "--",
                  thermostatFanMode : "--",
                  coolingSetpoint : "0",
-                 heatingSetpoint : "0"
+                 heatingSetpoint : "0",
+                 temperatureUnit : TemperatureUnit()
 			  ]
               return data
            }
@@ -395,7 +402,8 @@ def getACState(PodUid)
             thermostatMode: "",
             thermostatFanMode : "--",
             coolingSetpoint : "0",
-            heatingSetpoint : "0"
+            heatingSetpoint : "0",
+            temperatureUnit : TemperatureUnit()
 		]
         return data
 	} 
@@ -485,7 +493,8 @@ def pollChildren(PodUid)
                         on: setTemp.on.join(", "),
                         thermostatMode: setTemp.mode.join(", "),
                         coolingSetpoint: setTemp.targetTemperature.join(", "),
-                        heatingSetpoint: setTemp.targetTemperature.join(", ")
+                        heatingSetpoint: setTemp.targetTemperature.join(", "),
+                        temperatureUnit : TemperatureUnit()
                        // unit: lunit
 					]
 
