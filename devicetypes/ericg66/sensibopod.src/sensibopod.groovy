@@ -35,7 +35,7 @@ metadata {
         capability "Switch"
         capability "Thermostat"
         
-		attribute "temperatureUnit", "string"
+		//attribute "temperatureUnit", "string"
         
 		command "getPodInfo"
 		command "setFanLevel"
@@ -51,6 +51,7 @@ metadata {
         command "lowerCoolSetpoint"
         command "raiseHeatSetpoint"
         command "lowerHeatSetpoint"
+        //command "TempUnit"
 
 	}
 
@@ -73,7 +74,7 @@ metadata {
         
     	multiAttributeTile(name:"richcontact", type:"lighting", width:6, height:4) {
    			tileAttribute("device.targetTemperature", key: "PRIMARY_CONTROL") {
-            	attributeState ("targetTemperature", label:'${currentValue} '+ TempUnit(), 
+            	attributeState ("targetTemperature", label:'${currentValue} ' + TempUnit(), 
                 backgroundColors:[
 					[value: 15, color: "#153591"],
 					[value: 18, color: "#1e9cbb"],
@@ -129,29 +130,12 @@ metadata {
         }
         
 		controlTile("coolSliderControl", "device.coolingSetpoint", "slider", height: 1, width: 2, inactiveLabel: false,range:"(16..30)") {
-			state "setCoolingSetpoint", label:'Set temperature to', action:"thermostat.setCoolingSetpoint",
-				backgroundColors:[
-					[value: 15, color: "#153591"],
-					[value: 18, color: "#1e9cbb"],
-					[value: 21, color: "#90d2a7"],
-					[value: 24, color: "#44b621"],
-					[value: 27, color: "#f1d801"],
-					[value: 30, color: "#d04e00"],
-					[value: 33, color: "#bc2323"]
-				]
+			state "setCoolingSetpoint", label:'Set temperature to', action:"thermostat.setCoolingSetpoint"
+				
 		}
 
 		controlTile("heatSliderControl", "device.heatingSetpoint", "slider", height: 1, width: 2, inactiveLabel: false, range:"(16..30)") {
-			state "setHeatingSetpoint", label:'Set temperature to', action:"thermostat.setHeatingSetpoint",
-            	backgroundColors:[
-					[value: 15, color: "#153591"],
-					[value: 18, color: "#1e9cbb"],
-					[value: 21, color: "#90d2a7"],
-					[value: 24, color: "#44b621"],
-					[value: 27, color: "#f1d801"],
-					[value: 30, color: "#d04e00"],
-					[value: 33, color: "#bc2323"]
-				]
+			state "setHeatingSetpoint", label:'Set temperature to', action:"thermostat.setHeatingSetpoint"
 		}
         
         valueTile("temperature", "device.temperature", width: 2, height: 2) {
@@ -169,7 +153,7 @@ metadata {
 		}
         
         valueTile("humidity", "device.humidity", width: 2, height: 2) {
-			state("humidity", label:'Humidity: ${currentValue} %', unit:"C",
+			state("humidity", label:'Humidity: ${currentValue} %',
 				backgroundColors:[
 					[value: 31, color: "#153591"],
 					[value: 44, color: "#1e9cbb"],
@@ -206,6 +190,10 @@ metadata {
 
 		valueTile("coolingSetpoint", "device.coolingSetpoint") {
 			state "default", label:'${currentValue}°', unit:"Cool", backgroundColor:"#1e9cbb"
+		}
+        
+        valueTile("temperatureUnit", "device.temperatureUnit") {
+			state "default", label:'${currentValue}°', backgroundColor:"#1e9cbb"
 		}
         ////
 		       
@@ -320,7 +308,9 @@ void raiseCoolSetpoint() {
 }
 
 def TempUnit() { 
-	return "C"
+	//log.debug state["temperatureUnit"]
+	//log.debug "Temp " + device.currentState("temperatureUnit").value
+	return "C"//temperatureUnit
 }
 
 def refresh()
@@ -557,10 +547,27 @@ def parseEventData(Map results)
 	{
 		results.each { name, value -> 
  
+ 			log.debug "name :" + name + " value :" + value
 			def linkText = getLinkText(device)
             def isChange = false
             def isDisplayed = true
-            if (name=="thermostatMode") {
+            
+            //state["temperatureUnit"].value
+            if (name=="temperatureUnit") {            	                
+                isChange = true //isTemperatureStateChange(device, name, value.toString())
+                isDisplayed = false
+                   
+				sendEvent(
+					name: name,
+					value: value,
+                    unit: value,
+					linkText: linkText,
+					descriptionText: getThermostatDescriptionText(name, value, linkText),
+					handlerName: name,
+					isStateChange: isChange,
+					displayed: isDisplayed)
+            	}
+            else if (name=="thermostatMode") {
             	def mode = (value.toString() != "fan") ?: "auto"
                	
                 isChange = true //isTemperatureStateChange(device, name, value.toString())
@@ -578,10 +585,14 @@ def parseEventData(Map results)
             else if (name=="coolingSetpoint" || name== "heatingSetpoint") {           	
                 isChange = true //isTemperatureStateChange(device, name, value.toString())
                 isDisplayed = false
-                   
+                
+                if (TempUnit() == "F") {
+                	//value = cToF(value)
+                }
 				sendEvent(
 					name: name,
 					value: value,
+                    unit : "C",
 					linkText: linkText,
 					descriptionText: getThermostatDescriptionText(name, value, linkText),
 					handlerName: name,
@@ -607,7 +618,10 @@ def parseEventData(Map results)
             else if (name=="temperature" || name=="targetTemperature") {
 				isChange = true //isTemperatureStateChange(device, name, value.toString())
                 isDisplayed = isChange
-                   
+				
+                if (TempUnit() == "F") {
+                	//value = cToF(value)
+                }
 				sendEvent(
 					name: name,
 					value: value,
@@ -637,6 +651,16 @@ def parseEventData(Map results)
 		//generateSetpointEvent ()  
         generateStatusEvent ()
 	}
+}
+
+private cToF(celcius){
+	def farenheit = (celcius.toDouble() * 9/5) + 32
+	return farenheit
+}
+
+private fToC(farenheit){
+	def celcius = (farenheit.toDouble() -32) * 5 / 9
+	return celcius
 }
 
 private getThermostatDescriptionText(name, value, linkText)
@@ -727,6 +751,11 @@ def parse(String description) {
         name = "on"
         value = device.currentValue("on")
     }
+    else if (description?.startsWith("temperatureUnit")) {
+    	log.debug "temperatureUnit"
+        name = "temperatureUnit"
+        value = device.currentValue("temperatureUnit")
+    }
 	// TODO: handle 'humidity' attribute
 	// TODO: handle 'temperature' attribute
 	// TODO: handle 'temperatureUnit' attribute
@@ -765,6 +794,10 @@ def generateStatusEvent() {
         
     //}
     
+    if (TempUnit() == "F") {
+    	//temperature = cToF(temperature)
+    }
+                
     def statusTextmsg = "Temp: ${temperature} ${TempUnit()} humidity ${humidity}%"
     //sendEvent("name":"statusText", "value":statusTextmsg)
     
