@@ -166,7 +166,7 @@ def initialize() {
     log.debug "key "+ getapikey()
     
     atomicState.apikey = getapikey()
-
+	
     log.debug "initialize"
 
 	def devices = SelectedSensiboPods.collect { dni ->
