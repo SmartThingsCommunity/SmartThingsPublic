@@ -1,15 +1,15 @@
 /**
  *  Notify When Left Open and take photos
  *  Based on original code by olson.lukas@gmail.com (2013-06-24)
- *  8/14/2014 - Brian Lowrance - brian@rayzurbock.com - Photo code added
- *  11/8/2014 - Brian Lowrance - brian@rayzurbock.com - Prevent false alarms added
- *  11/8/2014 - Brian Lowrance - brian@rayzurbock.com - Option to repeat alert if door remains open
- *  11/9/2014 - Brian Lowrance - brian@rayzurbock.com - Modified repeat alert with a max of 10 per occurrance.
- *  12/3/2014 - Brian Lowrance - brian@rayzurbock.com - Added Dynamic Menus (Status Page, Configure Page). Added Hello Home action option on first alert.
- *  12/9/2014 - Brian Lowrance - brian@rayzurbock.com - Added SpeechSynthesis to speak alert if desired (Sonos or VLC Thing).
+ *  8/14/2014 - Brian Lowrance - rayzur@rayzurbock.com - Photo code added
+ *  11/8/2014 - Brian Lowrance - rayzur@rayzurbock.com - Prevent false alarms added
+ *  11/8/2014 - Brian Lowrance - rayzur@rayzurbock.com - Option to repeat alert if door remains open
+ *  11/9/2014 - Brian Lowrance - rayzur@rayzurbock.com - Modified repeat alert with a max of 10 per occurrance.
+ *  12/3/2014 - Brian Lowrance - rayzur@rayzurbock.com - Added Dynamic Menus (Status Page, Configure Page). Added Hello Home action option on first alert.
+ *  12/9/2014 - Brian Lowrance - rayzur@rayzurbock.com - Added SpeechSynthesis to speak alert if desired (Ubi or VLC Thing).
  *
  * For the latest version visit: https://github.com/rayzurbock/SmartThings-DoorLeftOpen
- * Version: 1.3.3
+ * Version: 1.3.4 - Brian Lowrance - rayzur@rayzurbock.com - Added musicPlayer to speak alert if desired support (Sonos or VLC Thing).
  */
 
 definition(
@@ -41,8 +41,14 @@ def pageStatus() {
                 statusmsg += "Left Open Threshold: ${settings.numMinutes} minute(s)\n\n"
                 statusmsg += "Alert Message:\n  '${settings.messageText}'\n"
                 if (settings.speechSynth) {
-                    statusmsg += "Announce with these speech synthesis devices:\n"
+                    statusmsg += "Announce with these speechSynthesis devices:\n"
                     settings.speechSynth.each() {
+                        statusmsg += "  - ${it.displayName}\n"
+                    }
+                }
+                if (settings.musicPlayer) {
+                    statusmsg += "Announce with these musicPlayer devices:\n"
+                    settings.musicPlayer.each() {
                         statusmsg += "  - ${it.displayName}\n"
                     }
                 }
@@ -87,7 +93,8 @@ def pageConfigure() {
         }
         section("Alert . . .") {
             input "messageText", "text", title: "Send notification that says", required: true
-            input "speechSynth", "capability.speechSynthesis", title: "Announce with these text-to-speech devices", multiple: true, required: false
+            input "speechSynth", "capability.speechSynthesis", title: "Announce with these text-to-speech devices (speechSynthesis)", multiple: true, required: false
+            input "musicPlayer", "capability.speechSynthesis", title: "Announce with these text-to-speech devices (musicPlayer)", multiple: true, required: false
             input "phoneNumber", "phone", title: "Send SMS message to", required: false
             input "repeatpush", "bool", title: "Repeat notification until resolved (up to 10x)?", required: true
         }
@@ -128,7 +135,7 @@ def pageHHAction(){
 
 def installed() {
     subscribe(contactSensor, "contact", onContactChange);
-    state.appversion = "1.3.2-beta1"
+    state.appversion = "1.3.4"
     state.count = 0;
     state.maxrepeat = 10;
     state.alertmsg = "";
@@ -136,7 +143,7 @@ def installed() {
 
 def updated() {
     unsubscribe()
-    state.appversion = "1.3.3"
+    state.appversion = "1.3.4"
     subscribe(contactSensor, "contact", onContactChange);
     state.count = 0;
     state.maxrepeat = 10;
@@ -144,7 +151,7 @@ def updated() {
 }
 
 def onContactChange(evt) {
-    log.debug "onContactChange";
+    log.debug "onContactChange - ${evt.displayName}:${evt.value}";
     if (evt.value == "open") {
         state.count = 0;
         state.maxrepeat = 10;
@@ -176,9 +183,10 @@ def onContactLeftOpenHandler() {
         if (state.count > 1 && state.count < state.maxrepeat) {state.alertmsg = "${messageText}. Repeat #${state.count}."}
         if (state.count == state.maxrepeat) {state.alertmsg = "${messageText}. Last notice."}
         sendPush(state.alertmsg);
-        sendSms(phoneNumber, state.alertmsg);
+        if (settings.phoneNumber) {sendSms(settings.phoneNumber, state.alertmsg)}
         if (settings.speechSynth) {settings.speechSynth*.speak("Door Left Open Alert! ! ! ${state.alertmsg}")}
-        if (repeatpush) {
+        if (settings.musicPlayer) {settings.musicPlayer*.playText("Door Left Open Alert! ! ! ${state.alertmsg}")}
+        if (settings.repeatpush) {
             if (state.count < state.maxrepeat) {
                 log.debug "Rescheduling repeat alert";
                 unschedule();
