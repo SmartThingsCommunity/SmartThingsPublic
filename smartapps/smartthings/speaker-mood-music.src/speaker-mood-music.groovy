@@ -10,7 +10,7 @@
  *  on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the License
  *  for the specific language governing permissions and limitations under the License.
  *
- *  Sonos Mood Music
+ *  Speaker Mood Music
  *
  *  Author: SmartThings
  *  Date: 2014-02-12
@@ -31,7 +31,7 @@ private songOptions() {
 	}
 
 	// Query for recent tracks
-	def states = sonos.statesSince("trackData", new Date(0), [max:30])
+	def states = speaker.statesSince("trackData", new Date(0), [max:30])
 	def dataMaps = states.collect{it.jsonValue}
 	options.addAll(dataMaps.collect{it.station})
 
@@ -43,7 +43,7 @@ private saveSelectedSong() {
 	try {
 		def thisSong = song
 		log.info "Looking for $thisSong"
-		def songs = sonos.statesSince("trackData", new Date(0), [max:30]).collect{it.jsonValue}
+		def songs = speaker.statesSince("trackData", new Date(0), [max:30]).collect{it.jsonValue}
 		log.info "Searching ${songs.size()} records"
 
 		def data = songs.find {s -> s.station == thisSong}
@@ -65,7 +65,7 @@ private saveSelectedSong() {
 }
 
 definition(
-    name: "Sonos Mood Music",
+    name: "Speaker Mood Music",
     namespace: "smartthings",
     author: "SmartThings",
     description: "Plays a selected song or station.",
@@ -75,7 +75,7 @@ definition(
 )
 
 preferences {
-	page(name: "mainPage", title: "Play a selected song or station on your Sonos when something happens", nextPage: "chooseTrack", uninstall: true)
+	page(name: "mainPage", title: "Play a selected song or station on your Speaker when something happens", nextPage: "chooseTrack", uninstall: true)
 	page(name: "chooseTrack", title: "Select a song", install: true)
 	page(name: "timeIntervalInput", title: "Only during a certain time") {
 		section {
@@ -125,7 +125,7 @@ def mainPage() {
 			ifUnset "timeOfDay", "time", title: "At a Scheduled Time", required: false
 		}
 		section {
-			input "sonos", "capability.musicPlayer", title: "On this Sonos player", required: true
+			input "speaker", "capability.musicPlayer", title: "On this Speaker player", required: true
 		}
 		section("More options", hideable: true, hidden: true) {
 			input "volume", "number", title: "Set the volume", description: "0-100%", required: false
@@ -248,13 +248,13 @@ private takeAction(evt) {
 	log.info "Playing '$state.selectedSong"
 
 	if (volume != null) {
-		sonos.stop()
+		speaker.stop()
 		pause(500)
-		sonos.setLevel(volume)
+		speaker.setLevel(volume)
 		pause(500)
 	}
 
-	sonos.playTrack(state.selectedSong)
+	speaker.playTrack(state.selectedSong)
 
 	if (frequency || oncePerDay) {
 		state[frequencyKey(evt)] = now()

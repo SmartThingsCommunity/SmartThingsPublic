@@ -10,23 +10,23 @@
  *  on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the License
  *  for the specific language governing permissions and limitations under the License.
  *
- *  Sonos Custom Message
+ *  Speaker Custom Message
  *
  *  Author: SmartThings
  *  Date: 2014-1-29
  */
 definition(
-	name: "Sonos Notify with Sound",
+	name: "Speaker Notify with Sound",
 	namespace: "smartthings",
 	author: "SmartThings",
-	description: "Play a sound or custom message through your Sonos when the mode changes or other events occur.",
+	description: "Play a sound or custom message through your Speaker when the mode changes or other events occur.",
 	category: "SmartThings Labs",
 	iconUrl: "https://s3.amazonaws.com/smartapp-icons/Partner/sonos.png",
 	iconX2Url: "https://s3.amazonaws.com/smartapp-icons/Partner/sonos@2x.png"
 )
 
 preferences {
-	page(name: "mainPage", title: "Play a message on your Sonos when something happens", install: true, uninstall: true)
+	page(name: "mainPage", title: "Play a message on your Speaker when something happens", install: true, uninstall: true)
 	page(name: "chooseTrack", title: "Select a song or station")
 	page(name: "timeIntervalInput", title: "Only during a certain time") {
 		section {
@@ -92,7 +92,7 @@ def mainPage() {
 			input "message","text",title:"Play this message", required:false, multiple: false
 		}
 		section {
-			input "sonos", "capability.musicPlayer", title: "On this Sonos player", required: true
+			input "speaker", "capability.musicPlayer", title: "On this Speaker player", required: true
 		}
 		section("More options", hideable: true, hidden: true) {
 			input "resumePlaying", "bool", title: "Resume currently playing music after notification", required: false, defaultValue: true
@@ -137,7 +137,7 @@ private songOptions() {
 	}
 
 	// Query for recent tracks
-	def states = sonos.statesSince("trackData", new Date(0), [max:30])
+	def states = speaker.statesSince("trackData", new Date(0), [max:30])
 	def dataMaps = states.collect{it.jsonValue}
 	options.addAll(dataMaps.collect{it.station})
 
@@ -149,7 +149,7 @@ private saveSelectedSong() {
 	try {
 		def thisSong = song
 		log.info "Looking for $thisSong"
-		def songs = sonos.statesSince("trackData", new Date(0), [max:30]).collect{it.jsonValue}
+		def songs = speaker.statesSince("trackData", new Date(0), [max:30]).collect{it.jsonValue}
 		log.info "Searching ${songs.size()} records"
 
 		def data = songs.find {s -> s.station == thisSong}
@@ -277,13 +277,13 @@ private takeAction(evt) {
 	log.trace "takeAction()"
 
 	if (song) {
-		sonos.playSoundAndTrack(state.sound.uri, state.sound.duration, state.selectedSong, volume)
+		speaker.playSoundAndTrack(state.sound.uri, state.sound.duration, state.selectedSong, volume)
 	}
 	else if (resumePlaying){
-		sonos.playTrackAndResume(state.sound.uri, state.sound.duration, volume)
+		speaker.playTrackAndResume(state.sound.uri, state.sound.duration, volume)
 	}
 	else {
-		sonos.playTrackAndRestore(state.sound.uri, state.sound.duration, volume)
+		speaker.playTrackAndRestore(state.sound.uri, state.sound.duration, volume)
 	}
 
 	if (frequency || oncePerDay) {

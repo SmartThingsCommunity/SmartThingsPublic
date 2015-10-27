@@ -10,24 +10,24 @@
  *  on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the License
  *  for the specific language governing permissions and limitations under the License.
  *
- *  Sonos Control
+ *  Speaker Control
  *
  *  Author: SmartThings
  *
  *  Date: 2013-12-10
  */
 definition(
-    name: "Sonos Control",
+    name: "Speaker Control",
     namespace: "smartthings",
     author: "SmartThings",
-    description: "Play or pause your Sonos when certain actions take place in your home.",
+    description: "Play or pause your Speaker when certain actions take place in your home.",
     category: "SmartThings Labs",
     iconUrl: "https://s3.amazonaws.com/smartapp-icons/Partner/sonos.png",
     iconX2Url: "https://s3.amazonaws.com/smartapp-icons/Partner/sonos@2x.png"
 )
 
 preferences {
-	page(name: "mainPage", title: "Control your Sonos when something happens", install: true, uninstall: true)
+	page(name: "mainPage", title: "Control your Speaker when something happens", install: true, uninstall: true)
 	page(name: "timeIntervalInput", title: "Only during a certain time") {
 		section {
 			input "starting", "time", title: "Starting", required: false
@@ -81,7 +81,7 @@ def mainPage() {
 			]
 		}
 		section {
-			input "sonos", "capability.musicPlayer", title: "Sonos music player", required: true
+			input "speaker", "capability.musicPlayer", title: "Speaker music player", required: true
 		}
 		section("More options", hideable: true, hidden: true) {
 			input "volume", "number", title: "Set the volume volume", description: "0-100%", required: false
@@ -201,31 +201,31 @@ private takeAction(evt) {
 	log.debug "takeAction($actionType)"
 	def options = [:]
 	if (volume) {
-		sonos.setLevel(volume as Integer)
+		speaker.setLevel(volume as Integer)
 		options.delay = 1000
 	}
 
 	switch (actionType) {
 		case "Play":
-			options ? sonos.on(options) : sonos.on()
+			options ? speaker.on(options) : speaker.on()
 			break
 		case "Stop Playing":
-			options ? sonos.off(options) : sonos.off()
+			options ? speaker.off(options) : speaker.off()
 			break
 		case "Toggle Play/Pause":
-			def currentStatus = sonos.currentValue("status")
+			def currentStatus = speaker.currentValue("status")
 			if (currentStatus == "playing") {
-				options ? sonos.pause(options) : sonos.pause()
+				options ? speaker.pause(options) : speaker.pause()
 			}
 			else {
-				options ? sonos.play(options) : sonos.play()
+				options ? speaker.play(options) : speaker.play()
 			}
 			break
 		case "Skip to Next Track":
-			options ? sonos.nextTrack(options) : sonos.nextTrack()
+			options ? speaker.nextTrack(options) : speaker.nextTrack()
 			break
 		case "Play Previous Track":
-			options ? sonos.previousTrack(options) : sonos.previousTrack()
+			options ? speaker.previousTrack(options) : speaker.previousTrack()
 			break
 		default:
 			log.error "Action type '$actionType' not defined"
