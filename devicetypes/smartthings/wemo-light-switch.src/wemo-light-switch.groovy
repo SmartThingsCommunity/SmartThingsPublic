@@ -25,6 +25,8 @@ metadata {
 		capability "Refresh"
 		capability "Sensor"
 
+    attribute "currentIP", "string"
+
 		command "subscribe"
 		command "resubscribe"
 		command "unsubscribe"
@@ -41,8 +43,14 @@ metadata {
 			state "off", label:'${name}', action:"switch.on", icon:"st.switches.switch.off", backgroundColor:"#ffffff", nextState:"turningOn"
 			state "turningOn", label:'${name}', icon:"st.switches.switch.on", backgroundColor:"#79b821"
 			state "turningOff", label:'${name}', icon:"st.switches.switch.off", backgroundColor:"#ffffff"
+			state "offline", label:'${name}', icon:"st.switches.switch.off", backgroundColor:"#ff0000"
 		}
-        standardTile("refresh", "device.switch", inactiveLabel: false, decoration: "flat") {
+
+		standardTile("currentIP", "device.motion") {
+			state "default", label:''
+    }
+
+    standardTile("refresh", "device.switch", inactiveLabel: false, decoration: "flat") {
 			state "default", label:'', action:"refresh.refresh", icon:"st.secondary.refresh"
 		}
 
@@ -68,6 +76,7 @@ def parse(String description) {
 	def result = []
 	def bodyString = msg.body
 	if (bodyString) {
+		unschedule("isOffline")
 		def body = new XmlSlurper().parseText(bodyString)
 
 		if (body?.property?.TimeSyncRequest?.text()) {
@@ -78,13 +87,14 @@ def parse(String description) {
 		} else if (body?.property?.BinaryState?.text()) {
 			def value = body?.property?.BinaryState?.text().toInteger() == 1 ? "on" : "off"
 			log.trace "Notify: BinaryState = ${value}"
-			result << createEvent(name: "switch", value: value)
+			          result << createEvent(name: "switch", value: value, descriptionText: "Switch is ${value}")
 		} else if (body?.property?.TimeZoneNotification?.text()) {
 			log.debug "Notify: TimeZoneNotification = ${body?.property?.TimeZoneNotification?.text()}"
 		} else if (body?.Body?.GetBinaryStateResponse?.BinaryState?.text()) {
 			def value = body?.Body?.GetBinaryStateResponse?.BinaryState?.text().toInteger() == 1 ? "on" : "off"
 			log.trace "GetBinaryResponse: BinaryState = ${value}"
-			result << createEvent(name: "switch", value: value)
+			def dispaux = device.currentValue("switch") != value
+			result << createEvent(name: "switch", value: value, descriptionText: "Switch is ${value}", displayed: dispaux)
 		}
 	}
 
@@ -194,6 +204,7 @@ def subscribe(ip, port) {
 	def existingPort = getDataValue("port")
 	if (ip && ip != existingIp) {
 		log.debug "Updating ip from $existingIp to $ip"
+    sendEvent(name: "currentIP", value: ipvalue, descriptionText: "IP changed to ${ipvalue}")
 		updateDataValue("ip", ip)
 	}
 	if (port && port != existingPort) {
@@ -259,6 +270,8 @@ User-Agent: CyberGarage-HTTP/1.0
 
 def poll() {
 log.debug "Executing 'poll'"
+if (device.currentValue("currentIP") != "Offline")
+    runIn(10, isOffline)
 new physicalgraph.device.HubAction("""POST /upnp/control/basicevent1 HTTP/1.1
 SOAPACTION: "urn:Belkin:service:basicevent:1#GetBinaryState"
 Content-Length: 277
@@ -273,4 +286,16 @@ User-Agent: CyberGarage-HTTP/1.0
 </u:GetBinaryState>
 </s:Body>
 </s:Envelope>""", physicalgraph.device.Protocol.LAN)
+}
+
+def isOffline() {
+    sendEvent(name: "switch", value: "offline", descriptionText: "The device is offline")
+}
+
+private Integer convertHexToInt(hex) {
+ 	Integer.parseInt(hex,16)
+}
+
+private String convertHexToIP(hex) {
+ 	[convertHexToInt(hex[0..1]),convertHexToInt(hex[2..3]),convertHexToInt(hex[4..5]),convertHexToInt(hex[6..7])].join(".")
 }
