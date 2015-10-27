@@ -10,6 +10,7 @@
  *
  * For the latest version visit: https://github.com/rayzurbock/SmartThings-DoorLeftOpen
  * Version: 1.3.4 - Brian Lowrance - rayzur@rayzurbock.com - Added musicPlayer to speak alert if desired support (Sonos or VLC Thing).
+ * Version: 1.3.5 - Brian Lowrance - rayzur@rayzurbock.com - Corrected new musicPlayer selection setting. (Thanks ST_Community: PM4_1613)
  */
 
 definition(
@@ -94,7 +95,7 @@ def pageConfigure() {
         section("Alert . . .") {
             input "messageText", "text", title: "Send notification that says", required: true
             input "speechSynth", "capability.speechSynthesis", title: "Announce with these text-to-speech devices (speechSynthesis)", multiple: true, required: false
-            input "musicPlayer", "capability.speechSynthesis", title: "Announce with these text-to-speech devices (musicPlayer)", multiple: true, required: false
+            input "musicPlayer", "capability.musicPlayer", title: "Announce with these text-to-speech devices (musicPlayer)", multiple: true, required: false
             input "phoneNumber", "phone", title: "Send SMS message to", required: false
             input "repeatpush", "bool", title: "Repeat notification until resolved (up to 10x)?", required: true
         }
@@ -135,7 +136,7 @@ def pageHHAction(){
 
 def installed() {
     subscribe(contactSensor, "contact", onContactChange);
-    state.appversion = "1.3.4"
+    state.appversion = "1.3.5"
     state.count = 0;
     state.maxrepeat = 10;
     state.alertmsg = "";
@@ -143,7 +144,7 @@ def installed() {
 
 def updated() {
     unsubscribe()
-    state.appversion = "1.3.4"
+    state.appversion = "1.3.5"
     subscribe(contactSensor, "contact", onContactChange);
     state.count = 0;
     state.maxrepeat = 10;
