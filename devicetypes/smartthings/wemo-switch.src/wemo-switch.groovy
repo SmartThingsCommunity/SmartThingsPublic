@@ -93,7 +93,7 @@ def parse(String description) {
  		} else if (body?.property?.BinaryState?.text()) {
         	def value = body?.property?.BinaryState?.text().substring(0, 1).toInteger() == 0 ? "off" : "on"
         	log.trace "Notify: BinaryState = ${value}, ${body.property.BinaryState}"
-        	result << createEvent(name: "switch", value: value)
+          result << createEvent(name: "switch", value: value, descriptionText: "Switch is ${value}")
         } else if (body?.property?.TimeZoneNotification?.text()) {
  			log.debug "Notify: TimeZoneNotification = ${body?.property?.TimeZoneNotification?.text()}"
  		} else if (body?.Body?.GetBinaryStateResponse?.BinaryState?.text()) {
@@ -105,7 +105,7 @@ def parse(String description) {
                 sendEvent(name: "IP", value: ipvalue, descriptionText: "IP is ${ipvalue}")
             }
             def dispaux = device.currentValue("switch") != value
- 			result << createEvent(name: "switch", value: value, displayed: dispaux)
+     			  result << createEvent(name: "switch", value: value, descriptionText: "Switch is ${value}", displayed: dispaux)
  		}
  	}
  result

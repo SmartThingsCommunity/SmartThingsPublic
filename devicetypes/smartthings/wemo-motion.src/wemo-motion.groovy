@@ -81,7 +81,7 @@ def parse(String description) {
 		} else if (body?.property?.BinaryState?.text()) {
 			def value = body?.property?.BinaryState?.text().toInteger() == 1 ? "active" : "inactive"
 			log.debug "Notify - BinaryState = ${value}"
-			result << createEvent(name: "motion", value: value)
+      result << createEvent(name: "motion", value: value, descriptionText: "Motion is ${value}")
 		} else if (body?.property?.TimeZoneNotification?.text()) {
 			log.debug "Notify: TimeZoneNotification = ${body?.property?.TimeZoneNotification?.text()}"
 		}
