@@ -187,7 +187,7 @@ metadata {
                     [value: 80, color: "#00b621"],
                     [value: 90, color: "#009c00"],
                     [value: 100, color: "#00ff00"]
-             ]h
+             ]
 		}
         
         valueTile("thermostatOperatingState", "device.thermostatOperatingState", inactiveLabel: false, decoration: "flat") {
