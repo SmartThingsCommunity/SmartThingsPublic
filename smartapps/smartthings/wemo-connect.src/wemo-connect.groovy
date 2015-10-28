@@ -245,8 +245,8 @@ def addSwitches() {
 							"port": selectedSwitch.value.port
 					]
 			])
-            def ipvalue = convertHexToIP(selectedSwitch.value.ip)
-			d.sendEvent(name: "IP", value: ipvalue, descriptionText: "IP is ${ipvalue}")
+      def ipvalue = convertHexToIP(selectedSwitch.value.ip)
+			d.sendEvent(name: "currentIP", value: ipvalue, descriptionText: "IP is ${ipvalue}")
 			log.debug "Created ${d.displayName} with id: ${d.id}, dni: ${d.deviceNetworkId}"
 		} else {
 			log.debug "found ${d.displayName} with id $dni already exists"
@@ -276,8 +276,9 @@ def addMotions() {
 					"port": selectedMotion.value.port
 				]
 			])
-
-			log.debug "Created ${d.displayName} with id: ${d.id}, dni: ${d.deviceNetworkId}"
+      def ipvalue = convertHexToIP(selectedMotion.value.ip)
+      d.sendEvent(name: "currentIP", value: ipvalue, descriptionText: "IP is ${ipvalue}")
+      log.debug "Created ${d.displayName} with id: ${d.id}, dni: ${d.deviceNetworkId}"
 		} else {
 			log.debug "found ${d.displayName} with id $dni already exists"
 		}
@@ -306,7 +307,8 @@ def addLightSwitches() {
 					"port": selectedLightSwitch.value.port
 				]
 			])
-
+      def ipvalue = convertHexToIP(selectedLightSwitch.value.ip)
+      d.sendEvent(name: "currentIP", value: ipvalue, descriptionText: "IP is ${ipvalue}")
 			log.debug "created ${d.displayName} with id $dni"
 		} else {
 		   log.debug "found ${d.displayName} with id $dni already exists"

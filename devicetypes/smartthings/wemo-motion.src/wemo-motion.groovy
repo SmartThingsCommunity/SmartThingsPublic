@@ -100,14 +100,6 @@ private getCallBackAddress() {
 	device.hub.getDataValue("localIP") + ":" + device.hub.getDataValue("localSrvPortTCP")
 }
 
-private Integer convertHexToInt(hex) {
-	Integer.parseInt(hex,16)
-}
-
-private String convertHexToIP(hex) {
-	[convertHexToInt(hex[0..1]),convertHexToInt(hex[2..3]),convertHexToInt(hex[4..5]),convertHexToInt(hex[6..7])].join(".")
-}
-
 private getHostAddress() {
 	def ip = getDataValue("ip")
 	def port = getDataValue("port")
