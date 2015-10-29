@@ -241,26 +241,25 @@ def zwaveEvent(physicalgraph.zwave.commands.sensormultilevelv2.SensorMultilevelR
 	{
 		case 1:
 			/* temperature */
-			def cmdScale = cmd.scale == 1 ? "F" : "C"
-            BigDecimal  offset = settings.TempOffset 
-            def startval = convertTemperatureIfNeeded( cmd.scaledSensorValue, cmdScale, cmd.precision )
-            def thetemp = startval as BigDecimal
-            BigDecimal adjval = (thetemp + offset)
-            def dispval =  String.format("%5.1f", adjval)
-            map.value = dispval
-			//map.value = convertTemperatureIfNeeded( cmd.scaledSensorValue, cmdScale, cmd.precision ) + settings.TempOffset
-			map.unit = getTemperatureScale()
+           // BigDecimal offset = settings.TempOffset
+           // def startval =convertTemperatureIfNeeded(cmd.scaledSensorValue, cmd.scale == 1 ? "F" : "C", cmd.precision)
+           // def thetemp = startval as BigDecimal
+           // BigDecimal adjval = (thetemp + offset)
+           // def dispval =  String.format("%5.1f", adjval)
+            //map.value = dispval
+            map.value = convertTemperatureIfNeeded(cmd.scaledSensorValue, cmd.scale == 1 ? "F" : "C", cmd.precision)
+            map.unit = getTemperatureScale()
 			map.name = "temperature"
 			break;
 		case 5:
 			/* humidity */
-            map.value = (cmd.scaledSensorValue.toInteger() + settings.HumidOffset).toString()
+            map.value = (cmd.scaledSensorValue.toInteger() + settings.HumidOffset)
 			map.unit = "%"
 			map.name = "humidity"
 			break;
 	}
 
-	map
+	createEvent(map)
 }
 
 def zwaveEvent(physicalgraph.zwave.commands.batteryv1.BatteryReport cmd) 
