@@ -548,7 +548,7 @@ def pollHandler() {
 	}
 }
 
-def debugEvent(message, displayEvent = true) {
+def debugEvent(message, displayEvent = false) {
 
 	def results = [
 		name: "appdebug",
