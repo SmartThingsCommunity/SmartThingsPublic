@@ -6,7 +6,9 @@
  * also add color to battery percent, and icons for humidity and temp. Make primary temp display larger.
  * original timeout was 5 minutes .. This is too often when putting in cold environment like freezer.
  * That is why I made the timeout configurable. And also change the default to 180 minutes.
- * version 2. Just set my second one up and temp is innacurate so add offset temp and humidity to fix.
+ *
+ * Version 2. Just set my second one up and temp is innacurate so add offset temp and humidity to fix.
+ * also limit temp to 1 place after the decimal. Also add more colors for temp for the lower ranges.
  *
  *  Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except
  *  in compliance with the License. You may obtain a copy of the License at:
@@ -79,25 +81,25 @@ preferences {
 
 	tiles 
 	{
-    
-    
-		valueTile("temperature", "device.temperature", width: 2, height: 2) {
+    	valueTile("temperature", "device.temperature", width: 2, height: 2) {
 			state("temperature", label:'${currentValue}°',
                 icon: "http://cdn.device-icons.smartthings.com/Weather/weather2-icn@2x.png",
 				backgroundColors:[
+                	[value: 1,  color: "#c8e3f9"],
+                	[value: 10, color: "#dbdee2"],
+                	[value: 20, color: "#c0d2e4"],
 					[value: 32, color: "#153591"],
 					[value: 44, color: "#1e9cbb"],
 					[value: 59, color: "#90d2a7"],
 					[value: 74, color: "#44b621"],
 					[value: 84, color: "#f1d801"],
-					[value: 92, color: "#d04e00"],
+                    [value: 92, color: "#d04e00"],
 					[value: 98, color: "#bc2323"]
+	
 				]
 			)
 		}
 	
-        
-        
 		valueTile("humidity", "device.humidity", inactiveLabel: false) {
 			state "humidity", label:'Humidity\n${currentValue}%', unit:"",
               icon: "http://cdn.device-icons.smartthings.com/Weather/weather12-icn@2x.png",
@@ -116,13 +118,6 @@ preferences {
 			state( "ok", label:'BAT OK', action:'alarm.on', icon:"st.alarm.alarm.alarm", backgroundColor:"#00cc00" )
 			state( "low", label:'BAT LOW', action:'alarm.off', icon:"st.alarm.alarm.alarm", backgroundColor:"#e86d13" )
 		}
-
-	/*	valueTile( "battery", "device.battery", inactiveLabel: false, decoration: "flat" ) 
-		{
-			state( "battery", label:'${currentValue}% battery', unit:"" )
-		}
-        */
-
 
 	valueTile("battery", "device.battery", inactiveLabel: false) {
 			state "battery", label:'Battery\n${currentValue}%', unit:"",
@@ -247,7 +242,13 @@ def zwaveEvent(physicalgraph.zwave.commands.sensormultilevelv2.SensorMultilevelR
 		case 1:
 			/* temperature */
 			def cmdScale = cmd.scale == 1 ? "F" : "C"
-			map.value = convertTemperatureIfNeeded( cmd.scaledSensorValue, cmdScale, cmd.precision ) + settings.TempOffset
+            BigDecimal  offset = settings.TempOffset 
+            def startval = convertTemperatureIfNeeded( cmd.scaledSensorValue, cmdScale, cmd.precision )
+            def thetemp = startval as BigDecimal
+            BigDecimal adjval = (thetemp + offset)
+            def dispval =  String.format("%5.1f", adjval)
+            map.value = dispval
+			//map.value = convertTemperatureIfNeeded( cmd.scaledSensorValue, cmdScale, cmd.precision ) + settings.TempOffset
 			map.unit = getTemperatureScale()
 			map.name = "temperature"
 			break;
@@ -282,7 +283,6 @@ def zwaveEvent(physicalgraph.zwave.Command cmd)
 
 def configure() 
 {
-
 log.debug "In configure for st814 timeout value = $settings.ReportTime"
 log.debug "temp change value = $settings.TempChangeAmount"
 log.debug "humid change value = $settings.HumidChangeAmount"
@@ -303,8 +303,7 @@ log.debug "humid adjust = $settings.HumidOffset"
     
 }
    
-
-// lgk init and updated functions
+// lgk  update function
 
 def updated()
 {
