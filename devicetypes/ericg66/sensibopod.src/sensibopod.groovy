@@ -265,8 +265,8 @@ void lowerCoolSetpoint() {
     if (result) {
         if (device.currentState("on").value == "off") { generateSwitchEvent("on") }
         
-    	sendEvent(name: 'coolingSetpoint', value: Setpoint)
-    	sendEvent(name: 'heatingSetpoint', value: Setpoint)
+    	sendEvent(name: 'coolingSetpoint', value: Setpoint, displayed: false)
+    	sendEvent(name: 'heatingSetpoint', value: Setpoint, displayed: false)
     	generateSetTempEvent(Setpoint)
         
     	log.debug "New target Temperature = ${Setpoint}"       
@@ -296,8 +296,8 @@ void raiseCoolSetpoint() {
     if (result) {
         if (device.currentState("on").value == "off") { generateSwitchEvent("on") }
         
-    	sendEvent(name: 'coolingSetpoint', value: Setpoint)
-    	sendEvent(name: 'heatingSetpoint', value: Setpoint)
+    	sendEvent(name: 'coolingSetpoint', value: Setpoint, displayed: false)
+    	sendEvent(name: 'heatingSetpoint', value: Setpoint, displayed: false)
     	generateSetTempEvent(Setpoint)
         
     	log.debug "New target Temperature = ${Setpoint}"       
