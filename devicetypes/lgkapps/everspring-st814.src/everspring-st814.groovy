@@ -6,6 +6,7 @@
  * also add color to battery percent, and icons for humidity and temp. Make primary temp display larger.
  * original timeout was 5 minutes .. This is too often when putting in cold environment like freezer.
  * That is why I made the timeout configurable. And also change the default to 180 minutes.
+ * version 2. Just set my second one up and temp is innacurate so add offset temp and humidity to fix.
  *
  *  Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except
  *  in compliance with the License. You may obtain a copy of the License at:
@@ -50,8 +51,10 @@ preferences {
     input("TempChangeAmount", "number", title: "Temperature Change Amount?",description: "The degrees the temperature must changes before a report is sent?", defaultValue: 2,required: true)
     input("HumidChangeAmount", "number", title: "Humidity Change Amount?",description: "The percent the humidity must changes before a report is sent?", defaultValue: 5,required: true)
     input("ReportTime", "number", title: "Report Timeout Interval?", description: "The time in minutes after which an update is sent?", defaultValue: 180, required: true)
-       
-}
+    input("TempOffset", "number", title: "Temperature Offset/Adjustment -10 to +10 in Degrees?", description: "If your temperature is innacurate this will offset/adjust it by this many degrees.", defaultValue: 0, required: true)
+    input("HumidOffset", "number", title: "Humidity Offset/Adjustment -10 to +10 in percent?", description: "If your humidty is innacurate this will offset/adjust it by this percent.", defaultValue: 0, required: true)
+    }
+
 	simulator 
 	{
 		/* messages the device returns in response to commands it receives */
@@ -244,13 +247,13 @@ def zwaveEvent(physicalgraph.zwave.commands.sensormultilevelv2.SensorMultilevelR
 		case 1:
 			/* temperature */
 			def cmdScale = cmd.scale == 1 ? "F" : "C"
-			map.value = convertTemperatureIfNeeded( cmd.scaledSensorValue, cmdScale, cmd.precision )
+			map.value = convertTemperatureIfNeeded( cmd.scaledSensorValue, cmdScale, cmd.precision ) + settings.TempOffset
 			map.unit = getTemperatureScale()
 			map.name = "temperature"
 			break;
 		case 5:
 			/* humidity */
-			map.value = cmd.scaledSensorValue.toInteger().toString()
+            map.value = (cmd.scaledSensorValue.toInteger() + settings.HumidOffset).toString()
 			map.unit = "%"
 			map.name = "humidity"
 			break;
@@ -282,7 +285,9 @@ def configure()
 
 log.debug "In configure for st814 timeout value = $settings.ReportTime"
 log.debug "temp change value = $settings.TempChangeAmount"
-log.debug " humid change value = $settings.HumidChangeAmount"
+log.debug "humid change value = $settings.HumidChangeAmount"
+log.debug "temp adjust = $settings.TempOffset"
+log.debug "humid adjust = $settings.HumidOffset"
 
 	delayBetween([
        	/* report in every 5 minute(s) -- lgk change all to use settings */
@@ -344,7 +349,21 @@ if (settings.TempChangeAmount < 1)
     settings.HumidChangeAmount = 70
     log.debug "Humidity Change Amount too high ... resetting to 70"
     }
+    
+     // fix temp offset
+ if (settings.TempOffset < -10)
+  {
+    settings.TempOffset = -10
+    log.debug "Temperature Offset too low... resetting to -10"
+    }
+    
+ if (settings.TempOffset > 10)
+  {
+    settings.TempOffset = 10
+    log.debug "Temperature Adjusment too high ... resetting to 10"
+    }
+    
     response(configure())
 }  
-    
+ 
   
