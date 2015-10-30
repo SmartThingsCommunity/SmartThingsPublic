@@ -68,12 +68,17 @@ def SensiboPodList()
 			paragraph "Tap below to see the list of Sensibo Pods available in your Sensibo account and select the ones you want to connect to SmartThings."
 			input(name: "SelectedSensiboPods", title:"Pods", type: "enum", required:true, multiple:true, description: "Tap to choose",  metadata:[values:stats])
 		}
-        //section("Notification") {
-        //    input "sendPush", "bool", required: false, title: "Send Push Notification when AC is turned on/off?"
-        	//input "Pods", "capability.switch", multiple:true, required: false, title: "Which Pod(s)?"
-    	//	}
+        section("Notification") {
+            input "sendPushNotif", "bool", required: false, title: "Send Push Notification when Temperature is too high/low?"
+         	paragraph "Select the temperature threshold"
+            input "minTemperature", "decimal", title: "Min Temperature",required:false
+            input "maxTemperature", "decimal", title: "Max Temperature",required:false
+            paragraph "Select the humidity threshold"
+            input "minHumidity", "decimal", title: "Min Humidity level",required:false
+            input "maxHumidity", "decimal", title: "Max Humidity level",required:false
+	//input "Pods", "capability.switch", multiple:true, required: false, title: "Which Pod(s)?"
         }
-	
+	}
 	return p
 }
 
@@ -119,7 +124,13 @@ def getSensiboPodList()
 def installed() {
 	log.debug "Installed with settings: ${settings}"
 
-	initialize()  
+	initialize()
+    
+    def d = getAllChildDevices()
+    if (sendPushNotif) {
+    	subscribe(d, "temperature", eTemperatureHandler)
+        subscribe(d, "humidity", eHumidityHandler) 
+    }
 }
 
 def updated() {
@@ -129,8 +140,47 @@ def updated() {
     unsubscribe()
 	
     initialize()
+    
+    def d = getAllChildDevices()
+    if (sendPushNotif) {
+    	subscribe(d, "temperature", eTemperatureHandler)
+        subscribe(d, "humidity", eHumidityHandler) 
+    }
 }
 
+def eTemperatureHandler(evt){
+	def currentTemperature = evt.device.currentState("temperature").value
+    def currentPod = evt.device.displayName 
+	if(maxTemperature != null){
+    	if(currentTemperature.toDouble() > maxTemperature)
+    	{
+        	sendPush("This is too hot at ${currentPod} : ${currentTemperature}")
+    	}
+    }
+    if(minTemperature != null) {
+    	if(currentTemperature.toDouble() < minTemperature)
+    	{	
+        	sendPush("This is too cold at ${currentPod} : ${currentTemperature}")
+    	}
+    }
+}
+
+def eHumidityHandler(evt){
+	def currentHumidity = evt.device.currentState("humidity").value
+    def currentPod = evt.device.displayName 
+	if(maxHumidity != null){
+    	if(currentHumidity.toDouble() > maxHumidity)
+    	{
+        	sendPush("Humidity level is too high at ${currentPod} : ${currentHumidity}")
+    	}
+    }
+    if(minHumidity != null) {
+    	if(currentHumidity.toDouble() < minHumidity)
+    	{	
+        	sendPush("Humidity level is too low ${currentPod} : ${currentHumidity}")
+    	}
+    }
+}
 
 def refresh() {
 	log.debug "refresh() called"
