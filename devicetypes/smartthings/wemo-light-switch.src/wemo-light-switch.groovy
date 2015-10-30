@@ -85,7 +85,7 @@ def parse(String description) {
 	def result = []
 	def bodyString = msg.body
 	if (bodyString) {
-		unschedule("isOffline")
+		unschedule("setOffline")
 		def body = new XmlSlurper().parseText(bodyString)
 
 		if (body?.property?.TimeSyncRequest?.text()) {
@@ -273,7 +273,7 @@ User-Agent: CyberGarage-HTTP/1.0
 def poll() {
 log.debug "Executing 'poll'"
 if (device.currentValue("currentIP") != "Offline")
-    runIn(10, isOffline)
+    runIn(10, setOffline)
 new physicalgraph.device.HubAction("""POST /upnp/control/basicevent1 HTTP/1.1
 SOAPACTION: "urn:Belkin:service:basicevent:1#GetBinaryState"
 Content-Length: 277
@@ -290,7 +290,7 @@ User-Agent: CyberGarage-HTTP/1.0
 </s:Envelope>""", physicalgraph.device.Protocol.LAN)
 }
 
-def isOffline() {
+def setOffline() {
     sendEvent(name: "switch", value: "offline", descriptionText: "The device is offline")
 }
 

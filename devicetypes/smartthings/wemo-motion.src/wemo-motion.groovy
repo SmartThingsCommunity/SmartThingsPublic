@@ -77,7 +77,7 @@ def parse(String description) {
 	def result = []
 	def bodyString = msg.body
 	if (bodyString) {
-    unschedule("isOffline")
+    unschedule("setOffline")
 		def body = new XmlSlurper().parseText(bodyString)
 
 		if (body?.property?.TimeSyncRequest?.text()) {
@@ -134,7 +134,7 @@ def refresh() {
 def getStatus() {
 log.debug "Executing WeMo Motion 'getStatus'"
 if (device.currentValue("currentIP") != "Offline")
-    runIn(10, isOffline)
+    runIn(10, setOffline)
 new physicalgraph.device.HubAction("""POST /upnp/control/basicevent1 HTTP/1.1
 SOAPACTION: "urn:Belkin:service:basicevent:1#GetBinaryState"
 Content-Length: 277
@@ -239,8 +239,8 @@ User-Agent: CyberGarage-HTTP/1.0
 """, physicalgraph.device.Protocol.LAN)
 }
 
-def isOffline() {
-    sendEvent(name: "switch", value: "offline", descriptionText: "The device is offline")
+def setOffline() {
+    sendEvent(name: "motion", value: "offline", descriptionText: "The device is offline")
 }
 
 private Integer convertHexToInt(hex) {
