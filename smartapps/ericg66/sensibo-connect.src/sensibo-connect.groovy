@@ -68,7 +68,11 @@ def SensiboPodList()
 			paragraph "Tap below to see the list of Sensibo Pods available in your Sensibo account and select the ones you want to connect to SmartThings."
 			input(name: "SelectedSensiboPods", title:"Pods", type: "enum", required:true, multiple:true, description: "Tap to choose",  metadata:[values:stats])
 		}
-	}
+        //section("Notification") {
+        //    input "sendPush", "bool", required: false, title: "Send Push Notification when AC is turned on/off?"
+        	//input "Pods", "capability.switch", multiple:true, required: false, title: "Which Pod(s)?"
+    	//	}
+        }
 	
 	return p
 }
@@ -122,6 +126,7 @@ def updated() {
 	log.debug "Updated with settings: ${settings}"
 
 	unschedule()
+    unsubscribe()
 	
     initialize()
 }
@@ -130,7 +135,8 @@ def updated() {
 def refresh() {
 	log.debug "refresh() called"
 
-    unschedule()  
+    unschedule()
+    
 	refreshDevices()
     runEvery15Minutes("refreshDevices")
 }
@@ -162,6 +168,7 @@ def initialize() {
 
 		if(!d)
 			{
+                
             	def name = getSensiboPodList().find( {key,value -> key == dni })
 
 				d = addChildDevice(getChildNamespace(), getChildTypeName(), dni,"", [
@@ -171,6 +178,7 @@ def initialize() {
                 d.setIcon("on","on","http://i130.photobucket.com/albums/p242/brutalboy_photos/on_color_large.png")
                 d.setIcon("off","on","http://i130.photobucket.com/albums/p242/brutalboy_photos/on_color_large.png")
                 d.save()
+                
 				log.debug "created ${d.displayName} with id $dni"
 			}
 			else
@@ -198,10 +206,31 @@ def initialize() {
 	log.debug "deleting ${delete.size()} Sensibo"
 	delete.each { deleteChildDevice(it.deviceNetworkId) }
 
-	pollHandler()
+	def PodList = getAllChildDevices()
+    //subscribe(PodList, "switch", OnOffHandler)
+	
+    pollHandler()
     
     refreshDevices()
     runEvery15Minutes("refreshDevices")
+}
+
+
+// Subscribe functions
+
+def OnOffHandler(evt) {
+	log.debug "on activated "
+    debugEvent(evt.value)
+    
+	//def name = evt.device.displayName
+
+    if (sendPush) {
+        if (evt.value == "on") {
+            //sendPush("The ${name} is turned on!")
+        } else if (evt.value == "off") {
+            //sendPush("The ${name} is turned off!")
+        }
+    }
 }
 
 def getPollRateMillis() { return 45 * 1000 }
@@ -337,14 +366,14 @@ def getACState(PodUid)
 				debugEvent ("Response from Sensibo GET = ${resp.data}")
 				debugEvent ("Response Status = ${resp.status}")
 			}
-			log.debug "xxxxxxxxxxxx Get Status " + resp.status
+			//log.debug "xxxxxxxxxxxx Get Status " + resp.status
 			if(resp.status == 200) {
             	resp.data.result.any { stat ->
                 	
                 	if (stat.status == "Success") {
-                    	log.debug "xxxxxxxxxxxx Sensibo Status " + stat.status
-                        log.debug "xxxxxxxxxxxx SUCCESS"
-                        log.debug stat.acState
+                    	//log.debug "xxxxxxxxxxxx Sensibo Status " + stat.status
+                       log.debug "get ACState Success"
+                        //log.debug stat.acState
                         
                         def OnOff = stat.acState.on ? "on" : "off"
                         stat.acState.on = OnOff
@@ -365,7 +394,7 @@ def getACState(PodUid)
                         log.debug "On: ${data.on} targetTemp: ${data.targetTemperature} fanLevel: ${data.fanLevel} mode: ${data.mode}"
                         return data
                 	}
-                    else { log.debug "State Failed"}
+                    else { log.debug "get ACState Failed"}
                }
            }
            else
@@ -382,6 +411,7 @@ def getACState(PodUid)
                  temperatureUnit : TemperatureUnit(),
                  Error : "Failed"
 			  ]
+              log.debug "get ACState Failed"
               return data
            }
        }
@@ -404,6 +434,7 @@ def getACState(PodUid)
             temperatureUnit : TemperatureUnit(),
             Error : "Failed" 
 		]
+        log.debug "get ACState Failed"
         return data
 	} 
 }
@@ -512,14 +543,13 @@ def pollChildren(PodUid)
 		log.debug "___exception polling children: " + e
 		debugEvent ("${e}")
 	}
-    //}
 }
 
 def pollHandler() {
 
 	debugEvent ("in Poll() method.")
 	
-    // Hit the Sensibo API for update on all thermostats
+    // Hit the Sensibo API for update on all the Pod
 	
     def PodList = getAllChildDevices()
     
