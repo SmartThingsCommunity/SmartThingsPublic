@@ -29,6 +29,12 @@ preferences {
 	section("Or, turn on when one of these contacts opened"){
 		input "contacts", "capability.contactSensor", multiple: true, title: "Select Contacts", required: false
 	}
+    section("Or, turn on when any of these people come home") {
+    input "peoplearrive", "capability.presenceSensor", multiple: true, required: false
+    }
+    section("Or, turn on when any of these people leave") {
+    input "peopleleave", "capability.presenceSensor", multiple: true, required: false
+    }
 	section("And off after no more triggers after..."){
 		input "minutes1", "number", title: "Minutes?", defaultValue: "5"
 	}
@@ -43,6 +49,8 @@ def installed()
 	subscribe(switches, "switch", switchChange)
 	subscribe(motions, "motion", motionHandler)
 	subscribe(contacts, "contact", contactHandler)
+    subscribe(peoplearrive, "presence.present", presencePresentHandler)
+    subscribe(peopleleave, "presence.not present", presenceNotPresentHandler)
 	schedule("0 * * * * ?", "scheduleCheck")
     state.myState = "ready"
 }
@@ -54,7 +62,8 @@ def updated()
 	subscribe(motions, "motion", motionHandler)
     subscribe(switches, "switch", switchChange)
 	subscribe(contacts, "contact", contactHandler)
-
+  	subscribe(peoplearrive, "presence.present", presencePresentHandler)
+    subscribe(peopleleave, "presence.not present", presenceNotPresentHandler)
     state.myState = "ready"
     log.debug "state: " + state.myState
 }
@@ -102,7 +111,7 @@ def contactHandler(evt) {
 }
 
 def motionHandler(evt) {
-	log.debug "motionHandler: $evt.name: $evt.value"
+	log.debug "motionHandler: $evt.name: $evt.value (current state: " + state.myState + ")"
 
     if (evt.value == "active") {
         if(state.myState == "ready" || state.myState == "active" || state.myState == "activating" ) {
@@ -117,6 +126,34 @@ def motionHandler(evt) {
            setActiveAndSchedule()
         }
     }
+    log.debug "state: " + state.myState
+}
+
+def presencePresentHandler(evt) {
+  log.debug "presence: $evt.linkText has arrived home (current state: " + state.myState + ")"
+
+    if (evt.value == "present") {
+        if(state.myState == "ready" || state.myState == "active" || state.myState == "activating" ) {
+            log.debug "turning on lights"
+            switches.on()
+            // We don't wait until the person leave, but instead start timer immediately.
+            setActiveAndSchedule()
+        }
+    } 
+    log.debug "state: " + state.myState
+}
+
+def presenceNotPresentHandler(evt) {
+  log.debug "presence: $evt.linkText has left home (current state: " + state.myState + ")"
+
+    if (evt.value == "not present") {
+        if(state.myState == "ready" || state.myState == "active" || state.myState == "activating" ) {
+            log.debug "turning on lights"
+            switches.on()
+            // We don't wait until the person arrive back, but instead start timer immediately.
+            setActiveAndSchedule()
+        }
+    } 
     log.debug "state: " + state.myState
 }
 
