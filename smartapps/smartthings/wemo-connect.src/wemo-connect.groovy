@@ -61,10 +61,7 @@ def firstPage()
 
 		log.debug "REFRESH COUNT :: ${refreshCount}"
 
-		if(!state.subscribe) {
-			subscribe(location, null, locationHandler, [filterEvents:false])
-			state.subscribe = true
-		}
+		subscribe(location, null, locationHandler, [filterEvents:false])
 
 		//ssdp request every 25 seconds
 		if((refreshCount % 5) == 0) {
@@ -176,10 +173,9 @@ def updated() {
 }
 
 def initialize() {
-	// remove location subscription afterwards
-	 unsubscribe()
-     unschedule()
-	 state.subscribe = false
+	unsubscribe()
+    unschedule()
+	subscribe(location, null, locationHandler, [filterEvents:false])
 
 	if (selectedSwitches)
 		addSwitches()
@@ -338,23 +334,14 @@ def locationHandler(evt) {
 
 			def d = switches."${parsedEvent.ssdpUSN.toString()}"
 			boolean deviceChangedValues = false
-
+			log.debug "$d.ip <==> $parsedEvent.ip"
 			if(d.ip != parsedEvent.ip || d.port != parsedEvent.port) {
 				d.ip = parsedEvent.ip
 				d.port = parsedEvent.port
 				deviceChangedValues = true
 				log.debug "Device's port or ip changed..."
-			}
-
-			if (deviceChangedValues) {
-				def children = getChildDevices()
-				log.debug "Found children ${children}"
-				children.each {
-					if (it.getDeviceDataByName("mac") == parsedEvent.mac) {
-						log.debug "updating ip and port, and resubscribing, for device ${it} with mac ${parsedEvent.mac}"
-						it.subscribe(parsedEvent.ip, parsedEvent.port)
-					}
-				}
+				def child = getChildDevice(parsedEvent.mac)
+				child.subscribe(parsedEvent.ip, parsedEvent.port)
 			}
 		}
 	}
@@ -401,10 +388,7 @@ def locationHandler(evt) {
 		if (!(lightSwitches."${parsedEvent.ssdpUSN.toString()}"))
 		{ //if it doesn't already exist
 			lightSwitches << ["${parsedEvent.ssdpUSN.toString()}":parsedEvent]
-		}
-		else
-		{ // just update the values
-
+		} else {
 			log.debug "Device was already found in state..."
 
 			def d = lightSwitches."${parsedEvent.ssdpUSN.toString()}"
@@ -415,21 +399,11 @@ def locationHandler(evt) {
 				d.port = parsedEvent.port
 				deviceChangedValues = true
 				log.debug "Device's port or ip changed..."
+				def child = getChildDevice(parsedEvent.mac)
+				log.debug "updating ip and port, and resubscribing, for device with mac ${parsedEvent.mac}"
+				child.subscribe(parsedEvent.ip, parsedEvent.port)
 			}
-
-			if (deviceChangedValues) {
-				def children = getChildDevices()
-				log.debug "Found children ${children}"
-				children.each {
-					if (it.getDeviceDataByName("mac") == parsedEvent.mac) {
-						log.debug "updating ip and port, and resubscribing, for device ${it} with mac ${parsedEvent.mac}"
-						it.subscribe(parsedEvent.ip, parsedEvent.port)
-					}
-				}
-			}
-
 		}
-
 	}
 	else if (parsedEvent.headers && parsedEvent.body) {
 		String headerString = new String(parsedEvent.headers.decodeBase64())?.toLowerCase()
@@ -574,10 +548,6 @@ private def parseDiscoveryMessage(String description) {
 
 def doDeviceSync(){
 	log.debug "Doing Device Sync!"
-	if(!state.subscribe) {
-		subscribe(location, null, locationHandler, [filterEvents:false])
-		state.subscribe = true
-	}
 	discoverAllWemoTypes()
 }
 

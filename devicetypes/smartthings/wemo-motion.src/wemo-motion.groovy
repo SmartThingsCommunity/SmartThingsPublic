@@ -21,7 +21,7 @@
 		capability "Refresh"
 		capability "Sensor"
 
-    attribute "currentIP", "string"
+    	attribute "currentIP", "string"
 
 		command "subscribe"
 		command "resubscribe"
@@ -33,23 +33,30 @@
 	}
 
 	// UI tile definitions
-	tiles {
+    tiles(scale: 2) {
+        multiAttributeTile(name:"rich-control", type: "motion", canChangeIcon: true){
+            tileAttribute ("device.motion", key: "PRIMARY_CONTROL") {
+                 attributeState "active", label:'motion', icon:"st.motion.motion.active", backgroundColor:"#53a7c0"
+                 attributeState "inactive", label:'no motion', icon:"st.motion.motion.inactive", backgroundColor:"#ffffff"
+                 attributeState "offline", label:'${name}', backgroundColor:"#ff0000"
+ 			}
+            tileAttribute ("currentIP", key: "SECONDARY_CONTROL") {
+             	 attributeState "currentIP", label: ''
+ 			}
+        }
+
 		standardTile("motion", "device.motion", width: 2, height: 2) {
 			state("active", label:'motion', icon:"st.motion.motion.active", backgroundColor:"#53a7c0")
 			state("inactive", label:'no motion', icon:"st.motion.motion.inactive", backgroundColor:"#ffffff")
-      state("offline", label:'${name}', icon:"st.motion.motion.inactive", backgroundColor:"#ff0000")
+      		state("offline", label:'${name}', backgroundColor:"#ff0000")
 		}
 
-    standardTile("currentIP", "device.motion") {
-			state "default", label:''
-    }
-
-		standardTile("refresh", "device.motion", inactiveLabel: false, decoration: "flat") {
-			state "default", label:'', action:"refresh.refresh", icon:"st.secondary.refresh"
-		}
+        standardTile("refresh", "device.switch", inactiveLabel: false, height: 2, width: 2, decoration: "flat") {
+            state "default", label:"", action:"refresh.refresh", icon:"st.secondary.refresh"
+        }
 
 		main "motion"
-		details (["motion", "refresh"])
+		details (["rich-control", "refresh"])
 	}
 }
 
@@ -168,8 +175,9 @@ def subscribe(ip, port) {
 	def existingPort = getDataValue("port")
 	if (ip && ip != existingIp) {
 		log.debug "Updating ip from $existingIp to $ip"
-    sendEvent(name: "currentIP", value: ipvalue, descriptionText: "IP changed to ${ipvalue}")
-		updateDataValue("ip", ip)
+        updateDataValue("ip", ip)
+    	def ipvalue = convertHexToIP(getDataValue("ip"))
+    	sendEvent(name: "currentIP", value: ipvalue, descriptionText: "IP changed to ${ipvalue}")
 	}
 	if (port && port != existingPort) {
 		log.debug "Updating port from $existingPort to $port"

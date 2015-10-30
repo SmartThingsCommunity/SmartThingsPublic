@@ -93,7 +93,8 @@ def parse(String description) {
  		} else if (body?.property?.BinaryState?.text()) {
         	def value = body?.property?.BinaryState?.text().substring(0, 1).toInteger() == 0 ? "off" : "on"
         	log.trace "Notify: BinaryState = ${value}, ${body.property.BinaryState}"
-          result << createEvent(name: "switch", value: value, descriptionText: "Switch is ${value}")
+            def dispaux = device.currentValue("switch") != value
+            result << createEvent(name: "switch", value: value, descriptionText: "Switch is ${value}", displayed: dispaux)
         } else if (body?.property?.TimeZoneNotification?.text()) {
  			log.debug "Notify: TimeZoneNotification = ${body?.property?.TimeZoneNotification?.text()}"
  		} else if (body?.Body?.GetBinaryStateResponse?.BinaryState?.text()) {
@@ -104,8 +105,8 @@ def parse(String description) {
                 def ipvalue = convertHexToIP(getDataValue("ip"))
                 sendEvent(name: "IP", value: ipvalue, descriptionText: "IP is ${ipvalue}")
             }
-            def dispaux = device.currentValue("switch") != value
-     			  result << createEvent(name: "switch", value: value, descriptionText: "Switch is ${value}", displayed: dispaux)
+            def dispaux2 = device.currentValue("switch") != value
+     		result << createEvent(name: "switch", value: value, descriptionText: "Switch is ${value}", displayed: dispaux2)
  		}
  	}
  result
@@ -207,10 +208,10 @@ def subscribe(ip, port) {
     def existingIp = getDataValue("ip")
     def existingPort = getDataValue("port")
     if (ip && ip != existingIp) {
+         log.debug "Updating ip from $existingIp to $ip"
+    	 updateDataValue("ip", ip)
     	 def ipvalue = convertHexToIP(getDataValue("ip"))
-         log.debug "Updating ip from $existingIp to $ipvalue"
          sendEvent(name: "currentIP", value: ipvalue, descriptionText: "IP changed to ${ipvalue}")
-         updateDataValue("ip", ip)
     }
  	if (port && port != existingPort) {
  		log.debug "Updating port from $existingPort to $port"

@@ -36,27 +36,36 @@ metadata {
 	// simulator metadata
 	simulator {}
 
-	// UI tile definitions
-	tiles {
-		standardTile("switch", "device.switch", width: 2, height: 2, canChangeIcon: true) {
-			state "on", label:'${name}', action:"switch.off", icon:"st.switches.switch.on", backgroundColor:"#79b821", nextState:"turningOff"
-			state "off", label:'${name}', action:"switch.on", icon:"st.switches.switch.off", backgroundColor:"#ffffff", nextState:"turningOn"
-			state "turningOn", label:'${name}', icon:"st.switches.switch.on", backgroundColor:"#79b821"
-			state "turningOff", label:'${name}', icon:"st.switches.switch.off", backgroundColor:"#ffffff"
-			state "offline", label:'${name}', icon:"st.switches.switch.off", backgroundColor:"#ff0000"
-		}
+ // UI tile definitions
+    tiles(scale: 2) {
+        multiAttributeTile(name:"rich-control", type: "switch", canChangeIcon: true){
+            tileAttribute ("device.switch", key: "PRIMARY_CONTROL") {
+                 attributeState "on", label:'${name}', action:"switch.off", icon:"st.Home.home30", backgroundColor:"#79b821", nextState:"turningOff"
+                 attributeState "off", label:'${name}', action:"switch.on", icon:"st.Home.home30", backgroundColor:"#ffffff", nextState:"turningOn"
+                 attributeState "turningOn", label:'${name}', action:"switch.off", icon:"st.Home.home30", backgroundColor:"#79b821", nextState:"turningOff"
+                 attributeState "turningOff", label:'${name}', action:"switch.on", icon:"st.Home.home30", backgroundColor:"#ffffff", nextState:"turningOn"
+                 attributeState "offline", label:'${name}', backgroundColor:"#ff0000"
+ 			}
+            tileAttribute ("currentIP", key: "SECONDARY_CONTROL") {
+             	 attributeState "currentIP", label: ''
+ 			}
+        }
 
-		standardTile("currentIP", "device.motion") {
-			state "default", label:''
+        standardTile("switch", "device.switch", width: 2, height: 2, canChangeIcon: true) {
+            state "on", label:'${name}', action:"switch.off", icon:"st.Home.home30", backgroundColor:"#79b821", nextState:"turningOff"
+            state "off", label:'${name}', action:"switch.on", icon:"st.Home.home30", backgroundColor:"#ffffff", nextState:"turningOn"
+            state "turningOn", label:'${name}', action:"switch.off", icon:"st.Home.home30", backgroundColor:"#79b821", nextState:"turningOff"
+            state "turningOff", label:'${name}', action:"switch.on", icon:"st.Home.home30", backgroundColor:"#ffffff", nextState:"turningOn"
+            state "offline", label:'${name}', icon:"st.Home.home30", backgroundColor:"#ff0000"
+        }
+
+        standardTile("refresh", "device.switch", inactiveLabel: false, height: 2, width: 2, decoration: "flat") {
+            state "default", label:"", action:"refresh.refresh", icon:"st.secondary.refresh"
+        }
+
+        main(["switch"])
+        details(["rich-control", "refresh"])
     }
-
-    standardTile("refresh", "device.switch", inactiveLabel: false, decoration: "flat") {
-			state "default", label:'', action:"refresh.refresh", icon:"st.secondary.refresh"
-		}
-
-		main "switch"
-		details (["switch", "refresh"])
-	}
 }
 
 // parse events into attributes
@@ -196,8 +205,9 @@ def subscribe(ip, port) {
 	def existingPort = getDataValue("port")
 	if (ip && ip != existingIp) {
 		log.debug "Updating ip from $existingIp to $ip"
-    sendEvent(name: "currentIP", value: ipvalue, descriptionText: "IP changed to ${ipvalue}")
 		updateDataValue("ip", ip)
+    	def ipvalue = convertHexToIP(getDataValue("ip"))
+        sendEvent(name: "currentIP", value: ipvalue, descriptionText: "IP changed to ${ipvalue}")
 	}
 	if (port && port != existingPort) {
 		log.debug "Updating port from $existingPort to $port"
