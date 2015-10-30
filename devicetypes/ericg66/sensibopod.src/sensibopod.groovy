@@ -103,11 +103,11 @@ metadata {
         }
         
         standardTile("upCoolButtonControl", "device.targetTemperature", inactiveLabel: false, decoration: "flat", width: 1, height: 1) {
-			state "setpoint", action:"raiseCoolSetpoint", backgroundColor:"#d04e00", icon:"st.thermostat.thermostat-up",label :"Up"
+			state "setpoint", action:"raiseCoolSetpoint", icon:"st.thermostat.thermostat-up",label :"Up"
 		}
         
         standardTile("downCoolButtonControl", "device.targetTemperature", inactiveLabel: false, decoration: "flat", width: 1, height: 1) {
-			state "setpoint", action:"lowerCoolSetpoint", backgroundColor:"#d04e00", icon:"st.thermostat.thermostat-down", label :"Down"
+			state "setpoint", action:"lowerCoolSetpoint", icon:"st.thermostat.thermostat-down", label :"Down"
 		}
         
         standardTile("mode", "device.mode",  width: 2, height: 2) {
