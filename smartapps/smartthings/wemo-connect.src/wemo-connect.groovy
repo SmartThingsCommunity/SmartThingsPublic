@@ -320,18 +320,12 @@ def locationHandler(evt) {
     log.debug parsedEvent
 
 	if (parsedEvent?.ssdpTerm?.contains("Belkin:device:controllee") || parsedEvent?.ssdpTerm?.contains("Belkin:device:insight")) {
-
 		def switches = getWemoSwitches()
-
-		if (!(switches."${parsedEvent.ssdpUSN.toString()}"))
-		{ //if it doesn't already exist
+		if (!(switches."${parsedEvent.ssdpUSN.toString()}")) {
+        	//if it doesn't already exist
 			switches << ["${parsedEvent.ssdpUSN.toString()}":parsedEvent]
-		}
-		else
-		{ // just update the values
-
+		} else {
 			log.debug "Device was already found in state..."
-
 			def d = switches."${parsedEvent.ssdpUSN.toString()}"
 			boolean deviceChangedValues = false
 			log.debug "$d.ip <==> $parsedEvent.ip"
@@ -340,22 +334,18 @@ def locationHandler(evt) {
 				d.port = parsedEvent.port
 				deviceChangedValues = true
 				log.debug "Device's port or ip changed..."
-				def child = getChildDevice(parsedEvent.mac)
+                def child = getChildDevice(parsedEvent.mac)
 				child.subscribe(parsedEvent.ip, parsedEvent.port)
+                child.poll()
 			}
 		}
 	}
 	else if (parsedEvent?.ssdpTerm?.contains("Belkin:device:sensor")) {
-
 		def motions = getWemoMotions()
-
-		if (!(motions."${parsedEvent.ssdpUSN.toString()}"))
-		{ //if it doesn't already exist
+		if (!(motions."${parsedEvent.ssdpUSN.toString()}")) {
+        	//if it doesn't already exist
 			motions << ["${parsedEvent.ssdpUSN.toString()}":parsedEvent]
-		}
-		else
-		{ // just update the values
-
+		} else { // just update the values
 			log.debug "Device was already found in state..."
 
 			def d = motions."${parsedEvent.ssdpUSN.toString()}"

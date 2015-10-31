@@ -38,7 +38,7 @@
             tileAttribute ("device.motion", key: "PRIMARY_CONTROL") {
                  attributeState "active", label:'motion', icon:"st.motion.motion.active", backgroundColor:"#53a7c0"
                  attributeState "inactive", label:'no motion', icon:"st.motion.motion.inactive", backgroundColor:"#ffffff"
-                 attributeState "offline", label:'${name}', backgroundColor:"#ff0000"
+                 attributeState "offline", label:'${name}', icon:"st.motion.motion.active", backgroundColor:"#ff0000"
  			}
             tileAttribute ("currentIP", key: "SECONDARY_CONTROL") {
              	 attributeState "currentIP", label: ''
@@ -48,7 +48,7 @@
 		standardTile("motion", "device.motion", width: 2, height: 2) {
 			state("active", label:'motion', icon:"st.motion.motion.active", backgroundColor:"#53a7c0")
 			state("inactive", label:'no motion', icon:"st.motion.motion.inactive", backgroundColor:"#ffffff")
-      		state("offline", label:'${name}', backgroundColor:"#ff0000")
+      		state("offline", label:'${name}', icon:"st.motion.motion.inactive", backgroundColor:"#ff0000")
 		}
 
         standardTile("refresh", "device.switch", inactiveLabel: false, height: 2, width: 2, decoration: "flat") {

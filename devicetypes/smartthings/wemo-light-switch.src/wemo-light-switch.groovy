@@ -44,7 +44,7 @@ metadata {
                  attributeState "off", label:'${name}', action:"switch.on", icon:"st.Home.home30", backgroundColor:"#ffffff", nextState:"turningOn"
                  attributeState "turningOn", label:'${name}', action:"switch.off", icon:"st.Home.home30", backgroundColor:"#79b821", nextState:"turningOff"
                  attributeState "turningOff", label:'${name}', action:"switch.on", icon:"st.Home.home30", backgroundColor:"#ffffff", nextState:"turningOn"
-                 attributeState "offline", label:'${name}', backgroundColor:"#ff0000"
+                 attributeState "offline", label:'${name}', icon:"st.Home.home30", backgroundColor:"#ff0000"
  			}
             tileAttribute ("currentIP", key: "SECONDARY_CONTROL") {
              	 attributeState "currentIP", label: ''
