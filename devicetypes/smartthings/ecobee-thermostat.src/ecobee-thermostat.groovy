@@ -139,36 +139,23 @@ def generateEvent(Map results) {
 			def linkText = getLinkText(device)
 			def isChange = false
 			def isDisplayed = true
+			def event = [name: name, linkText: linkText, descriptionText: getThermostatDescriptionText(name, value, linkText),
+			handlerName: name]
 
 			if (name=="temperature" || name=="heatingSetpoint" || name=="coolingSetpoint") {
 				def sendValue = value? convertTemperatureIfNeeded(value.toDouble(), "F", 1): value //API return temperature value in F
 				isChange = isTemperatureStateChange(device, name, value.toString())
 				isDisplayed = isChange
-
-				sendEvent(
-						name: name,
-						value: sendValue,
-						unit: location.temperatureScale,
-						linkText: linkText,
-						descriptionText: getThermostatDescriptionText(name, value, linkText),
-						handlerName: name,
-						isStateChange: isChange,
-						displayed: isDisplayed)
-
-			} else {
+				event << [value: sendValue, isStateChange: isChange, displayed: isDisplayed]
+			} else if (name=="heatMode" || name=="coolMode" || name=="autoMode" || name=="auxHeatMode"){
+				isChange = isStateChange(device, name, value.toString())
+				event << [value: value.toString(), isStateChange: isChange, displayed: false]
+			}  else {
 				isChange = isStateChange(device, name, value.toString())
 				isDisplayed = isChange
-
-				sendEvent(
-						name: name,
-						value: value.toString(),
-						linkText: linkText,
-						descriptionText: getThermostatDescriptionText(name, value, linkText),
-						handlerName: name,
-						isStateChange: isChange,
-						displayed: isDisplayed)
-
+				event << [value: value.toString(), isStateChange: isChange, displayed: isDisplayed]
 			}
+			sendEvent(event)
 		}
 		generateSetpointEvent ()
 		generateStatusEvent ()

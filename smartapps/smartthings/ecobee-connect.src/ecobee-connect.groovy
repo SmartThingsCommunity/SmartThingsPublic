@@ -95,7 +95,7 @@ def oauthInitUrl() {
 			redirect_uri: callbackUrl //"https://graph.api.smartthings.com/oauth/callback"
 	]
 
-	redirect(location: "https://api.ecobee.com/authorize?${toQueryString(oauthParams)}")
+	redirect(location: "${apiEndpoint}/authorize?${toQueryString(oauthParams)}")
 }
 
 def callback() {
@@ -739,11 +739,12 @@ def sendJson(child = null, String jsonBody) {
 
 def getChildName()           { "Ecobee Thermostat" }
 def getSensorChildName()     { "Ecobee Sensor" }
-def getServerUrl()           { getApiServerUrl() }
-def getSmartThingsClientId() { appSettings.clientId }
+def getServerUrl()           { return "https://graph.api.smartthings.com" }
+def getShardUrl()            { return getApiServerUrl() }
 def getCallbackUrl()        { "https://graph.api.smartthings.com/oauth/callback" }
-def getBuildRedirectUrl()   { "${serverUrl}/oauth/initialize?appId=${app.id}&access_token=${atomicState.accessToken}" }
+def getBuildRedirectUrl()   { "${serverUrl}/oauth/initialize?appId=${app.id}&access_token=${atomicState.accessToken}&apiServerUrl=${shardUrl}" }
 def getApiEndpoint()        { "https://api.ecobee.com" }
+def getSmartThingsClientId() { appSettings.clientId }
 
 def debugEvent(message, displayEvent = false) {
 
