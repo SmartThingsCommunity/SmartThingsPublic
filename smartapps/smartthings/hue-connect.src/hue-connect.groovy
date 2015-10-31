@@ -143,7 +143,7 @@ def bulbDiscovery() {
     if (numFound == 0)
     	app.updateSetting("selectedBulbs", "") 
         
-	if((bulbRefreshCount % 3) == 0) {
+	if((bulbRefreshCount % 5) == 0) {
 		discoverHueBulbs()
 	}
 
@@ -318,11 +318,15 @@ def addBulbs() {
 			def newHueBulb
 			if (bulbs instanceof java.util.Map) {
 				newHueBulb = bulbs.find { (app.id + "/" + it.value.id) == dni }
-				if (newHueBulb?.value?.type?.equalsIgnoreCase("Dimmable light")) {
-					d = addChildDevice("smartthings", "Hue Lux Bulb", dni, newHueBulb?.value.hub, ["label":newHueBulb?.value.name])
-				} else {
-					d = addChildDevice("smartthings", "Hue Bulb", dni, newHueBulb?.value.hub, ["label":newHueBulb?.value.name])
-				}
+                if (newHueBulb != null) {
+                    if (newHueBulb?.value?.type?.equalsIgnoreCase("Dimmable light") ) {
+                        d = addChildDevice("smartthings", "Hue Lux Bulb", dni, newHueBulb?.value.hub, ["label":newHueBulb?.value.name])
+                    } else {
+                        d = addChildDevice("smartthings", "Hue Bulb", dni, newHueBulb?.value.hub, ["label":newHueBulb?.value.name])
+                    }
+                } else {
+                	log.debug "$dni in not longer paired to the Hue Bridge or ID changed"
+                }
 			} else { 
             	//backwards compatable
 				newHueBulb = bulbs.find { (app.id + "/" + it.id) == dni }
@@ -604,18 +608,16 @@ def parse(childDevice, description) {
 	}
 }
 
-def on(childDevice, transition_deprecated = 0) {
+def on(childDevice) {
 	log.debug "Executing 'on'"
-    def percent = childDevice.device?.currentValue("level") as Integer
-	def level = Math.min(Math.round(percent * 255 / 100), 255)
-	put("lights/${getId(childDevice)}/state", [bri: level, on: true])
-    return "level: $percent"
+	put("lights/${getId(childDevice)}/state", [on: true])
+    return "Bulb is On"
 }
 
-def off(childDevice, transition_deprecated = 0) {
+def off(childDevice) {
 	log.debug "Executing 'off'"
 	put("lights/${getId(childDevice)}/state", [on: false])
-    return "level: 0"
+    return "Bulb is Off"
 }
 
 def setLevel(childDevice, percent) {
@@ -636,7 +638,7 @@ def setHue(childDevice, percent) {
 	put("lights/${getId(childDevice)}/state", [hue: level])
 }
 
-def setColor(childDevice, huesettings, alert_deprecated = "", transition_deprecated = 0) {
+def setColor(childDevice, huesettings) {
 	log.debug "Executing 'setColor($huesettings)'"
 	def hue = Math.min(Math.round(huesettings.hue * 65535 / 100), 65535)
 	def sat = Math.min(Math.round(huesettings.saturation * 255 / 100), 255)
@@ -720,13 +722,8 @@ private getBridgeIP() {
         		host = d.latestState('networkAddress').stringValue
         }    
         if (host == null || host == "") {
-            def serialNumber = selectedHue
-            def bridge = getHueBridges().find { it?.value?.serialNumber?.equalsIgnoreCase(serialNumber) }?.value
-            if (!bridge) { 
-            	//failed because mac address sent from hub is wrong and doesn't match the hue's real mac address and serial number
-                //in this case we will look up the bridge by comparing the incorrect mac addresses
-            	bridge = getHueBridges().find { it?.value?.mac?.equalsIgnoreCase(serialNumber) }?.value
-            }
+            def macAddress = selectedHue
+            def bridge = getHueBridges().find { it?.value?.mac?.equalsIgnoreCase(macAddress) }?.value
             if (bridge?.ip && bridge?.port) {
             	if (bridge?.ip.contains("."))
             		host = "${bridge?.ip}:${bridge?.port}"
