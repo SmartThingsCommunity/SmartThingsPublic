@@ -1,11 +1,12 @@
 /**
- *  GarageioServiceMgr v1.1
+ *  GarageioServiceMgr v1.1.1
  *		
  * 		Changelog
- *			v1.1 - GarageioServiceMgr() and Device Handler impplemented to handle ChildDevice creation, deletion, 
+ 			v1.1.1 - Tiny fix for service manager failing to complete
+ *			v1.1   - GarageioServiceMgr() and Device Handler impplemented to handle ChildDevice creation, deletion, 
  *				   polling, and ST suggested implementation.
- *			v1.0 - GarageioInit() implementation to handle polling in a Smart App, left this way for quite a while
- *			v0.1 - Initial working integration
+ *			v1.0   - GarageioInit() implementation to handle polling in a Smart App, left this way for quite a while
+ *			v0.1   - Initial working integration
  *
  *  Copyright 2015 Brandon Miller
  *
@@ -44,8 +45,8 @@ def about() {
  	dynamicPage(name: "about", install: false, uninstall: true) {
  		section("About") {	
 			paragraph "GarageioServiceMgr, the smartapp that initializes your Garageio device (doors) and polls them on a regular basis"
-			paragraph "Version 1.1\n\n" +
-				"If you like this app, please support the developer via PayPal:\n\bmmiller@gmail.com\n\n" +
+			paragraph "Version 1.1.1\n\n" +
+				"If you like this app, please support the developer via PayPal:\nbmmiller@gmail.com\n\n" +
 				"Copyright©2015 Brandon Miller"
 			href url: "http://github.com/bmmiller", style: "embedded", required: false, title: "More information..."
 		} 
@@ -317,7 +318,7 @@ def push(doorId, changeState) {
 	
 }
 
-def getChildName() { "Garageio Device v1.1" }
+def getChildName() { "Garageio Device" }
 
 def getChildNamespace() { "bmmiller" }
 
