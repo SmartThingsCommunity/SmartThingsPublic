@@ -24,7 +24,8 @@ definition(
     category: "SmartThings Internal",
     iconUrl: "https://s3.amazonaws.com/smartapp-icons/Convenience/Cat-Convenience.png",
     iconX2Url: "https://s3.amazonaws.com/smartapp-icons/Convenience/Cat-Convenience%402x.png",
-    oauth: true
+    oauth: true,
+    singleInstance: true
 ) {
   appSetting "serverUrl"
 }
