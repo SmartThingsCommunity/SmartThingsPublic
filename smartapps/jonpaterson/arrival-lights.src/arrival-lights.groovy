@@ -25,14 +25,22 @@ definition(
 
 
 preferences {
-	section("Title") {
-		// TODO: put inputs here
+	section("When one of these persons arrives") {
+		input "people", "capability.presenceSensor", multiple: true
+	}
+    section("And it's dark...") {
+		input "luminance", "capability.illuminanceMeasurement", title: "Where?"
+	}
+    section("Turn on these lights...") {
+		input "switch1", "capability.switch", multiple: true, title: "Where?"
+	}
+    section("Delay before turning off") {                    
+		input "delayMins", "number", title: "How long after arrival to leave lights on"
 	}
 }
 
 def installed() {
 	log.debug "Installed with settings: ${settings}"
-
 	initialize()
 }
 
@@ -44,7 +52,16 @@ def updated() {
 }
 
 def initialize() {
-	// TODO: subscribe to attributes, devices, locations, etc.
+	subscribe(people, "presence", presenseHandler)
 }
 
-// TODO: implement event handlers
+def presenseHandler(evt) {
+	if (evt.value == "present") {
+        def lightSensorState = luminance.currentIlluminance
+        log.debug "SENSOR = $lightSensorState"
+        if (lightSensorState && lightSensorState < 20) {
+            log.trace "light.on() ... [luminance: ${lightSensorState}]"
+            switch1.on()
+        }
+    }
+}
