@@ -102,11 +102,11 @@ metadata {
             state "auto", action:"switchFanLevel", backgroundColor:"#8C8C8D", icon:"http://i130.photobucket.com/albums/p242/brutalboy_photos/fan_auto_2.png" , nextState:"low"
         }
         
-        standardTile("upCoolButtonControl", "device.targetTemperature", inactiveLabel: false, decoration: "flat", width: 1, height: 1) {
+        standardTile("upCoolButtonControl", "device.targetTemperature", inactiveLabel: false, decoration: "flat", width: 2, height: 2) {
 			state "setpoint", action:"raiseCoolSetpoint", icon:"st.thermostat.thermostat-up",label :"Up"
 		}
         
-        standardTile("downCoolButtonControl", "device.targetTemperature", inactiveLabel: false, decoration: "flat", width: 1, height: 1) {
+        standardTile("downCoolButtonControl", "device.targetTemperature", inactiveLabel: false, decoration: "flat", width: 2, height: 2) {
 			state "setpoint", action:"lowerCoolSetpoint", icon:"st.thermostat.thermostat-down", label :"Down"
 		}
         
@@ -195,7 +195,8 @@ metadata {
 		}
 		       
 		main (["on"])
-		details (["richcontact","on","temperature","humidity", "fanLevel","mode","upCoolButtonControl","downCoolButtonControl","refresh"])    
+		details (["richcontact","on","fanLevel","mode","upCoolButtonControl","downCoolButtonControl","refresh"])    
+        //details (["richcontact","on","temperature","humidity", "fanLevel","mode","upCoolButtonControl","downCoolButtonControl","refresh"])    
 	}
 }
 
