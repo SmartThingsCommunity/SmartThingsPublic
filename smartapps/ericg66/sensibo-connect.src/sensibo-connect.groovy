@@ -33,7 +33,7 @@ definition(
 preferences {
 	page(name: "SelectAPIKey", title: "API Key", content: "setAPIKey", nextPage: "deviceList", install: false, uninstall: true)
 	page(name: "deviceList", title: "Sensibo", content:"SensiboPodList", install:true, uninstall: true)
-    
+    page(name: "timePage")
 }
 
 def getServerUrl() { "https://home.sensibo.com" }
@@ -69,19 +69,41 @@ def SensiboPodList()
 			input(name: "SelectedSensiboPods", title:"Pods", type: "enum", required:true, multiple:true, description: "Tap to choose",  metadata:[values:stats])
 		}
         section("Notification") {
-            input "sendPushNotif", "bool", required: false, title: "Send Push Notification when Temperature is too high/low?"
-         	paragraph "Select the temperature threshold"
-            input "minTemperature", "decimal", title: "Min Temperature",required:false
-            input "maxTemperature", "decimal", title: "Max Temperature",required:false
-            paragraph "Select the humidity threshold"
-            input "minHumidity", "decimal", title: "Min Humidity level",required:false
-            input "maxHumidity", "decimal", title: "Max Humidity level",required:false
-	//input "Pods", "capability.switch", multiple:true, required: false, title: "Which Pod(s)?"
+            input "sendPushNotif", "bool",submitOnChange: true, required: false, title: "Send Push Notification on Sensibo Pod sensors?"
+        }
+        if (sendPushNotif) {
+   	        //input "sendPushOnOff", "bool", required: false, title: "Trigger on/off event?"
+            section("Select the temperature threshold") {
+            	input "minTemperature", "decimal", title: "Min Temperature",required:false
+            	input "maxTemperature", "decimal", title: "Max Temperature",required:false }
+            section("Select the humidity threshold") {
+            	input "minHumidity", "decimal", title: "Min Humidity level",required:false
+            	input "maxHumidity", "decimal", title: "Max Humidity level",required:false }              
+         
+        	section("How frequently?") {
+        		input(name:"days", title: "Only on certain days of the week", type: "enum", required:false, multiple: true, options: ["Monday", "Tuesday", "Wednesday","Thursday","Friday","Saturday","Sunday"])
+            	//input(name:"StartTime", title: "Starting at :", type : "time", required: false
+        	}
+        	section("") {
+        		href(name: "toTimePage",
+                	 page: "timePage", title:"Only during a certain time", require: false)
+        	}
         }
 	}
 	return p
 }
 
+// page def must include a parameter for the params map!
+def timePage() {
+    dynamicPage(name: "timePage", uninstall: false, install: false, title: "Only during a certain time") {
+      section("") {
+        input(name: "startTime", title: "Starting at : ", required:false, multiple: false, type:"time")
+        //if (startTime) {
+        input(name: "endTime", title: "Ending at : ", required:false, multiple: false, type:"time")
+        //}
+      }
+   }
+}
 
 def getSensiboPodList()
 {
@@ -129,7 +151,7 @@ def installed() {
     def d = getAllChildDevices()
     if (sendPushNotif) {
     	subscribe(d, "temperature", eTemperatureHandler)
-        subscribe(d, "humidity", eHumidityHandler) 
+        subscribe(d, "humidity", eHumidityHandler)
     }
 }
 
@@ -144,41 +166,86 @@ def updated() {
     def d = getAllChildDevices()
     if (sendPushNotif) {
     	subscribe(d, "temperature", eTemperatureHandler)
-        subscribe(d, "humidity", eHumidityHandler) 
+        subscribe(d, "humidity", eHumidityHandler)
     }
 }
 
+//def eOnOffHandler(evt){
+//	def currentOn = evt.device.currentState("on").value
+//    sendPush("Test")
+//    def currentPod = evt.device.displayName 
+//	if(currentOn == "on"){
+//    	sendPush("${currentPod} is turned on")
+//    }
+//    else {	
+//        sendPush("${currentPod} is turned off")
+//   	}
+//}
+
 def eTemperatureHandler(evt){
 	def currentTemperature = evt.device.currentState("temperature").value
-    def currentPod = evt.device.displayName 
-	if(maxTemperature != null){
-    	if(currentTemperature.toDouble() > maxTemperature)
-    	{
-        	sendPush("This is too hot at ${currentPod} : ${currentTemperature}")
-    	}
-    }
-    if(minTemperature != null) {
-    	if(currentTemperature.toDouble() < minTemperature)
-    	{	
-        	sendPush("This is too cold at ${currentPod} : ${currentTemperature}")
-    	}
-    }
+    def currentPod = evt.device.displayName
+    
+    if (inDateThreshold(evt) == true) {
+        if(maxTemperature != null){
+            if(currentTemperature.toDouble() > maxTemperature)
+            {
+                sendPush("Temperature level is too high at ${currentPod} : ${currentTemperature}")
+            }
+        }
+        if(minTemperature != null) {
+            if(currentTemperature.toDouble() < minTemperature)
+            {	
+                sendPush("Temperature level is too low at ${currentPod} : ${currentTemperature}")
+            }
+        }
+    } 
 }
 
 def eHumidityHandler(evt){
 	def currentHumidity = evt.device.currentState("humidity").value
-    def currentPod = evt.device.displayName 
-	if(maxHumidity != null){
-    	if(currentHumidity.toDouble() > maxHumidity)
-    	{
-        	sendPush("Humidity level is too high at ${currentPod} : ${currentHumidity}")
-    	}
+    def currentPod = evt.device.displayName
+    
+    if (inDateThreshold(evt) == true) { 
+        if(maxHumidity != null){
+            if(currentHumidity.toDouble() > maxHumidity)
+            {
+                sendPush("Humidity level is too high at ${currentPod} : ${currentHumidity}")
+            }
+        }
+        if(minHumidity != null) {
+            if(currentHumidity.toDouble() < minHumidity)
+            {	
+                sendPush("Humidity level is too low ${currentPod} : ${currentHumidity}")
+            }
+        }
     }
-    if(minHumidity != null) {
-    	if(currentHumidity.toDouble() < minHumidity)
-    	{	
-        	sendPush("Humidity level is too low ${currentPod} : ${currentHumidity}")
-    	}
+}
+
+public smartThingsDateFormat() { "yyyy-MM-dd'T'HH:mm:ss.SSSZ" }
+
+def inDateThreshold(evt) {
+	def hour = new Date()
+ 	def minHour = new Date().parse(smartThingsDateFormat(), startTime)
+    def endHour = new Date().parse(smartThingsDateFormat(), endTime)
+    
+    def curHour = hour.format("HH:mm",location.timeZone)
+    def minHourstr = minHour.format("HH:mm",location.timeZone)
+    def maxHourstr = endHour.format("HH:mm",location.timeZone)
+
+	def curDay = hour.format("EEEE",location.timeZone)
+	
+    if (!days.contains(curDay)) {
+    	return false
+    }
+    
+    if (curHour >= minHourstr && curHour < maxHourstr) 
+    {
+    	return true
+    }
+    else
+    { 
+    	return false
     }
 }
 
