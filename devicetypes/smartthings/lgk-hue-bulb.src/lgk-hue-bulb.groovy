@@ -35,8 +35,6 @@ metadata {
 			tileAttribute ("device.level", key: "SLIDER_CONTROL") {
 				attributeState "level", action:"switch level.setLevel"
 			}
-            
-      
 			tileAttribute ("device.color", key: "COLOR_CONTROL") {
 				attributeState "color", action:"setAdjustedColor"
 			}
@@ -45,7 +43,7 @@ metadata {
 controlTile("levelSliderControl", "device.level", "slider", height: 1, width: 6, inactiveLabel: false) {
 			state "level", action:"setLevel"
 		}
-   controlTile("rgbSelector", "device.color", "color", height: 4, width: 6, inactiveLabel: false) {
+   controlTile("rgbSelector", "device.color", "color", height: 6, width: 6, inactiveLabel: false) {
 		state "color", action:"setAdjustedColor"
 	}
 	
