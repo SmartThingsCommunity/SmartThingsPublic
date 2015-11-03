@@ -73,10 +73,10 @@ def SensiboPodList()
         }
         if (sendPushNotif) {
    	        //input "sendPushOnOff", "bool", required: false, title: "Trigger on/off event?"
-            section("Select the temperature threshold") {
+            section("Select the temperature threshold",hideable: true) {
             	input "minTemperature", "decimal", title: "Min Temperature",required:false
             	input "maxTemperature", "decimal", title: "Max Temperature",required:false }
-            section("Select the humidity threshold") {
+            section("Select the humidity threshold",hideable: true) {
             	input "minHumidity", "decimal", title: "Min Humidity level",required:false
             	input "maxHumidity", "decimal", title: "Max Humidity level",required:false }              
          
@@ -97,10 +97,8 @@ def SensiboPodList()
 def timePage() {
     dynamicPage(name: "timePage", uninstall: false, install: false, title: "Only during a certain time") {
       section("") {
-        input(name: "startTime", title: "Starting at : ", required:false, multiple: false, type:"time")
-        //if (startTime) {
+        input(name: "startTime", title: "Starting at : ", required:false, multiple: false, type:"time",)
         input(name: "endTime", title: "Ending at : ", required:false, multiple: false, type:"time")
-        //}
       }
    }
 }
@@ -226,27 +224,34 @@ public smartThingsDateFormat() { "yyyy-MM-dd'T'HH:mm:ss.SSSZ" }
 
 def inDateThreshold(evt) {
 	def hour = new Date()
- 	def minHour = new Date().parse(smartThingsDateFormat(), startTime)
-    def endHour = new Date().parse(smartThingsDateFormat(), endTime)
-    
-    def curHour = hour.format("HH:mm",location.timeZone)
-    def minHourstr = minHour.format("HH:mm",location.timeZone)
-    def maxHourstr = endHour.format("HH:mm",location.timeZone)
 
-	def curDay = hour.format("EEEE",location.timeZone)
-	
-    if (!days.contains(curDay)) {
+    // Check the day of the week
+    if (days != null && !days.contains(curDay)) {
     	return false
     }
     
-    if (curHour >= minHourstr && curHour < maxHourstr) 
-    {
-    	return true
+    // Check the time Threshold
+	if (startTime && endTime) {
+ 		def minHour = new Date().parse(smartThingsDateFormat(), startTime)
+    	def endHour = new Date().parse(smartThingsDateFormat(), endTime)
+
+    	def curHour = hour.format("HH:mm",location.timeZone)
+    	def minHourstr = minHour.format("HH:mm",location.timeZone)
+    	def maxHourstr = endHour.format("HH:mm",location.timeZone)
+
+		def curDay = hour.format("EEEE",location.timeZone)
+
+    	if (curHour >= minHourstr && curHour < maxHourstr) 
+    	{
+    		return true
+    	}
+    	else
+    	{ 
+	    	return false
+	    }
     }
-    else
-    { 
-    	return false
-    }
+    sendPush("ici")
+    return true
 }
 
 def refresh() {
@@ -292,8 +297,8 @@ def initialize() {
                 	"label" : "Pod ${name.value}",
                     "name" : "Pod ${name.value}"
                     ])
-                d.setIcon("on","on","http://i130.photobucket.com/albums/p242/brutalboy_photos/on_color_large.png")
-                d.setIcon("off","on","http://i130.photobucket.com/albums/p242/brutalboy_photos/on_color_large.png")
+                d.setIcon("on","on","http://i130.photobucket.com/albums/p242/brutalboy_photos/on_color_large_on.png")
+                d.setIcon("off","on","http://i130.photobucket.com/albums/p242/brutalboy_photos/on_color_large_off2.png")
                 d.save()
                 
 				log.debug "created ${d.displayName} with id $dni"
