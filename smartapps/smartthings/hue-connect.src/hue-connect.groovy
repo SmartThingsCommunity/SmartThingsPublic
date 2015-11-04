@@ -24,7 +24,7 @@ definition(
 	category: "SmartThings Labs",
 	iconUrl: "https://s3.amazonaws.com/smartapp-icons/Partner/hue.png",
 	iconX2Url: "https://s3.amazonaws.com/smartapp-icons/Partner/hue@2x.png",
-	singleInstance: true
+    singleInstance: true
 )
 
 preferences {
@@ -623,7 +623,8 @@ def off(childDevice) {
 
 def setLevel(childDevice, percent) {
 	log.debug "Executing 'setLevel'"
-	def level = Math.min(Math.round(percent * 255 / 100), 255)
+    def level 
+    if (percent == 1) level = 1 else level = Math.min(Math.round(percent * 255 / 100), 255)
 	put("lights/${getId(childDevice)}/state", [bri: level, on: percent > 0])
 }
 
@@ -648,7 +649,7 @@ def setColor(childDevice, huesettings) {
 
 	def value = [sat: sat, hue: hue, alert: alert, transitiontime: transition]
 	if (huesettings.level != null) {
-		value.bri = Math.min(Math.round(huesettings.level * 255 / 100), 255)
+        if (huesettings.level == 1) value.bri = 1 else value.bri = Math.min(Math.round(huesettings.level * 255 / 100), 255)
 		value.on = value.bri > 0
 	}
 
