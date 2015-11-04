@@ -16,7 +16,7 @@
  *
  */
 definition(
-    name: "Send HAM Bridge Command When…",
+    name: "Send HAM Bridge Command When",
     namespace: "soletc.com",
     author: "Scottin Pollock",
     description: "Sends a command to your HAM Bridge server when SmartThings are activated.",
