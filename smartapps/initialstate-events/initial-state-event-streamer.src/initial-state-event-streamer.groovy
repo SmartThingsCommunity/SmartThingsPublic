@@ -226,20 +226,20 @@ def setAccessKey() {
 }
 
 def installed() {
-	atomicState.version = "1.0.18"
+	atomicState.version = "1.0.19"
 	subscribeToEvents()
 
 	atomicState.isBucketCreated = false
 	atomicState.grokerSubdomain = "groker"
 	atomicState.eventBuffer = []
 
-	runEvery15Minutes(flushBuffer)
+	runEvery5Minutes(flushBuffer)
 
 	log.debug "installed (version $atomicState.version)"
 }
 
 def updated() {
-	atomicState.version = "1.0.18"
+	atomicState.version = "1.0.19"
 	unsubscribe()
 
 	if (atomicState.bucketKey != null && atomicState.accessKey != null) {
