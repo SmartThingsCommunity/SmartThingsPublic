@@ -27,7 +27,7 @@ mappings {
 	path("/receivedToken") { action: [ POST: "receivedToken", GET: "receivedToken"] }
 	path("/receiveToken") { action: [ POST: "receiveToken", GET: "receiveToken"] }
 	path("/hookCallback") { action: [ POST: "hookEventHandler", GET: "hookEventHandler"] }
-    path("/oauth/initialize") {action: [GET: "oauthInitUrl"]}
+  path("/oauth/initialize") {action: [GET: "oauthInitUrl"]}
 	path("/oauth/callback") { action: [ GET: "callback" ] }
 }
 
@@ -280,10 +280,9 @@ def validateCurrentToken() {
 
 def initialize() {
     log.debug "Callback URL - Webhook"
-	def localServerUrl = getApiServerUrl()
-	def hookUrl = "${localServerUrl}/api/token/${state.accessToken}/smartapps/installations/${app.id}/hookCallback"
+		def hookUrl = buildActionUrl("hookCallback")
     def webhook = "https://jawbone.com/nudge/api/v.1.1/users/@me/pubsub?webhook=$hookUrl"
-	httpPost(uri: webhook, headers: ["Authorization": "Bearer ${state.JawboneAccessToken}" ])
+		httpPost(uri: webhook, headers: ["Authorization": "Bearer ${state.JawboneAccessToken}" ])
 }
 
 def setup() {
