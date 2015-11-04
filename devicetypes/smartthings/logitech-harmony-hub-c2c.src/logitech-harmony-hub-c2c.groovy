@@ -7,10 +7,10 @@ metadata {
 	definition (name: "Logitech Harmony Hub C2C", namespace: "smartthings", author: "SmartThings") {
 		capability "Media Controller"
         capability "Refresh"
-        
-        command "activityoff"   
-        command "alloff" 
-        command "refresh"          
+
+        command "activityoff"
+        command "alloff"
+        command "refresh"
 	}
 
 	simulator {
@@ -25,10 +25,10 @@ metadata {
 		}
 		standardTile("huboff", "device.switch", inactiveLabel: false, decoration: "flat") {
 			state "default", label:'End Activity', action:"activityoff", icon:"st.harmony.harmony-hub-icon"
-		}   
+		}
 		standardTile("alloff", "device.switch", inactiveLabel: false, decoration: "flat") {
 			state "default", label:'All Activities', action:"alloff", icon:"st.secondary.off"
-		}            
+		}
 		standardTile("refresh", "device.power", inactiveLabel: false, decoration: "flat") {
 			state "default", label:'', action:"refresh.refresh", icon:"st.secondary.refresh"
 		}
@@ -40,17 +40,17 @@ metadata {
 
 def startActivity(String activityId) {
 	log.debug "Executing 'Start Activity'"
-	log.trace parent.activity("$device.deviceNetworkId-$activityId","start")    
+	log.trace parent.activity("$device.deviceNetworkId-$activityId","start")
 }
 
 def activityoff() {
 	log.debug "Executing 'Activity Off'"
-    log.trace parent.activity(device.deviceNetworkId,"hub")    
+    log.trace parent.activity(device.deviceNetworkId,"hub")
 }
 
 def alloff() {
 	log.debug "Executing 'All Off'"
-    log.trace parent.activity("all","end")    
+    log.trace parent.activity("all","end")
 }
 
 def poll() {
