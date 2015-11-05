@@ -81,6 +81,7 @@ def SensiboPodList()
             	input "maxHumidity", "decimal", title: "Max Humidity level",required:false }              
          
         	section("How frequently?") {
+            	input(name:"sfrequency", title:"Once within this number of minutes", type:"number", required:false)
         		input(name:"days", title: "Only on certain days of the week", type: "enum", required:false, multiple: true, options: ["Monday", "Tuesday", "Wednesday","Thursday","Friday","Saturday","Sunday"])
             	//input(name:"StartTime", title: "Starting at :", type : "time", required: false
         	}
@@ -144,6 +145,9 @@ def getSensiboPodList()
 def installed() {
 	log.debug "Installed with settings: ${settings}"
 
+	state.lastTemperaturePush = null
+    state.lastHumidityPush = null
+    
 	initialize()
     
     def d = getAllChildDevices()
@@ -159,6 +163,9 @@ def updated() {
 	unschedule()
     unsubscribe()
 	
+    state.lastTemperaturePush = null
+    state.lastHumidityPush = null
+    
     initialize()
     
     def d = getAllChildDevices()
@@ -184,7 +191,7 @@ def eTemperatureHandler(evt){
 	def currentTemperature = evt.device.currentState("temperature").value
     def currentPod = evt.device.displayName
     
-    if (inDateThreshold(evt) == true) {
+    if (inDateThreshold(evt,"temperature") == true) {
         if(maxTemperature != null){
             if(currentTemperature.toDouble() > maxTemperature)
             {
@@ -204,7 +211,7 @@ def eHumidityHandler(evt){
 	def currentHumidity = evt.device.currentState("humidity").value
     def currentPod = evt.device.displayName
     
-    if (inDateThreshold(evt) == true) { 
+    if (inDateThreshold(evt,"humidity") == true) { 
         if(maxHumidity != null){
             if(currentHumidity.toDouble() > maxHumidity)
             {
@@ -221,10 +228,50 @@ def eHumidityHandler(evt){
 }
 
 public smartThingsDateFormat() { "yyyy-MM-dd'T'HH:mm:ss.SSSZ" }
+public smartThingsDateFormatNoMilli() { "yyyy-MM-dd'T'HH:mm:ssZ" }
 
-def inDateThreshold(evt) {
+def canPushNotification(hour,sType) {
+    // Check if the client already received a push
+    def sState 
+    if (sType == "temperature") sState = "lastTemperaturePush"
+    else sState = "lastHumidityPush"
+    
+    if (sfrequency.toString().isInteger()) {
+    	if (state.$sState == null) {
+            state.$sState = hour
+        }
+        else {
+            long unxNow = hour.time
+            def before = new Date().parse(smartThingsDateFormatNoMilli(),state.$sState)
+   			long unxEnd = before.time
+    		
+    		unxNow = unxNow/1000
+    		unxEnd = unxEnd/1000
+    		def timeDiff = Math.abs(unxNow-unxEnd)
+    		timeDiff = timeDiff/60
+
+        	if (timeDiff <= sfrequency)
+            {
+            	return false
+            }
+            else {
+            	state.$sState = hour
+                //return true
+            }
+        }
+    }
+    return true
+}
+
+def inDateThreshold(evt,sType) {
 	def hour = new Date()
-
+	def curHour = hour.format("HH:mm",location.timeZone)
+	
+    // Check if the client already received a push
+    
+    def result = canPushNotification(hour, sType)
+    if (!result) return false
+    
     // Check the day of the week
     if (days != null && !days.contains(curDay)) {
     	return false
@@ -235,7 +282,6 @@ def inDateThreshold(evt) {
  		def minHour = new Date().parse(smartThingsDateFormat(), startTime)
     	def endHour = new Date().parse(smartThingsDateFormat(), endTime)
 
-    	def curHour = hour.format("HH:mm",location.timeZone)
     	def minHourstr = minHour.format("HH:mm",location.timeZone)
     	def maxHourstr = endHour.format("HH:mm",location.timeZone)
 
@@ -250,7 +296,7 @@ def inDateThreshold(evt) {
 	    	return false
 	    }
     }
-    sendPush("ici")
+
     return true
 }
 
@@ -263,6 +309,12 @@ def refresh() {
     runEvery15Minutes("refreshDevices")
 }
 
+
+def refreshOneDevice(dni) {
+	log.debug "refreshOneDevice() called"
+	def d = getChildDevice(dni)
+	d.refresh()
+}
 
 def refreshDevices() {
 	log.debug "refreshDevices() called"
