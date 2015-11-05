@@ -175,18 +175,6 @@ def updated() {
     }
 }
 
-//def eOnOffHandler(evt){
-//	def currentOn = evt.device.currentState("on").value
-//    sendPush("Test")
-//    def currentPod = evt.device.displayName 
-//	if(currentOn == "on"){
-//    	sendPush("${currentPod} is turned on")
-//    }
-//    else {	
-//        sendPush("${currentPod} is turned off")
-//   	}
-//}
-
 def eTemperatureHandler(evt){
 	def currentTemperature = evt.device.currentState("temperature").value
     def currentPod = evt.device.displayName
@@ -198,7 +186,6 @@ def eTemperatureHandler(evt){
             {
             	def stext = "Temperature level is too high at ${currentPod} : ${currentTemperature}"
                 sendPush(stext)
-                //sendEvent(evt.device, [name: 'Notification', value: stext, displayed: true])
                 state.lastTemperaturePush = hour
             }
         }
@@ -207,7 +194,6 @@ def eTemperatureHandler(evt){
             {	
             	def stext = "Temperature level is too low at ${currentPod} : ${currentTemperature}"
                 sendPush(stext)
-                //sendEvent(evt.device, [name: 'Notification', value: stext, displayed: true])
                 state.lastTemperaturePush = hour
             }
         }
@@ -224,7 +210,6 @@ def eHumidityHandler(evt){
             {   
             	def stext = "Humidity level is too high at ${currentPod} : ${currentHumidity}"
                 sendPush(stext)
-                //sendEvent(evt.device, [name: 'Notification', value: stext, displayed: true])
                 state.lastHumidityPush = hour
             }
         }
@@ -233,7 +218,6 @@ def eHumidityHandler(evt){
             {
             	def stext = "Humidity level is too low at ${currentPod} : ${currentHumidity}"                
                 sendPush(stext)
-                //sendEvent(evt.device, [name: 'Notification', value: stext, displayed: true])
                 state.lastHumidityPush = hour
             }
         }
@@ -405,7 +389,6 @@ def initialize() {
 	delete.each { deleteChildDevice(it.deviceNetworkId) }
 
 	def PodList = getAllChildDevices()
-    //subscribe(PodList, "switch", OnOffHandler)
 	
     pollHandler()
     
