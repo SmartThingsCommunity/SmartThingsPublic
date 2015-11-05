@@ -13,7 +13,8 @@ definition(
 	iconUrl: "https://s3.amazonaws.com/smartapp-icons/Partner/jawbone-up.png",
 	iconX2Url: "https://s3.amazonaws.com/smartapp-icons/Partner/jawbone-up@2x.png",
 	oauth: true,
-    usePreferencesForAuthorization: false
+    usePreferencesForAuthorization: false,
+    singleInstance: true
 ) {
 	appSetting "clientId"
 	appSetting "clientSecret"
