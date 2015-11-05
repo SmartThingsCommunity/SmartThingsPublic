@@ -190,18 +190,25 @@ def updated() {
 def eTemperatureHandler(evt){
 	def currentTemperature = evt.device.currentState("temperature").value
     def currentPod = evt.device.displayName
+    def hour = new Date()
     
     if (inDateThreshold(evt,"temperature") == true) {
         if(maxTemperature != null){
             if(currentTemperature.toDouble() > maxTemperature)
             {
-                sendPush("Temperature level is too high at ${currentPod} : ${currentTemperature}")
+            	def stext = "Temperature level is too high at ${currentPod} : ${currentTemperature}"
+                sendPush(stext)
+                //sendEvent(evt.device, [name: 'Notification', value: stext, displayed: true])
+                state.lastTemperaturePush = hour
             }
         }
         if(minTemperature != null) {
             if(currentTemperature.toDouble() < minTemperature)
             {	
-                sendPush("Temperature level is too low at ${currentPod} : ${currentTemperature}")
+            	def stext = "Temperature level is too low at ${currentPod} : ${currentTemperature}"
+                sendPush(stext)
+                //sendEvent(evt.device, [name: 'Notification', value: stext, displayed: true])
+                state.lastTemperaturePush = hour
             }
         }
     } 
@@ -210,18 +217,24 @@ def eTemperatureHandler(evt){
 def eHumidityHandler(evt){
 	def currentHumidity = evt.device.currentState("humidity").value
     def currentPod = evt.device.displayName
-    
+    def hour = new Date()
     if (inDateThreshold(evt,"humidity") == true) { 
         if(maxHumidity != null){
             if(currentHumidity.toDouble() > maxHumidity)
-            {
-                sendPush("Humidity level is too high at ${currentPod} : ${currentHumidity}")
+            {   
+            	def stext = "Humidity level is too high at ${currentPod} : ${currentHumidity}"
+                sendPush(stext)
+                //sendEvent(evt.device, [name: 'Notification', value: stext, displayed: true])
+                state.lastHumidityPush = hour
             }
         }
         if(minHumidity != null) {
             if(currentHumidity.toDouble() < minHumidity)
-            {	
-                sendPush("Humidity level is too low ${currentPod} : ${currentHumidity}")
+            {
+            	def stext = "Humidity level is too low at ${currentPod} : ${currentHumidity}"                
+                sendPush(stext)
+                //sendEvent(evt.device, [name: 'Notification', value: stext, displayed: true])
+                state.lastHumidityPush = hour
             }
         }
     }
@@ -232,60 +245,72 @@ public smartThingsDateFormatNoMilli() { "yyyy-MM-dd'T'HH:mm:ssZ" }
 
 def canPushNotification(hour,sType) {
     // Check if the client already received a push
-    def sState 
-    if (sType == "temperature") sState = "lastTemperaturePush"
-    else sState = "lastHumidityPush"
-    
-    if (sfrequency.toString().isInteger()) {
-    	if (state.$sState == null) {
-            state.$sState = hour
-        }
-        else {
-            long unxNow = hour.time
-            def before = new Date().parse(smartThingsDateFormatNoMilli(),state.$sState)
-   			long unxEnd = before.time
-    		
-    		unxNow = unxNow/1000
-    		unxEnd = unxEnd/1000
-    		def timeDiff = Math.abs(unxNow-unxEnd)
-    		timeDiff = timeDiff/60
+    if (sType == "temperature") {
+        if (sfrequency.toString().isInteger()) {
+            if (state.lastTemperaturePush != null) {
+                long unxNow = hour.time
+                def before = new Date().parse(smartThingsDateFormatNoMilli(),state.lastTemperaturePush)
+                long unxEnd = before.time
 
-        	if (timeDiff <= sfrequency)
-            {
-            	return false
+                unxNow = unxNow/1000
+                unxEnd = unxEnd/1000
+                def timeDiff = Math.abs(unxNow-unxEnd)
+                timeDiff = timeDiff/60
+
+                if (timeDiff <= sfrequency)
+                {
+                    return false
+                }
             }
-            else {
-            	state.$sState = hour
-                //return true
-            }
-        }
+    	}
     }
+    else {
+        if (sfrequency.toString().isInteger()) {
+            if (state.lastHumidityPush != null) {
+                long unxNow = hour.time
+                def before = new Date().parse(smartThingsDateFormatNoMilli(),state.lastHumidityPush)
+                long unxEnd = before.time
+
+                unxNow = unxNow/1000
+                unxEnd = unxEnd/1000
+                def timeDiff = Math.abs(unxNow-unxEnd)
+                timeDiff = timeDiff/60
+
+                if (timeDiff <= sfrequency)
+                {
+                    return false
+                }
+            }
+    	}
+   	}
+
     return true
 }
 
 def inDateThreshold(evt,sType) {
 	def hour = new Date()
 	def curHour = hour.format("HH:mm",location.timeZone)
-	
+	def curDay = hour.format("EEEE",location.timeZone)
+    
     // Check if the client already received a push
     
     def result = canPushNotification(hour, sType)
-    if (!result) return false
+    if (!result) { 
+        return false 
+    }
     
     // Check the day of the week
     if (days != null && !days.contains(curDay)) {
     	return false
     }
     
-    // Check the time Threshold
+	// Check the time Threshold
 	if (startTime && endTime) {
  		def minHour = new Date().parse(smartThingsDateFormat(), startTime)
     	def endHour = new Date().parse(smartThingsDateFormat(), endTime)
 
     	def minHourstr = minHour.format("HH:mm",location.timeZone)
     	def maxHourstr = endHour.format("HH:mm",location.timeZone)
-
-		def curDay = hour.format("EEEE",location.timeZone)
 
     	if (curHour >= minHourstr && curHour < maxHourstr) 
     	{
@@ -296,7 +321,6 @@ def inDateThreshold(evt,sType) {
 	    	return false
 	    }
     }
-
     return true
 }
 
