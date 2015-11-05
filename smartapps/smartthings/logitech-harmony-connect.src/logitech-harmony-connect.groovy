@@ -43,7 +43,7 @@ definition(
     category: "SmartThings Labs",
     iconUrl: "https://s3.amazonaws.com/smartapp-icons/Partner/harmony.png",
     iconX2Url: "https://s3.amazonaws.com/smartapp-icons/Partner/harmony%402x.png",
-    oauth: [displayName: "Logitech Harmony", displayLink: "http://www.logitech.com/en-us/harmony-remotes"]
+    oauth: [displayName: "Logitech Harmony", displayLink: "http://www.logitech.com/en-us/harmony-remotes"],
     singleInstance: true
 ){
 	appSetting "clientId"
