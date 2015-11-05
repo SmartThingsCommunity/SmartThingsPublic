@@ -81,7 +81,7 @@ def SensiboPodList()
             	input "maxHumidity", "decimal", title: "Max Humidity level",required:false }              
          
         	section("How frequently?") {
-            	input(name:"sfrequency", title:"Once within this number of minutes", type:"number", required:false)
+            	//input(name:"sfrequency", title:"Once within this number of minutes", type:"number", required:false)
         		input(name:"days", title: "Only on certain days of the week", type: "enum", required:false, multiple: true, options: ["Monday", "Tuesday", "Wednesday","Thursday","Friday","Saturday","Sunday"])
             	//input(name:"StartTime", title: "Starting at :", type : "time", required: false
         	}
