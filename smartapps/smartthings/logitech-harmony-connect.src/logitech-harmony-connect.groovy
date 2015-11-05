@@ -88,10 +88,9 @@ mappings {
 	path("/oauth/initialize") { action: [ GET: "init"] }
 }
 
-def getShardUrl() { return getApiServerUrl() }
 def getServerUrl() { return "https://graph.api.smartthings.com" }
 def getCallbackUrl() { "https://graph.api.smartthings.com/oauth/callback" }
-def getBuildRedirectUrl() { "${serverUrl}/oauth/initialize?appId=${app.id}&access_token=${atomicState.accessToken}&apiServerUrl=${shardUrl}" }
+def getBuildRedirectUrl() { "${serverUrl}/oauth/initialize?appId=${app.id}&access_token=${atomicState.accessToken}&apiServerUrl=${apiServerUrl}" }
 
 def authPage() {
     def description = null
@@ -167,8 +166,8 @@ def callback() {
 
 def init() {
 	log.debug "Requesting Code"
-    def oauthParams = [client_id: "${appSettings.clientId}", scope: "remote", response_type: "code", redirect_uri: "${callbackUrl}" ]
-    redirect(location: "https://home.myharmony.com/oauth2/authorize?${toQueryString(oauthParams)}")
+	def oauthParams = [client_id: "${appSettings.clientId}", scope: "remote", response_type: "code", redirect_uri: "${callbackUrl}" ]
+	redirect(location: "https://home.myharmony.com/oauth2/authorize?${toQueryString(oauthParams)}")
 }
 
 def receiveToken(redirectUrl = null) {
