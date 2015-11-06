@@ -1,5 +1,5 @@
 /**
- *  Copyright 2014 SmartThings
+ *  Copyright 2015 SmartThings
  *
  *  Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except
  *  in compliance with the License. You may obtain a copy of the License at:
@@ -15,6 +15,7 @@ metadata {
 	// Automatically generated. Make future change here.
 	definition (name: "Simulated Thermostat", namespace: "smartthings/testing", author: "SmartThings") {
 		capability "Thermostat"
+		capability "Relative Humidity Measurement"
 
 		command "tempUp"
 		command "tempDown"
@@ -22,10 +23,39 @@ metadata {
 		command "heatDown"
 		command "coolUp"
 		command "coolDown"
-        command "setTemperature", ["number"]
+		command "setTemperature", ["number"]
 	}
 
-	tiles {
+	tiles(scale: 2) {
+		multiAttributeTile(name:"thermostatMulti", type:"thermostat", width:6, height:4) {
+			tileAttribute("device.temperature", key: "PRIMARY_CONTROL") {
+				attributeState("default", label:'${currentValue}', unit:"dF")
+			}
+			tileAttribute("device.temperature", key: "VALUE_CONTROL") {
+				attributeState("default", action: "setTemperature")
+			}
+			tileAttribute("device.humidity", key: "SECONDARY_CONTROL") {
+				attributeState("default", label:'${currentValue}%', icon: "st.Weather.weather12", unit:"%")
+			}
+			tileAttribute("device.thermostatOperatingState", key: "OPERATING_STATE") {
+				attributeState("idle", backgroundColor:"#44b621")
+				attributeState("heating", backgroundColor:"#ffa81e")
+				attributeState("cooling", backgroundColor:"#269bd2")
+			}
+			tileAttribute("device.thermostatMode", key: "THERMOSTAT_MODE") {
+				attributeState("off", label:'${name}')
+				attributeState("heat", label:'${name}')
+				attributeState("cool", label:'${name}')
+				attributeState("auto", label:'${name}')
+			}
+			tileAttribute("device.heatingSetpoint", key: "HEATING_SETPOINT") {
+				attributeState("default", label:'${currentValue}', unit:"dF")
+			}
+			tileAttribute("device.coolingSetpoint", key: "COOLING_SETPOINT") {
+				attributeState("default", label:'${currentValue}', unit:"dF")
+			}
+		}
+
 		valueTile("temperature", "device.temperature", width: 1, height: 1) {
 			state("temperature", label:'${currentValue}', unit:"dF",
 				backgroundColors:[
@@ -83,7 +113,7 @@ metadata {
 			state "cooling", label:'${name}', backgroundColor:"#269bd2"
 		}
 
-		main("temperature","operatingState")
+		main("thermostatMulti")
 		details([
 			"temperature","tempDown","tempUp",
 			"mode", "fanMode", "operatingState",
@@ -101,6 +131,7 @@ def installed() {
 	sendEvent(name: "thermostatMode", value: "off")
 	sendEvent(name: "thermostatFanMode", value: "fanAuto")
 	sendEvent(name: "thermostatOperatingState", value: "idle")
+	sendEvent(name: "humidity", value: 53, unit: "%")
 }
 
 def parse(String description) {

@@ -71,7 +71,36 @@ metadata {
 		reply "2502": "command: 2503, payload: FF"
 	}
 
-	tiles {
+	tiles(scale: 2) {
+		multiAttributeTile(name:"thermostatMulti", type:"thermostat", width:6, height:4) {
+			tileAttribute("device.temperature", key: "PRIMARY_CONTROL") {
+				attributeState("default", label:'${currentValue}', unit:"dF")
+			}
+			tileAttribute("device.temperature", key: "VALUE_CONTROL") {
+				attributeState("default", action: "setTemperature")
+			}
+			tileAttribute("device.humidity", key: "SECONDARY_CONTROL") {
+				attributeState("default", label:'${currentValue}%', icon: "st.Weather.weather12", unit:"%")
+			}
+			tileAttribute("device.thermostatOperatingState", key: "OPERATING_STATE") {
+				attributeState("idle", backgroundColor:"#44b621")
+				attributeState("heating", backgroundColor:"#ffa81e")
+				attributeState("cooling", backgroundColor:"#269bd2")
+			}
+			tileAttribute("device.thermostatMode", key: "THERMOSTAT_MODE") {
+				attributeState("off", label:'${name}')
+				attributeState("heat", label:'${name}')
+				attributeState("cool", label:'${name}')
+				attributeState("auto", label:'${name}')
+			}
+			tileAttribute("device.heatingSetpoint", key: "HEATING_SETPOINT") {
+				attributeState("default", label:'${currentValue}', unit:"dF")
+			}
+			tileAttribute("device.coolingSetpoint", key: "COOLING_SETPOINT") {
+				attributeState("default", label:'${currentValue}', unit:"dF")
+			}
+		}
+
 		valueTile("temperature", "device.temperature", width: 2, height: 2) {
 			state("temperature", label:'${currentValue}°',
 				backgroundColors:[
@@ -100,13 +129,13 @@ metadata {
 			state "fanOn", label:'${name}', action:"switchFanMode"
 			state "fanCirculate", label:'${name}', action:"switchFanMode"
 		}
-		controlTile("heatSliderControl", "device.heatingSetpoint", "slider", height: 1, width: 2, inactiveLabel: false) {
+		controlTile("heatSliderControl", "device.heatingSetpoint", "slider", height: 2, width: 4, inactiveLabel: false) {
 			state "setHeatingSetpoint", action:"quickSetHeat", backgroundColor:"#d04e00"
 		}
 		valueTile("heatingSetpoint", "device.heatingSetpoint", inactiveLabel: false, decoration: "flat") {
 			state "heat", label:'${currentValue}° heat', backgroundColor:"#ffffff"
 		}
-		controlTile("coolSliderControl", "device.coolingSetpoint", "slider", height: 1, width: 2, inactiveLabel: false) {
+		controlTile("coolSliderControl", "device.coolingSetpoint", "slider", height: 2, width: 4, inactiveLabel: false) {
 			state "setCoolingSetpoint", action:"quickSetCool", backgroundColor: "#1e9cbb"
 		}
 		valueTile("coolingSetpoint", "device.coolingSetpoint", inactiveLabel: false, decoration: "flat") {
@@ -118,7 +147,7 @@ metadata {
 		standardTile("configure", "device.configure", inactiveLabel: false, decoration: "flat") {
 			state "configure", label:'', action:"configuration.configure", icon:"st.secondary.configure"
 		}
-		main "temperature"
+		main "temperatureMulti"
 		details(["temperature", "mode", "fanMode", "heatSliderControl", "heatingSetpoint", "coolSliderControl", "coolingSetpoint", "refresh", "configure"])
 	}
 }
