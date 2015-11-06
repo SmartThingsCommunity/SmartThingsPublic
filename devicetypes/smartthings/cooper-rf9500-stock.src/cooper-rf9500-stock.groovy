@@ -75,14 +75,14 @@ def off() {
 
 def levelup() {
 	def curlevel = device.currentValue('level') as Integer 
-	if (curlevel <= 90)
-    	setLevel(curlevel + 10);     
+	if (curlevel <= 95)
+    	setLevel(curlevel + 5);     
 }
 
 def leveldown() {
 	def curlevel = device.currentValue('level') as Integer 
-	if (curlevel >= 10)
-    	setLevel(curlevel - 10)    
+	if (curlevel > 5)
+    	setLevel(curlevel - 5)    
 }
 
 def setLevel(value) {
