@@ -22,7 +22,8 @@ definition(
 	category: "SmartThings Labs",
     iconUrl: "https://s3.amazonaws.com/smartapp-icons/Partner/life360.png",
     iconX2Url: "https://s3.amazonaws.com/smartapp-icons/Partner/life360@2x.png",
-    oauth: [displayName: "Life360", displayLink: "Life360"]
+    oauth: [displayName: "Life360", displayLink: "Life360"],
+    singleInstance: true
 ) {
 	appSetting "clientId"
 	appSetting "clientSecret"

@@ -98,7 +98,7 @@ def configure() {
 		"zcl global send-me-a-report 0x500 0x0012 0x19 0 0xFF {}", "delay 200", //get notified on tamper
 		"send 0x${device.deviceNetworkId} 1 1", "delay 1500",
 		
-		"zcl global send-me-a-report 1 0x20 0x20 5 3600 {}", "delay 200", //battery report request
+		"zcl global send-me-a-report 1 0x20 0x20 3600 21600 {01}", "delay 200", //battery report request
 		"send 0x${device.deviceNetworkId} 1 1", "delay 1500",
 	
 		"zdo bind 0x${device.deviceNetworkId} 1 1 0x500 {${device.zigbeeId}} {}", "delay 500",

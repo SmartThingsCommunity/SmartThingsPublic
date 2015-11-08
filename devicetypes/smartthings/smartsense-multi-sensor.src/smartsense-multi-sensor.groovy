@@ -346,8 +346,8 @@ def getTemperature(value) {
 		log.debug "Acceleration"
         def name = "acceleration"
 		def value = numValue.endsWith("1") ? "active" : "inactive"
-		//def linkText = getLinkText(device)
-		def descriptionText = "was $value"
+		def linkText = getLinkText(device)
+		def descriptionText = "$linkText was $value"
 		def isStateChange = isStateChange(device, name, value)
 		[
 			name: name,

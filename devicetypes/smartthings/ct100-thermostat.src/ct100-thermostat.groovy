@@ -51,7 +51,27 @@ metadata {
 		reply "2502": "command: 2503, payload: FF"
 	}
 
-	tiles {
+	tiles(scale: 2) {
+    	multiAttributeTile(name: "richthermostat", type: "thermostat", width: 6, height: 4){
+        	tileAttribute("device.temperature", key: "PRIMARY_CONTROL") {
+            	attributeState("temperature", label:'${currentValue}°', backgroundColors:[
+					[value: 32, color: "#153591"],
+					[value: 44, color: "#1e9cbb"],
+					[value: 59, color: "#90d2a7"],
+					[value: 74, color: "#44b621"],
+					[value: 84, color: "#f1d801"],
+					[value: 92, color: "#d04e00"],
+					[value: 98, color: "#bc2323"]
+				]
+			)
+        	}
+            tileAttribute("device.heatingSetPoint", key: "VALUE_CONTROL") {
+            	attributeState("heatingSetPoint", action: "quickSetHeat")
+            }
+            tileAttribute("device.humidity", key: "SECONDARY_CONTROL") {
+            	attributeState "humidity", label:'${currentValue}% humidity', unit:""
+            }
+        }
 		valueTile("temperature", "device.temperature", width: 2, height: 2) {
 			state("temperature", label:'${currentValue}°',
 				backgroundColors:[
@@ -101,8 +121,8 @@ metadata {
 		standardTile("refresh", "device.thermostatMode", inactiveLabel: false, decoration: "flat") {
 			state "default", action:"refresh.refresh", icon:"st.secondary.refresh"
 		}
-		main "temperature"
-		details(["temperature", "mode", "fanMode", "heatSliderControl", "heatingSetpoint", "coolSliderControl", "coolingSetpoint", "refresh", "humidity", "battery"])
+		main "richthermostat"
+		details(["richthermostat", "mode", "fanMode", "heatSliderControl", "heatingSetpoint", "coolSliderControl", "coolingSetpoint", "refresh", "humidity", "battery"])
 	}
 }
 
