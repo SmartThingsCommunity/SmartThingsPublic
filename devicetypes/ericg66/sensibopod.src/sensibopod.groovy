@@ -654,7 +654,7 @@ def parseEventData(Map results)
 					isStateChange: isChange,
 					displayed: isDisplayed)
             	}
-            else if (name=="temperature") {
+            else if (name=="temperature" || name== "lastTemperaturePush" || name== "lastHumidityPush") {
 				isChange = true //isTemperatureStateChange(device, name, value.toString())
                 isDisplayed = isChange
 				
