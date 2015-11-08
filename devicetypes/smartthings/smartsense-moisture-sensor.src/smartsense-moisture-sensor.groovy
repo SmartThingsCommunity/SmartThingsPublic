@@ -280,16 +280,14 @@ def configure() {
 	def configCmds = [	
 		"zcl global write 0x500 0x10 0xf0 {${zigbeeEui}}", "delay 200",
 		"send 0x${device.deviceNetworkId} 1 1", "delay 500",
-        
-        "zcl global send-me-a-report 1 0x20 0x20 300 0600 {01}", "delay 200",
+
+		"zdo bind 0x${device.deviceNetworkId} ${endpointId} 1 1 {${device.zigbeeId}} {}", "delay 500",
+		"zcl global send-me-a-report 1 0x20 0x20 30 21600 {01}",		//checkin time 6 hrs
         "send 0x${device.deviceNetworkId} 1 1", "delay 500",
-        
-        "zcl global send-me-a-report 0x402 0 0x29 300 3600 {6400}", "delay 200",
-        "send 0x${device.deviceNetworkId} 1 1", "delay 500",
-        
-        
-		"zdo bind 0x${device.deviceNetworkId} 1 1 0x402 {${device.zigbeeId}} {}", "delay 500",
-		"zdo bind 0x${device.deviceNetworkId} 1 1 0x001 {${device.zigbeeId}} {}", "delay 500"
+
+		"zdo bind 0x${device.deviceNetworkId} ${endpointId} 1 0x402 {${device.zigbeeId}} {}", "delay 500",
+        "zcl global send-me-a-report 0x402 0 0x29 30 3600 {6400}",
+        "send 0x${device.deviceNetworkId} 1 1", "delay 500"
 	]
     return configCmds + refresh() // send refresh cmds as part of config
 }
@@ -299,7 +297,7 @@ def enrollResponse() {
 	String zigbeeEui = swapEndianHex(device.hub.zigbeeEui)
     [
 		//Resending the CIE in case the enroll request is sent before CIE is written
-		"zcl global write 0x500 0x10 0xf0 {${zigbeeEui}}",
+		"zcl global write 0x500 0x10 0xf0 {${zigbeeEui}}", "delay 200",
 		"send 0x${device.deviceNetworkId} 1 ${endpointId}", "delay 500",
 		//Enroll Response
 		"raw 0x500 {01 23 00 00 00}",

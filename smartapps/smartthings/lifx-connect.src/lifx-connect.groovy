@@ -13,7 +13,8 @@ definition(
 	iconUrl: "https://cloud.lifx.com/images/lifx.png",
 	iconX2Url: "https://cloud.lifx.com/images/lifx.png",
 	iconX3Url: "https://cloud.lifx.com/images/lifx.png",
-	oauth: true) {
+	oauth: true,
+	singleInstance: true) {
 		appSetting "clientId"
 		appSetting "clientSecret"
 	}
@@ -62,7 +63,7 @@ def authPage() {
 
 		def options = locationOptions() ?: []
 		def count = options.size()
-		def refreshInterval = 3
+        def refreshInterval = 3
 
 		return dynamicPage(name:"Credentials", title:"Select devices...", nextPage:"", refreshInterval:refreshInterval, install:true, uninstall: true) {
 			section("Select your location") {
