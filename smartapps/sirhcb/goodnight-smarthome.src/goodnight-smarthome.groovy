@@ -71,7 +71,7 @@ def pageMisc() {
 			input "buttonName", "text", title: "Enter a friendly name.", required: true
 		}
         section("Push Notification") {
-        	input "pushYN", "enum", metadata:[values:["Yes","No"]], title: "Send a push notification as well?"
+        	input "pushYN", "bool", title: "Send a push notification?", required: false, defaultValue: false	
         }    
         section("Text-to-Speach Device") {
         	paragraph "Next we'll need to know what device you're going to be using as your speaker."      
@@ -258,10 +258,10 @@ def switchOnHandler(evt) {
     	phrase = "You have left " + phrase + "open"					// Add some language to make it sound like a natural sentence.
     }
     log.debug "${phrase}"											// Echo once more to the logs before sending to device.
-	TTspeaker.speak("Hi")
+
 	TTspeaker.speak(phrase)											// Send the phrase to the TTS device.
-	if (pushYN == "Yes") {
-    	sendPush("${phrase}")
+	if (pushYN) {													// If the user also requsted a push notification
+    	sendPush("${phrase}")										// then send it here.
 	}
 }																	// Close the switchOnHandler Process
 
