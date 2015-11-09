@@ -70,6 +70,9 @@ def pageMisc() {
         	paragraph "Enter a name for the button that will act as the trigger for this app. Choose something friendly and short so it's easy to remember or say."
 			input "buttonName", "text", title: "Enter a friendly name.", required: true
 		}
+        section("Push Notification") {
+        	input "pushYN", "enum", metadata:[values:["Yes","No"]], title: "Send a push notification as well?"
+        }    
         section("Text-to-Speach Device") {
         	paragraph "Next we'll need to know what device you're going to be using as your speaker."      
 			input "TTspeaker", "capability.speechSynthesis", title: "Select your TTS Speaker", required: true
@@ -255,8 +258,13 @@ def switchOnHandler(evt) {
     	phrase = "You have left " + phrase + "open"					// Add some language to make it sound like a natural sentence.
     }
     log.debug "${phrase}"											// Echo once more to the logs before sending to device.
-    TTspeaker.speak(phrase)											// Send the phrase to the TTS device.
+	TTspeaker.speak("Hi")
+	TTspeaker.speak(phrase)											// Send the phrase to the TTS device.
+	if (pushYN == "Yes") {
+    	sendPush("${phrase}")
+	}
 }																	// Close the switchOnHandler Process
+
 
 // This is just a simple procedure that turns off the selected switches.  This procedure gets
 // scheduled in Step 2 above if the user wanted to turn any switches off.
