@@ -32,7 +32,7 @@ preferences {
 def setupPage() {
 	dynamicPage(name: "setupPage",title: "3400-X Keypad Manager", install: true, uninstall: true) {
         section("Settings") {
-            input(name: "keypad", title: "Keypad", type: "device.centraliteKeypad", multiple: false, required: true)
+            input(name: "keypad", title: "Keypad", type: "capability.lockCodes", multiple: false, required: true)
             input(name: "pin"	, title: "PIN code", type: "number", range: "0000..9999", required: true)
             paragraph "PIN should be four digits. Shorter PINs will be padded with leading zeroes. (42 becomes 0042)"
             label(title: "Assign a name", required: false)
