@@ -6,6 +6,8 @@
  * also add color to battery percent, and icons for humidity and temp. Make primary temp display larger.
  * original timeout was 5 minutes .. This is too often when putting in cold environment like freezer.
  * That is why I made the timeout configurable. And also change the default to 180 minutes.
+ * V4 some bug in recent release of smartthings ide made saving impossible if you make the parameters
+ * required kept saying please fill out all fields, even though they were so changed it.
  *
  * Version 2. Just set my second one up and temp is innacurate so add offset temp and humidity to fix.
  * also limit temp to 1 place after the decimal. Also add more colors for temp for the lower ranges.
@@ -50,11 +52,11 @@ metadata
 	}
 
 preferences {
-    input("TempChangeAmount", "number", title: "Temperature Change Amount?", range: "1..70",description: "The degrees the temperature must changes before a report is sent?", defaultValue: 2,required: true)
-    input("HumidChangeAmount", "number", title: "Humidity Change Amount?",range: "5..70" ,description: "The percent the humidity must changes before a report is sent?", defaultValue: 5,required: true)
-    input("ReportTime", "number", title: "Report Timeout Interval?", description: "The time in minutes after which an update is sent?", defaultValue: 180, required: true)
-    input("TempOffset", "number", title: "Temperature Offset/Adjustment -10 to +10 in Degrees?",range: "-10..10", description: "If your temperature is innacurate this will offset/adjust it by this many degrees.", defaultValue: 0, required: true)
-    input("HumidOffset", "number", title: "Humidity Offset/Adjustment -10 to +10 in percent?",range: "-10..10", description: "If your humidty is innacurate this will offset/adjust it by this percent.", defaultValue: 0, required: true)
+    input("TempChangeAmount", "number", title: "Temperature Change Amount?", range: "1..70",description: "The degrees the temperature must changes before a report is sent?", defaultValue: 2,required: false)
+    input("HumidChangeAmount", "number", title: "Humidity Change Amount?",range: "5..70" ,description: "The percent the humidity must changes before a report is sent?", defaultValue: 5,required: false)
+    input("ReportTime", "number", title: "Report Timeout Interval?", description: "The time in minutes after which an update is sent?", defaultValue: 180, required: false)
+    input("TempOffset", "number", title: "Temperature Offset/Adjustment -10 to +10 in Degrees?",range: "-10..10", description: "If your temperature is innacurate this will offset/adjust it by this many degrees.", defaultValue: 0, required: false)
+    input("HumidOffset", "number", title: "Humidity Offset/Adjustment -10 to +10 in percent?",range: "-10..10", description: "If your humidty is innacurate this will offset/adjust it by this percent.", defaultValue: 0, required: false)
     }
 
 	simulator 
