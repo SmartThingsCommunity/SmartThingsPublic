@@ -1,7 +1,7 @@
 This app is designed to be run at night before heading to bed.
 
 Please note: this app creates a virtual childDevice to act as a trigger to start the app running.  You are REQUIRED to
-also install the /sirhcb/ON/OFF button tile device type.  This is just a clone of the SmartThing device type with the
+also install the sirhcb/on-off-button-tile.src button tile device type.  This is just a clone of the SmartThing device type with the
 proper namespace to work with my app.
 
 When installing this app will ask for:
