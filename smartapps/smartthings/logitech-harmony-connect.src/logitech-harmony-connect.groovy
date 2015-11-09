@@ -90,7 +90,7 @@ mappings {
 
 def getServerUrl() { return "https://graph.api.smartthings.com" }
 def getCallbackUrl() { "https://graph.api.smartthings.com/oauth/callback" }
-def getBuildRedirectUrl() { "${serverUrl}/oauth/initialize?appId=${app.id}&access_token=${atomicState.accessToken}&apiServerUrl=${apiServerUrl}" }
+def getBuildRedirectUrl() { "${serverUrl}/oauth/initialize?appId=${app.id}&access_token=${state.accessToken}&apiServerUrl=${apiServerUrl}" }
 
 def authPage() {
     def description = null
