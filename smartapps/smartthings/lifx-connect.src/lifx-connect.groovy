@@ -13,7 +13,8 @@ definition(
 	iconUrl: "https://cloud.lifx.com/images/lifx.png",
 	iconX2Url: "https://cloud.lifx.com/images/lifx.png",
 	iconX3Url: "https://cloud.lifx.com/images/lifx.png",
-	oauth: true) {
+	oauth: true,
+	singleInstance: true) {
 		appSetting "clientId"
 		appSetting "clientSecret"
 	}
