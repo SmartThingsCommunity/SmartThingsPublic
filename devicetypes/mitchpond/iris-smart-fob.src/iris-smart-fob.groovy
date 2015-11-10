@@ -28,21 +28,9 @@ metadata {
 	}
 
 	tiles(scale: 2) {
-    	standardTile("button1", "device.button", decoration: "flat", width: 2, height: 2) {
+    	standardTile("button", "device.button", decoration: "flat", width: 2, height: 2) {
         	state "default", label: "#1", icon: "st.unknown.zwave.remote-controller", backgroundColor: "#ffffff", action: "test()"
-            state "button 1 pushed", label: "#1 pushed", icon: "st.unknown.zwave.remote-controller", backgroundColor: "#79b821"
-        }
-        standardTile("button2", "device.button", decoration: "flat", width: 2, height: 2) {
-        	state "default", label: "#2", icon: "st.unknown.zwave.remote-controller", backgroundColor: "#ffffff"
-            state "button 2 pushed", label: "#2 pushed", icon: "st.unknown.zwave.remote-controller", backgroundColor: "#79b821"
-        }
-        standardTile("button3", "device.button", decoration: "flat", width: 2, height: 2) {
-        	state "default", label: "#3", icon: "st.unknown.zwave.remote-controller", backgroundColor: "#ffffff"
-            state "button 3 pushed", label: "#3 pushed", icon: "st.unknown.zwave.remote-controller", backgroundColor: "#79b821"
-        }
-        standardTile("button4", "device.button", decoration: "flat", width: 2, height: 2) {
-        	state "default", label: "#4", icon: "st.unknown.zwave.remote-controller", backgroundColor: "#ffffff"
-            state "button 4 pushed", label: "#4 pushed", icon: "st.unknown.zwave.remote-controller", backgroundColor: "#79b821"
+            state "pushed", icon: "st.unknown.zwave.remote-controller", backgroundColor: "#79b821"
         }
         standardTile("presence", "device.presence", width: 2, height: 2, canChangeBackground: true) {
 		  	state "present", labelIcon:"st.presence.tile.present", backgroundColor:"#53a7c0"
@@ -53,7 +41,7 @@ metadata {
 		}
 
 		main (["battery"])
-		details(["button1","button2","battery","button3","button4","presence"])
+		details(["button","battery","presence"])
 	}
 }
 
