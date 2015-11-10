@@ -34,26 +34,12 @@ metadata {
         capability "Refresh"
         capability "Switch"
         capability "Thermostat"
-               
-		//command "getPodInfo"
-		//command "setFanLevel"
-		//command "setACMode"
-        //command "getTemperature"
-        //command "getHumidity"
-        //command "generateEvent"
-        //command "levelUpDown"
         command "switchFanLevel"
         command "switchMode"
         command "raiseCoolSetpoint"
         command "lowerCoolSetpoint"
         command "raiseHeatSetpoint"
         command "lowerHeatSetpoint"
-        //command "generateErrorEvent"
-        //command "generateSetTempEvent"
-        //command "generateSwitchEvent"
-        //command "generatefanLevelEvent"
-        //command "generateModeEvent"
-        //command "generateStatusEvent"
         command "TempUnit"
 	}
 
@@ -668,7 +654,7 @@ def parseEventData(Map results)
 					isStateChange: isChange,
 					displayed: isDisplayed)
             	}
-            else if (name=="temperature") {
+            else if (name=="temperature" || name== "lastTemperaturePush" || name== "lastHumidityPush") {
 				isChange = true //isTemperatureStateChange(device, name, value.toString())
                 isDisplayed = isChange
 				
