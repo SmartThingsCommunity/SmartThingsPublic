@@ -21,9 +21,6 @@ import groovyx.net.http.RESTClient
 
 
 preferences {
-	//input("username", "text", title: "Username", description: "Your Sensibo username (usually an email address)")
-	//input("password", "password", title: "Password", description: "Your Sensibo password")
-	//input("apikey", "text", title: "Serial #", description: "The APIkey number of your Sensibo account")
 }
 
 metadata {
@@ -40,7 +37,6 @@ metadata {
         command "lowerCoolSetpoint"
         command "raiseHeatSetpoint"
         command "lowerHeatSetpoint"
-        command "TempUnit"
 	}
 
 	simulator {
@@ -62,7 +58,7 @@ metadata {
         
     	multiAttributeTile(name:"richcontact", type:"lighting", width:6, height:4) {
    			tileAttribute("device.targetTemperature", key: "PRIMARY_CONTROL") {
-            	attributeState ("targetTemperature", label:'${currentValue} ' + TempUnit(), 
+            	attributeState ("targetTemperature", label:'${currentValue}', 
                 backgroundColors:[
 					[value: 15, color: "#153591"],
 					[value: 18, color: "#1e9cbb"],
@@ -70,7 +66,14 @@ metadata {
 					[value: 24, color: "#44b621"],
 					[value: 27, color: "#f1d801"],
 					[value: 30, color: "#d04e00"],
-					[value: 33, color: "#bc2323"]
+					[value: 33, color: "#bc2323"],
+                    [value: 59, color: "#153591"],
+					[value: 64, color: "#1e9cbb"],
+					[value: 70, color: "#90d2a7"],
+					[value: 75, color: "#44b621"],
+					[value: 81, color: "#f1d801"],
+					[value: 86, color: "#d04e00"],
+					[value: 91, color: "#bc2323"]
 				])
     		}
             tileAttribute ("statusText", key: "SECONDARY_CONTROL") {
@@ -81,11 +84,22 @@ metadata {
 	        //}
   		}
         
+        standardTile("on", "device.on", width: 2, height: 2, canChangeIcon: true) {
+			state "on", label:'${name}', action:"switch.off", icon:"st.switches.switch.on", backgroundColor:"#79b821"
+			state "off", label:'${name}', action:"switch.on", icon:"st.switches.switch.off", backgroundColor:"#ffffff"
+		}
+        
         standardTile("fanLevel", "device.fanLevel", width: 2, height: 2) {
             state "low", action:"switchFanLevel", backgroundColor:"#8C8C8D", icon:"http://i130.photobucket.com/albums/p242/brutalboy_photos/fan_low_2.png", nextState:"medium"
             state "medium", action:"switchFanLevel", backgroundColor:"#8C8C8D", icon:"http://i130.photobucket.com/albums/p242/brutalboy_photos/fan_medium_2.png", nextState:"high"
             state "high", action:"switchFanLevel", backgroundColor:"#8C8C8D", icon:"http://i130.photobucket.com/albums/p242/brutalboy_photos/fan_high_2.png", nextState:"auto"
             state "auto", action:"switchFanLevel", backgroundColor:"#8C8C8D", icon:"http://i130.photobucket.com/albums/p242/brutalboy_photos/fan_auto_2.png" , nextState:"low"
+        }
+        
+        standardTile("mode", "device.mode",  width: 2, height: 2) {
+            state "cool", action:"switchMode", backgroundColor:"#0099FF", icon:"st.thermostat.cool", nextState:"heat"
+            state "heat", action:"switchMode", backgroundColor:"#FF3300", icon:"st.thermostat.heat", nextState:"fan"
+            state "fan", action:"switchMode", backgroundColor:"#e8e3d8", icon:"st.thermostat.fan-on", nextState:"cool"         
         }
         
         standardTile("upCoolButtonControl", "device.targetTemperature", inactiveLabel: false, decoration: "flat", width: 2, height: 2) {
@@ -96,89 +110,78 @@ metadata {
 			state "setpoint", action:"lowerCoolSetpoint", icon:"st.thermostat.thermostat-down", label :"Down"
 		}
         
-        standardTile("mode", "device.mode",  width: 2, height: 2) {
-            state "cool", action:"switchMode", backgroundColor:"#0099FF", icon:"st.thermostat.cool", nextState:"heat"
-            state "heat", action:"switchMode", backgroundColor:"#FF3300", icon:"st.thermostat.heat", nextState:"fan"
-            state "fan", action:"switchMode", backgroundColor:"#e8e3d8", icon:"st.thermostat.fan-on", nextState:"cool"         
-        }
-        
         standardTile("refresh", "device.switch", inactiveLabel: false, decoration: "flat", width: 2, height: 2) {
 			state "default", label:'', action:"refresh.refresh", icon:"st.secondary.refresh"
 		}
 
-        valueTile("targetTemperature", "device.targetTemperature", inactiveLabel: false, width: 2, height: 2) {
-			state "targetTemperature", label:'${currentValue} ' + TempUnit(), backgroundColor:"#ffffff"
-        }
+		
+        //valueTile("targetTemperature", "device.targetTemperature", inactiveLabel: false, width: 2, height: 2) {
+		//	state "targetTemperature", label:'${currentValue}', backgroundColor:"#ffffff"
+        //}
         
-        valueTile("statusText", "statusText", inactiveLabel: false, width: 2, height: 2) {
-			state "statusText", label:'${currentValue}', backgroundColor:"#ffffff"
-        }
+        //valueTile("statusText", "statusText", inactiveLabel: false, width: 2, height: 2) {
+		//	state "statusText", label:'${currentValue}', backgroundColor:"#ffffff"
+        //}
         
-		controlTile("coolSliderControl", "device.coolingSetpoint", "slider", height: 1, width: 2, inactiveLabel: false,range:"(16..30)") {
-			state "setCoolingSetpoint", label:'Set temperature to', action:"thermostat.setCoolingSetpoint"
-				
-		}
+		//controlTile("coolSliderControl", "device.coolingSetpoint", "slider", height: 1, width: 2, inactiveLabel: false,range:"(16..30)") {
+		//	state "setCoolingSetpoint", label:'Set temperature to', action:"thermostat.setCoolingSetpoint"
+		//		
+		//}
 
-		controlTile("heatSliderControl", "device.heatingSetpoint", "slider", height: 1, width: 2, inactiveLabel: false, range:"(16..30)") {
-			state "setHeatingSetpoint", label:'Set temperature to', action:"thermostat.setHeatingSetpoint"
-		}
+		//controlTile("heatSliderControl", "device.heatingSetpoint", "slider", height: 1, width: 2, inactiveLabel: false, range:"(16..30)") {
+		//	state "setHeatingSetpoint", label:'Set temperature to', action:"thermostat.setHeatingSetpoint"
+		//}
         
-        valueTile("temperature", "device.temperature", width: 2, height: 2) {
-			state("temperature", label:'Temp: ${currentValue} ' + TempUnit(), unit:TempUnit(),
-				backgroundColors:[
-					[value: 15, color: "#153591"],
-					[value: 18, color: "#1e9cbb"],
-					[value: 21, color: "#90d2a7"],
-					[value: 24, color: "#44b621"],
-					[value: 27, color: "#f1d801"],
-					[value: 30, color: "#d04e00"],
-					[value: 33, color: "#bc2323"]
-				]
-			)
-		}
+        //valueTile("temperature", "device.temperature", width: 2, height: 2) {
+		//	state("temperature", label:'Temp: ${currentValue}',
+		//		backgroundColors:[
+		//			[value: 15, color: "#153591"],
+		//			[value: 18, color: "#1e9cbb"],
+		//			[value: 21, color: "#90d2a7"],
+		//			[value: 24, color: "#44b621"],
+		//			[value: 27, color: "#f1d801"],
+		//			[value: 30, color: "#d04e00"],
+		//			[value: 33, color: "#bc2323"],
+        //            [value: 59, color: "#153591"],
+		//			[value: 64, color: "#1e9cbb"],
+		//			[value: 70, color: "#90d2a7"],
+		//			[value: 75, color: "#44b621"],
+		//			[value: 81, color: "#f1d801"],
+		//			[value: 86, color: "#d04e00"],
+		//			[value: 91, color: "#bc2323"]
+		//		]
+		//	)
+		//}
         
-        valueTile("humidity", "device.humidity", width: 2, height: 2) {
-			state("humidity", label:'Humidity: ${currentValue} %',
-				backgroundColors:[
-					[value: 31, color: "#153591"],
-					[value: 44, color: "#1e9cbb"],
-					[value: 59, color: "#90d2a7"],
-					[value: 74, color: "#44b621"],
-					[value: 84, color: "#f1d801"],
-					[value: 95, color: "#d04e00"],
-					[value: 96, color: "#bc2323"]
-				]
-			)
-		}
+        //valueTile("humidity", "device.humidity", width: 2, height: 2) {
+		//	state("humidity", label:'Humidity: ${currentValue} %',
+		//		backgroundColors:[
+		//			[value: 31, color: "#153591"],
+		//			[value: 44, color: "#1e9cbb"],
+		//			[value: 59, color: "#90d2a7"],
+		//			[value: 74, color: "#44b621"],
+		//			[value: 84, color: "#f1d801"],
+		//			[value: 95, color: "#d04e00"],
+		//			[value: 96, color: "#bc2323"]
+		//		]
+		//	)
+		//}
         
-        standardTile("on", "device.on", width: 2, height: 2, canChangeIcon: true) {
-			state "on", label:'${name}', action:"switch.off", icon:"st.switches.switch.on", backgroundColor:"#79b821"
-			state "off", label:'${name}', action:"switch.on", icon:"st.switches.switch.off", backgroundColor:"#ffffff"
-		}
+        //standardTile("thermostatMode", "device.thermostatMode", inactiveLabel: true, decoration: "flat") {
+		//	state("cool", action:"thermostat.heat", icon: "st.thermostat.cool")
+		//	state("heat", action:"thermostat.auto", icon: "st.thermostat.heat")
+        //    state("auto", action:"thermostat.cool", icon: "st.thermostat.fan-on")
+		//}
         
-        standardTile("thermostatMode", "device.thermostatMode", inactiveLabel: true, decoration: "flat") {
-			state("cool", action:"thermostat.heat", icon: "st.thermostat.cool")
-			state("heat", action:"thermostat.auto", icon: "st.thermostat.heat")
-            state("auto", action:"thermostat.cool", icon: "st.thermostat.fan-on")
-		}
-        
-        standardTile("thermostatFanMode", "device.thermostatFanMode", inactiveLabel: true, decoration: "flat") {
-			state "auto", action:"thermostat.fanOn", icon: "http://i130.photobucket.com/albums/p242/brutalboy_photos/fan_auto_2.png" //auto
-			state "on", action:"thermostat.fanCirculate", icon: "http://i130.photobucket.com/albums/p242/brutalboy_photos/fan_medium_2.png" //medium
-			state "circulate", action:"thermostat.fanAuto", icon: "http://i130.photobucket.com/albums/p242/brutalboy_photos/fan_low_2.png" //low
-		}
-        
-        valueTile("heatingSetpoint", "device.heatingSetpoint") {
-			state "default", label:'${currentValue}°', unit:"Heat", backgroundColor:"#bc2323"
-		}
-
-		valueTile("coolingSetpoint", "device.coolingSetpoint") {
-			state "default", label:'${currentValue}°', unit:"Cool", backgroundColor:"#1e9cbb"
-		}
-        
-        valueTile("temperatureUnit", "device.temperatureUnit") {
-			state "default", label:'${currentValue}°', backgroundColor:"#1e9cbb"
-		}
+        //standardTile("thermostatFanMode", "device.thermostatFanMode", inactiveLabel: true, decoration: "flat") {
+		//	state "auto", action:"thermostat.fanOn", icon: "http://i130.photobucket.com/albums/p242/brutalboy_photos/fan_auto_2.png" //auto
+		//	state "on", action:"thermostat.fanCirculate", icon: "http://i130.photobucket.com/albums/p242/brutalboy_photos/fan_medium_2.png" //medium
+		//	state "circulate", action:"thermostat.fanAuto", icon: "http://i130.photobucket.com/albums/p242/brutalboy_photos/fan_low_2.png" //low
+		//}
+                     
+        //valueTile("temperatureUnit", "device.temperatureUnit") {
+		//	state "default", label:'${currentValue}', backgroundColor:"#1e9cbb"
+		//}
 		       
 		main (["on"])
 		details (["richcontact","on","fanLevel","mode","upCoolButtonControl","downCoolButtonControl","refresh"])    
@@ -239,11 +242,14 @@ void lowerCoolSetpoint() {
    	log.debug "Lower SetPoint"
     
     def Setpoint = device.currentValue("targetTemperature").toInteger()
-   
+   	
+    if (device.currentValue("temperatureUnit") == "F") {
+    	Setpoint = Math.round(fToC(Setpoint))
+    }
     log.debug "Current target temperature = ${Setpoint}"
 
     Setpoint--  
-        
+    
     if (Setpoint < 16)
     	Setpoint = 16
 
@@ -254,7 +260,12 @@ void lowerCoolSetpoint() {
         
     	sendEvent(name: 'coolingSetpoint', value: Setpoint, displayed: false)
     	sendEvent(name: 'heatingSetpoint', value: Setpoint, displayed: false)
-    	generateSetTempEvent(Setpoint)
+       
+        if (device.currentValue("temperatureUnit") == "F") {
+    		Setpoint = Math.round(cToF(Setpoint))
+    	}
+        generateSetTempEvent(Setpoint)
+  
         
     	log.debug "New target Temperature = ${Setpoint}"       
     }
@@ -269,9 +280,12 @@ void lowerCoolSetpoint() {
 void raiseCoolSetpoint() {
    	log.debug "Raise SetPoint"
     
-	//def mode = device.currentValue("thermostatMode")
     def Setpoint = device.currentValue("targetTemperature").toInteger()
    
+    if (device.currentValue("temperatureUnit") == "F") {
+    	Setpoint = Math.round(fToC(Setpoint))
+    }
+    
     log.debug "Current target temperature = ${Setpoint}"
 
     Setpoint++  
@@ -285,7 +299,11 @@ void raiseCoolSetpoint() {
         
     	sendEvent(name: 'coolingSetpoint', value: Setpoint, displayed: false)
     	sendEvent(name: 'heatingSetpoint', value: Setpoint, displayed: false)
-    	generateSetTempEvent(Setpoint)
+    	
+        if (device.currentValue("temperatureUnit") == "F") {
+    		Setpoint = Math.round(cToF(Setpoint))
+    	}
+        generateSetTempEvent(Setpoint)
         
     	log.debug "New target Temperature = ${Setpoint}"       
     }
@@ -294,10 +312,6 @@ void raiseCoolSetpoint() {
         refresh()
     }
 	generateStatusEvent()
-}
-
-def TempUnit() { 
-	return "C"
 }
 
 def refresh()
@@ -356,7 +370,13 @@ def generateSetTempEvent(temp) {
 def on() {
 	log.debug "on called"
     
-    def result = parent.setACStates(this, device.deviceNetworkId, "on", device.currentState("mode").value, device.currentState("targetTemperature").value, device.currentState("fanLevel").value)
+    def Setpoint = device.currentValue("targetTemperature").toInteger()
+   
+    if (device.currentValue("temperatureUnit") == "F") {
+    	Setpoint = Math.round(fToC(Setpoint))
+    }
+    
+    def result = parent.setACStates(this, device.deviceNetworkId, "on", device.currentState("mode").value, Setpoint, device.currentState("fanLevel").value)
     if (result) {
     	generateSwitchEvent("on")
     }
@@ -370,8 +390,15 @@ def on() {
 
 def off() {
 	log.debug "off called"
-    def result = parent.setACStates(this, device.deviceNetworkId, "off", device.currentState("mode").value, device.currentState("targetTemperature").value, device.currentState("fanLevel").value)
-    log.debug result
+    
+     def Setpoint = device.currentValue("targetTemperature").toInteger()
+   
+    if (device.currentValue("temperatureUnit") == "F") {
+    	Setpoint = Math.round(fToC(Setpoint))
+    }
+    
+    def result = parent.setACStates(this, device.deviceNetworkId, "off", device.currentState("mode").value, Setpoint, device.currentState("fanLevel").value)
+
     if (result) { 
     	generateSwitchEvent("off")
      }
@@ -390,7 +417,13 @@ def generateSwitchEvent(mode) {
 def dfanLow() {
 	log.debug "fanLow"
 
-    def result = parent.setACStates(this, device.deviceNetworkId ,"on", device.currentState("mode").value, device.currentState("targetTemperature").value, "low")
+    def Setpoint = device.currentValue("targetTemperature").toInteger()
+   
+    if (device.currentValue("temperatureUnit") == "F") {
+    	Setpoint = Math.round(fToC(Setpoint))
+    }
+    
+    def result = parent.setACStates(this, device.deviceNetworkId ,"on", device.currentState("mode").value, Setpoint, "low")
     if (result) {
         if (device.currentState("on").value == "off") { generateSwitchEvent("on") }
     	sendEvent(name: 'thermostatFanMode', value: "circulate", displayed: false)
@@ -405,8 +438,13 @@ def dfanLow() {
 
 def dfanMedium() {
 	log.debug "fanMedium"
-
-    def result = parent.setACStates(this, device.deviceNetworkId,"on", device.currentState("mode").value, device.currentState("targetTemperature").value, "medium")
+    
+    def Setpoint = device.currentValue("targetTemperature").toInteger()
+   
+    if (device.currentValue("temperatureUnit") == "F") {
+    	Setpoint = Math.round(fToC(Setpoint))
+    }
+    def result = parent.setACStates(this, device.deviceNetworkId,"on", device.currentState("mode").value, Setpoint, "medium")
     if (result) {
    		if (device.currentState("on").value == "off") { generateSwitchEvent("on") }
     	sendEvent(name: 'thermostatFanMode', value: "on", displayed: false)
@@ -414,9 +452,6 @@ def dfanMedium() {
     }
     else {
        	generateErrorEvent()
-        //device.currentState("fanLevel")?.value
-        //sendEvent(name: 'thermostatFanMode', value: "circulate")
-    	//generatefanLevelEvent("low")
         refresh()
     }      
     generateStatusEvent() 
@@ -425,7 +460,12 @@ def dfanMedium() {
 def dfanHigh() {
 	log.debug "fanHigh"
     
-    def result = parent.setACStates(this, device.deviceNetworkId,"on", device.currentState("mode").value, device.currentState("targetTemperature").value, "high")
+    def Setpoint = device.currentValue("targetTemperature").toInteger()
+   
+    if (device.currentValue("temperatureUnit") == "F") {
+    	Setpoint = Math.round(fToC(Setpoint))
+    }
+    def result = parent.setACStates(this, device.deviceNetworkId,"on", device.currentState("mode").value, Setpoint, "high")
     if (result) {
      	if (device.currentState("on").value == "off") { generateSwitchEvent("on") }   
     	sendEvent(name: 'thermostatFanMode', value: "on", displayed: false)
@@ -441,7 +481,12 @@ def dfanHigh() {
 def dfanAuto() {
 	log.debug "fanAuto"
     
-    def result = parent.setACStates(this, device.deviceNetworkId, "on", device.currentState("mode").value, device.currentState("targetTemperature").value, "auto")
+    def Setpoint = device.currentValue("targetTemperature").toInteger()
+   
+    if (device.currentValue("temperatureUnit") == "F") {
+    	Setpoint = Math.round(fToC(Setpoint))
+    }    
+    def result = parent.setACStates(this, device.deviceNetworkId, "on", device.currentState("mode").value, Setpoint, "auto")
     if (result) {
         if (device.currentState("on").value == "off") { generateSwitchEvent("on") }
     	sendEvent(name: 'thermostatFanMode', value: "auto", displayed: false)
@@ -508,8 +553,13 @@ def switchMode() {
 def modeHeat() {
 	log.debug "modeHeat"
     
+    def Setpoint = device.currentValue("targetTemperature").toInteger()
+   
+    if (device.currentValue("temperatureUnit") == "F") {
+    	Setpoint = Math.round(fToC(Setpoint))
+    }    
     //parent.setACStates(this, device.deviceNetworkId, device.currentState("on").value, "heat", device.currentState("targetTemperature").value, device.currentState("fanLevel").value)
-    def result = parent.setACStates(this, device.deviceNetworkId, "on", "heat", device.currentState("targetTemperature").value, device.currentState("fanLevel").value)
+    def result = parent.setACStates(this, device.deviceNetworkId, "on", "heat", Setpoint, device.currentState("fanLevel").value)
     if (result) {
         if (device.currentState("on").value == "off") { generateSwitchEvent("on") }
     	sendEvent(name: 'thermostatMode', value: "heat", displayed: false)
@@ -524,10 +574,14 @@ def modeHeat() {
 
 def modeCool() {
 	log.debug "modeCool"
-    
+
+    def Setpoint = device.currentValue("targetTemperature").toInteger()
+   
+    if (device.currentValue("temperatureUnit") == "F") {
+    	Setpoint = Math.round(fToC(Setpoint))
+    }
     if (device.currentState("on").value == "off") { generateSwitchEvent("on") }
-    //parent.setACStates(this, device.deviceNetworkId, device.currentState("on").value, "cool", device.currentState("targetTemperature").value, device.currentState("fanLevel").value)
-    def result = parent.setACStates(this, device.deviceNetworkId, "on", "cool", device.currentState("targetTemperature").value, device.currentState("fanLevel").value)
+    def result = parent.setACStates(this, device.deviceNetworkId, "on", "cool", Setpoint, device.currentState("fanLevel").value)
     if (result) { 
         if (device.currentState("on").value == "off") { generateSwitchEvent("on") }
     	sendEvent(name: 'thermostatMode', value: "cool", displayed: false)
@@ -542,13 +596,16 @@ def modeCool() {
 
 def modeFan() {
 	log.debug "modeFan"
-    
+
+    def Setpoint = device.currentValue("targetTemperature").toInteger()
+   
+    if (device.currentValue("temperatureUnit") == "F") {
+    	Setpoint = Math.round(fToC(Setpoint))
+    }
     // adapted to my AC model
     def LevelBefore = device.currentState("fanLevel").value.toString()
     def Level = (device.currentState("fanLevel").value == "auto") ? "medium" : device.currentState("fanLevel").value
-    
-    //parent.setACStates(this, device.deviceNetworkId, device.currentState("on").value, "fan", device.currentState("targetTemperature").value, Level)
-    def result = parent.setACStates(this, device.deviceNetworkId, "on", "fan", device.currentState("targetTemperature").value, Level)
+    def result = parent.setACStates(this, device.deviceNetworkId, "on", "fan", Setpoint, Level)
     if (result) {
     	if (LevelBefore == "auto") {
      		generatefanLevelEvent("medium")
@@ -631,7 +688,7 @@ def parseEventData(Map results)
 				sendEvent(
 					name: name,
 					value: value,
-                    unit : "C",
+                    unit : device.currentValue("temperatureUnit"),
 					linkText: linkText,
 					descriptionText: getThermostatDescriptionText(name, value, linkText),
 					handlerName: name,
@@ -661,7 +718,7 @@ def parseEventData(Map results)
 				sendEvent(
 					name: name,
 					value: value,
-					unit: "C",
+					unit: device.currentValue("temperatureUnit"),
 					linkText: linkText,
 					descriptionText: getThermostatDescriptionText(name, value, linkText),
 					handlerName: name,
@@ -706,7 +763,7 @@ private getThermostatDescriptionText(name, value, linkText)
 {
 	if(name == "temperature")
 	{
-		return "$name was $value " + TempUnit()
+		return "$name was $value " + device.currentState("temperatureUnit").value
 	}
     else if(name == "humidity")
 	{
@@ -714,7 +771,7 @@ private getThermostatDescriptionText(name, value, linkText)
     }
     else if(name == "targetTemperature")
 	{
-		return "latest temperature setpoint was $value " + TempUnit()
+		return "latest temperature setpoint was $value " + device.currentState("temperatureUnit").value
 	}
 	else if(name == "fanLevel")
 	{
@@ -812,24 +869,36 @@ def parse(String description) {
 }
 
 def generateStatusEvent() {
-    log.debug device
+    //log.debug device
     def temperature = device.currentValue("temperature").toDouble()  
     def humidity = device.currentValue("humidity").toDouble() 
-    def targetTemperature = device.currentValue("targetTemperature").toDouble()
+    def targetTemperature = device.currentValue("targetTemperature").split(' ')[0].toDouble()
     def fanLevel = device.currentValue("fanLevel")
     def mode = device.currentValue("mode")
     def on = device.currentValue("on")
 	def error = device.currentValue("Error")
     
-    log.debug "Generate Status Event for Mode = ${mode}"
-    log.debug "Temperature = ${temperature}"
-    log.debug "Humidity = ${humidity}"
-    log.debug "targetTemperature = ${targetTemperature}"
-    log.debug "fanLevel = ${fanLevel}"
-    log.debug "mode = ${mode}"
-	log.debug "switch = ${on}"
-    log.debug "Error = ${error}"                     
-    def statusTextmsg = "Temp: ${temperature} ${TempUnit()} humidity ${humidity}%"
+    //log.debug "Generate Status Event for Mode = ${mode}"
+    //log.debug "Temperature = ${temperature}"
+    //log.debug "Humidity = ${humidity}"
+    //log.debug "targetTemperature = ${targetTemperature}"
+    //log.debug "fanLevel = ${fanLevel}"
+    //log.debug "mode = ${mode}"
+	//log.debug "switch = ${on}"
+    //log.debug "Error = ${error}"                     
+    
+    def statusTextmsg = ""
+    def sUnit = device.currentValue("temperatureUnit")
 
+    statusTextmsg = "Temp: ${temperature} ${sUnit} humidity ${humidity}%"
+   
     sendEvent("name":"statusText", "value":statusTextmsg, "description":"", displayed: false, isStateChange: true)
+}
+
+def cToF(temp) {
+	return (temp * 1.8 + 32).toDouble()
+}
+
+def fToC(temp) {
+	return ((temp - 32) / 1.8).toDouble()
 }
