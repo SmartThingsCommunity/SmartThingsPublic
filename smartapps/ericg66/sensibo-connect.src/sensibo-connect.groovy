@@ -13,8 +13,7 @@
  *  for the specific language governing permissions and limitations under the License.
  *
  */
- 
- //aallo
+
 definition(
     name: "Sensibo (Connect)",
     namespace: "EricG66",
@@ -38,7 +37,7 @@ preferences {
 
 def getServerUrl() { "https://home.sensibo.com" }
 def getapikey() { apiKey }
-private def TemperatureUnit() { return location.temperatureScale }
+def TemperatureUnit() { return location.temperatureScale }
 
 def setAPIKey()
 {
@@ -119,12 +118,10 @@ def getSensiboPodList()
     	if(resp.status == 200)
 			{
 				resp.data.result.each { pod ->
-					log.debug pod.room
                     def key = pod.id
                     def value = pod.room.name
                         
 					pods[key] = value
-                    log.debug pods
 				}
 			}
 	  }
@@ -185,7 +182,6 @@ def eTemperatureHandler(evt){
             {
             	def stext = "Temperature level is too high at ${currentPod} : ${currentTemperature}"
 				sendEvent(name: "lastTemperaturePush", value: "${stext}",  displayed : "true", descriptionText:"${stext}")
-
                 sendPush(stext)
 
                 state.lastTemperaturePush = hour
@@ -563,21 +559,27 @@ def getACState(PodUid)
                 	
                 	if (stat.status == "Success") {
                     	//log.debug "xxxxxxxxxxxx Sensibo Status " + stat.status
-                       log.debug "get ACState Success"
+                        log.debug "get ACState Success"
                         //log.debug stat.acState
                         
                         def OnOff = stat.acState.on ? "on" : "off"
                         stat.acState.on = OnOff
+						
+						def stemp = stat.acState.targetTemperature.toInteger()
 
+						if (TemperatureUnit() == "F") {
+                    		stemp = Math.round(cToF(stemp))
+                    	}
+                        
                         data = [
-                            targetTemperature : stat.acState.targetTemperature,
+                            targetTemperature : stemp,
                             fanLevel : stat.acState.fanLevel,
                             mode : stat.acState.mode,
                             on : OnOff.toString(),
                             thermostatMode: stat.acState.mode,
                             thermostatFanMode : stat.acState.fanLevel,
-                            coolingSetpoint : stat.acState.targetTemperature,
-                            heatingSetpoint : stat.acState.targetTemperature,
+                            coolingSetpoint : stemp,
+                            heatingSetpoint : stemp,
                             temperatureUnit : TemperatureUnit(),
                             Error : "Success"
                         ]
@@ -698,8 +700,13 @@ def pollChildren(PodUid)
 					
 					log.debug "updating dni $dni"
                     
+                    def stemp = stat.temperature.toInteger()
+                    if (TemperatureUnit() == "F") {
+                    	stemp = Math.round(cToF(stemp))
+                    }
+
 					def data = [
-						temperature: stat.temperature,
+						temperature: stemp,
 						humidity: stat.humidity,
                         targetTemperature: setTemp.targetTemperature,
                         fanLevel: setTemp.fanLevel,
@@ -779,4 +786,12 @@ def debugEvent(message, displayEvent = false) {
 	log.debug "Generating AppDebug Event: ${results}"
 	sendEvent (results)
 
+}
+
+def cToF(temp) {
+	return (temp * 1.8 + 32).toDouble()
+}
+
+def fToC(temp) {
+	return ((temp - 32) / 1.8).toDouble()
 }
