@@ -54,8 +54,6 @@ metadata {
 	}
 
 	tiles(scale: 2) {
-		// TODO: define your main and details tiles here
-        
     	multiAttributeTile(name:"richcontact", type:"lighting", width:6, height:4) {
    			tileAttribute("device.targetTemperature", key: "PRIMARY_CONTROL") {
             	attributeState ("targetTemperature", label:'${currentValue}', 
@@ -79,9 +77,6 @@ metadata {
             tileAttribute ("statusText", key: "SECONDARY_CONTROL") {
 				attributeState "statusText", label:'${currentValue}'
 			}
-            //tileAttribute ("device.level", key: "VALUE_CONTROL") {
-			//	attributeState "level", action: "levelUpDown"
-	        //}
   		}
         
         standardTile("on", "device.on", width: 2, height: 2, canChangeIcon: true) {
@@ -113,79 +108,9 @@ metadata {
         standardTile("refresh", "device.switch", inactiveLabel: false, decoration: "flat", width: 2, height: 2) {
 			state "default", label:'', action:"refresh.refresh", icon:"st.secondary.refresh"
 		}
-
-		
-        //valueTile("targetTemperature", "device.targetTemperature", inactiveLabel: false, width: 2, height: 2) {
-		//	state "targetTemperature", label:'${currentValue}', backgroundColor:"#ffffff"
-        //}
-        
-        //valueTile("statusText", "statusText", inactiveLabel: false, width: 2, height: 2) {
-		//	state "statusText", label:'${currentValue}', backgroundColor:"#ffffff"
-        //}
-        
-		//controlTile("coolSliderControl", "device.coolingSetpoint", "slider", height: 1, width: 2, inactiveLabel: false,range:"(16..30)") {
-		//	state "setCoolingSetpoint", label:'Set temperature to', action:"thermostat.setCoolingSetpoint"
-		//		
-		//}
-
-		//controlTile("heatSliderControl", "device.heatingSetpoint", "slider", height: 1, width: 2, inactiveLabel: false, range:"(16..30)") {
-		//	state "setHeatingSetpoint", label:'Set temperature to', action:"thermostat.setHeatingSetpoint"
-		//}
-        
-        //valueTile("temperature", "device.temperature", width: 2, height: 2) {
-		//	state("temperature", label:'Temp: ${currentValue}',
-		//		backgroundColors:[
-		//			[value: 15, color: "#153591"],
-		//			[value: 18, color: "#1e9cbb"],
-		//			[value: 21, color: "#90d2a7"],
-		//			[value: 24, color: "#44b621"],
-		//			[value: 27, color: "#f1d801"],
-		//			[value: 30, color: "#d04e00"],
-		//			[value: 33, color: "#bc2323"],
-        //            [value: 59, color: "#153591"],
-		//			[value: 64, color: "#1e9cbb"],
-		//			[value: 70, color: "#90d2a7"],
-		//			[value: 75, color: "#44b621"],
-		//			[value: 81, color: "#f1d801"],
-		//			[value: 86, color: "#d04e00"],
-		//			[value: 91, color: "#bc2323"]
-		//		]
-		//	)
-		//}
-        
-        //valueTile("humidity", "device.humidity", width: 2, height: 2) {
-		//	state("humidity", label:'Humidity: ${currentValue} %',
-		//		backgroundColors:[
-		//			[value: 31, color: "#153591"],
-		//			[value: 44, color: "#1e9cbb"],
-		//			[value: 59, color: "#90d2a7"],
-		//			[value: 74, color: "#44b621"],
-		//			[value: 84, color: "#f1d801"],
-		//			[value: 95, color: "#d04e00"],
-		//			[value: 96, color: "#bc2323"]
-		//		]
-		//	)
-		//}
-        
-        //standardTile("thermostatMode", "device.thermostatMode", inactiveLabel: true, decoration: "flat") {
-		//	state("cool", action:"thermostat.heat", icon: "st.thermostat.cool")
-		//	state("heat", action:"thermostat.auto", icon: "st.thermostat.heat")
-        //    state("auto", action:"thermostat.cool", icon: "st.thermostat.fan-on")
-		//}
-        
-        //standardTile("thermostatFanMode", "device.thermostatFanMode", inactiveLabel: true, decoration: "flat") {
-		//	state "auto", action:"thermostat.fanOn", icon: "http://i130.photobucket.com/albums/p242/brutalboy_photos/fan_auto_2.png" //auto
-		//	state "on", action:"thermostat.fanCirculate", icon: "http://i130.photobucket.com/albums/p242/brutalboy_photos/fan_medium_2.png" //medium
-		//	state "circulate", action:"thermostat.fanAuto", icon: "http://i130.photobucket.com/albums/p242/brutalboy_photos/fan_low_2.png" //low
-		//}
-                     
-        //valueTile("temperatureUnit", "device.temperatureUnit") {
-		//	state "default", label:'${currentValue}', backgroundColor:"#1e9cbb"
-		//}
 		       
 		main (["on"])
 		details (["richcontact","on","fanLevel","mode","upCoolButtonControl","downCoolButtonControl","refresh"])    
-        //details (["richcontact","on","temperature","humidity", "fanLevel","mode","upCoolButtonControl","downCoolButtonControl","refresh"])    
 	}
 }
 
@@ -196,12 +121,6 @@ def fanLevelModes() {
 def Modes() {
    ["cool","heat","fan"]
 }
-
-//def levelUpDown(value) {
-    //log.trace "levelUpDown called with value $value" // Values are 0 and 1
-    //humidity = "10"
-//}
-
 
 def heat() {
     device.currentState("mode").value = "heat"
@@ -546,7 +465,7 @@ def switchMode() {
 			returnCommand = modeCool()
 			break
 	}
-	//if(!currentFanMode) { returnCommand = switchToFanMode("fanOn") }
+
 	returnCommand
 }
 
@@ -558,7 +477,6 @@ def modeHeat() {
     if (device.currentValue("temperatureUnit") == "F") {
     	Setpoint = Math.round(fToC(Setpoint))
     }    
-    //parent.setACStates(this, device.deviceNetworkId, device.currentState("on").value, "heat", device.currentState("targetTemperature").value, device.currentState("fanLevel").value)
     def result = parent.setACStates(this, device.deviceNetworkId, "on", "heat", Setpoint, device.currentState("fanLevel").value)
     if (result) {
         if (device.currentState("on").value == "off") { generateSwitchEvent("on") }
