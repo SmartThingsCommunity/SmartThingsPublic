@@ -72,7 +72,6 @@ def SensiboPodList()
             input "sendPushNotif", "bool",submitOnChange: true, required: false, title: "Send Push Notification on Sensibo Pod sensors?"
         }
         if (sendPushNotif) {
-   	        //input "sendPushOnOff", "bool", required: false, title: "Trigger on/off event?"
             section("Select the temperature threshold",hideable: true) {
             	input "minTemperature", "decimal", title: "Min Temperature",required:false
             	input "maxTemperature", "decimal", title: "Max Temperature",required:false }
@@ -81,9 +80,8 @@ def SensiboPodList()
             	input "maxHumidity", "decimal", title: "Max Humidity level",required:false }              
          
         	section("How frequently?") {
-            	input(name:"sfrequency", title:"Once within this number of minutes", type:"number", required:false)
+            	//input(name:"sfrequency", title:"Once within this number of minutes", type:"number", required:false)
         		input(name:"days", title: "Only on certain days of the week", type: "enum", required:false, multiple: true, options: ["Monday", "Tuesday", "Wednesday","Thursday","Friday","Saturday","Sunday"])
-            	//input(name:"StartTime", title: "Starting at :", type : "time", required: false
         	}
         	section("") {
         		href(name: "toTimePage",
@@ -151,6 +149,7 @@ def installed() {
 	initialize()
     
     def d = getAllChildDevices()
+
     if (sendPushNotif) {
     	subscribe(d, "temperature", eTemperatureHandler)
         subscribe(d, "humidity", eHumidityHandler)
@@ -175,18 +174,6 @@ def updated() {
     }
 }
 
-//def eOnOffHandler(evt){
-//	def currentOn = evt.device.currentState("on").value
-//    sendPush("Test")
-//    def currentPod = evt.device.displayName 
-//	if(currentOn == "on"){
-//    	sendPush("${currentPod} is turned on")
-//    }
-//    else {	
-//        sendPush("${currentPod} is turned off")
-//   	}
-//}
-
 def eTemperatureHandler(evt){
 	def currentTemperature = evt.device.currentState("temperature").value
     def currentPod = evt.device.displayName
@@ -197,8 +184,10 @@ def eTemperatureHandler(evt){
             if(currentTemperature.toDouble() > maxTemperature)
             {
             	def stext = "Temperature level is too high at ${currentPod} : ${currentTemperature}"
+				sendEvent(name: "lastTemperaturePush", value: "${stext}",  displayed : "true", descriptionText:"${stext}")
+
                 sendPush(stext)
-                //sendEvent(evt.device, [name: 'Notification', value: stext, displayed: true])
+
                 state.lastTemperaturePush = hour
             }
         }
@@ -206,8 +195,9 @@ def eTemperatureHandler(evt){
             if(currentTemperature.toDouble() < minTemperature)
             {	
             	def stext = "Temperature level is too low at ${currentPod} : ${currentTemperature}"
+                sendEvent(name: "lastTemperaturePush", value: "${stext}",  displayed : "true", descriptionText:"${stext}")
                 sendPush(stext)
-                //sendEvent(evt.device, [name: 'Notification', value: stext, displayed: true])
+
                 state.lastTemperaturePush = hour
             }
         }
@@ -223,17 +213,19 @@ def eHumidityHandler(evt){
             if(currentHumidity.toDouble() > maxHumidity)
             {   
             	def stext = "Humidity level is too high at ${currentPod} : ${currentHumidity}"
+                sendEvent(name: "lastHumidityPush", value: "${stext}", displayed : "true", descriptionText:"${stext}")
                 sendPush(stext)
-                //sendEvent(evt.device, [name: 'Notification', value: stext, displayed: true])
+                
                 state.lastHumidityPush = hour
             }
         }
         if(minHumidity != null) {
             if(currentHumidity.toDouble() < minHumidity)
             {
-            	def stext = "Humidity level is too low at ${currentPod} : ${currentHumidity}"                
+            	def stext = "Humidity level is too low at ${currentPod} : ${currentHumidity}"
+                sendEvent(name: "lastHumidityPush", value: "${stext}", displayed : "true", descriptionText:"${stext}")
                 sendPush(stext)
-                //sendEvent(evt.device, [name: 'Notification', value: stext, displayed: true])
+                
                 state.lastHumidityPush = hour
             }
         }
@@ -243,20 +235,20 @@ def eHumidityHandler(evt){
 public smartThingsDateFormat() { "yyyy-MM-dd'T'HH:mm:ss.SSSZ" }
 public smartThingsDateFormatNoMilli() { "yyyy-MM-dd'T'HH:mm:ssZ" }
 
-def canPushNotification(hour,sType) {
+def canPushNotification(currentPod, hour,sType) {
     // Check if the client already received a push
     if (sType == "temperature") {
         if (sfrequency.toString().isInteger()) {
             if (state.lastTemperaturePush != null) {
                 long unxNow = hour.time
+
                 def before = new Date().parse(smartThingsDateFormatNoMilli(),state.lastTemperaturePush)
                 long unxEnd = before.time
-
+                
                 unxNow = unxNow/1000
                 unxEnd = unxEnd/1000
                 def timeDiff = Math.abs(unxNow-unxEnd)
                 timeDiff = timeDiff/60
-
                 if (timeDiff <= sfrequency)
                 {
                     return false
@@ -268,6 +260,7 @@ def canPushNotification(hour,sType) {
         if (sfrequency.toString().isInteger()) {
             if (state.lastHumidityPush != null) {
                 long unxNow = hour.time
+                
                 def before = new Date().parse(smartThingsDateFormatNoMilli(),state.lastHumidityPush)
                 long unxEnd = before.time
 
@@ -291,14 +284,15 @@ def inDateThreshold(evt,sType) {
 	def hour = new Date()
 	def curHour = hour.format("HH:mm",location.timeZone)
 	def curDay = hour.format("EEEE",location.timeZone)
-    
+    def currentPod = evt.device.displayName
+     
     // Check if the client already received a push
     
-    def result = canPushNotification(hour, sType)
+    def result = canPushNotification(currentPod,hour, sType)
     if (!result) { 
         return false 
     }
-    
+   
     // Check the day of the week
     if (days != null && !days.contains(curDay)) {
     	return false
@@ -405,7 +399,6 @@ def initialize() {
 	delete.each { deleteChildDevice(it.deviceNetworkId) }
 
 	def PodList = getAllChildDevices()
-    //subscribe(PodList, "switch", OnOffHandler)
 	
     pollHandler()
     
