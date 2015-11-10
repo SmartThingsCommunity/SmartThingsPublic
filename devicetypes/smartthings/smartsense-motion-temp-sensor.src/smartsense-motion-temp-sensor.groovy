@@ -21,6 +21,7 @@ metadata {
 		capability "Battery"
         capability "Temperature Measurement"
 		capability "Refresh"
+		capability "Sensor"
         
         command "enrollResponse"
 
@@ -136,10 +137,6 @@ private boolean shouldProcessMessage(cluster) {
     return !ignoredMessage
 }
 
-private int getHumidity(value) {
-    return Math.round(Double.parseDouble(value))
-}
- 
 private Map parseReportAttributeMessage(String description) {
 	Map descMap = (description - "read attr - ").split(",").inject([:]) { map, param ->
 		def nameAndValue = param.split(":")
@@ -225,22 +222,29 @@ def getTemperature(value) {
 private Map getBatteryResult(rawValue) {
 	log.debug 'Battery'
 	def linkText = getLinkText(device)
-    
-    def result = [
-    	name: 'battery'
-    ]
-    
+
+	log.debug rawValue
+
+	def result = [
+		name: 'battery',
+		value: '--'
+	]
+
 	def volts = rawValue / 10
 	def descriptionText
-	if (volts > 3.5) {
-		result.descriptionText = "${linkText} battery has too much power (${volts} volts)."
-	}
+
+	if (rawValue == 0) {}
 	else {
-		def minVolts = 2.1
-    	def maxVolts = 3.0
-		def pct = (volts - minVolts) / (maxVolts - minVolts)
-		result.value = Math.min(100, (int) pct * 100)
-		result.descriptionText = "${linkText} battery was ${result.value}%"
+		if (volts > 3.5) {
+			result.descriptionText = "${linkText} battery has too much power (${volts} volts)."
+		}
+		else if (volts > 0){
+			def minVolts = 2.1
+			def maxVolts = 3.0
+			def pct = (volts - minVolts) / (maxVolts - minVolts)
+			result.value = Math.min(100, (int) pct * 100)
+			result.descriptionText = "${linkText} battery was ${result.value}%"
+		}
 	}
 
 	return result
@@ -273,48 +277,50 @@ private Map getMotionResult(value) {
 	]
 }
 
-def refresh()
-{
+def refresh() {
 	log.debug "refresh called"
-    [
+	def refreshCmds = [
 		"st rattr 0x${device.deviceNetworkId} 1 0x402 0", "delay 200",
-        "st rattr 0x${device.deviceNetworkId} 1 1 0x20"
-		
+		"st rattr 0x${device.deviceNetworkId} 1 1 0x20", "delay 200"
 	]
+
+	return refreshCmds + enrollResponse()
 }
 
 def configure() {
+	String zigbeeEui = swapEndianHex(device.hub.zigbeeEui)
+	log.debug "Configuring Reporting, IAS CIE, and Bindings."
 
-	String zigbeeId = swapEndianHex(device.hub.zigbeeId)
-	log.debug "Confuguring Reporting, IAS CIE, and Bindings."
 	def configCmds = [
-    	"zcl global write 0x500 0x10 0xf0 {${zigbeeId}}", "delay 200",
-		"send 0x${device.deviceNetworkId} 1 1", "delay 1500",
-        
-        "zcl global send-me-a-report 1 0x20 0x20 300 3600 {01}", "delay 200",
-        "send 0x${device.deviceNetworkId} 1 1", "delay 1500",
-        
-        "zcl global send-me-a-report 0x402 0 0x29 300 3600 {6400}", "delay 200",
-        "send 0x${device.deviceNetworkId} 1 1", "delay 1500",
-        
-        
-		"zdo bind 0x${device.deviceNetworkId} 1 1 0x402 {${device.zigbeeId}} {}", "delay 200",
-		"zdo bind 0x${device.deviceNetworkId} 1 1 0x001 {${device.zigbeeId}} {}", "delay 1500",
-        
-        "raw 0x500 {01 23 00 00 00}", "delay 200",
-        "send 0x${device.deviceNetworkId} 1 1", "delay 1500",
+		"zcl global write 0x500 0x10 0xf0 {${zigbeeEui}}", "delay 200",
+		"send 0x${device.deviceNetworkId} 1 ${endpointId}", "delay 500",
+
+		"zdo bind 0x${device.deviceNetworkId} ${endpointId} 1 1 {${device.zigbeeId}} {}", "delay 200",
+		"zcl global send-me-a-report 1 0x20 0x20 30 21600 {01}",		//checkin time 6 hrs
+		"send 0x${device.deviceNetworkId} 1 ${endpointId}", "delay 500",
+
+		"zdo bind 0x${device.deviceNetworkId} ${endpointId} 1 0x402 {${device.zigbeeId}} {}", "delay 200",
+		"zcl global send-me-a-report 0x402 0 0x29 30 3600 {6400}",
+		"send 0x${device.deviceNetworkId} 1 ${endpointId}", "delay 500"
 	]
     return configCmds + refresh() // send refresh cmds as part of config
 }
 
 def enrollResponse() {
 	log.debug "Sending enroll response"
-    [	
-    	
-	"raw 0x500 {01 23 00 00 00}", "delay 200",
-    "send 0x${device.deviceNetworkId} 1 1"
-        
+	String zigbeeEui = swapEndianHex(device.hub.zigbeeEui)
+	[
+		//Resending the CIE in case the enroll request is sent before CIE is written
+		"zcl global write 0x500 0x10 0xf0 {${zigbeeEui}}", "delay 200",
+		"send 0x${device.deviceNetworkId} 1 ${endpointId}", "delay 500",
+		//Enroll Response
+		"raw 0x500 {01 23 00 00 00}",
+		"send 0x${device.deviceNetworkId} 1 1", "delay 200"
     ]
+}
+
+private getEndpointId() {
+	new BigInteger(device.endpointId, 16).toString()
 }
 
 private hex(value) {

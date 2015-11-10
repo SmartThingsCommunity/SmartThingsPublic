@@ -12,7 +12,7 @@
  *
  */
 metadata {
-	definition (name: "SmartSense Presence", namespace: "smartthings", author: "SmartThings") {
+	definition (name: "Arrival Sensor", namespace: "smartthings", author: "SmartThings") {
 		capability "Tone"
 		capability "Actuator"
 		capability "Signal Strength"
@@ -31,10 +31,19 @@ metadata {
 		status "battery": "battery: 27, batteryDivisor: 0A, rssi: 100, lqi: 64"
 	}
 
+	preferences {
+		section {
+			image(name: 'educationalcontent', multiple: true, images: [
+				"http://cdn.device-gse.smartthings.com/Arrival/Arrival1.jpg",
+				"http://cdn.device-gse.smartthings.com/Arrival/Arrival2.jpg"
+				])
+		}
+	}
+
 	tiles {
 		standardTile("presence", "device.presence", width: 2, height: 2, canChangeBackground: true) {
 			state "present", labelIcon:"st.presence.tile.present", backgroundColor:"#53a7c0"
-			state "not present", labelIcon:"st.presence.tile.not-present", backgroundColor:"#ffffff"
+			state "not present", labelIcon:"st.presence.tile.not-present", backgroundColor:"#ebeef2"
 		}
 		standardTile("beep", "device.beep", decoration: "flat") {
 			state "beep", label:'', action:"tone.beep", icon:"st.secondary.beep", backgroundColor:"#ffffff"

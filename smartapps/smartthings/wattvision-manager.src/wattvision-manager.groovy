@@ -346,18 +346,20 @@ private getSensorJSON(id, key) {
 
 	def sensorUrl = "${wattvisionBaseURL()}/partners/smartthings/sensor_list?api_id=${id}&api_key=${key}"
 
-	httpGet(uri: sensorUrl) { response ->
+    httpGet(uri: sensorUrl) { response ->
 
-		def json = new org.json.JSONObject(response.data)
+		def sensors = [:]
 
-		state.sensors = json
-
-		json.each { sensorId, sensorName ->
+        response.data.each { sensorId, sensorName ->
+        	sensors[sensorId] = sensorName
 			createChild(sensorId, sensorName)
-		}
+        }
+        
+        state.sensors = sensors
 
 		return "success"
 	}
+    
 }
 
 def createChild(sensorId, sensorName) {
