@@ -18,30 +18,35 @@ metadata {
 		capability "Battery"
 		capability "Button"
         capability "Configuration"
-		capability "Presence Sensor"
 		capability "Sensor"
 
 		command "test"
         
-		fingerprint profileId: "FC01", deviceId: "019A" //just out of curiousity....
+        attribute "lastPress", "string"
+        
 		fingerprint endpointId: "01", profileId: "0104", inClusters: "0000,0001,0003,0007,0020,0B05", outClusters: "0003,0006,0019", model:"3450-L", manufacturer: "CentraLite"
 	}
+    
+    simulator {
+   		status "button 2 pressed": "catchall: 0104 0006 02 01 0140 00 6F37 01 00 0000 01 00"
+        status "button 2 released": "catchall: 0104 0006 02 01 0140 00 6F37 01 00 0000 00 00"
+    }
+    
+    preferences{
+    	input ("holdTime", "number", title: "Minimum time in seconds for a press to count as \"held\"",
+        		defaultValue: 3, displayDuringSetup: false)
+    }
 
 	tiles(scale: 2) {
     	standardTile("button", "device.button", decoration: "flat", width: 2, height: 2) {
-        	state "default", label: "#1", icon: "st.unknown.zwave.remote-controller", backgroundColor: "#ffffff", action: "test()"
-            state "pushed", icon: "st.unknown.zwave.remote-controller", backgroundColor: "#79b821"
+        	state "default", icon: "st.unknown.zwave.remote-controller", backgroundColor: "#ffffff"//, action: "test()"
         }
-        standardTile("presence", "device.presence", width: 2, height: 2, canChangeBackground: true) {
-		  	state "present", labelIcon:"st.presence.tile.present", backgroundColor:"#53a7c0"
-		  	state "not present", labelIcon:"st.presence.tile.not-present", backgroundColor:"#ebeef2"
-		}
 		valueTile("battery", "device.battery", decoration: "flat", width: 2, height: 2) {
 			state "battery", label:'${currentValue}% battery', unit:""
 		}
 
 		main (["battery"])
-		details(["button","battery","presence"])
+		details(["button","battery"])
 	}
 }
 
@@ -51,13 +56,11 @@ def parse(String description) {
     //log.debug descMap
     
 	def results = []
-    if (description?.startsWith('presence: 0')) results = createEvent([name: "presence", value: "not present"])
-	else if (description?.startsWith('catchall:')) {
+    if (description?.startsWith('catchall:'))
 		results = parseCatchAllMessage(descMap)
-	}
-	else if (description?.startsWith('read attr -')) {
+	else if (description?.startsWith('read attr -'))
 		results = parseReportAttributeMessage(descMap)
-	}
+        
 	return results;
 }
 
@@ -78,8 +81,10 @@ def configure(){
 
 def parseCatchAllMessage(descMap) {
 	//log.debug descMap
-    if (descMap?.clusterId == "0006" && descMap?.command == "00") 
-    	createButtonPushedEvent(descMap.sourceEndpoint as int)
+    if (descMap?.clusterId == "0006" && descMap?.command == "01") 		//button pressed
+    	createPressEvent(descMap.sourceEndpoint as int)
+    else if (descMap?.clusterId == "0006" && descMap?.command == "00") 	//button released
+    	createButtonEvent(descMap.sourceEndpoint as int)
 }
 
 def parseReportAttributeMessage(descMap) {
@@ -91,7 +96,27 @@ private createBatteryEvent(percent) {
 	return createEvent([name: "battery", value: percent])
 }
 
+//this method determines if a press should count as a push or a hold and returns the relevant event type
+private createButtonEvent(button) {
+	def currentTime = now()
+    def startOfPress = device.latestState('lastPress').date.getTime()
+    def timeDif = currentTime - startOfPress
+    def holdTimeMillisec = (settings.holdTime?:3).toInteger() * 1000
+    
+    if (timeDif < 0) 
+    	return []	//likely a message sequence issue. Drop this press and wait for another. Probably won't happen...
+    else if (timeDif < holdTimeMillisec) 
+    	return createButtonPushedEvent(button)
+    else 
+    	return createButtonHeldEvent(button)
+}
+
+private createPressEvent(button) {
+	return createEvent([name: 'lastPress', value: now(), data:[buttonNumber: button], displayed: false])
+}
+
 private createButtonPushedEvent(button) {
+	log.debug "Button ${button} pushed"
 	return createEvent([
     	name: "button",
         value: "pushed", 
@@ -102,6 +127,7 @@ private createButtonPushedEvent(button) {
 }
 
 private createButtonHeldEvent(button) {
+	log.debug "Button ${button} held"
 	return createEvent([
     	name: "button",
         value: "held", 
@@ -120,6 +146,6 @@ private getBatteryLevel(rawValue) {
 
 // handle commands
 def test() {
-	log.debug "Test"
+    log.debug "Test"
 	zigbee.refreshData("0","4") + zigbee.refreshData("0","5") + zigbee.refreshData("1","0x0020")
 }
