@@ -10,7 +10,7 @@
  *  The timeout perid begins when the contact is closed, or motion stops, so leaving a door open won't start the timer until it's closed.
  *
  *  Author: andersheie@gmail.com
- *  Date: 2014-08-31
+ *  Date: 2015-10-30
  */
 
 definition(
@@ -29,6 +29,12 @@ preferences {
 	section("Or, turn on when one of these contacts opened"){
 		input "contacts", "capability.contactSensor", multiple: true, title: "Select Contacts", required: false
 	}
+    section("Or, turn on when any of these people come home") {
+    input "peoplearrive", "capability.presenceSensor", multiple: true, required: false
+    }
+    section("Or, turn on when any of these people leave") {
+    input "peopleleave", "capability.presenceSensor", multiple: true, required: false
+    }
 	section("And off after no more triggers after..."){
 		input "minutes1", "number", title: "Minutes?", defaultValue: "5"
 	}
@@ -40,109 +46,232 @@ preferences {
 
 def installed()
 {
-	subscribe(switches, "switch", switchChange)
-	subscribe(motions, "motion", motionHandler)
-	subscribe(contacts, "contact", contactHandler)
-	schedule("0 * * * * ?", "scheduleCheck")
-    state.myState = "ready"
+	log.debug "installed()"
+    initialize()
 }
-
 
 def updated()
 {
+	log.debug "updated()"
 	unsubscribe()
+	initialize()
+}
+
+def initialize()
+{
+	log.debug "initialize()" 
+	// Reset to new set of Switches, just in case.
+    state.switches = [:]
+    
+    switches.each { 
+		// log.debug "ID: $it.id" 
+        // Set ready state for each switch
+        state.switches["$it.id"] = "ready"
+    }
+    logStates()
 	subscribe(motions, "motion", motionHandler)
     subscribe(switches, "switch", switchChange)
 	subscribe(contacts, "contact", contactHandler)
+  	subscribe(peoplearrive, "presence.present", presencePresentHandler)
+    subscribe(peopleleave, "presence.not present", presenceNotPresentHandler)
+    state.inactiveAt = null
+   	schedule("0 * * * * ?", "scheduleCheck")
 
-    state.myState = "ready"
-    log.debug "state: " + state.myState
+}
+
+def logStates() {
+	state.switches.each {
+		log.debug "$it.key = $it.value" 
+    }
+}
+
+def turnSwitchOn(id) {
+	 for(S in switches) {
+         if(S.id == id) {
+             S.on()
+         }
+     }
+}
+
+def turnSwitchOff(id) {
+	 for(S in switches) {
+         if(S.id == id) {
+             S.off()
+         }
+     }
 }
 
 def switchChange(evt) {
-	log.debug "SwitchChange: $evt.name: $evt.value"
+	def deviceID = evt.device.id
+	log.debug "SwitchChange: $evt.name: $evt.value $evt.device.id current state = " + state.switches[deviceID]
     
-    if(evt.value == "on") {
-        // Slight change of Race condition between motion or contact turning the switch on,
-        // versus user turning the switch on. Since we can't pass event parameters :-(, we rely
-        // on the state and hope the best.
-        if(state.myState == "activating") {
-            // OK, probably an event from Activating something, and not the switch itself. Go to Active mode.
-            state.myState = "active"
-        } else if(state.myState != "active") {
-    		state.myState = "already on"
-        }
+	if(evt.value == "on") {
+        if(state.switches[deviceID] == "activating") {
+                // OK, probably an event from Activating something, and not the switch itself. Go to Active mode.
+                log.debug "$deviceID = " + state.switches[deviceID] + " -> active"
+                state.switches[deviceID] = "active"
+            } else if(state.switches[deviceID] != "active") {
+            	log.debug "$deviceID = " + state.switches[deviceID] + " -> already on"
+                state.switches[deviceID] = "already on"
+            }
     } else {
-    	// If active and switch is turned of manually, then stop the schedule and go to ready state
-    	if(state.myState == "active" || state.myState == "activating") {
-    		unschedule()
+        // If active and switch is turned of manually, then stop the schedule and go to ready state
+        if(state.switches[deviceID] == "active" || state.switches[deviceID] == "activating") {
+            //unschedule()
         }
-  		state.myState = "ready"
+        state.switches[deviceID] = "ready"
     }
-    log.debug "state: " + state.myState
+    logStates()
+    
 }
 
 def contactHandler(evt) {
 	log.debug "contactHandler: $evt.name: $evt.value"
     
-    if (evt.value == "open") {
-        if(state.myState == "ready") {
-            log.debug "Turning on lights by contact opening"
-            switches.on()
-            state.inactiveAt = null
-            state.myState = "activating"
-        }
-    } else if (evt.value == "closed") {
-        if (!state.inactiveAt && state.myState == "active" || state.myState == "activating") {
-			// When contact closes, we reset the timer if not already set
-            setActiveAndSchedule()
-        }
-    }
-    log.debug "state: " + state.myState
-}
-
-def motionHandler(evt) {
-	log.debug "motionHandler: $evt.name: $evt.value"
-
-    if (evt.value == "active") {
-        if(state.myState == "ready" || state.myState == "active" || state.myState == "activating" ) {
-            log.debug "turning on lights"
-            switches.on()
-            state.inactiveAt = null
-            state.myState = "activating"
-        }
-    } else if (evt.value == "inactive") {
-        if (!state.inactiveAt && state.myState == "active" || state.myState == "activating") {
-			// When Motion ends, we reset the timer if not already set
-           setActiveAndSchedule()
+	boolean resetInactive = false
+    boolean setActive = false
+    state.switches.each { thisswitch ->
+         if (evt.value == "open") {
+            if(state.switches[thisswitch.key] == "ready") {
+                log.debug "Turning on lights by contact opening: $thisswitch"
+                log.debug "$thisswitch.key = " + state.switches[thisswitch.key] + " -> activating"
+                state.switches[thisswitch.key] = "activating"
+                //log.debug "Looking for $thisswitch.key"
+                
+                turnSwitchOn(thisswitch.key)
+                resetInactive = true
+                //state.inactiveAt = null
+            }
+        } else if (evt.value == "closed") {
+            if (!state.inactiveAt && (state.switches[thisswitch.key] == "active" 
+            					   || state.switches[thisswitch.key] == "activating")) {
+                // When contact closes, we reset the timer if not already set
+                log.debug "$thisswitch.key = " + state.switches[thisswitch.key] + " -> active"
+                state.switches[thisswitch.key] == "active"
+                setActive = true
+                //setActiveAndSchedule()
+            }
         }
     }
-    log.debug "state: " + state.myState
-}
-
-def setActiveAndSchedule() {
-    unschedule()
- 	state.myState = "active"
-    state.inactiveAt = now()
-	schedule("0 * * * * ?", "scheduleCheck")
+    if(resetInactive) {
+    	state.inactiveAt = null
+    }
+    if(setActive) {
+    	setActiveAndSchedule()
+    }
+    log.debug "Final States Are"
+    logStates()
 }
 
 def scheduleCheck() {
 	log.debug "schedule check, ts = ${state.inactiveAt}"
-    if(state.myState != "already on") {
-    	if(state.inactiveAt != null) {
-	        def elapsed = now() - state.inactiveAt
-            log.debug "${elapsed / 1000} sec since motion stopped"
-	        def threshold = 1000 * 60 * minutes1
-	        if (elapsed >= threshold) {
-	            if (state.myState == "active") {
-	                log.debug "turning off lights"
-	                switches.off()
-	            }
-	            state.inactiveAt = null
-	            state.myState = "ready"
-	        }
-    	}
+	boolean resetInactive = false
+	state.switches.each { thisswitch ->
+         if(state.switches[thisswitch.key] != "already on") {
+            if(state.inactiveAt != null) {
+                def elapsed = now() - state.inactiveAt
+                log.debug "${elapsed / 1000} sec since events stopped"
+                def threshold = 1000 * 60 * minutes1
+                if (elapsed >= threshold) {
+                    if (state.switches[thisswitch.key] == "active" 
+                    	|| state.switches[thisswitch.key] == "activating") {
+	                    state.switches[thisswitch.key] = "ready"
+                        log.debug "Turning off lights by contact closing: $thisswitch"
+                        turnSwitchOff(thisswitch.key)
+                    }
+                    resetInactive = true
+                    //state.inactiveAt = null
+                }
+            }
+        }
+        //log.debug "state: " + state.myState
     }
-    log.debug "state: " + state.myState
+    if(resetInactive) {
+    	state.inactiveAt = null
+        unschedule()
+    }
+    logStates()
 }
+
+
+/**********************************************************************/
+
+def motionHandler(evt) {
+	log.debug "motionHandler: $evt.name: $evt.value (current state: " + state.myState + ")"
+
+
+	state.switches.each { thisswitch ->
+         if (evt.value == "active") {
+            if(state.switches[thisswitch.key] == "ready" 
+            	|| state.switches[thisswitch.key] == "active" 
+                || state.switches[thisswitch.key] == "activating" ) {
+                log.debug "$thisswitch.key = " + state.switches[thisswitch.key] + " -> activating"
+                state.switches[thisswitch.key] = "activating"
+                turnSwitchOn(thisswitch.key)
+                state.inactiveAt = null
+            }
+        } else if (evt.value == "inactive") {
+            if (!state.inactiveAt && (state.switches[thisswitch.key] == "active" || state.switches[thisswitch.key] == "activating")) {
+                // When Motion ends, we reset the timer if not already set
+               log.debug "$thisswitch.key = " + state.switches[thisswitch.key] + " -> active"
+               state.switches[thisswitch.key] == "active"
+               setActiveAndSchedule()
+            }
+        }
+        //log.debug "state: " + state.switches["$it.key"]
+    }
+    logStates()
+}
+
+def presencePresentHandler(evt) {
+  log.debug "presence: $evt.linkText has arrived home (current state: " + state.myState + ")"
+  
+  
+    state.switches.each { thisswitch ->
+        if (evt.value == "present") {
+            if(state.switches[thisswitch.key] == "ready" 
+            	|| state.switches[thisswitch.key] == "active" 
+                || state.switches[thisswitch.key] == "activating" ) {
+                log.debug "turning on switch $thisswitch"
+                state.switches["hisswitch.key"] == "active"
+                turnSwitchOn(thisswitch.key)
+                // We don't wait until the person leave, but instead start timer immediately.
+                setActiveAndSchedule()
+                
+            }
+        } 
+        //log.debug "state: " + state.switches["$it.key"]
+    }
+    logStates()
+}
+
+def presenceNotPresentHandler(evt) {
+  log.debug "presence: $evt.linkText has left home (current state: " + state.myState + ")"
+
+  
+
+	state.switches.each { thisswitch ->
+        if (evt.value == "not present") {
+            if(state.switches[thisswitch.key] == "ready" 
+            	|| state.switches[thisswitch.key] == "active" 
+                || state.switches[thisswitch.key] == "activating" ) {
+                log.debug "turning on lights $thisswitch"
+                state.switches[thisswitch.key] == "active"
+                turnSwitchOn(thisswitch.key)
+                // We don't wait until the person arrive back, but instead start timer immediately.
+                setActiveAndSchedule()
+            }
+        } 
+        //log.debug "state: " + state.myState
+    }
+    logStates()
+}
+
+def setActiveAndSchedule() {
+    unschedule()
+/* 	state.myState = "active" */
+    state.inactiveAt = now()
+	schedule("0 * * * * ?", "scheduleCheck")
+    log.debug "Scheduled new timer"
+}
+
