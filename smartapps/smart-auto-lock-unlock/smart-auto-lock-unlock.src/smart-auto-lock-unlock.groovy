@@ -14,8 +14,8 @@
  *
  */
 definition(
-    name: "Smart Lock / Unlock",
-    namespace: "",
+    name: "Smart Auto Lock / Unlock",
+    namespace: "smart-auto-lock-unlock",
     author: "Arnaud",
     description: "Automatically locks door X minutes after being closed and keeps door unlocked if door is open.",
     category: "Safety & Security",

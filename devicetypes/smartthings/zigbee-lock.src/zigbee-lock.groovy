@@ -139,8 +139,7 @@ private Map parseReportAttributeMessage(String description) {
     Map resultMap = [:]
     if (descMap.clusterInt == CLUSTER_POWER && descMap.attrInt == POWER_ATTR_BATTERY_PERCENTAGE_REMAINING) {
         resultMap.name = "battery"
-        // BatteryPercentageRemaining is specified in .5% increments
-        resultMap.value = Integer.parseInt(descMap.value, 16) / 2
+        resultMap.value = Math.round(Integer.parseInt(descMap.value, 16) / 2)
         log.info "parseReportAttributeMessage() --- battery: ${resultMap.value}"
     }
     else if (descMap.clusterInt == CLUSTER_DOORLOCK && descMap.attrInt == DOORLOCK_ATTR_LOCKSTATE) {
