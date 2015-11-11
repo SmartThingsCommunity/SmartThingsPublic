@@ -1,5 +1,5 @@
 metadata {
-	definition (name: "Color Control Capability", namespace: "capabilities", author: "SmartThings") {
+	definition (name: "Simulated Color Control", namespace: "smartthings/testing", author: "SmartThings") {
     	capability "Color Control"
 	}
 
