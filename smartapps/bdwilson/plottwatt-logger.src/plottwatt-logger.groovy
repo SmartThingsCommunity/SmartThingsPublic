@@ -68,14 +68,18 @@ private logField(evt, field, Closure c) {
     def secs = millis/1000
     secs = secs.toInteger()
     def body = "${channelKey},${kwatts},${secs}"
-    
-	def uri = "http://${channelId}:@plotwatt.com/api/v2/push_readings"
-       def params = [
-        uri: uri,
-        body: body
+    def userpassascii = "${channelId}:"
+    def userpass = "Basic " + userpassascii.encodeAsBase64().toString()
+    def headers = [:]
+    headers.put("Authorization", userpass)
+
+    def uri = "http://plotwatt.com/api/v2/push_readings"
+    def params = [
+         uri: uri,
+         body: body,
+         headers: headers
     ] 
     log.debug "Posting Body: ${body} to ${uri}"
-
     httpPost(params) {response -> parseHttpResponse(response)}
 }
 
