@@ -25,10 +25,10 @@ metadata {
 	// UI tile definitions
 	tiles {
 		standardTile("speed", "device.speed", width: 2, height: 2, canChangeIcon: true) {
-			state "high", label: 'High', action: "high", backgroundColor: "#53a7c0", nextState: "med"
-			state "med", label: 'Med', action: "med", backgroundColor: "#53a7c0" , nextState: "low" 
-            state "low", label: 'Low', action: "low", backgroundColor: "#53a7c0", nextState: "off"
-            state "off", label: 'Off', action: "off", backgroundColor: "#ffffff", nextState: "high"
+			state "high", label: 'High', action: "med", backgroundColor: "#53a7c0", nextState: "med"
+			state "med", label: 'Med', action: "low", backgroundColor: "#53a7c0" , nextState: "low" 
+            state "low", label: 'Low', action: "off", backgroundColor: "#53a7c0", nextState: "off"
+            state "off", label: 'Off', action: "high", backgroundColor: "#ffffff", nextState: "high"
 		}
 		main "speed"
 		details "speed"
@@ -48,23 +48,23 @@ def push() {
 
 def low() {
 	log.debug "Push low"
-    sendEvent(name: "speed", value: "off", isStateChange: true)
+    sendEvent(name: "speed", value: "low", isStateChange: true)
     //push()
 }
 
 def med() {
 	log.debug "Push med"
-    sendEvent(name: "speed", value: "low", isStateChange: true)    
+    sendEvent(name: "speed", value: "med", isStateChange: true)    
     //push()
 }
 def high() {
 	log.debug "Push high"
-    sendEvent(name: "speed", value: "med", isStateChange: true)
+    sendEvent(name: "speed", value: "high", isStateChange: true)
     //push()
 }
 
 def off() {
 	log.debug "Push Off"
-    sendEvent(name: "speed", value: "high", isStateChange: true)
+    sendEvent(name: "speed", value: "off", isStateChange: true)
     //push()
 }

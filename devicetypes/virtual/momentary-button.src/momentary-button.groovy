@@ -12,6 +12,7 @@ metadata {
 		capability "Switch"
 		capability "Momentary"
 		capability "Sensor"
+
 	}
 
 	// simulator metadata

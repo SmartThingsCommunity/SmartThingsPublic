@@ -53,11 +53,13 @@ metadata {
 
 	// tile definitions
 	tiles {
-		standardTile("switch", "device.switch", width: 2, height: 2, canChangeIcon: true) {
+		/*
+        standardTile("switch", "device.switch", width: 2, height: 2, canChangeIcon: true) {
 			state "on", label: '${name}', action: "switch.off", icon: "st.switches.switch.on", backgroundColor: "#79b821"
 			state "off", label: '${name}', action: "switch.on", icon: "st.switches.switch.off", backgroundColor: "#ffffff"
 		}
-		valueTile("power", "device.power", decoration: "flat") {
+		*/
+        valueTile("power", "device.power", decoration: "flat") {
 			state "default", label:'${currentValue} W'
 		}
 		valueTile("energy", "device.energy", decoration: "flat") {
@@ -73,8 +75,8 @@ metadata {
 			state "default", label:'', action:"refresh.refresh", icon:"st.secondary.refresh"
 		}
 
-		main "switch"
-		details(["switch","power","energy","reset","configure","refresh"])
+		main "energy"
+		details(["power","energy","reset","configure","refresh"])
 	}
 }
 
@@ -116,7 +118,7 @@ def zwaveEvent(physicalgraph.zwave.Command cmd) {
 	// Handles all Z-Wave commands we aren't interested in
 	[:]
 }
-
+/*
 def on() {
 	delayBetween([
 			zwave.basicV1.basicSet(value: 0xFF).format(),
@@ -130,7 +132,7 @@ def off() {
 			zwave.switchBinaryV1.switchBinaryGet().format()
 	])
 }
-
+*/
 def poll() {
 	delayBetween([
 		zwave.switchBinaryV1.switchBinaryGet().format(),
