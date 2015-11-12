@@ -724,8 +724,11 @@ private getBridgeIP() {
         		host = d.latestState('networkAddress').stringValue
         }    
         if (host == null || host == "") {
-            def macAddress = selectedHue
-            def bridge = getHueBridges().find { it?.value?.mac?.equalsIgnoreCase(macAddress) }?.value
+            def serialNumber = selectedHue
+            def bridge = getHueBridges().find { it?.value?.serialNumber?.equalsIgnoreCase(serialNumber) }?.value
+            if (!bridge) { 
+            	bridge = getHueBridges().find { it?.value?.mac?.equalsIgnoreCase(serialNumber) }?.value
+            }
             if (bridge?.ip && bridge?.port) {
             	if (bridge?.ip.contains("."))
             		host = "${bridge?.ip}:${bridge?.port}"
