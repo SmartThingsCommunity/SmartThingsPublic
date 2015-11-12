@@ -191,7 +191,7 @@ def receiveToken(){
             <img src="https://s3.amazonaws.com/smartapp-icons/Partner/support/st-logo%402x.png" alt="SmartThings logo" />
             <p>Your Encored Technologies Account is now connected to SmartThings!</p>
             <p>Click 'Done' to finish setup.</p>
-            <p><a href="market://details?id=com.ionicframework.enertalkhome874425" target="_self">Install device 2</a></p>
+            <p><a href="http://enertalk-card.encoredtech.com/link?url=enertalkhome://intro/main">Install device 2</a></p>
         </div>
     </body>
     </html>
@@ -376,9 +376,8 @@ def getHtml() {
         """
         <meta name="viewport" content="initial-scale=1, maximum-scale=1, user-scalable=no, width=device-width, height=device-height">
         <script src="https://ajax.googleapis.com/ajax/libs/jquery/1.11.3/jquery.min.js"></script>
-        <script src="http://code.highcharts.com/highcharts.js"></script>
-        <script src="http://enertalk-card.encoredtech.com/sdk.js"></script>
-        
+        <script src="${buildResourceUrl('javascript/sdk.js')}"></script>
+        <link href='http://fonts.googleapis.com/css?family=Roboto' rel='stylesheet' type='text/css'>
         <link rel="stylesheet" href="${buildResourceUrl('css/app.css')}" type="text/css" media="screen"/>
         <script type="text/javascript" src="${buildResourceUrl('javascript/app.js')}"></script>
         """
@@ -386,97 +385,89 @@ def getHtml() {
         body {
         """
          <div id="real-time">
-    <div id="my-card">
+
+    <!-- real-time card -->
+    <div id="my-card"></div>
+
+    <!-- this month section -->
+    <div class="contents head" id="content1">
+      <p class="key" id="korean-this">This Month</p>
+      <span class="value-block">
+        <p class="unit first">&#x20A9;</p>
+        <p class="value">25,960</p>
+        <p class="unit second">/13 days</p>
+      </span> 
     </div>
+
+    <!-- Billing Tier section -->
+    <div class="contents tail" id="content2">
+      <p class="key" id="korean-tier">Billing Tier</p>
+      <span class="value-block">
+        <p class="value">3</p>
+      </span>
+    </div>  
     
-    <div class="first-row">
-      <div class="scope1">
-        <div class="content" id="content1">
-          <span class="words" align="center">
-            <br/>
-            This Month
-            <br/><br/><br/>
-            won 25,960
-            <br/><br/>
-            342kwh
-          </span>
-        </div>
-      </div>
-
-      <div class="scope1">
-        <div class="content" id="content2">
-          <span class="words" align="center">
-            <br/>
-            Last Month
-            <br/><br/><br/>
-            won 5,270
-            <br/><br/>
-            55.54kwh
-          </span>
-        </div>
-      </div>  
+    <!-- Plan section -->
+    <div class="contents tail" id="content3">
+      <p class="key" id="korean-plan">Plan</p>
+      <span class="value-block">
+        <p class="unit first">&#x20A9;</p>
+        <p class="value">5,960</p>
+        <p class="unit second">left</p> 
+      </span>
     </div>
 
-    <div class="second-row">
-      <div class="scope2">
-        <div class="content" id="content3">
-          <span class="words" align="center">
-            Rates
-            <br /><br />
-            Tier 3
-          </span>
-        </div>
-      </div>
-
-      <div class="scope2">
-        <div class="content" id="content4">
-          <span class="words" align="center">
-            Ranking
-            <br /><br />
-            32nd out of 100 homes
-          </span>
-        </div>
-      </div>
-
-      <div class="scope2">
-        <div class="content" id="content5">
-          <span class="words" align="center">
-            Plan
-            <br /><br />
-            won 40,000 <br />
-            won 25,960 <br />
-            22 days
-          </span>
-        </div>
-      </div> 
+    <!-- Last Month section -->
+    <div class="contents tail" id="content4">
+      <p class="key" id="korean-last">Last Month</p>
+      <span class="value-block">
+        <p class="unit first">&#x20A9;</p>
+        <p class="value">54,120</p>
+      </span>
     </div>
-    
-    <div class="third-row">
-      <div class="scope2">
-        <div class="content" id="content6">
-          <span class="words" align="center">
-            Standby
-            <br /><br />
-            13 % <br />
-            45.2 W
-          </span>
-        </div>
-      </div>
+
+    <!-- Ranking section -->
+    <div class="contents tail" id="content5">
+      <p class="key" id="korean-ranking">Ranking</p>
+      <span class="value-block">
+      </span>
+    </div> 
+ 
+    <!-- Standby section -->
+    <div class="contents tail" id="content6">
+      <p class="key" id="korean-standby">Standby</p>
+      <span class="value-block">
+        <p class="value">7.356</p>
+        <p class="unit third">w<p>
+      </span>
     </div>
+
+    <!-- Device status section -->
+    <div class="contents tail">
+      <p class="key">Energy Monitor Device</p>
+      <span class="value-block">
+        <div class="circle" ></div>
+        <p class="value last">OK</p>
+      </span>
+    </div>
+
     
   </div>
 
+  <!-- hidden section!! -->
+
   <div id="this-month">
     <div class="card-header">
-      <p class="title">This Month</p>
+      <p class="title" id="korean-title-this">This Month</p>
       <button class="show" id="show">X</button>
     </div>
     <div id="my-card2"></div>
+    <div id="my-card3"></div>
   </div>
   
   <div id="last-month">
     <div class="card-header">
-      <p class="title">Last Month</p>
+      <p class="title" id="korean-title-last">Last Month</p>
       <button class="show" id="show2">X</button>
     </div>
     <div id="my-card4"></div>
@@ -484,7 +475,7 @@ def getHtml() {
   
   <div id="progressive-step">
     <div class="card-header">
-      <p class="title">Progressive step</p>
+      <p class="title" id="korean-title-tier">Billing Tier</p>
       <button class="show" id="show3">X</button>
     </div>
     <div id="my-card5"></div>
@@ -492,7 +483,7 @@ def getHtml() {
   
   <div id="ranking">
     <div class="card-header">
-      <p class="title">Ranking</p>
+      <p class="title" id="korean-title-ranking">Ranking</p>
       <button class="show" id="show4">X</button>
     </div>
     <div id="my-card6"></div>
@@ -500,7 +491,7 @@ def getHtml() {
     
   <div id="plan">
     <div class="card-header">
-      <p class="title">Plan</p>
+      <p class="title" id="korean-title-plan">Plan</p>
       <button class="show" id="show5">X</button>
     </div>
     <div id="my-card7"></div>
@@ -508,7 +499,7 @@ def getHtml() {
   
   <div id="standby">
     <div class="card-header">
-      <p class="title">Standby</p>
+      <p class="title" id="korean-title-standby">Standby</p>
       <button class="show" id="show6">X</button>
     </div>
     <div id="my-card8"></div>
