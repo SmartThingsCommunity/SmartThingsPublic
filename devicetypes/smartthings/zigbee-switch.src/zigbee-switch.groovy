@@ -13,16 +13,25 @@
  */
 
 metadata {
-    definition (name: "ZigBee Dimmer", namespace: "smartthings", author: "SmartThings") {
+    definition (name: "ZigBee Switch", namespace: "smartthings", author: "SmartThings") {
         capability "Actuator"
         capability "Configuration"
         capability "Refresh"
         capability "Sensor"
         capability "Switch"
-        capability "Switch Level"
 
+        fingerprint profileId: "0104", inClusters: "0000, 0003, 0004, 0005, 0006"
+    }
 
-        fingerprint profileId: "0104", inClusters: "0000, 0003, 0004, 0005, 0006, 0008"
+    // simulator metadata
+    simulator {
+        // status messages
+        status "on": "on/off: 1"
+        status "off": "on/off: 0"
+
+        // reply messages
+        reply "zcl on-off on": "on/off: 1"
+        reply "zcl on-off off": "on/off: 0"
     }
 
     tiles(scale: 2) {
@@ -32,9 +41,6 @@ metadata {
                 attributeState "off", label:'${name}', action:"switch.on", icon:"st.switches.light.off", backgroundColor:"#ffffff", nextState:"turningOn"
                 attributeState "turningOn", label:'${name}', action:"switch.off", icon:"st.switches.light.on", backgroundColor:"#79b821", nextState:"turningOff"
                 attributeState "turningOff", label:'${name}', action:"switch.on", icon:"st.switches.light.off", backgroundColor:"#ffffff", nextState:"turningOn"
-            }
-            tileAttribute ("device.level", key: "SLIDER_CONTROL") {
-                attributeState "level", action:"switch level.setLevel"
             }
         }
         standardTile("refresh", "device.switch", inactiveLabel: false, decoration: "flat", width: 2, height: 2) {
@@ -73,15 +79,11 @@ def on() {
     zigbee.on()
 }
 
-def setLevel(value) {
-    zigbee.setLevel(value)
-}
-
 def refresh() {
-    zigbee.onOffRefresh() + zigbee.levelRefresh() + zigbee.onOffConfig() + zigbee.levelConfig()
+    zigbee.onOffRefresh() + zigbee.onOffConfig()
 }
 
 def configure() {
     log.debug "Configuring Reporting and Bindings."
-    zigbee.onOffConfig() + zigbee.levelConfig() + zigbee.onOffRefresh() + zigbee.levelRefresh()
+    zigbee.onOffConfig() + zigbee.onOffRefresh()
 }
