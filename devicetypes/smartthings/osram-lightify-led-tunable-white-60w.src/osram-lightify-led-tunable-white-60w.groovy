@@ -5,6 +5,8 @@
     that issue by using state variables
 */
 
+//DEPRECATED - Using the generic DTH for this device. Users need to be moved before deleting this DTH
+
 metadata {
     definition (name: "OSRAM LIGHTIFY LED Tunable White 60W", namespace: "smartthings", author: "SmartThings") {
 
@@ -20,10 +22,7 @@ metadata {
 
         // indicates that device keeps track of heartbeat (in state.heartbeat)
         attribute "heartbeat", "string"
-
-
-        fingerprint profileId: "0104", inClusters: "0000,0003,0004,0005,0006,0008,0300,0B04,FC0F", outClusters: "0019", manufacturer: "OSRAM", model: "Classic A60 TW"
-        fingerprint profileId: "0104", inClusters: "0000,0003,0004,0005,0006,0008,0300,0B04,FC0F", outClusters: "0019", manufacturer: "OSRAM", model: "LIGHTIFY A19 Tunable White"
+        
 
     }
 
