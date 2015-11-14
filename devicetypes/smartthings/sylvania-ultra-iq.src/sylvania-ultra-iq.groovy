@@ -11,6 +11,9 @@
  *  for the specific language governing permissions and limitations under the License.
  *
  */
+
+//DEPRECATED - Using the generic DTH for this device. Users need to be moved before deleting this DTH
+
 metadata {
 	definition (name: "Sylvania Ultra iQ", namespace:"smartthings", author: "SmartThings") {
 		capability "Switch Level"
