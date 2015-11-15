@@ -87,10 +87,10 @@ def getButtonSections(buttonNumber) {
 		section("Dimmers") {
 			input "dimmers_${buttonNumber}_pushed", "capability.switchLevel", title: "Pushed", multiple: true, required: false
 			input "switchLevels_${buttonNumber}_pushed", "enum", title: "Pushed Level", \
-				options: ["10","20","30","40","50","60","70","80","90","100"], required: false
+				options: ["10%","20%","30%","40%","50%","60%","70%","80%","90%","100%"], required: false
 			input "dimmers_${buttonNumber}_held", "capability.switchLevel", title: "Held", multiple: true, required: false
 			input "switchLevels_${buttonNumber}_held", "enum", \
-				options: ["10","20","30","40","50","60","70","80","90","100"], title: "Held Level", required: false
+				options: ["10%","20%","30%","40%","50%","60%","70%","80%","90%","100%"], title: "Held Level", required: false
 		}
 		section("Locks") {
 			input "locks_${buttonNumber}_pushed", "capability.lock", title: "Pushed", multiple: true, required: false
