@@ -45,6 +45,10 @@ def selectButton() {
 		section {
 			input "buttonDevice", "capability.button", title: "Button", multiple: false, required: true
 		}
+        
+        section(title: "Dimmer Mode", hidden: hideOptionsSection(), hideable: true) {
+        	input "dimmerMode", "enum", title: "What to do if already turned on?", required: true, options: ["Toggle", "Level"]
+        }
 
 		section(title: "More options", hidden: hideOptionsSection(), hideable: true) {
 
@@ -86,11 +90,11 @@ def getButtonSections(buttonNumber) {
 		}
 		section("Dimmers") {
 			input "dimmers_${buttonNumber}_pushed", "capability.switchLevel", title: "Pushed", multiple: true, required: false
-			input "switchLevels_${buttonNumber}_pushed", "enum", title: "Pushed Level", \
-				options: ["10%","20%","30%","40%","50%","60%","70%","80%","90%","100%"], required: false
+			input "switchLevel_${buttonNumber}_pushed", "enum", title: "Pushed Level", \
+				options: ["7%", "10%", "20%", "25%", "30%", "50%", "75%", "100%"], required: false
 			input "dimmers_${buttonNumber}_held", "capability.switchLevel", title: "Held", multiple: true, required: false
-			input "switchLevels_${buttonNumber}_held", "enum", \
-				options: ["10%","20%","30%","40%","50%","60%","70%","80%","90%","100%"], title: "Held Level", required: false
+			input "switchLevel_${buttonNumber}_held", "enum", \
+				options: ["7%", "10%", "20%", "25%", "30%", "50%", "75%", "100%"], title: "Held Level", required: false
 		}
 		section("Locks") {
 			input "locks_${buttonNumber}_pushed", "capability.lock", title: "Pushed", multiple: true, required: false
@@ -199,8 +203,8 @@ def executeHandlers(buttonNumber, value) {
 	if (lights != null) toggle(lights)
 	
 	def dimmers = find('dimmers', buttonNumber, value)
-	def switchLevels = find('switchLevels', buttonNumber, value)
-	if (dimmers != null) switchLevels ? toggle(dimmers,switchLevels) : toggle(dimmers)
+	def switchLevel = find('switchLevel', buttonNumber, value)
+	if (dimmers != null) switchLevel ? toggle(dimmers,switchLevel) : toggle(dimmers)
 
 	def locks = find('locks', buttonNumber, value)
 	if (locks != null) toggle(locks)
@@ -247,13 +251,19 @@ def findMsg(type, buttonNumber) {
 }
 
 def toggle(devices,switchLevel) {
-	log.debug "toggle: $devices = ${devices*.currentValue('switch')}, switchLevel: $switchLevel, switchLevel: ${devices*.currentValue('switchLevel')}"
+	log.debug "toggle: $devices = ${devices*.currentValue('switch')}, switchLevel: $switchLevel, switchLevel: ${devices*.currentValue('switchLevel')}, dimmerMode: ${dimmermode}"
 
 	if (devices*.currentValue('switch').contains('on') || !devices*.currentValue('switchLevel')) {
-		devices.off()
+    	if (dimmerMode.equals('Toggle')) {
+			devices.off()
+        }
+        else if (dimmerMode.equals('Level')) {
+			switchLevel ? devices.setLevel( new Integer(switchLevel.substring(0,switchLevel.length()-1))) : devices.on()
+        }
 	}
 	else if (devices*.currentValue('switch').contains('off')) {
-		switchLevel ? devices.setLevel(switchLevel) : devices.on()
+    	// if level is undefined, just turn it on.  otherwise, strip off the last char (%) and convert to integer
+		switchLevel ? devices.setLevel( new Integer(switchLevel.substring(0,switchLevel.length()-1))) : devices.on()
 	}
 }
 
