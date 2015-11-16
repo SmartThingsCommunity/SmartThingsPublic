@@ -85,7 +85,7 @@ def mainPage() {
 			)
 		}
 		section {
-			input "speaker", "capability.musicPlayer", title: "On this Speaker player", required: true
+			input "sonos", "capability.musicPlayer", title: "On this Speaker player", required: true
 		}
 		section("More options", hideable: true, hidden: true) {
 			input "resumePlaying", "bool", title: "Resume currently playing music after weather report finishes", required: false, defaultValue: true
@@ -223,16 +223,16 @@ private takeAction(evt) {
 	loadText()
 
 	if (song) {
-		speaker.playSoundAndTrack(state.sound.uri, state.sound.duration, state.selectedSong, volume)
+		sonos.playSoundAndTrack(state.sound.uri, state.sound.duration, state.selectedSong, volume)
 	}
 	else if (resumePlaying){
-		speaker.playTrackAndResume(state.sound.uri, state.sound.duration, volume)
+		sonos.playTrackAndResume(state.sound.uri, state.sound.duration, volume)
 	}
 	else if (volume) {
-		speaker.playTrackAtVolume(state.sound.uri, volume)
+		sonos.playTrackAtVolume(state.sound.uri, volume)
 	}
 	else {
-		speaker.playTrack(state.sound.uri)
+		sonos.playTrack(state.sound.uri)
 	}
 
 	if (frequency || oncePerDay) {
@@ -254,7 +254,7 @@ private songOptions() {
 	}
 
 	// Query for recent tracks
-	def states = speaker.statesSince("trackData", new Date(0), [max:30])
+	def states = sonos.statesSince("trackData", new Date(0), [max:30])
 	def dataMaps = states.collect{it.jsonValue}
 	options.addAll(dataMaps.collect{it.station})
 
@@ -266,7 +266,7 @@ private saveSelectedSong() {
 	try {
 		def thisSong = song
 		log.info "Looking for $thisSong"
-		def songs = speaker.statesSince("trackData", new Date(0), [max:30]).collect{it.jsonValue}
+		def songs = sonos.statesSince("trackData", new Date(0), [max:30]).collect{it.jsonValue}
 		log.info "Searching ${songs.size()} records"
 
 		def data = songs.find {s -> s.station == thisSong}
