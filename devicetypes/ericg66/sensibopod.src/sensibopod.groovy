@@ -79,6 +79,48 @@ metadata {
 			}
   		}
         
+		valueTile("temperature", "device.temperature", width: 2, height: 2) {
+			state("temperature", label:'Temp: ${currentValue} C',
+				backgroundColors:[
+					[value: 15, color: "#153591"],
+					[value: 18, color: "#1e9cbb"],
+					[value: 21, color: "#90d2a7"],
+					[value: 24, color: "#44b621"],
+					[value: 27, color: "#f1d801"],
+					[value: 30, color: "#d04e00"],
+					[value: 33, color: "#bc2323"],
+                    [value: 59, color: "#153591"],
+					[value: 64, color: "#1e9cbb"],
+					[value: 70, color: "#90d2a7"],
+					[value: 75, color: "#44b621"],
+					[value: 81, color: "#f1d801"],
+					[value: 86, color: "#d04e00"],
+					[value: 91, color: "#bc2323"]
+				]
+			)
+		}
+        
+		valueTile("humidity", "device.humidity", width: 2, height: 2) {
+			state("humidity", label:'Humidity: ${currentValue} %',
+				backgroundColors:[
+					[value: 15, color: "#153591"],
+					[value: 18, color: "#1e9cbb"],
+					[value: 21, color: "#90d2a7"],
+					[value: 24, color: "#44b621"],
+					[value: 27, color: "#f1d801"],
+					[value: 30, color: "#d04e00"],
+					[value: 33, color: "#bc2323"],
+                    [value: 59, color: "#153591"],
+					[value: 64, color: "#1e9cbb"],
+					[value: 70, color: "#90d2a7"],
+					[value: 75, color: "#44b621"],
+					[value: 81, color: "#f1d801"],
+					[value: 86, color: "#d04e00"],
+					[value: 91, color: "#bc2323"]
+				]
+			)
+		}
+        
         standardTile("on", "device.on", width: 2, height: 2, canChangeIcon: true) {
 			state "on", label:'${name}', action:"switch.off", icon:"st.switches.switch.on", backgroundColor:"#79b821"
 			state "off", label:'${name}', action:"switch.on", icon:"st.switches.switch.off", backgroundColor:"#ffffff"
