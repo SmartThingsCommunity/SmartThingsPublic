@@ -81,7 +81,7 @@ def mainPage() {
 			]
 		}
 		section {
-			input "speaker", "capability.musicPlayer", title: "Speaker music player", required: true
+			input "sonos", "capability.musicPlayer", title: "Speaker music player", required: true
 		}
 		section("More options", hideable: true, hidden: true) {
 			input "volume", "number", title: "Set the volume volume", description: "0-100%", required: false
@@ -201,31 +201,31 @@ private takeAction(evt) {
 	log.debug "takeAction($actionType)"
 	def options = [:]
 	if (volume) {
-		speaker.setLevel(volume as Integer)
+		sonos.setLevel(volume as Integer)
 		options.delay = 1000
 	}
 
 	switch (actionType) {
 		case "Play":
-			options ? speaker.on(options) : speaker.on()
+			options ? sonos.on(options) : sonos.on()
 			break
 		case "Stop Playing":
-			options ? speaker.off(options) : speaker.off()
+			options ? sonos.off(options) : sonos.off()
 			break
 		case "Toggle Play/Pause":
-			def currentStatus = speaker.currentValue("status")
+			def currentStatus = sonos.currentValue("status")
 			if (currentStatus == "playing") {
-				options ? speaker.pause(options) : speaker.pause()
+				options ? sonos.pause(options) : sonos.pause()
 			}
 			else {
-				options ? speaker.play(options) : speaker.play()
+				options ? sonos.play(options) : sonos.play()
 			}
 			break
 		case "Skip to Next Track":
-			options ? speaker.nextTrack(options) : speaker.nextTrack()
+			options ? sonos.nextTrack(options) : sonos.nextTrack()
 			break
 		case "Play Previous Track":
-			options ? speaker.previousTrack(options) : speaker.previousTrack()
+			options ? sonos.previousTrack(options) : sonos.previousTrack()
 			break
 		default:
 			log.error "Action type '$actionType' not defined"
