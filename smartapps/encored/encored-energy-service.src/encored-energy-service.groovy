@@ -394,7 +394,7 @@ def getHtml() {
       <p class="key" id="korean-this">This Month</p>
       <span class="value-block">
         <p class="unit first">&#x20A9;</p>
-        <p class="value">25,960</p>
+        <p class="value" id="value-this">25,960</p>
         <p class="unit second">/13 days</p>
       </span> 
     </div>
@@ -403,7 +403,7 @@ def getHtml() {
     <div class="contents tail" id="content2">
       <p class="key" id="korean-tier">Billing Tier</p>
       <span class="value-block">
-        <p class="value">3</p>
+        <p class="value" id="value-tier">3</p>
       </span>
     </div>  
     
@@ -412,7 +412,7 @@ def getHtml() {
       <p class="key" id="korean-plan">Plan</p>
       <span class="value-block">
         <p class="unit first">&#x20A9;</p>
-        <p class="value">5,960</p>
+        <p class="value" id="value-plan">5,960</p>
         <p class="unit second">left</p> 
       </span>
     </div>
@@ -422,7 +422,7 @@ def getHtml() {
       <p class="key" id="korean-last">Last Month</p>
       <span class="value-block">
         <p class="unit first">&#x20A9;</p>
-        <p class="value">54,120</p>
+        <p class="value" id="value-last">54,120</p>
       </span>
     </div>
 
@@ -437,13 +437,13 @@ def getHtml() {
     <div class="contents tail" id="content6">
       <p class="key" id="korean-standby">Standby</p>
       <span class="value-block">
-        <p class="value">7.356</p>
+        <p class="value" id="value-standby">7.356</p>
         <p class="unit third">w<p>
       </span>
     </div>
 
     <!-- Device status section -->
-    <div class="contents tail">
+    <div class="contents tail" id="content7">
       <p class="key">Energy Monitor Device</p>
       <span class="value-block">
         <div class="circle" ></div>
@@ -461,8 +461,8 @@ def getHtml() {
       <p class="title" id="korean-title-this">This Month</p>
       <button class="show" id="show">X</button>
     </div>
-    <div id="my-card2"></div>
-    <div id="my-card3"></div>
+    <div class="cards" id="my-card2"></div>
+    <div class="cards" id="my-card3"></div>
   </div>
   
   <div id="last-month">
@@ -470,7 +470,7 @@ def getHtml() {
       <p class="title" id="korean-title-last">Last Month</p>
       <button class="show" id="show2">X</button>
     </div>
-    <div id="my-card4"></div>
+    <div class="cards" id="my-card4"></div>
   </div>
   
   <div id="progressive-step">
@@ -478,7 +478,7 @@ def getHtml() {
       <p class="title" id="korean-title-tier">Billing Tier</p>
       <button class="show" id="show3">X</button>
     </div>
-    <div id="my-card5"></div>
+    <div class="cards" id="my-card5"></div>
   </div>
   
   <div id="ranking">
@@ -486,7 +486,7 @@ def getHtml() {
       <p class="title" id="korean-title-ranking">Ranking</p>
       <button class="show" id="show4">X</button>
     </div>
-    <div id="my-card6"></div>
+    <div class="cards" id="my-card6"></div>
   </div>
     
   <div id="plan">
@@ -494,7 +494,7 @@ def getHtml() {
       <p class="title" id="korean-title-plan">Plan</p>
       <button class="show" id="show5">X</button>
     </div>
-    <div id="my-card7"></div>
+    <div class="cards" id="my-card7"></div>
   </div>
   
   <div id="standby">
@@ -502,7 +502,7 @@ def getHtml() {
       <p class="title" id="korean-title-standby">Standby</p>
       <button class="show" id="show6">X</button>
     </div>
-    <div id="my-card8"></div>
+    <div class="cards" id="my-card8"></div>
   </div>
 
         """
@@ -518,25 +518,146 @@ def getInitialData() {
             path: "",
             headers : [Authorization: "Bearer ${atomicState.authToken}", ContentType: "application/json"]
 		]
-	log.debug "sending http get request."
+	log.debug "trying... http://enertalk-auth.encoredtech.com/verify"
     
     def token
     
     try {
         httpGet(eParams) { resp ->
-            log.debug "${resp.data}"
-            log.debug "${resp.status}"
             if(resp.status == 200)
             {
-                log.debug "token still usable"	
+                log.debug "passed... http://enertalk-auth.encoredtech.com/verify"	
             }
     	}
     } catch (e) {
-    	log.debug "$e"
-        log.debug "Refreshing your auth_token!"
-        refreshAuthToken()
+    	log.debug "not passed... http://enertalk-auth.encoredtech.com/verify"
+        refreshAuthToken() //need to think if error has been occured.
     }
-   [auth : atomicState.authToken]
+    
+    //check the device status.
+    eParams = [
+            uri: "http://api.encoredtech.com/1.2/devices/${atomicState.uuid}/status",
+            path: "",
+            headers : [Authorization: "Bearer ${atomicState.authToken}", ContentType: "application/json"]
+		]
+	log.debug "trying... http://api.encoredtech.com/1.2/devices/${atomicState.uuid}/status"
+    
+    def deviceState = false
+    
+    try {
+        httpGet(eParams) { resp ->
+            if(resp.status == 200)
+            {
+                log.debug "passed... http:///api.encoredtech.com/1.2/devices/${atomicState.uuid}/status"	
+            	if (resp.data.status == "NORMAL") {
+                	deviceState = true
+                }
+            }
+    	}
+    } catch (e) {
+    	log.debug "not passed... http://api.encoredtech.com/1.2/devices/${atomicState.uuid}/status"
+    }
+    
+     eParams = [
+            uri: "http://api.encoredtech.com/1.2/devices/${atomicState.uuid}/standbyPower",
+            path: "",
+            headers : [Authorization: "Bearer ${atomicState.authToken}", ContentType: "application/json"]
+		]
+	log.debug "trying... http://api.encoredtech.com/1.2/devices/${atomicState.uuid}/standbyPower"
+    def standby = 0
+    try {
+        httpGet(eParams) { resp ->
+            if(resp.status == 200)
+            {
+                log.debug "passed... http://api.encoredtech.com/1.2/devices/${atomicState.uuid}/standbyPower"	
+            	standby = (resp.data.standbyPower / 1000)
+            }
+    	}
+    } catch (e) {
+    	log.debug "not passed... http://api.encoredtech.com/1.2/devices/${atomicState.uuid}/standbyPower"
+    }
+    
+    
+    eParams = [
+            uri: "http://api.encoredtech.com/1.2/me",
+            path: "",
+            headers : [Authorization: "Bearer ${atomicState.authToken}", ContentType: "application/json"]
+		]
+	log.debug "trying... http://api.encoredtech.com/1.2/me"
+    def maxLimitUsageBill = 0
+    try {
+        httpGet(eParams) { resp ->
+            if(resp.status == 200)
+            {
+                log.debug "passed... http://api.encoredtech.com/1.2/me"	
+            	maxLimitUsageBill = resp.data.maxLimitUsageBill
+            }
+    	}
+    } catch (e) {
+    	log.debug "not passed... http://api.encoredtech.com/1.2/me"
+    }
+    
+    eParams = [
+            uri: "http://api.encoredtech.com/1.2/devices/${atomicState.uuid}/meteringUsage",
+            path: "",
+            headers : [Authorization: "Bearer ${atomicState.authToken}", ContentType: "application/json"]
+		]
+	log.debug "trying... http://api.encoredtech.com/1.2/devices/${atomicState.uuid}/meteringUsage"
+    def meteringPeriodBill, start, end, metering, meteringUsage, plan
+    try {
+        httpGet(eParams) { resp ->
+            if(resp.status == 200)
+            {
+                log.debug "passed... http://api.encoredtech.com/1.2/devices/${atomicState.uuid}/meteringUsage"	
+                meteringPeriodBill = resp.data.meteringPeriodBill
+                start = resp.data.meteringStart
+                end = resp.data.meteringEnd
+                metering = resp.data.meteringDay
+                meteringUsage = resp.data.meteringPeriodUsage
+            }
+    	}
+    } catch (e) {
+    	log.debug "not passed... http://api.encoredtech.com/1.2/devices/${atomicState.uuid}/meteringUsage"
+    }
+    
+    eParams = [
+            uri: "http://api.encoredtech.com/1.2/ranking/usages/${atomicState.uuid}?state=current&period=monthly",
+            path: "",
+            headers : [Authorization: "Bearer ${atomicState.authToken}", ContentType: "application/json"]
+		]
+	log.debug "trying... http://api.encoredtech.com/1.2/ranking/usages/${atomicState.uuid}?state=current&period=monthly"
+    def ranking, population, percent
+    try {
+        httpGet(eParams) { resp ->
+            if(resp.status == 200)
+            {
+                log.debug "passed... http://api.encoredtech.com/1.2/ranking/usages/${atomicState.uuid}?state=current&period=monthly"
+                ranking = resp.data.user.ranking
+                population = resp.data.user.population
+                log.debug ranking
+            }
+    	}
+    } catch (e) {
+    	log.debug "not passed... http://api.encoredtech.com/1.2/ranking/usages/${atomicState.uuid}?state=current&period=monthly"
+    }
+
+ 	 percent = ranking/population
+     plan = maxLimitUsageBill - meteringPeriodBill
+     def tier = ((int) (meteringUsage / 100000000) + 1)%10
+    //ranking
+    
+   [
+   auth           : atomicState.authToken, 
+   deviceState    : deviceState, 
+   standbyPower   : standby,
+   plan           : plan,
+   start          : start,
+   end            : end,
+   meteringDate   : metering,
+   percent        : percent,
+   tier           : tier,
+   meteringPeriodBill      : meteringPeriodBill
+   ]
 }
 
 
