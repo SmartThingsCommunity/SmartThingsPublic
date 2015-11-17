@@ -68,15 +68,9 @@ import physicalgraph.zwave.commands.usercodev1.*
 
 def updated() {
 	try {
-		def cmds = []
-		if (!device.currentState("lock")) {
-			cmds << zwave.doorLockV1.doorLockOperationGet()
-		}
-		if (!device.currentState("battery")) {
-			cmds << zwave.batteryV1.batteryGet()
-		}
-		if (cmds) {
-			response(secureSequence(cmds))
+		if (!state.init) {
+			state.init = true
+			response(secureSequence([zwave.doorLockV1.doorLockOperationGet(), zwave.batteryV1.batteryGet()]))
 		}
 	} catch (e) {
 		log.warn "updated() threw $e"
@@ -85,7 +79,7 @@ def updated() {
 
 def parse(String description) {
 	def result = null
-	if (description.startsWith("Err")) {
+	if (description.startsWith("Err 106")) {
 		if (state.sec) {
 			result = createEvent(descriptionText:description, displayed:false)
 		} else {
@@ -97,6 +91,8 @@ def parse(String description) {
 				displayed: true,
 			)
 		}
+	} else if (description == "updated") {
+		return null
 	} else {
 		def cmd = zwave.parse(description, [ 0x98: 1, 0x72: 2, 0x85: 2, 0x86: 1 ])
 		if (cmd) {
@@ -518,7 +514,6 @@ def refresh() {
 		cmds << secure(zwave.associationV1.associationGet(groupingIdentifier:1))
 		state.associationQuery = now()
 	} else if (secondsPast(state.associationQuery, 9)) {
-		log.debug "setting association"
 		cmds << "delay 6000"
 		cmds << zwave.associationV1.associationSet(groupingIdentifier:2, nodeId:zwaveHubNodeId).format()
 		cmds << secure(zwave.associationV1.associationSet(groupingIdentifier:1, nodeId:zwaveHubNodeId))
@@ -532,24 +527,14 @@ def refresh() {
 
 def poll() {
 	def cmds = []
-	if (state.assoc != zwaveHubNodeId && secondsPast(state.associationQuery, 19 * 60)) {
-		log.debug "setting association"
-		cmds << zwave.associationV1.associationSet(groupingIdentifier:2, nodeId:zwaveHubNodeId).format()
-		cmds << secure(zwave.associationV1.associationSet(groupingIdentifier:1, nodeId:zwaveHubNodeId))
-		cmds << zwave.associationV1.associationGet(groupingIdentifier:2).format()
-		cmds << "delay 6000"
-		cmds << secure(zwave.associationV1.associationGet(groupingIdentifier:1))
-		cmds << "delay 6000"
-		state.associationQuery = now()
-	} else {
-		// Only check lock state if it changed recently or we haven't had an update in an hour
-		def latest = device.currentState("lock")?.date?.time
-		if (!latest || !secondsPast(latest, 6 * 60) || secondsPast(state.lastPoll, 55 * 60)) {
-			cmds << secure(zwave.doorLockV1.doorLockOperationGet())
-			state.lastPoll = now()
-		} else if (!state.lastbatt || now() - state.lastbatt > 53*60*60*1000) {
-			cmds << secure(zwave.batteryV1.batteryGet())
-		}
+	// Only check lock state if it changed recently or we haven't had an update in an hour
+	def latest = device.currentState("lock")?.date?.time
+	if (!latest || !secondsPast(latest, 6 * 60) || secondsPast(state.lastPoll, 55 * 60)) {
+		cmds << secure(zwave.doorLockV1.doorLockOperationGet())
+		state.lastPoll = now()
+	} else if (!state.lastbatt || now() - state.lastbatt > 53*60*60*1000) {
+		cmds << secure(zwave.batteryV1.batteryGet())
+		state.lastbatt = now()  //inside-214
 	}
 	if (cmds) {
 		log.debug "poll is sending ${cmds.inspect()}"
