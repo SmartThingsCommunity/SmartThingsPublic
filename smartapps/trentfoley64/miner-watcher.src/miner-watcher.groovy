@@ -50,8 +50,8 @@ def updated() {
 }
 
 def initialize() {
-	subscribe(meter, "power", meterHandler)
     state.waitingForStartup = false
+	subscribe(meter, "power", meterHandler)
 }
 
 def meterHandler(evt) {
