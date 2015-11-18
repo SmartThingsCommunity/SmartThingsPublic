@@ -56,6 +56,8 @@ def selectButton() {
 				options: ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"]
 
 			input "modes", "mode", title: "Only when mode is", multiple: true, required: false
+
+			label title: "Assign a name", required: false
 		}
 	}
 }
