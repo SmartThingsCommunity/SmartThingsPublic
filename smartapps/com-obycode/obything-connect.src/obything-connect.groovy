@@ -49,6 +49,14 @@ def updated() {
 	unsubscribe()
 }
 
+def uninstalled() {
+  logout()
+}
+
+def logout() {
+  revokeAccessToken()
+}
+
 // mapping handlers
 
 // /setup POST
