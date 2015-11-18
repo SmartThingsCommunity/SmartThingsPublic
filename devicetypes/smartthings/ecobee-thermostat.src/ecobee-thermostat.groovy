@@ -35,8 +35,35 @@ metadata {
 
 	simulator { }
  
-		tiles {
-		valueTile("temperature", "device.temperature", width: 2, height: 2) {
+	tiles(scale:2) {
+
+		multiAttributeTile(name:"thermostatMulti", type:"thermostat", width:6, height:4) {
+			tileAttribute("device.temperature", key: "PRIMARY_CONTROL") {
+				attributeState("default", label:'${currentValue}', unit:"dF")
+			}
+			tileAttribute("device.temperature", key: "VALUE_CONTROL") {
+				attributeState("default", action: "setTemperature")
+			}
+			tileAttribute("device.thermostatOperatingState", key: "OPERATING_STATE") {
+				attributeState("idle", backgroundColor:"#44b621")
+				attributeState("heating", backgroundColor:"#ffa81e")
+				attributeState("cooling", backgroundColor:"#269bd2")
+			}
+			tileAttribute("device.thermostatMode", key: "THERMOSTAT_MODE") {
+				attributeState("off", label:'${name}')
+				attributeState("heat", label:'${name}')
+				attributeState("cool", label:'${name}')
+				attributeState("auto", label:'${name}')
+			}
+			tileAttribute("device.heatingSetpoint", key: "HEATING_SETPOINT") {
+				attributeState("default", label:'${currentValue}', unit:"dF")
+			}
+			tileAttribute("device.coolingSetpoint", key: "COOLING_SETPOINT") {
+				attributeState("default", label:'${currentValue}', unit:"dF")
+			}
+		}
+
+		valueTile("temperature", "device.temperature", width: 4, height: 4) {
 			state("temperature", label:'${currentValue}°', unit:"F",
 				backgroundColors:[
 					[value: 31, color: "#153591"],
@@ -66,22 +93,22 @@ metadata {
         standardTile("upButtonControl", "device.thermostatSetpoint", inactiveLabel: false, decoration: "flat") {
 			state "setpoint", action:"raiseSetpoint", backgroundColor:"#d04e00", icon:"st.thermostat.thermostat-up"
 		}
-        valueTile("thermostatSetpoint", "device.thermostatSetpoint", width: 1, height: 1, decoration: "flat") {
+        valueTile("thermostatSetpoint", "device.thermostatSetpoint", width: 2, height: 2, decoration: "flat") {
 			state "thermostatSetpoint", label:'${currentValue}'
 		}
-		valueTile("currentStatus", "device.thermostatStatus", height: 1, width: 2, decoration: "flat") {
+		valueTile("currentStatus", "device.thermostatStatus", height: 2, width: 4, decoration: "flat") {
 			state "thermostatStatus", label:'${currentValue}', backgroundColor:"#ffffff"
 		}    
 		standardTile("downButtonControl", "device.thermostatSetpoint", inactiveLabel: false, decoration: "flat") {
 			state "setpoint", action:"lowerSetpoint", backgroundColor:"#d04e00", icon:"st.thermostat.thermostat-down"
 		}        
-		controlTile("heatSliderControl", "device.heatingSetpoint", "slider", height: 1, width: 2, inactiveLabel: false) {
+		controlTile("heatSliderControl", "device.heatingSetpoint", "slider", height: 2, width: 4, inactiveLabel: false) {
 			state "setHeatingSetpoint", action:"thermostat.setHeatingSetpoint", backgroundColor:"#d04e00"
 		}
 		valueTile("heatingSetpoint", "device.heatingSetpoint", inactiveLabel: false, decoration: "flat") {
 			state "heat", label:'${currentValue}° heat', unit:"F"
 		}
-		controlTile("coolSliderControl", "device.coolingSetpoint", "slider", height: 1, width: 2, inactiveLabel: false) {
+		controlTile("coolSliderControl", "device.coolingSetpoint", "slider", height: 2, width: 4, inactiveLabel: false) {
 			state "setCoolingSetpoint", action:"thermostat.setCoolingSetpoint", backgroundColor: "#1e9cbb"
 		}
 		valueTile("coolingSetpoint", "device.coolingSetpoint", inactiveLabel: false, decoration: "flat") {
@@ -93,7 +120,7 @@ metadata {
 		standardTile("resumeProgram", "device.resumeProgram", inactiveLabel: false, decoration: "flat") {
 			state "resume", label:'Resume Program', action:"device.resumeProgram", icon:"st.sonos.play-icon"
 		}
-		main "temperature"
+		main "thermostatMulti"
         details(["temperature", "upButtonControl", "thermostatSetpoint", "currentStatus", "downButtonControl", "mode", "resumeProgram", "refresh"])
 	}
 
