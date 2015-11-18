@@ -20,7 +20,7 @@ definition(
 	namespace: "trentfoley64",
 	author: "A. Trent Foley",
 	description: "Control devices with buttons like the Aeon Labs Minimote with dimming",
-	category: "My Apps",
+	category: "Convenience",
 	iconUrl: "https://s3.amazonaws.com/smartapp-icons/MyApps/Cat-MyApps.png",
 	iconX2Url: "https://s3.amazonaws.com/smartapp-icons/MyApps/Cat-MyApps@2x.png"
 )
@@ -46,10 +46,6 @@ def selectButton() {
 			input "buttonDevice", "capability.button", title: "Button", multiple: false, required: true
 		}
         
-        section(title: "Dimmer Mode", hidden: hideOptionsSection(), hideable: true) {
-        	input "dimmerMode", "enum", title: "What to do if already turned on?", required: true, options: ["Toggle", "Level"]
-        }
-
 		section(title: "More options", hidden: hideOptionsSection(), hideable: true) {
 
 			def timeLabel = timeIntervalLabel()
@@ -88,13 +84,19 @@ def getButtonSections(buttonNumber) {
 			input "lights_${buttonNumber}_pushed", "capability.switch", title: "Pushed", multiple: true, required: false
 			input "lights_${buttonNumber}_held", "capability.switch", title: "Held", multiple: true, required: false
 		}
-		section("Dimmers") {
-			input "dimmers_${buttonNumber}_pushed", "capability.switchLevel", title: "Pushed", multiple: true, required: false
-			input "switchLevel_${buttonNumber}_pushed", "enum", title: "Pushed Level", \
+        section("Dimmers when Pushed") {
+			input "dimmers_${buttonNumber}_pushed", "capability.switchLevel", title: "Dimmers", multiple: true, required: false
+			input "switchLevel_${buttonNumber}_pushed", "enum", title: "Brightness Level",
 				options: ["7%", "10%", "20%", "25%", "30%", "50%", "75%", "100%"], required: false
-			input "dimmers_${buttonNumber}_held", "capability.switchLevel", title: "Held", multiple: true, required: false
-			input "switchLevel_${buttonNumber}_held", "enum", \
-				options: ["7%", "10%", "20%", "25%", "30%", "50%", "75%", "100%"], title: "Held Level", required: false
+        	input "dimmerMode_${buttonNumber}_pushed", "enum", title: "What to do if already turned on?", required: false,
+            	options: ["Toggle", "Set Level"]
+        }        
+        section("Dimmers when Held") {
+			input "dimmers_${buttonNumber}_held", "capability.switchLevel", title: "Dimmers", multiple: true, required: false
+			input "switchLevel_${buttonNumber}_held", "enum",
+				options: ["7%", "10%", "20%", "25%", "30%", "50%", "75%", "100%"], title: "Brightness Level", required: false
+        	input "dimmerMode_${buttonNumber}_held", "enum", title: "What to do if already turned on?", required: false,
+            	options: ["Toggle", "Set Level"]
 		}
 		section("Locks") {
 			input "locks_${buttonNumber}_pushed", "capability.lock", title: "Pushed", multiple: true, required: false
@@ -204,7 +206,8 @@ def executeHandlers(buttonNumber, value) {
 	
 	def dimmers = find('dimmers', buttonNumber, value)
 	def switchLevel = find('switchLevel', buttonNumber, value)
-	if (dimmers != null) switchLevel ? toggle(dimmers,switchLevel) : toggle(dimmers)
+    def dimmerMode = find('dimmerMode', buttonNumber, value)
+	if ((dimmers != null) && (dimmerMode != null)) switchLevel ? toggle(dimmers,switchLevel,dimmerMode) : toggle(dimmers)
 
 	def locks = find('locks', buttonNumber, value)
 	if (locks != null) toggle(locks)
@@ -250,14 +253,14 @@ def findMsg(type, buttonNumber) {
 	return pref
 }
 
-def toggle(devices,switchLevel) {
-	log.debug "toggle: $devices = ${devices*.currentValue('switch')}, switchLevel: $switchLevel, switchLevel: ${devices*.currentValue('switchLevel')}, dimmerMode: ${dimmermode}"
+def toggle(devices,switchLevel,dimmerMode) {
+	log.debug "toggle: $devices: switch=${devices*.currentValue('switch')}, switchLevel=${devices*.currentValue('switchLevel')}; parms: switchLevel=${switchLevel}, dimmerMode=${dimmerMode}"
 
 	if (devices*.currentValue('switch').contains('on') || !devices*.currentValue('switchLevel')) {
     	if (dimmerMode.equals('Toggle')) {
 			devices.off()
         }
-        else if (dimmerMode.equals('Level')) {
+        else if (dimmerMode.equals('Set Level')) {
 			switchLevel ? devices.setLevel( new Integer(switchLevel.substring(0,switchLevel.length()-1))) : devices.on()
         }
 	}
