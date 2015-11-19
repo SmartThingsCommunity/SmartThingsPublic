@@ -117,12 +117,7 @@ metadata {
             ]
 		}
    
-		standardTile("thermostatOperatingState", "device.thermostatOperatingState", inactiveLabel: false, decoration: "flat", width: 2, height: 2) {
-			state "idle", action:"polling.poll", label:'${name}', icon: "st.Home.home18"
-			state "heating", action:"polling.poll", label:'${name}', icon: "st.Home.home1"
-		}
-        
-        standardTile("thermostatOperatingState", "device.thermostatOperatingState", inactiveLabel: false, decoration: "flat") {
+        standardTile("thermostatOperatingState", "device.thermostatOperatingState", inactiveLabel: false, decoration: "flat", width: 2, height: 2) {
 			state "idle", action:"polling.poll", label:'${name}', icon: "st.sonos.pause-icon"
 			state "heating", action:"polling.poll", label:'  ', icon: "st.thermostat.heating", backgroundColor:"#bc2323"
 		}
@@ -134,9 +129,21 @@ metadata {
 			state("heat", action:"thermostat.auto", icon: "st.thermostat.heat")
 		}
 
-		standardTile("refresh", "device.thermostatMode", inactiveLabel: false, decoration: "flat", width: 2, height: 2) {
+		standardTile("refresh", "device.refresh", inactiveLabel: false, decoration: "flat", width: 2, height: 2) {
 			state("default", label:'refresh', action:"polling.poll", icon:"st.secondary.refresh-icon")
 		}
+        
+        standardTile("mode_auto", "device.mode_auto", inactiveLabel: false, decoration: "flat", width: 2, height: 2) {
+        	state "default", action:"auto", icon:"st.thermostat.auto"
+    	}
+        
+        standardTile("mode_manual", "device.mode_manual", inactiveLabel: false, decoration: "flat", width: 2, height: 2) {
+        	state "default", action:"heat", icon:"st.thermostat.heat"
+   	 	}
+        
+        standardTile("mode_off", "device.mode_off", inactiveLabel: false, decoration: "flat", width: 2, height: 2) {
+        	state "default", action:"off", icon:"st.thermostat.heating-cooling-off"
+   	 	}
 
 		main(["temperature", "thermostatOperatingState"])
 
