@@ -39,20 +39,15 @@ cards {
 }
 
 def whitelist() {
-	["code.jquery.com", "ajax.googleapis.com", "code.highcharts.com", "enertalk-card.encoredtech.com"]
+	["code.jquery.com", "ajax.googleapis.com", "code.highcharts.com", "enertalk-card.encoredtech.com", "s3-ap-northeast-1.amazonaws.com", "ui-hub.encoredtech.com"]
 }
 
 mappings {
 	path("/requestCode") { action: [ GET: "requestCode" ] }
 	path("/receiveToken") { action: [ GET: "receiveToken"] }
     path("/getHtml") { action: [GET: "getHtml"] }
-    path("/consoleLog") {
-        action: [POST: "consoleLog"]
-    }
-    
-    path("/getInitialData") {
-        action: [GET: "getInitialData"]
-    }
+    path("/consoleLog") { action: [POST: "consoleLog"]}
+    path("/getInitialData") { action: [GET: "getInitialData"]}
 }
 
 
@@ -155,7 +150,7 @@ def receiveToken(){
     def header = [Authorization: authorization, contentType: "application/json"]
     def body = [grant_type: "authorization_code", code: params.code]
 	
-    def encoredTokenParams = makeParams(uri, header, body)
+    def encoredTokenParams = makePostParams(uri, header, body)
 	log.debug encoredTokenParams
     
     def encoredTokens = getHttpPostJson(encoredTokenParams)
@@ -187,7 +182,37 @@ def updated() {
 	log.debug "Updated with settings: ${settings}"
 
 	unsubscribe()
-	initialize()
+	if(settings.contractType == "Low voltage"){
+    	settings.contractType = 1
+    } else {
+    	settings.contractType = 2
+    }
+    
+    def theDay = 1
+    for(def i=1; i < 28; i++) {
+    	if ("${i}st day of the month" == settings.meteringDate || 
+        	"${i}nd day of the month" == settings.meteringDate || 
+        	"${i}rd day of the month" == settings.meteringDate || 
+        	"${i}th day of the month" == settings.meteringDate) {
+            
+        	theDay = i
+            i = 28
+            
+        } else if ("Rest of the month" == settings.meteringDate) {
+        	theDay = 27
+            i = 28
+        }
+        
+    }
+    
+    def configurationParam = makePostParams("http://api.encoredtech.com/1.2/me",
+                                      [Authorization: "Bearer ${atomicState.encoredAccessToken}"],
+                                      [contractType: settings.contractType, 
+                                       meteringDay: theDay ])
+    getHttpPutJson(configurationParam)
+                                            
+    
+	//initialize()
 }
 
 def initialize() {
@@ -244,27 +269,6 @@ def setSummary() {
 }
 
 // TODO: implement event handlers
-
-private getHttpPostJson(param) {
-	def jsonMap = null
-   try {
-       httpPostJson(param) { resp ->
-           jsonMap = resp.data
-       }
-    } catch(groovyx.net.http.HttpResponseException e) {
-    	log.error "HTTP Post Error : ${e}"
-    }
-    
-    return jsonMap
-}
-
-private makeParams(uri, header, body=[]) {
-	return [
-    	uri : uri,
-        headers : header,
-        body : body
-    ]
-}
 
 private buildRedirectUrl(mappingPath) {
 	log.debug "In buildRedirectUrl : /${mappingPath}"
@@ -368,47 +372,221 @@ private connectionStatus(message) {
 }
 
 private refreshAuthToken() {
-	log.debug "refreshing auth token"
-	log.debug "atomicState $atomicState"
+
 	if(!atomicState.encoredRefreshToken) {
-		log.warn "Can not refresh OAuth token since there is no refreshToken stored"
+		log.error "Can not refresh OAuth token since there is no refreshToken stored"
 	} else {
-		def au = "Basic " + "${appSettings.clientId}:${appSettings.clientSecret}".bytes.encodeBase64()
-		def refreshParams = [
-				method: 'POST',
-				uri   : "http://enertalk-auth.encoredtech.com",
-                headers : [Authorization: au],
-				path  : "/token",
-				body : [grant_type: 'refresh_token', refresh_token: "${atomicState.encoredRefreshToken}"],
-		]
+    
+    	def authorization = "Basic " + "${appSettings.clientId}:${appSettings.clientSecret}".bytes.encodeBase64()
+    	def refreshParam = makePostParams("http://enertalk-auth.encoredtech.com/token",
+        									[Authorization: authorization],
+                                            [grant_type: 'refresh_token', refresh_token: "${atomicState.encoredRefreshToken}"])
         
-        def token
-        httpPost(refreshParams) { resp ->
-            token = resp.data
+        def newAccessToken = getHttpPostJson(refreshParam)
+        
+        if (newAccessToken) {
+        	atomicState.encoredAccessToken = newAccessToken.access_token
+        } else {
+        	log.error "Was unable to renew access token. Please check your refresh token."
         }
-        atomicState.encoredAccessToken = token.access_token
     }
 }
 
-def consoleLog() {
-    // If this endpoint were set up to work with a GET request,
-    // we would get the params using the `params` object:
-    // log.debug "console log: ${params.str}"
+private makePostParams(uri, header, body=[]) {
+	return [
+    	uri : uri,
+        headers : header,
+        body : body
+    ]
+}
 
-    // PUT/POST parameters come in on the request body as JSON.
+private getHttpPutJson(param) {
+
+	try {
+       httpPut(param) { resp ->
+ 			log.debug "HTTP Put Success"
+       }
+    } catch(groovyx.net.http.HttpResponseException e) {
+    	log.warn "HTTP Put Error : ${e}"
+    }
+}
+
+private getHttpPostJson(param) {
+   def jsonMap = null
+   try {
+       httpPost(param) { resp ->
+           jsonMap = resp.data
+       }
+    } catch(groovyx.net.http.HttpResponseException e) {
+    	log.warn "HTTP Post Error : ${e}"
+    }
+    
+    return jsonMap
+}
+
+private makeGetParams(uri, headers, path="") {
+	return [
+    	uri : uri,
+        path : path,
+        headers : headers
+    ]
+}
+
+private getHttpGetJson(param) {
+	
+   def jsonMap = null
+   try {
+       httpGet(param) { resp ->
+           jsonMap = resp.data
+       }
+    } catch(groovyx.net.http.HttpResponseException e) {
+    	log.debug param
+    	log.warn "HTTP Get Error : ${e}"
+    }
+    
+    return jsonMap
+
+}
+
+def getInitialData() {
+	def deviceStatusData, standbyData, meData, meteringData, rankingData
+	def deviceStatus, standby, plan, start, end, meteringDay, meteringUsage, percent, tier, meteringPeriodBill = false
+    def maxLimitUsageBill = 0
+    def displayUnit = "watt"
+    /* make a parameter to validate the Encored access token */
+    def verifyParam = makeGetParams("http://enertalk-auth.encoredtech.com/verify", 
+    							[Authorization: "Bearer ${atomicState.encoredAccessToken}", ContentType: "application/json"])
+    /* check the validation */
+    def verified = getHttpGetJson(verifyParam)
+    
+    log.debug "verified : ${verified}"
+    
+    /* if Encored Access Token need to be renewed. */
+    if (!verified) {
+    	try {
+        	refreshAuthToken()
+            
+            /* Recheck the renewed Encored access token. */
+    		verifyParam.headers = [Authorization: "Bearer ${atomicState.encoredAccessToken}"]
+    		verified = getHttpGetJson(verifyParam)
+            
+        } catch (groovyx.net.http.HttpResponseException e) {
+        	/* If refreshing token raises an error  */
+        	log.warn "Refresh Token Error :  ${e}"
+        }
+    }
+    
+    /* call other apis */
+    if (verified) {
+    	def deviceStatusParam = makeGetParams( "http://api.encoredtech.com/1.2/devices/${atomicState.uuid}/status",
+        										[Authorization: "Bearer ${atomicState.encoredAccessToken}", ContentType: "application/json"])
+        
+        deviceStatusData = getHttpGetJson(deviceStatusParam)
+        
+        def standbyParam = makeGetParams( "http://api.encoredtech.com/1.2/devices/${atomicState.uuid}/standbyPower",
+        									[Authorization: "Bearer ${atomicState.encoredAccessToken}", ContentType: "application/json"])
+                                            
+        standbyData = getHttpGetJson(standbyParam)
+        
+        def meParam = makeGetParams( "http://api.encoredtech.com/1.2/me",
+        							[Authorization: "Bearer ${atomicState.encoredAccessToken}", ContentType: "application/json"])
+        
+        meData = getHttpGetJson(meParam)
+        
+        def meteringParam = makeGetParams( "http://api.encoredtech.com/1.2/devices/${atomicState.uuid}/meteringUsage",
+        									[Authorization: "Bearer ${atomicState.encoredAccessToken}", ContentType: "application/json"])
+                                            
+        meteringData = getHttpGetJson(meteringParam)
+        
+        def rankingParam = makeGetParams( "http://api.encoredtech.com/1.2/ranking/usages/${atomicState.uuid}?state=current&period=monthly",
+        									[Authorization: "Bearer ${atomicState.encoredAccessToken}", ContentType: "application/json"])
+                                            
+        rankingData = getHttpGetJson(rankingParam)
+        
+        /* compute the values that will be used in web view. */
+        
+        if (deviceStatusData) {
+        	if (deviceStatusData.status == "NORMAL") {
+            	deviceStatus = true
+            }
+        }
+        
+        if (standbyData) {
+        	if (standbyData.standbyPower) {
+            	standby = (standbyData.standbyPower / 1000)
+            }
+        }
+        
+        if (meData) {
+        	if (meData.maxLimitUsageBill) {
+            	maxLimitUsageBill = meData.maxLimitUsageBill
+            }
+        }
+        
+        if (meteringData) {
+        	if (meteringData.meteringPeriodBill) {
+            	meteringPeriodBill = meteringData.meteringPeriodBill
+            	plan = maxLimitUsageBill - meteringData.meteringPeriodBill
+                start = meteringData.meteringStart
+                end = meteringData.meteringEnd
+                meteringDay = meteringData.meteringDay
+                meteringUsage = meteringData.meteringPeriodUsage
+                tier = ((int) (meteringData.meteringPeriodUsage / 100000000) + 1)
+                if(tier > 6) {
+                	tier = 6
+                }
+                
+            } 
+        }
+
+        if (rankingData) {
+        	if (rankingData.user.ranking) {
+            	percent = ((int)((rankingData.user.ranking / rankingData.user.population) * 10))
+                if (percent > 10) {
+                	percent = 10
+                }
+            }
+        }
+        
+    } else {
+    	/* If it finally, couldn't get Encored access token. */
+    	log.error "Cannot get Encored Access Token. Please try later."
+    }
+    
+   	if (settings.displayUnit == "WON(₩)") {
+    	displayUnit = "bill"
+    }
+   	[
+   auth           : "f247a7005e3f152d23317abaf1e9351d1ceb034039065e194cf5bfc71ade965060919f64eb02a8ff2e5784aa66c8768fac902f47c96d454b2c13b74c428ac1c4", 
+   deviceState    : deviceStatus, 
+   standbyPower   : standby,
+   plan           : plan,
+   start          : start,
+   end            : end,
+   meteringDate   : meteringDay,
+   percent        : percent,
+   tier           : tier,
+   meteringPeriodBill      : meteringPeriodBill,
+   displayUnit    : displayUnit
+   ]
+}
+
+def consoleLog() {
     log.debug "console log: ${request.JSON.str}"
 }
 
 def getHtml() {
-	log.debug "getHtml in here"
+
     renderHTML() {
         head {
         """
         <meta name="viewport" content="initial-scale=1, maximum-scale=1, user-scalable=no, width=device-width, height=device-height">
         <script src="https://ajax.googleapis.com/ajax/libs/jquery/1.11.3/jquery.min.js"></script>
-        <script src="http://code.highcharts.com/highcharts.js"></script>
-        <script src="http://enertalk-card.encoredtech.com/sdk.js"></script>
         
+        <script src="https://cdnjs.cloudflare.com/ajax/libs/webcomponentsjs/0.7.18/webcomponents-lite.min.js"></script>
+        <script src="${buildResourceUrl('javascript/sdk.js')}"></script>
+        
+        <link href='http://fonts.googleapis.com/css?family=Roboto' rel='stylesheet' type='text/css'>
         <link rel="stylesheet" href="${buildResourceUrl('css/app.css')}" type="text/css" media="screen"/>
         <script type="text/javascript" src="${buildResourceUrl('javascript/app.js')}"></script>
         """
@@ -416,166 +594,131 @@ def getHtml() {
         body {
         """
          <div id="real-time">
-    <div id="my-card">
-    </div>
-    
-    <div class="first-row">
-      <div class="scope1">
-        <div class="content" id="content1">
-          <span class="words" align="center">
-            <br/>
-            This Month
-            <br/><br/><br/>
-            won 25,960
-            <br/><br/>
-            342kwh
-          </span>
-        </div>
-      </div>
+         
+            <!-- real-time card -->
+            <div id="my-card"></div>
 
-      <div class="scope1">
-        <div class="content" id="content2">
-          <span class="words" align="center">
-            <br/>
-            Last Month
-            <br/><br/><br/>
-            won 5,270
-            <br/><br/>
-            55.54kwh
-          </span>
-        </div>
-      </div>  
-    </div>
+            <!-- this month section -->
+            <div class="contents head" id="content1">
+              <p class="key" id="korean-this">This Month</p>
+              <span class="value-block">
+                <p class="unit first" id="unit-first-this"></p>
+                <p class="value" id="value-this">analyzing...</p>
+                <p class="unit second" id ="unit-second-this"></p>
+              </span> 
+            </div>
 
-    <div class="second-row">
-      <div class="scope2">
-        <div class="content" id="content3">
-          <span class="words" align="center">
-            Rates
-            <br /><br />
-            Tier 3
-          </span>
-        </div>
-      </div>
+            <!-- Billing Tier section -->
+            <div class="contents tail" id="content2">
+              <p class="key" id="korean-tier">Billing Tier</p>
+              <span class="value-block">
+              	<div id="value-block-tier"></div>
+                <p class="value" id="value-tier">analyzing...</p>
+              </span>
+            </div>  
 
-      <div class="scope2">
-        <div class="content" id="content4">
-          <span class="words" align="center">
-            Ranking
-            <br /><br />
-            32nd out of 100 homes
-          </span>
-        </div>
-      </div>
+            <!-- Plan section -->
+            <div class="contents tail" id="content3">
+              <p class="key" id="korean-plan">Plan</p>
+              <span class="value-block">
+                <p class="unit first" id="unit-first-plan"></p>
+                <p class="value" id="value-plan">set up plan</p>
+                <p class="unit second" id="unit-second-plan"></p> 
+              </span>
+            </div>
 
-      <div class="scope2">
-        <div class="content" id="content5">
-          <span class="words" align="center">
-            Plan
-            <br /><br />
-            won 40,000 <br />
-            won 25,960 <br />
-            22 days
-          </span>
-        </div>
-      </div> 
-    </div>
-    
-    <div class="third-row">
-      <div class="scope2">
-        <div class="content" id="content6">
-          <span class="words" align="center">
-            Standby
-            <br /><br />
-            13 % <br />
-            45.2 W
-          </span>
-        </div>
-      </div>
-    </div>
-    
-  </div>
+            <!-- Last Month section -->
+            <div class="contents tail" id="content4">
+              <p class="key" id="korean-last">Last Month</p>
+              <span class="value-block">
+                <p class="unit first" id="unit-first-last"></p>
+                <p class="value" id="value-last">no records</p>
+              </span>
+            </div>
 
-  <div id="this-month">
-    <div class="card-header">
-      <p class="title">This Month</p>
-      <button class="show" id="show">X</button>
-    </div>
-    <div id="my-card2"></div>
-    <div id="my-card3"></div>
-  </div>
-  
-  <div id="last-month">
-    <div class="card-header">
-      <p class="title">Last Month</p>
-      <button class="show" id="show2">X</button>
-    </div>
-    <div id="my-card4"></div>
-  </div>
-  
-  <div id="progressive-step">
-    <div class="card-header">
-      <p class="title">Progressive step</p>
-      <button class="show" id="show3">X</button>
-    </div>
-    <div id="my-card5"></div>
-  </div>
-  
-  <div id="ranking">
-    <div class="card-header">
-      <p class="title">Ranking</p>
-      <button class="show" id="show4">X</button>
-    </div>
-    <div id="my-card6"></div>
-  </div>
-    
-  <div id="plan">
-    <div class="card-header">
-      <p class="title">Plan</p>
-      <button class="show" id="show5">X</button>
-    </div>
-    <div id="my-card7"></div>
-    <div id="my-card9"></div>
-  </div>
-  
-  <div id="standby">
-    <div class="card-header">
-      <p class="title">Standby</p>
-      <button class="show" id="show6">X</button>
-    </div>
-    <div id="my-card8"></div>
-  </div>
+            <!-- Ranking section -->
+            <div class="contents tail" id="content5">
+              <p class="key" id="korean-ranking">Ranking</p>
+              <span class="value-block">
+              <div id="value-block-rank"></div>
+              <p class="value" id="value-last">analyzing...</p>
+              </span>
+            </div> 
+
+            <!-- Standby section -->
+            <div class="contents tail" id="content6">
+              <p class="key" id="korean-standby">Standby</p>
+              <span class="value-block">
+                <p class="value" id="value-standby">analyzing...</p>
+                <p class="unit third" id="unit-third-standby"><p>
+              </span>
+            </div>
+
+            <!-- Device status section -->
+            <div class="contents tail" id="content7">
+              <p class="key">Energy Monitor Device</p>
+              <span class="value-block">
+                <div class="circle" ></div>
+                <p class="value last" id="value-ON-OFF">ON</p>
+              </span>
+            </div>
+
+
+          </div>
+
+          <!-- hidden section!! -->
+
+		  <div id="this-month">
+            <div class="card-header">
+              <p class="st-title" id="korean-title-this">This Month</p>
+              <button class="st-show" id="show">X</button>
+            </div>
+            <div class="cards" id="my-card2"></div>
+            <div class="cards" id="my-card3"></div>
+          </div>
+
+          <div id="last-month">
+            <div class="card-header">
+              <p class="st-title" id="korean-title-last">Last Month</p>
+              <button class="st-show" id="show2">X</button>
+            </div>
+            <div class="cards" id="my-card4"></div>
+          </div>
+
+          <div id="progressive-step">
+            <div class="card-header">
+              <p class="st-title" id="korean-title-tier">Billing Tier</p>
+              <button class="st-show" id="show3">X</button>
+            </div>
+            <div class="cards" id="my-card5"></div>
+          </div>
+
+          <div id="ranking">
+            <div class="card-header">
+              <p class="st-title" id="korean-title-ranking">Ranking</p>
+              <button class="st-show" id="show4">X</button>
+            </div>
+            <div class="cards" id="my-card6"></div>
+          </div>
+
+          <div id="plan">
+            <div class="card-header">
+              <p class="st-title" id="korean-title-plan">Plan</p>
+              <button class="st-show" id="show5">X</button>
+            </div>
+            <div class="cards" id="my-card7"></div>
+          </div>
+
+          <div id="standby">
+            <div class="card-header">
+              <p class="st-title" id="korean-title-standby">Standby</p>
+              <button class="st-show" id="show6">X</button>
+            </div>
+            <div class="cards" id="my-card8"></div>
+          </div>
+
 
         """
         }
     }
-}
-
-def getInitialData() {
-	log.debug "in getInitialData"
-    
-    def eParams = [
-            uri: "http://enertalk-auth.encoredtech.com/verify",
-            path: "",
-            headers : [Authorization: "Bearer ${atomicState.encoredAccessToken}", ContentType: "application/json"]
-		]
-	log.debug "sending http get request."
-    
-    def token
-    
-    try {
-        httpGet(eParams) { resp ->
-            log.debug "${resp.data}"
-            log.debug "${resp.status}"
-            if(resp.status == 200)
-            {
-                log.debug "token still usable"	
-            }
-    	}
-    } catch (e) {
-    	log.debug "$e"
-        log.debug "Refreshing your auth_token!"
-        refreshAuthToken()
-    }
-   [auth : atomicState.encoredAccessToken]
 }

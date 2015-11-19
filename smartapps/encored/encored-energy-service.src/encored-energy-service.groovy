@@ -39,7 +39,7 @@ cards {
 }
 
 def whitelist() {
-	["code.jquery.com", "ajax.googleapis.com", "code.highcharts.com", "enertalk-card.encoredtech.com"]
+	["code.jquery.com", "ajax.googleapis.com", "code.highcharts.com", "enertalk-card.encoredtech.com", "ui-hub.encoredtech.com"]
 }
 
 mappings {
@@ -376,6 +376,9 @@ def getHtml() {
         """
         <meta name="viewport" content="initial-scale=1, maximum-scale=1, user-scalable=no, width=device-width, height=device-height">
         <script src="https://ajax.googleapis.com/ajax/libs/jquery/1.11.3/jquery.min.js"></script>
+        <!-- test cards import directly -->
+ 		<script src="https://cdnjs.cloudflare.com/ajax/libs/webcomponentsjs/0.7.18/webcomponents-lite.min.js"></script>
+        
         <script src="${buildResourceUrl('javascript/sdk.js')}"></script>
         <link href='http://fonts.googleapis.com/css?family=Roboto' rel='stylesheet' type='text/css'>
         <link rel="stylesheet" href="${buildResourceUrl('css/app.css')}" type="text/css" media="screen"/>
@@ -458,8 +461,8 @@ def getHtml() {
 
   <div id="this-month">
     <div class="card-header">
-      <p class="title" id="korean-title-this">This Month</p>
-      <button class="show" id="show">X</button>
+      <p class="st-title" id="korean-title-this">This Month</p>
+      <button class="st-show" id="show">X</button>
     </div>
     <div class="cards" id="my-card2"></div>
     <div class="cards" id="my-card3"></div>
@@ -467,40 +470,40 @@ def getHtml() {
   
   <div id="last-month">
     <div class="card-header">
-      <p class="title" id="korean-title-last">Last Month</p>
-      <button class="show" id="show2">X</button>
+      <p class="st-title" id="korean-title-last">Last Month</p>
+      <button class="st-show" id="show2">X</button>
     </div>
     <div class="cards" id="my-card4"></div>
   </div>
   
   <div id="progressive-step">
     <div class="card-header">
-      <p class="title" id="korean-title-tier">Billing Tier</p>
-      <button class="show" id="show3">X</button>
+      <p class="st-title" id="korean-title-tier">Billing Tier</p>
+      <button class="st-show" id="show3">X</button>
     </div>
     <div class="cards" id="my-card5"></div>
   </div>
   
   <div id="ranking">
     <div class="card-header">
-      <p class="title" id="korean-title-ranking">Ranking</p>
-      <button class="show" id="show4">X</button>
+      <p class="st-title" id="korean-title-ranking">Ranking</p>
+      <button class="st-show" id="show4">X</button>
     </div>
     <div class="cards" id="my-card6"></div>
   </div>
     
   <div id="plan">
     <div class="card-header">
-      <p class="title" id="korean-title-plan">Plan</p>
-      <button class="show" id="show5">X</button>
+      <p class="st-title" id="korean-title-plan">Plan</p>
+      <button class="st-show" id="show5">X</button>
     </div>
     <div class="cards" id="my-card7"></div>
   </div>
   
   <div id="standby">
     <div class="card-header">
-      <p class="title" id="korean-title-standby">Standby</p>
-      <button class="show" id="show6">X</button>
+      <p class="st-title" id="korean-title-standby">Standby</p>
+      <button class="st-show" id="show6">X</button>
     </div>
     <div class="cards" id="my-card8"></div>
   </div>
@@ -511,7 +514,11 @@ def getHtml() {
 }
 
 def getInitialData() {
+	log.warn "stop this shit"
 	log.debug "in getInitialData"
+    if(0) {
+    	log.debug "0 is not false"
+    }
     
     def eParams = [
             uri: "http://enertalk-auth.encoredtech.com/verify",
@@ -525,7 +532,8 @@ def getInitialData() {
     try {
         httpGet(eParams) { resp ->
             if(resp.status == 200)
-            {
+            {	
+            	log.debug resp.data
                 log.debug "passed... http://enertalk-auth.encoredtech.com/verify"	
             }
     	}
@@ -647,7 +655,7 @@ def getInitialData() {
     //ranking
     
    [
-   auth           : atomicState.authToken, 
+   auth           : "60f0c06c7662c28285bce77016715821f342065a5ca89a9c6657fc67a6efe0177b74ea772fdc8c1bced5cecfd2b9f937d58578ff5b579df247085e413eccddf4", 
    deviceState    : deviceState, 
    standbyPower   : standby,
    plan           : plan,
