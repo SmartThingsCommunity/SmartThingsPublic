@@ -44,6 +44,12 @@
  *  on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the License
  *  for the specific language governing permissions and limitations under the License.
  *
+ *
+ *	VERSION HISTORY
+ *	v1.0 - Initial Release
+ *	v1.1 - Added function buttons to set Hive Heating to Off, Manual or Schedule
+ *	v1.2 - Removed requirement to type in Receiver Nickname from Hive
+ *	v1.3 - Altered temperature colours to match Hive branding (I was bored)
  */
 preferences {
 	input("username", "text", title: "Username", description: "Your Hive username (usually an email address)")
@@ -77,13 +83,13 @@ metadata {
 			tileAttribute("device.temperature", key:"PRIMARY_CONTROL"){
 				attributeState "default", label: '${currentValue}°C', backgroundColors: [
 				// Celsius Color Range
-				[value: 0, color: "#153591"],
-                [value: 7, color: "#1e9cbb"],
-                [value: 15, color: "#90d2a7"],
-                [value: 23, color: "#44b621"],
-                [value: 29, color: "#f1d801"],
-                [value: 33, color: "#d04e00"],
-                [value: 36, color: "#bc2323"]
+				[value: 0, color: "#50b5dd"],
+                [value: 10, color: "#43a575"],
+                [value: 13, color: "#c5d11b"],
+                [value: 17, color: "#f4961a"],
+                [value: 20, color: "#e75928"],
+                [value: 25, color: "#d9372b"],
+                [value: 29, color: "#b9203b"]
 			]}
 
 			main "Thermostat"
@@ -104,13 +110,13 @@ metadata {
 		valueTile("heatingSetpoint", "device.heatingSetpoint", width: 2, height: 2) {
 			state "default", label:'${currentValue}°C', unit:"Heat", 
             backgroundColors:[
-                [value: 0, color: "#153591"],
-                [value: 7, color: "#1e9cbb"],
-                [value: 15, color: "#90d2a7"],
-                [value: 23, color: "#44b621"],
-                [value: 29, color: "#f1d801"],
-                [value: 33, color: "#d04e00"],
-                [value: 36, color: "#bc2323"]
+                [value: 0, color: "#50b5dd"],
+                [value: 10, color: "#43a575"],
+                [value: 13, color: "#c5d11b"],
+                [value: 17, color: "#f4961a"],
+                [value: 20, color: "#e75928"],
+                [value: 25, color: "#d9372b"],
+                [value: 29, color: "#b9203b"]
             ]
 		}
    
@@ -142,7 +148,7 @@ metadata {
         	state "default", action:"off", label:'Off'
    	 	}
 
-		main(["temperature", "thermostatOperatingState"])
+		main(["temperature", "thermostatMode"])
 
 		// ============================================================
 		// Slider or Buttons...
@@ -150,7 +156,7 @@ metadata {
 		// To expose sliders, uncomment the first details line below and comment out the second details line below.
 
 		//details(["heatingSetpointDown", "heatingSetpoint", "heatingSetpointUp", "thermostatMode", "thermostatOperatingState", "refresh"])
-        details(["thermostatMode", "thermostatOperatingState", "refresh", "heatingSetpoint", "heatSliderControl", "mode_auto", "mode_manual", "mode_off"])
+        details(["mode_auto", "mode_manual", "mode_off", "heatingSetpoint", "heatSliderControl", "thermostatMode", "thermostatOperatingState", "refresh"])
 		
 		// ============================================================
 
