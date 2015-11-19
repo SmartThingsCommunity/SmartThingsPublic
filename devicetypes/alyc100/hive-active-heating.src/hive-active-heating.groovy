@@ -47,9 +47,10 @@
  *
  *	VERSION HISTORY
  *	v1.0 - Initial Release
- *	v1.1 - Added function buttons to set Hive Heating to Off, Manual or Schedule
- *	v1.2 - Removed requirement to type in Receiver Nickname from Hive
- *	v1.3 - Altered temperature colours to match Hive branding (I was bored)
+ *	v1.1 - Added function buttons to set Hive Heating to Off, Manual or Schedule.
+ *	v1.2 - Removed requirement to type in Receiver Nickname from Hive.
+ *	v1.3 - Altered temperature colours to match Hive branding (I was bored).
+ *	v1.4 - Enable options for sliders or buttons for temperature control.
  */
 preferences {
 	input("username", "text", title: "Username", description: "Your Hive username (usually an email address)")
@@ -99,13 +100,14 @@ metadata {
 		controlTile("heatSliderControl", "device.heatingSetpoint", "slider", height: 2, width: 4, inactiveLabel: false, range:"(5..32)") {
 			state "setHeatingSetpoint", label:'Set temperature to', action:"setHeatingSetpoint"
 		}
-		//standardTile("heatingSetpointUp", "device.heatingSetpoint", width: 2, height: 2, canChangeIcon: false, inactiveLabel: false, decoration: "flat") {
-		//	state "heatingSetpointUp", label:'  ', action:"heatingSetpointUp", icon:"st.thermostat.thermostat-up", backgroundColor:"#ffffff"
-		//}
+        
+		standardTile("heatingSetpointUp", "device.heatingSetpoint", width: 2, height: 2, canChangeIcon: false, inactiveLabel: false, decoration: "flat") {
+			state "heatingSetpointUp", label:'  ', action:"heatingSetpointUp", icon:"st.thermostat.thermostat-up", backgroundColor:"#ffffff"
+		}
 
-		//standardTile("heatingSetpointDown", "device.heatingSetpoint", width: 2, height: 2, canChangeIcon: false, inactiveLabel: false, decoration: "flat") {
-		//	state "heatingSetpointDown", label:'  ', action:"heatingSetpointDown", icon:"st.thermostat.thermostat-down", backgroundColor:"#ffffff"
-		//}
+		standardTile("heatingSetpointDown", "device.heatingSetpoint", width: 2, height: 2, canChangeIcon: false, inactiveLabel: false, decoration: "flat") {
+			state "heatingSetpointDown", label:'  ', action:"heatingSetpointDown", icon:"st.thermostat.thermostat-down", backgroundColor:"#ffffff"
+		}
 
 		valueTile("heatingSetpoint", "device.heatingSetpoint", width: 2, height: 2) {
 			state "default", label:'${currentValue}°C', unit:"Heat", 
@@ -152,10 +154,10 @@ metadata {
 
 		// ============================================================
 		// Slider or Buttons...
-		// To expose buttons, comment out the first detials line below and uncomment the second details line below.
-		// To expose sliders, uncomment the first details line below and comment out the second details line below.
+		// To expose sliders, comment out the first detials line below and uncomment the second details line below.
+		// To expose buttons, uncomment the first details line below and comment out the second details line below.
 
-		//details(["heatingSetpointDown", "heatingSetpoint", "heatingSetpointUp", "thermostatMode", "thermostatOperatingState", "refresh"])
+		//details(["mode_auto", "mode_manual", "mode_off", "heatingSetpointDown", "heatingSetpoint", "heatingSetpointUp", "thermostatMode", "thermostatOperatingState", "refresh"])
         details(["mode_auto", "mode_manual", "mode_off", "heatingSetpoint", "heatSliderControl", "thermostatMode", "thermostatOperatingState", "refresh"])
 		
 		// ============================================================
