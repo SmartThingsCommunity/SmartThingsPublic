@@ -134,15 +134,15 @@ metadata {
 		}
         
         standardTile("mode_auto", "device.mode_auto", inactiveLabel: false, decoration: "flat", width: 2, height: 2) {
-        	state "default", action:"auto", icon:"st.thermostat.auto"
+        	state "default", action:"auto", label:'Schedule'
     	}
         
         standardTile("mode_manual", "device.mode_manual", inactiveLabel: false, decoration: "flat", width: 2, height: 2) {
-        	state "default", action:"heat", icon:"st.thermostat.heat"
+        	state "default", action:"heat", label:'Manual'
    	 	}
         
         standardTile("mode_off", "device.mode_off", inactiveLabel: false, decoration: "flat", width: 2, height: 2) {
-        	state "default", action:"off", icon:"st.thermostat.heating-cooling-off"
+        	state "default", action:"off", label:'Off'
    	 	}
 
 		main(["temperature", "thermostatOperatingState"])
@@ -153,7 +153,7 @@ metadata {
 		// To expose sliders, uncomment the first details line below and comment out the second details line below.
 
 		//details(["heatingSetpointDown", "heatingSetpoint", "heatingSetpointUp", "thermostatMode", "thermostatOperatingState", "refresh"])
-        details(["heatingSetpoint", "heatSliderControl", "thermostatMode", "thermostatOperatingState", "refresh"])
+        details(["thermostatMode", "thermostatOperatingState", "refresh", "heatingSetpoint", "heatSliderControl", "mode_auto", "mode_manual", "mode_off"])
 		
 		// ============================================================
 
