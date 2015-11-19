@@ -80,7 +80,7 @@ def parse(String description) {
             else if (finalResult.type == "level") {
             	sendEvent(name: "level", value: finalResult.value)
             	sendEvent(name: "levelControl", value: finalResult.value)                
-            	if (finalResult.value == 100) {
+            	if (finalResult.value == 0) {
                 	sendEvent(name: "switch", value: "off")
                 }
                 else {
@@ -98,13 +98,13 @@ def parse(String description) {
 def off() {
 	log.debug "0x${device.deviceNetworkId} Endpoint ${endpointId}"
 	sendEvent(name: "level", value: "100")
-	sendEvent(name: "levelControl", value: "100")
+	sendEvent(name: "levelControl", value: "0")
 	"st cmd 0x${device.deviceNetworkId} ${endpointId} 0x0006 0 {}"
 }
 
 def on() {
 	log.debug "0x${device.deviceNetworkId} Endpoint ${endpointId}"
-	sendEvent(name: "level", value: "0")
+	sendEvent(name: "level", value: "100")
 	sendEvent(name: "levelControl", value: "0")
     "st cmd 0x${device.deviceNetworkId} ${endpointId} 0x0006 1 {}"
 }
