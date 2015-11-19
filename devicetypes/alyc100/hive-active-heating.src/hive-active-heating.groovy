@@ -10,6 +10,7 @@
  *         Polling
  *         Refresh
  *         Temperature Measurement
+ *		   Thermostat
  *         Thermostat Mode
  *         Thermostat Operating State
  *		   Thermostat Heating Setpoint
@@ -58,6 +59,7 @@ metadata {
 		capability "Polling"
 		capability "Refresh"
 		capability "Temperature Measurement"
+        capability "Thermostat"
 		capability "Thermostat Heating Setpoint"
 		capability "Thermostat Mode"
 		capability "Thermostat Operating State"
