@@ -32,8 +32,6 @@
  *     Click on the new device to see the details.
  *     Click the edit button next to Preferences
  *     Fill in your your Hive user name, Hive password.
- *     To find your Receiver nickname, login to http://www.hivehome.com. Click on 'Manage Devices'.
- *     You should see 3 devices including the Hub, Thermostat and Receiver. It is the Receiver nickname you need.
  *
  * 	4. It should be done.
  *
@@ -50,7 +48,6 @@
 preferences {
 	input("username", "text", title: "Username", description: "Your Hive username (usually an email address)")
 	input("password", "password", title: "Password", description: "Your Hive password")
-    input("receiver", "text", title: "Receiver", description: "Your receiver nickname")
 } 
  
 metadata {
@@ -369,9 +366,9 @@ def getNodeId () {
 		log.debug response.headers
         
         response.data.nodes.each {
-        	log.debug "node name $it.name"
-        	if (it.name == settings.receiver)
-            {            	
+        	log.debug "node name $it.name"           
+        	if (it.attributes.supportsHeatCoolModes != null)
+            {   
             	state.nodeid = it.id
             }
         }
