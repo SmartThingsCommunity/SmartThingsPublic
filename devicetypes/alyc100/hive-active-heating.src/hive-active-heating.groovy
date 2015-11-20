@@ -46,15 +46,11 @@
  *
  *
  *	VERSION HISTORY
- * 	(19/11/2015)
  *	v1.0 - Initial Release
  *	v1.1 - Added function buttons to set Hive Heating to Off, Manual or Schedule.
  *	v1.2 - Removed requirement to type in Receiver Nickname from Hive.
  *	v1.3 - Altered temperature colours to match Hive branding (I was bored).
  *	v1.4 - Enable options for sliders or buttons for temperature control.
- *
- *  (20/11/2015)
- *  v1.5 - UI improvements. Status now in text form and shown on top tile.
  */
 preferences {
 	input("username", "text", title: "Username", description: "Your Hive username (usually an email address)")
@@ -97,7 +93,7 @@ metadata {
                 [value: 29, color: "#b9203b"]
 			]}
             tileAttribute ("statusText", key: "SECONDARY_CONTROL") {
-				attributeState "statusText", label:'${currentValue}'
+				attributeState "hiveHeating", label:'${currentValue}'
 			}
 
 			main "Thermostat"
@@ -304,7 +300,7 @@ def poll() {
             statusMsg = statusMsg + " and is IDLE"
         }        
         
-        sendEvent("name":"statusText", "value":statusMsg)
+        sendEvent("name":"hiveHeating", "value":statusMsg)
     }
 }
 
