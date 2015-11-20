@@ -97,7 +97,7 @@ metadata {
                 [value: 25, color: "#d9372b"],
                 [value: 29, color: "#b9203b"]
 			]}
-            tileAttribute ("statusText", key: "SECONDARY_CONTROL") {
+            tileAttribute ("hiveHeating", key: "SECONDARY_CONTROL") {
 				attributeState "hiveHeating", label:'${currentValue}'
 			}
 
@@ -198,7 +198,7 @@ def setHeatingSetpoint(temp) {
             ]
     
 	api('temperature', args) {
-        runIn(3, poll)
+        runIn(4, poll)
 	}
 	
 }
@@ -249,7 +249,7 @@ def setThermostatMode(mode) {
     
 	api('thermostat_mode',  args) {
 		mode = mode == 'range' ? 'auto' : mode
-        runIn(3, poll)
+        runIn(4, poll)
 	}
 }
 
