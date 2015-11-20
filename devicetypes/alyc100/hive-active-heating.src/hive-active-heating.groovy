@@ -46,11 +46,16 @@
  *
  *
  *	VERSION HISTORY
+ *  19.11.2015
  *	v1.0 - Initial Release
  *	v1.1 - Added function buttons to set Hive Heating to Off, Manual or Schedule.
  *	v1.2 - Removed requirement to type in Receiver Nickname from Hive.
  *	v1.3 - Altered temperature colours to match Hive branding (I was bored).
  *	v1.4 - Enable options for sliders or buttons for temperature control.
+ *
+ *	20.11.2015
+ *	v1.5 - Clean up UI and make user friendly status message appear on top panel
+ *  v1.6 - Added icons to control buttons.
  */
 preferences {
 	input("username", "text", title: "Username", description: "Your Hive username (usually an email address)")
@@ -142,15 +147,15 @@ metadata {
 		}
         
         standardTile("mode_auto", "device.mode_auto", inactiveLabel: false, decoration: "flat", width: 2, height: 2) {
-        	state "default", action:"auto", label:'Schedule'
+        	state "default", action:"auto", label:'Schedule', icon:"st.Office.office7"
     	}
         
         standardTile("mode_manual", "device.mode_manual", inactiveLabel: false, decoration: "flat", width: 2, height: 2) {
-        	state "default", action:"heat", label:'Manual'
+        	state "default", action:"heat", label:'Manual', icon:"st.Weather.weather2"
    	 	}
         
         standardTile("mode_off", "device.mode_off", inactiveLabel: false, decoration: "flat", width: 2, height: 2) {
-        	state "default", action:"off", label:'Off'
+        	state "default", action:"off", label:'Off', icon:"st.Seasonal Winter.seasonal-winter-006"
    	 	}
 
 		main(["temperature", "thermostatMode"])
