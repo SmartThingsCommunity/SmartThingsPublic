@@ -154,7 +154,7 @@ metadata {
    	 	}
         
         standardTile("mode_off", "device.mode_off", inactiveLabel: false, decoration: "flat", width: 2, height: 2) {
-        	state "default", action:"off", label:'Off', icon:"st.Seasonal Winter.seasonal-winter-006"
+        	state "default", action:"off", icon:"st.thermostat.heating-cooling-off"
    	 	}
 
 		main(["temperature", "thermostatMode"])
