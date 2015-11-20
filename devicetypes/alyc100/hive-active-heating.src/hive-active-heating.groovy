@@ -55,7 +55,7 @@
  *
  *	20.11.2015
  *	v1.5 - Clean up UI and make user friendly status message appear on top panel
- *  v1.6 - Added icons to control buttons.
+ *  v1.6 - Added icons to control buttons. Increased poll delay time to ensure UI is updated on control press.
  */
 preferences {
 	input("username", "text", title: "Username", description: "Your Hive username (usually an email address)")
