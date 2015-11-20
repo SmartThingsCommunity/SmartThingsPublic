@@ -592,7 +592,7 @@ def updated() {
         	// log.debug "External Id=${app.id}:${member.id}"
        
        		// create the device
-       		def childDevice = addChildDevice("smartthings", "life360-user", "${app.id}.${member.id}",null,[name:member.firstName, completedSetup: true])
+       		def childDevice = addChildDevice("smartthings", "Life360 User", "${app.id}.${member.id}",null,[name:member.firstName, completedSetup: true])
             // childDevice.setMemberId(member.id)
         
         	if (childDevice)
