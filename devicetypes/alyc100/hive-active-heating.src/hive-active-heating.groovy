@@ -46,11 +46,15 @@
  *
  *
  *	VERSION HISTORY
+ * 	(19/11/2015)
  *	v1.0 - Initial Release
  *	v1.1 - Added function buttons to set Hive Heating to Off, Manual or Schedule.
  *	v1.2 - Removed requirement to type in Receiver Nickname from Hive.
  *	v1.3 - Altered temperature colours to match Hive branding (I was bored).
  *	v1.4 - Enable options for sliders or buttons for temperature control.
+ *
+ *  (20/11/2015)
+ *  v1.5 - UI improvements. Status now in text form and shown on top tile.
  */
 preferences {
 	input("username", "text", title: "Username", description: "Your Hive username (usually an email address)")
@@ -81,8 +85,8 @@ metadata {
 	tiles(scale: 2) {
 
 		multiAttributeTile(name: "Thermostat", width: 6, height: 4, type:"thermostat") {
-			tileAttribute("device.temperature", key:"PRIMARY_CONTROL"){
-				attributeState "default", label: '${currentValue}°C', backgroundColors: [
+			tileAttribute("device.temperature", key:"PRIMARY_CONTROL", canChangeBackground: true){
+				attributeState "default", label: '${currentValue}°', unit:"C", backgroundColors: [
 				// Celsius Color Range
 				[value: 0, color: "#50b5dd"],
                 [value: 10, color: "#43a575"],
@@ -92,6 +96,9 @@ metadata {
                 [value: 25, color: "#d9372b"],
                 [value: 29, color: "#b9203b"]
 			]}
+            tileAttribute ("statusText", key: "SECONDARY_CONTROL") {
+				attributeState "statusText", label:'${currentValue}'
+			}
 
 			main "Thermostat"
 			details "Thermostat"
@@ -110,7 +117,7 @@ metadata {
 		}
 
 		valueTile("heatingSetpoint", "device.heatingSetpoint", width: 2, height: 2) {
-			state "default", label:'${currentValue}°C', unit:"Heat", 
+			state "default", label:'${currentValue}°', unit:"C", 
             backgroundColors:[
                 [value: 0, color: "#50b5dd"],
                 [value: 10, color: "#43a575"],
@@ -158,7 +165,7 @@ metadata {
 		// To expose buttons, uncomment the first details line below and comment out the second details line below.
 
 		//details(["mode_auto", "mode_manual", "mode_off", "heatingSetpointDown", "heatingSetpoint", "heatingSetpointUp", "thermostatMode", "thermostatOperatingState", "refresh"])
-        details(["mode_auto", "mode_manual", "mode_off", "heatingSetpoint", "heatSliderControl", "thermostatMode", "thermostatOperatingState", "refresh"])
+        details(["mode_auto", "mode_manual", "mode_off", "heatingSetpoint", "heatSliderControl", "refresh"])
 		
 		// ============================================================
 
@@ -190,7 +197,7 @@ def setHeatingSetpoint(temp) {
             ]
     
 	api('temperature', args) {
-        runIn(2, poll)
+        runIn(3, poll)
 	}
 	
 }
@@ -241,7 +248,7 @@ def setThermostatMode(mode) {
     
 	api('thermostat_mode',  args) {
 		mode = mode == 'range' ? 'auto' : mode
-        runIn(2, poll)
+        runIn(3, poll)
 	}
 }
 
@@ -250,6 +257,9 @@ def poll() {
 	log.debug "Executing 'poll'"
 	api('status', []) {
     	data.nodes = it.data.nodes
+        
+        //Construct status message
+        def statusMsg = "Currently"
         
         // get temperature status
         def temperature = data.nodes.attributes.temperature.reportedValue[0]
@@ -269,9 +279,14 @@ def poll() {
         
         if (activeHeatCoolMode == "OFF") {
         	mode = 'off'
+            statusMsg = statusMsg + " set to OFF"
         }
         else if (activeHeatCoolMode == "HEAT" && activeScheduleLock) {
         	mode = 'heat'
+            statusMsg = statusMsg + " set to MANUAL"
+        }
+        else {
+        	statusMsg = statusMsg + " set to SCHEDULE"
         }
         sendEvent(name: 'thermostatMode', value: mode) 
         
@@ -282,10 +297,14 @@ def poll() {
         
         if (stateHeatingRelay == "ON") {
         	sendEvent(name: 'thermostatOperatingState', value: "heating")
+            statusMsg = statusMsg + " and is HEATING"
         }       
         else {
         	sendEvent(name: 'thermostatOperatingState', value: "idle")
-        }
+            statusMsg = statusMsg + " and is IDLE"
+        }        
+        
+        sendEvent("name":"statusText", "value":statusMsg)
     }
 }
 
