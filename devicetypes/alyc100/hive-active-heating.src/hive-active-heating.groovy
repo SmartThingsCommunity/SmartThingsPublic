@@ -132,13 +132,12 @@ metadata {
    
         standardTile("thermostatOperatingState", "device.thermostatOperatingState", inactiveLabel: false, decoration: "flat", width: 2, height: 2) {
 			state "idle", action:"polling.poll", label:'${name}', icon: "st.sonos.pause-icon"
-			state "heating", action:"polling.poll", label:'  ', icon: "st.thermostat.heating", backgroundColor:"#bc2323"
+			state "heating", action:"polling.poll", label:'  ', icon: "st.thermostat.heating", backgroundColor:"#EC6E05"
 		}
         
         standardTile("thermostatMode", "device.thermostatMode", inactiveLabel: true, decoration: "flat", width: 2, height: 2) {
-			state("auto", action:"thermostat.off", icon: "st.thermostat.auto")
-			state("off", action:"thermostat.cool", icon: "st.thermostat.heating-cooling-off")
-			state("cool", action:"thermostat.heat", icon: "st.thermostat.cool")
+			state("auto", action:"thermostat.off", icon: "st.Office.office7")
+			state("off", action:"thermostat.heat", icon: "st.thermostat.heating-cooling-off")
 			state("heat", action:"thermostat.auto", icon: "st.thermostat.heat")
 		}
 
