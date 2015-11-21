@@ -61,6 +61,7 @@
  *  v1.7 - Fixed issue where 'supportsHeatCoolModes' attribute does not exist.
  *	v1.8 - Changed behaviour when temperature is set when Hive Heating is in off mode to match Hive app behaviour.
  *	v1.9 - Added new Android tile layout option. Requires uncommenting/commenting out lines. Updated behaviour when Hive Heating is in off mode. Altered temperatue precision.
+ *	v1.9.1 - Tweaks to Android layout.
  */
 preferences {
 	input("username", "text", title: "Username", description: "Your Hive username (usually an email address)")
@@ -106,6 +107,19 @@ metadata {
 				attributeState "hiveHeating", label:'${currentValue}'
 			}
 		}
+        
+        valueTile("thermostat_small", "device.temperature", width: 4, height: 4) {
+			state "default", label:'${currentValue}°', unit:"C",
+            backgroundColors:[
+                [value: 0, color: "#50b5dd"],
+                [value: 10, color: "#43a575"],
+                [value: 13, color: "#c5d11b"],
+                [value: 17, color: "#f4961a"],
+                [value: 20, color: "#e75928"],
+                [value: 25, color: "#d9372b"],
+                [value: 29, color: "#b9203b"]
+            ]
+		}
 
 		controlTile("heatSliderControl", "device.heatingSetpoint", "slider", height: 2, width: 4, inactiveLabel: false, range:"(5..32)") {
 			state "setHeatingSetpoint", label:'Set temperature to', action:"setHeatingSetpoint"
@@ -138,9 +152,9 @@ metadata {
 		}
         
         standardTile("thermostatMode", "device.thermostatMode", inactiveLabel: true, decoration: "flat", width: 2, height: 2) {
-			state("auto", action:"thermostat.off", icon: "st.Office.office7")
-			state("off", action:"thermostat.heat", icon: "st.thermostat.heating-cooling-off")
-			state("heat", action:"thermostat.auto", icon: "st.thermostat.heat")
+			state("auto", action:"thermostat.off", label: "SCHEDULED")
+			state("off", action:"thermostat.heat", label: "OFF")
+			state("heat", action:"thermostat.auto", label: "MANUAL")
 		}
 
 		standardTile("refresh", "device.refresh", inactiveLabel: false, decoration: "flat", width: 2, height: 2) {
@@ -166,12 +180,8 @@ metadata {
         standardTile("mode_off", "device.mode_off", inactiveLabel: false, decoration: "flat", width: 2, height: 2) {
         	state "default", action:"off", icon:"st.thermostat.heating-cooling-off"
    	 	}
-        
-        valueTile("statusPanel", "device.hiveHeating", inactiveLabel: true, decoration: "flat", width: 6, height: 2) {
-        	state "default", label:'${currentValue}', backgroundColor:"#ffffff"
-   	 	}
 
-		main(["thermostat", "thermostatMode"])
+		main(["thermostat", "thermostatOperatingState"])
 
 		// ============================================================
 		// iOS TILES
@@ -185,7 +195,7 @@ metadata {
 		// ANDROID TILES
 		// To expose Android optimised tiles, comment out the details line in iOS Tiles section and uncomment details line below.
 		
-		//details(["thermostat", "statusPanel", "mode_auto", "mode_manual", "mode_off", "heatingSetpoint", "heatSliderControl", "refresh"])
+		//details(["thermostat_small", "thermostatOperatingState", "thermostatMode", "mode_auto", "mode_manual", "mode_off", "heatingSetpoint", "heatSliderControl", "refresh"])
 		
 		// ============================================================
 	}
