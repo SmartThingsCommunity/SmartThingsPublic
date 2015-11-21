@@ -64,6 +64,7 @@
  *	v1.9 - Added new Android tile layout option. Requires uncommenting/commenting out lines. Updated behaviour when Hive Heating is in off mode. Altered temperatue precision.
  *	v1.9.1 - Tweaks to Android layout.
  *  v1.9.2 - Tweaks to how set heating point temperature is reported in frost mode.
+ *  v1.9.3 - Improvements to handling temperature setting when in 'off' mode.
  */
 preferences {
 	input("username", "text", title: "Username", description: "Your Hive username (usually an email address)")
@@ -228,17 +229,22 @@ def setHeatingSetpoint(temp) {
 	if (temp > 32) {
 		temp = 32
 	}
+    
 	
+    //if thermostat is off, set to manual    
+   	if (latestThermostatMode.stringValue == 'off') {
+    	def args = [
+        	nodes: [	[attributes: [activeHeatCoolMode: [targetValue: "HEAT"], activeScheduleLock: [targetValue: true]]]]
+            ]
+		api('thermostat_mode',  args) {
+		}    	
+    }
+    
     // {"nodes":[{"attributes":{"targetHeatTemperature":{"targetValue":11}}}]}    
     def args = [
         	nodes: [	[attributes: [targetHeatTemperature: [targetValue: temp]]]]
-            ]
-    
-	api('temperature', args) {
-        //if thermostat is off, set to manual    
-    	if (latestThermostatMode.stringValue == 'off') {
-    		heat()
-    	}
+            ]               
+	api('temperature', args) {        
         runIn(4, poll)   
 	}	
 }
