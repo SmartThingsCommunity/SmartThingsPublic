@@ -160,6 +160,7 @@ def configured() {
 
 def buttonConfigured(idx) {
 	return settings["lights_$idx_pushed"] ||
+    	settings["dimmers_$idx_pushed"] ||
 		settings["locks_$idx_pushed"] ||
 		settings["sonos_$idx_pushed"] ||
 		settings["mode_$idx_pushed"] ||
@@ -204,12 +205,36 @@ def executeHandlers(buttonNumber, value) {
 	log.debug "executeHandlers: $buttonNumber - $value"
 
 	def lights = find('lights', buttonNumber, value)
-	if (lights != null) toggle(lights)
-	
 	def dimmers = find('dimmers', buttonNumber, value)
 	def switchLevel = find('switchLevel', buttonNumber, value)
     def dimmerMode = find('dimmerMode', buttonNumber, value)
-	if ((dimmers != null) && (dimmerMode != null)) switchLevel ? toggle(dimmers,switchLevel,dimmerMode) : toggle(dimmers)
+
+// Need to clean up this code.  It works but is convoluted from evolution.
+// Basically, this code should combine dimmers and lights when figuring out
+// what to do when toggling lights.  If any are on, turn them all off, otherwise
+// turn them on and set levels
+
+    def lightsAreOn = false
+    if (dimmers == null) {
+    	if (lights == null) {
+        	lightsAreOn = false
+        }
+        else {
+        	lightsAreOn = lights.currentValue("switch").contains("on")
+        }
+    }
+    else {
+    	if (lights == null) {
+        	lightsAreOn = dimmers.currentValue("switch").contains("on")
+        }
+        else {
+		    lightsAreOn = (lights+dimmers)*.currentValue("switch").contains("on")
+        }
+    }
+    
+	if (lights != null) toggle(lights,lightsAreOn)
+	
+	if ((dimmers != null) && (dimmerMode != null)) switchLevel ? toggle(dimmers,switchLevel,dimmerMode,lightsAreOn) : toggle(dimmers,lightsAreOn)
 
 	def locks = find('locks', buttonNumber, value)
 	if (locks != null) toggle(locks)
@@ -255,10 +280,12 @@ def findMsg(type, buttonNumber) {
 	return pref
 }
 
-def toggle(devices,switchLevel,dimmerMode) {
-	log.debug "toggle: $devices: switch=${devices*.currentValue('switch')}, switchLevel=${devices*.currentValue('switchLevel')}; parms: switchLevel=${switchLevel}, dimmerMode=${dimmerMode}"
+def toggle(devices,switchLevel,dimmerMode,lightsAreOn) {
+	log.debug "toggle: $devices: switch=${devices*.currentValue('switch')}, switchLevel=${devices*.currentValue('switchLevel')}; parms: switchLevel=${switchLevel}, dimmerMode=${dimmerMode}, lightsAreOn=${lightsAreOn}"
 
-	if (devices*.currentValue('switch').contains('on') || !devices*.currentValue('switchLevel')) {
+// need to clean up this code.  Ugly Ugly Ugly... but it works
+
+	if ((lightsAreOn) || !devices*.currentValue('switchLevel')) {
     	if (dimmerMode.equals('Toggle')) {
 			devices.off()
         }
@@ -266,9 +293,20 @@ def toggle(devices,switchLevel,dimmerMode) {
 			switchLevel ? devices.setLevel( new Integer(switchLevel.substring(0,switchLevel.length()-1))) : devices.on()
         }
 	}
-	else if (devices*.currentValue('switch').contains('off')) {
+	else if (!lightsAreOn) {
     	// if level is undefined, just turn it on.  otherwise, strip off the last char (%) and convert to integer
 		switchLevel ? devices.setLevel( new Integer(switchLevel.substring(0,switchLevel.length()-1))) : devices.on()
+	}
+}
+
+def toggle(devices,lightsAreOn) {
+	log.debug "toggle: $devices = ${devices*.currentValue('switch')}, lightsAreOn: $lightsAreOn"
+
+	if (lightsAreOn) {
+		devices.off()
+	}
+	else {
+		devices.on()
 	}
 }
 
