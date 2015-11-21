@@ -60,6 +60,7 @@
  *	21.11.2015
  *  v1.7 - Fixed issue where 'supportsHeatCoolModes' attribute does not exist.
  *	v1.8 - Changed behaviour when temperature is set when Hive Heating is in off mode to match Hive app behaviour.
+ *	v1.9 - Added new Android tile layout option. Requires uncommenting/commenting out lines. Updated behaviour when Hive Heating is in off mode.
  */
 preferences {
 	input("username", "text", title: "Username", description: "Your Hive username (usually an email address)")
@@ -89,7 +90,7 @@ metadata {
 
 	tiles(scale: 2) {
 
-		multiAttributeTile(name: "Thermostat", width: 6, height: 4, type:"thermostat") {
+		multiAttributeTile(name: "thermostat", width: 6, height: 4, type:"thermostat") {
 			tileAttribute("device.temperature", key:"PRIMARY_CONTROL", canChangeBackground: true){
 				attributeState "default", label: '${currentValue}°', unit:"C", backgroundColors: [
 				// Celsius Color Range
@@ -104,9 +105,6 @@ metadata {
             tileAttribute ("hiveHeating", key: "SECONDARY_CONTROL") {
 				attributeState "hiveHeating", label:'${currentValue}'
 			}
-
-			main "Thermostat"
-			details "Thermostat"
 		}
 
 		controlTile("heatSliderControl", "device.heatingSetpoint", "slider", height: 2, width: 4, inactiveLabel: false, range:"(5..32)") {
@@ -122,7 +120,7 @@ metadata {
 		}
 
 		valueTile("heatingSetpoint", "device.heatingSetpoint", width: 2, height: 2) {
-			state "default", label:'${currentValue}°', unit:"C", 
+			state "default", label:'${currentValue}°', unit:"C",
             backgroundColors:[
                 [value: 0, color: "#50b5dd"],
                 [value: 10, color: "#43a575"],
@@ -134,7 +132,7 @@ metadata {
             ]
 		}
    
-        standardTile("thermostatOperatingState", "device.thermostatOperatingState", inactiveLabel: false, decoration: "flat", width: 2, height: 2) {
+        standardTile("thermostatOperatingState", "device.thermostatOperatingState", inactiveLabel: true, decoration: "flat", width: 2, height: 2) {
 			state "idle", action:"polling.poll", label:'${name}', icon: "st.sonos.pause-icon"
 			state "heating", action:"polling.poll", label:'  ', icon: "st.thermostat.heating", backgroundColor:"#EC6E05"
 		}
@@ -149,6 +147,14 @@ metadata {
 			state("default", label:'refresh', action:"polling.poll", icon:"st.secondary.refresh-icon")
 		}
         
+        standardTile("boost", "device.boost", inactiveLabel: false, decoration: "flat", width: 2, height: 2) {
+			state("default", label:'boost', action:"boost", icon:"st.Home.home30")
+		}
+        
+        standardTile("boost_off", "device.boost", inactiveLabel: false, decoration: "flat", width: 2, height: 2) {
+			state("default", label:'boost off', action:"boost_off", icon:"st.Home.home30")
+		}
+        
         standardTile("mode_auto", "device.mode_auto", inactiveLabel: false, decoration: "flat", width: 2, height: 2) {
         	state "default", action:"auto", label:'Schedule', icon:"st.Office.office7"
     	}
@@ -160,19 +166,28 @@ metadata {
         standardTile("mode_off", "device.mode_off", inactiveLabel: false, decoration: "flat", width: 2, height: 2) {
         	state "default", action:"off", icon:"st.thermostat.heating-cooling-off"
    	 	}
+        
+        valueTile("statusPanel", "device.hiveHeating", inactiveLabel: true, decoration: "flat", width: 6, height: 2) {
+        	state "default", label:'${currentValue}', backgroundColor:"#ffffff"
+   	 	}
 
-		main(["temperature", "thermostatMode"])
+		main(["thermostat", "thermostatMode"])
 
 		// ============================================================
-		// Slider or Buttons...
-		// To expose sliders, comment out the first detials line below and uncomment the second details line below.
-		// To expose buttons, uncomment the first details line below and comment out the second details line below.
-
-		//details(["mode_auto", "mode_manual", "mode_off", "heatingSetpointDown", "heatingSetpoint", "heatingSetpointUp", "thermostatMode", "thermostatOperatingState", "refresh"])
-        details(["mode_auto", "mode_manual", "mode_off", "heatingSetpoint", "heatSliderControl", "refresh"])
+		// iOS TILES
+		// To expose iOS optimised tiles, comment out the details line in Android Tiles section and uncomment details line below.
+		
+		details(["thermostat", "mode_auto", "mode_manual", "mode_off", "heatingSetpoint", "heatSliderControl", "refresh"])
 		
 		// ============================================================
 
+		// ============================================================
+		// ANDROID TILES
+		// To expose Android optimised tiles, comment out the details line in iOS Tiles section and uncomment details line below.
+		
+		//details(["thermostat", "statusPanel", "mode_auto", "mode_manual", "mode_off", "heatingSetpoint", "heatSliderControl", "refresh"])
+		
+		// ============================================================
 	}
 }
 
@@ -187,6 +202,10 @@ def parse(String description) {
 }
 
 // handle commands
+
+def boost() {
+}
+
 def setHeatingSetpoint(temp) {
 	log.debug "Executing 'setHeatingSetpoint with temp $temp'"
 	def latestThermostatMode = device.latestState('thermostatMode')
@@ -202,18 +221,14 @@ def setHeatingSetpoint(temp) {
     def args = [
         	nodes: [	[attributes: [targetHeatTemperature: [targetValue: temp]]]]
             ]
-    //if thermostat is off, set to manual    
-    if (latestThermostatMode.stringValue == 'off') {
-    	
-    	args = [
-        	nodes: [	[attributes: [targetHeatTemperature: [targetValue: temp], activeHeatCoolMode: [targetValue: "HEAT"], activeScheduleLock: [targetValue: true]]]]
-            ]
-    }
     
 	api('temperature', args) {
-        runIn(4, poll)
-	}
-	
+        //if thermostat is off, set to manual    
+    	if (latestThermostatMode.stringValue == 'off') {
+    		heat()
+    	}
+        runIn(4, poll)   
+	}	
 }
 
 def heatingSetpointUp(){
@@ -252,7 +267,7 @@ def setThermostatMode(mode) {
             ]
     if (mode == 'off') {
      	args = [
-        	nodes: [	[attributes: [activeHeatCoolMode: [targetValue: "OFF"]]]]
+        	nodes: [	[attributes: [activeHeatCoolMode: [targetValue: "OFF"], activeScheduleLock: [targetValue: true]]]]
             ]
     } else if (mode == 'heat') {
     	//{"nodes":[{"attributes":{"activeHeatCoolMode":{"targetValue":"HEAT"},"activeScheduleLock":{"targetValue":true}}}]}
@@ -277,7 +292,13 @@ def poll() {
         
         // get temperature status
         def temperature = data.nodes.attributes.temperature.reportedValue[0]
-        def heatingSetpoint = data.nodes.attributes.targetHeatTemperature.reportedValue[0]        
+        def heatingSetpoint = data.nodes.attributes.targetHeatTemperature.reportedValue[0]  
+        
+        // convert temperature reading of 1 degree to 7 as Hive app does
+        log.debug "tempreature: $heatingSetpoint"
+        if (heatingSetpoint == 1.0) {
+        	heatingSetpoint = 7.0
+        }
         
         sendEvent(name: 'temperature', value: temperature, unit: "C", state: "heat")
         sendEvent(name: 'heatingSetpoint', value: heatingSetpoint, unit: "C", state: "heat")
