@@ -56,7 +56,10 @@
  *	20.11.2015
  *	v1.5 - Clean up UI and make user friendly status message appear on top panel
  *  v1.6 - Added icons to control buttons. Increased poll delay time to ensure UI is updated on control press.
- *	v1.7 - Fixed issue where 'supportsHeatCoolModes' attribute does not exist.
+ *
+ *	21.11.2015
+ *  v1.7 - Fixed issue where 'supportsHeatCoolModes' attribute does not exist.
+ *	v1.8 - Changed behaviour when temperature is set when Hive Heating is in off mode to match Hive app behaviour.
  */
 preferences {
 	input("username", "text", title: "Username", description: "Your Hive username (usually an email address)")
@@ -185,17 +188,27 @@ def parse(String description) {
 
 // handle commands
 def setHeatingSetpoint(temp) {
+	log.debug "Executing 'setHeatingSetpoint with temp $temp'"
 	def latestThermostatMode = device.latestState('thermostatMode')
+    
     if (temp < 5) {
 		temp = 5
 	}
 	if (temp > 32) {
 		temp = 32
 	}
-   	// {"nodes":[{"attributes":{"targetHeatTemperature":{"targetValue":11}}}]}
+	
+    // {"nodes":[{"attributes":{"targetHeatTemperature":{"targetValue":11}}}]}    
     def args = [
         	nodes: [	[attributes: [targetHeatTemperature: [targetValue: temp]]]]
             ]
+    //if thermostat is off, set to manual    
+    if (latestThermostatMode.stringValue == 'off') {
+    	
+    	args = [
+        	nodes: [	[attributes: [targetHeatTemperature: [targetValue: temp], activeHeatCoolMode: [targetValue: "HEAT"], activeScheduleLock: [targetValue: true]]]]
+            ]
+    }
     
 	api('temperature', args) {
         runIn(4, poll)
@@ -232,6 +245,7 @@ def auto() {
 }
 
 def setThermostatMode(mode) {
+	log.debug "Executing 'setThermostatMode with mode $mode'"
 	mode = mode == 'emergency heat'? 'heat' : mode  
     def args = [
         	nodes: [	[attributes: [activeHeatCoolMode: [targetValue: "HEAT"], activeScheduleLock: [targetValue: false]]]]
@@ -253,7 +267,6 @@ def setThermostatMode(mode) {
 	}
 }
 
-// handle commands
 def poll() {
 	log.debug "Executing 'poll'"
 	api('status', []) {
