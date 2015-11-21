@@ -1,5 +1,5 @@
 /**
- *  Hive Active Heating
+ *  Hive Active Hot Water
  *
  *  Copyright 2015 Alex Lee Yuk Cheung
  *
@@ -9,22 +9,16 @@
  *     Capabilities:
  *         Polling
  *         Refresh
- *         Temperature Measurement
  *		   Thermostat
  *         Thermostat Mode
- *         Thermostat Operating State
- *		   Thermostat Heating Setpoint
  *
  *     Custom Commands:
  *         setThermostatMode
- *         setHeatingSetpoint
- *         heatingSetpointUp
- *         heatingSetpointDown
  *
  * 	2. Create a new device (https://graph.api.smartthings.com/device/list)
  *     Name: Your Choice
  *     Device Network Id: Your Choice
- *     Type: Hive Active Heating (should be the last option)
+ *     Type: Hive Active Hot Water (should be the last option)
  *     Location: Choose the correct location
  *     Hub/Group: Leave blank
  *
@@ -44,40 +38,24 @@
  *  on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the License
  *  for the specific language governing permissions and limitations under the License.
  *
- *
  *	VERSION HISTORY
- *  19.11.2015
- *	v1.0 - Initial Release
- *	v1.1 - Added function buttons to set Hive Heating to Off, Manual or Schedule.
- *	v1.2 - Removed requirement to type in Receiver Nickname from Hive.
- *	v1.3 - Altered temperature colours to match Hive branding (I was bored).
- *	v1.4 - Enable options for sliders or buttons for temperature control.
- *
- *	20.11.2015
- *	v1.5 - Clean up UI and make user friendly status message appear on top panel
- *  v1.6 - Added icons to control buttons. Increased poll delay time to ensure UI is updated on control press.
- *	v1.7 - Fixed issue where 'supportsHeatCoolModes' attribute does not exist.
+ *  20.11.2015
+ *	v1.0 - Initial Release - There seems to be an issue on the Hive side where the Hot Water Relay status is being reported back incorrectly sometimes.
  */
 preferences {
 	input("username", "text", title: "Username", description: "Your Hive username (usually an email address)")
 	input("password", "password", title: "Password", description: "Your Hive password")
-} 
- 
+}
+
 metadata {
-	definition (name: "Hive Active Heating", namespace: "alyc100", author: "Alex Lee Yuk Cheung") {
+	definition (name: "Hive Active Hot Water", namespace: "alyc100", author: "Alex Lee Yuk Cheung") {
 		capability "Actuator"
 		capability "Polling"
 		capability "Refresh"
-		capability "Temperature Measurement"
         capability "Thermostat"
-		capability "Thermostat Heating Setpoint"
 		capability "Thermostat Mode"
-		capability "Thermostat Operating State"
         
-        command "heatingSetpointUp"
-		command "heatingSetpointDown"
         command "setThermostatMode"
-        command "setHeatingSetpoint"
 	}
 
 	simulator {
@@ -86,59 +64,23 @@ metadata {
 
 	tiles(scale: 2) {
 
-		multiAttributeTile(name: "Thermostat", width: 6, height: 4, type:"thermostat") {
-			tileAttribute("device.temperature", key:"PRIMARY_CONTROL", canChangeBackground: true){
-				attributeState "default", label: '${currentValue}°', unit:"C", backgroundColors: [
-				// Celsius Color Range
-				[value: 0, color: "#50b5dd"],
-                [value: 10, color: "#43a575"],
-                [value: 13, color: "#c5d11b"],
-                [value: 17, color: "#f4961a"],
-                [value: 20, color: "#e75928"],
-                [value: 25, color: "#d9372b"],
-                [value: 29, color: "#b9203b"]
-			]}
-            tileAttribute ("hiveHeating", key: "SECONDARY_CONTROL") {
-				attributeState "hiveHeating", label:'${currentValue}'
+		multiAttributeTile(name: "Hot Water Relay", width: 6, height: 4, type:"generic") {
+			tileAttribute("device.thermostatOperatingState", key:"PRIMARY_CONTROL"){
+				attributeState "heating", icon: "st.thermostat.heat", backgroundColor: "#EC6E05"
+  				attributeState "idle", icon: "st.thermostat.heating-cooling-off", backgroundColor: "#ffffff"
+            }
+            tileAttribute ("hiveHotWater", key: "SECONDARY_CONTROL") {
+				attributeState "hiveHotWater", label:'${currentValue}'
 			}
 
-			main "Thermostat"
-			details "Thermostat"
+			main "Hot Water Relay"
+			details "Hot Water Relay"
 		}
 
-		controlTile("heatSliderControl", "device.heatingSetpoint", "slider", height: 2, width: 4, inactiveLabel: false, range:"(5..32)") {
-			state "setHeatingSetpoint", label:'Set temperature to', action:"setHeatingSetpoint"
-		}
-        
-		standardTile("heatingSetpointUp", "device.heatingSetpoint", width: 2, height: 2, canChangeIcon: false, inactiveLabel: false, decoration: "flat") {
-			state "heatingSetpointUp", label:'  ', action:"heatingSetpointUp", icon:"st.thermostat.thermostat-up", backgroundColor:"#ffffff"
-		}
-
-		standardTile("heatingSetpointDown", "device.heatingSetpoint", width: 2, height: 2, canChangeIcon: false, inactiveLabel: false, decoration: "flat") {
-			state "heatingSetpointDown", label:'  ', action:"heatingSetpointDown", icon:"st.thermostat.thermostat-down", backgroundColor:"#ffffff"
-		}
-
-		valueTile("heatingSetpoint", "device.heatingSetpoint", width: 2, height: 2) {
-			state "default", label:'${currentValue}°', unit:"C", 
-            backgroundColors:[
-                [value: 0, color: "#50b5dd"],
-                [value: 10, color: "#43a575"],
-                [value: 13, color: "#c5d11b"],
-                [value: 17, color: "#f4961a"],
-                [value: 20, color: "#e75928"],
-                [value: 25, color: "#d9372b"],
-                [value: 29, color: "#b9203b"]
-            ]
-		}
-   
-        standardTile("thermostatOperatingState", "device.thermostatOperatingState", inactiveLabel: false, decoration: "flat", width: 2, height: 2) {
-			state "idle", action:"polling.poll", label:'${name}', icon: "st.sonos.pause-icon"
-			state "heating", action:"polling.poll", label:'  ', icon: "st.thermostat.heating", backgroundColor:"#EC6E05"
-		}
-        
         standardTile("thermostatMode", "device.thermostatMode", inactiveLabel: true, decoration: "flat", width: 2, height: 2) {
 			state("auto", action:"thermostat.off", icon: "st.Office.office7")
-			state("off", action:"thermostat.heat", icon: "st.thermostat.heating-cooling-off")
+			state("off", action:"thermostat.cool", icon: "st.thermostat.heating-cooling-off")
+			state("cool", action:"thermostat.heat", icon: "st.thermostat.cool")
 			state("heat", action:"thermostat.auto", icon: "st.thermostat.heat")
 		}
 
@@ -158,17 +100,8 @@ metadata {
         	state "default", action:"off", icon:"st.thermostat.heating-cooling-off"
    	 	}
 
-		main(["temperature", "thermostatMode"])
-
-		// ============================================================
-		// Slider or Buttons...
-		// To expose sliders, comment out the first detials line below and uncomment the second details line below.
-		// To expose buttons, uncomment the first details line below and comment out the second details line below.
-
-		//details(["mode_auto", "mode_manual", "mode_off", "heatingSetpointDown", "heatingSetpoint", "heatingSetpointUp", "thermostatMode", "thermostatOperatingState", "refresh"])
-        details(["mode_auto", "mode_manual", "mode_off", "heatingSetpoint", "heatSliderControl", "refresh"])
-		
-		// ============================================================
+		main(["switch", "thermostatMode"])
+        details(["mode_auto", "mode_manual", "mode_off", "refresh"])
 
 	}
 }
@@ -176,43 +109,27 @@ metadata {
 // parse events into attributes
 def parse(String description) {
 	log.debug "Parsing '${description}'"
-	// TODO: handle 'temperature' attribute
-	// TODO: handle 'heatingSetpoint' attribute
-	// TODO: handle 'thermostatSetpoint' attribute
+	// TODO: handle 'switch' attribute
 	// TODO: handle 'thermostatMode' attribute
-	// TODO: handle 'thermostatOperatingState' attribute
+
 }
 
 // handle commands
 def setHeatingSetpoint(temp) {
-	def latestThermostatMode = device.latestState('thermostatMode')
-    if (temp < 5) {
-		temp = 5
-	}
-	if (temp > 32) {
-		temp = 32
-	}
-   	// {"nodes":[{"attributes":{"targetHeatTemperature":{"targetValue":11}}}]}
-    def args = [
-        	nodes: [	[attributes: [targetHeatTemperature: [targetValue: temp]]]]
-            ]
-    
-	api('temperature', args) {
-        runIn(4, poll)
-	}
-	
+	//Not implemented	
 }
 
 def heatingSetpointUp(){
-	int newSetpoint = device.currentValue("heatingSetpoint") + 1
-	log.debug "Setting heat set point up to: ${newSetpoint}"
-	setHeatingSetpoint(newSetpoint)
+	//Not implemented
 }
 
 def heatingSetpointDown(){
-	int newSetpoint = device.currentValue("heatingSetpoint") - 1
-	log.debug "Setting heat set point down to: ${newSetpoint}"
-	setHeatingSetpoint(newSetpoint)
+	//Not implemented
+}
+
+def on() {
+	log.debug "Executing 'on'"
+	setThermostatMode('heat')
 }
 
 def off() {
@@ -249,27 +166,19 @@ def setThermostatMode(mode) {
     
 	api('thermostat_mode',  args) {
 		mode = mode == 'range' ? 'auto' : mode
-        runIn(4, poll)
+        runIn(3, poll)
 	}
 }
 
-// handle commands
 def poll() {
-	log.debug "Executing 'poll'"
+log.debug "Executing 'poll'"
 	api('status', []) {
     	data.nodes = it.data.nodes
         
         //Construct status message
         def statusMsg = "Currently"
         
-        // get temperature status
-        def temperature = data.nodes.attributes.temperature.reportedValue[0]
-        def heatingSetpoint = data.nodes.attributes.targetHeatTemperature.reportedValue[0]        
-        
-        sendEvent(name: 'temperature', value: temperature, unit: "C", state: "heat")
-        sendEvent(name: 'heatingSetpoint', value: heatingSetpoint, unit: "C", state: "heat")
-        
-        // determine hive operating mode
+        // determine hive hot water operating mode
         def activeHeatCoolMode = data.nodes.attributes.activeHeatCoolMode.reportedValue[0]
         def activeScheduleLock = data.nodes.attributes.activeScheduleLock.targetValue[0]
         
@@ -289,23 +198,23 @@ def poll() {
         else {
         	statusMsg = statusMsg + " set to SCHEDULE"
         }
+        
         sendEvent(name: 'thermostatMode', value: mode) 
         
-        // determine if Hive heating relay is on
-        def stateHeatingRelay = data.nodes.attributes.stateHeatingRelay.reportedValue[0]
+        // determine if Hive hot water relay is on
+        def stateHotWaterRelay = data.nodes.attributes.stateHotWaterRelay.reportedValue[0]
         
-        log.debug "stateHeatingRelay: $stateHeatingRelay"
+        log.debug "stateHotWaterRelay: $stateHotWaterRelay"
         
-        if (stateHeatingRelay == "ON") {
-        	sendEvent(name: 'thermostatOperatingState', value: "heating")
+        if (stateHotWaterRelay == "ON") {
+            sendEvent(name: 'thermostatOperatingState', value: "heating")
             statusMsg = statusMsg + " and is HEATING"
         }       
         else {
-        	sendEvent(name: 'thermostatOperatingState', value: "idle")
+            sendEvent(name: 'thermostatOperatingState', value: "idle")
             statusMsg = statusMsg + " and is IDLE"
-        }        
-        
-        sendEvent("name":"hiveHeating", "value":statusMsg)
+        }
+        sendEvent("name":"hiveHotWater", "value":statusMsg)
     }
 }
 
@@ -325,7 +234,6 @@ def api(method, args = [], success = {}) {
 	log.debug "Using node id: $state.nodeid"
 	def methods = [
 		'status': [uri: "https://api.prod.bgchprod.info:443/omnia/nodes/${state.nodeid}", type: 'get'],
-		'temperature': [uri: "https://api.prod.bgchprod.info:443/omnia/nodes/${state.nodeid}", type: 'put'],
         'thermostat_mode': [uri: "https://api.prod.bgchprod.info:443/omnia/nodes/${state.nodeid}", type: 'put']
 	]
 	
@@ -359,15 +267,14 @@ def doRequest(uri, args, type, success) {
 	def postRequest = { response ->
 		success.call(response)
 	}
-
 	
-		if (type == 'post') {
-			httpPostJson(params, postRequest)
-        } else if (type == 'put') {
-        	httpPutJson(params, postRequest)
-		} else if (type == 'get') {
-			httpGet(params, postRequest)
-		}
+	if (type == 'post') {
+		httpPostJson(params, postRequest)
+    } else if (type == 'put') {
+        httpPutJson(params, postRequest)
+	} else if (type == 'get') {
+		httpGet(params, postRequest)
+	}
 	
 }
 
@@ -395,7 +302,7 @@ def getNodeId () {
         
         response.data.nodes.each {
         	log.debug "node name $it.name"           
-        	if ((it.attributes.supportsHotWater != null) && (it.attributes.supportsHotWater.reportedValue == false))
+        	if ((it.attributes.supportsHotWater != null) && (it.attributes.supportsHotWater.reportedValue == true))
             {   
             	state.nodeid = it.id
             }
@@ -432,7 +339,7 @@ def login(method = null, args = [], success = {}) {
 		
 		// set the expiration to 5 minutes
 		data.auth.expires_at = new Date().getTime() + 300000;
-        
+		
         state.cookie = response?.headers?.'Set-Cookie'?.split(";")?.getAt(0)
 		log.debug "Adding cookie to collection: $cookie"
         log.debug "auth: $data.auth"
@@ -457,3 +364,4 @@ def isLoggedIn() {
 	def now = new Date().getTime();
     return data.auth.expires_at > now
 }
+
