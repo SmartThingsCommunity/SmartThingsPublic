@@ -190,7 +190,7 @@ metadata {
 		// iOS TILES
 		// To expose iOS optimised tiles, comment out the details line in Android Tiles section and uncomment details line below.
 		
-		details(["thermostat", "mode_auto", "mode_manual", "mode_off", "heatingSetpoint", "heatSliderControl", "boost", "boost_off", "refresh"])
+		details(["thermostat", "mode_auto", "mode_manual", "mode_off", "heatingSetpoint", "heatSliderControl", "refresh"])
 		
 		// ============================================================
 
