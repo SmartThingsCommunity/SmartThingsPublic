@@ -63,6 +63,7 @@
  *	v1.8 - Changed behaviour when temperature is set when Hive Heating is in off mode to match Hive app behaviour.
  *	v1.9 - Added new Android tile layout option. Requires uncommenting/commenting out lines. Updated behaviour when Hive Heating is in off mode. Altered temperatue precision.
  *	v1.9.1 - Tweaks to Android layout.
+ *	v1.9.2 - Changes to heating set point temperature reporting when in frost protect mode.
  */
 preferences {
 	input("username", "text", title: "Username", description: "Your Hive username (usually an email address)")
@@ -188,7 +189,7 @@ metadata {
 		// iOS TILES
 		// To expose iOS optimised tiles, comment out the details line in Android Tiles section and uncomment details line below.
 		
-		details(["thermostat", "mode_auto", "mode_manual", "mode_off", "heatingSetpoint", "heatSliderControl", "refresh"])
+		details(["thermostat", "mode_auto", "mode_manual", "mode_off", "heatingSetpoint", "heatSliderControl", "boost", "boost_off", "refresh"])
 		
 		// ============================================================
 
@@ -308,8 +309,9 @@ def poll() {
        	heatingSetpoint = convertTemperatureIfNeeded(heatingSetpoint, "C", 2)
         
         // convert temperature reading of 1 degree to 7 as Hive app does
-        if (heatingSetpoint == 1.0) {
-        	heatingSetpoint = 7.0
+        log.debug "heatingSetpoint: $heatingSetpoint"
+        if (heatingSetpoint == "1.0") {
+        	heatingSetpoint = "7.0"
         }
         
         sendEvent(name: 'temperature', value: temperature, unit: "C", state: "heat")
