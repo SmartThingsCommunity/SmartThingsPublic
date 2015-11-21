@@ -60,7 +60,7 @@
  *	21.11.2015
  *  v1.7 - Fixed issue where 'supportsHeatCoolModes' attribute does not exist.
  *	v1.8 - Changed behaviour when temperature is set when Hive Heating is in off mode to match Hive app behaviour.
- *	v1.9 - Added new Android tile layout option. Requires uncommenting/commenting out lines. Updated behaviour when Hive Heating is in off mode.
+ *	v1.9 - Added new Android tile layout option. Requires uncommenting/commenting out lines. Updated behaviour when Hive Heating is in off mode. Altered temperatue precision.
  */
 preferences {
 	input("username", "text", title: "Username", description: "Your Hive username (usually an email address)")
@@ -292,10 +292,11 @@ def poll() {
         
         // get temperature status
         def temperature = data.nodes.attributes.temperature.reportedValue[0]
-        def heatingSetpoint = data.nodes.attributes.targetHeatTemperature.reportedValue[0]  
+        def heatingSetpoint = data.nodes.attributes.targetHeatTemperature.reportedValue[0]
+        temperature = convertTemperatureIfNeeded(temperature, "C", 2)
+       	heatingSetpoint = convertTemperatureIfNeeded(heatingSetpoint, "C", 2)
         
         // convert temperature reading of 1 degree to 7 as Hive app does
-        log.debug "tempreature: $heatingSetpoint"
         if (heatingSetpoint == 1.0) {
         	heatingSetpoint = 7.0
         }
