@@ -100,7 +100,7 @@ metadata {
         	state "default", action:"off", icon:"st.thermostat.heating-cooling-off"
    	 	}
 
-		main(["switch", "thermostatMode"])
+		main(["thermostatOperatingState", "thermostatMode"])
         details(["mode_auto", "mode_manual", "mode_off", "refresh"])
 
 	}
@@ -364,4 +364,5 @@ def isLoggedIn() {
 	def now = new Date().getTime();
     return data.auth.expires_at > now
 }
+
 
