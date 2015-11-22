@@ -67,6 +67,7 @@
  *  v1.9.3 - Improvements to handling temperature setting when in 'off' mode.
  *  v1.10 - Added Boost button!! Reduced number of activity messages.
  *	v1.10.1 - Tweaks to temperature formatting.
+ *	v1.10.2 - Added icons to thermostat mode states
  */
 preferences {
 	input("username", "text", title: "Username", description: "Your Hive username (usually an email address)")
@@ -157,10 +158,10 @@ metadata {
 		}
         
         standardTile("thermostatMode", "device.thermostatMode", inactiveLabel: true, decoration: "flat", width: 2, height: 2) {
-			state("auto", label: "SCHEDULED")
-			state("off", label: "OFF")
-			state("heat", label: "MANUAL")
-			state("emergency heat", label: "BOOST")
+			state("auto", label: "SCHEDULED", icon:"st.Office.office7")
+			state("off", label: "OFF", icon:"st.thermostat.heating-cooling-off")
+			state("heat", label: "MANUAL", icon:"st.Weather.weather2")
+			state("emergency heat", label: "BOOST", icon:"st.Health & Wellness.health7")
 		}
 
 		standardTile("refresh", "device.refresh", inactiveLabel: false, decoration: "flat", width: 2, height: 2) {
@@ -321,7 +322,7 @@ def poll() {
         // get temperature status
         def temperature = data.nodes.attributes.temperature.reportedValue[0]
         def heatingSetpoint = data.nodes.attributes.targetHeatTemperature.reportedValue[0]
-        temperature = String.format("%5.1f",temperature)
+        temperature = String.format("%2.1f",temperature)
        	heatingSetpoint = convertTemperatureIfNeeded(heatingSetpoint, "C", 1)
         
         // convert temperature reading of 1 degree to 7 as Hive app does
