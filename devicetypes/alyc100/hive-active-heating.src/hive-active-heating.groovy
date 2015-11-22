@@ -66,6 +66,7 @@
  *  v1.9.2 - Tweaks to how set heating point temperature is reported in frost mode.
  *  v1.9.3 - Improvements to handling temperature setting when in 'off' mode.
  *  v1.10 - Added Boost button!! Reduced number of activity messages.
+ *	v1.10.1 - Tweaks to temperature formatting.
  */
 preferences {
 	input("username", "text", title: "Username", description: "Your Hive username (usually an email address)")
@@ -320,8 +321,8 @@ def poll() {
         // get temperature status
         def temperature = data.nodes.attributes.temperature.reportedValue[0]
         def heatingSetpoint = data.nodes.attributes.targetHeatTemperature.reportedValue[0]
-        temperature = convertTemperatureIfNeeded(temperature, "C", 2)
-       	heatingSetpoint = convertTemperatureIfNeeded(heatingSetpoint, "C", 2)
+        temperature = String.format("%5.1f",temperature)
+       	heatingSetpoint = convertTemperatureIfNeeded(heatingSetpoint, "C", 1)
         
         // convert temperature reading of 1 degree to 7 as Hive app does
         if (heatingSetpoint == "1.0") {
