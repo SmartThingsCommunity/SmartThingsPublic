@@ -33,8 +33,8 @@
  *     Click the edit button next to Preferences
  *     Fill in your your Hive user name, Hive password.
  *
- *	4. ANDROID USERS - You have to comment out the iOS details line at line 180 by adding "//" 
- * 	   and uncomment the Android details line by removing the preceding "//" at line 188 before publishing.
+ *	4. ANDROID USERS - You have to comment out the iOS details line at line 197 by adding "//" 
+ * 	   and uncomment the Android details line by removing the preceding "//" at line 207 before publishing.
  *
  *  Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except
  *  in compliance with the License. You may obtain a copy of the License at:
@@ -68,6 +68,7 @@
  *  v1.10 - Added Boost button!! Reduced number of activity messages.
  *	v1.10.1 - Tweaks to temperature formatting.
  *	v1.10.2 - Added icons to thermostat mode states
+ *	v1.10.3 - Tweaks to display on Things screen.
  */
 preferences {
 	input("username", "text", title: "Username", description: "Your Hive username (usually an email address)")
@@ -126,7 +127,12 @@ metadata {
                 [value: 29, color: "#b9203b"]
             ]
 		}
-
+        
+        standardTile("thermostat_main", "device.thermostatOperatingState", inactiveLabel: true, decoration: "flat", width: 2, height: 2) {
+			state "idle", label:'${currentValue}', icon: "st.Weather.weather2"
+			state "heating", label:'${currentValue}', icon: "st.Weather.weather2", backgroundColor:"#EC6E05"
+		}
+        
 		controlTile("heatSliderControl", "device.heatingSetpoint", "slider", height: 2, width: 4, inactiveLabel: false, range:"(5..32)") {
 			state "setHeatingSetpoint", label:'Set temperature to', action:"setHeatingSetpoint"
 		}
@@ -184,7 +190,7 @@ metadata {
         	state "default", action:"off", icon:"st.thermostat.heating-cooling-off"
    	 	}
 
-		main(["thermostat", "thermostatOperatingState"])
+		main(["thermostat_main"])
 
 		// ============================================================
 		// iOS TILES
@@ -276,6 +282,9 @@ def emergencyHeat() {
 	if (latestThermostatMode.stringValue != 'emergency heat') {
 		setThermostatMode('emergency heat')
     }
+    else {
+    	log.debug "Already in boost mode."
+    }
 
 }
 
@@ -334,6 +343,7 @@ def poll() {
         
         sendEvent(name: 'temperature', value: temperature, unit: "C", state: "heat")
         sendEvent(name: 'heatingSetpoint', value: heatingSetpoint, unit: "C", state: "heat")
+        sendEvent(name: 'thermostatSetpoint', value: heatingSetpoint, unit: "C", state: "heat", displayed: false)
         
         // determine hive operating mode
         def activeHeatCoolMode = data.nodes.attributes.activeHeatCoolMode.reportedValue[0]
