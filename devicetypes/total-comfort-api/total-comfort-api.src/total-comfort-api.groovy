@@ -18,9 +18,10 @@ preferences {
     input("username", "text", title: "Username", description: "Your Total Comfort User Name", required: true)
     input("password", "password", title: "Password", description: "Your Total Comfort password",required: true)
     input("honeywelldevice", "text", title: "Device ID", description: "Your Device ID", required: true)
-    input "enableOutdoorTemps", "enum", title: "Do you have the optional outdoor temperature sensor and want to enable it?", options: ["Yes", "No"], required: false, defaultValue: "No"
-        
-}
+    input ("enableOutdoorTemps", "enum", title: "Do you have the optional outdoor temperature sensor and want to enable it?", options: ["Yes", "No"], required: false, defaultValue: "No")
+    input ("tempScale", "enum", title: "Fahrenheit or Celsius?", options: ["F", "C"], required: false, defaultValue: "F")
+   
+  }
 
 metadata {
   definition (name: "Total Comfort API", namespace: 
@@ -46,7 +47,7 @@ metadata {
 
    tiles {
         valueTile("temperature", "device.temperature", width: 2, height: 2, canChangeIcon: true) {
-            state("temperature", label: '${currentValue}°F', 
+            state("temperature", label: '${currentValue}°', 
              icon: "http://cdn.device-icons.smartthings.com/Weather/weather2-icn@2x.png",
              unit:"F", backgroundColors: [
                     [value: 31, color: "#153591"],
@@ -87,7 +88,7 @@ metadata {
         }
        valueTile("coolingSetpoint", "device.coolingSetpoint", inactiveLabel: false) 
     	  {
-          state "default", label:'Cool\n${currentValue}°F', unit:"F",
+          state "default", label:'Cool\n${currentValue}°', unit:"F",
            backgroundColors:
            [
             [value: 31, color: "#153591"],
@@ -101,7 +102,7 @@ metadata {
         }
         valueTile("heatingSetpoint", "device.heatingSetpoint", inactiveLabel: false) 
     	{
-      state "default", label:'Heat\n${currentValue}°F', unit:"F",
+      state "default", label:'Heat\n${currentValue}°', unit: "F",
        backgroundColors:
        [
         [value: 31, color: "#153591"],
@@ -160,7 +161,7 @@ metadata {
         
         /* lgk new tiles for outside temp and hummidity */
           valueTile("outdoorTemperature", "device.outdoorTemperature", width: 1, height: 1, canChangeIcon: true) {
-            state("temperature", label: 'Outdoor\n ${currentValue}°F',
+            state("temperature", label: 'Outdoor\n ${currentValue}°',
             icon: "http://cdn.device-icons.smartthings.com/Weather/weather2-icn@2x.png",
             unit:"F", backgroundColors: [
                    [value: -31, color: "#003591"],
@@ -201,7 +202,11 @@ metadata {
     }
 }
 
-def coolLevelUp(){
+def coolLevelUp()
+{
+state.DisplayUnits = settings.tempScale
+if (state.DisplayUnits == "F")
+{
     int nextLevel = device.currentValue("coolingSetpoint") + 1
     
     if( nextLevel > 99){
@@ -210,8 +215,24 @@ def coolLevelUp(){
     log.debug "Setting cool set point up to: ${nextLevel}"
     setCoolingSetpoint(nextLevel)
 }
+else
+{
+ int nextLevel = device.currentValue("coolingSetpoint") + 0.5
+    
+    if( nextLevel > 37){
+      nextLevel = 37
+    }
+    log.debug "Setting cool set point up to: ${nextLevel}"
+    setCoolingSetpoint(nextLevel)
 
-def coolLevelDown(){
+}
+}
+
+def coolLevelDown()
+{
+state.DisplayUnits = settings.tempScale
+if (state.DisplayUnits == "F")
+{
     int nextLevel = device.currentValue("coolingSetpoint") - 1
     
     if( nextLevel < 50){
@@ -221,7 +242,26 @@ def coolLevelDown(){
     setCoolingSetpoint(nextLevel)
 }
 
-def heatLevelUp(){
+else
+
+{
+ double nextLevel = device.currentValue("coolingSetpoint") - 0.5
+    
+    if( nextLevel < 10){
+      nextLevel = 10
+    }
+    log.debug "Setting cool set point down to: ${nextLevel}"
+    setCoolingSetpoint(nextLevel)
+
+}
+}
+
+def heatLevelUp()
+{
+state.DisplayUnits = settings.tempScale
+if (state.DisplayUnits == "F")
+{
+   log.debug "in fahrenheit level up"
     int nextLevel = device.currentValue("heatingSetpoint") + 1
     
     if( nextLevel > 90){
@@ -231,7 +271,29 @@ def heatLevelUp(){
     setHeatingSetpoint(nextLevel)
 }
 
-def heatLevelDown(){
+else
+{
+
+   log.debug "in celsius level uo"
+  double nextLevel = device.currentValue("heatingSetpoint") + 0.5
+    
+    if( nextLevel > 33){
+      nextLevel = 33
+    }
+    log.debug "Setting heat set point up to: ${nextLevel}"
+    setHeatingSetpoint(nextLevel)
+}
+
+}
+
+
+
+def heatLevelDown()
+{
+state.DisplayUnits = settings.tempScale
+if (state.DisplayUnits == "F")
+{
+   log.debug "in fahrenheit level down"
     int nextLevel = device.currentValue("heatingSetpoint") - 1
     
     if( nextLevel < 40){
@@ -239,6 +301,21 @@ def heatLevelDown(){
     }
     log.debug "Setting heat set point down to: ${nextLevel}"
     setHeatingSetpoint(nextLevel)
+}
+
+else
+{
+
+   log.debug "in celsius level down"
+  double nextLevel = device.currentValue("heatingSetpoint") - 0.5
+    
+    if( nextLevel < 4){
+      nextLevel = 4
+    }
+    log.debug "Setting heat set point down to: ${nextLevel}"
+    setHeatingSetpoint(nextLevel)
+}
+
 }
 
 
@@ -249,6 +326,26 @@ def parse(String description) {
 }
 
 // handle commands
+
+def setHeatingSetpoint(Double temp)
+{
+ data.SystemSwitch = 'null' 
+    data.HeatSetpoint = temp
+    data.CoolSetpoint = 'null'
+    data.HeatNextPeriod = 'null'
+    data.CoolNextPeriod = 'null'
+    data.StatusHeat='1'
+    data.StatusCool='1'
+    data.FanMode = 'null'
+  setStatus()
+
+    if(data.SetStatus==1)
+  {
+        sendEvent(name: 'heatingSetpoint', value: temp as double)
+
+    }	
+}
+
 def setHeatingSetpoint(temp) {
   data.SystemSwitch = 'null' 
     data.HeatSetpoint = temp
@@ -266,6 +363,24 @@ def setHeatingSetpoint(temp) {
 
     }
         
+}
+
+def setCoolingSetpoint(double temp) {
+  data.SystemSwitch = 'null' 
+    data.HeatSetpoint = 'null'
+    data.CoolSetpoint = temp
+    data.HeatNextPeriod = 'null'
+    data.CoolNextPeriod = 'null'
+    data.StatusHeat='1'
+    data.StatusCool='1'
+    data.FanMode = 'null'
+  setStatus()
+    
+    if(data.SetStatus==1)
+  {
+        sendEvent(name: 'coolingSetpoint', value: temp as double)
+
+    }
 }
 
 def setCoolingSetpoint(temp) {
@@ -297,6 +412,21 @@ def setTargetTemp(temp) {
     data.FanMode = 'null'
   setStatus()
 }
+
+
+
+def setTargetTemp(double temp) {
+  data.SystemSwitch = 'null' 
+    data.HeatSetpoint = temp
+    data.CoolSetpoint = temp
+    data.HeatNextPeriod = 'null'
+    data.CoolNextPeriod = 'null'
+    data.StatusHeat='1'
+    data.StatusCool='1'
+    data.FanMode = 'null'
+  setStatus()
+}
+
 
 def off() {
   setThermostatMode(2)
@@ -404,7 +534,8 @@ def setStatus() {
   log.debug "Executing 'setStatus'"
 def today= new Date()
 log.debug "https://www.mytotalconnectcomfort.com/portal/Device/SubmitControlScreenChanges"
-
+log.debug "setting heat setpoint to $data.HeatSetpoint"
+log.debug "setting cool setpoint to $data.CoolSetpoint"
     
     def params = [
         uri: "https://www.mytotalconnectcomfort.com/portal/Device/SubmitControlScreenChanges",
@@ -420,10 +551,14 @@ log.debug "https://www.mytotalconnectcomfort.com/portal/Device/SubmitControlScre
               'X-Requested-With': 'XMLHttpRequest',
               'User-Agent': 'Mozilla/5.0 (Windows NT 6.1; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/28.0.1500.95 Safari/537.36',
               'Cookie': data.cookiess        ],
-        body: [ DeviceID: "${settings.honeywelldevice}", SystemSwitch : data.SystemSwitch ,HeatSetpoint : data.HeatSetpoint, CoolSetpoint: data.CoolSetpoint, HeatNextPeriod: data.HeatNextPeriod,CoolNextPeriod:data.CoolNextPeriod,StatusHeat:data.StatusHeat,StatusCool:data.StatusCool,FanMode:data.FanMode]
+        body: [ DeviceID: "${settings.honeywelldevice}", SystemSwitch : data.SystemSwitch ,HeatSetpoint : 
+        data.HeatSetpoint, CoolSetpoint: data.CoolSetpoint, HeatNextPeriod: 
+        data.HeatNextPeriod,CoolNextPeriod:data.CoolNextPeriod,StatusHeat:data.StatusHeat,
+        StatusCool:data.StatusCool,FanMode:data.FanMode,ThermostatUnits: settings.tempScale]
 
 ]
 
+log.debug "params = $params"
     httpPost(params) { response ->
         log.debug "Request was successful, $response.status"
  
@@ -462,7 +597,7 @@ log.debug "https://www.mytotalconnectcomfort.com/portal/Device/CheckDataSession/
 
         httpGet(params) { response ->
         log.debug "Request was successful, $response.status"
-       // log.debug "ld = $response.data.latestData"
+        log.debug "ld = $response.data.latestData"
        
         def curTemp = response.data.latestData.uiData.DispTemperature
         def fanMode = response.data.latestData.fanData.fanMode
@@ -476,6 +611,7 @@ log.debug "https://www.mytotalconnectcomfort.com/portal/Device/CheckDataSession/
         def Boolean hasOutdoorTemp = response.data.latestData.uiData.OutdoorTemperatureAvailable
         def curOutdoorHumidity = response.data.latestData.uiData.OutdoorHumidity
         def curOutdoorTemp = response.data.latestData.uiData.OutdoorTemperature
+        def displayUnits = response.data.latestData.uiData.DisplayUnits
         
 /*
  ‎2‎:‎48‎:‎50‎ ‎PM: debug ld = [fanData:[fanModeCirculateAllowed:true, fanModeAutoAllowed:true, 
@@ -525,6 +661,8 @@ log.debug "https://www.mytotalconnectcomfort.com/portal/Device/CheckDataSession/
         log.debug "hasOutdoorTemp =  $hasOutdoorTemp"
       
        */
+        log.debug "displayUnits = $displayUnits"
+        state.DisplayUnits = $displayUnits
         
         //Operating State Section 
         //Set the operating state to off 
@@ -572,13 +710,21 @@ log.debug "https://www.mytotalconnectcomfort.com/portal/Device/CheckDataSession/
         if(switchPos==4 || switchPos==5)
           switchPos = 'auto'
 
+    def formattedCoolSetPoint = String.format("%5.1f", coolSetPoint)
+    def formattedHeatSetPoint = String.format("%5.1f", heatSetPoint)
+    def formattedTemp = String.format("%5.1f", curTemp)
+    
+   	def finalCoolSetPoint = formattedCoolSetPoint as BigDecimal
+	def finalHeatSetPoint = formattedHeatSetPoint as BigDecimal
+	def finalTemp = formattedTemp as BigDecimal
+
 	//Send events 
         sendEvent(name: 'thermostatOperatingState', value: operatingState)
         sendEvent(name: 'thermostatFanMode', value: fanMode)
         sendEvent(name: 'thermostatMode', value: switchPos)
-        sendEvent(name: 'coolingSetpoint', value: coolSetPoint as Integer)
-        sendEvent(name: 'heatingSetpoint', value: heatSetPoint as Integer)
-        sendEvent(name: 'temperature', value: curTemp as Integer, state: switchPos)
+        sendEvent(name: 'coolingSetpoint', value: finalCoolSetPoint )
+        sendEvent(name: 'heatingSetpoint', value: finalHeatSetPoint )
+        sendEvent(name: 'temperature', value: finalTemp, state: switchPos)
         sendEvent(name: 'relativeHumidity', value: curHumidity as Integer)
         
       if (enableOutdoorTemps == "Yes")
@@ -657,6 +803,8 @@ def doRequest(uri, args, type, success) {
 
 def refresh() {
   log.debug "Executing 'refresh'"
+  def unit = getTemperatureScale()
+  log.debug "units = $unit"
     login()
     //getHumidifierStatus()
     getStatus()
@@ -708,4 +856,18 @@ def isLoggedIn() {
     return data.auth.expires_in > now
 }
 
+
+def updated()
+{
+log.debug "in updated"
+state.DisplayUnits = settings.tempScale
+ log.debug "display units now = $state.DisplayUnits"
+   
+}
+
+def installed() {
+  state.DisplayUnits = settings.tempScale
+  
+  log.debug "display units now = $state.DisplayUnits"
+}
 
