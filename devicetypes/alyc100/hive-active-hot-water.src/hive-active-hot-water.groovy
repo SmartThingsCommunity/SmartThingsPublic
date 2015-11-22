@@ -27,7 +27,8 @@
  *     Click the edit button next to Preferences
  *     Fill in your your Hive user name, Hive password.
  *
- * 	4. It should be done.
+ *	4. ANDROID USERS - You have to comment out the iOS details line at line 121 by adding "//" 
+ * 	   and uncomment the Android details line by removing the preceding "//" at line 129 before publishing.
  *
  *  Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except
  *  in compliance with the License. You may obtain a copy of the License at:
@@ -41,6 +42,10 @@
  *	VERSION HISTORY
  *  20.11.2015
  *	v1.0 - Initial Release - There seems to be an issue on the Hive side where the Hot Water Relay status is being reported back incorrectly sometimes.
+ *	v1.0.1 - Minor tweaks to improve support for thermostat capability
+ *	
+ *	22.11.2015
+ *	v1.1 - Implemented Boost functionality! Added optimised Android tile layout.
  */
 preferences {
 	input("username", "text", title: "Username", description: "Your Hive username (usually an email address)")
@@ -64,7 +69,7 @@ metadata {
 
 	tiles(scale: 2) {
 
-		multiAttributeTile(name: "Hot Water Relay", width: 6, height: 4, type:"generic") {
+		multiAttributeTile(name: "hotWaterRelay", width: 6, height: 4, type:"generic") {
 			tileAttribute("device.thermostatOperatingState", key:"PRIMARY_CONTROL"){
 				attributeState "heating", icon: "st.thermostat.heat", backgroundColor: "#EC6E05"
   				attributeState "idle", icon: "st.thermostat.heating-cooling-off", backgroundColor: "#ffffff"
@@ -72,20 +77,27 @@ metadata {
             tileAttribute ("hiveHotWater", key: "SECONDARY_CONTROL") {
 				attributeState "hiveHotWater", label:'${currentValue}'
 			}
-
-			main "Hot Water Relay"
-			details "Hot Water Relay"
+		}
+        
+        standardTile("hotWaterRelay_small", "device.thermostatOperatingState", inactiveLabel: true, width: 3, height: 3) {
+			state( "heating", icon: "st.thermostat.heat", backgroundColor: "#EC6E05")
+  			state( "idle", icon: "st.thermostat.heating-cooling-off", backgroundColor: "#ffffff")
 		}
 
-        standardTile("thermostatMode", "device.thermostatMode", inactiveLabel: true, decoration: "flat", width: 2, height: 2) {
-			state("auto", action:"thermostat.off", icon: "st.Office.office7")
-			state("off", action:"thermostat.cool", icon: "st.thermostat.heating-cooling-off")
-			state("cool", action:"thermostat.heat", icon: "st.thermostat.cool")
-			state("heat", action:"thermostat.auto", icon: "st.thermostat.heat")
+        standardTile("thermostatMode", "device.thermostatMode", inactiveLabel: true, decoration: "flat", width: 3, height: 3) {
+			state("auto", label: "SCHEDULED", icon:"st.Office.office7")
+			state("off", label: "OFF", icon:"st.thermostat.heating-cooling-off")
+			state("heat", label: "MANUAL", icon:"st.Weather.weather2")
+			state("emergency heat", label: "BOOST", icon:"st.Health & Wellness.health7")
 		}
+        
 
 		standardTile("refresh", "device.refresh", inactiveLabel: false, decoration: "flat", width: 2, height: 2) {
 			state("default", label:'refresh', action:"polling.poll", icon:"st.secondary.refresh-icon")
+		}
+        
+        valueTile("boost", "device.boostLabel", inactiveLabel: false, decoration: "flat", width: 2, height: 2) {
+			state("default", label:'${currentValue}', action:"emergencyHeat")
 		}
         
         standardTile("mode_auto", "device.mode_auto", inactiveLabel: false, decoration: "flat", width: 2, height: 2) {
@@ -101,7 +113,22 @@ metadata {
    	 	}
 
 		main(["thermostatOperatingState", "thermostatMode"])
-        details(["mode_auto", "mode_manual", "mode_off", "refresh"])
+        
+        		// ============================================================
+		// iOS TILES
+		// To expose iOS optimised tiles, comment out the details line in Android Tiles section and uncomment details line below.
+		
+		details(["hotWaterRelay", "mode_auto", "mode_manual", "mode_off", "boost", "refresh"])
+        
+		// ============================================================
+
+		// ============================================================
+		// ANDROID TILES
+		// To expose Android optimised tiles, comment out the details line in iOS Tiles section and uncomment details line below.
+		
+		//details(["hotWaterRelay_small", "thermostatMode", "mode_auto", "mode_manual", "mode_off", "boost", "refresh"])
+		
+		// ============================================================
 
 	}
 }
@@ -141,7 +168,19 @@ def heat() {
 }
 
 def emergencyHeat() {
-	setThermostatMode('heat')
+	log.debug "Executing 'boost'"
+	
+    def latestThermostatMode = device.latestState('thermostatMode')
+    
+    //Don't do if already in BOOST mode.
+	if (latestThermostatMode.stringValue != 'emergency heat') {
+		setThermostatMode('emergency heat')
+    }
+    else {
+    	log.debug "Already in boost mode."
+    }
+
+
 }
 
 def auto() {
@@ -149,7 +188,6 @@ def auto() {
 }
 
 def setThermostatMode(mode) {
-	mode = mode == 'emergency heat'? 'heat' : mode  
     def args = [
         	nodes: [	[attributes: [activeHeatCoolMode: [targetValue: "HEAT"], activeScheduleLock: [targetValue: false]]]]
             ]
@@ -162,7 +200,12 @@ def setThermostatMode(mode) {
     	args = [
         	nodes: [	[attributes: [activeHeatCoolMode: [targetValue: "HEAT"], activeScheduleLock: [targetValue: true]]]]
             ]
-    } 
+    } else if (mode == 'emergency heat') {
+    	//{"nodes":[{"attributes":{"activeHeatCoolMode":{"targetValue":"BOOST"},"scheduleLockDuration":{"targetValue":30},"targetHeatTemperature":{"targetValue":99}}}]}
+    	args = [
+        	nodes: [	[attributes: [activeHeatCoolMode: [targetValue: "BOOST"], scheduleLockDuration: [targetValue: 60], targetHeatTemperature: [targetValue: "99"]]]]
+            ]
+    }
     
 	api('thermostat_mode',  args) {
 		mode = mode == 'range' ? 'auto' : mode
@@ -178,6 +221,9 @@ log.debug "Executing 'poll'"
         //Construct status message
         def statusMsg = "Currently"
         
+        //Boost button label
+    	def boostLabel = "Start\nBoost"
+        
         // determine hive hot water operating mode
         def activeHeatCoolMode = data.nodes.attributes.activeHeatCoolMode.reportedValue[0]
         def activeScheduleLock = data.nodes.attributes.activeScheduleLock.targetValue[0]
@@ -190,6 +236,13 @@ log.debug "Executing 'poll'"
         if (activeHeatCoolMode == "OFF") {
         	mode = 'off'
             statusMsg = statusMsg + " set to OFF"
+        }
+        else if (activeHeatCoolMode == "BOOST") {
+        	mode = 'emergency heat'
+            statusMsg = statusMsg + " set to BOOST"
+            def boostTime = data.nodes.attributes.scheduleLockDuration.reportedValue[0]
+            boostLabel = "Boosting for \n" + boostTime + " mins"
+            sendEvent("name":"boostTimeRemaining", "value": boostTime + " mins")
         }
         else if (activeHeatCoolMode == "HEAT" && activeScheduleLock) {
         	mode = 'heat'
@@ -207,14 +260,20 @@ log.debug "Executing 'poll'"
         log.debug "stateHotWaterRelay: $stateHotWaterRelay"
         
         if (stateHotWaterRelay == "ON") {
+        	sendEvent(name: 'temperature', value: 99, unit: "C", state: "heat", displayed: false)
+        	sendEvent(name: 'heatingSetpoint', value: 99, unit: "C", state: "heat", displayed: false)
             sendEvent(name: 'thermostatOperatingState', value: "heating")
             statusMsg = statusMsg + " and is HEATING"
         }       
         else {
+        	sendEvent(name: 'temperature', value: 0, unit: "C", state: "heat", displayed: false)
+       	 	sendEvent(name: 'heatingSetpoint', value: 0, unit: "C", state: "heat", displayed: false)
             sendEvent(name: 'thermostatOperatingState', value: "idle")
             statusMsg = statusMsg + " and is IDLE"
         }
-        sendEvent("name":"hiveHotWater", "value":statusMsg)
+        sendEvent("name":"hiveHotWater", "value":statusMsg, displayed: false)
+        sendEvent("name":"boostLabel", "value": boostLabel, displayed: false)
+        
     }
 }
 
