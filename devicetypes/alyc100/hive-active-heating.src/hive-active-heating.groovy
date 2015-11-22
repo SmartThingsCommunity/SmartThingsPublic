@@ -246,12 +246,14 @@ def setHeatingSetpoint(temp) {
 }
 
 def heatingSetpointUp(){
+	log.debug "Executing 'heatingSetpointUp'"
 	int newSetpoint = device.currentValue("heatingSetpoint") + 1
 	log.debug "Setting heat set point up to: ${newSetpoint}"
 	setHeatingSetpoint(newSetpoint)
 }
 
 def heatingSetpointDown(){
+	log.debug "Executing 'heatingSetpointDown'"
 	int newSetpoint = device.currentValue("heatingSetpoint") - 1
 	log.debug "Setting heat set point down to: ${newSetpoint}"
 	setHeatingSetpoint(newSetpoint)
@@ -351,7 +353,7 @@ def poll() {
             statusMsg = statusMsg + " set to BOOST"
             def boostTime = data.nodes.attributes.scheduleLockDuration.reportedValue[0]
             boostLabel = "Boosting for \n" + boostTime + " mins"
-            sendEvent("name":"boostTimeRemainingIs", "value": boostTime + " mins")
+            sendEvent("name":"boostTimeRemaining", "value": boostTime + " mins")
         }
         else if (activeHeatCoolMode == "HEAT" && activeScheduleLock) {
         	mode = 'heat'
