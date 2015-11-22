@@ -112,7 +112,7 @@ metadata {
         	state "default", action:"off", icon:"st.thermostat.heating-cooling-off"
    	 	}
 
-		main(["thermostatOperatingState", "thermostatMode"])
+		main(["hotWaterRelay", "thermostatMode"])
         
         		// ============================================================
 		// iOS TILES
