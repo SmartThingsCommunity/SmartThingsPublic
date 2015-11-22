@@ -103,12 +103,10 @@ def refresh(){
 }
 
 private Map parseCustomMessage(String description) {
-	Map resultMap = [:]
 	if (description?.startsWith('temperature: ')) {
 		def value = zigbee.parseHATemperatureValue(description, "temperature: ", getTemperatureScale())
-		resultMap = getTemperatureResult(value)
+		createTempEvent(value)
 	}
-	return resultMap
 }
 
 def parseCatchAllMessage(descMap) {
