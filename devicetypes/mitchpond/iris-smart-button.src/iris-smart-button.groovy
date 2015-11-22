@@ -18,6 +18,7 @@ metadata {
 		capability "Battery"
 		capability "Button"
         capability "Configuration"
+        capability "Refresh"
 		capability "Sensor"
         capability "Temperature Measurement"
 
@@ -57,14 +58,17 @@ metadata {
 					[value: 96, color: "#bc2323"]
 				]
 		}
+        standardTile("refresh", "device.refresh", inactiveLabel: false, decoration: "flat", width: 2, height: 2) {
+			state "default", action:"refresh.refresh", icon:"st.secondary.refresh"
+		}
 
 		main (["temperature"])
-		details(["button","temperature","battery"])
+		details(["button","temperature","battery","refresh"])
 	}
 }
 
 def parse(String description) {
-	//log.debug "Parsing '${description}'"
+	log.debug "Parsing '${description}'"
     def descMap = zigbee.parseDescriptionAsMap(description)
     //log.debug descMap
     
@@ -87,9 +91,14 @@ def configure(){
 	"send 0x${device.deviceNetworkId} 1 1", "delay 200",
     
     "zcl global send-me-a-report 1 0x20 0x20 3600 86400 {01}", "delay 100", //battery report request
-	"send 0x${device.deviceNetworkId} 1 1", "delay 200",
-        
-    "st rattr 0x${device.deviceNetworkId} 1 1 0x20"
+	"send 0x${device.deviceNetworkId} 1 1", "delay 200"
+    ] + refresh()
+}
+
+def refresh(){
+	[
+    "st rattr 0x${device.deviceNetworkId} 1 1 0x20",
+    "st rattr 0x${device.deviceNetworkId} 1 0x402 0"
     ]
 }
 
@@ -103,16 +112,27 @@ private Map parseCustomMessage(String description) {
 }
 
 def parseCatchAllMessage(descMap) {
-	//log.debug descMap
+	//log.debug (descMap)
     if (descMap?.clusterId == "0006" && descMap?.command == "01") 		//button pressed
     	createPressEvent(descMap.sourceEndpoint as int)
     else if (descMap?.clusterId == "0006" && descMap?.command == "00") 	//button released
     	createButtonEvent(descMap.sourceEndpoint as int)
+    else if (descMap?.clusterId == "0402" && descMap?.command == "01") 	//temperature response
+    	parseTempAttributeMsg(descMap)
 }
 
 def parseReportAttributeMessage(descMap) {
 	if (descMap?.cluster == "0001" && descMap?.attrId == "0020") createBatteryEvent(getBatteryLevel(descMap.value))
-    else if (descMap?.cluster == "0402" && descMap?.attrId == "0000") createEvent(getTemperatureResult(getTemperature(descMap.value)))
+    else if (descMap?.cluster == "0402" && descMap?.attrId == "0000") createTempEvent(getTemperature(descMap.value))
+}
+
+private parseTempAttributeMsg(descMap) {
+	String temp = descMap.data[-2..-1].reverse().join()
+    createTempEvent(getTemperature(temp))
+}
+
+private createTempEvent(value) {
+	return createEvent(getTemperatureResult(value))
 }
 
 private createBatteryEvent(percent) {
@@ -186,6 +206,7 @@ private Map getTemperatureResult(value) {
 		value = v + offset
 	}
 	def descriptionText = "${linkText} was ${value}°${temperatureScale}"
+    log.debug "Temp value: "+value
 	return [
 		name: 'temperature',
 		value: value,
@@ -196,5 +217,6 @@ private Map getTemperatureResult(value) {
 // handle commands
 def test() {
     log.debug "Test"
-	zigbee.refreshData("0","4") + zigbee.refreshData("0","5") + zigbee.refreshData("1","0x0020")
+	//zigbee.refreshData("0","4") + zigbee.refreshData("0","5") + zigbee.refreshData("1","0x0020")
+    zigbee.refreshData("0x402","0")
 }
