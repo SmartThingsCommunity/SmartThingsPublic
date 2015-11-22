@@ -27,8 +27,8 @@
  *     Click the edit button next to Preferences
  *     Fill in your your Hive user name, Hive password.
  *
- *	4. ANDROID USERS - You have to comment out the iOS details line at line 121 by adding "//" 
- * 	   and uncomment the Android details line by removing the preceding "//" at line 129 before publishing.
+ *	4. ANDROID USERS - You have to comment out the iOS details line at line 122 by adding "//" 
+ * 	   and uncomment the Android details line by removing the preceding "//" at line 130 before publishing.
  *
  *  Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except
  *  in compliance with the License. You may obtain a copy of the License at:
@@ -46,6 +46,7 @@
  *	
  *	22.11.2015
  *	v1.1 - Implemented Boost functionality! Added optimised Android tile layout.
+ *	v1.1.1 - Improvements to display of Things screen.
  */
 preferences {
 	input("username", "text", title: "Username", description: "Your Hive username (usually an email address)")
@@ -84,11 +85,11 @@ metadata {
   			state( "idle", icon: "st.thermostat.heating-cooling-off", backgroundColor: "#ffffff")
 		}
 
-        standardTile("thermostatMode", "device.thermostatMode", inactiveLabel: true, decoration: "flat", width: 3, height: 3) {
-			state("auto", label: "SCHEDULED", icon:"st.Office.office7")
-			state("off", label: "OFF", icon:"st.thermostat.heating-cooling-off")
-			state("heat", label: "MANUAL", icon:"st.Weather.weather2")
-			state("emergency heat", label: "BOOST", icon:"st.Health & Wellness.health7")
+        standardTile("thermostatMode", "device.thermostatMode", inactiveLabel: false, decoration: "flat", width: 3, height: 3) {
+			state("auto", label: "SCHEDULED", action:"heat", icon:"st.Bath.bath6")
+			state("off", label: "OFF", action:"auto", icon:"st.Bath.bath6")
+			state("heat", label: "MANUAL", action:"off", icon:"st.Bath.bath6")
+			state("emergency heat", label: "BOOST", action:"auto", icon:"st.Bath.bath6")
 		}
         
 
@@ -112,7 +113,7 @@ metadata {
         	state "default", action:"off", icon:"st.thermostat.heating-cooling-off"
    	 	}
 
-		main(["hotWaterRelay", "thermostatMode"])
+		main(["thermostatMode"])
         
         		// ============================================================
 		// iOS TILES
