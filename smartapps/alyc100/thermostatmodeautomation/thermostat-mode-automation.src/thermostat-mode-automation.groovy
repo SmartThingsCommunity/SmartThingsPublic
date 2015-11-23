@@ -31,7 +31,6 @@
 definition(
     name:        "Thermostat Mode Automation",
     namespace:   "alyc100/thermostatmodeautomation",
-    singleInstance: true,
     author:      "Alex Lee Yuk Cheung",
     description: "Turns off selected thermostats when Smartthings hub changes into selected modes (e.g away). Turns thermostats back into desired operating state when mode changes back (e.g home).",
     category:    "My Apps",
