@@ -33,8 +33,8 @@
  *     Click the edit button next to Preferences
  *     Fill in your your Hive user name, Hive password.
  *
- *	4. ANDROID USERS - You have to comment out the iOS details line at line 197 by adding "//" 
- * 	   and uncomment the Android details line by removing the preceding "//" at line 207 before publishing.
+ *	4. ANDROID USERS - You have to comment out the iOS details line at line 202 by adding "//" 
+ * 	   and uncomment the Android details line by removing the preceding "//" at line 210 before publishing.
  *
  *  Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except
  *  in compliance with the License. You may obtain a copy of the License at:
@@ -69,6 +69,9 @@
  *	v1.10.1 - Tweaks to temperature formatting.
  *	v1.10.2 - Added icons to thermostat mode states
  *	v1.10.3 - Tweaks to display on Things screen.
+ *
+ *	23.11.2015
+ *	v1.10.4 - Set thermostatFanMode to 'off' to improve SmartTiles display
  */
 preferences {
 	input("username", "text", title: "Username", description: "Your Hive username (usually an email address)")
@@ -344,6 +347,7 @@ def poll() {
         sendEvent(name: 'temperature', value: temperature, unit: "C", state: "heat")
         sendEvent(name: 'heatingSetpoint', value: heatingSetpoint, unit: "C", state: "heat")
         sendEvent(name: 'thermostatSetpoint', value: heatingSetpoint, unit: "C", state: "heat", displayed: false)
+        sendEvent(name: 'thermostatFanMode', value: "off", displayed: false)
         
         // determine hive operating mode
         def activeHeatCoolMode = data.nodes.attributes.activeHeatCoolMode.reportedValue[0]
