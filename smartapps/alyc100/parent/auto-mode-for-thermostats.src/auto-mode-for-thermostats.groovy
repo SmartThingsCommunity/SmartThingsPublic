@@ -31,6 +31,7 @@
 definition(
     name:        "Auto Mode for Thermostats",
     namespace:   "alyc100/parent",
+    singleInstance: true,
     author:      "Alex Lee Yuk Cheung",
     description: "Changes operating mode (e.g off) of selected thermostats when Smartthings hub changes into selected modes (e.g away). Turns thermostats back into another desired operating mode (e.g Emergency Heat) when mode changes back (e.g home).",
     category:    "My Apps",
