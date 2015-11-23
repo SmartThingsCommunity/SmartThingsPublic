@@ -1,7 +1,15 @@
 /**
- *  Auto Mode for Thermostats
+ *  Auto Mode for Thermostats (PARENT APP)
  *
  *  Copyright 2015 Alex Lee Yuk Cheung
+ *
+ *	1. 	Save and Self-publish 'Auto Mode for Thermostats' SmartApp (https://github.com/alyc100/SmartThingsPublic/blob/master/smartapps/alyc100/parent/auto-mode-for-thermostats.src/auto-mode-for-thermostats.groovy)
+ *		by creating a new SmartApp in the SmartThings IDE and pasting the source code in the "From Code" tab. 
+ *
+ *	2. 	Save (do not publish) 'Thermostat Mode Automation' SmartApp (https://github.com/alyc100/SmartThingsPublic/blob/master/smartapps/alyc100/thermostatmodeautomation/thermostat-mode-automation.src/thermostat-mode-automation.groovy)
+ *		by creating a new SmartApp in the SmartThings IDE and pasting the source code in the "From Code" tab. 
+ *
+ *	3. 	Open SmartThings mobile app and locate "Auto Mode for Thermostats" SmartApp in the "My Apps" section of the Marketplace.
  *
  * 	Changes operating mode (e.g off) of selected thermostats when Smartthings hub changes into selected modes (e.g away). 
  *	Turns thermostats back into another desired operating mode (e.g Emergency Heat) when mode changes back (e.g home).
