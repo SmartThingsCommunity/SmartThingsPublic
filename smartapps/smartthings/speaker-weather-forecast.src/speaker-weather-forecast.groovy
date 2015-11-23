@@ -10,23 +10,23 @@
  *  on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the License
  *  for the specific language governing permissions and limitations under the License.
  *
- *  Sonos Weather Forecast
+ *  Speaker Weather Forecast
  *
  *  Author: SmartThings
  *  Date: 2014-1-29
  */
 definition(
-    name: "Sonos Weather Forecast",
+    name: "Speaker Weather Forecast",
     namespace: "smartthings",
     author: "SmartThings",
-    description: "Play a weather report through your Sonos when the mode changes or other events occur",
+    description: "Play a weather report through your Speaker when the mode changes or other events occur",
     category: "SmartThings Labs",
     iconUrl: "https://s3.amazonaws.com/smartapp-icons/Partner/sonos.png",
     iconX2Url: "https://s3.amazonaws.com/smartapp-icons/Partner/sonos@2x.png"
 )
 
 preferences {
-	page(name: "mainPage", title: "Play the weather report on your sonos", install: true, uninstall: true)
+	page(name: "mainPage", title: "Play the weather report on your speaker", install: true, uninstall: true)
 	page(name: "chooseTrack", title: "Select a song or station")
 	page(name: "timeIntervalInput", title: "Only during a certain time") {
 		section {
@@ -85,7 +85,7 @@ def mainPage() {
 			)
 		}
 		section {
-			input "sonos", "capability.musicPlayer", title: "On this Sonos player", required: true
+			input "sonos", "capability.musicPlayer", title: "On this Speaker player", required: true
 		}
 		section("More options", hideable: true, hidden: true) {
 			input "resumePlaying", "bool", title: "Resume currently playing music after weather report finishes", required: false, defaultValue: true

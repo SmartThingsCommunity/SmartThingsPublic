@@ -26,8 +26,6 @@ metadata {
 		capability "Actuator"
 		capability "Sensor"
 
-		fingerprint profileId: "0104", inClusters: "0000,0003,0004,0005,0006,0B05,0702", outClusters: "0003, 000A,0019", manufacturer: "Jasco Products", model: "45853"
-		fingerprint profileId: "0104", inClusters: "0000,0003,0004,0005,0006,0B05,0702", outClusters: "000A,0019", manufacturer: "Jasco Products", model: "45856"
 	}
 
 	// simulator metadata
