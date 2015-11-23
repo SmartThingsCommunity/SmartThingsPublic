@@ -317,7 +317,7 @@ def setLevel(value) {
     state.trigger = "setLevel"
     state.lvl = "${level}"
 
-    if (dimRate && (state?.rate != null)) {
+    if (dimRate) {
     	cmds << "st cmd 0x${device.deviceNetworkId} 1 8 4 {${level} ${state.rate}}"
     }
     else {
@@ -330,7 +330,8 @@ def setLevel(value) {
 
 def configure() {
 
-	log.debug "Configuring Reporting and Bindings."
+	String zigbeeId = swapEndianHex(device.hub.zigbeeId)
+	log.debug "Confuguring Reporting and Bindings."
 	def configCmds = [
 
         //Switch Reporting

@@ -153,37 +153,31 @@ def refresh()
 //}
 
 def getTemperature(value) {
-	if (value != null) {
-		def celsius = Integer.parseInt(value, 16) / 100
-		if (getTemperatureScale() == "C") {
-			return celsius
-		} else {
-			return Math.round(celsiusToFahrenheit(celsius))
-		}
+	def celsius = Integer.parseInt(value, 16) / 100
+	if(getTemperatureScale() == "C"){
+		return celsius
+	} else {
+		return celsiusToFahrenheit(celsius) as Integer
 	}
 }
 
 def setHeatingSetpoint(degrees) {
-	if (degrees != null) {
-		def temperatureScale = getTemperatureScale()
-
-		def degreesInteger = Math.round(degrees)
-		log.debug "setHeatingSetpoint({$degreesInteger} ${temperatureScale})"
-		sendEvent("name": "heatingSetpoint", "value": degreesInteger)
-
-		def celsius = (getTemperatureScale() == "C") ? degreesInteger : (fahrenheitToCelsius(degreesInteger) as Double).round(2)
-		"st wattr 0x${device.deviceNetworkId} 1 0x201 0x12 0x29 {" + hex(celsius * 100) + "}"
-	}
+	def temperatureScale = getTemperatureScale()
+	
+	def degreesInteger = degrees as Integer
+	log.debug "setHeatingSetpoint({$degreesInteger} ${temperatureScale})"
+	sendEvent("name":"heatingSetpoint", "value":degreesInteger)
+	
+	def celsius = (getTemperatureScale() == "C") ? degreesInteger : (fahrenheitToCelsius(degreesInteger) as Double).round(2)
+	"st wattr 0x${device.deviceNetworkId} 1 0x201 0x12 0x29 {" + hex(celsius*100) + "}"
 }
 
 def setCoolingSetpoint(degrees) {
-	if (degrees != null) {
-		def degreesInteger = Math.round(degrees)
-		log.debug "setCoolingSetpoint({$degreesInteger} ${temperatureScale})"
-		sendEvent("name": "coolingSetpoint", "value": degreesInteger)
-		def celsius = (getTemperatureScale() == "C") ? degreesInteger : (fahrenheitToCelsius(degreesInteger) as Double).round(2)
-		"st wattr 0x${device.deviceNetworkId} 1 0x201 0x11 0x29 {" + hex(celsius * 100) + "}"
-	}
+	def degreesInteger = degrees as Integer
+	log.debug "setCoolingSetpoint({$degreesInteger} ${temperatureScale})"
+	sendEvent("name":"coolingSetpoint", "value":degreesInteger)
+	def celsius = (getTemperatureScale() == "C") ? degreesInteger : (fahrenheitToCelsius(degreesInteger) as Double).round(2)
+	"st wattr 0x${device.deviceNetworkId} 1 0x201 0x11 0x29 {" + hex(celsius*100) + "}"
 }
 
 def modes() {

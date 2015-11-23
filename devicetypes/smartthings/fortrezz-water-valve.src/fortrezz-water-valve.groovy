@@ -19,6 +19,7 @@ metadata {
 		capability "Sensor"
         
 		fingerprint deviceId: "0x1000", inClusters: "0x25,0x72,0x86,0x71,0x22,0x70"
+		fingerprint deviceId: "0x1006", inClusters: "0x25"
 	}
 
 	// simulator metadata
