@@ -22,7 +22,8 @@ definition(
 	category: "SmartThings Labs",
     iconUrl: "https://s3.amazonaws.com/smartapp-icons/Partner/life360.png",
     iconX2Url: "https://s3.amazonaws.com/smartapp-icons/Partner/life360@2x.png",
-    oauth: [displayName: "Life360", displayLink: "Life360"]
+    oauth: [displayName: "Life360", displayLink: "Life360"],
+    singleInstance: true
 ) {
 	appSetting "clientId"
 	appSetting "clientSecret"
@@ -591,7 +592,7 @@ def updated() {
         	// log.debug "External Id=${app.id}:${member.id}"
        
        		// create the device
-       		def childDevice = addChildDevice("smartthings", "life360-user", "${app.id}.${member.id}",null,[name:member.firstName, completedSetup: true])
+       		def childDevice = addChildDevice("smartthings", "Life360 User", "${app.id}.${member.id}",null,[name:member.firstName, completedSetup: true])
             // childDevice.setMemberId(member.id)
         
         	if (childDevice)
