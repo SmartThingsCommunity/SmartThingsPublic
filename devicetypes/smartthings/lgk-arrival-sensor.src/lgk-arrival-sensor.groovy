@@ -121,7 +121,7 @@ def parse(String description) {
 		results = parsePresenceMessage(description)
 	}
 
-	log.debug "Parse returned $results.descriptionText"
+	//log.debug "Parse returned $results.descriptionText"
 	results
 }
 

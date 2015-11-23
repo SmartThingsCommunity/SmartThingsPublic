@@ -11,6 +11,7 @@
  *  Unless required by applicable law or agreed to in writing, software distributed under the License is distributed
  *  on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the License
  *  for the specific language governing permissions and limitations under the License.
+ * lgk version 4 supports celsius and fahrenheit with option, and now colors.
  * 
  *
  */
@@ -49,7 +50,16 @@ metadata {
         valueTile("temperature", "device.temperature", width: 2, height: 2, canChangeIcon: true) {
             state("temperature", label: '${currentValue}°', 
              icon: "http://cdn.device-icons.smartthings.com/Weather/weather2-icn@2x.png",
-             unit:"F", backgroundColors: [
+             unit:"F", backgroundColors: [            
+             		[value: -14, color: "#1e9cbb"],
+         	        [value: -10, color: "#90d2a7"],
+               		[value: -5, color: "#44b621"],
+             	    [value: -2, color: "#f1d801"],
+             	    [value: 0, color: "#153591"],
+               	    [value: 7, color: "#1e9cbb"],
+     			    [value: 15, color: "#90d2a7"],           
+              		[value: 23, color: "#44b621"],
+            	    [value: 29, color: "#f1d801"],
                     [value: 31, color: "#153591"],
                     [value: 44, color: "#1e9cbb"],
                     [value: 59, color: "#90d2a7"],
@@ -77,41 +87,54 @@ metadata {
         controlTile("coolSliderControl", "device.coolingSetpoint", "slider", height: 3, width: 1, inactiveLabel: false) {
             state "setCoolingSetpoint", label:'Set temperarure to', action:"thermostat.setCoolingSetpoint", 
             backgroundColors:[
-                [value: 31, color: "#153591"],
-                [value: 44, color: "#1e9cbb"],
-                [value: 59, color: "#90d2a7"],
-                [value: 74, color: "#44b621"],
-                [value: 84, color: "#f1d801"],
-                [value: 95, color: "#d04e00"],
-                [value: 96, color: "#bc2323"]
+             	    [value: 0, color: "#153591"],
+               	    [value: 7, color: "#1e9cbb"],
+     			    [value: 15, color: "#90d2a7"],           
+              		[value: 23, color: "#44b621"],
+            	    [value: 29, color: "#f1d801"],
+                    [value: 31, color: "#153591"],
+                    [value: 44, color: "#1e9cbb"],
+                    [value: 59, color: "#90d2a7"],
+                    [value: 74, color: "#44b621"],
+                    [value: 84, color: "#f1d801"],
+                    [value: 95, color: "#d04e00"],
+                    [value: 96, color: "#bc2323"]
             ]               
         }
        valueTile("coolingSetpoint", "device.coolingSetpoint", inactiveLabel: false) 
     	  {
           state "default", label:'Cool\n${currentValue}°', unit:"F",
-           backgroundColors:
-           [
-            [value: 31, color: "#153591"],
-            [value: 44, color: "#1e9cbb"],
-            [value: 59, color: "#90d2a7"],
-            [value: 74, color: "#44b621"],
-            [value: 84, color: "#f1d801"],
-            [value: 95, color: "#d04e00"],
-            [value: 96, color: "#bc2323"]
+           backgroundColors: [
+          		    [value: 0, color: "#153591"],
+               	    [value: 7, color: "#1e9cbb"],
+     			    [value: 15, color: "#90d2a7"],           
+              		[value: 23, color: "#44b621"],
+            	    [value: 29, color: "#f1d801"],
+                    [value: 31, color: "#153591"],
+                    [value: 44, color: "#1e9cbb"],
+                    [value: 59, color: "#90d2a7"],
+                    [value: 74, color: "#44b621"],
+                    [value: 84, color: "#f1d801"],
+                    [value: 95, color: "#d04e00"],
+                    [value: 96, color: "#bc2323"]
           ]   
         }
-        valueTile("heatingSetpoint", "device.heatingSetpoint", inactiveLabel: false) 
+   valueTile("heatingSetpoint", "device.heatingSetpoint", inactiveLabel: false) 
     	{
       state "default", label:'Heat\n${currentValue}°', unit: "F",
-       backgroundColors:
-       [
-        [value: 31, color: "#153591"],
-        [value: 44, color: "#1e9cbb"],
-        [value: 59, color: "#90d2a7"],
-        [value: 74, color: "#44b621"],
-        [value: 84, color: "#f1d801"],
-        [value: 95, color: "#d04e00"],
-        [value: 96, color: "#bc2323"]
+       backgroundColors:[
+     			    [value: 0, color: "#153591"],
+               	    [value: 7, color: "#1e9cbb"],
+     			    [value: 15, color: "#90d2a7"],           
+              		[value: 23, color: "#44b621"],
+            	    [value: 29, color: "#f1d801"],
+                    [value: 31, color: "#153591"],
+                    [value: 44, color: "#1e9cbb"],
+                    [value: 59, color: "#90d2a7"],
+                    [value: 74, color: "#44b621"],
+                    [value: 84, color: "#f1d801"],
+                    [value: 95, color: "#d04e00"],
+                    [value: 96, color: "#bc2323"]
       ]   
     }
     
@@ -164,7 +187,12 @@ metadata {
             state("temperature", label: 'Outdoor\n ${currentValue}°',
             icon: "http://cdn.device-icons.smartthings.com/Weather/weather2-icn@2x.png",
             unit:"F", backgroundColors: [
-                   [value: -31, color: "#003591"],
+                    [value: -31, color: "#003591"],
+                    [value: -10, color: "#90d2a7"],
+               		[value: -5, color: "#44b621"],
+             	    [value: -2, color: "#f1d801"],
+             	    [value: 0, color: "#153591"],
+               	    [value: 7, color: "#1e9cbb"],
                     [value: 00, color: "#cccccc"],
                     [value: 31, color: "#153500"],
                     [value: 44, color: "#1e9cbb"],
