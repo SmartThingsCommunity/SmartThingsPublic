@@ -284,6 +284,9 @@ def takeActionForMode(mode) {
 //Handler for thermostat mode change
 def thermostateventHandler(evt) {
 	log.debug "evt.name: $evt.value"
+    log.debug "state.thermostatAltered: $state.thermostatAltered"
+    log.debug "alteredThermostatMode: $alteredThermostatMode"
+    log.debug "state.boostingReset: $state.boostingReset"
     //If boost mode is selected as the trigger, turn switch off if boost mode finishes...
     if (state.thermostatAltered && (alteredThermostatMode == "Boost for 60 minutes")) {
     	//if the switch is currently on, check the new mode of the thermostat and set switch to off if necessary
