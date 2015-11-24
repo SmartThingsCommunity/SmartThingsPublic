@@ -26,9 +26,15 @@
  *	VERSION HISTORY
  *  22.11.2015
  *	v1.0 - Initial Release
+ *
+ *	23.11.2015
  *	v1.1 - Now with support for Switch detection. 
  *		   Dynamic preference screen. 
  *	 	   Introduced option to disable thermostat reset.
+ *
+ *	24.11.2015
+ *	v1.2 - Extra Boost handling capabilities. 
+ 		   Fixed bug where no reset was specified and app doesn't reset variable 'state.thermostatAltered'.
  */
 
 definition(
@@ -128,6 +134,7 @@ def installed() {
         	takeActionForSwitch(theSwitch.currentSwitch)
         }
     	subscribe(theSwitch, "switch", switchHandler)
+        subscribe(thermostats, "thermostatMode", thermostateventHandler)
     }
 }
 
@@ -151,6 +158,7 @@ def updated() {
         	takeActionForSwitch(theSwitch.currentSwitch)
         }
     	subscribe(theSwitch, "switch", switchHandler)
+        subscribe(thermostats, "thermostatMode", thermostateventHandler)
     }
 }
 
@@ -172,7 +180,11 @@ def takeActionForSwitch(switchState) {
             //Add detail to push message if set to Manual is specified
         	log.debug "$theSwitch.label is on, turning thermostats to $alteredThermostatMode"
             changeAllThermostatsModes(thermostats, alteredThermostatMode, "$theSwitch.label has turned on")
-        	state.thermostatAltered = true
+            //Only if reset action is specified, set the thermostatAltered state.
+            if (resetThermostats == "true")
+            {
+        		state.thermostatAltered = true
+            }
         }
     }
     else {
@@ -187,6 +199,7 @@ def takeActionForSwitch(switchState) {
         		log.debug "Thermostats have been altered, turning back to $resumedThermostatMode"
             	changeAllThermostatsModes(thermostats, resumedThermostatMode, "$theSwitch.label has turned off")
             }
+            //Reset app state
             state.thermostatAltered = false
         }
         else
@@ -215,7 +228,11 @@ def takeActionForMode(mode) {
         	log.debug "$mode in selected modes, turning thermostats to $alteredThermostatMode"
             changeAllThermostatsModes(thermostats, alteredThermostatMode, "mode has changed to $mode")
             
-        	state.thermostatAltered = true
+        	//Only if reset action is specified, set the thermostatAltered state.
+            if (resetThermostats == "true")
+            {
+        		state.thermostatAltered = true
+            }
         }
     }
     else {
@@ -232,6 +249,7 @@ def takeActionForMode(mode) {
             	changeAllThermostatsModes(thermostats, resumedThermostatMode, "mode has changed to $mode")   
 
             }
+            //Reset app state
             state.thermostatAltered = false
         }
         else
@@ -239,6 +257,21 @@ def takeActionForMode(mode) {
         	log.debug "Thermostats were not altered. No action taken."
         }
     }
+}
+
+//Handler for thermostat mode change
+def thermostateventHandler(evt) {
+	log.debug "evt.name: $evt.value"
+    //If boost mode is selected as the trigger, turn switch off if boost mode finishes...
+    if (alteredThermostatMode == "Boost for 60 minutes") {
+    	//if the switch is currently on, check the new mode of the thermostat and set switch to off if necessary
+        if (evt != "emergency heat") {
+    		if (theSwitch.currentSwitch == "on") {
+        		theSwitch.off()
+                state.thermostatAltered = false
+        	}
+        }
+   	}
 }
 
 //Helper method for thermostat mode change
