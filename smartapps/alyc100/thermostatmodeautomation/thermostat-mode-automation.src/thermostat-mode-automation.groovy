@@ -265,7 +265,7 @@ def thermostateventHandler(evt) {
     //If boost mode is selected as the trigger, turn switch off if boost mode finishes...
     if (alteredThermostatMode == "Boost for 60 minutes") {
     	//if the switch is currently on, check the new mode of the thermostat and set switch to off if necessary
-        if (evt != "emergency heat") {
+        if (evt.value != "emergency heat") {
     		if (theSwitch.currentSwitch == "on") {
         		theSwitch.off()
                 def message = ''
