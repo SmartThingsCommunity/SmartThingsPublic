@@ -35,8 +35,8 @@ metadata {
 	tiles(scale: 2) {
 		multiAttributeTile(name:"water", type: "generic", width: 6, height: 4){
 			tileAttribute ("device.water", key: "PRIMARY_CONTROL") {
-				attributeState "dry", icon:"st.alarm.water.dry", backgroundColor:"#ffffff"
-				attributeState "wet", icon:"st.alarm.water.wet", backgroundColor:"#53a7c0"
+				attributeState "dry", label: "Dry", icon:"st.alarm.water.dry", backgroundColor:"#ffffff"
+				attributeState "wet", label: "Wet", icon:"st.alarm.water.wet", backgroundColor:"#53a7c0"
 			}
 		}
 		standardTile("temperature", "device.temperature", width: 2, height: 2) {
@@ -47,6 +47,7 @@ metadata {
 		valueTile("battery", "device.battery", decoration: "flat", inactiveLabel: false, width: 2, height: 2) {
 			state "battery", label:'${currentValue}% battery', unit:""
 		}
+
 		main (["water", "temperature"])
 		details(["water", "temperature", "battery"])
 	}
@@ -125,6 +126,15 @@ def zwaveEvent(physicalgraph.zwave.commands.alarmv2.AlarmReport cmd)
 		map.descriptionText = "${device.displayName} is ${map.value}"
 	}
 
+	map
+}
+
+def zwaveEvent(physicalgraph.zwave.commands.basicv1.BasicSet cmd)
+{
+	def map = [:]
+	map.name = "water"
+	map.value = cmd.value ? "wet" : "dry"
+	map.descriptionText = "${device.displayName} is ${map.value}"
 	map
 }
 
