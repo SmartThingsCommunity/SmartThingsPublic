@@ -27,8 +27,8 @@
  *     Click the edit button next to Preferences
  *     Fill in your your Hive user name, Hive password.
  *
- *	4. ANDROID USERS - You have to comment out the iOS details line at line 122 by adding "//" 
- * 	   and uncomment the Android details line by removing the preceding "//" at line 130 before publishing.
+ *	4. ANDROID USERS - You have to comment out the iOS details line at line 128 by adding "//" 
+ * 	   and uncomment the Android details line by removing the preceding "//" at line 136 before publishing.
  *
  *  Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except
  *  in compliance with the License. You may obtain a copy of the License at:
@@ -47,6 +47,7 @@
  *	22.11.2015
  *	v1.1 - Implemented Boost functionality! Added optimised Android tile layout.
  *	v1.1.1 - Improvements to display of Things screen.
+ *	v1.1.2 - Fixes to 'On' mode. Changes to display on Things to match Hive Heating.
  */
 preferences {
 	input("username", "text", title: "Username", description: "Your Hive username (usually an email address)")
@@ -78,6 +79,11 @@ metadata {
             tileAttribute ("hiveHotWater", key: "SECONDARY_CONTROL") {
 				attributeState "hiveHotWater", label:'${currentValue}'
 			}
+		}
+        
+        standardTile("hotWaterRelay_main", "device.thermostatOperatingState", inactiveLabel: true, width: 3, height: 3) {
+			state( "heating", label:'${currentValue}', icon: "st.Bath.bath6", backgroundColor: "#EC6E05")
+  			state( "idle", label:'${currentValue}', icon: "st.Bath.bath6", backgroundColor: "#ffffff")
 		}
         
         standardTile("hotWaterRelay_small", "device.thermostatOperatingState", inactiveLabel: true, width: 3, height: 3) {
@@ -113,7 +119,7 @@ metadata {
         	state "default", action:"off", icon:"st.thermostat.heating-cooling-off"
    	 	}
 
-		main(["thermostatMode"])
+		main(["hotWaterRelay_main"])
         
         		// ============================================================
 		// iOS TILES
@@ -197,9 +203,9 @@ def setThermostatMode(mode) {
         	nodes: [	[attributes: [activeHeatCoolMode: [targetValue: "OFF"]]]]
             ]
     } else if (mode == 'heat') {
-    	//{"nodes":[{"attributes":{"activeHeatCoolMode":{"targetValue":"HEAT"},"activeScheduleLock":{"targetValue":true}}}]}
+    	//{"nodes":[{"attributes":{"activeHeatCoolMode":{"targetValue":"HEAT"},"activeScheduleLock":{"targetValue":true},"targetHeatTemperature":{"targetValue":99}}}]}
     	args = [
-        	nodes: [	[attributes: [activeHeatCoolMode: [targetValue: "HEAT"], activeScheduleLock: [targetValue: true]]]]
+        	nodes: [	[attributes: [activeHeatCoolMode: [targetValue: "HEAT"], activeScheduleLock: [targetValue: true], targetHeatTemperature: [targetValue: "99"]]]]
             ]
     } else if (mode == 'emergency heat') {
     	//{"nodes":[{"attributes":{"activeHeatCoolMode":{"targetValue":"BOOST"},"scheduleLockDuration":{"targetValue":30},"targetHeatTemperature":{"targetValue":99}}}]}
