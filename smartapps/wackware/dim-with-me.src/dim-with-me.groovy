@@ -1,11 +1,4 @@
 /**
- *  dim-with-me.app.groovy
- *  Dim With Me
- *
- *  Author: todd@wackford.net
- *  Date: 2013-11-12
- */
-/**
  *  App Name:   Dim With Me
  *
  *  Author: 	Todd Wackford
@@ -54,7 +47,7 @@ definition(
 
 preferences {
 	section("When this...") { 
-		input "masters", "capability.switchLevel", 
+		input "master", "capability.switchLevel", 
 			multiple: false, 
 			title: "Master Dimmer Switch...", 
 			required: true
@@ -77,19 +70,19 @@ preferences {
 
 def installed()
 {
-	subscribe(masters, "switch.on", switchOnHandler)
-	subscribe(masters, "switch.off", switchOffHandler)
-	subscribe(masters, "switch.setLevel", switchSetLevelHandler)
-	subscribe(masters, "switch", switchSetLevelHandler)
+	subscribe(master, "switch.on", switchOnHandler)
+	subscribe(master, "switch.off", switchOffHandler)
+	subscribe(master, "switch.setLevel", switchSetLevelHandler)
+	subscribe(master, "switch", switchSetLevelHandler)
 }
 
 def updated()
 {
 	unsubscribe()
-	subscribe(masters, "switch.on", switchOnHandler)
-	subscribe(masters, "switch.off", switchOffHandler)
-	subscribe(masters, "switch.setLevel", switchSetLevelHandler)
-	subscribe(masters, "switch", switchSetLevelHandler)
+	subscribe(master, "switch.on", switchOnHandler)
+	subscribe(master, "switch.off", switchOffHandler)
+	subscribe(master, "switch.setLevel", switchSetLevelHandler)
+	subscribe(master, "switch", switchSetLevelHandler)
 	log.info "subscribed to all of switches events"
 }
 
@@ -112,7 +105,7 @@ def switchOffHandler(evt) {
 
 def switchOnHandler(evt) {
 	log.info "switchOnHandler Event: ${evt.value}"
-	def dimmerValue = masters.latestValue("level") //can be turned on by setting the level
+	def dimmerValue = master.latestValue("level") //can be turned on by setting the level
 	slaves?.on()
 	slaves2?.on()
 }
