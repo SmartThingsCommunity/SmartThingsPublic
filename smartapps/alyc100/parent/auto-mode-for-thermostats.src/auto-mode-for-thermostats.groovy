@@ -26,6 +26,9 @@
  *	VERSION HISTORY
  *  22.11.2015
  *	v1.0 - Initial Release
+ *	v1.1 - Now with support for Switch detection. 
+ *		   Dynamic preference screen. 
+ *	 	   Introduced option to disable thermostat reset.
  */
 
 definition(
