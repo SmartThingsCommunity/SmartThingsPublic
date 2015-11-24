@@ -151,7 +151,6 @@ def installed() {
         	takeActionForSwitch(theSwitch.currentSwitch)
         }
     	subscribe(theSwitch, "switch", switchHandler)
-        subscribe(thermostats, "thermostatMode", thermostateventHandler)
     }
 }
 
