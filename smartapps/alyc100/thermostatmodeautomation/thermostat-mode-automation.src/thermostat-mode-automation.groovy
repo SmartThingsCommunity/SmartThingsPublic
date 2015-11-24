@@ -287,18 +287,18 @@ def thermostateventHandler(evt) {
     log.debug "alteredThermostatMode: $alteredThermostatMode"
     log.debug "state.boostingReset: $state.boostingReset"
     //If boost mode is selected as the trigger, turn switch off if boost mode finishes...
-    if (state.thermostatAltered && (alteredThermostatMode == "Boost for 60 minutes")) {
+    if (modeTrigger == "false") {    
     	//if the switch is currently on, check the new mode of the thermostat and set switch to off if necessary
-        if (evt.value != "emergency heat") {
-    		if (theSwitch.currentSwitch == "on") {
-                def message = ''
-        		message = "Boost has now finished. Turning $theSwitch.label off."
-        		log.info message
-        		send(message)
+        if (alteredThermostatMode == "Boost for 60 minutes") {
+        	if (evt.value != "emergency heat") {
                 //Switching the switch to off should trigger an event that resets app state
         		theSwitch.off()
-                
-        	}
+                        		
+        	} 
+            else {
+            	//Switching the switch to on so it can't be boost again
+            	theSwitch.on()
+            }
         }
    	} 
     
