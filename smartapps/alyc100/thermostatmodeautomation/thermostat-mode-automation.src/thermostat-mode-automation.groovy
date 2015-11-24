@@ -277,7 +277,7 @@ def thermostateventHandler(evt) {
                 
         	}
         }
-   	}
+   	} 
 }
 
 //Helper method for thermostat mode change
@@ -301,8 +301,7 @@ private changeAllThermostatsModes(thermostats, newThermostatMode, reason) {
     		thermostat.off()
     	}
     	else if (newThermostatMode == "Boost for 60 minutes") {
-    		thermostat.auto()
-        	thermostat.emergencyHeat()
+    		thermostat.emergencyHeat()
     	}
     	else {
     		thermostat.auto()

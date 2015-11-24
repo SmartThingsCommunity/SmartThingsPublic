@@ -26,9 +26,16 @@
  *	VERSION HISTORY
  *  22.11.2015
  *	v1.0 - Initial Release
+ *
+ *	23.11.2015
  *	v1.1 - Now with support for Switch detection. 
  *		   Dynamic preference screen. 
  *	 	   Introduced option to disable thermostat reset.
+ *
+ *	24.11.2015
+ *	v1.2 - 	 Extra Boost handling capabilities. 
+ *		   	 Fixed bug where no reset was specified and app doesn't reset variable 'state.thermostatAltered'.
+ *	v1.2.1 - Bug fixes
  */
 
 definition(
