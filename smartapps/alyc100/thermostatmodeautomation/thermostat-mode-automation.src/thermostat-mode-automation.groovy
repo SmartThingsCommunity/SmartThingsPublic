@@ -33,8 +33,9 @@
  *	 	   Introduced option to disable thermostat reset.
  *
  *	24.11.2015
- *	v1.2 - Extra Boost handling capabilities. 
- 		   Fixed bug where no reset was specified and app doesn't reset variable 'state.thermostatAltered'.
+ *	v1.2 - 	 Extra Boost handling capabilities. 
+ *		   	 Fixed bug where no reset was specified and app doesn't reset variable 'state.thermostatAltered'.
+ *	v1.2.1 - Bug fixes
  */
 
 definition(
