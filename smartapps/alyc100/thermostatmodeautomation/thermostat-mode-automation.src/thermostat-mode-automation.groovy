@@ -35,8 +35,9 @@
  *	24.11.2015
  *	v1.2 - 	 Extra Boost handling capabilities. 
  *		   	 Fixed bug where no reset was specified and app doesn't reset variable 'state.thermostatAltered'.
- *	v1.2.1 - Bug fixes
+ *	v1.2.1 - Bug fixes.
  *	v1.3 -	 Option added to set mode of thermostat after boost action if reset mode is set to 'Boost for 60 minutes'.
+ * 	v1.3.1 - Bug fixes.
  */
 
 definition(
