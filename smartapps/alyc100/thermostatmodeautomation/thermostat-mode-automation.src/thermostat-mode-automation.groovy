@@ -268,6 +268,10 @@ def thermostateventHandler(evt) {
         if (evt != "emergency heat") {
     		if (theSwitch.currentSwitch == "on") {
         		theSwitch.off()
+                def message = ''
+        		message = "Boost has now finished. Turning $theSwitch.label off."
+        		log.info message
+        		send(message)
                 state.thermostatAltered = false
         	}
         }
