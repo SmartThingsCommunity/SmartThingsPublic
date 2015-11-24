@@ -129,7 +129,7 @@ def installed() {
     //set up initial thermostat state and force thermostat into correct mode
     state.thermostatAltered = false
     state.boostingReset = false
-    
+    subscribe(thermostats, "thermostatMode", thermostateventHandler)
     //Check if mode or switch is the trigger and run initialisation
     if (modeTrigger == "true") {
     	def currentMode = location.mode
@@ -154,7 +154,7 @@ def updated() {
     //set up initial thermostat state and force thermostat into correct mode
     state.thermostatAltered = false
     state.boostingReset = false
-    
+    subscribe(thermostats, "thermostatMode", thermostateventHandler)
     //Check if mode or switch is the trigger and run initialisation
     if (modeTrigger == "true") {
     	def currentMode = location.mode
@@ -168,9 +168,8 @@ def updated() {
     	if (theSwitch.currentSwitch == "on") {
         	takeActionForSwitch(theSwitch.currentSwitch)
         }
-    	subscribe(theSwitch, "switch", switchHandler)
-        subscribe(thermostats, "thermostatMode", thermostateventHandler)
-    }
+    	subscribe(theSwitch, "switch", switchHandler)        
+    }   
 }
 
 //Handler and action for switch detection
