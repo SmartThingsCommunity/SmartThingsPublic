@@ -130,6 +130,7 @@ def installed() {
     //set up initial thermostat state and force thermostat into correct mode
     state.thermostatAltered = false
     state.boostingReset = false
+    state.disableEvent = false
     subscribe(thermostats, "thermostatMode", thermostateventHandler)
     //Check if mode or switch is the trigger and run initialisation
     if (modeTrigger == "true") {
@@ -155,6 +156,7 @@ def updated() {
     //set up initial thermostat state and force thermostat into correct mode
     state.thermostatAltered = false
     state.boostingReset = false
+    state.disableEvent = false
     subscribe(thermostats, "thermostatMode", thermostateventHandler)
     //Check if mode or switch is the trigger and run initialisation
     if (modeTrigger == "true") {
@@ -175,8 +177,10 @@ def updated() {
 
 //Handler and action for switch detection
 def switchHandler(evt) {
-	log.debug "evt.name: $evt.value"
-    takeActionForSwitch(evt.value)   
+	if (state.disableEvent == false) {
+		log.debug "evt.name: $evt.value"
+    	takeActionForSwitch(evt.value)   
+    }
 }
 
 def takeActionForSwitch(switchState) {
@@ -228,7 +232,7 @@ def takeActionForSwitch(switchState) {
 
 //Handler and action for mode detection
 def modeeventHandler(evt) {
-    log.debug "evt.name: $evt.value"
+    log.debug "evt.valuve: $evt.value"
     takeActionForMode(evt.value)   
 }
 
@@ -288,28 +292,36 @@ def thermostateventHandler(evt) {
     log.debug "alteredThermostatMode: $alteredThermostatMode"
     log.debug "state.boostingReset: $state.boostingReset"
     //If boost mode is selected as the trigger, turn switch off if boost mode finishes...
-    if (modeTrigger == "false") {    
-    	//if the switch is currently on, check the new mode of the thermostat and set switch to off if necessary
-        if (alteredThermostatMode == "Boost for 60 minutes") {
-        	if (evt.value != "emergency heat") {
-                //Switching the switch to off should trigger an event that resets app state
-        		theSwitch.off()
-                        		
-        	} 
-            else {
-            	//Switching the switch to on so it can't be boost again
-            	theSwitch.on()
+    if (state.disableEvent == false) {
+    	if (modeTrigger == "false") {    
+    		//if the switch is currently on, check the new mode of the thermostat and set switch to off if necessary
+        	if (alteredThermostatMode == "Boost for 60 minutes") {
+        		if (evt.value != "emergency heat") {
+                	//Switching the switch to off should trigger an event that resets app state
+                	//Don't trigger event
+                	state.disableEvent = true
+        			theSwitch.off()
+                	state.disableEvent = false
+        		} 
+            	else {
+            		//Switching the switch to on so it can't be boost again
+                	state.disableEvent = true
+            		theSwitch.on()
+                	state.disableEvent = false
+                }
             }
-        }
-   	} 
+        } 
     
-    //If boost mode is selected as resumed state, need to set thermostat mode as per preference
-    if (state.boostingReset) {
-    	if (evt.value != "emergency heat") {
-        	changeAllThermostatsModes(thermostats, thermostatModeAfterBoost, "Boost has now finished")
-            //Reset boosting reset flag
-            state.boostingReset = false
-        }
+    	//If boost mode is selected as resumed state, need to set thermostat mode as per preference
+    	if (state.boostingReset) {
+    		if (evt.value != "emergency heat") {
+        		state.disableEvent = true
+        		changeAllThermostatsModes(thermostats, thermostatModeAfterBoost, "Boost has now finished")
+            	state.disableEvent = false
+            	//Reset boosting reset flag
+            	state.boostingReset = false           
+        	}
+    	}
     }
 }
 
