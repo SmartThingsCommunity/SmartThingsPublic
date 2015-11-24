@@ -267,12 +267,13 @@ def thermostateventHandler(evt) {
     	//if the switch is currently on, check the new mode of the thermostat and set switch to off if necessary
         if (evt.value != "emergency heat") {
     		if (theSwitch.currentSwitch == "on") {
-        		theSwitch.off()
                 def message = ''
         		message = "Boost has now finished. Turning $theSwitch.label off."
         		log.info message
         		send(message)
-                state.thermostatAltered = false
+                //Switching the switch to off should trigger an event that resets app state
+        		theSwitch.off()
+                
         	}
         }
    	}
