@@ -38,6 +38,7 @@
  *	v1.2.1 - Bug fixes.
  *	v1.3 -	 Option added to set mode of thermostat after boost action if reset mode is set to 'Boost for 60 minutes'.
  * 	v1.3.1 - Bug fixes.
+ *  v1.3.2 - Stop possible infinite loop when handlers create events themselves.
  */
 
 definition(
@@ -130,7 +131,11 @@ def installed() {
     //set up initial thermostat state and force thermostat into correct mode
     state.thermostatAltered = false
     state.boostingReset = false
-    state.disableEvent = false
+    
+    //Flags to stop possible infinite loop scenarios when handlers create events
+    state.internalThermostatEvent = false
+    state.internalSwitchEvent = false
+    
     subscribe(thermostats, "thermostatMode", thermostateventHandler)
     //Check if mode or switch is the trigger and run initialisation
     if (modeTrigger == "true") {
@@ -156,7 +161,8 @@ def updated() {
     //set up initial thermostat state and force thermostat into correct mode
     state.thermostatAltered = false
     state.boostingReset = false
-    state.disableEvent = false
+    state.internalThermostatEvent = false
+    state.internalSwitchEvent = false
     subscribe(thermostats, "thermostatMode", thermostateventHandler)
     //Check if mode or switch is the trigger and run initialisation
     if (modeTrigger == "true") {
@@ -177,10 +183,12 @@ def updated() {
 
 //Handler and action for switch detection
 def switchHandler(evt) {
-	if (state.disableEvent == false) {
-		log.debug "evt.name: $evt.value"
+	log.debug "evt.value: $evt.value"
+    log.debug "state.internalSwitchEvent: $state.internalSwitchEvent"
+    if (state.internalSwitchEvent == false) {
     	takeActionForSwitch(evt.value)   
     }
+    state.internalSwitchEvent = false
 }
 
 def takeActionForSwitch(switchState) {
@@ -194,6 +202,7 @@ def takeActionForSwitch(switchState) {
         	           
             //Add detail to push message if set to Manual is specified
         	log.debug "$theSwitch.label is on, turning thermostats to $alteredThermostatMode"
+            state.internalThermostatEvent = true
             changeAllThermostatsModes(thermostats, alteredThermostatMode, "$theSwitch.label has turned on")
             //Only if reset action is specified, set the thermostatAltered state.
             if (resetThermostats == "true")
@@ -212,6 +221,7 @@ def takeActionForSwitch(switchState) {
  			{                          
             	log.debug "Thermostats have been altered, turning back to $resumedThermostatMode"     		
                 //Turn selected thermostats into selected mode
+                state.internalThermostatEvent = true
             	changeAllThermostatsModes(thermostats, resumedThermostatMode, "$theSwitch.label has turned off")
             	
                 //Set flag if boost mode is selected as reset state so it can be set back to desired mode in 'thermostatModeAfterBoost'
@@ -232,7 +242,7 @@ def takeActionForSwitch(switchState) {
 
 //Handler and action for mode detection
 def modeeventHandler(evt) {
-    log.debug "evt.valuve: $evt.value"
+    log.debug "evt.value: $evt.value"
     takeActionForMode(evt.value)   
 }
 
@@ -247,6 +257,7 @@ def takeActionForMode(mode) {
         	           
             //Add detail to push message if set to Manual is specified
         	log.debug "$mode in selected modes, turning thermostats to $alteredThermostatMode"
+            state.internalThermostatEvent = true
             changeAllThermostatsModes(thermostats, alteredThermostatMode, "mode has changed to $mode")
             
         	//Only if reset action is specified, set the thermostatAltered state.
@@ -267,6 +278,7 @@ def takeActionForMode(mode) {
             	log.debug "Thermostats have been altered, turning back to $resumedThermostatMode"
      		       
             	//Turn each thermostat to selected mode
+                state.internalThermostatEvent = true
             	changeAllThermostatsModes(thermostats, resumedThermostatMode, "mode has changed to $mode")   
 
  				//Set flag if boost mode is selected as reset state so it can be set back to desired mode in 'thermostatModeAfterBoost'
@@ -292,22 +304,18 @@ def thermostateventHandler(evt) {
     log.debug "alteredThermostatMode: $alteredThermostatMode"
     log.debug "state.boostingReset: $state.boostingReset"
     //If boost mode is selected as the trigger, turn switch off if boost mode finishes...
-    if (state.disableEvent == false) {
+ 	if (state.internalThermostatEvent == false) {
     	if (modeTrigger == "false") {    
     		//if the switch is currently on, check the new mode of the thermostat and set switch to off if necessary
         	if (alteredThermostatMode == "Boost for 60 minutes") {
+            	state.internalSwitchEvent = true
         		if (evt.value != "emergency heat") {
                 	//Switching the switch to off should trigger an event that resets app state
-                	//Don't trigger event
-                	state.disableEvent = true
         			theSwitch.off()
-                	state.disableEvent = false
         		} 
             	else {
             		//Switching the switch to on so it can't be boost again
-                	state.disableEvent = true
             		theSwitch.on()
-                	state.disableEvent = false
                 }
             }
         } 
@@ -315,14 +323,14 @@ def thermostateventHandler(evt) {
     	//If boost mode is selected as resumed state, need to set thermostat mode as per preference
     	if (state.boostingReset) {
     		if (evt.value != "emergency heat") {
-        		state.disableEvent = true
+            	state.internalThermostatEvent = true
         		changeAllThermostatsModes(thermostats, thermostatModeAfterBoost, "Boost has now finished")
-            	state.disableEvent = false
             	//Reset boosting reset flag
             	state.boostingReset = false           
         	}
     	}
     }
+    state.internalThermostatEvent = false
 }
 
 //Helper method for thermostat mode change
