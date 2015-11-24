@@ -27,8 +27,8 @@
  *     Click the edit button next to Preferences
  *     Fill in your your Hive user name, Hive password.
  *
- *	4. ANDROID USERS - You have to comment out the iOS details line at line 128 by adding "//" 
- * 	   and uncomment the Android details line by removing the preceding "//" at line 136 before publishing.
+ *	4. ANDROID USERS - You have to comment out the iOS details line at line 130 by adding "//" 
+ * 	   and uncomment the Android details line by removing the preceding "//" at line 138 before publishing.
  *
  *  Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except
  *  in compliance with the License. You may obtain a copy of the License at:
@@ -47,7 +47,9 @@
  *	22.11.2015
  *	v1.1 - Implemented Boost functionality! Added optimised Android tile layout.
  *	v1.1.1 - Improvements to display of Things screen.
- *	v1.1.2 - Fixes to 'On' mode. Changes to display on Things to match Hive Heating.
+ *	v1.1.2 - Change wording from 'Manual' to 'On' to match Hive app.
+ *			 Fixes to 'On' mode. 
+ *            Changes to display on Things to match Hive Heating.
  */
 preferences {
 	input("username", "text", title: "Username", description: "Your Hive username (usually an email address)")
@@ -94,7 +96,7 @@ metadata {
         standardTile("thermostatMode", "device.thermostatMode", inactiveLabel: false, decoration: "flat", width: 3, height: 3) {
 			state("auto", label: "SCHEDULED", action:"heat", icon:"st.Bath.bath6")
 			state("off", label: "OFF", action:"auto", icon:"st.Bath.bath6")
-			state("heat", label: "MANUAL", action:"off", icon:"st.Bath.bath6")
+			state("heat", label: "ON", action:"off", icon:"st.Bath.bath6")
 			state("emergency heat", label: "BOOST", action:"auto", icon:"st.Bath.bath6")
 		}
         
@@ -112,7 +114,7 @@ metadata {
     	}
         
         standardTile("mode_manual", "device.mode_manual", inactiveLabel: false, decoration: "flat", width: 2, height: 2) {
-        	state "default", action:"heat", label:'Manual', icon:"st.Weather.weather2"
+        	state "default", action:"heat", label:'On', icon:"st.Weather.weather2"
    	 	}
         
         standardTile("mode_off", "device.mode_off", inactiveLabel: false, decoration: "flat", width: 2, height: 2) {
@@ -253,7 +255,7 @@ log.debug "Executing 'poll'"
         }
         else if (activeHeatCoolMode == "HEAT" && activeScheduleLock) {
         	mode = 'heat'
-            statusMsg = statusMsg + " set to MANUAL"
+            statusMsg = statusMsg + " set to ON"
         }
         else {
         	statusMsg = statusMsg + " set to SCHEDULE"
