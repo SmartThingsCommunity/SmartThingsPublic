@@ -26,11 +26,15 @@
  *	VERSION HISTORY
  *  22.11.2015
  *	v1.0 - Initial Release
+ *	v1.1 - Now with support for Switch detection. 
+ *		   Dynamic preference screen. 
+ *	 	   Introduced option to disable thermostat reset.
  */
 
 definition(
     name:        "Thermostat Mode Automation",
     namespace:   "alyc100/thermostatmodeautomation",
+    singleInstance: true,
     author:      "Alex Lee Yuk Cheung",
     description: "Turns off selected thermostats when Smartthings hub changes into selected modes (e.g away). Turns thermostats back into desired operating state when mode changes back (e.g home).",
     category:    "My Apps",
@@ -39,66 +43,163 @@ definition(
 )
 
 preferences {
-  section("When SmartThings enters these modes") {
-        input "modes", "mode", multiple: true, required: true
-  }
+	page(name: "configurePage")
+  
+}
 
-  section("Using these thermostats") {
-    	input "thermostats", "capability.thermostat", multiple: true, required: true
-  }
+def configurePage() {
+	dynamicPage(name: "configurePage", title: "", install: true, uninstall: true) {
+		section {
+    		input ("thermostats", "capability.thermostat", title: "For these thermostats",  multiple: true, required: true)
+  		}
+        
+        section {
+            input(name: "modeTrigger", title: "Set the trigger to",
+                  description: null, multiple: false, required: true, submitOnChange: true, type: "enum", 
+                  options: ["true": "Mode Change", "false": "Switches"])
+        }
+
+        
+        if (modeTrigger == "true") {
+            // Do something here like update a message on the screen,
+            // or introduce more inputs. submitOnChange will refresh
+            // the page and allow the user to see the changes immediately.
+            // For example, you could prompt for the level of the dimmers
+            // if dimmers have been selected:
+
+            section {
+       			input ("modes", "mode", title:"When SmartThings enters these modes", multiple: true, required: true)
+  			}
+        }
+        else if (modeTrigger == "false"){
+        	section {
+        		input ("theSwitch", "capability.switch", title:"When this switch is activated", multiple: false, required: true) 		
+          	}      
+        }
+ 
+  		section {
+    		input ("alteredThermostatMode", "enum", multiple: false, title: "Set thermostats to this mode",
+            options: ["Set To Schedule", "Boost for 60 minutes", "Turn Off", "Set to Manual"], required: true, defaultValue: 'Turn Off')
+  		}
+        
+        section {
+        	input ("resetThermostats", "enum", title: "Reset thermostats after trigger turns off?",
+            options: ["true": "Yes","false": "No"], required: true, submitOnChange: true)
+  		}
+        
+        if (resetThermostats == "true") {
+            section {
+    			input ("resumedThermostatMode", "enum", multiple: false, title: "Reset thermostats back to this mode",
+            	options: ["Set To Schedule", "Boost for 60 minutes", "Turn Off", "Set to Manual"], required: true, defaultValue: 'Set To Schedule')
+  			}
+        }
   
-  section("Set thermostats to this mode") {
-    	input "alteredThermostatMode", "enum", multiple: false,
-              options: ["Set To Schedule", "Boost for 60 minutes", "Turn Off", "Set to Manual"], required: true, defaultValue: 'Keep Off'
-  }
+  		section( "Additional configuration" ) {
+  			input ("temp", "number", title: "If setting to Manual, set the temperature to this", required: false, defaultValue: 21)
+  		}
   
-  section("And then change thermostats back to this mode when SmartThings mode changes back") {
-    	input "thermostatMode", "enum", multiple: false,
-              options: ["Set To Schedule", "Boost for 60 minutes", "Keep Off", "Set to Manual"], required: true, defaultValue: 'Set To Schedule'
-  }
-  
-  section("If setting to Manual, set the temperature to this") {
-  		input "temp", "number", required: false, defaultValue: 21
-  }
-  
-  section( "Notifications" ) {
-        input "sendPushMessage", "enum", title: "Send a push notification?",
-            options: ["Yes", "No"], required: false
-        input "phone", "phone", title: "Send a Text Message?", required: false
-  }
+  		section( "Notifications" ) {
+        	input ("sendPushMessage", "enum", title: "Send a push notification?",
+            options: ["Yes", "No"], required: true)
+        	input ("phone", "phone", title: "Send a Text Message?", required: false)
+  		}
+  	}
 }
 
 def installed() {
     log.debug "Installed with settings: ${settings}"
-    def currentMode = location.mode
-    log.debug "currentMode = $currentMode"
     //set up initial thermostat state and force thermostat into correct mode
     state.thermostatAltered = false
-    if (currentMode in modes) {
-        takeAction(currentMode)
+    
+    //Check if mode or switch is the trigger and run initialisation
+    if (modeTrigger == "true") {
+    	def currentMode = location.mode
+    	log.debug "currentMode = $currentMode"
+    	if (currentMode in modes) {
+        	takeActionForMode(currentMode)
+    	}
+    	subscribe(location, "mode", modeeventHandler)
     }
-    subscribe(location, "mode", modeevent)
+    else {
+    	if (theSwitch.currentSwitch == "on") {
+        	takeActionForSwitch(theSwitch.currentSwitch)
+        }
+    	subscribe(theSwitch, "switch", switchHandler)
+    }
 }
 
 def updated() {
     log.debug "Updated with settings: ${settings}"
-    def currentMode = location.mode
-    log.debug "currentMode = $currentMode"
     unsubscribe()
     //set up initial thermostat state and force thermostat into correct mode
     state.thermostatAltered = false
-    if (currentMode in modes) {
-        takeAction(currentMode)
+    
+    //Check if mode or switch is the trigger and run initialisation
+    if (modeTrigger == "true") {
+    	def currentMode = location.mode
+    	log.debug "currentMode = $currentMode"
+    	if (currentMode in modes) {
+        	takeActionForMode(currentMode)
+    	}
+    	subscribe(location, "mode", modeeventHandler)
     }
-    subscribe(location, "mode", modeevent)
+    else {
+    	if (theSwitch.currentSwitch == "on") {
+        	takeActionForSwitch(theSwitch.currentSwitch)
+        }
+    	subscribe(theSwitch, "switch", switchHandler)
+    }
 }
 
-def modeevent(evt) {
+//Handler and action for switch detection
+def switchHandler(evt) {
+	log.debug "evt.name: $evt.value"
+    takeActionForSwitch(evt.value)   
+}
+
+def takeActionForSwitch(switchState) {
+	// Is incoming switch is on
+    if (switchState == "on")
+    {
+    	//Check thermostat is not already altered
+    	if (!state.thermostatAltered)
+        {
+        	//Turn selected thermostats into selected mode
+        	           
+            //Add detail to push message if set to Manual is specified
+        	log.debug "$theSwitch.label is on, turning thermostats to $alteredThermostatMode"
+            changeAllThermostatsModes(thermostats, alteredThermostatMode, "$theSwitch.label has turned on")
+        	state.thermostatAltered = true
+        }
+    }
+    else {
+        log.debug "$theSwitch.label is off"
+        //Check if thermostats have previously been altered
+        if (state.thermostatAltered)
+        {
+        	//Check if user wants to reset thermostats
+        	if (resetThermostats == "true")
+ 			{
+        		//Add detail to push message if set to Manual is specified
+        		log.debug "Thermostats have been altered, turning back to $resumedThermostatMode"
+            	changeAllThermostatsModes(thermostats, resumedThermostatMode, "$theSwitch.label has turned off")
+            }
+            state.thermostatAltered = false
+        }
+        else
+     	{
+        	log.debug "Thermostats were not altered. No action taken."
+        }
+    }
+}
+
+//Handler and action for mode detection
+def modeeventHandler(evt) {
     log.debug "evt.name: $evt.value"
-    takeAction(evt.value)   
+    takeActionForMode(evt.value)   
 }
 
-def takeAction(mode) {
+def takeActionForMode(mode) {
 	// Is incoming mode in the event input enumeration
     if (mode in modes)
     {
@@ -109,33 +210,8 @@ def takeAction(mode) {
         	           
             //Add detail to push message if set to Manual is specified
         	log.debug "$mode in selected modes, turning thermostats to $alteredThermostatMode"
-            def thermostatModeDetail = alteredThermostatMode
-            if (alteredThermostatMode == "Set to Manual") {
-            	thermostatModeDetail = thermostatModeDetail + " at $temp°C"
-            }
+            changeAllThermostatsModes(thermostats, alteredThermostatMode, "mode has changed to $mode")
             
-            //Turn each thermostat to desired mode
-            def message = ''
-            for (thermostat in thermostats) {
-            	message = "SmartThings has turned $thermostat.label to $alteredThermostatMode because mode has changed to $mode"
-        		log.info message
-            	send(message)
-           		log.debug "Setting $thermostat.label to $thermostatModeDetail"
-            	if (alteredThermostatMode == "Set to Manual") {
-            		thermostat.heat()
-             	   	thermostat.setHeatingSetpoint(temp)
-            	}
-            	else if (alteredThermostatMode == "Turn Off") {
-            		thermostat.off()
-            	}
-            	else if (alteredThermostatMode == "Boost for 60 minutes") {
-                	thermostat.auto()
-            		thermostat.emergencyHeat()
-            	}
-            	else {
-            		thermostat.auto()
-				}
-            }
         	state.thermostatAltered = true
         }
     }
@@ -144,41 +220,51 @@ def takeAction(mode) {
         //Check if thermostats have previously been altered
         if (state.thermostatAltered)
         {
-        	//Add detail to push message if set to Manual is specified
-        	log.debug "Thermostats have been altered, turning back to $thermostatMode"
-            def thermostatModeDetail = thermostatMode
-            if (thermostatMode == "Set to Manual") {
-            	thermostatModeDetail = thermostatModeDetail + " at $temp°C"
+        	//Check if user wants to reset thermostats
+        	if (resetThermostats == "true")
+ 			{
+            	log.debug "Thermostats have been altered, turning back to $resumedThermostatMode"
+        		       
+            	//Turn each thermostat to desired mode
+            	changeAllThermostatsModes(thermostats, resumedThermostatMode, "mode has changed to $mode")   
+
             }
-                        
-            //Turn each thermostat to desired mode
-            def message = ''
-            for (thermostat in thermostats) {
-            	message = "SmartThings has turned $thermostat.label to $thermostatModeDetail because mode has changed to $mode."
-            	log.info message
-            	send(message)
-           		log.debug "Setting $thermostat.label to $thermostatModeDetail"
-            	if (thermostatMode == "Set to Manual") {
-            		thermostat.heat()
-             	   	thermostat.setHeatingSetpoint(temp)
-            	}
-            	else if (thermostatMode == "Keep Off") {
-            		thermostat.off()
-            	}
-            	else if (thermostatMode == "Boost for 60 minutes") {
-                	thermostat.auto()
-            		thermostat.emergencyHeat()
-            	}
-            	else {
-            		thermostat.auto()
-				}
-  			}
             state.thermostatAltered = false
         }
         else
      	{
         	log.debug "Thermostats were not altered. No action taken."
         }
+    }
+}
+
+//Helper method for thermostat mode change
+private changeAllThermostatsModes(thermostats, newThermostatMode, reason) {
+	//Add detail to push message if set to Manual is specified
+    def thermostatModeDetail = newThermostatMode
+    if (newThermostatMode == "Set to Manual") {
+    	thermostatModeDetail = thermostatModeDetail + " at $temp°C"
+    }
+	for (thermostat in thermostats) {
+    	def message = ''
+        message = "SmartThings has reset $thermostat.label to $thermostatModeDetail because $reason."
+        log.info message
+        send(message)
+        log.debug "Setting $thermostat.label to $thermostatModeDetail" 
+		if (newThermostatMode == "Set to Manual") {
+    		thermostat.heat()
+        	thermostat.setHeatingSetpoint(temp)
+    	}
+    	else if (newThermostatMode == "Turn Off") {
+    		thermostat.off()
+    	}
+    	else if (newThermostatMode == "Boost for 60 minutes") {
+    		thermostat.auto()
+        	thermostat.emergencyHeat()
+    	}
+    	else {
+    		thermostat.auto()
+		}
     }
 }
 
