@@ -47,48 +47,40 @@ metadata {
 		status "x,y,z: 0,0,1000": "x: 0, y: 0, z: 1000, rssi: 100, lqi: 255"
 	}
 
-	tiles {
-		standardTile("status", "device.status", width: 2, height: 2) {
-			state("closed", label:'${name}', icon:"st.doors.garage.garage-closed", backgroundColor:"#79b821", nextState:"opening")
-			state("open", label:'${name}', icon:"st.doors.garage.garage-open", backgroundColor:"#ffa81e", nextState:"closing")
-			state("opening", label:'${name}', icon:"st.doors.garage.garage-opening", backgroundColor:"#ffe71e")
-			state("closing", label:'${name}', icon:"st.doors.garage.garage-closing", backgroundColor:"#ffe71e")
+	tiles(scale: 2) {
+		multiAttributeTile(name:"status", type: "generic", width: 6, height: 4){
+			tileAttribute ("device.status", key: "PRIMARY_CONTROL") {
+				attributeState "closed", label:'${name}', icon:"st.doors.garage.garage-closed", backgroundColor:"#79b821", nextState:"opening"
+				attributeState "open", label:'${name}', icon:"st.doors.garage.garage-open", backgroundColor:"#ffa81e", nextState:"closing"
+				attributeState "opening", label:'${name}', icon:"st.doors.garage.garage-opening", backgroundColor:"#ffe71e"
+				attributeState "closing", label:'${name}', icon:"st.doors.garage.garage-closing", backgroundColor:"#ffe71e"
+			}
 		}
-		standardTile("contact", "device.contact") {
+		standardTile("contact", "device.contact", width: 2, height: 2) {
 			state("open", label:'${name}', icon:"st.contact.contact.open", backgroundColor:"#ffa81e")
 			state("closed", label:'${name}', icon:"st.contact.contact.closed", backgroundColor:"#79b821")
 		}
-		standardTile("acceleration", "device.acceleration", decoration: "flat") {
+		standardTile("acceleration", "device.acceleration", decoration: "flat", width: 2, height: 2) {
 			state("active", label:'${name}', icon:"st.motion.acceleration.active", backgroundColor:"#53a7c0")
 			state("inactive", label:'${name}', icon:"st.motion.acceleration.inactive", backgroundColor:"#ffffff")
 		}
-		valueTile("temperature", "device.temperature", decoration: "flat") {
+		valueTile("temperature", "device.temperature", decoration: "flat", width: 2, height: 2) {
 			state("temperature", label:'${currentValue}°')
 		}
-		valueTile("3axis", "device.threeAxis", decoration: "flat", wordWrap: false) {
+		valueTile("3axis", "device.threeAxis", decoration: "flat", wordWrap: false, width: 2, height: 2) {
 			state("threeAxis", label:'${currentValue}', unit:"")
 		}
-		valueTile("battery", "device.battery", decoration: "flat", inactiveLabel: false) {
-			state "battery", label:'${currentValue}% battery', unit:""/*, backgroundColors:[
-				[value: 5, color: "#BC2323"],
-				[value: 10, color: "#D04E00"],
-				[value: 15, color: "#F1D801"],
-				[value: 16, color: "#FFFFFF"]
-			]*/
+		valueTile("battery", "device.battery", decoration: "flat", inactiveLabel: false, width: 2, height: 2) {
+			state "battery", label:'${currentValue}% battery', unit:""
 		}
-		/*
-		valueTile("lqi", "device.lqi", decoration: "flat", inactiveLabel: false) {
-			state "lqi", label:'${currentValue}% signal', unit:""
-		}
-		*/
-		
-		main(["status","contact", "acceleration"])
-		details(["status","contact", "acceleration", "temperature", "3axis", "battery"/*, "lqi"*/])
+
+		main(["status", "contact", "acceleration"])
+		details(["status", "contact", "acceleration", "temperature", "3axis", "battery"])
 	}
     
 	preferences {
-		input description: "This feature allows you to correct any temperature variations by selecting an offset. Ex: If your sensor consistently reports a temp that's 5 degrees too warm, you'd enter \"-5\". If 3 degrees too cold, enter \"+3\".", displayDuringSetup: false, type: "paragraph", element: "paragraph"
-		input "tempOffset", "number", title: "Temperature Offset", description: "Adjust temperature by this many degrees", range: "*..*", displayDuringSetup: false
+		input title: "Temperature Offset", description: "This feature allows you to correct any temperature variations by selecting an offset. Ex: If your sensor consistently reports a temp that's 5 degrees too warm, you'd enter \"-5\". If 3 degrees too cold, enter \"+3\".", displayDuringSetup: false, type: "paragraph", element: "paragraph"
+		input "tempOffset", "number", title: "Degrees", description: "Adjust temperature by this many degrees", range: "*..*", displayDuringSetup: false
 	}    
 }
 
