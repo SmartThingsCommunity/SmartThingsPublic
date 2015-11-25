@@ -54,14 +54,14 @@ preferences {
 	}
 
 	section("Then these will follow with on/off...") {
-		input "slaves2", "capability.switch", 
+		input "slaveSwitches", "capability.switch", 
 			multiple: true, 
 			title: "Slave On/Off Switch(es)...", 
 			required: false
 	}
     
 	section("And these will follow with dimming level...") {
-		input "slaves", "capability.switchLevel", 
+		input "slaveDimmers", "capability.switchLevel", 
 			multiple: true, 
 			title: "Slave Dimmer Switch(es)...", 
 			required: true
@@ -94,18 +94,18 @@ def switchSetLevelHandler(evt)
 	def level = evt.value.toFloat()
 	level = level.toInteger()
 	log.info "switchSetLevelHandler Event: ${level}"
-	slaves?.setLevel(level)
+	slaveDimmers?.setLevel(level)
 }
 
 def switchOffHandler(evt) {
 	log.info "switchoffHandler Event: ${evt.value}"
-	slaves?.off()
-	slaves2?.off()
+	slaveDimmers?.off()
+	slaveSwitches?.off()
 }
 
 def switchOnHandler(evt) {
 	log.info "switchOnHandler Event: ${evt.value}"
 	def dimmerValue = master.latestValue("level") //can be turned on by setting the level
-	slaves?.on()
-	slaves2?.on()
+	slaveDimmers?.on()
+	slaveSwitches?.on()
 }
