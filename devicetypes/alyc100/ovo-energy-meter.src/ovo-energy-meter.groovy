@@ -33,6 +33,7 @@
  *	VERSION HISTORY
  *  26.11.2015
  *	v1.0 - Initial Release
+ *	v1.0.1 - Tile layout update. Ability to change icon!!!
  */
 preferences {
 	input("username", "text", title: "Username", description: "Your OVO username (usually an email address)")
@@ -48,11 +49,12 @@ metadata {
 	}
 
 	tiles(scale: 2) {
-  		multiAttributeTile(name:"power", type:"generic", width:6, height:4) {
+  		multiAttributeTile(name:"power", type:"generic", width:6, height:4, canChangeIcon: true) {
     		tileAttribute("device.power", key: "PRIMARY_CONTROL") {
       			attributeState "default", label: '${currentValue}', icon:"st.Appliances.appliances17", backgroundColor:"#0a9928"
     		}
   		}
+        
         valueTile("consumptionPrice", "device.consumptionPrice", decoration: "flat", width: 3, height: 2) {
 			state "default", label: 'Current cost:\n${currentValue}/h'
 		}
