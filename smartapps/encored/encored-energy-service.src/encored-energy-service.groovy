@@ -18,7 +18,7 @@ definition(
     namespace: "Encored",
     author: "Encored Technologies",
     description: "An example showing several capabilities of HTML solution modules.",
-    category: "",
+    category: "SmartThings Labs",
     iconUrl: "https://s3.amazonaws.com/smartapp-icons/Convenience/Cat-Convenience.png",
     iconX2Url: "https://s3.amazonaws.com/smartapp-icons/Convenience/Cat-Convenience@2x.png",
     iconX3Url: "https://s3.amazonaws.com/smartapp-icons/Convenience/Cat-Convenience@2x.png",
@@ -654,8 +654,30 @@ def getInitialData() {
      def tier = ((int) (meteringUsage / 100000000) + 1)%10
     //ranking
     
+    log.debug "timestamp"
+    def now = new GregorianCalendar(2015, Calendar.JANUARY, 17, 15, 00, 00)
+    def ss = new Date(start).toCalendar()
+    def currentDate = new Date(start).toCalendar()
+			def prevYear = currentDate.get(Calendar.YEAR)
+            def prevMonth = currentDate.get(Calendar.MONTH)-1
+           def  prevDay = meteringDay
+            if (meteringDay > 27) {
+	            prevDay = 27
+            }
+            def prevDate = new GregorianCalendar(prevYear, prevMonth, prevDay-1, 15, 00, 00).time.time
+
+    log.debug now.time.month
+    log.debug  now.get(Calendar.YEAR)
+    log.debug now.get(Calendar.MONTH)
+    log.debug  now.get(Calendar.DATE)
+    log.debug new GregorianCalendar(ss.get(Calendar.YEAR), 
+    								-1, 
+                                    0,
+                                    15, 00 ,00).time.time
+
+    
    [
-   auth           : "60f0c06c7662c28285bce77016715821f342065a5ca89a9c6657fc67a6efe0177b74ea772fdc8c1bced5cecfd2b9f937d58578ff5b579df247085e413eccddf4", 
+   auth           : "40a406bae883a2dafcddf39b3d1835d1ce3e75623b82183c55bde8d5d8b828787829a04c26dc8bc9b4374e838880560fc188f3ee3c981ee915743870a001524f", 
    deviceState    : deviceState, 
    standbyPower   : standby,
    plan           : plan,
