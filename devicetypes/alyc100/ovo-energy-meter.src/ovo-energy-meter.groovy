@@ -34,6 +34,7 @@
  *  26.11.2015
  *	v1.0 - Initial Release
  *	v1.0.1 - Tile layout update. Ability to change icon!!!
+ *	v1.0.2 - SmartTiles compatability as Power Meter
  */
 preferences {
 	input("username", "text", title: "Username", description: "Your OVO username (usually an email address)")
@@ -51,7 +52,7 @@ metadata {
 	tiles(scale: 2) {
   		multiAttributeTile(name:"power", type:"generic", width:6, height:4, canChangeIcon: true) {
     		tileAttribute("device.power", key: "PRIMARY_CONTROL") {
-      			attributeState "default", label: '${currentValue}', icon:"st.Appliances.appliances17", backgroundColor:"#0a9928"
+      			attributeState "default", label: '${currentValue} W', icon:"st.Appliances.appliances17", backgroundColor:"#0a9928"
     		}
   		}
         
@@ -96,18 +97,18 @@ def refreshLiveData() {
     	data.meterlive = it.data
         
         // get electricity readings
-        def demand = (Math.round((data.meterlive.consumption.demand as BigDecimal) * 1000))/1000
+        def demand = ((int)Math.round((data.meterlive.consumption.demand as BigDecimal) * 1000))
         def consumptionPrice = (Math.round((data.meterlive.consumption.consumptionPrice.amount as BigDecimal) * 100))/100
         def consumptionPriceCurrency = data.meterlive.consumption.consumptionPrice.currency
         def unitPrice = (Math.round((data.meterlive.consumption.unitPrice.amount as BigDecimal) * 100))/100
         def unitPriceCurrency = data.meterlive.consumption.unitPrice.currency
         
-        demand = String.format("%1.2f",demand)
+        //demand = String.format("%4f",demand)
         consumptionPrice = String.format("%1.2f",consumptionPrice)
         unitPrice = String.format("%1.2f",unitPrice)
         
         // set local variables       
-        sendEvent(name: 'power', value: "$demand KW")
+        sendEvent(name: 'power', value: "$demand", unit: "W")
         sendEvent(name: 'consumptionPrice', value: "£$consumptionPrice", displayed: false)
         sendEvent(name: 'unitPrice', value: "£$unitPrice", displayed: false)
         
