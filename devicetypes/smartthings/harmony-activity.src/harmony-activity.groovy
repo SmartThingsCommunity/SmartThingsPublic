@@ -14,7 +14,7 @@
  *
  */
 metadata {
-        definition (name: "Logitech Harmony Activity", namespace: "smartthings", author: "Juan Risso") {
+        definition (name: "Harmony Activity", namespace: "smartthings", author: "Juan Risso") {
         capability "Switch"
         capability "Actuator"
 		capability "Refresh"
