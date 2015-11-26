@@ -3,7 +3,7 @@
  *
  *  Copyright 2015 Bruce Ravenel
  *
- *	10-09-2015 1.1
+ *	11-26-2015 1.1.1
  *
  *  Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except
  *  in compliance with the License. You may obtain a copy of the License at:
@@ -157,7 +157,7 @@ def initialize() {
 	state.currentMode = location.mode in modesX ? location.mode : modesX[0]
 	state.dimLevel = state.modeLevels[state.currentMode]
 	state.motionOffDismissed = true
-	state.motionDisabled = (disable) ? disable.currentSwitch == "on" : false
+	state.motionDisabled = (disabled) ? disabled.currentSwitch == "on" : false
 	state.masterOff = master.currentSwitch == "off"
 }
 
