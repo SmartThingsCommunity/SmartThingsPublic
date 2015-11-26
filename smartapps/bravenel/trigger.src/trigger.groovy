@@ -133,10 +133,10 @@ def getDevs(myCapab, dev, multi) {
 			thisName = "Locks"
 			thisCapab = "lock"
 			break
-//		case "Dimmer level":
-//			thisName = "Dimmer" + (multi ? "s" : "")
-//			thisCapab = "switchLevel"
-//			break
+		case "Dimmer level":
+			thisName = "Dimmer" + (multi ? "s" : "")
+			thisCapab = "switchLevel"
+			break
 		case "Temperature":
 			thisName = "Temperature sensor" + (multi ? "s" : "")
 			thisCapab = "temperatureMeasurement"
@@ -187,7 +187,7 @@ def getRelational(myDev) {
 
 def getCapab(myCapab) { 
 	def myOptions = ["Switch", "Physical Switch", "Motion", "Acceleration", "Contact", "Presence", "Lock", "Temperature", "Humidity", "Illuminance", "Certain Time", 
-    	"Mode", "Energy meter", "Power meter", "Water sensor", "Battery", "Routine", "Button"]
+    	"Mode", "Energy meter", "Power meter", "Water sensor", "Battery", "Routine", "Button", "Dimmer Level"]
 	def result = input myCapab, "enum", title: "Select capability", required: false, options: myOptions.sort(), submitOnChange: true
 }
 
@@ -202,7 +202,6 @@ def getState(myCapab, n) {
 	else if(myCapab == "Lock")				result = input "state$n", "enum", title: "Lock is ", options: ["locked", "unlocked"]
 	else if(myCapab == "Water sensor")		result = input "state$n", "enum", title: "Water becomes ", options: ["dry", "wet"]
 	else if(myCapab == "Button")			result = input "state$n", "enum", title: "Button pushed or held ", options: ["pushed", "held"], defaultValue: "pushed"
-//	else if(myCapab == "Dimmer level")		result = input "state$n", "number", title: "Dimmer level", range: "0..100"
 	else if(myCapab in ["Temperature", "Humidity", "Illuminance", "Energy meter", "Power meter", "Battery"]) {
     	input "isDev$n", "bool", title: "Relative to another device?", multiple: false, required: false, submitOnChange: true, defaultValue: false
         def myDev = settings.find {it.key == "isDev$n"}
@@ -210,6 +209,7 @@ def getState(myCapab, n) {
 		else if(myCapab == "Temperature") 		result = input "state$n", "decimal", title: "Temperature becomes ", range: "*..*"
 		else if(myCapab == "Humidity") 			result = input "state$n", "number", title: "Humidity becomes", range: "0..100"
 		else if(myCapab == "Illuminance") 		result = input "state$n", "number", title: "Illuminance becomes"
+		else if(myCapab == "Dimmer level")		result = input "state$n", "number", title: "Dimmer level", range: "0..100"
 		else if(myCapab == "Energy meter") 		result = input "state$n", "number", title: "Energy level becomes"
 		else if(myCapab == "Power meter") 		result = input "state$n", "number", title: "Power level becomes", range: "*..*"
 		else if(myCapab == "Battery") 			result = input "state$n", "number", title: "Battery level becomes"
@@ -278,7 +278,7 @@ def conditionLabelN(i) {
 		if     (thisCapab.value == "Temperature") 	result = "Temperature becomes "
 		else if(thisCapab.value == "Humidity") 		result = "Humidity becomes "
 		else if(thisCapab.value == "Illuminance")	result = "Illuminance becomes "
-//		else if(thisCapab.value == "Dimmer level")	result = "Dimmer level becomes " 
+		else if(thisCapab.value == "Dimmer level")	result = "Dimmer level becomes " 
 		else if(thisCapab.value == "Energy meter")	result = "Energy level becomes " 
 		else if(thisCapab.value == "Power meter")	result = "Power level becomes " 
 		else if(thisCapab.value == "Battery")		result = "Battery level becomes "
@@ -450,6 +450,10 @@ def initialize() {
 			case "Certain Time":
 				scheduleAtTime()
 				break
+			case "Dimmer level":
+				subscribe((settings.find{it.key == "rDev$i"}).value, "level", allHandler)
+                if(myRelDev) subscribe(myRelDev.value, "level", allHandler)
+				break
 			case "Energy meter":
 				subscribe((settings.find{it.key == "rDev$i"}).value, "energy", allHandler)
                 if(myRelDev) subscribe(myRelDev.value, "energy", allHandler)
@@ -516,7 +520,7 @@ def checkCondAny(dev, state, cap, rel, relDev) {
 	if     (cap == "Temperature") 	dev.currentTemperature.each 	{result = result || compare(it, rel, state, reldev ? relDev.currentTemperature : null)}
 	else if(cap == "Humidity")	dev.currentHumidity.each    	{result = result || compare(it, rel, state, reldev ? relDev.currentHumidity : null)}
 	else if(cap == "Illuminance") 	dev.currentIlluminance.each 	{result = result || compare(it, rel, state, reldev ? relDev.currentIlluminance : null)}
-//	else if(cap == "Dimmer level")	dev.currentLevel.each		{result = result || compare(it, rel, state, relDev ? relDev.currentLevel : null)}
+	else if(cap == "Dimmer level")	dev.currentLevel.each		{result = result || compare(it, rel, state, relDev ? relDev.currentLevel : null)}
 	else if(cap == "Energy meter")	dev.currentEnergy.each		{result = result || compare(it, rel, state, relDev ? relDev.currentEnergy : null)}
 	else if(cap == "Power meter")	dev.currentPower.each		{result = result || compare(it, rel, state, relDev ? relDev.currentPower : null)}
 	else if(cap == "Battery")	dev.currentBattery.each		{result = result || compare(it, rel, state, relDev ? relDev.currentBattery : null)}
@@ -548,7 +552,7 @@ def checkCondAll(dev, state, cap, rel, relDev) {
 	if     (cap == "Temperature") 		dev.currentTemperature.each 	{result = result && compare(it, rel, state, reldev ? relDev.currentTemperature : null)}
 	else if(cap == "Humidity") 		dev.currentHumidity.each    	{result = result && compare(it, rel, state, reldev ? relDev.currentHumidity : null)}
 	else if(cap == "Illuminance") 		dev.currentIlluminance.each 	{result = result && compare(it, rel, state, reldev ? relDev.currentIlluminance : null)}
-//	else if(cap == "Dimmer level")		dev.currentLevel.each		{result = result && compare(it, rel, state, reldev ? relDev.currentLevel : null)}
+	else if(cap == "Dimmer level")		dev.currentLevel.each		{result = result && compare(it, rel, state, reldev ? relDev.currentLevel : null)}
 	else if(cap == "Energy meter")		dev.currentEnergy.each		{result = result && compare(it, rel, state, reldev ? relDev.currentEnergy : null)}
 	else if(cap == "Power meter")		dev.currentPower.each		{result = result && compare(it, rel, state, reldev ? relDev.currentPower : null)}
 	else if(cap == "Battery")		dev.currentBattery.each		{result = result && compare(it, rel, state, reldev ? relDev.currentBattery : null)}
