@@ -117,7 +117,7 @@ def getDevs(myCapab, dev, multi) {
 			thisCapab = "lock"
 			break
 		case "Dimmer level":
-			thisName = "Dimmers"
+			thisName = "Dimmer" + (multi ? "s" : "")
 			thisCapab = "switchLevel"
 			break
 		case "Temperature":
