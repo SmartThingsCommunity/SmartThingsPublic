@@ -1,5 +1,5 @@
 /**
- *  Rule
+ *  Rule Machine
  *
  *  Copyright 2015 Mike Maxwell
  *
