@@ -3,7 +3,7 @@
  *
  *  Copyright 2015 Bruce Ravenel
  *
- *  Version 1.2.4  26 Nov 2015
+ *  Version 1.2.5  27 Nov 2015
  *
  *  Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except
  *  in compliance with the License. You may obtain a copy of the License at:
@@ -54,6 +54,7 @@ def selectRule() {
 			paragraph "Advanced Rule Input allows for parenthesized sub-rules."
 			input "advanced", "bool", title: "Advanced Rule Input", required: false
             input "disabled", "capability.switch", title: "Switch to disable rule when ON", required: false, multiple: false
+            input "logging", "bool", title: "Enable event and rule logging", required: false, defaultValue: false
    		}    
 	}
 }
@@ -866,13 +867,13 @@ def runRule(delay) {
 				if(phoneFalse)		sendSms(phoneFalse, msgFalse ?: "Rule $app.label False")
 			}
 		state.success = success
-		log.info (success ? "$app.label is True" : "$app.label is False")
+		if(logging) log.info (success ? "$app.label is True" : "$app.label is False")
         }
 	}
 }
 
 def allHandler(evt) {
-	log.info "$app.label: $evt.displayName $evt.name $evt.value"
+	if(logging) log.info "$app.label: $evt.displayName $evt.name $evt.value"
 	runRule(false)
 }
 

@@ -1,7 +1,7 @@
 /**
  *  Trigger
  *
- *	Version 1.1.0a     26 Nov 2015
+ *	Version 1.1.1     27 Nov 2015
  *
  *  Copyright 2015 Bruce Ravenel
  *
@@ -51,6 +51,7 @@ def selectTriggerActs() {
 				options: ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"]
 			input "modes", "mode", title: "Only when mode is", multiple: true, required: false            
 			input "disabled", "capability.switch", title: "Switch to disable trigger when ON", required: false, multiple: false
+            input "logging", "bool", title: "Enable event logging", required: false, defaultValue: false
    		}    
 	}
 }
@@ -627,7 +628,7 @@ def doDelayTrue(time) {
 	runIn(time * 60, delayRuleTrue)
 	def delayStr = "minute"
 	if(time > 1) delayStr = delayStr + "s"
-	log.info ("Delayed by $time $delayStr")
+	if(logging) log.info ("Delayed by $time $delayStr")
 }
 
 def doTrigger(delay) {
@@ -713,7 +714,7 @@ def testEvt(evt) {
 }
 
 def allHandler(evt) {
-	log.info "$app.label: $evt.displayName $evt.name $evt.value"
+	if(logging) log.info "$app.label: $evt.displayName $evt.name $evt.value"
 	def doit = true
 	if(evt.name in ["temperature", "humidity", "power", "energy", "battery", "illuminance", "mode", "presence", "button", "routineExecuted"]) doit = testEvt(evt)
 	if (doit) doTrigger(false)
@@ -724,7 +725,7 @@ def timeHandler() {
 }
 
 def physicalHandler(evt) {
-	log.info "$app.label: Physical $evt.displayName $evt.name $evt.value"
+	if(logging) log.info "$app.label: Physical $evt.displayName $evt.name $evt.value"
 	if(evt.isPhysical()) doTrigger(false)
 }
 
