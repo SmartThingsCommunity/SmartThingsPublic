@@ -53,8 +53,8 @@ def selectRule() {
 			input "modesZ", "mode", title: "Evaluate only when mode is", multiple: true, required: false
 			paragraph "Advanced Rule Input allows for parenthesized sub-rules."
 			input "advanced", "bool", title: "Advanced Rule Input", required: false
-            input "disabled", "capability.switch", title: "Switch to disable rule when ON", required: false, multiple: false
-            input "logging", "bool", title: "Enable event and rule logging", required: false, defaultValue: false
+			input "disabled", "capability.switch", title: "Switch to disable rule when ON", required: false, multiple: false
+			input "logging", "bool", title: "Enable event and rule logging", required: false, defaultValue: false
    		}    
 	}
 }
@@ -174,7 +174,7 @@ def getState(myCapab, n) {
 	else if(myCapab == "Acceleration")	result = input "state$n", "enum", title: "Acceleration state", options: ["active", "inactive"]
 	else if(myCapab == "Contact") 		result = input "state$n", "enum", title: "Contact state", options: ["open", "closed"]
 	else if(myCapab == "Presence") 		result = input "state$n", "enum", title: "Presence state", options: ["present", "not present"], defaultValue: "present"
-	else if(myCapab == "Lock")			result = input "state$n", "enum", title: "Lock state", options: ["locked", "unlocked"]
+	else if(myCapab == "Lock")		result = input "state$n", "enum", title: "Lock state", options: ["locked", "unlocked"]
 	else if(myCapab == "Water sensor")	result = input "state$n", "enum", title: "Water state", options: ["dry", "wet"]
 	else if(myCapab == "Dimmer level")	result = input "state$n", "number", title: "Dimmer level", range: "0..100"
 	else if(myCapab in ["Temperature", "Humidity", "Illuminance", "Energy meter", "Power meter", "Battery"]) {
@@ -258,8 +258,8 @@ def conditionLabelN(i) {
 		def thisRel = settings.find {it.key == "RelrDev$i"}
 		if(thisCapab.value in ["Temperature", "Humidity", "Illuminance", "Dimmer level", "Energy meter", "Power meter", "Battery"]) result = result + " " + thisRel.value + " "
 		def thisState = settings.find {it.key == "state$i"}
-        def thisRelDev = settings.find {it.key == "relDevice$i"}
-        if(thisRelDev) result = result + thisRelDev.value
+		def thisRelDev = settings.find {it.key == "relDevice$i"}
+		if(thisRelDev) result = result + thisRelDev.value
 		else result = result + thisState.value
         }
 	return result
@@ -618,27 +618,27 @@ def initialize() {
 				break
 			case "Energy meter":
 				subscribe((settings.find{it.key == "rDev$i"}).value, "energy", allHandler)
-                if(myRelDev) subscribe(myRelDev.value, "energy", allHandler)
+				if(myRelDev) subscribe(myRelDev.value, "energy", allHandler)
 				break
 			case "Power meter":
 				subscribe((settings.find{it.key == "rDev$i"}).value, "power", allHandler)
-                if(myRelDev) subscribe(myRelDev.value, "power", allHandler)
+				if(myRelDev) subscribe(myRelDev.value, "power", allHandler)
 				break
 			case "Temperature":
 				subscribe((settings.find{it.key == "rDev$i"}).value, "temperature", allHandler)
-                if(myRelDev) subscribe(myRelDev.value, "temperature", allHandler)
+				if(myRelDev) subscribe(myRelDev.value, "temperature", allHandler)
 				break
 			case "Humidity":
 				subscribe((settings.find{it.key == "rDev$i"}).value, "humidity", allHandler)
-                if(myRelDev) subscribe(myRelDev.value, "humidity", allHandler)
+				if(myRelDev) subscribe(myRelDev.value, "humidity", allHandler)
 				break
 			case "Battery":
 				subscribe((settings.find{it.key == "rDev$i"}).value, "battery", allHandler)
-                if(myRelDev) subscribe(myRelDev.value, "battery", allHandler)
+				if(myRelDev) subscribe(myRelDev.value, "battery", allHandler)
 				break
 			case "Illuminance":
 				subscribe((settings.find{it.key == "rDev$i"}).value, "illuminance", allHandler)
-                if(myRelDev) subscribe(myRelDev.value, "illuminance", allHandler)
+				if(myRelDev) subscribe(myRelDev.value, "illuminance", allHandler)
 				break
 			case "Water sensor":
 				subscribe((settings.find{it.key == "rDev$i"}).value, "water", allHandler)
@@ -732,7 +732,7 @@ def getOperand(i) {
 		def myState = 	settings.find {it.key == "state$i"}
 		def myRel = 	settings.find {it.key == "RelrDev$i"}
 		def myAll = 	settings.find {it.key == "AllrDev$i"}
-        def myRelDev =  settings.find {it.key == "relDevice$i"}
+		def myRelDev =  settings.find {it.key == "relDevice$i"}
 		if(myAll) {
 			if(myAll.value) result = checkCondAll(myDev.value, myState ? myState.value : null, capab, myRel ? myRel.value : 0, myRelDev ? myRelDev.value : null)
 			else result = checkCondAny(myDev.value, myState ? myState.value : null, capab, myRel ? myRel.value : 0, myRelDev ? myRelDev.value : null)
@@ -819,8 +819,8 @@ def runRule(delay) {
 	def success = eval()
 	if((success != state.success) || delay) {
 		unschedule(delayRuleTrue)
-        unschedule(delayRuleFalse)
-		if     (delayTrue > 0 && !delay && success)		doDelayTrue(delayTrue)
+		unschedule(delayRuleFalse)
+		if     (delayTrue > 0 && !delay && success)	doDelayTrue(delayTrue)
 		else if(delayFalse > 0 && !delay && !success)	doDelayFalse(delayFalse)
 		else {
         	if(success) {
@@ -866,9 +866,9 @@ def runRule(delay) {
 				if(pushFalse)		sendPush(msgFalse ?: "Rule $app.label False")
 				if(phoneFalse)		sendSms(phoneFalse, msgFalse ?: "Rule $app.label False")
 			}
-		state.success = success
-		if(logging) log.info (success ? "$app.label is True" : "$app.label is False")
-        }
+			state.success = success
+			if(logging) log.info (success ? "$app.label is True" : "$app.label is False")
+		}
 	}
 }
 
