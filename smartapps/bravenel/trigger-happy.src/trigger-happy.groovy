@@ -1,6 +1,8 @@
 /**
  *  Trigger Happy
  *
+ *	Version 1.0    27 Nov 2015
+ *
  *  Copyright 2015 Bruce Ravenel
  *
  *  Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except
