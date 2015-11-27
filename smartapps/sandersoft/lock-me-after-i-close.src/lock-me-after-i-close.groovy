@@ -13,10 +13,9 @@
  *  for the specific language governing permissions and limitations under the License.
  *
  */
-import java.text.SimpleDateFormat;
-import java.util.Date;
-import groovy.time.TimeCategory
  
+import groovy.time.TimeCategory
+
 definition(
     name: "Lock Me After I Close",
     namespace: "SanderSoft",
@@ -31,7 +30,7 @@ preferences {
 	section("When the door closes..."){
 		input "contact", "capability.contactSensor", title: "Where?"
 	}
-	section("Lock the lock...") {
+	section("Lock which lock...") {
 		input "lock","capability.lock", title: "Lock?"
 	}
 	section("Notify me...") {
@@ -51,7 +50,9 @@ def initialize() {
     log.debug "Auto Lock Door initialized."
 	subscribe(contact, "contact", doorHandler, [filterEvents: false])
     subscribe(lock, "lock", doorHandler, [filterEvents: false])
-    subscribe(lock, "unlock", doorHandler, [filterEvents: false])  
+    subscribe(lock, "unlock", doorHandler, [filterEvents: false])
+    log.debug "Creating the routineDoorLockCheck schedule"
+    runEvery30Minutes(routineDoorLockCheck)
 }
 def installed() {
     initialize()
@@ -61,6 +62,45 @@ def updated() {
     unschedule()
     initialize()
 }
+
+def routineDoorLockCheck()
+{
+    def currentFormatTime = new Date().format("EEE, MMM d, hh:mm a", location.timeZone)
+    log.debug "routineDoorLockCheck: Starting Routine Door/Lock Check at ${currentFormatTime}"
+	def ls = lock.latestValue("lock")
+    def cs = contact.latestValue("contact")    
+    def isLockLocked =    (ls == "locked" || ls == "unknown")   
+    def isContactClosed = (cs == "closed" || cs == "unknown")
+    log.debug "routineDoorLockCheck: lock status = ${ls}, Door Status = ${cs}"
+    
+	if ((isContactClosed) && (!isLockLocked)) { // If the door is closed and unlocked then...
+		def msg =  "Warning: Your Front door has been closed but NOT locked.  I'm going to try to lock the door!"
+        pushNotificationHandler(msg)
+		lockDoor()
+        runIn(15,lockVerify, options)
+    }
+    log.debug "Re-Scheduling routineDoorLockCheck for 30 mins from ${currentFormatTime}"
+}
+
+def lockVerify()
+{
+    def currentFormatTime = new Date().format("EEE, MMM d, hh:mm a", location.timeZone)
+    log.debug "lockVerify: Starting Routine Door/Lock Check at ${currentFormatTime}"
+	def ls = lock.latestValue("lock")
+    def cs = contact.latestValue("contact")    
+    def isLockLocked =    (ls == "locked" || ls == "unknown")   
+    def isContactClosed = (cs == "closed" || cs == "unknown")
+    def msg = "lockVerify: lock status = ${ls}, Door Status = ${cs}"
+    pushNotificationHandler(msg)
+    
+	if ((isContactClosed) && (!isLockLocked)) { // If the door is closed and unlocked then...
+		msg =  "Warning: Your Front door has been closed but NOT locked.  I'm going to try to lock the door!"
+        pushNotificationHandler(msg)
+		lockDoor()
+        runIn(15,LockVerify, options)
+    }
+}
+
 
 def lockDoor()
 {
@@ -80,23 +120,23 @@ def doorHandler(evt)
     def isContactClosed = (cs == "closed" || cs == "unknown")
         
     def delayDate = new Date()
-    log.debug "delayDate = $delayDate"
+//    log.debug "delayDate = $delayDate"
     
     use( TimeCategory ) {
     delayDate = delayDate + secsToDelay.seconds
 	}
-    log.debug "delayDate = $delayDate"
+//    log.debug "delayDate = $delayDate"
 
 	def delayDate2 = new Date()
-    log.debug "delayDate2 = $delayDate2"
+//    log.debug "delayDate2 = $delayDate2"
     
     use( TimeCategory ) {
     delayDate2 = delayDate2 + secsToDelay2.seconds
 	}
-    log.debug "delayDate2 = $delayDate2"
+//    log.debug "delayDate2 = $delayDate2"
     
     log.debug "The source of this event is: ${evt.source}"
-    log.debug "Event: Name ${evt.name} is ${evt.value} value and created at: ${evt.date}"
+    log.debug "Event: Name ${evt.name} is ${evt.value} value and created at: ${evt.date.format("EEE, MMM d, hh:mm a", location.timeZone)}"
     log.debug "ContactStatus: $cs LockStatus: $ls isLockedLocked: $isLockLocked isContactClosed: $isContactClosed"
 // 	Handle the Various Events and Door/Lock Status
     
@@ -105,23 +145,32 @@ def doorHandler(evt)
         log.debug "Cancel the current task. Door is unlocked and somebody just opened it!"
         contactOpenHandler()   // update the door open timestamp
         unschedule( lockDoor ) // ...we don't need to lock it later.
-        if (isLockLocked) {
-			def msg = "Warning: Door Opened with Lock in the Locked Mode"
-            unlockDoor() // Open Lock
+        log.debug "Lock status is $lock.currentLock"
+        if (lock.currentLock == "locked") {
+            if (secsToDelay2 == 0) {
+	            unlockDoor()
+            }
+        else {
+            runOnce(delayDate2,unlockDoor)
+            }
         }
     }
 // 	Door is currently OPEN, Lock was changed from UNLOCKED -> LOCKED (MISTAKE)
     else if ((!isContactClosed) && (evt.value == "locked")) {   
         log.debug "Door is in open status and somebody just locked the lock.  Mistake, unlocking the lock after !"
 //        runIn( secsToDelay2, unlockDoor )   // ...schedule (in seconds) to unlock...  We don't want the door to be closed while the lock is engaged. 
-	    runOnce(delayDate2,unlockDoor)
-
-}
-// 	Door is currently OPEN, Lock was changed from LOCKED -> UNLOCKED (MANUALLY UNLOCKED THE LOCK)
+        if (secsToDelay2 == 0) {
+            unlockDoor()
+            }
+        else {
+            runOnce(delayDate,unlockDoor)
+            }
+    }
+    // 	Door is currently OPEN, Lock was changed from LOCKED -> UNLOCKED (MANUALLY UNLOCKED THE LOCK)
     else if ((!isContactClosed) && (evt.value == "unlocked")) { // If the door is open and a person unlocks it then...
         log.debug "Cancel the current task. Door is open and somebody just manually unlocked the lock!"
         unschedule( unlockDoor ) // ...we don't need to unlock it later.
-	}
+    }
     
 // 	Door is currently CLOSED, Lock was changed from UNLOCKED to LOCKED (NORMAL CLOSING & LOCKING MODE)
 	else if ((isContactClosed) && (evt.value == "locked")) { // If the door is closed and a person manually locks it then...
@@ -134,7 +183,12 @@ def doorHandler(evt)
         log.debug "Re-arming lock in (${secsToDelay}s)."
 //        runIn( secsToDelay, lockDoor ) // ...schedule (in seconds) to lock.
 // Temporary Fix for problems with RunIn Routine
+	if (secsToDelay == 0) {
+    	lockDoor()
+        }
+    else {
 	    runOnce(delayDate,lockDoor)
+        }
     }
 // 	Door has been CLOSED and Lock is UNLOCKED (Normal Close Door Mode)
 	else if (!isLockLocked && (evt.value == "closed")) { // If a person closes an unlocked door...
@@ -143,8 +197,13 @@ def doorHandler(evt)
         log.debug "Re-arming lock in (${secsToDelay}s)."
 //        runIn( secsToDelay, lockDoor ) // ...schedule (in seconds) to lock.
 // Temporary Fix for problems with RunIn Routine
-	    runOnce(delayDate,lockDoor)
-    }
+		if (secsToDelay == 0) {
+    		lockDoor()
+        	}
+    	else {
+	    	runOnce(delayDate,lockDoor)
+        	}
+    	}
     else {
     // Unexpected Door and/or Lock state(s)
 		def msg = "Ohh.. no!!.. Unknown Status Conflicts"
@@ -159,37 +218,23 @@ def doorHandler(evt)
 }
 
 def contactCloseHandler() { //Specified contact has been event closed
-    //Set Timezone to New York for me!
-    TimeZone.setDefault(TimeZone.getTimeZone('America/New_York'))
-    SimpleDateFormat format = new SimpleDateFormat(
-                "EEE, d MMM, hh:mm a");
-    //Generate the door history report
-    // Format a message
+
+    def currentFormatTime = new Date().format("EEE, MMM d, hh:mm a", location.timeZone)
+
     def today = new Date()
     def currentTime = now()
-    log.debug "currentTime = $currentTime"
-    log.debug "OpenStartDT in Close Event = ${state.OpenStartDT}"    
-    log.debug "OpenStartDT in Close Event = ${format.format(new Date(state.OpenStartDT))}"
-    log.debug "OpenStartDT in Close Event after format.format = ${state.OpenStartDT}"    
     def int DoorOpenTime = (currentTime - state.OpenStartDT)/1000
-	log.debug "DoorOpenTime = ${DoorOpenTime}"
-	log.debug "DoorOpenTime converted = ${timeConversion(DoorOpenTime)}"
-	def msg = ""
-    msg = "The Front Door has been closed and locked, it was opened at ${format.format(new Date(state.OpenStartDT))} for ${timeConversion(DoorOpenTime)}"
+    def msg = "The Front Door has been closed and locked, it was opened at ${currentFormatTime} for ${timeConversion(DoorOpenTime)}"
+	log.debug "${msg}"
 	pushNotificationHandler(msg)
 }
 
 def contactOpenHandler() { //Specified contact has been event opened
-    //Set Timezone to New York for me!
-    TimeZone.setDefault(TimeZone.getTimeZone('America/New_York'))
+    def currentFormatTime = new Date().format("EEE, MMM d, hh:mm a", location.timeZone)
     def today = new Date()
-    SimpleDateFormat format = new SimpleDateFormat(
-                "EEE, d MMM, hh:mm a");
 	updateLastRunDT()
-	log.debug "OpenStartDT in Open Event = ${state.OpenStartDT}"    
-    log.debug "OpenStartDT in Open Event = ${format.format(new Date(state.OpenStartDT))}"    
-    log.debug "OpenStartDT in Open Event after format.format = ${state.OpenStartDT}"    
-	def msg = "Your front door was opened on ${format.format(today)}"
+	def msg = "Your front door was opened on ${currentFormatTime}"
+    log.debug "${msg}"
 	pushNotificationHandler(msg)
 }
 
