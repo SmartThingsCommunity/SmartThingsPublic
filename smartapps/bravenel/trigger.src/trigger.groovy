@@ -1,7 +1,7 @@
 /**
  *  Trigger
  *
- *	Version 1.1.0     26 Nov 2015
+ *	Version 1.1.0a     26 Nov 2015
  *
  *  Copyright 2015 Bruce Ravenel
  *
