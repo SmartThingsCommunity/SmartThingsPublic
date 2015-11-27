@@ -35,6 +35,7 @@
  *	v1.0 - Initial Release
  *	v1.0.1 - Tile layout update. Ability to change icon!!!
  *	v1.0.2 - SmartTiles compatability as Power Meter
+ *	v1.1 - Calculates cumulative daily costs without OVO API
  */
 preferences {
 	input("username", "text", title: "Username", description: "Your OVO username (usually an email address)")
@@ -57,17 +58,31 @@ metadata {
   		}
         
         valueTile("consumptionPrice", "device.consumptionPrice", decoration: "flat", width: 3, height: 2) {
-			state "default", label: 'Current cost:\n${currentValue}/h'
+			state "default", label: 'Curr. Cost:\n${currentValue}/h'
 		}
         valueTile("unitPrice", "device.unitPrice", decoration: "flat", width: 3, height: 2) {
 			state "default", label: 'Unit Price:\n${currentValue}'
 		}
+        
+        valueTile("totalDemand", "device.averageDailyTotalPower", decoration: "flat", width: 3, height: 2) {
+			state "default", label: 'Total Power:\n${currentValue} kWh'
+		}
+        valueTile("totalConsumptionPrice", "device.currentDailyTotalPowerCost", decoration: "flat", width: 3, height: 2) {
+			state "default", label: 'Total Price:\n${currentValue}'
+		}
+        
+        valueTile("yesterdayTotalPower", "device.yesterdayTotalPower", decoration: "flat", width: 3, height: 1) {
+			state "default", label: 'Prev. Daily Power :\n${currentValue} kWh'
+		}
+        valueTile("yesterdayTotalPowerCost", "device.yesterdayTotalPowerCost", decoration: "flat", width: 3, height: 1) {
+			state "default", label: 'Prev. Daily Cost:\n${currentValue}'
+		}
+        
 		standardTile("refresh", "device.power", inactiveLabel: false, decoration: "flat", width: 2, height: 2) {
 			state "default", label:'', action:"refresh.refresh", icon:"st.secondary.refresh"
 		}
-
 		main (["power"])
-		details(["power", "consumptionPrice", "unitPrice", "totalDemand", "totalConsumptionPrice", "refresh"])
+		details(["power", "consumptionPrice", "unitPrice", "totalDemand", "totalConsumptionPrice", "yesterdayTotalPower", "yesterdayTotalPowerCost", "refresh"])
 	}
 }
 
@@ -112,8 +127,64 @@ def refreshLiveData() {
         sendEvent(name: 'consumptionPrice', value: "£$consumptionPrice", displayed: false)
         sendEvent(name: 'unitPrice', value: "£$unitPrice", displayed: false)
         
+        //Calculate power costs manually without need for terrible OVO API.
+        if (data.dailyPowerHistory == null)
+        {
+        	data.dailyPowerHistory = [:]
+        }
+        //Get current hour
+        
+        //data.hour = null
+        def currentHour = new Date().getAt(Calendar.HOUR_OF_DAY)
+        if ((data.hour == null) || (data.hour != currentHour)) {
+        	//Reset at midnight or initial call
+        	if ((data.hour == null) || (currentHour == 0)) {  
+            	//Store the day's power info as yesterdays
+            	def totalPower = getTotalDailyPower()
+            	data.yesterdayTotalPower = (Math.round((totalPower as BigDecimal) * 1000))/1000
+                data.yesterdayTotalPowerCost = (Math.round(((totalPower as BigDecimal) * (data.meterlive.consumption.unitPrice.amount as BigDecimal)) * 100))/100
+            	sendEvent(name: 'yesterdayTotalPower', value: "$data.yesterdayTotalPower", unit: "KWh", displayed: false)
+        		sendEvent(name: 'yesterdayTotalPowerCost', value: "£$data.yesterdayTotalPowerCost", displayed: false)
+                
+                //Reset power history
+                data.dailyPowerHistory = [:]
+            }       	
+        	data.hour = currentHour
+            data.currentHourPowerTotal = 0
+            data.currentHourPowerEntryNumber = 1
+        }
+        else {
+       		data.currentHourPowerEntryNumber = data.currentHourPowerEntryNumber + 1      
+        }
+               
+        data.currentHourPowerTotal = data.currentHourPowerTotal + (data.meterlive.consumption.demand as BigDecimal)
+        data.dailyPowerHistory["Hour $data.hour"] = ((data.currentHourPowerTotal as BigDecimal) / data.currentHourPowerEntryNumber)
+        
+        def totalDailyPower = getTotalDailyPower()
+        def hourCount = 0
+        
+        def formattedAverageTotalPower = (Math.round((totalDailyPower as BigDecimal) * 1000))/1000
+        def formattedCurrentTotalPowerCost = (Math.round(((totalDailyPower as BigDecimal) * (data.meterlive.consumption.unitPrice.amount as BigDecimal)) * 100))/100
+        
+        formattedAverageTotalPower = String.format("%1.2f",formattedAverageTotalPower)
+        formattedCurrentTotalPowerCost = String.format("%1.2f",formattedCurrentTotalPowerCost)
+        
+        sendEvent(name: 'averageDailyTotalPower', value: "$formattedAverageTotalPower", unit: "KWh", displayed: false)
+        sendEvent(name: 'currentDailyTotalPowerCost', value: "£$formattedCurrentTotalPowerCost", displayed: false)
+        
+        log.debug "currentHour: $currentHour, data.hour: $data.hour, data.currentHourPowerTotal: $data.currentHourPowerTotal, data.currentHourPowerEntryNumber: $data.currentHourPowerEntryNumber, data.dailyPowerHistory: $data.dailyPowerHistory"
+        log.debug "formattedAverageTotalPower: $formattedAverageTotalPower, formattedCurrentTotalPowerCost: $formattedCurrentTotalPowerCost"
+        
     }
 
+}
+
+private def getTotalDailyPower() {
+	def totalDailyPower = 0
+	data.dailyPowerHistory.each { hour, averagePower ->
+    	totalDailyPower = totalDailyPower + averagePower
+	};
+    return totalDailyPower
 }
 
 def refreshHistoricalData() {
@@ -244,3 +315,4 @@ def isLoggedIn() {
 	def now = new Date().getTime();
     return data.auth.expires_at > now
 }
+
