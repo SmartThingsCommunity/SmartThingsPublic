@@ -1,5 +1,5 @@
 metadata {
-	definition (name: "Z-Wave Garage Door Sensor Button", namespace: "leblaaanc", author: "Chris LeBlanc") {
+	definition (name: "Z-Wave Garage Door Sensor Button", namespace: "LeBlaaanc", author: "Chris LeBlanc") {
 		capability "Garage Door Control"
 		capability "Contact Sensor"
 		capability "Actuator"
