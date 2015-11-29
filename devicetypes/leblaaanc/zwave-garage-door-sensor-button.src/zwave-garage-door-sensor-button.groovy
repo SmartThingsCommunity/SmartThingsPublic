@@ -230,22 +230,22 @@ def actuate() {
 }
 
 def open() {
-	if (device.currentValue("status") != "open") {
+	if (device.currentValue("status") == "closed") {
 		log.debug "Sending button press event to open door"
 		sendEvent(name: "buttonPress", value: "true", isStateChange: true, unit: "")
 	}
 	else {
-		log.debug "Not opening door since it is already open"
+		log.debug "Not opening door since it is already open or transitioning"
 	}
 }
 
 def close() {
-	if (device.currentValue("status") != "closed") {
+	if (device.currentValue("status") == "open") {
 		log.debug "Sending button press event to close door"
 		sendEvent(name: "buttonPress", value: "true", isStateChange: true, unit: "")
 	}
 	else {
-		log.debug "Not closing door since it is already closed"
+		log.debug "Not closing door since it is already closed or transitioning"
 	}
 }
 
