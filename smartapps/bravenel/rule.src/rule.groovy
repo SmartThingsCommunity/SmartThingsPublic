@@ -3,7 +3,7 @@
  *
  *  Copyright 2015 Bruce Ravenel
  *
- *  Version 1.2.6   28 Nov 2015
+ *  Version 1.2.7   29 Nov 2015
  *
  *  Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except
  *  in compliance with the License. You may obtain a copy of the License at:
@@ -43,6 +43,7 @@ def selectRule() {
 		section() {     
 			label title: "Name the Rule", required: true
 			def condLabel = conditionLabel()
+			if (condLabel) condLabel = condLabel[0..-2]
 			href "selectConditions", title: "Define Conditions", description: condLabel ? (condLabel) : "Tap to set", required: true, state: condLabel ? "complete" : null, submitOnChange: true
 			href "defineRule", title: "Define the Rule", description: state.str ? (state.str) : "Tap to set", state: state.str ? "complete" : null
 			href "selectActionsTrue", title: "Select the Actions for True", description: state.actsTrue ? state.actsTrue : "Tap to set", state: state.actsTrue ? "complete" : null
@@ -63,9 +64,10 @@ def selectRule() {
 def selectConditions() {
     def ct = settings.findAll{it.key.startsWith("rCapab")}
     state.howMany = ct.size() + 1
+    def howMany = state.howMany
 	dynamicPage(name: "selectConditions", title: "Select Conditions", uninstall: false) {
-		if(state.howMany) {
-			for (int i = 1; i <= state.howMany; i++) {
+		if(howMany) {
+			for (int i = 1; i <= howMany; i++) {
 				def thisCapab = "rCapab$i"
 				section("Condition #$i") {
 					getCapab(thisCapab)
@@ -218,14 +220,15 @@ def certainTime() {
 }
 
 def conditionLabel() {
+	def howMany = state.howMany
 	def result = ""
-	if(state.howMany) {
-		for (int i = 1; i < state.howMany; i++) {
+	if(howMany) {
+		for (int i = 1; i <= howMany; i++) {
 			result = result + conditionLabelN(i)
-			if((i + 1) < state.howMany) result = result + "\n"
+			if((i + 1) <= howMany) result = result + "\n"
 		}
-        if(state.howMany == 2) {
-        	state.str = result[0..-1]
+        if(howMany == 2) {
+        	state.str = result[0..-9]
         	state.eval = [1]
         }
     }
@@ -234,12 +237,12 @@ def conditionLabel() {
 
 def conditionLabelN(i) {
 	def result = ""
-        def thisCapab = settings.find {it.key == "rCapab$i"}
-        if(!thisCapab) return result
-        if(thisCapab.value == "Time of day") result = "Time between " + timeIntervalLabel()
-        else if(thisCapab.value == "Days of week") result = "Day i" + (days.size() > 1 ? "n " + days : "s " + days[0])
-        else if(thisCapab.value == "Mode") result = "Mode i" + (modes.size() > 1 ? "n " + modes : "s " + modes[0])
-        else {
+    def thisCapab = settings.find {it.key == "rCapab$i"}
+    if(!thisCapab) return result
+	if(thisCapab.value == "Time of day") result = "Time between " + timeIntervalLabel()
+	else if(thisCapab.value == "Days of week") result = "Day i" + (days.size() > 1 ? "n " + days : "s " + days[0])
+	else if(thisCapab.value == "Mode") result = "Mode i" + (modes.size() > 1 ? "n " + modes : "s " + modes[0])
+	else {
 		def thisDev = settings.find {it.key == "rDev$i"}
 		if(!thisDev) return result
 		def thisAll = settings.find {it.key == "AllrDev$i"}
@@ -258,8 +261,8 @@ def conditionLabelN(i) {
 		def thisRelDev = settings.find {it.key == "relDevice$i"}
 		if(thisRelDev) result = result + thisRelDev.value
 		else result = result + thisState.value
-		result = result + (getOperand(i) ? " [TRUE]" : " [FALSE]")
-    }
+	}
+	result = result + (getOperand(i) ? " [TRUE]" : " [FALSE]")
 	return result
 }
 
@@ -275,8 +278,9 @@ def defineRule() {
 }
 
 def inputLeft(sub) {
+	def howMany = state.howMany - 1
 	def conds = []
-	for (int i = 1; i < state.howMany; i++) conds << conditionLabelN(i)
+	for (int i = 1; i <= howMany; i++) conds << conditionLabelN(i)
 	if(advanced) input "subCondL$state.n", "bool", title: "Enter subrule for left?", submitOnChange: true
 	if(settings["subCondL$state.n"]) {
 		state.str = state.str + "("
@@ -298,6 +302,7 @@ def inputLeft(sub) {
 }
 
 def inputRight(sub) {
+	def howMany = state.howMany - 1
 	state.n = state.n + 1
 	input "operator$state.n", "enum", title: "AND  or  OR", options: ["AND", "OR"], submitOnChange: true, required: false
 	if(settings["operator$state.n"]) {
@@ -305,7 +310,7 @@ def inputRight(sub) {
 		state.eval << settings["operator$state.n"]
 		paragraph(state.str)
 		def conds = []
-		for (int i = 1; i < state.howMany; i++) conds << conditionLabelN(i)
+		for (int i = 1; i <= howMany; i++) conds << conditionLabelN(i)
 		if(advanced) input "subCondR$state.n", "bool", title: "Enter subrule for right?", submitOnChange: true
 		if(settings["subCondR$state.n"]) {
 			state.str = state.str + "("
@@ -342,14 +347,14 @@ def inputLeftAndRight(sub) {
 	inputRight(sub)
 }
 
-// Action selection code follows
-
 def stripBrackets(str) {
 	def i = str.indexOf('[')
 	def j = str.indexOf(']')
 	def result = str.substring(0, i) + str.substring(i + 1, j) + str.substring(j + 1)
 	return result
 }
+
+// Action selection code follows
 
 def setActTrue(dev, str) {
 	if(dev) state.actsTrue = state.actsTrue + stripBrackets("$str") + "\n"
@@ -595,7 +600,8 @@ def updated() {
 }
 
 def initialize() {
-	for (int i = 1; i < state.howMany; i++) {
+	def howMany = state.howMany - 1
+	for (int i = 1; i <= howMany; i++) {
 		def capab = (settings.find {it.key == "rCapab$i"}).value
         def myRelDev = settings.find {it.key == "relDevice$i"}
 		switch(capab) {
