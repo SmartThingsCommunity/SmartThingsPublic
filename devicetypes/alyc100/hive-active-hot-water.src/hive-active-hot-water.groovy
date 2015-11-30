@@ -324,7 +324,7 @@ def doRequest(uri, args, type, success) {
               'Content-Type': 'application/vnd.alertme.zoo-6.2+json',
               'Accept': 'application/vnd.alertme.zoo-6.2+json',
               'Content-Type': 'application/*+json',
-              'X-AlertMe-Client': 'smartthings',
+              'X-AlertMe-Client': 'Hive Web Dashboard',
               'X-Omnia-Access-Token': "${data.auth.sessions[0].id}"
         ],
 		body: args
@@ -358,7 +358,7 @@ def getNodeId () {
               'Content-Type': 'application/vnd.alertme.zoo-6.2+json',
               'Accept': 'application/vnd.alertme.zoo-6.2+json',
               'Content-Type': 'application/*+json',
-              'X-AlertMe-Client': 'smartthings',
+              'X-AlertMe-Client': 'Hive Web Dashboard',
               'X-Omnia-Access-Token': "${data.auth.sessions[0].id}"
         ]
     ]
@@ -389,7 +389,7 @@ def login(method = null, args = [], success = {}) {
               'Content-Type': 'application/vnd.alertme.zoo-6.1+json',
               'Accept': 'application/vnd.alertme.zoo-6.2+json',
               'Content-Type': 'application/*+json',
-              'X-AlertMe-Client': 'Smartthings Hive Device Type',
+              'X-AlertMe-Client': 'Hive Web Dashboard',
         ],
         body: [
         	sessions: [	[username: settings.username,
@@ -432,5 +432,4 @@ def isLoggedIn() {
 	def now = new Date().getTime();
     return data.auth.expires_at > now
 }
-
 
