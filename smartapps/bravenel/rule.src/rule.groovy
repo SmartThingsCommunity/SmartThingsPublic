@@ -228,7 +228,7 @@ def conditionLabel() {
 			if((i + 1) <= howMany) result = result + "\n"
 		}
         if(howMany == 2) {
-        	state.str = result[0..-9]
+        	state.str = result[0..-2]
         	state.eval = [1]
         }
     }
