@@ -3,7 +3,7 @@
  *
  *  Copyright 2015 Bruce Ravenel
  *
- *  Version 1.2.8   30 Nov 2015
+ *  Version 1.2.9   30 Nov 2015
  *
  *  Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except
  *  in compliance with the License. You may obtain a copy of the License at:
@@ -141,6 +141,14 @@ def getDevs(myCapab, dev, multi) {
 			thisName = "Power meter" + (multi ? "s" : "")
 			thisCapab = "powerMeter"
 			break
+		case "Carbon monoxide detector":
+			thisName = "CO detector" + (multi ? "s" : "")
+			thisCapab = "carbonMonoxide"
+			break
+		case "Smoke detector":
+			thisName = "Smoke detector" + (multi ? "s" : "")
+			thisCapab = "smoke"
+			break
 		case "Water sensor":
 			thisName = "Water sensors"
 			thisCapab = "waterSensor"
@@ -162,7 +170,7 @@ def getRelational(myDev) {
 
 def getCapab(myCapab) {  // removed , "Valve" to avoid confusion, and , "Certain Time"
 	def myOptions = ["Switch", "Motion", "Acceleration", "Contact", "Presence", "Lock", "Temperature", "Humidity", "Illuminance", "Time of day", 
-    	"Days of week", "Mode", "Dimmer level", "Energy meter", "Power meter", "Water sensor", "Battery"]
+    	"Days of week", "Mode", "Dimmer level", "Energy meter", "Power meter", "Water sensor", "Battery", "Carbon monoxide detector", "Smoke detector"]
 	def result = input myCapab, "enum", title: "Select capability", required: false, options: myOptions.sort(), submitOnChange: true
 }
 
@@ -175,6 +183,8 @@ def getState(myCapab, n) {
 	else if(myCapab == "Contact") 		result = input "state$n", "enum", title: "Contact state", options: ["open", "closed"], defaultValue: "open"
 	else if(myCapab == "Presence") 		result = input "state$n", "enum", title: "Presence state", options: ["present", "not present"], defaultValue: "present"
 	else if(myCapab == "Lock")		result = input "state$n", "enum", title: "Lock state", options: ["locked", "unlocked"], defaultValue: "unlocked"
+	else if(myCapab == "Carbon monoxide detector")		result = input "state$n", "enum", title: "CO becomes ", options: ["clear", ,"detected", "tested"], defaultValue: "detected"
+	else if(myCapab == "Smoke detector")		result = input "state$n", "enum", title: "Smoke becomes ", options: ["clear", ,"detected", "tested"], defaultValue: "detected"
 	else if(myCapab == "Water sensor")	result = input "state$n", "enum", title: "Water state", options: ["dry", "wet"], defaultValue: "wet"
 	else if(myCapab == "Dimmer level")	result = input "state$n", "number", title: "Dimmer level", range: "0..100"
 	else if(myCapab in ["Temperature", "Humidity", "Illuminance", "Energy meter", "Power meter", "Battery"]) {
@@ -682,6 +692,8 @@ def checkCondAny(dev, state, cap, rel, relDev) {
 	else if(cap == "Acceleration") 	result = state in dev.currentAcceleration
 	else if(cap == "Contact") 	result = state in dev.currentContact
 	else if(cap == "Presence") 	result = state in dev.currentPresence
+	else if(cap == "Smoke detector") 	result = state in dev.currentSmoke
+	else if(cap == "Carbon monoxide detector") 	result = state in dev.currentCarbonMonoxide
 	else if(cap == "Lock") 		result = state in dev.currentLock
 //	log.debug "CheckAny $cap $result"
 	return result
@@ -697,6 +709,8 @@ def checkCondAll(dev, state, cap, rel, relDev) {
                 "closed": "open",
                 "wet": "dry",
                 "dry": "wet",
+                "detected": "clear",
+                "clear": "detected",
                 "present": "not present",
                 "not present": "present",
                 "locked": "unlocked",
@@ -715,6 +729,8 @@ def checkCondAll(dev, state, cap, rel, relDev) {
 	else if(cap == "Acceleration") 		result = !(flip[state] in dev.currentAcceleration)
 	else if(cap == "Contact") 		result = !(flip[state] in dev.currentContact)
 	else if(cap == "Presence") 		result = !(flip[state] in dev.currentPresence)
+	else if(cap == "Smoke detector") 	result = !(flip[state] in dev.currentSmoke)
+	else if(cap == "Carbon monoxide detector") 	result = !(flip[state] in dev.currentCarbonMonoxide)
 	else if(cap == "Lock") 			result = !(flip[state] in dev.currentLock)
 //	log.debug "CheckAll $cap $result"
 	return result
