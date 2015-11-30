@@ -1,7 +1,7 @@
 /**
  *  Trigger
  *
- *	Version 1.1.2   30 Nov 2015
+ *	Version 1.1.2a   30 Nov 2015
  *
  *  Copyright 2015 Bruce Ravenel
  *
@@ -160,11 +160,11 @@ def getDevs(myCapab, dev, multi) {
 			break
 		case "Carbon monoxide detector":
 			thisName = "CO detector" + (multi ? "s" : "")
-			thisCapab = "carbonMonoxide"
+			thisCapab = "carbonMonoxideDetector"
 			break
 		case "Smoke detector":
 			thisName = "Smoke detector" + (multi ? "s" : "")
-			thisCapab = "smoke"
+			thisCapab = "smokeDetector"
 			break
 		case "Water sensor":
 			thisName = "Water sensors"
@@ -488,6 +488,12 @@ def initialize() {
 			case "Illuminance":
 				subscribe((settings.find{it.key == "rDev$i"}).value, "illuminance", allHandler)
 				if(myRelDev) subscribe(myRelDev.value, "illuminance", allHandler)
+				break
+			case "Carbon monoxide detector":
+				subscribe((settings.find{it.key == "rDev$i"}).value, "carbonMonoxide.$myState", allHandler)
+				break
+			case "Smoke detector":
+				subscribe((settings.find{it.key == "rDev$i"}).value, "smoke.$myState", allHandler)
 				break
 			case "Water sensor":
 				subscribe((settings.find{it.key == "rDev$i"}).value, "water.$myState", allHandler)
