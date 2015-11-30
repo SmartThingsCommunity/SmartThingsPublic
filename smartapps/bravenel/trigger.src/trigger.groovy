@@ -1,7 +1,7 @@
 /**
  *  Trigger
  *
- *	Version 1.1.1   27 Nov 2015
+ *	Version 1.1.2   30 Nov 2015
  *
  *  Copyright 2015 Bruce Ravenel
  *
@@ -158,6 +158,14 @@ def getDevs(myCapab, dev, multi) {
 			thisName = "Power meter" + (multi ? "s" : "")
 			thisCapab = "powerMeter"
 			break
+		case "Carbon monoxide detector":
+			thisName = "CO detector" + (multi ? "s" : "")
+			thisCapab = "carbonMonoxide"
+			break
+		case "Smoke detector":
+			thisName = "Smoke detector" + (multi ? "s" : "")
+			thisCapab = "smoke"
+			break
 		case "Water sensor":
 			thisName = "Water sensors"
 			thisCapab = "waterSensor"
@@ -188,20 +196,22 @@ def getRelational(myDev) {
 
 def getCapab(myCapab) { 
 	def myOptions = ["Switch", "Physical Switch", "Motion", "Acceleration", "Contact", "Presence", "Lock", "Temperature", "Humidity", "Illuminance", "Certain Time", 
-    	"Mode", "Energy meter", "Power meter", "Water sensor", "Battery", "Routine", "Button", "Dimmer level"]
+    	"Mode", "Energy meter", "Power meter", "Water sensor", "Battery", "Routine", "Button", "Dimmer level", "Carbon monoxide detector", "Smoke detector"]
 	def result = input myCapab, "enum", title: "Select capability", required: false, options: myOptions.sort(), submitOnChange: true
 }
 
 def getState(myCapab, n) {
 	def result = null
-	if     (myCapab == "Switch") 			result = input "state$n", "enum", title: "Switch turns ", options: ["on", "off"]
-	else if(myCapab == "Physical Switch")		result = input "state$n", "enum", title: "Switch turns ", options: ["on", "off"]
+	if     (myCapab == "Switch") 			result = input "state$n", "enum", title: "Switch turns ", options: ["on", "off"], defaultValue: "on"
+	else if(myCapab == "Physical Switch")		result = input "state$n", "enum", title: "Switch turns ", options: ["on", "off"], defaultValue: "on"
 	else if(myCapab == "Motion") 			result = input "state$n", "enum", title: "Motion becomes ", options: ["active", "inactive"], defaultValue: "active"
-	else if(myCapab == "Acceleration")		result = input "state$n", "enum", title: "Acceleration becomes ", options: ["active", "inactive"]
-	else if(myCapab == "Contact") 			result = input "state$n", "enum", title: "Contact ", options: ["open", "closed"]
-	else if(myCapab == "Presence") 			result = input "state$n", "enum", title: "Presence ", options: ["arrives", "leaves"], defaultValue: "arrive"
-	else if(myCapab == "Lock")			result = input "state$n", "enum", title: "Lock is ", options: ["locked", "unlocked"]
-	else if(myCapab == "Water sensor")		result = input "state$n", "enum", title: "Water becomes ", options: ["dry", "wet"]
+	else if(myCapab == "Acceleration")		result = input "state$n", "enum", title: "Acceleration becomes ", options: ["active", "inactive"], defaultValue: "active"
+	else if(myCapab == "Contact") 			result = input "state$n", "enum", title: "Contact ", options: ["open", "closed"], defaultValue: "open"
+	else if(myCapab == "Presence") 			result = input "state$n", "enum", title: "Presence ", options: ["arrives", "leaves"], defaultValue: "arrives"
+	else if(myCapab == "Lock")			result = input "state$n", "enum", title: "Lock is ", options: ["locked", "unlocked"], defaultValue: "unlocked"
+	else if(myCapab == "Carbon monoxide detector")		result = input "state$n", "enum", title: "CO becomes ", options: ["clear", ,"detected", "tested"], defaultValue: "detected"
+	else if(myCapab == "Smoke detector")		result = input "state$n", "enum", title: "Smoke becomes ", options: ["clear", ,"detected", "tested"], defaultValue: "detected"
+	else if(myCapab == "Water sensor")		result = input "state$n", "enum", title: "Water becomes ", options: ["dry", "wet"], defaultValue: "wet"
 	else if(myCapab == "Button")			result = input "state$n", "enum", title: "Button pushed or held ", options: ["pushed", "held"], defaultValue: "pushed"
 	else if(myCapab in ["Temperature", "Humidity", "Illuminance", "Energy meter", "Power meter", "Battery", "Dimmer level"]) {
     	input "isDev$n", "bool", title: "Relative to another device?", multiple: false, required: false, submitOnChange: true, defaultValue: false
@@ -531,6 +541,8 @@ def checkCondAny(dev, state, cap, rel, relDev) {
 	else if(cap == "Acceleration") 	result = state in dev.currentAcceleration
 	else if(cap == "Contact") 	result = state in dev.currentContact
 	else if(cap == "Presence") 	result = state in dev.currentPresence
+	else if(cap == "Smoke detector") 	result = state in dev.currentSmoke
+	else if(cap == "Carbon monoxide detector") 	result = state in dev.currentCarbonMonoxide
 	else if(cap == "Lock") 		result = state in dev.currentLock
 //	log.debug "CheckAny $cap $result"
 	return result
@@ -545,6 +557,8 @@ def checkCondAll(dev, state, cap, rel, relDev) {
                 "closed": "open",
                 "wet": "dry",
                 "dry": "wet",
+                "detected": "clear",
+                "clear": "detected",
                 "present": "not present",
                 "not present": "present",
                 "locked": "unlocked",
@@ -563,6 +577,8 @@ def checkCondAll(dev, state, cap, rel, relDev) {
 	else if(cap == "Acceleration") 		result = !(flip[state] in dev.currentAcceleration)
 	else if(cap == "Contact") 		result = !(flip[state] in dev.currentContact)
 	else if(cap == "Presence") 		result = !(flip[state] in dev.currentPresence)
+	else if(cap == "Smoke detector") 	result = !(flip[state] in dev.currentSmoke)
+	else if(cap == "Carbon monoxide detector") 	result = !(flip[state] in dev.currentCarbonMonoxide)
 	else if(cap == "Lock") 			result = !(flip[state] in dev.currentLock)
 //	log.debug "CheckAll $cap $result"
 	return result
@@ -708,8 +724,8 @@ def testEvt(evt) {
 			if(evt.name == "button") result = getButton(myDev, evt, i)
 			else result = getOperand(i)}
 		}
+        if(result) return result
 	}
-//	log.debug "testEvt result: $result"
 	return result
 }
 

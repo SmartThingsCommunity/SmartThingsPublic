@@ -3,7 +3,7 @@
  *
  *  Copyright 2015 Bruce Ravenel
  *
- *  Version 1.2.7a   29 Nov 2015
+ *  Version 1.2.8   30 Nov 2015
  *
  *  Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except
  *  in compliance with the License. You may obtain a copy of the License at:
@@ -169,13 +169,13 @@ def getCapab(myCapab) {  // removed , "Valve" to avoid confusion, and , "Certain
 def getState(myCapab, n) {
 	def result = null
 	def days = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"]
-	if     (myCapab == "Switch") 		result = input "state$n", "enum", title: "Switch state", options: ["on", "off"]
+	if     (myCapab == "Switch") 		result = input "state$n", "enum", title: "Switch state", options: ["on", "off"], defaultValue: "on"
 	else if(myCapab == "Motion") 		result = input "state$n", "enum", title: "Motion state", options: ["active", "inactive"], defaultValue: "active"
-	else if(myCapab == "Acceleration")	result = input "state$n", "enum", title: "Acceleration state", options: ["active", "inactive"]
-	else if(myCapab == "Contact") 		result = input "state$n", "enum", title: "Contact state", options: ["open", "closed"]
+	else if(myCapab == "Acceleration")	result = input "state$n", "enum", title: "Acceleration state", options: ["active", "inactive"], defaultValue: "active"
+	else if(myCapab == "Contact") 		result = input "state$n", "enum", title: "Contact state", options: ["open", "closed"], defaultValue: "open"
 	else if(myCapab == "Presence") 		result = input "state$n", "enum", title: "Presence state", options: ["present", "not present"], defaultValue: "present"
-	else if(myCapab == "Lock")		result = input "state$n", "enum", title: "Lock state", options: ["locked", "unlocked"]
-	else if(myCapab == "Water sensor")	result = input "state$n", "enum", title: "Water state", options: ["dry", "wet"]
+	else if(myCapab == "Lock")		result = input "state$n", "enum", title: "Lock state", options: ["locked", "unlocked"], defaultValue: "unlocked"
+	else if(myCapab == "Water sensor")	result = input "state$n", "enum", title: "Water state", options: ["dry", "wet"], defaultValue: "wet"
 	else if(myCapab == "Dimmer level")	result = input "state$n", "number", title: "Dimmer level", range: "0..100"
 	else if(myCapab in ["Temperature", "Humidity", "Illuminance", "Energy meter", "Power meter", "Battery"]) {
     	input "isDev$n", "bool", title: "Relative to another device?", multiple: false, required: false, submitOnChange: true, defaultValue: false
@@ -262,7 +262,6 @@ def conditionLabelN(i) {
 		if(thisRelDev) result = result + thisRelDev.value
 		else result = result + thisState.value
 	}
-//	result = result + (getOperand(i) ? " [TRUE]" : " [FALSE]")
 	return result
 }
 
