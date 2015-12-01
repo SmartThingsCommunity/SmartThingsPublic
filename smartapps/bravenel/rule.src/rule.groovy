@@ -449,8 +449,8 @@ def selectActionsTrue() {
 				if(thermoFanTrue) buildActTrue("Fan setting $thermoFanTrue", false)
 				addToActTrue("")
 			}
-            input "alarmTrue", "enum", title: "Set the alarm state", multiple: false, required: false, options: ["away" : "Arm (away)", "stay" : "Arm (stay)", "off" : "Disarm"], submitOnChange: true
-            if(alarmTrue) addToActTrue("Alarm: $alarmTrue")
+			input "alarmTrue", "enum", title: "Set the alarm state", multiple: false, required: false, options: ["away" : "Arm (away)", "stay" : "Arm (stay)", "off" : "Disarm"], submitOnChange: true
+			if(alarmTrue) addToActTrue("Alarm: $alarmTrue")
 			def myModes = []
 			location.modes.each {myModes << "$it"}
 			input "modeTrue", "enum", title: "Set the mode", multiple: false, required: false, options: myModes.sort(), submitOnChange: true
@@ -535,8 +535,8 @@ def selectActionsFalse() {
 				if(thermoFanFalse) buildActFalse("Fan setting $thermoFanFalse", false)
 				addToActFalse("")
 			}
-            input "alarmFalse", "enum", title: "Set the alarm state", multiple: false, required: false, options: ["away" : "Arm (away)", "stay" : "Arm (stay)", "off" : "Disarm"], submitOnChange: true
-            if(alarmFalse) addToActFalse("Alarm: $alarmFalse")
+			input "alarmFalse", "enum", title: "Set the alarm state", multiple: false, required: false, options: ["away" : "Arm (away)", "stay" : "Arm (stay)", "off" : "Disarm"], submitOnChange: true
+			if(alarmFalse) addToActFalse("Alarm: $alarmFalse")
 			def myModes = []
 			location.modes.each {myModes << "$it"}
 			input "modeFalse", "enum", title: "Set the mode", multiple: false, required: false, options: myModes.sort(), submitOnChange: true
@@ -857,10 +857,10 @@ def runRule(delay) {
 				if(unlockTrue) 		unlockTrue.unlock()
 				if(openValveTrue)	openValveTrue.open()
 				if(closeValveTrue)	closeValveTrue.close()
-				if(thermoTrue)		{	if(thermoModeTrue) thermoTrue.setThermostatMode(thermoModeTrue)
-								if(thermoSetHeatTrue) thermoTrue.setHeatingSetpoint(thermoSetHeatTrue)
-								if(thermoSetCoolTrue) thermoTrue.setCoolingSetpoint(thermoSetCoolTrue) 	
-                                if(thermoFanTrue)	  thermoTrue.setThermostatFanMode(thermoFanTrue)   }
+				if(thermoTrue)		{	if(thermoModeTrue) 	thermoTrue.setThermostatMode(thermoModeTrue)
+								if(thermoSetHeatTrue)	thermoTrue.setHeatingSetpoint(thermoSetHeatTrue)
+								if(thermoSetCoolTrue)	thermoTrue.setCoolingSetpoint(thermoSetCoolTrue) 	
+                                				if(thermoFanTrue) 	thermoTrue.setThermostatFanMode(thermoFanTrue)   }
 				if(alarmTrue)		sendLocationEvent(name: "alarmSystemStatus", value: "$alarmTrue")
 				if(modeTrue) 		setLocationMode(modeTrue)
 				if(myPhraseTrue)	location.helloHome.execute(myPhraseTrue)
@@ -879,10 +879,10 @@ def runRule(delay) {
 				if(unlockFalse) 	unlockFalse.unlock()
 				if(openValveFalse)	openValveFalse.open()
 				if(closeValveFalse)	closeValveFalse.close()
-				if(thermoFalse)		{	if(thermoModeFalse) thermoFalse.setThermostatMode(thermoModeFalse)
-								if(thermoSetHeatFalse) thermoFalse.setHeatingSetpoint(thermoSetHeatFalse)
-								if(thermoSetCoolFalse) thermoFalse.setCoolingSetpoint(thermoSetCoolFalse) 	
-                                if(thermoFanFalse)	  thermoFalse.setThermostatFanMode(thermoFanFalse)   }
+				if(thermoFalse)		{	if(thermoModeFalse) 	thermoFalse.setThermostatMode(thermoModeFalse)
+								if(thermoSetHeatFalse) 	thermoFalse.setHeatingSetpoint(thermoSetHeatFalse)
+								if(thermoSetCoolFalse) 	thermoFalse.setCoolingSetpoint(thermoSetCoolFalse) 	
+                                				if(thermoFanFalse)	thermoFalse.setThermostatFanMode(thermoFanFalse)   }
 				if(alarmFalse)		sendLocationEvent(name: "alarmSystemStatus", value: "$alarmFalse")
 				if(modeFalse) 		setLocationMode(modeFalse)
 				if(myPhraseFalse) 	location.helloHome.execute(myPhraseFalse)
