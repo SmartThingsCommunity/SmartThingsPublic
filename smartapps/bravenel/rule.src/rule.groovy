@@ -3,7 +3,7 @@
  *
  *  Copyright 2015 Bruce Ravenel
  *
- *  Version 1.2.9a   30 Nov 2015
+ *  Version 1.2.10   30 Nov 2015
  *
  *  Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except
  *  in compliance with the License. You may obtain a copy of the License at:
@@ -43,7 +43,6 @@ def selectRule() {
 		section() {     
 			label title: "Name the Rule", required: true
 			def condLabel = conditionLabel()
-			if (condLabel) condLabel = condLabel[0..-2]
 			href "selectConditions", title: "Define Conditions", description: condLabel ? (condLabel) : "Tap to set", required: true, state: condLabel ? "complete" : null, submitOnChange: true
 			href "defineRule", title: "Define the Rule", description: state.str ? (state.str) : "Tap to set", state: state.str ? "complete" : null
 			href "selectActionsTrue", title: "Select the Actions for True", description: state.actsTrue ? state.actsTrue : "Tap to set", state: state.actsTrue ? "complete" : null
@@ -63,11 +62,10 @@ def selectRule() {
 
 def selectConditions() {
     def ct = settings.findAll{it.key.startsWith("rCapab")}
-    state.howMany = ct.size() + 1
-    def howMany = state.howMany
+    state.howMany = ct.size() + 1							// initial value is 1
 	dynamicPage(name: "selectConditions", title: "Select Conditions", uninstall: false) {
-		if(howMany) {
-			for (int i = 1; i <= howMany; i++) {
+		if(state.howMany) {
+			for (int i = 1; i <= state.howMany; i++) {
 				def thisCapab = "rCapab$i"
 				section("Condition #$i") {
 					getCapab(thisCapab)
@@ -233,12 +231,12 @@ def conditionLabel() {
 	def howMany = state.howMany
 	def result = ""
 	if(howMany) {
-		for (int i = 1; i <= howMany; i++) {
-			result = result + conditionLabelN(i)
-			if((i + 1) <= howMany) result = result + "\n"
+		for (int i = 1; i < howMany; i++) {
+			result = result + conditionLabelN(i) + (getOperand(i) ? " [TRUE]" : " [FALSE]")
+			if(i < howMany - 1) result = result + "\n"
 		}
-        if(howMany == 2) {
-        	state.str = result[0..-2]
+        if(howMany == 1) {
+        	state.str = result[0..-8]
         	state.eval = [1]
         }
     }
@@ -287,9 +285,8 @@ def defineRule() {
 }
 
 def inputLeft(sub) {
-	def howMany = state.howMany - 1
 	def conds = []
-	for (int i = 1; i <= howMany; i++) conds << conditionLabelN(i)
+	for (int i = 1; i < state.howMany; i++) conds << conditionLabelN(i)
 	if(advanced) input "subCondL$state.n", "bool", title: "Enter subrule for left?", submitOnChange: true
 	if(settings["subCondL$state.n"]) {
 		state.str = state.str + "("
@@ -303,7 +300,7 @@ def inputLeft(sub) {
 		if(settings["condL$state.n"]) {
 			state.str = state.str + settings["condL$state.n"]
 			def myCond = 0
-			for (int i = 1; i <= howMany; i++) if(conditionLabelN(i) == settings["condL$state.n"]) myCond = i
+			for (int i = 1; i < state.howMany; i++) if(conditionLabelN(i) == settings["condL$state.n"]) myCond = i
 			state.eval << myCond
 			paragraph(state.str)
 		}
@@ -311,7 +308,6 @@ def inputLeft(sub) {
 }
 
 def inputRight(sub) {
-	def howMany = state.howMany - 1
 	state.n = state.n + 1
 	input "operator$state.n", "enum", title: "AND  or  OR", options: ["AND", "OR"], submitOnChange: true, required: false
 	if(settings["operator$state.n"]) {
@@ -319,7 +315,7 @@ def inputRight(sub) {
 		state.eval << settings["operator$state.n"]
 		paragraph(state.str)
 		def conds = []
-		for (int i = 1; i <= howMany; i++) conds << conditionLabelN(i)
+		for (int i = 1; i < state.howMany; i++) conds << conditionLabelN(i)
 		if(advanced) input "subCondR$state.n", "bool", title: "Enter subrule for right?", submitOnChange: true
 		if(settings["subCondR$state.n"]) {
 			state.str = state.str + "("
@@ -332,7 +328,7 @@ def inputRight(sub) {
 			if(settings["condR$state.n"]) {
 				state.str = state.str + settings["condR$state.n"]
 				def myCond = 0
-				for (int i = 1; i <= howMany; i++) if(conditionLabelN(i) == settings["condR$state.n"]) myCond = i
+				for (int i = 1; i < state.howMany; i++) if(conditionLabelN(i) == settings["condR$state.n"]) myCond = i
 				state.eval << myCond
 				paragraph(state.str)
 			}
@@ -609,8 +605,7 @@ def updated() {
 }
 
 def initialize() {
-	def howMany = state.howMany - 1
-	for (int i = 1; i <= howMany; i++) {
+	for (int i = 1; i < state.howMany; i++) {
 		def capab = (settings.find {it.key == "rCapab$i"}).value
         def myRelDev = settings.find {it.key == "relDevice$i"}
 		switch(capab) {
