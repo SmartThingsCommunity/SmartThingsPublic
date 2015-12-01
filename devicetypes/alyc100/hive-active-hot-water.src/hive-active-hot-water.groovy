@@ -27,8 +27,8 @@
  *     Click the edit button next to Preferences
  *     Fill in your your Hive user name, Hive password.
  *
- *	4. ANDROID USERS - You have to comment out the iOS details line at line 130 by adding "//" 
- * 	   and uncomment the Android details line by removing the preceding "//" at line 138 before publishing.
+ *	4. ANDROID USERS - You have to comment out the iOS details line at line 133 by adding "//" 
+ * 	   and uncomment the Android details line by removing the preceding "//" at line 141 before publishing.
  *
  *  Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except
  *  in compliance with the License. You may obtain a copy of the License at:
@@ -50,6 +50,9 @@
  *	v1.1.2 - Change wording from 'Manual' to 'On' to match Hive app.
  *			 Fixes to 'On' mode. 
  *            Changes to display on Things to match Hive Heating.
+ *
+ *	01.12.2015
+ *	v1.1.3 - Handle 'cool' mode. Change API client id.
  */
 preferences {
 	input("username", "text", title: "Username", description: "Your Hive username (usually an email address)")
@@ -197,6 +200,7 @@ def auto() {
 }
 
 def setThermostatMode(mode) {
+	mode = mode == 'cool' ? 'heat' : mode
     def args = [
         	nodes: [	[attributes: [activeHeatCoolMode: [targetValue: "HEAT"], activeScheduleLock: [targetValue: false]]]]
             ]
