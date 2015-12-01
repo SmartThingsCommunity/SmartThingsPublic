@@ -33,8 +33,8 @@ metadata {
 	}
 
 	preferences {
-		input description: "This feature allows you to correct any temperature variations by selecting an offset. Ex: If your sensor consistently reports a temp that's 5 degrees too warm, you'd enter \"-5\". If 3 degrees too cold, enter \"+3\".", displayDuringSetup: false, type: "paragraph", element: "paragraph"
-		input "tempOffset", "number", title: "Temperature Offset", description: "Adjust temperature by this many degrees", range: "*..*", displayDuringSetup: false
+		input title: "Temperature Offset", description: "This feature allows you to correct any temperature variations by selecting an offset. Ex: If your sensor consistently reports a temp that's 5 degrees too warm, you'd enter \"-5\". If 3 degrees too cold, enter \"+3\".", displayDuringSetup: false, type: "paragraph", element: "paragraph"
+		input "tempOffset", "number", title: "Degrees", description: "Adjust temperature by this many degrees", range: "*..*", displayDuringSetup: false
 	}
  
 	tiles {
@@ -270,12 +270,12 @@ def refresh()
 
 def configure() {
 
-	String zigbeeId = swapEndianHex(device.hub.zigbeeId)
-	log.debug "Confuguring Reporting, IAS CIE, and Bindings."
+	String zigbeeEui = swapEndianHex(device.hub.zigbeeEui)
+		log.debug "Configuring Reporting, IAS CIE, and Bindings."
 	def configCmds = [
     	"delay 1000",
         
-		"zcl global write 0x500 0x10 0xf0 {${zigbeeId}}", "delay 200",
+		"zcl global write 0x500 0x10 0xf0 {${zigbeeEui}}", "delay 200",
 		"send 0x${device.deviceNetworkId} 1 1", "delay 1500",
         
         "zcl global send-me-a-report 1 0x20 0x20 600 3600 {01}", "delay 200",

@@ -20,7 +20,8 @@ definition(
     description: "Use this free SmartApp in conjunction with the ObyThing Music app for your Mac to control and automate music and more with iTunes and SmartThings.",
     category: "SmartThings Labs",
     iconUrl: "http://obycode.com/obything/ObyThingSTLogo.png",
-    iconX2Url: "http://obycode.com/obything/ObyThingSTLogo@2x.png")
+    iconX2Url: "http://obycode.com/obything/ObyThingSTLogo@2x.png",
+    singleInstance: true)
 
 
 preferences {

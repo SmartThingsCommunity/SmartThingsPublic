@@ -24,7 +24,8 @@ definition(
     category: "Connections",
     iconUrl: "https://s3.amazonaws.com/smartapp-icons/Partner/withings.png",
     iconX2Url: "https://s3.amazonaws.com/smartapp-icons/Partner/withings%402x.png",
-    oauth: true
+    oauth: true,
+    singleInstance: true
 ) {
 	appSetting "clientId"
 	appSetting "clientSecret"
