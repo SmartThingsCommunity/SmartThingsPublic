@@ -1,7 +1,7 @@
 /**
  *  Trigger
  *
- *	Version 1.1.2a   30 Nov 2015
+ *	Version 1.1.3   30 Nov 2015
  *
  *  Copyright 2015 Bruce Ravenel
  *
@@ -40,7 +40,6 @@ def selectTriggerActs() {
 		section() {     
 			label title: "Name the Trigger", required: true
 			def condLabel = conditionLabel()
-			if (condLabel) condLabel = condLabel[0..-1]
 			href "selectConditions", title: "Define Triggers", description: condLabel ? (condLabel) : "Tap to set", required: true, state: condLabel ? "complete" : null, submitOnChange: true
 			href "selectActionsTrue", title: "Select the Actions", description: state.actsTrue ? state.actsTrue : "Tap to set", state: state.actsTrue ? "complete" : null
 		}
@@ -264,7 +263,7 @@ def conditionLabel() {
 	if(howMany) {
 		for (int i = 1; i <= howMany; i++) {
 			result = result + conditionLabelN(i)
-			if((i + 1) <= howMany) result = result + "\n"
+			if(i < howMany -1) result = result + "\n"
 		}
 	}
 	return result
@@ -448,8 +447,7 @@ def updated() {
 }
 
 def initialize() {
-	def howMany = state.howMany - 1
-	for (int i = 1; i <= howMany; i++) {
+	for (int i = 1; i < state.howMany; i++) {
 		def capab =   (settings.find {it.key == "rCapab$i"}).value
 		def myState = (settings.find {it.key == "state$i"})
 		def myRelDev = settings.find {it.key == "relDevice$i"}
