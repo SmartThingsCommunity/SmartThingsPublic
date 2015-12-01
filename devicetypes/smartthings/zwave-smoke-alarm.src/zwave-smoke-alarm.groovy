@@ -33,14 +33,16 @@ metadata {
 		status "battery 5%": "command: 8003, payload: 05"
 	}
 
-	tiles {
-		standardTile("smoke", "device.alarmState", width: 2, height: 2) {
-			state("clear", label:"clear", icon:"st.alarm.smoke.clear", backgroundColor:"#ffffff")
-			state("smoke", label:"SMOKE", icon:"st.alarm.smoke.smoke", backgroundColor:"#e86d13")
-			state("carbonMonoxide", label:"MONOXIDE", icon:"st.alarm.carbon-monoxide.carbon-monoxide", backgroundColor:"#e86d13")
-			state("tested", label:"TEST", icon:"st.alarm.smoke.test", backgroundColor:"#e86d13")
+	tiles (scale: 2){
+		multiAttributeTile(name:"smoke", type: "lighting", width: 6, height: 4){
+			tileAttribute ("device.alarmState", key: "PRIMARY_CONTROL") {
+				attributeState("clear", label:"clear", icon:"st.alarm.smoke.clear", backgroundColor:"#ffffff")
+				attributeState("smoke", label:"SMOKE", icon:"st.alarm.smoke.smoke", backgroundColor:"#e86d13")
+				attributeState("carbonMonoxide", label:"MONOXIDE", icon:"st.alarm.carbon-monoxide.carbon-monoxide", backgroundColor:"#e86d13")
+				attributeState("tested", label:"TEST", icon:"st.alarm.smoke.test", backgroundColor:"#e86d13")
+			}
 		}
-		valueTile("battery", "device.battery", inactiveLabel: false, decoration: "flat") {
+		valueTile("battery", "device.battery", inactiveLabel: false, decoration: "flat", width: 2, height: 2) {
 			state "battery", label:'${currentValue}% battery', unit:""
 		}
 

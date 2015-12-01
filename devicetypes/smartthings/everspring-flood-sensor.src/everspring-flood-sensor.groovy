@@ -28,15 +28,18 @@ metadata {
 			status "battery ${i}%": new physicalgraph.zwave.Zwave().batteryV1.batteryReport(batteryLevel: i).incomingMessage()
 		}
 	}
-	tiles {
-		standardTile("water", "device.water", width: 2, height: 2) {
-			state "dry", icon:"st.alarm.water.dry", backgroundColor:"#ffffff"
-			state "wet", icon:"st.alarm.water.wet", backgroundColor:"#53a7c0"
+	
+	tiles(scale: 2) {
+		multiAttributeTile(name:"water", type: "generic", width: 6, height: 4){
+			tileAttribute ("device.water", key: "PRIMARY_CONTROL") {
+				attributeState "dry", icon:"st.alarm.water.dry", backgroundColor:"#ffffff"
+				attributeState "wet", icon:"st.alarm.water.wet", backgroundColor:"#53a7c0"
+			}
 		}
-		valueTile("battery", "device.battery", decoration: "flat", inactiveLabel: false) {
+		valueTile("battery", "device.battery", decoration: "flat", inactiveLabel: false, width: 2, height: 2) {
 			state "battery", label:'${currentValue}% battery', unit:""
 		}
-		standardTile("configure", "device.configure", inactiveLabel: false, decoration: "flat") {
+		standardTile("configure", "device.configure", inactiveLabel: false, decoration: "flat", width: 2, height: 2) {
 			state "configure", label:'', action:"configuration.configure", icon:"st.secondary.configure"
 		}
 		main "water"
