@@ -1,7 +1,7 @@
 /**
  *  Trigger
  *
- *	Version 1.1.3   30 Nov 2015
+ *	Version 1.1.4   1 Dec 2015
  *
  *  Copyright 2015 Bruce Ravenel
  *
@@ -50,7 +50,7 @@ def selectTriggerActs() {
 				options: ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"]
 			input "modes", "mode", title: "Only when mode is", multiple: true, required: false            
 			input "disabled", "capability.switch", title: "Switch to disable trigger when ON", required: false, multiple: false
-			input "logging", "bool", title: "Enable event logging", required: false, defaultValue: false
+			input "logging", "bool", title: "Enable event logging", required: false, defaultValue: true
    		}    
 	}
 }
@@ -393,6 +393,8 @@ def selectActionsTrue() {
 				if(thermoFanTrue) buildActTrue("Fan setting $thermoFanTrue", false)
 				addToActTrue("")
 			}
+            input "alarmTrue", "enum", title: "Set the alarm state", multiple: false, required: false, options: ["away" : "Arm (away)", "stay" : "Arm (stay)", "off" : "Disarm"], submitOnChange: true
+            if(alarmTrue) addToActTrue("Alarm: $alarmTrue")
 			def myModes = []
 			location.modes.each {myModes << "$it"}
 			input "modeTrue", "enum", title: "Set the mode", multiple: false, required: false, options: myModes.sort(), submitOnChange: true
@@ -673,6 +675,7 @@ def doTrigger(delay) {
 							if(thermoSetHeatTrue) 	thermoTrue.setHeatingSetpoint(thermoSetHeatTrue)
 							if(thermoSetCoolTrue) 	thermoTrue.setCoolingSetpoint(thermoSetCoolTrue)
 							if(thermoFanTrue)	thermoTrue.setThermostatFanMode(thermoFanTrue)   }
+		if(alarmTrue)			sendLocationEvent(name: "alarmSystemStatus", value: "$alarmTrue")
 		if(modeTrue) 			setLocationMode(modeTrue)
 		if(myPhraseTrue)		location.helloHome.execute(myPhraseTrue)
 		if(pushTrue)			sendPush(msgTrue ?: "Rule $app.label True")
@@ -723,6 +726,7 @@ def testEvt(evt) {
 		return result
 	}
 	for(int i = 1; i < state.howMany; i++) {
+//    	log.debug "testEvt: $i"
 		def myDev = (settings.find {it.key == "rDev$i"}).value
 		myDev.each {if(evt.displayName == it.displayName) {
 			if(evt.name == "button") result = getButton(myDev, evt, i)

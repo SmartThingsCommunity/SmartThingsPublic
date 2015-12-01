@@ -3,7 +3,7 @@
  *
  *  Copyright 2015 Bruce Ravenel
  *
- *  Version 1.2.10   30 Nov 2015
+ *  Version 1.2.11   1 Dec 2015
  *
  *  Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except
  *  in compliance with the License. You may obtain a copy of the License at:
@@ -53,7 +53,7 @@ def selectRule() {
 			paragraph "Advanced Rule Input allows for parenthesized sub-rules."
 			input "advanced", "bool", title: "Advanced Rule Input", required: false
 			input "disabled", "capability.switch", title: "Switch to disable rule when ON", required: false, multiple: false
-			input "logging", "bool", title: "Enable event and rule logging", required: false, defaultValue: false
+			input "logging", "bool", title: "Enable event and rule logging", required: false, defaultValue: true
    		}    
 	}
 }
@@ -235,7 +235,7 @@ def conditionLabel() {
 			result = result + conditionLabelN(i) + (getOperand(i) ? " [TRUE]" : " [FALSE]")
 			if(i < howMany - 1) result = result + "\n"
 		}
-        if(howMany == 1) {
+        if(howMany == 2) {
         	state.str = result[0..-8]
         	state.eval = [1]
         }
@@ -449,6 +449,8 @@ def selectActionsTrue() {
 				if(thermoFanTrue) buildActTrue("Fan setting $thermoFanTrue", false)
 				addToActTrue("")
 			}
+            input "alarmTrue", "enum", title: "Set the alarm state", multiple: false, required: false, options: ["away" : "Arm (away)", "stay" : "Arm (stay)", "off" : "Disarm"], submitOnChange: true
+            if(alarmTrue) addToActTrue("Alarm: $alarmTrue")
 			def myModes = []
 			location.modes.each {myModes << "$it"}
 			input "modeTrue", "enum", title: "Set the mode", multiple: false, required: false, options: myModes.sort(), submitOnChange: true
@@ -533,6 +535,8 @@ def selectActionsFalse() {
 				if(thermoFanFalse) buildActFalse("Fan setting $thermoFanFalse", false)
 				addToActFalse("")
 			}
+            input "alarmFalse", "enum", title: "Set the alarm state", multiple: false, required: false, options: ["away" : "Arm (away)", "stay" : "Arm (stay)", "off" : "Disarm"], submitOnChange: true
+            if(alarmFalse) addToActFalse("Alarm: $alarmFalse")
 			def myModes = []
 			location.modes.each {myModes << "$it"}
 			input "modeFalse", "enum", title: "Set the mode", multiple: false, required: false, options: myModes.sort(), submitOnChange: true
@@ -857,6 +861,7 @@ def runRule(delay) {
 								if(thermoSetHeatTrue) thermoTrue.setHeatingSetpoint(thermoSetHeatTrue)
 								if(thermoSetCoolTrue) thermoTrue.setCoolingSetpoint(thermoSetCoolTrue) 	
                                 if(thermoFanTrue)	  thermoTrue.setThermostatFanMode(thermoFanTrue)   }
+				if(alarmTrue)		sendLocationEvent(name: "alarmSystemStatus", value: "$alarmTrue")
 				if(modeTrue) 		setLocationMode(modeTrue)
 				if(myPhraseTrue)	location.helloHome.execute(myPhraseTrue)
 				if(pushTrue)		sendPush(msgTrue ?: "Rule $app.label True")
@@ -878,6 +883,7 @@ def runRule(delay) {
 								if(thermoSetHeatFalse) thermoFalse.setHeatingSetpoint(thermoSetHeatFalse)
 								if(thermoSetCoolFalse) thermoFalse.setCoolingSetpoint(thermoSetCoolFalse) 	
                                 if(thermoFanFalse)	  thermoFalse.setThermostatFanMode(thermoFanFalse)   }
+				if(alarmFalse)		sendLocationEvent(name: "alarmSystemStatus", value: "$alarmFalse")
 				if(modeFalse) 		setLocationMode(modeFalse)
 				if(myPhraseFalse) 	location.helloHome.execute(myPhraseFalse)
 				if(pushFalse)		sendPush(msgFalse ?: "Rule $app.label False")
