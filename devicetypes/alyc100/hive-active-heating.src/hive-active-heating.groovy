@@ -72,6 +72,9 @@
  *
  *	23.11.2015
  *	v1.10.4 - Set thermostatFanMode to 'off' to improve SmartTiles display
+ *
+ *	01.12.2015
+ *	v1.10.5 - Handle event of thermostat being set to 'cool'. Changed API client name.
  */
 preferences {
 	input("username", "text", title: "Username", description: "Your Hive username (usually an email address)")
@@ -296,6 +299,7 @@ def auto() {
 }
 
 def setThermostatMode(mode) {
+	mode = mode == 'cool' ? 'heat' : mode
 	log.debug "Executing 'setThermostatMode with mode $mode'"
     def args = [
         	nodes: [	[attributes: [activeHeatCoolMode: [targetValue: "HEAT"], scheduleLockDuration: [targetValue: 0], activeScheduleLock: [targetValue: false]]]]
@@ -436,7 +440,7 @@ def doRequest(uri, args, type, success) {
               'Content-Type': 'application/vnd.alertme.zoo-6.2+json',
               'Accept': 'application/vnd.alertme.zoo-6.2+json',
               'Content-Type': 'application/*+json',
-              'X-AlertMe-Client': 'smartthings',
+              'X-AlertMe-Client': 'Hive Web Dashboard',
               'X-Omnia-Access-Token': "${data.auth.sessions[0].id}"
         ],
 		body: args
@@ -471,7 +475,7 @@ def getNodeId () {
               'Content-Type': 'application/vnd.alertme.zoo-6.2+json',
               'Accept': 'application/vnd.alertme.zoo-6.2+json',
               'Content-Type': 'application/*+json',
-              'X-AlertMe-Client': 'smartthings',
+              'X-AlertMe-Client': 'Hive Web Dashboard',
               'X-Omnia-Access-Token': "${data.auth.sessions[0].id}"
         ]
     ]
@@ -502,7 +506,7 @@ def login(method = null, args = [], success = {}) {
               'Content-Type': 'application/vnd.alertme.zoo-6.1+json',
               'Accept': 'application/vnd.alertme.zoo-6.2+json',
               'Content-Type': 'application/*+json',
-              'X-AlertMe-Client': 'Smartthings Hive Device Type',
+              'X-AlertMe-Client': 'Hive Web Dashboard',
         ],
         body: [
         	sessions: [	[username: settings.username,
