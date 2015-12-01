@@ -1,7 +1,7 @@
 /**
  *  Trigger
  *
- *	Version 1.1.4   1 Dec 2015
+ *	Version 1.1.5   1 Dec 2015
  *
  *  Copyright 2015 Bruce Ravenel
  *
@@ -498,7 +498,7 @@ def initialize() {
 			case "Water sensor":
 				subscribe((settings.find{it.key == "rDev$i"}).value, "water.$myState", allHandler)
 				break
-			case ["arrives", "leaves"]:
+			case ["Presence"]:
 				subscribe((settings.find{it.key == "rDev$i"}).value, "presence", allHandler)
 				break
 			case "Button":
@@ -726,7 +726,6 @@ def testEvt(evt) {
 		return result
 	}
 	for(int i = 1; i < state.howMany; i++) {
-//    	log.debug "testEvt: $i"
 		def myDev = (settings.find {it.key == "rDev$i"}).value
 		myDev.each {if(evt.displayName == it.displayName) {
 			if(evt.name == "button") result = getButton(myDev, evt, i)
