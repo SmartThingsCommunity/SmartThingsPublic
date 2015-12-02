@@ -463,7 +463,7 @@ def initialize() {
 				subscribe(location, "mode", allHandler)
 				break
 			case "Smart Home Monitor": 
-				subscribe(location, "alarmSystemStatus", allHandler)
+				subscribe(location, "alarmSystemStatus.$myState", allHandler)
 				break
 			case "Certain Time":
 				scheduleAtTime()
@@ -730,9 +730,10 @@ def testEvt(evt) {
 			def myCapab = (settings.find {it.key == "rCapab$i"}).value
 			def state = settings.find {it.key == "state$i"}
 			if(myCapab == "Routine") result = result || evt.displayName == state.value
+            if(result) return true
 		}
-		return result
-	}
+        return false
+    }
 	for(int i = 1; i < state.howMany; i++) {
 		def myDev = (settings.find {it.key == "rDev$i"}).value
 		myDev.each {if(evt.displayName == it.displayName) {
