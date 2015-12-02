@@ -3,7 +3,7 @@
  *
  *  Copyright 2015 Bruce Ravenel
  *
- *  Version 1.2.11   1 Dec 2015
+ *  Version 1.2.12   1 Dec 2015
  *
  *  Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except
  *  in compliance with the License. You may obtain a copy of the License at:
@@ -72,7 +72,7 @@ def selectConditions() {
 					def myCapab = settings.find {it.key == thisCapab}
 					if(myCapab) {
 						def xCapab = myCapab.value // removed , "Certain Time"
-						if(!(xCapab in ["Time of day", "Days of week", "Mode"])) {
+						if(!(xCapab in ["Time of day", "Days of week", "Mode", "Smart Home Monitor"])) {
 							def thisDev = "rDev$i"
 							getDevs(xCapab, thisDev, true)
 							def myDev = settings.find {it.key == thisDev}
@@ -168,7 +168,7 @@ def getRelational(myDev) {
 
 def getCapab(myCapab) {  // removed , "Valve" to avoid confusion, and , "Certain Time"
 	def myOptions = ["Switch", "Motion", "Acceleration", "Contact", "Presence", "Lock", "Temperature", "Humidity", "Illuminance", "Time of day", 
-    	"Days of week", "Mode", "Dimmer level", "Energy meter", "Power meter", "Water sensor", "Battery", "Carbon monoxide detector", "Smoke detector"]
+    	"Days of week", "Mode", "Dimmer level", "Energy meter", "Power meter", "Water sensor", "Battery", "Carbon monoxide detector", "Smoke detector", "Smart Home Monitor"]
 	def result = input myCapab, "enum", title: "Select capability", required: false, options: myOptions.sort(), submitOnChange: true
 }
 
@@ -185,6 +185,7 @@ def getState(myCapab, n) {
 	else if(myCapab == "Smoke detector")		result = input "state$n", "enum", title: "Smoke becomes ", options: ["clear", ,"detected", "tested"], defaultValue: "detected"
 	else if(myCapab == "Water sensor")	result = input "state$n", "enum", title: "Water state", options: ["dry", "wet"], defaultValue: "wet"
 	else if(myCapab == "Dimmer level")	result = input "state$n", "number", title: "Dimmer level", range: "0..100"
+    else if(myCapab == "Smart Home Monitor") result = input "state$n", "enum", title: "SHM state", options: ["away" : "Arm (away)", "stay" : "Arm (stay)", "off" : "Disarm"]
 	else if(myCapab in ["Temperature", "Humidity", "Illuminance", "Energy meter", "Power meter", "Battery"]) {
     	input "isDev$n", "bool", title: "Relative to another device?", multiple: false, required: false, submitOnChange: true, defaultValue: false
         def myDev = settings.find {it.key == "isDev$n"}
@@ -248,7 +249,10 @@ def conditionLabelN(i) {
     def thisCapab = settings.find {it.key == "rCapab$i"}
     if(!thisCapab) return result
 	if(thisCapab.value == "Time of day") result = "Time between " + timeIntervalLabel()
-	else if(thisCapab.value == "Days of week") result = "Day i" + (days.size() > 1 ? "n " + days : "s " + days[0])
+    else if(thisCapab.value == "Smart Home Monitor") {
+    	def thisState = (settings.find {it.key == "state$i"}).value
+    	result = "SHM state is " + (thisState in ["away", "stay"] ? "Arm ($thisState)" : "Disarm")
+	} else if(thisCapab.value == "Days of week") result = "Day i" + (days.size() > 1 ? "n " + days : "s " + days[0])
 	else if(thisCapab.value == "Mode") result = "Mode i" + (modes.size() > 1 ? "n " + modes : "s " + modes[0])
 	else {
 		def thisDev = settings.find {it.key == "rDev$i"}
@@ -450,7 +454,7 @@ def selectActionsTrue() {
 				addToActTrue("")
 			}
 			input "alarmTrue", "enum", title: "Set the alarm state", multiple: false, required: false, options: ["away" : "Arm (away)", "stay" : "Arm (stay)", "off" : "Disarm"], submitOnChange: true
-			if(alarmTrue) addToActTrue("Alarm: $alarmTrue")
+			if(alarmTrue) addToActTrue("Alarm: " + (alarmTrue in ["away", "stay"] ? "Arm ($alarmTrue)" : "Disarm"))
 			def myModes = []
 			location.modes.each {myModes << "$it"}
 			input "modeTrue", "enum", title: "Set the mode", multiple: false, required: false, options: myModes.sort(), submitOnChange: true
@@ -535,8 +539,7 @@ def selectActionsFalse() {
 				if(thermoFanFalse) buildActFalse("Fan setting $thermoFanFalse", false)
 				addToActFalse("")
 			}
-			input "alarmFalse", "enum", title: "Set the alarm state", multiple: false, required: false, options: ["away" : "Arm (away)", "stay" : "Arm (stay)", "off" : "Disarm"], submitOnChange: true
-			if(alarmFalse) addToActFalse("Alarm: $alarmFalse")
+			if(alarmFalse) addToActFalse("Alarm: " + (alarmFalse in ["away", "stay"] ? "Arm ($alarmFalse)" : "Disarm"))
 			def myModes = []
 			location.modes.each {myModes << "$it"}
 			input "modeFalse", "enum", title: "Set the mode", multiple: false, required: false, options: myModes.sort(), submitOnChange: true
@@ -615,6 +618,9 @@ def initialize() {
 		switch(capab) {
 			case "Mode": 
 				subscribe(location, "mode", allHandler)
+				break
+			case "Smart Home Monitor": 
+				subscribe(location, "alarmSystemStatus", allHandler)
 				break
 			case "Time of day":
 				scheduleTimeOfDay()
@@ -748,6 +754,7 @@ def getOperand(i) {
 	if     (capab == "Mode") result = modeOk
 	else if(capab == "Time of day") result = timeOk
 	else if(capab == "Days of week") result = daysOk
+    else if(capab == "Smart Home Monitor") result = (settings.find {it.key == "state$i"}).value == location.currentState("alarmSystemStatus")?.value
 	else {
 		def myDev = 	settings.find {it.key == "rDev$i"}
 		def myState = 	settings.find {it.key == "state$i"}
@@ -1053,7 +1060,7 @@ private setColor(trufal) {
 			hueColor = 70
 			break;
 		case "Green":
-			hueColor = 39
+			hueColor = 35
 			break;
 		case "Yellow":
 			hueColor = 25
