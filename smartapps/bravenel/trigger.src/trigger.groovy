@@ -1,7 +1,7 @@
 /**
  *  Trigger
  *
- *	Version 1.1.6   1 Dec 2015
+ *	Version 1.1.7   2 Dec 2015
  *
  *  Copyright 2015 Bruce Ravenel
  *
@@ -762,7 +762,8 @@ def physicalHandler(evt) {
 }
 
 def delayOffTrue() {
-	if(delayOnOffTrue && allOk) delayedOffTrue.on() else delayedOffTrue.off()
+	if(!allOk) return
+	if(delayOnOffTrue) delayedOffTrue.on() else delayedOffTrue.off()
 }
 
 def delayRuleTrue() {
