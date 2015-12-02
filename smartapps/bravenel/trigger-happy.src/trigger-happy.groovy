@@ -1,7 +1,7 @@
 /**
  *  Trigger Happy
  *
- *	Version 1.0    27 Nov 2015
+ *	Version 1.1    2 Dec 2015
  *
  *  Copyright 2015 Bruce Ravenel
  *
@@ -28,7 +28,7 @@ definition(
 )
 
 preferences {
-    page(name: "mainPage", title: "Triggers", install: true, uninstall: true,submitOnChange: true) {
+    page(name: "mainPage", title: "Triggers", install: true, uninstall: false, submitOnChange: true) {
             section {
                     app(name: "childTriggers", appName: "Trigger", namespace: "bravenel", title: "Create New Trigger...", multiple: true)
             }

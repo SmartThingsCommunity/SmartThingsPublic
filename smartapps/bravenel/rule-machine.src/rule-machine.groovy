@@ -3,7 +3,7 @@
  *
  *  Copyright 2015 Mike Maxwell
  *
- *  Version 1.0   25 Nov 2015
+ *  Version 1.1   2 Dec 2015
  *
  *  Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except
  *  in compliance with the License. You may obtain a copy of the License at:
@@ -29,7 +29,7 @@ definition(
 )
 
 preferences {
-    page(name: "mainPage", title: "Rules", install: true, uninstall: true,submitOnChange: true) {
+    page(name: "mainPage", title: "Rules", install: true, uninstall: false, submitOnChange: true) {
             section {
                     app(name: "childRules", appName: "Rule", namespace: "bravenel", title: "Create New Rule...", multiple: true)
             }
