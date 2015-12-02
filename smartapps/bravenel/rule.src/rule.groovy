@@ -3,7 +3,7 @@
  *
  *  Copyright 2015 Bruce Ravenel
  *
- *  Version 1.2.12   1 Dec 2015
+ *  Version 1.2.13   2 Dec 2015
  *
  *  Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except
  *  in compliance with the License. You may obtain a copy of the License at:
@@ -920,19 +920,23 @@ def timeHandler() {
 }
 
 def delayOffTrue() {
-	if(delayOnOffTrue && allOk) delayedOffTrue.on() else delayedOffTrue.off()
+	if(!allOk) return
+	if(delayOnOffTrue) delayedOffTrue.on() else delayedOffTrue.off()
 }
 
 def pendingOffTrue() {
-	if(pendOnOffTrue && allOk) pendedOffTrue.on() else pendedOffTrue.off()
+	if(!allOk) return
+	if(pendOnOffTrue) pendedOffTrue.on() else pendedOffTrue.off()
 }
 
 def delayOffFalse() {
-	if(delayOnOffFalse && allOk) delayedOffFalse.on() else delayedOffFalse.off()
+	if(!allOk) return
+	if(delayOnOffFalse) delayedOffFalse.on() else delayedOffFalse.off()
 }
 
 def pendingOffFalse() {
-	if(pendOnOffFalse && allOk) pendedOffFalse.on() else pendedOffFalse.off()
+	if(!allOk) return
+	if(pendOnOffFalse) pendedOffFalse.on() else pendedOffFalse.off()
 }
 
 def delayRuleTrue() {
