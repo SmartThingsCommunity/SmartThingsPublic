@@ -40,7 +40,7 @@ preferences {
 			input "switch1", "capability.switch", multiple: true, required: true
 		}
    }
-   page(name: "pageTwo", title: "Some more timing options") {
+   page(name: "pageTwo", title: "Some more timing options", nextPage: "pageThree") {
    		section("Which modes to trigger this automation? (optional)") {
 			input "modes", "mode", title: "Only when mode is", multiple: true, required: false
         }
@@ -55,6 +55,11 @@ preferences {
 			input "sunriseOffsetValue", "text", title: "HH:MM", required: false
 			input "sunriseOffsetDir", "enum", title: "Before or After", required: false, options: ["Before","After"]
 		}
+   }
+   page(name: "pageThree", title: "Name app and configure modes", install: true, uninstall: true) {
+   	    section([mobileOnly:true]) {
+	        label title: "Assign a name", required: false
+       }
    }
 }
 
