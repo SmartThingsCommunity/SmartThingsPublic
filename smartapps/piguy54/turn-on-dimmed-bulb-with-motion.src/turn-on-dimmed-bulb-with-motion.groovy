@@ -27,31 +27,31 @@ definition(
 
 preferences {
 	 page(name: "pageOne", title: "Basic Options", nextPage: "pageTwo", uninstall: true) {
-		section("When there's movement turn on...") {
+		section("When there's movement turn on (required)") {
 			input "motion1", "capability.motionSensor", title: "Where?", multiple: true, required: true
 		}
-    	section("At what dimmer level..."){
-			input "dimmerLevel", "number", title: "Dim Level?"
+    	section("At what dimmer level [1-100] (required)"){
+			input "dimmerLevel", "number", title: "Dim Level?", required: true
 		}
-    	section("And off when no motion for..."){
-			input "minutes1", "number", title: "Minutes?"
+    	section("And off when no motion for (required)"){
+			input "minutes1", "number", title: "Minutes?", required: true
 		}
-		section("Turn on/off lights..."){
+		section("Turn on/off lights (required)"){
 			input "switch1", "capability.switch", multiple: true, required: true
 		}
    }
    page(name: "pageTwo", title: "Some more timing options") {
-   		section("Modes...") {
+   		section("Which modes to trigger this automation? (optional)") {
 			input "modes", "mode", title: "Only when mode is", multiple: true, required: false
         }
-        section ("Only trigger between Sunset and Sunrise...") {
+        section ("Only trigger between Sunset and Sunrise? (required)") {
         	input "sunEnabled", "bool", title: "On/Off", required:true
         }
-        section ("Sunset offset (optional)...") {
+        section ("Sunset offset (optional)") {
 			input "sunsetOffsetValue", "text", title: "HH:MM", required: false
 			input "sunsetOffsetDir", "enum", title: "Before or After", required: false, options: ["Before","After"]
         }
-		section ("Sunrise offset (optional)...") {
+		section ("Sunrise offset (optional)") {
 			input "sunriseOffsetValue", "text", title: "HH:MM", required: false
 			input "sunriseOffsetDir", "enum", title: "Before or After", required: false, options: ["Before","After"]
 		}
