@@ -1,7 +1,7 @@
 /**
  *  Trigger
  *
- *	Version 1.1.7   2 Dec 2015
+ *	Version 1.1.8   2 Dec 2015
  *
  *  Copyright 2015 Bruce Ravenel
  *
@@ -506,7 +506,7 @@ def initialize() {
 				subscribe((settings.find{it.key == "rDev$i"}).value, "water.$myState", allHandler)
 				break
 			case ["Presence"]:
-				subscribe((settings.find{it.key == "rDev$i"}).value, "presence", allHandler)
+				subscribe((settings.find{it.key == "rDev$i"}).value, "presence." + (myState == "arrives" ? "present" : "not present"), allHandler)
 				break
 			case "Button":
 				subscribe((settings.find{it.key == "rDev$i"}).value, "button", allHandler)
@@ -736,6 +736,7 @@ def testEvt(evt) {
     }
 	for(int i = 1; i < state.howMany; i++) {
 		def myDev = (settings.find {it.key == "rDev$i"}).value
+        log.debug "testEvt: $myDev, $i, $evt.displayName"
 		myDev.each {if(evt.displayName == it.displayName) {
 			if(evt.name == "button") result = getButton(myDev, evt, i)
 			else result = getOperand(i)}
@@ -748,7 +749,7 @@ def testEvt(evt) {
 def allHandler(evt) {
 	if(logging) log.info "$app.label: $evt.displayName $evt.name $evt.value"
 	def doit = true
-	if(evt.name in ["temperature", "humidity", "power", "energy", "battery", "illuminance", "mode", "presence", "button", "routineExecuted"]) doit = testEvt(evt)
+	if(evt.name in ["temperature", "humidity", "power", "energy", "battery", "illuminance", "mode", "button", "routineExecuted"]) doit = testEvt(evt)
 	if (doit) doTrigger(false)
 }
 
