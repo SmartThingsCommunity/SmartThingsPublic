@@ -676,3 +676,8 @@ def generateStatusEvent() {
 	log.debug "Generate Status Event = ${statusText}"
 	sendEvent("name":"thermostatStatus", "value":statusText, "description":statusText, displayed: true)
 }
+
+//generate custom mobile activity feeds event
+def generateActivityFeedsEvent(notificationMessage) {
+	sendEvent(name: "notificationMessage", value: "$device.displayName $notificationMessage", descriptionText: "$device.displayName $notificationMessage", displayed: true)
+}

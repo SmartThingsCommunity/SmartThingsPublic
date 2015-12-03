@@ -10,14 +10,14 @@
  *      10-28-2015 DVCSMP-604 - accessory sensor, DVCSMP-1174, DVCSMP-1111 - not respond to routines
  */
 definition(
-    name: "Ecobee (Connect)",
-    namespace: "smartthings",
-    author: "SmartThings",
-    description: "Connect your Ecobee thermostat to SmartThings.",
-    category: "SmartThings Labs",
-    iconUrl: "https://s3.amazonaws.com/smartapp-icons/Partner/ecobee.png",
-    iconX2Url: "https://s3.amazonaws.com/smartapp-icons/Partner/ecobee@2x.png",
-    singleInstance: true
+		name: "Ecobee (Connect)",
+		namespace: "smartthings",
+		author: "SmartThings",
+		description: "Connect your Ecobee thermostat to SmartThings.",
+		category: "SmartThings Labs",
+		iconUrl: "https://s3.amazonaws.com/smartapp-icons/Partner/ecobee.png",
+		iconX2Url: "https://s3.amazonaws.com/smartapp-icons/Partner/ecobee@2x.png",
+        singleInstance: true
 ) {
 	appSetting "clientId"
 }
@@ -236,27 +236,32 @@ def getEcobeeThermostats() {
 	]
 
 	def stats = [:]
-	httpGet(deviceListParams) { resp ->
+    try {
+        httpGet(deviceListParams) { resp ->
 
-		if(resp.status == 200) {
-			resp.data.thermostatList.each { stat ->
-				atomicState.remoteSensors = stat.remoteSensors
-				def dni = [ app.id, stat.identifier ].join('.')
-				stats[dni] = getThermostatDisplayName(stat)
-			}
-		} else {
-			log.debug "http status: ${resp.status}"
-			//refresh the auth token
-			if (resp.status == 500 && resp.data.status.code == 14) {
-				log.debug "Storing the failed action to try later"
-				atomicState.action = "getEcobeeThermostats"
-				log.debug "Refreshing your auth_token!"
-				refreshAuthToken()
-			} else {
-				log.error "Authentication error, invalid authentication method, lack of credentials, etc."
-			}
-		}
-	}
+            if (resp.status == 200) {
+                resp.data.thermostatList.each { stat ->
+                    atomicState.remoteSensors = stat.remoteSensors
+                    def dni = [app.id, stat.identifier].join('.')
+                    stats[dni] = getThermostatDisplayName(stat)
+                }
+            } else {
+                log.debug "http status: ${resp.status}"
+                //refresh the auth token
+                if (resp.status == 500 && resp.data.status.code == 14) {
+                    log.debug "Storing the failed action to try later"
+                    atomicState.action = "getEcobeeThermostats"
+                    log.debug "Refreshing your auth_token!"
+                    refreshAuthToken()
+                } else {
+                    log.error "Authentication error, invalid authentication method, lack of credentials, etc."
+                }
+            }
+        }
+    } catch(Exception e) {
+        log.debug "___exception getEcobeeThermostats(): " + e
+        refreshAuthToken()
+    }
 	atomicState.thermostats = stats
 	return stats
 }
@@ -338,22 +343,19 @@ def initialize() {
 
 	atomicState.thermostatData = [:] //reset Map to store thermostat data
 
+    //send activity feeds to tell that device is connected
+    def notificationMessage = "is connected to SmartThings"
+    sendActivityFeeds(notificationMessage)
+    state.timeSendPush = null
+
 	pollHandler() //first time polling data data from thermostat
 
 	//automatically update devices status every 5 mins
 	runEvery5Minutes("poll")
 
-}
+    //since access_token expires every 2 hours
+    runEvery1Hour("refreshAuthToken")
 
-def uninstalled() {
-	log.info("Uninstalling, removing child devices...")
-	removeChildDevices(getChildDevices())
-}
-
-private removeChildDevices(delete) {
-	delete.each {
-		deleteChildDevice(it.deviceNetworkId)
-	}
 }
 
 def pollHandler() {
@@ -579,65 +581,69 @@ def toQueryString(Map m) {
 }
 
 private refreshAuthToken() {
-	log.debug "refreshing auth token"
+    log.debug "refreshing auth token"
 
-	if(!atomicState.refreshToken) {
-		log.warn "Can not refresh OAuth token since there is no refreshToken stored"
-	} else {
+    if(!atomicState.refreshToken) {
+        log.warn "Can not refresh OAuth token since there is no refreshToken stored"
+    } else {
 
-		def refreshParams = [
-				method: 'POST',
-				uri   : apiEndpoint,
-				path  : "/token",
-				query : [grant_type: 'refresh_token', code: "${atomicState.refreshToken}", client_id: smartThingsClientId],
-		]
+        def refreshParams = [
+                method: 'POST',
+                uri   : apiEndpoint,
+                path  : "/token",
+                query : [grant_type: 'refresh_token', code: "${atomicState.refreshToken}", client_id: smartThingsClientId],
+        ]
 
-		log.debug refreshParams
+        log.debug refreshParams
 
-		//changed to httpPost
-		try {
-			def jsonMap
-			httpPost(refreshParams) { resp ->
+        def notificationMessage = "is disconnected from SmartThings, because the access credential changed or was lost. Please go to the Ecobee (Connect) SmartApp and re-enter your account login credentials."
+        //changed to httpPost
+        try {
+            def jsonMap
+            httpPost(refreshParams) { resp ->
 
-				if(resp.status == 200) {
-					log.debug "Token refreshed...calling saved RestAction now!"
+                if(resp.status == 200) {
+                    log.debug "Token refreshed...calling saved RestAction now!"
 
-					debugEvent("Token refreshed ... calling saved RestAction now!")
+                    debugEvent("Token refreshed ... calling saved RestAction now!")
 
-					log.debug resp
+                    log.debug resp
 
-					jsonMap = resp.data
+                    jsonMap = resp.data
 
-					if(resp.data) {
+                    if(resp.data) {
 
-						log.debug resp.data
-						debugEvent("Response = ${resp.data}")
+                        log.debug resp.data
+                        debugEvent("Response = ${resp.data}")
 
-						atomicState.refreshToken = resp?.data?.refresh_token
-						atomicState.authToken = resp?.data?.access_token
+                        atomicState.refreshToken = resp?.data?.refresh_token
+                        atomicState.authToken = resp?.data?.access_token
 
-						debugEvent("Refresh Token = ${atomicState.refreshToken}")
-						debugEvent("OAUTH Token = ${atomicState.authToken}")
+                        debugEvent("Refresh Token = ${atomicState.refreshToken}")
+                        debugEvent("OAUTH Token = ${atomicState.authToken}")
 
-						if(atomicState.action && atomicState.action != "") {
-							log.debug "Executing next action: ${atomicState.action}"
+                        if(atomicState.action && atomicState.action != "") {
+                            log.debug "Executing next action: ${atomicState.action}"
 
-							"${atomicState.action}"()
+                            "${atomicState.action}"()
 
-							//remove saved action
-							atomicState.action = ""
-						}
+                            //remove saved action
+                            atomicState.action = ""
+                        }
 
-					}
-					atomicState.action = ""
-				} else {
-					log.debug "refresh failed ${resp.status} : ${resp.status.code}"
-				}
-			}
-		} catch(Exception e) {
-			log.debug "caught exception refreshing auth token: " + e
-		}
-	}
+                    }
+                    atomicState.action = ""
+                } else {
+                    log.debug "refresh failed ${resp.status} : ${resp.status.code}"
+                }
+            }
+        } catch(Exception e) {
+            log.error "refreshAuthToken() >> Error: e.statusCode ${e.statusCode}"
+            if (e.statusCode == 401) {
+                sendPushAndFeeds(notificationMessage)
+            }
+        }
+    }
 }
 
 def resumeProgram(child, deviceId) {
@@ -727,7 +733,7 @@ def sendJson(child = null, String jsonBody) {
 	} catch(Exception e) {
 		log.debug "Exception Sending Json: " + e
 		debugEvent ("Exception Sending JSON: " + e)
-//        debugEventFromParent(child, "Exception Sending JSON: " + e)
+        refreshAuthToken()
 		return false
 	}
 
@@ -760,4 +766,29 @@ def debugEvent(message, displayEvent = false) {
 
 def debugEventFromParent(child, message) {
 	if (child != null) { child.sendEvent("name":"debugEventFromParent", "value":message, "description":message, displayed: true, isStateChange: true)}
+}
+
+//send both push notification and mobile activity feeds
+def sendPushAndFeeds(notificationMessage){
+    log.warn "sendPushAndFeeds >> notificationMessage: ${notificationMessage}"
+    log.warn "sendPushAndFeeds >> atomicState.timeSendPush: ${atomicState.timeSendPush}"
+    if (atomicState.timeSendPush){
+        if (now() - atomicState.timeSendPush > 86400000){ // notification is sent to remind user once a day
+            sendPush("Your Ecobee thermostat " + notificationMessage)
+            sendActivityFeeds(notificationMessage)
+            atomicState.timeSendPush = now()
+        }
+    } else {
+        sendPush("Your Ecobee thermostat " + notificationMessage)
+        sendActivityFeeds(notificationMessage)
+        atomicState.timeSendPush = now()
+    }
+    atomicState.authToken = null
+}
+
+def sendActivityFeeds(notificationMessage) {
+    def devices = getChildDevices()
+    devices.each { child ->
+        child.generateActivityFeedsEvent(notificationMessage) //parse received message from parent
+    }
 }
