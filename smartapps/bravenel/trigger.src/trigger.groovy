@@ -736,7 +736,6 @@ def testEvt(evt) {
     }
 	for(int i = 1; i < state.howMany; i++) {
 		def myDev = (settings.find {it.key == "rDev$i"}).value
-        log.debug "testEvt: $myDev, $i, $evt.displayName"
 		myDev.each {if(evt.displayName == it.displayName) {
 			if(evt.name == "button") result = getButton(myDev, evt, i)
 			else result = getOperand(i)}
