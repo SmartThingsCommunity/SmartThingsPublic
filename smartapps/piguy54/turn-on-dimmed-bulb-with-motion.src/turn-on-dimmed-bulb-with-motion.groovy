@@ -33,8 +33,8 @@ preferences {
     	section("At what dimmer level [1-100] (required)"){
 			input "dimmerLevel", "number", title: "Dim Level?", required: true
 		}
-    	section("And off when no motion for (required)"){
-			input "minutes1", "number", title: "Minutes?", required: true
+    	section("And off when no motion for (optional)"){
+			input "delayMinutes", "number", title: "Minutes?"
 		}
 		section("Turn on/off lights (required)"){
 			input "switch1", "capability.switch", multiple: true, required: true
@@ -90,33 +90,39 @@ def sunriseSunsetTimeHandler(evt) {
 def motionHandler(evt) {
 	log.debug "$evt.name: $evt.value"
 	if (evt.value == "active") {
-    	log.debug "event detected"
-    	if (sunRiseSetEnabled() && modeEnabled()) {
-			log.debug "turning on lights"
+		if (sunRiseSetEnabled() && modeEnabled()) {
+			log.debug "turning on lights due to motion"
+            switch1.setLevel(dimmerLevel)
 			switch1.on()
-        	switch1.setLevel(dimmerLevel)
-        }
-	} else if (evt.value == "inactive") {
-		runIn(60 * minutes1, scheduleCheck, [overwrite: false])
+			state.lastStatus = "on"
+		}
+		state.motionStopTime = null
+	}
+	else {
+		state.motionStopTime = now()
+		if(delayMinutes) {
+			runIn(delayMinutes*60, turnOffMotionAfterDelay, [overwrite: false])
+		} else {
+			turnOffMotionAfterDelay()
+		}
+	}
+}
+
+def turnOffMotionAfterDelay() {
+	log.trace "In turnOffMotionAfterDelay, state.motionStopTime = $state.motionStopTime, state.lastStatus = $state.lastStatus"
+	if (state.motionStopTime && state.lastStatus != "off") {
+		def elapsed = now() - state.motionStopTime
+        log.trace "elapsed = $elapsed"
+		if (elapsed >= ((delayMinutes ?: 0) * 60000L) - 2000) {
+        	log.debug "Turning off lights"
+			switch1.off()
+			state.lastStatus = "off"
+		}
 	}
 }
 
 def scheduleCheck() {
-	log.debug "schedule check"
-	def motionState = motion1.currentState("motion")
-    log.debug "$motionState.value"
-    if (!motionState.contains("active")) {
-        def elapsed = now() - motionState.rawDateCreated.time
-    	def threshold = 1000 * 60 * minutes1 - 1000
-    	if (elapsed >= threshold) {
-            log.debug "Motion has stayed inactive long enough since last check ($elapsed ms):  turning lights off"
-            switch1.off()
-    	} else {
-        	log.debug "Motion has not stayed inactive long enough since last check ($elapsed ms):  doing nothing"
-        }
-    } else {
-    	log.debug "Motion is active, do nothing and wait for inactive"
-    }
+	log.debug "In scheduleCheck - skipping"
 }
 
 def astroCheck() {
