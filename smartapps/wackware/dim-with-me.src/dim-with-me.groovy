@@ -93,18 +93,18 @@ def switchSetLevelHandler(evt)
 		return
 	def level = evt.value.toFloat()
 	level = level.toInteger()
-	log.info "switchSetLevelHandler Event: ${level}"
+	log.debug "switchSetLevelHandler Event: ${level}"
 	slaveDimmers?.setLevel(level)
 }
 
 def switchOffHandler(evt) {
-	log.info "switchoffHandler Event: ${evt.value}"
+	log.debug "switchoffHandler Event: ${evt.value}"
 	slaveDimmers?.off()
 	slaveSwitches?.off()
 }
 
 def switchOnHandler(evt) {
-	log.info "switchOnHandler Event: ${evt.value}"
+	log.debug "switchOnHandler Event: ${evt.value}"
 	def dimmerValue = master.latestValue("level") //can be turned on by setting the level
 	slaveDimmers?.on()
 	slaveSwitches?.on()
