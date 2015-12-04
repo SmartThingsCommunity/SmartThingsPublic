@@ -25,7 +25,7 @@ metadata {
         command "enrollResponse"
 
 		fingerprint inClusters: "0000,0001,0003,0402,0500,0020,0B05", outClusters: "0019", manufacturer: "CentraLite", model: "3305-S"
-        fingerprint inClusters: "0000,0001,0003,0402,0500,0020,0B05", outClusters: "0019", manufacturer: "CentraLite", model: "3325-S"
+        fingerprint inClusters: "0000,0001,0003,0402,0500,0020,0B05", outClusters: "0019", manufacturer: "CentraLite", model: "3325-S", deviceJoinName: "Motion Sensor"
         fingerprint inClusters: "0000,0001,0003,0402,0500,0020,0B05", outClusters: "0019", manufacturer: "CentraLite", model: "3305"
         fingerprint inClusters: "0000,0001,0003,0402,0500,0020,0B05", outClusters: "0019", manufacturer: "CentraLite", model: "3325"
         fingerprint inClusters: "0000,0001,0003,0402,0500,0020,0B05", outClusters: "0019", manufacturer: "CentraLite", model: "3326"
@@ -37,8 +37,17 @@ metadata {
 	}
 
 	preferences {
-		input description: "This feature allows you to correct any temperature variations by selecting an offset. Ex: If your sensor consistently reports a temp that's 5 degrees too warm, you'd enter \"-5\". If 3 degrees too cold, enter \"+3\".", displayDuringSetup: false, type: "paragraph", element: "paragraph"
-		input "tempOffset", "number", title: "Temperature Offset", description: "Adjust temperature by this many degrees", range: "*..*", displayDuringSetup: false
+		section {
+			image(name: 'educationalcontent', multiple: true, images: [
+				"http://cdn.device-gse.smartthings.com/Motion/Motion1.jpg",
+				"http://cdn.device-gse.smartthings.com/Motion/Motion2.jpg",
+				"http://cdn.device-gse.smartthings.com/Motion/Motion3.jpg"
+				])
+		}
+		section {
+			input title: "Temperature Offset", description: "This feature allows you to correct any temperature variations by selecting an offset. Ex: If your sensor consistently reports a temp that's 5 degrees too warm, you'd enter \"-5\". If 3 degrees too cold, enter \"+3\".", displayDuringSetup: false, type: "paragraph", element: "paragraph"
+			input "tempOffset", "number", title: "Degrees", description: "Adjust temperature by this many degrees", range: "*..*", displayDuringSetup: false
+		}
 	}
 
 	tiles(scale: 2) {
@@ -292,20 +301,18 @@ def configure() {
 	log.debug "Configuring Reporting, IAS CIE, and Bindings."
 
 	def configCmds = [
-		"zcl global write 0x500 0x10 0xf0 {${zigbeeEui}}",
+		"zcl global write 0x500 0x10 0xf0 {${zigbeeEui}}", "delay 200",
 		"send 0x${device.deviceNetworkId} 1 ${endpointId}", "delay 500",
 
-		"zdo bind 0x${device.deviceNetworkId} 1 ${endpointId} 0x20 {${device.zigbeeId}} {}", "delay 200",
-		"zcl global send-me-a-report 1 0x20 0x20 300 3600 {01}",
+		"zdo bind 0x${device.deviceNetworkId} ${endpointId} 1 1 {${device.zigbeeId}} {}", "delay 200",
+		"zcl global send-me-a-report 1 0x20 0x20 30 21600 {01}",		//checkin time 6 hrs
 		"send 0x${device.deviceNetworkId} 1 ${endpointId}", "delay 500",
 
-		"zdo bind 0x${device.deviceNetworkId} 1 ${endpointId} 0x402 {${device.zigbeeId}} {}", "delay 200",
+		"zdo bind 0x${device.deviceNetworkId} ${endpointId} 1 0x402 {${device.zigbeeId}} {}", "delay 200",
 		"zcl global send-me-a-report 0x402 0 0x29 300 3600 {6400}",
-		"send 0x${device.deviceNetworkId} 1 ${endpointId}", "delay 500",
-
-		"zdo bind 0x${device.deviceNetworkId} 1 ${endpointId} 1 {${device.zigbeeId}} {}", "delay 200"
+		"send 0x${device.deviceNetworkId} 1 ${endpointId}", "delay 500"
 	]
-    return configCmds + refresh() // send refresh cmds as part of config
+	return configCmds + refresh() // send refresh cmds as part of config
 }
 
 def enrollResponse() {
@@ -313,12 +320,12 @@ def enrollResponse() {
 	String zigbeeEui = swapEndianHex(device.hub.zigbeeEui)
 	[
 		//Resending the CIE in case the enroll request is sent before CIE is written
-		"zcl global write 0x500 0x10 0xf0 {${zigbeeEui}}",
+		"zcl global write 0x500 0x10 0xf0 {${zigbeeEui}}", "delay 200",
 		"send 0x${device.deviceNetworkId} 1 ${endpointId}", "delay 500",
 		//Enroll Response
 		"raw 0x500 {01 23 00 00 00}",
 		"send 0x${device.deviceNetworkId} 1 1", "delay 200"
-    ]
+	]
 }
 
 private getEndpointId() {
