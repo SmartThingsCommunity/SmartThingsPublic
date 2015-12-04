@@ -180,6 +180,7 @@ def updateControllerState(namesToCheck) {
 	def controller = getControllerDevice()
     namesToCheck?.each { name ->
     	def values = devices?.currentValue(name)
+        values?.removeAll([null])
         log.debug "Updating Controller State: $name -> $values"
         controller.groupSync(name, values)
     }
