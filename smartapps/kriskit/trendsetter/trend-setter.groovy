@@ -19,9 +19,9 @@ definition(
     author: "Chris Kitch",
     description: "Uses virtual child devices to group other devices together and perform commands and aggregate data from the group.",
     category: "My Apps",
-    iconUrl: "https://s3.amazonaws.com/smartapp-icons/Convenience/Cat-Convenience.png",
-    iconX2Url: "https://s3.amazonaws.com/smartapp-icons/Convenience/Cat-Convenience@2x.png",
-    iconX3Url: "https://s3.amazonaws.com/smartapp-icons/Convenience/Cat-Convenience@2x.png",
+    iconUrl: "https://cdn.rawgit.com/Kriskit/SmartThingsPublic/smartapps/kriskit/trendsetter/icon.png",
+    iconX2Url: "https://cdn.rawgit.com/Kriskit/SmartThingsPublic/smartapps/kriskit/trendsetter/icon@2x.png",
+    iconX3Url: "https://cdn.rawgit.com/Kriskit/SmartThingsPublic/smartapps/kriskit/trendsetter/icon@3x.png",
     singleInstance: true)
 
 
