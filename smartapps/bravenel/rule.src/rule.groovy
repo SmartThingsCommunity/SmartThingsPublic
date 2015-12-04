@@ -3,7 +3,7 @@
  *
  *  Copyright 2015 Bruce Ravenel
  *
- *  Version 1.2.14   3 Dec 2015
+ *  Version 1.2.15   4 Dec 2015
  *
  *  Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except
  *  in compliance with the License. You may obtain a copy of the License at:
@@ -365,8 +365,12 @@ def stripBrackets(str) {
 
 // Action selection code follows
 
-def setActTrue(dev, str) {
+def checkActTrue(dev, str) {
 	if(dev) state.actsTrue = state.actsTrue + stripBrackets("$str") + "\n"
+}
+
+def setActTrue(str) {
+	state.actsTrue = state.actsTrue + stripBrackets("$str") + "\n"
 }
 
 def addToActTrue(str) {
@@ -377,8 +381,12 @@ def buildActTrue(str, brackets) {
 	state.actsTrue = state.actsTrue + (brackets ? stripBrackets("$str") : str)
 }
 
-def setActFalse(dev, str) {
+def checkActFalse(dev, str) {
 	if(dev) state.actsFalse = state.actsFalse + stripBrackets("$str") + "\n"
+}
+
+def setActFalse(str) {
+	state.actsFalse = state.actsFalse + stripBrackets("$str") + "\n"
 }
 
 def addToActFalse(str) {
@@ -394,9 +402,9 @@ def selectActionsTrue() {
 		state.actsTrue = ""
 		section("") {
 			input "onSwitchTrue", "capability.switch", title: "Turn on these switches", multiple: true, required: false, submitOnChange: true
-			setActTrue(onSwitchTrue, "On: $onSwitchTrue")
+			checkActTrue(onSwitchTrue, "On: $onSwitchTrue")
 			input "offSwitchTrue", "capability.switch", title: "Turn off these switches", multiple: true, required: false, submitOnChange: true
-			setActTrue(offSwitchTrue, "Off: $offSwitchTrue")
+			checkActTrue(offSwitchTrue, "Off: $offSwitchTrue")
 			input "delayedOffTrue", "capability.switch", title: "Turn on/off these switches after a delay (default is OFF)", multiple: true, required: false, submitOnChange: true
 			if(delayedOffTrue) {
 				input "delayOnOffTrue", "bool", title: "Turn ON after the delay?", multiple: false, required: false, defaultValue: false, submitOnChange: true
@@ -404,7 +412,7 @@ def selectActionsTrue() {
 				if(delayMinutesTrue) {
 					def delayStrTrue = "Delayed " + (delayOnOffTrue ? "On:" : "Off:") + " $delayedOffTrue: $delayMinutesTrue minute"
 					if(delayMinutesTrue > 1) delayStrTrue = delayStrTrue + "s"
-					setActTrue(delayedOffTrue, delayStrTrue)
+					setActTrue(delayStrTrue)
 				}
 			}
 			input "pendedOffTrue", "capability.switch", title: "Turn on/off these switches after a delay, pending cancellation (default is OFF)", multiple: true, required: false, submitOnChange: true
@@ -414,15 +422,19 @@ def selectActionsTrue() {
 				if(pendMinutesTrue) {
 					def pendStrTrue = "Pending "+ (pendOnOffTrue ? "On:" : "Off:") + " $pendedOffTrue: $pendMinutesTrue minute"
 					if(pendMinutesTrue > 1) pendStrTrue = pendStrTrue + "s"
-					setActTrue(pendedOffTrue, pendStrTrue)
+					setActTrue(pendStrTrue)
 				}
 			}
 			input "dimATrue", "capability.switchLevel", title: "Set these dimmers", multiple: true, submitOnChange: true, required: false
-			if(dimATrue) input "dimLATrue", "number", title: "To this level", range: "0..100", required: true, submitOnChange: true
-			if(dimLATrue) setActTrue(dimATrue, "Dim: $dimATrue: $dimLATrue")
+			if(dimATrue) {
+            	input "dimLATrue", "number", title: "To this level", range: "0..100", required: true, submitOnChange: true
+				if(dimLATrue) setActTrue("Dim: $dimATrue: $dimLATrue")
+            }
 			input "dimBTrue", "capability.switchLevel", title: "Set these other dimmers", multiple: true, submitOnChange: true, required: false
-			if(dimBTrue) input "dimLBTrue", "number", title: "To this level", range: "0..100", required: true, submitOnChange: true
-			if(dimLBTrue) setActTrue(dimBTrue, "Dim: $dimBTrue: $dimLBTrue")
+			if(dimBTrue) {
+            	input "dimLBTrue", "number", title: "To this level", range: "0..100", required: true, submitOnChange: true
+				if(dimLBTrue) setActTrue("Dim: $dimBTrue: $dimLBTrue")
+            }
 			input "bulbsTrue", "capability.colorControl", title: "Set color for these bulbs", multiple: true, required: false, submitOnChange: true
 			if(bulbsTrue) {
 				input "colorTrue", "enum", title: "Bulb color?", required: true, multiple: false, submitOnChange: true,
@@ -433,13 +445,13 @@ def selectActionsTrue() {
 				if(colorLevelTrue) addToActTrue("Level: $colorLevelTrue")
 			}            
 			input "lockTrue", "capability.lock", title: "Lock these locks", multiple: true, required: false, submitOnChange: true
-			setActTrue(lockTrue, "Lock: $lockTrue")
+			checkActTrue(lockTrue, "Lock: $lockTrue")
 			input "unlockTrue", "capability.lock", title: "Unlock these locks", multiple: true, required: false, submitOnChange: true
-			setActTrue(unlockTrue, "Unlock: $unlockTrue")
+			checkActTrue(unlockTrue, "Unlock: $unlockTrue")
 			input "openValveTrue", "capability.valve", title: "Open these valves", multiple: true, required: false, submitOnChange: true
-			setActTrue(openValveTrue, "Open: $openValveTrue")
+			checkActTrue(openValveTrue, "Open: $openValveTrue")
 			input "closeValveTrue", "capability.valve", title: "Close these valves", multiple: true, required: false, submitOnChange: true
-			setActTrue(closeValveTrue, "Close: $closeValveTrue")
+			checkActTrue(closeValveTrue, "Close: $closeValveTrue")
 			input "thermoTrue", "capability.thermostat", title: "Set these thermostats", multiple: true, required: false, submitOnChange: true
 			if(thermoTrue) {
 				input "thermoModeTrue", "enum", title: "Select thermostate mode", multiple: false, required: false, options: ["auto", "heat", "cool", "off"], submitOnChange: true
@@ -480,9 +492,9 @@ def selectActionsFalse() {
 		state.actsFalse = ""
 		section("") {
 			input "onSwitchFalse", "capability.switch", title: "Turn on these switches", multiple: true, required: false, submitOnChange: true
-			setActFalse(onSwitchFalse, "On: $onSwitchFalse")
+			checkActFalse(onSwitchFalse, "On: $onSwitchFalse")
 			input "offSwitchFalse", "capability.switch", title: "Turn off these switches", multiple: true, required: false, submitOnChange: true
-			setActFalse(offSwitchFalse, "Off: $offSwitchFalse")
+			checkActFalse(offSwitchFalse, "Off: $offSwitchFalse")
 			input "delayedOffFalse", "capability.switch", title: "Turn on/off these switches after a delay (default is OFF)", multiple: true, required: false, submitOnChange: true
 			if(delayedOffFalse) {
 				input "delayOnOffFalse", "bool", title: "Turn ON after the delay?", multiple: false, required: false, defaultValue: false, submitOnChange: true
@@ -490,7 +502,7 @@ def selectActionsFalse() {
 				if(delayMinutesFalse) {
 					def delayStrFalse = "Delayed " + (delayOnOffFalse ? "On:" : "Off:") + " $delayedOffFalse: $delayMinutesFalse minute"
 					if(delayMinutesFalse > 1) delayStrFalse = delayStrFalse + "s"
-					setActFalse(delayedOffFalse, delayStrFalse)
+					setActFalse(delayStrFalse)
 				}
 			}
 			input "pendedOffFalse", "capability.switch", title: "Turn on/off these switches after a delay, pending cancellation (default is OFF)", multiple: true, required: false, submitOnChange: true
@@ -500,15 +512,19 @@ def selectActionsFalse() {
 				if(pendMinutesFalse) {
 					def pendStrFalse = "Pending "+ (pendOnOffFalse ? "On:" : "Off:") + " $pendedOffFalse: $pendMinutesFalse minute"
 					if(pendMinutesFalse > 1) pendStrFalse = pendStrFalse + "s"
-					setActFalse(pendedOffFalse, pendStrFalse)
+					setActFalse(pendStrFalse)
 				}
 			}
 			input "dimAFalse", "capability.switchLevel", title: "Set these dimmers", multiple: true, submitOnChange: true, required: false
-			if(dimAFalse) input "dimLAFalse", "number", title: "To this level", range: "0..100", required: true, submitOnChange: true
-			if(dimLAFalse) setActFalse(dimAFalse, "Dim: $dimAFalse: $dimLAFalse")
+			if(dimAFalse) {
+            	input "dimLAFalse", "number", title: "To this level", range: "0..100", required: true, submitOnChange: true
+				if(dimLAFalse) setActFalse("Dim: $dimAFalse: $dimLAFalse")
+            }
 			input "dimBFalse", "capability.switchLevel", title: "Set these other dimmers", multiple: true, submitOnChange: true, required: false
-			if(dimBFalse) input "dimLBFalse", "number", title: "To this level", range: "0..100", required: true, submitOnChange: true
-			if(dimLBFalse) setActFalse(dimBFalse, "Dim: $dimBFalse: $dimLBFalse")
+			if(dimBFalse) {
+            	input "dimLBFalse", "number", title: "To this level", range: "0..100", required: true, submitOnChange: true
+				if(dimLBFalse) setActFalse("Dim: $dimBFalse: $dimLBFalse")
+            }
 			input "bulbsFalse", "capability.colorControl", title: "Set color for these bulbs", multiple: true, required: false, submitOnChange: true
 			if(bulbsFalse) {
 				input "colorFalse", "enum", title: "Bulb color?", required: true, multiple: false, submitOnChange: true,
@@ -519,13 +535,13 @@ def selectActionsFalse() {
 				if(colorLevelFalse) addToActFalse("Level: $colorLevelFalse")
 			}            
 			input "lockFalse", "capability.lock", title: "Lock these locks", multiple: true, required: false, submitOnChange: true
-			setActFalse(lockFalse, "Lock: $lockFalse")
+			checkActFalse(lockFalse, "Lock: $lockFalse")
 			input "unlockFalse", "capability.lock", title: "Unlock these locks", multiple: true, required: false, submitOnChange: true
-			setActFalse(unlockFalse, "Unlock: $unlockFalse")
+			checkActFalse(unlockFalse, "Unlock: $unlockFalse")
 			input "openValveFalse", "capability.valve", title: "Open these valves", multiple: true, required: false, submitOnChange: true
-			setActTrue(openValveFalse, "Open: $openValveFalse")
+			checkActFalse(openValveFalse, "Open: $openValveFalse")
 			input "closeValveFalse", "capability.valve", title: "Close these valves", multiple: true, required: false, submitOnChange: true
-			setActTrue(closeValveFalse, "Close: $closeValveFalse")
+			checkActFalse(closeValveFalse, "Close: $closeValveFalse")
 			input "thermoFalse", "capability.thermostat", title: "Set these thermostats", multiple: true, required: false, submitOnChange: true
 			if(thermoFalse) {
 				input "thermoModeFalse", "enum", title: "Select thermostate mode", multiple: false, required: false, options: ["auto", "heat", "cool", "off"], submitOnChange: true
