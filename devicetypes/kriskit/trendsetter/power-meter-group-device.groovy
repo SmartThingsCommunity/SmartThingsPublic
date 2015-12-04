@@ -20,7 +20,6 @@ metadata {
         capability "Refresh"
         
         attribute "powerUsage", "string"
-        attribute "aggregatePower", "number"
 	}
 
 	simulator {
