@@ -77,13 +77,13 @@ log.debug "in coil controller updated ... currenttemp = $sensor.currentTemperatu
 def temperatureHandler(evt)
 {
 def currenttemp = sensor.currentTemperature
-/*
+
 log.debug "in temp handler"
 log.debug "current temp = $currenttemp"
 log.debug "onSetPoint = $onSetPoint"
 log.debug "offSetPoint = $offSetPoint"
 log.debug "set offset = $tzOffset"
-*/
+
 	def today = new Date();
 
 		def ltf = new java.text.SimpleDateFormat("yyyyMMdd")
@@ -98,11 +98,15 @@ log.debug "set offset = $tzOffset"
          def onOutlets = currSwitches.findAll { switchVal ->
          switchVal == "on" ? true : false }
          
+         def onsize = onOutlets.size()
+         def allsize = outlets.size()
+         
          if  (((intdate >= startDate) && (intdate <= endDate))
             && ((currenttemp > onSetPoint) && (currenttemp < offSetPoint)))
            {
                      // dont do anything if already on
-                     if (onOutlets.size() != outlets.size())
+                     log.debug "In try turn on, number of outlets on = $onsize, total outlets = $allsize."
+                     if (onsize != allsize)
                        {
                          log.debug "turning outlets On as $sensor.displayName is reporting $currenttemp which is between $onSetPoint and $offSetPoint, and we are within the date range ($startDate - $endDate)!"
             	         mysend("Turning device(s) On as $sensor.displayName is reporting a temperature of $currenttemp which is between $onSetPoint and $offSetPoint, and we are within the date range ($startDate - $endDate)!")
@@ -113,7 +117,9 @@ log.debug "set offset = $tzOffset"
              else 
                  {
                     // dont do anything if already off
-                     if (onOutlets.size() != 0)
+                      log.debug "In try turn off, number of outlets  On = $onsize."
+                  
+                     if (onsize != 0)
                        {
                  	    log.debug "turning outlets Off! as $sensor.displayName is reporting $currenttemp which is Not between $onSetPoint and $offSetPoint, or we are no longer within the date range ($startDate - $endDate)!"
                         mysend("Turning device(s) Off as $sensor.displayName is reporting a temperature of $currenttemp which is not between $onSetPoint and $offSetPoint, or we are no longer within the date range ($startDate - $endDate)!")
