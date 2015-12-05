@@ -98,18 +98,11 @@ metadata {
 		details(["temperature", "upButtonControl", "thermostatSetpoint", "currentStatus", "downButtonControl", "mode", "resumeProgram", "refresh"])
 	}
 
+	preferences {
+		input "holdType", "enum", title: "Hold Type", description: "When changing temperature, use Temporary or Permanent hold", required: false, options:["Temporary", "Permanent"]
+	}
+
 }
-
-/*
-
-    preferences {
-		input "highTemperature", "number", title: "Auto Mode High Temperature:", defaultValue: 80
-		input "lowTemperature", "number", title: "Auto Mode Low Temperature:", defaultValue: 70
-        input name: "holdType", type: "enum", title: "Hold Type", description: "When changing temperature, use Temporary or Permanent hold", required: true, options:["Temporary", "Permanent"]
-  	}
-
-*/
-
 
 // parse events into attributes
 def parse(String description) {
@@ -208,7 +201,8 @@ void setHeatingSetpoint(Double setpoint) {
 
 	log.debug "Sending setHeatingSetpoint> coolingSetpoint: ${coolingSetpoint}, heatingSetpoint: ${heatingSetpoint}"
 
-	if (parent.setHold (this, heatingSetpoint,  coolingSetpoint, deviceId)) {
+	def sendHoldType = holdType ? (holdType=="Temporary")? "nextTransition" : (holdType=="Permanent")? "indefinite" : "indefinite" : "indefinite"
+	if (parent.setHold (this, heatingSetpoint,  coolingSetpoint, deviceId, sendHoldType)) {
 		sendEvent("name":"heatingSetpoint", "value":heatingSetpoint)
 		sendEvent("name":"coolingSetpoint", "value":coolingSetpoint)
 		log.debug "Done setHeatingSetpoint> coolingSetpoint: ${coolingSetpoint}, heatingSetpoint: ${heatingSetpoint}"
@@ -242,7 +236,8 @@ void setCoolingSetpoint(Double setpoint) {
 
 	log.debug "Sending setCoolingSetpoint> coolingSetpoint: ${coolingSetpoint}, heatingSetpoint: ${heatingSetpoint}"
 
-	if (parent.setHold (this, heatingSetpoint,  coolingSetpoint, deviceId)) {
+	def sendHoldType = holdType ? (holdType=="Temporary")? "nextTransition" : (holdType=="Permanent")? "indefinite" : "indefinite" : "indefinite"
+	if (parent.setHold (this, heatingSetpoint,  coolingSetpoint, deviceId, sendHoldType)) {
 		sendEvent("name":"heatingSetpoint", "value":heatingSetpoint)
 		sendEvent("name":"coolingSetpoint", "value":coolingSetpoint)
 		log.debug "Done setCoolingSetpoint>> coolingSetpoint = ${coolingSetpoint}, heatingSetpoint = ${heatingSetpoint}"
@@ -608,10 +603,11 @@ void alterSetpoint(temp) {
 	}
 
 	log.debug "alterSetpoint >> in mode ${mode} trying to change heatingSetpoint to ${targetHeatingSetpoint} " +
-			"coolingSetpoint to ${targetCoolingSetpoint}"
+			"coolingSetpoint to ${targetCoolingSetpoint} with holdType : ${holdType}"
 
+	def sendHoldType = holdType ? (holdType=="Temporary")? "nextTransition" : (holdType=="Permanent")? "indefinite" : "indefinite" : "indefinite"
 	//step2: call parent.setHold to send http request to 3rd party cloud
-	if (parent.setHold(this, targetHeatingSetpoint, targetCoolingSetpoint, deviceId)) {
+	if (parent.setHold(this, targetHeatingSetpoint, targetCoolingSetpoint, deviceId, sendHoldType)) {
 		sendEvent("name": "thermostatSetpoint", "value": temp.value.toString(), displayed: false)
 		sendEvent("name": "heatingSetpoint", "value": targetHeatingSetpoint)
 		sendEvent("name": "coolingSetpoint", "value": targetCoolingSetpoint)
