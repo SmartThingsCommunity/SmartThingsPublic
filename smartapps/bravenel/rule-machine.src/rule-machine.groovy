@@ -1,9 +1,9 @@
 /**
  *  Rule Machine
  *
- *  Copyright 2015 Mike Maxwell
+ *  Copyright 2015 Bruce Ravenel and Mike Maxwell
  *
- *  Version 1.1   2 Dec 2015
+ *  Version 1.1   5 Dec 2015
  *
  *  Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except
  *  in compliance with the License. You may obtain a copy of the License at:
@@ -20,7 +20,7 @@ definition(
     name: "Rule Machine",
     singleInstance: true,
     namespace: "bravenel",
-    author: "Mike Maxwell",
+    author: "Bruce Ravenel and Mike Maxwell",
     description: "Rule Machine",
     category: "My Apps",
   	iconUrl: "https://s3.amazonaws.com/smartapp-icons/ModeMagic/Cat-ModeMagic.png",
@@ -29,9 +29,16 @@ definition(
 )
 
 preferences {
-    page(name: "mainPage", title: "Rules", install: true, uninstall: false, submitOnChange: true) {
+	page(name: "mainPage")
+}
+
+def mainPage() {
+    dynamicPage(name: "mainPage", title: "Rules and Triggers", install: true, uninstall: false, submitOnChange: true) {
             section {
                     app(name: "childRules", appName: "Rule", namespace: "bravenel", title: "Create New Rule...", multiple: true)
+            }
+            section {
+                    app(name: "childTriggers", appName: "Trigr", namespace: "bravenel", title: "Create New Trigger...", multiple: true)
             }
     }
 }
@@ -46,7 +53,89 @@ def updated() {
 }
 
 def initialize() {
+	if(!state.setup) {
+		state.ruleState = [:]
+    	state.ruleSubscribers = [:]
+    }
     childApps.each {child ->
-            log.info "Installed Rules: ${child.label}"
+		if(child.name == "Rule") {
+			log.info "Installed Rules: ${child.label}"
+            if(!state.setup) {
+				state.ruleState[child.label] = null
+				state.ruleSubscribers[child.label] = [:]
+            }
+		}
+    }
+    childApps.each {child ->
+            if(child.name == "Trigr") log.info "Installed Triggers: ${child.label}"
+    }
+    state.setup = true
+}
+
+def ruleList(appLabel) {
+	def result = []
+    childApps.each { child ->
+    	if(child.name == "Rule" && child.label != appLabel) result << child.label
+    }
+    return result
+}
+
+def subscribeRule(appLabel, ruleName, ruleTruth, childMethod) {
+//	log.debug "subscribe: $appLabel, $ruleName, $ruleTruth, $childMethod"
+    ruleName.each {name ->
+    	state.ruleSubscribers[name].each {if(it == appLabel) return}
+        if(state.ruleSubscribers[name] == null) state.ruleSubscribers[name] = ["$appLabel":ruleTruth]
+    	else state.ruleSubscribers[name] << ["$appLabel":ruleTruth]
     }
 }
+
+def setRuleTruth(appLabel, ruleTruth) {
+//	log.debug "setRuleTruth1: $appLabel, $ruleTruth"
+	if(!state.setup) initialize()
+    state.ruleState[appLabel] = ruleTruth
+    def thisList = state.ruleSubscribers[appLabel]
+    thisList.each {
+        if(it.value == null || "$it.value" == "$ruleTruth") {
+    		childApps.each { child ->
+    			if(child.label == it.key) child.ruleHandler(appLabel, ruleTruth)
+    		}
+        }
+    }
+}
+
+def currentRule(appLabel) {
+//	log.debug "currentRule: $appLabel, ${state.ruleState[appLabel]}"
+	def result = state.ruleState[appLabel]
+}
+
+def childUninstalled() {
+//	log.debug "childUninstalled called"
+}
+
+def removeChild(appLabel) {
+//	log.debug "removeChild: $appLabel"
+    unSubscribeRule(appLabel)
+    state.ruleState.remove(appLabel)
+    state.ruleSubscribers.remove(appLabel)
+}
+
+def unSubscribeRule(appLabel) {
+//	log.debug "unSubscribeRule: $appLabel"
+    state.ruleSubscribers.each { rule ->
+        def newList = [:]
+        rule.value.each {list ->
+        	if(list.key != appLabel) newList << list
+        }
+        rule.value = newList
+    }
+}
+
+def runRule(rule, appLabel) {
+//	log.debug "runRule: $rule, $appLabel"
+    childApps.each { child ->
+    	rule.each {
+    		if(child.label == it) child.ruleEvaluator(appLabel)
+        }
+    }
+}
+
