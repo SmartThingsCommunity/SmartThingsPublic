@@ -206,14 +206,16 @@ def poll() {
 def refresh() {
 	def value = "when off"
    
-    log.debug "in refresh for whenon got indicatorstatus = $state.currentIndicatorStatus"
-    sendEvent(name: "indicatorStatus", value: state.currentIndicatorStatus, display: true)
-	
+  
 	delayBetween([
 		zwave.switchBinaryV1.switchBinaryGet().format(),
 		zwave.meterV2.meterGet(scale: 0).format(),
 		zwave.meterV2.meterGet(scale: 2).format()
 	])
+    
+      log.debug "in refresh for whenon got indicatorstatus = $state.currentIndicatorStatus"
+    sendEvent(name: "indicatorStatus", value: state.currentIndicatorStatus, display: true)
+	
 }
 
 def configure() {

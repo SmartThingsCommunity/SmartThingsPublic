@@ -431,10 +431,16 @@ range
 Values
 0 % - 100 %    ->    Define a brightness level.  
  */
- Short testlevel = newlevel
- sendEvent(name: "level", value: newlevel, displayed: true)	  	  
- zwave.configurationV1.configurationSet(parameterNumber: 0x54, size: 1, scaledConfigurationValue: testlevel).format()
-
+ 
+ def ledBright = 50
+    	if (newlevel) {
+        	ledBright=newlevel.toInteger()
+		 sendEvent(name: "level", value: ledBright, displayed: true)	 
+         delayBetween([
+  zwave.configurationV1.configurationSet(parameterNumber: 84, size: 3, configurationValue: [ledBright,ledBright,ledBright]),
+  zwave.configurationV1.configurationGet(parameterNumber: 84)
+ ])
+  }
  
 }
 
