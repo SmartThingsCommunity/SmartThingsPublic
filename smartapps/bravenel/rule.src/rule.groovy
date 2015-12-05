@@ -42,13 +42,13 @@ def selectRule() {
 	dynamicPage(name: "selectRule", title: "Select Conditions, Rule and Actions", uninstall: true, install: true) {
 		section() {     
 			label title: "First, Name the Rule", required: true, submitOnChange: true
-            if(app.label) {
+//            if(app.label) {
 				def condLabel = conditionLabel()
 				href "selectConditions", title: "Define Conditions", description: condLabel ? (condLabel) : "Tap to set", required: true, state: condLabel ? "complete" : null, submitOnChange: true
 				href "defineRule", title: "Define the Rule", description: state.str ? (state.str) : "Tap to set", state: state.str ? "complete" : null, submitOnChange: true
 				href "selectActionsTrue", title: "Select the Actions for True", description: state.actsTrue ? state.actsTrue : "Tap to set", state: state.actsTrue ? "complete" : null, submitOnChange: true
 				href "selectActionsFalse", title: "Select the Actions for False", description: state.actsFalse ? state.actsFalse : "Tap to set", state: state.actsFalse ? "complete" : null, submitOnChange: true
-            }
+//            }
 		}
 		section(title: "More options", hidden: hideOptionsSection(), hideable: true) {
 			input "modesZ", "mode", title: "Evaluate only when mode is", multiple: true, required: false

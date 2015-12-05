@@ -39,11 +39,11 @@ def selectTriggerActs() {
 	dynamicPage(name: "selectTriggerActs", title: "Select Triggers and Actions", uninstall: true, install: true) {
 		section() {     
 			label title: "First, Name the Trigger", required: true, submitOnChange: true
-            if(app.label) {
+//            if(app.label) {
 				def condLabel = conditionLabel()
 				href "selectConditions", title: "Define Triggers", description: condLabel ? (condLabel) : "Tap to set", required: true, state: condLabel ? "complete" : null, submitOnChange: true
 				href "selectActionsTrue", title: "Select the Actions", description: state.actsTrue ? state.actsTrue : "Tap to set", state: state.actsTrue ? "complete" : null
-            }
+//            }
 		}
 		section(title: "More options", hidden: hideOptionsSection(), hideable: true) {
 			def timeLabel = timeIntervalLabel()
