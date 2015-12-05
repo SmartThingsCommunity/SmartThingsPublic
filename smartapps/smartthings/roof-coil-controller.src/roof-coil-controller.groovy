@@ -53,6 +53,7 @@ preferences {
      section( "Notifications" ) {
         input("recipients", "contact", title: "Send notifications to") {
             input "sendPushMessage", "enum", title: "Send a push notification?", options: ["Yes", "No"], required: false
+            input "alsoSendTextMessage", "enum", title: "Also Send a text message?", options: ["Yes", "No"], required: false
             input "phone1", "phone", title: "Send a Text Message?", required: false
         }
     }
@@ -184,7 +185,6 @@ log.debug "set offset = $tzOffset"
                  }
 }
 
-
 private mysend(msg) {
     if (location.contactBookEnabled) {
         log.debug("sending notifications to: ${recipients?.size()}")
@@ -196,11 +196,11 @@ private mysend(msg) {
             sendPush(msg)
         }
 
-        if (phone1) {
+        if ((phone1) && (alsoSendTextMessage == "Yes")) {
             log.debug("sending text message")
             sendSms(phone1, msg)
         }
     }
 
-    log.debug msg
+   // log.debug msg
 }
