@@ -115,8 +115,8 @@ def childUninstalled() {
 def removeChild(appLabel) {
 //	log.debug "removeChild: $appLabel"
     unSubscribeRule(appLabel)
-    state.ruleState.remove(appLabel)
-    state.ruleSubscribers.remove(appLabel)
+    if(state.ruleState[appLabel]) state.ruleState.remove(appLabel)
+    if(state.ruleSubscribers[appLabel]) state.ruleSubscribers.remove(appLabel)
 }
 
 def unSubscribeRule(appLabel) {
