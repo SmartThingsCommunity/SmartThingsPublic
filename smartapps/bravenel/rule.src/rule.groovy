@@ -569,6 +569,7 @@ def selectActionsFalse() {
 				if(thermoFanFalse) buildActFalse("Fan setting $thermoFanFalse", false)
 				addToActFalse("")
 			}
+			input "alarmFalse", "enum", title: "Set the alarm state", multiple: false, required: false, options: ["away" : "Arm (away)", "stay" : "Arm (stay)", "off" : "Disarm"], submitOnChange: true
 			if(alarmFalse) addToActFalse("Alarm: " + (alarmFalse in ["away", "stay"] ? "Arm ($alarmFalse)" : "Disarm"))
 			def myModes = []
 			location.modes.each {myModes << "$it"}
