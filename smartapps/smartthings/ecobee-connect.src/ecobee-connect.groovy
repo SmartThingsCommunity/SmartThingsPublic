@@ -404,7 +404,7 @@ def pollChildren(child = null) {
 //            }
 
 			if(resp.status == 200) {
-				log.debug "poll results returned"
+				log.debug "poll results returned resp.data ${resp.data}"
 				atomicState.remoteSensors = resp.data.thermostatList.remoteSensors
 				atomicState.thermostatData = resp.data
 				updateSensorData()
@@ -423,7 +423,9 @@ def pollChildren(child = null) {
 							coolingSetpoint: stat.runtime.desiredCool / 10,
 							thermostatMode: stat.settings.hvacMode
 					]
-					data["temperature"] = data["temperature"] ? String.format("%.1f", data["temperature"]) : data["temperature"]
+					data["temperature"] = data["temperature"] ? data["temperature"].toDouble().toInteger() : data["temperature"]
+					data["heatingSetpoint"] = data["heatingSetpoint"] ? data["heatingSetpoint"].toDouble().toInteger() : data["heatingSetpoint"]
+					data["coolingSetpoint"] = data["coolingSetpoint"] ? data["coolingSetpoint"].toDouble().toInteger() : data["coolingSetpoint"]
 //                    debugEventFromParent(child, "Event Data = ${data}")
 
 					collector[dni] = [data:data]
@@ -547,9 +549,8 @@ def updateSensorData() {
 				it.capability.each {
 					if (it.type == "temperature") {
 						temperature = it.value as Double
-						temperature = temperature / 10
-					}
-					if (it.type == "occupancy") {
+						temperature = (temperature / 10).toInteger()
+					} else if (it.type == "occupancy") {
 						if(it.value == "true")
 							occupancy = "active"
 						else
@@ -658,7 +659,7 @@ def resumeProgram(child, deviceId) {
 	return result
 }
 
-def setHold(child, heating, cooling, deviceId) {
+def setHold(child, heating, cooling, deviceId, sendHoldType) {
 
 	int h = heating * 10
 	int c = cooling * 10
@@ -666,7 +667,7 @@ def setHold(child, heating, cooling, deviceId) {
 //    log.debug "setpoints____________ - h: $heating - $h, c: $cooling - $c"
 //    def thermostatIdsString = getChildDeviceIdsString()
 
-	def jsonRequestBody = '{"selection":{"selectionType":"thermostats","selectionMatch":"' + deviceId + '","includeRuntime":true},"functions": [{ "type": "setHold", "params": { "coolHoldTemp": '+c+',"heatHoldTemp": '+h+', "holdType": "indefinite" } } ]}'
+	def jsonRequestBody = '{"selection":{"selectionType":"thermostats","selectionMatch":"' + deviceId + '","includeRuntime":true},"functions": [{ "type": "setHold", "params": { "coolHoldTemp": '+c+',"heatHoldTemp": '+h+', "holdType": '+sendHoldType+' } } ]}'
 //	def jsonRequestBody = '{"selection":{"selectionType":"thermostats","selectionMatch":"' + thermostatIdsString + '","includeRuntime":true},"functions": [{"type": "resumeProgram"}, { "type": "setHold", "params": { "coolHoldTemp": '+c+',"heatHoldTemp": '+h+', "holdType": "indefinite" } } ]}'
 	def result = sendJson(child, jsonRequestBody)
 //    debugEventFromParent(child, "setHold: heating: ${h}, cooling: ${c} with result ${result}")
