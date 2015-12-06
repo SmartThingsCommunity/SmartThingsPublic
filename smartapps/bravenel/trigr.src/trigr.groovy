@@ -1,7 +1,7 @@
 /**
  *  Trigr
  *
- *	Version 1.3.0   5 Dec 2015
+ *	Version 1.3.1   6 Dec 2015
  *
  *  Copyright 2015 Bruce Ravenel
  *
@@ -38,12 +38,10 @@ preferences {
 def selectTriggerActs() {
 	dynamicPage(name: "selectTriggerActs", title: "Select Triggers and Actions", uninstall: true, install: true) {
 		section() {     
-			label title: "First, Name the Trigger", required: true, submitOnChange: true
-//            if(app.label) {
-				def condLabel = conditionLabel()
-				href "selectConditions", title: "Define Triggers", description: condLabel ? (condLabel) : "Tap to set", required: true, state: condLabel ? "complete" : null, submitOnChange: true
-				href "selectActionsTrue", title: "Select the Actions", description: state.actsTrue ? state.actsTrue : "Tap to set", state: state.actsTrue ? "complete" : null
-//            }
+			label title: "Name the Trigger", required: true, submitOnChange: true
+			def condLabel = conditionLabel()
+			href "selectConditions", title: "Define Triggers", description: condLabel ? (condLabel) : "Tap to set", required: true, state: condLabel ? "complete" : null, submitOnChange: true
+			href "selectActionsTrue", title: "Select the Actions", description: state.actsTrue ? state.actsTrue : "Tap to set", state: state.actsTrue ? "complete" : null
 		}
 		section(title: "More options", hidden: hideOptionsSection(), hideable: true) {
 			def timeLabel = timeIntervalLabel()
@@ -431,6 +429,12 @@ def selectActionsTrue() {
 				if(delayTrue > 1) delayStr = delayStr + "s"
 				addToActTrue(delayStr)
 			}
+			input "randomTrue", "number", title: "Delay this action by random minutes", required: false, submitOnChange: true
+			if(randomTrue) {
+				def randomStr = "Random Delay: $randomTrue minutes"
+//				if(randomTrue > 1) randomStr = randomStr + "s"
+				addToActTrue(randomStr)
+			}
 		}
         if(state.actsTrue) state.actsTrue = state.actsTrue[0..-2]
 	}
@@ -680,17 +684,20 @@ def dimToggle(devices, dimLevel) {
 	else devices.setLevel(dimLevel)
 }
 
-def doDelayTrue(time) {
-	runIn(time * 60, delayRuleTrue)
+def doDelayTrue(time, rand) {
+	def myTime = time
+    if(rand) myTime = Math.random()*time
+	runIn(myTime * 60, delayRuleTrue)
 	def delayStr = "minute"
 	if(time > 1) delayStr = delayStr + "s"
-	if(logging) log.info ("Delayed by $time $delayStr")
+	if(logging) log.info (rand ? "Random delay, up to $time minutes" : "Delayed by $time $delayStr")
 }
 
 def doTrigger(delay) {
 	if(!allOk) return
 	if(delay) unschedule(delayRuleTrue)
-	if(delayTrue > 0 && !delay) doDelayTrue(delayTrue)
+	if(delayTrue > 0 && !delay) doDelayTrue(delayTrue, false)
+    else if(randomTrue > 0 && !delay) doDelayTrue(randomTrue, true)
 	else {
 		if(onSwitchTrue) 		onSwitchTrue.on()
         if(refreshSwitchTrue)	refreshSwitchTrue.refresh()
