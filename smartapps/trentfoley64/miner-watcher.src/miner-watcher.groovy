@@ -29,8 +29,8 @@ definition(
 preferences {
 	section {
 		input(name: "minerMeter", type: "capability.powerMeter", title: "When This Power Meter...", required: true, multiple: false, description: null)
-        input(name: "thresholdLow", type: "number", title: "Reports Below...", required: true, description: "in Watts.")
-        input(name: "thresholdHigh", type: "number", title: "Reports Above...", required: true, description: "in Watts.")
+        input(name: "thresholdLow", type: "number", title: "Drops to...", required: true, description: "in Watts.")
+        input(name: "thresholdHigh", type: "number", title: "Rises to...", required: true, description: "in Watts.")
 	}
     section {
     	input(name: "minerSwitches", type: "capability.switch", title: "Turn Off These Switches Powering Mining Equipment", required: true, multiple: true, description: null)
@@ -60,8 +60,9 @@ def minerMeterHandler(evt) {
     def thresholdLowValue = thresholdLow as int
     def thresholdHighValue = thresholdHigh as int
     
+    // skip checks in case this is triggered while waiting for startup
     if (!state.waitingForStartup) {
-    	if (minerMeterValue < thresholdLowValue || minerMeterValue > thresholdHighValue) {
+    	if (minerMeterValue <= thresholdLowValue || minerMeterValue >= thresholdHighValue) {
 	    	log.debug "${minerMeter} reported energy consumption of ${minerMeterValue} which is not between ${thresholdLow} and ${thresholdHigh}. Turning off ${minerSwitches}."
     		minerSwitches.off()
         
