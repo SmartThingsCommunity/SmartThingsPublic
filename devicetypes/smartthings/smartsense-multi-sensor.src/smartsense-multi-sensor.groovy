@@ -61,8 +61,8 @@
 				])
 		}
 		section {
- 			input description: "This feature allows you to correct any temperature variations by selecting an offset. Ex: If your sensor consistently reports a temp that's 5 degrees too warm, you'd enter \"-5\". If 3 degrees too cold, enter \"+3\".", displayDuringSetup: false, type: "paragraph", element: "paragraph"
- 			input "tempOffset", "number", title: "Temperature Offset", description: "Adjust temperature by this many degrees", range: "*..*", displayDuringSetup: false
+ 			input title: "Temperature Offset", description: "This feature allows you to correct any temperature variations by selecting an offset. Ex: If your sensor consistently reports a temp that's 5 degrees too warm, you'd enter \"-5\". If 3 degrees too cold, enter \"+3\".", displayDuringSetup: false, type: "paragraph", element: "paragraph"
+ 			input "tempOffset", "number", title: "Degrees", description: "Adjust temperature by this many degrees", range: "*..*", displayDuringSetup: false
  		}
 		section {
  			input("garageSensor", "enum", title: "Do you want to use this sensor on a garage door?", options: ["Yes", "No"], defaultValue: "No", required: false, displayDuringSetup: false)
@@ -115,31 +115,30 @@
 	}
  }
 
- def parse(String description) {
- 	
- 	Map map = [:]
- 	if (description?.startsWith('catchall:')) {
- 		map = parseCatchAllMessage(description)
- 	}
- 	else if (description?.startsWith('read attr -')) {
- 		map = parseReportAttributeMessage(description)
- 	}
+def parse(String description) {
+	Map map = [:]
+	if (description?.startsWith('catchall:')) {
+		map = parseCatchAllMessage(description)
+	}
     else if (description?.startsWith('temperature: ')) {
- 		map = parseCustomMessage(description)
- 	}
- 	else if (description?.startsWith('zone status')) {
- 		map = parseIasMessage(description)
- 	}
+		map = parseCustomMessage(description)
+	}
+	else if (description?.startsWith('zone status')) {
+		map = parseIasMessage(description)
+	}
 
  	def result = map ? createEvent(map) : null
 
- 	if (description?.startsWith('enroll request')) {
- 		List cmds = enrollResponse()
- 		log.debug "enroll response: ${cmds}"
- 		result = cmds?.collect { new physicalgraph.device.HubAction(it) }
- 	}
- 	return result
- }
+	if (description?.startsWith('enroll request')) {
+		List cmds = enrollResponse()
+		log.debug "enroll response: ${cmds}"
+		result = cmds?.collect { new physicalgraph.device.HubAction(it) }
+	}
+    else if (description?.startsWith('read attr -')) {
+        result = parseReportAttributeMessage(description).each { createEvent(it) }
+    }
+	return result
+}
 
  private Map parseCatchAllMessage(String description) {
  	Map resultMap = [:]
@@ -178,28 +177,40 @@ private boolean shouldProcessMessage(cluster) {
     return !ignoredMessage
 }
 
-private Map parseReportAttributeMessage(String description) {
+private List parseReportAttributeMessage(String description) {
 	Map descMap = (description - "read attr - ").split(",").inject([:]) { map, param ->
 		def nameAndValue = param.split(":")
 		map += [(nameAndValue[0].trim()):nameAndValue[1].trim()]
 	}
-    
-    Map resultMap = [:]
+
+	List result = []
 	if (descMap.cluster == "0402" && descMap.attrId == "0000") {
 		def value = getTemperature(descMap.value)
-		resultMap = getTemperatureResult(value)
+		result << getTemperatureResult(value)
 	}
 	else if (descMap.cluster == "FC02" && descMap.attrId == "0010") {
-  		resultMap = getAccelerationResult(descMap.value)
+		if (descMap.value.size() == 32) {
+			// value will look like 00ae29001403e2290013001629001201
+			// breaking this apart and swapping byte order where appropriate, this breaks down to:
+			//   X (0x0012) = 0x0016
+			//   Y (0x0013) = 0x03E2
+			//   Z (0x0014) = 0x00AE
+			// note that there is a known bug in that the x,y,z attributes are interpreted in the wrong order
+			// this will be fixed in a future update
+			def threeAxisAttributes = descMap.value[0..-9]
+			result << parseAxis(threeAxisAttributes)
+			descMap.value = descMap.value[-2..-1]
+		}
+        result << getAccelerationResult(descMap.value)
 	}
-    else if (descMap.cluster == "FC02" && descMap.attrId == "0012") {
-  		resultMap = parseAxis(descMap.value)
+	else if (descMap.cluster == "FC02" && descMap.attrId == "0012") {
+        result << parseAxis(descMap.value)
 	}
 	else if (descMap.cluster == "0001" && descMap.attrId == "0020") {
-		resultMap = getBatteryResult(Integer.parseInt(descMap.value, 16))
+		result << getBatteryResult(Integer.parseInt(descMap.value, 16))
 	}
 
-	return resultMap
+	return result
 }
 
 private Map parseCustomMessage(String description) {
