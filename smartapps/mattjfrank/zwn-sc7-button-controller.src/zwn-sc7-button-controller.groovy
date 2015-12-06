@@ -11,7 +11,7 @@ definition(
     namespace: "mattjfrank",
     author: "Matt Frank, using code from Brian Dahlem",
     description: "ZWN-SC7	 7-Button	 Scene	 Controller	Button Assignment App",
-    category: "Convenience",
+    category: "My Apps",
     iconUrl: "https://s3.amazonaws.com/smartapp-icons/MyApps/Cat-MyApps.png",
     iconX2Url: "https://s3.amazonaws.com/smartapp-icons/MyApps/Cat-MyApps@2x.png"
 )

@@ -20,7 +20,7 @@ definition(
 	namespace: "trentfoley64",
 	author: "A. Trent Foley",
 	description: "Control devices with buttons like the Aeon Labs Minimote with dimming",
-	category: "Convenience",
+	category: "My Apps",
 	iconUrl: "https://s3.amazonaws.com/smartapp-icons/MyApps/Cat-MyApps.png",
 	iconX2Url: "https://s3.amazonaws.com/smartapp-icons/MyApps/Cat-MyApps@2x.png"
 )
