@@ -8,6 +8,7 @@ definition(
 	author: "A. Trent Foley, Sr.",
 	description: "Child SmartApp for Smart Thermostat Controls.",
 	category: "My Apps",
+	parent: "trentfoley64:Smart Thermostat Controls",
 	iconUrl: "http://www.trentfoley.com/ST/icons/thermostat.png",
 	iconX2Url: "http://www.trentfoley.com/ST/icons/thermostat@2x.png",
 	iconX3Url: "http://www.trentfoley.com/ST/icons/thermostat@3x.png",
