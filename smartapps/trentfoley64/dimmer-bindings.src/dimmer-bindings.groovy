@@ -20,20 +20,20 @@ definition(
     name: "Dimmer Bindings",
     singleInstance: true,
     namespace: "trentfoley64",
-    author: "A. Trent Foley",
-    description: "Allow multiple dimmers do be bound to a single real, or virtual (simulated) dimmer.  Very useful for grouping GE Link Bulbs together as one light.  A virtual dimmer device type makes this smartapp much more useful.",
+    author: "A. Trent Foley, Sr.",
+    description: "Allow multiple dimmers do be bound to a single real or virtual (simulated) dimmer.  Very useful for grouping GE Link Bulbs together as one light.  A virtual dimmer device type makes this smartapp much more useful.",
     category: "My Apps",
   	iconUrl: "https://s3.amazonaws.com/smartapp-icons/ModeMagic/Cat-ModeMagic.png",
     iconX2Url: "https://s3.amazonaws.com/smartapp-icons/ModeMagic/Cat-ModeMagic@2x.png",
-iconX3Url: "https://s3.amazonaws.com/smartapp-icons/ModeMagic/Cat-ModeMagic@3x.png"
+	iconX3Url: "https://s3.amazonaws.com/smartapp-icons/ModeMagic/Cat-ModeMagic@3x.png"
 )
 
 preferences {
-    page(name: "mainPage", title: "Dimmer Bindings", install: true, uninstall: true, submitOnChange: true) {
-            section {
-                    app(name: "childDimmerBindings", appName: "Dimmer Binding", namespace: "trentfoley64", title: "Create New Binding...", multiple: true)
-            }
-    }
+	page(name: "mainPage", title: "Dimmer Bindings", install: true, uninstall: true, submitOnChange: true) {
+		section {
+			app(name: "childDimmerBindings", appName: "_Dimmer Binding", namespace: "trentfoley64", title: "Create New Dimmer Binding...", multiple: true)
+		}
+	}
 }
 
 def installed() {

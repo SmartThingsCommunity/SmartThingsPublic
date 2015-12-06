@@ -18,7 +18,7 @@
 definition(
     name: "Miner Watcher",
     namespace: "trentfoley64",
-    author: "A. Trent Foley",
+    author: "A. Trent Foley, Sr.",
 		description: "Turn things off for a while when energy usage falls outside of thresholds.",
     category: "My Apps",
     iconUrl: "https://s3.amazonaws.com/smartapp-icons/Meta/light_outlet.png",
