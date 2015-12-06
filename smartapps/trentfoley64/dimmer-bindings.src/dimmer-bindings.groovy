@@ -23,9 +23,9 @@ definition(
     author: "A. Trent Foley, Sr.",
     description: "Allow multiple dimmers do be bound to a single real or virtual (simulated) dimmer.  Very useful for grouping GE Link Bulbs together as one light.  A virtual dimmer device type makes this smartapp much more useful.",
     category: "My Apps",
-  	iconUrl: "https://s3.amazonaws.com/smartapp-icons/ModeMagic/Cat-ModeMagic.png",
-    iconX2Url: "https://s3.amazonaws.com/smartapp-icons/ModeMagic/Cat-ModeMagic@2x.png",
-	iconX3Url: "https://s3.amazonaws.com/smartapp-icons/ModeMagic/Cat-ModeMagic@3x.png"
+  	iconUrl: "http://www.trentfoley.com/ST/icons/dimmer-bindings.png",
+    iconX2Url: "http://www.trentfoley.com/ST/icons/dimmer-bindings@2x.png",
+	iconX3Url: "http://www.trentfoley.com/ST/icons/dimmer-bindings@3x.png"
 )
 
 preferences {

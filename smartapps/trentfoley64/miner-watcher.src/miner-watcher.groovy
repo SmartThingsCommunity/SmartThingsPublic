@@ -21,9 +21,9 @@ definition(
     author: "A. Trent Foley, Sr.",
 		description: "Turn things off for a while when energy usage falls outside of thresholds.",
     category: "My Apps",
-    iconUrl: "https://s3.amazonaws.com/smartapp-icons/Meta/light_outlet.png",
-    iconX2Url: "https://s3.amazonaws.com/smartapp-icons/Meta/light_outlet@2x.png",
-    iconX3Url: "https://s3.amazonaws.com/smartapp-icons/Meta/light_outlet@2x.png"
+    iconUrl: "http://www.trentfoley.com/ST/icons/bitcoin.png",
+    iconX2Url: "http://www.trentfoley.com/ST/icons/bitcoin@2x.png",
+    iconX3Url: "http://www.trentfoley.com/ST/icons/bitcoin@3x.png",
 )
 
 preferences {

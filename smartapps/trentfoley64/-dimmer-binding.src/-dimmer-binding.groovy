@@ -55,8 +55,9 @@ definition(
     description: "Follows the dimmer level of another dimmer",
     parent: "trentfoley64:Dimmer Bindings",
     category: "My Apps",
-    iconUrl: "https://s3.amazonaws.com/smartapp-icons/Convenience/Cat-Convenience.png",
-    iconX2Url: "https://s3.amazonaws.com/smartapp-icons/Convenience/Cat-Convenience%402x.png"
+  	iconUrl: "http://www.trentfoley.com/ST/icons/dimmer-bindings.png",
+    iconX2Url: "http://www.trentfoley.com/ST/icons/dimmer-bindings@2x.png",
+	iconX3Url: "http://www.trentfoley.com/ST/icons/dimmer-bindings@3x.png"
 )
 
 preferences {
