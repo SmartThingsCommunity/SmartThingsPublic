@@ -572,7 +572,7 @@ def selectActionsTrue() {
                         input "colorSatTrue", "number", title: "Input saturation value", required: true, submitOnChange: true
                     }
                 	buildActTrue("$colorTrue ", false)
-                    if(colorHexTrue) buildActTrue("$colorHexTrue, $colorSatTrue ", false)
+                    if(colorHexTrue) buildActTrue("$colorHexTrue:$colorSatTrue ", false)
                 }
 				if(colorLevelTrue) addToActTrue("Level: $colorLevelTrue")
 			}            
@@ -676,10 +676,17 @@ def selectActionsFalse() {
 			input "bulbsFalse", "capability.colorControl", title: "Set color for these bulbs", multiple: true, required: false, submitOnChange: true
 			if(bulbsFalse) {
 				input "colorFalse", "enum", title: "Bulb color?", required: true, multiple: false, submitOnChange: true,
-					options: ["Soft White", "White", "Daylight", "Warm White", "Red", "Green", "Blue", "Yellow", "Orange", "Purple", "Pink"]
+					options: ["Soft White", "White", "Daylight", "Warm White", "Red", "Green", "Blue", "Yellow", "Orange", "Purple", "Pink", "Custom color"]
 				input "colorLevelFalse", "number", title: "Bulb level?", required: false, submitOnChange: true, range: "0..100"
 				buildActFalse("Color: $bulbsFalse ", true)
-				if(colorFalse) buildActFalse("$colorFalse ", false)
+				if(colorFalse) {
+                	if(colorFalse == "Custom color") {
+                    	input "colorHexFalse", "text", title: "Input hex value for color", required: true, submitOnChange: true
+                        input "colorSatFalse", "number", title: "Input saturation value", required: true, submitOnChange: true
+                    }
+                	buildActFalse("$colorFalse ", false)
+                    if(colorHexFalse) buildActFalse("$colorHexFalse:$colorSatFalse ", false)
+                }
 				if(colorLevelFalse) addToActFalse("Level: $colorLevelFalse")
 			}            
 			input "lockFalse", "capability.lock", title: "Lock these locks", multiple: true, required: false, submitOnChange: true
@@ -1436,7 +1443,6 @@ private hexToInt(hex) {
 	def hexval = ["0":0, "1":1, "2":2, "3":3, "4":4, "5":5, "6":6, "7":7, "8":8, "9":9, "A":10, "B":11, "C":12, "D":13, "E":14, "F":15]
 	def result = 0
     hex.each {result = result * 16 + hexval[it.toUpperCase()]}
-    log.debug "hexToInt: $hex, $result"
     return result
 }
 
