@@ -89,14 +89,14 @@ def getButtonSections(buttonNumber) {
         section("Dimmers when Pushed") {
 			input "dimmers_${buttonNumber}_pushed", "capability.switchLevel", title: "Dimmers", multiple: true, required: false
 			input "switchLevel_${buttonNumber}_pushed", "enum", title: "Brightness Level",
-				options: ["7%", "10%", "20%", "25%", "30%", "50%", "75%", "100%"], required: false
+				options: ["7%", "10%", "20%", "25%", "30%", "40%", "50%", "60%", "75%", "100%"], required: false
         	input "dimmerMode_${buttonNumber}_pushed", "enum", title: "What to do if already turned on?", required: false,
             	options: ["Toggle", "Set Level"]
         }        
         section("Dimmers when Held") {
 			input "dimmers_${buttonNumber}_held", "capability.switchLevel", title: "Dimmers", multiple: true, required: false
 			input "switchLevel_${buttonNumber}_held", "enum",
-				options: ["7%", "10%", "20%", "25%", "30%", "50%", "75%", "100%"], title: "Brightness Level", required: false
+				options: ["7%", "10%", "20%", "25%", "30%", "40%", "50%", "60%", "75%", "100%"], title: "Brightness Level", required: false
         	input "dimmerMode_${buttonNumber}_held", "enum", title: "What to do if already turned on?", required: false,
             	options: ["Toggle", "Set Level"]
 		}
