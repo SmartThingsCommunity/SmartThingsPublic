@@ -3,7 +3,7 @@
  *
  *  Copyright 2015 Bruce Ravenel
  *
- *  Version 1.4.0a   7 Dec 2015
+ *  Version 1.4.0b   7 Dec 2015
  *
  *  Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except
  *  in compliance with the License. You may obtain a copy of the License at:
@@ -568,8 +568,8 @@ def selectActionsTrue() {
 				buildActTrue("Color: $bulbsTrue ", true)
 				if(colorTrue) {
                 	if(colorTrue == "Custom color") {
-                    	input "colorHexTrue", "text", title: "Input hex value for color", required: true, submitOnChange: true
-                        input "colorSatTrue", "number", title: "Input saturation value", required: true, submitOnChange: true
+                    	input "colorHexTrue", "number", title: "Input color value", required: true, submitOnChange: true, range: "0..100"
+                        input "colorSatTrue", "number", title: "Input saturation value", required: true, submitOnChange: true, range: "0..100"
                     }
                 	buildActTrue("$colorTrue ", false)
                     if(colorHexTrue) buildActTrue("$colorHexTrue:$colorSatTrue ", false)
@@ -681,8 +681,8 @@ def selectActionsFalse() {
 				buildActFalse("Color: $bulbsFalse ", true)
 				if(colorFalse) {
                 	if(colorFalse == "Custom color") {
-                    	input "colorHexFalse", "text", title: "Input hex value for color", required: true, submitOnChange: true
-                        input "colorSatFalse", "number", title: "Input saturation value", required: true, submitOnChange: true
+                    	input "colorHexFalse", "number", title: "Input color value", required: true, submitOnChange: true, range: "0..100"
+                        input "colorSatFalse", "number", title: "Input saturation value", required: true, submitOnChange: true, range: "0..100"
                     }
                 	buildActFalse("$colorFalse ", false)
                     if(colorHexFalse) buildActFalse("$colorHexFalse:$colorSatFalse ", false)
@@ -1439,13 +1439,6 @@ private getTimeOk() {
 	return result
 }
 
-private hexToInt(hex) {
-	def hexval = ["0":0, "1":1, "2":2, "3":3, "4":4, "5":5, "6":6, "7":7, "8":8, "9":9, "A":10, "B":11, "C":12, "D":13, "E":14, "F":15]
-	def result = 0
-    hex.each {result = result * 16 + hexval[it.toUpperCase()]}
-    return result
-}
-
 private setColor(trufal) {
 	def hueColor = 0
 	def saturation = 100
@@ -1488,7 +1481,7 @@ private setColor(trufal) {
 			hueColor = 100
 			break;
 		case "Custom color":
-			hueColor = trufal ? hexToInt(colorHexTrue) : hexToInt(colorHexFalse)
+			hueColor = trufal ? colorHexTrue : colorHexFalse
             saturation = trufal ? colorSatTrue : colorSatFalse
 			break;
 	}
