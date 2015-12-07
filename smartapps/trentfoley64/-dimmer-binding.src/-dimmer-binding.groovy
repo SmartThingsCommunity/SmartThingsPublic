@@ -79,7 +79,6 @@ preferences {
 			title: "Slave On/Off Switch(es)...", 
 			required: false
 	}
-    
 }
 
 def installed()

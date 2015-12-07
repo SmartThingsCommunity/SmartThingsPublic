@@ -2,7 +2,7 @@
 
 */
 
-definition(
+definition (
 	name: "_Smart Thermostat Control",
 	namespace: "trentfoley64",
 	author: "A. Trent Foley, Sr.",
@@ -15,48 +15,72 @@ definition(
 )
 
 preferences {
-	section("Set these thermostats") {
-		input "thermostats", "capability.thermostat", title: "Which?", multiple:true
-	}
+    page(name: "setPrefs")
+    page(name: "setName")
+}
 
-	section("To these set points") {
-		input "heatSetpoint", "decimal", title: "for Heating"
-		input "coolSetpoint", "decimal", title: "for Cooling"
-	}
+def setPrefs() {
 
-	section("for Days of Week") {
-		input "dayOfWeek", "enum",
-			title: "Which days?",
-			required: true,
-			multiple: true,
-			options: [
-				'All Week',
-				'Saturday & Sunday',
-				'Monday to Friday',
-				'Sunday to Thursday',
-				'Monday',
-				'Tuesday',
-				'Wednesday',
-				'Thursday',
-				'Friday',
-				'Saturday',
-				'Sunday'
-			],
-			defaultValue: 'All Week'
-		input "time", "time", title: "At this time of day"
-	}
+	dynamicPage(name: "setPrefs", title: "Smart Thermostat Control", nextPage: "setName", uninstall: true) {
+		section("Set these thermostats") {
+			input "thermostats", "capability.thermostat", title: "Which?", multiple: true
+		}
 
-	section( "Presences") {
-		input "anyMustBePresent", "capability.presenceSensor", title: "At least one must be present", multiple:true
-		input "allMustBePresent", "capability.presenceSensor", title: "All must be present", multiple:true
-		input "anyMustBeAbsent", "capability.presenceSensor", title: "At least one must be absent", multiple:true
-		input "allMustBeAbsent", "capability.presenceSensor", title: "All must be absent", multiple:true
-	}
+		section("To these set points") {
+			input "heatSetpoint", "decimal", title: "for Heating"
+			input "coolSetpoint", "decimal", title: "for Cooling"
+		}
 
-	section( "Notifications" ) {
-		input "sendPushMessage", "enum", title: "Send a push notification?", options:["Yes", "No"], required: false
-		input "phoneNumber", "phone", title: "Send a text message?", required: false
+		section("for Days of Week") {
+			input "dayOfWeek", "enum",
+				title: "Which days?",
+				required: true,
+				multiple: true,
+				options: [
+					'All Week',
+					'Saturday & Sunday',
+					'Monday to Friday',
+					'Sunday to Thursday',
+					'Monday',
+					'Tuesday',
+					'Wednesday',
+					'Thursday',
+					'Friday',
+					'Saturday',
+					'Sunday'
+				],
+				defaultValue: 'All Week'
+			input "time", "time", title: "At this time of day"
+		}
+
+		section( "Presences") {
+			input "anyMustBePresent", "capability.presenceSensor", title: "At least one must be present", multiple: true
+			input "allMustBePresent", "capability.presenceSensor", title: "All must be present", multiple: true
+			input "anyMustBeAbsent", "capability.presenceSensor", title: "At least one must be absent", multiple: true
+			input "allMustBeAbsent", "capability.presenceSensor", title: "All must be absent", multiple: true
+		}
+
+		section( "Notifications" ) {
+			input "sendPushMessage", "enum", title: "Send a push notification?", options:["Yes", "No"], required: false
+			input "phoneNumber", "phone", title: "Send a text message?", required: false
+		}
 	}
+}
+
+def setName() {
+
+	dynamicPage(name: "setName", title: "Smart Thermostat Control", nextPage: null, uninstall: true) {
+		section("Rule name") {
+            label title: "Assign a name", required: true, description: getDefaultName()
+            mode title: "Set for specific mode(s)", required: false
+        }
+    }
+}
+
+private getDefaultName() {
+
+	return "$thermostats $time $dayOfWeek $anyMustBePresent $allMustBepresent $anyMustBeAbsent $allMustBeAbsent"
+    
 }
 
 def installed() {
