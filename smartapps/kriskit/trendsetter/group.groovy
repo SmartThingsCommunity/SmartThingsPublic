@@ -19,9 +19,9 @@ definition(
     author: "Chris Kitch",
     description: "A child SmartApp for Trend Setter for handling a group of devices.",
     category: "My Apps",
-    iconUrl: "https://s3.amazonaws.com/smartapp-icons/Convenience/Cat-Convenience.png",
-    iconX2Url: "https://s3.amazonaws.com/smartapp-icons/Convenience/Cat-Convenience@2x.png",
-    iconX3Url: "https://s3.amazonaws.com/smartapp-icons/Convenience/Cat-Convenience@2x.png")
+    iconUrl: "https://cdn.rawgit.com/Kriskit/SmartThingsPublic/master/smartapps/kriskit/trendsetter/icon.png",
+    iconX2Url: "https://cdn.rawgit.com/Kriskit/SmartThingsPublic/master/smartapps/kriskit/trendsetter/icon@2x.png",
+    iconX3Url: "https://cdn.rawgit.com/Kriskit/SmartThingsPublic/master/smartapps/kriskit/trendsetter/icon@3x.png")
     
 def version() {
 	return "1.0"
@@ -266,18 +266,6 @@ def selectedDevicesContainsController() {
     	it.deviceNetworkId == controller.deviceNetworkId 
     }
 }
-
-def getDeviceStatesPercentageMatch(stateToCheck, shouldMatch) {
-	def total = devices?.size()
-    def totalMatching = 0
-
-	totalMatching = devices?.count {
-    	it.latestValue(stateToCheck)?.toString() == shouldMatch?.toString()
-    }
-    
-    return (int)Math.floor((totalMatching / total) * 100)
-}
-
 
 private $performCommand(target, command, args) {
     switch(args?.size()) {
