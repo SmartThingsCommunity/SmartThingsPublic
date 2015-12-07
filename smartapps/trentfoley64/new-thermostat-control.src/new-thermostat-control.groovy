@@ -37,10 +37,6 @@ def setPrefs() {
 				required: true,
 				multiple: true,
 				options: [
-					'All Week',
-					'Saturday & Sunday',
-					'Monday to Friday',
-					'Sunday to Thursday',
 					'Monday',
 					'Tuesday',
 					'Wednesday',
@@ -104,7 +100,7 @@ def initialize() {
 		scheduleTime = scheduleTime + 1 // Adding one adds a day
 	}
 
-	log.debug "Scheduling change for " + scheduleTime.format("EEE MMM dd yyyy HH:mm z", location.timeZone)
+	log.debug "Scheduling next run for " + scheduleTime.format("EEE MMM dd yyyy HH:mm z", location.timeZone)
 	schedule(scheduleTime, processScheduledEvent)
 }
 
@@ -114,42 +110,36 @@ def processScheduledEvent() {
 	localCalendar.setTimeZone(location.timeZone)
 	int currentDayOfWeek = localCalendar.get(Calendar.DAY_OF_WEEK)
 
-	log.debug "Calendar DOW: " + currentDayOfWeek
-	log.debug "Configured DOW(s): " + dayOfWeek
-
 	// Check the current day of week against the list of days of the week for scheduling
-	if(dayOfWeek.contains('All Week')) {
+	if (dayOfWeek.contains('Monday') && currentDayOfWeek == Calendar.instance.MONDAY) {
 		passesChecks = true
 	}
-	else if((dayOfWeek.contains('Monday') || dayOfWeek.contains('Monday to Friday') || dayOfWeek.contains('Sunday to Thursday')) && currentDayOfWeek == Calendar.instance.MONDAY) {
+	else if (dayOfWeek.contains('Tuesday') && currentDayOfWeek == Calendar.instance.TUESDAY) {
 		passesChecks = true
 	}
-	else if((dayOfWeek.contains('Tuesday') || dayOfWeek.contains('Monday to Friday') || dayOfWeek.contains('Sunday to Thursday')) && currentDayOfWeek == Calendar.instance.TUESDAY) {
+	else if (dayOfWeek.contains('Wednesday') && currentDayOfWeek == Calendar.instance.WEDNESDAY) {
 		passesChecks = true
 	}
-	else if((dayOfWeek.contains('Wednesday') || dayOfWeek.contains('Monday to Friday') || dayOfWeek.contains('Sunday to Thursday')) && currentDayOfWeek == Calendar.instance.WEDNESDAY) {
+	else if (dayOfWeek.contains('Thursday') && currentDayOfWeek == Calendar.instance.THURSDAY) {
 		passesChecks = true
 	}
-	else if((dayOfWeek.contains('Thursday') || dayOfWeek.contains('Monday to Friday') || dayOfWeek.contains('Sunday to Thursday')) && currentDayOfWeek == Calendar.instance.THURSDAY) {
+	else if (dayOfWeek.contains('Friday') && currentDayOfWeek == Calendar.instance.FRIDAY) {
 		passesChecks = true
 	}
-	else if((dayOfWeek.contains('Friday') || dayOfWeek.contains('Monday to Friday')) && currentDayOfWeek == Calendar.instance.FRIDAY) {
+	else if (dayOfWeek.contains('Saturday') && currentDayOfWeek == Calendar.instance.SATURDAY) {
 		passesChecks = true
 	}
-	else if((dayOfWeek.contains('Saturday') || dayOfWeek.contains('Saturday & Sunday')) && currentDayOfWeek == Calendar.instance.SATURDAY) {
-		passesChecks = true
-	}
-	else if((dayOfWeek.contains('Sunday') || dayOfWeek.contains('Saturday & Sunday') || dayOfWeek.contains('Sunday to Thursday')) && currentDayOfWeek == Calendar.instance.SUNDAY) {
+	else if (dayOfWeek.contains('Sunday') && currentDayOfWeek == Calendar.instance.SUNDAY) {
 		passesChecks = true
 	}
 
 	// If day of week checks out, check presences
 	if (passesChecks) {
-
+    
 		// If defined, check anyMustBePresent
 		if (anyMustBePresent) {
 			// If anyMustBePresent does not contain anyone present, do not change thermostats
-			if (!anyMustBePresent.contains('present')) {
+			if (!anyMustBePresent.currentValue('presence').contains('present')) {
 				log.debug "Scheduled thermostat change cancelled due to all of ${anyMustBePresent} being absent."
 				passesChecks = false
 			}
@@ -158,7 +148,7 @@ def processScheduledEvent() {
 		// If defined, check allMustBePresent
 		if (allMustBePresent) {
 			// If allMustBePresent contains anyone not present, do not change thermostats
-			if (allMustBePresent.contains('not present')) {
+			if (allMustBePresent.currentValue('presence').contains('not present')) {
 				log.debug "Scheduled thermostat change cancelled due to one of ${allMustBePresent} being absent."
 				passesChecks = false
 			}
@@ -167,7 +157,7 @@ def processScheduledEvent() {
 		// If defined, check anyMustBeAbsent
 		if (anyMustBeAbsent) {
 			// If anyMustBeAbsent does not contain anyone not present, do not change thermostats
-			if (!anyMustBeAbsent.contains('not present')) {
+			if (!anyMustBeAbsent.currentValue('presence').contains('not present')) {
 				log.debug "Scheduled thermostat change cancelled due to all of ${anyMustBeAbsent} being present."
 				passesChecks = false
 			}
@@ -176,7 +166,7 @@ def processScheduledEvent() {
 		// If defined, check allMustBeAbsent
 		if (allMustBeAbsent) {
 			// If allMustBeAbsent contains anyone present, do not change thermostats
-			if (allMustBeAbsent.contains('present')) {
+			if (allMustBeAbsent.currentValue('presence').contains('present')) {
 				log.debug "Scheduled thermostat change cancelled due to one of ${allMustBeAbsent} being present."
 				passesChecks = false
 			}
@@ -185,7 +175,7 @@ def processScheduledEvent() {
 	}
 
 	// If we have hit the condition to schedule this then lets do it
-	if (passesChecks){
+	if (passesChecks) {
 		def msg = "$thermostats heat setpoint to '${heatSetpoint}' and cool setpoint to '${coolSetpoint}'"
 		log.debug msg
 		thermostats.setHeatingSetpoint(heatSetpoint)
