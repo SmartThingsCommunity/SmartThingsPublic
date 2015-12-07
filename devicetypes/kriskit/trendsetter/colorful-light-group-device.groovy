@@ -81,7 +81,7 @@ metadata {
         }
         
         standardTile("saturationLabel", "saturationLabel", height:1, width:1, decoration: "flat", inactiveLabel: true) {
-            state "default", label:"Sat", unit:"", icon: "st.alarm.beep.beep"
+            state "default", label:"Sat", unit:"", icon: "st.Kids.kids2"
         }
         
         controlTile("saturationSliderControl", "device.saturation", "slider", height: 1, width: 3, inactiveLabel: false) {
@@ -98,7 +98,7 @@ metadata {
         }
         
         standardTile("hueLabel", "hueLabel", height:1, width:1, decoration: "flat", inactiveLabel: true) {
-            state "default", label:"Hue", unit:"", icon: "st.illuminance.illuminance.bright"
+            state "default", label:"Hue", unit:"", icon: "st.Kids.kids2"
         }
         
         controlTile("hueSliderControl", "device.hue", "slider", height: 1, width: 3, inactiveLabel: false) {
