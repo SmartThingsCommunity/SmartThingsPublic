@@ -190,15 +190,6 @@ def performGroupCommand(command, arguments = null) {
 	runCommand(devices, command, arguments ?: []) 
 }
 
-def extractEventData(value) {
-	if (value instanceof String) {
-    	def slurp = new groovy.json.JsonSlurper()
-        return slurp.parseText(value)
-    }
-
-	return value
-}
-
 def runCommand(target, command, args) {
     log.debug "Running command '${command}' with arguments ${args} on ${target}..."
     $performCommand(target, command, args)
