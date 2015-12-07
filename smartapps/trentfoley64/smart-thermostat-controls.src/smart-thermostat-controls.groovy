@@ -26,7 +26,7 @@ definition(
 preferences {
 	page(name: "mainPage", title: "Smart Thermostat Controls", install: true, uninstall: true, submitOnChange: true) {
 		section {
-			app(name: "childSmartThermostatControls", appName: "_Smart Thermostat Control", namespace: "trentfoley64", title: "Create new thermostat rule...", multiple: true)
+			app(name: "childSmartThermostatControls", appName: "New Thermostat Control", namespace: "trentfoley64", title: "Create new thermostat rule...", multiple: true)
 		}
 	}
 }
