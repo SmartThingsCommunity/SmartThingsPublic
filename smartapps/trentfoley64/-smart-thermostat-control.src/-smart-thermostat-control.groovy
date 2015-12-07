@@ -48,17 +48,17 @@ def setPrefs() {
 					'Friday',
 					'Saturday',
 					'Sunday'
-				],
-				defaultValue: 'All Week'
+				]
+
 			input "time", "time", title: "At this time of day"
 		}
 
 		section( "Presences") {
-			input "anyMustBePresent", "capability.presenceSensor", title: "At least one must be present", multiple: true
-			input "allMustBePresent", "capability.presenceSensor", title: "All must be present", multiple: true
-			input "anyMustBeAbsent", "capability.presenceSensor", title: "At least one must be absent", multiple: true
-			input "allMustBeAbsent", "capability.presenceSensor", title: "All must be absent", multiple: true
-		}
+			input "anyMustBePresent", "capability.presenceSensor", title: "At least one must be present", multiple: true, required: false
+			input "allMustBePresent", "capability.presenceSensor", title: "All must be present", multiple: true, required: false
+			input "anyMustBeAbsent", "capability.presenceSensor", title: "At least one must be absent", multiple: true, required: false
+            input "allMustBeAbsent", "capability.presenceSensor", title: "All must be absent", multiple: true, required: false
+        }
 
 		section( "Notifications" ) {
 			input "sendPushMessage", "enum", title: "Send a push notification?", options:["Yes", "No"], required: false
@@ -69,9 +69,9 @@ def setPrefs() {
 
 def setName() {
 
-	dynamicPage(name: "setName", title: "Smart Thermostat Control", nextPage: null, uninstall: true) {
-		section("Rule name") {
-            label title: "Assign a name", required: true, description: getDefaultName()
+	dynamicPage(name: "setName", title: "Smart Thermostat Control", install: true, uninstall: true) {
+		section("Control name") {
+            label title: "Assign a name", required: true, default: getDefaultName()
             mode title: "Set for specific mode(s)", required: false
         }
     }
@@ -99,6 +99,7 @@ def initialize() {
 	def timeNow = now() + (2*1000) // ST platform has resolution of 1 minutes, so be safe and check for 2 minutes)
 
 	// If it is past current time, schedule for next day
+    // need to make this smarter. Use dow data to compute next date
 	if (scheduleTime.time < timeNow) {
 		scheduleTime = scheduleTime + 1 // Adding one adds a day
 	}
