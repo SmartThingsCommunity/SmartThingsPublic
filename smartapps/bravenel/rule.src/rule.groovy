@@ -3,7 +3,7 @@
  *
  *  Copyright 2015 Bruce Ravenel
  *
- *  Version 1.4.0   7 Dec 2015
+ *  Version 1.4.0a   7 Dec 2015
  *
  *  Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except
  *  in compliance with the License. You may obtain a copy of the License at:
@@ -563,10 +563,17 @@ def selectActionsTrue() {
 			input "bulbsTrue", "capability.colorControl", title: "Set color for these bulbs", multiple: true, required: false, submitOnChange: true
 			if(bulbsTrue) {
 				input "colorTrue", "enum", title: "Bulb color?", required: true, multiple: false, submitOnChange: true,
-					options: ["Soft White", "White", "Daylight", "Warm White", "Red", "Green", "Blue", "Yellow", "Orange", "Purple", "Pink"]
+					options: ["Soft White", "White", "Daylight", "Warm White", "Red", "Green", "Blue", "Yellow", "Orange", "Purple", "Pink", "Custom color"]
 				input "colorLevelTrue", "number", title: "Bulb level?", required: false, submitOnChange: true, range: "0..100"
 				buildActTrue("Color: $bulbsTrue ", true)
-				if(colorTrue) buildActTrue("$colorTrue ", false)
+				if(colorTrue) {
+                	if(colorTrue == "Custom color") {
+                    	input "colorHexTrue", "text", title: "Input hex value for color", required: true, submitOnChange: true
+                        input "colorSatTrue", "number", title: "Input saturation value", required: true, submitOnChange: true
+                    }
+                	buildActTrue("$colorTrue ", false)
+                    if(colorHexTrue) buildActTrue("$colorHexTrue, $colorSatTrue ", false)
+                }
 				if(colorLevelTrue) addToActTrue("Level: $colorLevelTrue")
 			}            
 			input "lockTrue", "capability.lock", title: "Lock these locks", multiple: true, required: false, submitOnChange: true
@@ -804,7 +811,7 @@ def initialize() {
 				subscribe(location, "mode", allHandler)
 				break
 			case "Smart Home Monitor": 
-				subscribe(location, "alarmSystemStatus" + state.isTrig ? ".$myState" : "", allHandler)
+				subscribe(location, "alarmSystemStatus" + (state.isTrig ? ".$myState" : ""), allHandler)
 				break
 			case "Time of day":
 				scheduleTimeOfDay()
@@ -844,13 +851,13 @@ def initialize() {
 				if(myRelDev) subscribe(myRelDev.value, "illuminance", allHandler)
 				break
 			case "Carbon monoxide detector":
-				subscribe((settings.find{it.key == "rDev$i"}).value, "carbonMonoxide" + state.isTrig ? ".$myState" : "", allHandler)
+				subscribe((settings.find{it.key == "rDev$i"}).value, "carbonMonoxide" + (state.isTrig ? ".$myState" : ""), allHandler)
 				break
 			case "Smoke detector":
-				subscribe((settings.find{it.key == "rDev$i"}).value, "smoke" + state.isTrig ? ".$myState" : "", allHandler)
+				subscribe((settings.find{it.key == "rDev$i"}).value, "smoke" + (state.isTrig ? ".$myState" : ""), allHandler)
 				break
 			case ["Presence"]:
-				subscribe((settings.find{it.key == "rDev$i"}).value, "presence" + state.isTrig ? (myState == "arrives" ? "present" : "not present") : "", allHandler)
+				subscribe((settings.find{it.key == "rDev$i"}).value, "presence" + (state.isTrig ? (myState == "arrives" ? "present" : "not present") : ""), allHandler)
 				break
 			case "Button":
 				subscribe((settings.find{it.key == "rDev$i"}).value, "button", allHandler)
@@ -859,7 +866,7 @@ def initialize() {
 				parent.subscribeRule(app.label, (settings.find{it.key == "rDev$i"}).value, myState, allHandler)
 				break
 			case "Water sensor":
-				subscribe((settings.find{it.key == "rDev$i"}).value, "water" + state.isTrig ? ".$myState" : "", allHandler)
+				subscribe((settings.find{it.key == "rDev$i"}).value, "water" + (state.isTrig ? ".$myState" : ""), allHandler)
 				break
 			case "Physical Switch":
 				subscribe((settings.find{it.key == "rDev$i"}).value, "switch.$myState", physicalHandler)
@@ -868,7 +875,7 @@ def initialize() {
 				subscribe(location, "routineExecuted", allHandler)
 				break
 			default:
-				subscribe((settings.find{it.key == "rDev$i"}).value, (capab.toLowerCase() + state.isTrig ? ".$myState" : ""), allHandler)
+				subscribe((settings.find{it.key == "rDev$i"}).value, (capab.toLowerCase() + (state.isTrig ? ".$myState" : "")), allHandler)
 		}
 	}
 	state.success = null
@@ -1425,6 +1432,14 @@ private getTimeOk() {
 	return result
 }
 
+private hexToInt(hex) {
+	def hexval = ["0":0, "1":1, "2":2, "3":3, "4":4, "5":5, "6":6, "7":7, "8":8, "9":9, "A":10, "B":11, "C":12, "D":13, "E":14, "F":15]
+	def result = 0
+    hex.each {result = result * 16 + hexval[it.toUpperCase()]}
+    log.debug "hexToInt: $hex, $result"
+    return result
+}
+
 private setColor(trufal) {
 	def hueColor = 0
 	def saturation = 100
@@ -1465,6 +1480,10 @@ private setColor(trufal) {
 			break;
 		case "Red":
 			hueColor = 100
+			break;
+		case "Custom color":
+			hueColor = trufal ? hexToInt(colorHexTrue) : hexToInt(colorHexFalse)
+            saturation = trufal ? colorSatTrue : colorSatFalse
 			break;
 	}
 	def lightLevel = trufal ? colorLevelTrue : colorLevelFalse
