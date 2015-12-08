@@ -24,8 +24,19 @@ preferences {
 
 def installed() {
 	log.debug "Installed with settings: ${settings}"
-
+def hub = location.hubs[0]
 	initialize()
+    log.debug "id: ${hub.id}"
+    log.debug "zigbeeId: ${hub.zigbeeId}"
+    log.debug "zigbeeEui: ${hub.zigbeeEui}"
+
+    // PHYSICAL or VIRTUAL
+    log.debug "type: ${hub.type}"
+
+    log.debug "name: ${hub.name}"
+    log.debug "firmwareVersionString: ${hub.firmwareVersionString}"
+    log.debug "localIp: ${hub.localIP}"
+    log.debug "localSrvPortTCP: ${hub.localSrvPortTCP}"
 }
 
 def updated() {
@@ -39,4 +50,20 @@ def initialize() {
 	// TODO: subscribe to attributes, devices, locations, etc.
 }
 
+
+mappings {
+  path("/HubInfo") {
+    action: [
+      GET: "hubInfo"
+    ]
+  }
+}
+
+// returns a list like
+// [[name: "kitchen lamp", value: "off"], [name: "bathroom", value: "on"]]
+def hubInfo() {
+
+    def hub = location.hubs[0]
+    return "localIp: ${hub.localIP}"
+}
 // TODO: implement event handlers
