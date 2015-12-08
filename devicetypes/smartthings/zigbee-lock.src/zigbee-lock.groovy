@@ -116,8 +116,8 @@ def parse(String description) {
         map = parseReportAttributeMessage(description)
     }
 
-    log.debug "parse() --- Parse returned $map"
     def result = map ? createEvent(map) : null
+    log.debug "parse() --- returned: $result"
     return result
 }
 
@@ -136,12 +136,7 @@ def unlock() {
 
 // Private methods
 private Map parseReportAttributeMessage(String description) {
-    log.trace "parseReportAttributeMessage() --- description: $description"
-
     Map descMap = zigbee.parseDescriptionAsMap(description)
-
-    log.debug "parseReportAttributeMessage() --- descMap: $descMap"
-
     Map resultMap = [:]
     if (descMap.clusterInt == CLUSTER_POWER && descMap.attrInt == POWER_ATTR_BATTERY_PERCENTAGE_REMAINING) {
         resultMap.name = "battery"
@@ -149,18 +144,24 @@ private Map parseReportAttributeMessage(String description) {
         if (device.getDataValue("manufacturer") == "Yale") {            //Handling issue with Yale locks incorrect battery reporting
             resultMap.value = Integer.parseInt(descMap.value, 16)
         }
-        log.info "parseReportAttributeMessage() --- battery: ${resultMap.value}"
     }
     else if (descMap.clusterInt == CLUSTER_DOORLOCK && descMap.attrInt == DOORLOCK_ATTR_LOCKSTATE) {
         def value = Integer.parseInt(descMap.value, 16)
+        def linkText = getLinkText(device)
         resultMap.name = "lock"
-        resultMap.putAll([0:["value":"unknown",
-                             "descriptionText":"Not fully locked"],
-                          1:["value":"locked"],
-                          2:["value":"unlocked"]].get(value,
-                                                      ["value":"unknown",
-                                                       "descriptionText":"Unknown lock state"]))
-        log.info "parseReportAttributeMessage() --- lock: ${resultMap.value}"
+        if (value == 0) {
+            resultMap.value = "unknown"
+            resultMap.descriptionText = "${linkText} is not fully locked"
+        } else if (value == 1) {
+            resultMap.value = "locked"
+            resultMap.descriptionText = "${linkText} is locked"
+        } else if (value == 2) {
+            resultMap.value = "unlocked"
+            resultMap.descriptionText = "${linkText} is unlocked"
+        } else {
+            resultMap.value = "unknown"
+            resultMap.descriptionText = "${linkText} is in unknown lock state"
+        }
     }
     else {
         log.debug "parseReportAttributeMessage() --- ignoring attribute"
