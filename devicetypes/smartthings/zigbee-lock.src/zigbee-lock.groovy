@@ -91,32 +91,19 @@ def uninstalled() {
 }
 
 def configure() {
-    /*
     def cmds =
-        zigbee.configSetup("${CLUSTER_DOORLOCK}", "${DOORLOCK_ATTR_LOCKSTATE}",
-                           "${TYPE_ENUM8}", 0, 3600, "{01}") +
-        zigbee.configSetup("${CLUSTER_POWER}", "${POWER_ATTR_BATTERY_PERCENTAGE_REMAINING}",
-                           "${TYPE_U8}", 600, 21600, "{01}")
-    */
-    def zigbeeId = device.zigbeeId
-    def cmds =
-        [
-            "zdo bind 0x${device.deviceNetworkId} 0x${device.endpointId} 1 ${CLUSTER_DOORLOCK} {$zigbeeId} {}", "delay 200",
-            "zcl global send-me-a-report ${CLUSTER_DOORLOCK} ${DOORLOCK_ATTR_LOCKSTATE} ${TYPE_ENUM8} 0 3600 {01}", "delay 200",
-            "send 0x${device.deviceNetworkId} 1 0x${device.endpointId}", "delay 200",
-
-            "zdo bind 0x${device.deviceNetworkId} 0x${device.endpointId} 1 ${CLUSTER_POWER} {$zigbeeId} {}", "delay 200",
-            "zcl global send-me-a-report ${CLUSTER_POWER} ${POWER_ATTR_BATTERY_PERCENTAGE_REMAINING} ${TYPE_U8} 600 21600 {01}", "delay 200",
-            "send 0x${device.deviceNetworkId} 1 0x${device.endpointId}", "delay 200",
-        ]
+        zigbee.configureReporting(CLUSTER_DOORLOCK, DOORLOCK_ATTR_LOCKSTATE,
+                                  TYPE_ENUM8, 0, 3600, null) +
+        zigbee.configureReporting(CLUSTER_POWER, POWER_ATTR_BATTERY_PERCENTAGE_REMAINING,
+                                  TYPE_U8, 600, 21600, 0x01)
     log.info "configure() --- cmds: $cmds"
     return cmds + refresh() // send refresh cmds as part of config
 }
 
 def refresh() {
     def cmds =
-        zigbee.refreshData("${CLUSTER_DOORLOCK}", "${DOORLOCK_ATTR_LOCKSTATE}") +
-        zigbee.refreshData("${CLUSTER_POWER}", "${POWER_ATTR_BATTERY_PERCENTAGE_REMAINING}")
+        zigbee.readAttribute(CLUSTER_DOORLOCK, DOORLOCK_ATTR_LOCKSTATE) +
+        zigbee.readAttribute(CLUSTER_POWER, POWER_ATTR_BATTERY_PERCENTAGE_REMAINING)
     log.info "refresh() --- cmds: $cmds"
     return cmds
 }
@@ -136,17 +123,15 @@ def parse(String description) {
 
 // Lock capability commands
 def lock() {
-    def cmds = zigbee.zigbeeCommand("${CLUSTER_DOORLOCK}", "${DOORLOCK_CMD_LOCK_DOOR}", "{}")
+    def cmds = zigbee.command(CLUSTER_DOORLOCK, DOORLOCK_CMD_LOCK_DOOR)
     log.info "lock() -- cmds: $cmds"
-    //return cmds
-    "st cmd 0x${device.deviceNetworkId} 0x${device.endpointId} ${CLUSTER_DOORLOCK} ${DOORLOCK_CMD_LOCK_DOOR} {}"
+    return cmds
 }
 
 def unlock() {
-    def cmds = zigbee.zigbeeCommand("${CLUSTER_DOORLOCK}", "${DOORLOCK_CMD_UNLOCK_DOOR}", "{}")
+    def cmds = zigbee.command(CLUSTER_DOORLOCK, DOORLOCK_CMD_UNLOCK_DOOR)
     log.info "unlock() -- cmds: $cmds"
-    //return cmds
-    "st cmd 0x${device.deviceNetworkId} 0x${device.endpointId} ${CLUSTER_DOORLOCK} ${DOORLOCK_CMD_UNLOCK_DOOR} {}"
+    return cmds
 }
 
 // Private methods
