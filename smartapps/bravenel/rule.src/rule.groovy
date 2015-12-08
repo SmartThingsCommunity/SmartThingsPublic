@@ -3,7 +3,7 @@
  *
  *  Copyright 2015 Bruce Ravenel
  *
- *  Version 1.4.1   8 Dec 2015
+ *  Version 1.4.1a   8 Dec 2015
  *
  *  Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except
  *  in compliance with the License. You may obtain a copy of the License at:
@@ -47,8 +47,8 @@ def selectRT() {
             	state.isRule = true
                 state.isTrig = false
             }
-			if(state.isRule || !app.label) href "selectRule", title: "Create a Rule", description: state.isRule ? (app.label) : "Tap to set", required: false, state: state.isRule ? "complete" : null
-            if(state.isTrig || !app.label) href "selectTriggerActs", title: "Create a Trigger", description: state.isTrig ? (app.label) : "Tap to set", required: false, state: state.isTrig ? "complete" : null
+			if(state.isRule || !app.label) href "selectRule", title: ((state.isRule ? "Installed" : "Create a") + " Rule"), description: state.isRule ? (app.label) : "Tap to set", required: false, state: state.isRule ? "complete" : null
+            if(state.isTrig || !app.label) href "selectTriggerActs", title: ((state.isTrig ? "Installed" : "Create a") + " Trigger"), description: state.isTrig ? (app.label) : "Tap to set", required: false, state: state.isTrig ? "complete" : null
 		}
     }
 }
