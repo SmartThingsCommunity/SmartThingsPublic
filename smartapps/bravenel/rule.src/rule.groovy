@@ -3,7 +3,7 @@
  *
  *  Copyright 2015 Bruce Ravenel
  *
- *  Version 1.4.0b   7 Dec 2015
+ *  Version 1.4.1   8 Dec 2015
  *
  *  Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except
  *  in compliance with the License. You may obtain a copy of the License at:
@@ -94,7 +94,7 @@ def selectTriggerActs() {
 			href "certainTime", title: "Only during a certain time", description: timeLabel ?: "Tap to set", state: timeLabel ? "complete" : null
 			input "days", "enum", title: "Only on certain days of the week", multiple: true, required: false,
 				options: ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"]
-			input "modes", "mode", title: "Only when mode is", multiple: true, required: false            
+			input "modesY", "mode", title: "Only when mode is", multiple: true, required: false            
 			input "disabled", "capability.switch", title: "Switch to disable trigger when ON", required: false, multiple: false
 			input "logging", "bool", title: "Enable event logging", required: false, defaultValue: true
    		}    
@@ -1377,7 +1377,7 @@ private timeIntervalLabel() {
 
 private getAllOk() {
 	if(state.isRule) modeZOk && !state.disabled  //&& daysOk && timeOk
-    else modeOk && daysOk && timeOk && !state.disabled
+    else modeYOk && daysOk && timeOk && !state.disabled
 }
 
 private hideOptionsSection() {
@@ -1387,6 +1387,12 @@ private hideOptionsSection() {
 
 private getModeZOk() {
 	def result = !modesZ || modesZ.contains(location.mode)
+//	log.trace "modeZOk = $result"
+	return result
+}
+
+private getModeYOk() {
+	def result = !modesY || modesY.contains(location.mode)
 //	log.trace "modeZOk = $result"
 	return result
 }
