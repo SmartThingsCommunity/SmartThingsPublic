@@ -26,7 +26,7 @@ definition(
 preferences {
 	page(name: "mainPage", title: "New Brighter Dimmer Bindings", install: true, uninstall: true, submitOnChange: true) {
 		section {
-			app(name: "childDimmerBindings", appName: "New Brighter Dimmer Binding", namespace: "trentfoley64", title: "new binding...", multiple: true)
+			app(name: "childDimmerBindings", appName: "New Brighter Dimmer Binding", namespace: "trentfoley64", title: "new dimmer binding...", multiple: true)
 		}
 	}
 }
