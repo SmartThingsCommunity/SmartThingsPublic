@@ -17,7 +17,7 @@ definition(
     name: "Variable Light Timer",
     namespace: "kriskit",
     author: "Chris Kitch",
-    description: "Different timers for different device activations",
+    description: "Different timers for different device activation",
     category: "Convenience",
     iconUrl: "https://s3.amazonaws.com/smartapp-icons/Convenience/Cat-Convenience.png",
     iconX2Url: "https://s3.amazonaws.com/smartapp-icons/Convenience/Cat-Convenience@2x.png",
@@ -25,18 +25,37 @@ definition(
 
 
 preferences {
-	section("Door") {
-        input "contact", "capability.contactSensor", required: true
-        input "contactDelay", type: "number", title: "Light Off Delay (seconds)", defaultValue: 45
-	}
-    
-    section("Motion") {
-		input "motion", "capability.motionSensor", required: true
-        input "motionDelay", type: "number", title: "Light Off Delay (seconds)", defaultValue: 15 * 60
-    }
-    
-    section("Lights") {
-    	input "lights", "capability.switch", multiple: true
+	page name: "mainPage"
+}
+
+def mainPage() {
+	dynamicPage(name: "mainPage", title: "", install: true, uninstall: app.installationState == "COMPLETE") {
+        section("Door") {
+                input "contact", "capability.contactSensor", required: true
+                input "contactDelay", type: "number", title: "Light Off Delay (seconds)", defaultValue: 45
+                input ("contactEvents", "enum", title: "Trigger when door is", required: true, multiple: true, options: [
+                    "open": "Opened",
+                    "closed": "Closed"
+                ])
+            }
+
+            section("Motion") {
+                input "motion", "capability.motionSensor", required: true
+                input "motionDelay", type: "number", title: "Light Off Delay (seconds)", defaultValue: 15 * 60
+            }
+
+            section("Lights") {
+                input "lights", "capability.switch", multiple: true
+            }
+
+            section {
+                input ("timeRestrictionEnabled", "bool", title: "Restrict to time range", submitOnChange: true)
+
+                if (timeRestrictionEnabled) {
+                    input "startTime", "time", title: "Start", required: true
+                    input "endTime", "time", title: "End", required: true
+                }
+            }
     }
 }
 
@@ -59,14 +78,21 @@ def initialize() {
 }
 
 def onContactChange(evt) {
-	if (evt.value == "open") {
-        log.debug "Door contact open"
-        lights?.on()
-        startTurnOffDelay(contactDelay)
-    }
+	if (!isWithinOperatingTimes())
+    	return
+
+	if (!contactEvents.contains(evt.value))
+    	return
+    
+    log.debug "Door contact ${evt.value}"
+    lights?.on()
+    startTurnOffDelay(contactDelay)
 }
 
 def onMotionChange(evt) {
+	if (!isWithinOperatingTimes())
+    	return
+
 	if (evt.value == "active") {
     	log.debug "Motion sensor active"
         lights?.on()
@@ -84,4 +110,15 @@ def turnOff() {
 	lights?.off()
 }
 
-// TODO: implement event handlers
+def isWithinOperatingTimes() {
+	if (!timeRestrictionEnabled)
+    	return true
+
+	if (!startTime || !endTime)
+    	return true
+    
+    def currentTime = new Date()
+    def start = timeToday(startTime, location.timeZone)
+    def end = timeToday(endTime, location.timeZone)    
+    return timeOfDayIsBetween(start, end, currentTime, location.timeZone)
+}
