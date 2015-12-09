@@ -26,7 +26,7 @@ definition(
 preferences {
 	page(name: "mainPage", title: "Brighter Thermostat Controls", install: true, uninstall: true, submitOnChange: true) {
 		section {
-			app(name: "childThermostatControls", appName: "New Thermostat Control", namespace: "trentfoley64", title: "new thermostat rule...", multiple: true)
+			app(name: "childThermostatControls", appName: "New Brighter Thermostat Control", namespace: "trentfoley64", title: "new thermostat rule...", multiple: true)
 		}
 	}
 }

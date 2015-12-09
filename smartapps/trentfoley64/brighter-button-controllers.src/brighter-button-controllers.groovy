@@ -26,7 +26,7 @@ definition(
 preferences {
 	page(name: "mainPage", title: "Brighter Button Controllers", install: true, uninstall: true, submitOnChange: true) {
 		section {
-			app(name: "childButtonControllers", appName: "New Brighter Button Controller", namespace: "trentfoley64", title: "Create New Brighter Button Controller...", multiple: true)
+			app(name: "childButtonControllers", appName: "New Brighter Button Controller", namespace: "trentfoley64", title: "new button controller...", multiple: true)
 		}
 	}
 }
