@@ -17,7 +17,7 @@
  */
 
 definition(
-    name: "Rule Machine Delete",
+    name: "Rule Machine",
     singleInstance: true,
     namespace: "bravenel",
     author: "Bruce Ravenel",
