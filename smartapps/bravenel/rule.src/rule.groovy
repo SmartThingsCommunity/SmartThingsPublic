@@ -3,7 +3,7 @@
  *
  *  Copyright 2015 Bruce Ravenel
  *
- *  Version 1.4.1a   8 Dec 2015
+ *  Version 1.4.1b   8 Dec 2015
  *
  *  Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except
  *  in compliance with the License. You may obtain a copy of the License at:
@@ -864,7 +864,7 @@ def initialize() {
 				subscribe((settings.find{it.key == "rDev$i"}).value, "smoke" + (state.isTrig ? ".$myState" : ""), allHandler)
 				break
 			case ["Presence"]:
-				subscribe((settings.find{it.key == "rDev$i"}).value, "presence" + (state.isTrig ? (myState == "arrives" ? "present" : "not present") : ""), allHandler)
+				subscribe((settings.find{it.key == "rDev$i"}).value, "presence" + (state.isTrig ? (myState == "arrives" ? ".present" : ".not present") : ""), allHandler)
 				break
 			case "Button":
 				subscribe((settings.find{it.key == "rDev$i"}).value, "button", allHandler)
