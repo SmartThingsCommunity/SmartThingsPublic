@@ -384,20 +384,8 @@ def getTemperature(value) {
 
         "zcl mfg-code ${manufacturerCode}", "delay 200",
         "zcl global read 0xFC02 0x0010",
-        "send 0x${device.deviceNetworkId} 1 1","delay 400",
-        
-        "zcl mfg-code ${manufacturerCode}", "delay 200",
-        "zcl global read 0xFC02 0x0012",
-        "send 0x${device.deviceNetworkId} 1 1","delay 400",
-        
-        "zcl mfg-code ${manufacturerCode}", "delay 200",
-        "zcl global read 0xFC02 0x0013",
-        "send 0x${device.deviceNetworkId} 1 1","delay 400",
-        
-        "zcl mfg-code ${manufacturerCode}", "delay 200",
-        "zcl global read 0xFC02 0x0014",
-        "send 0x${device.deviceNetworkId} 1 1", "delay 400"
-		]
+        "send 0x${device.deviceNetworkId} 1 1","delay 400"
+	]
 
 		return refreshCmds + enrollResponse()
 	}
