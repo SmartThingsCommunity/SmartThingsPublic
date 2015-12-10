@@ -356,6 +356,8 @@ def initialize() {
     //since access_token expires every 2 hours
     runEvery1Hour("refreshAuthToken")
 
+	atomicState.reAttempt = 0
+
 }
 
 def pollHandler() {
@@ -640,8 +642,18 @@ private refreshAuthToken() {
             }
         } catch(Exception e) {
             log.error "refreshAuthToken() >> Error: e.statusCode ${e.statusCode}"
-            if (e.statusCode == 401) {
-                sendPushAndFeeds(notificationMessage)
+			def reAttemptPeriod = 300 // in sec
+			if (e.statusCode != 401) { //this issue might comes from exceed 20sec app execution, connectivity issue etc.
+				runIn(reAttemptPeriod, "refreshAuthToken")
+			} else if (e.statusCode == 401) { //refresh token is expired
+				atomicState.reAttempt = atomicState.reAttempt + 1
+				log.warn "reAttempt refreshAuthToken to try = ${atomicState.reAttempt}"
+				if (atomicState.reAttempt <= 3) {
+					runIn(reAttemptPeriod, "refreshAuthToken")
+				} else {
+					sendPushAndFeeds(notificationMessage)
+					atomicState.reAttempt = 0
+				}
             }
         }
     }
