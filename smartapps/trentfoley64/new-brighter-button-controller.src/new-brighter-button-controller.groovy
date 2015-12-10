@@ -20,7 +20,7 @@ definition(
 	namespace: "trentfoley64",
 	author: "A. Trent Foley",
 	description: "Control devices with buttons like the Aeon Labs Minimote with dimming",
-	parent: "trentfoley64:Brighter Button Controller",
+	parent: "trentfoley64:Brighter Button Controllers",
 	category: "My Apps",
 	iconUrl: "http://www.trentfoley.com/ST/icons/brighter-button-controller.png",
 	iconX2Url: "http://www.trentfoley.com/ST/icons/brighter-button-controller@2x.png",
@@ -43,22 +43,18 @@ preferences {
 }
 
 def selectButton() {
-	dynamicPage(name: "selectButton", title: "First, select your button device", nextPage: "configureButton1", uninstall: configured()) {
+	dynamicPage(name: "selectButton", title: "First, select your button device", nextPage: "configureButton1", install: false, uninstall: configured()) {
 		section {
 			input "buttonDevice", "capability.button", title: "Button", multiple: false, required: true
 		}
         
 		section(title: "More options", hidden: hideOptionsSection(), hideable: true) {
-
 			def timeLabel = timeIntervalLabel()
 
 			href "timeIntervalInput", title: "Only during a certain time", description: timeLabel ?: "Tap to set", state: timeLabel ? "complete" : null
-
 			input "days", "enum", title: "Only on certain days of the week", multiple: true, required: false,
 				options: ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"]
-
 			input "modes", "mode", title: "Only when mode is", multiple: true, required: false
-
 			label title: "Assign a name", required: false
 		}
 	}
@@ -66,16 +62,16 @@ def selectButton() {
 
 def configureButton1() {
 	dynamicPage(name: "configureButton1", title: "Now let's decide how to use the first button",
-		nextPage: "configureButton2", uninstall: configured(), getButtonSections(1))
+		nextPage: "configureButton2", install: false, uninstall: configured(), getButtonSections(1))
 }
 def configureButton2() {
 	dynamicPage(name: "configureButton2", title: "If you have a second button, set it up here",
-		nextPage: "configureButton3", uninstall: configured(), getButtonSections(2))
+		nextPage: "configureButton3", install: false, uninstall: configured(), getButtonSections(2))
 }
 
 def configureButton3() {
 	dynamicPage(name: "configureButton3", title: "If you have a third button, you can do even more here",
-		nextPage: "configureButton4", uninstall: configured(), getButtonSections(3))
+		nextPage: "configureButton4", install: false, uninstall: configured(), getButtonSections(3))
 }
 def configureButton4() {
 	dynamicPage(name: "configureButton4", title: "If you have a fourth button, you rule, and can set it up here",
@@ -88,18 +84,16 @@ def getButtonSections(buttonNumber) {
 			input "lights_${buttonNumber}_pushed", "capability.switch", title: "Pushed", multiple: true, required: false
 			input "lights_${buttonNumber}_held", "capability.switch", title: "Held", multiple: true, required: false
 		}
-        section("Dimmers when Pushed") {
-			input "dimmers_${buttonNumber}_pushed", "capability.switchLevel", title: "Dimmers", multiple: true, required: false
-			input "switchLevel_${buttonNumber}_pushed", "enum", title: "Brightness Level",
+        section("Dimmers") {
+			input "dimmers_${buttonNumber}_pushed", "capability.switchLevel", title: "Pushed", multiple: true, required: false
+			input "switchLevel_${buttonNumber}_pushed", "enum", title: "  Brightness Level",
 				options: ["7%", "10%", "20%", "25%", "30%", "40%", "50%", "60%", "75%", "100%"], required: false
-        	input "dimmerMode_${buttonNumber}_pushed", "enum", title: "What to do if already turned on?", required: false,
+        	input "dimmerMode_${buttonNumber}_pushed", "enum", title: "  What to do if already turned on?", required: false,
             	options: ["Toggle", "Set Level"]
-        }        
-        section("Dimmers when Held") {
-			input "dimmers_${buttonNumber}_held", "capability.switchLevel", title: "Dimmers", multiple: true, required: false
+			input "dimmers_${buttonNumber}_held", "capability.switchLevel", title: "Held", multiple: true, required: false
 			input "switchLevel_${buttonNumber}_held", "enum",
-				options: ["7%", "10%", "20%", "25%", "30%", "40%", "50%", "60%", "75%", "100%"], title: "Brightness Level", required: false
-        	input "dimmerMode_${buttonNumber}_held", "enum", title: "What to do if already turned on?", required: false,
+				options: ["7%", "10%", "20%", "25%", "30%", "40%", "50%", "60%", "75%", "100%"], title: "  Brightness Level", required: false
+        	input "dimmerMode_${buttonNumber}_held", "enum", title: "  What to do if already turned on?", required: false,
             	options: ["Toggle", "Set Level"]
 		}
 		section("Locks") {

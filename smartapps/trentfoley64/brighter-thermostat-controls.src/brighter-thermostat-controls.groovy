@@ -25,9 +25,13 @@ definition(
 
 preferences {
 	page(name: "mainPage", title: "Brighter Thermostat Controls", install: true, uninstall: true, submitOnChange: true) {
-		section {
+		section("Brighter Thermostat Controls") {
 			app(name: "childThermostatControls", appName: "New Brighter Thermostat Control", namespace: "trentfoley64", title: "new thermostat control...", multiple: true)
 		}
+    	section("Filter info") {
+        	input "filterLastChanged", "date", title: "Date last changed?", required: false
+            input "filterMonthsBeforeChange", "number", title: "Lasts how many months?", required: false
+        }
 	}
 }
 

@@ -20,7 +20,7 @@ preferences {
 }
 
 def setPrefs() {
-	dynamicPage(name: "setPrefs", title: "Brighter Thermostat Control", nextPage: "setName", uninstall: true) {
+	dynamicPage(name: "setPrefs", title: "Brighter Thermostat Control", nextPage: "setName", install: false, uninstall: true) {
     	// Let use pick thermostats
 		section("Set these thermostats") {
 			input "thermostats", "capability.thermostat", title: "Which?", multiple: true

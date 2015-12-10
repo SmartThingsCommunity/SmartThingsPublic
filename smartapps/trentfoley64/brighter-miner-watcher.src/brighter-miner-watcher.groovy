@@ -29,8 +29,8 @@ definition(
 preferences {
 	section {
 		input(name: "minerMeter", type: "capability.powerMeter", title: "When This Power Meter...", required: true, multiple: false, description: null)
-        input(name: "thresholdLow", type: "number", title: "Drops to...", required: true, description: "in Watts.")
-        input(name: "thresholdHigh", type: "number", title: "Rises to...", required: true, description: "in Watts.")
+        input(name: "thresholdLow", type: "number", title: "Either drops to...", required: true, description: "in Watts.")
+        input(name: "thresholdHigh", type: "number", title: "Or rises to...", required: true, description: "in Watts.")
 	}
     section {
     	input(name: "minerSwitches", type: "capability.switch", title: "Turn Off These Switches Powering Mining Equipment", required: true, multiple: true, description: null)
