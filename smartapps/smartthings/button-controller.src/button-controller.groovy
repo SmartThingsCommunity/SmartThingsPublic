@@ -246,6 +246,9 @@ def toggle(devices) {
 	else if (devices*.currentValue('lock').contains('locked')) {
 		devices.unlock()
 	}
+	else if (devices*.currentValue('lock').contains('unlocked')) {
+		devices.lock()
+	}
 	else if (devices*.currentValue('alarm').contains('off')) {
         devices.siren()
     }

@@ -10,24 +10,24 @@
  *  on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the License
  *  for the specific language governing permissions and limitations under the License.
  *
- *  Sonos Control
+ *  Speaker Control
  *
  *  Author: SmartThings
  *
  *  Date: 2013-12-10
  */
 definition(
-    name: "Sonos Control",
+    name: "Speaker Control",
     namespace: "smartthings",
     author: "SmartThings",
-    description: "Play or pause your Sonos when certain actions take place in your home.",
+    description: "Play or pause your Speaker when certain actions take place in your home.",
     category: "SmartThings Labs",
     iconUrl: "https://s3.amazonaws.com/smartapp-icons/Partner/sonos.png",
     iconX2Url: "https://s3.amazonaws.com/smartapp-icons/Partner/sonos@2x.png"
 )
 
 preferences {
-	page(name: "mainPage", title: "Control your Sonos when something happens", install: true, uninstall: true)
+	page(name: "mainPage", title: "Control your Speaker when something happens", install: true, uninstall: true)
 	page(name: "timeIntervalInput", title: "Only during a certain time") {
 		section {
 			input "starting", "time", title: "Starting", required: false
@@ -81,7 +81,7 @@ def mainPage() {
 			]
 		}
 		section {
-			input "sonos", "capability.musicPlayer", title: "Sonos music player", required: true
+			input "sonos", "capability.musicPlayer", title: "Speaker music player", required: true
 		}
 		section("More options", hideable: true, hidden: true) {
 			input "volume", "number", title: "Set the volume volume", description: "0-100%", required: false

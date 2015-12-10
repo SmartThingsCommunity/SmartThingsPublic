@@ -341,6 +341,13 @@ def eventHandler(name, value) {
 
 	def eventBuffer = atomicState.eventBuffer
 	def epoch = now() / 1000
+	
+	// if for some reason this code block is being run
+	// but the SmartApp wasn't propery setup during install
+	// we need to set initialize the eventBuffer.
+	if (!atomicState.eventBuffer) {
+		atomicState.eventBuffer = []
+	}
 	eventBuffer << [key: "$name", value: "$value", epoch: "$epoch"]
 	
 	log.debug eventBuffer

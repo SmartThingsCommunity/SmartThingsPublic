@@ -50,7 +50,7 @@ metadata {
 		capability "Switch Level"
         capability "Polling"
 
-		fingerprint profileId: "0104", inClusters: "0000,0003,0004,0005,0006,0008,1000", outClusters: "0019"
+        fingerprint profileId: "0104", inClusters: "0000,0003,0004,0005,0006,0008,1000", outClusters: "0019", manufacturer: "GE_Appliances", model: "ZLL Light", deviceJoinName: "GE Link Bulb"
 	}
 
 	// UI tile definitions
@@ -317,7 +317,7 @@ def setLevel(value) {
     state.trigger = "setLevel"
     state.lvl = "${level}"
 
-    if (dimRate) {
+    if (dimRate && (state?.rate != null)) {
     	cmds << "st cmd 0x${device.deviceNetworkId} 1 8 4 {${level} ${state.rate}}"
     }
     else {
