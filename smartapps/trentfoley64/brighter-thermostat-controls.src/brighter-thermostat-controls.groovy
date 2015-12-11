@@ -9,14 +9,18 @@
  *  on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the License
  *  for the specific language governing permissions and limitations under the License.
  *
+ TODO:
+ 1) DONE 12/11/2015: Move the thermostats preference to the main parent app, allowing multiple instances of parent
+ 2) Implement filter change notices
  */
 
 definition(
 	name: "Brighter Thermostat Controls",
-	singleInstance: true,
+    // each thermostat can have its own instance
+	singleInstance: false,
 	namespace: "trentfoley64",
 	author: "A. Trent Foley, Sr.",
-	description: "Smart Thermostat Controls - time, day, and presence sensitive.",
+	description: "Brighter Thermostat Controls - time, day, and presence sensitive.",
 	category: "My Apps",
 	iconUrl: "http://www.trentfoley.com/ST/icons/thermostat.png",
 	iconX2Url: "http://www.trentfoley.com/ST/icons/thermostat@2x.png",
@@ -24,15 +28,35 @@ definition(
 )
 
 preferences {
-	page(name: "mainPage", title: "Brighter Thermostat Controls", install: true, uninstall: true, submitOnChange: true) {
-		section("Brighter Thermostat Controls") {
+	page(name: "prefsThermostat")
+	page(name: "prefsChildren")
+}
+
+def prefsThermostat() {
+	dynamicPage(name: "prefsThermostat", title: "Thermostat", nextPage: "prefsChildren", install: false, uninstall: true ) {
+		// Let user pick thermostats
+		section("Set these thermostats") {
+			input "thermostats", "capability.thermostat", title: "Which?", required: true, multiple: true
+		}
+        // Let user enter filter info
+		section("Filter monitoring", hideable: true) {
+			input "filterLastChanged", "date", title: "Date last changed?", required: false
+			input "filterMonthsBeforeChange", "number", title: "Lasts how many months?", required: false
+		}
+        // Let user name the smartapp - I'd love to be able to provide a default name
+		section {
+			label title: "Assign a name", required: false, description: "$thermostats", default: "$thermostats"
+			mode title: "Set for specific mode(s)", required: false
+		}
+	}
+}
+
+def prefsChildren() {
+	dynamicPage(name: "prefsChildren", title: "Brighter Thermostat Controls", install: true, uninstall: true ) { //, submitOnChange: true) {
+		section {
 			app(name: "childThermostatControls", appName: "New Brighter Thermostat Control", namespace: "trentfoley64", title: "new thermostat control...", multiple: true)
 		}
-    	section("Filter info") {
-        	input "filterLastChanged", "date", title: "Date last changed?", required: false
-            input "filterMonthsBeforeChange", "number", title: "Lasts how many months?", required: false
-        }
-	}
+    }
 }
 
 def installed() {
@@ -46,6 +70,6 @@ def updated() {
 
 def initialize() {
 	childApps.each {child ->
-			log.info "Installed Thermostat Rules: ${child.label}"
+			log.info "Brighter Thermostat Controls: ${child.label}"
 	}
 }
