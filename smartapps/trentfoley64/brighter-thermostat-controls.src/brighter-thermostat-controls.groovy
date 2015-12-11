@@ -10,13 +10,14 @@
  *  for the specific language governing permissions and limitations under the License.
  *
  TODO:
- 1) Move the thermostats preference to the main parent app, allowing multiple instances of parent
+ 1) DONE 12/11/2015: Move the thermostats preference to the main parent app, allowing multiple instances of parent
  2) Implement filter change notices
  */
 
 definition(
 	name: "Brighter Thermostat Controls",
-	singleInstance: true,
+    // each thermostat can have its own instance
+	singleInstance: false,
 	namespace: "trentfoley64",
 	author: "A. Trent Foley, Sr.",
 	description: "Brighter Thermostat Controls - time, day, and presence sensitive.",
@@ -27,15 +28,35 @@ definition(
 )
 
 preferences {
-	page(name: "mainPage", title: "Brighter Thermostat Controls", install: true, uninstall: true, submitOnChange: true) {
-		section {
-			app(name: "childThermostatControls", appName: "New Brighter Thermostat Control", namespace: "trentfoley64", title: "new thermostat control...", multiple: true)
+	page(name: "prefsThermostat")
+	page(name: "prefsChildren")
+}
+
+def prefsThermostat() {
+	dynamicPage(name: "prefsThermostat", title: "Thermostat", nextPage: "prefsChildren", install: false, uninstall: true ) {
+		// Let user pick thermostats
+		section("Set these thermostats") {
+			input "thermostats", "capability.thermostat", title: "Which?", required: true, multiple: true
 		}
-		section("Filter info", hideable: true) {
+        // Let user enter filter info
+		section("Filter monitoring", hideable: true) {
 			input "filterLastChanged", "date", title: "Date last changed?", required: false
 			input "filterMonthsBeforeChange", "number", title: "Lasts how many months?", required: false
 		}
+        // Let user name the smartapp - I'd love to be able to provide a default name
+		section {
+			label title: "Assign a name", required: false, description: "$thermostats", default: "$thermostats"
+			mode title: "Set for specific mode(s)", required: false
+		}
 	}
+}
+
+def prefsChildren() {
+	dynamicPage(name: "prefsChildren", title: "Brighter Thermostat Controls", install: true, uninstall: true ) { //, submitOnChange: true) {
+		section {
+			app(name: "childThermostatControls", appName: "New Brighter Thermostat Control", namespace: "trentfoley64", title: "new thermostat control...", multiple: true)
+		}
+    }
 }
 
 def installed() {
@@ -49,6 +70,6 @@ def updated() {
 
 def initialize() {
 	childApps.each {child ->
-			log.info "Installed Thermostat Rules: ${child.label}"
+			log.info "Brighter Thermostat Controls: ${child.label}"
 	}
 }
