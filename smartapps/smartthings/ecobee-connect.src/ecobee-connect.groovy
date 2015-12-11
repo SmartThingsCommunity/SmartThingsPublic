@@ -8,6 +8,7 @@
  *      JLH - 01-23-2014 - Update for Correct SmartApp URL Format
  *      JLH - 02-15-2014 - Fuller use of ecobee API
  *      10-28-2015 DVCSMP-604 - accessory sensor, DVCSMP-1174, DVCSMP-1111 - not respond to routines
+ *		StrykerSKS - 12-11-2015 - Make it work with the Ecobee 3
  */
 definition(
 		name: "Ecobee (Connect)",
@@ -34,6 +35,7 @@ mappings {
 def authPage() {
 	log.debug "authPage()"
 
+
 	if(!atomicState.accessToken) { //this is an access token for the 3rd party to make a call to the connect app
 		atomicState.accessToken = createAccessToken()
 	}
@@ -51,9 +53,10 @@ def authPage() {
 	}
 
 	def redirectUrl = buildRedirectUrl //"${serverUrl}/oauth/initialize?appId=${app.id}&access_token=${atomicState.accessToken}"
-	log.debug "RedirectUrl = ${redirectUrl}"
+	log.debug "authPage() --> RedirectUrl = ${redirectUrl}"
 	// get rid of next button until the user is actually auth'd
 	if (!oauthTokenProvided) {
+    	log.debug "authPage() --> in !oauthTokenProvided"
 		return dynamicPage(name: "auth", title: "Login", nextPage: "", uninstall:uninstallAllowed) {
 			section(){
 				paragraph "Tap below to log in to the ecobee service and authorize SmartThings access. Be sure to scroll down on page 2 and press the 'Allow' button."
@@ -95,26 +98,38 @@ def oauthInitUrl() {
 			redirect_uri: callbackUrl //"https://graph.api.smartthings.com/oauth/callback"
 	]
 
-	redirect(location: "${apiEndpoint}/authorize?${toQueryString(oauthParams)}")
+	log.debug "oauthInitUrl - Before redirect: apiEndpoint: ${apiEndpoint}"
+	log.debug "oauthInitUrl - Before redirect: querystring: ${toQueryString(oauthParams)}"
+	  
+
+	def tempUrl = apiEndpoint
+	log.debug "oauthInitUrl - Before redirect: location: ${tempUrl}/authorize?${toQueryString(oauthParams)}"
+  
+//    redirect(location: "${tempUrl}/authorize?${toQueryString(oauthParams)}")
+    redirect(location: "${apiEndpoint}/authorize?${toQueryString(oauthParams)}")
 }
 
 def callback() {
-	log.debug "callback()>> params: $params, params.code ${params.code}"
+	log.debug "callback()>> params: $params, params.code ${params.code}, params.state ${params.state}, atomicState.oauthInitState ${atomicState.oauthInitState}"
+
+return
 
 	def code = params.code
 	def oauthState = params.state
 
 	//verify oauthState == atomicState.oauthInitState, so the callback corresponds to the authentication request
 	if (oauthState == atomicState.oauthInitState){
-
+		log.debug "callback() --> States matched!"
 		def tokenParams = [
 				grant_type: "authorization_code",
 				code      : code,
 				client_id : smartThingsClientId,
+                state	  : oauthState,
 				redirect_uri: callbackUrl //"https://graph.api.smartthings.com/oauth/callback"
 		]
 
-		def tokenUrl = "https://www.ecobee.com/home/token?${toQueryString(tokenParams)}"
+		def tokenUrl = "${apiEndpoint}/token?${toQueryString(tokenParams)}"
+		log.debug "callback()-->tokenURL: ${tokenUrl}"
 
 		httpPost(uri: tokenUrl) { resp ->
 			atomicState.refreshToken = resp.data.refresh_token
@@ -756,14 +771,15 @@ def sendJson(child = null, String jsonBody) {
 		return false
 }
 
-def getChildName()           { "Ecobee Thermostat" }
-def getSensorChildName()     { "Ecobee Sensor" }
+def getChildName()           { return "Ecobee Thermostat" }
+def getSensorChildName()     { return "Ecobee Sensor" }
 def getServerUrl()           { return "https://graph.api.smartthings.com" }
 def getShardUrl()            { return getApiServerUrl() }
-def getCallbackUrl()        { "https://graph.api.smartthings.com/oauth/callback" }
-def getBuildRedirectUrl()   { "${serverUrl}/oauth/initialize?appId=${app.id}&access_token=${atomicState.accessToken}&apiServerUrl=${shardUrl}" }
-def getApiEndpoint()        { "https://api.ecobee.com" }
-def getSmartThingsClientId() { appSettings.clientId }
+// def getCallbackUrl()        { "https://graph.api.smartthings.com/oauth/callback" }
+def getCallbackUrl()        { return "${serverUrl}/oauth/callback" }
+def getBuildRedirectUrl()   { return "${serverUrl}/oauth/initialize?appId=${app.id}&access_token=${atomicState.accessToken}&apiServerUrl=${shardUrl}" }
+def getApiEndpoint()        { return "https://api.ecobee.com" }
+def getSmartThingsClientId() { return appSettings.clientId }
 
 def debugEvent(message, displayEvent = false) {
 
