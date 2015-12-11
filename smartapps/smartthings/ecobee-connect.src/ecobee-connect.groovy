@@ -65,8 +65,8 @@ def authPage() {
 		}
 	} else {
 		def stats = getEcobeeThermostats()
-		log.debug "thermostat list: $stats"
-		log.debug "sensor list: ${sensorsDiscovered()}"
+		log.debug "authPage() -> thermostat list: $stats"
+		log.debug "authPage() -> sensor list: ${sensorsDiscovered()}"
 		return dynamicPage(name: "auth", title: "Select Your Thermostats", uninstall: true) {
 			section(""){
 				paragraph "Tap below to see the list of ecobee thermostats available in your ecobee account and select the ones you want to connect to SmartThings."
@@ -92,10 +92,10 @@ def oauthInitUrl() {
 
 	def oauthParams = [
 			response_type: "code",
-			scope: "smartRead,smartWrite",
-			client_id: smartThingsClientId,
-			state: atomicState.oauthInitState,
-			redirect_uri: callbackUrl //"https://graph.api.smartthings.com/oauth/callback"
+			client_id: smartThingsClientId,			
+            scope: "smartRead,smartWrite",
+			redirect_uri: callbackUrl, //"https://graph.api.smartthings.com/oauth/callback"
+			state: atomicState.oauthInitState			
 	]
 
 	log.debug "oauthInitUrl - Before redirect: apiEndpoint: ${apiEndpoint}"
@@ -111,8 +111,6 @@ def oauthInitUrl() {
 
 def callback() {
 	log.debug "callback()>> params: $params, params.code ${params.code}, params.state ${params.state}, atomicState.oauthInitState ${atomicState.oauthInitState}"
-
-return
 
 	def code = params.code
 	def oauthState = params.state
@@ -255,7 +253,8 @@ def getEcobeeThermostats() {
         httpGet(deviceListParams) { resp ->
 
             if (resp.status == 200) {
-                resp.data.thermostatList.each { stat ->
+            
+            	resp.data.thermostatList.each { stat ->
                     atomicState.remoteSensors = stat.remoteSensors
                     def dni = [app.id, stat.identifier].join('.')
                     stats[dni] = getThermostatDisplayName(stat)
@@ -343,7 +342,7 @@ def initialize() {
 
 	def delete  // Delete any that are no longer in settings
 	if(!thermostats && !ecobeesensors) {
-		log.debug "delete thermostats ands sensors"
+		log.debug "delete thermostats and sensors"
 		delete = getAllChildDevices() //inherits from SmartApp (data-management)
 	} else { //delete only thermostat
 		log.debug "delete individual thermostat and sensor"
@@ -775,8 +774,8 @@ def getChildName()           { return "Ecobee Thermostat" }
 def getSensorChildName()     { return "Ecobee Sensor" }
 def getServerUrl()           { return "https://graph.api.smartthings.com" }
 def getShardUrl()            { return getApiServerUrl() }
-// def getCallbackUrl()        { "https://graph.api.smartthings.com/oauth/callback" }
-def getCallbackUrl()        { return "${serverUrl}/oauth/callback" }
+def getCallbackUrl()        { "https://graph.api.smartthings.com/oauth/callback" }
+// def getCallbackUrl()        { return "${serverUrl}/oauth/callback" }
 def getBuildRedirectUrl()   { return "${serverUrl}/oauth/initialize?appId=${app.id}&access_token=${atomicState.accessToken}&apiServerUrl=${shardUrl}" }
 def getApiEndpoint()        { return "https://api.ecobee.com" }
 def getSmartThingsClientId() { return appSettings.clientId }
