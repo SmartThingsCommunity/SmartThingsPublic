@@ -100,25 +100,63 @@ def namePage() {
 
 // inputs for selecting start and end time range
 def timeInputs() {
-    section() {
-                input "startingX", "enum", title: "Starting at", options: ["A specific time", "Sunrise", "Sunset"], defaultValue: "A specific time", submitOnChange: true
-                if(startingX in [null, "A specific time"]) input "starting", "time", title: "Start time", required: false
-                else {
-                    if(startingX == "Sunrise") input "startSunriseOffset", "number", range: "*..*", title: "Offset in minutes (+/-)", required: false
-                    else if(startingX == "Sunset") input "startSunsetOffset", "number", range: "*..*", title: "Offset in minutes (+/-)", required: false
-                }
-            }
-            
-    section() {
-                input "endingX", "enum", title: "Ending at", options: ["A specific time", "Sunrise", "Sunset"], defaultValue: "A specific time", submitOnChange: true
-                if(endingX in [null, "A specific time"]) input "ending", "time", title: "End time", required: false
-                else {
-                    if(endingX == "Sunrise") input "endSunriseOffset", "number", range: "*..*", title: "Offset in minutes (+/-)", required: false
-                    else if(endingX == "Sunset") input "endSunsetOffset", "number", range: "*..*", title: "Offset in minutes (+/-)", required: false
-                }
-            }
-    section(hideable: true, hidden: true, "Additional Options") {
-            input "weekDays","enum",title: "Only on certain days of the week", required: false, multiple: true, submitOnChange: true, options: ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"]
-            input "modes", "mode", title: "Only when the mode is", multiple: true, required: false
+    section("Time Range") {
+        input "startingX", "enum", title: "Starting at", options: ["A specific time", "Sunrise", "Sunset"], defaultValue: "A specific time", submitOnChange: true
+        if(startingX in [null, "A specific time"]) input "starting", "time", title: "Start time", required: false
+        else {
+            if(startingX == "Sunrise") input "startSunriseOffset", "number", range: "*..*", title: "Offset in minutes (+/-)", required: false
+            else if(startingX == "Sunset") input "startSunsetOffset", "number", range: "*..*", title: "Offset in minutes (+/-)", required: false
         }
     }
+            
+    section("Time Range") {
+        input "endingX", "enum", title: "Ending at", options: ["A specific time", "Sunrise", "Sunset"], defaultValue: "A specific time", submitOnChange: true
+        if(endingX in [null, "A specific time"]) input "ending", "time", title: "End time", required: false
+        else {
+            if(endingX == "Sunrise") input "endSunriseOffset", "number", range: "*..*", title: "Offset in minutes (+/-)", required: false
+            else if(endingX == "Sunset") input "endSunsetOffset", "number", range: "*..*", title: "Offset in minutes (+/-)", required: false
+        }
+    }
+    section(hideable: true, hidden: true, "Additional Options") {
+        input "weekDays","enum",title: "Only on certain days of the week", required: false, multiple: true, submitOnChange: true, options: ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"]
+        input "modes", "mode", title: "Only when the mode is", multiple: true, required: false
+        }
+    }
+
+// inputs for selecting which routines to run
+def actionInputs() {
+    // get the available actions
+    def actions = location.helloHome?.getPhrases()*.label
+    if (actions) {
+        // sort them alphabetically
+        actions.sort()
+    }
+    section("Automatically Run Home Routine(s)...") {
+        input "homeChoice", "enum", title: "When...", options: ["At Start of Time Range", "At End of Time Range"], submitOnChange: true
+        if(homeChoice == "At Start of Time Range") {
+            input "routineStartHome", "enum", title: "Select which routine(s) should run", multiple: true, required: true, options: actions
+        }
+        if(homeChoice == "At End of Time Range") {
+            input "routineEndHome", "enum", title: "Select which routine(s) should run", multiple: true, required: true, options: actions
+        }
+    }
+    section("Only If One of These People Are Home") {
+        input "peopleHome", "capability.presenceSensor", multiple: true
+        input "falseAlarmThreshold", "decimal", title: "Number of minutes", required: false, defaultValue: 10
+    }
+    section(hideable: true, hidden: true, "Additional Options") {
+        input "weekDays2","enum",title: "Only on certain days of the week", required: false, multiple: true, submitOnChange: true, options: ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"]
+        input "modes2", "mode", title: "Only when the mode is", multiple: true, required: false
+    }
+    section("Automatically Run Away Routine(s)...") {
+        input "peopleAway", "capability.presenceSensor", multiple: true, title: "Only IF All of These People Are Away"
+        input "falseAlarmThreshold2 ", "decimal", title: "Number of minutes", required: false, defaultValue: 10
+    }
+    section(hideable: true, hidden: true, "Additional Options") {
+        input "weekDays3","enum",title: "Only on certain days of the week", required: false, multiple: true, submitOnChange: true, options: ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"]
+        input "modes3", "mode", title: "Only when the mode is", multiple: true, required: false
+        }
+
+}
+
+
