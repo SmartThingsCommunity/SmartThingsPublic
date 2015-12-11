@@ -34,7 +34,7 @@ mappings {
 def authPage() {
 	log.debug "authPage()"
 
-	if(!atomicState.accessToken) { //this is to access token for 3rd party to make a call to connect app
+	if(!atomicState.accessToken) { //this is an access token for the 3rd party to make a call to the connect app
 		atomicState.accessToken = createAccessToken()
 	}
 
