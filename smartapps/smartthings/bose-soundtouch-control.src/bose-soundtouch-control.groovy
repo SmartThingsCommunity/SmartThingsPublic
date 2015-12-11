@@ -10,24 +10,25 @@
  *  on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the License
  *  for the specific language governing permissions and limitations under the License.
  *
- *  Sonos Control
+ *  Bose® SoundTouch® Control
  *
- *  Author: SmartThings
+ *  Author: SmartThings & Joe Geiger
  *
- *  Date: 2013-12-10
+ *  Date: 2015-30-09
  */
 definition(
-    name: "Sonos Control",
+    name: "Bose® SoundTouch® Control",
     namespace: "smartthings",
-    author: "SmartThings",
-    description: "Play or pause your Sonos when certain actions take place in your home.",
+    author: "SmartThings & Joe Geiger",
+    description: "Control your Bose® SoundTouch® when certain actions take place in your home.",
     category: "SmartThings Labs",
-    iconUrl: "https://s3.amazonaws.com/smartapp-icons/Partner/sonos.png",
-    iconX2Url: "https://s3.amazonaws.com/smartapp-icons/Partner/sonos@2x.png"
+    iconUrl: "https://s3.amazonaws.com/smartapp-icons/Convenience/Cat-Convenience.png",
+    iconX2Url: "https://s3.amazonaws.com/smartapp-icons/Convenience/Cat-Convenience%402x.png",
+    iconX3Url: "https://s3.amazonaws.com/smartapp-icons/Convenience/Cat-Convenience%402x.png"
 )
 
 preferences {
-	page(name: "mainPage", title: "Control your Sonos when something happens", install: true, uninstall: true)
+	page(name: "mainPage", title: "Control your Bose® SoundTouch® when something happens", install: true, uninstall: true)
 	page(name: "timeIntervalInput", title: "Only during a certain time") {
 		section {
 			input "starting", "time", title: "Starting", required: false
@@ -73,15 +74,21 @@ def mainPage() {
 		}
 		section("Perform this action"){
 			input "actionType", "enum", title: "Action?", required: true, defaultValue: "play", options: [
-				"Play",
-				"Stop Playing",
+				"Turn On & Play",
+				"Turn Off",
 				"Toggle Play/Pause",
 				"Skip to Next Track",
-				"Play Previous Track"
+				"Skip to Beginning/Previous Track",
+                "Play Preset 1",
+                "Play Preset 2",
+                "Play Preset 3",
+                "Play Preset 4",
+                "Play Preset 5",
+                "Play Preset 6"
 			]
 		}
 		section {
-			input "sonos", "capability.musicPlayer", title: "Sonos music player", required: true
+			input "bose", "capability.musicPlayer", title: "Bose® SoundTouch® music player", required: true
 		}
 		section("More options", hideable: true, hidden: true) {
 			input "volume", "number", title: "Set the volume volume", description: "0-100%", required: false
@@ -201,31 +208,49 @@ private takeAction(evt) {
 	log.debug "takeAction($actionType)"
 	def options = [:]
 	if (volume) {
-		sonos.setLevel(volume as Integer)
+		bose.setLevel(volume as Integer)
 		options.delay = 1000
 	}
 
 	switch (actionType) {
-		case "Play":
-			options ? sonos.on(options) : sonos.on()
+		case "Turn On & Play":
+			options ? bose.on(options) : bose.on()
 			break
-		case "Stop Playing":
-			options ? sonos.off(options) : sonos.off()
+		case "Turn Off":
+			options ? bose.off(options) : bose.off()
 			break
 		case "Toggle Play/Pause":
-			def currentStatus = sonos.currentValue("status")
-			if (currentStatus == "playing") {
-				options ? sonos.pause(options) : sonos.pause()
+			def currentStatus = bose.currentValue("playpause")
+			if (currentStatus == "play") {
+				options ? bose.pause(options) : bose.pause()
 			}
-			else {
-				options ? sonos.play(options) : sonos.play()
+			else if (currentStatus == "pause") {
+				options ? bose.play(options) : bose.play()
 			}
 			break
 		case "Skip to Next Track":
-			options ? sonos.nextTrack(options) : sonos.nextTrack()
+			options ? bose.nextTrack(options) : bose.nextTrack()
 			break
-		case "Play Previous Track":
-			options ? sonos.previousTrack(options) : sonos.previousTrack()
+		case "Skip to Beginning/Previous Track":
+			options ? bose.previousTrack(options) : bose.previousTrack()
+			break
+        case "Play Preset 1":
+			options ? bose.preset1(options) : bose.preset1()
+			break
+        case "Play Preset 2":
+			options ? bose.preset2(options) : bose.preset2()
+			break 
+        case "Play Preset 3":
+			options ? bose.preset3(options) : bose.preset3()
+			break
+        case "Play Preset 4":
+			options ? bose.preset4(options) : bose.preset4()
+			break
+        case "Play Preset 5":
+			options ? bose.preset5(options) : bose.preset5()
+			break
+        case "Play Preset 6":
+			options ? bose.preset6(options) : bose.preset6()
 			break
 		default:
 			log.error "Action type '$actionType' not defined"
@@ -314,4 +339,3 @@ private timeIntervalLabel()
 	(starting && ending) ? hhmm(starting) + "-" + hhmm(ending, "h:mm a z") : ""
 }
 // TODO - End Centralize
-
