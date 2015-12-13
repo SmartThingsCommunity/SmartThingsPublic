@@ -3,7 +3,7 @@
  *
  *  Copyright 2015 Bruce Ravenel
  *
- *  Version 1.5.1   13 Dec 2015
+ *  Version 1.5.1b   13 Dec 2015
  *
  *  Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except
  *  in compliance with the License. You may obtain a copy of the License at:
@@ -32,6 +32,7 @@ preferences {
 	page(name: "selectConditions")
 	page(name: "defineRule")
 	page(name: "certainTime")
+    page(name: "certainTimeX")
 	page(name: "atCertainTime")
 	page(name: "selectActionsTrue")
 	page(name: "selectActionsFalse")
@@ -78,9 +79,9 @@ def selectRule() {
 			section() { 
 				label title: "Name the Rule", required: true
 				def trigLabel = triggerLabel()
-				href "selectTriggers", title: "Define Triggers " + (state.howManyT == null ? "(Optional)" : ""), description: trigLabel ? (trigLabel) : "Tap to set", state: trigLabel ? "complete" : null, submitOnChange: true
+				href "selectTriggers", title: "Define Triggers " + (state.howManyT in [null, 1] ? "(Optional)" : ""), description: trigLabel ? (trigLabel) : "Tap to set", state: trigLabel ? "complete" : null, submitOnChange: true
 				def condLabel = conditionLabel()
-				href "selectConditions", title: "Define Conditions " + (state.howMany == null ? "(Optional)" : ""), description: condLabel ? (condLabel) : "Tap to set", state: condLabel ? "complete" : null, submitOnChange: true
+				href "selectConditions", title: "Define Conditions " + (state.howMany in [null, 1] ? "(Optional)" : ""), description: condLabel ? (condLabel) : "Tap to set", state: condLabel ? "complete" : null, submitOnChange: true
                 if(state.howMany > 1) 
 					href "defineRule", title: "Define a Rule", description: state.str ? (state.str) : "Tap to set", state: state.str ? "complete" : null, submitOnChange: true
 				href "selectActionsTrue", title: "Select Actions" + (state.howMany > 1 ? " for True" : ""), description: state.actsTrue ? state.actsTrue : "Tap to set", state: state.actsTrue ? "complete" : null, submitOnChange: true
@@ -311,8 +312,8 @@ def getState(myCapab, n, isTrig) {
         def modeVar = state.isRule ? "modes" : "modesX"
 		result = input modeVar, "enum", title: "Select mode(s)", multiple: true, required: false, options: myModes.sort()
 	} else if(myCapab == "Time of day") {
-		def timeLabel = timeIntervalLabel()
-		href "certainTime", title: "During a certain time", description: timeLabel ?: "Tap to set", state: timeLabel ? "complete" : null
+		def timeLabel = timeIntervalLabelX()
+		href "certainTimeX", title: "During a certain time", description: timeLabel ?: "Tap to set", state: timeLabel ? "complete" : null
 	} else if(myCapab == "Certain Time") {
 		def atTimeLabel = atTimeLabel()
 		href "atCertainTime", title: "At a certain time", description: atTimeLabel ?: "Tap to set", state: atTimeLabel ? "complete" : null
@@ -338,6 +339,27 @@ def certainTime() {
 			else {
 				if(endingX == "Sunrise") input "endSunriseOffset", "number", range: "*..*", title: "Offset in minutes (+/-)", required: false
 				else if(endingX == "Sunset") input "endSunsetOffset", "number", range: "*..*", title: "Offset in minutes (+/-)", required: false
+			}
+		}
+	}
+}
+
+def certainTimeX() {
+	dynamicPage(name: "certainTimeX", title: "Only during a certain time", uninstall: false) {
+		section() {
+			input "startingXX", "enum", title: "Starting at", options: ["A specific time", "Sunrise", "Sunset"], defaultValue: "A specific time", submitOnChange: true
+			if(startingXX in [null, "A specific time"]) input "startingA", "time", title: "Start time", required: false
+			else {
+				if(startingXX == "Sunrise") input "startSunriseOffsetX", "number", range: "*..*", title: "Offset in minutes (+/-)", required: false
+				else if(startingXX == "Sunset") input "startSunsetOffsetX", "number", range: "*..*", title: "Offset in minutes (+/-)", required: false
+			}
+		}
+		section() {
+			input "endingXX", "enum", title: "Ending at", options: ["A specific time", "Sunrise", "Sunset"], defaultValue: "A specific time", submitOnChange: true
+			if(endingXX in [null, "A specific time"]) input "endingA", "time", title: "End time", required: false
+			else {
+				if(endingXX == "Sunrise") input "endSunriseOffsetX", "number", range: "*..*", title: "Offset in minutes (+/-)", required: false
+				else if(endingXX == "Sunset") input "endSunsetOffsetX", "number", range: "*..*", title: "Offset in minutes (+/-)", required: false
 			}
 		}
 	}
@@ -393,7 +415,7 @@ def conditionLabelN(i, isTrig) {
     def SHMphrase = state.isRule ? "is" : "becomes"
     def phrase = state.isRule ? "of" : "becomes"
     def thisCapab = settings.find {it.key == (isTrig ? "tCapab$i" : "rCapab$i")}
-	if(thisCapab.value == "Time of day") result = "Time between " + timeIntervalLabel()
+	if(thisCapab.value == "Time of day") result = "Time between " + timeIntervalLabelX()
     else if(thisCapab.value == "Certain Time")  result = "When time is " + atTimeLabel()
     else if(thisCapab.value == "Smart Home Monitor") {
     	def thisState = (settings.find {it.key == (isTrig ? "tstate$i" : "state$i")}).value
@@ -830,17 +852,17 @@ def selectMsgFalse() {
 def scheduleTimeOfDay() {
 	def start = null
 	def stop = null
-	def s = getSunriseAndSunset(zipCode: zipCode, sunriseOffset: startSunriseOffset, sunsetOffset: startSunsetOffset)
-	if(startingX == "Sunrise") start = s.sunrise.time
-	else if(startingX == "Sunset") start = s.sunset.time
-	else if(starting) start = timeToday(starting,location.timeZone).time
-	s = getSunriseAndSunset(zipCode: zipCode, sunriseOffset: endSunriseOffset, sunsetOffset: endSunsetOffset)
-	if(endingX == "Sunrise") stop = s.sunrise.time
-	else if(endingX == "Sunset") stop = s.sunset.time
-	else if(ending) stop = timeToday(ending,location.timeZone).time
+	def s = getSunriseAndSunset(zipCode: zipCode, sunriseOffset: startSunriseOffsetX, sunsetOffset: startSunsetOffsetX)
+	if(startingXX == "Sunrise") start = s.sunrise.time
+	else if(startingXX == "Sunset") start = s.sunset.time
+	else if(startingA) start = timeToday(startingA,location.timeZone).time
+	s = getSunriseAndSunset(zipCode: zipCode, sunriseOffset: endSunriseOffsetX, sunsetOffset: endSunsetOffsetX)
+	if(endingXX == "Sunrise") stop = s.sunrise.time
+	else if(endingXX == "Sunset") stop = s.sunset.time
+	else if(endingA) stop = timeToday(endingA,location.timeZone).time
 	schedule(start, "startHandler")
 	schedule(stop, "stopHandler")
-	if(startingX in ["Sunrise", "Sunset"] || endingX in ["Sunrise", "Sunset"])
+	if(startingXX in ["Sunrise", "Sunset"] || endingXX in ["Sunrise", "Sunset"])
 		schedule("2015-01-09T00:15:29.000-0700", "scheduleTimeOfDay") // in case sunset/sunrise; change daily
 }
 
@@ -1451,6 +1473,19 @@ private timeIntervalLabel() {
 	else if (starting && ending) result = hhmm(starting) + " and " + hhmm(ending, "h:mm a z")
 }
 
+private timeIntervalLabelX() {
+	def result = ""
+	if (startingXX == "Sunrise" && endingXX == "Sunrise") result = "Sunrise" + offset(startSunriseOffsetX) + " and Sunrise" + offset(endSunriseOffsetX)
+	else if (startingXX == "Sunrise" && endingXX == "Sunset") result = "Sunrise" + offset(startSunriseOffsetX) + " and Sunset" + offset(endSunsetOffsetX)
+	else if (startingXX == "Sunset" && endingXX == "Sunrise") result = "Sunset" + offset(startSunsetOffsetX) + " and Sunrise" + offset(endSunriseOffsetX)
+	else if (startingXX == "Sunset" && endingXX == "Sunset") result = "Sunset" + offset(startSunsetOffsetX) + " and Sunset" + offset(endSunsetOffsetX)
+	else if (startingXX == "Sunrise" && endingA) result = "Sunrise" + offset(startSunriseOffsetX) + " and " + hhmm(endingA, "h:mm a z")
+	else if (startingXX == "Sunset" && endingA) result = "Sunset" + offset(startSunsetOffsetX) + " and " + hhmm(endingA, "h:mm a z")
+	else if (startingA && endingXX == "Sunrise") result = hhmm(startingA) + " and Sunrise" + offset(endSunriseOffsetX)
+	else if (startingA && endingXX == "Sunset") result = hhmm(startingA) + " and Sunset" + offset(endSunsetOffsetX)
+	else if (startingA && endingA) result = hhmm(startingA) + " and " + hhmm(endingA, "h:mm a z")
+}
+
 private getAllOk() {
 	if(state.isRule) modeZOk && !state.disabled  //&& daysOk && timeOk
     else modeYOk && daysOk && timeOk && !state.disabled
@@ -1518,6 +1553,29 @@ private getTimeOk() {
 		result = start < stop ? currTime >= start && currTime <= stop : currTime <= stop || currTime >= start
 	}
 //	log.trace "getTimeOk = $result"
+	return result
+}
+
+private getTimeOkX() {
+	def result = true
+	if((startingA && endingA) ||
+	(startingA && endingXX in ["Sunrise", "Sunset"]) ||
+	(startingXX in ["Sunrise", "Sunset"] && endingA) ||
+	(startingXX in ["Sunrise", "Sunset"] && endingXX in ["Sunrise", "Sunset"])) {
+		def currTime = now()
+		def start = null
+		def stop = null
+		def s = getSunriseAndSunset(zipCode: zipCode, sunriseOffset: startSunriseOffsetX, sunsetOffset: startSunsetOffsetX)
+		if(startingXX == "Sunrise") start = s.sunrise.time
+		else if(startingXX == "Sunset") start = s.sunset.time
+		else if(startingA) start = timeToday(startingA, location.timeZone).time
+		s = getSunriseAndSunset(zipCode: zipCode, sunriseOffset: endSunriseOffsetX, sunsetOffset: endSunsetOffsetX)
+		if(endingXX == "Sunrise") stop = s.sunrise.time
+		else if(endingXX == "Sunset") stop = s.sunset.time
+		else if(endingA) stop = timeToday(endingA,location.timeZone).time
+		result = start < stop ? currTime >= start && currTime <= stop : currTime <= stop || currTime >= start
+	}
+//	log.trace "getTimeOkX = $result"
 	return result
 }
 
