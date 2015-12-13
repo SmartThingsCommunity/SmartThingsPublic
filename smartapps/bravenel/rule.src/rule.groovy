@@ -3,7 +3,7 @@
  *
  *  Copyright 2015 Bruce Ravenel
  *
- *  Version 1.5.1b   13 Dec 2015
+ *  Version 1.5.1c   13 Dec 2015
  *
  *  Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except
  *  in compliance with the License. You may obtain a copy of the License at:
@@ -1070,7 +1070,7 @@ def getOperand(i, isR) {
 	def result = true
 	def capab = (settings.find {it.key == (isR ? "rCapab$i" : "tCapab$i")}).value
 	if     (capab == "Mode") result = modeOk
-	else if(capab == "Time of day") result = timeOk
+	else if(capab == "Time of day") result = timeOkX
 	else if(capab == "Days of week") result = daysOk
     else if(capab == "Smart Home Monitor") result = (settings.find {it.key == (isR ? "state$i" : "tstate$i")}).value == location.currentState("alarmSystemStatus")?.value
 	else {
