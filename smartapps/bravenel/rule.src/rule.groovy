@@ -3,7 +3,7 @@
  *
  *  Copyright 2015 Bruce Ravenel
  *
- *  Version 1.5.0e   12 Dec 2015
+ *  Version 1.5.1   13 Dec 2015
  *
  *  Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except
  *  in compliance with the License. You may obtain a copy of the License at:
@@ -138,7 +138,7 @@ def selectConditions() {
     def ct = settings.findAll{it.key.startsWith("rCapab")}
     state.howMany = ct.size() + 1							// initial value is 1
     def excludes = null
-    if(state.isRule) excludes = ["Time of day", "Days of week", "Mode", "Smart Home Monitor"]
+    if(state.isRule || state.howMany > 1) excludes = ["Time of day", "Days of week", "Mode", "Smart Home Monitor"]
     else excludes = ["Certain Time", "Mode", "Routine", "Button", "Smart Home Monitor"]
 	dynamicPage(name: "selectConditions", title: state.isTrig ? "Select Trigger Events" : "Select Conditions", uninstall: false) {
 		if(state.howMany) {
