@@ -3,7 +3,7 @@
  *
  *  Copyright 2015 Bruce Ravenel
  *
- *  Version 1.5.1g   13 Dec 2015
+ *  Version 1.5.1h   13 Dec 2015
  *
  *  Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except
  *  in compliance with the License. You may obtain a copy of the License at:
@@ -688,7 +688,7 @@ def selectActionsTrue() {
 			href "selectMsgTrue", title: "Send message", description: state.msgTrue ? state.msgTrue : "Tap to set", state: state.msgTrue ? "complete" : null
 			if(state.msgTrue) addToActTrue(state.msgTrue)
             if(!randomTrue) {
-				input "delayTrue", "number", title: "Delay " + (state.isRule ? "the effect of this rule" : "this action") + " by this many minutes", required: false, submitOnChange: true
+				input "delayTrue", "number", title: "Delay " + ((state.isRule || state.howMany > 1) ? "the effect of this rule" : "this action") + " by this many minutes", required: false, submitOnChange: true
 				if(delayTrue) {
 					def delayStr = "Delay Rule: $delayTrue minute"
 					if(delayTrue > 1) delayStr = delayStr + "s"
@@ -696,7 +696,7 @@ def selectActionsTrue() {
 				}
             }
             if(!delayTrue) {
-				input "randomTrue", "number", title: "Delay " + (state.isRule ? "the effect of this rule" : "this action") + " by random minutes up to", required: false, submitOnChange: true
+				input "randomTrue", "number", title: "Delay " + ((state.isRule || state.howMany > 1) ? "the effect of this rule" : "this action") + " by random minutes up to", required: false, submitOnChange: true
 				if(randomTrue) {
 					def randomStr = "Random Delay: $randomTrue minutes"
 					addToActTrue(randomStr)
@@ -1189,7 +1189,7 @@ def doDelayTrue(time, rand) {
 	runIn(myTime * 60, delayRuleTrue)
 	def delayStr = "minute"
 	if(time > 1) delayStr = delayStr + "s"
-    if(state.isRule) log.info ("$app.label is True, but " + (rand ? "random delay, up to $time minutes" : "delayed by $time $delayStr"))
+    if(state.isRule || state.howMany > 1) log.info ("$app.label is True, but " + (rand ? "random delay, up to $time minutes" : "delayed by $time $delayStr"))
     else log.info (rand ? "Random delay, up to $time minutes" : "Delayed by $time $delayStr")
 }
 
@@ -1199,7 +1199,7 @@ def doDelayFalse(time, rand) {
 	runIn(myTime * 60, delayRuleFalse)
 	def delayStr = "minute"
 	if(time > 1) delayStr = delayStr + "s"
-    if(state.isRule) log.info ("$app.label is False, but " + (rand ? "random delay, up to $time minutes" : "delayed by $time $delayStr"))
+    if(state.isRule || state.howMany > 1) log.info ("$app.label is False, but " + (rand ? "random delay, up to $time minutes" : "delayed by $time $delayStr"))
     else log.info (rand ? "Random delay, up to $time minutes" : "Delayed by $time $delayStr")
 	state.success = success
 }
