@@ -3,7 +3,7 @@
  *
  *  Copyright 2015 Bruce Ravenel
  *
- *  Version 1.5.0a   12 Dec 2015
+ *  Version 1.5.0b   12 Dec 2015
  *
  *  Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except
  *  in compliance with the License. You may obtain a copy of the License at:
@@ -1179,6 +1179,7 @@ def doDelayFalse(time, rand) {
 }
 
 def runRule(delay) {
+	if(state.isRule && !modesZOk) return
 	if(!allOk) return
 	state.token = 0
 	def success = eval()
