@@ -3,7 +3,7 @@
  *
  *  Copyright 2015 Bruce Ravenel
  *
- *  Version 1.5.1c   13 Dec 2015
+ *  Version 1.5.1d   13 Dec 2015
  *
  *  Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except
  *  in compliance with the License. You may obtain a copy of the License at:
@@ -108,11 +108,11 @@ def selectTriggers() {
     def ct = settings.findAll{it.key.startsWith("tCapab")}
     state.howManyT = ct.size() + 1							// initial value is 1
     def excludes = ["Certain Time", "Mode", "Routine", "Button", "Smart Home Monitor"]
-	dynamicPage(name: "selectTriggers", title: "Select Trigger Events", uninstall: false) {
+	dynamicPage(name: "selectTriggers", title: "Select Trigger Events (ANY will trigger)", uninstall: false) {
 		if(state.howManyT) {
 			for (int i = 1; i <= state.howManyT; i++) {
 				def thisCapab = "tCapab$i"
-				section("Event Trigger #$i") {
+				section((i > 1 ? "OR " : "") + "Event Trigger #$i") {
 					getCapab(thisCapab, true)
 					def myCapab = settings.find {it.key == thisCapab}
 					if(myCapab) {
@@ -385,7 +385,7 @@ def triggerLabel() {
 		for (int i = 1; i < howMany; i++) {
         	def thisCapab = settings.find {it.key == "tCapab$i"}
             if(!thisCapab) return result
-            result = result + conditionLabelN(i, true)
+            result = result + (i > 1 ? "OR " : "") + conditionLabelN(i, true)
 			if(i < howMany - 1) result = result + "\n"
 		}
     }
