@@ -3,7 +3,7 @@
  *
  *  Copyright 2015 Bruce Ravenel and Mike Maxwell
  *
- *  Version 1.2a   8 Dec 2015
+ *  Version 1.3   12 Dec 2015
  *
  *  Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except
  *  in compliance with the License. You may obtain a copy of the License at:
@@ -35,7 +35,7 @@ preferences {
 def mainPage() {
     dynamicPage(name: "mainPage", title: "Rules and Triggers", install: true, uninstall: false, submitOnChange: true) {
         section {
-            app(name: "childRules", appName: "Rule", namespace: "bravenel", title: "Create New Rule or Trigger...", multiple: true)
+            app(name: "childRules", appName: "Rule", namespace: "bravenel", title: "Create New Rule...", multiple: true)
         }
     }
 }
