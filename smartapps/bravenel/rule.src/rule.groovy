@@ -3,7 +3,7 @@
  *
  *  Copyright 2015 Bruce Ravenel
  *
- *  Version 1.5.0d   12 Dec 2015
+ *  Version 1.5.0e   12 Dec 2015
  *
  *  Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except
  *  in compliance with the License. You may obtain a copy of the License at:
@@ -264,7 +264,7 @@ def getCapab(myCapab, isTrig) {
 	def myOptions = null
 	if(state.isRule || !isTrig) myOptions = ["Switch", "Motion", "Acceleration", "Contact", "Presence", "Lock", "Temperature", "Humidity", "Illuminance", "Time of day", "Rule truth",
     	"Days of week", "Mode", "Dimmer level", "Energy meter", "Power meter", "Water sensor", "Battery", "Carbon monoxide detector", "Smoke detector", "Smart Home Monitor"]
-    else myOptions = ["Switch", "Physical Switch", "Motion", "Acceleration", "Contact", "Presence", "Lock", "Temperature", "Humidity", "Illuminance", "Certain Time", "Rule truth",
+    if(state.isTrig || isTrig) myOptions = ["Switch", "Physical Switch", "Motion", "Acceleration", "Contact", "Presence", "Lock", "Temperature", "Humidity", "Illuminance", "Certain Time", "Rule truth",
     	"Mode", "Energy meter", "Power meter", "Water sensor", "Battery", "Routine", "Button", "Dimmer level", "Carbon monoxide detector", "Smoke detector", "Smart Home Monitor"]
 	def result = input myCapab, "enum", title: "Select capability", required: false, options: myOptions.sort(), submitOnChange: true
 }
@@ -377,7 +377,7 @@ def conditionLabel() {
 		for (int i = 1; i < howMany; i++) {
         	def thisCapab = settings.find {it.key == "rCapab$i"}
             if(!thisCapab) return result
-            result = result + conditionLabelN(i, false) + ((state.isRule|| state.isRule == null) ? (getOperand(i, true) ? " [TRUE]" : " [FALSE]") : "")
+            result = result + conditionLabelN(i, false) + ((state.isRule || state.isRule == null) ? (getOperand(i, true) ? " [TRUE]" : " [FALSE]") : "")
 			if(i < howMany - 1) result = result + "\n"
 		}
         if((state.isRule || state.isRule == null) && howMany == 2) {
@@ -399,8 +399,10 @@ def conditionLabelN(i, isTrig) {
     	def thisState = (settings.find {it.key == (isTrig ? "tstate$i" : "state$i")}).value
     	result = "SHM state $SHMphrase " + (thisState in ["away", "stay"] ? "Arm ($thisState)" : "Disarm")
 	} else if(thisCapab.value == "Days of week") result = "Day i" + (days.size() > 1 ? "n " + days : "s " + days[0])
-	else if(thisCapab.value == "Mode") result = (state.isRule || !isTrig) ? "Mode i" + (modes.size() > 1 ? "n " + modes : "s " + modes[0]) : "Mode becomes " + (modesX.size() > 1 ? modesX : modesX[0])
-	else if(thisCapab.value == "Routine") {
+	else if(thisCapab.value == "Mode") { //result = (state.isRule || !isTrig) ? "Mode i" + (modes.size() > 1 ? "n " + modes : "s " + modes[0]) : "Mode becomes " + (modesX.size() > 1 ? modesX : modesX[0])
+    	if(state.isRule) result = "Mode i" + (modes.size() > 1 ? "n " + modes : "s " + modes[0])
+        if(state.isTrig || isTrig) result = "Mode becomes " + (modesX.size() > 1 ? modesX : modesX[0])
+	} else if(thisCapab.value == "Routine") {
         result = "Routine "
 		def thisState = settings.find {it.key == (isTrig ? "tstate$i" : "state$i")}
 		result = result + "'" + thisState.value + "' runs"        
