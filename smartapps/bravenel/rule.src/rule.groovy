@@ -3,7 +3,7 @@
  *
  *  Copyright 2015 Bruce Ravenel
  *
- *  Version 1.5.1f   13 Dec 2015
+ *  Version 1.5.1g   13 Dec 2015
  *
  *  Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except
  *  in compliance with the License. You may obtain a copy of the License at:
@@ -39,7 +39,9 @@ preferences {
 	page(name: "selectMsgTrue")
 	page(name: "selectMsgFalse")
 }
-
+//
+//	
+//
 def selectRule() {
 	def myTitle = "Select Triggers, Conditions, Rule and Actions"
     if(state.isRule) myTitle = "Select Conditions, Rule and Actions"
@@ -422,7 +424,7 @@ def conditionLabelN(i, isTrig) {
     	result = "SHM state $SHMphrase " + (thisState in ["away", "stay"] ? "Arm ($thisState)" : "Disarm")
 	} else if(thisCapab.value == "Days of week") result = "Day i" + (days.size() > 1 ? "n " + days : "s " + days[0])
 	else if(thisCapab.value == "Mode") { //result = (state.isRule || !isTrig) ? "Mode i" + (modes.size() > 1 ? "n " + modes : "s " + modes[0]) : "Mode becomes " + (modesX.size() > 1 ? modesX : modesX[0])
-    	if(state.isRule) result = "Mode i" + (modes.size() > 1 ? "n " + modes : "s " + modes[0])
+    	if(state.isRule || state.howMany > 1) result = "Mode i" + (modes.size() > 1 ? "n " + modes : "s " + modes[0])
         if(state.isTrig || isTrig) result = "Mode becomes " + (modesX.size() > 1 ? modesX : modesX[0])
 	} else if(thisCapab.value == "Routine") {
         result = "Routine "
