@@ -3,7 +3,7 @@
  *
  *  Copyright 2015 Bruce Ravenel
  *
- *  Version 1.5.1d   13 Dec 2015
+ *  Version 1.5.1e   13 Dec 2015
  *
  *  Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except
  *  in compliance with the License. You may obtain a copy of the License at:
@@ -277,9 +277,9 @@ def getState(myCapab, n, isTrig) {
 	def result = null
     def phrase = state.isRule ? "state" : "becomes"
     def swphrase = state.isRule ? "state" : "turns"
-    def presoptions = state.isRule ? ["present", "not present"] : ["arrives", "leaves"]
-    def presdefault = state.isRule ? "present" : "arrives"
-    def lockphrase = state.isRule ? "state" : "is"
+    def presoptions = (state.isRule || state.howMany > 1) ? ["present", "not present"] : ["arrives", "leaves"]
+    def presdefault = (state.isRule || state.howMany > 1) ? "present" : "arrives"
+    def lockphrase = (state.isRule || state.howMany > 1) ? "state" : "is"
 	def days = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"]
 	if     (myCapab == "Switch") 		result = input myState, "enum", title: "Switch $swphrase", options: ["on", "off"], defaultValue: "on"
 	else if(myCapab == "Physical Switch")		result = input myState, "enum", title: "Switch turns ", options: ["on", "off"], defaultValue: "on"
