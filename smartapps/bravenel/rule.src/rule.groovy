@@ -3,7 +3,7 @@
  *
  *  Copyright 2015 Bruce Ravenel
  *
- *  Version 1.5.1e   13 Dec 2015
+ *  Version 1.5.1f   13 Dec 2015
  *
  *  Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except
  *  in compliance with the License. You may obtain a copy of the License at:
@@ -275,8 +275,8 @@ def getState(myCapab, n, isTrig) {
     def myIsDev = isTrig ? "istDev$n" : "isDev$n"
     def myRelDev = isTrig ? "reltDevice$n" : "relDevice$n"
 	def result = null
-    def phrase = state.isRule ? "state" : "becomes"
-    def swphrase = state.isRule ? "state" : "turns"
+    def phrase = (state.isRule || state.howMany > 1) ? "state" : "becomes"
+    def swphrase = (state.isRule || state.howMany > 1) ? "state" : "turns"
     def presoptions = (state.isRule || state.howMany > 1) ? ["present", "not present"] : ["arrives", "leaves"]
     def presdefault = (state.isRule || state.howMany > 1) ? "present" : "arrives"
     def lockphrase = (state.isRule || state.howMany > 1) ? "state" : "is"
@@ -309,7 +309,7 @@ def getState(myCapab, n, isTrig) {
 	else if(myCapab == "Mode") {
 		def myModes = []
 		location.modes.each {myModes << "$it"}
-        def modeVar = state.isRule ? "modes" : "modesX"
+        def modeVar = (state.isRule || state.howMany > 1) ? "modes" : "modesX"
 		result = input modeVar, "enum", title: "Select mode(s)", multiple: true, required: false, options: myModes.sort()
 	} else if(myCapab == "Time of day") {
 		def timeLabel = timeIntervalLabelX()
@@ -412,8 +412,8 @@ def conditionLabel() {
 
 def conditionLabelN(i, isTrig) {
 	def result = ""
-    def SHMphrase = state.isRule ? "is" : "becomes"
-    def phrase = state.isRule ? "of" : "becomes"
+    def SHMphrase = (state.isRule || state.howMany > 1) ? "is" : "becomes"
+    def phrase = (state.isRule || state.howMany > 1) ? "of" : "becomes"
     def thisCapab = settings.find {it.key == (isTrig ? "tCapab$i" : "rCapab$i")}
 	if(thisCapab.value == "Time of day") result = "Time between " + timeIntervalLabelX()
     else if(thisCapab.value == "Certain Time")  result = "When time is " + atTimeLabel()
