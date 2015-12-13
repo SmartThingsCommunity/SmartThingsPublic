@@ -3,7 +3,7 @@
  *
  *  Copyright 2015 Bruce Ravenel
  *
- *  Version 1.5.0   12 Dec 2015
+ *  Version 1.5.0a   12 Dec 2015
  *
  *  Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except
  *  in compliance with the License. You may obtain a copy of the License at:
@@ -953,7 +953,8 @@ def initialize() {
 	subscribe(disabled, "switch", disabledHandler)
 	if(disabled) state.disabled = disabled.currentSwitch == "on"
 	else state.disabled = false
-	if(state.isRule || !hasTrig) runRule(false)
+    if(state.isTrig || state.howmany == null) return
+	if(state.isRule || state.howMany > 1) runRule(false)
 }
 
 // Main rule evaluation code follows
