@@ -28,7 +28,8 @@
  * also got rgb slider working. Note it only controls brightness in energy or momentary mode, not night light mode.
  * this is by design (for some reason but not sure why they did it.. see above document).
  * so now everything appears to be working.
- */
+ * version 2.1 work around changes in the new firmware that was stopping it from turning off. 
+*/
 metadata {
 	definition (name: "LGK Aeon Dimming Metering Smart Switch 6 V2", namespace: "smartthings", author: "lg kahn") {
 		capability "Switch"
@@ -123,7 +124,7 @@ metadata {
 	    state "configure", label:'', action:"configuration.configure", icon:"st.secondary.configure"
 	}
 	main(["switch","power","energy","voltage","amperage"] )
-		details(["switch", "power", "energy", "deviceMode","amperage","voltage","refresh","reset","configure","levelSliderControl",
+		details(["switch", "power", "energy", "deviceMode","amperage","voltage","refresh","reset","configure",
     				"rgbSelector"])
   
 }
@@ -138,8 +139,8 @@ def parse(String description) {
     
 	if (description != "updated") {
 		def cmd = zwave.parse(description, [0x20: 1, 0x26: 3, 0x70: 1, 0x32:3])
-        //log.debug "got command = '$cmd'"
-        
+       // log.debug "got command = '$cmd'"
+      
 		if (cmd) {
 			result = zwaveEvent(cmd)
 	        //log.debug("'$description' parsed to $result")
@@ -152,7 +153,7 @@ def parse(String description) {
 
 def updated()
 {
-//log.debug "in updated"
+log.debug "in updated"
 state.currentColor = 0
 
     state.onOffDisabled = ("true" == disableOnOff)
@@ -163,23 +164,35 @@ state.currentColor = 0
 }
 
 def zwaveEvent(physicalgraph.zwave.commands.basicv1.BasicReport cmd) {
+//log.debug "in basic report"
 	dimmerEvents(cmd)
 }
 
 def zwaveEvent(physicalgraph.zwave.commands.basicv1.BasicSet cmd) {
+//log.debug "in basic set"
 	dimmerEvents(cmd)
 }
 
 def zwaveEvent(physicalgraph.zwave.commands.switchmultilevelv3.SwitchMultilevelReport cmd) {
+//log.debug "in multi level report"
 	dimmerEvents(cmd)
 }
 
 def dimmerEvents(physicalgraph.zwave.Command cmd) {
 
-//log.debug "in zwave cmd handler for night light"
-
+//log.debug "in zwave cmd handler dimmer events cmd.value = $cmd.value"
+// lgk ignore dimming events as not working anyway 0 = off 255 = on .
 	def result = []
-	def value = (cmd.value ? "on" : "off")
+	def value = ""
+    
+  if (cmd.value == 0 || cmd.value == 255)
+   {
+	if (cmd.value == 255) 
+      value = "on"
+     if (cmd.value == 0)
+      value = "off"
+
+  //  log.debug "value = $value level = $cmd.value"
 	def switchEvent = createEvent(name: "switch", value: value, descriptionText: "$device.displayName was turned $value")
 	result << switchEvent
 	if (cmd.value) {
@@ -190,13 +203,15 @@ def dimmerEvents(physicalgraph.zwave.Command cmd) {
 	}
 	return result
 }
+ return null
+}
 
 def zwaveEvent(physicalgraph.zwave.commands.meterv3.MeterReport cmd) {
 //log.debug "in meter report cmd = '$cmd'"
 
 	if (cmd.meterType == 1) {
 		if (cmd.scale == 0) {
-         log.debug " got kwh $cmd.scaledMeterValue"
+     //    log.debug " got kwh $cmd.scaledMeterValue"
 			return createEvent(name: "energy", value: cmd.scaledMeterValue, unit: "kWh")
 		} else if (cmd.scale == 1) {
 			return createEvent(name: "energy", value: cmd.scaledMeterValue, unit: "kVAh")
@@ -223,6 +238,7 @@ def zwaveEvent(physicalgraph.zwave.commands.configurationv1.ConfigurationReport 
 
 
 def on() {
+log.debug "in on"
 	delayBetween([
 		zwave.basicV1.basicSet(value: 0xFF).format(),
 		zwave.switchMultilevelV1.switchMultilevelGet().format(),
@@ -231,24 +247,28 @@ def on() {
 }
 
 def off() {
+log.debug "in off"
 	delayBetween([
 		zwave.basicV1.basicSet(value: 0x00).format(),
 		zwave.switchMultilevelV1.switchMultilevelGet().format(),
 	], 5000)
 }
 
-def poll() {
 
+def poll() {
+ //log.debug "in poll"
 	delayBetween([
+		zwave.switchBinaryV1.switchBinaryGet().format(),
 		zwave.meterV2.meterGet(scale: 0).format(),
         zwave.meterV2.meterGet(scale: 1).format(),
 		zwave.meterV2.meterGet(scale: 2).format(),
         zwave.meterV2.meterGet(scale: 4).format(),
-	], 1000)
+	],1000)
 }
 
+
 def refresh() {
- 
+ log.debug "in refresh"
 	delayBetween([
 		zwave.switchMultilevelV1.switchMultilevelGet().format(),
 		zwave.meterV2.meterGet(scale: 0).format(),
@@ -260,14 +280,12 @@ def refresh() {
 
 def setLevel(level) {
 log.debug "in setlevel level = $level"
-    
     mySetLevel(level) 
 }
 
 
 def nightLight() {
-log.debug "in set nightlight mode"
-   
+log.debug "in set nightlight mode" 
      sendEvent(name: "deviceMode", value: "nightLight", displayed: true)
       setDeviceMode(2)
 }
@@ -297,7 +315,6 @@ def configure()
 {
 
 log.debug "in configure initializing stuff"
-
 
     //Get the values from the preferences section
     def reportIntervalSecs = 60;
@@ -371,6 +388,7 @@ log.debug "in configure initializing stuff"
 	zwave.configurationV1.configurationSet(parameterNumber: 0x6F, size: 4, scaledConfigurationValue: 120).format(),	// change reporting time to two minutes from default 10 minutes
  	zwave.configurationV1.configurationSet(parameterNumber: 0x70, size: 4, scaledConfigurationValue: 120).format(),	//change reporting time to two minutes from default 10 minutes
  	zwave.configurationV1.configurationSet(parameterNumber: 0x71, size: 4, scaledConfigurationValue: 120).format(),	//change reporting time to two minutes from default 10 minutes
+	//zwave.configurationV1.configurationSet(parameterNumber: 0x54, size: 1, scaledConfigurationValue: 0).format(),	//dimmer o
 
  ])
     

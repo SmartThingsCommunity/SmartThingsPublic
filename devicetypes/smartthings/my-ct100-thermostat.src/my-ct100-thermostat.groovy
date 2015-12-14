@@ -287,6 +287,7 @@ def zwaveEvent(physicalgraph.zwave.commands.thermostatsetpointv2.ThermostatSetpo
 
 def zwaveEvent(physicalgraph.zwave.commands.sensormultilevelv2.SensorMultilevelReport cmd)
 {
+log.debug "in sensor multilevel v2 cmd type = $cmd.sensorType";
 	def map = [:]
 	if (cmd.sensorType == 1) {
 		map.name = "temperature"
