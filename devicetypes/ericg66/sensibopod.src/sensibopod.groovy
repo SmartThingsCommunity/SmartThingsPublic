@@ -595,10 +595,46 @@ void poll() {
 	log.debug "Executing 'poll' using parent SmartApp"
 	
 	def results = parent.pollChild(this)
-	parseEventData(results)
+	
+    def linkText = getLinkText(device)
+    //sendEvent(		name: "temperatureUnit",
+	//				value: "C",
+    //                unit: "C",
+	//				linkText: linkText,
+	//				descriptionText: "temperatureUnit = C",
+	//				handlerName: "temperatureUnit",
+	//				isStateChange: true,
+	//				displayed: false)
+                    
+    parseTempUnitEventData(results)
+    parseEventData(results)
 	//generateStatusEvent()
 }
 
+def parseTempUnitEventData(Map results)
+{
+    log.debug "parsing data $results"
+	if(results)
+	{
+		results.each { name, value ->
+        	if (name=="temperatureUnit") { 
+            	def linkText = getLinkText(device)
+                def isChange = true //isTemperatureStateChange(device, name, value.toString())
+                def isDisplayed = false
+                   
+				sendEvent(
+					name: name,
+					value: value,
+                    unit: value,
+					linkText: linkText,
+					descriptionText: "${name} = ${value}",
+					handlerName: "temperatureUnit",
+					isStateChange: isChange,
+					displayed: isDisplayed)
+            }
+        }
+ 	}
+}
 
 def parseEventData(Map results)
 {
@@ -612,21 +648,21 @@ def parseEventData(Map results)
             def isChange = false
             def isDisplayed = true
                              
-            if (name=="temperatureUnit") {            	                
-                isChange = true //isTemperatureStateChange(device, name, value.toString())
-                isDisplayed = false
+            //if (name=="temperatureUnit") {            	                
+            //    isChange = true //isTemperatureStateChange(device, name, value.toString())
+            //    isDisplayed = false
                    
-				sendEvent(
-					name: name,
-					value: value,
-                    unit: value,
-					linkText: linkText,
-					descriptionText: getThermostatDescriptionText(name, value, linkText),
-					handlerName: name,
-					isStateChange: isChange,
-					displayed: isDisplayed)
-            	}
-            else if (name=="thermostatMode") {
+			//	sendEvent(
+			//		name: name,
+			//		value: value,
+            //        unit: value,
+			//		linkText: linkText,
+			//		descriptionText: getThermostatDescriptionText(name, value, linkText),
+			//		handlerName: name,
+			//		isStateChange: isChange,
+			//		displayed: isDisplayed)
+            //	}
+            if (name=="thermostatMode") {
             	def mode = (value.toString() != "fan") ?: "auto"
                	
                 isChange = true //isTemperatureStateChange(device, name, value.toString())
