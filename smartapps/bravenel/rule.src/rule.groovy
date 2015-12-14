@@ -3,7 +3,7 @@
  *
  *  Copyright 2015 Bruce Ravenel
  *
- *  Version 1.5.1k   13 Dec 2015
+ *  Version 1.5.2   14 Dec 2015
  *
  *  Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except
  *  in compliance with the License. You may obtain a copy of the License at:
@@ -1081,6 +1081,7 @@ def getOperand(i, isR) {
 		def myRel = 	settings.find {it.key == (isR ? "RelrDev$i" : "ReltDev$i")}
 		def myAll = 	settings.find {it.key == (isR ? "AllrDev$i" : "AlltDev$i")}
 		def myRelDev =  settings.find {it.key == (isR ? "relDevice$i" : "reltDevice$i")}
+        if(!myDev) return false
 		if(myAll) {
 			if(myAll.value) result = checkCondAll(myDev.value, myState ? myState.value : null, capab, myRel ? myRel.value : 0, myRelDev ? myRelDev.value : null)
 			else result = checkCondAny(myDev.value, myState ? myState.value : null, capab, myRel ? myRel.value : 0, myRelDev ? myRelDev.value : null)
