@@ -30,6 +30,7 @@
  		fingerprint inClusters: "0000,0001,0003,0402,0500,0020,0B05,FC02", outClusters: "0019", manufacturer: "CentraLite", model: "3320"
 		fingerprint inClusters: "0000,0001,0003,0402,0500,0020,0B05,FC02", outClusters: "0019", manufacturer: "CentraLite", model: "3321"
         fingerprint inClusters: "0000,0001,0003,0402,0500,0020,0B05,FC02", outClusters: "0019", manufacturer: "CentraLite", model: "3321-S", deviceJoinName: "Multipurpose Sensor"
+        fingerprint inClusters: "0000,0001,0003,000F,0020,0402,0500,FC02", outClusters: "0019", manufacturer: "SmartThings", model: "multiv4", deviceJoinName: "Multipurpose Sensor"
 
 		attribute "status", "string"
  	}
@@ -374,29 +375,17 @@ def getTemperature(value) {
         
         /* sensitivity - default value (8) */
         
-        "zcl mfg-code 0x104E", "delay 200",
+        "zcl mfg-code ${manufacturerCode}", "delay 200",
         "zcl global write 0xFC02 0 0x20 {02}", "delay 200",
         "send 0x${device.deviceNetworkId} 1 1", "delay 400",
 
 		"st rattr 0x${device.deviceNetworkId} 1 0x402 0", "delay 200",
 		"st rattr 0x${device.deviceNetworkId} 1 1 0x20", "delay 200",
 
-        "zcl mfg-code 0x104E", "delay 200",
+        "zcl mfg-code ${manufacturerCode}", "delay 200",
         "zcl global read 0xFC02 0x0010",
-        "send 0x${device.deviceNetworkId} 1 1","delay 400",
-        
-        "zcl mfg-code 0x104E", "delay 200",
-        "zcl global read 0xFC02 0x0012",
-        "send 0x${device.deviceNetworkId} 1 1","delay 400",
-        
-        "zcl mfg-code 0x104E", "delay 200",
-        "zcl global read 0xFC02 0x0013",
-        "send 0x${device.deviceNetworkId} 1 1","delay 400",
-        
-        "zcl mfg-code 0x104E", "delay 200",
-        "zcl global read 0xFC02 0x0014",
-        "send 0x${device.deviceNetworkId} 1 1", "delay 400"
-		]
+        "send 0x${device.deviceNetworkId} 1 1","delay 400"
+	]
 
 		return refreshCmds + enrollResponse()
 	}
@@ -420,19 +409,19 @@ def getTemperature(value) {
 		"send 0x${device.deviceNetworkId} 1 ${endpointId}", "delay 500",
 
 		"zdo bind 0x${device.deviceNetworkId} ${endpointId} 1 0xFC02 {${device.zigbeeId}} {}", "delay 200",
-		"zcl mfg-code 0x104E", 
+		"zcl mfg-code ${manufacturerCode}",
 		"zcl global send-me-a-report 0xFC02 0x0010 0x18 10 3600 {01}",
 		"send 0x${device.deviceNetworkId} 1 ${endpointId}", "delay 500",
 
-		"zcl mfg-code 0x104E",
+		"zcl mfg-code ${manufacturerCode}",
 		"zcl global send-me-a-report 0xFC02 0x0012 0x29 1 3600 {01}",
 		"send 0x${device.deviceNetworkId} 1 ${endpointId}", "delay 500",
 
-		"zcl mfg-code 0x104E",
+		"zcl mfg-code ${manufacturerCode}",
 		"zcl global send-me-a-report 0xFC02 0x0013 0x29 1 3600 {01}",
 		"send 0x${device.deviceNetworkId} 1 ${endpointId}", "delay 500",
 
-		"zcl mfg-code 0x104E",
+		"zcl mfg-code ${manufacturerCode}",
 		"zcl global send-me-a-report 0xFC02 0x0014 0x29 1 3600 {01}",
 		"send 0x${device.deviceNetworkId} 1 ${endpointId}", "delay 500"
 
@@ -528,6 +517,14 @@ private Map getXyzResult(results, description) {
 		isStateChange: isStateChange,
 		displayed: false
 	]
+}
+
+private getManufacturerCode() {
+	if (device.getDataValue("manufacturer") == "SmartThings") {
+		return "0x110A"
+	} else {
+		return "0x104E"
+	}
 }
 
 private hexToInt(value) {
