@@ -3,7 +3,7 @@
  *
  *  Copyright 2015 Bruce Ravenel
  *
- *  Version 1.5.1i   13 Dec 2015
+ *  Version 1.5.1j   13 Dec 2015
  *
  *  Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except
  *  in compliance with the License. You may obtain a copy of the License at:
@@ -435,7 +435,7 @@ def conditionLabelN(i, isTrig) {
 		if(!thisDev) return result
 		def thisAll = settings.find {it.key == (isTrig ? "AlltDev$i" : "AllrDev$i")}
 		def myAny = thisAll ? "any " : ""
-		def myButton = settings.find {it.key == "ButtonrDev$i"}
+		def myButton = settings.find {it.key == (isTrig ? "ButtontDev$i" : "ButtonrDev$i")}
 		if     (thisCapab.value == "Temperature") 	result = "Temperature $phrase "
 		else if(thisCapab.value == "Humidity") 		result = "Humidity $phrase "
 		else if(thisCapab.value == "Illuminance")	result = "Illuminance $phrase "
