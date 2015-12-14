@@ -597,16 +597,16 @@ void poll() {
 	def results = parent.pollChild(this)
 	
     def linkText = getLinkText(device)
-    sendEvent(		name: "temperatureUnit",
-					value: "C",
-                    unit: "C",
-					linkText: linkText,
-					descriptionText: "temperatureUnit = C",
-					handlerName: "temperatureUnit",
-					isStateChange: true,
-					displayed: false)
+    //sendEvent(		name: "temperatureUnit",
+	//				value: "C",
+    //                unit: "C",
+	//				linkText: linkText,
+	//				descriptionText: "temperatureUnit = C",
+	//				handlerName: "temperatureUnit",
+	//				isStateChange: true,
+	//				displayed: false)
                     
-    //parseTempUnitEventData(results)
+    parseTempUnitEventData(results)
     parseEventData(results)
 	//generateStatusEvent()
 }
@@ -624,10 +624,10 @@ def parseTempUnitEventData(Map results)
                    
 				sendEvent(
 					name: name,
-					value: "C",
-                    unit: "C",
+					value: value,
+                    unit: value,
 					linkText: linkText,
-					descriptionText: "temperatureUnit = C",
+					descriptionText: "${name} = ${value}",
 					handlerName: "temperatureUnit",
 					isStateChange: isChange,
 					displayed: isDisplayed)
