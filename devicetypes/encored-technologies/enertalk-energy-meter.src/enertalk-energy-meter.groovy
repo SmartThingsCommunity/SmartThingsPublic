@@ -83,7 +83,7 @@ def getLinkedApp() {
                   	 var ua = navigator.userAgent.toLowerCase();
                     var isAndroid = ua.indexOf("android") > -1;
                     if(!isAndroid) {
-                    	document.getElementById(\'st-deep-link\').href=\'tms-appss://itunes.apple.com/app/id1024660780\'; 
+                    	document.getElementById(\'st-deep-link\').href=\'https://itunes.apple.com/kr/app/enertalk-for-home/id1024660780?mt=8\'; 
                     } else {
                     	document.getElementById(\'st-deep-link\').href=\'market://details?id=com.ionicframework.enertalkhome874425\'; 
 					}
