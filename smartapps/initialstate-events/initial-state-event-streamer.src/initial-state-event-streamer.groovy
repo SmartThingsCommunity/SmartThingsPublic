@@ -349,6 +349,9 @@ def eventHandler(name, value) {
 		// from growing unbounded.
 		atomicState.eventBuffer = []
 		tryShipEvents(eventBuffer)
+	} else {
+		// Make sure we persist the updated eventBuffer with the new event added back to atomicState
+		atomicState.eventBuffer = eventBuffer
 	}
 	log.debug "Event added to buffer: " + eventBuffer
 }
