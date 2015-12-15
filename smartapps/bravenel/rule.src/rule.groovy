@@ -3,7 +3,7 @@
  *
  *  Copyright 2015 Bruce Ravenel
  *
- *  Version 1.5.2   14 Dec 2015
+ *  Version 1.5.3   15 Dec 2015
  *
  *  Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except
  *  in compliance with the License. You may obtain a copy of the License at:
@@ -648,6 +648,10 @@ def selectActionsTrue() {
                 }
 				if(colorLevelTrue) addToActTrue("Level: $colorLevelTrue")
 			}            
+			input "garageOpenTrue", "capability.garageDoorControl", title: "Open these garage doors", multiple: true, required: false, submitOnChange: true
+			checkActTrue(garageOpenTrue, "Garage open: $garageOpenTrue")
+			input "garageCloseTrue", "capability.garageDoorControl", title: "Close these garage doors", multiple: true, required: false, submitOnChange: true
+			checkActTrue(garageCloseTrue, "Garage close: $garageCloseTrue")
 			input "lockTrue", "capability.lock", title: "Lock these locks", multiple: true, required: false, submitOnChange: true
 			checkActTrue(lockTrue, "Lock: $lockTrue")
 			input "unlockTrue", "capability.lock", title: "Unlock these locks", multiple: true, required: false, submitOnChange: true
@@ -772,6 +776,10 @@ def selectActionsFalse() {
                 }
 				if(colorLevelFalse) addToActFalse("Level: $colorLevelFalse")
 			}            
+			input "garageOpenFalse", "capability.garageDoorControl", title: "Open these garage doors", multiple: true, required: false, submitOnChange: true
+			checkActFalse(garageOpenFalse, "Garage open: $garageOpenFalse")
+			input "garageCloseFalse", "capability.garageDoorControl", title: "Close these garage doors", multiple: true, required: false, submitOnChange: true
+			checkActFalse(garageCloseFalse, "Garage close: $garageCloseFalse")
 			input "lockFalse", "capability.lock", title: "Lock these locks", multiple: true, required: false, submitOnChange: true
 			checkActFalse(lockFalse, "Lock: $lockFalse")
 			input "unlockFalse", "capability.lock", title: "Unlock these locks", multiple: true, required: false, submitOnChange: true
@@ -1229,6 +1237,8 @@ def runRule(delay) {
 				if(dimBTrue) 		dimBTrue.setLevel(dimLBTrue)
 				if(toggleDimmerTrue)	dimToggle(toggleDimmerTrue, dimTogTrue)
 				if(bulbsTrue)		setColor(true)
+                if(garageOpenTrue)	garageOpenTrue.open()
+                if(garageCloseTrue)	garageCloseTrue.close()
 				if(lockTrue) 		lockTrue.lock()
 				if(unlockTrue) 		unlockTrue.unlock()
 				if(fanAdjustTrue)	adjustFan(fanAdjustTrue)
@@ -1255,6 +1265,8 @@ def runRule(delay) {
 				if(dimBFalse) 		dimBFalse.setLevel(dimLBFalse)
 				if(toggleDimmerFalse)	dimToggle(toggleDimmerFalse, dimTogFalse)
 				if(bulbsFalse)		setColor(false)
+                if(garageOpenFalse)	garageOpenFalse.open()
+                if(garageCloseFalse)	garageCloseFalse.close()
 				if(lockFalse) 		lockFalse.lock()
 				if(unlockFalse) 	unlockFalse.unlock()
 				if(fanAdjustFalse)		adjustFan(fanAdjustFalse)
@@ -1293,6 +1305,8 @@ def doTrigger(delay) {
 		if(dimBTrue) 			dimBTrue.setLevel(dimLBTrue)
 		if(toggleDimmerTrue)		dimToggle(toggleDimmerTrue, dimTogTrue)
 		if(bulbsTrue)			setColor(true)
+        if(garageOpenTrue)		garageOpenTrue.open()
+        if(garageCloseTrue)		garageCloseTrue.close()
 		if(lockTrue) 			lockTrue.lock()
 		if(unlockTrue) 			unlockTrue.unlock()
 		if(fanAdjustTrue)		adjustFan(fanAdjustTrue)
