@@ -700,9 +700,10 @@ def pollChildren(PodUid)
 					
 					log.debug "updating dni $dni"
                     
-                    def stemp = stat.temperature.toInteger()
+                    def stemp = stat.temperature.toDouble()
                     if (TemperatureUnit() == "F") {
-                    	stemp = Math.round(cToF(stemp))
+                    	//stemp = Math.round(cToF(stemp))
+                        stemp = cToF(stemp).round(1)
                     }
 
 					def data = [
