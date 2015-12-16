@@ -3,7 +3,7 @@
  *
  *  Copyright 2015 Bruce Ravenel and Mike Maxwell
  *
- *  Version 1.4   15 Dec 2015
+ *  Version 1.5   16 Dec 2015
  *
  *  Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except
  *  in compliance with the License. You may obtain a copy of the License at:
@@ -35,6 +35,7 @@ preferences {
 
 def mainPage() {
     dynamicPage(name: "mainPage", title: "Rules and Triggers", install: true, uninstall: false, submitOnChange: true) {
+    	if(!state.setup) initialize(true)
         section {
             app(name: "childRules", appName: "Rule", namespace: "bravenel", title: "Create New Rule...", multiple: true)
         }
@@ -67,10 +68,9 @@ def initialize(first) {
     childApps.each {child ->
 		if(child.name == "Rule") {
 			log.info "Installed Rules and Triggers: ${child.label}"
-            if(!state.updated) {
+            if(first) {
 				state.ruleState[child.label] = null
 				state.ruleSubscribers[child.label] = [:]
-                state.updated = true
             }
 		} 
     }
@@ -78,11 +78,6 @@ def initialize(first) {
 }
 
 def ruleList(appLabel) {
-	if(!state.updated) {
-    	initialize(false)
-        state.updated = true
-    	return
-    }
 	def result = []
     childApps.each { child ->
     	if(child.name == "Rule" && child.label != appLabel && state.ruleState[child.label] != null) result << child.label
@@ -92,11 +87,6 @@ def ruleList(appLabel) {
 
 def subscribeRule(appLabel, ruleName, ruleTruth, childMethod) {
 //	log.debug "subscribe: $appLabel, $ruleName, $ruleTruth, $childMethod"
-	if(!state.updated) {
-    	initialize(false)
-        state.updated = true
-    	return
-    }
     ruleName.each {name ->
     	state.ruleSubscribers[name].each {if(it == appLabel) return}
         if(state.ruleSubscribers[name] == null) state.ruleSubscribers[name] = ["$appLabel":ruleTruth]
@@ -106,12 +96,6 @@ def subscribeRule(appLabel, ruleName, ruleTruth, childMethod) {
 
 def setRuleTruth(appLabel, ruleTruth) {
 //	log.debug "setRuleTruth1: $appLabel, $ruleTruth"
-	if(!state.setup) initialize(true)
-	if(!state.updated) {
-    	initialize(false)
-        state.updated = true
-    	return
-    }
     state.ruleState[appLabel] = ruleTruth
     def thisList = state.ruleSubscribers[appLabel]
     thisList.each {
@@ -125,11 +109,6 @@ def setRuleTruth(appLabel, ruleTruth) {
 
 def currentRule(appLabel) {
 //	log.debug "currentRule: $appLabel, ${state.ruleState[appLabel]}"
-	if(!state.updated) {
-    	initialize(false)
-        state.updated = true
-    	return
-    }
 	def result = state.ruleState[appLabel]
 }
 
@@ -139,11 +118,6 @@ def childUninstalled() {
 
 def removeChild(appLabel) {
 //	log.debug "removeChild: $appLabel"
-	if(!state.updated) {
-    	initialize(false)
-        state.updated = true
-    	return
-    }
     unSubscribeRule(appLabel)
     if(state.ruleState[appLabel] != null) state.ruleState.remove(appLabel)
     if(state.ruleSubscribers[appLabel] != null) state.ruleSubscribers.remove(appLabel)
@@ -162,16 +136,9 @@ def unSubscribeRule(appLabel) {
 
 def runRule(rule, appLabel) {
 //	log.debug "runRule: $rule, $appLabel"
-	if(!state.updated) {
-    	initialize(false)
-        state.updated = true
-    	return
-    }
     childApps.each { child ->
     	rule.each {
     		if(child.label == it) child.ruleEvaluator(appLabel)
         }
     }
 }
-
-
