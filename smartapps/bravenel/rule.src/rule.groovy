@@ -3,7 +3,7 @@
  *
  *  Copyright 2015 Bruce Ravenel
  *
- *  Version 1.5.4   16 Dec 2015
+ *  Version 1.5.4a   16 Dec 2015
  *
  *  Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except
  *  in compliance with the License. You may obtain a copy of the License at:
@@ -198,6 +198,10 @@ def getDevs(myCapab, dev, multi) {
 			thisName = "Presence sensors"
 			thisCapab = "presenceSensor"
 			break
+		case "Garage door":
+			thisName = "Garage doors"
+			thisCapab = "garageDoorControl"
+			break
 		case "Lock":
 			thisName = "Locks"
 			thisCapab = "lock"
@@ -266,9 +270,9 @@ def getRelational(myDev) {
 def getCapab(myCapab, isTrig) {  
 	def myOptions = null
 	if(state.isRule || !isTrig) myOptions = ["Switch", "Motion", "Acceleration", "Contact", "Presence", "Lock", "Temperature", "Humidity", "Illuminance", "Time of day", "Rule truth",
-    	"Days of week", "Mode", "Dimmer level", "Energy meter", "Power meter", "Water sensor", "Battery", "Carbon monoxide detector", "Smoke detector", "Smart Home Monitor"]
+    	"Days of week", "Mode", "Dimmer level", "Energy meter", "Power meter", "Water sensor", "Battery", "Carbon monoxide detector", "Smoke detector", "Smart Home Monitor", "Garage door"]
     if(state.isTrig || isTrig) myOptions = ["Switch", "Physical Switch", "Motion", "Acceleration", "Contact", "Presence", "Lock", "Temperature", "Humidity", "Illuminance", "Certain Time", "Rule truth",
-    	"Mode", "Energy meter", "Power meter", "Water sensor", "Battery", "Routine", "Button", "Dimmer level", "Carbon monoxide detector", "Smoke detector", "Smart Home Monitor"]
+    	"Mode", "Energy meter", "Power meter", "Water sensor", "Battery", "Routine", "Button", "Dimmer level", "Carbon monoxide detector", "Smoke detector", "Smart Home Monitor", "Garage door"]
 	def result = input myCapab, "enum", title: "Select capability", required: false, options: myOptions.sort(), submitOnChange: true
 }
 
@@ -287,14 +291,15 @@ def getState(myCapab, n, isTrig) {
 	else if(myCapab == "Physical Switch")		result = input myState, "enum", title: "Switch turns ", options: ["on", "off"], defaultValue: "on"
 	else if(myCapab == "Motion") 		result = input myState, "enum", title: "Motion $phrase", options: ["active", "inactive"], defaultValue: "active"
 	else if(myCapab == "Acceleration")	result = input myState, "enum", title: "Acceleration $phrase", options: ["active", "inactive"], defaultValue: "active"
-	else if(myCapab == "Contact") 		result = input myState, "enum", title: "Contact state", options: ["open", "closed"], defaultValue: "open"
-	else if(myCapab == "Presence") 		result = input myState, "enum", title: "Presence state", options: presoptions, defaultValue: presdefault
+	else if(myCapab == "Contact") 		result = input myState, "enum", title: "Contact $phrase", options: ["open", "closed"], defaultValue: "open"
+	else if(myCapab == "Presence") 		result = input myState, "enum", title: "Presence $phrase", options: presoptions, defaultValue: presdefault
+	else if(myCapab == "Garage door")		result = input myState, "enum", title: "Garage door $phrase", options: ["closed", "open"], defaultValue: "open"
 	else if(myCapab == "Lock")		result = input myState, "enum", title: "Lock $lockphrase", options: ["locked", "unlocked"], defaultValue: "unlocked"
 	else if(myCapab == "Carbon monoxide detector")		result = input myState, "enum", title: "CO $phrase ", options: ["clear", ,"detected", "tested"], defaultValue: "detected"
 	else if(myCapab == "Smoke detector")		result = input myState, "enum", title: "Smoke $phrase ", options: ["clear", ,"detected", "tested"], defaultValue: "detected"
 	else if(myCapab == "Water sensor")	result = input myState, "enum", title: "Water $phrase", options: ["dry", "wet"], defaultValue: "wet"
 	else if(myCapab == "Button")			result = input myState, "enum", title: "Button pushed or held ", options: ["pushed", "held"], defaultValue: "pushed"
-    else if(myCapab == "Smart Home Monitor") result = input myState, "enum", title: "SHM state", options: ["away" : "Arm (away)", "stay" : "Arm (stay)", "off" : "Disarm"]
+    else if(myCapab == "Smart Home Monitor") result = input myState, "enum", title: "SHM $phrase", options: ["away" : "Arm (away)", "stay" : "Arm (stay)", "off" : "Disarm"]
     else if(myCapab == "Rule truth") 	result = input myState, "enum", title: "Rule truth $phrase ", options: ["true", "false"], defaultValue: "true"
 	else if(myCapab in ["Temperature", "Humidity", "Illuminance", "Energy meter", "Power meter", "Battery", "Dimmer level"]) {
     	input myIsDev, "bool", title: "Relative to another device?", multiple: false, required: false, submitOnChange: true, defaultValue: false
@@ -974,6 +979,9 @@ def initialize() {
 			case "Water sensor":
 				subscribe(myDev.value, "water" + ((state.isTrig || hasTrig) ? ".$myState" : ""), allHandler)
 				break
+			case "Garage door":
+				subscribe(myDev.value, "door" + ((state.isTrig || hasTrig) ? ".$myState" : ""), allHandler)
+				break
 			case "Physical Switch":
 				subscribe(myDev.value, "switch.$myState", physicalHandler)
 				break
@@ -1029,6 +1037,7 @@ def checkCondAny(dev, stateX, cap, rel, relDev) {
 	else if(cap == "Smoke detector") 	result = stateX in dev.currentSmoke
 	else if(cap == "Carbon monoxide detector") 	result = stateX in dev.currentCarbonMonoxide
 	else if(cap == "Lock") 		result = stateX in dev.currentLock
+    else if(cap == "Garage door")	result = stateX in dev.currentDoor
 //	log.debug "CheckAny $cap $result"
 	return result
 }
@@ -1072,6 +1081,7 @@ def checkCondAll(dev, stateX, cap, rel, relDev) {
 	else if(cap == "Smoke detector") 	result = !(flip[stateX] in dev.currentSmoke)
 	else if(cap == "Carbon monoxide detector") 	result = !(flip[stateX] in dev.currentCarbonMonoxide)
 	else if(cap == "Lock") 			result = !(flip[stateX] in dev.currentLock)
+    else if(cap == "Garage door")	result = !(flip[stateX] in dev.currentDoor)
 //	log.debug "CheckAll $cap $result"
 	return result
 }
