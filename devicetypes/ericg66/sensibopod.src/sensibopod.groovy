@@ -31,12 +31,14 @@ metadata {
         capability "Refresh"
         capability "Switch"
         capability "Thermostat"
+        //capability "Battery"
         command "switchFanLevel"
         command "switchMode"
         command "raiseCoolSetpoint"
         command "lowerCoolSetpoint"
         command "raiseHeatSetpoint"
         command "lowerHeatSetpoint"
+        command "battvoltage"
 	}
 
 	simulator {
@@ -120,7 +122,20 @@ metadata {
 				]
 			)
 		}
-        
+           
+        valueTile("voltage", "device.battvoltage", width: 2, height: 2) {
+			state("battvoltage", label:'${currentValue}',
+				backgroundColors:[
+					[value: 2700, color: "#CC0000"],
+					[value: 2800, color: "#FFFF00"],
+					[value: 2900, color: "#00FF00"]
+                    //[value: 20, color: "#CC0000"],
+					//[value: 40, color: "#FFFF00"],
+					//[value: 60, color: "#00FF00"]
+                ]
+           )
+        }
+            
         standardTile("on", "device.on", width: 2, height: 2, canChangeIcon: true) {
 			state "on", label:'${name}', action:"switch.off", icon:"st.switches.switch.on", backgroundColor:"#79b821"
 			state "off", label:'${name}', action:"switch.on", icon:"st.switches.switch.off", backgroundColor:"#ffffff"
@@ -139,11 +154,11 @@ metadata {
             state "fan", action:"switchMode", backgroundColor:"#e8e3d8", icon:"st.thermostat.fan-on", nextState:"cool"         
         }
         
-        standardTile("upCoolButtonControl", "device.targetTemperature", inactiveLabel: false, decoration: "flat", width: 2, height: 2) {
+        standardTile("upCoolButtonControl", "device.targetTemperature", inactiveLabel: false, decoration: "flat", width: 1, height: 2) {
 			state "setpoint", action:"raiseCoolSetpoint", icon:"st.thermostat.thermostat-up",label :"Up"
 		}
         
-        standardTile("downCoolButtonControl", "device.targetTemperature", inactiveLabel: false, decoration: "flat", width: 2, height: 2) {
+        standardTile("downCoolButtonControl", "device.targetTemperature", inactiveLabel: false, decoration: "flat", width: 1, height: 2) {
 			state "setpoint", action:"lowerCoolSetpoint", icon:"st.thermostat.thermostat-down", label :"Down"
 		}
         
@@ -152,7 +167,7 @@ metadata {
 		}
 		       
 		main (["on"])
-		details (["richcontact","on","fanLevel","mode","upCoolButtonControl","downCoolButtonControl","refresh"])    
+		details (["richcontact","on","fanLevel","mode","upCoolButtonControl","downCoolButtonControl","voltage","refresh"])    
 	}
 }
 
@@ -597,14 +612,6 @@ void poll() {
 	def results = parent.pollChild(this)
 	
     def linkText = getLinkText(device)
-    //sendEvent(		name: "temperatureUnit",
-	//				value: "C",
-    //                unit: "C",
-	//				linkText: linkText,
-	//				descriptionText: "temperatureUnit = C",
-	//				handlerName: "temperatureUnit",
-	//				isStateChange: true,
-	//				displayed: false)
                     
     parseTempUnitEventData(results)
     parseEventData(results)
@@ -619,7 +626,7 @@ def parseTempUnitEventData(Map results)
 		results.each { name, value ->
         	if (name=="temperatureUnit") { 
             	def linkText = getLinkText(device)
-                def isChange = true //isTemperatureStateChange(device, name, value.toString())
+                def isChange = true
                 def isDisplayed = false
                    
 				sendEvent(
@@ -648,21 +655,35 @@ def parseEventData(Map results)
             def isChange = false
             def isDisplayed = true
                              
-            //if (name=="temperatureUnit") {            	                
+            if (name=="battvoltage") {            	                
+                 isChange = true //isTemperatureStateChange(device, name, value.toString())
+                isDisplayed = true
+                  
+				sendEvent(
+					name: name,
+					value: value,
+                    unit: "mA",
+					linkText: linkText,
+					descriptionText: getThermostatDescriptionText(name, value, linkText),
+					handlerName: name,
+					isStateChange: isChange,
+					displayed: isDisplayed)
+            	}
+            //if (name== "battery") {            	                
             //    isChange = true //isTemperatureStateChange(device, name, value.toString())
             //    isDisplayed = false
-                   
+                  
 			//	sendEvent(
 			//		name: name,
 			//		value: value,
-            //        unit: value,
+                    //unit: "V",
 			//		linkText: linkText,
 			//		descriptionText: getThermostatDescriptionText(name, value, linkText),
 			//		handlerName: name,
 			//		isStateChange: isChange,
 			//		displayed: isDisplayed)
             //	}
-            if (name=="thermostatMode") {
+            else if (name=="thermostatMode") {
             	def mode = (value.toString() != "fan") ?: "auto"
                	
                 isChange = true //isTemperatureStateChange(device, name, value.toString())
@@ -790,6 +811,10 @@ private getThermostatDescriptionText(name, value, linkText)
     	def str = (value == "Failed") ? "failed" : "success"
         return "Last setACState was ${str}"
     }
+    else if (name == "battvoltage" || name== "battery")
+    {
+    	return "Battery voltage was ${value}"
+    }
     else
     {
         return "${name} = ${value}"
@@ -858,6 +883,16 @@ def parse(String description) {
         name = "Error"
         value = device.currentValue("Error")
     }
+    else if (description?.startsWith("battvoltage")) {
+    	log.debug "battvoltage"
+        name = "battvoltage"
+		value = device.currentValue("battvoltage")
+    }
+    else if (description?.startsWith("battery")) {
+    	log.debug "battery"
+        name = "battery"
+		value = device.currentValue("battery")
+    }
 	
     def result = createEvent(name: name, value: value)
 	log.debug "Parse returned ${result?.descriptionText}"
@@ -873,16 +908,7 @@ def generateStatusEvent() {
     def mode = device.currentValue("mode")
     def on = device.currentValue("on")
 	def error = device.currentValue("Error")
-    
-    //log.debug "Generate Status Event for Mode = ${mode}"
-    //log.debug "Temperature = ${temperature}"
-    //log.debug "Humidity = ${humidity}"
-    //log.debug "targetTemperature = ${targetTemperature}"
-    //log.debug "fanLevel = ${fanLevel}"
-    //log.debug "mode = ${mode}"
-	//log.debug "switch = ${on}"
-    //log.debug "Error = ${error}"                     
-    
+                    
     def statusTextmsg = ""
     def sUnit = device.currentValue("temperatureUnit")
 
