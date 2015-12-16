@@ -40,7 +40,7 @@ def mainPage() {
             app(name: "childRules", appName: "Rule", namespace: "bravenel", title: "Create New Rule...", multiple: true)
         }
         section {
-        	href "removePage", title: "Remove Rule Machine and all Rules"
+        	href "removePage", description: "Remove Rule Machine", title: ""
         }
     }
 }
