@@ -679,7 +679,7 @@ def pollChildren(PodUid)
     	uri: "${getServerUrl()}",
     	path: "/api/v2/pods/${thermostatIdsString}/measurements",
     	requestContentType: "application/json",
-    	query: [apiKey:"${getapikey()}", type:"json"]]
+    	query: [apiKey:"${getapikey()}", type:"json", fields:"batteryVoltage,temperature,humidity,time"]]
 
 	debugEvent ("Before HTTPGET to Sensibo.")
 
@@ -717,6 +717,8 @@ def pollChildren(PodUid)
                         coolingSetpoint: setTemp.targetTemperature,
                         heatingSetpoint: setTemp.targetTemperature,
                         temperatureUnit : TemperatureUnit(),
+                        battvoltage : stat.batteryVoltage,
+                        //battery : stat.batteryVoltage,
                         Error: setTemp.Error
 					]
                     
