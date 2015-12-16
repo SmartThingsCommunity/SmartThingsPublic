@@ -3,7 +3,7 @@
  *
  *  Copyright 2015 Bruce Ravenel
  *
- *  Version 1.5.4a   16 Dec 2015
+ *  Version 1.5.4b   16 Dec 2015
  *
  *  Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except
  *  in compliance with the License. You may obtain a copy of the License at:
@@ -419,8 +419,8 @@ def conditionLabel() {
 
 def conditionLabelN(i, isTrig) {
 	def result = ""
-    def SHMphrase = (state.isRule || state.howMany > 1) ? "is" : "becomes"
-    def phrase = (state.isRule || state.howMany > 1) ? "of" : "becomes"
+    def SHMphrase = isTrig ? "becomes" : ((state.isRule || state.howMany > 1) ? "is" : "becomes")
+    def phrase = isTrig ? "becomes" : ((state.isRule || state.howMany > 1) ? "of" : "becomes")
     def thisCapab = settings.find {it.key == (isTrig ? "tCapab$i" : "rCapab$i")}
 	if(thisCapab.value == "Time of day") result = "Time between " + timeIntervalLabelX()
     else if(thisCapab.value == "Certain Time")  result = "When time is " + atTimeLabel()
