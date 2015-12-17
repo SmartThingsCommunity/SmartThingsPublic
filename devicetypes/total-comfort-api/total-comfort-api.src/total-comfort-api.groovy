@@ -689,7 +689,7 @@ log.debug "https://www.mytotalconnectcomfort.com/portal/Device/CheckDataSession/
         log.debug "hasOutdoorTemp =  $hasOutdoorTemp"
       
        */
-        log.debug "displayUnits = $displayUnits"
+      //  log.debug "displayUnits = $displayUnits"
         state.DisplayUnits = $displayUnits
         
         //Operating State Section 
@@ -808,8 +808,8 @@ def getHumidifierStatus()
         log.debug "GetHumidity Request was successful, $response.status"
         log.debug "response = $response.data"
        
-        log.debug "ld = $response.data.latestData"
-         log.debug "humdata = $response.data.latestData.humData"
+      //  log.debug "ld = $response.data.latestData"
+       //  log.debug "humdata = $response.data.latestData.humData"
 
         log.trace("lowerLimit: ${response.data.latestData.humData.lowerLimit}")        
         log.trace("upperLimit: ${response.data.humData.upperLimit}")        
