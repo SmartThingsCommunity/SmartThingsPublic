@@ -8,7 +8,7 @@ definition(
     name: "Vinli Home Connect",
     namespace: "com.vinli.smartthings",
     author: "Daniel",
-    description: "Allows Vinli users to connect their car to Smart Things",
+    description: "Allows Vinli users to connect their car to SmartThings",
     category: "SmartThings Labs",
     iconUrl: "https://s3.amazonaws.com/smartapp-icons/Convenience/Cat-Convenience.png",
     iconX2Url: "https://s3.amazonaws.com/smartapp-icons/Convenience/Cat-Convenience@2x.png",
@@ -180,17 +180,10 @@ void updateSwitches() {
 
  def installed() {
 	log.debug "Installed with settings: ${settings}"
-
-	initialize()
 }
 
 def updated() {
 	log.debug "Updated with settings: ${settings}"
 
 	unsubscribe()
-	initialize()
-}
-
-def initialize() {
-	// TODO: subscribe to attributes, devices, locations, etc.s
 }
