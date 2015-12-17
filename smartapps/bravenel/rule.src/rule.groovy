@@ -604,9 +604,10 @@ def selectActionsTrue() {
 			input "delayedOffTrue", "capability.switch", title: "Turn on/off these switches after a delay (default is OFF)", multiple: true, required: false, submitOnChange: true
 			if(delayedOffTrue) {
 				input "delayOnOffTrue", "bool", title: "Turn ON after the delay?", multiple: false, required: false, defaultValue: false, submitOnChange: true
-				input "delayMinutesTrue", "number", title: "Minutes of delay", required: true, range: "1..*", submitOnChange: true
-				if(delayMinutesTrue) {
-					def delayStrTrue = "Delayed " + (delayOnOffTrue ? "On:" : "Off:") + " $delayedOffTrue: $delayMinutesTrue minute"
+                if(!delayMillisTrue) input "delayMinutesTrue", "number", title: "Minutes of delay", required: false, range: "1..*", submitOnChange: true
+                if(!delayMinutesTrue) input "delayMillisTrue", "number", title: "Milliseconds of delay", required: false, range: "1..*", submitOnChange: true
+				if(delayMinutesTrue || delayMillisTrue) {
+					def delayStrTrue = "Delayed " + (delayOnOffTrue ? "On:" : "Off:") + " $delayedOffTrue: " + (delayMillisTrue ? "$delayMillisTrue milliseconds" : "$delayMinutesTrue minute")
 					if(delayMinutesTrue > 1) delayStrTrue = delayStrTrue + "s"
 					setActTrue(delayStrTrue)
 				}
@@ -732,9 +733,10 @@ def selectActionsFalse() {
 			input "delayedOffFalse", "capability.switch", title: "Turn on/off these switches after a delay (default is OFF)", multiple: true, required: false, submitOnChange: true
 			if(delayedOffFalse) {
 				input "delayOnOffFalse", "bool", title: "Turn ON after the delay?", multiple: false, required: false, defaultValue: false, submitOnChange: true
-				input "delayMinutesFalse", "number", title: "Minutes of delay", required: true, range: "1..*", submitOnChange: true
-				if(delayMinutesFalse) {
-					def delayStrFalse = "Delayed " + (delayOnOffFalse ? "On:" : "Off:") + " $delayedOffFalse: $delayMinutesFalse minute"
+				if(!delayMillisFalse) input "delayMinutesFalse", "number", title: "Minutes of delay", required: false, range: "1..*", submitOnChange: true
+                if(!delayMinutesFalse) input "delayMillisFalse", "number", title: "Milliseconds of delay", required: false, range: "1..*", submitOnChange: true
+				if(delayMinutesFalse || delayMillisFalse) {
+					def delayStrFalse = "Delayed " + (delayOnOffFalse ? "On:" : "Off:") + " $delayedOffFalse: " + (delayMillisFalse ? "$delayMillisFalse milliseconds" : "$delayMinutesFalse minute")
 					if(delayMinutesFalse > 1) delayStrFalse = delayStrFalse + "s"
 					setActFalse(delayStrFalse)
 				}
@@ -1241,7 +1243,8 @@ def runRule(delay) {
 				if(onSwitchTrue) 	onSwitchTrue.on()
 				if(offSwitchTrue) 	offSwitchTrue.off()
 				if(toggleSwitchTrue)	toggle(toggleSwitchTrue)
-				if(delayedOffTrue)	runIn(delayMinutesTrue * 60, delayOffTrue)
+				if(delayedOffTrue)	{   if(delayMinutesTrue) runIn(delayMinutesTrue * 60, delayOffTrue)
+                						if(delayMillisTrue) {if(delayOnOffTrue) delayedOffTrue.on([delay: delayMillisTrue]) else delayedOffTrue.off([delay: delayMillisTrue])}   }
 				if(pendedOffTrue)	runIn(pendMinutesTrue * 60, pendingOffTrue)
 				if(pendedOffFalse)	unschedule(pendingOffFalse)
 				if(dimATrue) 		dimATrue.setLevel(dimLATrue)
@@ -1269,7 +1272,8 @@ def runRule(delay) {
 				if(onSwitchFalse) 	onSwitchFalse.on()
 				if(offSwitchFalse) 	offSwitchFalse.off()
 				if(toggleSwitchFalse)	toggle(toggleSwitchFalse)
-				if(delayedOffFalse)	runIn(delayMinutesFalse * 60, delayOffFalse)
+				if(delayedOffFalse)	{   if(delayMinutesFalse) runIn(delayMinutesFalse * 60, delayOffFalse)
+                						if(delayMillisFalse) {if(delayOnOffFalse) delayedOffFalse.on([delay: delayMillisFalse]) else delayedOffFalse.off([delay: delayMillisFalse])}   }
 				if(pendedOffFalse)	runIn(pendMinutesFalse * 60, pendingOffFalse)
 				if(pendedOffTrue)	unschedule(pendingOffTrue)
 				if(dimAFalse) 		dimAFalse.setLevel(dimLAFalse)
@@ -1296,6 +1300,7 @@ def runRule(delay) {
 			}
 			state.success = success
 			log.info (success ? "$app.label is True" : "$app.label is False")
+//            sendNotificationEvent(success ? "$app.label is True" : "$app.label is False")
 		}
 	}
 }
@@ -1311,7 +1316,8 @@ def doTrigger(delay) {
         if(pollSwitchTrue)		pollSwitchTrue.poll()
 		if(offSwitchTrue) 		offSwitchTrue.off()
 		if(toggleSwitchTrue)		toggle(toggleSwitchTrue)
-		if(delayedOffTrue)		runIn(delayMinutesTrue * 60, delayOffTrue)
+		if(delayedOffTrue)	{   if(delayMinutesTrue) runIn(delayMinutesTrue * 60, delayOffTrue)
+                				if(delayMillisTrue) {if(delayOnOffTrue) delayedOffTrue.on([delay: delayMillisTrue]) else delayedOffTrue.off([delay: delayMillisTrue])}   }
 		if(dimATrue) 			dimATrue.setLevel(dimLATrue)
 		if(dimBTrue) 			dimBTrue.setLevel(dimLBTrue)
 		if(toggleDimmerTrue)		dimToggle(toggleDimmerTrue, dimTogTrue)
@@ -1334,6 +1340,8 @@ def doTrigger(delay) {
 		if(pushTrue)			sendPush(msgTrue ?: "Rule $app.label True")
 		if(phoneTrue)			sendSms(phoneTrue, msgTrue ?: "Rule $app.label True")
 	}
+    log.info ("$app.label Ran")
+//    sendNotificationEvent("$app.label Ran")
 }
 
 def getButton(dev, evt, i) {
