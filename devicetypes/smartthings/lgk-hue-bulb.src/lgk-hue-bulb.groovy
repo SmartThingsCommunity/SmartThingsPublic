@@ -61,11 +61,11 @@ controlTile("levelSliderControl", "device.level", "slider", height: 1, width: 6,
 
 // parse events into attributes
 def parse(description) {
-	log.debug "parse() - $description"
+	//log.debug "parse() - $description"
 	def results = []
 	def map = description
 	if (description instanceof String)  {
-		log.debug "Hue Bulb stringToMap - ${map}"
+		//log.debug "Hue Bulb stringToMap - ${map}"
 		map = stringToMap(description)
 	}
 	if (map?.name && map?.value) {
