@@ -3,7 +3,7 @@
  *
  *  Copyright 2015 Bruce Ravenel
  *
- *  Version 1.5.4b   16 Dec 2015
+ *  Version 1.5.5   17 Dec 2015
  *
  *  Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except
  *  in compliance with the License. You may obtain a copy of the License at:
@@ -333,7 +333,7 @@ def getState(myCapab, n, isTrig) {
 def certainTime() {
 	dynamicPage(name: "certainTime", title: "Only during a certain time", uninstall: false) {
 		section() {
-			input "startingX", "enum", title: "Starting at", options: ["A specific time", "Sunrise", "Sunset"], defaultValue: "A specific time", submitOnChange: true
+			input "startingX", "enum", title: "Starting at", options: ["A specific time", "Sunrise", "Sunset"], defaultValue: "A specific time", submitOnChange: true, required: false
 			if(startingX in [null, "A specific time"]) input "starting", "time", title: "Start time", required: false
 			else {
 				if(startingX == "Sunrise") input "startSunriseOffset", "number", range: "*..*", title: "Offset in minutes (+/-)", required: false
@@ -341,7 +341,7 @@ def certainTime() {
 			}
 		}
 		section() {
-			input "endingX", "enum", title: "Ending at", options: ["A specific time", "Sunrise", "Sunset"], defaultValue: "A specific time", submitOnChange: true
+			input "endingX", "enum", title: "Ending at", options: ["A specific time", "Sunrise", "Sunset"], defaultValue: "A specific time", submitOnChange: true, required: false
 			if(endingX in [null, "A specific time"]) input "ending", "time", title: "End time", required: false
 			else {
 				if(endingX == "Sunrise") input "endSunriseOffset", "number", range: "*..*", title: "Offset in minutes (+/-)", required: false
@@ -1398,8 +1398,8 @@ def allHandler(evt) {
     def doit = true
     if(state.isTrig) {
 		if(evt.name in ["temperature", "humidity", "power", "energy", "battery", "illuminance", "mode", "button", "routineExecuted"]) doit = testEvt(evt)
-		if (doit) doTrigger(false)
-    } else if(state.isRule) runRule(false)
+		if (doit) doTrigger(false) }
+    else if(state.isRule) runRule(false)
     else {
     	if(hasTrig) if(evt.name in ["temperature", "humidity", "power", "energy", "battery", "illuminance", "mode", "button", "routineExecuted"]) doit = testEvt(evt)
         if(hasCond) {if(doit) runRule(hasTrig)}
