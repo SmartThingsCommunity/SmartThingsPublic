@@ -100,12 +100,14 @@ def parse(String description) {
 
 
 def zwaveEvent(physicalgraph.zwave.commands.meterv1.MeterReport cmd) {
-log.debug "in meter report cmd = $cmd "
+//log.debug "in meter report cmd = $cmd "
 	if (cmd.scale == 0) {
+    	log.debug "got energy/kWh = $cmd.scaledMeterValue"
 		createEvent(name: "energy", value: cmd.scaledMeterValue, unit: "kWh")
 	} else if (cmd.scale == 1) {
 		createEvent(name: "energy", value: cmd.scaledMeterValue, unit: "kVAh")
 	} else if (cmd.scale == 2) {
+    	log.debug "got power/W = $cmd.scaledMeterValue"
 		createEvent(name: "power", value: Math.round(cmd.scaledMeterValue), unit: "W")
 	}
 }
