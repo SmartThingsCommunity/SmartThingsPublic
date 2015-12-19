@@ -21,16 +21,16 @@ metadata {
 		capability "Thermostat"
 		capability "Polling"
 		capability "Sensor"
-        capability "Refresh"
+        	capability "Refresh"
 
-        command "generateEvent"
-        command "raiseSetpoint"
-        command "lowerSetpoint"
-        command "resumeProgram"
-        command "switchMode"
+        	command "generateEvent"
+        	command "raiseSetpoint"
+        	command "lowerSetpoint"
+        	command "resumeProgram"
+        	command "switchMode"
 
-        attribute "thermostatSetpoint","number"
-        attribute "thermostatStatus","string"
+        	attribute "thermostatSetpoint","number"
+        	attribute "thermostatStatus","string"
 	}
 
 	simulator { }
@@ -38,15 +38,15 @@ metadata {
     	tiles {
 		valueTile("temperature", "device.temperature", width: 2, height: 2) {
 			state("temperature", label:'${currentValue}°', unit:"F",
-                backgroundColors:[
-                    [value: 31, color: "#153591"],
-                    [value: 44, color: "#1e9cbb"],
-                    [value: 59, color: "#90d2a7"],
-                    [value: 74, color: "#44b621"],
-                    [value: 84, color: "#f1d801"],
-                    [value: 95, color: "#d04e00"],
-                    [value: 96, color: "#bc2323"]
-                ]
+	                backgroundColors:[
+                    		[value: 31, color: "#153591"],
+	                	[value: 44, color: "#1e9cbb"],
+        	        	[value: 59, color: "#90d2a7"],
+                		[value: 74, color: "#44b621"],
+	                	[value: 84, color: "#f1d801"],
+        	        	[value: 95, color: "#d04e00"],
+                	    	[value: 96, color: "#bc2323"]
+	                ]
 			)
 		}
 		standardTile("mode", "device.thermostatMode", inactiveLabel: false, decoration: "flat") {
@@ -676,4 +676,27 @@ def generateStatusEvent() {
 //generate custom mobile activity feeds event
 def generateActivityFeedsEvent(notificationMessage) {
 	sendEvent(name: "notificationMessage", value: "$device.displayName $notificationMessage", descriptionText: "$device.displayName $notificationMessage", displayed: true)
+}
+
+
+// Helper functions
+def toQueryString(Map m) {
+	return m.collect { k, v -> "${k}=${URLEncoder.encode(v.toString())}" }.sort().join("&")
+}
+
+private def cToF(temp) {
+	return (temp * 1.8 + 32)
+}
+private def fToC(temp) {
+	return (temp - 32) / 1.8
+}
+private def milesToKm(distance) {
+	return (distance * 1.609344) 
+}
+private def get_URI_ROOT() {
+	return "https://api.ecobee.com"
+}
+// Maximum tstat batch size (25 thermostats max may be processed in batch)
+private def get_MAX_TSTAT_BATCH() {
+	return 25
 }
