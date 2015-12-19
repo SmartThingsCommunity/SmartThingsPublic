@@ -12,14 +12,14 @@
  */
  
 definition(
-		name: "Ecobee (Connect)",
-		namespace: "smartthings",
-		author: "SmartThings",
-		description: "Connect your Ecobee thermostat to SmartThings.",
-		category: "My Apps",
-		iconUrl: "https://s3.amazonaws.com/smartapp-icons/Partner/ecobee.png",
-		iconX2Url: "https://s3.amazonaws.com/smartapp-icons/Partner/ecobee@2x.png",
-        	singleInstance: true
+	name: "Ecobee (Connect)",
+	namespace: "smartthings",
+	author: "SmartThings",
+	description: "Connect your Ecobee thermostat to SmartThings.",
+	category: "My Apps",
+	iconUrl: "https://s3.amazonaws.com/smartapp-icons/Partner/ecobee.png",
+	iconX2Url: "https://s3.amazonaws.com/smartapp-icons/Partner/ecobee@2x.png",
+        singleInstance: true
 ) {
 	appSetting "clientId"
 }
@@ -27,8 +27,8 @@ definition(
 preferences {
 	page(name: "auth", title: "ecobee3 Auth", nextPage: "therms", content: "authPage", uninstall: true)
 	page(name: "therms", title: "Select Thermostats", nextPage: "sensors", content: "thermsPage")
-	page(name: "sensors", title: "Select Sensors", nextPage: "otherprefs", content: "sensorsPage")
-	page(name: "otherprefs", title: "Advanced Preferences", nextPage: "", content: "otherprefsPage", install: true)
+	page(name: "sensors", title: "Select Sensors", nextPage: "", content: "sensorsPage")
+// page(name: "otherprefs", title: "Advanced Preferences", nextPage: "", content: "otherprefsPage", install: true)
 }
 
 mappings {
@@ -917,11 +917,13 @@ def getShardUrl()            { return getApiServerUrl() }
 def getCallbackUrl()        { return "${serverUrl}/oauth/callback" }
 def getBuildRedirectUrl()   { return "${serverUrl}/oauth/initialize?appId=${app.id}&access_token=${atomicState.accessToken}&apiServerUrl=${shardUrl}" }
 def getApiEndpoint()        { return "https://api.ecobee.com" }
+
 // This is the API Key from the Ecobee developer page. Can be provided by the app provider as well
 def getSmartThingsClientId() { 
 	if(!appSettings.clientId) {
-    	return "obvlTjUuuR2zKpHR6nZMxHWugoi5eVtS"
-    } else {
+		return "obvlTjUuuR2zKpHR6nZMxHWugoi5eVtS"
+		
+	} else {
 		return appSettings.clientId 
         }
 }
@@ -929,9 +931,9 @@ def getSmartThingsClientId() {
 def debugEvent(message, displayEvent = false) {
 
 	def results = [
-			name: "appdebug",
-			descriptionText: message,
-			displayed: displayEvent
+		name: "appdebug",
+		descriptionText: message,
+		displayed: displayEvent
 	]
 	log.debug "Generating AppDebug Event: ${results}"
 	sendEvent (results)
