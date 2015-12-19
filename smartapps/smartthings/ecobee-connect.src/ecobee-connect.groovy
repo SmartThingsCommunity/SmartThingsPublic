@@ -8,17 +8,18 @@
  *      JLH - 01-23-2014 - Update for Correct SmartApp URL Format
  *      JLH - 02-15-2014 - Fuller use of ecobee API
  *      10-28-2015 DVCSMP-604 - accessory sensor, DVCSMP-1174, DVCSMP-1111 - not respond to routines
- *		StrykerSKS - 12-11-2015 - Make it work with the Ecobee 3
+ *	StrykerSKS - 12-11-2015 - Make it work with the Ecobee 3
  */
+ 
 definition(
 		name: "Ecobee (Connect)",
 		namespace: "smartthings",
 		author: "SmartThings",
 		description: "Connect your Ecobee thermostat to SmartThings.",
-		category: "SmartThings Labs",
+		category: "My Apps",
 		iconUrl: "https://s3.amazonaws.com/smartapp-icons/Partner/ecobee.png",
 		iconX2Url: "https://s3.amazonaws.com/smartapp-icons/Partner/ecobee@2x.png",
-        singleInstance: true
+        	singleInstance: true
 ) {
 	appSetting "clientId"
 }
@@ -40,8 +41,6 @@ def authPage() {
    // log.debug "Current state: ${state}"
    // log.debug "Current atomicState: ${atomicState}"
    
-
-
 	if(!atomicState.accessToken) { //this is an access token for the 3rd party to make a call to the connect app
 		atomicState.accessToken = createAccessToken()
 	}
@@ -77,30 +76,7 @@ def authPage() {
                 href url:redirectUrl, style: "embedded", state: "complete", title: "ecobee Account Login", description: description
                 }
         }
-        
-  
-        /*
-		def stats = getEcobeeThermostats()
-		log.debug "authPage() -> thermostat list: $stats"
-		log.debug "authPage() -> sensor list: ${getEcobeeSensors()}"
-		return dynamicPage(name: "auth", title: "Select Your Thermostats", nextPage: "sensors", uninstall: true) {
-			section(""){
-				paragraph "Tap below to see the list of ecobee thermostats available in your ecobee account and select the ones you want to connect to SmartThings."
-				input(name: "thermostats", title:"Select Thermostats", type: "enum", required:true, multiple:true, description: "Tap to choose", metadata:[values:stats])
-			}
-*/
-			/* 
-            def options = getEcobeeSensors() ?: []
-			def numFound = options.size() ?: 0
-			if (numFound > 0)  {
-				section(""){
-					paragraph "Tap below to see the list of ecobee sensors available in your ecobee account and select the ones you want to connect to SmartThings."
-					input(name: "ecobeesensors", title:"Select Ecobee Sensors (${numFound} found)", type: "enum", required:false, description: "Tap to choose", multiple:true, options:options)
-				}
-			} 
-            
-		} */
-        
+           
         log.debug "authPage() end of else, should never get here!"
 	}
 }
@@ -451,6 +427,7 @@ Map getEcobeeSensors() {
 	} // end thermostats.each loop
 
 	log.debug "getEcobeeSensors() - remote sensor list: ${sensorMap}"
+    atomicState.sensors = sensorMap
 	return sensorMap        
         
 }
