@@ -74,13 +74,19 @@ def off() {
 }
 
 def levelup() {
+//log.debug "in level up"
+
 	def curlevel = device.currentValue('level') as Integer 
+       // log.debug "cur level = $curlevel"
 	if (curlevel <= 95)
     	setLevel(curlevel + 5);     
 }
 
 def leveldown() {
+//log.debug "in level down"
+
 	def curlevel = device.currentValue('level') as Integer 
+  //  log.debug "cur level = $curlevel"
 	if (curlevel > 5)
     	setLevel(curlevel - 5)    
 }
