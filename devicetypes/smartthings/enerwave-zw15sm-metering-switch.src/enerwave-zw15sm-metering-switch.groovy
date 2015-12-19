@@ -25,11 +25,15 @@ metadata {
 		capability "Configuration"
 		capability "Sensor"
         capability "Indicator"
-        
-      
-        
+       
 		fingerprint inClusters: "0x25,0x32"
 	}
+
+
+preferences {
+   input("ReportTime", "number", title: "Report Timeout Interval?", description: "The time in minutes after which an update is sent?", defaultValue: 3, required: false)
+   input("WattageChange", "number", title: "Wattage change before reporting: 1-25?", description: "The minimum wattage change before reporting?",defaultValue: 15, required: false)
+   }
 
 	// simulator metadata
 	simulator {
@@ -80,17 +84,10 @@ metadata {
 	}
 }
 
-def updated() {
-	try {
-		if (!state.MSR) {
-			response(zwave.manufacturerSpecificV2.manufacturerSpecificGet().format())
-		}
-	} catch (e) { log.debug e }
-}
 
 def parse(String description) {
 	def result = null
-    //log.debug "in parse desc = $description"
+   // log.debug "in parse desc = $description"
     
 	if(description == "updated") return 
 	def cmd = zwave.parse(description, [0x20: 1, 0x32: 1, 0x72: 2])
@@ -103,6 +100,7 @@ def parse(String description) {
 
 
 def zwaveEvent(physicalgraph.zwave.commands.meterv1.MeterReport cmd) {
+log.debug "in meter report cmd = $cmd "
 	if (cmd.scale == 0) {
 		createEvent(name: "energy", value: cmd.scaledMeterValue, unit: "kWh")
 	} else if (cmd.scale == 1) {
@@ -135,35 +133,14 @@ def zwaveEvent(physicalgraph.zwave.commands.configurationv1.ConfigurationReport 
 }
 
 def zwaveEvent(physicalgraph.zwave.commands.manufacturerspecificv2.ManufacturerSpecificReport cmd) {
+log.debug "in manuf specific report"
 	def result = []
 
 	
-	def msr = String.format("%04X-%04X-%04X", cmd.manufacturerId, cmd.productTypeId, cmd.productId)
-	log.debug "msr: $msr"
-	updateDataValue("MSR", msr)
-
-	// retypeBasedOnMSR()
-
-	result << createEvent(descriptionText: "$device.displayName MSR: $msr", isStateChange: false)
-
-	if (msr.startsWith("0086") && !state.aeonconfig) {  // Aeon Labs meter
-		state.aeonconfig = 1
-		result << response(delayBetween([
-			zwave.configurationV1.configurationSet(parameterNumber: 101, size: 4, scaledConfigurationValue: 4).format(),   // report power in watts
-			zwave.configurationV1.configurationSet(parameterNumber: 111, size: 4, scaledConfigurationValue: 300).format(), // every 5 min
-			zwave.configurationV1.configurationSet(parameterNumber: 102, size: 4, scaledConfigurationValue: 8).format(),   // report energy in kWh
-			zwave.configurationV1.configurationSet(parameterNumber: 112, size: 4, scaledConfigurationValue: 300).format(), // every 5 min
-			zwave.configurationV1.configurationSet(parameterNumber: 103, size: 4, scaledConfigurationValue: 0).format(),    // no third report
-			//zwave.configurationV1.configurationSet(parameterNumber: 113, size: 4, scaledConfigurationValue: 300).format(), // every 5 min
-			zwave.meterV2.meterGet(scale: 0).format(),
-			zwave.meterV2.meterGet(scale: 2).format(),
-		]))
-	} else {
 		result << response(delayBetween([
 			zwave.meterV2.meterGet(scale: 0).format(),
 			zwave.meterV2.meterGet(scale: 2).format(),
 		]))
-	}
 
 	result
 }
@@ -174,10 +151,8 @@ def zwaveEvent(physicalgraph.zwave.Command cmd) {
 }
 
 def on() {
-
 log.debug "in on"
 	[
-    
 		zwave.basicV1.basicSet(value: 0xFF).format(),
 		zwave.switchBinaryV1.switchBinaryGet().format(),
 		"delay 3000",
@@ -205,24 +180,40 @@ def poll() {
 
 def refresh() {
 	def value = "when off"
-   
-  
+  //  log.debug "in refresh for when on got indicatorstatus = $state.currentIndicatorStatus"
+    sendEvent(name: "indicatorStatus", value: state.currentIndicatorStatus, display: true)
+	
 	delayBetween([
 		zwave.switchBinaryV1.switchBinaryGet().format(),
 		zwave.meterV2.meterGet(scale: 0).format(),
 		zwave.meterV2.meterGet(scale: 2).format()
 	])
     
-      log.debug "in refresh for whenon got indicatorstatus = $state.currentIndicatorStatus"
-    sendEvent(name: "indicatorStatus", value: state.currentIndicatorStatus, display: true)
-	
+  
 }
 
 def configure() {
-	zwave.manufacturerSpecificV2.manufacturerSpecificGet().format()
+if (settings.WattageChange < 1 || settings.WattageChange > 25)
+ {
+   settings.WattageChange = 5;
+ }
+ 
+log.debug "In configure timeout value = $settings.ReportTime"
+log.debug "Wattage change = $settings.WattageChange"
+def wattageadjust = settings.WattageChange * 10;
+log.debug "Wattage change = $settings.WattageChange adjusted: $wattageadjust "
+
+ delayBetween([
+	zwave.configurationV1.configurationSet(parameterNumber: 8, size: 1, scaledConfigurationValue: settings.ReportTime).format(),	//send meter report every x minutes.
+	zwave.configurationV1.configurationSet(parameterNumber: 10, size: 1, scaledConfigurationValue: settings.ReportTime).format(),	//accumulated energy report meter interval
+	zwave.configurationV1.configurationSet(parameterNumber: 11, size: 1, scaledConfigurationValue: 1).format(),	//send only meter report when wattage change 1=meter, 2=multilevel , 3=both, 0=none 
+	zwave.configurationV1.configurationSet(parameterNumber: 12, size: 1, scaledConfigurationValue: wattageadjust).format(),//Minimum change in wattage 0-255
+	zwave.configurationV1.configurationSet(parameterNumber: 9, size: 1, scaledConfigurationValue: 0).format(),// dont send multilevel report
+    ])
 }
 
 def reset() {
+log.debug "in reset"
 			 state.currentIndicatorStatus = "when on"
 	return [
 		zwave.meterV2.meterReset().format(),
@@ -230,22 +221,23 @@ def reset() {
 	]
 }
 
-
-
-
 def indicatorWhenOn() {
 log.debug "in when on"
  state.currentIndicatorStatus = "when on"
 	sendEvent(name: "indicatorStatus", value: "when on", display: true)
-zwave.configurationV1.configurationSet(parameterNumber: 0x01, size: 1, scaledConfigurationValue: 1).format()
+	zwave.configurationV1.configurationSet(parameterNumber: 0x01, size: 1, scaledConfigurationValue: 1).format()
 	}
 
 def indicatorWhenOff() {
 log.debug "in when off"
  state.currentIndicatorStatus = "when off"
 	sendEvent(name: "indicatorStatus", value: "when off", display: true)	  
-zwave.configurationV1.configurationSet(parameterNumber: 0x01, size: 1, scaledConfigurationValue: 0).format()
+	zwave.configurationV1.configurationSet(parameterNumber: 0x01, size: 1, scaledConfigurationValue: 0).format()
 	}
 
 
-
+def updated()
+{
+log.debug "in updated"
+configure();
+}
