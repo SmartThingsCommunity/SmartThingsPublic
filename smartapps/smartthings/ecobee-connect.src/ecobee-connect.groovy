@@ -26,9 +26,9 @@ definition(
 
 preferences {
 	page(name: "auth", title: "ecobee3 Auth", nextPage: "therms", content: "authPage", uninstall: true)
-    page(name: "therms", title: "Select Thermostats", nextPage: "sensors", content: "thermsPage")
-    page(name: "sensors", title: "Select Sensors", nextPage: "otherprefs", content: "sensorsPage")
-    page(name: "otherprefs", title: "Advanced Preferences", nextPage: "", content: "otherprefsPage", install: true)
+	page(name: "therms", title: "Select Thermostats", nextPage: "sensors", content: "thermsPage")
+	page(name: "sensors", title: "Select Sensors", nextPage: "otherprefs", content: "sensorsPage")
+	page(name: "otherprefs", title: "Advanced Preferences", nextPage: "", content: "otherprefsPage", install: true)
 }
 
 mappings {
@@ -163,11 +163,11 @@ def callback() {
 	if (oauthState == atomicState.oauthInitState){
 		log.debug "callback() --> States matched!"
 		def tokenParams = [
-				grant_type: "authorization_code",
-				code      : code,
-				client_id : smartThingsClientId,
-                state	  : oauthState,
-				redirect_uri: callbackUrl //"https://graph.api.smartthings.com/oauth/callback"
+			grant_type: "authorization_code",
+			code      : code,
+			client_id : smartThingsClientId,
+                	state	  : oauthState,
+			redirect_uri: callbackUrl //"https://graph.api.smartthings.com/oauth/callback"
 		]
 
 		def tokenUrl = "${apiEndpoint}/token?${toQueryString(tokenParams)}"
@@ -796,19 +796,19 @@ private refreshAuthToken() {
             }
         } catch(Exception e) {
             log.error "refreshAuthToken() >> Error: e.statusCode ${e.statusCode}"
-			def reAttemptPeriod = 300 // in sec
-			if (e.statusCode != 401) { //this issue might comes from exceed 20sec app execution, connectivity issue etc.
+		def reAttemptPeriod = 300 // in sec
+		if (e.statusCode != 401) { //this issue might comes from exceed 20sec app execution, connectivity issue etc.
+			runIn(reAttemptPeriod, "refreshAuthToken")
+		} else if (e.statusCode == 401) { //refresh token is expired
+			atomicState.reAttempt = atomicState.reAttempt + 1
+			log.warn "reAttempt refreshAuthToken to try = ${atomicState.reAttempt}"
+			if (atomicState.reAttempt <= 3) {
 				runIn(reAttemptPeriod, "refreshAuthToken")
-			} else if (e.statusCode == 401) { //refresh token is expired
-				atomicState.reAttempt = atomicState.reAttempt + 1
-				log.warn "reAttempt refreshAuthToken to try = ${atomicState.reAttempt}"
-				if (atomicState.reAttempt <= 3) {
-					runIn(reAttemptPeriod, "refreshAuthToken")
-				} else {
-					sendPushAndFeeds(notificationMessage)
-					atomicState.reAttempt = 0
-				}
-            }
+			} else {
+				sendPushAndFeeds(notificationMessage)
+				atomicState.reAttempt = 0
+			}
+            	}
         }
     }
 }
@@ -915,7 +915,6 @@ def getSensorChildName()     { return "Ecobee Sensor" }
 def getServerUrl()           { return "https://graph.api.smartthings.com" }
 def getShardUrl()            { return getApiServerUrl() }
 def getCallbackUrl()        { return "${serverUrl}/oauth/callback" }
-// def getCallbackUrl()        { return "${serverUrl}/oauth/callback" }
 def getBuildRedirectUrl()   { return "${serverUrl}/oauth/initialize?appId=${app.id}&access_token=${atomicState.accessToken}&apiServerUrl=${shardUrl}" }
 def getApiEndpoint()        { return "https://api.ecobee.com" }
 // This is the API Key from the Ecobee developer page. Can be provided by the app provider as well
