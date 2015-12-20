@@ -3,7 +3,7 @@
  *
  *  Copyright 2015 Bruce Ravenel
  *
- *  Version 1.5.8a   20 Dec 2015
+ *  Version 1.5.8b   20 Dec 2015
  *
  *	Version History
  *
@@ -1005,7 +1005,7 @@ def initialize() {
 	subscribe(disabled, "switch", disabledHandler)
 	if(disabled) state.disabled = disabled.currentSwitch == "on"
 	else state.disabled = false
-    if(state.isTrig || state.howMany == null || state.howManyT > 1) return
+    if(state.isTrig || hasTrig) return
 	if(state.isRule || state.howMany > 1) runRule(true)
 }
 
