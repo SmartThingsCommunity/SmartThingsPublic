@@ -199,7 +199,11 @@ if (settings.WattageChange < 1 || settings.WattageChange > 25)
  {
    settings.WattageChange = 5;
  }
- 
+ if (settings.ReportTime == null)
+   settings.ReportTime = 5
+ if (settings.WattageChange == null)
+   settings.WattageChnage = 10;
+   
 log.debug "In configure timeout value = $settings.ReportTime"
 log.debug "Wattage change = $settings.WattageChange"
 def wattageadjust = settings.WattageChange * 10;
