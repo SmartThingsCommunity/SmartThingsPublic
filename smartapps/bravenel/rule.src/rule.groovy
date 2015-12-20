@@ -3,11 +3,11 @@
  *
  *  Copyright 2015 Bruce Ravenel
  *
- *  Version 1.5.8   20 Dec 2015
+ *  Version 1.5.8a   20 Dec 2015
  *
  *	Version History
  *
- *	1.5.8	20 Dec 2015		More repair for that same mode bug
+ *	1.5.8	20 Dec 2015		More repair for that same mode bug; fixed so triggered-rule not tested at install
  *	1.5.7	19 Dec 2015		Fixed bug re: selecting mode as condition/trigger, UI display
  *	1.5.6	18 Dec 2015		Fixed bug re: old triggers not editable
  *	1.5.5	17 Dec 2015		Added milliseconds to Delayed off, uses dev.off([delay: msec]) instead of runIn()
@@ -1005,7 +1005,7 @@ def initialize() {
 	subscribe(disabled, "switch", disabledHandler)
 	if(disabled) state.disabled = disabled.currentSwitch == "on"
 	else state.disabled = false
-    if(state.isTrig || state.howMany == null) return
+    if(state.isTrig || state.howMany == null || state.howManyT > 1) return
 	if(state.isRule || state.howMany > 1) runRule(true)
 }
 
