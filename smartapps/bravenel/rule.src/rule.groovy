@@ -3,10 +3,11 @@
  *
  *  Copyright 2015 Bruce Ravenel
  *
- *  Version 1.5.7   19 Dec 2015
+ *  Version 1.5.8   20 Dec 2015
  *
  *	Version History
  *
+ *	1.5.8	20 Dec 2015		More repair for that same mode bug
  *	1.5.7	19 Dec 2015		Fixed bug re: selecting mode as condition/trigger, UI display
  *	1.5.6	18 Dec 2015		Fixed bug re: old triggers not editable
  *	1.5.5	17 Dec 2015		Added milliseconds to Delayed off, uses dev.off([delay: msec]) instead of runIn()
@@ -436,8 +437,8 @@ def conditionLabelN(i, isTrig) {
 	} else if(thisCapab.value == "Days of week") result = "Day i" + (days.size() > 1 ? "n " + days : "s " + days[0])
 	else if(thisCapab.value == "Mode") { 
 //    	if(!modes) return result
-    	if(state.isRule || state.howMany > 1) result = "Mode i" + (modes.size() > 1 ? "n " + modes : "s " + modes[0])
         if(state.isTrig || isTrig) result = "Mode becomes " + (modesX.size() > 1 ? modesX : modesX[0])
+    	else if(state.isRule || state.howMany > 1) result = "Mode i" + (modes.size() > 1 ? "n " + modes : "s " + modes[0])
 	} else if(thisCapab.value == "Routine") {
         result = "Routine "
 		def thisState = settings.find {it.key == (isTrig ? "tstate$i" : "state$i")}
