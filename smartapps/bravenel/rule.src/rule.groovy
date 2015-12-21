@@ -3,10 +3,11 @@
  *
  *  Copyright 2015 Bruce Ravenel
  *
- *  Version 1.5.8b   20 Dec 2015
+ *  Version 1.5.9   21 Dec 2015
  *
  *	Version History
  *
+ *	1.5.9	21 Dec 2015		Fixed overlap of Days of Week selection
  *	1.5.8	20 Dec 2015		More repair for that same mode bug; fixed so triggered-rule not tested at install
  *	1.5.7	19 Dec 2015		Fixed bug re: selecting mode as condition/trigger, UI display
  *	1.5.6	18 Dec 2015		Fixed bug re: old triggers not editable
@@ -100,7 +101,7 @@ def selectRule() {
        		section(title: "More options", hidden: hideOptionsSection(), hideable: true) {
 				def timeLabel = timeIntervalLabel()
 				href "certainTime", title: "Only during a certain time", description: timeLabel ?: "Tap to set", state: timeLabel ? "complete" : null
-				input "days", "enum", title: "Only on certain days of the week", multiple: true, required: false,
+				input "daysY", "enum", title: "Only on certain days of the week", multiple: true, required: false,
 					options: ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"]
 				input "modesY", "mode", title: "Only when mode is", multiple: true, required: false            
 				paragraph "Complex Rule Input allows for parenthesized sub-rules."
@@ -1531,12 +1532,12 @@ private timeIntervalLabelX() {
 
 private getAllOk() {
 	if(state.isRule) modeZOk && !state.disabled  //&& daysOk && timeOk
-    else modeYOk && daysOk && timeOk && !state.disabled
+    else modeYOk && daysYOk && timeOk && !state.disabled
 }
 
 private hideOptionsSection() {
 	if(state.isRule) (modesZ || advanced) ? false : true
-    else (starting || ending || days || modes || startingX || endingX || disabled) ? false : true
+    else (starting || ending || daysY || modes || startingX || endingX || disabled) ? false : true
 }
 
 private getModeZOk() {
@@ -1571,6 +1572,19 @@ private getDaysOk() {
 		else df.setTimeZone(TimeZone.getTimeZone("America/New_York"))
 		def day = df.format(new Date())
 		result = days.contains(day)
+	}
+//	log.trace "daysOk = $result"
+	return result
+}
+
+private getDaysYOk() {
+	def result = true
+	if (daysY) {
+		def df = new java.text.SimpleDateFormat("EEEE")
+		if (location.timeZone) df.setTimeZone(location.timeZone)
+		else df.setTimeZone(TimeZone.getTimeZone("America/New_York"))
+		def day = df.format(new Date())
+		result = daysY.contains(day)
 	}
 //	log.trace "daysOk = $result"
 	return result
