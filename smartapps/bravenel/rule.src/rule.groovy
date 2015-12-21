@@ -7,7 +7,7 @@
  *
  *	Version History
  *
- *	1.5.9	21 Dec 2015		Fixed overlap of Days of Week selection
+ *	1.5.9a	21 Dec 2015		Fixed overlap of Days of Week selection
  *	1.5.8	20 Dec 2015		More repair for that same mode bug; fixed so triggered-rule not tested at install
  *	1.5.7	19 Dec 2015		Fixed bug re: selecting mode as condition/trigger, UI display
  *	1.5.6	18 Dec 2015		Fixed bug re: old triggers not editable
@@ -1532,6 +1532,7 @@ private timeIntervalLabelX() {
 
 private getAllOk() {
 	if(state.isRule) modeZOk && !state.disabled  //&& daysOk && timeOk
+    else if(state.isTrig) modeYOk && daysOK && timeOk && !state.disabled
     else modeYOk && daysYOk && timeOk && !state.disabled
 }
 
