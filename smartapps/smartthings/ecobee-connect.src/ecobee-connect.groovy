@@ -8,7 +8,7 @@
  *      JLH - 01-23-2014 - Update for Correct SmartApp URL Format
  *      JLH - 02-15-2014 - Fuller use of ecobee API
  *      10-28-2015 DVCSMP-604 - accessory sensor, DVCSMP-1174, DVCSMP-1111 - not respond to routines
- *	StrykerSKS - 12-11-2015 - Make it work with the Ecobee 3
+ *		StrykerSKS - 12-11-2015 - Make it work with the Ecobee 3
  */
  
 definition(
@@ -19,7 +19,7 @@ definition(
 	category: "My Apps",
 	iconUrl: "https://s3.amazonaws.com/smartapp-icons/Partner/ecobee.png",
 	iconX2Url: "https://s3.amazonaws.com/smartapp-icons/Partner/ecobee@2x.png",
-        singleInstance: true
+    singleInstance: true
 ) {
 	appSetting "clientId"
 }
@@ -27,7 +27,7 @@ definition(
 preferences {
 	page(name: "auth", title: "ecobee3 Auth", nextPage: "therms", content: "authPage", uninstall: true)
 	page(name: "therms", title: "Select Thermostats", nextPage: "sensors", content: "thermsPage")
-	page(name: "sensors", title: "Select Sensors", nextPage: "", content: "sensorsPage")
+	page(name: "sensors", title: "Select Sensors", nextPage: "", content: "sensorsPage", install:true)
 // page(name: "otherprefs", title: "Advanced Preferences", nextPage: "", content: "otherprefsPage", install: true)
 }
 
@@ -75,9 +75,7 @@ def authPage() {
             	paragraph "Continue on to select thermostats."
                 href url:redirectUrl, style: "embedded", state: "complete", title: "ecobee Account Login", description: description
                 }
-        }
-           
-        log.debug "authPage() end of else, should never get here!"
+        }           
 	}
 }
 
@@ -97,37 +95,41 @@ def thermsPage() {
 }
 
 def sensorsPage() {
-	// Only show sensors that are part of the chosen thermostat
-	log.debug "sensorsPage() entered"
+	// Only show sensors that are part of the chosen thermostat(s)
+	log.debug "=====> sensorsPage() entered. settings: ${settings}"
 
-
-	    def options = getEcobeeSensors() ?: []
-		def numFound = options.size() ?: 0
-        
+	def options = getEcobeeSensors() ?: []
+	def numFound = options.size() ?: 0
+      
 	log.debug "options = getEcobeeSensors == ${options}"
 
-    dynamicPage(name: "sensors", title: "Select Sensors", nextPage: "otherprefs") {
+    dynamicPage(name: "sensors", title: "Select Sensors", nextPage: "") {
 		if (numFound > 0)  {
 			section(""){
-				paragraph "Tap below to see the list of ecobee sensors available in your ecobee account and select the ones you want to connect to SmartThings."
-				input(name: "ecobeesensors", title:"Select Ecobee Sensors (${numFound} found)", type: "enum", required:false, description: "Tap to choose", multiple:true, options:options)
+				paragraph "Tap below to see the list of ecobee sensors available for the selected thermostat(s) and select the ones you want to connect to SmartThings."
+				input(name: "ecobeesensors", title:"Select Ecobee Sensors (${numFound} found)", type: "enum", required:false, description: "Tap to choose", multiple:true, metadata:[values:options])
 			}
 		} else {
     		 // Must not have any sensors associated with this Thermostat
  		   log.debug "sensorsPage(): No sensors found."
+           section(""){
+           		paragraph "No associated sensors were found. Click Done above."
+           }
 	    }
 	}
 }
 
 
+/*
 def otherprefsPage() {
 	log.debug "otherprefsPage() entered"
      return dynamicPage(name: "otherprefs", title: "Other Preferences", nextPage: "") {
     	section() {
-        	paragraph "Lorum Ipsum otherprefs"
+        	paragraph "For future options..."
         }
     }
 }
+*/
 
 def oauthInitUrl() {
 	log.debug "oauthInitUrl with callback: ${callbackUrl}"
@@ -146,10 +148,8 @@ def oauthInitUrl() {
 	log.debug "oauthInitUrl - Before redirect: querystring: ${toQueryString(oauthParams)}"
 	  
 
-//	def tempUrl = apiEndpoint
 	log.debug "oauthInitUrl - Before redirect: location: ${apiEndpoint}/authorize?${toQueryString(oauthParams)}"
   
-//    redirect(location: "${tempUrl}/authorize?${toQueryString(oauthParams)}")
     redirect(location: "${apiEndpoint}/authorize?${toQueryString(oauthParams)}")
 }
 
@@ -166,7 +166,7 @@ def callback() {
 			grant_type: "authorization_code",
 			code      : code,
 			client_id : smartThingsClientId,
-                	state	  : oauthState,
+			state	  : oauthState,
 			redirect_uri: callbackUrl //"https://graph.api.smartthings.com/oauth/callback"
 		]
 
@@ -337,16 +337,14 @@ def getEcobeeThermostats() {
 	return stats
 }
 
-// TODO: Rename this to getEcobeeSensors?
 Map getEcobeeSensors() {
 	log.debug "====> getEcobeeSensors() entered"
     log.debug "thermostats: ${thermostats}"
 
-// ----
 	def sensorMap = [:]
     
     // TODO: Is this needed?
-    atomicState.remoteSensors = []
+    atomicState.remoteSensors = []    
 
 	// Get the sensors only for the thermostats that we have selected
 	thermostats.each { thermostat ->
@@ -456,7 +454,7 @@ def updated() {
 
 def initialize() {
 
-	log.debug "initialize"
+	log.debug "=====> initialize(): settings.ecobeesensors = ${settings.ecobeesensors}"
 	def devices = thermostats.collect { dni ->
 		def d = getChildDevice(dni)
 		if(!d) {
@@ -468,7 +466,8 @@ def initialize() {
 		return d
 	}
 
-	def sensors = ecobeesensors.collect { dni ->
+//	log.debug "intialize(): settings.ecobeesensors == ${settings.ecobeesensors}"
+	def sensors = settings.ecobeesensors.collect { dni ->
 		def d = getChildDevice(dni)
 		if(!d) {
 			d = addChildDevice(app.namespace, getSensorChildName(), dni, null, ["label":"Ecobee Sensor:${atomicState.sensors[dni]}"])
@@ -478,21 +477,43 @@ def initialize() {
 		}
 		return d
 	}
+    
 	log.debug "created ${devices.size()} thermostats and ${sensors.size()} sensors."
 
+	// Debug the deletion process
+    // TODO: Fix it so that child sensors are deleted when a Thermostat is removed
+    // The bug seems to be in the input mechanism for enums, previously selected items have to be explicitly unselected. Even if they are no longer an option!
+    def founddevices = getChildDevices() /* { !thermostats.contains(it.deviceNetworkId) && !ecobeesensors.contains(it.deviceNetworkId)} */
+    
+    log.debug "foundDevices (all children): ${founddevices}."
+    founddevices.each {
+    	log.debug " ------> Device Network ID: ${it.deviceNetworkId}  <-----"
+    }
+
+
 	def delete  // Delete any that are no longer in settings
+    def combined = settings.thermostats + settings.ecobeesensors
+    
+    log.debug "Combined devices == ${combined}"
+    
+    /*
 	if(!thermostats && !ecobeesensors) {
 		log.debug "delete thermostats and sensors"
 		delete = getAllChildDevices() //inherits from SmartApp (data-management)
-	} else { //delete only thermostat
-		log.debug "delete individual thermostat and sensor"
+	} else { //delete only thermostat(s) and sensor(s) that have been removed
+		log.debug "delete individual thermostat(s) and sensor(s)"
 		if (!ecobeesensors) {
+        	log.debug "In !ecobeesensors section of else."
 			delete = getChildDevices().findAll { !thermostats.contains(it.deviceNetworkId) }
 		} else {
+        	log.debug "in else statement to delete only some devices"
 			delete = getChildDevices().findAll { !thermostats.contains(it.deviceNetworkId) && !ecobeesensors.contains(it.deviceNetworkId)}
 		}
 	}
-	log.warn "delete: ${delete}, deleting ${delete.size()} thermostats"
+    */
+    delete = getChildDevices().findAll { !combined.contains(it.deviceNetworkId) }
+    
+	log.warn "delete: ${delete}, deleting ${delete.size()} thermostat(s) and/or sensor(s)"
 	delete.each { deleteChildDevice(it.deviceNetworkId) } //inherits from SmartApp (data-management)
 
 	atomicState.thermostatData = [:] //reset Map to store thermostat data
@@ -523,7 +544,7 @@ def pollHandler() {
 		log.debug ("DNI = ${dni}")
 		def d = getChildDevice(dni)
 		if(d) {
-			log.debug ("Found Child Device.")
+			log.debug ("pollHandler(): Found Child Device.")
 			d.generateEvent(atomicState.thermostats[dni].data)
 		}
 	}
@@ -674,7 +695,7 @@ def availableModes(child) {
 }
 
 def currentMode(child) {
-	debugEvent ("atomicState.Thermos = ${atomicState.thermostats}")
+	debugEvent ("atomicState.thermostats = ${atomicState.thermostats}")
 
 	debugEvent ("Child DNI = ${child.device.deviceNetworkId}")
 
@@ -914,18 +935,17 @@ def getChildName()           { return "Ecobee Thermostat" }
 def getSensorChildName()     { return "Ecobee Sensor" }
 def getServerUrl()           { return "https://graph.api.smartthings.com" }
 def getShardUrl()            { return getApiServerUrl() }
-def getCallbackUrl()        { return "${serverUrl}/oauth/callback" }
-def getBuildRedirectUrl()   { return "${serverUrl}/oauth/initialize?appId=${app.id}&access_token=${atomicState.accessToken}&apiServerUrl=${shardUrl}" }
-def getApiEndpoint()        { return "https://api.ecobee.com" }
+def getCallbackUrl()         { return "${serverUrl}/oauth/callback" }
+def getBuildRedirectUrl()    { return "${serverUrl}/oauth/initialize?appId=${app.id}&access_token=${atomicState.accessToken}&apiServerUrl=${shardUrl}" }
+def getApiEndpoint()         { return "https://api.ecobee.com" }
 
 // This is the API Key from the Ecobee developer page. Can be provided by the app provider as well
 def getSmartThingsClientId() { 
 	if(!appSettings.clientId) {
-		return "obvlTjUuuR2zKpHR6nZMxHWugoi5eVtS"
-		
+		return "obvlTjUuuR2zKpHR6nZMxHWugoi5eVtS"		
 	} else {
 		return appSettings.clientId 
-        }
+    }
 }
 
 def debugEvent(message, displayEvent = false) {
