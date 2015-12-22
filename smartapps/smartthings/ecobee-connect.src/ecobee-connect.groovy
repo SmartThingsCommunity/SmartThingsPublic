@@ -19,7 +19,7 @@ definition(
 	category: "My Apps",
 	iconUrl: "https://s3.amazonaws.com/smartapp-icons/Partner/ecobee.png",
 	iconX2Url: "https://s3.amazonaws.com/smartapp-icons/Partner/ecobee@2x.png",
-    singleInstance: true
+	singleInstance: true
 ) {
 	appSetting "clientId"
 }
@@ -28,7 +28,6 @@ preferences {
 	page(name: "auth", title: "ecobee3 Auth", nextPage: "therms", content: "authPage", uninstall: true)
 	page(name: "therms", title: "Select Thermostats", nextPage: "sensors", content: "thermsPage")
 	page(name: "sensors", title: "Select Sensors", nextPage: "", content: "sensorsPage", install:true)
-// page(name: "otherprefs", title: "Advanced Preferences", nextPage: "", content: "otherprefsPage", install: true)
 }
 
 mappings {
@@ -38,9 +37,7 @@ mappings {
 
 def authPage() {
 	log.debug "=====> authPage() Entered"
-   // log.debug "Current state: ${state}"
-   // log.debug "Current atomicState: ${atomicState}"
-   
+
 	if(!atomicState.accessToken) { //this is an access token for the 3rd party to make a call to the connect app
 		atomicState.accessToken = createAccessToken()
 	}
@@ -127,18 +124,13 @@ def oauthInitUrl() {
 	def oauthParams = [
 			response_type: "code",
 			client_id: smartThingsClientId,			
-            scope: "smartRead,smartWrite",
+			scope: "smartRead,smartWrite",
 			redirect_uri: callbackUrl, //"https://graph.api.smartthings.com/oauth/callback"
 			state: atomicState.oauthInitState			
 	]
 
-	log.debug "oauthInitUrl - Before redirect: apiEndpoint: ${apiEndpoint}"
-	log.debug "oauthInitUrl - Before redirect: querystring: ${toQueryString(oauthParams)}"
-	  
-
 	log.debug "oauthInitUrl - Before redirect: location: ${apiEndpoint}/authorize?${toQueryString(oauthParams)}"
-  
-    redirect(location: "${apiEndpoint}/authorize?${toQueryString(oauthParams)}")
+	redirect(location: "${apiEndpoint}/authorize?${toQueryString(oauthParams)}")
 }
 
 def callback() {
@@ -270,10 +262,9 @@ def connectionStatus(message, redirectUrl = null) {
 
 def getEcobeeThermostats() {
 	log.debug "====> getEcobeeThermostats() entered"
-	log.debug "getting device list"
 
  	def requestBody = '{"selection":{"selectionType":"registered","selectionMatch":"","includeRuntime":true,"includeSensors":true}}'
-	// Only get the thermostats data
+	// TODO: Save some API bandwidth and only  get the thermostats data and not the sensors?
 	// def requestBody = '{"selection":{"selectionType":"registered","selectionMatch":"","includeRuntime":true,"includeSensors":false}}'
 
 	def deviceListParams = [
@@ -292,11 +283,9 @@ def getEcobeeThermostats() {
         
             if (resp.status == 200) {
             	log.debug "httpGet() in 200 Response"
- //         	atomicState.remoteSensors = []
-                
             	resp.data.thermostatList.each { stat ->
-                  	def dni = [app.id, stat.identifier].join('.')
-                    stats[dni] = getThermostatDisplayName(stat)
+					def dni = [app.id, stat.identifier].join('.')
+					stats[dni] = getThermostatDisplayName(stat)
                 }
             } else {
                 log.debug "httpGet() - in else: http status: ${resp.status}"
@@ -316,21 +305,21 @@ def getEcobeeThermostats() {
         refreshAuthToken()
     }
 	atomicState.thermostats = stats
-    log.debug "getEcobeeThermostats() - stats returned: ${stats}"
-    log.debug "getEcobeeThermostats() - remote sensor list: ${atomicState.remoteSensors}"
+    // log.debug "getEcobeeThermostats() - stats returned: ${stats}"
+    // log.debug "getEcobeeThermostats() - remote sensor list: ${atomicState.remoteSensors}"
 	return stats
 }
 
 Map getEcobeeSensors() {
-	log.debug "====> getEcobeeSensors() entered"
-    log.debug "thermostats: ${thermostats}"
+	log.debug "====> getEcobeeSensors() entered. thermostats: ${thermostats}"
 
 	def sensorMap = [:]
     
-    // TODO: Is this needed?
-    atomicState.remoteSensors = []    
+	// TODO: Is this needed?
+	atomicState.remoteSensors = []    
 
-	// Get the sensors only for the thermostats that we have selected
+	// Get the sensors only for the thermostats that we have selected. 
+	// TODO: Can we reuse the sensor list from the previous thermostat API calls in getEcobeeThermostats
 	thermostats.each { thermostat ->
 		log.debug "thermostat loop: thermostat == ${thermostat}"
         def statEcobeeId = thermostat.split("\\.")[1]
@@ -342,7 +331,7 @@ Map getEcobeeSensors() {
 			selectionType: "thermostats",
 			selectionMatch: statEcobeeId,
 			includeRuntime: true,
-            includeSensors: true
+			includeSensors: true
 		   ]
 	 	])
 
@@ -358,13 +347,11 @@ Map getEcobeeSensors() {
 		log.debug "deviceListParams = ${deviceListParams}"
     	try {
         	httpGet(deviceListParams) { resp ->
-
-			log.info "httpGet() status: ${resp.status}"
-            log.info "httpGet() response: ${resp.data}"
+				log.debug "httpGet() status: ${resp.status}"
+            	log.debug "httpGet() response: ${resp.data}"
     	       
-               if (resp.status == 200) {
-        	    	log.debug "getEcobeeSensors() --> httpGet() in 200 Response"
-                	log.debug "resp.data.thermostatList.each: ${resp.data.thermostatList}"
+				if (resp.status == 200) {
+					log.debug "getEcobeeSensors() --> httpGet() in 200 Response"
 
 					// TODO: Test without the loop, should only have a single thermostat based on query
                     resp.data.thermostatList.each { singleStat ->
@@ -376,29 +363,28 @@ Map getEcobeeSensors() {
                         //    tempSensor.thermDNI = "${thermostat}"
                         //    atomicState.remoteSensors = atomicState.remoteSensors + tempSensor
                         //}
-                        
-                        
-	                   	// log.debug "httpGet() - singleStat.remoteSensors: ${singleState.remoteSensors}"
+
+						// log.debug "httpGet() - singleStat.remoteSensors: ${singleState.remoteSensors}"
                     	// log.debug "httpGet() - atomicState.remoteSensors: ${atomicState.remoteSensors}"
-	                  }
+					}
                    
-	            } else {
-    	            log.debug "getEcobeeSensors() --> httpGet() - in else: http status: ${resp.status}"
-        	        //refresh the auth token
-            	    if (resp.status == 500 && resp.data.status.code == 14) {
-                	    log.debug "Storing the failed action to try later"
-	                    atomicState.action = "getEcobeeSensors"
-    	                log.debug "Refreshing your auth_token!"
-        	            refreshAuthToken()
-            	    } else {
+				} else {
+					log.debug "getEcobeeSensors() --> httpGet() - in else: http status: ${resp.status}"
+					//refresh the auth token
+					if (resp.status == 500 && resp.data.status.code == 14) {
+						log.debug "Storing the failed action to try later"
+						atomicState.action = "getEcobeeSensors"
+						log.debug "Refreshing your auth_token!"
+						refreshAuthToken()
+					} else {
                 	    log.error "Authentication error, invalid authentication method, lack of credentials, etc."
-                	}
+					}
             	}
         	}
-    	} catch(Exception e) {
-	        log.debug "___exception getEcobeeSensors() (): " + e
+		} catch(Exception e) {
+			log.debug "___exception getEcobeeSensors() (): " + e
             refreshAuthToken()
-    	}
+		}
 
 		atomicState.remoteSensors.each {
 			if (it.type != "thermostat") {
@@ -411,7 +397,7 @@ Map getEcobeeSensors() {
 
 	log.debug "getEcobeeSensors() - remote sensor list: ${sensorMap}"
     atomicState.sensors = sensorMap
-	return sensorMap        
+	return sensorMap
         
 }
         
@@ -669,11 +655,9 @@ def availableModes(child) {
 
 def currentMode(child) {
 	debugEvent ("atomicState.thermostats = ${atomicState.thermostats}")
-
 	debugEvent ("Child DNI = ${child.device.deviceNetworkId}")
 
 	def tData = atomicState.thermostats[child.device.deviceNetworkId]
-
 	debugEvent("Data = ${tData}")
 
 	if(!tData) {
@@ -755,15 +739,11 @@ private refreshAuthToken() {
 
                 if(resp.status == 200) {
                     log.debug "Token refreshed...calling saved RestAction now!"
-
                     debugEvent("Token refreshed ... calling saved RestAction now!")
-
                     log.debug resp
-
                     jsonMap = resp.data
 
                     if(resp.data) {
-
                         log.debug resp.data
                         debugEvent("Response = ${resp.data}")
 
@@ -790,19 +770,19 @@ private refreshAuthToken() {
             }
         } catch(Exception e) {
             log.error "refreshAuthToken() >> Error: e.statusCode ${e.statusCode}"
-		def reAttemptPeriod = 300 // in sec
-		if (e.statusCode != 401) { //this issue might comes from exceed 20sec app execution, connectivity issue etc.
-			runIn(reAttemptPeriod, "refreshAuthToken")
-		} else if (e.statusCode == 401) { //refresh token is expired
-			atomicState.reAttempt = atomicState.reAttempt + 1
-			log.warn "reAttempt refreshAuthToken to try = ${atomicState.reAttempt}"
-			if (atomicState.reAttempt <= 3) {
+			def reAttemptPeriod = 300 // in sec
+			if (e.statusCode != 401) { //this issue might comes from exceed 20sec app execution, connectivity issue etc.
 				runIn(reAttemptPeriod, "refreshAuthToken")
-			} else {
-				sendPushAndFeeds(notificationMessage)
-				atomicState.reAttempt = 0
-			}
-            	}
+			} else if (e.statusCode == 401) { //refresh token is expired
+				atomicState.reAttempt = atomicState.reAttempt + 1
+				log.warn "reAttempt refreshAuthToken to try = ${atomicState.reAttempt}"
+				if (atomicState.reAttempt <= 3) {
+					runIn(reAttemptPeriod, "refreshAuthToken")
+				} else {
+					sendPushAndFeeds(notificationMessage)
+					atomicState.reAttempt = 0
+				}
+            }
         }
     }
 }
