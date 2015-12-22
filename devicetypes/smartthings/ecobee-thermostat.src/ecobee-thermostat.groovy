@@ -680,6 +680,7 @@ def generateActivityFeedsEvent(notificationMessage) {
 
 
 // Helper functions
+// TODO: These are going to be used for coming features
 def toQueryString(Map m) {
 	return m.collect { k, v -> "${k}=${URLEncoder.encode(v.toString())}" }.sort().join("&")
 }
