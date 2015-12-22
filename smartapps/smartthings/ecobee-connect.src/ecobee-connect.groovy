@@ -119,18 +119,6 @@ def sensorsPage() {
 	}
 }
 
-
-/*
-def otherprefsPage() {
-	log.debug "otherprefsPage() entered"
-     return dynamicPage(name: "otherprefs", title: "Other Preferences", nextPage: "") {
-    	section() {
-        	paragraph "For future options..."
-        }
-    }
-}
-*/
-
 def oauthInitUrl() {
 	log.debug "oauthInitUrl with callback: ${callbackUrl}"
 
@@ -307,10 +295,6 @@ def getEcobeeThermostats() {
  //         	atomicState.remoteSensors = []
                 
             	resp.data.thermostatList.each { stat ->
-//                  atomicState.remoteSensors = atomicState.remoteSensors + stat.remoteSensors  
-//                	log.debug "httpGet() - each thermostat remoteSensors: ${stat.remoteSensors}"
-//                  log.debug "httpGet() - atomicState.remoteSensors: ${atomicState.remoteSensors}"
-                  
                   	def dni = [app.id, stat.identifier].join('.')
                     stats[dni] = getThermostatDisplayName(stat)
                 }
@@ -382,18 +366,22 @@ Map getEcobeeSensors() {
         	    	log.debug "getEcobeeSensors() --> httpGet() in 200 Response"
                 	log.debug "resp.data.thermostatList.each: ${resp.data.thermostatList}"
 
+					// TODO: Test without the loop, should only have a single thermostat based on query
                     resp.data.thermostatList.each { singleStat ->
-                    
                     	log.debug "singleStat == ${singleStat.name}"
                     	atomicState.remoteSensors = atomicState.remoteSensors + singleStat.remoteSensors
+                        // TODO: Iterate over remoteSensors list and add in the thermostat DNI
+                        // 		 This is needed to work around the dynamic enum "bug" which prevents proper deletion
+                        // singleStat.remoteSensors.each { tempSensor ->
+                        //    tempSensor.thermDNI = "${thermostat}"
+                        //    atomicState.remoteSensors = atomicState.remoteSensors + tempSensor
+                        //}
                         
-	                   	log.debug "httpGet() - singleStat.remoteSensors: ${singleState.remoteSensors}"
-                    	log.debug "httpGet() - atomicState.remoteSensors: ${atomicState.remoteSensors}"
+                        
+	                   	// log.debug "httpGet() - singleStat.remoteSensors: ${singleState.remoteSensors}"
+                    	// log.debug "httpGet() - atomicState.remoteSensors: ${atomicState.remoteSensors}"
 	                  }
                    
-    	              	// def dni = [app.id, stat.identifier].join('.')
-        	            // stats[dni] = getThermostatDisplayName(stat)
-            	    
 	            } else {
     	            log.debug "getEcobeeSensors() --> httpGet() - in else: http status: ${resp.status}"
         	        //refresh the auth token
@@ -411,10 +399,7 @@ Map getEcobeeSensors() {
 	        log.debug "___exception getEcobeeSensors() (): " + e
             refreshAuthToken()
     	}
-		// atomicState.thermostats = stats
-    	// log.debug "getEcobeeSensors() - stats returned: ${stats}"
-    	// log.debug "getEcobeeSensors() - remote sensor list: ${sensorMap}"
-        
+
 		atomicState.remoteSensors.each {
 			if (it.type != "thermostat") {
 				def value = "${it?.name}"
@@ -454,7 +439,7 @@ def updated() {
 
 def initialize() {
 
-	log.debug "=====> initialize(): settings.ecobeesensors = ${settings.ecobeesensors}"
+	log.debug "=====> initialize()"
 	def devices = thermostats.collect { dni ->
 		def d = getChildDevice(dni)
 		if(!d) {
@@ -466,7 +451,6 @@ def initialize() {
 		return d
 	}
 
-//	log.debug "intialize(): settings.ecobeesensors == ${settings.ecobeesensors}"
 	def sensors = settings.ecobeesensors.collect { dni ->
 		def d = getChildDevice(dni)
 		if(!d) {
@@ -481,37 +465,26 @@ def initialize() {
 	log.debug "created ${devices.size()} thermostats and ${sensors.size()} sensors."
 
 	// Debug the deletion process
-    // TODO: Fix it so that child sensors are deleted when a Thermostat is removed
-    // The bug seems to be in the input mechanism for enums, previously selected items have to be explicitly unselected. Even if they are no longer an option!
-    def founddevices = getChildDevices() /* { !thermostats.contains(it.deviceNetworkId) && !ecobeesensors.contains(it.deviceNetworkId)} */
+	// TODO: Fix it so that child sensors are deleted when a Thermostat is removed
+	// The bug seems to be in the input mechanism for enums, previously selected items have to be explicitly unselected. Even if they are no longer an option!
+	def founddevices = getChildDevices() /* { !thermostats.contains(it.deviceNetworkId) && !ecobeesensors.contains(it.deviceNetworkId)} */
     
-    log.debug "foundDevices (all children): ${founddevices}."
-    founddevices.each {
-    	log.debug " ------> Device Network ID: ${it.deviceNetworkId}  <-----"
-    }
+	// log.debug "foundDevices (all children): ${founddevices}."
+	// founddevices.each {
+	//	log.debug " ------> Device Network ID: ${it.deviceNetworkId}  <-----"
+	// }
 
 
 	def delete  // Delete any that are no longer in settings
-    def combined = settings.thermostats + settings.ecobeesensors
+	def combined = settings.thermostats + settings.ecobeesensors  // TODO: settings.ecobeesensors may contain leftover sensors in the dynamic enum bug scenario
     
-    log.debug "Combined devices == ${combined}"
+	log.debug "Combined devices == ${combined}"
     
-    /*
-	if(!thermostats && !ecobeesensors) {
-		log.debug "delete thermostats and sensors"
-		delete = getAllChildDevices() //inherits from SmartApp (data-management)
-	} else { //delete only thermostat(s) and sensor(s) that have been removed
-		log.debug "delete individual thermostat(s) and sensor(s)"
-		if (!ecobeesensors) {
-        	log.debug "In !ecobeesensors section of else."
-			delete = getChildDevices().findAll { !thermostats.contains(it.deviceNetworkId) }
-		} else {
-        	log.debug "in else statement to delete only some devices"
-			delete = getChildDevices().findAll { !thermostats.contains(it.deviceNetworkId) && !ecobeesensors.contains(it.deviceNetworkId)}
-		}
-	}
-    */
-    delete = getChildDevices().findAll { !combined.contains(it.deviceNetworkId) }
+    if (combined) {
+    	delete = getChildDevices().findAll { !combined.contains(it.deviceNetworkId) }
+    } else {
+    	delete = getAllChildDevices() // inherits from SmartApp (data-management)
+    }
     
 	log.warn "delete: ${delete}, deleting ${delete.size()} thermostat(s) and/or sensor(s)"
 	delete.each { deleteChildDevice(it.deviceNetworkId) } //inherits from SmartApp (data-management)
