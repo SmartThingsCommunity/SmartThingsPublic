@@ -3,10 +3,11 @@
  *
  *  Copyright 2015 Bruce Ravenel
  *
- *  Version 1.5.11a   23 Dec 2015
+ *  Version 1.6.0   23 Dec 2015
  *
  *	Version History
- *
+ *	
+ *	1.6.0	23 Dec 2015		Added actions for camera to take photo burst, and expert commands per Mike Maxwell
  *	1.5.11a	23 Dec 2015		Fixed bug that prevented old triggers from running, minor UI change for rule display
  *	1.5.10	22 Dec 2015		Require capability choice for all but last rule or trigger
  *	1.5.9a	21 Dec 2015		Fixed overlap of Days of Week selection
@@ -53,6 +54,8 @@ preferences {
 //	
 //
 def selectRule() {
+	//init expert settings for rule
+    state.isExpert = parent.isExpert()
 	def myTitle = "Select Triggers, Conditions, Rule and Actions"
     if(state.isRule) myTitle = "Select Conditions, Rule and Actions"
     if(state.isTrig) myTitle = "Select Triggers and Actions"
@@ -708,6 +711,11 @@ def selectActionsTrue() {
             if(ruleTrue) setActTrue("Rules: $ruleTrue")
 			href "selectMsgTrue", title: "Send message", description: state.msgTrue ? state.msgTrue : "Tap to set", state: state.msgTrue ? "complete" : null
 			if(state.msgTrue) addToActTrue(state.msgTrue)
+            input "cameraTrue", "capability.imageCapture", title: "Camera to take photos", required: false, multiple: false, submitOnChange: true
+            if(cameraTrue) {
+            	input "burstCountTrue", "number", title: "How many? (default 5)", defaultValue:5
+                addToActTrue("Photo: $cameraTrue " + (burstCountTrue ?: ""))
+            }
             if(!randomTrue) {
 				input "delayTrue", "number", title: "Delay " + ((state.isRule || state.howMany > 1) ? "the effect of this rule" : "this action") + " by this many minutes", required: false, submitOnChange: true
 				if(delayTrue) {
@@ -723,6 +731,19 @@ def selectActionsTrue() {
 					addToActTrue(randomStr)
 				}
             }
+			if (state.isExpert){
+				def cstCmds = parent.getCommands()
+				if (cstCmds){
+					input( name: "customDeviceTrue", type: "capability.actuator", title: "Run custom device command",multiple: true, required: false, submitOnChange: true)
+					if (customDeviceTrue) {
+						input( name: "ccTrue", type: "enum", title: "Run this command", multiple: false, required: false, options: cstCmds, submitOnChange: true)
+						if (ccTrue){
+							def c = cstCmds.find{it[(ccTrue)]}[(ccTrue)] 
+							checkActTrue(customDeviceTrue, "Command: ${c} on ${customDeviceTrue}")    
+						}
+					}
+				}
+			}   
 		}
         if(state.actsTrue) state.actsTrue = state.actsTrue[0..-2]
 	}
@@ -837,18 +858,40 @@ def selectActionsFalse() {
             if(ruleFalse) setActFalse("Rules: $ruleFalse")
 			href "selectMsgFalse", title: "Send message", description: state.msgFalse ? state.msgFalse : "Tap to set", state: state.msgFalse ? "complete" : null
 			if(state.msgFalse) addToActFalse(state.msgFalse)
-			input "delayFalse", "number", title: "Delay the effect of this rule by this many minutes", required: false, submitOnChange: true
-			if(delayFalse) {
-				def delayStr = "Delay Rule: $delayFalse minute"
-				if(delayFalse > 1) delayStr = delayStr + "s"
-				addToActFalse(delayStr)
+            input "cameraFalse", "capability.imageCapture", title: "Camera to take photos", required: false, multiple: false, submitOnChange: true
+            if(cameraFalse) {
+            	input "burstCountFalse", "number", title: "How many? (default 5)", defaultValue:5
+                addToActFalse("Photo: $cameraFalse " + (burstCountFalse ?: ""))
+            }
+            if(!randomFalse) {
+				input "delayFalse", "number", title: "Delay " + ((state.isRule || state.howMany > 1) ? "the effect of this rule" : "this action") + " by this many minutes", required: false, submitOnChange: true
+				if(delayFalse) {
+					def delayStr = "Delay Rule: $delayFalse minute"
+					if(delayFalse > 1) delayStr = delayStr + "s"
+					addToActFalse(delayStr)
+				}
+            }
+            if(!delayFalse) {
+				input "randomFalse", "number", title: "Delay " + ((state.isRule || state.howMany > 1) ? "the effect of this rule" : "this action") + " by random minutes up to", required: false, submitOnChange: true
+				if(randomFalse) {
+					def randomStr = "Random Delay: $randomFalse minutes"
+					addToActFalse(randomStr)
+				}
+            }
+			if (state.isExpert){
+				def cstCmds = parent.getCommands()
+				if (cstCmds){
+					input( name: "customDeviceFalse", type: "capability.actuator", title: "Run custom device command",multiple: true, required: false, submitOnChange: true)
+					if (customDeviceFalse) {
+						input( name: "ccFalse", type: "enum", title: "Run this command", multiple: false, required: false, options: cstCmds, submitOnChange: true)
+					if (ccFalse) {
+						def c = cstCmds.find{it[(ccFalse)]}[(ccFalse)] 
+						checkActFalse(customDeviceFalse, "Command: ${c} on ${customDeviceFalse}")    
+						}
+					}
+				}
 			}
-			input "randomFalse", "number", title: "Delay the effect of this rule by random minutes up to", required: false, submitOnChange: true
-			if(randomFalse) {
-				def randomStr = "Random Delay: $randomFalse minutes"
-				addToActFalse(randomStr)
-			}
-		}
+        }
         if(state.actsFalse) state.actsFalse = state.actsFalse[0..-2]
 	}
 }
@@ -1276,8 +1319,11 @@ def runRule(delay) {
 				if(modeTrue) 		setLocationMode(modeTrue)
         		if(ruleTrue)		parent.runRule(ruleTrue, app.label)
 				if(myPhraseTrue)	location.helloHome.execute(myPhraseTrue)
+                if(cameraTrue) 		{	cameraTrue.take() 
+                					(1..((burstCountTrue ?: 5) - 1)).each {cameraTrue.take(delay: (500 * it))}   }
 				if(pushTrue)		sendPush(msgTrue ?: "Rule $app.label True")
 				if(phoneTrue)		sendSms(phoneTrue, msgTrue ?: "Rule $app.label True")
+				if(customDeviceTrue)  execCommand(customDeviceTrue,ccTrue)
 			} else {
 				if(onSwitchFalse) 	onSwitchFalse.on()
 				if(offSwitchFalse) 	offSwitchFalse.off()
@@ -1305,8 +1351,11 @@ def runRule(delay) {
 				if(modeFalse) 		setLocationMode(modeFalse)
         		if(ruleFalse)		parent.runRule(ruleFalse, app.label)
 				if(myPhraseFalse) 	location.helloHome.execute(myPhraseFalse)
+                if(cameraFalse) 		{	cameraFalse.take() 
+                						(1..((burstCountFalse ?: 5) - 1)).each {cameraFalse.take(delay: (500 * it))}   }
 				if(pushFalse)		sendPush(msgFalse ?: "Rule $app.label False")
 				if(phoneFalse)		sendSms(phoneFalse, msgFalse ?: "Rule $app.label False")
+				if(customDeviceFalse)  execCommand(customDeviceFalse,ccFalse)
 			}
 			state.success = success
 			log.info (success ? "$app.label is True" : "$app.label is False")
@@ -1349,6 +1398,7 @@ def doTrigger(delay) {
 		if(myPhraseTrue)		location.helloHome.execute(myPhraseTrue)
 		if(pushTrue)			sendPush(msgTrue ?: "Rule $app.label True")
 		if(phoneTrue)			sendSms(phoneTrue, msgTrue ?: "Rule $app.label True")
+		if(customDeviceTrue)  execCommand(customDeviceTrue,ccTrue)
 	}
     log.info ("$app.label Ran")
 //    sendNotificationEvent("$app.label Ran")
@@ -1689,4 +1739,38 @@ private setColor(trufal) {
 	def newValue = [hue: hueColor, saturation: saturation, level: lightLevel as Integer ?: 100]
 	if(trufal) bulbsTrue.setColor(newValue) else bulbsFalse.setColor(newValue)
 	if(lightLevel == 0) {if(trufal) bulbsTrue.off() else bulbsFalse.off()}
+}
+
+//custom command execute method
+def execCommand(devices,cmdID){
+	def result = ""
+	def pList = []
+	def cmdMap = parent.getCommandMap(cmdID) 
+	if (cmdMap) {
+		def params = cmdMap.params.sort()
+		params.each{ p ->
+			if (p.value.type == "string"){
+				pList << "${p.value.value}"
+			} else if (p.value.type == "decimal"){
+				pList << p.value.value.toBigDecimal()
+			} else {
+				pList << p.value.value.toInteger()
+			}
+		}
+		def p = pList as Object[]
+		devices.each { device ->
+			try {
+				device."${cmdMap.cmd}"(p)
+				//result = "Command succeeded"
+			}
+			catch (IllegalArgumentException e){
+				def em = e as String
+				def ems = em.split(":")
+				ems = ems[2].replace(" [","").replace("]","")
+				ems = ems.replaceAll(", ","\n")
+				result = "${device.displayName}, command failed, valid commands:\n${ems}"
+			}
+		}
+		log.debug result
+	}
 }
