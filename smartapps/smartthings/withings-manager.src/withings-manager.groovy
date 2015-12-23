@@ -24,7 +24,7 @@ definition(
 	namespace: "smartthings",
 	author: "SmartThings",
 	description: "Connect With Withings",
-	category: "",
+	category: "Convenience",
 	iconUrl: "https://s3.amazonaws.com/smartapp-icons/Partner/withings.png",
 	iconX2Url: "https://s3.amazonaws.com/smartapp-icons/Partner/withings%402x.png",
 	iconX3Url: "https://s3.amazonaws.com/smartapp-icons/Partner/withings%402x.png",
