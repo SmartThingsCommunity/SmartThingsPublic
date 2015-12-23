@@ -3,7 +3,7 @@
  *
  *  Copyright 2015 Bruce Ravenel
  *
- *  Version 1.6.0a   23 Dec 2015
+ *  Version 1.6.0b   23 Dec 2015
  *
  *	Version History
  *	
@@ -1461,7 +1461,8 @@ def testEvt(evt) {
 }
 
 def allHandler(evt) {
-	log.info "$app.label: $evt.displayName $evt.name $evt.value"
+	if(!allOk) return
+    log.info "$app.label: $evt.displayName $evt.name $evt.value"
     def hasTrig = state.howManyT > 1
     def hasCond = state.howMany > 1
     def doit = true
@@ -1591,7 +1592,7 @@ private getAllOk() {
 
 private hideOptionsSection() {
 	if(state.isRule) (modesZ || advanced) ? false : true
-    else (starting || ending || daysY || modes || startingX || endingX || disabled) ? false : true
+    else (starting || ending || daysY || modes || modesY || startingX || endingX || disabled) ? false : true
 }
 
 private getModeZOk() {
