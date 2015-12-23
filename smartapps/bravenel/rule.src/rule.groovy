@@ -3,10 +3,11 @@
  *
  *  Copyright 2015 Bruce Ravenel
  *
- *  Version 1.5.9a   21 Dec 2015
+ *  Version 1.5.10   22 Dec 2015
  *
  *	Version History
  *
+ *	1.5.10	22 Dec 2015		Require capability choice for all but last rule or trigger
  *	1.5.9a	21 Dec 2015		Fixed overlap of Days of Week selection
  *	1.5.8	20 Dec 2015		More repair for that same mode bug; fixed so triggered-rule not tested at install
  *	1.5.7	19 Dec 2015		Fixed bug re: selecting mode as condition/trigger, UI display
@@ -123,7 +124,7 @@ def selectTriggers() {
 			for (int i = 1; i <= state.howManyT; i++) {
 				def thisCapab = "tCapab$i"
 				section((i > 1 ? "OR " : "") + "Event Trigger #$i") {
-					getCapab(thisCapab, true)
+					getCapab(thisCapab, true, i < state.howManyT)
 					def myCapab = settings.find {it.key == thisCapab}
 					if(myCapab) {
 						def xCapab = myCapab.value 
@@ -156,7 +157,7 @@ def selectConditions() {
 			for (int i = 1; i <= state.howMany; i++) {
 				def thisCapab = "rCapab$i"
 				section(state.isTrig ? "Event Trigger #$i" : "Condition #$i") {
-					getCapab(thisCapab, false)
+					getCapab(thisCapab, false, i < state.howMany)
 					def myCapab = settings.find {it.key == thisCapab}
 					if(myCapab) {
 						def xCapab = myCapab.value 
@@ -275,13 +276,13 @@ def getRelational(myDev) {
 	def result = input "Rel$myDev", "enum", title: "Choose comparison", required: true, options: ["=", "!=", "<", ">", "<=", ">="]
 }
 
-def getCapab(myCapab, isTrig) {  
+def getCapab(myCapab, isTrig, isReq) {  
 	def myOptions = null
 	if(state.isRule || !isTrig) myOptions = ["Switch", "Motion", "Acceleration", "Contact", "Presence", "Lock", "Temperature", "Humidity", "Illuminance", "Time of day", "Rule truth",
     	"Days of week", "Mode", "Dimmer level", "Energy meter", "Power meter", "Water sensor", "Battery", "Carbon monoxide detector", "Smoke detector", "Smart Home Monitor", "Garage door"]
     if(state.isTrig || isTrig) myOptions = ["Switch", "Physical Switch", "Motion", "Acceleration", "Contact", "Presence", "Lock", "Temperature", "Humidity", "Illuminance", "Certain Time", "Rule truth",
     	"Mode", "Energy meter", "Power meter", "Water sensor", "Battery", "Routine", "Button", "Dimmer level", "Carbon monoxide detector", "Smoke detector", "Smart Home Monitor", "Garage door"]
-	def result = input myCapab, "enum", title: "Select capability", required: false, options: myOptions.sort(), submitOnChange: true
+	def result = input myCapab, "enum", title: "Select capability", required: isReq, options: myOptions.sort(), submitOnChange: true
 }
 
 def getState(myCapab, n, isTrig) {
