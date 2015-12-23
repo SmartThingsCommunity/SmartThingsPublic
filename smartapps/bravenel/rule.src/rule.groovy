@@ -3,11 +3,11 @@
  *
  *  Copyright 2015 Bruce Ravenel
  *
- *  Version 1.5.11   23 Dec 2015
+ *  Version 1.5.11a   23 Dec 2015
  *
  *	Version History
  *
- *	1.5.11	23 Dec 2015		Fixed bug that prevented old triggers from running
+ *	1.5.11a	23 Dec 2015		Fixed bug that prevented old triggers from running, minor UI change for rule display
  *	1.5.10	22 Dec 2015		Require capability choice for all but last rule or trigger
  *	1.5.9a	21 Dec 2015		Fixed overlap of Days of Week selection
  *	1.5.8	20 Dec 2015		More repair for that same mode bug; fixed so triggered-rule not tested at install
@@ -517,7 +517,7 @@ def inputRight(sub) {
 	state.n = state.n + 1
 	input "operator$state.n", "enum", title: "AND  or  OR", options: ["AND", "OR"], submitOnChange: true, required: false
 	if(settings["operator$state.n"]) {
-		state.str = state.str + " " + settings["operator$state.n"] + " "
+		state.str = state.str + "\n" + settings["operator$state.n"] + "\n"
 		state.eval << settings["operator$state.n"]
 		paragraph(state.str)
 		def conds = []
