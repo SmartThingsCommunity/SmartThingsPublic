@@ -3,7 +3,7 @@
  *
  *  Copyright 2015 Bruce Ravenel
  *
- *  Version 1.6.0   23 Dec 2015
+ *  Version 1.6.0a   23 Dec 2015
  *
  *	Version History
  *	
@@ -55,7 +55,8 @@ preferences {
 //
 def selectRule() {
 	//init expert settings for rule
-    state.isExpert = parent.isExpert()
+    try { state.isExpert = parent.isExpert() }
+    catch (e) {log.error "Please update Rule Machine to V1.6 or later"}
 	def myTitle = "Select Triggers, Conditions, Rule and Actions"
     if(state.isRule) myTitle = "Select Conditions, Rule and Actions"
     if(state.isTrig) myTitle = "Select Triggers and Actions"
