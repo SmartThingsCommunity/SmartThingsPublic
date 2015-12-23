@@ -3,10 +3,11 @@
  *
  *  Copyright 2015 Bruce Ravenel
  *
- *  Version 1.5.10   22 Dec 2015
+ *  Version 1.5.11   23 Dec 2015
  *
  *	Version History
  *
+ *	1.5.11	23 Dec 2015		Fixed bug that prevented old triggers from running
  *	1.5.10	22 Dec 2015		Require capability choice for all but last rule or trigger
  *	1.5.9a	21 Dec 2015		Fixed overlap of Days of Week selection
  *	1.5.8	20 Dec 2015		More repair for that same mode bug; fixed so triggered-rule not tested at install
@@ -1533,7 +1534,7 @@ private timeIntervalLabelX() {
 
 private getAllOk() {
 	if(state.isRule) modeZOk && !state.disabled  //&& daysOk && timeOk
-    else if(state.isTrig) modeYOk && daysOK && timeOk && !state.disabled
+    else if(state.isTrig) modeYOk && daysOk && timeOk && !state.disabled
     else modeYOk && daysYOk && timeOk && !state.disabled
 }
 
@@ -1550,7 +1551,7 @@ private getModeZOk() {
 
 private getModeYOk() {
 	def result = !modesY || modesY.contains(location.mode)
-//	log.trace "modeZOk = $result"
+//	log.trace "modeYOk = $result"
 	return result
 }
 
@@ -1588,7 +1589,7 @@ private getDaysYOk() {
 		def day = df.format(new Date())
 		result = daysY.contains(day)
 	}
-//	log.trace "daysOk = $result"
+//	log.trace "daysYOk = $result"
 	return result
 }
 
