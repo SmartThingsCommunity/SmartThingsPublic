@@ -3,10 +3,11 @@
  *
  *  Copyright 2015 Bruce Ravenel and Mike Maxwell
  *
- *  Version 1.6   23 Dec 2015
+ *  Version 1.6.1   23 Dec 2015
  *
  *	Version History
  *	
+ *	1.6.1	24 Dec 2015		UI improvement
  *	1.6		23 Dec 2015		Added expert commands per Mike Maxwell
  *
  *  Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except
@@ -49,12 +50,12 @@ def mainPage() {
         section {
             app(name: "childRules", appName: "Rule", namespace: "bravenel", title: "Create New Rule...", multiple: true)
         }
+		section {
+			href( "expert", title: "", description: "Expert Features", state: "")
+        }
         section {
         	href "removePage", description: "Remove Rule Machine", title: ""
         }
-		section {
-			href( "expert", title: "", description: "Expert Features", state: "")
-		}
     }
 }
 
