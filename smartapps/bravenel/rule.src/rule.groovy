@@ -3,11 +3,11 @@
  *
  *  Copyright 2015 Bruce Ravenel
  *
- *  Version 1.6.1   24 Dec 2015
+ *  Version 1.6.1a   24 Dec 2015
  *
  *	Version History
  *
- *	1.6.1	24 Dec 2015		Added ability to send device name with push or SMS
+ *	1.6.1a	24 Dec 2015		Added ability to send device name with push or SMS, show rule truth on main page
  *	1.6.0	23 Dec 2015		Added actions for camera to take photo burst, and expert commands per Mike Maxwell
  *	1.5.11a	23 Dec 2015		Fixed bug that prevented old triggers from running, minor UI change for rule display
  *	1.5.10	22 Dec 2015		Require capability choice for all but last rule or trigger
@@ -99,8 +99,9 @@ def selectRule() {
 				href "selectTriggers", title: "Define Triggers " + (state.howManyT in [null, 1] ? "(Optional)" : ""), description: trigLabel ? (trigLabel) : "Tap to set", state: trigLabel ? "complete" : null, submitOnChange: true
 				def condLabel = conditionLabel()
 				href "selectConditions", title: "Define Conditions " + (state.howMany in [null, 1] ? "(Optional)" : ""), description: condLabel ? (condLabel) : "Tap to set", state: condLabel ? "complete" : null, submitOnChange: true
+                def ruleLabel = rulLabl()
                 if(state.howMany > 1) 
-					href "defineRule", title: "Define a Rule", description: state.str ? (state.str) : "Tap to set", state: state.str ? "complete" : null, submitOnChange: true
+					href "defineRule", title: "Define a Rule", description: ruleLabel ? (ruleLabel) : "Tap to set", state: ruleLabel ? "complete" : null, submitOnChange: true
 				href "selectActionsTrue", title: "Select Actions" + (state.howMany > 1 ? " for True" : ""), description: state.actsTrue ? state.actsTrue : "Tap to set", state: state.actsTrue ? "complete" : null, submitOnChange: true
                 if(state.howMany > 1)
 					href "selectActionsFalse", title: "Select Actions for False", description: state.actsFalse ? state.actsFalse : "Tap to set", state: state.actsFalse ? "complete" : null, submitOnChange: true
@@ -492,6 +493,15 @@ def defineRule() {
 		state.eval = []
 		section() {inputLeftAndRight(false)}
 	}
+}
+
+def rulLabl() {
+	def result = state.str
+    if(state.eval && state.str) {
+    	state.token = 0
+        def tru = eval()
+        result = result + "\n[" + (tru ? "TRUE" : "FALSE") + "]"
+    }
 }
 
 def inputLeft(sub) {
