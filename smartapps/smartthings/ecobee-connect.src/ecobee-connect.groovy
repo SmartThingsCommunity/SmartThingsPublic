@@ -359,13 +359,13 @@ Map getEcobeeSensors() {
                     	atomicState.remoteSensors = atomicState.remoteSensors + singleStat.remoteSensors
                         // TODO: Iterate over remoteSensors list and add in the thermostat DNI
                         // 		 This is needed to work around the dynamic enum "bug" which prevents proper deletion
-                        // singleStat.remoteSensors.each { tempSensor ->
-                        //    tempSensor.thermDNI = "${thermostat}"
-                        //    atomicState.remoteSensors = atomicState.remoteSensors + tempSensor
-                        //}
+                        singleStat.remoteSensors.each { tempSensor ->
+                            tempSensor.thermDNI = "${thermostat}"
+                            atomicState.remoteSensors = atomicState.remoteSensors + tempSensor
+                        }
 
-						// log.debug "httpGet() - singleStat.remoteSensors: ${singleState.remoteSensors}"
-                    	// log.debug "httpGet() - atomicState.remoteSensors: ${atomicState.remoteSensors}"
+						log.debug "httpGet() - singleStat.remoteSensors: ${singleState.remoteSensors}"
+                    	log.debug "httpGet() - atomicState.remoteSensors: ${atomicState.remoteSensors}"
 					}
                    
 				} else {
@@ -396,7 +396,7 @@ Map getEcobeeSensors() {
 	} // end thermostats.each loop
 
 	log.debug "getEcobeeSensors() - remote sensor list: ${sensorMap}"
-    atomicState.sensors = sensorMap
+    atomicState.eligibleSensors = sensorMap
 	return sensorMap
         
 }
@@ -440,7 +440,7 @@ def initialize() {
 	def sensors = settings.ecobeesensors.collect { dni ->
 		def d = getChildDevice(dni)
 		if(!d) {
-			d = addChildDevice(app.namespace, getSensorChildName(), dni, null, ["label":"Ecobee Sensor:${atomicState.sensors[dni]}"])
+			d = addChildDevice(app.namespace, getSensorChildName(), dni, null, ["label":"Ecobee Sensor:${atomicState.eligibleSensors[dni]}"])
 			log.debug "created ${d.displayName} with id $dni"
 		} else {
 			log.debug "found ${d.displayName} with id $dni already exists"
@@ -462,12 +462,28 @@ def initialize() {
 
 
 	def delete  // Delete any that are no longer in settings
-	def combined = settings.thermostats + settings.ecobeesensors  // TODO: settings.ecobeesensors may contain leftover sensors in the dynamic enum bug scenario
+    // WORKAROUND: settings.ecobeesensors may contain leftover sensors in the dynamic enum bug scenario, use info in atomicState.eligibleSensors instead
+    // TODO: Need to deal with individual sensors from remaining thermostats that might be excluded...
+    // TODO: Cleanup this code now that it is working!
+    def sensorList = atomicState.eligibleSensors.keySet()
+    atomicState.eligibleSensorsAsList = sensorList
     
+    def reducedSensorList = settings.ecobeesensors.findAll { sensorList.contains(it) }
+    log.info "**** reducedSensorList = ${reducedSensorList} *****"
+    atomicState.activeSensors = reducedSensorList
+    
+    
+    log.debug "sensorList based on keys: ${sensorList} from atomicState.sensors: ${atomicState.eligibleSensors}"
+    
+	def combined = settings.thermostats + atomicState.activeSensors  
 	log.debug "Combined devices == ${combined}"
     
+    // Determine if any thermostats have been removed
+    // def deletedThermostats = getChildDevices().findAll { !settings.thermostats.contains(it.deviceNetworkId) }
+    // log.warn "deletedThermostats = ${deletedThermostats}"
+    
     if (combined) {
-    	delete = getChildDevices().findAll { !combined.contains(it.deviceNetworkId) }
+    	delete = getChildDevices().findAll { !combined.contains(it.deviceNetworkId) }        
     } else {
     	delete = getAllChildDevices() // inherits from SmartApp (data-management)
     }
@@ -482,7 +498,7 @@ def initialize() {
     sendActivityFeeds(notificationMessage)
     atomicState.timeSendPush = null
 
-	pollHandler() //first time polling data data from thermostat
+	pollHandler() //first time polling data from thermostat
 
 	//automatically update devices status every 5 mins
 	runEvery5Minutes("poll")
@@ -509,6 +525,7 @@ def pollHandler() {
 	}
 }
 
+// Determines what data is sent to each of the children
 def pollChildren(child = null) {
 	def thermostatIdsString = getChildDeviceIdsString()
 	log.debug "polling children: $thermostatIdsString"
@@ -594,6 +611,7 @@ def pollChildren(child = null) {
 
 // Poll Child is invoked from the Child Device itself as part of the Poll Capability
 def pollChild(child){
+	log.debug "pollChild() called by ${child}"
 
 	if (pollChildren(child)){
 		if (!child.device.deviceNetworkId.startsWith("ecobee_sensor")){
