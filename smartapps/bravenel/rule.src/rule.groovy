@@ -3,10 +3,11 @@
  *
  *  Copyright 2015 Bruce Ravenel
  *
- *  Version 1.6.0c   23 Dec 2015
+ *  Version 1.6.1   24 Dec 2015
  *
  *	Version History
- *	
+ *
+ *	1.6.1	24 Dec 2015		Added ability to send device name with push or SMS
  *	1.6.0	23 Dec 2015		Added actions for camera to take photo burst, and expert commands per Mike Maxwell
  *	1.5.11a	23 Dec 2015		Fixed bug that prevented old triggers from running, minor UI change for rule display
  *	1.5.10	22 Dec 2015		Require capability choice for all but last rule or trigger
@@ -901,9 +902,10 @@ def selectMsgTrue() {
 		section("") {
 			input "pushTrue", "bool", title: "Send Push Notification?", required: false, submitOnChange: true
 			input "msgTrue", "text", title: "Custom message to send", required: false, submitOnChange: true
+            input "refDevTrue", "bool", title: "Include device name?", required: false, submitOnChange: true
 			input "phoneTrue", "phone", title: "Phone number for SMS", required: false, submitOnChange: true
 		}
-        state.msgTrue = (pushTrue ? "Push" : "") + (msgTrue ? " '$msgTrue'" : "") + (phoneTrue ? " to $phoneTrue" : "")
+        state.msgTrue = (pushTrue ? "Push" : "") + (msgTrue ? " '$msgTrue'" : "") + (refDevTrue ? " [device]" : "") + (phoneTrue ? " to $phoneTrue" : "")
 	}
 }
 
@@ -912,9 +914,10 @@ def selectMsgFalse() {
 		section("") {
 			input "pushFalse", "bool", title: "Send Push Notification?", required: false, submitOnChange: true
 			input "msgFalse", "text", title: "Custom message to send", required: false, submitOnChange: true
+            input "refDevFalse", "bool", title: "Include device name?", required: false, submitOnChange: true
 			input "phoneFalse", "phone", title: "Phone number for SMS", required: false, submitOnChange: true
 		}
-        state.msgFalse = (pushFalse ? "Push" : "") + (msgFalse ? " '$msgFalse'" : "") + (phoneFalse ? " to $phoneFalse" : "")
+        state.msgFalse = (pushFalse ? "Push" : "") + (msgFalse ? " '$msgFalse'" : "") + (refDevFalse ? " [device]" : "") + (phoneFalse ? " to $phoneFalse" : "")
 	}
 }
 
@@ -1322,8 +1325,8 @@ def runRule(delay) {
 				if(myPhraseTrue)	location.helloHome.execute(myPhraseTrue)
                 if(cameraTrue) 		{	cameraTrue.take() 
                 					(1..((burstCountTrue ?: 5) - 1)).each {cameraTrue.take(delay: (500 * it))}   }
-				if(pushTrue)		sendPush(msgTrue ?: "Rule $app.label True")
-				if(phoneTrue)		sendSms(phoneTrue, msgTrue ?: "Rule $app.label True")
+				if(pushTrue)		sendPush((msgTrue ?: "Rule $app.label True") + (refDevTrue ? " $state.lastEvtName" : ""))
+				if(phoneTrue)		sendSms(phoneTrue, (msgTrue ?: "Rule $app.label True") + (refDevTrue ? " $state.lastEvtName" : ""))
 				if(customDeviceTrue)  execCommand(customDeviceTrue,ccTrue)
 			} else {
 				if(onSwitchFalse) 	onSwitchFalse.on()
@@ -1354,8 +1357,8 @@ def runRule(delay) {
 				if(myPhraseFalse) 	location.helloHome.execute(myPhraseFalse)
                 if(cameraFalse) 		{	cameraFalse.take() 
                 						(1..((burstCountFalse ?: 5) - 1)).each {cameraFalse.take(delay: (500 * it))}   }
-				if(pushFalse)		sendPush(msgFalse ?: "Rule $app.label False")
-				if(phoneFalse)		sendSms(phoneFalse, msgFalse ?: "Rule $app.label False")
+				if(pushFalse)		sendPush((msgFalse ?: "Rule $app.label False") + (refDevFalse ? " $state.lastEvtName" : ""))
+				if(phoneFalse)		sendSms(phoneFalse, (msgFalse ?: "Rule $app.label False") + (refDevFalse ? " $state.lastEvtName" : ""))
 				if(customDeviceFalse)  execCommand(customDeviceFalse,ccFalse)
 			}
 			state.success = success
@@ -1397,8 +1400,8 @@ def doTrigger(delay) {
 		if(modeTrue) 			setLocationMode(modeTrue)
         if(ruleTrue)			parent.runRule(ruleTrue, app.label)
 		if(myPhraseTrue)		location.helloHome.execute(myPhraseTrue)
-		if(pushTrue)			sendPush(msgTrue ?: "Rule $app.label True")
-		if(phoneTrue)			sendSms(phoneTrue, msgTrue ?: "Rule $app.label True")
+		if(pushTrue)			sendPush((msgTrue ?: "Rule $app.label True") + (refDevTrue ? " $state.lastEvtName" : ""))
+		if(phoneTrue)			sendSms(phoneTrue, (msgTrue ?: "Rule $app.label True") + (refDevTrue ? " $state.lastEvtName" : ""))
 		if(customDeviceTrue)  execCommand(customDeviceTrue,ccTrue)
 	}
     log.info ("$app.label Ran")
@@ -1463,6 +1466,7 @@ def testEvt(evt) {
 def allHandler(evt) {
 	if(!allOk) return
     log.info "$app.label: $evt.displayName $evt.name $evt.value"
+    state.lastEvtName = evt.displayName
     def hasTrig = state.howManyT > 1
     def hasCond = state.howMany > 1
     def doit = true
