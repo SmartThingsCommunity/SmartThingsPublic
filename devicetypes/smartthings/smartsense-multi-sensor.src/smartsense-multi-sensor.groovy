@@ -30,6 +30,7 @@
  		fingerprint inClusters: "0000,0001,0003,0402,0500,0020,0B05,FC02", outClusters: "0019", manufacturer: "CentraLite", model: "3320"
 		fingerprint inClusters: "0000,0001,0003,0402,0500,0020,0B05,FC02", outClusters: "0019", manufacturer: "CentraLite", model: "3321"
         fingerprint inClusters: "0000,0001,0003,0402,0500,0020,0B05,FC02", outClusters: "0019", manufacturer: "CentraLite", model: "3321-S", deviceJoinName: "Multipurpose Sensor"
+        fingerprint inClusters: "0000,0001,0003,000F,0020,0402,0500,FC02", outClusters: "0019", manufacturer: "SmartThings", model: "multiv4", deviceJoinName: "Multipurpose Sensor"
 
 		attribute "status", "string"
  	}
@@ -115,31 +116,30 @@
 	}
  }
 
- def parse(String description) {
- 	
- 	Map map = [:]
- 	if (description?.startsWith('catchall:')) {
- 		map = parseCatchAllMessage(description)
- 	}
- 	else if (description?.startsWith('read attr -')) {
- 		map = parseReportAttributeMessage(description)
- 	}
+def parse(String description) {
+	Map map = [:]
+	if (description?.startsWith('catchall:')) {
+		map = parseCatchAllMessage(description)
+	}
     else if (description?.startsWith('temperature: ')) {
- 		map = parseCustomMessage(description)
- 	}
- 	else if (description?.startsWith('zone status')) {
- 		map = parseIasMessage(description)
- 	}
+		map = parseCustomMessage(description)
+	}
+	else if (description?.startsWith('zone status')) {
+		map = parseIasMessage(description)
+	}
 
  	def result = map ? createEvent(map) : null
 
- 	if (description?.startsWith('enroll request')) {
- 		List cmds = enrollResponse()
- 		log.debug "enroll response: ${cmds}"
- 		result = cmds?.collect { new physicalgraph.device.HubAction(it) }
- 	}
- 	return result
- }
+	if (description?.startsWith('enroll request')) {
+		List cmds = enrollResponse()
+		log.debug "enroll response: ${cmds}"
+		result = cmds?.collect { new physicalgraph.device.HubAction(it) }
+	}
+    else if (description?.startsWith('read attr -')) {
+        result = parseReportAttributeMessage(description).each { createEvent(it) }
+    }
+	return result
+}
 
  private Map parseCatchAllMessage(String description) {
  	Map resultMap = [:]
@@ -178,28 +178,40 @@ private boolean shouldProcessMessage(cluster) {
     return !ignoredMessage
 }
 
-private Map parseReportAttributeMessage(String description) {
+private List parseReportAttributeMessage(String description) {
 	Map descMap = (description - "read attr - ").split(",").inject([:]) { map, param ->
 		def nameAndValue = param.split(":")
 		map += [(nameAndValue[0].trim()):nameAndValue[1].trim()]
 	}
-    
-    Map resultMap = [:]
+
+	List result = []
 	if (descMap.cluster == "0402" && descMap.attrId == "0000") {
 		def value = getTemperature(descMap.value)
-		resultMap = getTemperatureResult(value)
+		result << getTemperatureResult(value)
 	}
 	else if (descMap.cluster == "FC02" && descMap.attrId == "0010") {
-  		resultMap = getAccelerationResult(descMap.value)
+		if (descMap.value.size() == 32) {
+			// value will look like 00ae29001403e2290013001629001201
+			// breaking this apart and swapping byte order where appropriate, this breaks down to:
+			//   X (0x0012) = 0x0016
+			//   Y (0x0013) = 0x03E2
+			//   Z (0x0014) = 0x00AE
+			// note that there is a known bug in that the x,y,z attributes are interpreted in the wrong order
+			// this will be fixed in a future update
+			def threeAxisAttributes = descMap.value[0..-9]
+			result << parseAxis(threeAxisAttributes)
+			descMap.value = descMap.value[-2..-1]
+		}
+        result << getAccelerationResult(descMap.value)
 	}
-    else if (descMap.cluster == "FC02" && descMap.attrId == "0012") {
-  		resultMap = parseAxis(descMap.value)
+	else if (descMap.cluster == "FC02" && descMap.attrId == "0012") {
+        result << parseAxis(descMap.value)
 	}
 	else if (descMap.cluster == "0001" && descMap.attrId == "0020") {
-		resultMap = getBatteryResult(Integer.parseInt(descMap.value, 16))
+		result << getBatteryResult(Integer.parseInt(descMap.value, 16))
 	}
 
-	return resultMap
+	return result
 }
 
 private Map parseCustomMessage(String description) {
@@ -359,33 +371,50 @@ def getTemperature(value) {
 
 	def refresh() {
 		log.debug "Refreshing Values "
-		def refreshCmds = [
         
-        /* sensitivity - default value (8) */
+        def refreshCmds = []
         
-        "zcl mfg-code 0x104E", "delay 200",
-        "zcl global write 0xFC02 0 0x20 {02}", "delay 200",
-        "send 0x${device.deviceNetworkId} 1 1", "delay 400",
+		if (device.getDataValue("manufacturer") == "SmartThings") {
+        	
+			log.debug "Refreshing Values for manufacturer: SmartThings "
+         	refreshCmds = refreshCmds + [
 
-		"st rattr 0x${device.deviceNetworkId} 1 0x402 0", "delay 200",
-		"st rattr 0x${device.deviceNetworkId} 1 1 0x20", "delay 200",
+	            /* These values of Motion Threshold Multiplier(01) and Motion Threshold (D200) 
+	               seem to be giving pretty accurate results for the XYZ co-ordinates for this manufacturer. 
+	               Separating these out in a separate if-else because I do not want to touch Centralite part 
+	               as of now. 
+	            */
 
-        "zcl mfg-code 0x104E", "delay 200",
-        "zcl global read 0xFC02 0x0010",
-        "send 0x${device.deviceNetworkId} 1 1","delay 400",
+	            "zcl mfg-code ${manufacturerCode}", "delay 200",
+	            "zcl global write 0xFC02 0 0x20 {01}", "delay 200",
+	            "send 0x${device.deviceNetworkId} 1 1", "delay 400",
+	            
+	            "zcl mfg-code ${manufacturerCode}", "delay 200",
+	            "zcl global write 0xFC02 2 0x21 {D200}", "delay 200",
+            	"send 0x${device.deviceNetworkId} 1 1", "delay 400",
+                
+            ]
+            
         
-        "zcl mfg-code 0x104E", "delay 200",
-        "zcl global read 0xFC02 0x0012",
-        "send 0x${device.deviceNetworkId} 1 1","delay 400",
+        } else {
+             refreshCmds = refreshCmds + [
+
+                /* sensitivity - default value (8) */
+	            "zcl mfg-code ${manufacturerCode}", "delay 200",
+                "zcl global write 0xFC02 0 0x20 {02}", "delay 200",
+            	"send 0x${device.deviceNetworkId} 1 1", "delay 400",
+            ]
+        }
         
-        "zcl mfg-code 0x104E", "delay 200",
-        "zcl global read 0xFC02 0x0013",
-        "send 0x${device.deviceNetworkId} 1 1","delay 400",
-        
-        "zcl mfg-code 0x104E", "delay 200",
-        "zcl global read 0xFC02 0x0014",
-        "send 0x${device.deviceNetworkId} 1 1", "delay 400"
-		]
+        //Common refresh commands
+        refreshCmds = refreshCmds + [
+            "st rattr 0x${device.deviceNetworkId} 1 0x402 0", "delay 200",
+            "st rattr 0x${device.deviceNetworkId} 1 1 0x20", "delay 200",
+
+            "zcl mfg-code ${manufacturerCode}", "delay 200",
+            "zcl global read 0xFC02 0x0010",
+            "send 0x${device.deviceNetworkId} 1 1","delay 400"
+        ]
 
 		return refreshCmds + enrollResponse()
 	}
@@ -409,19 +438,19 @@ def getTemperature(value) {
 		"send 0x${device.deviceNetworkId} 1 ${endpointId}", "delay 500",
 
 		"zdo bind 0x${device.deviceNetworkId} ${endpointId} 1 0xFC02 {${device.zigbeeId}} {}", "delay 200",
-		"zcl mfg-code 0x104E", 
+		"zcl mfg-code ${manufacturerCode}",
 		"zcl global send-me-a-report 0xFC02 0x0010 0x18 10 3600 {01}",
 		"send 0x${device.deviceNetworkId} 1 ${endpointId}", "delay 500",
 
-		"zcl mfg-code 0x104E",
+		"zcl mfg-code ${manufacturerCode}",
 		"zcl global send-me-a-report 0xFC02 0x0012 0x29 1 3600 {01}",
 		"send 0x${device.deviceNetworkId} 1 ${endpointId}", "delay 500",
 
-		"zcl mfg-code 0x104E",
+		"zcl mfg-code ${manufacturerCode}",
 		"zcl global send-me-a-report 0xFC02 0x0013 0x29 1 3600 {01}",
 		"send 0x${device.deviceNetworkId} 1 ${endpointId}", "delay 500",
 
-		"zcl mfg-code 0x104E",
+		"zcl mfg-code ${manufacturerCode}",
 		"zcl global send-me-a-report 0xFC02 0x0014 0x29 1 3600 {01}",
 		"send 0x${device.deviceNetworkId} 1 ${endpointId}", "delay 500"
 
@@ -461,19 +490,34 @@ private Map parseAxis(String description) {
 			xyzResults.x = signedX
             log.debug "X Part: ${signedX}"
         }
+        // Y and the Z axes are interchanged between SmartThings's implementation and Centralite's implementation
         else if (part.startsWith("13")) {
 			def unsignedY = hexToInt(part.split("13")[1].trim())
 			def signedY = unsignedY > 32767 ? unsignedY - 65536 : unsignedY
-			xyzResults.y = signedY
-            log.debug "Y Part: ${signedY}"
+			if (device.getDataValue("manufacturer") == "SmartThings") {
+                xyzResults.z = -signedY
+                log.debug "Z Part: ${xyzResults.z}"
+                if (garageSensor == "Yes")
+                    garageEvent(xyzResults.z)
+            } 
+            else {
+                xyzResults.y = signedY
+                log.debug "Y Part: ${signedY}"
+            }
         }
         else if (part.startsWith("14")) {
 			def unsignedZ = hexToInt(part.split("14")[1].trim())
 			def signedZ = unsignedZ > 32767 ? unsignedZ - 65536 : unsignedZ
-			xyzResults.z = signedZ
-            log.debug "Z Part: ${signedZ}"
-			if (garageSensor == "Yes")
-				garageEvent(signedZ)
+			if (device.getDataValue("manufacturer") == "SmartThings") {
+                xyzResults.y = signedZ
+                log.debug "Y Part: ${signedZ}"
+            } else {
+                xyzResults.z = signedZ
+                log.debug "Z Part: ${signedZ}"
+                if (garageSensor == "Yes")
+                    garageEvent(signedZ)
+            
+            }
         }
     }
 
@@ -519,6 +563,14 @@ private Map getXyzResult(results, description) {
 	]
 }
 
+private getManufacturerCode() {
+	if (device.getDataValue("manufacturer") == "SmartThings") {
+		return "0x110A"
+	} else {
+		return "0x104E"
+	}
+}
+
 private hexToInt(value) {
 	new BigInteger(value, 16)
 }
@@ -544,4 +596,5 @@ private byte[] reverseArray(byte[] array) {
 	}
 	return array
 }
+
 
