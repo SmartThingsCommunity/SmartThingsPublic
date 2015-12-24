@@ -12,6 +12,7 @@ metadata {
     capability "Configuration"
     capability "Refresh"
     capability "Sensor"
+    capability "Temperature Measurement"
     
     fingerprint profileId: "0104", endpointId: "01", inClusters: "0000,0001,0003,0004,0005,0020,0201,0202,0204,0B05", outClusters: "000A, 0019"
     
