@@ -3,7 +3,7 @@
  *
  *  Copyright 2015 Bruce Ravenel
  *
- *  Version 1.6.0b   23 Dec 2015
+ *  Version 1.6.0c   23 Dec 2015
  *
  *	Version History
  *	
@@ -443,7 +443,6 @@ def conditionLabelN(i, isTrig) {
     	result = "SHM state $SHMphrase " + (thisState in ["away", "stay"] ? "Arm ($thisState)" : "Disarm")
 	} else if(thisCapab.value == "Days of week") result = "Day i" + (days.size() > 1 ? "n " + days : "s " + days[0])
 	else if(thisCapab.value == "Mode") { 
-//    	if(!modes) return result
         if(state.isTrig || isTrig) result = "Mode becomes " + (modesX.size() > 1 ? modesX : modesX[0])
     	else if(state.isRule || state.howMany > 1) result = "Mode i" + (modes.size() > 1 ? "n " + modes : "s " + modes[0])
 	} else if(thisCapab.value == "Routine") {
@@ -562,14 +561,14 @@ def inputLeftAndRight(sub) {
 	inputRight(sub)
 }
 
+// Action selection code follows
+
 def stripBrackets(str) {
 	def i = str.indexOf('[')
 	def j = str.indexOf(']')
 	def result = str.substring(0, i) + str.substring(i + 1, j) + str.substring(j + 1)
 	return result
 }
-
-// Action selection code follows
 
 def checkActTrue(dev, str) {
 	if(dev) state.actsTrue = state.actsTrue + stripBrackets("$str") + "\n"
@@ -961,7 +960,8 @@ def updated() {
 
 def uninstalled() {
 //	log.debug "uninstalled called"
-	parent.removeChild(app.label)
+	try { parent.removeChild(app.label) }
+    catch (e) { log.error "No child app found" }
 }
 
 def initialize() {
