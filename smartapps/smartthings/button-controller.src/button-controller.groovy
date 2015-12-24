@@ -84,6 +84,12 @@ def getButtonSections(buttonNumber) {
 			input "lights_${buttonNumber}_pushed", "capability.switch", title: "Pushed", multiple: true, required: false
 			input "lights_${buttonNumber}_held", "capability.switch", title: "Held", multiple: true, required: false
 		}
+		section("Dimmers") {
+			input "dimmer${buttonNumber}_pushed", "capability.switchLevel", title: "Pushed", multiple: true, required: false
+			input "dimmerVal_${buttonNumber}_pushed", "number", title: "Step", multiple: false, required: false, description: "Amount to brighten, 1-10. (0 == toggle)"
+			input "dimmer_${buttonNumber}_held", "capability.switchLevel", title: "Held", multiple: true, required: false
+			input "dimmerVal_${buttonNumber}_held", "number", title: "Step", multiple: false, required: false, description: "Amount to brighten, 1-10. (0 == toggle)"
+		}		
 		section("Locks") {
 			input "locks_${buttonNumber}_pushed", "capability.lock", title: "Pushed", multiple: true, required: false
 			input "locks_${buttonNumber}_held", "capability.lock", title: "Held", multiple: true, required: false
@@ -144,6 +150,7 @@ def configured() {
 
 def buttonConfigured(idx) {
 	return settings["lights_$idx_pushed"] ||
+		settings["dimmer_$idx_pushed"] ||
 		settings["locks_$idx_pushed"] ||
 		settings["sonos_$idx_pushed"] ||
 		settings["mode_$idx_pushed"] ||
@@ -190,6 +197,10 @@ def executeHandlers(buttonNumber, value) {
 	def lights = find('lights', buttonNumber, value)
 	if (lights != null) toggle(lights)
 
+	def dimmer = find('dimmer', buttonNumber, value)
+	def dimmerVal = find('dimmerVal', buttonNumber, value)
+	if (dimmerVal) dimToggle(dimmer, dimmerVal)
+
 	def locks = find('locks', buttonNumber, value)
 	if (locks != null) toggle(locks)
 
@@ -232,6 +243,35 @@ def findMsg(type, buttonNumber) {
 	}
 
 	return pref
+}
+
+/** 
+ * Detect and adjust current device level.
+ * @param dimlevel Level to adjust dim by, going up.  0 means toggle.  Wraps around.
+ */
+def dimToggle(device, dimlevel) {
+	def currentLevel = device.level
+	if (device.currentSwitch == 'off') {
+		currentLevel = 0
+	}
+	def dimLevelPercent = dimlevel * 10
+	def newDimLevelPercent = Math.min(dimLevelPercent + currentLevel, 100)
+
+	/* Toggle Case */
+	if (dimLevelPercent == 0){
+		if (currentLevel == 0) {
+			device.on();
+		}
+		else {
+			device.off();
+		}
+	} /* Wrap around case */
+	else if (currentLevel > 98) {
+		device.off();
+	}	/* Do the math case */
+	else {
+		device.setLevel(newDimLevelPercent)
+	}
 }
 
 def toggle(devices) {
