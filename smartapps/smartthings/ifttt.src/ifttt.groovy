@@ -98,6 +98,15 @@ def installed() {
 }
 
 def updated() {
+	def currentDeviceIds = settings.collect { k, devices -> devices }.flatten().collect { it.id }.unique()
+	def subscriptionDevicesToRemove = app.subscriptions*.device.findAll { device ->
+		!currentDeviceIds.contains(device.id)
+	}
+	subscriptionDevicesToRemove.each { device ->
+		log.debug "Removing $device.displayName subscription"
+		state.remove(device.id)
+		unsubscribe(device)
+	}
 	log.debug settings
 }
 

@@ -22,7 +22,8 @@ definition(
     category: "SmartThings Labs",
     iconUrl: "https://s3.amazonaws.com/smartapp-icons/Partner/netamo-icon-1.png",
     iconX2Url: "https://s3.amazonaws.com/smartapp-icons/Partner/netamo-icon-1%402x.png",
-    oauth: true
+    oauth: true,
+    singleInstance: true
 ){
 	appSetting "clientId"
 	appSetting "clientSecret"
