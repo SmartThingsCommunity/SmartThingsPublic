@@ -152,7 +152,6 @@ def configured() {
 
 def buttonConfigured(idx) {
 	return settings["lights_$idx_pushed"] ||
-		settings["dimmerset_$idx_pushed"] ||
 		settings["dimmer_$idx_pushed"] ||
 		settings["locks_$idx_pushed"] ||
 		settings["sonos_$idx_pushed"] ||
@@ -265,15 +264,9 @@ def findMsg(type, buttonNumber) {
  */
 def setDimmersTo(devices, dimLevel) {
 	devices.eachWithIndex { device, index ->
-		if (dimLevel == 0) {
-			device.off();
-		}
-		else if (dimLevel == 1) {
-			device.on();
-		}
-		else {
-			device.setLevel(dimLevel);
-		}
+		if (dimLevel == 0)  		device.off();
+		else if (dimLevel == 1)  	device.on();
+		else 						device.setLevel(dimLevel);
 	}	
 }
 
@@ -284,9 +277,7 @@ def setDimmersTo(devices, dimLevel) {
 def dimRelative(devices, dimLevel) {
 	log.debug "dimRelative: $devices = ${devices*.currentValue('switch')}"
 	def currentLevel = devices[0].currentLevel
-	if (devices[0].currentSwitch == 'off') {
-		currentLevel = 0
-	}
+	if (devices[0].currentSwitch == 'off') 	currentLevel = 0;
     log.debug "Current Level: $currentLevel.  dimLevel: $dimLevel.";
     def newDimLevelNum = dimLevel + currentLevel;
 	def newDimLevelPercent = Math.min(newDimLevelNum.toInteger()
@@ -294,19 +285,11 @@ def dimRelative(devices, dimLevel) {
 
 	/* Toggle Case */
 	if (dimLevel == 0){
-		if (currentLevel == 0) {
-			setDimmersTo(devices, 1);
-		}
-		else {
-			setDimmersTo(devices, 0);
-		}
-	} /* Wrap around case */
-	else if (currentLevel > 98) {
-		setDimmersTo(devices, 0);
-	}	/* Do the math case */
-	else {
-		setDimmersTo(devices, newDimLevelPercent);
-	}
+		if (currentLevel == 0) 	setDimmersTo(devices, 1);
+		else 					setDimmersTo(devices, 0);
+	} 
+	else if (currentLevel > 98)	setDimmersTo(devices, 0); /* Wrap around case */
+	else 						setDimmersTo(devices, newDimLevelPercent); /* Do the math case */
 }
 
 /** 
@@ -316,15 +299,9 @@ def dimRelative(devices, dimLevel) {
 def dimAbsolute(devices, dimLevel) {
 	log.debug "dimAbsolute: $devices = ${devices*.currentValue('switch')}"
 	def currentLevel = devices[0].currentLevel
-	if (devices[0].currentSwitch == 'off') {
-		currentLevel = 0
-	}
-	if (currentLevel == 0) {
-		setDimmersTo(devices, dimLevel);
-	}	/* Do the math case */
-	else {
-		setDimmersTo(devices, 0);
-	}
+	if (devices[0].currentSwitch == 'off')	currentLevel = 0
+	if (currentLevel == 0)	setDimmersTo(devices, dimLevel);
+	else 					setDimmersTo(devices, 0); /* Do the math case */
 }
 
 def toggle(devices) {
