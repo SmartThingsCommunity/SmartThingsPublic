@@ -16,7 +16,7 @@
  *	Date: 2014-5-21
  */
 definition(
-    name: "Button Controller",
+    name: "Dimming Button Controller",
     namespace: "smartthings",
     author: "SmartThings",
     description: "Control devices with buttons like the Aeon Labs Minimote",
@@ -85,10 +85,12 @@ def getButtonSections(buttonNumber) {
 			input "lights_${buttonNumber}_held", "capability.switch", title: "Held", multiple: true, required: false
 		}
 		section("Dimmers") {
-			input "dimmer${buttonNumber}_pushed", "capability.switchLevel", title: "Pushed", multiple: true, required: false
-			input "dimmerVal_${buttonNumber}_pushed", "number", title: "Step", multiple: false, required: false, description: "Amount to brighten, 1-10. (0 == toggle)"
+			input "dimmer_${buttonNumber}_pushed", "capability.switchLevel", title: "Pushed", multiple: true, required: false
+			input "dimmerAbsolute_${buttonNumber}_pushed", "bool", title: "Absolute?", multiple: false, description: "On sets to/from level, Off adjusts brightness."
+			input "dimmerVal_${buttonNumber}_pushed", "number", title: "Step", multiple: false, required: false, description: "Percent to set/brighten, 0 == toggle."
 			input "dimmer_${buttonNumber}_held", "capability.switchLevel", title: "Held", multiple: true, required: false
-			input "dimmerVal_${buttonNumber}_held", "number", title: "Step", multiple: false, required: false, description: "Amount to brighten, 1-10. (0 == toggle)"
+			input "dimmerAbsolute_${buttonNumber}_held", "bool", title: "Absolute? (vs amount to brighten)", multiple: false, description: "On sets to/from level, Off adjusts brightness."
+			input "dimmerVal_${buttonNumber}_held", "number", title: "Step", multiple: false, required: false, description: "Percent to set/brighten, 0 == toggle."
 		}		
 		section("Locks") {
 			input "locks_${buttonNumber}_pushed", "capability.lock", title: "Pushed", multiple: true, required: false
@@ -150,6 +152,7 @@ def configured() {
 
 def buttonConfigured(idx) {
 	return settings["lights_$idx_pushed"] ||
+		settings["dimmerset_$idx_pushed"] ||
 		settings["dimmer_$idx_pushed"] ||
 		settings["locks_$idx_pushed"] ||
 		settings["sonos_$idx_pushed"] ||
@@ -197,10 +200,20 @@ def executeHandlers(buttonNumber, value) {
 	def lights = find('lights', buttonNumber, value)
 	if (lights != null) toggle(lights)
 
-	def dimmer = find('dimmer', buttonNumber, value)
-	def dimmerVal = find('dimmerVal', buttonNumber, value)
-	if (dimmerVal) dimToggle(dimmer, dimmerVal)
 
+	def dimmer = find('dimmer', buttonNumber, value)
+	def dimmerAbsolute = find('dimmerAbsolute', buttonNumber, value)
+	def dimmerVal = find('dimmerVal', buttonNumber, value)
+	if (dimmerVal) {
+		log.debug "Dimming Absolute is $dimmerAbsolute for buttonNumber $buttonNumber and value $value";
+		if (dimmerAbsolute) {
+			dimAbsolute(dimmer, dimmerVal)
+		}
+		else {
+			dimRelative(dimmer, dimmerVal)	
+		}
+	}
+	
 	def locks = find('locks', buttonNumber, value)
 	if (locks != null) toggle(locks)
 
@@ -245,32 +258,72 @@ def findMsg(type, buttonNumber) {
 	return pref
 }
 
-/** 
- * Detect and adjust current device level.
- * @param dimlevel Level to adjust dim by, going up.  0 means toggle.  Wraps around.
+/** Sets the devices to the defined level.
+ *	@param devices An array of devices
+ *  @param dimLevel Percent to set to, or 0 for off, or 1 for "on".
+ *  The assumption is that seldom will a device be told to dim to 1%
  */
-def dimToggle(device, dimlevel) {
-	def currentLevel = device.level
-	if (device.currentSwitch == 'off') {
-		currentLevel = 0
-	}
-	def dimLevelPercent = dimlevel * 10
-	def newDimLevelPercent = Math.min(dimLevelPercent + currentLevel, 100)
-
-	/* Toggle Case */
-	if (dimLevelPercent == 0){
-		if (currentLevel == 0) {
+def setDimmersTo(devices, dimLevel) {
+	devices.eachWithIndex { device, index ->
+		if (dimLevel == 0) {
+			device.off();
+		}
+		else if (dimLevel == 1) {
 			device.on();
 		}
 		else {
-			device.off();
+			device.setLevel(dimLevel);
+		}
+	}	
+}
+
+/** 
+ * Detect and adjust current device level.  Using first device as a proxy for all.
+ * @param dimLevel Level to adjust dim by, going up.  0 means toggle.  Wraps around.
+ */
+def dimRelative(devices, dimLevel) {
+	log.debug "dimRelative: $devices = ${devices*.currentValue('switch')}"
+	def currentLevel = devices[0].currentLevel
+	if (devices[0].currentSwitch == 'off') {
+		currentLevel = 0
+	}
+    log.debug "Current Level: $currentLevel.  dimLevel: $dimLevel.";
+    def newDimLevelNum = dimLevel + currentLevel;
+	def newDimLevelPercent = Math.min(newDimLevelNum.toInteger()
+    , 100)
+
+	/* Toggle Case */
+	if (dimLevel == 0){
+		if (currentLevel == 0) {
+			setDimmersTo(devices, 1);
+		}
+		else {
+			setDimmersTo(devices, 0);
 		}
 	} /* Wrap around case */
 	else if (currentLevel > 98) {
-		device.off();
+		setDimmersTo(devices, 0);
 	}	/* Do the math case */
 	else {
-		device.setLevel(newDimLevelPercent)
+		setDimmersTo(devices, newDimLevelPercent);
+	}
+}
+
+/** 
+ * Sets light to a specific level.
+ * dimLevel is percentage.
+ */
+def dimAbsolute(devices, dimLevel) {
+	log.debug "dimAbsolute: $devices = ${devices*.currentValue('switch')}"
+	def currentLevel = devices[0].currentLevel
+	if (devices[0].currentSwitch == 'off') {
+		currentLevel = 0
+	}
+	if (currentLevel == 0) {
+		setDimmersTo(devices, dimLevel);
+	}	/* Do the math case */
+	else {
+		setDimmersTo(devices, 0);
 	}
 }
 
