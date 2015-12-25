@@ -204,13 +204,8 @@ def executeHandlers(buttonNumber, value) {
 	def dimmerAbsolute = find('dimmerAbsolute', buttonNumber, value)
 	def dimmerVal = find('dimmerVal', buttonNumber, value)
 	if (dimmerVal) {
-		log.debug "Dimming Absolute is $dimmerAbsolute for buttonNumber $buttonNumber and value $value";
-		if (dimmerAbsolute) {
-			dimAbsolute(dimmer, dimmerVal)
-		}
-		else {
-			dimRelative(dimmer, dimmerVal)	
-		}
+		if (dimmerAbsolute) 	dimAbsolute(dimmer, dimmerVal);
+		else 					dimRelative(dimmer, dimmerVal)	
 	}
 	
 	def locks = find('locks', buttonNumber, value)
