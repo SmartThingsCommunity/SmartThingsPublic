@@ -7,7 +7,7 @@
  *
  *	Version History
  *
- *	1.6.2	25 Dec 2015		New delay selection, minor bug fixes, sub-rule input improvements
+ *	1.6.2	26 Dec 2015		New delay selection, minor bug fixes, sub-rule input improvements
  *	1.6.1	24 Dec 2015		Added ability to send device name with push or SMS, show rule truth on main page
  *	1.6.0	23 Dec 2015		Added expert commands per Mike Maxwell, and actions for camera to take photo burst
  *	1.5.11a	23 Dec 2015		Fixed bug that prevented old triggers from running, minor UI change for rule display
