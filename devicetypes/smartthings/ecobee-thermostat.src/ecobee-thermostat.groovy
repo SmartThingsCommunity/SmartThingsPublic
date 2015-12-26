@@ -17,13 +17,18 @@
  * 
  * 	Updates by Sean Kendall Schneyer <smartthings@linuxbox.org>
  * 	Date: 2015-12-23
- * 	Incorporate additional device capabilities, based on code by Yves Racine
+ * 	Incorporate additional device capabilities, some based on code by Yves Racine
+ *
+ * General TODOs:
+ *	- Add support for Celcius, use Hub Temperature Scale to choose units
+ *	
  */
 metadata {
 	definition (name: "Ecobee Thermostat", namespace: "smartthings", author: "SmartThings") {
 		capability "Actuator"
 		capability "Thermostat"
 		capability "Polling"
+        capability "Sensor"
 		capability "Refresh"
 		capability "Relative Humidity Measurement"
 		capability "Temperature Measurement"
@@ -39,8 +44,9 @@ metadata {
 		attribute "thermostatSetpoint","number"
 		attribute "thermostatStatus","string"
 		
+
 	
-	
+	/*
 		attribute "thermostatName", "string"
 		attribute "temperatureDisplay", "string"
 		attribute "coolingSetpointDisplay", "string"
@@ -67,6 +73,7 @@ metadata {
 		attribute "programCoolTempDisplay", "string"
 		attribute "programHeatTempDisplay", "string"
 		attribute "programEndTimeMsg", "string"
+        */
 		attribute "weatherDateTime", "string"
 		attribute "weatherSymbol", "string"
 		attribute "weatherStation", "string"
@@ -81,6 +88,7 @@ metadata {
 		attribute "weatherTempLow", "string"
 		attribute "weatherTempHighDisplay", "string"
 		attribute "weatherTempLowDisplay", "string"
+        /*
 		attribute "plugName", "string"
 		attribute "plugState", "string"
 		attribute "plugSettings", "string"
@@ -91,7 +99,8 @@ metadata {
 		attribute "ventilatorMinOnTime", "string"
 		attribute "ventilatorMode", "string"
 		attribute "programNameForUI", "string"
-		attribute "thermostatOperatingState", "string"        
+		// Passed in via the SmartApp
+        // attribute "thermostatOperatingState", "string"        
 		attribute "climateList", "string"	
 		attribute "modelNumber", "string"
 		attribute "followMeComfort", "string"
@@ -145,7 +154,10 @@ metadata {
 		attribute "remoteSensorMinHumidity", "string"
 		attribute "remoteSensorMaxTemp", "string"
 		attribute "remoteSensorMaxHumidity", "string"
-		
+		*/
+        
+        
+        command "setTemperature"
         
         /*
 		command "setFanMinOnTime"
@@ -235,13 +247,14 @@ metadata {
 				attributeState("default", label:'${currentValue}%', unit:"%")
 			}  
             
-			// TODO: Fix the thermostatOperatingState to use idle, heating, cooling and perhaps emergency heat?
 			tileAttribute("device.thermostatOperatingState", key: "OPERATING_STATE") {
-				attributeState("idle", backgroundColor:"#44b621")
+            	// TODO: Change this to a preference so the use can select green over grey from within the app
+            	// Uncomment the below if you prefer green for idle
+				attributeState("idle", backgroundColor:"#44b621") 
+				// Or uncomment this one if you prefer grey for idle 
+				// attributeState("idle", backgroundColor:"#C0C0C0") 
 				attributeState("heating", backgroundColor:"#ffa81e")
 				attributeState("cooling", backgroundColor:"#269bd2")
-                attributeState("auto", backgroundColor:"ff0000")
-                attributeState("?", backgroundColor:"ff0000")
 			}
             
 			tileAttribute("device.thermostatMode", key: "THERMOSTAT_MODE") {
@@ -254,12 +267,12 @@ metadata {
             	attributeState("default", label:'${currentValue}', unit:"F")
             }
 			tileAttribute("device.coolingSetpoint", key: "COOLING_SETPOINT") {
-				attributeState("default", label:'${currentValue}', unit:"F")
+				attributeState("default", label:'${currentValue}', unit:"dF")
 			}
             
         }
         
-        
+        // TODO Adjust this to support Celsium as well as F
 		valueTile("temperature", "device.temperature", width: 4, height: 4) {
 			state("temperature", label:'${currentValue}°', unit:"F",
 				backgroundColors:[
@@ -287,7 +300,7 @@ metadata {
 			state "off", label:'Fan: ${currentValue}', action:"switchFanMode", nextState: "circulate"
 			state "circulate", label:'Fan: ${currentValue}', action:"switchFanMode", nextState: "auto"
 		}
-		standardTile("upButtonControl", "device.thermostatSetpoint", width: 2, height: 2, inactiveLabel: false, decoration: "flat") {
+		standardTile("upButtonControl", "device.thermostatSetpoint", width: 2, height: 1, inactiveLabel: false, decoration: "flat") {
 			state "setpoint", action:"raiseSetpoint", icon:"st.thermostat.thermostat-up"
 		}
 		valueTile("thermostatSetpoint", "device.thermostatSetpoint", width: 2, height: 2, decoration: "flat") {
@@ -296,7 +309,7 @@ metadata {
 		valueTile("currentStatus", "device.thermostatStatus", height: 2, width: 4, decoration: "flat") {
 			state "thermostatStatus", label:'${currentValue}', backgroundColor:"#ffffff"
 		}
-		standardTile("downButtonControl", "device.thermostatSetpoint", height: 2, width: 2, inactiveLabel: false, decoration: "flat") {
+		standardTile("downButtonControl", "device.thermostatSetpoint", height: 1, width: 2, inactiveLabel: false, decoration: "flat") {
 			state "setpoint", action:"lowerSetpoint", icon:"st.thermostat.thermostat-down"
 		}
 		controlTile("heatSliderControl", "device.heatingSetpoint", "slider", height: 2, width: 4, inactiveLabel: false) {
@@ -320,12 +333,78 @@ metadata {
 		}
         
         // Additional tiles based on Yves Racine's device type
-        
+        // Weather Tiles
+		standardTile("weatherIcon", "device.weatherSymbol", inactiveLabel: false, width: 2, height: 2,
+			decoration: "flat") {
+			state "-2",			label: 'updating...',	icon: "st.unknown.unknown.unknown"
+			state "0",			label: 'Sunny',			icon: "st.Weather.weather14"
+			state "1",			label: 'Few Clouds',	icon: "st.Weather.weather11"
+			state "2",			label: 'Partly Cloudy',	icon: "st.Weather.weather11"
+			state "3",			label: 'Mostly Cloudy',	icon: "st.Weather.weather13"
+			state "4",			label: 'Overcast',		icon: "st.Weather.weather13"
+			state "5",			label: 'Drizzle',		icon: "st.Weather.weather10"
+			state "6",			label: 'Rain',			icon: "st.Weather.weather10"
+			state "7",			label: 'Freezing Rain',	icon: "st.Weather.weather6"
+			state "8",			label: 'Showers',		icon: "st.Weather.weather10"
+			state "9",			label: 'Hail',			icon: "st.custom.wuk.sleet"
+			state "10",			label: 'Snow',			icon: "st.Weather.weather6"
+			state "11",			label: 'Flurries',		icon: "st.Weather.weather6"
+			state "12",			label: 'Sleet',			icon: "st.Weather.weather6"
+			state "13",			label: 'Blizzard',		icon: "st.Weather.weather7"
+			state "14",			label: 'Pellets',		icon: "st.custom.wuk.sleet"
+			state "15",			label: 'Thunder Storms',icon: "st.custom.wuk.tstorms"
+			state "16",			label: 'Windy',			icon: "st.Transportation.transportation5"
+			state "17",			label: 'Tornado',		icon: "st.Weather.weather1"
+			state "18",			label: 'Fog',			icon: "st.Weather.weather13"
+			state "19",			label: 'Hazy',			icon: "st.Weather.weather13"
+			state "20",			label: 'Smoke',			icon: "st.Weather.weather13"
+			state "21",			label: 'Dust',			icon: "st.Weather.weather13"
+		}
+		valueTile("weatherDateTime", "device.weatherDateTime", inactiveLabel: false,
+			width: 3, height: 2, decoration: "flat") {
+			state "default", label: '${currentValue}'
+		}
+		valueTile("weatherConditions", "device.weatherCondition", 
+			inactiveLabel: false, width: 3, height: 2, decoration: "flat") {
+			state "default", label: 'Forecast\n${currentValue}'
+		}
+		valueTile("weatherTemperature", "device.weatherTemperatureDisplay", inactiveLabel:
+			false, width: 2, height: 2, decoration: "flat") {
+			state "default", label: 'Out Temp\n${currentValue}°', unit: "C"
+		}
+		valueTile("weatherRelativeHumidity", "device.weatherRelativeHumidity",
+			inactiveLabel: false, width: 2, height: 2,decoration: "flat") {
+			state "default", label: 'Out Hum\n${currentValue}%', unit: "humidity"
+		}
+		valueTile("weatherTempHigh", "device.weatherTempHigh", inactiveLabel: false,
+			width: 2, height: 2, decoration: "flat") {
+			state "default", label: 'ForecastH\n${currentValue}°', unit: "C"
+		}
+		valueTile("weatherTempLow", "device.weatherTempLow", inactiveLabel: false,
+			width: 2, height: 2, decoration: "flat") {
+			state "default", label: 'ForecastL\n${currentValue}°', unit: "C"
+		}
+		valueTile("weatherPressure", "device.weatherPressure", inactiveLabel: false,
+			width: 2, height: 2, decoration: "flat") {
+			state "default", label: 'Pressure\n${currentValue}', unit: "hpa"
+		}
+		valueTile("weatherWindDirection", "device.weatherWindDirection",
+			inactiveLabel: false, width: 2, height: 2, decoration: "flat") {
+			state "default", label: 'W.Dir\n${currentValue}'
+		}
+		valueTile("weatherWindSpeed", "device.weatherWindSpeed", inactiveLabel: false,
+			width: 2, height: 2, decoration: "flat") {
+			state "default", label: 'W.Speed\n${currentValue}'
+		}
+		valueTile("weatherPop", "device.weatherPop", inactiveLabel: false, width: 2,
+			height: 2, decoration: "flat") {
+			state "default", label: 'PoP\n${currentValue}%', unit: "%"
+		}
         
         
         
 		main "summary"
-        details(["summary","temperature", "upButtonControl", "thermostatSetpoint", "currentStatus", "downButtonControl", "mode", "resumeProgram", "refresh"])
+        details(["summary","temperature", "upButtonControl", "thermostatSetpoint", "currentStatus", "downButtonControl", "mode", "weatherIcon", "resumeProgram", "refresh"])
         
         
 //		main "temperature"
@@ -334,7 +413,13 @@ metadata {
 	}
 
 	preferences {
-		input "holdType", "enum", title: "Hold Type", description: "When changing temperature, use Temporary or Permanent hold (default)", required: false, options:["Temporary", "Permanent"]
+    	section () {
+			input "holdType", "enum", title: "Hold Type", description: "When changing temperature, use Temporary or Permanent hold (default)", required: false, options:["Temporary", "Permanent"]
+        	// TODO: Add a preference for the background color for "idle"
+        	// TODO: Allow for a "smart" Setpoint change in "Auto" mode. Why won't the paragraph show up in the Edit Device screen?
+        	paragraph "The Smart Auto Temp Adjust flag allows for the temperature to be adjusted manually even when the thermostat is in Auto mode. An attempt to determine if the heat or cool setting should be changed will be made automatically."
+            input "smartAuto", "bool", title: "Smart Auto Temp Adjust", description: true, required: false
+       }
 	}
 
 }
@@ -356,11 +441,12 @@ void poll() {
 	log.debug "Executing 'poll' using parent SmartApp"
 
 	def results = parent.pollChild(this)
+    log.debug "pollChild() - results: ${results}"
 	generateEvent(results) //parse received message from parent
 }
 
 def generateEvent(Map results) {
-	log.debug "parsing data $results"
+	log.debug "generateEvent(): parsing data $results"
 	if(results) {
 		results.each { name, value ->
 
@@ -413,8 +499,46 @@ private getThermostatDescriptionText(name, value, linkText) {
 }
 
 def setTemperature(setpoint) {
-	log.debug "setTemperature() called with setpoint = ${setpoint}"
+	log.debug "setTemperature() called with setpoint ${setpoint}. Current temperature: ${device.currentValue("temperature")}. Heat Setpoint: ${device.currentValue("heatingSetpoint")}. Cool Setpoint: ${device.currentValue("coolingSetpoint")}"
     
+    def mode = device.currentValue("thermostatMode")
+    def midpoint
+	def targetvalue
+
+	if (mode == "off" || (mode == "auto" && !settings.smartAuto)) {
+		log.warn "setTemperature(): this mode: $mode does not allow raiseSetpoint"
+        return
+    } 
+    
+    def currentTemp = device.currentValue("temperature")
+    def deltaTemp = setpoint - currentTemp
+    
+    log.debug "deltaTemp = ${deltaTemp}"
+    
+    if (mode == "auto") {
+    	// In Smart Auto Mode
+        log.debug "setTemperature(): In Smart Auto Mode"
+        
+        if (deltaTemp < 0) {
+        	// Decrement the temp for cooling
+            log.debug "Smart Auto: lowerSetpoint being called"
+            lowerSetpoint()
+        } else if (deltaTemp > 0) {
+        	// Increment the temp for heating
+            log.debug "Smart Auto: raiseSetpoint being called"
+            raiseSetpoint()
+        } // Otherwise they are equal and the setpoint does not change
+        
+    } else if (mode == "heat") {
+    	// Change the heat
+        log.debug "setTemperature(): change the heat temp"
+        setHeatingSetpoint(setpoint)
+        
+    } else if (mode == "cool") {
+    	// Change the cool
+        log.debug "setTemperature(): change the cool temp"
+        setCoolingSetpoint(setpoint)
+    }
 }
 
 void setHeatingSetpoint(setpoint) {
@@ -428,6 +552,7 @@ void setHeatingSetpoint(Double setpoint) {
 	def deviceId = device.deviceNetworkId.split(/\./).last()
 
 	//enforce limits of heatingSetpoint
+    // TODO: Make these limits configurable? Use values stored in Ecobee cloud?
 	if (heatingSetpoint > 79) {
 		heatingSetpoint = 79
 	} else if (heatingSetpoint < 45) {
@@ -443,8 +568,8 @@ void setHeatingSetpoint(Double setpoint) {
 
 	def sendHoldType = holdType ? (holdType=="Temporary")? "nextTransition" : (holdType=="Permanent")? "indefinite" : "indefinite" : "indefinite"
 	if (parent.setHold (this, heatingSetpoint,  coolingSetpoint, deviceId, sendHoldType)) {
-		sendEvent("name":"heatingSetpoint", "value":heatingSetpoint)
-		sendEvent("name":"coolingSetpoint", "value":coolingSetpoint)
+		sendEvent("name":"heatingSetpoint", "value":heatingSetpoint.toInteger())
+		sendEvent("name":"coolingSetpoint", "value":coolingSetpoint.toInteger())
 		log.debug "Done setHeatingSetpoint> coolingSetpoint: ${coolingSetpoint}, heatingSetpoint: ${heatingSetpoint}"
 		generateSetpointEvent()
 		generateStatusEvent()
@@ -478,8 +603,8 @@ void setCoolingSetpoint(Double setpoint) {
 
 	def sendHoldType = holdType ? (holdType=="Temporary")? "nextTransition" : (holdType=="Permanent")? "indefinite" : "indefinite" : "indefinite"
 	if (parent.setHold (this, heatingSetpoint,  coolingSetpoint, deviceId, sendHoldType)) {
-		sendEvent("name":"heatingSetpoint", "value":heatingSetpoint)
-		sendEvent("name":"coolingSetpoint", "value":coolingSetpoint)
+		sendEvent("name":"heatingSetpoint", "value":heatingSetpoint.toInteger())
+		sendEvent("name":"coolingSetpoint", "value":coolingSetpoint.toInteger())
 		log.debug "Done setCoolingSetpoint>> coolingSetpoint = ${coolingSetpoint}, heatingSetpoint = ${heatingSetpoint}"
 		generateSetpointEvent()
 		generateStatusEvent()
@@ -489,12 +614,13 @@ void setCoolingSetpoint(Double setpoint) {
 }
 
 void resumeProgram() {
+	// TODO: Put a check in place to see if we are already running the program. If there is nothing to resume, then save the calls upstream
 
 	log.debug "resumeProgram() is called"
-	sendEvent("name":"thermostatStatus", "value":"resuming schedule", "description":statusText, displayed: false)
+	sendEvent("name":"thermostatStatus", "value":"Resuming schedule...", "description":statusText, displayed: false)
 	def deviceId = device.deviceNetworkId.split(/\./).last()
 	if (parent.resumeProgram(this, deviceId)) {
-		sendEvent("name":"thermostatStatus", "value":"setpoint is updating", "description":statusText, displayed: false)
+		sendEvent("name":"thermostatStatus", "value":"Setpoint updating...", "description":statusText, displayed: false)
 		runIn(5, "poll")
 		log.debug "resumeProgram() is done"
 		sendEvent("name":"resumeProgram", "value":"resume", descriptionText: "resumeProgram is done", displayed: false, isStateChange: true)
@@ -724,26 +850,20 @@ def generateSetpointEvent() {
 	log.debug "Cooling Setpoint = ${coolingSetpoint}"
 
 	if (mode == "heat") {
-
 		sendEvent("name":"thermostatSetpoint", "value":heatingSetpoint.toString())
-
 	}
 	else if (mode == "cool") {
-
 		sendEvent("name":"thermostatSetpoint", "value":coolingSetpoint.toString())
-
-	} else if (mode == "auto") {
-
+	} else if (mode == "auto" && !settings.smartAuto) {
+		// No Smart Auto, just regular auto
 		sendEvent("name":"thermostatSetpoint", "value":"Auto")
-
-	} else if (mode == "off") {
-
+	} else if (mode == "auto" && settings.smartAuto) {
+    	// Smart Auto Enabled
+        sendEvent("name":"thermostatSetpoint", "value":device.currentValue("temperature").toString())
+    } else if (mode == "off") {
 		sendEvent("name":"thermostatSetpoint", "value":"Off")
-
 	} else if (mode == "emergencyHeat") {
-
 		sendEvent("name":"thermostatSetpoint", "value":heatingSetpoint.toString())
-
 	}
 
 }
@@ -752,21 +872,25 @@ void raiseSetpoint() {
 	def mode = device.currentValue("thermostatMode")
 	def targetvalue
 
-	if (mode == "off" || mode == "auto") {
-		log.warn "this mode: $mode does not allow raiseSetpoint"
-	} else {
-		def heatingSetpoint = device.currentValue("heatingSetpoint").toInteger()
+	if (mode == "off" || (mode == "auto" && !settings.smartAuto)) {
+		log.warn "raiseSetpoint(): this mode: $mode does not allow raiseSetpoint"
+        return
+	} 
+    
+    	def heatingSetpoint = device.currentValue("heatingSetpoint").toInteger()
 		def coolingSetpoint = device.currentValue("coolingSetpoint").toInteger()
-		def thermostatSetpoint = device.currentValue("thermostatSetpoint").toInteger()
+		def thermostatSetpoint = device.currentValue("thermostatSetpoint")
 		log.debug "raiseSetpoint() mode = ${mode}, heatingSetpoint: ${heatingSetpoint}, coolingSetpoint:${coolingSetpoint}, thermostatSetpoint:${thermostatSetpoint}"
 
-		if (device.latestState('thermostatSetpoint')) {
+    	if (device.latestState('thermostatSetpoint')) {
 			targetvalue = device.latestState('thermostatSetpoint').value as Integer
 		} else {
 			targetvalue = 0
 		}
 		targetvalue = targetvalue + 1
 
+		// TODO: Change these to preferences or use the configured values from the "Heat Set Point Range" in the Ecobee
+        // TODO: Also need to update for when using Smart Auto preference
 		if (mode == "heat" && targetvalue > 79) {
 			targetvalue = 79
 		} else if (mode == "cool" && targetvalue > 92) {
@@ -777,7 +901,7 @@ void raiseSetpoint() {
 		log.info "In mode $mode raiseSetpoint() to $targetvalue"
 
 		runIn(3, "alterSetpoint", [data: [value:targetvalue], overwrite: true]) //when user click button this runIn will be overwrite
-	}
+	
 }
 
 //called by tile when user hit raise temperature button on UI
@@ -785,10 +909,11 @@ void lowerSetpoint() {
 	def mode = device.currentValue("thermostatMode")
 	def targetvalue
 
-	if (mode == "off" || mode == "auto") {
-		log.warn "this mode: $mode does not allow lowerSetpoint"
-	} else {
-		def heatingSetpoint = device.currentValue("heatingSetpoint").toInteger()
+	if (mode == "off" || (mode == "auto" && !settings.smartAuto)) {
+		log.warn "lowerSetpoint(): this mode: $mode does not allow lowerSetpoint"
+    } else {
+	
+    	def heatingSetpoint = device.currentValue("heatingSetpoint").toInteger()
 		def coolingSetpoint = device.currentValue("coolingSetpoint").toInteger()
 		def thermostatSetpoint = device.currentValue("thermostatSetpoint").toInteger()
 		log.debug "lowerSetpoint() mode = ${mode}, heatingSetpoint: ${heatingSetpoint}, coolingSetpoint:${coolingSetpoint}, thermostatSetpoint:${thermostatSetpoint}"
@@ -799,6 +924,8 @@ void lowerSetpoint() {
 		}
 		targetvalue = targetvalue - 1
 
+		// TODO: Change these to preferences or use the configured values from the "Heat Set Point Range" in the Ecobee
+        // TODO: Also need to update for when using Smart Auto preference
 		if (mode == "heat" && targetvalue.toInteger() < 45) {
 			targetvalue = 45
 		} else if (mode == "cool" && targetvalue.toInteger() < 65) {
@@ -810,6 +937,7 @@ void lowerSetpoint() {
 
 		runIn(3, "alterSetpoint", [data: [value:targetvalue], overwrite: true]) //when user click button this runIn will be overwrite
 	}
+	
 }
 
 //called by raiseSetpoint() and lowerSetpoint()
@@ -818,10 +946,14 @@ void alterSetpoint(temp) {
 	def mode = device.currentValue("thermostatMode")
 	def heatingSetpoint = device.currentValue("heatingSetpoint").toInteger()
 	def coolingSetpoint = device.currentValue("coolingSetpoint").toInteger()
+    def currentTemp = device.currentValue("temperature").toInteger()
+    def saveThermostatSetpoint = device.currentValue("thermostatSetpoint").toInteger()
 	def deviceId = device.deviceNetworkId.split(/\./).last()
 
 	def targetHeatingSetpoint
 	def targetCoolingSetpoint
+
+	log.debug "alterSetpoint - temp.value is ${temp.value}"
 
 	//step1: check thermostatMode, enforce limits before sending request to cloud
 	if (mode == "heat"){
@@ -841,7 +973,26 @@ void alterSetpoint(temp) {
 			targetHeatingSetpoint = heatingSetpoint
 			targetCoolingSetpoint = temp.value
 		}
-	}
+	} else if (mode == "auto" && settings.smartAuto) {
+    	// Make changes based on our Smart Auto mode
+        if (temp.value > currentTemp) {
+        	// Change the heat settings to the new setpoint
+            log.debug "alterSetpoint() - Smart Auto setting setpoint: ${temp.value}"
+            targetCoolingSetpoint = (temp.value > coolingSetpoint) ? temp.value : coolingSetpoint
+            targetHeatingSetpoint = temp.value
+		} else {
+        	// Change the cool settings to the new setpoint
+			log.debug "alterSetpoint() - Smart Auto setting setpoint: ${temp.value}"
+            log.debug "targetHeatingSetpoint before ${targetHeatingSetpoint}"
+            targetHeatingSetpoint = (temp.value < heatingSetpoint) ? temp.value : heatingSetpoint
+            log.debug "targetHeatingSetpoint after ${targetHeatingSetpoint}"
+            targetCoolingSetpoint = temp.value
+        }    
+    } else {
+    	log.error "alterSetpoint() called with unsupported mode: ${mode}"
+        // return without changing settings on thermostat
+        return
+    }
 
 	log.debug "alterSetpoint >> in mode ${mode} trying to change heatingSetpoint to ${targetHeatingSetpoint} " +
 			"coolingSetpoint to ${targetCoolingSetpoint} with holdType : ${holdType}"
@@ -855,11 +1006,7 @@ void alterSetpoint(temp) {
 		log.debug "alterSetpoint in mode $mode succeed change setpoint to= ${temp.value}"
 	} else {
 		log.error "Error alterSetpoint()"
-		if (mode == "heat"){
-			sendEvent("name": "thermostatSetpoint", "value": heatingSetpoint.toString(), displayed: false)
-		} else if (mode == "cool") {
-			sendEvent("name": "thermostatSetpoint", "value": coolingSetpoint.toString(), displayed: false)
-		}
+        sendEvent("name": "thermostatSetpoint", "value": saveThermostatSetpoint.toString(), displayed: false)
 	}
 	generateStatusEvent()
 }
@@ -884,36 +1031,36 @@ def generateStatusEvent() {
 
 		if (temperature >= heatingSetpoint) {
 			statusText = "Right Now: Idle"
-			generateOperatingStateEvent("idle")
+			// generateOperatingStateEvent("idle")
 		} else {
 			statusText = "Heating to ${heatingSetpoint}° F"
-			generateOperatingStateEvent("heating")
+			// generateOperatingStateEvent("heating")
 		}
 
 	} else if (mode == "cool") {
 
 		if (temperature <= coolingSetpoint) {
 			statusText = "Right Now: Idle"
-			generateOperatingStateEvent("idle")
+			// generateOperatingStateEvent("idle")
 		} else {
 			statusText = "Cooling to ${coolingSetpoint}° F"
-			generateOperatingStateEvent("cooling")
+			// generateOperatingStateEvent("cooling")
 		}
 
 	} else if (mode == "auto") {
 		// TODO: Can we get more sophisticated here for the operating state event?
 		statusText = "Right Now: Auto"
-		generateOperatingStateEvent("auto")
+		// generateOperatingStateEvent("auto")
 
 	} else if (mode == "off") {
 
 		statusText = "Right Now: Off"        
-		generateOperatingStateEvent("off")
+		// generateOperatingStateEvent("off")
 
 	} else if (mode == "emergencyHeat") {
 
 		statusText = "Emergency Heat"       
-		generateOperatingStateEvent("auxheat")
+		// generateOperatingStateEvent("auxheat")
 
 	} else {
 
