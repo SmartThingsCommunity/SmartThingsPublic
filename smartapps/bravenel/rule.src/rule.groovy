@@ -623,7 +623,7 @@ def delayTruePage() {
             if(!delayMilTrue && !delaySecTrue) {
                 input "delayMinTrue", "number", title: "Minutes of delay", required: false, range: "1..*", submitOnChange: true
                 if(delayMinTrue > 0) {
-                    if(state.isRule || state.howMany > 1) input "cancelTrue", "bool", title: "Cancel delay on change?", required: false, submitOnChange: true
+                    if(state.isRule || state.howMany > 1) input "cancelTrue", "bool", title: "Cancel on truth change?", required: false, submitOnChange: true
             		paragraph "\n\n "
                 	input "randTrue", "bool", title: "Random delay?", required: false, submitOnChange: true
                 }
@@ -631,7 +631,7 @@ def delayTruePage() {
             if(!delayMinTrue && !delayMilTrue) {
             	paragraph "\n"
                 input "delaySecTrue", "number", title: "Seconds of delay", required: false, range: "1..*", submitOnChange: true
-                if(delaySecTrue > 0 && (state.isRule || state.howMany > 1)) input "cancelTrue", "bool", title: "Cancel delay on change?", required: false, submitOnChange: true
+                if(delaySecTrue > 0 && (state.isRule || state.howMany > 1)) input "cancelTrue", "bool", title: "Cancel on truth change?", required: false, submitOnChange: true
             }
             if(!delayMinTrue && !delaySecTrue) {
             	paragraph "\n\n Milliseconds delay works only for \n on/off/dim/toggle, open/close, lock/unlock"
@@ -652,7 +652,7 @@ def delayFalsePage() {
             if(!delayMilFalse && !delaySecFalse) {
                 input "delayMinFalse", "number", title: "Minutes of delay", required: false, range: "1..*", submitOnChange: true
                 if(delayMinFalse > 0) {
-                	if(state.isRule || state.howMany > 1) input "cancelFalse", "bool", title: "Cancel delay on change?", required: false, submitOnChange: true
+                	if(state.isRule || state.howMany > 1) input "cancelFalse", "bool", title: "Cancel on truth change?", required: false, submitOnChange: true
             		paragraph "\n\n "
                 	input "randFalse", "bool", title: "Random delay?", required: false, submitOnChange: true
                 }
@@ -660,7 +660,7 @@ def delayFalsePage() {
             if(!delayMinFalse && !delayMilFalse) {
             	paragraph "\n"
                 input "delaySecFalse", "number", title: "Seconds of delay", required: false, range: "1..*", submitOnChange: true
-                if(delaySecFalse > 0 && (state.isRule || state.howMany > 1)) input "cancelFalse", "bool", title: "Cancel delay on change?", required: false, submitOnChange: true
+                if(delaySecFalse > 0 && (state.isRule || state.howMany > 1)) input "cancelFalse", "bool", title: "Cancel on truth change?", required: false, submitOnChange: true
             }
             if(!delayMinFalse && !delaySecFalse) {
             	paragraph "\n\n Milliseconds delay works only for \n on/off/dim/toggle, open/close, lock/unlock"
