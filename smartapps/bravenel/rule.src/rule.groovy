@@ -3,7 +3,7 @@
  *
  *  Copyright 2015 Bruce Ravenel
  *
- *  Version 1.6.2   26 Dec 2015
+ *  Version 1.6.2a   26 Dec 2015
  *
  *	Version History
  *
@@ -1359,7 +1359,7 @@ def doDelayTrue(time, rand, cancel) {
 	else log.info (rand ? "Random delay, up to $time minutes" : "Delayed by $time $delayStr")
 }
 
-def doDelayFalse(time, rand) {
+def doDelayFalse(time, rand, cancel) {
 	def myTime = time
 	if(rand) myTime = Math.random()*time
 	if(cancel) runIn(myTime, delayRuleFalse)
