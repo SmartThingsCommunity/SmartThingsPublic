@@ -829,26 +829,26 @@ def selectActionsTrue() {
 }
 
 def selectActionsFalse() {
-    def isRule = state.howMany > 1
+	def isRule = state.howMany > 1
 	dynamicPage(name: "selectActionsFalse", title: "Select Actions" + (isRule ? " for False" : ""), uninstall: false) {
 		def isTrig = state.howManyT > 1
 		state.actsFalse = ""
 		section("") {
-        	href "delayFalsePage", title: "Delay These Actions?", description: state.delayStrFalse ? (state.delayStrFalse) : "Tap to set", state: state.delayStrFalse ? "complete" : null, submitOnChange: true
-            if(state.delayStrFalse) addToActFalse(state.delayStrFalse)
+			href "delayFalsePage", title: "Delay These Actions?", description: state.delayStrFalse ? (state.delayStrFalse) : "Tap to set", state: state.delayStrFalse ? "complete" : null, submitOnChange: true
+			if(state.delayStrFalse) addToActFalse(state.delayStrFalse)
 			input "onSwitchFalse", "capability.switch", title: "Turn on these switches", multiple: true, required: false, submitOnChange: true
 			checkActFalse(onSwitchFalse, "On: $onSwitchFalse")
 			input "offSwitchFalse", "capability.switch", title: "Turn off these switches", multiple: true, required: false, submitOnChange: true
 			checkActFalse(offSwitchFalse, "Off: $offSwitchFalse")
-            if(isTrig) {
+			if(isTrig) {
 				input "toggleSwitchFalse", "capability.switch", title: "Toggle these switches", multiple: true, required: false, submitOnChange: true
 				checkActFalse(toggleSwitchFalse, "Toggle: $toggleSwitchFalse")
-            }
+			}
 			if(delayedOffFalse) {
 				input "delayedOffFalse", "capability.switch", title: "Turn on/off these switches after a delay (default is OFF)", multiple: true, required: false, submitOnChange: true
 				input "delayOnOffFalse", "bool", title: "Turn ON after the delay?", multiple: false, required: false, defaultValue: false, submitOnChange: true
 				if(!delayMillisFalse) input "delayMinutesFalse", "number", title: "Minutes of delay", required: false, range: "1..*", submitOnChange: true
-                if(!delayMinutesFalse) input "delayMillisFalse", "number", title: "Milliseconds of delay", required: false, range: "1..*", submitOnChange: true
+				if(!delayMinutesFalse) input "delayMillisFalse", "number", title: "Milliseconds of delay", required: false, range: "1..*", submitOnChange: true
 				if(delayMinutesFalse || delayMillisFalse) {
 					def delayStrFalse = "Delayed " + (delayOnOffFalse ? "On:" : "Off:") + " $delayedOffFalse: " + (delayMillisFalse ? "$delayMillisFalse milliseconds" : "$delayMinutesFalse minute")
 					if(delayMinutesFalse > 1) delayStrFalse = delayStrFalse + "s"
@@ -869,19 +869,19 @@ def selectActionsFalse() {
 //            }
 			input "dimAFalse", "capability.switchLevel", title: "Set these dimmers", multiple: true, submitOnChange: true, required: false
 			if(dimAFalse) {
-            	input "dimLAFalse", "number", title: "To this level", range: "0..100", required: true, submitOnChange: true
+				input "dimLAFalse", "number", title: "To this level", range: "0..100", required: true, submitOnChange: true
 				if(dimLAFalse) setActFalse("Dim: $dimAFalse: $dimLAFalse")
-            }
+			}
 			input "dimBFalse", "capability.switchLevel", title: "Set these other dimmers", multiple: true, submitOnChange: true, required: false
 			if(dimBFalse) {
-            	input "dimLBFalse", "number", title: "To this level", range: "0..100", required: true, submitOnChange: true
+				input "dimLBFalse", "number", title: "To this level", range: "0..100", required: true, submitOnChange: true
 				if(dimLBFalse) setActFalse("Dim: $dimBFalse: $dimLBFalse")
-            }
-            if(state.howManyT > 1) {
+			}
+			if(state.howManyT > 1) {
 				input "toggleDimmerFalse", "capability.switchLevel", title: "Toggle these dimmers", multiple: true, required: false, submitOnChange: true
 				if(toggleDimmerFalse) input "dimTogFalse", "number", title: "To this level", range: "0..100", required: true, submitOnChange: true
 				if(dimTogFalse) checkActFalse(toggleDimmerFalse, "Toggle: $toggleDimmerFalse: $dimTogFalse")
-            }
+			}
 			input "bulbsFalse", "capability.colorControl", title: "Set color for these bulbs", multiple: true, required: false, submitOnChange: true
 			if(bulbsFalse) {
 				input "colorFalse", "enum", title: "Bulb color?", required: true, multiple: false, submitOnChange: true,
@@ -889,13 +889,13 @@ def selectActionsFalse() {
 				input "colorLevelFalse", "number", title: "Bulb level?", required: false, submitOnChange: true, range: "0..100"
 				buildActFalse("Color: $bulbsFalse ", true)
 				if(colorFalse) {
-                	if(colorFalse == "Custom color") {
-                    	input "colorHexFalse", "number", title: "Input color value", required: true, submitOnChange: true, range: "0..100"
-                        input "colorSatFalse", "number", title: "Input saturation value", required: true, submitOnChange: true, range: "0..100"
-                    }
-                	buildActFalse("$colorFalse ", false)
-                    if(colorHexFalse) buildActFalse("$colorHexFalse:$colorSatFalse ", false)
-                }
+					if(colorFalse == "Custom color") {
+						input "colorHexFalse", "number", title: "Input color value", required: true, submitOnChange: true, range: "0..100"
+						input "colorSatFalse", "number", title: "Input saturation value", required: true, submitOnChange: true, range: "0..100"
+					}
+					buildActFalse("$colorFalse ", false)
+					if(colorHexFalse) buildActFalse("$colorHexFalse:$colorSatFalse ", false)
+				}
 				if(colorLevelFalse) addToActFalse("Level: $colorLevelFalse")
 			}            
 			input "garageOpenFalse", "capability.garageDoorControl", title: "Open these garage doors", multiple: true, required: false, submitOnChange: true
@@ -906,10 +906,10 @@ def selectActionsFalse() {
 			checkActFalse(lockFalse, "Lock: $lockFalse")
 			input "unlockFalse", "capability.lock", title: "Unlock these locks", multiple: true, required: false, submitOnChange: true
 			checkActFalse(unlockFalse, "Unlock: $unlockFalse")
-            if(isTrig) {
+			if(isTrig) {
 				input "fanAdjustFalse", "capability.switchLevel", title: "Adjust these fans - Low, Medium, High, Off", multiple: false, required: false, submitOnChange: true
 				if(fanAdjustFalse) addToActFalse("Adjust Fan: $fanAdjustFalse")
-            }
+			}
 			input "openValveFalse", "capability.valve", title: "Open these valves", multiple: true, required: false, submitOnChange: true
 			checkActFalse(openValveFalse, "Open: $openValveFalse")
 			input "closeValveFalse", "capability.valve", title: "Close these valves", multiple: true, required: false, submitOnChange: true
@@ -936,31 +936,31 @@ def selectActionsFalse() {
 			def phrases = location.helloHome?.getPhrases()*.label
 			input "myPhraseFalse", "enum", title: "Routine to run", required: false, options: phrases.sort(), submitOnChange: true
 			if(myPhraseFalse) addToActFalse("Routine: $myPhraseFalse")
-            def theseRules = parent.ruleList(app.label)
-            if(theseRules != null) input "ruleFalse", "enum", title: "Rules to evaluate", required: false, multiple: true, options: theseRules.sort(), submitOnChange: true
-            if(ruleFalse) setActFalse("Rules: $ruleFalse")
+			def theseRules = parent.ruleList(app.label)
+			if(theseRules != null) input "ruleFalse", "enum", title: "Rules to evaluate", required: false, multiple: true, options: theseRules.sort(), submitOnChange: true
+			if(ruleFalse) setActFalse("Rules: $ruleFalse")
 			href "selectMsgFalse", title: "Send message", description: state.msgFalse ? state.msgFalse : "Tap to set", state: state.msgFalse ? "complete" : null
 			if(state.msgFalse) addToActFalse(state.msgFalse)
-            input "cameraFalse", "capability.imageCapture", title: "Camera to take photos", required: false, multiple: false, submitOnChange: true
-            if(cameraFalse) {
-            	input "burstCountFalse", "number", title: "How many? (default 5)", defaultValue:5
-                addToActFalse("Photo: $cameraFalse " + (burstCountFalse ?: ""))
-            }
-            if(delayFalse) {
+			input "cameraFalse", "capability.imageCapture", title: "Camera to take photos", required: false, multiple: false, submitOnChange: true
+			if(cameraFalse) {
+				input "burstCountFalse", "number", title: "How many? (default 5)", defaultValue:5
+				addToActFalse("Photo: $cameraFalse " + (burstCountFalse ?: ""))
+			}
+			if(delayFalse) {
 				input "delayFalse", "number", title: "Delay " + ((state.isRule || state.howMany > 1) ? "the effect of this rule" : "this action") + " by this many minutes", required: false, submitOnChange: true
 //				if(delayFalse) {
 					def delayStr = "Delay Rule: $delayFalse minute"
 					if(delayFalse > 1) delayStr = delayStr + "s"
 					addToActFalse(delayStr)
 //				}
-            }
-            if(randomFalse) {
+			}
+			if(randomFalse) {
 				input "randomFalse", "number", title: "Delay " + ((state.isRule || state.howMany > 1) ? "the effect of this rule" : "this action") + " by random minutes up to", required: false, submitOnChange: true
 //				if(randomFalse) {
 					def randomStr = "Random Delay: $randomFalse minutes"
 					addToActFalse(randomStr)
 //				}
-            }
+			}
 			if (state.isExpert){
 				def cstCmds = parent.getCommands()
 				if (cstCmds){
@@ -984,7 +984,7 @@ def selectMsgTrue() {
 		section("") {
 			input "pushTrue", "bool", title: "Send Push Notification?", required: false, submitOnChange: true
 			input "msgTrue", "text", title: "Custom message to send", required: false, submitOnChange: true
-            input "refDevTrue", "bool", title: "Include device name?", required: false, submitOnChange: true
+			input "refDevTrue", "bool", title: "Include device name?", required: false, submitOnChange: true
 			input "phoneTrue", "phone", title: "Phone number for SMS", required: false, submitOnChange: true
 		}
         state.msgTrue = (pushTrue ? "Push" : "") + (msgTrue ? " '$msgTrue'" : "") + (refDevTrue ? " [device]" : "") + (phoneTrue ? " to $phoneTrue" : "")
@@ -996,7 +996,7 @@ def selectMsgFalse() {
 		section("") {
 			input "pushFalse", "bool", title: "Send Push Notification?", required: false, submitOnChange: true
 			input "msgFalse", "text", title: "Custom message to send", required: false, submitOnChange: true
-            input "refDevFalse", "bool", title: "Include device name?", required: false, submitOnChange: true
+			input "refDevFalse", "bool", title: "Include device name?", required: false, submitOnChange: true
 			input "phoneFalse", "phone", title: "Phone number for SMS", required: false, submitOnChange: true
 		}
         state.msgFalse = (pushFalse ? "Push" : "") + (msgFalse ? " '$msgFalse'" : "") + (refDevFalse ? " [device]" : "") + (phoneFalse ? " to $phoneFalse" : "")
@@ -1039,24 +1039,24 @@ def installed() {
 def updated() {
 	unschedule()
 	unsubscribe()
-    parent.unSubscribeRule(app.label)
+	parent.unSubscribeRule(app.label)
 	initialize()
 }
 
 def uninstalled() {
 //	log.debug "uninstalled called"
 	try { parent.removeChild(app.label) }
-    catch (e) { log.error "No child app found" }
+	catch (e) { log.error "No child app found" }
 }
 
 def initialize() {
 	def hasTrig = state.howManyT > 1
-    def howMany = hasTrig ? state.howManyT : state.howMany
+	def howMany = hasTrig ? state.howManyT : state.howMany
 	for (int i = 1; i < howMany; i++) {
 		def capab = (settings.find {it.key == (hasTrig ? "tCapab$i" : "rCapab$i")}).value
 		def myState = settings.find {it.key == (hasTrig ? "tstate$i" : "state$i")}
-        def myRelDev = settings.find {it.key == (hasTrig ? "reltDevice$i" : "relDevice$i")}
-        def myDev = settings.find {it.key == (hasTrig ? "tDev$i" : "rDev$i")}
+		def myRelDev = settings.find {it.key == (hasTrig ? "reltDevice$i" : "relDevice$i")}
+		def myDev = settings.find {it.key == (hasTrig ? "tDev$i" : "rDev$i")}
 		if(myState) myState = myState.value
 		switch(capab) {
 			case "Mode": 
@@ -1137,7 +1137,7 @@ def initialize() {
 	subscribe(disabled, "switch", disabledHandler)
 	if(disabled) state.disabled = disabled.currentSwitch == "on"
 	else state.disabled = false
-    if(state.isTrig || hasTrig) return
+	if(state.isTrig || hasTrig) return
 	if(state.isRule || state.howMany > 1) runRule(true)
 }
 
@@ -1163,13 +1163,13 @@ def checkCondAny(dev, stateX, cap, rel, relDev) {
 	else if(cap == "Energy meter")	dev.currentEnergy.each		{result = result || compare(it, rel, stateX, relDev ? relDev.currentEnergy : null)}
 	else if(cap == "Power meter")	dev.currentPower.each		{result = result || compare(it, rel, stateX, relDev ? relDev.currentPower : null)}
 	else if(cap == "Battery")	dev.currentBattery.each		{result = result || compare(it, rel, stateX, relDev ? relDev.currentBattery : null)}
-    else if(cap == "Rule truth")	dev.each {
-    	def truth = null
-        if(it == state.ourRule) truth = state.ourTruth
-    	else truth = parent.currentRule(it)
-    	result = result || "$stateX" == "$truth"
+	else if(cap == "Rule truth")	dev.each {
+		def truth = null
+		if(it == state.ourRule) truth = state.ourTruth
+		else truth = parent.currentRule(it)
+	result = result || "$stateX" == "$truth"
 	} 
-    else if(cap == "Water sensor")	result = stateX in dev.currentWater
+	else if(cap == "Water sensor")	result = stateX in dev.currentWater
 	else if(cap == "Switch") 	result = stateX in dev.currentSwitch
 	else if(cap == "Motion") 	result = stateX in dev.currentMotion
 	else if(cap == "Acceleration") 	result = stateX in dev.currentAcceleration
@@ -1178,7 +1178,7 @@ def checkCondAny(dev, stateX, cap, rel, relDev) {
 	else if(cap == "Smoke detector") 	result = stateX in dev.currentSmoke
 	else if(cap == "Carbon monoxide detector") 	result = stateX in dev.currentCarbonMonoxide
 	else if(cap == "Lock") 		result = stateX in dev.currentLock
-    else if(cap == "Garage door")	result = stateX in dev.currentDoor
+	else if(cap == "Garage door")	result = stateX in dev.currentDoor
 //	log.debug "CheckAny $cap $result"
 	return result
 }
@@ -1207,11 +1207,11 @@ def checkCondAll(dev, stateX, cap, rel, relDev) {
 	else if(cap == "Energy meter")		dev.currentEnergy.each		{result = result && compare(it, rel, stateX, reldev ? relDev.currentEnergy : null)}
 	else if(cap == "Power meter")		dev.currentPower.each		{result = result && compare(it, rel, stateX, reldev ? relDev.currentPower : null)}
 	else if(cap == "Battery")		dev.currentBattery.each		{result = result && compare(it, rel, stateX, reldev ? relDev.currentBattery : null)}
-    else if(cap == "Rule truth")	dev.each {
-    											def rule = null
-    											if(it == state.ourRule) rule = state.ourTruth
-    											else rule = parent.currentRule(it)
-    											result = result && "$stateX" == "$rule"
+	else if(cap == "Rule truth")		dev.each {
+    							def rule = null
+    							if(it == state.ourRule) rule = state.ourTruth
+    							else rule = parent.currentRule(it)
+    							result = result && "$stateX" == "$rule"
                                                 }
 	else if(cap == "Water sensor")		result = !(flip[stateX] in dev.currentSwitch)
 	else if(cap == "Switch") 		result = !(flip[stateX] in dev.currentSwitch)
@@ -1222,7 +1222,7 @@ def checkCondAll(dev, stateX, cap, rel, relDev) {
 	else if(cap == "Smoke detector") 	result = !(flip[stateX] in dev.currentSmoke)
 	else if(cap == "Carbon monoxide detector") 	result = !(flip[stateX] in dev.currentCarbonMonoxide)
 	else if(cap == "Lock") 			result = !(flip[stateX] in dev.currentLock)
-    else if(cap == "Garage door")	result = !(flip[stateX] in dev.currentDoor)
+	else if(cap == "Garage door")	result = !(flip[stateX] in dev.currentDoor)
 //	log.debug "CheckAll $cap $result"
 	return result
 }
@@ -1234,7 +1234,7 @@ def getOperand(i, isR) {
 	if     (capab == "Mode") result = modeOk
 	else if(capab == "Time of day") result = timeOkX
 	else if(capab == "Days of week") result = daysOk
-    else if(capab == "Smart Home Monitor") result = (settings.find {it.key == (isR ? "state$i" : "tstate$i")}).value == location.currentState("alarmSystemStatus")?.value
+	else if(capab == "Smart Home Monitor") result = (settings.find {it.key == (isR ? "state$i" : "tstate$i")}).value == location.currentState("alarmSystemStatus")?.value
 	else {
 		def myDev = 	settings.find {it.key == (isR ? "rDev$i" : "tDev$i")}
 		def myState = 	settings.find {it.key == (isR ? "state$i" : "tstate$i")}
@@ -1264,12 +1264,12 @@ def findRParen() {
 }
 
 def disEval() {
-    if(state.eval[state.token] == "(") {
-    	state.parenLev = 0
-        findRParen()
-    }
-    if(state.token >= state.eval.size) return
-    state.token = state.token + 1
+	if(state.eval[state.token] == "(") {
+		state.parenLev = 0
+		findRParen()
+	}
+	if(state.token >= state.eval.size) return
+	state.token = state.token + 1
 }
 
 def evalTerm() {
@@ -1318,14 +1318,14 @@ def adjustFan(device) {
 def adjustShade(device) {
 //	log.debug "shades: $device = ${device.currentMotor} state.lastUP = $state.lastshadesUp"
 	if(device.currentMotor in ["up","down"]) {
-    	state.lastshadesUp = device.currentMotor == "up"
-    	device.stop()
-    } else {
-    	state.lastshadesUp ? device.down() : device.up()
+		state.lastshadesUp = device.currentMotor == "up"
+		device.stop()
+	} else {
+		state.lastshadesUp ? device.down() : device.up()
 //    	if(state.lastshadesUp) device.down()
 //        else device.up()
-        state.lastshadesUp = !state.lastshadesUp
-    }
+		state.lastshadesUp = !state.lastshadesUp
+	}
 }
 
 def toggle(devices, trufal) {
@@ -1348,95 +1348,95 @@ def dimToggle(devices, dimLevel, trufal) {
 
 def doDelayTrue(time, rand, cancel) {
 	def myTime = time
-    if(rand) myTime = Math.random()*time
-    if(cancel) runIn(myTime, delayRuleTrue)
-    else runIn(myTime, delayRuleTrueForce)
-    def isMins = time % 60 == 0
-    if(isMins) time = time / 60
+	if(rand) myTime = Math.random()*time
+	if(cancel) runIn(myTime, delayRuleTrue)
+	else runIn(myTime, delayRuleTrueForce)
+	def isMins = time % 60 == 0
+	if(isMins) time = time / 60
 	def delayStr = isMins ? "minute" : "seconds"
 	if(time > 1 && isMins) delayStr = delayStr + "s"
-    if(state.isRule || state.howMany > 1) log.info ("$app.label is True, but " + (rand ? "random delay, up to $time minutes" : "delayed by $time $delayStr"))
-    else log.info (rand ? "Random delay, up to $time minutes" : "Delayed by $time $delayStr")
+	if(state.isRule || state.howMany > 1) log.info ("$app.label is True, but " + (rand ? "random delay, up to $time minutes" : "delayed by $time $delayStr"))
+	else log.info (rand ? "Random delay, up to $time minutes" : "Delayed by $time $delayStr")
 }
 
 def doDelayFalse(time, rand) {
 	def myTime = time
-    if(rand) myTime = Math.random()*time
-    if(cancel) runIn(myTime, delayRuleFalse)
-    else runIn(myTime, delayRuleFalseForce)
-    def isMins = time % 60 == 0
-    if(isMins) time = time / 60
+	if(rand) myTime = Math.random()*time
+	if(cancel) runIn(myTime, delayRuleFalse)
+	else runIn(myTime, delayRuleFalseForce)
+	def isMins = time % 60 == 0
+	if(isMins) time = time / 60
 	def delayStr = isMins ? "minute" : "seconds"
 	if(time > 1 && isMins) delayStr = delayStr + "s"
-    if(state.isRule || state.howMany > 1) log.info ("$app.label is False, but " + (rand ? "random delay, up to $time minutes" : "delayed by $time $delayStr"))
-    else log.info (rand ? "Random delay, up to $time minutes" : "Delayed by $time $delayStr")
+	if(state.isRule || state.howMany > 1) log.info ("$app.label is False, but " + (rand ? "random delay, up to $time minutes" : "delayed by $time $delayStr"))
+	else log.info (rand ? "Random delay, up to $time minutes" : "Delayed by $time $delayStr")
 }
 
 def takeAction(success) {
 	if(success) {
 		if(onSwitchTrue) 		if(delayMilTrue) onSwitchTrue.on([delay: delayMilTrue]) else onSwitchTrue.on()
 		if(offSwitchTrue) 		if(delayMilTrue) offSwitchTrue.off([delay: delayMilTrue]) else offSwitchTrue.off()
-		if(toggleSwitchTrue)	toggle(toggleSwitchTrue, true)
-		if(delayedOffTrue)	{   if(delayMinutesTrue) runIn(delayMinutesTrue * 60, delayOffTrue)
+		if(toggleSwitchTrue)		toggle(toggleSwitchTrue, true)
+		if(delayedOffTrue)	{   	if(delayMinutesTrue) runIn(delayMinutesTrue * 60, delayOffTrue)
                 				if(delayMillisTrue) {if(delayOnOffTrue) delayedOffTrue.on([delay: delayMillisTrue]) else delayedOffTrue.off([delay: delayMillisTrue])}   }
 		if(pendedOffTrue)		runIn(pendMinutesTrue * 60, pendingOffTrue)
 		if(pendedOffFalse)		unschedule(pendingOffFalse)
 		if(dimATrue) 			if(delayMilTrue) dimATrue.setLevel(dimLATrue, [delay: delayMilTrue]) else dimATrue.setLevel(dimLATrue)
 		if(dimBTrue) 			if(delayMilTrue) dimBTrue.setLevel(dimLBTrue, [delay: delayMilTrue]) else dimBTrue.setLevel(dimLBTrue)
-		if(toggleDimmerTrue)	dimToggle(toggleDimmerTrue, dimTogTrue, true)
+		if(toggleDimmerTrue)		dimToggle(toggleDimmerTrue, dimTogTrue, true)
 		if(bulbsTrue)			setColor(true)
-        if(garageOpenTrue)		if(delayMilTrue) garageOpenTrue.open([delay: delayMilTrue]) else garageOpenTrue.open()
-        if(garageCloseTrue)		if(delayMilTrue) garageCloseTrue.close([delay: delayMilTrue]) else garageCloseTrue.close()
+		if(garageOpenTrue)		if(delayMilTrue) garageOpenTrue.open([delay: delayMilTrue]) else garageOpenTrue.open()
+		if(garageCloseTrue)		if(delayMilTrue) garageCloseTrue.close([delay: delayMilTrue]) else garageCloseTrue.close()
 		if(lockTrue) 			if(delayMilTrue) lockTrue.lock([delay: delayMilTrue]) else lockTrue.lock()
 		if(unlockTrue) 			if(delayMilTrue) unlockTrue.unlock([delay: delayMilTrue]) else unlockTrue.unlock()
 		if(fanAdjustTrue)		adjustFan(fanAdjustTrue)
 		if(openValveTrue)		if(delayMilTrue) openValveTrue.open([delay: delayMilTrue]) else openValveTrue.open()
 		if(closeValveTrue)		if(delayMilTrue) closeValveTrue.close([delay: delayMilTrue]) else closeValveTrue.close()
 		if(thermoTrue)		{	if(thermoModeTrue) 	thermoTrue.setThermostatMode(thermoModeTrue)
-								if(thermoSetHeatTrue)	thermoTrue.setHeatingSetpoint(thermoSetHeatTrue)
-								if(thermoSetCoolTrue)	thermoTrue.setCoolingSetpoint(thermoSetCoolTrue) 	
-                                if(thermoFanTrue) 	thermoTrue.setThermostatFanMode(thermoFanTrue)   }
+						if(thermoSetHeatTrue)	thermoTrue.setHeatingSetpoint(thermoSetHeatTrue)
+						if(thermoSetCoolTrue)	thermoTrue.setCoolingSetpoint(thermoSetCoolTrue) 	
+						if(thermoFanTrue) 	thermoTrue.setThermostatFanMode(thermoFanTrue)   }
 		if(alarmTrue)			sendLocationEvent(name: "alarmSystemStatus", value: "$alarmTrue")
 		if(modeTrue) 			setLocationMode(modeTrue)
-        if(ruleTrue)			parent.runRule(ruleTrue, app.label)
+		if(ruleTrue)			parent.runRule(ruleTrue, app.label)
 		if(myPhraseTrue)		location.helloHome.execute(myPhraseTrue)
-        if(cameraTrue) 		{	cameraTrue.take() 
+		if(cameraTrue) 		{	cameraTrue.take() 
                 				(1..((burstCountTrue ?: 5) - 1)).each {cameraTrue.take(delay: (500 * it))}   }
 		if(pushTrue)			sendPush((msgTrue ?: "Rule $app.label True") + (refDevTrue ? " $state.lastEvtName" : ""))
 		if(phoneTrue)			sendSms(phoneTrue, (msgTrue ?: "Rule $app.label True") + (refDevTrue ? " $state.lastEvtName" : ""))
-		if(customDeviceTrue)  	execCommand(customDeviceTrue,ccTrue)
+		if(customDeviceTrue)  		execCommand(customDeviceTrue,ccTrue)
 	} else {
 		if(onSwitchFalse) 		if(delayMilFalse) onSwitchFalse.on([delay: delayMilFalse]) else onSwitchFalse.on()
 		if(offSwitchFalse) 		if(delayMilFalse) offSwitchFalse.off([delay: delayMilFalse]) else offSwitchFalse.off()
-		if(toggleSwitchFalse)	toggle(toggleSwitchFalse, false)
-		if(delayedOffFalse)	{   if(delayMinutesFalse) runIn(delayMinutesFalse * 60, delayOffFalse)
+		if(toggleSwitchFalse)		toggle(toggleSwitchFalse, false)
+		if(delayedOffFalse)	{ 	if(delayMinutesFalse) runIn(delayMinutesFalse * 60, delayOffFalse)
                 				if(delayMillisFalse) {if(delayOnOffFalse) delayedOffFalse.on([delay: delayMillisFalse]) else delayedOffFalse.off([delay: delayMillisFalse])}   }
 		if(pendedOffFalse)		runIn(pendMinutesFalse * 60, pendingOffFalse)
 		if(pendedOffTrue)		unschedule(pendingOffTrue)
 		if(dimAFalse) 			if(delayMilFalse) dimAFalse.setLevel(dimLAFalse, [delay: delayMilFalse]) else dimAFalse.setLevel(dimLAFalse)
 		if(dimBFalse) 			if(delayMilFalse) dimBFalse.setLevel(dimLBFalse, [delay: delayMilFalse]) else dimBFalse.setLevel(dimLBFalse)
-		if(toggleDimmerFalse)	dimToggle(toggleDimmerFalse, dimTogFalse, false)
+		if(toggleDimmerFalse)		dimToggle(toggleDimmerFalse, dimTogFalse, false)
 		if(bulbsFalse)			setColor(false)
-        if(garageOpenFalse)		if(delayMilFalse) garageOpenFalse.open([delay: delayMilFalse]) else garageOpenFalse.open()
-        if(garageCloseFalse)	if(delayMilFalse) garageCloseFalse.close([delay: delayMilFalse]) else garageCloseFalse.close()
+		if(garageOpenFalse)		if(delayMilFalse) garageOpenFalse.open([delay: delayMilFalse]) else garageOpenFalse.open()
+		if(garageCloseFalse)	if(delayMilFalse) garageCloseFalse.close([delay: delayMilFalse]) else garageCloseFalse.close()
 		if(lockFalse) 			if(delayMilFalse) lockFalse.lock([delay: delayMilFalse]) else lockFalse.lock()
 		if(unlockFalse) 		if(delayMilFalse) unlockFalse.unlock([delay: delayMilFalse]) else unlockFalse.unlock()
 		if(fanAdjustFalse)		adjustFan(fanAdjustFalse)
 		if(openValveFalse)		if(delayMilFalse) openValveFalse.open([delay: delayMilFalse]) else openValveFalse.open()
 		if(closeValveFalse)		if(delayMilFalse) closeValveFalse.close([delay: delayMilFalse]) else closeValveFalse.close()
 		if(thermoFalse)		{	if(thermoModeFalse) 	thermoFalse.setThermostatMode(thermoModeFalse)
-								if(thermoSetHeatFalse) 	thermoFalse.setHeatingSetpoint(thermoSetHeatFalse)
-								if(thermoSetCoolFalse) 	thermoFalse.setCoolingSetpoint(thermoSetCoolFalse) 	
-                                if(thermoFanFalse)	thermoFalse.setThermostatFanMode(thermoFanFalse)   }
+						if(thermoSetHeatFalse) 	thermoFalse.setHeatingSetpoint(thermoSetHeatFalse)
+						if(thermoSetCoolFalse) 	thermoFalse.setCoolingSetpoint(thermoSetCoolFalse) 	
+						if(thermoFanFalse)	thermoFalse.setThermostatFanMode(thermoFanFalse)   }
 		if(alarmFalse)			sendLocationEvent(name: "alarmSystemStatus", value: "$alarmFalse")
 		if(modeFalse) 			setLocationMode(modeFalse)
-        if(ruleFalse)			parent.runRule(ruleFalse, app.label)
+		if(ruleFalse)			parent.runRule(ruleFalse, app.label)
 		if(myPhraseFalse) 		location.helloHome.execute(myPhraseFalse)
-        if(cameraFalse) 		{	cameraFalse.take() 
-                					(1..((burstCountFalse ?: 5) - 1)).each {cameraFalse.take(delay: (500 * it))}   }
+		if(cameraFalse) 	{	cameraFalse.take() 
+                				(1..((burstCountFalse ?: 5) - 1)).each {cameraFalse.take(delay: (500 * it))}   }
 		if(pushFalse)			sendPush((msgFalse ?: "Rule $app.label False") + (refDevFalse ? " $state.lastEvtName" : ""))
 		if(phoneFalse)			sendSms(phoneFalse, (msgFalse ?: "Rule $app.label False") + (refDevFalse ? " $state.lastEvtName" : ""))
-		if(customDeviceFalse)  	execCommand(customDeviceFalse,ccFalse)
+		if(customDeviceFalse)  		execCommand(customDeviceFalse,ccFalse)
 	}
 }
 
@@ -1449,14 +1449,14 @@ def runRule(force) {
 		unschedule(delayRuleFalse)
 		if     (delayTrue > 0 && success)		doDelayTrue(delayTrue * 60, false, true)
 		else if(delayFalse > 0 && !success)		doDelayFalse(delayFalse * 60, false, true)
-        else if(delayMinTrue > 0 && success) 	doDelayTrue(delayMinTrue * 60, randTrue, cancelTrue)
-        else if(delayMinFalse > 0 && !success) 	doDelayFalse(delayMinFalse * 60, randFalse, cancelFalse)
-        else if(delaySecTrue > 0 && success)	doDelayTrue(delaySecTrue, false, cancelTrue)
-        else if(delaySecFalse > 0 && !success)	doDelayFalse(delaySecFalse, false, cancelFalse)
-    	else if(randomTrue > 0 && success) 		doDelayTrue(randomTrue * 60, true, true)
-    	else if(randomFalse > 0 && !success) 	doDelayFalse(randomFalse * 60, true, true)
+		else if(delayMinTrue > 0 && success) 	doDelayTrue(delayMinTrue * 60, randTrue, cancelTrue)
+		else if(delayMinFalse > 0 && !success) 	doDelayFalse(delayMinFalse * 60, randFalse, cancelFalse)
+		else if(delaySecTrue > 0 && success)	doDelayTrue(delaySecTrue, false, cancelTrue)
+		else if(delaySecFalse > 0 && !success)	doDelayFalse(delaySecFalse, false, cancelFalse)
+		else if(randomTrue > 0 && success) 		doDelayTrue(randomTrue * 60, true, true)
+		else if(randomFalse > 0 && !success) 	doDelayFalse(randomFalse * 60, true, true)
 		else takeAction(success)
-        parent.setRuleTruth(app.label, success)
+		parent.setRuleTruth(app.label, success)
 		state.success = success
 		log.info (success ? "$app.label is True" : "$app.label is False")
 //      sendNotificationEvent(success ? "$app.label is True" : "$app.label is False")
@@ -1466,11 +1466,11 @@ def runRule(force) {
 def doTrigger() {
 	if(!allOk) return
 	if     (delayTrue > 0)		doDelayTrue(delayTrue * 60, false, true)
-    else if(delayMinTrue > 0)	doDelayTrue(delayMinTrue * 60, randTrue, true)
-    else if(delaySecTrue > 0)	doDelayTrue(delaySecTrue, false, true)	 
-    else if(randomTrue > 0) 	doDelayTrue(randomTrue * 60, true, true)
+	else if(delayMinTrue > 0)	doDelayTrue(delayMinTrue * 60, randTrue, true)
+	else if(delaySecTrue > 0)	doDelayTrue(delaySecTrue, false, true)	 
+	else if(randomTrue > 0) 	doDelayTrue(randomTrue * 60, true, true)
 	else takeAction(true)
-    log.info ("$app.label Triggered")
+	log.info ("$app.label Triggered")
 //  sendNotificationEvent("$app.label Ran")
 }
 
@@ -1507,44 +1507,44 @@ def getButton(dev, evt, i) {
 
 def testEvt(evt) {
 	def result = false
-    def howMany = state.isTrig ? state.howMany : state.howManyT
+	def howMany = state.isTrig ? state.howMany : state.howManyT
 	if(evt.name == "mode") return modeXOk
 	if(evt.name == "routineExecuted") {
 		for(int i = 1; i < howMany; i++) {
 			def myCapab = (settings.find {it.key == (state.isTrig ? "rCapab$i" : "tCapab$i")}).value
 			def state = settings.find {it.key == (state.isTrig ? "state$i" : "tstate$i")}
 			if(myCapab == "Routine") result = result || evt.displayName == state.value
-            if(result) return true
+			if(result) return true
 		}
         return false
-    }
+	}
 	for(int i = 1; i < howMany; i++) {
 		def myDev = (settings.find {it.key == (state.isTrig ? "rDev$i" : "tDev$i")}).value
 		myDev.each {if(evt.displayName == it.displayName) {
 			if(evt.name == "button") result = getButton(myDev, evt, i)
 			else result = getOperand(i, state.isTrig)}
 		}
-        if(result) return result
+		if(result) return result
 	}
 	return result
 }
 
 def allHandler(evt) {
 	if(!allOk) return
-    log.info "$app.label: $evt.displayName $evt.name $evt.value"
-    state.lastEvtName = evt.displayName
-    def hasTrig = state.howManyT > 1
-    def hasCond = state.howMany > 1
-    def doit = true
-    if(state.isTrig) {
+	log.info "$app.label: $evt.displayName $evt.name $evt.value"
+	state.lastEvtName = evt.displayName
+	def hasTrig = state.howManyT > 1
+	def hasCond = state.howMany > 1
+	def doit = true
+	if(state.isTrig) {
 		if(evt.name in ["temperature", "humidity", "power", "energy", "battery", "illuminance", "mode", "button", "routineExecuted"]) doit = testEvt(evt)
 		if (doit) doTrigger() }
-    else if(state.isRule) runRule(false)
-    else {
-    	if(hasTrig) if(evt.name in ["temperature", "humidity", "power", "energy", "battery", "illuminance", "mode", "button", "routineExecuted"]) doit = testEvt(evt)
-        if(hasCond) {if(doit) runRule(hasTrig)}
-        else if(doit) doTrigger()
-    }
+	else if(state.isRule) runRule(false)
+	else {
+		if(hasTrig) if(evt.name in ["temperature", "humidity", "power", "energy", "battery", "illuminance", "mode", "button", "routineExecuted"]) doit = testEvt(evt)
+		if(hasCond) {if(doit) runRule(hasTrig)}
+		else if(doit) doTrigger()
+	}
 }
 
 def startHandler() {
@@ -1556,8 +1556,8 @@ def stopHandler() {
 }
 
 def timeHandler() {
-    if(state.isTrig || state.howManyT > 1) doTrigger()
-    else if(state.howMany > 1) runRule(false)
+	if(state.isTrig || state.howManyT > 1) doTrigger()
+	else if(state.howMany > 1) runRule(false)
 }
 
 def physicalHandler(evt) {
@@ -1602,14 +1602,14 @@ def disabledHandler(evt) {
 
 def ruleHandler(rule, truth) {
 	log.info "$app.label: $rule is $truth"
-    state.ourRule = rule
-    state.ourTruth = truth
-    if(state.isRule || state.howMany > 1) runRule(false) else doTrigger()
+	state.ourRule = rule
+	state.ourTruth = truth
+	if(state.isRule || state.howMany > 1) runRule(false) else doTrigger()
 }
 
 def ruleEvaluator(rule) {
 	log.info "$app.label: $rule evaluate"
-    runRule(true)
+	runRule(true)
 }
 
 //  private execution filter methods follow
@@ -1660,13 +1660,13 @@ private timeIntervalLabelX() {
 
 private getAllOk() {
 	if(state.isRule) modeZOk && !state.disabled  //&& daysOk && timeOk
-    else if(state.isTrig) modeYOk && daysOk && timeOk && !state.disabled
-    else modeYOk && daysYOk && timeOk && !state.disabled
+	else if(state.isTrig) modeYOk && daysOk && timeOk && !state.disabled
+	else modeYOk && daysYOk && timeOk && !state.disabled
 }
 
 private hideOptionsSection() {
 	if(state.isRule) (modesZ || advanced) ? false : true
-    else (starting || ending || daysY || modes || modesY || startingX || endingX || disabled) ? false : true
+	else (starting || ending || daysY || modes || modesY || startingX || endingX || disabled) ? false : true
 }
 
 private getModeZOk() {
