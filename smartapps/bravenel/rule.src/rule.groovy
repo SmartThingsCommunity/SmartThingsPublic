@@ -667,7 +667,7 @@ def delayFalsePage() {
             	input "delayMilFalse", "number", title: "Milliseconds of delay", required: false, range: "1..*", submitOnChange: true
             }
 			if(delayMinFalse > 0 || delayMilFalse > 0 || delaySecFalse > 0) {
-				state.delayStrFalse = "Delay by " + (delayMilFalse ? "$delayMilFalse milliseconds" : "$delayMinFalse minute")
+				state.delayStrFalse = "Delay by " + (delayMilFalse ? "$delayMilFalse milliseconds" : (delaySecFalse ? "$delaySecFalse seconds" : "$delayMinFalse minute"))
 				if(delayMinFalse > 1) state.delayStrFalse = state.delayStrFalse + "s"
                 state.delayStrFalse = state.delayStrFalse + (cancelFalse ? " [Cancel]" : "") + (randFalse ? " [Random]" : "")
 			} else state.delayStrFalse = ""
