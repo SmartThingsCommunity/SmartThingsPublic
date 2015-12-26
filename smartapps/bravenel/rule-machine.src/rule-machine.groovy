@@ -3,10 +3,11 @@
  *
  *  Copyright 2015 Bruce Ravenel and Mike Maxwell
  *
- *  Version 1.6.2   25 Dec 2015
+ *  Version 1.6.3   26 Dec 2015
  *
  *	Version History
- *	
+ *
+ *	1.6.3	26 Dec 2015		UI improvements and icon per Michael Struck
  *  1.6.2	25 Dec 2015		null parameter value patch in expert, maxwell
  *	1.6.1	24 Dec 2015		UI improvement
  *	1.6		23 Dec 2015		Added expert commands per Mike Maxwell
@@ -51,11 +52,11 @@ def mainPage() {
         section {
             app(name: "childRules", appName: "Rule", namespace: "bravenel", title: "Create New Rule...", multiple: true)
         }
-		section {
-			href( "expert", title: "", description: "Expert Features", state: "")
+		section ("Expert Features") {
+			href( "expert", title: "", description: "Tap to create custom commands", state: "")
         }
-        section {
-        	href "removePage", description: "Remove Rule Machine", title: ""
+        section ("Remove Rule Machine"){
+        	href "removePage", description: "Tap to remove Rule Machine", title: ""
         }
     }
 }
@@ -162,13 +163,7 @@ def runRule(rule, appLabel) {
 def expert(){
 	dynamicPage(name: "expert", title: "Expert Features", uninstall: false, install: false) {
 		section(){
-			paragraph 	"Custom commands allows Rules to control devices with custom capabilities.\n" +
-						"Dual dimmers and switches, ThingShields, FGBW controllers or any device you might build a " +
-						"custom smartApp to utilize.\n" +
-						"Custom commands that are created and saved here will become available for use in any new " +
-						"or existing rules.\n" +
-						"After saving at least one command, look for 'Run custom device command' in your 'Select " +
-						"Actions'  sections."
+            paragraph "${expertText()}"
 			//expert hrefs...
 			href( "customCommandsPAGE"
 				,title		: "Configure Custom Commands..."
@@ -612,4 +607,13 @@ def getDeviceCommands(){
 
 def isExpert(){
 	return getCommands()
+}
+
+def expertText() {
+	def text = 
+		"Custom commands allows Rule Machine to control devices with custom capabilities. " +
+		"This includes dual dimmers and switches, ThingShields, FGBW controllers or any device you might build a " +
+		"custom SmartApp to utilize.\n\nCustom commands that are created and saved here will become available for use " +
+		"in any new or existing rules.\n\nAfter saving at least one command, look for 'Run custom device command' in your " + 
+		"'Select Actions' sections."
 }
