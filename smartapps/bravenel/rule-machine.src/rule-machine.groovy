@@ -30,8 +30,8 @@ definition(
     author: "Bruce Ravenel and Mike Maxwell",
     description: "Rule Machine",
     category: "My Apps",
-  	iconUrl: "https://raw.githubusercontent.com/MichaelStruck/SmartThings/master/Other-SmartApps/Rules-Triggers/RuleEngine.png",
-    iconX2Url: "https://raw.githubusercontent.com/MichaelStruck/SmartThings/master/Other-SmartApps/Rules-Triggers/RuleEngine%402x.png",
+  	iconUrl: "https://raw.githubusercontent.com/bravenel/Rule-Trigger/master/smartapps/bravenel/RuleMachine.png",
+    iconX2Url: "https://raw.githubusercontent.com/bravenel/Rule-Trigger/master/smartapps/bravenel/RuleMachine%402x.png",
 //    iconX3Url: "https://s3.amazonaws.com/smartapp-icons/ModeMagic/Cat-ModeMagic@3x.png"
 )
 
