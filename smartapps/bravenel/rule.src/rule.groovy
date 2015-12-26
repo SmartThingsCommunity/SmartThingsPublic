@@ -470,12 +470,12 @@ def conditionLabelN(i, isTrig) {
 		else if(thisCapab.value == "Battery")		result = "Battery level $phrase "
 		else if(thisCapab.value == "Rule truth") 	result = "Rule truth $phrase "
 		else if(thisCapab.value == "Button") {
-		result = "$thisDev.value button $myButton.value "                
-		def thisState = settings.find {it.key == (isTrig ? "tstate$i" : "state$i")}
-		result = result + thisState.value
-		return result
-	}
-        if(thisCapab.value == "Rule truth") result = result = result + (thisDev.value.size() > 1 ? ("$thisDev.value any ") : (thisDev.value[0] + " "))
+			result = "$thisDev.value button $myButton.value "                
+			def thisState = settings.find {it.key == (isTrig ? "tstate$i" : "state$i")}
+			result = result + thisState.value
+			return result
+		}
+		if(thisCapab.value == "Rule truth") result = result = result + (thisDev.value.size() > 1 ? ("$thisDev.value any ") : (thisDev.value[0] + " "))
 		else result = result + (myAny ? thisDev.value : thisDev.value[0]) + " " + ((thisAll ? thisAll.value : false) ? "all " : myAny)
 		def thisRel = settings.find {it.key == (isTrig ? "ReltDev$i" : "RelrDev$i")}
 		if(thisCapab.value in ["Temperature", "Humidity", "Illuminance", "Dimmer level", "Energy meter", "Power meter", "Battery"]) result = result + " " + thisRel.value + " "
