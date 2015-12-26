@@ -3,7 +3,7 @@
  *
  *  Copyright 2015 Bruce Ravenel
  *
- *  Version 1.6.3a   26 Dec 2015
+ *  Version 1.6.3b   26 Dec 2015
  *
  *	Version History
  *
@@ -758,10 +758,8 @@ def selectActionsTrue() {
 			checkActTrue(lockTrue, "Lock: $lockTrue")
 			input "unlockTrue", "capability.lock", title: "Unlock these locks", multiple: true, required: false, submitOnChange: true
 			checkActTrue(unlockTrue, "Unlock: $unlockTrue")
-			if(isTrig) {
-				input "fanAdjustTrue", "capability.switchLevel", title: "Adjust these fans - Low, Medium, High, Off", multiple: false, required: false, submitOnChange: true
-				if(fanAdjustTrue) addToActTrue("Adjust Fan: $fanAdjustTrue")
-			}
+			input "fanAdjustTrue", "capability.switchLevel", title: "Adjust these fans - Low, Medium, High, Off", multiple: false, required: false, submitOnChange: true
+			if(fanAdjustTrue) addToActTrue("Adjust Fan: $fanAdjustTrue")
 			input "openValveTrue", "capability.valve", title: "Open these valves", multiple: true, required: false, submitOnChange: true
 			checkActTrue(openValveTrue, "Open: $openValveTrue")
 			input "closeValveTrue", "capability.valve", title: "Close these valves", multiple: true, required: false, submitOnChange: true
@@ -914,10 +912,8 @@ def selectActionsFalse() {
 			checkActFalse(lockFalse, "Lock: $lockFalse")
 			input "unlockFalse", "capability.lock", title: "Unlock these locks", multiple: true, required: false, submitOnChange: true
 			checkActFalse(unlockFalse, "Unlock: $unlockFalse")
-			if(isTrig) {
-				input "fanAdjustFalse", "capability.switchLevel", title: "Adjust these fans - Low, Medium, High, Off", multiple: false, required: false, submitOnChange: true
-				if(fanAdjustFalse) addToActFalse("Adjust Fan: $fanAdjustFalse")
-			}
+			input "fanAdjustFalse", "capability.switchLevel", title: "Adjust these fans - Low, Medium, High, Off", multiple: false, required: false, submitOnChange: true
+			if(fanAdjustFalse) addToActFalse("Adjust Fan: $fanAdjustFalse")
 			input "openValveFalse", "capability.valve", title: "Open these valves", multiple: true, required: false, submitOnChange: true
 			checkActFalse(openValveFalse, "Open: $openValveFalse")
 			input "closeValveFalse", "capability.valve", title: "Close these valves", multiple: true, required: false, submitOnChange: true

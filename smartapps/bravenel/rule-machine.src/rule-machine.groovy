@@ -3,12 +3,12 @@
  *
  *  Copyright 2015 Bruce Ravenel and Mike Maxwell
  *
- *  Version 1.6.3   26 Dec 2015
+ *  Version 1.6.3a   26 Dec 2015
  *
  *	Version History
  *
  *	1.6.3	26 Dec 2015		UI improvements and icon per Michael Struck
- *  	1.6.2	25 Dec 2015		null parameter value patch in expert, maxwell
+ *	1.6.2	25 Dec 2015		null parameter value patch in expert, maxwell
  *	1.6.1	24 Dec 2015		UI improvement
  *	1.6	23 Dec 2015		Added expert commands per Mike Maxwell
  *
@@ -46,7 +46,7 @@ preferences {
 }
 
 def mainPage() {
-    dynamicPage(name: "mainPage", title: "Rules and Triggers", install: true, uninstall: false, submitOnChange: true) {
+    dynamicPage(name: "mainPage", title: "Installed Rules:", install: true, uninstall: false, submitOnChange: true) {
     	if(!state.setup) initialize(true)
         section {
             app(name: "childRules", appName: "Rule", namespace: "bravenel", title: "Create New Rule...", multiple: true)
