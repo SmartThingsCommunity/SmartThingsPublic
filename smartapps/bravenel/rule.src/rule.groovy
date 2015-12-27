@@ -3,7 +3,7 @@
  *
  *  Copyright 2015 Bruce Ravenel
  *
- *  Version 1.6.3c   26 Dec 2015
+ *  Version 1.6.3d   26 Dec 2015
  *
  *	Version History
  *
@@ -729,7 +729,7 @@ def selectActionsTrue() {
 			if(dimTogTrue) checkActTrue(toggleDimmerTrue, "Toggle: $toggleDimmerTrue: $dimTogTrue")
 			input "ctTrue", "capability.colorTemperature", title: "Set color temperature for these bulbs", multiple: true, submitOnChange: true, required: false
 			if(ctTrue) input "ctLTrue", "number", title: "To this color temperature", range: "2000..6500", required: true, submitOnChange: true
-			if(ctLTrue) setActTrue(ctTrue, "Color Temperature: $ctTrue: $ctLTrue")
+			if(ctLTrue) checkActTrue(ctTrue, "Color Temperature: $ctTrue: $ctLTrue")
 			input "bulbsTrue", "capability.colorControl", title: "Set color for these bulbs", multiple: true, required: false, submitOnChange: true
 			if(bulbsTrue) {
 				input "colorTrue", "enum", title: "Bulb color?", required: true, multiple: false, submitOnChange: true,
@@ -879,7 +879,7 @@ def selectActionsFalse() {
 			if(dimTogFalse) checkActFalse(toggleDimmerFalse, "Toggle: $toggleDimmerFalse: $dimTogFalse")
 			input "ctFalse", "capability.colorTemperature", title: "Set color temperature for these bulbs", multiple: true, submitOnChange: true, required: false
 			if(ctFalse) input "ctLFalse", "number", title: "To this color temperature", range: "2000..6500", required: true, submitOnChange: true
-			if(ctLFalse) setActFalse(ctFalse, "Color Temperature: $ctFalse: $ctLFalse")			
+			if(ctLFalse) checkActFalse(ctFalse, "Color Temperature: $ctFalse: $ctLFalse")			
             input "bulbsFalse", "capability.colorControl", title: "Set color for these bulbs", multiple: true, required: false, submitOnChange: true
 			if(bulbsFalse) {
 				input "colorFalse", "enum", title: "Bulb color?", required: true, multiple: false, submitOnChange: true,
