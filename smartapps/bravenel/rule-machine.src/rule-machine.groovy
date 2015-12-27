@@ -3,7 +3,7 @@
  *
  *  Copyright 2015 Bruce Ravenel and Mike Maxwell
  *
- *  Version 1.6.3a   26 Dec 2015
+ *  Version 1.6.3b   26 Dec 2015
  *
  *	Version History
  *
@@ -32,6 +32,7 @@ definition(
 	category: "My Apps",
 	iconUrl: "https://raw.githubusercontent.com/bravenel/Rule-Trigger/master/smartapps/bravenel/RuleMachine.png",
 	iconX2Url: "https://raw.githubusercontent.com/bravenel/Rule-Trigger/master/smartapps/bravenel/RuleMachine%402x.png",
+	iconX3Url: "https://raw.githubusercontent.com/bravenel/Rule-Trigger/master/smartapps/bravenel/RuleMachine%402x.png"
 )
 
 preferences {
