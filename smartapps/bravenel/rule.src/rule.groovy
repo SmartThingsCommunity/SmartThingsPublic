@@ -3,7 +3,7 @@
  *
  *  Copyright 2015 Bruce Ravenel
  *
- *  Version 1.6.3d   26 Dec 2015
+ *  Version 1.6.3e   26 Dec 2015
  *
  *	Version History
  *
@@ -33,7 +33,7 @@
 definition(
     name: "Rule",
     namespace: "bravenel",
-    author: "Bruce Ravenel",
+    author: "Bruce Ravenel and Mike Maxwell",
     description: "Rule",
     category: "Convenience",
     parent: "bravenel:Rule Machine",
@@ -783,7 +783,7 @@ def selectActionsTrue() {
 			input "myPhraseTrue", "enum", title: "Run a Routine", required: false, options: phrases.sort(), submitOnChange: true
 			if(myPhraseTrue) addToActTrue("Routine: $myPhraseTrue")
 			def theseRules = parent.ruleList(app.label)
-			if(theseRules != null) input "ruleTrue", "enum", title: "Evaluate rules", required: false, multiple: true, options: theseRules.sort(), submitOnChange: true
+			if(theseRules != null) input "ruleTrue", "enum", title: "Evaluate Rules", required: false, multiple: true, options: theseRules.sort(), submitOnChange: true
 			if(ruleTrue) setActTrue("Rules: $ruleTrue")
 				href "selectMsgTrue", title: "Send a message", description: state.msgTrue ? state.msgTrue : "Tap to set", state: state.msgTrue ? "complete" : null
 				if(state.msgTrue) addToActTrue(state.msgTrue)
@@ -933,7 +933,7 @@ def selectActionsFalse() {
 			input "myPhraseFalse", "enum", title: "Run a Routine", required: false, options: phrases.sort(), submitOnChange: true
 			if(myPhraseFalse) addToActFalse("Routine: $myPhraseFalse")
 			def theseRules = parent.ruleList(app.label)
-			if(theseRules != null) input "ruleFalse", "enum", title: "Evaluate rules", required: false, multiple: true, options: theseRules.sort(), submitOnChange: true
+			if(theseRules != null) input "ruleFalse", "enum", title: "Evaluate Rules", required: false, multiple: true, options: theseRules.sort(), submitOnChange: true
 			if(ruleFalse) setActFalse("Rules: $ruleFalse")
 			href "selectMsgFalse", title: "Send a message", description: state.msgFalse ? state.msgFalse : "Tap to set", state: state.msgFalse ? "complete" : null
 			if(state.msgFalse) addToActFalse(state.msgFalse)
@@ -1226,6 +1226,11 @@ def checkCondAll(dev, stateX, cap, rel, relDev) {
 
 def getOperand(i, isR) {
 	def result = true
+    def foundItem = (settings.find {it.key == (isR ? "rCapab$i" : "tCapab$i")})
+    if (foundItem == null) {
+        log.info "Cannot get operand for i: $i   isR: $isR"
+        return null
+    }
 	def capab = (settings.find {it.key == (isR ? "rCapab$i" : "tCapab$i")}).value
 	if     (capab == "Mode") result = modeOk
 	else if(capab == "Time of day") result = timeOkX
