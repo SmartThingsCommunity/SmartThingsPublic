@@ -12,6 +12,8 @@ v 3 reintegrate changes smarthigns made in setheatingsetpoint and setcoolingsetp
     these changes were made in the stock ct100 device type.
 v 5 something they did in they new setheat and cool setpoints even in stock delays changing each temp 
 to 30 secs before it registers changed this to 500 ms.
+v 6 lgk. added status tile with last upddate time for current temp so you can see at a glance it is updating without checking logs.
+note: there is a new input preferernce toffset which defaults to -5 and you must set yourself.
 
 
 
@@ -33,6 +35,8 @@ metadata {
         command "coolLevelUp"
         command "coolLevelDown"
 		attribute "thermostatFanState", "string"
+        attribute "lastUpdate", "string"
+
        
 		command "switchMode"
 		command "switchFanMode"
@@ -198,11 +202,14 @@ metadata {
 			state "default", action:"refresh.refresh", icon:"st.secondary.refresh"
 		}
         
+        valueTile("status", "device.lastUpdate", width: 2, height: 1, decoration: "flat") {
+			state "default", label: 'Last Update: ${currentValue}'
+		}
        main "temperature"
         details(["temperature", "mode", "fanMode",   
         "heatLevelUp", "heatingSetpoint" , "heatLevelDown", "coolLevelUp",
         "coolingSetpoint", "coolLevelDown",
-        "humidity", "battery","thermostatOperatingState","refresh"])
+        "humidity", "battery","thermostatOperatingState","status","refresh"])
         
 		/*main "temperature"
 		details(["temperature", "mode", "fanMode",
@@ -293,6 +300,16 @@ log.debug "in sensor multilevel v2 cmd type = $cmd.sensorType";
 		map.name = "temperature"
 		map.unit = getTemperatureScale()
 		map.value = convertTemperatureIfNeeded(cmd.scaledSensorValue, cmd.scale == 1 ? "F" : "C", cmd.precision)
+        
+        if (settings.tzOffset == null)
+ 		   settings.tzOffset = -5
+ 
+        def now = new Date()
+        def tf = new java.text.SimpleDateFormat("MM/dd/yyyy h:mm a")
+        tf.setTimeZone(TimeZone.getTimeZone("GMT${settings.tzOffset}"))
+        def newtime = "${tf.format(now)}" as String   
+        sendEvent(name: "lastUpdate", value: newtime, descriptionText: "Last Update: $newtime")
+
 	} else if (cmd.sensorType == 5) {
 		map.name = "humidity"
 		map.unit = "%"

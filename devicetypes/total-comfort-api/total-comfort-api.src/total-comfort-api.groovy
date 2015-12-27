@@ -12,6 +12,8 @@
  *  on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the License
  *  for the specific language governing permissions and limitations under the License.
  * lgk version 4 supports celsius and fahrenheit with option, and now colors.
+ * lgk version 5, due to intermittant update failures added last update date/time tile so that you can see when it happended
+ * not there is a new input tzoffset which defaults to my time ie -5 which you must set .
  * 
  *
  */
@@ -21,7 +23,7 @@ preferences {
     input("honeywelldevice", "text", title: "Device ID", description: "Your Device ID", required: true)
     input ("enableOutdoorTemps", "enum", title: "Do you have the optional outdoor temperature sensor and want to enable it?", options: ["Yes", "No"], required: false, defaultValue: "No")
     input ("tempScale", "enum", title: "Fahrenheit or Celsius?", options: ["F", "C"], required: false, defaultValue: "F")
-   
+  	input("tzOffset", "number", title: "Time zone offset +/-xx?", required: false, defaultValue: -5, description: "Time Zone Offset ie -5.")  
   }
 
 metadata {
@@ -39,6 +41,8 @@ metadata {
     command "coolLevelDown"
     attribute "outdoorHumidity", "number"
     attribute "outdoorTemperature", "number"
+    attribute "lastUpdate", "string"
+
     
   }
 
@@ -220,12 +224,15 @@ metadata {
                 ]
         }
 
-      
+      		valueTile("status", "device.lastUpdate", width: 2, height: 1, decoration: "flat") {
+			state "default", label: 'Last Update: ${currentValue}'
+		}
+
         main "temperature"
         details(["temperature", "thermostatMode", "thermostatFanMode",   
         "heatLevelUp", "heatingSetpoint" , "heatLevelDown", "coolLevelUp",
         "coolingSetpoint", "coolLevelDown" ,"thermostatOperatingState",
-        "refresh","relativeHumidity","outdoorTemperature","outdoorHumidity"])
+        "refresh","relativeHumidity","outdoorTemperature","outdoorHumidity", "status"])
        
     }
 }
@@ -598,13 +605,10 @@ log.debug "params = $params"
 }
 
 def getStatus() {
-  log.debug "Executing 'getStatus'"
-  
+  log.debug "Executing getStatus"
   log.debug "enable outside temps = $enableOutdoorTemps"
 def today= new Date()
 log.debug "https://www.mytotalconnectcomfort.com/portal/Device/CheckDataSession/${settings.honeywelldevice}?_=$today.time"
-
-
 
     def params = [
         uri: "https://www.mytotalconnectcomfort.com/portal/Device/CheckDataSession/${settings.honeywelldevice}",
@@ -623,6 +627,8 @@ log.debug "https://www.mytotalconnectcomfort.com/portal/Device/CheckDataSession/
               'Cookie': data.cookiess        ],
     ]
 
+		log.debug "doing request"
+        
         httpGet(params) { response ->
         log.debug "Request was successful, $response.status"
         log.debug "ld = $response.data.latestData"
@@ -755,6 +761,16 @@ log.debug "https://www.mytotalconnectcomfort.com/portal/Device/CheckDataSession/
         sendEvent(name: 'temperature', value: finalTemp, state: switchPos)
         sendEvent(name: 'relativeHumidity', value: curHumidity as Integer)
         
+       if (settings.tzOffset == null)
+        settings.tzOffset = -5
+
+        def now = new Date()
+        def tf = new java.text.SimpleDateFormat("MM/dd/yyyy h:mm a")
+        tf.setTimeZone(TimeZone.getTimeZone("GMT${settings.tzOffset}"))
+        def newtime = "${tf.format(now)}" as String   
+        sendEvent(name: "lastUpdate", value: newtime, descriptionText: "Last Update: $newtime")
+
+        
       if (enableOutdoorTemps == "Yes")
         {
     
@@ -841,8 +857,6 @@ def refresh() {
 def login() {  
   log.debug "Executing 'login'"
       
-
-        
     def params = [
         uri: 'https://www.mytotalconnectcomfort.com/portal',
         headers: [

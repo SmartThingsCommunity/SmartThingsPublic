@@ -211,11 +211,12 @@ def zwaveEvent(physicalgraph.zwave.commands.meterv3.MeterReport cmd) {
 
 	if (cmd.meterType == 1) {
 		if (cmd.scale == 0) {
-     //    log.debug " got kwh $cmd.scaledMeterValue"
+         log.debug " got kwh $cmd.scaledMeterValue"
 			return createEvent(name: "energy", value: cmd.scaledMeterValue, unit: "kWh")
 		} else if (cmd.scale == 1) {
 			return createEvent(name: "energy", value: cmd.scaledMeterValue, unit: "kVAh")
 		} else if (cmd.scale == 2) {
+            log.debug " got wattage $cmd.scaledMeterValue"
 			return createEvent(name: "power", value: Math.round(cmd.scaledMeterValue), unit: "W")
 		} else if (cmd.scale == 4) { //Volts
             log.debug " got voltage $cmd.scaledMeterValue"

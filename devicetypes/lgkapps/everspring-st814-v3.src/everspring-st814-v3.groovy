@@ -12,6 +12,8 @@
  * Version 2. Just set my second one up and temp is innacurate so add offset temp and humidity to fix.
  * also limit temp to 1 place after the decimal. Also add more colors for temp for the lower ranges.
  *
+ * version 3 lgk, added tile to show last update time, in case it is not working you will know at a glance.
+ *
  *  Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except
  *  in compliance with the License. You may obtain a copy of the License at:
  *
@@ -34,6 +36,7 @@ metadata
 		capability "Sensor"
         
         command "setBackLightLevel"
+        attribute "lastUpdate", "string"
 
 		fingerprint deviceId: "0x2101", inClusters: "0x31,0x60,0x86,0x72,0x85,0x84,0x80,0x70,0x20,0x71"
 
@@ -57,7 +60,8 @@ preferences {
     input("ReportTime", "number", title: "Report Timeout Interval?", description: "The time in minutes after which an update is sent?", defaultValue: 180, required: false)
     input("TempOffset", "number", title: "Temperature Offset/Adjustment -10 to +10 in Degrees?",range: "-10..10", description: "If your temperature is innacurate this will offset/adjust it by this many degrees.", defaultValue: 0, required: false)
     input("HumidOffset", "number", title: "Humidity Offset/Adjustment -10 to +10 in percent?",range: "-10..10", description: "If your humidty is innacurate this will offset/adjust it by this percent.", defaultValue: 0, required: false)
-    }
+  	input("tzOffset", "number", title: "Time zone offset +/-xx?", required: false, defaultValue: -5, description: "Time Zone Offset ie -5.")
+ }
 
 	simulator 
 	{
@@ -137,8 +141,12 @@ preferences {
 			state( "configure", label:'', action:"configuration.configure", icon:"st.secondary.configure" )
 		}
 
+		valueTile("status", "device.lastUpdate", width: 2, height: 1, decoration: "flat") {
+			state "default", label: 'Last Update: ${currentValue}'
+		}
+	
 		main( ["temperature", "humidity"] )
-		details( ["temperature", "humidity", "alarm","battery", "configure"] )
+		details( ["temperature", "humidity", "alarm","battery", "configure","status"] )
 	}
 }
 
@@ -255,6 +263,15 @@ def zwaveEvent(physicalgraph.zwave.commands.sensormultilevelv2.SensorMultilevelR
             //map.value = convertTemperatureIfNeeded(cmd.scaledSensorValue, cmd.scale == 1 ? "F" : "C", cmd.precision)
             map.unit = getTemperatureScale()
 			map.name = "temperature"
+           if (settings.tzOffset == null)
+ 				settings.tzOffset = -5
+ 
+            def now = new Date()
+            def tf = new java.text.SimpleDateFormat("MM/dd/yyyy h:mm a")
+            tf.setTimeZone(TimeZone.getTimeZone("GMT${settings.tzOffset}"))
+            def newtime = "${tf.format(now)}" as String   
+            sendEvent(name: "lastUpdate", value: newtime, descriptionText: "Last Update: $newtime")
+
 			break;
 		case 5:
 			/* humidity */
@@ -293,6 +310,15 @@ log.debug "Humidity change value = $settings.HumidChangeAmount"
 log.debug "Temperature adjust = $settings.TempOffset"
 log.debug "Humidity adjust = $settings.HumidOffset"
 
+if (settings.tzOffset == null)
+ settings.tzOffset = -5
+ 
+def now = new Date()
+def tf = new java.text.SimpleDateFormat("MM/dd/yyyy h:mm a")
+tf.setTimeZone(TimeZone.getTimeZone("GMT${settings.tzOffset}"))
+def newtime = "${tf.format(now)}" as String   
+sendEvent(name: "lastUpdate", value: newtime, descriptionText: "Configured: $newtime")
+      
 	delayBetween([
        	/* report in every 5 minute(s) -- lgk change all to use settings */
         /* lgk override to save battery set report as defined in preferences */
