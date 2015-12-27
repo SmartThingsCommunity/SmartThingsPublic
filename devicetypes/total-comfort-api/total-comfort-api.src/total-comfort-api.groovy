@@ -761,6 +761,8 @@ log.debug "https://www.mytotalconnectcomfort.com/portal/Device/CheckDataSession/
         sendEvent(name: 'temperature', value: finalTemp, state: switchPos)
         sendEvent(name: 'relativeHumidity', value: curHumidity as Integer)
         
+        log.debug "got current temp = $finalTemp"
+        
        if (settings.tzOffset == null)
         settings.tzOffset = -5
 
@@ -770,7 +772,6 @@ log.debug "https://www.mytotalconnectcomfort.com/portal/Device/CheckDataSession/
         def newtime = "${tf.format(now)}" as String   
         sendEvent(name: "lastUpdate", value: newtime, descriptionText: "Last Update: $newtime")
 
-        
       if (enableOutdoorTemps == "Yes")
         {
     
