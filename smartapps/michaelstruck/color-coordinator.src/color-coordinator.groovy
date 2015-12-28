@@ -1,9 +1,10 @@
 /**
- * 	Color Coordinator 
- *  Version 1.0.0 - 7/4/15
+ *  Color Coordinator 
+ *  Version 1.0.1 - 12/28/15
  *  By Michael Struck
  *
  *  1.0.0 - Initial release
+ *  1.0.1 - Interface revisions and fix to temperature syncing issue between master and slaves
  *
  *
  *  Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except
@@ -31,7 +32,7 @@ preferences {
 }
 
 def mainPage() {
-	dynamicPage(name: "mainPage", title: "", install: true, uninstall: true) {
+	dynamicPage(name: "mainPage", title: "", install: true, uninstall: false) {
 		section("Master Light") {
 			input "master", "capability.colorControl", title: "Colored Light"
 		}
@@ -40,18 +41,20 @@ def mainPage() {
 		}
     	section([mobileOnly:true], "Options") {
 			label(title: "Assign a name", required: false)
-			href "pageAbout", title: "About ${textAppName()}", description: "Tap to get application version, license and instructions"
+			href "pageAbout", title: "About ${textAppName()}", description: "Tap to get application version, license, instructions or to remove the application"
         }
 	}
 }
 
-page(name: "pageAbout", title: "About ${textAppName()}") {
+page(name: "pageAbout", title: "About ${textAppName()}", uninstall: true) {
 	section {
     	paragraph "${textVersion()}\n${textCopyright()}\n\n${textLicense()}\n"
 	}
 	section("Instructions") {
 		paragraph textHelp()
 	}
+    section("Tap button below to remove application"){
+    }
 }
 
 def installed() {   
@@ -86,6 +89,8 @@ def colorHandler(evt) {
     def saturationLevel = master.currentValue("saturation")
 	def newValue = [hue: hueLevel, saturation: saturationLevel, level: dimLevel as Integer]
     slaves?.setColor(newValue)
+    def tempLevel = master.currentValue("colorTemperature")
+    slaves?.setColorTemperature(tempLevel)
 }
 
 def tempHandler(evt){
@@ -102,7 +107,7 @@ private def textAppName() {
 }	
 
 private def textVersion() {
-    def text = "Version 1.0.0 (07/04/2015)"
+    def text = "Version 1.0.1 (12/28/2015)"
 }
 
 private def textCopyright() {
