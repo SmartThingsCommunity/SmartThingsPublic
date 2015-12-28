@@ -34,7 +34,7 @@ def installed()
 {
 	log.debug("Application installed.")
     
-	initialized()
+	initialize()
 }
 
 def updated()
