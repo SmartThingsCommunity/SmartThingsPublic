@@ -371,21 +371,50 @@ def getTemperature(value) {
 
 	def refresh() {
 		log.debug "Refreshing Values "
-		def refreshCmds = [
         
-        /* sensitivity - default value (8) */
+        def refreshCmds = []
         
-        "zcl mfg-code ${manufacturerCode}", "delay 200",
-        "zcl global write 0xFC02 0 0x20 {02}", "delay 200",
-        "send 0x${device.deviceNetworkId} 1 1", "delay 400",
+		if (device.getDataValue("manufacturer") == "SmartThings") {
+        	
+			log.debug "Refreshing Values for manufacturer: SmartThings "
+         	refreshCmds = refreshCmds + [
 
-		"st rattr 0x${device.deviceNetworkId} 1 0x402 0", "delay 200",
-		"st rattr 0x${device.deviceNetworkId} 1 1 0x20", "delay 200",
+	            /* These values of Motion Threshold Multiplier(01) and Motion Threshold (D200) 
+	               seem to be giving pretty accurate results for the XYZ co-ordinates for this manufacturer. 
+	               Separating these out in a separate if-else because I do not want to touch Centralite part 
+	               as of now. 
+	            */
 
-        "zcl mfg-code ${manufacturerCode}", "delay 200",
-        "zcl global read 0xFC02 0x0010",
-        "send 0x${device.deviceNetworkId} 1 1","delay 400"
-	]
+	            "zcl mfg-code ${manufacturerCode}", "delay 200",
+	            "zcl global write 0xFC02 0 0x20 {01}", "delay 200",
+	            "send 0x${device.deviceNetworkId} 1 1", "delay 400",
+	            
+	            "zcl mfg-code ${manufacturerCode}", "delay 200",
+	            "zcl global write 0xFC02 2 0x21 {D200}", "delay 200",
+            	"send 0x${device.deviceNetworkId} 1 1", "delay 400",
+                
+            ]
+            
+        
+        } else {
+             refreshCmds = refreshCmds + [
+
+                /* sensitivity - default value (8) */
+	            "zcl mfg-code ${manufacturerCode}", "delay 200",
+                "zcl global write 0xFC02 0 0x20 {02}", "delay 200",
+            	"send 0x${device.deviceNetworkId} 1 1", "delay 400",
+            ]
+        }
+        
+        //Common refresh commands
+        refreshCmds = refreshCmds + [
+            "st rattr 0x${device.deviceNetworkId} 1 0x402 0", "delay 200",
+            "st rattr 0x${device.deviceNetworkId} 1 1 0x20", "delay 200",
+
+            "zcl mfg-code ${manufacturerCode}", "delay 200",
+            "zcl global read 0xFC02 0x0010",
+            "send 0x${device.deviceNetworkId} 1 1","delay 400"
+        ]
 
 		return refreshCmds + enrollResponse()
 	}
@@ -461,19 +490,34 @@ private Map parseAxis(String description) {
 			xyzResults.x = signedX
             log.debug "X Part: ${signedX}"
         }
+        // Y and the Z axes are interchanged between SmartThings's implementation and Centralite's implementation
         else if (part.startsWith("13")) {
 			def unsignedY = hexToInt(part.split("13")[1].trim())
 			def signedY = unsignedY > 32767 ? unsignedY - 65536 : unsignedY
-			xyzResults.y = signedY
-            log.debug "Y Part: ${signedY}"
+			if (device.getDataValue("manufacturer") == "SmartThings") {
+                xyzResults.z = -signedY
+                log.debug "Z Part: ${xyzResults.z}"
+                if (garageSensor == "Yes")
+                    garageEvent(xyzResults.z)
+            } 
+            else {
+                xyzResults.y = signedY
+                log.debug "Y Part: ${signedY}"
+            }
         }
         else if (part.startsWith("14")) {
 			def unsignedZ = hexToInt(part.split("14")[1].trim())
 			def signedZ = unsignedZ > 32767 ? unsignedZ - 65536 : unsignedZ
-			xyzResults.z = signedZ
-            log.debug "Z Part: ${signedZ}"
-			if (garageSensor == "Yes")
-				garageEvent(signedZ)
+			if (device.getDataValue("manufacturer") == "SmartThings") {
+                xyzResults.y = signedZ
+                log.debug "Y Part: ${signedZ}"
+            } else {
+                xyzResults.z = signedZ
+                log.debug "Z Part: ${signedZ}"
+                if (garageSensor == "Yes")
+                    garageEvent(signedZ)
+            
+            }
         }
     }
 
@@ -552,4 +596,5 @@ private byte[] reverseArray(byte[] array) {
 	}
 	return array
 }
+
 
