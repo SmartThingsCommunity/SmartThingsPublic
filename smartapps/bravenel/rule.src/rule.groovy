@@ -3,11 +3,11 @@
  *
  *  Copyright 2015 Bruce Ravenel
  *
- *  Version 1.6.4c   29 Dec 2015
+ *  Version 1.6.4d   29 Dec 2015
  *
  *	Version History
  *
- *	1.6.4	29 Dec 2015		Added action to adjust dimmers +/-, fixed time bug for triggered rule
+ *	1.6.4	29 Dec 2015		Added action to adjust dimmers +/-, fixed time bug for triggered rule, fixed dimmer level condition bug
  *	1.6.3	26 Dec 2015		Added color temperature bulb set, per John-Paul Smith
  *	1.6.2	26 Dec 2015		New delay selection, minor bug fixes, sub-rule input improvements
  *	1.6.1	24 Dec 2015		Added ability to send device name with push or SMS, show rule truth on main page
@@ -1555,11 +1555,11 @@ def allHandler(evt) {
 	def hasCond = state.howMany > 1
 	def doit = true
 	if(state.isTrig) {
-		if(evt.name in ["temperature", "humidity", "power", "energy", "battery", "illuminance", "mode", "button", "routineExecuted"]) doit = testEvt(evt)
+		if(evt.name in ["temperature", "humidity", "power", "energy", "battery", "illuminance", "mode", "button", "routineExecuted", "level"]) doit = testEvt(evt)
 		if (doit) doTrigger() }
 	else if(state.isRule) runRule(false)
 	else {
-		if(hasTrig) if(evt.name in ["temperature", "humidity", "power", "energy", "battery", "illuminance", "mode", "button", "routineExecuted"]) doit = testEvt(evt)
+		if(hasTrig) if(evt.name in ["temperature", "humidity", "power", "energy", "battery", "illuminance", "mode", "button", "routineExecuted", "level"]) doit = testEvt(evt)
 		if(hasCond) {if(doit) runRule(hasTrig)}
 		else if(doit) doTrigger()
 	}
