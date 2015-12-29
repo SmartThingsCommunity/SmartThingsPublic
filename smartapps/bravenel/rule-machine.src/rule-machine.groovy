@@ -47,7 +47,7 @@ preferences {
 }
 
 def mainPage() {
-    dynamicPage(name: "mainPage", title: "Installed Rules:", install: true, uninstall: false, submitOnChange: true) {
+    dynamicPage(name: "mainPage", title: "Installed Rules", install: true, uninstall: false, submitOnChange: true) {
     	if(!state.setup) initialize(true)
         section {
             app(name: "childRules", appName: "Rule", namespace: "bravenel", title: "Create New Rule...", multiple: true)
