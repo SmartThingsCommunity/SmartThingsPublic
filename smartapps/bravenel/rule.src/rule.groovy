@@ -3,7 +3,7 @@
  *
  *  Copyright 2015 Bruce Ravenel
  *
- *  Version 1.6.4b   29 Dec 2015
+ *  Version 1.6.4c   29 Dec 2015
  *
  *	Version History
  *
@@ -97,8 +97,6 @@ def selectRule() {
 			}
 			section(title: "More options", hidden: hideOptionsSection(), hideable: true) {
 				input "modesZ", "mode", title: "Evaluate only when mode is", multiple: true, required: false
-				paragraph "Complex Rule Input allows for parenthesized sub-rules."
-				input "advanced", "bool", title: "Complex Rule Input", required: false
 				input "disabled", "capability.switch", title: "Switch to disable rule when ON", required: false, multiple: false
 			}   
 		} else {       // New format
@@ -121,7 +119,6 @@ def selectRule() {
 				input "daysY", "enum", title: "Only on certain days of the week", multiple: true, required: false,
 					options: ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"]
 				input "modesY", "mode", title: "Only when mode is", multiple: true, required: false            
-				paragraph "Complex Rule Input allows for parenthesized sub-rules."
 				input "disabled", "capability.switch", title: "Switch to disable Rule when ON", required: false, multiple: false
 			}    
 		}
@@ -493,7 +490,10 @@ def conditionLabelN(i, isTrig) {
 
 def defineRule() {
 	dynamicPage(name: "defineRule", title: "Define the Rule", uninstall: false) {
-    	section() { input "advanced", "bool", title: "Complex Rule Input", required: false }
+    	section() { 
+        	paragraph "Complex Rule Input allows for parenthesized sub-rules."
+        	input "advanced", "bool", title: "Complex Rule Input", required: false 
+        }
 		state.n = 0
 		state.str = ""
 		state.eval = []
@@ -718,16 +718,16 @@ def selectActionsTrue() {
 			input "dimATrue", "capability.switchLevel", title: "Set these dimmers", multiple: true, submitOnChange: true, required: false
 			if(dimATrue) {
 				input "dimLATrue", "number", title: "To this level", range: "0..100", required: true, submitOnChange: true
-				if(dimLATrue) setActTrue("Dim: $dimATrue: $dimLATrue")
+				if(dimLATrue != null) setActTrue("Dim: $dimATrue: $dimLATrue")
 			}
 			input "dimBTrue", "capability.switchLevel", title: "Set these other dimmers", multiple: true, submitOnChange: true, required: false
 			if(dimBTrue) {
 				input "dimLBTrue", "number", title: "To this level", range: "0..100", required: true, submitOnChange: true
-				if(dimLBTrue) setActTrue("Dim: $dimBTrue: $dimLBTrue")
+				if(dimLBTrue != null) setActTrue("Dim: $dimBTrue: $dimLBTrue")
 			}
 			input "toggleDimmerTrue", "capability.switchLevel", title: "Toggle these dimmers", multiple: true, required: false, submitOnChange: true
 			if(toggleDimmerTrue) input "dimTogTrue", "number", title: "To this level", range: "0..100", required: true, submitOnChange: true
-			if(dimTogTrue) checkActTrue(toggleDimmerTrue, "Toggle: $toggleDimmerTrue: $dimTogTrue")
+			if(dimTogTrue != null) checkActTrue(toggleDimmerTrue, "Toggle: $toggleDimmerTrue: $dimTogTrue")
             input "adjustDimmerTrue", "capability.switchLevel", title: "Adjust these dimmers", multiple: true, required: false, submitOnChange: true
 			if(adjustDimmerTrue) input "dimAdjTrue", "number", title: "By this amount", range: "-100..100", required: true, submitOnChange: true
 			if(dimAdjTrue) checkActTrue(adjustDimmerTrue, "Adjust: $adjustDimmerTrue: $dimAdjTrue")
@@ -871,16 +871,16 @@ def selectActionsFalse() {
 			input "dimAFalse", "capability.switchLevel", title: "Set these dimmers", multiple: true, submitOnChange: true, required: false
 			if(dimAFalse) {
 				input "dimLAFalse", "number", title: "To this level", range: "0..100", required: true, submitOnChange: true
-				if(dimLAFalse) setActFalse("Dim: $dimAFalse: $dimLAFalse")
+				if(dimLAFalse != null) setActFalse("Dim: $dimAFalse: $dimLAFalse")
 			}
 			input "dimBFalse", "capability.switchLevel", title: "Set these other dimmers", multiple: true, submitOnChange: true, required: false
 			if(dimBFalse) {
 				input "dimLBFalse", "number", title: "To this level", range: "0..100", required: true, submitOnChange: true
-				if(dimLBFalse) setActFalse("Dim: $dimBFalse: $dimLBFalse")
+				if(dimLBFalse != null) setActFalse("Dim: $dimBFalse: $dimLBFalse")
 			}
 			input "toggleDimmerFalse", "capability.switchLevel", title: "Toggle these dimmers", multiple: true, required: false, submitOnChange: true
 			if(toggleDimmerFalse) input "dimTogFalse", "number", title: "To this level", range: "0..100", required: true, submitOnChange: true
-			if(dimTogFalse) checkActFalse(toggleDimmerFalse, "Toggle: $toggleDimmerFalse: $dimTogFalse")
+			if(dimTogFalse != null) checkActFalse(toggleDimmerFalse, "Toggle: $toggleDimmerFalse: $dimTogFalse")
             input "adjustDimmerFalse", "capability.switchLevel", title: "Adjust these dimmers", multiple: true, required: false, submitOnChange: true
 			if(adjustDimmerFalse) input "dimAdjFalse", "number", title: "By this amount", range: "-100..100", required: true, submitOnChange: true
 			if(dimAdjFalse) checkActFalse(adjustDimmerFalse, "Adjust: $adjustDimmerFalse: $dimAdjFalse")
