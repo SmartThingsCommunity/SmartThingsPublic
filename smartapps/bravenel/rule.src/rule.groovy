@@ -3,11 +3,11 @@
  *
  *  Copyright 2015 Bruce Ravenel
  *
- *  Version 1.6.4   29 Dec 2015
+ *  Version 1.6.4a   29 Dec 2015
  *
  *	Version History
  *
- *	1.6.4	29 Dec 2015		Added action to adjust dimmers +/-
+ *	1.6.4	29 Dec 2015		Added action to adjust dimmers +/-, fixed time bug for triggered rule
  *	1.6.3	26 Dec 2015		Added color temperature bulb set, per John-Paul Smith
  *	1.6.2	26 Dec 2015		New delay selection, minor bug fixes, sub-rule input improvements
  *	1.6.1	24 Dec 2015		Added ability to send device name with push or SMS, show rule truth on main page
@@ -1574,8 +1574,8 @@ def stopHandler() {
 }
 
 def timeHandler() {
-	if(state.isTrig || state.howManyT > 1) doTrigger()
-	else if(state.howMany > 1) runRule(false)
+	if(state.howMany > 1 && !state.isTrig) runRule(true)
+	else if(state.isTrig || state.howManyT > 1) doTrigger()
 }
 
 def physicalHandler(evt) {
