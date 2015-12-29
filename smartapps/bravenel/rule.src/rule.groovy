@@ -3,7 +3,7 @@
  *
  *  Copyright 2015 Bruce Ravenel
  *
- *  Version 1.6.4a   29 Dec 2015
+ *  Version 1.6.4b   29 Dec 2015
  *
  *	Version History
  *
@@ -122,7 +122,6 @@ def selectRule() {
 					options: ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"]
 				input "modesY", "mode", title: "Only when mode is", multiple: true, required: false            
 				paragraph "Complex Rule Input allows for parenthesized sub-rules."
-				input "advanced", "bool", title: "Complex Rule Input", required: false
 				input "disabled", "capability.switch", title: "Switch to disable Rule when ON", required: false, multiple: false
 			}    
 		}
@@ -494,6 +493,7 @@ def conditionLabelN(i, isTrig) {
 
 def defineRule() {
 	dynamicPage(name: "defineRule", title: "Define the Rule", uninstall: false) {
+    	section() { input "advanced", "bool", title: "Complex Rule Input", required: false }
 		state.n = 0
 		state.str = ""
 		state.eval = []
