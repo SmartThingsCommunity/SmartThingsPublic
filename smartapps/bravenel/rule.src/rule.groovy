@@ -1683,7 +1683,7 @@ private getAllOk() {
 }
 
 private hideOptionsSection() {
-	if(state.isRule || state.howMany > 1) (modesZ || advanced) ? false : true
+	if(state.isRule || state.howMany > 1) (modesZ) ? false : true
 	else (starting || ending || daysY || modes || modesY || startingX || endingX || disabled) ? false : true
 }
 
