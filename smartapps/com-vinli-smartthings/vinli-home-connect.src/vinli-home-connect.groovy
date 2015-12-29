@@ -10,9 +10,9 @@ definition(
     author: "Daniel",
     description: "Allows Vinli users to connect their car to SmartThings",
     category: "SmartThings Labs",
-    iconUrl: "https://s3.amazonaws.com/smartapp-icons/Convenience/Cat-Convenience.png",
-    iconX2Url: "https://s3.amazonaws.com/smartapp-icons/Convenience/Cat-Convenience@2x.png",
-    iconX3Url: "https://s3.amazonaws.com/smartapp-icons/Convenience/Cat-Convenience@2x.png",
+    iconUrl: "https://d3azp77rte0gip.cloudfront.net/smartapps/baeb2e5d-ebd0-49fe-a4ec-e92417ae20bb/images/vinli_oauth_60.png",
+    iconX2Url: "https://d3azp77rte0gip.cloudfront.net/smartapps/baeb2e5d-ebd0-49fe-a4ec-e92417ae20bb/images/vinli_oauth_120.png",
+    iconX3Url: "https://d3azp77rte0gip.cloudfront.net/smartapps/baeb2e5d-ebd0-49fe-a4ec-e92417ae20bb/images/vinli_oauth_120.png",
     oauth: true)
   
 preferences {
