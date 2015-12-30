@@ -3,10 +3,11 @@
  *
  *  Copyright 2015 Bruce Ravenel
  *
- *  Version 1.6.5a   29 Dec 2015
+ *  Version 1.6.6   30 Dec 2015
  *
  *	Version History
  *
+ *	1.6.6	30 Dec 2015		Expert multi-commands added per Maxwell
  *	1.6.5	29 Dec 2015		Added action to set dimmers from a track dimmer, restored turn on/off after delay action
  *	1.6.4	29 Dec 2015		Added action to adjust dimmers +/-, fixed time bug for triggered rule, fixed dimmer level condition bug
  *	1.6.3	26 Dec 2015		Added color temperature bulb set, per John-Paul Smith
@@ -58,6 +59,7 @@ preferences {
 	page(name: "delayFalsePage")
 	page(name: "selectMsgTrue")
 	page(name: "selectMsgFalse")
+    page(name: "selectCustomActions")
 }
 
 //
@@ -66,7 +68,11 @@ preferences {
 
 def selectRule() {
 	//init expert settings for rule
-	try { state.isExpert = parent.isExpert() }
+	try { 
+		state.isExpert = parent.isExpert() 
+		if (state.isExpert) state.cstCmds = parent.getCommands()
+		else state.cstCmds = []
+	}
 	catch (e) {log.error "Please update Rule Machine to V1.6 or later"}
 	def myTitle = "Select Triggers, Conditions, Rule and Actions"
 	if(state.isRule) myTitle = "Select Conditions, Rule and Actions"
@@ -817,18 +823,17 @@ def selectActionsTrue() {
 //				}
             }
 			if (state.isExpert){
-				def cstCmds = parent.getCommands()
-				if (cstCmds){
-					input( name: "customDeviceTrue", type: "capability.actuator", title: "Run custom device command",multiple: true, required: false, submitOnChange: true)
-					if (customDeviceTrue) {
-						input( name: "ccTrue", type: "enum", title: "Run this command", multiple: false, required: false, options: cstCmds, submitOnChange: true)
-						if (ccTrue){
-							def c = cstCmds.find{it[(ccTrue)]}[(ccTrue)] 
-							checkActTrue(customDeviceTrue, "Command: ${c} on ${customDeviceTrue}")    
-						}
-					}
+				if (state.cstCmds){
+					state.ccTruth = true
+					def desc = state.cmdActTrue
+					href( "selectCustomActions"
+						,title		: "Run custom commands"
+						,description: desc ?: "Tap to set"
+						,state		: desc ? "complete" : null
+					)
+					checkActTrue(desc,"[${desc}]")
 				}
-			}   
+			}
 		}
         if(state.actsTrue) state.actsTrue = state.actsTrue[0..-2]
 	}
@@ -970,16 +975,15 @@ def selectActionsFalse() {
 //				}
 			}
 			if (state.isExpert){
-				def cstCmds = parent.getCommands()
-				if (cstCmds){
-					input( name: "customDeviceFalse", type: "capability.actuator", title: "Run custom device command",multiple: true, required: false, submitOnChange: true)
-					if (customDeviceFalse) {
-						input( name: "ccFalse", type: "enum", title: "Run this command", multiple: false, required: false, options: cstCmds, submitOnChange: true)
-					if (ccFalse) {
-						def c = cstCmds.find{it[(ccFalse)]}[(ccFalse)] 
-						checkActFalse(customDeviceFalse, "Command: ${c} on ${customDeviceFalse}")    
-						}
-					}
+				if (state.cstCmds){
+					state.ccTruth = false
+					def desc = state.cmdActFalse
+					href( "selectCustomActions"
+						,title		: "Run custom commands"
+						,description: desc ?: "Tap to set"
+						,state		: desc ? "complete" : null
+					)
+					checkActFalse(desc,"[${desc}]")
 				}
 			}
         }
@@ -1426,7 +1430,7 @@ def takeAction(success) {
                 				(1..((burstCountTrue ?: 5) - 1)).each {cameraTrue.take(delay: (500 * it))}   }
 		if(pushTrue)			sendPush((msgTrue ?: "Rule $app.label True") + (refDevTrue ? " $state.lastEvtName" : ""))
 		if(phoneTrue)			sendSms(phoneTrue, (msgTrue ?: "Rule $app.label True") + (refDevTrue ? " $state.lastEvtName" : ""))
-		if(customDeviceTrue)  	execCommand(customDeviceTrue,ccTrue)
+		if (state.howManyCCtrue > 1)  execCommands(true)
 	} else {
 		if(onSwitchFalse) 		if(delayMilFalse) onSwitchFalse.on([delay: delayMilFalse]) else onSwitchFalse.on()
 		if(offSwitchFalse) 		if(delayMilFalse) offSwitchFalse.off([delay: delayMilFalse]) else offSwitchFalse.off()
@@ -1461,7 +1465,7 @@ def takeAction(success) {
                 				(1..((burstCountFalse ?: 5) - 1)).each {cameraFalse.take(delay: (500 * it))}   }
 		if(pushFalse)			sendPush((msgFalse ?: "Rule $app.label False") + (refDevFalse ? " $state.lastEvtName" : ""))
 		if(phoneFalse)			sendSms(phoneFalse, (msgFalse ?: "Rule $app.label False") + (refDevFalse ? " $state.lastEvtName" : ""))
-		if(customDeviceFalse)  	execCommand(customDeviceFalse,ccFalse)
+		if (state.howManyCCfalse > 1)  execCommands(false)
 	}
 }
 
@@ -1863,17 +1867,105 @@ def execCommand(devices,cmdID){
 		devices.each { device ->
 			try {
 				device."${cmdMap.cmd}"(p)
-				//result = "Command succeeded"
 			}
 			catch (IllegalArgumentException e){
 				def em = e as String
 				def ems = em.split(":")
 				ems = ems[2].replace(" [","").replace("]","")
 				ems = ems.replaceAll(", ","\n")
-				result = "${device.displayName}, command failed, valid commands:\n${ems}"
+				log.error "${device.displayName}, command failed, valid commands:\n${ems}"
+			}
+			catch (e) {
+				log.error "${device.displayName}, command failed:\n${e}"
 			}
 		}
-		log.debug result
 	}
 }
 
+def execCommands(truth){
+	def devicePrefix
+	def commandPrefix
+	def theseDevices
+	def thisCommand
+	def howMany
+	if (truth) {
+		devicePrefix = "customDeviceTrue"
+		commandPrefix = "ccTrue"
+		howMany = state.howManyCCtrue
+	} else {
+		devicePrefix = "customDeviceFalse"
+		commandPrefix = "ccFalse"
+		howMany = state.howManyCCfalse
+	}	
+	for (int i = 1; i < howMany; i++) {
+		if (i == 1) theseDevices = devicePrefix
+		else theseDevices = devicePrefix + "${i}"
+		if (i == 1) thisCommand = commandPrefix
+		else thisCommand = commandPrefix + "${i}"
+		def devices = settings."${theseDevices}"
+		def cmdID = settings."${thisCommand}"
+		//log.debug "truth:${truth} devices:${devices} cmdID:${cmdID}"
+		 execCommand(devices,cmdID)
+	}
+}
+
+def selectCustomActions(){
+	def cstCmds = state.cstCmds.sort()
+	def truth = state.ccTruth
+	def devicePrefix
+	def commandPrefix
+	def theseDevices
+	def thisCommand
+	def allDevices
+	def allCommands
+	def howMany
+	if (truth) {
+		devicePrefix = "customDeviceTrue"
+		commandPrefix = "ccTrue"
+		allDevices = settings.findAll{it.key.startsWith(devicePrefix)}
+		allCommands = settings.findAll{it.key.startsWith(commandPrefix)}
+		if (allDevices.size() <= allCommands.size()) state.howManyCCtrue = allDevices.size() + 1
+		else state.howManyCCtrue = allDevices.size()
+		howMany = state.howManyCCtrue
+		state.cmdActTrue = ""
+	} else {
+		devicePrefix = "customDeviceFalse"
+		commandPrefix = "ccFalse"
+		allDevices = settings.findAll{it.key.startsWith(devicePrefix)}
+		allCommands = settings.findAll{it.key.startsWith(commandPrefix)}
+		if (allDevices.size() <= allCommands.size()) state.howManyCCfalse = allDevices.size() + 1
+		else state.howManyCCfalse = allDevices.size()
+		howMany = state.howManyCCfalse
+		state.cmdActFalse = ""
+	}
+	dynamicPage(name: "selectCustomActions", title: "Select Custom Command Actions", uninstall: false) {
+		for (int i = 1; i <= howMany; i++) {
+			if (i == 1) theseDevices = devicePrefix
+			else theseDevices = devicePrefix + "${i}" 
+			def crntDevices = settings."${theseDevices}"
+			section("custom device #${i}"){
+				input (name: theseDevices, type: "capability.actuator", title: "Custom devices", multiple: true, required: false, submitOnChange: true)
+				if (crntDevices) {
+					if (i == 1) thisCommand = commandPrefix
+					else thisCommand = commandPrefix + "${i}"
+					def crntCommand = settings."${thisCommand}"
+					input( name: thisCommand, type: "enum", title: "Run this command", multiple: false, required: false, options: cstCmds, submitOnChange: true)
+					if (crntCommand){
+					def c = cstCmds.find{it[crntCommand]}[crntCommand]
+						cmdActions("Command: ${c} on ${crntDevices}",truth)    
+					}
+				}
+			}
+		}
+		if (truth) {
+			if (state.cmdActTrue) state.cmdActTrue = state.cmdActTrue[0..-2]
+		} else {
+			if (state.cmdActFalse) state.cmdActFalse = state.cmdActFalse[0..-2]
+		}   
+	}
+}
+
+def cmdActions(str, truth) {
+	if (truth) state.cmdActTrue = state.cmdActTrue + stripBrackets("$str") + "\n"
+	else state.cmdActFalse = state.cmdActFalse + stripBrackets("$str") + "\n"
+}

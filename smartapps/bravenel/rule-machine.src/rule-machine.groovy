@@ -3,10 +3,11 @@
  *
  *  Copyright 2015 Bruce Ravenel and Mike Maxwell
  *
- *  Version 1.6.3b   26 Dec 2015
+ *  Version 1.6.4   30 Dec 2015
  *
  *	Version History
  *
+ *	1.6.4	30 Dec 2015		Multi-commands
  *	1.6.3	26 Dec 2015		UI improvements and icon per Michael Struck
  *	1.6.2	25 Dec 2015		null parameter value patch in expert, maxwell
  *	1.6.1	24 Dec 2015		UI improvement
@@ -606,7 +607,7 @@ def getDeviceCommands(){
 }
 
 def isExpert(){
-	return getCommands()
+	return getCommands().size() > 0
 }
 
 def expertText() {
