@@ -3,7 +3,7 @@
  *
  *  Copyright 2015 Bruce Ravenel
  *
- *  Version 1.6.5   29 Dec 2015
+ *  Version 1.6.5a   29 Dec 2015
  *
  *	Version History
  *
@@ -410,8 +410,8 @@ def triggerLabel() {
 	if(howMany) {
 		for (int i = 1; i < howMany; i++) {
         	def thisCapab = settings.find {it.key == "tCapab$i"}
-		if(!thisCapab) return result
-		result = result + (i > 1 ? "OR " : "") + conditionLabelN(i, true)
+			if(!thisCapab) return result
+			result = result + (i > 1 ? "OR " : "") + conditionLabelN(i, true)
 			if(i < howMany - 1) result = result + "\n"
 		}
 	}
@@ -1395,16 +1395,16 @@ def takeAction(success) {
 	if(success) {
 		if(onSwitchTrue) 		if(delayMilTrue) onSwitchTrue.on([delay: delayMilTrue]) else onSwitchTrue.on()
 		if(offSwitchTrue) 		if(delayMilTrue) offSwitchTrue.off([delay: delayMilTrue]) else offSwitchTrue.off()
-		if(toggleSwitchTrue)		toggle(toggleSwitchTrue, true)
-		if(delayedOffTrue)	{   	if(delayMinutesTrue) runIn(delayMinutesTrue * 60, delayOffTrue)
-                				if(delayMillisTrue) {if(delayOnOffTrue) delayedOffTrue.on([delay: delayMillisTrue]) else delayedOffTrue.off([delay: delayMillisTrue])}   }
+		if(toggleSwitchTrue)	toggle(toggleSwitchTrue, true)
+		if(delayedOffTrue)	{   if(delayMinutesTrue) runIn(delayMinutesTrue * 60, delayOffTrue)
+								if(delayMillisTrue) {if(delayOnOffTrue) delayedOffTrue.on([delay: delayMillisTrue]) else delayedOffTrue.off([delay: delayMillisTrue])}   }
 		if(pendedOffTrue)		runIn(pendMinutesTrue * 60, pendingOffTrue)
 		if(pendedOffFalse)		unschedule(pendingOffFalse)
-        if(dimTrackTrue)		if(delayMilTrue) dimATrue.setLevel(state.lastEvtLevel, [delay: delayMilTrue]) else dimATrue.setLevel(state.lastEvtLevel)
+        if(dimTrackTrue)		if(state.lastEvtLevel != null) {if(delayMilTrue) dimATrue.setLevel(state.lastEvtLevel, [delay: delayMilTrue]) else dimATrue.setLevel(state.lastEvtLevel)}
 		if(dimATrue) 			if(delayMilTrue) dimATrue.setLevel(dimLATrue, [delay: delayMilTrue]) else dimATrue.setLevel(dimLATrue)
 		if(dimBTrue) 			if(delayMilTrue) dimBTrue.setLevel(dimLBTrue, [delay: delayMilTrue]) else dimBTrue.setLevel(dimLBTrue)
-		if(toggleDimmerTrue)		dimToggle(toggleDimmerTrue, dimTogTrue, true)
-        if(adjustDimmerTrue)		dimAdjust(adjustDimmerTrue, dimAdjTrue, true)
+		if(toggleDimmerTrue)	dimToggle(toggleDimmerTrue, dimTogTrue, true)
+        if(adjustDimmerTrue)	dimAdjust(adjustDimmerTrue, dimAdjTrue, true)
 		if(ctTrue)   			ctTrue.setColorTemperature(ctLTrue)
 		if(bulbsTrue)			setColor(true)
 		if(garageOpenTrue)		if(delayMilTrue) garageOpenTrue.open([delay: delayMilTrue]) else garageOpenTrue.open()
@@ -1415,9 +1415,9 @@ def takeAction(success) {
 		if(openValveTrue)		if(delayMilTrue) openValveTrue.open([delay: delayMilTrue]) else openValveTrue.open()
 		if(closeValveTrue)		if(delayMilTrue) closeValveTrue.close([delay: delayMilTrue]) else closeValveTrue.close()
 		if(thermoTrue)		{	if(thermoModeTrue) 	thermoTrue.setThermostatMode(thermoModeTrue)
-						if(thermoSetHeatTrue)	thermoTrue.setHeatingSetpoint(thermoSetHeatTrue)
-						if(thermoSetCoolTrue)	thermoTrue.setCoolingSetpoint(thermoSetCoolTrue) 	
-						if(thermoFanTrue) 	thermoTrue.setThermostatFanMode(thermoFanTrue)   }
+								if(thermoSetHeatTrue)	thermoTrue.setHeatingSetpoint(thermoSetHeatTrue)
+								if(thermoSetCoolTrue)	thermoTrue.setCoolingSetpoint(thermoSetCoolTrue) 	
+								if(thermoFanTrue) 	thermoTrue.setThermostatFanMode(thermoFanTrue)   }
 		if(alarmTrue)			sendLocationEvent(name: "alarmSystemStatus", value: "$alarmTrue")
 		if(modeTrue) 			setLocationMode(modeTrue)
 		if(ruleTrue)			parent.runRule(ruleTrue, app.label)
@@ -1426,20 +1426,20 @@ def takeAction(success) {
                 				(1..((burstCountTrue ?: 5) - 1)).each {cameraTrue.take(delay: (500 * it))}   }
 		if(pushTrue)			sendPush((msgTrue ?: "Rule $app.label True") + (refDevTrue ? " $state.lastEvtName" : ""))
 		if(phoneTrue)			sendSms(phoneTrue, (msgTrue ?: "Rule $app.label True") + (refDevTrue ? " $state.lastEvtName" : ""))
-		if(customDeviceTrue)  		execCommand(customDeviceTrue,ccTrue)
+		if(customDeviceTrue)  	execCommand(customDeviceTrue,ccTrue)
 	} else {
 		if(onSwitchFalse) 		if(delayMilFalse) onSwitchFalse.on([delay: delayMilFalse]) else onSwitchFalse.on()
 		if(offSwitchFalse) 		if(delayMilFalse) offSwitchFalse.off([delay: delayMilFalse]) else offSwitchFalse.off()
-		if(toggleSwitchFalse)		toggle(toggleSwitchFalse, false)
+		if(toggleSwitchFalse)	toggle(toggleSwitchFalse, false)
 		if(delayedOffFalse)	{ 	if(delayMinutesFalse) runIn(delayMinutesFalse * 60, delayOffFalse)
                 				if(delayMillisFalse) {if(delayOnOffFalse) delayedOffFalse.on([delay: delayMillisFalse]) else delayedOffFalse.off([delay: delayMillisFalse])}   }
 		if(pendedOffFalse)		runIn(pendMinutesFalse * 60, pendingOffFalse)
 		if(pendedOffTrue)		unschedule(pendingOffTrue)
-        if(dimTrackFalse)		if(delayMilFalse) dimAFalse.setLevel(state.lastEvtLevel, [delay: delayMilFalse]) else dimAFalse.setLevel(state.lastEvtLevel)
+        if(dimTrackFalse)		if(state.lastEvtLevel != null) {if(delayMilFalse) dimAFalse.setLevel(state.lastEvtLevel, [delay: delayMilFalse]) else dimAFalse.setLevel(state.lastEvtLevel)}
 		if(dimAFalse) 			if(delayMilFalse) dimAFalse.setLevel(dimLAFalse, [delay: delayMilFalse]) else dimAFalse.setLevel(dimLAFalse)
 		if(dimBFalse) 			if(delayMilFalse) dimBFalse.setLevel(dimLBFalse, [delay: delayMilFalse]) else dimBFalse.setLevel(dimLBFalse)
-		if(toggleDimmerFalse)		dimToggle(toggleDimmerFalse, dimTogFalse, false)
-        if(adjustDimmerFalse)		dimAdjust(adjustDimmerFalse, dimAdjFalse, false)
+		if(toggleDimmerFalse)	dimToggle(toggleDimmerFalse, dimTogFalse, false)
+        if(adjustDimmerFalse)	dimAdjust(adjustDimmerFalse, dimAdjFalse, false)
 		if(ctFalse)   			ctFalse.setColorTemperature(ctLFalse)
 		if(bulbsFalse)			setColor(false)
 		if(garageOpenFalse)		if(delayMilFalse) garageOpenFalse.open([delay: delayMilFalse]) else garageOpenFalse.open()
@@ -1450,9 +1450,9 @@ def takeAction(success) {
 		if(openValveFalse)		if(delayMilFalse) openValveFalse.open([delay: delayMilFalse]) else openValveFalse.open()
 		if(closeValveFalse)		if(delayMilFalse) closeValveFalse.close([delay: delayMilFalse]) else closeValveFalse.close()
 		if(thermoFalse)		{	if(thermoModeFalse) 	thermoFalse.setThermostatMode(thermoModeFalse)
-						if(thermoSetHeatFalse) 	thermoFalse.setHeatingSetpoint(thermoSetHeatFalse)
-						if(thermoSetCoolFalse) 	thermoFalse.setCoolingSetpoint(thermoSetCoolFalse) 	
-						if(thermoFanFalse)	thermoFalse.setThermostatFanMode(thermoFanFalse)   }
+								if(thermoSetHeatFalse) 	thermoFalse.setHeatingSetpoint(thermoSetHeatFalse)
+								if(thermoSetCoolFalse) 	thermoFalse.setCoolingSetpoint(thermoSetCoolFalse) 	
+								if(thermoFanFalse)	thermoFalse.setThermostatFanMode(thermoFanFalse)   }
 		if(alarmFalse)			sendLocationEvent(name: "alarmSystemStatus", value: "$alarmFalse")
 		if(modeFalse) 			setLocationMode(modeFalse)
 		if(ruleFalse)			parent.runRule(ruleFalse, app.label)
@@ -1461,7 +1461,7 @@ def takeAction(success) {
                 				(1..((burstCountFalse ?: 5) - 1)).each {cameraFalse.take(delay: (500 * it))}   }
 		if(pushFalse)			sendPush((msgFalse ?: "Rule $app.label False") + (refDevFalse ? " $state.lastEvtName" : ""))
 		if(phoneFalse)			sendSms(phoneFalse, (msgFalse ?: "Rule $app.label False") + (refDevFalse ? " $state.lastEvtName" : ""))
-		if(customDeviceFalse)  		execCommand(customDeviceFalse,ccFalse)
+		if(customDeviceFalse)  	execCommand(customDeviceFalse,ccFalse)
 	}
 }
 
