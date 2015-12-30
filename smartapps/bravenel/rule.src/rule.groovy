@@ -3,10 +3,11 @@
  *
  *  Copyright 2015 Bruce Ravenel
  *
- *  Version 1.6.4d   29 Dec 2015
+ *  Version 1.6.5   29 Dec 2015
  *
  *	Version History
  *
+ *	1.6.5	29 Dec 2015		Added action to set dimmers from a track dimmer, restored turn on/off after delay action
  *	1.6.4	29 Dec 2015		Added action to adjust dimmers +/-, fixed time bug for triggered rule, fixed dimmer level condition bug
  *	1.6.3	26 Dec 2015		Added color temperature bulb set, per John-Paul Smith
  *	1.6.2	26 Dec 2015		New delay selection, minor bug fixes, sub-rule input improvements
@@ -491,7 +492,7 @@ def conditionLabelN(i, isTrig) {
 def defineRule() {
 	dynamicPage(name: "defineRule", title: "Define the Rule", uninstall: false) {
     	section() { 
-        	paragraph "Complex Rule Input allows for parenthesized sub-rules."
+        	paragraph "Turn on to enable parenthesized sub-rules"
         	input "advanced", "bool", title: "Complex Rule Input", required: false 
         }
 		state.n = 0
@@ -692,8 +693,8 @@ def selectActionsTrue() {
 			checkActTrue(offSwitchTrue, "Off: $offSwitchTrue")
 			input "toggleSwitchTrue", "capability.switch", title: "Toggle these switches", multiple: true, required: false, submitOnChange: true
 			checkActTrue(toggleSwitchTrue, "Toggle: $toggleSwitchTrue")
+			input "delayedOffTrue", "capability.switch", title: "Turn on/off these switches after a delay (default is OFF)", multiple: true, required: false, submitOnChange: true
 			if(delayedOffTrue) {
-				input "delayedOffTrue", "capability.switch", title: "Turn on/off these switches after a delay (default is OFF)", multiple: true, required: false, submitOnChange: true
 				input "delayOnOffTrue", "bool", title: "Turn ON after the delay?", multiple: false, required: false, defaultValue: false, submitOnChange: true
 				if(!delayMillisTrue) input "delayMinutesTrue", "number", title: "Minutes of delay", required: false, range: "1..*", submitOnChange: true
 				if(!delayMinutesTrue) input "delayMillisTrue", "number", title: "Milliseconds of delay", required: false, range: "1..*", submitOnChange: true
@@ -717,7 +718,9 @@ def selectActionsTrue() {
 //            }
 			input "dimATrue", "capability.switchLevel", title: "Set these dimmers", multiple: true, submitOnChange: true, required: false
 			if(dimATrue) {
-				input "dimLATrue", "number", title: "To this level", range: "0..100", required: true, submitOnChange: true
+            	input "dimTrackTrue", "bool", title: "Track event dimmer?", required: false, submitOnChange: true
+				if(dimTrackTrue) setActTrue("Track Dim: $dimATrue")
+                else input "dimLATrue", "number", title: "To this level", range: "0..100", required: true, submitOnChange: true
 				if(dimLATrue != null) setActTrue("Dim: $dimATrue: $dimLATrue")
 			}
 			input "dimBTrue", "capability.switchLevel", title: "Set these other dimmers", multiple: true, submitOnChange: true, required: false
@@ -845,8 +848,8 @@ def selectActionsFalse() {
 			checkActFalse(offSwitchFalse, "Off: $offSwitchFalse")
 			input "toggleSwitchFalse", "capability.switch", title: "Toggle these switches", multiple: true, required: false, submitOnChange: true
 			checkActFalse(toggleSwitchFalse, "Toggle: $toggleSwitchFalse")
+			input "delayedOffFalse", "capability.switch", title: "Turn on/off these switches after a delay (default is OFF)", multiple: true, required: false, submitOnChange: true
 			if(delayedOffFalse) {
-				input "delayedOffFalse", "capability.switch", title: "Turn on/off these switches after a delay (default is OFF)", multiple: true, required: false, submitOnChange: true
 				input "delayOnOffFalse", "bool", title: "Turn ON after the delay?", multiple: false, required: false, defaultValue: false, submitOnChange: true
 				if(!delayMillisFalse) input "delayMinutesFalse", "number", title: "Minutes of delay", required: false, range: "1..*", submitOnChange: true
 				if(!delayMinutesFalse) input "delayMillisFalse", "number", title: "Milliseconds of delay", required: false, range: "1..*", submitOnChange: true
@@ -870,7 +873,9 @@ def selectActionsFalse() {
 //            }
 			input "dimAFalse", "capability.switchLevel", title: "Set these dimmers", multiple: true, submitOnChange: true, required: false
 			if(dimAFalse) {
-				input "dimLAFalse", "number", title: "To this level", range: "0..100", required: true, submitOnChange: true
+            	input "dimTrackFalse", "bool", title: "Track event dimmer?", required: false, submitOnChange: true
+				if(dimTrackFalse) setActFalse("Track Dim: $dimAFalse")
+                else input "dimLAFalse", "number", title: "To this level", range: "0..100", required: true, submitOnChange: true
 				if(dimLAFalse != null) setActFalse("Dim: $dimAFalse: $dimLAFalse")
 			}
 			input "dimBFalse", "capability.switchLevel", title: "Set these other dimmers", multiple: true, submitOnChange: true, required: false
@@ -1395,6 +1400,7 @@ def takeAction(success) {
                 				if(delayMillisTrue) {if(delayOnOffTrue) delayedOffTrue.on([delay: delayMillisTrue]) else delayedOffTrue.off([delay: delayMillisTrue])}   }
 		if(pendedOffTrue)		runIn(pendMinutesTrue * 60, pendingOffTrue)
 		if(pendedOffFalse)		unschedule(pendingOffFalse)
+        if(dimTrackTrue)		if(delayMilTrue) dimATrue.setLevel(state.lastEvtLevel, [delay: delayMilTrue]) else dimATrue.setLevel(state.lastEvtLevel)
 		if(dimATrue) 			if(delayMilTrue) dimATrue.setLevel(dimLATrue, [delay: delayMilTrue]) else dimATrue.setLevel(dimLATrue)
 		if(dimBTrue) 			if(delayMilTrue) dimBTrue.setLevel(dimLBTrue, [delay: delayMilTrue]) else dimBTrue.setLevel(dimLBTrue)
 		if(toggleDimmerTrue)		dimToggle(toggleDimmerTrue, dimTogTrue, true)
@@ -1429,6 +1435,7 @@ def takeAction(success) {
                 				if(delayMillisFalse) {if(delayOnOffFalse) delayedOffFalse.on([delay: delayMillisFalse]) else delayedOffFalse.off([delay: delayMillisFalse])}   }
 		if(pendedOffFalse)		runIn(pendMinutesFalse * 60, pendingOffFalse)
 		if(pendedOffTrue)		unschedule(pendingOffTrue)
+        if(dimTrackFalse)		if(delayMilFalse) dimAFalse.setLevel(state.lastEvtLevel, [delay: delayMilFalse]) else dimAFalse.setLevel(state.lastEvtLevel)
 		if(dimAFalse) 			if(delayMilFalse) dimAFalse.setLevel(dimLAFalse, [delay: delayMilFalse]) else dimAFalse.setLevel(dimLAFalse)
 		if(dimBFalse) 			if(delayMilFalse) dimBFalse.setLevel(dimLBFalse, [delay: delayMilFalse]) else dimBFalse.setLevel(dimLBFalse)
 		if(toggleDimmerFalse)		dimToggle(toggleDimmerFalse, dimTogFalse, false)
@@ -1551,6 +1558,7 @@ def allHandler(evt) {
 	if(!allOk) return
 	log.info "$app.label: $evt.displayName $evt.name $evt.value"
 	state.lastEvtName = evt.displayName
+    if(evt.name == "level") state.lastEvtLevel = evt.value
 	def hasTrig = state.howManyT > 1
 	def hasCond = state.howMany > 1
 	def doit = true
