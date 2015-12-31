@@ -41,7 +41,7 @@ metadata {
 	}
 
 	tiles(scale: 2) {
-		multiAttributeTile(name:"switch", type: "lighting", width: 6, height: 4, canChangeIcon: true){
+		multiAttributeTile(name:"switch", type: "lighting", width: 6, height: 4){
 			tileAttribute ("device.switch", key: "PRIMARY_CONTROL") {
 				attributeState "on", label:'${name}', action:"switch.off", icon:"st.switches.switch.on", backgroundColor:"#79b821", nextState:"turningOff"
 				attributeState "off", label:'${name}', action:"switch.on", icon:"st.switches.switch.off", backgroundColor:"#ffffff", nextState:"turningOn"
@@ -287,8 +287,7 @@ def isDescriptionPower(descMap) {
 	def powerValue = "undefined"
 	if (descMap.cluster == "0B04") {
 		if (descMap.attrId == "050b") {
-			if(descMap.value!="ffff")
-				powerValue = convertHexToInt(descMap.value)
+			powerValue = convertHexToInt(descMap.value)
 		}
 	}
 	else if (descMap.clusterId == "0B04") {
@@ -328,9 +327,10 @@ def levelConfig() {
 //min change in value is 05
 def powerConfig() {
 	[
-		"zdo bind 0x${device.deviceNetworkId} 1 ${endpointId} 0x0B04 {${device.zigbeeId}} {}", "delay 200",
-		"zcl global send-me-a-report 0x0B04 0x050B 0x29 1 600 {05 00}",				//The send-me-a-report is custom to the attribute type for CentraLite
-		"send 0x${device.deviceNetworkId} 1 ${endpointId}", "delay 500"
+			//Meter (Power) Reporting
+			"zdo bind 0x${device.deviceNetworkId} 1 ${endpointId} 0x0B04 {${device.zigbeeId}} {}", "delay 200",
+			"zcl global send-me-a-report 0x0B04 0x050B 0x2A 1 600 {05}",
+			"send 0x${device.deviceNetworkId} 1 ${endpointId}", "delay 1500"
 	]
 }
 
