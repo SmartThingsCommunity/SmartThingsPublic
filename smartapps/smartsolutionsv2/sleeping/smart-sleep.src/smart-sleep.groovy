@@ -18,16 +18,17 @@ definition(
     namespace: "smartsolutionsv2/sleeping",
     author: "SmartThings",
     description: "Create rules to control devices based on a sleep sensor, including in bed, out of bed, sleeping, and not sleeping.",
-    category: "",
+    category: "My Apps",
     iconUrl: "https://s3.amazonaws.com/smartapp-icons/ModeMagic/Cat-ModeMagic.png",
-	iconX2Url: "https://s3.amazonaws.com/smartapp-icons/ModeMagic/Cat-ModeMagic@2x.png",
-	iconX3Url: "https://s3.amazonaws.com/smartapp-icons/ModeMagic/Cat-ModeMagic@3x.png"
+    iconX2Url: "https://s3.amazonaws.com/smartapp-icons/ModeMagic/Cat-ModeMagic@2x.png",
+    iconX3Url: "https://s3.amazonaws.com/smartapp-icons/ModeMagic/Cat-ModeMagic@3x.png",
+    singleInstance: true
 )
 
 preferences {
-	page(name: "main", title: "Rules", install: true, uninstall: true) {
+	page(name: "main", title: getLabel("str_Title"), install: true, uninstall: true) {
     	section {
-        	app(name: "smartsleepautomation", appName: "Smart Sleep Automation", namespace: "smartsolutionsv2/sleeping", title: "New Smart Sleep Automation", multiple: true, uninstall: true)
+        	app(name: "smartsleepautomation", appName: "Smart Sleep Automation", namespace: "smartsolutionsv2/sleeping", title: getLabel("str_SectionTitle"), multiple: true, uninstall: true)
         }
     }
 }
@@ -62,4 +63,39 @@ cards {
         	eventTile { }
         }
     }
+}
+
+def getLabel(value)
+{
+    def str_Title=[
+            "kr": "룰",
+            "us": "Rules"
+    ]
+
+    def str_SectionTitle=[
+            "kr": "새로운 자동화 룰 만들기",
+            "us": "New Smart Sleep Automation"
+    ]
+
+    if(clientLocale?.language == "ko")
+    {
+        switch(value)
+        {
+            case "str_Title":
+                return str_Title["kr"]
+            case "str_SectionTitle":
+                return str_SectionTitle["kr"]
+        }
+    }
+    else
+    {
+        switch(value)
+        {
+            case "str_Title":
+                return str_Title["us"]
+            case "str_SectionTitle":
+                return str_SectionTitle["us"]
+        }
+    }
+    return "Unknown"
 }

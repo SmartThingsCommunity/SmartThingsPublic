@@ -22,7 +22,7 @@ definition(
     parent: "smartsolutionsv2/sleeping:Smart Sleep",
     author: "SmartThings",
     description: "Sleeping automation rule.",
-    category: "",
+    category: "My Apps",
     iconUrl: "https://s3.amazonaws.com/smartapp-icons/ModeMagic/Cat-ModeMagic.png",
     iconX2Url: "https://s3.amazonaws.com/smartapp-icons/ModeMagic/Cat-ModeMagic@2x.png",
     iconX3Url: "https://s3.amazonaws.com/smartapp-icons/ModeMagic/Cat-ModeMagic@3x.png"
@@ -30,9 +30,9 @@ definition(
 
 
 preferences {
-    page(name: "mainPage", title: "Configure rule based on sleep sensor state", install: false, uninstall: true, nextPage: "namePage");
-    page(name: "namePage", title: "Configure rule based on sleep sensor state", install: true, uninstall: true);
-    page(name: "timeIntervalInput", title: "Only during a certain time");
+    page(name: "mainPage", title: getLabel("str_MainPageTitle"), install: false, uninstall: true, nextPage: "namePage");
+    page(name: "namePage", title: getLabel("str_NamePageTitle"), install: true, uninstall: true);
+    page(name: "timeIntervalInput", title: getLabel("str_TimeSet"));
 }
 
 def mainPage() {        
@@ -49,7 +49,7 @@ def mainPage() {
 
 //Sleep sensor input
 def sleepSensorInput() {
-    input(name: "sleepSensor", type: "capability.sleepSensor", title: "Which sleep sensor?", multiple: false, submitOnChange: true);
+    input(name: "sleepSensor", type: "capability.sleepSensor", title: getLabel("str_SelectSense"), multiple: false, submitOnChange: true);
 }
 
 //Sleep sensor action to trigger event
@@ -69,30 +69,40 @@ private actionOptions() {
 def triggerInput() {
     def requiredInput = androidClient() || iosClient("1.7.0.RC1");
     if(sleepSensor) {
-        input(name: "trigger", type: "enum", title: "Select trigger", options: actionOptions(), required: true, submitOnChange: true);
+        input(name: "trigger", type: "enum", title: getLabel("str_SelectSleepTrigger"), options: actionOptions(), required: true, submitOnChange: true);
     } 
 }
 
 // What type should be controlled
 private controlType() {
     def requiredInput = androidClient() || iosClient("1.7.0.RC1");
-    def mapControlTypes = [device: "A physical device at ${location.name}", homeWatch: "The state of Smart Home Monitoring", mode: "The mode at ${location.name}", routine: "A routine at ${location.name}"];
+    def mapControlTypes 
+    if(clientLocale?.language == "ko")
+    {
+        mapControlTypes = [device: "${location.name}${getLabel("str_HubofDevice")}", homeWatch: getLabel("str_HubofHomeWatch"), mode: "${location.name}${getLabel("str_HubofMode")}", routine: "${location.name}${getLabel("str_HubofRoutines")}"];
+    }
+    else
+    {
+        mapControlTypes = [device: "${getLabel("str_HubofDevice")}${location.name}", homeWatch: getLabel("str_HubofHomeWatch"), mode: "${getLabel("str_HubofMode")}${location.name}", routine: "${getLabel("str_HubofRoutines")}${location.name}"];
+    }
+
+    
 
     if(settings.trigger) {
         section() {
-            input(name: "controlType", type: "enum", title: "What would you like to control?", options: mapControlTypes, required: requiredInput, submitOnChange: true);
+            input(name: "controlType", type: "enum", title: getLabel("str_SelectLocation"), options: mapControlTypes, required: requiredInput, submitOnChange: true);
         }
     }
 }
 
 //Device to control with sleep sensor input
 private lightMap() {
-    def lightActionMap = [on: "Turn On", off: "Turn Off"];
+    def lightActionMap = [on: getLabel("str_DeviceTurnOn"), off: getLabel("str_DeviceTurnOff")];
     if (controlledDevice.find{it.hasCapability("Switch Level")} != null) {
-        lightActionMap.level = "Turn On & Set Level"
+        lightActionMap.level = getLabel("str_DeviceLevel")
     }
     if (controlledDevice.find{it.hasCapability("Color Control")} != null) {
-        lightActionMap.color = "Turn On & Set Color"
+        lightActionMap.color = getLabel("str_DeviceColor")
     }
     return lightActionMap;
 }
@@ -103,13 +113,13 @@ private lightOptions() {
 
 def controlledInput() {    
     def requiredInput = androidClient() || iosClient("1.7.0.RC1");
-    def mapControlledDeivces = [switch: "Switches & Dimmers", imageCapture: "Cameras", lock: "Locks", thermostat: "Thermostats", alarm: "Alarms & Sirens", musicPlayer: "Speakers"];
+    def mapControlledDeivces = [switch: getLabel("str_DeviceSwitch"), imageCapture: getLabel("str_DeviceCameras"), lock: getLabel("str_DeviceLocks"), thermostat: getLabel("str_DeviceThermostats"), alarm: getLabel("str_DeviceAlarms"), musicPlayer: getLabel("str_DeviceSpeaker")];
     
     log.debug "control type ${settings.controlType}";
 
     if(settings.controlType && settings.controlType == "device") {
-        section("Device Control") {
-            input(name: "controlledDeviceType", type: "enum", title: "Select device to control", options: mapControlledDeivces, required: requiredInput, submitOnChange: true);
+        section(getLabel("str_DeviceTitle")) {
+            input(name: "controlledDeviceType", type: "enum", title: getLabel("str_DeviceSelect"), options: mapControlledDeivces, required: requiredInput, submitOnChange: true);
         }
         
         if(controlledDeviceType) {
@@ -124,7 +134,7 @@ def controlledInput() {
                 section("${label}") {
                     switch(controlledDeviceType) {
                         case "switch":                            
-                            input(name: "actionsLights", type: "enum", title: "Lights will...", options: lightOptions(), multiple: false, required: requiredInput, submitOnChange: true);
+                            input(name: "actionsLights", type: "enum", title: getLabel("str_DeviceLightsTitle"), options: lightOptions(), multiple: false, required: requiredInput, submitOnChange: true);
                             if(actionsLights == "color") {
                                 input(name: "color", type: "enum", title: "Color", required: true, multiple: false, options: [
                                     ["Soft White":"Soft White - Default"],
@@ -177,20 +187,20 @@ def controlledInput() {
 
                             break;
                         case "imageCapture":
-                            input(name: "imageCaptureAction", type: "enum", title: "Camera will...", options: [take: "Take a photo"], multiple: false, required:true, submitOnChange: true);
+                            input(name: "imageCaptureAction", type: "enum", title: getLabel("str_CameraTitle"), options: [take: getLabel("str_CameraTake")], multiple: false, required:true, submitOnChange: true);
                             break;
                         case "lock":
-                    input(name: "lockAction", type: "enum", title: "Lock will...", options: [lock: "Lock the door", unlock: "Unlock the door"], multiple: false, required: true, submitOnChange: true);
-                    break;
+                            input(name: "lockAction", type: "enum", title: getLabel("str_LocksTitle"), options: [lock: getLabel("str_LocksLock"), unlock: getLabel("str_LocksUnLock")], multiple: false, required: true, submitOnChange: true);
+                        break;
                         case "thermostat":                            
-                            input(name: "thermostatMode", type: "enum", title: "Thermostat will...", options: [modeCool: "Set cooling point & set mode to cool", modeHeat: "Set heating point &  set mode to heat", off: "Turn Off"], required: requiredInput, multiple: false, submitOnChange: true);
+                            input(name: "thermostatMode", type: "enum", title: getLabel("str_DeviceThermostatTitle"), options: [modeCool: getLabel("str_DeviceThermostatCool"), modeHeat: getLabel("str_DeviceThermostatHeat"), off: getLabel("str_DeviceTurnOff")], required: requiredInput, multiple: false, submitOnChange: true);
                             
                             switch(thermostatMode) {
                                 case "modeCool":
-                                    input(name: "thermostatCoolTemp", type: "number", title: "Set cooling point to...", defaultValue: 76, required: true, submitOnChange: true);
+                                    input(name: "thermostatCoolTemp", type: "number", title: getLabel("str_DeviceThermostatCoolSet"), defaultValue: 76, required: true, submitOnChange: true);
                                     break;
                                 case "modeHeat":
-                                    input(name: "thermostatHeatTemp", type: "number", title: "Set heating point to...", defaultValue: 86, required: true, submitOnChange: true);
+                                    input(name: "thermostatHeatTemp", type: "number", title: getLabel("str_DeviceThermostatHeatSet"), defaultValue: 86, required: true, submitOnChange: true);
                                     break;
                             }
                             break;
@@ -198,7 +208,7 @@ def controlledInput() {
                             input(name: "alarmAction", type: "enum", title: "Alarm will...", options: [strobe: "Strobe the lights", siren: "Sound the siren", both: "Strobe the lights & sound the alarm", off: "turn Off"], multiple: false, required: true, submitOnChange: true);
                             break;
                         case "musicPlayer":
-                            input(name: "musicPlayerAction", type: "enum", title: "Speaker will...", options: [play: "Play", pause: "Pause", stop: "Stop"], required: true, multiple: false, submitOnChange: true);
+                            input(name: "musicPlayerAction", type: "enum", title: getLabel("str_DeviceSpeakerTitle"), options: [play: getLabel("str_DeviceSpeakerPlae"), pause: getLabel("str_DeviceSpeakerPause"), stop: getLabel("str_DeviceSpeakerStop")], required: true, multiple: false, submitOnChange: true);
                             break;
                     }
                 }
@@ -206,20 +216,20 @@ def controlledInput() {
         }
     }
     if(settings.controlType && settings.controlType == "homeWatch") {
-        section("Home Watch Control") {
-            input(name: "homeWatchAction", type: "enum", title: "Set HomeWatch status to...", required: true, multiple: false, options: [off: "Off", stay: "Stay", arm: "Arm"], submitOnChange: true);
+        section(getLabel("str_HomeWatchTitle")) {
+            input(name: "homeWatchAction", type: "enum", title: getLabel("str_HomeWatchSectionSelect"), required: true, multiple: false, options: [off: "Off", stay: "Stay", arm: "Arm"], submitOnChange: true);
         }
     }
     if(settings.controlType && settings.controlType == "mode") {
-        section("Mode Control") {
-            input(name: "modeAction", type: "mode", title: "Change Mode to...", required: true, multiple: false, submitOnChange: true);
+        section(getLabel("strr_ModeTitle")) {
+            input(name: "modeAction", type: "mode", title: getLabel("str_ModeSelect"), required: true, multiple: false, submitOnChange: true);
         }
     }
     if(settings.controlType && settings.controlType == "routine") {
         def routines = location.helloHome?.getPhrases()*.label;
         if(routines) {
-            section("Routine Control") {
-                input(name: "routineAction", type: "enum", title: "Run the routine...", options: routines, required: true, multiple: false, submitOnChange: true);
+            section(getLabel("str_RoutineTitle")) {
+                input(name: "routineAction", type: "enum", title: getLabel("str_RoutineSelect"), options: routines, required: true, multiple: false, submitOnChange: true);
             }
         }
     }
@@ -232,13 +242,13 @@ def otherInputs() {
             def timeBasedTrigger = trigger in ["At Sunrise", "At Sunset", "At a Specific Time"]
             log.trace "timeBasedTrigger: $timeBasedTrigger"
             if (!timeBasedTrigger) {
-                href "timeIntervalInput", title: "Only during a certain time", description: timeLabel ?: "Tap to set", state: timeLabel ? "complete" : "incomplete"
+                href "timeIntervalInput", title: getLabel("str_TimeSet"), description: timeLabel ?: "Tap to set", state: timeLabel ? "complete" : "incomplete"
             }
 
-            input "days", "enum", title: "Only on certain days of the week", multiple: true, required: false,
+            input "days", "enum", title: getLabel("str_WeekSet"), multiple: true, required: false,
                 options: ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"]
 
-            input "modes", "mode", title: "Only when mode is", multiple: true, required: false
+            //input "modes", "mode", title: "Only when mode is", multiple: true, required: false
         }
     }
 }
@@ -246,21 +256,21 @@ def otherInputs() {
 def timeIntervalInput() {
     dynamicPage(name: "timeIntervalInput") {
         section {
-            input "startTimeType", "enum", title: "Starting at", options: [["time": "A specific time"], ["sunrise": "Sunrise"], ["sunset": "Sunset"]], defaultValue: "time", submitOnChange: true
+            input "startTimeType", "enum", title: getLabel("str_TimeStartingCondition"), options: [["time": "A specific time"], ["sunrise": "Sunrise"], ["sunset": "Sunset"]], defaultValue: "time", submitOnChange: true
             if (startTimeType in ["sunrise","sunset"]) {
-                input "startTimeOffset", "number", title: "Offset in minutes (+/-)", range: "*..*", required: false
+                input "startTimeOffset", "number", title: getLabel("str_TimeOffset"), range: "*..*", required: false
             }
             else {
-                input "starting", "time", title: "Start time", required: false
+                input "starting", "time", title: getLabel("str_TimeStart"), required: false
             }
         }
         section {
-            input "endTimeType", "enum", title: "Ending at", options: [["time": "A specific time"], ["sunrise": "Sunrise"], ["sunset": "Sunset"]], defaultValue: "time", submitOnChange: true
+            input "endTimeType", "enum", title: getLabel("str_TimeEngingCondition"), options: [["time": "A specific time"], ["sunrise": "Sunrise"], ["sunset": "Sunset"]], defaultValue: "time", submitOnChange: true
             if (endTimeType in ["sunrise","sunset"]) {
-                input "endTimeOffset", "number", title: "Offset in minutes (+/-)", range: "*..*", required: false
+                input "endTimeOffset", "number", title: getLabel("str_TimeOffset"), range: "*..*", required: false
             }
             else {
-                input "ending", "time", title: "End time", required: false
+                input "ending", "time", title: getLabel("str_TimeEnd"), required: false
             }
         }
     }
@@ -349,16 +359,16 @@ def namePage() {
     }
     dynamicPage(name: "namePage") {
         if(overrideLabel) {
-            section(title: "Automation name") {
-                label(title: "Enter custom name", defaultValue: generateDefaultLabel(), required: false);
+            section(title: getLabel("str_NameAutomation")) {
+                label(title: getLabel("str_NameUser"), defaultValue: generateDefaultLabel(), required: false);
             }
         } else {
-            section(title: "Automation name") {
+            section(title: getLabel("str_NameAutomation")) {
                 paragraph app.label;
             }
         }
         section {
-            input(name: "overrideLabel", type: "bool", title: "Do you want to allow custom automation name?", required: false, submitOnChange: true);
+            input(name: "overrideLabel", type: "bool", title: getLabel("str_NameChange"), required: false, submitOnChange: true);
         }
     }
 }
@@ -737,7 +747,7 @@ private timeWindowStart() {
         }
     }
     else if (starting) {
-        result = timeToday(starting)
+        result = timeToday(starting, location.timeZone)
     }
     log.trace "timeWindowStart = ${result}"
     result
@@ -758,7 +768,7 @@ private timeWindowStop() {
         }
     }
     else if (ending) {
-        result = timeToday(ending)
+        result = timeToday(ending, location.timeZone)
     }
     log.trace "timeWindowStop = ${result}"
     result
@@ -806,3 +816,541 @@ private timeIntervalLabel() {
     }
     start && finish ? "${start} to ${finish}" : ""
 }
+
+
+def getLabel(value)
+{
+    //Name Page 
+    def str_NameChange=[
+            "kr": "이름을 변경 설정.",
+            "us": "Do you want to allow custom automation name?"
+    ]
+    
+    def str_NameAutomation=[
+            "kr": "이름을 변경 설정.",
+            "us": "Automation name"
+    ]
+
+    def str_NameUser=[
+            "kr": "사용자 이름.",
+            "us": "Enter custom name"
+    ]
+
+    def str_NamePageTitle=[
+            "kr": "자동화 룰 이름 설정",
+            "us": "Configure rule based on sleep sensor state"
+    ]
+
+    ///////////////////////////////////////////////////////////////////////////
+    
+    //Main Page 
+    def str_MainPageTitle=[
+            "kr": "슬립센서를 이용하여 자동화 룰을 만드세요.",
+            "us": "Configure rule based on sleep sensor state"
+    ]
+
+    def str_SelectSense=[
+            "kr": "슬립센서를 선택하세요.",
+            "us": "Which sleep sensor?"
+    ]
+    
+    def str_SelectSleepTrigger=[
+            "kr": "트리거를 선택하세요.",
+            "us": "Select trigger."
+    ]
+
+    def str_SelectLocation=[
+            "kr": "허브를 선택하세요.",
+            "us": "What would you like to control?"
+    ]
+
+    def str_HubofHomeWatch=[
+            "kr": "홈지키미의 상태",
+            "us": "The state of Smart Home Monitoring"
+    ]
+    
+    def str_HubofDevice=[
+            "kr": "의 디바이스",
+            "us": "The mode at  "
+    ]
+    
+    def str_HubofMode=[
+            "kr": "의 모드",
+            "us": "A mode at "
+    ]
+
+    def str_HubofRoutines=[
+            "kr": "의 루틴",
+            "us": "A routine at  "
+    ]
+
+    
+    ///////////////////////////////////////////////////////////////////////////
+
+    
+    def str_RoutineTitle=[
+            "kr": "자동화 설정",
+            "us": "Routine Control"
+    ]
+
+    def str_RoutineSelect=[
+            "kr": "자동화 룰을 선택하세요",
+            "us": "Run the routine..."
+    ]
+    
+    ///////////////////////////////////////////////////////////////////////////
+
+    def strr_ModeTitle=[
+            "kr": "모드",
+            "us": "mode"
+    ]
+
+    def str_ModeSelect=[
+            "kr": "모드 선택",
+            "us": "Change Mode to..."
+    ]
+
+    ///////////////////////////////////////////////////////////////////////////
+
+    def str_HomeWatchTitle=[
+            "kr": "홈지키미 모드 설정",
+            "us": "Home Watch Control"
+    ]
+
+    def str_HomeWatchSectionSelect=[
+            "kr": "홈지키미 모드 상태 선택",
+            "us": "Set HomeWatch status to..."
+    ]
+
+    ///////////////////////////////////////////////////////////////////////////
+
+    def str_DeviceTitle=[
+            "kr": "기기 제어",
+            "us": "Device Control"
+    ]
+
+    def str_DeviceSelect=[
+            "kr": "기기 선택",
+            "us": "Select device to control"
+    ]
+    
+    def str_DeviceSwitch=[
+            "kr": "스위치 및 디머",
+            "us": "Switches & Dimmers"
+    ]
+    def str_DeviceCameras=[
+            "kr": "카메라",
+            "us": "Cameras"
+    ]
+    def str_DeviceLocks=[
+            "kr": "자동 잠금 기기",
+            "us": "Locks"
+    ]
+    def str_DeviceThermostats=[
+            "kr": "에어컨 및 온도 설정기",
+            "us": "Thermostats"
+    ]
+    def str_DeviceAlarms=[
+            "kr": "알림 센서",
+            "us": "Alarms & Sirens"
+    ]
+    def str_DeviceSpeaker=[
+            "kr": "스피커",
+            "us": "Speakers"
+    ]
+
+    def str_DeviceLightsTitle=[
+            "kr": "동작 선택",
+            "us": "Lights will..."
+    ]
+
+    def str_DeviceTurnOn=[
+            "kr": "켜기",
+            "us": "Turn On"
+    ]
+
+    def str_DeviceTurnOff=[
+            "kr": "끄기",
+            "us": "Turn Off"
+    ]
+
+    def str_DeviceLevel=[
+            "kr": "켜고 밝기 조정하기",
+            "us": "Turn On & Set Level"
+    ]
+
+    def str_DeviceColor=[
+            "kr": "켜고 색상 조정하기",
+            "us": "Turn On & Set Color"
+    ]
+
+    def str_DeviceSpeakerTitle=[
+            "kr": "동작 선택",
+            "us": "Speaker will..."
+    ]
+
+    def str_DeviceSpeakerPlae=[
+            "kr": "동작",
+            "us": "Play"
+    ]
+
+    def str_DeviceSpeakerPause=[
+            "kr": "일시 정지",
+            "us": "Pause"
+    ]
+
+    def str_DeviceSpeakerStop=[
+            "kr": "중지",
+            "us": "Stop"
+    ]
+
+
+    def str_DeviceThermostatTitle=[
+            "kr": "동작 선택",
+            "us": "Thermostat will..."
+    ]
+
+    def str_DeviceThermostatCool=[
+            "kr": "냉방 모드 설정",
+            "us": "Set cooling point & set mode to cool"
+    ]
+
+    def str_DeviceThermostatHeat=[
+            "kr": "난방 모드 설정",
+            "us": "Set heating point &  set mode to heat"
+    ]
+
+    def str_DeviceThermostatCoolSet=[
+            "kr": "냉방 모드 온도 설정",
+            "us": "Set cooling point to..."
+    ]
+
+    def str_DeviceThermostatHeatSet=[
+            "kr": "난방 모드 온도 설정",
+            "us": "Set heating point to..."
+    ]
+
+    def str_CameraTitle=[
+            "kr": "동작 설정",
+            "us": "Camera will..."
+    ]
+
+    def str_CameraTake=[
+            "kr": "사진 가져 오기",
+            "us": "Take a photo"
+    ]
+
+
+    def str_LocksTitle=[
+            "kr": "동작 설정",
+            "us": "Lock will..."
+    ]
+
+
+    def str_LocksLock=[
+            "kr": "잠그기",
+            "us": "Lock the door"
+    ]
+
+    def str_LocksUnLock=[
+            "kr": "잠금 풀기",
+            "us": "Unlock the door"
+    ]
+    
+    
+    ///////////////////////////////////////////////////////////////////////////
+    
+    def str_MoreOptions=[
+            "kr": "추가 설정",
+            "us": "More options"
+    ]
+
+    def str_TimeSet=[
+            "kr": "동작 시간 설정",
+            "us": "Only during a certain time"
+    ]
+
+    def str_TimeStartingCondition=[
+            "kr": "시작 조건",
+            "us": "Starting at"
+    ]
+
+    def str_TimeEngingCondition=[
+            "kr": "종료 조건",
+            "us": "Ending at"
+    ]
+
+    def str_TimeSunrise=[
+            "kr": "해 질때",
+            "us": "At Sunrise"
+    ]
+
+    def str_TimeSunset=[
+            "kr": "해 뜰때",
+            "us": "At Sunset"
+    ]
+
+    def str_TimeSpecificTime=[
+            "kr": "사용자 설정",
+            "us": "At a Specific Time"
+    ]
+
+    def str_TimeOffset=[
+            "kr": "오차 범위를 설정하세요.",
+            "us": "Offset in minutes (+/-)"
+    ]
+
+    def str_TimeStart=[
+            "kr": "시작 시간",
+            "us": "Start time"
+    ]
+
+    def str_TimeEnd=[
+            "kr": "종료 시간",
+            "us": "End time"
+    ]
+
+    def str_WeekSet=[
+            "kr": "동작 요일을 선택하세요.",
+            "us": "Only on certain days of the week"
+    ]
+
+
+
+    
+
+
+
+   if(clientLocale?.language == "ko")
+    {
+        switch(value)
+        {
+            case "str_MainPageTitle":
+                return str_MainPageTitle["kr"]
+            case "str_SelectSense":
+                return str_SelectSense["kr"]
+            case "str_SelectSleepTrigger":
+                return str_SelectSleepTrigger["kr"]
+            case "str_SelectLocation":
+                return str_SelectLocation["kr"]
+            case "str_HubofHomeWatch":
+                return str_HubofHomeWatch["kr"]
+            case "str_HubofMode":
+                return str_HubofMode["kr"]
+            case "str_HubofRoutines":
+                return str_HubofRoutines["kr"]
+            case "str_HubofDevice":
+                return str_HubofDevice["kr"]
+                
+            case "str_RoutineTitle":
+                return str_RoutineTitle["kr"]
+            case "str_RoutineSelect":
+                return str_RoutineSelect["kr"]
+            case "str_TimeSet":
+                return str_TimeSet["kr"]
+            case "str_TimeStartingCondition":
+                return str_TimeStartingCondition["kr"]
+            case "str_TimeEngingCondition":
+                return str_TimeEngingCondition["kr"]
+            case "str_TimeSunrise":
+                return str_TimeSunrise["kr"]
+            case "str_TimeSunset":
+                return str_TimeSunset["kr"]
+            case "str_TimeSpecificTime":
+                return str_TimeSpecificTime["kr"]
+            case "str_TimeOffset":
+                return str_TimeOffset["kr"]
+            case "str_TimeStart":
+                return str_TimeStart["kr"]
+            case "str_TimeEnd":
+                return str_TimeEnd["kr"]
+            case "str_WeekSet":
+                return str_WeekSet["kr"]
+            case "str_NameChange":
+                return str_NameChange["kr"]
+            case "str_NameAutomation":
+                return str_NameAutomation["kr"]
+            case "str_NameUser":
+                return str_NameUser["kr"]
+            case "str_NamePageTitle":
+                return str_NamePageTitle["kr"]
+            case "str_DeviceTitle":
+                return str_DeviceTitle["kr"]
+            case "str_DeviceSelect":
+                return str_DeviceSelect["kr"]
+            case "str_DeviceLightsTitle":
+                return str_DeviceLightsTitle["kr"]
+            case "str_DeviceTurnOn":
+                return str_DeviceTurnOn["kr"]
+            case "str_DeviceTurnOff":
+                return str_DeviceTurnOff["kr"]
+            case "str_DeviceLevel":
+                return str_DeviceLevel["kr"]
+            case "str_DeviceColor":
+                return str_DeviceColor["kr"]
+            case "str_DeviceSpeakerTitle":
+                return str_DeviceSpeakerTitle["kr"]
+            case "str_DeviceSpeakerPlae":
+                return str_DeviceSpeakerPlae["kr"]
+            case "str_DeviceSpeakerPause":
+                return str_DeviceSpeakerPause["kr"]
+            case "str_DeviceSpeakerStop":
+                return str_DeviceSpeakerStop["kr"]
+            case "str_DeviceSwitch":
+                return str_DeviceSwitch["kr"]
+            case "str_DeviceCameras":
+                return str_DeviceCameras["kr"]
+            case "str_DeviceLocks":
+                return str_DeviceLocks["kr"]
+            case "str_DeviceThermostats":
+                return str_DeviceThermostats["kr"]
+            case "str_DeviceAlarms":
+                return str_DeviceAlarms["kr"]
+            case "str_DeviceSpeaker":
+                return str_DeviceSpeaker["kr"]
+            case "str_DeviceThermostatTitle":
+                return str_DeviceThermostatTitle["kr"]
+            case "str_DeviceThermostatCool":
+                return str_DeviceThermostatCool["kr"]
+            case "str_DeviceThermostatHeat":
+                return str_DeviceThermostatHeat["kr"]
+            case "str_DeviceThermostatCoolSet":
+                return str_DeviceThermostatCoolSet["kr"]
+            case "str_DeviceThermostatHeatSet":
+                return str_DeviceThermostatHeatSet["kr"]
+            case "strr_ModeTitle":
+                return strr_ModeTitle["kr"]
+            case "str_ModeSelect":
+                return str_ModeSelect["kr"]
+            case "str_HomeWatchTitle":
+                return str_HomeWatchTitle["kr"]
+            case "str_HomeWatchSectionSelect":
+                return str_HomeWatchSectionSelect["kr"]
+            case "str_CameraTitle":
+                return str_CameraTitle["kr"]
+            case "str_CameraTake":
+                return str_CameraTake["kr"]
+        }
+    }
+    else
+    {
+        switch(value)
+        {
+            case "str_MainPageTitle":
+                return str_MainPageTitle["kr"]
+            case "str_SelectSense":
+                return str_SelectSense["kr"]
+            case "str_SelectSleepTrigger":
+                return str_SelectSleepTrigger["kr"]
+            case "str_SelectLocation":
+                return str_SelectLocation["kr"]
+            case "str_HubofHomeWatch":
+                return str_HubofHomeWatch["kr"]
+            case "str_HubofMode":
+                return str_HubofMode["kr"]
+            case "str_HubofRoutines":
+                return str_HubofRoutines["kr"]
+            case "str_HubofDevice":
+                return str_HubofDevice["kr"]
+                
+            case "str_RoutineTitle":
+                return str_RoutineTitle["kr"]
+            case "str_RoutineSelect":
+                return str_RoutineSelect["kr"]
+            case "str_TimeSet":
+                return str_TimeSet["kr"]
+            case "str_TimeStartingCondition":
+                return str_TimeStartingCondition["kr"]
+            case "str_TimeEngingCondition":
+                return str_TimeEngingCondition["kr"]
+            case "str_TimeSunrise":
+                return str_TimeSunrise["kr"]
+            case "str_TimeSunset":
+                return str_TimeSunset["kr"]
+            case "str_TimeSpecificTime":
+                return str_TimeSpecificTime["kr"]
+            case "str_TimeOffset":
+                return str_TimeOffset["kr"]
+            case "str_TimeStart":
+                return str_TimeStart["kr"]
+            case "str_TimeEnd":
+                return str_TimeEnd["kr"]
+            case "str_WeekSet":
+                return str_WeekSet["kr"]
+            case "str_NameChange":
+                return str_NameChange["kr"]
+            case "str_NameAutomation":
+                return str_NameAutomation["kr"]
+            case "str_NameUser":
+                return str_NameUser["kr"]
+            case "str_NamePageTitle":
+                return str_NamePageTitle["kr"]
+            case "str_DeviceTitle":
+                return str_DeviceTitle["kr"]
+            case "str_DeviceSelect":
+                return str_DeviceSelect["kr"]
+            case "str_DeviceLightsTitle":
+                return str_DeviceLightsTitle["kr"]
+            case "str_DeviceTurnOn":
+                return str_DeviceTurnOn["kr"]
+            case "str_DeviceTurnOff":
+                return str_DeviceTurnOff["kr"]
+            case "str_DeviceLevel":
+                return str_DeviceLevel["kr"]
+            case "str_DeviceColor":
+                return str_DeviceColor["kr"]
+            case "str_DeviceSpeakerTitle":
+                return str_DeviceSpeakerTitle["kr"]
+            case "str_DeviceSpeakerPlae":
+                return str_DeviceSpeakerPlae["kr"]
+            case "str_DeviceSpeakerPause":
+                return str_DeviceSpeakerPause["kr"]
+            case "str_DeviceSpeakerStop":
+                return str_DeviceSpeakerStop["kr"]
+            case "str_DeviceSwitch":
+                return str_DeviceSwitch["kr"]
+            case "str_DeviceCameras":
+                return str_DeviceCameras["kr"]
+            case "str_DeviceLocks":
+                return str_DeviceLocks["kr"]
+            case "str_DeviceThermostats":
+                return str_DeviceThermostats["kr"]
+            case "str_DeviceAlarms":
+                return str_DeviceAlarms["kr"]
+            case "str_DeviceSpeaker":
+                return str_DeviceSpeaker["kr"]
+            case "str_DeviceThermostatTitle":
+                return str_DeviceThermostatTitle["kr"]
+            case "str_DeviceThermostatCool":
+                return str_DeviceThermostatCool["kr"]
+            case "str_DeviceThermostatHeat":
+                return str_DeviceThermostatHeat["kr"]
+            case "str_DeviceThermostatCoolSet":
+                return str_DeviceThermostatCoolSet["kr"]
+            case "str_DeviceThermostatHeatSet":
+                return str_DeviceThermostatHeatSet["kr"]
+            case "strr_ModeTitle":
+                return strr_ModeTitle["kr"]
+            case "str_ModeSelect":
+                return str_ModeSelect["kr"]
+            case "str_HomeWatchTitle":
+                return str_HomeWatchTitle["kr"]
+            case "str_HomeWatchSectionSelect":
+                return str_HomeWatchSectionSelect["kr"]
+            case "str_CameraTitle":
+                return str_CameraTitle["kr"]
+            case "str_CameraTake":
+                return str_CameraTake["kr"]
+
+        }
+    }
+    return "Unknown"
+}
+
+
+
+
+
+
+
+
