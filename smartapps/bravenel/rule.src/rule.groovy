@@ -3,7 +3,7 @@
  *
  *  Copyright 2015 Bruce Ravenel
  *
- *  Version 1.6.7   31 Dec 2015
+ *  Version 1.6.7a   31 Dec 2015
  *
  *	Version History
  *
@@ -1000,7 +1000,7 @@ def selectMsgTrue() {
 			input "refDevTrue", "bool", title: "Include device name?", required: false, submitOnChange: true
 			input "phoneTrue", "phone", title: "Phone number for SMS", required: false, submitOnChange: true
             input "speakTrue", "bool", title: "Speak this message?", required: false, submitOnChange: true
-            if(speakTrue) input "speakTrueDevice", title: "On this speach device", "capability.speechSynthesis", required: false, multiple: true, submitOnChange: true
+            if(speakTrue) input "speakTrueDevice", title: "On this speech device", "capability.speechSynthesis", required: false, multiple: true, submitOnChange: true
 		}
         state.msgTrue = (pushTrue ? "Push" : "") + (msgTrue ? " '$msgTrue'" : "") + (refDevTrue ? " [device]" : "") + (phoneTrue ? " to $phoneTrue" : "") + (speakTrue ? " [speak]" : "")
 	}
@@ -1014,7 +1014,7 @@ def selectMsgFalse() {
 			input "refDevFalse", "bool", title: "Include device name?", required: false, submitOnChange: true
 			input "phoneFalse", "phone", title: "Phone number for SMS", required: false, submitOnChange: true
             input "speakFalse", "bool", title: "Speak this message?", required: false, submitOnChange: true
-            if(speakFalse) input "speakFalseDevice", title: "On this speach device", "capability.speechSynthesis", required: false, multiple: true, submitOnChange: true
+            if(speakFalse) input "speakFalseDevice", title: "On this speech device", "capability.speechSynthesis", required: false, multiple: true, submitOnChange: true
 		}
         state.msgFalse = (pushFalse ? "Push" : "") + (msgFalse ? " '$msgFalse'" : "") + (refDevFalse ? " [device]" : "") + (phoneFalse ? " to $phoneFalse" : "") + (speakFalse ? " [speak]" : "")
 	}
