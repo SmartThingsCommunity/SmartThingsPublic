@@ -20,7 +20,7 @@
  * 	Incorporate additional device capabilities, some based on code by Yves Racine
  *
  * General TODOs:
- *	- Add support for Celcius, use Hub Temperature Scale to choose units
+ *	- Add support for Celcius, use Hub Temperature Scale to choose units. Perform unit conversions in SmartApp instead of Device?
  *	
  */
 metadata {
@@ -41,8 +41,10 @@ metadata {
 		command "switchMode"
 		
 		// Capability "Thermostat"
+        attribute "temperatureScale", "string"
 		attribute "thermostatSetpoint","number"
 		attribute "thermostatStatus","string"
+        attribute "apiConnected","string"
 		
 
 	
@@ -239,7 +241,6 @@ metadata {
 				attributeState("default", label:'${currentValue}', unit:"F")
 			}
             
-            // TODO: Need a setTemperature action 
 			tileAttribute("device.temperature", key: "VALUE_CONTROL") {
                 attributeState("default", action: "setTemperature")
 			}
@@ -267,16 +268,32 @@ metadata {
             	attributeState("default", label:'${currentValue}', unit:"F")
             }
 			tileAttribute("device.coolingSetpoint", key: "COOLING_SETPOINT") {
-				attributeState("default", label:'${currentValue}', unit:"dF")
+				attributeState("default", label:'${currentValue}', unit:"F")
 			}
             
         }
         
+        
+        // Show status of the API Connection for the Thermostat
+		standardTile("api", "device.apiConnected", width: 4, height: 4) {
+        	state "true", label: "API", backgroundColor: "#44b621", icon: "st.contact.contact.closed"
+            state "false", label: "API ", backgroundColor: "#ffa81e", icon: "st.contact.contact.open"
+		}
+        
         // TODO Adjust this to support Celsium as well as F
 		valueTile("temperature", "device.temperature", width: 4, height: 4) {
 			state("temperature", label:'${currentValue}°', unit:"F",
-				backgroundColors:[
-                	[value: 31, color: "#153591"],
+				backgroundColors: [
+                	// Celsius Color Range
+					[value: 0, color: "#153591"],
+					[value: 7, color: "#1e9cbb"],
+					[value: 15, color: "#90d2a7"],
+					[value: 23, color: "#44b621"],
+					[value: 29, color: "#f1d801"],
+					[value: 33, color: "#d04e00"],
+					[value: 36, color: "#bc2323"],
+					// Fahrenheit Color Range
+                	[value: 40, color: "#153591"],
 					[value: 44, color: "#1e9cbb"],
 					[value: 59, color: "#90d2a7"],
 					[value: 74, color: "#44b621"],
@@ -405,7 +422,7 @@ metadata {
         
 		main "summary"
         details(["summary","temperature", "upButtonControl", "thermostatSetpoint", "currentStatus", "downButtonControl", "mode", "weatherIcon", "resumeProgram", "refresh"])
-        
+        // details(["summary","api", "upButtonControl", "thermostatSetpoint", "currentStatus", "downButtonControl", "mode", "weatherIcon", "resumeProgram", "refresh"])        
         
 //		main "temperature"
 //		details(["temperature", "upButtonControl", "thermostatSetpoint", "currentStatus", "downButtonControl", "mode", "resumeProgram", "refresh"])
@@ -426,8 +443,8 @@ metadata {
 
 // parse events into attributes
 def parse(String description) {
-	log.debug "Parsing '${description}'"
-	// TODO: handle '' attribute
+	log.debug "parse() --> Parsing '${description}'"
+	// Not needed for cloud connected devices
 
 }
 
@@ -444,6 +461,7 @@ void poll() {
     log.debug "pollChild() - results: ${results}"
 	generateEvent(results) //parse received message from parent
 }
+
 
 def generateEvent(Map results) {
 	log.debug "generateEvent(): parsing data $results"
@@ -477,6 +495,7 @@ def generateEvent(Map results) {
 }
 
 //return descriptionText to be shown on mobile activity feed
+// TODO: Does this handle Celsius?
 private getThermostatDescriptionText(name, value, linkText) {
 	if(name == "temperature") {
 		return "$linkText temperature is $value°F"
@@ -553,6 +572,7 @@ void setHeatingSetpoint(Double setpoint) {
 
 	//enforce limits of heatingSetpoint
     // TODO: Make these limits configurable? Use values stored in Ecobee cloud?
+    // TODO: Does this handle Celcius?
 	if (heatingSetpoint > 79) {
 		heatingSetpoint = 79
 	} else if (heatingSetpoint < 45) {
@@ -1367,6 +1387,11 @@ def toQueryString(Map m) {
 // fahrenheitToCelsius()
 // celsiusToFahrenheit()
 
+def wantMetric() {
+	return (getTemperatureScale() == "C")
+}
+
+
 private def cToF(temp) {
 	//return (temp * 1.8 + 32)
     return celsiusToFahrenheit(temp)
@@ -1384,4 +1409,21 @@ private def get_URI_ROOT() {
 // Maximum tstat batch size (25 thermostats max may be processed in batch)
 private def get_MAX_TSTAT_BATCH() {
 	return 25
+}
+
+
+def getTempColors() {
+	def colorMap 	
+    
+    
+    	colorMap = [[value: 0, color: "#153591"],
+					[value: 7, color: "#1e9cbb"],
+					[value: 15, color: "#90d2a7"],
+					[value: 23, color: "#44b621"],
+					[value: 29, color: "#f1d801"],
+					[value: 33, color: "#d04e00"],
+					[value: 36, color: "#bc2323"]]
+	
+	return colorMap
+
 }
