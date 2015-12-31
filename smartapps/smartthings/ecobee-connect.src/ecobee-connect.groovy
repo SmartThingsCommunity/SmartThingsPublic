@@ -9,6 +9,9 @@
  *      JLH - 02-15-2014 - Fuller use of ecobee API
  *      10-28-2015 DVCSMP-604 - accessory sensor, DVCSMP-1174, DVCSMP-1111 - not respond to routines
  *		StrykerSKS - 12-11-2015 - Make it work with the Ecobee 3
+ *
+ *		General TODOs:
+ *			- Make polling intervals configurable: DONE
  */
  
 definition(
@@ -35,6 +38,8 @@ mappings {
 	path("/oauth/callback") {action: [GET: "callback"]}
 }
 
+
+// Begin Preference Pages
 def authPage() {
 	log.debug "=====> authPage() Entered"
 
@@ -78,15 +83,25 @@ def authPage() {
 
 def thermsPage() {
 	log.debug "=====> thermsPage() entered"
+    // TODO: Configure the Smart Auto feature as part of the Connect app instead of the preferences in the thermostat?
+    // TODO: Configure the Hold Type as part of the config here. Can be overridden at the individual thermostat later
         
 	def stats = getEcobeeThermostats()
 	log.debug "thermsPage() -> thermostat list: $stats"
     log.debug "thermsPage() starting settings: ${settings}"
     
     dynamicPage(name: "therms", title: "Select Thermostats", nextPage: "sensors", content: "thermsPage", uninstall: true) {    
-    	section("") {
+    	section("Units") {
+        	paragraph "NOTE: The units type (F or C) is determined by your Hub Location settings automatically. Please update your Hub settings (under My Locations) to change the units used. Current value is ${getTemperatureScale()}."
+        }
+    	section("Select Thermostats") {
         	paragraph "Tap below to see the list of ecobee thermostats available in your ecobee account and select the ones you want to connect to SmartThings."
 			input(name: "thermostats", title:"Select Thermostats", type: "enum", required:true, multiple:true, description: "Tap to choose", metadata:[values:stats])        
+        }
+        section("Optional Settings") {
+        	input(name: "holdType", title:"Select Hold Type", type: "enum", required:false, multiple:false, description: "Permanent", metadata:[values:["Permanent", "Temporary"]])
+            input(name: "smartAuto", title:"Use Smart Auto Temperature Adjust?", type: "bool", required:false, description: false)
+            input(name: "pollingInterval", title:"Polling Interval (in Minutes)", type: "enum", required:false, multiple:false, description: "5", options:["5", "10", "15", "30"])
         }
     } 
 }
@@ -116,6 +131,9 @@ def sensorsPage() {
 	}
 }
 
+// End Prefernce Pages
+
+// OAuth Init URL
 def oauthInitUrl() {
 	log.debug "oauthInitUrl with callback: ${callbackUrl}"
 
@@ -133,6 +151,7 @@ def oauthInitUrl() {
 	redirect(location: "${apiEndpoint}/authorize?${toQueryString(oauthParams)}")
 }
 
+// OAuth Callback URL and helpers
 def callback() {
 	log.debug "callback()>> params: $params, params.code ${params.code}, params.state ${params.state}, atomicState.oauthInitState ${atomicState.oauthInitState}"
 
@@ -156,6 +175,9 @@ def callback() {
 		httpPost(uri: tokenUrl) { resp ->
 			atomicState.refreshToken = resp.data.refresh_token
 			atomicState.authToken = resp.data.access_token
+            
+			log.debug "Expires in ${resp?.data?.expires_in} seconds"
+            atomicState.authTokenExpires = now() + (resp.data.expires_in * 1000)
 			log.debug "swapped token: $resp.data"
 			log.debug "atomicState.refreshToken: ${atomicState.refreshToken}"
 			log.debug "atomicState.authToken: ${atomicState.authToken}"
@@ -259,13 +281,13 @@ def connectionStatus(message, redirectUrl = null) {
 
 	render contentType: 'text/html', data: html
 }
+// End OAuth Callback URL and helpers
+
 
 def getEcobeeThermostats() {
 	log.debug "====> getEcobeeThermostats() entered"
 
  	def requestBody = '{"selection":{"selectionType":"registered","selectionMatch":"","includeRuntime":true,"includeSensors":true}}'
-	// TODO: Save some API bandwidth and only  get the thermostats data and not the sensors?
-	// def requestBody = '{"selection":{"selectionType":"registered","selectionMatch":"","includeRuntime":true,"includeSensors":false}}'
 
 	def deviceListParams = [
 			uri: apiEndpoint,
@@ -279,6 +301,9 @@ def getEcobeeThermostats() {
         httpGet(deviceListParams) { resp ->
 
 		log.debug "httpGet() response: ${resp.data}"
+        
+        // Initialize the Thermostat Data. Will reuse for the Sensor List intialization
+        atomicState.thermostatData = resp.data
         	
         
             if (resp.status == 200) {
@@ -314,78 +339,35 @@ Map getEcobeeSensors() {
 	log.debug "====> getEcobeeSensors() entered. thermostats: ${thermostats}"
 
 	def sensorMap = [:]
-    
+    def foundThermo = null
 	// TODO: Is this needed?
 	atomicState.remoteSensors = []    
 
-	// Get the sensors only for the thermostats that we have selected. 
-	// TODO: Can we reuse the sensor list from the previous thermostat API calls in getEcobeeThermostats
-	thermostats.each { thermostat ->
-		log.debug "thermostat loop: thermostat == ${thermostat}"
-        def statEcobeeId = thermostat.split("\\.")[1]
-        log.debug "statEcobeeId == ${statEcobeeId}"
+	atomicState.thermostatData.thermostatList.each { singleStat ->
+		log.debug "thermostat loop: singleStat == ${singleStat} singleStat.identifier == ${singleStat.identifier}"
         
-		// Allows for the selection of a single thermostat
-		def jsonRequestBody = toJson([
-        	selection:[
-			selectionType: "thermostats",
-			selectionMatch: statEcobeeId,
-			includeRuntime: true,
-			includeSensors: true
-		   ]
-	 	])
+    	if (!settings.thermostats.findAll{ it.contains(singleStat.identifier) } ) {
+        	// We can skip this thermostat as it was not selected by the user
+            log.info "getEcobeeSensors() --> Skipping this thermostat: ${singleStat.identifier}"
+        } else {
+			log.info "getEcobeeSensors() --> Entering the else... we found a match."
+			
+			log.debug "singleStat == ${singleStat.name}"
+                        
+        	atomicState.remoteSensors = atomicState.remoteSensors ? (atomicState.remoteSensors + singleStat.remoteSensors) : singleStat.remoteSensors
+	        log.debug "After atomicState.remoteSensors setup..."
+                        
+    	    // WORKAROUND: Iterate over remoteSensors list and add in the thermostat DNI
+        	// 		 This is needed to work around the dynamic enum "bug" which prevents proper deletion
+        	singleStat.remoteSensors.each { tempSensor ->
+        		tempSensor.thermDNI = "${thermostat}"
+            	atomicState.remoteSensors = atomicState.remoteSensors + tempSensor
+			}
 
-//         def jsonRequestBody = '{"selection":{"selectionType":"registered","selectionMatch":"","includeRuntime":true,"includeSensors":true}}'
-
-		def deviceListParams = [
-			uri: apiEndpoint,
-			path: "/1/thermostat",
-			headers: ["Content-Type": "text/json", "Authorization": "Bearer ${atomicState.authToken}"],
-			query: [format: 'json', body: jsonRequestBody]
-		]
-
-		log.debug "deviceListParams = ${deviceListParams}"
-    	try {
-        	httpGet(deviceListParams) { resp ->
-				log.debug "httpGet() status: ${resp.status}"
-            	log.debug "httpGet() response: ${resp.data}"
-    	       
-				if (resp.status == 200) {
-					log.debug "getEcobeeSensors() --> httpGet() in 200 Response"
-
-					// TODO: Test without the loop, should only have a single thermostat based on query
-                    resp.data.thermostatList.each { singleStat ->
-                    	log.debug "singleStat == ${singleStat.name}"
-                    	atomicState.remoteSensors = atomicState.remoteSensors + singleStat.remoteSensors
-                        // TODO: Iterate over remoteSensors list and add in the thermostat DNI
-                        // 		 This is needed to work around the dynamic enum "bug" which prevents proper deletion
-                        singleStat.remoteSensors.each { tempSensor ->
-                            tempSensor.thermDNI = "${thermostat}"
-                            atomicState.remoteSensors = atomicState.remoteSensors + tempSensor
-                        }
-
-						log.debug "httpGet() - singleStat.remoteSensors: ${singleState.remoteSensors}"
-                    	log.debug "httpGet() - atomicState.remoteSensors: ${atomicState.remoteSensors}"
-					}
-                   
-				} else {
-					log.debug "getEcobeeSensors() --> httpGet() - in else: http status: ${resp.status}"
-					//refresh the auth token
-					if (resp.status == 500 && resp.data.status.code == 14) {
-						log.debug "Storing the failed action to try later"
-						atomicState.action = "getEcobeeSensors"
-						log.debug "Refreshing your auth_token!"
-						refreshAuthToken()
-					} else {
-                	    log.error "Authentication error, invalid authentication method, lack of credentials, etc."
-					}
-            	}
-        	}
-		} catch(Exception e) {
-			log.debug "___exception getEcobeeSensors() (): " + e
-            refreshAuthToken()
+			log.debug "getEcobeeSensors() - singleStat.remoteSensors: ${singleStat.remoteSensors}"
+        	log.debug "getEcobeeSensors() - atomicState.remoteSensors: ${atomicState.remoteSensors}"
 		}
-
+        
 		atomicState.remoteSensors.each {
 			if (it.type != "thermostat") {
 				def value = "${it?.name}"
@@ -424,7 +406,6 @@ def updated() {
 }
 
 def initialize() {
-
 	log.debug "=====> initialize()"
 	def devices = thermostats.collect { dni ->
 		def d = getChildDevice(dni)
@@ -450,19 +431,8 @@ def initialize() {
     
 	log.debug "created ${devices.size()} thermostats and ${sensors.size()} sensors."
 
-	// Debug the deletion process
-	// TODO: Fix it so that child sensors are deleted when a Thermostat is removed
-	// The bug seems to be in the input mechanism for enums, previously selected items have to be explicitly unselected. Even if they are no longer an option!
-	def founddevices = getChildDevices() /* { !thermostats.contains(it.deviceNetworkId) && !ecobeesensors.contains(it.deviceNetworkId)} */
-    
-	// log.debug "foundDevices (all children): ${founddevices}."
-	// founddevices.each {
-	//	log.debug " ------> Device Network ID: ${it.deviceNetworkId}  <-----"
-	// }
-
-
-	def delete  // Delete any that are no longer in settings
-    // WORKAROUND: settings.ecobeesensors may contain leftover sensors in the dynamic enum bug scenario, use info in atomicState.eligibleSensors instead
+	
+	// WORKAROUND: settings.ecobeesensors may contain leftover sensors in the dynamic enum bug scenario, use info in atomicState.eligibleSensors instead
     // TODO: Need to deal with individual sensors from remaining thermostats that might be excluded...
     // TODO: Cleanup this code now that it is working!
     def sensorList = atomicState.eligibleSensors.keySet()
@@ -471,16 +441,14 @@ def initialize() {
     def reducedSensorList = settings.ecobeesensors.findAll { sensorList.contains(it) }
     log.info "**** reducedSensorList = ${reducedSensorList} *****"
     atomicState.activeSensors = reducedSensorList
-    
-    
+        
     log.debug "sensorList based on keys: ${sensorList} from atomicState.sensors: ${atomicState.eligibleSensors}"
     
 	def combined = settings.thermostats + atomicState.activeSensors  
 	log.debug "Combined devices == ${combined}"
     
-    // Determine if any thermostats have been removed
-    // def deletedThermostats = getChildDevices().findAll { !settings.thermostats.contains(it.deviceNetworkId) }
-    // log.warn "deletedThermostats = ${deletedThermostats}"
+    // Delete any that are no longer in settings
+	def delete  
     
     if (combined) {
     	delete = getChildDevices().findAll { !combined.contains(it.deviceNetworkId) }        
@@ -501,17 +469,26 @@ def initialize() {
 	pollHandler() //first time polling data from thermostat
 
 	//automatically update devices status every 5 mins
-	runEvery5Minutes("poll")
+    
+    //switch (settings.pollingInterval) {
+    //	case
+    def interval = (settings.pollingInterval?.toInteger() >= 5) ? settings.pollingInterval.toInteger() : 5
+	"runEvery${interval}Minutes"("poll")
 
     //since access_token expires every 2 hours
-    runEvery1Hour("refreshAuthToken")
+    // TODO Would it be safer to run the routine every 19 minutes just in case a run is missed? We can always defer within the routine
+    // TODO Even better would be to base this refresh on the actual expiry time received
+    runEvery15Minutes("refreshAuthToken")
 
 	atomicState.reAttempt = 0
 
 }
 
+
+// Called during initialization to get the inital poll
 def pollHandler() {
 	log.debug "pollHandler()"
+    atomicState.lastPoll = 0 // Initialize the variable and force a poll even if there was one recently
 	pollChildren(null) // Hit the ecobee API for update on all thermostats
 
 	atomicState.thermostats.each {stat ->
@@ -529,8 +506,19 @@ def pollHandler() {
 def pollChildren(child = null) {
 	def thermostatIdsString = getChildDeviceIdsString()
 	log.debug "polling children: $thermostatIdsString"
+    
+    def minSincePoll = (now() - atomicState.lastPoll.toDouble()) / 1000 / 60
+    log.debug "minutes since last poll: ${minSincePoll}"
+    
+    // Do not hit the API too often, check on last timestamp. Do not hit it more often than necessary. Set to 5 minutes for now
+    if ( (atomicState.lastPoll != 0) && ((now() - atomicState.lastPoll.toDouble()) / 1000 / 60) < 5 ) { 
+    	// Do not poll the API again, use the cached data instead
+        log.warn "Polling within interval. Using cached data instead."
+        return true
+    } 
+    
 
-	def jsonRequestBody = '{"selection":{"selectionType":"thermostats","selectionMatch":"' + thermostatIdsString + '","includeExtendedRuntime":"true","includeSettings":"true","includeRuntime":"true","includeSensors":true}}'
+	def jsonRequestBody = '{"selection":{"selectionType":"thermostats","selectionMatch":"' + thermostatIdsString + '","includeExtendedRuntime":"true","includeSettings":"true","includeRuntime":"true","includeEquipmentStatus":"true","includeSensors":true,"includeWeather":true}}'
 	def result = false
 	// // TODO: test this:
 	//
@@ -564,9 +552,11 @@ def pollChildren(child = null) {
 				atomicState.thermostats = resp.data.thermostatList.inject([:]) { collector, stat ->
 					def dni = [ app.id, stat.identifier ].join('.')
 
-					log.debug "updating dni $dni"
+					log.debug "Updating dni $dni, Got weather? ${stat.weather.forecasts[0].weatherSymbol.toString()}"
 
 					def data = [
+                    		temperatureScale: getTemperatureScale(),
+                    		apiConnected: (atomicState.connected.toString()),
 							coolMode: (stat.settings.coolStages > 0),
 							heatMode: (stat.settings.heatStages > 0),
 							autoMode: stat.settings.autoHeatCoolFeatureEnabled,
@@ -574,7 +564,27 @@ def pollChildren(child = null) {
 							temperature: stat.runtime.actualTemperature / 10,
 							heatingSetpoint: stat.runtime.desiredHeat / 10,
 							coolingSetpoint: stat.runtime.desiredCool / 10,
-							thermostatMode: stat.settings.hvacMode
+							thermostatMode: stat.settings.hvacMode,                            
+                            humidity: stat.runtime.actualHumidity,
+                            thermostatOperatingState: getThermostatOperatingState(stat),
+                            weatherSymbol: stat.weather.forecasts[0].weatherSymbol.toString()
+							// weatherStation:stat.weather.weatherStation,
+							// weatherSymbol:stat.weather.forecasts[0].weatherSymbol.toString(),
+							// weatherTemperature:stat.weather.forecasts[0].temperature,
+							// weatherTemperatureDisplay:stat.weather.forecasts[0].temperature,
+							// weatherDateTime:"Weather as of\n ${stat.weather.forecasts[0].dateTime.substring(0,16)}",
+							// weatherCondition:stat.weather.forecasts[0].condition,
+							// weatherTemp: stat.weather.forecasts[0].temperature,
+							// weatherTempDisplay: stat.weather.forecasts[0].temperature,
+							// weatherTempHigh: stat.weather.forecasts[0].tempHigh, 
+							// weatherTempLow: stat.weather.forecasts[0].tempLow,
+							// weatherTempHighDisplay: stat.weather.forecasts[0].tempHigh, 
+							// weatherTempLowDisplay: stat.weather.forecasts[0].tempLow,
+							// weatherWindSpeed: (stat.weather.forecasts[0].windSpeed/1000),		// divided by 1000 for display  TODO: Verify units on windSpeed
+							// weatherPressure:stat.weather.forecasts[0].pressure.toString(),
+							// weatherRelativeHumidity:stat.weather.forecasts[0].relativeHumidity,
+							// weatherWindDirection:stat.weather.forecasts[0].windDirection + " Winds",
+							// weatherPop:stat.weather.forecasts[0].pop.toString()
 					]
 					data["temperature"] = data["temperature"] ? data["temperature"].toDouble().toInteger() : data["temperature"]
 					data["heatingSetpoint"] = data["heatingSetpoint"] ? data["heatingSetpoint"].toDouble().toInteger() : data["heatingSetpoint"]
@@ -585,6 +595,7 @@ def pollChildren(child = null) {
 					return collector
 				}
 				result = true
+                atomicState.lastPoll = now();
 				log.debug "updated ${atomicState.thermostats?.size()} stats: ${atomicState.thermostats}"
 			} else {
 				log.error "polling children & got http status ${resp.status}"
@@ -610,7 +621,7 @@ def pollChildren(child = null) {
 }
 
 // Poll Child is invoked from the Child Device itself as part of the Poll Capability
-def pollChild(child){
+def pollChild(child) {
 	log.debug "pollChild() called by ${child}"
 
 	if (pollChildren(child)){
@@ -619,8 +630,10 @@ def pollChild(child){
 				def tData = atomicState.thermostats[child.device.deviceNetworkId]
 //                debugEventFromParent(child, "pollChild(child)>> data for ${child.device.deviceNetworkId} : ${tData.data}") //TODO comment
 				log.info "pollChild(child)>> data for ${child.device.deviceNetworkId} : ${tData.data}"
+                
+				// TODO Decide on returning the data or generating the Events. This was mismatched between the SmartApp and the Device before                
 				child.generateEvent(tData.data) //parse received message from parent
-//            return tData.data
+            	return tData.data
 			} else if(atomicState.thermostats[child.device.deviceNetworkId] == null) {
 //                debugEventFromParent(child, "ERROR: Device connection removed? no data for ${child.device.deviceNetworkId} after polling") //TODO comment
 				log.error "ERROR: Device connection removed? no data for ${child.device.deviceNetworkId}"
@@ -629,7 +642,7 @@ def pollChild(child){
 		}
 	} else {
 //        debugEventFromParent(child, "ERROR: pollChildren(child) for ${child.device.deviceNetworkId} after polling") //TODO comment
-		log.info "ERROR: pollChildren(child) for ${child.device.deviceNetworkId} after polling"
+		log.error "ERROR: pollChildren(child) for ${child.device.deviceNetworkId} after polling"
 		return null
 	}
 
@@ -643,11 +656,9 @@ void poll() {
 def availableModes(child) {
 
 	debugEvent ("atomicState.thermostats = ${atomicState.thermostats}")
-
 	debugEvent ("Child DNI = ${child.device.deviceNetworkId}")
 
 	def tData = atomicState.thermostats[child.device.deviceNetworkId]
-
 	debugEvent("Data = ${tData}")
 
 	if(!tData)
@@ -701,7 +712,7 @@ def updateSensorData() {
 				it.capability.each {
 					if (it.type == "temperature") {
 						temperature = it.value as Double
-						temperature = (temperature / 10).toInteger()
+						temperature = (temperature / 10).round()
 					} else if (it.type == "occupancy") {
 						if(it.value == "true")
 							occupancy = "active"
@@ -714,12 +725,25 @@ def updateSensorData() {
 				if(d) {
 					d.sendEvent(name:"temperature", value: temperature)
 					d.sendEvent(name:"motion", value: occupancy)
-//                    debugEventFromParent(d, "temperature : ${temperature}, motion:${occupancy}")
+                    debugEventFromParent(d, "temperature : ${temperature}, motion:${occupancy}")
 				}
 			}
 		}
 	}
 }
+
+def getThermostatOperatingState(stat) {
+
+	def equipStatus = (stat.equipmentStatus.size() > 0) ? stat.equipmentStatus : 'Idle'	
+	equipStatus = equipStatus.trim().toUpperCase()
+    
+    log.debug "getThermostatOperatingState - equipStatus == ${equipStatus}"
+    
+	def currentOpState = equipStatus.contains('HEAT')? 'heating' : (equipStatus.contains('COOL')? 'cooling' : 
+    	equipStatus.contains('FAN')? 'fan only': 'idle')
+	return currentOpState
+}
+
 
 def getChildDeviceIdsString() {
 	return thermostats.collect { it.split(/\./).last() }.join(',')
@@ -735,9 +759,24 @@ def toQueryString(Map m) {
 
 private refreshAuthToken() {
     log.debug "refreshing auth token"
+    debugEvent("Entered refreshAuthToken() ...")
+
+	def timeLeft 
+    
+    timeLeft = atomicState.authTokenExpires ? ((atomicState.authTokenExpires - now()) / 1000 / 60) : 0
+    log.debug "timeLeft until expiry (in min): ${timeLeft}"
 
     if(!atomicState.refreshToken) {
         log.warn "Can not refresh OAuth token since there is no refreshToken stored"
+        atomicState.connected = false
+        return
+    } else if ( timeLeft > 30 ) {
+    	// Not ready to refresh yet
+        log.debug "Can wait a bit longer to refresh..."
+		debugEvent("Entered refreshAuthToken(): There is still ${timeLeft} time left before expiration.")
+
+        
+    	return
     } else {
 
         def refreshParams = [
@@ -756,23 +795,41 @@ private refreshAuthToken() {
             httpPost(refreshParams) { resp ->
 
                 if(resp.status == 200) {
-                    log.debug "Token refreshed...calling saved RestAction now!"
-                    debugEvent("Token refreshed ... calling saved RestAction now!")
+                    log.debug "refreshAuthToken() - 200 Response received - Extracting info"
+                    debugEvent("refreshAuthToken() - 200 Response received - Extracting info")
+                    
                     log.debug resp
-                    jsonMap = resp.data
+                    jsonMap = resp.data // Needed to work around strange bug that wasn't updating atomicState when accessing resp.data directly
+                    log.debug "jsonMap is? ${jsonMap}"
 
-                    if(resp.data) {
-                        log.debug resp.data
-                        debugEvent("Response = ${resp.data}")
+                    if(jsonMap) {
+                        log.debug "resp.data == ${resp.data}, jsonMap == ${jsonMap}"
+                        debugEvent("Response = ${resp.data}, jsonMap == ${jsonMap}")
+                        
 
-                        atomicState.refreshToken = resp?.data?.refresh_token
-                        atomicState.authToken = resp?.data?.access_token
+						
+                        atomicState.refreshToken = jsonMap.refresh_token
+                        
+                        // TODO: This is not updating the atomicState values for some reason if we use resp.data directly???
+                        
+                        log.debug "atomicState.authToken before: ${atomicState.authToken}"
+                        def oldAuthToken = atomicState.authToken
+                        atomicState.authToken = jsonMap?.access_token  
+						log.debug "atomicState.authToken after: ${atomicState.authToken}"
+                        if (oldAuthToken == atomicState.authToken) { log.error "ERROR: atomicState.authToken did NOT update properly!" }
 
-                        debugEvent("Refresh Token = ${atomicState.refreshToken}")
-                        debugEvent("OAUTH Token = ${atomicState.authToken}")
+                        
+                        // Save the expiry time to optimize the refresh
+                        log.debug "Expires in ${resp?.data?.expires_in} seconds"
+                        atomicState.authTokenExpires = (resp?.data?.expires_in * 1000) + now()
+
+                        debugEvent("Refresh Token = atomicState =${atomicState.refreshToken}  == in: ${resp?.data?.refresh_token}")
+                        debugEvent("OAUTH Token = atomicState ${atomicState.authToken} == in: ${resp?.data?.access_token}")
 
                         if(atomicState.action && atomicState.action != "") {
                             log.debug "Executing next action: ${atomicState.action}"
+                            log.debug "Token refreshed...calling saved RestAction now!"
+                    		debugEvent("Token refreshed ... calling saved RestAction now!")
 
                             "${atomicState.action}"()
 
@@ -780,8 +837,11 @@ private refreshAuthToken() {
                             atomicState.action = ""
                         }
 
+                    } else {
+                    	debugEvent("No jsonMap??? ${jsonMap}")
                     }
                     atomicState.action = ""
+                    atomicState.connected = true
                 } else {
                     log.debug "refresh failed ${resp.status} : ${resp.status.code}"
                 }
@@ -799,6 +859,7 @@ private refreshAuthToken() {
 				} else {
 					sendPushAndFeeds(notificationMessage)
 					atomicState.reAttempt = 0
+                    atomicState.connected = false
 				}
             }
         }
@@ -959,3 +1020,34 @@ def sendActivityFeeds(notificationMessage) {
         child.generateActivityFeedsEvent(notificationMessage) //parse received message from parent
     }
 }
+
+// Helper Apps
+
+// Built in functions from SmartThings for temperature unit handling
+// getTemperatureScale()
+// fahrenheitToCelsius()
+// celsiusToFahrenheit()
+
+def wantMetric() {
+	return (getTemperatureScale() == "C")
+}
+
+private def cToF(temp) {
+	//return (temp * 1.8 + 32)
+    return celsiusToFahrenheit(temp)
+}
+private def fToC(temp) {
+	// return (temp - 32) / 1.8
+    return fahrenheitToCelsius(temp)
+}
+private def milesToKm(distance) {
+	return (distance * 1.609344) 
+}
+private def get_URI_ROOT() {
+	return "https://api.ecobee.com"
+}
+// Maximum tstat batch size (25 thermostats max may be processed in batch)
+private def get_MAX_TSTAT_BATCH() {
+	return 25
+}
+
