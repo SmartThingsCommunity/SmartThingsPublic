@@ -136,15 +136,15 @@ def parse(String description) {
 
 // Lock capability commands
 def lock() {
-    def cmds = zigbee.zigbeeCommand("${CLUSTER_DOORLOCK}", "${DOORLOCK_CMD_LOCK_DOOR}", "{}")
-    log.info "lock() -- cmds: $cmds"
+    //def cmds = zigbee.zigbeeCommand("${CLUSTER_DOORLOCK}", "${DOORLOCK_CMD_LOCK_DOOR}", "{}")
+    //log.info "lock() -- cmds: $cmds"
     //return cmds
     "st cmd 0x${device.deviceNetworkId} 0x${device.endpointId} ${CLUSTER_DOORLOCK} ${DOORLOCK_CMD_LOCK_DOOR} {}"
 }
 
 def unlock() {
-    def cmds = zigbee.zigbeeCommand("${CLUSTER_DOORLOCK}", "${DOORLOCK_CMD_UNLOCK_DOOR}", "{}")
-    log.info "unlock() -- cmds: $cmds"
+    //def cmds = zigbee.zigbeeCommand("${CLUSTER_DOORLOCK}", "${DOORLOCK_CMD_UNLOCK_DOOR}", "{}")
+    //log.info "unlock() -- cmds: $cmds"
     //return cmds
     "st cmd 0x${device.deviceNetworkId} 0x${device.endpointId} ${CLUSTER_DOORLOCK} ${DOORLOCK_CMD_UNLOCK_DOOR} {}"
 }
