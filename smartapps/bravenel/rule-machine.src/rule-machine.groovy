@@ -3,7 +3,7 @@
  *
  *  Copyright 2015 Bruce Ravenel and Mike Maxwell
  *
- *  Version 1.6.4   30 Dec 2015
+ *  Version 1.6.4a   31 Dec 2015
  *
  *	Version History
  *
@@ -63,8 +63,8 @@ def mainPage() {
 }
 
 def removePage() {
-	dynamicPage(name: "removePage", title: "Remove Rule Machine", install: false, uninstall: true) {
-    	section ("WARNING! Removing Rule Machine also removes all Rules") {
+	dynamicPage(name: "removePage", title: "Remove Rule Machine And All Rules", install: false, uninstall: true) {
+    	section ("WARNING!\n\nRemoving Rule Machine also removes all Rules\n") {
         }
     }
 }
