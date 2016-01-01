@@ -3,7 +3,7 @@
  *
  *  Copyright 2015 Bruce Ravenel
  *
- *  Version 1.6.7a   31 Dec 2015
+ *  Version 1.6.7b   1 Jan 2016
  *
  *	Version History
  *
@@ -500,7 +500,7 @@ def defineRule() {
 	dynamicPage(name: "defineRule", title: "Define the Rule", uninstall: false) {
     	section() { 
         	paragraph "Turn on to enable parenthesized sub-rules"
-        	input "advanced", "bool", title: "Complex Rule Input", required: false 
+        	input "advanced", "bool", title: "Complex Rule Input", required: false, submitOnChange: true 
         }
 		state.n = 0
 		state.str = ""
