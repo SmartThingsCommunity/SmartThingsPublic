@@ -3,10 +3,11 @@
  *
  *  Copyright 2015 Bruce Ravenel
  *
- *  Version 1.6.7b   1 Jan 2016
+ *  Version 1.6.8   1 Jan 2016
  *
  *	Version History
  *
+ *	1.6.8	1 Jan 2016		Added version numbers to main Rule Machine page
  *	1.6.7	31 Dec 2015		Added speak to send message
  *	1.6.6	30 Dec 2015		Expert multi-commands added per Maxwell
  *	1.6.5	29 Dec 2015		Added action to set dimmers from a track dimmer, restored turn on/off after delay action
@@ -70,7 +71,7 @@ preferences {
 def selectRule() {
 	//init expert settings for rule
 	try { 
-		state.isExpert = parent.isExpert() 
+		state.isExpert = parent.isExpert("1.6.8") 
 		if (state.isExpert) state.cstCmds = parent.getCommands()
 		else state.cstCmds = []
 	}

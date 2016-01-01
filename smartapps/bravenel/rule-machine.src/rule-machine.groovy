@@ -3,10 +3,11 @@
  *
  *  Copyright 2015 Bruce Ravenel and Mike Maxwell
  *
- *  Version 1.6.4a   31 Dec 2015
+ *  Version 1.6.5   1 Jan 2016
  *
  *	Version History
  *
+ *	1.6.5	1 Jan 2016		Added version numbers to main page
  *	1.6.4	30 Dec 2015		Multi-commands
  *	1.6.3	26 Dec 2015		UI improvements and icon per Michael Struck
  *	1.6.2	25 Dec 2015		null parameter value patch in expert, maxwell
@@ -57,8 +58,9 @@ def mainPage() {
 		href( "expert", title: "", description: "Tap to create custom commands", state: "")
         }
         section ("Remove Rule Machine"){
-        	href "removePage", description: "Tap to remove Rule Machine", title: ""
+        	href "removePage", description: "Tap to remove Rule Machine ", title: ""
         }
+        if(state.ver) section ("Version 1.6.5/" + state.ver) { }
     }
 }
 
@@ -606,7 +608,8 @@ def getDeviceCommands(){
 	return result
 }
 
-def isExpert(){
+def isExpert(ver){
+	state.ver = ver
 	return getCommands().size() > 0
 }
 
