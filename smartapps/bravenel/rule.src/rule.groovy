@@ -3,11 +3,11 @@
  *
  *  Copyright 2015 Bruce Ravenel
  *
- *  Version 1.6.8   1 Jan 2016
+ *  Version 1.6.8a   1 Jan 2016
  *
  *	Version History
  *
- *	1.6.8	1 Jan 2016		Added version numbers to main Rule Machine page
+ *	1.6.8	1 Jan 2016		Added version numbers to main Rule Machine page, multi SMS
  *	1.6.7	31 Dec 2015		Added speak to send message
  *	1.6.6	30 Dec 2015		Expert multi-commands added per Maxwell
  *	1.6.5	29 Dec 2015		Added action to set dimmers from a track dimmer, restored turn on/off after delay action
@@ -71,7 +71,7 @@ preferences {
 def selectRule() {
 	//init expert settings for rule
 	try { 
-		state.isExpert = parent.isExpert("1.6.8") 
+		state.isExpert = parent.isExpert("1.6.8a") 
 		if (state.isExpert) state.cstCmds = parent.getCommands()
 		else state.cstCmds = []
 	}
@@ -286,7 +286,7 @@ def getButton(dev) {
 }
 
 def getAnyAll(myDev) {
-	def result = input "All$myDev", "bool", title: "All of these?", defaultValue: false
+	def result = input "All$myDev", "bool", title: "All of these?", required: false
 }
 
 def getRelational(myDev) {
@@ -307,7 +307,7 @@ def getState(myCapab, n, isTrig) {
 	def myState = isTrig ? "tstate$n" : "state$n"
 	def myIsDev = isTrig ? "istDev$n" : "isDev$n"
 	def myRelDev = isTrig ? "reltDevice$n" : "relDevice$n"
-    def isRule = state.isRule || state.howMany > 1
+    def isRule = state.isRule || (state.howMany > 1 && !isTrig)
 	def phrase = isRule ? "state" : "becomes"
 	def swphrase = isRule ? "state" : "turns"
 	def presoptions = isRule ? ["present", "not present"] : ["arrives", "leaves"]
@@ -1375,6 +1375,15 @@ def dimAdjust(devices, dimLevel, trufal) {
     devices.each { if(del) setLevel(it.currentLevel + dimLevel, [delay: del]) else devices.setLevel(it.currentLevel + dimLevel) }
 }
 
+def sendSmsMulti(phone, msg) {
+	def num = ""
+    def i = phone.indexOf('*')
+    num = i > 0 ? phone.substring(0, i) : phone
+    sendSms(num, msg)
+    num = i > 0 ? phone.substring(i + 1) : ""
+    if(num) sendSmsMulti(num, msg)
+}
+
 def doDelayTrue(time, rand, cancel) {
 	def myTime = time
 	if(rand) myTime = Math.random()*time
@@ -1435,7 +1444,7 @@ def takeAction(success) {
 		if(cameraTrue) 		{	cameraTrue.take() 
                 				(1..((burstCountTrue ?: 5) - 1)).each {cameraTrue.take(delay: (500 * it))}   }
 		if(pushTrue)			sendPush((msgTrue ?: "Rule $app.label True") + (refDevTrue ? " $state.lastEvtName" : ""))
-		if(phoneTrue)			sendSms(phoneTrue, (msgTrue ?: "Rule $app.label True") + (refDevTrue ? " $state.lastEvtName" : ""))
+		if(phoneTrue)			sendSmsMulti(phoneTrue, (msgTrue ?: "Rule $app.label True") + (refDevTrue ? " $state.lastEvtName" : ""))
         if(speakTrue)			speakTrueDevice?.speak((msgTrue ?: "Rule $app.label True") + (refDevTrue ? " $state.lastEvtName" : ""))
 		if (state.howManyCCtrue > 1)  execCommands(true)
 	} else {
@@ -1471,7 +1480,7 @@ def takeAction(success) {
 		if(cameraFalse) 	{	cameraFalse.take() 
                 				(1..((burstCountFalse ?: 5) - 1)).each {cameraFalse.take(delay: (500 * it))}   }
 		if(pushFalse)			sendPush((msgFalse ?: "Rule $app.label False") + (refDevFalse ? " $state.lastEvtName" : ""))
-		if(phoneFalse)			sendSms(phoneFalse, (msgFalse ?: "Rule $app.label False") + (refDevFalse ? " $state.lastEvtName" : ""))
+		if(phoneFalse)			sendSmsMulti(phoneFalse, (msgFalse ?: "Rule $app.label False") + (refDevFalse ? " $state.lastEvtName" : ""))
         if(speakFalse)			speakFalseDevice?.speak((msgFalse ?: "Rule $app.label False") + (refDevFalse ? " $state.lastEvtName" : ""))
 		if (state.howManyCCfalse > 1)  execCommands(false)
 	}
