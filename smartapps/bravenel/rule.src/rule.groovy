@@ -3,7 +3,7 @@
  *
  *  Copyright 2015 Bruce Ravenel
  *
- *  Version 1.6.8b   1 Jan 2016
+ *  Version 1.6.8c   1 Jan 2016
  *
  *	Version History
  *
@@ -71,7 +71,7 @@ preferences {
 def selectRule() {
 	//init expert settings for rule
 	try { 
-		state.isExpert = parent.isExpert("1.6.8b") 
+		state.isExpert = parent.isExpert("1.6.8c") 
 		if (state.isExpert) state.cstCmds = parent.getCommands()
 		else state.cstCmds = []
 	}
@@ -491,7 +491,7 @@ def conditionLabelN(i, isTrig) {
 		def thisRelDev = settings.find {it.key == (isTrig ? "reltDevice$i" : "relDevice$i")}
 		if(thisRelDev) result = result + thisRelDev.value
 		else result = result + thisState.value
-        if(thisCapab.value == "Presence" && thisDev.value.size() > 1) result = result[0..-2] 
+        if(thisCapab.value == "Presence" && thisDev.value.size() > 1 && isTrig) result = result[0..-2] 
 	}
 	return result
 }
