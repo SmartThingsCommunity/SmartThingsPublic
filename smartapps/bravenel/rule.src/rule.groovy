@@ -3,7 +3,7 @@
  *
  *  Copyright 2015 Bruce Ravenel
  *
- *  Version 1.6.8a   1 Jan 2016
+ *  Version 1.6.8b   1 Jan 2016
  *
  *	Version History
  *
@@ -71,7 +71,7 @@ preferences {
 def selectRule() {
 	//init expert settings for rule
 	try { 
-		state.isExpert = parent.isExpert("1.6.8a") 
+		state.isExpert = parent.isExpert("1.6.8b") 
 		if (state.isExpert) state.cstCmds = parent.getCommands()
 		else state.cstCmds = []
 	}
@@ -466,7 +466,7 @@ def conditionLabelN(i, isTrig) {
 		def thisDev = settings.find {it.key == (isTrig ? "tDev$i" : "rDev$i")}
 		if(!thisDev) return result
 		def thisAll = settings.find {it.key == (isTrig ? "AlltDev$i" : "AllrDev$i")}
-		def myAny = thisAll ? "any " : ""
+		def myAny = thisAll && thisDev.value.size() > 1 ? "any " : ""
 		def myButton = settings.find {it.key == (isTrig ? "ButtontDev$i" : "ButtonrDev$i")}
 		if     (thisCapab.value == "Temperature") 	result = "Temperature $phrase "
 		else if(thisCapab.value == "Humidity") 		result = "Humidity $phrase "
@@ -491,6 +491,7 @@ def conditionLabelN(i, isTrig) {
 		def thisRelDev = settings.find {it.key == (isTrig ? "reltDevice$i" : "relDevice$i")}
 		if(thisRelDev) result = result + thisRelDev.value
 		else result = result + thisState.value
+        if(thisCapab.value == "Presence" && thisDev.value.size() > 1) result = result[0..-2] 
 	}
 	return result
 }
