@@ -1,3 +1,6 @@
+Ecobee Thermostat SmartApp(s) and related Device Types for use with the SmartThings Hub
+======================================================
+
 ## Introduction
 
 This SmartApp and the related Device types are intended to be used with the [Ecobee thermostats](http://www.ecobee.com/). 
@@ -10,10 +13,14 @@ The intent is to provide an Open Source Licensed implementation that can be used
 
 ## Installation
 
-It is highly recommended that you use the GitHub Integration that SmartThings offers with their IDE. This will make it **much** easier to keep up to date with changes over time.
-
-
+~~~ruby
 	NOTE: While I have tested this on my system and believe it to be working. I have not run a full battery of tests that can include all corner cases. It is possible, perhaps even _likely_, that there are still bugs in this code
+~~~
+
+
+It is highly recommended that you use the GitHub Integration that SmartThings offers with their IDE. This will make it **much** easier to keep up to date with changes over time. For the general steps needed for setting up GitHub IDE integration, please visit <http://docs.smartthings.com/en/latest/tools-and-ide/github-integration.html> and follow the steps for performing the setup.
+
+
 
 
 ## Open Items
