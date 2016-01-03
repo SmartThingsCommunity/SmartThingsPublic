@@ -180,6 +180,8 @@ At this point, the SmartApp will automatically create all of the new devices, on
 
 > **NOTE**: It may take a few minutes for the new devices to show up in the list. You should try refreshing the list (pull down on the list). In extreme cases, you may have to restart the SmartThings app on your phone to update the list. You should only have to do this once.
 
+
+
 > There is currently a lot of debug information generate from the app. If you need to do any kind of troubleshooting, you can see the current information flowing through in the `Live Logging` tab of the SmartThings IDE. You will also need this information if you open an `Issue` since it will be needed to track down what is going on. ** Please ensure that you do not include any personal information from the logs in an `Issue` report. **
 
 -------------------------
