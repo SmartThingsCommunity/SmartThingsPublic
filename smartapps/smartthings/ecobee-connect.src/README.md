@@ -81,7 +81,7 @@ Follow these steps to install the Ecobee Thermostat:
 - [IDE] Click on the `My Device Types` tab
 - [IDE] Click `New Device Type` (top right corner)
 - [IDE] Click `From Code`
-- [GitHub] Go to the respository for the Ecobee Sensor: <https://github.com/StrykerSKS/SmartThingsPublic/blob/StrykerSKS-Ecobee3/devicetypes/smartthings/ecobee-thermostat.src/ecobee-thermostat.groovy>
+- [GitHub] Go to the respository for the Ecobee Thermostat: <https://github.com/StrykerSKS/SmartThingsPublic/blob/StrykerSKS-Ecobee3/devicetypes/smartthings/ecobee-thermostat.src/ecobee-thermostat.groovy>
 - [GitHub] Click `Raw`
 - [GitHub] Select all of the text in the window (use Ctrl-A if using Windows)
 - [GitHub] Copy all of the selected text to the Clipboard (use Ctrl-C if using Windows)
@@ -92,7 +92,7 @@ Follow these steps to install the Ecobee Thermostat:
 - [IDE] Click `Publish` --> `For Me`
 
 
-## Install SmartApp
+## Install SmartApp in IDE
 Here we will install the following SmartApp:
 - `Ecobee (Connect)`
 
@@ -120,7 +120,71 @@ Follow these steps (all within the SmartThings IDE):
 - Verify that `Updated SmartApp` appears at the top of the screen
 
 
+
+### Install Manually from Code
+For this method you will need to have one browser window open on GitHub and another on the IDE.
+
+Follow these steps to install the Ecobee Sensor:
+- [IDE] Click on the `My SmartApps` tab
+- [IDE] Click `New SmartApp` (top right corner)
+- [IDE] Click `From Code`
+- [GitHub] Go to the respository for the Ecobee Connect SmartApp: <https://github.com/StrykerSKS/SmartThingsPublic/blob/StrykerSKS-Ecobee3/smartapps/smartthings/ecobee-connect.src/ecobee-connect.groovy>
+- [GitHub] Click `Raw`
+- [GitHub] Select all of the text in the window (use Ctrl-A if using Windows)
+- [GitHub] Copy all of the selected text to the Clipboard (use Ctrl-C if using Windows)
+- [IDE] Click inside the text box
+- [IDE] Paste all of the previously copied text (use Ctrl-V if using Windows)
+- [IDE] Click `Create`
+- [IDE] Click `Save`
+- [IDE] Click `Publish` --> `For Me`
+- [IDE] Click on the `My SmartApps` tab
+- [IDE] Verify that the SmartApp shows up in the list and is marked with Status `Published`
+- [IDE] Click on the `Edit Properties` button to the left of the SmartApp that we just added (looks like pencil on a paper)
+- [IDE] Click on the `OAuth` tab
+- [IDE] Click `Enable OAuth in Smart App`
+- [IDE] Click `Update` (bottom left of screen)
+- [IDE] Verify that `Updated SmartApp` appears at the top of the screen
+
+
+## Install and Run SmartApp on Phone/Tablet
+> **NOTE**: I have only tested this on an iPhone 6 as I do not have access to Android device. Feedback and bug reports are welcome if any issues are found.
+
+The SmartApp will guide you through the basic installation and setup process. It includes the following aspects:
+- Authentication with Ecobee to allow API Calls for your thermostat(s) (and connected sensors)
+- Discover and selection of Thermostats
+  - Setup of option features/parameters such as Smart Auto Temp Control, Polling Intervals, etc
+- Discover and selection of Remote Sensors (if there are any)
+
+Follow these steps for the SmartApp on your mobile device:
+- Open the SmartThings app
+- Open the `Marketplace`
+- Click the `SmartApps` tab
+- Select `My Apps` (all the way at the bottom of the list)
+- Click `Ecobee (Connect)`
+- Click (as indicated on the screen) to enter your Ecobee Credentials
+- Enter your Ecobee Email and Password
+- Click `Accept`
+- You should receive a message indicating `Your ecobee Account is now connected to SmartThings!`
+- Click `Done` 
+- Click `Next` (top right corner)
+- Select which thermostats you want connected
+- Optionally, set the other settings:
+  - Select Hold Type: This determines how a hold will behave. Either Permanent (until changed) or Temporary (until next program engages)
+  - Use Smart Auto Temperature Adjust: This allows you to adjust the temperature using the `Up` and `Down` arrows within SmartThings even when the device is in mode `Auto`. 
+  - Polling Interval: Determines how often to poll (via API calls) for fresh thermostat/sensor data
+- Click `Next`
+- Select which Sensors you want connected. NOTE: Only sensors associated with a thermostat from the previous step will be shown.
+- Click `Done`
+
+At this point, the SmartApp will automatically create all of the new devices, one for each thermostat and sensor. These will show up in your regular `Things` list within the app. 
+
+> **NOTE**: It may take a few minutes for the new devices to show up in the list. You should try refreshing the list (pull down on the list). In extreme cases, you may have to restart the SmartThings app on your phone to update the list.
+
 -------------------------
+## Reporting Issues
+All issues or feature requests should be submitted via the GitHub issue capability. It can be found on the [Issues](https://github.com/StrykerSKS/SmartThingsPublic/issues) tab within the GitHub repository.
+
+You are also welcome to engage in discussions using the [SmartThings Community](https://community.smartthings.com/).
 
 ## Open Items / To Dos
 
