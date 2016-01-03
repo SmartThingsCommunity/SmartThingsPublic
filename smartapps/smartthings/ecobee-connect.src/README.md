@@ -38,6 +38,8 @@ Here we will install to different Device Types:
 - `Ecobee Thermostat`
 - `Ecobee Sensor`
 
+Follow the steps for _either_ the GitHub Integration or the Manual method below. Do **not** try to do both methods.
+
 ### Install Using GitHub Integration
 Follow these steps (all within the SmartThings IDE):
 - Click on the `My Device Types` tab
@@ -57,6 +59,35 @@ Follow these steps (all within the SmartThings IDE):
 
 
 ### Install Manually from Code
+For this method you will need to have one browser window open on GitHub and another on the IDE.
+
+Follow these steps to install the Ecobee Sensor:
+- [IDE] Click on the `My Device Types` tab
+- [IDE] Click `New Device Type` (top right corner)
+- [IDE] Click `From Code`
+- [GitHub] Go to the respository for the Ecobee Sensor: <https://github.com/StrykerSKS/SmartThingsPublic/blob/StrykerSKS-Ecobee3/devicetypes/smartthings/ecobee-sensor.src/ecobee-sensor.groovy>
+- [GitHub] Click `Raw`
+- [GitHub] Select all of the text in the window (use Ctrl-A if using Windows)
+- [GitHub] Copy all of the selected text to the Clipboard (use Ctrl-C if using Windows)
+- [IDE] Click inside the text box
+- [IDE] Paste all of the previously copied text (use Ctrl-V if using Windows)
+- [IDE] Click `Create`
+- [IDE] Click `Save`
+- [IDE] Click `Publish` --> `For Me`
+
+Follow these steps to install the Ecobee Thermostat:
+- [IDE] Click on the `My Device Types` tab
+- [IDE] Click `New Device Type` (top right corner)
+- [IDE] Click `From Code`
+- [GitHub] Go to the respository for the Ecobee Sensor: <https://github.com/StrykerSKS/SmartThingsPublic/blob/StrykerSKS-Ecobee3/devicetypes/smartthings/ecobee-thermostat.src/ecobee-thermostat.groovy>
+- [GitHub] Click `Raw`
+- [GitHub] Select all of the text in the window (use Ctrl-A if using Windows)
+- [GitHub] Copy all of the selected text to the Clipboard (use Ctrl-C if using Windows)
+- [IDE] Click inside the text box
+- [IDE] Paste all of the previously copied text (use Ctrl-V if using Windows)
+- [IDE] Click `Create`
+- [IDE] Click `Save`
+- [IDE] Click `Publish` --> `For Me`
 
 
 ## Install SmartApp
