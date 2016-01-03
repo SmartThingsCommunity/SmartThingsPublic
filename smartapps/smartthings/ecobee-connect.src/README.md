@@ -13,14 +13,33 @@ The intent is to provide an Open Source Licensed implementation that can be used
 It is highly recommended that you use the GitHub Integration that SmartThings offers with their IDE. This will make it **much** easier to keep up to date with changes over time.
 
 
+	NOTE: While I have tested this on my system and believe it to be working. I have not run a full battery of tests that can include all corner cases. It is possible, perhaps even _likely_, that there are still bugs in this code
+
+
+## Open Items
+
+There is still plenty of work left to do and items to 
 
 ## Contributors
 
-The easiest way to track the contributors to the project will be to check 
+The easiest way to track the contributors to the project will be to check the contributors listed on GitHub.
 
 ## License
 
-A short snippet describing the license (MIT, Apache, etc.)
+Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except in compliance with the License. You may obtain a copy of the License at:
+      http://www.apache.org/licenses/LICENSE-2.0
+
+Unless required by applicable law or agreed to in writing, software distributed under the License is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the License for the specific language governing permissions and limitations under the License.
+
+
+
+
+
+
+
+
+
+
 
 Redcarpet is written with sugar, spice and everything nice
 ============================================================
