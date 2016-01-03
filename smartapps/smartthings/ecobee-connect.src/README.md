@@ -174,13 +174,20 @@ Follow these steps for the SmartApp on your mobile device:
   - Polling Interval: Determines how often to poll (via API calls) for fresh thermostat/sensor data
 - Click `Next`
 - Select which Sensors you want connected. NOTE: Only sensors associated with a thermostat from the previous step will be shown.
-- Click `Done`
+- Click `Done` (to close the selection window)
+- Click `Done` (to initiate the SmartApp installation)
+- You should receive a small green popup at the top stating "`Ecobee (Connect) is now installed and automating`"
+
 
 At this point, the SmartApp will automatically create all of the new devices, one for each thermostat and sensor. These will show up in your regular `Things` list within the app. 
 
 > **NOTE**: It may take a few minutes for the new devices to show up in the list. You should try refreshing the list (pull down on the list). In extreme cases, you may have to restart the SmartThings app on your phone to update the list. You should only have to do this once.
 
-.
+<br/>
+
+> **NOTE 2**: If you uninstall the SmartApp it will automatically remove all of the thermostats and sensors that it previously installed. This is necessary as those devices are "children" of the SmartApp.
+
+<br/>
 
 > There is currently a lot of debug information generate from the app. If you need to do any kind of troubleshooting, you can see the current information flowing through in the `Live Logging` tab of the SmartThings IDE. You will also need this information if you open an `Issue` since it will be needed to track down what is going on. ** Please ensure that you do not include any personal information from the logs in an `Issue` report. **
 
@@ -201,15 +208,11 @@ There is still plenty of work left to do and items to work on. Here is a list of
 
 The easiest way to track the contributors to the project will be to check the contributors listed on GitHub.
 
+[Readme file editing using prose.io]
+
 ## License
 
 Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except in compliance with the License. You may obtain a copy of the License at:
       http://www.apache.org/licenses/LICENSE-2.0
 
 Unless required by applicable law or agreed to in writing, software distributed under the License is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the License for the specific language governing permissions and limitations under the License.
-
-
-
-
-
-
