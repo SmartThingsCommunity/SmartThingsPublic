@@ -208,7 +208,7 @@ There is still plenty of work left to do and items to work on. Here is a list of
 
 The easiest way to track the contributors to the project will be to check the contributors listed on GitHub.
 
-[Readme file editing using prose.io]
+[Readme file edited using prose.io]
 
 ## License
 
