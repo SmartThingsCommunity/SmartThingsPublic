@@ -11,21 +11,32 @@ Here are links to the working version of the repository being developed and main
 
 The intent is to provide an Open Source Licensed implementation that can be used by the SmartThings community of users. This will help ensure accessibility for all users and provide for an easy mechanism for the community to help maintain/drive the functionality.
 
+The ultimate goal would be to have these capabilities become part of the stock drivers on the "master" branch. But until that time they will be maintained as a fork providing good visibility to any changes upstream.
+
+## Quick Links
+- Ecobee (Connect) SmartApp: <https://github.com/StrykerSKS/SmartThingsPublic/tree/StrykerSKS-Ecobee3/smartapps/smartthings/ecobee-connect.src>
+- Ecobee Thermostat Device: <https://github.com/StrykerSKS/SmartThingsPublic/tree/StrykerSKS-Ecobee3/devicetypes/smartthings/ecobee-thermostat.src>
+- Ecobee Sensor Device: <https://github.com/StrykerSKS/SmartThingsPublic/tree/StrykerSKS-Ecobee3/devicetypes/smartthings/ecobee-sensor.src>
+
+
+
 ## Installation
 
-~~~ruby
-	NOTE: While I have tested this on my system and believe it to be working. I have not run a full battery of tests that can include all corner cases. It is possible, perhaps even _likely_, that there are still bugs in this code
-~~~
-
+**NOTE**: While I have tested this on my system and believe it to be working. I have not run a full battery of tests that can include all corner cases. It is possible, perhaps even _likely_, that there are still bugs in this code. If you do run into an issue, the best option is to report it using the [Issues](https://github.com/StrykerSKS/SmartThingsPublic/issues) tab within the GitHub repository.
 
 It is highly recommended that you use the GitHub Integration that SmartThings offers with their IDE. This will make it **much** easier to keep up to date with changes over time. For the general steps needed for setting up GitHub IDE integration, please visit <http://docs.smartthings.com/en/latest/tools-and-ide/github-integration.html> and follow the steps for performing the setup.
 
+### General Setup
+The first step is to ensure that you delete any existing Ecobee related devices and SmartApps. They are likely not compatible with this codebase and are almost certain to cause problems down the road. 
 
 
 
-## Open Items
+## Open Items / TODO
 
-There is still plenty of work left to do and items to 
+There is still plenty of work left to do and items to work on. Here is a list of some of the items. This may also serve as a possible wishlist in the future:
+- Celsius: So far I have only tested this with Farhenheit. I plan to also test Celsius but haven't had a chance to do so. From working with the code, I suspect that there **will** be issues found here.
+- Additional SmartApps for things like Mode changes, etc.
+
 
 ## Contributors
 
