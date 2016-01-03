@@ -1,7 +1,7 @@
 Ecobee Thermostat SmartApp(s) and related Device Types for use with the SmartThings Hub
 ======================================================
 
-## Introduction
+## <a name="intro">Introduction</a>
 
 This SmartApp and the related Device types are intended to be used with the [Ecobee thermostats](http://www.ecobee.com/). 
 
@@ -202,6 +202,7 @@ You are also welcome to engage in discussions using the [SmartThings Community](
 There is still plenty of work left to do and items to work on. Here is a list of some of the items. This may also serve as a possible wishlist in the future:
 - Celsius: So far I have only tested this with Farhenheit. I plan to also test Celsius but haven't had a chance to do so. From working with the code, I suspect that there **will** be issues found here.
 - Additional SmartApps for things like Mode changes, etc.
+- Need to test the setting of the holdType at the individual thermostats to override the value set at the SmartApp level. (It should be working but has not been fully tested.)
 
 
 ## Contributors
@@ -216,3 +217,6 @@ Licensed under the Apache License, Version 2.0 (the "License"); you may not use 
       http://www.apache.org/licenses/LICENSE-2.0
 
 Unless required by applicable law or agreed to in writing, software distributed under the License is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the License for the specific language governing permissions and limitations under the License.
+
+## Table Of Contents
+- [Introduction](#intro)
