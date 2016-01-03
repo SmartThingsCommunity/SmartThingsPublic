@@ -275,7 +275,7 @@ metadata {
         
         
         // Show status of the API Connection for the Thermostat
-		standardTile("api", "device.apiConnected", width: 4, height: 4) {
+		standardTile("apiStatus", "device.apiConnected", width: 2, height: 2) {
         	state "true", label: "API", backgroundColor: "#44b621", icon: "st.contact.contact.closed"
             state "false", label: "API ", backgroundColor: "#ffa81e", icon: "st.contact.contact.open"
 		}
@@ -385,9 +385,9 @@ metadata {
 			inactiveLabel: false, width: 3, height: 2, decoration: "flat") {
 			state "default", label: 'Forecast\n${currentValue}'
 		}
-		valueTile("weatherTemperature", "device.weatherTemperatureDisplay", inactiveLabel:
+		standardTile("weatherTemperature", "device.weatherTemperature", inactiveLabel:
 			false, width: 2, height: 2, decoration: "flat") {
-			state "default", label: 'Out Temp\n${currentValue}°', unit: "C"
+			state "default", label: 'Outside: ${currentValue}°', unit: "F", icon: "st.Weather.weather2"
 		}
 		valueTile("weatherRelativeHumidity", "device.weatherRelativeHumidity",
 			inactiveLabel: false, width: 2, height: 2,decoration: "flat") {
@@ -395,11 +395,11 @@ metadata {
 		}
 		valueTile("weatherTempHigh", "device.weatherTempHigh", inactiveLabel: false,
 			width: 2, height: 2, decoration: "flat") {
-			state "default", label: 'ForecastH\n${currentValue}°', unit: "C"
+			state "default", label: 'ForecastH\n${currentValue}°', unit: "F"
 		}
 		valueTile("weatherTempLow", "device.weatherTempLow", inactiveLabel: false,
 			width: 2, height: 2, decoration: "flat") {
-			state "default", label: 'ForecastL\n${currentValue}°', unit: "C"
+			state "default", label: 'ForecastL\n${currentValue}°', unit: "F"
 		}
 		valueTile("weatherPressure", "device.weatherPressure", inactiveLabel: false,
 			width: 2, height: 2, decoration: "flat") {
@@ -421,11 +421,11 @@ metadata {
         
         
 		main "summary"
-        details(["summary","temperature", "upButtonControl", "thermostatSetpoint", "currentStatus", "downButtonControl", "mode", "weatherIcon", "resumeProgram", "refresh"])
-        // details(["summary","api", "upButtonControl", "thermostatSetpoint", "currentStatus", "downButtonControl", "mode", "weatherIcon", "resumeProgram", "refresh"])        
-        
+        // details(["summary","temperature", "upButtonControl", "thermostatSetpoint", "currentStatus", "downButtonControl", "mode", "weatherIcon", "resumeProgram", "refresh"])
+        // details(["summary","apiStatus", "upButtonControl", "thermostatSetpoint", "currentStatus", "downButtonControl", "mode", "weatherIcon", "resumeProgram", "refresh"])        
+        details(["summary","apiStatus", "weatherIcon", "weatherTemperature", "refresh", "resumeProgram", "mode"])        
 //		main "temperature"
-//		details(["temperature", "upButtonControl", "thermostatSetpoint", "currentStatus", "downButtonControl", "mode", "resumeProgram", "refresh"])
+//		details(["temperature", "upButtonControl", "thermostatSetpoint", "currentStatus", "downButtonControl", "refresh", "resumeProgram", "mode"])
         
 	}
 
@@ -457,9 +457,11 @@ def refresh() {
 void poll() {
 	log.debug "Executing 'poll' using parent SmartApp"
 
-	def results = parent.pollChild(this)
-    log.debug "pollChild() - results: ${results}"
-	generateEvent(results) //parse received message from parent
+	//def results = 
+    // Parent responsible for calling generateEvent with any changed events
+    parent.pollChildren(this)
+    // log.debug "pollChildren() - results: ${results}"
+	// generateEvent(results) //parse received message from parent
 }
 
 
@@ -524,7 +526,7 @@ def setTemperature(setpoint) {
     def midpoint
 	def targetvalue
 
-	if (mode == "off" || (mode == "auto" && !settings.smartAuto)) {
+	if (mode == "off" || (mode == "auto" && !usingSmartAuto() )) {
 		log.warn "setTemperature(): this mode: $mode does not allow raiseSetpoint"
         return
     } 
@@ -586,7 +588,8 @@ void setHeatingSetpoint(Double setpoint) {
 
 	log.debug "Sending setHeatingSetpoint> coolingSetpoint: ${coolingSetpoint}, heatingSetpoint: ${heatingSetpoint}"
 
-	def sendHoldType = holdType ? (holdType=="Temporary")? "nextTransition" : (holdType=="Permanent")? "indefinite" : "indefinite" : "indefinite"
+	
+	def sendHoldType = whatHoldType()
 	if (parent.setHold (this, heatingSetpoint,  coolingSetpoint, deviceId, sendHoldType)) {
 		sendEvent("name":"heatingSetpoint", "value":heatingSetpoint.toInteger())
 		sendEvent("name":"coolingSetpoint", "value":coolingSetpoint.toInteger())
@@ -874,10 +877,10 @@ def generateSetpointEvent() {
 	}
 	else if (mode == "cool") {
 		sendEvent("name":"thermostatSetpoint", "value":coolingSetpoint.toString())
-	} else if (mode == "auto" && !settings.smartAuto) {
+	} else if (mode == "auto" && !usingSmartAuto() ) {
 		// No Smart Auto, just regular auto
 		sendEvent("name":"thermostatSetpoint", "value":"Auto")
-	} else if (mode == "auto" && settings.smartAuto) {
+	} else if (mode == "auto" && usingSmartAuto() ) {
     	// Smart Auto Enabled
         sendEvent("name":"thermostatSetpoint", "value":device.currentValue("temperature").toString())
     } else if (mode == "off") {
@@ -892,7 +895,7 @@ void raiseSetpoint() {
 	def mode = device.currentValue("thermostatMode")
 	def targetvalue
 
-	if (mode == "off" || (mode == "auto" && !settings.smartAuto)) {
+	if (mode == "off" || (mode == "auto" && !usingSmartAuto() )) {
 		log.warn "raiseSetpoint(): this mode: $mode does not allow raiseSetpoint"
         return
 	} 
@@ -929,13 +932,13 @@ void lowerSetpoint() {
 	def mode = device.currentValue("thermostatMode")
 	def targetvalue
 
-	if (mode == "off" || (mode == "auto" && !settings.smartAuto)) {
+	if (mode == "off" || (mode == "auto" && !usingSmartAuto() )) {
 		log.warn "lowerSetpoint(): this mode: $mode does not allow lowerSetpoint"
     } else {
 	
     	def heatingSetpoint = device.currentValue("heatingSetpoint").toInteger()
 		def coolingSetpoint = device.currentValue("coolingSetpoint").toInteger()
-		def thermostatSetpoint = device.currentValue("thermostatSetpoint").toInteger()
+		def thermostatSetpoint = device.currentValue("thermostatSetpoint")?.toInteger() ?: device.currentValue("temperature")
 		log.debug "lowerSetpoint() mode = ${mode}, heatingSetpoint: ${heatingSetpoint}, coolingSetpoint:${coolingSetpoint}, thermostatSetpoint:${thermostatSetpoint}"
 		if (device.latestState('thermostatSetpoint')) {
 			targetvalue = device.latestState('thermostatSetpoint').value as Integer
@@ -970,8 +973,8 @@ void alterSetpoint(temp) {
     def saveThermostatSetpoint = device.currentValue("thermostatSetpoint").toInteger()
 	def deviceId = device.deviceNetworkId.split(/\./).last()
 
-	def targetHeatingSetpoint
-	def targetCoolingSetpoint
+	def targetHeatingSetpoint = heatingSetpoint
+	def targetCoolingSetpoint = coolingSetpoing
 
 	log.debug "alterSetpoint - temp.value is ${temp.value}"
 
@@ -993,20 +996,22 @@ void alterSetpoint(temp) {
 			targetHeatingSetpoint = heatingSetpoint
 			targetCoolingSetpoint = temp.value
 		}
-	} else if (mode == "auto" && settings.smartAuto) {
+	} else if (mode == "auto" && usingSmartAuto() ) {
     	// Make changes based on our Smart Auto mode
         if (temp.value > currentTemp) {
         	// Change the heat settings to the new setpoint
-            log.debug "alterSetpoint() - Smart Auto setting setpoint: ${temp.value}"
-            targetCoolingSetpoint = (temp.value > coolingSetpoint) ? temp.value : coolingSetpoint
+            log.debug "alterSetpoint() - Smart Auto setting setpoint: ${temp.value}. Updating heat target"
             targetHeatingSetpoint = temp.value
+            targetCoolingSetpoint = (temp.value > coolingSetpoint) ? temp.value : coolingSetpoint
 		} else {
         	// Change the cool settings to the new setpoint
-			log.debug "alterSetpoint() - Smart Auto setting setpoint: ${temp.value}"
+			log.debug "alterSetpoint() - Smart Auto setting setpoint: ${temp.value}. Updating cool target"
+            targetCoolingSetpoint = temp.value
+            
             log.debug "targetHeatingSetpoint before ${targetHeatingSetpoint}"
             targetHeatingSetpoint = (temp.value < heatingSetpoint) ? temp.value : heatingSetpoint
             log.debug "targetHeatingSetpoint after ${targetHeatingSetpoint}"
-            targetCoolingSetpoint = temp.value
+            
         }    
     } else {
     	log.error "alterSetpoint() called with unsupported mode: ${mode}"
@@ -1015,9 +1020,9 @@ void alterSetpoint(temp) {
     }
 
 	log.debug "alterSetpoint >> in mode ${mode} trying to change heatingSetpoint to ${targetHeatingSetpoint} " +
-			"coolingSetpoint to ${targetCoolingSetpoint} with holdType : ${holdType}"
+			"coolingSetpoint to ${targetCoolingSetpoint} with holdType : ${whatHoldType()}"
 
-	def sendHoldType = holdType ? (holdType=="Temporary")? "nextTransition" : (holdType=="Permanent")? "indefinite" : "indefinite" : "indefinite"
+	def sendHoldType = whatHoldType()
 	//step2: call parent.setHold to send http request to 3rd party cloud
 	if (parent.setHold(this, targetHeatingSetpoint, targetCoolingSetpoint, deviceId, sendHoldType)) {
 		sendEvent("name": "thermostatSetpoint", "value": temp.value.toString(), displayed: false)
@@ -1099,7 +1104,7 @@ def generateActivityFeedsEvent(notificationMessage) {
 
 
 // Ecobee API Related Functions - from Yves code
-// TODO: Move all of this into the Service Manager. No need to have each device contact the Ecobee cloud!!!
+// TODO: Move all of this into the Service Manager. No need to have each device contact the Ecobee cloud directly!!!
 private void api(method, args, success = {}) {
 	def MAX_EXCEPTION_COUNT=5
 	String URI_ROOT = "${get_URI_ROOT()}/1"
@@ -1411,19 +1416,44 @@ private def get_MAX_TSTAT_BATCH() {
 	return 25
 }
 
+private def usingSmartAuto() {
+	log.debug "Entered usingSmartAuto() "
+	if (settings.smartAuto) { return settings.smartAuto }
+    if (parent.settings.smartAuto) { return parent.settings.smartAuto }
+    return false
+}
+
+private String whatHoldType() {
+	// 	def sendHoldType = holdType ? (holdType=="Temporary")? "nextTransition" : (holdType=="Permanent")? "indefinite" : "indefinite" : "indefinite"
+	log.debug "Entered whatHoldType() "
+    if (settings.holdType) { return  holdType ? (holdType=="Temporary")? "nextTransition" : (holdType=="Permanent")? "indefinite" : "indefinite" : "indefinite" }
+    if (parent.settings.holdType) { return parent.settings.holdType   ? (parent.settings.holdType=="Temporary")? "nextTransition" : (parent.settings.holdType=="Permanent")? "indefinite" : "indefinite" : "indefinite"}
+    return "indefinite"
+}
+
 
 def getTempColors() {
 	def colorMap 	
     
     
-    	colorMap = [[value: 0, color: "#153591"],
+    	colorMap = [
+                	// Celsius Color Range
+					[value: 0, color: "#153591"],
 					[value: 7, color: "#1e9cbb"],
 					[value: 15, color: "#90d2a7"],
 					[value: 23, color: "#44b621"],
 					[value: 29, color: "#f1d801"],
 					[value: 33, color: "#d04e00"],
-					[value: 36, color: "#bc2323"]]
-	
+					[value: 36, color: "#bc2323"],
+					// Fahrenheit Color Range
+                	[value: 40, color: "#153591"],
+					[value: 44, color: "#1e9cbb"],
+					[value: 59, color: "#90d2a7"],
+					[value: 74, color: "#44b621"],
+					[value: 84, color: "#f1d801"],
+					[value: 95, color: "#d04e00"],
+					[value: 96, color: "#bc2323"]
+					]
 	return colorMap
 
 }
