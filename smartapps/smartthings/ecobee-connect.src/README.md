@@ -43,9 +43,9 @@ Follow these steps (all within the SmartThings IDE):
 - Click on the `My Device Types` tab
 - Click `Settings`
 - Click `Add new repository` and use the following parameters:
-..- Owner: `StrykerSKS`
-..- Name: `SmartThingsPublic`
-..- Branch: `StrykerSKS-Ecobee3`
+  -Owner: `StrykerSKS`
+  -Name: `SmartThingsPublic`
+  -Branch: `StrykerSKS-Ecobee3`
 - Click `Save`
 - Click `Update from Repo` and select the repository we just added above
 - Find and Select `ecobee-sensor.groovy` and `ecobee-thermostat.groovy`
