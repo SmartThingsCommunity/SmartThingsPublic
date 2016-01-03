@@ -24,7 +24,7 @@ The ultimate goal would be to have these capabilities become part of the stock d
 # Installation
 
 ## General
-**NOTE**: While I have tested this on my system and believe it to be working. I have not run a full battery of tests that can include all possible corner cases or configurations. It is possible, perhaps even _likely_, that there are still bugs in this code. If you do run into an issue, the best option is to report it using the [Issues](https://github.com/StrykerSKS/SmartThingsPublic/issues) tab within the GitHub repository.
+> **NOTE**: While I have tested this on my system and believe it to be working. I have not run a full battery of tests that can include all possible corner cases or configurations. It is possible, perhaps even _likely_, that there are still bugs in this code. If you do run into an issue, the best option is to report it using the [Issues](https://github.com/StrykerSKS/SmartThingsPublic/issues) tab within the GitHub repository.
 
 It is highly recommended that you use the GitHub Integration that SmartThings offers with their IDE. This will make it **much** easier to keep up to date with changes over time. For the general steps needed for setting up GitHub IDE integration, please visit <http://docs.smartthings.com/en/latest/tools-and-ide/github-integration.html> and follow the steps for performing the setup.
 
@@ -43,9 +43,9 @@ Follow these steps (all within the SmartThings IDE):
 - Click on the `My Device Types` tab
 - Click `Settings`
 - Click `Add new repository` and use the following parameters:
-  -Owner: `StrykerSKS`
-  -Name: `SmartThingsPublic`
-  -Branch: `StrykerSKS-Ecobee3`
+  - Owner: `StrykerSKS`
+  - Name: `SmartThingsPublic`
+  - Branch: `StrykerSKS-Ecobee3`
 - Click `Save`
 - Click `Update from Repo` and select the repository we just added above
 - Find and Select `ecobee-sensor.groovy` and `ecobee-thermostat.groovy`
