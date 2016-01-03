@@ -14,24 +14,60 @@ The intent is to provide an Open Source Licensed implementation that can be used
 The ultimate goal would be to have these capabilities become part of the stock drivers on the "master" branch. But until that time they will be maintained as a fork providing good visibility to any changes upstream.
 
 ## Quick Links
+- README.md (this file): <https://github.com/StrykerSKS/SmartThingsPublic/blob/StrykerSKS-Ecobee3/smartapps/smartthings/ecobee-connect.src/README.md>
 - Ecobee (Connect) SmartApp: <https://github.com/StrykerSKS/SmartThingsPublic/tree/StrykerSKS-Ecobee3/smartapps/smartthings/ecobee-connect.src>
 - Ecobee Thermostat Device: <https://github.com/StrykerSKS/SmartThingsPublic/tree/StrykerSKS-Ecobee3/devicetypes/smartthings/ecobee-thermostat.src>
 - Ecobee Sensor Device: <https://github.com/StrykerSKS/SmartThingsPublic/tree/StrykerSKS-Ecobee3/devicetypes/smartthings/ecobee-sensor.src>
+- SmartThings IDE: <https://graph.api.smartthings.com>
 
+-----------------------------
+# Installation
 
-
-## Installation
-
-**NOTE**: While I have tested this on my system and believe it to be working. I have not run a full battery of tests that can include all corner cases. It is possible, perhaps even _likely_, that there are still bugs in this code. If you do run into an issue, the best option is to report it using the [Issues](https://github.com/StrykerSKS/SmartThingsPublic/issues) tab within the GitHub repository.
+## General
+**NOTE**: While I have tested this on my system and believe it to be working. I have not run a full battery of tests that can include all possible corner cases or configurations. It is possible, perhaps even _likely_, that there are still bugs in this code. If you do run into an issue, the best option is to report it using the [Issues](https://github.com/StrykerSKS/SmartThingsPublic/issues) tab within the GitHub repository.
 
 It is highly recommended that you use the GitHub Integration that SmartThings offers with their IDE. This will make it **much** easier to keep up to date with changes over time. For the general steps needed for setting up GitHub IDE integration, please visit <http://docs.smartthings.com/en/latest/tools-and-ide/github-integration.html> and follow the steps for performing the setup.
 
-### General Setup
+## Install Preparation
 The first step is to ensure that you delete any existing Ecobee related devices and SmartApps. They are likely not compatible with this codebase and are almost certain to cause problems down the road. 
 
+If you are not familiar with adding your own custom devices, then be sure to familiarize yourself with the [SmartThings IDE](https://graph.api.smartthings.com/) before you begin the installation process.
+
+## Install Device Types
+Here we will install to different Device Types:
+- `Ecobee Thermostat`
+- `Ecobee Sensor`
+
+### Install Using GitHub Integration
+Follow these steps (all within the SmartThings IDE):
+- Click on the `My Device Types` tab
+- Click `Settings`
+- Click `Add new repository` and use the following parameters:
+..- Owner: `StrykerSKS`
+..- Name: `SmartThingsPublic`
+..- Branch: `StrykerSKS-Ecobee3`
+- Click `Save`
+- Click `Update from Repo` and select the repository we just added above
+- Find and Select `ecobee-sensor.groovy` and `ecobee-thermostat.groovy`
+- Select `Publish`(bottom right of screen near the `Cancel` button)
+- Click `Execute Update`
+- Note the response at the top. It should be something like "`Updated 0 devices and created 2 new devices, 2 published`"
+- Verify that the two devices show up in the list and are marked with Status `Published`
 
 
-## Open Items / TODO
+
+### Install Manually from Code
+
+
+## Install SmartApp
+NOTE: Turn on OAuth
+
+
+
+
+-------------------------
+
+## Open Items / To Dos
 
 There is still plenty of work left to do and items to work on. Here is a list of some of the items. This may also serve as a possible wishlist in the future:
 - Celsius: So far I have only tested this with Farhenheit. I plan to also test Celsius but haven't had a chance to do so. From working with the code, I suspect that there **will** be issues found here.
