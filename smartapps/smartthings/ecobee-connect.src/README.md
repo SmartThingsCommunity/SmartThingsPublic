@@ -222,6 +222,9 @@ Once you have determined that an update is available, follow these steps:
 
 You should now be running on the updated code. Be sure that you check for both updates of the SmartApp **and** the Device Type. Updating one but not the other could cause compatibility problems.
 
+## Updating manually (without GitHub Integration
+> TODO: Fill in the directions for manual upgrade
+
 
 -------------------------
 ## <a name="reporting-issues"Reporting Issues</a>
