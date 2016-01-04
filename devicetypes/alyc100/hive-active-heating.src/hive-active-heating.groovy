@@ -568,7 +568,7 @@ def login(method = null, args = [], success = {}) {
 		data.auth = response.data
 		
 		// set the expiration to 5 minutes
-		data.auth.expires_at = new Date().getTime() + 10000;
+		data.auth.expires_at = new Date().getTime() + 300000;
         
         state.cookie = response?.headers?.'Set-Cookie'?.split(";")?.getAt(0)
 		log.debug "Adding cookie to collection: $cookie"
