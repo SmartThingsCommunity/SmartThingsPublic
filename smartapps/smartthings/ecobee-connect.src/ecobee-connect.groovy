@@ -638,6 +638,8 @@ private def pollEcobeeAPI(thermostatIdsString = "") {
 				if (resp.status == 500 && resp.data.status.code == 14) {
 					log.debug "Resp.status: ${resp.status} Status Code: ${resp.data.status.code}. Storing the failed action to try later"
 					atomicState.action = "pollChildren";
+                    atomicState.connected = false
+                    generateEventLocalParams()
 					refreshAuthToken()
 				}
 				else {
@@ -645,11 +647,20 @@ private def pollEcobeeAPI(thermostatIdsString = "") {
 				}
 			}
 		}
-	} catch(Exception e) {
-		log.debug "___exception polling children: " + e
+	} catch (groovyx.net.http.HttpResponseException e) {
+    	// HTTP exception
+		log.error "pollEcobeeAPI(): HttpResponseException: ${e.toString()}. statuscode: ${e.statusCode}, response? ${e.getResponse().getData()} headers ${e.getResponse().getHeaders()}}. "
+		atomicState.connected = false
+        generateEventLocalParams()
+    	// refreshAuthToken() // Last ditch effort to refresh
+    } catch (java.util.concurrent.TimeoutException e) {
+		log.error "pollEcobeeAPI(), TimeoutException: ${e}."
 //        debugEventFromParent(child, "___exception polling children: " + e)
-		refreshAuthToken()
-	}
+		// Likely bad luck and network overload, move on and let it try again
+        
+	} catch (Exception e) {
+    	log.error "pollEcobeeAPI(): General Exception: ${e}."
+    }
     log.debug "<===== Leaving pollEcobeeAPI() results: ${result}"
 	return result
     
@@ -927,8 +938,10 @@ private refreshAuthToken() {
                     generateEventLocalParams() // Update the connected state at the thermostat devices
                 }
             }
-        } catch(Exception e) {
-            log.error "refreshAuthToken() >> Error: e.statusCode ${e.statusCode}"
+        } catch (groovyx.net.http.HttpResponseException e) {
+            log.error "refreshAuthToken() >> Error: e.statusCode ${e.statusCode}. full exception: ${e.toString()} response? data: ${e.getResponse().getData()} headers ${e.getResponse().getHeaders()}}"
+           	atomicState.connected = false
+            generateEventLocalParams() // Update the connected state at the thermostat devices
 			def reAttemptPeriod = 300 // in sec
 			if (e.statusCode != 401) { //this issue might comes from exceed 20sec app execution, connectivity issue etc.
 				runIn(reAttemptPeriod, "refreshAuthToken")
@@ -943,9 +956,17 @@ private refreshAuthToken() {
                     atomicState.connected = false
 				}
             }
+        } catch (java.util.concurrent.TimeoutException e) {
+			log.error "refreshAuthToken(), TimeoutException: ${e.toString()}."
+			// Likely bad luck and network overload, move on and let it try again
+            runIn(300, "refreshAuthToken")
+        } catch (Exception e) {
+        	log.error "refreshAuthToken(), General Exception: ${e.toString()}, Stack Trace: ${e.printStackTrace()}."
         }
     }
 }
+
+
 
 def resumeProgram(child, deviceId) {
 
@@ -964,13 +985,13 @@ def setHold(child, heating, cooling, deviceId, sendHoldType) {
 	int h = heating * 10
 	int c = cooling * 10
 
-//    log.debug "setpoints____________ - h: $heating - $h, c: $cooling - $c"
+    log.debug "setHold(): setpoints____________ - h: ${heating} - ${h}, c: ${cooling} - ${c}, setHoldType: ${setHoldType}"
 //    def thermostatIdsString = getChildDeviceIdsString()
 
 	def jsonRequestBody = '{"selection":{"selectionType":"thermostats","selectionMatch":"' + deviceId + '","includeRuntime":true},"functions": [{ "type": "setHold", "params": { "coolHoldTemp": '+c+',"heatHoldTemp": '+h+', "holdType": '+sendHoldType+' } } ]}'
 //	def jsonRequestBody = '{"selection":{"selectionType":"thermostats","selectionMatch":"' + thermostatIdsString + '","includeRuntime":true},"functions": [{"type": "resumeProgram"}, { "type": "setHold", "params": { "coolHoldTemp": '+c+',"heatHoldTemp": '+h+', "holdType": "indefinite" } } ]}'
 	def result = sendJson(child, jsonRequestBody)
-//    debugEventFromParent(child, "setHold: heating: ${h}, cooling: ${c} with result ${result}")
+    debugEventFromParent(child, "setHold: heating: ${h}, cooling: ${c} with result ${result}")
 	return result
 }
 
