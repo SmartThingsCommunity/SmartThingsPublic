@@ -32,9 +32,7 @@
  *     Click on the new device to see the details.
  *     Click the edit button next to Preferences
  *     Fill in your your Hive user name, Hive password.
- *
- *	4. ANDROID USERS - You have to comment out the iOS details line at line 205 by adding "//" 
- * 	   and uncomment the Android details line by removing the preceding "//" at line 213 before publishing.
+ *	   For Multi Zone Hive Systems, fill in the thermostat name of the zone.
  *
  *  Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except
  *  in compliance with the License. You may obtain a copy of the License at:
@@ -201,22 +199,7 @@ metadata {
    	 	}
 
 		main(["thermostat_main"])
-
-		// ============================================================
-		// iOS TILES
-		// To expose iOS optimised tiles, comment out the details line in Android Tiles section and uncomment details line below.
-		
-		details(["thermostat", "mode_auto", "mode_manual", "mode_off", "heatingSetpoint", "heatSliderControl", "boost", "refresh"])
-		
-		// ============================================================
-
-		// ============================================================
-		// ANDROID TILES
-		// To expose Android optimised tiles, comment out the details line in iOS Tiles section and uncomment details line below.
-		
-		//details(["thermostat_small", "thermostatOperatingState", "thermostatMode", "mode_auto", "mode_manual", "mode_off", "heatingSetpoint", "heatSliderControl", "boost", "refresh"])
-		
-		// ============================================================
+		details(["thermostat", "mode_auto", "mode_manual", "mode_off", "heatingSetpoint", "heatSliderControl", "boost", "refresh"])		
 	}
 }
 
