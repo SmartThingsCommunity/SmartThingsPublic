@@ -556,7 +556,7 @@ def login(method = null, args = [], success = {}) {
         body: [
         	sessions: [	[username: settings.username,
                  		password: settings.password,
-                 		caller: 'smartthings']]
+                 		caller: 'Hive Web Dashboard']]
         ]
     ]
 
