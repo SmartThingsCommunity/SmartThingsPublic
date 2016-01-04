@@ -541,7 +541,7 @@ def pollChildren(child = null) {
             oneChild.generateEvent(atomicState.thermostats[oneChild.device.deviceNetworkId].data)
         } else {
         	// We must have a remote sensor
-            log.debug "pollChildren() - Updating sensor data: ${oneChild.device.deviceNetworkId}"
+            log.debug "pollChildren() - Updating sensor data: ${oneChild.device.deviceNetworkId} data: ${atomicState.remoteSensors[oneChild.device.deviceNetworkId].data}"
             oneChild.generateEvent(atomicState.remoteSensors[oneChild.device.deviceNetworkId].data)
         } 
     }
@@ -649,7 +649,8 @@ private def pollEcobeeAPI(thermostatIdsString = "") {
 		}
 	} catch (groovyx.net.http.HttpResponseException e) {
     	// HTTP exception
-		log.error "pollEcobeeAPI(): HttpResponseException: ${e.toString()}. statuscode: ${e.statusCode}, response? ${e.getResponse().getData()} headers ${e.getResponse().getHeaders()}}. "
+		log.error "pollEcobeeAPI(): HttpResponseException: ${e}. statuscode: ${e.statusCode}, response? ${e.getResponse()}. "
+        // log.error "pollEcobeeAPI(): HttpResponseException: ${e}. statuscode: ${e.statusCode}, response? ${e.getResponse().getData()} headers ${e.getResponse().getHeaders()}}. "
 		atomicState.connected = false
         generateEventLocalParams()
     	// refreshAuthToken() // Last ditch effort to refresh
@@ -671,7 +672,7 @@ private def pollEcobeeAPI(thermostatIdsString = "") {
 void poll() {
 	// def devices = getChildDevices()
 	// devices.each {pollChild(it)}
-   //  if ( readyForAuthRefresh() ) { refreshAuthToken() }
+   //  TODO: if ( readyForAuthRefresh() ) { refreshAuthToken() } // Use runIn to make this feasible?
     pollChildren(null) // Poll ALL the children at the same time for efficiency
 }
 
@@ -742,8 +743,17 @@ def updateSensorData() {
                             
 				it.capability.each { cap ->
 					if (cap.type == "temperature") {
-						temperature = cap.value as Double
-						temperature = (temperature / 10).toDouble().round(0)
+                    	log.debug "updateSensorData() - Sensor (DNI: ${sensorDNI}) temp is ${cap.value}"
+                        if ( cap.value.isNumber() ) { // Handles the case when the sensor is offline, which would return "unkown"
+							temperature = cap.value as Double
+							temperature = (temperature / 10).toDouble().round(0)
+                        } else if (temperature == "unknown") {
+                        	// TODO: Do something here to mark the sensor as offline?
+                            log.error "updateSensorData() - sensor (DNI: ${sensorDNI}) returned unknown temp value. Perhaps it is unreachable."
+                            
+                        } else {
+                        	 log.error "updateSensorData() - sensor (DNI: ${sensorDNI}) returned ${cap.value}."
+                        }
 					} else if (cap.type == "occupancy") {
 						if(cap.value == "true") {
 							occupancy = "active"
@@ -939,7 +949,7 @@ private refreshAuthToken() {
                 }
             }
         } catch (groovyx.net.http.HttpResponseException e) {
-            log.error "refreshAuthToken() >> Error: e.statusCode ${e.statusCode}. full exception: ${e.toString()} response? data: ${e.getResponse().getData()} headers ${e.getResponse().getHeaders()}}"
+            log.error "refreshAuthToken() >> Error: e.statusCode ${e.statusCode}. full exception: ${e} response? data: ${e.getResponse().getData()} headers ${e.getResponse().getHeaders()}}"
            	atomicState.connected = false
             generateEventLocalParams() // Update the connected state at the thermostat devices
 			def reAttemptPeriod = 300 // in sec
@@ -957,11 +967,11 @@ private refreshAuthToken() {
 				}
             }
         } catch (java.util.concurrent.TimeoutException e) {
-			log.error "refreshAuthToken(), TimeoutException: ${e.toString()}."
+			log.error "refreshAuthToken(), TimeoutException: ${e}."
 			// Likely bad luck and network overload, move on and let it try again
             runIn(300, "refreshAuthToken")
         } catch (Exception e) {
-        	log.error "refreshAuthToken(), General Exception: ${e.toString()}, Stack Trace: ${e.printStackTrace()}."
+        	log.error "refreshAuthToken(), General Exception: ${e}."
         }
     }
 }
