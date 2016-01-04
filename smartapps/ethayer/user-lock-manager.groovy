@@ -1,5 +1,5 @@
 /**
- *  User Lock Manager v4.1.0
+ *  User Lock Manager v4.1.1
  *
  *  Copyright 2015 Erik Thayer
  *
@@ -1056,8 +1056,8 @@ def codeUsed(evt) {
         runIn(60*2, doPoll)
         message += ".  Now burning code."
       }
-      //Only send notificaton if set to burn code or not muted
-      if(settings."burnCode${usedIndex}" || settings."dontNotify${usedIndex}" != true) {
+      //Don't send notification if muted
+      if(settings."dontNotify${usedIndex}" != true) {
         send(message)
       }
     }
