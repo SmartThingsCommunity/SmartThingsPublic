@@ -3,7 +3,7 @@
  *
  *  Copyright 2015 Bruce Ravenel
  *
- *  Version 1.6.8c   1 Jan 2016
+ *  Version 1.6.8d   4 Jan 2016
  *
  *	Version History
  *
@@ -71,7 +71,7 @@ preferences {
 def selectRule() {
 	//init expert settings for rule
 	try { 
-		state.isExpert = parent.isExpert("1.6.8c") 
+		state.isExpert = parent.isExpert("1.6.8d") 
 		if (state.isExpert) state.cstCmds = parent.getCommands()
 		else state.cstCmds = []
 	}
@@ -1713,7 +1713,7 @@ private getAllOk() {
 }
 
 private hideOptionsSection() {
-	if(state.isRule || state.howMany > 1) (modesZ) ? false : true
+	if(state.isRule || state.howMany > 1) (modesZ || daysY || modesY || disabled || starting || ending || startingX || endingX) ? false : true
 	else (starting || ending || daysY || modes || modesY || startingX || endingX || disabled) ? false : true
 }
 
