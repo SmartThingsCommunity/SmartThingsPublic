@@ -1176,8 +1176,9 @@ private Boolean readyForAuthRefresh () {
     log.debug "timeLeft until expiry (in min): ${timeLeft}"
     
     // Since this runs as part of poll() we can be a bit more conservative on the time before renewing the token
-    def pollInterval = settings.pollingInterval ?: 5
-    def ready = timeLeft <= ((pollInterval * 3) + 2)
+    // def pollInterval = settings.pollingInterval ?: 5
+    // def ready = timeLeft <= ((pollInterval * 3) + 2)
+    def ready = timeLeft <= 29
     log.debug "Ready for authRefresh? ${ready}"
     return ready
 }
