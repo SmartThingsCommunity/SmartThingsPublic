@@ -1,19 +1,32 @@
 Ecobee Thermostat SmartApp(s) and related Device Types for use with the SmartThings Hub
 ======================================================
 
+## <a name="top">Table Of Contents</a>
+- [Introduction](#intro)
+- [Motivation](#motivation)
+- [Quick Links](#quicklinks)
+- [Installation](#installation)
+  - [Install Device Types](#install-device-types)
+  - [Install SmartApp in IDE](#install-smartapp)
+  - [Install SmartApp on Device](#install-smartapp-phone)
+- [Reporting Issues](#reporting-issues)
+- [Open Items](#open-items--to-dos)
+- [Contributors](#contributors)
+- [License](#license)
+
 ## <a name="intro">Introduction</a>
 
 This SmartApp and the related Device types are intended to be used with the [Ecobee thermostats](http://www.ecobee.com/). 
 
 Here are links to the working version of the repository being developed and maintained by Sean Schneyer [(on GitHub)](https://github.com/StrykerSKS) [(on SmartThings Community)](https://community.smartthings.com/users/strykersks/).
 
-## Motivation
+## <a name="motivation">Motivation</a>
 
 The intent is to provide an Open Source Licensed implementation that can be used by the SmartThings community of users. This will help ensure accessibility for all users and provide for an easy mechanism for the community to help maintain/drive the functionality.
 
 The ultimate goal would be to have these capabilities become part of the stock drivers on the "master" branch. But until that time they will be maintained as a fork providing good visibility to any changes upstream.
 
-## Quick Links
+## <a name="quicklinks">Quick Links</a>
 - README.md (this file): <https://github.com/StrykerSKS/SmartThingsPublic/blob/StrykerSKS-Ecobee3/smartapps/smartthings/ecobee-connect.src/README.md>
 - Ecobee (Connect) SmartApp: <https://github.com/StrykerSKS/SmartThingsPublic/tree/StrykerSKS-Ecobee3/smartapps/smartthings/ecobee-connect.src>
 - Ecobee Thermostat Device: <https://github.com/StrykerSKS/SmartThingsPublic/tree/StrykerSKS-Ecobee3/devicetypes/smartthings/ecobee-thermostat.src>
@@ -21,7 +34,7 @@ The ultimate goal would be to have these capabilities become part of the stock d
 - SmartThings IDE: <https://graph.api.smartthings.com>
 
 -----------------------------
-# Installation
+# <a name="installation">Installation</a>
 
 ## General
 > **NOTE**: While I have tested this on my system and believe it to be working. I have not run a full battery of tests that can include all possible corner cases or configurations. It is possible, perhaps even _likely_, that there are still bugs in this code. If you do run into an issue, the best option is to report it using the [Issues](https://github.com/StrykerSKS/SmartThingsPublic/issues) tab within the GitHub repository.
@@ -35,7 +48,7 @@ If you are not familiar with adding your own custom devices, then be sure to fam
 
 You will also need to make sure that you remember your Ecobee username and password. You should login to <http://www.ecobee.com/> now to ensure you have your credentials.
 
-## Install Device Types
+## <a name="install-device-type">Install Device Types</a>
 Here we will install two (2) different Device Types:
 - `Ecobee Thermostat`
 - `Ecobee Sensor`
@@ -92,7 +105,7 @@ Follow these steps to install the Ecobee Thermostat:
 - [IDE] Click `Publish` --> `For Me`
 
 
-## Install SmartApp in IDE
+## <a name="install-smartapp">Install SmartApp in IDE</a>
 Here we will install the following SmartApp:
 - `Ecobee (Connect)`
 
@@ -119,8 +132,6 @@ Follow these steps (all within the SmartThings IDE):
 - Click `Update` (bottom left of screen)
 - Verify that `Updated SmartApp` appears at the top of the screen
 
-
-
 ### Install Manually from Code
 For this method you will need to have one browser window open on GitHub and another on the IDE.
 
@@ -146,7 +157,7 @@ Follow these steps to install the Ecobee Sensor:
 - [IDE] Verify that `Updated SmartApp` appears at the top of the screen
 
 
-## Install and Run SmartApp on Phone/Tablet
+## <a name="install-smartapp-phone">Install and Run SmartApp on Phone/Tablet</a>
 > **NOTE**: I have only tested this on an iPhone 6 as I do not have access to Android device. Feedback and bug reports are welcome if any issues are found.
 
 The SmartApp will guide you through the basic installation and setup process. It includes the following aspects:
@@ -192,12 +203,12 @@ At this point, the SmartApp will automatically create all of the new devices, on
 > There is currently a lot of debug information generate from the app. If you need to do any kind of troubleshooting, you can see the current information flowing through in the `Live Logging` tab of the SmartThings IDE. You will also need this information if you open an `Issue` since it will be needed to track down what is going on. ** Please ensure that you do not include any personal information from the logs in an `Issue` report. **
 
 -------------------------
-## Reporting Issues
+## <a name="reporting-issues"Reporting Issues</a>
 All issues or feature requests should be submitted via the GitHub issue capability. It can be found on the [Issues](https://github.com/StrykerSKS/SmartThingsPublic/issues) tab within the GitHub repository.
 
 You are also welcome to engage in discussions using the [SmartThings Community](https://community.smartthings.com/).
 
-## Open Items / To Dos
+## <a name="open-items">Open Items / To Dos</a>
 
 There is still plenty of work left to do and items to work on. Here is a list of some of the items. This may also serve as a possible wishlist in the future:
 - Celsius: So far I have only tested this with Farhenheit. I plan to also test Celsius but haven't had a chance to do so. From working with the code, I suspect that there **will** be issues found here.
@@ -205,18 +216,17 @@ There is still plenty of work left to do and items to work on. Here is a list of
 - Need to test the setting of the holdType at the individual thermostats to override the value set at the SmartApp level. (It should be working but has not been fully tested.)
 
 
-## Contributors
+## <a name="contributors">Contributors</a>
 
 The easiest way to track the contributors to the project will be to check the contributors listed on GitHub.
 
 [Readme file edited using prose.io]
 
-## License
+## <a name="license">License<a/>
 
 Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except in compliance with the License. You may obtain a copy of the License at:
       http://www.apache.org/licenses/LICENSE-2.0
 
 Unless required by applicable law or agreed to in writing, software distributed under the License is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the License for the specific language governing permissions and limitations under the License.
 
-## Table Of Contents
-- [Introduction](#intro)
+
