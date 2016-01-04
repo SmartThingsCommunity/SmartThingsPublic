@@ -75,10 +75,14 @@
  *
  *	01.12.2015
  *	v1.10.5 - Handle event of thermostat being set to 'cool'. Changed API client name.
+ *
+ *	04.01.2016
+ *	v1.11 - Support for multi zone systems with new thermostat name attribute. Changes to multi attribute tile to attempt to unify android UI with iOS.
  */
 preferences {
 	input("username", "text", title: "Username", description: "Your Hive username (usually an email address)")
 	input("password", "password", title: "Password", description: "Your Hive password")
+    input("thermostat", "text", title: "Thermostat Name", description: "Multi Zone Hive Systems Only. The name of the thermostat controlling the zone (i.e, Ground Floor)")
 } 
  
 metadata {
@@ -104,7 +108,7 @@ metadata {
 
 	tiles(scale: 2) {
 
-		multiAttributeTile(name: "thermostat", width: 6, height: 4, type:"thermostat") {
+		multiAttributeTile(name: "thermostat", width: 6, height: 4, type:"lighting") {
 			tileAttribute("device.temperature", key:"PRIMARY_CONTROL", canChangeBackground: true){
 				attributeState "default", label: '${currentValue}°', unit:"C", backgroundColors: [
 				// Celsius Color Range
@@ -316,7 +320,7 @@ def setThermostatMode(mode) {
     } else if (mode == 'emergency heat') {
     	//{"nodes":[{"attributes":{"activeHeatCoolMode":{"targetValue":"BOOST"},"scheduleLockDuration":{"targetValue":30},"targetHeatTemperature":{"targetValue":22}}}]}
     	args = [
-        	nodes: [	[attributes: [activeHeatCoolMode: [targetValue: "BOOST"], scheduleLockDuration: [targetValue: 60], targetHeatTemperature: [targetValue: "22"]]]]
+        	nodes: [	[attributes: [activeHeatCoolMode: [targetValue: "BOOST"], scheduleLockDuration: [targetValue: 60], targetHeatTemperature: [targetValue: "21"]]]]
             ]
     }
     
@@ -463,9 +467,46 @@ def doRequest(uri, args, type, success) {
 	
 }
 
+def getThermostatId() {
+	log.debug "Calling getThermostatId()"
+	//get parent thermostat node id
+    def params = [
+		uri: 'https://api.prod.bgchprod.info:443/omnia/nodes',
+        contentType: 'application/json',
+        headers: [
+        	  'Cookie': state.cookie,
+              'Content-Type': 'application/vnd.alertme.zoo-6.2+json',
+              'Accept': 'application/vnd.alertme.zoo-6.2+json',
+              'Content-Type': 'application/*+json',
+              'X-AlertMe-Client': 'Hive Web Dashboard',
+              'X-Omnia-Access-Token': "${data.auth.sessions[0].id}"
+        ]
+    ]
+    
+    httpGet(params) {response ->
+		log.debug "Request was successful, $response.status"
+		log.debug response.headers
+        
+        response.data.nodes.each {
+        	log.debug "node name $it.name"           
+        	if (it.name == settings.thermostat)
+            {   
+            	state.parentNodeId = it.id
+            }
+        }
+        
+        if (state.parentNodeId == '')
+        {
+        	log.error "No thermostat found with name $settings.thermostat. Please check settings. Attempting to use default thermostat."
+        }
+        
+		log.debug "parentNodeId: $state.parentNodeId"
+    }
+}
+
 def getNodeId () {
 	log.debug "Calling getNodeId()"
-	//get thermostat node id
+	//get node id
     log.debug "Using session id, $data.auth.sessions[0].id"
     def params = [
 		uri: 'https://api.prod.bgchprod.info:443/omnia/nodes',
@@ -486,11 +527,15 @@ def getNodeId () {
 		log.debug response.headers
         
         response.data.nodes.each {
-        	log.debug "node name $it.name"           
-        	if ((it.attributes.supportsHotWater != null) && (it.attributes.supportsHotWater.reportedValue == false))
+        	if (((state.parentNodeId == '') || (it.parentNodeId == state.parentNodeId)) && (it.attributes.supportsHotWater != null) && (it.attributes.supportsHotWater.reportedValue == false))
             {   
             	state.nodeid = it.id
             }
+        }
+        
+        if (state.nodeid == '')
+        {
+        	log.error "No node found to create device type with. Please check settings."
         }
         
 		log.debug "nodeid: $state.nodeid"
@@ -523,13 +568,21 @@ def login(method = null, args = [], success = {}) {
 		data.auth = response.data
 		
 		// set the expiration to 5 minutes
-		data.auth.expires_at = new Date().getTime() + 300000;
+		data.auth.expires_at = new Date().getTime() + 10000;
         
         state.cookie = response?.headers?.'Set-Cookie'?.split(";")?.getAt(0)
 		log.debug "Adding cookie to collection: $cookie"
         log.debug "auth: $data.auth"
 		log.debug "cookie: $state.cookie"
         log.debug "sessionid: $data.auth.sessions[0].id"
+        
+        state.parentNodeId = ''
+        
+        //Get thermostat id for multi zone systems.
+        if (settings.thermostat != null && settings.thermostat != '')
+        {
+        	getThermostatId()
+        }
         
         getNodeId()
 		
