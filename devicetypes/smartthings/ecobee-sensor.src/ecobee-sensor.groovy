@@ -83,6 +83,7 @@ void poll() {
 }
 
 def generateEvent(Map results) {
+	// TODO: Need to add Celcius handling?
 	results.each { name, value ->
 		sendEvent(name: name, value: value)
 	}

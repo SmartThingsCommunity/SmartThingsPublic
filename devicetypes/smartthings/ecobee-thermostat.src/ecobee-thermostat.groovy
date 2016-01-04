@@ -345,7 +345,6 @@ metadata {
             state "false", label: "API ", backgroundColor: "#ffa81e", icon: "st.contact.contact.open"
 		}
         
-        // TODO Adjust this to support Celsium as well as F
 		valueTile("temperature", "device.temperature", width: 2, height: 2) {
 			state("temperature", label:'${currentValue}°', unit:"F",
 				backgroundColors: [
