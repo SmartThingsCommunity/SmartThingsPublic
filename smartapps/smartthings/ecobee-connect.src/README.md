@@ -9,6 +9,7 @@ Ecobee Thermostat SmartApp(s) and related Device Types for use with the SmartThi
   - [Install Device Types](#install-device-types)
   - [Install SmartApp in IDE](#install-smartapp)
   - [Install SmartApp on Device](#install-smartapp-phone)
+- [Updating](#updating)
 - [Reporting Issues](#reporting-issues)
 - [Open Items](#open-items--to-dos)
 - [Contributors](#contributors)
@@ -201,6 +202,26 @@ At this point, the SmartApp will automatically create all of the new devices, on
 <br/>
 
 > There is currently a lot of debug information generate from the app. If you need to do any kind of troubleshooting, you can see the current information flowing through in the `Live Logging` tab of the SmartThings IDE. You will also need this information if you open an `Issue` since it will be needed to track down what is going on. ** Please ensure that you do not include any personal information from the logs in an `Issue` report. **
+
+-------------------------
+## Updating
+If you have enabled GitHub integration with the SmartThings IDE, then updates are a breeze. Otherwise the steps are a bit more manual but not too complicated.
+
+### Updating with GitHub Integration
+The IDE provides visual cues to alert you that any device types or SmartApps have been updated in their upstream repositories. See the [GitHub/IDE integration guide](http://docs.smartthings.com/en/latest/tools-and-ide/github-integration.html) for more details on the different colors.
+
+Once you have determined that an update is available, follow these steps:
+- Login to the SmartThings IDE
+- Go to either the `My Device Types` or `My SmartApps` tabs to see if there are updates (the color of the item will be purple)
+- Click the `Update from Repo` button (top right)
+- Select the repository and branch you want to update `SmartThingsPublic (StrykerSKS-Ecobee3)`
+- The item should show up in the `Obsolete (updated in GitHub)` column and automatically be selected
+- Select `Publish` 
+- Click `Execute Update`
+- You should receive a confirmation message such as this example: `Updated 1 and created 0 SmartApps, 1 published`
+
+You should now be running on the updated code. Be sure that you check for both updates of the SmartApp **and** the Device Type. Updating one but not the other could cause compatibility problems.
+
 
 -------------------------
 ## <a name="reporting-issues"Reporting Issues</a>
