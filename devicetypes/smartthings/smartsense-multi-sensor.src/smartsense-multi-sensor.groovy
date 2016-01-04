@@ -204,8 +204,10 @@ private List parseReportAttributeMessage(String description) {
 		}
         result << getAccelerationResult(descMap.value)
 	}
-	else if (descMap.cluster == "FC02" && descMap.attrId == "0012") {
-        result << parseAxis(descMap.value)
+	else if (descMap.cluster == "FC02" && descMap.attrId == "0012" && descMap.value.size() == 24) {
+		// The size is checked to ensure the attribute report contains X, Y and Z values
+		// If all three axis are not included then the attribute report is ignored
+		result << parseAxis(descMap.value)
 	}
 	else if (descMap.cluster == "0001" && descMap.attrId == "0020") {
 		result << getBatteryResult(Integer.parseInt(descMap.value, 16))
