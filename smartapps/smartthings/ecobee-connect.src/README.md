@@ -216,13 +216,14 @@ Once you have determined that an update is available, follow these steps:
 - Click the `Update from Repo` button (top right)
 - Select the repository and branch you want to update `SmartThingsPublic (StrykerSKS-Ecobee3)`
 - The item should show up in the `Obsolete (updated in GitHub)` column and automatically be selected
-- Select `Publish` 
-- Click `Execute Update`
+- Select `Publish` (bottom right)
+- Click `Execute Update` (bottom right)
 - You should receive a confirmation message such as this example: `Updated 1 and created 0 SmartApps, 1 published`
 
 You should now be running on the updated code. Be sure that you check for both updates of the SmartApp **and** the Device Type. Updating one but not the other could cause compatibility problems.
 
-## Updating manually (without GitHub Integration
+### Updating manually (without GitHub Integration
+
 > TODO: Fill in the directions for manual upgrade
 
 
