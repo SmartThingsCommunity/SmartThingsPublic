@@ -235,10 +235,10 @@ metadata {
 
     	tiles(scale: 2) {
         
-        
+      /*  
 		multiAttributeTile(name:"summary", type:"thermostat", width:6, height:4) {
 			tileAttribute("device.temperature", key: "PRIMARY_CONTROL") {
-				attributeState("default", label:'${currentValue}', unit:"F")
+				attributeState("default", label:'${currentValue}', unit:"dF")
 			}
             
 			tileAttribute("device.temperature", key: "VALUE_CONTROL") {
@@ -271,8 +271,73 @@ metadata {
 				attributeState("default", label:'${currentValue}', unit:"F")
 			}
             
-        }
+        } // End multiAttributeTile
+        */
         
+        // Workaround until they fix the Thermostat tile. Only use this one OR the above one, not both
+        multiAttributeTile(name:"summary", type: "lighting", width: 6, height: 4) {
+        	tileAttribute("device.temperature", key: "PRIMARY_CONTROL") {
+				attributeState("temperature", label:'${currentValue}°', unit:"dF",
+				backgroundColors: [
+                	// Celsius Color Range
+					[value: 0, color: "#1e9cbb"],
+					[value: 15, color: "#1e9cbb"],
+                    [value: 19, color: "#1e9cbb"],
+                    
+                    [value: 21, color: "#44b621"],
+					[value: 22, color: "#44b621"],
+                    [value: 24, color: "#44b621"],
+                    
+					[value: 21, color: "#d04e00"],
+					[value: 35, color: "#d04e00"],
+					[value: 37, color: "#d04e00"],
+					// Fahrenheit Color Range
+                	[value: 40, color: "#1e9cbb"],
+					[value: 59, color: "#1e9cbb"],
+                    [value: 67, color: "#1e9cbb"],
+                    
+                    [value: 69, color: "#44b621"], 
+					[value: 72, color: "#44b621"],
+                    [value: 74, color: "#44b621"],
+                    
+					[value: 76, color: "#d04e00"],
+					[value: 95, color: "#d04e00"],
+					[value: 99, color: "#d04e00"]
+				])
+			}
+            
+			tileAttribute("device.temperature", key: "VALUE_CONTROL") {
+                attributeState("default", action: "setTemperature")
+			}
+            
+            tileAttribute("device.humidity", key: "SECONDARY_CONTROL") {
+				attributeState("default", label:'${currentValue}%', unit:"%")
+			}  
+            
+			tileAttribute("device.thermostatOperatingState", key: "OPERATING_STATE") {
+            	// TODO: Change this to a preference so the use can select green over grey from within the app
+            	// Uncomment the below if you prefer green for idle
+				attributeState("idle", backgroundColor:"#44b621") 
+				// Or uncomment this one if you prefer grey for idle 
+				// attributeState("idle", backgroundColor:"#C0C0C0") 
+				attributeState("heating", backgroundColor:"#ffa81e")
+				attributeState("cooling", backgroundColor:"#269bd2")
+			}
+            
+			tileAttribute("device.thermostatMode", key: "THERMOSTAT_MODE") {
+				attributeState("off", label:'${name}')
+				attributeState("heat", label:'${name}')
+				attributeState("cool", label:'${name}')
+                attributeState("auto", label:'${name}')
+			}
+            tileAttribute("device.heatingSetpoint", key: "HEATING_SETPOINT") {
+            	attributeState("default", label:'${currentValue}', unit:"F")
+            }
+			tileAttribute("device.coolingSetpoint", key: "COOLING_SETPOINT") {
+				attributeState("default", label:'${currentValue}', unit:"F")
+			}
+        	
+        }
         
         // Show status of the API Connection for the Thermostat
 		standardTile("apiStatus", "device.apiConnected", width: 2, height: 2) {
@@ -281,25 +346,33 @@ metadata {
 		}
         
         // TODO Adjust this to support Celsium as well as F
-		valueTile("temperature", "device.temperature", width: 4, height: 4) {
+		valueTile("temperature", "device.temperature", width: 2, height: 2) {
 			state("temperature", label:'${currentValue}°', unit:"F",
 				backgroundColors: [
                 	// Celsius Color Range
-					[value: 0, color: "#153591"],
-					[value: 7, color: "#1e9cbb"],
-					[value: 15, color: "#90d2a7"],
-					[value: 23, color: "#44b621"],
-					[value: 29, color: "#f1d801"],
-					[value: 33, color: "#d04e00"],
-					[value: 36, color: "#bc2323"],
+					[value: 0, color: "#1e9cbb"],
+					[value: 15, color: "#1e9cbb"],
+                    [value: 19, color: "#1e9cbb"],
+                    
+                    [value: 21, color: "#44b621"],
+					[value: 22, color: "#44b621"],
+                    [value: 24, color: "#44b621"],
+                    
+					[value: 21, color: "#d04e00"],
+					[value: 35, color: "#d04e00"],
+					[value: 37, color: "#d04e00"],
 					// Fahrenheit Color Range
-                	[value: 40, color: "#153591"],
-					[value: 44, color: "#1e9cbb"],
-					[value: 59, color: "#90d2a7"],
-					[value: 74, color: "#44b621"],
-					[value: 84, color: "#f1d801"],
+                	[value: 40, color: "#1e9cbb"],
+					[value: 59, color: "#1e9cbb"],
+                    [value: 67, color: "#1e9cbb"],
+                    
+                    [value: 69, color: "#44b621"], 
+					[value: 72, color: "#44b621"],
+                    [value: 74, color: "#44b621"],
+                    
+					[value: 76, color: "#d04e00"],
 					[value: 95, color: "#d04e00"],
-					[value: 96, color: "#bc2323"]
+					[value: 99, color: "#d04e00"]
 				]
 			)
 		}
@@ -329,28 +402,44 @@ metadata {
 		standardTile("downButtonControl", "device.thermostatSetpoint", height: 1, width: 2, inactiveLabel: false, decoration: "flat") {
 			state "setpoint", action:"lowerSetpoint", icon:"st.thermostat.thermostat-down"
 		}
-		controlTile("heatSliderControl", "device.heatingSetpoint", "slider", height: 2, width: 4, inactiveLabel: false) {
+		controlTile("heatSliderControl", "device.heatingSetpoint", "slider", height: 1, width: 4, inactiveLabel: false) {
 			state "setHeatingSetpoint", action:"thermostat.setHeatingSetpoint", backgroundColor:"#d04e00"
 		}
-		valueTile("heatingSetpoint", "device.heatingSetpoint", inactiveLabel: false, decoration: "flat") {
-			state "heat", label:'${currentValue}° heat', unit:"F"
+		valueTile("heatingSetpoint", "device.heatingSetpoint", height: 1, width: 2, inactiveLabel: false, decoration: "flat") {
+			state "heat", label:'${currentValue}° Heat', unit:"dF", backgroundColor:"#d04e00"
 		}
-		controlTile("coolSliderControl", "device.coolingSetpoint", "slider", height: 2, width: 4, inactiveLabel: false) {
+		controlTile("coolSliderControl", "device.coolingSetpoint", "slider", height: 1, width: 4, inactiveLabel: false) {
 			state "setCoolingSetpoint", action:"thermostat.setCoolingSetpoint", backgroundColor: "#1e9cbb"
 		}
-		valueTile("coolingSetpoint", "device.coolingSetpoint", width: 2, height: 2, inactiveLabel: false, decoration: "flat") {
-			state "cool", label:'${currentValue}° cool', unit:"F", backgroundColor:"#ffffff"
+		valueTile("coolingSetpoint", "device.coolingSetpoint", width: 2, height: 1, inactiveLabel: false, decoration: "flat") {
+			state "cool", label:'${currentValue}° Cool', unit:"dF", backgroundColor: "#1e9cbb"
 		}
 		standardTile("refresh", "device.thermostatMode", width: 2, height: 2,inactiveLabel: false, decoration: "flat") {
 			state "default", action:"refresh.refresh", icon:"st.secondary.refresh"
 		}
 		standardTile("resumeProgram", "device.resumeProgram", width: 2, height: 2, inactiveLabel: false, decoration: "flat") {
-			state "resume", action:"resumeProgram", nextState: "updating", label:'Resume Schedule', icon:"st.samsung.da.oven_ic_send"
-			state "updating", label:"Working", icon: "st.secondary.secondary"
+			state "resume", action:"resumeProgram", nextState: "updating", label:'Resume Schedule', icon:"st.Office.office7"
+			state "updating", label:"Working", icon: "st.samsung.da.oven_ic_send"
 		}
         
-        // Additional tiles based on Yves Racine's device type
-        // Weather Tiles
+        
+        standardTile("operatingState", "device.thermostatOperatingState", width: 2, height: 2, inactiveLabel: false, decoration: "flat") {
+			state "idle", label: "Idle", backgroundColor:"#44b621", icon: "st.nest.empty"
+				// Or uncomment this one if you prefer grey for idle 
+				// attributeState("idle", backgroundColor:"#C0C0C0") 
+			state "heating", backgroundColor:"#ffa81e", icon: "st.thermostat.heat"
+			state "cooling", backgroundColor:"#269bd2", icon: "st.thermostat.cool"
+            state "default", label: '${currentValue}'
+		}
+        
+        valueTile("humidity", "device.humidity", inactiveLabel: false, decoration: "flat", width: 2, height: 2,) {
+			state "default", label: 'Humidity\n${currentValue}%', unit: "humidity" // Add a blue background signifying water?
+		}
+        
+        
+        
+        // Additional tiles based on Yves Racine's device type        
+        // Weather Tiles and other Forecast related tiles
 		standardTile("weatherIcon", "device.weatherSymbol", inactiveLabel: false, width: 2, height: 2,
 			decoration: "flat") {
 			state "-2",			label: 'updating...',	icon: "st.unknown.unknown.unknown"
@@ -387,7 +476,7 @@ metadata {
 		}
 		standardTile("weatherTemperature", "device.weatherTemperature", inactiveLabel:
 			false, width: 2, height: 2, decoration: "flat") {
-			state "default", label: 'Outside: ${currentValue}°', unit: "F", icon: "st.Weather.weather2"
+			state "default", label: 'Outside: ${currentValue}°', unit: "dF", icon: "st.Weather.weather2"
 		}
 		valueTile("weatherRelativeHumidity", "device.weatherRelativeHumidity",
 			inactiveLabel: false, width: 2, height: 2,decoration: "flat") {
@@ -395,11 +484,11 @@ metadata {
 		}
 		valueTile("weatherTempHigh", "device.weatherTempHigh", inactiveLabel: false,
 			width: 2, height: 2, decoration: "flat") {
-			state "default", label: 'ForecastH\n${currentValue}°', unit: "F"
+			state "default", label: 'ForecastH\n${currentValue}°', unit: "dF"
 		}
 		valueTile("weatherTempLow", "device.weatherTempLow", inactiveLabel: false,
 			width: 2, height: 2, decoration: "flat") {
-			state "default", label: 'ForecastL\n${currentValue}°', unit: "F"
+			state "default", label: 'ForecastL\n${currentValue}°', unit: "dF"
 		}
 		valueTile("weatherPressure", "device.weatherPressure", inactiveLabel: false,
 			width: 2, height: 2, decoration: "flat") {
@@ -420,10 +509,27 @@ metadata {
         
         
         
-		main "summary"
+		main(["temperature", "summary"])
         // details(["summary","temperature", "upButtonControl", "thermostatSetpoint", "currentStatus", "downButtonControl", "mode", "weatherIcon", "resumeProgram", "refresh"])
         // details(["summary","apiStatus", "upButtonControl", "thermostatSetpoint", "currentStatus", "downButtonControl", "mode", "weatherIcon", "resumeProgram", "refresh"])        
-        details(["summary","apiStatus", "weatherIcon", "weatherTemperature", "refresh", "resumeProgram", "mode"])        
+        details(["summary",
+        	"operatingState", "weatherIcon", "weatherTemperature", 
+            "apiStatus", "resumeProgram", "mode",
+            "coolSliderControl", "coolingSetpoint", 
+            "heatSliderControl", "heatingSetpoint",
+            "refresh"])      
+        
+/*
+		details(["summary", // MultiAttributeTile
+        	"resumeProgram", "mode",  "upButtonControl", "thermostatSetpoint", // Row 1
+            "humidity", "operatingState", "downButtonControl",// Row 2
+            "weatherIcon", "weatherTemperature", "refresh", "apiStatus" // Row 3
+            ])        
+*/
+
+            
+            
+            
 //		main "temperature"
 //		details(["temperature", "upButtonControl", "thermostatSetpoint", "currentStatus", "downButtonControl", "refresh", "resumeProgram", "mode"])
         
@@ -563,11 +669,14 @@ def setTemperature(setpoint) {
 }
 
 void setHeatingSetpoint(setpoint) {
+	log.debug "setHeatingSetpoint() request with setpoint value = ${setpoint}"
 	setHeatingSetpoint(setpoint.toDouble())
 }
 
 void setHeatingSetpoint(Double setpoint) {
 //    def mode = device.currentValue("thermostatMode")
+	log.debug "setHeatingSetpoint() request with setpoint value = ${setpoint}"
+
 	def heatingSetpoint = setpoint
 	def coolingSetpoint = device.currentValue("coolingSetpoint").toDouble()
 	def deviceId = device.deviceNetworkId.split(/\./).last()
@@ -602,10 +711,13 @@ void setHeatingSetpoint(Double setpoint) {
 }
 
 void setCoolingSetpoint(setpoint) {
+	log.debug "setCoolingSetpoint() request with setpoint value = ${setpoint}"
+
 	setCoolingSetpoint(setpoint.toDouble())
 }
 
 void setCoolingSetpoint(Double setpoint) {
+	log.debug "setCoolingSetpoint() request with setpoint value = ${setpoint}"
 //    def mode = device.currentValue("thermostatMode")
 	def heatingSetpoint = device.currentValue("heatingSetpoint").toDouble()
 	def coolingSetpoint = setpoint
