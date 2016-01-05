@@ -76,6 +76,9 @@
  *
  *	04.01.2016
  *	v1.11 - Support for multi zone systems with new thermostat name attribute. Changes to multi attribute tile to attempt to unify android UI with iOS.
+ *
+ *	05.01.2016
+ *	v1.11.1 - Removed the need for Pollster.
  */
 preferences {
 	input("username", "text", title: "Username", description: "Your Hive username (usually an email address)")
@@ -211,6 +214,24 @@ def parse(String description) {
 	// TODO: handle 'thermostatSetpoint' attribute
 	// TODO: handle 'thermostatMode' attribute
 	// TODO: handle 'thermostatOperatingState' attribute
+}
+
+def installed() {
+	log.debug "Executing 'installed'"
+	// execute handlerMethod every 10 minutes.
+    schedule("0 0/10 * * * ?", poll)
+}
+
+def updated() {
+	log.debug "Executing 'updated'"
+	// execute handlerMethod every 10 minutes.
+    unschedule(poll)
+    schedule("0 0/10 * * * ?", poll)
+}
+
+def uninstalled() {
+	log.debug "Executing 'unsinstalled'"
+	unschedule(poll)
 }
 
 // handle commands

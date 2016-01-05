@@ -27,8 +27,8 @@
  *     Click the edit button next to Preferences
  *     Fill in your your Hive user name, Hive password.
  *
- *	4. ANDROID USERS - You have to comment out the iOS details line at line 133 by adding "//" 
- * 	   and uncomment the Android details line by removing the preceding "//" at line 141 before publishing.
+ *	4. ANDROID USERS - You have to comment out the iOS details line at line 130 by adding "//" 
+ * 	   and uncomment the Android details line by removing the preceding "//" at line 138 before publishing.
  *
  *  Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except
  *  in compliance with the License. You may obtain a copy of the License at:
@@ -53,6 +53,9 @@
  *
  *	01.12.2015
  *	v1.1.3 - Handle 'cool' mode. Change API client id.
+ *
+ *	05.01.2016
+ *	v1.1.4 - Removed the need for Pollster.
  */
 preferences {
 	input("username", "text", title: "Username", description: "Your Hive username (usually an email address)")
@@ -151,6 +154,24 @@ def parse(String description) {
 	// TODO: handle 'switch' attribute
 	// TODO: handle 'thermostatMode' attribute
 
+}
+
+def installed() {
+	log.debug "Executing 'installed'"
+	// execute handlerMethod every 10 minutes.
+    schedule("0 0/10 * * * ?", poll)
+}
+
+def updated() {
+	log.debug "Executing 'updated'"
+	// execute handlerMethod every 10 minutes.
+    unschedule(poll)
+    schedule("0 0/10 * * * ?", poll)
+}
+
+def uninstalled() {
+	log.debug "Executing 'unsinstalled'"
+	unschedule(poll)
 }
 
 // handle commands
@@ -436,4 +457,3 @@ def isLoggedIn() {
 	def now = new Date().getTime();
     return data.auth.expires_at > now
 }
-

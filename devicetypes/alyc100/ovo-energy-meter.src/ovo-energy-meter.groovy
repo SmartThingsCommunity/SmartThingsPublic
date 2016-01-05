@@ -36,6 +36,9 @@
  *	v1.0.1 - Tile layout update. Ability to change icon!!!
  *	v1.0.2 - SmartTiles compatability as Power Meter
  *	v1.1 - Calculates cumulative daily costs without OVO API
+ *
+ *	05.01.2016
+ *	v1.1.1 - Remove requirement for Pollster app.
  */
 preferences {
 	input("username", "text", title: "Username", description: "Your OVO username (usually an email address)")
@@ -91,6 +94,24 @@ def parse(String description) {
 	log.debug "Parsing '${description}'"
 	// TODO: handle 'power' attribute
 
+}
+
+def installed() {
+	log.debug "Executing 'installed'"
+	// execute handlerMethod every 10 minutes.
+    schedule("0 0/1 * * * ?", poll)
+}
+
+def updated() {
+	log.debug "Executing 'updated'"
+	// execute handlerMethod every 10 minutes.
+    unschedule(poll)
+    schedule("0 0/1 * * * ?", poll)
+}
+
+def uninstalled() {
+	log.debug "Executing 'unsinstalled'"
+	unschedule(poll)
 }
 
 // handle commands
@@ -315,4 +336,3 @@ def isLoggedIn() {
 	def now = new Date().getTime();
     return data.auth.expires_at > now
 }
-
