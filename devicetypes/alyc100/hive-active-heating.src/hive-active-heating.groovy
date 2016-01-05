@@ -80,6 +80,7 @@
  *	05.01.2016
  *	v1.11.1 - Removed the need for Pollster.
  *	v1.11.2 - Added extra checks to ensure discovered node is active
+ *	v1.11.3 - Improved scheduler reliability without Pollster.
  */
 preferences {
 	input("username", "text", title: "Username", description: "Your Hive username (usually an email address)")
@@ -262,7 +263,7 @@ def setHeatingSetpoint(temp) {
         	nodes: [	[attributes: [targetHeatTemperature: [targetValue: temp]]]]
             ]               
 	api('temperature', args) {        
-        runIn(4, poll)   
+        runIn(4, refresh)   
 	}	
 }
 
@@ -331,7 +332,7 @@ def setThermostatMode(mode) {
     
 	api('thermostat_mode',  args) {
 		mode = mode == 'range' ? 'auto' : mode
-        runIn(4, poll)
+        runIn(4, refresh)
 	}
 }
 

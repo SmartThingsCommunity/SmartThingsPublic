@@ -27,6 +27,8 @@
  *     Click the edit button next to Preferences
  *     Fill in your your Hive user name, Hive password.
  *
+ *	4. ANDROID USERS - You have to comment out the iOS details line at line 130 by adding "//" 
+ * 	   and uncomment the Android details line by removing the preceding "//" at line 138 before publishing.
  *
  *  Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except
  *  in compliance with the License. You may obtain a copy of the License at:
@@ -53,7 +55,8 @@
  *	v1.1.3 - Handle 'cool' mode. Change API client id.
  *
  *	05.01.2016
- *	v1.1.4 - Removed the need for Pollster. Improved tile layout for Android UI.
+ *	v1.1.4 - Removed the need for Pollster. Unify Android tile UI to match iOS.
+ *	v1.1.5 - Improved scheduler reliability without Pollster.
  */
 preferences {
 	input("username", "text", title: "Username", description: "Your Hive username (usually an email address)")
@@ -226,7 +229,7 @@ def setThermostatMode(mode) {
     
 	api('thermostat_mode',  args) {
 		mode = mode == 'range' ? 'auto' : mode
-        runIn(3, poll)
+        runIn(3, refresh)
 	}
 }
 
@@ -296,7 +299,7 @@ log.debug "Executing 'poll'"
 
 def refresh() {
 	log.debug "Executing 'refresh'"
-	// TODO: handle 'refresh' command
+	poll()
 }
 
 def api(method, args = [], success = {}) {
@@ -440,3 +443,4 @@ def isLoggedIn() {
 	def now = new Date().getTime();
     return data.auth.expires_at > now
 }
+
