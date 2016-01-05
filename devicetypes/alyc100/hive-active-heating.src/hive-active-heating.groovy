@@ -81,6 +81,7 @@
  *	v1.11.1 - Removed the need for Pollster.
  *	v1.11.2 - Added extra checks to ensure discovered node is active
  *	v1.11.3 - Improved scheduler reliability without Pollster.
+ *	v1.12 - Added option to adjust boost length.
  */
 preferences {
 	input("username", "text", title: "Username", description: "Your Hive username (usually an email address)")
@@ -103,6 +104,7 @@ metadata {
 		command "heatingSetpointDown"
         command "setThermostatMode"
         command "setHeatingSetpoint"
+        command "setBoostLength"
 	}
 
 	simulator {
@@ -148,6 +150,10 @@ metadata {
         
 		controlTile("heatSliderControl", "device.heatingSetpoint", "slider", height: 2, width: 4, inactiveLabel: false, range:"(5..32)") {
 			state "setHeatingSetpoint", label:'Set temperature to', action:"setHeatingSetpoint"
+		}
+        
+        controlTile("boostSliderControl", "device.boostLength", "slider", height: 2, width: 4, inactiveLabel: false, range:"(10..240)") {
+			state "setBoostLength", label:'Set boost length to', action:"setBoostLength"
 		}
         
 		standardTile("heatingSetpointUp", "device.heatingSetpoint", width: 2, height: 2, canChangeIcon: false, inactiveLabel: false, decoration: "flat") {
@@ -204,7 +210,7 @@ metadata {
    	 	}
 
 		main(["thermostat_main"])
-		details(["thermostat", "mode_auto", "mode_manual", "mode_off", "heatingSetpoint", "heatSliderControl", "boost", "refresh"])		
+		details(["thermostat", "mode_auto", "mode_manual", "mode_off", "heatingSetpoint", "heatSliderControl", "boost", "boostSliderControl", "refresh"])		
 	}
 }
 
@@ -221,6 +227,7 @@ def parse(String description) {
 def installed() {
 	log.debug "Executing 'installed'"
 	// execute handlerMethod every 10 minutes.
+    state.boostLength = 60
     schedule("0 0/10 * * * ?", poll)
 }
 
@@ -265,6 +272,21 @@ def setHeatingSetpoint(temp) {
 	api('temperature', args) {        
         runIn(4, refresh)   
 	}	
+}
+
+def setBoostLength(minutes) {
+	log.debug "Executing 'setBoostLength with length $minutes minutes'"
+    if (minutes < 10) {
+		minutes = 10
+	}
+	if (minutes > 240) {
+		minutes = 240
+	}
+    state.boostLength = minutes
+    sendEvent("name":"boostLength", "value": state.boostLength, displayed: true)
+    
+    refresh()
+    
 }
 
 def heatingSetpointUp(){
@@ -323,10 +345,15 @@ def setThermostatMode(mode) {
     	args = [
         	nodes: [	[attributes: [activeHeatCoolMode: [targetValue: "HEAT"], scheduleLockDuration: [targetValue: 0], activeScheduleLock: [targetValue: true]]]]
             ]
-    } else if (mode == 'emergency heat') {
+    } else if (mode == 'emergency heat') {  
+    	if (state.boostLength == null || state.boostLength == '')
+        {
+        	state.boostLength = 60
+            sendEvent("name":"boostLength", "value": 60, displayed: true)
+        }
     	//{"nodes":[{"attributes":{"activeHeatCoolMode":{"targetValue":"BOOST"},"scheduleLockDuration":{"targetValue":30},"targetHeatTemperature":{"targetValue":22}}}]}
     	args = [
-        	nodes: [	[attributes: [activeHeatCoolMode: [targetValue: "BOOST"], scheduleLockDuration: [targetValue: 60], targetHeatTemperature: [targetValue: "21"]]]]
+        	nodes: [	[attributes: [activeHeatCoolMode: [targetValue: "BOOST"], scheduleLockDuration: [targetValue: state.boostLength], targetHeatTemperature: [targetValue: "22"]]]]
             ]
     }
     
@@ -345,7 +372,12 @@ def poll() {
         def statusMsg = "Currently"
         
         //Boost button label
-    	def boostLabel = "Start\nBoost"
+        if (state.boostLength == null || state.boostLength == '')
+        {
+        	state.boostLength = 60
+            sendEvent("name":"boostLength", "value": 60, displayed: true)
+        }
+    	def boostLabel = "Start\n$state.boostLength Min Boost"
         
         // get temperature status
         def temperature = data.nodes.attributes.temperature.reportedValue[0]

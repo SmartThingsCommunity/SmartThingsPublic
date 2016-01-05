@@ -57,6 +57,7 @@
  *	05.01.2016
  *	v1.1.4 - Removed the need for Pollster. Unify Android tile UI to match iOS.
  *	v1.1.5 - Improved scheduler reliability without Pollster.
+ *	v1.2 - Added option to adjust boost length.
  */
 preferences {
 	input("username", "text", title: "Username", description: "Your Hive username (usually an email address)")
@@ -72,6 +73,7 @@ metadata {
 		capability "Thermostat Mode"
         
         command "setThermostatMode"
+        command "setBoostLength"
 	}
 
 	simulator {
@@ -116,6 +118,10 @@ metadata {
 			state("default", label:'${currentValue}', action:"emergencyHeat")
 		}
         
+        controlTile("boostSliderControl", "device.boostLength", "slider", height: 2, width: 4, inactiveLabel: false, range:"(10..240)") {
+			state "setBoostLength", label:'Set boost length to', action:"setBoostLength"
+		}
+        
         standardTile("mode_auto", "device.mode_auto", inactiveLabel: false, decoration: "flat", width: 2, height: 2) {
         	state "default", action:"auto", label:'Schedule', icon:"st.Office.office7"
     	}
@@ -129,7 +135,7 @@ metadata {
    	 	}
 
 		main(["hotWaterRelay_main"])	
-		details(["hotWaterRelay", "mode_auto", "mode_manual", "mode_off", "boost", "refresh"])
+		details(["hotWaterRelay", "mode_auto", "mode_manual", "mode_off", "boost", "boostSliderControl", "refresh"])
 
 	}
 }
@@ -144,6 +150,7 @@ def parse(String description) {
 
 def installed() {
 	log.debug "Executing 'installed'"
+    state.boostLength = 60
 	// execute handlerMethod every 10 minutes.
     schedule("0 0/10 * * * ?", poll)
 }
@@ -163,6 +170,20 @@ def uninstalled() {
 // handle commands
 def setHeatingSetpoint(temp) {
 	//Not implemented	
+}
+
+def setBoostLength(minutes) {
+	log.debug "Executing 'setBoostLength with length $minutes minutes'"
+    if (minutes < 10) {
+		minutes = 10
+	}
+	if (minutes > 240) {
+		minutes = 240
+	}
+    state.boostLength = minutes
+    sendEvent("name":"boostLength", "value": state.boostLength, displayed: true)
+    
+    refresh()    
 }
 
 def heatingSetpointUp(){
@@ -221,9 +242,14 @@ def setThermostatMode(mode) {
         	nodes: [	[attributes: [activeHeatCoolMode: [targetValue: "HEAT"], activeScheduleLock: [targetValue: true], targetHeatTemperature: [targetValue: "99"]]]]
             ]
     } else if (mode == 'emergency heat') {
+    	if (state.boostLength == null || state.boostLength == '')
+        {
+        	state.boostLength = 60
+            sendEvent("name":"boostLength", "value": 60, displayed: true)
+        }
     	//{"nodes":[{"attributes":{"activeHeatCoolMode":{"targetValue":"BOOST"},"scheduleLockDuration":{"targetValue":30},"targetHeatTemperature":{"targetValue":99}}}]}
     	args = [
-        	nodes: [	[attributes: [activeHeatCoolMode: [targetValue: "BOOST"], scheduleLockDuration: [targetValue: 60], targetHeatTemperature: [targetValue: "99"]]]]
+        	nodes: [	[attributes: [activeHeatCoolMode: [targetValue: "BOOST"], scheduleLockDuration: [targetValue: state.boostLength], targetHeatTemperature: [targetValue: "99"]]]]
             ]
     }
     
@@ -242,7 +268,12 @@ log.debug "Executing 'poll'"
         def statusMsg = "Currently"
         
         //Boost button label
-    	def boostLabel = "Start\nBoost"
+        if (state.boostLength == null || state.boostLength == '')
+        {
+        	state.boostLength = 60
+            sendEvent("name":"boostLength", "value": 60, displayed: true)
+        }
+    	def boostLabel = "Start\n$state.boostLength Min Boost"
         
         // determine hive hot water operating mode
         def activeHeatCoolMode = data.nodes.attributes.activeHeatCoolMode.reportedValue[0]
