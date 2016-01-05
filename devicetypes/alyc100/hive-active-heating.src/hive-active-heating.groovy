@@ -79,6 +79,7 @@
  *
  *	05.01.2016
  *	v1.11.1 - Removed the need for Pollster.
+ *	v1.11.2 - Added extra checks to ensure discovered node is active
  */
 preferences {
 	input("username", "text", title: "Username", description: "Your Hive username (usually an email address)")
@@ -531,7 +532,7 @@ def getNodeId () {
 		log.debug response.headers
         
         response.data.nodes.each {
-        	if (((state.parentNodeId == '') || (it.parentNodeId == state.parentNodeId)) && (it.attributes.supportsHotWater != null) && (it.attributes.supportsHotWater.reportedValue == false))
+        	if (((state.parentNodeId == '') || (it.parentNodeId == state.parentNodeId)) && (it.attributes.supportsHotWater != null) && (it.attributes.supportsHotWater.reportedValue == false) && (it.attributes.temperature != null))
             {   
             	state.nodeid = it.id
             }
