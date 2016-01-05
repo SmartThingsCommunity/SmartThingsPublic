@@ -79,7 +79,7 @@ metadata {
 
 	tiles(scale: 2) {
 
-		multiAttributeTile(name: "hotWaterRelay", width: 6, height: 4, type:"generic") {
+		multiAttributeTile(name: "hotWaterRelay", width: 6, height: 4, type:"lighting") {
 			tileAttribute("device.thermostatOperatingState", key:"PRIMARY_CONTROL"){
 				attributeState "heating", icon: "st.thermostat.heat", backgroundColor: "#EC6E05"
   				attributeState "idle", icon: "st.thermostat.heating-cooling-off", backgroundColor: "#ffffff"
@@ -127,23 +127,8 @@ metadata {
         	state "default", action:"off", icon:"st.thermostat.heating-cooling-off"
    	 	}
 
-		main(["hotWaterRelay_main"])
-        
-        		// ============================================================
-		// iOS TILES
-		// To expose iOS optimised tiles, comment out the details line in Android Tiles section and uncomment details line below.
-		
+		main(["hotWaterRelay_main"])	
 		details(["hotWaterRelay", "mode_auto", "mode_manual", "mode_off", "boost", "refresh"])
-        
-		// ============================================================
-
-		// ============================================================
-		// ANDROID TILES
-		// To expose Android optimised tiles, comment out the details line in iOS Tiles section and uncomment details line below.
-		
-		//details(["hotWaterRelay_small", "thermostatMode", "mode_auto", "mode_manual", "mode_off", "boost", "refresh"])
-		
-		// ============================================================
 
 	}
 }
