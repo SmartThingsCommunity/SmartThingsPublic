@@ -55,7 +55,7 @@
  *	v1.1.3 - Handle 'cool' mode. Change API client id.
  *
  *	05.01.2016
- *	v1.1.4 - Removed the need for Pollster.
+ *	v1.1.4 - Removed the need for Pollster. Improved tile layout for Android UI.
  */
 preferences {
 	input("username", "text", title: "Username", description: "Your Hive username (usually an email address)")
