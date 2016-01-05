@@ -14,10 +14,8 @@
  */
 metadata {
 	definition (name: "Enerwave ZW15R Outlet", namespace: "smartthings", author: "LGKahn") {
-		capability "Energy Meter"
 		capability "Actuator"
 		capability "Switch"
-		capability "Power Meter"
 		capability "Polling"
 		capability "Refresh"
 		capability "Configuration"
