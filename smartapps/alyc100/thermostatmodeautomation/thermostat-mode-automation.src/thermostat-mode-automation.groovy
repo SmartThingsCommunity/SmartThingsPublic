@@ -36,9 +36,10 @@
  *	v1.2 - 	 Extra Boost handling capabilities. 
  *		   	 Fixed bug where no reset was specified and app doesn't reset variable 'state.thermostatAltered'.
  *	v1.2.1 - Bug fixes.
- *	v1.3 -	 Option added to set mode of thermostat after boost action if reset mode is set to 'Boost for 60 minutes'.
+ *	v1.3 -	 Option added to set mode of thermostat after boost action if reset mode is set to 'Boost'.
  * 	v1.3.1 - Bug fixes.
  *  v1.3.2 - Stop possible infinite loop when handlers create events themselves.
+ *	v1.3.3 - Label change for Boost
  */
 
 definition(
@@ -88,7 +89,7 @@ def configurePage() {
  
   		section {
     		input ("alteredThermostatMode", "enum", multiple: false, title: "Set thermostats to this mode",
-            options: ["Set To Schedule", "Boost for 60 minutes", "Turn Off", "Set to Manual"], required: true, defaultValue: 'Turn Off')
+            options: ["Set To Schedule", "Boost", "Turn Off", "Set to Manual"], required: true, defaultValue: 'Turn Off')
   		}
         
         section {
@@ -99,10 +100,10 @@ def configurePage() {
         if (resetThermostats == "true") {
             section {
     			input ("resumedThermostatMode", "enum", multiple: false, title: "Reset thermostats back to this mode", submitOnChange: true,
-            	options: ["Set To Schedule", "Boost for 60 minutes", "Turn Off", "Set to Manual"], required: true, defaultValue: 'Set To Schedule')
+            	options: ["Set To Schedule", "Boost", "Turn Off", "Set to Manual"], required: true, defaultValue: 'Set To Schedule')
   			}
             
-            if (resumedThermostatMode == "Boost for 60 minutes") {
+            if (resumedThermostatMode == "Boost") {
             	section {
     				input ("thermostatModeAfterBoost", "enum", multiple: false, title: "What to do when Boost has finished",
             		options: ["Set To Schedule", "Turn Off", "Set to Manual"], required: true, defaultValue: 'Set To Schedule')
@@ -224,7 +225,7 @@ def takeActionForSwitch(switchState) {
             	changeAllThermostatsModes(thermostats, resumedThermostatMode, "$theSwitch.label has turned off")
             	
                 //Set flag if boost mode is selected as reset state so it can be set back to desired mode in 'thermostatModeAfterBoost'
-                if (resumedThermostatMode == "Boost for 60 minutes") {
+                if (resumedThermostatMode == "Boost") {
                 	state.boostingReset = true
                 }
                 
@@ -281,7 +282,7 @@ def takeActionForMode(mode) {
             	changeAllThermostatsModes(thermostats, resumedThermostatMode, "mode has changed to $mode")   
 
  				//Set flag if boost mode is selected as reset state so it can be set back to desired mode in 'thermostatModeAfterBoost'
-                if (resumedThermostatMode == "Boost for 60 minutes") {
+                if (resumedThermostatMode == "Boost") {
                 	state.boostingReset = true
                 }  
                               
@@ -306,7 +307,7 @@ def thermostateventHandler(evt) {
  	if (state.internalThermostatEvent == false) {
     	if (modeTrigger == "false") {    
     		//if the switch is currently on, check the new mode of the thermostat and set switch to off if necessary
-        	if (alteredThermostatMode == "Boost for 60 minutes") {
+        	if (alteredThermostatMode == "Boost") {
             	state.internalSwitchEvent = true
         		if (evt.value != "emergency heat") {
                 	//Switching the switch to off should trigger an event that resets app state
@@ -352,7 +353,7 @@ private changeAllThermostatsModes(thermostats, newThermostatMode, reason) {
     	else if (newThermostatMode == "Turn Off") {
     		thermostat.off()
     	}
-    	else if (newThermostatMode == "Boost for 60 minutes") {
+    	else if (newThermostatMode == "Boost") {
     		thermostat.emergencyHeat()
     	}
     	else {
