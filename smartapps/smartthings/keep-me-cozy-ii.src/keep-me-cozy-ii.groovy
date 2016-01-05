@@ -79,7 +79,7 @@ private evaluate()
 {
 	if (sensor) {
 		def threshold = 1.0
-        def offset = 2.0
+		def offset = 2.0
 		def tm = thermostat.currentThermostatMode
 		def ct = thermostat.currentTemperature
 		def currentTemp = sensor.currentTemperature
