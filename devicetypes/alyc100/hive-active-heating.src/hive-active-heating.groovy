@@ -285,7 +285,17 @@ def setBoostLength(minutes) {
     state.boostLength = minutes
     sendEvent("name":"boostLength", "value": state.boostLength, displayed: true)
     
-    refresh()
+    def latestThermostatMode = device.latestState('thermostatMode')
+    
+    //If already in BOOST mode, send updated boost length to Hive.
+	if (latestThermostatMode.stringValue == 'emergency heat') {
+		setThermostatMode('emergency heat')
+    }
+    else {
+    	refresh()
+    }
+    
+    
     
 }
 
