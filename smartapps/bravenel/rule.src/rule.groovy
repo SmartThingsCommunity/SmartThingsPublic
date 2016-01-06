@@ -3,7 +3,7 @@
  *
  *  Copyright 2015 Bruce Ravenel
  *
- *  Version 1.6.8d   4 Jan 2016
+ *  Version 1.6.8e   6 Jan 2016
  *
  *	Version History
  *
@@ -1373,7 +1373,7 @@ def dimToggle(devices, dimLevel, trufal) {
 def dimAdjust(devices, dimLevel, trufal) {
 //	log.debug "dimAdjust: $devices = ${devices*.currentValue('level')}"
 	def del = trufal ? delayMilTrue : delayMilFalse
-    devices.each { if(del) setLevel(it.currentLevel + dimLevel, [delay: del]) else devices.setLevel(it.currentLevel + dimLevel) }
+    devices.each { if(del) it.setLevel(it.currentLevel + dimLevel, [delay: del]) else devices.setLevel(it.currentLevel + dimLevel) }
 }
 
 def sendSmsMulti(phone, msg) {
