@@ -72,7 +72,7 @@ preferences {
 def selectRule() {
 	//init expert settings for rule
 	try { 
-		state.isExpert = parent.isExpert("1.6.8d") 
+		state.isExpert = parent.isExpert("1.6.9a") 
 		if (state.isExpert) state.cstCmds = parent.getCommands()
 		else state.cstCmds = []
 	}
