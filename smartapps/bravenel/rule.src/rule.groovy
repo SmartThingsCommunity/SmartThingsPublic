@@ -3,10 +3,11 @@
  *
  *  Copyright 2015 Bruce Ravenel
  *
- *  Version 1.6.8e   6 Jan 2016
+ *  Version 1.6.9   6 Jan 2016
  *
  *	Version History
  *
+ *	1.6.9	6 Jan 2016		Fixed bugs related to presence in triggers
  *	1.6.8	1 Jan 2016		Added version numbers to main Rule Machine page, multi SMS
  *	1.6.7	31 Dec 2015		Added speak to send message
  *	1.6.6	30 Dec 2015		Expert multi-commands added per Maxwell
@@ -1174,6 +1175,8 @@ def compare(a, rel, b, relDev) {
 }
 
 def checkCondAny(dev, stateX, cap, rel, relDev) {
+    if(stateX == "leaves") stateX = "not present"
+    else if(stateX == "arrives") stateX = "present"
 	def result = false
 	if     (cap == "Temperature") 	dev.currentTemperature.each 	{result = result || compare(it, rel, stateX, reldev ? relDev.currentTemperature : null)}
 	else if(cap == "Humidity")	dev.currentHumidity.each    	{result = result || compare(it, rel, stateX, reldev ? relDev.currentHumidity : null)}
@@ -1216,6 +1219,8 @@ def checkCondAll(dev, stateX, cap, rel, relDev) {
                 "clear": "detected",
                 "present": "not present",
                 "not present": "present",
+                "leaves": "present",
+                "arrives": "not present",
                 "locked": "unlocked",
                 "unlocked": "locked"]
 	def result = true
@@ -1585,11 +1590,11 @@ def allHandler(evt) {
 	def hasCond = state.howMany > 1
 	def doit = true
 	if(state.isTrig) {
-		if(evt.name in ["temperature", "humidity", "power", "energy", "battery", "illuminance", "mode", "button", "routineExecuted", "level"]) doit = testEvt(evt)
+		if(evt.name in ["temperature", "humidity", "power", "energy", "battery", "illuminance", "mode", "button", "routineExecuted", "level", "presence"]) doit = testEvt(evt)
 		if (doit) doTrigger() }
 	else if(state.isRule) runRule(false)
 	else {
-		if(hasTrig) if(evt.name in ["temperature", "humidity", "power", "energy", "battery", "illuminance", "mode", "button", "routineExecuted", "level"]) doit = testEvt(evt)
+		if(hasTrig) if(evt.name in ["temperature", "humidity", "power", "energy", "battery", "illuminance", "mode", "button", "routineExecuted", "level", "presence"]) doit = testEvt(evt)
 		if(hasCond) {if(doit) runRule(hasTrig)}
 		else if(doit) doTrigger()
 	}
