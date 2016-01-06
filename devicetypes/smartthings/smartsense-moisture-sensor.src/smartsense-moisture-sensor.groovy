@@ -22,12 +22,12 @@ metadata {
 		capability "Water Sensor"
         
         command "enrollResponse"
- 
- 
-		fingerprint inClusters: "0000,0001,0003,0402,0500,0020,0B05", outClusters: "0019", manufacturer: "CentraLite",  model: "3315-S"
-	        fingerprint inClusters: "0000,0001,0003,0402,0500,0020,0B05", outClusters: "0019", manufacturer: "CentraLite",  model: "3315"
-       		fingerprint inClusters: "0000,0001,0003,0402,0500,0020,0B05", outClusters: "0019", manufacturer: "CentraLite",  model: "3315-Seu"
 
+
+		fingerprint inClusters: "0000,0001,0003,0402,0500,0020,0B05", outClusters: "0019", manufacturer: "CentraLite",  model: "3315-S", deviceJoinName: "Water Leak Sensor"
+		fingerprint inClusters: "0000,0001,0003,0402,0500,0020,0B05", outClusters: "0019", manufacturer: "CentraLite",  model: "3315"
+		fingerprint inClusters: "0000,0001,0003,0402,0500,0020,0B05", outClusters: "0019", manufacturer: "CentraLite",  model: "3315-Seu", deviceJoinName: "Water Leak Sensor"
+		fingerprint inClusters: "0000,0001,0003,000F,0020,0402,0500", outClusters: "0019", manufacturer: "SmartThings", model: "moisturev4", deviceJoinName: "Water Leak Sensor"
 	}
  
 	simulator {
@@ -35,17 +35,27 @@ metadata {
 	}
 
 	preferences {
-		input description: "This feature allows you to correct any temperature variations by selecting an offset. Ex: If your sensor consistently reports a temp that's 5 degrees too warm, you'd enter \"-5\". If 3 degrees too cold, enter \"+3\".", displayDuringSetup: false, type: "paragraph", element: "paragraph"
-		input "tempOffset", "number", title: "Temperature Offset", description: "Adjust temperature by this many degrees", range: "*..*", displayDuringSetup: false
+		section {
+			image(name: 'educationalcontent', multiple: true, images: [
+				"http://cdn.device-gse.smartthings.com/Moisture/Moisture1.png",
+				"http://cdn.device-gse.smartthings.com/Moisture/Moisture2.png",
+				"http://cdn.device-gse.smartthings.com/Moisture/Moisture3.png"
+				])
+		}
+		section {
+			input title: "Temperature Offset", description: "This feature allows you to correct any temperature variations by selecting an offset. Ex: If your sensor consistently reports a temp that's 5 degrees too warm, you'd enter \"-5\". If 3 degrees too cold, enter \"+3\".", displayDuringSetup: false, type: "paragraph", element: "paragraph"
+			input "tempOffset", "number", title: "Degrees", description: "Adjust temperature by this many degrees", range: "*..*", displayDuringSetup: false
+		}
 	}
  
-	tiles {
-		standardTile("water", "device.water", width: 2, height: 2) {
-			state "dry", icon:"st.alarm.water.dry", backgroundColor:"#ffffff"
-			state "wet", icon:"st.alarm.water.wet", backgroundColor:"#53a7c0"
+	tiles(scale: 2) {
+		multiAttributeTile(name:"water", type: "generic", width: 6, height: 4){
+			tileAttribute ("device.water", key: "PRIMARY_CONTROL") {
+				attributeState "dry", label: "Dry", icon:"st.alarm.water.dry", backgroundColor:"#ffffff"
+				attributeState "wet", label: "Wet", icon:"st.alarm.water.wet", backgroundColor:"#53a7c0"
+			}
 		}
-        
-		valueTile("temperature", "device.temperature", inactiveLabel: false) {
+		valueTile("temperature", "device.temperature", inactiveLabel: false, width: 2, height: 2) {
 			state "temperature", label:'${currentValue}°',
 				backgroundColors:[
 					[value: 31, color: "#153591"],
@@ -57,16 +67,14 @@ metadata {
 					[value: 96, color: "#bc2323"]
 				]
 		}
- 
-		valueTile("battery", "device.battery", decoration: "flat", inactiveLabel: false) {
-			state "battery", label:'${currentValue}% battery'
+		valueTile("battery", "device.battery", decoration: "flat", inactiveLabel: false, width: 2, height: 2) {
+			state "battery", label:'${currentValue}% battery', unit:""
 		}
-        
-        standardTile("refresh", "device.refresh", inactiveLabel: false, decoration: "flat") {
+		standardTile("refresh", "device.refresh", inactiveLabel: false, decoration: "flat", width: 2, height: 2) {
 			state "default", action:"refresh.refresh", icon:"st.secondary.refresh"
 		}
- 
-		main "water", "temperature"
+
+		main (["water", "temperature"])
 		details(["water", "temperature", "battery", "refresh"])
 	}
 }
@@ -256,50 +264,49 @@ private Map getMoistureResult(value) {
 	]
 }
 
-def refresh()
-{
+def refresh() {
 	log.debug "Refreshing Temperature and Battery"
-	[
-		
-
+	def refreshCmds = [
         "st rattr 0x${device.deviceNetworkId} 1 0x402 0", "delay 200",
-		"st rattr 0x${device.deviceNetworkId} 1 1 0x20"
-
+		"st rattr 0x${device.deviceNetworkId} 1 1 0x20", "delay 200"
 	]
+
+	return refreshCmds + enrollResponse()
 }
 
 def configure() {
-
-	String zigbeeId = swapEndianHex(device.hub.zigbeeId)
-	log.debug "Confuguring Reporting, IAS CIE, and Bindings."
+	String zigbeeEui = swapEndianHex(device.hub.zigbeeEui)
+	log.debug "Configuring Reporting, IAS CIE, and Bindings."
 	def configCmds = [	
-		"zcl global write 0x500 0x10 0xf0 {${zigbeeId}}", "delay 200",
-		"send 0x${device.deviceNetworkId} 1 1", "delay 1500",
-        
-        "zcl global send-me-a-report 1 0x20 0x20 300 0600 {01}", "delay 200",
-        "send 0x${device.deviceNetworkId} 1 1", "delay 1500",
-        
-        "zcl global send-me-a-report 0x402 0 0x29 300 3600 {6400}", "delay 200",
-        "send 0x${device.deviceNetworkId} 1 1", "delay 1500",
-        
-        
-		"zdo bind 0x${device.deviceNetworkId} 1 1 0x402 {${device.zigbeeId}} {}", "delay 500",
-		"zdo bind 0x${device.deviceNetworkId} 1 1 0x001 {${device.zigbeeId}} {}", "delay 1000",
-        
-        "raw 0x500 {01 23 00 00 00}", "delay 200",
-        "send 0x${device.deviceNetworkId} 1 1", "delay 1000",
+		"zcl global write 0x500 0x10 0xf0 {${zigbeeEui}}", "delay 200",
+		"send 0x${device.deviceNetworkId} 1 1", "delay 500",
+
+		"zdo bind 0x${device.deviceNetworkId} ${endpointId} 1 1 {${device.zigbeeId}} {}", "delay 500",
+		"zcl global send-me-a-report 1 0x20 0x20 30 21600 {01}",		//checkin time 6 hrs
+        "send 0x${device.deviceNetworkId} 1 1", "delay 500",
+
+		"zdo bind 0x${device.deviceNetworkId} ${endpointId} 1 0x402 {${device.zigbeeId}} {}", "delay 500",
+        "zcl global send-me-a-report 0x402 0 0x29 30 3600 {6400}",
+        "send 0x${device.deviceNetworkId} 1 1", "delay 500"
 	]
     return configCmds + refresh() // send refresh cmds as part of config
 }
 
 def enrollResponse() {
 	log.debug "Sending enroll response"
-    [	
-    	
-	"raw 0x500 {01 23 00 00 00}", "delay 200",
-    "send 0x${device.deviceNetworkId} 1 1"
-        
+	String zigbeeEui = swapEndianHex(device.hub.zigbeeEui)
+    [
+		//Resending the CIE in case the enroll request is sent before CIE is written
+		"zcl global write 0x500 0x10 0xf0 {${zigbeeEui}}", "delay 200",
+		"send 0x${device.deviceNetworkId} 1 ${endpointId}", "delay 500",
+		//Enroll Response
+		"raw 0x500 {01 23 00 00 00}",
+		"send 0x${device.deviceNetworkId} 1 1", "delay 200"
     ]
+}
+
+private getEndpointId() {
+	new BigInteger(device.endpointId, 16).toString()
 }
 
 private hex(value) {

@@ -5,6 +5,8 @@
     that issue by using state variables
 */
 
+//DEPRECATED - Using the generic DTH for this device. Users need to be moved before deleting this DTH
+
 metadata {
     definition (name: "OSRAM LIGHTIFY LED Tunable White 60W", namespace: "smartthings", author: "SmartThings") {
 
@@ -13,17 +15,14 @@ metadata {
         capability "Switch"
         capability "Switch Level"
         capability "Configuration"
-        capability "Polling"
         capability "Refresh"
         capability "Sensor"
 
         attribute "colorName", "string"
-        // heartbeat is updated at every poll
+
+        // indicates that device keeps track of heartbeat (in state.heartbeat)
         attribute "heartbeat", "string"
-
-
-        fingerprint profileId: "0104", inClusters: "0000,0003,0004,0005,0006,0008,0300,0B04,FC0F", outClusters: "0019", manufacturer: "OSRAM", model: "Classic A60 TW"
-        fingerprint profileId: "0104", inClusters: "0000,0003,0004,0005,0006,0008,0300,0B04,FC0F", outClusters: "0019", manufacturer: "OSRAM", model: "LIGHTIFY A19 Tunable White"
+        
 
     }
 
@@ -75,6 +74,10 @@ metadata {
 // Parse incoming device messages to generate events
 def parse(String description) {
     //log.trace description
+
+    // save heartbeat (i.e. last time we got a message from device)
+    state.heartbeat = Calendar.getInstance().getTimeInMillis()
+
     if (description?.startsWith("catchall:")) {
         if(description?.endsWith("0100") ||description?.endsWith("1001") || description?.matches("on/off\\s*:\\s*1"))
         {
@@ -95,21 +98,16 @@ def parse(String description) {
         log.trace "descMap : $descMap"
 
         if (descMap.cluster == "0300") {
-            // trigger heartbeat
-            def hb = createEvent(name: "heartbeat", value: "alive", isStateChange: true, displayed:false)
-
             log.debug descMap.value
             def tempInMired = convertHexToInt(descMap.value)
             def tempInKelvin = Math.round(1000000/tempInMired)
             log.trace "temp in kelvin: $tempInKelvin"
-            def result = createEvent(name: "colorTemperature", value: tempInKelvin, displayed:false)
-            return [result, hb]
+            sendEvent(name: "colorTemperature", value: tempInKelvin, displayed:false)
         }
         else if(descMap.cluster == "0008"){
             def dimmerValue = Math.round(convertHexToInt(descMap.value) * 100 / 255)
             log.debug "dimmer value is $dimmerValue"
-            def result = createEvent(name: "level", value: dimmerValue)
-            return result
+            sendEvent(name: "level", value: dimmerValue)
         }
     }
     else {
@@ -119,8 +117,6 @@ def parse(String description) {
         log.debug "Parse returned ${result?.descriptionText}"
         return result
     }
-
-
 }
 
 def on() {
@@ -136,6 +132,7 @@ def off() {
 }
 
 def refresh() {
+    sendEvent(name: "heartbeat", value: "alive", displayed:false)
     [
             "st rattr 0x${device.deviceNetworkId} ${endpointId} 6 0", "delay 500",
             "st rattr 0x${device.deviceNetworkId} ${endpointId} 8 0", "delay 500",
@@ -146,22 +143,29 @@ def refresh() {
 
 def configure() {
     state.levelValue = 100
-    log.debug "Confuguring Reporting and Bindings."
+    log.debug "Configuring Reporting and Bindings."
     def configCmds = [
-
-            //Switch Reporting
-            "zcl global send-me-a-report 6 0 0x10 0 3600 {01}", "delay 500",
-            "send 0x${device.deviceNetworkId} ${endpointId} 1", "delay 1000",
-
-            //Level Control Reporting
-            "zcl global send-me-a-report 8 0 0x20 5 3600 {0010}", "delay 200",
-            "send 0x${device.deviceNetworkId} ${endpointId} 1", "delay 1500",
-
-            "zdo bind 0x${device.deviceNetworkId} ${endpointId} 1 6 {${device.zigbeeId}} {}", "delay 1000",
-            "zdo bind 0x${device.deviceNetworkId} ${endpointId} 1 8 {${device.zigbeeId}} {}", "delay 500",
             "zdo bind 0x${device.deviceNetworkId} ${endpointId} 1 0x0300 {${device.zigbeeId}} {}", "delay 500"
     ]
-    return configCmds + refresh() // send refresh cmds as part of config
+    return onOffConfig() + levelConfig() + configCmds + refresh() // send refresh cmds as part of config
+}
+
+def onOffConfig() {
+    [
+            "zdo bind 0x${device.deviceNetworkId} ${endpointId} 1 6 {${device.zigbeeId}} {}", "delay 200",
+            "zcl global send-me-a-report 6 0 0x10 0 300 {01}",
+            "send 0x${device.deviceNetworkId} 1 ${endpointId}", "delay 1500"
+    ]
+}
+
+//level config for devices with min reporting interval as 5 seconds and reporting interval if no activity as 1hour (3600s)
+//min level change is 01
+def levelConfig() {
+    [
+            "zdo bind 0x${device.deviceNetworkId} ${endpointId} 1 8 {${device.zigbeeId}} {}", "delay 200",
+            "zcl global send-me-a-report 8 0 0x20 5 3600 {01}",
+            "send 0x${device.deviceNetworkId} 1 ${endpointId}", "delay 1500"
+    ]
 }
 
 def setColorTemperature(value) {
@@ -188,11 +192,6 @@ def parseDescriptionAsMap(description) {
         def nameAndValue = param.split(":")
         map += [(nameAndValue[0].trim()):nameAndValue[1].trim()]
     }
-}
-
-def poll(){
-    log.debug "Poll is calling refresh"
-    refresh()
 }
 
 def setLevel(value) {

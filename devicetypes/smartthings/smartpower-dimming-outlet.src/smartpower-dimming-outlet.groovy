@@ -40,28 +40,28 @@ metadata {
 		reply "zcl on-off off": "on/off: 0"
 	}
 
-	// UI tile definitions
-	tiles {
-		standardTile("switch", "device.switch", width: 2, height: 2, canChangeIcon: true) {
-			state "on", label:'${name}', action:"switch.off", icon:"st.switches.switch.on", backgroundColor:"#79b821", nextState:"turningOff"
-			state "off", label:'${name}', action:"switch.on", icon:"st.switches.switch.off", backgroundColor:"#ffffff", nextState:"turningOn"
-			state "turningOn", label:'${name}', action:"switch.off", icon:"st.switches.switch.on", backgroundColor:"#79b821", nextState:"turningOff"
-			state "turningOff", label:'${name}', action:"switch.on", icon:"st.switches.switch.off", backgroundColor:"#ffffff", nextState:"turningOn"
+	tiles(scale: 2) {
+		multiAttributeTile(name:"switch", type: "lighting", width: 6, height: 4, canChangeIcon: true){
+			tileAttribute ("device.switch", key: "PRIMARY_CONTROL") {
+				attributeState "on", label:'${name}', action:"switch.off", icon:"st.switches.switch.on", backgroundColor:"#79b821", nextState:"turningOff"
+				attributeState "off", label:'${name}', action:"switch.on", icon:"st.switches.switch.off", backgroundColor:"#ffffff", nextState:"turningOn"
+				attributeState "turningOn", label:'${name}', action:"switch.off", icon:"st.switches.switch.on", backgroundColor:"#79b821", nextState:"turningOff"
+				attributeState "turningOff", label:'${name}', action:"switch.on", icon:"st.switches.switch.off", backgroundColor:"#ffffff", nextState:"turningOn"
+			}
+			tileAttribute ("device.level", key: "SLIDER_CONTROL") {
+				attributeState "level", action:"switch level.setLevel"
+			}
+			tileAttribute ("device.power", key: "SECONDARY_CONTROL") {
+				attributeState "power", label:'${currentValue} W'
+			}
 		}
-		controlTile("levelSliderControl", "device.level", "slider", height: 1, width: 2, inactiveLabel: false) {
-			state "level", action:"switch level.setLevel"
-		}
-		valueTile("level", "device.level", inactiveLabel: false, decoration: "flat") {
-			state "level", label: 'Level ${currentValue}%'
-		}
-		valueTile("power", "device.power", decoration: "flat") {
-			state "power", label:'${currentValue} W'
-		}
-		standardTile("refresh", "device.power", inactiveLabel: false, decoration: "flat") {
+
+		standardTile("refresh", "device.power", inactiveLabel: false, decoration: "flat", width: 2, height: 2) {
 			state "default", label:'', action:"refresh.refresh", icon:"st.secondary.refresh"
 		}
+
 		main "switch"
-		details(["switch", "level", "power","refresh","levelSliderControl"])
+		details(["switch", "refresh"])
 	}
 }
 
@@ -287,7 +287,8 @@ def isDescriptionPower(descMap) {
 	def powerValue = "undefined"
 	if (descMap.cluster == "0B04") {
 		if (descMap.attrId == "050b") {
-			powerValue = convertHexToInt(descMap.value)
+			if(descMap.value!="ffff")
+				powerValue = convertHexToInt(descMap.value)
 		}
 	}
 	else if (descMap.clusterId == "0B04") {
@@ -327,10 +328,9 @@ def levelConfig() {
 //min change in value is 05
 def powerConfig() {
 	[
-			//Meter (Power) Reporting
-			"zdo bind 0x${device.deviceNetworkId} 1 ${endpointId} 0x0B04 {${device.zigbeeId}} {}", "delay 200",
-			"zcl global send-me-a-report 0x0B04 0x050B 0x2A 1 600 {05}",
-			"send 0x${device.deviceNetworkId} 1 ${endpointId}", "delay 1500"
+		"zdo bind 0x${device.deviceNetworkId} 1 ${endpointId} 0x0B04 {${device.zigbeeId}} {}", "delay 200",
+		"zcl global send-me-a-report 0x0B04 0x050B 0x29 1 600 {05 00}",				//The send-me-a-report is custom to the attribute type for CentraLite
+		"send 0x${device.deviceNetworkId} 1 ${endpointId}", "delay 500"
 	]
 }
 
