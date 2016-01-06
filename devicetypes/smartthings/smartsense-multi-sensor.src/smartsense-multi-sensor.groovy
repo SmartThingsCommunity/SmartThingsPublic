@@ -381,7 +381,7 @@ def getTemperature(value) {
 			log.debug "Refreshing Values for manufacturer: SmartThings "
          	refreshCmds = refreshCmds + [
 
-	            /* These values of Motion Threshold Multiplier(01) and Motion Threshold (D200) 
+	            /* These values of Motion Threshold Multiplier(01) and Motion Threshold (7602)
 	               seem to be giving pretty accurate results for the XYZ co-ordinates for this manufacturer. 
 	               Separating these out in a separate if-else because I do not want to touch Centralite part 
 	               as of now. 
@@ -392,7 +392,7 @@ def getTemperature(value) {
 	            "send 0x${device.deviceNetworkId} 1 1", "delay 400",
 	            
 	            "zcl mfg-code ${manufacturerCode}", "delay 200",
-	            "zcl global write 0xFC02 2 0x21 {D200}", "delay 200",
+	            "zcl global write 0xFC02 2 0x21 {7602}", "delay 200",
             	"send 0x${device.deviceNetworkId} 1 1", "delay 400",
                 
             ]
