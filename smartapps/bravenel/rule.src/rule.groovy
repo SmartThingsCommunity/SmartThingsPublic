@@ -3,7 +3,7 @@
  *
  *  Copyright 2015 Bruce Ravenel
  *
- *  Version 1.6.9a   6 Jan 2016
+ *  Version 1.6.9b   6 Jan 2016
  *
  *	Version History
  *
@@ -72,7 +72,7 @@ preferences {
 def selectRule() {
 	//init expert settings for rule
 	try { 
-		state.isExpert = parent.isExpert("1.6.9a") 
+		state.isExpert = parent.isExpert("1.6.9b") 
 		if (state.isExpert) state.cstCmds = parent.getCommands()
 		else state.cstCmds = []
 	}
@@ -532,7 +532,7 @@ def inputLeft(sub) {
 		inputLeftAndRight(true)
 //		input "moreConds$state.n", "bool", title: "More conditions on left?", submitOnChange: true
 //		if(settings["moreConds$state.n"]) inputRight(sub)
-//      inputRight(sub)
+//		inputRight(sub)
 	} else {
 		input "condL$state.n", "enum", title: "Which condition?", options: conds, submitOnChange: true
 		if(settings["condL$state.n"]) {
@@ -561,6 +561,15 @@ def inputRight(sub) {
 			paragraph(state.str)
 			inputLeftAndRight(true)
 			inputRight(sub)
+			if(sub) {
+				input "endOfSub$state.n", "bool", title: "End of sub-rule?", submitOnChange: true
+				if(settings["endOfSub$state.n"]) {
+					state.str = state.str + " )"
+					state.eval << ")"
+					paragraph(state.str)
+					return
+				}
+			}
 		} else {
 			input "condR$state.n", "enum", title: "Which condition?", options: conds, submitOnChange: true
 			if(settings["condR$state.n"]) {
