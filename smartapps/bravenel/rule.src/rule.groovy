@@ -3,11 +3,11 @@
  *
  *  Copyright 2015 Bruce Ravenel
  *
- *  Version 1.6.9c   6 Jan 2016
+ *  Version 1.6.9d   6 Jan 2016
  *
  *	Version History
  *
- *	1.6.9	6 Jan 2016		Fixed bugs related to presence in triggers, add Off as disable option
+ *	1.6.9	6 Jan 2016		Fixed bugs related to presence in triggers, add Off as disable option, fixed bug in rule evaluation
  *	1.6.8	1 Jan 2016		Added version numbers to main Rule Machine page, multi SMS
  *	1.6.7	31 Dec 2015		Added speak to send message
  *	1.6.6	30 Dec 2015		Expert multi-commands added per Maxwell
@@ -1267,7 +1267,7 @@ def getOperand(i, isR) {
 	def result = true
     def foundItem = (settings.find {it.key == (isR ? "rCapab$i" : "tCapab$i")})
     if (foundItem == null) {
-        log.info "Cannot get operand for i: $i   isR: $isR"
+//        log.info "Cannot get operand for i: $i   isR: $isR"
         return null
     }
 	def capab = (settings.find {it.key == (isR ? "rCapab$i" : "tCapab$i")}).value
@@ -1287,7 +1287,7 @@ def getOperand(i, isR) {
 			else result = checkCondAny(myDev.value, myState ? myState.value : null, capab, myRel ? myRel.value : 0, myRelDev ? myRelDev.value : null)
 		} else result = checkCondAny(myDev.value, myState ? myState.value : null, capab, myRel ? myRel.value : 0, myRelDev ? myRelDev.value : null)
 	}
-//    log.debug "operand is $result"
+//    log.debug "operand $i is $result"
 	return result
 }
 
@@ -1310,12 +1310,13 @@ def disEval() {
 	}
 	if(state.token >= state.eval.size) return
 	state.token = state.token + 1
+//    log.debug "diseval: $state.token"
 }
 
 def evalTerm() {
 	def result = true
 	def thisTok = state.eval[state.token]
-	if (thisTok == "(") {
+	if(thisTok == "(") {
 		state.token = state.token + 1
 		result = eval()
 	} else result = getOperand(thisTok, true)
@@ -1324,18 +1325,20 @@ def evalTerm() {
 }
 
 def eval() {
-	def result = evalTerm()
+    def result = evalTerm()
 	while(true) {
 		if(state.token >= state.eval.size) return result
 		def thisTok = state.eval[state.token]
 		if (thisTok == "OR") {
 			if(result) {
 				disEval()
+                state.token = state.token + 1
 				return true
 			} 
 		} else if (thisTok == "AND") {
 			if(!result) {
 				disEval()
+                state.token = state.token + 1
 				return false
 			} 
 		} else if (thisTok == ")") return result
