@@ -3,11 +3,11 @@
  *
  *  Copyright 2015 Bruce Ravenel
  *
- *  Version 1.6.10   6 Jan 2016
+ *  Version 1.6.10a   7 Jan 2016
  *
  *	Version History
  *
- *	1.6.10	6 Jan 2016		Returned Delay on/off pending cancel per user request
+ *	1.6.10	6 Jan 2016		Returned Delay on/off pending cancel per user request, further debug of rule evaluation
  *	1.6.9	6 Jan 2016		Fixed bugs related to presence in triggers, add Off as disable option, fixed bug in rule evaluation
  *	1.6.8	1 Jan 2016		Added version numbers to main Rule Machine page, multi SMS
  *	1.6.7	31 Dec 2015		Added speak to send message
@@ -1305,13 +1305,8 @@ def findRParen() {
 }
 
 def disEval() {
-	if(state.eval[state.token] == "(") {
-		state.parenLev = 0
-		findRParen()
-	}
-	if(state.token >= state.eval.size) return
-	state.token = state.token + 1
-//    log.debug "diseval: $state.token"
+    state.parenLev = 0
+    findRParen()
 }
 
 def evalTerm() {
@@ -1333,13 +1328,11 @@ def eval() {
 		if (thisTok == "OR") {
 			if(result) {
 				disEval()
-                state.token = state.token + 1
 				return true
 			} 
 		} else if (thisTok == "AND") {
 			if(!result) {
 				disEval()
-                state.token = state.token + 1
 				return false
 			} 
 		} else if (thisTok == ")") return result
