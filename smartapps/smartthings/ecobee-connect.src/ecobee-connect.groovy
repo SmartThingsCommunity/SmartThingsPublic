@@ -19,7 +19,7 @@
  *      JLH - 01-23-2014 - Update for Correct SmartApp URL Format
  *      JLH - 02-15-2014 - Fuller use of ecobee API
  *      10-28-2015 DVCSMP-604 - accessory sensor, DVCSMP-1174, DVCSMP-1111 - not respond to routines
- *	StrykerSKS - 12-11-2015 - Make it work (better) with the Ecobee 3
+ *      StrykerSKS - 12-11-2015 - Make it work (better) with the Ecobee 3
  *
  */
  
@@ -347,7 +347,7 @@ Map getEcobeeSensors() {
 	def sensorMap = [:]
     def foundThermo = null
 	// TODO: Is this needed?
-	atomicState.remoteSensors = []    
+	atomicState.remoteSensors = [:]    
 
 	atomicState.thermostatData.thermostatList.each { singleStat ->
 		log.debug "thermostat loop: singleStat == ${singleStat} singleStat.identifier == ${singleStat.identifier}"
@@ -673,6 +673,13 @@ void poll() {
 	// def devices = getChildDevices()
 	// devices.each {pollChild(it)}
    //  TODO: if ( readyForAuthRefresh() ) { refreshAuthToken() } // Use runIn to make this feasible?
+   def C = myConvertTemperatureIfNeeded(81, "C", 1)
+   def F = myConvertTemperatureIfNeeded(81, "F", 1)
+   
+   
+   log.debug "myConvertTemperatureIfNeeded(81, X, 1): F: ${F} C: ${C}"
+   
+
     pollChildren(null) // Poll ALL the children at the same time for efficiency
 }
 
@@ -764,8 +771,9 @@ def updateSensorData() {
 					}
 				}
                                             
+				// TODO: Test the "unknown" populated data
 				def sensorData = [
-					temperature: temperature,
+					temperature: ((temperature == "unknown") ? "--" : myConvertTemperatureIfNeeded(temperature, "F", 0)),
 					motion: occupancy
 				]
 				sensorCollector[sensorDNI] = [data:sensorData]
@@ -791,14 +799,14 @@ def updateThermostatData() {
 			heatMode: (stat.settings.heatStages > 0),
 			autoMode: stat.settings.autoHeatCoolFeatureEnabled,
 			auxHeatMode: (stat.settings.hasHeatPump) && (stat.settings.hasForcedAir || stat.settings.hasElectric || stat.settings.hasBoiler),
-			temperature: stat.runtime.actualTemperature / 10,
-			heatingSetpoint: stat.runtime.desiredHeat / 10,
-			coolingSetpoint: stat.runtime.desiredCool / 10,
+			temperature: myConvertTemperatureIfNeeded( (stat.runtime.actualTemperature / 10), "F", 0),
+			heatingSetpoint: myConvertTemperatureIfNeeded( (stat.runtime.desiredHeat / 10), "F", 0),
+			coolingSetpoint: myConvertTemperatureIfNeeded( (stat.runtime.desiredCool / 10), "F", 0),
 			thermostatMode: stat.settings.hvacMode,                            
 			humidity: stat.runtime.actualHumidity,
 			thermostatOperatingState: getThermostatOperatingState(stat),
 			weatherSymbol: stat.weather.forecasts[0].weatherSymbol.toString(),
-			weatherTemperature: (stat.weather.forecasts[0].temperature.toDouble() / 10).round(0)
+			weatherTemperature: myConvertTemperatureIfNeeded( ((stat.weather.forecasts[0].temperature / 10)), "F", 0)
 			// weatherStation:stat.weather.weatherStation,
 			// weatherSymbol:stat.weather.forecasts[0].weatherSymbol.toString(),
 			// weatherTemperature:stat.weather.forecasts[0].temperature,
@@ -817,10 +825,12 @@ def updateThermostatData() {
 			// weatherWindDirection:stat.weather.forecasts[0].windDirection + " Winds",
 			// weatherPop:stat.weather.forecasts[0].pop.toString()
 		]
+        // TODO: Fix F to C conversion here as well
 		data["temperature"] = data["temperature"] ? data["temperature"].toDouble().toInteger() : data["temperature"]
 		data["heatingSetpoint"] = data["heatingSetpoint"] ? data["heatingSetpoint"].toDouble().toInteger() : data["heatingSetpoint"]
 		data["coolingSetpoint"] = data["coolingSetpoint"] ? data["coolingSetpoint"].toDouble().toInteger() : data["coolingSetpoint"]
-//		debugEventFromParent(child, "Event Data = ${data}")
+        data["weatherTemperature"] = data["weatherTemperature"] ? data["weatherTemperature"].toDouble().toInteger() : data["weatherTemperature"]
+		debugEventFromParent(child, "Event Data = ${data}")
 
 		collector[dni] = [data:data]
 		return collector
@@ -991,11 +1001,12 @@ def resumeProgram(child, deviceId) {
 }
 
 def setHold(child, heating, cooling, deviceId, sendHoldType) {
+	int h = (getTemperatureScale() == "C") ? (cToF(heating) * 10) : (heating * 10)
+	int c = (getTemperatureScale() == "C") ? (cToF(cooling) * 10) : (cooling * 10)
+    
 
-	int h = heating * 10
-	int c = cooling * 10
-
-    log.debug "setHold(): setpoints____________ - h: ${heating} - ${h}, c: ${cooling} - ${c}, setHoldType: ${setHoldType}"
+    log.debug "setHold(): setpoints____________ - h: ${heating} - ${h}, c: ${cooling} - ${c}, setHoldType: ${sendHoldType}"
+    debugEventFromParent(child, "setHold(): setpoints____________ - h: ${heating} - ${h}, c: ${cooling} - ${c}, setHoldType: ${sendHoldType}")
 //    def thermostatIdsString = getChildDeviceIdsString()
 
 	def jsonRequestBody = '{"selection":{"selectionType":"thermostats","selectionMatch":"' + deviceId + '","includeRuntime":true},"functions": [{ "type": "setHold", "params": { "coolHoldTemp": '+c+',"heatHoldTemp": '+h+', "holdType": '+sendHoldType+' } } ]}'
@@ -1140,18 +1151,43 @@ def sendActivityFeeds(notificationMessage) {
 // getTemperatureScale()
 // fahrenheitToCelsius()
 // celsiusToFahrenheit()
+// convertTemperatureIfNeeded()
+
+// Creating my own as it seems that the built-in version only works for a device, NOT a SmartApp
+def myConvertTemperatureIfNeeded(scaledSensorValue, cmdScale, precision) {
+	if ( (cmdScale != "C") && (cmdScale != "F") && (cmdScale != "dC") && (cmdScale != "dF") ) {
+    	// We do not have a valid Scale input, throw a debug error into the logs and just return the passed in value
+        return scaledSensorValue
+    }
+
+	// Normalize the input
+	if (cmdScale == "dF") { cmdScale = "F" }
+    if (cmdScale == "dC") { cmdScale = "C" }
+
+	if (cmdScale == getTemperatureScale() ) {
+    	// The platform scale is the same as the current value scale
+        return scaledSensorValue
+    } else if (cmdScale == "F") {
+    	return fToC(scaledSensorValue).round(precision)
+    } else {
+    	return cToF(scaledSensorValue).round(precision)
+    }
+    
+}
 
 def wantMetric() {
 	return (getTemperatureScale() == "C")
 }
 
 private def cToF(temp) {
-	//return (temp * 1.8 + 32)
-    return celsiusToFahrenheit(temp)
+	log.info "cToF entered with ${temp}"
+	return (temp * 1.8 + 32) as Double
+    // return celsiusToFahrenheit(temp)
 }
-private def fToC(temp) {
-	// return (temp - 32) / 1.8
-    return fahrenheitToCelsius(temp)
+private def fToC(temp) {	
+	log.info "fToC entered with ${temp}"
+	return (temp - 32) / 1.8 as Double
+    // return fahrenheitToCelsius(temp)
 }
 private def milesToKm(distance) {
 	return (distance * 1.609344) 
@@ -1174,7 +1210,7 @@ private String childType(child) {
 	// Determine child type (Thermostat or Remote Sensor)
     if ( child.hasCapability("Thermostat") ) { return getChildThermostatName() }
     if ( child.name.contains( getChildSensorName() ) ) { return getChildSensorName() }
-    return "Unkown"
+    return "Unknown"
     
 }
 
