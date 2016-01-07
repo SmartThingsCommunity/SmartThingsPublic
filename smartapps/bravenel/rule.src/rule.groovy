@@ -3,10 +3,11 @@
  *
  *  Copyright 2015 Bruce Ravenel
  *
- *  Version 1.6.9d   6 Jan 2016
+ *  Version 1.6.10   6 Jan 2016
  *
  *	Version History
  *
+ *	1.6.10	6 Jan 2016		Returned Delay on/off pending cancel per user request
  *	1.6.9	6 Jan 2016		Fixed bugs related to presence in triggers, add Off as disable option, fixed bug in rule evaluation
  *	1.6.8	1 Jan 2016		Added version numbers to main Rule Machine page, multi SMS
  *	1.6.7	31 Dec 2015		Added speak to send message
@@ -72,7 +73,7 @@ preferences {
 def selectRule() {
 	//init expert settings for rule
 	try { 
-		state.isExpert = parent.isExpert("1.6.9c") 
+		state.isExpert = parent.isExpert("1.6.10") 
 		if (state.isExpert) state.cstCmds = parent.getCommands()
 		else state.cstCmds = []
 	}
@@ -724,9 +725,9 @@ def selectActionsTrue() {
 					setActTrue(delayStrTrue)
 				}
 			}
-//            if(state.isRule || state.howMany > 1) {
+            if(state.isRule || state.howMany > 1) {
+				input "pendedOffTrue", "capability.switch", title: "Turn on/off these switches after a delay, pending cancellation (default is OFF)", multiple: true, required: false, submitOnChange: true
 				if(pendedOffTrue) {
-					input "pendedOffTrue", "capability.switch", title: "Turn on/off these switches after a delay, pending cancellation (default is OFF)", multiple: true, required: false, submitOnChange: true
 					input "pendOnOffTrue", "bool", title: "Turn ON after the delay?", multiple: false, required: false, defaultValue: false, submitOnChange: true
 					input "pendMinutesTrue", "number", title: "Minutes of delay", required: true, range: "1..*", submitOnChange: true
 					if(pendMinutesTrue) {
@@ -735,7 +736,7 @@ def selectActionsTrue() {
 						setActTrue(pendStrTrue)
 					}
 				}
-//            }
+            }
 			input "dimATrue", "capability.switchLevel", title: "Set these dimmers", multiple: true, submitOnChange: true, required: false
 			if(dimATrue) {
             	input "dimTrackTrue", "bool", title: "Track event dimmer?", required: false, submitOnChange: true
@@ -878,9 +879,9 @@ def selectActionsFalse() {
 					setActFalse(delayStrFalse)
 				}
 			}
-//            if(isRule) {
+            if(isRule) {
+				input "pendedOffFalse", "capability.switch", title: "Turn on/off these switches after a delay, pending cancellation (default is OFF)", multiple: true, required: false, submitOnChange: true
 				if(pendedOffFalse) {
-					input "pendedOffFalse", "capability.switch", title: "Turn on/off these switches after a delay, pending cancellation (default is OFF)", multiple: true, required: false, submitOnChange: true
 					input "pendOnOffFalse", "bool", title: "Turn ON after the delay?", multiple: false, required: false, defaultValue: false, submitOnChange: true
 					input "pendMinutesFalse", "number", title: "Minutes of delay", required: true, range: "1..*", submitOnChange: true
 					if(pendMinutesFalse) {
@@ -889,7 +890,7 @@ def selectActionsFalse() {
 						setActFalse(pendStrFalse)
 					}
 				}
-//            }
+            }
 			input "dimAFalse", "capability.switchLevel", title: "Set these dimmers", multiple: true, submitOnChange: true, required: false
 			if(dimAFalse) {
             	input "dimTrackFalse", "bool", title: "Track event dimmer?", required: false, submitOnChange: true
