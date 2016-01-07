@@ -17,16 +17,18 @@
  metadata {
  	definition (name: "SmartSense Multi Sensor", namespace: "smartthings", author: "SmartThings") {
  		
-        capability "Three Axis"
+                capability "Three Axis"
 		capability "Battery"
  		capability "Configuration"
-        capability "Sensor"
+                capability "Sensor"
  		capability "Contact Sensor"
  		capability "Acceleration Sensor"
  		capability "Refresh"
  		capability "Temperature Measurement"
+ 		capability "Garage Door Control"
         
- 		command "enrollResponse"
+ 		command "actuate"
+
  		fingerprint inClusters: "0000,0001,0003,0402,0500,0020,0B05,FC02", outClusters: "0019", manufacturer: "CentraLite", model: "3320"
 		fingerprint inClusters: "0000,0001,0003,0402,0500,0020,0B05,FC02", outClusters: "0019", manufacturer: "CentraLite", model: "3321"
         fingerprint inClusters: "0000,0001,0003,0402,0500,0020,0B05,FC02", outClusters: "0019", manufacturer: "CentraLite", model: "3321-S", deviceJoinName: "Multipurpose Sensor"
@@ -36,9 +38,6 @@
  	}
 
  	simulator {
-		status "open": "zone report :: type: 19 value: 0031"
-		status "closed": "zone report :: type: 19 value: 0030"
-
 		status "acceleration": "acceleration: 1"
 		status "no acceleration": "acceleration: 0"
 
@@ -52,6 +51,45 @@
 		status "x,y,z: 0,1000,0": "x: 0, y: 1000, z: 0"
 		status "x,y,z: 0,0,1000": "x: 0, y: 0, z: 1000"
 	}
+	tiles {
+		standardTile("status", "device.status", width: 2, height: 2) {
+			state("closed", label:'${name}', icon:"st.doors.garage.garage-closed", action: "actuate", backgroundColor:"#79b821", nextState:"opening")
+			state("open", label:'${name}', icon:"st.doors.garage.garage-open", action: "actuate", backgroundColor:"#ffa81e", nextState:"closing")
+			state("opening", label:'${name}', icon:"st.doors.garage.garage-opening", backgroundColor:"#ffe71e")
+			state("closing", label:'${name}', icon:"st.doors.garage.garage-closing", backgroundColor:"#ffe71e")
+		}
+		standardTile("contact", "device.contact") {
+			state("open", label:'${name}', icon:"st.contact.contact.open", backgroundColor:"#ffa81e")
+			state("closed", label:'${name}', icon:"st.contact.contact.closed", backgroundColor:"#79b821")
+		}
+		standardTile("acceleration", "device.acceleration", decoration: "flat") {
+			state("active", label:'${name}', icon:"st.motion.acceleration.active", backgroundColor:"#53a7c0")
+			state("inactive", label:'${name}', icon:"st.motion.acceleration.inactive", backgroundColor:"#ffffff")
+		}
+		valueTile("temperature", "device.temperature", decoration: "flat") {
+			state("temperature", label:'${currentValue}°')
+		}
+		valueTile("3axis", "device.threeAxis", decoration: "flat", wordWrap: false) {
+			state("threeAxis", label:'${currentValue}', unit:"")
+		}
+		valueTile("battery", "device.battery", decoration: "flat", inactiveLabel: false) {
+			state "battery", label:'${currentValue}% battery', unit:""/*, backgroundColors:[
+				[value: 5, color: "#BC2323"],
+				[value: 10, color: "#D04E00"],
+				[value: 15, color: "#F1D801"],
+				[value: 16, color: "#FFFFFF"]
+			]*/
+		}
+		/*
+		valueTile("lqi", "device.lqi", decoration: "flat", inactiveLabel: false) {
+			state "lqi", label:'${currentValue}% signal', unit:""
+		}
+		*/
+
+		main(["status","contact", "acceleration"])
+		details(["status","contact", "acceleration", "temperature", "3axis", "battery"/*, "lqi"*/])
+	}
+
  	preferences {
 		section {
 			image(name: 'educationalcontent', multiple: true, images: [
@@ -68,53 +106,8 @@
 		section {
  			input("garageSensor", "enum", title: "Do you want to use this sensor on a garage door?", options: ["Yes", "No"], defaultValue: "No", required: false, displayDuringSetup: false)
 		}
- 	}
-
-	tiles(scale: 2) {
-		multiAttributeTile(name:"status", type: "generic", width: 6, height: 4){
-			tileAttribute ("device.status", key: "PRIMARY_CONTROL") {
-				attributeState "open", label:'${name}', icon:"st.contact.contact.open", backgroundColor:"#ffa81e"
-				attributeState "closed", label:'${name}', icon:"st.contact.contact.closed", backgroundColor:"#79b821"
-				attributeState "garage-open", label:'Open', icon:"st.doors.garage.garage-open", backgroundColor:"#ffa81e"
-				attributeState "garage-closed", label:'Closed', icon:"st.doors.garage.garage-closed", backgroundColor:"#79b821"
-			}
-		}
-		standardTile("contact", "device.contact", width: 2, height: 2) {
-			state("open", label:'${name}', icon:"st.contact.contact.open", backgroundColor:"#ffa81e")
-			state("closed", label:'${name}', icon:"st.contact.contact.closed", backgroundColor:"#79b821")
-		}
-		standardTile("acceleration", "device.acceleration", width: 2, height: 2) {
-			state("active", label:'${name}', icon:"st.motion.acceleration.active", backgroundColor:"#53a7c0")
-			state("inactive", label:'${name}', icon:"st.motion.acceleration.inactive", backgroundColor:"#ffffff")
-		}
-		valueTile("temperature", "device.temperature", width: 2, height: 2) {
-			state("temperature", label:'${currentValue}°',
-				backgroundColors:[
-					[value: 31, color: "#153591"],
-					[value: 44, color: "#1e9cbb"],
-					[value: 59, color: "#90d2a7"],
-					[value: 74, color: "#44b621"],
-					[value: 84, color: "#f1d801"],
-					[value: 95, color: "#d04e00"],
-					[value: 96, color: "#bc2323"]
-				]
-			)
-		}
-		valueTile("3axis", "device.threeAxis", decoration: "flat", wordWrap: false, width: 2, height: 2) {
-			state("threeAxis", label:'${currentValue}', unit:"", backgroundColor:"#ffffff")
-		}
-		valueTile("battery", "device.battery", decoration: "flat", inactiveLabel: false, width: 2, height: 2) {
-			state "battery", label:'${currentValue}% battery', unit:""
-		}
- 		standardTile("refresh", "device.refresh", inactiveLabel: false, decoration: "flat", width: 2, height: 2) {
- 			state "default", action:"refresh.refresh", icon:"st.secondary.refresh"
- 		}
-
-
-		main(["status", "acceleration", "temperature"])
-		details(["status", "acceleration", "temperature", "3axis", "battery", "refresh"])
-	}
- }
+ 
+}
 
 def parse(String description) {
 	Map map = [:]
