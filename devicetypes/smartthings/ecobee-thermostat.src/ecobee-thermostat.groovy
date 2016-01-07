@@ -345,7 +345,7 @@ metadata {
             state "false", label: "API ", backgroundColor: "#ffa81e", icon: "st.contact.contact.open"
 		}
         
-		valueTile("temperature", "device.temperature", width: 2, height: 2) {
+		valueTile("temperature", "device.temperature", width: 2, height: 2, canChangeIcon: true, icon: "st.Home.home1") {
 			state("temperature", label:'${currentValue}°', unit:"F",
 				backgroundColors: [
                 	// Celsius Color Range
@@ -402,16 +402,16 @@ metadata {
 			state "setpoint", action:"lowerSetpoint", icon:"st.thermostat.thermostat-down"
 		}
 		controlTile("heatSliderControl", "device.heatingSetpoint", "slider", height: 1, width: 4, inactiveLabel: false) {
-			state "setHeatingSetpoint", action:"thermostat.setHeatingSetpoint", backgroundColor:"#d04e00"
+			state "setHeatingSetpoint", action:"thermostat.setHeatingSetpoint", backgroundColor:"#d04e00", unit: '${getTemperatureScale()}'
 		}
 		valueTile("heatingSetpoint", "device.heatingSetpoint", height: 1, width: 2, inactiveLabel: false, decoration: "flat") {
-			state "heat", label:'${currentValue}° Heat', unit:"dF", backgroundColor:"#d04e00"
+			state "heat", label:'${currentValue}°\nHeat', unit:"dF", backgroundColor:"#d04e00"
 		}
 		controlTile("coolSliderControl", "device.coolingSetpoint", "slider", height: 1, width: 4, inactiveLabel: false) {
-			state "setCoolingSetpoint", action:"thermostat.setCoolingSetpoint", backgroundColor: "#1e9cbb"
+			state "setCoolingSetpoint", action:"thermostat.setCoolingSetpoint", backgroundColor: "#1e9cbb", unit: '${getTemperatureScale()}'
 		}
 		valueTile("coolingSetpoint", "device.coolingSetpoint", width: 2, height: 1, inactiveLabel: false, decoration: "flat") {
-			state "cool", label:'${currentValue}° Cool', unit:"dF", backgroundColor: "#1e9cbb"
+			state "cool", label:'${currentValue}°\nCool', unit:"dF", backgroundColor: "#1e9cbb"
 		}
 		standardTile("refresh", "device.thermostatMode", width: 2, height: 2,inactiveLabel: false, decoration: "flat") {
 			state "default", action:"refresh.refresh", icon:"st.secondary.refresh"
@@ -428,7 +428,8 @@ metadata {
 				// attributeState("idle", backgroundColor:"#C0C0C0") 
 			state "heating", backgroundColor:"#ffa81e", icon: "st.thermostat.heat"
 			state "cooling", backgroundColor:"#269bd2", icon: "st.thermostat.cool"
-            state "default", label: '${currentValue}'
+            // Issue reported that the label overlaps. Need to remove the icon
+            state "default", label: '${currentValue}', backgroundColor:"c0c0c0", icon: ""
 		}
         
         valueTile("humidity", "device.humidity", inactiveLabel: false, decoration: "flat", width: 2, height: 2,) {
@@ -541,6 +542,7 @@ metadata {
         	// TODO: Allow for a "smart" Setpoint change in "Auto" mode. Why won't the paragraph show up in the Edit Device screen?
         	paragraph "The Smart Auto Temp Adjust flag allows for the temperature to be adjusted manually even when the thermostat is in Auto mode. An attempt to determine if the heat or cool setting should be changed will be made automatically."
             input "smartAuto", "bool", title: "Smart Auto Temp Adjust", description: true, required: false
+            input "detailedTracing", "bool", title: "Enable Detailed Tracing", description: true, required: false
        }
 	}
 
@@ -572,28 +574,33 @@ void poll() {
 
 def generateEvent(Map results) {
 	log.debug "generateEvent(): parsing data $results"
+	def linkText = getLinkText(device)
+
 	if(results) {
 		results.each { name, value ->
-
-			def linkText = getLinkText(device)
+			log.debug "generateEvent() - In each loop: name: ${name}  value: ${value}"
 			def isChange = false
 			def isDisplayed = true
 			def event = [name: name, linkText: linkText, descriptionText: getThermostatDescriptionText(name, value, linkText),
 			handlerName: name]
 
-			if (name=="temperature" || name=="heatingSetpoint" || name=="coolingSetpoint") {
-				def sendValue = value? convertTemperatureIfNeeded(value.toDouble(), "F", 1): value //API return temperature value in F
+			if (name=="temperature" || name=="heatingSetpoint" || name=="coolingSetpoint" || name=="weatherTemperature" ) {
+				def sendValue = value // ? convertTemperatureIfNeeded(value.toDouble(), "F", 1): value //API return temperature value in F
 				isChange = isTemperatureStateChange(device, name, value.toString())
 				isDisplayed = isChange
 				event << [value: sendValue, isStateChange: isChange, displayed: isDisplayed]
-			} else if (name=="heatMode" || name=="coolMode" || name=="autoMode" || name=="auxHeatMode"){
+			} else if (name=="heatMode" || name=="coolMode" || name=="autoMode" || name=="auxHeatMode") {
 				isChange = isStateChange(device, name, value.toString())
 				event << [value: value.toString(), isStateChange: isChange, displayed: false]
-			}  else {
+			} else if (name=="thermostatOperatingState") {
+            	generateOperatingStateEvent(value.toString())
+                return
+            } else {
 				isChange = isStateChange(device, name, value.toString())
 				isDisplayed = isChange
 				event << [value: value.toString(), isStateChange: isChange, displayed: isDisplayed]
 			}
+            log.debug "Out of loop, calling sendevent(${event})"
 			sendEvent(event)
 		}
 		generateSetpointEvent ()
@@ -605,13 +612,13 @@ def generateEvent(Map results) {
 // TODO: Does this handle Celsius?
 private getThermostatDescriptionText(name, value, linkText) {
 	if(name == "temperature") {
-		return "$linkText temperature is $value°F"
+		return "$linkText temperature is $value°"
 
 	} else if(name == "heatingSetpoint") {
-		return "heating setpoint is $value°F"
+		return "heating setpoint is $value°"
 
 	} else if(name == "coolingSetpoint"){
-		return "cooling setpoint is $value°F"
+		return "cooling setpoint is $value°"
 
 	} else if (name == "thermostatMode") {
 		return "thermostat mode is ${value}"
@@ -683,12 +690,20 @@ void setHeatingSetpoint(Double setpoint) {
 	//enforce limits of heatingSetpoint
     // TODO: Make these limits configurable? Use values stored in Ecobee cloud?
     // TODO: Does this handle Celcius?
-	if (heatingSetpoint > 79) {
-		heatingSetpoint = 79
-	} else if (heatingSetpoint < 45) {
-		heatingSetpoint = 45
-	}
-
+	if ( getTemperatureScale() == "F" ) {
+		if (heatingSetpoint > 79) {
+			heatingSetpoint = 79
+		} else if (heatingSetpoint < 45) {
+			heatingSetpoint = 45
+		}
+	} else {
+		if (heatingSetpoint > 26) {
+			heatingSetpoint = 26
+		} else if (heatingSetpoint < 7) {
+			heatingSetpoint = 7
+		}    
+    }
+    
 	//enforce limits of heatingSetpoint vs coolingSetpoint
 	if (heatingSetpoint >= coolingSetpoint) {
 		coolingSetpoint = heatingSetpoint
@@ -698,9 +713,11 @@ void setHeatingSetpoint(Double setpoint) {
 
 	
 	def sendHoldType = whatHoldType()
+    
+    // TODO: Update this parent call with Farenheit values if in mode Celcius!!!
 	if (parent.setHold (this, heatingSetpoint,  coolingSetpoint, deviceId, sendHoldType)) {
-		sendEvent("name":"heatingSetpoint", "value":heatingSetpoint.toInteger())
-		sendEvent("name":"coolingSetpoint", "value":coolingSetpoint.toInteger())
+		sendEvent("name":"heatingSetpoint", "value":heatingSetpoint.toInteger()) // TODO: This does not round up
+		sendEvent("name":"coolingSetpoint", "value":coolingSetpoint.toInteger()) // TODO: This does not round up
 		log.debug "Done setHeatingSetpoint> coolingSetpoint: ${coolingSetpoint}, heatingSetpoint: ${heatingSetpoint}"
 		generateSetpointEvent()
 		generateStatusEvent()
@@ -722,11 +739,21 @@ void setCoolingSetpoint(Double setpoint) {
 	def coolingSetpoint = setpoint
 	def deviceId = device.deviceNetworkId.split(/\./).last()
 
-	if (coolingSetpoint > 92) {
-		coolingSetpoint = 92
-	} else if (coolingSetpoint < 65) {
-		coolingSetpoint = 65
-	}
+// TODO: Make this check work for both C AND F
+	if ( getTemperatureScale() == "F" ) {
+		if (coolingSetpoint > 92) {
+			coolingSetpoint = 92
+		} else if (coolingSetpoint < 65) {
+			coolingSetpoint = 65
+		}
+    } else {
+    	if (coolingSetpoint > 33) {
+			coolingSetpoint = 33
+		} else if (coolingSetpoint < 18) {
+			coolingSetpoint = 18
+		}
+    
+    }
 
 	//enforce limits of heatingSetpoint vs coolingSetpoint
 	if (heatingSetpoint >= coolingSetpoint) {
@@ -736,6 +763,9 @@ void setCoolingSetpoint(Double setpoint) {
 	log.debug "Sending setCoolingSetpoint> coolingSetpoint: ${coolingSetpoint}, heatingSetpoint: ${heatingSetpoint}"
 
 	def sendHoldType = holdType ? (holdType=="Temporary")? "nextTransition" : (holdType=="Permanent")? "indefinite" : "indefinite" : "indefinite"
+    log.debug "sendHoldType == ${sendHoldType}"
+    
+    // Convert temp to F from C if needed
 	if (parent.setHold (this, heatingSetpoint,  coolingSetpoint, deviceId, sendHoldType)) {
 		sendEvent("name":"heatingSetpoint", "value":heatingSetpoint.toInteger())
 		sendEvent("name":"coolingSetpoint", "value":coolingSetpoint.toInteger())
@@ -1135,6 +1165,7 @@ void alterSetpoint(temp) {
 
 	def sendHoldType = whatHoldType()
 	//step2: call parent.setHold to send http request to 3rd party cloud
+    // Convert values to F from C if needed
 	if (parent.setHold(this, targetHeatingSetpoint, targetCoolingSetpoint, deviceId, sendHoldType)) {
 		sendEvent("name": "thermostatSetpoint", "value": temp.value.toString(), displayed: false)
 		sendEvent("name": "heatingSetpoint", "value": targetHeatingSetpoint)
@@ -1148,8 +1179,6 @@ void alterSetpoint(temp) {
 }
 
 def generateStatusEvent() {
-	// TODO: Move the generateOperatingStateEvent somewhere else and use the EquipmentStatus to determine?
-
 	def mode = device.currentValue("thermostatMode")
 	def heatingSetpoint = device.currentValue("heatingSetpoint").toInteger()
 	def coolingSetpoint = device.currentValue("coolingSetpoint").toInteger()
@@ -1167,41 +1196,26 @@ def generateStatusEvent() {
 
 		if (temperature >= heatingSetpoint) {
 			statusText = "Right Now: Idle"
-			// generateOperatingStateEvent("idle")
 		} else {
-			statusText = "Heating to ${heatingSetpoint}° F"
-			// generateOperatingStateEvent("heating")
+			statusText = "Heating to ${heatingSetpoint}°"
 		}
 
 	} else if (mode == "cool") {
 
 		if (temperature <= coolingSetpoint) {
 			statusText = "Right Now: Idle"
-			// generateOperatingStateEvent("idle")
 		} else {
-			statusText = "Cooling to ${coolingSetpoint}° F"
-			// generateOperatingStateEvent("cooling")
+			statusText = "Cooling to ${coolingSetpoint}°"
 		}
 
 	} else if (mode == "auto") {
-		// TODO: Can we get more sophisticated here for the operating state event?
 		statusText = "Right Now: Auto"
-		// generateOperatingStateEvent("auto")
-
 	} else if (mode == "off") {
-
 		statusText = "Right Now: Off"        
-		// generateOperatingStateEvent("off")
-
 	} else if (mode == "emergencyHeat") {
-
 		statusText = "Emergency Heat"       
-		// generateOperatingStateEvent("auxheat")
-
 	} else {
-
 		statusText = "?"
-
 	}
 	log.debug "Generate Status Event = ${statusText}"
 	sendEvent("name":"thermostatStatus", "value":statusText, "description":statusText, displayed: true)
@@ -1534,12 +1548,13 @@ private def usingSmartAuto() {
     return false
 }
 
-private String whatHoldType() {
-	// 	def sendHoldType = holdType ? (holdType=="Temporary")? "nextTransition" : (holdType=="Permanent")? "indefinite" : "indefinite" : "indefinite"
-	log.debug "Entered whatHoldType() "
-    if (settings.holdType) { return  holdType ? (holdType=="Temporary")? "nextTransition" : (holdType=="Permanent")? "indefinite" : "indefinite" : "indefinite" }
-    if (parent.settings.holdType) { return parent.settings.holdType   ? (parent.settings.holdType=="Temporary")? "nextTransition" : (parent.settings.holdType=="Permanent")? "indefinite" : "indefinite" : "indefinite"}
-    return "indefinite"
+private def whatHoldType() {
+	def sendHoldType = parent.settings.holdType ? (parent.settings.holdType=="Temporary")? "nextTransition" : (holdType=="Permanent")? "indefinite" : "indefinite" : "indefinite"
+	log.debug "Entered whatHoldType() with ${sendHoldType}  settings.holdType == ${settings.holdType}"
+   if (settings.holdType && settings.holdType != "") { return  holdType ? (holdType=="Temporary")? "nextTransition" : (holdType=="Permanent")? "indefinite" : "indefinite" : "indefinite" }
+   //if (parent.settings.holdType != "") { return parent.settings.holdType   ? (parent.settings.holdType=="Temporary")? "nextTransition" : (parent.settings.holdType=="Permanent")? "indefinite" : "indefinite" : "indefinite"}
+    //return sendHoldType
+    return sendHoldType
 }
 
 

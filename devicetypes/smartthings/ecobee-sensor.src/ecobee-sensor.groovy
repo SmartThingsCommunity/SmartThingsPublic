@@ -82,13 +82,36 @@ void poll() {
 	parent.pollChildren(this)
 }
 
-def generateEvent(Map results) {
-	// TODO: Need to add Celcius handling?
-	results.each { name, value ->
-		sendEvent(name: name, value: value)
+
+def generateEvent(Map results) {	
+	log.debug "generateEvent(): parsing data $results. F or C? ${getTemperatureScale()}"
+	if(results) {
+		results.each { name, value ->
+
+			def linkText = getLinkText(device)
+			def isChange = false
+			def isDisplayed = true
+			def event = [name: name, linkText: linkText, handlerName: name]
+
+            
+			if (name=="temperature") {
+				def sendValue = value// ? convertTemperatureIfNeeded(value.toDouble(), "F", 1): value //API return temperature value in F
+				isChange = isTemperatureStateChange(device, name, value.toString())
+				isDisplayed = isChange
+				event << [value: sendValue, isStateChange: isChange, displayed: isDisplayed]
+                // To test at a later date
+//				event << [value: sendValue, linkText: linkText, unit: getTemperatureScale(), isStateChange: isChange, displayed: isDisplayed]
+
+			} else {
+				isChange = isStateChange(device, name, value.toString())
+				isDisplayed = isChange
+				event << [value: value.toString(), isStateChange: isChange, displayed: isDisplayed]
+			}
+			sendEvent(event)
+		}
 	}
-	return null
 }
+
 
 
 //generate custom mobile activity feeds event
