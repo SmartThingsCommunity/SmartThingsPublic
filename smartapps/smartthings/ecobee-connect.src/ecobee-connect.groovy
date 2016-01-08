@@ -778,8 +778,8 @@ def updateSensorData() {
 				]
 				sensorCollector[sensorDNI] = [data:sensorData]
 			}
-		}
-	}
+		} // End it.each loop
+	} // End remoteSensors.each loop
 	atomicState.remoteSensors = sensorCollector
 	log.debug "updateSensorData(): found these remoteSensors: ${sensorCollector}"
                 
