@@ -632,7 +632,7 @@ private getThermostatDescriptionText(name, value, linkText) {
 }
 
 def setTemperature(setpoint) {
-	log.debug "setTemperature() called with setpoint ${setpoint}. Current temperature: ${device.currentValue("temperature")}. Heat Setpoint: ${device.currentValue("heatingSetpoint")}. Cool Setpoint: ${device.currentValue("coolingSetpoint")}"
+	log.debug "setTemperature() called with setpoint ${setpoint}. Current temperature: ${device.currentValue("temperature")}. Heat Setpoint: ${device.currentValue("heatingSetpoint")}. Cool Setpoint: ${device.currentValue("coolingSetpoint")}. Thermo Setpoint: ${device.currentValue("thermostatSetpoint")}"
     
     def mode = device.currentValue("thermostatMode")
     def midpoint
@@ -644,6 +644,7 @@ def setTemperature(setpoint) {
     } 
     
     def currentTemp = device.currentValue("temperature")
+    def currentSetpoint = device.currentValue("thermostatSetpoint") ?: currentTemp
     def deltaTemp = setpoint - currentTemp
     
     log.debug "deltaTemp = ${deltaTemp}"
@@ -665,12 +666,31 @@ def setTemperature(setpoint) {
     } else if (mode == "heat") {
     	// Change the heat
         log.debug "setTemperature(): change the heat temp"
-        setHeatingSetpoint(setpoint)
+        // setHeatingSetpoint(setpoint)
+        if (deltaTemp < 0) {
+        	// Decrement the temp for cooling
+            log.debug "Heat: lowerSetpoint being called"
+            lowerSetpoint()
+        } else if (deltaTemp > 0) {
+        	// Increment the temp for heating
+            log.debug "Heat: raiseSetpoint being called"
+            raiseSetpoint()
+        } // Otherwise they are equal and the setpoint does not change
         
     } else if (mode == "cool") {
     	// Change the cool
         log.debug "setTemperature(): change the cool temp"
-        setCoolingSetpoint(setpoint)
+        // setCoolingSetpoint(setpoint)
+        if (deltaTemp < 0) {
+        	// Decrement the temp for cooling
+            log.debug "Cool: lowerSetpoint being called"
+            lowerSetpoint()
+        } else if (deltaTemp > 0) {
+        	// Increment the temp for heating
+            log.debug "Cool: raiseSetpoint being called"
+            raiseSetpoint()
+        } // Otherwise they are equal and the setpoint does not change
+        
     }
 }
 
@@ -727,7 +747,7 @@ void setHeatingSetpoint(Double setpoint) {
 }
 
 void setCoolingSetpoint(setpoint) {
-	log.debug "setCoolingSetpoint() request with setpoint value = ${setpoint}"
+	log.debug "setCoolingSetpoint() request with setpoint value = ${setpoint} (before toDouble)"
 
 	setCoolingSetpoint(setpoint.toDouble())
 }
@@ -1055,13 +1075,14 @@ void raiseSetpoint() {
 
 		// TODO: Change these to preferences or use the configured values from the "Heat Set Point Range" in the Ecobee
         // TODO: Also need to update for when using Smart Auto preference
-		if (mode == "heat" && targetvalue > 79) {
+        // Use the Ecobee built in limits instead
+		/* if (mode == "heat" && targetvalue > 79) {
 			targetvalue = 79
 		} else if (mode == "cool" && targetvalue > 92) {
 			targetvalue = 92
-		}
+		} */
 
-		sendEvent("name":"thermostatSetpoint", "value":targetvalue, displayed: false)
+		sendEvent("name":"thermostatSetpoint", "value":targetvalue, displayed: true)
 		log.info "In mode $mode raiseSetpoint() to $targetvalue"
 
 		runIn(3, "alterSetpoint", [data: [value:targetvalue], overwrite: true]) //when user click button this runIn will be overwrite
@@ -1081,24 +1102,32 @@ void lowerSetpoint() {
 		def coolingSetpoint = device.currentValue("coolingSetpoint").toInteger()
 		def thermostatSetpoint = device.currentValue("thermostatSetpoint")?.toInteger() ?: device.currentValue("temperature")
 		log.debug "lowerSetpoint() mode = ${mode}, heatingSetpoint: ${heatingSetpoint}, coolingSetpoint:${coolingSetpoint}, thermostatSetpoint:${thermostatSetpoint}"
-		if (device.latestState('thermostatSetpoint')) {
-			targetvalue = device.latestState('thermostatSetpoint').value as Integer
-		} else {
-			targetvalue = 0
-		}
+		
+        targetvalue = thermostatSetpoint
 		targetvalue = targetvalue - 1
 
 		// TODO: Change these to preferences or use the configured values from the "Heat Set Point Range" in the Ecobee
         // TODO: Also need to update for when using Smart Auto preference
-		if (mode == "heat" && targetvalue.toInteger() < 45) {
-			targetvalue = 45
-		} else if (mode == "cool" && targetvalue.toInteger() < 65) {
-			targetvalue = 65
-		}
-
-		sendEvent("name":"thermostatSetpoint", "value":targetvalue, displayed: false)
+        
+     	// We don't need these, the Ecobee already has limits in place, just use those!
+		/* 
+		if ( getTemperatureScale() == "F" ) {
+			if (mode == "heat" && targetvalue.toInteger() < 45) {
+				targetvalue = 45
+			} else if (mode == "cool" && targetvalue.toInteger() < 65) {
+				targetvalue = 65
+			} else if ( (mode == "auto") && usingSmartAuto() ) {
+            	// 
+            }
+		} else {
+        
+        
+        } */
+        
+		sendEvent("name":"thermostatSetpoint", "value":targetvalue, displayed: true)
 		log.info "In mode $mode lowerSetpoint() to $targetvalue"
 
+		// Wait 3 seconds before sending in case we hit the buttons again
 		runIn(3, "alterSetpoint", [data: [value:targetvalue], overwrite: true]) //when user click button this runIn will be overwrite
 	}
 	
