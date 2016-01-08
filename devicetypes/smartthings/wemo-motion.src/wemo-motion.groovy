@@ -77,9 +77,8 @@ def parse(String description) {
 	def result = []
 	def bodyString = msg.body
 	if (bodyString) {
-    unschedule("setOffline")
+    	unschedule("setOffline")
 		def body = new XmlSlurper().parseText(bodyString)
-
 		if (body?.property?.TimeSyncRequest?.text()) {
 			log.trace "Got TimeSyncRequest"
 			result << timeSyncResponse()
@@ -134,7 +133,7 @@ def refresh() {
 def getStatus() {
 log.debug "Executing WeMo Motion 'getStatus'"
 if (device.currentValue("currentIP") != "Offline")
-    runIn(10, setOffline)
+    runIn(30, setOffline)
 new physicalgraph.device.HubAction("""POST /upnp/control/basicevent1 HTTP/1.1
 SOAPACTION: "urn:Belkin:service:basicevent:1#GetBinaryState"
 Content-Length: 277
