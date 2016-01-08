@@ -38,7 +38,7 @@ metadata {
        		state "plan", label:' ${currentValue}'
 		}
         
-        htmlTile(name:"deepLink", action:"linkApp", whiltelist:["code.jquery.com", 
+        htmlTile(name:"deepLink", action:"linkApp", whitelist:["code.jquery.com", 
     	"ajax.googleapis.com", 
         "fonts.googleapis.com",
     	"code.highcharts.com", 
@@ -63,30 +63,39 @@ mappings {
 }
 
 def getLinkedApp() {
+	def lang = clientLocale?.language
+    if ("${lang}" == "ko") {
+    	lang = "<p style=\'margin-left:15vw; color: #aeaeb0;\'>기기 설정</p>"
+    } else {
+    	lang = "<p style=\'margin-left:5vw; color: #aeaeb0;\'>Setup Device</p>"
+    }
 	renderHTML() {
         head {
            """
-        	<meta name="viewport" content="initial-scale=1, maximum-scale=1, user-scalable=no, width=device-width, height=device-height">
-           
+			<meta name="viewport" content="initial-scale=1, maximum-scale=1, user-scalable=no, width=device-width, height=device-height">
+           	<style>
+            	#레이어_1 { margin-left : 17vw; width : 50vw; height : 50vw;}
+                .st0{fill:#B5B6BB;}
+            </style>
         """ 
         }
         body {
         """
-         	<div id="container">
-            	<a id=\'st-deep-link\' href=\'#\' onclick=\'openApp()\'><svg version="1.1" id="레이어_1" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" x="0px" y="0px" viewBox="0 0 40 40" style="enable-background:new 0 0 40 40;" xml:space="preserve">
-              <path class="st0" d="M20,0C9,0,0,9,0,20C0,30.5,8,39,18.2,40l3.8-4.8l-3.9-4.8c-4.9-0.9-8.6-5.2-8.6-10.4c0-5.8,4.7-10.5,10.5-10.5 S30.5,14.2,30.5,20c0,5.1-3.7,9.4-8.5,10.3l3.7,4.5L21.8,40C32,39.1,40,30.5,40,20C40,9,31,0,20,0z"/>
-            </svg></a>
-          	</div>
+            <div id="container">
+            	<a id="st-deep-link" href="#">
+                	<svg version="1.1" id="레이어_1" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" x="0px" y="0px" viewBox="0 0 40 40" style="enable-background:new 0 0 40 40;" xml:space="preserve"><path class="st0" d="M20,0C9,0,0,9,0,20C0,30.5,8,39,18.2,40l3.8-4.8l-3.9-4.8c-4.9-0.9-8.6-5.2-8.6-10.4c0-5.8,4.7-10.5,10.5-10.5
+					S30.5,14.2,30.5,20c0,5.1-3.7,9.4-8.5,10.3l3.7,4.5L21.8,40C32,39.1,40,30.5,40,20C40,9,31,0,20,0z"/></svg>
+                </a>
+                ${lang} 
+            </div>
             <script src="https://ajax.googleapis.com/ajax/libs/jquery/1.11.3/jquery.min.js"></script>
             <script>
-            	function openApp() {
-                  	 var ua = navigator.userAgent.toLowerCase();
-                    var isAndroid = ua.indexOf("android") > -1;
-                    if(!isAndroid) {
-                    	document.getElementById(\'st-deep-link\').href=\'https://itunes.apple.com/kr/app/enertalk-for-home/id1024660780?mt=8\'; 
-                    } else {
-                    	document.getElementById(\'st-deep-link\').href=\'market://details?id=com.ionicframework.enertalkhome874425\'; 
-					}
+           		var ua = navigator.userAgent.toLowerCase();
+                var isAndroid = ua.indexOf("android") > -1;
+                if(!isAndroid) { 
+                	\$("#st-deep-link").attr("href", "https://itunes.apple.com/kr/app/enertalk-for-home/id1024660780?mt=8");
+                } else {
+                	\$("#st-deep-link").attr("href", "market://details?id=com.ionicframework.enertalkhome874425");
                 }
             </script>
         """
