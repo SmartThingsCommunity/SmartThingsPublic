@@ -13,6 +13,8 @@
  * also limit temp to 1 place after the decimal. Also add more colors for temp for the lower ranges.
  *
  * version 3 lgk, added tile to show last update time, in case it is not working you will know at a glance.
+ * Version 3a default values are not working correctly so put code in to set inputs if null, also put in
+ * correct time zone ranges -12 to 14 according to wikipedia.
  *
  *  Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except
  *  in compliance with the License. You may obtain a copy of the License at:
@@ -60,7 +62,7 @@ preferences {
     input("ReportTime", "number", title: "Report Timeout Interval?", description: "The time in minutes after which an update is sent?", defaultValue: 180, required: false)
     input("TempOffset", "number", title: "Temperature Offset/Adjustment -10 to +10 in Degrees?",range: "-10..10", description: "If your temperature is innacurate this will offset/adjust it by this many degrees.", defaultValue: 0, required: false)
     input("HumidOffset", "number", title: "Humidity Offset/Adjustment -10 to +10 in percent?",range: "-10..10", description: "If your humidty is innacurate this will offset/adjust it by this percent.", defaultValue: 0, required: false)
-  	input("tzOffset", "number", title: "Time zone offset +/-xx?", required: false, defaultValue: -5, description: "Time Zone Offset ie -5.")
+  	input("tzOffset", "number", title: "Time zone offset +/-x?", required: false, range: "-12..14", defaultValue: -5, description: "Time Zone Offset ie -5.")
  }
 
 	simulator 
@@ -304,15 +306,29 @@ def zwaveEvent(physicalgraph.zwave.Command cmd)
 
 def configure() 
 {
+
+// default values not working trying to set implicitly if null
+
+if (settings.ReportTime == null)
+  settings.ReportTime = 180
+if (settings.TempChangeAmount == null)
+  settings.TempChangeAmount = 1
+if (settings.HumidChangeAmount == null)
+  settings.HumidChangeAmount = 5
+if (settings.TempOffset == null)
+  settings.TempOffset = 0
+if (settings.HumidOffset == null)
+  settings.HumidOffset = 0
+if (settings.tzOffset == null)
+  settings.tzOffset = -5
+  
 log.debug "ST814: In configure timeout value = $settings.ReportTime"
 log.debug "Temperature change value = $settings.TempChangeAmount"
 log.debug "Humidity change value = $settings.HumidChangeAmount"
 log.debug "Temperature adjust = $settings.TempOffset"
 log.debug "Humidity adjust = $settings.HumidOffset"
+log.debug "Tz Offset = $settings.tzOffset"
 
-if (settings.tzOffset == null)
- settings.tzOffset = -5
- 
 def now = new Date()
 def tf = new java.text.SimpleDateFormat("MM/dd/yyyy h:mm a")
 tf.setTimeZone(TimeZone.getTimeZone("GMT${settings.tzOffset}"))
@@ -339,6 +355,19 @@ def updated()
 {
 log.debug "in updated"
  
+if (settings.ReportTime == null)
+  settings.ReportTime = 180
+if (settings.TempChangeAmount == null)
+  settings.TempChangeAmount = 1
+if (settings.HumidChangeAmount == null)
+  settings.HumidChangeAmount = 5
+if (settings.TempOffset == null)
+  settings.TempOffset = 0
+if (settings.HumidOffset == null)
+  settings.HumidOffset = 0
+if (settings.tzOffset == null)
+  settings.TzOffset = -5
+  
 // fix interval if bad
 if (settings.ReportTime <1)
   {
@@ -380,16 +409,16 @@ if (settings.TempChangeAmount < 1)
     }
     
      // fix temp offset
- if (settings.TempOffset < -10)
+ if (settings.TempOffset < -12)
   {
-    settings.TempOffset = -10
-    log.debug "Temperature Offset too low... resetting to -10"
+    settings.TempOffset = -12
+    log.debug "Temperature Offset too low... resetting to -12"
     }
     
- if (settings.TempOffset > 10)
+ if (settings.TempOffset > 14)
   {
-    settings.TempOffset = 10
-    log.debug "Temperature Adjusment too high ... resetting to 10"
+    settings.TempOffset = 14
+    log.debug "Temperature Adjusment too high ... resetting to 14"
     }
     
     response(configure())
