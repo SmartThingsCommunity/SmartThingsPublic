@@ -254,9 +254,14 @@ def zwaveEvent(physicalgraph.zwave.commands.sensormultilevelv2.SensorMultilevelR
 		case 1:
 			/* temperature */
            // log.debug "try4"
+     
             BigDecimal offset = settings.TempOffset
             def startval =convertTemperatureIfNeeded(cmd.scaledSensorValue, cmd.scale == 1 ? "F" : "C", cmd.precision)
+           log.debug "scaled scaled sensor value = $cmd.scaledSensorValue scale = $cmd.scale"
+           log.debug "offset = $offset"
+           log.debug "startval = $startval"
 			def thetemp = startval as BigDecimal
+            log.debug "the temp = $thetemp"
             def newValue = (Math.round(thetemp * 100) + (offset * 100)) / 100
             BigDecimal adjval = (thetemp + offset)
             def dispval =  String.format("%5.1f", adjval)
