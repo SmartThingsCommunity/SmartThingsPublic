@@ -427,7 +427,7 @@ def initialize() {
 		return d
 	}
 
-    // Create the child Ecobee Sensor Devices
+	 // Create the child Ecobee Sensor Devices
 	def sensors = settings.ecobeesensors.collect { dni ->
 		def d = getChildDevice(dni)
 		if(!d) {
@@ -443,9 +443,9 @@ def initialize() {
 
 
 	// WORKAROUND: settings.ecobeesensors may contain leftover sensors in the dynamic enum bug scenario, use info in atomicState.eligibleSensors instead
-    // TODO: Need to deal with individual sensors from remaining thermostats that might be excluded...
-    // TODO: Cleanup this code now that it is working!
-    def sensorList = atomicState.eligibleSensors.keySet()
+	// TODO: Need to deal with individual sensors from remaining thermostats that might be excluded...
+	// TODO: Cleanup this code now that it is working with workaround
+	def sensorList = atomicState.eligibleSensors.keySet()
     
     // atomicState.eligibleSensorsAsList = sensorList
     
@@ -480,11 +480,11 @@ def initialize() {
 	pollHandler() //first time polling data from thermostat
 
 	//automatically update devices status every 5 mins
-    def interval = (settings.pollingInterval?.toInteger() >= 5) ? settings.pollingInterval.toInteger() : 5
+	def interval = (settings.pollingInterval?.toInteger() >= 5) ? settings.pollingInterval.toInteger() : 5
 	"runEvery${interval}Minutes"("poll")
 
-    // Auth Token expires every hour 
-    // Run as part of the poll() procedure since it runs every 5 minutes. Only runs if the time is close enough though to avoid API calls
+	// Auth Token expires every hour 
+	// Run as part of the poll() procedure since it runs every 5 minutes. Only runs if the time is close enough though to avoid API calls
 	runEvery15Minutes("refreshAuthToken")
 
 	atomicState.reAttempt = 0
@@ -495,7 +495,7 @@ def initialize() {
 // Called during initialization to get the inital poll
 def pollHandler() {
 	log.debug "pollHandler()"
-    atomicState.lastPoll = 0 // Initialize the variable and force a poll even if there was one recently
+	atomicState.lastPoll = 0 // Initialize the variable and force a poll even if there was one recently
 	pollChildren(null) // Hit the ecobee API for update on all thermostats
 
 /*
@@ -673,13 +673,7 @@ void poll() {
 	// def devices = getChildDevices()
 	// devices.each {pollChild(it)}
    //  TODO: if ( readyForAuthRefresh() ) { refreshAuthToken() } // Use runIn to make this feasible?
-   def C = myConvertTemperatureIfNeeded(81, "C", 1)
-   def F = myConvertTemperatureIfNeeded(81, "F", 1)
    
-   
-   log.debug "myConvertTemperatureIfNeeded(81, X, 1): F: ${F} C: ${C}"
-   
-
     pollChildren(null) // Poll ALL the children at the same time for efficiency
 }
 
