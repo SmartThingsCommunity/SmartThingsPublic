@@ -19,8 +19,6 @@
  * 	Date: 2015-12-23
  * 	Incorporate additional device capabilities, some based on code by Yves Racine
  *
- * General TODOs:
- *	- Add support for Celcius, use Hub Temperature Scale to choose units. Perform unit conversions in SmartApp instead of Device?
  *	
  */
 metadata {
@@ -401,13 +399,13 @@ metadata {
 		standardTile("downButtonControl", "device.thermostatSetpoint", height: 1, width: 2, inactiveLabel: false, decoration: "flat") {
 			state "setpoint", action:"lowerSetpoint", icon:"st.thermostat.thermostat-down"
 		}
-		controlTile("heatSliderControl", "device.heatingSetpoint", "slider", height: 1, width: 4, inactiveLabel: false) {
+		controlTile("heatSliderControl", "device.heatingSetpoint", "slider", height: 1, width: 4, inactiveLabel: false, range:"(15..85") {
 			state "setHeatingSetpoint", action:"thermostat.setHeatingSetpoint", backgroundColor:"#d04e00", unit: '${getTemperatureScale()}'
 		}
 		valueTile("heatingSetpoint", "device.heatingSetpoint", height: 1, width: 2, inactiveLabel: false, decoration: "flat") {
 			state "heat", label:'${currentValue}°\nHeat', unit:"dF", backgroundColor:"#d04e00"
 		}
-		controlTile("coolSliderControl", "device.coolingSetpoint", "slider", height: 1, width: 4, inactiveLabel: false) {
+		controlTile("coolSliderControl", "device.coolingSetpoint", "slider", height: 1, width: 4, inactiveLabel: false, range:"(15..85") {
 			state "setCoolingSetpoint", action:"thermostat.setCoolingSetpoint", backgroundColor: "#1e9cbb", unit: '${getTemperatureScale()}'
 		}
 		valueTile("coolingSetpoint", "device.coolingSetpoint", width: 2, height: 1, inactiveLabel: false, decoration: "flat") {
@@ -903,13 +901,13 @@ def getDataByName(String name) {
 }
 
 def setThermostatMode(String value) {
-	log.debug "setThermostatMode({$value})"
+	log.debug "setThermostatMode(${value})"
 
 }
 
 def setThermostatFanMode(String value) {
 
-	log.debug "setThermostatFanMode({$value})"
+	log.debug "setThermostatFanMode(${value})"
 
 }
 
@@ -1612,3 +1610,5 @@ def getTempColors() {
 	return colorMap
 
 }
+
+
