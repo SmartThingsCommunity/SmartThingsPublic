@@ -3,10 +3,11 @@
  *
  *  Copyright 2015 Bruce Ravenel
  *
- *  Version 1.6.10a   7 Jan 2016
+ *  Version 1.6.11   8 Jan 2016
  *
  *	Version History
  *
+ *	1.6.11	8 Jan 2016		Added offset to compare to device
  *	1.6.10	6 Jan 2016		Returned Delay on/off pending cancel per user request, further debug of rule evaluation
  *	1.6.9	6 Jan 2016		Fixed bugs related to presence in triggers, add Off as disable option, fixed bug in rule evaluation
  *	1.6.8	1 Jan 2016		Added version numbers to main Rule Machine page, multi SMS
@@ -73,7 +74,7 @@ preferences {
 def selectRule() {
 	//init expert settings for rule
 	try { 
-		state.isExpert = parent.isExpert("1.6.10a") 
+		state.isExpert = parent.isExpert("1.6.11") 
 		if (state.isExpert) state.cstCmds = parent.getCommands()
 		else state.cstCmds = []
 	}
@@ -334,7 +335,16 @@ def getState(myCapab, n, isTrig) {
 	else if(myCapab in ["Temperature", "Humidity", "Illuminance", "Energy meter", "Power meter", "Battery", "Dimmer level"]) {
     	input myIsDev, "bool", title: "Relative to another device?", multiple: false, required: false, submitOnChange: true, defaultValue: false
         def myDev = settings.find {it.key == myIsDev}
-        if(myDev && myDev.value) getDevs(myCapab, myRelDev, false)
+        if(myDev && myDev.value) {
+        	getDevs(myCapab, myRelDev, false)
+			if(myCapab == "Temperature") 				result = input myState, "decimal",	title: "Temperature offset ", 	range: "*..*",		defaultValue: 0
+			else if(myCapab == "Humidity") 				result = input myState, "number", 	title: "Humidity offset", 		range: "-100..100",	defaultValue: 0
+			else if(myCapab == "Illuminance") 			result = input myState, "number", 	title: "Illuminance offset",	range: "*..*",		defaultValue: 0
+			else if(myCapab == "Dimmer level")			result = input myState, "number", 	title: "Dimmer offset", 		range: "-100..100",	defaultValue: 0
+			else if(myCapab == "Energy meter") 			result = input myState, "number", 	title: "Energy level offset",	range: "*..*",		defaultValue: 0
+			else if(myCapab == "Power meter") 			result = input myState, "number", 	title: "Power level offset", 	range: "*..*",		defaultValue: 0
+			else if(myCapab == "Battery") 				result = input myState, "number", 	title: "Battery level offset",	range: "-100..100",	defaultValue: 0
+        }
 		else if(myCapab == "Temperature") 			result = input myState, "decimal",	title: "Temperature becomes ", 	range: "*..*"
 		else if(myCapab == "Humidity") 				result = input myState, "number", 	title: "Humidity becomes", 		range: "0..100"
 		else if(myCapab == "Illuminance") 			result = input myState, "number", 	title: "Illuminance becomes",	range: "0..*"
@@ -492,7 +502,10 @@ def conditionLabelN(i, isTrig) {
 		if(thisCapab.value == "Physical Switch") result = result + "physical "
 		def thisState = settings.find {it.key == (isTrig ? "tstate$i" : "state$i")}
 		def thisRelDev = settings.find {it.key == (isTrig ? "reltDevice$i" : "relDevice$i")}
-		if(thisRelDev) result = result + thisRelDev.value
+		if(thisRelDev) {
+        	result = result + thisRelDev.value
+        	if(thisState) result = result + (thisState.value > 0 ? " +" : " ") + (thisState.value != 0 ? thisState.value : "")
+		}
 		else result = result + thisState.value
         if(thisCapab.value == "Presence" && thisDev.value.size() > 1 && isTrig) result = result[0..-2] 
 	}
@@ -1177,12 +1190,12 @@ def initialize() {
 
 def compare(a, rel, b, relDev) {
 	def result = true
-	if     (rel == "=") 	result = a == (relDev ?: b)
-	else if(rel == "!=") 	result = a != (relDev ?: b)
-	else if(rel == ">") 	result = a >  (relDev ?: b)
-	else if(rel == "<") 	result = a <  (relDev ?: b)
-	else if(rel == ">=") 	result = a >= (relDev ?: b)
-	else if(rel == "<=") 	result = a <= (relDev ?: b)
+	if     (rel == "=") 	result = a == (relDev ? relDev + b : b)
+	else if(rel == "!=") 	result = a != (relDev ? relDev + b : b)
+	else if(rel == ">") 	result = a >  (relDev ? relDev + b : b)
+	else if(rel == "<") 	result = a <  (relDev ? relDev + b : b)
+	else if(rel == ">=") 	result = a >= (relDev ? relDev + b : b)
+	else if(rel == "<=") 	result = a <= (relDev ? relDev + b : b)
 	return result
 }
 
