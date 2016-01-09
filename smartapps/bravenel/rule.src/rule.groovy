@@ -3,7 +3,7 @@
  *
  *  Copyright 2015 Bruce Ravenel
  *
- *  Version 1.6.11d   9 Jan 2016
+ *  Version 1.6.11e   9 Jan 2016
  *
  *	Version History
  *
@@ -74,7 +74,7 @@ preferences {
 def selectRule() {
 	//init expert settings for rule
 	try { 
-		state.isExpert = parent.isExpert("1.6.11d") 
+		state.isExpert = parent.isExpert("1.6.11e") 
 		if (state.isExpert) state.cstCmds = parent.getCommands()
 		else state.cstCmds = []
 	}
@@ -1446,8 +1446,8 @@ def takeAction(success) {
 		if(pendedOffTrue)		runIn(pendMinutesTrue * 60, pendingOffTrue)
 		if(pendedOffFalse)		unschedule(pendingOffFalse)
         if(dimTrackTrue)		if(state.lastEvtLevel != null) {if(delayMilTrue) dimATrue.setLevel(state.lastEvtLevel, [delay: delayMilTrue]) else dimATrue.setLevel(state.lastEvtLevel)}
-		if(dimATrue && !dimTrackTrue) if(delayMilTrue) dimATrue.setLevel(dimLATrue, [delay: delayMilTrue]) else dimATrue.setLevel(dimLATrue)
-		if(dimBTrue) 			if(delayMilTrue) dimBTrue.setLevel(dimLBTrue, [delay: delayMilTrue]) else dimBTrue.setLevel(dimLBTrue)
+		if(dimATrue && dimLATrue) if(delayMilTrue) dimATrue.setLevel(dimLATrue, [delay: delayMilTrue]) else dimATrue.setLevel(dimLATrue)
+		if(dimBTrue && dimLBTrue) if(delayMilTrue) dimBTrue.setLevel(dimLBTrue, [delay: delayMilTrue]) else dimBTrue.setLevel(dimLBTrue)
 		if(toggleDimmerTrue)	dimToggle(toggleDimmerTrue, dimTogTrue, true)
         if(adjustDimmerTrue)	dimAdjust(adjustDimmerTrue, dimAdjTrue, true)
 		if(ctTrue)   			ctTrue.setColorTemperature(ctLTrue)
@@ -1482,8 +1482,8 @@ def takeAction(success) {
 		if(pendedOffFalse)		runIn(pendMinutesFalse * 60, pendingOffFalse)
 		if(pendedOffTrue)		unschedule(pendingOffTrue)
         if(dimTrackFalse)		if(state.lastEvtLevel != null) {if(delayMilFalse) dimAFalse.setLevel(state.lastEvtLevel, [delay: delayMilFalse]) else dimAFalse.setLevel(state.lastEvtLevel)}
-		if(dimAFalse && !dimTrackFalse) if(delayMilFalse) dimAFalse.setLevel(dimLAFalse, [delay: delayMilFalse]) else dimAFalse.setLevel(dimLAFalse)
-		if(dimBFalse) 			if(delayMilFalse) dimBFalse.setLevel(dimLBFalse, [delay: delayMilFalse]) else dimBFalse.setLevel(dimLBFalse)
+		if(dimAFalse && dimLAFalse) if(delayMilFalse) dimAFalse.setLevel(dimLAFalse, [delay: delayMilFalse]) else dimAFalse.setLevel(dimLAFalse)
+		if(dimBFalse && dimLBFalse) if(delayMilFalse) dimBFalse.setLevel(dimLBFalse, [delay: delayMilFalse]) else dimBFalse.setLevel(dimLBFalse)
 		if(toggleDimmerFalse)	dimToggle(toggleDimmerFalse, dimTogFalse, false)
         if(adjustDimmerFalse)	dimAdjust(adjustDimmerFalse, dimAdjFalse, false)
 		if(ctFalse)   			ctFalse.setColorTemperature(ctLFalse)
