@@ -16,14 +16,14 @@ metadata {
 	}
 
 	tiles(scale: 2) {
-     	multiAttributeTile(name:"rich-control"){
+		multiAttributeTile(name:"rich-control"){
 			tileAttribute ("device.switch", key: "PRIMARY_CONTROL") {
-	            attributeState "default", label: "Hue Bridge", action: "", icon: "st.Lighting.light99-hue", backgroundColor: "#F3C200"
+				attributeState "default", label: "Hue Bridge", action: "", icon: "st.Lighting.light99-hue", backgroundColor: "#F3C200"
 			}    
-	        tileAttribute ("serialNumber", key: "SECONDARY_CONTROL") {
-	            attributeState "default", label:'SN: ${currentValue}'
+			tileAttribute ("serialNumber", key: "SECONDARY_CONTROL") {
+				attributeState "default", label:'SN: ${currentValue}'
 			}    
-        }    
+		}    
 		standardTile("icon", "icon", width: 1, height: 1, canChangeIcon: false, inactiveLabel: true, canChangeBackground: false) {
 			state "default", label: "Hue Bridge", action: "", icon: "st.Lighting.light99-hue", backgroundColor: "#FFFFFF"
 		}
@@ -59,18 +59,34 @@ def parse(description) {
 			log.trace "HUE BRIDGE, GENERATING EVENT: $map.name: $map.value"
 			results << createEvent(name: "${map.name}", value: "${map.value}")
 		} else {
-        	log.trace "Parsing description"
+			log.trace "Parsing description"
 			def msg = parseLanMessage(description)
 			if (msg.body) {
 				def contentType = msg.headers["Content-Type"]
 				if (contentType?.contains("json")) {
 					def bulbs = new groovy.json.JsonSlurper().parseText(msg.body)
+					boolean isLightGroup = false
+					bulbs.each{
+						log.info it.toString().contains("LightGroup")
+						isLightGroup = it.toString().contains("LightGroup")
+					}
 					if (bulbs.state) {
 						log.info "Bridge response: $msg.body"
 					} else {
-						// Sending Bulbs List to parent"
-                        if (parent.state.inBulbDiscovery)
-                        	log.info parent.bulbListHandler(device.hub.id, msg.body)
+						// Sending Bulbs or Groups List to parent"
+						if (parent.state.inBulbDiscovery)
+						{
+							if(isLightGroup)
+							{
+								log.trace "Sending Group List"
+								log.info parent.groupListHandler(device.hub.id, msg.body)
+							} else
+							{
+								log.trace "Sending Bulb List"
+								log.info parent.bulbListHandler(device.hub.id, msg.body)
+							}
+						}
+							
 					}
 				}
 				else if (contentType?.contains("xml")) {
