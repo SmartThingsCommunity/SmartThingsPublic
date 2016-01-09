@@ -1,0 +1,212 @@
+/**
+ *  MiHome eTRV
+ *
+ *  Copyright 2015 Alex Lee Yuk Cheung
+ *
+ *  Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except
+ *  in compliance with the License. You may obtain a copy of the License at:
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ *  Unless required by applicable law or agreed to in writing, software distributed under the License is distributed
+ *  on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the License
+ *  for the specific language governing permissions and limitations under the License.
+ *
+ *
+ *	VERSION HISTORY
+ *  09.01.2016
+ *	v1.0 - Initial Release
+ */
+ 
+metadata {
+	definition (name: "MiHome eTRV", namespace: "alyc100", author: "Alex Lee Yuk Cheung") {
+		capability "Actuator"
+		capability "Polling"
+		capability "Refresh"
+		capability "Temperature Measurement"
+        capability "Thermostat"
+		capability "Thermostat Heating Setpoint"
+		capability "Switch"
+        
+        command "heatingSetpointUp"
+		command "heatingSetpointDown"
+        command "setHeatingSetpoint"
+	}
+
+	simulator {
+		// TODO: define status and reply messages here
+	}
+
+	tiles(scale: 2) {
+
+		multiAttributeTile(name: "thermostat", width: 6, height: 4, type:"lightin") {
+			tileAttribute("device.temperature", key:"PRIMARY_CONTROL", canChangeBackground: true){
+				attributeState "default", label: '${currentValue}°', unit:"C", 
+                backgroundColors:[
+					[value: 0, color: "#153591"],
+					[value: 10, color: "#1e9cbb"],
+					[value: 13, color: "#90d2a7"],
+					[value: 17, color: "#44b621"],
+					[value: 20, color: "#f1d801"],
+					[value: 25, color: "#d04e00"],
+					[value: 29, color: "#bc2323"]
+				]
+			}
+            tileAttribute ("voltage", key: "SECONDARY_CONTROL") {
+				attributeState "voltage", label:'${currentValue}'
+			}
+		}
+        
+        valueTile("thermostat_small", "device.temperature", width: 4, height: 4) {
+			state "default", label:'${currentValue}°', unit:"C",
+            backgroundColors:[
+                [value: 0, color: "#153591"],
+					[value: 10, color: "#1e9cbb"],
+					[value: 13, color: "#90d2a7"],
+					[value: 17, color: "#44b621"],
+					[value: 20, color: "#f1d801"],
+					[value: 25, color: "#d04e00"],
+					[value: 29, color: "#bc2323"]
+            ]
+		}
+        
+        valueTile("heatingSetpoint", "device.heatingSetpoint", width: 2, height: 2) {
+			state "default", label:'${currentValue}°', unit:"C",
+            backgroundColors:[
+					[value: 0, color: "#153591"],
+					[value: 10, color: "#1e9cbb"],
+					[value: 13, color: "#90d2a7"],
+					[value: 17, color: "#44b621"],
+					[value: 20, color: "#f1d801"],
+					[value: 25, color: "#d04e00"],
+					[value: 29, color: "#bc2323"]
+				]
+		}
+        
+        standardTile("refresh", "device.refresh", inactiveLabel: false, decoration: "flat", width: 2, height: 2) {
+			state("default", label:'refresh', action:"polling.poll", icon:"st.secondary.refresh-icon")
+		}
+        
+        controlTile("heatSliderControl", "device.heatingSetpoint", "slider", height: 2, width: 4, inactiveLabel: false, range:"(12..30)") {
+			state "setHeatingSetpoint", label:'Set temperature to', action:"setHeatingSetpoint"
+		}
+        
+        standardTile("switch", "device.switch", decoration: "flat", height: 2, width: 2, inactiveLabel: false) {
+			state "on", label:'${name}', action:"switch.off", icon:"st.Home.home1", backgroundColor:"#f1d801"
+			state "off", label:'${name}', action:"switch.on", icon:"st.Home.home1", backgroundColor:"#ffffff"
+		}
+        
+        main(["thermostat_small"])
+		details(["thermostat", "heatingSetpoint", "heatSliderControl", "switch", "refresh"])
+	}
+}
+
+def uninstalled() {
+    unschedule()
+}
+
+// parse events into attributes
+def parse(String description) {
+	log.debug "Parsing '${description}'"
+	// TODO: handle 'temperature' attribute
+	// TODO: handle 'heatingSetpoint' attribute
+	// TODO: handle 'thermostatSetpoint' attribute
+	// TODO: handle 'thermostatMode' attribute
+	// TODO: handle 'thermostatOperatingState' attribute
+}
+
+// handle commands
+def setHeatingSetpoint(temp) {
+	log.debug "Executing 'setHeatingSetpoint with temp $temp'"
+	def latestThermostatMode = device.latestState('thermostatMode')
+    
+    if (temp < 12) {
+		temp = 12
+	}
+	if (temp > 30) {
+		temp = 30
+	}
+    
+    def resp = parent.apiGET("/subdevices/set_target_temperature?params=" + URLEncoder.encode(new groovy.json.JsonBuilder([id: device.deviceNetworkId.toInteger(), temperature: temp]).toString()))
+	if (resp.status != 200) {
+		log.error("Unexpected result in poll(): [${resp.status}] ${resp.data}")
+	}
+    else {
+    	runIn(1, refresh)
+    }    
+}
+
+def heatingSetpointUp(){
+	log.debug "Executing 'heatingSetpointUp'"
+	int newSetpoint = device.currentValue("heatingSetpoint") + 1
+	log.debug "Setting heat set point up to: ${newSetpoint}"
+	setHeatingSetpoint(newSetpoint)
+}
+
+def heatingSetpointDown(){
+	log.debug "Executing 'heatingSetpointDown'"
+	int newSetpoint = device.currentValue("heatingSetpoint") - 1
+	log.debug "Setting heat set point down to: ${newSetpoint}"
+	setHeatingSetpoint(newSetpoint)
+}
+
+def off() {
+	setThermostatMode('off')
+    
+}
+
+def on() {
+    def lastHeatingSetPoint = !state.lastHeatingSetPoint ? 21 : state.lastHeatingSetPoint
+    setHeatingSetPoint(lastHeatingSetPoint)
+}
+
+def heat() {
+	setThermostatMode('heat')
+}
+
+def emergencyHeat() {
+	setThermostatMode('heat')
+}
+
+def auto() {
+	setThermostatMode('heat')
+}
+
+def setThermostatMode(mode) {
+	mode = mode == 'cool' ? 'heat' : mode
+	log.debug "Executing 'setThermostatMode with mode $mode'"
+    
+    if (mode == 'off') {
+    	state.lastHeatingSetPoint = device.currentValue('heatingSetpoint')
+    	setHeatingSetPoint(12)
+    } else {
+    	on()
+    }
+
+}
+
+def poll() {
+    log.debug "Executing 'poll' for ${device} ${this} ${device.deviceNetworkId}"
+    
+    def resp = parent.apiGET("/subdevices/show?params=" + URLEncoder.encode(new groovy.json.JsonBuilder([id: device.deviceNetworkId.toInteger()]).toString()))
+	if (resp.status != 200) {
+		log.error("Unexpected result in poll(): [${resp.status}] ${resp.data}")
+		return []
+	}
+
+	sendEvent(name: "temperature", value: resp.data.data.last_temperature, unit: "C", state: "heat")
+    sendEvent(name: "heatingSetpoint", value: resp.data.data.target_temperature, unit: "C", state: "heat")
+	sendEvent(name: "thermostatMode", value: resp.data.data.target_temperature == 12 ? "off" : "heat")
+    sendEvent(name: 'thermostatOperatingState', value: resp.data.data.target_temperature == 12 ? "idle" : "heating")
+    sendEvent(name: 'thermostatFanMode', value: "off", displayed: false)
+    sendEvent(name: "switch", value: resp.data.data.target_temperature == 12 ? "off" : "on")
+    sendEvent(name: "voltage", value: "Battery Voltage is " + resp.data.data.voltage + "V")
+    
+    return []
+	
+}
+
+def refresh() {
+	log.debug "Executing 'refresh'"
+	poll()
+}
