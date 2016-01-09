@@ -69,14 +69,14 @@ def installed() {
 // called after settings are changed
 def updated() {
 	initialize()
-    unschedule('refreshDevices')
+    unschedule(refreshDevices)
     schedule("0 0/10 * * * ?", refreshDevices)
 }
 
 def uninstalled() {
 	log.info("Uninstalling, removing child devices...")
-	unschedule('updateDevices')
-    unschedule('refreshDevices')
+	unschedule(updateDevices)
+    unschedule(refreshDevices)
 	removeChildDevices(getChildDevices())
 }
 
