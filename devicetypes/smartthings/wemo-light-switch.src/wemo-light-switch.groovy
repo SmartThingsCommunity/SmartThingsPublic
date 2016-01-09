@@ -273,7 +273,7 @@ User-Agent: CyberGarage-HTTP/1.0
 def poll() {
 log.debug "Executing 'poll'"
 if (device.currentValue("currentIP") != "Offline")
-    runIn(10, setOffline)
+    runIn(30, setOffline)
 new physicalgraph.device.HubAction("""POST /upnp/control/basicevent1 HTTP/1.1
 SOAPACTION: "urn:Belkin:service:basicevent:1#GetBinaryState"
 Content-Length: 277
