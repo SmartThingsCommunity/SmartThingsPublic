@@ -3,11 +3,11 @@
  *
  *  Copyright 2015 Bruce Ravenel
  *
- *  Version 1.6.11   8 Jan 2016
+ *  Version 1.6.11a   9 Jan 2016
  *
  *	Version History
  *
- *	1.6.11	8 Jan 2016		Added offset to compare to device
+ *	1.6.11	8 Jan 2016		Added offset to compare to device, fixed bugs in compare to device
  *	1.6.10	6 Jan 2016		Returned Delay on/off pending cancel per user request, further debug of rule evaluation
  *	1.6.9	6 Jan 2016		Fixed bugs related to presence in triggers, add Off as disable option, fixed bug in rule evaluation
  *	1.6.8	1 Jan 2016		Added version numbers to main Rule Machine page, multi SMS
@@ -74,7 +74,7 @@ preferences {
 def selectRule() {
 	//init expert settings for rule
 	try { 
-		state.isExpert = parent.isExpert("1.6.11") 
+		state.isExpert = parent.isExpert("1.6.11a") 
 		if (state.isExpert) state.cstCmds = parent.getCommands()
 		else state.cstCmds = []
 	}
@@ -368,6 +368,7 @@ def getState(myCapab, n, isTrig) {
     	def phrases = location.helloHome?.getPhrases()*.label
         result = input myState, "enum", title: "When this routine runs", multiple: false, required: false, options: phrases
 	}
+    def whatState = settings.find {it.key == myState}
 }
 
 def certainTime() {
@@ -1203,9 +1204,9 @@ def checkCondAny(dev, stateX, cap, rel, relDev) {
     if(stateX == "leaves") stateX = "not present"
     else if(stateX == "arrives") stateX = "present"
 	def result = false
-	if     (cap == "Temperature") 	dev.currentTemperature.each 	{result = result || compare(it, rel, stateX, reldev ? relDev.currentTemperature : null)}
-	else if(cap == "Humidity")	dev.currentHumidity.each    	{result = result || compare(it, rel, stateX, reldev ? relDev.currentHumidity : null)}
-	else if(cap == "Illuminance") 	dev.currentIlluminance.each 	{result = result || compare(it, rel, stateX, reldev ? relDev.currentIlluminance : null)}
+	if     (cap == "Temperature") 	dev.currentTemperature.each 	{result = result || compare(it, rel, stateX, relDev ? relDev.currentTemperature : null)}
+	else if(cap == "Humidity")	dev.currentHumidity.each    	{result = result || compare(it, rel, stateX, relDev ? relDev.currentHumidity : null)}
+	else if(cap == "Illuminance") 	dev.currentIlluminance.each 	{result = result || compare(it, rel, stateX, relDev ? relDev.currentIlluminance : null)}
 	else if(cap == "Dimmer level")	dev.currentLevel.each		{result = result || compare(it, rel, stateX, relDev ? relDev.currentLevel : null)}
 	else if(cap == "Energy meter")	dev.currentEnergy.each		{result = result || compare(it, rel, stateX, relDev ? relDev.currentEnergy : null)}
 	else if(cap == "Power meter")	dev.currentPower.each		{result = result || compare(it, rel, stateX, relDev ? relDev.currentPower : null)}
@@ -1249,13 +1250,13 @@ def checkCondAll(dev, stateX, cap, rel, relDev) {
                 "locked": "unlocked",
                 "unlocked": "locked"]
 	def result = true
-	if     (cap == "Temperature") 		dev.currentTemperature.each 	{result = result && compare(it, rel, stateX, reldev ? relDev.currentTemperature : null)}
-	else if(cap == "Humidity") 		dev.currentHumidity.each    	{result = result && compare(it, rel, stateX, reldev ? relDev.currentHumidity : null)}
-	else if(cap == "Illuminance") 		dev.currentIlluminance.each 	{result = result && compare(it, rel, stateX, reldev ? relDev.currentIlluminance : null)}
-	else if(cap == "Dimmer level")		dev.currentLevel.each		{result = result && compare(it, rel, stateX, reldev ? relDev.currentLevel : null)}
-	else if(cap == "Energy meter")		dev.currentEnergy.each		{result = result && compare(it, rel, stateX, reldev ? relDev.currentEnergy : null)}
-	else if(cap == "Power meter")		dev.currentPower.each		{result = result && compare(it, rel, stateX, reldev ? relDev.currentPower : null)}
-	else if(cap == "Battery")		dev.currentBattery.each		{result = result && compare(it, rel, stateX, reldev ? relDev.currentBattery : null)}
+	if     (cap == "Temperature") 		dev.currentTemperature.each 	{result = result && compare(it, rel, stateX, relDev ? relDev.currentTemperature : null)}
+	else if(cap == "Humidity") 		dev.currentHumidity.each    	{result = result && compare(it, rel, stateX, relDev ? relDev.currentHumidity : null)}
+	else if(cap == "Illuminance") 		dev.currentIlluminance.each 	{result = result && compare(it, rel, stateX, relDev ? relDev.currentIlluminance : null)}
+	else if(cap == "Dimmer level")		dev.currentLevel.each		{result = result && compare(it, rel, stateX, relDev ? relDev.currentLevel : null)}
+	else if(cap == "Energy meter")		dev.currentEnergy.each		{result = result && compare(it, rel, stateX, relDev ? relDev.currentEnergy : null)}
+	else if(cap == "Power meter")		dev.currentPower.each		{result = result && compare(it, rel, stateX, relDev ? relDev.currentPower : null)}
+	else if(cap == "Battery")		dev.currentBattery.each		{result = result && compare(it, rel, stateX, relDev ? relDev.currentBattery : null)}
 	else if(cap == "Rule truth")		dev.each {
     							def rule = null
     							if(it == state.ourRule) rule = state.ourTruth
@@ -1297,9 +1298,9 @@ def getOperand(i, isR) {
 		def myRelDev =  settings.find {it.key == (isR ? "relDevice$i" : "reltDevice$i")}
         if(!myDev) return false
 		if(myAll) {
-			if(myAll.value) result = checkCondAll(myDev.value, myState ? myState.value : null, capab, myRel ? myRel.value : 0, myRelDev ? myRelDev.value : null)
-			else result = checkCondAny(myDev.value, myState ? myState.value : null, capab, myRel ? myRel.value : 0, myRelDev ? myRelDev.value : null)
-		} else result = checkCondAny(myDev.value, myState ? myState.value : null, capab, myRel ? myRel.value : 0, myRelDev ? myRelDev.value : null)
+			if(myAll.value) result = checkCondAll(myDev.value, myState ? myState.value : 0, capab, myRel ? myRel.value : 0, myRelDev ? myRelDev.value : 0)
+			else result = checkCondAny(myDev.value, myState ? myState.value : 0, capab, myRel ? myRel.value : 0, myRelDev ? myRelDev.value : 0)
+		} else result = checkCondAny(myDev.value, myState ? myState.value : 0, capab, myRel ? myRel.value : 0, myRelDev ? myRelDev.value : 0)
 	}
 //    log.debug "operand $i is $result"
 	return result
