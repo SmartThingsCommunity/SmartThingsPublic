@@ -3,7 +3,7 @@
  *
  *  Copyright 2015 Bruce Ravenel
  *
- *  Version 1.6.11a   9 Jan 2016
+ *  Version 1.6.11b   9 Jan 2016
  *
  *	Version History
  *
@@ -74,7 +74,7 @@ preferences {
 def selectRule() {
 	//init expert settings for rule
 	try { 
-		state.isExpert = parent.isExpert("1.6.11a") 
+		state.isExpert = parent.isExpert("1.6.11b") 
 		if (state.isExpert) state.cstCmds = parent.getCommands()
 		else state.cstCmds = []
 	}
@@ -715,9 +715,9 @@ def delayFalsePage() {
 }
 
 def selectActionsTrue() {
+	def isRule = state.isRule || state.howMany > 1
 	dynamicPage(name: "selectActionsTrue", title: "Select Actions" + (isRule ? " for True" : ""), uninstall: false) {
 		def isTrig = state.isTrig || state.howManyT > 1
-		def isRule = state.isRule || state.howMany > 1
 		state.actsTrue = ""
 		section("") {
 			href "delayTruePage", title: "Delay These Actions", description: state.delayStrTrue ? (state.delayStrTrue) : "Tap to set", state: state.delayStrTrue ? "complete" : null, submitOnChange: true
@@ -869,9 +869,7 @@ def selectActionsTrue() {
 }
 
 def selectActionsFalse() {
-	def isRule = state.howMany > 1
-	dynamicPage(name: "selectActionsFalse", title: "Select Actions" + (isRule ? " for False" : ""), uninstall: false) {
-		def isTrig = state.howManyT > 1
+	dynamicPage(name: "selectActionsFalse", title: "Select Actions for False", uninstall: false) {
 		state.actsFalse = ""
 		section("") {
 			href "delayFalsePage", title: "Delay These Actions", description: state.delayStrFalse ? (state.delayStrFalse) : "Tap to set", state: state.delayStrFalse ? "complete" : null, submitOnChange: true
@@ -893,7 +891,7 @@ def selectActionsFalse() {
 					setActFalse(delayStrFalse)
 				}
 			}
-            if(isRule) {
+            if(state.isRule || state.howMany > 1) {
 				input "pendedOffFalse", "capability.switch", title: "Turn on/off these switches after a delay, pending cancellation (default is OFF)", multiple: true, required: false, submitOnChange: true
 				if(pendedOffFalse) {
 					input "pendOnOffFalse", "bool", title: "Turn ON after the delay?", multiple: false, required: false, defaultValue: false, submitOnChange: true
