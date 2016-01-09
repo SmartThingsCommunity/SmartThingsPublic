@@ -158,6 +158,7 @@ metadata {
         
         
         command "setTemperature"
+        command "auxHeatOnly"
         
         /*
 		command "setFanMinOnTime"
@@ -607,16 +608,15 @@ def generateEvent(Map results) {
 }
 
 //return descriptionText to be shown on mobile activity feed
-// TODO: Does this handle Celsius?
 private getThermostatDescriptionText(name, value, linkText) {
 	if(name == "temperature") {
-		return "$linkText temperature is $value°"
+		return "$linkText temperature is ${value}°"
 
 	} else if(name == "heatingSetpoint") {
-		return "heating setpoint is $value°"
+		return "heating setpoint is ${value}°"
 
 	} else if(name == "coolingSetpoint"){
-		return "cooling setpoint is $value°"
+		return "cooling setpoint is ${value}°"
 
 	} else if (name == "thermostatMode") {
 		return "thermostat mode is ${value}"
@@ -705,23 +705,7 @@ void setHeatingSetpoint(Double setpoint) {
 	def coolingSetpoint = device.currentValue("coolingSetpoint").toDouble()
 	def deviceId = device.deviceNetworkId.split(/\./).last()
 
-	//enforce limits of heatingSetpoint
-    // TODO: Make these limits configurable? Use values stored in Ecobee cloud?
-    // TODO: Does this handle Celcius?
-	if ( getTemperatureScale() == "F" ) {
-		if (heatingSetpoint > 79) {
-			heatingSetpoint = 79
-		} else if (heatingSetpoint < 45) {
-			heatingSetpoint = 45
-		}
-	} else {
-		if (heatingSetpoint > 26) {
-			heatingSetpoint = 26
-		} else if (heatingSetpoint < 7) {
-			heatingSetpoint = 7
-		}    
-    }
-    
+	   
 	//enforce limits of heatingSetpoint vs coolingSetpoint
 	if (heatingSetpoint >= coolingSetpoint) {
 		coolingSetpoint = heatingSetpoint
@@ -732,7 +716,6 @@ void setHeatingSetpoint(Double setpoint) {
 	
 	def sendHoldType = whatHoldType()
     
-    // TODO: Update this parent call with Farenheit values if in mode Celcius!!!
 	if (parent.setHold (this, heatingSetpoint,  coolingSetpoint, deviceId, sendHoldType)) {
 		sendEvent("name":"heatingSetpoint", "value":heatingSetpoint.toInteger()) // TODO: This does not round up
 		sendEvent("name":"coolingSetpoint", "value":coolingSetpoint.toInteger()) // TODO: This does not round up
@@ -756,22 +739,6 @@ void setCoolingSetpoint(Double setpoint) {
 	def heatingSetpoint = device.currentValue("heatingSetpoint").toDouble()
 	def coolingSetpoint = setpoint
 	def deviceId = device.deviceNetworkId.split(/\./).last()
-
-// TODO: Make this check work for both C AND F
-	if ( getTemperatureScale() == "F" ) {
-		if (coolingSetpoint > 92) {
-			coolingSetpoint = 92
-		} else if (coolingSetpoint < 65) {
-			coolingSetpoint = 65
-		}
-    } else {
-    	if (coolingSetpoint > 33) {
-			coolingSetpoint = 33
-		} else if (coolingSetpoint < 18) {
-			coolingSetpoint = 18
-		}
-    
-    }
 
 	//enforce limits of heatingSetpoint vs coolingSetpoint
 	if (heatingSetpoint >= coolingSetpoint) {
@@ -901,13 +868,34 @@ def getDataByName(String name) {
 }
 
 def setThermostatMode(String value) {
+	// 	"emergency heat" "heat" "cool" "off" "auto"
 	log.debug "setThermostatMode(${value})"
+    if (value=="emergency heat") {
+    	
+    } else if (value=="heat") {
+    	heat()
+    } else if (value=="cool") {
+		cool()
+    } else if (value=="off") {
+		off()
+    } else if (value=="auto") {
+    	auto()
+    } else if (value=="aux") {
+		auxHeatOnly()
+	} else if (value=="emergency") {
+    	log.debug "setThermostatMode(${value}): using auxHeatOnly for emergency heat"
+        emergency()        
+    } else {
+    	// Unrecognized mode requested
+        log.error "setThermostatMode(): Unrecognized mode ${value} requested"
+    }
 
 }
 
 def setThermostatFanMode(String value) {
-
 	log.debug "setThermostatFanMode(${value})"
+	// "auto" "on" "circulate"
+
 
 }
 
@@ -964,6 +952,10 @@ def auxHeatOnly() {
 	}
 	generateSetpointEvent()
 	generateStatusEvent()
+}
+
+def emergency() {
+	auxHeatOnly()
 }
 
 def cool() {
