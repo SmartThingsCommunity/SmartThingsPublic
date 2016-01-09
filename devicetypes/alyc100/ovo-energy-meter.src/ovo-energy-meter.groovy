@@ -105,13 +105,13 @@ def installed() {
 def updated() {
 	log.debug "Executing 'updated'"
 	// execute handlerMethod every 10 minutes.
-    unschedule('poll')
+    unschedule(poll)
     schedule("0 0/1 * * * ?", poll)
 }
 
 def uninstalled() {
 	log.debug "Executing 'unsinstalled'"
-	unschedule('poll')
+	unschedule(poll)
 }
 
 // handle commands
