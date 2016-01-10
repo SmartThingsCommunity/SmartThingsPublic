@@ -16,6 +16,7 @@
  *	VERSION HISTORY
  *  09.01.2016
  *	v1.0 - Initial Release
+ *	v1.1 - Added BETA Boost Capability
  */
  
 metadata {
@@ -31,6 +32,7 @@ metadata {
         command "heatingSetpointUp"
 		command "heatingSetpointDown"
         command "setHeatingSetpoint"
+        command "setBoostLength"
 	}
 
 	simulator {
@@ -91,14 +93,27 @@ metadata {
 			state "setHeatingSetpoint", label:'Set temperature to', action:"setHeatingSetpoint"
 		}
         
+        controlTile("boostSliderControl", "device.boostLength", "slider", height: 2, width: 4, inactiveLabel: false, range:"(60..300)") {
+			state ("setBoostLength", label:'Set boost length to', action:"setBoostLength")
+		}
+        
         standardTile("switch", "device.switch", decoration: "flat", height: 2, width: 2, inactiveLabel: false) {
 			state "on", label:'${name}', action:"switch.off", icon:"st.Home.home1", backgroundColor:"#f1d801"
 			state "off", label:'${name}', action:"switch.on", icon:"st.Home.home1", backgroundColor:"#ffffff"
 		}
         
+         valueTile("boost", "device.boostLabel", inactiveLabel: false, decoration: "flat", width: 2, height: 2) {
+			state("default", label:'${currentValue}', action:"emergencyHeat")
+		}
+        
         main(["thermostat_small"])
-		details(["thermostat", "heatingSetpoint", "heatSliderControl", "switch", "refresh"])
+		details(["thermostat", "heatingSetpoint", "heatSliderControl", "boost", "boostSliderControl", "switch", "refresh"])
 	}
+}
+
+def installed() {
+	log.debug "Executing 'installed'"
+    state.boostLength = 60
 }
 
 def uninstalled() {
@@ -126,7 +141,7 @@ def setHeatingSetpoint(temp) {
 	if (temp > 30) {
 		temp = 30
 	}
-    
+    state.boost = "off"
     def resp = parent.apiGET("/subdevices/set_target_temperature?params=" + URLEncoder.encode(new groovy.json.JsonBuilder([id: device.deviceNetworkId.toInteger(), temperature: temp]).toString()))
 	if (resp.status != 200) {
 		log.error("Unexpected result in poll(): [${resp.status}] ${resp.data}")
@@ -134,6 +149,33 @@ def setHeatingSetpoint(temp) {
     else {
     	runIn(1, refresh)
     }    
+}
+
+def setBoostLength(minutes) {
+	log.debug "Executing 'setBoostLength with length $minutes minutes'"
+    if (minutes < 60) {
+		minutes = 60
+	}
+	if (minutes > 300) {
+		minutes = 300
+	}
+    state.boostLength = minutes
+    sendEvent(name:"boostLength", value: state.boostLength, displayed: true)
+    
+    def latestThermostatMode = device.latestState('thermostatMode')
+    
+    //If already in BOOST mode, send updated boost length.
+	if (latestThermostatMode.stringValue == 'emergency heat') {
+		setThermostatMode('emergency heat')
+    }
+    else {
+    	refresh()
+    }    
+}
+
+def stopBoost() {
+	state.boost = "off"
+    on()
 }
 
 def heatingSetpointUp(){
@@ -150,14 +192,21 @@ def heatingSetpointDown(){
 	setHeatingSetpoint(newSetpoint)
 }
 
+def setLastHeatingSetpoint(temp) {
+	//Don't store set point if it is 12.
+	if (temp > 12) {
+		state.lastHeatingSetPoint = temp
+    }
+}
+
 def off() {
 	setThermostatMode('off')
     
 }
 
 def on() {
-    def lastHeatingSetPoint = !state.lastHeatingSetPoint ? 21 : state.lastHeatingSetPoint
-    setHeatingSetPoint(lastHeatingSetPoint)
+	setThermostatMode('heat')
+	
 }
 
 def heat() {
@@ -165,7 +214,17 @@ def heat() {
 }
 
 def emergencyHeat() {
-	setThermostatMode('heat')
+	log.debug "Executing 'boost'"
+	
+    def latestThermostatMode = device.latestState('thermostatMode')
+    
+    //Don't do if already in BOOST mode.
+	if (latestThermostatMode.stringValue != 'emergency heat') {
+		setThermostatMode('emergency heat')
+    }
+    else {
+    	log.debug "Already in boost mode."
+    }
 }
 
 def auto() {
@@ -177,10 +236,36 @@ def setThermostatMode(mode) {
 	log.debug "Executing 'setThermostatMode with mode $mode'"
     
     if (mode == 'off') {
-    	state.lastHeatingSetPoint = device.currentValue('heatingSetpoint')
-    	setHeatingSetPoint(12)
+    	unschedule(stopBoost)
+        state.boost = "off"
+    	setLastHeatingSetpoint(device.currentValue('heatingSetpoint'))
+    	setHeatingSetpoint(12)
+    } else if (mode == 'emergency heat') { 
+    	if (state.boostLength == null || state.boostLength == '')
+        {
+        	state.boostLength = 60
+            sendEvent("name":"boostLength", "value": 60, displayed: true)
+        }
+        setLastHeatingSetpoint(device.currentValue('heatingSetpoint'))
+        state.boost = "on"
+        def resp = parent.apiGET("/subdevices/set_target_temperature?params=" + URLEncoder.encode(new groovy.json.JsonBuilder([id: device.deviceNetworkId.toInteger(), temperature: 21]).toString()))
+        if (resp.status != 200) {
+			log.error("Unexpected result in poll(): [${resp.status}] ${resp.data}")
+		}
+   	 	else {
+    		runIn(1, refresh)
+    	}  
+        //Schedule boost switch off
+        schedule(now() + (state.boostLength * 60000), stopBoost)
     } else {
-    	on()
+    	unschedule(stopBoost)
+        state.boost = "off"
+    	def lastHeatingSetPoint = 21
+        if (state.lastHeatingSetPoint != null && state.lastHeatingSetPoint > 12)
+        {
+        	lastHeatingSetPoint = state.lastHeatingSetPoint
+        }
+    	setHeatingSetpoint(lastHeatingSetPoint)
     }
 
 }
@@ -193,14 +278,30 @@ def poll() {
 		log.error("Unexpected result in poll(): [${resp.status}] ${resp.data}")
 		return []
 	}
-
+    
+    //Boost button label
+    if (state.boostLength == null || state.boostLength == '')
+    {
+        state.boostLength = 60
+        sendEvent("name":"boostLength", "value": 60, displayed: true)
+    }
+	def boostLabel = ""
+    
 	sendEvent(name: "temperature", value: resp.data.data.last_temperature, unit: "C", state: "heat")
     sendEvent(name: "heatingSetpoint", value: resp.data.data.target_temperature, unit: "C", state: "heat")
-	sendEvent(name: "thermostatMode", value: resp.data.data.target_temperature == 12 ? "off" : "heat")
+    if (state.boost != null && state.boost == "on") {
+    	sendEvent(name: "thermostatMode", value: "emergency heat")
+        boostLabel = "Boosting"
+    }
+    else {
+		sendEvent(name: "thermostatMode", value: resp.data.data.target_temperature == 12 ? "off" : "heat")
+        boostLabel = "Start\n$state.boostLength Min Boost"
+    }
     sendEvent(name: 'thermostatOperatingState', value: resp.data.data.target_temperature == 12 ? "idle" : "heating")
     sendEvent(name: 'thermostatFanMode', value: "off", displayed: false)
     sendEvent(name: "switch", value: resp.data.data.target_temperature == 12 ? "off" : "on")
     sendEvent(name: "voltage", value: "Battery Voltage is " + resp.data.data.voltage + "V")
+    sendEvent(name: "boostLabel", value: boostLabel, displayed: false)
     
     return []
 	
