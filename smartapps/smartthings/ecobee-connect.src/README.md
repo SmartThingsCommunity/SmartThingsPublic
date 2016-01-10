@@ -10,6 +10,7 @@ Ecobee Thermostat SmartApp(s) and related Device Types for use with the SmartThi
   - [Install SmartApp in IDE](#install-smartapp)
   - [Install SmartApp on Device](#install-smartapp-phone)
 - [Updating](#updating)
+- [Troubleshooting](#troubleshooting)
 - [Reporting Issues](#reporting-issues)
 - [Open Items](#open-items--to-dos)
 - [Contributors](#contributors)
@@ -226,9 +227,17 @@ You should now be running on the updated code. Be sure that you check for both u
 
 > TODO: Fill in the directions for manual upgrade
 
+-------------------------
+## Troubleshooting
+
+| Symptom 	| Possible Solution 	|
+|---------	|-------------------	|
+| The devices are not showing up in the Things tab after install    	|  It can take several minutes for things to show up properly. If you don't want to wait then simply kill the SmartThings app and reload it.              	|
+| Receive error similar to "error java.lang.NullPointerException: Cannot get property 'authorities' on null object"        	| This indicates that you have not turned on OAuth for the SmartApp. Please review the installation instructions and complete the OAuth steps.                  	|
+|         	|                   	|
 
 -------------------------
-## <a name="reporting-issues"Reporting Issues</a>
+## <a name="reporting-issues">Reporting Issues</a>
 All issues or feature requests should be submitted via the GitHub issue capability. It can be found on the [Issues](https://github.com/StrykerSKS/SmartThingsPublic/issues) tab within the GitHub repository.
 
 You are also welcome to engage in discussions using the [SmartThings Community](https://community.smartthings.com/).
@@ -253,5 +262,3 @@ Licensed under the Apache License, Version 2.0 (the "License"); you may not use 
       http://www.apache.org/licenses/LICENSE-2.0
 
 Unless required by applicable law or agreed to in writing, software distributed under the License is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the License for the specific language governing permissions and limitations under the License.
-
-
