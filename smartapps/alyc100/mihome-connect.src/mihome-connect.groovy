@@ -15,6 +15,9 @@
  *	VERSION HISTORY
  *  09.01.2016
  *	v1.0 - Initial Release
+ *
+ *	10.01.2016
+ *	v1.0.1 - Improve messaging for connection process.
  */
 definition(
 		name: "MiHome (Connect)",
@@ -51,7 +54,14 @@ def firstPage() {
 			section {
     			input("username", "text", title: "Username", description: "Your MiHome username (usually an email address)", required: true)
 				input("password", "password", title: "Password", description: "Your MiHome password", required: true, submitOnChange: true)
-  			}
+            }
+            if (state.miHomeAccessToken != null && state.miHomeAccessToken != '') {
+            	section {
+                	paragraph "You have successfully connected to MiHome. Press 'Done' and your devices should have been added automatically."
+  				}
+            } else {
+            	paragraph "There was a problem connecting to MiHome. Check your user credential and error logs in SmartThings web console."
+            }
     	}
     }
 }
