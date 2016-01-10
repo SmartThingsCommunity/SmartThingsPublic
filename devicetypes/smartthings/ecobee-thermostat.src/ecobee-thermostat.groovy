@@ -340,8 +340,9 @@ metadata {
         
         // Show status of the API Connection for the Thermostat
 		standardTile("apiStatus", "device.apiConnected", width: 2, height: 2) {
-        	state "true", label: "API", backgroundColor: "#44b621", icon: "st.contact.contact.closed"
-            state "false", label: "API ", backgroundColor: "#ffa81e", icon: "st.contact.contact.open"
+        	state "full", label: "API", backgroundColor: "#44b621", icon: "st.contact.contact.closed"
+            state "warn", label: "API ", backgroundColor: "#FFFF33", icon: "st.contact.contact.open"
+            state "lost", label: "API ", backgroundColor: "#ffa81e", icon: "st.contact.contact.open"
 		}
         
 		valueTile("temperature", "device.temperature", width: 2, height: 2, canChangeIcon: true, icon: "st.Home.home1") {
@@ -705,9 +706,10 @@ void setHeatingSetpoint(Double setpoint) {
 	def coolingSetpoint = device.currentValue("coolingSetpoint").toDouble()
 	def deviceId = device.deviceNetworkId.split(/\./).last()
 
-	   
+
+	log.debug "setHeatingSetpoint() before compare: heatingSetpoint == ${heatingSetpoint}   coolingSetpoint == ${coolingSetpoint}"	   
 	//enforce limits of heatingSetpoint vs coolingSetpoint
-	if (heatingSetpoint >= coolingSetpoint) {
+	if (heatingSetpoint > coolingSetpoint) {
 		coolingSetpoint = heatingSetpoint
 	}
 
@@ -740,8 +742,10 @@ void setCoolingSetpoint(Double setpoint) {
 	def coolingSetpoint = setpoint
 	def deviceId = device.deviceNetworkId.split(/\./).last()
 
+
+	log.debug "setCoolingSetpoint() before compare: heatingSetpoint == ${heatingSetpoint}   coolingSetpoint == ${coolingSetpoint}"
 	//enforce limits of heatingSetpoint vs coolingSetpoint
-	if (heatingSetpoint >= coolingSetpoint) {
+	if (heatingSetpoint > coolingSetpoint) {
 		heatingSetpoint = coolingSetpoint
 	}
 
