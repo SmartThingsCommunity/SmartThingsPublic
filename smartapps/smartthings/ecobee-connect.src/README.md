@@ -236,6 +236,13 @@ You should now be running on the updated code. Be sure that you check for both u
 | Receive error similar to "error java.lang.NullPointerException: Cannot get property 'authorities' on null object"        	| This indicates that you have not turned on OAuth for the SmartApp. Please review the installation instructions and complete the OAuth steps.                  	|
 |         	|                   	|
 
+### Live Logging on IDE
+TODO: Put information on getting to the Live Logging on the IDE
+
+### Installed SmartApps Info on IDE
+TODO: Put information about accessing the Installed SmartApps screens to get more information about the state of the SmartApp. In particular, can be used to determine if the poll handlers are still running.
+
+
 -------------------------
 ## <a name="reporting-issues">Reporting Issues</a>
 All issues or feature requests should be submitted via the GitHub issue capability. It can be found on the [Issues](https://github.com/StrykerSKS/SmartThingsPublic/issues) tab within the GitHub repository.
