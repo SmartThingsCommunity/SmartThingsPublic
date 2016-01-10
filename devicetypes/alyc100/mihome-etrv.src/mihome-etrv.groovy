@@ -265,7 +265,7 @@ def setThermostatMode(mode) {
         state.lastThermostatMode = device.latestState('thermostatMode')
         setLastHeatingSetpoint(device.currentValue('heatingSetpoint'))
         state.boost = "on"
-        def resp = parent.apiGET("/subdevices/set_target_temperature?params=" + URLEncoder.encode(new groovy.json.JsonBuilder([id: device.deviceNetworkId.toInteger(), temperature: 21]).toString()))
+        def resp = parent.apiGET("/subdevices/set_target_temperature?params=" + URLEncoder.encode(new groovy.json.JsonBuilder([id: device.deviceNetworkId.toInteger(), temperature: 23]).toString()))
         if (resp.status != 200) {
 			log.error("Unexpected result in poll(): [${resp.status}] ${resp.data}")
 		}
