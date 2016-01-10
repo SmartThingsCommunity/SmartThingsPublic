@@ -54,8 +54,8 @@ metadata {
 					[value: 29, color: "#bc2323"]
 				]
 			}
-            tileAttribute ("voltage", key: "SECONDARY_CONTROL") {
-				attributeState "voltage", label:'${currentValue}'
+            tileAttribute ("batteryVoltage", key: "SECONDARY_CONTROL") {
+				attributeState "batteryVoltage", label:'Battery Voltage Is ${currentValue}'
 			}
 		}
         
@@ -307,7 +307,7 @@ def poll() {
     sendEvent(name: 'thermostatOperatingState', value: resp.data.data.target_temperature == 12 ? "idle" : "heating")
     sendEvent(name: 'thermostatFanMode', value: "off", displayed: false)
     sendEvent(name: "switch", value: resp.data.data.target_temperature == 12 ? "off" : "on")
-    sendEvent(name: "voltage", value: "Battery Voltage is " + resp.data.data.voltage + "V")
+    sendEvent(name: "batteryVoltage", value: resp.data.data.voltage + "V")
     sendEvent(name: "boostLabel", value: boostLabel, displayed: false)
     
     return []
