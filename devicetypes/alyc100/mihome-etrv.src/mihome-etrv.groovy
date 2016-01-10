@@ -317,7 +317,7 @@ def poll() {
     sendEvent(name: 'thermostatOperatingState', value: resp.data.data.target_temperature == 12 ? "idle" : "heating")
     sendEvent(name: 'thermostatFanMode', value: "off", displayed: false)
     sendEvent(name: "switch", value: resp.data.data.target_temperature == 12 ? "off" : "on")
-    sendEvent(name: "batteryVoltage", value: resp.data.data.voltage + "V")
+    sendEvent(name: "batteryVoltage", value: resp.data.data.voltage == null ? "Not Available" : "$resp.data.data.voltageV")
     sendEvent(name: "boostLabel", value: boostLabel, displayed: false)
     
     return []
