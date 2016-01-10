@@ -102,6 +102,13 @@ metadata {
 			state "off", label:'${name}', action:"switch.on", icon:"st.Home.home1", backgroundColor:"#ffffff"
 		}
         
+        standardTile("thermostatMode", "device.thermostatMode", inactiveLabel: true, decoration: "flat", width: 2, height: 2) {
+			state("auto", label: "SCHEDULED", icon:"st.Office.office7")
+			state("off", icon:"st.thermostat.heating-cooling-off")
+			state("heat", label: "MANUAL", icon:"st.Weather.weather2")
+			state("emergency heat", label: "BOOST", icon:"st.Health & Wellness.health7")
+		}
+        
          valueTile("boost", "device.boostLabel", inactiveLabel: false, decoration: "flat", width: 2, height: 2) {
 			state("default", label:'${currentValue}', action:"emergencyHeat")
 		}
