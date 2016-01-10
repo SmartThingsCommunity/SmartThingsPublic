@@ -3,10 +3,11 @@
  *
  *  Copyright 2015 Bruce Ravenel and Mike Maxwell
  *
- *  Version 1.6.5   1 Jan 2016
+ *  Version 1.6.6   10 Jan 2016
  *
  *	Version History
  *
+ *	1.6.6	10 Jan 2016		Improved method of getting custom device commands
  *	1.6.5	1 Jan 2016		Added version numbers to main page
  *	1.6.4	30 Dec 2015		Multi-commands
  *	1.6.3	26 Dec 2015		UI improvements and icon per Michael Struck
@@ -60,7 +61,7 @@ def mainPage() {
         section ("Remove Rule Machine"){
         	href "removePage", description: "Tap to remove Rule Machine ", title: ""
         }
-        if(state.ver) section ("Version 1.6.5/" + state.ver) { }
+        if(state.ver) section ("Version 1.6.6/" + state.ver) { }
     }
 }
 
@@ -594,16 +595,8 @@ def execCommand(cmdID){
 def getDeviceCommands(){
 	def result = ""
 	devices.each { device ->
-		try {
-			device."xxx"()
-			result = "Command succeeded"
-		}
-		catch (IllegalArgumentException e){
-			def em = e as String
-			def ems = em.split(":")
-			ems = ems[2].replace(" [","").replace("]","")
-			result = ems.split(", ").collect{it as String}
-		}
+        result = device.supportedCommands.collect{ it as String }
+        //log.debug "supportedCommands:${result}"
 	}
 	return result
 }
