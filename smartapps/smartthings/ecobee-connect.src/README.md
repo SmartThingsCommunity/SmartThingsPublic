@@ -232,7 +232,7 @@ You should now be running on the updated code. Be sure that you check for both u
 
 | Symptom 	| Possible Solution 	|
 |---------	|-------------------	|
-| The devices are not showing up in the Things tab after install    	|  It can take several minutes for things to show up properly. If you don't want to wait then simply kill the SmartThings app and reload it.              	|
+| The devices are not showing up in the Things tab after installation    	|  It can take several minutes for things to show up properly. If you don't want to wait then simply kill the SmartThings app and reload it.              	|
 | Receive error similar to "error java.lang.NullPointerException: Cannot get property 'authorities' on null object"        	| This indicates that you have not turned on OAuth for the SmartApp. Please review the installation instructions and complete the OAuth steps.                  	|
 |         	|                   	|
 
