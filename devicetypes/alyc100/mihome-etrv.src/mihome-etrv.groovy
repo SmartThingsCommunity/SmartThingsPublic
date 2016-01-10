@@ -17,6 +17,9 @@
  *  09.01.2016
  *	v1.0 - Initial Release
  *	v1.1 - Added BETA Boost Capability
+ *
+ *	10.01.2016
+ *	v1.1.1 - Fixed stopBoost always returning to 'on' mode.
  */
  
 metadata {
@@ -181,8 +184,14 @@ def setBoostLength(minutes) {
 }
 
 def stopBoost() {
+	log.debug "Executing 'stopBoost'"
 	state.boost = "off"
-    on()
+    if (state.lastThermostatMode == 'off') {
+    	off()
+    }
+    else {
+    	on()
+    }
 }
 
 def heatingSetpointUp(){
@@ -253,6 +262,7 @@ def setThermostatMode(mode) {
         	state.boostLength = 60
             sendEvent("name":"boostLength", "value": 60, displayed: true)
         }
+        state.lastThermostatMode = device.latestState('thermostatMode')
         setLastHeatingSetpoint(device.currentValue('heatingSetpoint'))
         state.boost = "on"
         def resp = parent.apiGET("/subdevices/set_target_temperature?params=" + URLEncoder.encode(new groovy.json.JsonBuilder([id: device.deviceNetworkId.toInteger(), temperature: 21]).toString()))
