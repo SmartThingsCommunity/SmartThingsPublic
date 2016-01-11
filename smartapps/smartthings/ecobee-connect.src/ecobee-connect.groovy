@@ -548,8 +548,8 @@ def pollChildren(child = null) {
             oneChild.generateEvent(atomicState.thermostats[oneChild.device.deviceNetworkId].data)
         } else {
         	// We must have a remote sensor
-            log.debug "pollChildren() - Updating sensor data: ${oneChild.device.deviceNetworkId} data: ${atomicState.remoteSensors[oneChild.device.deviceNetworkId].data}"
-            oneChild.generateEvent(atomicState.remoteSensors[oneChild.device.deviceNetworkId].data)
+            log.debug "pollChildren() - Updating sensor data: ${oneChild.device.deviceNetworkId} data: ${atomicState.remoteSensorsData[oneChild.device.deviceNetworkId].data}"
+            oneChild.generateEvent(atomicState.remoteSensorsData[oneChild.device.deviceNetworkId].data)
         } 
     }
 
@@ -773,7 +773,7 @@ def updateSensorData() {
                     	log.debug "updateSensorData() - Sensor (DNI: ${sensorDNI}) temp is ${cap.value}"
                         if ( cap.value.isNumber() ) { // Handles the case when the sensor is offline, which would return "unkown"
 							temperature = cap.value as Double
-							temperature = (temperature / 10).toDouble().round(0)
+							temperature = wantMetric() ? (temperature / 10).toDouble().round(1) : (temperature / 10).toDouble().round(0)
                         } else if (temperature == "unknown") {
                         	// TODO: Do something here to mark the sensor as offline?
                             log.error "updateSensorData() - sensor (DNI: ${sensorDNI}) returned unknown temp value. Perhaps it is unreachable."
@@ -793,14 +793,14 @@ def updateSensorData() {
                                             
 				// TODO: Test the "unknown" populated data
 				def sensorData = [
-					temperature: ((temperature == "unknown") ? "--" : myConvertTemperatureIfNeeded(temperature, "F", 0)),
+					temperature: ((temperature == "unknown") ? "--" : myConvertTemperatureIfNeeded(temperature, "F", 1)),
 					motion: occupancy
 				]
 				sensorCollector[sensorDNI] = [data:sensorData]
 			}
 		} // End it.each loop
 	} // End remoteSensors.each loop
-	atomicState.remoteSensors = sensorCollector
+	atomicState.remoteSensorsData = sensorCollector
 	log.debug "updateSensorData(): found these remoteSensors: ${sensorCollector}"
                 
 }
@@ -819,14 +819,14 @@ def updateThermostatData() {
 			heatMode: (stat.settings.heatStages > 0),
 			autoMode: stat.settings.autoHeatCoolFeatureEnabled,
 			auxHeatMode: (stat.settings.hasHeatPump) && (stat.settings.hasForcedAir || stat.settings.hasElectric || stat.settings.hasBoiler),
-			temperature: myConvertTemperatureIfNeeded( (stat.runtime.actualTemperature / 10), "F", 0),
-			heatingSetpoint: myConvertTemperatureIfNeeded( (stat.runtime.desiredHeat / 10), "F", 0),
-			coolingSetpoint: myConvertTemperatureIfNeeded( (stat.runtime.desiredCool / 10), "F", 0),
+			temperature: myConvertTemperatureIfNeeded( (stat.runtime.actualTemperature / 10), "F", (wantMetric() ? 1 : 0)),
+			heatingSetpoint: myConvertTemperatureIfNeeded( (stat.runtime.desiredHeat / 10), "F", (wantMetric() ? 1 : 0)),
+			coolingSetpoint: myConvertTemperatureIfNeeded( (stat.runtime.desiredCool / 10), "F", (wantMetric() ? 1 : 0)),
 			thermostatMode: stat.settings.hvacMode,                            
 			humidity: stat.runtime.actualHumidity,
 			thermostatOperatingState: getThermostatOperatingState(stat),
 			weatherSymbol: stat.weather.forecasts[0].weatherSymbol.toString(),
-			weatherTemperature: myConvertTemperatureIfNeeded( ((stat.weather.forecasts[0].temperature / 10)), "F", 0)
+			weatherTemperature: myConvertTemperatureIfNeeded( ((stat.weather.forecasts[0].temperature / 10)), "F", (wantMetric() ? 1 : 0))
 			// weatherStation:stat.weather.weatherStation,
 			// weatherSymbol:stat.weather.forecasts[0].weatherSymbol.toString(),
 			// weatherTemperature:stat.weather.forecasts[0].temperature,
@@ -846,10 +846,12 @@ def updateThermostatData() {
 			// weatherPop:stat.weather.forecasts[0].pop.toString()
 		]
         // TODO: Fix F to C conversion here as well
-		data["temperature"] = data["temperature"] ? data["temperature"].toDouble().toInteger() : data["temperature"]
-		data["heatingSetpoint"] = data["heatingSetpoint"] ? data["heatingSetpoint"].toDouble().toInteger() : data["heatingSetpoint"]
-		data["coolingSetpoint"] = data["coolingSetpoint"] ? data["coolingSetpoint"].toDouble().toInteger() : data["coolingSetpoint"]
-        data["weatherTemperature"] = data["weatherTemperature"] ? data["weatherTemperature"].toDouble().toInteger() : data["weatherTemperature"]
+		data["temperature"] = data["temperature"] ? ( wantMetric() ? data["temperature"].toDouble() : data["temperature"].toDouble().toInteger() ) : data["temperature"]
+		data["heatingSetpoint"] = data["heatingSetpoint"] ? ( wantMetric() ? data["heatingSetpoint"].toDouble() : data["heatingSetpoint"].toDouble().toInteger() ) : data["heatingSetpoint"]
+		data["coolingSetpoint"] = data["coolingSetpoint"] ? ( wantMetric() ? data["coolingSetpoint"].toDouble() : data["coolingSetpoint"].toDouble().toInteger() ) : data["coolingSetpoint"]
+        data["weatherTemperature"] = data["weatherTemperature"] ? ( wantMetric() ? data["weatherTemperature"].toDouble() : data["weatherTemperature"].toDouble().toInteger() ) : data["weatherTemperature"]
+        
+		
 		debugEventFromParent(child, "Event Data = ${data}")
 
 		collector[dni] = [data:data]
@@ -1018,6 +1020,8 @@ def resumeProgram(child, deviceId) {
 	//, { "type": "sendMessage", "params": { "text": "Setpoint Updated" } }
 	def result = sendJson(jsonRequestBody)
 //    debugEventFromParent(child, "resumeProgram(child) with result ${result}")
+	// Update the data after giving the thermostat a chance to consume the command and update the values
+	runIn(20, "pollChildren")
 	return result
 }
 
