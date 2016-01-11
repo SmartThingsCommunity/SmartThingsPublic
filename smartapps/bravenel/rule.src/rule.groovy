@@ -3,7 +3,7 @@
  *
  *  Copyright 2015 Bruce Ravenel
  *
- *  Version 1.6.12a   10 Jan 2016
+ *  Version 1.6.12b   10 Jan 2016
  *
  *	Version History
  *
@@ -75,7 +75,7 @@ preferences {
 def selectRule() {
 	//init expert settings for rule
 	try { 
-		state.isExpert = parent.isExpert("1.6.12a") 
+		state.isExpert = parent.isExpert("1.6.12b") 
 		if (state.isExpert) state.cstCmds = parent.getCommands()
 		else state.cstCmds = []
 	}
@@ -1593,10 +1593,13 @@ def testEvt(evt) {
 	}
 	for(int i = 1; i < howMany; i++) {
 		def myDev = settings.find {it.key == (state.isTrig ? "rDev$i" : "tDev$i")}
-		if(myDev) myDev.value.each {if(evt.displayName == it.displayName) {
-			if(evt.name == "button") result = getButton(myDev, evt, i)
-			else result = getOperand(i, state.isTrig)}
-		}
+		if(myDev) {
+        	myDev = myDev.value
+        	myDev.each {if(evt.displayName == it.displayName) {
+				if(evt.name == "button") result = getButton(myDev, evt, i)
+				else result = getOperand(i, state.isTrig)}
+			}
+        }
 		if(result) return result
 	}
 	return result
