@@ -276,33 +276,8 @@ metadata {
         // Workaround until they fix the Thermostat tile. Only use this one OR the above one, not both
         multiAttributeTile(name:"summary", type: "lighting", width: 6, height: 4) {
         	tileAttribute("device.temperature", key: "PRIMARY_CONTROL") {
-				attributeState("temperature", label:'${currentValue}°', unit:"dF",
-				backgroundColors: [
-                	// Celsius Color Range
-					[value: 0, color: "#1e9cbb"],
-					[value: 15, color: "#1e9cbb"],
-                    [value: 19, color: "#1e9cbb"],
-                    
-                    [value: 21, color: "#44b621"],
-					[value: 22, color: "#44b621"],
-                    [value: 24, color: "#44b621"],
-                    
-					[value: 21, color: "#d04e00"],
-					[value: 35, color: "#d04e00"],
-					[value: 37, color: "#d04e00"],
-					// Fahrenheit Color Range
-                	[value: 40, color: "#1e9cbb"],
-					[value: 59, color: "#1e9cbb"],
-                    [value: 67, color: "#1e9cbb"],
-                    
-                    [value: 69, color: "#44b621"], 
-					[value: 72, color: "#44b621"],
-                    [value: 74, color: "#44b621"],
-                    
-					[value: 76, color: "#d04e00"],
-					[value: 95, color: "#d04e00"],
-					[value: 99, color: "#d04e00"]
-				])
+				attributeState("temperature", label:'${currentValue}°', unit:"F",
+				backgroundColors: getTempColors())
 			}
             
 			tileAttribute("device.temperature", key: "VALUE_CONTROL") {
@@ -347,32 +322,7 @@ metadata {
         
 		valueTile("temperature", "device.temperature", width: 2, height: 2, canChangeIcon: true, icon: "st.Home.home1") {
 			state("temperature", label:'${currentValue}°', unit:"F",
-				backgroundColors: [
-                	// Celsius Color Range
-					[value: 0, color: "#1e9cbb"],
-					[value: 15, color: "#1e9cbb"],
-                    [value: 19, color: "#1e9cbb"],
-                    
-                    [value: 21, color: "#44b621"],
-					[value: 22, color: "#44b621"],
-                    [value: 24, color: "#44b621"],
-                    
-					[value: 21, color: "#d04e00"],
-					[value: 35, color: "#d04e00"],
-					[value: 37, color: "#d04e00"],
-					// Fahrenheit Color Range
-                	[value: 40, color: "#1e9cbb"],
-					[value: 59, color: "#1e9cbb"],
-                    [value: 67, color: "#1e9cbb"],
-                    
-                    [value: 69, color: "#44b621"], 
-					[value: 72, color: "#44b621"],
-                    [value: 74, color: "#44b621"],
-                    
-					[value: 76, color: "#d04e00"],
-					[value: 95, color: "#d04e00"],
-					[value: 99, color: "#d04e00"]
-				]
+				backgroundColors: getTempColors()
 			)
 		}
 		standardTile("mode", "device.thermostatMode", width: 2, height: 2, inactiveLabel: false, decoration: "flat") {
@@ -423,13 +373,13 @@ metadata {
         
         
         standardTile("operatingState", "device.thermostatOperatingState", width: 2, height: 2, inactiveLabel: false, decoration: "flat") {
-			state "idle", label: "Idle", backgroundColor:"#44b621", icon: "st.nest.empty"
-				// Or uncomment this one if you prefer grey for idle 
-				// attributeState("idle", backgroundColor:"#C0C0C0") 
+			//state "idle", label: "Idle", backgroundColor:"#44b621", icon: "st.nest.empty"
+            state "idle", label: "Idle", backgroundColor:"#c0c0c0", icon: "st.nest.empty"		
+            state "fan only", backgroundColor:"#44b21", icon: "st.Appliances.appliances11"
 			state "heating", backgroundColor:"#ffa81e", icon: "st.thermostat.heat"
 			state "cooling", backgroundColor:"#269bd2", icon: "st.thermostat.cool"
             // Issue reported that the label overlaps. Need to remove the icon
-            state "default", label: '${currentValue}', backgroundColor:"c0c0c0", icon: ""
+            state "default", label: '${currentValue}', backgroundColor:"c0c0c0", icon: "st.nest.empty"
 		}
         
         valueTile("humidity", "device.humidity", inactiveLabel: false, decoration: "flat", width: 2, height: 2,) {
@@ -517,7 +467,8 @@ metadata {
             "apiStatus", "resumeProgram", "mode",
             "coolSliderControl", "coolingSetpoint", 
             "heatSliderControl", "heatingSetpoint",
-            "refresh"])      
+            "currentStatus", "refresh"
+            ])      
         
 /*
 		details(["summary", // MultiAttributeTile
@@ -642,8 +593,19 @@ def setTemperature(setpoint) {
         return
     } 
     
-    def currentTemp = device.currentValue("temperature")
+	def currentTemp = device.currentValue("temperature")
     def currentSetpoint = device.currentValue("thermostatSetpoint") ?: currentTemp
+    
+    // TODO: WORKAROUND - Bug causes the widget to set a different value when using C vs F! Uses 0 and 1 instead of the actual value
+    if ( getTemperatureScale() == "C" ) { 
+    	if (setpoint == 0) { 
+        	setpoint = currentTemp.toDouble() - 1.0 
+		} else { 
+        	setpoint = currentTemp.toDouble() + 1.0 
+		}
+    }
+    
+   
     def deltaTemp = setpoint - currentTemp
     
     log.debug "deltaTemp = ${deltaTemp}"
@@ -719,13 +681,13 @@ void setHeatingSetpoint(Double setpoint) {
 	def sendHoldType = whatHoldType()
     
 	if (parent.setHold (this, heatingSetpoint,  coolingSetpoint, deviceId, sendHoldType)) {
-		sendEvent("name":"heatingSetpoint", "value":heatingSetpoint.toInteger()) // TODO: This does not round up
-		sendEvent("name":"coolingSetpoint", "value":coolingSetpoint.toInteger()) // TODO: This does not round up
+		sendEvent("name":"heatingSetpoint", "value":heatingSetpoint) // TODO: This does not round up
+		sendEvent("name":"coolingSetpoint", "value":coolingSetpoint) // TODO: This does not round up
 		log.debug "Done setHeatingSetpoint> coolingSetpoint: ${coolingSetpoint}, heatingSetpoint: ${heatingSetpoint}"
 		generateSetpointEvent()
 		generateStatusEvent()
 	} else {
-		log.error "Error setHeatingSetpoint(setpoint)" //This error is handled by the connect app
+		log.error "Error setHeatingSetpoint(${setpoint})" //This error is handled by the connect app
 	}
 }
 
@@ -756,8 +718,8 @@ void setCoolingSetpoint(Double setpoint) {
     
     // Convert temp to F from C if needed
 	if (parent.setHold (this, heatingSetpoint,  coolingSetpoint, deviceId, sendHoldType)) {
-		sendEvent("name":"heatingSetpoint", "value":heatingSetpoint.toInteger())
-		sendEvent("name":"coolingSetpoint", "value":coolingSetpoint.toInteger())
+		sendEvent("name":"heatingSetpoint", "value":heatingSetpoint)
+		sendEvent("name":"coolingSetpoint", "value":coolingSetpoint)
 		log.debug "Done setCoolingSetpoint>> coolingSetpoint = ${coolingSetpoint}, heatingSetpoint = ${heatingSetpoint}"
 		generateSetpointEvent()
 		generateStatusEvent()
@@ -1021,10 +983,10 @@ def generateSetpointEvent() {
 	def mode = device.currentValue("thermostatMode")
 	log.debug "Current Mode = ${mode}"
 
-	def heatingSetpoint = device.currentValue("heatingSetpoint").toInteger()
+	def heatingSetpoint = device.currentValue("heatingSetpoint")
 	log.debug "Heating Setpoint = ${heatingSetpoint}"
 
-	def coolingSetpoint = device.currentValue("coolingSetpoint").toInteger()
+	def coolingSetpoint = device.currentValue("coolingSetpoint")
 	log.debug "Cooling Setpoint = ${coolingSetpoint}"
 
 	if (mode == "heat") {
@@ -1055,17 +1017,17 @@ void raiseSetpoint() {
         return
 	} 
     
-    	def heatingSetpoint = device.currentValue("heatingSetpoint").toInteger()
-		def coolingSetpoint = device.currentValue("coolingSetpoint").toInteger()
+    	def heatingSetpoint = device.currentValue("heatingSetpoint")
+		def coolingSetpoint = device.currentValue("coolingSetpoint")
 		def thermostatSetpoint = device.currentValue("thermostatSetpoint")
 		log.debug "raiseSetpoint() mode = ${mode}, heatingSetpoint: ${heatingSetpoint}, coolingSetpoint:${coolingSetpoint}, thermostatSetpoint:${thermostatSetpoint}"
 
-    	if (device.latestState('thermostatSetpoint')) {
-			targetvalue = device.latestState('thermostatSetpoint').value as Integer
+    	if (thermostatSetpoint) {
+			targetvalue = thermostatSetpoint
 		} else {
-			targetvalue = 0
+			targetvalue = 0.0
 		}
-		targetvalue = targetvalue + 1
+		targetvalue = targetvalue.toDouble() + 1.0
 
 		// TODO: Change these to preferences or use the configured values from the "Heat Set Point Range" in the Ecobee
         // TODO: Also need to update for when using Smart Auto preference
@@ -1079,7 +1041,7 @@ void raiseSetpoint() {
 		sendEvent("name":"thermostatSetpoint", "value":targetvalue, displayed: true)
 		log.info "In mode $mode raiseSetpoint() to $targetvalue"
 
-		runIn(3, "alterSetpoint", [data: [value:targetvalue], overwrite: true]) //when user click button this runIn will be overwrite
+		runIn(5, "alterSetpoint", [data: [value:targetvalue], overwrite: true]) //when user click button this runIn will be overwrite
 	
 }
 
@@ -1092,31 +1054,22 @@ void lowerSetpoint() {
 		log.warn "lowerSetpoint(): this mode: $mode does not allow lowerSetpoint"
     } else {
 	
-    	def heatingSetpoint = device.currentValue("heatingSetpoint").toInteger()
-		def coolingSetpoint = device.currentValue("coolingSetpoint").toInteger()
-		def thermostatSetpoint = device.currentValue("thermostatSetpoint")?.toInteger() ?: device.currentValue("temperature")
+    	def heatingSetpoint = device.currentValue("heatingSetpoint")
+		def coolingSetpoint = device.currentValue("coolingSetpoint")
+		def thermostatSetpoint = device.currentValue("thermostatSetpoint")
 		log.debug "lowerSetpoint() mode = ${mode}, heatingSetpoint: ${heatingSetpoint}, coolingSetpoint:${coolingSetpoint}, thermostatSetpoint:${thermostatSetpoint}"
 		
-        targetvalue = thermostatSetpoint
-		targetvalue = targetvalue - 1
-
-		// TODO: Change these to preferences or use the configured values from the "Heat Set Point Range" in the Ecobee
-        // TODO: Also need to update for when using Smart Auto preference
-        
-     	// We don't need these, the Ecobee already has limits in place, just use those!
-		/* 
-		if ( getTemperatureScale() == "F" ) {
-			if (mode == "heat" && targetvalue.toInteger() < 45) {
-				targetvalue = 45
-			} else if (mode == "cool" && targetvalue.toInteger() < 65) {
-				targetvalue = 65
-			} else if ( (mode == "auto") && usingSmartAuto() ) {
-            	// 
-            }
+        if (thermostatSetpoint) {
+			targetvalue = thermostatSetpoint
 		} else {
+			targetvalue = 0.0
+		}
         
-        
-        } */
+        if (getTemperatureScale() == "C" ) {
+        	targetvalue = targetvalue.toDouble() - 0.5
+        } else {
+			targetvalue = targetvalue.toDouble() - 1.0
+        }
         
 		sendEvent("name":"thermostatSetpoint", "value":targetvalue, displayed: true)
 		log.info "In mode $mode lowerSetpoint() to $targetvalue"
@@ -1131,10 +1084,10 @@ void lowerSetpoint() {
 void alterSetpoint(temp) {
 
 	def mode = device.currentValue("thermostatMode")
-	def heatingSetpoint = device.currentValue("heatingSetpoint").toInteger()
-	def coolingSetpoint = device.currentValue("coolingSetpoint").toInteger()
-    def currentTemp = device.currentValue("temperature").toInteger()
-    def saveThermostatSetpoint = device.currentValue("thermostatSetpoint").toInteger()
+	def heatingSetpoint = device.currentValue("heatingSetpoint")
+	def coolingSetpoint = device.currentValue("coolingSetpoint")
+    def currentTemp = device.currentValue("temperature")
+    def saveThermostatSetpoint = device.currentValue("thermostatSetpoint")
 	def deviceId = device.deviceNetworkId.split(/\./).last()
 
 	def targetHeatingSetpoint = heatingSetpoint
@@ -1199,13 +1152,15 @@ void alterSetpoint(temp) {
         sendEvent("name": "thermostatSetpoint", "value": saveThermostatSetpoint.toString(), displayed: false)
 	}
 	generateStatusEvent()
+    // refresh data 
+    runIn(20, "poll")
 }
 
 def generateStatusEvent() {
 	def mode = device.currentValue("thermostatMode")
-	def heatingSetpoint = device.currentValue("heatingSetpoint").toInteger()
-	def coolingSetpoint = device.currentValue("coolingSetpoint").toInteger()
-	def temperature = device.currentValue("temperature").toInteger()
+	def heatingSetpoint = device.currentValue("heatingSetpoint")
+	def coolingSetpoint = device.currentValue("coolingSetpoint")
+	def temperature = device.currentValue("temperature")
 
 	def statusText
 
@@ -1232,7 +1187,7 @@ def generateStatusEvent() {
 		}
 
 	} else if (mode == "auto") {
-		statusText = "Right Now: Auto"
+		statusText = "Right Now: Auto (Heat: ${heatingSetpoint}/Cool: ${coolingSetpoint})"
 	} else if (mode == "off") {
 		statusText = "Right Now: Off"        
 	} else if (mode == "emergencyHeat") {
@@ -1585,26 +1540,32 @@ def getTempColors() {
 	def colorMap 	
     
     
-    	colorMap = [
+    	colorMap = [        
                 	// Celsius Color Range
-					[value: 0, color: "#153591"],
-					[value: 7, color: "#1e9cbb"],
-					[value: 15, color: "#90d2a7"],
-					[value: 23, color: "#44b621"],
-					[value: 29, color: "#f1d801"],
-					[value: 33, color: "#d04e00"],
-					[value: 36, color: "#bc2323"],
+					[value: 0, color: "#1e9cbb"],
+					[value: 15, color: "#1e9cbb"],
+                    [value: 19, color: "#1e9cbb"],
+                    
+                    [value: 21, color: "#44b621"],
+					[value: 22, color: "#44b621"],
+                    [value: 24, color: "#44b621"],
+                    
+					[value: 21, color: "#d04e00"],
+					[value: 35, color: "#d04e00"],
+					[value: 37, color: "#d04e00"],
 					// Fahrenheit Color Range
-                	[value: 40, color: "#153591"],
-					[value: 44, color: "#1e9cbb"],
-					[value: 59, color: "#90d2a7"],
-					[value: 74, color: "#44b621"],
-					[value: 84, color: "#f1d801"],
+                	[value: 40, color: "#1e9cbb"],
+					[value: 59, color: "#1e9cbb"],
+                    [value: 67, color: "#1e9cbb"],
+                    
+                    [value: 69, color: "#44b621"], 
+					[value: 72, color: "#44b621"],
+                    [value: 74, color: "#44b621"],
+                    
+					[value: 76, color: "#d04e00"],
 					[value: 95, color: "#d04e00"],
-					[value: 96, color: "#bc2323"]
-					]
-	return colorMap
-
+					[value: 99, color: "#d04e00"]
+				]
 }
 
 
