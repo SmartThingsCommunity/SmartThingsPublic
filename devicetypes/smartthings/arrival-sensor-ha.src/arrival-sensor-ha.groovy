@@ -95,16 +95,17 @@ private handleBatteryEvent(rawValue) {
     ]
 
     def volts = rawValue / 10
-    if (volts > 3.5) {
-        eventMap.descriptionText = "${linkText} battery has too much power (${volts} volts)."
-    }
-    else if (volts > 0){
-        def minVolts = 2.1
-        def maxVolts = 3.0
+    if (volts > 0){
+        def minVolts = 2.0
+        def maxVolts = 2.8
+
+        if (volts < minVolts)
+            volts = minVolts
+        else if (volts > maxVolts)
+            volts = maxVolts
         def pct = (volts - minVolts) / (maxVolts - minVolts)
-        if (pct < 0)
-            pct = 0
-        eventMap.value = Math.min(100, (int) pct * 100)
+
+        eventMap.value = Math.round(pct * 100)
         eventMap.descriptionText = "${linkText} battery was ${eventMap.value}%"
     }
 
