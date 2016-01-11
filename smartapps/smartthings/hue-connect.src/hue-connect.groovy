@@ -258,8 +258,8 @@ def installed() {
 
 def updated() {
 	log.trace "Updated with settings: ${settings}"
-    unschedule()
 	unsubscribe() 
+    unschedule()    
 	initialize()
 }
 
@@ -325,6 +325,7 @@ def addBulbs() {
                     } else {
                         d = addChildDevice("smartthings", "Hue Bulb", dni, newHueBulb?.value.hub, ["label":newHueBulb?.value.name])
                     }
+                    log.debug "created ${d.displayName} with id $dni"
                 } else {
                 	log.debug "$dni in not longer paired to the Hue Bridge or ID changed"
                 }
@@ -333,8 +334,6 @@ def addBulbs() {
 				newHueBulb = bulbs.find { (app.id + "/" + it.id) == dni }
 				d = addChildDevice("smartthings", "Hue Bulb", dni, newHueBulb?.hub, ["label":newHueBulb?.name])
 			}
-
-			log.debug "created ${d.displayName} with id $dni"
 			d.refresh()
 		} else {
 			log.debug "found ${d.displayName} with id $dni already exists, type: '$d.typeName'"
