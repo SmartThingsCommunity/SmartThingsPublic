@@ -415,6 +415,8 @@ def updated() {
 def initialize() {
 	log.debug "=====> initialize()"
     
+    atomicState.connected = "full"
+    
     // Create the child Thermostat Devices
 	def devices = thermostats.collect { dni ->
 		def d = getChildDevice(dni)
@@ -515,6 +517,11 @@ def pollHandler() {
 def pollChildren(child = null) {
 	log.debug "=====> pollChildren()"
     
+    if (apiConnected() == "lost") {
+    	log.warn "pollChildren() - Unable to pollChildren() due to API not being connected"
+    	return
+    }
+    
     // TODO: Fix the SmartThings docs: now() is in seconds, NOT milliseconds
     // Check to see if it is time to do an full poll to the Ecobee servers. If so, execute the API call and update ALL children
     def timeSinceLastPoll = ((now() - atomicState.lastPoll?.toDouble()) / 1000 / 60)
@@ -541,8 +548,8 @@ def pollChildren(child = null) {
             oneChild.generateEvent(atomicState.thermostats[oneChild.device.deviceNetworkId].data)
         } else {
         	// We must have a remote sensor
-            log.debug "pollChildren() - Updating sensor data: ${oneChild.device.deviceNetworkId} data: ${atomicState.remoteSensors[oneChild.device.deviceNetworkId].data}"
-            oneChild.generateEvent(atomicState.remoteSensors[oneChild.device.deviceNetworkId].data)
+            log.debug "pollChildren() - Updating sensor data: ${oneChild.device.deviceNetworkId} data: ${atomicState.remoteSensorsData[oneChild.device.deviceNetworkId].data}"
+            oneChild.generateEvent(atomicState.remoteSensorsData[oneChild.device.deviceNetworkId].data)
         } 
     }
 
@@ -625,8 +632,8 @@ private def pollEcobeeAPI(thermostatIdsString = "") {
                 
 				result = true
                 
-                if (!atomicState.connected) {
-					atomicState.connected = true
+                if (atomicState.connected != "full") {
+					atomicState.connected = "full"
                     generateEventLocalParams() // Update the connection status
                 }
                 atomicState.lastPoll = now();
@@ -636,11 +643,9 @@ private def pollEcobeeAPI(thermostatIdsString = "") {
 
 				//refresh the auth token
 				if (resp.status == 500 && resp.data.status.code == 14) {
-					log.debug "Resp.status: ${resp.status} Status Code: ${resp.data.status.code}. Storing the failed action to try later"
-					atomicState.action = "pollChildren";
-                    atomicState.connected = false
-                    generateEventLocalParams()
-					refreshAuthToken()
+					log.debug "Resp.status: ${resp.status} Status Code: ${resp.data.status.code}. Unable to recover"
+                    // Not possible to recover from a code 14
+                    apiLost()					
 				}
 				else {
 					log.error "pollEcobeeAPI() - Authentication error, invalid authentication method, lack of credentials, etc."
@@ -648,12 +653,27 @@ private def pollEcobeeAPI(thermostatIdsString = "") {
 			}
 		}
 	} catch (groovyx.net.http.HttpResponseException e) {
-    	// HTTP exception
-		log.error "pollEcobeeAPI(): HttpResponseException: ${e}. statuscode: ${e.statusCode}, response? ${e.getResponse()}. "
-        // log.error "pollEcobeeAPI(): HttpResponseException: ${e}. statuscode: ${e.statusCode}, response? ${e.getResponse().getData()} headers ${e.getResponse().getHeaders()}}. "
-		atomicState.connected = false
-        generateEventLocalParams()
-    	// refreshAuthToken() // Last ditch effort to refresh
+    
+		log.error "pollEcobeeAPI() >> HttpResponseException occured. Exception info: ${e} StatusCode: ${e.statusCode}  response? data: ${e.getResponse()?.getData()}"
+
+		if ( (e.statusCode == 500 && e.getResponse()?.data.status.code == 14) ||  (e.statusCode == 401 && e.getResponse()?.data.status.code == 14) ) {
+        	// Not possible to recover from status.code == 14
+        	apiLost()
+		} else if (e.statusCode != 401) { //this issue might comes from exceed 20sec app execution, connectivity issue etc.
+            atomicState.connected = "warn"
+            generateEventLocalParams() // Update the connected state at the thermostat devices
+			runIn(reAttemptPeriod, "refreshAuthToken")
+		} else if (e.statusCode == 401) { // Status.code other than 14
+			atomicState.reAttempt = atomicState.reAttempt + 1
+			log.warn "reAttempt refreshAuthToken to try = ${atomicState.reAttempt}"
+			if (atomicState.reAttempt <= 3) {
+               	atomicState.connected = "warn"
+           		generateEventLocalParams() // Update the connected state at the thermostat devices
+				runIn(reAttemptPeriod, "refreshAuthToken")
+			} else {
+               	apiLost()
+			}
+		}    
     } catch (java.util.concurrent.TimeoutException e) {
 		log.error "pollEcobeeAPI(), TimeoutException: ${e}."
 //        debugEventFromParent(child, "___exception polling children: " + e)
@@ -673,8 +693,14 @@ void poll() {
 	// def devices = getChildDevices()
 	// devices.each {pollChild(it)}
    //  TODO: if ( readyForAuthRefresh() ) { refreshAuthToken() } // Use runIn to make this feasible?
-   
-    pollChildren(null) // Poll ALL the children at the same time for efficiency
+	
+    // Check to see if we are connected to the API or not
+    if (apiConnected() == "lost") {
+    	log.warn "poll() - Skipping poll() due to lost API Connection"
+    } else {
+    	log.debug "poll() - Polling children with pollChildren(null)"
+    	pollChildren(null) // Poll ALL the children at the same time for efficiency
+    }
 }
 
 
@@ -747,7 +773,7 @@ def updateSensorData() {
                     	log.debug "updateSensorData() - Sensor (DNI: ${sensorDNI}) temp is ${cap.value}"
                         if ( cap.value.isNumber() ) { // Handles the case when the sensor is offline, which would return "unkown"
 							temperature = cap.value as Double
-							temperature = (temperature / 10).toDouble().round(0)
+							temperature = wantMetric() ? (temperature / 10).toDouble().round(1) : (temperature / 10).toDouble().round(0)
                         } else if (temperature == "unknown") {
                         	// TODO: Do something here to mark the sensor as offline?
                             log.error "updateSensorData() - sensor (DNI: ${sensorDNI}) returned unknown temp value. Perhaps it is unreachable."
@@ -767,14 +793,14 @@ def updateSensorData() {
                                             
 				// TODO: Test the "unknown" populated data
 				def sensorData = [
-					temperature: ((temperature == "unknown") ? "--" : myConvertTemperatureIfNeeded(temperature, "F", 0)),
+					temperature: ((temperature == "unknown") ? "--" : myConvertTemperatureIfNeeded(temperature, "F", 1)),
 					motion: occupancy
 				]
 				sensorCollector[sensorDNI] = [data:sensorData]
 			}
 		} // End it.each loop
 	} // End remoteSensors.each loop
-	atomicState.remoteSensors = sensorCollector
+	atomicState.remoteSensorsData = sensorCollector
 	log.debug "updateSensorData(): found these remoteSensors: ${sensorCollector}"
                 
 }
@@ -793,14 +819,14 @@ def updateThermostatData() {
 			heatMode: (stat.settings.heatStages > 0),
 			autoMode: stat.settings.autoHeatCoolFeatureEnabled,
 			auxHeatMode: (stat.settings.hasHeatPump) && (stat.settings.hasForcedAir || stat.settings.hasElectric || stat.settings.hasBoiler),
-			temperature: myConvertTemperatureIfNeeded( (stat.runtime.actualTemperature / 10), "F", 0),
-			heatingSetpoint: myConvertTemperatureIfNeeded( (stat.runtime.desiredHeat / 10), "F", 0),
-			coolingSetpoint: myConvertTemperatureIfNeeded( (stat.runtime.desiredCool / 10), "F", 0),
+			temperature: myConvertTemperatureIfNeeded( (stat.runtime.actualTemperature / 10), "F", (wantMetric() ? 1 : 0)),
+			heatingSetpoint: myConvertTemperatureIfNeeded( (stat.runtime.desiredHeat / 10), "F", (wantMetric() ? 1 : 0)),
+			coolingSetpoint: myConvertTemperatureIfNeeded( (stat.runtime.desiredCool / 10), "F", (wantMetric() ? 1 : 0)),
 			thermostatMode: stat.settings.hvacMode,                            
 			humidity: stat.runtime.actualHumidity,
 			thermostatOperatingState: getThermostatOperatingState(stat),
 			weatherSymbol: stat.weather.forecasts[0].weatherSymbol.toString(),
-			weatherTemperature: myConvertTemperatureIfNeeded( ((stat.weather.forecasts[0].temperature / 10)), "F", 0)
+			weatherTemperature: myConvertTemperatureIfNeeded( ((stat.weather.forecasts[0].temperature / 10)), "F", (wantMetric() ? 1 : 0))
 			// weatherStation:stat.weather.weatherStation,
 			// weatherSymbol:stat.weather.forecasts[0].weatherSymbol.toString(),
 			// weatherTemperature:stat.weather.forecasts[0].temperature,
@@ -820,10 +846,12 @@ def updateThermostatData() {
 			// weatherPop:stat.weather.forecasts[0].pop.toString()
 		]
         // TODO: Fix F to C conversion here as well
-		data["temperature"] = data["temperature"] ? data["temperature"].toDouble().toInteger() : data["temperature"]
-		data["heatingSetpoint"] = data["heatingSetpoint"] ? data["heatingSetpoint"].toDouble().toInteger() : data["heatingSetpoint"]
-		data["coolingSetpoint"] = data["coolingSetpoint"] ? data["coolingSetpoint"].toDouble().toInteger() : data["coolingSetpoint"]
-        data["weatherTemperature"] = data["weatherTemperature"] ? data["weatherTemperature"].toDouble().toInteger() : data["weatherTemperature"]
+		data["temperature"] = data["temperature"] ? ( wantMetric() ? data["temperature"].toDouble() : data["temperature"].toDouble().toInteger() ) : data["temperature"]
+		data["heatingSetpoint"] = data["heatingSetpoint"] ? ( wantMetric() ? data["heatingSetpoint"].toDouble() : data["heatingSetpoint"].toDouble().toInteger() ) : data["heatingSetpoint"]
+		data["coolingSetpoint"] = data["coolingSetpoint"] ? ( wantMetric() ? data["coolingSetpoint"].toDouble() : data["coolingSetpoint"].toDouble().toInteger() ) : data["coolingSetpoint"]
+        data["weatherTemperature"] = data["weatherTemperature"] ? ( wantMetric() ? data["weatherTemperature"].toDouble() : data["weatherTemperature"].toDouble().toInteger() ) : data["weatherTemperature"]
+        
+		
 		debugEventFromParent(child, "Event Data = ${data}")
 
 		collector[dni] = [data:data]
@@ -871,8 +899,7 @@ private refreshAuthToken() {
 
 	if(!atomicState.refreshToken) {
         log.error "refreshAuthToken() - There is no refreshToken stored! Unable to refresh OAuth token."
-        atomicState.connected = false
-        generateEventLocalParams() // Update the connected state at the thermostat devices
+    	apiLost()
         return
     } else if ( !readyForAuthRefresh() ) {
     	// Not ready to refresh yet
@@ -889,8 +916,6 @@ private refreshAuthToken() {
         ]
 
         log.debug "refreshParams = ${refreshParams}"
-
-        def notificationMessage = "is disconnected from SmartThings, because the access credential changed or was lost. Please go to the Ecobee (Connect) SmartApp and re-enter your account login credentials."
 
         try {
             def jsonMap
@@ -916,8 +941,8 @@ private refreshAuthToken() {
                         atomicState.authToken = jsonMap?.access_token  
 						log.debug "atomicState.authToken after: ${atomicState.authToken}"
                         if (oldAuthToken == atomicState.authToken) { 
-                        	log.error "ERROR: atomicState.authToken did NOT update properly!" 
-                            atomicState.connected = false
+                        	log.warn "WARN: atomicState.authToken did NOT update properly! This is likely a transient problem." 
+                            atomicState.connected = "warn"
 							generateEventLocalParams() // Update the connected state at the thermostat devices
 						}
 
@@ -943,31 +968,35 @@ private refreshAuthToken() {
                     	debugEvent("No jsonMap??? ${jsonMap}")
                     }
                     atomicState.action = ""
-                    atomicState.connected = true
+                    atomicState.connected = "full"
                     generateEventLocalParams() // Update the connected state at the thermostat devices
                     
                 } else {
                     log.error "Refresh failed ${resp.status} : ${resp.status.code}!"
-					atomicState.connected = false
+					atomicState.connected = "warn"
                     generateEventLocalParams() // Update the connected state at the thermostat devices
                 }
             }
         } catch (groovyx.net.http.HttpResponseException e) {
-            log.error "refreshAuthToken() >> Error: e.statusCode ${e.statusCode}. full exception: ${e} response? data: ${e.getResponse().getData()} headers ${e.getResponse().getHeaders()}}"
-           	atomicState.connected = false
-            generateEventLocalParams() // Update the connected state at the thermostat devices
-			def reAttemptPeriod = 300 // in sec
-			if (e.statusCode != 401) { //this issue might comes from exceed 20sec app execution, connectivity issue etc.
+        	log.error "refreshAuthToken() >> HttpResponseException occured. Exception info: ${e} StatusCode: ${e.statusCode}  response? data: ${e.getResponse()?.getData()}"
+            // log.error "refreshAuthToken() >> Error: e.statusCode ${e.statusCode}. full exception: ${e} response? data: ${e.getResponse()?.getData()} headers ${e.getResponse()?.getHeaders()}}"
+           	def reAttemptPeriod = 300 // in sec
+			if ( (e.statusCode == 500 && e.getResponse()?.data.status.code == 14) || (e.statusCode == 401 && e.getResponse()?.data.status.code == 14) ) {
+            	apiLost()
+            } else if (e.statusCode != 401) { //this issue might comes from exceed 20sec app execution, connectivity issue etc.
+            	atomicState.connected = "warn"
+            	generateEventLocalParams() // Update the connected state at the thermostat devices
 				runIn(reAttemptPeriod, "refreshAuthToken")
-			} else if (e.statusCode == 401) { //refresh token is expired
+			} else if (e.statusCode == 401) { // status.code other than 14
 				atomicState.reAttempt = atomicState.reAttempt + 1
 				log.warn "reAttempt refreshAuthToken to try = ${atomicState.reAttempt}"
 				if (atomicState.reAttempt <= 3) {
+                	atomicState.connected = "warn"
+            		generateEventLocalParams() // Update the connected state at the thermostat devices
 					runIn(reAttemptPeriod, "refreshAuthToken")
 				} else {
-					sendPushAndFeeds(notificationMessage)
-					atomicState.reAttempt = 0
-                    atomicState.connected = false
+                	// More than 3 attempts, time to give up and notify the end user
+                	apiLost()
 				}
             }
         } catch (java.util.concurrent.TimeoutException e) {
@@ -991,6 +1020,8 @@ def resumeProgram(child, deviceId) {
 	//, { "type": "sendMessage", "params": { "text": "Setpoint Updated" } }
 	def result = sendJson(jsonRequestBody)
 //    debugEventFromParent(child, "resumeProgram(child) with result ${result}")
+	// Update the data after giving the thermostat a chance to consume the command and update the values
+	runIn(20, "pollChildren")
 	return result
 }
 
@@ -1057,20 +1088,32 @@ def sendJson(child = null, String jsonBody) {
 				if (resp.status == 500 && resp.status.code == 14) {
 					//log.debug "Storing the failed action to try later"
 					log.debug "Refreshing your auth_token!"
-					debugEvent ("Refreshing OAUTH Token")
+					debugEvent ("sendJson() - Refreshing OAUTH Token")
 					refreshAuthToken()
 					return false
 				} else {
-					debugEvent ("Authentication error, invalid authentication method, lack of credentials, etc.")
-					log.error "Authentication error, invalid authentication method, lack of credentials, etc."
+					debugEvent ("Possible Authentication error, invalid authentication method, lack of credentials, etc. Status: ${resp.status} - ${resp.status.code} ")
+					log.error "Possible Authentication error, invalid authentication method, lack of credentials, etc. Status: ${resp.status} - ${resp.status.code} "
+                    atomicState.connected = "warn"
+                    generateEventLocalParams()
+                    refreshAuthToken()
 					return false
 				}
 			}
 		}
-	} catch(Exception e) {
+	} catch (groovyx.net.http.HttpResponseException e) {
+    	log.error "sendJson() >> HttpResponseException occured. Exception info: ${e} StatusCode: ${e.statusCode}  response? data: ${e.getResponse()?.getData()}"
+        debugEvent( "sendJson() >> HttpResponseException occured. Exception info: ${e} StatusCode: ${e.statusCode}  response? data: ${e.getResponse()?.getData()}" )
+		atomicState.connected = "warn"
+        generateEventLocalParams()
+        refreshAuthToken()
+		return false
+    } catch(Exception e) {
+    	// Might need to further break down 
 		log.error "sendJson() - Exception Sending Json: " + e
 		debugEvent ("Exception Sending JSON: " + e)
-        atomicState.connected = false
+        atomicState.connected = "warn"
+        generateEventLocalParams()
         refreshAuthToken()
 		return false
 	}
@@ -1196,8 +1239,23 @@ private def  getMinMinBtwPolls() {
 
 // Are we connected with the Ecobee service?
 private String apiConnected() {
-	if (atomicState.connected == null) atomicState.connected = false
-	return atomicState.connected?.toString() ?: "false"
+	// values can be "full", "warn", "lost"
+	if (atomicState.connected == null) atomicState.connected = "lost"
+	return atomicState.connected?.toString() ?: "lost"
+}
+
+private def apiLost() {
+    log.error "Lost connection with APIs. unscheduling Polling and refreshAuthToken. User MUST reintialize the connection with Ecobee by running the SmartApp and logging in again"
+	
+    // provide cleanup steps when API Connection is lost
+	def notificationMessage = "is disconnected from SmartThings/Ecobee, because the access credential changed or was lost. Please go to the Ecobee (Connect) SmartApp and re-enter your account login credentials."
+    atomicState.connected = "lost"
+    sendPushAndFeeds(notificationMessage)
+	generateEventLocalParams()
+
+    debugEvent("unscheduling Polling and refreshAuthToken. User MUST reintialize the connection with Ecobee by running the SmartApp and logging in again")
+    unschedule("poll")
+    unschedule("refreshAuthToken")
 }
 
 private String childType(child) {
