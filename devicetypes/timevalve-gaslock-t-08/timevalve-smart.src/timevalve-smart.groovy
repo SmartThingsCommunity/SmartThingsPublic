@@ -3,8 +3,6 @@ metadata {
                 capability "Valve"
                 capability "Refresh"
                 capability "Battery"
-                capability "Notification"
-				capability "Configuration"
                 capability "Temperature Measurement"
                 
                 command "setRemaining"
@@ -19,13 +17,13 @@ metadata {
                 attribute "remaining", "number"
                 attribute "remainingText", "String"
                 attribute "timeout", "number"
-        }
-
-        simulator {
+                
+                //raw desc : 0 0 0x1006 0 0 0 7 0x5E 0x86 0x72 0x5A 0x73 0x98 0x80
+                fingerprint deviceId:"0x1006", inClusters:"0x5E, 0x86, 0x72, 0x5A, 0x73, 0x98, 0x80"
         }
 
         tiles (scale: 2) {
-        	multiAttributeTile(name:"statusTile", type:"thermostat", width:6, height:4) {
+        	multiAttributeTile(name:"statusTile", type:"generic", width:6, height:4) {
             	tileAttribute("device.contact", key: "PRIMARY_CONTROL") {
 	            	attributeState "open", label: '${name}', action: "close", icon:"st.contact.contact.open", backgroundColor:"#ffa81e"
 	            	attributeState "closed", label:'${name}', action: "", icon:"st.contact.contact.closed", backgroundColor:"#79b821"
@@ -136,7 +134,7 @@ def zwaveEvent(physicalgraph.zwave.commands.configurationv1.ConfigurationReport 
 	log.info "zwave.configurationV1.configurationGet - " + cmd
     def array = cmd.configurationValue
     def value = ( (array[0] * 0x1000000) + (array[1] * 0x10000) + (array[2] * 0x100) + array[3] ).intdiv(60)
-    if (device.currentValue("switch") == "on") {
+    if (device.currentValue("contact") == "open") {
     	value = ( (array[0] * 0x1000000) + (array[1] * 0x10000) + (array[2] * 0x100) + array[3] ).intdiv(60)
     } else {
     	value = 0
@@ -153,29 +151,6 @@ def zwaveEvent(physicalgraph.zwave.commands.configurationv1.ConfigurationReport 
     } else {
     	result.add( createEvent(name: "timeout", value: value, displayed: false, isStateChange: true) )
     }
-    
-    /*
-    if (cmd.parameterNumber == 0x01) { // timeout
-    	result.add( createEvent(name: "timeout", value: value, displayed: false, isStateChange: true) )
-        
-        
-        // timeout 설정 시에도 
-        def hour = value.intdiv(60);
-        def min = (value % 60).toString().padLeft(2, '0');
-        def text = "${hour}:${min}M"
-        
-        result.add( createEvent(name: "remaining", value: value, displayed: false, isStateChange: true) )
-        result.add( createEvent(name: "remainingText", value: text, displayed: false, isStateChange: true) )
-    } else if (cmd.parameterNumber == 0x03) { // remaining
-        def hour = value.intdiv(60);
-        def min = (value % 60).toString().padLeft(2, '0');
-        def text = "${hour}:${min}M"
-        
-        debug.info "remain - " + text
-        result.add( createEvent(name: "remaining", value: value, displayed: false, isStateChange: true) )
-        result.add( createEvent(name: "remainingText", value: text, displayed: false, isStateChange: true) )
-    }
-    */
     return result
 }
 
@@ -183,7 +158,7 @@ def zwaveEvent(physicalgraph.zwave.commands.notificationv3.NotificationReport cm
 	def type = cmd.notificationType
     if (type == cmd.NOTIFICATION_TYPE_HEAT) {
     	log.info "NotificationReport - ${type}"
-        createEvent(name: "temperature", value: 80, descriptionText: "${device.displayName} is over heat!", displayed: true, isStateChange: true)
+        createEvent(name: "temperature", value: 999, unit: "C", descriptionText: "${device.displayName} is over heat!", displayed: true, isStateChange: true)
     }
 }
 
@@ -193,7 +168,7 @@ def zwaveEvent(physicalgraph.zwave.commands.alarmv1.AlarmReport cmd) {
     
     log.info "AlarmReport - type : ${type}, level : ${level}"
     def msg = "${device.displayName} is over heat!"
-    def result = createEvent(name: "temperature", value: 80, descriptionText: msg, displayed: true, isStateChange: true)
+    def result = createEvent(name: "temperature", value: 999, unit: "C", descriptionText: msg, displayed: true, isStateChange: true)
     if (sendPushMessage) {
     	sendPushMessage(msg)
     }
@@ -201,13 +176,7 @@ def zwaveEvent(physicalgraph.zwave.commands.alarmv1.AlarmReport cmd) {
 }
 
 // remote open not allow
-def open() {
-//	log.debug 'cmd - open()'
-    commands([
-        zwave.basicV1.basicSet(value: 0xFF).format(),
-        zwave.basicV1.basicGet().format()
-    ])  // 5 second delay for dimmers that change gradually, can be left out for immediate switches
-}
+def open() {}
 
 def close() {
 //	log.debug 'cmd - close()'
@@ -271,11 +240,4 @@ def refresh() {
                 zwave.configurationV1.configurationGet(parameterNumber: 0x01),
                 zwave.configurationV1.configurationGet(parameterNumber: 0x03)
         ], 400)
-}
-
-
-// If you add the Configuration capability to your device type, this
-// command will be called right after the device joins to set
-// device-specific configuration commands.
-def configure() {
 }
