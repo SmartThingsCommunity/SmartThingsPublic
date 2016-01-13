@@ -220,6 +220,7 @@ Once you have determined that an update is available, follow these steps:
 - Select `Publish` (bottom right)
 - Click `Execute Update` (bottom right)
 - You should receive a confirmation message such as this example: `Updated 1 and created 0 SmartApps, 1 published`
+- (Optional, but recommended) Rerun the `Ecobee (Connect)` SmartApp. This seems to eleviate any residual issues that may occur due to the update
 
 You should now be running on the updated code. Be sure that you check for both updates of the SmartApp **and** the Device Type. Updating one but not the other could cause compatibility problems.
 
