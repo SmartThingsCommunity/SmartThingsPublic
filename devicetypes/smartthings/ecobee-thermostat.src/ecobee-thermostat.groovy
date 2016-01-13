@@ -469,21 +469,6 @@ metadata {
             "heatSliderControl", "heatingSetpoint",
             "currentStatus", "refresh"
             ])      
-        
-/*
-		details(["summary", // MultiAttributeTile
-        	"resumeProgram", "mode",  "upButtonControl", "thermostatSetpoint", // Row 1
-            "humidity", "operatingState", "downButtonControl",// Row 2
-            "weatherIcon", "weatherTemperature", "refresh", "apiStatus" // Row 3
-            ])        
-*/
-
-            
-            
-            
-//		main "temperature"
-//		details(["temperature", "upButtonControl", "thermostatSetpoint", "currentStatus", "downButtonControl", "refresh", "resumeProgram", "mode"])
-        
 	}
 
 	preferences {
@@ -594,7 +579,6 @@ def setTemperature(setpoint) {
     } 
     
 	def currentTemp = device.currentValue("temperature")
-    def currentSetpoint = device.currentValue("thermostatSetpoint") ?: currentTemp
     
     // TODO: WORKAROUND - Bug causes the widget to set a different value when using C vs F! Uses 0 and 1 instead of the actual value
     if ( getTemperatureScale() == "C" ) { 
@@ -681,8 +665,8 @@ void setHeatingSetpoint(Double setpoint) {
 	def sendHoldType = whatHoldType()
     
 	if (parent.setHold (this, heatingSetpoint,  coolingSetpoint, deviceId, sendHoldType)) {
-		sendEvent("name":"heatingSetpoint", "value":heatingSetpoint) // TODO: This does not round up
-		sendEvent("name":"coolingSetpoint", "value":coolingSetpoint) // TODO: This does not round up
+		sendEvent("name":"heatingSetpoint", "value": wantMetric() ? heatingSetpoint : heatingSetpoint.round(0).toInteger() )
+		sendEvent("name":"coolingSetpoint", "value": wantMetric() ? coolingSetpoint : coolingSetpoint.round(0).toInteger() )
 		log.debug "Done setHeatingSetpoint> coolingSetpoint: ${coolingSetpoint}, heatingSetpoint: ${heatingSetpoint}"
 		generateSetpointEvent()
 		generateStatusEvent()
@@ -718,8 +702,8 @@ void setCoolingSetpoint(Double setpoint) {
     
     // Convert temp to F from C if needed
 	if (parent.setHold (this, heatingSetpoint,  coolingSetpoint, deviceId, sendHoldType)) {
-		sendEvent("name":"heatingSetpoint", "value":heatingSetpoint)
-		sendEvent("name":"coolingSetpoint", "value":coolingSetpoint)
+		sendEvent("name":"heatingSetpoint", "value": wantMetric() ? heatingSetpoint : heatingSetpoint.round(0).toInteger() )
+		sendEvent("name":"coolingSetpoint", "value": wantMetric() ? coolingSetpoint : coolingSetpoint.round(0).toInteger() )
 		log.debug "Done setCoolingSetpoint>> coolingSetpoint = ${coolingSetpoint}, heatingSetpoint = ${heatingSetpoint}"
 		generateSetpointEvent()
 		generateStatusEvent()
@@ -1015,11 +999,11 @@ void raiseSetpoint() {
 	if (mode == "off" || (mode == "auto" && !usingSmartAuto() )) {
 		log.warn "raiseSetpoint(): this mode: $mode does not allow raiseSetpoint"
         return
-	} 
+	}
     
     	def heatingSetpoint = device.currentValue("heatingSetpoint")
 		def coolingSetpoint = device.currentValue("coolingSetpoint")
-		def thermostatSetpoint = device.currentValue("thermostatSetpoint")
+		def thermostatSetpoint = device.currentValue("thermostatSetpoint").toDouble()
 		log.debug "raiseSetpoint() mode = ${mode}, heatingSetpoint: ${heatingSetpoint}, coolingSetpoint:${coolingSetpoint}, thermostatSetpoint:${thermostatSetpoint}"
 
     	if (thermostatSetpoint) {
@@ -1033,8 +1017,8 @@ void raiseSetpoint() {
         } else {
 			targetvalue = targetvalue.toDouble() - 1.0
         }
-        
-		sendEvent("name":"thermostatSetpoint", "value":targetvalue, displayed: true)
+		
+		sendEvent("name":"thermostatSetpoint", "value":( wantMetric() ? targetvalue : targetvalue.round(0).toInteger() ), displayed: true)
 		log.info "In mode $mode raiseSetpoint() to $targetvalue"
 
 		runIn(4, "alterSetpoint", [data: [value:targetvalue], overwrite: true]) //when user click button this runIn will be overwrite
@@ -1052,7 +1036,7 @@ void lowerSetpoint() {
 	
     	def heatingSetpoint = device.currentValue("heatingSetpoint")
 		def coolingSetpoint = device.currentValue("coolingSetpoint")
-		def thermostatSetpoint = device.currentValue("thermostatSetpoint")
+		def thermostatSetpoint = device.currentValue("thermostatSetpoint").toDouble()
 		log.debug "lowerSetpoint() mode = ${mode}, heatingSetpoint: ${heatingSetpoint}, coolingSetpoint:${coolingSetpoint}, thermostatSetpoint:${thermostatSetpoint}"
 		
         if (thermostatSetpoint) {
@@ -1066,8 +1050,8 @@ void lowerSetpoint() {
         } else {
 			targetvalue = targetvalue.toDouble() - 1.0
         }
-        
-		sendEvent("name":"thermostatSetpoint", "value":targetvalue, displayed: true)
+        		           
+		sendEvent("name":"thermostatSetpoint", "value":( wantMetric() ? targetvalue : targetvalue.round(0).toInteger() ), displayed: true)
 		log.info "In mode $mode lowerSetpoint() to $targetvalue"
 
 		// Wait 4 seconds before sending in case we hit the buttons again
@@ -1183,7 +1167,7 @@ def generateStatusEvent() {
 		}
 
 	} else if (mode == "auto") {
-		statusText = "Right Now: Auto (Heat: ${heatingSetpoint}/ Cool: ${coolingSetpoint})"
+		statusText = "Right Now: Auto (Heat: ${heatingSetpoint}/Cool: ${coolingSetpoint})"
 	} else if (mode == "off") {
 		statusText = "Right Now: Off"        
 	} else if (mode == "emergencyHeat") {
@@ -1204,6 +1188,8 @@ def generateActivityFeedsEvent(notificationMessage) {
 
 // Ecobee API Related Functions - from Yves code
 // TODO: Move all of this into the Service Manager. No need to have each device contact the Ecobee cloud directly!!!
+
+/*
 private void api(method, args, success = {}) {
 	def MAX_EXCEPTION_COUNT=5
 	String URI_ROOT = "${get_URI_ROOT()}/1"
@@ -1225,7 +1211,7 @@ private void api(method, args, success = {}) {
             
 		} else {
         
-			/* Reset Exceptions counter as the refresh_tokens() call has been successful */    
+			// Reset Exceptions counter as the refresh_tokens() call has been successful     
 			state.exceptionCount=0
 		}            
 	}
@@ -1303,7 +1289,7 @@ private void doRequest(uri, args, type, success) {
 			params.body = null // parameters already in the URL request
 			httpGet(params, success)
 		}
-		/* when success, reset the exception counter */
+		// when success, reset the exception counter 
 		state.exceptionCount=0
 
 	} catch (java.net.UnknownHostException e) {
@@ -1472,18 +1458,18 @@ void setThermostatSettings(thermostatId,tstatSettings = []) {
 				def cmd= []           
 				cmd << "delay 1000"                    
 				cmd            
-			} /* end if statusCode */
-		} /* end api call */                
-	} /* end for */
+			} // end if statusCode 
+		} // end api call 
+	} // end for 
 }
 
-
+*/
 
 // Helper functions
 // TODO: These are going to be used for coming features
-def toQueryString(Map m) {
-	return m.collect { k, v -> "${k}=${URLEncoder.encode(v.toString())}" }.sort().join("&")
-}
+// def toQueryString(Map m) {
+//	return m.collect { k, v -> "${k}=${URLEncoder.encode(v.toString())}" }.sort().join("&")
+// }
 
 
 // Built in functions from SmartThings?
