@@ -152,7 +152,7 @@ def setHeatingSetpoint(temp) {
 	if (temp > 30) {
 		temp = 30
 	}
-    state.boost = "off"
+    sendEvent(name: "boostSwitch", value: "off", displayed: false)
     def resp = parent.apiGET("/subdevices/set_target_temperature?params=" + URLEncoder.encode(new groovy.json.JsonBuilder([id: device.deviceNetworkId.toInteger(), temperature: temp]).toString()))
 	if (resp.status != 200) {
 		log.error("Unexpected result in poll(): [${resp.status}] ${resp.data}")
@@ -186,7 +186,7 @@ def setBoostLength(minutes) {
 
 def stopBoost() {
 	log.debug "Executing 'stopBoost'"
-	state.boost = "off"
+	sendEvent(name: "boostSwitch", value: "off", displayed: false)
     if (state.lastThermostatMode == 'off') {
     	off()
     }
@@ -254,7 +254,7 @@ def setThermostatMode(mode) {
     
     if (mode == 'off') {
     	unschedule(stopBoost)
-        state.boost = "off"
+        sendEvent(name: "boostSwitch", value: "off", displayed: false)
     	setLastHeatingSetpoint(device.currentValue('heatingSetpoint'))
     	setHeatingSetpoint(12)
     } else if (mode == 'emergency heat') { 
@@ -265,20 +265,19 @@ def setThermostatMode(mode) {
         }
         state.lastThermostatMode = device.latestState('thermostatMode')
         setLastHeatingSetpoint(device.currentValue('heatingSetpoint'))
-        state.boost = "on"
+        sendEvent(name: "boostSwitch", value: "on", displayed: false)
         def resp = parent.apiGET("/subdevices/set_target_temperature?params=" + URLEncoder.encode(new groovy.json.JsonBuilder([id: device.deviceNetworkId.toInteger(), temperature: 22]).toString()))
         if (resp.status != 200) {
 			log.error("Unexpected result in poll(): [${resp.status}] ${resp.data}")
 		}
    	 	else {
-        	sendEvent(name: "thermostatMode", value: "emergency heat")
     		refresh()
     	}  
         //Schedule boost switch off
         schedule(now() + (state.boostLength * 60000), stopBoost)
     } else {
     	unschedule(stopBoost)
-        state.boost = "off"
+        sendEvent(name: "boostSwitch", value: "off", displayed: false)
     	def lastHeatingSetPoint = 21
         if (state.lastHeatingSetPoint != null && state.lastHeatingSetPoint > 12)
         {
@@ -308,7 +307,9 @@ def poll() {
     
 	sendEvent(name: "temperature", value: resp.data.data.last_temperature, unit: "C", state: "heat")
     sendEvent(name: "heatingSetpoint", value: resp.data.data.target_temperature, unit: "C", state: "heat")
-    if (state.boost != null && state.boost == "on") {
+    def boostSwitch = device.currentValue("boostSwitch")
+    log.debug "boostSwitch: $boostSwitch"
+    if (boostSwitch != null && boostSwitch == "on") {
     	sendEvent(name: "thermostatMode", value: "emergency heat")
         boostLabel = "Boosting"
     }
