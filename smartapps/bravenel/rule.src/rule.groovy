@@ -3,14 +3,14 @@
  *
  *  Copyright 2015 Bruce Ravenel
  *
- *  Version 1.6.12b   10 Jan 2016
+ *  Version 1.6.12c   13 Jan 2016
  *
  *	Version History
  *
  *	1.6.12	10 Jan 2016		Bug fix re removing parts of a rule
  *	1.6.11	8 Jan 2016		Added offset to compare to device, fixed bugs in compare to device
  *	1.6.10	6 Jan 2016		Returned Delay on/off pending cancel per user request, further debug of rule evaluation
- *	1.6.9	6 Jan 2016		Fixed bugs related to presence in triggers, add Off as disable option, fixed bug in rule evaluation
+ *	1.6.9	6 Jan 2016		Fixed bugs related to presence in triggers, added Off as disable option, fixed bug in rule evaluation
  *	1.6.8	1 Jan 2016		Added version numbers to main Rule Machine page, multi SMS
  *	1.6.7	31 Dec 2015		Added speak to send message
  *	1.6.6	30 Dec 2015		Expert multi-commands added per Maxwell
@@ -73,9 +73,9 @@ preferences {
 //
 
 def selectRule() {
-	//init expert settings for rule
+	//version to parent app and expert settings for rule
 	try { 
-		state.isExpert = parent.isExpert("1.6.12b") 
+		state.isExpert = parent.isExpert("1.6.12c") 
 		if (state.isExpert) state.cstCmds = parent.getCommands()
 		else state.cstCmds = []
 	}
@@ -159,10 +159,7 @@ def selectTriggers() {
 						def myDev = settings.find {it.key == thisDev}
 						if(myDev) if(myDev.value.size() > 1 && (xCapab != "Rule truth")) getAnyAll(thisDev)
 						if(xCapab in ["Temperature", "Humidity", "Illuminance", "Dimmer level", "Energy meter", "Power meter", "Battery"]) getRelational(thisDev)
-					} else if(xCapab == "Button") {
-						def thisDev = "tDev$i"
-						getButton(thisDev)
-					}
+					} else if(xCapab == "Button") getButton("tDev$i")
 					getState(xCapab, i, true)
 				}
 			}
@@ -190,10 +187,7 @@ def selectConditions() {
 						def myDev = settings.find {it.key == thisDev}
 						if(myDev) if(myDev.value.size() > 1 && (xCapab != "Rule truth" || state.isRule)) getAnyAll(thisDev)
 						if(xCapab in ["Temperature", "Humidity", "Illuminance", "Dimmer level", "Energy meter", "Power meter", "Battery"]) getRelational(thisDev)
-					} else if(xCapab == "Button") {
-						def thisDev = "rDev$i"
-						getButton(thisDev)
-					}
+					} else if(xCapab == "Button") getButton("rDev$i")
 					getState(xCapab, i, false)
 				}
 			}
@@ -1999,8 +1993,10 @@ def selectCustomActions(){
 					def crntCommand = settings."${thisCommand}"
 					input( name: thisCommand, type: "enum", title: "Run this command", multiple: false, required: false, options: cstCmds, submitOnChange: true)
 					if (crntCommand){
-					def c = cstCmds.find{it[crntCommand]}[crntCommand]
-						cmdActions("Command: ${c} on ${crntDevices}",truth)    
+						if (cstCmds.find{it[crntCommand]}) {
+							def c = cstCmds.find{it[crntCommand]}[crntCommand]
+							cmdActions("Command: ${c} on ${crntDevices}",truth)    
+						}
 					}
 				}
 			}
