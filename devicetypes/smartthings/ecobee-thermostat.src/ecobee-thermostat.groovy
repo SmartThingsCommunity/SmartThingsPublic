@@ -1027,21 +1027,17 @@ void raiseSetpoint() {
 		} else {
 			targetvalue = 0.0
 		}
-		targetvalue = targetvalue.toDouble() + 1.0
-
-		// TODO: Change these to preferences or use the configured values from the "Heat Set Point Range" in the Ecobee
-        // TODO: Also need to update for when using Smart Auto preference
-        // Use the Ecobee built in limits instead
-		/* if (mode == "heat" && targetvalue > 79) {
-			targetvalue = 79
-		} else if (mode == "cool" && targetvalue > 92) {
-			targetvalue = 92
-		} */
-
+        
+        if (getTemperatureScale() == "C" ) {
+        	targetvalue = targetvalue.toDouble() - 0.5
+        } else {
+			targetvalue = targetvalue.toDouble() - 1.0
+        }
+        
 		sendEvent("name":"thermostatSetpoint", "value":targetvalue, displayed: true)
 		log.info "In mode $mode raiseSetpoint() to $targetvalue"
 
-		runIn(5, "alterSetpoint", [data: [value:targetvalue], overwrite: true]) //when user click button this runIn will be overwrite
+		runIn(4, "alterSetpoint", [data: [value:targetvalue], overwrite: true]) //when user click button this runIn will be overwrite
 	
 }
 
@@ -1074,8 +1070,8 @@ void lowerSetpoint() {
 		sendEvent("name":"thermostatSetpoint", "value":targetvalue, displayed: true)
 		log.info "In mode $mode lowerSetpoint() to $targetvalue"
 
-		// Wait 3 seconds before sending in case we hit the buttons again
-		runIn(3, "alterSetpoint", [data: [value:targetvalue], overwrite: true]) //when user click button this runIn will be overwrite
+		// Wait 4 seconds before sending in case we hit the buttons again
+		runIn(4, "alterSetpoint", [data: [value:targetvalue], overwrite: true]) //when user click button this runIn will be overwrite
 	}
 	
 }
@@ -1148,7 +1144,7 @@ void alterSetpoint(temp) {
 		sendEvent("name": "coolingSetpoint", "value": targetCoolingSetpoint)
 		log.debug "alterSetpoint in mode $mode succeed change setpoint to= ${temp.value}"
 	} else {
-		log.error "Error alterSetpoint()"
+		log.warn "WARN: alterSetpoint() - setHold failed. Could be an intermittent problem."
         sendEvent("name": "thermostatSetpoint", "value": saveThermostatSetpoint.toString(), displayed: false)
 	}
 	generateStatusEvent()
@@ -1187,7 +1183,7 @@ def generateStatusEvent() {
 		}
 
 	} else if (mode == "auto") {
-		statusText = "Right Now: Auto (Heat: ${heatingSetpoint}/Cool: ${coolingSetpoint})"
+		statusText = "Right Now: Auto (Heat: ${heatingSetpoint}/ Cool: ${coolingSetpoint})"
 	} else if (mode == "off") {
 		statusText = "Right Now: Off"        
 	} else if (mode == "emergencyHeat") {
