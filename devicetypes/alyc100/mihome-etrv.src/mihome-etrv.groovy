@@ -20,6 +20,7 @@
  *
  *	10.01.2016
  *	v1.1.1 - Fixed stopBoost always returning to 'on' mode.
+ *	v1.1.2 - Bug fix to Boost mode not executing.
  */
  
 metadata {
@@ -265,12 +266,12 @@ def setThermostatMode(mode) {
         state.lastThermostatMode = device.latestState('thermostatMode')
         setLastHeatingSetpoint(device.currentValue('heatingSetpoint'))
         state.boost = "on"
-        def resp = parent.apiGET("/subdevices/set_target_temperature?params=" + URLEncoder.encode(new groovy.json.JsonBuilder([id: device.deviceNetworkId.toInteger(), temperature: 23]).toString()))
+        def resp = parent.apiGET("/subdevices/set_target_temperature?params=" + URLEncoder.encode(new groovy.json.JsonBuilder([id: device.deviceNetworkId.toInteger(), temperature: 22]).toString()))
         if (resp.status != 200) {
 			log.error("Unexpected result in poll(): [${resp.status}] ${resp.data}")
 		}
    	 	else {
-    		runIn(1, refresh)
+    		refresh()
     	}  
         //Schedule boost switch off
         schedule(now() + (state.boostLength * 60000), stopBoost)
