@@ -76,6 +76,8 @@ def parse(String description) {
     if (description?.startsWith('read attr -')) {
         handleReportAttributeMessage(description)
     }
+
+    return []
 }
 
 private handleReportAttributeMessage(String description) {
