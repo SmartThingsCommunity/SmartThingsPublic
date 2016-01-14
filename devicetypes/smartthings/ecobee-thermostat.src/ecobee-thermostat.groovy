@@ -30,7 +30,8 @@ metadata {
 		capability "Refresh"
 		capability "Relative Humidity Measurement"
 		capability "Temperature Measurement"
-		capability "Presence Sensor"
+		// capability "Presence Sensor"
+        capability "Motion Sensor"
 
 		command "generateEvent"
 		command "raiseSetpoint"
@@ -382,10 +383,15 @@ metadata {
             state "default", label: '${currentValue}', backgroundColor:"c0c0c0", icon: "st.nest.empty"
 		}
         
-        valueTile("humidity", "device.humidity", inactiveLabel: false, decoration: "flat", width: 2, height: 2,) {
+        valueTile("humidity", "device.humidity", inactiveLabel: false, decoration: "flat", width: 2, height: 2) {
 			state "default", label: 'Humidity\n${currentValue}%', unit: "humidity" // Add a blue background signifying water?
 		}
         
+        
+		standardTile("motion", "device.motion", width: 2, height: 2) {
+			state("active", label:'motion', icon:"st.motion.motion.active", backgroundColor:"#53a7c0")
+			state("inactive", label:'no motion', icon:"st.motion.motion.inactive", backgroundColor:"#ffffff")
+		}
         
         
         // Additional tiles based on Yves Racine's device type        
@@ -464,10 +470,11 @@ metadata {
         // details(["summary","apiStatus", "upButtonControl", "thermostatSetpoint", "currentStatus", "downButtonControl", "mode", "weatherIcon", "resumeProgram", "refresh"])        
         details(["summary",
         	"operatingState", "weatherIcon", "weatherTemperature", 
-            "apiStatus", "resumeProgram", "mode",
+            "motion", "resumeProgram", "mode",
             "coolSliderControl", "coolingSetpoint", 
             "heatSliderControl", "heatingSetpoint",
-            "currentStatus", "refresh"
+            "currentStatus", "apiStatus",
+            "refresh"
             ])      
 	}
 

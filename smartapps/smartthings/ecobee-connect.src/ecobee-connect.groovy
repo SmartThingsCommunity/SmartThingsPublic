@@ -657,7 +657,8 @@ private def pollEcobeeAPI(thermostatIdsString = "") {
 	} catch (groovyx.net.http.HttpResponseException e) {
     
 		log.error "pollEcobeeAPI() >> HttpResponseException occured. Exception info: ${e} StatusCode: ${e.statusCode}  response? data: ${e.getResponse()?.getData()}"
-
+        
+		def reAttemptPeriod = 45 // in sec
 		if ( (e.statusCode == 500 && e.getResponse()?.data.status.code == 14) ||  (e.statusCode == 401 && e.getResponse()?.data.status.code == 14) ) {
         	// Not possible to recover from status.code == 14
             log.error "In HttpResponseException: Received data.stat.code of 14"
@@ -666,16 +667,18 @@ private def pollEcobeeAPI(thermostatIdsString = "") {
 		} else if (e.statusCode != 401) { //this issue might comes from exceed 20sec app execution, connectivity issue etc.
             atomicState.connected = "warn"
             generateEventLocalParams() // Update the connected state at the thermostat devices
-			runIn(reAttemptPeriod, "refreshAuthToken")
+			runIn(reAttemptPeriod, "pollEcobeeAPI") // retry to poll
 		} else if (e.statusCode == 401) { // Status.code other than 14
-			atomicState.reAttempt = atomicState.reAttempt + 1
-			log.warn "reAttempt refreshAuthToken to try = ${atomicState.reAttempt}"
-			if (atomicState.reAttempt <= 3) {
+			atomicState.reAttemptPoll = atomicState.reAttemptPoll + 1
+			log.warn "reAttempt refreshAuthToken to try = ${atomicState.reAttemptPoll}"
+			if (atomicState.reAttemptPoll <= 3) {
                	atomicState.connected = "warn"
            		generateEventLocalParams() // Update the connected state at the thermostat devices
-				runIn(reAttemptPeriod, "refreshAuthToken")
+				runIn(reAttemptPeriod, "pollEcobeeAPI")
 			} else {
-               	apiLost()
+               	log.error "Unable to poll EcobeeAPI after three attempts. Will try to refresh authtoken."
+                debugEvent( "Unable to poll EcobeeAPI after three attempts. Will try to refresh authtoken." )
+                refreshAuthToken()
 			}
 		}    
     } catch (java.util.concurrent.TimeoutException e) {
@@ -801,7 +804,10 @@ def updateSensorData() {
 					motion: occupancy
 				]
 				sensorCollector[sensorDNI] = [data:sensorData]
-			}
+			} else if (it.type == "thermostat") { 
+            	// Extract the occupancy status
+            
+            } // end thermostat else if
 		} // End it.each loop
 	} // End remoteSensors.each loop
 	atomicState.remoteSensorsData = sensorCollector
@@ -815,6 +821,18 @@ def updateThermostatData() {
 		def dni = [ app.id, stat.identifier ].join('.')
 
 		log.debug "Updating dni $dni, Got weather? ${stat.weather.forecasts[0].weatherSymbol.toString()}"
+        
+        def thermSensor = stat.remoteSensors.find { it.type == "thermostat" }
+        log.debug "updateThermostatData() - thermSensor == ${thermSensor}"
+        debugEvent( "updateThermostatData() - thermSensor == ${thermSensor}" )
+        
+        def occupancyCap = thermSensor.capability.find { it.type == "occupancy" }
+        log.debug "updateThermostatData() - occupancyCap = ${occupancyCap}"
+        debugEvent( "updateThermostatData() - occupancyCap = ${occupancyCap}" )
+        
+        def occupancy =  occupancyCap.value
+        
+        
         
         def usingMetric = wantMetric() // cache the value to save the function calls
         def tempTemperature = myConvertTemperatureIfNeeded( (stat.runtime.actualTemperature / 10), "F", (usingMetric ? 1 : 0))
@@ -834,6 +852,7 @@ def updateThermostatData() {
 			coolingSetpoint: usingMetric ? tempCoolingSetpoint : tempCoolingSetpoint.toInteger(),
 			thermostatMode: stat.settings.hvacMode,                            
 			humidity: stat.runtime.actualHumidity,
+            motion: (occupancy == "true") ? "active" : "inactive",
 			thermostatOperatingState: getThermostatOperatingState(stat),
 			weatherSymbol: stat.weather.forecasts[0].weatherSymbol.toString(),
 			weatherTemperature: usingMetric ? tempWeatherTemperature : tempWeatherTemperature.toInteger()
