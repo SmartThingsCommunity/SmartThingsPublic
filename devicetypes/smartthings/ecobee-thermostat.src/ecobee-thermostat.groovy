@@ -67,7 +67,7 @@ metadata {
 			state "setpoint", action:"raiseSetpoint", icon:"st.thermostat.thermostat-up"
 		}
 		valueTile("thermostatSetpoint", "device.thermostatSetpoint", width: 1, height: 1, decoration: "flat") {
-			state "thermostatSetpoint", label:'${currentValue}°'
+			state "thermostatSetpoint", label:'${currentValue}'
 		}
 		valueTile("currentStatus", "device.thermostatStatus", height: 1, width: 2, decoration: "flat") {
 			state "thermostatStatus", label:'${currentValue}', backgroundColor:"#ffffff"
@@ -99,7 +99,7 @@ metadata {
 	}
 
 	preferences {
-		input "holdType", "enum", title: "Hold Type", description: "When changing temperature, use Temporary or Permanent hold (default)", required: false, options:["Temporary", "Permanent"]
+		input "holdType", "enum", title: "Hold Type", description: "When changing temperature, use Temporary (Until next transition) or Permanent hold (default)", required: false, options:["Temporary", "Permanent"]
 	}
 
 }

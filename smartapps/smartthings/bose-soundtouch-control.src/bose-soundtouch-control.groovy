@@ -22,9 +22,9 @@ definition(
     author: "SmartThings & Joe Geiger",
     description: "Control your Bose® SoundTouch® when certain actions take place in your home.",
     category: "SmartThings Labs",
-    iconUrl: "https://s3.amazonaws.com/smartapp-icons/Convenience/Cat-Convenience.png",
-    iconX2Url: "https://s3.amazonaws.com/smartapp-icons/Convenience/Cat-Convenience%402x.png",
-    iconX3Url: "https://s3.amazonaws.com/smartapp-icons/Convenience/Cat-Convenience%402x.png"
+    iconUrl: "https://d3azp77rte0gip.cloudfront.net/smartapps/fcf1d93a-ba0b-4324-b96f-e5b5487dfaf5/images/BoseST_icon.png",
+    iconX2Url: "https://d3azp77rte0gip.cloudfront.net/smartapps/fcf1d93a-ba0b-4324-b96f-e5b5487dfaf5/images/BoseST_icon@2x.png",
+    iconX3Url: "https://d3azp77rte0gip.cloudfront.net/smartapps/fcf1d93a-ba0b-4324-b96f-e5b5487dfaf5/images/BoseST_icon@2x-1.png"
 )
 
 preferences {
