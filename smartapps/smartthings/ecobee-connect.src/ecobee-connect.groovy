@@ -109,6 +109,7 @@ def thermsPage() {
         	input(name: "holdType", title:"Select Hold Type", type: "enum", required:false, multiple:false, description: "Permanent", metadata:[values:["Permanent", "Temporary"]])
             input(name: "smartAuto", title:"Use Smart Auto Temperature Adjust?", type: "bool", required:false, description: false)
             input(name: "pollingInterval", title:"Polling Interval (in Minutes)", type: "enum", required:false, multiple:false, description: "5", options:["5", "10", "15", "30"])
+            input(name: "debugLevel", title:"Debugging Level (higher # is more data reported)", type: "enum", required:false, multiple:false, description: "0", metadata:[values:["5", "4", "3", "2", "1", "0"]])
         }
     } 
 }
@@ -416,6 +417,8 @@ def initialize() {
 	log.debug "=====> initialize()"
     
     atomicState.connected = "full"
+    unschedule()
+    atomicState.reAttempt = 0
     
     // Create the child Thermostat Devices
 	def devices = thermostats.collect { dni ->
@@ -489,7 +492,7 @@ def initialize() {
 	// Run as part of the poll() procedure since it runs every 5 minutes. Only runs if the time is close enough though to avoid API calls
 	runEvery15Minutes("refreshAuthToken")
 
-	atomicState.reAttempt = 0
+
 
 }
 
@@ -637,7 +640,7 @@ private def pollEcobeeAPI(thermostatIdsString = "") {
                     generateEventLocalParams() // Update the connection status
                 }
                 atomicState.lastPoll = now();
-				log.debug "updated ${atomicState.thermostats?.size()} stats: ${atomicState.thermostats}"
+				log.debug "httpGet: updated ${atomicState.thermostats?.size()} stats: ${atomicState.thermostats}"
 			} else {
 				log.error "pollEcobeeAPI() - polling children & got http status ${resp.status}"
 
@@ -781,7 +784,7 @@ def updateSensorData() {
                         if ( cap.value.isNumber() ) { // Handles the case when the sensor is offline, which would return "unkown"
 							temperature = cap.value as Double
 							temperature = wantMetric() ? (temperature / 10).toDouble().round(1) : (temperature / 10).toDouble().round(0)
-                        } else if (temperature == "unknown") {
+                        } else if (cap.value == "unknown") {
                         	// TODO: Do something here to mark the sensor as offline?
                             log.error "updateSensorData() - sensor (DNI: ${sensorDNI}) returned unknown temp value. Perhaps it is unreachable."
                             
@@ -1279,9 +1282,9 @@ private String apiConnected() {
 	return atomicState.connected?.toString() ?: "lost"
 }
 
-private def apiLost() {
-    log.error "Lost connection with APIs. unscheduling Polling and refreshAuthToken. User MUST reintialize the connection with Ecobee by running the SmartApp and logging in again"
-    debugEvent("Lost connection with APIs. unscheduling Polling and refreshAuthToken. User MUST reintialize the connection with Ecobee by running the SmartApp and logging in again")
+private def apiLost(where = "not specified") {
+    log.error "apiLost() - ${where}: Lost connection with APIs. unscheduling Polling and refreshAuthToken. User MUST reintialize the connection with Ecobee by running the SmartApp and logging in again"
+    debugEvent("apiLost() - ${where}: Lost connection with APIs. unscheduling Polling and refreshAuthToken. User MUST reintialize the connection with Ecobee by running the SmartApp and logging in again")
 	
     // provide cleanup steps when API Connection is lost
 	def notificationMessage = "is disconnected from SmartThings/Ecobee, because the access credential changed or was lost. Please go to the Ecobee (Connect) SmartApp and re-enter your account login credentials."
@@ -1297,11 +1300,14 @@ private def apiLost() {
 
 def notifyApiLost() {
 	def notificationMessage = "is disconnected from SmartThings/Ecobee, because the access credential changed or was lost. Please go to the Ecobee (Connect) SmartApp and re-enter your account login credentials."
-    atomicState.connected = "lost"
-    generateEventLocalParams()
-	sendPushAndFeeds(notificationMessage)
-	
-    debugEvent("notifyApiLost() - API Connection Previously Lost. User MUST reintialize the connection with Ecobee by running the SmartApp and logging in again")
+    if ( atomicState.connected == "lost" ) {
+    	generateEventLocalParams()
+		sendPushAndFeeds(notificationMessage)
+        debugEvent("notifyApiLost() - API Connection Previously Lost. User MUST reintialize the connection with Ecobee by running the SmartApp and logging in again")
+	} else {
+    	// Must have restored connection
+        unschedule("notifyApiLost")
+    }    
 }
 
 private String childType(child) {
