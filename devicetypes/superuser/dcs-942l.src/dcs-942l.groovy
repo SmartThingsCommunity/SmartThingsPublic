@@ -26,6 +26,7 @@ metadata {
 		attribute "hubactionMode", "string"
         //attribute "switch1", "string"
         attribute "switch2", "string"
+        attribute "switch3", "string"
         
         
         
@@ -33,6 +34,8 @@ metadata {
         command "motionOff"
         command "pirOn"
         command "pirOff"
+        command "nvOn"
+        command "nvOff"
         
 	}
 
@@ -68,12 +71,17 @@ metadata {
             state "toggle", label:'toggle', action: "", icon: "st.motion.buttons.rec", backgroundColor: "#53a7c0"
 			state "on", label: 'PIR On', action: "pirOff", icon: "st.custom.buttons.rec", backgroundColor: "#EE0000", nextState: "toggle"
 		}
-       controlTile("levelSliderControl", "device.level", "slider", height: 1, width: 2, inactiveLabel: false, range:"(0..100)") {
+        standardTile("nightVision", "device.switch3", width: 1, height: 1, canChangeIcon: false) {
+			state "off", label: 'Night Vision Off', action: "nvOn", icon: "st.Weather.weather14", backgroundColor: "#ffff00", nextState: "toggle"
+            state "toggle", label:'toggle', action: "", icon: "st.motion.motion.inactive", backgroundColor: "#53a7c0"
+			state "on", label: 'Night Vision On', action: "nvOff", icon: "st.Weather.weather4", backgroundColor: "#4169E1", nextState: "toggle"            
+		}
+       controlTile("levelSliderControl", "device.level", "slider", height: 1, width: 1, inactiveLabel: false, range:"(0..100)") {
             state "level", action:"switch level.setLevel"
         }
         
         main "motion"
-        details(["cameraDetails", "take", "motion", "PIR", "refresh", "levelSliderControl"])
+        details(["cameraDetails", "take", "motion", "PIR", "refresh", "nightVision", "levelSliderControl"])
     }
 }
 
@@ -132,8 +140,17 @@ def parse(String description) {
             
             sendEvent(name: "level",  value: "${senseValue[0]}")
             //sendEvent(name: "switch.setLevel", value: "${senseValue}")
-        }        
-    }
+        }       
+        
+        if (msg.body.contains( "mode=night")) {
+            log.debug "Night Vision is on"
+            sendEvent(name: "switch3", value: "on");
+        }
+        else if (msg.body.contains("mode=day")) {
+            log.debug "Night Vision is off"
+            sendEvent(name: "switch3", value: "off");
+        }
+    }    
 }
 
 // handle commands
@@ -174,6 +191,7 @@ def take() {
     catch (Exception e) {
     	log.debug "Hit Exception $e on $hubAction"
     }
+    
 }
 
 def motionCmd(int motion, String attr)
@@ -289,6 +307,45 @@ def sensitivityCmd(int percent)
   
 }
 
+def nightCmd(String attr)
+{
+	def userpassascii = "${CameraUser}:${CameraPassword}"
+	def userpass = "Basic " + userpassascii.encodeAsBase64().toString()
+    def host = CameraIP 
+    def hosthex = convertIPtoHex(host)
+    def porthex = convertPortToHex(CameraPort)
+    device.deviceNetworkId = "$hosthex:$porthex" 
+    
+    log.debug "The device id configured is: $device.deviceNetworkId"
+    
+    def headers = [:] 
+    headers.put("HOST", "$host:$CameraPort")
+    headers.put("Authorization", userpass)
+    
+    log.debug "The Header is $headers"
+    
+ def path = "/config/icr.cgi?mode=${attr}"
+ log.debug "path is: $path"
+  try {
+    def hubAction = new physicalgraph.device.HubAction(
+    	method: "GET",
+    	path: path,
+    	headers: headers
+        )
+        	
+   
+    log.debug hubAction
+    return hubAction
+    
+    }
+    catch (Exception e) {
+    	log.debug "Hit Exception $e on $hubAction"
+    }
+  
+ 
+}
+
+
 def putImageInS3(map) {
 	log.debug "firing s3"
     def s3ObjectContent
@@ -358,27 +415,44 @@ private getHostAddress() {
 
 def on() {
 	log.debug "Enabling motion detection"
-    return motionCmd(1, "enable=yes&pir")    
+    return motionCmd(1, "enable")    
+    
 }
 
 def off() {
 	log.debug "Disabling motion detection"
-    return motionCmd(0, "enable=no&pir")    
+    return motionCmd(0, "enable")    
+    
 }
 def pirOn() {
 	log.debug "Enabling PIR Sensor"
-    return motionCmd(1, "pir")    
+    return motionCmd(1, "pir")  
+    
 }
 
 def pirOff() {
 	log.debug "Disabling PIR Sensor"
-    return motionCmd(0, "pir")    
+    return motionCmd(0, "pir") 
+    
 }
 
 def setLevel(percent) {
 	log.debug "Executing 'setLevel'"
-	return sensitivityCmd(percent)	   
+	return sensitivityCmd(percent)	
+    
 }
+def nvOn() {
+	log.debug "Enabling Night Vision"
+    return nightCmd("night")   
+    
+}
+
+def nvOff() {
+	log.debug "Disabling Night Vision"
+    return nightCmd("day")    
+    
+}
+
 def refresh(){
 
 	log.debug "Refresh"

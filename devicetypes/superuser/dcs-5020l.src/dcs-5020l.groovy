@@ -1,5 +1,5 @@
 /**
- *	D-Link DCS-5020L v1.1.1
+ *	D-Link DCS-5020L v1.1.2
  *  Modified from Generic Camera Device v1.0.07102014
  *
  *  Copyright 2014 patrick@patrickstuart.com
@@ -22,8 +22,10 @@ metadata {
 		capability "Switch"
         capability "Switch Level"
         capability "Refresh"
+        capability "Notification"
         
 		attribute "hubactionMode", "string"
+        attribute "position", "string"
         
         command "left"
 		command "right"
@@ -513,4 +515,8 @@ def preset()
 def setLevel(percent) {
 	log.debug "Executing 'setLevel'"
 	return sensitivityCmd(percent)	   
+}
+
+def deviceNotification(position) {
+	presetCmd(position.toInteger())
 }
