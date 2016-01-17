@@ -2,7 +2,7 @@
  *  Smart Bathroom Ventilation-Scenario
  *
  *  Version 1.0.0 (11/27/15) - Initial release of child app
- *  Version 1.0.1 (1/11/16) - Allow for parent app to see version of child app
+ *  Version 1.0.1 (1/17/16) - Allow for parent app to see version of child app
  * 
  * 
  *  Copyright 2016 Michael Struck - Uses code from Lighting Director by Tim Slagle & Michael Struck
@@ -36,8 +36,8 @@ preferences {
 
 // Show setup page
 def pageSetup() {
-	dynamicPage(name: "pageSetup", install: true, uninstall: true) {
-		section("Name your scenario") {
+	dynamicPage(name: "pageSetup", title: "Ventilation Scenario", install: true, uninstall: true) {
+		section() {
 			label title:"Scenario Name", required: true
     	}
         section("Devices included in the scenario") {
@@ -226,5 +226,5 @@ private getTimeOk(startTime,endTime) {
 }
 //Version
 private def textVersion() {
-    def text = "Child App Version: 1.0.1 (01/11/2016)"
+    def text = "Child App Version: 1.0.1 (01/17/2016)"
 }
