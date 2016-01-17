@@ -18,6 +18,9 @@
  *
  *	10.01.2016
  *	v1.0.1 - Improve messaging for connection process.
+ *
+ *	17.01.2016
+ *	v1.0.2 - Bug fix when device has been manually deleted.
  */
 definition(
 		name: "MiHome (Connect)",
@@ -130,7 +133,11 @@ def updateDevices() {
     }
     getChildDevices().findAll { !selectors.contains("${it.deviceNetworkId}") }.each {
 		log.info("Deleting ${it.deviceNetworkId}")
-		deleteChildDevice(it.deviceNetworkId)
+        try {
+			deleteChildDevice(it.deviceNetworkId)
+        } catch (physicalgraph.exception.NotFoundException e) {
+        	log.info("Could not find ${it.deviceNetworkId}. Assuming manually deleted.")
+        }
 	}
 	runIn(1, 'refreshDevices') // Asynchronously refresh devices so we don't block
 }
