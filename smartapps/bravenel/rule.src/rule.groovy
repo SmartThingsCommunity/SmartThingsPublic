@@ -3,7 +3,7 @@
  *
  *  Copyright 2015 Bruce Ravenel
  *
- *  Version 1.6.13   17 Jan 2016
+ *  Version 1.6.13a   17 Jan 2016
  *
  *	Version History
  *
@@ -1450,7 +1450,7 @@ def takeAction(success) {
 								if(delayMillisTrue) {if(delayOnOffTrue) delayedOffTrue.on([delay: delayMillisTrue]) else delayedOffTrue.off([delay: delayMillisTrue])}   }
 		if(pendedOffTrue)		runIn(pendMinutesTrue * 60, pendingOffTrue)
 		if(pendedOffFalse)		unschedule(pendingOffFalse)
-        if(dimTrackTrue && dimATrue != null) if(state.lastEvtLevel != null) {if(delayMilTrue) dimATrue.setLevel(state.lastEvtLevel, [delay: delayMilTrue]) else dimATrue.setLevel(state.lastEvtLevel)}
+        if(dimTrackTrue && dimATrue != null) if(state.lastEvtLevel != null) {if(delayMilTrue) dimATrue.setLevel(state.lastEvtLevel.toInteger(), [delay: delayMilTrue]) else dimATrue.setLevel(state.lastEvtLevel)}
 		if(dimATrue && dimLATrue != null) if(delayMilTrue) dimATrue.setLevel(dimLATrue, [delay: delayMilTrue]) else dimATrue.setLevel(dimLATrue)
 		if(dimBTrue && dimLBTrue != null) if(delayMilTrue) dimBTrue.setLevel(dimLBTrue, [delay: delayMilTrue]) else dimBTrue.setLevel(dimLBTrue)
 		if(toggleDimmerTrue && dimTogTrue != null)	dimToggle(toggleDimmerTrue, dimTogTrue, true)
@@ -1487,7 +1487,7 @@ def takeAction(success) {
                 				if(delayMillisFalse) {if(delayOnOffFalse) delayedOffFalse.on([delay: delayMillisFalse]) else delayedOffFalse.off([delay: delayMillisFalse])}   }
 		if(pendedOffFalse)		runIn(pendMinutesFalse * 60, pendingOffFalse)
 		if(pendedOffTrue)		unschedule(pendingOffTrue)
-        if(dimTrackFalse && dimAFalse != null) if(state.lastEvtLevel != null) {if(delayMilFalse) dimAFalse.setLevel(state.lastEvtLevel, [delay: delayMilFalse]) else dimAFalse.setLevel(state.lastEvtLevel)}
+        if(dimTrackFalse && dimAFalse != null) if(state.lastEvtLevel != null) {if(delayMilFalse) dimAFalse.setLevel(state.lastEvtLevel.toInteger(), [delay: delayMilFalse]) else dimAFalse.setLevel(state.lastEvtLevel)}
 		if(dimAFalse && dimLAFalse != null) if(delayMilFalse) dimAFalse.setLevel(dimLAFalse, [delay: delayMilFalse]) else dimAFalse.setLevel(dimLAFalse)
 		if(dimBFalse && dimLBFalse != null) if(delayMilFalse) dimBFalse.setLevel(dimLBFalse, [delay: delayMilFalse]) else dimBFalse.setLevel(dimLBFalse)
 		if(toggleDimmerFalse && dimTogFalse != null) dimToggle(toggleDimmerFalse, dimTogFalse, false)
