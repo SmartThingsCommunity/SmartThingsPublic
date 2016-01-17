@@ -3,10 +3,11 @@
  *
  *  Copyright 2015 Bruce Ravenel
  *
- *  Version 1.6.12c   13 Jan 2016
+ *  Version 1.6.13   17 Jan 2016
  *
  *	Version History
  *
+ *	1.6.13	17 Jan 2016		Added TTS support
  *	1.6.12	10 Jan 2016		Bug fix re removing parts of a rule
  *	1.6.11	8 Jan 2016		Added offset to compare to device, fixed bugs in compare to device
  *	1.6.10	6 Jan 2016		Returned Delay on/off pending cancel per user request, further debug of rule evaluation
@@ -239,6 +240,10 @@ def getDevs(myCapab, dev, multi) {
 			thisName = "Temperature sensor" + (multi ? "s" : "")
 			thisCapab = "temperatureMeasurement"
 			break
+		case "Thermostat":
+			thisName = "Thermostat" + (multi ? "s" : "")
+			thisCapab = "thermostat"
+			break
 		case "Humidity":
 			thisName = "Humidity sensor" + (multi ? "s" : "")
 			thisCapab = "relativeHumidityMeasurement"
@@ -295,9 +300,9 @@ def getRelational(myDev) {
 def getCapab(myCapab, isTrig, isReq) {  
 	def myOptions = null
 	if(state.isRule || !isTrig) myOptions = ["Switch", "Motion", "Acceleration", "Contact", "Presence", "Lock", "Temperature", "Humidity", "Illuminance", "Time of day", "Rule truth",
-    	"Days of week", "Mode", "Dimmer level", "Energy meter", "Power meter", "Water sensor", "Battery", "Carbon monoxide detector", "Smoke detector", "Smart Home Monitor", "Garage door"]
+    	"Days of week", "Mode", "Dimmer level", "Energy meter", "Power meter", "Water sensor", "Battery", "Carbon monoxide detector", "Smoke detector", "Smart Home Monitor", "Garage door", "Thermostat"]
 	if(state.isTrig || isTrig) myOptions = ["Switch", "Physical Switch", "Motion", "Acceleration", "Contact", "Presence", "Lock", "Temperature", "Humidity", "Illuminance", "Certain Time", "Rule truth",
-    	"Mode", "Energy meter", "Power meter", "Water sensor", "Battery", "Routine", "Button", "Dimmer level", "Carbon monoxide detector", "Smoke detector", "Smart Home Monitor", "Garage door"]
+    	"Mode", "Energy meter", "Power meter", "Water sensor", "Battery", "Routine", "Button", "Dimmer level", "Carbon monoxide detector", "Smoke detector", "Smart Home Monitor", "Garage door", "Thermostat"]
 	def result = input myCapab, "enum", title: "Select capability", required: isReq, options: myOptions.sort(), submitOnChange: true
 }
 
@@ -321,6 +326,7 @@ def getState(myCapab, n, isTrig) {
 	else if(myCapab == "Presence")					result = input myState, "enum", title: "Presence $phrase", 			options: presoptions, 						defaultValue: presdefault
 	else if(myCapab == "Garage door")				result = input myState, "enum", title: "Garage door $phrase", 		options: ["closed", "open"], 				defaultValue: "open"
 	else if(myCapab == "Lock")						result = input myState, "enum", title: "Lock $lockphrase", 			options: ["locked", "unlocked"], 			defaultValue: "unlocked"
+    else if(myCapab == "Thermostat")				result = input myState, "enum", title: "Thermostat set ",			options: ["heat", "cool", "auto", "off"],	defaultValue: "heat"
 	else if(myCapab == "Carbon monoxide detector")	result = input myState, "enum", title: "CO $phrase ", 				options: ["clear", ,"detected", "tested"], 	defaultValue: "detected"
 	else if(myCapab == "Smoke detector")			result = input myState, "enum", title: "Smoke $phrase ", 			options: ["clear", ,"detected", "tested"], 	defaultValue: "detected"
 	else if(myCapab == "Water sensor")				result = input myState, "enum", title: "Water $phrase", 			options: ["dry", "wet"], 					defaultValue: "wet"
@@ -541,9 +547,6 @@ def inputLeft(sub) {
 		state.eval << "("
 		paragraph(state.str)
 		inputLeftAndRight(true)
-//		input "moreConds$state.n", "bool", title: "More conditions on left?", submitOnChange: true
-//		if(settings["moreConds$state.n"]) inputRight(sub)
-//		inputRight(sub)
 	} else {
 		input "condL$state.n", "enum", title: "Which condition?", options: conds, submitOnChange: true
 		if(settings["condL$state.n"]) {
@@ -1021,9 +1024,13 @@ def selectMsgTrue() {
 			input "refDevTrue", "bool", title: "Include device name?", required: false, submitOnChange: true
 			input "phoneTrue", "phone", title: "Phone number for SMS", required: false, submitOnChange: true
             input "speakTrue", "bool", title: "Speak this message?", required: false, submitOnChange: true
-            if(speakTrue) input "speakTrueDevice", title: "On this speech device", "capability.speechSynthesis", required: false, multiple: true, submitOnChange: true
+            if(speakTrue){
+            	input "speakTrueDevice", title: "On this speech device", "capability.speechSynthesis", required: false, multiple: true, submitOnChange: true
+            	input "mediaTrueDevice", title: "On this music device", "capability.musicPlayer", required: false, multiple: true, submitOnChange: true
+                if (mediaTrueDevice) input "mediaTrueVolume", title: "At this volume", "number", required: false, multiple: false, defaultValue: "50", submitOnChange: true
+            }
 		}
-        state.msgTrue = (pushTrue ? "Push" : "") + (msgTrue ? " '$msgTrue'" : "") + (refDevTrue ? " [device]" : "") + (phoneTrue ? " to $phoneTrue" : "") + (speakTrue ? " [speak]" : "")
+        state.msgTrue = (pushTrue ? "Push" : "") + (msgTrue ? " '$msgTrue'" : "") + (refDevTrue ? " [device]" : "") + (phoneTrue ? " to $phoneTrue" : "") + (speakTrue ? " [speak]" : "") + (mediaTrueDevice ? " ${mediaTrueDevice}" : "")
 	}
 }
 
@@ -1035,12 +1042,15 @@ def selectMsgFalse() {
 			input "refDevFalse", "bool", title: "Include device name?", required: false, submitOnChange: true
 			input "phoneFalse", "phone", title: "Phone number for SMS", required: false, submitOnChange: true
             input "speakFalse", "bool", title: "Speak this message?", required: false, submitOnChange: true
-            if(speakFalse) input "speakFalseDevice", title: "On this speech device", "capability.speechSynthesis", required: false, multiple: true, submitOnChange: true
-		}
-        state.msgFalse = (pushFalse ? "Push" : "") + (msgFalse ? " '$msgFalse'" : "") + (refDevFalse ? " [device]" : "") + (phoneFalse ? " to $phoneFalse" : "") + (speakFalse ? " [speak]" : "")
+            if(speakFalse){
+            	input "speakFalseDevice", title: "On this speech device", "capability.speechSynthesis", required: false, multiple: true, submitOnChange: true
+            	input "mediaFalseDevice", title: "On this music device", "capability.musicPlayer", required: false, multiple: true, submitOnChange: true
+                if (mediaFalseDevice) input "mediaFalseVolume", title: "At this volume", "number", required: false, multiple: false, defaultValue: "50", submitOnChange: true
+            }		
+        }
+        state.msgFalse = (pushFalse ? "Push" : "") + (msgFalse ? " '$msgFalse'" : "") + (refDevFalse ? " [device]" : "") + (phoneFalse ? " to $phoneFalse" : "") + (speakFalse ? " [speak]" : "") + (mediaFalseDevice ? " ${mediaFalseDevice}" : "")
 	}
 }
-
 // initialization code follows
 
 def scheduleTimeOfDay() {
@@ -1467,6 +1477,7 @@ def takeAction(success) {
 		if(pushTrue)			sendPush((msgTrue ?: "Rule $app.label True") + (refDevTrue ? " $state.lastEvtName" : ""))
 		if(phoneTrue)			sendSmsMulti(phoneTrue, (msgTrue ?: "Rule $app.label True") + (refDevTrue ? " $state.lastEvtName" : ""))
         if(speakTrue)			speakTrueDevice?.speak((msgTrue ?: "Rule $app.label True") + (refDevTrue ? " $state.lastEvtName" : ""))
+		if (mediaTrueDevice)	mediaTrueDevice.playTextAndRestore((msgTrue ?: "Rule $app.label True") + (refDevTrue ? " $state.lastEvtName" : ""), mediaTrueVolume)
 		if (state.howManyCCtrue > 1)  execCommands(true)
 	} else {
 		if(onSwitchFalse) 		if(delayMilFalse) onSwitchFalse.on([delay: delayMilFalse]) else onSwitchFalse.on()
@@ -1503,7 +1514,8 @@ def takeAction(success) {
 		if(pushFalse)			sendPush((msgFalse ?: "Rule $app.label False") + (refDevFalse ? " $state.lastEvtName" : ""))
 		if(phoneFalse)			sendSmsMulti(phoneFalse, (msgFalse ?: "Rule $app.label False") + (refDevFalse ? " $state.lastEvtName" : ""))
         if(speakFalse)			speakFalseDevice?.speak((msgFalse ?: "Rule $app.label False") + (refDevFalse ? " $state.lastEvtName" : ""))
-		if (state.howManyCCfalse > 1)  execCommands(false)
+		if (mediaFalseDevice)	mediaFalseDevice.playTextAndRestore((msgFalse ?: "Rule $app.label False") + (refDevFalse ? " $state.lastEvtName" : ""), mediaFalseVolume)		
+        if (state.howManyCCfalse > 1)  execCommands(false)
 	}
 }
 
