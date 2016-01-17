@@ -38,7 +38,7 @@ preferences {
 
 // Show setup page
 def pageSetup() {
-    dynamicPage(name: "pageSetup", install: true, uninstall: true) {
+    dynamicPage(name: "pageSetup", title: "Lighting Scenario", install: true, uninstall: true) {
 		section() {
 			label title:"Scenario Name", required:true
     	}
