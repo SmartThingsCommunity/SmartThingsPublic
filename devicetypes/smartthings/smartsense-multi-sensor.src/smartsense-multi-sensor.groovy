@@ -303,8 +303,7 @@ def getTemperature(value) {
 	}
 
 private Map getBatteryResult(rawValue) {
-	log.debug "Battery"
-	log.debug rawValue
+	log.debug "Battery rawValue = ${rawValue}"
 	def linkText = getLinkText(device)
 
 	def result = [
@@ -313,19 +312,37 @@ private Map getBatteryResult(rawValue) {
 	]
 
 	def volts = rawValue / 10
-	def descriptionText
 
-	if (rawValue == 255) {}
+	if (rawValue == 0 || rawValue == 255) {}
 	else {
 		if (volts > 3.5) {
 			result.descriptionText = "${linkText} battery has too much power (${volts} volts)."
 		}
 		else {
-			def minVolts = 2.1
-			def maxVolts = 3.0
-			def pct = (volts - minVolts) / (maxVolts - minVolts)
-			result.value = Math.min(100, (int) pct * 100)
-			result.descriptionText = "${linkText} battery was ${result.value}%"
+			if (device.getDataValue("manufacturer") == "SmartThings") {
+				volts = rawValue // For the batteryMap to work the key needs to be an int
+				def batteryMap = [28:100, 27:100, 26:100, 25:90, 24:90, 23:70,
+								  22:70, 21:50, 20:50, 19:30, 18:30, 17:15, 16:1, 15:0]
+				def minVolts = 15
+				def maxVolts = 28
+
+				if (volts < minVolts)
+					volts = minVolts
+				else if (volts > maxVolts)
+					volts = maxVolts
+				def pct = batteryMap[volts]
+				if (pct != null) {
+					result.value = pct
+					result.descriptionText = "${linkText} battery was ${result.value}%"
+				}
+			}
+			else {
+				def minVolts = 2.1
+				def maxVolts = 3.0
+				def pct = (volts - minVolts) / (maxVolts - minVolts)
+				result.value = Math.min(100, (int) pct * 100)
+				result.descriptionText = "${linkText} battery was ${result.value}%"
+			}
 		}
 	}
 
