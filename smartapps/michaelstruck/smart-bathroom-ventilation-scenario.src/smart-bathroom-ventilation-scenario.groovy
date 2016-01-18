@@ -2,7 +2,7 @@
  *  Smart Bathroom Ventilation-Scenario
  *
  *  Version 1.0.0 (11/27/15) - Initial release of child app
- *  Version 1.0.1 (1/17/16) - Allow for parent app to see version of child app
+ *  Version 1.0.1 (1/17/16) - Allow for parent app to see version of child app, added refresh of sensor
  * 
  * 
  *  Copyright 2016 Michael Struck - Uses code from Lighting Director by Tim Slagle & Michael Struck
@@ -46,9 +46,10 @@ def pageSetup() {
 			input "A_fan", "capability.switch", title: "Control the following ventilation fans...", multiple: true, required: true
 		}
 		section("Fan settings") {
-        	if (A_humidity){
+        	if (A_humidity && A_switch){
             	input "A_humidityDelta", title: "Ventilation fans turns on when lights are on and humidity rises(%)", "number", required: false, description: "0-50%"
-        	}
+            	input "A_repoll", "enum", title: "Repoll humidity sensor after (minutes)...", options: [[1:"1 Minute"],[2:"2 Minutes"],[3:"3 Minutes"],[4:"4 Minutes"],[5:"5 Minutes"]], defaultValue: 5
+            }
             input "A_timeOn", title: "Optionally, turn on fans after light switch is turned on (minutes, 0=immediately)", "number", required: false
             if (A_humidity) {
             	input "A_fanTime", title: "Turn off ventilation fans after...", "enum", required: false, options: [[5:"5 Minutes"],[10:"10 Minutes"],[15:"15 Minutes"],[30:"30 Minutes"],[60:"1 hour"],[98:"Light switch is turned off"],[99:"Humidity drops to or below original value"]]
@@ -74,7 +75,6 @@ page(name: "timeIntervalInputA", title: "Only during a certain time") {
 			input "A_timeEnd", "time", title: "Ending", required: false
 		}
 } 
-
 
 def installed() {
     initialize()
@@ -111,7 +111,7 @@ def turnOnA(evt){
         state.triggeredA = true
         if (state.A_runTime < 98) {
 			log.debug "Ventilation will be turned off in ${state.A_runTime} minutes."
-            unschedule (turnOnA)
+            unschedule ()
             runIn (state.A_runTime*60, "turnOffA")
         }
 	}
@@ -120,7 +120,7 @@ def turnOnA(evt){
 def turnOffA(evt) {
 	log.debug "Ventilation turned off."
     A_fan?.off()
-    unschedule (turnOffA)
+    unschedule ()
 }
 
 def humidityHandlerA(evt){
@@ -133,21 +133,30 @@ def humidityHandlerA(evt){
     	turnOffA()
     }      
 }
+def rePoll(){
+	def currentHumidityA =A_humidity.currentValue("humidity")
+    log.debug "Humidity value before refresh ${currentHumidityA}."
+    A_humidity.refresh()
+}
 
-def onEventA(evt) {
+def onEventA(evt) {   
     def humidityDelta = A_humidity && A_humidityDelta ? A_humidityDelta as Integer : 0
     def text = ""
     if (A_humidity){
-    	state.humidityStartA = A_humidity.currentValue("humidity")
+    	
+        state.humidityStartA = A_humidity.currentValue("humidity")
     	state.humidityLimitA = state.humidityStartA + humidityDelta
         text = "Humidity starting value is ${state.humidityStartA}. Ventilation threshold is ${state.humidityLimitA}."
     }
-    log.debug "Light turned on in ${ScenarioNameA}. ${text}" 
+    if (A_repoll){
+        log.debug "Re-Polling in ${(A_repoll as int)*60} seconds"
+        runIn((A_repoll as int)*60, "rePoll")
+    }
+    log.debug "Light turned on in ${app.label}. ${text}" 
     if ((!A_humidityDelta || A_humidityDelta == 0) && (A_timeOn != "null" && A_timeOn == 0)) {
     	turnOnA()
     }
     if ((A_timeOn && A_timeOn > 0) && getDayOk(A_day) && !state.triggeredA && getTimeOk(A_timeStart,A_timeEnd)) {
-    	def timeOn = A_timeOn as Integer
         log.debug "Ventilation will start in ${timeOn} minute(s)"
         runIn (timeOn*60, "turnOnA")
     }
@@ -160,7 +169,7 @@ def offEventA(evt) {
     	currentHumidityA = A_humidity.currentValue("humidity") 
         text = "Humidity value is ${currentHumidityA}."
     }
-    log.debug "Light turned off in '${ScenarioNameA}'. ${text}"
+    log.debug "Light turned off in '${app.label}'. ${text}"
 	state.triggeredA = false
     if (state.A_runTime == 98){
     	turnOffA()
