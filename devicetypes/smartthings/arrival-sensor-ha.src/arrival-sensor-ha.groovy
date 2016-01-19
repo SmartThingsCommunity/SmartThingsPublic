@@ -88,31 +88,37 @@ private handleReportAttributeMessage(String description) {
     }
 }
 
-private handleBatteryEvent(rawValue) {
-    def linkText = getLinkText(device)
-
-    def eventMap = [
-        name: 'battery',
-        value: '--'
-    ]
-
-    def volts = rawValue / 10
-    if (volts > 0){
-        def minVolts = 2.0
-        def maxVolts = 2.8
+/**
+ * Create battery event from reported battery voltage.
+ *
+ * @param volts Battery voltage in .1V increments
+ */
+private handleBatteryEvent(volts) {
+    if (volts == 0 || volts == 255) {
+        log.debug "Ignoring invalid value for voltage (${volts/10}V)"
+    }
+    else {
+        def batteryMap = [28:100, 27:100, 26:100, 25:90, 24:90, 23:70,
+                          22:70, 21:50, 20:50, 19:30, 18:30, 17:15, 16:1, 15:0]
+        def minVolts = 15
+        def maxVolts = 28
 
         if (volts < minVolts)
             volts = minVolts
         else if (volts > maxVolts)
             volts = maxVolts
-        def pct = (volts - minVolts) / (maxVolts - minVolts)
-
-        eventMap.value = Math.round(pct * 100)
-        eventMap.descriptionText = "${linkText} battery was ${eventMap.value}%"
+        def pct = batteryMap[volts]
+        if (pct != null) {
+            def linkText = getLinkText(device)
+            def eventMap = [
+                name: 'battery',
+                value: pct,
+                descriptionText: "${linkText} battery was ${pct}%"
+            ]
+            log.debug "Creating battery event for voltage=${volts/10}V: ${eventMap}"
+            sendEvent(eventMap)
+        }
     }
-
-    log.debug "Creating battery event: ${eventMap}"
-    sendEvent(eventMap)
 }
 
 private handlePresenceEvent(present) {
