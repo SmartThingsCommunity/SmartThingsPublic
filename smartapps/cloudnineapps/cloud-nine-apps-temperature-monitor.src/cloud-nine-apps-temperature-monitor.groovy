@@ -12,6 +12,14 @@
  *  on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the License
  *  for the specific language governing permissions and limitations under the License.
  *
+ * Version History
+ * ---------------
+ * - 1.0 (First release)
+ *   - Features
+ *     - Ability to send push notification and/or text message for one or more sensors when temperature either
+ *       falls below a configured value or rises above a configured value.
+ *     - Ability to set low temperature and high temperature values via preferences.
+ *     - Ability to send custom text message for the above events. 
  */
 definition(
     name: "Cloud Nine Apps Temperature Monitor",
