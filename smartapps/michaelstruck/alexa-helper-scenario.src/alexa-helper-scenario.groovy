@@ -2,7 +2,7 @@
  *  Alexa Helper-Child
  *
  *  Copyright © 2016 Michael Struck
- *  Version 2.1.0 1/18/16
+ *  Version 2.1.0a 1/20/16
  * 
  *  Version 1.0.0 - Initial release of child app
  *  Version 1.1.0 - Added framework to show version number of child app and copyright
@@ -742,7 +742,7 @@ def scenarioDesc(){
     }
     if (scenarioType=="Panic"){
     	desc = panicSwitchOn ? "'${panicSwitchOn}' switch activates panic actions." : desc
-        desc += panicSwitchOff ?"'${panicSwitchOff}' switch deactivates panic actions." : ""
+        desc += panicSwitchOn && panicSwitchOff ?"\n'${panicSwitchOff}' switch deactivates panic actions." : ""
     }
     desc
 }
@@ -966,7 +966,7 @@ def saveSelectedSong(slot, song) {
 }
 //Version
 private def textVersion() {
-    def text = "Child App Version: 2.1.0 (01/18/2016)"
+    def text = "Child App Version: 2.1.0a (01/20/2016)"
 }
 private def versionInt(){
 	def text = 210
