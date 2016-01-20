@@ -29,18 +29,18 @@ metadata {
 
 	tiles {
 
-		valueTile("power", "device.power") {
+		valueTile("power", "device.power", canChangeIcon: true) {
 			state "power", label: '${currentValue} W'
 		}
 
-		tile(name: "powerChart", attribute: "powerContent", type: "HTML", url: '${currentValue}', width: 3, height: 2) { }
+		htmlTile(name: "powerContent", attribute: "powerContent", type: "HTML", whitelist: "www.wattvision.com" , url: '${currentValue}', width: 3, height: 2)
 
 		standardTile("refresh", "device.power", inactiveLabel: false, decoration: "flat") {
 			state "default", label: '', action: "refresh.refresh", icon: "st.secondary.refresh"
 		}
 
 		main "power"
-		details(["powerChart", "power", "refresh"])
+		details(["powerContent", "power", "refresh"])
 
 	}
 }
@@ -74,10 +74,10 @@ public addWattvisionData(json) {
 
 	log.trace "Adding data from Wattvision"
 
-	def data = json.data
+	def data = parseJson(json.data.toString())
 	def units = json.units ?: "watts"
 
-	if (data) {
+	if (data.size() > 0) {
 		def latestData = data[-1]
 		data.each {
 			sendPowerEvent(it.t, it.v, units, (latestData == it))
@@ -102,4 +102,8 @@ private sendPowerEvent(time, value, units, isLatest = false) {
 	log.debug "sending event: ${eventData}"
 	sendEvent(eventData)
 
+}
+
+def parseJson(String s) {
+	new groovy.json.JsonSlurper().parseText(s)
 }
