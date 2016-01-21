@@ -913,4 +913,3 @@ def installed() {
   
   log.debug "display units now = $state.DisplayUnits"
 }
-
