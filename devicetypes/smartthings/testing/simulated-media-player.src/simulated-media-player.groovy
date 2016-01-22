@@ -19,28 +19,6 @@
 		capability "Refresh"
 		capability "Sensor"
 		capability "Music Player"
-		/*
-		Music Player capability attributes:
-			status: string,
-			level: number,
-			mute, enum("muted","unmuted")
-			trackDescription: string
-			trackData: json
-		Music Player capability commands:
-			play
-			pause
-			stop
-			previousTrack
-			nextTrack
-			mute
-			unmute
-			playTrack: string
-			setTrack: string
-			resumeTrack: string
-			restoreTrack: string
-			setLevel: number
-			playText: string
-		*/
 	}
 
 	tiles(scale: 2) {
@@ -73,47 +51,9 @@
 			}
 		}
 
-		// Row 1
-		standardTile("nextTrack", "device.status", width: 2, height: 2, decoration: "flat") {
-			state "next", label:'', action:"music Player.nextTrack", icon:"st.sonos.next-btn", backgroundColor:"#ffffff"
-		}
-		standardTile("play", "device.status", width: 2, height: 2, decoration: "flat") {
-			state "default", label:'', action:"music Player.play", icon:"st.sonos.play-btn", nextState:"playing", backgroundColor:"#ffffff"
-			//   state "grouped", label:'', action:"music Player.play", icon:"st.sonos.play-btn", backgroundColor:"#ffffff"
-		}
-		standardTile("previousTrack", "device.status", width: 2, height: 2, decoration: "flat") {
-			state "previous", label:'', action:"music Player.previousTrack", icon:"st.sonos.previous-btn", backgroundColor:"#ffffff"
-		}
-
-		// Row 2
-		standardTile("status", "device.status", width: 2, height: 2, decoration: "flat", canChangeIcon: true) {
-			state "playing", label:'Playing', action:"music Player.pause", icon:"st.Electronics.electronics1", nextState:"paused", backgroundColor:"#ffffff"
-			state "stopped", label:'Stopped', action:"music Player.play", icon:"st.Electronics.electronics1", nextState:"playing", backgroundColor:"#ffffff"
-			state "paused", label:'Paused', action:"music Player.play", icon:"st.Electronics.electronics1", nextState:"playing", backgroundColor:"#ffffff"
-			//   state "grouped", label:'Grouped', action:"", icon:"st.Electronics.electronics16", backgroundColor:"#ffffff"
-		}
-		standardTile("pause", "device.status", width: 2, height: 2, decoration: "flat") {
-			state "default", label:'', action:"music Player.pause", icon:"st.sonos.pause-btn", nextState:"paused", backgroundColor:"#ffffff"
-			//   state "grouped", label:'', action:"music Player.pause", icon:"st.sonos.pause-btn", backgroundColor:"#ffffff"
-		}
-		standardTile("mute", "device.mute", inactiveLabel: false, decoration: "flat") {
-			state "unmuted", label:"", action:"music Player.mute", icon:"st.custom.sonos.unmuted", backgroundColor:"#ffffff", nextState:"muted"
-			state "muted", label:"", action:"music Player.unmute", icon:"st.custom.sonos.muted", backgroundColor:"#ffffff", nextState:"unmuted"
-		}
-
-		// Row 3
-		controlTile("levelSliderControl", "device.level", "slider", height: 2, width: 6, inactiveLabel: false, range:"0..30") {
-			state "level", action:"tileSetLevel", backgroundColor:"#ffffff"
-		}
-
-		// Row 4
-		valueTile("currentSong", "device.trackDescription", inactiveLabel: true, height:2, width:6, decoration: "flat") {
-			state "default", label:'${currentValue}', backgroundColor:"#ffffff"
-		}
-
 		main "mediaMulti"
 
-		details([])
+		details(["mediaMulti"])
 	}
 }
 
@@ -134,7 +74,7 @@ def installed() {
 }
 
 def parse(description) {
-	// Nah, we're good. Thanks, though.
+	// Nah, we're good. No parsing necessary.
 }
 
 def play() {
