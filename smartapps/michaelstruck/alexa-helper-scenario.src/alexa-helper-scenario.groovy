@@ -2,7 +2,7 @@
  *  Alexa Helper-Child
  *
  *  Copyright © 2016 Michael Struck
- *  Version 2.1.0a 1/20/16
+ *  Version 2.2.0 1/22/16
  * 
  *  Version 1.0.0 - Initial release of child app
  *  Version 1.1.0 - Added framework to show version number of child app and copyright
@@ -13,6 +13,7 @@
  *  Version 2.0.0 - Added in speaker and thermostat scenarios from main app to allow for more than one of these devices
  *  Version 2.0.1 - Fixed an issue with the getTimeOk routine
  *  Version 2.1.0 - Many changes; added switches, dimmers and colored lights as control devices. Modified Thermostat logic and modified GUI
+ *  Version 2.2.0 - Added SMS to on/off control scenarios, and allow  'toggle' to change the lights; added Sonos as an alarm type
  * 
  *  Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except
  *  in compliance with the License. You may obtain a copy of the License at:
@@ -25,29 +26,29 @@
  *
  */
 definition(
-    name: "Alexa Helper-Scenario",
-    namespace: "MichaelStruck",
-    author: "Michael Struck",
-    description: "Child app (do not publish) that allows various SmartThings devices to be tied to switches controlled by Amazon Echo('Alexa').",
-    category: "Convenience",
+	name: "Alexa Helper-Scenario",
+	namespace: "MichaelStruck",
+	author: "Michael Struck",
+	description: "Child app (do not publish) that allows various SmartThings devices to be tied to switches controlled by Amazon Echo('Alexa').",
+	category: "Convenience",
 	parent: "MichaelStruck:Alexa Helper",
-    iconUrl: "https://raw.githubusercontent.com/MichaelStruck/SmartThings/master/Other-SmartApps/AlexaHelper/Alexa.png",
-    iconX2Url: "https://raw.githubusercontent.com/MichaelStruck/SmartThings/master/Other-SmartApps/AlexaHelper/Alexa@2x.png",
-    iconX3Url: "https://raw.githubusercontent.com/MichaelStruck/SmartThings/master/Other-SmartApps/AlexaHelper/Alexa@2x.png")    
+	iconUrl: "https://raw.githubusercontent.com/MichaelStruck/SmartThings/master/Other-SmartApps/AlexaHelper/Alexa.png",
+	iconX2Url: "https://raw.githubusercontent.com/MichaelStruck/SmartThings/master/Other-SmartApps/AlexaHelper/Alexa@2x.png",
+	iconX3Url: "https://raw.githubusercontent.com/MichaelStruck/SmartThings/master/Other-SmartApps/AlexaHelper/Alexa@2x.png")    
 preferences {
-    page name:"pageStart"
-    page name:"pageControl"
-    page name: "pageSTDevicesOn"
-    page name: "pageSTDevicesOff"
-    page name: "pageSpeaker"
-    page name: "pagePanic"
-    page name: "pageThermostat"
+	page name:"pageStart"
+	page name:"pageControl"
+	page name: "pageSTDevicesOn"
+	page name: "pageSTDevicesOff"
+	page name: "pageSpeaker"
+	page name: "pagePanic"
+	page name: "pageThermostat"
 }
 def pageStart() {
 	dynamicPage(name: "pageStart", title: "Scenario Settings", uninstall: true, install: true) {
 		section {
        		def parentVersion = parent.versionInt()
-			if (parentVersion < 410){
+			if (parentVersion < 411){
 				paragraph "You are using a version of the parent app that is older than the recommended version. Please upgrade "+
 					"to the latest version to ensure you have the latest features and bug fixes."
 			}
@@ -78,7 +79,7 @@ page(name: "timeIntervalInput", title: "Only during a certain time") {
 def pageControl() {
 	dynamicPage(name: "pageControl", title: "Control Scenario Settings", install: false, uninstall: false) {
         section {
-			input "AlexaSwitch", "capability.switch", title: "Alexa Switch", multiple: false, required: true
+			input "AlexaSwitch", "capability.switch", title: "Control Switch (On/Off, Momentary)", multiple: false, required: true
     		input "showOptions", "enum", title: "Switch states to react to...", options: ["":"On/Off", "1":"On Only", "2":"Off Only"] , required: false, submitOnChange:true
         }
         def phrases = location.helloHome?.getPhrases()*.label
@@ -95,6 +96,8 @@ def pageControl() {
             	href "pageSTDevicesOn", title: "SmartThings Device Control...", description: getDeviceDesc("on")
             	input "onHTTP", "text", title:"Run this HTTP request...", required: false
             	input "delayOn", "number", title: "Delay in minutes", defaultValue: 0, required: false
+                input "onSMSNum", "phone", title: "Send SMS message (phone number)...", required: false
+                input "onSMSMsg", "text", title: "Message to send...", required: false
 			}
         }
         if (!showOptions || showOptions == "2") {
@@ -107,6 +110,8 @@ def pageControl() {
                 href "pageSTDevicesOff", title: "SmartThings Device Control...", description: getDeviceDesc("off")
                 input "offHTTP", "text", title:"Run this HTTP request...", required: false
                 input "delayOff", "number", title: "Delay in minutes", defaultValue: 0, required: false
+                input "offSMSNum", "phone", title: "Send SMS message (phone number)...", required: false
+                input "offSMSMsg", "text", title: "Message to send...", required: false
         	}
         }
     }
@@ -117,13 +122,13 @@ def pageSTDevicesOn(){
 		section ("Switches"){
     		input "onSwitches", "capability.switch", title: "Control these switches...", multiple: true, required: false, submitOnChange:true
         	if (onSwitches){
-        		input "onSwitchesCMD", "enum", title: "Switches command", options:["on":"Turn On","off":"Turn Off"], multiple: false, required: false
+        		input "onSwitchesCMD", "enum", title: "Switches command", options:["on":"Turn on","off":"Turn off", "toggle":"Toggle the switches' on/off state"], multiple: false, required: false
     		}
     	}
     	section ("Dimmers"){
     		input "onDimmers", "capability.switchLevel", title: "Control these dimmers...", multiple: true, required: false, submitOnChange:true
         	if (onDimmers){
-        		input "onDimmersCMD", "enum", title: "Dimmer command", options:["on":"Turn On","off":"Turn Off","set":"Set Level"], multiple: false, required: false, submitOnChange:true
+        		input "onDimmersCMD", "enum", title: "Dimmer command", options:["on":"Turn on","off":"Turn off","set":"Set level", "toggle":"Toggle the dimmers' on/off state"], multiple: false, required: false, submitOnChange:true
    			}
         	if (onDimmersCMD == "set" && onDimmers){
         		input "onDimmersLVL", "number", title: "Dimmer level", description: "Set dimmer level", required: false, defaultValue: 0
@@ -132,7 +137,7 @@ def pageSTDevicesOn(){
         section ("Colored Lights"){
         	input "onColoredLights", "capability.colorControl", title: "Control these colored lights...", multiple: true, required: false, submitOnChange:true
 			if (onColoredLights){
-        		input "onColoredLightsCMD", "enum", title: "Colored lights command", options:["on":"Turn On","off":"Turn Off","set":"Set Color and Level"], multiple: false, required: false, submitOnChange:true
+        		input "onColoredLightsCMD", "enum", title: "Colored lights command", options:["on":"Turn on","off":"Turn off","set":"Set color and level", "toggle":"Toggle the lights' on/off state"], multiple: false, required: false, submitOnChange:true
    			}
             if (onColoredLightsCMD == "set" && onColoredLights){
         		input "onColoredLightsCLR", "enum", title: "Choose a color...", required: false, multiple:false, options: getColorOptions(), submitOnChange:true
@@ -163,13 +168,13 @@ def pageSTDevicesOff(){
 		section ("Switches"){
     		input "offSwitches", "capability.switch", title: "Control these switches...", multiple: true, required: false, submitOnChange:true
         	if (offSwitches){
-        		input "offSwitchesCMD", "enum", title: "Command sent to switches", options:["on":"Turn On","off":"Turn Off"], multiple: false, required: false
+        		input "offSwitchesCMD", "enum", title: "Command sent to switches", options:["on":"Turn on","off":"Turn off", "toggle":"Toggle the switches state"], multiple: false, required: false
     		}
     	}
     	section ("Dimmers"){
     		input "offDimmers", "capability.switchLevel", title: "Control these dimmers...", multiple: true, required: false , submitOnChange:true
         	if (offDimmers){
-        		input "offDimmersCMD", "enum", title: "Dimmer command", options:["on":"Turn On","off":"Turn Off","set":"Set Level"], multiple: false, required: false, submitOnChange:true
+        		input "offDimmersCMD", "enum", title: "Dimmer command", options:["on":"Turn on","off":"Turn off","set":"Set level", "toggle":"Toggle the switches state"], multiple: false, required: false, submitOnChange:true
    			}
         	if (offDimmersCMD == "set" && offDimmers){
         		input "offDimmersLVL", "number", title: "Dimmer level", description: "Set dimmer level", required: false, defaultValue: 0
@@ -178,7 +183,7 @@ def pageSTDevicesOff(){
         section ("Colored Lights"){
         	input "offColoredLights", "capability.colorControl", title: "Control these colored lights...", multiple: true, required: false, submitOnChange:true
 			if (offColoredLights){
-        		input "offColoredLightsCMD", "enum", title: "Colored lights command", options:["on":"Turn On","off":"Turn Off","set":"Set Color and Level"], multiple: false, required: false, submitOnChange:true
+        		input "offColoredLightsCMD", "enum", title: "Colored lights command", options:["on":"Turn on","off":"Turn off","set":"Set color and level", "toggle":"Toggle the switches state"], multiple: false, required: false, submitOnChange:true
    			}
             if (offColoredLightsCMD == "set" && offColoredLights){
         		input "offColoredLightsCLR", "enum", title: "Choose a color...", required: false, multiple:false, options: getColorOptions()
@@ -203,23 +208,38 @@ def pageSTDevicesOff(){
 def pagePanic() {
 	dynamicPage(name: "pagePanic", title: "Panic Scenario Settings", install: false, uninstall: false) {
         section {
-			input "panicSwitchOn", "capability.momentary", title: "Panic ON Switch", multiple: false, required: true, submitOnChange:true
+			input "panicSwitchOn", "capability.momentary", title: "ON Control Switch (On/Off, Momentary)", multiple: false, required: true, submitOnChange:true
           	if (panicSwitchOn){
-            	input "panicSwitchOff", "capability.momentary", title: "Panic OFF Switch", multiple: false, required: false, submitOnChange:true
+            	input "panicSwitchOff", "capability.momentary", title: "OFF Control Switch (On/Off, Momentary)", multiple: false, required: false, submitOnChange:true
             }
         }
         section ("When panic is activated..."){
         	input "alarm", "capability.alarm", title: "Activate alarms...", multiple: true, required: false, submitOnChange:true
+            if (parent.getSonos()){
+            	input "alarmSonos", "capability.musicPlayer", title: "Use Sonos as alarm...", multiple: false , required: false , submitOnChange:true
+			}
             if (alarm){
-            	input "alarmType", "enum", title: "Choose an alarm type", options: ["strobe":"Strobe Light", "siren":"Siren", "both":"Both stobe and siren"], multiple: false
-            	input "alarmTimer", "number", title:"Alarm turns off automatically after (minutes)", required: false 
+            	input "alarmType", "enum", title: "Choose an alarm type", options: ["strobe":"Strobe light", "siren":"Siren", "both":"Both stobe and siren"], multiple: false, required: false  
+            	input "alarmTimer", "number", title:"Alarm turns off automatically after (minutes)", required: false
             }
-	        input "panicSMSnumberOn", "phone", title: "Send SMS message to (phone number)...", required: false
+            if (alarmSonos && parent.getSonos()  && alarmSonos.name.contains("Sonos")){
+            	//Speaker alarm options
+                input "alarmSonosVolume", "number", title:"Sonos alarm volume", required: false
+                input "alarmSonosSound", "enum", title:"Sonos alarm sound", options: [1:"Alarm 1-European Siren", 2:"Alarm 2-Sci-Fi Siren", 3:"Alarm 3-Police Car Siren", 4:"Alarm 4-Red Alert",5:"Custom-User Defined"], multiple: false, required: false, submitOnChange:true 
+                if (alarmSonosSound == "5"){
+                	input "alarmSonosCustom", "text", title:"URL/Location of custom sound...", required: false
+                }
+                input "alarmSonosTimer", "number", title:"Alarm turns off automatically after (seconds)", required: false
+            }
+            if (alarmSonos && parent.getSonos()  && !alarmSonos.name.contains("Sonos")){
+            	paragraph "You have chosen a speaker for your alarm that is not supported. Currently, only Sonos speakers can be used as alarms. Please choose a Sonos speaker."
+            }
+            input "panicSMSnumberOn", "phone", title: "Send SMS message to (phone number)...", required: false
             input "panicSMSMsgOn","text",title: "Message to send...", required: false
         }
         if (panicSwitchOn && panicSwitchOff){
         	section ("When panic is deactivated..."){
-        		if (alarm){
+        		if (alarm || alarmSonos){
             		input "alarmOff", "bool", title: "Turn off alarm?", defaultValue: false
             	}
             	input "panicSMSnumberOff", "phone", title: "Send SMS message to (phone number)...", required: false
@@ -232,7 +252,7 @@ def pagePanic() {
 def pageSpeaker(){
 	dynamicPage(name: "pageSpeaker", title: "Speaker Scenario Settings", install: false, uninstall: false) {
 		section {
-        	input "vDimmerSpeaker", "capability.switchLevel", title: "Alexa Dimmer Switch", multiple: false, required:false
+        	input "vDimmerSpeaker", "capability.switchLevel", title: "Control Switch (Dimmer)", multiple: false, required:false
 			input "speaker", "capability.musicPlayer", title: "Speaker To Control", multiple: false , required: false
 		}
     	section ("Speaker Volume Limits") {        
@@ -276,9 +296,9 @@ def pageSpeaker(){
 		}
         if (!songOptions(1) && parent.getSonos() && speaker.name.contains("Sonos")){
         	section ("Sonos Saved Stations") {
-            	paragraph "There are currently no songs available in the Sonos memory. Ensure you play a "+
-                	"song or station through SmartThings, then come back and the station list should be "+
-                    "available"
+            	paragraph "There are currently no songs available in the Sonos memory. Play a "+
+                	"song or station through SmartThings, then come back to this app and the "+
+                    "station list should be available"
             }
         }
 	}
@@ -287,7 +307,7 @@ def pageSpeaker(){
 def pageThermostat(){
     dynamicPage(name: "pageThermostat", title: "Thermostat Scenario Settings", install: false, uninstall: false) {
         section {
-            input "vDimmerTstat", "capability.switchLevel", title: "Alexa Dimmer Switch", multiple: false, required:false
+            input "vDimmerTstat", "capability.switchLevel", title: "Control Switch (Dimmer)", multiple: false, required:false
             input "tstat", "capability.thermostat", title: "Thermostat To Control", multiple: false , required: false
             input "autoControlTstat", "bool", title: "Control thermostat in 'Auto' mode", defaultValue: false
         }
@@ -377,6 +397,9 @@ def initialize() {
 	if (scenarioType == "Panic"){
 		if (panicSwitchOn){subscribe (panicSwitchOn, "switch.on", "panicOn")}
         if (panicSwitchOff){subscribe (panicSwitchOff, "switch.on", "panicOff")}
+        if (alarmSonos && parent.getSonos() && alarmSonos.name.contains("Sonos") && alarmSonosSound){
+        	getAlarmSound()
+		}
 	}
 }
 //Handlers
@@ -385,7 +408,7 @@ def switchHandler(evt) {
     if (getOkToRun("Control Scenario on/off")) {    
         if (evt.value == "on" && getOkOnOptions()) {
             if (!delayOn || delayOn == 0) {
-            	turnOn()
+                turnOn()
             }
             else {
             	runIn(delayOn*60, turnOn, [overwrite: true])
@@ -402,14 +425,15 @@ def switchHandler(evt) {
 	}
 }
 def turnOn(){
-    if (onPhrase){
-		location.helloHome.execute(onPhrase)
-	}
-	if (onMode) {
-		changeMode(onMode)
-	}
+    if (onPhrase){location.helloHome.execute(onPhrase)}
+	if (onMode) {changeMode(onMode)}
     if (onSwitches && onSwitchesCMD){
-        onSwitches?."$onSwitchesCMD"()
+    	if (onSwitchesCMD == "toggle"){
+    		toggleState(onSwitches)	
+        }
+        else {
+        	onSwitches?."$onSwitchesCMD"()
+        }
     }
     if (onDimmers && onDimmersCMD){
         if (onDimmersCMD == "set"){
@@ -417,6 +441,9 @@ def turnOn(){
         	if (level < 0) {level=0}
         	if (level >100) {level=100}
         	onDimmers?.setLevel(level)
+        }
+        if (onDimmersCMD == "toggle"){
+    		toggleState(onDimmers)	
         }
         else {
         	onDimmers?."$onDimmersCMD"()
@@ -434,13 +461,14 @@ def turnOn(){
             	onColoredLights?.setLevel(level)
             }
         }
+        else if (onColoredLightsCMD == "toggle"){
+    		toggleState(onColoredLights)	
+        }
         else {
         	onColoredLights?."$onColoredLightsCMD"()
-        }
+		}
     }
-    if (onLocks && onLocksCMD){
-    	onLocks?."$onLocksCMD"()
-    }
+    if (onLocks && onLocksCMD){onLocks?."$onLocksCMD"()}
 	if (onHTTP){
     	log.debug "Attempting to run: ${onHTTP}"
         httpGet("${onHTTP}")   
@@ -449,19 +477,19 @@ def turnOn(){
     	log.debug "Setting Smart Home Monitor to ${onSHM}"
         sendLocationEvent(name: "alarmSystemStatus", value: "${onSHM}")
     }
-    if (onGarages && onGaragesCMD){
-    	onGarages?."$onGaragesCMD"()
-    }
+    if (onGarages && onGaragesCMD){onGarages?."$onGaragesCMD"()}
+    if (onSMSNum && onSMSMsg){sendMSG(onSMSNum, onSMSMsg)}
 }
 def turnOff(){
-	if (offPhrase){
-		location.helloHome.execute(offPhrase)
-	}
-	if (offMode) {
-		changeMode(offMode)
-	}
+	if (offPhrase){location.helloHome.execute(offPhrase)}
+	if (offMode) {changeMode(offMode)}
     if (offSwitches && offSwitchesCMD){
-    	offSwitches?."$offSwitchesCMD"()
+    	if (offSwitchesCMD == "toggle"){
+    		toggleState(offSwitches)	
+        }
+        else {
+        	offSwitches?."$offSwitchesCMD"()
+        }
     }
     if (offDimmers && offDimmersCMD){
     	if (offDimmersCMD == "set"){
@@ -469,6 +497,9 @@ def turnOff(){
         	if (level < 0) {level=0}
         	if (level >100) {level=100}
         	offDimmers?.setLevel(level)
+        }
+        if (offDimmersCMD == "toggle"){
+    		toggleState(offDimmers)	
         }
         else {
         	offDimmers?."$offDimmersCMD"()
@@ -486,13 +517,14 @@ def turnOff(){
             	offColoredLights?.setLevel(level)
             }
         }
+        else if (offColoredLightsCMD == "toggle"){
+    		toggleState(offColoredLights)	
+        }
         else {
         	offColoredLights?."$offColoredLightsCMD"()
         }
     }
-    if (offLocks && offLocksCMD){
-    	offLocks?."$offLocksCMD"()
-    }
+    if (offLocks && offLocksCMD){offLocks?."$offLocksCMD"()}
     if (offHTTP){
     	log.debug "Attempting to run: ${offHTTP}"
         httpGet("${offHTTP}")
@@ -501,23 +533,29 @@ def turnOff(){
     	log.debug "Setting Smart Home Monitor to ${offSHM}"
         sendLocationEvent(name: "alarmSystemStatus", value: "${offSHM}")
     }
-    if (offGarages && offGaragesCMD){
-    	offGarages?."$offGaragesCMD"()
-    }
+    if (offGarages && offGaragesCMD){offGarages?."$offGaragesCMD"()}
+    if (offSMSNum && offSMSMsg){sendMSG(offSMSNum,offSMSMSG)}
 }
 //Panic Handlers-----------------------------------------------------------------
 //Panic On
 def panicOn(evt){
 	if (getOkToRun("Panic actions activated")) {
-		if (alarm && alarmType){
+        if (alarm && alarmType){
 			alarmTurnOn()
 			if (alarmTimer && alarmTimer > 0){
 				def delayOff = alarmTimer as int
 				runIn(delayOff*60, alarmTurnOff, [overwrite: true])
 			}
 		}
-		if (panicSMSnumberOn){ 
-			sendMSG(panicSMSnumberOn,panicSMSMsgOn) 	
+        if (alarmSonos && parent.getSonos()  && alarmSonos.name.contains("Sonos") && alarmSonosSound) { 
+			if (alarmSonosVolume){
+            	alarmSonos.setLevel(alarmSonosVolume as int)
+			}
+            alarmSonos.playTrack(state.alarmSound.uri)
+        }
+        if (panicSMSnumberOn){ 
+			def smsTxt = panicSMSMsgOn ? panicSMSMsgOn : "Panic was activated/deactivated without message text input. Please investigate"
+            sendMSG(panicSMSnumberOn, smsTxt) 	
 		}	
 	}
 }
@@ -528,7 +566,8 @@ def panicOff(evt){
 			alarmTurnOff()
 		}
 		if (panicSMSnumberOff){
-			sendMSG(panicSMSnumberOff,panicSMSMsgOff) 	
+			def smsTxt = panicSMSMsgOff ? panicSMSMsgOff : "Panic was activated/deactivated without message text input. Please investigate"
+            sendMSG(panicSMSnumberOff, smsTxt) 	
 		}
 	}
 }
@@ -539,12 +578,6 @@ def alarmTurnOn(){
 //AlarmOff
 def alarmTurnOff(){
 	alarm?.off()
-}
-//SendSMS
-def sendMSG(num, msg){
-	def smsTxt = msg ? msg : "Panic was activated/deactivated without message text input. Please investigate"
-    log.debug "Message '${smsTxt}' sent to ${num}"
-    sendSms(num,"${smsTxt}")  	
 }
 //Speaker Handlers-----------------------------------------------------------------
 def speakerControl(cmd,song){
@@ -620,8 +653,6 @@ def controlSong(evt){
 def thermoOffHandler(evt){
 	if (getOkToRun("Thermostat turned off")) {
    		tstat.off()
-            //act as a momentary switch, turns off thermostat with dimmer off and then immediately turns back on dimmer in case of manually turing on tstat
-		vDimmerTstat?.on()
 	}
 }
 //Thermostat mode changes
@@ -694,10 +725,10 @@ def getOkToRun(module){
     result
 }
 def getOkOnOptions(){
-	def result = (!showOptions || showOptions == "1") && (onPhrase || onMode || onSwitches || onDimmers || onColoredLights || onLocks || onGarages || onHTTP || onSHM)
+	def result = (!showOptions || showOptions == "1") && (onPhrase || onMode || onSwitches || onDimmers || onColoredLights || onLocks || onGarages || onHTTP || onSHM || (onSMSNum && onSMSMsg))
 }
 def getOkOffOptions(){
-	def result = (!showOptions || showOptions == "2") && (offPhrase || offMode || offSwitches || offDimmers || offColoredLights || offLocks || offGarages || offHTTP || offSHM)
+	def result = (!showOptions || showOptions == "2") && (offPhrase || offMode || offSwitches || offDimmers || offColoredLights || offLocks || offGarages || offHTTP || offSHM || (offSMSNum && offSMSMsg))
 }
 def changeMode(newMode) {
     if (location.mode != newMode) {
@@ -785,12 +816,12 @@ def getDeviceDesc(type){
     if (cLvl < 0) {cLvl = 0}
     if (cLvl >100) {cLvl=100}
     if (switches || dimmers || cLights || locks || garages) {
-    	result = switches ? "${switches} set to turn ${switchCMD}" : ""
+    	result = switches  ? "${switches} set to ${switchCMD}" : ""
         result += result && dimmers ? "\n" : ""
-        result += dimmers && dimmerCMD != "set" ? "${dimmers} set to turn ${dimmerCMD}" : ""
+        result += dimmers && dimmerCMD != "set" ? "${dimmers} set to ${dimmerCMD}" : ""
         result += dimmers && dimmerCMD == "set" ? "${dimmers} set to ${lvl}%" : ""	
-		result += result && cLights ? "\n" : ""
-    	result += cLights && cLightCMD != "set" ? "${cLights} set to turn ${cLightCMD}":""
+        result += result && cLights ? "\n" : ""
+    	result += cLights && cLightCMD != "set" ? "${cLights} set to ${cLightCMD}":""
         result += cLights && cLightCMD == "set" ? "${cLights} set to " : ""
         result += cLights && cLightCMD == "set" && clr ? "${clr} and " : ""
         result += cLights && cLightCMD == "set" ? "${cLvl}%" : ""
@@ -885,7 +916,7 @@ private setColoredLights(switches, color, level){
 		case "Red":
 			hueColor = 100
 			break;
-		case "User Defined":
+		case "Custom-User Defined":
         	hueColor = hueUserDefined ? hueUserDefined : 0
             satLevel = satUserDefined ? satUserDefined : 0
             if (hueColor>100){hueColor=100}
@@ -964,10 +995,46 @@ def saveSelectedSong(slot, song) {
 		log.error t
 	}
 }
+//SendSMS
+def sendMSG(num, msg){
+    log.debug "SMS Message '${msg}' sent to ${num}"
+    sendSms(num,"${msg}")  	
+}
+//Toggle states (off -> on, on -> off)
+def toggleState(swDevices){
+	swDevices.each{
+    	def currState = it.currentValue("switch")
+        def newstate = currState == "off" ? "on" : "off"
+        it?."$newstate"()
+    }
+}
+//Get Sonos Alarm Sound uri
+def getAlarmSound(){
+	def soundUri
+    def soundLength = alarmSonosTimer && alarmSonosTimer < 60 ? alarmSonosTimer : 60
+    switch(alarmSonosSound) {
+    	case "1":
+            soundUri = [uri: "https://raw.githubusercontent.com/MichaelStruck/SmartThings/master/Other-SmartApps/AlexaHelper/AlarmSirens/AlarmSiren1.mp3", duration: "${soundLength}"]
+        	break
+        case "2":
+            soundUri = [uri: "https://raw.githubusercontent.com/MichaelStruck/SmartThings/master/Other-SmartApps/AlexaHelper/AlarmSirens/AlarmSiren2.mp3", duration: "${soundLength}"]
+        	break
+        case "3":
+            soundUri = [uri: "https://raw.githubusercontent.com/MichaelStruck/SmartThings/master/Other-SmartApps/AlexaHelper/AlarmSirens/AlarmSiren3.mp3", duration: "${soundLength}"]
+        	break
+		case "4":
+            soundUri = [uri: "https://raw.githubusercontent.com/MichaelStruck/SmartThings/master/Other-SmartApps/AlexaHelper/AlarmSirens/AlarmSiren4.mp3", duration: "${soundLength}"]
+        	break
+        case "5":
+        	soundUri =[uri: "${alarmSonosCustom}", duration: "${soundLength}"]
+            break
+    }
+    state.alarmSound = soundUri
+}
 //Version
 private def textVersion() {
-    def text = "Child App Version: 2.1.0a (01/20/2016)"
+    def text = "Child App Version: 2.2.0 (01/22/2016)"
 }
 private def versionInt(){
-	def text = 210
+	def text = 220
 }
