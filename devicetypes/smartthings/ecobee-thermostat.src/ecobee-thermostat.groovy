@@ -33,11 +33,20 @@ metadata {
 		// capability "Presence Sensor"
         capability "Motion Sensor"
 
+		command "setTemperature"
+        command "auxHeatOnly"
+
 		command "generateEvent"
 		command "raiseSetpoint"
 		command "lowerSetpoint"
 		command "resumeProgram"
 		command "switchMode"
+        
+        command "setThermostatProgram"
+        command "home"
+        command "sleep"
+        command "away"
+        
 
 		// Capability "Thermostat"
         attribute "temperatureScale", "string"
@@ -46,7 +55,12 @@ metadata {
         attribute "apiConnected","string"
         attribute "averagedTemperature","number"
 
-
+		attribute "currentProgram","string"
+        attribute "currentProgramId","string"
+		
+        attribute "weatherSymbol", "string"
+        
+        attribute "debugEventFromParent","string"
 
 	/*
 		attribute "thermostatName", "string"
@@ -75,7 +89,7 @@ metadata {
 		attribute "programCoolTempDisplay", "string"
 		attribute "programHeatTempDisplay", "string"
 		attribute "programEndTimeMsg", "string"
-        */
+        
 		attribute "weatherDateTime", "string"
 		attribute "weatherSymbol", "string"
 		attribute "weatherStation", "string"
@@ -90,7 +104,7 @@ metadata {
 		attribute "weatherTempLow", "string"
 		attribute "weatherTempHighDisplay", "string"
 		attribute "weatherTempLowDisplay", "string"
-        /*
+        
 		attribute "plugName", "string"
 		attribute "plugState", "string"
 		attribute "plugSettings", "string"
@@ -159,8 +173,7 @@ metadata {
 		*/
 
 
-        command "setTemperature"
-        command "auxHeatOnly"
+      
 
         /*
 		command "setFanMinOnTime"
@@ -372,7 +385,24 @@ metadata {
 			state "resume", action:"resumeProgram", nextState: "updating", label:'Resume Schedule', icon:"st.Office.office7"
 			state "updating", label:"Working", icon: "st.samsung.da.oven_ic_send"
 		}
+        valueTile("currentProgram", "device.currentProgramName", height: 2, width: 4, inactiveLabel: false, decoration: "flat") {
+			state "default", label:'Comfort Setting:\n${currentValue}' 
+		}
+        
+		standardTile("setHome", "device.setHome", width: 2, height: 2, inactiveLabel: false, decoration: "flat") {
+			state "home", action:"home", nextState: "updating", label:'Set Home', icon:"st.Home.home4"
+			state "updating", label:"Working...", icon: "st.samsung.da.oven_ic_send"
+		}
+        
+        standardTile("setAway", "device.setAway", width: 2, height: 2, inactiveLabel: false, decoration: "flat") {
+			state "away", action:"away", nextState: "updating", label:'Set Away', icon:"st.Home.home1"
+			state "updating", label:"Working...", icon: "st.samsung.da.oven_ic_send"
+		}
 
+        standardTile("setSleep", "device.setSleep", width: 2, height: 2, inactiveLabel: false, decoration: "flat") {
+			state "sleep", action:"sleep", nextState: "updating", label:'Set Sleep', icon:"st.Bedroom.bedroom2"
+			state "updating", label:"Working...", icon: "st.samsung.da.oven_ic_send"
+		}
 
         standardTile("operatingState", "device.thermostatOperatingState", width: 2, height: 2, inactiveLabel: false, decoration: "flat") {
 			//state "idle", label: "Idle", backgroundColor:"#44b621", icon: "st.nest.empty"
@@ -475,7 +505,9 @@ metadata {
             "coolSliderControl", "coolingSetpoint",
             "heatSliderControl", "heatingSetpoint",
             "currentStatus", "apiStatus",
-            "refresh"
+            "currentProgram", "refresh",
+            "setHome", "setAway", "setSleep"
+            
             ])
 	}
 
@@ -494,7 +526,7 @@ metadata {
 
 // parse events into attributes
 def parse(String description) {
-	if (parent.settings.debugLevel > 3) { log.debug "parse() --> Parsing '${description}'" }
+	if ( debugLevel(3) ) { log.debug "parse() --> Parsing '${description}'" }
 	// Not needed for cloud connected devices
 
 }
@@ -518,7 +550,7 @@ void poll() {
 
 def generateEvent(Map results) {
 	if ( debugLevel(4) ) { log.debug "generateEvent(): parsing data $results" }
-    if ( debugLevel(1) ) { log.info "Debug level of parent: ${parent.settings.debugLevel}" }
+    if ( debugLevel(1) ) { log.info "Debug level of parent: ${parent.settings?.debugLevel}" }
 	def linkText = getLinkText(device)
 
 	if(results) {
@@ -553,8 +585,8 @@ def generateEvent(Map results) {
 			if ( debugLevel(5) ) { log.debug "Out of loop, calling sendevent(${event})" }
 			sendEvent(event)
 		}
-		generateSetpointEvent ()
-		generateStatusEvent ()
+		generateSetpointEvent()
+		generateStatusEvent()
 	}
 }
 
@@ -950,6 +982,102 @@ def auto() {
 	generateSetpointEvent()
 	generateStatusEvent()
 }
+
+
+// Handle Comfort Settings
+def home() {
+	// Change the Comfort Setting to Home
+    if ( debugLevel(4) ) { log.debug "home()" }
+	def deviceId = device.deviceNetworkId.split(/\./).last()    
+    
+    if ( debugLevel(5) ) { log.debug "Before calling parent.setProgram()" }
+	
+    def sendHoldType = whatHoldType()
+    def program = "home"
+  
+    if ( parent.setProgram(this, program, deviceId, sendHoldType) ) {
+		generateProgramEvent(program)
+        runIn(15, "poll")        
+	} else {
+		if ( debugLevel(3) ) { log.debug "Error setting new comfort setting ${program}." }
+		def currentProgram = device.currentState("currentProgramId")?.value
+		generateProgramEvent(currentProgram, program) // reset the tile back
+	}
+    
+    if ( debugLevel(5) ) { log.debug "After calling parent.setProgram()" }
+    
+	generateSetpointEvent()
+	generateStatusEvent()    
+}
+
+def away() {
+	// Change the Comfort Setting to Away
+    if ( debugLevel(4) ) { log.debug "away() entered" }
+	def deviceId = device.deviceNetworkId.split(/\./).last()
+ 
+ 	if ( debugLevel(5) ) { log.debug "Before calling parent.setProgram()" }
+    
+    def sendHoldType = whatHoldType()
+    def program = "away"
+    
+    if ( parent.setProgram(this, program, deviceId, sendHoldType) ) {
+		generateProgramEvent(program)
+        runIn(10, "poll")        
+	} else {
+		if ( debugLevel(3) ) { log.debug "Error setting new comfort setting ${program}." }
+		def currentProgram = device.currentState("currentProgramId")?.value
+		generateProgramEvent(currentProgram, program) // reset the tile back
+	}
+    
+    if ( debugLevel(5) ) { log.debug "After calling parent.setProgram()" }
+    
+	generateSetpointEvent()
+	generateStatusEvent()    
+}
+
+def sleep() {
+	// Change the Comfort Setting to Sleep
+    if ( debugLevel(4) ) { log.debug "sleep()" }
+	def deviceId = device.deviceNetworkId.split(/\./).last()
+ 	
+    if ( debugLevel(5) ) { log.debug "Before calling parent.setProgram()" }
+    
+    def sendHoldType = whatHoldType()
+    def program = "sleep"
+   
+    if ( parent.setProgram(this, program, deviceId, sendHoldType) ) {
+		generateProgramEvent(program)
+        runIn(10, "poll")        
+	} else {
+		if ( debugLevel(3) ) { log.debug "Error setting new comfort setting ${program}." }
+		def currentProgram = device.currentState("currentProgramId")?.value
+		generateProgramEvent(currentProgram, program) // reset the tile back
+	}
+    
+    if ( debugLevel(5) ) { log.debug "After calling parent.setProgram()" }
+    
+	generateSetpointEvent()
+	generateStatusEvent()    
+}
+
+def generateProgramEvent(program, failedProgram=null) {
+
+	if ( debugLevel(3) ) { log.debug "Generate generateProgramEvent Event: program ${program}" }
+
+	sendEvent("name":"thermostatStatus", "value":"Setpoint updating...", "description":statusText, displayed: false)
+	sendEvent("name":"currentProgramName", "value":program.capitalize())
+    sendEvent("name":"currentProgramId", "value":program)
+    
+    def tileName = ""
+    
+    if (!failedProgram) {
+    	tileName = "set" + program.capitalize()    	
+    } else {
+    	tileName = "set" + failedProgram.capitalize()    	
+    }
+    sendEvent("name":"${tileName}", "value":"${program}", descriptionText: "${tileName} is done", displayed: false, isStateChange: true)
+}
+
 
 def fanOn() {
 	if ( debugLevel(3) ) { log.debug "fanOn(): Not yet implemented!" }
