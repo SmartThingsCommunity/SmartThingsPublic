@@ -2,7 +2,7 @@
  *  Alexa Helper-Child
  *
  *  Copyright © 2016 Michael Struck
- *  Version 2.2.0 1/22/16
+ *  Version 2.2.0a 1/23/16
  * 
  *  Version 1.0.0 - Initial release of child app
  *  Version 1.1.0 - Added framework to show version number of child app and copyright
@@ -13,7 +13,7 @@
  *  Version 2.0.0 - Added in speaker and thermostat scenarios from main app to allow for more than one of these devices
  *  Version 2.0.1 - Fixed an issue with the getTimeOk routine
  *  Version 2.1.0 - Many changes; added switches, dimmers and colored lights as control devices. Modified Thermostat logic and modified GUI
- *  Version 2.2.0 - Added SMS to on/off control scenarios, and allow  'toggle' to change the lights; added Sonos as an alarm type
+ *  Version 2.2.0a - Added SMS to on/off control scenarios, and allow  'toggle' to change the lights; added Sonos as an alarm type
  * 
  *  Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except
  *  in compliance with the License. You may obtain a copy of the License at:
@@ -253,7 +253,7 @@ def pageSpeaker(){
 	dynamicPage(name: "pageSpeaker", title: "Speaker Scenario Settings", install: false, uninstall: false) {
 		section {
         	input "vDimmerSpeaker", "capability.switchLevel", title: "Control Switch (Dimmer)", multiple: false, required:false
-			input "speaker", "capability.musicPlayer", title: "Speaker To Control", multiple: false , required: false
+			input "speaker", "capability.musicPlayer", title: "Speaker To Control", multiple: false , required: false, submitOnChange:true
 		}
     	section ("Speaker Volume Limits") {        
         	input "upLimitSpeaker", "number", title: "Volume Upper Limit", required: false
@@ -264,7 +264,7 @@ def pageSpeaker(){
         	input "nextSwitch", "capability.momentary", title: "Next Track Switch", multiple: false, required: false
        		input "prevSwitch", "capability.momentary", title: "Previous Track Switch", multiple: false, required: false
     	}
-        if (songOptions(1) && parent.getSonos() && speaker.name.contains("Sonos")){
+        if (speaker && songOptions(1) && parent.getSonos() && speaker.name.contains("Sonos")){
 			section ("Sonos Saved Station 1"){
 				input "song1Switch", "capability.momentary", title: "Saved Station Switch #1", multiple: false, required: false, submitOnChange:true
 				if (song1Switch){
@@ -294,7 +294,7 @@ def pageSpeaker(){
 				}
 			}
 		}
-        if (!songOptions(1) && parent.getSonos() && speaker.name.contains("Sonos")){
+        if (speaker && !songOptions(1) && parent.getSonos() && speaker.name.contains("Sonos")){
         	section ("Sonos Saved Stations") {
             	paragraph "There are currently no songs available in the Sonos memory. Play a "+
                 	"song or station through SmartThings, then come back to this app and the "+
@@ -758,10 +758,10 @@ def scenarioDesc(){
     	desc = vDimmerSpeaker && speaker ? "'${vDimmerSpeaker}' dimmer controls '${speaker}' speaker": desc
         desc += nextSwitch ? "\n'${nextSwitch}' switch activates Next Track" : ""
         desc += prevSwitch ? "\n'${prevSwitch}' switch activates Previous Track" : ""
-        desc += parent.getSonos() && speaker.name.contains("Sonos") && song1Switch && song1Station ?"\n'${song1Switch}' switch activates '${song1Station}'":""
-        desc += parent.getSonos() && speaker.name.contains("Sonos") && song2Switch && song2Station ?"\n'${song2Switch}' switch activates '${song2Station}'":""
-        desc += parent.getSonos() && speaker.name.contains("Sonos") && song3Switch && song3Station ?"\n'${song3Switch}' switch activates '${song3Station}'":""
-        desc += parent.getSonos() && speaker.name.contains("Sonos") && song4Switch && song4Station ?"\n'${song4Switch}' switch activates '${song4Station}'":""
+        desc += parent.getSonos() && (speaker && speaker.name.contains("Sonos")) && song1Switch && song1Station ?"\n'${song1Switch}' switch activates '${song1Station}'":""
+        desc += parent.getSonos() && (speaker && speaker.name.contains("Sonos")) && song2Switch && song2Station ?"\n'${song2Switch}' switch activates '${song2Station}'":""
+        desc += parent.getSonos() && (speaker && speaker.name.contains("Sonos")) && song3Switch && song3Station ?"\n'${song3Switch}' switch activates '${song3Station}'":""
+        desc += parent.getSonos() && (speaker && speaker.name.contains("Sonos")) && song4Switch && song4Station ?"\n'${song4Switch}' switch activates '${song4Station}'":""
     }
     if (scenarioType=="Thermostat"){
     	desc = vDimmerTstat && tstat ? "'${vDimmerTstat}' dimmer controls '${tstat}' thermostat" : desc
@@ -1033,7 +1033,7 @@ def getAlarmSound(){
 }
 //Version
 private def textVersion() {
-    def text = "Child App Version: 2.2.0 (01/22/2016)"
+    def text = "Child App Version: 2.2.0a (01/22/2016)"
 }
 private def versionInt(){
 	def text = 220
