@@ -2,11 +2,12 @@
  *  Alexa Switch
  *
  *  Copyright 2016 Michael Struck
- *  Version 2.0.0 1/21/16
+ *  Version 2.0.1 1/23/16
  *
  *  Version 1.0.0 - Initial release
  *  Version 1.1.0 - Updated the interface to better match SmartThings dimmers (thanks to @BoruGee)
  *  Version 2.0.0 - Updated to allow for sending state change regardless of switch/dimmer status;changed name of device
+ *  Version 2.0.1 - No longer on/off commands sent to dimmer when level changes 
  * 
  *  Uses code from SmartThings
  *
@@ -89,11 +90,9 @@ def setLevel(val){
     
     if (val == 0){ 
     	sendEvent(name:"level",value:val)
-    	off()
     }
     else
     {
-    	on()
     	sendEvent(name:"level",value:val)
     	sendEvent(name:"switch.setLevel",value:val)
     }
