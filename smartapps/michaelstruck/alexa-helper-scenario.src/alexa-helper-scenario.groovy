@@ -1033,7 +1033,7 @@ def getAlarmSound(){
 }
 //Version
 private def textVersion() {
-    def text = "Child App Version: 2.2.0a (01/22/2016)"
+    def text = "Child App Version: 2.2.0a (01/23/2016)"
 }
 private def versionInt(){
 	def text = 220
