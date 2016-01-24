@@ -1487,7 +1487,7 @@ private Boolean readyForAuthRefresh() {
 
 private debugLevel(level=3) {
 	def debugLvlNum = settings.debugLevel?.toInteger() ?: 3
-    def wantedLvl = level.?toInteger()
+    def wantedLvl = level?.toInteger()
     
     return ( debugLvlNum >= wantedLvl )
 }
