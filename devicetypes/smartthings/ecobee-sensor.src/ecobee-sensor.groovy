@@ -143,8 +143,8 @@ def generateActivityFeedsEvent(notificationMessage) {
 
 
 private debugLevel(level=3) {
-	def debugLvlNum = parent.settings.debugLevel.toInteger() ?: 3
-    def wantedLvl = level.toInteger()
+	def debugLvlNum = parent.settings.debugLevel?.toInteger() ?: 3
+    def wantedLvl = level?.toInteger()
     
     return ( debugLvlNum >= wantedLvl )
 }
