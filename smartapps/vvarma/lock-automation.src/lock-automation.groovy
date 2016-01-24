@@ -19,7 +19,7 @@ definition(
     name: "Lock Automation",
  	namespace: "vvarma",
     author: "Vikash Varma",
-    description: "Manage authorized users and send notification when lock is unlocked. Automatically lock it based on elapsed time or no motion detected near the lock",
+    description: "Manage authorized users and send notification when lock is unlocked. Automatically lock it based on elapsed time or when no motion detected near the lock",
     category: "Safety & Security",
     iconUrl: "http://ecx.images-amazon.com/images/I/51lIeDU229L._SL1500_.jpg",
     iconX2Url: "http://ecx.images-amazon.com/images/I/51lIeDU229L._SL1500_.jpg",
