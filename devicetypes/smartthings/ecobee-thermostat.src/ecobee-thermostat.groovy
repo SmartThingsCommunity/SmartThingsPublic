@@ -767,7 +767,7 @@ void resumeProgram() {
 	def deviceId = device.deviceNetworkId.split(/\./).last()
 	if (parent.resumeProgram(this, deviceId)) {
 		sendEvent("name":"thermostatStatus", "value":"Setpoint updating...", "description":statusText, displayed: false)
-		runIn(5, "poll")
+		runIn(15, "poll")
 		if ( debugLevel(5) ) { log.debug "resumeProgram() is done" }
 		sendEvent("name":"resumeProgram", "value":"resume", descriptionText: "resumeProgram is done", displayed: false, isStateChange: true)
 	} else {
@@ -985,10 +985,38 @@ def auto() {
 
 
 // Handle Comfort Settings
+def setThermostatProgram(program, holdType=null) {
+	// Change the Comfort Setting to Home
+    LOG("setThermostatProgram: program: ${program}  holdType: ${holdType}", 4)
+	def deviceId = device.deviceNetworkId.split(/\./).last()    
+
+	LOG("Before calling parent.setProgram()", 5)
+	
+    def sendHoldType = holdType ?: whatHoldType()
+    
+  
+    if ( parent.setProgram(this, program, deviceId, sendHoldType) ) {
+		generateProgramEvent(program)
+        runIn(15, "poll")        
+	} else {
+    	LOG("Error setting new comfort setting ${program}.", 2, null, "warn")
+		def currentProgram = device.currentState("currentProgramId")?.value
+		generateProgramEvent(currentProgram, program) // reset the tile back
+	}
+ 
+ 	LOG("After calling parent.setProgram()", 5)
+    
+	generateSetpointEvent()
+	generateStatusEvent()    
+}
+
+
 def home() {
 	// Change the Comfort Setting to Home
-    if ( debugLevel(4) ) { log.debug "home()" }
-	def deviceId = device.deviceNetworkId.split(/\./).last()    
+    LOG("home()", 5)
+    setThermostatProgram("home")
+
+	/* def deviceId = device.deviceNetworkId.split(/\./).last()    
     
     if ( debugLevel(5) ) { log.debug "Before calling parent.setProgram()" }
 	
@@ -1008,11 +1036,14 @@ def home() {
     
 	generateSetpointEvent()
 	generateStatusEvent()    
+    */
 }
 
 def away() {
 	// Change the Comfort Setting to Away
-    if ( debugLevel(4) ) { log.debug "away() entered" }
+    LOG("away()", 5)
+    setThermostatProgram("away")
+    /*
 	def deviceId = device.deviceNetworkId.split(/\./).last()
  
  	if ( debugLevel(5) ) { log.debug "Before calling parent.setProgram()" }
@@ -1033,10 +1064,15 @@ def away() {
     
 	generateSetpointEvent()
 	generateStatusEvent()    
+    */
 }
 
 def sleep() {
-	// Change the Comfort Setting to Sleep
+	// Change the Comfort Setting to Sleep    
+    LOG("sleep()", 5)
+    setThermostatProgram("sleep")
+    
+    /*
     if ( debugLevel(4) ) { log.debug "sleep()" }
 	def deviceId = device.deviceNetworkId.split(/\./).last()
  	
@@ -1058,6 +1094,7 @@ def sleep() {
     
 	generateSetpointEvent()
 	generateStatusEvent()    
+    */
 }
 
 def generateProgramEvent(program, failedProgram=null) {
@@ -1666,6 +1703,30 @@ private debugLevel(level=3) {
     def wantedLvl = level.toInteger()
     
     return ( debugLvlNum >= wantedLvl )
+}
+
+
+
+private def LOG(message, level=3, child=null, logType="debug", event=false, displayEvent=false) {
+	def prefix = ""
+	if ( parent.settings.debugLevel?.toInteger() == 5 ) { prefix = "LOG: " }
+	if ( debugLevel(level) ) { 
+    	log."${logType}" "${prefix}${message}"
+        // log.debug message
+        if (event) { debugEvent(message, displayEvent) }        
+	}    
+}
+
+
+private def debugEvent(message, displayEvent = false) {
+
+	def results = [
+		name: "appdebug",
+		descriptionText: message,
+		displayed: displayEvent
+	]
+	if ( debugLevel(4) ) { log.debug "Generating AppDebug Event: ${results}" }
+	sendEvent (results)
 }
 
 def getTempColors() {

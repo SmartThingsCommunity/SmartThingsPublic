@@ -148,3 +148,27 @@ private debugLevel(level=3) {
     
     return ( debugLvlNum >= wantedLvl )
 }
+
+
+
+private def LOG(message, level=3, child=null, logType="debug", event=false, displayEvent=false) {
+	def prefix = ""
+	if ( parent.settings.debugLevel?.toInteger() == 5 ) { prefix = "LOG: " }
+	if ( debugLevel(level) ) { 
+    	log."${logType}" "${prefix}${message}"
+        // log.debug message
+        if (event) { debugEvent(message, displayEvent) }        
+	}    
+}
+
+
+private def debugEvent(message, displayEvent = false) {
+
+	def results = [
+		name: "appdebug",
+		descriptionText: message,
+		displayed: displayEvent
+	]
+	if ( debugLevel(4) ) { log.debug "Generating AppDebug Event: ${results}" }
+	sendEvent (results)
+}
