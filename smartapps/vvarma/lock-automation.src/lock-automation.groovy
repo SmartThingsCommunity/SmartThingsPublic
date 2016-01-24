@@ -23,7 +23,6 @@ definition(
     category: "Safety & Security",
     iconUrl: "http://ecx.images-amazon.com/images/I/51lIeDU229L._SL1500_.jpg",
     iconX2Url: "http://ecx.images-amazon.com/images/I/51lIeDU229L._SL1500_.jpg",
-    oauth: true
 )
 import groovy.json.JsonSlurper
 
