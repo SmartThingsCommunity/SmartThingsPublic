@@ -2,7 +2,7 @@
  *  Alexa Helper-Child
  *
  *  Copyright © 2016 Michael Struck
- *  Version 2.2.0a 1/23/16
+ *  Version 2.2.1 1/24/16
  * 
  *  Version 1.0.0 - Initial release of child app
  *  Version 1.1.0 - Added framework to show version number of child app and copyright
@@ -14,6 +14,7 @@
  *  Version 2.0.1 - Fixed an issue with the getTimeOk routine
  *  Version 2.1.0 - Many changes; added switches, dimmers and colored lights as control devices. Modified Thermostat logic and modified GUI
  *  Version 2.2.0a - Added SMS to on/off control scenarios, and allow  'toggle' to change the lights; added Sonos as an alarm type
+ *  Version 2.2.1 - Code and syntax optimization; added routine to turn off Sonos speaker if used as alarm
  * 
  *  Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except
  *  in compliance with the License. You may obtain a copy of the License at:
@@ -208,9 +209,9 @@ def pageSTDevicesOff(){
 def pagePanic() {
 	dynamicPage(name: "pagePanic", title: "Panic Scenario Settings", install: false, uninstall: false) {
         section {
-			input "panicSwitchOn", "capability.momentary", title: "ON Control Switch (On/Off, Momentary)", multiple: false, required: true, submitOnChange:true
+			input "panicSwitchOn", "capability.momentary", title: "ON Control Switch (Momentary)", multiple: false, required: true, submitOnChange:true
           	if (panicSwitchOn){
-            	input "panicSwitchOff", "capability.momentary", title: "OFF Control Switch (On/Off, Momentary)", multiple: false, required: false, submitOnChange:true
+            	input "panicSwitchOff", "capability.momentary", title: "OFF Control Switch (Momentary)", multiple: false, required: false, submitOnChange:true
             }
         }
         section ("When panic is activated..."){
@@ -253,41 +254,41 @@ def pageSpeaker(){
 	dynamicPage(name: "pageSpeaker", title: "Speaker Scenario Settings", install: false, uninstall: false) {
 		section {
         	input "vDimmerSpeaker", "capability.switchLevel", title: "Control Switch (Dimmer)", multiple: false, required:false
-			input "speaker", "capability.musicPlayer", title: "Speaker To Control", multiple: false , required: false, submitOnChange:true
-		}
+            input "speaker", "capability.musicPlayer", title: "Speaker To Control", multiple: false , required: false, submitOnChange:true
+        }
     	section ("Speaker Volume Limits") {        
         	input "upLimitSpeaker", "number", title: "Volume Upper Limit", required: false
     		input "lowLimitSpeaker", "number", title: "Volume  Lower Limit", required: false
         	input "speakerInitial", "number", title: "Volume When Speaker Turned On", required: false
 		}
 		section ("Speaker Track Controls") {    
-        	input "nextSwitch", "capability.momentary", title: "Next Track Switch", multiple: false, required: false
-       		input "prevSwitch", "capability.momentary", title: "Previous Track Switch", multiple: false, required: false
+        	input "nextSwitch", "capability.momentary", title: "Next Track Switch (Momentary)", multiple: false, required: false
+       		input "prevSwitch", "capability.momentary", title: "Previous Track Switch (Momentary)", multiple: false, required: false
     	}
         if (speaker && songOptions(1) && parent.getSonos() && speaker.name.contains("Sonos")){
 			section ("Sonos Saved Station 1"){
-				input "song1Switch", "capability.momentary", title: "Saved Station Switch #1", multiple: false, required: false, submitOnChange:true
+				input "song1Switch", "capability.momentary", title: "Saved Station Switch #1 (Momentary)", multiple: false, required: false, submitOnChange:true
 				if (song1Switch){
 					input "song1Station", "enum", title: "Song/Station #1", description: "Tap to select recently played song/station", multiple: false, 
 						required: false, options: songOptions(1)
 				}
 			}
 			section ("Sonos Saved Station 2"){
-				input "song2Switch", "capability.momentary", title: "Saved Station Switch #2", multiple: false, required: false, submitOnChange:true
+				input "song2Switch", "capability.momentary", title: "Saved Station Switch #2 (Momentary)", multiple: false, required: false, submitOnChange:true
 				if (song2Switch){
 					input "song2Station", "enum", title: "Song/Station #2", description: "Tap to select recently played song/station", multiple: false, 
 						required: false, options: songOptions(2)
 				}
 			}
 			section ("Sonos Saved Station 3"){
-				input "song3Switch", "capability.momentary", title: "Saved Station Switch #3", multiple: false, required: false, submitOnChange:true
+				input "song3Switch", "capability.momentary", title: "Saved Station Switch #3 (Momentary)", multiple: false, required: false, submitOnChange:true
 				if (song3Switch){
 					input "song3Station", "enum", title: "Song/Station #3", description: "Tap to select recently played song/station", multiple: false, 
 						required: false, options: songOptions(3)
 				}
 			}
 			section ("Sonos Saved Station 4"){
-				input "song4Switch", "capability.momentary", title: "Saved Station Switch #4", multiple: false, required: false, submitOnChange:true
+				input "song4Switch", "capability.momentary", title: "Saved Station Switch #4 (Momentary)", multiple: false, required: false, submitOnChange:true
 				if (song3Switch){
                 	input "song4Station", "enum", title: "Song/Station #4", description: "Tap to select recently played song/station", multiple: false, 
 						required: false, options: songOptions(4)
@@ -320,14 +321,14 @@ def pageThermostat(){
             input "coolingSetpoint", "number", title: "Cooling setpoint", required: false
         }
          section ("Thermostat Mode Controls") {
-            input "heatingSwitch", "capability.momentary", title: "Heating Mode Switch", multiple: false, required: false
-            input "coolingSwitch", "capability.momentary", title: "Cooling Mode Switch", multiple: false, required: false
-            input "autoSwitch", "capability.momentary", title: "Auto Mode Switch", multiple: false, required: false
+            input "heatingSwitch", "capability.momentary", title: "Heating Mode Switch (Momentary)", multiple: false, required: false
+            input "coolingSwitch", "capability.momentary", title: "Cooling Mode Switch (Momentary)", multiple: false, required: false
+            input "autoSwitch", "capability.momentary", title: "Auto Mode Switch (Momentary)", multiple: false, required: false
         }
         if (parent.getNest()){
             section ("Nest Home/Away Controls"){
-                input "nestHome", "capability.momentary", title: "Home Mode Switch", multiple: false, required: false
-                input "nestAway", "capability.momentary", title: "Away Mode Switch", multiple: false, required: false
+                input "nestHome", "capability.momentary", title: "Home Mode Switch (Momentary)", multiple: false, required: false
+                input "nestAway", "capability.momentary", title: "Away Mode Switch (Momentary)", multiple: false, required: false
             }
         }
     }
@@ -407,20 +408,10 @@ def initialize() {
 def switchHandler(evt) {
     if (getOkToRun("Control Scenario on/off")) {    
         if (evt.value == "on" && getOkOnOptions()) {
-            if (!delayOn || delayOn == 0) {
-                turnOn()
-            }
-            else {
-            	runIn(delayOn*60, turnOn, [overwrite: true])
-            }
+            !delayOn || delayOn == 0 ? turnOn() : runIn(delayOn*60, turnOn, [overwrite: true])
     	} 
     	else if (evt.value == "off" && getOkOffOptions()) {
-        	if (!delayOff || delayOff == 0) {
-            	turnOff()
-            }
-            else {
-            	runIn(delayOff*60, turnOff, [overwrite: true])
-            }
+        	!delayOff || delayOff == 0 ? turnOff() : runIn(delayOff*60, turnOff, [overwrite: true])
     	}
 	}
 }
@@ -428,12 +419,7 @@ def turnOn(){
     if (onPhrase){location.helloHome.execute(onPhrase)}
 	if (onMode) {changeMode(onMode)}
     if (onSwitches && onSwitchesCMD){
-    	if (onSwitchesCMD == "toggle"){
-    		toggleState(onSwitches)	
-        }
-        else {
-        	onSwitches?."$onSwitchesCMD"()
-        }
+    	onSwitchesCMD == "toggle" ? toggleState(onSwitches) : onSwitches?."$onSwitchesCMD"()
     }
     if (onDimmers && onDimmersCMD){
         if (onDimmersCMD == "set"){
@@ -442,12 +428,9 @@ def turnOn(){
         	if (level >100) {level=100}
         	onDimmers?.setLevel(level)
         }
-        if (onDimmersCMD == "toggle"){
-    		toggleState(onDimmers)	
-        }
         else {
-        	onDimmers?."$onDimmersCMD"()
-        }
+        	onDimmersCMD == "toggle" ? toggleState(onDimmers) : onDimmers?."$onDimmersCMD"()
+		}
     }
     if (onColoredLights && onColoredLightsCMD){
     	if (onColoredLightsCMD == "set"){
@@ -484,12 +467,7 @@ def turnOff(){
 	if (offPhrase){location.helloHome.execute(offPhrase)}
 	if (offMode) {changeMode(offMode)}
     if (offSwitches && offSwitchesCMD){
-    	if (offSwitchesCMD == "toggle"){
-    		toggleState(offSwitches)	
-        }
-        else {
-        	offSwitches?."$offSwitchesCMD"()
-        }
+    	offSwitchesCMD == "toggle" ? toggleState(offSwitches) : offSwitches?."$offSwitchesCMD"()
     }
     if (offDimmers && offDimmersCMD){
     	if (offDimmersCMD == "set"){
@@ -498,11 +476,8 @@ def turnOff(){
         	if (level >100) {level=100}
         	offDimmers?.setLevel(level)
         }
-        if (offDimmersCMD == "toggle"){
-    		toggleState(offDimmers)	
-        }
         else {
-        	offDimmers?."$offDimmersCMD"()
+			offDimmersCMD == "toggle" ? toggleState(offDimmers) : offDimmers?."$offDimmersCMD"()
         }
     }
     if (offColoredLights && offColoredLightsCMD){
@@ -549,9 +524,9 @@ def panicOn(evt){
 		}
         if (alarmSonos && parent.getSonos()  && alarmSonos.name.contains("Sonos") && alarmSonosSound) { 
 			if (alarmSonosVolume){
-            	alarmSonos.setLevel(alarmSonosVolume as int)
+                alarmSonos.setLevel(alarmSonosVolume as int)
 			}
-            alarmSonos.playTrack(state.alarmSound.uri)
+            alarmSonos.playSoundAndTrack (state.alarmSound.uri, state.alarmSound.duration,"")
         }
         if (panicSMSnumberOn){ 
 			def smsTxt = panicSMSMsgOn ? panicSMSMsgOn : "Panic was activated/deactivated without message text input. Please investigate"
@@ -564,6 +539,9 @@ def panicOff(evt){
 	if (getOkToRun("Panic actions deactivated")) {
 		if (alarmOff){
 			alarmTurnOff()
+        	if (alarmSonos && parent.getSonos()  && alarmSonos.name.contains("Sonos") && alarmSonosSound) { 
+            	alarmSonos.stop()
+        	}
 		}
 		if (panicSMSnumberOff){
 			def smsTxt = panicSMSMsgOff ? panicSMSMsgOff : "Panic was activated/deactivated without message text input. Please investigate"
@@ -582,7 +560,8 @@ def alarmTurnOff(){
 //Speaker Handlers-----------------------------------------------------------------
 def speakerControl(cmd,song){
     if (cmd=="station" || cmd=="on") {
-    	if (speakerInitial && vDimmerSpeaker.currentValue("switch")=="off"){
+    	//Alexa Switch should be used to prevent looping to this point when switch in turned on
+        if (speakerInitial){
         	def speakerLevel = speakerInitial as int
     		vDimmerSpeaker.setLevel(speakerLevel)
         }
@@ -932,37 +911,11 @@ def songOptions(slot) {
     if (speaker) {
 		// Make sure current selection is in the set
 		def options = new LinkedHashSet()
-        if (slot ==1){
-           	if (state.selectedSong1?.station) {
-				options << state.selectedSong1.station
-			}
-			else if (state.selectedSong1?.description) {
-				options << state.selectedSong1.description
-			}
+        if (state."selectedSong${slot}"?.station) {
+			options << state."selectedSong${slot}".station
 		}
-        if (slot ==2){
-          	if (state.selectedSong2?.station) {
-				options << state.selectedSong2.station
-			}
-			else if (state.selectedSong2?.description) {
-				options << state.selectedSong2.description
-			}
-		}
-        if (slot ==3){
-           	if (state.selectedSong3?.station) {
-				options << state.selectedSong3.station
-			}
-			else if (state.selectedSong3?.description) {
-				options << state.selectedSong3.description
-			}
-		}
-        if (slot ==4){
-           	if (state.selectedSong4?.station) {
-				options << state.selectedSong4.station
-			}
-			else if (state.selectedSong4?.description) {
-				options << state.selectedSong4.description
-			}
+		else if (state."selectedSong${slot}"?.description) {
+			options << state."selectedSong${slot}".description
 		}
         // Query for recent tracks
 		def states = speaker.statesSince("trackData", new Date(0), [max:30])
@@ -982,10 +935,7 @@ def saveSelectedSong(slot, song) {
 		def data = songs.find {s -> s.station == thisSong}
 		log.info "Found ${data?.station}"
 		if (data) {
-			if (slot == 1) {state.selectedSong1 = data}
-            if (slot == 2) {state.selectedSong2 = data}            
-			if (slot == 3) {state.selectedSong3 = data}
-			if (slot == 4) {state.selectedSong4 = data}
+			state."selectedSong${slot}"=data
 		}
 		else {
 			log.warn "Selected song '$song' not found"
@@ -1033,8 +983,8 @@ def getAlarmSound(){
 }
 //Version
 private def textVersion() {
-    def text = "Child App Version: 2.2.0a (01/23/2016)"
+    def text = "Child App Version: 2.2.1 (01/24/2016)"
 }
 private def versionInt(){
-	def text = 220
+	def text = 221
 }
