@@ -1,7 +1,10 @@
 /**
  *  Talking Alarm Clock-Schedule
  *
- *  Version 1.0.0a (1/24/16) - Initial release of child app
+ *  Version 1.0.1 (1/25/16) - Initial release of child app
+ *
+ *  Version 1.0.0 - Initial release
+ *  Version 1.0.1 - Small syntax changes for consistency
  * 
  *  Copyright 2016 Michael Struck - Uses code from Lighting Director by Tim Slagle & Michael Struck
  *
@@ -83,7 +86,7 @@ def pageSetup() {
         	}
       	}
         if (alarmSpeaker){
-            section("Devices to control in this alarm scenario") {
+            section("Devices to control at alarm time") {
                 input "switches", "capability.switch",title: "Turn on the following switches...", multiple: true, required: false, submitOnChange:true
                 href "pageDimmers", title: "Dimmer Settings", description: dimmerDesc(), state: greyOutDimmer(), submitOnChange:true
                 href "pageThermostats", title: "Thermostat Settings", description: tstatDesc(), state: greyOutTstat(), submitOnChange:true
@@ -545,5 +548,5 @@ private saveSelectedSong() {
 }
 //Version
 private def textVersion() {
-    def text = "Child App Version: 1.0.0a (01/24/2016)"
+    def text = "Child App Version: 1.0.1 (01/25/2016)"
 }
