@@ -1,7 +1,7 @@
 /**
  *  Talking Alarm Clock-Schedule
  *
- *  Version 1.0.0 (1/24/16) - Initial release of child app
+ *  Version 1.0.0a (1/24/16) - Initial release of child app
  * 
  *  Copyright 2016 Michael Struck - Uses code from Lighting Director by Tim Slagle & Michael Struck
  *
@@ -242,7 +242,7 @@ def alarmHandler() {
             	alarmSpeaker.playSoundAndTrack (state.soundAlarm.uri, state.soundAlarm.duration, state.selectedSong)
             }
             if (!secondAlarm){
-            	alarmSpeaker.playTrack(state.soundAlarm.uri)
+            	alarmSpeaker.playSoundAndTrack(state.soundAlarm.uri, state.soundAlarm.duration, "")
             }
         }
         if (alarmType == "2") {
@@ -545,5 +545,5 @@ private saveSelectedSong() {
 }
 //Version
 private def textVersion() {
-    def text = "Child App Version: 1.0.0 (01/24/2016)"
+    def text = "Child App Version: 1.0.0a (01/24/2016)"
 }
