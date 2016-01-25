@@ -20,7 +20,7 @@ metadata {
 		capability "Switch"
 		capability "Polling"
 		capability "Refresh"
-        //capability "Zw Multichannel"
+
 
 		fingerprint inClusters: "0x91 0x73 0x72 0x86 0x60 0x25 0x27"
         
@@ -47,7 +47,7 @@ metadata {
     
 	// tile definitions
     tiles {
-        standardTile("mainSwitch", "device.switch", width: 2, height: 2, canChangeIcon: true) {
+        standardTile("switch", "device.switch", width: 2, height: 2, canChangeIcon: true) {
             state "on", label: '${name}', action: "off", icon: "st.switches.switch.on", backgroundColor: "#79b821"
             state "off", label: '${name}', action: "on", icon: "st.switches.switch.off", backgroundColor: "#ffffff"
         }
@@ -62,9 +62,9 @@ metadata {
         standardTile("refresh", "device.switch", inactiveLabel: false, decoration: "flat") {
             state "default", label:"", action:"refresh", icon:"st.secondary.refresh"
         }
-        main "mainSwitch"
+        main "switch"
 
-        details(["mainSwitch","switch1","switch2","refresh"])
+        details(["switch","switch1","switch2","refresh"])
     }
 }
 
@@ -237,5 +237,4 @@ def configure() {
     if(switchAll=="true") { switchAllmode = 255 } else { switchAllmode=0 }
     log.debug "SW All - $switchAllmode $switchAll"
 }
-
 
