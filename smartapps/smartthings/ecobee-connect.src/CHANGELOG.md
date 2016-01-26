@@ -5,8 +5,13 @@ Notable changes to this project will be documented in this file.
 This project is in a pre-1.0 state. This means that its APIs and behavior are subject to breaking changes without deprecation notices. However, all due efforts will be made to warn the user. Until 1.0, version numbers will follow a [Semver][]-ish `0.y.z` format, where `y` is incremented when new features or breaking changes are introduced, and `z` is incremented for lesser changes or bug fixes.
 
 
-## [Development][] (Ongoing)
-* Follow the link to see any changes made since the last tagged release
+## [Beta][] (Ongoing)
+* Follow the link to see the comparison between the stable release and the beta branch (`StrykerSKS-enhanced-ecobee`)
+
+## [Alpha][] (Ongoing)
+* Follow the link to see the comparison between the stable release and the beta branch (`StrykerSKS-enhanced-ecobee`)
+* **NOTE: This is my active development branch. Things on this branch are very likely to break at random times. Provided for informational purposes only!**
+
 
 ## [0.7.5][] (2016-01-25)
 
@@ -42,4 +47,7 @@ This project is in a pre-1.0 state. This means that its APIs and behavior are su
 [0.6.0]: https://github.com/StrykerSKS/SmartThingsPublic/compare/master...StrykerSKS:302bb77d7237132caaa5281b64d4bfbf4420f7cf
 
 [Development]: https://github.com/StrykerSKS/SmartThingsPublic/compare/StrykerSKS:v0.7.5...HEAD
+[Beta]: https://github.com/StrykerSKS/SmartThingsPublic/compare/StrykerSKS:HEAD...StrykerSKS-enhanced-ecobeedevice
+[Alpha]: https://github.com/StrykerSKS/SmartThingsPublic/compare/StrykerSKS:HEAD...StrykerSKS-development
+
 
