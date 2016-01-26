@@ -20,6 +20,10 @@
  * 	Incorporate additional device capabilities, some based on code by Yves Racine
  *
  *
+ *  Current Version: 0.8.0-RC
+ *  Release Date: 2016-01-26
+ *  See separate Changelog for change history 
+ *
  */
 metadata {
 	definition (name: "Ecobee Thermostat", namespace: "smartthings", author: "SmartThings") {
@@ -32,6 +36,7 @@ metadata {
 		capability "Temperature Measurement"
 		// capability "Presence Sensor"
         capability "Motion Sensor"
+            
 
 		command "setTemperature"
         command "auxHeatOnly"
@@ -47,6 +52,8 @@ metadata {
         command "sleep"
         command "away"
         
+        command "fanOff"  // Missing from the Thermostat standard capability set
+        
 
 		// Capability "Thermostat"
         attribute "temperatureScale", "string"
@@ -61,7 +68,8 @@ metadata {
         attribute "weatherSymbol", "string"
         
         attribute "debugEventFromParent","string"
-
+        
+        
 	/*
 		attribute "thermostatName", "string"
 		attribute "temperatureDisplay", "string"
@@ -249,8 +257,8 @@ metadata {
 
     	tiles(scale: 2) {
 
-      /*
-		multiAttributeTile(name:"summary", type:"thermostat", width:6, height:4) {
+      
+		multiAttributeTile(name:"iOSsummary", type:"thermostat", width:6, height:4) {
 			tileAttribute("device.temperature", key: "PRIMARY_CONTROL") {
 				attributeState("default", label:'${currentValue}', unit:"dF")
 			}
@@ -286,7 +294,7 @@ metadata {
 			}
 
         } // End multiAttributeTile
-        */
+        
 
         // Workaround until they fix the Thermostat tile. Only use this one OR the above one, not both
         multiAttributeTile(name:"summary", type: "lighting", width: 6, height: 4) {
@@ -349,10 +357,11 @@ metadata {
 			state "updating", label:"Working", icon: "st.secondary.secondary"
 		}
 		standardTile("fanMode", "device.thermostatFanMode", width: 2, height: 2, inactiveLabel: false, decoration: "flat") {
-			state "auto", label:'Fan: ${currentValue}', action:"switchFanMode", nextState: "on"
-			state "on", label:'Fan: ${currentValue}', action:"switchFanMode", nextState: "off"
-			state "off", label:'Fan: ${currentValue}', action:"switchFanMode", nextState: "circulate"
-			state "circulate", label:'Fan: ${currentValue}', action:"switchFanMode", nextState: "auto"
+			state "auto", label:'Fan: ${currentValue}', action:"thermostat.fanOn", nextState: "updating", icon: "st.Appliances.appliances11"
+			state "on", label:'Fan: ${currentValue}', action:"thermostat.fanAuto", nextState: "updating", icon: "st.Appliances.appliances11"
+			// state "off", label:'Fan: ${currentValue}', action:"switchFanMode", nextState: "updating", icon: "st.Appliances.appliances11"
+			// state "circulate", label:'Fan: ${currentValue}', action:"switchFanMode", nextState: "updating", icon: "st.Appliances.appliances11"
+            state "updating", label:"Working", icon: "st.secondary.secondary"
 		}
 		standardTile("upButtonControl", "device.thermostatSetpoint", width: 2, height: 1, inactiveLabel: false, decoration: "flat") {
 			state "setpoint", action:"raiseSetpoint", icon:"st.thermostat.thermostat-up"
@@ -407,7 +416,7 @@ metadata {
         standardTile("operatingState", "device.thermostatOperatingState", width: 2, height: 2, inactiveLabel: false, decoration: "flat") {
 			//state "idle", label: "Idle", backgroundColor:"#44b621", icon: "st.nest.empty"
             state "idle", label: "Idle", backgroundColor:"#c0c0c0", icon: "st.nest.empty"
-            state "fan only", backgroundColor:"#44b21", icon: "st.Appliances.appliances11"
+            state "fan only", label: "Fan Only", backgroundColor:"#87ceeb", icon: "st.Appliances.appliances11"
 			state "heating", backgroundColor:"#ffa81e", icon: "st.thermostat.heat"
 			state "cooling", backgroundColor:"#269bd2", icon: "st.thermostat.cool"
             // Issue reported that the label overlaps. Need to remove the icon
@@ -505,9 +514,9 @@ metadata {
             "coolSliderControl", "coolingSetpoint",
             "heatSliderControl", "heatingSetpoint",
             "currentStatus", "apiStatus",
-            "currentProgram", "refresh",
-            "setHome", "setAway", "setSleep"
-            
+            "currentProgram", "fanMode",
+            "setHome", "setAway", "setSleep",
+            "refresh"
             ])
 	}
 
@@ -526,36 +535,30 @@ metadata {
 
 // parse events into attributes
 def parse(String description) {
-	if ( debugLevel(3) ) { log.debug "parse() --> Parsing '${description}'" }
+	LOG( "parse() --> Parsing '${description}'" )
 	// Not needed for cloud connected devices
 
 }
 
 def refresh() {
-	if ( debugLevel(4) ) { log.debug "refresh called" }
+	LOG("refresh() called", 4)
 	poll()
-	if ( debugLevel(4) ) { log.debug "refresh ended" }
 }
 
 void poll() {
-	if ( debugLevel(2) ) { log.debug "Executing 'poll' using parent SmartApp" }
-
-	//def results =
-    // Parent responsible for calling generateEvent with any changed events
+	LOG("Executing 'poll' using parent SmartApp")
     parent.pollChildren(this)
-    // log.debug "pollChildren() - results: ${results}"
-	// generateEvent(results) //parse received message from parent
 }
 
 
 def generateEvent(Map results) {
-	if ( debugLevel(4) ) { log.debug "generateEvent(): parsing data $results" }
-    if ( debugLevel(1) ) { log.info "Debug level of parent: ${parent.settings?.debugLevel}" }
+	LOG("generateEvent(): parsing data $results", 4)
+    LOG("Debug level of parent: ${parent.settings?.debugLevel}")
 	def linkText = getLinkText(device)
 
 	if(results) {
 		results.each { name, value ->
-			if ( debugLevel(4) ) { log.debug "generateEvent() - In each loop: name: ${name}  value: ${value}" }
+			LOG("generateEvent() - In each loop: name: ${name}  value: ${value}", 4)
 			def isChange = false
 			def isDisplayed = true
 			def event = [name: name, linkText: linkText, descriptionText: getThermostatDescriptionText(name, value, linkText),
@@ -582,7 +585,7 @@ def generateEvent(Map results) {
 				isDisplayed = isChange
 				event << [value: value.toString(), isStateChange: isChange, displayed: isDisplayed]
 			}
-			if ( debugLevel(5) ) { log.debug "Out of loop, calling sendevent(${event})" }
+			LOG("Out of loop, calling sendevent(${event})", 5)
 			sendEvent(event)
 		}
 		generateSetpointEvent()
@@ -612,73 +615,72 @@ private getThermostatDescriptionText(name, value, linkText) {
 	}
 }
 
+// Does not set in absolute values, sets in increments either up or down
 def setTemperature(setpoint) {
-	if ( debugLevel(4) ) { log.debug "setTemperature() called with setpoint ${setpoint}. Current temperature: ${device.currentValue("temperature")}. Heat Setpoint: ${device.currentValue("heatingSetpoint")}. Cool Setpoint: ${device.currentValue("coolingSetpoint")}. Thermo Setpoint: ${device.currentValue("thermostatSetpoint")}" }
+	LOG("setTemperature() called with setpoint ${setpoint}. Current temperature: ${device.currentValue("temperature")}. Heat Setpoint: ${device.currentValue("heatingSetpoint")}. Cool Setpoint: ${device.currentValue("coolingSetpoint")}. Thermo Setpoint: ${device.currentValue("thermostatSetpoint")}", 4)
 
     def mode = device.currentValue("thermostatMode")
     def midpoint
 	def targetvalue
 
 	if (mode == "off" || (mode == "auto" && !usingSmartAuto() )) {
-		if ( debugLevel(5) ) { log.warn "setTemperature(): this mode: $mode does not allow raiseSetpoint" }
+		LOG("setTemperature(): this mode: $mode does not allow raiseSetpoint", 2, null, "warn")
         return
     }
 
 	def currentTemp = device.currentValue("temperature")
+    def deltaTemp = 0
 
-    // TODO: WORKAROUND - Bug causes the widget to set a different value when using C vs F! Uses 0 and 1 instead of the actual value
-    if ( getTemperatureScale() == "C" ) {
-    	if (setpoint == 0) {
-        	setpoint = currentTemp.toDouble() - 1.0
-		} else {
-        	setpoint = currentTemp.toDouble() + 1.0
-		}
+	if (setpoint == 0) { // down arrow pressed
+    	deltaTemp = -1
+    } else if (setpoint == 1) { // up arrow pressed
+    	deltaTemp = 1
+    } else {
+    	deltaTemp = ( (setpoint - currentTemp) < 0) ? -1 : 1
     }
+    
 
-
-    def deltaTemp = setpoint - currentTemp
-
-    log.debug "deltaTemp = ${deltaTemp}"
+    LOG("deltaTemp = ${deltaTemp}")
 
     if (mode == "auto") {
     	// In Smart Auto Mode
-		if ( debugLevel(4) ) { log.debug "setTemperature(): In Smart Auto Mode" }
+		LOG("setTemperature(): In Smart Auto Mode", 4)
 
         if (deltaTemp < 0) {
         	// Decrement the temp for cooling
-            if ( debugLevel(4) ) { log.debug "Smart Auto: lowerSetpoint being called" }
+            LOG("Smart Auto: lowerSetpoint being called", 4)
             lowerSetpoint()
         } else if (deltaTemp > 0) {
         	// Increment the temp for heating
-            if ( debugLevel(4) ) { log.debug "Smart Auto: raiseSetpoint being called" }
+            LOG("Smart Auto: raiseSetpoint being called", 4)
             raiseSetpoint()
         } // Otherwise they are equal and the setpoint does not change
 
     } else if (mode == "heat") {
     	// Change the heat
-        if ( debugLevel(5) ) { log.debug "setTemperature(): change the heat temp" }
+        LOG("setTemperature(): change the heat temp", 4)
         // setHeatingSetpoint(setpoint)
         if (deltaTemp < 0) {
         	// Decrement the temp for cooling
-            if ( debugLevel(5) ) { log.debug "Heat: lowerSetpoint being called" }
+            LOG("Heat: lowerSetpoint being called", 4)
             lowerSetpoint()
         } else if (deltaTemp > 0) {
         	// Increment the temp for heating
-            if ( debugLevel(5) ) { log.debug "Heat: raiseSetpoint being called" }
+            LOG("Heat: raiseSetpoint being called", 4)
             raiseSetpoint()
         } // Otherwise they are equal and the setpoint does not change
 
     } else if (mode == "cool") {
     	// Change the cool
-        if ( debugLevel(5) ) { log.debug "setTemperature(): change the cool temp" }
+        LOG("setTemperature(): change the cool temp", 4)
         // setCoolingSetpoint(setpoint)
         if (deltaTemp < 0) {
         	// Decrement the temp for cooling
-            if ( debugLevel(5) ) { log.debug "Cool: lowerSetpoint being called" }
+            LOG("Cool: lowerSetpoint being called", 4)
             lowerSetpoint()
         } else if (deltaTemp > 0) {
         	// Increment the temp for heating
-            if ( debugLevel(5) ) { log.debug "Cool: raiseSetpoint being called" }
+            LOG("Cool: raiseSetpoint being called", 4)
             raiseSetpoint()
         } // Otherwise they are equal and the setpoint does not change
 
@@ -686,26 +688,26 @@ def setTemperature(setpoint) {
 }
 
 void setHeatingSetpoint(setpoint) {
-	if ( debugLevel(4) ) { log.debug "setHeatingSetpoint() request with setpoint value = ${setpoint} before toDouble()" }
+	LOG("setHeatingSetpoint() request with setpoint value = ${setpoint} before toDouble()", 4)
 	setHeatingSetpoint(setpoint.toDouble())
 }
 
 void setHeatingSetpoint(Double setpoint) {
 //    def mode = device.currentValue("thermostatMode")
-	if ( debugLevel(4) ) { log.debug "setHeatingSetpoint() request with setpoint value = ${setpoint}" }
+	LOG("setHeatingSetpoint() request with setpoint value = ${setpoint}", 4)
 
 	def heatingSetpoint = setpoint
 	def coolingSetpoint = device.currentValue("coolingSetpoint").toDouble()
-	def deviceId = device.deviceNetworkId.split(/\./).last()
+	def deviceId = getDeviceId()
 
 
-	if ( debugLevel(4) ) { log.debug "setHeatingSetpoint() before compare: heatingSetpoint == ${heatingSetpoint}   coolingSetpoint == ${coolingSetpoint}" }
+	LOG("setHeatingSetpoint() before compare: heatingSetpoint == ${heatingSetpoint}   coolingSetpoint == ${coolingSetpoint}", 4)
 	//enforce limits of heatingSetpoint vs coolingSetpoint
 	if (heatingSetpoint > coolingSetpoint) {
 		coolingSetpoint = heatingSetpoint
 	}
 
-	if ( debugLevel(4) ) { log.debug "Sending setHeatingSetpoint> coolingSetpoint: ${coolingSetpoint}, heatingSetpoint: ${heatingSetpoint}" }
+	LOG("Sending setHeatingSetpoint> coolingSetpoint: ${coolingSetpoint}, heatingSetpoint: ${heatingSetpoint}", 4)
 
 
 	def sendHoldType = whatHoldType()
@@ -713,88 +715,90 @@ void setHeatingSetpoint(Double setpoint) {
 	if (parent.setHold (this, heatingSetpoint,  coolingSetpoint, deviceId, sendHoldType)) {
 		sendEvent("name":"heatingSetpoint", "value": wantMetric() ? heatingSetpoint : heatingSetpoint.round(0).toInteger() )
 		sendEvent("name":"coolingSetpoint", "value": wantMetric() ? coolingSetpoint : coolingSetpoint.round(0).toInteger() )
-		if ( debugLevel(4) ) { log.debug "Done setHeatingSetpoint> coolingSetpoint: ${coolingSetpoint}, heatingSetpoint: ${heatingSetpoint}" }
+		LOG("Done setHeatingSetpoint> coolingSetpoint: ${coolingSetpoint}, heatingSetpoint: ${heatingSetpoint}", 4)
 		generateSetpointEvent()
 		generateStatusEvent()
 	} else {
-		if ( debugLevel(2) ) { log.error "Error setHeatingSetpoint(${setpoint})" } //This error is handled by the connect app
+		LOG("Error setHeatingSetpoint(${setpoint})", 2, null, "error") //This error is handled by the connect app
 	}
 }
 
 void setCoolingSetpoint(setpoint) {
-	if ( debugLevel(4) ) { log.debug "setCoolingSetpoint() request with setpoint value = ${setpoint} (before toDouble)" }
+	LOG("setCoolingSetpoint() request with setpoint value = ${setpoint} (before toDouble)", 4)
 
 	setCoolingSetpoint(setpoint.toDouble())
 }
 
 void setCoolingSetpoint(Double setpoint) {
-	if ( debugLevel(4) ) { log.debug "setCoolingSetpoint() request with setpoint value = ${setpoint}" }
+	LOG("setCoolingSetpoint() request with setpoint value = ${setpoint}", 4)
 //    def mode = device.currentValue("thermostatMode")
 	def heatingSetpoint = device.currentValue("heatingSetpoint").toDouble()
 	def coolingSetpoint = setpoint
-	def deviceId = device.deviceNetworkId.split(/\./).last()
+	def deviceId = getDeviceId()
 
 
-	if ( debugLevel(4) ) { log.debug "setCoolingSetpoint() before compare: heatingSetpoint == ${heatingSetpoint}   coolingSetpoint == ${coolingSetpoint}" }
+	LOG("setCoolingSetpoint() before compare: heatingSetpoint == ${heatingSetpoint}   coolingSetpoint == ${coolingSetpoint}")
 
 	//enforce limits of heatingSetpoint vs coolingSetpoint
 	if (heatingSetpoint > coolingSetpoint) {
 		heatingSetpoint = coolingSetpoint
 	}
 
-	if ( debugLevel(4) ) { log.debug "Sending setCoolingSetpoint> coolingSetpoint: ${coolingSetpoint}, heatingSetpoint: ${heatingSetpoint}" }
-
-	def sendHoldType = holdType ? (holdType=="Temporary")? "nextTransition" : (holdType=="Permanent")? "indefinite" : "indefinite" : "indefinite"
-    if ( debugLevel(5) ) { log.debug "sendHoldType == ${sendHoldType}" }
+	LOG("Sending setCoolingSetpoint> coolingSetpoint: ${coolingSetpoint}, heatingSetpoint: ${heatingSetpoint}")
+	def sendHoldType = whatHoldType()
+    LOG("sendHoldType == ${sendHoldType}", 5)
 
     // Convert temp to F from C if needed
 	if (parent.setHold (this, heatingSetpoint,  coolingSetpoint, deviceId, sendHoldType)) {
 		sendEvent("name":"heatingSetpoint", "value": wantMetric() ? heatingSetpoint : heatingSetpoint.round(0).toInteger() )
 		sendEvent("name":"coolingSetpoint", "value": wantMetric() ? coolingSetpoint : coolingSetpoint.round(0).toInteger() )
-		if ( debugLevel(4) ) { log.debug "Done setCoolingSetpoint>> coolingSetpoint = ${coolingSetpoint}, heatingSetpoint = ${heatingSetpoint}" }
+		LOG("Done setCoolingSetpoint>> coolingSetpoint = ${coolingSetpoint}, heatingSetpoint = ${heatingSetpoint}", 4)
 		generateSetpointEvent()
 		generateStatusEvent()
 	} else {
-		if ( debugLevel(4) ) { log.error "Error setCoolingSetpoint(setpoint)" } //This error is handled by the connect app
+		LOG("Error setCoolingSetpoint(setpoint)", 2, null, "error") //This error is handled by the connect app
 	}
 }
 
 void resumeProgram() {
 	// TODO: Put a check in place to see if we are already running the program. If there is nothing to resume, then save the calls upstream
-
-	if ( debugLevel(4) ) { log.debug "resumeProgram() is called" }
+	LOG("resumeProgram() is called", 5)
 	sendEvent("name":"thermostatStatus", "value":"Resuming schedule...", "description":statusText, displayed: false)
-	def deviceId = device.deviceNetworkId.split(/\./).last()
+	def deviceId = getDeviceId()
 	if (parent.resumeProgram(this, deviceId)) {
 		sendEvent("name":"thermostatStatus", "value":"Setpoint updating...", "description":statusText, displayed: false)
 		runIn(15, "poll")
-		if ( debugLevel(5) ) { log.debug "resumeProgram() is done" }
+		LOG("resumeProgram() is done", 5)
 		sendEvent("name":"resumeProgram", "value":"resume", descriptionText: "resumeProgram is done", displayed: false, isStateChange: true)
 	} else {
 		sendEvent("name":"thermostatStatus", "value":"failed resume click refresh", "description":statusText, displayed: false)
-		if ( debugLevel(4) ) { log.error "Error resumeProgram() check parent.resumeProgram(this, deviceId)" }
+		LOG("Error resumeProgram() check parent.resumeProgram(this, deviceId)", 2, null, "error")
 	}
 
+	generateSetpointEvent()
+	generateStatusEvent()    
 }
 
 def modes() {
 	if (state.modes) {
-		if ( debugLevel(5) ) { log.debug "Modes = ${state.modes}" }
+		LOG("Modes = ${state.modes}", 5)
 		return state.modes
 	}
 	else {
 		state.modes = parent.availableModes(this)
-		if ( debugLevel(5) ) { log.debug "Modes = ${state.modes}" }
+		LOG("Modes = ${state.modes}", 5)
 		return state.modes
 	}
 }
 
 def fanModes() {
-	["off", "on", "auto", "circulate"]
+	["on", "auto", "circulate"]
 }
 
+
+// TODO Add a delay (like in the setTemperature case) to capture multiple clicks on the UI
 def switchMode() {
-	if ( debugLevel(5) ) { log.debug "in switchMode" }
+	LOG("in switchMode()", 5)
 	def currentMode = device.currentState("thermostatMode")?.value
 	def lastTriedMode = state.lastTriedMode ?: currentMode ?: "off"
 	def modeOrder = modes()
@@ -804,18 +808,19 @@ def switchMode() {
 }
 
 def switchToMode(nextMode) {
-	if ( debugLevel(5) ) { log.debug "In switchToMode = ${nextMode}" }
+	LOG("In switchToMode = ${nextMode}", 5)
 	if (nextMode in modes()) {
 		state.lastTriedMode = nextMode
 		"$nextMode"()
 	} else {
-		if ( debugLevel(4) ) { log.debug("no mode method '$nextMode'") }
+		LOG("switchToMode(): No mode method: ${nextMode}", 1, null, "warn")
 	}
 }
 
 def switchFanMode() {
+	LOG("switchFanMode()", 5)
 	def currentFanMode = device.currentState("thermostatFanMode")?.value
-	if ( debugLevel(4) ) { log.debug "switching fan from current mode: $currentFanMode" }
+	LOG("switching fan from current mode: $currentFanMode", 4)
 	def returnCommand
 
 	switch (currentFanMode) {
@@ -835,7 +840,7 @@ def switchFanMode() {
 
 def switchToFanMode(nextMode) {
 
-	if ( debugLevel(5) ) { log.debug "switching to fan mode: $nextMode" }
+	LOG("switching to fan mode: $nextMode", 4)
 	def returnCommand
 
 	if(nextMode == "fanAuto") {
@@ -864,40 +869,11 @@ def getDataByName(String name) {
 	state[name] ?: device.getDataValue(name)
 }
 
-def setThermostatMode(String value) {
-	// 	"emergency heat" "heat" "cool" "off" "auto"
-	if ( debugLevel(5) ) { log.debug "setThermostatMode(${value})" }
-    if (value=="emergency heat") {
-
-    } else if (value=="heat") {
-    	heat()
-    } else if (value=="cool") {
-		cool()
-    } else if (value=="off") {
-		off()
-    } else if (value=="auto") {
-    	auto()
-    } else if (value=="aux") {
-		auxHeatOnly()
-	} else if (value=="emergency") {
-    	if ( debugLevel(4) ) { log.debug "setThermostatMode(${value}): using auxHeatOnly for emergency heat" }
-        emergency()
-    } else {
-    	// Unrecognized mode requested
-        if ( debugLevel(4) ) { log.error "setThermostatMode(): Unrecognized mode ${value} requested" }
-    }
-
-}
-
-def setThermostatFanMode(String value) {
-	if ( debugLevel(3) ) { log.debug "setThermostatFanMode(${value}) - Not yet implemented!" }
-	// "auto" "on" "circulate"
 
 
-}
-
-def generateModeEvent(mode) {
-	sendEvent(name: "thermostatMode", value: mode, descriptionText: "$device.displayName is in ${mode} mode", displayed: true)
+def generateQuickEvent(name, value, pollIn=0) {
+	sendEvent(name: name, value: value, displayed: true)
+    if (pollIn > 0) { runIn(pollIn, "poll") }
 }
 
 def generateFanModeEvent(fanMode) {
@@ -905,82 +881,62 @@ def generateFanModeEvent(fanMode) {
 }
 
 def generateOperatingStateEvent(operatingState) {
-	if ( debugLevel(4) ) { log.debug "generateOperatingStateEvent with state: ${operatingState}" }
+	LOG("generateOperatingStateEvent with state: ${operatingState}", 4)
 	sendEvent(name: "thermostatOperatingState", value: operatingState, descriptionText: "$device.displayName is ${operatingState}", displayed: true)
 }
 
-def off() {
-	if ( debugLevel(5) ) { log.debug "off" }
-	def deviceId = device.deviceNetworkId.split(/\./).last()
-	if (parent.setMode (this,"off", deviceId))
-		generateModeEvent("off")
+
+def setThermostatMode(String value, holdType=null) {
+	// 	"emergencyHeat" "heat" "cool" "off" "auto"
+    
+    if (value=="emergency" || value=="emergencyHeat") { value = "auxHeatOnly" }    
+	LOG("setThermostatMode(${value})", 5)
+    
+    def deviceId = getDeviceId()
+	if (parent.setMode(this, value, deviceId, holdType))
+		generateQuickEvent("thermostatMode", value, 15)
 	else {
-		if ( debugLevel(1) ) { log.error "Error setting new mode to off." }
+		LOG("Error setting new mode to ${value}.", 1, null, "error")
 		def currentMode = device.currentState("thermostatMode")?.value
-		generateModeEvent(currentMode) // reset the tile back
+		generateQuickEvent("thermostatMode", currentMode) // reset the tile back
 	}
 	generateSetpointEvent()
 	generateStatusEvent()
+}
+
+
+def off() {
+	LOG("off()", 5)
+    setThermostatMode("off")    
 }
 
 def heat() {
-	if ( debugLevel(3) ) { log.debug "heat" }
-	def deviceId = device.deviceNetworkId.split(/\./).last()
-	if (parent.setMode (this,"heat", deviceId))
-		generateModeEvent("heat")
-	else {
-		if ( debugLevel(1) ) { log.error "Error setting new mode to heat." }
-		def currentMode = device.currentState("thermostatMode")?.value
-		generateModeEvent(currentMode) // reset the tile back
-	}
-	generateSetpointEvent()
-	generateStatusEvent()
+	LOG("heat()", 5)
+    setThermostatMode("heat")    
 }
 
 def auxHeatOnly() {
-	if ( debugLevel(4) ) { log.debug "auxHeatOnly" }
-	def deviceId = device.deviceNetworkId.split(/\./).last()
-	if (parent.setMode (this,"auxHeatOnly", deviceId))
-		generateModeEvent("auxHeatOnly")
-	else {
-		if ( debugLevel(1) ) { log.error "Error setting new mode to auxHeatOnly." }
-		def currentMode = device.currentState("thermostatMode")?.value
-		generateModeEvent(currentMode) // reset the tile back
-	}
-	generateSetpointEvent()
-	generateStatusEvent()
+	LOG("auxHeatOnly()", 5)
+    setThermostatMode("auxHeatOnly")
 }
 
 def emergency() {
 	auxHeatOnly()
 }
 
+// This is the proper definition for the capability
+def emergencyHeat() {
+	auxHeatOnly()
+}
+
 def cool() {
-	if ( debugLevel(4) ) { log.debug "cool" }
-	def deviceId = device.deviceNetworkId.split(/\./).last()
-	if (parent.setMode (this,"cool", deviceId))
-		generateModeEvent("cool")
-	else {
-		if ( debugLevel(1) ) { log.error "Error setting new mode to cool." }
-		def currentMode = device.currentState("thermostatMode")?.value
-		generateModeEvent(currentMode) // reset the tile back
-	}
-	generateSetpointEvent()
-	generateStatusEvent()
+	LOG("cool()", 5)
+    setThermostatMode("cool")    
 }
 
 def auto() {
-	if ( debugLevel(4) ) { log.debug "auto()" }
-	def deviceId = device.deviceNetworkId.split(/\./).last()
-	if (parent.setMode (this,"auto", deviceId))
-		generateModeEvent("auto")
-	else {
-		if ( debugLevel(3) ) { log.debug "Error setting new mode auto." }
-		def currentMode = device.currentState("thermostatMode")?.value
-		generateModeEvent(currentMode) // reset the tile back
-	}
-	generateSetpointEvent()
-	generateStatusEvent()
+	LOG("auto()", 5)
+    setThermostatMode("auto")    
 }
 
 
@@ -988,7 +944,7 @@ def auto() {
 def setThermostatProgram(program, holdType=null) {
 	// Change the Comfort Setting to Home
     LOG("setThermostatProgram: program: ${program}  holdType: ${holdType}", 4)
-	def deviceId = device.deviceNetworkId.split(/\./).last()    
+	def deviceId = getDeviceId()    
 
 	LOG("Before calling parent.setProgram()", 5)
 	
@@ -1011,95 +967,27 @@ def setThermostatProgram(program, holdType=null) {
 }
 
 
+
 def home() {
 	// Change the Comfort Setting to Home
     LOG("home()", 5)
     setThermostatProgram("home")
-
-	/* def deviceId = device.deviceNetworkId.split(/\./).last()    
-    
-    if ( debugLevel(5) ) { log.debug "Before calling parent.setProgram()" }
-	
-    def sendHoldType = whatHoldType()
-    def program = "home"
-  
-    if ( parent.setProgram(this, program, deviceId, sendHoldType) ) {
-		generateProgramEvent(program)
-        runIn(15, "poll")        
-	} else {
-		if ( debugLevel(3) ) { log.debug "Error setting new comfort setting ${program}." }
-		def currentProgram = device.currentState("currentProgramId")?.value
-		generateProgramEvent(currentProgram, program) // reset the tile back
-	}
-    
-    if ( debugLevel(5) ) { log.debug "After calling parent.setProgram()" }
-    
-	generateSetpointEvent()
-	generateStatusEvent()    
-    */
 }
 
 def away() {
 	// Change the Comfort Setting to Away
     LOG("away()", 5)
     setThermostatProgram("away")
-    /*
-	def deviceId = device.deviceNetworkId.split(/\./).last()
- 
- 	if ( debugLevel(5) ) { log.debug "Before calling parent.setProgram()" }
-    
-    def sendHoldType = whatHoldType()
-    def program = "away"
-    
-    if ( parent.setProgram(this, program, deviceId, sendHoldType) ) {
-		generateProgramEvent(program)
-        runIn(10, "poll")        
-	} else {
-		if ( debugLevel(3) ) { log.debug "Error setting new comfort setting ${program}." }
-		def currentProgram = device.currentState("currentProgramId")?.value
-		generateProgramEvent(currentProgram, program) // reset the tile back
-	}
-    
-    if ( debugLevel(5) ) { log.debug "After calling parent.setProgram()" }
-    
-	generateSetpointEvent()
-	generateStatusEvent()    
-    */
 }
 
 def sleep() {
 	// Change the Comfort Setting to Sleep    
     LOG("sleep()", 5)
     setThermostatProgram("sleep")
-    
-    /*
-    if ( debugLevel(4) ) { log.debug "sleep()" }
-	def deviceId = device.deviceNetworkId.split(/\./).last()
- 	
-    if ( debugLevel(5) ) { log.debug "Before calling parent.setProgram()" }
-    
-    def sendHoldType = whatHoldType()
-    def program = "sleep"
-   
-    if ( parent.setProgram(this, program, deviceId, sendHoldType) ) {
-		generateProgramEvent(program)
-        runIn(10, "poll")        
-	} else {
-		if ( debugLevel(3) ) { log.debug "Error setting new comfort setting ${program}." }
-		def currentProgram = device.currentState("currentProgramId")?.value
-		generateProgramEvent(currentProgram, program) // reset the tile back
-	}
-    
-    if ( debugLevel(5) ) { log.debug "After calling parent.setProgram()" }
-    
-	generateSetpointEvent()
-	generateStatusEvent()    
-    */
 }
 
 def generateProgramEvent(program, failedProgram=null) {
-
-	if ( debugLevel(3) ) { log.debug "Generate generateProgramEvent Event: program ${program}" }
+	LOG("Generate generateProgramEvent Event: program ${program}", 4)
 
 	sendEvent("name":"thermostatStatus", "value":"Setpoint updating...", "description":statusText, displayed: false)
 	sendEvent("name":"currentProgramName", "value":program.capitalize())
@@ -1116,42 +1004,52 @@ def generateProgramEvent(program, failedProgram=null) {
 }
 
 
+def setThermostatFanMode(value, holdType=null) {
+	LOG("setThermostatFanMode(${value})", 4)
+	// "auto" "on" "circulate" "off"       
+	if ( parent.setFanMode(this, value, getDeviceId()) ) {
+    	generateQuickEvent("thermostatFanMode", value, 15)
+    } else {
+    	generateQuickEvent("thermostatFanMode", device.currentValue("thermostatFanMode"))
+    }
+    
+	generateSetpointEvent()
+	generateStatusEvent()    
+}
+
 def fanOn() {
-	if ( debugLevel(3) ) { log.debug "fanOn(): Not yet implemented!" }
-//    parent.setFanMode (this,"on")
+	LOG("fanON()", 5)
+    setThermostatFanMode("on")
 
 }
 
 def fanAuto() {
-	if ( debugLevel(3) ) { log.debug "fanAuto(): Not yet implemented!" }
-//    parent.setFanMode (this,"auto")
-
+	LOG("fanAuto()", 5)
+	setThermostatFanMode("auto")
 }
 
 def fanCirculate() {
-	if ( debugLevel(3) ) { log.debug "fanCirculate(): Not yet implemented!" }
-//    parent.setFanMode (this,"circulate")
-
+	LOG("fanCirculate()", 5)
+    setThermostatFanMode("circulate")
 }
 
 def fanOff() {
-	if ( debugLevel(3) ) { log.debug "fanOff(): Not yet implemetned!" }
-//    parent.setFanMode (this,"off")
-
+	LOG("fanOff()", 5)
+	setThermostatFanMode("off")
 }
 
 def generateSetpointEvent() {
 
-	if ( debugLevel(3) ) { log.debug "Generate SetPoint Event" }
+	LOG("Generate SetPoint Event", 5)
 
-	def mode = device.currentValue("thermostatMode")
+	def mode = device.currentValue("thermostatMode")    
     def heatingSetpoint = device.currentValue("heatingSetpoint")
 	def coolingSetpoint = device.currentValue("coolingSetpoint")
-    if ( debugLevel(3) ) { 
-    	log.debug "Current Mode = ${mode}" 	
-		log.debug "Heating Setpoint = ${heatingSetpoint}"	
-		log.debug "Cooling Setpoint = ${coolingSetpoint}"
-    }
+    
+    	LOG("Current Mode = ${mode}")
+		LOG("Heating Setpoint = ${heatingSetpoint}")
+		LOG("Cooling Setpoint = ${coolingSetpoint}")
+    
 
 	if (mode == "heat") {
 		sendEvent("name":"thermostatSetpoint", "value":heatingSetpoint.toString())
@@ -1177,14 +1075,14 @@ void raiseSetpoint() {
 	def targetvalue
 
 	if (mode == "off" || (mode == "auto" && !usingSmartAuto() )) {
-		if ( debugLevel(3) ) { log.warn "raiseSetpoint(): this mode: $mode does not allow raiseSetpoint" }
+		LOG("raiseSetpoint(): this mode: $mode does not allow raiseSetpoint")
         return
 	}
 
     	def heatingSetpoint = device.currentValue("heatingSetpoint")
 		def coolingSetpoint = device.currentValue("coolingSetpoint")
 		def thermostatSetpoint = device.currentValue("thermostatSetpoint").toDouble()
-		if ( debugLevel(4) ) { log.debug "raiseSetpoint() mode = ${mode}, heatingSetpoint: ${heatingSetpoint}, coolingSetpoint:${coolingSetpoint}, thermostatSetpoint:${thermostatSetpoint}" }
+		LOG("raiseSetpoint() mode = ${mode}, heatingSetpoint: ${heatingSetpoint}, coolingSetpoint:${coolingSetpoint}, thermostatSetpoint:${thermostatSetpoint}", 4)
 
     	if (thermostatSetpoint) {
 			targetvalue = thermostatSetpoint
@@ -1193,13 +1091,13 @@ void raiseSetpoint() {
 		}
 
         if (getTemperatureScale() == "C" ) {
-        	targetvalue = targetvalue.toDouble() - 0.5
+        	targetvalue = targetvalue.toDouble() + 0.5
         } else {
-			targetvalue = targetvalue.toDouble() - 1.0
+			targetvalue = targetvalue.toDouble() + 1.0
         }
 
 		sendEvent("name":"thermostatSetpoint", "value":( wantMetric() ? targetvalue : targetvalue.round(0).toInteger() ), displayed: true)
-		if ( debugLevel(5) ) { log.info "In mode $mode raiseSetpoint() to $targetvalue" }
+		LOG("In mode $mode raiseSetpoint() to $targetvalue", 4)
 
 		runIn(4, "alterSetpoint", [data: [value:targetvalue], overwrite: true]) //when user click button this runIn will be overwrite
 }
@@ -1231,7 +1129,7 @@ void lowerSetpoint() {
         }
 
 		sendEvent("name":"thermostatSetpoint", "value":( wantMetric() ? targetvalue : targetvalue.round(0).toInteger() ), displayed: true)
-		if ( debugLevel(5) ) { log.info "In mode $mode lowerSetpoint() to $targetvalue" }
+		LOG("In mode $mode lowerSetpoint() to $targetvalue", 5, null, "info")
 
 		// Wait 4 seconds before sending in case we hit the buttons again
 		runIn(4, "alterSetpoint", [data: [value:targetvalue], overwrite: true]) //when user click button this runIn will be overwrite
@@ -1247,14 +1145,14 @@ void alterSetpoint(temp) {
 	def coolingSetpoint = device.currentValue("coolingSetpoint")
     def currentTemp = device.currentValue("temperature")
     def saveThermostatSetpoint = device.currentValue("thermostatSetpoint")
-	def deviceId = device.deviceNetworkId.split(/\./).last()
+	def deviceId = getDeviceId()
 
 	def targetHeatingSetpoint = heatingSetpoint
 	def targetCoolingSetpoint = coolingSetpoing
 
-	if ( debugLevel(4) ) { log.debug "alterSetpoint - temp.value is ${temp.value}" }
+	LOG("alterSetpoint - temp.value is ${temp.value}", 4)
 
-	//step1: check thermostatMode, enforce limits before sending request to cloud
+	//step1: check thermostatMode
 	if (mode == "heat"){
 		if (temp.value > coolingSetpoint){
 			targetHeatingSetpoint = temp.value
@@ -1276,43 +1174,43 @@ void alterSetpoint(temp) {
     	// Make changes based on our Smart Auto mode
         if (temp.value > currentTemp) {
         	// Change the heat settings to the new setpoint
-            log.debug "alterSetpoint() - Smart Auto setting setpoint: ${temp.value}. Updating heat target"
+            LOG("alterSetpoint() - Smart Auto setting setpoint: ${temp.value}. Updating heat target")
             targetHeatingSetpoint = temp.value
             targetCoolingSetpoint = (temp.value > coolingSetpoint) ? temp.value : coolingSetpoint
 		} else {
         	// Change the cool settings to the new setpoint
-			log.debug "alterSetpoint() - Smart Auto setting setpoint: ${temp.value}. Updating cool target"
+			LOG("alterSetpoint() - Smart Auto setting setpoint: ${temp.value}. Updating cool target")
             targetCoolingSetpoint = temp.value
 
-            log.debug "targetHeatingSetpoint before ${targetHeatingSetpoint}"
+            LOG("targetHeatingSetpoint before ${targetHeatingSetpoint}")
             targetHeatingSetpoint = (temp.value < heatingSetpoint) ? temp.value : heatingSetpoint
-            log.debug "targetHeatingSetpoint after ${targetHeatingSetpoint}"
+            LOG("targetHeatingSetpoint after ${targetHeatingSetpoint}")
 
         }
     } else {
-    	log.error "alterSetpoint() called with unsupported mode: ${mode}"
+    	LOG("alterSetpoint() called with unsupported mode: ${mode}", 2, null, "warn")
         // return without changing settings on thermostat
         return
     }
 
-	if ( debugLevel(3) ) { log.debug "alterSetpoint >> in mode ${mode} trying to change heatingSetpoint to ${targetHeatingSetpoint} " +
-			"coolingSetpoint to ${targetCoolingSetpoint} with holdType : ${whatHoldType()}" }
+	LOG("alterSetpoint >> in mode ${mode} trying to change heatingSetpoint to ${targetHeatingSetpoint} " +
+			"coolingSetpoint to ${targetCoolingSetpoint} with holdType : ${whatHoldType()}")
 
 	def sendHoldType = whatHoldType()
-	//step2: call parent.setHold to send http request to 3rd party cloud
-    // Convert values to F from C if needed
+	//step2: call parent.setHold to send http request to 3rd party cloud    
 	if (parent.setHold(this, targetHeatingSetpoint, targetCoolingSetpoint, deviceId, sendHoldType)) {
 		sendEvent("name": "thermostatSetpoint", "value": temp.value.toString(), displayed: false)
 		sendEvent("name": "heatingSetpoint", "value": targetHeatingSetpoint)
 		sendEvent("name": "coolingSetpoint", "value": targetCoolingSetpoint)
 		log.debug "alterSetpoint in mode $mode succeed change setpoint to= ${temp.value}"
 	} else {
-		if ( debugLevel(1) ) { log.warn "WARN: alterSetpoint() - setHold failed. Could be an intermittent problem." }
+		LOG("WARN: alterSetpoint() - setHold failed. Could be an intermittent problem.", 1, null, "error")
         sendEvent("name": "thermostatSetpoint", "value": saveThermostatSetpoint.toString(), displayed: false)
 	}
+    // generateSetpointEvent()
 	generateStatusEvent()
     // refresh data
-    runIn(20, "poll")
+    runIn(15, "poll")
 }
 
 def generateStatusEvent() {
@@ -1323,13 +1221,13 @@ def generateStatusEvent() {
 
 	def statusText
 
-	if ( debugLevel(3) ) { 
-    	log.debug "Generate Status Event for Mode = ${mode}" 
-		log.debug "Temperature = ${temperature}"
-		log.debug "Heating set point = ${heatingSetpoint}"
-		log.debug "Cooling set point = ${coolingSetpoint}"
-		log.debug "HVAC Mode = ${mode}"
-	}
+	
+	LOG("Generate Status Event for Mode = ${mode}")
+	LOG("Temperature = ${temperature}")
+	LOG("Heating set point = ${heatingSetpoint}")
+	LOG("Cooling set point = ${coolingSetpoint}")
+	LOG("HVAC Mode = ${mode}")
+	
 
 	if (mode == "heat") {
 
@@ -1351,12 +1249,12 @@ def generateStatusEvent() {
 		statusText = "Right Now: Auto (Heat: ${heatingSetpoint}/Cool: ${coolingSetpoint})"
 	} else if (mode == "off") {
 		statusText = "Right Now: Off"
-	} else if (mode == "emergencyHeat") {
+	} else if (mode == "emergencyHeat" || mode == "emergency heat" || mode == "emergency") {
 		statusText = "Emergency Heat"
 	} else {
-		statusText = "?"
+		statusText = "${mode}?"
 	}
-	if ( debugLevel(4) ) { log.debug "Generate Status Event = ${statusText}" }
+	LOG("Generate Status Event = ${statusText}", 4)
 	sendEvent("name":"thermostatStatus", "value":statusText, "description":statusText, displayed: true)
 }
 
@@ -1364,293 +1262,6 @@ def generateStatusEvent() {
 def generateActivityFeedsEvent(notificationMessage) {
 	sendEvent(name: "notificationMessage", value: "$device.displayName $notificationMessage", descriptionText: "$device.displayName $notificationMessage", displayed: true)
 }
-
-
-
-// Ecobee API Related Functions - from Yves code
-// TODO: Move all of this into the Service Manager. No need to have each device contact the Ecobee cloud directly!!!
-
-/*
-private void api(method, args, success = {}) {
-	def MAX_EXCEPTION_COUNT=5
-	String URI_ROOT = "${get_URI_ROOT()}/1"
-	if (!isLoggedIn()) {
-		login()
-
-	}
-	if (isTokenExpired()) {
-		if (settings.trace) {
-			log.debug "api>need to refresh tokens"
-		}
-		if (!refresh_tokens()) {
-			login()
-			def exceptionCheck=device.currentValue("verboseTrace")
-			if (exceptionCheck.contains("exception")) {
-				log.error ("api>$exceptionCheck, not able to renew the refresh token, need to re-login to ecobee, run MyEcobeeInit....")
-				sendEvent (name: "verboseTrace", value:"api>$exceptionCheck, not able to renew the refresh token, need to re-login to ecobee, run MyEcobeeInit....")
-			}
-
-		} else {
-
-			// Reset Exceptions counter as the refresh_tokens() call has been successful
-			state.exceptionCount=0
-		}
-	}
-	if (state.exceptionCount >= MAX_EXCEPTION_COUNT) {
-
-		log.error ("api>error: found a high number of exceptions (${state.exceptionCount}), will try to refresh tokens, it it fails, you should run MyEcobeeInit and re-login to ecobee....")
-		sendEvent (name: "verboseTrace",
-			value: "api>error: found a high number of exceptions (${state.exceptionCount}) , will try to refresh tokens, it it fails, you should run MyEcobeeInit and re-login to ecobee....")
-		refresh_tokens()
-		state.exceptionCount=0
-	}
-	def args_encoded = java.net.URLEncoder.encode(args.toString(), "UTF-8")
-	def methods = [
-		'thermostatSummary':
-			[uri:"${URI_ROOT}/thermostatSummary?format=json&body=${args_encoded}",
-      			type:'get'],
-		'thermostatInfo':
-			[uri:"${URI_ROOT}/thermostat?format=json&body=${args_encoded}",
-          		type: 'get'],
-		'setThermostatSettings':
-			[uri: "${URI_ROOT}/thermostat?format=json", type: 'post'],
-		'setHold':
-			[uri: "${URI_ROOT}/thermostat?format=json", type: 'post'],
-		'resumeProgram':
-			[uri: "${URI_ROOT}/thermostat?format=json", type: 'post'],
-		'createVacation':
-			[uri: "${URI_ROOT}/thermostat?format=json", type: 'post'],
-		'deleteVacation':
-			[uri: "${URI_ROOT}/thermostat?format=json", type: 'post'],
-		'getGroups':
-			[uri: "${URI_ROOT}/group?format=json&body=${args_encoded}",
-			type: 'get'],
-		'updateGroup':
-			[uri: "${URI_ROOT}/group?format=json", type: 'post'],
-		'updateClimate':
-			[uri: "${URI_ROOT}/thermostat?format=json", type: 'post'],
-		'controlPlug':
-			[uri: "${URI_ROOT}/thermostat?format=json", type: 'post'],
-		'runtimeReport':
-			[uri:"${URI_ROOT}/runtimeReport?format=json&body=${args_encoded}",
-          		type: 'get'],
-		]
-	def request = methods.getAt(method)
-	if (settings.trace) {
-		log.debug "api> about to call doRequest with (unencoded) args = ${args}"
-		sendEvent name: "verboseTrace", value:
-			"api> about to call doRequest with (unencoded) args = ${args}"
-	}
-	doRequest(request.uri, args_encoded, request.type, success)
-}
-
-// Need to be authenticated in before this is called. So don't call this. Call api.
-private void doRequest(uri, args, type, success) {
-	def params = [
-		uri: uri,
-		headers: [
-			'Authorization': "${data.auth.token_type} ${data.auth.access_token}",
-			'Content-Type': "application/json",
-			'charset': "UTF-8",
-			'Accept': "application/json"
-		],
-		body: args
-	]
-	try {
-		if (settings.trace) {
-//			sendEvent name: "verboseTrace", value: "doRequest>token= ${data.auth.access_token}"
-			sendEvent name: "verboseTrace", value:
-				"doRequest>about to ${type} with uri ${params.uri}, (encoded)args= ${args}"
-				log.debug "doRequest> ${type}> uri ${params.uri}, args= ${args}"
-		}
-		if (type == 'post') {
-			httpPostJson(params, success)
-
-		} else if (type == 'get') {
-			params.body = null // parameters already in the URL request
-			httpGet(params, success)
-		}
-		// when success, reset the exception counter
-		state.exceptionCount=0
-
-	} catch (java.net.UnknownHostException e) {
-		log.error "doRequest> Unknown host - check the URL " + params.uri
-		sendEvent name: "verboseTrace", value: "doRequest> Unknown host ${params.uri}"
-		state.exceptionCount = state.exceptionCount +1
-	} catch (java.net.NoRouteToHostException e) {
-		log.error "doRequest> No route to host - check the URL " + params.uri
-		sendEvent name: "verboseTrace", value: "doRequest> No route to host ${params.uri}"
-		state.exceptionCount = state.exceptionCount +1
-	} catch (e) {
-		log.debug "doRequest>exception $e for " + params.body
-		sendEvent name: "verboseTrace", value:
-			"doRequest>exception $e for " + params.body
-		state.exceptionCount = state.exceptionCount +1
-	}
-}
-
-// tstatType =managementSet or registered (no spaces).
-//		registered is for SMART & SMART-SI thermostats,
-//		managementSet is for EMS thermostat
-//		may also be set to a specific locationSet (ex. /Toronto/Campus/BuildingA)
-//		may be set to null if not relevant for the given method
-// thermostatId may be a list of serial# separated by ",", no spaces (ex. '123456789012,123456789013')
-private def build_body_request(method, tstatType="registered", thermostatId, tstatParams = [],
-	tstatSettings = []) {
-	def selectionJson = null
-	def selection = null
-	if (method == 'thermostatSummary') {
-		if (tstatType.trim().toUpperCase() == 'REGISTERED') {
-			selection = [selection: [selectionType: 'registered', selectionMatch: '',
-							includeEquipmentStatus: 'true']
-						]
-		} else {
-			// If tstatType is different than managementSet, it is assumed to be locationSet specific (ex./Toronto/Campus/BuildingA)
-			selection = (tstatType.trim().toUpperCase() == 'MANAGEMENTSET') ?
-				// get all EMS thermostats from the root
-				[selection: [selectionType: 'managementSet', selectionMatch: '/',
-					includeEquipmentStatus: 'true']
-				] : // Or Specific to a location
-				[selection: [selectionType: 'managementSet', selectionMatch: tstatType.trim(),
-					includeEquipmentStatus: 'true']
-				]
-		}
-		selectionJson = new groovy.json.JsonBuilder(selection)
-		return selectionJson
-	} else if (method == 'thermostatInfo') {
-		selection = [selection: [selectionType: 'thermostats',
-			selectionMatch: thermostatId,
-			includeSettings: 'true',
-			includeRuntime: 'true',
-			includeProgram: 'true',
-			includeWeather: 'true',
-			includeAlerts: 'true',
-			includeEvents: 'true',
-			includeEquipmentStatus: 'true',
-			includeSensors: 'true'
-			]
-		]
-		selectionJson = new groovy.json.JsonBuilder(selection)
-		return selectionJson
-	} else {
-		selection = [selectionType: 'thermostats', selectionMatch: thermostatId]
-	}
-	selectionJson = new groovy.json.JsonBuilder(selection)
-	if ((method != 'setThermostatSettings') && (tstatSettings != null) && (tstatSettings != [])) {
-		def function_clause = ((tstatParams != null) && (tsatParams != [])) ?
-			[type:method, params: tstatParams] :
-			[type: method]
-		def bodyWithSettings = [functions: [function_clause], selection: selection,
-				thermostat: [settings: tstatSettings]
-			]
-		def bodyWithSettingsJson = new groovy.json.JsonBuilder(bodyWithSettings)
-		return bodyWithSettingsJson
-	} else if (method == 'setThermostatSettings') {
-		def bodyWithSettings = [selection: selection,thermostat: [settings: tstatSettings]
-			]
-		def bodyWithSettingsJson = new groovy.json.JsonBuilder(bodyWithSettings)
-		return bodyWithSettingsJson
-	} else if ((tstatParams != null) && (tsatParams != [])) {
-		def function_clause = [type: method, params: tstatParams]
-		def simpleBody = [functions: [function_clause], selection: selection]
-		def simpleBodyJson = new groovy.json.JsonBuilder(simpleBody)
-		return simpleBodyJson
-	} else {
-		def function_clause = [type: method]
-		def simpleBody = [functions: [function_clause], selection: selection]
-		def simpleBodyJson = new groovy.json.JsonBuilder(simpleBody)
-		return simpleBodyJson
-    }
-}
-
-
-// iterateSetThermostatSettings: iterate thru all the thermostats under a specific account and set the desired settings
-// tstatType =managementSet or registered (no spaces).  May also be set to a specific locationSet (ex./Toronto/Campus/BuildingA)
-// settings can be anything supported by ecobee
-//		at https://www.ecobee.com/home/developer/api/documentation/v1/objects/Settings.shtml
-void iterateSetThermostatSettings(tstatType, tstatSettings = []) {
-	Integer MAX_TSTAT_BATCH = get_MAX_TSTAT_BATCH()
-	def tstatlist = null
-	Integer nTstats = 0
-
-	def ecobeeType = determine_ecobee_type_or_location(tstatType)
-	getThermostatSummary(ecobeeType)
-	if (settings.trace) {
-		log.debug
-			"iterateSetThermostatSettings>ecobeeType=${ecobeeType},about to loop ${data.thermostatCount} thermostat(s)"
-		sendEvent name: "verboseTrace", value:
-			"iterateSetThermostatSettings>ecobeeType=${ecobeeType},about to loop ${data.thermostatCount} thermostat(s)"
-	}
-	for (i in 0..data.thermostatCount - 1) {
-		def thermostatDetails = data.revisionList[i].split(':')
-		def Id = thermostatDetails[0]
-		def thermostatName = thermostatDetails[1]
-		def connected = thermostatDetails[2]
-		if (connected == 'true') {
-			if (nTstats == 0) {
-				tstatlist = Id
-				nTstats = 1
-			}
-			if ((nTstats > MAX_TSTAT_BATCH) || (i == (data.thermostatCount - 1))) {
-				// process a batch of maximum 25 thermostats according to API doc
-				if (settings.trace) {
-					sendEvent name: "verboseTrace", value:
-						"iterateSetThermostatSettings>about to call setThermostatSettings for ${tstatlist}"
-					log.debug "iterateSetThermostatSettings> about to call setThermostatSettings for ${tstatlist}"
-				}
-				setThermostatSettings("${tstatlist}",tstatSettings)
-				tstatlist = Id
-				nTstats = 1
-			} else {
-				tstatlist = tstatlist + "," + Id
-				nTstats++
-			}
-		}
-	}
-}
-
-// thermostatId may be a list of serial# separated by ",", no spaces (ex. '123456789012,123456789013')
-//	if no thermostatId is provided, it is defaulted to the current thermostatId
-// settings can be anything supported by ecobee at https://www.ecobee.com/home/developer/api/documentation/v1/objects/Settings.shtml
-void setThermostatSettings(thermostatId,tstatSettings = []) {
-   	thermostatId= determine_tstat_id(thermostatId)
-	if (settings.trace) {
-		log.debug
-			"setThermostatSettings>called with values ${tstatSettings} for ${thermostatId}"
-		sendEvent name: "verboseTrace", value:
-			"setThermostatSettings>called with values ${tstatSettings} for ${thermostatId}"
-	}
-	def bodyReq = build_body_request('setThermostatSettings',null,thermostatId,null,tstatSettings)
-	def statusCode=true
-	int j=0
-	while ((statusCode) && (j++ <2)) { // retries once if api call fails
-		api('setThermostatSettings', bodyReq) {resp ->
-			statusCode = resp.data.status.code
-			def message = resp.data.status.message
-			if (!statusCode) {
-				sendEvent name: "verboseTrace", value:
-						"setThermostatSettings>done for ${thermostatId}"
-			} else {
-				log.error
-					"setThermostatSettings> error=${statusCode.toString()},message=${message} for ${thermostatId}"
-				sendEvent name: "verboseTrace", value:
-					"setThermostatSettings> error=${statusCode.toString()},message=${message} for ${thermostatId}"
-				// introduce a 1 second delay before re-attempting any other command
-				def cmd= []
-				cmd << "delay 1000"
-				cmd
-			} // end if statusCode
-		} // end api call
-	} // end for
-}
-
-*/
-
-// Helper functions
-// TODO: These are going to be used for coming features
-// def toQueryString(Map m) {
-//	return m.collect { k, v -> "${k}=${URLEncoder.encode(v.toString())}" }.sort().join("&")
-// }
 
 
 // Built in functions from SmartThings?
@@ -1662,9 +1273,8 @@ def wantMetric() {
 	return (getTemperatureScale() == "C")
 }
 
-
 private def cToF(temp) {
-	//return (temp * 1.8 + 32)
+	// return (temp * 1.8 + 32)
     return celsiusToFahrenheit(temp)
 }
 private def fToC(temp) {
@@ -1682,19 +1292,23 @@ private def get_MAX_TSTAT_BATCH() {
 	return 25
 }
 
+
+private def getDeviceId() {
+	return device.deviceNetworkId.split(/\./).last()	
+}
+
 private def usingSmartAuto() {
-	if ( debugLevel(3) ) { log.debug "Entered usingSmartAuto() " }
+	LOG("Entered usingSmartAuto() ", 5)
 	if (settings.smartAuto) { return settings.smartAuto }
     if (parent.settings.smartAuto) { return parent.settings.smartAuto }
     return false
 }
 
 private def whatHoldType() {
-	def sendHoldType = parent.settings.holdType ? (parent.settings.holdType=="Temporary")? "nextTransition" : (holdType=="Permanent")? "indefinite" : "indefinite" : "indefinite"
-	log.debug "Entered whatHoldType() with ${sendHoldType}  settings.holdType == ${settings.holdType}"
-   if (settings.holdType && settings.holdType != "") { return  holdType ? (holdType=="Temporary")? "nextTransition" : (holdType=="Permanent")? "indefinite" : "indefinite" : "indefinite" }
-   //if (parent.settings.holdType != "") { return parent.settings.holdType   ? (parent.settings.holdType=="Temporary")? "nextTransition" : (parent.settings.holdType=="Permanent")? "indefinite" : "indefinite" : "indefinite"}
-    //return sendHoldType
+	def sendHoldType = parent.settings.holdType ? (parent.settings.holdType=="Temporary" || parent.settings.holdType=="Until Next Program")? "nextTransition" : (parent.settings.holdType=="Permanent" || parent.settings.holdType=="Until I Change")? "indefinite" : "indefinite" : "indefinite"
+	LOG("Entered whatHoldType() with ${sendHoldType}  settings.holdType == ${settings.holdType}")
+	if (settings.holdType && settings.holdType != "") { return  holdType ? (settings.holdType=="Temporary" || settings.holdType=="Until Next Program")? "nextTransition" : (settings.holdType=="Permanent" || settings.holdType=="Until I Change")? "indefinite" : "indefinite" : "indefinite" }   
+   
     return sendHoldType
 }
 
@@ -1704,7 +1318,6 @@ private debugLevel(level=3) {
     
     return ( debugLvlNum >= wantedLvl )
 }
-
 
 
 private def LOG(message, level=3, child=null, logType="debug", event=false, displayEvent=false) {
@@ -1729,34 +1342,35 @@ private def debugEvent(message, displayEvent = false) {
 	sendEvent (results)
 }
 
+
+
 def getTempColors() {
 	def colorMap
 
+	colorMap = [
+		// Celsius Color Range
+		[value: 0, color: "#1e9cbb"],
+		[value: 15, color: "#1e9cbb"],
+		[value: 19, color: "#1e9cbb"],
 
-    	colorMap = [
-                	// Celsius Color Range
-					[value: 0, color: "#1e9cbb"],
-					[value: 15, color: "#1e9cbb"],
-                    [value: 19, color: "#1e9cbb"],
+		[value: 21, color: "#44b621"],
+		[value: 22, color: "#44b621"],
+		[value: 24, color: "#44b621"],
 
-                    [value: 21, color: "#44b621"],
-					[value: 22, color: "#44b621"],
-                    [value: 24, color: "#44b621"],
+		[value: 21, color: "#d04e00"],
+		[value: 35, color: "#d04e00"],
+		[value: 37, color: "#d04e00"],
+		// Fahrenheit Color Range
+		[value: 40, color: "#1e9cbb"],
+		[value: 59, color: "#1e9cbb"],
+		[value: 67, color: "#1e9cbb"],
 
-					[value: 21, color: "#d04e00"],
-					[value: 35, color: "#d04e00"],
-					[value: 37, color: "#d04e00"],
-					// Fahrenheit Color Range
-                	[value: 40, color: "#1e9cbb"],
-					[value: 59, color: "#1e9cbb"],
-                    [value: 67, color: "#1e9cbb"],
+		[value: 69, color: "#44b621"],
+		[value: 72, color: "#44b621"],
+		[value: 74, color: "#44b621"],
 
-                    [value: 69, color: "#44b621"],
-					[value: 72, color: "#44b621"],
-                    [value: 74, color: "#44b621"],
-
-					[value: 76, color: "#d04e00"],
-					[value: 95, color: "#d04e00"],
-					[value: 99, color: "#d04e00"]
-				]
+		[value: 76, color: "#d04e00"],
+		[value: 95, color: "#d04e00"],
+		[value: 99, color: "#d04e00"]
+	]
 }
