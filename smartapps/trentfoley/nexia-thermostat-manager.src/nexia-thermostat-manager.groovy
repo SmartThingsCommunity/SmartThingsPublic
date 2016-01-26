@@ -39,15 +39,13 @@ def getChildName() { "Nexia Thermostat" }
 def getServerUrl() { "https://www.mynexia.com" }
 
 def debugEvent(message, displayEvent = false) {
-
 	def results = [
 		name: "appdebug",
 		descriptionText: message,
 		displayed: displayEvent
 	]
-	log.debug "Generating AppDebug Event: ${results}"
+	log.debug "DEBUG: ${results}"
 	sendEvent (results)
-
 }
 
 def installed() {
@@ -104,7 +102,7 @@ def initialize() {
 
 		log.debug "Discovered ${devices.size()} thermostats"
         
-		pollHandler()
+		devices.each { it.poll() }
     }
 }
 
@@ -140,7 +138,7 @@ def getDefaultHeaders() {
 }
 
 private refreshAuthToken() {
-    debugEvent("refreshing auth token")
+    debugEvent("refreshAuthToken()")
 
 	// Initialize / clear any existing cookies
 	state.cookies = [:]
@@ -152,7 +150,7 @@ private refreshAuthToken() {
         headers: defaultHeaders
     ]
 
-    log.debug "Login Params: ${loginParams}"
+    debugEvent("Login Params: ${loginParams}")
     
     try {
         httpGet(loginParams) { loginResp ->
@@ -160,7 +158,7 @@ private refreshAuthToken() {
             
             // html / body   / div id=content / div id=external-wrapper / div id=external-content / div id=login-form / form / div / input name=authenticity_token
             def authenticityToken = loginResp.data[0].children[1].children[1].children[0].children[0].children[1].children[2].children[0].children[1].attributes()["value"]
-            log.debug "Authenticity Token: ${authenticityToken}"
+            debugEvent("Authenticity Token: ${authenticityToken}")
             
             def sessionParams = [
                 method: 'POST',
@@ -176,7 +174,7 @@ private refreshAuthToken() {
                 ]
             ]
 
-            log.debug "Session Parameters: ${sessionParams}"
+            debugEvent("Session Parameters: ${sessionParams}")
 
             httpPost(sessionParams) { sessionResp ->
                 if (sessionResp.status != 302) { throw new Exception("Did not receive expected response status code.  Expected 302, actual ${sessionResp.status}") }
@@ -185,12 +183,12 @@ private refreshAuthToken() {
         }
     }
     catch(Exception e) {
-        log.debug "Caught exception refreshing auth token: ${e}"
+        log.error "Caught exception refreshing auth token: ${e}"
     }
 }
 
 private requestThermostats(Closure closure) {
-	log.debug "Requesting thermostats at ${state.thermostatsPath}"
+	debugEvent("requestThermostats(${state.thermostatsPath})")
     
     def thermostatsParams = [
         method: 'GET',
@@ -199,7 +197,7 @@ private requestThermostats(Closure closure) {
         headers: defaultHeaders
     ]
 
-	log.debug "Thermostat Params: ${thermostatsParams}"
+	debugEvent("Thermostat Params: ${thermostatsParams}")
     
     try {
         httpGet(thermostatsParams) { resp ->
@@ -214,182 +212,75 @@ private requestThermostats(Closure closure) {
         }
     }
     catch(Exception e) {
-        log.debug "Caught exception requesting thermostats: ${e}"
+        log.error "Caught exception requesting thermostats: ${e}"
     }
 }
-
-def translateThermostatMode(statMode) {
-	// TODO: handle case for emergency_heat
-    return statMode.toLowerCase()
-}
-
-def pollChildren() {
-    log.debug "Polling children"
-    
-    requestThermostats { resp ->
-        atomicState.thermostats = resp.data.inject([:]) { collector, stat ->
-            def dni = getDeviceNetworkId(stat.id)
-            log.debug "updating dni $dni"
-
-			def zone = stat.zones[0]
-
-            def data = [
-                auxHeatMode: stat.emergency_heat_supported,
-                temperature: zone.temperature,
-                heatingSetpoint: zone.heating_setpoint,
-                coolingSetpoint: zone.cooling_setpoint,
-                thermostatMode: translateThermostatMode(zone.requested_zone_mode),
-                thermostatStatus: stat.system_status
-            ]
-
-            debugEvent ("Event Data = ${data}")
-
-            collector[dni] = [ data : data ]
-            return collector
-        }
-
-        log.debug "updated ${atomicState.thermostats?.size()} stats: ${atomicState.thermostats}"
-    }
-}
-
-def pollHandler() {
-    debugEvent ("in Poll() method.")
-    pollChildren() // Hit the Nexia API for update on all thermostats
-
-    atomicState.thermostats.each { stat ->
-        def dni = stat.key
-
-        log.debug ("DNI = ${dni}")
-        debugEvent ("DNI = ${dni}")
-
-        def device = getChildDevice(dni)
-
-        if(device) {
-            log.debug ("Found Child Device.")
-            debugEvent ("Found Child Device.")
-            debugEvent("Event Data before generate event call = ${stat}")
-
-            device.generateEvent(atomicState.thermostats[dni].data)
-        }
-    }
-}
-
-def getPollRateMillis() { return 5 * 60 * 1000 } // 5 minutes
 
 // Poll Child is invoked from the Child Device itself as part of the Poll Capability
-def pollChild( child )
-{
-    log.debug "poll child"
-    debugEvent ("poll child")
-    def now = new Date().time
+def pollChild(child) {
+    def deviceNetworkId = child.device.deviceNetworkId
+    debugEvent("pollChild(${deviceNetworkId})")
 
-    debugEvent ("Last Poll Millis = ${atomicState.lastPollMillis}")
-    def last = atomicState.lastPollMillis ?: 0
-    def next = last + pollRateMillis
+	def statData = [:]
 
-    log.debug "pollChild( ${child.device.deviceNetworkId} ): $now > $next ?? w/ current state: ${atomicState.thermostats}"
-    debugEvent ("pollChild( ${child.device.deviceNetworkId} ): $now > $next ?? w/ current state: ${atomicState.thermostats}")
-
-    // if( now > next )
-    if( true ) // for now let's always poll/refresh
-    {
-        log.debug "polling children because $now > $next"
-        debugEvent("polling children because $now > $next")
-
-        pollChildren()
-
-        log.debug "polled children and looking for ${child.device.deviceNetworkId} from ${atomicState.thermostats}"
-        debugEvent ("polled children and looking for ${child.device.deviceNetworkId} from ${atomicState.thermostats}")
-
-        def currentTime = new Date().time
-        debugEvent ("Current Time = ${currentTime}")
-        atomicState.lastPollMillis = currentTime
-
-        def tData = atomicState.thermostats[child.device.deviceNetworkId]
-
-        if(!tData)
-        {
-            log.error "ERROR: Device connection removed? no data for ${child.device.deviceNetworkId} after polling"
-
-            // TODO: flag device as in error state
-            // child.errorState = true
-
-            return null
+	requestThermostats { resp ->
+        def stat = resp.data.find { it -> getDeviceNetworkId(it.id) == deviceNetworkId }
+        if (!stat) {
+        	log.error "ERROR: Device connection removed? No data found for ${deviceNetworkId} after polling"
+        } else {
+            def zone = stat.zones[0]
+            
+            def systemStatusToOperatingStateMapping = [
+                "System Idle": "idle",
+                "Waiting...": "pending ${zone.zone_mode.toLowerCase()}",
+                "Heating": "heating",
+                "Cooling": "cooling",
+                "Fan Running": "fan only"
+            ]
+            
+            debugEvent(stat)
+            
+            statData = [
+                temperature: zone.temperature.toInteger(),
+                heatingSetpoint: zone.heating_setpoint.toInteger(),
+                coolingSetpoint: zone.cooling_setpoint.toInteger(),
+                thermostatSetpoint: ((zone.zone_mode == "COOL") ? zone.cooling_setpoint : zone.heating_setpoint).toInteger(),
+                // TODO: handle case for "emergency heat"
+                thermostatMode: zone.requested_zone_mode.toLowerCase(), // "auto" "emergency heat" "heat" "off" "cool"
+                thermostatFanMode: stat.fan_mode,  // "auto" "on" "circulate"
+                thermostatOperatingState: systemStatusToOperatingStateMapping[stat.system_status], // "heating" "idle" "pending cool" "vent economizer" "cooling" "pending heat" "fan only"
+                systemStatus: stat.system_status,
+                activeMode: zone.zone_mode.toLowerCase(),
+                emergencyHeatSupported: stat.emergency_heat_supported,
+                humidity: (stat.current_relative_humidity * 100).toInteger(),
+                outdoorTemperature: stat.raw_outdoor_temperature.toInteger()
+            ]
         }
-
-        tData.updated = currentTime
-
-        return tData.data
     }
-    else if(atomicState.thermostats[child.device.deviceNetworkId] != null)
-    {
-        log.debug "not polling children, found child ${child.device.deviceNetworkId} "
-
-        def tData = atomicState.thermostats[child.device.deviceNetworkId]
-        if(!tData.updated)
-        {
-            // we have pulled new data for this thermostat, but it has not asked us for it
-            // track it and return the data
-            tData.updated = new Date().time
-            return tData.data
-        }
-        return null
-    }
-    else if(atomicState.thermostats[child.device.deviceNetworkId] == null)
-    {
-        log.error "ERROR: Device connection removed? no data for ${child.device.deviceNetworkId}"
-
-        // TODO: flag device as in error state
-        // child.errorState = true
-
-        return null
-    }
-    else
-    {
-        // it's not time to poll again and this thermostat already has its latest values
-    }
-
-    return null
+    
+    return statData
 }
 
-def availableModes(child) {
-    debugEvent ("atomicState.Thermos = ${atomicState.thermostats}")
-    debugEvent ("Child DNI = ${child.device.deviceNetworkId}")
-
-    def tData = atomicState.thermostats[child.device.deviceNetworkId]
-
-    debugEvent("Data = ${tData}")
-
-    if(!tData) {
-        log.error "ERROR: Device connection removed? no data for ${child.device.deviceNetworkId} after polling"
-
-        // TODO: flag device as in error state
-        // child.errorState = true
-
-        return null
-    }
-
-    def modes = ["off", "heat", "cool", "auto"]
-    if (tData.data.auxHeatMode) { modes.add("auxHeatOnly") }
-    return modes
+def setHeatingSetpoint(child, degreesF) {
+	def deviceNetworkId = child.device.deviceNetworkId
+    debugEvent("setHeatingSetpoint(${deviceNetworkId}, ${degreesF})")
+    
 }
 
-def currentMode(child) {
-    debugEvent ("atomicState.Thermos = ${atomicState.thermostats}")
-    debugEvent ("Child DNI = ${child.device.deviceNetworkId}")
+def setCoolingSetpoint(child, degreesF) {
+	def deviceNetworkId = child.device.deviceNetworkId
+    debugEvent("setCoolingSetpoint(${deviceNetworkId}, ${degreesF})")
+    
+}
 
-    def tData = atomicState.thermostats[child.device.deviceNetworkId]
+def setThermostatMode(child, value) {
 
-    debugEvent("Data = ${tData}")
+}
 
-    if(!tData) {
-        log.error "ERROR: Device connection removed? no data for ${child.device.deviceNetworkId} after polling"
+def setThermostatFanMode(child, value) {
 
-        // TODO: flag device as in error state
-        // child.errorState = true
+}
 
-        return null
-    }
-
-    return tData.data.thermostatMode
+def resumeProgram(child) {
+	
 }
