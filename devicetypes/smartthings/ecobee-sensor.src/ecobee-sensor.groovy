@@ -12,6 +12,9 @@
  *  on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the License
  *  for the specific language governing permissions and limitations under the License.
  *
+ *
+ *  Version: 20160124_001_development
+ *
  */
 metadata {
 	definition (name: "Ecobee Sensor", namespace: "smartthings", author: "SmartThings") {
@@ -28,17 +31,16 @@ metadata {
 
 	tiles {
 		valueTile("temperature", "device.temperature", width: 2, height: 2) {
-			// state("451", label: "Offline", backgroundColor:"#ffa81e", icon:"st.contact.contact.open")             
             state("temperature", defaultState: true, label:'${currentValue}°', unit:"dF",
 				backgroundColors:[
                 	// Celsius Color Range
 					[value: 0, color: "#1e9cbb"],
 					[value: 15, color: "#1e9cbb"],
-                    [value: 19, color: "#1e9cbb"],
+					[value: 19, color: "#1e9cbb"],
                     
-                    [value: 21, color: "#44b621"],
+					[value: 21, color: "#44b621"],
 					[value: 22, color: "#44b621"],
-                    [value: 24, color: "#44b621"],
+					[value: 24, color: "#44b621"],
                     
 					[value: 21, color: "#d04e00"],
 					[value: 35, color: "#d04e00"],
@@ -46,17 +48,17 @@ metadata {
 					// Fahrenheit Color Range
                 	[value: 40, color: "#1e9cbb"],
 					[value: 59, color: "#1e9cbb"],
-                    [value: 67, color: "#1e9cbb"],
+					[value: 67, color: "#1e9cbb"],
                     
-                    [value: 69, color: "#44b621"], 
+					[value: 69, color: "#44b621"], 
 					[value: 72, color: "#44b621"],
-                    [value: 74, color: "#44b621"],
+					[value: 74, color: "#44b621"],
                     
 					[value: 76, color: "#d04e00"],
 					[value: 95, color: "#d04e00"],
 					[value: 99, color: "#d04e00"],
-                    [value: 99, color: "#d04e00"],
-                    [value: 451, color: "#ffa81e"] // Nod to the book and temp that paper burns. Used to catch when the device is offline
+					[value: 99, color: "#d04e00"],
+					[value: 451, color: "#ffa81e"] // Nod to the book and temp that paper burns. Used to catch when the device is offline
 				]
 			)
 		}
@@ -143,8 +145,8 @@ def generateActivityFeedsEvent(notificationMessage) {
 
 
 private debugLevel(level=3) {
-	def debugLvlNum = parent.settings.debugLevel.toInteger() ?: 3
-    def wantedLvl = level.toInteger()
+	def debugLvlNum = parent.settings.debugLevel?.toInteger() ?: 3
+    def wantedLvl = level?.toInteger()
     
     return ( debugLvlNum >= wantedLvl )
 }
