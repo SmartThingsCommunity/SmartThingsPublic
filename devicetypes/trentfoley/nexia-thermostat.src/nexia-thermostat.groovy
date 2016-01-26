@@ -14,8 +14,7 @@ metadata {
 		capability "Sensor"
         capability "Refresh"
         
-        command "notchTemperature"
-        command "resumeProgram"
+        command "setTemperature"
         
         attribute "activeMode", "string"
         attribute "outdoorTemperature", "number"
@@ -42,7 +41,7 @@ metadata {
                 attributeState("default", label:'${currentValue}°', unit:"F")
             }
             tileAttribute("device.temperature", key: "VALUE_CONTROL") {
-                attributeState("default", action: "notchTemperature")
+                attributeState("default", action: "setTemperature")
             }
             tileAttribute("device.humidity", key: "SECONDARY_CONTROL") {
                 attributeState("default", label:'${currentValue}%')
@@ -119,15 +118,12 @@ metadata {
 				]
 			)
         }
-		standardTile("resumeProgram", "device.resumeProgram", height: 1, width: 1, decoration: "flat") {
-			state "resume", label: 'Resume Program', action:"device.resumeProgram", icon:"st.Office.office7"
-		}
-        standardTile("refresh", "device.thermostatMode", height: 1, width: 1, decoration: "flat") {
+        standardTile("refresh", "device.thermostatMode", height: 3, width: 3, decoration: "flat") {
 			state "default", action:"refresh.refresh", icon:"st.secondary.refresh"
 		}
         standardTile("blank", "device.thermostatMode", height: 1, width: 1, decoration: "flat")
 		main "temperature"
-        details(["thermostatMulti", "mode", "modeOff", "modeAuto", "modeCool", "modeHeat", "modeEmergencyHeat", "fanMode", "blank", "fanModeAuto", "fanModeOn", "fanModeCirculate", "blank", "outdoorTemperature", "resumeProgram", "refresh"])
+        details(["thermostatMulti", "mode", "modeOff", "modeAuto", "modeCool", "modeHeat", "modeEmergencyHeat", "fanMode", "blank", "fanModeAuto", "fanModeOn", "fanModeCirculate", "blank", "outdoorTemperature", "refresh"])
 	}
 }
 
@@ -163,37 +159,38 @@ def poll() {
     }
 }
 
-def notchTemperature(up) {
-	log.debug "setTemperature(${up})"
-    def notchAmount = ((up == 1) ? 1 : -1)
+def setTemperature(degreesF) {
+	log.debug "setTemperature(${degreesF})"
+    def delta = degreesF - device.currentValue("temperature")
+    log.debug "Determined delta to be ${delta}"
     
     if (device.currentValue("activeMode") == "cool") {
-    	setCoolingSetpoint(device.currentValue("coolingSetpoint") + notchAmount)
+    	setCoolingSetpoint(device.currentValue("coolingSetpoint") + delta)
     } else {
-        setHeatingSetpoint(device.currentValue("heatingSetpoint") + notchAmount)
+        setHeatingSetpoint(device.currentValue("heatingSetpoint") + delta)
     }
 }
 
 // Implementation of capability.thermostat
 def setHeatingSetpoint(degreesF) {
 	log.debug "setHeatingSetpoint(${degreesF})"
+    sendEvent(name: "heatingSetpoint", value: degreesF, unit: "F")
     parent.setHeatingSetpoint(this, degreesF)
-	refresh()
 }
 
 // Implementation of capability.thermostat
 def setCoolingSetpoint(degreesF) {
 	log.debug "setCoolingSetpoint(${degreesF})"
+    sendEvent(name: "coolingSetpoint", value: degreesF, unit: "F")
     parent.setCoolingSetpoint(this, degreesF)
-	refresh()
 }
 
 // Implementation of capability.thermostat
 // Valid values are: "auto" "emergency heat" "heat" "off" "cool"
-def setThermostatMode(String value) {
-	log.debug "setThermostatMode(${value})"
-	parent.setThermostatMode(this, value)
-    refresh()
+def setThermostatMode(String mode) {
+	log.debug "setThermostatMode(${mode})"
+    sendEvent(name: "thermostatMode", value: mode)
+	parent.setThermostatMode(this, mode)
 }
 
 // Implementation of capability.thermostat
@@ -213,10 +210,10 @@ def auto() { setThermostatMode("auto") }
 
 // Implementation of capability.thermostat
 // Valid values are: "auto" "on" "circulate"
-def setThermostatFanMode(String value) {
-	log.debug "setThermostatFanMode(${value})"
-    parent.setThermostatFanMode(this, value)
-    refresh()
+def setThermostatFanMode(String fanMode) {
+	log.debug "setThermostatFanMode(${fanMode})"
+    sendEvent(name: "thermostatFanMode", value: fanMode)
+    parent.setThermostatFanMode(this, fanMode)
 }
 
 // Implementation of capability.thermostat
@@ -227,9 +224,3 @@ def fanAuto() { setThermostatFanMode("auto") }
 
 // Implementation of capability.thermostat
 def fanCirculate() { setThermostatFanMode("circulate") }
-
-def resumeProgram() {
-	log.debug "resumeProgram()"
-    parent.resumeProgram(this)
-    refresh()
-}
