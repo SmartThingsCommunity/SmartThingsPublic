@@ -38,28 +38,40 @@ def getChildNamespace() { "trentfoley" }
 def getChildName() { "Nexia Thermostat" }
 def getServerUrl() { "https://www.mynexia.com" }
 
-def debugEvent(message, displayEvent = false) {
+private debugEvent(message, displayEvent = false) {
 	def results = [
-		name: "appdebug",
+		name: "debug",
 		descriptionText: message,
 		displayed: displayEvent
 	]
-	log.debug "DEBUG: ${results}"
-	sendEvent (results)
+	log.debug "${results}"
+	sendEvent(results)
+}
+
+private errorEvent(message, displayEvent = true) {
+	def results = [
+		name: "error",
+		descriptionText: message,
+		displayed: displayEvent
+	]
+	log.error "${results}"
+	sendEvent(results)
 }
 
 def installed() {
-    log.debug "Installed with settings: ${settings}"
+    debugEvent("installed()")
     initialize()
 }
 
 def updated() {
-    log.debug "Updated with settings: ${settings}"
+    debugEvent("updated()")
     unsubscribe()
     initialize()
 }
 
 def initialize() {
+	debugEvent("initialize()")
+    
     // Ensure authenticated
     refreshAuthToken()
     
@@ -70,39 +82,40 @@ def initialize() {
         headers: defaultHeaders
     ]
 
-    log.debug "Home Parameters: ${homeParams}"
+    debugEvent("Nexia Home Request Parameters: ${homeParams}")
 
 	try {
         httpGet(homeParams) { homeResp ->
             // html / body / div id=footer-wrapper / div id=content / div id=content_sidebar / nav / ul / li / a id=climate_link
             def climatePath = homeResp.data[0].children[1].children[0].children[3].children[1].children[2].children[0].children[3].children[0].attributes()["href"]
             state.thermostatsPath = climatePath.replace("climate/index", "xxl_thermostats")
+            state.zonesPath = climatePath.replace("climate/index", "xxl_zones")
         }
     }
     catch(Exception e) {
-        log.debug "Caught exception determining thermostats path: ${e}"
+        errorEvent("Caught exception determining thermostats path: ${e}")
     }
     
     // Get list of thermostats and ensure child devices
     requestThermostats { thermostatsResp ->
         def devices = thermostatsResp.data.collect { stat ->
-            log.debug "Found thermostat with ID: ${stat.id}"
+            debugEvent("Found thermostat with ID: ${stat.id}")
             
             def dni = getDeviceNetworkId(stat.id)
 			def device = getChildDevice(dni)
             if(!device) {
                 device = addChildDevice(childNamespace, childName, dni, null, [ label: "${childName} (${stat.name})" ])
-                log.debug "Created ${device.displayName} with device network id: ${dni}"
+                debugEvent("Created ${device.displayName} with device network id: ${dni}")
             } else {
-                log.debug "Found already existing ${device.displayName} with device network id: ${dni}"
+                debugEvent("Found already existing ${device.displayName} with device network id: ${dni}")
             }
 
             return device
         }
 
-		log.debug "Discovered ${devices.size()} thermostats"
+		debugEvent("Discovered ${devices.size()} thermostats")
         
-		devices.each { it.poll() }
+		devices.each { it.refresh() }
     }
 }
 
@@ -116,7 +129,7 @@ private updateCookies(groovyx.net.http.HttpResponseDecorator response) {
         def cookieName = cookieValue.split('=')[0]
         // if (!state.cookies) { state.cookies = [:] }
         
-        log.debug "Updating cookie: ${cookieValue}"
+        debugEvent("Updating cookie: ${cookieValue}")
         
         state.cookies[(cookieName)] = cookieValue
     }
@@ -183,7 +196,7 @@ private refreshAuthToken() {
         }
     }
     catch(Exception e) {
-        log.error "Caught exception refreshing auth token: ${e}"
+        errorEvent("Caught exception refreshing auth token: ${e}")
     }
 }
 
@@ -191,7 +204,6 @@ private requestThermostats(Closure closure) {
 	debugEvent("requestThermostats(${state.thermostatsPath})")
     
     def thermostatsParams = [
-        method: 'GET',
         uri: serverUrl,
         path: state.thermostatsPath,
         headers: defaultHeaders
@@ -212,7 +224,19 @@ private requestThermostats(Closure closure) {
         }
     }
     catch(Exception e) {
-        log.error "Caught exception requesting thermostats: ${e}"
+        errorEvent("Caught exception requesting thermostats: ${e}")
+    }
+}
+
+private requestThermostat(deviceNetworkId, Closure closure) {
+	requestThermostats { resp ->
+        def stat = resp.data.find { it -> getDeviceNetworkId(it.id) == deviceNetworkId }
+        if (!stat) {
+        	errorEvent("ERROR: Device connection removed? No data found for ${deviceNetworkId} after polling")
+        } else {
+        	debugEvent("Thermostat request succeeded: ${stat}")
+        	closure(stat)
+        }
     }
 }
 
@@ -223,64 +247,126 @@ def pollChild(child) {
 
 	def statData = [:]
 
-	requestThermostats { resp ->
-        def stat = resp.data.find { it -> getDeviceNetworkId(it.id) == deviceNetworkId }
-        if (!stat) {
-        	log.error "ERROR: Device connection removed? No data found for ${deviceNetworkId} after polling"
-        } else {
-            def zone = stat.zones[0]
-            
-            def systemStatusToOperatingStateMapping = [
-                "System Idle": "idle",
-                "Waiting...": "pending ${zone.zone_mode.toLowerCase()}",
-                "Heating": "heating",
-                "Cooling": "cooling",
-                "Fan Running": "fan only"
-            ]
-            
-            debugEvent(stat)
-            
-            statData = [
-                temperature: zone.temperature.toInteger(),
-                heatingSetpoint: zone.heating_setpoint.toInteger(),
-                coolingSetpoint: zone.cooling_setpoint.toInteger(),
-                thermostatSetpoint: ((zone.zone_mode == "COOL") ? zone.cooling_setpoint : zone.heating_setpoint).toInteger(),
-                // TODO: handle case for "emergency heat"
-                thermostatMode: zone.requested_zone_mode.toLowerCase(), // "auto" "emergency heat" "heat" "off" "cool"
-                thermostatFanMode: stat.fan_mode,  // "auto" "on" "circulate"
-                thermostatOperatingState: systemStatusToOperatingStateMapping[stat.system_status], // "heating" "idle" "pending cool" "vent economizer" "cooling" "pending heat" "fan only"
-                systemStatus: stat.system_status,
-                activeMode: zone.zone_mode.toLowerCase(),
-                emergencyHeatSupported: stat.emergency_heat_supported,
-                humidity: (stat.current_relative_humidity * 100).toInteger(),
-                outdoorTemperature: stat.raw_outdoor_temperature.toInteger()
-            ]
-        }
+	requestThermostat(deviceNetworkId) { stat ->
+        def zone = stat.zones[0]
+
+        def systemStatusToOperatingStateMapping = [
+            "System Idle": "idle",
+            "Waiting...": "pending ${zone.zone_mode.toLowerCase()}",
+            "Heating": "heating",
+            "Cooling": "cooling",
+            "Fan Running": "fan only"
+        ]
+
+        statData = [
+            temperature: zone.temperature.toInteger(),
+            heatingSetpoint: zone.heating_setpoint.toInteger(),
+            coolingSetpoint: zone.cooling_setpoint.toInteger(),
+            thermostatSetpoint: ((zone.zone_mode == "COOL") ? zone.cooling_setpoint : zone.heating_setpoint).toInteger(),
+            // TODO: handle case for "emergency heat"
+            thermostatMode: zone.requested_zone_mode.toLowerCase(), // "auto" "emergency heat" "heat" "off" "cool"
+            thermostatFanMode: stat.fan_mode,  // "auto" "on" "circulate"
+            thermostatOperatingState: systemStatusToOperatingStateMapping[stat.system_status], // "heating" "idle" "pending cool" "vent economizer" "cooling" "pending heat" "fan only"
+            systemStatus: stat.system_status,
+            activeMode: zone.zone_mode.toLowerCase(),
+            emergencyHeatSupported: stat.emergency_heat_supported,
+            humidity: (stat.current_relative_humidity * 100).toInteger(),
+            outdoorTemperature: stat.raw_outdoor_temperature.toInteger()
+        ]
     }
     
     return statData
+}
+
+// updateType can be: "setpoints", "zone_mode"
+private updateZone(zone, updateType) {
+	debugEvent("updateZone(${zone.id}, ${updateType})")
+    def requestParams = [
+        uri: serverUrl,
+        path: "${state.zonesPath}/${zone.id}/${updateType}",
+        headers: defaultHeaders,
+        body: zone
+    ]
+
+    httpPutJson(requestParams) { resp ->
+        if (resp.status == 200) {
+            debugEvent("Zone update suceeded")
+        } else {
+            throw new Exception("Unexpected status while attempting to update zone: ${resp.status}")
+        }
+    }
+}
+
+// updateType can be: "fan_mode"
+private updateThermostat(stat, updateType) {
+	debugEvent("updateThermostat(${stat.id}, ${updateType})")
+    def requestParams = [
+        uri: serverUrl,
+        path: "${state.thermostatsPath}/${stat.id}/${updateType}",
+        headers: defaultHeaders,
+        body: stat
+    ]
+
+    httpPutJson(requestParams) { resp ->
+        if (resp.status == 200) {
+            debugEvent("Thermostat update suceeded")
+        } else {
+            throw new Exception("Unexpected status while attempting to update thermostat: ${resp.status}")
+        }
+    }
 }
 
 def setHeatingSetpoint(child, degreesF) {
 	def deviceNetworkId = child.device.deviceNetworkId
     debugEvent("setHeatingSetpoint(${deviceNetworkId}, ${degreesF})")
     
+    requestThermostat(deviceNetworkId) { stat ->
+        def zone = stat.zones[0]
+        zone.heating_setpoint = degreesF
+		zone.heating_integer = "${degreesF.toInteger()}"
+        zone.heating_decimal = ""
+        zone.cooling_setpoint = zone.cooling_setpoint
+		zone.cooling_integer = "${zone.cooling_setpoint}"
+		zone.cooling_decimal = ""
+        
+        updateZone(zone, "setpoints")
+    }
 }
 
 def setCoolingSetpoint(child, degreesF) {
 	def deviceNetworkId = child.device.deviceNetworkId
     debugEvent("setCoolingSetpoint(${deviceNetworkId}, ${degreesF})")
     
+    requestThermostat(deviceNetworkId) { stat ->
+        def zone = stat.zones[0]
+        zone.heating_setpoint = zone.heating_setpoint
+		zone.heating_integer = "${zone.heating_setpoint.toInteger()}"
+        zone.heating_decimal = ""
+		zone.cooling_setpoint = degreesF
+        zone.cooling_integer = "${degreesF.toInteger()}"
+		zone.cooling_decimal = ""
+        
+        updateZone(zone, "setpoints")
+    }
 }
 
 def setThermostatMode(child, value) {
-
+	def deviceNetworkId = child.device.deviceNetworkId
+    debugEvent("setThermostatMode(${deviceNetworkId}, ${value})")
+    
+    requestThermostat(deviceNetworkId) { stat ->
+        def zone = stat.zones[0]
+        zone.requested_zone_mode = value.toUpperCase()
+        updateZone(zone, "zone_mode")
+    }
 }
 
 def setThermostatFanMode(child, value) {
-
-}
-
-def resumeProgram(child) {
-	
+	def deviceNetworkId = child.device.deviceNetworkId
+    debugEvent("setThermostatFanMode(${deviceNetworkId}, ${value})")
+    
+    requestThermostat(deviceNetworkId) { stat ->
+        stat.fan_mode = value
+        updateThermostat(stat, "fan_mode")
+    }
 }
