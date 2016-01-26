@@ -20,7 +20,9 @@
  * 	Incorporate additional device capabilities, some based on code by Yves Racine
  *
  *
- *  Version: 20160124_001_development
+ *  Current Version: 0.8.0-RC
+ *  Release Date: 2016-01-26
+ *  See separate Changelog for change history 
  *
  */
 metadata {
@@ -533,36 +535,30 @@ metadata {
 
 // parse events into attributes
 def parse(String description) {
-	if ( debugLevel(3) ) { log.debug "parse() --> Parsing '${description}'" }
+	LOG( "parse() --> Parsing '${description}'" )
 	// Not needed for cloud connected devices
 
 }
 
 def refresh() {
-	if ( debugLevel(4) ) { log.debug "refresh called" }
+	LOG("refresh() called", 4)
 	poll()
-	if ( debugLevel(4) ) { log.debug "refresh ended" }
 }
 
 void poll() {
-	if ( debugLevel(2) ) { log.debug "Executing 'poll' using parent SmartApp" }
-
-	//def results =
-    // Parent responsible for calling generateEvent with any changed events
+	LOG("Executing 'poll' using parent SmartApp")
     parent.pollChildren(this)
-    // log.debug "pollChildren() - results: ${results}"
-	// generateEvent(results) //parse received message from parent
 }
 
 
 def generateEvent(Map results) {
-	if ( debugLevel(4) ) { log.debug "generateEvent(): parsing data $results" }
-    if ( debugLevel(1) ) { log.info "Debug level of parent: ${parent.settings?.debugLevel}" }
+	LOG("generateEvent(): parsing data $results", 4)
+    LOG("Debug level of parent: ${parent.settings?.debugLevel}")
 	def linkText = getLinkText(device)
 
 	if(results) {
 		results.each { name, value ->
-			if ( debugLevel(4) ) { log.debug "generateEvent() - In each loop: name: ${name}  value: ${value}" }
+			LOG("generateEvent() - In each loop: name: ${name}  value: ${value}", 4)
 			def isChange = false
 			def isDisplayed = true
 			def event = [name: name, linkText: linkText, descriptionText: getThermostatDescriptionText(name, value, linkText),
@@ -589,7 +585,7 @@ def generateEvent(Map results) {
 				isDisplayed = isChange
 				event << [value: value.toString(), isStateChange: isChange, displayed: isDisplayed]
 			}
-			if ( debugLevel(5) ) { log.debug "Out of loop, calling sendevent(${event})" }
+			LOG("Out of loop, calling sendevent(${event})", 5)
 			sendEvent(event)
 		}
 		generateSetpointEvent()
@@ -628,7 +624,7 @@ def setTemperature(setpoint) {
 	def targetvalue
 
 	if (mode == "off" || (mode == "auto" && !usingSmartAuto() )) {
-		if ( debugLevel(5) ) { log.warn "setTemperature(): this mode: $mode does not allow raiseSetpoint" }
+		LOG("setTemperature(): this mode: $mode does not allow raiseSetpoint", 2, null, "warn")
         return
     }
 
@@ -756,11 +752,11 @@ void setCoolingSetpoint(Double setpoint) {
 	if (parent.setHold (this, heatingSetpoint,  coolingSetpoint, deviceId, sendHoldType)) {
 		sendEvent("name":"heatingSetpoint", "value": wantMetric() ? heatingSetpoint : heatingSetpoint.round(0).toInteger() )
 		sendEvent("name":"coolingSetpoint", "value": wantMetric() ? coolingSetpoint : coolingSetpoint.round(0).toInteger() )
-		if ( debugLevel(4) ) { log.debug "Done setCoolingSetpoint>> coolingSetpoint = ${coolingSetpoint}, heatingSetpoint = ${heatingSetpoint}" }
+		LOG("Done setCoolingSetpoint>> coolingSetpoint = ${coolingSetpoint}, heatingSetpoint = ${heatingSetpoint}", 4)
 		generateSetpointEvent()
 		generateStatusEvent()
 	} else {
-		if ( debugLevel(4) ) { log.error "Error setCoolingSetpoint(setpoint)" } //This error is handled by the connect app
+		LOG("Error setCoolingSetpoint(setpoint)", 2, null, "error") //This error is handled by the connect app
 	}
 }
 
@@ -844,7 +840,7 @@ def switchFanMode() {
 
 def switchToFanMode(nextMode) {
 
-	if ( debugLevel(5) ) { log.debug "switching to fan mode: $nextMode" }
+	LOG("switching to fan mode: $nextMode", 4)
 	def returnCommand
 
 	if(nextMode == "fanAuto") {
@@ -885,7 +881,7 @@ def generateFanModeEvent(fanMode) {
 }
 
 def generateOperatingStateEvent(operatingState) {
-	if ( debugLevel(4) ) { log.debug "generateOperatingStateEvent with state: ${operatingState}" }
+	LOG("generateOperatingStateEvent with state: ${operatingState}", 4)
 	sendEvent(name: "thermostatOperatingState", value: operatingState, descriptionText: "$device.displayName is ${operatingState}", displayed: true)
 }
 
@@ -991,8 +987,7 @@ def sleep() {
 }
 
 def generateProgramEvent(program, failedProgram=null) {
-
-	if ( debugLevel(3) ) { log.debug "Generate generateProgramEvent Event: program ${program}" }
+	LOG("Generate generateProgramEvent Event: program ${program}", 4)
 
 	sendEvent("name":"thermostatStatus", "value":"Setpoint updating...", "description":statusText, displayed: false)
 	sendEvent("name":"currentProgramName", "value":program.capitalize())
@@ -1134,7 +1129,7 @@ void lowerSetpoint() {
         }
 
 		sendEvent("name":"thermostatSetpoint", "value":( wantMetric() ? targetvalue : targetvalue.round(0).toInteger() ), displayed: true)
-		if ( debugLevel(5) ) { log.info "In mode $mode lowerSetpoint() to $targetvalue" }
+		LOG("In mode $mode lowerSetpoint() to $targetvalue", 5, null, "info")
 
 		// Wait 4 seconds before sending in case we hit the buttons again
 		runIn(4, "alterSetpoint", [data: [value:targetvalue], overwrite: true]) //when user click button this runIn will be overwrite
@@ -1215,7 +1210,7 @@ void alterSetpoint(temp) {
     // generateSetpointEvent()
 	generateStatusEvent()
     // refresh data
-    runIn(20, "poll")
+    runIn(15, "poll")
 }
 
 def generateStatusEvent() {
@@ -1226,13 +1221,13 @@ def generateStatusEvent() {
 
 	def statusText
 
-	if ( debugLevel(3) ) { 
-    	log.debug "Generate Status Event for Mode = ${mode}" 
-		log.debug "Temperature = ${temperature}"
-		log.debug "Heating set point = ${heatingSetpoint}"
-		log.debug "Cooling set point = ${coolingSetpoint}"
-		log.debug "HVAC Mode = ${mode}"
-	}
+	
+	LOG("Generate Status Event for Mode = ${mode}")
+	LOG("Temperature = ${temperature}")
+	LOG("Heating set point = ${heatingSetpoint}")
+	LOG("Cooling set point = ${coolingSetpoint}")
+	LOG("HVAC Mode = ${mode}")
+	
 
 	if (mode == "heat") {
 
@@ -1259,7 +1254,7 @@ def generateStatusEvent() {
 	} else {
 		statusText = "${mode}?"
 	}
-	if ( debugLevel(4) ) { log.debug "Generate Status Event = ${statusText}" }
+	LOG("Generate Status Event = ${statusText}", 4)
 	sendEvent("name":"thermostatStatus", "value":statusText, "description":statusText, displayed: true)
 }
 
@@ -1267,293 +1262,6 @@ def generateStatusEvent() {
 def generateActivityFeedsEvent(notificationMessage) {
 	sendEvent(name: "notificationMessage", value: "$device.displayName $notificationMessage", descriptionText: "$device.displayName $notificationMessage", displayed: true)
 }
-
-
-
-// Ecobee API Related Functions - from Yves code
-// TODO: Move all of this into the Service Manager. No need to have each device contact the Ecobee cloud directly!!!
-
-/*
-private void api(method, args, success = {}) {
-	def MAX_EXCEPTION_COUNT=5
-	String URI_ROOT = "${get_URI_ROOT()}/1"
-	if (!isLoggedIn()) {
-		login()
-
-	}
-	if (isTokenExpired()) {
-		if (settings.trace) {
-			log.debug "api>need to refresh tokens"
-		}
-		if (!refresh_tokens()) {
-			login()
-			def exceptionCheck=device.currentValue("verboseTrace")
-			if (exceptionCheck.contains("exception")) {
-				log.error ("api>$exceptionCheck, not able to renew the refresh token, need to re-login to ecobee, run MyEcobeeInit....")
-				sendEvent (name: "verboseTrace", value:"api>$exceptionCheck, not able to renew the refresh token, need to re-login to ecobee, run MyEcobeeInit....")
-			}
-
-		} else {
-
-			// Reset Exceptions counter as the refresh_tokens() call has been successful
-			state.exceptionCount=0
-		}
-	}
-	if (state.exceptionCount >= MAX_EXCEPTION_COUNT) {
-
-		log.error ("api>error: found a high number of exceptions (${state.exceptionCount}), will try to refresh tokens, it it fails, you should run MyEcobeeInit and re-login to ecobee....")
-		sendEvent (name: "verboseTrace",
-			value: "api>error: found a high number of exceptions (${state.exceptionCount}) , will try to refresh tokens, it it fails, you should run MyEcobeeInit and re-login to ecobee....")
-		refresh_tokens()
-		state.exceptionCount=0
-	}
-	def args_encoded = java.net.URLEncoder.encode(args.toString(), "UTF-8")
-	def methods = [
-		'thermostatSummary':
-			[uri:"${URI_ROOT}/thermostatSummary?format=json&body=${args_encoded}",
-      			type:'get'],
-		'thermostatInfo':
-			[uri:"${URI_ROOT}/thermostat?format=json&body=${args_encoded}",
-          		type: 'get'],
-		'setThermostatSettings':
-			[uri: "${URI_ROOT}/thermostat?format=json", type: 'post'],
-		'setHold':
-			[uri: "${URI_ROOT}/thermostat?format=json", type: 'post'],
-		'resumeProgram':
-			[uri: "${URI_ROOT}/thermostat?format=json", type: 'post'],
-		'createVacation':
-			[uri: "${URI_ROOT}/thermostat?format=json", type: 'post'],
-		'deleteVacation':
-			[uri: "${URI_ROOT}/thermostat?format=json", type: 'post'],
-		'getGroups':
-			[uri: "${URI_ROOT}/group?format=json&body=${args_encoded}",
-			type: 'get'],
-		'updateGroup':
-			[uri: "${URI_ROOT}/group?format=json", type: 'post'],
-		'updateClimate':
-			[uri: "${URI_ROOT}/thermostat?format=json", type: 'post'],
-		'controlPlug':
-			[uri: "${URI_ROOT}/thermostat?format=json", type: 'post'],
-		'runtimeReport':
-			[uri:"${URI_ROOT}/runtimeReport?format=json&body=${args_encoded}",
-          		type: 'get'],
-		]
-	def request = methods.getAt(method)
-	if (settings.trace) {
-		log.debug "api> about to call doRequest with (unencoded) args = ${args}"
-		sendEvent name: "verboseTrace", value:
-			"api> about to call doRequest with (unencoded) args = ${args}"
-	}
-	doRequest(request.uri, args_encoded, request.type, success)
-}
-
-// Need to be authenticated in before this is called. So don't call this. Call api.
-private void doRequest(uri, args, type, success) {
-	def params = [
-		uri: uri,
-		headers: [
-			'Authorization': "${data.auth.token_type} ${data.auth.access_token}",
-			'Content-Type': "application/json",
-			'charset': "UTF-8",
-			'Accept': "application/json"
-		],
-		body: args
-	]
-	try {
-		if (settings.trace) {
-//			sendEvent name: "verboseTrace", value: "doRequest>token= ${data.auth.access_token}"
-			sendEvent name: "verboseTrace", value:
-				"doRequest>about to ${type} with uri ${params.uri}, (encoded)args= ${args}"
-				log.debug "doRequest> ${type}> uri ${params.uri}, args= ${args}"
-		}
-		if (type == 'post') {
-			httpPostJson(params, success)
-
-		} else if (type == 'get') {
-			params.body = null // parameters already in the URL request
-			httpGet(params, success)
-		}
-		// when success, reset the exception counter
-		state.exceptionCount=0
-
-	} catch (java.net.UnknownHostException e) {
-		log.error "doRequest> Unknown host - check the URL " + params.uri
-		sendEvent name: "verboseTrace", value: "doRequest> Unknown host ${params.uri}"
-		state.exceptionCount = state.exceptionCount +1
-	} catch (java.net.NoRouteToHostException e) {
-		log.error "doRequest> No route to host - check the URL " + params.uri
-		sendEvent name: "verboseTrace", value: "doRequest> No route to host ${params.uri}"
-		state.exceptionCount = state.exceptionCount +1
-	} catch (e) {
-		log.debug "doRequest>exception $e for " + params.body
-		sendEvent name: "verboseTrace", value:
-			"doRequest>exception $e for " + params.body
-		state.exceptionCount = state.exceptionCount +1
-	}
-}
-
-// tstatType =managementSet or registered (no spaces).
-//		registered is for SMART & SMART-SI thermostats,
-//		managementSet is for EMS thermostat
-//		may also be set to a specific locationSet (ex. /Toronto/Campus/BuildingA)
-//		may be set to null if not relevant for the given method
-// thermostatId may be a list of serial# separated by ",", no spaces (ex. '123456789012,123456789013')
-private def build_body_request(method, tstatType="registered", thermostatId, tstatParams = [],
-	tstatSettings = []) {
-	def selectionJson = null
-	def selection = null
-	if (method == 'thermostatSummary') {
-		if (tstatType.trim().toUpperCase() == 'REGISTERED') {
-			selection = [selection: [selectionType: 'registered', selectionMatch: '',
-							includeEquipmentStatus: 'true']
-						]
-		} else {
-			// If tstatType is different than managementSet, it is assumed to be locationSet specific (ex./Toronto/Campus/BuildingA)
-			selection = (tstatType.trim().toUpperCase() == 'MANAGEMENTSET') ?
-				// get all EMS thermostats from the root
-				[selection: [selectionType: 'managementSet', selectionMatch: '/',
-					includeEquipmentStatus: 'true']
-				] : // Or Specific to a location
-				[selection: [selectionType: 'managementSet', selectionMatch: tstatType.trim(),
-					includeEquipmentStatus: 'true']
-				]
-		}
-		selectionJson = new groovy.json.JsonBuilder(selection)
-		return selectionJson
-	} else if (method == 'thermostatInfo') {
-		selection = [selection: [selectionType: 'thermostats',
-			selectionMatch: thermostatId,
-			includeSettings: 'true',
-			includeRuntime: 'true',
-			includeProgram: 'true',
-			includeWeather: 'true',
-			includeAlerts: 'true',
-			includeEvents: 'true',
-			includeEquipmentStatus: 'true',
-			includeSensors: 'true'
-			]
-		]
-		selectionJson = new groovy.json.JsonBuilder(selection)
-		return selectionJson
-	} else {
-		selection = [selectionType: 'thermostats', selectionMatch: thermostatId]
-	}
-	selectionJson = new groovy.json.JsonBuilder(selection)
-	if ((method != 'setThermostatSettings') && (tstatSettings != null) && (tstatSettings != [])) {
-		def function_clause = ((tstatParams != null) && (tsatParams != [])) ?
-			[type:method, params: tstatParams] :
-			[type: method]
-		def bodyWithSettings = [functions: [function_clause], selection: selection,
-				thermostat: [settings: tstatSettings]
-			]
-		def bodyWithSettingsJson = new groovy.json.JsonBuilder(bodyWithSettings)
-		return bodyWithSettingsJson
-	} else if (method == 'setThermostatSettings') {
-		def bodyWithSettings = [selection: selection,thermostat: [settings: tstatSettings]
-			]
-		def bodyWithSettingsJson = new groovy.json.JsonBuilder(bodyWithSettings)
-		return bodyWithSettingsJson
-	} else if ((tstatParams != null) && (tsatParams != [])) {
-		def function_clause = [type: method, params: tstatParams]
-		def simpleBody = [functions: [function_clause], selection: selection]
-		def simpleBodyJson = new groovy.json.JsonBuilder(simpleBody)
-		return simpleBodyJson
-	} else {
-		def function_clause = [type: method]
-		def simpleBody = [functions: [function_clause], selection: selection]
-		def simpleBodyJson = new groovy.json.JsonBuilder(simpleBody)
-		return simpleBodyJson
-    }
-}
-
-
-// iterateSetThermostatSettings: iterate thru all the thermostats under a specific account and set the desired settings
-// tstatType =managementSet or registered (no spaces).  May also be set to a specific locationSet (ex./Toronto/Campus/BuildingA)
-// settings can be anything supported by ecobee
-//		at https://www.ecobee.com/home/developer/api/documentation/v1/objects/Settings.shtml
-void iterateSetThermostatSettings(tstatType, tstatSettings = []) {
-	Integer MAX_TSTAT_BATCH = get_MAX_TSTAT_BATCH()
-	def tstatlist = null
-	Integer nTstats = 0
-
-	def ecobeeType = determine_ecobee_type_or_location(tstatType)
-	getThermostatSummary(ecobeeType)
-	if (settings.trace) {
-		log.debug
-			"iterateSetThermostatSettings>ecobeeType=${ecobeeType},about to loop ${data.thermostatCount} thermostat(s)"
-		sendEvent name: "verboseTrace", value:
-			"iterateSetThermostatSettings>ecobeeType=${ecobeeType},about to loop ${data.thermostatCount} thermostat(s)"
-	}
-	for (i in 0..data.thermostatCount - 1) {
-		def thermostatDetails = data.revisionList[i].split(':')
-		def Id = thermostatDetails[0]
-		def thermostatName = thermostatDetails[1]
-		def connected = thermostatDetails[2]
-		if (connected == 'true') {
-			if (nTstats == 0) {
-				tstatlist = Id
-				nTstats = 1
-			}
-			if ((nTstats > MAX_TSTAT_BATCH) || (i == (data.thermostatCount - 1))) {
-				// process a batch of maximum 25 thermostats according to API doc
-				if (settings.trace) {
-					sendEvent name: "verboseTrace", value:
-						"iterateSetThermostatSettings>about to call setThermostatSettings for ${tstatlist}"
-					log.debug "iterateSetThermostatSettings> about to call setThermostatSettings for ${tstatlist}"
-				}
-				setThermostatSettings("${tstatlist}",tstatSettings)
-				tstatlist = Id
-				nTstats = 1
-			} else {
-				tstatlist = tstatlist + "," + Id
-				nTstats++
-			}
-		}
-	}
-}
-
-// thermostatId may be a list of serial# separated by ",", no spaces (ex. '123456789012,123456789013')
-//	if no thermostatId is provided, it is defaulted to the current thermostatId
-// settings can be anything supported by ecobee at https://www.ecobee.com/home/developer/api/documentation/v1/objects/Settings.shtml
-void setThermostatSettings(thermostatId,tstatSettings = []) {
-   	thermostatId= determine_tstat_id(thermostatId)
-	if (settings.trace) {
-		log.debug
-			"setThermostatSettings>called with values ${tstatSettings} for ${thermostatId}"
-		sendEvent name: "verboseTrace", value:
-			"setThermostatSettings>called with values ${tstatSettings} for ${thermostatId}"
-	}
-	def bodyReq = build_body_request('setThermostatSettings',null,thermostatId,null,tstatSettings)
-	def statusCode=true
-	int j=0
-	while ((statusCode) && (j++ <2)) { // retries once if api call fails
-		api('setThermostatSettings', bodyReq) {resp ->
-			statusCode = resp.data.status.code
-			def message = resp.data.status.message
-			if (!statusCode) {
-				sendEvent name: "verboseTrace", value:
-						"setThermostatSettings>done for ${thermostatId}"
-			} else {
-				log.error
-					"setThermostatSettings> error=${statusCode.toString()},message=${message} for ${thermostatId}"
-				sendEvent name: "verboseTrace", value:
-					"setThermostatSettings> error=${statusCode.toString()},message=${message} for ${thermostatId}"
-				// introduce a 1 second delay before re-attempting any other command
-				def cmd= []
-				cmd << "delay 1000"
-				cmd
-			} // end if statusCode
-		} // end api call
-	} // end for
-}
-
-*/
-
-// Helper functions
-// TODO: These are going to be used for coming features
-// def toQueryString(Map m) {
-//	return m.collect { k, v -> "${k}=${URLEncoder.encode(v.toString())}" }.sort().join("&")
-// }
 
 
 // Built in functions from SmartThings?
@@ -1565,9 +1273,8 @@ def wantMetric() {
 	return (getTemperatureScale() == "C")
 }
 
-
 private def cToF(temp) {
-	//return (temp * 1.8 + 32)
+	// return (temp * 1.8 + 32)
     return celsiusToFahrenheit(temp)
 }
 private def fToC(temp) {
@@ -1613,7 +1320,6 @@ private debugLevel(level=3) {
 }
 
 
-
 private def LOG(message, level=3, child=null, logType="debug", event=false, displayEvent=false) {
 	def prefix = ""
 	if ( parent.settings.debugLevel?.toInteger() == 5 ) { prefix = "LOG: " }
@@ -1641,31 +1347,30 @@ private def debugEvent(message, displayEvent = false) {
 def getTempColors() {
 	def colorMap
 
+	colorMap = [
+		// Celsius Color Range
+		[value: 0, color: "#1e9cbb"],
+		[value: 15, color: "#1e9cbb"],
+		[value: 19, color: "#1e9cbb"],
 
-    	colorMap = [
-                	// Celsius Color Range
-					[value: 0, color: "#1e9cbb"],
-					[value: 15, color: "#1e9cbb"],
-                    [value: 19, color: "#1e9cbb"],
+		[value: 21, color: "#44b621"],
+		[value: 22, color: "#44b621"],
+		[value: 24, color: "#44b621"],
 
-                    [value: 21, color: "#44b621"],
-					[value: 22, color: "#44b621"],
-                    [value: 24, color: "#44b621"],
+		[value: 21, color: "#d04e00"],
+		[value: 35, color: "#d04e00"],
+		[value: 37, color: "#d04e00"],
+		// Fahrenheit Color Range
+		[value: 40, color: "#1e9cbb"],
+		[value: 59, color: "#1e9cbb"],
+		[value: 67, color: "#1e9cbb"],
 
-					[value: 21, color: "#d04e00"],
-					[value: 35, color: "#d04e00"],
-					[value: 37, color: "#d04e00"],
-					// Fahrenheit Color Range
-                	[value: 40, color: "#1e9cbb"],
-					[value: 59, color: "#1e9cbb"],
-                    [value: 67, color: "#1e9cbb"],
+		[value: 69, color: "#44b621"],
+		[value: 72, color: "#44b621"],
+		[value: 74, color: "#44b621"],
 
-                    [value: 69, color: "#44b621"],
-					[value: 72, color: "#44b621"],
-                    [value: 74, color: "#44b621"],
-
-					[value: 76, color: "#d04e00"],
-					[value: 95, color: "#d04e00"],
-					[value: 99, color: "#d04e00"]
-				]
+		[value: 76, color: "#d04e00"],
+		[value: 95, color: "#d04e00"],
+		[value: 99, color: "#d04e00"]
+	]
 }

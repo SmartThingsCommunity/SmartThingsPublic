@@ -11,11 +11,13 @@
  *  Unless required by applicable law or agreed to in writing, software distributed under the License is distributed
  *  on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the License
  *  for the specific language governing permissions and limitations under the License.
- *
- *
- *  Version: 20160124_001_development
+ * 
+ *  Current Version: 0.8.0-RC
+ *  Release Date: 2016-01-26
+ *  See separate Changelog for change history
  *
  */
+ 
 metadata {
 	definition (name: "Ecobee Sensor", namespace: "smartthings", author: "SmartThings") {
 		capability "Sensor"
@@ -103,7 +105,7 @@ def generateEvent(Map results) {
                 
                 if (sendValue == "unknown") {
                 	// We are OFFLINE
-                    if ( debugLevel(2) ) { log.warn "Warning: Remote Sensor (${name}) is OFFLINE. Please check the batteries or move closer to the thermostat." }                    
+                    LOG( "Warning: Remote Sensor (${name}) is OFFLINE. Please check the batteries or move closer to the thermostat.", 2, null, "warn")
                     state.onlineState = false
                     sendValue = "unknown"
                 } else {
@@ -120,7 +122,7 @@ def generateEvent(Map results) {
             
                 if ( (sendValue == "unknown") || (!state.onlineState) ) {
                 	// We are OFFLINE
-                    if ( debugLevel(2) ) { log.warn "Warning: Remote Sensor (${name}) is OFFLINE. Please check the batteries or move closer to the thermostat." }
+                    LOG( "Warning: Remote Sensor (${name}) is OFFLINE. Please check the batteries or move closer to the thermostat.", 2, null, "warn")
                     sendValue = "unknown"
                 }
                 
