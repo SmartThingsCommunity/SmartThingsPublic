@@ -12,6 +12,9 @@
  *  on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the License
  *  for the specific language governing permissions and limitations under the License.
  *
+ *  Current Version: 0.7.5
+ *  Release Date: 20160125
+ *  See separate Changelog for change history
  */
 metadata {
 	definition (name: "Ecobee Sensor", namespace: "smartthings", author: "SmartThings") {
