@@ -21,7 +21,9 @@
  *      10-28-2015 DVCSMP-604 - accessory sensor, DVCSMP-1174, DVCSMP-1111 - not respond to routines
  *      StrykerSKS - 12-11-2015 - Make it work (better) with the Ecobee 3
  *
- *  Version: 20160124_001_development
+ *  Current Version: 0.8.0-RC
+ *  Release Date: 2016-01-26
+ *  See separate Changelog for change history
  *
  */
  
