@@ -10,14 +10,36 @@ This project is in a pre-1.0 state. This means that its APIs and behavior are su
 
 ## [0.7.5][] (2016-01-25)
 
+### General Changes
 * First tagged release
+* Added support for different debug levels. This should make it easier to thin out the logs to see real errors instead of all the trace information
+* Total of 3 changed files with 889 additions and 454 deletions
+
+### SmartApp Changes
+* Added support for Comfort Settings
+* Tweeks to the handling for API connection errors in an attempt to recover a connection
+* Fixes for handling an offline Remote Sensor (due to range, battery, etc)
+* Refactoring of code to simplify maintenance (this will be an ongoing process for the next several releases)
+* Added support for Ecobee Events to read the current state. This means we can now show status for Manual and Automatic "Holds" that are running including `Smart Home` and `Smart Away`
+* Clear the waittime between polls immediately after making changes to the settings. This allows the `refresh` button to be more responsive. 
+
+### Device Handler Changes
+* [Thermostat] Added support for Comfort Settings (programs). Adds the following new commands (can be invoked by other SmartApps):
+  * setThermostatProgram(program, holdType)
+  * home()
+  * sleep()
+  * away()
+* [Thermostat] Added the corresponding Tiles to support manipulating and viewing the Comfort Settings. (NOTE: UI elements are likely to change in the future once the overall development stabalizes)
+* [Remote Sensor] Added state for an offline sensor. Marks the `motion` tile to indicate the failure
+
 
 ## [0.6.0][] (2016-01-15)
 * Checkpoint from previous commits to use as baseline
+* Click the release number to see all of the changes made to this branch up until this date
 
 [Semver]: http://semver.org
-[0.7.5]: https://github.com/SmartThingsCommunity/SmartThingsPublic/compare/302bb77d7237132caaa5281b64d4bfbf4420f7cf...StrykerSKS:v0.7.5
-[0.6.0]: https://github.com/SmartThingsCommunity/SmartThingsPublic/compare/master...StrykerSKS:302bb77d7237132caaa5281b64d4bfbf4420f7cf
+[0.7.5]: https://github.com/StrykerSKS/SmartThingsPublic/compare/302bb77d7237132caaa5281b64d4bfbf4420f7cf...StrykerSKS:v0.7.5.5
+[0.6.0]: https://github.com/StrykerSKS/SmartThingsPublic/compare/master...StrykerSKS:302bb77d7237132caaa5281b64d4bfbf4420f7cf
 
-[Development]: https://github.com/SmartThingsCommunity/SmartThingsPublic/compare/StrykerSKS:v0.7.5...HEAD
+[Development]: https://github.com/StrykerSKS/SmartThingsPublic/compare/StrykerSKS:v0.7.5...HEAD
 
