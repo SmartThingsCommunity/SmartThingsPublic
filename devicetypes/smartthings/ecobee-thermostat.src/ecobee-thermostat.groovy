@@ -19,7 +19,10 @@
  * 	Date: 2015-12-23
  * 	Incorporate additional device capabilities, some based on code by Yves Racine
  *
- *
+ *  Current Version: 0.7.5
+ *  Release Date: 20160125
+ *  See separate Changelog for change history
+ * 
  */
 metadata {
 	definition (name: "Ecobee Thermostat", namespace: "smartthings", author: "SmartThings") {
