@@ -2,7 +2,7 @@
  *  Alexa Helper-Child
  *
  *  Copyright © 2016 Michael Struck
- *  Version 2.2.1 1/24/16
+ *  Version 2.2.1a 1/26/16
  * 
  *  Version 1.0.0 - Initial release of child app
  *  Version 1.1.0 - Added framework to show version number of child app and copyright
@@ -14,7 +14,7 @@
  *  Version 2.0.1 - Fixed an issue with the getTimeOk routine
  *  Version 2.1.0 - Many changes; added switches, dimmers and colored lights as control devices. Modified Thermostat logic and modified GUI
  *  Version 2.2.0a - Added SMS to on/off control scenarios, and allow  'toggle' to change the lights; added Sonos as an alarm type
- *  Version 2.2.1 - Code and syntax optimization; added routine to turn off Sonos speaker if used as alarm
+ *  Version 2.2.1a - Code and syntax optimization; added routine to turn off Sonos speaker if used as alarm
  * 
  *  Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except
  *  in compliance with the License. You may obtain a copy of the License at:
@@ -660,12 +660,12 @@ def autoHandler(evt){
 	}
 }
 def nestHomeHandler(evt){
-	if (getOkToRun("Thermostat mode:Auto")) {	
+	if (getOkToRun("Thermostat mode:Home")) {	
 		tstat.present()
 	}
 }
 def nestAwayHandler(evt){
-   	if (getOkToRun("Thermostat mode:Auto")) {	
+   	if (getOkToRun("Thermostat mode:Away")) {	
 		tstat.away()
 	}
 }
@@ -983,7 +983,7 @@ def getAlarmSound(){
 }
 //Version
 private def textVersion() {
-    def text = "Child App Version: 2.2.1 (01/24/2016)"
+    def text = "Child App Version: 2.2.1a (01/26/2016)"
 }
 private def versionInt(){
 	def text = 221
