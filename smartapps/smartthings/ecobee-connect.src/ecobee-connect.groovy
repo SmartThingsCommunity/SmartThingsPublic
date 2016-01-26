@@ -20,7 +20,11 @@
  *      JLH - 02-15-2014 - Fuller use of ecobee API
  *      10-28-2015 DVCSMP-604 - accessory sensor, DVCSMP-1174, DVCSMP-1111 - not respond to routines
  *      StrykerSKS - 12-11-2015 - Make it work (better) with the Ecobee 3
- *
+ * 
+ *  Current Version: 0.7.5
+ *  Release Date: 20160125
+ *  See separate Changelog for change history
+
  */
  
 definition(
