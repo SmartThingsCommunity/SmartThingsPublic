@@ -4,7 +4,8 @@
  *  Copyright © 2016 Michael Struck
  *  Version 2.0.1 1/26/16
  * 
- *  Version 2.0.1 - Initial release of parent/client app. 1.4.5 was released to SmartThings production
+ *  Version 2.0.0 - Initial release of parent/client app. 1.4.5 was released to SmartThings production
+ *  Version 2.0.1 - Changed teh default of new schedules to 'enabled'
  *
  *  Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except
  *  in compliance with the License. You may obtain a copy of the License at:
