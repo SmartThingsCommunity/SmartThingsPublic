@@ -5,7 +5,7 @@ metadata {
 		capability "Switch"
 		capability "Sensor"
 
-		fingerprint profileId: "0104", inClusters: "0000,0003,0006", outClusters: "0019"
+		fingerprint profileId: "0104", inClusters: "0006, 0004, 0003, 0000, 0005", outClusters: "0019", manufacturer: "Compacta International, Ltd", model: "ZBMPlug15", deviceJoinName: "SmartPower Outlet V1"
 	}
 
 	// simulator metadata
