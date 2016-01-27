@@ -3,7 +3,7 @@
  *
  *  Copyright 2015 Bruce Ravenel
  *
- *  Version 1.7.0   27 Jan 2016
+ *  Version 1.7.0a   27 Jan 2016
  *
  *	Version History
  *
@@ -77,7 +77,7 @@ preferences {
 def selectRule() {
 	//version to parent app and expert settings for rule
 	try { 
-		state.isExpert = parent.isExpert("1.7.0") 
+		state.isExpert = parent.isExpert("1.7.0a") 
 		if (state.isExpert) state.cstCmds = parent.getCommands()
 		else state.cstCmds = []
 	}
@@ -806,7 +806,7 @@ def selectActionsTrue() {
 				input "thermoModeTrue", "enum", title: "Select thermostate mode", multiple: false, required: false, options: ["auto", "heat", "cool", "off"], submitOnChange: true
 				input "thermoSetHeatTrue", "decimal", title: "Set heating point", multiple: false, required: false, submitOnChange: true
 				input "thermoSetCoolTrue", "decimal", title: "Set cooling point", multiple: false, required: false, submitOnChange: true 
-				input "thermoFanTrue", "enum", title: "Fan setting", multiple: false, required: false, submitOnChange: true, options: ["fanOn", "fanAuto"]
+				input "thermoFanTrue", "enum", title: "Fan setting", multiple: false, required: false, submitOnChange: true, options: ["on", "auto"]
 				buildActTrue("$thermoTrue: ", true)
 				if(thermoModeTrue) buildActTrue("Mode: " + thermoModeTrue + " ", false)
 				if(thermoSetHeatTrue) buildActTrue("Heat to $thermoSetHeatTrue ", false)
@@ -958,7 +958,7 @@ def selectActionsFalse() {
 				input "thermoModeFalse", "enum", title: "Select thermostate mode", multiple: false, required: false, options: ["auto", "heat", "cool", "off"], submitOnChange: true
 				input "thermoSetHeatFalse", "decimal", title: "Set heating point", multiple: false, required: false, submitOnChange: true
 				input "thermoSetCoolFalse", "decimal", title: "Set cooling point", multiple: false, required: false, submitOnChange: true 
-				input "thermoFanFalse", "enum", title: "Fan setting", multiple: false, required: false, submitOnChange: true, options: ["fanOn", "fanAuto"]
+				input "thermoFanFalse", "enum", title: "Fan setting", multiple: false, required: false, submitOnChange: true, options: ["on", "auto"]
 				buildActFalse("$thermoFalse: ", true)
 				if(thermoModeFalse) buildActFalse("Mode: " + thermoModeFalse + " ", false)
 				if(thermoSetHeatFalse) buildActFalse("Heat to $thermoSetHeatFalse ", false)
