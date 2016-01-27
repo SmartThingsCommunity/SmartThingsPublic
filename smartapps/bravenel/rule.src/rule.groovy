@@ -3,11 +3,11 @@
  *
  *  Copyright 2015 Bruce Ravenel
  *
- *  Version 1.7.0a   27 Jan 2016
+ *  Version 1.7.0b   27 Jan 2016
  *
  *	Version History
  *
- *	1.7.0	27 Jan 2016		Fixed thermostat mode trigger/condition
+ *	1.7.0	27 Jan 2016		Fixed thermostat mode trigger/condition, added thermostat operating state condition
  *	1.6.13	17 Jan 2016		Added TTS support
  *	1.6.12	10 Jan 2016		Bug fix re removing parts of a rule
  *	1.6.11	8 Jan 2016		Added offset to compare to device, fixed bugs in compare to device
@@ -77,7 +77,7 @@ preferences {
 def selectRule() {
 	//version to parent app and expert settings for rule
 	try { 
-		state.isExpert = parent.isExpert("1.7.0a") 
+		state.isExpert = parent.isExpert("1.7.0b") 
 		if (state.isExpert) state.cstCmds = parent.getCommands()
 		else state.cstCmds = []
 	}
@@ -245,6 +245,10 @@ def getDevs(myCapab, dev, multi) {
 			thisName = "Thermostat" + (multi ? "s" : "")
 			thisCapab = "thermostat"
 			break
+		case "Thermostat State":
+			thisName = "Thermostat" + (multi ? "s" : "")
+			thisCapab = "thermostat"
+			break
 		case "Humidity":
 			thisName = "Humidity sensor" + (multi ? "s" : "")
 			thisCapab = "relativeHumidityMeasurement"
@@ -300,11 +304,13 @@ def getRelational(myDev) {
 
 def getCapab(myCapab, isTrig, isReq) {  
 	def myOptions = null
-	if(state.isRule || !isTrig) myOptions = ["Switch", "Motion", "Acceleration", "Contact", "Presence", "Lock", "Temperature", "Humidity", "Illuminance", "Time of day", "Rule truth",
-    	"Days of week", "Mode", "Dimmer level", "Energy meter", "Power meter", "Water sensor", "Battery", "Carbon monoxide detector", "Smoke detector", "Smart Home Monitor", "Garage door", "Thermostat"]
-	if(state.isTrig || isTrig) myOptions = ["Switch", "Physical Switch", "Motion", "Acceleration", "Contact", "Presence", "Lock", "Temperature", "Humidity", "Illuminance", "Certain Time", "Rule truth",
-    	"Mode", "Energy meter", "Power meter", "Water sensor", "Battery", "Routine", "Button", "Dimmer level", "Carbon monoxide detector", "Smoke detector", "Smart Home Monitor", "Garage door", "Thermostat"]
-	def result = input myCapab, "enum", title: "Select capability", required: isReq, options: myOptions.sort(), submitOnChange: true
+	if(state.isRule || !isTrig) myOptions = ["Acceleration", "Battery", "Carbon monoxide detector", "Contact", "Days of week", "Dimmer level", "Energy meter", "Garage door", "Humidity", "Illuminance", "Lock", 
+    	"Mode", "Motion", "Power meter", "Presence", "Rule truth", "Smart Home Monitor", "Smoke detector", "Switch", "Temperature", 
+        "Thermostat", "Thermostat State", "Time of day", "Water sensor"]
+	if(state.isTrig || isTrig) myOptions = ["Acceleration", "Battery", "Button", "Carbon monoxide detector", "Certain Time", "Contact", "Dimmer level", "Energy meter", "Garage door", "Humidity", "Illuminance", 
+    	"Lock", "Mode", "Motion", "Physical Switch", "Power meter", "Presence", "Routine", "Rule truth", "Smart Home Monitor", "Smoke detector", "Switch", "Temperature", 
+        "Thermostat", "Thermostat State", "Water sensor"]
+	def result = input myCapab, "enum", title: "Select capability", required: isReq, options: myOptions, submitOnChange: true
 }
 
 def getState(myCapab, n, isTrig) {
@@ -327,7 +333,8 @@ def getState(myCapab, n, isTrig) {
 	else if(myCapab == "Presence")					result = input myState, "enum", title: "Presence $phrase", 			options: presoptions, 						defaultValue: presdefault
 	else if(myCapab == "Garage door")				result = input myState, "enum", title: "Garage door $phrase", 		options: ["closed", "open"], 				defaultValue: "open"
 	else if(myCapab == "Lock")						result = input myState, "enum", title: "Lock $lockphrase", 			options: ["locked", "unlocked"], 			defaultValue: "unlocked"
-    else if(myCapab == "Thermostat")				result = input myState, "enum", title: "Thermostat set ",			options: ["heat", "cool", "auto", "off"],	defaultValue: "heat"
+    else if(myCapab == "Thermostat")				result = input myState, "enum", title: "Thermostat mode ",			options: ["heat", "cool", "auto", "off", "emergency heat"],	defaultValue: "heat"
+    else if(myCapab == "Thermostat State")			result = input myState, "enum", title: "Thermostat state ",			options: ["heating", "idle", "pending cool", "vent economizer", "cooling", "pending heat", "fan only"]
 	else if(myCapab == "Carbon monoxide detector")	result = input myState, "enum", title: "CO $phrase ", 				options: ["clear", ,"detected", "tested"], 	defaultValue: "detected"
 	else if(myCapab == "Smoke detector")			result = input myState, "enum", title: "Smoke $phrase ", 			options: ["clear", ,"detected", "tested"], 	defaultValue: "detected"
 	else if(myCapab == "Water sensor")				result = input myState, "enum", title: "Water $phrase", 			options: ["dry", "wet"], 					defaultValue: "wet"
@@ -1175,6 +1182,9 @@ def initialize() {
 			case "Thermostat":
 				subscribe(myDev.value, "thermostatMode" + ((state.isTrig || hasTrig) ? ".$myState" : ""), allHandler)
 				break
+			case "Thermostat State":
+				subscribe(myDev.value, "thermostatOperatingState" + ((state.isTrig || hasTrig) ? ".$myState" : ""), allHandler)
+				break
 			case "Physical Switch":
 				subscribe(myDev.value, "switch.$myState", physicalHandler)
 				break
@@ -1235,6 +1245,7 @@ def checkCondAny(dev, stateX, cap, rel, relDev) {
 	else if(cap == "Lock") 		result = stateX in dev.currentLock
 	else if(cap == "Garage door")	result = stateX in dev.currentDoor
 	else if(cap == "Thermostat")	result = stateX in dev.currentThermostatMode
+	else if(cap == "Thermostat State")	result = stateX in dev.currentThermostatOperatingState
 //	log.debug "CheckAny $cap $result"
 	return result
 }
@@ -1282,6 +1293,7 @@ def checkCondAll(dev, stateX, cap, rel, relDev) {
 	else if(cap == "Lock") 			result = !(flip[stateX] in dev.currentLock)
 	else if(cap == "Garage door")	result = !(flip[stateX] in dev.currentDoor)
     else if(cap == "Thermostat")	dev.currentThermmostatMode.each {result = result && stateX == it}
+    else if(cap == "Thermostat State")	dev.currentThermmostatOperatingState.each {result = result && stateX == it}
 //	log.debug "CheckAll $cap $result"
 	return result
 }
