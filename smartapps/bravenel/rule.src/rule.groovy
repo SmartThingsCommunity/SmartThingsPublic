@@ -3,7 +3,7 @@
  *
  *  Copyright 2015 Bruce Ravenel
  *
- *  Version 1.7.0c   28 Jan 2016
+ *  Version 1.7.0d   28 Jan 2016
  *
  *	Version History
  *
@@ -77,7 +77,7 @@ preferences {
 def selectRule() {
 	//version to parent app and expert settings for rule
 	try { 
-		state.isExpert = parent.isExpert("1.7.0c") 
+		state.isExpert = parent.isExpert("1.7.0d") 
 		if (state.isExpert) state.cstCmds = parent.getCommands()
 		else state.cstCmds = []
 	}
@@ -1292,7 +1292,7 @@ def checkCondAll(dev, stateX, cap, rel, relDev) {
 	else if(cap == "Carbon monoxide detector") 	result = !(flip[stateX] in dev.currentCarbonMonoxide)
 	else if(cap == "Lock") 			result = !(flip[stateX] in dev.currentLock)
 	else if(cap == "Garage door")	result = !(flip[stateX] in dev.currentDoor)
-    else if(cap == "Thermostat")	dev.currentThermmostatMode.each {result = result && stateX == it}
+    else if(cap == "Thermostat")	dev.currentThermostatMode.each {result = result && stateX == it}
     else if(cap == "Thermostat State")	dev.currentThermmostatOperatingState.each {result = result && stateX == it}
 //	log.debug "CheckAll $cap $result"
 	return result
