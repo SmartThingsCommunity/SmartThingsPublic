@@ -3,7 +3,7 @@
  *
  *  Copyright 2015 Bruce Ravenel
  *
- *  Version 1.7.0b   27 Jan 2016
+ *  Version 1.7.0c   28 Jan 2016
  *
  *	Version History
  *
@@ -802,7 +802,7 @@ def selectActionsTrue() {
 			checkActTrue(lockTrue, "Lock: $lockTrue")
 			input "unlockTrue", "capability.lock", title: "Unlock these locks", multiple: true, required: false, submitOnChange: true
 			checkActTrue(unlockTrue, "Unlock: $unlockTrue")
-			input "fanAdjustTrue", "capability.switchLevel", title: "Adjust these fans - Low, Medium, High, Off", multiple: false, required: false, submitOnChange: true
+			input "fanAdjustTrue", "capability.switchLevel", title: "Adjust this fan - Low, Medium, High, Off", multiple: false, required: false, submitOnChange: true
 			if(fanAdjustTrue) addToActTrue("Adjust Fan: $fanAdjustTrue")
 			input "openValveTrue", "capability.valve", title: "Open these valves", multiple: true, required: false, submitOnChange: true
 			checkActTrue(openValveTrue, "Open: $openValveTrue")
@@ -954,7 +954,7 @@ def selectActionsFalse() {
 			checkActFalse(lockFalse, "Lock: $lockFalse")
 			input "unlockFalse", "capability.lock", title: "Unlock these locks", multiple: true, required: false, submitOnChange: true
 			checkActFalse(unlockFalse, "Unlock: $unlockFalse")
-			input "fanAdjustFalse", "capability.switchLevel", title: "Adjust these fans - Low, Medium, High, Off", multiple: false, required: false, submitOnChange: true
+			input "fanAdjustFalse", "capability.switchLevel", title: "Adjust this fan - Low, Medium, High, Off", multiple: false, required: false, submitOnChange: true
 			if(fanAdjustFalse) addToActFalse("Adjust Fan: $fanAdjustFalse")
 			input "openValveFalse", "capability.valve", title: "Open these valves", multiple: true, required: false, submitOnChange: true
 			checkActFalse(openValveFalse, "Open: $openValveFalse")
