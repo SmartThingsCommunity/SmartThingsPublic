@@ -2,7 +2,7 @@
  *  Alexa Helper-Child
  *
  *  Copyright © 2016 Michael Struck
- *  Version 2.2.1a 1/26/16
+ *  Version 2.3.0 1/28/16
  * 
  *  Version 1.0.0 - Initial release of child app
  *  Version 1.1.0 - Added framework to show version number of child app and copyright
@@ -15,7 +15,9 @@
  *  Version 2.1.0 - Many changes; added switches, dimmers and colored lights as control devices. Modified Thermostat logic and modified GUI
  *  Version 2.2.0a - Added SMS to on/off control scenarios, and allow  'toggle' to change the lights; added Sonos as an alarm type
  *  Version 2.2.1a - Code and syntax optimization; added routine to turn off Sonos speaker if used as alarm
- * 
+ *  Version 2.3.0 - Code optimization and configuration for additional memory slots for Sonos (advanced users only)
+ *
+ *
  *  Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except
  *  in compliance with the License. You may obtain a copy of the License at:
  *
@@ -266,32 +268,14 @@ def pageSpeaker(){
        		input "prevSwitch", "capability.momentary", title: "Previous Track Switch (Momentary)", multiple: false, required: false
     	}
         if (speaker && songOptions(1) && parent.getSonos() && speaker.name.contains("Sonos")){
-			section ("Sonos Saved Station 1"){
-				input "song1Switch", "capability.momentary", title: "Saved Station Switch #1 (Momentary)", multiple: false, required: false, submitOnChange:true
-				if (song1Switch){
-					input "song1Station", "enum", title: "Song/Station #1", description: "Tap to select recently played song/station", multiple: false, 
-						required: false, options: songOptions(1)
-				}
-			}
-			section ("Sonos Saved Station 2"){
-				input "song2Switch", "capability.momentary", title: "Saved Station Switch #2 (Momentary)", multiple: false, required: false, submitOnChange:true
-				if (song2Switch){
-					input "song2Station", "enum", title: "Song/Station #2", description: "Tap to select recently played song/station", multiple: false, 
-						required: false, options: songOptions(2)
-				}
-			}
-			section ("Sonos Saved Station 3"){
-				input "song3Switch", "capability.momentary", title: "Saved Station Switch #3 (Momentary)", multiple: false, required: false, submitOnChange:true
-				if (song3Switch){
-					input "song3Station", "enum", title: "Song/Station #3", description: "Tap to select recently played song/station", multiple: false, 
-						required: false, options: songOptions(3)
-				}
-			}
-			section ("Sonos Saved Station 4"){
-				input "song4Switch", "capability.momentary", title: "Saved Station Switch #4 (Momentary)", multiple: false, required: false, submitOnChange:true
-				if (song3Switch){
-                	input "song4Station", "enum", title: "Song/Station #4", description: "Tap to select recently played song/station", multiple: false, 
-						required: false, options: songOptions(4)
+			for (int i = 1; i < sonosSlots(); i++) {
+    			if (settings."song${i}Switch" || i==1 || settings."song${i-1}Switch" )
+                section ("Sonos Saved Station ${i}"){
+					input "song${i}Switch", "capability.momentary", title: "Saved Station Switch #${i} (Momentary)", multiple: false, required: false, submitOnChange:true
+					if (settings."song${i}Switch"){
+						input "song${i}Station", "enum", title: "Song/Station #${i}", description: "Tap to select recently played song/station", multiple: false, 
+							required: false, options: songOptions("${i}")
+					}
 				}
 			}
 		}
@@ -375,21 +359,10 @@ def initialize() {
             if (nextSwitch) {subscribe (nextSwitch, "switch.on", "controlNextHandler")}
         	if (prevSwitch) {subscribe (prevSwitch, "switch.on", "controlPrevHandler")} 
             if (parent.getSonos() && speaker.name.contains("Sonos")){
-                if (song1Switch && song1Station){
-                    saveSelectedSong(1,song1Station)
-                    subscribe (song1Switch, "switch.on", "controlSong")
-                }
-                if (song2Switch && song2Station){
-                    saveSelectedSong(2,song2Station)
-                    subscribe (song2Switch, "switch.on", "controlSong")
-                }
-                if (song3Switch && song3Station){
-                    saveSelectedSong(3,song1Station)
-                    subscribe (song3Switch, "switch.on", "controlSong")
-                }
-                if (song4Switch && song4Station){
-                    saveSelectedSong(4,song1Station)
-                    subscribe (song4Switch, "switch.on", "controlSong")
+                for (int i = 1; i < sonosSlots(); i++) {
+                	if (settings."song${i}Switch" && settings."song${i}Station"){
+                    	subscribe (settings."song${i}Switch", "switch.on", "controlSong")
+                    }
                 }
 			}
         }
@@ -613,18 +586,11 @@ def controlPrevHandler(evt){
 def controlSong(evt){
 	def trigger = evt.displayName
     if (getOkToRun("Speaker Saved Song/Station Trigger: ${trigger}")) {
-       	if (song1Switch && trigger == song1Switch.label){
-			speakerControl("station",state.selectedSong1)
-       	}
-		if (song2Switch && trigger == song2Switch.label){
-			speakerControl("station",state.selectedSong2)		
-       	}
-		if (song3Switch && trigger == song3Switch.label){
-			speakerControl("station",state.selectedSong3)	
-       	}
-		if (song4Switch && trigger == song4Switch.label){
-			speakerControl("station",state.selectedSong4)
-		}
+       	for (int i = 1; i < sonosSlots(); i++) {
+        	if (settings."song${i}Switch" && trigger == settings."song${i}Switch".label){
+        		speakerControl("station",state."selectedSong${i}")
+            }
+        }
 	}
 }
 //Thermostat Handlers-----------------------------------------------------------------
@@ -737,10 +703,9 @@ def scenarioDesc(){
     	desc = vDimmerSpeaker && speaker ? "'${vDimmerSpeaker}' dimmer controls '${speaker}' speaker": desc
         desc += nextSwitch ? "\n'${nextSwitch}' switch activates Next Track" : ""
         desc += prevSwitch ? "\n'${prevSwitch}' switch activates Previous Track" : ""
-        desc += parent.getSonos() && (speaker && speaker.name.contains("Sonos")) && song1Switch && song1Station ?"\n'${song1Switch}' switch activates '${song1Station}'":""
-        desc += parent.getSonos() && (speaker && speaker.name.contains("Sonos")) && song2Switch && song2Station ?"\n'${song2Switch}' switch activates '${song2Station}'":""
-        desc += parent.getSonos() && (speaker && speaker.name.contains("Sonos")) && song3Switch && song3Station ?"\n'${song3Switch}' switch activates '${song3Station}'":""
-        desc += parent.getSonos() && (speaker && speaker.name.contains("Sonos")) && song4Switch && song4Station ?"\n'${song4Switch}' switch activates '${song4Station}'":""
+        for (int i = 1; i < sonosSlots(); i++) {
+        	desc += parent.getSonos() && (speaker && speaker.name.contains("Sonos")) && settings."song${i}Switch" && settings."song${i}Station" ? "\n'" + settings."song${i}Switch" + "' switch activates '" + settings."song${i}Station" + "'" : ""	
+        }
     }
     if (scenarioType=="Thermostat"){
     	desc = vDimmerTstat && tstat ? "'${vDimmerTstat}' dimmer controls '${tstat}' thermostat" : desc
@@ -824,12 +789,7 @@ private getDayOk(dayList) {
 	def result = true
     if (dayList) {
 		def df = new java.text.SimpleDateFormat("EEEE")
-		if (location.timeZone) {
-			df.setTimeZone(location.timeZone)
-		}
-		else {
-			df.setTimeZone(TimeZone.getTimeZone("America/New_York"))
-		}
+		location.timeZone ? df.setTimeZone(location.timeZone) : df.setTimeZone(TimeZone.getTimeZone("America/New_York"))
 		def day = df.format(new Date())
 		result = dayList.contains(day)
 	}
@@ -981,10 +941,14 @@ def getAlarmSound(){
     }
     state.alarmSound = soundUri
 }
+private def sonosSlots(){
+	def count = 4
+    return count+1
+}
 //Version
 private def textVersion() {
-    def text = "Child App Version: 2.2.1a (01/26/2016)"
+    def text = "Child App Version: 2.3.0 (01/28/2016)"
 }
 private def versionInt(){
-	def text = 221
+	def text = 230
 }
