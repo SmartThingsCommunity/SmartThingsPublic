@@ -19,9 +19,9 @@ This project is in a pre-1.0 state. This means that its APIs and behavior are su
 *  Fan Modes Implemented:
  *  "on", "off", "auto": full support
  *  "circulate": Partially implemented, currently just calls `auto()`
- *  Added a button for changing the fan between "auto" and "on" on the Thermostat Tile
- *  Continued code refactoring
- *  Changed holdType labels to "Until I Change" and "Until Next Program" to better align with the Ecobee terms
+*  Added a button for changing the fan between "auto" and "on" on the Thermostat Tile
+*  Continued code refactoring
+*  Changed holdType labels to "Until I Change" and "Until Next Program" to better align with the Ecobee terms
 
 ## [0.7.5][] (2016-01-25)
 
