@@ -1,12 +1,13 @@
 /**
  *  Talking Alarm Clock-Schedule
  *
- *  Version 1.0.1 (1/25/16) - Initial release of child app
+ *  Copyright © 2016 Michael Struck
+ *
+ *  Version 1.1.0 (1/27/16) - Initial release of child app
  *
  *  Version 1.0.0 - Initial release
  *  Version 1.0.1 - Small syntax changes for consistency
- * 
- *  Copyright 2016 Michael Struck - Uses code from Lighting Director by Tim Slagle & Michael Struck
+ *  Version 1.1.0 - Added switch alarm restriction
  *
  *  Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except
  *  in compliance with the License. You may obtain a copy of the License at:
@@ -38,7 +39,7 @@ def pageSetup() {
 	dynamicPage(name: "pageSetup", title: "Alarm Settings", install: true, uninstall: true) {
 		section() {
 			label title:"Alarm Schedule Name", required: true
-            def status = parent.getSchedStatus(app.id)? "ENABLED" : "DISABLED"
+            def status = parent.getSchedStatus(app.id) ? "ENABLED" : "DISABLED"
             if (status){
             	paragraph "This schedule is currently ${status}. To change this status, go to the 'Alarm Summary' page on the Talking Alarm Clock main page"
             }
@@ -62,7 +63,7 @@ def pageSetup() {
                     }
                 }
                 href "pageRestrictions", title: "Alarm Restrictions", description: getRestricionDesc(), state: greyOutRestrictions()
-			}
+            }
 		}
         if (alarmType == "1"){
         	section ("Alarm sound options"){
@@ -117,7 +118,9 @@ page(name: "pageRestrictions", title: "Alarm Restrictions", install: false, unin
 	section{
         input "alarmDay", "enum", options: ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"], title: "Alarm on certain days of the week...", multiple: true, required: false
         input "alarmMode", "mode", title: "Alarm only during the following modes...", multiple: true, required: false
-        input "alarmPresence", "capability.presenceSensor", title: "Alarm only when all are present...", multiple: true, required: false        		
+        input "alarmPresence", "capability.presenceSensor", title: "Alarm only when all are present...", multiple: true, required: false
+        input "alarmSwitchActive", "capability.switch", title: "Alarm only when these switches are on...", multiple: true, required: false
+        input "alarmSwitchNotActive", "capability.switch", title: "Alarm only when these switches are off...", multiple: true, required: false
 	}
 }
 page(name: "pageDimmers", title: "Dimmer Settings", install: false, uninstall: false) {
@@ -172,7 +175,7 @@ def initialize() {
 }
 //Handlers----------------
 def alarmHandler() {
-    if (parent.getSchedStatus(app.id) && (!alarmMode || alarmMode.contains(location.mode)) && getDayOk() && everyoneIsPresent()) {	
+    if (parent.getSchedStatus(app.id) && (!alarmMode || alarmMode.contains(location.mode)) && getDayOk() && everyoneIsPresent() && switchesOnStatus() && switchesOffStatus()) {	
         if (switches || dimmers || thermostats) {
         	def dimLevel = dimmersLevel as Integer
             switches?.on()
@@ -314,6 +317,36 @@ def getAlarmDesc() {
      	else {
     		desc += " in all modes"
         }
+        if (alarmSwitchActive){
+        	def switchOnSize = alarmSwitchActive.size()
+            def switchPrefix =" when the following switches are on: "
+            if (switchOnSize == 1) {
+        		switchPrefix = " when the following switch is on: "
+        	}
+            desc += "${switchPrefix}"
+            for (switchName in alarmSwitchActive) {
+            	desc += "'${switchName}'"
+                switchOnSize = switchOnSize -1
+                if (switchOnSize) {
+                	desc += ", "
+                }
+			}
+        }
+        if (alarmSwitchNotActive){
+        	def switchOffSize = alarmSwitchNotActive.size()
+            def switchPrefix =" when the following switches are off: "
+            if (switchOffSize == 1) {
+        		switchPrefix = " when the following switch is off: "
+        	}
+            desc += "${switchPrefix}"
+            for (switchName in alarmSwitchNotActive) {
+            	desc += "'${switchName}'"
+                switchOffSize = switchOffSize -1
+                if (switchOffSize) {
+                	desc += ", "
+                }
+			}
+        }
     }
 	desc	
 }
@@ -358,10 +391,14 @@ def getRestricionDesc(){
     result += alarmMode ? "Modes: ${alarmMode}" : ""
     result += result && alarmPresence ? "\n" : ""
     result += alarmPresence ? "Presence: ${alarmPresence}" : ""
+    result += result && (alarmSwitchActive || alarmSwitchNotActive) ? "\n" : ""
+    result += alarmSwitchActive ? "Switches (ON): ${alarmSwitchActive}" : ""
+    result += result && alarmSwitchNotActive ? "\n" : ""
+    result += alarmSwitchNotActive ? "Switches (OFF): ${alarmSwitchNotActive} " : ""
     result = result ? result : "Tap to configure alarm restrictions"
 }
 def greyOutRestrictions(){
-	def result = alarmDay || alarmMode || alarmPresence ? "complete" : ""
+	def result = alarmDay || alarmMode || alarmPresence || alarmSwitchActive || alarmSwitchNotActive ? "complete" : ""
 }	
 private getDayOk() {
 	def result = true
@@ -370,16 +407,17 @@ private getDayOk() {
 }
 private getDay(){
 	def df = new java.text.SimpleDateFormat("EEEE")
-	if (location.timeZone) {
-		df.setTimeZone(location.timeZone)
-	}
-	else {
-		df.setTimeZone(TimeZone.getTimeZone("America/New_York"))
-	}
+	location.timeZone ? df.setTimeZone(location.timeZone) : df.setTimeZone(TimeZone.getTimeZone("America/New_York"))
 	def day = df.format(new Date())
 }
 private everyoneIsPresent() {
     def result = alarmPresence && alarmPresence.find {it.currentPresence == "not present"} ? false : true
+}
+private switchesOnStatus(){
+	def result = alarmSwitchActive && alarmSwitchActive.find{it.currentValue("switch") == "off"} ? false : true	
+}
+private switchesOffStatus(){
+	def result = alarmSwitchNotActive && alarmSwitchNotActive.find{it.currentValue("switch") == "on"} ? false : true	
 }
 private getSunriseSunset(){
     if (location.timeZone || zipCode) {
@@ -437,6 +475,7 @@ private getWeatherReport() {
         	}
         }
 		def msg = sb.toString()
+        //message pronunciation filters....
         msg = msg.replaceAll(/([0-9]+)C/,'$1 degrees')
         msg = msg.replaceAll(/([0-9]+)F/,'$1 degrees')
         msg = msg.replaceAll("0s.","0's  .")
@@ -548,5 +587,5 @@ private saveSelectedSong() {
 }
 //Version
 private def textVersion() {
-    def text = "Child App Version: 1.0.1 (01/25/2016)"
+    def text = "Child App Version: 1.1.0 (01/27/2016)"
 }
