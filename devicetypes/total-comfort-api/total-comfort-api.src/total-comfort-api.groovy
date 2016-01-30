@@ -14,7 +14,12 @@
  * lgk version 4 supports celsius and fahrenheit with option, and now colors.
  * lgk version 5, due to intermittant update failures added last update date/time tile so that you can see when it happended
  * not there is a new input tzoffset which defaults to my time ie -5 which you must set .
- * 
+ * lgk version 6 add support for actually knowing the fan is on or not (added tile),
+ * and also the actual operating state ie heating,cooling or idle via new response variables.
+ * lgk version 7, change the new operating state to be a value vs standard tile
+ * to work around a bug smartthings caused in the latest 2.08 release with text wrapping.
+ * related also added icons to the operating state, and increase the width of the last update
+ * to avoid wrapping.
  *
  */
 preferences {
@@ -85,7 +90,6 @@ metadata {
             state "auto", label:'${name}', action:"thermostat.fanAuto", icon: "st.Appliances.appliances11", backgroundColor: '#44b621'
             state "circulate", label:'${name}', action:"thermostat.fanCirculate", icon: "st.Appliances.appliances11", backgroundColor: '#44b621'
             state "on", label:'${name}', action:"thermostat.fanOn", icon: "st.Appliances.appliances11", backgroundColor: '#44b621'
-        
         }
 
         controlTile("coolSliderControl", "device.coolingSetpoint", "slider", height: 3, width: 1, inactiveLabel: false) {
@@ -145,10 +149,17 @@ metadata {
         
         //tile added for operating state - Create the tiles for each possible state, look at other examples if you wish to change the icons here. 
         
-        standardTile("thermostatOperatingState", "device.thermostatOperatingState", inactiveLabel: false) {
-            state "heating", label:'${name}', backgroundColor : '#E14902'
-            state "cooling", label:'${name}', backgroundColor : '#1e9cbb'
-            state "idle", label:'${name}'
+        valueTile("thermostatOperatingState", "device.thermostatOperatingState", inactiveLabel: false) {
+            state "Heating", label:'${name}', backgroundColor : '#E14902', icon: "st.Weather.weather14"
+            state "Cooling", label:'${name}', backgroundColor : '#1e9cbb', icon: "st.Weather.weather7"
+            state "Idle", label:'${name}', icon: ""
+            state "Unknown", label:'${name}', backgroundColor : '#cc0000', icon: ""
+        }
+        
+           standardTile("fanOperatingState", "device.fanOperatingState", inactiveLabel: false) {
+            state "On", label:'${name}',icon: "st.Appliances.appliances11", backgroundColor : '#53a7c0'
+            state "Idle", label:'${name}',icon: "st.Appliances.appliances11"
+            state "Unknown", label:'${name}',icon: "st.Appliances.appliances11", backgroundColor : '#cc0000'
         }
         
         standardTile("refresh", "device.thermostatMode", inactiveLabel: false, decoration: "flat") {
@@ -224,14 +235,14 @@ metadata {
                 ]
         }
 
-      		valueTile("status", "device.lastUpdate", width: 2, height: 1, decoration: "flat") {
+      		valueTile("status", "device.lastUpdate", width: 3, height: 1, decoration: "flat") {
 			state "default", label: 'Last Update: ${currentValue}'
 		}
 
         main "temperature"
         details(["temperature", "thermostatMode", "thermostatFanMode",   
         "heatLevelUp", "heatingSetpoint" , "heatLevelDown", "coolLevelUp",
-        "coolingSetpoint", "coolLevelDown" ,"thermostatOperatingState",
+        "coolingSetpoint", "coolLevelDown" ,"thermostatOperatingState","fanOperatingState",
         "refresh","relativeHumidity","outdoorTemperature","outdoorHumidity", "status"])
        
     }
@@ -545,9 +556,9 @@ def setThermostatFanMode(mode) {
       fanMode = 'auto'
     if(mode==1)
       fanMode = 'on'
-    if(mode==1)
+    if(mode==2)
       fanMode = 'circulate'
-
+   
   if(data.SetStatus==1)
   {
       sendEvent(name: 'thermostatFanMode', value: fanMode)    
@@ -631,6 +642,7 @@ log.debug "https://www.mytotalconnectcomfort.com/portal/Device/CheckDataSession/
         
         httpGet(params) { response ->
         log.debug "Request was successful, $response.status"
+        //log.debug "data = $response.data"
         log.debug "ld = $response.data.latestData"
        
         def curTemp = response.data.latestData.uiData.DispTemperature
@@ -646,26 +658,29 @@ log.debug "https://www.mytotalconnectcomfort.com/portal/Device/CheckDataSession/
         def curOutdoorHumidity = response.data.latestData.uiData.OutdoorHumidity
         def curOutdoorTemp = response.data.latestData.uiData.OutdoorTemperature
         def displayUnits = response.data.latestData.uiData.DisplayUnits
+        def fanIsRunning = response.data.latestData.fanData.fanIsRunning
+        def equipmentStatus = response.data.latestData.uiData.EquipmentOutputStatus
         
-/*
- ‎2‎:‎48‎:‎50‎ ‎PM: debug ld = [fanData:[fanModeCirculateAllowed:true, fanModeAutoAllowed:true, 
- fanModeFollowScheduleAllowed:false, fanModeOnAllowed:true, fanMode:0], drData:[Load:127.5, 
- HeatSetpLimit:0, OptOutable:false, DeltaHeatSP:-0.01, CoolSetpLimit:0, Phase:-1, DeltaCoolSP:-0.01],
- uiData:[OutdoorTemperature:60.0000, TemporaryHoldUntilTime:0, ScheduleHeatSp:68.0000, 
- DeviceID:454832, DispTemperatureAvailable:true, VacationHold:0, VacationHoldUntilTime:0,
- CoolSetpoint:75.0000, ScheduleCoolSp:75.0000, SwitchHeatAllowed:true, CoolNextPeriod:64, 
- IndoorHumidity:49.0000, SwitchAutoAllowed:true, SetpointChangeAllowed:true, 
- HeatLowerSetptLimit:40.0000, OutdoorHumidStatus:0, SwitchOffAllowed:true, 
- OutdoorHumidityAvailable:true, StatusCool:0, OutdoorTemperatureAvailable:true,
- StatusHeat:0, CurrentSetpointStatus:0, HoldUntilCapable:true, CoolUpperSetptLimit:99.0000,
- SwitchCoolAllowed:true, OutdoorHumidity:51.0000, DualSetpointStatus:false, 
- SwitchEmergencyHeatAllowed:false, Commercial:false, CoolLowerSetptLimit:50.0000,
- OutdoorHumiditySensorNotFault:true, IndoorHumiditySensorAvailable:true, 
- ScheduleCapable:true, DisplayUnits:F, DispTemperature:71.0000, Deadband:3.0000, 
- HeatUpperSetptLimit:90.0000, IsInVacationHoldMode:false, OutdoorTemperatureSensorNotFault:true,
- HeatSetpoint:68.0000, DispTemperatureStatus:0, HeatNextPeriod:64, IndoorHumiditySensorNotFault:true,
- OutdoorTempStatus:0, IndoorHumidStatus:0, SystemSwitchPosition:4], canControlHumidification:false, hasFan:true] 
- 
+/*ld = [fanData:[fanModeCirculateAllowed:true, fanModeAutoAllowed:true, fanModeFollowScheduleAllowed:false, 
+        fanIsRunning:false, fanModeOnAllowed:true, fanMode:0], 
+        drData:[Load:127.5, HeatSetpLimit:0,
+        OptOutable:false, DeltaHeatSP:-0.01, CoolSetpLimit:0, Phase:-1, DeltaCoolSP:-0.01], 
+        uiData:[OutdoorTemperature:128.0000, TemporaryHoldUntilTime:0, ScheduleHeatSp:67.0000, 
+        DeviceID:453824, DispTemperatureAvailable:true, VacationHold:0, VacationHoldUntilTime:0,
+        CoolSetpoint:76.0000, ScheduleCoolSp:76.0000, SwitchHeatAllowed:true, CoolNextPeriod:67, 
+        IndoorHumidity:31.0000, SwitchAutoAllowed:true, SetpointChangeAllowed:true, HeatLowerSetptLimit:40.0000,
+        OutdoorHumidStatus:128, SwitchOffAllowed:true, OutdoorHumidityAvailable:false,
+        StatusCool:0, OutdoorTemperatureAvailable:false, EquipmentOutputStatus:0, StatusHeat:0, 
+        CurrentSetpointStatus:0, HoldUntilCapable:true, CoolUpperSetptLimit:99.0000, SwitchCoolAllowed:true, 
+        OutdoorHumidity:128.0000, DualSetpointStatus:false, SwitchEmergencyHeatAllowed:false, Commercial:false, 
+        CoolLowerSetptLimit:50.0000, OutdoorHumiditySensorNotFault:true, IndoorHumiditySensorAvailable:true,
+        ScheduleCapable:true, DisplayUnits:F, DispTemperature:70.0000, Deadband:3.0000, HeatUpperSetptLimit:90.0000, 
+        IsInVacationHoldMode:false, OutdoorTemperatureSensorNotFault:true, HeatSetpoint:67.0000, DispTemperatureStatus:0,
+        HeatNextPeriod:67, IndoorHumiditySensorNotFault:true, OutdoorTempStatus:128, IndoorHumidStatus:0, 
+        SystemSwitchPosition:4], canControlHumidification:false, hasFan:true] 
+        
+        log.trace("Fan operating state: ${response.data.latestData.fanData.fanIsRunning}")
+        log.trace("EquipmentOutputStatus: ${response.data.latestData.uiData.EquipmentOutputStatus}")
         log.trace("IndoorHumidity: ${response.data.latestData.uiData.IndoorHumidity}")
           
         log.trace("OutdoorTemp = ${response.data.latestData.uiData.OutdoorTemperature}")
@@ -677,11 +692,11 @@ log.debug "https://www.mytotalconnectcomfort.com/portal/Device/CheckDataSession/
         log.trace("IndoorHumiditySensorAvailable: ${response.data.latestData.uiData.IndoorHumiditySensorAvailable}")        
         log.trace("IndoorHumidityAvailable: ${response.data.latestData.uiData.IndoorHumidityAvailable}")        
        
-          log.debug "OutdoorHumidityAvailable: response.data.latestData.uiData.OutdoorHumidityAvailable"        
-          log.debug "OutdoorTemperatureAvailable: $response.data.latestData.uiData.OutdoorTemperatureAvailable"        
-
-		  log.debug "OutdoorHumiditySensorNotFault = $response.data.latestData.uiData.OutdoorHumiditySensorNotFault"
-		  log.debug "OutdoorTemperatureSensorNotFault = $response.data.latestData.uiData.OutdoorTemperatureSensorNotFault"
+        log.debug "OutdoorHumidityAvailable: response.data.latestData.uiData.OutdoorHumidityAvailable"        
+        log.debug "OutdoorTemperatureAvailable: $response.data.latestData.uiData.OutdoorTemperatureAvailable"        
+        
+		log.debug "OutdoorHumiditySensorNotFault = $response.data.latestData.uiData.OutdoorHumiditySensorNotFault"
+		log.debug "OutdoorTemperatureSensorNotFault = $response.data.latestData.uiData.OutdoorTemperatureSensorNotFault"
           
         log.debug "IndoorHumiditySensorNotFault: $response.data.latestData.uiData.IndoorHumiditySensorNotFault"        
         log.debug "IndoorHumidStatus: $response.data.latestData.uiData.IndoorHumidStatus"       
@@ -693,20 +708,32 @@ log.debug "https://www.mytotalconnectcomfort.com/portal/Device/CheckDataSession/
         log.debug "got curOutdoorHumidity = $curOutdoorHumidity"
         log.debug "hasOutdoorHumid = $hasOutdoorHumid"
         log.debug "hasOutdoorTemp =  $hasOutdoorTemp"
+      */
       
-       */
       //  log.debug "displayUnits = $displayUnits"
         state.DisplayUnits = $displayUnits
         
         //Operating State Section 
         //Set the operating state to off 
         
-        def operatingState = "idle"
-        
-
+        def operatingState = "Unknown"
+          
 // lgk operating state not working here.. shows both on ie 1 when heat doesnt go on to 67 and heat till 76  and current is 73 
         //Check the status of heat and cool 
-        if(statusCool == 1 && (switchPos == 3 || switchPos == 5 || swithPos == 4)) {
+     
+     // lgk old method now use equipment status
+     if (equipmentStatus == 1) {
+        operatingState = "Heating"
+      } else if (equipmentStatus == 2) {
+        operatingState = "Cooling"
+      } else if (equipmentStatus == 0) {
+        operatingState = "Idle"
+      } else {
+          	operatingState = "Unknown"
+      }
+      
+      /*
+     if(statusCool == 1 && (switchPos == 3 || switchPos == 5 || swithPos == 4)) {
             operatingState = "cooling"
         } else if (statusHeat == 1 && (switchPos == 1 || switchPos == 5 || switchPos == 4)) {  
             operatingState = "heating"
@@ -716,9 +743,18 @@ log.debug "https://www.mytotalconnectcomfort.com/portal/Device/CheckDataSession/
         } else {
           	operatingState = "unknown"
         }
-        
+        */
 
         log.trace("Set operating State to: ${operatingState}")        
+
+     // set fast state
+     def fanState = "Unknown"
+
+	if (fanIsRunning == true)
+      fanState = "On"
+    else fanState = "Idle" 
+
+    log.trace("Set Fan operating State to: ${fanState}")        
 
         //End Operating State
         
@@ -754,14 +790,13 @@ log.debug "https://www.mytotalconnectcomfort.com/portal/Device/CheckDataSession/
 
 	//Send events 
         sendEvent(name: 'thermostatOperatingState', value: operatingState)
+        sendEvent(name: 'fanOperatingState', value: fanState)
         sendEvent(name: 'thermostatFanMode', value: fanMode)
         sendEvent(name: 'thermostatMode', value: switchPos)
         sendEvent(name: 'coolingSetpoint', value: finalCoolSetPoint )
         sendEvent(name: 'heatingSetpoint', value: finalHeatSetPoint )
         sendEvent(name: 'temperature', value: finalTemp, state: switchPos)
         sendEvent(name: 'relativeHumidity', value: curHumidity as Integer)
-        
-        log.debug "got current temp = $finalTemp"
         
        if (settings.tzOffset == null)
         settings.tzOffset = -5
@@ -772,6 +807,7 @@ log.debug "https://www.mytotalconnectcomfort.com/portal/Device/CheckDataSession/
         def newtime = "${tf.format(now)}" as String   
         sendEvent(name: "lastUpdate", value: newtime, descriptionText: "Last Update: $newtime")
 
+        
       if (enableOutdoorTemps == "Yes")
         {
     

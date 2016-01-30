@@ -14,6 +14,7 @@ v 5 something they did in they new setheat and cool setpoints even in stock dela
 to 30 secs before it registers changed this to 500 ms.
 v 6 lgk. added status tile with last upddate time for current temp so you can see at a glance it is updating without checking logs.
 note: there is a new input preferernce toffset which defaults to -5 and you must set yourself.
+v 7 forgot to add the preference section added now.
 
 
 
@@ -45,6 +46,11 @@ metadata {
 
 		fingerprint deviceId: "0x08", inClusters: "0x43,0x40,0x44,0x31,0x80,0x85,0x60"
 	}
+
+
+preferences {
+ input("tzOffset", "number", title: "Time zone offset +/-x?", required: false, range: "-12..14", defaultValue: -5, description: "Time Zone Offset ie -5.")  
+  }
 
 	// simulator metadata
 	simulator {
@@ -568,6 +574,13 @@ def setCoolingSetpoint(Double degrees, Integer delay = 500) {
 }
 
 def configure() {
+
+ if (settings.tzOffset == null)
+  {
+    settings.tzOffset = "-5"
+    log.debug "tzOffset was null ... set to -5!"
+  }
+
 	delayBetween([
 		zwave.thermostatModeV2.thermostatModeSupportedGet().format(),
 	], 2300)
@@ -771,6 +784,11 @@ def heatLevelDown(){
     setHeatingSetpoint(nextLevel)
 }
 
-
-
-
+def input()
+{
+ if (settings.tzOffset == null)
+  {
+    settings.tzOffset = "-5"
+    log.debug "tzOffset was null ... set to -5!"
+  }
+}
