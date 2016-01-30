@@ -3,10 +3,11 @@
  *
  *  Copyright 2015 Bruce Ravenel
  *
- *  Version 1.7.0d   28 Jan 2016
+ *  Version 1.7.1   30 Jan 2016
  *
  *	Version History
  *
+ *	1.7.1	30 Jan 2016		Added support for more buttons than 4 on button device, now as many as 20
  *	1.7.0	27 Jan 2016		Fixed thermostat mode trigger/condition, added thermostat operating state condition
  *	1.6.13	17 Jan 2016		Added TTS support
  *	1.6.12	10 Jan 2016		Bug fix re removing parts of a rule
@@ -77,7 +78,7 @@ preferences {
 def selectRule() {
 	//version to parent app and expert settings for rule
 	try { 
-		state.isExpert = parent.isExpert("1.7.0d") 
+		state.isExpert = parent.isExpert("1.7.1") 
 		if (state.isExpert) state.cstCmds = parent.getCommands()
 		else state.cstCmds = []
 	}
@@ -290,8 +291,18 @@ def getDevs(myCapab, dev, multi) {
 }
 
 def getButton(dev) {
-	def result = input "$dev", "capability.button", title: "Button Device", required: true, multiple: false, submitOnChange: true
-	if(dev) input "Button$dev", "enum", title: "Button number", required: true, multiple: false, submitOnChange: true, options: ["one", "two", "three", "four"]
+	def numNames = ["one", "two", "three", "four", "five", "six", "seven", "eight", "nine", "ten",
+    	"eleven", "twelve", "thirteen", "fourteen", "fifteen", "sixteen", "seventeen", "eighteen", "nineteen", "twenty"]
+ 	def result = input "$dev", "capability.button", title: "Button Device", required: true, multiple: false, submitOnChange: true
+    def thisDev = settings.find{it.key == "$dev"}
+	if(thisDev) {
+        input "numButtons$dev", "number", title: "Number of buttons? (Default 4)", range: "1..20", required: false, submitOnChange: true, description: "4"
+        def numButtons = settings.find{it.key == "numButtons$dev"}
+        numButtons = numButtons ? numButtons.value : 4
+        def butOpts = ["one"]
+        if(numButtons > 1) for (int i = 1; i < numButtons; i++) butOpts[i] = numNames[i]
+    	input "Button$dev", "enum", title: "Button number", required: true, multiple: false, submitOnChange: true, options: butOpts
+    }
 }
 
 def getAnyAll(myDev) {
@@ -1576,6 +1587,7 @@ def getButton(dev, evt, i) {
 	def value = evt.value
 //	log.debug "buttonEvent: $evt.name = $evt.value ($evt.data)"
 //	log.debug "button: $buttonNumber, value: $value"
+//	log.debug "button json: $evt.jsonData.buttonNumber"
 	def recentEvents = dev.eventsSince(new Date(now() - 3000)).findAll{it.value == evt.value && it.data == evt.data}
 //	log.debug "Found ${recentEvents.size()?:0} events in past 3 seconds"
 	def thisButton = 0
