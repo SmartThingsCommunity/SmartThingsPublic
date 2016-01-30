@@ -12,7 +12,7 @@
  *
  * Roommate Warning
  *
- *  Author: SmartThings
+ *  Author: erudition3000
  *
  *  blinks a light to warn a roommate when you are home
  *
@@ -36,6 +36,8 @@ preferences {
 	section("By flashing these lights") {
 		input "switches", "capability.switch", required: true, multiple: true, title: "Which lights?"
         input "numTimes", "number", range: "2..10", required: false, defaultValue: 2, title: "this many times (2..10)"
+        input "onFor", "number", range: "100..5000", required: false, defaultValue: 3000, title: "On time in msec (100..5000)"
+        input "offFor", "number", range: "100..5000", required: false, defaultValue: 3000, title: "Off time in msec (100..5000)"
 	}
 }
 
@@ -54,19 +56,20 @@ def updated()
 
 def initialize() {
 	state.numberOfFlashes = (numTimes) ? numTimes.toInteger() : 2
+    state.onFor = (onFor) ? onFor.toInteger() : 3000
+    state.offFor = (offFor) ? offFor.toInteger() : 3000
     //state.numberOfFlashes = 2
 	subscribe(presenceSensors, "presence.present", presenceHandler)
 }
 
 def presenceHandler(evt) {
-	log.trace "presence"
 	flashLights()
 }
 
 private flashLights() {
 	def doFlash = true
-	def onFor = onFor ?: 3000
-	def offFor = offFor ?: 3000
+	//def onFor = onFor ?: 3000
+	//def offFor = offFor ?: 3000
 	//def numFlashes = numFlashes ?: 3
 
 	log.debug "LAST ACTIVATED IS: ${state.lastActivated}"
@@ -81,45 +84,38 @@ private flashLights() {
 		log.debug "FLASHING ${state.numberOfFlashes} times"
 		state.lastActivated = now()
 		log.debug "LAST ACTIVATED SET TO: ${state.lastActivated}"
-		def initialActionOn = switches.collect{it.currentSwitch != "on"}
+		def initialStateOn = switches.collect{it.currentSwitch == "on"}
         def initialLevel = switches.collect{it.currentLevel}
-		def delay = 0L
-		state.numberOfFlashes.times {
-			log.trace "Switch on after  $delay msec"
+		
+        def delay = 0L
+        state.numberOfFlashes.times {
+			log.trace "Flash ${it} -- at $delay msec"
 			switches.eachWithIndex {s, i ->
-				if (initialActionOn[i]) {
-                	if(initialLevel[i]!=null) {
-                    	s.setLevel(100, [delay: delay])
-                        log.trace "    Set level to 100  $delay msec"
+				if (initialStateOn[i]) {
+                	//first off, then on
+                	s.off(delay:delay)
+                    if(initialLevel[i]!=null) {
+                    	s.setLevel(100, [delay: delay+state.offFor])
                     } else {
-						s.on(delay: delay)
+						s.on(delay: delay+state.offFor)
                     }
 				}
 				else {
-					s.off(delay:delay)
-				}
-			}
-			delay += onFor
-			log.trace "Switch off after $delay msec"
-			switches.eachWithIndex {s, i ->
-				if (initialActionOn[i]) {
-					s.off(delay: delay)
-				}
-				else {
+                	//first on, then off
                 	if(initialLevel[i]!=null) {
                     	s.setLevel(100, [delay: delay])
-                        log.trace "    Set level to 100  $delay msec"
                     } else {
 						s.on(delay: delay)
                     }
+					s.off(delay:delay+state.onFor)
 				}
 			}
-			delay += offFor
-		}
+            delay += state.onFor + state.offFor
+        }
         
         //set dim level back if we leave the light on
         switches.eachWithIndex {s, i ->
-            if (initialLevel[i]!=null && !initialActionOn[i]) {
+            if (initialLevel[i]!=null && initialStateOn[i]) {
                 s.setLevel(initialLevel[i].toInteger(), [delay: delay])
                 log.trace "    Set level to ${initialLevel[i]}  $delay msec"
             }
