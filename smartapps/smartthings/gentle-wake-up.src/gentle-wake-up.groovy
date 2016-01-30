@@ -1,5 +1,5 @@
 /**
- *  Copyright 2015 SmartThings
+ *  Copyright 2016 SmartThings
  *
  *  Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except
  *  in compliance with the License. You may obtain a copy of the License at:
@@ -38,33 +38,71 @@ preferences {
 	page(name: "schedulingPage")
 	page(name: "completionPage")
 	page(name: "numbersPage")
+	page(name: "controllerExplanationPage")
 }
 
 def rootPage() {
 	dynamicPage(name: "rootPage", title: "", install: true, uninstall: true) {
 
-		section {
+		section("What to dim") {
 			input(name: "dimmers", type: "capability.switchLevel", title: "Dimmers", description: null, multiple: true, required: true, submitOnChange: true)
+			if (dimmers) {
+				href(name: "toNumbersPage", page: "numbersPage", title: "Duration & Direction", description: numbersPageHrefDescription(), state: "complete")
+			}
 		}
 
 		if (dimmers) {
 
-			section {
-				href(name: "toNumbersPage", page: "numbersPage", title: "Duration & Direction", description: numbersPageHrefDescription(), state: "complete")
+			section("Gentle Wake Up Has A Controller") {
+				href(title: "Learn how to control Gentle Wake Up", page: "controllerExplanationPage", description: null)
 			}
 
-			section {
-				href(name: "toSchedulingPage", page: "schedulingPage", title: "Rules For Automatically Dimming Your Lights", description: schedulingHrefDescription(), state: schedulingHrefDescription() ? "complete" : "")
-			}
-
-			section {
-				href(name: "toCompletionPage", title: "Completion Actions (Optional)", page: "completionPage", state: completionHrefDescription() ? "complete" : "", description: completionHrefDescription())
+			section("Rules For Dimming") {
+				href(name: "toSchedulingPage", page: "schedulingPage", title: "Automation", description: schedulingHrefDescription() ?: "Set rules for when to start", state: schedulingHrefDescription() ? "complete" : "")
+				input(name: "manualOverride", type: "enum", options: ["cancel": "Cancel dimming", "jumpTo": "Jump to the end"], title: "When one of the dimmers is manually turned off…", description: "dimming will continue", required: false, multiple: false)
+				href(name: "toCompletionPage", title: "Completion Actions", page: "completionPage", state: completionHrefDescription() ? "complete" : "", description: completionHrefDescription() ?: "Set rules for what to do when dimming completes")
 			}
 
 			section {
 				// TODO: fancy label
-				label(title: "Label this SmartApp", required: false, defaultValue: "")
+				label(title: "Label This SmartApp", required: false, defaultValue: "", description: "Highly recommended", submitOnChange: true)
 			}
+		}
+	}
+}
+
+def controllerExplanationPage() {
+	dynamicPage(name: "controllerExplanationPage", title: "How To Control Gentle Wake Up") {
+
+		section("With other SmartApps", hideable: true, hidden: false) {
+			paragraph "When this SmartApp is installed, it will create a controller device which you can use in other SmartApps for even more customizable automation!"
+			paragraph "The controller acts like a switch so any SmartApp that can control a switch can control Gentle Wake Up, too!"
+			paragraph "Routines and 'Smart Lighting' are great ways to automate Gentle Wake Up."
+		}
+
+		section("More about the controller", hideable: true, hidden: true) {
+			paragraph "You can find the controller with your other 'Things'. It will look like this."
+			image "http://f.cl.ly/items/2O0v0h41301U14042z3i/GentleWakeUpController-tile-stopped.png"
+			paragraph "You can start and stop Gentle Wake up by tapping the control on the right."
+			image "http://f.cl.ly/items/3W323J3M1b3K0k0V3X3a/GentleWakeUpController-tile-running.png"
+			paragraph "If you look at the device details screen, you will find even more information about Gentle Wake Up and more fine grain controls."
+			image "http://f.cl.ly/items/291s3z2I2Q0r2q0x171H/GentleWakeUpController-richTile-stopped.png"
+			paragraph "The slider allows you to jump to any point in the dimming process. Think of it as a percentage. If Gentle Wake Up is set to dim down as you fall asleep, but your book is just too good to put down; simply drag the slider to the left and Gentle Wake Up will give you more time to finish your chapter and drift off to sleep."
+			image "http://f.cl.ly/items/0F0N2G0S3v1q0L0R3J3Y/GentleWakeUpController-richTile-running.png"
+			paragraph "In the lower left, you will see the amount of time remaining in the dimming cycle. It does not count down evenly. Instead, it will update whenever the slider is updated; typically every 6-18 seconds depending on the duration of your dimming cycle."
+			paragraph "Of course, you may also tap the middle to start or stop the dimming cycle at any time."
+		}
+
+		section("Starting and stopping the SmartApp itself", hideable: true, hidden: true) {
+			paragraph "Tap the 'play' button on the SmartApp to start or stop dimming."
+			image "http://f.cl.ly/items/0R2u1Z2H30393z2I2V3S/GentleWakeUp-appTouch2.png"
+		}
+
+		section("Turning off devices while dimming", hideable: true, hidden: true) {
+			paragraph "It's best to use other Devices and SmartApps for triggering the Controller device. However, that isn't always an option."
+			paragraph "If you turn off a switch that is being dimmed, it will either continue to dim, stop dimming, or jump to the end of the dimming cycle depending on your settings."
+			paragraph "Unfortunately, some switches take a little time to turn off and may not finish turning off before Gentle Wake Up sets its dim level again. You may need to try a few times to get it to stop."
+			paragraph "That's why it's best to use devices that aren't currently dimming. Remember that you can use other SmartApps to toggle the controller. :)"
 		}
 	}
 }
@@ -128,22 +166,31 @@ def endLevelLabel() {
 	return "${endLevel}%"
 }
 
+def weekdays() {
+	["Monday", "Tuesday", "Wednesday", "Thursday", "Friday"]
+}
+
+def weekends() {
+	["Saturday", "Sunday"]
+}
+
 def schedulingPage() {
 	dynamicPage(name: "schedulingPage", title: "Rules For Automatically Dimming Your Lights") {
 
-		section {
-			input(name: "days", type: "enum", title: "Allow Automatic Dimming On These Days", description: "Every day", required: false, multiple: true, options: ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"])
+		section("Use Other SmartApps!") {
+			href(title: "Learn how to control Gentle Wake Up", page: "controllerExplanationPage", description: null)
 		}
 
-		section {
-			input(name: "modeStart", title: "Start when entering this mode", type: "mode", required: false, mutliple: false, submitOnChange: true)
+		section("Allow Automatic Dimming") {
+			input(name: "days", type: "enum", title: "On These Days", description: "Every day", required: false, multiple: true, options: weekdays() + weekends())
+		}
+
+		section("Start Dimming...") {
+			input(name: "startTime", type: "time", title: "At This Time", description: null, required: false)
+			input(name: "modeStart", title: "When Entering This Mode", type: "mode", required: false, mutliple: false, submitOnChange: true, description: null)
 			if (modeStart) {
 				input(name: "modeStop", title: "Stop when leaving '${modeStart}' mode", type: "bool", required: false)
 			}
-		}
-
-		section {
-			input(name: "startTime", type: "time", title: "Start Dimming At This Time", description: null, required: false)
 		}
 
 	}
@@ -194,11 +241,16 @@ def updated() {
 	log.debug "Updating 'Gentle Wake Up' with settings: ${settings}"
 	unschedule()
 
+	def controller = getController()
+	if (controller) {
+		controller.label = app.label
+	}
+
 	initialize()
 }
 
 private initialize() {
-	stop()
+	stop("settingsChange")
 
 	if (startTime) {
 		log.debug "scheduling dimming routine to run at $startTime"
@@ -209,15 +261,27 @@ private initialize() {
 	subscribe(app, appHandler)
 
 	subscribe(location, locationHandler)
+
+	if (manualOverride) {
+		subscribe(dimmers, "switch.off", stopDimmersHandler)
+	}
+
+	if (!getAllChildDevices()) {
+		// create controller device and set name to the label used here
+		def dni = "${new Date().getTime()}"
+		log.debug "app.label: ${app.label}"
+		addChildDevice("smartthings", "Gentle Wake Up Controller", dni, null, ["label": app.label])
+		state.controllerDni = dni
+	}
 }
 
 def appHandler(evt) {
 	log.debug "appHandler evt: ${evt.value}"
 	if (evt.value == "touch") {
 		if (atomicState.running) {
-			stop()
+			stop("appTouch")
 		} else {
-			start()
+			start("appTouch")
 		}
 	}
 }
@@ -233,11 +297,30 @@ def locationHandler(evt) {
 	def modeStopIsTrue = (modeStop && modeStop != "false")
 
 	if (isSpecifiedMode && canStartAutomatically()) {
-		start()
+		start("modeChange")
 	} else if (!isSpecifiedMode && modeStopIsTrue) {
-		stop()
+		stop("modeChange")
 	}
 
+}
+
+def stopDimmersHandler(evt) {
+	log.trace "stopDimmersHandler evt: ${evt.value}"
+	def percentComplete = completionPercentage()
+	// Often times, the first thing we do is turn lights on or off so make sure we don't stop as soon as we start
+	if (percentComplete > 2 && percentComplete < 98) {
+		if (manualOverride == "cancel") {
+			log.debug "STOPPING in stopDimmersHandler"
+			stop("manualOverride")
+		} else if (manualOverride == "jumpTo") {
+			def end = dynamicEndLevel()
+			log.debug "Jumping to 99% complete in stopDimmersHandler"
+			jumpTo(99)
+		}
+
+	} else {
+		log.debug "not stopping in stopDimmersHandler"
+	}
 }
 
 // ========================================================
@@ -246,12 +329,14 @@ def locationHandler(evt) {
 
 def scheduledStart() {
 	if (canStartAutomatically()) {
-		start()
+		start("schedule")
 	}
 }
 
-def start() {
+public def start(source) {
 	log.trace "START"
+
+	sendStartEvent(source)
 
 	setLevelsInState()
 
@@ -263,8 +348,10 @@ def start() {
 	increment()
 }
 
-def stop() {
+public def stop(source) {
 	log.trace "STOP"
+
+	sendStopEvent(source)
 
 	atomicState.running = false
 	atomicState.start = 0
@@ -280,6 +367,110 @@ private healthCheck() {
 	}
 
 	increment()
+}
+
+// ========================================================
+// Controller
+// ========================================================
+
+def sendStartEvent(source) {
+	log.trace "sendStartEvent(${source})"
+	def eventData = [
+			name: "sessionStatus",
+			value: "running",
+			descriptionText: "${app.label} has started dimming",
+			displayed: true,
+			linkText: app.label,
+			isStateChange: true
+	]
+	if (source == "modeChange") {
+		eventData.descriptionText += " because of a mode change"
+	} else if (source == "schedule") {
+		eventData.descriptionText += " as scheduled"
+	} else if (source == "appTouch") {
+		eventData.descriptionText += " because you pressed play on the app"
+	} else if (source == "controller") {
+		eventData.descriptionText += " because you pressed play on the controller"
+	}
+
+	sendControllerEvent(eventData)
+}
+
+def sendStopEvent(source) {
+	log.trace "sendStopEvent(${source})"
+	def eventData = [
+			name: "sessionStatus",
+			value: "stopped",
+			descriptionText: "${app.label} has stopped dimming",
+			displayed: true,
+			linkText: app.label,
+			isStateChange: true
+	]
+	if (source == "modeChange") {
+		eventData.descriptionText += " because of a mode change"
+		eventData.value += "cancelled"
+	} else if (source == "schedule") {
+		eventData.descriptionText = "${app.label} has finished dimming"
+	} else if (source == "appTouch") {
+		eventData.descriptionText += " because you pressed play on the app"
+		eventData.value += "cancelled"
+	} else if (source == "controller") {
+		eventData.descriptionText += " because you pressed stop on the controller"
+		eventData.value += "cancelled"
+	} else if (source == "settingsChange") {
+		eventData.descriptionText += " because the settings have changed"
+		eventData.value += "cancelled"
+	} else if (source == "manualOverride") {
+		eventData.descriptionText += " because the dimmer was manually turned off"
+		eventData.value += "cancelled"
+	}
+
+	sendControllerEvent(eventData)
+	sendTimeRemainingEvent(0)
+}
+
+def sendTimeRemainingEvent(percentComplete) {
+	log.trace "sendTimeRemainingEvent(${percentComplete})"
+
+	def percentCompleteEventData = [
+			name: "percentComplete",
+			value: percentComplete as int,
+			displayed: true,
+			isStateChange: true
+	]
+	sendControllerEvent(percentCompleteEventData)
+
+	def duration = sanitizeInt(duration, 30)
+	def timeRemaining = duration - (duration * (percentComplete / 100))
+	def timeRemainingEventData = [
+			name: "timeRemaining",
+			value: displayableTime(timeRemaining),
+			displayed: true,
+			isStateChange: true
+	]
+	sendControllerEvent(timeRemainingEventData)
+}
+
+def sendControllerEvent(eventData) {
+	def controller = getController()
+	if (controller) {
+		controller.controllerEvent(eventData)
+	}
+}
+
+def getController() {
+	def dni = state.controllerDni
+	if (!dni) {
+		log.warn "no controller dni"
+		return null
+	}
+	def controller = getChildDevice(dni)
+	if (!controller) {
+		log.warn "no controller"
+		return null
+	}
+	log.debug "controller: ${controller}"
+	return controller
 }
 
 // ========================================================
@@ -349,6 +540,8 @@ def updateDimmers(percentComplete) {
 
 		}
 	}
+
+	sendTimeRemainingEvent(percentComplete)
 }
 
 int dynamicLevel(dimmer, percentComplete) {
@@ -377,7 +570,7 @@ private completion() {
 		return
 	}
 
-	stop()
+	stop("schedule")
 
 	handleCompletionSwitches()
 
@@ -385,6 +578,7 @@ private completion() {
 
 	handleCompletionModesAndPhrases()
 
+	sendTimeRemainingEvent(100)
 }
 
 private handleCompletionSwitches() {
@@ -493,21 +687,64 @@ def completionPercentage() {
 		return
 	}
 
-	int now = new Date().getTime()
-	int diff = now - atomicState.start
-	int totalRunTime = totalRunTimeMillis()
-	int percentOfRunTime = (diff / totalRunTime) * 100
-	log.debug "percentOfRunTime: ${percentOfRunTime}"
+	def now = new Date().getTime()
+	def timeElapsed = now - atomicState.start
+	def totalRunTime = totalRunTimeMillis()
+	def percentComplete = timeElapsed / totalRunTime * 100
+	log.debug "percentComplete: ${percentComplete}"
 
-	percentOfRunTime
+	return percentComplete
 }
 
 int totalRunTimeMillis() {
 	int minutes = sanitizeInt(duration, 30)
+	convertToMillis(minutes)
+}
+
+int convertToMillis(minutes) {
 	def seconds = minutes * 60
 	def millis = seconds * 1000
-	return millis as int
+	return millis
 }
+
+def timeRemaining(percentComplete) {
+	def normalizedPercentComplete = percentComplete / 100
+	def duration = sanitizeInt(duration, 30)
+	def timeElapsed = duration * normalizedPercentComplete
+	def timeRemaining = duration - timeElapsed
+	return timeRemaining
+}
+
+int millisToEnd(percentComplete) {
+	convertToMillis(timeRemaining(percentComplete))
+}
+
+String displayableTime(timeRemaining) {
+	def timeString = "${timeRemaining}"
+	def parts = timeString.split(/\./)
+	if (!parts.size()) {
+		return "0:00"
+	}
+	def minutes = parts[0]
+	if (parts.size() == 1) {
+		return "${minutes}:00"
+	}
+	def fraction = "0.${parts[1]}" as double
+	def seconds = "${60 * fraction as int}".padRight(2, "0")
+	return "${minutes}:${seconds}"
+}
+
+def jumpTo(percentComplete) {
+	def millisToEnd = millisToEnd(percentComplete)
+	def endTime = new Date().getTime() + millisToEnd
+	def duration = sanitizeInt(duration, 30)
+	def durationMillis = convertToMillis(duration)
+	def shiftedStart = endTime - durationMillis
+	atomicState.start = shiftedStart
+	updateDimmers(percentComplete)
+	sendTimeRemainingEvent(percentComplete)
+}
+
 
 int dynamicEndLevel() {
 	if (usesOldSettings()) {
@@ -673,7 +910,13 @@ def schedulingHrefDescription() {
 
 	def descriptionParts = []
 	if (days) {
-		descriptionParts << "On ${fancyString(days)},"
+		if (days == weekdays()) {
+			descriptionParts << "On weekdays,"
+		} else if (days == weekends()) {
+			descriptionParts << "On weekends,"
+		} else {
+			descriptionParts << "On ${fancyString(days)},"
+		}
 	}
 
 	descriptionParts << "${fancyDeviceString(dimmers)} will start dimming"
@@ -759,15 +1002,15 @@ def completionHrefDescription() {
 
 def numbersPageHrefDescription() {
 	def title = "All dimmers will dim for ${duration ?: '30'} minutes from ${startLevelLabel()} to ${endLevelLabel()}"
-    if (colorize) {
-			def colorDimmers = dimmersWithSetColorCommand()
-			if (colorDimmers == dimmers) {
-				title += " and will gradually change color."
-			} else {
-				title += ".\n${fancyDeviceString(colorDimmers)} will gradually change color."
-			}
-    }
-    return title
+	if (colorize) {
+		def colorDimmers = dimmersWithSetColorCommand()
+		if (colorDimmers == dimmers) {
+			title += " and will gradually change color."
+		} else {
+			title += ".\n${fancyDeviceString(colorDimmers)} will gradually change color."
+		}
+	}
+	return title
 }
 
 def hueSatToHex(h, s) {
