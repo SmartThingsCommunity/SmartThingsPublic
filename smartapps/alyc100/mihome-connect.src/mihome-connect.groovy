@@ -21,6 +21,9 @@
  *
  *	17.01.2016
  *	v1.0.2 - Bug fix when device has been manually deleted.
+ *
+ *	31.01.2016
+ *	v1.0.3 - Bug fix to refresh schedule job.
  */
 definition(
 		name: "MiHome (Connect)",
@@ -72,24 +75,26 @@ def firstPage() {
 // App lifecycle hooks
 
 def installed() {
+	log.debug "installed"
 	initialize()
 	// Check for new devices and remove old ones every 3 hours
 	runEvery3Hours('updateDevices')
     // execute handlerMethod every 10 minutes.
-    schedule("0 0/10 * * * ?", refreshDevices)
+    runEvery5Minutes('refreshDevices')
 }
 
 // called after settings are changed
 def updated() {
+	log.debug "updated"
 	initialize()
-    unschedule(refreshDevices)
-    schedule("0 0/10 * * * ?", refreshDevices)
+    unschedule('refreshDevices')
+    runEvery5Minutes('refreshDevices')
 }
 
 def uninstalled() {
 	log.info("Uninstalling, removing child devices...")
-	unschedule(updateDevices)
-    unschedule(refreshDevices)
+	unschedule('updateDevices')
+    unschedule('refreshDevices')
 	removeChildDevices(getChildDevices())
 }
 
