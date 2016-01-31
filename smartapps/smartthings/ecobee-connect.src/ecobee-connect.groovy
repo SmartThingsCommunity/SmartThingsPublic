@@ -21,15 +21,20 @@
  *      10-28-2015 DVCSMP-604 - accessory sensor, DVCSMP-1174, DVCSMP-1111 - not respond to routines
  *      StrykerSKS - 12-11-2015 - Make it work (better) with the Ecobee 3
  *
- *  Current Version: 0.8.9-RC
- *  See separate Changelog for change history
+ *  See Changelog for change history
  *
- */
+ */  
+private def getVersion() { return "ecobee (Connect) Version 0.9.0-RC" }
+private def getHelperSmartApps() {
+	return [ "ecobee Routines": [multiple: true, description: "Example Description"],
+    		 "ecobee ABC": [multiple: false, description: "Example Description for ecobee ABC"]
+             ]    
+}
  
 definition(
 	name: "Ecobee (Connect)",
 	namespace: "smartthings",
-	author: "SmartThings",
+	author: "Sean Kendall Schneyer",
 	description: "Connect your Ecobee thermostat to SmartThings.",
 	category: "My Apps",
 	iconUrl: "https://s3.amazonaws.com/smartapp-icons/Partner/ecobee.png",
@@ -40,9 +45,16 @@ definition(
 }
 
 preferences {
-	page(name: "auth", title: "ecobee3 Auth", nextPage: "therms", content: "authPage", uninstall: true)
-	page(name: "therms", title: "Select Thermostats", nextPage: "sensors", content: "thermsPage")
-	page(name: "sensors", title: "Select Sensors", nextPage: "", content: "sensorsPage", install:true)
+	page(name: "mainPage")
+    page(name: "removePage")
+	page(name: "authPage")
+	page(name: "thermsPage")
+	page(name: "sensorsPage")
+    page(name: "preferencesPage")    
+    page(name: "helperSmartAppsPage")    
+    // Part of debug Dashboard
+    page(name: "debugDashboardPage")
+    page(name: "pollChildrenPage")
 }
 
 mappings {
@@ -52,6 +64,65 @@ mappings {
 
 
 // Begin Preference Pages
+def mainPage() {
+	dynamicPage(name: "mainPage", title: "Welcome to ecobee (Connect)", install: true, uninstall: false, submitOnChange: true) {
+    	def ecoAuthDesc = (state.authToken != null) ? "[Connected]\n" :"[Not Connected]\n"
+		
+        if(state.initialized && !state.authToken) {
+        	section() {
+				paragraph "WARNING!\n\nYou are no longer connected to the ecobee API. Please re-Authorize below."				
+			}
+        }       
+
+		if(state.authToken != null) {
+			section("Devices") {
+				def howManyThermsSel = settings.thermostats?.size() ?: 0
+                def howManyTherms = state.numAvailTherms ?: "?"
+                def howManySensors = state.numAvailSensors ?: "?"
+                
+                // Thermostats
+				state.settingsCurrentTherms = settings.thermostats ?: []
+    	    	href ("thermsPage", title: "Thermostats", description: "Tap to select Thermostats [${howManyThermsSel}/${howManyTherms}]")                
+                
+                // Sensors
+            	if (settings.thermostats?.size() > 0) {
+					state.settingsCurrentSensors = settings.ecobeesensors ?: []
+                	def howManySensorsSel = settings.ecobeesensors?.size() ?: 0
+            		href ("sensorsPage", title: "Sensors", description: "Tap to select Sensors [${howManySensorsSel}/${howManySensors}]")
+	            }
+    	    }        
+	        section("Preferences") {
+    	    	href ("preferencesPage", title: "Preferences", description: "Tap to review SmartApp settings.")
+                LOG("In Preferences page section after preferences line", 5, null, "trace")
+        	}
+            if ( debugLevel(5) ) {
+	        	section ("Debug Dashboard") {
+					href ("debugDashboardPage", description: "Tap to enter the Debug Dashboard", title: "")
+    	    	}
+			}
+            section("Remove ecobee (Connect)") {
+				href ("removePage", description: "Tap to remove ecobee (Connect) ", title: "")
+        	}            
+    	} // End if(state.authToken)
+        
+        // Setup our API Tokens       
+		section("Ecobee Authentication") {
+			href ("authPage", title: "ecobee Authorization", description: "${ecoAuthDesc}Tap for ecobee Credentials")
+		}        
+     
+		section (getVersion())
+	}
+}
+
+
+def removePage() {
+	dynamicPage(name: "removePage", title: "Remove ecobee (Connect) and All Devices", install: false, uninstall: true) {
+    	section ("WARNING!\n\nRemoving ecobee (Connect) also removes all Devices\n") {
+        }
+    }
+}
+
+// Setup OAuth between SmartThings and Ecobee clouds
 def authPage() {
 	LOG("=====> authPage() Entered", 5)
 
@@ -59,16 +130,17 @@ def authPage() {
 		state.accessToken = createAccessToken()
 	}
 
-	def description = "Click to enter Ecobee Credentials"
+	def description = "Click to enter ecobee Credentials"
 	def uninstallAllowed = false
 	def oauthTokenProvided = false
 
 	if(state.authToken) {
-		description = "You are connected. Click Next above."
+		description = "You are connected. Tap Done above."
 		uninstallAllowed = true
 		oauthTokenProvided = true
+        state.connected = "full"
 	} else {
-		description = "Click to enter Ecobee Credentials"
+		description = "Tap to enter ecobee Credentials"
 	}
 
 	def redirectUrl = buildRedirectUrl //"${serverUrl}/oauth/initialize?appId=${app.id}&access_token=${state.accessToken}"
@@ -77,77 +149,142 @@ def authPage() {
 	// get rid of next button until the user is actually auth'd
 	if (!oauthTokenProvided) {
     	LOG("authPage() --> in !oauthTokenProvided")    	
-		return dynamicPage(name: "auth", title: "ecobee Setup", nextPage: "", uninstall: uninstallAllowed) {
+		return dynamicPage(name: "authPage", title: "ecobee Setup", nextPage: "", uninstall: uninstallAllowed) {
 			section() {
-				paragraph "Tap below to log in to the ecobee service and authorize SmartThings access. Be sure to scroll down on page 2 and press the 'Allow' button."
-				href url:redirectUrl, style:"embedded", required:true, title: "ecobee Account Login", description:description 
+				paragraph "Tap below to log in to the ecobee service and authorize SmartThings access. Be sure to press the 'Allow' button on the 2nd page."
+				href url:redirectUrl, style:"embedded", required:true, title: "ecobee Account Authorization", description:description 
 			}
 		}
 	} else {    	
         LOG("authPage() --> in else for oauthTokenProvided - ${state.authToken}.")
-        return dynamicPage(name: "auth", title: "ecobee Setup", nextPage: "therms", uninstall: uninstallAllowed) {
+        return dynamicPage(name: "authPage", title: "ecobee Setup", nextPage: "mainPage", uninstall: uninstallAllowed) {
         	section() {
-            	paragraph "Continue on to select thermostats."
-                href url:redirectUrl, style: "embedded", state: "complete", title: "ecobee Account Login", description: description
+            	paragraph "Return to main menu."
+                href url:redirectUrl, style: "embedded", state: "complete", title: "ecobee Account Authorization", description: description
                 }
         }           
 	}
 }
 
-def thermsPage() {
+// Select which Thermostats are to be used
+def thermsPage(params) {
 	LOG("=====> thermsPage() entered", 5)
+    state.thermsPageVisited = true
         
 	def stats = getEcobeeThermostats()
-    LOG("thermsPage() -> thermostat list: $stats")
+    LOG("thermsPage() -> thermostat list: ${stats}")
     LOG("thermsPage() starting settings: ${settings}")
-    
-    dynamicPage(name: "therms", title: "Select Thermostats", nextPage: "sensors", content: "thermsPage", uninstall: true) {    
+    LOG("thermsPage() params passed? ${params}", 4, null, "trace")
+
+    dynamicPage(name: "thermsPage", title: "Select Thermostats", params: params, nextPage: "", content: "thermsPage", uninstall: false) {    
     	section("Units") {
         	paragraph "NOTE: The units type (F or C) is determined by your Hub Location settings automatically. Please update your Hub settings (under My Locations) to change the units used. Current value is ${getTemperatureScale()}."
         }
     	section("Select Thermostats") {
+			LOG("thersPage(): state.settingsCurrentTherms=${state.settingsCurrentTherms}   settings.thermostats=${settings.thermostats}", 4, null, "trace")
+			if (state.settingsCurrentTherms != settings.thermostats) {
+				LOG("state.settingsCurrentTherms != settings.thermostats determined!!!", 4, null, "trace")			
+			} else { LOG("state.settingsCurrentTherms == settings.thermostats: No changes detected!", 4, null, "trace") }
         	paragraph "Tap below to see the list of ecobee thermostats available in your ecobee account and select the ones you want to connect to SmartThings."
-			input(name: "thermostats", title:"Select Thermostats", type: "enum", required:true, multiple:true, description: "Tap to choose", metadata:[values:stats])        
-        }
-        section("Optional Settings") {
-        	input(name: "holdType", title:"Select Hold Type", type: "enum", required:false, multiple:false, description: "Until I Change", metadata:[values:["Until I Change", "Until Next Program"]])
-            input(name: "smartAuto", title:"Use Smart Auto Temperature Adjust?", type: "bool", required:false, description: false)
-            input(name: "pollingInterval", title:"Polling Interval (in Minutes)", type: "enum", required:false, multiple:false, description: "5", options:["5", "10", "15", "30"])
-            input(name: "debugLevel", title:"Debugging Level (higher # is more data reported)", type: "enum", required:false, multiple:false, description: "3", metadata:[values:["5", "4", "3", "2", "1", "0"]])
-        }
-    } 
+			input(name: "thermostats", title:"Select Thermostats", type: "enum", required:false, multiple:true, description: "Tap to choose", params: params, metadata:[values:stats], , submitOnChange: true)        
+        }      
+    }      
 }
 
 def sensorsPage() {
 	// Only show sensors that are part of the chosen thermostat(s)
+    // Refactor to show the sensors under their corresponding Thermostats. Use Thermostat name as section header?
     LOG("=====> sensorsPage() entered. settings: ${settings}", 5)
+    state.sensorsPageVisited = true
 
 	def options = getEcobeeSensors() ?: []
 	def numFound = options.size() ?: 0
-      
+    
     LOG("options = getEcobeeSensors == ${options}")
 
-    dynamicPage(name: "sensors", title: "Select Sensors", nextPage: "") {
+    dynamicPage(name: "sensorsPage", title: "Select Sensors", nextPage: "") {
 		if (numFound > 0)  {
-			section(""){
+			section("Select Sensors"){
+				LOG("sensorsPage(): state.settingsCurrentSensors=${state.settingsCurrentSensors}   settings.ecobeesensors=${settings.ecobeesensors}", 4, null, "trace")
+				if (state.settingsCurrentSensors != settings.ecobeesensors) {
+					LOG("state.settingsCurrentSensors != settings.ecobeesensors determined!!!", 4, null, "trace")					
+				} else { LOG("state.settingsCurrentSensors == settings.ecobeesensors: No changes detected!", 4, null, "trace") }
 				paragraph "Tap below to see the list of ecobee sensors available for the selected thermostat(s) and select the ones you want to connect to SmartThings."
+                if (settings.showThermsAsSensor) { paragraph "NOTE: Also showing Thermostats as an available sensor to allow for actual temperature values to be used." }
 				input(name: "ecobeesensors", title:"Select Ecobee Sensors (${numFound} found)", type: "enum", required:false, description: "Tap to choose", multiple:true, metadata:[values:options])
 			}
 		} else {
-    		 // Must not have any sensors associated with this Thermostat 		   
+    		 // No sensors associated with this set of Thermostats was found
            LOG("sensorsPage(): No sensors found.", 4)
            section(""){
            		paragraph "No associated sensors were found. Click Done above."
            }
-	    }
+	    }        
 	}
+}
+
+def preferencesPage() {
+    LOG("=====> preferencesPage() entered. settings: ${settings}", 5)
+
+    dynamicPage(name: "preferencesPage", title: "Update SmartApp Preferences", nextPage: "") {
+		section("SmartApp Preferences") {
+        	input(name: "holdType", title:"Select Hold Type", type: "enum", required:false, multiple:false, description: "Until I Change", metadata:[values:["Until I Change", "Until Next Program"]])
+            paragraph "The 'Smart Auto Temperature Adjust' feature determines if you want to allow the thermostat setpoint to be changed using the arrow buttons in the Tile when the thermostat is in 'auto' mode."
+            input(name: "smartAuto", title:"Use Smart Auto Temperature Adjust?", type: "bool", required:false, description: false)
+            input(name: "pollingInterval", title:"Polling Interval (in Minutes)", type: "enum", required:false, multiple:false, description: "5", options:["5", "10", "15", "30"])
+            input(name: "debugLevel", title:"Debugging Level (higher # for more information)", type: "enum", required:false, multiple:false, description: "3", metadata:[values:["5", "4", "3", "2", "1", "0"]])            
+            paragraph "Showing a Thermostat as a Remote Sensor is useful if you need to access the actual temperature in the room where the Thermostat is located and not just the (average) temperature displayed on the Thermostat"
+            input(name: "showThermsAsSensor", title:"Include Thermostats as a Remote Sensor?", type: "bool", required:false, description: false)
+        }
+	}
+}
+
+def debugDashboardPage() {
+	LOG("=====> debugDashboardPage() entered.", 5)
+    
+    
+    dynamicPage(name: "debugDashboardPage", title: "") {
+    	section (getVersion())
+		section("Commands") {
+        	href(name: "pollChildrenPage", title: "", required: false, page: "pollChildrenPage", description: "Tap to execute command: pollChildren()")
+        }    	
+    	section("Settings Information") {
+        	paragraph "debugLevel: ${settings.debugLevel} (default=3 if null)"
+            paragraph "holdType: ${settings.holdType} (default='Until I Change' if null)"
+            paragraph "pollingInterval: ${settings.pollingInterval} {default=5 if null)"
+            paragraph "showThermsAsSensor: ${settings.showThermsAsSensor} {default=false if null)"
+            paragraph "smartAuto: ${settings.smartAuto} (default=false if null)"   
+            paragraph "Selected Thermostats: ${settings.thermostats}"
+        }
+    	section("Commands") {
+        	href(name: "pollChildrenPage", title: "", required: false, page: "pollChildrenPage", description: "Tap to execute command: pollChildren()")
+            href ("removePage", description: "Tap to remove ecobee (Connect) ", title: "")
+        }
+    }    
+}
+
+// pages that are part of Debug Dashboard
+def pollChildrenPage() {
+	LOG("=====> pollChildrenPage() entered.", 5)
+	pollChildren(null)
+    
+	dynamicPage(name: "pollChildrenPage", title: "") {
+    	section() {
+        	paragraph "pollChildren() was called"
+        }
+    }    
+}
+
+
+def helperSmartAppsPage() {
+
+
 }
 // End Prefernce Pages
 
 // OAuth Init URL
 def oauthInitUrl() {
 	LOG("oauthInitUrl with callback: ${callbackUrl}", 5)
-
 	state.oauthInitState = UUID.randomUUID().toString()
 
 	def oauthParams = [
@@ -165,7 +302,6 @@ def oauthInitUrl() {
 // OAuth Callback URL and helpers
 def callback() {
 	LOG("callback()>> params: $params, params.code ${params.code}, params.state ${params.state}, state.oauthInitState ${state.oauthInitState}", 4)
-
 	def code = params.code
 	def oauthState = params.state
 
@@ -193,13 +329,14 @@ def callback() {
 		}
 
 		if (state.authToken) {
-			success()
+        	state.lastTokenRefresh = now()
+			success()            
 		} else {
 			fail()
 		}
 
 	} else {
-    	LOG("callback() failed oauthState != state.oauthInitState", 1)
+    	LOG("callback() failed oauthState != state.oauthInitState", 1, null, "warn")
 	}
 
 }
@@ -317,6 +454,8 @@ def getEcobeeThermostats() {
         
             if (resp.status == 200) {
             	LOG("httpGet() in 200 Response")
+                state.numAvailTherms = resp.data.thermostatList?.size() ?: 0
+                
             	resp.data.thermostatList.each { stat ->
 					def dni = [app.id, stat.identifier].join('.')
 					stats[dni] = getThermostatDisplayName(stat)
@@ -344,6 +483,7 @@ def getEcobeeThermostats() {
 }
 
 // Get the list of Ecobee Sensors for use in the settings pages (Only include the sensors that are tied to a thermostat that was selected)
+// NOTE: getEcobeeThermostats() should be called prior to getEcobeeSensors to refresh the full data of all thermostats
 Map getEcobeeSensors() {	
     LOG("====> getEcobeeSensors() entered. thermostats: ${thermostats}", 5)
 
@@ -352,8 +492,12 @@ Map getEcobeeSensors() {
 	// TODO: Is this needed?
 	state.remoteSensors = [:]    
 
+	// Need to query to get full list of Thermostats (need to pull this here as we can call getEcobeeSensors out of sequence after initial setup
+    // TODO: Check on possible race conditions. Leave to update and initialize procedures to call in sequence?
+    // getEcobeeThermostats()
+	
 	state.thermostatData.thermostatList.each { singleStat ->
-		LOG("thermostat loop: singleStat == ${singleStat} singleStat.identifier == ${singleStat.identifier}", 4)
+		LOG("thermostat loop: singleStat.identifier == ${singleStat.identifier} -- singleStat.remoteSensors == ${singleStat.remoteSensors} ", 4)
         
     	if (!settings.thermostats.findAll{ it.contains(singleStat.identifier) } ) {
         	// We can skip this thermostat as it was not selected by the user
@@ -375,17 +519,29 @@ Map getEcobeeSensors() {
             LOG("getEcobeeSensors() - state.remoteSensors: ${state.remoteSensors}", 4)
 		}
         
+        LOG("remoteSensors all before each loop: ${state.remoteSensors}", 5, null, "trace")
 		state.remoteSensors.each {
-			if (it.type != "thermostat") {
+        	LOG("Looping through each remoteSensor. Current remoteSensor: ${it}", 5, null, "trace")
+			if (it.type == "ecobee3_remote_sensor") {
+            	LOG("Adding an ecobee3_remote_sensor: ${it}", 4, null, "trace")
 				def value = "${it?.name}"
 				def key = "ecobee_sensor-"+ it?.id + "-" + it?.code
 				sensorMap["${key}"] = value
-			}
+			} else if ( (it.type == "thermostat") && (settings.showThermsAsSensor == true) ) {            	
+				LOG("Adding a Thermostat as a Sensor: ${it}", 4, null, "trace")
+                def value = "${it?.name}"
+				def key = "ecobee_sensor_thermostat-"+ it?.id + "-" + singleStat.identifier
+                LOG("Adding a Thermostat as a Sensor: ${it}, key: ${key}  value: ${value}", 4, null, "trace")
+				sensorMap["${key}"] = value + " (Thermostat)"
+            } else {
+            	LOG("Did NOT add: ${it}. settings.showThermsAsSensor=${settings.showThermsAsSensor}", 4, null, "trace")
+            }
 		}
 	} // end thermostats.each loop
 	
     LOG("getEcobeeSensors() - remote sensor list: ${sensorMap}", 4)
     state.eligibleSensors = sensorMap
+    state.numAvailSensors = sensorMap.size() ?: 0
 	return sensorMap
         
 }
@@ -402,41 +558,109 @@ def getThermostatTypeName(stat) {
 }
 
 def installed() {
-	LOG("Installed with settings: ${settings}", 5)	
+	LOG("Installed with settings: ${settings}", 4)	
 	initialize()
 }
 
 def updated() {	
     LOG("Updated with settings: ${settings}", 4)
-	unsubscribe()
-	initialize()
+	unsubscribe() // Do we really need/want to unsubscribe to anything?
+    
+    // refresh Thermostats and Sensor full lists
+    getEcobeeThermostats()
+    getEcobeeSensors()
+    
+    // Children
+	if (settings.thermostats?.size() > 0) { 
+    	createChildrenThermostats() 
+		if (settings.ecobeesensors?.size() > 0) { createChildrenSensors() } 
+	}        
+    deleteUnusedChildren()
+    
+        
+    // Force the rescheduling
+    state.lastScheduledPoll = 0
+    state.lastPoll = 0
+    state.lastTokenRefresh = 0
+    scheduleHandlers()	
 }
 
 def initialize() {	
     LOG("=====> initialize()", 4)
-    
-    state.connected = "full"
-    unschedule()
+    if (state.initialized) {
+    	LOG("initialized() called more than once. Please contact the developer of this app.", 1, null, "error")
+        return false
+    }    
+    state.connected = "full"    
+    unschedule() // Shouldn't be needed as we are only calling intialize once now, but just in case
     state.reAttempt = 0
     
+    // Setup initial polling and determine polling intervals
+	state.pollingInterval = (settings.pollingInterval?.toInteger() >= 5) ? settings.pollingInterval.toInteger() : 5
+    state.tokenGrace = 16 // Anything more than this then we have a possible failed 
+	
+    // Children
+    def aOK = true
+	if (settings.thermostats?.size() > 0) { aOK = aOK && createChildrenThermostats() }
+	if (settings.ecobeesensors?.size() > 0) { aOK = aOK && createChildrenSensors() }
+    deleteUnusedChildren()
+    
+    // Schedule the various handlers
+    scheduleHandlers()    
+    
+    // Add subscriptions as little "daemons" that will check on our health
+    subscribe(location, "routineExecuted", scheduleHandlers)
+    subscribe(location, "sunset", scheduleHandlers)
+    subscribe(location, "sunrise", scheduleHandlers)
+    
+    // TODO: Add ability to add additional physical (or virtual) items to subscribe to that have events generated that could heal our app
+    
+    //send activity feeds to tell that device is connected
+    def notificationMessage = aOK ? "is connected to SmartThings" : "had an error during setup of devices"
+    sendActivityFeeds(notificationMessage)
+    state.timeSendPush = null
+    
+    state.initialized = true
+    return aOK
+}
+
+private def createChildrenThermostats() {
+	LOG("createChildrenThermostats() entered: thermostats=${settings.thermostats}", 5)
     // Create the child Thermostat Devices
-	def devices = thermostats.collect { dni ->
+	def devices = settings.thermostats.collect { dni ->
 		def d = getChildDevice(dni)
 		if(!d) {
-			d = addChildDevice(app.namespace, getChildThermostatName(), dni, null, ["label":"Ecobee Thermostat:${state.thermostatsWithNames[dni]}"])			
+        	// TODO: Place in a try block and check for this exception: physicalgraph.app.exception.UnknownDeviceTypeException
+            try {
+				d = addChildDevice(app.namespace, getChildThermostatName(), dni, null, ["label":"Ecobee Thermostat:${state.thermostatsWithNames[dni]}"])			
+			} catch (physicalgraph.app.exception.UnknownDeviceTypeException e) {
+            	LOG("You MUST add the ${getChildSensorName()} Device Handler to the IDE BEFORE running the setup.", 1, null, "error")
+                return false
+            }
             LOG("created ${d.displayName} with id $dni", 4)
 		} else {
-			LOG("found ${d.displayName} with id $dni already exists", 4)
-            
+			LOG("found ${d.displayName} with id $dni already exists", 4)            
 		}
 		return d
-	}
+	}    
+    
+    LOG("Created/Updated ${devices.size()} thermostats")    
+    return true
+}
 
+private def createChildrenSensors() {
+	LOG("createChildrenSensors() entered: ecobeesensors=${settings.ecobeesensors}", 5)
     // Create the child Ecobee Sensor Devices
 	def sensors = settings.ecobeesensors.collect { dni ->
 		def d = getChildDevice(dni)
 		if(!d) {
-			d = addChildDevice(app.namespace, getChildSensorName(), dni, null, ["label":"Ecobee Sensor:${state.eligibleSensors[dni]}"])
+        	// TODO: Place in a try block and check for this exception: physicalgraph.app.exception.UnknownDeviceTypeException
+            try {
+				d = addChildDevice(app.namespace, getChildSensorName(), dni, null, ["label":"Ecobee Sensor:${state.eligibleSensors[dni]}"])
+			} catch (physicalgraph.app.exception.UnknownDeviceTypeException e) {
+            	LOG("You MUST add the ${getChildSensorName()} Device Handler to the IDE BEFORE running the setup.", 1, null, "error")
+                return false
+            }
             LOG("created ${d.displayName} with id $dni", 4)
 		} else {
         	LOG("found ${d.displayName} with id $dni already exists", 4)
@@ -444,61 +668,87 @@ def initialize() {
 		return d
 	}
     
-	LOG("created ${devices.size()} thermostats and ${sensors.size()} sensors.")
+	LOG("Created/Updated ${sensors.size()} sensors.")
+    return true
+}
 
-
-	// WORKAROUND: settings.ecobeesensors may contain leftover sensors in the dynamic enum bug scenario, use info in state.eligibleSensors instead
-    // TODO: Need to deal with individual sensors from remaining thermostats that might be excluded...
-    // TODO: Cleanup this code now that it is working!
-    def sensorList = state.eligibleSensors.keySet()
+// NOTE: For this to work effectively getEcobeeThermostats() and getEcobeeSensors() should be called prior
+private def deleteUnusedChildren() {
+	LOG("deleteUnusedChildren() entered", 5)    
     
-    // state.eligibleSensorsAsList = sensorList
-    
-    def reducedSensorList = settings.ecobeesensors.findAll { sensorList.contains(it) }
-    LOG("**** reducedSensorList = ${reducedSensorList} *****", 4, null, "warn")
-    state.activeSensors = reducedSensorList
-        
-    LOG("sensorList based on keys: ${sensorList} from state.sensors: ${state.eligibleSensors}", 4)
-    
-	def combined = settings.thermostats + state.activeSensors  
-	LOG("Combined devices == ${combined}", 4)
-    
-    // Delete any that are no longer in settings
-	def delete  
-    
-    if (combined) {
-    	delete = getChildDevices().findAll { !combined.contains(it.deviceNetworkId) }        
+    if (settings.thermostats?.size() == 0) {
+    	// No thermostats, need to delete all children
+        LOG("Deleting All My Children!", 2, null, "warn")
+    	getAllChildDevices().each { deleteChildDevice(it.deviceNetworkId) }        
     } else {
-    	delete = getAllChildDevices() // inherits from SmartApp (data-management)
+    	// Only delete those that are no longer in the list
+        // This should be a combination of any removed thermostats and any removed sensors
+        def allMyChildren = getAllChildDevices()
+        LOG("These are currently all of my childred: ${allMyChildren}", 5, null, "debug")
+        
+        // Update list of "eligibleSensors"       
+        def childrenToKeep = thermostats + (state.eligibleSensors?.keySet() ?: [])
+        LOG("These are the children to keep around: ${childrenToKeep}", 4, null, "trace")
+        
+    	def childrenToDelete = allMyChildren.findAll { !childrenToKeep.contains(it.deviceNetworkId) }        
+        
+        LOG("Ready to delete these devices. ${childrenToDelete}", 4, null, "trace")
+		childrenToDelete.each { deleteChildDevice(it.deviceNetworkId) } //inherits from SmartApp (data-management)    
+    }    
+}
+	
+
+def scheduleHandlers() {
+	if(state.connected == "lost") {
+    	LOG("Unable to schedule handlers do to loss of API Connection. Please ensure you are authorized.", 1, null, "error")
+    	return
     }
     
-	LOG("delete: ${delete}, deleting ${delete.size()} thermostat(s) and/or sensor(s)", 4, null, "warn")
-	delete.each { deleteChildDevice(it.deviceNetworkId) } //inherits from SmartApp (data-management)
-
-	state.thermostatData = [:] //reset Map to store thermostat data
-
-    //send activity feeds to tell that device is connected
-    def notificationMessage = "is connected to SmartThings"
-    sendActivityFeeds(notificationMessage)
-    state.timeSendPush = null
-
-	pollHandler() //first time polling data from thermostat
-
-	//automatically update devices status every 5 mins
+	// state.lastScheduledPoll == last time the poll() was run via the scheduler
+    // state.lastScheduledTokenRefresh == last time the refreshAuthToken was run via the scheduler
+	//automatically update devices status every 5 mins    
+	def timeSinceLastScheduledPoll = (state.lastScheduledPoll == 0 || !state.lastScheduledPoll) ? 0 : ((now() - state.lastScheduledPoll?.toDouble()) / 1000 / 60)
+    def timeSinceLastScheduledRefresh = (state.lastScheduledTokenRefresh == 0 || !state.lastScheduledTokenRefresh) ? 0 : ((now() - state.lastScheduledTokenRefresh?.toDouble()) / 1000 / 60)
+	def timeBeforeExpiry = state.authTokenExpires ? ((state.authTokenExpires - now()) / 1000 / 60) : 0    
+    
+    LOG("Time since last poll? ${timeSinceLastScheduledPoll} -- state.lastScheduledPoll == ${state.lastScheduledPoll}", 4, null, "info")
+    LOG("Time since last token refresh? ${timeSinceLastScheduledRefresh} -- state.lastScheduledTokenRefresh == ${state.lastScheduledTokenRefresh}", 4, null, "info")
+    LOG("timeLeft until expiry (in min): ${timeBeforeExpiry}", 4, null, "info")
+    
+    // Reschedule polling if it has been a while since the previous poll
     def interval = (settings.pollingInterval?.toInteger() >= 5) ? settings.pollingInterval.toInteger() : 5
-	"runEvery${interval}Minutes"("poll")
-    // runEvery5Minutes("poll")
+    if ( (timeSinceLastScheduledPoll == 0) || (timeSinceLastPoll >= (interval * 2)) || (!state.initialized) ) {
+    	// automatically update devices status every ${interval} mins    
+        // re-establish polling
+        LOG("pollChildren() - Rescheduling handlers due to delays!", 1, child, "warn")
+        unschedule("poll")
+		"runEvery${interval}Minutes"("poll")        
+        pollScheduled()
+    }    
+    
+    // Reschedule Authrefresh if we are over the grace period    
+	if ( (timeSinceLastScheduledRefresh == 0)  || (timeBeforeExpiry >= state.tokenGrace) || (!state.initialized) ) {
+    	unschedule("refreshAuthTokenScheduled")
+		runEvery15Minutes("refreshAuthTokenScheduled")        
+        refreshAuthTokenScheduled()
+	}    
+}
 
-    // Auth Token expires every hour 
-    // Run as part of the poll() procedure since it runs every 5 minutes. Only runs if the time is close enough though to avoid API calls
-	runEvery15Minutes("refreshAuthToken")
+def pollScheduled() {
+	state.lastScheduledPoll = now()
+    poll()
+}
+
+def refreshAuthTokenScheduled() {
+	state.lastScheduledTokenRefresh = now()
+    refreshAuthToken()
 }
 
 
 // Called during initialization to get the inital poll
 def pollHandler() {
 	LOG("pollHandler()", 5)
-    state.lastPoll = 0 // Initialize the variable and force a poll even if there was one recently
+    state.lastPoll = 0 // Initialize the variable and force a poll even if there was one recently    
 	pollChildren(null) // Hit the ecobee API for update on all thermostats
 }
 
@@ -511,11 +761,16 @@ def pollChildren(child = null) {
     	return
     }
     
+    if (settings.thermostats?.size() < 1) {
+    	LOG("pollChildren() - Nothing to poll as there are no thermostats currently selected", 1, child, "warn")
+		return    
+    }    
 
     // Check to see if it is time to do an full poll to the Ecobee servers. If so, execute the API call and update ALL children
     def timeSinceLastPoll = (state.lastPoll == 0) ? 0 : ((now() - state.lastPoll?.toDouble()) / 1000 / 60)
     LOG("Time since last poll? ${timeSinceLastPoll} -- state.lastPoll == ${state.lastPoll}", 3, child, "info")
     
+    // TODO: Let the scheduleHandlers() function do this instead
     // Reschedule polling if it has been a while since the previous poll
     def interval = (settings.pollingInterval?.toInteger() >= 5) ? settings.pollingInterval.toInteger() : 5
     if ( timeSinceLastPoll >= (interval * 2) ) {
@@ -545,11 +800,11 @@ def pollChildren(child = null) {
     	if( oneChild.hasCapability("Thermostat") ) {
         	// We found a Thermostat, send all of its events
             LOG("pollChildren() - We found a Thermostat!", 5)
-            oneChild.generateEvent(state.thermostats[oneChild.device.deviceNetworkId].data)
+            oneChild.generateEvent(state.thermostats[oneChild.device.deviceNetworkId]?.data)
         } else {
         	// We must have a remote sensor
-            LOG("pollChildren() - Updating sensor data: ${oneChild.device.deviceNetworkId} data: ${state.remoteSensorsData[oneChild.device.deviceNetworkId].data}", 4)
-            oneChild.generateEvent(state.remoteSensorsData[oneChild.device.deviceNetworkId].data)
+            LOG("pollChildren() - Updating sensor data: ${oneChild.device.deviceNetworkId} data: ${state.remoteSensorsData[oneChild.device.deviceNetworkId]?.data}", 4)
+            oneChild.generateEvent(state.remoteSensorsData[oneChild.device.deviceNetworkId]?.data)
         } 
     }
 }
@@ -568,7 +823,7 @@ private def generateEventLocalParams() {
             	apiConnected: apiConnected()
             ]
             
-            state.thermostats[oneChild.device.deviceNetworkId].data.apiConnected = apiConnected()            
+            state.thermostats[oneChild.device.deviceNetworkId].data?.apiConnected = apiConnected()            
             oneChild.generateEvent(data)
         } else {
         	// We must have a remote sensor
@@ -678,11 +933,7 @@ private def pollEcobeeAPI(thermostatIdsString = "") {
 
 
 // poll() will be called on a regular interval using a runEveryX command
-void poll() {
-	// def devices = getChildDevices()
-	// devices.each {pollChildren(it)}
-   //  TODO: if ( readyForAuthRefresh() ) { refreshAuthToken() } // Use runIn to make this feasible?
-	
+void poll() {	
     // Check to see if we are connected to the API or not
     if (apiConnected() == "lost") {
     	LOG("poll() - Skipping poll() due to lost API Connection", 1, null, "warn")
@@ -693,8 +944,7 @@ void poll() {
 }
 
 
-def availableModes(child) {
-	
+def availableModes(child) {	
 	def tData = state.thermostats[child.device.deviceNetworkId]
     LOG("state.thermostats = ${state.thermostats}", 3, child)
 	LOG("Child DNI = ${child.device.deviceNetworkId}", 3, child)
@@ -751,9 +1001,11 @@ def updateSensorData() {
                 
 	state.remoteSensors.each {
 		it.each {
-			if ( it.type == "ecobee3_remote_sensor" ) {
+			if ( ( it.type == "ecobee3_remote_sensor" ) || ((it.type == "thermostat") && (settings.showThermsAsSensor)) ) {
 				// Add this sensor to the list
-				def sensorDNI = "ecobee_sensor-" + it?.id + "-" + it?.code 
+				def sensorDNI 
+                if (it.type == "ecobee3_remote_sensor") { sensorDNI = "ecobee_sensor-" + it?.id + "-" + it?.code }
+                else { sensorDNI = "ecobee_sensor_thermostat-" + it?.id + "-" + it?.code }
 				LOG("sensorDNI == ${sensorDNI}", 4)
             	                
 				def temperature = ""
@@ -795,8 +1047,9 @@ def updateSensorData() {
 				sensorCollector[sensorDNI] = [data:sensorData]
                 LOG("sensorCollector being updated with sensorData: ${sensorData}", 4)
                 
-			} else if (it.type == "thermostat") { 
-            	// Extract the occupancy status
+			} else if ( (it.type == "thermostat") && (settings.showThermsAsSensor) ) { 
+            	// Also update the thermostat based Remote Sensor
+                
             
             } // end thermostat else if
 		} // End it.each loop
@@ -832,23 +1085,19 @@ def updateThermostatData() {
         	runningEvent = stat.events.find { 
             	LOG("Checking event: ${it}", 5) 
                 it.running == true
-            }
-        	
-        }
-        
+            }        	
+        }        
         
         def usingMetric = wantMetric() // cache the value to save the function calls
-        def tempTemperature = myConvertTemperatureIfNeeded( (stat.runtime.actualTemperature / 10), "F", (usingMetric ? 1 : 0))
-        def tempHeatingSetpoint = myConvertTemperatureIfNeeded( (stat.runtime.desiredHeat / 10), "F", (usingMetric ? 1 : 0))
-        def tempCoolingSetpoint = myConvertTemperatureIfNeeded( (stat.runtime.desiredCool / 10), "F", (usingMetric ? 1 : 0))
-        def tempWeatherTemperature = myConvertTemperatureIfNeeded( ((stat.weather.forecasts[0].temperature / 10)), "F", (usingMetric ? 1 : 0))
-        
-        
+        def tempTemperature = myConvertTemperatureIfNeeded( (stat.runtime.actualTemperature.toDouble() / 10), "F", (usingMetric ? 1 : 0))
+        def tempHeatingSetpoint = myConvertTemperatureIfNeeded( (stat.runtime.desiredHeat.toDouble() / 10), "F", (usingMetric ? 1 : 0))
+        def tempCoolingSetpoint = myConvertTemperatureIfNeeded( (stat.runtime.desiredCool.toDouble() / 10), "F", (usingMetric ? 1 : 0))
+        def tempWeatherTemperature = myConvertTemperatureIfNeeded( ((stat.weather.forecasts[0].temperature.toDouble() / 10)), "F", (usingMetric ? 1 : 0))
+                
         def currentClimateName = ""
 		def currentClimateId = ""
         def currentFanMode = ""
-         
-        
+                 
         if (runningEvent) {         	
             LOG("Found a running Event: ${runningEvent}", 4) 
             def tempClimateRef = runningEvent.holdClimateRef ?: ""
@@ -935,19 +1184,21 @@ def getThermostatOperatingState(stat) {
 
 def getChildThermostatDeviceIdsString(singleStat = null) {
 	if(!singleStat) {
-    	LOG("getChildThermostatDeviceIdsString() - !singleStat", 2, null, "warn")
+    	LOG("getChildThermostatDeviceIdsString() - !singleStat returning the list for all thermostats", 4, null, "info")
 		return thermostats.collect { it.split(/\./).last() }.join(',')
 	} else {
     	// Only return the single thermostat
         def ecobeeDevId = singleStat.device.deviceNetworkID.split(/\./).last()
-        LOG("Received a single thermostat, returning the Ecobee Device ID as a String: ${ecobeeDevId}", 4)
+        LOG("Received a single thermostat, returning the Ecobee Device ID as a String: ${ecobeeDevId}", 4, null, "info")
         return ecobeeDevId    	
     }
 }
 
+/* 
 def toJson(Map m) {
 	return new org.json.JSONObject(m).toString()
 }
+*/ // Pending delete if not used anywhere
 
 def toQueryString(Map m) {
 	return m.collect { k, v -> "${k}=${URLEncoder.encode(v.toString())}" }.sort().join("&")
@@ -1138,76 +1389,25 @@ def setMode(child, mode, deviceId) {
 	return result
 }
 
-
-def setFanMinOnTime(child, min, deviceId, temp=true) {
-	LOG("setFanMinOnTime() - Setting for ${min} minutes", 1, child, "warn")
-    def h = "690"
-    def c = "770"
-    
-     def tstatSettings = ((sendHoldType != null) && (sendHoldType != "")) ?
-				[coolHoldTemp:"${c}", heatHoldTemp: "${h}", holdType:"${sendHoldType}"
-				] :
-				[coolHoldTemp:"${c}", heatHoldTemp: "${h}"
-				]
-		
-    
-    def jsonRequestBody
-    // Determine if this is setting the minimum time temperarily or permanment basis
-    if(temp) {
-    	// temporarily set the fanMinOnTime 
-        LOG("setFanMinOnTime() in 'temp' if", 4, child)
-		def currentHeatingSetpoint = h ?: child.device.currentValue("heatingSetpoint")
-    	def currentCoolingSetpoint = child.device.currentValue("coolingSetpoint")
-    	def holdType = whatHoldType()
-        def tstatParams = tstatSettings
-        tstatParams << [fanMinOnTime:"${min}", isTemperatureRelative: "false", isTemperatureAbsolute: "false"]
-        // jsonRequestBody = buildBodyRequest('setHold',null,deviceId,tstatParams,null).toString()
-        jsonRequestBody = '{"functions":[{"type":"setHold","params":{"coolHoldTemp":"730","heatHoldTemp":"690","holdType":"nextTransition","fan":"auto","fanMinOnTime":"15","isTemperatureRelative":"false","isTemperatureAbsolute":"false"}}],"selection":{"selectionType":"thermostats","selectionMatch":"312989153500"},"thermostat":{"settings":{"fanMinOnTime":"15"}}}'
-        //jsonRequestBody = '{"functions":[{"type":"setHold","params":{"fanMinOnTime":"15","coolHoldTemp":"730","heatHoldTemp":"690","holdType":"nextTransition","fan":"auto"}}],"selection":{"selectionType":"thermostats","selectionMatch":"312989153500"}}'        
-        //jsonRequestBody = '{"functions":[{"type":"setHold","event":[{"type":"hold","name":"auto","fanMinOnTime":"15","isTemperatureRelative":"false","isTemperatureAbsolute":"false"}]}],"selection":{"selectionType":"thermostats","selectionMatch":"312989153500"}}'        
-		LOG("setFanMinOnTime Request Body (temp) = ${jsonRequestBody}", 4, child)    	
-    } else {
-    	// Change the value in settings until changed again
-    	
-        	tstatSettings <<  [fanMinOnTime:"${min}"]
-
-		jsonRequestBody = buildBodyRequest('setThermostatSettings',null,deviceId,null,tstatSettings).toString()
-		LOG("setFanMinOnTime Request Body = ${jsonRequestBody}", 4, child)    	
-    }
-    
-    
-
-	def result = sendJson(child, jsonRequestBody)
-    LOG("seFanMinOnTime to ${min} with result ${result}", 4, child)
-	if (result) {
-    	child.generateQuickEvent("fanMinOnTime", min, 15)
-    } else {
-    	LOG("Unable to set fanMinOnTime (${min})", 1, child, "warn")
-    }
-
-    
-}
-
-
-// TODO: Pull the learnings from the setFanMinOnTime to be able to set just the fan settings without impacting temperature. 
-// TODO: Be sure to take into consideration any existing running Event?
 def setFanMode(child, fanMode, deviceId, sendHoldType=null) {
 	LOG("setFanMode() to ${fanMode} with DeviceID: ${deviceId}", 5, child)
     
     def extraParams = [isTemperatureRelative: "false", isTemperatureAbsolute: "false"]
     // TODO: Set the fan mode to circulate in the events data sent to the device
-    if (fanMode == "circulate") { 
-    	fanMode = "auto"
+    if (fanMode == "circulate") {    	
+    	fanMode = "auto"        
+        LOG("fanMode == 'circulate'", 5, child, "trace")        
         // Add a minimum circulate time here
-        extraParams << [fanMinOnTime: "15"]
-        child.state.circulateFanModeOn = true
-        return true
+        // NOTE: This is not currently honored by the Ecobee
+        extraParams << [fanMinOnTime:15]
+		child.circulateFanModeOn = true
     } else if (fanMode == "off") {
-    	child.state.circulateFanModeOn = false    
+    	child.circulateFanModeOn = false    
         fanMode = "auto"
+        // NOTE: This is not currently honored by the Ecobee
         extraParams << [fanMinOnTime: "0"]
     } else {
-    	child.state.circulateFanModeOn = false    
+		child.circulateFanModeOn = false    
     }
     
     // TODO Check to see if there is an existing event and use that to overwrite?
@@ -1215,10 +1415,10 @@ def setFanMode(child, fanMode, deviceId, sendHoldType=null) {
     def currentCoolingSetpoint = child.device.currentValue("coolingSetpoint")
     def holdType = sendHoldType ?: whatHoldType()
     
+    LOG("about to call setHold: ${currentHeatingSetpoint}, ${currentCoolingSetpoint}, ${deviceId}, ${holdType}, ${fanMode}, ${extraParams}", 5, child, "trace")
     return setHold(child, currentHeatingSetpoint, currentCoolingSetpoint, deviceId, holdType, fanMode, extraParams)
     
 }
-
 
 def setProgram(child, program, deviceId, sendHoldType=null) {
 	LOG("setProgram() to ${program} with DeviceID: ${deviceId}", 5, child)
@@ -1231,12 +1431,7 @@ def setProgram(child, program, deviceId, sendHoldType=null) {
 				]
     
 	def jsonRequestBody = buildBodyRequest('setHold',null,deviceId,tstatSettings,null).toString()
-	//def jsonRequestBody = '{"selection":{"selectionType":"thermostats","selectionMatch":"' + deviceId + '","includeRuntime":true},"functions": [{ "type": "setHold", "params": { "holdClimateRef": '+ program + '", "coolHoldTemp": '+c+',"heatHoldTemp": '+h+', "holdType": '+sendHoldType+' } } ]}'
-	// def jsonRequestBody = '{"selection":{"selectionType":"thermostats","selectionMatch":"' + deviceId + '","includeRuntime":true},"functions": [{ "type": "setHold", "params": { "holdClimateRef": "'+program+'", "holdType": '+sendHoldType+' } } ]}'
-    
-    LOG("about to sendJson with jsonRequestBody (${jsonRequestBody}", 4, child)
-    
-    
+    LOG("about to sendJson with jsonRequestBody (${jsonRequestBody}", 4, child)    
 	def result = sendJson(child, jsonRequestBody)	
     LOG("setProgram with result ${result}", 3, child)
     dirtyPollData()
@@ -1244,9 +1439,8 @@ def setProgram(child, program, deviceId, sendHoldType=null) {
 }
 
 
-
-
-def sendJson(child = null, String jsonBody) {
+// API Helper Functions
+private def sendJson(child = null, String jsonBody) {
 	// Reset the poll timer to allow for an immediate refresh
 	dirtyPollData()
     
@@ -1323,16 +1517,16 @@ def sendJson(child = null, String jsonBody) {
 		return false
 }
 
-def getChildThermostatName() { return "Ecobee Thermostat" }
-def getChildSensorName()     { return "Ecobee Sensor" }
-def getServerUrl()           { return "https://graph.api.smartthings.com" }
-def getShardUrl()            { return getApiServerUrl() }
-def getCallbackUrl()         { return "${serverUrl}/oauth/callback" }
-def getBuildRedirectUrl()    { return "${serverUrl}/oauth/initialize?appId=${app.id}&access_token=${state.accessToken}&apiServerUrl=${shardUrl}" }
-def getApiEndpoint()         { return "https://api.ecobee.com" }
+private def getChildThermostatName() { return "Ecobee Thermostat" }
+private def getChildSensorName()     { return "Ecobee Sensor" }
+private def getServerUrl()           { return "https://graph.api.smartthings.com" }
+private def getShardUrl()            { return getApiServerUrl() }
+private def getCallbackUrl()         { return "${serverUrl}/oauth/callback" }
+private def getBuildRedirectUrl()    { return "${serverUrl}/oauth/initialize?appId=${app.id}&access_token=${state.accessToken}&apiServerUrl=${shardUrl}" }
+private def getApiEndpoint()         { return "https://api.ecobee.com" }
 
 // This is the API Key from the Ecobee developer page. Can be provided by the app provider or use the appSettings
-def getSmartThingsClientId() { 
+private def getSmartThingsClientId() { 
 	if(!appSettings.clientId) {
 		return "obvlTjUuuR2zKpHR6nZMxHWugoi5eVtS"		
 	} else {
@@ -1342,7 +1536,7 @@ def getSmartThingsClientId() {
 
 
 
-private def LOG(message, level=3, child=null, logType="debug", event=true, displayEvent=false) {
+private def LOG(message, level=3, child=null, logType="debug", event=true, displayEvent=true) {
 	def prefix = ""
 	if ( settings.debugLevel?.toInteger() == 5 ) { prefix = "LOG: " }
 	if ( debugLevel(level) ) { 
@@ -1355,7 +1549,6 @@ private def LOG(message, level=3, child=null, logType="debug", event=true, displ
 
 
 private def debugEvent(message, displayEvent = false) {
-
 	def results = [
 		name: "appdebug",
 		descriptionText: message,
@@ -1371,15 +1564,10 @@ private def debugEventFromParent(child, message) {
             	debugEventFromParent: message
             ]         
 	if (child) { child.generateEvent(data) }
-	/*
-	if (child != null) {
-    	child.sendEvent("name":"debugEventFromParent", "value":message, "description":message, displayed: true, isStateChange: true)        
-    }
-    */
 }
 
 //send both push notification and mobile activity feeds
-def sendPushAndFeeds(notificationMessage) {
+private def sendPushAndFeeds(notificationMessage) {
 	LOG("sendPushAndFeeds >> notificationMessage: ${notificationMessage}", 1, null, "warn")
 	LOG("sendPushAndFeeds >> state.timeSendPush: ${state.timeSendPush}", 1, null, "warn")
     
@@ -1397,7 +1585,7 @@ def sendPushAndFeeds(notificationMessage) {
     // state.authToken = null
 }
 
-def sendActivityFeeds(notificationMessage) {
+private def sendActivityFeeds(notificationMessage) {
     def devices = getChildDevices()
     devices.each { child ->
         child.generateActivityFeedsEvent(notificationMessage) //parse received message from parent
@@ -1416,34 +1604,32 @@ def sendActivityFeeds(notificationMessage) {
 
 
 
-// Helper Apps
-
-// Built in functions from SmartThings for temperature unit handling?
-// getTemperatureScale()
-// fahrenheitToCelsius()
-// celsiusToFahrenheit()
-// convertTemperatureIfNeeded()
-
+// Helper Functions
 // Creating my own as it seems that the built-in version only works for a device, NOT a SmartApp
 def myConvertTemperatureIfNeeded(scaledSensorValue, cmdScale, precision) {
 	if ( (cmdScale != "C") && (cmdScale != "F") && (cmdScale != "dC") && (cmdScale != "dF") ) {
     	// We do not have a valid Scale input, throw a debug error into the logs and just return the passed in value
+        LOG("Invalid temp scale used: ${cmdScale}", 2, null, "error")
         return scaledSensorValue
     }
 
+	def returnSensorValue 
+    
 	// Normalize the input
 	if (cmdScale == "dF") { cmdScale = "F" }
     if (cmdScale == "dC") { cmdScale = "C" }
 
+	LOG("About to convert/scale temp: ${scaledSensorValue}", 5, null, "trace", false)
 	if (cmdScale == getTemperatureScale() ) {
     	// The platform scale is the same as the current value scale
-        return scaledSensorValue
-    } else if (cmdScale == "F") {
-    	return fToC(scaledSensorValue).round(precision)
+        returnSensorValue = scaledSensorValue.round(precision)
+    } else if (cmdScale == "F") {		    	
+    	returnSensorValue = fToC(scaledSensorValue).round(precision)
     } else {
-    	return cToF(scaledSensorValue).round(precision)
+    	returnSensorValue = cToF(scaledSensorValue).round(precision)
     }
-    
+    LOG("returnSensorValue == ${returnSensorValue}", 5, null, "trace", false)
+    return returnSensorValue
 }
 
 def wantMetric() {
