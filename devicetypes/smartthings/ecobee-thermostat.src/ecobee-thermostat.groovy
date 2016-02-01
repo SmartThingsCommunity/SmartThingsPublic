@@ -23,8 +23,10 @@
  *  See Changelog for change history 
  *
  */
- 
-private def getVersion() { return "ecobee (Connect) Version 0.9.0-RC" }
+
+def getVersionNum() { return "0.9.0" }
+private def getVersionLabel() { return "Ecobee Thermostat Version 0.9.0-RC2" }
+
  
 metadata {
 	definition (name: "Ecobee Thermostat", namespace: "smartthings", author: "SmartThings") {
