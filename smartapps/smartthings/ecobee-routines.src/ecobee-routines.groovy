@@ -14,7 +14,9 @@
  *  for the specific language governing permissions and limitations under the License.
  *
  */
-private def getVersion() { return "ecobee Routines Version 0.1.0-RC" }
+def getVersionNum() { return "0.1.0" }
+private def getVersionLabel() { return "ecobee Routines Version ${getVersionNum()}-RC2" }
+
 
 
 definition(
@@ -54,7 +56,9 @@ def mainPage() {
                 input(name: "useSunriseSunset", title: "Also at Sunrise or Sunset?\n(Optional) ", type: "enum", required: false, multiple: true, description: "Tap to choose...", metadata:[values:["Sunrise", "Sunset"]], submitOnChange: true)                
             }            
             input(name: "tempDisable", title: "Temporarily Disable Handler? ", type: "bool", required: false, description: false, submitOnChange: true)                
-        }    
+        }
+        
+        section (getVersionLabel())
     }
 }
 
