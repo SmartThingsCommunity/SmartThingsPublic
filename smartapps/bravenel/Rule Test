@@ -955,6 +955,8 @@ def selectActionsFalse() {
             input "adjustDimmerFalse", "capability.switchLevel", title: "Adjust these dimmers", multiple: true, required: false, submitOnChange: true
 			if(adjustDimmerFalse) input "dimAdjFalse", "number", title: "By this amount", range: "-100..100", required: true, submitOnChange: true
 			if(dimAdjFalse) checkActFalse(adjustDimmerFalse, "Adjust: $adjustDimmerFalse: $dimAdjFalse")
+			def myModes = []
+			location.modes.each {myModes << "$it"}
             input "dimmerModesFalse", "enum", title: "Select dimmer level by mode", required: false, options: myModes.sort(), multiple: true, submitOnChange: true
             if(dimmerModesFalse) {
 				def sortModes = dimmerModesFalse.sort()
@@ -1010,8 +1012,6 @@ def selectActionsFalse() {
 			}
 			input "alarmFalse", "enum", title: "Set the alarm state", multiple: false, required: false, options: ["away" : "Arm (away)", "stay" : "Arm (stay)", "off" : "Disarm"], submitOnChange: true
 			if(alarmFalse) addToActFalse("Alarm: " + (alarmFalse in ["away", "stay"] ? "Arm ($alarmFalse)" : "Disarm"))
-			def myModes = []
-			location.modes.each {myModes << "$it"}
 			input "modeFalse", "enum", title: "Set the mode", multiple: false, required: false, options: myModes.sort(), submitOnChange: true
 			if(modeFalse) addToActFalse("Mode: $modeFalse")
 			def phrases = location.helloHome?.getPhrases()*.label
