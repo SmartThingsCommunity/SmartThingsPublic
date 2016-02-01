@@ -26,8 +26,10 @@
  */  
 private def getVersion() { return "ecobee (Connect) Version 0.9.0-RC" }
 private def getHelperSmartApps() {
-	return [ "ecobee Routines": [multiple: true, description: "Example Description"],
-    		 "ecobee ABC": [multiple: false, description: "Example Description for ecobee ABC"]
+	return [ 
+    		[name: "ecobeeRoutinesChild", appName: "ecobee Routines",  
+            	namespace: "smartthings", multiple: true, 
+                title: "Create new Routines Handler..."]
              ]    
 }
  
@@ -88,6 +90,11 @@ def mainPage() {
         }       
 
 		if(state.authToken != null && deviceHandlersInstalled) {
+        	if (settings.thermostats?.size() > 0) {
+            	section("Helper SmartApps") {
+                	href ("helperSmartAppsPage", title: "Helper SmartApps", description: "Tap to manage Helper SmartApps")
+                }            
+            }
 			section("Devices") {
 				def howManyThermsSel = settings.thermostats?.size() ?: 0
                 def howManyTherms = state.numAvailTherms ?: "?"
@@ -200,7 +207,7 @@ def thermsPage(params) {
 				LOG("state.settingsCurrentTherms != settings.thermostats determined!!!", 4, null, "trace")			
 			} else { LOG("state.settingsCurrentTherms == settings.thermostats: No changes detected!", 4, null, "trace") }
         	paragraph "Tap below to see the list of ecobee thermostats available in your ecobee account and select the ones you want to connect to SmartThings."
-			input(name: "thermostats", title:"Select Thermostats", type: "enum", required:false, multiple:true, description: "Tap to choose", params: params, metadata:[values:stats], , submitOnChange: true)        
+			input(name: "thermostats", title:"Select Thermostats", type: "enum", required:false, multiple:true, description: "Tap to choose", params: params, metadata:[values:stats], submitOnChange: true)        
         }      
     }      
 }
@@ -292,8 +299,20 @@ def pollChildrenPage() {
 
 
 def helperSmartAppsPage() {
+	LOG("helperSmartAppsPage() entered", 5)
 
-
+	LOG("SmartApps available are ${getHelperSmartApps()}", 5, null, "info")
+ //getHelperSmartApps() {
+ 	dynamicPage(name: "helperSmartAppsPage", title: "Helper Smart Apps", install: true, uninstall: false, submitOnChange: true) {    	
+		getHelperSmartApps().each { oneApp ->
+			LOG("Processing the app: ${oneApp}", 4, null, "trace")            
+            def allowMultiple = oneApp.multiple.value
+			section ("${oneApp.appName.value}") {
+            	app(name:"${oneApp.name.value}", appName:"${oneApp.appName.value}", namespace:"${oneApp.namespace.value}", title:"${oneApp.title.value}", multiple: allowMultiple)            
+                //app(name: "${oneApp.name.value}", appName: "ecobee Routines", namespace: "smartthings", title: "Create new ecobee Routine Handler...", multiple: true)
+			}
+		}
+	}
 }
 // End Prefernce Pages
 
@@ -753,7 +772,7 @@ private def deleteUnusedChildren() {
 }
 	
 
-def scheduleHandlers() {
+def scheduleHandlers(evt=null) {
 	if(state.connected == "lost") {
     	LOG("Unable to schedule handlers do to loss of API Connection. Please ensure you are authorized.", 1, null, "error")
     	return
@@ -1123,7 +1142,10 @@ def updateThermostatData() {
 	state.thermostats = state.thermostatData.thermostatList.inject([:]) { collector, stat ->
 		def dni = [ app.id, stat.identifier ].join('.')
 
-		LOG("Updating dni $dni, Got weather? ${stat.weather.forecasts[0].weatherSymbol.toString()}")
+		LOG("Updating dni $dni, Got weather? ${stat.weather.forecasts[0].weatherSymbol.toString()}", 4)
+        LOG("Climates available: ${stat.program?.climates}", 4)
+        // Extract Climates
+        def climateData = stat.program?.climates
         
         // TODO: Put a wrapper here based on the thermostat brand
         def thermSensor = stat.remoteSensors.find { it.type == "thermostat" }
@@ -1222,11 +1244,12 @@ def updateThermostatData() {
 		
 		LOG("Event Data = ${data}", 4)
 
-		collector[dni] = [data:data]
+		collector[dni] = [data:data,climateData:climateData]
 		return collector
 	}
 				
 }
+
 
 def getThermostatOperatingState(stat) {
 
@@ -1459,17 +1482,16 @@ def setFanMode(child, fanMode, deviceId, sendHoldType=null) {
         // Add a minimum circulate time here
         // NOTE: This is not currently honored by the Ecobee
         extraParams << [fanMinOnTime:15]
-		child.circulateFanModeOn = true
+		state.circulateFanModeOn = true
     } else if (fanMode == "off") {
-    	child.circulateFanModeOn = false    
+    	state.circulateFanModeOn = false    
         fanMode = "auto"
         // NOTE: This is not currently honored by the Ecobee
         extraParams << [fanMinOnTime: "0"]
     } else {
-		child.circulateFanModeOn = false    
+		state.circulateFanModeOn = false    
     }
-    
-    // TODO Check to see if there is an existing event and use that to overwrite?
+
     def currentHeatingSetpoint = child.device.currentValue("heatingSetpoint")
     def currentCoolingSetpoint = child.device.currentValue("coolingSetpoint")
     def holdType = sendHoldType ?: whatHoldType()
@@ -1481,6 +1503,7 @@ def setFanMode(child, fanMode, deviceId, sendHoldType=null) {
 
 def setProgram(child, program, deviceId, sendHoldType=null) {
 	LOG("setProgram() to ${program} with DeviceID: ${deviceId}", 5, child)
+    program = program.toLower()
 
 	def tstatSettings 
     tstatSettings = ((sendHoldType != null) && (sendHoldType != "")) ?
@@ -1594,7 +1617,6 @@ private def getSmartThingsClientId() {
 }
 
 
-
 private def LOG(message, level=3, child=null, logType="debug", event=true, displayEvent=true) {
 	def prefix = ""
 	if ( settings.debugLevel?.toInteger() == 5 ) { prefix = "LOG: " }
@@ -1618,13 +1640,13 @@ private def debugEvent(message, displayEvent = false) {
 }
 
 private def debugEventFromParent(child, message) {
-
 	 def data = [
             	debugEventFromParent: message
             ]         
 	if (child) { child.generateEvent(data) }
 }
 
+// TODO: Create a more generic push capability to send notifications
 //send both push notification and mobile activity feeds
 private def sendPushAndFeeds(notificationMessage) {
 	LOG("sendPushAndFeeds >> notificationMessage: ${notificationMessage}", 1, null, "warn")
@@ -1650,15 +1672,6 @@ private def sendActivityFeeds(notificationMessage) {
         child.generateActivityFeedsEvent(notificationMessage) //parse received message from parent
     }
 }
-
-
-
-
-
-
-
-
-
 
 
 
@@ -1887,88 +1900,3 @@ private def buildBodyRequest(method, tstatType="registered", thermostatId, tstat
     }    
 }
 
-
-// iterateSetThermostatSettings: iterate thru all the thermostats under a specific account and set the desired settings
-// tstatType =managementSet or registered (no spaces).  May also be set to a specific locationSet (ex./Toronto/Campus/BuildingA)
-// settings can be anything supported by ecobee 
-//		at https://www.ecobee.com/home/developer/api/documentation/v1/objects/Settings.shtml
-/*
-void iterateSetThermostatSettings(tstatType, tstatSettings = []) {
-	Integer MAX_TSTAT_BATCH = get_MAX_TSTAT_BATCH()
-	def tstatlist = null
-	Integer nTstats = 0
-
-	def ecobeeType = determine_ecobee_type_or_location(tstatType)
-	getThermostatSummary(ecobeeType)
-	if (settings.trace) {
-		log.debug
-			"iterateSetThermostatSettings>ecobeeType=${ecobeeType},about to loop ${data.thermostatCount} thermostat(s)"
-		sendEvent name: "verboseTrace", value:
-			"iterateSetThermostatSettings>ecobeeType=${ecobeeType},about to loop ${data.thermostatCount} thermostat(s)"
-	}
-	for (i in 0..data.thermostatCount - 1) {
-		def thermostatDetails = data.revisionList[i].split(':')
-		def Id = thermostatDetails[0]
-		def thermostatName = thermostatDetails[1]
-		def connected = thermostatDetails[2]
-		if (connected == 'true') {
-			if (nTstats == 0) {
-				tstatlist = Id
-				nTstats = 1
-			}
-			if ((nTstats > MAX_TSTAT_BATCH) || (i == (data.thermostatCount - 1))) { 
-				// process a batch of maximum 25 thermostats according to API doc
-				if (settings.trace) {
-					sendEvent name: "verboseTrace", value:
-						"iterateSetThermostatSettings>about to call setThermostatSettings for ${tstatlist}"
-					log.debug "iterateSetThermostatSettings> about to call setThermostatSettings for ${tstatlist}"
-				}
-				setThermostatSettings("${tstatlist}",tstatSettings)
-				tstatlist = Id
-				nTstats = 1
-			} else {
-				tstatlist = tstatlist + "," + Id
-				nTstats++ 
-			}
-		}
-	}
-}
-
-*/
-
-/*
-// thermostatId may be a list of serial# separated by ",", no spaces (ex. '123456789012,123456789013') 
-//	if no thermostatId is provided, it is defaulted to the current thermostatId 
-// settings can be anything supported by ecobee at https://www.ecobee.com/home/developer/api/documentation/v1/objects/Settings.shtml
-void setThermostatSettings(thermostatId,tstatSettings = []) {
-   	thermostatId= determine_tstat_id(thermostatId) 	    
-	if ( debugLevel(5) ) {
-		log.debug "setThermostatSettings>called with values ${tstatSettings} for ${thermostatId}"		
-	}
-    
-	def bodyReq = buildBodyRequest('setThermostatSettings',null,thermostatId,null,tstatSettings)
-	def statusCode=true
-	int j=0        
-	while ((statusCode) && (j++ <2)) { // retries once if api call fails
-		apiHelper('setThermostatSettings', bodyReq) {resp ->
-			statusCode = resp.data.status.code
-			def message = resp.data.status.message
-			if (!statusCode) {
-				if ( debugLevel(3) ) { log.debug "setThermostatSettings() successful for ${thermostatId} with settings ${tstatSettings}" }            	
-
-			} else {
-            	if ( debugLevel(1) ) {
-					log.error "setThermostatSettings() error=${statusCode.toString()},message=${message} for ${thermostatId}"
-					debugEvent( "setThermostatSettings() error=${statusCode.toString()},message=${message} for ${thermostatId}" )
-				} 
-
-				// introduce a 1 second delay before re-attempting any other command                    
-				def cmd= []           
-				cmd << "delay 1000"                    
-				cmd            
-		} // end if statusCode 
-		} // end api call              
-	} // end for 
-}
-
-*/
