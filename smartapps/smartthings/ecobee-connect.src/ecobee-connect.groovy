@@ -24,7 +24,8 @@
  *  See Changelog for change history
  *
  */  
-private def getVersion() { return "ecobee (Connect) Version 0.9.0-RC" }
+def getVersionNum() { return "0.9.0" }
+private def getVersionLabel() { return "ecobee (Connect) Version ${getVersionNum()}-RC2" }
 private def getHelperSmartApps() {
 	return [ 
     		[name: "ecobeeRoutinesChild", appName: "ecobee Routines",  
@@ -131,7 +132,7 @@ def mainPage() {
 			href ("authPage", title: "ecobee Authorization", description: "${ecoAuthDesc}Tap for ecobee Credentials")
 		}        
      
-		section (getVersion())
+		section (getVersionLabel())
 	}
 }
 
@@ -265,7 +266,7 @@ def debugDashboardPage() {
     
     
     dynamicPage(name: "debugDashboardPage", title: "") {
-    	section (getVersion())
+    	section (getVersionLabel())
 		section("Commands") {
         	href(name: "pollChildrenPage", title: "", required: false, page: "pollChildrenPage", description: "Tap to execute command: pollChildren()")
         }    	
