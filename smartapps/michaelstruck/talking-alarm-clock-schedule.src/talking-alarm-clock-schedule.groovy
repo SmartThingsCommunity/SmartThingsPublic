@@ -3,11 +3,12 @@
  *
  *  Copyright © 2016 Michael Struck
  *
- *  Version 1.1.0 (1/27/16) - Initial release of child app
+ *  Version 1.1.0 (1/30/16) - Initial release of child app
  *
  *  Version 1.0.0 - Initial release
  *  Version 1.0.1 - Small syntax changes for consistency
  *  Version 1.1.0 - Added switch alarm restriction
+ *  Version 1.2.0 - Added custom alarm sound selection
  *
  *  Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except
  *  in compliance with the License. You may obtain a copy of the License at:
@@ -69,9 +70,12 @@ def pageSetup() {
         	section ("Alarm sound options"){
 				input "soundAlarm", "enum", title: "Play this sound...", required:false, multiple: false, 
                 	options: [[1:"Alien-8 seconds"],[2:"Bell-12 seconds"], [3:"Buzzer-20 seconds"], 
-                    [4:"Fire-20 seconds"], [5:"Rooster-2 seconds"], [6:"Siren-20 seconds"]], submitOnChange:true
+                    [4:"Fire-20 seconds"], [5:"Rooster-2 seconds"], [6:"Siren-20 seconds"],[7:"Custom-User Defined"]], submitOnChange:true
 				if (soundAlarm){
-                	input "soundLength", "number", title: "Maximum time to play sound (empty=use sound default)", description: "1-20", required: false        
+                	if (soundAlarm == "7"){
+                    	input "alarmCustom", "text", title:"URL/Location of custom sound...", required: false	
+                    }
+                    input "soundLength", "number", title: "Maximum time to play sound (empty=use sound default)", description: "1-20", required: false        
        			}
             }
 		}
@@ -513,6 +517,10 @@ private alarmSoundUri(){
         	newSoundLength = soundLength >0 && soundLength < 20 ? soundLength : 20
             soundUri = [uri: "https://raw.githubusercontent.com/MichaelStruck/SmartThings/master/Other-SmartApps/Talking-Alarm-Clock/AlarmSounds/AlarmSiren.mp3", duration: "${newSoundLength}"]
 			break
+		case "7":
+        	newSoundLength = soundLength >0 && soundLength < 20 ? soundLength : 20
+            soundUri = [uri: "${alarmCustom}", duration: "${newSoundLength}"]
+            break
     }
 	state.soundAlarm = soundUri
 }
@@ -587,5 +595,5 @@ private saveSelectedSong() {
 }
 //Version
 private def textVersion() {
-    def text = "Child App Version: 1.1.0 (01/27/2016)"
+    def text = "Child App Version: 1.2.0 (01/30/2016)"
 }

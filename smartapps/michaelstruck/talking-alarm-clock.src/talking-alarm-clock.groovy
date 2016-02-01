@@ -2,10 +2,11 @@
  *  Talking Alarm Clock-Parent
  *
  *  Copyright © 2016 Michael Struck
- *  Version 2.0.1 1/26/16
+ *  Version 2.1.0 1/30/16
  * 
  *  Version 2.0.0 - Initial release of parent/client app. 1.4.5 was released to SmartThings production
- *  Version 2.0.1 - Changed teh default of new schedules to 'enabled'
+ *  Version 2.0.1 - Changed the default of new schedules to 'enabled'
+ *  Version 2.1.0 - Added momentary switch as trigger to give alarm summary
  *
  *  Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except
  *  in compliance with the License. You may obtain a copy of the License at:
@@ -75,7 +76,11 @@ def pageSummary(){
         }
         section ("Voice Summary Settings") { 
 			input "summaryEnable", "bool", title: "Enable voice summary from SmartApp page", defaultValue: false,  submitOnChange: true
-            if (summaryEnable){
+            input "summaryEnableSW", "bool", title: "Enable voice summary when switches turned on", defaultValue: false,  submitOnChange: true
+            if (summaryEnableSW){
+            	input "summarySwitch", "capability.switch", title: "Choose switches to activate summary", multiple: true, required: false	
+            }
+            if (summaryEnable || summaryEnableSW ){
                 input "summarySpeaker", "capability.musicPlayer", title: "Choose a speaker", required: false 
                 input "summaryVolume", "number", title: "Set the summary volume", description: "0-100%", required: false 
                 input "summaryDisabled", "bool", title: "Include disabled alarms in summary", defaultValue: false 
@@ -100,14 +105,17 @@ def initialize() {
 		log.info "Installed Schedules: ${child.label}"
     }
     if (summaryEnable && summarySpeaker){
-    	subscribe(app, appTouchHandler)
+    	subscribe(app, summaryHandler)
+    }
+    if (summaryEnableSW && summarySpeaker && summarySwitch){
+    	subscribe(summarySwitch, "switch.on", summaryHandler)
     }
 }
 //Common modules (for child app)
 def getSchedStatus(appid){
     def result  = (settings."${appid}"!= null && settings."${appid}") || settings."${appid}" == null ? "true": false
 }
-def appTouchHandler(evt){ 
+def summaryHandler(evt){ 
  	def summaryMsg = ""
     if (!summaryMode || summaryMode.contains(location.mode)) { 
      	if (childApps.size()){
@@ -137,7 +145,7 @@ private def textAppName() {
 	def text = "Talking Alarm Clock"
 }	
 private def textVersion() {
-    def version = "Parent App Version: 2.0.1 (01/26/2016)"
+    def version = "Parent App Version: 2.1.0 (01/30/2016)"
     def childCount = childApps.size()
     def childVersion = childCount ? childApps[0].textVersion() : "No alarm schedules installed"
     return "${version}\n${childVersion}"
@@ -167,6 +175,6 @@ private def textHelp() {
 		"Variables that can be used in the voice greeting include %day%, %time% and %date%.\n\n"+
 		"From the main SmartApp convenience page, tapping the 'Talking Alarm Clock' icon (if enabled within the app) will "+ 
 		"speak a summary of the alarms enabled or disabled without having to go into the application itself. This " + 
-		"functionality is optional and can be configured from the Alarm Summary page." 
+		"functionality is optional and can be configured from the Alarm Summary page. You may also use a real or virtual switch to get a summary." 
 
 }
