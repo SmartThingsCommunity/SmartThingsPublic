@@ -13,6 +13,38 @@ This project is in a pre-1.0 state. This means that its APIs and behavior are su
 * **NOTE: This is my active development branch. Things on this branch are very likely to break at random times. Provided for informational purposes only!**
 
 
+## [0.9.0-RC2][] (2016-02-01) **(Beta Release)**
+### General Changes
+* 3 changed files with 876 additions and 467 deletions
+* Introduction of support for Child SmartApps! First SmartApp is `ecobee Routines` for using SmartThings Modes (Routines) to control the modes (and other settings) on the Ecobee Thermostats
+* More hooks to be defensive against the SmartThings platform stability issues (e.g. Scheduled Events)
+
+### SmartApp Changes
+#### **NEW** ecobee Routines Child SmartApp
+* Control your Ecobee Thermostats based on SmartThings Modes/Routines
+* Support for multiple instances for running different options at different modes
+* Support for controlling the following options per instance:
+  * Multiple SmartThings Modes
+  * Multiple Thermostats
+  * Select Ecobee Program to run (Away, Home, Sleep or Resume Program) (NOTE: Custom programs are on the wish list for a future release)
+  * Select Fan Mode (Optional)
+  * Can also be run at Sunrise and/or Sunset event (Optional)
+  * Toggle to temporarily disable the Handler so you don't have to delete it when you want it off temporarily
+
+#### Ecobee (Connect)
+* Complete overhaul of the Ecobee (Connect) User Interface to make it easier to manage and to allow for the introduction of the Child SmartApps
+* Switched from using `atomicState` to just `state` to reduce overhead
+* Using helper functions to build JSON bodies for API requests. This should spead up adding new features over time
+* Added checks to make sure the customer Device Handlers are installed before proceeding with setup
+* Added a `Debug Dashboard` so that various state variables and functions can be performed right from within the SmartApp. No need to go the IDE just to check things!
+* Added some watchdog capabilities to improve reliability of Scheduled Events
+* Updated the fan mode handling to not disrupt the existing running event (hold) or program, only changes the fan settings now
+* Set several helper function to `private` so as to not pollute the exposed interfaces
+
+### Device Handler Changes
+* [Thermostat] Faster response in User Interface (send events immediately when a change is made in app)
+* [Thermostat] Defaulting back to the thermostat `multiAttributeTile` with the release of the 2.0.8 phone apps (Needs Android testing!)
+
 ## [0.8.0][] (2016-01-28)
 *  4 changed files with 469 additions and 932 deletions
 *  Support for `setThermostatFanMode` handling to set the fan modes
@@ -53,6 +85,7 @@ This project is in a pre-1.0 state. This means that its APIs and behavior are su
 * Click the release number to see all of the changes made to this branch up until this date
 
 [Semver]: http://semver.org
+[0.9.0-RC2]: https://github.com/StrykerSKS/SmartThingsPublic/compare/StrykerSKS:v0.8.0...StrykerSKS-enhanced-ecobeedevice
 [0.8.0]: https://github.com/StrykerSKS/SmartThingsPublic/compare/StrykerSKS:v0.7.5...StrykerSKS:v0.8.0
 [0.7.5]: https://github.com/StrykerSKS/SmartThingsPublic/compare/302bb77d7237132caaa5281b64d4bfbf4420f7cf...StrykerSKS:v0.7.5
 [0.6.0]: https://github.com/StrykerSKS/SmartThingsPublic/compare/master...StrykerSKS:302bb77d7237132caaa5281b64d4bfbf4420f7cf
