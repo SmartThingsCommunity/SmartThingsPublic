@@ -3,7 +3,7 @@
  *
  *  Copyright 2015 Bruce Ravenel
  *
- *  Version 1.7.2a   31 Jan 2016
+ *  Version 1.7.2b   31 Jan 2016
  *
  *	Version History
  *
@@ -79,7 +79,7 @@ preferences {
 def selectRule() {
 	//version to parent app and expert settings for rule
 	try { 
-		state.isExpert = parent.isExpert("1.7.2a") 
+		state.isExpert = parent.isExpert("1.7.2b") 
 		if (state.isExpert) state.cstCmds = parent.getCommands()
 		else state.cstCmds = []
 	}
@@ -1241,7 +1241,7 @@ def initialize() {
 	else state.disabled = false
 	if(state.isTrig || hasTrig) return
 	if(state.isRule || state.howMany > 1) runRule(true)
-    parent.setRuleTruth(app.label, true)
+    else parent.setRuleTruth(app.label, true)
 }
 
 // Main rule evaluation code follows
