@@ -144,7 +144,7 @@ def updateDevices() {
         	log.info("Could not find ${it.deviceNetworkId}. Assuming manually deleted.")
         }
 	}
-	runIn(1, 'refreshDevices') // Asynchronously refresh devices so we don't block
+	//runIn(1, 'refreshDevices') // Asynchronously refresh devices so we don't block
 }
 
 def refreshDevices() {
