@@ -3,7 +3,7 @@
  *
  *  Copyright 2015 Bruce Ravenel
  *
- *  Version 1.7.2b   31 Jan 2016
+ *  Version 1.7.2c   1 Feb 2016
  *
  *	Version History
  *
@@ -79,7 +79,7 @@ preferences {
 def selectRule() {
 	//version to parent app and expert settings for rule
 	try { 
-		state.isExpert = parent.isExpert("1.7.2b") 
+		state.isExpert = parent.isExpert("1.7.2c") 
 		if (state.isExpert) state.cstCmds = parent.getCommands()
 		else state.cstCmds = []
 	}
@@ -1241,7 +1241,7 @@ def initialize() {
 	else state.disabled = false
 	if(state.isTrig || hasTrig) return
 	if(state.isRule || state.howMany > 1) runRule(true)
-    else parent.setRuleTruth(app.label, true)
+    else parent.setRuleTruth(app.label, true)  // action only rule
 }
 
 // Main rule evaluation code follows
@@ -1605,7 +1605,7 @@ def runRule(force) {
 		else if(randomTrue > 0 && success) 		doDelayTrue(randomTrue * 60, true, true)
 		else if(randomFalse > 0 && !success) 	doDelayFalse(randomFalse * 60, true, true)
 		else takeAction(success)
-		parent.setRuleTruth(app.label, success)
+		if(state.howManyT <= 1) parent.setRuleTruth(app.label, success)  // don't set for triggered rule
 		state.success = success
 		log.info (success ? "$app.label is True" : "$app.label is False")
 //      sendNotificationEvent(success ? "$app.label is True" : "$app.label is False")
