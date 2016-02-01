@@ -3,10 +3,11 @@
  *
  *  Copyright 2015 Bruce Ravenel and Mike Maxwell
  *
- *  Version 1.6.6   10 Jan 2016
+ *  Version 1.7.0   31 Jan 2016
  *
  *	Version History
  *
+ *	1.7.0	31 Jan 2016		Added run Rule actions
  *	1.6.6	10 Jan 2016		Improved method of getting custom device commands
  *	1.6.5	1 Jan 2016		Added version numbers to main page
  *	1.6.4	30 Dec 2015		Multi-commands
@@ -61,7 +62,7 @@ def mainPage() {
         section ("Remove Rule Machine"){
         	href "removePage", description: "Tap to remove Rule Machine ", title: ""
         }
-        if(state.ver) section ("Version 1.6.6/" + state.ver) { }
+        if(state.ver) section ("Version 1.7.0/" + state.ver) { }
     }
 }
 
@@ -159,6 +160,15 @@ def runRule(rule, appLabel) {
 	childApps.each { child ->
 		rule.each {
 			if(child.label == it) child.ruleEvaluator(appLabel)
+		}
+	}
+}
+
+def runRuleAct(rule, appLabel) {
+//	log.debug "runRule: $rule, $appLabel"
+	childApps.each { child ->
+		rule.each {
+			if(child.label == it) child.ruleActions(appLabel)
 		}
 	}
 }

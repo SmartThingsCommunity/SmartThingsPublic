@@ -3,10 +3,11 @@
  *
  *  Copyright 2015 Bruce Ravenel
  *
- *  Version 1.7.1   30 Jan 2016
+ *  Version 1.7.2   31 Jan 2016
  *
  *	Version History
  *
+ *	1.7.2	31 Jan 2016		Added mode based dimming action, and cause rule actions action
  *	1.7.1	30 Jan 2016		Added support for more buttons than 4 on button device, now as many as 20
  *	1.7.0	27 Jan 2016		Fixed thermostat mode trigger/condition, added thermostat operating state condition
  *	1.6.13	17 Jan 2016		Added TTS support
@@ -78,7 +79,7 @@ preferences {
 def selectRule() {
 	//version to parent app and expert settings for rule
 	try { 
-		state.isExpert = parent.isExpert("1.7.1") 
+		state.isExpert = parent.isExpert("1.7.2") 
 		if (state.isExpert) state.cstCmds = parent.getCommands()
 		else state.cstCmds = []
 	}
@@ -731,6 +732,15 @@ def delayFalsePage() {
 	}
 }
 
+def setModeLevel(thisMode, modeVar, trufal) {
+	def result = input modeVar, "number", range: "0..100", title: "Level for $thisMode", required: true, submitOnChange: true
+    def str = settings.find{it.key == "$modeVar"}
+    if(str) {
+    	if(trufal) addToActTrue("  $thisMode: $str.value")
+    	else addToActFalse("  $thisMode: $str.value")
+    }
+}
+
 def selectActionsTrue() {
 	def isRule = state.isRule || state.howMany > 1
 	dynamicPage(name: "selectActionsTrue", title: "Select Actions" + (isRule ? " for True" : ""), uninstall: false) {
@@ -786,6 +796,15 @@ def selectActionsTrue() {
             input "adjustDimmerTrue", "capability.switchLevel", title: "Adjust these dimmers", multiple: true, required: false, submitOnChange: true
 			if(adjustDimmerTrue) input "dimAdjTrue", "number", title: "By this amount", range: "-100..100", required: true, submitOnChange: true
 			if(dimAdjTrue) checkActTrue(adjustDimmerTrue, "Adjust: $adjustDimmerTrue: $dimAdjTrue")
+			def myModes = []
+			location.modes.each {myModes << "$it"}
+            input "dimmerModesTrue", "enum", title: "Select dimmer level by mode", required: false, options: myModes.sort(), multiple: true, submitOnChange: true
+            if(dimmerModesTrue) {
+				def sortModes = dimmerModesTrue.sort()
+                input "dimMTrue", "capability.switchLevel", title: "Set these dimmers per mode", multiple: true, submitOnChange: true, required: true
+                checkActTrue(dimMTrue, "Dimmers per mode: $dimMTrue")
+				sortModes.each {setModeLevel(it, "levelTrue$it", true)}
+            }
 			input "ctTrue", "capability.colorTemperature", title: "Set color temperature for these bulbs", multiple: true, submitOnChange: true, required: false
 			if(ctTrue) input "ctLTrue", "number", title: "To this color temperature", range: "2000..6500", required: true, submitOnChange: true
 			if(ctLTrue) checkActTrue(ctTrue, "Color Temperature: $ctTrue: $ctLTrue")
@@ -834,8 +853,6 @@ def selectActionsTrue() {
 			}
 			input "alarmTrue", "enum", title: "Set the alarm state", multiple: false, required: false, options: ["away" : "Arm (away)", "stay" : "Arm (stay)", "off" : "Disarm"], submitOnChange: true
 			if(alarmTrue) addToActTrue("Alarm: " + (alarmTrue in ["away", "stay"] ? "Arm ($alarmTrue)" : "Disarm"))
-			def myModes = []
-			location.modes.each {myModes << "$it"}
 			input "modeTrue", "enum", title: "Set the mode", multiple: false, required: false, options: myModes.sort(), submitOnChange: true
 			if(modeTrue) addToActTrue("Mode: $modeTrue")
 			def phrases = location.helloHome?.getPhrases()*.label
@@ -844,6 +861,8 @@ def selectActionsTrue() {
 			def theseRules = parent.ruleList(app.label)
 			if(theseRules != null) input "ruleTrue", "enum", title: "Evaluate Rules", required: false, multiple: true, options: theseRules.sort(), submitOnChange: true
 			if(ruleTrue) setActTrue("Rules: $ruleTrue")
+			if(theseRules != null) input "ruleActTrue", "enum", title: "Run Rule Actions", required: false, multiple: true, options: theseRules.sort(), submitOnChange: true
+			if(ruleActTrue) setActTrue("Rule Actions: $ruleActTrue")
 			href "selectMsgTrue", title: "Send or speak a message", description: state.msgTrue ? state.msgTrue : "Tap to set", state: state.msgTrue ? "complete" : null
 			if(state.msgTrue) addToActTrue(state.msgTrue)
 			input "cameraTrue", "capability.imageCapture", title: "Take photos", required: false, multiple: false, submitOnChange: true
@@ -938,6 +957,15 @@ def selectActionsFalse() {
             input "adjustDimmerFalse", "capability.switchLevel", title: "Adjust these dimmers", multiple: true, required: false, submitOnChange: true
 			if(adjustDimmerFalse) input "dimAdjFalse", "number", title: "By this amount", range: "-100..100", required: true, submitOnChange: true
 			if(dimAdjFalse) checkActFalse(adjustDimmerFalse, "Adjust: $adjustDimmerFalse: $dimAdjFalse")
+			def myModes = []
+			location.modes.each {myModes << "$it"}
+            input "dimmerModesFalse", "enum", title: "Select dimmer level by mode", required: false, options: myModes.sort(), multiple: true, submitOnChange: true
+            if(dimmerModesFalse) {
+				def sortModes = dimmerModesFalse.sort()
+                input "dimMFalse", "capability.switchLevel", title: "Set these dimmers per mode", multiple: true, submitOnChange: true, required: true
+                checkActFalse(dimMFalse, "Dimmers per mode: $dimMFalse")
+				sortModes.each {setModeLevel(it, "levelFalse$it", false)}
+            }
 			input "ctFalse", "capability.colorTemperature", title: "Set color temperature for these bulbs", multiple: true, submitOnChange: true, required: false
 			if(ctFalse) input "ctLFalse", "number", title: "To this color temperature", range: "2000..6500", required: true, submitOnChange: true
 			if(ctLFalse) checkActFalse(ctFalse, "Color Temperature: $ctFalse: $ctLFalse")			
@@ -986,8 +1014,6 @@ def selectActionsFalse() {
 			}
 			input "alarmFalse", "enum", title: "Set the alarm state", multiple: false, required: false, options: ["away" : "Arm (away)", "stay" : "Arm (stay)", "off" : "Disarm"], submitOnChange: true
 			if(alarmFalse) addToActFalse("Alarm: " + (alarmFalse in ["away", "stay"] ? "Arm ($alarmFalse)" : "Disarm"))
-			def myModes = []
-			location.modes.each {myModes << "$it"}
 			input "modeFalse", "enum", title: "Set the mode", multiple: false, required: false, options: myModes.sort(), submitOnChange: true
 			if(modeFalse) addToActFalse("Mode: $modeFalse")
 			def phrases = location.helloHome?.getPhrases()*.label
@@ -996,6 +1022,8 @@ def selectActionsFalse() {
 			def theseRules = parent.ruleList(app.label)
 			if(theseRules != null) input "ruleFalse", "enum", title: "Evaluate Rules", required: false, multiple: true, options: theseRules.sort(), submitOnChange: true
 			if(ruleFalse) setActFalse("Rules: $ruleFalse")
+			if(theseRules != null) input "ruleActFalse", "enum", title: "Run Rule Actions", required: false, multiple: true, options: theseRules.sort(), submitOnChange: true
+			if(ruleActFalse) setActFalse("Rule Actions: $ruleActFalse")
 			href "selectMsgFalse", title: "Send or speak a message", description: state.msgFalse ? state.msgFalse : "Tap to set", state: state.msgFalse ? "complete" : null
 			if(state.msgFalse) addToActFalse(state.msgFalse)
 			input "cameraFalse", "capability.imageCapture", title: "Take photos", required: false, multiple: false, submitOnChange: true
@@ -1435,6 +1463,14 @@ def dimAdjust(devices, dimLevel, trufal) {
     devices.each { if(del) it.setLevel(it.currentLevel + dimLevel, [delay: del]) else it.setLevel(it.currentLevel + dimLevel) }
 }
 
+def dimModes(trufal) {
+	if(location.mode in (trufal ? dimmerModesTrue : dimmerModesFalse)) {
+    	def lev = settings.find{it.key == ("level" + (trufal ? "True" : "False") + "$location.mode")}.value
+        def dev = trufal ? dimMTrue : dimMFalse
+        dev.setLevel(lev)
+    }
+}
+
 def sendSmsMulti(phone, msg) {
 	def num = ""
     def i = phone.indexOf('*')
@@ -1484,6 +1520,7 @@ def takeAction(success) {
 		if(dimBTrue && dimLBTrue != null) if(delayMilTrue) dimBTrue.setLevel(dimLBTrue, [delay: delayMilTrue]) else dimBTrue.setLevel(dimLBTrue)
 		if(toggleDimmerTrue && dimTogTrue != null)	dimToggle(toggleDimmerTrue, dimTogTrue, true)
         if(adjustDimmerTrue && dimAdjTrue != null)	dimAdjust(adjustDimmerTrue, dimAdjTrue, true)
+        if(dimmerModesTrue && dimMTrue)		dimModes(true)
 		if(ctTrue && ctLTrue)   			ctTrue.setColorTemperature(ctLTrue)
 		if(bulbsTrue)			setColor(true)
 		if(garageOpenTrue)		if(delayMilTrue) garageOpenTrue.open([delay: delayMilTrue]) else garageOpenTrue.open()
@@ -1500,6 +1537,7 @@ def takeAction(success) {
 		if(alarmTrue)			sendLocationEvent(name: "alarmSystemStatus", value: "$alarmTrue")
 		if(modeTrue) 			setLocationMode(modeTrue)
 		if(ruleTrue)			parent.runRule(ruleTrue, app.label)
+        if(ruleActTrue)			parent.runRuleAct(ruleActTrue, app.label)
 		if(myPhraseTrue)		location.helloHome.execute(myPhraseTrue)
 		if(cameraTrue) 		{	cameraTrue.take() 
                 				(1..((burstCountTrue ?: 5) - 1)).each {cameraTrue.take(delay: (500 * it))}   }
@@ -1521,6 +1559,7 @@ def takeAction(success) {
 		if(dimBFalse && dimLBFalse != null) if(delayMilFalse) dimBFalse.setLevel(dimLBFalse, [delay: delayMilFalse]) else dimBFalse.setLevel(dimLBFalse)
 		if(toggleDimmerFalse && dimTogFalse != null) dimToggle(toggleDimmerFalse, dimTogFalse, false)
         if(adjustDimmerFalse && dimAdjFalse != null) dimAdjust(adjustDimmerFalse, dimAdjFalse, false)
+        if(dimmerModesFalse && dimMFalse)		dimModes(false)
 		if(ctFalse)   			ctFalse.setColorTemperature(ctLFalse)
 		if(bulbsFalse)			setColor(false)
 		if(garageOpenFalse)		if(delayMilFalse) garageOpenFalse.open([delay: delayMilFalse]) else garageOpenFalse.open()
@@ -1537,6 +1576,7 @@ def takeAction(success) {
 		if(alarmFalse)			sendLocationEvent(name: "alarmSystemStatus", value: "$alarmFalse")
 		if(modeFalse) 			setLocationMode(modeFalse)
 		if(ruleFalse)			parent.runRule(ruleFalse, app.label)
+        if(ruleActFalse)		parent.runRuleAct(ruleActFalse, app.label)
 		if(myPhraseFalse) 		location.helloHome.execute(myPhraseFalse)
 		if(cameraFalse) 	{	cameraFalse.take() 
                 				(1..((burstCountFalse ?: 5) - 1)).each {cameraFalse.take(delay: (500 * it))}   }
@@ -1724,6 +1764,11 @@ def ruleHandler(rule, truth) {
 def ruleEvaluator(rule) {
 	log.info "$app.label: $rule evaluate"
 	runRule(true)
+}
+
+def ruleActions(rule) {
+	log.info "$app.label: $rule evaluate"
+    takeAction(true)
 }
 
 //  private execution filter methods follow
