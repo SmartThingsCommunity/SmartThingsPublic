@@ -1,6 +1,6 @@
 /**
- *  BIG TALKER -- Version 1.1.3 -- A SmartApp for SmartThings Home Automation System
- *  Copyright 2014 - rayzur@rayzurbock.com - Brian S. Lowrance
+ *  BIG TALKER -- Version 1.1.5 -- A SmartApp for SmartThings Home Automation System
+ *  Copyright 2014-2016 - rayzur@rayzurbock.com - Brian S. Lowrance
  *  For the latest version, development and test releases visit http://www.github.com/rayzurbock
  *
  *  This SmartApp is free. Donations to support development efforts are accepted via: 
@@ -28,9 +28,9 @@ definition(
     author: "rayzur@rayzurbock.com",
     description: "Let's talk about mode changes, switches, motions, and so on.",
     category: "Fun & Social",
-    iconUrl: "http://rayzurbock.com/ST/icons/BigTalker.png",
-    iconX2Url: "http://rayzurbock.com/ST/icons/BigTalker@2x.png",
-    iconX3Url: "http://rayzurbock.com/ST/icons/BigTalker@2x.png")
+    iconUrl: "http://rayzurbock.com/ST/icons/BigTalker-115.png",
+    iconX2Url: "http://rayzurbock.com/ST/icons/BigTalker@2x-115.png",
+    iconX3Url: "http://rayzurbock.com/ST/icons/BigTalker@2x-115.png")
 
 
 preferences {
@@ -52,6 +52,7 @@ preferences {
     page(name: "pageConfigSmoke")
     page(name: "pageConfigButton")
     page(name: "pageConfigTime")
+    page(name: "pageHelpPhraseTokens")
 //End preferences
 }
 
@@ -70,34 +71,34 @@ def pageStart(){
                 href "pageTalkNow", title:"Talk Now", description:"Tap to setup talk now" 
             }
         }
-        section(){
-            paragraph "Big Talker is a SmartApp that can make your house talk depending on various triggered events."
-            paragraph "Pair with a SmartThings compatible audio device such as Sonos, Ubi, VLC Thing on your computer or Raspberry Pi!\n"
-            paragraph "You can contribute to the development of this SmartApp by making a PayPal donation to rayzur@rayzurbock.com or visit http://rayzurbock.com/store"
-        }
-        section(){
+        section("About"){
+            def AboutApp = ""
+            AboutApp += 'Big Talker is a SmartApp that can make your house talk depending on various triggered events.\n\n'
+            AboutApp += 'Pair with a SmartThings compatible audio device such as Sonos, Ubi, LANnouncer, VLC Thing (running on your computer or Raspberry Pi) or a DLNA device using the "Generic MediaRenderer" SmartApp/Device!\n\n'
+            AboutApp += 'You can contribute to the development of this SmartApp by making a PayPal donation to rayzur@rayzurbock.com or visit http://rayzurbock.com/store\n\n'
             if (!(state.appversion == null)){ 
-                paragraph "Big Talker ${state.appversion}\nhttp://www.github.com/rayzurbock\n" 
+                AboutApp += "Big Talker ${state.appversion}\nhttp://www.github.com/rayzurbock\n" 
             } else {
-                paragraph "Big Talker \nhttp://www.github.com/rayzurbock\n" 
+                AboutApp += 'Big Talker \nhttp://www.github.com/rayzurbock\n'
             }
+            paragraph(AboutApp)
         }
     }
 }
 
 def pageStatus(){
     //dynamicPage(name: "pageStatus", title: "Big Talker is configured as follows:", nextPage: "pageConfigure"){
-    dynamicPage(name: "pageStatus", title: "Big Talker is configured as follows:"){
+    dynamicPage(name: "pageStatus", title: "Big Talker is configured as follows:", install: false, uninstall: false){
         String enabledDevices = ""
         
         //BEGIN STATUS DEFAULTS
         enabledDevices = "Speech Device Mode:\n"
         enabledDevices += "   "
         if (state.speechDeviceType == "capability.musicPlayer") {
-            enabledDevices += "musicPlayer (Sonos, VLCThing)"
+            enabledDevices += "musicPlayer (Sonos, VLCThing, Generic DLNA)"
         }
         if (state.speechDeviceType == "capability.speechSynthesis") {
-            enabledDevices += "speechSynthesis (Ubi, VLCThing)"
+            enabledDevices += "speechSynthesis (Ubi, LANnouncer)"
         }
         enabledDevices += "\n\n"
         enabledDevices += "Default Speech Devices:\n"
@@ -106,7 +107,7 @@ def pageStatus(){
             enabledDevices += "${it.displayName},"
         }
         enabledDevices += "\n\n"
-        if (settings.speechVolume) {
+        if (settings.speechVolume && state.speechDeviceType == "capability.musicPlayer") {
             enabledDevices += "Adjust Volume To: ${settings.speechVolume}%"
             enabledDevices += "\n\n"
         }
@@ -121,6 +122,10 @@ def pageStatus(){
             def defEndTime =  getTimeFromDateString(settings.defaultEndTime, true)
             enabledDevices += "Default Allowed Talk Time:\n ${defStartTime} - ${defEndTime}"
         }
+        enabledDevices += "\n\n"
+        enabledDevices += "Hub ZipCode* for Weather: ${location.zipCode}\n"
+        enabledDevices += "*SmartThings uses GPS to ZipCode conversion; May not be exact"
+        
         section ("Defaults:"){
             paragraph enabledDevices
         }
@@ -1573,17 +1578,44 @@ def pageTalkNow(){
                 state.lastTalkNow = settings.speechTalkNow
             }
         }
+        section("Help"){
+            href "pageHelpPhraseTokens", title:"Phrase Tokens", description:"Tap for a list of phrase tokens"
+        }
     }
+}
+
+def pageHelpPhraseTokens(){
+    dynamicPage(name: "pageHelpPhraseTokens", title: "Available Phrase Tokens", install: false, uninstall:false){
+       section("The following tokens can be used in your event phrases and will be replaced as listed:"){
+       	   def AvailTokens = ""
+           AvailTokens += "%devicename% = Triggering devices display name\n\n"
+           AvailTokens += "%devicetype% = Triggering device type; motion, switch, etc\n\n"
+           AvailTokens += "%locationname% = Hub location name; home, work, etc\n\n"
+           AvailTokens += "%lastmode% = Last hub mode; home, away, etc\n\n"
+           AvailTokens += "%mode% = Current hub mode; home, away, etc\n\n"
+           AvailTokens += "%time% = Current hub time; HH:mm am/pm\n\n"
+           AvailTokens += "%weathercurrent% = Current weather based on hub location\n\n"
+           AvailTokens += "%weathercurrent(00000)% = Current weather* based on custom zipcode (replace 00000)\n\n"
+           AvailTokens += "%weathertoday% = Today's weather forecast* based on hub location\n\n"
+           AvailTokens += "%weathertoday(00000)% = Today's weather forecast* based on custom zipcode (replace 00000)\n\n"
+           AvailTokens += "%weathertonight% = Tonight's weather forecast* based on hub location\n\n"
+           AvailTokens += "%weathertonight(00000)% = Tonight's weather* forecast based on custom zipcode (replace 00000)\n\n"
+           AvailTokens += "%weathertomorrow% = Tomorrow's weather forecast* based on hub location\n\n"
+           AvailTokens += "%weathertomorrow(00000)% = Tomorrow's weather forecast* based on custom zipcode (replace 00000)\n\n"
+           AvailTokens += "\n*Weather forecasts provided by Weather Underground"
+           paragraph(AvailTokens)
+       }
+   }
 }
 
 def pageConfigureSpeechDeviceType(){
     if (!(state.installed == true)) { state.installed = false; state.speechDeviceType = "capability.musicPlayer"}
     dynamicPage(name: "pageConfigureSpeechDeviceType", title: "Configure", nextPage: "pageConfigureDefaults", install: false, uninstall: false) {
-        section ("Speech Device Type Support"){
+        //section ("Speech Device Type Support"){
+        section (){
             paragraph "${app.label} can support either 'Music Player' or 'Speech Synthesis' devices."
-            paragraph "'Music Player' typically supports devices such as Sonos and VLCThing.\n\n'Speech Synthesis' typically supports devices such as Ubi and VLCThing."
-            paragraph "Set to ON for 'Music Player' support, OFF for 'Speech Synthesis' support"
-            input "speechDeviceType", "bool", title: "ON=Sonos/VLCThing, OFF=Ubi/VLCThing", required: true, defaultValue: true, submitOnChange: true
+            paragraph "'Music Player' typically supports devices such as Sonos, VLCThing, Generic Media Renderer.\n\n'Speech Synthesis' typically supports devices such as Ubi and LANnouncer.\n\nThis setting cannot be changed without reinstalling ${app.label}."
+            input "speechDeviceType", "bool", title: "ON=Music Player\nOFF=Speech Synthesis", required: true, defaultValue: true, submitOnChange: true
             paragraph "\nClick Next (top right) to continue configuration...\n"
             if (speechDeviceType == true || speechDeviceType == null) {state.speechDeviceType = "capability.musicPlayer"}
             if (speechDeviceType == false) {state.speechDeviceType = "capability.speechSynthesis"}
@@ -1593,29 +1625,32 @@ def pageConfigureSpeechDeviceType(){
 }
 
 def pageConfigureDefaults(){
-    def dynPageProperties = [
-            name:      "pageConfigureDefaults",
-            title:     "Configure Defaults",
-            install:   false,
-            uninstall: false
-    ]
     if (!(state.installed == true)) { 
-        dynPageProperties = [
+       state.dynPageProperties = [
             name:      "pageConfigureDefaults",
             title:     "Configure Defaults",
             install:   false,
             uninstall: false,
             nextPage:  "pageConfigureEvents"
         ]
+    } else {
+       state.dynPageProperties = [
+            name:      "pageConfigureDefaults",
+            title:     "Configure Defaults",
+            install:   true,
+            uninstall: true
+        ]
     }
-    return dynamicPage(dynPageProperties) {
+    return dynamicPage(state.dynPageProperties) {
     //dynamicPage(name: "pageConfigureDefaults", title: "Configure Defaults", nextPage: "${myNextPage}", install: false, uninstall: false) {
         section("Talk with:"){
            if (state.speechDeviceType == null || state.speechDeviceType == "") { state.speechDeviceType = "capability.musicPlayer" }
            input "speechDeviceDefault", state.speechDeviceType, title: "Talk with these text-to-speech devices (default)", multiple: true, required: true, submitOnChange: false
         }
-        section ("Adjust volume during announcement (optional; Supports: Sonos, VLC-Thing):"){
-            input "speechVolume", "number", title: "Set volume to (1-100%):", required: false
+        if (state.speechDeviceType == "capability.musicPlayer") {
+            section ("Adjust volume during announcement (optional; Supports: Sonos, VLC-Thing):"){
+                input "speechVolume", "number", title: "Set volume to (1-100%):", required: false
+            }
         }
         section ("Talk only while in these modes:"){
             input "speechModesDefault", "mode", title: "Talk only while in these modes (default)", multiple: true, required: true, submitOnChange: false
@@ -1732,6 +1767,9 @@ def pageConfigMotion(){
             input name: "motionStartTime3", type: "time", title: "Don't talk before (overrides default)", required: false, submitOnChange: true
             input name: "motionEndTime3", type: "time", title: "Don't talk after (overrides default)", required: (!(settings.motionStartTime3 == null))
         }
+        section("Help"){
+            href "pageHelpPhraseTokens", title:"Phrase Tokens", description:"Tap for a list of phrase tokens"
+        }
     }
 //End pageConfigMotion()
 }
@@ -1770,6 +1808,9 @@ def pageConfigSwitch(){
             input name: "switchModes3", type: "mode", title: "Talk when in these mode(s) (overrides default)", multiple: true, required: false
             input name: "switchStartTime3", type: "time", title: "Don't talk before (overrides default)", required: false, submitOnChange: true
             input name: "switchEndTime3", type: "time", title: "Don't talk after (overrides default)", required: (!(settings.switchStartTime3 == null))
+        }
+        section("Help"){
+            href "pageHelpPhraseTokens", title:"Phrase Tokens", description:"Tap for a list of phrase tokens"
         }
     }
 //End pageConfigSwitch()
@@ -1810,6 +1851,9 @@ def pageConfigPresence(){
             input name: "presStartTime3", type: "time", title: "Don't talk before (overrides default)", required: false, submitOnChange: true
             input name: "presEndTime3", type: "time", title: "Don't talk after (overrides default)", required: (!(settings.presStartTime3 == null))
         }
+        section("Help"){
+            href "pageHelpPhraseTokens", title:"Phrase Tokens", description:"Tap for a list of phrase tokens"
+        }
     }
 //End pageConfigPresence()
 }
@@ -1848,6 +1892,9 @@ def pageConfigLock(){
             input name: "lockModes3", type: "mode", title: "Talk when in these mode(s) (overrides default)", multiple: true, required: false
             input name: "lockStartTime3", type: "time", title: "Don't talk before (overrides default)", required: false, submitOnChange: true
             input name: "lockEndTime3", type: "time", title: "Don't talk after (overrides default)", required: (!(settings.lockStartTime3 == null))
+        }
+        section("Help"){
+            href "pageHelpPhraseTokens", title:"Phrase Tokens", description:"Tap for a list of phrase tokens"
         }
     }
 //End pageConfigLock()
@@ -1888,6 +1935,9 @@ def pageConfigContact(){
             input name: "contactStartTime3", type: "time", title: "Don't talk before (overrides default)", required: false, submitOnChange: true
             input name: "contactEndTime3", type: "time", title: "Don't talk after (overrides default)", required: (!(settings.contactStartTime3 == null))
         }
+        section("Help"){
+            href "pageHelpPhraseTokens", title:"Phrase Tokens", description:"Tap for a list of phrase tokens"
+        }
     }
 //End pageConfigContact()
 }
@@ -1910,6 +1960,9 @@ def pageConfigMode(){
             input name: "modePhraseSpeechDevice1", type: state.speechDeviceType, title: "Talk with these text-to-speech devices (overrides default)", multiple: true, required: false
             input name: "modeStartTime1", type: "time", title: "Don't talk before (overrides default)", required: false, submitOnChange: true
             input name: "modeEndTime1", type: "time", title: "Don't talk after (overrides default)", required: (!(settings.modeStartTime1 == null))
+        }
+        section("Help"){
+            href "pageHelpPhraseTokens", title:"Phrase Tokens", description:"Tap for a list of phrase tokens"
         }
     }
 //End pageConfigMode()
@@ -1937,6 +1990,9 @@ def pageConfigThermostat(){
             input name: "thermostatModes1", type: "mode", title: "Talk when in these mode(s) (overrides default)", multiple: true, required: false
             input name: "thermostatStartTime1", type: "time", title: "Don't talk before (overrides default)", required: false, submitOnChange: true
             input name: "thermostatEndTime1", type: "time", title: "Don't talk after (overrides default)", required: (!(settings.thermostatStartTime1 == null))
+        }
+        section("Help"){
+            href "pageHelpPhraseTokens", title:"Phrase Tokens", description:"Tap for a list of phrase tokens"
         }
     }
 //End pageConfigThermostat()
@@ -1977,6 +2033,9 @@ def pageConfigAcceleration(){
             input name: "accelerationStartTime3", type: "time", title: "Don't talk before (overrides default)", required: false, submitOnChange: true
             input name: "accelerationEndTime3", type: "time", title: "Don't talk after (overrides default)", required: (!(settings.accelerationStartTime3 == null))
         }
+        section("Help"){
+            href "pageHelpPhraseTokens", title:"Phrase Tokens", description:"Tap for a list of phrase tokens"
+        }
     }
 //End pageConfigAcceleration()
 }
@@ -1987,8 +2046,8 @@ def pageConfigWater(){
             def defaultSpeechWet1 = ""
             def defaultSpeechDry1 = ""
             if (!waterDeviceGroup1) {
-                defaultSpeechWet1 = "%devicename% acceleration %devicechange%"
-                defaultSpeechDry1 = "%devicename% acceleration is no longer active"
+                defaultSpeechWet1 = "%devicename% is %devicechange%"
+                defaultSpeechDry1 = "%devicename% is %devicechange%"
             }
             input name: "waterDeviceGroup1", type: "capability.waterSensor", title: "Water sensor(s)", required: false, multiple: true
             input name: "waterTalkOnWet1", type: "text", title: "Say this when wet:", required: false, defaultValue: defaultSpeechWet1
@@ -2015,6 +2074,9 @@ def pageConfigWater(){
             input name: "waterModes3", type: "mode", title: "Talk when in these mode(s) (overrides default)", multiple: true, required: false
             input name: "waterStartTime3", type: "time", title: "Don't talk before (overrides default)", required: false, submitOnChange: true
             input name: "waterEndTime3", type: "time", title: "Don't talk after (overrides default)", required: (!(settings.waterStartTime3 == null))
+        }
+        section("Help"){
+            href "pageHelpPhraseTokens", title:"Phrase Tokens", description:"Tap for a list of phrase tokens"
         }
     }
 //End pageConfigWater()
@@ -2060,6 +2122,9 @@ def pageConfigSmoke(){
             input name: "smokeStartTime3", type: "time", title: "Don't talk before (overrides default)", required: false, submitOnChange: true
             input name: "smokeEndTime3", type: "time", title: "Don't talk after (overrides default)", required: (!(settings.smokeStartTime3 == null))
         }
+        section("Help"){
+            href "pageHelpPhraseTokens", title:"Phrase Tokens", description:"Tap for a list of phrase tokens"
+        }
     }
 //End pageConfigSmoke()
 }
@@ -2094,6 +2159,9 @@ def pageConfigButton(){
             input name: "buttonStartTime3", type: "time", title: "Don't talk before (overrides default)", required: false, submitOnChange: true
             input name: "buttonEndTime3", type: "time", title: "Don't talk after (overrides default)", required: (!(settings.buttonStartTime3 == null))
         }
+        section("Help"){
+            href "pageHelpPhraseTokens", title:"Phrase Tokens", description:"Tap for a list of phrase tokens"
+        }
     }
 //End pageConfigSmoke()
 }
@@ -2121,22 +2189,29 @@ def pageConfigTime(){
             input name: "timeSlotSpeechDevice3", type: state.speechDeviceType, title: "Talk with these text-to-speech devices (overrides default)", multiple: true, required: false
             input name: "timeSlotModes3", type: "mode", title: "Talk when in these mode(s) (overrides default)", multiple: true, required: false
         }
+        section("Help"){
+            href "pageHelpPhraseTokens", title:"Phrase Tokens", description:"Tap for a list of phrase tokens"
+        }
     }
 }
 
 def installed() {
 	state.installed = true
-    LOGTRACE("Installed with settings: ${settings}")
+    //LOGTRACE("Installed with settings: ${settings}")
+    LOGTRACE("Installed")
 	initialize()
+    myRunIn(60, poll)
 //End installed()
 }
 
 def updated() {
-    state.installed = true
-	LOGTRACE("Updated with settings: ${settings}")
-	unsubscribe()
     unschedule()
-	initialize()
+    state.installed = true
+	//LOGTRACE("Updated with settings: ${settings}")
+    LOGTRACE("Updated settings")
+    unsubscribe()
+    initialize()
+    myRunIn(60, poll)
 //End updated()
 }
 
@@ -2531,15 +2606,27 @@ def processModeChangeEvent(index, evt){
         return
     }
     if (settings.modePhraseGroup1.contains(location.mode)){
-        if (!(settings.modeExcludePhraseGroup1.contains(state.lastMode))) {
+        if (!settings.modeExcludePhraseGroup1 == null){
+            //settings.modeExcluePhraseGroup1 is not empty
+            if (!(settings.modeExcludePhraseGroup1.contains(state.lastMode))) {
+                //If we are not coming from an exclude mode, Talk.
+                state.TalkPhrase = null
+                state.speechDevice = null
+                state.TalkPhrase = settings.TalkOnModeChange1; state.speechDevice = modePhraseSpeechDevice1
+                Talk(state.TalkPhrase, state.speechDevice, evt)
+                state.TalkPhrase = null
+                state.speechDevice = null
+            } else {
+                LOGDEBUG("Mode change silent due to exclusion configuration (${state.lastMode} >> ${location.mode})")
+            }
+        } else {
+            //settings.modeExcluePhraseGroup1 is empty, no exclusions, Talk.
             state.TalkPhrase = null
             state.speechDevice = null
             state.TalkPhrase = settings.TalkOnModeChange1; state.speechDevice = modePhraseSpeechDevice1
             Talk(state.TalkPhrase, state.speechDevice, evt)
             state.TalkPhrase = null
             state.speechDevice = null
-        } else {
-            LOGDEBUG("Mode change silent due to exclusion configuration (${state.lastMode} >> ${location.mode})")
         }
     }
     state.lastMode = location.mode
@@ -2768,119 +2855,253 @@ def processButtonEvent(index, evt){
 //END HANDLE BUTTON
 
 def processPhraseVariables(phrase, evt){
-    phrase = phrase.replace('%devicename%', evt.displayName)  //User given name of the device
-    phrase = phrase.replace('%devicetype%', evt.name)  //Device type: motion, switch, etc...
-    phrase = phrase.replace('%devicechange%', evt.value)  //State change that occurred: on/off, active/inactive, etc...
-    phrase = phrase.replace('%locationname%', location.name)
-    phrase = phrase.replace('%lastmode%', state.lastMode)
-    phrase = phrase.replace('%mode%', location.mode)
-    phrase = phrase.replace('%time%', getTimeFromCalendar(false,true))
+    def zipCode = location.zipCode
+    if (phrase.toLowerCase().contains(" percent ")) { phrase = phrase.replace(" percent ","%") }
+    if (phrase.toLowerCase().contains("%devicename%")) {phrase = phrase.toLowerCase().replace('%devicename%', evt.displayName)}  //User given name of the device
+    if (phrase.toLowerCase().contains("%devicetype%")) {phrase = phrase.toLowerCase().replace('%devicetype%', evt.name)}  //Device type: motion, switch, etc...
+    if (phrase.toLowerCase().contains("%devicechange%")) {phrase = phrase.toLowerCase().replace('%devicechange%', evt.value)}  //State change that occurred: on/off, active/inactive, etc...
+    if (phrase.toLowerCase().contains("%locationname%")) {phrase = phrase.toLowerCase().replace('%locationname%', location.name)}
+    if (phrase.toLowerCase().contains("%lastmode%")) {phrase = phrase.toLowerCase().replace('%lastmode%', state.lastMode)}
+    if (phrase.toLowerCase().contains("%mode%")) {phrase = phrase.toLowerCase().replace('%mode%', location.mode)}
+    if (phrase.toLowerCase().contains("%time%")) {phrase = phrase.toLowerCase().replace('%time%', getTimeFromCalendar(false,true))}
+    if (phrase.toLowerCase().contains("%weathercurrent%")) {phrase = phrase.toLowerCase().replace('%weathercurrent%', getWeather("current", zipCode)); phrase = adjustWeatherPhrase(phrase)}
+    if (phrase.toLowerCase().contains("%weathertoday%")) {phrase = phrase.toLowerCase().replace('%weathertoday%', getWeather("today", zipCode)); phrase = adjustWeatherPhrase(phrase)}
+    if (phrase.toLowerCase().contains("%weathertonight%")) {phrase = phrase.toLowerCase().replace('%weathertonight%', getWeather("tonight", zipCode));phrase = adjustWeatherPhrase(phrase)}
+    if (phrase.toLowerCase().contains("%weathertomorrow%")) {phrase = phrase.toLowerCase().replace('%weathertomorrow%', getWeather("tomorrow", zipCode));phrase = adjustWeatherPhrase(phrase)}
+    if (phrase.toLowerCase().contains("%weathercurrent(")) {
+        if (phrase.toLowerCase().contains(")%")) {
+            def phraseZipStart = (phrase.toLowerCase().indexOf("%weathercurrent(") + 16)
+            def phraseZipEnd = (phrase.toLowerCase().indexOf(")%"))
+            zipCode = phrase.substring(phraseZipStart, phraseZipEnd)
+            LOGDEBUG("Custom zipCode: ${zipCode}")
+            phrase = phrase.toLowerCase().replace("%weathercurrent(${zipCode})%", getWeather("current", zipCode))
+            phrase = adjustWeatherPhrase(phrase.toLowerCase())
+        } else {
+            phrase = "Custom Zip Code format error in request for current weather"
+        }
+    }
+    if (phrase.toLowerCase().contains("%weathertoday(")) {
+        if (phrase.contains(")%")) {
+            def phraseZipStart = (phrase.toLowerCase().indexOf("%weathertoday(") + 14)
+            def phraseZipEnd = (phrase.toLowerCase().indexOf(")%"))
+            zipCode = phrase.substring(phraseZipStart, phraseZipEnd)
+            LOGDEBUG("Custom zipCode: ${zipCode}")
+            phrase = phrase.toLowerCase().replace("%weathertoday(${zipCode})%", getWeather("today", zipCode))
+            phrase = adjustWeatherPhrase(phrase.toLowerCase())
+        } else {
+            phrase = "Custom Zip Code format error in request for today's weather"
+        }
+    }
+    if (phrase.toLowerCase().contains("%weathertonight(")) {
+        if (phrase.contains(")%")) {
+            def phraseZipStart = (phrase.toLowerCase().indexOf("%weathertonight(") + 16)
+            def phraseZipEnd = (phrase.toLowerCase().indexOf(")%"))
+            zipCode = phrase.substring(phraseZipStart, phraseZipEnd)
+            LOGDEBUG("Custom zipCode: ${zipCode}")
+            phrase = phrase.toLowerCase().replace("%weathertonight(${zipCode})%", getWeather("tonight", zipCode))
+            phrase = adjustWeatherPhrase(phrase)
+        } else {
+            phrase = "Custom Zip Code format error in request for tonight's weather"
+        }
+    }
+    if (phrase.toLowerCase().contains("%weathertomorrow(")) {
+        if (phrase.contains(")%")) {
+            def phraseZipStart = (phrase.toLowerCase().indexOf("%weathertomorrow(") + 17)
+            def phraseZipEnd = (phrase.toLowerCase().indexOf(")%"))
+            zipCode = phrase.substring(phraseZipStart, phraseZipEnd)
+            LOGDEBUG("Custom zipCode: ${zipCode}")
+            phrase = phrase.toLowerCase().replace("%weathertomorrow(${zipCode})%", getWeather("tomorrow", zipCode))
+            phrase = adjustWeatherPhrase(phrase)
+        } else {
+            phrase = "Custom ZipCode format error in request for tomorrow's weather"
+        }
+    }
+    if (state.speechDeviceType == "capability.speechSynthesis"){
+        //ST TTS Engine pronunces "Dash", so only convert for speechSynthesis devices (LANnouncer)
+        if (phrase.contains(",")) { phrase = phrase.replace(","," - ") }
+        //if (phrase.contains(".")) { phrase = phrase.replace("."," - ") }
+    }
+    if (phrase.contains('"')) { phrase = phrase.replace('"',"") }
+    if (phrase.contains("'")) { phrase = phrase.replace("'","") }
+    if (phrase.contains("10S")) { phrase = phrase.replace("10S","tens") }
+    if (phrase.contains("20S")) { phrase = phrase.replace("20S","twenties") }
+    if (phrase.contains("30S")) { phrase = phrase.replace("30S","thirties") }
+    if (phrase.contains("40S")) { phrase = phrase.replace("40S","fourties") }
+    if (phrase.contains("50S")) { phrase = phrase.replace("50S","fifties") }
+    if (phrase.contains("60S")) { phrase = phrase.replace("60S","sixties") }
+    if (phrase.contains("70S")) { phrase = phrase.replace("70S","seventies") }
+    if (phrase.contains("80S")) { phrase = phrase.replace("80S","eighties") }
+    if (phrase.contains("90S")) { phrase = phrase.replace("90S","nineties") }
+    if (phrase.contains("100S")) { phrase = phrase.replace("100S","one hundreds") }
+    if (phrase.contains("%")) { phrase = phrase.replace("%"," percent ") }
     return phrase
+}
+
+def adjustWeatherPhrase(phraseIn){
+    def phraseOut = ""
+    phraseOut = phraseIn.toUpperCase()
+    phraseOut = phraseOut.replace(" N ", " North ")
+    phraseOut = phraseOut.replace(" S ", " South ")
+    phraseOut = phraseOut.replace(" E ", " East ")
+    phraseOut = phraseOut.replace(" W ", " West ")
+    phraseOut = phraseOut.replace(" NNE ", " North Northeast ")
+    phraseOut = phraseOut.replace(" NNW ", " North Northwest ")
+    phraseOut = phraseOut.replace(" SSE ", " South Southeast ")
+    phraseOut = phraseOut.replace(" SSW ", " South Southwest ")
+    phraseOut = phraseOut.replace(" ENE ", " East Northeast ")
+    phraseOut = phraseOut.replace(" ESE ", " East Southeast ")
+    phraseOut = phraseOut.replace(" WNW ", " West Northeast ")
+    phraseOut = phraseOut.replace(" WSW ", " West Southwest ")
+    phraseOut = phraseOut.replace(" MPH", " Miles Per Hour")
+    phraseOut = phraseOut.replace(" MM)", " Milimeters ")
+    return phraseOut
 }
 
 def Talk(phrase, customSpeechDevice, evt){
     def currentSpeechDevices = []
-    if (!(phrase == null)) {
-        phrase = processPhraseVariables(phrase, evt)
-        if (!(customSpeechDevice == null)) {
-            currentSpeechDevices = customSpeechDevice
-        } else {
-            //Use Default Speech Device
-            currentSpeechDevices = settings.speechDeviceDefault
-        }
-        //Iterate Speech Devices and talk
-        LOGTRACE("TALK(${evt.name}) >> ${phrase}")
-        currentSpeechDevices.each(){
-            if (state.speechDeviceType == "capability.musicPlayer"){
-                def currentStatus = it.currentValue("status")
-                def currentTrack = it.currentState("trackData")?.jsonValue
-                def currentVolume = it.currentState("level")?.integerValue ? it.currentState("level")?.integerValue : 0
-                if (settings.speechVolume) { LOGDEBUG("${it.displayName} | Volume: ${currentVolume}, Desired Volume: ${settings.speechVolume}") }
-                if (!(settings.speechVolume)) { LOGDEBUG("${it.displayName} | Volume: ${currentVolume}") }
-                if (!(currentTrack == null)){
-                    //currentTrack has data
-                    LOGTRACE("mP | ${it.displayName} | (1)Current Status: ${currentStatus}, CurrentTrack: ${currentTrack}, CurrentTrack.Status: ${currentTrack.status}.")
-                    if (currentTrack.status == 'playing') {
-                        LOGTRACE("${it.displayName} | Resuming play. Sending playTextAndResume().")
-                        if (settings.speechVolume) { 
-                            it.playTextAndResume(phrase, settings.speechVolume) 
-                        } else { 
-                            if (currentVolume > 0) { it.playTextAndResume(phrase, currentVolume) }
-                            if (currentVolume == 0) { it.playTextAndResume(phrase, 100) }
-                        }
-                    } else
-                    {
-                        LOGDEBUG("mP | ${it.displayName} | (2)Nothing playing. Sending playTextAndRestore()")
-                        if (settings.speechVolume) { 
-                            it.playTextAndRestore(phrase, settings.speechVolume)
-                        } else { 
-                            if (currentVolume > 0) { it.playTextAndRestore(phrase, currentVolume) }
-                            if (currentVolume == 0) { it.playTextAndRestore(phrase, 100) }
-                        }
-                    }
-                } else {
-                    //currentTrack doesn't have data or is not supported on this device
-                    if (currentStatus == "disconnected") {
-                        //VLCThing?
-                        LOGTRACE("mP | ${it.displayName} | (3)VLCThing? | Current Status: ${currentStatus}.")
-                        LOGTRACE("${it.displayName} | Resuming play. Sending playText().")
-                        if (settings.speechVolume) { 
-                            it.setLevel(settings.speechVolume)
-                            it.playText(phrase)
-                            if (currentVolume > 0) {it.setLevel(currentVolume)}
-                            if (currentVolume == 0 ) {it.setLevel(100)}
-                        } else { 
-                            it.playText(phrase) 
-                        }
-                    } else {
-                        LOGTRACE("mP | ${it.displayName} | (4)Current Status: ${currentStatus}.")
-                        if (currentStatus == "playing") {
-                            LOGTRACE("${it.displayName} | Resuming play. Sending playTextAndResume().")
-                            if (settings.speechVolume) { 
-                                it.playTextAndResume(phrase, settings.speechVolume) 
-                            } else { 
-                                if (currentVolume > 0) { it.playTextAndResume(phrase, currentVolume) }
-                                if (currentVolume == 0) { it.playTextAndResume(phrase, 100) }
-                            }
-                        } else {
-                            LOGTRACE("${it.displayName} | Resuming play. Sending playText().")
-                            if (settings.speechVolume) { 
-                                it.setLevel(settings.speechVolume)
-                                it.playText(phrase)
-                                if (currentVolume > 0) {it.setLevel(currentVolume)}
-                                if (currentVolume == 0 ) {it.setLevel(100)}
-                            } else { 
-                                it.playText(phrase) 
-                            }
-                        }
-                    }
+    if (state.speechDeviceType == "capability.musicPlayer"){
+        state.sound = ""
+        state.ableToTalk = false
+        if (!(phrase == null)) {
+            phrase = processPhraseVariables(phrase, evt)
+            LOGTRACE("TALK(${evt.name}) |mP| >> ${phrase}")
+            try {
+                state.sound = textToSpeech(phrase instanceof List ? phrase[0] : phrase) 
+                state.ableToTalk = true
+            } catch(e) {
+                LOGERROR("ST Platform issue (textToSpeech)? ${e}")
+                //Try Again
+                try {
+                    LOGTRACE("Trying textToSpeech function again...")
+                    state.sound = textToSpeech(phrase instanceof List ? phrase[0] : phrase)
+                    state.ableToTalk = true
+                } catch(ex) {
+                    LOGERROR("ST Platform issue (textToSpeech)? I tried textToSpeech() twice, SmartThings wouldn't convert/process.  I give up, Sorry..")
+                    sendNotificationEvent("ST Platform issue? textToSpeech() failed.")
+                    sendNotification("BigTalker couldn't announce: ${phrase}")
                 }
-            } else {
-                //capability.speechSynthesis is in use
-                //LOGDEBUG("Supported Commands: ${it.supportedCommands}")
-                //def currentVolume = it.currentState("level")?.integerValue ? it.currentState("level")?.integerValue : 0
-                //def supportsVolume = false
-                //it.supportedCommands?.each(){
-                //    if (it == "setLevel") { 
-                //        supportsVolume = true 
-                //        LOGDEBUG("Volume is supported")
-                //    }
-                //}
-                //LOGDEBUG("Supports Volume = ${supportsVolume}")
-                //if (supportsVolume && (settings.speechVolume > 0)){
-                //    LOGDEBUG("${it.displayName} |sS| Volume: ${currentVolume}, Desired Volume: ${settings.speechVolume}")
-                //    it.setLevel(settings.speechVolume)
-                //    it.speak(phrase)
-                //    it.setLevel(currentVolume)
-                //} else {
-                    LOGDEBUG("sS | ${it.displayName}")
-                    LOGTRACE("${it.displayName} | Sending speak().")
-                    it.speak(phrase)
-                //}
             }
-        } 
-    }
-}
+            unschedule("poll")
+            LOGDEBUG("Delaying polling for 120 seconds")
+            myRunIn(120, poll)
+            if (state.ableToTalk){
+                state.sound.duration = (state.sound.duration.toInteger() + 5).toString()  //Try to prevent cutting out, add seconds to the duration
+                if (!(customSpeechDevice == null)) {
+                    currentSpeechDevices = customSpeechDevice
+                } else {
+                    //Use Default Speech Device
+                    currentSpeechDevices = settings.speechDeviceDefault
+                }
+                LOGTRACE("Last poll: ${state.lastPoll}")
+                //Iterate Speech Devices and talk
+		        def attrs = currentSpeechDevices.supportedAttributes
+                currentSpeechDevices.each(){
+            	    //if (state.speechDeviceType == "capability.musicPlayer"){
+                	    LOGDEBUG("attrs=${attrs}")
+                	    def currentStatus = it.latestValue('status')
+                	    def currentTrack = it.latestState("trackData")?.jsonValue
+                	    def currentVolume = it.latestState("level")?.integerValue ? it.currentState("level")?.integerValue : 0
+                	    LOGDEBUG("currentStatus:${currentStatus}")
+                	    LOGDEBUG("currentTrack:${currentTrack}")
+                	    LOGDEBUG("currentVolume:${currentVolume}")
+                        LOGDEBUG("Sound: ${state.sound.uri} , ${state.sound.duration}")
+                	    if (settings.speechVolume) { LOGTRACE("${it.displayName} | Volume: ${currentVolume}, Desired Volume: ${settings.speechVolume}") }
+                	    if (!(settings.speechVolume)) { LOGTRACE("${it.displayName} | Volume: ${currentVolume}") }
+                	    if (!(currentTrack == null)){
+                    	    //currentTrack has data
+                            if (!(currentTrack?.status == null)) { LOGTRACE("mP | ${it.displayName} | Current Status: ${currentStatus}, CurrentTrack: ${currentTrack}, CurrentTrack.Status: ${currentTrack.status}.") }
+                    	    if (currentTrack?.status == null) { LOGTRACE("mP | ${it.displayName} | Current Status: ${currentStatus}, CurrentTrack: ${currentTrack}.") }
+                    	    if (currentStatus == 'playing' || currentTrack?.status == 'playing') {
+    	                        LOGTRACE("${it.displayName} | cT<>null | cS/cT=playing | Sending playTrackAndResume().")
+        	                    if (settings.speechVolume) { 
+                	                if (settings.speechVolume == currentVolume){it.playTrackAndResume(state.sound.uri, state.sound.duration)}
+                                    if (!(settings.speechVolume == currentVolume)){it.playTrackAndResume(state.sound.uri, state.sound.duration, settings.speechVolume)}
+                    	        } else { 
+                            	    if (currentVolume > 50) { it.playTrackAndResume(state.sound.uri, state.sound.duration) }
+                            	    if (currentVolume == 0) { it.playTrackAndResume(state.sound.uri, state.sound.duration, 75) }
+                        	    }
+                    	    } else
+                    	    {
+                        	    LOGTRACE("mP | ${it.displayName} | cT<>null | cS/cT<>playing | Sending playTrackAndRestore().")
+                        	    if (settings.speechVolume) { 
+	                                if (settings.speechVolume == currentVolume){it.playTrackAndRestore(state.sound.uri, state.sound.duration)}
+                                    if (!(settings.speechVolume == currentVolume)){it.playTrackAndRestore(state.sound.uri, state.sound.duration, settings.speechVolume)}
+	                            } else { 
+            	                    if (currentVolume > 50) { it.playTrackAndRestore(state.sound.uri, state.sound.duration) }
+                	                if (currentVolume == 0) { it.playTrackAndRestore(state.sound.uri, state.sound.duration, 75) }
+                    	        }
+                    	    }
+                	    } else {
+                    	    //currentTrack doesn't have data or is not supported on this device
+                            if (!(currentStatus == null)) {
+                    	        LOGTRACE("mP | ${it.displayName} | (2) Current Status: ${currentStatus}.")
+                                if (currentStatus == "disconnected") {
+	                                //VLCThing?
+    	                            LOGTRACE("mP | ${it.displayName} | cT=null | cS=disconnected | Sending playTrackAndResume().")
+	                                if (settings.speechVolume) { 
+                    	                if (settings.speechVolume == currentVolume){it.playTrackAndResume(state.sound.uri, state.sound.duration)}
+                                        if (!(settings.speechVolume == currentVolume)){it.playTrackAndResume(state.sound.uri, state.sound.duration, settings.speechVolume)}
+                        	        } else { 
+                                        if (currentVolume > 50) { it.playTrackAndResume(state.sound.uri, state.sound.duration) }
+                	                    if (currentVolume == 0) { it.playTrackAndResume(state.sound.uri, state.sound.duration, 75) }
+                            	        it.playTrackAndResume(state.sound.uri, state.sound.duration, settings.speechVolume)
+                        	        }
+                    	        } else {
+    	                            if (currentStatus == "playing") {
+            	                        LOGTRACE("mP | ${it.displayName} | cT=null | cS=playing | Sending playTrackAndResume().")
+                	                    if (settings.speechVolume) { 
+                        	                if (settings.speechVolume == currentVolume){it.playTrackAndResume(state.sound.uri, state.sound.duration)}
+                                            if (!(settings.speechVolume == currentVolume)){it.playTrackAndResume(state.sound.uri, state.sound.duration, settings.speechVolume)}
+                            	        } else { 
+        	                                if (currentVolume > 50) { it.playTrackAndResume(state.sound.uri, state.sound.duration) }
+            	                            if (currentVolume == 0) { it.playTrackAndResume(state.sound.uri, state.sound.duration, 75) }
+                	                    }
+                    	            } else {
+                            	        LOGTRACE("mP | ${it.displayName} | cT=null | cS<>playing | Sending playTrackAndRestore().")
+                            	        if (settings.speechVolume) { 
+                                	        if (settings.speechVolume == currentVolume){it.playTrackAndRestore(state.sound.uri, state.sound.duration)}
+                                            if (!(settings.speechVolume == currentVolume)){it.playTrackAndRestore(state.sound.uri, state.sound.duration, settings.speechVolume)}
+                            	        } else { 
+	                                        if (currentVolume > 50) { it.playTrackAndRestore(state.sound.uri, state.sound.duration) }
+    	                                    if (currentVolume == 0) { it.playTrackAndRestore(state.sound.uri, state.sound.duration, 75) }
+        	                            }
+            	                    }
+                	            }
+                            } else {
+                                //currentTrack and currentStatus are both null
+                                LOGTRACE("mP | ${it.displayName} | (3) cT=null | cS=null | Sending playTrackAndRestore().")
+                                if (settings.speechVolume) { 
+                                    if (settings.speechVolume == currentVolume){it.playTrackAndRestore(state.sound.uri, state.sound.duration)}
+                                    if (!(settings.speechVolume == currentVolume)){it.playTrackAndRestore(state.sound.uri, state.sound.duration, settings.speechVolume)}
+                                } else { 
+	                                if (currentVolume > 50) { it.playTrackAndRestore(state.sound.uri, state.sound.duration) }
+    	                            if (currentVolume == 0) { it.playTrackAndRestore(state.sound.uri, state.sound.duration, 75) }
+        	                    }
+                            }
+                	    }
+                    } //currentSpeechDevices.each()
+            	} //state.ableToTalk
+            } //!phrase == null
+        } else {
+            //capability.speechSynthesis is in use
+            if (!(phrase == null)) {
+                phrase = processPhraseVariables(phrase, evt)
+                LOGTRACE("TALK(${evt.name}) |sS| >> ${phrase}")
+                if (!(customSpeechDevice == null)) {
+                    currentSpeechDevices = customSpeechDevice
+                } else {
+                    //Use Default Speech Device
+                    currentSpeechDevices = settings.speechDeviceDefault
+                }
+                //Iterate Speech Devices and talk
+		        def attrs = currentSpeechDevices.supportedAttributes
+                currentSpeechDevices.each(){
+	                LOGTRACE("sS | ${it.displayName} | Sending speak().")
+	                it.speak(phrase)
+                }
+    	    } //!phrase == null
+        } //state.speechDeviceType
+}//Talk()
 
 def timeAllowed(devicetype,index){
     def now = new Date()
@@ -3529,13 +3750,13 @@ def getTimeFromCalendar(includeSeconds, includeAmPm){
 
 //myRunIn from ST:Geko / Statusbits SmartAlarm app http://statusbits.github.io/smartalarm/
 private def myRunIn(delay_s, func) {
-    LOGDEBUG("myRunIn(${delay_s})")
+    //LOGDEBUG("myRunIn(${delay_s},${func})")
 
     if (delay_s > 0) {
         def tms = now() + (delay_s * 1000)
         def date = new Date(tms)
         runOnce(date, func)
-        LOGDEBUG("'${func}' scheduled to run at ${date}")
+        //LOGDEBUG("'${func}' scheduled to run at ${date}")
     }
 }
 
@@ -3546,12 +3767,148 @@ def TalkQueue(phrase, customSpeechDevice, evt){
     LOGDEBUG("TALKQUEUE()")
 }
 
+def getWeather(mode, zipCode) {
+    //Function derived from "Sonos Weather Forecast" SmartApp by Smartthings (modified)
+    LOGDEBUG("Processing: getWeather(${mode},${zipCode})")
+	def weather = getWeatherFeature("forecast", zipCode)
+	def current = getWeatherFeature("conditions", zipCode)
+	def isMetric = location.temperatureScale == "C"
+	def delim = ""
+	def sb = new StringBuilder()
+	if (mode == "current") {
+			if (isMetric) {
+               	sb << "The current temperature is ${Math.round(current.current_observation.temp_c)} degrees."
+            }
+            else {
+               	sb << "The current temperature is ${Math.round(current.current_observation.temp_f)} degrees."
+            }
+			delim = " "
+	} //mode == current
+    else if (mode == "today") {
+		sb << delim
+		sb << "Today's forecast is "
+		if (isMetric) {
+           	sb << weather.forecast.txt_forecast.forecastday[0].fcttext_metric 
+        }
+        else {
+           	sb << weather.forecast.txt_forecast.forecastday[0].fcttext
+        }
+	} //mode == today
+	else if (mode == "tonight") {
+        sb << delim
+		sb << "Tonight will be "
+		if (isMetric) {
+          	sb << weather.forecast.txt_forecast.forecastday[1].fcttext_metric 
+        }
+        else {
+        	sb << weather.forecast.txt_forecast.forecastday[1].fcttext
+        }
+	} //mode == tonight
+	else if (mode == "tomorrow") {
+		sb << delim
+		sb << "Tomorrow will be "
+		if (isMetric) {
+           	sb << weather.forecast.txt_forecast.forecastday[2].fcttext_metric 
+        }
+        else {
+          	sb << weather.forecast.txt_forecast.forecastday[2].fcttext
+        }
+	} //mode == tomorrow
+    else {
+        sb < "ERROR: Requested weather mode was not recognized."
+    }//mode = unknown
+	def msg = sb.toString()
+    msg = msg.replaceAll(/([0-9]+)C/,'$1 degrees celsius')
+    msg = msg.replaceAll(/([0-9]+)F/,'$1 degrees fahrenheit')
+    LOGDEBUG("msg = ${msg}")
+	return(msg)
+}
+
+def poll(){
+    if (state.speechDeviceType == "capability.musicPlayer") {
+        LOGDEBUG("Polling speech device(s) for latest status")
+        if (state?.polledDevices == null) { state.polledDevices = "!" }
+        try {
+            if (!(settings?.speechDeviceDefault == null)) {dopoll(settings.speechDeviceDefault)}
+            if (!(settings?.motionSpeechDevice1 == null)) {dopoll(settings.motionSpeechDevice1)}
+            if (!(settings?.motionSpeechDevice2 == null)) {dopoll(settings.motionSpeechDevice2)}
+            if (!(settings?.motionSpeechDevice3 == null)) {dopoll(settings.motionSpeechDevice3)}
+            if (!(settings?.switchSpeechDevice1 == null)) {dopoll(settings.switchSpeechDevice1)}
+            if (!(settings?.switchSpeechDevice2 == null)) {dopoll(settings.switchSpeechDevice2)}
+            if (!(settings?.switchSpeechDevice3 == null)) {dopoll(settings.switchSpeechDevice3)}
+            if (!(settings?.presSpeechDevice1 == null)) {dopoll(settings.presSpeechDevice1)}
+            if (!(settings?.presSpeechDevice2 == null)) {dopoll(settings.presSpeechDevice2)}
+            if (!(settings?.presSpeechDevice3 == null)) {dopoll(settings.presSpeechDevice3)}
+            if (!(settings?.lockSpeechDevice1 == null)) {dopoll(settings.lockSpeechDevice1)}
+            if (!(settings?.lockSpeechDevice2 == null)) {dopoll(settings.lockSpeechDevice2)}
+            if (!(settings?.lockSpeechDevice3 == null)) {dopoll(settings.lockSpeechDevice3)}
+            if (!(settings?.contactSpeechDevice1 == null)) {dopoll(settings.contactSpeechDevice1)}
+            if (!(settings?.contactSpeechDevice2 == null)) {dopoll(settings.contactSpeechDevice2)}
+            if (!(settings?.contactSpeechDevice3 == null)) {dopoll(settings.contactSpeechDevice3)}
+            if (!(settings?.modePhraseSpeechDevice1 == null)) {dopoll(settings.modePhraseSpeechDevice1)}
+            if (!(settings?.thermostatSpeechDevice1 == null)) {dopoll(settings.thermostatSpeechDevice1)}
+            if (!(settings?.accelerationSpeechDevice1 == null)) {dopoll(settings.accelerationSpeechDevice1)}
+            if (!(settings?.accelerationSpeechDevice2 == null)) {dopoll(settings.accelerationSpeechDevice2)}
+            if (!(settings?.accelerationSpeechDevice3 == null)) {dopoll(settings.accelerationSpeechDevice3)}
+            if (!(settings?.waterSpeechDevice1 == null)) {dopoll(settings.waterSpeechDevice1)}
+            if (!(settings?.waterSpeechDevice2 == null)) {dopoll(settings.waterSpeechDevice2)}
+            if (!(settings?.waterSpeechDevice3 == null)) {dopoll(settings.waterSpeechDevice3)}
+            if (!(settings?.smokeSpeechDevice1 == null)) {dopoll(settings.smokeSpeechDevice1)}
+            if (!(settings?.smokeSpeechDevice2 == null)) {dopoll(settings.smokeSpeechDevice2)}
+            if (!(settings?.smokeSpeechDevice3 == null)) {dopoll(settings.smokeSpeechDevice3)}
+            if (!(settings?.buttonSpeechDevice1 == null)) {dopoll(settings.buttonSpeechDevice1)}
+            if (!(settings?.buttonSpeechDevice2 == null)) {dopoll(settings.buttonSpeechDevice2)}
+            if (!(settings?.buttonSpeechDevice3 == null)) {dopoll(settings.buttonSpeechDevice3)}
+            if (!(settings?.timeslotSpeechDevice1 == null)) {dopoll(settings.timeslotSpeechDevice1)}
+            if (!(settings?.timeslotSpeechDevice2 == null)) {dopoll(settings.timeslotSpeechDevice2)}
+            if (!(settings?.timeslotSpeechDevice3 == null)) {dopoll(settings.timeslotSpeechDevice3)}
+        } catch(e) {
+            LOGERROR("One of your speech devices is not responding.  Poll failed.")
+        }
+        state.polledDevices = "!"
+        state.lastPoll = getTimeFromCalendar(true,true)
+        myRunIn(60, poll)
+    }
+}
+def dopoll(pollSpeechDevice){
+    pollSpeechDevice.each(){
+        if (!(state.polledDevices.find(",${it.displayName}"))) {
+            state.polledDevices = "${state.polledDevices},${it.displayName}"
+            //LOGDEBUG("Polling: ${it.displayName}")
+            state.refresh = false
+            state.poll = false
+            try {
+                //LOGTRACE("refresh()")
+                it.refresh()
+                state.refresh = true
+            }
+            catch (ex) {
+                //LOGDEBUG("ERROR(informational): it.refresh: ${ex}")
+            }
+            if (!state.refresh) {
+                try {
+                    //LOGTRACE("poll()")
+                    it.poll()
+                    state.poll = true
+                }
+                catch (ex) {
+                    //LOGDEBUG ("ERROR(informational): it.poll: ${ex}")
+                }
+            }
+        }
+    }
+}
+
 def LOGDEBUG(txt){
     if (settings.debugmode) { log.debug("${app.label.replace(" ","").toUpperCase()}(${state.appversion}) || ${txt}") }
 }
 def LOGTRACE(txt){
     log.trace("${app.label.replace(" ","").toUpperCase()}(${state.appversion}) || ${txt}")
 }
+def LOGERROR(txt){
+    log.error("${app.label.replace(" ","").toUpperCase()}(${state.appversion}) || ERROR: ${txt}")
+}
+
 def setAppVersion(){
-    state.appversion = "1.1.3"
+    state.appversion = "1.1.5"
 }
