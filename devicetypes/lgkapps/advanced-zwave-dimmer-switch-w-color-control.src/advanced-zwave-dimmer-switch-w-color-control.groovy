@@ -25,7 +25,6 @@
  */
 metadata {
 	definition (name: "Advanced Zwave Dimmer Switch w Color Control", namespace: "lgkapps", author: "kahn@lgk.com") {
-		capability "Switch Level"
 		capability "Actuator"
 		capability "Indicator"
 		capability "Switch"
@@ -202,7 +201,7 @@ def on() {
 
 def off() {
 	log.debug "off"
-	delayBetween ([zwave.basicV1.basicSet(value: 0x00).format(), zwave.switchMultilevelV1.switchMultilevelGet().format(),zwave.switchMultilevelV1.switchMultilevelGet().format()], 2000)
+	delayBetween ([zwave.basicV1.basicSet(value: 0x00).format(), zwave.switchMultilevelV1.switchMultilevelGet().format()], 3000)
 
 }
 
