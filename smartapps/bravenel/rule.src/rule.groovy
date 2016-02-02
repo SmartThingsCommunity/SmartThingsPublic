@@ -3,7 +3,7 @@
  *
  *  Copyright 2015 Bruce Ravenel
  *
- *  Version 1.7.3   2 Feb 2016
+ *  Version 1.7.3a   2 Feb 2016
  *
  *	Version History
  *
@@ -80,7 +80,7 @@ preferences {
 def selectRule() {
 	//version to parent app and expert settings for rule
 	try { 
-		state.isExpert = parent.isExpert("1.7.3") 
+		state.isExpert = parent.isExpert("1.7.3a") 
 		if (state.isExpert) state.cstCmds = parent.getCommands()
 		else state.cstCmds = []
 	}
@@ -293,12 +293,11 @@ def getDevs(myCapab, dev, multi) {
 }
 
 def getButton(dev) {
-	def numNames = ["one", "two", "three", "four", "five", "six", "seven", "eight", "nine", "ten",
-    	"eleven", "twelve", "thirteen", "fourteen", "fifteen", "sixteen", "seventeen", "eighteen", "nineteen", "twenty"]
+	def numNames = ["one", "two", "three", "four", "five", "six", "seven"]
  	def result = input "$dev", "capability.button", title: "Button Device", required: true, multiple: false, submitOnChange: true
     def thisDev = settings.find{it.key == "$dev"}
 	if(thisDev) {
-        input "numButtons$dev", "number", title: "Number of buttons? (Default 4)", range: "1..20", required: false, submitOnChange: true, description: "4"
+        input "numButtons$dev", "number", title: "Number of buttons? (Default 4)", range: "1..7", required: false, submitOnChange: true, description: "4"
         def numButtons = settings.find{it.key == "numButtons$dev"}
         numButtons = numButtons ? numButtons.value : 4
         def butOpts = ["one"]
@@ -1625,77 +1624,21 @@ def doTrigger() {
 }
 
 def getButton(dev, evt, i) {
-	def buttonNumber = evt.data 
+	def numNames = ["", "one", "two", "three", "four", "five", "six", "seven"]
+	def buttonNumber = evt.jsonData.buttonNumber 
 	def value = evt.value
 //	log.debug "buttonEvent: $evt.name = $evt.value ($evt.data)"
 //	log.debug "button: $buttonNumber, value: $value"
 //	log.debug "button json: $evt.jsonData.buttonNumber"
 	def recentEvents = dev.eventsSince(new Date(now() - 3000)).findAll{it.value == evt.value && it.data == evt.data}
-//	log.debug "Found ${recentEvents.size()?:0} events in past 3 seconds"
+//	log.debug "Found ${recentEvents.size()?:0} events in past second"
 	def thisButton = 0
-	if(recentEvents.size <= 1){
-		switch(buttonNumber) {
-			case ~/.*1.*/:
-				thisButton = "one"
-				break
-			case ~/.*2.*/:
-				thisButton = "two"
-				break
-			case ~/.*3.*/:
-				thisButton = "three"
-				break
-			case ~/.*4.*/:
-				thisButton = "four"
-				break
-			case ~/.*5.*/:
-				thisButton = "five"
-				break
-			case ~/.*6.*/:
-				thisButton = "six"
-				break
-			case ~/.*7.*/:
-				thisButton = "seven"
-				break
-			case ~/.*8.*/:
-				thisButton = "eight"
-				break
-			case ~/.*9.*/:
-				thisButton = "nine"
-				break
-			case ~/.*10.*/:
-				thisButton = "ten"
-				break
-			case ~/.*11.*/:
-				thisButton = "eleven"
-				break
-			case ~/.*12.*/:
-				thisButton = "twelve"
-				break
-			case ~/.*13.*/:
-				thisButton = "thirteen"
-				break
-			case ~/.*14.*/:
-				thisButton = "fourteen"
-				break
-			case ~/.*15.*/:
-				thisButton = "fifteen"
-				break
-			case ~/.*16.*/:
-				thisButton = "sixteen"
-				break
-			case ~/.*17.*/:
-				thisButton = "seventeen"
-				break
-			case ~/.*18.*/:
-				thisButton = "eighteen"
-				break
-			case ~/.*19.*/:
-				thisButton = "nineteen"
-				break
-			case ~/.*20.*/:
-				thisButton = "twenty"
-				break
-		}
+	def firstEventId = 0
+	if (recentEvents.size() != 0) {
+		firstEventId = recentEvents[0].id
+	} 
+	if(firstEventId == evt.id){
+		thisButton = numNames[buttonNumber]
 //	} else {
 //		log.debug "Found recent button press events for $buttonNumber with value $value"
 	}
