@@ -25,7 +25,7 @@
  *
  */  
 def getVersionNum() { return "0.9.0" }
-private def getVersionLabel() { return "ecobee (Connect) Version ${getVersionNum()}-RC3" }
+private def getVersionLabel() { return "ecobee (Connect) Version ${getVersionNum()}-RC4" }
 private def getHelperSmartApps() {
 	return [ 
     		[name: "ecobeeRoutinesChild", appName: "ecobee Routines",  
@@ -783,13 +783,13 @@ def scheduleHandlers(evt=null) {
     def timeSinceLastScheduledRefresh = (state.lastScheduledTokenRefresh == 0 || !state.lastScheduledTokenRefresh) ? 0 : ((now() - state.lastScheduledTokenRefresh?.toDouble()) / 1000 / 60)
 	def timeBeforeExpiry = state.authTokenExpires ? ((state.authTokenExpires - now()) / 1000 / 60) : 0    
     
-    LOG("Time since last poll? ${timeSinceLastScheduledPoll} -- state.lastScheduledPoll == ${state.lastScheduledPoll}", 4, null, "info")
-    LOG("Time since last token refresh? ${timeSinceLastScheduledRefresh} -- state.lastScheduledTokenRefresh == ${state.lastScheduledTokenRefresh}", 4, null, "info")
-    LOG("timeLeft until expiry (in min): ${timeBeforeExpiry}", 4, null, "info")
+    LOG("scheduleHandlers() - Time since last poll? ${timeSinceLastScheduledPoll} -- state.lastScheduledPoll == ${state.lastScheduledPoll}", 4, null, "info")
+    LOG("scheduleHandlers() - Time since last token refresh? ${timeSinceLastScheduledRefresh} -- state.lastScheduledTokenRefresh == ${state.lastScheduledTokenRefresh}", 4, null, "info")
+    LOG("scheduleHandlers() - timeLeft until expiry (in min): ${timeBeforeExpiry}", 4, null, "info")
     
     // Reschedule polling if it has been a while since the previous poll
     def interval = (settings.pollingInterval?.toInteger() >= 5) ? settings.pollingInterval.toInteger() : 5
-    if ( (timeSinceLastScheduledPoll == 0) || (timeSinceLastPoll >= (interval * 2)) || (!state.initialized) ) {
+    if ( (timeSinceLastScheduledPoll == 0) || (timeSinceLastScheduledPoll >= (interval * 2)) || (!state.initialized) ) {
     	// automatically update devices status every ${interval} mins    
         // re-establish polling
         LOG("scheduleHandlers() - Rescheduling handlers due to delays!", 1, child, "warn")
@@ -798,10 +798,10 @@ def scheduleHandlers(evt=null) {
     }    
     
     // Reschedule Authrefresh if we are over the grace period    
-	if ( (timeSinceLastScheduledRefresh == 0)  || (timeBeforeExpiry >= state.tokenGrace) || (!state.initialized) ) {
+	if ( (timeSinceLastScheduledRefresh == 0)  || (timeBeforeExpiry <= state.tokenGrace) || (!state.initialized) ) {
     	unschedule("refreshAuthTokenScheduled")
 		runEvery15Minutes("refreshAuthTokenScheduled")        
-        refreshAuthTokenScheduled()
+        refreshAuthTokenScheduled()        
 	}    
 }
 
@@ -1752,8 +1752,8 @@ private def apiLost(where = "not specified") {
 		}
     }
     
-    unschedule("poll")
-    unschedule("refreshAuthToken")
+    // unschedule("pollScheduled")
+    // unschedule("refreshAuthTokenScheduled")
     runEvery3Hours("notifyApiLost")
 }
 
