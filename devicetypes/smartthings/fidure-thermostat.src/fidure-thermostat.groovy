@@ -3,7 +3,7 @@
  *
  *	Author: Fidure
  *	Date: 2014-12-13
- *  Updated: 2015-08-26
+ *  Updated: 2016-1-29
  */
 metadata {
 	// Automatically generated. Make future change here.
@@ -207,7 +207,8 @@ def parse(String description) {
 	            case "0000":
 	  						map.name = "temperature"
 	  						map.value = getTemperature(atMap.value)
-								result += createEvent("name":"displayTemperature", "value": getDisplayTemperature(atMap.value))
+								result += createEvent("name":"displayTemperature", "value":
+								getDisplayTemperature(atMap.value))
 	  					break;
 	            case "0005":
 	            //log.debug "hex time: ${descMap.value}"
@@ -227,7 +228,7 @@ def parse(String description) {
 	  					case "0012":
 	  						map.name = "heatingSetpoint"
 	  						map.value = getDisplayTemperature(atMap.value)
-								updateSetpoint(map.name,map.value)
+							updateSetpoint(map.name,map.value)
 	  					break;
 	  					case "001c":
                         	map.name = "thermostatMode"
@@ -298,7 +299,7 @@ def parseDescriptionAsMap(description) {
     def size = Long.parseLong(''+ map.get('size'), 16)
     def index = 12;
     def len
-	
+
     //log.trace "processing multi attributes"
     while((index-12) < size) {
        attrId = flipHexStringEndianness(raw[index..(index+3)])
@@ -313,9 +314,9 @@ def parseDescriptionAsMap(description) {
        list += ['attrId': "$attrId", 'encoding':"$encoding", 'value': "$value"]
     }
   }
-  else 
+  else
     list += ['attrId': "$attrId", 'encoding': "$encoding", 'value': "$value"]
-  
+
   map.remove('value')
   map.remove('encoding')
   map.remove('attrId')
@@ -339,8 +340,9 @@ def getDataLengthByType(t)
 	 "2a":3,	"2b":4,	"2c":5,	"2d":6,	"2e":7,	"2f":8,	"30":1,	"31":2,	"38":2,	"39":4,	"40":8,	"e0":4,	"e1":4,	"e2":4,
 	 "e8":2,	"e9":2,	"ea":4,	"f0":8,	"f1":16]
 
-	// return number of hex chars
-	 return map.get(t) * 2
+	// return number of hex chars if the type is not in the map,
+    // then it's likely a malformed msg and should not be parsed
+    return (map.get(t) ?: 256) * 2
 }
 
 
@@ -377,15 +379,13 @@ def updateSetpoint(attrib, val)
 
 	def value = '--';
 
+	if (("heat"  == mode && heat != null) ||
+    	("auto" == mode && runningMode == "heat" && heat != null))
+        	value = (attrib == "heatingSetpoint")? val : heat;
+	else if (("cool"  == mode && cool != null) || ("auto" == mode && runningMode == "cool" && cool != null))
+    	value = (attrib == "coolingSetpoint")? val : cool;
 
-	if ("heat"  == mode && heat != null)
-		value = heat;
-	else if ("cool"  == mode && cool != null)
-		value = cool;
-    else if ("auto" == mode && runningMode == "cool" && cool != null)
-    	value = cool;
-    else if ("auto" == mode && runningMode == "heat" && heat != null)
-    	value = heat;
+
 
 	sendEvent("name":"displaySetpoint", "value": value)
 }
@@ -565,7 +565,7 @@ def convertToTime(data)
 	def time = Integer.parseInt("$data", 16) as long;
     time *= 1000;
     time += 946684800000; // 481418694
-    time -= location.timeZone.getRawOffset() + location.timeZone.getDSTSavings();
+    time -= location.timeZone.getOffset(date.getTime());
 
     def d = new Date(time);
 
@@ -611,12 +611,14 @@ def checkLastTimeSync(delay)
     if (!lastSync)
     	lastSync = "${new Date(0)}"
 
-    if (settings.sync_clock ?: false && lastSync != new Date(0))
-    	{
-        	sendEvent("name":"lastTimeSync", "value":"${new Date(0)}")
-    	}
-
-
+	if (!settings.sync_clock)
+	{
+		if (lastSync != new Date(0))
+		{
+			sendEvent("name":"lastTimeSync", "value":"${new Date(0)}")
+		}
+		return []
+	}
 
 	long duration = (new Date()).getTime() - (new Date(lastSync)).getTime()
 
@@ -649,7 +651,7 @@ def refresh()
 {
 	log.debug "refresh called"
      // log.trace "list: " +       readAttributesCommand(0x201, [0x1C,0x1E,0x23])
-      
+
         readAttributesCommand(0x201, [0x00,0x11,0x12]) +
         readAttributesCommand(0x201, [0x1C,0x1E,0x23]) +
         readAttributesCommand(0x201, [0x24,0x25,0x29]) +
@@ -731,7 +733,7 @@ def setThermostatMode(String next) {
 	def val = (getModeMap().find { it.value == next }?.key)?: "00"
 
 	// log.trace "mode changing to $next sending value: $val"
-    
+
 	sendEvent("name":"thermostatMode", "value":"$next")
 	["st wattr 0x${device.deviceNetworkId} 1 0x201 0x1C 0x30 {$val}"] +
     refresh()
@@ -805,24 +807,23 @@ def lock()
   //log.debug "current lock is: ${val}"
 
   if (val == "00")
-      val = getLockMap().find { it.value == (settings.lock_level ?: "Full") }?.key
+      val = getLockMap().find { it.value == (settings.lock_level ?: "Unlocked") }?.key
   else
       val = "00"
 
- "st rattr 0x${device.deviceNetworkId} 1 0x204 0x01"
-
+  ["st wattr 0x${device.deviceNetworkId} 1 0x204 1 0x30 {${val}}",
+   "st rattr 0x${device.deviceNetworkId} 1 0x204 0x01", "delay 500"]
 }
 
 
 def setThermostatTime()
 {
 
-  if ((settings.sync_clock ?: false))
+  if (false == (settings.sync_clock ?: false))
     {
       log.debug "sync time is disabled, leaving"
       return []
     }
-
 
   	Date date = new Date();
   	String zone = location.timeZone.getRawOffset() + " DST " + location.timeZone.getDSTSavings();
@@ -830,7 +831,7 @@ def setThermostatTime()
 	long millis = date.getTime(); // Millis since Unix epoch
   	millis -= 946684800000;  // adjust for ZigBee EPOCH
   // adjust for time zone and DST offset
-	millis += location.timeZone.getRawOffset() + location.timeZone.getDSTSavings();
+	millis += location.timeZone.getOffset(date.getTime());
 	//convert to seconds
 	millis /= 1000;
 
