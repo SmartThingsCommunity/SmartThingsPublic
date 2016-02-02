@@ -1504,7 +1504,7 @@ def setFanMode(child, fanMode, deviceId, sendHoldType=null) {
 
 def setProgram(child, program, deviceId, sendHoldType=null) {
 	LOG("setProgram() to ${program} with DeviceID: ${deviceId}", 5, child)
-    program = program.toLower()
+    program = program.toLowerCase()
 
 	def tstatSettings 
     tstatSettings = ((sendHoldType != null) && (sendHoldType != "")) ?
