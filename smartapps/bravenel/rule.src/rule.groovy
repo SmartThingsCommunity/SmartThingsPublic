@@ -3,10 +3,11 @@
  *
  *  Copyright 2015 Bruce Ravenel
  *
- *  Version 1.7.2d   1 Feb 2016
+ *  Version 1.7.3   2 Feb 2016
  *
  *	Version History
  *
+ *	1.7.3	2 Feb 2016		Bug fix for multi-button device with more than 4 buttons
  *	1.7.2	31 Jan 2016		Added mode based dimming action, and cause rule actions action
  *	1.7.1	30 Jan 2016		Added support for more buttons than 4 on button device, now as many as 20
  *	1.7.0	27 Jan 2016		Fixed thermostat mode trigger/condition, added thermostat operating state condition
@@ -79,7 +80,7 @@ preferences {
 def selectRule() {
 	//version to parent app and expert settings for rule
 	try { 
-		state.isExpert = parent.isExpert("1.7.2d") 
+		state.isExpert = parent.isExpert("1.7.3") 
 		if (state.isExpert) state.cstCmds = parent.getCommands()
 		else state.cstCmds = []
 	}
@@ -1645,6 +1646,54 @@ def getButton(dev, evt, i) {
 				break
 			case ~/.*4.*/:
 				thisButton = "four"
+				break
+			case ~/.*5.*/:
+				thisButton = "five"
+				break
+			case ~/.*6.*/:
+				thisButton = "six"
+				break
+			case ~/.*7.*/:
+				thisButton = "seven"
+				break
+			case ~/.*8.*/:
+				thisButton = "eight"
+				break
+			case ~/.*9.*/:
+				thisButton = "nine"
+				break
+			case ~/.*10.*/:
+				thisButton = "ten"
+				break
+			case ~/.*11.*/:
+				thisButton = "eleven"
+				break
+			case ~/.*12.*/:
+				thisButton = "twelve"
+				break
+			case ~/.*13.*/:
+				thisButton = "thirteen"
+				break
+			case ~/.*14.*/:
+				thisButton = "fourteen"
+				break
+			case ~/.*15.*/:
+				thisButton = "fifteen"
+				break
+			case ~/.*16.*/:
+				thisButton = "sixteen"
+				break
+			case ~/.*17.*/:
+				thisButton = "seventeen"
+				break
+			case ~/.*18.*/:
+				thisButton = "eighteen"
+				break
+			case ~/.*19.*/:
+				thisButton = "nineteen"
+				break
+			case ~/.*20.*/:
+				thisButton = "twenty"
 				break
 		}
 //	} else {
