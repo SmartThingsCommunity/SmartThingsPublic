@@ -3,7 +3,7 @@
  *
  *  Copyright 2015 Bruce Ravenel
  *
- *  Version 1.7.3a   2 Feb 2016
+ *  Version 1.7.3b   2 Feb 2016
  *
  *	Version History
  *
@@ -80,7 +80,7 @@ preferences {
 def selectRule() {
 	//version to parent app and expert settings for rule
 	try { 
-		state.isExpert = parent.isExpert("1.7.3a") 
+		state.isExpert = parent.isExpert("1.7.3b") 
 		if (state.isExpert) state.cstCmds = parent.getCommands()
 		else state.cstCmds = []
 	}
@@ -293,11 +293,12 @@ def getDevs(myCapab, dev, multi) {
 }
 
 def getButton(dev) {
-	def numNames = ["one", "two", "three", "four", "five", "six", "seven"]
+	def numNames = ["one", "two", "three", "four", "five", "six", "seven", "eight", "nine", "ten",
+    	"eleven", "twelve", "thirteen", "fourteen", "fifteen", "sixteen", "seventeen", "eighteen", "nineteen", "twenty"]
  	def result = input "$dev", "capability.button", title: "Button Device", required: true, multiple: false, submitOnChange: true
     def thisDev = settings.find{it.key == "$dev"}
 	if(thisDev) {
-        input "numButtons$dev", "number", title: "Number of buttons? (Default 4)", range: "1..7", required: false, submitOnChange: true, description: "4"
+        input "numButtons$dev", "number", title: "Number of buttons? (Default 4)", range: "1..20", required: false, submitOnChange: true, description: "4"
         def numButtons = settings.find{it.key == "numButtons$dev"}
         numButtons = numButtons ? numButtons.value : 4
         def butOpts = ["one"]
@@ -1624,9 +1625,10 @@ def doTrigger() {
 }
 
 def getButton(dev, evt, i) {
-	def numNames = ["", "one", "two", "three", "four", "five", "six", "seven"]
+	def numNames = ["", "one", "two", "three", "four", "five", "six", "seven", "eight", "nine", "ten",
+    	"eleven", "twelve", "thirteen", "fourteen", "fifteen", "sixteen", "seventeen", "eighteen", "nineteen", "twenty"]
 	def buttonNumber = evt.jsonData.buttonNumber 
-	def value = evt.value
+    def value = evt.value
 //	log.debug "buttonEvent: $evt.name = $evt.value ($evt.data)"
 //	log.debug "button: $buttonNumber, value: $value"
 //	log.debug "button json: $evt.jsonData.buttonNumber"
@@ -1644,7 +1646,9 @@ def getButton(dev, evt, i) {
 	}
 	def myState = settings.find {it.key == (state.isTrig ? "state$i" : "tstate$i")}
 	def myButton = settings.find {it.key == (state.isTrig ? "ButtonrDev$i" : "ButtontDev$i")}
-	def result = (evt.value == myState.value) && (thisButton == myButton.value)
+    def result = true
+    if(value in ["pushed", "held"]) result = (value == myState.value) && (thisButton == myButton.value)
+    else result = thisButton == myButton.value
 }
 
 def testEvt(evt) {
