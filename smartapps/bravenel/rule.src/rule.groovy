@@ -3,10 +3,11 @@
  *
  *  Copyright 2015 Bruce Ravenel
  *
- *  Version 1.7.3b   2 Feb 2016
+ *  Version 1.7.4   2 Feb 2016
  *
  *	Version History
  *
+ *	1.7.4	2 Feb 2016		Redesign of UI to make it clearer between Triggers and Rules
  *	1.7.3	2 Feb 2016		Bug fix for multi-button device with more than 4 buttons
  *	1.7.2	31 Jan 2016		Added mode based dimming action, and cause rule actions action
  *	1.7.1	30 Jan 2016		Added support for more buttons than 4 on button device, now as many as 20
@@ -57,7 +58,10 @@ definition(
 )
 
 preferences {
+	page(name: "firstPage")
 	page(name: "selectRule")
+	page(name: "selectRule2")
+    page(name: "selectActions")
 	page(name: "selectTriggers")
 	page(name: "selectConditions")
 	page(name: "defineRule")
@@ -76,15 +80,33 @@ preferences {
 //
 //	
 //
-
-def selectRule() {
+def firstPage() {
 	//version to parent app and expert settings for rule
 	try { 
-		state.isExpert = parent.isExpert("1.7.3b") 
+		state.isExpert = parent.isExpert("1.7.4") 
 		if (state.isExpert) state.cstCmds = parent.getCommands()
 		else state.cstCmds = []
 	}
 	catch (e) {log.error "Please update Rule Machine to V1.6 or later"}
+    def myTitle = "Select Trigger, Rule or Actions"
+    if(state.howManyT > 1) myTitle = "Define a Trigger"
+    else if(state.howMany > 1) myTitle = "Define a Rule"
+    else if(app.label != null) myTitle = "Define Actions"
+    dynamicPage(name: "firstPage", title: myTitle, uninstall: false, install: false) {
+    	section() {
+        	if(state.isTrig || state.howManyT > 1) href "selectRule", title: "Define a Trigger", description: app.label, state: "complete"
+            else if(state.isRule || state.howMany > 1) href "selectRule2", title: "Define a Rule", description: app.label, state: "complete"
+            else if(app.label != null) href "selectActions", title: "Define just Actions", description: app.label, state: "complete"
+            else {
+            	href "selectRule", title: "Define a Trigger"
+                href "selectRule2", title: "Define a Rule"
+                href "selectActions", title: "Define just Actions"
+            }
+        }
+    }
+}
+
+def selectRule() {
 	def myTitle = "Select Triggers, Conditions, Rule and Actions"
 	if(state.isRule) myTitle = "Select Conditions, Rule and Actions"
 	if(state.isTrig) myTitle = "Select Triggers and Actions"
@@ -121,7 +143,8 @@ def selectRule() {
 			section() { 
 				label title: "Name the Rule", required: true
 				def trigLabel = triggerLabel()
-				href "selectTriggers", title: "Define Triggers " + (state.howManyT in [null, 1] ? "(Optional)" : ""), description: trigLabel ? (trigLabel) : "Tap to set", state: trigLabel ? "complete" : null, submitOnChange: true
+//				href "selectTriggers", title: "Define Triggers " + (state.howManyT in [null, 1] ? "(Optional)" : ""), description: trigLabel ? (trigLabel) : "Tap to set", state: trigLabel ? "complete" : null, submitOnChange: true
+				href "selectTriggers", title: "Define Triggers ", description: trigLabel ? (trigLabel) : "Tap to set", state: trigLabel ? "complete" : null, submitOnChange: true
 				def condLabel = conditionLabel()
 				href "selectConditions", title: "Define Conditions " + (state.howMany in [null, 1] ? "(Optional)" : ""), description: condLabel ? (condLabel) : "Tap to set", state: condLabel ? "complete" : null, submitOnChange: true
 				def ruleLabel = rulLabl()
@@ -141,6 +164,40 @@ def selectRule() {
                 if(disabled) input "disabledOff", "bool", title: "Disable when Off? On is default", required: false, defaultValue: false
 			}    
 		}
+	}
+}
+
+def selectRule2() {
+	dynamicPage(name: "selectRule", title: "Select Conditions, Rule and Actions", uninstall: true, install: true) {
+			section() { 
+				label title: "Name the Rule", required: true
+				def condLabel = conditionLabel()
+				href "selectConditions", title: "Define Conditions ", description: condLabel ? (condLabel) : "Tap to set", state: condLabel ? "complete" : null, submitOnChange: true
+				def ruleLabel = rulLabl()
+				if(state.howMany > 1) 
+					href "defineRule", title: "Define a Rule", description: ruleLabel ? (ruleLabel) : "Tap to set", state: ruleLabel ? "complete" : null, submitOnChange: true
+				href "selectActionsTrue", title: "Select Actions" + (state.howMany > 1 ? " for True" : ""), description: state.actsTrue ? state.actsTrue : "Tap to set", state: state.actsTrue ? "complete" : null, submitOnChange: true
+				if(state.howMany > 1)
+					href "selectActionsFalse", title: "Select Actions for False", description: state.actsFalse ? state.actsFalse : "Tap to set", state: state.actsFalse ? "complete" : null, submitOnChange: true
+			}
+			section(title: "More options", hidden: hideOptionsSection(), hideable: true) {
+				def timeLabel = timeIntervalLabel()
+				href "certainTime", title: "Only during a certain time", description: timeLabel ?: "Tap to set", state: timeLabel ? "complete" : null
+				input "daysY", "enum", title: "Only on certain days of the week", multiple: true, required: false,
+					options: ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"]
+				input "modesY", "mode", title: "Only when mode is", multiple: true, required: false            
+				input "disabled", "capability.switch", title: "Switch to disable Rule", required: false, multiple: false, submitOnChange: true
+                if(disabled) input "disabledOff", "bool", title: "Disable when Off? On is default", required: false, defaultValue: false
+			}    
+	}
+}
+
+def selectActions() {
+	dynamicPage(name: "selectActions", title: "Select Actions", uninstall: true, install: true) {
+			section() { 
+				label title: "Name the Rule", required: true
+				href "selectActionsTrue", title: "Select Actions", description: state.actsTrue ? state.actsTrue : "Tap to set", state: state.actsTrue ? "complete" : null, submitOnChange: true
+			}
 	}
 }
 
