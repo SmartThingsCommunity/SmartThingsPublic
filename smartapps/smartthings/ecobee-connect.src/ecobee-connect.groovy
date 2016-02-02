@@ -798,10 +798,10 @@ def scheduleHandlers(evt=null) {
     }    
     
     // Reschedule Authrefresh if we are over the grace period    
-	if ( (timeSinceLastScheduledRefresh == 0)  || (timeBeforeExpiry <= state.tokenGrace) || (!state.initialized) ) {
+	if ( (timeSinceLastScheduledRefresh == 0)  || (timeSinceLastScheduledRefresh >= state.tokenGrace) || (!state.initialized) ) {
     	unschedule("refreshAuthTokenScheduled")
-		runEvery15Minutes("refreshAuthTokenScheduled")        
-        refreshAuthTokenScheduled()        
+		runEvery15Minutes("refreshAuthTokenScheduled")
+        if ( readyForAuthRefresh() ) refreshAuthTokenScheduled()
 	}    
 }
 
