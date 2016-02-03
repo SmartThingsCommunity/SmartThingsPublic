@@ -3,7 +3,7 @@
  *
  *  Copyright 2015 Bruce Ravenel
  *
- *  Version 1.7.4   2 Feb 2016
+ *  Version 1.7.4a   2 Feb 2016
  *
  *	Version History
  *
@@ -83,7 +83,7 @@ preferences {
 def firstPage() {
 	//version to parent app and expert settings for rule
 	try { 
-		state.isExpert = parent.isExpert("1.7.4") 
+		state.isExpert = parent.isExpert("1.7.4a") 
 		if (state.isExpert) state.cstCmds = parent.getCommands()
 		else state.cstCmds = []
 	}
@@ -1705,7 +1705,7 @@ def getButton(dev, evt, i) {
 	def myButton = settings.find {it.key == (state.isTrig ? "ButtonrDev$i" : "ButtontDev$i")}
     def result = true
     if(value in ["pushed", "held"]) result = (value == myState.value) && (thisButton == myButton.value)
-    else result = thisButton == myButton.value
+    else if(value.startsWith("button")) result = thisButton == myButton.value // ZWN-SC7
 }
 
 def testEvt(evt) {
