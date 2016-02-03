@@ -3,7 +3,7 @@
  *
  *  Copyright 2015 Bruce Ravenel
  *
- *  Version 1.7.5   3 Feb 2016
+ *  Version 1.7.5a   3 Feb 2016
  *
  *	Version History
  *
@@ -84,7 +84,7 @@ preferences {
 def firstPage() {
 	//version to parent app and expert settings for rule
 	try { 
-		state.isExpert = parent.isExpert("1.7.5") 
+		state.isExpert = parent.isExpert("1.7.5a") 
 		if (state.isExpert) state.cstCmds = parent.getCommands()
 		else state.cstCmds = []
 	}
@@ -97,7 +97,7 @@ def firstPage() {
     	section() {
         	if(state.isTrig || state.howManyT > 1) href "selectRule", title: "Define a Trigger", description: app.label, state: "complete"
             else if(state.isRule || state.howMany > 1) href "selectRule2", title: "Define a Rule", description: app.label, state: "complete"
-            else if(app.label != null) href "selectActions", title: "Define just Actions", description: app.label, state: "complete"
+            else if(app.label != "Rule" && app.label != null) href "selectActions", title: "Define just Actions", description: app.label, state: "complete"
             else {
             	href "selectRule", title: "Define a Trigger"
                 href "selectRule2", title: "Define a Rule"
