@@ -3,10 +3,11 @@
  *
  *  Copyright 2015 Bruce Ravenel
  *
- *  Version 1.7.4a   2 Feb 2016
+ *  Version 1.7.5   3 Feb 2016
  *
  *	Version History
  *
+ *	1.7.5	3 Feb 2016		Removed use of unschedule() for delay cancel, to avoid ST issues
  *	1.7.4	2 Feb 2016		Redesign of UI to make it clearer between Triggers and Rules
  *	1.7.3	2 Feb 2016		Bug fix for multi-button device with more than 4 buttons
  *	1.7.2	31 Jan 2016		Added mode based dimming action, and cause rule actions action
@@ -83,7 +84,7 @@ preferences {
 def firstPage() {
 	//version to parent app and expert settings for rule
 	try { 
-		state.isExpert = parent.isExpert("1.7.4a") 
+		state.isExpert = parent.isExpert("1.7.5") 
 		if (state.isExpert) state.cstCmds = parent.getCommands()
 		else state.cstCmds = []
 	}
@@ -828,10 +829,10 @@ def selectActionsTrue() {
 				input "pendedOffTrue", "capability.switch", title: "Turn on/off these switches after a delay, pending cancellation (default is OFF)", multiple: true, required: false, submitOnChange: true
 				if(pendedOffTrue) {
 					input "pendOnOffTrue", "bool", title: "Turn ON after the delay?", multiple: false, required: false, defaultValue: false, submitOnChange: true
-					input "pendMinutesTrue", "number", title: "Minutes of delay", required: true, range: "1..*", submitOnChange: true
-					if(pendMinutesTrue) {
+					input "pendMinutesTrue", "number", title: "Minutes of delay", required: true, range: "0..*", submitOnChange: true
+					if(pendMinutesTrue != null) {
 						def pendStrTrue = "Pending "+ (pendOnOffTrue ? "On:" : "Off:") + " $pendedOffTrue: $pendMinutesTrue minute"
-						if(pendMinutesTrue > 1) pendStrTrue = pendStrTrue + "s"
+						if(pendMinutesTrue > 1 || pendMinutesTrue == 0) pendStrTrue = pendStrTrue + "s"
 						setActTrue(pendStrTrue)
 					}
 				}
@@ -989,10 +990,10 @@ def selectActionsFalse() {
 				input "pendedOffFalse", "capability.switch", title: "Turn on/off these switches after a delay, pending cancellation (default is OFF)", multiple: true, required: false, submitOnChange: true
 				if(pendedOffFalse) {
 					input "pendOnOffFalse", "bool", title: "Turn ON after the delay?", multiple: false, required: false, defaultValue: false, submitOnChange: true
-					input "pendMinutesFalse", "number", title: "Minutes of delay", required: true, range: "1..*", submitOnChange: true
-					if(pendMinutesFalse) {
+					input "pendMinutesFalse", "number", title: "Minutes of delay", required: true, range: "0..*", submitOnChange: true
+					if(pendMinutesFalse != null) {
 						def pendStrFalse = "Pending "+ (pendOnOffFalse ? "On:" : "Off:") + " $pendedOffFalse: $pendMinutesFalse minute"
-						if(pendMinutesFalse > 1) pendStrFalse = pendStrFalse + "s"
+						if(pendMinutesFalse > 1 || pendMinutesFalse == 0) pendStrFalse = pendStrFalse + "s"
 						setActFalse(pendStrFalse)
 					}
 				}
@@ -1542,8 +1543,10 @@ def sendSmsMulti(phone, msg) {
 def doDelayTrue(time, rand, cancel) {
 	def myTime = time
 	if(rand) myTime = Math.random()*time
-	if(cancel) runIn(myTime, delayRuleTrue)
-	else runIn(myTime, delayRuleTrueForce)
+	if(cancel) {
+    	runIn(myTime, delayRuleTrue)
+        state.delayRuleTrue = true
+	} else runIn(myTime, delayRuleTrueForce)
 	def isMins = time % 60 == 0
 	if(isMins) time = time / 60
 	def delayStr = isMins ? "minute" : "seconds"
@@ -1555,8 +1558,10 @@ def doDelayTrue(time, rand, cancel) {
 def doDelayFalse(time, rand, cancel) {
 	def myTime = time
 	if(rand) myTime = Math.random()*time
-	if(cancel) runIn(myTime, delayRuleFalse)
-	else runIn(myTime, delayRuleFalseForce)
+	if(cancel) {
+    	runIn(myTime, delayRuleFalse)
+        state.delayRuleFalse = true
+	} else runIn(myTime, delayRuleFalseForce)
 	def isMins = time % 60 == 0
 	if(isMins) time = time / 60
 	def delayStr = isMins ? "minute" : "seconds"
@@ -1572,8 +1577,9 @@ def takeAction(success) {
 		if(toggleSwitchTrue)	toggle(toggleSwitchTrue, true)
 		if(delayedOffTrue)	{   if(delayMinutesTrue) runIn(delayMinutesTrue * 60, delayOffTrue)
 								if(delayMillisTrue) {if(delayOnOffTrue) delayedOffTrue.on([delay: delayMillisTrue]) else delayedOffTrue.off([delay: delayMillisTrue])}   }
-		if(pendedOffTrue)		runIn(pendMinutesTrue * 60, pendingOffTrue)
-		if(pendedOffFalse)		unschedule(pendingOffFalse)
+		if(pendedOffTrue)		{state.pendingOffTrue = true
+        						if(pendMinutesTrue > 0) runIn(pendMinutesTrue * 60, pendingOffTrue) else pendingOffTrue()}
+		if(pendedOffFalse)		state.pendingOffFalse = false  //unschedule(pendingOffFalse)
         if(dimTrackTrue && dimATrue != null) if(state.lastEvtLevel != null) {if(delayMilTrue) dimATrue.setLevel(state.lastEvtLevel, [delay: delayMilTrue]) else dimATrue.setLevel(state.lastEvtLevel)}
 		if(dimATrue && dimLATrue != null) if(delayMilTrue) dimATrue.setLevel(dimLATrue, [delay: delayMilTrue]) else dimATrue.setLevel(dimLATrue)
 		if(dimBTrue && dimLBTrue != null) if(delayMilTrue) dimBTrue.setLevel(dimLBTrue, [delay: delayMilTrue]) else dimBTrue.setLevel(dimLBTrue)
@@ -1611,8 +1617,9 @@ def takeAction(success) {
 		if(toggleSwitchFalse)	toggle(toggleSwitchFalse, false)
 		if(delayedOffFalse)	{ 	if(delayMinutesFalse) runIn(delayMinutesFalse * 60, delayOffFalse)
                 				if(delayMillisFalse) {if(delayOnOffFalse) delayedOffFalse.on([delay: delayMillisFalse]) else delayedOffFalse.off([delay: delayMillisFalse])}   }
-		if(pendedOffFalse)		runIn(pendMinutesFalse * 60, pendingOffFalse)
-		if(pendedOffTrue)		unschedule(pendingOffTrue)
+		if(pendedOffFalse)		{state.pendingOffFalse = true
+        						if(pendMinutesFalse > 0) runIn(pendMinutesFalse * 60, pendingOffFalse) else pendingOffFalse()}
+		if(pendedOffTrue)		state.pendingOffTrue = false  //unschedule(pendingOffTrue)
         if(dimTrackFalse && dimAFalse != null) if(state.lastEvtLevel != null) {if(delayMilFalse) dimAFalse.setLevel(state.lastEvtLevel, [delay: delayMilFalse]) else dimAFalse.setLevel(state.lastEvtLevel)}
 		if(dimAFalse && dimLAFalse != null) if(delayMilFalse) dimAFalse.setLevel(dimLAFalse, [delay: delayMilFalse]) else dimAFalse.setLevel(dimLAFalse)
 		if(dimBFalse && dimLBFalse != null) if(delayMilFalse) dimBFalse.setLevel(dimLBFalse, [delay: delayMilFalse]) else dimBFalse.setLevel(dimLBFalse)
@@ -1652,8 +1659,10 @@ def runRule(force) {
 	state.token = 0
 	def success = eval()
 	if((success != state.success) || force) {
-		unschedule(delayRuleTrue)
-		unschedule(delayRuleFalse)
+//		unschedule(delayRuleTrue)
+//		unschedule(delayRuleFalse)
+		state.delayRuleTrue = false
+        state.delayRuleFalse = false
 		if     (delayTrue > 0 && success)		doDelayTrue(delayTrue * 60, false, true)
 		else if(delayFalse > 0 && !success)		doDelayFalse(delayFalse * 60, false, true)
 		else if(delayMinTrue > 0 && success) 	doDelayTrue(delayMinTrue * 60, randTrue, cancelTrue)
@@ -1776,7 +1785,7 @@ def delayOffTrue() {
 }
 
 def pendingOffTrue() {
-	if(allOk) {if(pendOnOffTrue) pendedOffTrue.on() else pendedOffTrue.off()}
+	if(allOk && state.pendingOffTrue) {if(pendOnOffTrue) pendedOffTrue.on() else pendedOffTrue.off()}
 }
 
 def delayOffFalse() {
@@ -1784,11 +1793,11 @@ def delayOffFalse() {
 }
 
 def pendingOffFalse() {
-	if(allOk) {if(pendOnOffFalse) pendedOffFalse.on() else pendedOffFalse.off()}
+	if(allOk && state.pendingOffFalse) {if(pendOnOffFalse) pendedOffFalse.on() else pendedOffFalse.off()}
 }
 
 def delayRuleTrue() {
-	if(allOk) takeAction(true)
+	if(allOk && state.delayRuleTrue) takeAction(true)
 }
 
 def delayRuleTrueForce() {
@@ -1796,7 +1805,7 @@ def delayRuleTrueForce() {
 }
 
 def delayRuleFalse() {
-	if(allOk) takeAction(false)
+	if(allOk && state.delayRuleFalse) takeAction(false)
 }
 
 def delayRuleFalseForce() {
