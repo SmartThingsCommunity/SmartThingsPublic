@@ -2,7 +2,7 @@
  *  Alexa Helper-Child
  *
  *  Copyright © 2016 Michael Struck
- *  Version 2.3.0 1/28/16
+ *  Version 2.3.0a 2/2/16
  * 
  *  Version 1.0.0 - Initial release of child app
  *  Version 1.1.0 - Added framework to show version number of child app and copyright
@@ -39,8 +39,8 @@ definition(
 	iconX2Url: "https://raw.githubusercontent.com/MichaelStruck/SmartThings/master/Other-SmartApps/AlexaHelper/Alexa@2x.png",
 	iconX3Url: "https://raw.githubusercontent.com/MichaelStruck/SmartThings/master/Other-SmartApps/AlexaHelper/Alexa@2x.png")    
 preferences {
-	page name:"pageStart"
-	page name:"pageControl"
+	page name: "pageStart"
+	page name: "pageControl"
 	page name: "pageSTDevicesOn"
 	page name: "pageSTDevicesOff"
 	page name: "pageSpeaker"
@@ -268,7 +268,7 @@ def pageSpeaker(){
        		input "prevSwitch", "capability.momentary", title: "Previous Track Switch (Momentary)", multiple: false, required: false
     	}
         if (speaker && songOptions(1) && parent.getSonos() && speaker.name.contains("Sonos")){
-			for (int i = 1; i < sonosSlots(); i++) {
+			for (int i = 1; i <= sonosSlots(); i++) {
     			if (settings."song${i}Switch" || i==1 || settings."song${i-1}Switch" )
                 section ("Sonos Saved Station ${i}"){
 					input "song${i}Switch", "capability.momentary", title: "Saved Station Switch #${i} (Momentary)", multiple: false, required: false, submitOnChange:true
@@ -359,7 +359,7 @@ def initialize() {
             if (nextSwitch) {subscribe (nextSwitch, "switch.on", "controlNextHandler")}
         	if (prevSwitch) {subscribe (prevSwitch, "switch.on", "controlPrevHandler")} 
             if (parent.getSonos() && speaker.name.contains("Sonos")){
-                for (int i = 1; i < sonosSlots(); i++) {
+                for (int i = 1; i <= sonosSlots(); i++) {
                 	if (settings."song${i}Switch" && settings."song${i}Station"){
                     	subscribe (settings."song${i}Switch", "switch.on", "controlSong")
                     }
@@ -586,7 +586,7 @@ def controlPrevHandler(evt){
 def controlSong(evt){
 	def trigger = evt.displayName
     if (getOkToRun("Speaker Saved Song/Station Trigger: ${trigger}")) {
-       	for (int i = 1; i < sonosSlots(); i++) {
+       	for (int i = 1; i <= sonosSlots(); i++) {
         	if (settings."song${i}Switch" && trigger == settings."song${i}Switch".label){
         		speakerControl("station",state."selectedSong${i}")
             }
@@ -679,7 +679,8 @@ def changeMode(newMode) {
     if (location.mode != newMode) {
 		if (location.modes?.find{it.name == newMode}) {
 			setLocationMode(newMode)
-		} else {
+		} 
+        else {
 			log.debug "Unable to change to undefined mode '${newMode}'"
 		}
 	}
@@ -703,7 +704,7 @@ def scenarioDesc(){
     	desc = vDimmerSpeaker && speaker ? "'${vDimmerSpeaker}' dimmer controls '${speaker}' speaker": desc
         desc += nextSwitch ? "\n'${nextSwitch}' switch activates Next Track" : ""
         desc += prevSwitch ? "\n'${prevSwitch}' switch activates Previous Track" : ""
-        for (int i = 1; i < sonosSlots(); i++) {
+        for (int i = 1; i <= sonosSlots(); i++) {
         	desc += parent.getSonos() && (speaker && speaker.name.contains("Sonos")) && settings."song${i}Switch" && settings."song${i}Station" ? "\n'" + settings."song${i}Switch" + "' switch activates '" + settings."song${i}Station" + "'" : ""	
         }
     }
@@ -943,11 +944,10 @@ def getAlarmSound(){
 }
 private def sonosSlots(){
 	def count = 4
-    return count+1
 }
 //Version
 private def textVersion() {
-    def text = "Child App Version: 2.3.0 (01/28/2016)"
+    def text = "Child App Version: 2.3.0a (02/02/2016)"
 }
 private def versionInt(){
 	def text = 230
