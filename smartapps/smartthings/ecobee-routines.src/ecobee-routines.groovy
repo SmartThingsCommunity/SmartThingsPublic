@@ -15,7 +15,7 @@
  *
  */
 def getVersionNum() { return "0.1.0" }
-private def getVersionLabel() { return "ecobee Routines Version ${getVersionNum()}-RC2" }
+private def getVersionLabel() { return "ecobee Routines Version ${getVersionNum()}-RC5" }
 
 
 
@@ -23,7 +23,7 @@ definition(
 	name: "ecobee Routines",
 	namespace: "smartthings",
 	author: "Sean Kendall Schneyer (smartthings at linuxbox dot org)",
-	description: "Rule",
+	description: "Support for changing ecobee Programs based on SmartThings Mode changes",
 	category: "Convenience",
 	parent: "smartthings:Ecobee (Connect)",
 	iconUrl: "https://s3.amazonaws.com/smartapp-icons/Partner/ecobee.png",
