@@ -38,6 +38,7 @@ metadata {
                 attributeState "exitdelay", label:'Exit Delay', action: 'disarm', icon:"st.security.alarm.on", backgroundColor:"#ff9900"
                 attributeState "notready", label:'Open', icon:"st.security.alarm.off", backgroundColor:"#ffcc00"
                 attributeState "ready", label:'Ready', action: 'stay', icon:"st.security.alarm.off", backgroundColor:"#79b821"
+                attributeState "forceready", label:'Force Ready', action: 'stay', icon:"st.security.alarm.off", backgroundColor:"#79b821"
                 attributeState "stay", label:'Armed Stay', action: 'disarm', icon:"st.security.alarm.on", backgroundColor:"#008CC1"
                 attributeState "instantaway", label:'Armed Instant Away', action: 'stay', icon:"st.security.alarm.on", backgroundColor:"#800000"
                 attributeState "instantstay", label:'Armed Instant Stay', action: 'disarm', icon:"st.security.alarm.on", backgroundColor:"#008CC1"
