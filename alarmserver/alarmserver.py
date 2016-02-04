@@ -17,7 +17,6 @@ import hashlib
 import time
 import getopt
 import requests
-import urllib2
 
 from envisalinkdefs import evl_ResponseTypes
 from envisalinkdefs import evl_Defaults
@@ -94,81 +93,23 @@ class AlarmServerConfig():
         self.ALARMCODE = self.read_config_var('envisalink', 'alarmcode', 1111, 'int')
         self.EVENTTIMEAGO = self.read_config_var('alarmserver', 'eventtimeago', True, 'bool')
         self.LOGFILE = self.read_config_var('alarmserver', 'logfile', '', 'str')
-        self.APPTOKEN = self.read_config_var('alarmserver', 'apptoken', '', 'str')
-        self.ACCESSTOKEN = self.read_config_var('alarmserver', 'accesstoken', '', 'str')
-        self.ALARMTOKEN = self.read_config_var('alarmserver', 'alarmtoken', '', 'str')
-        self.STURL = self.read_config_var('alarmserver', 'smartthingsurl', '', 'str')
-
+        self.CALLBACKURL_BASE = self.read_config_var('alarmserver', 'callbackurl_base', '', 'str')
+        self.CALLBACKURL_APP_ID = self.read_config_var('alarmserver', 'callbackurl_app_id', '', 'str')
+        self.CALLBACKURL_ACCESS_TOKEN = self.read_config_var('alarmserver', 'callbackurl_access_token', '', 'str')
+        self.CALLBACKURL_EVENT_CODES = self.read_config_var('alarmserver', 'callbackurl_event_codes', '', 'str')
         global LOGTOFILE
         if self.LOGFILE == '':
             LOGTOFILE = False
         else:
             LOGTOFILE = True
 
-        self.ALARMSTAY={}
-        self.ALARMAWAY={}
-        self.ALARMOFF={}
-        self.ALARMEXITDELAY={}
-        self.ALARMENTRYDELAY={}
-        self.ALARMNOTREADY={}
-        self.ALARMREADY={}
-        self.ALARMACTIVE={}
-        for i in range(1, 99):
-            token=self.read_config_var('alarm'+str(i), 'token', False, 'str', True)
-            type=self.read_config_var('alarm'+str(i), 'type', 'switches', 'str', True)
-            away=self.read_config_var('alarm'+str(i), 'away', False, 'str', True)
-            stay=self.read_config_var('alarm'+str(i), 'stay', False, 'str', True)
-            off=self.read_config_var('alarm'+str(i), 'off', False, 'str', True)
-            exitdelay=self.read_config_var('alarm'+str(i), 'exitdelay', False, 'str', True)
-            entrydelay=self.read_config_var('alarm'+str(i), 'entrydelay', False, 'str', True)
-            notready=self.read_config_var('alarm'+str(i), 'notready', False, 'str', True)
-            ready=self.read_config_var('alarm'+str(i), 'ready', False, 'str', True)
-            alarm=self.read_config_var('alarm'+str(i), 'alarm', False, 'str', True)
-            if token:
-                if stay:
-                    self.ALARMSTAY[i]=self.STURL+self.APPTOKEN+'/'+type+'/'+token+'/'+stay+'?access_token='+self.ACCESSTOKEN
-                if away:
-                    self.ALARMAWAY[i]=self.STURL+self.APPTOKEN+'/'+type+'/'+token+'/'+away+'?access_token='+self.ACCESSTOKEN
-                if off:
-                    self.ALARMOFF[i]=self.STURL+self.APPTOKEN+'/'+type+'/'+token+'/'+off+'?access_token='+self.ACCESSTOKEN
-                if exitdelay:
-                    self.ALARMEXITDELAY[i]=self.STURL+self.APPTOKEN+'/'+type+'/'+token+'/'+exitdelay+'?access_token='+self.ACCESSTOKEN
-                if entrydelay:
-                    self.ALARMENTRYDELAY[i]=self.STURL+self.APPTOKEN+'/'+type+'/'+token+'/'+entrydelay+'?access_token='+self.ACCESSTOKEN
-                if notready:
-                    self.ALARMNOTREADY[i]=self.STURL+self.APPTOKEN+'/'+type+'/'+token+'/'+notready+'?access_token='+self.ACCESSTOKEN
-                if ready:
-                    self.ALARMREADY[i]=self.STURL+self.APPTOKEN+'/'+type+'/'+token+'/'+ready+'?access_token='+self.ACCESSTOKEN
-                if alarm:
-                    self.ALARMACTIVE[i]=self.STURL+self.APPTOKEN+'/'+type+'/'+token+'/'+alarm+'?access_token='+self.ACCESSTOKEN
-
-        self.ZONEOPEN={}
-        self.ZONECLOSE={}
-        for i in range(1, MAXZONES+1):
-            zonetype = self.read_config_var('zone'+str(i), 'type', False, 'str', True)
-            if zonetype == 'contact':
-              type = 'contactsensors'
-              open = 'open'
-              close = 'closed'
-            elif zonetype == 'motion':
-              type = 'motionsensors'
-              open = 'active'
-              close = 'inactive'
-
-            if zonetype:
-              self.ZONEOPEN[i]=self.STURL+self.APPTOKEN+'/'+type+'/'+self.read_config_var('zone'+str(i), 'token', False, 'str', True)+'/'+open+'?access_token='+self.ACCESSTOKEN
-              self.ZONECLOSE[i]=self.STURL+self.APPTOKEN+'/'+type+'/'+self.read_config_var('zone'+str(i), 'token', False, 'str', True)+'/'+close+'?access_token='+self.ACCESSTOKEN
-            else:
-              self.ZONEOPEN[i]=False
-              self.ZONECLOSE[i]=False
- 
         self.PARTITIONNAMES={}
         for i in range(1, MAXPARTITIONS+1):
             self.PARTITIONNAMES[i]=self.read_config_var('alarmserver', 'partition'+str(i), False, 'str', True)
 
         self.ZONENAMES={}
         for i in range(1, MAXZONES+1):
-            self.ZONENAMES[i]=self.read_config_var('zone'+str(i), 'description', False, 'str', True)
+            self.ZONENAMES[i]=self.read_config_var('alarmserver', 'zone'+str(i), False, 'str', True)
 
         self.ALARMUSERNAMES={}
         for i in range(1, MAXALARMUSERS+1):
@@ -439,100 +380,50 @@ class EnvisalinkClient(asynchat.async_chat):
         self.handle_event(code, parameters[0], event, message)
 
     def callbackurl_event(self, code, parameters, event, message):
-        alarmserver_logger('Did a callback!')
-        if parameters.isdigit()==True:
-                if self._config.ZONEOPEN[int(parameters)]!=False:
-                        alarmserver_logger(str(code))
-                        if str(code) == "609":
-                                try:
-                                        response = urllib2.urlopen(str(self._config.ZONEOPEN[int(parameters)]))
-                                        html = response.read()
-                                        alarmserver_logger(str(self._config.ZONEOPEN[int(parameters)]))
-                                except:
-                                        alarmserver_logger("Failed to connect to SmartThings")    
-                        elif str(code) == "610":
-                                try:
-                                        response = urllib2.urlopen(str(self._config.ZONECLOSE[int(parameters)]))
-                                        html = response.read()
-                                        alarmserver_logger(str(self._config.ZONECLOSE[int(parameters)]))
-                                except:
-                                        alarmserver_logger("Failed to connect to SmartThings")
-                        #Alarm Ready
-                        elif str(code) == "650":
-                                try:
-                                        for i in self._config.ALARMREADY:
-                                            response = urllib2.urlopen(str(self._config.ALARMREADY[i]))
-                                            html = response.read()
-                                            alarmserver_logger(str(self._config.ALARMREADY[i]))
-                                except:
-                                        alarmserver_logger("Failed to connect to SmartThings")
-                        #Alarm Not Ready
-                        elif str(code) == "651":
-                                try:
-                                        for i in self._config.ALARMNOTREADY:
-                                            response = urllib2.urlopen(str(self._config.ALARMNOTREADY[i]))
-                                            html = response.read()
-                                            alarmserver_logger(str(self._config.ALARMNOTREADY[i]))
-                                except:
-                                        alarmserver_logger("Failed to connect to SmartThings")
-                        #Alarm Active (Alarm Tripped)
-                        elif str(code) == "654":
-                                try:
-                                        for i in self._config.ALARMACTIVE:
-                                            response = urllib2.urlopen(str(self._config.ALARMACTIVE[i]))
-                                            html = response.read()
-                                            alarmserver_logger(str(self._config.ALARMACTIVE[i]))
-                                except:
-                                        alarmserver_logger("Failed to connect to SmartThings")
-                        #Alarm Disarm
-                        elif str(code) == "655":
-                                try:
-                                        for i in self._config.ALARMOFF:
-                                            response = urllib2.urlopen(str(self._config.ALARMOFF[i]))
-                                            html = response.read()
-                                            alarmserver_logger(str(self._config.ALARMOFF[i]))
-                                except:
-                                        alarmserver_logger("Failed to connect to SmartThings")
-                        #Exit Delay
-                        elif str(code) == "656":
-                                try:
-                                        for i in self._config.ALARMEXITDELAY:
-                                            response = urllib2.urlopen(str(self._config.ALARMEXITDELAY[i]))
-                                            html = response.read()
-                                            alarmserver_logger(str(self._config.ALARMEXITDELAY[i]))
-                                except:
-                                        alarmserver_logger("Failed to connect to SmartThings")
-                        #Entry Delay
-                        elif str(code) == "657":
-                                try:
-                                        for i in self._config.ALARMENTRYDELAY:
-                                            response = urllib2.urlopen(str(self._config.ALARMENTRYDELAY[i]))
-                                            html = response.read()
-                                            alarmserver_logger(str(self._config.ALARMENTRYDELAY[i]))
-                                except:
-                                        alarmserver_logger("Failed to connect to SmartThings")
+        myEvents = self._config.CALLBACKURL_EVENT_CODES.split(',')
+        # Determin what events we are sending to smartthings then send if we match
+        if str(code) in myEvents:
+           # Now check if Zone has a custom name, if it does then send notice to Smartthings
+           # Check for event type
+           if event['type'] == 'partition':
+             # Is our partition setup with a custom name?
+             if int(parameters[0]) in self._config.PARTITIONNAMES:
+               armmode=''
+               if str(code) == '652':
+                 if message.endswith('Zero Entry Away'):
+                   armmode=2
+                 elif message.endswith('Zero Entry Stay'):
+                   armmode=3
+                 elif message.endswith('Away'):
+                   armmode=0
+                 elif message.endswith('Stay'):
+                   armmode=1
 
-                        #Alarm Armed
-                        elif str(code) == "652":
-                                if message.endswith("Away"):
-                                        # Turn on away
-                                        try:
-                                                for i in self._config.ALARMAWAY:
-                                                    response = urllib2.urlopen(str(self._config.ALARMAWAY[i]))
-                                                    html = response.read()
-                                                    alarmserver_logger(str(self._config.ALARMAWAY[i]))
-                                        except:
-                                                alarmserver_logger("Failed to connect to SmartThings")
-                                elif message.endswith("Stay"):
-                                        # Turn on stay
-                                        try:
-                                                for i in self._config.ALARMSTAY:
-                                                    response = urllib2.urlopen(str(self._config.ALARMSTAY[i]))
-                                                    html = response.read()
-                                                    alarmserver_logger(str(self._config.ALARMSTAY[i]))
-                                        except:
-                                                alarmserver_logger("Failed to connect to SmartThings")
+               myURL = self._config.CALLBACKURL_BASE + '/' + self._config.CALLBACKURL_APP_ID + '/panel/' + str(code) + str(armmode) + '/' + str(int(parameters[0])) + '?access_token=' + self._config.CALLBACKURL_ACCESS_TOKEN
+             else:
+               # We don't care about this partition
+               return
+           elif event['type'] == 'zone':
+             # Is our zone setup with a custom name, if so we care about it
+             if self._config.ZONENAMES[int(parameters)]:
+               myURL = self._config.CALLBACKURL_BASE + '/' + self._config.CALLBACKURL_APP_ID + '/panel/' + str(code) + '/' + str(int(parameters)) + '?access_token=' + self._config.CALLBACKURL_ACCESS_TOKEN
+             else:
+               # We don't care about this zone
+               return
+           else:
+             # Unhandled event type..
+             return
 
+           # If we made it here we should send to Smartthings
+           try:
+             # Note: I don't currently care about the return value, fire and forget right now
+             requests.get(myURL)
+             print "myURL: ", myURL
+             #print "Exit code: ", r.status_code
+             #print "Response data: ", r.text
+             time.sleep(0.5)
+           except:
+             print sys.exc_info()[0]
 
 class push_FileProducer:
     # a producer which reads data from a file object

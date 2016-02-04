@@ -1,5 +1,5 @@
 /**
- *  Alarm Control Center
+ *  DSC Stay Panel
  *
  *  Author: Jordan <jordan@xeron.cc
  *  Original Code By: Rob Fisher <robfish@att.net>, Carlos Santiago <carloss66@gmail.com>, JTT <aesystems@gmail.com>
@@ -14,19 +14,12 @@ preferences {
  
 metadata {
     // Automatically generated. Make future change here.
-    definition (name: "Alarm Control Center", author: "Jordan <jordan@xeron.cc>") {
+    definition (name: "DSC Stay Panel", author: "Jordan <jordan@xeron.cc>") {
         capability "Switch"
         
-        command "awayswitch"
-        command "disarmswitch"
-        command "stayswitch"
-        command "alarm"
         command "away"
         command "disarm"
-        command "entrydelay"
-        command "exitdelay"
-        command "notready"
-        command "ready"
+        command "partition"
         command "stay"
     }
 
@@ -38,24 +31,26 @@ metadata {
     tiles(scale: 2) {
         multiAttributeTile(name:"status", type: "generic", width: 6, height: 4){
             tileAttribute ("device.switch", key: "PRIMARY_CONTROL") {
-                attributeState "alarm", label:'Alarm', icon:"st.security.alarm.off", backgroundColor:"#ff0000"
-                attributeState "arm", label:'Armed Away', icon:"st.security.alarm.on", backgroundColor:"#800000"
+                attributeState "alarm", label:'Alarm', action: 'disarm', icon:"st.security.alarm.off", backgroundColor:"#ff0000"
+                attributeState "away", label:'Armed Away', action: 'disarm', icon:"st.security.alarm.on", backgroundColor:"#800000"
                 attributeState "disarm", label:'Disarmed', icon:"st.security.alarm.off", backgroundColor:"#79b821"
-                attributeState "entrydelay", label:'Entry Delay', icon:"st.security.alarm.on", backgroundColor:"#ff9900"
-                attributeState "exitdelay", label:'Exit Delay', icon:"st.security.alarm.on", backgroundColor:"#ff9900"
+                attributeState "entrydelay", label:'Entry Delay', action: 'disarm', icon:"st.security.alarm.on", backgroundColor:"#ff9900"
+                attributeState "exitdelay", label:'Exit Delay', action: 'disarm', icon:"st.security.alarm.on", backgroundColor:"#ff9900"
                 attributeState "notready", label:'Open', icon:"st.security.alarm.off", backgroundColor:"#ffcc00"
-                attributeState "ready", label:'Ready', icon:"st.security.alarm.off", backgroundColor:"#79b821"
-                attributeState "stay", label:'Armed Stay', icon:"st.security.alarm.on", backgroundColor:"#008CC1"
+                attributeState "ready", label:'Ready', action: 'stay', icon:"st.security.alarm.off", backgroundColor:"#79b821"
+                attributeState "stay", label:'Armed Stay', action: 'disarm', icon:"st.security.alarm.on", backgroundColor:"#008CC1"
+                attributeState "instantaway", label:'Armed Instant Away', action: 'disarm', icon:"st.security.alarm.on", backgroundColor:"#800000"
+                attributeState "instantstay", label:'Armed Instant Stay', action: 'disarm', icon:"st.security.alarm.on", backgroundColor:"#008CC1"
             }
         }
         standardTile("disarm", "capability.momentary", width: 2, height: 2, title: "Disarm", required: true, multiple: false){
-            state "disarm", label: 'Disarm', action: "disarmswitch", icon: "st.Home.home4", backgroundColor: "#79b821"
+            state "disarm", label: 'Disarm', action: "disarm", icon: "st.Home.home4", backgroundColor: "#79b821"
         }
         standardTile("away", "capability.momentary", width: 2, height: 2, title: "Armed Away", required: true, multiple: false){
-            state "away", label: 'Arm Away', action: "awayswitch", icon: "st.Home.home4", backgroundColor: "#800000"
+            state "away", label: 'Arm Away', action: "away", icon: "st.Home.home4", backgroundColor: "#800000"
         }
         standardTile("stay", "capability.momentary", width: 2, height: 2, title: "Armed Stay", required: true, multiple: false){
-            state "stay", label: 'Arm Stay', action: "stayswitch", icon: "st.Home.home4", backgroundColor: "#008CC1"
+            state "stay", label: 'Arm Stay', action: "stay", icon: "st.Home.home4", backgroundColor: "#008CC1"
         }
 
         main (["status", "away", "stay", "disarm"])
@@ -67,7 +62,15 @@ metadata {
 def parse(String description) {
 }
 
-def stayswitch() {
+def partition(String state, String partition) {
+    // state will be a valid state for the panel (ready, notready, armed, etc)
+    // partition will be a partition number, for most users this will always be 1
+
+    log.debug "Partition: ${state} for partition: ${partition}"
+    sendEvent (name: "switch", value: "${state}")
+}
+
+def stay() {
     def result = new physicalgraph.device.HubAction(
         method: "GET",
         path: "/api/alarm/stayarm",
@@ -82,7 +85,7 @@ def stayswitch() {
     return result
 }
 
-def awayswitch() {
+def away() {
     def result = new physicalgraph.device.HubAction(
         method: "GET",
         path: "/api/alarm/arm",
@@ -99,12 +102,14 @@ def awayswitch() {
 
 
 def on() {
+    stay()
 }
 
 def off() {
+    disarm()
 }
 
-def disarmswitch() {
+def disarm() {
     def result = new physicalgraph.device.HubAction(
         method: "GET",
         path: "/api/alarm/disarm",
@@ -117,36 +122,4 @@ def disarmswitch() {
     //log.debug "disarm"
     //sendEvent (name: "switch", value: "disarm")
     return result
-}
-
-def away() {
-    sendEvent (name: "switch", value: "away")
-}
-
-def stay() {
-    sendEvent (name: "switch", value: "stay")
-}
-
-def disarm() {
-    sendEvent (name: "switch", value: "disarm")
-}
-
-def exitdelay() {
-    sendEvent (name: "switch", value: "exitdelay")
-}
-
-def entrydelay() {
-    sendEvent (name: "switch", value: "entrydelay")
-}
-
-def notready() {
-    sendEvent (name: "switch", value: "notready")
-}
-
-def ready() {
-    sendEvent (name: "switch", value: "ready")
-}
-
-def alarm() {
-    sendEvent (name: "switch", value: "alarm")
 }
