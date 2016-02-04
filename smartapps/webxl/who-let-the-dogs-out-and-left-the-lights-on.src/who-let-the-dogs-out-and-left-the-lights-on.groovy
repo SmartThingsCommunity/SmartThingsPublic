@@ -54,11 +54,13 @@ def shouldTurnOn() {
     	sunTime = getSunriseAndSunset(zipCode: "90210")
     }
     
+    def nextRise = sunTime.sunrise + 1;
+    
     log.debug "nowTime: $now"
-	log.debug "riseTime: $sunTime.sunrise"
+	log.debug "riseTime: $nextRise"
 	log.debug "setTime: $sunTime.sunset"
     
-    return now > sunTime.sunset && now < sunTime.sunrise
+    return now > sunTime.sunset && now < nextRise
 }
 
 
