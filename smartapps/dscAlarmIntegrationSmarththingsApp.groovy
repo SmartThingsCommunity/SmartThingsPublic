@@ -86,6 +86,7 @@ private update() {
       '651':"partition notready",
       '652':"partition armed",
       '654':"partition alarm",
+      '655':"partition disarm",
       '656':"partition exitdelay",
       '657':"partition entrydelay",
       '701':"partition armed",
