@@ -32,14 +32,14 @@ metadata {
         multiAttributeTile(name:"status", type: "generic", width: 6, height: 4){
             tileAttribute ("device.switch", key: "PRIMARY_CONTROL") {
                 attributeState "alarm", label:'Alarm', action: 'disarm', icon:"st.security.alarm.off", backgroundColor:"#ff0000"
-                attributeState "away", label:'Armed Away', action: 'disarm', icon:"st.security.alarm.on", backgroundColor:"#800000"
+                attributeState "away", label:'Armed Away', action: 'stay', icon:"st.security.alarm.on", backgroundColor:"#800000"
                 attributeState "disarm", label:'Disarmed', icon:"st.security.alarm.off", backgroundColor:"#79b821"
                 attributeState "entrydelay", label:'Entry Delay', action: 'disarm', icon:"st.security.alarm.on", backgroundColor:"#ff9900"
                 attributeState "exitdelay", label:'Exit Delay', action: 'disarm', icon:"st.security.alarm.on", backgroundColor:"#ff9900"
                 attributeState "notready", label:'Open', icon:"st.security.alarm.off", backgroundColor:"#ffcc00"
                 attributeState "ready", label:'Ready', action: 'stay', icon:"st.security.alarm.off", backgroundColor:"#79b821"
                 attributeState "stay", label:'Armed Stay', action: 'disarm', icon:"st.security.alarm.on", backgroundColor:"#008CC1"
-                attributeState "instantaway", label:'Armed Instant Away', action: 'disarm', icon:"st.security.alarm.on", backgroundColor:"#800000"
+                attributeState "instantaway", label:'Armed Instant Away', action: 'stay', icon:"st.security.alarm.on", backgroundColor:"#800000"
                 attributeState "instantstay", label:'Armed Instant Stay', action: 'disarm', icon:"st.security.alarm.on", backgroundColor:"#008CC1"
             }
         }
