@@ -74,9 +74,11 @@ def pageMisc() {
         	input "pushYN", "bool", title: "Send a push notification?", required: false, defaultValue: false	
         }    
         section("Text-to-Speach Device") {
-        	paragraph "Next we'll need to know what device you're going to be using as your speaker."      
+        	paragraph "Next we'll need to know what device you're going to be using as your speaker as well as the phrase you'd like to hear if every door and window is closed."      
 			input "TTspeaker", "capability.speechSynthesis", title: "Select your TTS Speaker", required: true
+            input "userPhrase", "text", title: "Enter phrase here.", required: true
 	    }
+        
 	}
 }
 
@@ -252,7 +254,7 @@ def switchOnHandler(evt) {
 
 	// Now let's tidy up the phrase we're going to have our speaker say:   
     if (phrase == "") {												// If the phrase is empty (no open doors/windows were found),
-    	phrase = "The house is ready for night."					// then insert a phrase saying the house is ready.
+    	phrase = userPhrase											// then insert the user submitted phrase saying the house is ready.
     	}
     else {															// but if we did find at least one thing open, then...
     	phrase = "You have left " + phrase + "open"					// Add some language to make it sound like a natural sentence.
