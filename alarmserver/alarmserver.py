@@ -3,6 +3,7 @@
 ## Supporting Envisalink 2DS/3
 ## Written by donnyk+envisalink@gmail.com
 ## Lightly improved by leaberry@gmail.com
+## Smartthings away/stay mode by jordan@xeron.cc
 ##
 ## This code is under the terms of the GPL v3 license.
 

@@ -2,9 +2,9 @@
  *  DSC Zone Device
  *
  *  Author: Matt Martz <matt.martz@gmail.com>
- *  Date: 2014-04-28
  *  Modified to be a motion device: Kent Holloway <drizit@gmail.com>
- *  Date: 2014-05-24
+ *  Modified by Jordan <jordan@xeron.cc>
+ *  Date: 2016-02-04
  */
 
 // for the UI

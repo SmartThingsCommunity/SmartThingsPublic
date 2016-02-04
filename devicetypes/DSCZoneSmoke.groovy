@@ -3,7 +3,8 @@
  *
  *  Original Device Author: Matt Martz <matt.martz@gmail.com>
  *  Smoke Alarm Additions Author: Dan S <coke12oz@hotmail.com>
- *  Date: 2014-04-28
+ *  Modified by Jordan <jordan@xeron.cc>
+ *  Date: 2016-02-04
  */
 
 // for the UI
