@@ -24,7 +24,7 @@
  *  See Changelog for change history
  *
  */  
-def getVersionNum() { return "0.9.0" }
+def getVersionNum() { return "0.9.1" }
 private def getVersionLabel() { return "ecobee (Connect) Version ${getVersionNum()}-RC6" }
 private def getHelperSmartApps() {
 	return [ 
@@ -1007,7 +1007,7 @@ def pollInit() {
 def pollChildren(child = null) {
 	def results = true
     
-	LOG("=====> pollChildren()", 4)
+	LOG("=====> pollChildren() - state.forcePoll(${state.forcePoll})  state.lastPoll(${state.lastPoll})  now(${now()})  state.lastPollDate(${state.lastPollDate})", 4, child, "trace")
     
 	if(apiConnected() == "lost") {
     	// Possibly a false alarm? Check if we can update the token with one last fleeting try...
@@ -1124,7 +1124,7 @@ private def pollEcobeeAPI(thermostatIdsString = "") {
 					apiRestored()
                     generateEventLocalParams() // Update the connection status
                 }
-                state.lastPoll = now();
+                updateLastPoll()
 				LOG("httpGet: updated ${state.thermostats?.size()} stats: ${state.thermostats}")
 			} else {
 				LOG("pollEcobeeAPI() - polling children & got http status ${resp.status}", 1, null, "error")
@@ -1197,10 +1197,8 @@ def poll() {
         	LOG("poll() - we were unable to recover the connection.", 2, null, "error")
             return false
         }
-    }
-    
-	state.lastPoll = now()
-	state.lastPollDate = getTimestamp()
+    }    
+	
 	LOG("poll() - Polling children with pollChildren(null)", 4)
 	return pollChildren(null) // Poll ALL the children at the same time for efficiency    
 }
