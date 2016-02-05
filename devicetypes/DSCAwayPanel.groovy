@@ -36,7 +36,7 @@ metadata {
                 attributeState "disarm", label:'Disarmed', icon:"st.security.alarm.off", backgroundColor:"#79b821"
                 attributeState "entrydelay", label:'Entry Delay', action: 'disarm', icon:"st.security.alarm.on", backgroundColor:"#ff9900"
                 attributeState "exitdelay", label:'Exit Delay', action: 'disarm', icon:"st.security.alarm.on", backgroundColor:"#ff9900"
-                attributeState "notready", label:'Open', icon:"st.security.alarm.off", backgroundColor:"#ffcc00"
+                attributeState "notready", label:'Not Ready', icon:"st.security.alarm.off", backgroundColor:"#ffcc00"
                 attributeState "ready", label:'Ready', action: 'away', icon:"st.security.alarm.off", backgroundColor:"#79b821"
                 attributeState "forceready", label:'Force Ready', action: 'away', icon:"st.security.alarm.off", backgroundColor:"#79b821"
                 attributeState "stay", label:'Armed Stay', action: 'away', icon:"st.security.alarm.on", backgroundColor:"#008CC1"
