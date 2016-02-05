@@ -149,7 +149,7 @@ private updateZoneDevices(zonedevices,zonenum,zonestatus) {
 
 private updatePartitions(paneldevices, partitionnum, partitionstatus) {
   log.debug "paneldevices: $paneldevices - ${partitionnum} is ${partitionstatus}"
-  def paneldevice = paneldevices.find { it.deviceNetworkId == "dscpartition${partitionnum}" }
+  def paneldevice = paneldevices.find { it.deviceNetworkId == "dscpanel${partitionnum}" }
   if (paneldevice) {
     log.debug "Was True... Panel device: $paneldevice.displayName at $paneldevice.deviceNetworkId is ${partitionstatus}"
     //Was True... Zone Device: Front Door Sensor at zone1 is closed
