@@ -3,7 +3,7 @@
  *
  *  Copyright 2015 Bruce Ravenel
  *
- *  Version 1.7.5a   3 Feb 2016
+ *  Version 1.7.5b   5 Feb 2016
  *
  *	Version History
  *
@@ -84,7 +84,7 @@ preferences {
 def firstPage() {
 	//version to parent app and expert settings for rule
 	try { 
-		state.isExpert = parent.isExpert("1.7.5a") 
+		state.isExpert = parent.isExpert("1.7.5b") 
 		if (state.isExpert) state.cstCmds = parent.getCommands()
 		else state.cstCmds = []
 	}
@@ -99,9 +99,9 @@ def firstPage() {
             else if(state.isRule || state.howMany > 1) href "selectRule2", title: "Define a Rule", description: app.label, state: "complete"
             else if(app.label != "Rule" && app.label != null) href "selectActions", title: "Define just Actions", description: app.label, state: "complete"
             else {
-            	href "selectRule", title: "Define a Trigger"
-                href "selectRule2", title: "Define a Rule"
-                href "selectActions", title: "Define just Actions"
+            	href "selectRule", title: "Define a Trigger", description: "Tap to set"
+                href "selectRule2", title: "Define a Rule", description: "Tap to set"
+                href "selectActions", title: "Define just Actions", description: "Tap to set"
             }
         }
     }
@@ -169,7 +169,7 @@ def selectRule() {
 }
 
 def selectRule2() {
-	dynamicPage(name: "selectRule", title: "Select Conditions, Rule and Actions", uninstall: true, install: true) {
+	dynamicPage(name: "selectRule2", title: "Select Conditions, Rule and Actions", uninstall: true, install: true) {
 			section() { 
 				label title: "Name the Rule", required: true
 				def condLabel = conditionLabel()
