@@ -53,3 +53,14 @@ For example: **dsczone1** or **dsczone5**
 
 4. Fire up the AlarmServer, you should see your events from the server show up within 1-2 seconds on your Smartphone.
 
+## Thanks!
+Thanks goes out to the following people, without their previous work none of this would have been possible:
+juggie
+Ethomasii
+Rob Fisher <robfish@att.net>
+Carlos Santiago <carloss66@gmail.com>
+JTT <aesystems@gmail.com>
+Donny K <donnyk+envisalink@gmail.com>
+Leaberry <leaberry@gmail.com>
+Kent Holloway <drizit@gmail.com>
+Matt Martz <matt.martz@gmail.com>
