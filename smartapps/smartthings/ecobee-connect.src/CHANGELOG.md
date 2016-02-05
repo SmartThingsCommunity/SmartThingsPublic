@@ -13,9 +13,9 @@ This project is in a pre-1.0 state. This means that its APIs and behavior are su
 * **NOTE: This is my active development branch. Things on this branch are very likely to break at random times. Provided for informational purposes only!**
 
 
-## [0.9.0-RC4][] (2016-02-01) **(Beta Release)**
+## [0.9.0-RC6][] (2016-02-01) **(Beta Release)**
 ### General Changes
-* 3 changed files with 876 additions and 467 deletions
+* 3 changed files with 876 additions and 467 deletions (To be updated)
 * Introduction of support for Child SmartApps! First SmartApp is `ecobee Routines` for using SmartThings Modes (Routines) to control the modes (and other settings) on the Ecobee Thermostats
 * More hooks to be defensive against the SmartThings platform stability issues (e.g. Scheduled Events)
 
@@ -86,7 +86,7 @@ This project is in a pre-1.0 state. This means that its APIs and behavior are su
 * Click the release number to see all of the changes made to this branch up until this date
 
 [Semver]: http://semver.org
-[0.9.0-RC4]: https://github.com/StrykerSKS/SmartThingsPublic/compare/StrykerSKS:v0.9.0-RC4...StrykerSKS-enhanced-ecobeedevice
+[0.9.0-RC6]: https://github.com/StrykerSKS/SmartThingsPublic/compare/StrykerSKS:v0.9.0-RC6...StrykerSKS:v0.8.0
 [0.8.0]: https://github.com/StrykerSKS/SmartThingsPublic/compare/StrykerSKS:v0.7.5...StrykerSKS:v0.8.0
 [0.7.5]: https://github.com/StrykerSKS/SmartThingsPublic/compare/302bb77d7237132caaa5281b64d4bfbf4420f7cf...StrykerSKS:v0.7.5
 [0.6.0]: https://github.com/StrykerSKS/SmartThingsPublic/compare/master...StrykerSKS:302bb77d7237132caaa5281b64d4bfbf4420f7cf
