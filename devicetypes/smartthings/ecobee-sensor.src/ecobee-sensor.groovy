@@ -12,15 +12,16 @@
  *  on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the License
  *  for the specific language governing permissions and limitations under the License.
  * 
- *  Current Version: 0.8.0-RC
- *  Release Date: 2016-01-26
- *  See separate Changelog for change history
+ *  See Changelog for change history
  *
  *  Current Version: 0.7.5
  *  Release Date: 20160125
  *  See separate Changelog for change history
  */
- 
+
+def getVersionNum() { return "0.9.0" }
+private def getVersionLabel() { return "Ecobee Sensor Version 0.9.0-RC2" }
+
 metadata {
 	definition (name: "Ecobee Sensor", namespace: "smartthings", author: "SmartThings") {
 		capability "Sensor"
