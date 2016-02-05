@@ -14,7 +14,7 @@ preferences {
  
 metadata {
     // Automatically generated. Make future change here.
-    definition (name: "DSC Alarm Panel", author: "Jordan <jordan@xeron.cc>") {
+    definition (name: "DSC Alarm Panel", namespace: "lxxero", author: "Jordan <jordan@xeron.cc>") {
         capability "Switch"
         
         command "away"
