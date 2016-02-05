@@ -1,1 +1,0 @@
-../../DSCZoneSmoke.groovy
