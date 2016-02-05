@@ -29,7 +29,7 @@ metadata {
 
 	tiles {
 
-		valueTile("power", "device.power") {
+		valueTile("power", "device.power", canChangeIcon: true) {
 			state "power", label: '${currentValue} W'
 		}
 
