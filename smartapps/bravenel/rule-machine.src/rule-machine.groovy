@@ -3,10 +3,11 @@
  *
  *  Copyright 2015 Bruce Ravenel and Mike Maxwell
  *
- *  Version 1.7.0   31 Jan 2016
+ *  Version 1.7.1   5 Feb 2016
  *
  *	Version History
  *
+ *	1.7.1	5 Feb 2016		Added update Rule
  *	1.7.0	31 Jan 2016		Added run Rule actions
  *	1.6.6	10 Jan 2016		Improved method of getting custom device commands
  *	1.6.5	1 Jan 2016		Added version numbers to main page
@@ -165,10 +166,19 @@ def runRule(rule, appLabel) {
 }
 
 def runRuleAct(rule, appLabel) {
-//	log.debug "runRule: $rule, $appLabel"
+//	log.debug "runRuleAct: $rule, $appLabel"
 	childApps.each { child ->
 		rule.each {
 			if(child.label == it) child.ruleActions(appLabel)
+		}
+	}
+}
+
+def runUpdate(rule) {
+//	log.debug "runUpdate: $rule"
+	childApps.each { child ->
+		rule.each {
+			if(child.label == it) child.updated()
 		}
 	}
 }

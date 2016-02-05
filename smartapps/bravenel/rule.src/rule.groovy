@@ -3,10 +3,11 @@
  *
  *  Copyright 2015 Bruce Ravenel
  *
- *  Version 1.7.5b   5 Feb 2016
+ *  Version 1.7.6   5 Feb 2016
  *
  *	Version History
  *
+ *	1.7.6	3 Feb 2016		Added action to update rule(s) to fix broken schedules
  *	1.7.5	3 Feb 2016		Removed use of unschedule() for delay cancel, to avoid ST issues
  *	1.7.4	2 Feb 2016		Redesign of UI to make it clearer between Triggers and Rules
  *	1.7.3	2 Feb 2016		Bug fix for multi-button device with more than 4 buttons
@@ -84,7 +85,7 @@ preferences {
 def firstPage() {
 	//version to parent app and expert settings for rule
 	try { 
-		state.isExpert = parent.isExpert("1.7.5b") 
+		state.isExpert = parent.isExpert("1.7.6") 
 		if (state.isExpert) state.cstCmds = parent.getCommands()
 		else state.cstCmds = []
 	}
@@ -922,6 +923,8 @@ def selectActionsTrue() {
 			if(ruleTrue) setActTrue("Rules: $ruleTrue")
 			if(theseRules != null) input "ruleActTrue", "enum", title: "Run Rule Actions", required: false, multiple: true, options: theseRules.sort(), submitOnChange: true
 			if(ruleActTrue) setActTrue("Rule Actions: $ruleActTrue")
+            input "updateTrue", "enum", title: "Update Rules", required: false, multiple: true,options: theseRules.sort(), submitOnChange: true
+            if(updateTrue) setActTrue("Update Rules: $updateTrue")
 			href "selectMsgTrue", title: "Send or speak a message", description: state.msgTrue ? state.msgTrue : "Tap to set", state: state.msgTrue ? "complete" : null
 			if(state.msgTrue) addToActTrue(state.msgTrue)
 			input "cameraTrue", "capability.imageCapture", title: "Take photos", required: false, multiple: false, submitOnChange: true
@@ -1083,6 +1086,8 @@ def selectActionsFalse() {
 			if(ruleFalse) setActFalse("Rules: $ruleFalse")
 			if(theseRules != null) input "ruleActFalse", "enum", title: "Run Rule Actions", required: false, multiple: true, options: theseRules.sort(), submitOnChange: true
 			if(ruleActFalse) setActFalse("Rule Actions: $ruleActFalse")
+            input "updateFalse", "enum", title: "Update Rules", required: false, multiple: true,options: theseRules.sort(), submitOnChange: true
+            if(updateFalse) setActFalse("Update Rules: $updateFalse")
 			href "selectMsgFalse", title: "Send or speak a message", description: state.msgFalse ? state.msgFalse : "Tap to set", state: state.msgFalse ? "complete" : null
 			if(state.msgFalse) addToActFalse(state.msgFalse)
 			input "cameraFalse", "capability.imageCapture", title: "Take photos", required: false, multiple: false, submitOnChange: true
@@ -1191,7 +1196,7 @@ def installed() {
 }
 
 def updated() {
-	unschedule()
+	//unschedule()
 	unsubscribe()
 	parent.unSubscribeRule(app.label)
 	initialize()
@@ -1603,6 +1608,7 @@ def takeAction(success) {
 		if(modeTrue) 			setLocationMode(modeTrue)
 		if(ruleTrue)			parent.runRule(ruleTrue, app.label)
         if(ruleActTrue)			parent.runRuleAct(ruleActTrue, app.label)
+        if(updateTrue)			parent.runUpdate(updateTrue)
 		if(myPhraseTrue)		location.helloHome.execute(myPhraseTrue)
 		if(cameraTrue) 		{	cameraTrue.take() 
                 				(1..((burstCountTrue ?: 5) - 1)).each {cameraTrue.take(delay: (500 * it))}   }
@@ -1643,6 +1649,7 @@ def takeAction(success) {
 		if(modeFalse) 			setLocationMode(modeFalse)
 		if(ruleFalse)			parent.runRule(ruleFalse, app.label)
         if(ruleActFalse)		parent.runRuleAct(ruleActFalse, app.label)
+        if(updateTrue)			parent.runUpdate(updateFalse)
 		if(myPhraseFalse) 		location.helloHome.execute(myPhraseFalse)
 		if(cameraFalse) 	{	cameraFalse.take() 
                 				(1..((burstCountFalse ?: 5) - 1)).each {cameraFalse.take(delay: (500 * it))}   }
