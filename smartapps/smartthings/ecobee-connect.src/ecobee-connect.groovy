@@ -25,7 +25,7 @@
  *
  */  
 def getVersionNum() { return "0.9.0" }
-private def getVersionLabel() { return "ecobee (Connect) Version ${getVersionNum()}-RC5" }
+private def getVersionLabel() { return "ecobee (Connect) Version ${getVersionNum()}-RC6" }
 private def getHelperSmartApps() {
 	return [ 
     		[name: "ecobeeRoutinesChild", appName: "ecobee Routines",  
@@ -69,14 +69,21 @@ mappings {
 // Begin Preference Pages
 def mainPage() {
 	
-	def deviceHandlersInstalled = testForDeviceHandlers()
-    def readyToInstall = deviceHandlersInstalled
+	def deviceHandlersInstalled 
+    def readyToInstall 
+    
+    // Only create the dummy devices if we aren't initialized yet
+    if (!state.initialized) {
+    	deviceHandlersInstalled = testForDeviceHandlers()
+    	readyToInstall = deviceHandlersInstalled
+	}
+    if (state.initialized) { readyToInstall = true }
     
 	dynamicPage(name: "mainPage", title: "Welcome to ecobee (Connect)", install: readyToInstall, uninstall: false, submitOnChange: true) {
     	def ecoAuthDesc = (state.authToken != null) ? "[Connected]\n" :"[Not Connected]\n"        
 		
         // If not device Handlers we cannot proceed
-        if(!deviceHandlersInstalled) {
+        if(!state.initialized && !deviceHandlersInstalled) {
 			section() {
 				paragraph "ERROR!\n\nYou MUST add the ${getChildThermostatName()} and ${getChildSensorName()} Device Handlers to the IDE BEFORE running the setup."				
 			}		
@@ -90,7 +97,14 @@ def mainPage() {
 			}
         }       
 
-		if(state.authToken != null && deviceHandlersInstalled) {
+		if(state.authToken != null && state.initialized != true) {
+        	section() {
+            	paragraph "Please click 'Done' to save your credentials. Then re-open the SmartApp to continue the setup."
+            }
+        }
+
+		// Need to save the initial login to setup the device without timeouts
+		if(state.authToken != null && state.initialized) {
         	if (settings.thermostats?.size() > 0 && state.initialized) {
             	section("Helper SmartApps") {
                 	href ("helperSmartAppsPage", title: "Helper SmartApps", description: "Tap to manage Helper SmartApps")
@@ -272,10 +286,21 @@ def debugDashboardPage() {
     	section("Settings Information") {
         	paragraph "debugLevel: ${settings.debugLevel} (default=3 if null)"
             paragraph "holdType: ${settings.holdType} (default='Until I Change' if null)"
-            paragraph "pollingInterval: ${settings.pollingInterval} {default=5 if null)"
-            paragraph "showThermsAsSensor: ${settings.showThermsAsSensor} {default=false if null)"
+            paragraph "pollingInterval: ${settings.pollingInterval} (default=5 if null)"
+            paragraph "showThermsAsSensor: ${settings.showThermsAsSensor} (default=false if null)"
             paragraph "smartAuto: ${settings.smartAuto} (default=false if null)"   
             paragraph "Selected Thermostats: ${settings.thermostats}"
+        }
+        section("Dump of Debug Variables") {
+        	def debugParamList = getDebugDump()
+            LOG("debugParamList: ${debugParamList}", 4, null, "debug")
+            //if ( debugParamList?.size() > 0 ) {
+			if ( debugParamList != null ) {
+            	debugParamList.each { key, value ->  
+                	LOG("Adding paragraph: key:${key}  value:${value}", 5, null, "trace")
+                	paragraph "${key}: ${value}"
+                }
+            }
         }
     	section("Commands") {
         	href(name: "pollChildrenPage", title: "", required: false, page: "pollChildrenPage", description: "Tap to execute command: pollChildren()")
@@ -302,7 +327,8 @@ def helperSmartAppsPage() {
 	LOG("helperSmartAppsPage() entered", 5)
 
 	LOG("SmartApps available are ${getHelperSmartApps()}", 5, null, "info")
- //getHelperSmartApps() {
+	
+    //getHelperSmartApps() {
  	dynamicPage(name: "helperSmartAppsPage", title: "Helper Smart Apps", install: true, uninstall: false, submitOnChange: true) {    	
 		getHelperSmartApps().each { oneApp ->
 			LOG("Processing the app: ${oneApp}", 4, null, "trace")            
@@ -524,7 +550,7 @@ def getEcobeeThermostats() {
                 	LOG("Storing the failed action to try later")
                     state.action = "getEcobeeThermostats"
                     LOG("Refreshing your auth_token!", 1)
-                    refreshAuthToken()
+                    refreshAuthToken(true)
                 } else {
                 	LOG("Other error. Status: ${resp.status}  Response data: ${resp.data} ", 1)
                 }
@@ -532,7 +558,7 @@ def getEcobeeThermostats() {
         }
     } catch(Exception e) {
     	LOG("___exception getEcobeeThermostats(): ${e}", 1, null, "error")
-        refreshAuthToken()
+        refreshAuthToken(true)
     }
 	state.thermostatsWithNames = stats
     LOG("state.thermostatsWithNames == ${state.thermostatsWithNames}", 4)
@@ -632,11 +658,18 @@ def initialize() {
     	LOG("updated() - Exception encountered trying to unschedule(). Exception: ${e}", 2, null, "error")
     }    
     
-    // Initialize several variables
-	state.lastScheduledPoll = now()
-    state.lastScheduledTokenRefresh = now()
-    state.lastScheduledWatchdog = now()
-	state.lastPoll = now()
+    def nowTime = now()
+    def nowDate = getTimestamp()
+    
+    // Initialize several variables    
+	state.lastScheduledPoll = nowTime
+    state.lastScheduledPollDate = nowDate
+    state.lastScheduledTokenRefresh = nowTime
+    state.lastScheduledTokenRefreshDate = nowDate
+    state.lastScheduledWatchdog = nowTime
+    state.lastScheduledWatchdogDate = nowDate
+	state.lastPoll = nowTime
+    state.lastPollDate = nowDate
 	    
     // Setup initial polling and determine polling intervals
 	state.pollingInterval = getPollingInterval()
@@ -677,8 +710,12 @@ def initialize() {
     //send activity feeds to tell that device is connected
     def notificationMessage = aOK ? "is connected to SmartThings" : "had an error during setup of devices"
     sendActivityFeeds(notificationMessage)
-    state.timeSendPush = null    
-    state.initialized = true
+    state.timeSendPush = null
+    if (!state.initialized) {
+    	state.initialized = true
+        state.initializedEpic = nowTime
+        state.initializedDate = nowDate
+	}
         
     return aOK
 }
@@ -752,16 +789,27 @@ private def deleteUnusedChildren() {
     	def childrenToDelete = allMyChildren.findAll { !childrenToKeep.contains(it.deviceNetworkId) }        
         
         LOG("Ready to delete these devices. ${childrenToDelete}", 4, null, "trace")
-		childrenToDelete.each { deleteChildDevice(it.deviceNetworkId) } //inherits from SmartApp (data-management)    
+		if (childrenToDelete.size() > 0) childrenToDelete?.each { deleteChildDevice(it.deviceNetworkId) } //inherits from SmartApp (data-management)    
     }    
 }
 	
 
-def scheduleWatchdog(evt=null) {
+def scheduleWatchdog(evt=null, local=false) {
 	def results = true
+    LOG("scheduleWhatdog() called with: evt (${evt}) & local (${local})", 4, null, "trace")
+    // Only update the Scheduled timestamp if it is not a local action or from a subscription
+    if ( (evt == null) && (local==false) ) {
+    	state.lastScheduledWatchdog = now()
+        state.lastScheduledWatchdogDate = getTimestamp()
+	}
+    
+    state.lastWatchdog = now()
+    state.lastWatchdogDate = getTimestamp()
+    
+    LOG("After watchdog tagging")
 	if(apiConnected() == "lost") {
     	// Possibly a false alarm? Check if we can update the token with one last fleeting try...
-        if( refreshAuthToken() ) { 
+        if( refreshAuthToken(true) ) { 
         	// We are back in business!
 			LOG("scheduleWatchdog() - Was able to recover the lost connection. Please ignore any notifications received.", 1, null, "error")
         } else {        
@@ -792,13 +840,15 @@ private def Boolean isDaemonAlive(daemon="all") {
 	daemon = daemon.toLowerCase()
     def result = true    
     		
-    def timeSinceLastScheduledPoll = (state.lastScheduledPoll == 0 || state.lastScheduledPoll == null) ? 0 : ((now() - state.lastScheduledPoll?.toDouble()) / 1000 / 60)
-    def timeSinceLastScheduledRefresh = (state.lastScheduledTokenRefresh == 0 || state.lastScheduledTokenRefresh == null) ? 0 : ((now() - state.lastScheduledTokenRefresh?.toDouble()) / 1000 / 60)
-    def timeSinceLastScheduledWatchdog = (state.lastScheduledWatchdog == 0 || state.lastScheduledWatchdog == null) ? 0 : ((now() - state.lastScheduledWatchdog?.toDouble()) / 1000 / 60)
-	def timeBeforeExpiry = state.authTokenExpires ? ((state.authTokenExpires - now()) / 1000 / 60) : 0    
+    def timeSinceLastScheduledPoll = (state.lastScheduledPoll == 0 || state.lastScheduledPoll == null) ? 0 : ((now() - state.lastScheduledPoll) / 1000 / 60)  // TODO: Removed toDouble() will this impact?
+    def timeSinceLastScheduledRefresh = (state.lastScheduledTokenRefresh == 0 || state.lastScheduledTokenRefresh == null) ? 0 : ((now() - state.lastScheduledTokenRefresh) / 1000 / 60)
+    def timeSinceLastScheduledWatchdog = (state.lastScheduledWatchdog == 0 || state.lastScheduledWatchdog == null) ? 0 : ((now() - state.lastScheduledWatchdog) / 1000 / 60)
+	def timeBeforeExpiry = state.authTokenExpires ? ((state.authTokenExpires - now()) / 1000 / 60) : 0
     
+    LOG("isDaemonAlive() - now() == ${now()} for daemon (${daemon})", 5, null, "trace")
     LOG("isDaemonAlive() - Time since last poll? ${timeSinceLastScheduledPoll} -- state.lastScheduledPoll == ${state.lastScheduledPoll}", 4, null, "info")
     LOG("isDaemonAlive() - Time since last token refresh? ${timeSinceLastScheduledRefresh} -- state.lastScheduledTokenRefresh == ${state.lastScheduledTokenRefresh}", 4, null, "info")
+    LOG("isDaemonAlive() - Time since watchdog activation? ${timeSinceLastScheduledWatchdog} -- state.lastScheduledWatchdog == ${state.lastScheduledWatchdog}", 4, null, "info")
     LOG("isDaemonAlive() - Time left (timeBeforeExpiry) until expiry (in min): ${timeBeforeExpiry}", 4, null, "info")
         
     if (daemon == "poll" || daemon == "all") {
@@ -816,8 +866,9 @@ private def Boolean isDaemonAlive(daemon="all") {
     
     if (daemon == "watchdog" || daemon == "all") {
     	LOG("isDaemonAlive() - Checking daemon (${daemon}) in 'watchdog'", 4, null, "trace")
-        def maxInterval = state.watchdogInterval + 3
-        // if ( (timeSinceLastScheduledWatchdog == 0) || (timeSinceLastScheduledWatchdog >= (maxInterval)) || (state.initialized != true) ) { result = false }
+        def maxInterval = state.watchdogInterval + 6
+        //if ( (timeSinceLastScheduledWatchdog == 0) || (timeSinceLastScheduledWatchdog >= (maxInterval)) || (state.initialized != true) ) { result = false }
+        LOG("isDaemonAlive(watchdog) - timeSinceLastScheduledWatchdog=(${timeSinceLastScheduledWatchdog})  Timestamps: (${state.lastScheduledWatchdogDate}) (epic: ${state.lastScheduledWatchdog}) now-(${now()})", 4, null, "trace")
         if ( timeSinceLastScheduledWatchdog >= maxInterval ) { result = false }
     }
     
@@ -826,6 +877,7 @@ private def Boolean isDaemonAlive(daemon="all") {
         LOG("isDaemonAlive() - Unknown daemon: ${daemon} received. Do not know how to check this daemon.", 1, null, "error")
         result = false
     }
+    LOG("isDaemonAlive() - result is ${result}", 4, null, "trace")
     return result
 }
 
@@ -840,12 +892,13 @@ private def Boolean spawnDaemon(daemon="all") {
     	LOG("spawnDaemon() - Performing seance for daemon (${daemon}) in 'poll'", 4, null, "trace")
         // Reschedule the daemon
         try {
-			result = result && unschedule("pollScheduled")
+			// result = result && unschedule("pollScheduled")
             if ( canSchedule() ) { 
         		"runEvery${state.pollingInterval}Minutes"("pollScheduled")
-                // if ( canSchedule() ) { runIn(30, "pollScheduled") }  // Don't count this against the results
-                pollScheduled()
-            	result = result && true
+                // if ( canSchedule() ) { runIn(30, "pollScheduled") }  // This will wipe out the existing scheduler!
+                // Web Services taking too long. Go ahead and only schedule here for now
+                
+            	result = result && pollScheduled()
 			} else {
             	LOG("canSchedule() is NOT allowed! Unable to schedule daemon!", 1, null, "error")
         		result = false
@@ -860,12 +913,13 @@ private def Boolean spawnDaemon(daemon="all") {
     	LOG("spawnDaemon() - Performing seance for daemon (${daemon}) in 'auth'", 4, null, "trace")
 		// Reschedule the daemon
         try {
-			result = result && unschedule("refreshAuthTokenScheduled")
+			// result = result && unschedule("refreshAuthTokenScheduled")
             if ( canSchedule() ) { 
         		runEvery15Minutes("refreshAuthTokenScheduled")
                 // if ( canSchedule() ) { runIn(30, "refreshAuthTokenScheduled") }  // Don't count this against the results
-                refreshAuthTokenScheduled()
-            	result = result && true
+                // Web Services taking too long. Go ahead and only schedule here for now
+                
+            	result = result && refreshAuthTokenScheduled()
 			} else {
             	LOG("canSchedule() is NOT allowed! Unable to schedule daemon!", 1, null, "error")
         		result = false
@@ -880,7 +934,7 @@ private def Boolean spawnDaemon(daemon="all") {
     	LOG("spawnDaemon() - Performing seance for daemon (${daemon}) in 'watchdog'", 4, null, "trace")
         // Reschedule the daemon
         try {
-			result = result && unschedule("scheduleWatchdog")
+			// result = result && unschedule("scheduleWatchdog")
             if ( canSchedule() ) { 
         		runEvery15Minutes("scheduleWatchdog")
             	result = result && true
@@ -906,10 +960,10 @@ private def Boolean spawnDaemon(daemon="all") {
 def updateLastPoll(Boolean isScheduled=false) {
 	if (isScheduled) {
     	state.lastScheduledPoll = now()
-        state.lastScheduledPollDate = new Date().toString()
+        state.lastScheduledPollDate =  getTimestamp()
     } else {
     	state.lastPoll = now()
-        state.lastPollDate = new Date().toString()
+        state.lastPollDate = getTimestamp()
     }
 }
 
@@ -921,22 +975,24 @@ def pollScheduled() {
 }
 
 
-def updateLastTokenRefresh(Boolean isScheduled=false) {
-	if (isScheduled) {
+def updateLastTokenRefresh(isScheduled=false) {
+	if (isScheduled) {    	
     	state.lastScheduledTokenRefresh = now()
-        state.lastScheduledTokenRefreshDate = new Date().toString()
+        state.lastScheduledTokenRefreshDate =  getTimestamp()
+        LOG("updateLastTokenRefresh(true) - Updated timestamps: state.lastScheduledTokenRefreshDate=(${state.lastScheduledTokenRefreshDate})  state.lastScheduledTokenRefresh=${state.lastScheduledTokenRefresh} ", 5, null, "trace")
     } else {
     	state.lastTokenRefresh = now()
-        state.lastTokenRefreshDate = new Date().toString()        
+        state.lastTokenRefreshDate = getTimestamp()      
     }
 }
 
 // Called by scheduled() event handler
 def refreshAuthTokenScheduled() {
 	updateLastTokenRefresh(true)
-    LOG("refreshAuthTokenScheduled() - Running at ${state.lastScheduledTokenRefreshDate} (epic: ${state.lastScheduledTokenRefresh})", 3, null, "trace")
-    scheduleWatchdog()
-    return refreshAuthToken()
+    LOG("refreshAuthTokenScheduled() - Running at ${state.lastScheduledTokenRefreshDate} (epic: ${state.lastScheduledTokenRefresh})", 3, null, "trace")    
+    
+    def result  = refreshAuthToken()
+    return result    
 }
 
 
@@ -964,14 +1020,14 @@ def pollChildren(child = null) {
 		}
 	}
 
+    // Run a watchdog checker here
+    scheduleWatchdog(null, true)    
     
     if (settings.thermostats?.size() < 1) {
     	LOG("pollChildren() - Nothing to poll as there are no thermostats currently selected", 1, child, "warn")
 		return true
     }    
     
-    // Run a watchdog checker here
-    scheduleWatchdog()    
     
    // Check to see if it is time to do an full poll to the Ecobee servers. If so, execute the API call and update ALL children
     def timeSinceLastPoll = (state.forcePoll == true) ? 0 : ((now() - state.lastPoll?.toDouble()) / 1000 / 60) 
@@ -1092,7 +1148,7 @@ private def pollEcobeeAPI(thermostatIdsString = "") {
 		def reAttemptPeriod = 45 // in sec
 		if ( (e.statusCode == 500 && e.getResponse()?.data.status.code == 14) ||  (e.statusCode == 401 && e.getResponse()?.data.status.code == 14) ) {
         	// Not possible to recover from status.code == 14
-            if ( refreshAuthToken() ) { LOG("We have recovered the token a from the code 14.", 2, null, "warn") }
+            // if ( refreshAuthToken() ) { LOG("We have recovered the token a from the code 14.", 2, null, "warn") }
             LOG("In HttpResponseException: Received data.stat.code of 14", 1, null, "error")
         	apiLost("pollEcobeeAPI() - In HttpResponseException: Received data.stat.code of 14")
 		} else if (e.statusCode != 401) { //this issue might comes from exceed 20sec app execution, connectivity issue etc.
@@ -1132,7 +1188,7 @@ def poll() {
     // Check to see if we are connected to the API or not
     if (apiConnected() == "lost") {
     	LOG("poll() - Attempting to recover poll() due to lost API Connection", 1, null, "warn")
-        scheduleWatchdog()
+        scheduleWatchdog(null, true)
         if ( refreshAuthToken() ) {
         	// We were able to recover
             apiRestored()
@@ -1144,7 +1200,7 @@ def poll() {
     }
     
 	state.lastPoll = now()
-	state.lastPollDate = new Date().toString()
+	state.lastPollDate = getTimestamp()
 	LOG("poll() - Polling children with pollChildren(null)", 4)
 	return pollChildren(null) // Poll ALL the children at the same time for efficiency    
 }
@@ -1418,14 +1474,16 @@ def toQueryString(Map m) {
 	return m.collect { k, v -> "${k}=${URLEncoder.encode(v.toString())}" }.sort().join("&")
 }
 
-private def Boolean refreshAuthToken() {
-
+private def Boolean refreshAuthToken(force=false) {
+	// Update the timestamp
+    updateLastTokenRefresh()
+    
 	if(!state.refreshToken) {
     	LOG("refreshing auth token", 2)	
 		LOG("refreshAuthToken() - There is no refreshToken stored! Unable to refresh OAuth token.", 1, null, "error")
     	apiLost("refreshAuthToken() - No refreshToken")
         return false
-    } else if ( !readyForAuthRefresh() ) {
+    } else if ( (force != true) && !readyForAuthRefresh() ) {
     	// Not ready to refresh yet
         LOG("refreshAuthToken() - Not time to refresh yet, there is still time left before expiration.")
     	return true
@@ -1506,31 +1564,44 @@ private def Boolean refreshAuthToken() {
 			if ( (e.statusCode == 500 && e.getResponse()?.data.status.code == 14) || (e.statusCode == 401 && e.getResponse()?.data.status.code == 14) ) {
             	LOG("refreshAuthToken() - Received data.status.code = 14", 1, null, "error")
             	apiLost("refreshAuthToken() - Received data.status.code = 14" )
+                return false
             } else if (e.statusCode != 401) { //this issue might comes from exceed 20sec app execution, connectivity issue etc.
             	LOG("refreshAuthToken() - e.statusCode: ${e.statusCode}", 1, null, "warn")
             	state.connected = "warn"
             	generateEventLocalParams() // Update the connected state at the thermostat devices
-				if(canSchedule()) { runIn(reAttemptPeriod, "refreshAuthToken") } else { refreshAuthTokens() }
+				if(canSchedule()) { runIn(reAttemptPeriod, "refreshAuthToken") } else { refreshAuthTokens(true) }
+                return false
 			} else if (e.statusCode == 401) { // status.code other than 14
 				state.reAttempt = state.reAttempt + 1
 				LOG("reAttempt refreshAuthToken to try = ${state.reAttempt}", 1, null, "warn")
 				if (state.reAttempt <= 3) {
                 	state.connected = "warn"
             		generateEventLocalParams() // Update the connected state at the thermostat devices
-					if(canSchedule()) { runIn(reAttemptPeriod, "refreshAuthToken") } else { refreshAuthToken() }
+					if(canSchedule()) { runIn(reAttemptPeriod, "refreshAuthToken") } else { refreshAuthToken(true) }
+                    return false
 				} else {
                 	// More than 3 attempts, time to give up and notify the end user
                     LOG("More than 3 attempts to refresh tokens. Giving up", 1, null, "error")
                     debugEvent("More than 3 attempts to refresh tokens. Giving up")
                 	apiLost("refreshAuthToken() - More than 3 attempts to refresh token. Have to give up")
+                    return false
 				}
             }
         } catch (java.util.concurrent.TimeoutException e) {
 			LOG("refreshAuthToken(), TimeoutException: ${e}.", 1, null, "error")
 			// Likely bad luck and network overload, move on and let it try again
-            if(canSchedule()) { runIn(300, "refreshAuthToken") } else { refreshAuth() }
+            state.connected = "warn"
+            generateEventLocalParams() // Update the connected state at the thermostat devices
+			def reAttemptPeriod = 300 // in sec
+			if(canSchedule()) { runIn(reAttemptPeriod, "refreshAuthToken") } else { refreshAuthTokens(true) }            
+            return false
+        } catch (groovy.lang.StringWriterIOException e) {
+        	LOG("refreshAuthToken(), groovy.lang.StringWriterIOException encountered: ${e}", 1, null, "error")
+          	apiLost("refreshAuthToken(), groovy.lang.StringWriterIOException encountered: ${e}")
+            return false
         } catch (Exception e) {
         	LOG("refreshAuthToken(), General Exception: ${e}.", 1, null, "error")
+            return false
         }
     }
 }
@@ -1696,7 +1767,7 @@ private def sendJson(child = null, String jsonBody) {
 					//refresh the auth token
 					if (resp.status == 500 && resp.status.code == 14) {					
 						LOG("Refreshing your auth_token!")					
-						if(refreshAuthToken()) { 
+						if(refreshAuthToken(true)) { 
                         	LOG("Successfully performed a refreshAuthToken() after a Code 14!", 2, child, "warn")                        
                         }
 						return false // No way to recover from a status.code 14
@@ -1705,7 +1776,7 @@ private def sendJson(child = null, String jsonBody) {
         	            state.connected = "warn"
             	        generateEventLocalParams()
                 	    if (j == 2) { // Go ahead and refresh on the second pass through
-                    		refreshAuthToken() 
+                    		refreshAuthToken(true) 
 	                        return false
     	                }						
 					}
@@ -1716,7 +1787,7 @@ private def sendJson(child = null, String jsonBody) {
     	LOG("sendJson() >> HttpResponseException occured. Exception info: ${e} StatusCode: ${e.statusCode}  response? data: ${e.getResponse()?.getData()}", 1, child, "error")	
 		state.connected = "warn"
         generateEventLocalParams()
-        refreshAuthToken()
+        refreshAuthToken(true)
 		return false
     } catch(Exception e) {
     	// Might need to further break down 
@@ -1724,7 +1795,7 @@ private def sendJson(child = null, String jsonBody) {
         state.connected = "warn"
         generateEventLocalParams()
         if (j == 2) { // Go ahead and refresh on the second pass through
-        	refreshAuthToken()
+        	refreshAuthToken(true)
 			return false
 		}
 	}
@@ -1753,14 +1824,22 @@ private def getSmartThingsClientId() {
 }
 
 
-private def LOG(message, level=3, child=null, logType="debug", event=true, displayEvent=true) {
+private def LOG(message, level=3, child=null, logType="debug", event=false, displayEvent=true) {
 	def prefix = ""
+    def logTypes = ["error", "debug", "info", "trace"]
+    
+    if(!logTypes.contains(logType)) {
+    	log.error "LOG() - Received logType ${logType} which is not in the list of allowed types."
+        if (event && child) { debugEventFromParent(child, "LOG() - Received logType ${logType} which is not in the list of allowed types.") }
+        logType = "debug"
+    }
+    
+    if ( logType == "error" ) { state.lastLOGerror = message }
 	if ( settings.debugLevel?.toInteger() == 5 ) { prefix = "LOG: " }
 	if ( debugLevel(level) ) { 
     	log."${logType}" "${prefix}${message}"
-        // log.debug message
         if (event) { debugEvent(message, displayEvent) }
-        if (event && child) { debugEventFromParent(child, message) }
+        if (child) { debugEventFromParent(child, message) }
 	}    
 }
 
@@ -1868,6 +1947,10 @@ private def getPollingInterval() {
 	return (settings.pollingInterval?.toInteger() >= 5) ? settings.pollingInterval.toInteger() : 5
 }
 
+private def String getTimestamp() {
+	return new Date().format("yyyy-MM-dd HH:mm:ss z", location.timeZone)
+}
+
 
 // Are we connected with the Ecobee service?
 private String apiConnected() {
@@ -1882,10 +1965,29 @@ private def apiRestored() {
 	unschedule("notifyApiLost")
 }
 
+
+private def getDebugDump() {
+	 def debugParams = [when:"${getTimestamp()}", whenEpic:"${now()}", 
+				lastPollDate:"${state.lastPollDate}", lastScheduledPollDate:"${state.lastScheduledPollDate}", 
+				lastScheduledTokenRefreshDate:"${state.lastScheduledTokenRefreshDate}", lastScheduledWatchdogDate:"${state.lastScheduledWatchdogDate}",
+				lastTokenRefreshDate:"${state.lastTokenRefreshDate}", initializedEpic:"${state.initializedEpic}", initializedDate:"${state.initializedDate}",
+                lastLOGerror:"${state.lastLOGerror}"
+			]    
+	return debugParams
+}
+
 private def apiLost(where = "not specified") {
-    LOG("apiLost() - ${where}: Lost connection with APIs. unscheduling Polling and refreshAuthToken. User MUST reintialize the connection with Ecobee by running the SmartApp and logging in again", 1, null, "error", true, true)
+    LOG("apiLost() - ${where}: Lost connection with APIs. unscheduling Polling and refreshAuthToken. User MUST reintialize the connection with Ecobee by running the SmartApp and logging in again", 1, null, "error")
     // TODO: Add a state.apiLostDump variable and populate it with useful troubleshooting information to make it easier to grab everything in one place. Then also add this to the Debug Dashboard
-    // state.apiLostDump = [blah:blah, yup:yup]
+    state.apiLostDump = getDebugDump()
+    
+    // Has out token really expired yet?
+    if ( !readyForAuthRefresh() ) {
+    	LOG("apiLost() - Still time left on expiry of Auth Token. Gonna wait until full expiry to actually declare the api as fully lost. Setting it to warn instead.", 1, null, "error")
+        state.connected = "warn"
+    	generateEventLocalParams()
+        return
+	}    
     
     // provide cleanup steps when API Connection is lost
 	def notificationMessage = "is disconnected from SmartThings/Ecobee, because the access credential changed or was lost. Please go to the Ecobee (Connect) SmartApp and re-enter your account login credentials."
@@ -1895,13 +1997,13 @@ private def apiLost(where = "not specified") {
     sendPushAndFeeds(notificationMessage)
 	generateEventLocalParams()
 
-    LOG("Unscheduling Polling and refreshAuthToken. User MUST reintialize the connection with Ecobee by running the SmartApp and logging in again", 0, null, "error", true, true)
+    LOG("Unscheduling Polling and refreshAuthToken. User MUST reintialize the connection with Ecobee by running the SmartApp and logging in again", 0, null, "error")
     
     // Notify each child that we lost so it gets logged
     if ( debugLevel(3) ) {
     	def d = getChildDevices()
     	d?.each { oneChild ->
-        	LOG("apiLost() - notifying each child: ${oneChild} of loss", 0, child, "error", true, true)
+        	LOG("apiLost() - notifying each child: ${oneChild} of loss", 0, child, "error")
 		}
     }
     
@@ -1915,7 +2017,7 @@ def notifyApiLost() {
     if ( state.connected == "lost" ) {
     	generateEventLocalParams()
 		sendPushAndFeeds(notificationMessage)
-        LOG("notifyApiLost() - API Connection Previously Lost. User MUST reintialize the connection with Ecobee by running the SmartApp and logging in again", 0, null, "error", true, true)
+        LOG("notifyApiLost() - API Connection Previously Lost. User MUST reintialize the connection with Ecobee by running the SmartApp and logging in again", 0, null, "error")
 	} else {
     	// Must have restored connection
         unschedule("notifyApiLost")
