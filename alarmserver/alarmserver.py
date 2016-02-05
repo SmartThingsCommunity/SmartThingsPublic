@@ -91,7 +91,7 @@ class AlarmServerConfig():
         self.ENVISALINKPROXYPASS = self.read_config_var('envisalink', 'proxypass', self.ENVISALINKPASS, 'str')
         self.PUSHOVER_ENABLE = self.read_config_var('pushover', 'enable', False, 'bool')
         self.PUSHOVER_USERTOKEN = self.read_config_var('pushover', 'enable', False, 'bool')
-        self.ALARMCODE = self.read_config_var('envisalink', 'alarmcode', 1111, 'int')
+        self.ALARMCODE = self.read_config_var('envisalink', 'alarmcode', 1111, 'str')
         self.EVENTTIMEAGO = self.read_config_var('alarmserver', 'eventtimeago', True, 'bool')
         self.LOGFILE = self.read_config_var('alarmserver', 'logfile', '', 'str')
         self.CALLBACKURL_BASE = self.read_config_var('alarmserver', 'callbackurl_base', '', 'str')
