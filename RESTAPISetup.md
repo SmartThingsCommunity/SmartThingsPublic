@@ -33,6 +33,9 @@ SAVE THAT ACCESS CODE!
 
 You need that everytime you want to send a command to your new Smartthings App!
 
+If this step didn't work for some reason - try another web browser. I ended up using "curl" from the commandline and that worked
+just fine when chrome didn't. Your luck may vary...
+
 Last step!
 
 You now need to get your apps ID so you can reference it directly, go to the URL below and if prompted login with your Smartthings developer id you have been using.
