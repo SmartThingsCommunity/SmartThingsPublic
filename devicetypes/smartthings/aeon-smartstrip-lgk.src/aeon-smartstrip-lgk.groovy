@@ -15,9 +15,7 @@
  * add labels so you can name each switch
  * fix last switch which will not change color.
  * currently need to use ver 2.07 off app at least on android as 2.08 has a bug with labels being all
- * screwed up below the fold. I know the labels are too big but there is no way unfort. to 
- * only used 1/2 height tiles.. It would be a nice addition especially for cases like this when yo
- * want a whole width label.
+ * screwed up below the fold.
  * change scale to 2 for smaller tiles, but for some strange reason had to put blank tile
  * on the end of the label otherwise it screws up and puts weird stuff there.
  
