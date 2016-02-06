@@ -3,7 +3,7 @@
  *
  *  Copyright 2015 Bruce Ravenel
  *
- *  Version 1.7.6f   5 Feb 2016
+ *  Version 1.7.6g   5 Feb 2016
  *
  *	Version History
  *
@@ -85,7 +85,7 @@ preferences {
 def firstPage() {
 	//version to parent app and expert settings for rule
 	try { 
-		state.isExpert = parent.isExpert("1.7.6f") 
+		state.isExpert = parent.isExpert("1.7.6g") 
 		if (state.isExpert) state.cstCmds = parent.getCommands()
 		else state.cstCmds = []
 	}
@@ -99,7 +99,7 @@ def firstPage() {
 			section() {     
 				label title: "Name the Trigger", required: true
 				def condLabel = conditionLabel()
-				href "selectConditions", title: "Define Trigger Events", description: condLabel ? (condLabel) : "Tap to set", required: true, state: condLabel ? "complete" : null, submitOnChange: true
+				href "selectConditions", title: "Select Trigger Events", description: condLabel ? (condLabel) : "Tap to set", required: true, state: condLabel ? "complete" : null, submitOnChange: true
 				href "selectActionsTrue", title: "Select Actions", description: state.actsTrue ? state.actsTrue : "Tap to set", state: state.actsTrue ? "complete" : null
 			}
 			section(title: "More options", hidden: hideOptionsSection(), hideable: true) {
@@ -114,9 +114,9 @@ def firstPage() {
 			section() { 
 				label title: "Name the Trigger", required: true
 				def trigLabel = triggerLabel()
-				href "selectTriggers", title: "Define Trigger Events", description: trigLabel ? (trigLabel) : "Tap to set", state: trigLabel ? "complete" : null, submitOnChange: true
+				href "selectTriggers", title: "Select Trigger Events", description: trigLabel ? (trigLabel) : "Tap to set", state: trigLabel ? "complete" : null, submitOnChange: true
 				def condLabel = conditionLabel()
-				href "selectConditions", title: "Define Conditions " + (state.howMany in [null, 1] ? "(Optional)" : ""), description: condLabel ? (condLabel) : "Tap to set", state: condLabel ? "complete" : null, submitOnChange: true
+				href "selectConditions", title: "Select Conditions " + (state.howMany in [null, 1] ? "(Optional)" : ""), description: condLabel ? (condLabel) : "Tap to set", state: condLabel ? "complete" : null, submitOnChange: true
 				def ruleLabel = rulLabl()
 				if(state.howMany > 1) 
 					href "defineRule", title: "Define a Rule", description: ruleLabel ? (ruleLabel) : "Tap to set", state: ruleLabel ? "complete" : null, submitOnChange: true
@@ -137,7 +137,7 @@ def firstPage() {
 			section() { 
 				label title: "Name the Rule", required: true
 				def condLabel = conditionLabel()
-				href "selectConditions", title: "Define Conditions", description: condLabel ? (condLabel) : "Tap to set", required: true, state: condLabel ? "complete" : null, submitOnChange: true
+				href "selectConditions", title: "Select Conditions", description: condLabel ? (condLabel) : "Tap to set", required: true, state: condLabel ? "complete" : null, submitOnChange: true
 				href "defineRule", title: "Define the Rule", description: state.str ? (state.str) : "Tap to set", state: state.str ? "complete" : null, submitOnChange: true
 				href "selectActionsTrue", title: "Select Actions for True", description: state.actsTrue ? state.actsTrue : "Tap to set", state: state.actsTrue ? "complete" : null, submitOnChange: true
 				href "selectActionsFalse", title: "Select Actions for False", description: state.actsFalse ? state.actsFalse : "Tap to set", state: state.actsFalse ? "complete" : null, submitOnChange: true
@@ -150,7 +150,7 @@ def firstPage() {
         	section() { 
 				label title: "Name the Rule", required: true
 				def condLabel = conditionLabel()
-				href "selectConditions", title: "Define Conditions", description: condLabel ? (condLabel) : "Tap to set", state: condLabel ? "complete" : null, submitOnChange: true
+				href "selectConditions", title: "Select Conditions", description: condLabel ? (condLabel) : "Tap to set", state: condLabel ? "complete" : null, submitOnChange: true
 				def ruleLabel = rulLabl()
 				if(state.howMany > 1) 
 					href "defineRule", title: "Define a Rule", description: ruleLabel ? (ruleLabel) : "Tap to set", state: ruleLabel ? "complete" : null, submitOnChange: true
@@ -191,7 +191,7 @@ def selectTrig() {
 			section() {     
 				label title: "Name the Trigger", required: true
 				def condLabel = conditionLabel()
-				href "selectConditions", title: "Define Trigger Events", description: condLabel ? (condLabel) : "Tap to set", required: true, state: condLabel ? "complete" : null, submitOnChange: true
+				href "selectConditions", title: "Select Trigger Events", description: condLabel ? (condLabel) : "Tap to set", required: true, state: condLabel ? "complete" : null, submitOnChange: true
 				href "selectActionsTrue", title: "Select the Actions", description: state.actsTrue ? state.actsTrue : "Tap to set", state: state.actsTrue ? "complete" : null
 			}
 			section(title: "More options", hidden: hideOptionsSection(), hideable: true) {
@@ -206,7 +206,7 @@ def selectTrig() {
 			section() { 
 				label title: "Name the Trigger", required: true
 				def trigLabel = triggerLabel()
-				href "selectTriggers", title: "Define Trigger Events", description: trigLabel ? (trigLabel) : "Tap to set", state: trigLabel ? "complete" : null, submitOnChange: true
+				href "selectTriggers", title: "Select Trigger Events", description: trigLabel ? (trigLabel) : "Tap to set", state: trigLabel ? "complete" : null, submitOnChange: true
 				def condLabel = conditionLabel()
 				href "selectConditions", title: "Define Conditions " + (state.howMany in [null, 1] ? "(Optional)" : ""), description: condLabel ? (condLabel) : "Tap to set", state: condLabel ? "complete" : null, submitOnChange: true
 				def ruleLabel = rulLabl()
@@ -235,7 +235,7 @@ def selectRule() {
 			section() { 
 				label title: "Name the Rule", required: true
 				def condLabel = conditionLabel()
-				href "selectConditions", title: "Define Conditions", description: condLabel ? (condLabel) : "Tap to set", required: true, state: condLabel ? "complete" : null, submitOnChange: true
+				href "selectConditions", title: "Select Conditions", description: condLabel ? (condLabel) : "Tap to set", required: true, state: condLabel ? "complete" : null, submitOnChange: true
 				href "defineRule", title: "Define the Rule", description: state.str ? (state.str) : "Tap to set", state: state.str ? "complete" : null, submitOnChange: true
 				href "selectActionsTrue", title: "Select the Actions for True", description: state.actsTrue ? state.actsTrue : "Tap to set", state: state.actsTrue ? "complete" : null, submitOnChange: true
 				href "selectActionsFalse", title: "Select the Actions for False", description: state.actsFalse ? state.actsFalse : "Tap to set", state: state.actsFalse ? "complete" : null, submitOnChange: true
@@ -248,7 +248,7 @@ def selectRule() {
         	section() { 
 				label title: "Name the Rule", required: true
 				def condLabel = conditionLabel()
-				href "selectConditions", title: "Define Conditions ", description: condLabel ? (condLabel) : "Tap to set", state: condLabel ? "complete" : null, submitOnChange: true
+				href "selectConditions", title: "Select Conditions ", description: condLabel ? (condLabel) : "Tap to set", state: condLabel ? "complete" : null, submitOnChange: true
 				def ruleLabel = rulLabl()
 				href "defineRule", title: "Define a Rule", description: ruleLabel ? (ruleLabel) : "Tap to set", state: ruleLabel ? "complete" : null, submitOnChange: true
 				href "selectActionsTrue", title: "Select Actions for True", description: state.actsTrue ? state.actsTrue : "Tap to set", state: state.actsTrue ? "complete" : null, submitOnChange: true
