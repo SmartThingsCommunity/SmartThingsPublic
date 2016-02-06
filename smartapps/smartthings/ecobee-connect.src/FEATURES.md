@@ -1,7 +1,7 @@
 # Feature Description for the Ecobee (Connect) SmartApp and Related Components
 
 ## Introduction
-This document describes the various features related to the Ecobee (Connect) Open Source SmartApp and the related compoenents.
+This document describes the various features related to the Open Source Ecobee (Connect)  SmartApp and the related compoenents.
 
 The following components are part of the solution:
 - **Ecobee (Connect) SmartApp**: This SmartApp provides a single interface for Ecobee Authorization, Device Setup (both Thermostats **and** Sensors), Behavioral Settings and even a Debug Dashboard. Additional features can be added over time as well thanks to built in support for Child SmartApps, keeping everything nicely integrated into one app.
