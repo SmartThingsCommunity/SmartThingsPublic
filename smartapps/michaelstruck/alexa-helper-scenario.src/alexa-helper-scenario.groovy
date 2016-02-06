@@ -2,7 +2,7 @@
  *  Alexa Helper-Child
  *
  *  Copyright © 2016 Michael Struck
- *  Version 2.3.0a 2/2/16
+ *  Version 2.4.0 2/3/16
  * 
  *  Version 1.0.0 - Initial release of child app
  *  Version 1.1.0 - Added framework to show version number of child app and copyright
@@ -16,7 +16,7 @@
  *  Version 2.2.0a - Added SMS to on/off control scenarios, and allow  'toggle' to change the lights; added Sonos as an alarm type
  *  Version 2.2.1a - Code and syntax optimization; added routine to turn off Sonos speaker if used as alarm
  *  Version 2.3.0 - Code optimization and configuration for additional memory slots for Sonos (advanced users only)
- *
+ *  Version 2.4.0 - Added GUI (in parent app) to allow for variable number of Sonos memory slots, added speaker pause toggle
  *
  *  Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except
  *  in compliance with the License. You may obtain a copy of the License at:
@@ -51,7 +51,7 @@ def pageStart() {
 	dynamicPage(name: "pageStart", title: "Scenario Settings", uninstall: true, install: true) {
 		section {
        		def parentVersion = parent.versionInt()
-			if (parentVersion < 411){
+			if (parentVersion < 420){
 				paragraph "You are using a version of the parent app that is older than the recommended version. Please upgrade "+
 					"to the latest version to ensure you have the latest features and bug fixes."
 			}
@@ -255,7 +255,10 @@ def pagePanic() {
 def pageSpeaker(){
 	dynamicPage(name: "pageSpeaker", title: "Speaker Scenario Settings", install: false, uninstall: false) {
 		section {
-        	input "vDimmerSpeaker", "capability.switchLevel", title: "Control Switch (Dimmer)", multiple: false, required:false
+        	input "vDimmerSpeaker", "capability.switchLevel", title: "Control Switch (Dimmer)", multiple: false, required:false, submitOnChange:true
+            	if (vDimmerSpeaker){
+                	input "speakerOffFunction", "bool", title: "Switch off action: Pause/Stop Playback", defaultValue: false
+                }
             input "speaker", "capability.musicPlayer", title: "Speaker To Control", multiple: false , required: false, submitOnChange:true
         }
     	section ("Speaker Volume Limits") {        
@@ -268,8 +271,7 @@ def pageSpeaker(){
        		input "prevSwitch", "capability.momentary", title: "Previous Track Switch (Momentary)", multiple: false, required: false
     	}
         if (speaker && songOptions(1) && parent.getSonos() && speaker.name.contains("Sonos")){
-			for (int i = 1; i <= sonosSlots(); i++) {
-    			if (settings."song${i}Switch" || i==1 || settings."song${i-1}Switch" )
+            for (int i = 1; i <=sonosSlots(); i++) {
                 section ("Sonos Saved Station ${i}"){
 					input "song${i}Switch", "capability.momentary", title: "Saved Station Switch #${i} (Momentary)", multiple: false, required: false, submitOnChange:true
 					if (settings."song${i}Switch"){
@@ -359,7 +361,7 @@ def initialize() {
             if (nextSwitch) {subscribe (nextSwitch, "switch.on", "controlNextHandler")}
         	if (prevSwitch) {subscribe (prevSwitch, "switch.on", "controlPrevHandler")} 
             if (parent.getSonos() && speaker.name.contains("Sonos")){
-                for (int i = 1; i <= sonosSlots(); i++) {
+				for (int i = 1; i <= sonosSlots(); i++) {
                 	if (settings."song${i}Switch" && settings."song${i}Station"){
                     	subscribe (settings."song${i}Switch", "switch.on", "controlSong")
                     }
@@ -547,7 +549,14 @@ def speakerControl(cmd,song){
 		}
     	if (cmd=="on"){speaker.play()}
     }
-	if (cmd=="off"){speaker.stop()}
+	if (cmd=="off"){
+    	if (speakerOffFunction){
+        	speaker.stop()
+        }
+        else {
+        	speaker.pause()
+        }
+    }
 }
 //Volume Handler
 def speakerVolHandler(evt){
@@ -942,13 +951,13 @@ def getAlarmSound(){
     }
     state.alarmSound = soundUri
 }
-private def sonosSlots(){
-	def count = 4
+def sonosSlots(){
+    def slots = parent.getMemCount() as int
 }
 //Version
 private def textVersion() {
-    def text = "Child App Version: 2.3.0a (02/02/2016)"
+    def text = "Child App Version: 2.4.0 (02/03/2016)"
 }
 private def versionInt(){
-	def text = 230
+	def text = 240
 }

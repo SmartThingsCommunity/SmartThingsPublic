@@ -2,7 +2,7 @@
  *  Alexa Helper-Parent
  *
  *  Copyright © 2016 Michael Struck
- *  Version 4.1.1 1/22/16
+ *  Version 4.2.0 2/5/16
  * 
  *  Version 1.0.0 - Initial release
  *  Version 2.0.0 - Added 6 slots to allow for one app to control multiple on/off actions
@@ -22,6 +22,7 @@
  *  Version 4.0.0 - Moved the speaker and thermostat controls to the scenario child app and optimized code
  *  Version 4.1.0 - Updated the instructions to reflect new functionality within the scenarios and new options page
  *  Version 4.1.1 - Minor syntax clean up
+ *  Version 4.2.0 - Added dropdown for number of Sonos memory slots
  *
  *  Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except
  *  in compliance with the License. You may obtain a copy of the License at:
@@ -46,6 +47,7 @@ definition(
 preferences {
     page name:"mainPage"
     page name:"pageAbout"
+    page name:"pageSettings"
 }
 //Show main page
 def mainPage() {
@@ -54,7 +56,7 @@ def mainPage() {
         	def childCount = childApps.size()
         	if (childCount){
         		def childVersion = childApps[0].versionInt()
-            	if (childVersion < 220){
+            	if (childVersion < 240){
             		paragraph "You are using a version of the child app that is older than the recommended version. Please upgrade "+
                     	"to the latest version to ensure you have the latest features and bug fixes."
             	}
@@ -80,11 +82,16 @@ def pageAbout(){
         }
 	}
 }
-page(name: "pageSettings", title: "Settings", install: false, uninstall: false) {	
-	section {
-    	input "speakerSonos", "bool", title: "Allow Sonos special options", defaultValue: false
-        input "tstatNest", "bool", title: "Allow Nest special options", defaultValue: false
-        input "showRestrictions", "bool", title: "Show scenario restrictions", defaultValue: true
+def pageSettings(){
+    dynamicPage(name: "pageSettings", title: "Settings", install: false, uninstall: false) {	
+        section {
+            input "speakerSonos", "bool", title: "Allow Sonos special options", defaultValue: false, submitOnChange:true
+                if (speakerSonos){
+                    input "memoryCount", "enum", title: "Maximum number of Sonos memory slots", options: [2,3,4,5,6,7,8], defaultValue: 2, required: false
+                }
+            input "tstatNest", "bool", title: "Allow Nest special options", defaultValue: false
+            input "showRestrictions", "bool", title: "Show scenario restrictions", defaultValue: true
+        }
     }
 }
 def installed() {
@@ -109,18 +116,21 @@ def getRestrictions(){
 def getNest(){
 	def result = tstatNest
 }
+def getMemCount(){
+	def result = memoryCount ? memoryCount : 2
+}
 //Version/Copyright/Information/Help
 private def textAppName() {
 	def text = "Alexa Helper"
 }	
 private def textVersion() {
-    def version = "Parent App Version: 4.1.1 (01/22/2016)"
+    def version = "Parent App Version: 4.2.0 (02/05/2016)"
     def childCount = childApps.size()
     def childVersion = childCount ? childApps[0].textVersion() : "No scenarios installed"
     return "${version}\n${childVersion}"
 }
 private def versionInt(){
-	def text = 411
+	def text = 420
 }
 private def textCopyright() {
     def text = "Copyright © 2016 Michael Struck"
@@ -141,7 +151,7 @@ private def textLicense() {
 }
 private def textHelp() {
 	def text =
-		"Ties various SmartThings functions to the on/off state of a specifc switch. You may also control a thermostat or the volume of a wireless speaker using a dimmer control. "+
+		"Ties various SmartThings functions to the on/off state of specifc switches. You may also control a thermostat or the volume of a wireless speaker using a dimmer control. "+
 		"Perfect for use with the Amazon Echo ('Alexa').\n\nTo use, first create the required momentary button tiles or 'Alexa Switch' (custom switch/dimmer) from the SmartThings IDE. "+
 		"You may also use any physical switches already associated with SmartThings. Include these switches within the Echo/SmartThings app, then discover the switches on the Echo. "+
 		"For control over SmartThings aspects such as modes and routines, add a new scenario choosing Modes/Routines/Devices/HTTP/SHM scenario type. "+
@@ -155,6 +165,6 @@ private def textHelp() {
 		"you change modes. Momentary switches can be used to activate the thermostat's heating, cooling, or auto modes."+
 		"\n\nTo control a connected speaker, add a new scenario choosing the 'speaker' scenario type, then under the settings choose a dimmer switch (usually an Alexa Switch) "+
 		"and speaker you wish to control. You can set the initial volume upon turning on the speaker, along with volume limits. Finally, you can utilize other virtual momentary "+
-		"button tiles to choose next/previous tracks." +
+		"button tiles to choose next/previous tracks or (if you have a Sonos speaker) specific memory slots for songs/internet stations." +
 		"\n\nYou can also sent up panic commands that will turn on a connected strobe/alarm device or send an SMS message to someone when activated."
 }
