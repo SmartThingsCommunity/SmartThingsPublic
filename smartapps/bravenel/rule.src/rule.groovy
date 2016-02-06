@@ -3,7 +3,7 @@
  *
  *  Copyright 2015 Bruce Ravenel
  *
- *  Version 1.7.6e   5 Feb 2016
+ *  Version 1.7.6f   5 Feb 2016
  *
  *	Version History
  *
@@ -85,7 +85,7 @@ preferences {
 def firstPage() {
 	//version to parent app and expert settings for rule
 	try { 
-		state.isExpert = parent.isExpert("1.7.6e") 
+		state.isExpert = parent.isExpert("1.7.6f") 
 		if (state.isExpert) state.cstCmds = parent.getCommands()
 		else state.cstCmds = []
 	}
@@ -973,7 +973,7 @@ def selectActionsTrue() {
 			checkActTrue(closeValveTrue, "Close: $closeValveTrue")
 			input "thermoTrue", "capability.thermostat", title: "Set these thermostats", multiple: true, required: false, submitOnChange: true
 			if(thermoTrue) {
-				input "thermoModeTrue", "enum", title: "Select thermostate mode", multiple: false, required: false, options: ["auto", "heat", "cool", "off"], submitOnChange: true
+				input "thermoModeTrue", "enum", title: "Select thermostat mode", multiple: false, required: false, options: ["auto", "heat", "cool", "off"], submitOnChange: true
 				input "thermoSetHeatTrue", "decimal", title: "Set heating point", multiple: false, required: false, submitOnChange: true
 				input "thermoSetCoolTrue", "decimal", title: "Set cooling point", multiple: false, required: false, submitOnChange: true 
 				input "thermoFanTrue", "enum", title: "Fan setting", multiple: false, required: false, submitOnChange: true, options: ["on", "auto"]
@@ -1136,7 +1136,7 @@ def selectActionsFalse() {
 			checkActFalse(closeValveFalse, "Close: $closeValveFalse")
 			input "thermoFalse", "capability.thermostat", title: "Set these thermostats", multiple: true, required: false, submitOnChange: true
 			if(thermoFalse) {
-				input "thermoModeFalse", "enum", title: "Select thermostate mode", multiple: false, required: false, options: ["auto", "heat", "cool", "off"], submitOnChange: true
+				input "thermoModeFalse", "enum", title: "Select thermostat mode", multiple: false, required: false, options: ["auto", "heat", "cool", "off"], submitOnChange: true
 				input "thermoSetHeatFalse", "decimal", title: "Set heating point", multiple: false, required: false, submitOnChange: true
 				input "thermoSetCoolFalse", "decimal", title: "Set cooling point", multiple: false, required: false, submitOnChange: true 
 				input "thermoFanFalse", "enum", title: "Fan setting", multiple: false, required: false, submitOnChange: true, options: ["on", "auto"]
