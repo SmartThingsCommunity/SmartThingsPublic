@@ -888,7 +888,7 @@ def selectActionsTrue() {
 			checkActTrue(offSwitchTrue, "Off: $offSwitchTrue")
 			input "toggleSwitchTrue", "capability.switch", title: "Toggle these switches", multiple: true, required: false, submitOnChange: true
 			checkActTrue(toggleSwitchTrue, "Toggle: $toggleSwitchTrue")
-			input "delayedOffTrue", "capability.switch", title: "Turn on/off these switches after a delay (default is OFF)", multiple: true, required: false, submitOnChange: true
+			input "delayedOffTrue", "capability.switch", title: "Turn on or off these switches after a delay (default is OFF)", multiple: true, required: false, submitOnChange: true
 			if(delayedOffTrue) {
 				input "delayOnOffTrue", "bool", title: "Turn ON after the delay?", multiple: false, required: false, defaultValue: false, submitOnChange: true
 				if(!delayMillisTrue) input "delayMinutesTrue", "number", title: "Minutes of delay", required: false, range: "1..*", submitOnChange: true
@@ -900,7 +900,7 @@ def selectActionsTrue() {
 				}
 			}
             if(state.isRule || state.howMany > 1) {
-				input "pendedOffTrue", "capability.switch", title: "Turn on/off these switches after a delay, pending cancellation (default is OFF)", multiple: true, required: false, submitOnChange: true
+				input "pendedOffTrue", "capability.switch", title: "Turn on or off these switches after a delay, pending cancellation (default is OFF)", multiple: true, required: false, submitOnChange: true
 				if(pendedOffTrue) {
 					input "pendOnOffTrue", "bool", title: "Turn ON after the delay?", multiple: false, required: false, defaultValue: false, submitOnChange: true
 					input "pendMinutesTrue", "number", title: "Minutes of delay", required: true, range: "0..*", submitOnChange: true
@@ -1051,7 +1051,7 @@ def selectActionsFalse() {
 			checkActFalse(offSwitchFalse, "Off: $offSwitchFalse")
 			input "toggleSwitchFalse", "capability.switch", title: "Toggle these switches", multiple: true, required: false, submitOnChange: true
 			checkActFalse(toggleSwitchFalse, "Toggle: $toggleSwitchFalse")
-			input "delayedOffFalse", "capability.switch", title: "Turn on/off these switches after a delay (default is OFF)", multiple: true, required: false, submitOnChange: true
+			input "delayedOffFalse", "capability.switch", title: "Turn on or off these switches after a delay (default is OFF)", multiple: true, required: false, submitOnChange: true
 			if(delayedOffFalse) {
 				input "delayOnOffFalse", "bool", title: "Turn ON after the delay?", multiple: false, required: false, defaultValue: false, submitOnChange: true
 				if(!delayMillisFalse) input "delayMinutesFalse", "number", title: "Minutes of delay", required: false, range: "1..*", submitOnChange: true
@@ -1063,7 +1063,7 @@ def selectActionsFalse() {
 				}
 			}
             if(state.isRule || state.howMany > 1) {
-				input "pendedOffFalse", "capability.switch", title: "Turn on/off these switches after a delay, pending cancellation (default is OFF)", multiple: true, required: false, submitOnChange: true
+				input "pendedOffFalse", "capability.switch", title: "Turn on or off these switches after a delay, pending cancellation (default is OFF)", multiple: true, required: false, submitOnChange: true
 				if(pendedOffFalse) {
 					input "pendOnOffFalse", "bool", title: "Turn ON after the delay?", multiple: false, required: false, defaultValue: false, submitOnChange: true
 					input "pendMinutesFalse", "number", title: "Minutes of delay", required: true, range: "0..*", submitOnChange: true
