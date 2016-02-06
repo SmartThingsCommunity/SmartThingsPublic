@@ -3,7 +3,7 @@
  *
  *  Copyright 2015 Bruce Ravenel
  *
- *  Version 1.7.6   5 Feb 2016
+ *  Version 1.7.6a   5 Feb 2016
  *
  *	Version History
  *
@@ -61,8 +61,8 @@ definition(
 
 preferences {
 	page(name: "firstPage")
+	page(name: "selectTrig")
 	page(name: "selectRule")
-	page(name: "selectRule2")
     page(name: "selectActions")
 	page(name: "selectTriggers")
 	page(name: "selectConditions")
@@ -85,34 +85,18 @@ preferences {
 def firstPage() {
 	//version to parent app and expert settings for rule
 	try { 
-		state.isExpert = parent.isExpert("1.7.6") 
+		state.isExpert = parent.isExpert("1.7.6a") 
 		if (state.isExpert) state.cstCmds = parent.getCommands()
 		else state.cstCmds = []
 	}
 	catch (e) {log.error "Please update Rule Machine to V1.6 or later"}
     def myTitle = "Select Trigger, Rule or Actions"
-    if(state.howManyT > 1) myTitle = "Define a Trigger"
+    if(state.howManyT > 1 || state.isTrig) myTitle = "Define a Trigger"
     else if(state.howMany > 1) myTitle = "Define a Rule"
     else if(app.label != null) myTitle = "Define Actions"
     dynamicPage(name: "firstPage", title: myTitle, uninstall: false, install: false) {
-    	section() {
-        	if(state.isTrig || state.howManyT > 1) href "selectRule", title: "Define a Trigger", description: app.label, state: "complete"
-            else if(state.isRule || state.howMany > 1) href "selectRule2", title: "Define a Rule", description: app.label, state: "complete"
-            else if(app.label != "Rule" && app.label != null) href "selectActions", title: "Define just Actions", description: app.label, state: "complete"
-            else {
-            	href "selectRule", title: "Define a Trigger", description: "Tap to set"
-                href "selectRule2", title: "Define a Rule", description: "Tap to set"
-                href "selectActions", title: "Define just Actions", description: "Tap to set"
-            }
-        }
-    }
-}
-
-def selectRule() {
-	def myTitle = "Select Triggers, Conditions, Rule and Actions"
-	if(state.isRule) myTitle = "Select Conditions, Rule and Actions"
-	if(state.isTrig) myTitle = "Select Triggers and Actions"
-	dynamicPage(name: "selectRule", title: myTitle, uninstall: true, install: true) {
+//    	section() {
+        	if(state.isTrig || state.howManyT > 1) {
 		if(state.isTrig) {    // old Trigger
 			section() {     
 				label title: "Name the Trigger", required: true
@@ -128,7 +112,34 @@ def selectRule() {
 				input "modesY", "mode", title: "Only when mode is", multiple: true, required: false            
 				input "disabled", "capability.switch", title: "Switch to disable trigger when ON", required: false, multiple: false
 			}    
-		} else if(state.isRule) {   // old Rule
+		} else {       // New format
+			section() { 
+				label title: "Name the Trigger", required: true
+				def trigLabel = triggerLabel()
+//				href "selectTriggers", title: "Define Triggers " + (state.howManyT in [null, 1] ? "(Optional)" : ""), description: trigLabel ? (trigLabel) : "Tap to set", state: trigLabel ? "complete" : null, submitOnChange: true
+				href "selectTriggers", title: "Define Triggers ", description: trigLabel ? (trigLabel) : "Tap to set", state: trigLabel ? "complete" : null, submitOnChange: true
+				def condLabel = conditionLabel()
+				href "selectConditions", title: "Define Conditions " + (state.howMany in [null, 1] ? "(Optional)" : ""), description: condLabel ? (condLabel) : "Tap to set", state: condLabel ? "complete" : null, submitOnChange: true
+				def ruleLabel = rulLabl()
+				if(state.howMany > 1) 
+					href "defineRule", title: "Define a Rule", description: ruleLabel ? (ruleLabel) : "Tap to set", state: ruleLabel ? "complete" : null, submitOnChange: true
+				href "selectActionsTrue", title: "Select Actions" + (state.howMany > 1 ? " for True" : ""), description: state.actsTrue ? state.actsTrue : "Tap to set", state: state.actsTrue ? "complete" : null, submitOnChange: true
+				if(state.howMany > 1)
+					href "selectActionsFalse", title: "Select Actions for False", description: state.actsFalse ? state.actsFalse : "Tap to set", state: state.actsFalse ? "complete" : null, submitOnChange: true
+			}
+			section(title: "More options", hidden: hideOptionsSection(), hideable: true) {
+				def timeLabel = timeIntervalLabel()
+				href "certainTime", title: "Only during a certain time", description: timeLabel ?: "Tap to set", state: timeLabel ? "complete" : null
+				input "daysY", "enum", title: "Only on certain days of the week", multiple: true, required: false,
+					options: ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"]
+				input "modesY", "mode", title: "Only when mode is", multiple: true, required: false            
+				input "disabled", "capability.switch", title: "Switch to disable Rule", required: false, multiple: false, submitOnChange: true
+                if(disabled) input "disabledOff", "bool", title: "Disable when Off? On is default", required: false, defaultValue: false
+			}    
+		}
+            }
+            else if(state.isRule || state.howMany > 1) {
+		if(state.isRule) {   // old Rule
 			section() { 
 				label title: "Name the Rule", required: true
 				def condLabel = conditionLabel()
@@ -141,6 +152,66 @@ def selectRule() {
 				input "modesZ", "mode", title: "Evaluate only when mode is", multiple: true, required: false
 				input "disabled", "capability.switch", title: "Switch to disable rule when ON", required: false, multiple: false
 			}   
+		} else {		
+        	section() { 
+				label title: "Name the Rule", required: true
+				def condLabel = conditionLabel()
+				href "selectConditions", title: "Define Conditions ", description: condLabel ? (condLabel) : "Tap to set", state: condLabel ? "complete" : null, submitOnChange: true
+				def ruleLabel = rulLabl()
+				if(state.howMany > 1) 
+					href "defineRule", title: "Define a Rule", description: ruleLabel ? (ruleLabel) : "Tap to set", state: ruleLabel ? "complete" : null, submitOnChange: true
+				href "selectActionsTrue", title: "Select Actions" + (state.howMany > 1 ? " for True" : ""), description: state.actsTrue ? state.actsTrue : "Tap to set", state: state.actsTrue ? "complete" : null, submitOnChange: true
+				if(state.howMany > 1)
+					href "selectActionsFalse", title: "Select Actions for False", description: state.actsFalse ? state.actsFalse : "Tap to set", state: state.actsFalse ? "complete" : null, submitOnChange: true
+			}
+			section(title: "More options", hidden: hideOptionsSection(), hideable: true) {
+				def timeLabel = timeIntervalLabel()
+				href "certainTime", title: "Only during a certain time", description: timeLabel ?: "Tap to set", state: timeLabel ? "complete" : null
+				input "daysY", "enum", title: "Only on certain days of the week", multiple: true, required: false,
+					options: ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"]
+				input "modesY", "mode", title: "Only when mode is", multiple: true, required: false            
+				input "disabled", "capability.switch", title: "Switch to disable Rule", required: false, multiple: false, submitOnChange: true
+                if(disabled) input "disabledOff", "bool", title: "Disable when Off? On is default", required: false, defaultValue: false
+			}
+        }
+            }
+            else if(app.label != "Rule" && app.label != null) {
+			section() { 
+				label title: "Name the Actions", required: true
+				href "selectActionsTrue", title: "Select Actions", description: state.actsTrue ? state.actsTrue : "Tap to set", state: state.actsTrue ? "complete" : null, submitOnChange: true
+			}
+            }
+            else {
+            	section() {
+            	href "selectRule", title: "Define a Trigger", description: "Tap to set"
+                href "selectRule2", title: "Define a Rule", description: "Tap to set"
+                href "selectActions", title: "Define Actions", description: "Tap to set"
+                }
+            }
+//        }
+    }
+}
+
+def selectTrig() {
+	def myTitle = "Select Triggers, Conditions, Rule and Actions"
+	if(state.isRule) myTitle = "Select Conditions, Rule and Actions"
+	if(state.isTrig) myTitle = "Select Triggers and Actions"
+	dynamicPage(name: "selectTrig", title: myTitle, uninstall: true, install: true) {
+		if(state.isTrig) {    // old Trigger
+			section() {     
+				label title: "Name the Trigger", required: true
+				def condLabel = conditionLabel()
+				href "selectConditions", title: "Define Triggers", description: condLabel ? (condLabel) : "Tap to set", required: true, state: condLabel ? "complete" : null, submitOnChange: true
+				href "selectActionsTrue", title: "Select the Actions", description: state.actsTrue ? state.actsTrue : "Tap to set", state: state.actsTrue ? "complete" : null
+			}
+			section(title: "More options", hidden: hideOptionsSection(), hideable: true) {
+				def timeLabel = timeIntervalLabel()
+				href "certainTime", title: "Only during a certain time", description: timeLabel ?: "Tap to set", state: timeLabel ? "complete" : null
+				input "days", "enum", title: "Only on certain days of the week", multiple: true, required: false,
+					options: ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"]
+				input "modesY", "mode", title: "Only when mode is", multiple: true, required: false            
+				input "disabled", "capability.switch", title: "Switch to disable trigger when ON", required: false, multiple: false
+			}    
 		} else {       // New format
 			section() { 
 				label title: "Name the Rule", required: true
@@ -169,9 +240,23 @@ def selectRule() {
 	}
 }
 
-def selectRule2() {
-	dynamicPage(name: "selectRule2", title: "Select Conditions, Rule and Actions", uninstall: true, install: true) {
+def selectRule() {
+	dynamicPage(name: "selectRule", title: "Select Conditions, Rule and Actions", uninstall: true, install: true) {
+		if(state.isRule) {   // old Rule
 			section() { 
+				label title: "Name the Rule", required: true
+				def condLabel = conditionLabel()
+				href "selectConditions", title: "Define Conditions", description: condLabel ? (condLabel) : "Tap to set", required: true, state: condLabel ? "complete" : null, submitOnChange: true
+				href "defineRule", title: "Define the Rule", description: state.str ? (state.str) : "Tap to set", state: state.str ? "complete" : null, submitOnChange: true
+				href "selectActionsTrue", title: "Select the Actions for True", description: state.actsTrue ? state.actsTrue : "Tap to set", state: state.actsTrue ? "complete" : null, submitOnChange: true
+				href "selectActionsFalse", title: "Select the Actions for False", description: state.actsFalse ? state.actsFalse : "Tap to set", state: state.actsFalse ? "complete" : null, submitOnChange: true
+			}
+			section(title: "More options", hidden: hideOptionsSection(), hideable: true) {
+				input "modesZ", "mode", title: "Evaluate only when mode is", multiple: true, required: false
+				input "disabled", "capability.switch", title: "Switch to disable rule when ON", required: false, multiple: false
+			}   
+		} else {		
+        	section() { 
 				label title: "Name the Rule", required: true
 				def condLabel = conditionLabel()
 				href "selectConditions", title: "Define Conditions ", description: condLabel ? (condLabel) : "Tap to set", state: condLabel ? "complete" : null, submitOnChange: true
@@ -190,14 +275,15 @@ def selectRule2() {
 				input "modesY", "mode", title: "Only when mode is", multiple: true, required: false            
 				input "disabled", "capability.switch", title: "Switch to disable Rule", required: false, multiple: false, submitOnChange: true
                 if(disabled) input "disabledOff", "bool", title: "Disable when Off? On is default", required: false, defaultValue: false
-			}    
+			}
+        }
 	}
 }
 
 def selectActions() {
 	dynamicPage(name: "selectActions", title: "Select Actions", uninstall: true, install: true) {
 			section() { 
-				label title: "Name the Rule", required: true
+				label title: "Name the Actions", required: true
 				href "selectActionsTrue", title: "Select Actions", description: state.actsTrue ? state.actsTrue : "Tap to set", state: state.actsTrue ? "complete" : null, submitOnChange: true
 			}
 	}
