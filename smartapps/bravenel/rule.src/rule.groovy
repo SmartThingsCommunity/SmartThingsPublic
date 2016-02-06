@@ -3,7 +3,7 @@
  *
  *  Copyright 2015 Bruce Ravenel
  *
- *  Version 1.7.6c   5 Feb 2016
+ *  Version 1.7.6d   5 Feb 2016
  *
  *	Version History
  *
@@ -85,7 +85,7 @@ preferences {
 def firstPage() {
 	//version to parent app and expert settings for rule
 	try { 
-		state.isExpert = parent.isExpert("1.7.6c") 
+		state.isExpert = parent.isExpert("1.7.6d") 
 		if (state.isExpert) state.cstCmds = parent.getCommands()
 		else state.cstCmds = []
 	}
@@ -174,8 +174,8 @@ def firstPage() {
 			}
         } else {
             section() {
-            	href "selectRule", title: "Define a Trigger", description: "Tap to set"
-                href "selectRule2", title: "Define a Rule", description: "Tap to set"
+            	href "selectTrig", title: "Define a Trigger", description: "Tap to set"
+                href "selectRule", title: "Define a Rule", description: "Tap to set"
                 href "selectActions", title: "Define Actions", description: "Tap to set"
             }
         }
