@@ -2,11 +2,12 @@
  *  Talking Alarm Clock-Parent
  *
  *  Copyright © 2016 Michael Struck
- *  Version 2.1.0 1/30/16
+ *  Version 2.1.1 2/6/16
  * 
  *  Version 2.0.0 - Initial release of parent/client app. 1.4.5 was released to SmartThings production
  *  Version 2.0.1 - Changed the default of new schedules to 'enabled'
  *  Version 2.1.0 - Added momentary switch as trigger to give alarm summary
+ *  Version 2.1.1 - Added information in help about %people% variable
  *
  *  Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except
  *  in compliance with the License. You may obtain a copy of the License at:
@@ -145,7 +146,7 @@ private def textAppName() {
 	def text = "Talking Alarm Clock"
 }	
 private def textVersion() {
-    def version = "Parent App Version: 2.1.0 (01/30/2016)"
+    def version = "Parent App Version: 2.1.1 (02/06/2016)"
     def childCount = childApps.size()
     def childVersion = childCount ? childApps[0].textVersion() : "No alarm schedules installed"
     return "${version}\n${childVersion}"
@@ -172,7 +173,7 @@ private def textHelp() {
 		"Within each alarm schedule you create, choose a Sonos speaker, an alarm time and alarm type along with " +
 		"switches, dimmers and thermostat to control when the alarm is triggered. Routines and modes can be triggered at alarm time. "+
 		"You also have the option of setting up different alarm sounds, tracks and a personalized spoken greeting that can include a weather report. " +
-		"Variables that can be used in the voice greeting include %day%, %time% and %date%.\n\n"+
+		"Variables that can be used in the voice greeting include %people%, %day%, %time% and %date%.\n\n"+
 		"From the main SmartApp convenience page, tapping the 'Talking Alarm Clock' icon (if enabled within the app) will "+ 
 		"speak a summary of the alarms enabled or disabled without having to go into the application itself. This " + 
 		"functionality is optional and can be configured from the Alarm Summary page. You may also use a real or virtual switch to get a summary." 

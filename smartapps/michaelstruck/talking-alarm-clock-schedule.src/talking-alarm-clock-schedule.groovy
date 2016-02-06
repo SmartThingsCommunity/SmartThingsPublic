@@ -3,12 +3,13 @@
  *
  *  Copyright © 2016 Michael Struck
  *
- *  Version 1.1.0 (1/30/16) - Initial release of child app
+ *  Version 1.3.0 (2/4/16) - Initial release of child app
  *
  *  Version 1.0.0 - Initial release
  *  Version 1.0.1 - Small syntax changes for consistency
  *  Version 1.1.0 - Added switch alarm restriction
  *  Version 1.2.0 - Added custom alarm sound selection
+ *  Version 1.3.0 - Added presence voice variables (requires presence sensor used under the restrictions page), optimized code
  *
  *  Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except
  *  in compliance with the License. You may obtain a copy of the License at:
@@ -34,11 +35,12 @@ definition(
 preferences {
 	page name:"pageSetup"
     page name:"pageWeatherSettings"
+    page name:"pageRestrictions"
 }
 // Show setup page
 def pageSetup() {
 	dynamicPage(name: "pageSetup", title: "Alarm Settings", install: true, uninstall: true) {
-		section() {
+        section() {
 			label title:"Alarm Schedule Name", required: true
             def status = parent.getSchedStatus(app.id) ? "ENABLED" : "DISABLED"
             if (status){
@@ -63,7 +65,7 @@ def pageSetup() {
                         input "secondAlarmMusic", "bool", title: "Play a track after voice greeting", defaultValue: "false", required: false, submitOnChange:true
                     }
                 }
-                href "pageRestrictions", title: "Alarm Restrictions", description: getRestricionDesc(), state: greyOutRestrictions()
+                href "pageRestrictions", title: "Alarm Restrictions", description: getRestrictionDesc(), state: greyOutRestrictions()
             }
 		}
         if (alarmType == "1"){
@@ -118,14 +120,19 @@ def pageSetup() {
 		}
 	}
 }
-page(name: "pageRestrictions", title: "Alarm Restrictions", install: false, uninstall: false){
-	section{
-        input "alarmDay", "enum", options: ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"], title: "Alarm on certain days of the week...", multiple: true, required: false
-        input "alarmMode", "mode", title: "Alarm only during the following modes...", multiple: true, required: false
-        input "alarmPresence", "capability.presenceSensor", title: "Alarm only when all are present...", multiple: true, required: false
-        input "alarmSwitchActive", "capability.switch", title: "Alarm only when these switches are on...", multiple: true, required: false
-        input "alarmSwitchNotActive", "capability.switch", title: "Alarm only when these switches are off...", multiple: true, required: false
-	}
+def pageRestrictions(){
+    dynamicPage(name: "pageRestrictions", title: "Alarm Restrictions", install: false, uninstall: false){
+        section{
+            input "alarmDay", "enum", options: ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"], title: "Alarm on certain days of the week...", multiple: true, required: false
+            input "alarmMode", "mode", title: "Alarm only during the following modes...", multiple: true, required: false
+            input "alarmPresence", "capability.presenceSensor", title: "Alarm only when present...", multiple: true, required: false, submitOnChange:true
+            if (alarmPresence && alarmPresence.size()>1){
+				input "alarmPresAll", "bool", title: "Off=Any present; On=All present", defaultValue: false
+			}
+            input "alarmSwitchActive", "capability.switch", title: "Alarm only when these switches are on...", multiple: true, required: false
+            input "alarmSwitchNotActive", "capability.switch", title: "Alarm only when these switches are off...", multiple: true, required: false
+        }
+    }
 }
 page(name: "pageDimmers", title: "Dimmer Settings", install: false, uninstall: false) {
 	section {
@@ -179,6 +186,7 @@ def initialize() {
 }
 //Handlers----------------
 def alarmHandler() {
+    log.debug "Alarm time: Evaluating restrictions"
     if (parent.getSchedStatus(app.id) && (!alarmMode || alarmMode.contains(location.mode)) && getDayOk() && everyoneIsPresent() && switchesOnStatus() && switchesOffStatus()) {	
         if (switches || dimmers || thermostats) {
         	def dimLevel = dimmersLevel as Integer
@@ -291,16 +299,16 @@ def getAlarmDesc() {
         	def presListSize = alarmPresence.size()
             desc += " when "
             def verb = "are"
+            if (presListSize > 1 && !alarmPresAll){
+            	desc += "either "
+            }
+            if (presListSize > 1 && alarmPresAll){
+            	verb += " all are"
+            }  
             if (presListSize == 1){
             	verb = "is"
             }
-            for (presName in alarmPresence){
-            	desc += "${presName}"
-                presListSize =presListSize-1
-                if (presListSize) {
-                	desc += ", "
-				}
-			}
+            desc += getPresenceNames(1)
         	desc += " ${verb} present"
         }
         if (alarmMode) {
@@ -352,7 +360,7 @@ def getAlarmDesc() {
 			}
         }
     }
-	desc	
+	desc
 }
 def getWeatherDesc() {
 	def desc = includeTemp || localTemp ? "Speak temperature" : ""
@@ -389,12 +397,14 @@ def tstatDesc(){
 def greyOutTstat(){
 	def result = thermostats && (temperatureH || temperatureC)  ? "complete" : ""
 }
-def getRestricionDesc(){
+def getRestrictionDesc(){
 	def result = alarmDay ? "Days: ${alarmDay}" : ""
     result += result && alarmMode ? "\n" : ""
     result += alarmMode ? "Modes: ${alarmMode}" : ""
     result += result && alarmPresence ? "\n" : ""
-    result += alarmPresence ? "Presence: ${alarmPresence}" : ""
+    result += alarmPresence && alarmPresence.size()==1 ? "Present: ${alarmPresence}" : ""
+    result += alarmPresence && alarmPresAll && alarmPresence.size()>1 ? "All Present: ${alarmPresence}" : ""
+    result += alarmPresence && !alarmPresAll && alarmPresence.size()>1 ? "Any Present: ${alarmPresence}" : ""
     result += result && (alarmSwitchActive || alarmSwitchNotActive) ? "\n" : ""
     result += alarmSwitchActive ? "Switches (ON): ${alarmSwitchActive}" : ""
     result += result && alarmSwitchNotActive ? "\n" : ""
@@ -403,10 +413,39 @@ def getRestricionDesc(){
 }
 def greyOutRestrictions(){
 	def result = alarmDay || alarmMode || alarmPresence || alarmSwitchActive || alarmSwitchNotActive ? "complete" : ""
-}	
+}
+private getPresenceNames(param){
+    def nameList = ""
+    if (!param){
+    	def presentCount = 0
+        for (sensor in alarmPresence){
+    		if (sensor.currentPresence == "present"){presentCount ++}
+		}
+        for (presName in alarmPresence){
+        	if (presName.currentPresence == "present"){
+            	nameList += "${presName}"
+                presentCount = presentCount - 1
+                if (presentCount > 1) {nameList += ", "}
+                if (presentCount == 1) {nameList += " and "}
+            }
+		}
+    }
+    else {
+        def presListSize = alarmPresence.size()
+        for (presName in alarmPresence){
+            nameList += "${presName}"
+            presListSize = presListSize - 1
+            if (presListSize > 1) {nameList += ", "}
+            if (alarmPresAll && presListSize == 1){nameList += " and "}
+            if (presListSize == 1 && !alarmPresAll){nameList += " or "}
+        }
+	}
+    nameList
+}
 private getDayOk() {
 	def result = true
 	if (alarmDay) {result = alarmDay.contains(getDay())}
+    log.debug "Day ok ${result}"
     result
 }
 private getDay(){
@@ -415,13 +454,25 @@ private getDay(){
 	def day = df.format(new Date())
 }
 private everyoneIsPresent() {
-    def result = alarmPresence && alarmPresence.find {it.currentPresence == "not present"} ? false : true
+    def result = true
+    if (alarmPresAll && alarmPresence){
+        result = alarmPresence.find {it.currentPresence == "not present"} ? false : true
+    }
+    else if (!alarmPresAll && alarmPresence) {
+    	result = alarmPresence.find {it.currentPresence == "present"}
+    }
+    log.debug "Presence: ${result}"
+    result
 }
 private switchesOnStatus(){
 	def result = alarmSwitchActive && alarmSwitchActive.find{it.currentValue("switch") == "off"} ? false : true	
+	log.debug "Switch on restrictions: ${result}"
+    result
 }
 private switchesOffStatus(){
 	def result = alarmSwitchNotActive && alarmSwitchNotActive.find{it.currentValue("switch") == "on"} ? false : true	
+	log.debug "Switch off restrictions: ${result}"
+    result
 }
 private getSunriseSunset(){
     if (location.timeZone || zipCode) {
@@ -551,10 +602,11 @@ private getGreeting(msg) {
     def time = parseDate("", now(), "h:mm a")
     def month = parseDate("", now(), "MMMM")
     def year = parseDate("", now(), "yyyy")
-    def dayNum = parseDate("", now(), "dd")
+    def dayNum = parseDate("", now(), "d")
 	msg = msg.replace('%day%', day)
     msg = msg.replace('%date%', "${month} ${dayNum}, ${year}")
     msg = msg.replace('%time%', "${time}")
+    msg = alarmPresence ? msg.replace('%people%', "${getPresenceNames()}") : msg.replace('%people%', "")
     msg = "${msg} "
     compileMsg(msg)
 }
@@ -595,5 +647,5 @@ private saveSelectedSong() {
 }
 //Version
 private def textVersion() {
-    def text = "Child App Version: 1.2.0 (01/30/2016)"
+    def text = "Child App Version: 1.3.0 (02/04/2016)"
 }
