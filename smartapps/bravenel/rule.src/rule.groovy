@@ -3,11 +3,11 @@
  *
  *  Copyright 2015 Bruce Ravenel
  *
- *  Version 1.7.7   6 Feb 2016
+ *  Version 1.7.7a   6 Feb 2016
  *
  *	Version History
  *
- *	1.7.7	6 Feb 2016		UI cleanup and organization
+ *	1.7.7	6 Feb 2016		UI cleanup and organization, added capture/restore for switches/dimmers
  *	1.7.6	5 Feb 2016		Added action to update rule(s) to fix broken schedules due to ST issues
  *	1.7.5	3 Feb 2016		Removed use of unschedule() for delay cancel, to avoid ST issues
  *	1.7.4	2 Feb 2016		Redesign of UI to make it clearer between Triggers and Rules
@@ -86,7 +86,7 @@ preferences {
 def firstPage() {
 	//version to parent app and expert settings for rule
 	try { 
-		state.isExpert = parent.isExpert("1.7.7") 
+		state.isExpert = parent.isExpert("1.7.7a") 
 		if (state.isExpert) state.cstCmds = parent.getCommands()
 		else state.cstCmds = []
 	}
@@ -905,6 +905,13 @@ def selectActionsTrue() {
                 checkActTrue(dimMTrue, "Dimmers per mode: $dimMTrue")
 				sortModes.each {setModeLevel(it, "levelTrue$it", true)}
             }
+            if(captureFalse == null) {
+            	input "captureTrue", "capability.switch", title: "Capture the state of these switches", multiple: true, required: false, submitOnChange: true
+            	checkActTrue(captureTrue, "Capture: $captureTrue")
+            }
+            if(captureTrue || captureFalse) input "restoreTrue", "bool", title: "Restore the state of captured switches", required: false, submitOnChange: true
+            if(restoreTrue && captureTrue) setActTrue("Restore: $captureTrue")
+            else if(restoreTrue && captureFalse) setActTrue("Restore: $captureFalse")
 			input "ctTrue", "capability.colorTemperature", title: "Set color temperature for these bulbs", multiple: true, submitOnChange: true, required: false
 			if(ctTrue) input "ctLTrue", "number", title: "To this color temperature", range: "2000..6500", required: true, submitOnChange: true
 			if(ctLTrue) checkActTrue(ctTrue, "Color Temperature: $ctTrue: $ctLTrue")
@@ -1068,6 +1075,13 @@ def selectActionsFalse() {
                 checkActFalse(dimMFalse, "Dimmers per mode: $dimMFalse")
 				sortModes.each {setModeLevel(it, "levelFalse$it", false)}
             }
+            if(captureTrue == null) {
+            	input "captureFalse", "capability.switch", title: "Capture the state of these switches", multiple: true, required: false, submitOnChange: true
+            	checkActFalse(captureFalse, "Capture: $captureFalse")
+            }
+            if(captureTrue || captureFalse) input "restoreFalse", "bool", title: "Restore the state of captured switches?", required: false, submitOnChange: true
+            if(restoreFalse && captureFalse) setActFalse("Restore: $captureFalse")
+            else if(restoreFalse && captureTrue) setActFalse("Restore: $captureTrue")
 			input "ctFalse", "capability.colorTemperature", title: "Set color temperature for these bulbs", multiple: true, submitOnChange: true, required: false
 			if(ctFalse) input "ctLFalse", "number", title: "To this color temperature", range: "2000..6500", required: true, submitOnChange: true
 			if(ctLFalse) checkActFalse(ctFalse, "Color Temperature: $ctFalse: $ctLFalse")			
@@ -1615,8 +1629,42 @@ def doDelayFalse(time, rand, cancel) {
 	else log.info (rand ? "Random delay, up to $time minutes" : "Delayed by $time $delayStr")
 }
 
+def capture(dev) {
+	state.lastDevState = []
+    def i = 0
+    def switchState = ""
+    def dimmerValue = ""
+    dev.each {
+        switchState = it.currentSwitch.toString()
+        dimmerValue = it.currentLevel.toString()   
+        state.lastDevState[i] = [switchState: switchState, dimmerValue: dimmerValue]
+        i++       	
+    }
+}
+
+def restoreDev(switches, switchState, dimmerValue, i) {
+	if((switchState == "on") && (switchType != "Dimmer Switch")) switches[i].on()            
+    if((switchState == "on") && (switchType == "Dimmer Switch")) switches[i].setLevel(dimmerValue)
+    if(switchState == "off") switches[i].off()
+}
+
+def restore() {
+	def i = 0
+    def switchState = ""
+    def dimmerValue = ""
+	state.lastDevState.each {
+    	switchState = it.switchState
+        if(it.dimmerValue != "null") dimmerValue = it.dimmerValue.toInteger()
+        else dimmerValue = 0
+        if(captureTrue) restoreDev(captureTrue, switchState, dimmerValue, i)
+        if(captureFalse) restoreDev(captureFalse, switchState, dimmerValue, i)
+        i++
+    }
+}
+
 def takeAction(success) {
 	if(success) {
+        if(captureTrue)			capture(captureTrue)
 		if(onSwitchTrue) 		if(delayMilTrue) onSwitchTrue.on([delay: delayMilTrue]) else onSwitchTrue.on()
 		if(offSwitchTrue) 		if(delayMilTrue) offSwitchTrue.off([delay: delayMilTrue]) else offSwitchTrue.off()
 		if(toggleSwitchTrue)	toggle(toggleSwitchTrue, true)
@@ -1631,6 +1679,7 @@ def takeAction(success) {
 		if(toggleDimmerTrue && dimTogTrue != null)	dimToggle(toggleDimmerTrue, dimTogTrue, true)
         if(adjustDimmerTrue && dimAdjTrue != null)	dimAdjust(adjustDimmerTrue, dimAdjTrue, true)
         if(dimmerModesTrue && dimMTrue)		dimModes(true)
+        if(restoreTrue)			restore()
 		if(ctTrue && ctLTrue)   			ctTrue.setColorTemperature(ctLTrue)
 		if(bulbsTrue)			setColor(true)
 		if(garageOpenTrue)		if(delayMilTrue) garageOpenTrue.open([delay: delayMilTrue]) else garageOpenTrue.open()
@@ -1658,6 +1707,7 @@ def takeAction(success) {
 		if (mediaTrueDevice)	mediaTrueDevice.playTextAndRestore((msgTrue ?: "Rule $app.label True") + (refDevTrue ? " $state.lastEvtName" : ""), mediaTrueVolume)
 		if (state.howManyCCtrue > 1)  execCommands(true)
 	} else {
+        if(captureFalse)		capture(captureFalse)
 		if(onSwitchFalse) 		if(delayMilFalse) onSwitchFalse.on([delay: delayMilFalse]) else onSwitchFalse.on()
 		if(offSwitchFalse) 		if(delayMilFalse) offSwitchFalse.off([delay: delayMilFalse]) else offSwitchFalse.off()
 		if(toggleSwitchFalse)	toggle(toggleSwitchFalse, false)
@@ -1672,6 +1722,7 @@ def takeAction(success) {
 		if(toggleDimmerFalse && dimTogFalse != null) dimToggle(toggleDimmerFalse, dimTogFalse, false)
         if(adjustDimmerFalse && dimAdjFalse != null) dimAdjust(adjustDimmerFalse, dimAdjFalse, false)
         if(dimmerModesFalse && dimMFalse)		dimModes(false)
+        if(restoreFalse)		restore()
 		if(ctFalse)   			ctFalse.setColorTemperature(ctLFalse)
 		if(bulbsFalse)			setColor(false)
 		if(garageOpenFalse)		if(delayMilFalse) garageOpenFalse.open([delay: delayMilFalse]) else garageOpenFalse.open()
