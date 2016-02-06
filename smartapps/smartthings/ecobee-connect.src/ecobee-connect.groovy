@@ -611,6 +611,13 @@ Map getEcobeeSensors() {
 				def key = "ecobee_sensor_thermostat-"+ it?.id + "-" + it?.name
                 LOG("Adding a Thermostat as a Sensor: ${it}, key: ${key}  value: ${value}", 4, null, "trace")
 				sensorMap["${key}"] = value + " (Thermostat)"
+            } else if ( it.type == "monitor_sensor" && it.capability?.type == "temperature") {
+            	// We can add this one as it supports temperature
+                LOG("Adding an monitor_sensor: ${it}", 4, null, "trace")
+				def value = "${it?.name}"
+				def key = "monitor_sensor-"+ it?.id + "-" + it?.code
+				sensorMap["${key}"] = value
+            
             } else {
             	LOG("Did NOT add: ${it}. settings.showThermsAsSensor=${settings.showThermsAsSensor}", 4, null, "trace")
             }
@@ -1266,7 +1273,10 @@ def updateSensorData() {
 				def sensorDNI 
                 if (it.type == "ecobee3_remote_sensor") { 
                 	sensorDNI = "ecobee_sensor-" + it?.id + "-" + it?.code 
-				} else { 
+				} else if (it.type == "monitor_sensor") {
+                	LOG("We have a Smart SI style monitor_sensor! it=${it}", 4, null, "trace")
+                    sensorDNI = "monitor_sensor-" + it?.id + "-" + it?.code 
+                } else { 
                 	LOG("We have a Thermostat based Sensor! it=${it}", 4, null, "trace")
                 	sensorDNI = "ecobee_sensor_thermostat-"+ it?.id + "-" + it?.name
 				}
@@ -1305,14 +1315,17 @@ def updateSensorData() {
 				}
                                             				
 				def sensorData = [
-					temperature: ((temperature == "unknown") ? "unknown" : myConvertTemperatureIfNeeded(temperature, "F", 1)),
-					motion: occupancy
+					temperature: ((temperature == "unknown") ? "unknown" : myConvertTemperatureIfNeeded(temperature, "F", 1))					
 				]
+                if (occupancy != "") {
+                	sensorData << [ motion: occupancy ]
+                }
 				sensorCollector[sensorDNI] = [data:sensorData]
                 LOG("sensorCollector being updated with sensorData: ${sensorData}", 4)
                 
 			} else if ( (it.type == "thermostat") && (settings.showThermsAsSensor) ) { 
-            	// Also update the thermostat based Remote Sensor
+            	// Also update the thermostat based Remote Sensor??
+                // Don't think this is needed as we incorporated it directly in the if above
                 
             
             } // end thermostat else if
