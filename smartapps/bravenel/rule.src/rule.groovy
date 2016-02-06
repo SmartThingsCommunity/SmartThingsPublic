@@ -7,7 +7,7 @@
  *
  *	Version History
  *
- *	1.7.6	5 Feb 2016		Added action to update rule(s) to fix broken schedules
+ *	1.7.6	5 Feb 2016		Added action to update rule(s) to fix broken schedules due to ST issues
  *	1.7.5	3 Feb 2016		Removed use of unschedule() for delay cancel, to avoid ST issues
  *	1.7.4	2 Feb 2016		Redesign of UI to make it clearer between Triggers and Rules
  *	1.7.3	2 Feb 2016		Bug fix for multi-button device with more than 4 buttons
