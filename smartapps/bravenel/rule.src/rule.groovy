@@ -3,7 +3,7 @@
  *
  *  Copyright 2015 Bruce Ravenel
  *
- *  Version 1.7.6b   5 Feb 2016
+ *  Version 1.7.6c   5 Feb 2016
  *
  *	Version History
  *
@@ -85,7 +85,7 @@ preferences {
 def firstPage() {
 	//version to parent app and expert settings for rule
 	try { 
-		state.isExpert = parent.isExpert("1.7.6b") 
+		state.isExpert = parent.isExpert("1.7.6c") 
 		if (state.isExpert) state.cstCmds = parent.getCommands()
 		else state.cstCmds = []
 	}
@@ -95,14 +95,12 @@ def firstPage() {
     else if(state.howMany > 1) myTitle = "Define a Rule"
     else if(app.label != null) myTitle = "Define Actions"
     dynamicPage(name: "firstPage", title: myTitle, uninstall: true, install: true) {
-//    	section() {
-        	if(state.isTrig || state.howManyT > 1) {
 		if(state.isTrig) {    // old Trigger
 			section() {     
 				label title: "Name the Trigger", required: true
 				def condLabel = conditionLabel()
-				href "selectConditions", title: "Define Triggers", description: condLabel ? (condLabel) : "Tap to set", required: true, state: condLabel ? "complete" : null, submitOnChange: true
-				href "selectActionsTrue", title: "Select the Actions", description: state.actsTrue ? state.actsTrue : "Tap to set", state: state.actsTrue ? "complete" : null
+				href "selectConditions", title: "Define Trigger Events", description: condLabel ? (condLabel) : "Tap to set", required: true, state: condLabel ? "complete" : null, submitOnChange: true
+				href "selectActionsTrue", title: "Select Actions", description: state.actsTrue ? state.actsTrue : "Tap to set", state: state.actsTrue ? "complete" : null
 			}
 			section(title: "More options", hidden: hideOptionsSection(), hideable: true) {
 				def timeLabel = timeIntervalLabel()
@@ -112,12 +110,11 @@ def firstPage() {
 				input "modesY", "mode", title: "Only when mode is", multiple: true, required: false            
 				input "disabled", "capability.switch", title: "Switch to disable trigger when ON", required: false, multiple: false
 			}    
-		} else {       // New format
+		} else if(state.howManyT > 1) {       // New trigger
 			section() { 
 				label title: "Name the Trigger", required: true
 				def trigLabel = triggerLabel()
-//				href "selectTriggers", title: "Define Triggers " + (state.howManyT in [null, 1] ? "(Optional)" : ""), description: trigLabel ? (trigLabel) : "Tap to set", state: trigLabel ? "complete" : null, submitOnChange: true
-				href "selectTriggers", title: "Define Triggers ", description: trigLabel ? (trigLabel) : "Tap to set", state: trigLabel ? "complete" : null, submitOnChange: true
+				href "selectTriggers", title: "Define Trigger Events", description: trigLabel ? (trigLabel) : "Tap to set", state: trigLabel ? "complete" : null, submitOnChange: true
 				def condLabel = conditionLabel()
 				href "selectConditions", title: "Define Conditions " + (state.howMany in [null, 1] ? "(Optional)" : ""), description: condLabel ? (condLabel) : "Tap to set", state: condLabel ? "complete" : null, submitOnChange: true
 				def ruleLabel = rulLabl()
@@ -136,27 +133,24 @@ def firstPage() {
 				input "disabled", "capability.switch", title: "Switch to disable Rule", required: false, multiple: false, submitOnChange: true
                 if(disabled) input "disabledOff", "bool", title: "Disable when Off? On is default", required: false, defaultValue: false
 			}    
-		}
-            }
-            else if(state.isRule || state.howMany > 1) {
-		if(state.isRule) {   // old Rule
+		} else if(state.isRule) {   // old Rule
 			section() { 
 				label title: "Name the Rule", required: true
 				def condLabel = conditionLabel()
 				href "selectConditions", title: "Define Conditions", description: condLabel ? (condLabel) : "Tap to set", required: true, state: condLabel ? "complete" : null, submitOnChange: true
 				href "defineRule", title: "Define the Rule", description: state.str ? (state.str) : "Tap to set", state: state.str ? "complete" : null, submitOnChange: true
-				href "selectActionsTrue", title: "Select the Actions for True", description: state.actsTrue ? state.actsTrue : "Tap to set", state: state.actsTrue ? "complete" : null, submitOnChange: true
-				href "selectActionsFalse", title: "Select the Actions for False", description: state.actsFalse ? state.actsFalse : "Tap to set", state: state.actsFalse ? "complete" : null, submitOnChange: true
+				href "selectActionsTrue", title: "Select Actions for True", description: state.actsTrue ? state.actsTrue : "Tap to set", state: state.actsTrue ? "complete" : null, submitOnChange: true
+				href "selectActionsFalse", title: "Select Actions for False", description: state.actsFalse ? state.actsFalse : "Tap to set", state: state.actsFalse ? "complete" : null, submitOnChange: true
 			}
 			section(title: "More options", hidden: hideOptionsSection(), hideable: true) {
 				input "modesZ", "mode", title: "Evaluate only when mode is", multiple: true, required: false
 				input "disabled", "capability.switch", title: "Switch to disable rule when ON", required: false, multiple: false
 			}   
-		} else {		
+		} else if(state.howMany > 1) {		
         	section() { 
 				label title: "Name the Rule", required: true
 				def condLabel = conditionLabel()
-				href "selectConditions", title: "Define Conditions ", description: condLabel ? (condLabel) : "Tap to set", state: condLabel ? "complete" : null, submitOnChange: true
+				href "selectConditions", title: "Define Conditions", description: condLabel ? (condLabel) : "Tap to set", state: condLabel ? "complete" : null, submitOnChange: true
 				def ruleLabel = rulLabl()
 				if(state.howMany > 1) 
 					href "defineRule", title: "Define a Rule", description: ruleLabel ? (ruleLabel) : "Tap to set", state: ruleLabel ? "complete" : null, submitOnChange: true
@@ -173,22 +167,18 @@ def firstPage() {
 				input "disabled", "capability.switch", title: "Switch to disable Rule", required: false, multiple: false, submitOnChange: true
                 if(disabled) input "disabledOff", "bool", title: "Disable when Off? On is default", required: false, defaultValue: false
 			}
-        }
-            }
-            else if(app.label != "Rule" && app.label != null) {
+        } else if(app.label != "Rule" && app.label != null) {
 			section() { 
 				label title: "Name the Actions", required: true
 				href "selectActionsTrue", title: "Select Actions", description: state.actsTrue ? state.actsTrue : "Tap to set", state: state.actsTrue ? "complete" : null, submitOnChange: true
 			}
-            }
-            else {
-            	section() {
+        } else {
+            section() {
             	href "selectRule", title: "Define a Trigger", description: "Tap to set"
                 href "selectRule2", title: "Define a Rule", description: "Tap to set"
                 href "selectActions", title: "Define Actions", description: "Tap to set"
-                }
             }
-//        }
+        }
     }
 }
 
@@ -201,7 +191,7 @@ def selectTrig() {
 			section() {     
 				label title: "Name the Trigger", required: true
 				def condLabel = conditionLabel()
-				href "selectConditions", title: "Define Triggers", description: condLabel ? (condLabel) : "Tap to set", required: true, state: condLabel ? "complete" : null, submitOnChange: true
+				href "selectConditions", title: "Define Trigger Events", description: condLabel ? (condLabel) : "Tap to set", required: true, state: condLabel ? "complete" : null, submitOnChange: true
 				href "selectActionsTrue", title: "Select the Actions", description: state.actsTrue ? state.actsTrue : "Tap to set", state: state.actsTrue ? "complete" : null
 			}
 			section(title: "More options", hidden: hideOptionsSection(), hideable: true) {
@@ -214,10 +204,9 @@ def selectTrig() {
 			}    
 		} else {       // New format
 			section() { 
-				label title: "Name the Rule", required: true
+				label title: "Name the Trigger", required: true
 				def trigLabel = triggerLabel()
-//				href "selectTriggers", title: "Define Triggers " + (state.howManyT in [null, 1] ? "(Optional)" : ""), description: trigLabel ? (trigLabel) : "Tap to set", state: trigLabel ? "complete" : null, submitOnChange: true
-				href "selectTriggers", title: "Define Triggers ", description: trigLabel ? (trigLabel) : "Tap to set", state: trigLabel ? "complete" : null, submitOnChange: true
+				href "selectTriggers", title: "Define Trigger Events", description: trigLabel ? (trigLabel) : "Tap to set", state: trigLabel ? "complete" : null, submitOnChange: true
 				def condLabel = conditionLabel()
 				href "selectConditions", title: "Define Conditions " + (state.howMany in [null, 1] ? "(Optional)" : ""), description: condLabel ? (condLabel) : "Tap to set", state: condLabel ? "complete" : null, submitOnChange: true
 				def ruleLabel = rulLabl()
