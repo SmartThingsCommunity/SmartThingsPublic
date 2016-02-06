@@ -52,7 +52,7 @@ preferences {
 }
 
 def mainPage() {
-    dynamicPage(name: "mainPage", title: "Installed Rules", install: true, uninstall: false, submitOnChange: true) {
+    dynamicPage(name: "mainPage", title: "Installed Rules, Triggers and Actions", install: true, uninstall: false, submitOnChange: true) {
     	if(!state.setup) initialize(true)
         section {
             app(name: "childRules", appName: "Rule", namespace: "bravenel", title: "Create New Rule...", multiple: true)
@@ -63,7 +63,7 @@ def mainPage() {
         section ("Remove Rule Machine"){
         	href "removePage", description: "Tap to remove Rule Machine ", title: ""
         }
-        if(state.ver) section ("Version 1.7.0/" + state.ver) { }
+        if(state.ver) section ("Version 1.7.1/" + state.ver) { }
     }
 }
 
