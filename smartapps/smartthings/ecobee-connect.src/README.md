@@ -5,6 +5,7 @@ Ecobee Thermostat SmartApp(s) and related Device Types for use with the SmartThi
 - [Introduction](#intro)
 - [Motivation](#motivation)
 - [Quick Links](#quicklinks)
+- [Features](#features)
 - [Installation](#installation)
   - [Install Device Types](#install-device-types)
   - [Install SmartApp in IDE](#install-smartapp)
@@ -17,8 +18,13 @@ Ecobee Thermostat SmartApp(s) and related Device Types for use with the SmartThi
 - [License](#license)
 
 ## <a name="intro">Introduction</a>
+This document describes the various features related to the Open Source Ecobee (Connect)  SmartApp and the related compoenents. This SmartApp suite and the related Device Handlers are intended to be used with [Ecobee thermostats](http://www.ecobee.com/) with the [SmartThings](https://www.smartthings.com/) platform. 
 
-This SmartApp and the related Device types are intended to be used with the [Ecobee thermostats](http://www.ecobee.com/). 
+The following components are part of the solution:
+- **Ecobee (Connect) SmartApp**: This SmartApp provides a single interface for Ecobee Authorization, Device Setup (both Thermostats **and** Sensors), Behavioral Settings and even a Debug Dashboard. Additional features can be added over time as well thanks to built in support for Child SmartApps, keeping everything nicely integrated into one app.
+- **ecobee Routines Child SmartApp**: Child app that lets you trigger settings changes on your Ecobee thermostats based on the SmartThings Hello Modes. Settings include the Ecobee Program (Comfort Settings), Fan Modes and Hold Types. In additional to SmartThings Hello Modes, sunrise/sunset triggers are also support. Multiple instances of the SmartApp are also supported for maximum flexibility.
+- **Ecobee Thermostat Device Handler**: This implements the Device Handler for the Ecobee Thermostat functions and attributes.
+- **Ecobee Sensor Device Handler**: This implements the Device Handler for the Ecobee Sensor attributes.
 
 Here are links to the working version of the repository being developed and maintained by Sean Schneyer [(on GitHub)](https://github.com/StrykerSKS) [(on SmartThings Community)](https://community.smartthings.com/users/strykersks/).
 
@@ -31,9 +37,16 @@ The ultimate goal would be to have these capabilities become part of the stock d
 ## <a name="quicklinks">Quick Links</a>
 - README.md (this file): <https://github.com/StrykerSKS/SmartThingsPublic/blob/StrykerSKS-Ecobee3/smartapps/smartthings/ecobee-connect.src/README.md>
 - Ecobee (Connect) SmartApp: <https://github.com/StrykerSKS/SmartThingsPublic/tree/StrykerSKS-Ecobee3/smartapps/smartthings/ecobee-connect.src>
+- ecobee Routines ChildSmartApp: <https://github.com/StrykerSKS/SmartThingsPublic/tree/StrykerSKS-Ecobee3/smartapps/smartthings/ecobee-routines.src>
 - Ecobee Thermostat Device: <https://github.com/StrykerSKS/SmartThingsPublic/tree/StrykerSKS-Ecobee3/devicetypes/smartthings/ecobee-thermostat.src>
 - Ecobee Sensor Device: <https://github.com/StrykerSKS/SmartThingsPublic/tree/StrykerSKS-Ecobee3/devicetypes/smartthings/ecobee-sensor.src>
 - SmartThings IDE: <https://graph.api.smartthings.com>
+
+
+-----------------------------
+# <a name="features">Features</a>
+
+
 
 -----------------------------
 # <a name="installation">Installation</a>
