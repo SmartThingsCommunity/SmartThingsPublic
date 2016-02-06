@@ -3,10 +3,11 @@
  *
  *  Copyright 2015 Bruce Ravenel
  *
- *  Version 1.7.6g   5 Feb 2016
+ *  Version 1.7.7   6 Feb 2016
  *
  *	Version History
  *
+ *	1.7.7	6 Feb 2016		UI cleanup and organization
  *	1.7.6	5 Feb 2016		Added action to update rule(s) to fix broken schedules due to ST issues
  *	1.7.5	3 Feb 2016		Removed use of unschedule() for delay cancel, to avoid ST issues
  *	1.7.4	2 Feb 2016		Redesign of UI to make it clearer between Triggers and Rules
@@ -85,7 +86,7 @@ preferences {
 def firstPage() {
 	//version to parent app and expert settings for rule
 	try { 
-		state.isExpert = parent.isExpert("1.7.6g") 
+		state.isExpert = parent.isExpert("1.7.7") 
 		if (state.isExpert) state.cstCmds = parent.getCommands()
 		else state.cstCmds = []
 	}
@@ -184,25 +185,7 @@ def firstPage() {
 
 def selectTrig() {
 	def myTitle = "Select Triggers, Conditions, Rule and Actions"
-	if(state.isRule) myTitle = "Select Conditions, Rule and Actions"
-	if(state.isTrig) myTitle = "Select Triggers and Actions"
 	dynamicPage(name: "selectTrig", title: myTitle, uninstall: true, install: true) {
-		if(state.isTrig) {    // old Trigger
-			section() {     
-				label title: "Name the Trigger", required: true
-				def condLabel = conditionLabel()
-				href "selectConditions", title: "Select Trigger Events", description: condLabel ? (condLabel) : "Tap to set", required: true, state: condLabel ? "complete" : null, submitOnChange: true
-				href "selectActionsTrue", title: "Select the Actions", description: state.actsTrue ? state.actsTrue : "Tap to set", state: state.actsTrue ? "complete" : null
-			}
-			section(title: "More options", hidden: hideOptionsSection(), hideable: true) {
-				def timeLabel = timeIntervalLabel()
-				href "certainTime", title: "Only during a certain time", description: timeLabel ?: "Tap to set", state: timeLabel ? "complete" : null
-				input "days", "enum", title: "Only on certain days of the week", multiple: true, required: false,
-					options: ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"]
-				input "modesY", "mode", title: "Only when mode is", multiple: true, required: false            
-				input "disabled", "capability.switch", title: "Switch to disable trigger when ON", required: false, multiple: false
-			}    
-		} else {       // New format
 			section() { 
 				label title: "Name the Trigger", required: true
 				def trigLabel = triggerLabel()
@@ -225,26 +208,11 @@ def selectTrig() {
 				input "disabled", "capability.switch", title: "Switch to disable Rule", required: false, multiple: false, submitOnChange: true
                 if(disabled) input "disabledOff", "bool", title: "Disable when Off? On is default", required: false, defaultValue: false
 			}    
-		}
 	}
 }
 
 def selectRule() {
 	dynamicPage(name: "selectRule", title: "Select Conditions, Rule and Actions", uninstall: true, install: true) {
-		if(state.isRule) {   // old Rule
-			section() { 
-				label title: "Name the Rule", required: true
-				def condLabel = conditionLabel()
-				href "selectConditions", title: "Select Conditions", description: condLabel ? (condLabel) : "Tap to set", required: true, state: condLabel ? "complete" : null, submitOnChange: true
-				href "defineRule", title: "Define the Rule", description: state.str ? (state.str) : "Tap to set", state: state.str ? "complete" : null, submitOnChange: true
-				href "selectActionsTrue", title: "Select the Actions for True", description: state.actsTrue ? state.actsTrue : "Tap to set", state: state.actsTrue ? "complete" : null, submitOnChange: true
-				href "selectActionsFalse", title: "Select the Actions for False", description: state.actsFalse ? state.actsFalse : "Tap to set", state: state.actsFalse ? "complete" : null, submitOnChange: true
-			}
-			section(title: "More options", hidden: hideOptionsSection(), hideable: true) {
-				input "modesZ", "mode", title: "Evaluate only when mode is", multiple: true, required: false
-				input "disabled", "capability.switch", title: "Switch to disable rule when ON", required: false, multiple: false
-			}   
-		} else {		
         	section() { 
 				label title: "Name the Rule", required: true
 				def condLabel = conditionLabel()
@@ -263,7 +231,6 @@ def selectRule() {
 				input "disabled", "capability.switch", title: "Switch to disable Rule", required: false, multiple: false, submitOnChange: true
                 if(disabled) input "disabledOff", "bool", title: "Disable when Off? On is default", required: false, defaultValue: false
 			}
-        }
 	}
 }
 
