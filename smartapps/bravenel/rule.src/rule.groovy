@@ -3,7 +3,7 @@
  *
  *  Copyright 2015 Bruce Ravenel
  *
- *  Version 1.7.6a   5 Feb 2016
+ *  Version 1.7.6b   5 Feb 2016
  *
  *	Version History
  *
@@ -85,7 +85,7 @@ preferences {
 def firstPage() {
 	//version to parent app and expert settings for rule
 	try { 
-		state.isExpert = parent.isExpert("1.7.6a") 
+		state.isExpert = parent.isExpert("1.7.6b") 
 		if (state.isExpert) state.cstCmds = parent.getCommands()
 		else state.cstCmds = []
 	}
@@ -94,7 +94,7 @@ def firstPage() {
     if(state.howManyT > 1 || state.isTrig) myTitle = "Define a Trigger"
     else if(state.howMany > 1) myTitle = "Define a Rule"
     else if(app.label != null) myTitle = "Define Actions"
-    dynamicPage(name: "firstPage", title: myTitle, uninstall: false, install: false) {
+    dynamicPage(name: "firstPage", title: myTitle, uninstall: true, install: true) {
 //    	section() {
         	if(state.isTrig || state.howManyT > 1) {
 		if(state.isTrig) {    // old Trigger
