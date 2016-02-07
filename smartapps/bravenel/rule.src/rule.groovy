@@ -1,12 +1,13 @@
 /**
  *  Rule
  *
- *  Copyright 2015 Bruce Ravenel
+ *  Copyright 2015, 2016 Bruce Ravenel
  *
- *  Version 1.7.7b   6 Feb 2016
+ *  Version 1.7.8   7 Feb 2016
  *
  *	Version History
  *
+ *	1.7.8	7 Feb 2016		Added Evaluate Rule after Delay (loop possible), and Private Boolean
  *	1.7.7	6 Feb 2016		UI cleanup and organization, added capture/restore for switches/dimmers
  *	1.7.6	5 Feb 2016		Added action to update rule(s) to fix broken schedules due to ST issues
  *	1.7.5	3 Feb 2016		Removed use of unschedule() for delay cancel, to avoid ST issues
@@ -86,11 +87,12 @@ preferences {
 def firstPage() {
 	//version to parent app and expert settings for rule
 	try { 
-		state.isExpert = parent.isExpert("1.7.7b") 
+		state.isExpert = parent.isExpert("1.7.8") 
 		if (state.isExpert) state.cstCmds = parent.getCommands()
 		else state.cstCmds = []
 	}
 	catch (e) {log.error "Please update Rule Machine to V1.6 or later"}
+    state.private = true
     def myTitle = "Select Trigger, Rule or Actions"
     if(state.howManyT > 1 || state.isTrig) myTitle = "Define a Trigger"
     else if(state.howMany > 1) myTitle = "Define a Rule"
@@ -275,7 +277,7 @@ def selectConditions() {
 	def ct = settings.findAll{it.key.startsWith("rCapab")}
 	state.howMany = ct.size() + 1							// initial value is 1
 	def excludes = null
-	if(state.isRule || state.howMany > 1) excludes = ["Time of day", "Days of week", "Mode", "Smart Home Monitor"]
+	if(state.isRule || state.howMany > 1) excludes = ["Time of day", "Days of week", "Mode", "Smart Home Monitor", "Private Boolean"]
 	if(state.isTrig) excludes = ["Certain Time", "Mode", "Routine", "Button", "Smart Home Monitor"]
 	dynamicPage(name: "selectConditions", title: state.isTrig ? "Select Trigger Events" : "Select Conditions", uninstall: false) {
 		for (int i = 1; i <= state.howMany; i++) {
@@ -417,12 +419,12 @@ def getRelational(myDev) {
 def getCapab(myCapab, isTrig, isReq) {  
 	def myOptions = null
 	if(state.isRule || !isTrig) myOptions = ["Acceleration", "Battery", "Carbon monoxide detector", "Contact", "Days of week", "Dimmer level", "Energy meter", "Garage door", "Humidity", "Illuminance", "Lock", 
-    	"Mode", "Motion", "Power meter", "Presence", "Rule truth", "Smart Home Monitor", "Smoke detector", "Switch", "Temperature", 
+    	"Mode", "Motion", "Power meter", "Presence", "Rule truth", "Smart Home Monitor", "Smoke detector", "Switch", "Temperature", "Private Boolean", 
         "Thermostat", "Thermostat State", "Time of day", "Water sensor"]
 	if(state.isTrig || isTrig) myOptions = ["Acceleration", "Battery", "Button", "Carbon monoxide detector", "Certain Time", "Contact", "Dimmer level", "Energy meter", "Garage door", "Humidity", "Illuminance", 
-    	"Lock", "Mode", "Motion", "Physical Switch", "Power meter", "Presence", "Routine", "Rule truth", "Smart Home Monitor", "Smoke detector", "Switch", "Temperature", 
+    	"Lock", "Mode", "Motion", "Physical Switch", "Power meter", "Presence", "Routine", "Rule truth", "Smart Home Monitor", "Smoke detector", "Switch", "Temperature",
         "Thermostat", "Thermostat State", "Water sensor"]
-	def result = input myCapab, "enum", title: "Select capability", required: isReq, options: myOptions, submitOnChange: true
+	def result = input myCapab, "enum", title: "Select capability", required: isReq, options: myOptions.sort(), submitOnChange: true
 }
 
 def getState(myCapab, n, isTrig) {
@@ -452,6 +454,7 @@ def getState(myCapab, n, isTrig) {
 	else if(myCapab == "Water sensor")				result = input myState, "enum", title: "Water $phrase", 			options: ["dry", "wet"], 					defaultValue: "wet"
 	else if(myCapab == "Button")					result = input myState, "enum", title: "Button pushed or held ", 	options: ["pushed", "held"], 				defaultValue: "pushed"
 	else if(myCapab == "Rule truth")				result = input myState, "enum", title: "Rule truth $phrase ", 		options: ["true", "false"], 				defaultValue: "true"
+    else if(myCapab == "Private Boolean")				result = input myState, "enum", title: "Private truth $phrase ", 	options: ["true", "false"], 				defaultValue: "true"
 	else if(myCapab == "Smart Home Monitor")		result = input myState, "enum", title: "SHM $phrase", 				options: ["away" : "Arm (away)", "stay" : "Arm (stay)", "off" : "Disarm"]
 	else if(myCapab in ["Temperature", "Humidity", "Illuminance", "Energy meter", "Power meter", "Battery", "Dimmer level"]) {
     	input myIsDev, "bool", title: "Relative to another device?", multiple: false, required: false, submitOnChange: true, defaultValue: false
@@ -596,7 +599,10 @@ def conditionLabelN(i, isTrig) {
 	} else if(thisCapab.value == "Routine") {
 		result = "Routine "
 		def thisState = settings.find {it.key == (isTrig ? "tstate$i" : "state$i")}
-		result = result + "'" + thisState.value + "' runs"        
+		result = result + "'" + thisState.value + "' runs"
+    } else if(thisCapab.value == "Private Boolean") {
+    	def thisState = settings.find {it.key == (isTrig ? "tstate$i" : "state$i")}
+        result = "Private Boolean $thisState.value"
 	} else {
 		def thisDev = settings.find {it.key == (isTrig ? "tDev$i" : "rDev$i")}
 		if(!thisDev) return result
@@ -892,7 +898,7 @@ def selectActionsTrue() {
 			}
 			input "toggleDimmerTrue", "capability.switchLevel", title: "Toggle these dimmers", multiple: true, required: false, submitOnChange: true
 			if(toggleDimmerTrue) input "dimTogTrue", "number", title: "To this level", range: "0..100", required: true, submitOnChange: true
-			if(dimTogTrue != null) checkActTrue(toggleDimmerTrue, "Toggle: $toggleDimmerTrue: $dimTogTrue")
+			if(dimTogTrue != null) checkActTrue(toggleDimmerTrue, "Toggle Dim: $toggleDimmerTrue: $dimTogTrue")
             input "adjustDimmerTrue", "capability.switchLevel", title: "Adjust these dimmers", multiple: true, required: false, submitOnChange: true
 			if(adjustDimmerTrue) input "dimAdjTrue", "number", title: "By this amount", range: "-100..100", required: true, submitOnChange: true
 			if(dimAdjTrue) checkActTrue(adjustDimmerTrue, "Adjust: $adjustDimmerTrue: $dimAdjTrue")
@@ -970,6 +976,16 @@ def selectActionsTrue() {
 			if(ruleTrue) setActTrue("Rules: $ruleTrue")
 			if(theseRules != null) input "ruleActTrue", "enum", title: "Run Rule Actions", required: false, multiple: true, options: theseRules.sort(), submitOnChange: true
 			if(ruleActTrue) setActTrue("Rule Actions: $ruleActTrue")
+            theseRules << app.label
+			input "ruleEvalDelayTrue", "enum", title: "Evaluate Rules after delay", required: false, multiple: true, options: theseRules.sort(), submitOnChange: true
+			if(ruleEvalDelayTrue) {
+				input "delayEvalMinutesTrue", "number", title: "Minutes of delay", required: false, range: "1..*", submitOnChange: true
+                if(delayEvalMinutesTrue != null) {
+					def delayStrTrue = "Delay Rule Evaluations: $ruleEvalDelayTrue: $delayEvalMinutesTrue minute"
+					if(delayEvalMinutesTrue > 1) delayStrTrue = delayStrTrue + "s"
+					setActTrue(delayStrTrue)
+                }
+            }
             input "updateTrue", "enum", title: "Update Rules", required: false, multiple: true,options: theseRules.sort(), submitOnChange: true
             if(updateTrue) setActTrue("Update Rules: $updateTrue")
 			href "selectMsgTrue", title: "Send or speak a message", description: state.msgTrue ? state.msgTrue : "Tap to set", state: state.msgTrue ? "complete" : null
@@ -996,6 +1012,8 @@ def selectActionsTrue() {
 					addToActTrue(randomStr)
 //				}
             }
+            input "privateTrue", "enum", title: "Set Private Boolean", required: false, submitOnChange: true, options: ["true", "false"]
+            if(privateTrue) addToActTrue("Private Boolean: $privateTrue")
 			if (state.isExpert){
 				if (state.cstCmds){
 					state.ccTruth = true
@@ -1062,7 +1080,7 @@ def selectActionsFalse() {
 			}
 			input "toggleDimmerFalse", "capability.switchLevel", title: "Toggle these dimmers", multiple: true, required: false, submitOnChange: true
 			if(toggleDimmerFalse) input "dimTogFalse", "number", title: "To this level", range: "0..100", required: true, submitOnChange: true
-			if(dimTogFalse != null) checkActFalse(toggleDimmerFalse, "Toggle: $toggleDimmerFalse: $dimTogFalse")
+			if(dimTogFalse != null) checkActFalse(toggleDimmerFalse, "Toggle Dim: $toggleDimmerFalse: $dimTogFalse")
             input "adjustDimmerFalse", "capability.switchLevel", title: "Adjust these dimmers", multiple: true, required: false, submitOnChange: true
 			if(adjustDimmerFalse) input "dimAdjFalse", "number", title: "By this amount", range: "-100..100", required: true, submitOnChange: true
 			if(dimAdjFalse) checkActFalse(adjustDimmerFalse, "Adjust: $adjustDimmerFalse: $dimAdjFalse")
@@ -1140,6 +1158,16 @@ def selectActionsFalse() {
 			if(ruleFalse) setActFalse("Rules: $ruleFalse")
 			if(theseRules != null) input "ruleActFalse", "enum", title: "Run Rule Actions", required: false, multiple: true, options: theseRules.sort(), submitOnChange: true
 			if(ruleActFalse) setActFalse("Rule Actions: $ruleActFalse")
+            theseRules << app.label
+			input "ruleEvalDelayFalse", "enum", title: "Evaluate Rules after delay", required: false, multiple: true, options: theseRules.sort(), submitOnChange: true
+			if(ruleEvalDelayFalse) {
+				input "delayEvalMinutesFalse", "number", title: "Minutes of delay", required: false, range: "1..*", submitOnChange: true
+                if(delayEvalMinutesFalse != null) {
+					def delayStrFalse = "Delay Rule Evaluations: $ruleEvalDelayFalse: $delayEvalMinutesFalse minute"
+					if(delayEvalMinutesFalse > 1) delayStrFalse = delayStrFalse + "s"
+					setActFalse(delayStrFalse)
+                }
+            }
             input "updateFalse", "enum", title: "Update Rules", required: false, multiple: true,options: theseRules.sort(), submitOnChange: true
             if(updateFalse) setActFalse("Update Rules: $updateFalse")
 			href "selectMsgFalse", title: "Send or speak a message", description: state.msgFalse ? state.msgFalse : "Tap to set", state: state.msgFalse ? "complete" : null
@@ -1164,6 +1192,8 @@ def selectActionsFalse() {
 					addToActFalse(randomStr)
 //				}
 			}
+            input "privateFalse", "enum", title: "Set Private Boolean", required: false, submitOnChange: true, options: ["true", "false"]
+            if(privateFalse) addToActFalse("Private Boolean: $privateFalse")
 			if (state.isExpert){
 				if (state.cstCmds){
 					state.ccTruth = false
@@ -1348,6 +1378,8 @@ def initialize() {
 			case "Routine":
 				subscribe(location, "routineExecuted", allHandler)
 				break
+            case "Private Boolean":
+            	break
 			default:
 				subscribe(myDev.value, (capab.toLowerCase() + ((state.isTrig || hasTrig) ? ".$myState" : "")), allHandler)
 		}
@@ -1468,7 +1500,10 @@ def getOperand(i, isR) {
 	if     (capab == "Mode") result = modeOk
 	else if(capab == "Time of day") result = timeOkX
 	else if(capab == "Days of week") result = daysOk
-	else if(capab == "Smart Home Monitor") result = (settings.find {it.key == (isR ? "state$i" : "tstate$i")}).value == location.currentState("alarmSystemStatus")?.value
+    else if(capab == "Private Boolean") {
+    	def thisState = settings.find{it.key == "state$i"}
+    	result = thisState.value == state.private.toString()
+	} else if(capab == "Smart Home Monitor") result = (settings.find {it.key == (isR ? "state$i" : "tstate$i")}).value == location.currentState("alarmSystemStatus")?.value
 	else {
 		def myDev = 	settings.find {it.key == (isR ? "rDev$i" : "tDev$i")}
 		def myState = 	settings.find {it.key == (isR ? "state$i" : "tstate$i")}
@@ -1696,6 +1731,7 @@ def takeAction(success) {
 		if(modeTrue) 			setLocationMode(modeTrue)
 		if(ruleTrue)			parent.runRule(ruleTrue, app.label)
         if(ruleActTrue)			parent.runRuleAct(ruleActTrue, app.label)
+        if(ruleEvalDelayTrue)	if(delayEvalMinutesTrue) runIn(delayEvalMinutesTrue * 60, delayEvalTrue)
         if(updateTrue)			parent.runUpdate(updateTrue)
 		if(myPhraseTrue)		location.helloHome.execute(myPhraseTrue)
 		if(cameraTrue) 		{	cameraTrue.take() 
@@ -1703,8 +1739,9 @@ def takeAction(success) {
 		if(pushTrue)			sendPush((msgTrue ?: "Rule $app.label True") + (refDevTrue ? " $state.lastEvtName" : ""))
 		if(phoneTrue)			sendSmsMulti(phoneTrue, (msgTrue ?: "Rule $app.label True") + (refDevTrue ? " $state.lastEvtName" : ""))
         if(speakTrue)			speakTrueDevice?.speak((msgTrue ?: "Rule $app.label True") + (refDevTrue ? " $state.lastEvtName" : ""))
-		if (mediaTrueDevice)	mediaTrueDevice.playTextAndRestore((msgTrue ?: "Rule $app.label True") + (refDevTrue ? " $state.lastEvtName" : ""), mediaTrueVolume)
-		if (state.howManyCCtrue > 1)  execCommands(true)
+		if(mediaTrueDevice)		mediaTrueDevice.playTextAndRestore((msgTrue ?: "Rule $app.label True") + (refDevTrue ? " $state.lastEvtName" : ""), mediaTrueVolume)
+        if(privateTrue)			state.private = privateTrue
+		if(state.howManyCCtrue > 1)  execCommands(true)
         if(restoreTrue)			restore()
 	} else {
         if(captureFalse)		capture(captureFalse)
@@ -1739,15 +1776,17 @@ def takeAction(success) {
 		if(modeFalse) 			setLocationMode(modeFalse)
 		if(ruleFalse)			parent.runRule(ruleFalse, app.label)
         if(ruleActFalse)		parent.runRuleAct(ruleActFalse, app.label)
-        if(updateTrue)			parent.runUpdate(updateFalse)
+        if(ruleEvalDelayFalse)	if(delayEvalMinutesFalse) runIn(delayEvalMinutesFalse * 60, delayEvalFalse)
+        if(updateFalse)			parent.runUpdate(updateFalse)
 		if(myPhraseFalse) 		location.helloHome.execute(myPhraseFalse)
 		if(cameraFalse) 	{	cameraFalse.take() 
                 				(1..((burstCountFalse ?: 5) - 1)).each {cameraFalse.take(delay: (500 * it))}   }
 		if(pushFalse)			sendPush((msgFalse ?: "Rule $app.label False") + (refDevFalse ? " $state.lastEvtName" : ""))
 		if(phoneFalse)			sendSmsMulti(phoneFalse, (msgFalse ?: "Rule $app.label False") + (refDevFalse ? " $state.lastEvtName" : ""))
         if(speakFalse)			speakFalseDevice?.speak((msgFalse ?: "Rule $app.label False") + (refDevFalse ? " $state.lastEvtName" : ""))
-		if (mediaFalseDevice)	mediaFalseDevice.playTextAndRestore((msgFalse ?: "Rule $app.label False") + (refDevFalse ? " $state.lastEvtName" : ""), mediaFalseVolume)		
-        if (state.howManyCCfalse > 1)  execCommands(false)
+		if(mediaFalseDevice)	mediaFalseDevice.playTextAndRestore((msgFalse ?: "Rule $app.label False") + (refDevFalse ? " $state.lastEvtName" : ""), mediaFalseVolume)		
+        if(privateFalse)		state.private = privateFalse
+        if(state.howManyCCfalse > 1)  execCommands(false)
         if(restoreFalse)		restore()
 	}
 }
@@ -1886,12 +1925,20 @@ def pendingOffTrue() {
 	if(allOk && state.pendingOffTrue) {if(pendOnOffTrue) pendedOffTrue.on() else pendedOffTrue.off()}
 }
 
+def delayEvalTrue() {
+	if(allOk) parent.runRule(ruleEvalDelayTrue, app.label)
+}
+
 def delayOffFalse() {
 	if(allOk) {if(delayOnOffFalse) delayedOffFalse.on() else delayedOffFalse.off()}
 }
 
 def pendingOffFalse() {
 	if(allOk && state.pendingOffFalse) {if(pendOnOffFalse) pendedOffFalse.on() else pendedOffFalse.off()}
+}
+
+def delayEvalFalse() {
+	if(allOk) parent.runRule(ruleEvalDelayFalse, app.label)
 }
 
 def delayRuleTrue() {
