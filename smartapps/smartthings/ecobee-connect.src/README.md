@@ -46,6 +46,12 @@ The ultimate goal would be to have these capabilities become part of the stock d
 -----------------------------
 # <a name="features">Features</a>
 
+- Mention the capabilities
+- Provide pretty screenshots
+- SmartApp support
+- All in one design
+- Simplicity
+- Celcius and F support
 
 
 -----------------------------
