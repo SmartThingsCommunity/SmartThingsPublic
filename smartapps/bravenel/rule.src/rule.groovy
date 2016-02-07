@@ -3,7 +3,7 @@
  *
  *  Copyright 2015, 2016 Bruce Ravenel
  *
- *  Version 1.7.8   7 Feb 2016
+ *  Version 1.7.8a   7 Feb 2016
  *
  *	Version History
  *
@@ -87,12 +87,12 @@ preferences {
 def firstPage() {
 	//version to parent app and expert settings for rule
 	try { 
-		state.isExpert = parent.isExpert("1.7.8") 
+		state.isExpert = parent.isExpert("1.7.8a") 
 		if (state.isExpert) state.cstCmds = parent.getCommands()
 		else state.cstCmds = []
 	}
 	catch (e) {log.error "Please update Rule Machine to V1.6 or later"}
-    state.private = true
+    if(state.private == null) state.private = true
     def myTitle = "Select Trigger, Rule or Actions"
     if(state.howManyT > 1 || state.isTrig) myTitle = "Define a Trigger"
     else if(state.howMany > 1) myTitle = "Define a Rule"
