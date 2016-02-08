@@ -670,6 +670,7 @@ def initialize() {
     state.lastScheduledWatchdogDate = nowDate
 	state.lastPoll = nowTime
     state.lastPollDate = nowDate
+    state.timeOfDay = "night" // TODO: Make this more precise later. For now just set it to a valid value to prevent errors
 	    
     // Setup initial polling and determine polling intervals
 	state.pollingInterval = getPollingInterval()
@@ -697,8 +698,8 @@ def initialize() {
 
     // Add subscriptions as little "daemons" that will check on our health
     subscribe(location, "routineExecuted", scheduleWatchdog)
-    subscribe(location, "sunset", scheduleWatchdog)
-    subscribe(location, "sunrise", scheduleWatchdog)
+    subscribe(location, "sunset", sunsetEvent)
+    subscribe(location, "sunrise", sunriseEvent)
     
     // Schedule the various handlers
     if (settings.thermostats?.size() > 0) { spawnDaemon("poll") } 
@@ -793,6 +794,23 @@ private def deleteUnusedChildren() {
     }    
 }
 	
+
+def sunriseEvent(evt) {
+	LOG("sunriseEvent() - with evt (${evt})", 4, null, "info")
+	state.timeOfDay = "day"
+    state.lastSunriseEvent = now()
+    state.lastSunriseEventDate = getTimestamp()
+    scheduleWatchdog(evt, false)
+    
+}
+
+def sunsetEvent(evt) {
+	LOG("sunsetEvent() - with evt (${evt})", 4, null, "info")
+	state.timeOfDay = "night"
+    state.lastSunsetEvent = now()
+    state.lastSunsetEventDate = getTimestamp()
+    scheduleWatchdog(evt, false)
+}
 
 def scheduleWatchdog(evt=null, local=false) {
 	def results = true
@@ -1007,7 +1025,7 @@ def pollInit() {
 def pollChildren(child = null) {
 	def results = true
     
-	LOG("=====> pollChildren()", 4)
+	LOG("=====> pollChildren()", 4, child, "trace")
     
 	if(apiConnected() == "lost") {
     	// Possibly a false alarm? Check if we can update the token with one last fleeting try...
@@ -1404,6 +1422,7 @@ def updateThermostatData() {
      
 
 		def data = [ 
+        	timeOfDay: state.timeOfDay ?: "night",
 			temperatureScale: getTemperatureScale(),
 			apiConnected: apiConnected(),
 			coolMode: (stat.settings.coolStages > 0),
