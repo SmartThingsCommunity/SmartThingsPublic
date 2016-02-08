@@ -3,10 +3,11 @@
  *
  *  Copyright 2015, 2016 Bruce Ravenel and Mike Maxwell
  *
- *  Version 1.7.1   5 Feb 2016
+ *  Version 1.7.2   8 Feb 2016
  *
  *	Version History
  *
+ *	1.7.2	8 Feb 2016		Added set Boolean for Rules
  *	1.7.1	5 Feb 2016		Added update Rule
  *	1.7.0	31 Jan 2016		Added run Rule actions
  *	1.6.6	10 Jan 2016		Improved method of getting custom device commands
@@ -63,7 +64,7 @@ def mainPage() {
         section ("Remove Rule Machine"){
         	href "removePage", description: "Tap to remove Rule Machine ", title: ""
         }
-        if(state.ver) section ("Version 1.7.1/" + state.ver) { }
+        if(state.ver) section ("Version 1.7.2/" + state.ver) { }
     }
 }
 
@@ -117,7 +118,7 @@ def subscribeRule(appLabel, ruleName, ruleTruth, childMethod) {
 }
 
 def setRuleTruth(appLabel, ruleTruth) {
-//	log.debug "setRuleTruth1: $appLabel, $ruleTruth"
+//	log.debug "setRuleTruth: $appLabel, $ruleTruth"
 	state.ruleState[appLabel] = ruleTruth
 	def thisList = state.ruleSubscribers[appLabel]
 	thisList.each {
@@ -127,6 +128,15 @@ def setRuleTruth(appLabel, ruleTruth) {
 			}
 		}
 	}
+}
+
+def setRuleBoolean(rule, ruleBoolean, appLabel) {
+//	log.debug "setRuleBoolean: $appLabel, $ruleBoolean"
+	childApps.each { child ->
+    	rule.each {
+			if(child.label == it) child.setBoolean(ruleBoolean, appLabel)
+        }
+	}	
 }
 
 def currentRule(appLabel) {

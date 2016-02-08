@@ -3,11 +3,11 @@
  *
  *  Copyright 2015, 2016 Bruce Ravenel
  *
- *  Version 1.7.8a   7 Feb 2016
+ *  Version 1.7.9   8 Feb 2016
  *
  *	Version History
  *
- *	1.7.8	7 Feb 2016		Added Evaluate Rule after Delay (loop possible), and Private Boolean
+ *	1.7.8	7 Feb 2016		Added Evaluate Rule after Delay (loop possible), and Private Boolean, send notification
  *	1.7.7	6 Feb 2016		UI cleanup and organization, added capture/restore for switches/dimmers
  *	1.7.6	5 Feb 2016		Added action to update rule(s) to fix broken schedules due to ST issues
  *	1.7.5	3 Feb 2016		Removed use of unschedule() for delay cancel, to avoid ST issues
@@ -87,7 +87,7 @@ preferences {
 def firstPage() {
 	//version to parent app and expert settings for rule
 	try { 
-		state.isExpert = parent.isExpert("1.7.8a") 
+		state.isExpert = parent.isExpert("1.7.9") 
 		if (state.isExpert) state.cstCmds = parent.getCommands()
 		else state.cstCmds = []
 	}
@@ -113,6 +113,19 @@ def firstPage() {
 				input "modesY", "mode", title: "Only when mode is", multiple: true, required: false            
 				input "disabled", "capability.switch", title: "Switch to disable trigger when ON", required: false, multiple: false
 			}    
+		} else if(state.isRule) {   // old Rule
+			section() { 
+				label title: "Name the Rule", required: true
+				def condLabel = conditionLabel()
+				href "selectConditions", title: "Select Conditions", description: condLabel ? (condLabel) : "Tap to set", required: true, state: condLabel ? "complete" : null, submitOnChange: true
+				href "defineRule", title: "Define the Rule", description: state.str ? (state.str) : "Tap to set", state: state.str ? "complete" : null, submitOnChange: true
+				href "selectActionsTrue", title: "Select Actions for True", description: state.actsTrue ? state.actsTrue : "Tap to set", state: state.actsTrue ? "complete" : null, submitOnChange: true
+				href "selectActionsFalse", title: "Select Actions for False", description: state.actsFalse ? state.actsFalse : "Tap to set", state: state.actsFalse ? "complete" : null, submitOnChange: true
+			}
+			section(title: "More options", hidden: hideOptionsSection(), hideable: true) {
+				input "modesZ", "mode", title: "Evaluate only when mode is", multiple: true, required: false
+				input "disabled", "capability.switch", title: "Switch to disable rule when ON", required: false, multiple: false
+			}   
 		} else if(state.howManyT > 1) {       // New trigger
 			section() { 
 				label title: "Name the Trigger", required: true
@@ -127,29 +140,8 @@ def firstPage() {
 				if(state.howMany > 1)
 					href "selectActionsFalse", title: "Select Actions for False", description: state.actsFalse ? state.actsFalse : "Tap to set", state: state.actsFalse ? "complete" : null, submitOnChange: true
 			}
-			section(title: "More options", hidden: hideOptionsSection(), hideable: true) {
-				def timeLabel = timeIntervalLabel()
-				href "certainTime", title: "Only during a certain time", description: timeLabel ?: "Tap to set", state: timeLabel ? "complete" : null
-				input "daysY", "enum", title: "Only on certain days of the week", multiple: true, required: false,
-					options: ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"]
-				input "modesY", "mode", title: "Only when mode is", multiple: true, required: false            
-				input "disabled", "capability.switch", title: "Switch to disable Rule", required: false, multiple: false, submitOnChange: true
-                if(disabled) input "disabledOff", "bool", title: "Disable when Off? On is default", required: false, defaultValue: false
-			}    
-		} else if(state.isRule) {   // old Rule
-			section() { 
-				label title: "Name the Rule", required: true
-				def condLabel = conditionLabel()
-				href "selectConditions", title: "Select Conditions", description: condLabel ? (condLabel) : "Tap to set", required: true, state: condLabel ? "complete" : null, submitOnChange: true
-				href "defineRule", title: "Define the Rule", description: state.str ? (state.str) : "Tap to set", state: state.str ? "complete" : null, submitOnChange: true
-				href "selectActionsTrue", title: "Select Actions for True", description: state.actsTrue ? state.actsTrue : "Tap to set", state: state.actsTrue ? "complete" : null, submitOnChange: true
-				href "selectActionsFalse", title: "Select Actions for False", description: state.actsFalse ? state.actsFalse : "Tap to set", state: state.actsFalse ? "complete" : null, submitOnChange: true
-			}
-			section(title: "More options", hidden: hideOptionsSection(), hideable: true) {
-				input "modesZ", "mode", title: "Evaluate only when mode is", multiple: true, required: false
-				input "disabled", "capability.switch", title: "Switch to disable rule when ON", required: false, multiple: false
-			}   
-		} else if(state.howMany > 1) {		
+            getMoreOptions()
+		} else if(state.howMany > 1) {	  	  // New Rule	
         	section() { 
 				label title: "Name the Rule", required: true
 				def condLabel = conditionLabel()
@@ -161,21 +153,15 @@ def firstPage() {
 				if(state.howMany > 1)
 					href "selectActionsFalse", title: "Select Actions for False", description: state.actsFalse ? state.actsFalse : "Tap to set", state: state.actsFalse ? "complete" : null, submitOnChange: true
 			}
-			section(title: "More options", hidden: hideOptionsSection(), hideable: true) {
-				def timeLabel = timeIntervalLabel()
-				href "certainTime", title: "Only during a certain time", description: timeLabel ?: "Tap to set", state: timeLabel ? "complete" : null
-				input "daysY", "enum", title: "Only on certain days of the week", multiple: true, required: false,
-					options: ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"]
-				input "modesY", "mode", title: "Only when mode is", multiple: true, required: false            
-				input "disabled", "capability.switch", title: "Switch to disable Rule", required: false, multiple: false, submitOnChange: true
-                if(disabled) input "disabledOff", "bool", title: "Disable when Off? On is default", required: false, defaultValue: false
-			}
+            getMoreOptions()
+
         } else if(app.label != "Rule" && app.label != null) {
-			section() { 
+			section() { 					// Actions only
 				label title: "Name the Actions", required: true
 				href "selectActionsTrue", title: "Select Actions", description: state.actsTrue ? state.actsTrue : "Tap to set", state: state.actsTrue ? "complete" : null, submitOnChange: true
 			}
-        } else {
+            getMoreOptions()
+        } else {							// New Trigger, Rule or Actions
             section() {
             	href "selectTrig", title: "Define a Trigger", description: "Tap to set"
                 href "selectRule", title: "Define a Rule", description: "Tap to set"
@@ -186,8 +172,7 @@ def firstPage() {
 }
 
 def selectTrig() {
-	def myTitle = "Select Triggers, Conditions, Rule and Actions"
-	dynamicPage(name: "selectTrig", title: myTitle, uninstall: true, install: true) {
+	dynamicPage(name: "selectTrig", title: "Select Triggers, Conditions, Rule and Actions", uninstall: true, install: true) {
 			section() { 
 				label title: "Name the Trigger", required: true
 				def trigLabel = triggerLabel()
@@ -201,15 +186,7 @@ def selectTrig() {
 				if(state.howMany > 1)
 					href "selectActionsFalse", title: "Select Actions for False", description: state.actsFalse ? state.actsFalse : "Tap to set", state: state.actsFalse ? "complete" : null, submitOnChange: true
 			}
-			section(title: "More options", hidden: hideOptionsSection(), hideable: true) {
-				def timeLabel = timeIntervalLabel()
-				href "certainTime", title: "Only during a certain time", description: timeLabel ?: "Tap to set", state: timeLabel ? "complete" : null
-				input "daysY", "enum", title: "Only on certain days of the week", multiple: true, required: false,
-					options: ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"]
-				input "modesY", "mode", title: "Only when mode is", multiple: true, required: false            
-				input "disabled", "capability.switch", title: "Switch to disable Rule", required: false, multiple: false, submitOnChange: true
-                if(disabled) input "disabledOff", "bool", title: "Disable when Off? On is default", required: false, defaultValue: false
-			}    
+            getMoreOptions()
 	}
 }
 
@@ -224,15 +201,7 @@ def selectRule() {
 				href "selectActionsTrue", title: "Select Actions for True", description: state.actsTrue ? state.actsTrue : "Tap to set", state: state.actsTrue ? "complete" : null, submitOnChange: true
 				href "selectActionsFalse", title: "Select Actions for False", description: state.actsFalse ? state.actsFalse : "Tap to set", state: state.actsFalse ? "complete" : null, submitOnChange: true
 			}
-			section(title: "More options", hidden: hideOptionsSection(), hideable: true) {
-				def timeLabel = timeIntervalLabel()
-				href "certainTime", title: "Only during a certain time", description: timeLabel ?: "Tap to set", state: timeLabel ? "complete" : null
-				input "daysY", "enum", title: "Only on certain days of the week", multiple: true, required: false,
-					options: ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"]
-				input "modesY", "mode", title: "Only when mode is", multiple: true, required: false            
-				input "disabled", "capability.switch", title: "Switch to disable Rule", required: false, multiple: false, submitOnChange: true
-                if(disabled) input "disabledOff", "bool", title: "Disable when Off? On is default", required: false, defaultValue: false
-			}
+            getMoreOptions()
 	}
 }
 
@@ -242,7 +211,20 @@ def selectActions() {
 				label title: "Name the Actions", required: true
 				href "selectActionsTrue", title: "Select Actions", description: state.actsTrue ? state.actsTrue : "Tap to set", state: state.actsTrue ? "complete" : null, submitOnChange: true
 			}
+            getMoreOptions()
 	}
+}
+
+def getMoreOptions() {
+			section(title: "More options", hidden: hideOptionsSection(), hideable: true) {
+				def timeLabel = timeIntervalLabel()
+				href "certainTime", title: "Only during a certain time", description: timeLabel ?: "Tap to set", state: timeLabel ? "complete" : null
+				input "daysY", "enum", title: "Only on certain days of the week", multiple: true, required: false,
+					options: ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"]
+				input "modesY", "mode", title: "Only when mode is", multiple: true, required: false            
+				input "disabled", "capability.switch", title: "Switch to disable Rule", required: false, multiple: false, submitOnChange: true
+                if(disabled) input "disabledOff", "bool", title: "Disable when Off? On is default", required: false, defaultValue: false
+			}    
 }
 
 // Trigger and Condition input code follows
@@ -454,7 +436,7 @@ def getState(myCapab, n, isTrig) {
 	else if(myCapab == "Water sensor")				result = input myState, "enum", title: "Water $phrase", 			options: ["dry", "wet"], 					defaultValue: "wet"
 	else if(myCapab == "Button")					result = input myState, "enum", title: "Button pushed or held ", 	options: ["pushed", "held"], 				defaultValue: "pushed"
 	else if(myCapab == "Rule truth")				result = input myState, "enum", title: "Rule truth $phrase ", 		options: ["true", "false"], 				defaultValue: "true"
-    else if(myCapab == "Private Boolean")				result = input myState, "enum", title: "Private truth $phrase ", 	options: ["true", "false"], 				defaultValue: "true"
+    else if(myCapab == "Private Boolean")			result = input myState, "enum", title: "Private truth $phrase ", 	options: ["true", "false"], 				defaultValue: "true"
 	else if(myCapab == "Smart Home Monitor")		result = input myState, "enum", title: "SHM $phrase", 				options: ["away" : "Arm (away)", "stay" : "Arm (stay)", "off" : "Disarm"]
 	else if(myCapab in ["Temperature", "Humidity", "Illuminance", "Energy meter", "Power meter", "Battery", "Dimmer level"]) {
     	input myIsDev, "bool", title: "Relative to another device?", multiple: false, required: false, submitOnChange: true, defaultValue: false
@@ -986,7 +968,7 @@ def selectActionsTrue() {
 					setActTrue(delayStrTrue)
                 }
             }
-            input "updateTrue", "enum", title: "Update Rules", required: false, multiple: true,options: theseRules.sort(), submitOnChange: true
+            input "updateTrue", "enum", title: "Update Rules", required: false, multiple: true, options: theseRules.sort(), submitOnChange: true
             if(updateTrue) setActTrue("Update Rules: $updateTrue")
 			href "selectMsgTrue", title: "Send or speak a message", description: state.msgTrue ? state.msgTrue : "Tap to set", state: state.msgTrue ? "complete" : null
 			if(state.msgTrue) addToActTrue(state.msgTrue)
@@ -995,6 +977,7 @@ def selectActionsTrue() {
 				input "burstCountTrue", "number", title: "How many? (default 5)", defaultValue:5
 				addToActTrue("Photo: $cameraTrue " + (burstCountTrue ?: ""))
 			}
+// code below is vestigal, supports prior version of delayTrue and randomTrue            
 //            if(!randomTrue) {
 			if(delayTrue) {
 				input "delayTrue", "number", title: "Delay " + ((state.isRule || state.howMany > 1) ? "the effect of this rule" : "this action") + " by this many minutes", required: false, submitOnChange: true
@@ -1013,7 +996,14 @@ def selectActionsTrue() {
 //				}
             }
             input "privateTrue", "enum", title: "Set Private Boolean", required: false, submitOnChange: true, options: ["true", "false"]
-            if(privateTrue) addToActTrue("Private Boolean: $privateTrue")
+            if(privateTrue) {
+            	input "otherTrue", "bool", title: "For this Rule (default) or others?", required: false, submitOnChange: true
+                if(otherTrue) {
+                	theseRules = parent.ruleList(app.label)
+                	input "otherPrivateTrue", "enum", title: "Select Rules to set Boolean", required: true, multiple: true, options: theseRules.sort(), submitOnChange: true
+                    if(otherPrivateTrue) setActTrue("Rule Boolean: $otherPrivateTrue: $privateTrue")
+                } else addToActTrue("Private Boolean: $privateTrue")
+            }
 			if (state.isExpert){
 				if (state.cstCmds){
 					state.ccTruth = true
@@ -1193,7 +1183,14 @@ def selectActionsFalse() {
 //				}
 			}
             input "privateFalse", "enum", title: "Set Private Boolean", required: false, submitOnChange: true, options: ["true", "false"]
-            if(privateFalse) addToActFalse("Private Boolean: $privateFalse")
+            if(privateFalse) {
+            	input "otherFalse", "bool", title: "For this Rule (default) or others?", required: false, submitOnChange: true
+                if(otherFalse) {
+                	theseRules = parent.ruleList(app.label)
+                	input "otherPrivateFalse", "enum", title: "Select Rules to set Boolean", required: true, multiple: true, options: theseRules.sort(), submitOnChange: true
+                    if(otherPrivateFalse) setActFalse("Rule Boolean: $otherPrivateFalse: $privateFalse")
+                } else addToActFalse("Private Boolean: $privateFalse")
+            }
 			if (state.isExpert){
 				if (state.cstCmds){
 					state.ccTruth = false
@@ -1214,7 +1211,8 @@ def selectActionsFalse() {
 def selectMsgTrue() {
 	dynamicPage(name: "selectMsgTrue", title: "Select Message and Destination", uninstall: false) {
 		section("") {
-			input "pushTrue", "bool", title: "Send Push Notification?", required: false, submitOnChange: true
+			if(noticeTrue in [null, false]) input "pushTrue", "bool", title: "Send Push?", required: false, submitOnChange: true
+            if(pushTrue in [null, false]) input "noticeTrue", "bool", title: "Send Notification?", required: false, submitOnChange: true
 			input "msgTrue", "text", title: "Custom message to send", required: false, submitOnChange: true
 			input "refDevTrue", "bool", title: "Include device name?", required: false, submitOnChange: true
 			input "phoneTrue", "phone", title: "Phone number for SMS", required: false, submitOnChange: true
@@ -1225,14 +1223,15 @@ def selectMsgTrue() {
                 if (mediaTrueDevice) input "mediaTrueVolume", title: "At this volume", "number", required: false, multiple: false, defaultValue: "50", submitOnChange: true
             }
 		}
-        state.msgTrue = (pushTrue ? "Push" : "") + (msgTrue ? " '$msgTrue'" : "") + (refDevTrue ? " [device]" : "") + (phoneTrue ? " to $phoneTrue" : "") + (speakTrue ? " [speak]" : "") + (mediaTrueDevice ? " ${mediaTrueDevice}" : "")
+        state.msgTrue = (pushTrue ? "Push" : "") + (noticeTrue ? "Notify" : "") + (msgTrue ? " '$msgTrue'" : "") + (refDevTrue ? " [device]" : "") + (phoneTrue ? " to $phoneTrue" : "") + (speakTrue ? " [speak]" : "") + (mediaTrueDevice ? " ${mediaTrueDevice}" : "")
 	}
 }
 
 def selectMsgFalse() {
 	dynamicPage(name: "selectMsgFalse", title: "Select Message and Destination", uninstall: false) {
 		section("") {
-			input "pushFalse", "bool", title: "Send Push Notification?", required: false, submitOnChange: true
+			if(noticeFalse in [null, false]) input "pushFalse", "bool", title: "Send Push?", required: false, submitOnChange: true
+            if(pushFalse in [null, false]) input "noticeFalse", "bool", title: "Send Notification?", required: false, submitOnChange: true
 			input "msgFalse", "text", title: "Custom message to send", required: false, submitOnChange: true
 			input "refDevFalse", "bool", title: "Include device name?", required: false, submitOnChange: true
 			input "phoneFalse", "phone", title: "Phone number for SMS", required: false, submitOnChange: true
@@ -1243,7 +1242,7 @@ def selectMsgFalse() {
                 if (mediaFalseDevice) input "mediaFalseVolume", title: "At this volume", "number", required: false, multiple: false, defaultValue: "50", submitOnChange: true
             }		
         }
-        state.msgFalse = (pushFalse ? "Push" : "") + (msgFalse ? " '$msgFalse'" : "") + (refDevFalse ? " [device]" : "") + (phoneFalse ? " to $phoneFalse" : "") + (speakFalse ? " [speak]" : "") + (mediaFalseDevice ? " ${mediaFalseDevice}" : "")
+        state.msgFalse = (pushFalse ? "Push" : "") + (noticeFalse ? "Notify" : "") + (msgFalse ? " '$msgFalse'" : "") + (refDevFalse ? " [device]" : "") + (phoneFalse ? " to $phoneFalse" : "") + (speakFalse ? " [speak]" : "") + (mediaFalseDevice ? " ${mediaFalseDevice}" : "")
 	}
 }
 // initialization code follows
@@ -1703,10 +1702,10 @@ def takeAction(success) {
 		if(onSwitchTrue) 		if(delayMilTrue) onSwitchTrue.on([delay: delayMilTrue]) else onSwitchTrue.on()
 		if(offSwitchTrue) 		if(delayMilTrue) offSwitchTrue.off([delay: delayMilTrue]) else offSwitchTrue.off()
 		if(toggleSwitchTrue)	toggle(toggleSwitchTrue, true)
-		if(delayedOffTrue)	{   if(delayMinutesTrue) runIn(delayMinutesTrue * 60, delayOffTrue)
+		if(delayedOffTrue)	{   if(delayMinutesTrue) runIn(delayMinutesTrue * 60 + 1, delayOffTrue)
 								if(delayMillisTrue) {if(delayOnOffTrue) delayedOffTrue.on([delay: delayMillisTrue]) else delayedOffTrue.off([delay: delayMillisTrue])}   }
 		if(pendedOffTrue)		{state.pendingOffTrue = true
-        						if(pendMinutesTrue > 0) runIn(pendMinutesTrue * 60, pendingOffTrue) else pendingOffTrue()}
+        						if(pendMinutesTrue > 0) runIn(pendMinutesTrue * 60 + 1, pendingOffTrue) else pendingOffTrue()}
 		if(pendedOffFalse)		state.pendingOffFalse = false  //unschedule(pendingOffFalse)
         if(dimTrackTrue && dimATrue != null) if(state.lastEvtLevel != null) {if(delayMilTrue) dimATrue.setLevel(state.lastEvtLevel, [delay: delayMilTrue]) else dimATrue.setLevel(state.lastEvtLevel)}
 		if(dimATrue && dimLATrue != null) if(delayMilTrue) dimATrue.setLevel(dimLATrue, [delay: delayMilTrue]) else dimATrue.setLevel(dimLATrue)
@@ -1731,16 +1730,18 @@ def takeAction(success) {
 		if(modeTrue) 			setLocationMode(modeTrue)
 		if(ruleTrue)			parent.runRule(ruleTrue, app.label)
         if(ruleActTrue)			parent.runRuleAct(ruleActTrue, app.label)
-        if(ruleEvalDelayTrue)	if(delayEvalMinutesTrue) runIn(delayEvalMinutesTrue * 60, delayEvalTrue)
+        if(ruleEvalDelayTrue)	if(delayEvalMinutesTrue) runIn(delayEvalMinutesTrue * 60 + 1, delayEvalTrue)
         if(updateTrue)			parent.runUpdate(updateTrue)
 		if(myPhraseTrue)		location.helloHome.execute(myPhraseTrue)
 		if(cameraTrue) 		{	cameraTrue.take() 
                 				(1..((burstCountTrue ?: 5) - 1)).each {cameraTrue.take(delay: (500 * it))}   }
 		if(pushTrue)			sendPush((msgTrue ?: "Rule $app.label True") + (refDevTrue ? " $state.lastEvtName" : ""))
+        if(noticeTrue)			sendNotificationEvent((msgTrue ?: "Rule $app.label True") + (refDevTrue ? " $state.lastEvtName" : ""))
 		if(phoneTrue)			sendSmsMulti(phoneTrue, (msgTrue ?: "Rule $app.label True") + (refDevTrue ? " $state.lastEvtName" : ""))
         if(speakTrue)			speakTrueDevice?.speak((msgTrue ?: "Rule $app.label True") + (refDevTrue ? " $state.lastEvtName" : ""))
 		if(mediaTrueDevice)		mediaTrueDevice.playTextAndRestore((msgTrue ?: "Rule $app.label True") + (refDevTrue ? " $state.lastEvtName" : ""), mediaTrueVolume)
-        if(privateTrue)			state.private = privateTrue
+        if(privateTrue)			if(otherTrue && otherPrivateTrue) parent.setRuleBoolean(otherPrivateTrue, privateTrue, app.label)
+        						else state.private = privateTrue
 		if(state.howManyCCtrue > 1)  execCommands(true)
         if(restoreTrue)			restore()
 	} else {
@@ -1748,10 +1749,10 @@ def takeAction(success) {
 		if(onSwitchFalse) 		if(delayMilFalse) onSwitchFalse.on([delay: delayMilFalse]) else onSwitchFalse.on()
 		if(offSwitchFalse) 		if(delayMilFalse) offSwitchFalse.off([delay: delayMilFalse]) else offSwitchFalse.off()
 		if(toggleSwitchFalse)	toggle(toggleSwitchFalse, false)
-		if(delayedOffFalse)	{ 	if(delayMinutesFalse) runIn(delayMinutesFalse * 60, delayOffFalse)
+		if(delayedOffFalse)	{ 	if(delayMinutesFalse) runIn(delayMinutesFalse * 60 + 1, delayOffFalse)
                 				if(delayMillisFalse) {if(delayOnOffFalse) delayedOffFalse.on([delay: delayMillisFalse]) else delayedOffFalse.off([delay: delayMillisFalse])}   }
 		if(pendedOffFalse)		{state.pendingOffFalse = true
-        						if(pendMinutesFalse > 0) runIn(pendMinutesFalse * 60, pendingOffFalse) else pendingOffFalse()}
+        						if(pendMinutesFalse > 0) runIn(pendMinutesFalse * 60 + 1, pendingOffFalse) else pendingOffFalse()}
 		if(pendedOffTrue)		state.pendingOffTrue = false  //unschedule(pendingOffTrue)
         if(dimTrackFalse && dimAFalse != null) if(state.lastEvtLevel != null) {if(delayMilFalse) dimAFalse.setLevel(state.lastEvtLevel, [delay: delayMilFalse]) else dimAFalse.setLevel(state.lastEvtLevel)}
 		if(dimAFalse && dimLAFalse != null) if(delayMilFalse) dimAFalse.setLevel(dimLAFalse, [delay: delayMilFalse]) else dimAFalse.setLevel(dimLAFalse)
@@ -1776,16 +1777,18 @@ def takeAction(success) {
 		if(modeFalse) 			setLocationMode(modeFalse)
 		if(ruleFalse)			parent.runRule(ruleFalse, app.label)
         if(ruleActFalse)		parent.runRuleAct(ruleActFalse, app.label)
-        if(ruleEvalDelayFalse)	if(delayEvalMinutesFalse) runIn(delayEvalMinutesFalse * 60, delayEvalFalse)
+        if(ruleEvalDelayFalse)	if(delayEvalMinutesFalse) runIn(delayEvalMinutesFalse * 60 + 1, delayEvalFalse)
         if(updateFalse)			parent.runUpdate(updateFalse)
 		if(myPhraseFalse) 		location.helloHome.execute(myPhraseFalse)
 		if(cameraFalse) 	{	cameraFalse.take() 
                 				(1..((burstCountFalse ?: 5) - 1)).each {cameraFalse.take(delay: (500 * it))}   }
 		if(pushFalse)			sendPush((msgFalse ?: "Rule $app.label False") + (refDevFalse ? " $state.lastEvtName" : ""))
+        if(noticeFalse)			sendNotificationEvent((msgFalse ?: "Rule $app.label False") + (refDevFalse ? " $state.lastEvtName" : ""))
 		if(phoneFalse)			sendSmsMulti(phoneFalse, (msgFalse ?: "Rule $app.label False") + (refDevFalse ? " $state.lastEvtName" : ""))
         if(speakFalse)			speakFalseDevice?.speak((msgFalse ?: "Rule $app.label False") + (refDevFalse ? " $state.lastEvtName" : ""))
 		if(mediaFalseDevice)	mediaFalseDevice.playTextAndRestore((msgFalse ?: "Rule $app.label False") + (refDevFalse ? " $state.lastEvtName" : ""), mediaFalseVolume)		
-        if(privateFalse)		state.private = privateFalse
+        if(privateFalse)		if(otherFalse && otherPrivateFalse) parent.setRuleBoolean(otherPrivateFalse, privateFalse, app.label)
+        						else state.private = privateFalse
         if(state.howManyCCfalse > 1)  execCommands(false)
         if(restoreFalse)		restore()
 	}
@@ -1977,6 +1980,12 @@ def ruleEvaluator(rule) {
 def ruleActions(rule) {
 	log.info "$app.label: $rule evaluate"
     takeAction(true)
+}
+
+def setBoolean(truth, appLabel) {
+	log.info "$app.label: Set Boolean from $appLabel: $truth"
+	state.private = truth
+	if(state.isRule || state.howMany > 1) runRule(false)
 }
 
 //  private execution filter methods follow
