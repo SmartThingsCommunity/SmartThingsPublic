@@ -7,7 +7,8 @@
  *
  *	Version History
  *
- *	1.7.8	7 Feb 2016		Added Evaluate Rule after Delay (loop possible), and Private Boolean, send notification
+ *	1.7.9	8 Feb 2016		Added set Boolean for other rule, and send notification
+ *	1.7.8	7 Feb 2016		Added Evaluate Rule after Delay (loop possible), and Private Boolean
  *	1.7.7	6 Feb 2016		UI cleanup and organization, added capture/restore for switches/dimmers
  *	1.7.6	5 Feb 2016		Added action to update rule(s) to fix broken schedules due to ST issues
  *	1.7.5	3 Feb 2016		Removed use of unschedule() for delay cancel, to avoid ST issues
