@@ -487,11 +487,6 @@ def enrollResponse() {
 }
 
 private Map parseAxis(String description) {
-	def hexToSignedInt = { hexVal ->
-		def unsignedVal = hexToInt(hexVal)
-		unsignedVal > 32767 ? unsignedVal - 65536 : unsignedVal
-	}
-
 	def z = hexToSignedInt(description[0..3])
 	def y = hexToSignedInt(description[10..13])
 	def x = hexToSignedInt(description[20..23])
@@ -516,6 +511,11 @@ private Map parseAxis(String description) {
 		garageEvent(xyzResults.z)
 
 	getXyzResult(xyzResults, description)
+}
+
+private hexToSignedInt(hexVal) {
+	def unsignedVal = hexToInt(hexVal)
+	unsignedVal > 32767 ? unsignedVal - 65536 : unsignedVal
 }
 
 def garageEvent(zValue) {
