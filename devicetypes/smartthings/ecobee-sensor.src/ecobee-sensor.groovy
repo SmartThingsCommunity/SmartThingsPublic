@@ -14,6 +14,9 @@
  * 
  *  See Changelog for change history
  *
+ *  Current Version: 0.7.5
+ *  Release Date: 20160125
+ *  See separate Changelog for change history
  */
 
 def getVersionNum() { return "0.9.0" }

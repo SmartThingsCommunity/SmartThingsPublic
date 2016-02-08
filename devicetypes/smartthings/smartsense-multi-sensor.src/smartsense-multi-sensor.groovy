@@ -381,7 +381,7 @@ def getTemperature(value) {
 			log.debug "Refreshing Values for manufacturer: SmartThings "
          	refreshCmds = refreshCmds + [
 
-	            /* These values of Motion Threshold Multiplier(01) and Motion Threshold (D200) 
+	            /* These values of Motion Threshold Multiplier(01) and Motion Threshold (7602)
 	               seem to be giving pretty accurate results for the XYZ co-ordinates for this manufacturer. 
 	               Separating these out in a separate if-else because I do not want to touch Centralite part 
 	               as of now. 
@@ -392,7 +392,7 @@ def getTemperature(value) {
 	            "send 0x${device.deviceNetworkId} 1 1", "delay 400",
 	            
 	            "zcl mfg-code ${manufacturerCode}", "delay 200",
-	            "zcl global write 0xFC02 2 0x21 {D200}", "delay 200",
+	            "zcl global write 0xFC02 2 0x21 {7602}", "delay 200",
             	"send 0x${device.deviceNetworkId} 1 1", "delay 400",
                 
             ]
@@ -478,50 +478,34 @@ def enrollResponse() {
 	]
 }
 
-
 private Map parseAxis(String description) {
-	log.debug "parseAxis"
-	def xyzResults = [x: 0, y: 0, z: 0]
-    def parts = description.split("2900")
-    parts[0] = "12" + parts[0]
-    parts.each { part ->
-    	part = part.trim()
-        if (part.startsWith("12")) {
-    		def unsignedX = hexToInt(part.split("12")[1].trim())
-			def signedX = unsignedX > 32767 ? unsignedX - 65536 : unsignedX
-			xyzResults.x = signedX
-            log.debug "X Part: ${signedX}"
-        }
-        // Y and the Z axes are interchanged between SmartThings's implementation and Centralite's implementation
-        else if (part.startsWith("13")) {
-			def unsignedY = hexToInt(part.split("13")[1].trim())
-			def signedY = unsignedY > 32767 ? unsignedY - 65536 : unsignedY
-			if (device.getDataValue("manufacturer") == "SmartThings") {
-                xyzResults.z = -signedY
-                log.debug "Z Part: ${xyzResults.z}"
-                if (garageSensor == "Yes")
-                    garageEvent(xyzResults.z)
-            } 
-            else {
-                xyzResults.y = signedY
-                log.debug "Y Part: ${signedY}"
-            }
-        }
-        else if (part.startsWith("14")) {
-			def unsignedZ = hexToInt(part.split("14")[1].trim())
-			def signedZ = unsignedZ > 32767 ? unsignedZ - 65536 : unsignedZ
-			if (device.getDataValue("manufacturer") == "SmartThings") {
-                xyzResults.y = signedZ
-                log.debug "Y Part: ${signedZ}"
-            } else {
-                xyzResults.z = signedZ
-                log.debug "Z Part: ${signedZ}"
-                if (garageSensor == "Yes")
-                    garageEvent(signedZ)
-            
-            }
-        }
-    }
+	def hexToSignedInt = { hexVal ->
+		def unsignedVal = hexToInt(hexVal)
+		unsignedVal > 32767 ? unsignedVal - 65536 : unsignedVal
+	}
+
+	def z = hexToSignedInt(description[0..3])
+	def y = hexToSignedInt(description[10..13])
+	def x = hexToSignedInt(description[20..23])
+	def xyzResults = [x: x, y: y, z: z]
+
+	if (device.getDataValue("manufacturer") == "SmartThings") {
+		// This mapping matches the current behavior of the Device Handler for the Centralite sensors
+		xyzResults.x = z
+		xyzResults.y = y
+		xyzResults.z = -x
+	} else {
+		// The axises reported by the Device Handler differ from the axises reported by the sensor
+		// This may change in the future
+		xyzResults.x = z
+		xyzResults.y = x
+		xyzResults.z = y
+	}
+
+	log.debug "parseAxis -- ${xyzResults}"
+
+	if (garageSensor == "Yes")
+		garageEvent(xyzResults.z)
 
 	getXyzResult(xyzResults, description)
 }

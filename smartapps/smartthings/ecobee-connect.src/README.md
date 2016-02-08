@@ -5,19 +5,26 @@ Ecobee Thermostat SmartApp(s) and related Device Types for use with the SmartThi
 - [Introduction](#intro)
 - [Motivation](#motivation)
 - [Quick Links](#quicklinks)
+- [Features](#features)
 - [Installation](#installation)
   - [Install Device Types](#install-device-types)
   - [Install SmartApp in IDE](#install-smartapp)
   - [Install SmartApp on Device](#install-smartapp-phone)
 - [Updating](#updating)
+- [Troubleshooting](#troubleshooting)
 - [Reporting Issues](#reporting-issues)
 - [Open Items](#open-items--to-dos)
 - [Contributors](#contributors)
 - [License](#license)
 
 ## <a name="intro">Introduction</a>
+This document describes the various features related to the Open Source Ecobee (Connect)  SmartApp and the related compoenents. This SmartApp suite and the related Device Handlers are intended to be used with [Ecobee thermostats](http://www.ecobee.com/) with the [SmartThings](https://www.smartthings.com/) platform. 
 
-This SmartApp and the related Device types are intended to be used with the [Ecobee thermostats](http://www.ecobee.com/). 
+The following components are part of the solution:
+- **Ecobee (Connect) SmartApp**: This SmartApp provides a single interface for Ecobee Authorization, Device Setup (both Thermostats **and** Sensors), Behavioral Settings and even a Debug Dashboard. Additional features can be added over time as well thanks to built in support for Child SmartApps, keeping everything nicely integrated into one app.
+- **ecobee Routines Child SmartApp**: Child app that lets you trigger settings changes on your Ecobee thermostats based on the SmartThings Hello Modes. Settings include the Ecobee Program (Comfort Settings), Fan Modes and Hold Types. In additional to SmartThings Hello Modes, sunrise/sunset triggers are also support. Multiple instances of the SmartApp are also supported for maximum flexibility.
+- **Ecobee Thermostat Device Handler**: This implements the Device Handler for the Ecobee Thermostat functions and attributes.
+- **Ecobee Sensor Device Handler**: This implements the Device Handler for the Ecobee Sensor attributes.
 
 Here are links to the working version of the repository being developed and maintained by Sean Schneyer [(on GitHub)](https://github.com/StrykerSKS) [(on SmartThings Community)](https://community.smartthings.com/users/strykersks/).
 
@@ -30,9 +37,22 @@ The ultimate goal would be to have these capabilities become part of the stock d
 ## <a name="quicklinks">Quick Links</a>
 - README.md (this file): <https://github.com/StrykerSKS/SmartThingsPublic/blob/StrykerSKS-Ecobee3/smartapps/smartthings/ecobee-connect.src/README.md>
 - Ecobee (Connect) SmartApp: <https://github.com/StrykerSKS/SmartThingsPublic/tree/StrykerSKS-Ecobee3/smartapps/smartthings/ecobee-connect.src>
+- ecobee Routines ChildSmartApp: <https://github.com/StrykerSKS/SmartThingsPublic/tree/StrykerSKS-Ecobee3/smartapps/smartthings/ecobee-routines.src>
 - Ecobee Thermostat Device: <https://github.com/StrykerSKS/SmartThingsPublic/tree/StrykerSKS-Ecobee3/devicetypes/smartthings/ecobee-thermostat.src>
 - Ecobee Sensor Device: <https://github.com/StrykerSKS/SmartThingsPublic/tree/StrykerSKS-Ecobee3/devicetypes/smartthings/ecobee-sensor.src>
 - SmartThings IDE: <https://graph.api.smartthings.com>
+
+
+-----------------------------
+# <a name="features">Features</a>
+
+- Mention the capabilities
+- Provide pretty screenshots
+- SmartApp support
+- All in one design
+- Simplicity
+- Celcius and F support
+
 
 -----------------------------
 # <a name="installation">Installation</a>
@@ -219,6 +239,7 @@ Once you have determined that an update is available, follow these steps:
 - Select `Publish` (bottom right)
 - Click `Execute Update` (bottom right)
 - You should receive a confirmation message such as this example: `Updated 1 and created 0 SmartApps, 1 published`
+- (Optional, but recommended) Rerun the `Ecobee (Connect)` SmartApp. This seems to eleviate any residual issues that may occur due to the update
 
 You should now be running on the updated code. Be sure that you check for both updates of the SmartApp **and** the Device Type. Updating one but not the other could cause compatibility problems.
 
@@ -226,9 +247,26 @@ You should now be running on the updated code. Be sure that you check for both u
 
 > TODO: Fill in the directions for manual upgrade
 
+-------------------------
+## Troubleshooting
+
+| Symptom 	| Possible Solution 	|
+|---------	|-------------------	|
+| The devices are not showing up in the Things tab after installation    	|  It can take several minutes for things to show up properly. If you don't want to wait then simply kill the SmartThings app and reload it.              	|
+| Receive error similar to "error java.lang.NullPointerException: Cannot get property 'authorities' on null object"        	| This indicates that you have not turned on OAuth for the SmartApp. Please review the installation instructions and complete the OAuth steps.                  	|
+| Irregular behavior after an update to the SmartApp or Device Handler code| It is possible that after updating the codebase that you may experience strange behavior, including possible app crashes. This seems to be a general issue with updates on SmartThings. Try the following steps: <br/> 1) Re-run the `Ecobee (Connect)` SmartApp to re-initialize the devices <br/> 2) If that does not solve the problem, remove and re-install the SmartApp |
+|         	|                   	|
+|         	|                   	|
+
+### Live Logging on IDE
+TODO: Put information on getting to the Live Logging on the IDE
+
+### Installed SmartApps Info on IDE
+TODO: Put information about accessing the Installed SmartApps screens to get more information about the state of the SmartApp. In particular, can be used to determine if the poll handlers are still running.
+
 
 -------------------------
-## <a name="reporting-issues"Reporting Issues</a>
+## <a name="reporting-issues">Reporting Issues</a>
 All issues or feature requests should be submitted via the GitHub issue capability. It can be found on the [Issues](https://github.com/StrykerSKS/SmartThingsPublic/issues) tab within the GitHub repository.
 
 You are also welcome to engage in discussions using the [SmartThings Community](https://community.smartthings.com/).
@@ -253,5 +291,3 @@ Licensed under the Apache License, Version 2.0 (the "License"); you may not use 
       http://www.apache.org/licenses/LICENSE-2.0
 
 Unless required by applicable law or agreed to in writing, software distributed under the License is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the License for the specific language governing permissions and limitations under the License.
-
-
