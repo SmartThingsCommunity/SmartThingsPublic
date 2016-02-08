@@ -14,7 +14,7 @@
  *  for the specific language governing permissions and limitations under the License.
  *
  */
-def getVersionNum() { return "0.1.0" }
+def getVersionNum() { return "0.1.2" }
 private def getVersionLabel() { return "ecobee Routines Version ${getVersionNum()}-RC5" }
 
 
@@ -49,8 +49,8 @@ def mainPage() {
         
 	        if (myThermostats?.size() > 0) {
     	    	// Start defining which Routine(s) to allow the SmartApp to execute in		                
-                mode(title: "Select mode(s) to use: ", required: true)            	
-            	input(name: "whichProgram", title: "Select Program to use: ", type: "enum", required: true, multiple:false, description: "Tap to choose...", metadata:[values:["Away", "Home", "Sleep", "Resume Program"]], submitOnChange: true)                
+                mode(title: "When Hello Mode(s) changes to: ", required: true)            	
+            	input(name: "whichProgram", title: "Switch to this Ecobee Program: ", type: "enum", required: true, multiple:false, description: "Tap to choose...", metadata:[values:["Away", "Home", "Sleep", "Resume Program"]], submitOnChange: true)                
                 input(name: "fanMode", title: "Select a Fan Mode to use\n(Optional) ", type: "enum", required: false, multiple: false, description: "Tap to choose...", metadata:[values:["On", "Auto", "default"]], submitOnChange: true)
                 if(settings.whichProgram != "Resume Program") input(name: "holdType", title: "Select the Hold Type to use\n(Optional) ", type: "enum", required: false, multiple: false, description: "Tap to choose...", metadata:[values:["Until I Change", "Until Next Program", "default"]], submitOnChange: true)
                 input(name: "useSunriseSunset", title: "Also at Sunrise or Sunset?\n(Optional) ", type: "enum", required: false, multiple: true, description: "Tap to choose...", metadata:[values:["Sunrise", "Sunset"]], submitOnChange: true)                
