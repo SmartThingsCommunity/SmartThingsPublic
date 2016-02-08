@@ -3,7 +3,7 @@
  *
  *  Copyright 2015, 2016 Bruce Ravenel
  *
- *  Version 1.7.9   8 Feb 2016
+ *  Version 1.7.9a   8 Feb 2016
  *
  *	Version History
  *
@@ -87,7 +87,7 @@ preferences {
 def firstPage() {
 	//version to parent app and expert settings for rule
 	try { 
-		state.isExpert = parent.isExpert("1.7.9") 
+		state.isExpert = parent.isExpert("1.7.9a") 
 		if (state.isExpert) state.cstCmds = parent.getCommands()
 		else state.cstCmds = []
 	}
@@ -232,7 +232,7 @@ def getMoreOptions() {
 def selectTriggers() {
 	def ct = settings.findAll{it.key.startsWith("tCapab")}
 	state.howManyT = ct.size() + 1							// initial value is 1
-	def excludes = ["Certain Time", "Mode", "Routine", "Button", "Smart Home Monitor"]
+	def excludes = ["Certain Time", "Mode", "Routine", "Button", "Smart Home Monitor", "Private Boolean"]
 	dynamicPage(name: "selectTriggers", title: "Select Trigger Events (ANY will trigger)", uninstall: false) {
 		for (int i = 1; i <= state.howManyT; i++) {
 			def thisCapab = "tCapab$i"
@@ -405,7 +405,7 @@ def getCapab(myCapab, isTrig, isReq) {
         "Thermostat", "Thermostat State", "Time of day", "Water sensor"]
 	if(state.isTrig || isTrig) myOptions = ["Acceleration", "Battery", "Button", "Carbon monoxide detector", "Certain Time", "Contact", "Dimmer level", "Energy meter", "Garage door", "Humidity", "Illuminance", 
     	"Lock", "Mode", "Motion", "Physical Switch", "Power meter", "Presence", "Routine", "Rule truth", "Smart Home Monitor", "Smoke detector", "Switch", "Temperature",
-        "Thermostat", "Thermostat State", "Water sensor"]
+        "Thermostat", "Thermostat State", "Water sensor", "Private Boolean"]
 	def result = input myCapab, "enum", title: "Select capability", required: isReq, options: myOptions.sort(), submitOnChange: true
 }
 
@@ -436,7 +436,7 @@ def getState(myCapab, n, isTrig) {
 	else if(myCapab == "Water sensor")				result = input myState, "enum", title: "Water $phrase", 			options: ["dry", "wet"], 					defaultValue: "wet"
 	else if(myCapab == "Button")					result = input myState, "enum", title: "Button pushed or held ", 	options: ["pushed", "held"], 				defaultValue: "pushed"
 	else if(myCapab == "Rule truth")				result = input myState, "enum", title: "Rule truth $phrase ", 		options: ["true", "false"], 				defaultValue: "true"
-    else if(myCapab == "Private Boolean")			result = input myState, "enum", title: "Private truth $phrase ", 	options: ["true", "false"], 				defaultValue: "true"
+    else if(myCapab == "Private Boolean")			result = input myState, "enum", title: "Private Boolean $phrase ", 	options: ["true", "false"], 				defaultValue: "true"
 	else if(myCapab == "Smart Home Monitor")		result = input myState, "enum", title: "SHM $phrase", 				options: ["away" : "Arm (away)", "stay" : "Arm (stay)", "off" : "Disarm"]
 	else if(myCapab in ["Temperature", "Humidity", "Illuminance", "Energy meter", "Power meter", "Battery", "Dimmer level"]) {
     	input myIsDev, "bool", title: "Relative to another device?", multiple: false, required: false, submitOnChange: true, defaultValue: false
@@ -1500,7 +1500,7 @@ def getOperand(i, isR) {
 	else if(capab == "Time of day") result = timeOkX
 	else if(capab == "Days of week") result = daysOk
     else if(capab == "Private Boolean") {
-    	def thisState = settings.find{it.key == "state$i"}
+    	def thisState = settings.find{it.key == (isR ? "state$i" : "tstate$i")}
     	result = thisState.value == state.private.toString()
 	} else if(capab == "Smart Home Monitor") result = (settings.find {it.key == (isR ? "state$i" : "tstate$i")}).value == location.currentState("alarmSystemStatus")?.value
 	else {
@@ -1985,7 +1985,11 @@ def ruleActions(rule) {
 def setBoolean(truth, appLabel) {
 	log.info "$app.label: Set Boolean from $appLabel: $truth"
 	state.private = truth
-	if(state.isRule || state.howMany > 1) runRule(false)
+	if(state.isRule || state.howMany > 1) runRule(false) 
+    else for(int i = 1; i < state.howManyT; i++) {
+		def myCap = settings.find {it.key == "tCapab$i"}
+		if(myCap.value == "Private Boolean") if(getOperand(i, false)) doTrigger()
+    }
 }
 
 //  private execution filter methods follow
