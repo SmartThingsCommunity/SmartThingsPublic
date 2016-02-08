@@ -615,7 +615,7 @@ Map getEcobeeSensors() {
             	// We can add this one as it supports temperature
                 LOG("Adding a control_sensor: ${it}", 4, null, "trace")
 				def value = "${it?.name}"
-				def key = "control_sensor-"+ it?.id + "-" + it?.code
+				def key = "control_sensor-"+ it?.id
 				sensorMap["${key}"] = value
             
             } else {
@@ -1275,7 +1275,7 @@ def updateSensorData() {
                 	sensorDNI = "ecobee_sensor-" + it?.id + "-" + it?.code 
 				} else if (it.type == "control_sensor") {
                 	LOG("We have a Smart SI style control_sensor! it=${it}", 4, null, "trace")
-                    sensorDNI = "control_sensor-" + it?.id + "-" + it?.code 
+                    sensorDNI = "control_sensor-" + it?.id 
                 } else { 
                 	LOG("We have a Thermostat based Sensor! it=${it}", 4, null, "trace")
                 	sensorDNI = "ecobee_sensor_thermostat-"+ it?.id + "-" + it?.name
