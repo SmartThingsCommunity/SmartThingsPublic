@@ -3,7 +3,7 @@
  *
  *  Copyright 2015, 2016 Bruce Ravenel
  *
- *  Version 1.7.9a   8 Feb 2016
+ *  Version 1.7.9b   8 Feb 2016
  *
  *	Version History
  *
@@ -88,7 +88,7 @@ preferences {
 def firstPage() {
 	//version to parent app and expert settings for rule
 	try { 
-		state.isExpert = parent.isExpert("1.7.9a") 
+		state.isExpert = parent.isExpert("1.7.9b") 
 		if (state.isExpert) state.cstCmds = parent.getCommands()
 		else state.cstCmds = []
 	}
@@ -1989,7 +1989,10 @@ def setBoolean(truth, appLabel) {
 	if(state.isRule || state.howMany > 1) runRule(false) 
     else for(int i = 1; i < state.howManyT; i++) {
 		def myCap = settings.find {it.key == "tCapab$i"}
-		if(myCap.value == "Private Boolean") if(getOperand(i, false)) doTrigger()
+		if(myCap.value == "Private Boolean") if(getOperand(i, false)) {
+        	doTrigger()
+            return
+        }
     }
 }
 
