@@ -65,7 +65,7 @@ Key Highlights include:
 
 Thermostat Device |  Thermostat Device w/ Annotation
 :-------------------------:|:-------------------------:
-<img src="https://raw.githubusercontent.com/StrykerSKS/SmartThings/master/smartapp-icons/ecobee/documentation/current_thermo_screenshot.jpg" width="250" /> |  <img src="https://raw.githubusercontent.com/StrykerSKS/SmartThings/master/smartapp-icons/ecobee/documentation/thermostat_annotation_current.png" width="650" />
+<img src="https://raw.githubusercontent.com/StrykerSKS/SmartThings/master/smartapp-icons/ecobee/documentation/current_thermo_screenshot.jpg" border=1 width="250" /> |  <img src="https://raw.githubusercontent.com/StrykerSKS/SmartThings/master/smartapp-icons/ecobee/documentation/thermostat_annotation_current.png" width="650" />
 
 
 -----------------------------
