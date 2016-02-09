@@ -3,7 +3,7 @@
  *
  *  Copyright 2015, 2016 Bruce Ravenel
  *
- *  Version 1.7.9d   8 Feb 2016
+ *  Version 1.7.9e   9 Feb 2016
  *
  *	Version History
  *
@@ -88,13 +88,13 @@ preferences {
 def firstPage() {
 	//version to parent app and expert settings for rule
 	try { 
-		state.isExpert = parent.isExpert("1.7.9d") 
+		state.isExpert = parent.isExpert("1.7.9e") 
 		if (state.isExpert) state.cstCmds = parent.getCommands()
 		else state.cstCmds = []
 	}
 	catch (e) {log.error "Please update Rule Machine to V1.6 or later"}
     if(state.private == null) state.private = true
-    def myTitle = "Define a Rule, a Trigger or Actions"
+    def myTitle = "Define a Rule, a Trigger or Actions\n"
     if(state.howManyT > 1 || state.isTrig) myTitle = "Define a Trigger"
     else if(state.howMany > 1) myTitle = "Define a Rule"
     else if(app.label != null) myTitle = "Define Actions"
@@ -528,7 +528,7 @@ def triggerLabel() {
 		for (int i = 1; i < howMany; i++) {
         	def thisCapab = settings.find {it.key == "tCapab$i"}
 			if(!thisCapab) return result
-			result = result + (i > 1 ? "OR " : "") + conditionLabelN(i, true)
+			result = result + (i > 1 ? "OR\n" : "") + conditionLabelN(i, true)
 			if(i < howMany - 1) result = result + "\n"
 		}
 	}
@@ -573,7 +573,7 @@ def conditionLabelN(i, isTrig) {
 		result = result + "'" + thisState.value + "' runs"
     } else if(thisCapab.value == "Private Boolean") {
     	def thisState = settings.find {it.key == (isTrig ? "tstate$i" : "state$i")}
-        result = "Private Boolean $thisState.value"
+        result = "Private Boolean $SHMphrase $thisState.value"
 	} else {
 		def thisDev = settings.find {it.key == (isTrig ? "tDev$i" : "rDev$i")}
 		if(!thisDev) return result
@@ -875,12 +875,14 @@ def selectActionsTrue() {
 			if(dimAdjTrue) checkActTrue(adjustDimmerTrue, "Adjust: $adjustDimmerTrue: $dimAdjTrue")
 			def myModes = []
 			location.modes.each {myModes << "$it"}
-            input "dimmerModesTrue", "enum", title: "Select dimmer level by mode", required: false, options: myModes.sort(), multiple: true, submitOnChange: true
-            if(dimmerModesTrue) {
-				def sortModes = dimmerModesTrue.sort()
-                input "dimMTrue", "capability.switchLevel", title: "> Set these dimmers per mode", multiple: true, submitOnChange: true, required: true
-                checkActTrue(dimMTrue, "Dimmers per mode: $dimMTrue")
-				sortModes.each {setModeLevel(it, "levelTrue$it", true)}
+            input "dimMTrue", "capability.switchLevel", title: "Set these dimmers per mode", multiple: true, submitOnChange: true, required: false
+            if(dimMTrue) {
+            	input "dimmerModesTrue", "enum", title: "> Select dimmer level by mode", required: true, options: myModes.sort(), multiple: true, submitOnChange: true
+                if(dimmerModesTrue) {
+					def sortModes = dimmerModesTrue.sort()
+                	checkActTrue(dimMTrue, "Dimmers per mode: $dimMTrue")
+					sortModes.each {setModeLevel(it, "levelTrue$it", true)}
+                }
             }
             if(captureFalse == null) {
             	input "captureTrue", "capability.switch", title: "Capture the state of these switches", multiple: true, required: false, submitOnChange: true
@@ -947,8 +949,11 @@ def selectActionsTrue() {
 			if(ruleTrue) setActTrue("Rules: $ruleTrue")
 			if(theseRules != null) input "ruleActTrue", "enum", title: "Run Rule Actions", required: false, multiple: true, options: theseRules.sort(), submitOnChange: true
 			if(ruleActTrue) setActTrue("Rule Actions: $ruleActTrue")
-            theseRules << app.label
-			input "ruleEvalDelayTrue", "enum", title: "Evaluate Rules after delay", required: false, multiple: true, options: theseRules.sort(), submitOnChange: true
+            input "updateTrue", "enum", title: "Update Rules", required: false, multiple: true, options: theseRules.sort(), submitOnChange: true
+            if(updateTrue) setActTrue("Update Rules: $updateTrue")
+            def theseRules2 = parent.ruleList(app.label)
+            theseRules2 << app.label
+			input "ruleEvalDelayTrue", "enum", title: "Evaluate Rules after delay", required: false, multiple: true, options: theseRules2.sort(), submitOnChange: true
 			if(ruleEvalDelayTrue) {
 				input "delayEvalMinutesTrue", "number", title: "> Minutes of delay", required: false, range: "1..*", submitOnChange: true
                 if(delayEvalMinutesTrue != null) {
@@ -957,8 +962,6 @@ def selectActionsTrue() {
 					setActTrue(delayStrTrue)
                 }
             }
-            input "updateTrue", "enum", title: "Update Rules", required: false, multiple: true, options: theseRules.sort(), submitOnChange: true
-            if(updateTrue) setActTrue("Update Rules: $updateTrue")
 			href "selectMsgTrue", title: "Send or speak a message", description: state.msgTrue ? state.msgTrue : "Tap to set", state: state.msgTrue ? "complete" : null
 			if(state.msgTrue) addToActTrue(state.msgTrue)
 			input "cameraTrue", "capability.imageCapture", title: "Take photos", required: false, multiple: false, submitOnChange: true
@@ -988,7 +991,6 @@ def selectActionsTrue() {
             if(privateTrue) {
             	input "otherTrue", "bool", title: "> For this Rule (default) or others?", required: false, submitOnChange: true
                 if(otherTrue) {
-                	theseRules = parent.ruleList(app.label)
                 	input "otherPrivateTrue", "enum", title: "> Select Rules to set Boolean", required: true, multiple: true, options: theseRules.sort(), submitOnChange: true
                     if(otherPrivateTrue) setActTrue("Rule Boolean: $otherPrivateTrue: $privateTrue")
                 } else addToActTrue("Private Boolean: $privateTrue")
@@ -1065,12 +1067,14 @@ def selectActionsFalse() {
 			if(dimAdjFalse) checkActFalse(adjustDimmerFalse, "Adjust: $adjustDimmerFalse: $dimAdjFalse")
 			def myModes = []
 			location.modes.each {myModes << "$it"}
-            input "dimmerModesFalse", "enum", title: "Select dimmer level by mode", required: false, options: myModes.sort(), multiple: true, submitOnChange: true
-            if(dimmerModesFalse) {
-				def sortModes = dimmerModesFalse.sort()
-                input "dimMFalse", "capability.switchLevel", title: "> Set these dimmers per mode", multiple: true, submitOnChange: true, required: true
-                checkActFalse(dimMFalse, "Dimmers per mode: $dimMFalse")
-				sortModes.each {setModeLevel(it, "levelFalse$it", false)}
+            input "dimMFalse", "capability.switchLevel", title: "Set these dimmers per mode", multiple: true, submitOnChange: true, required: false
+            if(dimMFalse) {
+            	input "dimmerModesFalse", "enum", title: "> Select dimmer level by mode", required: true, options: myModes.sort(), multiple: true, submitOnChange: true
+                if(dimmerModesFalse) {
+					def sortModes = dimmerModesFalse.sort()
+                	checkActFalse(dimMFalse, "Dimmers per mode: $dimMFalse")
+					sortModes.each {setModeLevel(it, "levelFalse$it", false)}
+                }
             }
             if(captureTrue == null) {
             	input "captureFalse", "capability.switch", title: "Capture the state of these switches", multiple: true, required: false, submitOnChange: true
@@ -1137,8 +1141,11 @@ def selectActionsFalse() {
 			if(ruleFalse) setActFalse("Rules: $ruleFalse")
 			if(theseRules != null) input "ruleActFalse", "enum", title: "Run Rule Actions", required: false, multiple: true, options: theseRules.sort(), submitOnChange: true
 			if(ruleActFalse) setActFalse("Rule Actions: $ruleActFalse")
-            theseRules << app.label
-			input "ruleEvalDelayFalse", "enum", title: "Evaluate Rules after delay", required: false, multiple: true, options: theseRules.sort(), submitOnChange: true
+            input "updateFalse", "enum", title: "Update Rules", required: false, multiple: true,options: theseRules.sort(), submitOnChange: true
+            if(updateFalse) setActFalse("Update Rules: $updateFalse")
+            def theseRules2 = parent.ruleList(app.label)
+            theseRules2 << app.label
+			input "ruleEvalDelayFalse", "enum", title: "Evaluate Rules after delay", required: false, multiple: true, options: theseRules2.sort(), submitOnChange: true
 			if(ruleEvalDelayFalse) {
 				input "delayEvalMinutesFalse", "number", title: "> Minutes of delay", required: false, range: "1..*", submitOnChange: true
                 if(delayEvalMinutesFalse != null) {
@@ -1147,8 +1154,6 @@ def selectActionsFalse() {
 					setActFalse(delayStrFalse)
                 }
             }
-            input "updateFalse", "enum", title: "Update Rules", required: false, multiple: true,options: theseRules.sort(), submitOnChange: true
-            if(updateFalse) setActFalse("Update Rules: $updateFalse")
 			href "selectMsgFalse", title: "Send or speak a message", description: state.msgFalse ? state.msgFalse : "Tap to set", state: state.msgFalse ? "complete" : null
 			if(state.msgFalse) addToActFalse(state.msgFalse)
 			input "cameraFalse", "capability.imageCapture", title: "Take photos", required: false, multiple: false, submitOnChange: true
@@ -1176,7 +1181,6 @@ def selectActionsFalse() {
             if(privateFalse) {
             	input "otherFalse", "bool", title: "> For this Rule (default) or others?", required: false, submitOnChange: true
                 if(otherFalse) {
-                	theseRules = parent.ruleList(app.label)
                 	input "otherPrivateFalse", "enum", title: "> Select Rules to set Boolean", required: true, multiple: true, options: theseRules.sort(), submitOnChange: true
                     if(otherPrivateFalse) setActFalse("Rule Boolean: $otherPrivateFalse: $privateFalse")
                 } else addToActFalse("Private Boolean: $privateFalse")
