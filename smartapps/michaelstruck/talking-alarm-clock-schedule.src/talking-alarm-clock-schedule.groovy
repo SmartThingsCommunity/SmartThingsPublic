@@ -3,7 +3,7 @@
  *
  *  Copyright © 2016 Michael Struck
  *
- *  Version 1.4.0 (2/9/16) - Initial release of child app
+ *  Version 1.4.1 (2/9/16) - Initial release of child app
  *
  *  Version 1.0.0 - Initial release
  *  Version 1.0.1 - Small syntax changes for consistency
@@ -660,5 +660,5 @@ private saveSelectedSong() {
 }
 //Version
 private def textVersion() {
-    def text = "Child App Version: 1.4.0 (02/09/2016)"
+    def text = "Child App Version: 1.4.1 (02/09/2016)"
 }
