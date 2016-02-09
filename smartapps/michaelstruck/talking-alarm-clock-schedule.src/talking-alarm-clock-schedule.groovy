@@ -3,13 +3,14 @@
  *
  *  Copyright © 2016 Michael Struck
  *
- *  Version 1.3.0 (2/4/16) - Initial release of child app
+ *  Version 1.4.0 (2/9/16) - Initial release of child app
  *
  *  Version 1.0.0 - Initial release
  *  Version 1.0.1 - Small syntax changes for consistency
  *  Version 1.1.0 - Added switch alarm restriction
  *  Version 1.2.0 - Added custom alarm sound selection
  *  Version 1.3.0 - Added presence voice variables (requires presence sensor used under the restrictions page), optimized code
+ *  Verison 1.4.0 - Added switches that can trigger alarms in addition to time
  *
  *  Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except
  *  in compliance with the License. You may obtain a copy of the License at:
@@ -55,7 +56,8 @@ def pageSetup() {
                     	"attempt to use this application with your ${alarmSpeaker} speaker."
                 }
                 input "alarmVolume", "number", title: "Alarm volume", description: "0-100%", required: false
-                input "alarmStart", "time", title: "Time to trigger alarm", required: true
+                input "alarmStart", "time", title: "Time to trigger alarm", required: false
+                input "alarmTrigger", "capability.switch", title: "Trigger alarm when switches turned on...", required: false, multiple: true
                 input "alarmType", "enum", title: "Select a primary alarm type...", multiple: false, required: true, options: [[1:"Alarm sound (up to 20 seconds)"],[3:"Music track/internet radio"],[2:"Voice Greeting"],], submitOnChange:true
                 if (alarmType != "3") {
                     if (alarmType == "1"){
@@ -170,6 +172,7 @@ def installed() {
 }
 def updated() {
     log.debug "Updated with settings: ${settings}"
+    unsubscribe()
     unschedule()
     initialize()
 }
@@ -179,13 +182,14 @@ def initialize() {
     }
     if (alarmStart && alarmSpeaker && alarmType){
 		schedule (alarmStart, alarmHandler)
+        if (alarmTrigger) {subscribe (alarmTrigger, "switch.on", alarmHandler)}
         if (musicTrack){
         	saveSelectedSong()
         }
 	}
 }
 //Handlers----------------
-def alarmHandler() {
+def alarmHandler(evt) {
     log.debug "Alarm time: Evaluating restrictions"
     if (parent.getSchedStatus(app.id) && (!alarmMode || alarmMode.contains(location.mode)) && getDayOk() && everyoneIsPresent() && switchesOnStatus() && switchesOffStatus()) {	
         if (switches || dimmers || thermostats) {
@@ -265,10 +269,10 @@ def alarmHandler() {
         }
         if (alarmType == "2") {
         	if (secondAlarmMusic && state.selectedSong){
-            	alarmSpeaker.playSoundAndTrack (state.sound.uri, state.sound.duration, state.selectedSong)
+                alarmSpeaker.playSoundAndTrack (state.sound.uri, state.sound.duration, state.selectedSong)
             }
             else {
-            	alarmSpeaker.playTrack(state.sound.uri)
+                alarmSpeaker.playTrack(state.sound.uri)
             }
         }
         if (alarmType == "3") {
@@ -647,5 +651,5 @@ private saveSelectedSong() {
 }
 //Version
 private def textVersion() {
-    def text = "Child App Version: 1.3.0 (02/04/2016)"
+    def text = "Child App Version: 1.4.0 (02/09/2016)"
 }
