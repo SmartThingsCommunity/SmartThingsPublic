@@ -3,10 +3,11 @@
  *
  *  Copyright 2015, 2016 Bruce Ravenel
  *
- *  Version 1.7.9e   9 Feb 2016
+ *  Version 1.7.10   9 Feb 2016
  *
  *	Version History
  *
+ *	1.7.10	9 Feb 2016		Added Music player condition, fixed Days of Week schedule bug
  *	1.7.9	8 Feb 2016		Added set Boolean for other Rules, and Send notification event
  *	1.7.8	7 Feb 2016		Added Evaluate Rule after Delay (loop possible), and Private Boolean
  *	1.7.7	6 Feb 2016		UI cleanup and organization, added capture/restore for switches/dimmers
@@ -88,7 +89,7 @@ preferences {
 def firstPage() {
 	//version to parent app and expert settings for rule
 	try { 
-		state.isExpert = parent.isExpert("1.7.9e") 
+		state.isExpert = parent.isExpert("1.7.10") 
 		if (state.isExpert) state.cstCmds = parent.getCommands()
 		else state.cstCmds = []
 	}
@@ -297,10 +298,10 @@ def getCapab(myCapab, isTrig, isReq) {
 	def myOptions = null
 	if(state.isRule || !isTrig) myOptions = ["Acceleration", "Battery", "Carbon monoxide detector", "Contact", "Days of week", "Dimmer level", "Energy meter", "Garage door", "Humidity", "Illuminance", "Lock", 
     	"Mode", "Motion", "Power meter", "Presence", "Rule truth", "Smart Home Monitor", "Smoke detector", "Switch", "Temperature", "Private Boolean", 
-        "Thermostat Mode", "Thermostat State", "Time of day", "Water sensor"]
+        "Thermostat Mode", "Thermostat State", "Time of day", "Water sensor", "Music player"]
 	if(state.isTrig || isTrig) myOptions = ["Acceleration", "Battery", "Button", "Carbon monoxide detector", "Certain Time", "Contact", "Dimmer level", "Energy meter", "Garage door", "Humidity", "Illuminance", 
     	"Lock", "Mode", "Motion", "Physical Switch", "Power meter", "Presence", "Routine", "Rule truth", "Smart Home Monitor", "Smoke detector", "Switch", "Temperature",
-        "Thermostat Mode", "Thermostat State", "Water sensor", "Private Boolean"]
+        "Thermostat Mode", "Thermostat State", "Water sensor", "Private Boolean", "Music player"]
 	def result = input myCapab, "enum", title: "Select capability", required: isReq, options: myOptions.sort(), submitOnChange: true
 }
 
@@ -384,6 +385,10 @@ def getDevs(myCapab, dev, multi) {
 			thisName = "Water sensors"
 			thisCapab = "waterSensor"
 			break
+		case "Music player":
+			thisName = "Music player"
+			thisCapab = "musicPlayer"
+			break
 		case "Rule truth":
 			thisName = "Rules"
 			def theseRules = parent.ruleList(app.label)
@@ -446,6 +451,7 @@ def getState(myCapab, n, isTrig) {
 	else if(myCapab == "Water sensor")				result = input myState, "enum", title: "Water $phrase", 			options: ["dry", "wet"], 					defaultValue: "wet"
 	else if(myCapab == "Button")					result = input myState, "enum", title: "Button pushed or held ", 	options: ["pushed", "held"], 				defaultValue: "pushed"
 	else if(myCapab == "Rule truth")				result = input myState, "enum", title: "Rule truth $phrase ", 		options: ["true", "false"], 				defaultValue: "true"
+	else if(myCapab == "Music player")				result = input myState, "enum", title: "Playing state", 			options: ["playing", "paused","stopped"], 	defaultValue: "playing"
     else if(myCapab == "Private Boolean")			result = input myState, "enum", title: "Private Boolean $phrase ", 	options: ["true", "false"], 				defaultValue: "true"
 	else if(myCapab == "Smart Home Monitor")		result = input myState, "enum", title: "SHM $phrase", 				options: ["away" : "Arm (away)", "stay" : "Arm (stay)", "off" : "Disarm"]
 	else if(myCapab in ["Temperature", "Humidity", "Illuminance", "Energy meter", "Power meter", "Battery", "Dimmer level"]) {
@@ -1255,7 +1261,7 @@ def scheduleTimeOfDay() {
 	schedule(start, "startHandler")
 	schedule(stop, "stopHandler")
 	if(startingXX in ["Sunrise", "Sunset"] || endingXX in ["Sunrise", "Sunset"])
-		schedule("2015-01-09T00:15:29.000-0700", "scheduleTimeOfDay") // in case sunset/sunrise; change daily
+		schedule("2015-01-09T00:15:29.000" + gmtOffset(), "scheduleTimeOfDay") // in case sunset/sunrise; change daily
 }
 
 def scheduleAtTime() {
@@ -1265,7 +1271,7 @@ def scheduleAtTime() {
 	else if(timeX == "Sunset") myTime = s.sunset.time
 	else myTime = timeToday(atTime, location.timeZone).time
 	schedule(myTime, "timeHandler")
-	if(timeX in ["Sunrise", "Sunset"]) schedule("2015-01-09T00:15:29.000-0700", "scheduleAtTime") // in case sunset/sunrise; change daily
+	if(timeX in ["Sunrise", "Sunset"]) schedule("2015-01-09T00:15:29.000" + gmtOffset(), "scheduleAtTime") // in case sunset/sunrise; change daily
 }
 
 def installed() {
@@ -1283,6 +1289,17 @@ def uninstalled() {
 //	log.debug "uninstalled called"
 	try { parent.removeChild(app.label) }
 	catch (e) { log.error "No child app found" }
+}
+
+def gmtOffset() {
+	def offset = location.timeZone.rawOffset
+    def offsetAbs = offset < 0 ? -offset : offset
+    def offsetSign = offset < 0 ? "-" : "+"
+    int offsetInt = offsetAbs / 3600000
+    int offsetMM = offsetAbs / 60000
+    int offMM = offsetAbs - (offsetMM * 60000)
+    def result = ""
+	result = String.format("%s%02d%02d", offsetSign, offsetInt, offMM);    
 }
 
 def initialize() {
@@ -1305,7 +1322,7 @@ def initialize() {
 				scheduleTimeOfDay()
 				break
 			case "Days of week":
-				schedule("2015-01-09T00:01:00.000-0700", "runRule")
+				schedule("2015-01-09T00:01:00.000" + gmtOffset(), "runRule")
 				break
 			case "Certain Time":
 				scheduleAtTime()
@@ -1371,6 +1388,9 @@ def initialize() {
 			case "Routine":
 				subscribe(location, "routineExecuted", allHandler)
 				break
+            case "Music player":
+ 				subscribe(myDev.value, "music" + ((state.isTrig || hasTrig) ? ".$myState" : ""), allHandler)
+ 				break
             case "Private Boolean":
             	break
 			default:
@@ -1405,30 +1425,31 @@ def checkCondAny(dev, stateX, cap, rel, relDev) {
     else if(stateX == "arrives") stateX = "present"
 	def result = false
 	if     (cap == "Temperature") 	dev.currentTemperature.each 	{result = result || compare(it, rel, stateX, relDev ? relDev.currentTemperature : null)}
-	else if(cap == "Humidity")	dev.currentHumidity.each    	{result = result || compare(it, rel, stateX, relDev ? relDev.currentHumidity : null)}
+	else if(cap == "Humidity")		dev.currentHumidity.each    	{result = result || compare(it, rel, stateX, relDev ? relDev.currentHumidity : null)}
 	else if(cap == "Illuminance") 	dev.currentIlluminance.each 	{result = result || compare(it, rel, stateX, relDev ? relDev.currentIlluminance : null)}
-	else if(cap == "Dimmer level")	dev.currentLevel.each		{result = result || compare(it, rel, stateX, relDev ? relDev.currentLevel : null)}
-	else if(cap == "Energy meter")	dev.currentEnergy.each		{result = result || compare(it, rel, stateX, relDev ? relDev.currentEnergy : null)}
-	else if(cap == "Power meter")	dev.currentPower.each		{result = result || compare(it, rel, stateX, relDev ? relDev.currentPower : null)}
-	else if(cap == "Battery")	dev.currentBattery.each		{result = result || compare(it, rel, stateX, relDev ? relDev.currentBattery : null)}
+	else if(cap == "Dimmer level")	dev.currentLevel.each			{result = result || compare(it, rel, stateX, relDev ? relDev.currentLevel : null)}
+	else if(cap == "Energy meter")	dev.currentEnergy.each			{result = result || compare(it, rel, stateX, relDev ? relDev.currentEnergy : null)}
+	else if(cap == "Power meter")	dev.currentPower.each			{result = result || compare(it, rel, stateX, relDev ? relDev.currentPower : null)}
+	else if(cap == "Battery")		dev.currentBattery.each			{result = result || compare(it, rel, stateX, relDev ? relDev.currentBattery : null)}
 	else if(cap == "Rule truth")	dev.each {
 		def truth = null
 		if(it == state.ourRule) truth = state.ourTruth
 		else truth = parent.currentRule(it)
 		result = result || "$stateX" == "$truth"
 	} 
-	else if(cap == "Water sensor")	result = stateX in dev.currentWater
-	else if(cap == "Switch") 	result = stateX in dev.currentSwitch
-	else if(cap == "Motion") 	result = stateX in dev.currentMotion
-	else if(cap == "Acceleration") 	result = stateX in dev.currentAcceleration
-	else if(cap == "Contact") 	result = stateX in dev.currentContact
-	else if(cap == "Presence") 	result = stateX in dev.currentPresence
-	else if(cap == "Smoke detector") 	result = stateX in dev.currentSmoke
+	else if(cap == "Water sensor")				result = stateX in dev.currentWater
+	else if(cap == "Switch") 					result = stateX in dev.currentSwitch
+	else if(cap == "Motion") 					result = stateX in dev.currentMotion
+	else if(cap == "Acceleration") 				result = stateX in dev.currentAcceleration
+	else if(cap == "Contact") 					result = stateX in dev.currentContact
+	else if(cap == "Presence") 					result = stateX in dev.currentPresence
+	else if(cap == "Smoke detector") 			result = stateX in dev.currentSmoke
 	else if(cap == "Carbon monoxide detector") 	result = stateX in dev.currentCarbonMonoxide
-	else if(cap == "Lock") 		result = stateX in dev.currentLock
-	else if(cap == "Garage door")	result = stateX in dev.currentDoor
-	else if(cap == "Thermostat Mode")	result = stateX in dev.currentThermostatMode
-	else if(cap == "Thermostat State")	result = stateX in dev.currentThermostatOperatingState
+	else if(cap == "Lock") 						result = stateX in dev.currentLock
+	else if(cap == "Garage door")				result = stateX in dev.currentDoor
+	else if(cap == "Thermostat Mode")			result = stateX in dev.currentThermostatMode
+	else if(cap == "Music player")				result = stateX in dev.currentStatus
+	else if(cap == "Thermostat State")			result = stateX in dev.currentThermostatOperatingState
 //	log.debug "CheckAny $cap $result"
 	return result
 }
@@ -1453,28 +1474,29 @@ def checkCondAll(dev, stateX, cap, rel, relDev) {
                 "unlocked": "locked"]
 	def result = true
 	if     (cap == "Temperature") 		dev.currentTemperature.each 	{result = result && compare(it, rel, stateX, relDev ? relDev.currentTemperature : null)}
-	else if(cap == "Humidity") 		dev.currentHumidity.each    	{result = result && compare(it, rel, stateX, relDev ? relDev.currentHumidity : null)}
+	else if(cap == "Humidity") 			dev.currentHumidity.each    	{result = result && compare(it, rel, stateX, relDev ? relDev.currentHumidity : null)}
 	else if(cap == "Illuminance") 		dev.currentIlluminance.each 	{result = result && compare(it, rel, stateX, relDev ? relDev.currentIlluminance : null)}
-	else if(cap == "Dimmer level")		dev.currentLevel.each		{result = result && compare(it, rel, stateX, relDev ? relDev.currentLevel : null)}
-	else if(cap == "Energy meter")		dev.currentEnergy.each		{result = result && compare(it, rel, stateX, relDev ? relDev.currentEnergy : null)}
-	else if(cap == "Power meter")		dev.currentPower.each		{result = result && compare(it, rel, stateX, relDev ? relDev.currentPower : null)}
-	else if(cap == "Battery")		dev.currentBattery.each		{result = result && compare(it, rel, stateX, relDev ? relDev.currentBattery : null)}
+	else if(cap == "Dimmer level")		dev.currentLevel.each			{result = result && compare(it, rel, stateX, relDev ? relDev.currentLevel : null)}
+	else if(cap == "Energy meter")		dev.currentEnergy.each			{result = result && compare(it, rel, stateX, relDev ? relDev.currentEnergy : null)}
+	else if(cap == "Power meter")		dev.currentPower.each			{result = result && compare(it, rel, stateX, relDev ? relDev.currentPower : null)}
+	else if(cap == "Battery")			dev.currentBattery.each			{result = result && compare(it, rel, stateX, relDev ? relDev.currentBattery : null)}
 	else if(cap == "Rule truth")		dev.each {
     							def rule = null
     							if(it == state.ourRule) rule = state.ourTruth
     							else rule = parent.currentRule(it)
     							result = result && "$stateX" == "$rule"
                                                 }
-	else if(cap == "Water sensor")		result = !(flip[stateX] in dev.currentSwitch)
-	else if(cap == "Switch") 		result = !(flip[stateX] in dev.currentSwitch)
-	else if(cap == "Motion") 		result = !(flip[stateX] in dev.currentMotion)
-	else if(cap == "Acceleration") 		result = !(flip[stateX] in dev.currentAcceleration)
-	else if(cap == "Contact") 		result = !(flip[stateX] in dev.currentContact)
-	else if(cap == "Presence") 		result = !(flip[stateX] in dev.currentPresence)
-	else if(cap == "Smoke detector") 	result = !(flip[stateX] in dev.currentSmoke)
+	else if(cap == "Water sensor")				result = !(flip[stateX] in dev.currentSwitch)
+	else if(cap == "Switch") 					result = !(flip[stateX] in dev.currentSwitch)
+	else if(cap == "Motion") 					result = !(flip[stateX] in dev.currentMotion)
+	else if(cap == "Acceleration") 				result = !(flip[stateX] in dev.currentAcceleration)
+	else if(cap == "Contact") 					result = !(flip[stateX] in dev.currentContact)
+	else if(cap == "Presence") 					result = !(flip[stateX] in dev.currentPresence)
+	else if(cap == "Smoke detector") 			result = !(flip[stateX] in dev.currentSmoke)
 	else if(cap == "Carbon monoxide detector") 	result = !(flip[stateX] in dev.currentCarbonMonoxide)
-	else if(cap == "Lock") 			result = !(flip[stateX] in dev.currentLock)
-	else if(cap == "Garage door")	result = !(flip[stateX] in dev.currentDoor)
+	else if(cap == "Lock") 						result = !(flip[stateX] in dev.currentLock)
+	else if(cap == "Garage door")				result = !(flip[stateX] in dev.currentDoor)
+    else if(cap == "Music player")				result = !(flip[stateX] in dev.currentState)
     else if(cap == "Thermostat Mode")	dev.currentThermostatMode.each {result = result && stateX == it}
     else if(cap == "Thermostat State")	dev.currentThermmostatOperatingState.each {result = result && stateX == it}
 //	log.debug "CheckAll $cap $result"
@@ -1735,7 +1757,7 @@ def takeAction(success) {
         if(speakTrue)			speakTrueDevice?.speak((msgTrue ?: "Rule $app.label True") + (refDevTrue ? " $state.lastEvtName" : ""))
 		if(mediaTrueDevice)		mediaTrueDevice.playTextAndRestore((msgTrue ?: "Rule $app.label True") + (refDevTrue ? " $state.lastEvtName" : ""), mediaTrueVolume)
         if(privateTrue)			if(otherTrue && otherPrivateTrue) parent.setRuleBoolean(otherPrivateTrue, privateTrue, app.label)
-        						else state.private = privateTrue
+        						else state.private = privateTrue == "true"
 		if(state.howManyCCtrue > 1)  execCommands(true)
         if(restoreTrue)			restore()
 	} else {
@@ -1827,7 +1849,7 @@ def doTrigger() {
 def getButton(dev, evt, i) {
 	def numNames = ["", "one", "two", "three", "four", "five", "six", "seven", "eight", "nine", "ten",
     	"eleven", "twelve", "thirteen", "fourteen", "fifteen", "sixteen", "seventeen", "eighteen", "nineteen", "twenty"]
-	def buttonNumber = evt.jsonData.buttonNumber 
+	def buttonNumber = evt.jsonData.buttonNumber.toInteger() 
     def value = evt.value
 //	log.debug "buttonEvent: $evt.name = $evt.value ($evt.data)"
 //	log.debug "button: $buttonNumber, value: $value"
@@ -1978,7 +2000,7 @@ def ruleActions(rule) {
 
 def setBoolean(truth, appLabel) {
 	log.info "$app.label: Set Boolean from $appLabel: $truth"
-	state.private = truth
+	state.private = truth == "true"
 	if(state.isRule || state.howMany > 1) runRule(false) 
     else for(int i = 1; i < state.howManyT; i++) {
 		def myCap = settings.find {it.key == "tCapab$i"}
@@ -2108,7 +2130,7 @@ private getTimeOk() {
 		def s = getSunriseAndSunset(zipCode: zipCode, sunriseOffset: startSunriseOffset, sunsetOffset: startSunsetOffset)
 		if(startingX == "Sunrise") start = s.sunrise.time
 		else if(startingX == "Sunset") start = s.sunset.time
-		else if(starting) start = timeToday(starting, location.timeZone).time
+		else if(starting) start = timeToday(starting, location.timeZone).time    //  Crash here means time zone not set!!
 		s = getSunriseAndSunset(zipCode: zipCode, sunriseOffset: endSunriseOffset, sunsetOffset: endSunsetOffset)
 		if(endingX == "Sunrise") stop = s.sunrise.time
 		else if(endingX == "Sunset") stop = s.sunset.time
