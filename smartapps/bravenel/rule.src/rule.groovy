@@ -98,7 +98,8 @@ def firstPage() {
     if(state.howManyT > 1 || state.isTrig) myTitle = "Define a Trigger"
     else if(state.howMany > 1) myTitle = "Define a Rule"
     else if(app.label != null) myTitle = "Define Actions"
-    dynamicPage(name: "firstPage", title: myTitle, uninstall: true, install: true) {
+    def myUninstall = state.isTrig || state.isRule || state.howManyT > 1 || state.howMany > 1 || (app.label != "Rule" && app.label != null)
+    dynamicPage(name: "firstPage", title: myTitle, uninstall: myUninstall, install: myUninstall) {
 		if(state.isTrig) {    // old Trigger
 			section() {     
 				label title: "Name the Trigger", required: true
@@ -168,7 +169,7 @@ def firstPage() {
             section("A Trigger uses events to run actions\n\nOptional: with conditions tested under a rule") {
             	href "selectTrig", title: "Define a Trigger", description: "Tap to set"
             }
-            section("Other Rules can run these actions") {
+            section("Other Rules can run these Actions") {
                 href "selectActions", title: "Define Actions", description: "Tap to set"
             }
         }
