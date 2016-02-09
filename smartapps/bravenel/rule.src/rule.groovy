@@ -94,7 +94,7 @@ def firstPage() {
 	}
 	catch (e) {log.error "Please update Rule Machine to V1.6 or later"}
     if(state.private == null) state.private = true
-    def myTitle = "Define a Rule, Trigger or Actions"
+    def myTitle = "Define a Rule, a Trigger or Actions"
     if(state.howManyT > 1 || state.isTrig) myTitle = "Define a Trigger"
     else if(state.howMany > 1) myTitle = "Define a Rule"
     else if(app.label != null) myTitle = "Define Actions"
