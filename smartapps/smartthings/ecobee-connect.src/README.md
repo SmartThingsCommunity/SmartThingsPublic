@@ -63,7 +63,8 @@ Key Highlights include:
 
 ## Thermostat and Sensor Device User Interface
 
-![Thermostat Device User Interface](https://raw.githubusercontent.com/StrykerSKS/SmartThings/master/smartapp-icons/ecobee/documentation/current_thermo_screenshot.jpg =100x)
+
+<img src="https://raw.githubusercontent.com/StrykerSKS/SmartThings/master/smartapp-icons/ecobee/documentation/current_thermo_screenshot.jpg" width="100" />
 
 
 -----------------------------
