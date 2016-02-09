@@ -1268,7 +1268,7 @@ def updateSensorData() {
                 
 	state.remoteSensors.each {
 		it.each {
-			if ( ( it.type == "ecobee3_remote_sensor" ) || ((it.type == "thermostat") && (settings.showThermsAsSensor)) ) {
+			if ( ( it.type == "ecobee3_remote_sensor" ) || (it.type == "control_sensor") || ((it.type == "thermostat") && (settings.showThermsAsSensor)) ) {
 				// Add this sensor to the list
 				def sensorDNI 
                 if (it.type == "ecobee3_remote_sensor") { 
