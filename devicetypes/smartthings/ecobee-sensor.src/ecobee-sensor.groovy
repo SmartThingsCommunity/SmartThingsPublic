@@ -14,13 +14,10 @@
  * 
  *  See Changelog for change history
  *
- *  Current Version: 0.7.5
- *  Release Date: 20160125
- *  See separate Changelog for change history
  */
 
-def getVersionNum() { return "0.9.0" }
-private def getVersionLabel() { return "Ecobee Sensor Version 0.9.0-RC2" }
+def getVersionNum() { return "0.9.1" }
+private def getVersionLabel() { return "Ecobee Sensor Version ${getVersionNum()}-RC2" }
 
 metadata {
 	definition (name: "Ecobee Sensor", namespace: "smartthings", author: "SmartThings") {
@@ -35,8 +32,8 @@ metadata {
 		// TODO: define status and reply messages here
 	}
 
-	tiles {
-		valueTile("temperature", "device.temperature", width: 2, height: 2) {
+	tiles (scale: 2) {
+		valueTile("temperature", "device.temperature", width: 4, height: 4) {
             state("temperature", defaultState: true, label:'${currentValue}°', unit:"dF",
 				backgroundColors:[
                 	// Celsius Color Range
@@ -69,6 +66,13 @@ metadata {
 			)
 		}
 
+        
+        standardTile("motion", "device.motion", width: 2, height: 2, inactiveLabel: false, decoration: "flat") {
+			state "active", action:"noOp", nextState: "active", label:"Motion", icon:"https://raw.githubusercontent.com/StrykerSKS/SmartThings/master/smartapp-icons/ecobee/png/motion_sensor_motion.png"
+			state "inactive", action: "noOp", nextState: "inactive", label:"No Motion", icon:"https://raw.githubusercontent.com/StrykerSKS/SmartThings/master/smartapp-icons/ecobee/png/motion_sensor_nomotion.png"
+            state "unkown", action: "noOp", label:"Offline", nextState: "unkown", icon: "https://raw.githubusercontent.com/StrykerSKS/SmartThings/master/smartapp-icons/ecobee/png/motion_sensor_noconnection.png"
+		}
+        /*
 		standardTile("motion", "device.motion") {
 			state("active", label:'Motion', icon:"st.motion.motion.active", backgroundColor:"#53a7c0")
 			state("inactive", label:'No Motion', icon:"st.motion.motion.inactive", backgroundColor:"#ffffff")
@@ -78,6 +82,11 @@ metadata {
 		standardTile("refresh", "device.refresh", inactiveLabel: false, decoration: "flat") {
 			state "default", action:"refresh.refresh", icon:"st.secondary.refresh"
 		}
+*/
+		standardTile("refresh", "device.thermostatMode", width: 2, height: 2,inactiveLabel: false, decoration: "flat") {
+            state "default", action:"refresh.refresh", label: "Refresh", icon:"https://raw.githubusercontent.com/StrykerSKS/SmartThings/master/smartapp-icons/ecobee/png/header_ecobeeicon_blk.png"
+		}
+
 
 		main (["temperature","motion"])
 		details(["temperature","motion","refresh"])
