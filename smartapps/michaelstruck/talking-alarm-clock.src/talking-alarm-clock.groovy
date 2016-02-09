@@ -2,12 +2,13 @@
  *  Talking Alarm Clock-Parent
  *
  *  Copyright © 2016 Michael Struck
- *  Version 2.1.1 2/6/16
+ *  Version 2.1.2 2/9/16
  * 
  *  Version 2.0.0 - Initial release of parent/client app. 1.4.5 was released to SmartThings production
  *  Version 2.0.1 - Changed the default of new schedules to 'enabled'
  *  Version 2.1.0 - Added momentary switch as trigger to give alarm summary
  *  Version 2.1.1 - Added information in help about %people% variable
+ *  Version 2.1.2 - Added trigger switches to the verbal summary information
  *
  *  Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except
  *  in compliance with the License. You may obtain a copy of the License at:
@@ -122,10 +123,10 @@ def summaryHandler(evt){
      	if (childApps.size()){
         	childApps.each {child ->
         		if (settings."${child.id}"){
-                	summaryMsg += "The alarm named ${child.label}, set for ${child.getAlarmTime()}, is enabled. "
+                	summaryMsg += "The alarm named ${child.label}, set ${child.getAlarmMethod()}, is enabled. "
                 }
                 if (!settings."${child.id}" && summaryDisabled){
-                	summaryMsg += " The alarm named ${child.label}, set for ${child.getAlarmTime()}, is disabled. "
+                	summaryMsg += " The alarm named ${child.label}, set ${child.getAlarmMethod()}, is disabled. "
                 }
 			}        
         }
@@ -146,7 +147,7 @@ private def textAppName() {
 	def text = "Talking Alarm Clock"
 }	
 private def textVersion() {
-    def version = "Parent App Version: 2.1.1 (02/06/2016)"
+    def version = "Parent App Version: 2.1.2 (02/09/2016)"
     def childCount = childApps.size()
     def childVersion = childCount ? childApps[0].textVersion() : "No alarm schedules installed"
     return "${version}\n${childVersion}"

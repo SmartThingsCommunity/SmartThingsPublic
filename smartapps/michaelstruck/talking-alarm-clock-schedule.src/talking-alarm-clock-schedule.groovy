@@ -11,6 +11,7 @@
  *  Version 1.2.0 - Added custom alarm sound selection
  *  Version 1.3.0 - Added presence voice variables (requires presence sensor used under the restrictions page), optimized code
  *  Verison 1.4.0 - Added switches that can trigger alarms in addition to time
+ *  Version 1.4.1 - Added the trigger switches to the summary page
  *
  *  Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except
  *  in compliance with the License. You may obtain a copy of the License at:
@@ -180,12 +181,10 @@ def initialize() {
 	if (alarmType =="1" && soundAlarm){
     	alarmSoundUri()
     }
-    if (alarmStart && alarmSpeaker && alarmType){
-		schedule (alarmStart, alarmHandler)
+    if ((alarmStart || alarmTrigger) && alarmSpeaker && alarmType){
+        if (alarmStart){schedule (alarmStart, alarmHandler)}
         if (alarmTrigger) {subscribe (alarmTrigger, "switch.on", alarmHandler)}
-        if (musicTrack){
-        	saveSelectedSong()
-        }
+        if (musicTrack){saveSelectedSong()}
 	}
 }
 //Handlers----------------
@@ -283,8 +282,11 @@ def alarmHandler(evt) {
 //Common Methods-------------
 def getAlarmDesc() {
 	def desc = ""
-	if (alarmStart) {
-    	desc = "Alarm set to " + parseDate(alarmStart,"", "h:mm a") +" on ${alarmSpeaker}"		
+	if (alarmStart || alarmTrigger) {
+    	def triggerMethod = alarmStart ? "at " + parseDate(alarmStart,"", "h:mm a") : ""
+        triggerMethod += alarmStart && alarmTrigger ? " and " : ""
+        triggerMethod += alarmTrigger ? "when switches are activated" : ""
+        desc = "Alarm triggers ${alarmSpeaker} ${triggerMethod}"		
         def dayListSize = alarmDay ? alarmDay.size() : 7            
         if (alarmDay && dayListSize < 7) {
         	desc += " on"
@@ -364,6 +366,9 @@ def getAlarmDesc() {
 			}
         }
     }
+    else {
+		desc = "No time or trigger for this alarm schedule set."
+    }
 	desc
 }
 def getWeatherDesc() {
@@ -378,8 +383,12 @@ def getWeatherDesc() {
     desc += !includeSunrise && includeSunset ? "Speak sunset" : ""
     desc = desc ? desc : "Tap to setup weather reporting options"
 }
-def getAlarmTime(){
-	def result = "${parseDate(alarmStart, "", "h:mm a")}"
+def getAlarmMethod(){
+	def result = ""
+    if (alarmStart) {result += "for ${parseDate(alarmStart, "", "h:mm a")}"}
+    if (alarmStart && alarmTrigger) {result += " and "}
+    if (alarmTrigger) { result += "to trigger when switches activated"}
+	result    
 }
 def greyOut(){
 	def result = speakWeather || includeSunrise || includeSunset || includeTemp || localHumidity || localTemp? "complete" : ""
