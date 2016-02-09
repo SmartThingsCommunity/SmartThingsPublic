@@ -3,11 +3,11 @@
  *
  *  Copyright 2015, 2016 Bruce Ravenel
  *
- *  Version 1.7.9c   8 Feb 2016
+ *  Version 1.7.9d   8 Feb 2016
  *
  *	Version History
  *
- *	1.7.9	8 Feb 2016		Added set Boolean for other rule, and send notification
+ *	1.7.9	8 Feb 2016		Added set Boolean for other Rules, and Send notification event
  *	1.7.8	7 Feb 2016		Added Evaluate Rule after Delay (loop possible), and Private Boolean
  *	1.7.7	6 Feb 2016		UI cleanup and organization, added capture/restore for switches/dimmers
  *	1.7.6	5 Feb 2016		Added action to update rule(s) to fix broken schedules due to ST issues
@@ -88,13 +88,13 @@ preferences {
 def firstPage() {
 	//version to parent app and expert settings for rule
 	try { 
-		state.isExpert = parent.isExpert("1.7.9c") 
+		state.isExpert = parent.isExpert("1.7.9d") 
 		if (state.isExpert) state.cstCmds = parent.getCommands()
 		else state.cstCmds = []
 	}
 	catch (e) {log.error "Please update Rule Machine to V1.6 or later"}
     if(state.private == null) state.private = true
-    def myTitle = "Select Trigger, Rule or Actions"
+    def myTitle = "Define a Rule, Trigger or Actions"
     if(state.howManyT > 1 || state.isTrig) myTitle = "Define a Trigger"
     else if(state.howMany > 1) myTitle = "Define a Rule"
     else if(app.label != null) myTitle = "Define Actions"
@@ -155,17 +155,20 @@ def firstPage() {
 					href "selectActionsFalse", title: "Select Actions for False", description: state.actsFalse ? state.actsFalse : "Tap to set", state: state.actsFalse ? "complete" : null, submitOnChange: true
 			}
             getMoreOptions()
-
         } else if(app.label != "Rule" && app.label != null) {
 			section() { 					// Actions only
 				label title: "Name the Actions", required: true
 				href "selectActionsTrue", title: "Select Actions", description: state.actsTrue ? state.actsTrue : "Tap to set", state: state.actsTrue ? "complete" : null, submitOnChange: true
 			}
             getMoreOptions()
-        } else {							// New Trigger, Rule or Actions
-            section() {
-            	href "selectTrig", title: "Define a Trigger", description: "Tap to set"
+        } else {							// New Rule, Trigger or Actions
+            section("A Rule uses conditions tested under a rule to choose actions based on true or false") {
                 href "selectRule", title: "Define a Rule", description: "Tap to set"
+            }
+            section("A Trigger uses events to cause actions") {
+            	href "selectTrig", title: "Define a Trigger", description: "Tap to set"
+            }
+            section("Other Rules can run these actions") {
                 href "selectActions", title: "Define Actions", description: "Tap to set"
             }
         }
@@ -174,114 +177,130 @@ def firstPage() {
 
 def selectTrig() {
 	dynamicPage(name: "selectTrig", title: "Select Triggers, Conditions, Rule and Actions", uninstall: true, install: true) {
-			section() { 
-				label title: "Name the Trigger", required: true
-				def trigLabel = triggerLabel()
-				href "selectTriggers", title: "Select Trigger Events", description: trigLabel ? (trigLabel) : "Tap to set", state: trigLabel ? "complete" : null, submitOnChange: true
-				def condLabel = conditionLabel()
-				href "selectConditions", title: "Select Conditions " + (state.howMany in [null, 1] ? "(Optional)" : ""), description: condLabel ? (condLabel) : "Tap to set", state: condLabel ? "complete" : null, submitOnChange: true
-				def ruleLabel = rulLabl()
-				if(state.howMany > 1) 
-					href "defineRule", title: "Define a Rule", description: ruleLabel ? (ruleLabel) : "Tap to set", state: ruleLabel ? "complete" : null, submitOnChange: true
-				href "selectActionsTrue", title: "Select Actions" + (state.howMany > 1 ? " for True" : ""), description: state.actsTrue ? state.actsTrue : "Tap to set", state: state.actsTrue ? "complete" : null, submitOnChange: true
-				if(state.howMany > 1)
-					href "selectActionsFalse", title: "Select Actions for False", description: state.actsFalse ? state.actsFalse : "Tap to set", state: state.actsFalse ? "complete" : null, submitOnChange: true
-			}
-            getMoreOptions()
+		section() { 
+			label title: "Name the Trigger", required: true
+			def trigLabel = triggerLabel()
+			href "selectTriggers", title: "Select Trigger Events", description: trigLabel ? (trigLabel) : "Tap to set", state: trigLabel ? "complete" : null, submitOnChange: true
+			def condLabel = conditionLabel()
+			href "selectConditions", title: "Select Conditions " + (state.howMany in [null, 1] ? "(Optional)" : ""), description: condLabel ? (condLabel) : "Tap to set", state: condLabel ? "complete" : null, submitOnChange: true
+			def ruleLabel = rulLabl()
+			if(state.howMany > 1) 
+				href "defineRule", title: "Define a Rule", description: ruleLabel ? (ruleLabel) : "Tap to set", state: ruleLabel ? "complete" : null, submitOnChange: true
+			href "selectActionsTrue", title: "Select Actions" + (state.howMany > 1 ? " for True" : ""), description: state.actsTrue ? state.actsTrue : "Tap to set", state: state.actsTrue ? "complete" : null, submitOnChange: true
+			if(state.howMany > 1)
+				href "selectActionsFalse", title: "Select Actions for False", description: state.actsFalse ? state.actsFalse : "Tap to set", state: state.actsFalse ? "complete" : null, submitOnChange: true
+		}
+        getMoreOptions()
 	}
 }
 
 def selectRule() {
 	dynamicPage(name: "selectRule", title: "Select Conditions, Rule and Actions", uninstall: true, install: true) {
-        	section() { 
-				label title: "Name the Rule", required: true
-				def condLabel = conditionLabel()
-				href "selectConditions", title: "Select Conditions ", description: condLabel ? (condLabel) : "Tap to set", state: condLabel ? "complete" : null, submitOnChange: true
-				def ruleLabel = rulLabl()
-				href "defineRule", title: "Define a Rule", description: ruleLabel ? (ruleLabel) : "Tap to set", state: ruleLabel ? "complete" : null, submitOnChange: true
-				href "selectActionsTrue", title: "Select Actions for True", description: state.actsTrue ? state.actsTrue : "Tap to set", state: state.actsTrue ? "complete" : null, submitOnChange: true
-				href "selectActionsFalse", title: "Select Actions for False", description: state.actsFalse ? state.actsFalse : "Tap to set", state: state.actsFalse ? "complete" : null, submitOnChange: true
-			}
-            getMoreOptions()
+        section() { 
+			label title: "Name the Rule", required: true
+			def condLabel = conditionLabel()
+			href "selectConditions", title: "Select Conditions ", description: condLabel ? (condLabel) : "Tap to set", state: condLabel ? "complete" : null, submitOnChange: true
+			def ruleLabel = rulLabl()
+			href "defineRule", title: "Define a Rule", description: ruleLabel ? (ruleLabel) : "Tap to set", state: ruleLabel ? "complete" : null, submitOnChange: true
+			href "selectActionsTrue", title: "Select Actions for True", description: state.actsTrue ? state.actsTrue : "Tap to set", state: state.actsTrue ? "complete" : null, submitOnChange: true
+			href "selectActionsFalse", title: "Select Actions for False", description: state.actsFalse ? state.actsFalse : "Tap to set", state: state.actsFalse ? "complete" : null, submitOnChange: true
+		}
+        getMoreOptions()
 	}
 }
 
 def selectActions() {
 	dynamicPage(name: "selectActions", title: "Select Actions", uninstall: true, install: true) {
-			section() { 
-				label title: "Name the Actions", required: true
-				href "selectActionsTrue", title: "Select Actions", description: state.actsTrue ? state.actsTrue : "Tap to set", state: state.actsTrue ? "complete" : null, submitOnChange: true
-			}
-            getMoreOptions()
+		section() { 
+			label title: "Name the Actions", required: true
+			href "selectActionsTrue", title: "Select Actions", description: state.actsTrue ? state.actsTrue : "Tap to set", state: state.actsTrue ? "complete" : null, submitOnChange: true
+		}
+        getMoreOptions()
 	}
 }
 
 def getMoreOptions() {
-			section(title: "More options", hidden: hideOptionsSection(), hideable: true) {
-				def timeLabel = timeIntervalLabel()
-				href "certainTime", title: "Only during a certain time", description: timeLabel ?: "Tap to set", state: timeLabel ? "complete" : null
-				input "daysY", "enum", title: "Only on certain days of the week", multiple: true, required: false,
-					options: ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"]
-				input "modesY", "mode", title: "Only when mode is", multiple: true, required: false            
-				input "disabled", "capability.switch", title: "Switch to disable Rule", required: false, multiple: false, submitOnChange: true
-                if(disabled) input "disabledOff", "bool", title: "Disable when Off? On is default", required: false, defaultValue: false
-			}    
+	section(title: "More options", hidden: hideOptionsSection(), hideable: true) {
+		def timeLabel = timeIntervalLabel()
+		href "certainTime", title: "Only during a certain time", description: timeLabel ?: "Tap to set", state: timeLabel ? "complete" : null
+		input "daysY", "enum", title: "Only on certain days of the week", multiple: true, required: false,
+			options: ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"]
+		input "modesY", "mode", title: "Only when mode is", multiple: true, required: false            
+		input "disabled", "capability.switch", title: "Switch to disable Rule", required: false, multiple: false, submitOnChange: true
+        if(disabled) input "disabledOff", "bool", title: "Disable when Off? On is default", required: false, defaultValue: false
+	}    
+}
+
+def certainTime() {
+	dynamicPage(name: "certainTime", title: "Only during a certain time", uninstall: false) {
+		section() {
+			input "startingX", "enum", title: "Starting at", options: ["A specific time", "Sunrise", "Sunset"], defaultValue: "A specific time", submitOnChange: true, required: false
+			if(startingX in [null, "A specific time"]) input "starting", "time", title: "Start time", required: false
+			else {
+				if(startingX == "Sunrise") input "startSunriseOffset", "number", range: "*..*", title: "Offset in minutes (+/-)", required: false
+				else if(startingX == "Sunset") input "startSunsetOffset", "number", range: "*..*", title: "Offset in minutes (+/-)", required: false
+			}
+		}
+		section() {
+			input "endingX", "enum", title: "Ending at", options: ["A specific time", "Sunrise", "Sunset"], defaultValue: "A specific time", submitOnChange: true, required: false
+			if(endingX in [null, "A specific time"]) input "ending", "time", title: "End time", required: false
+			else {
+				if(endingX == "Sunrise") input "endSunriseOffset", "number", range: "*..*", title: "Offset in minutes (+/-)", required: false
+				else if(endingX == "Sunset") input "endSunsetOffset", "number", range: "*..*", title: "Offset in minutes (+/-)", required: false
+			}
+		}
+	}
 }
 
 // Trigger and Condition input code follows
 
 def selectTriggers() {
-	def ct = settings.findAll{it.key.startsWith("tCapab")}
-	state.howManyT = ct.size() + 1							// initial value is 1
-	def excludes = ["Certain Time", "Mode", "Routine", "Button", "Smart Home Monitor", "Private Boolean"]
-	dynamicPage(name: "selectTriggers", title: "Select Trigger Events (ANY will trigger)", uninstall: false) {
-		for (int i = 1; i <= state.howManyT; i++) {
-			def thisCapab = "tCapab$i"
-			section((i > 1 ? "OR " : "") + "Event Trigger #$i") {
-				getCapab(thisCapab, true, i < state.howManyT)
+	selectTrigCond(true)
+}
+
+def selectConditions() {
+	selectTrigCond(false)
+}
+
+def selectTrigCond(isTrig) {
+	def ctStr = isTrig ? "tCapab" : "rCapab"
+    def ct = settings.findAll{it.key.startsWith(ctStr)}
+    def howMany = ct.size() + 1
+    if(isTrig) state.howManyT = howMany 
+    else state.howMany = howMany
+    def excludes = (state.isTrig || isTrig) ? ["Certain Time", "Mode", "Routine", "Button", "Smart Home Monitor", "Private Boolean"] : ["Time of day", "Days of week", "Mode", "Smart Home Monitor", "Private Boolean"]
+    def pageName = isTrig ? "selectTriggers" : "selectConditions"
+    dynamicPage(name: pageName, title: (state.isTrig || isTrig) ? "Select Trigger Events (ANY will trigger)" : "Select Conditions", uninstall: false) {
+    	for (int i = 1; i <= howMany; i++) {
+        	def thisCapab = isTrig ? "tCapab$i" : "rCapab$i"
+            section((state.isTrig || isTrig) ? "Event Trigger #$i" : "Condition #$i") {            	
+				getCapab(thisCapab, isTrig, i < howMany)
 				def myCapab = settings.find {it.key == thisCapab}
 				if(myCapab) {
 					def xCapab = myCapab.value 
 					if(!(xCapab in excludes)) {
-						def thisDev = "tDev$i"
+						def thisDev = isTrig ? "tDev$i" : "rDev$i"
 						getDevs(xCapab, thisDev, true)
 						def myDev = settings.find {it.key == thisDev}
-						if(myDev) if(myDev.value.size() > 1 && (xCapab != "Rule truth")) getAnyAll(thisDev)
+						if(myDev) if(myDev.value.size() > 1 && (xCapab != "Rule truth" || state.isRule)) getAnyAll(thisDev)
 						if(xCapab in ["Temperature", "Humidity", "Illuminance", "Dimmer level", "Energy meter", "Power meter", "Battery"]) getRelational(thisDev)
-					} else if(xCapab == "Button") getButton("tDev$i")
-					getState(xCapab, i, true)
+					} else if(xCapab == "Button") getButton(isTrig ? "tDev$i" : "rDev$i")
+					getState(xCapab, i, isTrig)
 				}
 			}
 		}
 	}
 }
 
-def selectConditions() {
-	def ct = settings.findAll{it.key.startsWith("rCapab")}
-	state.howMany = ct.size() + 1							// initial value is 1
-	def excludes = null
-	if(state.isRule || state.howMany > 1) excludes = ["Time of day", "Days of week", "Mode", "Smart Home Monitor", "Private Boolean"]
-	if(state.isTrig) excludes = ["Certain Time", "Mode", "Routine", "Button", "Smart Home Monitor"]
-	dynamicPage(name: "selectConditions", title: state.isTrig ? "Select Trigger Events" : "Select Conditions", uninstall: false) {
-		for (int i = 1; i <= state.howMany; i++) {
-			def thisCapab = "rCapab$i"
-			section(state.isTrig ? "Event Trigger #$i" : "Condition #$i") {
-				getCapab(thisCapab, false, i < state.howMany)
-				def myCapab = settings.find {it.key == thisCapab}
-				if(myCapab) {
-					def xCapab = myCapab.value 
-					if(!(xCapab in excludes)) {
-						def thisDev = "rDev$i"
-						getDevs(xCapab, thisDev, true)
-						def myDev = settings.find {it.key == thisDev}
-						if(myDev) if(myDev.value.size() > 1 && (xCapab != "Rule truth" || state.isRule)) getAnyAll(thisDev)
-						if(xCapab in ["Temperature", "Humidity", "Illuminance", "Dimmer level", "Energy meter", "Power meter", "Battery"]) getRelational(thisDev)
-					} else if(xCapab == "Button") getButton("rDev$i")
-					getState(xCapab, i, false)
-				}
-			}
-		}
-	}
+def getCapab(myCapab, isTrig, isReq) {  
+	def myOptions = null
+	if(state.isRule || !isTrig) myOptions = ["Acceleration", "Battery", "Carbon monoxide detector", "Contact", "Days of week", "Dimmer level", "Energy meter", "Garage door", "Humidity", "Illuminance", "Lock", 
+    	"Mode", "Motion", "Power meter", "Presence", "Rule truth", "Smart Home Monitor", "Smoke detector", "Switch", "Temperature", "Private Boolean", 
+        "Thermostat Mode", "Thermostat State", "Time of day", "Water sensor"]
+	if(state.isTrig || isTrig) myOptions = ["Acceleration", "Battery", "Button", "Carbon monoxide detector", "Certain Time", "Contact", "Dimmer level", "Energy meter", "Garage door", "Humidity", "Illuminance", 
+    	"Lock", "Mode", "Motion", "Physical Switch", "Power meter", "Presence", "Routine", "Rule truth", "Smart Home Monitor", "Smoke detector", "Switch", "Temperature",
+        "Thermostat Mode", "Thermostat State", "Water sensor", "Private Boolean"]
+	def result = input myCapab, "enum", title: "Select capability", required: isReq, options: myOptions.sort(), submitOnChange: true
 }
 
 def getDevs(myCapab, dev, multi) {
@@ -376,6 +395,14 @@ def getDevs(myCapab, dev, multi) {
 	def result = input dev, "capability.$thisCapab", title: thisName, required: true, multiple: multi, submitOnChange: true
 }
 
+def getAnyAll(myDev) {
+	def result = input "All$myDev", "bool", title: "All of these?", required: false
+}
+
+def getRelational(myDev) {
+	def result = input "Rel$myDev", "enum", title: "Choose comparison", required: true, options: ["=", "!=", "<", ">", "<=", ">="]
+}
+
 def getButton(dev) {
 	def numNames = ["one", "two", "three", "four", "five", "six", "seven", "eight", "nine", "ten",
     	"eleven", "twelve", "thirteen", "fourteen", "fifteen", "sixteen", "seventeen", "eighteen", "nineteen", "twenty"]
@@ -389,25 +416,6 @@ def getButton(dev) {
         if(numButtons > 1) for (int i = 1; i < numButtons; i++) butOpts[i] = numNames[i]
     	input "Button$dev", "enum", title: "Button number", required: true, multiple: false, submitOnChange: true, options: butOpts
     }
-}
-
-def getAnyAll(myDev) {
-	def result = input "All$myDev", "bool", title: "All of these?", required: false
-}
-
-def getRelational(myDev) {
-	def result = input "Rel$myDev", "enum", title: "Choose comparison", required: true, options: ["=", "!=", "<", ">", "<=", ">="]
-}
-
-def getCapab(myCapab, isTrig, isReq) {  
-	def myOptions = null
-	if(state.isRule || !isTrig) myOptions = ["Acceleration", "Battery", "Carbon monoxide detector", "Contact", "Days of week", "Dimmer level", "Energy meter", "Garage door", "Humidity", "Illuminance", "Lock", 
-    	"Mode", "Motion", "Power meter", "Presence", "Rule truth", "Smart Home Monitor", "Smoke detector", "Switch", "Temperature", "Private Boolean", 
-        "Thermostat Mode", "Thermostat State", "Time of day", "Water sensor"]
-	if(state.isTrig || isTrig) myOptions = ["Acceleration", "Battery", "Button", "Carbon monoxide detector", "Certain Time", "Contact", "Dimmer level", "Energy meter", "Garage door", "Humidity", "Illuminance", 
-    	"Lock", "Mode", "Motion", "Physical Switch", "Power meter", "Presence", "Routine", "Rule truth", "Smart Home Monitor", "Smoke detector", "Switch", "Temperature",
-        "Thermostat Mode", "Thermostat State", "Water sensor", "Private Boolean"]
-	def result = input myCapab, "enum", title: "Select capability", required: isReq, options: myOptions.sort(), submitOnChange: true
 }
 
 def getState(myCapab, n, isTrig) {
@@ -476,27 +484,6 @@ def getState(myCapab, n, isTrig) {
         result = input myState, "enum", title: "When this routine runs", multiple: false, required: false, options: phrases
 	}
     def whatState = settings.find {it.key == myState}
-}
-
-def certainTime() {
-	dynamicPage(name: "certainTime", title: "Only during a certain time", uninstall: false) {
-		section() {
-			input "startingX", "enum", title: "Starting at", options: ["A specific time", "Sunrise", "Sunset"], defaultValue: "A specific time", submitOnChange: true, required: false
-			if(startingX in [null, "A specific time"]) input "starting", "time", title: "Start time", required: false
-			else {
-				if(startingX == "Sunrise") input "startSunriseOffset", "number", range: "*..*", title: "Offset in minutes (+/-)", required: false
-				else if(startingX == "Sunset") input "startSunsetOffset", "number", range: "*..*", title: "Offset in minutes (+/-)", required: false
-			}
-		}
-		section() {
-			input "endingX", "enum", title: "Ending at", options: ["A specific time", "Sunrise", "Sunset"], defaultValue: "A specific time", submitOnChange: true, required: false
-			if(endingX in [null, "A specific time"]) input "ending", "time", title: "End time", required: false
-			else {
-				if(endingX == "Sunrise") input "endSunriseOffset", "number", range: "*..*", title: "Offset in minutes (+/-)", required: false
-				else if(endingX == "Sunset") input "endSunsetOffset", "number", range: "*..*", title: "Offset in minutes (+/-)", required: false
-			}
-		}
-	}
 }
 
 def certainTimeX() {
@@ -1168,6 +1155,7 @@ def selectActionsFalse() {
 				input "burstCountFalse", "number", title: "> How many? (default 5)", defaultValue:5
 				addToActFalse("Photo: $cameraFalse " + (burstCountFalse ?: ""))
 			}
+// code below is vestigal, supports prior version of delayFalse and randomFalse            
 			if(delayFalse) {
 				input "delayFalse", "number", title: "Delay " + ((state.isRule || state.howMany > 1) ? "the effect of this rule" : "this action") + " by this many minutes", required: false, submitOnChange: true
 //				if(delayFalse) {
