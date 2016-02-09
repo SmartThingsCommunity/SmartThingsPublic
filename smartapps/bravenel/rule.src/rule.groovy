@@ -162,7 +162,7 @@ def firstPage() {
 			}
             getMoreOptions()
         } else {							// New Rule, Trigger or Actions
-            section("A Rule uses conditions tested under a rule to choose actions based on true or false") {
+            section("A Rule uses conditions tested under a rule to run actions based on true or false") {
                 href "selectRule", title: "Define a Rule", description: "Tap to set"
             }
             section("A Trigger uses events to cause actions") {
