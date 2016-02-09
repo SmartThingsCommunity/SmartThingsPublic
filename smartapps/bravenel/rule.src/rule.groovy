@@ -165,7 +165,7 @@ def firstPage() {
             section("A Rule uses conditions tested under a rule to run actions based on true or false") {
                 href "selectRule", title: "Define a Rule", description: "Tap to set"
             }
-            section("A Trigger uses events to cause actions") {
+            section("A Trigger uses events to run actions") {
             	href "selectTrig", title: "Define a Trigger", description: "Tap to set"
             }
             section("Other Rules can run these actions") {
