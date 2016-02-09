@@ -24,8 +24,8 @@
  *
  */
 
-def getVersionNum() { return "0.9.2" }
-private def getVersionLabel() { return "Ecobee Thermostat Version ${getVersionNum()}-RC6" }
+def getVersionNum() { return "0.9.5" }
+private def getVersionLabel() { return "Ecobee Thermostat Version ${getVersionNum()}-RC7" }
 
  
 metadata {
@@ -176,10 +176,38 @@ metadata {
 			state "auxHeatOnly", action:"thermostat.auto", icon: "st.thermostat.emergency-heat"
 			state "updating", label:"Working", icon: "st.secondary.secondary"
 		}
+        
+        // TODO Use a different color for the one that is active
+		standardTile("setModeHeat", "device.thermostatMode", width: 2, height: 2, inactiveLabel: false, decoration: "flat") {			
+			state "heat", action:"thermostat.heat",  label: "Set Heat", nextState: "updating", icon: "https://raw.githubusercontent.com/StrykerSKS/SmartThings/master/smartapp-icons/ecobee/png/systemmode_heat.png"
+			state "updating", label:"Working...", icon: "st.secondary.secondary"
+		}
+
+		standardTile("setModeCool", "device.thermostatMode", width: 2, height: 2, inactiveLabel: false, decoration: "flat") {			
+			state "cool", action:"thermostat.cool",  label: "Set Cool", nextState: "updating", icon: "https://raw.githubusercontent.com/StrykerSKS/SmartThings/master/smartapp-icons/ecobee/png/systemmode_cool.png"
+			state "updating", label:"Working...", icon: "st.secondary.secondary"
+		}        
+		standardTile("setModeAuto", "device.thermostatMode", width: 2, height: 2, inactiveLabel: false, decoration: "flat") {			
+			state "auto", action:"thermostat.auto",  label: "Set Auto", nextState: "updating", icon: "https://raw.githubusercontent.com/StrykerSKS/SmartThings/master/smartapp-icons/ecobee/png/systemmode_auto.png"
+			state "updating", label:"Working...", icon: "st.secondary.secondary"
+		}
+		standardTile("setModeAuto", "device.thermostatMode", width: 2, height: 2, inactiveLabel: false, decoration: "flat") {			
+			state "off", action:"thermostat.off", label: "Set Off", nextState: "updating", icon: "https://raw.githubusercontent.com/StrykerSKS/SmartThings/master/smartapp-icons/ecobee/png/systemmode_off.png"
+			state "updating", label:"Working...", icon: "st.secondary.secondary"
+		}
+        
+
+		standardTile("fanModeLabeled", "device.thermostatFanMode", width: 2, height: 2, inactiveLabel: false, decoration: "flat") {
+			state "on", label:'Fan: ${currentValue}', action:"noOp", nextState: "on", icon: "https://raw.githubusercontent.com/StrykerSKS/SmartThings/master/smartapp-icons/ecobee/png/systemmode_fan.png"
+            state "auto", label:'Fan: ${currentValue}', action:"noOp", nextState: "auto", icon: "https://raw.githubusercontent.com/StrykerSKS/SmartThings/master/smartapp-icons/ecobee/png/systemmode_fan.png"
+			state "circulate", label:'Fan: ${currentValue}', action:"noOp", nextState: "circulate", icon: "https://raw.githubusercontent.com/StrykerSKS/SmartThings/master/smartapp-icons/ecobee/png/systemmode_fan.png"
+            state "updating", label:"Working", icon: "st.secondary.secondary"
+		}
+        
 		standardTile("fanMode", "device.thermostatFanMode", width: 2, height: 2, inactiveLabel: false, decoration: "flat") {
-			state "on", label:'Fan: ${currentValue}', action:"thermostat.fanAuto", nextState: "updating", icon: "https://raw.githubusercontent.com/StrykerSKS/SmartThings/master/smartapp-icons/ecobee/png/systemmode_fan.png"
-            state "auto", label:'Fan: ${currentValue}', action:"thermostat.fanOn", nextState: "updating", icon: "https://raw.githubusercontent.com/StrykerSKS/SmartThings/master/smartapp-icons/ecobee/png/systemmode_fan.png"
-			state "circulate", label:'Fan: ${currentValue}', action:"thermostat.fanOn", nextState: "updating", icon: "https://raw.githubusercontent.com/StrykerSKS/SmartThings/master/smartapp-icons/ecobee/png/systemmode_fan.png"
+			state "on", action:"thermostat.fanAuto", nextState: "updating", icon: "https://raw.githubusercontent.com/StrykerSKS/SmartThings/master/smartapp-icons/ecobee/png/systemmode_fan_big_nolabel.png"
+            state "auto", action:"thermostat.fanOn", nextState: "updating", icon: "https://raw.githubusercontent.com/StrykerSKS/SmartThings/master/smartapp-icons/ecobee/png/systemmode_fan_big_nolabel.png"
+			state "circulate", action:"thermostat.fanOn", nextState: "updating", icon: "https://raw.githubusercontent.com/StrykerSKS/SmartThings/master/smartapp-icons/ecobee/png/systemmode_fan_big_nolabel.png"
             state "updating", label:"Working", icon: "st.secondary.secondary"
 		}
         standardTile("fanModeAutoSlider", "device.thermostatFanMode", width: 2, height: 2, inactiveLabel: false, decoration: "flat") {
@@ -228,16 +256,16 @@ metadata {
         
         // TODO: Add icons and handling for Ecobee Comfort Settings
         standardTile("currentProgramIcon", "device.currentProgramName", height: 2, width: 2, inactiveLabel: false, decoration: "flat") {
-			state "Home", action:"noOp", label: 'Running Program', icon: "https://raw.githubusercontent.com/StrykerSKS/SmartThings/master/smartapp-icons/ecobee/png/schedule_home_blue.png"
-			state "Away", label: 'Running Program', icon: "https://raw.githubusercontent.com/StrykerSKS/SmartThings/master/smartapp-icons/ecobee/png/schedule_away_blue.png"
-            state "Sleep", label: 'Running Program', icon: "https://raw.githubusercontent.com/StrykerSKS/SmartThings/master/smartapp-icons/ecobee/png/schedule_asleep_blue.png"
-            state "Auto Away", label: 'Running Program', icon: "https://raw.githubusercontent.com/StrykerSKS/SmartThings/master/smartapp-icons/ecobee/png/schedule_away_blue.png" // Fix to auto version
-            state "Auto Home", label: 'Running Program', icon: "https://raw.githubusercontent.com/StrykerSKS/SmartThings/master/smartapp-icons/ecobee/png/schedule_home_blue.png" // Fix to auto
-            state "Hold", label: "Hold Running"
-            state "Hold Home", label: 'Running Program', icon: "https://raw.githubusercontent.com/StrykerSKS/SmartThings/master/smartapp-icons/ecobee/png/schedule_home_blue.png"
-            state "Hold Away", label: 'Running Program',  icon: "https://raw.githubusercontent.com/StrykerSKS/SmartThings/master/smartapp-icons/ecobee/png/schedule_away_blue.png"
-            state "Hold Sleep", label: 'Running Program',  icon: "https://raw.githubusercontent.com/StrykerSKS/SmartThings/master/smartapp-icons/ecobee/png/schedule_asleep_blue.png"
-            state "default:", label: 'Other Program Running: ${currentValue}', icon: "https://raw.githubusercontent.com/StrykerSKS/SmartThings/master/smartapp-icons/ecobee/png/schedule_asleep_blue.png"
+			state "Home", action:"noOp", label: 'Home', icon: "https://raw.githubusercontent.com/StrykerSKS/SmartThings/master/smartapp-icons/ecobee/png/schedule_home_blue.png"
+			state "Away", action:"noOp", label: 'Away', icon: "https://raw.githubusercontent.com/StrykerSKS/SmartThings/master/smartapp-icons/ecobee/png/schedule_away_blue.png"
+            state "Sleep", action:"noOp", label: 'Sleep', icon: "https://raw.githubusercontent.com/StrykerSKS/SmartThings/master/smartapp-icons/ecobee/png/schedule_asleep_blue.png"
+            state "Auto Away", action:"noOp", label: 'Auto Away', icon: "https://raw.githubusercontent.com/StrykerSKS/SmartThings/master/smartapp-icons/ecobee/png/schedule_away_blue.png" // Fix to auto version
+            state "Auto Home", action:"noOp", label: 'Auto Home', icon: "https://raw.githubusercontent.com/StrykerSKS/SmartThings/master/smartapp-icons/ecobee/png/schedule_home_blue.png" // Fix to auto
+            state "Hold", action:"noOp", label: "Hold Activated", icon: "https://raw.githubusercontent.com/StrykerSKS/SmartThings/master/smartapp-icons/ecobee/png/schedule_generic_chair_blue.png"
+            state "Hold: Home", action:"noOp", label: 'Hold: Home', icon: "https://raw.githubusercontent.com/StrykerSKS/SmartThings/master/smartapp-icons/ecobee/png/schedule_home_blue.png"
+            state "Hold: Away", action:"noOp", label: 'Hold: Away',  icon: "https://raw.githubusercontent.com/StrykerSKS/SmartThings/master/smartapp-icons/ecobee/png/schedule_away_blue.png"
+            state "Hold: Sleep", action:"noOp", label: 'Hold: Sleep',  icon: "https://raw.githubusercontent.com/StrykerSKS/SmartThings/master/smartapp-icons/ecobee/png/schedule_asleep_blue.png"
+            state "default:", action:"noOp", label: 'Other: ${currentValue}', icon: "https://raw.githubusercontent.com/StrykerSKS/SmartThings/master/smartapp-icons/ecobee/png/schedule_asleep_blue.png"
             
 		}        
         
@@ -349,23 +377,19 @@ metadata {
 
 
 		main(["temperature", "tempSummary"])
-        // details(["summary","temperature", "upButtonControl", "thermostatSetpoint", "currentStatus", "downButtonControl", "mode", "weatherIcon", "resumeProgram", "refresh"])
-        // details(["summary","apiStatus", "upButtonControl", "thermostatSetpoint", "currentStatus", "downButtonControl", "mode", "weatherIcon", "resumeProgram", "refresh"])
-
 		details(["tempSummary",
         	"operatingState", "weatherIcon", "refresh", 
-            "motionState", "resumeProgram", "mode",
-            "coolSliderControl", "coolingSetpoint",
-            "heatSliderControl", "heatingSetpoint",
-            "currentStatus", "apiStatus",
-            "oneBuffer", "commandDivider", "oneBuffer",
-            "fanModeAutoSlider", "fanModeOnSlider",
-            "currentProgram", "fanMode",
-            "setHome", "setAway", "setSleep",
-            "mode", "weatherTemperature", "currentProgramIcon"
-            ])
-
+            "currentProgramIcon", "weatherTemperature", "motionState", 
+            "apiStatus", "fanModeLabeled", "resumeProgram",
             
+            "oneBuffer", "commandDivider", "oneBuffer",
+            "coolSliderControl", "coolingSetpoint",
+            "heatSliderControl", "heatingSetpoint",            
+            "fanMode", "fanModeAutoSlider", "fanModeOnSlider", 
+            // "currentProgram", "apiStatus",
+            "setHome", "setAway", "setSleep",
+            "setModeHeat", "setModeCool", "setModeAuto"
+            ])            
 	}
 
 	preferences {
