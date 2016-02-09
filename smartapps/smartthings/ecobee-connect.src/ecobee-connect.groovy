@@ -24,8 +24,8 @@
  *  See Changelog for change history
  *
  */  
-def getVersionNum() { return "0.9.1" }
-private def getVersionLabel() { return "ecobee (Connect) Version ${getVersionNum()}-RC6" }
+def getVersionNum() { return "0.9.5" }
+private def getVersionLabel() { return "ecobee (Connect) Version ${getVersionNum()}-RC7" }
 private def getHelperSmartApps() {
 	return [ 
     		[name: "ecobeeRoutinesChild", appName: "ecobee Routines",  
@@ -670,7 +670,11 @@ def initialize() {
     state.lastScheduledWatchdogDate = nowDate
 	state.lastPoll = nowTime
     state.lastPollDate = nowDate
-    state.timeOfDay = "night" // TODO: Make this more precise later. For now just set it to a valid value to prevent errors
+    state.timeOfDay = "night" 
+    
+    def sunriseAndSunset = getSunriseAndSunset()
+    state.sunriseTime = sunriseAndSunset.sunrise.format("HHmm", location.timeZone).toDouble()
+    state.sunsetTime = sunriseAndSunset.sunset.format("HHmm", location.timeZone).toDouble()
 	    
     // Setup initial polling and determine polling intervals
 	state.pollingInterval = getPollingInterval()
@@ -800,6 +804,7 @@ def sunriseEvent(evt) {
 	state.timeOfDay = "day"
     state.lastSunriseEvent = now()
     state.lastSunriseEventDate = getTimestamp()
+    state.sunriseTime = new Date().format("HHmm", location.timeZone).toInteger()
     scheduleWatchdog(evt, false)
     
 }
@@ -809,6 +814,7 @@ def sunsetEvent(evt) {
 	state.timeOfDay = "night"
     state.lastSunsetEvent = now()
     state.lastSunsetEventDate = getTimestamp()
+    state.sunsetTime = new Date().format("HHmm", location.timeZone).toInteger()
     scheduleWatchdog(evt, false)
 }
 
@@ -1166,9 +1172,13 @@ private def pollEcobeeAPI(thermostatIdsString = "") {
 		def reAttemptPeriod = 45 // in sec
 		if ( (e.statusCode == 500 && e.getResponse()?.data.status.code == 14) ||  (e.statusCode == 401 && e.getResponse()?.data.status.code == 14) ) {
         	// Not possible to recover from status.code == 14
-            // if ( refreshAuthToken() ) { LOG("We have recovered the token a from the code 14.", 2, null, "warn") }
             LOG("In HttpResponseException: Received data.stat.code of 14", 1, null, "error")
-        	apiLost("pollEcobeeAPI() - In HttpResponseException: Received data.stat.code of 14")
+            if ( refreshAuthToken() ) { 
+            	LOG("We have recovered the token a from the code 14.", 2, null, "warn") } 
+			else { 
+            	LOT("Unable to recover from error even after refreshAuthToken called", 2, null, "warn")             
+        		apiLost("pollEcobeeAPI() - In HttpResponseException: Received data.stat.code of 14") 
+			}
 		} else if (e.statusCode != 401) { //this issue might comes from exceed 20sec app execution, connectivity issue etc.
         	LOG("In HttpResponseException - statusCode != 401 (${e.statusCode})", 1, null, "warn")
             state.connected = "warn"
@@ -1342,6 +1352,8 @@ def updateSensorData() {
 }
 
 def updateThermostatData() {
+	state.timeOfDay = getTimeOfDay()
+	
 	// Create the list of thermostats and related data
 	state.thermostats = state.thermostatData.thermostatList.inject([:]) { collector, stat ->
 		def dni = [ app.id, stat.identifier ].join('.')
@@ -1851,7 +1863,10 @@ private def LOG(message, level=3, child=null, logType="debug", event=false, disp
         logType = "debug"
     }
     
-    if ( logType == "error" ) { state.lastLOGerror = message }
+    if ( logType == "error" ) { 
+    	state.lastLOGerror = message 
+        state.LastLOGerrorDate = getTimestamp()
+	}
 	if ( settings.debugLevel?.toInteger() == 5 ) { prefix = "LOG: " }
 	if ( debugLevel(level) ) { 
     	log."${logType}" "${prefix}${message}"
@@ -1968,6 +1983,15 @@ private def String getTimestamp() {
 	return new Date().format("yyyy-MM-dd HH:mm:ss z", location.timeZone)
 }
 
+private def getTimeOfDay() {
+	def nowTime = new Date().format("HHmm", location.timeZone).toDouble()
+    LOG("getTimeOfDay() - nowTime = ${nowTime}", 4, null, "trace")
+    if ( (nowTime < state.sunriseTime) || (nowTime > state.sunsetTime) ) {
+    	return "night"
+    } else {
+    	return "day"
+    }
+}
 
 // Are we connected with the Ecobee service?
 private String apiConnected() {
@@ -1988,12 +2012,12 @@ private def getDebugDump() {
 				lastPollDate:"${state.lastPollDate}", lastScheduledPollDate:"${state.lastScheduledPollDate}", 
 				lastScheduledTokenRefreshDate:"${state.lastScheduledTokenRefreshDate}", lastScheduledWatchdogDate:"${state.lastScheduledWatchdogDate}",
 				lastTokenRefreshDate:"${state.lastTokenRefreshDate}", initializedEpic:"${state.initializedEpic}", initializedDate:"${state.initializedDate}",
-                lastLOGerror:"${state.lastLOGerror}"
+                lastLOGerror:"${state.lastLOGerror}", authTokenExpires:"${state.authTokenExpires}"
 			]    
 	return debugParams
 }
 
-private def apiLost(where = "not specified") {
+private def apiLost(where = "[where not specified]") {
     LOG("apiLost() - ${where}: Lost connection with APIs. unscheduling Polling and refreshAuthToken. User MUST reintialize the connection with Ecobee by running the SmartApp and logging in again", 1, null, "error")
     // TODO: Add a state.apiLostDump variable and populate it with useful troubleshooting information to make it easier to grab everything in one place. Then also add this to the Debug Dashboard
     state.apiLostDump = getDebugDump()
