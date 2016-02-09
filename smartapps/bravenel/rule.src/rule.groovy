@@ -3,7 +3,7 @@
  *
  *  Copyright 2015, 2016 Bruce Ravenel
  *
- *  Version 1.7.10   9 Feb 2016
+ *  Version 1.7.10a   9 Feb 2016
  *
  *	Version History
  *
@@ -89,7 +89,7 @@ preferences {
 def firstPage() {
 	//version to parent app and expert settings for rule
 	try { 
-		state.isExpert = parent.isExpert("1.7.10") 
+		state.isExpert = parent.isExpert("1.7.10a") 
 		if (state.isExpert) state.cstCmds = parent.getCommands()
 		else state.cstCmds = []
 	}
@@ -1297,9 +1297,9 @@ def gmtOffset() {
     def offsetSign = offset < 0 ? "-" : "+"
     int offsetInt = offsetAbs / 3600000
     int offsetMM = offsetAbs / 60000
-    int offMM = offsetAbs - (offsetMM * 60000)
-    def result = ""
-	result = String.format("%s%02d%02d", offsetSign, offsetInt, offMM);    
+    int offsetM6 = offsetMM / 60
+    int offMM = offsetMM - (offsetM6.toInteger() * 60)
+    def result = String.format("%s%02d%02d", offsetSign, offsetInt, offMM);    
 }
 
 def initialize() {
