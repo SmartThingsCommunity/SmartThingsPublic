@@ -48,10 +48,6 @@ The ultimate goal would be to have these capabilities become part of the stock d
 
 - Mention the capabilities
 - Provide pretty screenshots
-- SmartApp support
-- All in one design
-- Simplicity
-- Celcius and F support
 
 ## General
 This set of SmartApps and Device Handlers have been designed for simple installation, flexibile configuration options and easy operation. It is also extensible through the use of Child SmartApps that can easily be added to the configuration.
@@ -65,6 +61,9 @@ Key Highlights include:
 - Included Child SmartApp (`ecobee Routines`) for automating settings changes based on SmartThings Hello Modes being activated (such as through a Routine)
 - Full support for both Fahrenheit and Celsius
 
+## Thermostat and Sensor Device User Interface
+
+![Thermostat Device User Interface]({{site.baseurl}}/https://raw.githubusercontent.com/StrykerSKS/SmartThings/master/smartapp-icons/ecobee/documentation/current_thermo_screenshot.jpg)
 
 
 -----------------------------
