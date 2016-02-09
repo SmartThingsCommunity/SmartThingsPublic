@@ -57,6 +57,7 @@ The ultimate goal would be to have these capabilities become part of the stock d
 This set of SmartApps and Device Handlers have been designed for simple installation, flexibile configuration options and easy operation. It is also extensible through the use of Child SmartApps that can easily be added to the configuration.
 
 Key Highlights include:
+- Open Source Implementation! Free as in beer AND speech. No donations or purchase necessary to use.
 - Single installation SmartApp, `Ecobee (Connect)` used for installing both Thermostats **and** Sensors. No need for multiple apps just for installation!
 - Sophisticated User Interface: Uses custom Ecobee icons throughout the design to provide a more polished look and feel
 - Display current weather with support for separate day and night icons (just like on the front of your Ecobee thermostat)!
