@@ -53,6 +53,18 @@ The ultimate goal would be to have these capabilities become part of the stock d
 - Simplicity
 - Celcius and F support
 
+## General
+This set of SmartApps and Device Handlers have been designed for simple installation, flexibile configuration options and easy operation. It is also extensible through the use of Child SmartApps that can easily be added to the configuration.
+
+Key Highlights include:
+- Single installation SmartApp, `Ecobee (Connect)` used for installing both Thermostats **and** Sensors. No need for multiple apps just for installation!
+- Sophisticated User Interface: Uses custom Ecobee icons throughout the design to provide a more polished look and feel
+- Display current weather with support for separate day and night icons (just like on the front of your Ecobee thermostat)!
+- Robust watchdog handling to minimize API Connectivity issues, but also includes an API Status Tile to quickly identify if there is an ongoing problem
+- Included Child SmartApp (`ecobee Routines`) for automating settings changes based on SmartThings Hello Modes being activated (such as through a Routine)
+- Full support for both Fahrenheit and Celsius
+
+
 
 -----------------------------
 # <a name="installation">Installation</a>
