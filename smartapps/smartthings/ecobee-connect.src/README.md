@@ -61,17 +61,19 @@ Key Highlights include:
 - Included Child SmartApp (`ecobee Routines`) for automating settings changes based on SmartThings Hello Modes being activated (such as through a Routine)
 - Full support for both Fahrenheit and Celsius
 
--------------------------
 ## Thermostat and Sensor Device User Interface
-The primary user interface on a day-to-day basis will be 
+The primary user interface on a day-to-day basis will be two different types of Device Handlers that are shown on the `Things` list under `My Home` in the mobile app. Screenshots of both the `Ecobee Thermostat` and the `Ecobee Sensor` are shown below. 
 
-Thermostat Device |  Thermostat Device w/ Annotation
+`Ecobee Thermostat` Device |  `Ecobee Thermostat` Device w/ Annotation
+:-------------------------:|:-------------------------:
+<img src="https://raw.githubusercontent.com/StrykerSKS/SmartThings/master/smartapp-icons/ecobee/documentation/current_thermo_screenshot.jpg" border="1" width="250" /> |  <img src="https://raw.githubusercontent.com/StrykerSKS/SmartThings/master/smartapp-icons/ecobee/documentation/thermostat_annotation_current.png" width="650" />
+
+`Ecobee Sensor` Device |  `Ecobee Sensor` Device w/ Annotation
 :-------------------------:|:-------------------------:
 <img src="https://raw.githubusercontent.com/StrykerSKS/SmartThings/master/smartapp-icons/ecobee/documentation/current_thermo_screenshot.jpg" border="1" width="250" /> |  <img src="https://raw.githubusercontent.com/StrykerSKS/SmartThings/master/smartapp-icons/ecobee/documentation/thermostat_annotation_current.png" width="650" />
 
 
 
--------------------------
 ## SmartThings Capabilities Supported
 In order to support the broadest set of interactions with other parts of the SmartThings ecosystem, the below SmartThings Capabilities have been implemented. (More information about SmartThings Capabilities can be found [here](http://docs.smartthings.com/en/latest/capabilities-reference.html).
 
