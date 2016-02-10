@@ -71,11 +71,10 @@ Thermostat Device |  Thermostat Device w/ Annotation
 ## SmartThings Capabilities Supported
 In order to support the broadest set of interactions with other parts of the SmartThings ecosystem, the below SmartThings Capabilities have been implemented. (More information about SmartThings Capabilities can be found [here](http://docs.smartthings.com/en/latest/capabilities-reference.html).
 
-* 
+### Capability: [Thermostat](http://docs.smartthings.com/en/latest/capabilities-reference.html#thermostat)
 
-**SmartApp Example**
 
-.. code-block:: groovy
+
 
 -----------------------------
 # <a name="installation">Installation</a>
