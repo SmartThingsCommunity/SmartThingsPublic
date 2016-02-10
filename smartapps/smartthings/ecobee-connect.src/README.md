@@ -83,7 +83,7 @@ Capabilities are important as it allows the device to be used and selected in ot
 ### Device Handler: Ecobee Thermostat
 Supports the following capabilities (tagging capabilities not listed). Follow the links for more details on each capabability:
 * capability ["Thermostat"](http://docs.smartthings.com/en/latest/capabilities-reference.html#thermostat)
-* capability "Temperature Measurement"
+* capability ["Temperature Measurement"](http://docs.smartthings.com/en/latest/capabilities-reference.html#temperature-measurement)
 * capability "Motion Sensor"
 * capability "Relative Humidity Measurement"
 * capability "Polling"
@@ -127,7 +127,12 @@ weatherSymbol		| String		|
 - _sleep()_
 - _away()_
 
-#### Capability: 
+#### Capability: ["Thermostat"](http://docs.smartthings.com/en/latest/capabilities-reference.html#thermostat)
+Follow the above link to the capability for more details on the standard attributes and commands.
+
+**Compliance:** Fully Implemented
+
+
 
 ### Device Handler: Ecobee Sensor
 
