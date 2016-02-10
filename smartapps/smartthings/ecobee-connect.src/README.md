@@ -53,20 +53,37 @@ The ultimate goal would be to have these capabilities become part of the stock d
 This set of SmartApps and Device Handlers have been designed for simple installation, flexibile configuration options and easy operation. It is also extensible through the use of Child SmartApps that can easily be added to the configuration.
 
 Key Highlights include:
-- Open Source Implementation! Free as in beer AND speech. No donations or purchase necessary to use.
-- Single installation SmartApp, `Ecobee (Connect)` used for installing both Thermostats **and** Sensors. No need for multiple apps just for installation!
-- Sophisticated User Interface: Uses custom Ecobee icons throughout the design to provide a more polished look and feel
-- Display current weather with support for separate day and night icons (just like on the front of your Ecobee thermostat)!
-- Robust watchdog handling to minimize API Connectivity issues, but also includes an API Status Tile to quickly identify if there is an ongoing problem
+- Open Source Implementation! Free as in beer AND speech. No donations or purchase needed to use.
+- Single installation SmartApp, `Ecobee (Connect)` used for installing both Thermostats **and** Sensors. No need for multiple apps just for installation! In fact, the `Ecobee (Connect)` SmartApp is the only SmartApp interface you'll need to access all available functions, including those provided by Child SmartApps (if installed).
+- Sophisticated User Interface: Uses custom Ecobee icons throughout the design to provide a more polished look and feel.
+- Display of current weather with support for separate day and night icons (just like on the front of your Ecobee thermostat)!
+- Robust watchdog handling to minimize API Connectivity issues, but also includes an API Status Tile to quickly identify if there is an ongoing problem. No more guessing if you are still connected or not.
 - Included Child SmartApp (`ecobee Routines`) for automating settings changes based on SmartThings Hello Modes being activated (such as through a Routine)
 - Full support for both Fahrenheit and Celsius
 
 ## Thermostat and Sensor Device User Interface
+The primary user interface on a day-to-day basis will be 
 
 Thermostat Device |  Thermostat Device w/ Annotation
 :-------------------------:|:-------------------------:
 <img src="https://raw.githubusercontent.com/StrykerSKS/SmartThings/master/smartapp-icons/ecobee/documentation/current_thermo_screenshot.jpg" border="1" width="250" /> |  <img src="https://raw.githubusercontent.com/StrykerSKS/SmartThings/master/smartapp-icons/ecobee/documentation/thermostat_annotation_current.png" width="650" />
 
+## SmartThings Capabilities Supported
+In order to support the broadest set of interactions with other parts of the SmartThings ecosystem, the below SmartThings Capabilities have been implemented. 
+
+-- test --
+============================= ====================================== ===================================== ========================
+       Name                   Preferences Reference                  Attributes                            Commands
+============================= ====================================== ===================================== ========================
+:ref:`acceleration-sensor`    capability.accelerationSensor          - acceleration
+
+:ref:`actuator`               capability.actuator
+:ref:`alarm`                  capability.alarm                       - alarm                               - off()
+                                                                                                           - strobe()
+                                                                                                           - siren()
+                                                                                                           - both()
+
+-- test --
 
 -----------------------------
 # <a name="installation">Installation</a>
