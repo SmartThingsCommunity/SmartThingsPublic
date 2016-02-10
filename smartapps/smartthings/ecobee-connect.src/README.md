@@ -81,7 +81,7 @@ Capabilities are important as it allows the device to be used and selected in ot
 
 
 ### Device Handler: Ecobee Thermostat
-Supports the following capabilities (tagging capabilities not listed):
+Supports the following capabilities (tagging capabilities not listed). Follow the links for more details on each capabability:
 * capability "Thermostat"
 * capability "Temperature Measurement"
 * capability "Motion Sensor"
@@ -93,17 +93,25 @@ Supports the following capabilities (tagging capabilities not listed):
         
 #### Capability: [Thermostat](http://docs.smartthings.com/en/latest/capabilities-reference.html#thermostat) (_capability.thermostat_)
 
-**Attributes:**
+Follow the above link to the capability for more details on the standard attributes and commands.
+**Compliance:** Fully Implemented
+**Additional Attributes:**
 
 **Attribute**		| **Type** 		| **Possible Values**
 :------------------|:-------------|:-------------------------------------------------:
-temperature	 		|				|
-heatingSetpoint		|				|
-coolingSetpoint		|				|
-thermostatSetpoint	|				| 	 
-thermostatMode		| String		| "auto" "emergency heat" "heat" "off" "cool"
-thermostatFanMode	| String		| "auto" "on" "circulate"
-thermostatOperatingState	|String	| "heating" "idle" "cooling" "fan only"
+temperatureScale	| String		| "C" "F"
+thermostatStatus	|				|
+apiConnected		| String		| "full" "warn" "lost"
+currentProgram		| String		| 	 
+currentProgramId	| String		| 
+weatherSymbol		| String		| 
+
+- **temperatureScale:** Indicates if Fahrenheit of Celsius is being used
+- **thermostatStatus:** Used to provide status information to the UI such as "Resuming schedule..."
+- **apiConnected:** Indicates the current state of the API connection to the Ecobee servers
+- **currentProgram:** The string representation of the program (Comfort Setting) currently being executed.
+- **currentProgramId:** The ID of the current running program
+- **weatherSymbol:** Indicates the current weather pattern currently in effect according to the Ecobee forecast information (e.g. Partly Cloudy, Sunny, Fog, etc)
 
 
 #### Capability
