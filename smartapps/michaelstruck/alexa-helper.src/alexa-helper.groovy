@@ -2,7 +2,7 @@
  *  Alexa Helper-Parent
  *
  *  Copyright © 2016 Michael Struck
- *  Version 4.2.0 2/5/16
+ *  Version 4.2.0a 2/10/16
  * 
  *  Version 1.0.0 - Initial release
  *  Version 2.0.0 - Added 6 slots to allow for one app to control multiple on/off actions
@@ -22,7 +22,7 @@
  *  Version 4.0.0 - Moved the speaker and thermostat controls to the scenario child app and optimized code
  *  Version 4.1.0 - Updated the instructions to reflect new functionality within the scenarios and new options page
  *  Version 4.1.1 - Minor syntax clean up
- *  Version 4.2.0 - Added dropdown for number of Sonos memory slots
+ *  Version 4.2.0a - Added dropdown for number of Sonos memory slots
  *
  *  Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except
  *  in compliance with the License. You may obtain a copy of the License at:
@@ -87,7 +87,7 @@ def pageSettings(){
         section {
             input "speakerSonos", "bool", title: "Allow Sonos special options", defaultValue: false, submitOnChange:true
                 if (speakerSonos){
-                    input "memoryCount", "enum", title: "Maximum number of Sonos memory slots", options: [2,3,4,5,6,7,8], defaultValue: 2, required: false
+                    input "memoryCount", "enum", title: "Maximum number of Sonos memory slots", options: [2:"2",3:"3",4:"4",5:"5",6:"6",7:"7",8:"8"], defaultValue: 2, required: false
                 }
             input "tstatNest", "bool", title: "Allow Nest special options", defaultValue: false
             input "showRestrictions", "bool", title: "Show scenario restrictions", defaultValue: true
@@ -124,7 +124,7 @@ private def textAppName() {
 	def text = "Alexa Helper"
 }	
 private def textVersion() {
-    def version = "Parent App Version: 4.2.0 (02/05/2016)"
+    def version = "Parent App Version: 4.2.0a (02/10/2016)"
     def childCount = childApps.size()
     def childVersion = childCount ? childApps[0].textVersion() : "No scenarios installed"
     return "${version}\n${childVersion}"
