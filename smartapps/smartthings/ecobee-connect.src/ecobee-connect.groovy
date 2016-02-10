@@ -1348,14 +1348,20 @@ def updateThermostatData() {
         
         // TODO: Put a wrapper here based on the thermostat brand
         def thermSensor = stat.remoteSensors.find { it.type == "thermostat" }
-        LOG("updateThermostatData() - thermSensor == ${thermSensor}" )
+        def occupancy = "not supported"
+        if(!thermSensor) {
+		LOG("This particular thermostat does not have a built in remote sensor", 4)
+		state.hasInternalSensors = false
+        } else {
+        	state.hasInternalSensors = true
+		LOG("updateThermostatData() - thermSensor == ${thermSensor}" )
         
-        def occupancyCap = thermSensor?.capability.find { it.type == "occupancy" }
-        LOG("updateThermostatData() - occupancyCap = ${occupancyCap} value = ${occupancyCap.value}")
+		def occupancyCap = thermSensor?.capability.find { it.type == "occupancy" }
+		LOG("updateThermostatData() - occupancyCap = ${occupancyCap} value = ${occupancyCap.value}")
         
-        // Check to see if there is even a value, not all types have a sensor
-        def occupancy =  occupancyCap.value ?: "not support"
-        
+		// Check to see if there is even a value, not all types have a sensor
+		occupancy =  occupancyCap.value ?: "not supported"
+        }
         LOG("Program data: ${stat.program}  Current climate (ref): ${stat.program?.currentClimateRef}", 4)
         
         // Determine if an Event is running, find the first running event
@@ -1413,32 +1419,33 @@ def updateThermostatData() {
         	currentFanMode = stat.runtime.desiredFanMode
         }
      
+	if (state.hasInternalSensors) { occupancy = (occupancy == "true") ? "active" : "inactive" }
 
-		def data = [ 
-			temperatureScale: getTemperatureScale(),
-			apiConnected: apiConnected(),
-			coolMode: (stat.settings.coolStages > 0),
-			heatMode: (stat.settings.heatStages > 0),
-			autoMode: stat.settings.autoHeatCoolFeatureEnabled,
-            currentProgramName: currentClimateName,
-            currentProgramId: currentClimateId,
-			auxHeatMode: (stat.settings.hasHeatPump) && (stat.settings.hasForcedAir || stat.settings.hasElectric || stat.settings.hasBoiler),
-			temperature: usingMetric ? tempTemperature : tempTemperature.toInteger(),
-			heatingSetpoint: usingMetric ? tempHeatingSetpoint : tempHeatingSetpoint.toInteger(),
-			coolingSetpoint: usingMetric ? tempCoolingSetpoint : tempCoolingSetpoint.toInteger(),
-			thermostatMode: stat.settings.hvacMode,
-            thermostatFanMode: currentFanMode,
-			humidity: stat.runtime.actualHumidity,
-            motion: (occupancy == "true") ? "active" : "inactive",
-			thermostatOperatingState: getThermostatOperatingState(stat),
-			weatherSymbol: stat.weather.forecasts[0].weatherSymbol.toString(),
-			weatherTemperature: usingMetric ? tempWeatherTemperature : tempWeatherTemperature.toInteger()
-		]
-        
+	def data = [ 
+		temperatureScale: getTemperatureScale(),
+		apiConnected: apiConnected(),
+		coolMode: (stat.settings.coolStages > 0),
+		heatMode: (stat.settings.heatStages > 0),
+		autoMode: stat.settings.autoHeatCoolFeatureEnabled,
+		currentProgramName: currentClimateName,
+		currentProgramId: currentClimateId,
+		auxHeatMode: (stat.settings.hasHeatPump) && (stat.settings.hasForcedAir || stat.settings.hasElectric || stat.settings.hasBoiler),
+		temperature: usingMetric ? tempTemperature : tempTemperature.toInteger(),
+		heatingSetpoint: usingMetric ? tempHeatingSetpoint : tempHeatingSetpoint.toInteger(),
+		coolingSetpoint: usingMetric ? tempCoolingSetpoint : tempCoolingSetpoint.toInteger(),
+		thermostatMode: stat.settings.hvacMode,
+		thermostatFanMode: currentFanMode,
+		humidity: stat.runtime.actualHumidity,
+		motion: occupancy,
+		thermostatOperatingState: getThermostatOperatingState(stat),
+		weatherSymbol: stat.weather.forecasts[0].weatherSymbol.toString(),
+		weatherTemperature: usingMetric ? tempWeatherTemperature : tempWeatherTemperature.toInteger()
+	]
+       
 		data["temperature"] = data["temperature"] ? ( wantMetric() ? data["temperature"].toDouble() : data["temperature"].toDouble().toInteger() ) : data["temperature"]
 		data["heatingSetpoint"] = data["heatingSetpoint"] ? ( wantMetric() ? data["heatingSetpoint"].toDouble() : data["heatingSetpoint"].toDouble().toInteger() ) : data["heatingSetpoint"]
 		data["coolingSetpoint"] = data["coolingSetpoint"] ? ( wantMetric() ? data["coolingSetpoint"].toDouble() : data["coolingSetpoint"].toDouble().toInteger() ) : data["coolingSetpoint"]
-        data["weatherTemperature"] = data["weatherTemperature"] ? ( wantMetric() ? data["weatherTemperature"].toDouble() : data["weatherTemperature"].toDouble().toInteger() ) : data["weatherTemperature"]
+		data["weatherTemperature"] = data["weatherTemperature"] ? ( wantMetric() ? data["weatherTemperature"].toDouble() : data["weatherTemperature"].toDouble().toInteger() ) : data["weatherTemperature"]
         
 		
 		LOG("Event Data = ${data}", 4)
