@@ -24,7 +24,7 @@ The following components are part of the solution:
 - **Ecobee (Connect) SmartApp**: This SmartApp provides a single interface for Ecobee Authorization, Device Setup (both Thermostats **and** Sensors), Behavioral Settings and even a Debug Dashboard. Additional features can be added over time as well thanks to built in support for Child SmartApps, keeping everything nicely integrated into one app.
 - **ecobee Routines Child SmartApp**: Child app that lets you trigger settings changes on your Ecobee thermostats based on the SmartThings Hello Modes. Settings include the Ecobee Program (Comfort Settings), Fan Modes and Hold Types. In additional to SmartThings Hello Modes, sunrise/sunset triggers are also support. Multiple instances of the SmartApp are also supported for maximum flexibility.
 - **Ecobee Thermostat Device Handler**: This implements the Device Handler for the Ecobee Thermostat functions and attributes.
-- **Ecobee Sensor Device Handler**: This implements the Device Handler for the Ecobee Sensor attributes.
+- **Ecobee Sensor Device Handler**: This implements the Device Handler for the Ecobee Sensor attributes. This is also used to expose the internal sensors on the Thermostat to allow the actual temperature values (instead of only the average) to also be available. This is critically important for some applications such as smart vents.
 
 Here are links to the working version of the repository being developed and maintained by Sean Schneyer [(on GitHub)](https://github.com/StrykerSKS) [(on SmartThings Community)](https://community.smartthings.com/users/strykersks/).
 
@@ -81,19 +81,27 @@ Capabilities are important as it allows the device to be used and selected in ot
 
 
 ### Device Handler: Ecobee Thermostat
-Supports the following capabilities (default capabilities :
-* capability "Actuator"
-		capability "Thermostat"
-		capability "Polling"
-        capability "Sensor"
-		capability "Refresh"
-		capability "Relative Humidity Measurement"
-		capability "Temperature Measurement"
-		// capability "Presence Sensor"
-        capability "Motion Sensor"
+Supports the following capabilities (tagging capabilities not listed):
+* capability "Thermostat"
+* capability "Polling"
+* capability "Refresh"
+* capability "Relative Humidity Measurement"
+* capability "Temperature Measurement"
+* capability "Motion Sensor"
         
-#### Capability: [Thermostat](http://docs.smartthings.com/en/latest/capabilities-reference.html#thermostat)
+#### Capability: [Thermostat](http://docs.smartthings.com/en/latest/capabilities-reference.html#thermostat) (_capability.thermostat_)
 
+**Attributes:**
+
+**Attribute**		| **Type** 		| **Possible Values**
+:------------------:|:-------------:|:-------------------------------------------------:
+temperature	 		|				|
+heatingSetpoint		|				|
+coolingSetpoint		|				|
+thermostatSetpoint	|				| 	 
+thermostatMode		| String		| "auto" "emergency heat" "heat" "off" "cool"
+thermostatFanMode	| String		| "auto" "on" "circulate"
+thermostatOperatingState	|String	| "heating" "idle" "pending cool" "vent economizer" "cooling" "pending heat" "fan only"
 
 #### Cap
 
