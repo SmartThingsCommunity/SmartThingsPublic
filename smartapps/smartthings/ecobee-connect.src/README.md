@@ -70,7 +70,7 @@ The primary user interface on a day-to-day basis will be two different types of 
 
 `Ecobee Sensor` Device |  `Ecobee Sensor` Device w/ Annotation
 :-------------------------:|:-------------------------:
-<img src="https://raw.githubusercontent.com/StrykerSKS/SmartThings/master/smartapp-icons/ecobee/documentation/current_sensor_screenshot.jpg" border="1" width="250" /> |  <img src="https://raw.githubusercontent.com/StrykerSKS/SmartThings/master/smartapp-icons/ecobee/documentation/sensor_annotation_current.png" width="650" />
+<img src="https://raw.githubusercontent.com/StrykerSKS/SmartThings/master/smartapp-icons/ecobee/documentation/current_sensor_screenshot.jpg" border="1" width="250" /> |  <img src="https://raw.githubusercontent.com/StrykerSKS/SmartThings/master/smartapp-icons/ecobee/documentation/sensor_annotation_current.png" width="450" />
 
 
 
