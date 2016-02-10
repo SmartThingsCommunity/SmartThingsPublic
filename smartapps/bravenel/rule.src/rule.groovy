@@ -3,7 +3,7 @@
  *
  *  Copyright 2015, 2016 Bruce Ravenel
  *
- *  Version 1.7.10c   10 Feb 2016
+ *  Version 1.7.10d   10 Feb 2016
  *
  *	Version History
  *
@@ -88,7 +88,7 @@ preferences {
 def firstPage() {
 	//version to parent app and expert settings for rule
 	try { 
-		state.isExpert = parent.isExpert("1.7.10c") 
+		state.isExpert = parent.isExpert("1.7.10d") 
 		if (state.isExpert) state.cstCmds = parent.getCommands()
 		else state.cstCmds = []
 	}
@@ -487,7 +487,7 @@ def getState(myCapab, n, isTrig) {
 		href "atCertainTime", title: "At a certain time", description: atTimeLabel ?: "Tap to set", state: atTimeLabel ? "complete" : null
 	} else if(myCapab == "Routine") {
 		def phrases = location.helloHome?.getPhrases()*.label
-        	result = input myState, "enum", title: "When this routine runs", multiple: false, required: false, options: phrases
+        result = input myState, "enum", title: "When this routine runs", multiple: false, required: false, options: phrases
 	}
 	def whatState = settings.find {it.key == myState}
 }
@@ -610,7 +610,7 @@ def conditionLabelN(i, isTrig) {
         	result = result + thisRelDev.value
         	if(thisState) result = result + (thisState.value > 0 ? " +" : " ") + (thisState.value != 0 ? thisState.value : "")
 		}
-	else result = result + thisState.value
+		else result = result + thisState.value
         if(thisCapab.value == "Presence" && thisDev.value.size() > 1 && isTrig) result = result[0..-2] 
 	}
 	return result
@@ -912,7 +912,7 @@ def selectActionsTrue() {
 					}
 					buildActTrue("$colorTrue ", false)
 					if(colorHexTrue) buildActTrue("$colorHexTrue:$colorSatTrue ", false)
-                		}
+                }
 				if(colorLevelTrue) addToActTrue("Level: $colorLevelTrue")
 			}            
 			input "garageOpenTrue", "capability.garageDoorControl", title: "Open these garage doors", multiple: true, required: false, submitOnChange: true
@@ -1294,11 +1294,12 @@ def gmtOffset() {
 	def offset = location.timeZone.rawOffset
 	def offsetAbs = offset < 0 ? -offset : offset
 	def offsetSign = offset < 0 ? "-" : "+"
-	int offsetInt = offsetAbs / 3600000
-	int offsetMM = offsetAbs / 60000
-	int offsetM6 = offsetMM / 60
-	int offMM = offsetMM - (offsetM6.toInteger() * 60)
-	def result = String.format("%s%02d%02d", offsetSign, offsetInt, offMM);    
+	int offsetHour = offsetAbs / 3600000
+	int offsetMin = offsetAbs / 60000
+	int offsetM6 = offsetMin / 60
+//	int offMin = offsetMin - (offsetM6.toInteger() * 60)
+	int offMin = offsetMin % 60
+	def result = String.format("%s%02d%02d", offsetSign, offsetHour, offMin);    
 }
 
 def initialize() {
@@ -1321,7 +1322,7 @@ def initialize() {
 				scheduleTimeOfDay()
 				break
 			case "Days of week":
-				schedule("2015-01-09T00:01:00.000" + gmtOffset(), "runRule")
+				schedule("2015-01-09T00:01:00.000" + gmtOffset(), "dayHandler")
 				break
 			case "Certain Time":
 				scheduleAtTime()
@@ -1829,9 +1830,9 @@ def runRule(force) {
 		else takeAction(success)
 		parent.setRuleTruth(app.label, success)
 		state.success = success
-		log.info (success ? "$app.label is True" : "$app.label is False")
+		log.info (success ? "$app.label is now True" : "$app.label is now False")
 //      sendNotificationEvent(success ? "$app.label is True" : "$app.label is False")
-	}
+	} // else log.info "$app.label evaluated " + (success ? "true" : "false")
 }
 
 def doTrigger() {
@@ -1923,6 +1924,10 @@ def startHandler() {
 }
 
 def stopHandler() {
+	runRule(false)
+}
+
+def dayHandler() {
 	runRule(false)
 }
 
