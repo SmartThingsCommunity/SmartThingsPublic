@@ -94,7 +94,9 @@ Supports the following capabilities (tagging capabilities not listed). Follow th
 #### Capability: [Thermostat](http://docs.smartthings.com/en/latest/capabilities-reference.html#thermostat) (_capability.thermostat_)
 
 Follow the above link to the capability for more details on the standard attributes and commands.
+
 **Compliance:** Fully Implemented
+
 **Additional Attributes:**
 
 **Attribute**		| **Type** 		| **Possible Values**
