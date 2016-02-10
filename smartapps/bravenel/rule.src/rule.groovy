@@ -3,7 +3,7 @@
  *
  *  Copyright 2015, 2016 Bruce Ravenel
  *
- *  Version 1.7.10a   9 Feb 2016
+ *  Version 1.7.10b   10 Feb 2016
  *
  *	Version History
  *
@@ -89,7 +89,7 @@ preferences {
 def firstPage() {
 	//version to parent app and expert settings for rule
 	try { 
-		state.isExpert = parent.isExpert("1.7.10a") 
+		state.isExpert = parent.isExpert("1.7.10b") 
 		if (state.isExpert) state.cstCmds = parent.getCommands()
 		else state.cstCmds = []
 	}
@@ -841,8 +841,8 @@ def selectActionsTrue() {
 			input "delayedOffTrue", "capability.switch", title: "Turn on or off these switches after a delay (default is OFF)", multiple: true, required: false, submitOnChange: true
 			if(delayedOffTrue) {
 				input "delayOnOffTrue", "bool", title: "> Turn ON after the delay?", multiple: false, required: false, defaultValue: false, submitOnChange: true
-				if(!delayMillisTrue) input "> delayMinutesTrue", "number", title: "> Minutes of delay", required: false, range: "1..*", submitOnChange: true
-				if(!delayMinutesTrue) input "> delayMillisTrue", "number", title: "> Milliseconds of delay", required: false, range: "1..*", submitOnChange: true
+				if(!delayMillisTrue) input "delayMinutesTrue", "number", title: "> Minutes of delay", required: false, range: "1..*", submitOnChange: true
+				if(!delayMinutesTrue) input "delayMillisTrue", "number", title: "> Milliseconds of delay", required: false, range: "1..*", submitOnChange: true
 				if(delayMinutesTrue || delayMillisTrue) {
 					def delayStrTrue = "Delayed " + (delayOnOffTrue ? "On:" : "Off:") + " $delayedOffTrue: " + (delayMillisTrue ? "$delayMillisTrue milliseconds" : "$delayMinutesTrue minute")
 					if(delayMinutesTrue > 1) delayStrTrue = delayStrTrue + "s"
