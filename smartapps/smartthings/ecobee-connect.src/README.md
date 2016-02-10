@@ -94,7 +94,7 @@ Supports the following capabilities (tagging capabilities not listed):
 **Attributes:**
 
 **Attribute**		| **Type** 		| **Possible Values**
-:------------------:|:-------------:|:-------------------------------------------------:
+:------------------|:-------------|:-------------------------------------------------:
 temperature	 		|				|
 heatingSetpoint		|				|
 coolingSetpoint		|				|
