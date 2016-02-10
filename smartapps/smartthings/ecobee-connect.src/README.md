@@ -108,12 +108,12 @@ currentProgram		| String		|
 currentProgramId	| String		| 
 weatherSymbol		| String		| 
 
-- **temperatureScale:** Indicates if Fahrenheit of Celsius is being used
-- **thermostatStatus:** Used to provide status information to the UI such as "Resuming schedule..."
-- **apiConnected:** Indicates the current state of the API connection to the Ecobee servers
-- **currentProgram:** The string representation of the program (Comfort Setting) currently being executed.
-- **currentProgramId:** The ID of the current running program
-- **weatherSymbol:** Indicates the current weather pattern currently in effect according to the Ecobee forecast information (e.g. Partly Cloudy, Sunny, Fog, etc)
+- _temperatureScale_: Indicates if Fahrenheit of Celsius is being used
+- _thermostatStatus_: Used to provide status information to the UI such as "Resuming schedule..."
+- _apiConnected_: Indicates the current state of the API connection to the Ecobee servers
+- _currentProgram_: The string representation of the program (Comfort Setting) currently being executed.
+- _currentProgramId_: The ID of the current running program
+- _weatherSymbol_: Indicates the current weather pattern currently in effect according to the Ecobee forecast information (e.g. Partly Cloudy, Sunny, Fog, etc)
 
 
 **Additional Commands:**
