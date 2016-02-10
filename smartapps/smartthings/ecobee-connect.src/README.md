@@ -83,11 +83,13 @@ Capabilities are important as it allows the device to be used and selected in ot
 ### Device Handler: Ecobee Thermostat
 Supports the following capabilities (tagging capabilities not listed):
 * capability "Thermostat"
-* capability "Polling"
-* capability "Refresh"
-* capability "Relative Humidity Measurement"
 * capability "Temperature Measurement"
 * capability "Motion Sensor"
+* capability "Relative Humidity Measurement"
+* capability "Polling"
+* capability "Refresh"
+
+
         
 #### Capability: [Thermostat](http://docs.smartthings.com/en/latest/capabilities-reference.html#thermostat) (_capability.thermostat_)
 
@@ -103,7 +105,8 @@ thermostatMode		| String		| "auto" "emergency heat" "heat" "off" "cool"
 thermostatFanMode	| String		| "auto" "on" "circulate"
 thermostatOperatingState	|String	| "heating" "idle" "cooling" "fan only"
 
-#### Cap
+
+#### Capability
 
 ### Device Handler: Ecobee Sensor
 
