@@ -69,21 +69,13 @@ Thermostat Device |  Thermostat Device w/ Annotation
 <img src="https://raw.githubusercontent.com/StrykerSKS/SmartThings/master/smartapp-icons/ecobee/documentation/current_thermo_screenshot.jpg" border="1" width="250" /> |  <img src="https://raw.githubusercontent.com/StrykerSKS/SmartThings/master/smartapp-icons/ecobee/documentation/thermostat_annotation_current.png" width="650" />
 
 ## SmartThings Capabilities Supported
-In order to support the broadest set of interactions with other parts of the SmartThings ecosystem, the below SmartThings Capabilities have been implemented. 
+In order to support the broadest set of interactions with other parts of the SmartThings ecosystem, the below SmartThings Capabilities have been implemented. (More information about SmartThings Capabilities can be found [here](http://docs.smartthings.com/en/latest/capabilities-reference.html).
 
--- test --
-============================= ====================================== ===================================== ========================
-       Name                   Preferences Reference                  Attributes                            Commands
-============================= ====================================== ===================================== ========================
-:ref:`acceleration-sensor`    capability.accelerationSensor          - acceleration
+* 
 
-:ref:`actuator`               capability.actuator
-:ref:`alarm`                  capability.alarm                       - alarm                               - off()
-                                                                                                           - strobe()
-                                                                                                           - siren()
-                                                                                                           - both()
+**SmartApp Example**
 
--- test --
+.. code-block:: groovy
 
 -----------------------------
 # <a name="installation">Installation</a>
