@@ -117,6 +117,8 @@ weatherSymbol		| String		|
 
 
 **Additional Commands:**
+- _setTemperature(number)_
+- _auxHeatOnly()_
 - _raiseSetpoint()_
 - _lowerSetpoint()_
 - _resumeProgram()_
