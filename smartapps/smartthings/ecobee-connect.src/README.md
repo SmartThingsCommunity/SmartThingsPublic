@@ -61,7 +61,7 @@ Key Highlights include:
 - Included Child SmartApp (`ecobee Routines`) for automating settings changes based on SmartThings Hello Modes being activated (such as through a Routine)
 - Full support for both Fahrenheit and Celsius
 
-## Thermostat and Sensor Device User Interface
+## Thermostat and Sensor Device User Interfaces
 The primary user interface on a day-to-day basis will be two different types of Device Handlers that are shown on the `Things` list under `My Home` in the mobile app. Screenshots of both the `Ecobee Thermostat` and the `Ecobee Sensor` are shown below. 
 
 `Ecobee Thermostat` Device |  `Ecobee Thermostat` Device w/ Annotation
