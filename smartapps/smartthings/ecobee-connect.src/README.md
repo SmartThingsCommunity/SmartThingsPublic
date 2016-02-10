@@ -116,6 +116,15 @@ weatherSymbol		| String		|
 - **weatherSymbol:** Indicates the current weather pattern currently in effect according to the Ecobee forecast information (e.g. Partly Cloudy, Sunny, Fog, etc)
 
 
+**Additional Commands:**
+- _raiseSetpoint()_
+- _lowerSetpoint()_
+- _resumeProgram()_
+- _setThermostatProgram(String)_
+- _home()_
+- _sleep()_
+- _away()_
+
 #### Capability
 
 ### Device Handler: Ecobee Sensor
