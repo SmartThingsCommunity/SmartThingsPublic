@@ -61,6 +61,7 @@ Key Highlights include:
 - Included Child SmartApp (`ecobee Routines`) for automating settings changes based on SmartThings Hello Modes being activated (such as through a Routine)
 - Full support for both Fahrenheit and Celsius
 
+-------------------------
 ## Thermostat and Sensor Device User Interface
 The primary user interface on a day-to-day basis will be 
 
@@ -68,10 +69,33 @@ Thermostat Device |  Thermostat Device w/ Annotation
 :-------------------------:|:-------------------------:
 <img src="https://raw.githubusercontent.com/StrykerSKS/SmartThings/master/smartapp-icons/ecobee/documentation/current_thermo_screenshot.jpg" border="1" width="250" /> |  <img src="https://raw.githubusercontent.com/StrykerSKS/SmartThings/master/smartapp-icons/ecobee/documentation/thermostat_annotation_current.png" width="650" />
 
+
+
+-------------------------
 ## SmartThings Capabilities Supported
 In order to support the broadest set of interactions with other parts of the SmartThings ecosystem, the below SmartThings Capabilities have been implemented. (More information about SmartThings Capabilities can be found [here](http://docs.smartthings.com/en/latest/capabilities-reference.html).
 
-### Capability: [Thermostat](http://docs.smartthings.com/en/latest/capabilities-reference.html#thermostat)
+Capabilities are important as it allows the device to be used and selected in other usecases (such as from other SmartApps) in a standard, interoperable way.
+
+
+### Device Handler: Ecobee Thermostat
+Supports the following capabilities (default capabilities :
+* capability "Actuator"
+		capability "Thermostat"
+		capability "Polling"
+        capability "Sensor"
+		capability "Refresh"
+		capability "Relative Humidity Measurement"
+		capability "Temperature Measurement"
+		// capability "Presence Sensor"
+        capability "Motion Sensor"
+        
+#### Capability: [Thermostat](http://docs.smartthings.com/en/latest/capabilities-reference.html#thermostat)
+
+
+#### Cap
+
+### Device Handler: Ecobee Sensor
 
 
 
