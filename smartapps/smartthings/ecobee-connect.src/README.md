@@ -101,7 +101,7 @@ coolingSetpoint		|				|
 thermostatSetpoint	|				| 	 
 thermostatMode		| String		| "auto" "emergency heat" "heat" "off" "cool"
 thermostatFanMode	| String		| "auto" "on" "circulate"
-thermostatOperatingState	|String	| "heating" "idle" "pending cool" "vent economizer" "cooling" "pending heat" "fan only"
+thermostatOperatingState	|String	| "heating" "idle" "cooling" "fan only"
 
 #### Cap
 
