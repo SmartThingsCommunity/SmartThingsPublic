@@ -24,8 +24,8 @@
  *  See Changelog for change history
  *
  */  
-def getVersionNum() { return "0.9.5" }
-private def getVersionLabel() { return "ecobee (Connect) Version ${getVersionNum()}-RC7" }
+def getVersionNum() { return "0.9.6" }
+private def getVersionLabel() { return "ecobee (Connect) Version ${getVersionNum()}-RC8" }
 private def getHelperSmartApps() {
 	return [ 
     		[name: "ecobeeRoutinesChild", appName: "ecobee Routines",  
@@ -649,11 +649,16 @@ def installed() {
 
 def updated() {	
     LOG("Updated with settings: ${settings}", 4)	
+	if( readyForAuthRefresh() ) {    
+    	LOG("In update() - readyForAuthRefresh() returned true. Need to refresh the tokens.", 2, null, "error")
+        refreshAuthToken(true)
+    }
+
     initialize()
 }
 
 def initialize() {	
-    LOG("=====> initialize()", 4)
+    LOG("=====> initialize()", 4)    
     
     state.connected = "full"        
     state.reAttempt = 0
@@ -946,6 +951,7 @@ private def Boolean spawnDaemon(daemon="all") {
         try {
 			// result = result && unschedule("refreshAuthTokenScheduled")
             if ( canSchedule() ) { 
+            	LOG("canSchedule() is true. About to perform runEvery15Minutes for 'refreshAuthTokenScheduled'", 4, null, "debug")
         		runEvery15Minutes("refreshAuthTokenScheduled")
                 // if ( canSchedule() ) { runIn(30, "refreshAuthTokenScheduled") }  // Don't count this against the results
                 // Web Services taking too long. Go ahead and only schedule here for now
@@ -1127,8 +1133,6 @@ private def pollEcobeeAPI(thermostatIdsString = "") {
     
     LOG("buildBodyRequest returned: ${jsonRequestBody}", 5)
     
-
-    
     def result = false
 	
 	def pollParams = [
@@ -1180,9 +1184,10 @@ private def pollEcobeeAPI(thermostatIdsString = "") {
 		if ( (e.statusCode == 500 && e.getResponse()?.data.status.code == 14) ||  (e.statusCode == 401 && e.getResponse()?.data.status.code == 14) ) {
         	// Not possible to recover from status.code == 14
             LOG("In HttpResponseException: Received data.stat.code of 14", 1, null, "error")
-            if ( refreshAuthToken() ) { 
-            	LOG("We have recovered the token a from the code 14.", 2, null, "warn") } 
-			else { 
+            if ( refreshAuthToken(true) ) { 
+            	LOG("We have recovered the token a from the code 14.", 2, null, "warn") 
+                pollChildren()
+			} else { 
             	LOT("Unable to recover from error even after refreshAuthToken called", 2, null, "warn")             
         		apiLost("pollEcobeeAPI() - In HttpResponseException: Received data.stat.code of 14") 
 			}
@@ -1190,19 +1195,13 @@ private def pollEcobeeAPI(thermostatIdsString = "") {
         	LOG("In HttpResponseException - statusCode != 401 (${e.statusCode})", 1, null, "warn")
             state.connected = "warn"
             generateEventLocalParams() // Update the connected state at the thermostat devices
-			if(canSchedule()) { runIn(reAttemptPeriod, "pollChildren") } else { pollChildren() }
+            if ( refreshAuthToken(true) ) { pollChildren() }
 		} else if (e.statusCode == 401) { // Status.code other than 14
 			state.reAttemptPoll = state.reAttemptPoll + 1
-			LOG("statusCode == 401: reAttempt refreshAuthToken to try = ${state.reAttemptPoll}", 1, null, "warn")
-			if (state.reAttemptPoll <= 3) {
-               	state.connected = "warn"
-           		generateEventLocalParams() // Update the connected state at the thermostat devices
-				if(canSchedule()) { runIn(reAttemptPeriod, "pollChildren") } else { pollChildren() }
-			} else {
-               	LOG("Unable to poll EcobeeAPI after three attempts. Will try to refresh authtoken.", 1, null, "error")
-                debugEvent( "Unable to poll EcobeeAPI after three attempts. Will try to refresh authtoken." )
-                refreshAuthToken()
-			}
+			LOG("statusCode == 401: will try to refreshAuthToken", 1, null, "warn")
+			state.connected = "warn"
+			generateEventLocalParams() // Update the connected state at the thermostat devices
+			if ( refreshAuthToken(true) ) { pollChildren() }			
 		}    
     } catch (java.util.concurrent.TimeoutException e) {
 		LOG("pollEcobeeAPI(), TimeoutException: ${e}.", 1, null, "warn")
@@ -1650,6 +1649,7 @@ private def Boolean refreshAuthToken(force=false) {
             return false
         } catch (Exception e) {
         	LOG("refreshAuthToken(), General Exception: ${e}.", 1, null, "error")
+            apiLost("refreshAuthToken(), General Exception: ${e}.")
             return false
         }
     }
@@ -1884,7 +1884,7 @@ private def LOG(message, level=3, child=null, logType="debug", event=false, disp
     }
     
     if ( logType == "error" ) { 
-    	state.lastLOGerror = message 
+    	state.lastLOGerror = "${message} @ ${getTimestamp()}"
         state.LastLOGerrorDate = getTimestamp()
 	}
 	if ( settings.debugLevel?.toInteger() == 5 ) { prefix = "LOG: " }
