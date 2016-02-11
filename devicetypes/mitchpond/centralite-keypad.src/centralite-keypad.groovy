@@ -15,11 +15,12 @@
  */
 metadata {
 	definition (name: "Centralite Keypad", namespace: "mitchpond", author: "Mitch Pond") {
-		capability "Battery"
+	capability "Battery"
         capability "Configuration"
-		capability "Sensor"
+	capability "Sensor"
         capability "Temperature Measurement"
         capability "Refresh"
+        capability "Lock Codes"
         
         attribute "armMode", "String"
         
