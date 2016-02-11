@@ -611,6 +611,13 @@ Map getEcobeeSensors() {
 				def key = "ecobee_sensor_thermostat-"+ it?.id + "-" + it?.name
                 LOG("Adding a Thermostat as a Sensor: ${it}, key: ${key}  value: ${value}", 4, null, "trace")
 				sensorMap["${key}"] = value + " (Thermostat)"
+            } else if ( it.type == "control_sensor" && it.capability[0]?.type == "temperature") {
+            	// We can add this one as it supports temperature
+                LOG("Adding a control_sensor: ${it}", 4, null, "trace")
+				def value = "${it?.name}"
+				def key = "control_sensor-"+ it?.id
+				sensorMap["${key}"] = value
+            
             } else {
             	LOG("Did NOT add: ${it}. settings.showThermsAsSensor=${settings.showThermsAsSensor}", 4, null, "trace")
             }
@@ -1289,12 +1296,15 @@ def updateSensorData() {
                 
 	state.remoteSensors.each {
 		it.each {
-			if ( ( it.type == "ecobee3_remote_sensor" ) || ((it.type == "thermostat") && (settings.showThermsAsSensor)) ) {
+			if ( ( it.type == "ecobee3_remote_sensor" ) || (it.type == "control_sensor") || ((it.type == "thermostat") && (settings.showThermsAsSensor)) ) {
 				// Add this sensor to the list
 				def sensorDNI 
                 if (it.type == "ecobee3_remote_sensor") { 
                 	sensorDNI = "ecobee_sensor-" + it?.id + "-" + it?.code 
-				} else { 
+				} else if (it.type == "control_sensor") {
+                	LOG("We have a Smart SI style control_sensor! it=${it}", 4, null, "trace")
+                    sensorDNI = "control_sensor-" + it?.id 
+                } else { 
                 	LOG("We have a Thermostat based Sensor! it=${it}", 4, null, "trace")
                 	sensorDNI = "ecobee_sensor_thermostat-"+ it?.id + "-" + it?.name
 				}
@@ -1333,14 +1343,17 @@ def updateSensorData() {
 				}
                                             				
 				def sensorData = [
-					temperature: ((temperature == "unknown") ? "unknown" : myConvertTemperatureIfNeeded(temperature, "F", 1)),
-					motion: occupancy
+					temperature: ((temperature == "unknown") ? "unknown" : myConvertTemperatureIfNeeded(temperature, "F", 1))					
 				]
+                if (occupancy != "") {
+                	sensorData << [ motion: occupancy ]
+                }
 				sensorCollector[sensorDNI] = [data:sensorData]
                 LOG("sensorCollector being updated with sensorData: ${sensorData}", 4)
                 
 			} else if ( (it.type == "thermostat") && (settings.showThermsAsSensor) ) { 
-            	// Also update the thermostat based Remote Sensor
+            	// Also update the thermostat based Remote Sensor??
+                // Don't think this is needed as we incorporated it directly in the if above
                 
             
             } // end thermostat else if
@@ -1365,14 +1378,20 @@ def updateThermostatData() {
         
         // TODO: Put a wrapper here based on the thermostat brand
         def thermSensor = stat.remoteSensors.find { it.type == "thermostat" }
-        LOG("updateThermostatData() - thermSensor == ${thermSensor}" )
+        def occupancy = "not supported"
+        if(!thermSensor) {
+		LOG("This particular thermostat does not have a built in remote sensor", 4)
+		state.hasInternalSensors = false
+        } else {
+        	state.hasInternalSensors = true
+		LOG("updateThermostatData() - thermSensor == ${thermSensor}" )
         
-        def occupancyCap = thermSensor?.capability.find { it.type == "occupancy" }
-        LOG("updateThermostatData() - occupancyCap = ${occupancyCap} value = ${occupancyCap.value}")
+		def occupancyCap = thermSensor?.capability.find { it.type == "occupancy" }
+		LOG("updateThermostatData() - occupancyCap = ${occupancyCap} value = ${occupancyCap.value}")
         
-        // Check to see if there is even a value, not all types have a sensor
-        def occupancy =  occupancyCap.value ?: "not support"
-        
+		// Check to see if there is even a value, not all types have a sensor
+		occupancy =  occupancyCap.value ?: "not supported"
+        }
         LOG("Program data: ${stat.program}  Current climate (ref): ${stat.program?.currentClimateRef}", 4)
         
         // Determine if an Event is running, find the first running event
@@ -1430,33 +1449,34 @@ def updateThermostatData() {
         	currentFanMode = stat.runtime.desiredFanMode
         }
      
-
-		def data = [ 
-        	timeOfDay: state.timeOfDay ?: "night",
-			temperatureScale: getTemperatureScale(),
-			apiConnected: apiConnected(),
-			coolMode: (stat.settings.coolStages > 0),
-			heatMode: (stat.settings.heatStages > 0),
-			autoMode: stat.settings.autoHeatCoolFeatureEnabled,
-            currentProgramName: currentClimateName,
-            currentProgramId: currentClimateId,
-			auxHeatMode: (stat.settings.hasHeatPump) && (stat.settings.hasForcedAir || stat.settings.hasElectric || stat.settings.hasBoiler),
-			temperature: usingMetric ? tempTemperature : tempTemperature.toInteger(),
-			heatingSetpoint: usingMetric ? tempHeatingSetpoint : tempHeatingSetpoint.toInteger(),
-			coolingSetpoint: usingMetric ? tempCoolingSetpoint : tempCoolingSetpoint.toInteger(),
-			thermostatMode: stat.settings.hvacMode,
-            thermostatFanMode: currentFanMode,
-			humidity: stat.runtime.actualHumidity,
-            motion: (occupancy == "true") ? "active" : "inactive",
-			thermostatOperatingState: getThermostatOperatingState(stat),
-			weatherSymbol: stat.weather.forecasts[0].weatherSymbol.toString(),
-			weatherTemperature: usingMetric ? tempWeatherTemperature : tempWeatherTemperature.toInteger()
-		]
         
+	if (state.hasInternalSensors) { occupancy = (occupancy == "true") ? "active" : "inactive" }
+
+	def data = [ 
+		temperatureScale: getTemperatureScale(),
+		apiConnected: apiConnected(),
+		coolMode: (stat.settings.coolStages > 0),
+		heatMode: (stat.settings.heatStages > 0),
+		autoMode: stat.settings.autoHeatCoolFeatureEnabled,
+		currentProgramName: currentClimateName,
+		currentProgramId: currentClimateId,
+		auxHeatMode: (stat.settings.hasHeatPump) && (stat.settings.hasForcedAir || stat.settings.hasElectric || stat.settings.hasBoiler),
+		temperature: usingMetric ? tempTemperature : tempTemperature.toInteger(),
+		heatingSetpoint: usingMetric ? tempHeatingSetpoint : tempHeatingSetpoint.toInteger(),
+		coolingSetpoint: usingMetric ? tempCoolingSetpoint : tempCoolingSetpoint.toInteger(),
+		thermostatMode: stat.settings.hvacMode,
+		thermostatFanMode: currentFanMode,
+		humidity: stat.runtime.actualHumidity,
+		motion: occupancy,
+		thermostatOperatingState: getThermostatOperatingState(stat),
+		weatherSymbol: stat.weather.forecasts[0].weatherSymbol.toString(),
+		weatherTemperature: usingMetric ? tempWeatherTemperature : tempWeatherTemperature.toInteger()
+	]
+       
 		data["temperature"] = data["temperature"] ? ( wantMetric() ? data["temperature"].toDouble() : data["temperature"].toDouble().toInteger() ) : data["temperature"]
 		data["heatingSetpoint"] = data["heatingSetpoint"] ? ( wantMetric() ? data["heatingSetpoint"].toDouble() : data["heatingSetpoint"].toDouble().toInteger() ) : data["heatingSetpoint"]
 		data["coolingSetpoint"] = data["coolingSetpoint"] ? ( wantMetric() ? data["coolingSetpoint"].toDouble() : data["coolingSetpoint"].toDouble().toInteger() ) : data["coolingSetpoint"]
-        data["weatherTemperature"] = data["weatherTemperature"] ? ( wantMetric() ? data["weatherTemperature"].toDouble() : data["weatherTemperature"].toDouble().toInteger() ) : data["weatherTemperature"]
+		data["weatherTemperature"] = data["weatherTemperature"] ? ( wantMetric() ? data["weatherTemperature"].toDouble() : data["weatherTemperature"].toDouble().toInteger() ) : data["weatherTemperature"]
         
 		
 		LOG("Event Data = ${data}", 4)
