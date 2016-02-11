@@ -77,6 +77,38 @@ metadata {
 
     	tiles(scale: 2) {      
               
+
+multiAttributeTile(name:"thermostatMulti", type:"thermostat", width:6, height:4, canChangeIcon: true, icon: "st.Home.home1") {
+  tileAttribute("device.temperature", key: "PRIMARY_CONTROL") {
+    attributeState("temperature", label:'${currentValue}°', unit:"F")
+  }
+  /*
+  tileAttribute("device.temperature", key: "VALUE_CONTROL") {
+    attributeState("default", action: "setTemperature")
+  }
+  tileAttribute("device.humidity", key: "SECONDARY_CONTROL") {
+    attributeState("default", label:'${currentValue}%', unit:"%")
+  }
+  tileAttribute("device.thermostatOperatingState", key: "OPERATING_STATE") {
+    attributeState("idle", backgroundColor:"#44b621")
+    attributeState("heating", backgroundColor:"#ffa81e")
+    attributeState("cooling", backgroundColor:"#269bd2")
+  }
+  tileAttribute("device.thermostatMode", key: "THERMOSTAT_MODE") {
+    attributeState("off", label:'${name}')
+    attributeState("heat", label:'${name}')
+    attributeState("cool", label:'${name}')
+    attributeState("auto", label:'${name}')
+  }
+  tileAttribute("device.heatingSetpoint", key: "HEATING_SETPOINT") {
+    attributeState("default", label:'${currentValue}', unit:"dF")
+  }
+  tileAttribute("device.coolingSetpoint", key: "COOLING_SETPOINT") {
+    attributeState("default", label:'${currentValue}', unit:"dF")
+  }
+  */
+}
+
 		multiAttributeTile(name:"tempSummary", type:"thermostat", width:6, height:4) {
 			tileAttribute("device.temperature", key: "PRIMARY_CONTROL") {
 				attributeState("default", label:'${currentValue}', unit:"dF")
@@ -439,6 +471,7 @@ def generateEvent(Map results) {
 
 			if (name=="temperature" || name=="heatingSetpoint" || name=="coolingSetpoint" || name=="weatherTemperature" ) {
 				def sendValue = value // ? convertTemperatureIfNeeded(value.toDouble(), "F", 1): value //API return temperature value in F
+                LOG("generateEvent(): Temperature value: ${sendValue}", 5, this, "trace")
 				isChange = isTemperatureStateChange(device, name, value.toString())
 				isDisplayed = isChange
 				event << [value: sendValue, isStateChange: isChange, displayed: isDisplayed]
