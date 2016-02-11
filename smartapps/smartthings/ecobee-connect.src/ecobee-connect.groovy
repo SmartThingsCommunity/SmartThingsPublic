@@ -24,8 +24,8 @@
  *  See Changelog for change history
  *
  */  
-def getVersionNum() { return "0.9.5" }
-private def getVersionLabel() { return "ecobee (Connect) Version ${getVersionNum()}-RC7" }
+def getVersionNum() { return "0.9.6" }
+private def getVersionLabel() { return "ecobee (Connect) Version ${getVersionNum()}-RC8" }
 private def getHelperSmartApps() {
 	return [ 
     		[name: "ecobeeRoutinesChild", appName: "ecobee Routines",  
