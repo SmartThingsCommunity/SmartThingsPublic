@@ -37,6 +37,8 @@ metadata {
     preferences{
     	input ("holdTime", "number", title: "Minimum time in seconds for a press to count as \"held\"",
         		defaultValue: 3, displayDuringSetup: false)
+        input ("tempOffset", "number", title: "Enter an offset to adjust the reported temperature",
+        		defaultValue: 0, displayDuringSetup: false)
     }
 
 	tiles(scale: 2) {
@@ -46,7 +48,7 @@ metadata {
 		valueTile("battery", "device.battery", decoration: "flat", width: 2, height: 2) {
 			state "battery", label:'${currentValue}% battery', unit:""
 		}
-        valueTile("temperature", "device.temperature", inactiveLabel: false, width: 2, height: 2) {
+        valueTile("temperature", "device.temperature", width: 2, height: 2) {
 			state "temperature", label:'${currentValue}°',
 				backgroundColors:[
 					[value: 31, color: "#153591"],
@@ -58,7 +60,7 @@ metadata {
 					[value: 96, color: "#bc2323"]
 				]
 		}
-        standardTile("refresh", "device.refresh", inactiveLabel: false, decoration: "flat", width: 2, height: 2) {
+        standardTile("refresh", "device.refresh", decoration: "flat", width: 2, height: 2) {
 			state "default", action:"refresh.refresh", icon:"st.secondary.refresh"
 		}
 
