@@ -66,9 +66,20 @@ metadata {
 import physicalgraph.zwave.commands.doorlockv1.*
 import physicalgraph.zwave.commands.usercodev1.*
 
+def updated() {
+	try {
+		if (!state.init) {
+			state.init = true
+			response(secureSequence([zwave.doorLockV1.doorLockOperationGet(), zwave.batteryV1.batteryGet()]))
+		}
+	} catch (e) {
+		log.warn "updated() threw $e"
+	}
+}
+
 def parse(String description) {
 	def result = null
-	if (description.startsWith("Err")) {
+	if (description.startsWith("Err 106")) {
 		if (state.sec) {
 			result = createEvent(descriptionText:description, displayed:false)
 		} else {
@@ -80,6 +91,8 @@ def parse(String description) {
 				displayed: true,
 			)
 		}
+	} else if (description == "updated") {
+		return null
 	} else {
 		def cmd = zwave.parse(description, [ 0x98: 1, 0x72: 2, 0x85: 2, 0x86: 1 ])
 		if (cmd) {
@@ -286,7 +299,7 @@ def zwaveEvent(physicalgraph.zwave.commands.alarmv2.AlarmReport cmd) {
 			}
 			break
 		case 167:
-			if (!state.lastbatt || (new Date().time) - state.lastbatt > 12*60*60*1000) {
+			if (!state.lastbatt || now() - state.lastbatt > 12*60*60*1000) {
 				map = [ descriptionText: "$device.displayName: battery low", isStateChange: true ]
 				result << response(secure(zwave.batteryV1.batteryGet()))
 			} else {
@@ -431,7 +444,7 @@ def zwaveEvent(physicalgraph.zwave.commands.batteryv1.BatteryReport cmd) {
 	} else {
 		map.value = cmd.batteryLevel
 	}
-	state.lastbatt = new Date().time
+	state.lastbatt = now()
 	createEvent(map)
 }
 
@@ -499,15 +512,14 @@ def refresh() {
 		cmds << "delay 4200"
 		cmds << zwave.associationV1.associationGet(groupingIdentifier:2).format()  // old Schlage locks use group 2 and don't secure the Association CC
 		cmds << secure(zwave.associationV1.associationGet(groupingIdentifier:1))
-		state.associationQuery = new Date().time
-	} else if (new Date().time - state.associationQuery.toLong() > 9000) {
-		log.debug "setting association"
+		state.associationQuery = now()
+	} else if (secondsPast(state.associationQuery, 9)) {
 		cmds << "delay 6000"
 		cmds << zwave.associationV1.associationSet(groupingIdentifier:2, nodeId:zwaveHubNodeId).format()
 		cmds << secure(zwave.associationV1.associationSet(groupingIdentifier:1, nodeId:zwaveHubNodeId))
 		cmds << zwave.associationV1.associationGet(groupingIdentifier:2).format()
 		cmds << secure(zwave.associationV1.associationGet(groupingIdentifier:1))
-		state.associationQuery = new Date().time
+		state.associationQuery = now()
 	}
 	log.debug "refresh sending ${cmds.inspect()}"
 	cmds
@@ -515,55 +527,22 @@ def refresh() {
 
 def poll() {
 	def cmds = []
-	if (state.assoc != zwaveHubNodeId && secondsPast(state.associationQuery, 19 * 60)) {
-		log.debug "setting association"
-		cmds << zwave.associationV1.associationSet(groupingIdentifier:2, nodeId:zwaveHubNodeId).format()
-		cmds << secure(zwave.associationV1.associationSet(groupingIdentifier:1, nodeId:zwaveHubNodeId))
-		cmds << zwave.associationV1.associationGet(groupingIdentifier:2).format()
-		cmds << "delay 6000"
-		cmds << secure(zwave.associationV1.associationGet(groupingIdentifier:1))
-		cmds << "delay 6000"
-		state.associationQuery = new Date().time
-	} else {
-		// Only check lock state if it changed recently or we haven't had an update in an hour
-		def latest = device.currentState("lock")?.date?.time
-		if (!latest || !secondsPast(latest, 6 * 60) || secondsPast(state.lastPoll, 55 * 60)) {
-			cmds << secure(zwave.doorLockV1.doorLockOperationGet())
-			state.lastPoll = (new Date()).time
-		} else if (!state.MSR) {
-			cmds << zwave.manufacturerSpecificV1.manufacturerSpecificGet().format()
-		} else if (!state.fw) {
-			cmds << zwave.versionV1.versionGet().format()
-		} else if (!state.codes) {
-			state.pollCode = 1
-			cmds << secure(zwave.userCodeV1.usersNumberGet())
-		} else if (state.pollCode && state.pollCode <= state.codes) {
-			cmds << requestCode(state.pollCode)
-		} else if (!state.lastbatt || (new Date().time) - state.lastbatt > 53*60*60*1000) {
-			cmds << secure(zwave.batteryV1.batteryGet())
-		} else if (!state.enc) {
-			encryptCodes()
-			state.enc = 1
-		}
+	// Only check lock state if it changed recently or we haven't had an update in an hour
+	def latest = device.currentState("lock")?.date?.time
+	if (!latest || !secondsPast(latest, 6 * 60) || secondsPast(state.lastPoll, 55 * 60)) {
+		cmds << secure(zwave.doorLockV1.doorLockOperationGet())
+		state.lastPoll = now()
+	} else if (!state.lastbatt || now() - state.lastbatt > 53*60*60*1000) {
+		cmds << secure(zwave.batteryV1.batteryGet())
+		state.lastbatt = now()  //inside-214
 	}
-	log.debug "poll is sending ${cmds.inspect()}"
-	device.activity()
-	cmds ?: null
-}
-
-private def encryptCodes() {
-	def keys = new ArrayList(state.keySet().findAll { it.startsWith("code") })
-	keys.each { key ->
-		def match = (key =~ /^code(\d+)$/)
-		if (match) try {
-			def keynum = match[0][1].toInteger()
-			if (keynum > 30 && !state[key]) {
-				state.remove(key)
-			} else if (state[key] && !state[key].startsWith("~")) {
-				log.debug "encrypting $key: ${state[key].inspect()}"
-				state[key] = encrypt(state[key])
-			}
-		} catch (java.lang.NumberFormatException e) { }
+	if (cmds) {
+		log.debug "poll is sending ${cmds.inspect()}"
+		cmds
+	} else {
+		// workaround to keep polling from stopping due to lack of activity
+		sendEvent(descriptionText: "skipping poll", isStateChange: true, displayed: false)
+		null
 	}
 }
 
@@ -672,7 +651,7 @@ private Boolean secondsPast(timestamp, seconds) {
 			return true
 		}
 	}
-	return (new Date().time - timestamp) > (seconds * 1000)
+	return (now() - timestamp) > (seconds * 1000)
 }
 
 private allCodesDeleted() {

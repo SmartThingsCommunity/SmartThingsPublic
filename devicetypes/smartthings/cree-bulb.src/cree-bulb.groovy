@@ -38,168 +38,63 @@ metadata {
 	}
 
 	// UI tile definitions
-	tiles {
-		standardTile("switch", "device.switch", width: 2, height: 2, canChangeIcon: true) {
-			state "off", label: '${name}', action: "switch.on", icon: "st.switches.light.off", backgroundColor: "#ffffff"
-			state "on", label: '${name}', action: "switch.off", icon: "st.switches.light.on", backgroundColor: "#79b821"
-		}
-		standardTile("refresh", "device.switch", inactiveLabel: false, decoration: "flat") {
-			state "default", label:"", action:"refresh.refresh", icon:"st.secondary.refresh"
-		}
-		controlTile("levelSliderControl", "device.level", "slider", height: 1, width: 3, inactiveLabel: false) {
-			state "level", action:"switch level.setLevel"
-		}
-		valueTile("level", "device.level", inactiveLabel: false, decoration: "flat") {
-			state "level", label: 'Level ${currentValue}%'
-		}
-		
-
-		main(["switch"])
-		details(["switch", "level", "levelSliderControl", "refresh"])
-	}
+    tiles(scale: 2) {
+        multiAttributeTile(name:"switch", type: "lighting", width: 6, height: 4, canChangeIcon: true){
+            tileAttribute ("device.switch", key: "PRIMARY_CONTROL") {
+                attributeState "on", label:'${name}', action:"switch.off", icon:"st.switches.light.on", backgroundColor:"#79b821", nextState:"turningOff"
+                attributeState "off", label:'${name}', action:"switch.on", icon:"st.switches.light.off", backgroundColor:"#ffffff", nextState:"turningOn"
+                attributeState "turningOn", label:'${name}', action:"switch.off", icon:"st.switches.light.on", backgroundColor:"#79b821", nextState:"turningOff"
+                attributeState "turningOff", label:'${name}', action:"switch.on", icon:"st.switches.light.off", backgroundColor:"#ffffff", nextState:"turningOn"
+            }
+            tileAttribute ("device.level", key: "SLIDER_CONTROL") {
+                attributeState "level", action:"switch level.setLevel"
+            }
+        }
+        standardTile("refresh", "device.switch", inactiveLabel: false, decoration: "flat", width: 2, height: 2) {
+            state "default", label:"", action:"refresh.refresh", icon:"st.secondary.refresh"
+        }
+        main "switch"
+        details(["switch", "refresh"])
+    }
 }
 
 // Parse incoming device messages to generate events
-
 def parse(String description) {
-	log.trace description
-	if (description?.startsWith("catchall:")) {
-		def msg = zigbee.parse(description)
-		log.trace msg
-		log.trace "data: $msg.data"
-        
-        if(description?.endsWith("0100") ||description?.endsWith("1001"))
-        {
-        	def result = createEvent(name: "switch", value: "on")
-            log.debug "Parse returned ${result?.descriptionText}"
-            return result
+    log.debug "description is $description"
+
+    def resultMap = zigbee.getKnownDescription(description)
+    if (resultMap) {
+        log.info resultMap
+        if (resultMap.type == "update") {
+            log.info "$device updates: ${resultMap.value}"
         }
-        
-        if(description?.endsWith("0000") || description?.endsWith("1000"))
-        {
-        	def result = createEvent(name: "switch", value: "off")
-            log.debug "Parse returned ${result?.descriptionText}"
-            return result
+        else {
+            sendEvent(name: resultMap.type, value: resultMap.value)
         }
-	}
-    
-    
-   if (description?.startsWith("read attr")) {
-   		
-        log.debug description[-2..-1]
-        def i = Math.round(convertHexToInt(description[-2..-1]) / 256 * 100 )
-        
-		sendEvent( name: "level", value: i )
     }
-    
-	
+    else {
+        log.warn "DID NOT PARSE MESSAGE for description : $description"
+        log.debug zigbee.parseDescriptionAsMap(description)
+    }
+}
+
+def off() {
+    zigbee.off()
 }
 
 def on() {
-	log.debug "on()"
-	sendEvent(name: "switch", value: "on")
-    
-    "st cmd 0x${device.deviceNetworkId} ${endpointId} 6 1 {}"
-    }
-
-def off() {
-	log.debug "off()"
-	sendEvent(name: "switch", value: "off")
-    
-	"st cmd 0x${device.deviceNetworkId} ${endpointId} 6 0 {}"
- 
-}
-
-def refresh() {
-    // Schedule poll every 1 min
-    //schedule("0 */1 * * * ?", poll)
-    //poll()
-    
-    [
-	"st rattr 0x${device.deviceNetworkId} ${endpointId} 6 0", "delay 500",
-    "st rattr 0x${device.deviceNetworkId} ${endpointId} 8 0"
-    ]
+    zigbee.on()
 }
 
 def setLevel(value) {
-	log.trace "setLevel($value)"
-	def cmds = []
+    zigbee.setLevel(value)
+}
 
-	if (value == 0) {
-		sendEvent(name: "switch", value: "off")
-		cmds << "st cmd 0x${device.deviceNetworkId} ${endpointId} 6 0 {0000 0000}"
-	}
-	else if (device.latestValue("switch") == "off") {
-		sendEvent(name: "switch", value: "on")
-	}
-
-	sendEvent(name: "level", value: value)
-    def level = hex(value * 255/100)
-	cmds << "st cmd 0x${device.deviceNetworkId} ${endpointId} 8 4 {${level} 0000}"
-
-	//log.debug cmds
-	cmds
+def refresh() {
+    zigbee.onOffRefresh() + zigbee.levelRefresh() + zigbee.onOffConfig() + zigbee.levelConfig()
 }
 
 def configure() {
-
-	log.debug "Configuring Reporting and Bindings."
-	def configCmds = [	
-  
-        //Switch Reporting
-        "zcl global send-me-a-report 6 0 0x10 0 3600 {01}", "delay 500",
-        "send 0x${device.deviceNetworkId} ${endpointId} 1", "delay 1000",
-        
-        //Level Control Reporting
-        "zcl global send-me-a-report 8 0 0x20 5 3600 {0010}", "delay 200",
-        "send 0x${device.deviceNetworkId} ${endpointId} 1", "delay 1500",
-        
-        "zdo bind 0x${device.deviceNetworkId} ${endpointId} 1 6 {${device.zigbeeId}} {}", "delay 1000",
-		"zdo bind 0x${device.deviceNetworkId} ${endpointId} 1 8 {${device.zigbeeId}} {}", "delay 500",
-	]
-    return configCmds + refresh() // send refresh cmds as part of config
-}
-
-def uninstalled() {
-
-	log.debug "uninstalled()"
-		
-	response("zcl rftd")
- 
-}
-
-private getEndpointId() {
-	new BigInteger(device.endpointId, 16).toString()
-}
-
-
-
-private hex(value, width=2) {
-	def s = new BigInteger(Math.round(value).toString()).toString(16)
-	while (s.size() < width) {
-		s = "0" + s
-	}
-	s
-}
-
-private Integer convertHexToInt(hex) {
-	Integer.parseInt(hex,16)
-}
-
-private String swapEndianHex(String hex) {
-    reverseArray(hex.decodeHex()).encodeHex()
-}
-
-private byte[] reverseArray(byte[] array) {
-    int i = 0;
-    int j = array.length - 1;
-    byte tmp;
-    while (j > i) {
-        tmp = array[j];
-        array[j] = array[i];
-        array[i] = tmp;
-        j--;
-        i++;
-    }
-    return array
+    log.debug "Configuring Reporting and Bindings."
+    zigbee.onOffConfig() + zigbee.levelConfig() + zigbee.onOffRefresh() + zigbee.levelRefresh()
 }

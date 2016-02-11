@@ -28,6 +28,7 @@
         command "subscribe"
         command "resubscribe"
         command "unsubscribe"
+        command "setOffline"
  }
 
  // simulator metadata
@@ -207,7 +208,7 @@ def subscribe(ip, port) {
     def existingIp = getDataValue("ip")
     def existingPort = getDataValue("port")
     if (ip && ip != existingIp) {
-         log.debug "Updating ip from $existingIp to $ip"
+         log.debug "Updating ip from $existingIp to $ip"    
     	 updateDataValue("ip", ip)
     	 def ipvalue = convertHexToIP(getDataValue("ip"))
          sendEvent(name: "currentIP", value: ipvalue, descriptionText: "IP changed to ${ipvalue}")
@@ -275,7 +276,7 @@ def setOffline() {
 def poll() {
 log.debug "Executing 'poll'"
 if (device.currentValue("currentIP") != "Offline")
-    runIn(10, setOffline)
+    runIn(30, setOffline)
 new physicalgraph.device.HubAction("""POST /upnp/control/basicevent1 HTTP/1.1
 SOAPACTION: "urn:Belkin:service:basicevent:1#GetBinaryState"
 Content-Length: 277
