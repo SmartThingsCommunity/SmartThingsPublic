@@ -24,7 +24,7 @@
  *  See Changelog for change history
  *
  */  
-def getVersionNum() { return "0.9.6" }
+def getVersionNum() { return "0.9.7" }
 private def getVersionLabel() { return "ecobee (Connect) Version ${getVersionNum()}-RC8" }
 private def getHelperSmartApps() {
 	return [ 
@@ -697,6 +697,8 @@ def initialize() {
 	state.lastPoll = nowTime
     state.lastPollDate = nowDate
     state.timeOfDay = "night" 
+    
+    state.lastWatchdog = newTime
     
     def sunriseAndSunset = getSunriseAndSunset()
     state.sunriseTime = sunriseAndSunset.sunrise.format("HHmm", location.timeZone).toDouble()
