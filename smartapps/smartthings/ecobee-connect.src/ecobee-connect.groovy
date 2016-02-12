@@ -698,7 +698,7 @@ def initialize() {
     state.lastPollDate = nowDate
     state.timeOfDay = "night" 
     
-    state.lastWatchdog = newTime
+    state.lastWatchdog = nowTime
     
     def sunriseAndSunset = getSunriseAndSunset()
     state.sunriseTime = sunriseAndSunset.sunrise.format("HHmm", location.timeZone).toDouble()
