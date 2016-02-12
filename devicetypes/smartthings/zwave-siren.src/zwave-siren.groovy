@@ -115,6 +115,10 @@ def strobe() {
 	]
 }
 
+def both() {
+	on()
+}
+
 def refresh() {
 	log.debug "sending battery refresh command"
 	zwave.batteryV1.batteryGet().format()
