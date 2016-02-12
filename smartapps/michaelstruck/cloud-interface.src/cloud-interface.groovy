@@ -1,14 +1,14 @@
 /**
  *  Cloud Interface
  *
- *  Version 1.0.4 - 1/9/16 Copyright © 2016 Michael Struck
+ *  Version 1.1.0 - 2/12/16 Copyright © 2016 Michael Struck
  *  
  *  Version 1.0.0 - Initial release
  *  Version 1.0.1 - Fixed code syntax
  *  Version 1.0.2 - Fixed additional syntax items and moved the remove button to the help screen
  *  Version 1.0.3 - Fixed OAuth reset/code optimization
  *  Version 1.0.4 - Changed name to allow it to be used with other SmartApps instead of associating it with Alexa Helper
- *
+ *  Version 1.1.0 - Code optimization and URL page improvements
  *
  *  Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except
  *  in compliance with the License. You may obtain a copy of the License at:
@@ -20,7 +20,6 @@
  *  for the specific language governing permissions and limitations under the License.
  *
  */
- 
 definition(
     name: "Cloud Interface",
     namespace: "MichaelStruck",
@@ -31,59 +30,38 @@ definition(
     iconX2Url: "https://raw.githubusercontent.com/MichaelStruck/SmartThings/master/Other-SmartApps/AlexaHelper/CloudInterface@2x.png",
     iconX3Url: "https://raw.githubusercontent.com/MichaelStruck/SmartThings/master/Other-SmartApps/AlexaHelper/CloudInterface@2x.png",
   	oauth: true)
-
-
 preferences {
     page name:"mainPage"
     page name:"showURLs"
     page name:"pageReset"
     page name:"pageAbout"
 }
-
 //Show main page
 def mainPage() {
     dynamicPage(name: "mainPage", title:"", install: true, uninstall: false) {
 		section("External control") {
         	input "switches", "capability.switch", title: "Choose Switches", multiple: true, required: false, submitOnChange:true
 			if (switches){
-            	href "showURLs", title: "Show URLs", description: "Tap to show URLs to control switches"
+            	if (!state.accessToken) {
+					OAuthToken()
+				}
+                if (state.accessToken != null){
+                    href url:"https://graph.api.smartthings.com/api/smartapps/installations/${app.id}/l?access_token=${state.accessToken}", style:"embedded", required:false, title:"Show URLs", description:"Tap to show URLs that control switches"
+                }
+                else {
+                	paragraph "URLs cannot be created. Access Token not defined. OAuth may not be enabled. Go to the SmartApp IDE settings to enable OAuth."
+               }
 			}
         }
         section([title:"Options", mobileOnly:true]) {
-			href "pageSecurity", title: "Security Options", description: "Tap to show security options"
+			href "pageOptions", title: "Options", description: "Tap to show application options"
             label title:"Assign a name", required:false
 			href "pageAbout", title: "About ${textAppName()}", description: "Tap to get application version, license, instructions or remove the application"
         }
 	}
 }
-
-def showURLs(){
-	dynamicPage(name: "showURLs", title:"On/Off URLs for selected switches") {
-        if (!state.accessToken) {
-			OAuthToken()
-		}
-        if (state.accessToken != null) {
-        	def swName=""
-        	switches.each{
-        		swName= "${it.label}"
-        		section ("Turn ON ${swName}") {
-					paragraph "", title: "https://graph.api.smartthings.com/api/smartapps/installations/${app.id}/w?l=${swName}&c=on&access_token=${state.accessToken}"
-				}
-        			section ("Turn OFF ${swName}") {
-					paragraph "", title: "https://graph.api.smartthings.com/api/smartapps/installations/${app.id}/w?l=${swName}&c=off&access_token=${state.accessToken}"
-				}	
-       		}
-		}
-        else {
-        	section ("Error in creation of URLs"){
-            	paragraph "Could not create URLs. Access Token not defined. OAuth may not be enabled. Go to the SmartApp IDE settings to enable OAuth."
-            }
-        }
-	}
-}
-
 def pageAbout(){
-	dynamicPage(name: "pageAbout", title: "About ${textAppName()}",uninstall: true ) {
+	dynamicPage(name: "pageAbout", title: "About ${textAppName()}", uninstall: true ) {
         section {
             if (!state.accessToken) {
 				OAuthToken()
@@ -98,13 +76,14 @@ def pageAbout(){
         }
 	}
 }
-
-page(name: "pageSecurity", title: "Security Options"){
-	section{
+page(name: "pageOptions", title: "Options"){
+	section("URL Options"){
+    	input "urlOnOff", "bool", title: "Show both ON/OFF links on 'Show URLs' page (default=show ON only)", defaultValue: Off
+    }
+    section("Security Options"){
     	href "pageReset", title: "Reset Access Token", description: "Tap to revoke access token. All current URLs in use will need to be re-generated"
 	}
 }
-
 def pageReset(){
 	dynamicPage(name: "pageReset", title: "Access Token Reset"){
         section{
@@ -115,36 +94,34 @@ def pageReset(){
 		}
 	}
 }
-
 def installed() {
 	log.debug "Installed with settings: ${settings}"
 	initialize()
 }
-
 def updated() {
 	log.debug "Updated with settings: ${settings}"
 	initialize()
 }
-
 def initialize() {
 	if (!state.accessToken) {
 		log.error "Access token not defined. Ensure OAuth is enabled in the SmartThings IDE and generate the Access Token in the help or URL pages within the app."
 	}
 }
-
 mappings {
       path("/w") {action: [GET: "writeData"]}
+      path("/l") {action: [GET: "listURLs"]}
 }
-
 def writeData() {
     log.debug "Command received with params $params"
 	def command = params.c  	//The action you want to take i.e. on/off 
 	def label = params.l		//The name given to the device by you
-    
 	if (switches){
 		def device = switches?.find{it.label == label}
        	device."$command"()
 	}
+}
+def listURLs() {
+	render contentType: "text/html", data: """<!DOCTYPE html><html><head><meta charset="UTF-8" /></head><body style="margin: 0;">${displayURLS()}</body></html>"""
 }
 //Common Code
 def OAuthToken(){
@@ -152,23 +129,32 @@ def OAuthToken(){
 		createAccessToken()
 		log.debug "Creating new Access Token"
 	} catch (e) {
-		log.error "Could not create URLs. Access Token not defined. OAuth may not be enabled. Go to the SmartApp IDE settings to enable OAuth."
+		log.error "Access Token not defined. OAuth may not be enabled. Go to the SmartApp IDE settings to enable OAuth."
 	}
 }
-
+def displayURLS(){
+	def display = "<div style='padding:10px'>Copy the URLs of the switches you want to control.<br>Paste them to your control applications.</div><div style='padding:10px'>Click DONE to return to the Cloud Interface SmartApp.</div>"
+	switches.each {
+    	display += "<div style='padding:10px'>${it.label} ON:</div>"
+		display += "<textarea rows='5' style='font-size:10px; width: 100%'>https://graph.api.smartthings.com/api/smartapps/installations/${app.id}/w?l=${it.label}&c=on&access_token=${state.accessToken}</textarea>"
+		if (urlOnOff){
+        	display += "<div style='padding:10px'>${it.label} OFF:</div>"
+        	display += "<textarea rows='5' style='font-size:10px; width: 100%'>https://graph.api.smartthings.com/api/smartapps/installations/${app.id}/w?l=${it.label}&c=off&access_token=${state.accessToken}</textarea>"
+		}
+		display += "<hr>"
+    }
+    display
+}
 //Version/Copyright/Information/Help
 private def textAppName() {
 	def text = "Cloud Interface"
 }	
-
 private def textVersion() {
-    def text = "Version 1.0.4 (01/09/2016)"
+    def text = "Version 1.1.0 (02/12/2016)"
 }
-
 private def textCopyright() {
     def text = "Copyright © 2016 Michael Struck"
 }
-
 private def textLicense() {
 	def text =
 		"Licensed under the Apache License, Version 2.0 (the 'License'); "+
@@ -183,9 +169,8 @@ private def textLicense() {
 		"See the License for the specific language governing permissions and "+
 		"limitations under the License."
 }
-
 private def textHelp() {
 	def text =
-		"This app allows you to define switches (typically virtual) to be controlled via a single URL REST point."+
-		"This is useful when attempting to control devices at two different SmartThings locations/accounts. "
+		"This app allows you to define switches (typically virtual) to be controlled via a single URL REST point. "+
+		"This is useful when controlling devices at two different SmartThings locations/accounts. "
 }
