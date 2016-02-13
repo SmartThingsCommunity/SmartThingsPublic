@@ -337,4 +337,3 @@ def parse(String description) {
 	   	createEvent (name:"speed", value:"off", isStateChange:true)
     }
 }
-

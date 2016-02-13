@@ -248,4 +248,3 @@ def close() {
 		log.debug "Not closing door since it is already closed or transitioning"
 	}
 }
-

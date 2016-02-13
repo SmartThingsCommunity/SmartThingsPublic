@@ -484,5 +484,3 @@ def configure() {
     log.info "Sending ZigBee Configuration Commands to Coop Control"
     return cmd + refresh()
 	}
-
-
