@@ -73,7 +73,13 @@ The primary user interface on a day-to-day basis will be two different types of 
 Rich set of Ecobee related icons:
 <img src="https://raw.githubusercontent.com/StrykerSKS/SmartThings/master/smartapp-icons/ecobee/documentation/ST_ecobee_icons_thumbs.png" border="1" />
 
+## <a name="features-connect-sa">Ecobee (Connect) Smart App User Interface</a>
+The `Ecobee (Connect)` SmartApp provides a single SmartApp interface for accessing installation, updates, Child SmartApps and even debugging tools. The interface uses dynamic pages to guide the user through the installation process in order simplify the steps as much as possible.
 
+## <a name="features-connect-sa">`Ecobee (Connect)` Smart App User Interface</a>
+
+
+## <a name="features-routines-sa">`ecobee Routines` Smart App User Interface</a>
 
 -----------------------------
 # <a name="installation">Installation</a>
