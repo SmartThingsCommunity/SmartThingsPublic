@@ -6,8 +6,8 @@ Ecobee Thermostat SmartApp(s) and related Device Types for use with the SmartThi
 - [Motivation](#motivation)
 - [Quick Links](#quicklinks)
 - [Features](#features)
-	- [Thermostat and Sensor Device User Interfaces](#eatures-therm-ui)
-    
+	- [Thermostat and Sensor Device User Interfaces](#features-therm-ui)
+	- [Ecobee (Connect) Smart App User Interface](#features-connect-sa)
 - [Installation](#installation)
   - [Install Device Types](#install-device-types)
   - [Install SmartApp in IDE](#install-smartapp)
