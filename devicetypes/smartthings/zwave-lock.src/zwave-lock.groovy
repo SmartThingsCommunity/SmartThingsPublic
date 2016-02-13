@@ -275,7 +275,6 @@ def zwaveEvent(physicalgraph.zwave.commands.alarmv2.AlarmReport cmd) {
 		case 32:
 			map = [ name: "codeChanged", value: "all", descriptionText: "$device.displayName: all user codes deleted", isStateChange: true ]
 			allCodesDeleted()
-			break
 		case 33:
 			map = [ name: "codeReport", value: cmd.alarmLevel, data: [ code: "" ], isStateChange: true ]
 			map.descriptionText = "$device.displayName code $cmd.alarmLevel was deleted"
@@ -342,14 +341,14 @@ def zwaveEvent(UserCodeReport cmd) {
 			map = [ name: "codeReport", value: cmd.userIdentifier, data: [ code: code ] ]
 			map.descriptionText = "$device.displayName code $cmd.userIdentifier is set"
 			map.displayed = (cmd.userIdentifier != state.requestCode && cmd.userIdentifier != state.pollCode)
-			map.isStateChange = true
+			map.isStateChange = (code != decrypt(state[name]))
 		}
 		result << createEvent(map)
 	} else {
 		map = [ name: "codeReport", value: cmd.userIdentifier, data: [ code: "" ] ]
 		if (state.blankcodes && state["reset$name"]) {  // we deleted this code so we can tell that our new code gets set
 			map.descriptionText = "$device.displayName code $cmd.userIdentifier was reset"
-			map.displayed = map.isStateChange = true
+			map.displayed = map.isStateChange = false
 			result << createEvent(map)
 			state["set$name"] = state["reset$name"]
 			result << response(setCode(cmd.userIdentifier, state["reset$name"]))
@@ -361,7 +360,7 @@ def zwaveEvent(UserCodeReport cmd) {
 				map.descriptionText = "$device.displayName code $cmd.userIdentifier is not set"
 			}
 			map.displayed = (cmd.userIdentifier != state.requestCode && cmd.userIdentifier != state.pollCode)
-			map.isStateChange = true
+			map.isStateChange = state[name] as Boolean
 			result << createEvent(map)
 		}
 		code = ""

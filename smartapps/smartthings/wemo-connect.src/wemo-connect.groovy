@@ -473,48 +473,68 @@ private def parseXmlBody(def body) {
 }
 
 private def parseDiscoveryMessage(String description) {
-	def event = [:]
+	def device = [:]
 	def parts = description.split(',')
 	parts.each { part ->
 		part = part.trim()
 		if (part.startsWith('devicetype:')) {
-			part -= "devicetype:"
-			event.devicetype = part.trim()
+			def valueString = part.split(":")[1].trim()
+			device.devicetype = valueString
 		}
 		else if (part.startsWith('mac:')) {
-			part -= "mac:"
-			event.mac = part.trim()
+			def valueString = part.split(":")[1].trim()
+			if (valueString) {
+				device.mac = valueString
+			}
 		}
 		else if (part.startsWith('networkAddress:')) {
-			part -= "networkAddress:"
-			event.ip = part.trim()
+			def valueString = part.split(":")[1].trim()
+			if (valueString) {
+				device.ip = valueString
+			}
 		}
 		else if (part.startsWith('deviceAddress:')) {
-			part -= "deviceAddress:"
-			event.port = part.trim()
+			def valueString = part.split(":")[1].trim()
+			if (valueString) {
+				device.port = valueString
+			}
 		}
 		else if (part.startsWith('ssdpPath:')) {
-			part -= "ssdpPath:"
-			event.ssdpPath = part.trim()
+			def valueString = part.split(":")[1].trim()
+			if (valueString) {
+				device.ssdpPath = valueString
+			}
 		}
 		else if (part.startsWith('ssdpUSN:')) {
 			part -= "ssdpUSN:"
-			event.ssdpUSN = part.trim()
+			def valueString = part.trim()
+			if (valueString) {
+				device.ssdpUSN = valueString
+			}
 		}
 		else if (part.startsWith('ssdpTerm:')) {
 			part -= "ssdpTerm:"
-			event.ssdpTerm = part.trim()
+			def valueString = part.trim()
+			if (valueString) {
+				device.ssdpTerm = valueString
+			}
 		}
 		else if (part.startsWith('headers')) {
 			part -= "headers:"
-			event.headers = part.trim()
+			def valueString = part.trim()
+			if (valueString) {
+				device.headers = valueString
+			}
 		}
 		else if (part.startsWith('body')) {
 			part -= "body:"
-			event.body = part.trim()
+			def valueString = part.trim()
+			if (valueString) {
+				device.body = valueString
+			}
 		}
 	}
-	event
+	device
 }
 
 def doDeviceSync(){
