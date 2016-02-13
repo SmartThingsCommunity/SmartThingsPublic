@@ -73,7 +73,7 @@ The primary user interface on a day-to-day basis will be two different types of 
 <img src="https://raw.githubusercontent.com/StrykerSKS/SmartThings/master/smartapp-icons/ecobee/documentation/current_sensor_screenshot.png" border="1" width="250" /> |  <img src="https://raw.githubusercontent.com/StrykerSKS/SmartThings/master/smartapp-icons/ecobee/documentation/sensor_annotation_current.png" width="400" />
 
 Full set of Ecobee related icons:
-<img src="https://raw.githubusercontent.com/StrykerSKS/SmartThings/master/smartapp-icons/ecobee/documentation/ST_ecobee_icons_thumbs.png" border="1" width="100%" />
+<img src="https://raw.githubusercontent.com/StrykerSKS/SmartThings/master/smartapp-icons/ecobee/documentation/ST_ecobee_icons_thumbs.png" border="1" />
 
 
 ## SmartThings Capabilities Supported
