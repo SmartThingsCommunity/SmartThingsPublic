@@ -50,10 +50,10 @@ The ultimate goal would be to have these capabilities become part of the stock d
 - Provide pretty screenshots
 
 ## General
-This collection of SmartApps and Device Handlers has been designed for simple installation, flexibile configuration options and easy operation. It is also extensible through the use of Child SmartApps that can easily be added to the configuration. And it fully implements the the related [SmartThings Capabilities](http://docs.smartthings.com/en/latest/capabilities-reference.html).
+This collection of SmartApps and Device Handlers has been designed for simple installation, flexibile configuration options and easy operation. It is also extensible through the use of Child SmartApps that can easily be added to the configuration. **And it fully implements the the related [SmartThings Capabilities](http://docs.smartthings.com/en/latest/capabilities-reference.html).**
 
 Key Highlights include:
-- Open Source Implementation! Free as in beer AND speech. No donations or purchase needed to use.
+- **Open Source Implementation!** Free as in beer AND speech. No donations or purchase needed to use.
 - Single installation SmartApp, `Ecobee (Connect)` used for installing both Thermostats **and** Sensors. No need for multiple apps just for installation! In fact, the `Ecobee (Connect)` SmartApp is the only SmartApp interface you'll need to access all available functions, including those provided by Child SmartApps (if installed).
 - Sophisticated User Interface: Uses custom Ecobee icons throughout the design to provide a more polished look and feel.
 - Display of current weather with support for separate day and night icons (just like on the front of your Ecobee thermostat)!
@@ -72,6 +72,8 @@ The primary user interface on a day-to-day basis will be two different types of 
 :-------------------------:|:-------------------------:
 <img src="https://raw.githubusercontent.com/StrykerSKS/SmartThings/master/smartapp-icons/ecobee/documentation/current_sensor_screenshot.png" border="1" width="250" /> |  <img src="https://raw.githubusercontent.com/StrykerSKS/SmartThings/master/smartapp-icons/ecobee/documentation/sensor_annotation_current.png" width="400" />
 
+Full set of Ecobee related icons:
+<img src="https://raw.githubusercontent.com/StrykerSKS/SmartThings/master/smartapp-icons/ecobee/documentation/ST_ecobee_icons_thumbs.png" border="1" width="100%" />
 
 
 ## SmartThings Capabilities Supported
