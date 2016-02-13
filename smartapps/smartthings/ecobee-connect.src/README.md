@@ -6,6 +6,8 @@ Ecobee Thermostat SmartApp(s) and related Device Types for use with the SmartThi
 - [Motivation](#motivation)
 - [Quick Links](#quicklinks)
 - [Features](#features)
+	- [Thermostat and Sensor Device User Interfaces](#eatures-therm-ui)
+    
 - [Installation](#installation)
   - [Install Device Types](#install-device-types)
   - [Install SmartApp in IDE](#install-smartapp)
@@ -30,7 +32,7 @@ Here are links to the working version of the repository being developed and main
 
 ## <a name="motivation">Motivation</a>
 
-The intent is to provide an Open Source Licensed implementation that can be used by the SmartThings community of users. This will help ensure accessibility for all users and provide for an easy mechanism for the community to help maintain/drive the functionality.
+The intent is to provide an Open Source Licensed ecobee-to-SmartThings implementation that can be used by the SmartThings community of users free of charge and without fear of the device disappearing in the future. This will help ensure accessibility for all users and provide for an easy mechanism for the community to help maintain/drive the functionality.
 
 The ultimate goal would be to have these capabilities become part of the stock drivers on the "master" branch. But until that time they will be maintained as a fork providing good visibility to any changes upstream.
 
@@ -45,10 +47,6 @@ The ultimate goal would be to have these capabilities become part of the stock d
 
 -----------------------------
 # <a name="features">Features</a>
-
-- Mention the capabilities
-- Provide pretty screenshots
-
 ## General
 This collection of SmartApps and Device Handlers has been designed for simple installation, flexibile configuration options and easy operation. It is also extensible through the use of Child SmartApps that can easily be added to the configuration. **And it fully implements the the related [SmartThings Capabilities](http://docs.smartthings.com/en/latest/capabilities-reference.html).**
 
@@ -61,7 +59,7 @@ Key Highlights include:
 - Included Child SmartApp (`ecobee Routines`) for automating settings changes based on SmartThings Hello Modes being activated (such as through a Routine)
 - Full support for both Fahrenheit and Celsius
 
-## Thermostat and Sensor Device User Interfaces
+## <a name="features-therm-ui">Thermostat and Sensor Device User Interfaces</a>
 The primary user interface on a day-to-day basis will be two different types of Device Handlers that are shown on the `Things` list under `My Home` in the mobile app. Screenshots of both the `Ecobee Thermostat` and the `Ecobee Sensor` are shown below. 
 
 `Ecobee Thermostat` Device |  `Ecobee Thermostat` Device w/ Annotation
