@@ -129,7 +129,7 @@ weatherSymbol		| String		|
 - _sleep()_
 - _away()_
 
-#### Capability: [Temperature Measurement](http://docs.smartthings.com/en/latest/capabilities-reference.html#temperature-measurement)
+#### Capability: [Temperature Measurement](http://docs.smartthings.com/en/latest/capabilities-reference.html#temperature-measurement) (capability.temperatureMeasurement)
 Follow the above link to the capability for more details on the standard attributes and commands.
 
 **Compliance:** Fully Implemented
@@ -334,7 +334,7 @@ Once you have determined that an update is available, follow these steps:
 
 You should now be running on the updated code. Be sure that you check for both updates of the SmartApp **and** the Device Type. Updating one but not the other could cause compatibility problems.
 
-### Updating manually (without GitHub Integration
+### Updating manually (without GitHub Integration)
 
 > TODO: Fill in the directions for manual upgrade
 
