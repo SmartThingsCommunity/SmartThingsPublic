@@ -50,7 +50,7 @@ The ultimate goal would be to have these capabilities become part of the stock d
 - Provide pretty screenshots
 
 ## General
-This set of SmartApps and Device Handlers have been designed for simple installation, flexibile configuration options and easy operation. It is also extensible through the use of Child SmartApps that can easily be added to the configuration.
+This collection of SmartApps and Device Handlers has been designed for simple installation, flexibile configuration options and easy operation. It is also extensible through the use of Child SmartApps that can easily be added to the configuration. And it fully implements the the related [SmartThings Capabilities](http://docs.smartthings.com/en/latest/capabilities-reference.html).
 
 Key Highlights include:
 - Open Source Implementation! Free as in beer AND speech. No donations or purchase needed to use.
