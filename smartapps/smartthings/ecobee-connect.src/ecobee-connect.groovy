@@ -715,10 +715,7 @@ def initialize() {
     	getEcobeeThermostats()
     	getEcobeeSensors()
     } 
-    
-    // getEcobeeThermostats()
-	// getEcobeeSensors()
-    
+   
     // Children
     def aOK = true
 	if (settings.thermostats?.size() > 0) { aOK = aOK && createChildrenThermostats() }
@@ -735,6 +732,7 @@ def initialize() {
     subscribe(location, "sunrise", sunriseEvent)
     
     // Schedule the various handlers
+    LOG("Spawning scheduled events from initialize()", 5, null, "trace")
     if (settings.thermostats?.size() > 0) { spawnDaemon("poll") } 
     spawnDaemon("watchdog")
     spawnDaemon("auth")
@@ -1093,7 +1091,6 @@ def pollChildren(child = null) {
 		return true
     }    
     
-    
    // Check to see if it is time to do an full poll to the Ecobee servers. If so, execute the API call and update ALL children
     def timeSinceLastPoll = (state.forcePoll == true) ? 0 : ((now() - state.lastPoll?.toDouble()) / 1000 / 60) 
     LOG("Time since last poll? ${timeSinceLastPoll} -- state.lastPoll == ${state.lastPoll}", 3, child, "info")
@@ -1147,7 +1144,6 @@ private def generateEventLocalParams() {
 			// No local params to send            
         } 
     }
-
 }
 
 private def pollEcobeeAPI(thermostatIdsString = "") {
@@ -1215,10 +1211,10 @@ private def pollEcobeeAPI(thermostatIdsString = "") {
         	LOG("Setting up retryPolling")
 			def reAttemptPeriod = 15 // in sec
         	if ( canSchedule() ) {
-            	runIn(state.reAttemptInterval, "retryPolling") 
+            	runIn(state.reAttemptInterval, "retryAuthAndPolling") 
 			} else { 
-            	LOG("Unable to schedule retryPolling, running directly")
-            	retryPolling() 
+            	LOG("Unable to schedule retryAuthAndPolling, running directly")
+            	retryAuthAndPolling() 
             }
         }
         
@@ -1258,14 +1254,14 @@ private def pollEcobeeAPI(thermostatIdsString = "") {
 }
 
 // Used after an HTTP Exception 
-def retryPolling() {
-	LOG("retryPolling() entered", 2, null, "trace")
+def retryAuthAndPolling(poll=true) {
+	LOG("retryAuthAndPolling() entered", 2, null, "trace")
     if ( refreshAuthToken(true) ) {
-    	LOG("retryPolling() - refreshAuthToken() was successful. Will reattempt to poll children.", 2, null, "trace")
+    	LOG("retryAuthAndPolling() - refreshAuthToken() was successful. Will reattempt to poll children.", 2, null, "trace")
     	state.reAttempt = 0  // Refresh Auth success, reset retries
         state.forcePoll = true        
         
-        if ( pollChildren() ) {
+        if ( poll && pollChildren() ) {
         	state.reAttemptPoll = 0
         	apiRestored()
         }
