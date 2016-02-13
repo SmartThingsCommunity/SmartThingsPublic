@@ -72,7 +72,7 @@ The primary user interface on a day-to-day basis will be two different types of 
 :-------------------------:|:-------------------------:
 <img src="https://raw.githubusercontent.com/StrykerSKS/SmartThings/master/smartapp-icons/ecobee/documentation/current_sensor_screenshot.png" border="1" width="250" /> |  <img src="https://raw.githubusercontent.com/StrykerSKS/SmartThings/master/smartapp-icons/ecobee/documentation/sensor_annotation_current.png" width="400" />
 
-Full set of Ecobee related icons:
+Rich set of Ecobee related icons:
 <img src="https://raw.githubusercontent.com/StrykerSKS/SmartThings/master/smartapp-icons/ecobee/documentation/ST_ecobee_icons_thumbs.png" border="1" />
 
 
@@ -86,8 +86,8 @@ Capabilities are important as it allows the device to be used and selected in ot
 Supports the following capabilities (tagging capabilities not listed). Follow the links for more details on each capabability:
 * capability ["Thermostat"](http://docs.smartthings.com/en/latest/capabilities-reference.html#thermostat)
 * capability ["Temperature Measurement"](http://docs.smartthings.com/en/latest/capabilities-reference.html#temperature-measurement)
-* capability "Motion Sensor"
-* capability "Relative Humidity Measurement"
+* capability ["Motion Sensor"](http://docs.smartthings.com/en/latest/capabilities-reference.html#motion-sensor)
+* capability ["Relative Humidity Measurement"](http://docs.smartthings.com/en/latest/capabilities-reference.html#relative-humidity-measurement)
 * capability "Polling"
 * capability "Refresh"
 
@@ -129,7 +129,7 @@ weatherSymbol		| String		|
 - _sleep()_
 - _away()_
 
-#### Capability: ["Thermostat"](http://docs.smartthings.com/en/latest/capabilities-reference.html#thermostat)
+#### Capability: [Temperature Measurement](http://docs.smartthings.com/en/latest/capabilities-reference.html#temperature-measurement)
 Follow the above link to the capability for more details on the standard attributes and commands.
 
 **Compliance:** Fully Implemented
@@ -137,7 +137,11 @@ Follow the above link to the capability for more details on the standard attribu
 
 
 ### Device Handler: Ecobee Sensor
-
+Supports the following capabilities (tagging capabilities not listed). Follow the links for more details on each capabability:
+* capability ["Temperature Measurement"](http://docs.smartthings.com/en/latest/capabilities-reference.html#temperature-measurement)
+* capability ["Motion Sensor"](http://docs.smartthings.com/en/latest/capabilities-reference.html#motion-sensor)
+* capability "Polling"
+* capability "Refresh"
 
 
 
