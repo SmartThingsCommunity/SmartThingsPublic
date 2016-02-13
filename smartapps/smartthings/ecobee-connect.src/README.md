@@ -76,74 +76,6 @@ Rich set of Ecobee related icons:
 <img src="https://raw.githubusercontent.com/StrykerSKS/SmartThings/master/smartapp-icons/ecobee/documentation/ST_ecobee_icons_thumbs.png" border="1" />
 
 
-## SmartThings Capabilities Supported
-In order to support the broadest set of interactions with other parts of the SmartThings ecosystem, the below SmartThings Capabilities have been implemented. (More information about SmartThings Capabilities can be found [here](http://docs.smartthings.com/en/latest/capabilities-reference.html).
-
-Capabilities are important as it allows the device to be used and selected in other usecases (such as from other SmartApps) in a standard, interoperable way.
-
-
-### Device Handler: Ecobee Thermostat
-Supports the following capabilities (tagging capabilities not listed). Follow the links for more details on each capabability:
-* capability ["Thermostat"](http://docs.smartthings.com/en/latest/capabilities-reference.html#thermostat)
-* capability ["Temperature Measurement"](http://docs.smartthings.com/en/latest/capabilities-reference.html#temperature-measurement)
-* capability ["Motion Sensor"](http://docs.smartthings.com/en/latest/capabilities-reference.html#motion-sensor)
-* capability ["Relative Humidity Measurement"](http://docs.smartthings.com/en/latest/capabilities-reference.html#relative-humidity-measurement)
-* capability "Polling"
-* capability "Refresh"
-
-
-        
-#### Capability: [Thermostat](http://docs.smartthings.com/en/latest/capabilities-reference.html#thermostat) (_capability.thermostat_)
-
-Follow the above link to the capability for more details on the standard attributes and commands.
-
-**Compliance:** Fully Implemented
-
-**Additional Attributes:**
-
-**Attribute**		| **Type** 		| **Possible Values**
-:------------------|:-------------|:-------------------------------------------------:
-temperatureScale	| String		| "C" "F"
-thermostatStatus	|				|
-apiConnected		| String		| "full" "warn" "lost"
-currentProgram		| String		| 	 
-currentProgramId	| String		| 
-weatherSymbol		| String		| 
-
-- _temperatureScale_: Indicates if Fahrenheit of Celsius is being used
-- _thermostatStatus_: Used to provide status information to the UI such as "Resuming schedule..."
-- _apiConnected_: Indicates the current state of the API connection to the Ecobee servers
-- _currentProgram_: The string representation of the program (Comfort Setting) currently being executed.
-- _currentProgramId_: The ID of the current running program
-- _weatherSymbol_: Indicates the current weather pattern currently in effect according to the Ecobee forecast information (e.g. Partly Cloudy, Sunny, Fog, etc)
-
-
-**Additional Commands:**
-- _setTemperature(number)_
-- _auxHeatOnly()_
-- _raiseSetpoint()_
-- _lowerSetpoint()_
-- _resumeProgram()_
-- _setThermostatProgram(String)_
-- _home()_
-- _sleep()_
-- _away()_
-
-#### Capability: [Temperature Measurement](http://docs.smartthings.com/en/latest/capabilities-reference.html#temperature-measurement) (capability.temperatureMeasurement)
-Follow the above link to the capability for more details on the standard attributes and commands.
-
-**Compliance:** Fully Implemented
-
-
-
-### Device Handler: Ecobee Sensor
-Supports the following capabilities (tagging capabilities not listed). Follow the links for more details on each capabability:
-* capability ["Temperature Measurement"](http://docs.smartthings.com/en/latest/capabilities-reference.html#temperature-measurement)
-* capability ["Motion Sensor"](http://docs.smartthings.com/en/latest/capabilities-reference.html#motion-sensor)
-* capability "Polling"
-* capability "Refresh"
-
-
 
 -----------------------------
 # <a name="installation">Installation</a>
@@ -382,3 +314,73 @@ Licensed under the Apache License, Version 2.0 (the "License"); you may not use 
       http://www.apache.org/licenses/LICENSE-2.0
 
 Unless required by applicable law or agreed to in writing, software distributed under the License is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the License for the specific language governing permissions and limitations under the License.
+
+## Apendices
+
+## SmartThings Capabilities Supported
+In order to support the broadest set of interactions with other parts of the SmartThings ecosystem, the below SmartThings Capabilities have been implemented. (More information about SmartThings Capabilities can be found [here](http://docs.smartthings.com/en/latest/capabilities-reference.html).
+
+Capabilities are important as it allows the device to be used and selected in other usecases (such as from other SmartApps) in a standard, interoperable way.
+
+
+### Device Handler: Ecobee Thermostat
+Supports the following capabilities (tagging capabilities not listed). Follow the links for more details on each capabability:
+* capability ["Thermostat"](http://docs.smartthings.com/en/latest/capabilities-reference.html#thermostat)
+* capability ["Temperature Measurement"](http://docs.smartthings.com/en/latest/capabilities-reference.html#temperature-measurement)
+* capability ["Motion Sensor"](http://docs.smartthings.com/en/latest/capabilities-reference.html#motion-sensor)
+* capability ["Relative Humidity Measurement"](http://docs.smartthings.com/en/latest/capabilities-reference.html#relative-humidity-measurement)
+* capability "Polling"
+* capability "Refresh"
+
+
+        
+#### Capability: [Thermostat](http://docs.smartthings.com/en/latest/capabilities-reference.html#thermostat) (_capability.thermostat_)
+
+Follow the above link to the capability for more details on the standard attributes and commands.
+
+**Compliance:** Fully Implemented
+
+**Additional Attributes:**
+
+**Attribute**		| **Type** 		| **Possible Values**
+:------------------|:-------------|:-------------------------------------------------:
+temperatureScale	| String		| "C" "F"
+thermostatStatus	|				|
+apiConnected		| String		| "full" "warn" "lost"
+currentProgram		| String		| 	 
+currentProgramId	| String		| 
+weatherSymbol		| String		| 
+
+- _temperatureScale_: Indicates if Fahrenheit of Celsius is being used
+- _thermostatStatus_: Used to provide status information to the UI such as "Resuming schedule..."
+- _apiConnected_: Indicates the current state of the API connection to the Ecobee servers
+- _currentProgram_: The string representation of the program (Comfort Setting) currently being executed.
+- _currentProgramId_: The ID of the current running program
+- _weatherSymbol_: Indicates the current weather pattern currently in effect according to the Ecobee forecast information (e.g. Partly Cloudy, Sunny, Fog, etc)
+
+
+**Additional Commands:**
+- _setTemperature(number)_
+- _auxHeatOnly()_
+- _raiseSetpoint()_
+- _lowerSetpoint()_
+- _resumeProgram()_
+- _setThermostatProgram(String)_
+- _home()_
+- _sleep()_
+- _away()_
+
+#### Capability: [Temperature Measurement](http://docs.smartthings.com/en/latest/capabilities-reference.html#temperature-measurement) (capability.temperatureMeasurement)
+Follow the above link to the capability for more details on the standard attributes and commands.
+
+**Compliance:** Fully Implemented
+
+
+
+### Device Handler: Ecobee Sensor
+Supports the following capabilities (tagging capabilities not listed). Follow the links for more details on each capabability:
+* capability ["Temperature Measurement"](http://docs.smartthings.com/en/latest/capabilities-reference.html#temperature-measurement)
+* capability ["Motion Sensor"](http://docs.smartthings.com/en/latest/capabilities-reference.html#motion-sensor)
+* capability "Polling"
+* capability "Refresh"
+
