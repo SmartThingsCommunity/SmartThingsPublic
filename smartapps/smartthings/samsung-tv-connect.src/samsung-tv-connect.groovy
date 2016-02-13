@@ -316,40 +316,60 @@ private def parseEventMessage(String description) {
 	parts.each { part ->
 		part = part.trim()
 		if (part.startsWith('devicetype:')) {
-			part -= "devicetype:"
-			event.devicetype = part.trim()
+			def valueString = part.split(":")[1].trim()
+			event.devicetype = valueString
 		}
 		else if (part.startsWith('mac:')) {
-			part -= "mac:"
-			event.mac = part.trim()
+			def valueString = part.split(":")[1].trim()
+			if (valueString) {
+				event.mac = valueString
+			}
 		}
 		else if (part.startsWith('networkAddress:')) {
-			part -= "networkAddress:"
-			event.ip = part.trim()
+			def valueString = part.split(":")[1].trim()
+			if (valueString) {
+				event.ip = valueString
+			}
 		}
 		else if (part.startsWith('deviceAddress:')) {
-			part -= "deviceAddress:"
-			event.port = part.trim()
+			def valueString = part.split(":")[1].trim()
+			if (valueString) {
+				event.port = valueString
+			}
 		}
 		else if (part.startsWith('ssdpPath:')) {
-			part -= "ssdpPath:"
-			event.ssdpPath = part.trim()
+			def valueString = part.split(":")[1].trim()
+			if (valueString) {
+				event.ssdpPath = valueString
+			}
 		}
 		else if (part.startsWith('ssdpUSN:')) {
 			part -= "ssdpUSN:"
-			event.ssdpUSN = part.trim()
+			def valueString = part.trim()
+			if (valueString) {
+				event.ssdpUSN = valueString
+			}
 		}
 		else if (part.startsWith('ssdpTerm:')) {
 			part -= "ssdpTerm:"
-			event.ssdpTerm = part.trim()
+			def valueString = part.trim()
+			if (valueString) {
+				event.ssdpTerm = valueString
+			}
 		}
 		else if (part.startsWith('headers')) {
 			part -= "headers:"
-			event.headers = part.trim()
+			def valueString = part.trim()
+			if (valueString) {
+				event.headers = valueString
+			}
 		}
 		else if (part.startsWith('body')) {
 			part -= "body:"
-			event.body = part.trim()
+			def valueString = part.trim()
+			if (valueString) {
+				event.body = valueString
+			}
 		}
 	}
 	event
