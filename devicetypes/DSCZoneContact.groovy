@@ -8,7 +8,7 @@
 
 // for the UI
 metadata {
-  definition (name: "DSC Zone", author: "matt.martz@gmail.com") {
+  definition (name: "DSC Zone Contact", author: "matt.martz@gmail.com") {
     // Change or define capabilities here as needed
     capability "Contact Sensor"
     capability "Sensor"

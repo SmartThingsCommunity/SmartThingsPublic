@@ -14,9 +14,10 @@ There are 6 types of devices you can create:
 * DSC Stay Panel  - (Shows partition status info and provides Stay switch that can be used in routines)
 * DSC Away Panel  - (Shows partition status info and provides Away switch that can be used in routines)
 * DSC Panel       - (Shows partition status info, DEPRECATED, see above)
-* DSC Zone - (contact device open/close)
+* DSC Zone Contact - (contact device open/close)
 * DSC Zone Motion  - (motion device active/inactive)
 * DSC Zone Smoke   - (smoke device, alarm/clear)
+
 
 At a minimum you'll probably want the Stay/Away panels, Contact, and Motion.
 
@@ -26,7 +27,7 @@ For all the device types make sure you save them and then publish them for yours
 
 ### Create panel devices
 
-Create a new device and choose the type of "DSC Panel", "DSC Stay Panel" or "DSC Away Panel" that you published earlier. The network id needs to be **dscpanel1**, **dscstay1** or **dscaway1** depending on the panel type. Once the devices are created - edit the configuration via smartthings app to setup the IP and port of your alarmserver.
+Create a new device and choose the type of "DSC Panel", "DSC Stay Panel" or "DSC Away Panel" that you published earlier. The network id needs to be **dscpanel1**, **dscstay1** or **dscaway1** depending on the panel type. Be sure your hub is selected as well. Once the devices are created - edit the configuration via smartthings app to setup the IP and port of your alarmserver.
 
 ### Create individual zones
 Create a new "Zone Device" for each Zone you want Smartthings to show you status for. 
@@ -34,6 +35,8 @@ Create a new "Zone Device" for each Zone you want Smartthings to show you status
 The network id needs to be the word 'zone' followed by the matching zone number that your DSC system sees it as.
 
 For example: **dsczone1** or **dsczone5**
+
+And again, ensure your hub is selected in the device settings.
 
 ### The rest of the setup
 
