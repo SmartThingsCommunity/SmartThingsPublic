@@ -3,10 +3,11 @@
  *
  *  Copyright 2015, 2016 Bruce Ravenel and Mike Maxwell
  *
- *  Version 1.7.2   8 Feb 2016
+ *  Version 1.7.3   14 Feb 2016
  *
  *	Version History
  *
+ *	1.7.3	14 Feb 2016		Improved Rule Machine initialization, fixed Delete custom commands bug
  *	1.7.2	8 Feb 2016		Added set Boolean for Rules
  *	1.7.1	5 Feb 2016		Added update Rule
  *	1.7.0	31 Jan 2016		Added run Rule actions
@@ -53,18 +54,19 @@ preferences {
 }
 
 def mainPage() {
+	if(!state.setup) firstRun()
     dynamicPage(name: "mainPage", title: "Installed Rules, Triggers and Actions", install: true, uninstall: false, submitOnChange: true) {
     	if(!state.setup) initialize(true)
         section {
             app(name: "childRules", appName: "Rule", namespace: "bravenel", title: "Create New Rule...", multiple: true)
         }
-	section ("Expert Features") {
-		href( "expert", title: "", description: "Tap to create custom commands", state: "")
+		section ("Expert Features") {
+			href( "expert", title: "", description: "Tap to create custom commands", state: "")
         }
         section ("Remove Rule Machine"){
         	href "removePage", description: "Tap to remove Rule Machine ", title: ""
         }
-        if(state.ver) section ("Version 1.7.2/" + state.ver) { }
+        if(state.ver) section ("Version 1.7.3/" + state.ver) { }
     }
 }
 
@@ -76,29 +78,22 @@ def removePage() {
 }
 
 def installed() {
-    if(!state.setup) initialize(true) else initialize(false)
 }
 
 def updated() {
-    initialize(false)
 }
 
-def initialize(first) {
-	if(first) {
-		state.ruleState = [:]
-    		state.ruleSubscribers = [:]
-	}
-	childApps.each {child ->
-		if(child.name == "Rule") {
-			log.info "Installed Rules and Triggers: ${child.label}"
-			if(first) {
-				state.ruleState[child.label] = null
-				state.ruleSubscribers[child.label] = [:]
-			}
-		} 
-	}
+def firstRun() {
 	state.setup = true
+	state.ruleState = [:]
+	state.ruleSubscribers = [:]
 }
+
+//def initialize() {
+//	childApps.each {child ->
+//		if(child.name == "Rule") log.info "Installed Rules and Triggers: ${child.label}"
+//	}
+//}
 
 def ruleList(appLabel) {
 	def result = []
@@ -519,7 +514,7 @@ def isValidCommand(cmdIDS){
 def deleteCommands(){
 	def result
 	def cmdMaps = state.customCommands
-	if (deleteCmds.size == 1) result = "Command removed"
+	if (deleteCmds.size() == 1) result = "Command removed"
 	else result = "Commands removed"
 	deleteCmds.each{ it -> 
 		cmdMaps.remove(it)
