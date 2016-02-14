@@ -2,7 +2,7 @@
  *  Alexa Helper-Child
  *
  *  Copyright © 2016 Michael Struck
- *  Version 2.5.0 2/7/16
+ *  Version 2.5.1 2/14/16
  * 
  *  Version 1.0.0 - Initial release of child app
  *  Version 1.1.0 - Added framework to show version number of child app and copyright
@@ -18,6 +18,7 @@
  *  Version 2.3.0 - Code optimization and configuration for additional memory slots for Sonos (advanced users only)
  *  Version 2.4.0 - Added GUI (in parent app) to allow for variable number of Sonos memory slots, added speaker pause toggle
  *  Version 2.5.0 - Added switch functions when speaker on/off issued
+ *  Version 2.5.1 - Fixed issue with songs not initalizing
  *
  *  Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except
  *  in compliance with the License. You may obtain a copy of the License at:
@@ -368,7 +369,8 @@ def initialize() {
             if (parent.getSonos() && speaker.name.contains("Sonos")){
 				for (int i = 1; i <= sonosSlots(); i++) {
                 	if (settings."song${i}Switch" && settings."song${i}Station"){
-                    	subscribe (settings."song${i}Switch", "switch.on", "controlSong")
+                    	saveSelectedSong(i,settings."song${i}Station")
+                        subscribe (settings."song${i}Switch", "switch.on", "controlSong")
                     }
                 }
 			}
@@ -958,8 +960,8 @@ def sonosSlots(){
 }
 //Version
 private def textVersion() {
-    def text = "Child App Version: 2.5.0 (02/07/2016)"
+    def text = "Child App Version: 2.5.1 (02/14/2016)"
 }
 private def versionInt(){
-	def text = 250
+	def text = 251
 }
