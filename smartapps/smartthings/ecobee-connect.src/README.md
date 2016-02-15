@@ -81,7 +81,7 @@ The SmartApp has the following screens:
 
 
 ## <a name="features-routines-sa">`ecobee Routines` Smart App User Interface</a>
-The `ecobee Routins` SmartApp provides the ability 
+The `ecobee Routines` SmartApp provides the ability 
 
 
 -----------------------------
@@ -355,7 +355,7 @@ Capabilities are important as it allows the device to be used and selected in ot
 
 
 ### Device Handler: Ecobee Thermostat
-Supports the following capabilities (tagging capabilities not listed). Follow the links for more details on each capabability:
+Supports the following capabilities (tagging capabilities not listed). Unless noted, each capability is Fully Implemented. Follow the links for more details on each capabability:
 * capability ["Thermostat"](http://docs.smartthings.com/en/latest/capabilities-reference.html#thermostat)
 * capability "Thermostat Cooling Setpoint"
 * capability "Thermostat Fan Mode"
