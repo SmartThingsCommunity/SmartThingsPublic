@@ -311,10 +311,15 @@ Also, if a user chooses Debug Level 5, then a new `Debug Dashboard` will appear 
 The `Live Logging` feature on the SmartThings IDE is an essential tool in the debugging process of any issues that may be encountered.
 
 To access the `Live Logging` feature, follow these steps:
-- 
+- Go the SmartThings IDE (<https://graph.api.smartthings.com/>) and log in
+- click `Live Logging`
 
 ### Installed SmartApps Info on IDE
-TODO: Put information about accessing the Installed SmartApps screens to get more information about the state of the SmartApp. In particular, can be used to determine if the poll handlers are still running.
+The SmartThings IDE also provides helpful insights related to the current state of any SmartApp running on the system. To access this information, follow the follwing steps:
+- Go the SmartThings IDE (<https://graph.api.smartthings.com/>) and log in
+- Click `My Locations` (select your location if you have more than one)
+- Scroll down and click `List SmartApps`
+- Find the `Ecobee (Connect)` SmartApp and click the link
 
 
 -------------------------
@@ -325,10 +330,7 @@ You are also welcome to engage in discussions using the [SmartThings Community](
 
 ## <a name="open-items">Open Items / To Dos</a>
 
-There is still plenty of work left to do and items to work on. Here is a list of some of the items. This may also serve as a possible wishlist in the future:
-- Celsius: So far I have only tested this with Farhenheit. I plan to also test Celsius but haven't had a chance to do so. From working with the code, I suspect that there **will** be issues found here.
-- Additional SmartApps for things like Mode changes, etc.
-- Need to test the setting of the holdType at the individual thermostats to override the value set at the SmartApp level. (It should be working but has not been fully tested.)
+Please visit the GitHub page to see any open [Issues](https://github.com/StrykerSKS/SmartThingsPublic/issues).
 
 
 ## <a name="contributors">Contributors</a>
