@@ -211,7 +211,7 @@ Follow these steps to install the `ecobee Routines` SmartApps:
 - [IDE] Click on the `My SmartApps` tab
 - [IDE] Click `New SmartApp` (top right corner)
 - [IDE] Click `From Code`
-- [GitHub] Go to the respository for the `Ecobee (Connect)` SmartApp: <https://github.com/StrykerSKS/SmartThingsPublic/blob/StrykerSKS-Ecobee3/smartapps/smartthings/ecobee-connect.src/ecobee-routines.groovy>
+- [GitHub] Go to the respository for the `Ecobee (Connect)` SmartApp: <https://github.com/StrykerSKS/SmartThingsPublic/blob/StrykerSKS-Ecobee3/smartapps/smartthings/ecobee-routines.src/ecobee-routines.groovy>
 - [GitHub] Click `Raw`
 - [GitHub] Select all of the text in the window (use Ctrl-A if using Windows)
 - [GitHub] Copy all of the selected text to the Clipboard (use Ctrl-C if using Windows)
