@@ -178,7 +178,7 @@ Follow these steps to install the `Ecobee (Connect)` SmartApp (all within the Sm
 - Note the response at the top. It should be something like "`Updated 0 and created 2 SmartApps, 2 published`"
 - Verify that the SmartApps shows up in the list and is marked with Status `Published`
 - Locate the `Ecobee (Connect)` SmartApp from the list and Click on the `Edit Properties` button to the left of the SmartApp that we just added (looks like pencil on a paper)
-- Click on the `OAuth` tab (**NOTE: This is a commonly missed set of steps, but failing to enable OAuth will generate cryptic errors later when you try to use the SmartApp.)
+- Click on the `OAuth` tab (**NOTE: This is a commonly missed set of steps, but failing to enable OAuth will generate cryptic errors later when you try to use the SmartApp.**)
 - Click `Enable OAuth in Smart App`
 - Click `Update` (bottom left of screen)
 - Verify that `Updated SmartApp` appears at the top of the screen
