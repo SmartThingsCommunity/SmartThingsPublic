@@ -225,38 +225,33 @@ Follow these steps to install the `ecobee Routines` SmartApps:
 
 
 
-## <a name="install-smartapp-phone">Install and Run SmartApp on Phone/Tablet</a>
-> **NOTE**: I have only tested this on an iPhone 6 as I do not have access to Android device. Feedback and bug reports are welcome if any issues are found.
+## <a name="install-smartapp-phone">Install and Run `Ecobee (Connect) `SmartApp on Phone/Tablet</a>
+> **NOTE**: I have only tested this on an iPhone 6 as I do not have access to Android device. Feedback and bug reports are welcome if any issues are found on any platform. There are already some known issues with platforms behaving differently due to differences in the SmartThings apps on those platforms.
 
 The SmartApp will guide you through the basic installation and setup process. It includes the following aspects:
 - Authentication with Ecobee to allow API Calls for your thermostat(s) (and connected sensors)
 - Discover and selection of Thermostats
-  - Setup of option features/parameters such as Smart Auto Temp Control, Polling Intervals, etc
 - Discover and selection of Remote Sensors (if there are any)
+- Setup of option features/parameters such as Smart Auto Temp Control, Polling Intervals, etc
 
 Follow these steps for the SmartApp on your mobile device:
 - Open the SmartThings app
 - Open the `Marketplace`
 - Click the `SmartApps` tab
 - Select `My Apps` (all the way at the bottom of the list)
-- Click `Ecobee (Connect)`
+- Click `Ecobee (Connect)` (NOTE: If the app simply returns back to the `My Apps` screen try clicking again. If this still does not work after several tries, please verify all install steps from above are completed.)
 - Click (as indicated on the screen) to enter your Ecobee Credentials
 - Enter your Ecobee Email and Password
 - Click `Accept`
 - You should receive a message indicating `Your ecobee Account is now connected to SmartThings!`
-- Click `Done` 
-- Click `Next` (top right corner)
-- Select which thermostats you want connected
-- Optionally, set the other settings:
-  - Select Hold Type: This determines how a hold will behave. Either Permanent (until changed) or Temporary (until next program engages)
-  - Use Smart Auto Temperature Adjust: This allows you to adjust the temperature using the `Up` and `Down` arrows within SmartThings even when the device is in mode `Auto`. 
-  - Polling Interval: Determines how often to poll (via API calls) for fresh thermostat/sensor data
-- Click `Next`
-- Select which Sensors you want connected. NOTE: Only sensors associated with a thermostat from the previous step will be shown.
-- Click `Done` (to close the selection window)
-- Click `Done` (to initiate the SmartApp installation)
+- Click `Done` (or `Next` depending on your device OS)
+- Click `Done` (or `Next` depending on your device OS) again to save the credentials and prepare for the next steps.
 - You should receive a small green popup at the top stating "`Ecobee (Connect) is now installed and automating`"
-
+- Go to the `My Home` screen and slect the `SmartApps` tab
+- Click on the `Ecobee (Connect)` SmartApp
+- Work through the various option screens to select thermostats and sensors. (NOTE: The options are dynamic and will change/appear based on other selections such as selecting a thermostat will reveal the sensors option screen.)
+- You can also go into the `Preferences` section to set various preferences such as `Hold Type`, `Smart Auto Temperature`, `Polling Interval`, `Debug Level`, and wether to create separate sensor objects for thermostats.
+- After making all selections, Click `Done` to save your preferences and exit the SmartApp
 
 At this point, the SmartApp will automatically create all of the new devices, one for each thermostat and sensor. These will show up in your regular `Things` list within the app. 
 
@@ -292,7 +287,7 @@ You should now be running on the updated code. Be sure that you check for both u
 
 ### Updating manually (without GitHub Integration)
 
-> TODO: Fill in the directions for manual upgrade
+To update manually, you will need to "cut & paste" the raw code from GitHub into the SmartThings IDE, Save and Publish the code. I will leave it to the reader to work through the full individual steps, but the links to the code are the same as those that were used during the initial install process.
 
 -------------------------
 ## Troubleshooting
