@@ -357,9 +357,16 @@ Capabilities are important as it allows the device to be used and selected in ot
 ### Device Handler: Ecobee Thermostat
 Supports the following capabilities (tagging capabilities not listed). Follow the links for more details on each capabability:
 * capability ["Thermostat"](http://docs.smartthings.com/en/latest/capabilities-reference.html#thermostat)
+* capability "Thermostat Cooling Setpoint"
+* capability "Thermostat Fan Mode"
+* capability "Thermostat Heating Setpoint"
+* capability "Thermostat Mode"
+* capability "Thermostat Operating State"
+* capability "Thermostat Setpoint"
 * capability ["Temperature Measurement"](http://docs.smartthings.com/en/latest/capabilities-reference.html#temperature-measurement)
 * capability ["Motion Sensor"](http://docs.smartthings.com/en/latest/capabilities-reference.html#motion-sensor)
 * capability ["Relative Humidity Measurement"](http://docs.smartthings.com/en/latest/capabilities-reference.html#relative-humidity-measurement)
+
 * capability "Polling"
 * capability "Refresh"
 
@@ -404,6 +411,17 @@ weatherSymbol		| String		|
 #### Capability: [Temperature Measurement](http://docs.smartthings.com/en/latest/capabilities-reference.html#temperature-measurement) (capability.temperatureMeasurement)
 Follow the above link to the capability for more details on the standard attributes and commands.
 
+**Compliance:** Fully Implemented
+
+#### Capability: [Motion Sensor](http://docs.smartthings.com/en/latest/capabilities-reference.html) (capability.motionSensor)
+Follow the above link to the capability for more details on the standard attributes and commands.
+ 
+**Compliance:** Fully Implemented
+ 
+ 
+ #### Capability: [Relative Humidity Measurement](http://docs.smartthings.com/en/latest/capabilities-reference.html) (capability.motionSensor)
+Follow the above link to the capability for more details on the standard attributes and commands.
+ 
 **Compliance:** Fully Implemented
 
 
