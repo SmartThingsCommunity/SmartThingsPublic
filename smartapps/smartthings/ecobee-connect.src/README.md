@@ -93,22 +93,22 @@ The `ecobee Routins` SmartApp provides the ability
 It is highly recommended that you use the GitHub Integration that SmartThings offers with their IDE. This will make it **much** easier to keep up to date with changes over time. For the general steps needed for setting up GitHub IDE integration, please visit <http://docs.smartthings.com/en/latest/tools-and-ide/github-integration.html> and follow the steps for performing the setup.
 
 ## Install Preparation
-The first step is to ensure that you delete any existing Ecobee related devices and SmartApps. They are likely not compatible with this codebase and are almost certain to cause problems down the road. 
+The first step is to ensure that you delete any existing Ecobee related devices and SmartApps that you may have from other sources. They are likely not compatible with this codebase and are almost certain to cause problems down the road. 
 
 If you are not familiar with adding your own custom devices, then be sure to familiarize yourself with the [SmartThings IDE](https://graph.api.smartthings.com/) before you begin the installation process.
 
 You will also need to make sure that you remember your Ecobee username and password. You should login to <http://www.ecobee.com/> now to ensure you have your credentials.
 
-## <a name="install-device-type">Install Device Types</a>
-Here we will install two (2) different Device Types:
+## <a name="install-device-type">Install Device Handlers</a>
+Here we will install two (2) different Device Handlers:
 - `Ecobee Thermostat`
 - `Ecobee Sensor`
 
 Follow the steps for _either_ the GitHub Integration or the Manual method below. Do **not** try to do both methods.
 
-### Install Using GitHub Integration
+### Install Using GitHub Integration (Recommended Method)
 Follow these steps (all within the SmartThings IDE):
-- Click on the `My Device Types` tab
+- Click on the `My Device Handlers` tab
 - Click `Settings`
 - Click `Add new repository` and use the following parameters:
   - Owner: `StrykerSKS`
@@ -120,15 +120,14 @@ Follow these steps (all within the SmartThings IDE):
 - Select `Publish`(bottom right of screen near the `Cancel` button)
 - Click `Execute Update`
 - Note the response at the top. It should be something like "`Updated 0 devices and created 2 new devices, 2 published`"
-- Verify that the two devices show up in the list and are marked with Status `Published`
-
+- Verify that the two devices show up in the list and are marked with Status `Published` (NOTE: You may have to reload the `My Device Handlers` screen for the devices to show up properly.)
 
 
 ### Install Manually from Code
 For this method you will need to have one browser window open on GitHub and another on the IDE.
 
-Follow these steps to install the Ecobee Sensor:
-- [IDE] Click on the `My Device Types` tab
+Follow these steps to install the `Ecobee Sensor`:
+- [IDE] Click on the `My Device Handlers` tab
 - [IDE] Click `New Device Type` (top right corner)
 - [IDE] Click `From Code`
 - [GitHub] Go to the respository for the Ecobee Sensor: <https://github.com/StrykerSKS/SmartThingsPublic/blob/StrykerSKS-Ecobee3/devicetypes/smartthings/ecobee-sensor.src/ecobee-sensor.groovy>
@@ -141,8 +140,8 @@ Follow these steps to install the Ecobee Sensor:
 - [IDE] Click `Save`
 - [IDE] Click `Publish` --> `For Me`
 
-Follow these steps to install the Ecobee Thermostat:
-- [IDE] Click on the `My Device Types` tab
+Follow these steps to install the `Ecobee Thermostat`:
+- [IDE] Click on the `My Device Handlers` tab
 - [IDE] Click `New Device Type` (top right corner)
 - [IDE] Click `From Code`
 - [GitHub] Go to the respository for the Ecobee Thermostat: <https://github.com/StrykerSKS/SmartThingsPublic/blob/StrykerSKS-Ecobee3/devicetypes/smartthings/ecobee-thermostat.src/ecobee-thermostat.groovy>
@@ -157,13 +156,14 @@ Follow these steps to install the Ecobee Thermostat:
 
 
 ## <a name="install-smartapp">Install SmartApp in IDE</a>
-Here we will install the following SmartApp:
+Here we will install the following SmartApps:
 - `Ecobee (Connect)`
+- `ecobee Routines` (Child SmartApp)
 
 Follow the steps for _either_ the GitHub Integration or the Manual method below. Do **not** try to do both methods.
 
 ### Install Using GitHub Integration
-Follow these steps (all within the SmartThings IDE):
+Follow these steps to install the `Ecobee (Connect)` SmartApp (all within the SmartThings IDE):
 - Click on the `My SmartApps` tab
 - Click `Settings`
 - Click `Add new repository` and use the following parameters:
@@ -243,15 +243,15 @@ Follow these steps for the SmartApp on your mobile device:
 
 At this point, the SmartApp will automatically create all of the new devices, one for each thermostat and sensor. These will show up in your regular `Things` list within the app. 
 
-> **NOTE**: It may take a few minutes for the new devices to show up in the list. You should try refreshing the list (pull down on the list). In extreme cases, you may have to restart the SmartThings app on your phone to update the list. You should only have to do this once.
+> **NOTE 1**: It may take a few minutes for the new devices to show up in the list. You should try refreshing the list if they are not there (pull down on the list). In extreme cases, you may have to restart the SmartThings app on your phone to update the list. You should only have to do this once.
 
 <br/>
 
-> **NOTE 2**: If you uninstall the SmartApp it will automatically remove all of the thermostats and sensors that it previously installed. This is necessary as those devices are "children" of the SmartApp.
+> **NOTE 2**: If you uninstall the SmartApp it will automatically remove all of the thermostats and sensors that it previously installed. This is necessary (and expected) as those devices are "children" of the SmartApp.
 
 <br/>
 
-> There is currently a lot of debug information generate from the app. If you need to do any kind of troubleshooting, you can see the current information flowing through in the `Live Logging` tab of the SmartThings IDE. You will also need this information if you open an `Issue` since it will be needed to track down what is going on. ** Please ensure that you do not include any personal information from the logs in an `Issue` report. **
+> There is currently a lot of debug information that can be generated from the app (which is configurable). If you need to do any kind of troubleshooting, you can see the current information flowing through in the `Live Logging` tab of the SmartThings IDE. You will also need this information if you open an `Issue` since it will be needed to track down what is going on. ** Please ensure that you do not include any personal information from the logs in an `Issue` report. **
 
 -------------------------
 ## Updating
@@ -262,7 +262,7 @@ The IDE provides visual cues to alert you that any device types or SmartApps hav
 
 Once you have determined that an update is available, follow these steps:
 - Login to the SmartThings IDE
-- Go to either the `My Device Types` or `My SmartApps` tabs to see if there are updates (the color of the item will be purple)
+- Go to either the `My Device Handlers` or `My SmartApps` tabs to see if there are updates (the color of the item will be purple)
 - Click the `Update from Repo` button (top right)
 - Select the repository and branch you want to update `SmartThingsPublic (StrykerSKS-Ecobee3)`
 - The item should show up in the `Obsolete (updated in GitHub)` column and automatically be selected
