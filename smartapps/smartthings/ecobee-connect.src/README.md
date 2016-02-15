@@ -88,7 +88,7 @@ The `ecobee Routins` SmartApp provides the ability
 # <a name="installation">Installation</a>
 
 ## General
-> **NOTE**: While I have tested this on my system and believe it to be working. I have not run a full battery of tests that can include all possible corner cases or configurations. It is possible, perhaps even _likely_, that there are still bugs in this code. If you do run into an issue, the best option is to report it using the [Issues](https://github.com/StrykerSKS/SmartThingsPublic/issues) tab within the GitHub repository.
+> **NOTE**: While I have tested this on my system and believe it to be working (and we have over 200 user now). I have not run a full battery of tests that can include all possible corner cases or configurations. It is possible, perhaps even _likely_, that there are still bugs or platform specific issues in this code. If you do run into an issue, the best option is to report it using the [Issues](https://github.com/StrykerSKS/SmartThingsPublic/issues) tab within the GitHub repository. I will do my best to quickly address any issues that are found. 
 
 It is highly recommended that you use the GitHub Integration that SmartThings offers with their IDE. This will make it **much** easier to keep up to date with changes over time. For the general steps needed for setting up GitHub IDE integration, please visit <http://docs.smartthings.com/en/latest/tools-and-ide/github-integration.html> and follow the steps for performing the setup.
 
@@ -155,7 +155,7 @@ Follow these steps to install the `Ecobee Thermostat`:
 - [IDE] Click `Publish` --> `For Me`
 
 
-## <a name="install-smartapp">Install SmartApp in IDE</a>
+## <a name="install-smartapp">Install SmartApps in IDE</a>
 Here we will install the following SmartApps:
 - `Ecobee (Connect)`
 - `ecobee Routines` (Child SmartApp)
@@ -172,13 +172,13 @@ Follow these steps to install the `Ecobee (Connect)` SmartApp (all within the Sm
   - Branch: `StrykerSKS-Ecobee3`
 - Click `Save`
 - Click `Update from Repo` and select the repository we just added above
-- Find and Select `ecobee-connect.groovy`
+- Find and Select `ecobee-connect.groovy` and `ecobee-routines.groovy`
 - Select `Publish`(bottom right of screen near the `Cancel` button)
 - Click `Execute Update`
-- Note the response at the top. It should be something like "`Updated 0 and created 1 SmartApps, 1 published`"
-- Verify that the SmartApp shows up in the list and is marked with Status `Published`
-- Click on the `Edit Properties` button to the left of the SmartApp that we just added (looks like pencil on a paper)
-- Click on the `OAuth` tab
+- Note the response at the top. It should be something like "`Updated 0 and created 2 SmartApps, 2 published`"
+- Verify that the SmartApps shows up in the list and is marked with Status `Published`
+- Locate the `Ecobee (Connect)` SmartApp from the list and Click on the `Edit Properties` button to the left of the SmartApp that we just added (looks like pencil on a paper)
+- Click on the `OAuth` tab (**NOTE: This is a commonly missed set of steps, but failing to enable OAuth will generate cryptic errors later when you try to use the SmartApp.)
 - Click `Enable OAuth in Smart App`
 - Click `Update` (bottom left of screen)
 - Verify that `Updated SmartApp` appears at the top of the screen
