@@ -178,7 +178,7 @@ Follow these steps to install the `Ecobee (Connect)` SmartApp (all within the Sm
 - Note the response at the top. It should be something like "`Updated 0 and created 2 SmartApps, 2 published`"
 - Verify that the SmartApps shows up in the list and is marked with Status `Published`
 - Locate the `Ecobee (Connect)` SmartApp from the list and Click on the `Edit Properties` button to the left of the SmartApp that we just added (looks like pencil on a paper)
-- Click on the `OAuth` tab (**NOTE: This is a commonly missed set of steps, but failing to enable OAuth will generate cryptic errors later when you try to use the SmartApp.**)
+- Click on the `OAuth` tab (**NOTE: This is a commonly missed set of steps, but failing to enable OAuth will generate cryptic errors later when you try to use the SmartApp. So please don't skip these steps.**)
 - Click `Enable OAuth in Smart App`
 - Click `Update` (bottom left of screen)
 - Verify that `Updated SmartApp` appears at the top of the screen
@@ -186,11 +186,11 @@ Follow these steps to install the `Ecobee (Connect)` SmartApp (all within the Sm
 ### Install Manually from Code
 For this method you will need to have one browser window open on GitHub and another on the IDE.
 
-Follow these steps to install the Ecobee Sensor:
+Follow these steps to install the `Ecobee (Connect)` SmartApps:
 - [IDE] Click on the `My SmartApps` tab
 - [IDE] Click `New SmartApp` (top right corner)
 - [IDE] Click `From Code`
-- [GitHub] Go to the respository for the Ecobee Connect SmartApp: <https://github.com/StrykerSKS/SmartThingsPublic/blob/StrykerSKS-Ecobee3/smartapps/smartthings/ecobee-connect.src/ecobee-connect.groovy>
+- [GitHub] Go to the respository for the `Ecobee (Connect)` SmartApp: <https://github.com/StrykerSKS/SmartThingsPublic/blob/StrykerSKS-Ecobee3/smartapps/smartthings/ecobee-connect.src/ecobee-connect.groovy>
 - [GitHub] Click `Raw`
 - [GitHub] Select all of the text in the window (use Ctrl-A if using Windows)
 - [GitHub] Copy all of the selected text to the Clipboard (use Ctrl-C if using Windows)
@@ -206,6 +206,23 @@ Follow these steps to install the Ecobee Sensor:
 - [IDE] Click `Enable OAuth in Smart App`
 - [IDE] Click `Update` (bottom left of screen)
 - [IDE] Verify that `Updated SmartApp` appears at the top of the screen
+
+Follow these steps to install the `ecobee Routines` SmartApps:
+- [IDE] Click on the `My SmartApps` tab
+- [IDE] Click `New SmartApp` (top right corner)
+- [IDE] Click `From Code`
+- [GitHub] Go to the respository for the `Ecobee (Connect)` SmartApp: <https://github.com/StrykerSKS/SmartThingsPublic/blob/StrykerSKS-Ecobee3/smartapps/smartthings/ecobee-connect.src/ecobee-routines.groovy>
+- [GitHub] Click `Raw`
+- [GitHub] Select all of the text in the window (use Ctrl-A if using Windows)
+- [GitHub] Copy all of the selected text to the Clipboard (use Ctrl-C if using Windows)
+- [IDE] Click inside the text box
+- [IDE] Paste all of the previously copied text (use Ctrl-V if using Windows)
+- [IDE] Click `Create`
+- [IDE] Click `Save`
+- [IDE] Click `Publish` --> `For Me` (Optional)
+- [IDE] Click on the `My SmartApps` tab
+- [IDE] Verify that the SmartApp shows up in the list
+
 
 
 ## <a name="install-smartapp-phone">Install and Run SmartApp on Phone/Tablet</a>
