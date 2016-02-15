@@ -37,7 +37,6 @@ definition(
 preferences {
     section("About") {
         paragraph "Turns on the lights when people arrive after sunset but before sunrise."
-        paragraph "Version 1.0"
     }
 
     section("When one of these people arrive at home"){
@@ -51,7 +50,6 @@ preferences {
 
 	section ("Additionally", hidden: hideOptionsSection(), hideable: true) {
 		input "falseAlarmThreshold", "decimal", title: "False alarm threshold (minutes)", required: false
-        input "debugOutput", "boolean", title: "Enable debug logging?", required: false
     }
 }
 
@@ -77,8 +75,8 @@ def initialize() {
 	//Set initial state
     state.afterDark = false
     state.threshold = (falseAlarmThreshold) ? (falseAlarmThreshold * 60 * 1000) as Long : 5 * 60 * 1000L
-    state.debugOutput = (debugOutput) ? debugOutput.toBoolean() : false
-    state.userOverride = lights.currentSwitch
+    state.lightsDuration = (lightsDuration) ? (lightsDuration * 60) as Long : 0
+    state.userOverride = lights.currentSwitch=="on"
 
     //Subscribe to sunrise and sunset events
     subscribe(location, "sunrise", sunriseHandler)
@@ -92,11 +90,10 @@ def initialize() {
     if (sunset.before(now)) {
         state.afterDark = true
     }
-    if (state.debugOutput) {
-	    log.debug "state.afterDark: $state.afterDark"
-	    log.debug "state.threshold: $state.threshold"
-        log.debug "state.userOverride: $state.userOverride"
-    }
+    log.trace "state.afterDark: $state.afterDark"
+    log.trace "state.threshold: $state.threshold"
+    log.trace "state.lightsDuration: $state.lightsDuration"
+    log.trace "state.userOverride: $state.userOverride"
 }
 
 /**
@@ -107,9 +104,7 @@ def initialize() {
  *	evt		The sunrise event
  */
 def sunriseHandler(evt) {
-    if (state.debugOutput) {
-	    log.debug "Sunrise evt: ${evt}, ${evt.value}"
-    }
+	//log.debug "Sunrise evt: ${evt}, ${evt.value}"
     def sunriseTime = new Date()
     log.info "Sunrise at ${sunriseTime}"
     state.afterDark = false
@@ -123,9 +118,7 @@ def sunriseHandler(evt) {
  *	evt		The sunset event
  */
 def sunsetHandler(evt) {
-    if (state.debugOutput) {
-	    log.debug "Sunset evt: ${evt}"
-    }
+	//log.debug "Sunset evt: ${evt}"
     def sunsetTime = new Date()
     log.info "Sunset at ${sunsetTime}"
     state.afterDark = true
@@ -139,9 +132,7 @@ def sunsetHandler(evt) {
  *	evt		The switch event
  */
 def switchHandler(evt) {
-    if (state.debugOutput) {
-	    log.debug "Lights evt: ${evt}"
-    }    
+	//log.debug "Lights evt: ${evt}"  
     state.userOverride = evt.value=="on"
     log.info "state.userOverride ${state.userOverride}"
 }
@@ -157,37 +148,36 @@ def switchHandler(evt) {
  */
 def presenceHandler(evt)
 {
-    if (state.debugOutput) {
-    	log.debug "Presence evt.name: $evt.value"
-    }
+	def person = presence.find{it.id == evt.deviceId}
+    log.debug "$person is $evt.value!"
 
 	if(!state.userOverride) {
         if(state.afterDark) {
             if("present" == evt.value) {
                 def thresholdWindow = new Date(now() - state.threshold)
 
-                def person = presence.find{it.id == evt.deviceId}
                 def recentNotPresent = person.statesSince("presence", thresholdWindow).find{it.value == "not present"}
-                if (recentNotPresent && state.debugOutput) {
+                if (recentNotPresent) {
                     log.debug "skipping notification of arrival of ${person.displayName} because last departure was only ${now() - recentNotPresent.date.time} msec ago"
                 }
                 else {
                     lights.on()
                     //If we turn off the lights after some period, set timer
-                    if (lightsDuration) {
+                    if (state.lightsDuration>0) {
                         def delayInSeconds = lightsDuration * 60
                         //No need to guard against multiple arrivals, 
                         //since calling 'runIn' again cancels any existing scheduled event
+                        log.trace "Turning off lights in $delayInSeconds secs"
                         runIn(delayInSeconds, lightsOffHandler)
                     }
                 }
             }
         }
-        else if (state.debugOutput) {
+        else {
             log.debug "Not after dark - do nothing"
         }
     }
-    else if (state.debugOutput) {
+    else {
         log.debug "user Override - do nothing"
     }
 }
@@ -201,7 +191,7 @@ def presenceHandler(evt)
  */
 def lightsOffHandler(evt)
 {
-    log.debug "runIn evt: ${evt}"
+    log.debug "Automatic lights off"
     lights.off()
 }
 
@@ -209,6 +199,6 @@ def lightsOffHandler(evt)
  * Enables/Disables the optional section
  */
 private hideOptionsSection() {
-    (falseAlarmThreshold || debugOutput) ? false : true
+    (falseAlarmThreshold ) ? false : true
 }
 //EOF
