@@ -24,8 +24,8 @@
  *
  */
 
-def getVersionNum() { return "0.9.5" }
-private def getVersionLabel() { return "Ecobee Thermostat Version ${getVersionNum()}-RC7" }
+def getVersionNum() { return "0.9.6" }
+private def getVersionLabel() { return "Ecobee Thermostat Version ${getVersionNum()}" }
 
  
 metadata {
@@ -371,7 +371,7 @@ multiAttributeTile(name:"thermostatMulti", type:"thermostat", width:6, height:4,
 			state "100",			icon: "https://raw.githubusercontent.com/StrykerSKS/SmartThings/master/smartapp-icons/ecobee/png/weather_clear_night_100.png" // label: 'Sunny',			
 			state "101",			icon: "https://raw.githubusercontent.com/StrykerSKS/SmartThings/master/smartapp-icons/ecobee/png/weather_night_partly_cloudy_101.png" // label: 'Few Clouds',	
 			state "102",			icon: "https://raw.githubusercontent.com/StrykerSKS/SmartThings/master/smartapp-icons/ecobee/png/weather_night_partly_cloudy_101.png"
-			state "103",			icon: "https://raw.githubusercontent.com/StrykerSKS/SmartThings/master/smartapp-icons/ecobee/png/weather_night_mostly_cloudy_night_103.png"
+			state "103",			icon: "https://raw.githubusercontent.com/StrykerSKS/SmartThings/master/smartapp-icons/ecobee/png/weather_night_mostly_cloudy_103.png"
 			state "104",			icon: "https://raw.githubusercontent.com/StrykerSKS/SmartThings/master/smartapp-icons/ecobee/png/weather_cloudy_04.png"
 			state "105",			icon: "https://raw.githubusercontent.com/StrykerSKS/SmartThings/master/smartapp-icons/ecobee/png/weather_night_drizzle_105.png"
 			state "106",			icon: "https://raw.githubusercontent.com/StrykerSKS/SmartThings/master/smartapp-icons/ecobee/png/weather_night_rain_106.png"
