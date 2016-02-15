@@ -300,8 +300,18 @@ To update manually, you will need to "cut & paste" the raw code from GitHub into
 |         	|                   	|
 |         	|                   	|
 
+
+
+### Debug Level in SmartApp
+The `Ecobee (Connect)` SmartApp allows the end user to config the Debug Level they wish to use (ranging from 1-5). The higher the level the more debug information is fed into the `Live Logging` on the SmartThings IDE.
+
+Also, if a user chooses Debug Level 5, then a new `Debug Dashboard` will appear within the SmartApp. This dashboard gives direct access to various state information of the app as well as a few helper functions that can be used to manaually trigger actions that are normally timer based.
+
 ### Live Logging on IDE
-TODO: Put information on getting to the Live Logging on the IDE
+The `Live Logging` feature on the SmartThings IDE is an essential tool in the debugging process of any issues that may be encountered.
+
+To access the `Live Logging` feature, follow these steps:
+- 
 
 ### Installed SmartApps Info on IDE
 TODO: Put information about accessing the Installed SmartApps screens to get more information about the state of the SmartApp. In particular, can be used to determine if the poll handlers are still running.
