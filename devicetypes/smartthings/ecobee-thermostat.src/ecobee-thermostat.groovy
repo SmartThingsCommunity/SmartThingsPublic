@@ -24,7 +24,7 @@
  *
  */
 
-def getVersionNum() { return "0.9.6" }
+def getVersionNum() { return "0.9.7" }
 private def getVersionLabel() { return "Ecobee Thermostat Version ${getVersionNum()}" }
 
  
@@ -39,6 +39,14 @@ metadata {
 		capability "Temperature Measurement"
 		// capability "Presence Sensor"
         capability "Motion Sensor"
+        
+        // Extended Set of Thermostat Capabilities
+        capability "Thermostat Cooling Setpoint"
+		capability "Thermostat Fan Mode"
+		capability "Thermostat Heating Setpoint"
+		capability "Thermostat Mode"
+		capability "Thermostat Operating State"
+		capability "Thermostat Setpoint"
             
 
 		command "setTemperature"
@@ -77,38 +85,6 @@ metadata {
 
     	tiles(scale: 2) {      
               
-
-multiAttributeTile(name:"thermostatMulti", type:"thermostat", width:6, height:4, canChangeIcon: true, icon: "st.Home.home1") {
-  tileAttribute("device.temperature", key: "PRIMARY_CONTROL") {
-    attributeState("temperature", label:'${currentValue}°', unit:"F")
-  }
-  /*
-  tileAttribute("device.temperature", key: "VALUE_CONTROL") {
-    attributeState("default", action: "setTemperature")
-  }
-  tileAttribute("device.humidity", key: "SECONDARY_CONTROL") {
-    attributeState("default", label:'${currentValue}%', unit:"%")
-  }
-  tileAttribute("device.thermostatOperatingState", key: "OPERATING_STATE") {
-    attributeState("idle", backgroundColor:"#44b621")
-    attributeState("heating", backgroundColor:"#ffa81e")
-    attributeState("cooling", backgroundColor:"#269bd2")
-  }
-  tileAttribute("device.thermostatMode", key: "THERMOSTAT_MODE") {
-    attributeState("off", label:'${name}')
-    attributeState("heat", label:'${name}')
-    attributeState("cool", label:'${name}')
-    attributeState("auto", label:'${name}')
-  }
-  tileAttribute("device.heatingSetpoint", key: "HEATING_SETPOINT") {
-    attributeState("default", label:'${currentValue}', unit:"dF")
-  }
-  tileAttribute("device.coolingSetpoint", key: "COOLING_SETPOINT") {
-    attributeState("default", label:'${currentValue}', unit:"dF")
-  }
-  */
-}
-
 		multiAttributeTile(name:"tempSummary", type:"thermostat", width:6, height:4) {
 			tileAttribute("device.temperature", key: "PRIMARY_CONTROL") {
 				attributeState("default", label:'${currentValue}', unit:"dF")
@@ -256,7 +232,8 @@ multiAttributeTile(name:"thermostatMulti", type:"thermostat", width:6, height:4,
 			state "setpoint", action:"raiseSetpoint", icon:"st.thermostat.thermostat-up"
 		}
 		valueTile("thermostatSetpoint", "device.thermostatSetpoint", width: 2, height: 2, decoration: "flat") {
-			state "thermostatSetpoint", label:'${currentValue}°'
+			state "thermostatSetpoint", label:'${currentValue}°',
+				backgroundColors: getTempColors()
 		}
 		valueTile("currentStatus", "device.thermostatStatus", height: 2, width: 4, decoration: "flat") {
 			state "thermostatStatus", label:'${currentValue}', backgroundColor:"#ffffff"
@@ -410,7 +387,14 @@ multiAttributeTile(name:"thermostatMulti", type:"thermostat", width:6, height:4,
 
 
 		main(["temperature", "tempSummary"])
-		details(["tempSummary",
+		details([
+        	// Use this if you are on a fully operational device OS (such as iOS or Android)
+        	"tempSummary",
+            // Use the lines below if you can't (or don't want to) use the multiAttributeTile version
+            // To use, uncomment these lines below, and comment out the line above
+            // "temperature", "humidity",  "upButtonControl", "thermostatSetpoint", 
+            // "currentStatus", "downButtonControl",
+            
         	"operatingState", "weatherIcon", "refresh", 
             "currentProgramIcon", "weatherTemperature", "motionState", 
             "apiStatus", "fanModeLabeled", "resumeProgram",
