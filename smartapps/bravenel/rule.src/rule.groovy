@@ -3,7 +3,7 @@
  *
  *  Copyright 2015, 2016 Bruce Ravenel
  *
- *  Version 1.7.10d   10 Feb 2016
+ *  Version 1.7.10e   15 Feb 2016
  *
  *	Version History
  *
@@ -88,7 +88,7 @@ preferences {
 def firstPage() {
 	//version to parent app and expert settings for rule
 	try { 
-		state.isExpert = parent.isExpert("1.7.10d") 
+		state.isExpert = parent.isExpert("1.7.10e") 
 		if (state.isExpert) state.cstCmds = parent.getCommands()
 		else state.cstCmds = []
 	}
@@ -137,7 +137,7 @@ def firstPage() {
 				href "selectConditions", title: "Select Conditions " + (state.howMany in [null, 1] ? "(Optional)" : ""), description: condLabel ? (condLabel) : "Tap to set", state: condLabel ? "complete" : null, submitOnChange: true
 				def ruleLabel = rulLabl()
 				if(state.howMany > 1) 
-					href "defineRule", title: "Define a Rule", description: ruleLabel ? (ruleLabel) : "Tap to set", state: ruleLabel ? "complete" : null, submitOnChange: true
+					href "defineRule", title: "Define Rule", description: ruleLabel ? (ruleLabel) : "Tap to set", state: ruleLabel ? "complete" : null, submitOnChange: true
 				href "selectActionsTrue", title: "Select Actions" + (state.howMany > 1 ? " for True" : ""), description: state.actsTrue ? state.actsTrue : "Tap to set", state: state.actsTrue ? "complete" : null, submitOnChange: true
 				if(state.howMany > 1)
 					href "selectActionsFalse", title: "Select Actions for False", description: state.actsFalse ? state.actsFalse : "Tap to set", state: state.actsFalse ? "complete" : null, submitOnChange: true
@@ -150,7 +150,7 @@ def firstPage() {
 				href "selectConditions", title: "Select Conditions", description: condLabel ? (condLabel) : "Tap to set", state: condLabel ? "complete" : null, submitOnChange: true
 				def ruleLabel = rulLabl()
 				if(state.howMany > 1) 
-					href "defineRule", title: "Define a Rule", description: ruleLabel ? (ruleLabel) : "Tap to set", state: ruleLabel ? "complete" : null, submitOnChange: true
+					href "defineRule", title: "Define Rule", description: ruleLabel ? (ruleLabel) : "Tap to set", state: ruleLabel ? "complete" : null, submitOnChange: true
 				href "selectActionsTrue", title: "Select Actions" + (state.howMany > 1 ? " for True" : ""), description: state.actsTrue ? state.actsTrue : "Tap to set", state: state.actsTrue ? "complete" : null, submitOnChange: true
 				if(state.howMany > 1)
 					href "selectActionsFalse", title: "Select Actions for False", description: state.actsFalse ? state.actsFalse : "Tap to set", state: state.actsFalse ? "complete" : null, submitOnChange: true
@@ -186,7 +186,7 @@ def selectTrig() {
 			href "selectConditions", title: "Select Conditions " + (state.howMany in [null, 1] ? "(Optional)" : ""), description: condLabel ? (condLabel) : "Tap to set", state: condLabel ? "complete" : null, submitOnChange: true
 			def ruleLabel = rulLabl()
 			if(state.howMany > 1) 
-				href "defineRule", title: "Define a Rule", description: ruleLabel ? (ruleLabel) : "Tap to set", state: ruleLabel ? "complete" : null, submitOnChange: true
+				href "defineRule", title: "Define Rule", description: ruleLabel ? (ruleLabel) : "Tap to set", state: ruleLabel ? "complete" : null, submitOnChange: true
 			href "selectActionsTrue", title: "Select Actions" + (state.howMany > 1 ? " for True" : ""), description: state.actsTrue ? state.actsTrue : "Tap to set", state: state.actsTrue ? "complete" : null, submitOnChange: true
 			if(state.howMany > 1)
 				href "selectActionsFalse", title: "Select Actions for False", description: state.actsFalse ? state.actsFalse : "Tap to set", state: state.actsFalse ? "complete" : null, submitOnChange: true
@@ -202,7 +202,7 @@ def selectRule() {
 			def condLabel = conditionLabel()
 			href "selectConditions", title: "Select Conditions ", description: condLabel ? (condLabel) : "Tap to set", state: condLabel ? "complete" : null, submitOnChange: true
 			def ruleLabel = rulLabl()
-			href "defineRule", title: "Define a Rule", description: ruleLabel ? (ruleLabel) : "Tap to set", state: ruleLabel ? "complete" : null, submitOnChange: true
+			href "defineRule", title: "Define Rule", description: ruleLabel ? (ruleLabel) : "Tap to set", state: ruleLabel ? "complete" : null, submitOnChange: true
 			href "selectActionsTrue", title: "Select Actions for True", description: state.actsTrue ? state.actsTrue : "Tap to set", state: state.actsTrue ? "complete" : null, submitOnChange: true
 			href "selectActionsFalse", title: "Select Actions for False", description: state.actsFalse ? state.actsFalse : "Tap to set", state: state.actsFalse ? "complete" : null, submitOnChange: true
 		}
@@ -389,9 +389,8 @@ def getDevs(myCapab, dev, multi) {
 			thisCapab = "musicPlayer"
 			break
 		case "Rule truth":
-			thisName = "Rules"
 			def theseRules = parent.ruleList(app.label)
-			def result = input dev, "enum", title: thisName, required: true, multiple: multi, submitOnChange: true, options: theseRules.sort()
+			def result = input dev, "enum", title: "Rules", required: true, multiple: multi, submitOnChange: true, options: theseRules.sort()
 			return result
 		case "Battery":
 			thisName = multi ? "Batteries" : "Battery"
@@ -1717,19 +1716,19 @@ def takeAction(success) {
 		if(captureTrue)			capture(captureTrue)
 		if(onSwitchTrue) 		if(delayMilTrue) onSwitchTrue.on([delay: delayMilTrue]) else onSwitchTrue.on()
 		if(offSwitchTrue) 		if(delayMilTrue) offSwitchTrue.off([delay: delayMilTrue]) else offSwitchTrue.off()
-		if(toggleSwitchTrue)		toggle(toggleSwitchTrue, true)
-		if(delayedOffTrue)		{   if(delayMinutesTrue) runIn(delayMinutesTrue * 60 + 1, delayOffTrue)
-							if(delayMillisTrue) {if(delayOnOffTrue) delayedOffTrue.on([delay: delayMillisTrue]) else delayedOffTrue.off([delay: delayMillisTrue])}   }
+		if(toggleSwitchTrue)	toggle(toggleSwitchTrue, true)
+		if(delayedOffTrue)	{   if(delayMinutesTrue) runIn(delayMinutesTrue * 60 + 1, delayOffTrue)
+								if(delayMillisTrue) {if(delayOnOffTrue) delayedOffTrue.on([delay: delayMillisTrue]) else delayedOffTrue.off([delay: delayMillisTrue])}   }
 		if(pendedOffTrue)		{state.pendingOffTrue = true
-							if(pendMinutesTrue > 0) 	runIn(pendMinutesTrue * 60 + 1, pendingOffTrue) else pendingOffTrue()}
-		if(pendedOffFalse)		state.pendingOffFalse = false  //unschedule(pendingOffFalse)
+								if(pendMinutesTrue > 0) 	runIn(pendMinutesTrue * 60 + 1, pendingOffTrue) else pendingOffTrue()}
+		if(pendedOffFalse)  	state.pendingOffFalse = false  //unschedule(pendingOffFalse)}
 		if(dimTrackTrue && dimATrue != null) if(state.lastEvtLevel != null) {if(delayMilTrue) dimATrue.setLevel(state.lastEvtLevel, [delay: delayMilTrue]) else dimATrue.setLevel(state.lastEvtLevel)}
 		if(dimATrue && dimLATrue != null) if(delayMilTrue) dimATrue.setLevel(dimLATrue, [delay: delayMilTrue]) else dimATrue.setLevel(dimLATrue)
 		if(dimBTrue && dimLBTrue != null) if(delayMilTrue) dimBTrue.setLevel(dimLBTrue, [delay: delayMilTrue]) else dimBTrue.setLevel(dimLBTrue)
 		if(toggleDimmerTrue && dimTogTrue != null)	dimToggle(toggleDimmerTrue, dimTogTrue, true)
 		if(adjustDimmerTrue && dimAdjTrue != null)	dimAdjust(adjustDimmerTrue, dimAdjTrue, true)
 		if(dimmerModesTrue && dimMTrue)		dimModes(true)
-		if(ctTrue && ctLTrue)   			ctTrue.setColorTemperature(ctLTrue)
+		if(ctTrue && ctLTrue)   ctTrue.setColorTemperature(ctLTrue)
 		if(bulbsTrue)			setColor(true)
 		if(garageOpenTrue)		if(delayMilTrue) garageOpenTrue.open([delay: delayMilTrue]) else garageOpenTrue.open()
 		if(garageCloseTrue)		if(delayMilTrue) garageCloseTrue.close([delay: delayMilTrue]) else garageCloseTrue.close()
@@ -1739,9 +1738,9 @@ def takeAction(success) {
 		if(openValveTrue)		if(delayMilTrue) openValveTrue.open([delay: delayMilTrue]) else openValveTrue.open()
 		if(closeValveTrue)		if(delayMilTrue) closeValveTrue.close([delay: delayMilTrue]) else closeValveTrue.close()
 		if(thermoTrue)		{	if(thermoModeTrue) 	thermoTrue.setThermostatMode(thermoModeTrue)
-							if(thermoSetHeatTrue)	thermoTrue.setHeatingSetpoint(thermoSetHeatTrue)
-							if(thermoSetCoolTrue)	thermoTrue.setCoolingSetpoint(thermoSetCoolTrue) 	
-							if(thermoFanTrue) 	thermoTrue.setThermostatFanMode(thermoFanTrue)   }
+								if(thermoSetHeatTrue)	thermoTrue.setHeatingSetpoint(thermoSetHeatTrue)
+								if(thermoSetCoolTrue)	thermoTrue.setCoolingSetpoint(thermoSetCoolTrue) 	
+								if(thermoFanTrue) 	thermoTrue.setThermostatFanMode(thermoFanTrue)   }
 		if(alarmTrue)			sendLocationEvent(name: "alarmSystemStatus", value: "$alarmTrue")
 		if(modeTrue) 			setLocationMode(modeTrue)
 		if(ruleTrue)			parent.runRule(ruleTrue, app.label)
@@ -1757,7 +1756,7 @@ def takeAction(success) {
 		if(speakTrue)			speakTrueDevice?.speak((msgTrue ?: "Rule $app.label True") + (refDevTrue ? " $state.lastEvtName" : ""))
 		if(mediaTrueDevice)		mediaTrueDevice.playTextAndRestore((msgTrue ?: "Rule $app.label True") + (refDevTrue ? " $state.lastEvtName" : ""), mediaTrueVolume)
 		if(privateTrue)			if(otherTrue && otherPrivateTrue) parent.setRuleBoolean(otherPrivateTrue, privateTrue, app.label)
-						else state.private = privateTrue == "true"
+								else state.private = privateTrue == "true"
 		if(state.howManyCCtrue > 1)  execCommands(true)
         if(restoreTrue)			restore()
 	} else {
@@ -1769,7 +1768,7 @@ def takeAction(success) {
                 				if(delayMillisFalse) {if(delayOnOffFalse) delayedOffFalse.on([delay: delayMillisFalse]) else delayedOffFalse.off([delay: delayMillisFalse])}   }
 		if(pendedOffFalse)		{state.pendingOffFalse = true
         						if(pendMinutesFalse > 0) runIn(pendMinutesFalse * 60 + 1, pendingOffFalse) else pendingOffFalse()}
-		if(pendedOffTrue)		state.pendingOffTrue = false  //unschedule(pendingOffTrue)
+		if(pendedOffTrue)  		state.pendingOffTrue = false  //unschedule(pendingOffTrue)}
 		if(dimTrackFalse && dimAFalse != null) if(state.lastEvtLevel != null) {if(delayMilFalse) dimAFalse.setLevel(state.lastEvtLevel, [delay: delayMilFalse]) else dimAFalse.setLevel(state.lastEvtLevel)}
 		if(dimAFalse && dimLAFalse != null) if(delayMilFalse) dimAFalse.setLevel(dimLAFalse, [delay: delayMilFalse]) else dimAFalse.setLevel(dimLAFalse)
 		if(dimBFalse && dimLBFalse != null) if(delayMilFalse) dimBFalse.setLevel(dimLBFalse, [delay: delayMilFalse]) else dimBFalse.setLevel(dimLBFalse)
@@ -1803,8 +1802,8 @@ def takeAction(success) {
 		if(phoneFalse)			sendSmsMulti(phoneFalse, (msgFalse ?: "Rule $app.label False") + (refDevFalse ? " $state.lastEvtName" : ""))
 		if(speakFalse)			speakFalseDevice?.speak((msgFalse ?: "Rule $app.label False") + (refDevFalse ? " $state.lastEvtName" : ""))
 		if(mediaFalseDevice)	mediaFalseDevice.playTextAndRestore((msgFalse ?: "Rule $app.label False") + (refDevFalse ? " $state.lastEvtName" : ""), mediaFalseVolume)		
-	        if(privateFalse)		if(otherFalse && otherPrivateFalse) parent.setRuleBoolean(otherPrivateFalse, privateFalse, app.label)
-						else state.private = privateFalse
+		if(privateFalse)		if(otherFalse && otherPrivateFalse) parent.setRuleBoolean(otherPrivateFalse, privateFalse, app.label)
+								else state.private = privateFalse
 		if(state.howManyCCfalse > 1)  	execCommands(false)
 		if(restoreFalse)		restore()
 	}
