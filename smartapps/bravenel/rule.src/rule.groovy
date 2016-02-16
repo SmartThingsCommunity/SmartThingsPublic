@@ -140,7 +140,7 @@ def mainPage() {
         	getCTrigger()
 			getMoreOptions()
         } else if(app.label != "Rule" && app.label != null) {
-        	getActions
+        	getActions()
 			getMoreOptions()
         } else {														// New Rule, Trigger, Conditional Trigger or Actions
             section("A Rule uses conditions tested under a rule to run actions") {
