@@ -22,10 +22,6 @@ metadata {
 		capability "Polling"
 	}
 
-	simulator {
-		// TODO: define status and reply messages here
-	}
-
 	tiles {
 		valueTile("temperature", "device.temperature", width: 2, height: 2) {
 			state("temperature", label:'${currentValue}°', unit:"F",
@@ -56,16 +52,12 @@ metadata {
 }
 
 def refresh() {
-	log.debug "refresh..."
+	log.debug "refresh called"
 	poll()
 }
 
 void poll() {
 	log.debug "Executing 'poll' using parent SmartApp"
-	parent.pollChildren(this)
-}
+	parent.pollChild(this)
 
-//generate custom mobile activity feeds event
-def generateActivityFeedsEvent(notificationMessage) {
-	sendEvent(name: "notificationMessage", value: "$device.displayName $notificationMessage", descriptionText: "$device.displayName $notificationMessage", displayed: true)
 }
