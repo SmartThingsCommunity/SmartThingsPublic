@@ -2017,7 +2017,7 @@ def ruleEvaluator(rule) {
 
 def ruleActions(rule) {
 	log.info "$app.label: $rule evaluate"
-    takeAction(true)
+    if(allOk) takeAction(true)
 }
 
 def setBoolean(truth, appLabel) {
