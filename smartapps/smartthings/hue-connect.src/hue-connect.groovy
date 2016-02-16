@@ -35,23 +35,11 @@ preferences {
 }
 
 def mainPage() {
-	if(canInstallLabs()) {
-		def bridges = bridgesDiscovered()
-		if (state.username && bridges) {
-			return bulbDiscovery()
-		} else {
-			return bridgeDiscovery()
-		}
+	def bridges = bridgesDiscovered()
+	if (state.username && bridges) {
+		return bulbDiscovery()
 	} else {
-		def upgradeNeeded = """To use SmartThings Labs, your Hub should be completely up to date.
-
-To update your Hub, access Location Settings in the Main Menu (tap the gear next to your location name), select your Hub, and choose "Update Hub"."""
-
-		return dynamicPage(name:"bridgeDiscovery", title:"Upgrade needed!", nextPage:"", install:false, uninstall: true) {
-			section("Upgrade") {
-				paragraph "$upgradeNeeded"
-			}
-		}
+		return bridgeDiscovery()
 	}
 }
 
@@ -326,6 +314,7 @@ def addBulbs() {
                         d = addChildDevice("smartthings", "Hue Bulb", dni, newHueBulb?.value.hub, ["label":newHueBulb?.value.name])
                     }
                     log.debug "created ${d.displayName} with id $dni"
+                    d.refresh()
                 } else {
                 	log.debug "$dni in not longer paired to the Hue Bridge or ID changed"
                 }
@@ -333,8 +322,8 @@ def addBulbs() {
             	//backwards compatable
 				newHueBulb = bulbs.find { (app.id + "/" + it.id) == dni }
 				d = addChildDevice("smartthings", "Hue Bulb", dni, newHueBulb?.hub, ["label":newHueBulb?.name])
+                d.refresh()
 			}
-			d.refresh()
 		} else {
 			log.debug "found ${d.displayName} with id $dni already exists, type: '$d.typeName'"
 			if (bulbs instanceof java.util.Map) {
@@ -762,10 +751,6 @@ def convertBulbListToMap() {
 
 private String convertHexToIP(hex) {
 	[convertHexToInt(hex[0..1]),convertHexToInt(hex[2..3]),convertHexToInt(hex[4..5]),convertHexToInt(hex[6..7])].join(".")
-}
-
-private Boolean canInstallLabs() {
-	return hasAllHubsOver("000.011.00603")
 }
 
 private Boolean hasAllHubsOver(String desiredFirmware) {

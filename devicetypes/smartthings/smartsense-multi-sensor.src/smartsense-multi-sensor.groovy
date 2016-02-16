@@ -441,28 +441,28 @@ def configure() {
 		"send 0x${device.deviceNetworkId} 1 ${endpointId}", "delay 500",
 
 		"zdo bind 0x${device.deviceNetworkId} ${endpointId} 1 1 {${device.zigbeeId}} {}", "delay 200",
-		"zcl global send-me-a-report 1 0x20 0x20 30 21600 {01}",		//checkin time 6 hrs
+		"zcl global send-me-a-report 1 0x20 0x20 30 21600 {01}", "delay 200",		//checkin time 6 hrs
 		"send 0x${device.deviceNetworkId} 1 ${endpointId}", "delay 500",
 
 		"zdo bind 0x${device.deviceNetworkId} ${endpointId} 1 0x402 {${device.zigbeeId}} {}", "delay 200",
-		"zcl global send-me-a-report 0x402 0 0x29 30 3600 {6400}",
+		"zcl global send-me-a-report 0x402 0 0x29 30 3600 {6400}", "delay 200",
 		"send 0x${device.deviceNetworkId} 1 ${endpointId}", "delay 500",
 
 		"zdo bind 0x${device.deviceNetworkId} ${endpointId} 1 0xFC02 {${device.zigbeeId}} {}", "delay 200",
-		"zcl mfg-code ${manufacturerCode}",
-		"zcl global send-me-a-report 0xFC02 0x0010 0x18 10 3600 {01}",
+		"zcl mfg-code ${manufacturerCode}", "delay 200",
+		"zcl global send-me-a-report 0xFC02 0x0010 0x18 10 3600 {01}", "delay 200",
 		"send 0x${device.deviceNetworkId} 1 ${endpointId}", "delay 500",
 
-		"zcl mfg-code ${manufacturerCode}",
-		"zcl global send-me-a-report 0xFC02 0x0012 0x29 1 3600 {01}",
+		"zcl mfg-code ${manufacturerCode}", "delay 200",
+		"zcl global send-me-a-report 0xFC02 0x0012 0x29 1 3600 {01}", "delay 200",
 		"send 0x${device.deviceNetworkId} 1 ${endpointId}", "delay 500",
 
-		"zcl mfg-code ${manufacturerCode}",
-		"zcl global send-me-a-report 0xFC02 0x0013 0x29 1 3600 {01}",
+		"zcl mfg-code ${manufacturerCode}", "delay 200",
+		"zcl global send-me-a-report 0xFC02 0x0013 0x29 1 3600 {01}", "delay 200",
 		"send 0x${device.deviceNetworkId} 1 ${endpointId}", "delay 500",
 
-		"zcl mfg-code ${manufacturerCode}",
-		"zcl global send-me-a-report 0xFC02 0x0014 0x29 1 3600 {01}",
+		"zcl mfg-code ${manufacturerCode}", "delay 200",
+		"zcl global send-me-a-report 0xFC02 0x0014 0x29 1 3600 {01}", "delay 200",
 		"send 0x${device.deviceNetworkId} 1 ${endpointId}", "delay 500"
 		]
 
@@ -481,17 +481,12 @@ def enrollResponse() {
 		"zcl global write 0x500 0x10 0xf0 {${zigbeeEui}}", "delay 200",
 		"send 0x${device.deviceNetworkId} 1 ${endpointId}", "delay 500",
 		//Enroll Response
-		"raw 0x500 {01 23 00 00 00}",
+		"raw 0x500 {01 23 00 00 00}", "delay 200",
 		"send 0x${device.deviceNetworkId} 1 1", "delay 200"
 	]
 }
 
 private Map parseAxis(String description) {
-	def hexToSignedInt = { hexVal ->
-		def unsignedVal = hexToInt(hexVal)
-		unsignedVal > 32767 ? unsignedVal - 65536 : unsignedVal
-	}
-
 	def z = hexToSignedInt(description[0..3])
 	def y = hexToSignedInt(description[10..13])
 	def x = hexToSignedInt(description[20..23])
@@ -516,6 +511,11 @@ private Map parseAxis(String description) {
 		garageEvent(xyzResults.z)
 
 	getXyzResult(xyzResults, description)
+}
+
+private hexToSignedInt(hexVal) {
+	def unsignedVal = hexToInt(hexVal)
+	unsignedVal > 32767 ? unsignedVal - 65536 : unsignedVal
 }
 
 def garageEvent(zValue) {
