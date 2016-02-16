@@ -3,7 +3,7 @@
  *
  *  Copyright 2015, 2016 Bruce Ravenel
  *
- *  Version 1.7.11a   15 Feb 2016
+ *  Version 1.7.11b   15 Feb 2016
  *
  *	Version History
  *
@@ -90,7 +90,7 @@ preferences {
 def mainPage() {
 	//version to parent app and expert settings for rule
 	try { 
-		state.isExpert = parent.isExpert("1.7.11a") 
+		state.isExpert = parent.isExpert("1.7.11b") 
 		if (state.isExpert) state.cstCmds = parent.getCommands()
 		else state.cstCmds = []
 	}
@@ -465,7 +465,7 @@ def getState(myCapab, n, isTrig) {
 		input myIsDev, "bool", title: "Relative to another device?", multiple: false, required: false, submitOnChange: true, defaultValue: false
 		def myDev = settings.find {it.key == myIsDev}
 		if(myDev && myDev.value) {
-		getDevs(myCapab, myRelDev, false)
+			getDevs(myCapab, myRelDev, false)
 			if(myCapab == "Temperature") 				result = input myState, "decimal",	title: "Temperature offset ", 	range: "*..*",		defaultValue: 0
 			else if(myCapab == "Humidity") 				result = input myState, "number", 	title: "Humidity offset", 		range: "-100..100",	defaultValue: 0
 			else if(myCapab == "Illuminance") 			result = input myState, "number", 	title: "Illuminance offset",	range: "*..*",		defaultValue: 0
@@ -1512,7 +1512,7 @@ def checkCondAll(dev, stateX, cap, rel, relDev) {
 	else if(cap == "Carbon monoxide detector") 	result = !(flip[stateX] in dev.currentCarbonMonoxide)
 	else if(cap == "Lock") 						result = !(flip[stateX] in dev.currentLock)
 	else if(cap == "Garage door")				result = !(flip[stateX] in dev.currentDoor)
-	else if(cap == "Music player")				result = !(flip[stateX] in dev.currentState)
+	else if(cap == "Music player")				result = !(flip[stateX] in dev.currentStatus)
 	else if(cap == "Thermostat Mode")	dev.currentThermostatMode.each {result = result && stateX == it}
 	else if(cap == "Thermostat State")	dev.currentThermmostatOperatingState.each {result = result && stateX == it}
 //	log.debug "CheckAll $cap $result"
