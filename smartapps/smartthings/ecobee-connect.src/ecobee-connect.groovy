@@ -890,7 +890,7 @@ def scheduleWatchdog(evt=null, local=false) {
 	def results = true    
     LOG("scheduleWhatchdog() called with: evt (${evt?.name}:${evt?.value}) & local (${local})", 4, null, "trace")
     // Only update the Scheduled timestamp if it is not a local action or from a subscription
-    if ( (evt != null) && (local==false) ) {
+    if ( (evt == null) && (local==false) ) {
     	state.lastScheduledWatchdog = now()
         state.lastScheduledWatchdogDate = getTimestamp()
 	}
