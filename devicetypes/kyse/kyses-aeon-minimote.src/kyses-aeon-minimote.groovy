@@ -43,15 +43,15 @@ metadata {
 	}
 
 	simulator {
-		//status "button 1 pushed":  "command: 2001, payload: 01"
-		//status "button 1 held":  "command: 2001, payload: 15"
-		//status "button 2 pushed":  "command: 2001, payload: 29"
-		//status "button 2 held":  "command: 2001, payload: 3D"
-		//status "button 3 pushed":  "command: 2001, payload: 51"
-		//status "button 3 held":  "command: 2001, payload: 65"
-		//status "button 4 pushed":  "command: 2001, payload: 79"
-		//status "button 4 held":  "command: 2001, payload: 8D"
-		//status "wakeup":  "command: 8407, payload: "
+		status "pushed 1":  "command: 2001, payload: 01"
+		status "held 1":  "command: 2001, payload: 15"
+		status "pushed 2":  "command: 2001, payload: 29"
+		status "held 2":  "command: 2001, payload: 3D"
+		status "pushed 3":  "command: 2001, payload: 51"
+		status "held 3":  "command: 2001, payload: 65"
+		status "pushed 4":  "command: 2001, payload: 79"
+		status "held 4":  "command: 2001, payload: 8D"
+		status "wakeup":  "command: 8407, payload: "
 	}
 	tiles (scale: 2) {
     	def tiles = []
@@ -104,9 +104,9 @@ def zwaveEvent(physicalgraph.zwave.commands.wakeupv1.WakeUpNotification cmd) {
 def buttonEvent(button, held) {
 	button = button as Integer
 	if (held) {
-		createEvent(name: "button", value: "held", data: [buttonNumber: button], descriptionText: "$device.displayName button $button was held", isStateChange: true)
+		createEvent(name: "button", value: "held ${button}", data: [buttonNumber: button, action: (held ? "held" : "pushed")], descriptionText: "$device.displayName button $button was held", isStateChange: true)
 	} else {
-		createEvent(name: "button", value: "pushed", data: [buttonNumber: button], descriptionText: "$device.displayName button $button was pushed", isStateChange: true)
+		createEvent(name: "button", value: "pushed ${button}", data: [buttonNumber: button, action: (held ? "held" : "pushed")], descriptionText: "$device.displayName button $button was pushed", isStateChange: true)
 	}
 }
 
@@ -165,7 +165,7 @@ def push4() {
 }
 
 def pushed(button) {
-	sendEvent(name: "button", value: "pushed", data: [buttonNumber: button], descriptionText: "$device.displayName button $button was pushed", isStateChange: true)
+	sendEvent(name: "button", value: "pushed", data: [buttonNumber: button, action: "pushed"], descriptionText: "$device.displayName button $button was pushed", isStateChange: true)
 }
 
 def hold1() {
@@ -185,5 +185,5 @@ def hold4() {
 }
 
 def held(button) {
-    sendEvent(name: "button", value: "held", data: [buttonNumber: button], descriptionText: "$device.displayName button $button was held", isStateChange: true)
+    sendEvent(name: "button", value: "held", data: [buttonNumber: button, action: "held"], descriptionText: "$device.displayName button $button was held", isStateChange: true)
 }
