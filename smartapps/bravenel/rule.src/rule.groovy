@@ -3,7 +3,7 @@
  *
  *  Copyright 2015, 2016 Bruce Ravenel
  *
- *  Version 1.7.11c   15 Feb 2016
+ *  Version 1.7.11d   15 Feb 2016
  *
  *	Version History
  *
@@ -90,7 +90,7 @@ preferences {
 def mainPage() {
 	//version to parent app and expert settings for rule
 	try { 
-		state.isExpert = parent.isExpert("1.7.11c") 
+		state.isExpert = parent.isExpert("1.7.11d") 
 		if (state.isExpert) state.cstCmds = parent.getCommands()
 		else state.cstCmds = []
 	}
@@ -2081,7 +2081,7 @@ private timeIntervalLabelX() {
 
 private getAllOk() {
 	if(state.isRule) modeZOk && !state.disabled  //&& daysOk && timeOk
-//	else if(state.isTrig) modeYOk && daysOk && timeOk && !state.disabled
+	else if(state.isTrig) modeYOk && daysOk && timeOk && !state.disabled
 	else modeYOk && daysYOk && timeOk && !state.disabled
 }
 
