@@ -3,7 +3,7 @@
  *
  *  Copyright 2015, 2016 Bruce Ravenel
  *
- *  Version 1.7.11b   15 Feb 2016
+ *  Version 1.7.11c   15 Feb 2016
  *
  *	Version History
  *
@@ -90,7 +90,7 @@ preferences {
 def mainPage() {
 	//version to parent app and expert settings for rule
 	try { 
-		state.isExpert = parent.isExpert("1.7.11b") 
+		state.isExpert = parent.isExpert("1.7.11c") 
 		if (state.isExpert) state.cstCmds = parent.getCommands()
 		else state.cstCmds = []
 	}
@@ -1405,7 +1405,7 @@ def initialize() {
 				subscribe(location, "routineExecuted", allHandler)
 				break
 			case "Music player":
-				subscribe(myDev.value, "music" + ((state.isTrig || hasTrig) ? ".$myState" : ""), allHandler)
+				subscribe(myDev.value, "status" + ((state.isTrig || hasTrig) ? ".$myState" : ""), allHandler)
 				break
 			case "Private Boolean":
 				break
