@@ -40,13 +40,22 @@ def installed() {
 def initialize() {
 }
 
+def updated() {
+}
+
 def uninstalled() {
-  removeChildDevices(getChildDevices())
+  logout()
+  removeChildDevices(getAllChildDevices())
+}
+
+def logout() {
+  revokeAccessToken()
 }
 
 mappings {
   path("/beacons") {
     action: [
+    GET:    "getBeacons",
     DELETE: "clearBeacons",
     POST:   "addBeacon"
     ]
@@ -54,14 +63,44 @@ mappings {
 
   path("/beacons/:id") {
     action: [
-    PUT: "updateBeacon",
+    PUT:    "updateBeacon",
     DELETE: "deleteBeacon"
+    ]
+  }
+
+  path("/logout") {
+    action: [
+    POST: "logout"
     ]
   }
 }
 
+def getBeacons() {
+  def children = getAllChildDevices()
+  def childList = ['places':[],'areas':[]]
+  children.each {
+    def parts = it.deviceNetworkId.split('-')
+    def beacon = [:]
+    if (parts.size() < 2) {
+      log.debug "invalid dni: ${it.deviceNetworkId}"
+      return
+    }
+    beacon['name'] = it.label
+    beacon['major'] = parts[1]
+    if (parts.size() == 3) {
+      beacon['minor'] = parts[2]
+      childList['areas'].add(beacon)
+    }
+    else {
+      childList['places'].add(beacon)
+    }
+  }
+  log.debug "childList is $childList"
+  childList
+}
+
 void clearBeacons() {
-  removeChildDevices(getChildDevices())
+  removeChildDevices(getAllChildDevices())
 }
 
 void addBeacon() {
@@ -74,7 +113,18 @@ void addBeacon() {
         beaconId = "$beaconId-${beacon.minor}"
       }
     }
-    log.debug "adding beacon $beaconId"
+
+    // If for some reason this beacon is already registered, delete it
+    try {
+      def existingDevice = getChildDevice(beaconId)
+      if(!existingDevice) {
+        deleteChildDevice(beaconId)
+      }
+    } catch (e) {
+      log.debug "couldn't delete existing child"
+    }
+
+    log.debug "Adding beacon $beaconId"
     def d = addChildDevice("com.obycode", "BeaconThing", beaconId,  null, [label:beacon.name, name:"BeaconThing", completedSetup: true])
 
     if (beacon.presence) {
@@ -85,8 +135,12 @@ void addBeacon() {
 
 void updateBeacon() {
   log.debug "updating beacon ${params.id}"
-  def children = getChildDevices()
+  def children = getAllChildDevices()
   def beaconDevice = children.find{ d -> d.deviceNetworkId == "${params.id}" }
+  if (!beaconDevice) {
+    log.debug "Beacon not found: ${params.id}"
+    return
+  }
 
   // This could be just updating the presence
   def presence = request.JSON?.presence
@@ -104,9 +158,10 @@ void updateBeacon() {
 
 void deleteBeacon() {
   log.debug "deleting beacon ${params.id}"
-  def children = getChildDevices()
-  def beaconDevice = children.find{ d -> d.deviceNetworkId == "${params.id}" }
-  deleteChildDevice(beaconDevice.deviceNetworkId)
+  // def children = getChildDevices()
+  // def beaconDevice = children.find{ d -> d.deviceNetworkId == "${params.id}" }
+  // deleteChildDevice(beaconDevice.deviceNetworkId)
+  deleteChildDevice(params.id)
 }
 
 private removeChildDevices(delete) {
