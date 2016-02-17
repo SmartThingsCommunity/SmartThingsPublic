@@ -422,7 +422,8 @@ def pollChildren(child = null) {
 							heatingSetpoint: stat.runtime.desiredHeat / 10,
 							coolingSetpoint: stat.runtime.desiredCool / 10,
 							thermostatMode: stat.settings.hvacMode,
-							humidity: stat.runtime.actualHumidity
+							humidity: stat.runtime.actualHumidity,
+							thermostatFanMode: stat.runtime.desiredFanMode
 					]
 
 					if (location.temperatureScale == "F")
@@ -676,9 +677,19 @@ def setHold(child, heating, cooling, deviceId, sendHoldType) {
 
 	int h = heating * 10
 	int c = cooling * 10
-
-
 	def jsonRequestBody = '{"selection":{"selectionType":"thermostats","selectionMatch":"' + deviceId + '","includeRuntime":true},"functions": [{ "type": "setHold", "params": { "coolHoldTemp": '+c+',"heatHoldTemp": '+h+', "holdType": '+sendHoldType+' } } ]}'
+
+	def result = sendJson(child, jsonRequestBody)
+	return result
+}
+
+def setFanMode(child, heating, cooling, deviceId, sendHoldType, fanMode) {
+
+	int h = heating * 10
+	int c = cooling * 10
+
+
+	def jsonRequestBody = '{"selection":{"selectionType":"thermostats","selectionMatch":"' + deviceId + '","includeRuntime":true},"functions": [{ "type": "setHold", "params": { "coolHoldTemp": '+c+',"heatHoldTemp": '+h+', "holdType": '+sendHoldType+', "fan": '+fanMode+' } } ]}'
 	def result = sendJson(child, jsonRequestBody)
 	return result
 }
