@@ -20,13 +20,13 @@
  *
  */
 definition(
-  name: "Dual Relay Adapter",
-  namespace: "erocm123",
-  author: "Eric Maycock",
-  description: "Associates Dual Relay Switch Modules with one or two standard SmartThings 'virtual switch' devices for compatibility with standard control and automation techniques",
-  category: "My Apps",
-  iconUrl: "https://s3.amazonaws.com/smartapp-icons/Convenience/Cat-Convenience.png",
-  iconX2Url: "https://s3.amazonaws.com/smartapp-icons/Convenience/Cat-Convenience@2x.png")
+   name: "Dual Relay Adapter",
+   namespace: "erocm123",
+   author: "Eric Maycock",
+   description: "Associates Dual Relay Switch Modules with one or two standard SmartThings 'virtual switch' devices for compatibility with standard control and automation techniques",
+   category: "My Apps",
+   iconUrl: "https://s3.amazonaws.com/smartapp-icons/Convenience/Cat-Convenience.png",
+   iconX2Url: "https://s3.amazonaws.com/smartapp-icons/Convenience/Cat-Convenience@2x.png")
 
 
 preferences {
