@@ -24,7 +24,7 @@
  *  See Changelog for change history
  *
  */  
-def getVersionNum() { return "0.9.9" }
+def getVersionNum() { return "0.9.10" }
 private def getVersionLabel() { return "ecobee (Connect) Version ${getVersionNum()}" }
 private def getHelperSmartApps() {
 	return [ 
@@ -60,6 +60,7 @@ preferences {
     page(name: "debugDashboardPage")
     page(name: "pollChildrenPage")
     page(name: "updatedPage")
+    page(name: "refreshAuthTokenPage")    
 }
 
 mappings {
@@ -139,17 +140,18 @@ def mainPage() {
                 	href ("addWatchdogDevicesPage", title: "Watchdog Devices", description: "Tap to select Watchdog Devices.")
                 }
             }
-            if ( debugLevel(5) ) {
-	        	section ("Debug Dashboard") {
-					href ("debugDashboardPage", description: "Tap to enter the Debug Dashboard", title: "Debug Dashboard")
-    	    	}
-			}
+           
     	} // End if(state.authToken)
         
         // Setup our API Tokens       
 		section("Ecobee Authentication") {
 			href ("authPage", title: "ecobee Authorization", description: "${ecoAuthDesc}Tap for ecobee Credentials")
-		}        
+		}      
+		if ( debugLevel(5) ) {
+			section ("Debug Dashboard") {
+				href ("debugDashboardPage", description: "Tap to enter the Debug Dashboard", title: "Debug Dashboard")
+			}
+		}
 		section("Remove ecobee (Connect)") {
 			href ("removePage", description: "Tap to remove ecobee (Connect) ", title: "Remove ecobee (Connect)")
 		}            
@@ -205,7 +207,7 @@ def authPage() {
         	section() {
             	paragraph "Return to main menu."
                 href url:redirectUrl, style: "embedded", state: "complete", title: "ecobee Account Authorization", description: description
-                }
+			}
         }           
 	}
 }
@@ -301,8 +303,9 @@ def debugDashboardPage() {
     dynamicPage(name: "debugDashboardPage", title: "") {
     	section (getVersionLabel())
 		section("Commands") {
-        	href(name: "pollChildrenPage", title: "", required: false, page: "pollChildrenPage", description: "Tap to execute command: pollChildren()")
-            href(name: "updatedPage", title: "", required: false, page: "updatedPage", description: "Tap to execute command: updated()")
+        	href(name: "pollChildrenPage", title: "", required: false, page: "pollChildrenPage", description: "Tap to execute: pollChildren()")
+            href(name: "refreshAuthTokenPage", title: "", required: false, page: "refreshAuthTokenPage", description: "Tap to execute: refreshAuthToken()")
+            href(name: "updatedPage", title: "", required: false, page: "updatedPage", description: "Tap to execute: updated()")
         }    	
         
     	section("Settings Information") {
@@ -352,6 +355,17 @@ def updatedPage() {
 	dynamicPage(name: "updatedPage", title: "") {
     	section() {
         	paragraph "updated() was called"
+        }
+    }    
+}
+
+def refreshAuthTokenPage() {
+	LOG("=====> refreshAuthTokenPage() entered.", 5)
+    refreshAuthToken(true)
+    
+	dynamicPage(name: "refreshAuthTokenPage", title: "") {
+    	section() {
+        	paragraph "refreshAuthTokenPage() was called"
         }
     }    
 }
@@ -682,6 +696,7 @@ def installed() {
 
 def updated() {	
     LOG("Updated with settings: ${settings}", 4)	
+    state.pollSemiphore = 0
 	if( readyForAuthRefresh() ) {    
     	LOG("In update() - readyForAuthRefresh() returned true. Need to refresh the tokens.", 2, null, "error")
         refreshAuthToken(true)
@@ -693,6 +708,7 @@ def updated() {
 def initialize() {	
     LOG("=====> initialize()", 4)    
     
+    state.pollSemiphore = 0
     state.connected = "full"        
     state.reAttempt = 0
     state.reAttemptPoll = 0
@@ -749,7 +765,7 @@ def initialize() {
     if (settings.thermostats?.size() > 0) { pollInit() }
 
     // Add subscriptions as little "daemons" that will check on our health
-    subscribe(app, scheduleWatchdog)
+    // subscribe(app, scheduleWatchdog)
     subscribe(location, scheduleWatchdog)
     subscribe(location, "routineExecuted", scheduleWatchdog)
     subscribe(location, "sunset", sunsetEvent)
@@ -880,7 +896,9 @@ def sunsetEvent(evt) {
 }
 
 def userDefinedEvent(evt) {
-	LOG("userDefinedEvent() - with evt (${evt?.name}:${evt?.value})", 4, null, "info")
+	LOG("userDefinedEvent() - with evt (Device:${evt?.displayName} ${evt?.name}:${evt?.value})", 4, null, "info")
+    state.lastUserDefinedEventDate = getTimestamp()
+    state.lastUserDefinedEventInfo = "Event Info: (Device:${evt?.displayName} ${evt?.name}:${evt?.value})"
     if ( readyForAuthRefresh() ) { refreshAuthToken() }
     poll()
     scheduleWatchdog(evt, true)
@@ -890,7 +908,7 @@ def scheduleWatchdog(evt=null, local=false) {
 	def results = true    
     LOG("scheduleWhatchdog() called with: evt (${evt?.name}:${evt?.value}) & local (${local})", 4, null, "trace")
     // Only update the Scheduled timestamp if it is not a local action or from a subscription
-    if ( (evt != null) && (local==false) ) {
+    if ( (evt == null) && (local==false) ) {
     	state.lastScheduledWatchdog = now()
         state.lastScheduledWatchdogDate = getTimestamp()
 	}
@@ -1306,6 +1324,7 @@ private def pollEcobeeAPI(thermostatIdsString = "") {
     	LOG("pollEcobeeAPI(): General Exception: ${e}.", 1, null, "error")
     }
     LOG("<===== Leaving pollEcobeeAPI() results: ${result}", 5)
+   
 	return result
     
 }
@@ -1634,6 +1653,17 @@ def toQueryString(Map m) {
 }
 
 private def Boolean refreshAuthToken(force=false) {
+	LOG("Entered refreshAuthToken(${force})", 5)
+	def activeSemiphore = !( ((now() - state.pollSemiphore.toLong()) / 1000 / 60) > 1 )  // If we are over 1 minute then the previous attempt failed or there is no active
+	LOG("activeSemiphore == ${activeSemiphore}", 4)
+    // Make sure we are only here ONCE at a time
+    if ( activeSemiphore && (force==false) ) { 
+    	LOG("activeSemphore in effect, will not refresh now.", 5, null, "trace")
+    	return true 
+	}
+    state.pollSemiphore = now()
+
+
 	// Update the timestamp
     updateLastTokenRefresh()
     
@@ -1641,10 +1671,12 @@ private def Boolean refreshAuthToken(force=false) {
     	LOG("refreshing auth token", 2)	
 		LOG("refreshAuthToken() - There is no refreshToken stored! Unable to refresh OAuth token.", 1, null, "error")
     	apiLost("refreshAuthToken() - No refreshToken")
+        state.pollSemiphore = 0
         return false
     } else if ( (force != true) && !readyForAuthRefresh() ) {
     	// Not ready to refresh yet
         LOG("refreshAuthToken() - Not time to refresh yet, there is still time left before expiration.")
+        state.pollSemiphore = 0
     	return true
     } else {
 		LOG("Performing a refreshAuthToken(${force})", 4)
@@ -1664,6 +1696,9 @@ private def Boolean refreshAuthToken(force=false) {
 				LOG("Inside httpPost resp handling.", 3, null, "debug")
                 if(resp.status == 200) {
                     LOG("refreshAuthToken() - 200 Response received - Extracting info." )
+                    state.action = ""
+                    apiRestored()                    
+                    generateEventLocalParams() // Update the connected state at the thermostat devices
                     
                     jsonMap = resp.data // Needed to work around strange bug that wasn't updating state when accessing resp.data directly
                     LOG("resp.data = ${resp.data} -- jsonMap is? ${jsonMap}")
@@ -1707,26 +1742,29 @@ private def Boolean refreshAuthToken(force=false) {
                     } else {
                     	LOG("No jsonMap??? ${jsonMap}", 2)
                     }
-                    state.action = ""
-                    apiRestored()                    
-                    generateEventLocalParams() // Update the connected state at the thermostat devices
+                    
+                    state.pollSemiphore = 0
                     return true
                 } else {
                     LOG("Refresh failed ${resp.status} : ${resp.status.code}!", 1, null, "error")
 					state.connected = "warn"
                     generateEventLocalParams() // Update the connected state at the thermostat devices
+                    state.pollSemiphore = 0
                     return false
                 }
             }
+            state.pollSemiphore = 0
         } catch (groovyx.net.http.HttpResponseException e) {
-        	// LOG("refreshAuthToken() - HttpResponseException occured. Exception info: ${e} StatusCode: ${e.statusCode}  response? data: ${e.getResponse()?.getData()}", 1, null, "error")
+        	//LOG("refreshAuthToken() - HttpResponseException occured. Exception info: ${e} StatusCode: ${e.statusCode}  response? data: ${e.getResponse()?.getData()}", 1, null, "error")
             LOG("refreshAuthToken() - HttpResponseException occured. Exception info: ${e} StatusCode: ${e.statusCode}", 1, null, "error")
 			state.reAttempt = state.reAttempt + 1  // = (state.reAttemptPoll ?: 0) + 1
 	        if (state.reAttempt > 3) {        
     	    	apiLost("Too many retries (${state.reAttempt - 1}) for token refresh.")
-        	    return false
+        	    state.pollSemiphore = 0
+                return false
 	        } else {
-    	    	// LOG("Setting up retryPolling")
+    	    	//LOG("Setting up retryPolling")
+                state.pollSemiphore = 0
         		if ( canSchedule() ) {
             		runIn(state.reAttemptInterval, "retryAuthAndPolling") 
 				} else { 
@@ -1736,6 +1774,7 @@ private def Boolean refreshAuthToken(force=false) {
         	}
            	state.connected = "warn"
             generateEventLocalParams() // Update the connected state at the thermostat devices
+            state.pollSemiphore = 0
             return false
 		} catch (java.util.concurrent.TimeoutException e) {
 			// LOG("refreshAuthToken(), TimeoutException: ${e}.", 1, null, "error")
@@ -1744,13 +1783,15 @@ private def Boolean refreshAuthToken(force=false) {
             generateEventLocalParams() // Update the connected state at the thermostat devices
 			def reAttemptPeriod = 300 // in sec
 			if(canSchedule()) { runIn(reAttemptPeriod, "refreshAuthToken") } else { refreshAuthTokens(true) }            
+            state.pollSemiphore = 0
             return false
         } catch (Exception e) {
         	// LOG("refreshAuthToken(), General Exception: ${e}.", 1, null, "error")            
         	state.reAttempt = state.reAttempt + 1  // = (state.reAttemptPoll ?: 0) + 1
 	        if (state.reAttempt > 3) {        
     	    	apiLost("Too many retries (${state.reAttempt - 1}) for token refresh.")
-        	    return false
+        	    state.pollSemiphore = 0
+                return false
 	        } else {
     	    	LOG("Setting up retryPolling")
         		if ( canSchedule() ) {
@@ -1762,6 +1803,7 @@ private def Boolean refreshAuthToken(force=false) {
         	}
            	state.connected = "warn"
             generateEventLocalParams() // Update the connected state at the thermostat devices
+            state.pollSemiphore = 0
             return false
         }
     }
