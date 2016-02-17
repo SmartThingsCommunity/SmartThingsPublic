@@ -204,11 +204,11 @@ private getThermostatDescriptionText(name, value, linkText) {
 
 void setHeatingSetpoint(setpoint) {
 	log.debug "***heating setpoint $setpoint"
-	def heatingSetpoint = setpoint.toDouble()
-	def coolingSetpoint = device.currentValue("coolingSetpoint").toDouble()
+	def heatingSetpoint = setpoint
+	def coolingSetpoint = device.currentValue("coolingSetpoint")
 	def deviceId = device.deviceNetworkId.split(/\./).last()
-	def maxHeatingSetpoint = device.currentValue("maxHeatingSetpoint").toDouble()
-	def minHeatingSetpoint = device.currentValue("minHeatingSetpoint").toDouble()
+	def maxHeatingSetpoint = device.currentValue("maxHeatingSetpoint")
+	def minHeatingSetpoint = device.currentValue("minHeatingSetpoint")
 
 	//enforce limits of heatingSetpoint
 	if (heatingSetpoint > maxHeatingSetpoint) {
@@ -241,11 +241,11 @@ void setHeatingSetpoint(setpoint) {
 
 void setCoolingSetpoint(setpoint) {
 	log.debug "***cooling setpoint $setpoint"
-	def heatingSetpoint = device.currentValue("heatingSetpoint").toDouble()
-	def coolingSetpoint = setpoint.toDouble()
+	def heatingSetpoint = device.currentValue("heatingSetpoint")
+	def coolingSetpoint = setpoint
 	def deviceId = device.deviceNetworkId.split(/\./).last()
-	def maxCoolingSetpoint = device.currentValue("maxCoolingSetpoint").toDouble()
-	def minCoolingSetpoint = device.currentValue("minCoolingSetpoint").toDouble()
+	def maxCoolingSetpoint = device.currentValue("maxCoolingSetpoint")
+	def minCoolingSetpoint = device.currentValue("minCoolingSetpoint")
 
 
 	if (coolingSetpoint > maxCoolingSetpoint) {
@@ -505,9 +505,6 @@ def fanAuto() {
 	}
 }
 
-
-
-
 def generateSetpointEvent() {
 
 	log.debug "Generate SetPoint Event"
@@ -535,6 +532,7 @@ def generateSetpointEvent() {
 		heatingSetpoint = roundC(heatingSetpoint)
 		coolingSetpoint = roundC(coolingSetpoint)
 	}
+
 
 	sendEvent("name":"maxHeatingSetpoint", "value":maxHeatingSetpoint, "unit":location.temperatureScale)
 	sendEvent("name":"maxCoolingSetpoint", "value":maxCoolingSetpoint, "unit":location.temperatureScale)
