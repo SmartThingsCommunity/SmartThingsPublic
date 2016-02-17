@@ -24,6 +24,15 @@ metadata {
 		capability "Sensor"
         
 		attribute "numButtons", "STRING"
+        attribute "lblPush1", "STRING"
+        attribute "lblHold1", "STRING"
+        attribute "lblPush2", "STRING"
+        attribute "lblHold2", "STRING"
+        attribute "lblPush3", "STRING"
+        attribute "lblHold3", "STRING"
+        attribute "lblPush4", "STRING"
+        attribute "lblHold4", "STRING"
+        
 
 		command "pushed"
         command "held"
@@ -53,30 +62,63 @@ metadata {
 		status "held 4":  "command: 2001, payload: 8D"
 		status "wakeup":  "command: 8407, payload: "
 	}
+    
+    preferences {
+    	section ("Labels") {
+            input("lblPush1", "text", title: "Label for Button 1 Push?", required: false, displayDuringSetup: false, defaultValue: "Push 1", description: "Label for the first push button.")  
+            input("lblHold1", "text", title: "Label for Button 1 Hold?", required: false, displayDuringSetup: false, defaultValue: "Hold 1", description: "Label for the second hold button.")  
+            input("lblPush2", "text", title: "Label for Button 2 Push?", required: false, displayDuringSetup: false, defaultValue: "Push 2", description: "Label for the third push button.")  
+            input("lblHold2", "text", title: "Label for Button 2 Hold?", required: false, displayDuringSetup: false, defaultValue: "Hold 2", description: "Label for the fourth hold button.")  
+            input("lblPush3", "text", title: "Label for Button 3 Push?", required: false, displayDuringSetup: false, defaultValue: "Push 3", description: "Label for the first push button.")  
+            input("lblHold3", "text", title: "Label for Button 3 Hold?", required: false, displayDuringSetup: false, defaultValue: "Hold 3", description: "Label for the second hold button.")  
+            input("lblPush4", "text", title: "Label for Button 4 Push?", required: false, displayDuringSetup: false, defaultValue: "Push 4", description: "Label for the third push button.")  
+            input("lblHold4", "text", title: "Label for Button 4 Hold?", required: false, displayDuringSetup: false, defaultValue: "Hold 4", description: "Label for the fourth hold button.")  
+        }
+    }
+ 
 	tiles (scale: 2) {
-    	def tiles = []
+    	def tileList = []
     	(1..4).each { btn ->
         	def index = btn * 3 - 3
-            tiles << "vButton${btn}Label".toString()
-        	tiles << "vButton${btn}Push".toString()
-            tiles << "vButton${btn}Hold".toString()
-            standardTile(tiles[index], "device.button", width: 2, height: 2) {
-            	state("default", label: "Button ${btn}", defaultState: true, backgroundColor: "#ffffff", icon: "st.unknown.zwave.remote-controller", decoration: "flat")
+            tileList << "vButton${btn}Label".toString()
+        	tileList << "vButton${btn}Push".toString()
+            tileList << "vButton${btn}Hold".toString()
+            standardTile(tileList[index], "device.button", width: 2, height: 2) {
+            	state("default", label: "Button ${btn}", defaultState: true, backgroundColor: "#ffffff", icon: "st.unknown.zwave.remote-controller", decoration: "flat", canChangeIcon: true, canChangeBackground: true)
             }
-        	valueTile(tiles[index + 1], "device.button", width: 2, height: 2) {
-				state("default", label: "Push ${btn}", action: "push${btn}", defaultState: true, backgroundColor: "#33cc33")
+        	valueTile(tileList[index + 1], "device.lblPush${btn}", width: 2, height: 2) {
+				state("default", label: '${currentValue}', action: "push${btn}", defaultState: true, backgroundColor: "#33cc33", canChangeIcon: true, canChangeBackground: true)
             }
-            valueTile(tiles[index + 2], "device.button", width: 2, height: 2) {
-            	state("default", label: "Hold ${btn}", action: "hold${btn}", defaultState: true, backgroundColor: "#3399ff") 
+            valueTile(tileList[index + 2], "device.lblHold${btn}", width: 2, height: 2) {
+            	state("default", label: '${currentValue}', action: "hold${btn}", defaultState: true, backgroundColor: "#3399ff", canChangeIcon: true, canChangeBackground: true) 
             }
 		}
-        tiles << "configure"
+        tileList << "configure"
     	standardTile("configure", "device.configure", inactiveLabel: false, decoration: "flat") {
       		state "configure", label: '', action:"configuration.configure", icon:"st.secondary.configure"
     	}
-        main(tiles.take(1))
-		details(tiles)
+        main(tileList.take(1))
+		details(tileList)
 	}
+}
+
+def installed() {
+	initLabels()
+}
+
+def updated() {
+	initLabels()
+}
+
+def initLabels() {
+    (1..4).each { button ->
+    	["Push","Hold"].each { action ->
+           	def descriptionText = "Updating button ${button} ${action}"
+            def settingName = "lbl${action}${button}"
+            log.debug descriptionText + ": ${settings[settingName]}"
+			sendEvent(name: "lbl${action}${button}", value: "${settings[settingName]}", descriptionText: descriptionText, isStateChange: true, displayed: false)
+		}
+    }
 }
 
 def parse(String description) {
@@ -102,11 +144,12 @@ def zwaveEvent(physicalgraph.zwave.commands.wakeupv1.WakeUpNotification cmd) {
 }
 
 def buttonEvent(button, held) {
+	// Leaving value as pushed or held to stay compatible with Buton Controller Smart App for now.
 	button = button as Integer
 	if (held) {
-		createEvent(name: "button", value: "held ${button}", data: [buttonNumber: button, action: (held ? "held" : "pushed")], descriptionText: "$device.displayName button $button was held", isStateChange: true)
+		createEvent(name: "button", value: "held", data: [buttonNumber: button, action: (held ? "held" : "pushed")], descriptionText: "$device.displayName button $button was held", isStateChange: true)
 	} else {
-		createEvent(name: "button", value: "pushed ${button}", data: [buttonNumber: button, action: (held ? "held" : "pushed")], descriptionText: "$device.displayName button $button was pushed", isStateChange: true)
+		createEvent(name: "button", value: "pushed", data: [buttonNumber: button, action: (held ? "held" : "pushed")], descriptionText: "$device.displayName button $button was pushed", isStateChange: true)
 	}
 }
 
