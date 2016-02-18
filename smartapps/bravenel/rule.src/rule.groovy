@@ -3,7 +3,7 @@
  *
  *  Copyright 2015, 2016 Bruce Ravenel
  *
- *  Version 1.7.11e   18 Feb 2016
+ *  Version 1.7.11f   18 Feb 2016
  *
  *	Version History
  *
@@ -90,7 +90,7 @@ preferences {
 def mainPage() {
 	//version to parent app and expert settings for rule
 	try { 
-		state.isExpert = parent.isExpert("1.7.11e") 
+		state.isExpert = parent.isExpert("1.7.11f") 
 		if (state.isExpert) state.cstCmds = parent.getCommands()
 		else state.cstCmds = []
 	}
@@ -1297,7 +1297,7 @@ def gmtOffset() {
 	def offsetSign = offset < 0 ? "-" : "+"
 	int offsetHour = offsetAbs / 3600000
 	int offsetMin = offsetAbs / 60000
-	int offsetM6 = offsetMin / 60
+//	int offsetM6 = offsetMin / 60
 //	int offMin = offsetMin - (offsetM6.toInteger() * 60)
 	int offMin = offsetMin % 60
 	def result = String.format("%s%02d%02d", offsetSign, offsetHour, offMin);    
@@ -1433,9 +1433,7 @@ def checkCondAny(dev, stateX, cap, rel, relDev) {
 	else if(cap == "Power meter")	dev.currentPower.each			{result = result || compare(it, rel, stateX, relDev ? relDev.currentPower : null)}
 	else if(cap == "Battery")		dev.currentBattery.each			{result = result || compare(it, rel, stateX, relDev ? relDev.currentBattery : null)}
 	else if(cap == "Rule truth")	dev.each {
-		def truth = null
-		if(it == state.ourRule) truth = state.ourTruth
-		else truth = parent.currentRule(it)
+		def truth = parent.currentRule(it)
 		result = result || stateX == "$truth"
 	} 
 	else if(cap == "Water sensor")				result = stateX in dev.currentWater
@@ -1482,11 +1480,9 @@ def checkCondAll(dev, stateX, cap, rel, relDev) {
 	else if(cap == "Power meter")		dev.currentPower.each			{result = result && compare(it, rel, stateX, relDev ? relDev.currentPower : null)}
 	else if(cap == "Battery")			dev.currentBattery.each			{result = result && compare(it, rel, stateX, relDev ? relDev.currentBattery : null)}
 	else if(cap == "Rule truth")		dev.each {
-    							def rule = null
-    							if(it == state.ourRule) rule = state.ourTruth
-    							else rule = parent.currentRule(it)
-    							result = result && "$stateX" == "$rule"
-                                                }
+    	def rule = parent.currentRule(it)
+    	result = result && "$stateX" == "$rule"
+	}
 	else if(cap == "Water sensor")				result = !(flip[stateX] in dev.currentSwitch)
 	else if(cap == "Switch") 					result = !(flip[stateX] in dev.currentSwitch)
 	else if(cap == "Motion") 					result = !(flip[stateX] in dev.currentMotion)
@@ -1990,11 +1986,7 @@ def disabledHandler(evt) {
 
 def ruleHandler(rule, truth) {
 	log.info "$app.label: $rule is $truth"
-	state.ourRule = rule
-	state.ourTruth = truth
 	if(state.isRule || state.howMany > 1) runRule(false) else doTrigger()
-    state.ourRule = null
-    state.ourTruth = null
 }
 
 def ruleEvaluator(rule) {
