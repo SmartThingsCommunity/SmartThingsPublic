@@ -3,7 +3,7 @@
  *
  *  Copyright 2015, 2016 Bruce Ravenel
  *
- *  Version 1.7.11d   15 Feb 2016
+ *  Version 1.7.11e   18 Feb 2016
  *
  *	Version History
  *
@@ -90,12 +90,12 @@ preferences {
 def mainPage() {
 	//version to parent app and expert settings for rule
 	try { 
-		state.isExpert = parent.isExpert("1.7.11d") 
+		state.isExpert = parent.isExpert("1.7.11e") 
 		if (state.isExpert) state.cstCmds = parent.getCommands()
 		else state.cstCmds = []
 	}
 	catch (e) {log.error "Please update Rule Machine to V1.6 or later"}
-	if(state.private == null) state.private = true
+	if(state.private == null) state.private = "true"
 	def myTitle = "Define a Rule, Trigger or Actions\n"
 	if(state.howManyT > 1 || state.isTrig) myTitle = "Define a Trigger"
 	else if(state.howMany > 1) myTitle = "Define a Rule"
@@ -130,31 +130,16 @@ def mainPage() {
 				input "modesZ", "mode", title: "Evaluate only when mode is", multiple: true, required: false
 				input "disabled", "capability.switch", title: "Switch to disable rule when ON", required: false, multiple: false
 			}   
-		} else if(state.howMany > 1 && state.howManyT in [null, 1]) {	  	  							// New Rule	
-        	getRule()
-			getMoreOptions()
-		} else if(state.howManyT > 1 && state.howMany in [null, 1]) {   // New trigger
-        	getTrigger()
-			getMoreOptions()
-		} else if(state.howManyT > 1) {       							// New conditional trigger
-        	getCTrigger()
-			getMoreOptions()
-        } else if(app.label != "Rule" && app.label != null) {
-        	getActions()
-			getMoreOptions()
-        } else {														// New Rule, Trigger, Conditional Trigger or Actions
-            section("A Rule uses conditions tested under a rule to run actions") {
-                href "selectRule", title: "Define a Rule", description: "Tap to set"
-            }
-            section("A Trigger uses events to run actions") {
-            	href "selectTrig", title: "Define a Trigger", description: "Tap to set"
-            }
-            section("A Conditional Trigger uses events to run actions \nbased on conditions tested under a rule") {
-            	href "selectCTrig", title: "Define a Conditional Trigger", description: "Tap to set"
-            }
-            section("Other Rules can run these Actions") {
-                href "selectActions", title: "Define Actions", description: "Tap to set"
-            }
+		} 
+        else if(state.howMany > 1 && state.howManyT in [null, 1]) 	getRule()		// Existing Rule	
+		else if(state.howManyT > 1 && state.howMany in [null, 1]) 	getTrigger()   	// Existing Trigger
+		else if(state.howManyT > 1) 								getCTrigger()   // Existing Conditional Trigger
+		else if(app.label != "Rule" && app.label != null) 			getActions()	// Existing Actions
+        else {																		// New Rule, Trigger, Conditional Trigger or Actions
+            section("A Rule uses conditions tested under a rule to run actions") 									{href "selectRule", title: "Define a Rule", description: "Tap to set"}
+            section("A Trigger uses events to run actions") 														{href "selectTrig", title: "Define a Trigger", description: "Tap to set"}
+            section("A Conditional Trigger uses events to run actions\nbased on conditions tested under a rule") 	{href "selectCTrig", title: "Define a Conditional Trigger", description: "Tap to set"}
+            section("Other Rules can run these Actions") 															{href "selectActions", title: "Define Actions", description: "Tap to set"}
         }
     }
 }
@@ -162,28 +147,24 @@ def mainPage() {
 def selectRule() {
 	dynamicPage(name: "selectRule", title: "Select Conditions, Rule and Actions", uninstall: true, install: true) {
     	getRule()
-        getMoreOptions()
 	}
 }
 
 def selectTrig() {
 	dynamicPage(name: "selectTrig", title: "Select Trigger Events and Actions", uninstall: true, install: true) {
 		getTrigger()
-        getMoreOptions()
 	}
 }
 
 def selectCTrig() {
 	dynamicPage(name: "selectCTrig", title: "Select Triggers, Conditions, Rule and Actions", uninstall: true, install: true) {
 		getCTrigger()
-        getMoreOptions()
 	}
 }
 
 def selectActions() {
 	dynamicPage(name: "selectActions", title: "Select Actions", uninstall: true, install: true) {
 		getActions()
-        getMoreOptions()
 	}
 }
 
@@ -197,6 +178,7 @@ def getRule() {
 		href "selectActionsTrue", title: "Select Actions for True", description: state.actsTrue ? state.actsTrue : "Tap to set", state: state.actsTrue ? "complete" : null, submitOnChange: true
 		href "selectActionsFalse", title: "Select Actions for False", description: state.actsFalse ? state.actsFalse : "Tap to set", state: state.actsFalse ? "complete" : null, submitOnChange: true
 	}
+    getMoreOptions()
 }
 
 def getTrigger() {
@@ -206,6 +188,7 @@ def getTrigger() {
 		href "selectTriggers", title: "Select Trigger Events", description: trigLabel ? (trigLabel) : "Tap to set", state: trigLabel ? "complete" : null, submitOnChange: true
 		href "selectActionsTrue", title: "Select Actions", description: state.actsTrue ? state.actsTrue : "Tap to set", state: state.actsTrue ? "complete" : null, submitOnChange: true
 	}
+    getMoreOptions()
 }
 
 def getCTrigger() {
@@ -220,6 +203,7 @@ def getCTrigger() {
 		href "selectActionsTrue", title: "Select Actions for True", description: state.actsTrue ? state.actsTrue : "Tap to set", state: state.actsTrue ? "complete" : null, submitOnChange: true
 		href "selectActionsFalse", title: "Select Actions for False", description: state.actsFalse ? state.actsFalse : "Tap to set", state: state.actsFalse ? "complete" : null, submitOnChange: true
 	}
+    getMoreOptions()
 }
 
 def getActions() {
@@ -227,6 +211,7 @@ def getActions() {
 		label title: "Name the Actions", required: true
 		href "selectActionsTrue", title: "Select Actions", description: state.actsTrue ? state.actsTrue : "Tap to set", state: state.actsTrue ? "complete" : null, submitOnChange: true
 	}
+    getMoreOptions()
 }
 
 def getMoreOptions() {
@@ -1451,7 +1436,9 @@ def checkCondAny(dev, stateX, cap, rel, relDev) {
 		def truth = null
 		if(it == state.ourRule) truth = state.ourTruth
 		else truth = parent.currentRule(it)
-		result = result || "$stateX" == "$truth"
+        def boool = stateX == "true"
+        log.debug "checkCondAny: $stateX, $truth, $boool"
+		result = result || stateX == "$truth"
 	} 
 	else if(cap == "Water sensor")				result = stateX in dev.currentWater
 	else if(cap == "Switch") 					result = stateX in dev.currentSwitch
@@ -1533,7 +1520,7 @@ def getOperand(i, isR) {
 	else if(capab == "Days of week") result = daysOk
 	else if(capab == "Private Boolean") {
     	def thisState = settings.find{it.key == (isR ? "state$i" : "tstate$i")}
-    	result = thisState.value == state.private.toString()
+    	result = thisState.value == state.private //.toString()
 	} else if(capab == "Smart Home Monitor") result = (settings.find {it.key == (isR ? "state$i" : "tstate$i")}).value == location.currentState("alarmSystemStatus")?.value
 	else {
 		def myDev = 	settings.find {it.key == (isR ? "rDev$i" : "tDev$i")}
@@ -1732,7 +1719,6 @@ def takeAction(success) {
 	if(success) {
 		if(captureTrue)			capture(captureTrue)
 		if(onSwitchTrue) 		if(delayMilTrue) onSwitchTrue.on([delay: delayMilTrue]) else onSwitchTrue.on()
-		if(offSwitchTrue) 		if(delayMilTrue) offSwitchTrue.off([delay: delayMilTrue]) else offSwitchTrue.off()
 		if(toggleSwitchTrue)	toggle(toggleSwitchTrue, true)
 		if(delayedOffTrue)	{   if(delayMinutesTrue) runIn(delayMinutesTrue * 60, delayOffTrue)
         						if(delaySecondsTrue) runIn(delaySecondsTrue, delayOffTrue)
@@ -1774,13 +1760,13 @@ def takeAction(success) {
 		if(speakTrue)			speakTrueDevice?.speak((msgTrue ?: "Rule $app.label True") + (refDevTrue ? " $state.lastEvtName" : ""))
 		if(mediaTrueDevice)		mediaTrueDevice.playTextAndRestore((msgTrue ?: "Rule $app.label True") + (refDevTrue ? " $state.lastEvtName" : ""), mediaTrueVolume)
 		if(privateTrue)			if(otherTrue && otherPrivateTrue) parent.setRuleBoolean(otherPrivateTrue, privateTrue, app.label)
-								else state.private = privateTrue == "true"
+								else state.private = privateTrue // == "true"
 		if(state.howManyCCtrue > 1)  execCommands(true)
+		if(offSwitchTrue) 		if(delayMilTrue) offSwitchTrue.off([delay: delayMilTrue]) else offSwitchTrue.off()
         if(restoreTrue)			restore()
 	} else {
 		if(captureFalse)		capture(captureFalse)
 		if(onSwitchFalse) 		if(delayMilFalse) onSwitchFalse.on([delay: delayMilFalse]) else onSwitchFalse.on()
-		if(offSwitchFalse) 		if(delayMilFalse) offSwitchFalse.off([delay: delayMilFalse]) else offSwitchFalse.off()
 		if(toggleSwitchFalse)	toggle(toggleSwitchFalse, false)
 		if(delayedOffFalse)	{ 	if(delayMinutesFalse) runIn(delayMinutesFalse * 60, delayOffFalse)
         						if(delaySecondsFalse) runIn(delaySecondsFalse, delayOffFalse)
@@ -1824,6 +1810,7 @@ def takeAction(success) {
 		if(privateFalse)		if(otherFalse && otherPrivateFalse) parent.setRuleBoolean(otherPrivateFalse, privateFalse, app.label)
 								else state.private = privateFalse
 		if(state.howManyCCfalse > 1)  	execCommands(false)
+		if(offSwitchFalse) 		if(delayMilFalse) offSwitchFalse.off([delay: delayMilFalse]) else offSwitchFalse.off()
 		if(restoreFalse)		restore()
 	}
 }
@@ -2008,6 +1995,8 @@ def ruleHandler(rule, truth) {
 	state.ourRule = rule
 	state.ourTruth = truth
 	if(state.isRule || state.howMany > 1) runRule(false) else doTrigger()
+    state.ourRule = null
+    state.ourTruth = null
 }
 
 def ruleEvaluator(rule) {
@@ -2022,7 +2011,7 @@ def ruleActions(rule) {
 
 def setBoolean(truth, appLabel) {
 	log.info "$app.label: Set Boolean from $appLabel: $truth"
-	state.private = truth == "true"
+	state.private = truth // == "true"
 	if(state.isRule || state.howMany > 1) runRule(false) 
     else for(int i = 1; i < state.howManyT; i++) {
 		def myCap = settings.find {it.key == "tCapab$i"}
