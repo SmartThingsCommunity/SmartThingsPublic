@@ -419,9 +419,11 @@ def addDevice() {
         def d = getChildDevice(dni)
         if(!d) {
             def newAction = state.HarmonyActivities.find { it.key == dni }
-            d = addChildDevice("smartthings", "Harmony Activity", dni, null, [label:"${newAction.value} [Harmony Activity]"])
-            log.trace "created ${d.displayName} with id $dni"
-            poll()
+            if (newAction) {
+	            d = addChildDevice("smartthings", "Harmony Activity", dni, null, [label:"${newAction.value} [Harmony Activity]"])
+	            log.trace "created ${d.displayName} with id $dni"
+	            poll()
+            }
         } else {
             log.trace "found ${d.displayName} with id $dni already exists"
         }
