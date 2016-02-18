@@ -1436,8 +1436,6 @@ def checkCondAny(dev, stateX, cap, rel, relDev) {
 		def truth = null
 		if(it == state.ourRule) truth = state.ourTruth
 		else truth = parent.currentRule(it)
-        def boool = stateX == "true"
-        log.debug "checkCondAny: $stateX, $truth, $boool"
 		result = result || stateX == "$truth"
 	} 
 	else if(cap == "Water sensor")				result = stateX in dev.currentWater
