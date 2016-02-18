@@ -1,5 +1,5 @@
 /**
- *  User Lock Manager v4.1.1
+ *  User Lock Manager v4.1.2
  *
  *  Copyright 2015 Erik Thayer
  *
@@ -1304,5 +1304,5 @@ def populateDiscovery(codeData, lock) {
   (1..codeSlots).each { slot->
     codes."slot${slot}" = codeData."code${slot}"
   }
-  state."lock${lock.id}".codes = codes
+  atomicState."lock${lock.id}".codes = codes
 }
