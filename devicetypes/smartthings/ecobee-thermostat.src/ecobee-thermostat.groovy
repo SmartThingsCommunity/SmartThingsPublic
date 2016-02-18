@@ -103,7 +103,7 @@ metadata {
 			state "humidity", label:'${currentValue}%'
 		}
 		main "temperature"
-		details(["temperature", "upButtonControl", "thermostatSetpoint", "currentStatus", "downButtonControl", "mode", "fanMode","resumeProgram", "humidity", "refresh"])
+		details(["temperature", "upButtonControl", "thermostatSetpoint", "currentStatus", "downButtonControl", "mode", "fanMode","humidity", "resumeProgram", "refresh"])
 	}
 
 	preferences {
