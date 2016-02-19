@@ -3,7 +3,7 @@
  *
  *  Copyright 2015, 2016 Bruce Ravenel
  *
- *  Version 1.7.11f   18 Feb 2016
+ *  Version 1.7.11g   18 Feb 2016
  *
  *	Version History
  *
@@ -90,7 +90,7 @@ preferences {
 def mainPage() {
 	//version to parent app and expert settings for rule
 	try { 
-		state.isExpert = parent.isExpert("1.7.11f") 
+		state.isExpert = parent.isExpert("1.7.11g") 
 		if (state.isExpert) state.cstCmds = parent.getCommands()
 		else state.cstCmds = []
 	}
@@ -1369,7 +1369,7 @@ def initialize() {
 				subscribe(myDev.value, "button", allHandler)
 				break
 			case "Rule truth":
-				parent.subscribeRule(app.label, myDev.value, myState, allHandler)
+				parent.subscribeRule(app.label, myDev.value, (state.isTrig || hasTrig) ? myState : null, allHandler)
 				break
 			case "Water sensor":
 				subscribe(myDev.value, "water" + ((state.isTrig || hasTrig) ? ".$myState" : ""), allHandler)
