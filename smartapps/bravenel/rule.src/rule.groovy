@@ -3,10 +3,11 @@
  *
  *  Copyright 2015, 2016 Bruce Ravenel
  *
- *  Version 1.7.11g   18 Feb 2016
+ *  Version 1.7.12   19 Feb 2016
  *
  *	Version History
  *
+ *	1.7.12	19 Feb 2016		Added Private Boolean enable/disable
  *	1.7.11	15 Feb 2016		Further UI redesign to better distinguish triggers, added seconds for delayed on/off
  *	1.7.10	9 Feb 2016		Added Music player condition, fixed Days of Week schedule bug
  *	1.7.9	8 Feb 2016		Added set Boolean for other Rules, and Send notification event
@@ -90,7 +91,7 @@ preferences {
 def mainPage() {
 	//version to parent app and expert settings for rule
 	try { 
-		state.isExpert = parent.isExpert("1.7.11g") 
+		state.isExpert = parent.isExpert("1.7.12") 
 		if (state.isExpert) state.cstCmds = parent.getCommands()
 		else state.cstCmds = []
 	}
@@ -223,6 +224,7 @@ def getMoreOptions() {
 		input "modesY", "mode", title: "Only when mode is", multiple: true, required: false            
 		input "disabled", "capability.switch", title: "Switch to disable Rule", required: false, multiple: false, submitOnChange: true
         if(disabled) input "disabledOff", "bool", title: "Disable when Off? On is default", required: false, defaultValue: false
+        input "usePrivateDisable", "bool", title: "Enable/Disable with Private Boolean?", required: false
 	}    
 }
 
@@ -2059,9 +2061,10 @@ private timeIntervalLabelX() {
 }
 
 private getAllOk() {
-	if(state.isRule) modeZOk && !state.disabled  //&& daysOk && timeOk
-	else if(state.isTrig) modeYOk && daysOk && timeOk && !state.disabled
-	else modeYOk && daysYOk && timeOk && !state.disabled
+	def okay = !(usePrivateDisable && state.private == "false")
+	if(state.isRule) modeZOk && !state.disabled  && okay //&& daysOk && timeOk
+	else if(state.isTrig) modeYOk && daysOk && timeOk && !state.disabled && okay
+	else modeYOk && daysYOk && timeOk && !state.disabled && okay
 }
 
 private hideOptionsSection() {
