@@ -4,18 +4,17 @@
  *  Copyright 2016 Jared Fisher
  *
  *  2/14/2016 - Initial Commit
+ *  2/17/2016 - Clean up preferences from state and phantom settings upon install and update.
+ *            - Required prompt for number of buttons in preferences page if the remote device doesn't have an attribute 'numButtons'.
  *
  *  Note: Works well with Kyse's Aeon Minimote, which is modified to give a nice 
  *  mobile app user interface for triggering the button events, and provides the
  *  number of buttons available to the device.
  *
  *  Todo List:
- *  - Handle deduping event calls. - In progress
- *  - Add pretty descriptions for displaying sub page settings to help navigate easier (summary view).
+ *  - Add pretty descriptions for displaying sub page settings to help navigate easier (summary view). - In Progress
  *  - Add per device or button event Mode/Day/Time settings.
- *  - Add clean up of settings when preferences are changed, devices removed, etc (phantom actions). - In Progress
- *  - Add support for other capabilities/actions.
- *  - Add preference for specifying number of buttons on device for incompatible device handlers.
+ *  - Add support for other capabilities/actions (based on device capabilities/attributes/commands).  Need to discover/handle custom commands and attributes properly.
  */
 definition(
     name: "Kyse's Remote Controller",
@@ -48,11 +47,13 @@ def pageSettingsMain() {
             }
         }
         section (hideable: true, hidden: false, "Other Settings") {
-        	input(name: "dedupe", type: "number", title: "Dedupe time (miliseconds)", defaultValue: 1000, required: true, multiple: false)
+        	if (!getNumButtons())
+	        	input(name: "numButtons", type: "number", title: "Specify the number of buttons for ${getRemote()}", required: !getNumButtons(), multiple: false, submitOnChange: true)
+        	//input(name: "dedupe", type: "number", title: "Dedupe time (miliseconds)", defaultValue: 1000, required: true, multiple: false)
         	label(name: "label", title: "Assign a name", required: false, multiple: false)
             //mode(title: "Set for specific mode(s)")
         }
-        section { paragraph "Settings: ${settings}" }
+        //section { paragraph "Settings: ${settings}" }
 	}
 }
 
@@ -71,13 +72,13 @@ def pageConfigEvent(params) {
 	persistPrefParams(params)
 	dynamicPage(name: "pageConfigEvent", title: "Configure Button ${getButtonIdStr()} ${getButtonEvent().capitalize()}", install: false, uninstall: false) {
     	section ("Devices") {
-        	input(name: getSettingName(getButtonId(),getButtonEvent(),"devices"), type: "capability.switch", title: "Switches & Dimmers", required: true, multiple: true, submitOnChange: true)
+        	input(name: getSettingName(getButtonId(),getButtonEvent(),"devices"), type: "capability.switch", title: "Switches & Dimmers", required: false, multiple: true, submitOnChange: true)
         }
-        settings[getSettingName(getButtonId(),getButtonEvent(),"devices")].each { device ->
+        getSetting(getButtonId(),getButtonEvent(),"devices").each { device ->
 	        section (hideable: true, hidden: false, "Configure ${device?.displayName} Actions") {
-                input(name: getSettingName(getButtonId(),getButtonEvent(),device.id,"power"), type: "enum", title: "Power", options: ["None","Toggle","On","Off"], defaultValue: "None", required: true, multiple: false)
+                input(name: getSettingName(getButtonId(),getButtonEvent(),device.id,"power"), type: "enum", title: "Power", options: ["Toggle","On","Off"], required: false, multiple: false)
              	if (device.hasCapability("Switch Level")) {
-                    input(name: getSettingName(getButtonId(),getButtonEvent(),device.id,"dimmer"), type: "enum", title: "Dimming", options: ["None","Sequential","Set Level"], defaultValue: "None", required: true, multiple: false, submitOnChange: true)
+                    input(name: getSettingName(getButtonId(),getButtonEvent(),device.id,"dimmer"), type: "enum", title: "Dimming", options: ["Sequential","Set Level"], required: false, multiple: false, submitOnChange: true)
                     if (settings[getSettingName(getButtonId(),getButtonEvent(),device.id,"dimmer")] == "Set Level") {
                     	input(name: getSettingName(getButtonId(),getButtonEvent(),device.id,"dimmer","level"), type: "number", title: "Dimmer Level", range: "0..100", defaultValue: 100, required: true, multiple: false) 
                     }
@@ -132,14 +133,14 @@ def btnEvent(evt) {
 
 def dedupe(btnId, btnEvent) {
 	// TODO Handle multiple events being fired from one button press
-    log.debug "Dedupe: Button ${btnId} ${btnEvent}.  This message in place to assess need for deduping."
+    //log.debug "Dedupe: Button ${btnId} ${btnEvent}.  This message in place to assess need for deduping."
 	false
 }
 
 // Actions
 def actionPower(btnId, btnEvent, device) {
 	def prefPower = getSetting(btnId,btnEvent,device.id,"power")
-    if (prefPower == "None" || !device.hasCapability("Switch"))
+    if (!prefPower || !device.hasCapability("Switch"))
     	return
     else if (prefPower == "Toggle")
     	if (device.currentSwitch == "on")
@@ -152,7 +153,7 @@ def actionPower(btnId, btnEvent, device) {
 
 def actionDimmer(btnId, btnEvent, device) {
 	def prefDimmer = getSetting(btnId,btnEvent,device.id,"dimmer")
-    if (prefDimmer == "None" || !device.hasCapability("Switch Level"))
+    if (!prefDimmer|| !device.hasCapability("Switch Level"))
     	return
     else if (prefDimmer == "Set Level") {
     	def prefDimmerLevel = getSetting(btnId,btnEvent,device.id,"dimmer","level")
@@ -174,7 +175,7 @@ def actionDimmer(btnId, btnEvent, device) {
 
 // Helpers
 def getNumButtons() {
-	(getRemote()?.currentValue("numButtons") ?: "0")?.toInteger()
+	(getRemote()?.currentValue("numButtons") ?: getSetting("numButtons"))?.toInteger()
 }
 
 def getPrefButtonDescription(btnId) {
@@ -183,8 +184,15 @@ def getPrefButtonDescription(btnId) {
 }
 
 def getPrefActionDescription(btnId, btnEvent) {
-	// TODO Give a description of contents
-    "Click to view"
+	def desc = []
+    def devices = getSetting(btnId, btnEvent, "devices")
+    devices?.each { device ->
+    	// Another reason to automate settings via capabilities/attributes vs manually
+        def power = getSetting(btnId, btnEvent, device.id, "power")
+        def dimmer = getSetting(btnId, btnEvent, device.id, "dimmer")
+        desc.add("${device.displayName}: ${power ? "Power(" + power + ")" : ""}${dimmer ? (power ? ", " : "") + "Dimmer(" + dimmer + ")" : ""}")
+    }
+    desc.join("\r\n") ?: "None"
 }
 
 // dynamicPage params persistence
@@ -195,7 +203,7 @@ def persistPrefParams(params) {
 
 def cleanPrefParams() {
 	if (params?.pref)
-    	delete state.pref
+    	state.remove("pref")
 }
 
 def getButtonId() {
@@ -211,20 +219,9 @@ def getButtonEvent() {
 }
 
 // Settings
-def getPrefName(btnId, btnEvent, deviceId, actionName = null) {
-	("btn${btnId}${btnEvent}${deviceId}${actionName ? "-" + actionName : ""}").toString()
-}
-
-def getPrefValue(btnId, btnEvent, deviceId, actionName = null) {
-	//def name = getPrefName(btnId, btnEvent, deviceId, actionName)
-	def value = settings[getPrefName(btnId, btnEvent, deviceId, actionName)]
-    //log.debug "name: ${name}, value: ${value}"
-    //log.debug "settings: ${settings}"
-    value
-}
-
 def settingsMap() {
-	// Anything past the action should include the previous setting name ie dimmer -> dimmerlevel
+	// Anything past the action of a device should include the previous setting name ie dimmer -> dimmerlevel
+    // Might be an idea to switch actions to capabilities to make adding more device capabilities easier.
 	[
     	remote: [dependency: null],
         devices: [depencency: null],
@@ -238,31 +235,72 @@ def settingsMap() {
 
 def cleanSettings() {
 	cleanPrefParams()
+    return
     
-    settings.each { key, value -> 
-        if (!checkDependency(key, value))
-        	delete settings[key]
-    }
+    // Per docs, settings are a read-only map.
+	//log.debug "This: ${this}"
+	//log.debug "Settings: ${settings}"
+    def toRemove = settings.findAll{ k, v -> !checkDependency(k) }
+    //log.debug "To Remove: ${toRemove}"
+    //toRemove.each { settings?.remove(it.key) }
+    //log.debug "Settings: ${settings}"
+
+    //settings.each { key, value -> 
+    //    if (!checkDependency(key)) {
+        	//log.debug "Deleting ${key}"
+        	//settings.remove(key)
+    //    }
+    //}
 }
 
-def checkDependency(key, value) {
+def checkDependency(key) {
+	//log.debug "Key: ${key}"
 	def paramMap = parseSettingName(key)
+    //log.debug "Checking: ${paramMap}"
     def split = key.split("~")
 	def mapName = "${->def size = split.size() > 4 ? -2..-1 : -1;[split[size]].flatten().join()}"
-    def dependencyMap = settingsMap()[mapName]
-    if (dependencyMap?.dependency) {
+    def depMap = settingsMap()[mapName]
+    if (depMap?.dependency) {
     	// Get the dependency setting (if it exists)
-        def depCheck = split[0..-1]
-        log.debug "${depCheck}"
+        def depCheck = []
+        if (split.size() > 4) {
+        	depCheck.addAll(split[0..-2])
+        } else if (split.size() == 4) {
+        	depCheck.addAll(key.split("~")[0..1])
+            depCheck.add("devices")
+        } else if (split.size() < 4 && split.size() > 1) {
+        	depCheck.addAll(split[0..-2])
+        }
+        //log.debug "- Dependency: ${depCheck.join("~")}"
+        //log.debug "- Testing Setting ${depCheck}"
+        def depSetting = getSetting(depCheck as Object[])
+        //log.debug "- Found Setting: ${depSetting}"
+        if (!depSetting)
+        	return false
+            
+        // Check if devices contains device id
+        if (split.size() == 4 && !depSetting.any { it.id == paramMap?.deviceId })
+        	return false
+		
+        // Check value of sub setting vs dependency map value
+        if (depMap?.depedency?.value && depSetting != depMap.dependency.value)
+        	return false
+            
+        // Check push/hold, button attributes?
+        // Doesn't really matter unless we get button attributes standardized
+        
+        // Check button number against remote.numButtons attribute?
+            
+        return checkDependency(depCheck.join("~"))
     }
-    true
-}
-
-def getSettingName(Object[] params) {
-	"${->params*.toString()*.toLowerCase().join("~")}".toString()
+    return true
 }
 
 def settingsIndexMap() {
+	// remote
+    // 1~pushed~devices
+    // 1~pushed~deviceId~dimmer
+    // 1~pushed~deviceId~dimmer~level
 	[0:"id",1:"event",2:"deviceId",3:"action",4:"option"]
 }
 
@@ -272,6 +310,10 @@ def parseSettingName(name) {
     	map.put(settingsIndexMap()[i], val)
     }
     map
+}
+
+def getSettingName(Object[] params) {
+	"${->params*.toString()*.toLowerCase().join("~")}".toString()
 }
 
 def getSetting(Object[] params) {
