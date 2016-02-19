@@ -3,7 +3,7 @@
  *
  *  Copyright © 2016 Michael Struck
  *
- *  Version 1.4.1 (2/9/16) - Initial release of child app
+ *  Version 1.4.2 (2/19/16) - Initial release of child app
  *
  *  Version 1.0.0 - Initial release
  *  Version 1.0.1 - Small syntax changes for consistency
@@ -12,6 +12,7 @@
  *  Version 1.3.0 - Added presence voice variables (requires presence sensor used under the restrictions page), optimized code
  *  Verison 1.4.0 - Added switches that can trigger alarms in addition to time
  *  Version 1.4.1 - Added the trigger switches to the summary page
+ *  Version 1.4.2 - Syntax changes and minor revisions
  *
  *  Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except
  *  in compliance with the License. You may obtain a copy of the License at:
@@ -286,7 +287,7 @@ def getAlarmDesc() {
     	def triggerMethod = alarmStart ? "at " + parseDate(alarmStart,"", "h:mm a") : ""
         triggerMethod += alarmStart && alarmTrigger ? " and " : ""
         triggerMethod += alarmTrigger ? "when switches are activated" : ""
-        desc = "Alarm triggers ${alarmSpeaker} ${triggerMethod}"		
+        desc = "Alarm plays on ${alarmSpeaker} ${triggerMethod}"		
         def dayListSize = alarmDay ? alarmDay.size() : 7            
         if (alarmDay && dayListSize < 7) {
         	desc += " on"
@@ -660,5 +661,5 @@ private saveSelectedSong() {
 }
 //Version
 private def textVersion() {
-    def text = "Child App Version: 1.4.1 (02/09/2016)"
+    def text = "Child App Version: 1.4.2 (02/19/2016)"
 }
