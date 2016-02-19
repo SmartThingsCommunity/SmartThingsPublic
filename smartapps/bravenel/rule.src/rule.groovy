@@ -3,11 +3,11 @@
  *
  *  Copyright 2015, 2016 Bruce Ravenel
  *
- *  Version 1.7.12   19 Feb 2016
+ *  Version 1.7.12a   19 Feb 2016
  *
  *	Version History
  *
- *	1.7.12	19 Feb 2016		Added Private Boolean enable/disable
+ *	1.7.12	19 Feb 2016		Added Private Boolean enable/disable, capture/restore color hue and saturation
  *	1.7.11	15 Feb 2016		Further UI redesign to better distinguish triggers, added seconds for delayed on/off
  *	1.7.10	9 Feb 2016		Added Music player condition, fixed Days of Week schedule bug
  *	1.7.9	8 Feb 2016		Added set Boolean for other Rules, and Send notification event
@@ -91,7 +91,7 @@ preferences {
 def mainPage() {
 	//version to parent app and expert settings for rule
 	try { 
-		state.isExpert = parent.isExpert("1.7.12") 
+		state.isExpert = parent.isExpert("1.7.12a") 
 		if (state.isExpert) state.cstCmds = parent.getCommands()
 		else state.cstCmds = []
 	}
@@ -1683,30 +1683,40 @@ def capture(dev) {
 	def i = 0
 	def switchState = ""
 	def dimmerValue = ""
+    def hueValue = ""
+    def satValue = ""
 	dev.each {
-		switchState = it.currentSwitch.toString()
-		dimmerValue = it.currentLevel.toString()   
-		state.lastDevState[i] = [switchState: switchState, dimmerValue: dimmerValue]
+		switchState = "$it.currentSwitch"
+		dimmerValue = "$it.currentLevel" 
+        hueValue = "$it.currentHue"
+        satValue = "$it.currentSaturation"
+		state.lastDevState[i] = [switchState: switchState, dimmerValue: dimmerValue, hueValue: hueValue, satValue: satValue]
 		i++       	
 	}
 }
 
-def restoreDev(switches, switchState, dimmerValue, i) {
-	if((switchState == "on") && (switchType != "Dimmer Switch")) switches[i].on()            
-	if((switchState == "on") && (switchType == "Dimmer Switch")) switches[i].setLevel(dimmerValue)
+def restoreDev(switches, switchState, dimmerValue, hueValue, satValue, i) {
 	if(switchState == "off") switches[i].off()
+    else if(hueValue > 0 && satValue > 0) {
+		def newValue = [hue: hueColor, saturation: saturation, level: dimmerValue]
+        switches.setColor(newValue)
+    } else if(dimmerValue) switches[i].setLevel(dimmerValue)
+    else switches[i].on()            
 }
 
 def restore() {
 	def i = 0
 	def switchState = ""
 	def dimmerValue = ""
+    def hueValue = ""
+    def satValue = ""
 	state.lastDevState.each {
     	switchState = it.switchState
-        if(it.dimmerValue != "null") dimmerValue = it.dimmerValue.toInteger()
-        else dimmerValue = 0
-        if(captureTrue) restoreDev(captureTrue, switchState, dimmerValue, i)
-        if(captureFalse) restoreDev(captureFalse, switchState, dimmerValue, i)
+        dimmerValue = it.dimmerValue
+        hueValue = it.hueValue
+        satValue = it.satValue
+        if(captureTrue) restoreDev(captureTrue, switchState, dimmerValue, hueValue, satValue, i)
+        if(captureFalse) restoreDev(captureFalse, switchState, dimmerValue, hueValue, satValue, i)
         i++
     }
 }
