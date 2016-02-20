@@ -719,6 +719,8 @@ def initialize() {
     state.timeOfDay = "night"     
     state.lastWatchdog = nowTime
     state.lastWatchdogDate = nowDate
+    state.lastUserDefinedEvent = now()
+    state.lastUserDefinedEventDate = getTimestamp()    
     
     def sunriseAndSunset = getSunriseAndSunset()
     state.sunriseTime = sunriseAndSunset.sunrise.format("HHmm", location.timeZone).toDouble()
@@ -882,6 +884,13 @@ def sunsetEvent(evt) {
 def userDefinedEvent(evt) {
 	LOG("userDefinedEvent() - with evt (${evt?.name}:${evt?.value})", 4, null, "info")
     if ( readyForAuthRefresh() ) { refreshAuthToken() }
+    if ( ((now() - state.lastUserDefinedEvent) / 1000 / 60) < 3) { 
+    	LOG("Time since last event is less than 3 minutes. Exiting without performing additional actions.", 4)
+    	return 
+	}
+    
+    state.lastUserDefinedEvent = now()
+    state.lastUserDefinedEventDate = getTimestamp()    
     poll()
     scheduleWatchdog(evt, true)
 }
