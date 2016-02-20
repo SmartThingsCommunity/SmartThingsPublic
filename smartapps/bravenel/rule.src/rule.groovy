@@ -3,7 +3,7 @@
  *
  *  Copyright 2015, 2016 Bruce Ravenel
  *
- *  Version 1.7.12b   19 Feb 2016
+ *  Version 1.7.12c   20 Feb 2016
  *
  *	Version History
  *
@@ -91,7 +91,7 @@ preferences {
 def mainPage() {
 	//version to parent app and expert settings for rule
 	try { 
-		state.isExpert = parent.isExpert("1.7.12b") 
+		state.isExpert = parent.isExpert("1.7.12c") 
 		if (state.isExpert) state.cstCmds = parent.getCommands()
 		else state.cstCmds = []
 	}
@@ -137,7 +137,7 @@ def mainPage() {
 		else if(state.howManyT > 1) 								getCTrigger()   // Existing Conditional Trigger
 		else if(app.label != "Rule" && app.label != null) 			getActions()	// Existing Actions
         else {																		// New Rule, Trigger, Conditional Trigger or Actions
-            section("A Rule uses conditions tested under a rule to run actions") 									{href "selectRule", title: "Define a Rule", description: "Tap to set"}
+            section("A Rule uses events for conditions and then\ntests a rule to run actions") 							{href "selectRule", title: "Define a Rule", description: "Tap to set"}
             section("A Trigger uses events to run actions") 														{href "selectTrig", title: "Define a Trigger", description: "Tap to set"}
             section("A Conditional Trigger uses events to run actions\nbased on conditions tested under a rule") 	{href "selectCTrig", title: "Define a Conditional Trigger", description: "Tap to set"}
             section("Other Rules can run these Actions") 															{href "selectActions", title: "Define Actions", description: "Tap to set"}
