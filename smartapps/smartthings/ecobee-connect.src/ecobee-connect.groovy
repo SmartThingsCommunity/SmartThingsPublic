@@ -1,4 +1,4 @@
-/**
+/**D
  *  Copyright 2015 SmartThings
  *
  *  Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except
@@ -24,7 +24,7 @@
  *  See Changelog for change history
  *
  */  
-def getVersionNum() { return "0.9.10" }
+def getVersionNum() { return "0.9.9a" }
 private def getVersionLabel() { return "ecobee (Connect) Version ${getVersionNum()}" }
 private def getHelperSmartApps() {
 	return [ 
@@ -735,6 +735,8 @@ def initialize() {
     state.timeOfDay = "night"     
     state.lastWatchdog = nowTime
     state.lastWatchdogDate = nowDate
+    state.lastUserDefinedEvent = now()
+    state.lastUserDefinedEventDate = getTimestamp()    
     
     def sunriseAndSunset = getSunriseAndSunset()
     state.sunriseTime = sunriseAndSunset.sunrise.format("HHmm", location.timeZone).toDouble()
@@ -900,6 +902,13 @@ def userDefinedEvent(evt) {
     state.lastUserDefinedEventDate = getTimestamp()
     state.lastUserDefinedEventInfo = "Event Info: (Device:${evt?.displayName} ${evt?.name}:${evt?.value})"
     if ( readyForAuthRefresh() ) { refreshAuthToken() }
+    if ( ((now() - state.lastUserDefinedEvent) / 1000 / 60) < 3) { 
+    	LOG("Time since last event is less than 3 minutes. Exiting without performing additional actions.", 4)
+    	return 
+	}
+    
+    state.lastUserDefinedEvent = now()
+    state.lastUserDefinedEventDate = getTimestamp()    
     poll()
     scheduleWatchdog(evt, true)
 }
