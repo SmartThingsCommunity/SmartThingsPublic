@@ -3,7 +3,7 @@
  *
  *  Copyright 2015, 2016 Bruce Ravenel and Mike Maxwell
  *
- *  Version 1.7.5   21 Feb 2016
+ *  Version 1.7.5a   21 Feb 2016
  *
  *	Version History
  *
@@ -68,7 +68,7 @@ def mainPage() {
         section ("Remove Rule Machine"){
         	href "removePage", description: "Tap to remove Rule Machine ", title: ""
         }
-        if(state.ver) section ("Version 1.7.5/" + state.ver) { }
+        if(state.ver) section ("Version 1.7.5a/" + state.ver) { }
     }
 }
 
@@ -377,9 +377,10 @@ def addCustomCommandPAGE(){
 				,state: null
 			)
 		}
-		if (test){
+		if (cCmd){
 			def result = execTestCommand()
-			section("Configured command: ${cmdLabel}\n${result}"){
+//			section("Configured command: ${cmdLabel}\n${result}"){
+			section() {
 				if (result == "succeeded"){
 					if (!commandExists(cmdLabel)){
 						href( "generalApprovalPAGE"
