@@ -3,10 +3,11 @@
  *
  *  Copyright 2015, 2016 Bruce Ravenel and Mike Maxwell
  *
- *  Version 1.7.3   14 Feb 2016
+ *  Version 1.7.4   20 Feb 2016
  *
  *	Version History
  *
+ *	1.7.4	20 Feb 2016		Added saved command display
  *	1.7.3	14 Feb 2016		Improved Rule Machine initialization, fixed Delete custom commands bug
  *	1.7.2	8 Feb 2016		Added set Boolean for Rules
  *	1.7.1	5 Feb 2016		Added update Rule
@@ -46,9 +47,9 @@ preferences {
 	page(name: "mainPage")
 	page(name: "removePage")
 	//expert pages
-	page(name: "expert")
-	page(name: "generalApprovalPAGE")
+//	page(name: "expert")
 	page(name: "customCommandsPAGE")
+	page(name: "generalApprovalPAGE")
 	page(name: "addCustomCommandPAGE")
 	page(name: "customParamsPAGE")
 }
@@ -61,12 +62,13 @@ def mainPage() {
             app(name: "childRules", appName: "Rule", namespace: "bravenel", title: "Create New Rule...", multiple: true)
         }
 		section ("Expert Features") {
-			href( "expert", title: "", description: "Tap to create custom commands", state: "")
+//			href( "expert", title: "", description: "Tap to create custom commands", state: "")
+			href("customCommandsPAGE", title: null, description: "Custom Commands...", state: anyCustom())
         }
         section ("Remove Rule Machine"){
         	href "removePage", description: "Tap to remove Rule Machine ", title: ""
         }
-        if(state.ver) section ("Version 1.7.3/" + state.ver) { }
+        if(state.ver) section ("Version 1.7.4/" + state.ver) { }
     }
 }
 
@@ -221,46 +223,28 @@ def customCommandsPAGE() {
 	if (!state.lastCmdIDX) state.lastCmdIDX = 0
 	def savedCommands = getCommands()
 	dynamicPage(name: "customCommandsPAGE", title: "Custom Commands", uninstall: false, install: false) {
-		section(){
-			input(
-				name			: "devices"
-				,title			: "Test device"
-				,multiple		: false
-				,required		: false
-				,type			: "capability.actuator"
-				,submitOnChange	: true
-			)
-			if (settings.devices && savedCommands.size() != 0){
+    	def hasCommands = settings.devices && savedCommands.size() != 0
+		section(hasCommands ? "Saved Commands" : "") {
+			if (hasCommands){
+				def cmdMaps = state.customCommands ?: []
+				def result = ""
+				cmdMaps.each{ cmd ->
+					def cont = cmd.value.text.size() > 30 ? "..." : ""
+					result = result + "\n\t" + cmd.value.text.take(30) + cont
+				}
+				paragraph(result)
 				input(
 					name			: "testCmd"
-					,title			: "Select saved command to test"
+					,title			: "Test saved command"
 					,multiple		: false
 					,required		: false
 					,type			: "enum"
 					,options		: savedCommands
 					,submitOnChange	: true
 				)
-			}
-		}
-		def result = execCommand(settings.testCmd)
-		if (result) {
-			section("${result}"){
-			}
-		}
-		section(){
-		if (devices){
-				href( "addCustomCommandPAGE"
-					,title		: "New custom command..."
-					,description: ""
-					,state		: null
-				)
-			}
-        }
-		if (getCommands()){
-			section(){
 				input(
 					name			: "deleteCmds"
-					,title			: "Delete custom commands..."
+					,title			: "Delete saved commands"
 					,multiple		: true
 					,required		: false
                     ,description	: ""
@@ -277,8 +261,31 @@ def customCommandsPAGE() {
 						,submitOnChange	: true
 					)
 				}
+                paragraph("\n")
+			}
+			input(
+				name			: "devices"
+				,title			: "Test device for commands"
+				,multiple		: false
+				,required		: false
+				,type			: "capability.actuator"
+				,submitOnChange	: true
+			)
+		}
+		def result = execCommand(settings.testCmd)
+		if (result) {
+			section("${result}"){
 			}
 		}
+		section(){
+			if (devices){
+				href( "addCustomCommandPAGE"
+					,title		: "New custom command..."
+					,description: ""
+					,state		: null
+				)
+			}
+        }
 	}
 }
 
@@ -638,4 +645,16 @@ def expertText() {
 		"custom SmartApp to utilize.\n\nCustom commands that are created and saved here will become available for use " +
 		"in any new or existing rules.\n\nAfter saving at least one command, look for 'Run custom device command' in your " + 
 		"'Select Actions' sections."
+}
+
+def displaySavedCommands(){
+	section("Saved Commands"){
+		def cmdMaps = state.customCommands ?: []
+		def result = ""
+		cmdMaps.each{ cmd ->
+			def cont = cmd.value.text.size() > 30 ? "..." : ""
+			result = result + "\n\t" + cmd.value.text.take(30) + cont
+		}
+		paragraph(result)
+    }
 }
