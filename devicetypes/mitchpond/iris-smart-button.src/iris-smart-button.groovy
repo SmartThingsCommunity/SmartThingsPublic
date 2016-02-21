@@ -36,7 +36,7 @@ metadata {
     
     preferences{
     	input ("holdTime", "number", title: "Minimum time in seconds for a press to count as \"held\"",
-        		defaultValue: 3, displayDuringSetup: false)
+        		defaultValue: 3, range: "3..15", displayDuringSetup: false)
         input ("tempOffset", "number", title: "Enter an offset to adjust the reported temperature",
         		defaultValue: 0, displayDuringSetup: false)
     }
@@ -85,40 +85,29 @@ def parse(String description) {
 }
 
 def configure(){
-	[
-	"zdo bind 0x${device.deviceNetworkId} 1 1 6 {${device.zigbeeId}} {}", "delay 200",
-    "zdo bind 0x${device.deviceNetworkId} 1 1 0x402 {${device.zigbeeId}} {}", "delay 200",
-    
-    "zcl global send-me-a-report 0x402 0 0x29 30 3600 {6400}", "delay 100",
-	"send 0x${device.deviceNetworkId} 1 1", "delay 200",
-    
-    "zcl global send-me-a-report 1 0x20 0x20 3600 86400 {01}", "delay 100", //battery report request
-	"send 0x${device.deviceNetworkId} 1 1", "delay 200"
-    ] + refresh()
+	zigbee.onOffConfig() +											//on/off binding
+    zigbee.configureReporting(1,0x20,0x20,3600,86400,0x01) + 		//battery reporting
+    zigbee.configureReporting(0x0402,0x00,0x29,30,3600,0x0064) + 	//temperature reporting
+    refresh()
 }
 
 def refresh(){
-	[
-    "st rattr 0x${device.deviceNetworkId} 1 1 0x20",
-    "st rattr 0x${device.deviceNetworkId} 1 0x402 0"
-    ]
+	return zigbee.readAttribute(0x0001,0x20) + zigbee.readAttribute(0x0402,0x00)
 }
 
 private Map parseCustomMessage(String description) {
-	if (description?.startsWith('temperature: ')) {
-		def value = zigbee.parseHATemperatureValue(description, "temperature: ", getTemperatureScale())
-		createTempEvent(value)
-	}
+    def value = zigbee.parseHATemperatureValue(description, "temperature: ", getTemperatureScale())
+    return createTempEvent(value)
 }
 
 def parseCatchAllMessage(descMap) {
 	//log.debug (descMap)
     if (descMap?.clusterId == "0006" && descMap?.command == "01") 		//button pressed
-    	createPressEvent(descMap.sourceEndpoint as int)
+    	return createPressEvent(1)
     else if (descMap?.clusterId == "0006" && descMap?.command == "00") 	//button released
-    	createButtonEvent(descMap.sourceEndpoint as int)
+    	return [createButtonEvent(1), createEvent([name: 'lastPress', value: null, displayed: false])]
     else if (descMap?.clusterId == "0402" && descMap?.command == "01") 	//temperature response
-    	parseTempAttributeMsg(descMap)
+    	return parseTempAttributeMsg(descMap)
 }
 
 def parseReportAttributeMessage(descMap) {
@@ -147,8 +136,14 @@ private createButtonEvent(button) {
     def timeDif = currentTime - startOfPress
     def holdTimeMillisec = (settings.holdTime?:3).toInteger() * 1000
     
-    if (timeDif < 0) 
+    if (timeDif < 0) {
+    	log.debug "Press arrived out of sequence! Dropping event."
     	return []	//likely a message sequence issue. Drop this press and wait for another. Probably won't happen...
+    }
+    else if (timeDif > 20000) {
+    	log.debug "Hold time longer than 20 seconds. Likely an error. Dropping event."
+    	return []	//stale lastPress state. Likely an error
+    }
     else if (timeDif < holdTimeMillisec) 
     	return createButtonPushedEvent(button)
     else 
