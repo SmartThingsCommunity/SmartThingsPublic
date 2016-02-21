@@ -244,14 +244,8 @@ def customCommandsPAGE() {
 				}
                 paragraph("\n")
 			}
-            getCapab()
+//            getCapab()
             if(myCapab) getDevs(myCapab) else getDevs("Actuator")
-//            def result = getDeviceCommands()
-//			def result = execCommand(settings.testCmd)
-//			if (result) {
-//				section("${result}"){
-//				}
-//			}
 		}
 		section(){
 			if (devices){
