@@ -3,10 +3,11 @@
  *
  *  Copyright 2015, 2016 Bruce Ravenel and Mike Maxwell
  *
- *  Version 1.7.4a   20 Feb 2016
+ *  Version 1.7.5   21 Feb 2016
  *
  *	Version History
  *
+ *	1.7.5	21 Feb 2016		Improved custom command selection
  *	1.7.4	20 Feb 2016		Added saved command display, UI improvements
  *	1.7.3	14 Feb 2016		Improved Rule Machine initialization, fixed Delete custom commands bug
  *	1.7.2	8 Feb 2016		Added set Boolean for Rules
@@ -67,7 +68,7 @@ def mainPage() {
         section ("Remove Rule Machine"){
         	href "removePage", description: "Tap to remove Rule Machine ", title: ""
         }
-        if(state.ver) section ("Version 1.7.4a/" + state.ver) { }
+        if(state.ver) section ("Version 1.7.5/" + state.ver) { }
     }
 }
 
@@ -200,18 +201,19 @@ def generalApprovalPAGE(params){
 
 def customCommandsPAGE() {
 	if (!state.lastCmdIDX) state.lastCmdIDX = 0
-	def savedCommands = getCommands()
+	def savedCommands = getMyCommands()
 	dynamicPage(name: "customCommandsPAGE", title: "Custom Commands", uninstall: false, install: false) {
     	def hasCommands = savedCommands.size() != 0
-		section(hasCommands ? "Saved Commands" : "") {
-			if (hasCommands){
-				def cmdMaps = state.customCommands ?: []
-				def result = ""
-				cmdMaps.each{ cmd ->
-					def cont = cmd.value.text.size() > 30 ? "..." : ""
-					result = result + "\n\t" + cmd.value.text.take(30) + cont
-				}
-				paragraph(result)
+		def result = ""
+		if (hasCommands){
+			def cmdMaps = state.customCommands ?: []
+			cmdMaps.each{ cmd ->
+				def cont = cmd.value.text.size() > 30 ? "..." : ""
+				result = result + "\n\t" + cmd.value.text.take(30) + cont
+			}
+        }
+		section(hasCommands ? "Saved commands:\n" + result : "") {
+			if (hasCommands) {
 				input(
 					name			: "testCmd"
 					,title			: "Test saved command"
@@ -230,7 +232,7 @@ def customCommandsPAGE() {
 					,required		: false
                     ,description	: ""
 					,type			: "enum"
-					,options		: getCommands()
+					,options		: savedCommands
 					,submitOnChange	: true
 				)
 				if (isValidCommand(deleteCmds)){
@@ -244,7 +246,7 @@ def customCommandsPAGE() {
 				}
                 paragraph("\n")
 			}
-//            getCapab()
+			getCapab()
             if(myCapab) getDevs(myCapab) else getDevs("Actuator")
 		}
 		section(){
@@ -260,8 +262,8 @@ def customCommandsPAGE() {
 }
 
 def getCapab() {  
-	def myOptions = ["Acceleration", "Button", "Carbon monoxide detector", "Contact", "Energy meter", "Garage door", "Humidity", "Illuminance", 
-    	"Lock", "Motion", "Power meter", "Presence", "Smoke detector", "Switch", "Temperature",
+	def myOptions = ["Acceleration", "Carbon monoxide detector", "Contact", "Energy meter", "Garage door", "Humidity", "Illuminance", 
+    	"Lock", "Motion", "Power meter", "Presence", "Smoke detector", "Switch", "Temperature", "Thermostat",
         "Water sensor", "Music player", "Actuator"]
 	def result = input "myCapab", "enum", title: "Select capability for test device", required: false, options: myOptions.sort(), submitOnChange: true, defaultValue: "Actuator"
 }
@@ -306,6 +308,10 @@ def getDevs(myCapab) {
 		case "Temperature":
 			thisName = "temperature sensor" + (multi ? "s" : "")
 			thisCapab = "temperatureMeasurement"
+			break
+		case "Thermostat":
+			thisName = "thermostat" + (multi ? "s" : "")
+			thisCapab = "thermostat"
 			break
 		case "Humidity":
 			thisName = "humidity sensor" + (multi ? "s" : "")
@@ -559,6 +565,16 @@ def getCommands(){
 	def result = [] 
 	def cmdMaps = state.customCommands ?: []
 	cmdMaps.each{ cmd ->
+		def option = [(cmd.key):([cmd.value.text, cmd.value.capab == null ? "actuator" : cmd.value.capab])]
+		result.push(option)
+	}
+	return result
+}
+
+def getMyCommands(){
+	def result = [] 
+	def cmdMaps = state.customCommands ?: []
+	cmdMaps.each{ cmd ->
 		def option = [(cmd.key):(cmd.value.text)]
 		result.push(option)
 	}
@@ -592,6 +608,24 @@ def commandExists(cmd){
 	return result
 }
 def addCommand(){
+	def capabs = [	"Acceleration" : "accelerationSensor", 
+    				"Carbon monoxide detector" : "carbonMonoxideDetector", 
+                    "Contact" : "contactSensor", 
+                    "Energy meter" : "energyMeter", 
+                    "Garage door" : "garageDoorControl", 
+                    "Humidity" : "humiditySensor", 
+                    "Illuminance" : "illuminanceSensor", 
+    				"Lock" : "lock", 
+                    "Motion" : "motionSensor", 
+                    "Power meter" : "powerMeter", 
+                    "Presence" : "presenceSensor", 
+                    "Smoke detector" : "smokeDetector", 
+                    "Switch" : "switch", 
+                    "Temperature" : "temperatureMeasurement", 
+                    "Thermostat" : "thermostat",
+        			"Water sensor" : "waterSensor", 
+                    "Music player" : "musicPlayer", 
+                    "Actuator" : "actuator"]
 	def result
 	def newCmd = getCmdLabel()
 	def found = commandExists(newCmd)
@@ -610,6 +644,7 @@ def addCommand(){
 			params.put(i, param)
 		}	
 		cmd.put("params",params)
+        if(myCapab) cmd.put("capab", capabs[myCapab]) else cmd.put("capab", "actuator")
 		if (cmdMaps) cmdMaps.put((nextIDX),cmd)
 		else state.customCommands = [(nextIDX):cmd]
 		result = "command: ${newCmd} was added"

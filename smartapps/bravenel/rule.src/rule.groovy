@@ -3,10 +3,11 @@
  *
  *  Copyright 2015, 2016 Bruce Ravenel
  *
- *  Version 1.7.12d   20 Feb 2016
+ *  Version 1.7.13   21 Feb 2016
  *
  *	Version History
  *
+ *	1.7.13	21 Feb 2016		Improved custom command selection
  *	1.7.12	19 Feb 2016		Added Private Boolean enable/disable, capture/restore color hue and saturation
  *	1.7.11	15 Feb 2016		Further UI redesign to better distinguish triggers, added seconds for delayed on/off
  *	1.7.10	9 Feb 2016		Added Music player condition, fixed Days of Week schedule bug
@@ -91,7 +92,7 @@ preferences {
 def mainPage() {
 	//version to parent app and expert settings for rule
 	try { 
-		state.isExpert = parent.isExpert("1.7.12d") 
+		state.isExpert = parent.isExpert("1.7.13") 
 		if (state.isExpert) state.cstCmds = parent.getCommands()
 		else state.cstCmds = []
 	}
@@ -2295,7 +2296,14 @@ def execCommands(truth){
 }
 
 def selectCustomActions(){
-	def cstCmds = state.cstCmds.sort()
+	def cstCmds = []
+    def cstCapabs = []
+    state.cstCmds.each {
+    	it.each {myT ->
+            cstCmds << [(myT.key):myT.value[0]]
+            cstCapabs << [(myT.key):myT.value[1]]
+        }
+    }
 	def truth = state.ccTruth
 	def devicePrefix
 	def commandPrefix
@@ -2304,6 +2312,7 @@ def selectCustomActions(){
 	def allDevices
 	def allCommands
 	def howMany
+    def capab
 	if (truth) {
 		devicePrefix = "customDeviceTrue"
 		commandPrefix = "ccTrue"
@@ -2328,20 +2337,23 @@ def selectCustomActions(){
 			if (i == 1) theseDevices = devicePrefix
 			else theseDevices = devicePrefix + "${i}" 
 			def crntDevices = settings."${theseDevices}"
-			section("custom device #${i}"){
-				input (name: theseDevices, type: "capability.actuator", title: "Custom devices", multiple: true, required: false, submitOnChange: true)
-				if (crntDevices) {
-					if (i == 1) thisCommand = commandPrefix
-					else thisCommand = commandPrefix + "${i}"
-					def crntCommand = settings."${thisCommand}"
-					input( name: thisCommand, type: "enum", title: "Run this command", multiple: false, required: false, options: cstCmds, submitOnChange: true)
-					if (crntCommand){
+			section("Custom command #${i}"){
+				if(i == 1) thisCommand = commandPrefix
+                else thisCommand = commandPrefix + "${i}"
+                def crntCommand = settings."${thisCommand}"
+                input( name: thisCommand, type: "enum", title: "Run this command", multiple: false, required: false, options: cstCmds, submitOnChange: true)
+				if (crntCommand) {
+					if (cstCmds.find{it[crntCommand]}) {
+                        capab = cstCapabs.find{it[crntCommand]}[crntCommand]
+					}
+                	input (name: theseDevices, type: "capability.$capab", title: "On these devices", multiple: true, required: false, submitOnChange: true)
+					if (crntDevices){
 						if (cstCmds.find{it[crntCommand]}) {
 							def c = cstCmds.find{it[crntCommand]}[crntCommand]
 							cmdActions("Command: ${c} on ${crntDevices}",truth)    
 						}
 					}
-				}
+                }
 			}
 		}
 		if (truth) {
