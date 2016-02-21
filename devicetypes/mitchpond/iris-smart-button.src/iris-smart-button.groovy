@@ -85,10 +85,7 @@ def parse(String description) {
 }
 
 def configure(){
-	[
-    "zdo bind 0x${device.deviceNetworkId} 1 1 0x402 {${device.zigbeeId}} {}", "delay 200"
-    ] + 
-    zigbee.onOffConfig() +
+	zigbee.onOffConfig() +											//on/off binding
     zigbee.configureReporting(1,0x20,0x20,3600,86400,0x01) + 		//battery reporting
     zigbee.configureReporting(0x0402,0x00,0x29,30,3600,0x0064) + 	//temperature reporting
     refresh()
@@ -108,7 +105,7 @@ def parseCatchAllMessage(descMap) {
     if (descMap?.clusterId == "0006" && descMap?.command == "01") 		//button pressed
     	return createPressEvent(1)
     else if (descMap?.clusterId == "0006" && descMap?.command == "00") 	//button released
-    	return createButtonEvent(1) + createEvent([name: 'lastPress', value: null, displayed: false])
+    	return [createButtonEvent(1), createEvent([name: 'lastPress', value: null, displayed: false])]
     else if (descMap?.clusterId == "0402" && descMap?.command == "01") 	//temperature response
     	return parseTempAttributeMsg(descMap)
 }
