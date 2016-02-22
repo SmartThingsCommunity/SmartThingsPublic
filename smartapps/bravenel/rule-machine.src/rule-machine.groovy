@@ -3,7 +3,7 @@
  *
  *  Copyright 2015, 2016 Bruce Ravenel and Mike Maxwell
  *
- *  Version 1.7.5b   21 Feb 2016
+ *  Version 1.7.5c   22 Feb 2016
  *
  *	Version History
  *
@@ -69,7 +69,7 @@ def mainPage() {
         section ("Remove Rule Machine"){
         	href "removePage", description: "Tap to remove Rule Machine and Rules", title: ""
         }
-        if(state.ver) section ("Version 1.7.5b/" + state.ver) { }
+        if(state.ver) section ("Version 1.7.5c/" + state.ver) { }
     }
 }
 
@@ -266,7 +266,7 @@ def customCommandsPAGE() {
 }
 
 def getCapab() {  
-	def myOptions = ["Acceleration", "Button", "Carbon monoxide detector", "Contact", "Dimmer", "Energy meter", "Garage door", "Humidity", "Illuminance", 
+	def myOptions = ["Acceleration", "Actuator", "Button", "Carbon monoxide detector", "Contact", "Dimmer", "Energy meter", "Garage door", "Humidity", "Illuminance", 
     	"Lock", "Motion", "Power meter", "Presence", "Smoke detector", "Switch", "Temperature", "Thermostat", "Water sensor", "Music player"]
 	def result = input "myCapab", "enum", title: "Select capability for test device", required: false, options: myOptions.sort(), submitOnChange: true
 }
@@ -279,6 +279,10 @@ def getDevs() {
 		case "Switch":
 			thisName = "switch"
 			thisCapab = "switch"
+			break
+		case "Actuator":
+			thisName = "actuator"
+			thisCapab = "actuator"
 			break
 		case "Motion":
 			thisName = "motion sensor"
@@ -616,8 +620,10 @@ def commandExists(cmd){
 }
 def addCommand(){
 	def capabs = [	"Acceleration" : "accelerationSensor", 
+    				"Button" : "button",
     				"Carbon monoxide detector" : "carbonMonoxideDetector", 
                     "Contact" : "contactSensor", 
+                    "Dimmer" : "switchLevel",
                     "Energy meter" : "energyMeter", 
                     "Garage door" : "garageDoorControl", 
                     "Humidity" : "humiditySensor", 
