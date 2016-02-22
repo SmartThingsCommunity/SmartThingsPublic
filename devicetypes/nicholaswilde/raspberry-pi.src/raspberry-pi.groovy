@@ -1,25 +1,3 @@
-/**
- *  Raspberry Pi
- *
- *  Copyright 2015 Nicholas Wilde
- *
- *  Monitor your Raspberry Pi using SmartThings and BerryIO SmartThings <https://github.com/nicholaswilde/berryio-smartthings>
- *
- *  Contributors:
- *  Thanks to NewHorizons for BerryIO
- *  Thanks to Ledridge for the SmartThings addition to BerryIO
- *  
- *  Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except
- *  in compliance with the License. You may obtain a copy of the License at:
- *
- *      http://www.apache.org/licenses/LICENSE-2.0
- *
- *  Unless required by applicable law or agreed to in writing, software distributed under the License is distributed
- *  on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the License
- *  for the specific language governing permissions and limitations under the License.
- *
- */
- 
 import groovy.json.JsonSlurper;
 import com.google.common.base.Splitter;
 import java.util.List;
@@ -28,7 +6,7 @@ import java.util.Map.Entry;
 
 
 preferences {
-        input("ip", "string", title:"IP Address", description: "192.168.1.150", defaultValue: "192.168.1.150" ,required: true, displayDuringSetup: true)
+        input("ip", "string", title:"IP Address", description: "192.168.1.7", defaultValue: "192.168.1.7" ,required: true, displayDuringSetup: true)
         input("port", "string", title:"Port", description: "80", defaultValue: "80" , required: true, displayDuringSetup: true)
         input("username", "string", title:"Username", description: "pi", defaultValue: "pi" , required: true, displayDuringSetup: true)
         input("password", "password", title:"Password", description: "raspberry", defaultValue: "raspberry" , required: true, displayDuringSetup: true)
