@@ -1,0 +1,12 @@
+[Unit]
+Description=screen
+After=network.target
+
+[Service]
+Type=simple
+User=%i
+ExecStart=/usr/bin/screen -DmS alarmserver /home/%i/alarmserver/alarmserver.py -c /home/%i/alarmserver/alarmserver.cfg
+ExecStop=/usr/bin/screen -S alarmserver -X quit
+
+[Install]
+WantedBy=multi-user.target
