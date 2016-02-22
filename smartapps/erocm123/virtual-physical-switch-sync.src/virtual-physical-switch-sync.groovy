@@ -1,13 +1,9 @@
 /**
- *  Virtual / Physical Switch Sync (i.e. Enerwave ZWN-RSM2 Adapter, Monoprice Dual Relay, Philio PAN04)
+ *  Virtual / Physical Switch Sync (i.e. Enerwave ZWN-RSM2 Adapter, Monoprice Dual Relay, Philio PAN04, Aeon SmartStrip)
  *
  *  Copyright 2016 Eric Maycock (erocm123)
  * 
- *  Special thanks to Joel Tamkin for the bulk of this code. Special thanks to Justin Ellison for other additions and "cleanups"
- * 
- *  2016-01-13: erocm123 - Added "on/offPhysical()" code (as suggested by Justin Ellison) to prevent the app from turning lights on/off when quickly flicking switch.
- *                         Must be using the "Simulated Switch" device type for this to work right.
- *  2015-10-29: erocm123 - I removed the scheduled refreshes for my Philio PAN04 as it supports instant status updates with my custom device type
+ *  Note: Use a "Simulated Switch" from the IDE for best results
  *
  *  Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except
  *  in compliance with the License. You may obtain a copy of the License at:
@@ -30,13 +26,28 @@ definition(
 
 
 preferences {
-  section("Configuration:") {
-    input "physical", "capability.switch", title: "Which Dual Relay Module?", multiple: false, required: true
-    input "virtual1", "capability.switch", title: "Virtual Switch to link to Switch 1?", multiple: false, required: true
-    input "virtual2", "capability.switch", title: "Virtual Switch to link to Switch 2?", multiple: false, required: false
-    input "virtual3", "capability.switch", title: "Virtual Switch to link to Switch 3?", multiple: false, required: true
-    input "virtual4", "capability.switch", title: "Virtual Switch to link to Switch 4?", multiple: false, required: false
-  }
+    page(name: "numberPage", nextPage: "setupPage")
+    page(name: "setupPage")
+}
+
+def numberPage() {
+    dynamicPage(name: "numberPage", install: false, uninstall: true) {
+        section {
+            input "vNumber", "number", title:"Number of virtual switches", description: 2, defaultValue: 2 , required: true
+        }
+    }
+
+}
+
+def setupPage() {
+    dynamicPage(name: "setupPage", install: true, uninstall: true) {
+    section {
+        input "physical", "capability.switch", title: "Which Pyhsical Switch?", multiple: false, required: true
+        for (int i = 1; i <= vNumber; i++){
+            input "virtual${i}", "capability.switch", title: "Virtual Switch to link to Switch ${i}?", multiple: false, required: true        
+        }
+    }
+    }
 }
 
 def installed() {
@@ -51,117 +62,47 @@ def updated() {
 }
 
 def initialize() {
-  log.debug "Initializing Dual Relay Adapter v1.0.1"
-  subscribe(physical,     "switch1", physicalHandler)
-  subscribe(physical,     "switch2", physicalHandler)
-  subscribe(physical,     "switch3", physicalHandler)
-  subscribe(physical,     "switch4", physicalHandler)
-  subscribeToCommand(virtual1, "on", virtualHandler)
-  subscribeToCommand(virtual1, "off", virtualHandler)
-  subscribeToCommand(virtual2, "on", virtualHandler)
-  subscribeToCommand(virtual2, "off", virtualHandler)
-  subscribeToCommand(virtual3, "on", virtualHandler)
-  subscribeToCommand(virtual3, "off", virtualHandler)
-  subscribeToCommand(virtual4, "on", virtualHandler)
-  subscribeToCommand(virtual4, "off", virtualHandler)
+  log.debug "Initializing Virtual / Physical Switch Sync v 1.0"
+  for (int i = 1; i <= vNumber; i++){
+     subscribe(physical, "switch${i}", physicalHandler)
+     subscribeToCommand(settings["virtual${i}"], "on", virtualHandler)
+     subscribeToCommand(settings["virtual${i}"], "off", virtualHandler)
+  }
 }
 
 def virtualHandler(evt) {
-  log.debug "switchHandler called with event:  name:${evt.name} source:${evt.source} value:${evt.value} isStateChange: ${evt.isStateChange()} isPhysical: ${evt.isPhysical()} isDigital: ${evt.isDigital()} data: ${evt.data} device: ${evt.device}"
-  switch (evt.deviceId) {
-    case virtual1.id:
-      switch (evt.value) {
-        case 'on':
-          //log.debug "switch 1 on"
-          physical.on1()
-          break
-        case 'off':
-          //log.debug "switch 1 off"
-          physical.off1()
-          break
-        }
-        break
-    case virtual2.id:
-      switch (evt.value) {
-        case 'on':
-          //log.debug "switch 2 on"
-          physical.on2()
-          break
-        case 'off':
-          //log.debug "switch 2 off"
-          physical.off2()
-          break
-        }
-        break
-        case virtual3.id:
-      switch (evt.value) {
-        case 'on':
-          //log.debug "switch 2 on"
-          physical.on3()
-          break
-        case 'off':
-          //log.debug "switch 2 off"
-          physical.off3()
-          break
-        }
-        break
-        case virtual4.id:
-      switch (evt.value) {
-        case 'on':
-          //log.debug "switch 2 on"
-          physical.on4()
-          break
-        case 'off':
-          //log.debug "switch 2 off"
-          physical.off4()
-          break
-        }
-        break
-    default:
-      pass
-  }
+  log.debug "switchHandler called with event: deviceId ${evt.deviceId} name:${evt.name} source:${evt.source} value:${evt.value} isStateChange: ${evt.isStateChange()} isPhysical: ${evt.isPhysical()} isDigital: ${evt.isDigital()} data: ${evt.data} device: ${evt.device}"
+  
+    for (int i = 1; i <= vNumber; i++){
+       if (evt.deviceId == settings["virtual${i}"].id) {
+          switch (evt.value) {
+             case 'on':
+             //log.debug "switch ${i} on"
+             physical."on${i}"()
+             //eval(physical.on+${i}())
+             break
+             case 'off':
+             //log.debug "switch ${i} off"
+             physical."off${i}"()
+             break
+          }
+       }
+    }
 }
 
 def physicalHandler(evt) {
   log.debug "rsmHandler called with event:  name:${evt.name} source:${evt.source} value:${evt.value} isStateChange: ${evt.isStateChange()} isPhysical: ${evt.isPhysical()} isDigital: ${evt.isDigital()} data: ${evt.data} device: ${evt.device}"
-  if (evt.name == "switch1") {
-    switch (evt.value) {
-      case 'on':
-        virtual1.onPhysical()
-        break
-      case 'off':
-        virtual1.offPhysical()
-        break
-    }
-  }
-  else if (evt.name == "switch2") {
-    switch (evt.value) {
-      case 'on':
-        virtual2.onPhysical()
-        break
-      case 'off':
-        virtual2.offPhysical()
-        break
-    }
-  }
-  else if (evt.name == "switch3") {
-    switch (evt.value) {
-      case 'on':
-        virtual3.onPhysical()
-        break
-      case 'off':
-        virtual3.offPhysical()
-        break
-    }
-    }
-    else if (evt.name == "switch4") {
-    switch (evt.value) {
-      case 'on':
-        virtual4.onPhysical()
-        break
-      case 'off':
-        virtual4.offPhysical()
-        break
-    }
+  
+  for (int i = 1; i <= vNumber; i++){
+       if (evt.name == "switch${i}") {
+          switch (evt.value) {
+             case 'on':
+             settings["virtual${i}"].onPhysical()
+             break
+             case 'off':
+             settings["virtual${i}"].offPhysical()
+             break
+          }
+       }
     }
 }
