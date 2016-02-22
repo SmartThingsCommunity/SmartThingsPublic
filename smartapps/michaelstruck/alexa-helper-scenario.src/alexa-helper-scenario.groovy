@@ -2,7 +2,7 @@
  *  Alexa Helper-Child
  *
  *  Copyright © 2016 Michael Struck
- *  Version 2.5.1 2/14/16
+ *  Version 2.6.0 2/21/16
  * 
  *  Version 1.0.0 - Initial release of child app
  *  Version 1.1.0 - Added framework to show version number of child app and copyright
@@ -19,6 +19,7 @@
  *  Version 2.4.0 - Added GUI (in parent app) to allow for variable number of Sonos memory slots, added speaker pause toggle
  *  Version 2.5.0 - Added switch functions when speaker on/off issued
  *  Version 2.5.1 - Fixed issue with songs not initalizing
+ *  Version 2.6.0 - Refined notification methods; displays action on notification feed and added push notifications; code optimization
  *
  *  Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except
  *  in compliance with the License. You may obtain a copy of the License at:
@@ -28,7 +29,6 @@
  *  Unless required by applicable law or agreed to in writing, software distributed under the License is distributed
  *  on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the License
  *  for the specific language governing permissions and limitations under the License.
- *
  */
 definition(
 	name: "Alexa Helper-Scenario",
@@ -52,11 +52,8 @@ preferences {
 def pageStart() {
 	dynamicPage(name: "pageStart", title: "Scenario Settings", uninstall: true, install: true) {
 		section {
-       		def parentVersion = parent.versionInt()
-			if (parentVersion < 420){
-				paragraph "You are using a version of the parent app that is older than the recommended version. Please upgrade "+
+			if (parent.versionInt() < 430) paragraph "You are using a version of the parent app that is older than the recommended version. Please upgrade "+
 					"to the latest version to ensure you have the latest features and bug fixes."
-			}
             label title:"Scenario Name", required:true
     	   	input "scenarioType", "enum", title: "Scenario Type...", options: [["Control":"Modes/Routines/Devices/HTTP/SHM"],["Panic":"Panic Commands"],"Speaker","Thermostat"], required: false, multiple: false, submitOnChange:true
         	if (scenarioType){
@@ -88,34 +85,34 @@ def pageControl() {
     		input "showOptions", "enum", title: "Switch states to react to...", options: ["":"On/Off", "1":"On Only", "2":"Off Only"] , required: false, submitOnChange:true
         }
         def phrases = location.helloHome?.getPhrases()*.label
-		if (phrases) {
-        	phrases.sort()
-		}	
+		if (phrases) phrases.sort()	
         if (!showOptions || showOptions == "1") {
         	section ("When switch is on..."){
-        		if (phrases) {
-            		input "onPhrase", "enum", title: "Perform this routine", options: phrases, required: false
-            	}
+        		if (phrases) input "onPhrase", "enum", title: "Perform this routine", options: phrases, required: false
         		input "onMode", "mode", title: "Change to this mode", required: false
             	input "onSHM", "enum",title: "Change Smart Home Monitor to...", options: ["away":"Arm(Away)", "stay":"Arm(Stay)", "off":"Disarm"], required: false
             	href "pageSTDevicesOn", title: "SmartThings Device Control...", description: getDeviceDesc("on")
             	input "onHTTP", "text", title:"Run this HTTP request...", required: false
             	input "delayOn", "number", title: "Delay in minutes", defaultValue: 0, required: false
-                input "onSMSNum", "phone", title: "Send SMS message (phone number)...", required: false
+                input ("onContacts", "contact", title: "Send notifications to...") {
+                	input "onSMSNum", "phone", title: "Send SMS message (phone number)...", required: false
+                	input "onPushMsg", "bool", title: "Send Push message", defaultValue: false
+				}
                 input "onSMSMsg", "text", title: "Message to send...", required: false
 			}
         }
         if (!showOptions || showOptions == "2") {
         	section ("When switch is off..."){
-        		if (phrases) {
-            		input "offPhrase", "enum", title: "Perform this routine", options: phrases, required: false
-            	}
+        		if (phrases) input "offPhrase", "enum", title: "Perform this routine", options: phrases, required: false
         		input "offMode", "mode", title: "Change to this mode", required: false
                 input "offSHM", "enum",title: "Change Smart Home Monitor to...", options: ["away":"Arm(Away)", "stay":"Arm(Stay)", "off":"Disarm"], required: false
                 href "pageSTDevicesOff", title: "SmartThings Device Control...", description: getDeviceDesc("off")
                 input "offHTTP", "text", title:"Run this HTTP request...", required: false
                 input "delayOff", "number", title: "Delay in minutes", defaultValue: 0, required: false
-                input "offSMSNum", "phone", title: "Send SMS message (phone number)...", required: false
+                input ("offContacts", "contact", title: "Send notifications to...") {
+                	input "offSMSNum", "phone", title: "Send SMS message (phone number)...", required: false
+                	input "offPushMsg", "bool", title: "Send Push message", defaultValue: false
+                }
                 input "offSMSMsg", "text", title: "Message to send...", required: false
         	}
         }
@@ -126,44 +123,32 @@ def pageSTDevicesOn(){
 	dynamicPage (name: "pageSTDevicesOn", title: "SmartThings Device Control", install: false, uninstall: false) {
 		section ("Switches"){
     		input "onSwitches", "capability.switch", title: "Control these switches...", multiple: true, required: false, submitOnChange:true
-        	if (onSwitches){
-        		input "onSwitchesCMD", "enum", title: "Switches command", options:["on":"Turn on","off":"Turn off", "toggle":"Toggle the switches' on/off state"], multiple: false, required: false
-    		}
+        	if (onSwitches) input "onSwitchesCMD", "enum", title: "Command to send to switches", options:["on":"Turn on","off":"Turn off", "toggle":"Toggle the switches' on/off state"], multiple: false, required: false
     	}
     	section ("Dimmers"){
     		input "onDimmers", "capability.switchLevel", title: "Control these dimmers...", multiple: true, required: false, submitOnChange:true
-        	if (onDimmers){
-        		input "onDimmersCMD", "enum", title: "Dimmer command", options:["on":"Turn on","off":"Turn off","set":"Set level", "toggle":"Toggle the dimmers' on/off state"], multiple: false, required: false, submitOnChange:true
-   			}
-        	if (onDimmersCMD == "set" && onDimmers){
-        		input "onDimmersLVL", "number", title: "Dimmer level", description: "Set dimmer level", required: false, defaultValue: 0
-        	}
+        	if (onDimmers) input "onDimmersCMD", "enum", title: "Command to send to dimmers", options:["on":"Turn on","off":"Turn off","set":"Set level", "toggle":"Toggle the dimmers' on/off state"], multiple: false, required: false, submitOnChange:true
+        	if (onDimmersCMD == "set" && onDimmers) input "onDimmersLVL", "number", title: "Dimmers level", description: "Set dimmer level", required: false, defaultValue: 0
    		}
         section ("Colored Lights"){
         	input "onColoredLights", "capability.colorControl", title: "Control these colored lights...", multiple: true, required: false, submitOnChange:true
-			if (onColoredLights){
-        		input "onColoredLightsCMD", "enum", title: "Colored lights command", options:["on":"Turn on","off":"Turn off","set":"Set color and level", "toggle":"Toggle the lights' on/off state"], multiple: false, required: false, submitOnChange:true
-   			}
+			if (onColoredLights) input "onColoredLightsCMD", "enum", title: "Command to send to colored lights", options:["on":"Turn on","off":"Turn off","set":"Set color and level", "toggle":"Toggle the lights' on/off state"], multiple: false, required: false, submitOnChange:true
             if (onColoredLightsCMD == "set" && onColoredLights){
         		input "onColoredLightsCLR", "enum", title: "Choose a color...", required: false, multiple:false, options: getColorOptions(), submitOnChange:true
                 if (onColoredLightsCLR == "User Defined"){
-                	input "hueUserDefined", "number", title: "Colored light hue", description: "Set colored light hue (0 to 100)", required: false, defaultValue: 0
-                	input "satUserDefined", "number", title: "Colored light saturation", description: "Set colored light saturation (0 to 100)", required: false, defaultValue: 0
+                	input "hueUserDefined", "number", title: "Colored lights hue", description: "Set colored light hue (0 to 100)", required: false, defaultValue: 0
+                	input "satUserDefined", "number", title: "Colored lights saturation", description: "Set colored light saturation (0 to 100)", required: false, defaultValue: 0
                 }
-                input "onColoredLightsLVL", "number", title: "Colored light level", description: "Set colored light level", required: false, defaultValue: 0
+                input "onColoredLightsLVL", "number", title: "Colored lights level", description: "Set colored light level", required: false, defaultValue: 0
             }
     	}
         section ("Locks"){
         	input "onLocks","capability.lock", title: "Control these locks...", multiple: true, required: false, submitOnChange:true
-        	if (onLocks){
-            	input "onLocksCMD", "enum", title: "Locks command", options:["lock":"Lock","unlock":"Unlock"], multiple: false, required: false
-            }
+        	if (onLocks) input "onLocksCMD", "enum", title: "Command to send to locks", options:["lock":"Lock","unlock":"Unlock"], multiple: false, required: false
         }
-        section("Garage Doors"){
+        section("Garage Doors") {
         	input "onGarages","capability.garageDoorControl", title: "Control these garage doors...", multiple: true, required: false, submitOnChange:true
-            if (onGarages){
-            	input "onGaragesCMD", "enum", title: "Garge door command", options:["open":"Open","close":"Close"], multiple: false, required: false
-            }
+            if (onGarages) input "onGaragesCMD", "enum", title: "Command to send to garage doors", options:["open":"Open","close":"Close"], multiple: false, required: false
         }
 	}
 }
@@ -172,40 +157,28 @@ def pageSTDevicesOff(){
 	dynamicPage (name: "pageSTDevicesOff", title: "SmartThings Device Control", install: false, uninstall: false) {
 		section ("Switches"){
     		input "offSwitches", "capability.switch", title: "Control these switches...", multiple: true, required: false, submitOnChange:true
-        	if (offSwitches){
-        		input "offSwitchesCMD", "enum", title: "Command sent to switches", options:["on":"Turn on","off":"Turn off", "toggle":"Toggle the switches state"], multiple: false, required: false
-    		}
+        	if (offSwitches) input "offSwitchesCMD", "enum", title: "Command to send to switches", options:["on":"Turn on","off":"Turn off", "toggle":"Toggle the switches state"], multiple: false, required: false
     	}
     	section ("Dimmers"){
     		input "offDimmers", "capability.switchLevel", title: "Control these dimmers...", multiple: true, required: false , submitOnChange:true
-        	if (offDimmers){
-        		input "offDimmersCMD", "enum", title: "Dimmer command", options:["on":"Turn on","off":"Turn off","set":"Set level", "toggle":"Toggle the switches state"], multiple: false, required: false, submitOnChange:true
-   			}
-        	if (offDimmersCMD == "set" && offDimmers){
-        		input "offDimmersLVL", "number", title: "Dimmer level", description: "Set dimmer level", required: false, defaultValue: 0
-        	}
+        	if (offDimmers) input "offDimmersCMD", "enum", title: "Command to send to dimmers", options:["on":"Turn on","off":"Turn off","set":"Set level", "toggle":"Toggle the switches state"], multiple: false, required: false, submitOnChange:true
+        	if (offDimmersCMD == "set" && offDimmers) input "offDimmersLVL", "number", title: "Dimmers level", description: "Set dimmer level", required: false, defaultValue: 0
    		}
         section ("Colored Lights"){
         	input "offColoredLights", "capability.colorControl", title: "Control these colored lights...", multiple: true, required: false, submitOnChange:true
-			if (offColoredLights){
-        		input "offColoredLightsCMD", "enum", title: "Colored lights command", options:["on":"Turn on","off":"Turn off","set":"Set color and level", "toggle":"Toggle the switches state"], multiple: false, required: false, submitOnChange:true
-   			}
+			if (offColoredLights) input "offColoredLightsCMD", "enum", title: "Command to send to colored lights", options:["on":"Turn on","off":"Turn off","set":"Set color and level", "toggle":"Toggle the switches state"], multiple: false, required: false, submitOnChange:true
             if (offColoredLightsCMD == "set" && offColoredLights){
         		input "offColoredLightsCLR", "enum", title: "Choose a color...", required: false, multiple:false, options: getColorOptions()
-                input "offColoredLightsLVL", "number", title: "Colored light level", description: "Set colored light level", required: false, defaultValue: 0
+                input "offColoredLightsLVL", "number", title: "Colored light level", description: "Set colored lights level", required: false, defaultValue: 0
         	}
     	}
         section ("Locks"){
         	input "offLocks","capability.lock", title: "Control these locks...", multiple: true, required: false, submitOnChange:true
-        	if (offLocks){
-            	input "offLocksCMD", "enum", title: "Locks command", options:["lock":"Lock","unlock":"Unlock"], multiple: false, required: false
-            }
+        	if (offLocks) input "offLocksCMD", "enum", title: "Command to send to locks", options:["lock":"Lock","unlock":"Unlock"], multiple: false, required: false
         }
         section("Garage Doors"){
         	input "offGarages","capability.garageDoorControl", title: "Control these garage doors...", multiple: true, required: false, submitOnChange:true
-            if (offGarages){
-            	input "offGaragesCMD", "enum", title: "Garge door command", options:["open":"Open","close":"Close"], multiple: false, required: false
-            }
+            if (offGarages) input "offGaragesCMD", "enum", title: "Command to send to garage doors", options:["open":"Open","close":"Close"], multiple: false, required: false
         }
 	}
 }
@@ -214,15 +187,11 @@ def pagePanic() {
 	dynamicPage(name: "pagePanic", title: "Panic Scenario Settings", install: false, uninstall: false) {
         section {
 			input "panicSwitchOn", "capability.momentary", title: "ON Control Switch (Momentary)", multiple: false, required: true, submitOnChange:true
-          	if (panicSwitchOn){
-            	input "panicSwitchOff", "capability.momentary", title: "OFF Control Switch (Momentary)", multiple: false, required: false, submitOnChange:true
-            }
+          	if (panicSwitchOn) input "panicSwitchOff", "capability.momentary", title: "OFF Control Switch (Momentary)", multiple: false, required: false, submitOnChange:true
         }
         section ("When panic is activated..."){
         	input "alarm", "capability.alarm", title: "Activate alarms...", multiple: true, required: false, submitOnChange:true
-            if (parent.getSonos()){
-            	input "alarmSonos", "capability.musicPlayer", title: "Use Sonos as alarm...", multiple: false , required: false , submitOnChange:true
-			}
+            if (parent.getSonos()) input "alarmSonos", "capability.musicPlayer", title: "Use Sonos as alarm...", multiple: false , required: false , submitOnChange:true
             if (alarm){
             	input "alarmType", "enum", title: "Choose an alarm type", options: ["strobe":"Strobe light", "siren":"Siren", "both":"Both stobe and siren"], multiple: false, required: false  
             	input "alarmTimer", "number", title:"Alarm turns off automatically after (minutes)", required: false
@@ -239,16 +208,20 @@ def pagePanic() {
             if (alarmSonos && parent.getSonos()  && !alarmSonos.name.contains("Sonos")){
             	paragraph "You have chosen a speaker for your alarm that is not supported. Currently, only Sonos speakers can be used as alarms. Please choose a Sonos speaker."
             }
-            input "panicSMSnumberOn", "phone", title: "Send SMS message to (phone number)...", required: false
+            input ("panicContactsOn", "contact", title: "Send notifications to...") {
+            	input "panicSMSnumberOn", "phone", title: "Send SMS message to (phone number)...", required: false
+            	input "panicPushOn", "bool", title: "Send Push Message", defaultValue: false
+            }
             input "panicSMSMsgOn","text",title: "Message to send...", required: false
         }
         if (panicSwitchOn && panicSwitchOff){
         	section ("When panic is deactivated..."){
-        		if (alarm || alarmSonos){
-            		input "alarmOff", "bool", title: "Turn off alarm?", defaultValue: false
+        		if (alarm || alarmSonos) input "alarmOff", "bool", title: "Turn off alarm?", defaultValue: false
+            	input ("panicContactsOff", "contact", title: "Send notifications to...") {
+                	input "panicSMSnumberOff", "phone", title: "Send SMS message to (phone number)...", required: false
+                	input "panicPushOff", "bool", title: "Send Push Message", defaultValue: false
             	}
-            	input "panicSMSnumberOff", "phone", title: "Send SMS message to (phone number)...", required: false
-            	input "panicSMSMsgOff","text",title: "Message to send...", required: false
+                input "panicSMSMsgOff","text",title: "Message to send...", required: false
         	}
         }
 	}
@@ -280,10 +253,8 @@ def pageSpeaker(){
             for (int i = 1; i <=sonosSlots(); i++) {
                 section ("Sonos Saved Station ${i}"){
 					input "song${i}Switch", "capability.momentary", title: "Saved Station Switch #${i} (Momentary)", multiple: false, required: false, submitOnChange:true
-					if (settings."song${i}Switch"){
-						input "song${i}Station", "enum", title: "Song/Station #${i}", description: "Tap to select recently played song/station", multiple: false, 
+					if (settings."song${i}Switch") input "song${i}Station", "enum", title: "Song/Station #${i}", description: "Tap to select recently played song/station", multiple: false, 
 							required: false, options: songOptions("${i}")
-					}
 				}
 			}
 		}
@@ -341,22 +312,20 @@ def initialize() {
     }
     //--------------------------------------------------------------------
     if (scenarioType == "Control"){
-        if (AlexaSwitch){
-        	subscribe(AlexaSwitch, "switch", "switchHandler")
-        }
+        if (AlexaSwitch) subscribe(AlexaSwitch, "switch", "switchHandler")
 	}
 	//--------------------------------------------------------------------
     if (scenarioType == "Thermostat"){
     	if (vDimmerTstat && tstat){
             subscribe (vDimmerTstat, "switch.off", "thermoOffHandler")
     		subscribe (vDimmerTstat, "level", "thermoHandler")
-        	if (heatingSwitch) {subscribe (heatingSwitch, "switch.on", "heatHandler")}
-        	if (coolingSwitch) {subscribe (coolingSwitch, "switch.on", "coolHandler")}
-        	if (autoSwitch) {subscribe (autoSwitch, "switch.on", "autoHandler")}
+        	if (heatingSwitch) subscribe (heatingSwitch, "switch.on", "heatHandler")
+        	if (coolingSwitch) subscribe (coolingSwitch, "switch.on", "coolHandler")
+        	if (autoSwitch) subscribe (autoSwitch, "switch.on", "autoHandler")
 		}
         if (parent.getNest()){
-        	if (nestHome){subscribe(nestHome, "switch.on", "nestHomeHandler")}
-            if (nestAway){subscribe(nestAway, "switch.on", "nestAwayHandler")}
+        	if (nestHome) subscribe(nestHome, "switch.on", "nestHomeHandler")
+            if (nestAway) subscribe(nestAway, "switch.on", "nestAwayHandler")
 		}
     }
     //--------------------------------------------------------------------
@@ -364,8 +333,8 @@ def initialize() {
     	if (vDimmerSpeaker && speaker) {
     		subscribe (vDimmerSpeaker, "level", "speakerVolHandler")
         	subscribe (vDimmerSpeaker, "switch", "speakerOnHandler")
-            if (nextSwitch) {subscribe (nextSwitch, "switch.on", "controlNextHandler")}
-        	if (prevSwitch) {subscribe (prevSwitch, "switch.on", "controlPrevHandler")} 
+            if (nextSwitch) subscribe (nextSwitch, "switch.on", "controlNextHandler")
+        	if (prevSwitch) subscribe (prevSwitch, "switch.on", "controlPrevHandler") 
             if (parent.getSonos() && speaker.name.contains("Sonos")){
 				for (int i = 1; i <= sonosSlots(); i++) {
                 	if (settings."song${i}Switch" && settings."song${i}Station"){
@@ -378,11 +347,9 @@ def initialize() {
     }
     //--------------------------------------------------------------------
 	if (scenarioType == "Panic"){
-		if (panicSwitchOn){subscribe (panicSwitchOn, "switch.on", "panicOn")}
-        if (panicSwitchOff){subscribe (panicSwitchOff, "switch.on", "panicOff")}
-        if (alarmSonos && parent.getSonos() && alarmSonos.name.contains("Sonos") && alarmSonosSound){
-        	getAlarmSound()
-		}
+		if (panicSwitchOn) subscribe (panicSwitchOn, "switch.on", "panicOn")
+        if (panicSwitchOff) subscribe (panicSwitchOff, "switch.on", "panicOff") 
+        if (alarmSonos && parent.getSonos() && alarmSonos.name.contains("Sonos") && alarmSonosSound) getAlarmSound()
 	}
 }
 //Handlers
@@ -390,19 +357,36 @@ def initialize() {
 def switchHandler(evt) {
     if (getOkToRun("Control Scenario on/off")) {    
         if (evt.value == "on" && getOkOnOptions()) {
-            !delayOn || delayOn == 0 ? turnOn() : runIn(delayOn*60, turnOn, [overwrite: true])
+            if (!delayOn || delayOn == 0) turnOn() 
+            else {
+            	runIn(delayOn*60, turnOn, [overwrite: true])
+				if (parent.getNotifyFeed()){
+    				def logText = "Alexa Helper Scenario: '${app.label}' ON triggered. Will activate in ${delayOn} minutes."
+                    sendNotificationEvent(logText)
+    			}
+            }
+            
     	} 
     	else if (evt.value == "off" && getOkOffOptions()) {
-        	!delayOff || delayOff == 0 ? turnOff() : runIn(delayOff*60, turnOff, [overwrite: true])
+        	if (delayOff || delayOff == 0) turnOff()
+            else{
+            	runIn(delayOff*60, turnOff, [overwrite: true])
+                if (parent.getNotifyFeed()){
+    				def logText = "Alexa Helper Scenario: '${app.label}' OFF triggered. Will activate in ${delayOn} minutes."
+                    sendNotificationEvent(logText)
+    			}
+            }
     	}
 	}
 }
 def turnOn(){
-    if (onPhrase){location.helloHome.execute(onPhrase)}
-	if (onMode) {changeMode(onMode)}
-    if (onSwitches && onSwitchesCMD){
-    	onSwitchesCMD == "toggle" ? toggleState(onSwitches) : onSwitches?."$onSwitchesCMD"()
-    }
+    if (parent.getNotifyFeed()){
+		def logText = "Alexa Helper Scenario: '${app.label}' ON activated."
+		sendNotificationEvent(logText)
+	}
+    if (onPhrase) location.helloHome.execute(onPhrase)
+	if (onMode) changeMode(onMode)
+    if (onSwitches && onSwitchesCMD) onSwitchesCMD == "toggle" ? toggleState(onSwitches) : onSwitches?."$onSwitchesCMD"()
     if (onDimmers && onDimmersCMD){
         if (onDimmersCMD == "set"){
         	def level = onDimmersLVL ? onDimmersLVL as int : 0
@@ -410,28 +394,17 @@ def turnOn(){
         	if (level >100) {level=100}
         	onDimmers?.setLevel(level)
         }
-        else {
-        	onDimmersCMD == "toggle" ? toggleState(onDimmers) : onDimmers?."$onDimmersCMD"()
-		}
+        else onDimmersCMD == "toggle" ? toggleState(onDimmers) : onDimmers?."$onDimmersCMD"()
     }
     if (onColoredLights && onColoredLightsCMD){
     	if (onColoredLightsCMD == "set"){
         	def level = onColoredLightsLVL ? onColoredLightsLVL as int : 0
             if (level < 0) {level=0}
         	if (level >100) {level=100}
-            if (onColoredLightsCLR){
-            	setColoredLights(onColoredLights, onColoredLightsCLR, level)
-            }
-            else {
-            	onColoredLights?.setLevel(level)
-            }
+            onColoredLightsCLR ? setColoredLights(onColoredLights, onColoredLightsCLR, level) : onColoredLights?.setLevel(level)
         }
-        else if (onColoredLightsCMD == "toggle"){
-    		toggleState(onColoredLights)	
-        }
-        else {
-        	onColoredLights?."$onColoredLightsCMD"()
-		}
+        else if (onColoredLightsCMD == "toggle") toggleState(onColoredLights)	
+        else onColoredLights?."$onColoredLightsCMD"()
     }
     if (onLocks && onLocksCMD){onLocks?."$onLocksCMD"()}
 	if (onHTTP){
@@ -443,45 +416,36 @@ def turnOn(){
         sendLocationEvent(name: "alarmSystemStatus", value: "${onSHM}")
     }
     if (onGarages && onGaragesCMD){onGarages?."$onGaragesCMD"()}
-    if (onSMSNum && onSMSMsg){sendMSG(onSMSNum, onSMSMsg)}
+   	if ((onPushMsg || onSMSNum || onContacts) && onSMSMsg){sendMSG(onSMSNum, onSMSMsg, onPushMsg, onContacts)}
 }
 def turnOff(){
-	if (offPhrase){location.helloHome.execute(offPhrase)}
-	if (offMode) {changeMode(offMode)}
-    if (offSwitches && offSwitchesCMD){
-    	offSwitchesCMD == "toggle" ? toggleState(offSwitches) : offSwitches?."$offSwitchesCMD"()
-    }
+	if (parent.getNotifyFeed()){
+		def logText = "Alexa Helper Scenario: '${app.label}' OFF activated."
+		sendNotificationEvent(logText)
+	}
+    if (offPhrase) location.helloHome.execute(offPhrase)
+	if (offMode) changeMode(offMode)
+    if (offSwitches && offSwitchesCMD) offSwitchesCMD == "toggle" ? toggleState(offSwitches) : offSwitches?."$offSwitchesCMD"()
     if (offDimmers && offDimmersCMD){
     	if (offDimmersCMD == "set"){
         	def level = offDimmersLVL ? offDimmersLVL as int : 0
-        	if (level < 0) {level=0}
-        	if (level >100) {level=100}
+        	if (level < 0) level=0
+        	if (level >100) level=100
         	offDimmers?.setLevel(level)
         }
-        else {
-			offDimmersCMD == "toggle" ? toggleState(offDimmers) : offDimmers?."$offDimmersCMD"()
-        }
+        else offDimmersCMD == "toggle" ? toggleState(offDimmers) : offDimmers?."$offDimmersCMD"()
     }
     if (offColoredLights && offColoredLightsCMD){
     	if (offColoredLightsCMD == "set"){
         	def level = offColoredLightsLVL ? offColoredLightsLVL as int : 0
-            if (level < 0) {level=0}
-        	if (level >100) {level=100}
-            if (offColoredLightsCLR){
-            	setColoredLights(offColoredLights, offColoredLightsCLR, level)
-            }
-            else {
-            	offColoredLights?.setLevel(level)
-            }
+            if (level < 0) level=0
+        	if (level >100) level=100
+            offColoredLightsCLR ? setColoredLights(offColoredLights, offColoredLightsCLR, level) : offColoredLights?.setLevel(level)
         }
-        else if (offColoredLightsCMD == "toggle"){
-    		toggleState(offColoredLights)	
-        }
-        else {
-        	offColoredLights?."$offColoredLightsCMD"()
-        }
+        else if (offColoredLightsCMD == "toggle") toggleState(offColoredLights)	
+        else offColoredLights?."$offColoredLightsCMD"()
     }
-    if (offLocks && offLocksCMD){offLocks?."$offLocksCMD"()}
+    if (offLocks && offLocksCMD) offLocks?."$offLocksCMD"()
     if (offHTTP){
     	log.debug "Attempting to run: ${offHTTP}"
         httpGet("${offHTTP}")
@@ -490,44 +454,48 @@ def turnOff(){
     	log.debug "Setting Smart Home Monitor to ${offSHM}"
         sendLocationEvent(name: "alarmSystemStatus", value: "${offSHM}")
     }
-    if (offGarages && offGaragesCMD){offGarages?."$offGaragesCMD"()}
-    if (offSMSNum && offSMSMsg){sendMSG(offSMSNum,offSMSMSG)}
+    if (offGarages && offGaragesCMD) offGarages?."$offGaragesCMD"()
+   	if ((offPushMsg || offSMSNum || offContacts) && offSMSMsg) sendMSG(offSMSNum, offSMSMSG, offPushMsg, offContacts)
 }
 //Panic Handlers-----------------------------------------------------------------
 //Panic On
 def panicOn(evt){
 	if (getOkToRun("Panic actions activated")) {
         if (alarm && alarmType){
-			alarmTurnOn()
+            alarmTurnOn()
 			if (alarmTimer && alarmTimer > 0){
 				def delayOff = alarmTimer as int
 				runIn(delayOff*60, alarmTurnOff, [overwrite: true])
 			}
 		}
         if (alarmSonos && parent.getSonos()  && alarmSonos.name.contains("Sonos") && alarmSonosSound) { 
-			if (alarmSonosVolume){
-                alarmSonos.setLevel(alarmSonosVolume as int)
-			}
+			if (alarmSonosVolume) alarmSonos.setLevel(alarmSonosVolume as int)
             alarmSonos.playSoundAndTrack (state.alarmSound.uri, state.alarmSound.duration,"")
         }
-        if (panicSMSnumberOn){ 
-			def smsTxt = panicSMSMsgOn ? panicSMSMsgOn : "Panic was activated/deactivated without message text input. Please investigate"
-            sendMSG(panicSMSnumberOn, smsTxt) 	
-		}	
+        if (panicSMSnumberOn || panicPushOn || panicContactsOn){ 
+			def smsTxt = panicSMSMsgOn ? panicSMSMsgOn : "Panic was activated without message text input. Please investigate"
+            sendMSG(panicSMSnumberOn, smsTxt, panicPushOn, panicContactsOn) 	
+		}
+		if (parent.getNotifyFeed()){
+			def logText = "Alexa Helper Scenario: '${app.label}' PANIC ON activated."
+			sendNotificationEvent(logText)
+		}        
 	}
 }
 //Panic Off
 def panicOff(evt){
 	if (getOkToRun("Panic actions deactivated")) {
 		if (alarmOff){
-			alarmTurnOff()
-        	if (alarmSonos && parent.getSonos()  && alarmSonos.name.contains("Sonos") && alarmSonosSound) { 
-            	alarmSonos.stop()
-        	}
+            alarmTurnOff()
+        	if (alarmSonos && parent.getSonos()  && alarmSonos.name.contains("Sonos") && alarmSonosSound) alarmSonos.stop()
 		}
-		if (panicSMSnumberOff){
-			def smsTxt = panicSMSMsgOff ? panicSMSMsgOff : "Panic was activated/deactivated without message text input. Please investigate"
-            sendMSG(panicSMSnumberOff, smsTxt) 	
+		if (panicSMSnumberOff || panicPushOff || panicContactsOff){
+			def smsTxt = panicSMSMsgOff ? panicSMSMsgOff : "Panic was deactivated without message text input. Please investigate"
+            sendMSG(panicSMSnumberOff, smsTxt, panicPushOff, panicContactsOff) 	
+		}
+        if (parent.getNotifyFeed()){
+			def logText = "Alexa Helper Scenario: '${app.label}' PANIC OFF activated."
+			sendNotificationEvent(logText)
 		}
 	}
 }
@@ -547,9 +515,7 @@ def speakerControl(cmd,song){
         	def speakerLevel = speakerInitial as int
     		vDimmerSpeaker.setLevel(speakerLevel)
         }
-        else {
-            vDimmerSpeaker.setLevel(speaker.currentValue("level") as int)
-        }
+        else vDimmerSpeaker.setLevel(speaker.currentValue("level") as int)
 		if (cmd=="station"){
     		log.debug "Playing: ${song}"
 			speaker.playTrack(song)
@@ -568,7 +534,7 @@ def speakerControl(cmd,song){
 def speakerVolHandler(evt){
     if (getOkToRun("Speaker volume change")) {
         def speakerLevel = vDimmerSpeaker.currentValue("level") as int
-    	if (speakerLevel == 0) {vDimmerSpeaker.off()}
+    	if (speakerLevel == 0) vDimmerSpeaker.off()
     	else {
         	// Get settings between limits
         	speakerLevel = upLimitSpeaker && (vDimmerSpeaker.currentValue("level") > upLimitSpeaker) ? upLimitSpeaker : speakerLevel
@@ -581,20 +547,14 @@ def speakerVolHandler(evt){
 //Speaker on/off
 def speakerOnHandler(evt){
 	if (getOkToRun("Speaker on/off")) {
-    	if (evt.value == "on" || evt.value == "off" ){
-    		speakerControl(evt.value,"")
-    	}
+    	if (evt.value == "on" || evt.value == "off" ) speakerControl(evt.value,"")
 	}
 }
 def controlNextHandler(evt){
-    if (getOkToRun("Speaker next track")) {
-		speaker.nextTrack()
-	}
+    if (getOkToRun("Speaker next track")) speaker.nextTrack()
 }
 def controlPrevHandler(evt){
-    if (getOkToRun("Speaker previous track")) {
-		speaker.previousTrack()   
-	}
+    if (getOkToRun("Speaker previous track")) speaker.previousTrack()   
 }
 def controlSong(evt){
 	def trigger = evt.displayName
@@ -609,9 +569,7 @@ def controlSong(evt){
 //Thermostat Handlers-----------------------------------------------------------------
 //Thermostat Off
 def thermoOffHandler(evt){
-	if (getOkToRun("Thermostat turned off")) {
-   		tstat.off()
-	}
+	if (getOkToRun("Thermostat turned off")) tstat.off()
 }
 //Thermostat mode changes
 def heatHandler(evt){
@@ -639,14 +597,10 @@ def autoHandler(evt){
 	}
 }
 def nestHomeHandler(evt){
-	if (getOkToRun("Thermostat mode:Home")) {	
-		tstat.present()
-	}
+	if (getOkToRun("Thermostat mode:Home")) tstat.present()
 }
 def nestAwayHandler(evt){
-   	if (getOkToRun("Thermostat mode:Away")) {	
-		tstat.away()
-	}
+   	if (getOkToRun("Thermostat mode:Away")) tstat.away()
 }
 //Thermostat Temp Handler
 def thermoHandler(evt){
@@ -658,12 +612,8 @@ def thermoHandler(evt){
     		tstatLevel = upLimitTstat && vDimmerTstat.currentValue("level") > upLimitTstat ? upLimitTstat : tstatLevel
         	tstatLevel = lowLimitTstat && vDimmerTstat.currentValue("level") < lowLimitTstat ? lowLimitTstat : tstatLevel
 			//Turn thermostat to proper level depending on mode	
-    		if (tstatMode == "heat" || tstatMode == "auto") {
-        		tstat.setHeatingSetpoint(tstatLevel)	
-    		}	
-    		if (tstatMode == "cool" || tstatMode == "auto") {
-        		tstat.setCoolingSetpoint(tstatLevel)	
-    		}
+    		if (tstatMode == "heat" || tstatMode == "auto") tstat.setHeatingSetpoint(tstatLevel)		
+    		if (tstatMode == "cool" || tstatMode == "auto") tstat.setCoolingSetpoint(tstatLevel)	
     		log.debug "Thermostat set to ${tstatLevel}"
 		}
     }
@@ -671,44 +621,28 @@ def thermoHandler(evt){
 //Common Methods-------------
 def getOkToRun(module){
 	def result = true
-    if (parent.getRestrictions()){
-        result = (!runMode || runMode.contains(location.mode)) && getDayOk(runDay) && getTimeOk(timeStart,timeEnd)  
-	}        
-	if (result){
-		log.debug "Alexa Helper scenario '${app.label}', '${module}' triggered"
-	}
-	else {
-		log.debug "Alexa Helper scenario '${app.label}', '${module}' not triggered due to scenario restrictions"
-	}
+    if (parent.getRestrictions()) result = (!runMode || runMode.contains(location.mode)) && getDayOk(runDay) && getTimeOk(timeStart,timeEnd)   
+	if (result) log.debug "Alexa Helper scenario '${app.label}', '${module}' triggered"
+	else log.debug "Alexa Helper scenario '${app.label}', '${module}' not triggered due to scenario restrictions"
     result
 }
 def getOkOnOptions(){
-	def result = (!showOptions || showOptions == "1") && (onPhrase || onMode || onSwitches || onDimmers || onColoredLights || onLocks || onGarages || onHTTP || onSHM || (onSMSNum && onSMSMsg))
+	def result = (!showOptions || showOptions == "1") && (onPhrase || onMode || onSwitches || onDimmers || onColoredLights || onLocks || onGarages || onHTTP || onSHM || onSMSMsg)
 }
 def getOkOffOptions(){
-	def result = (!showOptions || showOptions == "2") && (offPhrase || offMode || offSwitches || offDimmers || offColoredLights || offLocks || offGarages || offHTTP || offSHM || (offSMSNum && offSMSMsg))
+	def result = (!showOptions || showOptions == "2") && (offPhrase || offMode || offSwitches || offDimmers || offColoredLights || offLocks || offGarages || offHTTP || offSHM || offSMSMsg)
 }
 def changeMode(newMode) {
     if (location.mode != newMode) {
-		if (location.modes?.find{it.name == newMode}) {
-			setLocationMode(newMode)
-		} 
-        else {
-			log.debug "Unable to change to undefined mode '${newMode}'"
-		}
+		if (location.modes?.find{it.name == newMode}) setLocationMode(newMode)
+        else log.debug "Unable to change to undefined mode '${newMode}'"
 	}
 }
 def getTimeLabel(start, end){
 	def timeLabel = "Tap to set"
-    if(start && end){
-    	timeLabel = "Between " + hhmm(start) + " and " +  hhmm(end)
-    }
-    else if (start) {
-		timeLabel = "Start at " + hhmm(start)
-    }
-    else if(end){
-    	timeLabel = "End at " + hhmm(end)
-    }
+    if(start && end) timeLabel = "Between " + hhmm(start) + " and " +  hhmm(end)
+    else if (start) timeLabel = "Start at " + hhmm(start)
+    else if(end) timeLabel = "End at " + hhmm(end)
 	timeLabel	
 }
 def scenarioDesc(){
@@ -814,15 +748,9 @@ private getTimeOk(startTime, endTime) {
     def currTime = now()
 	def start = startTime ? timeToday(startTime).time : null
 	def stop = endTime ? timeToday(endTime).time : null
-	if (startTime && endTime) {
-		result = start < stop ? currTime >= start && currTime <= stop : currTime <= stop || currTime >= start
-	}
-	else if (startTime){
-    	result = currTime >= start
-    }
-    else if (endTime){
-    	result = currTime <= stop
-    }
+	if (startTime && endTime) result = start < stop ? currTime >= start && currTime <= stop : currTime <= stop || currTime >= start
+	else if (startTime) result = currTime >= start
+    else if (endTime) result = currTime <= stop
     result
 }
 def getColorOptions(){
@@ -872,10 +800,10 @@ private setColoredLights(switches, color, level){
 		case "Custom-User Defined":
         	hueColor = hueUserDefined ? hueUserDefined : 0
             satLevel = satUserDefined ? satUserDefined : 0
-            if (hueColor>100){hueColor=100}
-            if (hueColor<0){hueColor=0}
-            if (satLevel>100){satLevel=100}
-            if (satLevel<0){satLevel=0}
+            if (hueColor>100) hueColor=100
+            if (hueColor<0) hueColor=0
+            if (satLevel>100) satLevel=100
+            if (satLevel<0) satLevel=0
             break;
 	}
     def newValue = [hue: hueColor as int, saturation: satLevel as int, level: level as int]
@@ -895,7 +823,6 @@ def songOptions(slot) {
 		def states = speaker.statesSince("trackData", new Date(0), [max:30])
 		def dataMaps = states.collect{it.jsonValue}
 		options.addAll(dataMaps.collect{it.station})
-
 		log.trace "${options.size()} songs in list"
         options.take(20) as List
 	}
@@ -908,21 +835,27 @@ def saveSelectedSong(slot, song) {
 		log.info "Searching ${songs.size()} records"
 		def data = songs.find {s -> s.station == thisSong}
 		log.info "Found ${data?.station}"
-		if (data) {
-			state."selectedSong${slot}"=data
-		}
-		else {
-			log.warn "Selected song '$song' not found"
-		}
+		if (data) state."selectedSong${slot}"=data
+		else log.warn "Selected song '$song' not found"
 	}
 	catch (Throwable t) {
 		log.error t
 	}
 }
-//SendSMS
-def sendMSG(num, msg){
-    log.debug "SMS Message '${msg}' sent to ${num}"
-    sendSms(num,"${msg}")  	
+//Send Messages
+def sendMSG(num, msg, push, recipients){
+    def logText =""
+    if (num){logText = "SMS Message '${msg}' sent to ${num}"}
+    if (push) {logText = "Message '${msg}' pushed to SmartApp"}
+    if (num && push) {logText = "Message '${msg}' sent to ${num} and pushed to SmartApp"}
+    if (location.contactBookEnabled && recipients) {logText = "Message '${msg}' sent to ${recipients}"}
+    if (parent.getNotifyFeed()) sendNotificationEvent(logText)
+    log.debug logText
+    if (location.contactBookEnabled && recipients) sendNotificationToContacts(msg, recipients)
+    else {
+    	if (num) {sendSmsMessage(num,"${msg}")}
+    	if (push) {sendPushMessage("${msg}")}
+    }
 }
 //Toggle states (off -> on, on -> off)
 def toggleState(swDevices){
@@ -939,19 +872,19 @@ def getAlarmSound(){
     switch(alarmSonosSound) {
     	case "1":
             soundUri = [uri: "https://raw.githubusercontent.com/MichaelStruck/SmartThings/master/Other-SmartApps/AlexaHelper/AlarmSirens/AlarmSiren1.mp3", duration: "${soundLength}"]
-        	break
+        	break;
         case "2":
             soundUri = [uri: "https://raw.githubusercontent.com/MichaelStruck/SmartThings/master/Other-SmartApps/AlexaHelper/AlarmSirens/AlarmSiren2.mp3", duration: "${soundLength}"]
-        	break
+        	break;
         case "3":
             soundUri = [uri: "https://raw.githubusercontent.com/MichaelStruck/SmartThings/master/Other-SmartApps/AlexaHelper/AlarmSirens/AlarmSiren3.mp3", duration: "${soundLength}"]
-        	break
+        	break;
 		case "4":
             soundUri = [uri: "https://raw.githubusercontent.com/MichaelStruck/SmartThings/master/Other-SmartApps/AlexaHelper/AlarmSirens/AlarmSiren4.mp3", duration: "${soundLength}"]
-        	break
+        	break;
         case "5":
         	soundUri =[uri: "${alarmSonosCustom}", duration: "${soundLength}"]
-            break
+            break;
     }
     state.alarmSound = soundUri
 }
@@ -960,8 +893,8 @@ def sonosSlots(){
 }
 //Version
 private def textVersion() {
-    def text = "Child App Version: 2.5.1 (02/14/2016)"
+    def text = "Child App Version: 2.6.0 (02/21/2016)"
 }
 private def versionInt(){
-	def text = 251
+	def text = 260
 }

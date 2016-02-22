@@ -2,7 +2,7 @@
  *  Alexa Helper-Parent
  *
  *  Copyright © 2016 Michael Struck
- *  Version 4.2.0a 2/10/16
+ *  Version 4.3.0 2/21/16
  * 
  *  Version 1.0.0 - Initial release
  *  Version 2.0.0 - Added 6 slots to allow for one app to control multiple on/off actions
@@ -23,6 +23,7 @@
  *  Version 4.1.0 - Updated the instructions to reflect new functionality within the scenarios and new options page
  *  Version 4.1.1 - Minor syntax clean up
  *  Version 4.2.0a - Added dropdown for number of Sonos memory slots
+ *  Version 4.3.0 - Added notification options, refined GUI
  *
  *  Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except
  *  in compliance with the License. You may obtain a copy of the License at:
@@ -32,7 +33,6 @@
  *  Unless required by applicable law or agreed to in writing, software distributed under the License is distributed
  *  on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the License
  *  for the specific language governing permissions and limitations under the License.
- *
  */
 definition(
     name: "Alexa Helper",
@@ -56,7 +56,7 @@ def mainPage() {
         	def childCount = childApps.size()
         	if (childCount){
         		def childVersion = childApps[0].versionInt()
-            	if (childVersion < 240){
+            	if (childVersion < 250){
             		paragraph "You are using a version of the child app that is older than the recommended version. Please upgrade "+
                     	"to the latest version to ensure you have the latest features and bug fixes."
             	}
@@ -84,13 +84,17 @@ def pageAbout(){
 }
 def pageSettings(){
     dynamicPage(name: "pageSettings", title: "Settings", install: false, uninstall: false) {	
-        section {
-            input "speakerSonos", "bool", title: "Allow Sonos special options", defaultValue: false, submitOnChange:true
+        section ("Display Settings") {
+            input "speakerSonos", "bool", title: "Show Sonos options", defaultValue: false, submitOnChange:true
                 if (speakerSonos){
                     input "memoryCount", "enum", title: "Maximum number of Sonos memory slots", options: [2:"2",3:"3",4:"4",5:"5",6:"6",7:"7",8:"8"], defaultValue: 2, required: false
                 }
-            input "tstatNest", "bool", title: "Allow Nest special options", defaultValue: false
+            input "tstatNest", "bool", title: "Show Nest options", defaultValue: false
             input "showRestrictions", "bool", title: "Show scenario restrictions", defaultValue: true
+        }
+        section ("Notification Settings"){
+        	input "showNotifyFeed", "bool", title: "Post to notification feed" , defaultValue: false
+        
         }
     }
 }
@@ -119,18 +123,21 @@ def getNest(){
 def getMemCount(){
 	def result = memoryCount ? memoryCount : 2
 }
+def getNotifyFeed(){
+	def result = showNotifyFeed
+}
 //Version/Copyright/Information/Help
 private def textAppName() {
 	def text = "Alexa Helper"
 }	
 private def textVersion() {
-    def version = "Parent App Version: 4.2.0a (02/10/2016)"
+    def version = "Parent App Version: 4.3.0 (02/21/2016)"
     def childCount = childApps.size()
     def childVersion = childCount ? childApps[0].textVersion() : "No scenarios installed"
     return "${version}\n${childVersion}"
 }
 private def versionInt(){
-	def text = 420
+	def text = 430
 }
 private def textCopyright() {
     def text = "Copyright © 2016 Michael Struck"
