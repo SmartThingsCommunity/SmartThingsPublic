@@ -20,7 +20,7 @@
  *
  */
  
-import groovy.json.JsonSlurper
+import groovy.json.JsonSlurper;
 import com.google.common.base.Splitter;
 import java.util.List;
 import java.util.Map;
