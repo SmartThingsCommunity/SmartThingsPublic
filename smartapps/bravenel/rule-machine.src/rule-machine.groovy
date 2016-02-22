@@ -3,7 +3,7 @@
  *
  *  Copyright 2015, 2016 Bruce Ravenel and Mike Maxwell
  *
- *  Version 1.7.5a   21 Feb 2016
+ *  Version 1.7.5b   21 Feb 2016
  *
  *	Version History
  *
@@ -56,19 +56,20 @@ preferences {
 
 def mainPage() {
 	if(!state.setup) firstRun()
-    dynamicPage(name: "mainPage", title: "Installed Rules, Triggers and Actions", install: true, uninstall: false, submitOnChange: true) {
+    def nApps = childApps.size()
+    dynamicPage(name: "mainPage", title: "Installed Rules, Triggers and Actions " + (nApps > 0 ? "[$nApps]" : ""), install: true, uninstall: false, submitOnChange: true) {
     	if(!state.setup) initialize(true)
         section {
             app(name: "childRules", appName: "Rule", namespace: "bravenel", title: "Create New Rule...", multiple: true)
         }
 		section ("Expert Features") {
 //			href( "expert", title: "", description: "Tap to create custom commands", state: "")
-			href("customCommandsPAGE", title: null, description: "Custom Commands...", state: anyCustom())
+			href("customCommandsPAGE", title: null, description: anyCustom() ? "Custom Commands..." : "Tap to create custom commands", state: anyCustom())
         }
         section ("Remove Rule Machine"){
-        	href "removePage", description: "Tap to remove Rule Machine ", title: ""
+        	href "removePage", description: "Tap to remove Rule Machine and Rules", title: ""
         }
-        if(state.ver) section ("Version 1.7.5a/" + state.ver) { }
+        if(state.ver) section ("Version 1.7.5b/" + state.ver) { }
     }
 }
 
@@ -211,20 +212,9 @@ def customCommandsPAGE() {
 				def cont = cmd.value.text.size() > 30 ? "..." : ""
 				result = result + "\n\t" + cmd.value.text.take(30) + cont
 			}
-        }
+        } else state.lastCmdIDX = 0
 		section(hasCommands ? "Saved commands:\n" + result : "") {
 			if (hasCommands) {
-				input(
-					name			: "testCmd"
-					,title			: "Test saved command"
-					,multiple		: false
-					,required		: false
-					,type			: "enum"
-					,options		: savedCommands
-					,submitOnChange	: true
-				)
-				def res = execCommand(settings.testCmd)
-				if (res) paragraph("${result}")
 				input(
 					name			: "deleteCmds"
 					,title			: "Delete saved commands"
@@ -237,17 +227,30 @@ def customCommandsPAGE() {
 				)
 				if (isValidCommand(deleteCmds)){
 					href( "generalApprovalPAGE"
-						,title			: "Delete command(s) now"
+						,title			: "Delete commands now"
 						,description	: ""
 						,state			: null
-						,params			: [method:"deleteCommands",title:"Delete Command"]
+						,params			: [method:"deleteCommands",title:"Delete commands"]
 						,submitOnChange	: true
 					)
 				}
-                paragraph("\n")
+                paragraph("")
 			}
 			getCapab()
-            if(myCapab) getDevs(myCapab) else getDevs("Actuator")
+            if(myCapab) getDevs()
+            if(devices && hasCommands) {
+				input(
+					name			: "testCmd"
+					,title			: "Test saved command on\n$devices"
+					,multiple		: false
+					,required		: false
+					,type			: "enum"
+					,options		: savedCommands
+					,submitOnChange	: true
+				)
+				def res = execCommand(settings.testCmd)
+				if (res) paragraph("${result}")
+            }
 		}
 		section(){
 			if (devices){
@@ -262,13 +265,12 @@ def customCommandsPAGE() {
 }
 
 def getCapab() {  
-	def myOptions = ["Acceleration", "Carbon monoxide detector", "Contact", "Energy meter", "Garage door", "Humidity", "Illuminance", 
-    	"Lock", "Motion", "Power meter", "Presence", "Smoke detector", "Switch", "Temperature", "Thermostat",
-        "Water sensor", "Music player", "Actuator"]
-	def result = input "myCapab", "enum", title: "Select capability for test device", required: false, options: myOptions.sort(), submitOnChange: true, defaultValue: "Actuator"
+	def myOptions = ["Acceleration", "Button", "Carbon monoxide detector", "Contact", "Dimmer", "Energy meter", "Garage door", "Humidity", "Illuminance", 
+    	"Lock", "Motion", "Power meter", "Presence", "Smoke detector", "Switch", "Temperature", "Thermostat", "Water sensor", "Music player"]
+	def result = input "myCapab", "enum", title: "Select capability for test device", required: false, options: myOptions.sort(), submitOnChange: true
 }
 
-def getDevs(myCapab) {
+def getDevs() {
 	def multi = false
     def thisName = ""
     def thisCapab = ""
@@ -277,13 +279,13 @@ def getDevs(myCapab) {
 			thisName = "switch"
 			thisCapab = "switch"
 			break
-		case "Actuator":
-			thisName = "device"
-			thisCapab = "actuator"
-			break
 		case "Motion":
 			thisName = "motion sensor"
 			thisCapab = "motionSensor"
+			break
+		case "Button":
+			thisName = "button device"
+			thisCapab = "button"
 			break
 		case "Acceleration":
 			thisName = "acceleration sensor"
@@ -304,6 +306,10 @@ def getDevs(myCapab) {
 		case "Lock":
 			thisName = "lock"
 			thisCapab = "lock"
+			break
+		case "Dimmer":
+			thisName = "dimmer" + (multi ? "s" : "")
+			thisCapab = "switchLevel"
 			break
 		case "Temperature":
 			thisName = "temperature sensor" + (multi ? "s" : "")
@@ -344,6 +350,7 @@ def getDevs(myCapab) {
 		case "Music player":
 			thisName = "music player"
 			thisCapab = "musicPlayer"
+			break
 	}
 	def result = input "devices", "capability.$thisCapab", title: "Select $thisName to test for commands", required: false, multiple: multi, submitOnChange: true
 }
@@ -361,7 +368,6 @@ def addCustomCommandPAGE(){
 	}
 	dynamicPage(name: "addCustomCommandPAGE", title: pageTitle, uninstall: false, install: false) {
 		section(){
-//            paragraph("$rest"[1..-2])
 			input(
 		   		name			: "cCmd"
 				,title			: "Select custom command"
@@ -379,8 +385,7 @@ def addCustomCommandPAGE(){
 		}
 		if (cCmd){
 			def result = execTestCommand()
-//			section("Configured command: ${cmdLabel}\n${result}"){
-			section() {
+			section("Configured command: ${cmdLabel}\n${result}"){
 				if (result == "succeeded"){
 					if (!commandExists(cmdLabel)){
 						href( "generalApprovalPAGE"
@@ -669,7 +674,8 @@ def execTestCommand(){
 			def ems = em.split(":")
 			ems = ems[2].replace(" [","").replace("]","")
 			ems = ems.replaceAll(", ","\n")
-			result = "failed, valid commands:\n${ems}"
+//			result = "failed, valid commands:\n${ems}"
+			result = "failed"
 		}
 		catch (e){
 			result = "failed with:\n${e}"
