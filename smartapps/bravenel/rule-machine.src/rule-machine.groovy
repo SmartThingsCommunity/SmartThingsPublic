@@ -57,7 +57,7 @@ preferences {
 def mainPage() {
 	if(!state.setup) firstRun()
     def nApps = childApps.size()
-    dynamicPage(name: "mainPage", title: "Installed Rules, Triggers and Actions " + (nApps > 0 ? "[$nApps]" : ""), install: true, uninstall: false, submitOnChange: true) {
+    dynamicPage(name: "mainPage", title: "Installed Rules, Triggers and Actions " + (nApps > 0 ? "[$nApps]" : ""), install: true, uninstall: false) {
     	if(!state.setup) initialize(true)
         section {
             app(name: "childRules", appName: "Rule", namespace: "bravenel", title: "Create New Rule...", multiple: true)
@@ -244,6 +244,7 @@ def customCommandsPAGE() {
 					,title			: "Test saved command on\n$devices"
 					,multiple		: false
 					,required		: false
+                    ,description	: ""
 					,type			: "enum"
 					,options		: savedCommands
 					,submitOnChange	: true
