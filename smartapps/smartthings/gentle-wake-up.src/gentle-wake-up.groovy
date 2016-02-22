@@ -201,8 +201,8 @@ def completionPage() {
 
 		section("Switches") {
 			input(name: "completionSwitches", type: "capability.switch", title: "Set these switches", description: null, required: false, multiple: true, submitOnChange: true)
-			if (completionSwitches || androidClient()) {
-				input(name: "completionSwitchesState", type: "enum", title: "To", description: null, required: false, multiple: false, options: ["on", "off"], style: "segmented", defaultValue: "on")
+			if (completionSwitches) {
+				input(name: "completionSwitchesState", type: "enum", title: "To", description: null, required: false, multiple: false, options: ["on", "off"], defaultValue: "on")
 				input(name: "completionSwitchesLevel", type: "number", title: "Optionally, Set Dimmer Levels To", description: null, required: false, multiple: false, range: "(0..99)")
 			}
 		}
