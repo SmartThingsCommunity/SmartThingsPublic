@@ -3,7 +3,7 @@
  *
  *  Copyright 2015, 2016 Bruce Ravenel
  *
- *  Version 1.7.14   23 Feb 2016
+ *  Version 1.7.14a   23 Feb 2016
  *
  *	Version History
  *
@@ -93,7 +93,7 @@ preferences {
 def mainPage() {
 	//version to parent app and expert settings for rule
 	try { 
-		state.isExpert = parent.isExpert("1.7.14") 
+		state.isExpert = parent.isExpert("1.7.14a") 
 		if (state.isExpert) state.cstCmds = parent.getCommands()
 		else state.cstCmds = []
 	}
@@ -898,18 +898,18 @@ def selectActionsTrue() {
 			if(restoreTrue && captureTrue) setActTrue("Restore: $captureTrue")
 			else if(restoreTrue && captureFalse) setActTrue("Restore: $captureFalse")
 			input "ctTrue", "capability.colorTemperature", title: "Set color temperature for these bulbs", multiple: true, submitOnChange: true, required: false
-			if(ctTrue) input "ctLTrue", "number", title: "> To this color temperature", range: "2000..6500", required: true, submitOnChange: true
+			if(ctTrue) input "ctLTrue", "number", title: "> To this color temperature", range: "2000..6500", required: true, submitOnChange: true, description: "2000..6500"
 			if(ctLTrue) checkActTrue(ctTrue, "Color Temperature: $ctTrue: $ctLTrue")
 			input "bulbsTrue", "capability.colorControl", title: "Set color for these bulbs", multiple: true, required: false, submitOnChange: true
 			if(bulbsTrue) {
 				input "colorTrue", "enum", title: "> Bulb color?", required: true, multiple: false, submitOnChange: true,
 					options: ["Soft White", "White", "Daylight", "Warm White", "Red", "Green", "Blue", "Yellow", "Orange", "Purple", "Pink", "Custom color"]
-				input "colorLevelTrue", "number", title: "> Bulb level?", required: false, submitOnChange: true, range: "0..100"
+				input "colorLevelTrue", "number", title: "> Bulb level?", required: false, submitOnChange: true, range: "0..100", description: "0..100"
 				buildActTrue("Color: $bulbsTrue ", true)
 				if(colorTrue) {
 					if(colorTrue == "Custom color") {
-						input "colorHexTrue", "number", title: "> Input color value", required: true, submitOnChange: true, range: "0..100"
-						input "colorSatTrue", "number", title: "> Input saturation value", required: true, submitOnChange: true, range: "0..100"
+						input "colorHexTrue", "number", title: "> Color value?", required: false, submitOnChange: true, range: "0..100", description: "0..100"
+						input "colorSatTrue", "number", title: "> Saturation value?", required: false, submitOnChange: true, range: "0..100", description: "0..100"
 					}
 					buildActTrue("$colorTrue ", false)
 					if(colorHexTrue) buildActTrue("$colorHexTrue:$colorSatTrue ", false)
@@ -1098,18 +1098,18 @@ def selectActionsFalse() {
 			if(restoreFalse && captureFalse) setActFalse("Restore: $captureFalse")
 			else if(restoreFalse && captureTrue) setActFalse("Restore: $captureTrue")
 			input "ctFalse", "capability.colorTemperature", title: "Set color temperature for these bulbs", multiple: true, submitOnChange: true, required: false
-			if(ctFalse) input "ctLFalse", "number", title: "> To this color temperature", range: "2000..6500", required: true, submitOnChange: true
+			if(ctFalse) input "ctLFalse", "number", title: "> To this color temperature", range: "2000..6500", required: true, submitOnChange: true, description: "2000..6500"
 			if(ctLFalse) checkActFalse(ctFalse, "Color Temperature: $ctFalse: $ctLFalse")			
 			input "bulbsFalse", "capability.colorControl", title: "Set color for these bulbs", multiple: true, required: false, submitOnChange: true
 			if(bulbsFalse) {
 				input "colorFalse", "enum", title: "> Bulb color?", required: true, multiple: false, submitOnChange: true,
 					options: ["Soft White", "White", "Daylight", "Warm White", "Red", "Green", "Blue", "Yellow", "Orange", "Purple", "Pink", "Custom color"]
-				input "colorLevelFalse", "number", title: "> Bulb level?", required: false, submitOnChange: true, range: "0..100"
+				input "colorLevelFalse", "number", title: "> Bulb level?", required: false, submitOnChange: true, range: "0..100", description: "0..100"
 				buildActFalse("Color: $bulbsFalse ", true)
 				if(colorFalse) {
 					if(colorFalse == "Custom color") {
-						input "colorHexFalse", "number", title: "> Input color value", required: true, submitOnChange: true, range: "0..100"
-						input "colorSatFalse", "number", title: "> Input saturation value", required: true, submitOnChange: true, range: "0..100"
+						input "colorHexFalse", "number", title: "> Color value?", required: false, submitOnChange: true, range: "0..100", description: "0..100"
+						input "colorSatFalse", "number", title: "> Saturation value?", required: false, submitOnChange: true, range: "0..100", description: "0..100"
 					}
 					buildActFalse("$colorFalse ", false)
 					if(colorHexFalse) buildActFalse("$colorHexFalse:$colorSatFalse ", false)
