@@ -6,6 +6,12 @@
  *	email: erocmail@gmail.com
  *	Date: 2015-10-29
  * 
+ *  NOTE: As of the 2016-02-23 update, this handler is no longer recommended for the Enerwave and Monoprice relays.
+ *        It has been optimized for performance and functionality with the Philio.
+ *        You can still get excellent results with my Generic Dual Relay if you are using the Enerwave or Monoprice:
+ *        https://github.com/erocm123/SmartThingsPublic/blob/master/devicetypes/erocm123/generic-dual-relay.src/generic-dual-relay.groovy
+ *
+ *  2016-02-23: Complete redesign and support for energy and power on both circuits.
  *  2016-01-13: Fixed an error in the MultiChannelCmdEncap method that was stopping the instant status
  *              update from working correctly. Also removed some unnecessary code.
  *  2015-11-17: Added the ability to change config parameters through the device preferences	
