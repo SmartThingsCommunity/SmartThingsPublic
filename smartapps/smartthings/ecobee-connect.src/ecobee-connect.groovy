@@ -25,7 +25,7 @@
  *  See Changelog for change history
  *
  */  
-def getVersionNum() { return "0.9.11" }
+def getVersionNum() { return "0.9.12" }
 private def getVersionLabel() { return "ecobee (Connect) Version ${getVersionNum()}" }
 private def getHelperSmartApps() {
 	return [ 
