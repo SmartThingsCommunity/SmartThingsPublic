@@ -67,11 +67,13 @@ def initialize() {
      subscribe(physical, "switch${i}", physicalHandler)
      subscribeToCommand(settings["virtual${i}"], "on", virtualHandler)
      subscribeToCommand(settings["virtual${i}"], "off", virtualHandler)
+     subscribe(physical, "power${i}", powerHandler)
+     subscribe(physical, "energy${i}", energyHandler)
   }
 }
 
 def virtualHandler(evt) {
-  log.debug "switchHandler called with event: deviceId ${evt.deviceId} name:${evt.name} source:${evt.source} value:${evt.value} isStateChange: ${evt.isStateChange()} isPhysical: ${evt.isPhysical()} isDigital: ${evt.isDigital()} data: ${evt.data} device: ${evt.device}"
+  log.debug "virtualHandler called with event: deviceId ${evt.deviceId} name:${evt.name} source:${evt.source} value:${evt.value} isStateChange: ${evt.isStateChange()} isPhysical: ${evt.isPhysical()} isDigital: ${evt.isDigital()} data: ${evt.data} device: ${evt.device}"
   
     for (int i = 1; i <= vNumber; i++){
        if (evt.deviceId == settings["virtual${i}"].id) {
@@ -91,7 +93,7 @@ def virtualHandler(evt) {
 }
 
 def physicalHandler(evt) {
-  log.debug "rsmHandler called with event:  name:${evt.name} source:${evt.source} value:${evt.value} isStateChange: ${evt.isStateChange()} isPhysical: ${evt.isPhysical()} isDigital: ${evt.isDigital()} data: ${evt.data} device: ${evt.device}"
+  log.debug "physicalHandler called with event:  name:${evt.name} source:${evt.source} value:${evt.value} isStateChange: ${evt.isStateChange()} isPhysical: ${evt.isPhysical()} isDigital: ${evt.isDigital()} data: ${evt.data} device: ${evt.device}"
   
   for (int i = 1; i <= vNumber; i++){
        if (evt.name == "switch${i}") {
@@ -105,4 +107,22 @@ def physicalHandler(evt) {
           }
        }
     }
+}
+
+def powerHandler(evt) {
+   log.debug "powerHandler called with event:  name:${evt.name} source:${evt.source} value:${evt.value} isStateChange: ${evt.isStateChange()} isPhysical: ${evt.isPhysical()} isDigital: ${evt.isDigital()} data: ${evt.data} device: ${evt.device}"
+   for (int i = 1; i <= vNumber; i++){
+       if (evt.name == "power${i}") {
+          settings["virtual${i}"].power(evt.value)
+       }
+   }
+}
+
+def energyHandler(evt) {
+   log.debug "energyHandler called with event:  name:${evt.name} source:${evt.source} value:${evt.value} isStateChange: ${evt.isStateChange()} isPhysical: ${evt.isPhysical()} isDigital: ${evt.isDigital()} data: ${evt.data} device: ${evt.device}"
+   for (int i = 1; i <= vNumber; i++){
+       if (evt.name == "energy${i}") {
+          settings["virtual${i}"].energy(evt.value)
+       }
+   }
 }
