@@ -3,7 +3,7 @@
  *
  *  Copyright 2015, 2016 Bruce Ravenel
  *
- *  Version 1.7.14c   23 Feb 2016
+ *  Version 1.7.14d   23 Feb 2016
  *
  *	Version History
  *
@@ -93,7 +93,7 @@ preferences {
 def mainPage() {
 	//version to parent app and expert settings for rule
 	try { 
-		state.isExpert = parent.isExpert("1.7.14c") 
+		state.isExpert = parent.isExpert("1.7.14d") 
 		if (state.isExpert) state.cstCmds = parent.getCommands()
 		else state.cstCmds = []
 	}
@@ -997,7 +997,7 @@ def selectActionsTrue() {
 					addToActTrue(randomStr)
 //				}
             }
-			input "privateTrue", "enum", title: "Set Private Boolean", required: false, submitOnChange: true, options: ["true", "false"]
+			input "privateTrue", "enum", title: "Set private Boolean", required: false, submitOnChange: true, options: ["true", "false"]
 			if(privateTrue) {
 				input "otherTrue", "bool", title: "> For this Rule (default) or others?", required: false, submitOnChange: true
 				if(otherTrue) input "otherPrivateTrue", "enum", title: "> Select Rules to set Boolean", required: false, multiple: true, options: theseRules.sort(), submitOnChange: true
@@ -1195,7 +1195,7 @@ def selectActionsFalse() {
 					addToActFalse(randomStr)
 //				}
 			}
-			input "privateFalse", "enum", title: "Set Private Boolean", required: false, submitOnChange: true, options: ["true", "false"]
+			input "privateFalse", "enum", title: "Set private Boolean", required: false, submitOnChange: true, options: ["true", "false"]
 			if(privateFalse) {
 				input "otherFalse", "bool", title: "> For this Rule (default) or others?", required: false, submitOnChange: true
 				if(otherFalse) input "otherPrivateFalse", "enum", title: "> Select Rules to set Boolean", required: false, multiple: true, options: theseRules.sort(), submitOnChange: true
