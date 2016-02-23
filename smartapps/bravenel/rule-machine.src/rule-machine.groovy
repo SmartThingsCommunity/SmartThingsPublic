@@ -3,7 +3,7 @@
  *
  *  Copyright 2015, 2016 Bruce Ravenel and Mike Maxwell
  *
- *  Version 1.7.5c   22 Feb 2016
+ *  Version 1.7.5d   23 Feb 2016
  *
  *	Version History
  *
@@ -64,12 +64,12 @@ def mainPage() {
         }
 		section ("Expert Features") {
 //			href( "expert", title: "", description: "Tap to create custom commands", state: "")
-			href("customCommandsPAGE", title: null, description: anyCustom() ? "Custom Commands..." : "Tap to create custom commands", state: anyCustom())
+			href("customCommandsPAGE", title: null, description: anyCustom() ? "Custom Commands..." : "Tap to create Custom Commands", state: anyCustom())
         }
         section ("Remove Rule Machine"){
         	href "removePage", description: "Tap to remove Rule Machine and Rules", title: ""
         }
-        if(state.ver) section ("Version 1.7.5c/" + state.ver) { }
+        if(state.ver) section ("Version 1.7.5d/" + state.ver) { }
     }
 }
 
