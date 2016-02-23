@@ -419,7 +419,8 @@ class EnvisalinkClient(asynchat.async_chat):
            try:
              # Note: I don't currently care about the return value, fire and forget right now
              requests.get(myURL)
-             alarmserver_logger('myURL: %s' % myURL)
+             if (config.LOGURLREQUESTS):
+               alarmserver_logger('myURL: %s' % myURL)
              #print "myURL: ", myURL
              #print "Exit code: ", r.status_code
              #print "Response data: ", r.text
