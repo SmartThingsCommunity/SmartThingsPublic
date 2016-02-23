@@ -3,11 +3,11 @@
  *
  *  Copyright 2015, 2016 Bruce Ravenel
  *
- *  Version 1.7.14a   23 Feb 2016
+ *  Version 1.7.14b   23 Feb 2016
  *
  *	Version History
  *
- *	1.7.14	23 Feb 2016		Added adjust thermostat setpoints
+ *	1.7.14	23 Feb 2016		Added adjust thermostat setpoints, delay Set Private Boolean
  *	1.7.13	21 Feb 2016		Improved custom command selection
  *	1.7.12	19 Feb 2016		Added Private Boolean enable/disable, capture/restore color hue and saturation
  *	1.7.11	15 Feb 2016		Further UI redesign to better distinguish triggers, added seconds for delayed on/off
@@ -93,7 +93,7 @@ preferences {
 def mainPage() {
 	//version to parent app and expert settings for rule
 	try { 
-		state.isExpert = parent.isExpert("1.7.14a") 
+		state.isExpert = parent.isExpert("1.7.14b") 
 		if (state.isExpert) state.cstCmds = parent.getCommands()
 		else state.cstCmds = []
 	}
@@ -1000,10 +1000,10 @@ def selectActionsTrue() {
 			input "privateTrue", "enum", title: "Set Private Boolean", required: false, submitOnChange: true, options: ["true", "false"]
 			if(privateTrue) {
 				input "otherTrue", "bool", title: "> For this Rule (default) or others?", required: false, submitOnChange: true
-				if(otherTrue) {
-					input "otherPrivateTrue", "enum", title: "> Select Rules to set Boolean", required: true, multiple: true, options: theseRules.sort(), submitOnChange: true
-					if(otherPrivateTrue) setActTrue("Rule Boolean: $otherPrivateTrue: $privateTrue")
-				} else addToActTrue("Private Boolean: $privateTrue")
+				if(otherTrue) input "otherPrivateTrue", "enum", title: "> Select Rules to set Boolean", required: false, multiple: true, options: theseRules.sort(), submitOnChange: true
+                input "privateDelayTrue", "number", title: "> Set after a delay?", required: false, submitOnChange: true, description: "0 minutes"
+                if(otherPrivateTrue) setActTrue("Rule Boolean: $otherPrivateTrue: $privateTrue" + (privateDelayTrue ? ": Delay $privateDelayTrue minutes" : ""))
+                else addToActTrue("Private Boolean: $privateTrue" + (privateDelayTrue ? ": Delay $privateDelayTrue minutes" : ""))
 			}
 			if (state.isExpert){
 				if (state.cstCmds){
@@ -1198,10 +1198,10 @@ def selectActionsFalse() {
 			input "privateFalse", "enum", title: "Set Private Boolean", required: false, submitOnChange: true, options: ["true", "false"]
 			if(privateFalse) {
 				input "otherFalse", "bool", title: "> For this Rule (default) or others?", required: false, submitOnChange: true
-				if(otherFalse) {
-					input "otherPrivateFalse", "enum", title: "> Select Rules to set Boolean", required: true, multiple: true, options: theseRules.sort(), submitOnChange: true
-					if(otherPrivateFalse) setActFalse("Rule Boolean: $otherPrivateFalse: $privateFalse")
-				} else addToActFalse("Private Boolean: $privateFalse")
+				if(otherFalse) input "otherPrivateFalse", "enum", title: "> Select Rules to set Boolean", required: false, multiple: true, options: theseRules.sort(), submitOnChange: true
+                input "privateDelayFalse", "number", title: "> Set after a delay?", required: false, submitOnChange: true, description: "0 minutes"
+                if(otherPrivateFalse) setActFalse("Rule Boolean: $otherPrivateFalse: $privateFalse" + (privateDelayFalse ? ": Delay $privateDelayFalse minutes" : ""))
+                else addToActFalse("Private Boolean: $privateFalse" + (privateDelayFalse ? ": Delay $privateDelayFalse minutes" : ""))
 			}
 			if (state.isExpert){
 				if (state.cstCmds){
@@ -1779,7 +1779,8 @@ def takeAction(success) {
 		if(phoneTrue)			sendSmsMulti(phoneTrue, (msgTrue ?: "Rule $app.label True") + (refDevTrue ? " $state.lastEvtName" : ""))
 		if(speakTrue)			speakTrueDevice?.speak((msgTrue ?: "Rule $app.label True") + (refDevTrue ? " $state.lastEvtName" : ""))
 		if(mediaTrueDevice)		mediaTrueDevice.playTextAndRestore((msgTrue ?: "Rule $app.label True") + (refDevTrue ? " $state.lastEvtName" : ""), mediaTrueVolume)
-		if(privateTrue)			if(otherTrue && otherPrivateTrue) parent.setRuleBoolean(otherPrivateTrue, privateTrue, app.label)
+		if(privateTrue)			if(privateDelayTrue) runIn(privateDelayTrue * 60, delayPrivyTrue)
+        						else if(otherTrue && otherPrivateTrue) parent.setRuleBoolean(otherPrivateTrue, privateTrue, app.label)
 								else state.private = privateTrue // == "true"
 		if(state.howManyCCtrue > 1)  execCommands(true)
 		if(offSwitchTrue) 		if(delayMilTrue) offSwitchTrue.off([delay: delayMilTrue]) else offSwitchTrue.off()
@@ -1829,7 +1830,8 @@ def takeAction(success) {
 		if(phoneFalse)			sendSmsMulti(phoneFalse, (msgFalse ?: "Rule $app.label False") + (refDevFalse ? " $state.lastEvtName" : ""))
 		if(speakFalse)			speakFalseDevice?.speak((msgFalse ?: "Rule $app.label False") + (refDevFalse ? " $state.lastEvtName" : ""))
 		if(mediaFalseDevice)	mediaFalseDevice.playTextAndRestore((msgFalse ?: "Rule $app.label False") + (refDevFalse ? " $state.lastEvtName" : ""), mediaFalseVolume)		
-		if(privateFalse)		if(otherFalse && otherPrivateFalse) parent.setRuleBoolean(otherPrivateFalse, privateFalse, app.label)
+		if(privateFalse)		if(privateDelayFalse) runIn(privateDelayFalse * 60, delayPrivyFalse)
+        						else if(otherFalse && otherPrivateFalse) parent.setRuleBoolean(otherPrivateFalse, privateFalse, app.label)
 								else state.private = privateFalse
 		if(state.howManyCCfalse > 1)  	execCommands(false)
 		if(offSwitchFalse) 		if(delayMilFalse) offSwitchFalse.off([delay: delayMilFalse]) else offSwitchFalse.off()
@@ -2005,6 +2007,24 @@ def delayRuleFalse() {
 
 def delayRuleFalseForce() {
 	if(allOk) takeAction(false)
+}
+
+def delayPrivyTrue() {
+	if(otherTrue && otherPrivateTrue) parent.setRuleBoolean(otherPrivateTrue, privateTrue, app.label)
+	else {
+    	state.private = privateTrue // == "true"
+		if(state.isRule || (state.howMany > 1 && state.howManyT <= 1)) runRule(false)
+        else doTrigger()
+    }
+}
+
+def delayPrivyFalse() {
+	if(otherFalse && otherPrivateFalse) parent.setRuleBoolean(otherPrivateFalse, privateFalse, app.label)
+	else {
+    	state.private = privateFalse
+		if(state.isRule || (state.howMany > 1 && state.howManyT <= 1)) runRule(false)
+        else doTrigger()
+    }
 }
 
 def disabledHandler(evt) {
