@@ -109,8 +109,8 @@ metadata {
 
 		(1..4).each { n ->
 			standardTile("switch$n", "switch$n", canChangeIcon: true, width: 2, height: 2) {
-				state "on", label: '${name}', action: "off$n", icon: "st.switches.switch.on", backgroundColor: "#79b821"
-				state "off", label: '${name}', action: "on$n", icon: "st.switches.switch.off", backgroundColor: "#ffffff"
+				state "on", label: "switch$n", action: "off$n", icon: "st.switches.switch.on", backgroundColor: "#79b821"
+				state "off", label: "switch$n", action: "on$n", icon: "st.switches.switch.off", backgroundColor: "#ffffff"
 			}
 			valueTile("power$n", "power$n", decoration: "flat", width: 2, height: 2) {
 				state "default", label:'${currentValue} W'
@@ -121,7 +121,7 @@ metadata {
 		}
         (5..6).each { n ->
             valueTile("outlet$n", "outlet$n", decoration: "flat", width: 2, height: 2) {
-				state "default", label:"outlet$n"
+				state "default", label:"outlet${n-4}"
 			}
 			valueTile("power$n", "power$n", decoration: "flat", width: 2, height: 2) {
 				state "default", label:'${currentValue} W'
@@ -149,7 +149,7 @@ def parse(String description) {
 		result = createEvent(descriptionText:description, isStateChange:true)
 	} else if (description != "updated") {
 		def cmd = zwave.parse(description, [0x60: 3, 0x32: 3, 0x25: 1, 0x20: 1])
-        //log.debug "Command: ${cmd}"
+        log.debug "Command: ${cmd}"
 		if (cmd) {
 			result = zwaveEvent(cmd, null)
 		}
