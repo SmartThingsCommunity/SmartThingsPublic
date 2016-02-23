@@ -3,7 +3,7 @@
  *
  *  Copyright 2015, 2016 Bruce Ravenel
  *
- *  Version 1.7.14b   23 Feb 2016
+ *  Version 1.7.14c   23 Feb 2016
  *
  *	Version History
  *
@@ -93,7 +93,7 @@ preferences {
 def mainPage() {
 	//version to parent app and expert settings for rule
 	try { 
-		state.isExpert = parent.isExpert("1.7.14b") 
+		state.isExpert = parent.isExpert("1.7.14c") 
 		if (state.isExpert) state.cstCmds = parent.getCommands()
 		else state.cstCmds = []
 	}
@@ -2023,7 +2023,13 @@ def delayPrivyFalse() {
 	else {
     	state.private = privateFalse
 		if(state.isRule || (state.howMany > 1 && state.howManyT <= 1)) runRule(false)
-        else doTrigger()
+    	else for(int i = 1; i < state.howManyT; i++) {
+			def myCap = settings.find {it.key == "tCapab$i"}
+			if(myCap.value == "Private Boolean") if(getOperand(i, false)) {
+        		doTrigger()
+            	return
+        	}
+    	}
     }
 }
 
