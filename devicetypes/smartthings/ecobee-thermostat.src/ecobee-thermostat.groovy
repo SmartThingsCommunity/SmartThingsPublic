@@ -1,5 +1,6 @@
 /**
- *  Copyright 2015 SmartThings
+ *  Based on original version Copyright 2015 SmartThings
+ *  Additions Copyright 2016 Sean Kendall Schneyer
  *
  *  Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except
  *  in compliance with the License. You may obtain a copy of the License at:
@@ -17,14 +18,13 @@
  *
  * 	Updates by Sean Kendall Schneyer <smartthings@linuxbox.org>
  * 	Date: 2015-12-23
- * 	Incorporate additional device capabilities, some based on code by Yves Racine
  *
  *
  *  See Changelog for change history 
  *
  */
 
-def getVersionNum() { return "0.9.7" }
+def getVersionNum() { return "0.9.8" }
 private def getVersionLabel() { return "Ecobee Thermostat Version ${getVersionNum()}" }
 
  
@@ -65,6 +65,8 @@ metadata {
         
         command "fanOff"  // Missing from the Thermostat standard capability set
         command "noOp" // Workaround for formatting issues 
+        command "setStateVariable"
+        
         
 
 		// Capability "Thermostat"
@@ -176,7 +178,7 @@ metadata {
 			)
 		}
 		standardTile("mode", "device.thermostatMode", width: 2, height: 2, inactiveLabel: false, decoration: "flat") {
-			state "off", action:"thermostat.heat", label: "Set Mode", nextState: "updating", icon: "st.thermostat.heating-cooling-off"
+			state "off", action:"thermostat.heat", label: "Set Mode", nextState: "updating", icon: "https://raw.githubusercontent.com/StrykerSKS/SmartThings/master/smartapp-icons/ecobee/png/systemmode_off.png"
 			state "heat", action:"thermostat.cool",  label: "Set Mode", nextState: "updating", icon: "https://raw.githubusercontent.com/StrykerSKS/SmartThings/master/smartapp-icons/ecobee/png/systemmode_heat.png"
 			state "cool", action:"thermostat.auto",  label: "Set Mode", nextState: "updating", icon: "https://raw.githubusercontent.com/StrykerSKS/SmartThings/master/smartapp-icons/ecobee/png/systemmode_cool.png"
 			state "auto", action:"thermostat.off",  label: "Set Mode", nextState: "updating", icon: "https://raw.githubusercontent.com/StrykerSKS/SmartThings/master/smartapp-icons/ecobee/png/systemmode_auto.png"
@@ -199,7 +201,7 @@ metadata {
 			state "auto", action:"thermostat.auto",  label: "Auto", nextState: "updating", icon: "https://raw.githubusercontent.com/StrykerSKS/SmartThings/master/smartapp-icons/ecobee/png/systemmode_auto.png"
 			state "updating", label:"Working...", icon: "st.secondary.secondary"
 		}
-		standardTile("setModeAuto", "device.thermostatMode", width: 2, height: 2, inactiveLabel: false, decoration: "flat") {			
+		standardTile("setModeOff", "device.thermostatMode", width: 2, height: 2, inactiveLabel: false, decoration: "flat") {			
 			state "off", action:"thermostat.off", label: "Off", nextState: "updating", icon: "https://raw.githubusercontent.com/StrykerSKS/SmartThings/master/smartapp-icons/ecobee/png/systemmode_off.png"
 			state "updating", label:"Working...", icon: "st.secondary.secondary"
 		}
@@ -208,7 +210,18 @@ metadata {
 		standardTile("fanModeLabeled", "device.thermostatFanMode", width: 2, height: 2, inactiveLabel: false, decoration: "flat") {
 			state "on", label:'On', action:"noOp", nextState: "on", icon: "https://raw.githubusercontent.com/StrykerSKS/SmartThings/master/smartapp-icons/ecobee/png/systemmode_fan.png"
             state "auto", label:'Auto', action:"noOp", nextState: "auto", icon: "https://raw.githubusercontent.com/StrykerSKS/SmartThings/master/smartapp-icons/ecobee/png/systemmode_fan.png"
+            state "off", label:'Off', action:"noOp", nextState: "auto", icon: "https://raw.githubusercontent.com/StrykerSKS/SmartThings/master/smartapp-icons/ecobee/png/systemmode_fan.png"
 			state "circulate", label:'Circulate', action:"noOp", nextState: "circulate", icon: "https://raw.githubusercontent.com/StrykerSKS/SmartThings/master/smartapp-icons/ecobee/png/systemmode_fan.png"
+            state "updating", label:"Working", icon: "st.secondary.secondary"
+		}
+        
+        standardTile("fanOffButton", "device.thermostatFanMode", width: 2, height: 2, inactiveLabel: false, decoration: "flat") {
+			state "circulate", label:"Fan Off", action:"fanOff", nextState: "updating", icon: "https://raw.githubusercontent.com/StrykerSKS/SmartThings/master/smartapp-icons/ecobee/png/systemmode_fan_big_nolabel.png"
+            state "updating", label:"Working", icon: "st.secondary.secondary"
+		}
+
+		standardTile("fanCirculate", "device.thermostatFanMode", width: 2, height: 2, inactiveLabel: false, decoration: "flat") {
+			state "circulate", label:"Fan Cicrulate", action:"thermostat.fanCirculate", nextState: "updating", icon: "https://raw.githubusercontent.com/StrykerSKS/SmartThings/master/smartapp-icons/ecobee/png/systemmode_fan_big_nolabel.png"
             state "updating", label:"Working", icon: "st.secondary.secondary"
 		}
         
@@ -353,7 +366,7 @@ metadata {
 			state "105",			icon: "https://raw.githubusercontent.com/StrykerSKS/SmartThings/master/smartapp-icons/ecobee/png/weather_night_drizzle_105.png"
 			state "106",			icon: "https://raw.githubusercontent.com/StrykerSKS/SmartThings/master/smartapp-icons/ecobee/png/weather_night_rain_106.png"
 			state "107",			icon: "https://raw.githubusercontent.com/StrykerSKS/SmartThings/master/smartapp-icons/ecobee/png/weather_night_freezing_rain_107.png"
-			state "108",			icon: "https://raw.githubusercontent.com/StrykerSKS/SmartThings/master/smartapp-icons/ecobee/png/weather_rain_06.png"
+			state "108",			icon: "https://raw.githubusercontent.com/StrykerSKS/SmartThings/master/smartapp-icons/ecobee/png/weather_night_rain_106.png"
 			state "109",			icon: "https://raw.githubusercontent.com/StrykerSKS/SmartThings/master/smartapp-icons/ecobee/png/weather_night_freezing_rain_107.png"
 			state "110",			icon: "https://raw.githubusercontent.com/StrykerSKS/SmartThings/master/smartapp-icons/ecobee/png/weather_night_snow_110.png"
 			state "111",			icon: "https://raw.githubusercontent.com/StrykerSKS/SmartThings/master/smartapp-icons/ecobee/png/weather_night_flurries_111.png"
@@ -383,9 +396,8 @@ metadata {
 
         standardTile("commandDivider", "device.logo", inactiveLabel: false, width: 4, height: 1, decoration: "flat") {
         	state "default", icon:"https://raw.githubusercontent.com/StrykerSKS/SmartThings/master/smartapp-icons/ecobee/png/command_divider.png"			
-        }
-
-
+        }        
+    
 		main(["temperature", "tempSummary"])
 		details([
         	// Use this if you are on a fully operational device OS (such as iOS or Android)
@@ -406,6 +418,7 @@ metadata {
             // "currentProgram", "apiStatus",
             "setHome", "setAway", "setSleep",
             "setModeHeat", "setModeCool", "setModeAuto"
+            // "fanOffButton", "fanCirculate", "setVariable"
             ])            
 	}
 
@@ -450,8 +463,7 @@ def generateEvent(Map results) {
 			LOG("generateEvent() - In each loop: name: ${name}  value: ${value}", 4)
 			def isChange = false
 			def isDisplayed = true
-			def event = [name: name, linkText: linkText, descriptionText: getThermostatDescriptionText(name, value, linkText),
-			handlerName: name]
+			def event = [name: name, linkText: linkText, descriptionText: getThermostatDescriptionText(name, value, linkText), handlerName: name]
 
 			if (name=="temperature" || name=="heatingSetpoint" || name=="coolingSetpoint" || name=="weatherTemperature" ) {
 				def sendValue = value // ? convertTemperatureIfNeeded(value.toDouble(), "F", 1): value //API return temperature value in F
@@ -692,82 +704,6 @@ def fanModes() {
 }
 
 
-// TODO Add a delay (like in the setTemperature case) to capture multiple clicks on the UI
-/*
-def switchMode() {
-	LOG("in switchMode()", 5)
-	def currentMode = device.currentState("thermostatMode")?.value
-	def lastTriedMode = state.lastTriedMode ?: currentMode ?: "auto"
-	def modeOrder = modes()
-	def next = { modeOrder[modeOrder.indexOf(it) + 1] ?: modeOrder[0] }
-	def nextMode = next(lastTriedMode)
-	switchToMode(nextMode)
-}
-
-def switchToMode(nextMode) {
-	LOG("In switchToMode = ${nextMode}", 5)
-	if (nextMode in modes()) {
-		state.lastTriedMode = nextMode
-		"$nextMode"()
-	} else {
-		LOG("switchToMode(): No mode method: ${nextMode}", 1, null, "warn")
-	}
-}
-
-
-def switchFanMode() {
-	LOG("switchFanMode()", 5)
-	def currentFanMode = device.currentState("thermostatFanMode")?.value
-	LOG("switching fan from current mode: $currentFanMode", 4)
-	def returnCommand
-
-	switch (currentFanMode) {
-		case "fanAuto":
-			returnCommand = switchToFanMode("fanOn")
-			break
-		case "fanOn":
-			returnCommand = switchToFanMode("fanCirculate")
-			break
-		case "fanCirculate":
-			returnCommand = switchToFanMode("fanAuto")
-			break
-	}
-	if(!currentFanMode) { returnCommand = switchToFanMode("fanOn") }
-	returnCommand
-}
-
-def switchToFanMode(nextMode) {
-
-	LOG("switching to fan mode: $nextMode", 4)
-	def returnCommand
-
-	if(nextMode == "fanAuto") {
-		if(!fanModes.contains("fanAuto")) {
-			returnCommand = fanAuto()
-		} else {
-			returnCommand = switchToFanMode("fanOn")
-		}
-	} else if(nextMode == "fanOn") {
-		if(!fanModes.contains("fanOn")) {
-			returnCommand = fanOn()
-		} else {
-			returnCommand = switchToFanMode("fanCirculate")
-		}
-	} else if(nextMode == "fanCirculate") {
-		if(!fanModes.contains("fanCirculate")) {
-			returnCommand = fanCirculate()
-		} else {
-			returnCommand = switchToFanMode("fanAuto")
-		}
-	}
-	returnCommand
-}
-*/
-
-
-def getDataByName(String name) {
-	state[name] ?: device.getDataValue(name)
-}
 
 def generateQuickEvent(name, value) {
 	generateQuickEvent(name, value, 0)
@@ -925,7 +861,9 @@ def setThermostatFanMode(value, holdType=null) {
     // Change the state now to quickly refresh the UI
     generateQuickEvent("thermostatFanMode", value, 0)
     
-	if ( parent.setFanMode(this, value, getDeviceId()) ) {
+    def results = parent.setFanMode(this, value, getDeviceId())
+    
+	if ( results ) {
     	LOG("parent.setFanMode() returned successfully!", 5)
     } else {
     	generateQuickEvent("thermostatFanMode", device.currentValue("thermostatFanMode"))
