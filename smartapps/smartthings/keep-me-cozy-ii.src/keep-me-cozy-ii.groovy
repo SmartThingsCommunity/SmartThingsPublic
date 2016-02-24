@@ -91,7 +91,7 @@ private evaluate()
 				thermostat.setCoolingSetpoint(ct - offset)
 				log.debug "thermostat.setCoolingSetpoint(${ct - offset}), ON"
 			}
-			else if (coolingSetpoint - currentTemp >= threshold && ct - thermostat.currentCoolingSetpoint < offset) {
+			else if (coolingSetpoint - currentTemp >= threshold && ct - thermostat.currentCoolingSetpoint <= offset) {
 				thermostat.setCoolingSetpoint(ct + offset)
 				log.debug "thermostat.setCoolingSetpoint(${ct + offset}), OFF"
 			}
@@ -102,7 +102,7 @@ private evaluate()
 				thermostat.setHeatingSetpoint(ct + offset)
 				log.debug "thermostat.setHeatingSetpoint(${ct + offset}), ON"
 			}
-			else if (currentTemp - heatingSetpoint >= threshold && thermostat.currentHeatingSetpoint - ct < offset) {
+			else if (currentTemp - heatingSetpoint >= threshold && thermostat.currentHeatingSetpoint - ct <= offset) {
 				thermostat.setHeatingSetpoint(ct - offset)
 				log.debug "thermostat.setHeatingSetpoint(${ct - offset}), OFF"
 			}
