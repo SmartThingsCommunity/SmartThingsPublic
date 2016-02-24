@@ -3,7 +3,7 @@
  *
  *  Copyright 2015, 2016 Bruce Ravenel
  *
- *  Version 1.7.14e   23 Feb 2016
+ *  Version 1.7.14f   24 Feb 2016
  *
  *	Version History
  *
@@ -93,7 +93,7 @@ preferences {
 def mainPage() {
 	//version to parent app and expert settings for rule
 	try { 
-		state.isExpert = parent.isExpert("1.7.14e") 
+		state.isExpert = parent.isExpert("1.7.14f") 
 		if (state.isExpert) state.cstCmds = parent.getCommands()
 		else state.cstCmds = []
 	}
@@ -226,7 +226,7 @@ def getMoreOptions() {
 		input "modesY", "mode", title: "Only when mode is", multiple: true, required: false            
 		input "disabled", "capability.switch", title: "Switch to disable Rule", required: false, multiple: false, submitOnChange: true
         if(disabled) input "disabledOff", "bool", title: "Disable when Off? On is default", required: false, defaultValue: false
-        input "usePrivateDisable", "bool", title: "Enable/Disable with Private Boolean?", required: false
+        input "usePrivateDisable", "bool", title: "Enable/Disable with private Boolean?", required: false
 	}    
 }
 
@@ -2056,11 +2056,11 @@ def ruleActions(rule) {
 def setBoolean(truth, appLabel) {
 	log.info "$app.label: Set Boolean from $appLabel: $truth"
 	state.private = truth // == "true"
-	if(state.isRule || (state.howMany > 1 && state.howManyT <= 1)) runRule(false) 
+	if(state.isRule || (state.howMany > 1 && state.howManyT <= 1)) if(allOk) runRule(false) 
     else for(int i = 1; i < state.howManyT; i++) {
 		def myCap = settings.find {it.key == "tCapab$i"}
 		if(myCap.value == "Private Boolean") if(getOperand(i, false)) {
-        	doTrigger()
+        	if(allOk) doTrigger()
             return
         }
     }
