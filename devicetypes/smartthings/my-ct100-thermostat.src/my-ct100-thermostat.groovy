@@ -15,6 +15,12 @@ to 30 secs before it registers changed this to 500 ms.
 v 6 lgk. added status tile with last upddate time for current temp so you can see at a glance it is updating without checking logs.
 note: there is a new input preferernce toffset which defaults to -5 and you must set yourself.
 v 7 forgot to add the preference section added now.
+v8 turn on extra debugging to figure out why direct sets are failing from routines
+v9 fixed issue with routines not setting temps.. it was silently timing out with no error.. needed to up delay times
+even the stock one with a delay time would only set the heat setpoint from a routine (first call) and would timeout on the cool
+one.. I upped the delays to 45 seconds and it seems to set both. Then i passed in a smaller delay from the toggle buttons so you
+still can go up or down a temp in 1/2 sec.. otherwise it would only update every 30 or 45 secs etc.
+
 
 
 
@@ -226,6 +232,8 @@ preferences {
 
 def parse(String description)
 {
+ //log.debug "in parse desc = $description"
+ 
 	def result = []
 	if (description == "updated") {
 	} else {
@@ -242,7 +250,7 @@ def parse(String description)
 	if (result.size() == 1 && (!state.lastbatt || now() - state.lastbatt > 48*60*60*1000)) {
 		result << response(zwave.batteryV1.batteryGet().format())
 	}
-	//log.debug "$device.displayName parsed '$description' to $result"
+	log.debug "$device.displayName parsed '$description' to $result"
 	result
 }
 
@@ -517,11 +525,11 @@ def quickSetHeat(degrees) {
 	setHeatingSetpoint(degrees, 500)
 }
 
-def setHeatingSetpoint(degrees, delay = 500) {
+def setHeatingSetpoint(degrees, delay = 40000) {
 	setHeatingSetpoint(degrees.toDouble(), delay)
 }
 
-def setHeatingSetpoint(Double degrees, Integer delay = 500) {
+def setHeatingSetpoint(Double degrees, Integer delay = 40000) {
 	log.debug "setHeatingSetpoint($degrees, $delay)"
 	def deviceScale = state.scale ?: 1
 	def deviceScaleString = deviceScale == 2 ? "C" : "F"
@@ -537,6 +545,7 @@ def setHeatingSetpoint(Double degrees, Integer delay = 500) {
 		convertedDegrees = degrees
 	}
 
+  log.debug "calling thermostatSetpointV1.thermostatSetpointSet (heat type = 1) with degrees = $convertedDegrees delay = $delay"
 	delayBetween([
 		zwave.thermostatSetpointV1.thermostatSetpointSet(setpointType: 1, scale: deviceScale, precision: p, scaledValue: convertedDegrees).format(),
 		zwave.thermostatSetpointV1.thermostatSetpointGet(setpointType: 1).format()
@@ -547,11 +556,11 @@ def quickSetCool(degrees) {
 	setCoolingSetpoint(degrees, 500)
 }
 
-def setCoolingSetpoint(degrees, delay = 500) {
+def setCoolingSetpoint(degrees, delay = 40000) {
 	setCoolingSetpoint(degrees.toDouble(), delay)
 }
 
-def setCoolingSetpoint(Double degrees, Integer delay = 500) {
+def setCoolingSetpoint(Double degrees, Integer delay = 40000) {
 	log.debug "setCoolingSetpoint($degrees, $delay)"
 	def deviceScale = state.scale ?: 1
 	def deviceScaleString = deviceScale == 2 ? "C" : "F"
@@ -567,6 +576,7 @@ def setCoolingSetpoint(Double degrees, Integer delay = 500) {
 		convertedDegrees = degrees
 	}
 
+   log.debug "calling thermostatSetpointV1.thermostatSetpointSet (cool type=2) with degrees = $convertedDegrees delay = $delay"
 	delayBetween([
 		zwave.thermostatSetpointV1.thermostatSetpointSet(setpointType: 2, scale: deviceScale, precision: p,	 scaledValue: convertedDegrees).format(),
 		zwave.thermostatSetpointV1.thermostatSetpointGet(setpointType: 2).format()
@@ -751,7 +761,7 @@ def coolLevelUp(){
       nextLevel = 99
     }
     log.debug "Setting cool set point up to: ${nextLevel}"
-    setCoolingSetpoint(nextLevel)
+    setCoolingSetpoint(nextLevel,500)
 }
 
 def coolLevelDown(){
@@ -761,7 +771,7 @@ def coolLevelDown(){
       nextLevel = 50
     }
     log.debug "Setting cool set point down to: ${nextLevel}"
-    setCoolingSetpoint(nextLevel)
+    setCoolingSetpoint(nextLevel,500)
 }
 
 def heatLevelUp(){
@@ -771,7 +781,7 @@ def heatLevelUp(){
       nextLevel = 90
     }
     log.debug "Setting heat set point up to: ${nextLevel}"
-    setHeatingSetpoint(nextLevel)
+    setHeatingSetpoint(nextLevel,500)
 }
 
 def heatLevelDown(){
@@ -781,7 +791,7 @@ def heatLevelDown(){
       nextLevel = 40
     }
     log.debug "Setting heat set point down to: ${nextLevel}"
-    setHeatingSetpoint(nextLevel)
+    setHeatingSetpoint(nextLevel,500)
 }
 
 def input()
