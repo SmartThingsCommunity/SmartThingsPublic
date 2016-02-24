@@ -3,7 +3,7 @@
  *
  *  Copyright 2015, 2016 Bruce Ravenel
  *
- *  Version 1.7.14d   23 Feb 2016
+ *  Version 1.7.14e   23 Feb 2016
  *
  *	Version History
  *
@@ -93,7 +93,7 @@ preferences {
 def mainPage() {
 	//version to parent app and expert settings for rule
 	try { 
-		state.isExpert = parent.isExpert("1.7.14d") 
+		state.isExpert = parent.isExpert("1.7.14e") 
 		if (state.isExpert) state.cstCmds = parent.getCommands()
 		else state.cstCmds = []
 	}
@@ -954,6 +954,13 @@ def selectActionsTrue() {
 			def phrases = location.helloHome?.getPhrases()*.label
 			input "myPhraseTrue", "enum", title: "Run a Routine", required: false, options: phrases.sort(), submitOnChange: true
 			if(myPhraseTrue) addToActTrue("Routine: $myPhraseTrue")
+			href "selectMsgTrue", title: "Send or speak a message", description: state.msgTrue ? state.msgTrue : "Tap to set", state: state.msgTrue ? "complete" : null
+			if(state.msgTrue) addToActTrue(state.msgTrue)
+			input "cameraTrue", "capability.imageCapture", title: "Take photos", required: false, multiple: false, submitOnChange: true
+			if(cameraTrue) {
+				input "burstCountTrue", "number", title: "> How many? (default 5)", defaultValue:5
+				addToActTrue("Photo: $cameraTrue " + (burstCountTrue ?: ""))
+			}
 			def theseRules = parent.ruleList(app.label)
 			if(theseRules != null) input "ruleTrue", "enum", title: "Evaluate Rules", required: false, multiple: true, options: theseRules.sort(), submitOnChange: true
 			if(ruleTrue) setActTrue("Rules: $ruleTrue")
@@ -971,13 +978,6 @@ def selectActionsTrue() {
 					if(delayEvalMinutesTrue > 1) delayStrTrue = delayStrTrue + "s"
 					setActTrue(delayStrTrue)
 				}
-			}
-			href "selectMsgTrue", title: "Send or speak a message", description: state.msgTrue ? state.msgTrue : "Tap to set", state: state.msgTrue ? "complete" : null
-			if(state.msgTrue) addToActTrue(state.msgTrue)
-			input "cameraTrue", "capability.imageCapture", title: "Take photos", required: false, multiple: false, submitOnChange: true
-			if(cameraTrue) {
-				input "burstCountTrue", "number", title: "> How many? (default 5)", defaultValue:5
-				addToActTrue("Photo: $cameraTrue " + (burstCountTrue ?: ""))
 			}
 // code below is vestigal, supports prior version of delayTrue and randomTrue            
 //            if(!randomTrue) {
@@ -1154,6 +1154,13 @@ def selectActionsFalse() {
 			def phrases = location.helloHome?.getPhrases()*.label
 			input "myPhraseFalse", "enum", title: "Run a Routine", required: false, options: phrases.sort(), submitOnChange: true
 			if(myPhraseFalse) addToActFalse("Routine: $myPhraseFalse")
+			href "selectMsgFalse", title: "Send or speak a message", description: state.msgFalse ? state.msgFalse : "Tap to set", state: state.msgFalse ? "complete" : null
+			if(state.msgFalse) addToActFalse(state.msgFalse)
+			input "cameraFalse", "capability.imageCapture", title: "Take photos", required: false, multiple: false, submitOnChange: true
+			if(cameraFalse) {
+				input "burstCountFalse", "number", title: "> How many? (default 5)", defaultValue:5
+				addToActFalse("Photo: $cameraFalse " + (burstCountFalse ?: ""))
+			}
 			def theseRules = parent.ruleList(app.label)
 			if(theseRules != null) input "ruleFalse", "enum", title: "Evaluate Rules", required: false, multiple: true, options: theseRules.sort(), submitOnChange: true
 			if(ruleFalse) setActFalse("Rules: $ruleFalse")
@@ -1171,13 +1178,6 @@ def selectActionsFalse() {
 					if(delayEvalMinutesFalse > 1) delayStrFalse = delayStrFalse + "s"
 					setActFalse(delayStrFalse)
 				}
-			}
-			href "selectMsgFalse", title: "Send or speak a message", description: state.msgFalse ? state.msgFalse : "Tap to set", state: state.msgFalse ? "complete" : null
-			if(state.msgFalse) addToActFalse(state.msgFalse)
-			input "cameraFalse", "capability.imageCapture", title: "Take photos", required: false, multiple: false, submitOnChange: true
-			if(cameraFalse) {
-				input "burstCountFalse", "number", title: "> How many? (default 5)", defaultValue:5
-				addToActFalse("Photo: $cameraFalse " + (burstCountFalse ?: ""))
 			}
 // code below is vestigal, supports prior version of delayFalse and randomFalse            
 			if(delayFalse) {
