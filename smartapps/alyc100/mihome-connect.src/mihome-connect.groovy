@@ -80,7 +80,7 @@ def installed() {
 	// Check for new devices and remove old ones every 3 hours
 	runEvery3Hours('updateDevices')
     // execute handlerMethod every 10 minutes.
-    runEvery5Minutes('refreshDevices')
+    runEvery10Minutes('refreshDevices')
 }
 
 // called after settings are changed
@@ -88,7 +88,7 @@ def updated() {
 	log.debug "updated"
 	initialize()
     unschedule('refreshDevices')
-    runEvery5Minutes('refreshDevices')
+    runEvery10Minutes('refreshDevices')
 }
 
 def uninstalled() {
@@ -226,7 +226,7 @@ def logErrors(options = [errorReturn: null, logObject: log], Closure c) {
 	} catch (groovyx.net.http.HttpResponseException e) {
 		options.logObject.error("got error: ${e}, body: ${e.getResponse().getData()}")
 		if (e.statusCode == 401) { // token is expired
-			state.remove("lifxAccessToken")
+			state.remove("miHomeAccessToken")
 			options.logObject.warn "Access token is not valid"
 		}
 		return options.errorReturn
