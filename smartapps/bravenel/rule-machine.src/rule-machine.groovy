@@ -3,10 +3,11 @@
  *
  *  Copyright 2015, 2016 Bruce Ravenel and Mike Maxwell
  *
- *  Version 1.7.5d   23 Feb 2016
+ *  Version 1.7.6   24 Feb 2016
  *
  *	Version History
  *
+ *	1.7.6	24 Feb 2016		Added User Guide link
  *	1.7.5	21 Feb 2016		Improved custom command selection
  *	1.7.4	20 Feb 2016		Added saved command display, UI improvements
  *	1.7.3	14 Feb 2016		Improved Rule Machine initialization, fixed Delete custom commands bug
@@ -66,10 +67,13 @@ def mainPage() {
 //			href( "expert", title: "", description: "Tap to create custom commands", state: "")
 			href("customCommandsPAGE", title: null, description: anyCustom() ? "Custom Commands..." : "Tap to create Custom Commands", state: anyCustom())
         }
+        section ("User Guide") {
+			href url:"https://community.smartthings.com/t/rule-machine-user-guide/40176", style:"embedded", required:false, description:"Tap to view User Guide", title: ""
+        }
         section ("Remove Rule Machine"){
         	href "removePage", description: "Tap to remove Rule Machine and Rules", title: ""
         }
-        if(state.ver) section ("Version 1.7.5d/" + state.ver) { }
+        if(state.ver) section ("Version 1.7.6/" + state.ver) { }
     }
 }
 

@@ -3,10 +3,11 @@
  *
  *  Copyright 2015, 2016 Bruce Ravenel
  *
- *  Version 1.7.14f   24 Feb 2016
+ *  Version 1.7.15   24 Feb 2016
  *
  *	Version History
  *
+ *	1.7.15	24 Feb 2016		Minor UI cleanup, bug fixes
  *	1.7.14	23 Feb 2016		Added adjust thermostat setpoints, delay Set Private Boolean
  *	1.7.13	21 Feb 2016		Improved custom command selection
  *	1.7.12	19 Feb 2016		Added Private Boolean enable/disable, capture/restore color hue and saturation
@@ -93,7 +94,7 @@ preferences {
 def mainPage() {
 	//version to parent app and expert settings for rule
 	try { 
-		state.isExpert = parent.isExpert("1.7.14f") 
+		state.isExpert = parent.isExpert("1.7.15") 
 		if (state.isExpert) state.cstCmds = parent.getCommands()
 		else state.cstCmds = []
 	}
