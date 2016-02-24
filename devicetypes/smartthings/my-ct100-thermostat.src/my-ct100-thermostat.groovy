@@ -250,7 +250,7 @@ def parse(String description)
 	if (result.size() == 1 && (!state.lastbatt || now() - state.lastbatt > 48*60*60*1000)) {
 		result << response(zwave.batteryV1.batteryGet().format())
 	}
-	log.debug "$device.displayName parsed '$description' to $result"
+	//log.debug "$device.displayName parsed '$description' to $result"
 	result
 }
 
