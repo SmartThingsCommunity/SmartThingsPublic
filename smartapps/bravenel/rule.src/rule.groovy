@@ -2057,11 +2057,11 @@ def ruleActions(rule) {
 def setBoolean(truth, appLabel) {
 	log.info "$app.label: Set Boolean from $appLabel: $truth"
 	state.private = truth // == "true"
-	if(state.isRule || (state.howMany > 1 && state.howManyT <= 1)) if(allOk) runRule(false) 
+	if(state.isRule || (state.howMany > 1 && state.howManyT <= 1)) runRule(false) 
     else for(int i = 1; i < state.howManyT; i++) {
 		def myCap = settings.find {it.key == "tCapab$i"}
 		if(myCap.value == "Private Boolean") if(getOperand(i, false)) {
-        	if(allOk) doTrigger()
+        	doTrigger()
             return
         }
     }
