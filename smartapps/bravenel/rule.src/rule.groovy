@@ -3,7 +3,7 @@
  *
  *  Copyright 2015, 2016 Bruce Ravenel
  *
- *  Version 1.7.15   24 Feb 2016
+ *  Version 1.7.15a   24 Feb 2016
  *
  *	Version History
  *
@@ -94,7 +94,7 @@ preferences {
 def mainPage() {
 	//version to parent app and expert settings for rule
 	try { 
-		state.isExpert = parent.isExpert("1.7.15") 
+		state.isExpert = parent.isExpert("1.7.15a") 
 		if (state.isExpert) state.cstCmds = parent.getCommands()
 		else state.cstCmds = []
 	}
@@ -1416,7 +1416,7 @@ def initialize() {
 	def disOnOff = disabledOff ? "off" : "on"
 	if(disabled) state.disabled = disabled.currentSwitch == disOnOff
 	else state.disabled = false
-	parent.setRuleTruth(app.label, true)
+//	parent.setRuleTruth(app.label, true)
 	if(state.isTrig || hasTrig) return
 	if(state.isRule || state.howMany > 1) runRule(true)
 }
@@ -1861,7 +1861,6 @@ def runRule(force) {
 		parent.setRuleTruth(app.label, success)
 		state.success = success
 		log.info (success ? "$app.label is now True" : "$app.label is now False")
-//      sendNotificationEvent(success ? "$app.label is True" : "$app.label is False")
 	} // else log.info "$app.label evaluated " + (success ? "true" : "false")
 }
 
@@ -1873,7 +1872,6 @@ def doTrigger() {
 	else if(randomTrue > 0) 	doDelayTrue(randomTrue * 60, true, true)
 	else takeAction(true)
 	log.info ("$app.label Triggered")
-//  sendNotificationEvent("$app.label Ran")
 }
 
 def getButton(dev, evt, i) {
@@ -2052,6 +2050,10 @@ def ruleEvaluator(rule) {
 def ruleActions(rule) {
 	log.info "$app.label: $rule evaluate"
     if(allOk) takeAction(true)
+}
+
+def revealSuccess() {
+	def result = state.success
 }
 
 def setBoolean(truth, appLabel) {

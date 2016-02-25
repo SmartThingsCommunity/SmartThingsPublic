@@ -3,11 +3,11 @@
  *
  *  Copyright 2015, 2016 Bruce Ravenel and Mike Maxwell
  *
- *  Version 1.7.6   24 Feb 2016
+ *  Version 1.7.6a   24 Feb 2016
  *
  *	Version History
  *
- *	1.7.6	24 Feb 2016		Added User Guide link
+ *	1.7.6	24 Feb 2016		Added User Guide link, fixed Rule truth mechanism
  *	1.7.5	21 Feb 2016		Improved custom command selection
  *	1.7.4	20 Feb 2016		Added saved command display, UI improvements
  *	1.7.3	14 Feb 2016		Improved Rule Machine initialization, fixed Delete custom commands bug
@@ -57,6 +57,7 @@ preferences {
 
 def mainPage() {
 	if(!state.setup) firstRun()
+    if(state.ruleState) state.ruleState = null  // obsolete
     def nApps = childApps.size()
     dynamicPage(name: "mainPage", title: "Installed Rules, Triggers and Actions " + (nApps > 0 ? "[$nApps]" : ""), install: true, uninstall: false) {
     	if(!state.setup) initialize(true)
@@ -64,7 +65,6 @@ def mainPage() {
             app(name: "childRules", appName: "Rule", namespace: "bravenel", title: "Create New Rule...", multiple: true)
         }
 		section ("Expert Features") {
-//			href( "expert", title: "", description: "Tap to create custom commands", state: "")
 			href("customCommandsPAGE", title: null, description: anyCustom() ? "Custom Commands..." : "Tap to create Custom Commands", state: anyCustom())
         }
         section ("User Guide") {
@@ -73,7 +73,7 @@ def mainPage() {
         section ("Remove Rule Machine"){
         	href "removePage", description: "Tap to remove Rule Machine and Rules", title: ""
         }
-        if(state.ver) section ("Version 1.7.6/" + state.ver) { }
+        if(state.ver) section ("Version 1.7.6a/" + state.ver) { }
     }
 }
 
@@ -92,14 +92,13 @@ def updated() {
 
 def firstRun() {
 	state.setup = true
-	state.ruleState = [:]
 	state.ruleSubscribers = [:]
 }
 
 def ruleList(appLabel) {
 	def result = []
 	childApps.each { child ->
-		if(child.name == "Rule" && child.label != appLabel && state.ruleState[child.label] != null) result << child.label
+		if(child.name == "Rule" && child.label != appLabel) result << child.label
 	}
 	return result
 }
@@ -114,8 +113,7 @@ def subscribeRule(appLabel, ruleName, ruleTruth, childMethod) {
 }
 
 def setRuleTruth(appLabel, ruleTruth) {
-//	log.debug "setRuleTruth: $appLabel, $ruleTruth"
-	state.ruleState[appLabel] = ruleTruth
+//	log.debug "setRuleTruth: $appLabel, $ruleTruth, ${state.ruleState[appLabel]}"
 	def thisList = state.ruleSubscribers[appLabel]
 	thisList.each {
 		if(it.value == null || "$it.value" == "$ruleTruth") {
@@ -136,8 +134,11 @@ def setRuleBoolean(rule, ruleBoolean, appLabel) {
 }
 
 def currentRule(appLabel) {
-//	log.debug "currentRule: $appLabel, ${state.ruleState[appLabel]}"
-	def result = state.ruleState[appLabel]
+	def result
+	childApps.each { child ->
+		if(child.label == appLabel) result = child.revealSuccess()
+	}
+    return result
 }
 
 def childUninstalled() {
@@ -147,7 +148,6 @@ def childUninstalled() {
 def removeChild(appLabel) {
 //	log.debug "removeChild: $appLabel"
 	unSubscribeRule(appLabel)
-	if(state.ruleState[appLabel] != null) state.ruleState.remove(appLabel)
 	if(state.ruleSubscribers[appLabel] != null) state.ruleSubscribers.remove(appLabel)
 }
 
