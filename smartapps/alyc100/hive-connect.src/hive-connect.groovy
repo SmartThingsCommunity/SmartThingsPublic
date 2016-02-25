@@ -55,7 +55,7 @@ def firstPage() {
             }
             if (state.hiveAccessToken != null && state.hiveAccessToken != '') {
             	section {
-                	paragraph "You have successfully connected to Hive. Press 'Done' and your devices should be discovered."
+                	paragraph "You have successfully connected to Hive. Your devices should be discovered and selectable below."
   				}
                 section("Select a device...") {
 					input "selectedHeating", "enum", required:false, title:"Select Hive Heating Devices \n(${state.hiveHeatingDevices.size() ?: 0} found)", multiple:true, options:state.hiveHeatingDevices
