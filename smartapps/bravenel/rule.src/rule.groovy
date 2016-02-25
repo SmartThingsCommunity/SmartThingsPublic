@@ -23,7 +23,7 @@
  *	1.7.2	31 Jan 2016		Added mode based dimming action, and cause rule actions action
  *	1.7.1	30 Jan 2016		Added support for more buttons than 4 on button device, now as many as 20
  *	1.7.0	27 Jan 2016		Fixed thermostat mode trigger/condition, added thermostat operating state condition
- *	1.6.13	17 Jan 2016		Added TTS support
+ *	1.6.13	17 Jan 2016		Added Text to speech support
  *	1.6.12	10 Jan 2016		Bug fix re removing parts of a rule
  *	1.6.11	8 Jan 2016		Added offset to compare to device, fixed bugs in compare to device
  *	1.6.10	6 Jan 2016		Returned Delay on/off pending cancel per user request, further debug of rule evaluation
