@@ -1,0 +1,27 @@
+machine:
+  java:
+    version:
+      oraclejdk8
+
+dependencies:
+  override:
+    - echo "Nothing to do."
+
+test:
+  override:
+    - echo "We don't have any tests :-("
+
+deployment:
+  develop:
+    branch: master
+    commands:
+      - ./gradlew deployArchives -PsmartThingsArtifactoryUserName=$ARTIFACTORY_USERNAME -PsmartThingsArtifactoryPassword=$ARTIFACTORY_PASSWORD -Ps3BucketName=$S3_BUCKET_NAME_PREPROD_DEV
+      - ./gradlew hipchatSendNotification -PsmartThingsArtifactoryUserName=$ARTIFACTORY_USERNAME -PsmartThingsArtifactoryPassword=$ARTIFACTORY_PASSWORD -Pbranch=$CIRCLE_BRANCH
+      - ./gradlew hipchatShareFile -PsmartThingsArtifactoryUserName=$ARTIFACTORY_USERNAME -PsmartThingsArtifactoryPassword=$ARTIFACTORY_PASSWORD
+
+  stage:
+    branch: staging
+    commands:
+      - ./gradlew deployArchives -PsmartThingsArtifactoryUserName=$ARTIFACTORY_USERNAME -PsmartThingsArtifactoryPassword=$ARTIFACTORY_PASSWORD -Ps3BucketName=$S3_BUCKET_NAME_PREPROD_STAGING
+      - ./gradlew hipchatSendNotification -PsmartThingsArtifactoryUserName=$ARTIFACTORY_USERNAME -PsmartThingsArtifactoryPassword=$ARTIFACTORY_PASSWORD -Pbranch=$CIRCLE_BRANCH
+      - ./gradlew hipchatShareFile -PsmartThingsArtifactoryUserName=$ARTIFACTORY_USERNAME -PsmartThingsArtifactoryPassword=$ARTIFACTORY_PASSWORD
