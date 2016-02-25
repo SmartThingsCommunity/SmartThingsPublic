@@ -51,7 +51,7 @@ hipchatShareFile {
 
 hipchatSendNotification {
     String branch = project.hasProperty('branch') ? project.property('branch') : 'unknown'
-    message = "Began executable deploy of SmartThingsPrivate(${branch})."
+    message = "Began executable deploy of SmartThingsPublic(${branch})."
     color = branch == 'master' ? 'yellow' : 'red'
     notify = true
 }
