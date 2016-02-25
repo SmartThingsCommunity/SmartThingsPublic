@@ -3,7 +3,7 @@
  *
  *  Copyright 2015, 2016 Bruce Ravenel
  *
- *  Version 1.7.15a   24 Feb 2016
+ *  Version 1.7.15b   24 Feb 2016
  *
  *	Version History
  *
@@ -94,7 +94,7 @@ preferences {
 def mainPage() {
 	//version to parent app and expert settings for rule
 	try { 
-		state.isExpert = parent.isExpert("1.7.15a") 
+		state.isExpert = parent.isExpert("1.7.15b") 
 		if (state.isExpert) state.cstCmds = parent.getCommands()
 		else state.cstCmds = []
 	}
@@ -113,7 +113,7 @@ def mainPage() {
 				href "selectConditions", title: "Select Trigger Events", description: condLabel ? (condLabel) : "Tap to set", required: true, state: condLabel ? "complete" : null, submitOnChange: true
 				href "selectActionsTrue", title: "Select Actions", description: state.actsTrue ? state.actsTrue : "Tap to set", state: state.actsTrue ? "complete" : null
 			}
-			section(title: "More options", hidden: hideOptionsSection(), hideable: true) {
+			section(title: "Restrictions", hidden: hideOptionsSection(), hideable: true) {
 				def timeLabel = timeIntervalLabel()
 				href "certainTime", title: "Only during a certain time", description: timeLabel ?: "Tap to set", state: timeLabel ? "complete" : null
 				input "days", "enum", title: "Only on certain days of the week", multiple: true, required: false,
@@ -130,7 +130,7 @@ def mainPage() {
 				href "selectActionsTrue", title: "Select Actions for True", description: state.actsTrue ? state.actsTrue : "Tap to set", state: state.actsTrue ? "complete" : null, submitOnChange: true
 				href "selectActionsFalse", title: "Select Actions for False", description: state.actsFalse ? state.actsFalse : "Tap to set", state: state.actsFalse ? "complete" : null, submitOnChange: true
 			}
-			section(title: "More options", hidden: hideOptionsSection(), hideable: true) {
+			section(title: "Restrictions", hidden: hideOptionsSection(), hideable: true) {
 				input "modesZ", "mode", title: "Evaluate only when mode is", multiple: true, required: false
 				input "disabled", "capability.switch", title: "Switch to disable rule when ON", required: false, multiple: false
 			}   
@@ -219,7 +219,7 @@ def getActions() {
 }
 
 def getMoreOptions() {
-	section(title: "More options", hidden: hideOptionsSection(), hideable: true) {
+	section(title: "Restrictions", hidden: hideOptionsSection(), hideable: true) {
 		def timeLabel = timeIntervalLabel()
 		href "certainTime", title: "Only during a certain time", description: timeLabel ?: "Tap to set", state: timeLabel ? "complete" : null
 		input "daysY", "enum", title: "Only on certain days of the week", multiple: true, required: false,
