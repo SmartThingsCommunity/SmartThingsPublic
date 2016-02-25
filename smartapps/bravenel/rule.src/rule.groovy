@@ -1411,12 +1411,13 @@ def initialize() {
 				subscribe(myDev.value, (capab.toLowerCase() + ((state.isTrig || hasTrig) ? ".$myState" : "")), allHandler)
 		}
 	}
-	state.success = null
 	subscribe(disabled, "switch", disabledHandler)
 	def disOnOff = disabledOff ? "off" : "on"
 	if(disabled) state.disabled = disabled.currentSwitch == disOnOff
 	else state.disabled = false
 //	parent.setRuleTruth(app.label, true)
+	if(hasTrig && state.howMany > 1) state.success = true
+    else state.success = null
 	if(state.isTrig || hasTrig) return
 	if(state.isRule || state.howMany > 1) runRule(true)
 }
