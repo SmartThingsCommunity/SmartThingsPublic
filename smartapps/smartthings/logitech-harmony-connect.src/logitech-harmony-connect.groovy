@@ -89,7 +89,7 @@ mappings {
 }
 
 def getServerUrl() { return "https://graph.api.smartthings.com" }
-def getCallbackUrl() { "https://graph.api.smartthings.com/oauth/callback" }
+def getServercallbackUrl() { "https://graph.api.smartthings.com/oauth/callback" }
 def getBuildRedirectUrl() { "${serverUrl}/oauth/initialize?appId=${app.id}&access_token=${state.accessToken}&apiServerUrl=${apiServerUrl}" }
 
 def authPage() {
@@ -166,7 +166,7 @@ def callback() {
 
 def init() {
 	log.debug "Requesting Code"
-	def oauthParams = [client_id: "${appSettings.clientId}", scope: "remote", response_type: "code", redirect_uri: "${callbackUrl}" ]
+	def oauthParams = [client_id: "${appSettings.clientId}", scope: "remote", response_type: "code", redirect_uri: "${servercallbackUrl}" ]
 	redirect(location: "https://home.myharmony.com/oauth2/authorize?${toQueryString(oauthParams)}")
 }
 
