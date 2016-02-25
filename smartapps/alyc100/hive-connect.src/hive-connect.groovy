@@ -22,8 +22,8 @@ definition(
 		namespace: "alyc100",
 		author: "Alex Lee Yuk Cheung",
 		description: "Connect your Hive devices to SmartThings.",
-		iconUrl: "https://www.hivehome.com/attachment/46/download/hive_logo_low_res.png",
-		iconX2Url: "https://www.hivehome.com/attachment/46/download/hive_logo_low_res.png",
+		iconUrl: "https://scontent-lhr3-1.xx.fbcdn.net/hphotos-xfp1/v/t1.0-9/10457773_334250273417145_3395772416845089626_n.png?oh=fb96583154582526d24409597fbccc18&oe=57248CDA",
+		iconX2Url: "https://scontent-lhr3-1.xx.fbcdn.net/hphotos-xfp1/v/t1.0-9/10457773_334250273417145_3395772416845089626_n.png?oh=fb96583154582526d24409597fbccc18&oe=57248CDA",
         singleInstance: true
 ) 
 
