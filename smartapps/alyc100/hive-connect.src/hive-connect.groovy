@@ -122,22 +122,56 @@ def updateDevices() {
 	def devices = devicesList()
     state.hiveHeatingDevices = [:]
     state.hiveHotWaterDevices = [:]
+    def selectors = []
 	devices.each { device ->  	
+    	selectors.add("${device.id}")
     	if (device.attributes.capabilities != null && device.attributes.capabilities.reportedValue[0] == "THERMOSTAT") {
         	def parentNode = devices.find { d -> d.id == device.parentNodeId }
             if ((device.attributes.supportsHotWater != null) && (device.attributes.supportsHotWater.reportedValue == false) && (device.attributes.temperature != null)) {
             	def value = "${parentNode.name} Hive Heating"
 				def key = device.id
 				state.hiveHeatingDevices["${key}"] = value
+                
+                //Update names of devices
+        		def childDevice = getChildDevice("${device.id}")
+        		if (childDevice) { 
+        			//Update name of device if different.
+        			if(childDevice.name != parentNode.name + " Hive Heating") {
+						childDevice.name = parentNode.name + " Hive Heating"
+            			childDevice.label = parentNode.name + " Hive Heating"
+						log.debug "Device's name has changed."
+					}
+        		}
             }
             else if ((device.attributes.supportsHotWater != null) && (device.attributes.supportsHotWater.reportedValue == true)) {
             	def value = "${parentNode.name} Hive Hot Water"
 				def key = device.id
 				state.hiveHotWaterDevices["${key}"] = value
+                
+                //Update names of devices
+        		def childDevice = getChildDevice("${device.id}")
+        		if (childDevice) { 
+        			//Update name of device if different.
+        			if(childDevice.name != parentNode.name + " Hive Hot Water") {
+						childDevice.name = parentNode.name + " Hive Hot Water"
+            			childDevice.label = parentNode.name + " Hive Hot Water"
+						log.debug "Device's name has changed."
+					}
+        		}
             }
             // Support for more Hive Device Types can be added here in the future.
         }
-    }    	
+    }    
+    
+    //Remove devices if does not exist on the Hive platform
+    getChildDevices().findAll { !selectors.contains("${it.deviceNetworkId}") }.each {
+		log.info("Deleting ${it.deviceNetworkId}")
+        try {
+			deleteChildDevice(it.deviceNetworkId)
+        } catch (physicalgraph.exception.NotFoundException e) {
+        	log.info("Could not find ${it.deviceNetworkId}. Assuming manually deleted.")
+        }
+	}  
 }
 
 def addHeating() {
