@@ -24,6 +24,9 @@
  *
  *	31.01.2016
  *	v1.0.3 - Bug fix to refresh schedule job.
+ *
+ *  25.02.2016
+ *  v1.0.4 - View detected devices in Connect App
  */
 definition(
 		name: "MiHome (Connect)",
@@ -65,6 +68,12 @@ def firstPage() {
             	section {
                 	paragraph "You have successfully connected to MiHome. Press 'Done' and your devices should have been added automatically."
   				}
+                section("Devices Discovered And Automatically Added...") {
+					state.devices.each {devices ->
+                    	paragraph devices.trim()
+                    }
+					
+				}
             } else {
             	paragraph "There was a problem connecting to MiHome. Check your user credential and error logs in SmartThings web console."
             }
@@ -112,13 +121,12 @@ def initialize() {
 
 
 def updateDevices() {
-	if (!state.devices) {
-		state.devices = [:]
-	}
+	state.devices = []
 	def devices = devicesList()
     def selectors = []
 	devices.each { device ->
     	def childDevice = getChildDevice("${device.id}")
+        state.devices.add("${device.label} eTRV")
     	selectors.add("${device.id}")
         if (!childDevice) { 
     		log.info("Adding device ${device.id}: ${device.device_type}: ${device.label}: ${device.target_temperature}: ${device.last_temperature}: ${device.voltage}")
