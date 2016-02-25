@@ -64,7 +64,7 @@ def mainPage() {
         section {
             app(name: "childRules", appName: "Rule", namespace: "bravenel", title: "Create New Rule...", multiple: true)
         }
-		section ("Rule Machine Expert Features") {
+		section ("Expert Features") {
 			href("customCommandsPAGE", title: null, description: anyCustom() ? "Custom Commands..." : "Tap to create Custom Commands", state: anyCustom())
         }
         section ("Rule Machine User Guide") {
