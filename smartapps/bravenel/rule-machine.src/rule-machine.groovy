@@ -64,10 +64,10 @@ def mainPage() {
         section {
             app(name: "childRules", appName: "Rule", namespace: "bravenel", title: "Create New Rule...", multiple: true)
         }
-		section ("Expert Features") {
+		section ("Rule Machine Expert Features") {
 			href("customCommandsPAGE", title: null, description: anyCustom() ? "Custom Commands..." : "Tap to create Custom Commands", state: anyCustom())
         }
-        section ("User Guide") {
+        section ("Rule Machine User Guide") {
 			href url:"https://community.smartthings.com/t/rule-machine-user-guide/40176", style:"embedded", required:false, description:"Tap to view User Guide", title: ""
         }
         section ("Remove Rule Machine"){
