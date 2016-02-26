@@ -2,13 +2,14 @@
  *  Talking Alarm Clock-Parent
  *
  *  Copyright © 2016 Michael Struck
- *  Version 2.1.2 2/9/16
+ *  Version 2.1.3 2/26/16
  * 
  *  Version 2.0.0 - Initial release of parent/client app. 1.4.5 was released to SmartThings production
  *  Version 2.0.1 - Changed the default of new schedules to 'enabled'
  *  Version 2.1.0 - Added momentary switch as trigger to give alarm summary
  *  Version 2.1.1 - Added information in help about %people% variable
  *  Version 2.1.2 - Added trigger switches to the verbal summary information
+ *  Version 2.1.3 - GUI cleanup
  *
  *  Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except
  *  in compliance with the License. You may obtain a copy of the License at:
@@ -43,8 +44,7 @@ def mainPage() {
             app(name: "childSchedules", appName: "Talking Alarm Clock-Schedule", namespace: "MichaelStruck", title: "Create New Alarm Schedule...", multiple: true)
 		}
 		section([title:"Options", mobileOnly:true]) {
-            href "pageSummary", title: "Alarm Summary", description: "Tap to get alarm summary and configure voice summary"
-            label title:"Assign a name", required:false
+            href "pageSummary", title: "View/Configure Alarm Summaries", description: none
 			href "pageAbout", title: "About ${textAppName()}", description: "Tap to get application version, license, instructions or to remove the application"
 		}
 	}
@@ -62,7 +62,7 @@ def pageAbout(){
 	}
 }
 def pageSummary(){
-	dynamicPage(name: "pageSummary", title: "Alarm Summary View and Settings", uninstall: false) {
+	dynamicPage(name: "pageSummary", title:"View/Configure Alarm Summaries", uninstall: false) {
         if (childApps.size()){
             childApps.each {child ->
                 section("${child.label}"){
@@ -147,7 +147,7 @@ private def textAppName() {
 	def text = "Talking Alarm Clock"
 }	
 private def textVersion() {
-    def version = "Parent App Version: 2.1.2 (02/09/2016)"
+    def version = "Parent App Version: 2.1.3 (02/26/2016)"
     def childCount = childApps.size()
     def childVersion = childCount ? childApps[0].textVersion() : "No alarm schedules installed"
     return "${version}\n${childVersion}"
