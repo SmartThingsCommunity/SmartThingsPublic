@@ -1,7 +1,7 @@
 /**
  *  Cloud Interface
  *
- *  Version 1.1.0 - 2/12/16 Copyright © 2016 Michael Struck
+ *  Version 1.1.1 - 2/26/16 Copyright © 2016 Michael Struck
  *  
  *  Version 1.0.0 - Initial release
  *  Version 1.0.1 - Fixed code syntax
@@ -9,6 +9,7 @@
  *  Version 1.0.3 - Fixed OAuth reset/code optimization
  *  Version 1.0.4 - Changed name to allow it to be used with other SmartApps instead of associating it with Alexa Helper
  *  Version 1.1.0 - Code optimization and URL page improvements
+ *  Version 1.1.1 - GUI clean up
  *
  *  Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except
  *  in compliance with the License. You may obtain a copy of the License at:
@@ -46,7 +47,7 @@ def mainPage() {
 					OAuthToken()
 				}
                 if (state.accessToken != null){
-                    href url:"https://graph.api.smartthings.com/api/smartapps/installations/${app.id}/l?access_token=${state.accessToken}", style:"embedded", required:false, title:"Show URLs", description:"Tap to show URLs that control switches"
+                    href url:"https://graph.api.smartthings.com/api/smartapps/installations/${app.id}/l?access_token=${state.accessToken}", style:"embedded", required:false, title:"Show URLs", description: none
                 }
                 else {
                 	paragraph "URLs cannot be created. Access Token not defined. OAuth may not be enabled. Go to the SmartApp IDE settings to enable OAuth."
@@ -54,8 +55,7 @@ def mainPage() {
 			}
         }
         section([title:"Options", mobileOnly:true]) {
-			href "pageOptions", title: "Options", description: "Tap to show application options"
-            label title:"Assign a name", required:false
+			href "pageSettings", title: "Settings", description: none
 			href "pageAbout", title: "About ${textAppName()}", description: "Tap to get application version, license, instructions or remove the application"
         }
 	}
@@ -76,11 +76,11 @@ def pageAbout(){
         }
 	}
 }
-page(name: "pageOptions", title: "Options"){
-	section("URL Options"){
+page(name: "pageSettings", title: "Settings"){
+	section("URL Settings"){
     	input "urlOnOff", "bool", title: "Show both ON/OFF links on 'Show URLs' page (default=show ON only)", defaultValue: Off
     }
-    section("Security Options"){
+    section("Security Settings"){
     	href "pageReset", title: "Reset Access Token", description: "Tap to revoke access token. All current URLs in use will need to be re-generated"
 	}
 }
@@ -150,7 +150,7 @@ private def textAppName() {
 	def text = "Cloud Interface"
 }	
 private def textVersion() {
-    def text = "Version 1.1.0 (02/12/2016)"
+    def text = "Version 1.1.1 (02/26/2016)"
 }
 private def textCopyright() {
     def text = "Copyright © 2016 Michael Struck"
