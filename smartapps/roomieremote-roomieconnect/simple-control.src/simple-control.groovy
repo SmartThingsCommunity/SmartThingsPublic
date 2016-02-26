@@ -3,7 +3,7 @@
  *
  *  Copyright 2015 Roomie Remote, Inc.
  *
- *	Date: 2016-01-11
+ *	Date: 2015-09-22
  */
 
 definition(
@@ -18,47 +18,15 @@ definition(
 
 preferences()
 {
-	section("Allow Simple Control to Monitor and Control These Things...") {
-	    
+	section("Allow Simple Control to Monitor and Control These Things...")
+    {
     	input "switches", "capability.switch", title: "Which Switches?", multiple: true, required: false
-        input "motionSensors", "capability.motionSensor", title: "Which Motion Sensors?", multiple: true, required: false
-        input "presenceSensors", "capability.presenceSensor", title: "Which Presence Sensors?", multiple: true, required: false
-        input "contactSensors", "capability.contactSensor", title: "Which Contact Sensors?", multiple: true, required: false
-    	input "locks", "capability.lock", title: "Which Locks?", multiple: true, required: false
-        input "beacons", "capability.beacon", title: "Which Beacons?", multiple: true, required: false
-        input "thermostats", "capability.thermostat", title: "Which Thermostats?", multiple: true, required: false
-        input "imageCaptures", "capability.imageCapture", title: "Which Image Capture Devices?", multiple: true, required: false
-        input "relaySwitches", "capability.relaySwitch", title: "Which Relay Switches?", multiple: true, required: false
-        input "doorControls", "capability.doorControl", title: "Which Door Controls?", multiple: true, required: false
-        input "colorControls", "capability.colorControl", title: "Which Color Controllers?", multiple: true, required: false
-        input "musicPlayers", "capability.musicPlayer", title: "Which Music Players?", multiple: true, required: false
-        input "speechSynthesizers", "capability.speecySynthesis", title: "Which Speakable Devices?", multiple: true, required: false
-        input "switchLevels", "capability.switchLevel", title: "Which Adjustable Switches?", multiple: true, required: false
-        input "indicators", "capability.indicator", title: "Which Indicators?", multiple: true, required: false
-		input "mediaControllers", "capability.mediaController", title: "Which Media Controllers?", multiple: true, required: false
-        input "tones", "capability.tone", title: "Which Tone Emitters?", multiple: true, required: false
-        input "tvs", "capability.tv", title: "Which Televisions?", multiple: true, required: false
-        input "alarms", "capability.alarm", title: "Which Sirens?", multiple: true, required: false
-        input "valves", "capability.valve", title: "Which Valves", multiple: true, required: false
-        input "pushButtons", "capability.button", title: "Which Buttons?", multiple: true, required: false
-        input "smokeDetectors", "capability.smokeDetector", title: "Which Smoke Detectors?", multiple: true, required: false
-        input "coDetectors", "capability.carbonMonoxideDetector", title: "Which Carbon Monoxide Detectors?", multiple: true, required: false
-        input "accelerationSensors", "capability.accelerationSensor", title: "Which Vibration Sensors?", multiple: true, required: false
-        input "energyMeters", "capability.energyMeter", title: "Which Energy Meters?", multiple: true, required: false
-        input "powerMeters", "capability.powerMeter", title: "Which Power Meters?", multiple: true, required: false
-        input "lightSensors", "capability.illuminanceMeasurement", title: "Which Light Sensors?", multiple: true, required: false
-        input "humiditySensors", "capability.relativeHumidityMeasurement", title: "Which Relative Humidity Sensors?", multiple: true, required: false
-        input "temperatureSensors", "capability.temperatureMeasurement", title: "Which Temperature Sensors?", multiple: true, required: false
-        input "speechRecognizers", "capability.speechRecognition", title: "Which Speech Recognizers?", multiple: true, required: false
-        input "stepSensors", "capability.stepSensor", title: "Which Step Sensors?", multiple: true, required: false
-        input "touchSensors", "capability.touchSensor", title: "Which Touch Sensors?", multiple: true, required: false
-        
   	}
-    
+	
 	page(name: "mainPage", title: "Simple Control Setup", content: "mainPage", refreshTimeout: 5)
-    page(name:"agentDiscovery", title:"Simple Sync Discovery", content:"agentDiscovery", refreshTimeout:5)
-    page(name:"manualAgentEntry")
-    page(name:"verifyManualEntry")
+	page(name:"agentDiscovery", title:"Simple Sync Discovery", content:"agentDiscovery", refreshTimeout:5)
+	page(name:"manualAgentEntry")
+	page(name:"verifyManualEntry")
 }
 
 mappings {
@@ -385,12 +353,16 @@ def agentDiscovery(params=[:])
     return dynamicPage(name:"agentDiscovery", title:"Pair with Simple Sync", nextPage:"", refreshInterval: refreshInterval, install:true, uninstall: true) {
         section("Pair with Simple Sync")
         {
-            input "selectedAgent", "enum", required:true, title:"Select Simple Sync\n(${agentsDiscovered.size() ?: 0} found)", multiple:false, options:agentsDiscovered
+            input "selectedAgent", "enum", required:false, title:"Select Simple Sync\n(${agentsDiscovered.size() ?: 0} found)", multiple:false, options:agentsDiscovered
         	href(name:"manualAgentEntry",
             	 title:"Manually Configure Simple Sync",
                  required:false,
                  page:"manualAgentEntry")
         }
+        section("Allow Simple Control to Monitor and Control These Things...")
+        {
+	    	input "switches", "capability.switch", title: "Which Switches?", multiple: true, required: false
+	  	}
     }
 }
 
@@ -698,6 +670,7 @@ def List getRealHubFirmwareVersions()
 {
     return location.hubs*.firmwareVersionString.findAll { it }
 }
+
 
 
 
