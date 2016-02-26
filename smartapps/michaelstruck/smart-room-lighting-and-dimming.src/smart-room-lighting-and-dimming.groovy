@@ -9,6 +9,7 @@
  *  Version - 1.2.0 8/28/15 Added option to turn off dimmers if set to anything above 0 when lux threshold is exceeded
  *  Version - 2.0.0 11/24/15 Modified to allow more scenarios via parent/child app structure
  *  Version - 2.0.1 1/16/16 Allow ability to see child app version within parent app and moved the remove button
+ *  Version - 2.0.2 2/26/16 GUI clean up
  * 
  *  Copyright © 2016 Michael Struck - Uses code from Lighting Director by Tim Slagle & Michael Struck
  *
@@ -46,7 +47,6 @@ def mainPage() {
                     app(name: "childScenarios", appName: "Smart Room Lighting and Dimming-Scenario", namespace: "MichaelStruck", title: "Create New Scenario...", multiple: true)
             }
             section([title:"Options", mobileOnly:true]) {
-            	label title:"Assign a name", required:false
             	href "pageAbout", title: "About ${textAppName()}", description: "Tap to get application version, license, instructions or to remove the application"
         	}
     }
@@ -87,7 +87,7 @@ private def textAppName() {
 }	
 
 private def textVersion() {
-    def version = "Parent App Version: 2.0.1 (01/16/2015)"
+    def version = "Parent App Version: 2.0.2 (02/26/2015)"
     def childCount = childApps.size()
     def childVersion = childCount ? childApps[0].textVersion() : "No scenarios installed"  
     return "${version}\n${childVersion}"
