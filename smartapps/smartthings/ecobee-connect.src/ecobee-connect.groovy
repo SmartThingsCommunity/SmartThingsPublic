@@ -257,21 +257,16 @@ def getEcobeeThermostats() {
 				}
 			} else {
 				log.debug "http status: ${resp.status}"
-				//refresh the auth token
-				if (resp.data.status.code == 14) {
-					log.debug "Storing the failed action to try later"
-					atomicState.action = "getEcobeeThermostats"
-					log.debug "Refreshing your auth_token!"
-					refreshAuthToken()
-				} else {
-					log.error "Authentication error, invalid authentication method, lack of credentials, etc."
-				}
 			}
 		}
-	} catch(Exception e) {
-		log.debug "___exception getEcobeeThermostats(): " + e
-		refreshAuthToken()
-	}
+	} catch (groovyx.net.http.HttpResponseException e) {
+        log.trace "Exception polling children: " + e.response.data.status
+        if (e.response.data.status.code == 14) {
+            atomicState.action = "getEcobeeThermostats"
+            log.debug "Refreshing your auth_token!"
+            refreshAuthToken()
+        }
+    }
 	atomicState.thermostats = stats
 	return stats
 }
@@ -422,7 +417,8 @@ def pollChildren(child = null) {
 							heatingSetpoint: stat.runtime.desiredHeat / 10,
 							coolingSetpoint: stat.runtime.desiredCool / 10,
 							thermostatMode: stat.settings.hvacMode,
-							humidity: stat.runtime.actualHumidity
+							humidity: stat.runtime.actualHumidity,
+							thermostatFanMode: stat.runtime.desiredFanMode
 					]
 
 					if (location.temperatureScale == "F")
@@ -449,23 +445,15 @@ def pollChildren(child = null) {
 				}
 				result = true
 				log.debug "updated ${atomicState.thermostats?.size()} stats: ${atomicState.thermostats}"
-			} else {
-				log.error "polling children & got http status ${resp.status}"
-
-				//refresh the auth token
-				if (resp.data.status.code == 14) {
-					atomicState.action = "pollChildren"
-					log.debug "Refreshing your auth_token!"
-					refreshAuthToken()
-				}
-				else {
-					log.error "Authentication error, invalid authentication method, lack of credentials, etc."
-				}
 			}
 		}
-	} catch(Exception e) {
-		log.debug "___exception polling children: " + e
-		refreshAuthToken()
+	} catch (groovyx.net.http.HttpResponseException e) {
+		log.trace "Exception polling children: " + e.response.data.status
+        if (e.response.data.status.code == 14) {
+            atomicState.action = "pollChildren"
+            log.debug "Refreshing your auth_token!"
+            refreshAuthToken()
+        }
 	}
 	return result
 }
@@ -641,16 +629,14 @@ private refreshAuthToken() {
 
 					}
 					atomicState.action = ""
-				} else {
-					log.debug "refresh failed ${resp.status} : ${resp.status.code}"
 				}
 			}
 		} catch (groovyx.net.http.HttpResponseException e) {
 			log.error "refreshAuthToken() >> Error: e.statusCode ${e.statusCode}"
 			def reAttemptPeriod = 300 // in sec
-			if (e.statusCode != 401) { //this issue might comes from exceed 20sec app execution, connectivity issue etc.
+			if (e.statusCode != 401) { // this issue might comes from exceed 20sec app execution, connectivity issue etc.
 				runIn(reAttemptPeriod, "refreshAuthToken")
-			} else if (e.statusCode == 401) { //refresh token is expired
+			} else if (e.statusCode == 401) { // unauthorized
 				atomicState.reAttempt = atomicState.reAttempt + 1
 				log.warn "reAttempt refreshAuthToken to try = ${atomicState.reAttempt}"
 				if (atomicState.reAttempt <= 3) {
@@ -676,9 +662,19 @@ def setHold(child, heating, cooling, deviceId, sendHoldType) {
 
 	int h = heating * 10
 	int c = cooling * 10
-
-
 	def jsonRequestBody = '{"selection":{"selectionType":"thermostats","selectionMatch":"' + deviceId + '","includeRuntime":true},"functions": [{ "type": "setHold", "params": { "coolHoldTemp": '+c+',"heatHoldTemp": '+h+', "holdType": '+sendHoldType+' } } ]}'
+
+	def result = sendJson(child, jsonRequestBody)
+	return result
+}
+
+def setFanMode(child, heating, cooling, deviceId, sendHoldType, fanMode) {
+
+	int h = heating * 10
+	int c = cooling * 10
+
+
+	def jsonRequestBody = '{"selection":{"selectionType":"thermostats","selectionMatch":"' + deviceId + '","includeRuntime":true},"functions": [{ "type": "setHold", "params": { "coolHoldTemp": '+c+',"heatHoldTemp": '+h+', "holdType": '+sendHoldType+', "fan": '+fanMode+' } } ]}'
 	def result = sendJson(child, jsonRequestBody)
 	return result
 }
@@ -713,29 +709,21 @@ def sendJson(child = null, String jsonBody) {
 					log.debug "Error return code = ${resp.data.status.code}"
 					debugEvent("Error return code = ${resp.data.status.code}")
 				}
-			} else {
-				log.error "sent Json & got http status ${resp.status} - ${resp.status.code}"
-				debugEvent ("sent Json & got http status ${resp.status} - ${resp.status.code}")
-
-				//refresh the auth token
-				if (resp.status.code == 14) {
-					log.debug "Refreshing your auth_token!"
-					debugEvent ("Refreshing OAUTH Token")
-					refreshAuthToken()
-					return false
-				} else {
-					debugEvent ("Authentication error, invalid authentication method, lack of credentials, etc.")
-					log.error "Authentication error, invalid authentication method, lack of credentials, etc."
-					return false
-				}
 			}
 		}
-	} catch(Exception e) {
-		log.debug "Exception Sending Json: " + e
-		debugEvent ("Exception Sending JSON: " + e)
-		refreshAuthToken()
-		return false
-	}
+	} catch (groovyx.net.http.HttpResponseException e) {
+        log.trace "Exception Sending Json: " + e.response.data.status
+        debugEvent ("sent Json & got http status ${e.statusCode} - ${e.response.data.status.code}")
+        if (e.response.data.status.code == 14) {
+            atomicState.action = "pollChildren"
+            log.debug "Refreshing your auth_token!"
+            refreshAuthToken()
+        }
+        else {
+            debugEvent("Authentication error, invalid authentication method, lack of credentials, etc.")
+            log.error "Authentication error, invalid authentication method, lack of credentials, etc."
+        }
+    }
 
 	if (returnStatus == 0)
 		return true

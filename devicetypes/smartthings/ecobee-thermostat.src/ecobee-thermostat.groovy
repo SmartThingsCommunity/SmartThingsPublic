@@ -30,6 +30,7 @@ metadata {
 		command "lowerSetpoint"
 		command "resumeProgram"
 		command "switchMode"
+		command "switchFanMode"
 
 		attribute "thermostatSetpoint","number"
 		attribute "thermostatStatus","string"
@@ -44,7 +45,16 @@ metadata {
 		valueTile("temperature", "device.temperature", width: 2, height: 2) {
 			state("temperature", label:'${currentValue}°', unit:"F",
 					backgroundColors:[
-							[value: 31, color: "#153591"],
+							// Celsius
+							[value: 0, color: "#153591"],
+							[value: 7, color: "#1e9cbb"],
+							[value: 15, color: "#90d2a7"],
+							[value: 23, color: "#44b621"],
+							[value: 28, color: "#f1d801"],
+							[value: 35, color: "#d04e00"],
+							[value: 37, color: "#bc2323"],
+							// Fahrenheit
+							[value: 40, color: "#153591"],
 							[value: 44, color: "#1e9cbb"],
 							[value: 59, color: "#90d2a7"],
 							[value: 74, color: "#44b621"],
@@ -63,10 +73,9 @@ metadata {
 			state "updating", label:"Working", icon: "st.secondary.secondary"
 		}
 		standardTile("fanMode", "device.thermostatFanMode", inactiveLabel: false, decoration: "flat") {
-			state "auto", label:'Fan: ${currentValue}', action:"switchFanMode", nextState: "on"
-			state "on", label:'Fan: ${currentValue}', action:"switchFanMode", nextState: "off"
-			state "off", label:'Fan: ${currentValue}', action:"switchFanMode", nextState: "circulate"
-			state "circulate", label:'Fan: ${currentValue}', action:"switchFanMode", nextState: "auto"
+			state "auto", action:"switchFanMode", nextState: "updating", icon: "st.thermostat.fan-auto"
+			state "on", action:"switchFanMode", nextState: "updating", icon: "st.thermostat.fan-on"
+			state "updating", label:"Working", icon: "st.secondary.secondary"
 		}
 		standardTile("upButtonControl", "device.thermostatSetpoint", inactiveLabel: false, decoration: "flat") {
 			state "setpoint", action:"raiseSetpoint", icon:"st.thermostat.thermostat-up"
@@ -96,14 +105,14 @@ metadata {
 			state "default", action:"refresh.refresh", icon:"st.secondary.refresh"
 		}
 		standardTile("resumeProgram", "device.resumeProgram", inactiveLabel: false, decoration: "flat") {
-			state "resume", action:"resumeProgram", nextState: "updating", label:'Resume Schedule', icon:"st.samsung.da.oven_ic_send"
+			state "resume", action:"resumeProgram", nextState: "updating", label:'Resume', icon:"st.samsung.da.oven_ic_send"
 			state "updating", label:"Working", icon: "st.secondary.secondary"
 		}
 		valueTile("humidity", "device.humidity", decoration: "flat") {
-			state "humidity", label:'${currentValue}% humidity'
+			state "humidity", label:'${currentValue}%'
 		}
 		main "temperature"
-		details(["temperature", "upButtonControl", "thermostatSetpoint", "currentStatus", "downButtonControl", "mode", "resumeProgram", "refresh", "humidity"])
+		details(["temperature", "upButtonControl", "thermostatSetpoint", "currentStatus", "downButtonControl", "mode", "fanMode","humidity", "resumeProgram", "refresh"])
 	}
 
 	preferences {
@@ -154,6 +163,9 @@ def generateEvent(Map results) {
 			}  else if (name=="heatMode" || name=="coolMode" || name=="autoMode" || name=="auxHeatMode"){
 				isChange = isStateChange(device, name, value.toString())
 				event << [value: value.toString(), isStateChange: isChange, displayed: false]
+			}  else if (name=="thermostatFanMode"){
+				isChange = isStateChange(device, name, value.toString())
+				event << [value: value.toString(), isStateChange: isChange, displayed: false]
 			}  else if (name=="humidity") {
 				isChange = isStateChange(device, name, value.toString())
 				event << [value: value.toString(), isStateChange: isChange, displayed: false, unit: "%"]
@@ -201,11 +213,11 @@ private getThermostatDescriptionText(name, value, linkText) {
 
 void setHeatingSetpoint(setpoint) {
 	log.debug "***heating setpoint $setpoint"
-	def heatingSetpoint = setpoint.toDouble()
-	def coolingSetpoint = device.currentValue("coolingSetpoint").toDouble()
+	def heatingSetpoint = setpoint
+	def coolingSetpoint = device.currentValue("coolingSetpoint")
 	def deviceId = device.deviceNetworkId.split(/\./).last()
-	def maxHeatingSetpoint = device.currentValue("maxHeatingSetpoint").toDouble()
-	def minHeatingSetpoint = device.currentValue("minHeatingSetpoint").toDouble()
+	def maxHeatingSetpoint = device.currentValue("maxHeatingSetpoint")
+	def minHeatingSetpoint = device.currentValue("minHeatingSetpoint")
 
 	//enforce limits of heatingSetpoint
 	if (heatingSetpoint > maxHeatingSetpoint) {
@@ -238,11 +250,11 @@ void setHeatingSetpoint(setpoint) {
 
 void setCoolingSetpoint(setpoint) {
 	log.debug "***cooling setpoint $setpoint"
-	def heatingSetpoint = device.currentValue("heatingSetpoint").toDouble()
-	def coolingSetpoint = setpoint.toDouble()
+	def heatingSetpoint = device.currentValue("heatingSetpoint")
+	def coolingSetpoint = setpoint
 	def deviceId = device.deviceNetworkId.split(/\./).last()
-	def maxCoolingSetpoint = device.currentValue("maxCoolingSetpoint").toDouble()
-	def minCoolingSetpoint = device.currentValue("minCoolingSetpoint").toDouble()
+	def maxCoolingSetpoint = device.currentValue("maxCoolingSetpoint")
+	def minCoolingSetpoint = device.currentValue("minCoolingSetpoint")
 
 
 	if (coolingSetpoint > maxCoolingSetpoint) {
@@ -303,7 +315,7 @@ def modes() {
 }
 
 def fanModes() {
-	["off", "on", "auto", "circulate"]
+	["on", "auto"]
 }
 
 def switchMode() {
@@ -332,17 +344,15 @@ def switchFanMode() {
 	def returnCommand
 
 	switch (currentFanMode) {
-		case "fanAuto":
-			returnCommand = switchToFanMode("fanOn")
+		case "on":
+			returnCommand = switchToFanMode("auto")
 			break
-		case "fanOn":
-			returnCommand = switchToFanMode("fanCirculate")
+		case "auto":
+			returnCommand = switchToFanMode("on")
 			break
-		case "fanCirculate":
-			returnCommand = switchToFanMode("fanAuto")
-			break
+
 	}
-	if(!currentFanMode) { returnCommand = switchToFanMode("fanOn") }
+	if(!currentFanMode) { returnCommand = switchToFanMode("auto") }
 	returnCommand
 }
 
@@ -351,25 +361,20 @@ def switchToFanMode(nextMode) {
 	log.debug "switching to fan mode: $nextMode"
 	def returnCommand
 
-	if(nextMode == "fanAuto") {
-		if(!fanModes.contains("fanAuto")) {
+	if(nextMode == "auto") {
+		if(!fanModes.contains("auto")) {
 			returnCommand = fanAuto()
 		} else {
-			returnCommand = switchToFanMode("fanOn")
+			returnCommand = switchToFanMode("on")
 		}
-	} else if(nextMode == "fanOn") {
-		if(!fanModes.contains("fanOn")) {
+	} else if(nextMode == "on") {
+		if(!fanModes.contains("on")) {
 			returnCommand = fanOn()
 		} else {
-			returnCommand = switchToFanMode("fanCirculate")
-		}
-	} else if(nextMode == "fanCirculate") {
-		if(!fanModes.contains("fanCirculate")) {
-			returnCommand = fanCirculate()
-		} else {
-			returnCommand = switchToFanMode("fanAuto")
+			returnCommand = switchToFanMode("auto")
 		}
 	}
+
 	returnCommand
 }
 
@@ -379,13 +384,10 @@ def getDataByName(String name) {
 
 def setThermostatMode(String value) {
 	log.debug "setThermostatMode({$value})"
-
 }
 
 def setThermostatFanMode(String value) {
-
 	log.debug "setThermostatFanMode({$value})"
-
 }
 
 def generateModeEvent(mode) {
@@ -426,6 +428,10 @@ def heat() {
 	}
 	generateSetpointEvent()
 	generateStatusEvent()
+}
+
+def emergencyHeat() {
+	auxHeatOnly()
 }
 
 def auxHeatOnly() {
@@ -472,22 +478,44 @@ def auto() {
 
 def fanOn() {
 	log.debug "fanOn"
-//    parent.setFanMode (this,"on")
+	String fanMode = "on"
+	def heatingSetpoint = device.currentValue("heatingSetpoint")
+	def coolingSetpoint = device.currentValue("coolingSetpoint")
+	def deviceId = device.deviceNetworkId.split(/\./).last()
+
+	def sendHoldType = holdType ? (holdType=="Temporary")? "nextTransition" : (holdType=="Permanent")? "indefinite" : "indefinite" : "indefinite"
+
+	def coolingValue = location.temperatureScale == "C"? convertCtoF(coolingSetpoint) : coolingSetpoint
+	def heatingValue = location.temperatureScale == "C"? convertCtoF(heatingSetpoint) : heatingSetpoint
+
+	if (parent.setFanMode(this, heatingValue, coolingValue, deviceId, sendHoldType, fanMode)) {
+		generateFanModeEvent(fanMode)
+	} else {
+		log.debug "Error setting new mode."
+		def currentFanMode = device.currentState("thermostatFanMode")?.value
+		generateModeEvent(currentFanMode) // reset the tile back
+	}
 }
 
 def fanAuto() {
 	log.debug "fanAuto"
-//    parent.setFanMode (this,"auto")
-}
+	String fanMode = "auto"
+	def heatingSetpoint = device.currentValue("heatingSetpoint")
+	def coolingSetpoint = device.currentValue("coolingSetpoint")
+	def deviceId = device.deviceNetworkId.split(/\./).last()
 
-def fanCirculate() {
-	log.debug "fanCirculate"
-//    parent.setFanMode (this,"circulate")
-}
+	def sendHoldType = holdType ? (holdType=="Temporary")? "nextTransition" : (holdType=="Permanent")? "indefinite" : "indefinite" : "indefinite"
 
-def fanOff() {
-	log.debug "fanOff"
-//    parent.setFanMode (this,"off")
+	def coolingValue = location.temperatureScale == "C"? convertCtoF(coolingSetpoint) : coolingSetpoint
+	def heatingValue = location.temperatureScale == "C"? convertCtoF(heatingSetpoint) : heatingSetpoint
+
+	if (parent.setFanMode(this, heatingValue, coolingValue, deviceId, sendHoldType, fanMode)) {
+		generateFanModeEvent(fanMode)
+	} else {
+		log.debug "Error setting new mode."
+		def currentFanMode = device.currentState("thermostatFanMode")?.value
+		generateModeEvent(currentFanMode) // reset the tile back
+	}
 }
 
 def generateSetpointEvent() {
@@ -517,6 +545,7 @@ def generateSetpointEvent() {
 		heatingSetpoint = roundC(heatingSetpoint)
 		coolingSetpoint = roundC(coolingSetpoint)
 	}
+
 
 	sendEvent("name":"maxHeatingSetpoint", "value":maxHeatingSetpoint, "unit":location.temperatureScale)
 	sendEvent("name":"maxCoolingSetpoint", "value":maxCoolingSetpoint, "unit":location.temperatureScale)
