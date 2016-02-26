@@ -15,6 +15,7 @@
  *  VERSION HISTORY
  *  24.02.2016
  *  v2.0 BETA - New Hive Connect App
+ *  v2.0.1 BETA - Fix bug for accounts that do not have capabilities attribute against thermostat nodes.
  *
  */
 definition(
@@ -125,7 +126,7 @@ def updateDevices() {
     def selectors = []
 	devices.each { device ->  	
     	selectors.add("${device.id}")
-    	if (device.attributes.capabilities != null && device.attributes.capabilities.reportedValue[0] == "THERMOSTAT") {
+    	if (device.attributes.activeHeatCoolMode != null) {
         	def parentNode = devices.find { d -> d.id == device.parentNodeId }
             if ((device.attributes.supportsHotWater != null) && (device.attributes.supportsHotWater.reportedValue == false) && (device.attributes.temperature != null)) {
             	def value = "${parentNode.name} Hive Heating"
@@ -170,6 +171,8 @@ def updateDevices() {
 			deleteChildDevice(it.deviceNetworkId)
         } catch (physicalgraph.exception.NotFoundException e) {
         	log.info("Could not find ${it.deviceNetworkId}. Assuming manually deleted.")
+        } catch (physicalgraph.exception.ConflictException ce) {
+        	log.info("Device ${it.deviceNetworkId} in use. Please manually delete.")
         }
 	}  
 }
