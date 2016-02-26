@@ -395,7 +395,7 @@ def generateModeEvent(mode) {
 }
 
 def generateFanModeEvent(fanMode) {
-	sendEvent(name: "thermostatFanMode", value: fanMode, descriptionText: "$device.displayName fan is in ${mode} mode", displayed: true)
+	sendEvent(name: "thermostatFanMode", value: fanMode, descriptionText: "$device.displayName fan is in ${fanMode} mode", displayed: true)
 }
 
 def generateOperatingStateEvent(operatingState) {
@@ -493,7 +493,7 @@ def fanOn() {
 	} else {
 		log.debug "Error setting new mode."
 		def currentFanMode = device.currentState("thermostatFanMode")?.value
-		generateModeEvent(currentFanMode) // reset the tile back
+		generateFanModeEvent(currentFanMode) // reset the tile back
 	}
 }
 
@@ -514,7 +514,7 @@ def fanAuto() {
 	} else {
 		log.debug "Error setting new mode."
 		def currentFanMode = device.currentState("thermostatFanMode")?.value
-		generateModeEvent(currentFanMode) // reset the tile back
+		generateFanModeEvent(currentFanMode) // reset the tile back
 	}
 }
 
