@@ -311,11 +311,12 @@ To update manually, you will need to "cut & paste" the raw code from GitHub into
 |---------	|-------------------	|
 | The devices are not showing up in the Things tab after installation    	|  It can take several minutes for things to show up properly. If you don't want to wait then simply kill the SmartThings app and reload it.              	|
 | Receive error similar to "error java.lang.NullPointerException: Cannot get property 'authorities' on null object"        	| This indicates that you have not turned on OAuth for the SmartApp. Please review the installation instructions and complete the OAuth steps.                  	|
+| "You are not authorized to perform the requested operation."        	|  This indicates that you have not turned on OAuth for the SmartApp. Please review the installation instructions and complete the OAuth steps.                 	|
 | Irregular behavior after an update to the SmartApp or Device Handler code| It is possible that after updating the codebase that you may experience strange behavior, including possible app crashes. This seems to be a general issue with updates on SmartThings. Try the following steps: <br/> 1) Re-run the `Ecobee (Connect)` SmartApp to re-initialize the devices <br/> 2) If that does not solve the problem, remove and re-install the SmartApp |
 |         	|                   	|
 |         	|                   	|
 
-
+"You are not authorized to perform the requested operation."
 
 ### Debug Level in SmartApp
 The `Ecobee (Connect)` SmartApp allows the end user to config the Debug Level they wish to use (ranging from 1-5). The higher the level the more debug information is fed into the `Live Logging` on the SmartThings IDE.
