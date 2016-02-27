@@ -2,7 +2,7 @@
  *  Momentary Button Tile
  *
  *  Copyright 2016 Michael Struck
- *  Version 1.0.0 2/26/16
+ *  Version 1.0.0 2/27/16
  * 
  *  Uses code from SmartThings
  *
@@ -31,8 +31,8 @@ metadata {
 	// UI tile definitions
 	tiles {
 		standardTile("switch", "device.switch", width: 2, height: 2, canChangeIcon: true) {
-			state "off", label: 'Push', action: "momentary.push", backgroundColor: "#ffffff", nextState: "on"
-			state "on", label: 'Push', action: "momentary.push", backgroundColor: "#53a7c0"
+			state "off", label: 'Push', action: "momentary.push", backgroundColor: "#ffffff", nextState: "on", icon: "https://raw.githubusercontent.com/MichaelStruck/SmartThings/master/Other-SmartApps/AlexaHelper/AH-Off.png"
+			state "on", label: 'Push', action: "momentary.push", backgroundColor: "#53a7c0", icon: "https://raw.githubusercontent.com/MichaelStruck/SmartThings/master/Other-SmartApps/AlexaHelper/AH-On.png"
 		}
 		main "switch"
 		details "switch"
