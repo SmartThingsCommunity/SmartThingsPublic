@@ -76,12 +76,25 @@ Rich set of Ecobee related icons:
 ## <a name="features-connect-sa">`Ecobee (Connect)` Smart App User Interface</a>
 The `Ecobee (Connect)` SmartApp provides a single SmartApp interface for accessing installation, updates, Child SmartApps and even debugging tools. The interface uses dynamic pages to guide the user through the installation process in order simplify the steps as much as possible.
 
-The SmartApp has the following screens:
-- 
+The SmartApp provides the following capabilities:
+- Perform Ecobee API Authorization (OAuth)
+- Select Thermostats from account to use (dynamic list, so any future Thermostats can easily be added at a later date)
+- Select Sensors to use (dynamic list, will only show sensors associated with the previously selected Thermostats)
+- Set various Preferences:
+  - Set default Hold Type ("Until Next Program" or "Until I Change")
+  - Allow changes to temperature setpoint via arrows when in auto mode ("Smart Auto Temperature Adjust")
+  - Polling Interval
+  - Debugging Level
+  - Include Thermostats as a separate Ecobee Sensor (useful in order to expose the true temperature reading and not just the average temperature shown on the thermostat, e.g. for Smart Vent input)
+  - Monitor external devices to drive additional polling and watchdog events
+  - Delay timer value after pressing setpoint arrows (to allow multiple arror presses before calling the Ecobee APIs)
+
 
 
 ## <a name="features-routines-sa">`ecobee Routines` Smart App User Interface</a>
-The `ecobee Routines` SmartApp provides the ability 
+The `ecobee Routines` SmartApp provides the ability to change the running Program (Comfort Setting) when a SmartThings Mode is changed (for example, by running a Routine). 
+
+>**NOTE**: There is an open issue where we only use Mode changes to trigger an event today. An update is planned that will also use a Routine execution to trigger the events. 
 
 
 -----------------------------
@@ -432,4 +445,3 @@ Supports the following capabilities (tagging capabilities not listed). Follow th
 * capability ["Motion Sensor"](http://docs.smartthings.com/en/latest/capabilities-reference.html#motion-sensor)
 * capability "Polling"
 * capability "Refresh"
-
