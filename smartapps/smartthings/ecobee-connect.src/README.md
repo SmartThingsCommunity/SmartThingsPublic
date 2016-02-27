@@ -88,6 +88,8 @@ The SmartApp provides the following capabilities:
   - Include Thermostats as a separate Ecobee Sensor (useful in order to expose the true temperature reading and not just the average temperature shown on the thermostat, e.g. for Smart Vent input)
   - Monitor external devices to drive additional polling and watchdog events
   - Delay timer value after pressing setpoint arrows (to allow multiple arror presses before calling the Ecobee APIs)
+- Select Polling and Watchdog Devices (if enabled in Preferences)
+- Debug Dashboard (if Debug Level is set to 5)
 
 
 
