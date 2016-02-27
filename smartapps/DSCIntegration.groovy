@@ -92,6 +92,8 @@ private update() {
       '657':"partition entrydelay",
       '701':"partition armed",
       '702':"partition armed",
+      '840':"partition trouble",
+      '841':"partition notrouble",
       '6520':"partition away",
       '6521':"partition stay",
       '6522':"partition instantaway",

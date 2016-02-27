@@ -44,18 +44,26 @@ metadata {
                 attributeState "instantstay", label:'Armed Instant Stay', action: 'away', icon:"st.security.alarm.on", backgroundColor:"#008CC1"
             }
         }
-        standardTile("disarm", "capability.momentary", width: 2, height: 2, title: "Disarm", required: true, multiple: false){
+        standardTile("disarm", "capability.momentary", width: 2, height: 2, title: "Disarm"){
             state "disarm", label: 'Disarm', action: "disarm", icon: "st.Home.home4", backgroundColor: "#79b821"
         }
-        standardTile("away", "capability.momentary", width: 2, height: 2, title: "Armed Away", required: true, multiple: false){
+        standardTile("away", "capability.momentary", width: 2, height: 2, title: "Armed Away"){
             state "away", label: 'Arm Away', action: "away", icon: "st.Home.home4", backgroundColor: "#800000"
         }
-        standardTile("stay", "capability.momentary", width: 2, height: 2, title: "Armed Stay", required: true, multiple: false){
+        standardTile("stay", "capability.momentary", width: 2, height: 2, title: "Armed Stay"){
             state "stay", label: 'Arm Stay', action: "stay", icon: "st.Home.home4", backgroundColor: "#008CC1"
         }
+        standardTile("instant", "capability.momentary", width: 2, height: 2, title: "Toggle Instant"){
+            state "instant", label: 'Toggle Instant', action: "instant", icon: "st.Home.home4", backgroundColor: "#008CC1"
+        }
 
-        main (["status", "away", "stay", "disarm"])
-        details(["status", "away", "stay", "disarm"])
+        standardTile("trouble", "device.trouble", width: 2, height: 2, title: "Trouble"){
+            state "detected", label: 'Trouble', icon: "st.security.alarm.on", backgroundColor: "#800000"
+            state "clear", label: 'No Trouble', icon: "st.security.alarm.off", backgroundColor: "#79b821"
+        }
+
+        main (["status", "away", "stay", "disarm", "instant", "trouble"])
+        details(["status", "away", "stay", "disarm", "instant", "trouble"])
 
     }
 }
@@ -68,23 +76,21 @@ def partition(String state, String partition) {
     // partition will be a partition number, for most users this will always be 1
 
     log.debug "Partition: ${state} for partition: ${partition}"
-    sendEvent (name: "switch", value: "${state}")
+
+    def troubleMap = [
+      'trouble':"detected",
+      'notrouble':"clear",
+    ]
+
+    if (troubleMap[state]) {
+        def troubleState = troubleMap."${state}"
+        // Send final event
+        sendEvent (name: "trouble", value: "${troubleState}")
+    } else {
+        sendEvent (name: "switch", value: "${state}")
+    }
 }
 
-def stay() {
-    def result = new physicalgraph.device.HubAction(
-        method: "GET",
-        path: "/api/alarm/stayarm",
-        headers: [
-            HOST: "$ip:$port"
-            //HOST: getHostAddress()
-        ]
-    )
-    log.debug "response" : "Request to stay arm received"
-    //log.debug "stay"
-    //sendEvent (name: "switch", value: "stay")
-    return result
-}
 
 def away() {
     def result = new physicalgraph.device.HubAction(
@@ -92,15 +98,35 @@ def away() {
         path: "/api/alarm/arm",
         headers: [
             HOST: "$ip:$port"
-            //HOST: getHostAddress()
         ]
     )
     log.debug "response" : "Request to away arm received"
-    //log.debug "away"
-    //sendEvent (name: "switch", value: "away")
     return result
 }
 
+def disarm() {
+    def result = new physicalgraph.device.HubAction(
+        method: "GET",
+        path: "/api/alarm/disarm",
+        headers: [
+            HOST: "$ip:$port"
+        ]
+    )
+    log.debug "response" : "Request to disarm received"
+    return result
+}
+
+def instant() {
+    def result = new physicalgraph.device.HubAction(
+        method: "GET",
+        path: "/api/alarm/toggleinstant",
+        headers: [
+            HOST: "$ip:$port"
+        ]
+    )
+    log.debug "response" : "Request to toggle instant mode received"
+    return result
+}
 
 def on() {
     away()
@@ -110,17 +136,14 @@ def off() {
     disarm()
 }
 
-def disarm() {
+def stay() {
     def result = new physicalgraph.device.HubAction(
         method: "GET",
-        path: "/api/alarm/disarm",
+        path: "/api/alarm/stayarm",
         headers: [
             HOST: "$ip:$port"
-            //HOST: getHostAddress()
         ]
     )
-    log.debug "response" : "Request to disarm received"
-    //log.debug "disarm"
-    //sendEvent (name: "switch", value: "disarm")
+    log.debug "response" : "Request to stay arm received"
     return result
 }
