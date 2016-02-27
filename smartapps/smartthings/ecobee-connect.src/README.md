@@ -80,6 +80,7 @@ The SmartApp provides the following capabilities:
 - Perform Ecobee API Authorization (OAuth)
 - Select Thermostats from account to use (dynamic list, so any future Thermostats can easily be added at a later date)
 - Select Sensors to use (dynamic list, will only show sensors associated with the previously selected Thermostats)
+- Access Child SmartApps (such as `ecobee Routines`)
 - Set various Preferences:
   - Set default Hold Type ("Until Next Program" or "Until I Change")
   - Allow changes to temperature setpoint via arrows when in auto mode ("Smart Auto Temperature Adjust")
