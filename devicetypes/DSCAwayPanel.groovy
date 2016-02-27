@@ -79,7 +79,7 @@ def partition(String state, String partition) {
 
     def troubleMap = [
       'trouble':"detected",
-      'notrouble':"clear",
+      'restore':"clear",
     ]
 
     if (troubleMap[state]) {

@@ -78,6 +78,8 @@ private update() {
     def eventMap = [
       '601':"zone alarm",
       '602':"zone closed",
+      '605':"zone fault",
+      '606':"zone restore",
       '609':"zone open",
       '610':"zone closed",
       '631':"zone smoke",
@@ -93,7 +95,7 @@ private update() {
       '701':"partition armed",
       '702':"partition armed",
       '840':"partition trouble",
-      '841':"partition notrouble",
+      '841':"partition restore",
       '6520':"partition away",
       '6521':"partition stay",
       '6522':"partition instantaway",
