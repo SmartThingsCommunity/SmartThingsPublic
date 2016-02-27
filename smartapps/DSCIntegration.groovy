@@ -78,6 +78,8 @@ private update() {
     def eventMap = [
       '601':"zone alarm",
       '602':"zone closed",
+      '603':"zone tamper",
+      '604':"zone restore",
       '605':"zone fault",
       '606':"zone restore",
       '609':"zone open",

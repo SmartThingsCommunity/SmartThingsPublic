@@ -29,16 +29,17 @@ metadata {
       state "alarm",  label: '${name}', icon: "st.contact.contact.open",   backgroundColor: "#ff0000"
     }
 
-    standardTile("tamper", "device.tamper", width: 2, height: 2, canChangeBackground: true, canChangeIcon: true) {
-      state "clear",   label: 'No Tamper', icon: "st.contact.contact.closed",   backgroundColor: "#79b821"
-      state "detected", label: 'Tamper', icon: "st.contact.contact.open", backgroundColor: "#ffa81e"
+    standardTile("trouble", "device.trouble", width: 2, height: 2, canChangeBackground: true, canChangeIcon: true) {
+      state "restore", label: 'No Trouble', icon: "st.contact.contact.closed",   backgroundColor: "#79b821"
+      state "tamper", label: 'Tamper', icon: "st.contact.contact.open", backgroundColor: "#ffa81e"
+      state "fault", label: 'Fault', icon: "st.contact.contact.open", backgroundColor: "#ffa81e"
     }
 
     // This tile will be the tile that is displayed on the Hub page.
     main "zone"
 
     // These tiles will be displayed when clicked on the device, in the order listed here.
-    details(["zone","tamper"])
+    details(["zone","trouble"])
   }
 }
 
@@ -48,15 +49,11 @@ def zone(String state) {
   // zone will be a number for the zone
   log.debug "Zone: ${state}"
 
-  def tamperMap = [
-    'fault':"detected",
-    'restore':"clear",
-  ]
+  def troubleList = ['fault','tamper','restore']
 
-  if (tamperMap[state]) {
-    def tamperState = tamperMap."${state}"
+  if (troubleList.contains(state)) {
     // Send final event
-    sendEvent (name: "tamper", value: "${tamperState}")
+    sendEvent (name: "trouble", value: "${state}")
   } else {
     sendEvent (name: "contact", value: "${state}")
   }
