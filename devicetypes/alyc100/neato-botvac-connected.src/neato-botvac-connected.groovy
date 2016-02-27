@@ -312,6 +312,7 @@ def api(method, args = [], success = {}) {
 private postAction(uri){
   ipSetup()  
   
+  runIn(30, setOffline)
   def hubAction = new physicalgraph.device.HubAction(
     method: "GET",
     path: uri,
@@ -320,7 +321,6 @@ private postAction(uri){
   log.debug("Executing hubAction on " + getHostAddress())
   log.debug hubAction
   hubAction    
-  runIn(30, setOffline)
 }
 
 def ipSetup() {
