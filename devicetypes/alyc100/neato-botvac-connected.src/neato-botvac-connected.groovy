@@ -25,6 +25,7 @@
  *
  *  Modified 2016 by Alex Lee Yuk Cheung for Neato BotVac Compatibility. Requires https://github.com/kangguru/botvac web server running. 
  *  Neato Version: 1.0 - Initial Version
+ *	Neato Version: 1.0.1 - Improved Botvac connection detection
  */
 import groovy.json.JsonSlurper
 
@@ -121,6 +122,7 @@ def parse(String description) {
 	def result
 	def statusMsg = ""
     def binFullFlag = false
+    unschedule('setOffline')
 	map = stringToMap(description)
 	headerString = new String(map.headers.decodeBase64())    
 	if (headerString.contains("200 OK")) {
@@ -208,8 +210,8 @@ def parse(String description) {
         
 	}
 	else {
-		sendEvent(name: 'status', value: "error" as String)
-		sendEvent(name: 'network', value: "Not Connected" as String)
+		setOffline()
+        sendEvent(name: 'status', value: "error" as String)
         statusMsg += 'Not Connected To Neato'
 		log.debug headerString
 	}
@@ -265,6 +267,10 @@ def disableSchedule() {
 	api('manual')
 }
 
+def setOffline() {
+	sendEvent(name: 'network', value: "Not Connected" as String)
+}
+
 def poll() {
 	log.debug "Executing 'poll'"
     
@@ -272,8 +278,8 @@ def poll() {
 		api('refresh')
 	}
 	else {
-		sendEvent(name: 'status', value: "error" as String)
-		sendEvent(name: 'network', value: "Not Connected" as String)
+		setOffline()
+        sendEvent(name: 'status', value: "error" as String)
 		log.debug "DNI: Not set"
 	}
 }
@@ -314,6 +320,7 @@ private postAction(uri){
   log.debug("Executing hubAction on " + getHostAddress())
   log.debug hubAction
   hubAction    
+  runIn(30, setOffline)
 }
 
 def ipSetup() {
