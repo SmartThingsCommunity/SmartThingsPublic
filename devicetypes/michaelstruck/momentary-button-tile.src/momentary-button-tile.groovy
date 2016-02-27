@@ -2,7 +2,7 @@
  *  Momentary Button Tile
  *
  *  Copyright 2016 Michael Struck
- *  Version 1.0.0 2/25/16
+ *  Version 1.0.0 2/26/16
  * 
  *  Uses code from SmartThings
  *
@@ -16,7 +16,6 @@
  *  for the specific language governing permissions and limitations under the License.
  *
  */
- // for the UI
 metadata {
 	definition (name: "Momentary Button Tile", namespace: "MichaelStruck", author: "SmartThings") {
 		capability "Actuator"
@@ -24,35 +23,35 @@ metadata {
 		capability "Momentary"
 		capability "Sensor"
 	}
+
+	// simulator metadata
 	simulator {
-		// TODO: define status and reply messages here
 	}
 
+	// UI tile definitions
 	tiles {
-		// TODO: define your main and details tiles here
+		standardTile("switch", "device.switch", width: 2, height: 2, canChangeIcon: true) {
+			state "off", label: 'Push', action: "momentary.push", backgroundColor: "#ffffff", nextState: "on"
+			state "on", label: 'Push', action: "momentary.push", backgroundColor: "#53a7c0"
+		}
+		main "switch"
+		details "switch"
 	}
 }
 
-// parse events into attributes
 def parse(String description) {
-	log.debug "Parsing '${description}'"
-	// TODO: handle 'switch' attribute
-	// TODO: handle 'momentary' attribute
-
-}
-
-// handle commands
-def on() {
-	log.debug "Executing 'on'"
-	// TODO: handle 'on' command
-}
-
-def off() {
-	log.debug "Executing 'off'"
-	// TODO: handle 'off' command
 }
 
 def push() {
-	log.debug "Executing 'push'"
-	// TODO: handle 'push' command
+	sendEvent(name: "switch", value: "on", isStateChange: true, display: false)
+	sendEvent(name: "switch", value: "off", isStateChange: true, display: false)
+	sendEvent(name: "momentary", value: "pushed", isStateChange: true)
+}
+
+def on() {
+	push()
+}
+
+def off() {
+	push()
 }
