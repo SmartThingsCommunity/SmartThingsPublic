@@ -3,10 +3,11 @@
  *
  *  Copyright 2015, 2016 Bruce Ravenel
  *
- *  Version 1.7.15b   24 Feb 2016
+ *  Version 1.7.16   28 Feb 2016
  *
  *	Version History
  *
+ *	1.7.16	28 Feb 2016		Added cancel for delay set private, and delay for restore with cancel
  *	1.7.15	24 Feb 2016		Minor UI cleanup, bug fixes
  *	1.7.14	23 Feb 2016		Added adjust thermostat setpoints, delay Set Private Boolean
  *	1.7.13	21 Feb 2016		Improved custom command selection
@@ -94,7 +95,7 @@ preferences {
 def mainPage() {
 	//version to parent app and expert settings for rule
 	try { 
-		state.isExpert = parent.isExpert("1.7.15b") 
+		state.isExpert = parent.isExpert("1.7.16") 
 		if (state.isExpert) state.cstCmds = parent.getCommands()
 		else state.cstCmds = []
 	}
@@ -850,7 +851,7 @@ def selectActionsTrue() {
 					setActTrue(delayStrTrue)
 				}
 			}
-            if(state.isRule || state.howMany > 1) {
+            if(isRule) {
 				input "pendedOffTrue", "capability.switch", title: "Turn on or off these switches after a delay, pending cancellation (default is OFF)", multiple: true, required: false, submitOnChange: true
 				if(pendedOffTrue) {
 					input "pendOnOffTrue", "bool", title: "> Turn ON after the delay?", multiple: false, required: false, defaultValue: false, submitOnChange: true
@@ -896,8 +897,10 @@ def selectActionsTrue() {
 				checkActTrue(captureTrue, "Capture: $captureTrue")
 			}
 			if(captureTrue || captureFalse) input "restoreTrue", "bool", title: "Restore the state of captured switches", required: false, submitOnChange: true
-			if(restoreTrue && captureTrue) setActTrue("Restore: $captureTrue")
-			else if(restoreTrue && captureFalse) setActTrue("Restore: $captureFalse")
+            if(restoreTrue) input "restoreDelayTrue", "number", title: "> Restore after a delay?", required: false, submitOnChange: true, description: "0 minutes"
+            if(restoreDelayTrue > 0) input "restoreCancelTrue", "bool", title: "> Cancel on truth change?", required: false, submitOnChange: true
+			if(restoreTrue && captureTrue) setActTrue("Restore: $captureTrue" + (restoreDelayTrue > 0 ? " after $restoreDelayTrue minutes" + (restoreCancelTrue ? " [Cancel]" : "") : ""))
+			else if(restoreTrue && captureFalse) setActTrue("Restore: $captureFalse" + (restoreDelayTrue > 0 ? " after $restoreDelayTrue minutes"  + (restoreCancelTrue ? " [Cancel]" : ""): ""))
 			input "ctTrue", "capability.colorTemperature", title: "Set color temperature for these bulbs", multiple: true, submitOnChange: true, required: false
 			if(ctTrue) input "ctLTrue", "number", title: "> To this color temperature", range: "2000..6500", required: true, submitOnChange: true, description: "2000..6500"
 			if(ctLTrue) checkActTrue(ctTrue, "Color Temperature: $ctTrue: $ctLTrue")
@@ -974,7 +977,7 @@ def selectActionsTrue() {
 			input "ruleEvalDelayTrue", "enum", title: "Evaluate Rules after delay", required: false, multiple: true, options: theseRules2.sort(), submitOnChange: true
 			if(ruleEvalDelayTrue) {
 				input "delayEvalMinutesTrue", "number", title: "> Minutes of delay", required: false, range: "1..*", submitOnChange: true
-				if(delayEvalMinutesTrue != null) {
+				if(delayEvalMinutesTrue > 0) {
 					def delayStrTrue = "Delay Rule Evaluations: $ruleEvalDelayTrue: $delayEvalMinutesTrue minute"
 					if(delayEvalMinutesTrue > 1) delayStrTrue = delayStrTrue + "s"
 					setActTrue(delayStrTrue)
@@ -1003,8 +1006,9 @@ def selectActionsTrue() {
 				input "otherTrue", "bool", title: "> For this Rule (default) or others?", required: false, submitOnChange: true
 				if(otherTrue) input "otherPrivateTrue", "enum", title: "> Select Rules to set Boolean", required: false, multiple: true, options: theseRules.sort(), submitOnChange: true
                 input "privateDelayTrue", "number", title: "> Set after a delay?", required: false, submitOnChange: true, description: "0 minutes"
-                if(otherPrivateTrue) setActTrue("Rule Boolean: $otherPrivateTrue: $privateTrue" + (privateDelayTrue ? ": Delay $privateDelayTrue minutes" : ""))
-                else addToActTrue("Private Boolean: $privateTrue" + (privateDelayTrue ? ": Delay $privateDelayTrue minutes" : ""))
+                if(privateDelayTrue > 0 && isRule) input "privateDelayCancelTrue", "bool", title: "> Cancel on truth change?", required: false, submitOnChange: true
+                if(otherPrivateTrue) setActTrue("Rule Boolean: $otherPrivateTrue: $privateTrue" + (privateDelayTrue ? ": Delay $privateDelayTrue minutes" + (privateDelayCancelTrue ? " [Cancel]" : "") : ""))
+                else addToActTrue("Private Boolean: $privateTrue" + (privateDelayTrue ? ": Delay $privateDelayTrue minutes" + (privateDelayCancelTrue ? " [Cancel]" : "") : ""))
 			}
 			if (state.isExpert){
 				if (state.cstCmds){
@@ -1096,8 +1100,10 @@ def selectActionsFalse() {
 				checkActFalse(captureFalse, "Capture: $captureFalse")
 			}
 			if(captureTrue || captureFalse) input "restoreFalse", "bool", title: "Restore the state of captured switches?", required: false, submitOnChange: true
-			if(restoreFalse && captureFalse) setActFalse("Restore: $captureFalse")
-			else if(restoreFalse && captureTrue) setActFalse("Restore: $captureTrue")
+            if(restoreFalse) input "restoreDelayFalse", "number", title: "> Restore after a delay?", required: false, submitOnChange: true, description: "0 minutes"
+            if(restoreDelayFalse > 0) input "restoreCancelFalse", "bool", title: "> Cancel on truth change?", required: false, submitOnChange: true
+			if(restoreFalse && captureFalse) setActFalse("Restore: $captureFalse" + (restoreDelayFalse > 0 ? " after $restoreDelayFalse minutes"  + (restoreCancelFalse ? " [Cancel]" : ""): ""))
+			else if(restoreFalse && captureTrue) setActFalse("Restore: $captureTrue" + (restoreDelayFalse > 0 ? " after $restoreDelayFalse minutes"  + (restoreCancelFalse ? " [Cancel]" : ""): ""))
 			input "ctFalse", "capability.colorTemperature", title: "Set color temperature for these bulbs", multiple: true, submitOnChange: true, required: false
 			if(ctFalse) input "ctLFalse", "number", title: "> To this color temperature", range: "2000..6500", required: true, submitOnChange: true, description: "2000..6500"
 			if(ctLFalse) checkActFalse(ctFalse, "Color Temperature: $ctFalse: $ctLFalse")			
@@ -1174,7 +1180,7 @@ def selectActionsFalse() {
 			input "ruleEvalDelayFalse", "enum", title: "Evaluate Rules after delay", required: false, multiple: true, options: theseRules2.sort(), submitOnChange: true
 			if(ruleEvalDelayFalse) {
 				input "delayEvalMinutesFalse", "number", title: "> Minutes of delay", required: false, range: "1..*", submitOnChange: true
-				if(delayEvalMinutesFalse != null) {
+				if(delayEvalMinutesFalse > 0) {
 					def delayStrFalse = "Delay Rule Evaluations: $ruleEvalDelayFalse: $delayEvalMinutesFalse minute"
 					if(delayEvalMinutesFalse > 1) delayStrFalse = delayStrFalse + "s"
 					setActFalse(delayStrFalse)
@@ -1201,8 +1207,9 @@ def selectActionsFalse() {
 				input "otherFalse", "bool", title: "> For this Rule (default) or others?", required: false, submitOnChange: true
 				if(otherFalse) input "otherPrivateFalse", "enum", title: "> Select Rules to set Boolean", required: false, multiple: true, options: theseRules.sort(), submitOnChange: true
                 input "privateDelayFalse", "number", title: "> Set after a delay?", required: false, submitOnChange: true, description: "0 minutes"
-                if(otherPrivateFalse) setActFalse("Rule Boolean: $otherPrivateFalse: $privateFalse" + (privateDelayFalse ? ": Delay $privateDelayFalse minutes" : ""))
-                else addToActFalse("Private Boolean: $privateFalse" + (privateDelayFalse ? ": Delay $privateDelayFalse minutes" : ""))
+                if(privateDelayFalse > 0 && isRule) input "privateDelayCancelFalse", "bool", title: "> Cancel on truth change?", required: false, submitOnChange: true
+                if(otherPrivateFalse) setActFalse("Rule Boolean: $otherPrivateFalse: $privateFalse" + (privateDelayFalse ? ": Delay $privateDelayFalse minutes" + (privateDelayCancelFalse ? " [Cancel]" : "") : ""))
+                else addToActFalse("Private Boolean: $privateFalse" + (privateDelayFalse ? ": Delay $privateDelayFalse minutes" + (privateDelayCancelFalse ? " [Cancel]" : "") : ""))
 			}
 			if (state.isExpert){
 				if (state.cstCmds){
@@ -1769,6 +1776,11 @@ def takeAction(success) {
 								if(thermoFanTrue) 		thermoTrue.setThermostatFanMode(thermoFanTrue)   }
 		if(alarmTrue)			sendLocationEvent(name: "alarmSystemStatus", value: "$alarmTrue")
 		if(modeTrue) 			setLocationMode(modeTrue)
+		if(privateTrue)			if(privateDelayTrue) {	if(privateDelayCancelTrue) { state.delayRuleTrue = true
+        													runIn(privateDelayTrue * 60, delayPrivyTrueX) }
+        												else runIn(privateDelayTrue * 60, delayPrivyTrue) }
+        						else if(otherTrue && otherPrivateTrue) parent.setRuleBoolean(otherPrivateTrue, privateTrue, app.label)
+								else state.private = privateTrue // == "true"
 		if(ruleTrue)			parent.runRule(ruleTrue, app.label)
 		if(ruleActTrue)			parent.runRuleAct(ruleActTrue, app.label)
 		if(ruleEvalDelayTrue)	if(delayEvalMinutesTrue) runIn(delayEvalMinutesTrue * 60, delayEvalTrue)
@@ -1781,12 +1793,12 @@ def takeAction(success) {
 		if(phoneTrue)			sendSmsMulti(phoneTrue, (msgTrue ?: "Rule $app.label True") + (refDevTrue ? " $state.lastEvtName" : ""))
 		if(speakTrue)			speakTrueDevice?.speak((msgTrue ?: "Rule $app.label True") + (refDevTrue ? " $state.lastEvtName" : ""))
 		if(mediaTrueDevice)		mediaTrueDevice.playTextAndRestore((msgTrue ?: "Rule $app.label True") + (refDevTrue ? " $state.lastEvtName" : ""), mediaTrueVolume)
-		if(privateTrue)			if(privateDelayTrue) runIn(privateDelayTrue * 60, delayPrivyTrue)
-        						else if(otherTrue && otherPrivateTrue) parent.setRuleBoolean(otherPrivateTrue, privateTrue, app.label)
-								else state.private = privateTrue // == "true"
 		if(state.howManyCCtrue > 1)  execCommands(true)
 		if(offSwitchTrue) 		if(delayMilTrue) offSwitchTrue.off([delay: delayMilTrue]) else offSwitchTrue.off()
-        if(restoreTrue)			restore()
+        if(restoreTrue)			if(restoreDelayTrue > 0) {	 if(restoreCancelTrue) { state.delayRuleTrue = true
+        														runIn(restoreDelayTrue * 60, delayRestoreTrue) }
+        													 else runIn(restoreDelayTrue * 60, restore) }
+        						else restore()
 	} else {
 		if(captureFalse)		capture(captureFalse)
 		if(onSwitchFalse) 		if(delayMilFalse) onSwitchFalse.on([delay: delayMilFalse]) else onSwitchFalse.on()
@@ -1820,6 +1832,11 @@ def takeAction(success) {
 								if(thermoFanFalse)		thermoFalse.setThermostatFanMode(thermoFanFalse)   }
 		if(alarmFalse)			sendLocationEvent(name: "alarmSystemStatus", value: "$alarmFalse")
 		if(modeFalse) 			setLocationMode(modeFalse)
+		if(privateFalse)		if(privateDelayFalse) {	if(privateDelayCancelFalse) { state.delayRuleFalse = true
+        													runIn(privateDelayFalse * 60, delayPrivyFalseX) }
+        												else runIn(privateDelayFalse * 60, delayPrivyFalse) }
+        						else if(otherFalse && otherPrivateFalse) parent.setRuleBoolean(otherPrivateFalse, privateFalse, app.label)
+								else state.private = privateFalse
 		if(ruleFalse)			parent.runRule(ruleFalse, app.label)
 		if(ruleActFalse)		parent.runRuleAct(ruleActFalse, app.label)
 		if(ruleEvalDelayFalse)	if(delayEvalMinutesFalse) runIn(delayEvalMinutesFalse * 60, delayEvalFalse)
@@ -1832,12 +1849,12 @@ def takeAction(success) {
 		if(phoneFalse)			sendSmsMulti(phoneFalse, (msgFalse ?: "Rule $app.label False") + (refDevFalse ? " $state.lastEvtName" : ""))
 		if(speakFalse)			speakFalseDevice?.speak((msgFalse ?: "Rule $app.label False") + (refDevFalse ? " $state.lastEvtName" : ""))
 		if(mediaFalseDevice)	mediaFalseDevice.playTextAndRestore((msgFalse ?: "Rule $app.label False") + (refDevFalse ? " $state.lastEvtName" : ""), mediaFalseVolume)		
-		if(privateFalse)		if(privateDelayFalse) runIn(privateDelayFalse * 60, delayPrivyFalse)
-        						else if(otherFalse && otherPrivateFalse) parent.setRuleBoolean(otherPrivateFalse, privateFalse, app.label)
-								else state.private = privateFalse
 		if(state.howManyCCfalse > 1)  	execCommands(false)
 		if(offSwitchFalse) 		if(delayMilFalse) offSwitchFalse.off([delay: delayMilFalse]) else offSwitchFalse.off()
-		if(restoreFalse)		restore()
+        if(restoreFalse)		if(restoreDelayFalse > 0) {	 if(restoreCancelFalse) { state.delayRuleFalse = true
+        														runIn(restoreDelayFalse * 60, delayRestoreFalse) }
+        													 else runIn(restoreDelayFalse * 60, restore) }
+        						else restore()
 	}
 }
 
@@ -1867,6 +1884,8 @@ def runRule(force) {
 
 def doTrigger() {
 	if(!allOk) return
+	state.delayRuleTrue = false
+    state.delayRuleFalse = false
 	if     (delayTrue > 0)		doDelayTrue(delayTrue * 60, false, true)
 	else if(delayMinTrue > 0)	doDelayTrue(delayMinTrue * 60, randTrue, true)
 	else if(delaySecTrue > 0)	doDelayTrue(delaySecTrue, false, true)	 
@@ -2018,19 +2037,28 @@ def delayPrivyTrue() {
     }
 }
 
+def delayPrivyTrueX() {
+	if(state.delayRuleTrue) delayPrivyTrue()
+}
+
 def delayPrivyFalse() {
 	if(otherFalse && otherPrivateFalse) parent.setRuleBoolean(otherPrivateFalse, privateFalse, app.label)
 	else {
     	state.private = privateFalse
 		if(state.isRule || (state.howMany > 1 && state.howManyT <= 1)) runRule(false)
-    	else for(int i = 1; i < state.howManyT; i++) {
-			def myCap = settings.find {it.key == "tCapab$i"}
-			if(myCap.value == "Private Boolean") if(getOperand(i, false)) {
-        		doTrigger()
-            	return
-        	}
-    	}
     }
+}
+
+def delayPrivyFalseX() {
+	if(state.delayRuleFalse) delayPrivyFalse()
+}
+
+def delayRestoreTrue() {
+	if(state.delayRuleTrue) restore()
+}
+
+def delayRestoreFalse() {
+	if(state.delayRuleFalse) restore()
 }
 
 def disabledHandler(evt) {
