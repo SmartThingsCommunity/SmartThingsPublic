@@ -64,7 +64,7 @@ The primary user interface on a day-to-day basis will be two different types of 
 
 `Ecobee Thermostat` Device |  `Ecobee Thermostat` Device w/ Annotation
 :-------------------------:|:-------------------------:
-<img src="https://raw.githubusercontent.com/StrykerSKS/SmartThings/master/smartapp-icons/ecobee/documentation/current_thermo_screenshot.jpg" border="1" width="255" /> |  <img src="https://raw.githubusercontent.com/StrykerSKS/SmartThings/master/smartapp-icons/ecobee/documentation/thermostat_annotation_current.png" height="650" />
+<img src="https://raw.githubusercontent.com/StrykerSKS/SmartThings/master/smartapp-icons/ecobee/documentation/current_thermo_screenshot.jpg" border="1" width="250" /> |  <img src="https://raw.githubusercontent.com/StrykerSKS/SmartThings/master/smartapp-icons/ecobee/documentation/thermostat_annotation_current.png" height="650" />
 
 `Ecobee Sensor` Device |  `Ecobee Sensor` Device w/ Annotation
 :-------------------------:|:-------------------------:
