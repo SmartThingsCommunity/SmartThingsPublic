@@ -21,25 +21,25 @@ metadata {
     // Nothing here, you could put some testing stuff here if you like
   }
 
-  tiles {
-    // Main Row
-    standardTile("zone", "device.contact", width: 2, height: 2, canChangeBackground: true, canChangeIcon: true) {
-      state "open",   label: '${name}', icon: "st.contact.contact.open",   backgroundColor: "#ffa81e"
-      state "closed", label: '${name}', icon: "st.contact.contact.closed", backgroundColor: "#79b821"
-      state "alarm",  label: '${name}', icon: "st.contact.contact.open",   backgroundColor: "#ff0000"
-    }
-
-    standardTile("trouble", "device.trouble", width: 2, height: 2, canChangeBackground: true, canChangeIcon: true) {
-      state "restore", label: 'No Trouble', icon: "st.contact.contact.closed",   backgroundColor: "#79b821"
-      state "tamper", label: 'Tamper', icon: "st.contact.contact.open", backgroundColor: "#ffa81e"
-      state "fault", label: 'Fault', icon: "st.contact.contact.open", backgroundColor: "#ffa81e"
+  tiles(scale: 2) {
+    multiAttributeTile(name:"zone", type: "lighting", width: 6, height: 4){
+      tileAttribute ("device.contact", key: "PRIMARY_CONTROL") {
+        attributeState "open",   label: '${name}', icon: "st.contact.contact.open",   backgroundColor: "#ffa81e"
+        attributeState "closed", label: '${name}', icon: "st.contact.contact.closed", backgroundColor: "#79b821"
+        attributeState "alarm",  label: '${name}', icon: "st.contact.contact.open",   backgroundColor: "#ff0000"
+       }
+       tileAttribute("device.trouble", key: "SECONDARY_CONTROL") {
+         attributeState("restore", label:'No Trouble')
+         attributeState("tamper", label:'Tamper')
+         attributeState("fault", label:'Fault')
+       }
     }
 
     // This tile will be the tile that is displayed on the Hub page.
     main "zone"
 
     // These tiles will be displayed when clicked on the device, in the order listed here.
-    details(["zone","trouble"])
+    details "zone"
   }
 }
 
