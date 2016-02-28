@@ -7,7 +7,8 @@ Ecobee Thermostat SmartApp(s) and related Device Types for use with the SmartThi
 - [Quick Links](#quicklinks)
 - [Features](#features)
 	- [Thermostat and Sensor Device User Interfaces](#features-therm-ui)
-	- [Ecobee (Connect) Smart App User Interface](#features-connect-sa)
+	- [Ecobee (Connect) SmartApp](#features-connect-sa)
+    - [ecobee Routines SmartApp](#features-routines-sa)
 - [Installation](#installation)
   - [Install Device Types](#install-device-types)
   - [Install SmartApp in IDE](#install-smartapp)
@@ -73,7 +74,7 @@ The primary user interface on a day-to-day basis will be two different types of 
 Rich set of Ecobee related icons:
 <img src="https://raw.githubusercontent.com/StrykerSKS/SmartThings/master/smartapp-icons/ecobee/documentation/ST_ecobee_icons_thumbs.png" border="1" />
 
-## <a name="features-connect-sa">`Ecobee (Connect)` Smart App User Interface</a>
+## <a name="features-connect-sa">`Ecobee (Connect)` SmartApp</a>
 The `Ecobee (Connect)` SmartApp provides a single SmartApp interface for accessing installation, updates, Child SmartApps and even debugging tools. The interface uses dynamic pages to guide the user through the installation process in order simplify the steps as much as possible.
 
 The SmartApp provides the following capabilities:
@@ -94,7 +95,7 @@ The SmartApp provides the following capabilities:
 
 
 
-## <a name="features-routines-sa">`ecobee Routines` Smart App User Interface</a>
+## <a name="features-routines-sa">`ecobee Routines` SmartApp</a>
 The `ecobee Routines` SmartApp provides the ability to change the running Program (Comfort Setting) when a SmartThings Mode is changed (for example, by running a Routine). 
 
 >**NOTE**: There is an open issue where we only use Mode changes to trigger an event today. An update is planned that will also use a Routine execution to trigger the events. 
