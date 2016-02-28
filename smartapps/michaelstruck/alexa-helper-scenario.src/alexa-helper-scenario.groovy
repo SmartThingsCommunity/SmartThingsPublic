@@ -2,7 +2,7 @@
  *  Alexa Helper-Child
  *
  *  Copyright © 2016 Michael Struck
- *  Version 2.6.0 2/21/16
+ *  Version 2.7.0 2/27/16
  * 
  *  Version 1.0.0 - Initial release of child app
  *  Version 1.1.0 - Added framework to show version number of child app and copyright
@@ -20,6 +20,7 @@
  *  Version 2.5.0 - Added switch functions when speaker on/off issued
  *  Version 2.5.1 - Fixed issue with songs not initalizing
  *  Version 2.6.0 - Refined notification methods; displays action on notification feed and added push notifications; code optimization
+ *  Version 2.7.0 - Added baseboard heaters scenario type and various code optimizations
  *
  *  Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except
  *  in compliance with the License. You may obtain a copy of the License at:
@@ -52,10 +53,10 @@ preferences {
 def pageStart() {
 	dynamicPage(name: "pageStart", title: "Scenario Settings", uninstall: true, install: true) {
 		section {
-			if (parent.versionInt() < 430) paragraph "You are using a version of the parent app that is older than the recommended version. Please upgrade "+
+			if (parent.versionInt() < 440) paragraph "You are using a version of the parent app that is older than the recommended version. Please upgrade "+
 					"to the latest version to ensure you have the latest features and bug fixes."
             label title:"Scenario Name", required:true
-    	   	input "scenarioType", "enum", title: "Scenario Type...", options: [["Control":"Modes/Routines/Devices/HTTP/SHM"],["Panic":"Panic Commands"],"Speaker","Thermostat"], required: false, multiple: false, submitOnChange:true
+    	   	input "scenarioType", "enum", title: "Scenario Type...", options: [["Baseboard":"Baseboard Heater Control"],["Control":"Modes/Routines/Devices/HTTP/SHM"],["Panic":"Panic Commands"],["Speaker":"Speaker Control"],["Thermostat":"Heating/Cooling Thermostat"]], required: false, multiple: false, submitOnChange:true
         	if (scenarioType){
                 href "page${scenarioType}", title: "${scenarioType} Scenario Settings", description: scenarioDesc(), state: greyOutScen()
 			}
@@ -67,8 +68,7 @@ def pageStart() {
             	input "runMode", "mode", title: "Only during the following modes...", multiple: true, required: false
 			}
         }
-        section("Tap the button below to remove this scenario only"){
-		}
+        section("Tap the button below to remove this scenario"){}
 	}
 }
 page(name: "timeIntervalInput", title: "Only during a certain time") {
@@ -296,6 +296,21 @@ def pageThermostat(){
         }
     }
 }
+// Show "pageBaseboard" page
+page(name: "pageBaseboard", title: "Baseboard Scenario Settings", install: false, uninstall: false) {
+	section {
+		input "vDimmerBB", "capability.switchLevel", title: "Control Switch (Dimmer)", multiple: false, required:false
+		input "tstatBB", "capability.thermostat", title: "Thermostat To Control", multiple: true, required: false
+	}
+	section ("Baseboard Temperature Limits") {
+		input "upLimitTstatBB", "number", title: "Thermostat Upper Limit", required: false
+		input "lowLimitTstatBB", "number", title: "Thermostat Lower Limit", required: false
+	}
+	section ("Baseboard On/Off Setpoints"){
+		input "setpointBBOn", "number", title: "Setpoint when Control Switch turned on", required: false
+		input "setpointBBOff", "number", title: "Setpoint when Control Switch turned off", required: false
+	}
+}
 def installed() {
     log.debug "Installed with settings: ${settings}"
     initialize()
@@ -326,6 +341,13 @@ def initialize() {
         if (parent.getNest()){
         	if (nestHome) subscribe(nestHome, "switch.on", "nestHomeHandler")
             if (nestAway) subscribe(nestAway, "switch.on", "nestAwayHandler")
+		}
+    }
+    //--------------------------------------------------------------------
+    if (scenarioType == "Baseboard"){
+    	if (vDimmerBB && tstatBB){
+            subscribe (vDimmerBB, "switch", "BBOnOffHandler")
+    		subscribe (vDimmerBB, "level", "BBHandler")
 		}
     }
     //--------------------------------------------------------------------
@@ -618,6 +640,23 @@ def thermoHandler(evt){
 		}
     }
 }
+//Baseboard Handlers-----------------------------------------------------------------
+def BBOnOffHandler(evt){
+	if (getOkToRun("Baseboard turned ${evt.value}")) BBOnOff(evt.value)
+}
+def BBHandler(evt){
+	if (getOkToRun("Baseboard Temperature change")) {
+    	def tstatBBLevel = vDimmerBB.currentValue("level") as int
+        tstatBBLevel = upLimitTstatBB && vDimmerBB.currentValue("level") > upLimitTstatBB ? upLimitTstatBB : tstatBBLevel
+        tstatBBLevel = lowLimitTstatBB && vDimmerBB.currentValue("level") < lowLimitTstatBB ? lowLimitTstatBB : tstatBBLevel
+    	tstatBB?.setHeatingSetpoint(tstatBBLevel)
+        log.debug "Baseboard set to ${tstatBBLevel}"
+    }
+}
+def BBOnOff(status){
+	if (status=="on" && setpointBBOn) vDimmerBB.setLevel(setpointBBOn)
+    if (status=="off" && setpointBBOff) vDimmerBB.setLevel(setpointBBOff)	
+}
 //Common Methods-------------
 def getOkToRun(module){
 	def result = true
@@ -642,31 +681,35 @@ def getTimeLabel(start, end){
 	def timeLabel = "Tap to set"
     if(start && end) timeLabel = "Between " + hhmm(start) + " and " +  hhmm(end)
     else if (start) timeLabel = "Start at " + hhmm(start)
-    else if(end) timeLabel = "End at " + hhmm(end)
+    else if (end) timeLabel = "End at " + hhmm(end)
 	timeLabel	
 }
 def scenarioDesc(){
-	def desc = scenarioType=="Control" && AlexaSwitch ? "'${AlexaSwitch}' switch controls the scenario" : "Tap to configure scenario..."
+	def desc = scenarioType=="Control" && AlexaSwitch ? "'${AlexaSwitch}' switch controls the scenario" : ""
     if (scenarioType=="Speaker"){
-    	desc = vDimmerSpeaker && speaker ? "'${vDimmerSpeaker}' dimmer controls '${speaker}' speaker": desc
-        desc += nextSwitch ? "\n'${nextSwitch}' switch activates Next Track" : ""
-        desc += prevSwitch ? "\n'${prevSwitch}' switch activates Previous Track" : ""
+    	desc = vDimmerSpeaker && speaker ? "'${vDimmerSpeaker}' dimmer controls '${speaker}' speaker": ""
+        desc += nextSwitch && desc ? "\n'${nextSwitch}' switch activates Next Track" : ""
+        desc += prevSwitch && desc ? "\n'${prevSwitch}' switch activates Previous Track" : ""
         for (int i = 1; i <= sonosSlots(); i++) {
-        	desc += parent.getSonos() && (speaker && speaker.name.contains("Sonos")) && settings."song${i}Switch" && settings."song${i}Station" ? "\n'" + settings."song${i}Switch" + "' switch activates '" + settings."song${i}Station" + "'" : ""	
+        	desc += parent.getSonos() && (speaker && speaker.name.contains("Sonos")) && settings."song${i}Switch" && settings."song${i}Station" && desc ? "\n'" + settings."song${i}Switch" + "' switch activates '" + settings."song${i}Station" + "'" : ""	
         }
     }
     if (scenarioType=="Thermostat"){
-    	desc = vDimmerTstat && tstat ? "'${vDimmerTstat}' dimmer controls '${tstat}' thermostat" : desc
-        desc += heatingSwitch ? "\n'${heatingSwitch}' switch activates 'Heat' mode" : ""
-        desc += coolingSwitch ? "\n'${coolingSwitch}' switch activates 'Cool' mode" : ""
-        desc += autoSwitch ? "\n'${autoSwitch}' switch activates 'Auto' mode" : ""
-        desc += parent.getNest() && nestHome ? "\n'${nestHome}' switch activates 'Home' mode" : ""
-        desc += parent.getNest() && nestAway ? "\n'${nestAway}' switch activates 'Away' mode" : ""
+    	desc = vDimmerTstat && tstat ? "'${vDimmerTstat}' dimmer controls '${tstat}' thermostat" : ""
+        desc += heatingSwitch && desc? "\n'${heatingSwitch}' switch activates 'Heat' mode" : ""
+        desc += coolingSwitch && desc ? "\n'${coolingSwitch}' switch activates 'Cool' mode" : ""
+        desc += autoSwitch && desc ? "\n'${autoSwitch}' switch activates 'Auto' mode" : ""
+        desc += parent.getNest() && nestHome && desc ? "\n'${nestHome}' switch activates 'Home' mode" : ""
+        desc += parent.getNest() && nestAway && desc? "\n'${nestAway}' switch activates 'Away' mode" : ""
     }
     if (scenarioType=="Panic"){
-    	desc = panicSwitchOn ? "'${panicSwitchOn}' switch activates panic actions." : desc
-        desc += panicSwitchOn && panicSwitchOff ?"\n'${panicSwitchOff}' switch deactivates panic actions." : ""
+    	desc = panicSwitchOn ? "'${panicSwitchOn}' switch activates panic actions." : ""
+        desc += panicSwitchOn && panicSwitchOff && desc ?"\n'${panicSwitchOff}' switch deactivates panic actions." : ""
     }
+    if (scenarioType=="Baseboard"){
+    	desc=vDimmerBB && tstatBB ? "'${vDimmerBB}' dimmer controls baseboard(s)": ""
+    }
+    desc = desc ? desc : "Tap to configure scenario..."
     desc
 }
 def getDeviceDesc(type){  
@@ -838,9 +881,7 @@ def saveSelectedSong(slot, song) {
 		if (data) state."selectedSong${slot}"=data
 		else log.warn "Selected song '$song' not found"
 	}
-	catch (Throwable t) {
-		log.error t
-	}
+	catch (Throwable t) {log.error t}
 }
 //Send Messages
 def sendMSG(num, msg, push, recipients){
@@ -892,9 +933,5 @@ def sonosSlots(){
     def slots = parent.getMemCount() as int
 }
 //Version
-private def textVersion() {
-    def text = "Child App Version: 2.6.0 (02/21/2016)"
-}
-private def versionInt(){
-	def text = 260
-}
+private def textVersion() {def text = "Child App Version: 2.7.0 (02/27/2016)"}
+private def versionInt(){def text = 270}

@@ -2,7 +2,7 @@
  *  Alexa Helper-Parent
  *
  *  Copyright © 2016 Michael Struck
- *  Version 4.3.0 2/21/16
+ *  Version 4.4.0 2/26/16
  * 
  *  Version 1.0.0 - Initial release
  *  Version 2.0.0 - Added 6 slots to allow for one app to control multiple on/off actions
@@ -24,6 +24,7 @@
  *  Version 4.1.1 - Minor syntax clean up
  *  Version 4.2.0a - Added dropdown for number of Sonos memory slots
  *  Version 4.3.0 - Added notification options, refined GUI
+ *  Version 4.4.0 - Added option to add switches from the app instead of going to the IDE; GUI clean up
  *
  *  Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except
  *  in compliance with the License. You may obtain a copy of the License at:
@@ -48,6 +49,8 @@ preferences {
     page name:"mainPage"
     page name:"pageAbout"
     page name:"pageSettings"
+    page name:"pageSwitches"
+    page name:"pageAddSwitch"
 }
 //Show main page
 def mainPage() {
@@ -63,9 +66,11 @@ def mainPage() {
             }
 			app(name: "childScenarios", appName: "Alexa Helper-Scenario", namespace: "MichaelStruck", title: "Create New Alexa Scenario...", multiple: true)
 		}
-		section([title:"Options", mobileOnly:true]) {
-			href "pageSettings", title: "Settings", description: "Tap to edit Alexa Helper settings"
-            label title:"Assign a name", required:false
+		section("Options") {
+			href "pageSettings", title: "Configure Settings", description: none
+            if (showAddSwitches){
+				href "pageSwitches", title: "View/Add Virtual Switches", description: none	
+        	}
 			href "pageAbout", title: "About ${textAppName()}", description: "Tap to get application version, license, instructions or to remove the application"
 		}
 	}
@@ -78,24 +83,48 @@ def pageAbout(){
     	section("Instructions") {
         	paragraph textHelp()
     	}
-        section("Tap button below to remove all scenarios and application"){
+        section("Tap button below to remove all scenarios, switches and application"){
         }
 	}
 }
 def pageSettings(){
     dynamicPage(name: "pageSettings", title: "Settings", install: false, uninstall: false) {	
-        section ("Display Settings") {
+        section {
             input "speakerSonos", "bool", title: "Show Sonos options", defaultValue: false, submitOnChange:true
                 if (speakerSonos){
                     input "memoryCount", "enum", title: "Maximum number of Sonos memory slots", options: [2:"2",3:"3",4:"4",5:"5",6:"6",7:"7",8:"8"], defaultValue: 2, required: false
                 }
             input "tstatNest", "bool", title: "Show Nest options", defaultValue: false
             input "showRestrictions", "bool", title: "Show scenario restrictions", defaultValue: true
-        }
-        section ("Notification Settings"){
+            input "showAddSwitches", "bool", title: "Allow virtual switch creation within Alexa Helper", defaultValue: false
         	input "showNotifyFeed", "bool", title: "Post to notification feed" , defaultValue: false
-        
         }
+    }
+}
+def pageSwitches() {
+    dynamicPage(name: "pageSwitches", title: "Switches", install: false, uninstall: false) {
+    	section("New switch information"){
+        	input "addSwitchName", "text", title: "Switch Label", description: "Enter a unique label name for the virtual switch", required: false, submitOnChange:true
+            input "addSwitchType", "enum", title: "Switch Type...", description: "Choose a switch type", options:["Alexa Switch","Momentary Button Tile"], required: false, submitOnChange:true	
+            if (addSwitchType && addSwitchName) href "pageAddSwitch",title: "Add Switch", description: none
+        }        
+        def switchList = ""
+        if (getChildDevices().size() > 0)  getChildDevices().each {switchList += "${it.label} (${it.typeName})\n"}
+        else switchList = "No switches created yet\n"
+        section ("Switches created within Alexa Helper"){paragraph switchList}
+    }
+}
+// Show "pageAddSwitch" page
+def pageAddSwitch() {
+	dynamicPage(name: "pageAddSwitch", title: "Add Switch", install: false, uninstall: false) {
+    	def repsonse
+        if (getChildDevices().find{it.label == addSwitchName}){
+            repsonse="There is already a switch labled '${addSwitchName}'.\n\nTap Done to go back and change the switch label name."
+        }
+        else {
+         	repsonse = !addSwitchName || !addSwitchType ? "Switch label name or type not specified.\n\nTap Done to go back and enter the switch information" :  addChildSwitches()
+        }
+        section {paragraph repsonse}
     }
 }
 def installed() {
@@ -105,9 +134,37 @@ def updated() {
     initialize()
     unsubscribe()
 }
+def uninstalled(){
+	deleteChildSwitches()
+}
 def initialize() {
     childApps.each {child ->
 		log.info "Installed Scenario: ${child.label}"
+    }
+}
+//Common modules (for adding switches)
+def addChildSwitches(){
+    def deviceID = "AH_${app.id}_${getChildDevices().size()}"
+    def nameSpace = "MichaelStruck"
+    def result
+    try {
+		def childDevice = addChildDevice(nameSpace, addSwitchType, deviceID, null, [name: deviceID, label: addSwitchName, completedSetup: true])
+		log.debug "Created Switch ${addSwitchName}: ${deviceID}"
+        result ="The ${addSwitchType} named '${addSwitchName}' has been created.\n\nBe sure to 'discover' the switch in your Alexa app."
+    } catch (e) {
+		log.debug "Error creating switch: ${e}"
+        result ="The ${addSwitchType} named '${addSwitchName}' could NOT be created.\n\nEnsure you have the correct device code installed and published within the IDE."
+	}
+	result + "\n\nTap Done to return to the switches page."   
+}
+def deleteChildSwitches() {
+    getChildDevices().each {
+    	log.debug "Deleting switch ID: " + it.deviceNetworkId
+        try {
+            deleteChildDevice(it.deviceNetworkId)
+        } catch (e) {
+            log.debug "Fatal exception ${e}"
+        }
     }
 }
 //Common modules (for child app)
@@ -131,13 +188,13 @@ private def textAppName() {
 	def text = "Alexa Helper"
 }	
 private def textVersion() {
-    def version = "Parent App Version: 4.3.0 (02/21/2016)"
+    def version = "Parent App Version: 4.4.0 (02/26/2016)"
     def childCount = childApps.size()
     def childVersion = childCount ? childApps[0].textVersion() : "No scenarios installed"
     return "${version}\n${childVersion}"
 }
 private def versionInt(){
-	def text = 430
+	def text = 440
 }
 private def textCopyright() {
     def text = "Copyright © 2016 Michael Struck"
@@ -159,7 +216,7 @@ private def textLicense() {
 private def textHelp() {
 	def text =
 		"Ties various SmartThings functions to the on/off state of specifc switches. You may also control a thermostat or the volume of a wireless speaker using a dimmer control. "+
-		"Perfect for use with the Amazon Echo ('Alexa').\n\nTo use, first create the required momentary button tiles or 'Alexa Switch' (custom switch/dimmer) from the SmartThings IDE. "+
+		"Perfect for use with the Amazon Echo ('Alexa').\n\nTo use, first create the required momentary button tiles or 'Alexa Switch' (custom switch/dimmer) from the SmartThings IDE or the SmartApp. "+
 		"You may also use any physical switches already associated with SmartThings. Include these switches within the Echo/SmartThings app, then discover the switches on the Echo. "+
 		"For control over SmartThings aspects such as modes and routines, add a new scenario choosing Modes/Routines/Devices/HTTP/SHM scenario type. "+
 		"Within scenario settings, choose the Alexa discovered switch to be monitored and tie the on/off state of that switch to a specific routine, mode, URL, Smart Home Monitor "+
