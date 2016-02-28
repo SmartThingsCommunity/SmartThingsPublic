@@ -501,6 +501,9 @@ class AlarmServer(asyncore.dispatcher):
         elif query.path == '/api/alarm/armwithcode':
             channel.pushok(json.dumps({'response' : 'Request to arm with code received'}))
             self._envisalinkclient.send_command('033', '1' + alarmcode)
+        elif query.path == '/api/alarm/reset':
+            channel.pushok(json.dumps({'response' : 'Request to reset sensors received'}))
+            self._envisalinkclient.send_command('071', '1*72')
         elif query.path == '/api/pgm':
             channel.pushok(json.dumps({'response' : 'Request to trigger PGM'}))
             #self._envisalinkclient.send_command('020', '1' + str(query_array['pgmnum'][0]))
