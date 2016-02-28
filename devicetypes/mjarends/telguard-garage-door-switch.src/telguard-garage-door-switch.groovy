@@ -41,8 +41,8 @@ metadata {
 	tiles(scale: 2) {
 		multiAttributeTile(name:"switch", type: "lighting", width: 6, height: 4, canChangeIcon: true){
 			tileAttribute ("device.switch", key: "PRIMARY_CONTROL") {
-                attributeState "off", label: 'Closed', action: "switch.on", icon: "st.doors.garage.garage-closed", backgroundColor: "#ffffff", nextState:"openingdoor"
-				attributeState "on", label: 'Open', action: "switch.off", icon: "st.doors.garage.garage-open", backgroundColor: "#79b821", nextState:"closingdoor"
+                attributeState "off", label: 'Closed', action: "switch.on", icon: "st.doors.garage.garage-closed", backgroundColor: "#79b821", nextState:"openingdoor"
+				attributeState "on", label: 'Open', action: "switch.off", icon: "st.doors.garage.garage-open", backgroundColor: "#ffa81e", nextState:"closingdoor"
                 attributeState "closingdoor", label:'Closing', icon:"st.doors.garage.garage-closing", backgroundColor:"#ffd700"
                 attributeState "openingdoor", label:'Opening', icon:"st.doors.garage.garage-opening", backgroundColor:"#ffd700"
 			}
@@ -88,7 +88,7 @@ def zwaveEvent(physicalgraph.zwave.commands.switchbinaryv1.SwitchBinaryReport cm
     def state = cmd.value ? "OPEN" : "CLOSED"
     result << createEvent(name: "contactState", value: state)
     def timeString = new Date().format("h:mma MM-dd-yyyy", location.timeZone)
-    def statusTextmsg = "Garage door is ${state}.\nLast refreshed at ${timeString}."
+    def statusTextmsg = "Last refreshed: ${timeString}"
     result << createEvent("name":"statusText", "value":statusTextmsg, displayed: false)
     result
 }
