@@ -10,7 +10,7 @@ Ecobee Thermostat SmartApp(s) and related Device Types for use with the SmartThi
 	- [Ecobee (Connect) SmartApp](#features-connect-sa)
     - [ecobee Routines SmartApp](#features-routines-sa)
 - [Installation](#installation)
-  - [Install Device Types](#install-device-types)
+  - [Install Device Handlers](#install-device-types)
   - [Install SmartApp in IDE](#install-smartapp)
   - [Install SmartApp on Device](#install-smartapp-phone)
 - [Updating](#updating)
@@ -19,6 +19,7 @@ Ecobee Thermostat SmartApp(s) and related Device Types for use with the SmartThi
 - [Open Items](#open-items--to-dos)
 - [Contributors](#contributors)
 - [License](#license)
+- [Appendix - SmartThings Capabilities Supported](#smartthings-capabilities-supported)
 
 ## <a name="intro">Introduction</a>
 This document describes the various features related to the Open Source Ecobee (Connect)  SmartApp and the related compoenents. This SmartApp suite and the related Device Handlers are intended to be used with [Ecobee thermostats](http://www.ecobee.com/) with the [SmartThings](https://www.smartthings.com/) platform. 
