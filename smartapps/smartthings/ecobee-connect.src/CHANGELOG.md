@@ -90,8 +90,8 @@ This project is in a pre-1.0 state. This means that its APIs and behavior are su
 
 
 [Semver]: http://semver.org
-[0.9.0-13]: https://github.com/StrykerSKS/SmartThingsPublic/compare/StrykerSKS:v0.9.10...StrykerSKS:v0.9.0-RC6
-[0.9.0-RC6]: https://github.com/StrykerSKS/SmartThingsPublic/compare/StrykerSKS:v0.9.0-RC6...StrykerSKS:v0.8.0
+[0.9.0-13]: https://github.com/StrykerSKS/SmartThingsPublic/compare/StrykerSKS:v0.9.0-RC6...StrykerSKS:v0.9.10
+[0.9.0-RC6]: https://github.com/StrykerSKS/SmartThingsPublic/compare/StrykerSKS:StrykerSKS:v0.8.0...v0.9.0-RC6
 [0.8.0]: https://github.com/StrykerSKS/SmartThingsPublic/compare/StrykerSKS:v0.7.5...StrykerSKS:v0.8.0
 [0.7.5]: https://github.com/StrykerSKS/SmartThingsPublic/compare/302bb77d7237132caaa5281b64d4bfbf4420f7cf...StrykerSKS:v0.7.5
 [0.6.0]: https://github.com/StrykerSKS/SmartThingsPublic/compare/master...StrykerSKS:302bb77d7237132caaa5281b64d4bfbf4420f7cf
