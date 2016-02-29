@@ -8,6 +8,31 @@ This project is in a pre-1.0 state. This means that its APIs and behavior are su
 
 ## [0.9.0-13][] (2016-02-28) **(Beta Release)**
 ### General Changes
+* 11 changed files with 1,368 additions and 1,095 deletions
+* 
+* Removal of certain 3PP code segments and update of Copyright Headers
+
+
+### SmartApp Changes
+#### Ecobee (Connect) SmartApp
+* Completely overhauled Authentication Token Handling using recommended sequence outlined in Ecobee API documentation. This has greatly improved the stability of the API connection!
+* 
+
+#### ecobee Routines Child SmartApp
+* Cleaned up UI to better reflect how users will use the features
+* Added support for triggered Routines, not just Modes
+* Added support for custom Programs (in addition to the standard Home, Away and Sleep)
+
+
+### Device Handler Changes
+* [All] Updated with new UI Scheme using themed icons
+* [Sensor] States for when the motion sensor is not supported
+* [Thermostat] Added full range of Thermostat Capabilities
+* [Thermostat] Added a "Last Poll" Timestamp to the UI to make it easier to determine when the most recent successful poll took place
+* [Thermostat] Added a Tile to show the current HVAC System Status (On, Off, Auto, Off)
+* [Thermostat] Added support for both day **and** night weather icons 
+* [Thermostat] Removal of many un-needed functions (commands) that weren't part of the standard capabilities set
+
 
 
 
