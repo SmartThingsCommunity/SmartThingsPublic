@@ -14,8 +14,8 @@
  *  for the specific language governing permissions and limitations under the License.
  *
  */
-def getVersionNum() { return "0.1.2" }
-private def getVersionLabel() { return "ecobee Routines Version ${getVersionNum()}-RC5" }
+def getVersionNum() { return "0.1.3" }
+private def getVersionLabel() { return "ecobee Routines Version ${getVersionNum()}" }
 
 
 
@@ -23,7 +23,7 @@ definition(
 	name: "ecobee Routines",
 	namespace: "smartthings",
 	author: "Sean Kendall Schneyer (smartthings at linuxbox dot org)",
-	description: "Support for changing ecobee Programs based on SmartThings Mode changes",
+	description: "Support for changing ecobee Programs based on SmartThings Routine execution or Mode changes",
 	category: "Convenience",
 	parent: "smartthings:Ecobee (Connect)",
 	iconUrl: "https://s3.amazonaws.com/smartapp-icons/Partner/ecobee.png",
@@ -41,22 +41,54 @@ def mainPage() {
     	section(title: "Name for Routine Handler") {
         	label title: "Name this Routine Handler", required: true
         
-        }    
+        }
         
-        section(title: "Select Conditions") {
+        section(title: "Select Thermostats") {
         	if(settings.tempDisable == true) paragraph "WARNING: Temporarily Disabled as requested. Turn back on to activate handler."
         	input ("myThermostats", "capability.Thermostat", title: "Pick Ecobee Thermostat(s)", required: true, multiple: true, submitOnChange: true)            
+		}
+        
+        section(title: "Select Mode or Routine") {
+        	// Settings option for using Mode or Routine
+            input(name: "modeOrRoutine", title: "Use Mode Change, Routine Execution: ", type: "enum", required: true, multiple: false, description: "Tap to choose...", metadata:[values:["Mode", "Routine"]], submitOnChange: true)
+		}
         
 	        if (myThermostats?.size() > 0) {
-    	    	// Start defining which Routine(s) to allow the SmartApp to execute in		                
-                mode(title: "When Hello Mode(s) changes to: ", required: true)            	
-            	input(name: "whichProgram", title: "Switch to this Ecobee Program: ", type: "enum", required: true, multiple:false, description: "Tap to choose...", metadata:[values:["Away", "Home", "Sleep", "Resume Program"]], submitOnChange: true)                
-                input(name: "fanMode", title: "Select a Fan Mode to use\n(Optional) ", type: "enum", required: false, multiple: false, description: "Tap to choose...", metadata:[values:["On", "Auto", "default"]], submitOnChange: true)
-                if(settings.whichProgram != "Resume Program") input(name: "holdType", title: "Select the Hold Type to use\n(Optional) ", type: "enum", required: false, multiple: false, description: "Tap to choose...", metadata:[values:["Until I Change", "Until Next Program", "default"]], submitOnChange: true)
-                input(name: "useSunriseSunset", title: "Also at Sunrise or Sunset?\n(Optional) ", type: "enum", required: false, multiple: true, description: "Tap to choose...", metadata:[values:["Sunrise", "Sunset"]], submitOnChange: true)                
-            }            
-            input(name: "tempDisable", title: "Temporarily Disable Handler? ", type: "bool", required: false, description: false, submitOnChange: true)                
-        }
+            	if(settings.modeOrRoutine == "Mode") {
+	    	    	// Start defining which Modes(s) to allow the SmartApp to execute in
+                    // TODO: Need ro run in all modes now and then filter on which modes were selected!!!
+    	            //mode(title: "When Hello Mode(s) changes to: ", required: true)
+                    section(title: "Modes") {
+                    	input(name: "modes", type: "mode", title: "When Hello Mode(s) change to: ", required: true, multiple: true)
+					}
+                } else if(settings.modeOrRoutine == "Routine") {
+                	// Routine based inputs
+                     def actions = location.helloHome?.getPhrases()*.label
+					if (actions) {
+            			// sort them alphabetically
+            			actions.sort()
+						LOG("Actions found: ${actions}", 4)
+						// use the actions as the options for an enum input
+                        section(title: "Routines") {
+							input(name:"action", type:"enum", title: "When these Routines execute: ", options: actions, required: true, multiple: true)
+                        }
+					} // End if (actions)
+                } // Mode or Routine If/Then/Else
+
+				section(title: "Actions") {
+                	def programs = getEcobeePrograms()
+                    programs = programs + ["Resume Program"]
+                	LOG("Found the following programs: ${programs}", 4)
+                    
+	               	input(name: "whichProgram", title: "Switch to this Ecobee Program: ", type: "enum", required: true, multiple:false, description: "Tap to choose...", options: programs, submitOnChange: true)
+    	       	    input(name: "fanMode", title: "Select a Fan Mode to use\n(Optional) ", type: "enum", required: false, multiple: false, description: "Tap to choose...", metadata:[values:["On", "Auto", "default"]], submitOnChange: true)
+        	       	if(settings.whichProgram != "Resume Program") input(name: "holdType", title: "Select the Hold Type to use\n(Optional) ", type: "enum", required: false, multiple: false, description: "Tap to choose...", metadata:[values:["Until I Change", "Until Next Program", "default"]], submitOnChange: true)
+            	   	input(name: "useSunriseSunset", title: "Also at Sunrise or Sunset?\n(Optional) ", type: "enum", required: false, multiple: true, description: "Tap to choose...", metadata:[values:["Sunrise", "Sunset"]], submitOnChange: true)                
+                }
+            } // End if myThermostats size
+            section(title: "Temporarily Disable?") {
+            	input(name: "tempDisable", title: "Temporarily Disable Handler? ", type: "bool", required: false, description: false, submitOnChange: true)                
+        	}
         
         section (getVersionLabel())
     }
@@ -82,10 +114,13 @@ def initialize() {
     	LOG("Teporarily Disapabled as per request.", 2, null, "warn")
     	return true
     }
-    
-	subscribe(location, "mode", changeProgramHandler)
-	// subscribe(app, changeProgramHandler)
-    
+	
+	if (settings.modeOrRoutine == "Routine") {
+    	subscribe(location, "routineExecuted", changeProgramHandler)
+    } else {
+    	subscribe(location, "mode", changeProgramHandler)
+    }	   
+   
     if(useSunriseSunset?.size() > 0) {
 		// Setup subscriptions for sunrise and/or sunset as well
         if( useSunriseSunset.contains("Sunrise") ) subscribe(location, "sunrise", changeProgramHandler)
@@ -95,6 +130,27 @@ def initialize() {
 	// Normalize settings data
     normalizeSettings()
     LOG("initialize() exiting")
+}
+
+// get the combined set of Ecobee Programs applicable for these thermostats
+private def getEcobeePrograms() {
+	def programs
+
+	if (myThermostats?.size() > 0) {
+		myThermostats.each { stat ->
+        	def DNI = stat.device.deviceNetworkId
+            LOG("Getting list of programs for stat (${stat}) with DNI (${DNI})", 4)
+        	if (!programs) {
+            	LOG("No programs yet, adding to the list", 5)
+                programs = parent.getAvailablePrograms(stat)
+            } else {
+            	LOG("Already have some programs, need to create the set of overlapping", 5)
+                programs = programs.intersect(parent.getAvailablePrograms(stat))
+            }
+        }
+	} 
+    LOG("getEcobeePrograms: returning ${programs}", 4)
+    return programs
 }
 
 private def normalizeSettings() {
@@ -131,11 +187,32 @@ private def normalizeSettings() {
         	state.holdTypeParam = null
         }
     }
+    
+	if (settings.modeOrRoutine == "Routine") {
+    	state.expectedEvent = settings.action
+    } else {
+    	state.expectedEvent = settings.modes
+    }
+	LOG("state.expectedEvent set to ${state.expectedEvent}", 4)
+
 }
 
 def changeProgramHandler(evt) {
 	LOG("changeProgramHander() entered with evt: ${evt}", 5)
 	
+    def gotEvent 
+    if (settings.modeOrRoutine == "Routine") {
+    	gotEvent = evt.displayName?.toLowerCase()
+    } else {
+    	gotEvent = evt.value?.toLowerCase()
+    }
+    LOG("Event name received (in lowercase): ${gotEvent}  and current expected: ${state.expectedEvent}", 5)
+
+    if ( !state.expectedEvent*.toLowerCase().contains(gotEvent) ) {
+    	LOG("Received an mode/routine that we aren't watching. Nothing to do.", 4)
+        return true
+    }
+    
     settings.myThermostats.each { stat ->
     	LOG("In each loop: Working on stat: ${stat}", 4, null, "trace")
     	// First let's change the Thermostat Program
@@ -158,4 +235,3 @@ private def LOG(message, level=3, child=null, logType="debug", event=true, displ
 	message = "${app.label} ${message}"
 	parent.LOG(message, level, child, logType, event, displayEvent)
 }
-
