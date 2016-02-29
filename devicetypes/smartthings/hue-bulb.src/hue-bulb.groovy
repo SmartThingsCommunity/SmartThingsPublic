@@ -16,8 +16,8 @@ metadata {
 		capability "Sensor"
 
 		command "setAdjustedColor"
-                command "reset"        
-                command "refresh"
+		command "reset"
+		command "refresh"
 	}
 
 	simulator {
@@ -68,17 +68,17 @@ def parse(description) {
 }
 
 // handle commands
-def on() {
+void on() {
 	log.trace parent.on(this)
 	sendEvent(name: "switch", value: "on")
 }
 
-def off() {
+void off() {
 	log.trace parent.off(this)
 	sendEvent(name: "switch", value: "off")
 }
 
-def nextLevel() {
+void nextLevel() {
 	def level = device.latestValue("level") as Integer ?: 0
 	if (level <= 100) {
 		level = Math.min(25 * (Math.round(level / 25) + 1), 100) as Integer
@@ -89,25 +89,25 @@ def nextLevel() {
 	setLevel(level)
 }
 
-def setLevel(percent) {
+void setLevel(percent) {
 	log.debug "Executing 'setLevel'"
 	parent.setLevel(this, percent)
 	sendEvent(name: "level", value: percent)
 }
 
-def setSaturation(percent) {
+void setSaturation(percent) {
 	log.debug "Executing 'setSaturation'"
 	parent.setSaturation(this, percent)
 	sendEvent(name: "saturation", value: percent)
 }
 
-def setHue(percent) {
+void setHue(percent) {
 	log.debug "Executing 'setHue'"
 	parent.setHue(this, percent)
 	sendEvent(name: "hue", value: percent)
 }
 
-def setColor(value) {
+void setColor(value) {
 	log.debug "setColor: ${value}, $this"
 	parent.setColor(this, value)
 	if (value.hue) { sendEvent(name: "hue", value: value.hue)}
@@ -117,25 +117,25 @@ def setColor(value) {
 	if (value.switch) { sendEvent(name: "switch", value: value.switch)}
 }
 
-def reset() {
+void reset() {
 	log.debug "Executing 'reset'"
-    def value = [level:100, hex:"#90C638", saturation:56, hue:23]
-    setAdjustedColor(value)
+	def value = [level:100, hex:"#90C638", saturation:56, hue:23]
+	setAdjustedColor(value)
 	parent.poll()
 }
 
-def setAdjustedColor(value) {
+void setAdjustedColor(value) {
 	if (value) {
-        log.trace "setAdjustedColor: ${value}"
-        def adjusted = value + [:]
-        adjusted.hue = adjustOutgoingHue(value.hue)
-        // Needed because color picker always sends 100
-        adjusted.level = null 
-        setColor(adjusted)
-    }
+		log.trace "setAdjustedColor: ${value}"
+		def adjusted = value + [:]
+		adjusted.hue = adjustOutgoingHue(value.hue)
+		// Needed because color picker always sends 100
+		adjusted.level = null
+		setColor(adjusted)
+	}
 }
 
-def refresh() {
+void refresh() {
 	log.debug "Executing 'refresh'"
 	parent.manualRefresh()
 }
