@@ -15,8 +15,14 @@ This project is in a pre-1.0 state. This means that its APIs and behavior are su
 
 ### SmartApp Changes
 #### Ecobee (Connect) SmartApp
-* Completely overhauled Authentication Token Handling using recommended sequence outlined in Ecobee API documentation. This has greatly improved the stability of the API connection!
-* 
+* Completely overhauled Authentication Token Handling using recommended sequence outlined in Ecobee API documentation. **This has greatly improved the stability of the API connection!**
+* [Experimental] Addes support for one (1) and three (3) minute polling intervals
+* Added ability to use external devices (such as motion sensors, temperature readings, etc) to trigger additional polling events (and also trigger the watchdog)
+* Fixed issue causing the added devices to show and not configured in the Marketplace in the Mobile App
+* Added sunrise()/sunset() events to watchdog handling and to determine day/night for icons
+* Implemented off() and circulate() modes for the fan along with the appropriate state information to allow a proper return using resumeProgram()
+* Implemented support for getting the current HVAC Mode
+* Added `update()` and `refreshAuthToken()` helper functions to the Debug Dashboard
 
 #### ecobee Routines Child SmartApp
 * Cleaned up UI to better reflect how users will use the features
