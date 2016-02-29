@@ -32,7 +32,7 @@ metadata {
     
     tiles(scale: 2) {
     	multiAttributeTile(name:"FGK", type:"lighting", width:6, height:4) {//with generic type secondary control text is not displayed in Android app
-        	tileAttribute("device.motion", key:"PRIMARY_CONTROL") {
+        	tileAttribute("device.contact", key:"PRIMARY_CONTROL") {
             	attributeState("open", icon:"st.contact.contact.open", backgroundColor:"#ffa81e")
                 attributeState("closed", icon:"st.contact.contact.closed", backgroundColor:"#79b821")
             }
@@ -43,12 +43,11 @@ metadata {
 			}  
         }
                 
-        valueTile("battery", "device.battery", inactiveLabel: false,
-                          decoration: "flat") {
-                        state "battery", label:'${currentValue}% battery', unit:""
+        valueTile("battery", "device.battery", inactiveLabel: false, , width: 2, height: 2, decoration: "flat") {
+            state "battery", label:'${currentValue}% battery', unit:""
         }
         
-        valueTile("temperature", "device.temperature", inactiveLabel: false) {
+        valueTile("temperature", "device.temperature", inactiveLabel: false, width: 2, height: 2) {
 			state "temperature", label:'${currentValue}°',
 			backgroundColors:[
 				[value: 31, color: "#153591"],
