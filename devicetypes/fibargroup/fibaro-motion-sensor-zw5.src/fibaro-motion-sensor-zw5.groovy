@@ -43,7 +43,7 @@ metadata {
 			}  
         }
         
-        valueTile("temperature", "device.temperature", inactiveLabel: false) {
+        valueTile("temperature", "device.temperature", inactiveLabel: false, width: 2, height: 2) {
 			state "temperature", label:'${currentValue}°',
 			backgroundColors:[
 				[value: 31, color: "#153591"],
@@ -56,13 +56,12 @@ metadata {
 			]
 		}
         
-        valueTile("illuminance", "device.illuminance", inactiveLabel: false) {
+        valueTile("illuminance", "device.illuminance", inactiveLabel: false, width: 2, height: 2) {
 			state "luminosity", label:'${currentValue} ${unit}', unit:"lux"
 		}
         
-        valueTile("battery", "device.battery", inactiveLabel: false,
-                          decoration: "flat") {
-                        state "battery", label:'${currentValue}% battery', unit:""
+        valueTile("battery", "device.battery", inactiveLabel: false, width: 2, height: 2, decoration: "flat") {
+            state "battery", label:'${currentValue}% battery', unit:""
         }
         
         main "FGMS"
