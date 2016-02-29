@@ -9,7 +9,8 @@ This project is in a pre-1.0 state. This means that its APIs and behavior are su
 ## [0.9.0-13][] (2016-02-28) **(Beta Release)**
 ### General Changes
 * 11 changed files with 1,368 additions and 1,095 deletions
-* 
+* Overhauled authentication handling with much better stability
+* Revamped UI to give it a more familiar look that ecobee users are used to
 * Removal of certain 3PP code segments and update of Copyright Headers
 
 
