@@ -49,6 +49,7 @@ def uninstalled() {
 }
 
 def logout() {
+  removeChildDevices(getAllChildDevices())
   revokeAccessToken()
 }
 
