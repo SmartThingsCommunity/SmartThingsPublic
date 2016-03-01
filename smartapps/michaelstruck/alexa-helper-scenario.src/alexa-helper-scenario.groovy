@@ -2,7 +2,7 @@
  *  Alexa Helper-Child
  *
  *  Copyright © 2016 Michael Struck
- *  Version 2.7.0 2/27/16
+ *  Version 2.7.1 2/29/16
  * 
  *  Version 1.0.0 - Initial release of child app
  *  Version 1.1.0 - Added framework to show version number of child app and copyright
@@ -21,6 +21,7 @@
  *  Version 2.5.1 - Fixed issue with songs not initalizing
  *  Version 2.6.0 - Refined notification methods; displays action on notification feed and added push notifications; code optimization
  *  Version 2.7.0 - Added baseboard heaters scenario type and various code optimizations
+ *  Version 2.7.1 - Small syntax changes
  *
  *  Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except
  *  in compliance with the License. You may obtain a copy of the License at:
@@ -386,12 +387,11 @@ def switchHandler(evt) {
     				def logText = "Alexa Helper Scenario: '${app.label}' ON triggered. Will activate in ${delayOn} minutes."
                     sendNotificationEvent(logText)
     			}
-            }
-            
+            }          
     	} 
     	else if (evt.value == "off" && getOkOffOptions()) {
         	if (delayOff || delayOff == 0) turnOff()
-            else{
+            else {
             	runIn(delayOff*60, turnOff, [overwrite: true])
                 if (parent.getNotifyFeed()){
     				def logText = "Alexa Helper Scenario: '${app.label}' OFF triggered. Will activate in ${delayOn} minutes."
@@ -696,7 +696,7 @@ def scenarioDesc(){
     }
     if (scenarioType=="Thermostat"){
     	desc = vDimmerTstat && tstat ? "'${vDimmerTstat}' dimmer controls '${tstat}' thermostat" : ""
-        desc += heatingSwitch && desc? "\n'${heatingSwitch}' switch activates 'Heat' mode" : ""
+        desc += heatingSwitch && desc ? "\n'${heatingSwitch}' switch activates 'Heat' mode" : ""
         desc += coolingSwitch && desc ? "\n'${coolingSwitch}' switch activates 'Cool' mode" : ""
         desc += autoSwitch && desc ? "\n'${autoSwitch}' switch activates 'Auto' mode" : ""
         desc += parent.getNest() && nestHome && desc ? "\n'${nestHome}' switch activates 'Home' mode" : ""
@@ -707,10 +707,20 @@ def scenarioDesc(){
         desc += panicSwitchOn && panicSwitchOff && desc ?"\n'${panicSwitchOff}' switch deactivates panic actions." : ""
     }
     if (scenarioType=="Baseboard"){
-    	desc=vDimmerBB && tstatBB ? "'${vDimmerBB}' dimmer controls baseboard(s)": ""
+    	desc = vDimmerBB && tstatBB ? "'${vDimmerBB}' dimmer controls ${parseList(tstatBB)}" : ""
     }
     desc = desc ? desc : "Tap to configure scenario..."
     desc
+}
+def parseList(list){
+    def listSize = list.size()
+    def result = listSize == 1 ? "baseboard heater " : "baseboard heaters "
+    for (listName in list) {
+		result += "'${listName}'"
+        listSize = listSize -1
+        if (listSize) result += ", "
+    }
+    result
 }
 def getDeviceDesc(type){  
     def result, switches, dimmers, cLights, locks, garages = ""
@@ -746,10 +756,10 @@ def getDeviceDesc(type){
         locks = offLocks && lockCMD ? offLocks : ""
         garages = offGarages && garageCMD ? offGarages : ""
     }
-    if (lvl < 0) {lvl = 0}
-    if (lvl >100) {lvl=100}
-    if (cLvl < 0) {cLvl = 0}
-    if (cLvl >100) {cLvl=100}
+    if (lvl < 0) lvl = 0
+    if (lvl >100) lvl=100
+    if (cLvl < 0) cLvl = 0
+    if (cLvl >100) cLvl=100
     if (switches || dimmers || cLights || locks || garages) {
     	result = switches  ? "${switches} set to ${switchCMD}" : ""
         result += result && dimmers ? "\n" : ""
@@ -933,5 +943,5 @@ def sonosSlots(){
     def slots = parent.getMemCount() as int
 }
 //Version
-private def textVersion() {def text = "Child App Version: 2.7.0 (02/27/2016)"}
-private def versionInt(){def text = 270}
+private def textVersion() {def text = "Child App Version: 2.7.1 (02/29/2016)"}
+private def versionInt(){def text = 271}
