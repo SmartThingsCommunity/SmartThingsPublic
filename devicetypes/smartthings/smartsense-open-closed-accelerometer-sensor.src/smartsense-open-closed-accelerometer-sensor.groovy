@@ -225,7 +225,8 @@ def getTemperature(value) {
 
 		def volts = rawValue / 10
 		def descriptionText
-		if (volts > 3.5) {
+        if (rawValue == 0 || rawValue == 255) {}
+		else if (volts > 3.5) {
 			result.descriptionText = "${linkText} battery has too much power (${volts} volts)."
 		}
 		else {
