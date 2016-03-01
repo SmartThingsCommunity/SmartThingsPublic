@@ -353,7 +353,7 @@ def onLocation(evt) {
     }
     else if (
         lanEvent.headers && lanEvent.body &&
-        lanEvent.headers."content-type".contains("xml")
+        lanEvent.headers."content-type"?.contains("xml")
         )
     {
         def parsers = getParsers()
