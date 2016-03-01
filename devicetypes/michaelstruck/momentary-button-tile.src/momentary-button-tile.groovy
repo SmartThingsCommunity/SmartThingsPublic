@@ -2,8 +2,11 @@
  *  Momentary Button Tile
  *
  *  Copyright 2016 Michael Struck
- *  Version 1.0.0 2/27/16
- * 
+ *  Version 1.0.1 2/27/16
+ *
+ *  Version 1.0.0 Initial release
+ *  Version 1.0.1 Reverted back to original icons for better GUI experience
+ *
  *  Uses code from SmartThings
  *
  *  Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except
@@ -22,6 +25,8 @@ metadata {
 		capability "Switch"
 		capability "Momentary"
 		capability "Sensor"
+        
+		attribute "About", "string"
 	}
 
 	// simulator metadata
@@ -29,14 +34,17 @@ metadata {
 	}
 	// UI tile definitions
 	tiles(scale: 2) {
-		multiAttributeTile(name: "switch", type: "lighting", width: 6, height: 4, canChangeIcon: true, canChangeBackground: true) {
+		multiAttributeTile(name: "switch", type: "generic", width: 6, height: 4, canChangeIcon: true, canChangeBackground: true) {
 			tileAttribute("device.switch", key: "PRIMARY_CONTROL") {
-				attributeState "off", label: 'push', action: "momentary.push", backgroundColor: "#ffffff",icon: "https://raw.githubusercontent.com/MichaelStruck/SmartThings/master/Other-SmartApps/AlexaHelper/AH-Off.png", nextState: "on"
-				attributeState "on", label: 'push', action: "momentary.push", backgroundColor: "#79b821",icon: "https://raw.githubusercontent.com/MichaelStruck/SmartThings/master/Other-SmartApps/AlexaHelper/AH-On.png"
+				attributeState "off", label: 'push', action: "momentary.push", backgroundColor: "#ffffff",icon: "st.contact.contact.closed", nextState: "on"
+				attributeState "on", label: 'push', action: "momentary.push", backgroundColor: "#79b821",icon: "st.contact.contact.closed"
 			}
-		main "switch"
-		details "switch"
+        }
+        valueTile("about", "device.About", inactiveLabel: false, decoration: "flat", width: 6, height:2) {
+            state "default", label:"Momentary Button Tile\nSwitch created by Alexa Helper\nSwitch code version 1.0.1 (03/01/16)"
 		}
+        main "switch"
+		details (["switch","about"])
 	}
 }
 
