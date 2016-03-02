@@ -222,6 +222,7 @@ def configure() {
 	log.debug "configure() called"
     def cmds = []
     //if (deviceType.value == deviceType.value) log.debug "Statement True"
+    if (deviceType != null && deviceType.value != null) {
     switch (deviceType.value as String) {
        case "1":
        log.debug "Configuring device as Philio"
@@ -241,6 +242,7 @@ def configure() {
        default:
        log.debug "No valid device type chosen"
        break
+    }
     }
     
     if ( cmds != [] && cmds != null ) return delayBetween(cmds, 2000) else return
