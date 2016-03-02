@@ -3,10 +3,11 @@
  *
  *  Copyright 2015, 2016 Bruce Ravenel
  *
- *  Version 1.8.0   2 Mar 2016
+ *  Version 1.8.1   2 Mar 2016
  *
  *	Version History
  *
+ *	1.8.1	2 Mar 2016		Added NOT for rules: NOT Condition and NOT (sub-rule) 
  *	1.8.0	2 Mar 2016		Major code cleanup; added random color, decimal for energy & power, and door control
  *	1.7.16	28 Feb 2016		Added cancel for delay set private, and delay for restore with cancel
  *	1.7.15	24 Feb 2016		Minor UI cleanup, bug fixes
@@ -96,7 +97,7 @@ preferences {
 def mainPage() {
 	//version to parent app and expert settings for rule
 	try { 
-		state.isExpert = parent.isExpert("1.8.0") 
+		state.isExpert = parent.isExpert("1.8.1") 
 		if (state.isExpert) state.cstCmds = parent.getCommands()
 		else state.cstCmds = []
 	}
@@ -555,7 +556,7 @@ def conditionLabel() {
 			result = result + conditionLabelN(i, false) + ((state.isRule || state.isRule == null) ? (getOperand(i, true) ? " [TRUE]" : " [FALSE]") : "")
 			if(i < howMany - 1) result = result + "\n"
 		}
-		if((state.isRule || state.isRule == null) && howMany == 2) {
+		if((state.isRule || state.isRule == null) && howMany == 2 && state.eval in [null, [], [1]]) {
 			state.str = result[0..-8]
 			state.eval = [1]
 		}
@@ -648,6 +649,12 @@ def rulLabl() {
 def inputLeft(sub) {
 	def conds = []
 	for (int i = 1; i < state.howMany; i++) conds << conditionLabelN(i, false)
+    input "condNotL$state.n", "bool", title: "NOT ?", submitOnChange: true
+    if(settings["condNotL$state.n"]) {
+    	state.str = state.str + "NOT "
+        state.eval << "NOT"
+        paragraph(state.str)
+    }
 	if(advanced) input "subCondL$state.n", "bool", title: "Enter subrule for left?", submitOnChange: true
 	if(settings["subCondL$state.n"]) {
 		state.str = state.str + "( "
@@ -667,6 +674,15 @@ def inputLeft(sub) {
 }
 
 def inputRight(sub) {
+	if(sub) {
+		input "endOfSubL$state.n", "bool", title: "End of sub-rule?", submitOnChange: true
+		if(settings["endOfSubL$state.n"]) {
+			state.str = state.str + " )"
+			state.eval << ")"
+			paragraph(state.str)
+			return
+		}
+	}
 	state.n = state.n + 1
 	input "operator$state.n", "enum", title: "AND  or  OR", options: ["AND", "OR"], submitOnChange: true, required: false
 	if(settings["operator$state.n"]) {
@@ -675,6 +691,12 @@ def inputRight(sub) {
 		paragraph(state.str)
 		def conds = []
 		for (int i = 1; i < state.howMany; i++) conds << conditionLabelN(i, false)
+    	input "condNotR$state.n", "bool", title: "NOT ?", submitOnChange: true
+    	if(settings["condNotR$state.n"]) {
+    		state.str = state.str + "NOT "
+        	state.eval << "NOT"
+        	paragraph(state.str)
+    	}
 		if(advanced) input "subCondR$state.n", "bool", title: "Enter subrule for right?", submitOnChange: true
 		if(settings["subCondR$state.n"]) {
 			state.str = state.str + "( "
@@ -1446,7 +1468,10 @@ def evalTerm() {
 	if(thisTok == "(") {
 		state.token = state.token + 1
 		result = eval()
-	} else result = getOperand(thisTok, true)
+	} else if(thisTok == "NOT") {
+    	state.token = state.token + 1
+        result = !evalTerm()
+    } else result = getOperand(thisTok, true)
 	state.token = state.token + 1
 	return result
 }
