@@ -63,7 +63,7 @@ metadata {
 			state "turningOn", label:'${name}', action:"switch.off", icon:"st.switches.switch.on", backgroundColor:"#79b821", nextState:"turningOff"
 			state "turningOff", label:'${name}', action:"switch.on", icon:"st.switches.switch.off", backgroundColor:"#ffffff", nextState:"turningOn"
 		}
-		standardTile("refresh", "device.switch", inactiveLabel: false, decoration: "flat") {
+		standardTile("refresh", "device.refresh", inactiveLabel: false, decoration: "flat") {
 			state "default", label:"", action:"refresh.refresh", icon:"st.secondary.refresh"
 		}
 		controlTile("rgbSelector", "device.color", "color", height: 3, width: 3, inactiveLabel: false) {
