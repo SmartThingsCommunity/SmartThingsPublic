@@ -3,10 +3,11 @@
  *
  *  Copyright 2015, 2016 Bruce Ravenel
  *
- *  Version 1.7.16   28 Feb 2016
+ *  Version 1.8.0   2 Mar 2016
  *
  *	Version History
  *
+ *	1.8.0	2 Mar 2016		Major code cleanup; added random color, decimal for energy & power, and door control
  *	1.7.16	28 Feb 2016		Added cancel for delay set private, and delay for restore with cancel
  *	1.7.15	24 Feb 2016		Minor UI cleanup, bug fixes
  *	1.7.14	23 Feb 2016		Added adjust thermostat setpoints, delay Set Private Boolean
@@ -95,7 +96,7 @@ preferences {
 def mainPage() {
 	//version to parent app and expert settings for rule
 	try { 
-		state.isExpert = parent.isExpert("1.7.16") 
+		state.isExpert = parent.isExpert("1.8.0") 
 		if (state.isExpert) state.cstCmds = parent.getCommands()
 		else state.cstCmds = []
 	}
@@ -296,10 +297,10 @@ def selectTrigCond(isTrig) {
 def getCapab(myCapab, isTrig, isReq) {  
 	def myOptions = null
 	if(state.isRule || !isTrig) myOptions = ["Acceleration", "Battery", "Carbon monoxide detector", "Contact", "Days of week", "Dimmer level", "Energy meter", "Garage door", "Humidity", "Illuminance", "Lock", 
-    	"Mode", "Motion", "Power meter", "Presence", "Rule truth", "Smart Home Monitor", "Smoke detector", "Switch", "Temperature", "Private Boolean", 
+    	"Mode", "Motion", "Power meter", "Presence", "Rule truth", "Smart Home Monitor", "Smoke detector", "Switch", "Temperature", "Private Boolean", "Door", 
         "Thermostat Mode", "Thermostat State", "Time of day", "Water sensor", "Music player"]
 	if(state.isTrig || isTrig) myOptions = ["Acceleration", "Battery", "Button", "Carbon monoxide detector", "Certain Time", "Contact", "Dimmer level", "Energy meter", "Garage door", "Humidity", "Illuminance", 
-    	"Lock", "Mode", "Motion", "Physical Switch", "Power meter", "Presence", "Routine", "Rule truth", "Smart Home Monitor", "Smoke detector", "Switch", "Temperature",
+    	"Lock", "Mode", "Motion", "Physical Switch", "Power meter", "Presence", "Routine", "Rule truth", "Smart Home Monitor", "Smoke detector", "Switch", "Temperature", "Door",
         "Thermostat Mode", "Thermostat State", "Water sensor", "Private Boolean", "Music player"]
 	def result = input myCapab, "enum", title: "Select capability", required: isReq, options: myOptions.sort(), submitOnChange: true
 }
@@ -335,6 +336,10 @@ def getDevs(myCapab, dev, multi) {
 		case "Garage door":
 			thisName = "Garage doors"
 			thisCapab = "garageDoorControl"
+			break
+		case "Door":
+			thisName = "Doors"
+			thisCapab = "doorControl"
 			break
 		case "Lock":
 			thisName = "Locks"
@@ -440,7 +445,8 @@ def getState(myCapab, n, isTrig) {
 	else if(myCapab == "Acceleration")				result = input myState, "enum", title: "Acceleration $phrase", 		options: ["active", "inactive"], 			defaultValue: "active"
 	else if(myCapab == "Contact")					result = input myState, "enum", title: "Contact $phrase", 			options: ["open", "closed"], 				defaultValue: "open"
 	else if(myCapab == "Presence")					result = input myState, "enum", title: "Presence $phrase", 			options: presoptions, 						defaultValue: presdefault
-	else if(myCapab == "Garage door")				result = input myState, "enum", title: "Garage door $phrase", 		options: ["closed", "open"], 				defaultValue: "open"
+	else if(myCapab == "Garage door")				result = input myState, "enum", title: "Garage door $phrase", 		options: ["closed", "open", "opening", "closing", "unknown"], defaultValue: "open"
+	else if(myCapab == "Door")						result = input myState, "enum", title: "Door $phrase", 				options: ["closed", "open", "opening", "closing", "unknown"], defaultValue: "open"
 	else if(myCapab == "Lock")						result = input myState, "enum", title: "Lock $lockphrase", 			options: ["locked", "unlocked"], 			defaultValue: "unlocked"
 	else if(myCapab == "Thermostat Mode")			result = input myState, "enum", title: "Thermostat mode ",			options: ["heat", "cool", "auto", "off", "emergency heat"],	defaultValue: "heat"
 	else if(myCapab == "Thermostat State")			result = input myState, "enum", title: "Thermostat state ",			options: ["heating", "idle", "pending cool", "vent economizer", "cooling", "pending heat", "fan only"],	defaultValue: "heating"
@@ -461,16 +467,16 @@ def getState(myCapab, n, isTrig) {
 			else if(myCapab == "Humidity") 				result = input myState, "number", 	title: "Humidity offset", 		range: "-100..100",	defaultValue: 0
 			else if(myCapab == "Illuminance") 			result = input myState, "number", 	title: "Illuminance offset",	range: "*..*",		defaultValue: 0
 			else if(myCapab == "Dimmer level")			result = input myState, "number", 	title: "Dimmer offset", 		range: "-100..100",	defaultValue: 0
-			else if(myCapab == "Energy meter") 			result = input myState, "number", 	title: "Energy level offset",	range: "*..*",		defaultValue: 0
-			else if(myCapab == "Power meter") 			result = input myState, "number", 	title: "Power level offset", 	range: "*..*",		defaultValue: 0
+			else if(myCapab == "Energy meter") 			result = input myState, "decimal", 	title: "Energy level offset",	range: "*..*",		defaultValue: 0
+			else if(myCapab == "Power meter") 			result = input myState, "decimal", 	title: "Power level offset", 	range: "*..*",		defaultValue: 0
 			else if(myCapab == "Battery") 				result = input myState, "number", 	title: "Battery level offset",	range: "-100..100",	defaultValue: 0
 		}
 		else if(myCapab == "Temperature") 			result = input myState, "decimal",	title: "Temperature becomes ", 	range: "*..*"
 		else if(myCapab == "Humidity") 				result = input myState, "number", 	title: "Humidity becomes", 		range: "0..100"
 		else if(myCapab == "Illuminance") 			result = input myState, "number", 	title: "Illuminance becomes",	range: "0..*"
 		else if(myCapab == "Dimmer level")			result = input myState, "number", 	title: "Dimmer level", 			range: "0..100"
-		else if(myCapab == "Energy meter") 			result = input myState, "number", 	title: "Energy level becomes",	range: "0..*"
-		else if(myCapab == "Power meter") 			result = input myState, "number", 	title: "Power level becomes", 	range: "*..*"
+		else if(myCapab == "Energy meter") 			result = input myState, "decimal", 	title: "Energy level becomes",	range: "0..*"
+		else if(myCapab == "Power meter") 			result = input myState, "decimal", 	title: "Power level becomes", 	range: "*..*"
 		else if(myCapab == "Battery") 				result = input myState, "number", 	title: "Battery level becomes",	range: "0..100"
 	} else if(myCapab == "Days of week") 			result = input "days",  "enum", 	title: "On certain days of the week", multiple: true, required: false, options: days
 	else if(myCapab == "Mode") {
@@ -716,313 +722,11 @@ def inputLeftAndRight(sub) {
 
 // Action selection code follows
 
-def stripBrackets(str) {
-	def i = str.indexOf('[')
-	def j = str.indexOf(']')
-	def result = str.substring(0, i) + str.substring(i + 1, j) + str.substring(j + 1)
-	return result
-}
-
-def checkActTrue(dev, str) {
-	if(dev) state.actsTrue = state.actsTrue + stripBrackets("$str") + "\n"
-}
-
-def setActTrue(str) {
-	state.actsTrue = state.actsTrue + stripBrackets("$str") + "\n"
-}
-
-def addToActTrue(str) {
-	state.actsTrue = state.actsTrue + str + "\n"
-}
-
-def buildActTrue(str, brackets) {
-	state.actsTrue = state.actsTrue + (brackets ? stripBrackets("$str") : str)
-}
-
-def checkActFalse(dev, str) {
-	if(dev) state.actsFalse = state.actsFalse + stripBrackets("$str") + "\n"
-}
-
-def setActFalse(str) {
-	state.actsFalse = state.actsFalse + stripBrackets("$str") + "\n"
-}
-
-def addToActFalse(str) {
-	state.actsFalse = state.actsFalse + str + "\n"
-}
-
-def buildActFalse(str, brackets) {
-	state.actsFalse = state.actsFalse + (brackets ? stripBrackets("$str") : str)
-}
-
-def delayTruePage() {
-	dynamicPage(name: "delayTruePage", title: "Select Delay for Actions", uninstall: false) {
-		section() {
-			if(!delayMilTrue && !delaySecTrue) {
-				input "delayMinTrue", "number", title: "Minutes of delay", required: false, range: "1..*", submitOnChange: true
-				if(delayMinTrue > 0) {
-					if(state.isRule || state.howMany > 1) input "cancelTrue", "bool", title: "Cancel on truth change?", required: false, submitOnChange: true
-					paragraph "\n\n "
-					input "randTrue", "bool", title: "Random delay?", required: false, submitOnChange: true
-				}
-			}
-			if(!delayMinTrue && !delayMilTrue) {
-				paragraph "\n"
-				input "delaySecTrue", "number", title: "Seconds of delay", required: false, range: "1..*", submitOnChange: true
-				if(delaySecTrue > 0 && (state.isRule || state.howMany > 1)) input "cancelTrue", "bool", title: "Cancel on truth change?", required: false, submitOnChange: true
-			}
-			if(!delayMinTrue && !delaySecTrue) {
-				paragraph "\n\n Milliseconds delay works only for \n on/off/dim/toggle, open/close, lock/unlock"
-				input "delayMilTrue", "number", title: "Milliseconds of delay", required: false, range: "1..*", submitOnChange: true
-			}
-			if(delayMinTrue > 0 || delayMilTrue > 0 || delaySecTrue > 0) {
-				state.delayStrTrue = "Delay by " + (delayMilTrue ? "$delayMilTrue milliseconds" : (delaySecTrue ? "$delaySecTrue seconds" : "$delayMinTrue minute"))
-				if(delayMinTrue > 1) state.delayStrTrue = state.delayStrTrue + "s"
-				state.delayStrTrue = state.delayStrTrue + (cancelTrue ? " [Cancel]" : "") + (randTrue ? " [Random]" : "")
-			} else state.delayStrTrue = ""
-		}
-	}
-}
-
-def delayFalsePage() {
-	dynamicPage(name: "delayFalsePage", title: "Select Delay for Actions", uninstall: false) {
-		section() {
-			if(!delayMilFalse && !delaySecFalse) {
-				input "delayMinFalse", "number", title: "Minutes of delay", required: false, range: "1..*", submitOnChange: true
-				if(delayMinFalse > 0) {
-					if(state.isRule || state.howMany > 1) input "cancelFalse", "bool", title: "Cancel on truth change?", required: false, submitOnChange: true
-					paragraph "\n\n "
-					input "randFalse", "bool", title: "Random delay?", required: false, submitOnChange: true
-				}
-			}                
-			if(!delayMinFalse && !delayMilFalse) {
-				paragraph "\n"
-				input "delaySecFalse", "number", title: "Seconds of delay", required: false, range: "1..*", submitOnChange: true
-				if(delaySecFalse > 0 && (state.isRule || state.howMany > 1)) input "cancelFalse", "bool", title: "Cancel on truth change?", required: false, submitOnChange: true
-			}
-			if(!delayMinFalse && !delaySecFalse) {
-				paragraph "\n\n Milliseconds delay works only for \n on/off/dim/toggle, open/close, lock/unlock"
-				input "delayMilFalse", "number", title: "Milliseconds of delay", required: false, range: "1..*", submitOnChange: true
-			}
-			if(delayMinFalse > 0 || delayMilFalse > 0 || delaySecFalse > 0) {
-				state.delayStrFalse = "Delay by " + (delayMilFalse ? "$delayMilFalse milliseconds" : (delaySecFalse ? "$delaySecFalse seconds" : "$delayMinFalse minute"))
-				if(delayMinFalse > 1) state.delayStrFalse = state.delayStrFalse + "s"
-				state.delayStrFalse = state.delayStrFalse + (cancelFalse ? " [Cancel]" : "") + (randFalse ? " [Random]" : "")
-			} else state.delayStrFalse = ""
-		}
-	}
-}
-
-def setModeLevel(thisMode, modeVar, trufal) {
-	def result = input modeVar, "number", range: "0..100", title: "> Level for $thisMode", required: true, submitOnChange: true
-	def str = settings.find{it.key == "$modeVar"}
-	if(str) {
-		if(trufal) addToActTrue("  $thisMode: $str.value")
-		else addToActFalse("  $thisMode: $str.value")
-	}
-}
-
 def selectActionsTrue() {
 	def isRule = state.isRule || state.howMany > 1
 	dynamicPage(name: "selectActionsTrue", title: "Select Actions" + (isRule ? " for True" : ""), uninstall: false) {
-		def isTrig = state.isTrig || state.howManyT > 1
 		state.actsTrue = ""
-		section("") {
-			href "delayTruePage", title: "Delay These Actions", description: state.delayStrTrue ? (state.delayStrTrue) : "Tap to set", state: state.delayStrTrue ? "complete" : null, submitOnChange: true
-			if(state.delayStrTrue) addToActTrue(state.delayStrTrue)
-			input "onSwitchTrue", "capability.switch", title: "Turn on these switches", multiple: true, required: false, submitOnChange: true
-			checkActTrue(onSwitchTrue, "On: $onSwitchTrue")
-			input "offSwitchTrue", "capability.switch", title: "Turn off these switches", multiple: true, required: false, submitOnChange: true
-			checkActTrue(offSwitchTrue, "Off: $offSwitchTrue")
-			input "toggleSwitchTrue", "capability.switch", title: "Toggle these switches", multiple: true, required: false, submitOnChange: true
-			checkActTrue(toggleSwitchTrue, "Toggle: $toggleSwitchTrue")
-			input "delayedOffTrue", "capability.switch", title: "Turn on or off these switches after a delay (default is OFF)", multiple: true, required: false, submitOnChange: true
-			if(delayedOffTrue) {
-				input "delayOnOffTrue", "bool", title: "> Turn ON after the delay?", multiple: false, required: false, defaultValue: false, submitOnChange: true
-				if(!delayMillisTrue && !delaySecondsTrue) input "delayMinutesTrue", "number", title: "> Minutes of delay", required: false, range: "1..*", submitOnChange: true
-				if(!delayMillisTrue && !delayMinutesTrue) input "delaySecondsTrue", "number", title: "> Seconds of delay", required: false, range: "1..*", submitOnChange: true
-				if(!delayMinutesTrue && !delaySecondsTrue) input "delayMillisTrue", "number", title: "> Milliseconds of delay", required: false, range: "1..*", submitOnChange: true
-				if(delayMinutesTrue || delaySecondsTrue || delayMillisTrue) {
-					def delayStrTrue = "Delayed " + (delayOnOffTrue ? "On:" : "Off:") + " $delayedOffTrue: " 
-                    if(delayMillisTrue) delayStrTrue = delayStrTrue + "$delayMillisTrue milliseconds"
-                    if(delaySecondsTrue) delayStrTrue = delayStrTrue + "$delaySecondsTrue second"
-                    if(delayMinutesTrue) delayStrTrue = delayStrTrue + "$delayMinutesTrue minute"
-					if(delayMinutesTrue > 1 || delaySecondsTrue > 1) delayStrTrue = delayStrTrue + "s"
-					setActTrue(delayStrTrue)
-				}
-			}
-            if(isRule) {
-				input "pendedOffTrue", "capability.switch", title: "Turn on or off these switches after a delay, pending cancellation (default is OFF)", multiple: true, required: false, submitOnChange: true
-				if(pendedOffTrue) {
-					input "pendOnOffTrue", "bool", title: "> Turn ON after the delay?", multiple: false, required: false, defaultValue: false, submitOnChange: true
-					input "pendMinutesTrue", "number", title: "> Minutes of delay", required: true, range: "0..*", submitOnChange: true
-					if(pendMinutesTrue != null) {
-						def pendStrTrue = "Pending "+ (pendOnOffTrue ? "On:" : "Off:") + " $pendedOffTrue: $pendMinutesTrue minute"
-						if(pendMinutesTrue > 1 || pendMinutesTrue == 0) pendStrTrue = pendStrTrue + "s"
-						setActTrue(pendStrTrue)
-					}
-				}
-            }
-			input "dimATrue", "capability.switchLevel", title: "Set these dimmers", multiple: true, submitOnChange: true, required: false
-			if(dimATrue) {
-				input "dimTrackTrue", "bool", title: "> Track event dimmer?", required: false, submitOnChange: true
-				if(dimTrackTrue) setActTrue("Track Dim: $dimATrue")
-				else input "dimLATrue", "number", title: "> To this level", range: "0..100", required: true, submitOnChange: true
-				if(dimLATrue != null) setActTrue("Dim: $dimATrue: $dimLATrue")
-			}
-			input "dimBTrue", "capability.switchLevel", title: "Set these other dimmers", multiple: true, submitOnChange: true, required: false
-			if(dimBTrue) {
-				input "dimLBTrue", "number", title: "> To this level", range: "0..100", required: true, submitOnChange: true
-				if(dimLBTrue != null) setActTrue("Dim: $dimBTrue: $dimLBTrue")
-			}
-			input "toggleDimmerTrue", "capability.switchLevel", title: "Toggle these dimmers", multiple: true, required: false, submitOnChange: true
-			if(toggleDimmerTrue) input "dimTogTrue", "number", title: "> To this level", range: "0..100", required: true, submitOnChange: true
-			if(dimTogTrue != null) checkActTrue(toggleDimmerTrue, "Toggle Dim: $toggleDimmerTrue: $dimTogTrue")
-			input "adjustDimmerTrue", "capability.switchLevel", title: "Adjust these dimmers", multiple: true, required: false, submitOnChange: true
-			if(adjustDimmerTrue) input "dimAdjTrue", "number", title: "> By this amount", range: "-100..100", required: true, submitOnChange: true
-			if(dimAdjTrue) checkActTrue(adjustDimmerTrue, "Adjust: $adjustDimmerTrue: $dimAdjTrue")
-			def myModes = []
-			location.modes.each {myModes << "$it"}
-			input "dimMTrue", "capability.switchLevel", title: "Set these dimmers per mode", multiple: true, submitOnChange: true, required: false
-			if(dimMTrue) {
-				input "dimmerModesTrue", "enum", title: "> Select dimmer level by mode", required: true, options: myModes.sort(), multiple: true, submitOnChange: true
-				if(dimmerModesTrue) {
-					def sortModes = dimmerModesTrue.sort()
-					checkActTrue(dimMTrue, "Dimmers per mode: $dimMTrue")
-					sortModes.each {setModeLevel(it, "levelTrue$it", true)}
-				}
-			}
-			if(captureFalse == null) {
-				input "captureTrue", "capability.switch", title: "Capture the state of these switches", multiple: true, required: false, submitOnChange: true
-				checkActTrue(captureTrue, "Capture: $captureTrue")
-			}
-			if(captureTrue || captureFalse) input "restoreTrue", "bool", title: "Restore the state of captured switches", required: false, submitOnChange: true
-            if(restoreTrue) input "restoreDelayTrue", "number", title: "> Restore after a delay?", required: false, submitOnChange: true, description: "0 minutes"
-            if(restoreDelayTrue > 0) input "restoreCancelTrue", "bool", title: "> Cancel on truth change?", required: false, submitOnChange: true
-			if(restoreTrue && captureTrue) setActTrue("Restore: $captureTrue" + (restoreDelayTrue > 0 ? " after $restoreDelayTrue minutes" + (restoreCancelTrue ? " [Cancel]" : "") : ""))
-			else if(restoreTrue && captureFalse) setActTrue("Restore: $captureFalse" + (restoreDelayTrue > 0 ? " after $restoreDelayTrue minutes"  + (restoreCancelTrue ? " [Cancel]" : ""): ""))
-			input "ctTrue", "capability.colorTemperature", title: "Set color temperature for these bulbs", multiple: true, submitOnChange: true, required: false
-			if(ctTrue) input "ctLTrue", "number", title: "> To this color temperature", range: "2000..6500", required: true, submitOnChange: true, description: "2000..6500"
-			if(ctLTrue) checkActTrue(ctTrue, "Color Temperature: $ctTrue: $ctLTrue")
-			input "bulbsTrue", "capability.colorControl", title: "Set color for these bulbs", multiple: true, required: false, submitOnChange: true
-			if(bulbsTrue) {
-				input "colorTrue", "enum", title: "> Bulb color?", required: true, multiple: false, submitOnChange: true,
-					options: ["Soft White", "White", "Daylight", "Warm White", "Red", "Green", "Blue", "Yellow", "Orange", "Purple", "Pink", "Custom color"]
-				input "colorLevelTrue", "number", title: "> Bulb level?", required: false, submitOnChange: true, range: "0..100", description: "0..100"
-				buildActTrue("Color: $bulbsTrue ", true)
-				if(colorTrue) {
-					if(colorTrue == "Custom color") {
-						input "colorHexTrue", "number", title: "> Color value?", required: false, submitOnChange: true, range: "0..100", description: "0..100"
-						input "colorSatTrue", "number", title: "> Saturation value?", required: false, submitOnChange: true, range: "0..100", description: "0..100"
-					}
-					buildActTrue("$colorTrue ", false)
-					if(colorHexTrue) buildActTrue("$colorHexTrue:$colorSatTrue ", false)
-                }
-				if(colorLevelTrue) addToActTrue("Level: $colorLevelTrue")
-			}            
-			input "garageOpenTrue", "capability.garageDoorControl", title: "Open these garage doors", multiple: true, required: false, submitOnChange: true
-			checkActTrue(garageOpenTrue, "Garage open: $garageOpenTrue")
-			input "garageCloseTrue", "capability.garageDoorControl", title: "Close these garage doors", multiple: true, required: false, submitOnChange: true
-			checkActTrue(garageCloseTrue, "Garage close: $garageCloseTrue")
-			input "lockTrue", "capability.lock", title: "Lock these locks", multiple: true, required: false, submitOnChange: true
-			checkActTrue(lockTrue, "Lock: $lockTrue")
-			input "unlockTrue", "capability.lock", title: "Unlock these locks", multiple: true, required: false, submitOnChange: true
-			checkActTrue(unlockTrue, "Unlock: $unlockTrue")
-			input "fanAdjustTrue", "capability.switchLevel", title: "Adjust this fan - Low, Medium, High, Off", multiple: false, required: false, submitOnChange: true
-			if(fanAdjustTrue) addToActTrue("Adjust Fan: $fanAdjustTrue")
-			input "openValveTrue", "capability.valve", title: "Open these valves", multiple: true, required: false, submitOnChange: true
-			checkActTrue(openValveTrue, "Open: $openValveTrue")
-			input "closeValveTrue", "capability.valve", title: "Close these valves", multiple: true, required: false, submitOnChange: true
-			checkActTrue(closeValveTrue, "Close: $closeValveTrue")
-			input "thermoTrue", "capability.thermostat", title: "Set these thermostats", multiple: true, required: false, submitOnChange: true
-			if(thermoTrue) {
-				input "thermoModeTrue", "enum", title: "> Select thermostat mode", multiple: false, required: false, options: ["auto", "heat", "cool", "off"], submitOnChange: true
-				input "thermoSetHeatTrue", "decimal", title: "> Set heating point", multiple: false, required: false, submitOnChange: true
-				input "thermoAdjHeatTrue", "decimal", title: "> Adjust heating point", multiple: false, required: false, submitOnChange: true, range: "*..*"
-				input "thermoSetCoolTrue", "decimal", title: "> Set cooling point", multiple: false, required: false, submitOnChange: true 
-				input "thermoAdjCoolTrue", "decimal", title: "> Adjust cooling point", multiple: false, required: false, submitOnChange: true, range: "*..*"
-				input "thermoFanTrue", "enum", title: "> Fan setting", multiple: false, required: false, submitOnChange: true, options: ["on", "auto"]
-				buildActTrue("$thermoTrue: ", true)
-				if(thermoModeTrue) buildActTrue("Mode: " + thermoModeTrue + " ", false)
-				if(thermoSetHeatTrue) buildActTrue("Heat to $thermoSetHeatTrue ", false)
-				if(thermoAdjHeatTrue) buildActTrue("Adjust Heat by $thermoAdjHeatTrue ", false)
-				if(thermoSetCoolTrue) buildActTrue("Cool to $thermoSetCoolTrue ", false)
-				if(thermoAdjCoolTrue) buildActTrue("Adjust Cool by $thermoAdjCoolTrue ", false)
-				if(thermoFanTrue) buildActTrue("Fan setting $thermoFanTrue", false)
-				addToActTrue("")
-			}
-			input "alarmTrue", "enum", title: "Set the alarm state", multiple: false, required: false, options: ["away" : "Arm (away)", "stay" : "Arm (stay)", "off" : "Disarm"], submitOnChange: true
-			if(alarmTrue) addToActTrue("Alarm: " + (alarmTrue in ["away", "stay"] ? "Arm ($alarmTrue)" : "Disarm"))
-			input "modeTrue", "enum", title: "Set the mode", multiple: false, required: false, options: myModes.sort(), submitOnChange: true
-			if(modeTrue) addToActTrue("Mode: $modeTrue")
-			def phrases = location.helloHome?.getPhrases()*.label
-			input "myPhraseTrue", "enum", title: "Run a Routine", required: false, options: phrases.sort(), submitOnChange: true
-			if(myPhraseTrue) addToActTrue("Routine: $myPhraseTrue")
-			href "selectMsgTrue", title: "Send or speak a message", description: state.msgTrue ? state.msgTrue : "Tap to set", state: state.msgTrue ? "complete" : null
-			if(state.msgTrue) addToActTrue(state.msgTrue)
-			input "cameraTrue", "capability.imageCapture", title: "Take photos", required: false, multiple: false, submitOnChange: true
-			if(cameraTrue) {
-				input "burstCountTrue", "number", title: "> How many? (default 5)", defaultValue:5
-				addToActTrue("Photo: $cameraTrue " + (burstCountTrue ?: ""))
-			}
-			def theseRules = parent.ruleList(app.label)
-			if(theseRules != null) input "ruleTrue", "enum", title: "Evaluate Rules", required: false, multiple: true, options: theseRules.sort(), submitOnChange: true
-			if(ruleTrue) setActTrue("Rules: $ruleTrue")
-			if(theseRules != null) input "ruleActTrue", "enum", title: "Run Rule Actions", required: false, multiple: true, options: theseRules.sort(), submitOnChange: true
-			if(ruleActTrue) setActTrue("Rule Actions: $ruleActTrue")
-			input "updateTrue", "enum", title: "Update Rules", required: false, multiple: true, options: theseRules.sort(), submitOnChange: true
-			if(updateTrue) setActTrue("Update Rules: $updateTrue")
-			def theseRules2 = parent.ruleList(app.label)
-			theseRules2 << app.label
-			input "ruleEvalDelayTrue", "enum", title: "Evaluate Rules after delay", required: false, multiple: true, options: theseRules2.sort(), submitOnChange: true
-			if(ruleEvalDelayTrue) {
-				input "delayEvalMinutesTrue", "number", title: "> Minutes of delay", required: false, range: "1..*", submitOnChange: true
-				if(delayEvalMinutesTrue > 0) {
-					def delayStrTrue = "Delay Rule Evaluations: $ruleEvalDelayTrue: $delayEvalMinutesTrue minute"
-					if(delayEvalMinutesTrue > 1) delayStrTrue = delayStrTrue + "s"
-					setActTrue(delayStrTrue)
-				}
-			}
-// code below is vestigal, supports prior version of delayTrue and randomTrue            
-//            if(!randomTrue) {
-			if(delayTrue) {
-				input "delayTrue", "number", title: "Delay " + ((state.isRule || state.howMany > 1) ? "the effect of this rule" : "this action") + " by this many minutes", required: false, submitOnChange: true
-//				if(delayTrue) {
-					def delayStr = "Delay Rule: $delayTrue minute"
-					if(delayTrue > 1) delayStr = delayStr + "s"
-					addToActTrue(delayStr)
-//				}
-            }
-//            if(!delayTrue) {
-            if(randomTrue) {
-				input "randomTrue", "number", title: "Delay " + ((state.isRule || state.howMany > 1) ? "the effect of this rule" : "this action") + " by random minutes up to", required: false, submitOnChange: true
-//				if(randomTrue) {
-					def randomStr = "Random Delay: $randomTrue minutes"
-					addToActTrue(randomStr)
-//				}
-            }
-			input "privateTrue", "enum", title: "Set private Boolean", required: false, submitOnChange: true, options: ["true", "false"]
-			if(privateTrue) {
-				input "otherTrue", "bool", title: "> For this Rule (default) or others?", required: false, submitOnChange: true
-				if(otherTrue) input "otherPrivateTrue", "enum", title: "> Select Rules to set Boolean", required: false, multiple: true, options: theseRules.sort(), submitOnChange: true
-                input "privateDelayTrue", "number", title: "> Set after a delay?", required: false, submitOnChange: true, description: "0 minutes"
-                if(privateDelayTrue > 0 && isRule) input "privateDelayCancelTrue", "bool", title: "> Cancel on truth change?", required: false, submitOnChange: true
-                if(otherPrivateTrue) setActTrue("Rule Boolean: $otherPrivateTrue: $privateTrue" + (privateDelayTrue ? ": Delay $privateDelayTrue minutes" + (privateDelayCancelTrue ? " [Cancel]" : "") : ""))
-                else addToActTrue("Private Boolean: $privateTrue" + (privateDelayTrue ? ": Delay $privateDelayTrue minutes" + (privateDelayCancelTrue ? " [Cancel]" : "") : ""))
-			}
-			if (state.isExpert){
-				if (state.cstCmds){
-					state.ccTruth = true
-					def desc = state.cmdActTrue
-					href( "selectCustomActions"
-						,title		: "Run custom commands"
-						,description: desc ?: "Tap to set"
-						,state		: desc ? "complete" : null
-					)
-					checkActTrue(desc,"[${desc}]")
-				}
-			}
-		}
+        getActions(true)
         if(state.actsTrue) state.actsTrue = state.actsTrue[0..-2]
 	}
 }
@@ -1030,241 +734,402 @@ def selectActionsTrue() {
 def selectActionsFalse() {
 	dynamicPage(name: "selectActionsFalse", title: "Select Actions for False", uninstall: false) {
 		state.actsFalse = ""
-		section("") {
-			href "delayFalsePage", title: "Delay These Actions", description: state.delayStrFalse ? (state.delayStrFalse) : "Tap to set", state: state.delayStrFalse ? "complete" : null, submitOnChange: true
-			if(state.delayStrFalse) addToActFalse(state.delayStrFalse)
-			input "onSwitchFalse", "capability.switch", title: "Turn on these switches", multiple: true, required: false, submitOnChange: true
-			checkActFalse(onSwitchFalse, "On: $onSwitchFalse")
-			input "offSwitchFalse", "capability.switch", title: "Turn off these switches", multiple: true, required: false, submitOnChange: true
-			checkActFalse(offSwitchFalse, "Off: $offSwitchFalse")
-			input "toggleSwitchFalse", "capability.switch", title: "Toggle these switches", multiple: true, required: false, submitOnChange: true
-			checkActFalse(toggleSwitchFalse, "Toggle: $toggleSwitchFalse")
-			input "delayedOffFalse", "capability.switch", title: "Turn on or off these switches after a delay (default is OFF)", multiple: true, required: false, submitOnChange: true
-			if(delayedOffFalse) {
-				input "delayOnOffFalse", "bool", title: "> Turn ON after the delay?", multiple: false, required: false, defaultValue: false, submitOnChange: true
-				if(!delayMillisFalse && !delaySecondsFalse) input "delayMinutesFalse", "number", title: "> Minutes of delay", required: false, range: "1..*", submitOnChange: true
-				if(!delayMillisFalse && !delayMinutesFalse) input "delaySecondsFalse", "number", title: "> Seconds of delay", required: false, range: "1..*", submitOnChange: true
-				if(!delayMinutesFalse && !delaySecondsFalse) input "delayMillisFalse", "number", title: "> Milliseconds of delay", required: false, range: "1..*", submitOnChange: true
-				if(delayMinutesFalse || delaySecondsFalse || delayMillisFalse) {
-					def delayStrFalse = "Delayed " + (delayOnOffFalse ? "On:" : "Off:") + " $delayedOffFalse: " 
-                    if(delayMillisFalse) delayStrFalse = delayStrFalse + "$delayMillisFalse milliseconds"
-                    if(delaySecondsFalse) delayStrFalse = delayStrFalse + "$delaySecondsFalse second"
-                    if(delayMinutesFalse) delayStrFalse = delayStrFalse + "$delayMinutesFalse minute"
-					if(delayMinutesFalse > 1 || delaySecondsFalse > 1) delayStrFalse = delayStrFalse + "s"
-					setActFalse(delayStrFalse)
-				}
-			}
-			if(state.isRule || state.howMany > 1) {
-				input "pendedOffFalse", "capability.switch", title: "Turn on or off these switches after a delay, pending cancellation (default is OFF)", multiple: true, required: false, submitOnChange: true
-				if(pendedOffFalse) {
-					input "pendOnOffFalse", "bool", title: "> Turn ON after the delay?", multiple: false, required: false, defaultValue: false, submitOnChange: true
-					input "pendMinutesFalse", "number", title: "> Minutes of delay", required: true, range: "0..*", submitOnChange: true
-					if(pendMinutesFalse != null) {
-						def pendStrFalse = "Pending "+ (pendOnOffFalse ? "On:" : "Off:") + " $pendedOffFalse: $pendMinutesFalse minute"
-						if(pendMinutesFalse > 1 || pendMinutesFalse == 0) pendStrFalse = pendStrFalse + "s"
-						setActFalse(pendStrFalse)
-					}
-				}
-			}
-			input "dimAFalse", "capability.switchLevel", title: "Set these dimmers", multiple: true, submitOnChange: true, required: false
-			if(dimAFalse) {
-				input "dimTrackFalse", "bool", title: "> Track event dimmer?", required: false, submitOnChange: true
-				if(dimTrackFalse) setActFalse("Track Dim: $dimAFalse")
-				else input "dimLAFalse", "number", title: "> To this level", range: "0..100", required: true, submitOnChange: true
-				if(dimLAFalse != null) setActFalse("Dim: $dimAFalse: $dimLAFalse")
-			}
-			input "dimBFalse", "capability.switchLevel", title: "Set these other dimmers", multiple: true, submitOnChange: true, required: false
-			if(dimBFalse) {
-				input "dimLBFalse", "number", title: "> To this level", range: "0..100", required: true, submitOnChange: true
-				if(dimLBFalse != null) setActFalse("Dim: $dimBFalse: $dimLBFalse")
-			}
-			input "toggleDimmerFalse", "capability.switchLevel", title: "Toggle these dimmers", multiple: true, required: false, submitOnChange: true
-			if(toggleDimmerFalse) input "dimTogFalse", "number", title: "> To this level", range: "0..100", required: true, submitOnChange: true
-			if(dimTogFalse != null) checkActFalse(toggleDimmerFalse, "Toggle Dim: $toggleDimmerFalse: $dimTogFalse")
-			input "adjustDimmerFalse", "capability.switchLevel", title: "Adjust these dimmers", multiple: true, required: false, submitOnChange: true
-			if(adjustDimmerFalse) input "dimAdjFalse", "number", title: "> By this amount", range: "-100..100", required: true, submitOnChange: true
-			if(dimAdjFalse) checkActFalse(adjustDimmerFalse, "Adjust: $adjustDimmerFalse: $dimAdjFalse")
-			def myModes = []
-			location.modes.each {myModes << "$it"}
-			input "dimMFalse", "capability.switchLevel", title: "Set these dimmers per mode", multiple: true, submitOnChange: true, required: false
-			if(dimMFalse) {
-				input "dimmerModesFalse", "enum", title: "> Select dimmer level by mode", required: true, options: myModes.sort(), multiple: true, submitOnChange: true
-				if(dimmerModesFalse) {
-					def sortModes = dimmerModesFalse.sort()
-					checkActFalse(dimMFalse, "Dimmers per mode: $dimMFalse")
-					sortModes.each {setModeLevel(it, "levelFalse$it", false)}
-				}
-			}
-			if(captureTrue == null) {
-				input "captureFalse", "capability.switch", title: "Capture the state of these switches", multiple: true, required: false, submitOnChange: true
-				checkActFalse(captureFalse, "Capture: $captureFalse")
-			}
-			if(captureTrue || captureFalse) input "restoreFalse", "bool", title: "Restore the state of captured switches?", required: false, submitOnChange: true
-            if(restoreFalse) input "restoreDelayFalse", "number", title: "> Restore after a delay?", required: false, submitOnChange: true, description: "0 minutes"
-            if(restoreDelayFalse > 0) input "restoreCancelFalse", "bool", title: "> Cancel on truth change?", required: false, submitOnChange: true
-			if(restoreFalse && captureFalse) setActFalse("Restore: $captureFalse" + (restoreDelayFalse > 0 ? " after $restoreDelayFalse minutes"  + (restoreCancelFalse ? " [Cancel]" : ""): ""))
-			else if(restoreFalse && captureTrue) setActFalse("Restore: $captureTrue" + (restoreDelayFalse > 0 ? " after $restoreDelayFalse minutes"  + (restoreCancelFalse ? " [Cancel]" : ""): ""))
-			input "ctFalse", "capability.colorTemperature", title: "Set color temperature for these bulbs", multiple: true, submitOnChange: true, required: false
-			if(ctFalse) input "ctLFalse", "number", title: "> To this color temperature", range: "2000..6500", required: true, submitOnChange: true, description: "2000..6500"
-			if(ctLFalse) checkActFalse(ctFalse, "Color Temperature: $ctFalse: $ctLFalse")			
-			input "bulbsFalse", "capability.colorControl", title: "Set color for these bulbs", multiple: true, required: false, submitOnChange: true
-			if(bulbsFalse) {
-				input "colorFalse", "enum", title: "> Bulb color?", required: true, multiple: false, submitOnChange: true,
-					options: ["Soft White", "White", "Daylight", "Warm White", "Red", "Green", "Blue", "Yellow", "Orange", "Purple", "Pink", "Custom color"]
-				input "colorLevelFalse", "number", title: "> Bulb level?", required: false, submitOnChange: true, range: "0..100", description: "0..100"
-				buildActFalse("Color: $bulbsFalse ", true)
-				if(colorFalse) {
-					if(colorFalse == "Custom color") {
-						input "colorHexFalse", "number", title: "> Color value?", required: false, submitOnChange: true, range: "0..100", description: "0..100"
-						input "colorSatFalse", "number", title: "> Saturation value?", required: false, submitOnChange: true, range: "0..100", description: "0..100"
-					}
-					buildActFalse("$colorFalse ", false)
-					if(colorHexFalse) buildActFalse("$colorHexFalse:$colorSatFalse ", false)
-				}
-				if(colorLevelFalse) addToActFalse("Level: $colorLevelFalse")
-			}            
-			input "garageOpenFalse", "capability.garageDoorControl", title: "Open these garage doors", multiple: true, required: false, submitOnChange: true
-			checkActFalse(garageOpenFalse, "Garage open: $garageOpenFalse")
-			input "garageCloseFalse", "capability.garageDoorControl", title: "Close these garage doors", multiple: true, required: false, submitOnChange: true
-			checkActFalse(garageCloseFalse, "Garage close: $garageCloseFalse")
-			input "lockFalse", "capability.lock", title: "Lock these locks", multiple: true, required: false, submitOnChange: true
-			checkActFalse(lockFalse, "Lock: $lockFalse")
-			input "unlockFalse", "capability.lock", title: "Unlock these locks", multiple: true, required: false, submitOnChange: true
-			checkActFalse(unlockFalse, "Unlock: $unlockFalse")
-			input "fanAdjustFalse", "capability.switchLevel", title: "Adjust this fan - Low, Medium, High, Off", multiple: false, required: false, submitOnChange: true
-			if(fanAdjustFalse) addToActFalse("Adjust Fan: $fanAdjustFalse")
-			input "openValveFalse", "capability.valve", title: "Open these valves", multiple: true, required: false, submitOnChange: true
-			checkActFalse(openValveFalse, "Open: $openValveFalse")
-			input "closeValveFalse", "capability.valve", title: "Close these valves", multiple: true, required: false, submitOnChange: true
-			checkActFalse(closeValveFalse, "Close: $closeValveFalse")
-			input "thermoFalse", "capability.thermostat", title: "Set these thermostats", multiple: true, required: false, submitOnChange: true
-			if(thermoFalse) {
-				input "thermoModeFalse", "enum", title: "> Select thermostat mode", multiple: false, required: false, options: ["auto", "heat", "cool", "off"], submitOnChange: true
-				input "thermoSetHeatFalse", "decimal", title: "> Set heating point", multiple: false, required: false, submitOnChange: true
-				input "thermoAdjHeatFalse", "decimal", title: "> Adjust heating point", multiple: false, required: false, submitOnChange: true, range: "*..*"
-				input "thermoSetCoolFalse", "decimal", title: "> Set cooling point", multiple: false, required: false, submitOnChange: true 
-				input "thermoAdjCoolFalse", "decimal", title: "> Adjust cooling point", multiple: false, required: false, submitOnChange: true, range: "*..*"
-				input "thermoFanFalse", "enum", title: "> Fan setting", multiple: false, required: false, submitOnChange: true, options: ["on", "auto"]
-				buildActFalse("$thermoFalse: ", true)
-				if(thermoModeFalse) buildActFalse("Mode: " + thermoModeFalse + " ", false)
-				if(thermoSetHeatFalse) buildActFalse("Heat to $thermoSetHeatFalse ", false)
-				if(thermoAdjHeatFalse) buildActFalse("Adjust Heat by $thermoAdjHeatFalse ", false)
-				if(thermoSetCoolFalse) buildActFalse("Cool to $thermoSetCoolFalse ", false)
-				if(thermoAdjCoolFalse) buildActFalse("Adjust Cool by $thermoAdjCoolFalse ", false)
-				if(thermoFanFalse) buildActFalse("Fan setting $thermoFanFalse", false)
-				addToActFalse("")
-			}
-			input "alarmFalse", "enum", title: "Set the alarm state", multiple: false, required: false, options: ["away" : "Arm (away)", "stay" : "Arm (stay)", "off" : "Disarm"], submitOnChange: true
-			if(alarmFalse) addToActFalse("Alarm: " + (alarmFalse in ["away", "stay"] ? "Arm ($alarmFalse)" : "Disarm"))
-			input "modeFalse", "enum", title: "Set the mode", multiple: false, required: false, options: myModes.sort(), submitOnChange: true
-			if(modeFalse) addToActFalse("Mode: $modeFalse")
-			def phrases = location.helloHome?.getPhrases()*.label
-			input "myPhraseFalse", "enum", title: "Run a Routine", required: false, options: phrases.sort(), submitOnChange: true
-			if(myPhraseFalse) addToActFalse("Routine: $myPhraseFalse")
-			href "selectMsgFalse", title: "Send or speak a message", description: state.msgFalse ? state.msgFalse : "Tap to set", state: state.msgFalse ? "complete" : null
-			if(state.msgFalse) addToActFalse(state.msgFalse)
-			input "cameraFalse", "capability.imageCapture", title: "Take photos", required: false, multiple: false, submitOnChange: true
-			if(cameraFalse) {
-				input "burstCountFalse", "number", title: "> How many? (default 5)", defaultValue:5
-				addToActFalse("Photo: $cameraFalse " + (burstCountFalse ?: ""))
-			}
-			def theseRules = parent.ruleList(app.label)
-			if(theseRules != null) input "ruleFalse", "enum", title: "Evaluate Rules", required: false, multiple: true, options: theseRules.sort(), submitOnChange: true
-			if(ruleFalse) setActFalse("Rules: $ruleFalse")
-			if(theseRules != null) input "ruleActFalse", "enum", title: "Run Rule Actions", required: false, multiple: true, options: theseRules.sort(), submitOnChange: true
-			if(ruleActFalse) setActFalse("Rule Actions: $ruleActFalse")
-			input "updateFalse", "enum", title: "Update Rules", required: false, multiple: true,options: theseRules.sort(), submitOnChange: true
-			if(updateFalse) setActFalse("Update Rules: $updateFalse")
-			def theseRules2 = parent.ruleList(app.label)
-			theseRules2 << app.label
-			input "ruleEvalDelayFalse", "enum", title: "Evaluate Rules after delay", required: false, multiple: true, options: theseRules2.sort(), submitOnChange: true
-			if(ruleEvalDelayFalse) {
-				input "delayEvalMinutesFalse", "number", title: "> Minutes of delay", required: false, range: "1..*", submitOnChange: true
-				if(delayEvalMinutesFalse > 0) {
-					def delayStrFalse = "Delay Rule Evaluations: $ruleEvalDelayFalse: $delayEvalMinutesFalse minute"
-					if(delayEvalMinutesFalse > 1) delayStrFalse = delayStrFalse + "s"
-					setActFalse(delayStrFalse)
-				}
-			}
-// code below is vestigal, supports prior version of delayFalse and randomFalse            
-			if(delayFalse) {
-				input "delayFalse", "number", title: "Delay " + ((state.isRule || state.howMany > 1) ? "the effect of this rule" : "this action") + " by this many minutes", required: false, submitOnChange: true
-//				if(delayFalse) {
-					def delayStr = "Delay Rule: $delayFalse minute"
-					if(delayFalse > 1) delayStr = delayStr + "s"
-					addToActFalse(delayStr)
-//				}
-			}
-			if(randomFalse) {
-				input "randomFalse", "number", title: "Delay " + ((state.isRule || state.howMany > 1) ? "the effect of this rule" : "this action") + " by random minutes up to", required: false, submitOnChange: true
-//				if(randomFalse) {
-					def randomStr = "Random Delay: $randomFalse minutes"
-					addToActFalse(randomStr)
-//				}
-			}
-			input "privateFalse", "enum", title: "Set private Boolean", required: false, submitOnChange: true, options: ["true", "false"]
-			if(privateFalse) {
-				input "otherFalse", "bool", title: "> For this Rule (default) or others?", required: false, submitOnChange: true
-				if(otherFalse) input "otherPrivateFalse", "enum", title: "> Select Rules to set Boolean", required: false, multiple: true, options: theseRules.sort(), submitOnChange: true
-                input "privateDelayFalse", "number", title: "> Set after a delay?", required: false, submitOnChange: true, description: "0 minutes"
-                if(privateDelayFalse > 0 && isRule) input "privateDelayCancelFalse", "bool", title: "> Cancel on truth change?", required: false, submitOnChange: true
-                if(otherPrivateFalse) setActFalse("Rule Boolean: $otherPrivateFalse: $privateFalse" + (privateDelayFalse ? ": Delay $privateDelayFalse minutes" + (privateDelayCancelFalse ? " [Cancel]" : "") : ""))
-                else addToActFalse("Private Boolean: $privateFalse" + (privateDelayFalse ? ": Delay $privateDelayFalse minutes" + (privateDelayCancelFalse ? " [Cancel]" : "") : ""))
-			}
-			if (state.isExpert){
-				if (state.cstCmds){
-					state.ccTruth = false
-					def desc = state.cmdActFalse
-					href( "selectCustomActions"
-						,title		: "Run custom commands"
-						,description: desc ?: "Tap to set"
-						,state		: desc ? "complete" : null
-					)
-					checkActFalse(desc,"[${desc}]")
-				}
-			}
-        }
+        getActions(false)
         if(state.actsFalse) state.actsFalse = state.actsFalse[0..-2]
 	}
 }
 
-def selectMsgTrue() {
-	dynamicPage(name: "selectMsgTrue", title: "Select Message and Destination", uninstall: false) {
-		section("") {
-			if(noticeTrue in [null, false]) input "pushTrue", "bool", title: "Send Push?", required: false, submitOnChange: true
-			if(pushTrue in [null, false]) input "noticeTrue", "bool", title: "Send Notification?", required: false, submitOnChange: true
-			input "msgTrue", "text", title: "Custom message to send", required: false, submitOnChange: true
-			input "refDevTrue", "bool", title: "Include device name?", required: false, submitOnChange: true
-			input "phoneTrue", "phone", title: "Phone number for SMS", required: false, submitOnChange: true
-			input "speakTrue", "bool", title: "Speak this message?", required: false, submitOnChange: true
-			if(speakTrue){
-				input "speakTrueDevice", title: "On this speech device", "capability.speechSynthesis", required: false, multiple: true, submitOnChange: true
-				input "mediaTrueDevice", title: "On this music device", "capability.musicPlayer", required: false, multiple: true, submitOnChange: true
-				if (mediaTrueDevice) input "mediaTrueVolume", title: "At this volume", "number", required: false, multiple: false, defaultValue: "50", submitOnChange: true
+def getActions(trufal) {
+	def thisStr = trufal ? "True" : "False"
+	def isRule = state.isRule || state.howMany > 1
+	section("") {
+// Delay These Actions
+    	def thisPage = "delay" + thisStr + "Page"
+        def thisStateStr = trufal ? state.delayStrTrue : state.delayStrFalse
+		href thisPage, title: "Delay These Actions", description: thisStateStr ? (thisStateStr) : "Tap to set", state: thisStateStr ? "complete" : null, submitOnChange: true
+        if(thisStateStr) setAct(trufal, thisStateStr)
+// Turn on these switches        
+        def onSwitch = "onSwitch" + thisStr
+		input onSwitch, "capability.switch", title: "Turn on these switches", multiple: true, required: false, submitOnChange: true
+		checkAct(trufal, onSwitch, "On: ${settings[onSwitch]}")
+// Turn off these switches        
+        def offSwitch = "offSwitch" + thisStr
+		input offSwitch, "capability.switch", title: "Turn off these switches", multiple: true, required: false, submitOnChange: true
+		checkAct(trufal, offSwitch, "Off: ${settings[offSwitch]}")
+// Toggle these switches        
+        def toggleSwitch = "toggleSwitch" + thisStr
+		input toggleSwitch, "capability.switch", title: "Toggle these switches", multiple: true, required: false, submitOnChange: true
+		checkAct(trufal, toggleSwitch, "Toggle: ${settings[toggleSwitch]}")
+// Turn on or off these switches after a delay (default is OFF)        
+        def delayedOff = "delayedOff" + thisStr
+		input delayedOff, "capability.switch", title: "Turn on or off these switches after a delay (default is OFF)", multiple: true, required: false, submitOnChange: true
+		if(settings[delayedOff]) {
+        	def delayOnOff = "delayOnOff" + thisStr
+			input delayOnOff, "bool", title: "> Turn ON after the delay?", multiple: false, required: false, defaultValue: false, submitOnChange: true
+            def delayMinutes = "delayMinutes" + thisStr
+            def delaySeconds = "delaySeconds" + thisStr
+            def delayMillis = "delayMillis" + thisStr
+			if(!settings[delayMillis] && !settings[delaySeconds]) input delayMinutes, "number", title: "> Minutes of delay", required: false, range: "1..*", submitOnChange: true
+			if(!settings[delayMillis] && !settings[delayMinutes]) input delaySeconds, "number", title: "> Seconds of delay", required: false, range: "1..*", submitOnChange: true
+			if(!settings[delayMinutes] && !settings[delaySeconds]) input delayMillis, "number", title: "> Milliseconds of delay", required: false, range: "1..*", submitOnChange: true
+			if(settings[delayMinutes] || settings[delaySeconds] || settings[delayMillis]) {
+				def delayStr = "Delayed " + (settings[delayOnOff] ? "On:" : "Off:") + " ${settings[delayedOff]}: " 
+                if(settings[delayMillis]) delayStr = delayStr + "${settings[delayMillis]} milliseconds"
+                if(settings[delaySeconds]) delayStr = delayStr + "${settings[delaySeconds]} second"
+                if(settings[delayMinutes]) delayStr = delayStr + "${settings[delayMinutes]} minute"
+				if(settings[delayMinutes] > 1 || settings[delaySeconds] > 1) delayStr = delayStr + "s"
+				setAct(trufal, delayStr)
 			}
 		}
-        state.msgTrue = (pushTrue ? "Push" : "") + (noticeTrue ? "Notify" : "") + (msgTrue ? " '$msgTrue'" : "") + (refDevTrue ? " [device]" : "") + (phoneTrue ? " to $phoneTrue" : "") + (speakTrue ? " [speak]" : "") + (mediaTrueDevice ? " ${mediaTrueDevice}" : "")
+// Turn on or off these switches after a delay, pending cancellation (default is OFF)        
+        if(isRule) {
+        	def pendedOff = "pendedOff" + thisStr
+			input pendedOff, "capability.switch", title: "Turn on or off these switches after a delay, pending cancellation (default is OFF)", multiple: true, required: false, submitOnChange: true
+			if(settings[pendedOff]) {
+            	def pendOnOff = "pendOnOff" + thisStr
+                def pendMinutes = "pendMinutes" + thisStr
+				input pendOnOff, "bool", title: "> Turn ON after the delay?", multiple: false, required: false, defaultValue: false, submitOnChange: true
+				input pendMinutes, "number", title: "> Minutes of delay", required: true, range: "0..*", submitOnChange: true
+				if(settings[pendMinutes] != null) {
+					def pendStr = "Pending "+ (settings[pendOnOff] ? "On:" : "Off:") + " ${settings[pendedOff]}: ${settings[pendMinutes]} minute"
+					if(settings[pendMinutes] > 1 || settings[pendMinutes] == 0) pendStr = pendStr + "s"
+					setAct(trufal, pendStr)
+				}
+			}
+        }
+// Set these dimmers        
+        def dimA = "dimA" + thisStr
+		input dimA, "capability.switchLevel", title: "Set these dimmers", multiple: true, submitOnChange: true, required: false
+		if(settings[dimA]) {
+        	def dimTrack = "dimTrack" + thisStr
+            def dimLA = "dimLA" + thisStr
+			input dimTrack, "bool", title: "> Track event dimmer?", required: false, submitOnChange: true
+			if(settings[dimTrack]) setAct(trufal, "Track Dim: ${settings[dimA]}")
+			else input dimLA, "number", title: "> To this level", range: "0..100", required: true, submitOnChange: true
+			if(settings[dimLA] != null) setAct(trufal, "Dim: ${settings[dimA]}: ${settings[dimLA]}")
+		}
+// Set these other dimmers        
+        def dimB = "dimB" + thisStr
+		input dimB, "capability.switchLevel", title: "Set these other dimmers", multiple: true, submitOnChange: true, required: false
+		if(settings[dimB]) {
+        	def dimLB = "dimLB" + thisStr
+			input dimLB, "number", title: "> To this level", range: "0..100", required: true, submitOnChange: true
+			if(settings[dimLB] != null) setAct(trufal, "Dim: ${settings[dimB]}: ${settings[dimLB]}")
+		}
+// Toggle these dimmers        
+        def toggleDimmer = "toggleDimmer" + thisStr
+        def dimTog = "dimTog" + thisStr
+		input toggleDimmer, "capability.switchLevel", title: "Toggle these dimmers", multiple: true, required: false, submitOnChange: true
+		if(settings[toggleDimmer]) input dimTog, "number", title: "> To this level", range: "0..100", required: true, submitOnChange: true
+		if(settings[dimTog] != null) checkAct(trufal, toggleDimmer, "Toggle Dim: ${settings[toggleDimmer]}: ${settings[dimTog]}")
+// Adjust these dimmers        
+        def adjustDimmer = "adjustDimmer" + thisStr
+        def dimAdj = "dimAdj" + thisStr
+		input adjustDimmer, "capability.switchLevel", title: "Adjust these dimmers", multiple: true, required: false, submitOnChange: true
+		if(settings[adjustDimmer]) input dimAdj, "number", title: "> By this amount", range: "-100..100", required: true, submitOnChange: true
+		if(settings[dimAdj]) checkAct(trufal, adjustDimmer, "Adjust: ${settings[adjustDimmer]}: ${settings[dimAdj]}")
+// Set these dimmers per mode        
+		def myModes = []
+		location.modes.each {myModes << "$it"}
+        def dimM = "dimM" + thisStr
+		input dimM, "capability.switchLevel", title: "Set these dimmers per mode", multiple: true, submitOnChange: true, required: false
+		if(settings[dimM]) {
+        	def dimmerModes = "dimmerModes" + thisStr
+			input dimmerModes, "enum", title: "> Select dimmer level by mode", required: true, options: myModes.sort(), multiple: true, submitOnChange: true
+			if(settings[dimmerModes]) {
+				def sortModes = settings[dimmerModes].sort()
+				checkAct(trufal, dimM, "Dimmers per mode: ${settings[dimM]}")
+				sortModes.each {getModeLevel(it, "level" + thisStr + "$it", trufal)}
+			}
+		}
+// Capture the state of these switches        
+        def capture = "capture"  + thisStr
+        def captureNot = "capture"  + trufal ? "False" : "True"
+		if(settings[captureNot] == null) {
+			input capture, "capability.switch", title: "Capture the state of these switches", multiple: true, required: false, submitOnChange: true
+			checkAct(trufal, capture, "Capture: ${settings[capture]}")
+		}
+// Restore the state of captured switches        
+        def restore = "restore" + thisStr
+        def restoreDelay = "restoreDelay" + thisStr
+        def restoreCancel = "restoreCancel" + thisStr
+		if(settings[capture] || settings[captureNot]) input restore, "bool", title: "Restore the state of captured switches", required: false, submitOnChange: true
+        if(settings[restore]) input restoreDelay, "number", title: "> Restore after a delay?", required: false, submitOnChange: true, description: "0 minutes"
+        if(settings[restoreDelay] > 0 && isRule) input restoreCancel, "bool", title: "> Cancel on truth change?", required: false, submitOnChange: true
+		if(settings[restore] && settings[capture]) setAct(trufal, "Restore: ${settings[capture]}" + (settings[restoreDelay] > 0 ? " after ${settings[restoreDelay]} minutes" + 
+        	(settings[restoreCancel] ? " [Cancel]" : "") : ""))
+		else if(settings[restore] && settings[captureNot]) setAct(trufal, "Restore: ${settings[captureNot]}" + (settings[restoreDelay] > 0 ? " after ${settings[restoreDelay]} minutes"  + 
+        	(settings[restoreCancel] ? " [Cancel]" : ""): ""))
+// Set color temperature for these bulbs            
+        def ct = "ct" + thisStr
+        def ctL = "ctL" + thisStr
+		input ct, "capability.colorTemperature", title: "Set color temperature for these bulbs", multiple: true, submitOnChange: true, required: false
+		if(settings[ct]) input ctL, "number", title: "> To this color temperature", range: "2000..6500", required: true, submitOnChange: true, description: "2000..6500"
+		if(settings[ctL]) checkAct(trufal, ct, "Color Temperature: ${settings[ct]}: ${settings[ctL]}")
+// Set color for these bulbs        
+        def bulbs = "bulbs" + thisStr
+		input bulbs, "capability.colorControl", title: "Set color for these bulbs", multiple: true, required: false, submitOnChange: true
+		if(settings[bulbs]) {
+        	def color = "color" + thisStr
+            def colorLevel = "colorLevel" + thisStr
+			input color, "enum", title: "> Bulb color?", required: true, multiple: false, submitOnChange: true,
+				options: ["Soft White", "White", "Daylight", "Warm White", "Red", "Green", "Blue", "Yellow", "Orange", "Purple", "Pink", "Custom color", "Random color"]
+			input colorLevel, "number", title: "> Bulb level?", required: false, submitOnChange: true, range: "0..100", description: "0..100"
+			setAct(trufal, "Color: ${settings[bulbs]} ")
+            def colorHex = "colorHex" + thisStr
+            def colorSat = "colorSat" + thisStr
+			if(settings[color]) {
+				if(settings[color] == "Custom color") {
+					input colorHex, "number", title: "> Color value?", required: false, submitOnChange: true, range: "0..100", description: "0..100"
+					input colorSat, "number", title: "> Saturation value?", required: false, submitOnChange: true, range: "0..100", description: "0..100"
+				}
+				setAct(trufal, "   ${settings[color]} ")
+				if(settings[colorHex]) setAct(trufal, "   Hue:${settings[colorHex]} Sat:${settings[colorSat]} ")
+            }
+			checkAct(trufal, colorLevel, "   Level: ${settings[colorLevel]}")
+		} 
+// Open these garage doors        
+        def garageOpen = "garageOpen" + thisStr
+		input garageOpen, "capability.garageDoorControl", title: "Open these garage doors", multiple: true, required: false, submitOnChange: true
+		checkAct(trufal, garageOpen, "Garage open: ${settings[garageOpen]}")
+// Close these garage doors        
+        def garageClose = "garageClose" + thisStr
+		input garageClose, "capability.garageDoorControl", title: "Close these garage doors", multiple: true, required: false, submitOnChange: true
+		checkAct(trufal, garageClose, "Garage close: ${settings[garageClose]}")
+// Lock these locks        
+        def lock = "lock" + thisStr
+		input lock, "capability.lock", title: "Lock these locks", multiple: true, required: false, submitOnChange: true
+		checkAct(trufal, lock, "Lock: ${settings[lock]}")
+// Unlock these locks        
+        def unlock = "unlock" + thisStr
+		input unlock, "capability.lock", title: "Unlock these locks", multiple: true, required: false, submitOnChange: true
+		checkAct(trufal, unlock, "Unlock: ${settings[unlock]}")
+// Adjust this fan - Low, Medium, High, Off     
+        def fanAdjust = "fanAdjust" + thisStr
+		input fanAdjust, "capability.switchLevel", title: "Adjust this fan - Low, Medium, High, Off", multiple: false, required: false, submitOnChange: true
+		checkAct(trufal, fanAdjust, "Adjust Fan: ${settings[fanAdjust]}")
+// Open these valves
+        def openValve = "openValve" + thisStr
+		input openValve, "capability.valve", title: "Open these valves", multiple: true, required: false, submitOnChange: true
+		checkAct(trufal, openValve, "Open: ${settings[openValve]}")
+// Close these valves
+        def closeValve = "closeValve" + thisStr
+		input closeValve, "capability.valve", title: "Close these valves", multiple: true, required: false, submitOnChange: true
+		checkAct(trufal, closeValve, "Close: ${settings[closeValve]}")
+// Set these thermostats        
+        def thermo = "thermo" + thisStr
+		input thermo, "capability.thermostat", title: "Set these thermostats", multiple: true, required: false, submitOnChange: true
+		if(settings[thermo]) {
+        	def thermoMode = "thermoMode" + thisStr
+        	def thermoSetHeat = "thermoSetHeat" + thisStr
+        	def thermoAdjHeat = "thermoAdjHeat" + thisStr
+        	def thermoSetCool = "thermoSetCool" + thisStr
+        	def thermoAdjCool = "thermoAdjCool" + thisStr
+        	def thermoFan = "thermoFan" + thisStr
+			input thermoMode, "enum", title: "> Select thermostat mode", multiple: false, required: false, options: ["auto", "heat", "cool", "off"], submitOnChange: true
+			input thermoSetHeat, "decimal", title: "> Set heating point", multiple: false, required: false, submitOnChange: true
+			input thermoAdjHeat, "decimal", title: "> Adjust heating point", multiple: false, required: false, submitOnChange: true, range: "*..*"
+			input thermoSetCool, "decimal", title: "> Set cooling point", multiple: false, required: false, submitOnChange: true 
+			input thermoAdjCool, "decimal", title: "> Adjust cooling point", multiple: false, required: false, submitOnChange: true, range: "*..*"
+			input thermoFan, "enum", title: "> Fan setting", multiple: false, required: false, submitOnChange: true, options: ["on", "auto"]
+			setAct(trufal, "${settings[thermo]}: ")
+			checkAct(trufal, thermoMode, "   Mode: " + settings[thermoMode] + " ")
+			checkAct(trufal, thermoSetHeat, "   Heat to ${settings[thermoSetHeat]} ")
+			checkAct(trufal, thermoAdjHeat, "   Adjust Heat by ${settings[thermoAdjHeat]} ")
+			checkAct(trufal, thermoSetCool, "   Cool to ${settings[thermoSetCool]} ")
+			checkAct(trufal, thermoAdjCool, "   Adjust Cool by ${settings[thermoAdjCool]} ")
+			checkAct(trufal, thermoFan, "   Fan setting ${settings[thermoFan]}")
+		}
+// Set the alarm state        
+        def alarm = "alarm" + thisStr
+		input alarm, "enum", title: "Set the alarm state", multiple: false, required: false, options: ["away" : "Arm (away)", "stay" : "Arm (stay)", "off" : "Disarm"], submitOnChange: true
+		checkAct(trufal, alarm, "Alarm: " + (settings[alarm] in ["away", "stay"] ? "Arm (${settings[alarm]})" : "Disarm"))
+// Set the mode        
+        def modeV = "mode" + thisStr
+		input modeV, "enum", title: "Set the mode", multiple: false, required: false, options: myModes.sort(), submitOnChange: true
+		checkAct(trufal, modeV, "Mode: ${settings[modeV]}")
+// Run a Routine
+		def phrases = location.helloHome?.getPhrases()*.label
+        def myPhrase = "myPhrase" + thisStr
+		input myPhrase, "enum", title: "Run a Routine", required: false, options: phrases.sort(), submitOnChange: true
+		checkAct(trufal, myPhrase, "Routine: ${settings[myPhrase]}")  
+// Send or speak a message        
+        def msgPage = "selectMsg" + thisStr
+        def msgStr = trufal ? state.msgTrue : state.msgFalse
+		href msgPage, title: "Send or speak a message", description: msgStr ? msgStr : "Tap to set", state: msgStr ? "complete" : null
+        if(msgStr) setAct(trufal, msgStr)
+// Take photos
+        def camera = "camera" + thisStr
+		input camera, "capability.imageCapture", title: "Take photos", required: false, multiple: false, submitOnChange: true
+		if(settings[camera]) {
+        	def burstCount = "burstCount" + thisStr
+			input burstCount, "number", title: "> How many? (default 5)", defaultValue:5
+			setAct(trufal, "Photo: ${settings[camera]} " + (settings[burstCount] ?: ""))
+		}
+// Evaluate Rules        
+		def theseRules = parent.ruleList(app.label)
+        def rule = "rule" + thisStr
+		if(theseRules != null) input rule, "enum", title: "Evaluate Rules", required: false, multiple: true, options: theseRules.sort(), submitOnChange: true
+		checkAct(trufal, rule, "Rules: ${settings[rule]}")
+// Run Rule Actions
+        def ruleAct = "ruleAct" + thisStr
+		if(theseRules != null) input ruleAct, "enum", title: "Run Rule Actions", required: false, multiple: true, options: theseRules.sort(), submitOnChange: true
+		checkAct(trufal, ruleAct, "Rule Actions: ${settings[ruleAct]}")
+// Update Rules
+        def update = "update" + thisStr
+		input update, "enum", title: "Update Rules", required: false, multiple: true, options: theseRules.sort(), submitOnChange: true
+		checkAct(trufal, update, "Update Rules: ${settings[update]}")
+// Evaluate Rules after delay
+		def theseRules2 = parent.ruleList(app.label)
+		theseRules2 << app.label
+        def ruleEvalDelay = "ruleEvalDelay" + thisStr
+		input ruleEvalDelay, "enum", title: "Evaluate Rules after delay", required: false, multiple: true, options: theseRules2.sort(), submitOnChange: true
+		if(settings[ruleEvalDelay]) {
+        	def delayEvalMinutes = "delayEvalMinutes" + thisStr
+			input delayEvalMinutes, "number", title: "> Minutes of delay", required: false, range: "1..*", submitOnChange: true
+			if(settings[delayEvalMinutes] > 0) {
+				def delayStr = "Delay Rule Evaluations: ${settings[ruleEvalDelay]}: ${settings[delayEvalMinutes]} minute"
+				if(settings[delayEvalMinutes] > 1) delayStr = delayStr + "s"
+				setAct(trufal, delayStr)
+			}
+		}
+// Set private Boolean
+        def privateV = "private" + thisStr
+		input privateV, "enum", title: "Set private Boolean", required: false, submitOnChange: true, options: ["true", "false"]
+		if(settings[privateV]) {
+        	def other = "other" + thisStr
+            def otherPrivate = "otherPrivate" + thisStr
+            def privateDelay = "privateDelay" + thisStr
+            def privateDelayCancel = "privateDelayCancel" + thisStr
+			input other, "bool", title: "> For this Rule (default) or others?", required: false, submitOnChange: true
+			if(settings[other]) input otherPrivate, "enum", title: "> Select Rules to set Boolean", required: false, multiple: true, options: theseRules.sort(), submitOnChange: true
+            input privateDelay, "number", title: "> Set after a delay?", required: false, submitOnChange: true, description: "0 minutes"
+            if(settings[privateDelay] > 0 && isRule) input privateDelayCancel, "bool", title: "> Cancel on truth change?", required: false, submitOnChange: true
+            if(settings[otherPrivate]) setAct(trufal, "Rule Boolean: ${settings[otherPrivate]}: ${settings[privateV]}" + (settings[privateDelay] ? ": Delay ${settings[privateDelay]} minutes" + (settings[privateDelayCancel] ? " [Cancel]" : "") : ""))
+            else setAct(trufal, "Private Boolean: ${settings[privateV]}" + (settings[privateDelay] ? ": Delay ${settings[privateDelay]} minutes" + (settings[privateDelayCancel] ? " [Cancel]" : "") : ""))
+		}
+// Run custom commands        
+		if (state.isExpert){
+			if (state.cstCmds){
+				state.ccTruth = trufal
+				def desc = trufal ? state.cmdActTrue : state.cmdActFalse
+				href( "selectCustomActions"
+					,title		: "Run custom commands"
+					,description: desc ?: "Tap to set"
+					,state		: desc ? "complete" : null
+				)
+				if(desc) setAct(trufal, desc)
+			}
+		}
 	}
+}
+
+def delayTruePage() {
+	dynamicPage(name: "delayTruePage", title: "Select Delay for Actions", uninstall: false) {
+		state.delayStrTrue = getDelay(true)
+	}
+}
+
+def delayFalsePage() {
+	dynamicPage(name: "delayFalsePage", title: "Select Delay for Actions", uninstall: false) {
+    	state.delayStrFalse = getDelay(false)
+    }
+}
+
+def getDelay(trufal) {
+	def thisStr = trufal ? "True" : "False"
+    def delayStr = ""
+	section() {
+        def delayMin = "delayMin" + thisStr
+        def delaySec = "delaySec" + thisStr
+        def delayMil = "delayMil" + thisStr
+        def cancel = "cancel" + thisStr
+        def rand = "random" + thisStr
+		if(!settings[delayMil] && !settings[delaySec]) {
+			input delayMin, "number", title: "Minutes of delay", required: false, range: "1..*", submitOnChange: true
+			if(settings[delayMin] > 0) {
+				if(state.isRule || state.howMany > 1) input cancel, "bool", title: "Cancel on truth change?", required: false, submitOnChange: true
+				paragraph "\n\n "
+				input rand, "bool", title: "Random delay?", required: false, submitOnChange: true
+			}
+		}
+		if(!settings[delayMin] && !settings[delayMil]) {
+			paragraph "\n"
+			input delaySec, "number", title: "Seconds of delay", required: false, range: "1..*", submitOnChange: true
+			if(settings[delaySec] > 0 && (state.isRule || state.howMany > 1)) input cancel, "bool", title: "Cancel on truth change?", required: false, submitOnChange: true
+		}
+		if(!settings[delayMin] && !settings[delaySec]) {
+			paragraph "\n\n Milliseconds delay works only for \n on/off/dim/toggle, open/close, lock/unlock"
+			input delayMil, "number", title: "Milliseconds of delay", required: false, range: "1..*", submitOnChange: true
+		}
+		if(settings[delayMin] > 0 || settings[delayMil] > 0 || settings[delaySec] > 0) {
+            delayStr = "Delay by " + (settings[delayMil] ? "${settings[delayMil]} milliseconds" : (settings[delaySec] ? "${settings[delaySec]} seconds" : "${settings[delayMin]} minute"))
+			if(settings[delayMin] > 1) delayStr = delayStr + "s"
+			delayStr = delayStr + (settings[cancel] ? " [Cancel]" : "") + (settings[rand] ? " [Random]" : "")
+		}
+	}
+    return delayStr
+}
+
+def getModeLevel(thisMode, modeVar, trufal) {
+	def result = input modeVar, "number", range: "0..100", title: "> Level for $thisMode", required: true, submitOnChange: true
+	def str = settings[modeVar]
+	if(str) setAct(trufal, "   $thisMode: $str")
+}
+
+def selectMsgTrue() {
+	dynamicPage(name: "selectMsgTrue", title: "Select Message and Destination", uninstall: false) {
+    	state.msgTrue = getMsg(true)
+    }
 }
 
 def selectMsgFalse() {
 	dynamicPage(name: "selectMsgFalse", title: "Select Message and Destination", uninstall: false) {
-		section("") {
-			if(noticeFalse in [null, false]) input "pushFalse", "bool", title: "Send Push?", required: false, submitOnChange: true
-			if(pushFalse in [null, false]) input "noticeFalse", "bool", title: "Send Notification?", required: false, submitOnChange: true
-			input "msgFalse", "text", title: "Custom message to send", required: false, submitOnChange: true
-			input "refDevFalse", "bool", title: "Include device name?", required: false, submitOnChange: true
-			input "phoneFalse", "phone", title: "Phone number for SMS", required: false, submitOnChange: true
-			input "speakFalse", "bool", title: "Speak this message?", required: false, submitOnChange: true
-			if(speakFalse){
-				input "speakFalseDevice", title: "On this speech device", "capability.speechSynthesis", required: false, multiple: true, submitOnChange: true
-				input "mediaFalseDevice", title: "On this music device", "capability.musicPlayer", required: false, multiple: true, submitOnChange: true
-				if (mediaFalseDevice) input "mediaFalseVolume", title: "At this volume", "number", required: false, multiple: false, defaultValue: "50", submitOnChange: true
-			}		
-		}
-        state.msgFalse = (pushFalse ? "Push" : "") + (noticeFalse ? "Notify" : "") + (msgFalse ? " '$msgFalse'" : "") + (refDevFalse ? " [device]" : "") + (phoneFalse ? " to $phoneFalse" : "") + (speakFalse ? " [speak]" : "") + (mediaFalseDevice ? " ${mediaFalseDevice}" : "")
+    	state.msgFalse = getMsg(false)
 	}
 }
+
+def getMsg(trufal) {
+	def thisStr = trufal ? "True" : "False"
+    def push = "push" + thisStr
+    def notice = "notice" + thisStr
+    def msg = "msg" + thisStr
+    def refDev = "refDev" + thisStr
+	def phone = "phone" + thisStr
+	def speak = "speak" + thisStr
+	def speakDevice = "speak" + thisStr + "Device"
+	def mediaDevice = "media" + thisStr + "Device"
+	def mediaVolume = "media" + thisStr + "Volume"
+	section("") {
+		if(settings[notice] in [null, false]) input push, "bool", title: "Send Push?", required: false, submitOnChange: true
+		if(settings[push] in [null, false]) input notice, "bool", title: "Send Notification?", required: false, submitOnChange: true
+		input msg, "text", title: "Custom message to send", required: false, submitOnChange: true
+		input refDev, "bool", title: "Include device name?", required: false, submitOnChange: true
+		input phone, "phone", title: "Phone number for SMS", required: false, submitOnChange: true
+		input speak, "bool", title: "Speak this message?", required: false, submitOnChange: true
+		if(settings[speak]){
+			input speakDevice, title: "On this speech device", "capability.speechSynthesis", required: false, multiple: true, submitOnChange: true
+			input mediaDevice, title: "On this music device", "capability.musicPlayer", required: false, multiple: true, submitOnChange: true
+			if (settings[mediaDevice]) input mediaVolume, title: "At this volume", "number", required: false, multiple: false, defaultValue: "50", submitOnChange: true
+		}
+	}
+    def str = (settings[push] ? "Push" : "") + (settings[notice] ? "Notify" : "") + (settings[msg] ? " '${settings[msg]}'" : "") + (settings[refDev] ? " [device]" : "") + 
+    	(settings[phone] ? " to ${settings[phone]}" : "") + (settings[speak] ? " [speak]" : "") + (settings[mediaDevice] ? " ${settings[mediaDevice]}" : "")
+    return str
+}
+
+def checkAct(trufal, dev, str) {
+	if(settings[dev]) {	
+    	if(trufal)	state.actsTrue = state.actsTrue + stripBrackets("$str") + "\n"
+    	else		state.actsFalse = state.actsFalse + stripBrackets("$str") + "\n"
+	}
+}
+
+def setAct(trufal, str) {
+	if(trufal)	state.actsTrue = state.actsTrue + stripBrackets("$str") + "\n"
+    else		state.actsFalse = state.actsFalse + stripBrackets("$str") + "\n"
+}
+
 // initialization code follows
 
 def scheduleTimeOfDay() {
@@ -1397,6 +1262,9 @@ def initialize() {
 			case "Garage door":
 				subscribe(myDev.value, "door" + ((state.isTrig || hasTrig) ? ".$myState" : ""), allHandler)
 				break
+			case "Door":
+				subscribe(myDev.value, "door" + ((state.isTrig || hasTrig) ? ".$myState" : ""), allHandler)
+				break
 			case "Thermostat Mode":
 				subscribe(myDev.value, "thermostatMode" + ((state.isTrig || hasTrig) ? ".$myState" : ""), allHandler)
 				break
@@ -1467,6 +1335,7 @@ def checkCondAny(dev, stateX, cap, rel, relDev) {
 	else if(cap == "Carbon monoxide detector") 	result = stateX in dev.currentCarbonMonoxide
 	else if(cap == "Lock") 						result = stateX in dev.currentLock
 	else if(cap == "Garage door")				result = stateX in dev.currentDoor
+	else if(cap == "Door")						result = stateX in dev.currentDoor
 	else if(cap == "Thermostat Mode")			result = stateX in dev.currentThermostatMode
 	else if(cap == "Music player")				result = stateX in dev.currentStatus
 	else if(cap == "Thermostat State")			result = stateX in dev.currentThermostatOperatingState
@@ -1513,10 +1382,11 @@ def checkCondAll(dev, stateX, cap, rel, relDev) {
 	else if(cap == "Smoke detector") 			result = !(flip[stateX] in dev.currentSmoke)
 	else if(cap == "Carbon monoxide detector") 	result = !(flip[stateX] in dev.currentCarbonMonoxide)
 	else if(cap == "Lock") 						result = !(flip[stateX] in dev.currentLock)
-	else if(cap == "Garage door")				result = !(flip[stateX] in dev.currentDoor)
-	else if(cap == "Music player")				result = !(flip[stateX] in dev.currentStatus)
-	else if(cap == "Thermostat Mode")	dev.currentThermostatMode.each {result = result && stateX == it}
-	else if(cap == "Thermostat State")	dev.currentThermmostatOperatingState.each {result = result && stateX == it}
+	else if(cap == "Garage door")				dev.currentDoor.each 						{result = result && stateX == it}
+	else if(cap == "Door")						dev.currentDoor.each 						{result = result && stateX == it}
+	else if(cap == "Music player")				dev.currentStatus.each 						{result = result && stateX == it}
+	else if(cap == "Thermostat Mode")			dev.currentThermostatMode.each 				{result = result && stateX == it}
+	else if(cap == "Thermostat State")			dev.currentThermmostatOperatingState.each 	{result = result && stateX == it}
 //	log.debug "CheckAll $cap $result"
 	return result
 }
@@ -1667,34 +1537,23 @@ def sendSmsMulti(phone, msg) {
 	if(num) sendSmsMulti(num, msg)
 }
 
-def doDelayTrue(time, rand, cancel) {
+def doDelay(time, rand, cancel, trufal) {
 	def myTime = time
-	if(rand) myTime = Math.random()*time
+	if(rand) {
+    	myTime = Math.random()*time as Integer
+        if(time > 60 && time % 60 == 0 && myTime < 60) myTime = 60
+        else if(myTime < 10) myTime = 10
+    }
 	if(cancel) {
-		runIn(myTime, delayRuleTrue)
-		state.delayRuleTrue = true
-	} else runIn(myTime, delayRuleTrueForce)
-	def isMins = time % 60 == 0
-	if(isMins) time = time / 60
+		runIn(myTime, trufal ? delayRuleTrue : delayRuleFalse)
+		if(trufal) state.delayRuleTrue = true else state.delayRuleFalse = true
+	} else runIn(myTime, trufal ? delayRuleTrueForce : delayRuleFalseForce)
+	def isMins = myTime % 60 == 0
+	if(isMins) myTime = myTime / 60
 	def delayStr = isMins ? "minute" : "seconds"
-	if(time > 1 && isMins) delayStr = delayStr + "s"
-	if(state.isRule || state.howMany > 1) log.info ("$app.label is True, but " + (rand ? "random delay, up to $time minutes" : "delayed by $time $delayStr"))
-	else log.info (rand ? "Random delay, up to $time minutes" : "Delayed by $time $delayStr")
-}
-
-def doDelayFalse(time, rand, cancel) {
-	def myTime = time
-	if(rand) myTime = Math.random()*time
-	if(cancel) {
-		runIn(myTime, delayRuleFalse)
-		state.delayRuleFalse = true
-	} else runIn(myTime, delayRuleFalseForce)
-	def isMins = time % 60 == 0
-	if(isMins) time = time / 60
-	def delayStr = isMins ? "minute" : "seconds"
-	if(time > 1 && isMins) delayStr = delayStr + "s"
-	if(state.isRule || state.howMany > 1) log.info ("$app.label is False, but " + (rand ? "random delay, up to $time minutes" : "delayed by $time $delayStr"))
-	else log.info (rand ? "Random delay, up to $time minutes" : "Delayed by $time $delayStr")
+	if(myTime > 1 && isMins) delayStr = delayStr + "s"
+	if(state.isRule || state.howMany > 1) log.info ("$app.label is " + (trufal ? "True" : "False") + ", but " + (rand ? "random delay of $myTime $delayStr" : "delayed by $myTime $delayStr"))
+	else log.info (rand ? "Random delay of $myTime $delayStr" : "Delayed by $myTime $delayStr")
 }
 
 def capture(dev) {
@@ -1867,14 +1726,10 @@ def runRule(force) {
 //		unschedule(delayRuleFalse)
 		state.delayRuleTrue = false
         state.delayRuleFalse = false
-		if     (delayTrue > 0 && success)		doDelayTrue(delayTrue * 60, false, true)
-		else if(delayFalse > 0 && !success)		doDelayFalse(delayFalse * 60, false, true)
-		else if(delayMinTrue > 0 && success) 	doDelayTrue(delayMinTrue * 60, randTrue, cancelTrue)
-		else if(delayMinFalse > 0 && !success) 	doDelayFalse(delayMinFalse * 60, randFalse, cancelFalse)
-		else if(delaySecTrue > 0 && success)	doDelayTrue(delaySecTrue, false, cancelTrue)
-		else if(delaySecFalse > 0 && !success)	doDelayFalse(delaySecFalse, false, cancelFalse)
-		else if(randomTrue > 0 && success) 		doDelayTrue(randomTrue * 60, true, true)
-		else if(randomFalse > 0 && !success) 	doDelayFalse(randomFalse * 60, true, true)
+		if     (delayMinTrue > 0 && success) 	doDelay(delayMinTrue * 60, randomTrue, cancelTrue, true)
+		else if(delayMinFalse > 0 && !success) 	doDelay(delayMinFalse * 60, randomFalse, cancelFalse, false)
+		else if(delaySecTrue > 0 && success)	doDelay(delaySecTrue, false, cancelTrue, true)
+		else if(delaySecFalse > 0 && !success)	doDelay(delaySecFalse, false, cancelFalse, false)
 		else takeAction(success)
 		parent.setRuleTruth(app.label, success)
 		state.success = success
@@ -1884,15 +1739,13 @@ def runRule(force) {
 
 def doTrigger() {
 	if(!allOk) return
-	state.delayRuleTrue = false
-    state.delayRuleFalse = false
-	if     (delayTrue > 0)		doDelayTrue(delayTrue * 60, false, true)
-	else if(delayMinTrue > 0)	doDelayTrue(delayMinTrue * 60, randTrue, true)
-	else if(delaySecTrue > 0)	doDelayTrue(delaySecTrue, false, true)	 
-	else if(randomTrue > 0) 	doDelayTrue(randomTrue * 60, true, true)
+	if     (delayMinTrue > 0)	doDelay(delayMinTrue * 60, randomTrue, true, true)
+	else if(delaySecTrue > 0)	doDelay(delaySecTrue, false, true, true)	 
 	else takeAction(true)
 	log.info ("$app.label Triggered")
 }
+
+// Event Handler code follows
 
 def getButton(dev, evt, i) {
 	def numNames = ["", "one", "two", "three", "four", "five", "six", "seven", "eight", "nine", "ten",
@@ -1988,6 +1841,8 @@ def physicalHandler(evt) {
 	if(evt.isPhysical()) allHandler(evt)
 }
 
+// Delay Handlers follow
+
 def delayOffTrue() {
 	if(allOk) {if(delayOnOffTrue) delayedOffTrue.on() else delayedOffTrue.off()}
 }
@@ -2066,6 +1921,8 @@ def disabledHandler(evt) {
 	state.disabled = evt.value == disOnOff
 }
 
+// Rule evaluation and action handlers follow
+
 def ruleHandler(rule, truth) {
 	log.info "$app.label: $rule is $truth"
 	if(state.isRule || state.howMany > 1) runRule(false) else doTrigger()
@@ -2077,8 +1934,11 @@ def ruleEvaluator(rule) {
 }
 
 def ruleActions(rule) {
+	if(!allOk) return
 	log.info "$app.label: $rule evaluate"
-    if(allOk) takeAction(true)
+	if     (delayMinTrue > 0)	doDelay(delayMinTrue * 60, randomTrue, true, true)
+	else if(delaySecTrue > 0)	doDelay(delaySecTrue, false, true, true)	 
+	else takeAction(true)
 }
 
 def revealSuccess() {
@@ -2152,8 +2012,8 @@ private getAllOk() {
 }
 
 private hideOptionsSection() {
-	if(state.isRule || state.howMany > 1) (modesZ || daysY || modesY || disabled || starting || ending || startingX || endingX) ? false : true
-	else (starting || ending || daysY || modes || modesY || startingX || endingX || disabled) ? false : true
+	if(state.isRule || state.howMany > 1) (modesZ || daysY || modesY || disabled || starting || ending || startingX || endingX || usePrivateDisable) ? false : true
+	else (starting || ending || daysY || modes || modesY || startingX || endingX || disabled || usePrivateDisable) ? false : true
 }
 
 private getModeZOk() {
@@ -2252,6 +2112,14 @@ private getTimeOkX() {
 	return result
 }
 
+private stripBrackets(str) {
+	def result = str
+	def i = str.indexOf('[')
+	def j = str.indexOf(']')
+	if(i >= 0 && j > i) result = str.substring(0, i) + str.substring(i + 1, j) + str.substring(j + 1)
+	return result
+}
+
 private setColor(trufal) {
 	def hueColor = 0
 	def saturation = 100
@@ -2297,6 +2165,11 @@ private setColor(trufal) {
 			hueColor = trufal ? colorHexTrue : colorHexFalse
             saturation = trufal ? colorSatTrue : colorSatFalse
 			break;
+        case "Random color":
+        	hueColor = Math.random()*100 as Integer
+            saturation = Math.random()*100 as Integer
+            log.info "Random color: hue: $hueColor, saturation: $saturation"
+            break;
 	}
 	def lightLevel = trufal ? colorLevelTrue : colorLevelFalse
 	def newValue = [hue: hueColor, saturation: saturation, level: lightLevel as Integer ?: 100]
