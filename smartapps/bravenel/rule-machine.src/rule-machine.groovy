@@ -74,7 +74,7 @@ def mainPage() {
         section ("Remove Rule Machine"){
         	href "removePage", description: "Tap to remove Rule Machine and Rules", title: ""
         }
-        if(state.ver) section ("Version 1.7.6a/" + state.ver) { }
+        if(state.ver) section ("Version 1.8.0/" + state.ver) { }
     }
 }
 
