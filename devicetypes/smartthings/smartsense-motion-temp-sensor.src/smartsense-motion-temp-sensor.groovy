@@ -231,7 +231,7 @@ private Map getBatteryResult(rawValue) {
 	def volts = rawValue / 10
 	def descriptionText
 
-	if (rawValue == 0) {}
+    if (rawValue == 0 || rawValue == 255) {}
 	else {
 		if (volts > 3.5) {
 			result.descriptionText = "${linkText} battery has too much power (${volts} volts)."
