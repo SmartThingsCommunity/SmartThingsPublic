@@ -2,7 +2,7 @@
  *  Alexa Helper-Child
  *
  *  Copyright © 2016 Michael Struck
- *  Version 2.7.1 2/29/16
+ *  Version 2.7.1 3/2/16
  * 
  *  Version 1.0.0 - Initial release of child app
  *  Version 1.1.0 - Added framework to show version number of child app and copyright
@@ -21,7 +21,7 @@
  *  Version 2.5.1 - Fixed issue with songs not initalizing
  *  Version 2.6.0 - Refined notification methods; displays action on notification feed and added push notifications; code optimization
  *  Version 2.7.0 - Added baseboard heaters scenario type and various code optimizations
- *  Version 2.7.1 - Small syntax changes
+ *  Version 2.7.1a - Small syntax changes
  *
  *  Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except
  *  in compliance with the License. You may obtain a copy of the License at:
@@ -54,7 +54,7 @@ preferences {
 def pageStart() {
 	dynamicPage(name: "pageStart", title: "Scenario Settings", uninstall: true, install: true) {
 		section {
-			if (parent.versionInt() < 440) paragraph "You are using a version of the parent app that is older than the recommended version. Please upgrade "+
+			if (parent.versionInt() < 441) paragraph "You are using a version of the parent app that is older than the recommended version. Please upgrade "+
 					"to the latest version to ensure you have the latest features and bug fixes."
             label title:"Scenario Name", required:true
     	   	input "scenarioType", "enum", title: "Scenario Type...", options: [["Baseboard":"Baseboard Heater Control"],["Control":"Modes/Routines/Devices/HTTP/SHM"],["Panic":"Panic Commands"],["Speaker":"Speaker Control"],["Thermostat":"Heating/Cooling Thermostat"]], required: false, multiple: false, submitOnChange:true
@@ -943,5 +943,5 @@ def sonosSlots(){
     def slots = parent.getMemCount() as int
 }
 //Version
-private def textVersion() {def text = "Child App Version: 2.7.1 (02/29/2016)"}
+private def textVersion() {def text = "Child App Version: 2.7.1a (03/02/2016)"}
 private def versionInt(){def text = 271}

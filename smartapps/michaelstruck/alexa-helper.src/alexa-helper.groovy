@@ -2,7 +2,7 @@
  *  Alexa Helper-Parent
  *
  *  Copyright © 2016 Michael Struck
- *  Version 4.4.0a 2/28/16
+ *  Version 4.4.1 3/2/16
  * 
  *  Version 1.0.0 - Initial release
  *  Version 2.0.0 - Added 6 slots to allow for one app to control multiple on/off actions
@@ -25,6 +25,7 @@
  *  Version 4.2.0a - Added dropdown for number of Sonos memory slots
  *  Version 4.3.0 - Added notification options, refined GUI
  *  Version 4.4.0a - Added option to add switches from the app instead of going to the IDE; GUI clean up
+ *  Version 4.4.1 - Added routine for switch info feedback
  *
  *  Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except
  *  in compliance with the License. You may obtain a copy of the License at:
@@ -59,7 +60,7 @@ def mainPage() {
         	def childCount = childApps.size()
         	if (childCount){
         		def childVersion = childApps[0].versionInt()
-            	if (childVersion < 250){
+            	if (childVersion < 271){
             		paragraph "You are using a version of the child app that is older than the recommended version. Please upgrade "+
                     	"to the latest version to ensure you have the latest features and bug fixes."
             	}
@@ -183,18 +184,21 @@ def getMemCount(){
 def getNotifyFeed(){
 	def result = showNotifyFeed
 }
+def getSwitchAbout(){
+	def result = "Created by Alexa Helper SmartApp"
+}
 //Version/Copyright/Information/Help
 private def textAppName() {
 	def text = "Alexa Helper"
 }	
 private def textVersion() {
-    def version = "Parent App Version: 4.4.0a (02/28/2016)"
+    def version = "Parent App Version: 4.4.1 (03/02/2016)"
     def childCount = childApps.size()
     def childVersion = childCount ? childApps[0].textVersion() : "No scenarios installed"
     return "${version}\n${childVersion}"
 }
 private def versionInt(){
-	def text = 440
+	def text = 441
 }
 private def textCopyright() {
     def text = "Copyright © 2016 Michael Struck"
