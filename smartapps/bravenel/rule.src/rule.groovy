@@ -3,7 +3,7 @@
  *
  *  Copyright 2015, 2016 Bruce Ravenel
  *
- *  Version 1.8.1   2 Mar 2016
+ *  Version 1.8.1a   2 Mar 2016
  *
  *	Version History
  *
@@ -97,7 +97,7 @@ preferences {
 def mainPage() {
 	//version to parent app and expert settings for rule
 	try { 
-		state.isExpert = parent.isExpert("1.8.1") 
+		state.isExpert = parent.isExpert("1.8.1a") 
 		if (state.isExpert) state.cstCmds = parent.getCommands()
 		else state.cstCmds = []
 	}
@@ -1470,7 +1470,11 @@ def evalTerm() {
 		result = eval()
 	} else if(thisTok == "NOT") {
     	state.token = state.token + 1
-        result = !evalTerm()
+        thisTok = state.eval[state.token]
+        if(thisTok == "(") {
+        	state.token = state.token + 1
+            result = !eval()
+        } else result = !getOperand(thisTok, true)
     } else result = getOperand(thisTok, true)
 	state.token = state.token + 1
 	return result
