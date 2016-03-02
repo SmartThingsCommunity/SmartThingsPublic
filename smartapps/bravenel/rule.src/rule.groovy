@@ -1464,20 +1464,19 @@ def disEval() {
 
 def evalTerm() {
 	def result = true
+    def negate = false
 	def thisTok = state.eval[state.token]
+	if(thisTok == "NOT") {
+    	state.token = state.token + 1
+        thisTok = state.eval[state.token]
+        negate = true
+    }
 	if(thisTok == "(") {
 		state.token = state.token + 1
 		result = eval()
-	} else if(thisTok == "NOT") {
-    	state.token = state.token + 1
-        thisTok = state.eval[state.token]
-        if(thisTok == "(") {
-        	state.token = state.token + 1
-            result = !eval()
-        } else result = !getOperand(thisTok, true)
     } else result = getOperand(thisTok, true)
 	state.token = state.token + 1
-	return result
+	return negate ? !result : result
 }
 
 def eval() {
