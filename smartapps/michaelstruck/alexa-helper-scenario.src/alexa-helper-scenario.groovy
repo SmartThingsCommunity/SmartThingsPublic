@@ -2,7 +2,7 @@
  *  Alexa Helper-Child
  *
  *  Copyright © 2016 Michael Struck
- *  Version 2.7.1 3/2/16
+ *  Version 2.7.1b 3/2/16
  * 
  *  Version 1.0.0 - Initial release of child app
  *  Version 1.1.0 - Added framework to show version number of child app and copyright
@@ -21,7 +21,7 @@
  *  Version 2.5.1 - Fixed issue with songs not initalizing
  *  Version 2.6.0 - Refined notification methods; displays action on notification feed and added push notifications; code optimization
  *  Version 2.7.0 - Added baseboard heaters scenario type and various code optimizations
- *  Version 2.7.1a - Small syntax changes
+ *  Version 2.7.1b - Small syntax changes
  *
  *  Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except
  *  in compliance with the License. You may obtain a copy of the License at:
@@ -943,5 +943,5 @@ def sonosSlots(){
     def slots = parent.getMemCount() as int
 }
 //Version
-private def textVersion() {def text = "Child App Version: 2.7.1a (03/02/2016)"}
+private def textVersion() {def text = "Child App Version: 2.7.1b (03/02/2016)"}
 private def versionInt(){def text = 271}
