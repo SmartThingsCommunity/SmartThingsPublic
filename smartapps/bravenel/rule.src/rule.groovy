@@ -3,7 +3,7 @@
  *
  *  Copyright 2015, 2016 Bruce Ravenel
  *
- *  Version 1.8.2b   2 Mar 2016
+ *  Version 1.8.2c   2 Mar 2016
  *
  *	Version History
  *
@@ -108,7 +108,7 @@ preferences {
 def mainPage() {
 	//version to parent app and expert settings for rule
 	try { 
-		state.isExpert = parent.isExpert("1.8.2b") 
+		state.isExpert = parent.isExpert("1.8.2c") 
 		if (state.isExpert) state.cstCmds = parent.getCommands()
 		else state.cstCmds = []
 	}
@@ -716,15 +716,15 @@ def inputRight(sub) {
 			paragraph(state.str)
 			inputLeftAndRight(true)
 			inputRight(sub)
-			if(sub) {
-				input "endOfSub$state.n", "bool", title: "End of sub-rule?", submitOnChange: true
-				if(settings["endOfSub$state.n"]) {
-					state.str = state.str + " )"
-					state.eval << ")"
-					paragraph(state.str)
-					return
-				}
-			}
+//			if(sub) {
+//				input "endOfSub$state.n", "bool", title: "End of sub-rule?", submitOnChange: true
+//				if(settings["endOfSub$state.n"]) {
+//					state.str = state.str + " )"
+//					state.eval << ")"
+//					paragraph(state.str)
+//					return
+//				}
+//			}
 		} else {
 			input "condR$state.n", "enum", title: "Which condition?", options: conds, submitOnChange: true
 			if(settings["condR$state.n"]) {
@@ -952,7 +952,7 @@ def getSwitch(trufal) {
         def restoreCancel = "restoreCancel" + thisStr
 		if(settings[capture] || settings[captureNot]) input restore, "bool", title: "Restore the state of captured switches", required: false, submitOnChange: true
         if(settings[restore]) input restoreDelay, "number", title: "> Restore after a delay?", required: false, submitOnChange: true, description: "0 minutes"
-        if(settings[restoreDelay] > 0 && isRule) input restoreCancel, "bool", title: "> Cancel on truth change?", required: false, submitOnChange: true
+        if(settings[restoreDelay] > 0 && (state.isRule || state.howMany > 1)) input restoreCancel, "bool", title: "> Cancel on truth change?", required: false, submitOnChange: true
 		if(settings[restore] && settings[capture]) setAct(trufal, "Restore: ${settings[capture]}" + (settings[restoreDelay] > 0 ? " after ${settings[restoreDelay]} minutes" + 
         	(settings[restoreCancel] ? " [Cancel]" : "") : ""))
 		else if(settings[restore] && settings[captureNot]) setAct(trufal, "Restore: ${settings[captureNot]}" + (settings[restoreDelay] > 0 ? " after ${settings[restoreDelay]} minutes"  + 
@@ -1510,22 +1510,6 @@ def checkCondAny(dev, stateX, cap, rel, relDev) {
 
 
 def checkCondAll(dev, stateX, cap, rel, relDev) {
-	def flip = ["on": "off",
-		"off": "on",
-                "active": "inactive",
-                "inactive": "active",
-                "open": "closed",
-                "closed": "open",
-                "wet": "dry",
-                "dry": "wet",
-                "detected": "clear",
-                "clear": "detected",
-                "present": "not present",
-                "not present": "present",
-                "leaves": "present",
-                "arrives": "not present",
-                "locked": "unlocked",
-                "unlocked": "locked"]
 	def result = true
 	if     (cap == "Temperature") 		dev.currentTemperature.each 	{result = result && compare(it, rel, stateX, relDev ? relDev.currentTemperature : null)}
 	else if(cap == "Humidity") 			dev.currentHumidity.each    	{result = result && compare(it, rel, stateX, relDev ? relDev.currentHumidity : null)}
@@ -1538,15 +1522,15 @@ def checkCondAll(dev, stateX, cap, rel, relDev) {
     	def rule = parent.currentRule(it)
     	result = result && "$stateX" == "$rule"
 	}
-	else if(cap == "Water sensor")				result = !(flip[stateX] in dev.currentSwitch)
-	else if(cap == "Switch") 					result = !(flip[stateX] in dev.currentSwitch)
-	else if(cap == "Motion") 					result = !(flip[stateX] in dev.currentMotion)
-	else if(cap == "Acceleration") 				result = !(flip[stateX] in dev.currentAcceleration)
-	else if(cap == "Contact") 					result = !(flip[stateX] in dev.currentContact)
-	else if(cap == "Presence") 					result = !(flip[stateX] in dev.currentPresence)
-	else if(cap == "Smoke detector") 			result = !(flip[stateX] in dev.currentSmoke)
-	else if(cap == "Carbon monoxide detector") 	result = !(flip[stateX] in dev.currentCarbonMonoxide)
-	else if(cap == "Lock") 						result = !(flip[stateX] in dev.currentLock)
+	else if(cap == "Water sensor")				dev.currentSwitch.each						{result = result && stateX == it}
+	else if(cap == "Switch") 					dev.currentSwitch.each						{result = result && stateX == it}
+	else if(cap == "Motion") 					dev.currentMotion.each						{result = result && stateX == it}
+	else if(cap == "Acceleration") 				dev.currentAcceleration.each				{result = result && stateX == it}
+	else if(cap == "Contact") 					dev.currentContact.each						{result = result && stateX == it}
+	else if(cap == "Presence") 					dev.currentPresence.each					{result = result && stateX == it}
+	else if(cap == "Smoke detector") 			dev.currentSmoke.each						{result = result && stateX == it}
+	else if(cap == "Carbon monoxide detector") 	dev.currentCarbonMonoxide.each				{result = result && stateX == it}
+	else if(cap == "Lock") 						dev.currentLock.each						{result = result && stateX == it}
 	else if(cap == "Garage door")				dev.currentDoor.each 						{result = result && stateX == it}
 	else if(cap == "Door")						dev.currentDoor.each 						{result = result && stateX == it}
 	else if(cap == "Music player")				dev.currentStatus.each 						{result = result && stateX == it}
