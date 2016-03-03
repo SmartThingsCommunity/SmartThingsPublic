@@ -3,7 +3,7 @@
  *
  *  Copyright 2015, 2016 Bruce Ravenel
  *
- *  Version 1.8.2a   2 Mar 2016
+ *  Version 1.8.2b   2 Mar 2016
  *
  *	Version History
  *
@@ -108,7 +108,7 @@ preferences {
 def mainPage() {
 	//version to parent app and expert settings for rule
 	try { 
-		state.isExpert = parent.isExpert("1.8.2a") 
+		state.isExpert = parent.isExpert("1.8.2b") 
 		if (state.isExpert) state.cstCmds = parent.getCommands()
 		else state.cstCmds = []
 	}
@@ -775,27 +775,26 @@ def selectActionsFalse() {
 
 def getActions(trufal) {
 	def thisStr = trufal ? "True" : "False"
-	def isRule = state.isRule || state.howMany > 1
 	section("") {
 // Delay These Actions
     	def thisPage = "delay" + thisStr + "Page"
         def thisStateStr = trufal ? state.delayStrTrue : state.delayStrFalse
-		href thisPage, title: "Delay These Actions", description: thisStateStr ? (thisStateStr) : "Tap to set", state: thisStateStr ? "complete" : null, submitOnChange: true
+		href thisPage, title: "Delay These Actions", description: thisStateStr ? (thisStateStr) : "Tap to set", state: thisStateStr ? "complete" : null
         if(thisStateStr) setAct(trufal, thisStateStr)
 // Control Switches, Capture/Restore
     	def thisPage1 = "switch" + thisStr + "Page"
         def thisStateStr1 = trufal ? state.switchStrTrue : state.switchStrFalse
-		href thisPage1, title: "Control Switches, Capture/Restore", description: thisStateStr1 ? (thisStateStr1) : "Tap to set", state: thisStateStr1 ? "complete" : null, submitOnChange: true
+		href thisPage1, title: "Control Switches, Capture/Restore", description: thisStateStr1 ? (thisStateStr1) : "Tap to set", state: thisStateStr1 ? "complete" : null
         if(thisStateStr1) setAct(trufal, thisStateStr1)
 // Set Dimmers and Bulbs
     	def thisPage2 = "dimmer" + thisStr + "Page"
         def thisStateStr2 = trufal ? state.dimmerStrTrue : state.dimmerStrFalse
-		href thisPage2, title: "Set Dimmers and Bulbs", description: thisStateStr2 ? (thisStateStr2) : "Tap to set", state: thisStateStr2 ? "complete" : null, submitOnChange: true
+		href thisPage2, title: "Set Dimmers and Bulbs", description: thisStateStr2 ? (thisStateStr2) : "Tap to set", state: thisStateStr2 ? "complete" : null
         if(thisStateStr2) setAct(trufal, thisStateStr2)
 // Control doors, locks, thermostats, fans, valves
     	def thisPage3 = "door" + thisStr + "Page"
         def thisStateStr3 = trufal ? state.doorStrTrue : state.doorStrFalse
-		href thisPage3, title: "Control doors, locks, thermostats, fans, valves", description: thisStateStr3 ? (thisStateStr3) : "Tap to set", state: thisStateStr3 ? "complete" : null, submitOnChange: true
+		href thisPage3, title: "Control doors, locks, thermostats, fans, valves", description: thisStateStr3 ? (thisStateStr3) : "Tap to set", state: thisStateStr3 ? "complete" : null
         if(thisStateStr3) setAct(trufal, thisStateStr3)
 // Send or speak a message        
         def msgPage = "selectMsg" + thisStr
@@ -805,12 +804,12 @@ def getActions(trufal) {
 // Set mode, alarm, Routine, photos
     	def thisPage4 = "mode" + thisStr + "Page"
         def thisStateStr4 = trufal ? state.modeStrTrue : state.modeStrFalse
-		href thisPage4, title: "Set mode, alarm, Routine, photos", description: thisStateStr4 ? (thisStateStr4) : "Tap to set", state: thisStateStr4 ? "complete" : null, submitOnChange: true
+		href thisPage4, title: "Set mode, alarm, Routine, photos", description: thisStateStr4 ? (thisStateStr4) : "Tap to set", state: thisStateStr4 ? "complete" : null
         if(thisStateStr4) setAct(trufal, thisStateStr4)
 // Run Rules, Actions, set Boolean
     	def thisPage5 = "rule" + thisStr + "Page"
         def thisStateStr5 = trufal ? state.ruleStrTrue : state.ruleStrFalse
-		href thisPage5, title: "Run Rules, Actions, set Boolean", description: thisStateStr5 ? (thisStateStr5) : "Tap to set", state: thisStateStr5 ? "complete" : null, submitOnChange: true
+		href thisPage5, title: "Run Rules, Actions, set Boolean", description: thisStateStr5 ? (thisStateStr5) : "Tap to set", state: thisStateStr5 ? "complete" : null
         if(thisStateStr5) setAct(trufal, thisStateStr5)
 // Run custom commands        
 		if (state.isExpert){
@@ -925,7 +924,7 @@ def getSwitch(trufal) {
 			}
 		}
 // Turn on or off these switches after a delay, pending cancellation (default is OFF)        
-        if(isRule) {
+        if(state.isRule || state.howMany > 1) {
         	def pendedOff = "pendedOff" + thisStr
 			input pendedOff, "capability.switch", title: "Turn on or off these switches after a delay, pending cancellation (default is OFF)", multiple: true, required: false, submitOnChange: true
 			if(settings[pendedOff]) {
