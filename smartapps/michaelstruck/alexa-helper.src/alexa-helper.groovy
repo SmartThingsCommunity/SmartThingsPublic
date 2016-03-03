@@ -2,7 +2,7 @@
  *  Alexa Helper-Parent
  *
  *  Copyright © 2016 Michael Struck
- *  Version 4.4.2 3/2/16
+ *  Version 4.4.3 3/3/16
  * 
  *  Version 1.0.0 - Initial release
  *  Version 2.0.0 - Added 6 slots to allow for one app to control multiple on/off actions
@@ -27,6 +27,7 @@
  *  Version 4.4.0a - Added option to add switches from the app instead of going to the IDE; GUI clean up
  *  Version 4.4.1 - Added routine for switch info feedback
  *  Version 4.4.2 - Minor GUI tweaks
+ *  Version 4.4.3 - Added ability to poll device version numbers, showing in About screen
  *
  *  Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except
  *  in compliance with the License. You may obtain a copy of the License at:
@@ -111,10 +112,16 @@ def pageSwitches() {
             if (addSwitchType && addSwitchName) href "pageAddSwitch",title: "Add Switch", description: none
         }        
         def switchList = ""
+        state.sw1Ver = ""
+        state.sw2Ver = ""
         def noun = "${getChildDevices().size()} switches"
         if (getChildDevices().size() > 0) {
         	if (getChildDevices().size() == 1) noun = "One switch"
-            getChildDevices().each {switchList += "${it.label} (${it.typeName})\n"}
+            getChildDevices().each {
+            	if (it.typeName=="Alexa Switch" && state.sw1Ver == "") state.sw1Ver = "Alexa Switch Version: ${it.versionNum()}"
+                if (it.typeName=="Momentary Button Tile" && state.sw2Ver == "") state.sw2Ver = "Momentary Button Tile Version: ${it.versionNum()}"
+                switchList += "${it.label} (${it.typeName})\n"
+            }
 		}
         else switchList = "\n"
         section ("${noun} created within Alexa Helper"){paragraph switchList}
@@ -195,13 +202,16 @@ private def textAppName() {
 	def text = "Alexa Helper"
 }	
 private def textVersion() {
-    def version = "Parent App Version: 4.4.2 (03/02/2016)"
+    def version = "Parent App Version: 4.4.3 (03/03/2016)"
     def childCount = childApps.size()
+    def deviceCount= getChildDevices().size()
     def childVersion = childCount ? childApps[0].textVersion() : "No scenarios installed"
+    childVersion += state.sw1Ver && deviceCount ? "\n${state.sw1Ver}": ""
+    childVersion += state.sw2Ver && deviceCount ? "\n${state.sw2Ver}": ""
     return "${version}\n${childVersion}"
 }
 private def versionInt(){
-	def text = 442
+	def text = 443
 }
 private def textCopyright() {
     def text = "Copyright © 2016 Michael Struck"
