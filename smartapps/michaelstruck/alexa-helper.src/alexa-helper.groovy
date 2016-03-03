@@ -2,7 +2,7 @@
  *  Alexa Helper-Parent
  *
  *  Copyright © 2016 Michael Struck
- *  Version 4.4.1 3/2/16
+ *  Version 4.4.2 3/2/16
  * 
  *  Version 1.0.0 - Initial release
  *  Version 2.0.0 - Added 6 slots to allow for one app to control multiple on/off actions
@@ -26,6 +26,7 @@
  *  Version 4.3.0 - Added notification options, refined GUI
  *  Version 4.4.0a - Added option to add switches from the app instead of going to the IDE; GUI clean up
  *  Version 4.4.1 - Added routine for switch info feedback
+ *  Version 4.4.2 - Minor GUI tweaks
  *
  *  Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except
  *  in compliance with the License. You may obtain a copy of the License at:
@@ -110,9 +111,13 @@ def pageSwitches() {
             if (addSwitchType && addSwitchName) href "pageAddSwitch",title: "Add Switch", description: none
         }        
         def switchList = ""
-        if (getChildDevices().size() > 0)  getChildDevices().each {switchList += "${it.label} (${it.typeName})\n"}
-        else switchList = "No switches created yet\n"
-        section ("Switches created within Alexa Helper"){paragraph switchList}
+        def noun = "${getChildDevices().size()} switches"
+        if (getChildDevices().size() > 0) {
+        	if (getChildDevices().size() == 1) noun = "One switch"
+            getChildDevices().each {switchList += "${it.label} (${it.typeName})\n"}
+		}
+        else switchList = "\n"
+        section ("${noun} created within Alexa Helper"){paragraph switchList}
     }
 }
 // Show "pageAddSwitch" page
@@ -139,9 +144,7 @@ def uninstalled(){
 	deleteChildSwitches()
 }
 def initialize() {
-    childApps.each {child ->
-		log.info "Installed Scenario: ${child.label}"
-    }
+    childApps.each {child ->log.info "Installed Scenario: ${child.label}"}
 }
 //Common modules (for adding switches)
 def addChildSwitches(){
@@ -192,13 +195,13 @@ private def textAppName() {
 	def text = "Alexa Helper"
 }	
 private def textVersion() {
-    def version = "Parent App Version: 4.4.1 (03/02/2016)"
+    def version = "Parent App Version: 4.4.2 (03/02/2016)"
     def childCount = childApps.size()
     def childVersion = childCount ? childApps[0].textVersion() : "No scenarios installed"
     return "${version}\n${childVersion}"
 }
 private def versionInt(){
-	def text = 441
+	def text = 442
 }
 private def textCopyright() {
     def text = "Copyright © 2016 Michael Struck"
@@ -223,6 +226,6 @@ private def textHelp() {
         "either a dimmer control or momentary button tile. Perfect for use with the Amazon Echo ('Alexa').\n\n" +
 		"To use, first create the required momentary button tiles or 'Alexa Switch' (custom switch/dimmer) from the SmartThings IDE or the SmartApp. "+
         "You may also use any physical switches already associated with SmartThings. Include these switches within the Echo/SmartThings app, then discover the switches on the Echo. "+
-		"Then, create a new scenario that best fits your needs, associating the switches with the various scontrol within the scenario.\n\n" +
+		"Then, create a new scenario that best fits your needs, associating the switches with the various controls within the scenario.\n\n" +
         "For more information, go to http://thingsthataresmart.wiki/index.php?title=Alexa_Helper"    
 }
