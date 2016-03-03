@@ -2,10 +2,11 @@
  *  Momentary Button Tile
  *
  *  Copyright 2016 Michael Struck
- *  Version 1.0.1 2/27/16
+ *  Version 1.0.2 3/2/16
  *
  *  Version 1.0.0 Initial release
  *  Version 1.0.1 Reverted back to original icons for better GUI experience
+ *  Version 1.0.2 Added dynamic feedback to user on code version of switch
  *
  *  Uses code from SmartThings
  *
@@ -26,7 +27,7 @@ metadata {
 		capability "Momentary"
 		capability "Sensor"
         
-		attribute "About", "string"
+		attribute "about", "string"
 	}
 
 	// simulator metadata
@@ -40,12 +41,15 @@ metadata {
 				attributeState "on", label: 'push', action: "momentary.push", backgroundColor: "#79b821",icon: "st.contact.contact.closed"
 			}
         }
-        valueTile("about", "device.About", inactiveLabel: false, decoration: "flat", width: 6, height:2) {
-            state "default", label:"Momentary Button Tile\nSwitch created by Alexa Helper\nSwitch code version 1.0.1 (03/01/16)"
+        valueTile("aboutTxt", "device.about", inactiveLabel: false, decoration: "flat", width: 6, height:2) {
+            state "default", label:'${currentValue}'
 		}
         main "switch"
-		details (["switch","about"])
+		details (["switch","aboutTxt"])
 	}
+}
+def installed() {
+	showVersion()	
 }
 
 def parse(String description) {
@@ -55,6 +59,7 @@ def push() {
 	sendEvent(name: "switch", value: "on", isStateChange: true, display: false)
 	sendEvent(name: "switch", value: "off", isStateChange: true, display: false)
 	sendEvent(name: "momentary", value: "pushed", isStateChange: true)
+    showVersion()
 }
 
 def on() {
@@ -63,4 +68,17 @@ def on() {
 
 def off() {
 	push()
+}
+def showVersion(){
+	def versionTxt = "${appName()}\n"
+    try {if (parent.getSwitchAbout()){versionTxt += parent.getSwitchAbout()}}
+    catch(e){versionTxt +="Installed from the SmartThings IDE"}
+	versionTxt += "\nSwitch code version: ${versionNum()}"
+	sendEvent (name: "about", value:versionTxt) 
+}
+def versionNum(){
+	def txt = "1.0.2 (03/02/16)"
+}
+def appName(){
+	def txt="Momentary Button Tile"
 }

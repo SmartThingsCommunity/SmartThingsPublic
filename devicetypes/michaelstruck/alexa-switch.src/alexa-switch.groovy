@@ -2,7 +2,7 @@
  *  Alexa Switch
  *
  *  Copyright 2016 Michael Struck
- *  Version 2.0.3 3/1/16
+ *  Version 2.0.4 3/2/16
  *
  *  Version 1.0.0 - Initial release
  *  Version 1.1.0 - Updated the interface to better match SmartThings dimmers (thanks to @BoruGee)
@@ -10,6 +10,7 @@
  *  Version 2.0.1 - No longer on/off commands sent to dimmer when level changes
  *  Version 2.0.2 - Added icons for the switch states
  *  Version 2.0.3 - Reverted back to original icons for better GUI experience
+ *  Version 2.0.4 - Added dynamic feedback to user on code version of switch
  * 
  *  Uses code from SmartThings
  *
@@ -29,7 +30,7 @@ metadata {
         capability "Switch"
         capability "Switch Level"
         
-		attribute "About", "string"
+		attribute "about", "string"
     }
 
 	// simulator metadata
@@ -52,8 +53,8 @@ metadata {
               		attributeState "level", label: 'Light dimmed to ${currentValue}%'
         		}    
 		}
-        valueTile("about", "device.About", inactiveLabel: false, decoration: "flat", width: 6, height:2) {
-            state "default", label:"Alexa Switch\nSwitch created by Alexa Helper\nSwitch code version 2.0.3 (03/01/16)"
+        valueTile("aboutTxt", "device.about", inactiveLabel: false, decoration: "flat", width: 6, height:2) {
+            state "default", label:'${currentValue}'
 		}
         valueTile("lValue", "device.level", inactiveLabel: true, height:2, width:2, decoration: "flat") {  
 			state "levelValue", label:'${currentValue}%', unit:"", backgroundColor: "#53a7c0"  
@@ -65,9 +66,12 @@ metadata {
 			state "default", label:'off', action:"switch.off", icon:"st.switches.light.off"
 		}
 		main "switch"
-		details(["switch","on","lValue","off","about"])
+		details(["switch","on","lValue","off","aboutTxt"])
 
 	}
+}
+def installed() {
+	showVersion()	
 }
 def parse(String description) {
 }
@@ -75,11 +79,13 @@ def parse(String description) {
 def on() {
 	sendEvent(name: "switch", value: "on",isStateChange: true)
     log.info "Alexa Switch sent 'On' command"
+    showVersion()
 }
 
 def off() {
 	sendEvent(name: "switch", value: "off",isStateChange: true)
     log.info "Alexa Switch sent 'Off' command"
+    showVersion()
 }
 
 def setLevel(val){
@@ -104,4 +110,16 @@ def setLevel(val){
     	sendEvent(name:"switch.setLevel",value:val)
     }
 }
-
+def showVersion(){
+	def versionTxt = "${appName()}\n"
+    try {if (parent.getSwitchAbout()){versionTxt += parent.getSwitchAbout()}}
+    catch(e){versionTxt +="Installed from the SmartThings IDE"}
+	versionTxt += "\nSwitch code version: ${versionNum()}"
+	sendEvent (name: "about", value:versionTxt) 
+}
+def versionNum(){
+	def txt = "2.0.4 (03/02/16)"
+}
+def appName(){
+	def txt="Alexa Switch"
+}
