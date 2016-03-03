@@ -3,10 +3,11 @@
  *
  *  Copyright 2015, 2016 Bruce Ravenel and Mike Maxwell
  *
- *  Version 1.8.0a   3 Mar 2016
+ *  Version 1.8.1   3 Mar 2016
  *
  *	Version History
  *
+ *	1.8.1	3 Mar 2016		Changed method of getting Rule version
  *	1.8.0	2 Mar 2016		Clean up, added Door control
  *	1.7.6	24 Feb 2016		Added User Guide link, fixed Rule truth mechanism
  *	1.7.5	21 Feb 2016		Improved custom command selection
@@ -74,8 +75,7 @@ def mainPage() {
         section ("Remove Rule Machine"){
         	href "removePage", description: "Tap to remove Rule Machine and Rules", title: ""
         }
-//      if(state.ver) section ("Version 1.8.0/" + state.ver) { }
-		if(state.ver) section ("Version 1.8.0a/" + childVersion()) { }
+		section ("Version 1.8.1/" + (nApps > 0 ? "${childApps[0].appVersion()}" : "---")) { }
     }
 }
 
@@ -98,14 +98,8 @@ def firstRun() {
 }
 
 def childVersion() {
-	def result = ""
-    def first = true
-	childApps.each { child ->
-    	if(first) {
-    		result = child.appVersion()
-            first = false
-        }
-    }
+	def result = "---"
+	if(childApps.size() > 0) result = childApps[0].appVersion()
     return result
 }
 
@@ -761,7 +755,6 @@ def getDeviceCommands(){
 	return result
 }
 
-def isExpert(ver){
-	state.ver = ver
+def isExpert(){
 	return getCommands().size() > 0
 }
