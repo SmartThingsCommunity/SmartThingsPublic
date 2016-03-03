@@ -3,7 +3,7 @@
  *
  *  Copyright 2015, 2016 Bruce Ravenel
  *
- *  Version 1.8.2c   3 Mar 2016
+ *  Version 1.8.2d   3 Mar 2016
  *
  *	Version History
  *
@@ -108,7 +108,7 @@ preferences {
 def mainPage() {
 	//version to parent app and expert settings for rule
 	try { 
-		state.isExpert = parent.isExpert("1.8.2c") 
+		state.isExpert = parent.isExpert("1.8.2d") 
 		if (state.isExpert) state.cstCmds = parent.getCommands()
 		else state.cstCmds = []
 	}
@@ -1227,7 +1227,7 @@ def getRule(trufal) {
 			input other, "bool", title: "> For this Rule (default) or others?", required: false, submitOnChange: true
 			if(settings[other]) input otherPrivate, "enum", title: "> Select Rules to set Boolean", required: false, multiple: true, options: theseRules.sort(), submitOnChange: true
             input privateDelay, "number", title: "> Set after a delay?", required: false, submitOnChange: true, description: "0 minutes"
-            if(settings[privateDelay] > 0 && isRule) input privateDelayCancel, "bool", title: "> Cancel on truth change?", required: false, submitOnChange: true
+            if(settings[privateDelay] > 0 && (state.isRule || state.howMany > 1)) input privateDelayCancel, "bool", title: "> Cancel on truth change?", required: false, submitOnChange: true
             if(settings[otherPrivate]) setAct(trufal, "Rule Boolean: ${settings[otherPrivate]}: ${settings[privateV]}" + (settings[privateDelay] ? ": Delay ${settings[privateDelay]} minutes" + (settings[privateDelayCancel] ? " [Cancel]" : "") : ""))
             else setAct(trufal, "Private Boolean: ${settings[privateV]}" + (settings[privateDelay] ? ": Delay ${settings[privateDelay]} minutes" + (settings[privateDelayCancel] ? " [Cancel]" : "") : ""))
 		}
