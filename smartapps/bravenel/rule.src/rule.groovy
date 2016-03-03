@@ -3,7 +3,7 @@
  *
  *  Copyright 2015, 2016 Bruce Ravenel
  *
- *  Version 1.8.2   2 Mar 2016
+ *  Version 1.8.2a   2 Mar 2016
  *
  *	Version History
  *
@@ -108,7 +108,7 @@ preferences {
 def mainPage() {
 	//version to parent app and expert settings for rule
 	try { 
-		state.isExpert = parent.isExpert("1.8.2") 
+		state.isExpert = parent.isExpert("1.8.2a") 
 		if (state.isExpert) state.cstCmds = parent.getCommands()
 		else state.cstCmds = []
 	}
@@ -241,7 +241,8 @@ def getMoreOptions() {
 		input "modesY", "mode", title: "Only when mode is", multiple: true, required: false            
 		input "disabled", "capability.switch", title: "Switch to disable Rule", required: false, multiple: false, submitOnChange: true
         if(disabled) input "disabledOff", "bool", title: "Disable when Off? On is default", required: false, defaultValue: false
-        input "usePrivateDisable", "bool", title: "Enable/Disable with private Boolean?", required: false
+        def privy = state.private
+        input "usePrivateDisable", "bool", title: "Enable/Disable with private Boolean? [$privy]", required: false, submitOnChange: true
 	}    
 }
 
