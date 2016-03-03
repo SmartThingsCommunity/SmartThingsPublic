@@ -3,7 +3,7 @@
  *
  *  Copyright 2015, 2016 Bruce Ravenel and Mike Maxwell
  *
- *  Version 1.8.0   2 Mar 2016
+ *  Version 1.8.0a   3 Mar 2016
  *
  *	Version History
  *
@@ -74,7 +74,8 @@ def mainPage() {
         section ("Remove Rule Machine"){
         	href "removePage", description: "Tap to remove Rule Machine and Rules", title: ""
         }
-        if(state.ver) section ("Version 1.8.0/" + state.ver) { }
+//      if(state.ver) section ("Version 1.8.0/" + state.ver) { }
+		if(state.ver) section ("Version 1.8.0a/" + childVersion()) { }
     }
 }
 
@@ -94,6 +95,18 @@ def updated() {
 def firstRun() {
 	state.setup = true
 	state.ruleSubscribers = [:]
+}
+
+def childVersion() {
+	def result = ""
+    def first = true
+	childApps.each { child ->
+    	if(first) {
+    		result = child.appVersion()
+            first = false
+        }
+    }
+    return result
 }
 
 def ruleList(appLabel) {

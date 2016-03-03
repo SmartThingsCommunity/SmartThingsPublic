@@ -3,7 +3,7 @@
  *
  *  Copyright 2015, 2016 Bruce Ravenel
  *
- *  Version 1.8.2d   3 Mar 2016
+ *  Version 1.8.2e   3 Mar 2016
  *
  *	Version History
  *
@@ -105,10 +105,15 @@ preferences {
 //
 //	
 //
+
+def appVersion() {
+	return "1.8.2e"
+}
+
 def mainPage() {
 	//version to parent app and expert settings for rule
 	try { 
-		state.isExpert = parent.isExpert("1.8.2d") 
+		state.isExpert = parent.isExpert(appVersion()) 
 		if (state.isExpert) state.cstCmds = parent.getCommands()
 		else state.cstCmds = []
 	}
