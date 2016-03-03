@@ -3,7 +3,7 @@
  *
  *  Copyright 2015, 2016 Bruce Ravenel
  *
- *  Version 1.8.2c   2 Mar 2016
+ *  Version 1.8.2c   3 Mar 2016
  *
  *	Version History
  *
