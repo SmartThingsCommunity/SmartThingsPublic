@@ -36,6 +36,8 @@
  *				Slider range from 0..100
  *	Change 9:	2015-03-06	(Juan Risso)
  *				Setlevel -> value to integer (to prevent smartapp calling this function from not working).
+ *  	Change 10:  	2015-09-06  	(Sticks18)
+ *              		Modified tile layout to make use of new multiattribute tile for dimming. Added dim adjustment when sending setLevel() if bulb is off, so it will transition smoothly from 0.
  *
  */
 
@@ -54,25 +56,37 @@ metadata {
 	}
 
 	// UI tile definitions
-	tiles {
-		standardTile("switch", "device.switch", width: 2, height: 2, canChangeIcon: true) {
-			state "on", label: '${name}', action: "switch.off", icon: "st.switches.light.on", backgroundColor: "#79b821", nextState:"turningOff"
-			state "off", label: '${name}', action: "switch.on", icon: "st.switches.light.off", backgroundColor: "#ffffff", nextState:"turningOn"
- 			state "turningOn", label:'${name}', action: "switch.off", icon:"st.switches.light.on", backgroundColor:"#79b821", nextState:"turningOff"
-            state "turningOff", label:'${name}', action: "switch.on", icon:"st.switches.light.off", backgroundColor:"#ffffff", nextState:"turningOn"
+	tiles(scale: 2) {
+		multiAttributeTile(name: "switch", type: "lighting", width: 6, height: 4, canChangeIcon: true, canChangeBackground: true) {
+			tileAttribute("device.switch", key: "PRIMARY_CONTROL") {
+                  attributeState "off", label: '${name}', action: "switch.on", icon: "st.switches.light.off", backgroundColor: "#ffffff", nextState: "turningOn"
+			      attributeState "on", label: '${name}', action: "switch.off", icon: "st.switches.light.on", backgroundColor: "#79b821", nextState: "turningOff"
+                  attributeState "turningOff", label: '${name}', action: "switch.on", icon: "st.switches.light.off", backgroundColor: "#ffffff", nextState: "turningOn"
+			      attributeState "turningOn", label: '${name}', action: "switch.off", icon: "st.switches.light.on", backgroundColor: "#79b821", nextState: "turningOff"
+            }
+            tileAttribute("device.level", key: "SLIDER_CONTROL") {
+                  attributeState "level", action:"switch level.setLevel"
+            }
+            tileAttribute("level", key: "SECONDARY_CONTROL") {
+                  attributeState "level", label: 'Light dimmed to ${currentValue}%'
+            }    
 		}
-		standardTile("refresh", "device.switch", inactiveLabel: false, decoration: "flat") {
+		standardTile("refresh", "device.switch", inactiveLabel: false, decoration: "flat", width: 2, height: 2) {
 			state "default", label:"", action:"refresh.refresh", icon:"st.secondary.refresh"
 		}
-		controlTile("levelSliderControl", "device.level", "slider", height: 1, width: 3, inactiveLabel: false, range:"(0..100)") {
+        valueTile("attDimRate", "device.attDimRate", inactiveLabel: false, decoration: "flat", width: 4, height: 1) {
+			state "attDimRate", label: 'Dim rate: ${currentValue}'
+		}
+        valueTile("attDimOnOff", "device.attDimOnOff", inactiveLabel: false, decoration: "flat", width: 4, height: 1) {
+			state "attDimOnOff", label: 'Dim for on/off: ${currentValue}'
+		}
+		controlTile("levelSliderControl", "device.level", "slider", height: 2, width: 6, inactiveLabel: false, range: "(0..100)") {
 			state "level", action:"switch level.setLevel"
 		}
-		valueTile("level", "device.level", inactiveLabel: false, decoration: "flat") {
-			state "level", label: 'Level ${currentValue}%'
-		}
-
-		main(["switch"])
-		details(["switch", "level", "levelSliderControl", "refresh"])
+        
+        
+		main "switch"
+		details(["switch","attDimRate", "refresh", "attDimOnOff","levelSliderControl"])
 	}
 
 	    preferences {
@@ -108,38 +122,44 @@ def parse(String description) {
 
         def x = description[-4..-1]
         // log.debug x
+		def z = description[18]
+        
+        if (z == "8"){}
+        
+        else {
+        
+        	switch (x) 
+        	{
 
-        switch (x)
-        {
+        		case "0000":
 
-        	case "0000":
+            		def result = createEvent(name: "switch", value: "off")
+            		log.debug "${result?.descriptionText}"
+           			return result
+                	break
 
-            	def result = createEvent(name: "switch", value: "off")
-            	log.debug "${result?.descriptionText}"
-           		return result
-                break
+            	case "1000":
 
-            case "1000":
+            		def result = createEvent(name: "switch", value: "off")
+            		log.debug "${result?.descriptionText}"
+           			return result
+                	break
 
-            	def result = createEvent(name: "switch", value: "off")
-            	log.debug "${result?.descriptionText}"
-           		return result
-                break
+            	case "0100":
 
-            case "0100":
+            		def result = createEvent(name: "switch", value: "on")
+            		log.debug "${result?.descriptionText}"
+           			return result
+                	break
 
-            	def result = createEvent(name: "switch", value: "on")
-            	log.debug "${result?.descriptionText}"
-           		return result
-                break
+            	case "1001":
 
-            case "1001":
-
-            	def result = createEvent(name: "switch", value: "on")
-            	log.debug "${result?.descriptionText}"
-           		return result
-                break
-        }
+            		def result = createEvent(name: "switch", value: "on")
+            		log.debug "${result?.descriptionText}"
+           			return result
+                	break
+        	}
+    	}
     }
 
     if (description?.startsWith("read attr")) {
@@ -307,7 +327,8 @@ def setLevel(value) {
 		cmds << "st cmd 0x${device.deviceNetworkId} 1 8 0 {0000 ${state.rate}}"
 	}
 	else if (device.latestValue("switch") == "off") {
-		sendEvent(name: "switch", value: "on")
+        	cmds << "st cmd 0x${device.deviceNetworkId} 1 8 0 {00 0000}"
+        	sendEvent(name: "switch", value: "on")
 	}
 
     sendEvent(name: "level", value: value)
