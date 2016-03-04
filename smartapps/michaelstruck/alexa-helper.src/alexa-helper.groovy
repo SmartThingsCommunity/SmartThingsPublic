@@ -63,7 +63,7 @@ def mainPage() {
         	def childCount = childApps.size()
         	if (childCount){
         		def childVersion = childApps[0].versionInt()
-            	if (childVersion < 271){
+            	if (childVersion < 272){
             		paragraph "You are using a version of the child app that is older than the recommended version. Please upgrade "+
                     	"to the latest version to ensure you have the latest features and bug fixes."
             	}
