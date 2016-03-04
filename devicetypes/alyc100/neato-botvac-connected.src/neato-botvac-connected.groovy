@@ -26,6 +26,7 @@
  *  Modified 2016 by Alex Lee Yuk Cheung for Neato BotVac Compatibility. Requires https://github.com/kangguru/botvac web server running. 
  *  Neato Version: 1.0 - Initial Version
  *	Neato Version: 1.0.1 - Improved Botvac connection detection
+ *	Neato Version: 1.0.2 - Added Please Clear My Path Error message
  */
 import groovy.json.JsonSlurper
 
@@ -53,7 +54,7 @@ metadata {
 	tiles(scale: 2) {
     	multiAttributeTile(name: "clean", width: 6, height: 4, type:"lighting") {
 			tileAttribute("device.switch", key:"PRIMARY_CONTROL", canChangeBackground: true){
-				attributeState("off", label: 'STOPPED', action: "on", icon: "st.Appliances.appliances13", backgroundColor: "#cccccc")
+				attributeState("off", label: 'STOPPED', action: "on", icon: "st.Appliances.appliances13", backgroundColor: "#ffffff")
 				attributeState("on", label: 'CLEANING', action: "off", icon: "st.Appliances.appliances13", backgroundColor: "#79b821")
 			}
             tileAttribute ("statusMsg", key: "SECONDARY_CONTROL") {
@@ -180,6 +181,9 @@ def parse(String description) {
                 break;
                 case "ui_error_dust_bin_missing":
                 	statusMsg += ' - Dust Bin Is Missing!'
+                break
+                case "ui_error_navigation_falling":
+                	statusMsg += ' - Please Clear My Path!'
                 break
                 //More error detail messages here as discovered
 				
