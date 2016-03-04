@@ -2,7 +2,7 @@
  *  Alexa Helper-Parent
  *
  *  Copyright © 2016 Michael Struck
- *  Version 4.4.3a 3/3/16
+ *  Version 4.4.3b 3/3/16
  * 
  *  Version 1.0.0 - Initial release
  *  Version 2.0.0 - Added 6 slots to allow for one app to control multiple on/off actions
@@ -27,7 +27,7 @@
  *  Version 4.4.0a - Added option to add switches from the app instead of going to the IDE; GUI clean up
  *  Version 4.4.1 - Added routine for switch info feedback
  *  Version 4.4.2 - Minor GUI tweaks
- *  Version 4.4.3a - Added ability to poll device version numbers, showing in About screen
+ *  Version 4.4.3b - Added ability to poll device version numbers, showing in About screen
  *
  *  Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except
  *  in compliance with the License. You may obtain a copy of the License at:
@@ -203,7 +203,7 @@ private def textAppName() {
 	def text = "Alexa Helper"
 }	
 private def textVersion() {
-    def version = "Parent App Version: 4.4.3a (03/03/2016)"
+    def version = "Parent App Version: 4.4.3b (03/03/2016)"
     def childCount = childApps.size()
     def deviceCount= getChildDevices().size()
     def childVersion = childCount ? childApps[0].textVersion() : "No scenarios installed"
@@ -239,21 +239,4 @@ private def textHelp() {
         "You may also use any physical switches already associated with SmartThings. Include these switches within the Echo/SmartThings app, then discover the switches on the Echo. "+
 		"Then, create a new scenario that best fits your needs, associating the switches with the various controls within the scenario.\n\n" +
         "For more information, go to http://thingsthataresmart.wiki/index.php?title=Alexa_Helper"    
-}
-
-def hubInfo() {
-    def hubCount = location.hubs.size()
-    log.debug hubCount
-    def hub = location.hubs
-    log.debug "id: ${hub.id}"
-    log.debug "zigbeeId: ${hub.zigbeeId}"
-    log.debug "zigbeeEui: ${hub.zigbeeEui}"
-
-    // PHYSICAL or VIRTUAL
-    log.debug "type: ${hub.type}"
-
-    log.debug "name: ${hub.name}"
-    log.debug "firmwareVersionString: ${hub.firmwareVersionString}"
-    log.debug "localIp: ${hub.localIP}"
-    log.debug "localSrvPortTCP: ${hub.localSrvPortTCP}"
 }
