@@ -2,7 +2,7 @@
  *  Alexa Helper-Parent
  *
  *  Copyright © 2016 Michael Struck
- *  Version 4.4.3b 3/3/16
+ *  Version 4.4.4 3/4/16
  * 
  *  Version 1.0.0 - Initial release
  *  Version 2.0.0 - Added 6 slots to allow for one app to control multiple on/off actions
@@ -28,6 +28,7 @@
  *  Version 4.4.1 - Added routine for switch info feedback
  *  Version 4.4.2 - Minor GUI tweaks
  *  Version 4.4.3b - Added ability to poll device version numbers, showing in About screen
+ *  Version 4.4.4 - Fixed bug in hub ID
  *
  *  Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except
  *  in compliance with the License. You may obtain a copy of the License at:
@@ -156,11 +157,10 @@ def initialize() {
 //Common modules (for adding switches)
 def addChildSwitches(){
     def deviceID = "AH_${app.id}_${getChildDevices().size()}"
-    def hubID = location.hubs[0].id
     def nameSpace = "MichaelStruck"
     def result
     try {
-		def childDevice = addChildDevice(nameSpace, addSwitchType, deviceID, hubID, [name: deviceID, label: addSwitchName, completedSetup: true])
+		def childDevice = addChildDevice(nameSpace, addSwitchType, deviceID, null, [name: deviceID, label: addSwitchName, completedSetup: true])
 		log.debug "Created Switch ${addSwitchName}: ${deviceID}"
         result ="The ${addSwitchType} named '${addSwitchName}' has been created.\n\nBe sure to 'discover' the switch in your Alexa app."
     } catch (e) {
@@ -203,7 +203,7 @@ private def textAppName() {
 	def text = "Alexa Helper"
 }	
 private def textVersion() {
-    def version = "Parent App Version: 4.4.3b (03/03/2016)"
+    def version = "Parent App Version: 4.4.4 (03/04/2016)"
     def childCount = childApps.size()
     def deviceCount= getChildDevices().size()
     def childVersion = childCount ? childApps[0].textVersion() : "No scenarios installed"
