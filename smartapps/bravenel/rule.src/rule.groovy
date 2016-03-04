@@ -3,7 +3,7 @@
  *
  *  Copyright 2015, 2016 Bruce Ravenel
  *
- *  Version 1.8.3   3 Mar 2016
+ *  Version 1.8.3a   4 Mar 2016
  *
  *	Version History
  *
@@ -108,7 +108,7 @@ preferences {
 //
 
 def appVersion() {
-	return "1.8.3"
+	return "1.8.3a"
 }
 
 def mainPage() {
@@ -947,7 +947,7 @@ def getSwitch(trufal) {
         }
 // Capture the state of these switches        
         def capture = "capture"  + thisStr
-        def captureNot = "capture"  + trufal ? "False" : "True"
+        def captureNot = "capture"  + (trufal ? "False" : "True")
 		if(settings[captureNot] == null) {
 			input capture, "capability.switch", title: "Capture the state of these switches", multiple: true, required: false, submitOnChange: true
 			checkAct(trufal, capture, "Capture: ${settings[capture]}")
