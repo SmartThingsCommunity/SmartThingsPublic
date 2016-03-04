@@ -1,4 +1,4 @@
-//#1.1   Aug 7, 2014
+//#1.5   Mar 4, 2016
 
 /**
  *  Blue Iris Integration
@@ -28,7 +28,7 @@ definition(
  *  
  *
  *  Author: pursual
- *  Date: 2014-08-07
+ *  Date: 2016-03-04
  *
  *  Sets Blue Iris to a profile that corresponds to the Smartthings "mode". 
  */
@@ -40,18 +40,18 @@ preferences {
 
 def selectModes() {  
   dynamicPage(name: "selectModes", title: "Mode and Profile Matching", nextPage:"BISettings", uninstall:true) {    
-	section("") {
-    	paragraph "Numbers 1-7 correspond to Blue Iris profile numbers. To ignore a mode leave it blank. A profile of 0 sets Blue Iris to 'incative'."
-    	location.modes.each { mode ->
-    		def modeId = mode.id.toString()  
-        	input "mode-${modeId}", "number", title: "Mode ${mode}", required: false
-    	}
+    section("") {
+        paragraph "Numbers 1-7 correspond to Blue Iris profile numbers. To ignore a mode leave it blank. A profile of 0 sets Blue Iris to 'incative'."
+        location.modes.each { mode ->
+            def modeId = mode.id.toString()  
+            input "mode-${modeId}", "number", title: "Mode ${mode}", required: false
+        }
     }
   }
 }
 
 def BISettings() {
-	dynamicPage(name:"BISettings", "title":"Blue Iris Login Info", uninstall:true, install:true) {
+    dynamicPage(name:"BISettings", "title":"Blue Iris Login Info", uninstall:true, install:true) {
         section( "" ) {
             input "host", "string", title: "BI Webserver Host(include http://)", required:true
             input "port", "number", title: "BI Webserver Port (81?)", required:true, default:81
@@ -76,16 +76,16 @@ def updated() {
 
 def modeChange(evt)
 {
-    log.debug "modeChange detected."
-	def checkMode = ""
+    log.debug "BI_modeChange detected."
+    def checkMode = ""
     
     //easiest way to get mode by id. Didnt want to use names.
     location.modes.each { mode ->
-    	if (mode.name == evt.value){checkMode = "mode-" + mode.id}
+        if (mode.name == evt.value){checkMode = "mode-" + mode.id}
     }
     
     if (settings[checkMode]){
-    	log.debug "Found profile " + settings[checkMode]
+        log.debug "BI_Found profile " + settings[checkMode]
         takeAction(settings[checkMode].toInteger());
     }
 }
@@ -100,15 +100,18 @@ def takeAction(profile)
 
             if (response.data.result == "fail")
             {
-                def session = response.data.session
-                def hash = username + ":" + response.data.session + ":" + password
-                hash = hash.encodeAsMD5()
+               log.debug "BI_Inside initial call fail, proceeding to login"
+               def session = response.data.session
+               def hash = username + ":" + response.data.session + ":" + password
+               hash = hash.encodeAsMD5()
 
                httpPostJson(uri: host + ':' + port, path: '/json',  body: ["cmd":"login","session":session,"response":hash]) { response2 ->
                     if (response2.data.result == "success") {
                         def BIprofileNames = response2.data.data.profiles;
+                        log.debug ("BI_Logged In")
                         //log.debug response2.data
                         httpPostJson(uri: host + ':' + port, path: '/json',  body: ["cmd":"status","session":session]) { response3 ->
+                            log.debug ("BI_Retrieved Status");
                             //log.debug response3.data
                             if (response3.data.result == "success"){
                                 if (response3.data.data.profile != profile){
@@ -116,28 +119,54 @@ def takeAction(profile)
                                         //log.debug response4.data
                                         if (response4.data.result == "success") {
                                             if (response4.data.data.profile.toInteger() == profile.toInteger()) {
+                                                log.debug ("I set Blue Iris to profile ${profileName(BIprofileNames,profile)}!")
                                                 sendNotificationEvent("I set Blue Iris to profile ${profileName(BIprofileNames,profile)}!")
                                             } else {
+                                                log.debug ("Hmmm...Blue Iris ended up on profile ${profileName(BIprofileNames,response4.data.data.profile)}? I tried ${profileName(BIprofileNames,profile)}. Check your user permissions.")
                                                 sendNotificationEvent("Hmmm...Blue Iris ended up on profile ${profileName(BIprofileNames,response4.data.data.profile)}? I tried ${profileName(BIprofileNames,profile)}. Check your user permissions.");
                                             }
-                                        } else {sendNotificationEvent(errorMsg)}
+                                            httpPostJson(uri: host + ':' + port, path: '/json',  body: ["cmd":"logout","session":session]) { response5 ->
+                                                //log.debug response5.data
+                                                //log.debug "Logged out?"
+                                            }
+                                        } else {
+                                            log.debug "BI_FAILURE"
+                                            log.debug(response4.data.data.reason)
+                                            sendNotificationEvent(errorMsg)
+                                        }
                                     }
-                                } else {sendNotificationEvent("Blue Iris is already at profile ${profileName(BIprofileNames,profile)}.")}
-                            } else {sendNotificationEvent(errorMsg)}
+                                } else {
+                                    log.debug ("Blue Iris is already at profile ${profileName(BIprofileNames,profile)}.")
+                                    sendNotificationEvent("Blue Iris is already at profile ${profileName(BIprofileNames,profile)}.")
+                                    }
+                            } else {
+                                log.debug "BI_FAILURE"
+                                log.debug(response3.data.data.reason)
+                                sendNotificationEvent(errorMsg)
+                            }
                         }
-                    } else {sendNotificationEvent(errorMsg)}
+                    } else {
+                        log.debug "BI_FAILURE"
+                        log.debug(response2.data.data.reason)
+                        sendNotificationEvent(errorMsg)
+                    }
                 }
-            } else {sendNotificationEvent(errorMsg)}
+            } else {
+                log.debug "FAILURE"
+                log.debug(response.data.data.reason)
+                sendNotificationEvent(errorMsg)
+            }
         }
     } catch(Exception e) {
+        log.debug(e)
         sendNotificationEvent(errorMsg);
     }
 }
 
 def profileName(names, num) {
-	if (names[num.toInteger()]) {
-    	names[num.toInteger()] + " (#${num})"
+    if (names[num.toInteger()]) {
+        names[num.toInteger()] + " (#${num})"
     } else {
-    	'#' + num
+        '#' + num
     }
 }
