@@ -2,7 +2,7 @@
  *  Alexa Switch
  *
  *  Copyright 2016 Michael Struck
- *  Version 2.0.4 3/2/16
+ *  Version 2.0.5 3/3/16
  *
  *  Version 1.0.0 - Initial release
  *  Version 1.1.0 - Updated the interface to better match SmartThings dimmers (thanks to @BoruGee)
@@ -11,6 +11,7 @@
  *  Version 2.0.2 - Added icons for the switch states
  *  Version 2.0.3 - Reverted back to original icons for better GUI experience
  *  Version 2.0.4 - Added dynamic feedback to user on code version of switch
+ *  Version 2.0.5 - Remove state of dimmer level, allowing the switch to act as a pass through
  * 
  *  Uses code from SmartThings
  *
@@ -102,12 +103,12 @@ def setLevel(val){
     }
     
     if (val == 0){ 
-    	sendEvent(name:"level",value:val)
+    	sendEvent(name:"level",value:val,isStateChange: true)
     }
     else
     {
-    	sendEvent(name:"level",value:val)
-    	sendEvent(name:"switch.setLevel",value:val)
+    	sendEvent(name:"level",value:val,isStateChange: true)
+    	sendEvent(name:"switch.setLevel",value:val,isStateChange: true)
     }
 }
 def showVersion(){
@@ -118,7 +119,7 @@ def showVersion(){
 	sendEvent (name: "about", value:versionTxt) 
 }
 def versionNum(){
-	def txt = "2.0.4 (03/02/16)"
+	def txt = "2.0.5 (03/03/16)"
 }
 def appName(){
 	def txt="Alexa Switch"
