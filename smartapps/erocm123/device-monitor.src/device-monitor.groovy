@@ -15,6 +15,7 @@
  *  Contributors
  *  ----------------
  *  Based off of code from J.Constantelos (https://github.com/constjs)
+ *  Some code modifications provided by "Craig.K.Lyons" (https://github.com/lyons189)
  *
  *  Overview
  *  
