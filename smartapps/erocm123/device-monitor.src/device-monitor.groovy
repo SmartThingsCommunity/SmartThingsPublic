@@ -78,7 +78,7 @@ def pageStatus(params) {
     
     def pageProperties = [
 		name:       "pageStatus",
-		title:      "Quick Device Check",
+		title:      "Device Check",
 		nextPage:   null,
 		install:    true,
 		uninstall:  true
@@ -330,7 +330,7 @@ def pageConfigure() {
     def inputSmokeDevices = [name:"smokedevices",type:"capability.smokeDetector",title:"Which Smoke/CO2 detectors?",multiple:true,required:false]
 	
 	def pageProperties = [name:"pageConfigure",
-		title:          "Quick Device Check Configurator",
+		title:          "Device Monitor Configuration",
 		nextPage:       "pageStatus",
 		uninstall:      true
 	]
@@ -403,7 +403,7 @@ def updated() {
 }
 
 def initialize() {
-    log.trace "Launching Quick Device Check"
+    log.trace "Initializing Device Monitor"
     scheduleCheck()
     subscribeDevices()
 }
