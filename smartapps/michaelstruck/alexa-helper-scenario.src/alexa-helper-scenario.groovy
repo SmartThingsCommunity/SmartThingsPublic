@@ -2,7 +2,7 @@
  *  Alexa Helper-Child
  *
  *  Copyright © 2016 Michael Struck
- *  Version 2.7.1b 3/2/16
+ *  Version 2.7.2 3/4/16
  * 
  *  Version 1.0.0 - Initial release of child app
  *  Version 1.1.0 - Added framework to show version number of child app and copyright
@@ -22,6 +22,7 @@
  *  Version 2.6.0 - Refined notification methods; displays action on notification feed and added push notifications; code optimization
  *  Version 2.7.0 - Added baseboard heaters scenario type and various code optimizations
  *  Version 2.7.1b - Small syntax changes
+ *  Version 2.7.2 - Code optimization
  *
  *  Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except
  *  in compliance with the License. You may obtain a copy of the License at:
@@ -54,7 +55,7 @@ preferences {
 def pageStart() {
 	dynamicPage(name: "pageStart", title: "Scenario Settings", uninstall: true, install: true) {
 		section {
-			if (parent.versionInt() < 441) paragraph "You are using a version of the parent app that is older than the recommended version. Please upgrade "+
+			if (parent.versionInt() < 443) paragraph "You are using a version of the parent app that is older than the recommended version. Please upgrade "+
 					"to the latest version to ensure you have the latest features and bug fixes."
             label title:"Scenario Name", required:true
     	   	input "scenarioType", "enum", title: "Scenario Type...", options: [["Baseboard":"Baseboard Heater Control"],["Control":"Modes/Routines/Devices/HTTP/SHM"],["Panic":"Panic Commands"],["Speaker":"Speaker Control"],["Thermostat":"Heating/Cooling Thermostat"]], required: false, multiple: false, submitOnChange:true
@@ -280,7 +281,7 @@ def pageThermostat(){
             input "upLimitTstat", "number", title: "Thermostat Upper Limit", required: false
             input "lowLimitTstat", "number", title: "Thermostat Lower Limit", required: false
         }
-        section ("Thermostat Setpoints"){
+        section ("Thermostat Setpoints (when heating, cooling or auto mode controls turned on below)"){
             input "heatingSetpoint", "number", title: "Heating setpoint", required: false
             input "coolingSetpoint", "number", title: "Cooling setpoint", required: false
         }
@@ -412,8 +413,7 @@ def turnOn(){
     if (onDimmers && onDimmersCMD){
         if (onDimmersCMD == "set"){
         	def level = onDimmersLVL ? onDimmersLVL as int : 0
-        	if (level < 0) {level=0}
-        	if (level >100) {level=100}
+        	level = level < 0 ? level=0 : level >100 ? level=100 : level
         	onDimmers?.setLevel(level)
         }
         else onDimmersCMD == "toggle" ? toggleState(onDimmers) : onDimmers?."$onDimmersCMD"()
@@ -421,8 +421,7 @@ def turnOn(){
     if (onColoredLights && onColoredLightsCMD){
     	if (onColoredLightsCMD == "set"){
         	def level = onColoredLightsLVL ? onColoredLightsLVL as int : 0
-            if (level < 0) {level=0}
-        	if (level >100) {level=100}
+            level = level < 0 ? level=0 : level >100 ? level=100 : level
             onColoredLightsCLR ? setColoredLights(onColoredLights, onColoredLightsCLR, level) : onColoredLights?.setLevel(level)
         }
         else if (onColoredLightsCMD == "toggle") toggleState(onColoredLights)	
@@ -451,8 +450,7 @@ def turnOff(){
     if (offDimmers && offDimmersCMD){
     	if (offDimmersCMD == "set"){
         	def level = offDimmersLVL ? offDimmersLVL as int : 0
-        	if (level < 0) level=0
-        	if (level >100) level=100
+        	level = level < 0 ? level=0 : level >100 ? level=100 : level
         	offDimmers?.setLevel(level)
         }
         else offDimmersCMD == "toggle" ? toggleState(offDimmers) : offDimmers?."$offDimmersCMD"()
@@ -460,8 +458,7 @@ def turnOff(){
     if (offColoredLights && offColoredLightsCMD){
     	if (offColoredLightsCMD == "set"){
         	def level = offColoredLightsLVL ? offColoredLightsLVL as int : 0
-            if (level < 0) level=0
-        	if (level >100) level=100
+            level = level < 0 ? level=0 : level >100 ? level=100 : level
             offColoredLightsCLR ? setColoredLights(offColoredLights, offColoredLightsCLR, level) : offColoredLights?.setLevel(level)
         }
         else if (offColoredLightsCMD == "toggle") toggleState(offColoredLights)	
@@ -756,10 +753,8 @@ def getDeviceDesc(type){
         locks = offLocks && lockCMD ? offLocks : ""
         garages = offGarages && garageCMD ? offGarages : ""
     }
-    if (lvl < 0) lvl = 0
-    if (lvl >100) lvl=100
-    if (cLvl < 0) cLvl = 0
-    if (cLvl >100) cLvl=100
+    lvl = lvl < 0 ? lvl = 0 : lvl >100 ? lvl=100 : lvl
+    cLvl = cLvl < 0 ? cLvl = 0 : cLvl >100 ? cLvl=100 : cLvl
     if (switches || dimmers || cLights || locks || garages) {
     	result = switches  ? "${switches} set to ${switchCMD}" : ""
         result += result && dimmers ? "\n" : ""
@@ -853,10 +848,8 @@ private setColoredLights(switches, color, level){
 		case "Custom-User Defined":
         	hueColor = hueUserDefined ? hueUserDefined : 0
             satLevel = satUserDefined ? satUserDefined : 0
-            if (hueColor>100) hueColor=100
-            if (hueColor<0) hueColor=0
-            if (satLevel>100) satLevel=100
-            if (satLevel<0) satLevel=0
+            hueColor = hueColor>100 ? hueColor=100 : hueColor<0 ? hueColor=0 : hueColor
+            satLevel = satLevel>100 ? satLevel=100 : satLevel<0 ? satLevel=0 : satLevel
             break;
 	}
     def newValue = [hue: hueColor as int, saturation: satLevel as int, level: level as int]
@@ -943,5 +936,5 @@ def sonosSlots(){
     def slots = parent.getMemCount() as int
 }
 //Version
-private def textVersion() {def text = "Child App Version: 2.7.1b (03/02/2016)"}
-private def versionInt(){def text = 271}
+private def textVersion() {def text = "Child App Version: 2.7.2 (03/04/2016)"}
+private def versionInt(){def text = 272}
