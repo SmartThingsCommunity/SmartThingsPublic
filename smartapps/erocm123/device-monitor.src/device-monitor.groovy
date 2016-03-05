@@ -137,7 +137,7 @@ def pageStatus(params) {
 
 def eventCheck(evt = false){
     if(allOk) {
-    if (settings.checkEvent.toBoolean() || evt == false) {
+    if ((settings.checkEvent != null && settings.checkEvent.toBoolean()) || evt == false) {
        if (settings.minimumCheck == null || settings.minimumCheck == "") settings.minimumCheck = 15
        if (atomicState.lastExe != null && now() - atomicState.lastExe > settings.minimumCheck * 60 * 1000) {
           atomicState.lastExe = now()
@@ -355,7 +355,7 @@ def pageConfigure() {
                6:"3 Hours" ]
                
             input "checkEvent", "boolean", title: "Run a check each time one of the selected devices sends an event?", required: false, submitOnChange: true, value: false
-            if (checkEvent.toBoolean() == true) {
+            if (settings.checkEvent != null && checkEvent.toBoolean() == true) {
                input "minimumCheck", "number", title: "Minimum time (in minutes) between checks. Useful if you use the above option and subscribe to many devices.", required: false, value: 15
             }
             def timeLabel = timeIntervalLabel()
@@ -482,7 +482,7 @@ private getAllOk() {
 
 private getModeOk() {
 	def result = !modes || modes.contains(location.mode)
-	//log.trace "modeOk = $result"
+	if (!result) log.trace "modeOk = $result"
 	result
 }
 
@@ -499,7 +499,7 @@ private getDaysOk() {
 		def day = df.format(new Date())
 		result = days.contains(day)
 	}
-	//log.trace "daysOk = $result"
+	if (!result) log.trace "daysOk = $result"
 	result
 }
 
@@ -511,7 +511,7 @@ private getTimeOk() {
 		def stop = timeToday(ending).time
 		result = start < stop ? currTime >= start && currTime <= stop : currTime <= stop || currTime >= start
 	}
-	//log.trace "timeOk = $result"
+	if (!result) log.trace "timeOk = $result"
 	result
 }
 
