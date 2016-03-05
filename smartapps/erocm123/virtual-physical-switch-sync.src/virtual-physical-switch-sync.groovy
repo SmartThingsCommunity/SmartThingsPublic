@@ -42,7 +42,7 @@ def numberPage() {
 def setupPage() {
     dynamicPage(name: "setupPage", install: true, uninstall: true) {
     section {
-        input "physical", "capability.switch", title: "Which Pyhsical Switch?", multiple: false, required: true
+        input "physical", "capability.switch", title: "Which Physical Switch?", multiple: false, required: true
         for (int i = 1; i <= vNumber; i++){
             input "virtual${i}", "capability.switch", title: "Virtual Switch to link to Switch ${i}?", multiple: false, required: true        
         }
