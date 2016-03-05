@@ -32,7 +32,7 @@ preferences {
     input "xbmcserver", "text", title: "XBMC IP", description: "IP Address", required: false
     input "xbmcport", "number", title: "XBMC Port", description: "Port", required: false
   }
-  section("Notifications (optional) - NOT WORKING:") {
+  section("Notifications (optional)") {
     input "sendPush", "enum", title: "Push Notifiation", required: false,
       metadata: [
        values: ["Yes","No"]
@@ -40,12 +40,12 @@ preferences {
     input "phone1", "phone", title: "Phone Number", required: false
   }
   section("Notification events (optional):") {
-    input "notifyEvents", "enum", title: "Which Events?", description: "default (none)", required: false, multiple: false,
-     options:
-      ['all','alarm','closed','open','closed','partitionready',
-       'partitionnotready','partitionarmed','partitionalarm',
-       'partitionexitdelay','partitionentrydelay', 'partitionaway',
-       'partitionstay', 'partitioninstantaway', 'partitioninstantstay'
+    input "notifyEvents", "enum", title: "Which Events?", description: "Events to notify on", required: false, multiple: true,
+      options: [
+        'all', 'partition alarm', 'partition armed', 'partition away', 'partition disarm', 'partition entrydelay',
+        'partition exitdelay', 'partition forceready', 'partition instantaway', 'partition instantstay',
+        'partition notready', 'partition ready', 'partition restore', 'partition stay', 'partition trouble',
+        'zone alarm', 'zone clear', 'zone closed', 'zone fault', 'zone open', 'zone restore', 'zone smoke', 'zone tamper'
       ]
   }
 }
@@ -114,6 +114,10 @@ private update() {
       // log.debug "Zone or partition: $zoneorpartition"
       if (opts[0])
       {
+        if (notifyEvents.contains('all') || notifyEvents.contains(eventMap[eventCode])) {
+          sendMessage("${opts[0]} ${zoneorpartition} in ${opts[1]} state")
+        }
+
         // We have some stuff to send to the device now
         // this looks something like panel.zone("open", "1")
         // log.debug "Test: ${opts[0]} and: ${opts[1]} for $zoneorpartition"
