@@ -2,10 +2,13 @@
 
 #### EDIT SETTINGS HERE ####
 
-$candles = array("xx:xx:xx:xx:xx:xx", "xx:xx:xx:xx:xx:xx", "xx:xx:xx:xx:xx:xx");
-
-$color_handle = "0x0019";
-$effect_handle = "0x0017";
+$candles = array
+  (
+  array("xx:xx:xx:xx:xx:xx","0x0019","0x0017"),
+  array("xx:xx:xx:xx:xx:xx","0x0019","0x0017"),
+  array("xx:xx:xx:xx:xx:xx","0x0019","0x0017"),
+  array("xx:xx:xx:xx:xx:xx","0x001B","0x0019"),
+  );
 
 ############################
 
@@ -17,9 +20,9 @@ $refresh = $_REQUEST['refresh'];
 if ($config) {
    $x = 1;
    $return = [];
-   foreach ($candles as &$value) {
-      //echo "candle" . ($x++) . "   " . $value . "<br>";
-      $return["candle" . ($x++)] = $value;
+   foreach ($candles as $n)
+   {
+      $return["candle" . ($x++)] = array( 'id' => $n[0], 'color_handle' => $n[1], 'effect_handle' => $n[2] );
    }
    echo json_encode( $return );
 
@@ -32,19 +35,21 @@ if ($device && $refresh) {
    for ($x = 0; $x < count($candles); $x++) {
       if ("$devices[0]" == "candle" . ($x+1))
       {
-         $candle=$candles[$x];
+         $candle=$candles[$x][0];
+         $color_handle=$candles[$x][1];
+         $effect_handle=$candles[$x][2];
       }
    }
 
-   $output = shell_exec("gatttool -b $candle --char-read -a 0x0017 | sed 's_Characteristic value/descriptor: __g'");
+   $output = shell_exec("gatttool -b $candle --char-read -a $effect_handle | sed 's_Characteristic value/descriptor: __g'");
    $effect_value = explode(" ", $output);
    $effect_value =  $effect_value[4] . $effect_value[5] . $effect_value[6] . $effect_value[7];
    $effect_color = explode(" ", $output);
    $effect_color = $effect_color[0] . $effect_color[1] . $effect_color[2] . $effect_color[3];
-   $output = shell_exec("gatttool -b $candle --char-read -a 0x0019 | sed 's_Characteristic value/descriptor: __g'");
+   $output = shell_exec("gatttool -b $candle --char-read -a $color_handle | sed 's_Characteristic value/descriptor: __g'");
    $candle_color = trim(str_replace(" ", "", $output));
 
-   if ($candle_color === "0000000" && $effect_color === "0000000") {
+   if (($candle_color === "00000000" && $effect_color === "00000000") || $effect_color === "00000000") {
       //echo $device . " is off";
       $return = array( 'device' => $device, 'power' => 'off' );
       echo json_encode( $return );
@@ -52,7 +57,7 @@ if ($device && $refresh) {
    else {
       //echo $device . " is on";
       $return = array( 'device' => $device, 'power' => 'on' );
-      if ($candle_color !== "0000000") {
+      if ($candle_color !== "00000000") {
          $return['color'] = $candle_color;
          $return['effe'] = $effect_value;
          $return['ecol'] = $effect_color;
@@ -64,22 +69,21 @@ if ($device && $refresh) {
 if ($device && $setting) {
 
 $devices = explode(",", $device);
+$all_devices = [];
 
 for ($x = 0; $x < count($candles); $x++) {
 for ($y = 0; $y < count($devices); $y++) {
    if ("$devices[$y]" == "candle" . ($x+1))
    {
-      $devices[$y]=$candles[$x];
+      array_push ( $all_devices, array($candles[$x][0],$candles[$x][1],$candles[$x][2]) );
    }
 }
 }
 
-
-
 switch ($setting) {
    case off:
       $handle=$color_handle;
-      $color="00000000";
+      $color="0000000001000f0f";
       break;
    case red:
       $handle=$color_handle;
@@ -190,7 +194,7 @@ switch ($setting) {
       }
 }
 
-if ( $color === "00000000" )
+if ( $color === "00000000" || substr($color, 0, 8) === "00000000" )
 {
    $return = array( 'device' => $device, 'power' => 'off' );
 } else {
@@ -207,11 +211,17 @@ if ( $color === "00000000" )
 }
 echo json_encode( $return );
 
-for ($y = 0; $y < count($devices); $y++) {
-   $output = shell_exec("gatttool -b $devices[$y] --char-write -a $handle -n $color" );
+foreach ($all_devices as $x)
+{
+   //echo $x[0] . " " . $x[1] . " " . $x[2];
+   if (strlen($color) == 16)
+   {
+   $output = shell_exec("gatttool -b $x[0] --char-write -a $x[2] -n $color" );
+   } else {
+   $output = shell_exec("gatttool -b $x[0] --char-write -a $x[1] -n $color" );
+   }
    usleep(500000);
 }
-
 }
 
 ?>
