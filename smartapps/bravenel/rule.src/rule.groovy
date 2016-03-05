@@ -3,7 +3,7 @@
  *
  *  Copyright 2015, 2016 Bruce Ravenel
  *
- *  Version 1.8.3a   4 Mar 2016
+ *  Version 1.8.3b   4 Mar 2016
  *
  *	Version History
  *
@@ -108,7 +108,7 @@ preferences {
 //
 
 def appVersion() {
-	return "1.8.3a"
+	return "1.8.3b" 
 }
 
 def mainPage() {
@@ -303,7 +303,7 @@ def selectTrigCond(isTrig) {
 						def thisDev = isTrig ? "tDev$i" : "rDev$i"
 						getDevs(xCapab, thisDev, true)
 						def myDev = settings.find {it.key == thisDev}
-						if(myDev) if(myDev.value.size() > 1 && (xCapab != "Rule truth" || state.isRule)) getAnyAll(thisDev)
+						if(myDev) if(myDev.value.size() > 1 && (xCapab != "Rule truth" || state.isRule) && !isTrig) getAnyAll(thisDev)
 						if(xCapab in ["Temperature", "Humidity", "Illuminance", "Dimmer level", "Energy meter", "Power meter", "Battery"]) getRelational(thisDev)
 					} else if(xCapab == "Button") getButton(isTrig ? "tDev$i" : "rDev$i")
 					getState(xCapab, i, isTrig)
@@ -607,7 +607,8 @@ def conditionLabelN(i, isTrig) {
 		def thisDev = settings.find {it.key == (isTrig ? "tDev$i" : "rDev$i")}
 		if(!thisDev) return result
 		def thisAll = settings.find {it.key == (isTrig ? "AlltDev$i" : "AllrDev$i")}
-		def myAny = thisAll && thisDev.value.size() > 1 ? "any " : ""
+//		def myAny = thisAll && thisDev.value.size() > 1 ? "any " : ""		
+		def myAny = thisDev.value.size() > 1 ? "any " : ""
 		def myButton = settings.find {it.key == (isTrig ? "ButtontDev$i" : "ButtonrDev$i")}
 		if     (thisCapab.value == "Temperature") 	result = "Temperature $phrase "
 		else if(thisCapab.value == "Humidity") 		result = "Humidity $phrase "
