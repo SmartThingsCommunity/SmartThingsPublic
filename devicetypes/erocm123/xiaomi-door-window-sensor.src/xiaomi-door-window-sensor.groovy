@@ -23,9 +23,9 @@ metadata {
    command "enrollResponse"
    
    //fingerprint endpointId: "01", inClusters: "0000,0001", outClusters: "1234"//, model: "3320-L", manufacturer: "CentraLite"
-   fingerprint endpoint: "01",
+   //fingerprint endpoint: "01",
    //profileId: "0104",
-   inClusters: "0000,0001"
+   //inClusters: "0000,0001"
    //outClusters: "1234"
  
    }

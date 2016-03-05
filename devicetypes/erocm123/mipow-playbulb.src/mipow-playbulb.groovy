@@ -217,7 +217,7 @@ def on() {
 
 def off() {
 	log.debug "off()"
-	def uri = "/playbulb.php?device=${deviceId}&setting=00000000"
+	def uri = "/playbulb.php?device=${deviceId}&setting=off"
     postAction(uri)
 }
 
