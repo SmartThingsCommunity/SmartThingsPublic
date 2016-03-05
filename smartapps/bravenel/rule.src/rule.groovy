@@ -3,7 +3,7 @@
  *
  *  Copyright 2015, 2016 Bruce Ravenel
  *
- *  Version 1.8.3b   4 Mar 2016
+ *  Version 1.8.3c   5 Mar 2016
  *
  *	Version History
  *
@@ -108,7 +108,7 @@ preferences {
 //
 
 def appVersion() {
-	return "1.8.3b" 
+	return "1.8.3c" 
 }
 
 def mainPage() {
@@ -303,7 +303,7 @@ def selectTrigCond(isTrig) {
 						def thisDev = isTrig ? "tDev$i" : "rDev$i"
 						getDevs(xCapab, thisDev, true)
 						def myDev = settings.find {it.key == thisDev}
-						if(myDev) if(myDev.value.size() > 1 && (xCapab != "Rule truth" || state.isRule) && !isTrig) getAnyAll(thisDev)
+						if(myDev) if(myDev.value.size() > 1 && !isTrig) getAnyAll(thisDev)
 						if(xCapab in ["Temperature", "Humidity", "Illuminance", "Dimmer level", "Energy meter", "Power meter", "Battery"]) getRelational(thisDev)
 					} else if(xCapab == "Button") getButton(isTrig ? "tDev$i" : "rDev$i")
 					getState(xCapab, i, isTrig)
@@ -607,7 +607,6 @@ def conditionLabelN(i, isTrig) {
 		def thisDev = settings.find {it.key == (isTrig ? "tDev$i" : "rDev$i")}
 		if(!thisDev) return result
 		def thisAll = settings.find {it.key == (isTrig ? "AlltDev$i" : "AllrDev$i")}
-//		def myAny = thisAll && thisDev.value.size() > 1 ? "any " : ""		
 		def myAny = thisDev.value.size() > 1 ? "any " : ""
 		def myButton = settings.find {it.key == (isTrig ? "ButtontDev$i" : "ButtonrDev$i")}
 		if     (thisCapab.value == "Temperature") 	result = "Temperature $phrase "
@@ -624,8 +623,7 @@ def conditionLabelN(i, isTrig) {
 			result = result + thisState.value
 			return result
 		}
-		if(thisCapab.value == "Rule truth") result = result = result + (thisDev.value.size() > 1 ? ("$thisDev.value any ") : (thisDev.value[0] + " "))
-		else result = result + (myAny ? thisDev.value : thisDev.value[0]) + " " + ((thisAll ? thisAll.value : false) ? "all " : myAny)
+		result = result + (myAny ? thisDev.value : thisDev.value[0]) + " " + ((thisAll ? thisAll.value : false) ? "all " : myAny)
 		def thisRel = settings.find {it.key == (isTrig ? "ReltDev$i" : "RelrDev$i")}
 		if(thisCapab.value in ["Temperature", "Humidity", "Illuminance", "Dimmer level", "Energy meter", "Power meter", "Battery"]) result = result + " " + thisRel.value + " "
 		if(thisCapab.value == "Physical Switch") result = result + "physical "
