@@ -3,7 +3,7 @@
  *
  *  Copyright 2015, 2016 Bruce Ravenel
  *
- *  Version 1.8.3c   5 Mar 2016
+ *  Version 1.8.3d   6 Mar 2016
  *
  *	Version History
  *
@@ -108,7 +108,7 @@ preferences {
 //
 
 def appVersion() {
-	return "1.8.3c" 
+	return "1.8.3d" 
 }
 
 def mainPage() {
@@ -414,6 +414,7 @@ def getDevs(myCapab, dev, multi) {
 			break
 		case "Rule truth":
 			def theseRules = parent.ruleList(app.label)
+            log.debug "getDevs: $dev, ${theseRules.sort()}" 
 			def result = input dev, "enum", title: "Rules", required: true, multiple: multi, submitOnChange: true, options: theseRules.sort()
 			return result
 		case "Battery":
@@ -607,7 +608,7 @@ def conditionLabelN(i, isTrig) {
 		def thisDev = settings.find {it.key == (isTrig ? "tDev$i" : "rDev$i")}
 		if(!thisDev) return result
 		def thisAll = settings.find {it.key == (isTrig ? "AlltDev$i" : "AllrDev$i")}
-		def myAny = thisDev.value.size() > 1 ? "any " : ""
+		def myAny = thisAll && thisDev.value.size() > 1 ? "any " : ""
 		def myButton = settings.find {it.key == (isTrig ? "ButtontDev$i" : "ButtonrDev$i")}
 		if     (thisCapab.value == "Temperature") 	result = "Temperature $phrase "
 		else if(thisCapab.value == "Humidity") 		result = "Humidity $phrase "
