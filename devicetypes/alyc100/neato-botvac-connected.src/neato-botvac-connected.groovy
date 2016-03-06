@@ -27,6 +27,7 @@
  *  Neato Version: 1.0 - Initial Version
  *	Neato Version: 1.0.1 - Improved Botvac connection detection
  *	Neato Version: 1.0.2 - Added Please Clear My Path Error message
+ *  Neato Version: 1.0.3 - Added Navigation No Progress Error message
  */
 import groovy.json.JsonSlurper
 
@@ -185,6 +186,10 @@ def parse(String description) {
                 case "ui_error_navigation_falling":
                 	statusMsg += ' - Please Clear My Path!'
                 break
+                case "ui_error_navigation_noprogress":
+                	statusMsg += ' - Please Clear My Path!'
+                break
+                
                 //More error detail messages here as discovered
 				
 			}
