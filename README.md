@@ -13,10 +13,10 @@ There are 6 types of devices you can create:
 
 * DSC Stay Panel  - (Shows partition status info and provides Stay switch that can be used in routines)
 * DSC Away Panel  - (Shows partition status info and provides Away switch that can be used in routines)
-* DSC Panel       - (Shows partition status info, DEPRECATED, see above)
 * DSC Zone Contact - (contact device open/close)
 * DSC Zone Motion  - (motion device active/inactive)
-* DSC Zone Smoke   - (smoke device, alarm/clear)
+* DSC Zone Smoke 4w  - (4-wire smoke device, alarm/clear/test. It's nearly the same as motion or contact, as it's attached to a zone.)
+* DSC Zone Smoke 2w  - (2-wire smoke device, alarm/clear, UNTESTED, Probably doesn't work right now and I have no way to test it. 2 wire devices create their own alarm type that isn't attached to a zone.)
 
 
 At a minimum you'll probably want the Stay/Away panels, Contact, and Motion.

@@ -22,24 +22,25 @@ metadata {
     // Nothing here, you could put some testing stuff here if you like
   }
 
-  tiles {
-    // Main Row
-    standardTile("zone", "device.smoke", width: 2, height: 2, canChangeBackground: true, canChangeIcon: true) {
-      state "clear",  label: 'clear',  icon: "st.alarm.smoke.clear", backgroundColor: "#ffffff"
-      state "smoke",  label: 'SMOKE',  icon: "st.alarm.smoke.smoke", backgroundColor: "#e86d13"
-      state "tested", label: 'TESTED', icon: "st.alarm.smoke.test",  backgroundColor: "#e86d13"
-    }
-
-    standardTile("tamper", "device.tamper", width: 2, height: 2, canChangeBackground: true, canChangeIcon: true) {
-      state "clear",   label: 'No Tamper', icon: "st.contact.contact.closed",   backgroundColor: "#79b821"
-      state "detected", label: 'Tamper', icon: "st.contact.contact.open", backgroundColor: "#ffa81e"
+  tiles(scale: 2) {
+    multiAttributeTile(name:"zone", type: "lighting", width: 6, height: 4){
+      tileAttribute ("device.smoke", key: "PRIMARY_CONTROL") {
+        attributeState "clear",  label: 'clear',  icon: "st.alarm.smoke.clear", backgroundColor: "#ffffff"
+        attributeState "smoke",  label: 'SMOKE',  icon: "st.alarm.smoke.smoke", backgroundColor: "#e86d13"
+        attributeState "tested", label: 'TESTED', icon: "st.alarm.smoke.test",  backgroundColor: "#e86d13"
+       }
+       tileAttribute("device.trouble", key: "SECONDARY_CONTROL") {
+         attributeState("restore", label:'No Trouble')
+         attributeState("tamper", label:'Tamper')
+         attributeState("fault", label:'Fault')
+       }
     }
 
     // This tile will be the tile that is displayed on the Hub page.
     main "zone"
 
     // These tiles will be displayed when clicked on the device, in the order listed here.
-    details(["zone","tamper"])
+    details "zone"
   }
 }
 
@@ -49,17 +50,13 @@ def zone(String state) {
   // zone will be a number for the zone
   log.debug "Zone: ${state}"
 
-  def tamperMap = [
-    'fault':"detected",
-    'restore':"clear",
-  ]
+  def troubleList = ['fault','tamper','restore']
 
-  if (tamperMap[state]) {
-    def tamperState = tamperMap."${state}"
+  if (troubleList.contains(state)) {
     // Send final event
-    sendEvent (name: "tamper", value: "${tamperState}")
+    sendEvent (name: "trouble", value: "${state}")
   } else {
-    // Since this is a smoke device we need to convert open to test and closed to clear
+    // Since this is a smoke device we need to convert the values to match the device capabilities
     // before sending the event
     def eventMap = [
      'open':"tested",
