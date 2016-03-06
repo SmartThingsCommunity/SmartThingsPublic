@@ -3,7 +3,7 @@
  *
  *  Copyright 2015, 2016 Bruce Ravenel
  *
- *  Version 1.8.3e   6 Mar 2016
+ *  Version 1.8.3f   6 Mar 2016
  *
  *	Version History
  *
@@ -108,7 +108,7 @@ preferences {
 //
 
 def appVersion() {
-	return "1.8.3e" 
+	return "1.8.3f" 
 }
 
 def mainPage() {
@@ -1680,7 +1680,12 @@ def dimToggle(devices, dimLevel, trufal) {
 def dimAdjust(devices, dimLevel, trufal) {
 //	log.debug "dimAdjust: $devices = ${devices*.currentValue('level')}"
 	def del = trufal ? delayMilTrue : delayMilFalse
-    devices.each { if(del) it.setLevel(it.currentLevel + dimLevel, [delay: del]) else it.setLevel(it.currentLevel + dimLevel) }
+    devices.each { 
+    	def level = it.currentLevel + dimLevel
+        if(level > 99) level = 99
+        if(level < 0) level = 0
+    	if(del) it.setLevel(level, [delay: del]) else it.setLevel(level) 
+    }
 }
 
 def dimModes(trufal) {
