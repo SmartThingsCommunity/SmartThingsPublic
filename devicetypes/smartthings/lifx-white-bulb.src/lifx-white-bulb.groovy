@@ -84,6 +84,7 @@ def setLevel(percentage) {
 			log.error("Bad setLevel result: [${resp.status}] ${resp.data}")
 		}
 	}
+	return []
 }
 
 def setColorTemperature(kelvin) {
@@ -99,6 +100,7 @@ def setColorTemperature(kelvin) {
 			log.error("Bad setColorTemperature result: [${resp.status}] ${resp.data}")
 		}
 	}
+	return []
 }
 
 def on() {
@@ -108,6 +110,7 @@ def on() {
 			sendEvent(name: "switch", value: "on")
 		}
 	}
+	return []
 }
 
 def off() {
@@ -117,6 +120,7 @@ def off() {
 			sendEvent(name: "switch", value: "off")
 		}
 	}
+	return []
 }
 
 def poll() {

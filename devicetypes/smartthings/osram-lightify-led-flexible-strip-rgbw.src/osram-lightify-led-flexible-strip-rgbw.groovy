@@ -4,6 +4,7 @@
     Osram bulbs have a firmware issue causing it to forget its dimming level when turned off (via commands). Handling
     that issue by using state variables
 */
+//DEPRECATED - Using the generic DTH for this device. Users need to be moved before deleting this DTH
 
 metadata {
 	definition (name: "OSRAM LIGHTIFY LED Flexible Strip RGBW", namespace: "smartthings", author: "SmartThings") {
@@ -23,8 +24,8 @@ metadata {
         command "setAdjustedColor"
 
 
-		fingerprint profileId: "0104", inClusters: "0000,0003,0004,0005,0006,0008,0300,0B04,FC0F", outClusters: "0019", manufacturer: "OSRAM", model: "LIGHTIFY Flex RGBW"
-        fingerprint profileId: "0104", inClusters: "0000,0003,0004,0005,0006,0008,0300,0B04,FC0F", outClusters: "0019", manufacturer: "OSRAM", model: "Flex RGBW"
+		//fingerprint profileId: "0104", inClusters: "0000,0003,0004,0005,0006,0008,0300,0B04,FC0F", outClusters: "0019", manufacturer: "OSRAM", model: "LIGHTIFY Flex RGBW"
+        //fingerprint profileId: "0104", inClusters: "0000,0003,0004,0005,0006,0008,0300,0B04,FC0F", outClusters: "0019", manufacturer: "OSRAM", model: "Flex RGBW"
 
     }
 

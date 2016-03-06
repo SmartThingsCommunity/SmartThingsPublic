@@ -32,7 +32,8 @@ definition(
 
 
 preferences {
-	page(name: "checkAccessToken")
+    page(name: "checkAccessToken")
+    
 }
 
 cards {
@@ -41,20 +42,26 @@ cards {
 
 /* This list contains, that url need to be allowed in Smart Energy Service.*/
 def whiteList() {
-	[
-    	"code.jquery.com", 
-    	"ajax.googleapis.com", 
-    	"code.highcharts.com", 
-    	"enertalk-card.encoredtech.com", 
-    	"s3-ap-northeast-1.amazonaws.com", 
-    	"ui-hub.encoredtech.com"
+    [
+        "code.jquery.com", 
+        "ajax.googleapis.com", 
+        "fonts.googleapis.com",
+        "enertalk-card.encoredtech.com", 
+        "s3-ap-northeast-1.amazonaws.com",
+        "s3.amazonaws.com", 
+        "ui-hub.encoredtech.com",
+        "enertalk-auth.encoredtech.com",
+        "api.encoredtech.com",
+        "cdnjs.cloudflare.com",
+        "encoredtech.com",
+        "itunes.apple.com"
     ]
 }
 
 /* url endpoints */
 mappings {
-	path("/requestCode") { action: [ GET: "requestCode" ] }
-	path("/receiveToken") { action: [ GET: "receiveToken"] }
+    path("/requestCode") { action: [ GET: "requestCode" ] }
+    path("/receiveToken") { action: [ GET: "receiveToken"] }
     path("/getHtml") { action: [GET: "getHtml"] }
     path("/consoleLog") { action: [POST: "consoleLog"]}
     path("/getInitialData") { action: [GET: "getInitialData"]}
@@ -67,106 +74,102 @@ mappings {
 * 2. If Encored access token does exist, it will show a list of configurations, that user need to define values. 
 */
 def checkAccessToken() {
-	log.debug "Staring the installation"
-    
-    /* getting language setting of user's device. */
+
+    /* Choose the level */    
+    atomicState.env_mode ="prod"
+   
     def lang = clientLocale?.language
    
-    if ("${lang}" == "ko")
-    	state.language = "ko"
-    else {
-    	state.language = "en"
+    /* getting language settings of user's device.  */
+    if ("${lang}" == "ko") {
+        atomicState.language = "ko"
+    } else {
+        atomicState.language = "en"
     }
     
-    /* create tanslation for descriptive and informative strings that can be seen by users.  */
+    /* create tanslation for descriptive and informative strings that can be seen by users. */
     if (!state.languageString) {
-    	createLocaleStrings() 
+        createLocaleStrings() 
     }
     
-	if (!atomicState.encoredAccessToken) { /*check if Encored access token does exist.*/
-    	
-        log.debug "Encored Access Token does not exist."
-        log.debug "Start : Starting the process of getting Encored Access Token"
+    if (!atomicState.encoredAccessToken) { /*check if Encored access token does exist.*/
         
         if (!state.accessToken) { /*if smartThings' access token does not exitst*/
-        	log.debug "SmartThings Access Token does not exist."
-            log.debug "Starting : Starting the process of getting SmartThings Access Token"
             createAccessToken() /*request and get access token from smartThings*/
-            log.debug "Done : Finished to get SmartThings Access Token"
-            /* re-create strings to make sure it's been initialized. */
-            createLocaleStrings() 
         }
 
-		def redirectUrl = buildRedirectUrl("requestCode") /* build a redirect url with endpoint "requestCode"*/
+        def redirectUrl = buildRedirectUrl("requestCode") /* build a redirect url with endpoint "requestCode"*/
         
-        /* These below lines will redirect the page on the app to the mapped page, which was maaped within endpoint of the redirectUrl*/
-        log.debug "Start : String the process to request a code to Encored."
+        /* These lines will start the OAuth process.\n*/
         return dynamicPage(name: "checkAccessToken", nextPage:null, uninstall: true, install:false) {
             section{
-            	paragraph state.languageString."${state.language}".desc1
-                href(title: state.languageString."${state.language}".main,
-                     description: state.languageString."${state.language}".desc2,
+                paragraph state.languageString."${atomicState.language}".desc1
+                href(title: state.languageString."${atomicState.language}".main,
+                     description: state.languageString."${atomicState.language}".desc2,
                      required: true,
                      style:"embedded",
                      url: redirectUrl)
             }
         }
     } else {
-    	/* This part will load the configuration for this application */
+        /* This part will load the configuration for this application */
         return dynamicPage(name:"checkAccessToken",install:true, uninstall : true) {
-        	section(title:state.languageString."${state.language}".title6) {
+            section(title:state.languageString."${atomicState.language}".title6) {
             
-            	/* A push alarm for this application */
-            	input(
+                /* A push alarm for this application */
+                input(
                     type: "boolean", 
                     name: "notification", 
-                    title: state.languageString."${state.language}".title1,
-                    required: false, 
+                    title: state.languageString."${atomicState.language}".title1,
+                    required: false,
+                    default: true,
                     multiple: false
                 )
                 
                 /* A plan that user need to decide */
                 input(
-                	type: "number", 
+                    type: "number", 
                     name: "energyPlan", 
-                    title: state.languageString."${state.language}".title2,
-                    description : state.languageString."${state.language}".subTitle1,
+                    title: state.languageString."${atomicState.language}".title2,
+                    description : state.languageString."${atomicState.language}".subTitle1,
                     defaultValue: state.languageString.energyPlan,
+                    range: "1130..*",
+                    submitOnChange: true,
                     required: true, 
                     multiple: false
                 )
-                 
+                
                 /* A displaying unit that user need to decide */
                 input(
-                	type: "enum", 
+                    type: "enum", 
                     name: "displayUnit", 
-                    title: state.languageString."${state.language}".title3, 
-                    defaultValue : state.languageString."${state.language}".defaultValues.default1,
+                    title: state.languageString."${atomicState.language}".title3, 
+                    defaultValue : state.languageString."${atomicState.language}".defaultValues.default1,
                     required: true, 
                     multiple: false, 
-                    options: state.languageString."${state.language}".displayUnits
+                    options: state.languageString."${atomicState.language}".displayUnits
                 )
                 
                 /* A metering date that user should know */
-            	input(
-                	type: "enum", 
+                input(
+                    type: "enum", 
                     name: "meteringDate", 
-                    title: state.languageString."${state.language}".title4,
-                    defaultValue: state.languageString."${state.language}".defaultValues.default2,
+                    title: state.languageString."${atomicState.language}".title4,
+                    defaultValue: state.languageString."${atomicState.language}".defaultValues.default2,
                     required: true, 
                     multiple: false, 
-                    options: state.languageString."${state.language}".meteringDays
+                    options: state.languageString."${atomicState.language}".meteringDays
                 )
                 
                 /* A contract type that user should know */
                 input(
-                	type: "enum", 
-                	name: "contractType", 
-                    title: state.languageString."${state.language}".title5,
-                    defaultValue: state.languageString."${state.language}".defaultValues.default3,
+                    type: "enum", 
+                    name: "contractType", 
+                    title: state.languageString."${atomicState.language}".title5,
+                    defaultValue: state.languageString."${atomicState.language}".defaultValues.default3,
                     required: true, 
                     multiple: false, 
-                    options: state.languageString."${state.language}".contractTypes)
+                    options: state.languageString."${atomicState.language}".contractTypes)
             }
             
         }
@@ -174,73 +177,64 @@ def checkAccessToken() {
 }
 
 def requestCode(){
-	log.debug "In process : Making a parameter to request Encored a code."
-	/* Make a parameter to request Encored for a OAuth code. */
+    
+    /* Make a parameter to request Encored for a OAuth code. */
     def oauthParams = 
     [
-		response_type: "code",
-		scope: "remote",
-		client_id: "${appSettings.clientId}",
+        response_type: "code",
+        scope: "remote",
+        client_id: "${appSettings.clientId}",
         app_version: "web",
-		redirect_uri: buildRedirectUrl("receiveToken")
-	]
+        redirect_uri: buildRedirectUrl("receiveToken")
+    ]
 
-	log.debug "In process : Sending parameter to Encored."
-    
     /* Request Encored a code. */
-	redirect location: "https://enertalk-auth.encoredtech.com/authorization?${toQueryString(oauthParams)}"
+    redirect location: "https://enertalk-auth.encoredtech.com/authorization?${toQueryString(oauthParams)}"
 }
 
 def receiveToken(){
-	log.debug "In process : Starting to request Encored to swap code with Encored Aceess Token"
-	
-    /* Making a parameter values to swap code with token */
+    
+    /* Making a parameter to swap code with a token */
     def authorization = "Basic " + "${appSettings.clientId}:${appSettings.clientSecret}".bytes.encodeBase64()
     def uri = "https://enertalk-auth.encoredtech.com/token"
     def header = [Authorization: authorization, contentType: "application/json"]
     def body = [grant_type: "authorization_code", code: params.code]
-	
-    log.debug "In process : Making a parameter to swap code with a token"
+    
     def encoredTokenParams = makePostParams(uri, header, body)
     
-    log.debug "In process : Sending REST to Encored to swap code with a token"
     def encoredTokens = getHttpPostJson(encoredTokenParams)
-	
+    
     /* make a page to show people if the REST was successful or not. */
     if (encoredTokens) {
-    	log.debug "Done : Successfully got Encored Access Token"
-        
-		atomicState.encoredRefreshToken = encoredTokens.refresh_token
-		atomicState.encoredAccessToken = encoredTokens.access_token
+        atomicState.encoredRefreshToken = encoredTokens.refresh_token
+        atomicState.encoredAccessToken = encoredTokens.access_token
         
         success()
-	} else {
-    	log.debug "Done : Failed to get Encored Access Token"
-    	fail()
+    } else {
+        
+        fail()
     }
     
 }
 
 
 def installed() {
-	log.debug "Installed with settings: ${settings}"
 
-	initialize()
+    initialize()
 }
 
 def updated() {
-	log.debug "Updated with settings: ${settings}"
-	log.debug "state : ${atomicState}"
-
-	unsubscribe()
     
-   	/* Check uuid and if it does not exist then don't update.*/
-    log.debug atomicState.notPaired
+    /* Make sure uuid is there. */
+    getUUID()
+    
+    /* Check uuid and if it does not exist then don't update.*/
     if (!atomicState.notPaired) {  
-
         def theDay = 1
 
         for(def i=1; i < 28; i++) {
+            
+            /* set user choosen option to apropriate value. */
             if (atomicState.language == "en") {
                 if ("${i}st day of the month" == settings.meteringDate || 
                     "${i}nd day of the month" == settings.meteringDate || 
@@ -268,49 +262,61 @@ def updated() {
             }
 
         }
-
-
-        def changeToUsageParam = makeGetParams("http://api-staging.encoredtech.com/1.2/devices/${atomicState.uuid}/bill/expectedUsage?bill=${settings.energyPlan}",
-                                      [Authorization: "Bearer ${atomicState.encoredAccessToken}", ContentType: "application/json"])
-
-       def energyPlanUsage = getHttpGetJson(changeToUsageParam)
-        def epUsage = 0
-        if (energyPlanUsage) {
-        	log.debug "getin herhehrehrehrehrehrehrehehrehehrehherherhehrehehrehehrehrehrehrehhr"
-            epUsage = energyPlanUsage.usage
-        } 
-
+        
+        /* Set choosen contract to apropriate variable. */
         def contract = 1
         if (settings.contractType == "High voltage" || settings.contractType == "주택용 고압") {
             contract = 2
+            
+            if (settings.energyPlan < 460) {
+                settings.energyPlan = 490
+            }
+        } else {
+            
+            if (settings.energyPlan < 1130) {
+                settings.energyPlan = 1130
+            }
+        }
+        
+        
+        /* convert bill to milliwatts */
+        def changeToUsageParam = makeGetParams("${state.domains."${atomicState.env_mode}"}/1.2/devices/${atomicState.uuid}/bill/expectedUsage?bill=${settings.energyPlan}",
+                                      [Authorization: "Bearer ${atomicState.encoredAccessToken}", ContentType: "application/json"])
+
+       def energyPlanUsage = getHttpGetJson(changeToUsageParam, 'CheckEnergyPlanUsage')
+        def epUsage = 0
+        if (energyPlanUsage) {
+            epUsage = energyPlanUsage.usage
         } 
-		log.debug "Usage epepepepepepepepepepepepepepepepepepeeppepepepeeppepepepepepepeep ${epUsage}"
-        def configurationParam = makePostParams("http://api-staging.encoredtech.com/1.2/me",
+        
+        /* update the the information depends on the option choosen */
+        def configurationParam = makePostParams("${state.domains."${atomicState.env_mode}"}/1.2/me",
                                           [Authorization     : "Bearer ${atomicState.encoredAccessToken}"],
                                           [contractType      : contract, 
                                            meteringDay       : theDay,
                                            maxLimitUsage     : epUsage])
         getHttpPutJson(configurationParam)
     }
-	
+    
 }
 
 def initialize() {
-	log.debug "Initializing Application"
-    
+
     def EATValidation = checkEncoreAccessTokenValidation()
     
+    /* if token exist get user's device id, uuid */
     if (EATValidation) {
-        if (getUUID()) {
-        //if (false) { // to test things without uuid.
-            def pushParams = makePostParams("http://api-staging.encoredtech.com/1.2/devices/${atomicState.uuid}/events/push",
+        getUUID()
+        if (atomicState.uuid) {
+            
+            def pushParams = makePostParams("${state.domains."${atomicState.env_mode}"}/1.2/devices/${atomicState.uuid}/events/push",
                                         [Authorization: "Bearer ${atomicState.encoredAccessToken}", ContentType: "application/json"],
                                         [type: "REST", regId:"${state.accessToken}__${app.id}"])
             getHttpPostJson(pushParams)
-		}
+        }
         
     } else {
-    	log.warning "Ecored Access Token did not get refreshed!"
+        log.warn "Ecored Access Token did not get refreshed!"
     }
         
     
@@ -318,24 +324,19 @@ def initialize() {
     atomicState.dni = "EncoredDTH01"
     def d = getChildDevice(atomicState.dni)
     if(!d) {
-        log.debug "Device does not exists."
-        
-        d = addChildDevice("Encored", "EnerTalk Energy Meter", atomicState.dni, null, [name:"EnerTalk Energy Meter", label:name])
+    
+        d = addChildDevice("Encored Technologies", "EnerTalk Energy Meter", atomicState.dni, null, [name:"EnerTalk Energy Meter", label:name])
 
     } else {
-        log.debug "Device already created"
+        log.warn "Device already created"
     }
     
-    setSummary()    
+    setSummary()
+    runEvery5Minutes(getHtml)
 }
 
 def setSummary() {
-    // Use sendEvent with a SOLUTION_SUMMARY eventType - this
-    // is what drives the information on the solution module dashboard.
-    // Since this summary just displays the switch configured, we need
-    // to ensure it's called every time the app is installed or configured
-    // so that the summary data is correct.
-    log.debug "in setSummary"
+   
     def text = "Successfully installed."
     sendEvent(linkText:count.toString(), descriptionText: app.label,
               eventType:"SOLUTION_SUMMARY",
@@ -347,19 +348,17 @@ def setSummary() {
 
 // TODO: implement event handlers
 
-/* 	Check the validation of Encored Access Token (EAT)
-*	If it's not valid try refresh Access Token.
-*	If the token get refreshed, it will refresh the value of Encored Access Token
-*	If it doesn't get refreshed, then it returns null
+/*  Check the validation of Encored Access Token (EAT)
+*   If it's not valid try refresh Access Token.
+*   If the token gets refreshed, it will refresh the value of Encored Access Token
+*   If it doesn't get refreshed, then it returns null
 */
 private checkEncoreAccessTokenValidation() {
-	/* make a parameter to check the validation of Encored access token */
-    def verifyParam = makeGetParams("http://enertalk-auth.encoredtech.com/verify", 
-    							[Authorization: "Bearer ${atomicState.encoredAccessToken}", ContentType: "application/json"])
+    /* make a parameter to check the validation of Encored access token */
+    def verifyParam = makeGetParams("https://enertalk-auth.encoredtech.com/verify", 
+                                [Authorization: "Bearer ${atomicState.encoredAccessToken}", ContentType: "application/json"])
     /* check the validation */
-    def verified = getHttpGetJson(verifyParam)
-
-    log.debug "verified : ${verified}"
+    def verified = getHttpGetJson(verifyParam, 'verifyToken')
 
     /* if Encored Access Token need to be renewed. */
     if (!verified) {
@@ -368,7 +367,7 @@ private checkEncoreAccessTokenValidation() {
 
             /* Recheck the renewed Encored access token. */
             verifyParam.headers = [Authorization: "Bearer ${atomicState.encoredAccessToken}"]
-            verified = getHttpGetJson(verifyParam)
+            verified = getHttpGetJson(verifyParam, 'CheckRefresh')
 
         } catch (groovyx.net.http.HttpResponseException e) {
             /* If refreshing token raises an error  */
@@ -381,29 +380,32 @@ private checkEncoreAccessTokenValidation() {
 
 /* Get device UUID, if it does not exist, return false. true otherwise.*/
 private getUUID() {
-	atomicState.uuid = null
+    atomicState.uuid = null
     atomicState.notPaired = true
     /* Make a parameter to get device id (uuid)*/
-    def uuidParams = makeGetParams( "http://enertalk-auth.encoredtech.com/uuid",
+    def uuidParams = makeGetParams( "https://enertalk-auth.encoredtech.com/uuid",
                                    [Authorization: "Bearer ${atomicState.encoredAccessToken}", ContentType: "application/json"])
 
-    def deviceUUID = getHttpGetJson(uuidParams)
-    
+    def deviceUUID = getHttpGetJson(uuidParams, 'UUID')
+
     if (!deviceUUID) {
-    	return false
+        return false
     }
-    
+
     atomicState.uuid = deviceUUID.uuid
     atomicState.notPaired = false
     return true
 }
 
 private createLocaleStrings() {
-	
+   state.domains = [
+        test : "http://api.encoredtech.com",
+        prod : "https://api.encoredtech.com:8082/"
+   ]
    state.languageString = 
    [
-   		energyPlan : 1000,
-    	en : [
+        energyPlan : 30000,
+        en : [
                 desc1 : "Tab below to sign in or sign up to Encored EnerTalk smart energy service and authorize SmartThings access.",
                 desc2 : "Click to proceed authorization.",
                 main : "EnerTalk",
@@ -411,7 +413,7 @@ private createLocaleStrings() {
                                 default1 : "kWh",
                                 default2 : "1st day of the month",
                                 default3 : "Low voltage"
-                				],
+                                ],
                 meteringDays : [
                             "1st day of the month", 
                             "2nd day of the month", 
@@ -451,7 +453,20 @@ private createLocaleStrings() {
                 title5 : "Contract Type",
                 title6 : "User & Notifications",
                 message1 : """ <p>Your Encored Account is now connected to SmartThings!</p> <p>Click 'Done' to finish setup.</p> """,
-                message2 : """ <p>The connection could not be established!</p> <p>Click 'Done' to return to the menu.</p> """
+                message2 : """ <p>The connection could not be established!</p> <p>Click 'Done' to return to the menu.</p> """,
+                message3 : [
+                        header : "Device is not installed",
+                        body1 : "You need to install EnerTalk device at first,",
+                        body2 : "and proceed setup and register device.",
+                        button1 : "Setup device",
+                        button2 : "Not Installed"
+                       ],
+                message4 : [
+                            header : "Device is not connected.",
+                            body1 : "Please check the Wi-Fi network connection",
+                            body2 : "and EnerTalk device status.",
+                            body3 : "Select ‘Setup Device’ to reset the device."
+                            ]
             ],
         ko :[
                 desc1 : "스마트 에너지 서비스를 이용하시려면 EnerTalk 서비스 가입과 SmartThings 접근 권한이 필요합니다.",
@@ -461,7 +476,7 @@ private createLocaleStrings() {
                                 default1 : "kWh",
                                 default2 : "매월 1일",
                                 default3 : "주택용 저압"
-                				],
+                                ],
                 meteringDays : [
                             "매월 1일", 
                             "매월 2일", 
@@ -494,14 +509,28 @@ private createLocaleStrings() {
                 displayUnits : ["원(₩)", "kWh"],
                 contractTypes : ["주택용 저압", "주택용 고압"],
                 title1 : "알람 설정",
-                title2 : "에너지 사용 계획",
+                title2 : "사용 계획 (원)",
                 subTitle1 : "월간 계획을 금액으로 입력하세요",
                 title3 : "표시 단위",
                 title4 : "정기검침일",
                 title5 : "계약종별",
                 title6 : "사용자 & 알람 설정",
-                message1 : """ <p>EnerTalk 기기 설치가 완료되었습니다!</p> <p>Done을 눌러 계속 진행해 주세요.</p> """,
-                message2 : """ <p>계정 연결이 실패했습니다.</p> <p>Done 버튼을 눌러 다시 시도해주세요.</p> """
+                message1 : """ <p>EnerTalk 계정이 SmartThings와 연결 되었습니다!</p> <p>Done을 눌러 계속 진행해 주세요.</p> """,
+                message2 : """ <p>계정 연결이 실패했습니다.</p> <p>Done 버튼을 눌러 다시 시도해주세요.</p> """,
+                message3 : [
+                        header : "기기 설치가 필요합니다.",
+                        body1 : "가정 내 분전반에 EnerTalk 기기를 먼저 설치하고,",
+                        body2 : "아래 버튼을 눌러 기기등록 및 연결을 진행하세요.",
+                        button1 : "기기 설정",
+                        button2 : "설치필요"
+                       ],
+                message4 : [
+                            header : "Device is not connected.",
+                            body1 : "Please check the Wi-Fi network connection",
+                            body2 : "and EnerTalk device status.",
+                            body3 : "Select ‘Setup Device’ to reset the device."
+                            ]
+                
             ]
     ]
 
@@ -509,25 +538,42 @@ private createLocaleStrings() {
 
 /* This method makes a redirect url with a given endpoint */
 private buildRedirectUrl(mappingPath) {
-	log.debug "Start : Starting to making a redirect URL with endpoint : /${mappingPath}"
+
     def url = "https://graph.api.smartthings.com/api/token/${state.accessToken}/smartapps/installations/${app.id}/${mappingPath}"
-    log.debug "Done : Finished to make a URL : ${url}"
+
     url
 }
 
 String toQueryString(Map m) {
-	return m.collect { k, v -> "${k}=${URLEncoder.encode(v.toString())}" }.sort().join("&")
+    return m.collect { k, v -> "${k}=${URLEncoder.encode(v.toString())}" }.sort().join("&")
 }
 
 /* make a success message. */
 private success() {
-	def message = state.languageString."${state.language}".message1
-	connectionStatus(message)
+    def lang = clientLocale?.language
+   
+    if ("${lang}" == "ko") {
+        atomicState.language = "ko"
+    } else {
+  
+        atomicState.language = "en"
+    }
+
+    def message = atomicState.languageString."${atomicState.language}".message1
+    connectionStatus(message)
 }
 
 /* make a failure message. */
 private fail() {
-    def message = state.languageString."${state.language}".message2
+    def lang = clientLocale?.language
+   
+    if ("${lang}" == "ko") {
+        atomicState.language = "ko"
+    } else {
+  
+        atomicState.language = "en"
+    }
+    def message = atomicState.languageString."${atomicState.language}".message2
     connectionStatus(message)
 }
 
@@ -538,7 +584,7 @@ private connectionStatus(message) {
         <head>
         <meta name="viewport" content="initial-scale=1, maximum-scale=1, user-scalable=no, width=device-width height=device-height">
        
-        <link href='http://fonts.googleapis.com/css?family=Roboto' rel='stylesheet' type='text/css'>
+        <link href='https://fonts.googleapis.com/css?family=Roboto' rel='stylesheet' type='text/css'>
         <title>SmartThings Connection</title>
         <style type="text/css">
             @font-face {
@@ -562,8 +608,8 @@ private connectionStatus(message) {
                 font-style: normal;
             }
             body {
-            	margin: 0;
-            	width : 100%;
+                margin: 0;
+                width : 100%;
             }
             .container {
                 width: 100%;
@@ -578,20 +624,20 @@ private connectionStatus(message) {
             }
             
             .encored{
-            	width: 25vw;
+                width: 25vw;
                 height: 25vw;
                 margin-right : 8.75vw;
             }
             .chain {
-            	width:6.25vw;
+                width:6.25vw;
                 height: 6.25vw;
             }
             .smartt {
-            	width: 25vw;
+                width: 25vw;
                 height: 25vw;
                 margin-left: 8.75vw
             }
-           	
+            
             p {
                 font-size: 21px;
                 font-weight: 300;
@@ -623,70 +669,63 @@ private connectionStatus(message) {
             
         </body>
         </html>
-	"""
-	render contentType: 'text/html', data: html
+    """
+    render contentType: 'text/html', data: html
 }
 
 private refreshAuthToken() {
-	/*Refreshing Encored Access Token*/
+    /*Refreshing Encored Access Token*/
+    if(!atomicState.encoredRefreshToken) {
+        log.error "Encored Refresh Token does not exist!"
+    } else {
     
-    log.debug "Start : Refreshing Encored Access Token"
-	if(!atomicState.encoredRefreshToken) {
-		log.error "Encored Refresh Token does not exist!"
-	} else {
-    
-    	def authorization = "Basic " + "${appSettings.clientId}:${appSettings.clientSecret}".bytes.encodeBase64()
-    	def refreshParam = makePostParams("http://enertalk-auth.encoredtech.com/token",
-        									[Authorization: authorization],
+        def authorization = "Basic " + "${appSettings.clientId}:${appSettings.clientSecret}".bytes.encodeBase64()
+        def refreshParam = makePostParams("https://enertalk-auth.encoredtech.com/token",
+                                            [Authorization: authorization],
                                             [grant_type: 'refresh_token', refresh_token: "${atomicState.encoredRefreshToken}"])
         
         def newAccessToken = getHttpPostJson(refreshParam)
         
         if (newAccessToken) {
-        	atomicState.encoredAccessToken = newAccessToken.access_token
-            log.debug "Done : Successfully got new Encored Access Token."
+            atomicState.encoredAccessToken = newAccessToken.access_token
         } else {
-        	log.error "Was unable to renew Encored Access Token."
+            log.warn "Was unable to renew Encored Access Token.\n"
         }
     }
 }
 
 private getHttpPutJson(param) {
-	
-    log.debug "Put URI : ${param.uri}"
-	try {
+    
+    try {
        httpPut(param) { resp ->
- 			log.debug "HTTP Put Success"
+            log.debug "HTTP Put Success"
        }
     } catch(groovyx.net.http.HttpResponseException e) {
-    	log.warn "HTTP Put Error : ${e}"
+        log.warn "HTTP Put Error : ${e}"
     }
 }
 
 private getHttpPostJson(param) {
-	log.debug "Post URI : ${param.uri}"
    def jsonMap = null
    try {
        httpPost(param) { resp ->
            jsonMap = resp.data
-           log.debug resp.data
        }
     } catch(groovyx.net.http.HttpResponseException e) {
-    	log.warn "HTTP Post Error : ${e}"
+        log.warn "HTTP Post Error : ${e}"
     }
     
     return jsonMap
 }
 
-private getHttpGetJson(param) {
-	log.debug "Get URI : ${param.uri}"
+private getHttpGetJson(param, testLog) {
    def jsonMap = null
    try {
        httpGet(param) { resp ->
            jsonMap = resp.data
        }
     } catch(groovyx.net.http.HttpResponseException e) {
-    	log.warn "HTTP Get Error : ${e}"
+        log.warn "HTTP Get Error : ${e}"
     }
     
     return jsonMap
@@ -694,23 +733,30 @@ private getHttpGetJson(param) {
 }
 
 private makePostParams(uri, header, body=[]) {
-	return [
-    	uri : uri,
+    return [
+        uri : uri,
         headers : header,
         body : body
     ]
 }
 
 private makeGetParams(uri, headers, path="") {
-	return [
-    	uri : uri,
+    return [
+        uri : uri,
         path : path,
         headers : headers
     ]
 }
 
 def getInitialData() {
-	atomicState.solutionModuleSettings
+    def lang = clientLocale?.language
+    if ("${lang}" == "ko") {
+        lang = "ko"
+    } else {
+        lang = "en"
+    }
+    atomicState.solutionModuleSettings.language = lang
+    atomicState.solutionModuleSettings
 }
 
 def consoleLog() {
@@ -718,10 +764,10 @@ def consoleLog() {
 }
 
 def getHtml() {
-	
+    
     /* initializing variables */
-	def deviceStatusData = "", standbyData = "", meData = "", meteringData = "", rankingData = "", lastMonth = "", deviceId = ""
-	def standby = "", plan = "", start = "", end = "", meteringDay = "", meteringUsage = "", percent = "", tier = "", meteringPeriodBill = ""
+    def deviceStatusData = "", standbyData = "", meData = "", meteringData = "", rankingData = "", lastMonth = "", deviceId = ""
+    def standby = "", plan = "", start = "", end = "", meteringDay = "", meteringUsage = "", percent = "", tier = "", meteringPeriodBill = ""
     def maxLimitUsageBill, maxLimitUsage = 0
     def deviceStatus = false
     def displayUnit = "watt"
@@ -729,62 +775,72 @@ def getHtml() {
     def meteringPeriodBillShow = "", meteringPeriodBillFalse = "collecting data"
     def standbyShow = "", standbyFalse = "collecting data" 
     def rankingShow = "collecting data"
+    def tierShow = "collecting data"
     def lastMonthShow = "", lastMonthFalse = "no records"
     def planShow = "", planFalse = "set up plan"
     
     def thisMonthUnitOne ="", thisMonthUnitTwo = "", planUnitOne = "", planUnitTwo = "", lastMonthUnit = "", standbyUnit = ""
-    def thisMonthTitle = "This Month", tierTitle = "Billing Tier", planTitle = "Plan", 
-    lastMonthTitle = "Last Month", rankingTitle = "Ranking", standbyTitle = "Standby", energyMonitorDeviceTitle = "Energy Monitor Device"
-    def onOff = "OFF", rankImage = ""
+    def thisMonthTitle = "This Month", tierTitle = "Billing Tier", planTitle = "Energy Goal", 
+    lastMonthTitle = "Last Month", rankingTitle = "Ranking", standbyTitle = "Always on", energyMonitorDeviceTitle = "EnerTalk Device" , realtimeTitle = "Realtime"
+    def onOff = "OFF", rankImage = "", tierImage = ""
+    
+    def htmlBody = ""
+    
+    /* Get the language setting on device. */
+    def lang = clientLocale?.language
+    if ("${lang}" == "ko") {
+        atomicState.language = "ko"
+    } else {
+        atomicState.language = "en"
+    }
+    
+    if (atomicState.language == "ko") {
+        rankingShow = "데이터 수집 중"
+        meteringPeriodBillFalse = "데이터 수집 중" 
+        lastMonthFalse = "정보가 없습니다" 
+        standbyFalse = "데이터 수집 중"
+        planFalse = "계획을 입력하세요"
+        thisMonthTitle = "이번 달" 
+        tierTitle = "누진단계" 
+        planTitle = "사용 계획" 
+        lastMonthTitle = "지난달" 
+        rankingTitle = "랭킹" 
+        standbyTitle = "대기전력" 
+        energyMonitorDeviceTitle = "스마트미터 상태"
+        realtimeTitle = "실시간"
+    }
     
     /* check Encored Access Token */
     def EATValidation = checkEncoreAccessTokenValidation()
-    
+
     /* check if uuid already exist or not.*/
     if (EATValidation && atomicState.notPaired) {
-    	getUUID()
+        getUUID()
     }
     
     /* If token has been verified or refreshed and if uuid exist, call other apis */
+
     if (!atomicState.notPaired) {
-    	log.debug "uuid exist and I am proceeding in good position."
-	//if (false) { //to test
+
         if(EATValidation) {
-            /* make a parameter to get device status */
-            def deviceStatusParam = makeGetParams( "http://api-staging.encoredtech.com/1.2/devices/${atomicState.uuid}/status",
+        
+            def summaryApiParam = makeGetParams( "http://api.encoredtech.com/1.2/devices/${atomicState.uuid}/summary",
                                                     [Authorization: "Bearer ${atomicState.encoredAccessToken}", ContentType: "application/json"])
-
-            /* get device status. */
-            deviceStatusData = getHttpGetJson(deviceStatusParam)
-
-            /* make a parameter to get standby value.*/
-            def standbyParam = makeGetParams( "http://api-staging.encoredtech.com/1.2/devices/${atomicState.uuid}/standbyPower",
-                                                [Authorization: "Bearer ${atomicState.encoredAccessToken}", ContentType: "application/json"])
-
-            /* get standby value */
-            standbyData = getHttpGetJson(standbyParam)
-
-            /* make a parameter to get user's info. */
-            def meParam = makeGetParams( "http://api-staging.encoredtech.com/1.2/me",
-                                        [Authorization: "Bearer ${atomicState.encoredAccessToken}", ContentType: "application/json"])
-
-            /* Get user's info */
-            meData = getHttpGetJson(meParam)
-
-            /* make a parameter to get energy used since metering date */
-            def meteringParam = makeGetParams( "http://api-staging.encoredtech.com/1.2/devices/${atomicState.uuid}/meteringUsage",
-                                                [Authorization: "Bearer ${atomicState.encoredAccessToken}", ContentType: "application/json"])
-
-            /* Get the value of energy used since metering date. */
-            meteringData = getHttpGetJson(meteringParam)
-
-            /* make a parameter to get the energy usage ranking of a user. */
-            def rankingParam = makeGetParams( "http://api-staging.encoredtech.com/1.2/ranking/usages/${atomicState.uuid}?state=current&period=monthly",
-                                                [Authorization: "Bearer ${atomicState.encoredAccessToken}", ContentType: "application/json"])
-
-            /* Get user's energy usage rank */
-            rankingData = getHttpGetJson(rankingParam)
-
+                                                    
+            def summary = getHttpGetJson(summaryApiParam, 'CheckSummary')
+            
+            log.debug "summary is ${summary}"
+        
+            deviceStatusData = summary.status
+            
+            standbyData = summary.standbyPower
+            
+            meData = summary.me
+        
+            meteringData = summary.thisMonth
+            
+            rankingData = summary.ranking
+            
             /* Parse the values from the returned value of api calls. Then use these values to inform user how much they have used or will use. */
 
             /* parse device status. */
@@ -809,20 +865,20 @@ def getHtml() {
                 }
             }
 
-            /* Parse the values that they have been used since metering date.
+            /* Parse the values which have been used since metering date.
             * The list is :
-            *	meteringPeriodBill : A bill for energy usage.
-            *	plan  : The left amount of bill until it reaches limit.
-            *	start : metering date in millisecond e.g. if the metering started on june and 1st, 2015,06,01
-            * 	end	  : Today's date in millisecond
-            *	meteringDay : The day of the metering date. e.g. if the metering date is June 1st, then it will return 1.
-            *	meteringUSage : The amount of energy that user has used.
-            * 	tier : the level of energy use, tier exits from 1 to 6.
-            */	
+            *   meteringPeriodBill : A bill for energy usage.
+            *   plan  : The left amount of bill until it reaches limit.
+            *   start : metering date in millisecond e.g. if the metering started on june and 1st, 2015,06,01
+            *   end   : Today's date in millisecond
+            *   meteringDay : The day of the metering date. e.g. if the metering date is June 1st, then it will return 1.
+            *   meteringUSage : The amount of energy that user has used.
+            *   tier : the level of energy use, tier exits from 1 to 6.
+            */  
             if (meteringData) {
                 if (meteringData.meteringPeriodBill) {
-                    meteringPeriodBill = meteringData.meteringPeriodBill
-                    plan = maxLimitUsageBill - meteringData.meteringPeriodBill
+                    meteringPeriodBill = Math.round(meteringData.meteringPeriodBill)
+                    plan = Math.round(maxLimitUsageBill) - Math.round(meteringData.meteringPeriodBill)
                     start = meteringData.meteringStart
                     end = meteringData.meteringEnd
                     meteringDay = meteringData.meteringDay
@@ -847,19 +903,8 @@ def getHtml() {
 
             /* if the start value exist, get last month energy usage. */
             if (start) {
-                def lastMonthParam = makeGetParams( "http://api-staging.encoredtech.com/1.2/devices/${atomicState.uuid}/meteringUsages?period=monthly&start=${start}&end=${end}",
-                                                [Authorization: "Bearer ${atomicState.encoredAccessToken}", ContentType: "application/json"])
+                lastMonth = summary.lastMonth
 
-                lastMonth = getHttpGetJson(lastMonthParam)
-
-            }
-
-            /* Get the language setting on device. */
-            def lang = clientLocale?.language
-            if ("${lang}" == "ko")
-                state.language = "ko"
-            else {
-                state.language = "en"
             }
 
             /* I decided to set values to device type handler, on loading solution module. 
@@ -868,34 +913,46 @@ def getHtml() {
             def kWhMonth = Math.round(meteringUsage / 10000) / 100 /* milliwatt to kilowatt*/
             def planUsed = 0
             if ( maxLimitUsage > 0 ) {
-                planUsed = Math.round((meteringUsage / maxLimitUsage) * 100) /* get the pecent of used amount against max usage */
+                planUsed = Math.round((meteringUsage / maxLimitUsage) * 10000) / 100 /* get the pecent of used amount against max usage */
             } else {
-                planUsed = Math.round((meteringUsage/ 1000000) * 100) /* if max was not decided let the used value be percent. e.g. 1kWh = 100% */
+                planUsed = Math.round((meteringUsage/ 1000000) * 10000) / 100 /* if max was not decided let the used value be percent. e.g. 1kWh = 100% */
             }
+           
+           def realTimeInfo = summary.realtimeUsage
 
-            /* get realtime usage of user's device.*/
-            def realTimeParam = makeGetParams("http://api-staging.encoredtech.com/1.2/devices/${atomicState.uuid}/realtimeUsage",
-                                              [Authorization: "Bearer ${atomicState.encoredAccessToken}"])
-            def realTimeInfo = getHttpGetJson(realTimeParam)
-
-            if (!realTimeInfo) {
+            if (!realTimeInfo.activePower) {
                 realTimeInfo = 0
             } else {
-                realTimeInfo = Math.round(realTimeInfo.activePower / 1000 )
+                realTimeInfo = Math.round(realTimeInfo.activePower / 10 ) / 100
             }
-
-            /* inserting values to device type handler */ 
+            
+            
+            
+            /* inserting values to device type handler */
+            
+            
+            
             d?.sendEvent(name: "view", value : "${kWhMonth}")
-            d?.sendEvent(name: "month", value : "This Month ㄹㅎㄴ오ㅓㅏ론머ㅏ로미나ㅓ롬니ㅏㅇ롬니아ㅓ로마너ㅣㅇ로 kWh")
-            d?.sendEvent(name: "real", value : "${realTimeInfo}w \n\n Realtime")
-            d?.sendEvent(name: "tier", value : "${tier}\n\n Billing Tier")
-            d?.sendEvent(name: "plan", value :"${planUsed}% \n\n Plan")
+            if (deviceStatus) {
+
+                d?.sendEvent(name: "month", value : "${thisMonthTitle} \n ${kWhMonth} \n kWh")
+            } else { 
+
+                d?.sendEvent(name: "month", value : "\n ${state.languageString."${atomicState.language}".message4.header} \n\n " + 
+                                                    "${state.languageString."${atomicState.language}".message4.body1} \n " +
+                                                    "${state.languageString."${atomicState.language}".message4.body2} \n " +
+                                                    "${state.languageString."${atomicState.language}".message4.body3}") 
+            }
+            
+            d?.sendEvent(name: "real", value : "${realTimeInfo}w \n\n ${realtimeTitle}")
+            d?.sendEvent(name: "tier", value : "${tier} \n\n ${tierTitle}")
+            d?.sendEvent(name: "plan", value : "${planUsed}% \n\n ${planTitle}")
+          
             deviceId = d.id
-            d?.parser()
 
         } else {
             /* If it finally couldn't get Encored access token. */
-            log.error "Cannot get Encored Access Token. Please try later."
+            log.error "Could not get Encored Access Token. Please try later."
         }
 
         /* change the display uinit to bill from kWh if user want. */
@@ -903,29 +960,15 @@ def getHtml() {
             displayUnit = "bill"
         }
 
-        if (state.language == "ko") {
-            rankingShow = "데이터 수집 중"
-            meteringPeriodBillFalse = "데이터 수집 중" 
-            lastMonthFalse = "정보가 없습니다" 
-            standbyFalse = "데이터 수집 중"
-            planFalse = "계획을 입력하세요"
-            thisMonthTitle = "이번달" 
-            tierTitle = "누진단계" 
-            planTitle = "계획" 
-            lastMonthTitle = "지난달" 
-            rankingTitle = "랭킹" 
-            standbyTitle = "대기전력" 
-            energyMonitorDeviceTitle = "스마트미터 상태"
-        }
-
         if (meteringPeriodBill) {
             /* reform the value of the bill with the , separator */
+            log.debug " metering Bill ${meteringPeriodBill}"
             meteringPeriodBillShow = formatMoney("${meteringPeriodBill}")
             meteringPeriodBillFalse = ""
             thisMonthUnitOne = "&#x20A9;"
 
             def dayPassed = getDayPassed(start, end, meteringDay)
-            if (state.language == 'ko') {
+            if (atomicState.language == 'ko') {
                 thisMonthUnitTwo = "/ ${dayPassed}일"
             } else {
                 if (dayPassed == 1) {
@@ -937,12 +980,13 @@ def getHtml() {
         }
 
         if (plan) {
+            log.debug "plan is ${plan}"
             planShow = plan
             if (plan >= 1000) {planShow = formatMoney("${plan}") }
             planFalse = ""
             planUnitOne = "&#x20A9;"
 
-            if (state.language == 'ko') {
+            if (atomicState.language == 'ko') {
                 planUnitTwo = "남음"
             } else {
                 planUnitTwo = "left"
@@ -951,16 +995,17 @@ def getHtml() {
         }
 
         /*set the showing units for html.*/
-        if (lastMonth) {
-            lastMonthShow = formatMoney("${lastMonth.usages[0].meteringPeriodBill}")
+        if (lastMonth.usages) {
+            lastMonthShow = formatMoney("${Math.round(lastMonth.usages[0].meteringPeriodBill)}")
             lastMonthFalse = ""
             lastMonthUnit = "&#x20A9;"
+       
         }
 
         if (standby) {
             standbyShow = standby
             standbyFalse = ""
-            standbyUnit = "WH"
+            standbyUnit = "W"
         }
 
         if (percent) {
@@ -968,24 +1013,30 @@ def getHtml() {
             rankingShow = ""
         }
 
+        if (tier) {
+            tierImage = "<img id=\"image-tier\" src=\"https://s3-ap-northeast-1.amazonaws.com/smartthings-images/tier_${tier}.svg\" />"
+            tierShow = ""
+        }
+
         if (deviceStatus) {
             onOff = "ON"
         }
-
 
         atomicState.solutionModuleSettings = [
            auth           : atomicState.encoredAccessToken, 
            deviceState    : deviceStatus, 
            percent        : percent,
            displayUnit    : displayUnit,
-           language		  : state.language,
-           deviceId	      : deviceId,
-           pairing		  : true
+           language       : atomicState.language,
+           deviceId       : deviceId,
+           pairing        : true
         ]
+        log.debug atomicState.solutionModuleSettings
+        log.debug "meteringBill ${meteringPeriodBillShow} plan ${planShow} lastMonth ${lastMonthShow}"
         
-        atomicState.htmlBody = """
+        htmlBody = """
          <div id="real-time">
-         	
+            
             <!-- real-time card -->
             <div id="my-card"></div>
             
@@ -996,7 +1047,7 @@ def getHtml() {
                 <p class="unit first" id="unit-first-this">${thisMonthUnitOne}</p>
                 <p class="value" id="value-this">${meteringPeriodBillShow}</p>
                 <p class="value" id="value-fail">${meteringPeriodBillFalse}</p>
-                <p class="unit second" id ="unit-second-this">${thisMonthUnitTwo}</p>
+                <p class="unit second" id="unit-second-this">${thisMonthUnitTwo}</p>
               </span> 
             </div>
             
@@ -1004,8 +1055,8 @@ def getHtml() {
             <div class="contents tail" id="content2">
               <p class="key" id="korean-tier">${tierTitle}</p>
               <span class="value-block">
-              	<div id="value-block-tier"><img id=\"image-tier\" src=\"https://s3-ap-northeast-1.amazonaws.com/smartthings-images/tier_${tier}.svg\" /></div>
-                <p class="value" id="value-tier">${tier}</p>
+                <div id="value-block-tier">${tierImage}</div>
+                <p class="value" id="value-fail">${tierShow}</p>
               </span>
             </div> 
             
@@ -1051,18 +1102,18 @@ def getHtml() {
             
             <!-- Device status section -->
             <div class="contents tail" id="content7">
-              <p class="key" id="korean-device" >${energyMonitorDeviceTitle}</p>
+              <p class="key" id="korean-device">${energyMonitorDeviceTitle}</p>
               <span class="value-block">
-                <div class="circle" ></div>
+                <div class="circle"></div>
                 <p class="value last" id="value-ON-OFF">${onOff}</p>
               </span>
             </div>
             
           </div>
           
-          <!-- hidden section!! -->
+          <!-- hidden section -->
           
-		  <div id="this-month">
+          <div id="this-month">
             <div class="card-header">
               <p class="st-title" id="korean-title-this">${thisMonthTitle}</p>
               <button class="st-show" id="show">X</button>
@@ -1110,113 +1161,123 @@ def getHtml() {
             </div>
             <div class="cards" id="my-card8"></div>
           </div>
-		  
-          <link href='http://fonts.googleapis.com/css?family=Roboto' rel='stylesheet' type='text/css'>
-        <link rel="stylesheet" href="${buildResourceUrl('css/app.css')}" type="text/css" media="screen"/>
-        
-          <script src="https://ajax.googleapis.com/ajax/libs/jquery/1.11.3/jquery.min.js"></script>
-          
-    	  <script src="https://cdnjs.cloudflare.com/ajax/libs/webcomponentsjs/0.7.18/webcomponents-lite.min.js"></script>
-  		  <script src="http://ui-hub.encoredtech.com/sdk.js"></script>
           <script>
-          	\$("#this-month").slideUp();
-            \$("#last-month").slideUp();
-            \$("#progressive-step").slideUp();
-            \$("#ranking").slideUp();
-            \$("#plan").slideUp();
-            \$("#standby").slideUp();
-           
-            console.log("adjhsflakhflakdhflakhdflkahdflkahskjdfhaksf");
-            
-            var UI = new Encored.UI({env:'development'});
-            UI.renderCard({
-            	'cards': [{
-                	'id': 'ui:h:strealtime:v1', 
+                 \$("#this-month").slideUp();
+                \$("#last-month").slideUp();
+                \$("#progressive-step").slideUp();
+                \$("#ranking").slideUp();
+                \$("#plan").slideUp();
+                \$("#standby").slideUp();
+
+                var UI = new Encored.UI({
+        
+                });
+                UI.renderCard({
+                   'cards': [{
+                    'id': 'ui:h:strealtime:v1', 
                     'params': {
-                                'lang': '${state.language}', 
+                                'lang': '${atomicState.language}', 
                                 'useDemoLabel': 1, 
                                 'displayUnit': '${displayUnit}'
-					}
-				}], 
-                'accessToken': '${atomicState.encoredAccessToken}', 
-                'target': document.querySelector("#my-card")
-			});
+                    }
+                    }], 
+                    'accessToken': '${atomicState.encoredAccessToken}', 
+                    'target': document.getElementById("my-card")
+                 });
           </script>
-        <script type="text/javascript" src="${buildResourceUrl('javascript/app.js')}"></script>
+        <script src="${buildResourceUrl('javascript/app.js')}"></script>
         
         """
     } else {
-    	log.debug "what the fuck I shouldn't be here ffjahdsfalksf"
-    	def d = getChildDevice(atomicState.dni)
-        log.debug "goint to print things that already have existed since 1yes agakafjlajjjjkkj000000000000000000000000000000"
-    	/* need device pairing */
-        atomicState.solutionModuleSettings = [
-        	dId		: d.id,
-            pairing	: false
-        ]
-        log.debug state.solutionModuleSettings
-        atomicState.htmlBody = """
-         	<div id="real-time">
+        def d = getChildDevice(atomicState.dni)
+        /* inserting values to device type handler */ 
+
+        d?.sendEvent(name: "month", value : "\n ${state.languageString."${atomicState.language}".message3.header} \n\n ${state.languageString."${atomicState.language}".message3.body1} \n ${state.languageString."${atomicState.language}".message3.body2}")
+        deviceId = d.id
         
-            	<!-- real-time card -->
+        if (state.language == "ko") {
+            energyMonitorDeviceTitle = "스마트미터 상태"   
+        }
+        /* need device pairing */
+        atomicState.solutionModuleSettings = [
+            dId     : deviceId,
+            pairing : false
+        ]
+  
+        htmlBody = """
+        
+            <div id="real-time">
+        
+                <!-- real-time card -->
                 <div id="st-pairing-card">
-                	<p class="st-pairing-card-header" align="center">Device is not installed.</p>
-                	<p class="st-pairing-card-body" align="center">You need to install EnerTalk device at first, <br/> and proceed setup and register device</p>
-                	<div id="st-deep-link-container"></div>
+                    <p class="st-pairing-card-header" align="center">${state.languageString."${atomicState.language}".message3.header}</p>
+                    <p class="st-pairing-card-body" align="center"> ${state.languageString."${atomicState.language}".message3.body1} <br/> ${state.languageString."${atomicState.language}".message3.body2}</p>
+                    <div id="st-deep-link-container"></div>
                 </div>
 
 
 
                 <!-- Device status section -->
                 <div class="contents tail" id="content7">
-                  <p class="key">EnerTalk Device</p>
+                  <p class="key">${energyMonitorDeviceTitle}</p>
                   <span class="value-block">
-                    <p class="value last">NOT Installed</p>
+                    <p class="value last">${state.languageString."${atomicState.language}".message3.button2}</p>
                   </span>
                 </div>
             
-          	</div>
-		  
-          	<link href='http://fonts.googleapis.com/css?family=Roboto' rel='stylesheet' type='text/css'>
-			<link rel="stylesheet" href="${buildResourceUrl('css/app.css')}" type="text/css" media="screen"/>
-        
-          	<script src="https://ajax.googleapis.com/ajax/libs/jquery/1.11.3/jquery.min.js"></script>
-            <script type="text/javascript" src="${buildResourceUrl('javascript/app.js')}"></script>
+            </div>
+          
+            <script src="https://ajax.googleapis.com/ajax/libs/jquery/1.11.3/jquery.min.js"></script>
+            <script src="${buildResourceUrl('javascript/app.js')}"></script>
             <script>
                 var ua = navigator.userAgent.toLowerCase();
                 var isAndroid = ua.indexOf("android") > -1; //&& ua.indexOf("mobile");
                 if(!isAndroid) { 
-                	
-				} else {
-                	\$("#st-deep-link-container").html("<a id=\'st-deep-link\' href=\'market://details?id=com.ionicframework.enertalkhome874425\'><p class=\'st-deep-text\'>Setup Device</p></a>");
+                    \$("#st-deep-link-container").html("<a id=\'st-deep-link\' href=\'https://itunes.apple.com/kr/app/enertalk-for-home/id1024660780?mt=8\'><p class=\'st-deep-text\'>${state.languageString."${state.language}".message3.button1}</p></a>");
+                } else {
+                    \$("#st-deep-link-container").html("<a id=\'st-deep-link\' href=\'market://details?id=com.ionicframework.enertalkhome874425\'><p class=\'st-deep-text\'>${state.languageString."${state.language}".message3.button1}</p></a>");
                 };
             </script>
-            
-        
         """
     }
 
     renderHTML() {
         head {
         """
-        	<meta name="viewport" content="initial-scale=1, maximum-scale=1, user-scalable=no, width=device-width, height=device-height">
+            <meta name="viewport" content="initial-scale=1, maximum-scale=1, user-scalable=no, width=device-width, height=device-height">
+            <link href='https://fonts.googleapis.com/css?family=Roboto' rel='stylesheet' type='text/css'>
+            <link rel="stylesheet" href="${buildResourceUrl('css/app.css')}" type="text/css">
+            <script src="https://cdnjs.cloudflare.com/ajax/libs/webcomponentsjs/0.7.18/webcomponents-lite.min.js"></script>
+            <script src="https://enertalk-card.encoredtech.com/sdk.js"></script>
+            <script src="https://ajax.googleapis.com/ajax/libs/jquery/1.11.3/jquery.min.js"></script>
         """
         }
         body {
-        	atomicState.htmlBody
+            htmlBody
         }
     }
 }
 
+
 /* put commas for money or if there are things that need to have a comma separator.*/
 private formatMoney(money) {
-	def i = money.length() -1
+    def i = money.length()-1
     def ret = ""
-	while (i >= 0 ) {
-        if ((i % 3) == 0 && i != (money.length() -1)) {
-        	ret = ",${ret}"
+    def commas = ((int) Math.floor(i/3))
+
+    def j = 0
+    def counter = 0
+ 
+    while (i >= 0) {
+
+        if (counter > 0 && (counter % 3) == 0) {
+            ret = "${money[i]},${ret}"
+            j++
+        } else {
+            ret = "${money[i]}${ret}"
         }
-        ret = "${money[i]}${ret}"
+        
+        counter++
         i--
     }
     
@@ -1224,16 +1285,16 @@ private formatMoney(money) {
 }
 
 /* Count how many days have been passed since metering day:
-* 	if metering day < today, it returns today - metering day
-*	else if metering day > today, it calcualtes how many days have been passed since meterin day and return calculated value.
-*	else return 1 (today).
+*   if metering day < today, it returns today - metering day
+*   else if metering day > today, it calcualtes how many days have been passed since meterin day and return calculated value.
+*   else return 1 (today).
 */
 private getDayPassed(start, end, meteringDay){
     
     def day = 1
     def today = new Date(end)
     def tzDifference = 9 * 60 + today.getTimezoneOffset()
-	today = new Date(today.getTime() + tzDifference * 60 * 1000).getDate();
+    today = new Date(today.getTime() + tzDifference * 60 * 1000).getDate();
     
     if (today > meteringDay) {
         day += today - meteringDay;
@@ -1260,13 +1321,13 @@ private getDayPassed(start, end, meteringDay){
 /* Get Encored push and send the notification. */
 def getEncoredPush() {
 
-	byte[] decoded = "${params.msg}".decodeBase64()
-	def decodedString = new String(decoded)
+    byte[] decoded = "${params.msg}".decodeBase64()
+    def decodedString = new String(decoded)
 
     if (settings.notification == "true") {
-    	sendNotification("${decodedString}", [method: "push"])
+        sendNotification("${decodedString}", [method: "push"])
     } else {
-    	sendNotificationEvent("${decodedString}")
+        sendNotificationEvent("${decodedString}")
     }
     
 }

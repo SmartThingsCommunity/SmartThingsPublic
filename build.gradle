@@ -1,0 +1,57 @@
+import java.nio.charset.StandardCharsets
+import java.nio.file.Paths
+
+apply plugin: 'groovy'
+apply plugin: 'smartthings-executable-deployment'
+apply plugin: 'smartthings-hipchat'
+
+buildscript {
+    dependencies {
+        classpath "com.smartthings.deployment:executable-deployment-scripts:1.0.3"
+    }
+    repositories {
+        jcenter()
+        maven {
+            credentials {
+                username smartThingsArtifactoryUserName
+                password smartThingsArtifactoryPassword
+            }
+            url "http://artifactory.smartthings.com/libs-release-local"
+        }
+    }
+}
+
+repositories {
+    mavenLocal()
+    jcenter()
+}
+
+dependencies {
+}
+
+hipchatShareFile {
+    List<String> archives = []
+    File rootDir = new File("${project.buildDir}/archives")
+    if (rootDir.exists()) {
+        // Create a list of archives which were deployed.
+        java.nio.file.Path rootPath = Paths.get(rootDir.absolutePath)
+        rootDir.eachFileRecurse { File file ->
+            if (file.name.endsWith('.tar.gz')) {
+                java.nio.file.Path archivePath = Paths.get(file.absolutePath)
+                archives.add(rootPath.relativize(archivePath).toString())
+            }
+        }
+    }
+
+    // Set task properties
+    data = archives.join('\n').getBytes(StandardCharsets.UTF_8)
+    fileName = 'deployment-notes.txt'
+    contentType = 'text/html'
+}
+
+hipchatSendNotification {
+    String branch = project.hasProperty('branch') ? project.property('branch') : 'unknown'
+    message = "Began executable deploy of SmartThingsPublic(${branch})."
+    color = branch == 'master' ? 'yellow' : 'red'
+    notify = true
+}
