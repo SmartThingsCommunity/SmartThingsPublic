@@ -114,7 +114,7 @@ private update() {
       // log.debug "Zone or partition: $zoneorpartition"
       if (opts[0])
       {
-        if (notifyEvents.contains('all') || notifyEvents.contains(eventMap[eventCode])) {
+        if (notifyEvents && (notifyEvents.contains('all') || notifyEvents.contains(eventMap[eventCode]))) {
           sendMessage("${opts[0]} ${zoneorpartition} in ${opts[1]} state")
         }
 
