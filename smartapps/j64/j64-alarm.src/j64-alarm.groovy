@@ -19,10 +19,8 @@ definition(
 	name: "j64 Alarm",
 	namespace: "j64",
 	author: "Joe Jarvis",
-	description: "Integrate your Envisalink/DSC alarm system with SmartThings using the j64 Alarm Server.\
-                  This integration allows you to incorporate and control your existing motion sensors, contact sensors\
-                  and alarms from the SmartThings Hub.",
-	category: "SmartThings Labs",
+	description: "Integrate your Envisalink/DSC alarm system with SmartThings using the j64 Alarm Server.  This integration allows you to incorporate and control your existing motion sensors, contact sensors and alarms from the SmartThings Hub.",
+    category: "Safety & Security",
         iconUrl: "http://cdn.device-icons.smartthings.com/Home/home3-icn.png",
         iconX2Url: "http://cdn.device-icons.smartthings.com/Home/home3-icn@2x.png",
         iconX3Url: "http://cdn.device-icons.smartthings.com/Home/home3-icn@3x.png"
@@ -66,6 +64,7 @@ def installDevices() {
     state.j64User = params.j64UserName
     state.j64Password = params.j64Password
     
+	log.debug "installDevices started - will call back to ${j64AlarmServerAddress()} with user ${state.j64User}"
     hubApiGet("/api/AlarmSystem")
 }
 
