@@ -3,7 +3,7 @@
  *
  *  Copyright 2015, 2016 Bruce Ravenel
  *
- *  Version 1.8.3d   6 Mar 2016
+ *  Version 1.8.3e   6 Mar 2016
  *
  *	Version History
  *
@@ -108,7 +108,7 @@ preferences {
 //
 
 def appVersion() {
-	return "1.8.3d" 
+	return "1.8.3e" 
 }
 
 def mainPage() {
@@ -608,8 +608,10 @@ def conditionLabelN(i, isTrig) {
 		def thisDev = settings.find {it.key == (isTrig ? "tDev$i" : "rDev$i")}
 		if(!thisDev) return result
 		def thisAll = settings.find {it.key == (isTrig ? "AlltDev$i" : "AllrDev$i")}
-		def myAny = thisAll && thisDev.value.size() > 1 ? "any " : ""
+//		def myAny = thisAll && thisDev.value.size() > 1 ? "any " : ""
 		def myButton = settings.find {it.key == (isTrig ? "ButtontDev$i" : "ButtonrDev$i")}
+        def myAny = ""
+        if((thisAll || !myButton) && thisDev.value.size() > 1) myAny = "any "
 		if     (thisCapab.value == "Temperature") 	result = "Temperature $phrase "
 		else if(thisCapab.value == "Humidity") 		result = "Humidity $phrase "
 		else if(thisCapab.value == "Illuminance")	result = "Illuminance $phrase "
