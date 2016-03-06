@@ -235,6 +235,7 @@ def connectionStatus(message, redirectUrl = null) {
 
 def getEcobeeThermostats() {
 	log.debug "getting device list"
+	atomicState.remoteSensors = []
 
 	def requestBody = '{"selection":{"selectionType":"registered","selectionMatch":"","includeRuntime":true,"includeSensors":true}}'
 
@@ -251,7 +252,7 @@ def getEcobeeThermostats() {
 
 			if (resp.status == 200) {
 				resp.data.thermostatList.each { stat ->
-					atomicState.remoteSensors = stat.remoteSensors
+					atomicState.remoteSensors = atomicState.remoteSensors == null ? stat.remoteSensors : atomicState.remoteSensors <<  stat.remoteSensors
 					def dni = [app.id, stat.identifier].join('.')
 					stats[dni] = getThermostatDisplayName(stat)
 				}
@@ -273,11 +274,14 @@ def getEcobeeThermostats() {
 
 Map sensorsDiscovered() {
 	def map = [:]
-	atomicState.remoteSensors.each {
-		if (it.type != "thermostat") {
-			def value = "${it?.name}"
-			def key = "ecobee_sensor-"+ it?.id + "-" + it?.code
-			map["${key}"] = value
+	log.info "list ${atomicState.remoteSensors}"
+	atomicState.remoteSensors.each { sensors ->
+		sensors.each {
+			if (it.type != "thermostat") {
+				def value = "${it?.name}"
+				def key = "ecobee_sensor-"+ it?.id + "-" + it?.code
+				map["${key}"] = value
+			}
 		}
 	}
 	atomicState.sensors = map
@@ -541,10 +545,15 @@ def updateSensorData() {
 				def occupancy = ""
 				it.capability.each {
 					if (it.type == "temperature") {
-						if (location.temperatureScale == "F") {
-							temperature = Math.round(it.value.toDouble() / 10)
+						if (it.value == "unknown") {
+							temperature = "--"
 						} else {
-							temperature = convertFtoC(it.value.toDouble() / 10)
+							if (location.temperatureScale == "F") {
+								temperature = Math.round(it.value.toDouble() / 10)
+							} else {
+								temperature = convertFtoC(it.value.toDouble() / 10)
+							}
+
 						}
 
 					} else if (it.type == "occupancy") {

@@ -455,7 +455,7 @@ def locationHandler(evt) {
 					log.error "/description.xml returned a bridge that didn't exist"
 				}
 			}
-		} else if(headerString?.contains("json")) {
+		} else if(headerString?.contains("json") && isValidSource(parsedEvent.mac)) {
             log.trace "description.xml response (application/json)"
 			def body = new groovy.json.JsonSlurper().parseText(parsedEvent.body)
 			if (body.success != null) {
@@ -492,6 +492,11 @@ def doDeviceSync(){
     	log.trace "Subscription already exist"
  	}
 	discoverBridges()
+}
+
+def isValidSource(macAddress) {
+	def vbridges = getVerifiedHueBridges()
+	return (vbridges?.find {"${it.value.mac}" == macAddress}) != null
 }
 
 /////////////////////////////////////
