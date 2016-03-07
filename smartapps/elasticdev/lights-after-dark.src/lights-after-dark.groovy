@@ -73,56 +73,35 @@ def updated()
  */
 def initialize() {
 	//Set initial state
-    state.afterDark = false
+    state.afterDark = isAfterDark()
     state.threshold = (falseAlarmThreshold) ? (falseAlarmThreshold * 60 * 1000) as Long : 5 * 60 * 1000L
     state.lightsDuration = (lightsDuration) ? (lightsDuration * 60) as Long : 0
     state.userOverride = lights.currentSwitch=="on"
 
     //Subscribe to sunrise and sunset events
-    subscribe(location, "sunrise", sunriseHandler)
-    subscribe(location, "sunset", sunsetHandler)
+    //subscribe(location, "sunrise", sunriseandler)
+    //subscribe(location, "sunset", sunsetHandler)
 	subscribe(presence, "presence", presenceHandler)
     subscribe(lights, "switch", switchHandler)
-
-    //Check if current time is after sunset
-    def sunset = getSunriseAndSunset().sunset
-    def now = new Date()
-    if (sunset.before(now)) {
-        state.afterDark = true
-    }
+    
     log.trace "state.afterDark: $state.afterDark"
     log.trace "state.threshold: $state.threshold"
     log.trace "state.lightsDuration: $state.lightsDuration"
     log.trace "state.userOverride: $state.userOverride"
 }
 
-/**
- *	Sunrise Handler
- *
- *	Sets the afterDark flag in the state to false
- *
- *	evt		The sunrise event
- */
-def sunriseHandler(evt) {
-	//log.debug "Sunrise evt: ${evt}, ${evt.value}"
-    def sunriseTime = new Date()
-    log.info "Sunrise at ${sunriseTime}"
-    state.afterDark = false
+
+def isAfterDark(){
+	//Check if current time is after sunset
+    def sunset = getSunriseAndSunset().sunset
+    def now = new Date()
+    if (sunset.before(now)) {
+    	return true
+    } else {
+    	return false
+    }
 }
 
-/**
- *	Sunset Handler
- *
- *	Sets the afterDark flag in the state to true
- *
- *	evt		The sunset event
- */
-def sunsetHandler(evt) {
-	//log.debug "Sunset evt: ${evt}"
-    def sunsetTime = new Date()
-    log.info "Sunset at ${sunsetTime}"
-    state.afterDark = true
-}
 
 /**
  *	Switch Handler
@@ -150,7 +129,8 @@ def presenceHandler(evt)
 {
 	def person = presence.find{it.id == evt.deviceId}
     log.debug "$person is $evt.value!"
-
+	state.afterDark = isAfterDark()
+    
 	if(!state.userOverride) {
         if(state.afterDark) {
             if("present" == evt.value) {
