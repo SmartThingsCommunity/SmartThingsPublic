@@ -36,7 +36,7 @@ definition(
 
 preferences {
     section("About") {
-        paragraph "Turns on the lights when people arrive after sunset but before sunrise."
+        paragraph "Turns on the lights when people arrive after dark (after sunset and before sunrise)."
     }
 
     section("When one of these people arrive at home"){
