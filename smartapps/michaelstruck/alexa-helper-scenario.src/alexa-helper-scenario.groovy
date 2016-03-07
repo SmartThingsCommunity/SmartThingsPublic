@@ -2,7 +2,7 @@
  *  Alexa Helper-Child
  *
  *  Copyright © 2016 Michael Struck
- *  Version 2.7.2 3/4/16
+ *  Version 2.8.0 3/6/16
  * 
  *  Version 1.0.0 - Initial release of child app
  *  Version 1.1.0 - Added framework to show version number of child app and copyright
@@ -23,6 +23,7 @@
  *  Version 2.7.0 - Added baseboard heaters scenario type and various code optimizations
  *  Version 2.7.1b - Small syntax changes
  *  Version 2.7.2 - Code optimization
+ *  Versopm 2.8.0 - Added voice reporting options
  *
  *  Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except
  *  in compliance with the License. You may obtain a copy of the License at:
@@ -51,14 +52,17 @@ preferences {
 	page name: "pageSpeaker"
 	page name: "pagePanic"
 	page name: "pageThermostat"
+    page name: "pageVoice"
+    page name: "pageTempReport"
+    page name: "pageHomeReport"
 }
 def pageStart() {
 	dynamicPage(name: "pageStart", title: "Scenario Settings", uninstall: true, install: true) {
 		section {
-			if (parent.versionInt() < 443) paragraph "You are using a version of the parent app that is older than the recommended version. Please upgrade "+
+			if (parent.versionInt() < 445) paragraph "You are using a version of the parent app that is older than the recommended version. Please upgrade "+
 					"to the latest version to ensure you have the latest features and bug fixes."
             label title:"Scenario Name", required:true
-    	   	input "scenarioType", "enum", title: "Scenario Type...", options: [["Baseboard":"Baseboard Heater Control"],["Control":"Modes/Routines/Devices/HTTP/SHM"],["Panic":"Panic Commands"],["Speaker":"Speaker Control"],["Thermostat":"Heating/Cooling Thermostat"]], required: false, multiple: false, submitOnChange:true
+    	   	input "scenarioType", "enum", title: "Scenario Type...", options: [["Baseboard":"Baseboard Heater Control"],["Control":"Modes/Routines/Devices/HTTP/SHM"],["Panic":"Panic Commands"],["Speaker":"Speaker Control"],["Thermostat":"Heating/Cooling Thermostat"],["Voice":"Voice Reporting"]], required: false, multiple: false, submitOnChange:true
         	if (scenarioType){
                 href "page${scenarioType}", title: "${scenarioType} Scenario Settings", description: scenarioDesc(), state: greyOutScen()
 			}
@@ -66,7 +70,7 @@ def pageStart() {
 		if (scenarioType && parent.getRestrictions()){
 			section("Restrictions") {            
 				input "runDay", "enum", options: ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"], title: "Only on certain days of the week...",  multiple: true, required: false
-        		href "timeIntervalInput", title: "Only during a certain time...", description: getTimeLabel(timeStart, timeEnd), state: greyOutState(timeStart, timeEnd)
+        		href "timeIntervalInput", title: "Only during a certain time...", description: getTimeLabel(timeStart, timeEnd), state: greyOutState(timeStart, timeEnd,"")
             	input "runMode", "mode", title: "Only during the following modes...", multiple: true, required: false
 			}
         }
@@ -125,8 +129,8 @@ def pageSTDevicesOn(){
 	dynamicPage (name: "pageSTDevicesOn", title: "SmartThings Device Control", install: false, uninstall: false) {
 		section ("Switches"){
     		input "onSwitches", "capability.switch", title: "Control these switches...", multiple: true, required: false, submitOnChange:true
-        	if (onSwitches) input "onSwitchesCMD", "enum", title: "Command to send to switches", options:["on":"Turn on","off":"Turn off", "toggle":"Toggle the switches' on/off state"], multiple: false, required: false
-    	}
+			if (onSwitches) input "onSwitchesCMD", "enum", title: "Command to send to switches", options:["on":"Turn on","off":"Turn off", "toggle":"Toggle the switches' on/off state"], multiple: false, required: false
+        }
     	section ("Dimmers"){
     		input "onDimmers", "capability.switchLevel", title: "Control these dimmers...", multiple: true, required: false, submitOnChange:true
         	if (onDimmers) input "onDimmersCMD", "enum", title: "Command to send to dimmers", options:["on":"Turn on","off":"Turn off","set":"Set level", "toggle":"Toggle the dimmers' on/off state"], multiple: false, required: false, submitOnChange:true
@@ -202,9 +206,7 @@ def pagePanic() {
             	//Speaker alarm options
                 input "alarmSonosVolume", "number", title:"Sonos alarm volume", required: false
                 input "alarmSonosSound", "enum", title:"Sonos alarm sound", options: [1:"Alarm 1-European Siren", 2:"Alarm 2-Sci-Fi Siren", 3:"Alarm 3-Police Car Siren", 4:"Alarm 4-Red Alert",5:"Custom-User Defined"], multiple: false, required: false, submitOnChange:true 
-                if (alarmSonosSound == "5"){
-                	input "alarmSonosCustom", "text", title:"URL/Location of custom sound...", required: false
-                }
+                if (alarmSonosSound == "5") input "alarmSonosCustom", "text", title:"URL/Location of custom sound...", required: false
                 input "alarmSonosTimer", "number", title:"Alarm turns off automatically after (seconds)", required: false
             }
             if (alarmSonos && parent.getSonos()  && !alarmSonos.name.contains("Sonos")){
@@ -313,6 +315,57 @@ page(name: "pageBaseboard", title: "Baseboard Scenario Settings", install: false
 		input "setpointBBOff", "number", title: "Setpoint when Control Switch turned off", required: false
 	}
 }
+//Show "pageVoice" page
+def pageVoice(){
+    dynamicPage(name: "pageVoice", title: "Voice Reporting Scenario Settings", install: false, uninstall: false){
+        section {
+            input "voiceControl", "capability.momentary", title: "Voice Report Control Switch (Momentary)", multiple: false, required: true
+            input "voiceSpeaker", "capability.musicPlayer", title: "Speaker For Voice Report", multiple: false, required: false
+            input "voiceVolume", "number", title: "Volume Of Voice Report", required: false
+        }
+        section ("Report Types"){
+            input "voicePre", "text", title: "Speak Message Before Report", description: "Enter a message to play before the report", defaultValue: "This is your SmartThings voice report.", required: false
+            href "pageSwitchReport", title: "Switch Status Report", description: reportDesc(voiceSwitch, "", ""), state: greyOutState(voiceSwitch, "", "")
+            href "pageDoorReport", title: "Doors/Windows Report", description: reportDesc(voiceDoorSensors, voiceDoorControls, voiceDoorLocks), state: greyOutState(voiceDoorSensors, voiceDoorControls, voiceDoorLocks)
+            href "pageTempReport", title: "Temperatures/Thermostats Report", description: reportDesc(voiceTemperature, voiceTempSettings, ""), state: greyOutState(voiceTemperature, voiceTempSettings, "")
+            href "pageHomeReport", title: "Mode and Smart Home Monitor Report", description: reportDesc(voiceMode, voiceSHM, ""), state: "complete"
+            input "voicePost", "text", title: "Speak Message After Report", description: "Enter a message to play after the report", required: false
+        }
+    }
+}
+page(name: "pageSwitchReport", title: "Device Status Report", install: false, uninstall: false){
+	section {
+        input "voiceSwitch", "capability.switch", title: "Switches To Report Their Status...", multiple: true, required: false
+        input "voiceOnSwitchOnly", "bool", title: "Report only switches that are on", defaultValue: false
+    }
+}
+page(name: "pageDoorReport", title: "Doors/Windows Report", install: false, uninstall: false){
+	section {
+		input "voiceDoorSensors", "capability.contactSensor", title: "Check Which Doors/Windows Sensors...", multiple: true, required: false
+		input "voiceDoorControls", "capability.doorControl", title: "Check Which Door Controls...", multiple: true, required: false
+		input "voiceDoorLocks", "capability.lock", title: "Check Which Locks...", multiple: true, required: false
+        input "voiceDoorAll", "bool", title: "Report door/window summary even when all are closed and locked", defaultValue: false
+	}
+}
+def pageTempReport(){
+    dynamicPage(name: "pageTempReport", title: "Temperature Report", install: false, uninstall: false){
+        section {
+            input "voiceTemperature", "capability.temperatureMeasurement", title: "Devices To Report Temperatures...",multiple: true, required: false
+            input "voiceTempSettings", "capability.thermostat", title: "Thermostats To Report Their Setpoints...",multiple: true, required: false
+            input "voiceTempSettingSummary", "bool", title: "Consolidate Thermostats Report", defaultValue: false, submitOnChange:true
+            if (voiceTempSettingSummary) input "voiceTempTarget", "number", title: "Thermostat's Setpoint Target", required: false, defaultValue: 50
+        }
+    }
+}
+def pageHomeReport(){
+    dynamicPage(name: "pageHomeReport", title: "Mode And Security Report", install: false, uninstall: false){
+        section {
+            input "voiceMode", "bool", title: "Report SmartThings Mode Status", defaultValue: false
+            input "voiceSHM", "bool", title: "Report Smart Home Monitor Status", defaultValue: false
+        }
+    }
+}
+//----------------------------------------------------
 def installed() {
     log.debug "Installed with settings: ${settings}"
     initialize()
@@ -324,14 +377,8 @@ def updated() {
     initialize()
 }
 def initialize() {
-    childApps.each {child ->
-		log.info "Installed Scenario: ${child.label}"
-    }
-    //--------------------------------------------------------------------
-    if (scenarioType == "Control"){
-        if (AlexaSwitch) subscribe(AlexaSwitch, "switch", "switchHandler")
-	}
-	//--------------------------------------------------------------------
+    childApps.each {child -> log.info "Installed Scenario: ${child.label}"}
+    if (scenarioType == "Control" && AlexaSwitch) subscribe(AlexaSwitch, "switch", "switchHandler")
     if (scenarioType == "Thermostat"){
     	if (vDimmerTstat && tstat){
             subscribe (vDimmerTstat, "switch.off", "thermoOffHandler")
@@ -345,36 +392,30 @@ def initialize() {
             if (nestAway) subscribe(nestAway, "switch.on", "nestAwayHandler")
 		}
     }
-    //--------------------------------------------------------------------
-    if (scenarioType == "Baseboard"){
-    	if (vDimmerBB && tstatBB){
-            subscribe (vDimmerBB, "switch", "BBOnOffHandler")
-    		subscribe (vDimmerBB, "level", "BBHandler")
+    if (scenarioType == "Baseboard" && vDimmerBB && tstatBB){
+		subscribe (vDimmerBB, "switch", "BBOnOffHandler")
+    	subscribe (vDimmerBB, "level", "BBHandler")
+    }
+    if (scenarioType == "Speaker" && vDimmerSpeaker && speaker) {
+    	subscribe (vDimmerSpeaker, "level", "speakerVolHandler")
+        subscribe (vDimmerSpeaker, "switch", "speakerOnHandler")
+        if (nextSwitch) subscribe (nextSwitch, "switch.on", "controlNextHandler")
+        if (prevSwitch) subscribe (prevSwitch, "switch.on", "controlPrevHandler") 
+        if (parent.getSonos() && speaker.name.contains("Sonos")){
+			for (int i = 1; i <= sonosSlots(); i++) {
+               	if (settings."song${i}Switch" && settings."song${i}Station"){
+                   	saveSelectedSong(i,settings."song${i}Station")
+                    subscribe (settings."song${i}Switch", "switch.on", "controlSong")
+                }
+            }
 		}
     }
-    //--------------------------------------------------------------------
-    if (scenarioType == "Speaker"){
-    	if (vDimmerSpeaker && speaker) {
-    		subscribe (vDimmerSpeaker, "level", "speakerVolHandler")
-        	subscribe (vDimmerSpeaker, "switch", "speakerOnHandler")
-            if (nextSwitch) subscribe (nextSwitch, "switch.on", "controlNextHandler")
-        	if (prevSwitch) subscribe (prevSwitch, "switch.on", "controlPrevHandler") 
-            if (parent.getSonos() && speaker.name.contains("Sonos")){
-				for (int i = 1; i <= sonosSlots(); i++) {
-                	if (settings."song${i}Switch" && settings."song${i}Station"){
-                    	saveSelectedSong(i,settings."song${i}Station")
-                        subscribe (settings."song${i}Switch", "switch.on", "controlSong")
-                    }
-                }
-			}
-        }
-    }
-    //--------------------------------------------------------------------
 	if (scenarioType == "Panic"){
 		if (panicSwitchOn) subscribe (panicSwitchOn, "switch.on", "panicOn")
         if (panicSwitchOff) subscribe (panicSwitchOff, "switch.on", "panicOff") 
         if (alarmSonos && parent.getSonos() && alarmSonos.name.contains("Sonos") && alarmSonosSound) getAlarmSound()
 	}
+    if (scenarioType == "Voice" && voiceControl) subscribe(voiceControl, "switch.on", "voiceHandler")
 }
 //Handlers
 //Mode/Routine/Devices/HTTP/SHM-----------------------------------------------------------------
@@ -477,7 +518,6 @@ def turnOff(){
    	if ((offPushMsg || offSMSNum || offContacts) && offSMSMsg) sendMSG(offSMSNum, offSMSMSG, offPushMsg, offContacts)
 }
 //Panic Handlers-----------------------------------------------------------------
-//Panic On
 def panicOn(evt){
 	if (getOkToRun("Panic actions activated")) {
         if (alarm && alarmType){
@@ -501,7 +541,6 @@ def panicOn(evt){
 		}        
 	}
 }
-//Panic Off
 def panicOff(evt){
 	if (getOkToRun("Panic actions deactivated")) {
 		if (alarmOff){
@@ -518,14 +557,8 @@ def panicOff(evt){
 		}
 	}
 }
-//AlarmOn
-def alarmTurnOn(){
-	alarm?."$alarmType"()
-}
-//AlarmOff
-def alarmTurnOff(){
-	alarm?.off()
-}
+def alarmTurnOn(){alarm?."$alarmType"()}
+def alarmTurnOff(){alarm?.off()}
 //Speaker Handlers-----------------------------------------------------------------
 def speakerControl(cmd,song){
     if (cmd=="station" || cmd=="on") {
@@ -564,33 +597,17 @@ def speakerVolHandler(evt){
 	}
 }    
 //Speaker on/off
-def speakerOnHandler(evt){
-	if (getOkToRun("Speaker on/off")) {
-    	if (evt.value == "on" || evt.value == "off" ) speakerControl(evt.value,"")
-	}
-}
-def controlNextHandler(evt){
-    if (getOkToRun("Speaker next track")) speaker.nextTrack()
-}
-def controlPrevHandler(evt){
-    if (getOkToRun("Speaker previous track")) speaker.previousTrack()   
-}
+def speakerOnHandler(evt){if (getOkToRun("Speaker on/off")) {if (evt.value == "on" || evt.value == "off" ) speakerControl(evt.value,"")}}
+def controlNextHandler(evt){if (getOkToRun("Speaker next track")) speaker.nextTrack()}
+def controlPrevHandler(evt){if (getOkToRun("Speaker previous track")) speaker.previousTrack()}
 def controlSong(evt){
 	def trigger = evt.displayName
     if (getOkToRun("Speaker Saved Song/Station Trigger: ${trigger}")) {
-       	for (int i = 1; i <= sonosSlots(); i++) {
-        	if (settings."song${i}Switch" && trigger == settings."song${i}Switch".label){
-        		speakerControl("station",state."selectedSong${i}")
-            }
-        }
+       	for (int i = 1; i <= sonosSlots(); i++) if (settings."song${i}Switch" && trigger == settings."song${i}Switch".label){speakerControl("station",state."selectedSong${i}")}
 	}
 }
 //Thermostat Handlers-----------------------------------------------------------------
-//Thermostat Off
-def thermoOffHandler(evt){
-	if (getOkToRun("Thermostat turned off")) tstat.off()
-}
-//Thermostat mode changes
+def thermoOffHandler(evt){if (getOkToRun("Thermostat turned off")) tstat.off()}
 def heatHandler(evt){
 	if (getOkToRun("Thermostat mode:Heating")) {
 		tstat.heat()
@@ -615,12 +632,8 @@ def autoHandler(evt){
 		tstat.setCoolingSetpoint(setpointC)
 	}
 }
-def nestHomeHandler(evt){
-	if (getOkToRun("Thermostat mode:Home")) tstat.present()
-}
-def nestAwayHandler(evt){
-   	if (getOkToRun("Thermostat mode:Away")) tstat.away()
-}
+def nestHomeHandler(evt){if (getOkToRun("Thermostat mode:Home")) tstat.present()}
+def nestAwayHandler(evt){if (getOkToRun("Thermostat mode:Away")) tstat.away()}
 //Thermostat Temp Handler
 def thermoHandler(evt){
     if (getOkToRun("Temperature change")) {
@@ -638,9 +651,7 @@ def thermoHandler(evt){
     }
 }
 //Baseboard Handlers-----------------------------------------------------------------
-def BBOnOffHandler(evt){
-	if (getOkToRun("Baseboard turned ${evt.value}")) BBOnOff(evt.value)
-}
+def BBOnOffHandler(evt){if (getOkToRun("Baseboard turned ${evt.value}")) BBOnOff(evt.value)}
 def BBHandler(evt){
 	if (getOkToRun("Baseboard Temperature change")) {
     	def tstatBBLevel = vDimmerBB.currentValue("level") as int
@@ -654,6 +665,28 @@ def BBOnOff(status){
 	if (status=="on" && setpointBBOn) vDimmerBB.setLevel(setpointBBOn)
     if (status=="off" && setpointBBOff) vDimmerBB.setLevel(setpointBBOff)	
 }
+//Voice Reporting Handlers-----------------------------------------------------------------
+def voiceHandler(evt){
+	if (getOkToRun("Voice Reporting")) {
+    	def fullMsg = voicePre ? "${voicePre} " : ""
+        //Device Status Report
+        if (voiceOnSwitchOnly) fullMsg += voiceSwitch ? switchOnReport() : ""
+        else fullMsg += voiceSwitch ? reportStatus(voiceSwitch, "switch", "Switch") : ""
+        //Temperature Status Report
+        fullMsg += (voiceTemperature) ? reportStatus(voiceTemperature, "temperature", "Temperature") : ""
+        if (voiceTempSettingSummary) fullMsg += (voiceTempSettings) ? thermostatSummary(): ""
+        else fullMsg += (voiceTempSettings) ? reportStatus(voiceTempSettings, "thermostatSetpoint", "Thermostat Setpoint") : ""
+        //Doors/Windows Report
+        fullMsg += voiceDoorSensors || voiceDoorControls || voiceDoorLocks ? doorWindowReport() : ""
+        //Mode/Security Report
+        fullMsg += voiceMode ? "The current SmartThings mode is set to, '${location.currentMode}'. " : ""
+        fullMsg += voiceSHM ? "The current Smart Home Monitor status is '${location.currentState("alarmSystemStatus")?.value}'. " : ""
+        fullMsg += voicePost ? "${voicePost} " : ""
+        log.debug fullMsg
+    	if (voiceVolume) voiceSpeaker.setLevel(voiceVolume as int)
+    	voiceSpeaker.playText(fullMsg)
+    }
+}
 //Common Methods-------------
 def getOkToRun(module){
 	def result = true
@@ -662,12 +695,8 @@ def getOkToRun(module){
 	else log.debug "Alexa Helper scenario '${app.label}', '${module}' not triggered due to scenario restrictions"
     result
 }
-def getOkOnOptions(){
-	def result = (!showOptions || showOptions == "1") && (onPhrase || onMode || onSwitches || onDimmers || onColoredLights || onLocks || onGarages || onHTTP || onSHM || onSMSMsg)
-}
-def getOkOffOptions(){
-	def result = (!showOptions || showOptions == "2") && (offPhrase || offMode || offSwitches || offDimmers || offColoredLights || offLocks || offGarages || offHTTP || offSHM || offSMSMsg)
-}
+def getOkOnOptions(){def result = (!showOptions || showOptions == "1") && (onPhrase || onMode || onSwitches || onDimmers || onColoredLights || onLocks || onGarages || onHTTP || onSHM || onSMSMsg)}
+def getOkOffOptions(){def result = (!showOptions || showOptions == "2") && (offPhrase || offMode || offSwitches || offDimmers || offColoredLights || offLocks || offGarages || offHTTP || offSHM || offSMSMsg)}
 def changeMode(newMode) {
     if (location.mode != newMode) {
 		if (location.modes?.find{it.name == newMode}) setLocationMode(newMode)
@@ -703,11 +732,9 @@ def scenarioDesc(){
     	desc = panicSwitchOn ? "'${panicSwitchOn}' switch activates panic actions." : ""
         desc += panicSwitchOn && panicSwitchOff && desc ?"\n'${panicSwitchOff}' switch deactivates panic actions." : ""
     }
-    if (scenarioType=="Baseboard"){
-    	desc = vDimmerBB && tstatBB ? "'${vDimmerBB}' dimmer controls ${parseList(tstatBB)}" : ""
-    }
+    if (scenarioType=="Baseboard") desc = vDimmerBB && tstatBB ? "'${vDimmerBB}' dimmer controls ${parseList(tstatBB)}" : ""
+    if (scenarioType=="Voice") desc = voiceControl && voiceSpeaker ? "'${voiceControl}' controls voice reports on '${voiceSpeaker}'" : ""
     desc = desc ? desc : "Tap to configure scenario..."
-    desc
 }
 def parseList(list){
     def listSize = list.size()
@@ -719,10 +746,11 @@ def parseList(list){
     }
     result
 }
+def reportDesc(param1, param2, param3){ def result = param1 || param2 || param3  ? "Status: CONFIGURED - Tap to edit" : "Status: UNCONFIGURED - Tap to configure"}
 def getDeviceDesc(type){  
-    def result, switches, dimmers, cLights, locks, garages = ""
+    def result, switches, dimmers, cLights, locks, garages
     def lvl, cLvl, clr
-    def dimmerCMD, switchCMD, cLightCMD, lockCMD, garageCMD = ""
+    def dimmerCMD, switchCMD, cLightCMD, lockCMD, garageCMD
     if (type == "on"){
         switchCMD = onSwitchesCMD
         dimmerCMD = onDimmersCMD
@@ -770,17 +798,11 @@ def getDeviceDesc(type){
         result += result && garages ? "\n" : ""
         result += garages ? "${garages} set to ${garageCMD}" : ""
     }
-    result = result ? result : "Tap to configure SmartThings devices"
+    result = result ? result : "Status: UNCONFIGURED - Tap to configure"
 }
-def greyOutState(param1, param2){
-	def result = param1 || param2 ? "complete" : ""
-}
-def greyOutScen(){
-	def result = (scenarioType=="Control" && AlexaSwitch) || (scenarioType=="Speaker" && vDimmerSpeaker && speaker) || (scenarioType=="Thermostat" && vDimmerTstat && tstat) || (scenarioType=="Panic" && panicSwitchOn && panicSwitchOff) ? "complete" : ""
-}
-private hhmm(time) {
-	new Date().parse("yyyy-MM-dd'T'HH:mm:ss.SSSZ", time).format("h:mm a", timeZone(time))
-}
+def greyOutState(param1, param2, param3){def result = param1 || param2 || param3 ? "complete" : ""}
+def greyOutScen(){def result = (scenarioType=="Control" && AlexaSwitch) || (scenarioType=="Speaker" && vDimmerSpeaker && speaker) || (scenarioType=="Thermostat" && vDimmerTstat && tstat) || (scenarioType=="Panic" && panicSwitchOn && panicSwitchOff) ? "complete" : ""}
+private hhmm(time) {new Date().parse("yyyy-MM-dd'T'HH:mm:ss.SSSZ", time).format("h:mm a", timeZone(time))}
 private getDayOk(dayList) {
 	def result = true
     if (dayList) {
@@ -801,9 +823,7 @@ private getTimeOk(startTime, endTime) {
     else if (endTime) result = currTime <= stop
     result
 }
-def getColorOptions(){
-	def colors=[["Soft White":"Soft White"],["White":"White - Concentrate"],["Daylight":"Daylight - Energize"],["Warm White":"Warm White - Relax"],"Red","Green","Blue","Yellow","Orange","Purple","Pink","User Defined"]
-}
+def getColorOptions(){def colors=[["Soft White":"Soft White"],["White":"White - Concentrate"],["Daylight":"Daylight - Energize"],["Warm White":"Warm White - Relax"],"Red","Green","Blue","Yellow","Orange","Purple","Pink","User Defined"]}
 private setColoredLights(switches, color, level){
     def hueColor = 0
 	def satLevel = 100
@@ -859,12 +879,8 @@ def songOptions(slot) {
     if (speaker) {
 		// Make sure current selection is in the set
 		def options = new LinkedHashSet()
-        if (state."selectedSong${slot}"?.station) {
-			options << state."selectedSong${slot}".station
-		}
-		else if (state."selectedSong${slot}"?.description) {
-			options << state."selectedSong${slot}".description
-		}
+        if (state."selectedSong${slot}"?.station) options << state."selectedSong${slot}".station
+		else if (state."selectedSong${slot}"?.description) options << state."selectedSong${slot}".description
         // Query for recent tracks
 		def states = speaker.statesSince("trackData", new Date(0), [max:30])
 		def dataMaps = states.collect{it.jsonValue}
@@ -886,6 +902,109 @@ def saveSelectedSong(slot, song) {
 	}
 	catch (Throwable t) {log.error t}
 }
+//Voice report---------------------------------------------------
+def switchOnReport(){
+    def result = "Switch Status: "
+    if (voiceSwitch.latestValue("switch").contains("on")){
+    	voiceSwitch.each {deviceName->
+        	if (deviceName.latestValue("switch")=="on") result += "${deviceName} is on. "
+        }
+    }
+    else result += "All of the monitored switches are off. "
+}
+def thermostatSummary(){
+	def result =""
+    def monitorCount = voiceTempSettings.size()
+    def matchCount = 0
+    def notMatchList = ""
+    for (device in voiceTempSettings) {if (device.latestValue("thermostatSetpoint") as int != voiceTempTarget as int) matchCount += 1}
+    if (!matchCount) result += "All thermostats are set to ${voiceTempTarget} degrees. "
+    else if (matchCount == monitorCount) result += "None of the thermostats are set to ${voiceTempTarget} degrees. "
+    else if (matchCount != monitorCount && matchCount) {
+    	result += "All of the thermostats are set to ${voiceTempTarget} degrees except"
+        for (device in voiceTempSettings){
+        	if (device.latestValue("thermostatSetpoint") as int != voiceTempTarget as int){
+            	result += " ${device}"
+                matchCount = matchCount -1
+                result += matchCount && matchCount == 1 ? " and" : matchCount && matchCount > 1 ? ", " : ". "
+    		}
+		}
+	}
+    result
+}
+def reportStatus(deviceList, type, properName){
+	def result = "${properName} Status: "
+    def appd = type=="temperature" || type=="thermostatSetpoint" ? "degrees" : ""
+    if (type!= "thermostatSetpoint") deviceList.each {deviceName->result += "${deviceName} is ${deviceName.latestValue(type)} ${appd}. " }
+    else deviceList.each {deviceName->result += "${deviceName} is set to ${deviceName.latestValue(type) as int} ${appd}. " }
+    result
+}
+def doorWindowReport(){
+    def unlocked = voiceDoorLocks && voiceDoorLocks.latestValue("lock").contains("unlocked")
+    def opened = voiceDoorSensors && voiceDoorSensors.latestValue("contact").contains("open")
+    def openedDoor = voiceDoorControls && voiceDoorControls.latestValue("door").contains("open")
+    def countOpened = 0 
+    def countOpenedDoor = 0
+    def countUnlocked = 0
+    def result=""
+    def listOpened="" 
+    def listUnlocked = ""
+    if (opened){
+    	for (sensor in voiceDoorSensors) if (sensor.latestValue("contact")=="open") countOpened += 1
+        for (sensor in voiceDoorSensors){
+			if (sensor.latestValue("contact")=="open"){
+				listOpened +=" ${sensor}"
+                countOpened = countOpened - 1
+				if (countOpened == 1 && !openedDoor) listOpened += "and the "
+                else if (countOpened > 1 || openedDoor) listOpened += ", "
+			}
+		}
+	}
+	if (openedDoor){
+        for (door in voiceDoorControls) if (door.latestValue("door") == "open") countOpenedDoor += 1
+        for (door in doorControls){	
+            if (door.latestValue("door") == "open"){
+				listOpened += " ${door}"
+                countOpenedDoor = countOpenedDoor - 1
+                if (countOpenedDoor == 1) listOpened += "and the "
+                else if (countOpenedDoor > 1) listOpened += ", "
+        	}
+    	}
+    }
+    if (unlocked){
+        for (doorLock in voiceDoorLocks) if (doorLock.latestValue("lock")=="unlocked") countUnlocked += 1
+        for (doorLock in voiceDoorLocks){	
+            if (doorLock.latestValue("lock")=="unlocked"){
+				listUnlocked += " ${doorLock}"
+                countUnlocked = countUnlocked - 1
+                if (countUnlocked == 1) listUnlocked += "and the "
+        		else if (countUnlocked > 1) listUnlocked += ", "
+            }
+    	}    
+    }
+    def totalCount = countOpenedDoor + countOpened
+    if (voiceDoorAll){
+    	if (!opened && !unlocked && !openedDoor) result = "All of the doors and windows are closed and locked. "
+        if (!opened && !openedDoor && unlocked){
+   			result = "All of the doors and windows are closed, but the"
+            result = countUnlocked > 1 ? "${result} following are unlocked: ${listUnlocked}. " :"${result} ${listUnlocked} is unlocked. "
+    	}
+        if ((opened || openedDoor) && !unlocked){
+   			result = "All of the doors are locked, but the"
+            result += totalCount > 1 ? "following doors or windows are open: ${listOpened}. " : "${listOpened} is open. "
+    	}
+    }   
+	else {
+		if ((opened || openedDoor) && !unlocked) result = totalCount > 1 ? "The following doors or windows are currently open: ${listOpened}. " : "${listOpened} is open. "
+        if (!opened && !openedDoor && unlocked) result = countUnlocked > 1 ? "The following doors are unlocked: ${listUnlocked}. " : "The ${listUnlocked} is unlocked. "
+	}
+    if ((opened || openedDoor) && unlocked){
+		def verb = totalCount > 1 ? "following doors or windows are currently open: ${listOpened}" : "${listOpened} is open"
+		def verb1 = countUnlocked > 1 ? "following are unlocked: ${listUnlocked}" : "${listUnlocked} is unlocked"
+		result = "The ${verb}. Also, the ${verb1}. "
+    }
+    result
+}
 //Send Messages
 def sendMSG(num, msg, push, recipients){
     def logText =""
@@ -894,7 +1013,7 @@ def sendMSG(num, msg, push, recipients){
     if (num && push) {logText = "Message '${msg}' sent to ${num} and pushed to SmartApp"}
     if (location.contactBookEnabled && recipients) {logText = "Message '${msg}' sent to ${recipients}"}
     if (parent.getNotifyFeed()) sendNotificationEvent(logText)
-    log.debug logText
+    log.info logText
     if (location.contactBookEnabled && recipients) sendNotificationToContacts(msg, recipients)
     else {
     	if (num) {sendSmsMessage(num,"${msg}")}
@@ -932,9 +1051,7 @@ def getAlarmSound(){
     }
     state.alarmSound = soundUri
 }
-def sonosSlots(){
-    def slots = parent.getMemCount() as int
-}
+def sonosSlots(){def slots = parent.getMemCount() as int}
 //Version
-private def textVersion() {def text = "Child App Version: 2.7.2 (03/04/2016)"}
-private def versionInt(){def text = 272}
+private def textVersion() {def text = "Child App Version: 2.8.0 (03/06/2016)"}
+private def versionInt() {def text = 280}
