@@ -93,24 +93,6 @@ metadata {
   			
 		}
         
-        valueTile("thermostat_small", "device.temperature", width: 4, height: 4) {
-			state "default", label:'${currentValue}°', unit:"C",
-            backgroundColors:[
-                [value: 0, color: "#50b5dd"],
-                [value: 10, color: "#43a575"],
-                [value: 13, color: "#c5d11b"],
-                [value: 17, color: "#f4961a"],
-                [value: 20, color: "#e75928"],
-                [value: 25, color: "#d9372b"],
-                [value: 29, color: "#b9203b"]
-            ]
-		}
-        
-        standardTile("thermostat_main", "device.thermostatOperatingState", inactiveLabel: true, decoration: "flat", width: 2, height: 2) {
-			state "idle", label:'${currentValue}', icon: "st.Weather.weather2"
-			state "heating", label:'${currentValue}', icon: "st.Weather.weather2", backgroundColor:"#EC6E05"
-		}
-        
 		controlTile("heatSliderControl", "device.desiredHeatSetpoint", "slider", height: 2, width: 3, inactiveLabel: false, range:"(5..32)") {
 			state "setHeatingSetpoint", label:'Set temperature to', action:"setTemperatureForSlider"
 		}
@@ -273,7 +255,7 @@ def setNewSetPointValue(newSetPointValue) {
     state.desiredHeatSetpoint = state.newSetpoint
 	sendEvent("name":"desiredHeatSetpoint", "value": state.desiredHeatSetpoint, displayed: false)
 	log.debug "Setting heat set point up to: ${state.newSetpoint}"
-    runIn(5, setHeatingSetpointToDesired)
+    runIn(3, setHeatingSetpointToDesired)
 }
 
 def heatingSetpointUp(){
