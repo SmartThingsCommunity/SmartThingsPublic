@@ -180,7 +180,7 @@ metadata {
         	state "default", action:"off", icon:"st.thermostat.heating-cooling-off"
    	 	}
 
-		main(["thermostat_main"])
+		main(["thermostat"])
         details(["thermostat", "mode_auto", "mode_manual", "mode_off", "heatingSetpointUp", "heatingSetpoint", "boost", "boostTimeUp", "heatingSetpointDown", "boostTimeDown", "refresh"])
         
         //Uncomment below for V1 tile layout
