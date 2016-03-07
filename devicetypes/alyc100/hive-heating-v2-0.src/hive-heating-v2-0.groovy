@@ -360,10 +360,10 @@ def setThermostatMode(mode) {
 }
 
 def refreshBoostLabel() {
-	def boostLabel = "Start $state.boostLength Min Boost"
+	def boostLabel = "Start\n$state.boostLength Min Boost"
     def latestThermostatMode = device.latestState('thermostatMode')  
     if (latestThermostatMode.stringValue == 'emergency heat' ) {
-    	boostLabel = "Restart $state.boostLength Min Boost"
+    	boostLabel = "Restart\n$state.boostLength Min Boost"
     }
     sendEvent("name":"boostLabel", "value": boostLabel, displayed: false)
 }
@@ -387,7 +387,7 @@ def poll() {
         	state.boostLength = 60
             sendEvent("name":"boostLength", "value": 60, displayed: true)
         }
-    	def boostLabel = "Start $state.boostLength Min Boost"
+    	def boostLabel = "Start\n$state.boostLength Min Boost"
         
         // get temperature status
         def temperature = data.nodes.attributes.temperature.reportedValue[0]
@@ -423,7 +423,7 @@ def poll() {
         else if (activeHeatCoolMode == "BOOST") {
         	mode = 'emergency heat'          
             def boostTime = data.nodes.attributes.scheduleLockDuration.reportedValue[0]
-            boostLabel = "Restart $state.boostLength Min Boost"
+            boostLabel = "Restart\n$state.boostLength Min Boost"
             statusMsg = "BOOSTING - " + boostTime + " mins remaining"
             sendEvent("name":"boostTimeRemaining", "value": boostTime + " mins")
         }
