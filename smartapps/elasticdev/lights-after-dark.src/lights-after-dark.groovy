@@ -28,7 +28,7 @@ definition(
     name: "Lights After Dark",
     namespace: "elasticdev",
     author: "James P",
-    description: "Turns on the lights when people arrive after sunset but before sunrise",
+    description: "Turns on the lights when people arrive after dark (after sunset and before sunrise)",
     category: "Safety & Security",
     iconUrl: "http://cdn.device-icons.smartthings.com/Lighting/light9-icn.png",
     iconX2Url: "http://cdn.device-icons.smartthings.com/Lighting/light9-icn@2x.png",
@@ -73,18 +73,14 @@ def updated()
  */
 def initialize() {
 	//Set initial state
-    state.afterDark = isAfterDark()
     state.threshold = (falseAlarmThreshold) ? (falseAlarmThreshold * 60 * 1000) as Long : 5 * 60 * 1000L
     state.lightsDuration = (lightsDuration) ? (lightsDuration * 60) as Long : 0
     state.userOverride = lights.currentSwitch=="on"
 
     //Subscribe to sunrise and sunset events
-    //subscribe(location, "sunrise", sunriseandler)
-    //subscribe(location, "sunset", sunsetHandler)
-	subscribe(presence, "presence", presenceHandler)
+    subscribe(presence, "presence", presenceHandler)
     subscribe(lights, "switch", switchHandler)
     
-    log.trace "state.afterDark: $state.afterDark"
     log.trace "state.threshold: $state.threshold"
     log.trace "state.lightsDuration: $state.lightsDuration"
     log.trace "state.userOverride: $state.userOverride"
@@ -132,7 +128,7 @@ def presenceHandler(evt)
 	state.afterDark = isAfterDark()
     
 	if(!state.userOverride) {
-        if(state.afterDark) {
+        if(isAfterDark()) {
             if("present" == evt.value) {
                 def thresholdWindow = new Date(now() - state.threshold)
 
