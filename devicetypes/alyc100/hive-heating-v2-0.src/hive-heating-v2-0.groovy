@@ -16,6 +16,8 @@
  *  VERSION HISTORY
  *  25.02.2016
  *  v2.0 BETA - Initial Release
+ *	v2.1 - Introducing button temperature control via improved thermostat multi attribute tile. More responsive temperature control. 
+ 			Improve Boost button behaviour and look.
  */
  
 metadata {
@@ -31,9 +33,14 @@ metadata {
         
         command "heatingSetpointUp"
 		command "heatingSetpointDown"
+        command "boostTimeUp"
+		command "boostTimeDown"
         command "setThermostatMode"
         command "setHeatingSetpoint"
+        command "setTemperatureForSlider"
         command "setBoostLength"
+        command "setTemperature"
+        command "boostButton"
 	}
 
 	simulator {
@@ -41,8 +48,8 @@ metadata {
 	}
 
 	tiles(scale: 2) {
-
-		multiAttributeTile(name: "thermostat", width: 6, height: 4, type:"lighting") {
+    
+    	multiAttributeTile(name: "thermostat", width: 6, height: 4, type:"thermostat") {
 			tileAttribute("device.temperature", key:"PRIMARY_CONTROL", canChangeBackground: true){
 				attributeState "default", label: '${currentValue}°', unit:"C", backgroundColors: [
 				// Celsius Color Range
@@ -54,9 +61,36 @@ metadata {
                 [value: 25, color: "#d9372b"],
                 [value: 29, color: "#b9203b"]
 			]}
+            
             tileAttribute ("hiveHeating", key: "SECONDARY_CONTROL") {
 				attributeState "hiveHeating", label:'${currentValue}'
 			}
+  			tileAttribute("device.temperature", key: "VALUE_CONTROL") {
+    				attributeState("default", action: "setTemperature")
+  			}
+  			tileAttribute("device.thermostatOperatingState", key: "OPERATING_STATE") {
+    				attributeState("idle", backgroundColor:"#ffffff")
+    				attributeState("heating", backgroundColor:"#ec6e05")
+  			}
+  			tileAttribute("device.thermostatMode", key: "THERMOSTAT_MODE") {
+    				attributeState("off", label:'Off')
+    				attributeState("heat", label:'Manual')
+    				attributeState("cool", label:'Manual')
+    				attributeState("auto", label:'Schedule')
+                    attributeState("emergency heat", label:'Boost')
+  			}
+  			tileAttribute("device.heatingSetpoint", key: "HEATING_SETPOINT") {
+                    attributeState "default", label: '${currentValue}', backgroundColors: [
+				// Celsius Color Range
+				[value: 0, color: "#50b5dd"],
+                [value: 10, color: "#43a575"],
+                [value: 13, color: "#c5d11b"],
+                [value: 17, color: "#f4961a"],
+                [value: 20, color: "#e75928"],
+                [value: 25, color: "#d9372b"],
+                [value: 29, color: "#b9203b"]
+			]}
+  			
 		}
         
         valueTile("thermostat_small", "device.temperature", width: 4, height: 4) {
@@ -77,23 +111,23 @@ metadata {
 			state "heating", label:'${currentValue}', icon: "st.Weather.weather2", backgroundColor:"#EC6E05"
 		}
         
-		controlTile("heatSliderControl", "device.heatingSetpoint", "slider", height: 2, width: 4, inactiveLabel: false, range:"(5..32)") {
-			state "setHeatingSetpoint", label:'Set temperature to', action:"setHeatingSetpoint"
+		controlTile("heatSliderControl", "device.desiredHeatSetpoint", "slider", height: 2, width: 3, inactiveLabel: false, range:"(5..32)") {
+			state "setHeatingSetpoint", label:'Set temperature to', action:"setTemperatureForSlider"
 		}
         
         controlTile("boostSliderControl", "device.boostLength", "slider", height: 2, width: 4, inactiveLabel: false, range:"(10..240)") {
 			state "setBoostLength", label:'Set boost length to', action:"setBoostLength"
 		}
         
-		standardTile("heatingSetpointUp", "device.heatingSetpoint", width: 2, height: 2, canChangeIcon: false, inactiveLabel: false, decoration: "flat") {
+		standardTile("heatingSetpointUp", "device.desiredHeatSetpoint", width: 1, height: 1, canChangeIcon: false, inactiveLabel: false, decoration: "flat") {
 			state "heatingSetpointUp", label:'  ', action:"heatingSetpointUp", icon:"st.thermostat.thermostat-up", backgroundColor:"#ffffff"
 		}
 
-		standardTile("heatingSetpointDown", "device.heatingSetpoint", width: 2, height: 2, canChangeIcon: false, inactiveLabel: false, decoration: "flat") {
+		standardTile("heatingSetpointDown", "device.desiredHeatSetpoint", width: 1, height: 1, canChangeIcon: false, inactiveLabel: false, decoration: "flat") {
 			state "heatingSetpointDown", label:'  ', action:"heatingSetpointDown", icon:"st.thermostat.thermostat-down", backgroundColor:"#ffffff"
 		}
 
-		valueTile("heatingSetpoint", "device.heatingSetpoint", width: 2, height: 2) {
+		valueTile("heatingSetpoint", "device.desiredHeatSetpoint", width: 2, height: 2) {
 			state "default", label:'${currentValue}°', unit:"C",
             backgroundColors:[
                 [value: 0, color: "#50b5dd"],
@@ -104,6 +138,14 @@ metadata {
                 [value: 25, color: "#d9372b"],
                 [value: 29, color: "#b9203b"]
             ]
+		}
+        
+        standardTile("boostTimeUp", "device.boostLength", width: 1, height: 1, canChangeIcon: false, inactiveLabel: false, decoration: "flat") {
+			state "heatingSetpointUp", label:'  ', action:"boostTimeUp", icon:"st.thermostat.thermostat-up", backgroundColor:"#ffffff"
+		}
+
+		standardTile("boostTimeDown", "device.boostLength", width: 1, height: 1, canChangeIcon: false, inactiveLabel: false, decoration: "flat") {
+			state "heatingSetpointDown", label:'  ', action:"boostTimeDown", icon:"st.thermostat.thermostat-down", backgroundColor:"#ffffff"
 		}
    
         standardTile("thermostatOperatingState", "device.thermostatOperatingState", inactiveLabel: true, decoration: "flat", width: 2, height: 2) {
@@ -122,8 +164,8 @@ metadata {
 			state("default", label:'refresh', action:"polling.poll", icon:"st.secondary.refresh-icon")
 		}
         
-        valueTile("boost", "device.boostLabel", inactiveLabel: false, decoration: "flat", width: 2, height: 2) {
-			state("default", label:'${currentValue}', action:"emergencyHeat")
+        valueTile("boost", "device.boostLabel", inactiveLabel: false, decoration: "flat", width: 2, height: 2, wordwrap: true) {
+			state("default", label:'${currentValue}', action:"boostButton")
 		}
         
         standardTile("mode_auto", "device.mode_auto", inactiveLabel: false, decoration: "flat", width: 2, height: 2) {
@@ -139,7 +181,10 @@ metadata {
    	 	}
 
 		main(["thermostat_main"])
-		details(["thermostat", "mode_auto", "mode_manual", "mode_off", "heatingSetpoint", "heatSliderControl", "boost", "boostSliderControl", "refresh"])		
+        details(["thermostat", "mode_auto", "mode_manual", "mode_off", "heatingSetpointUp", "heatingSetpoint", "boost", "boostTimeUp", "heatingSetpointDown", "boostTimeDown", "refresh"])
+        
+        //Uncomment below for V1 tile layout
+		//details(["thermostat", "mode_auto", "mode_manual", "mode_off", "heatingSetpoint", "heatSliderControl", "boost", "boostSliderControl", "refresh"])
 	}
 }
 
@@ -155,8 +200,8 @@ def parse(String description) {
 
 def installed() {
 	log.debug "Executing 'installed'"
-	// execute handlerMethod every 10 minutes.
     state.boostLength = 60
+    state.desiredHeatSetpoint = 7
 }
 
 // handle commands
@@ -171,17 +216,13 @@ def setHeatingSetpoint(temp) {
 		temp = 32
 	}
     
-	
     //if thermostat is off, set to manual    
    	if (latestThermostatMode.stringValue == 'off') {
     	def args = [
         	nodes: [	[attributes: [activeHeatCoolMode: [targetValue: "HEAT"], activeScheduleLock: [targetValue: true]]]]
             ]
 		def resp = parent.apiPUT("/nodes/${device.deviceNetworkId}", args)
-		if (resp.status != 200) {
-			log.error("Unexpected result in poll(): [${resp.status}] ${resp.data}")
-			return []
-		}
+		
     }
     
     // {"nodes":[{"attributes":{"targetHeatTemperature":{"targetValue":11}}}]}    
@@ -190,13 +231,7 @@ def setHeatingSetpoint(temp) {
             ]               
     
     def resp = parent.apiPUT("/nodes/${device.deviceNetworkId}", args)
-	if (resp.status != 200) {
-		log.error("Unexpected result in poll(): [${resp.status}] ${resp.data}")
-		return []
-	}
-    else {
-        runIn(4, refresh)
-	}
+    runIn(4, refresh)
 }
 
 def setBoostLength(minutes) {
@@ -209,33 +244,60 @@ def setBoostLength(minutes) {
 	}
     state.boostLength = minutes
     sendEvent("name":"boostLength", "value": state.boostLength, displayed: true)
-    
-    def latestThermostatMode = device.latestState('thermostatMode')
-    
-    //If already in BOOST mode, send updated boost length to Hive.
-	if (latestThermostatMode.stringValue == 'emergency heat') {
-		setThermostatMode('emergency heat')
-    }
-    else {
-    	refresh()
-    }
-    
-    
-    
+    refreshBoostLabel()  
+}
+
+def boostTimeUp() {
+	log.debug "Executing 'boostTimeUp'"
+	setBoostLength(state.boostLength + 10)
+}
+
+def boostTimeDown() {
+	log.debug "Executing 'boostTimeDown'"
+	setBoostLength(state.boostLength - 10)
+}
+
+def boostButton() {
+	log.debug "Executing 'boostButton'"
+	setThermostatMode('emergency heat')
+}
+
+def setHeatingSetpointToDesired() {
+	setHeatingSetpoint(state.newSetpoint)
+}
+
+def setNewSetPointValue(newSetPointValue) {
+	log.debug "Executing 'setNewSetPointValue' with value $newSetPointValue"
+	unschedule('setHeatingSetpointToDesired')
+    state.newSetpoint = newSetPointValue
+    state.desiredHeatSetpoint = state.newSetpoint
+	sendEvent("name":"desiredHeatSetpoint", "value": state.desiredHeatSetpoint, displayed: false)
+	log.debug "Setting heat set point up to: ${state.newSetpoint}"
+    runIn(5, setHeatingSetpointToDesired)
 }
 
 def heatingSetpointUp(){
 	log.debug "Executing 'heatingSetpointUp'"
-	int newSetpoint = device.currentValue("heatingSetpoint") + 1
-	log.debug "Setting heat set point up to: ${newSetpoint}"
-	setHeatingSetpoint(newSetpoint)
+	setNewSetPointValue(getHeatTemp().toInteger() + 1)
 }
 
 def heatingSetpointDown(){
 	log.debug "Executing 'heatingSetpointDown'"
-	int newSetpoint = device.currentValue("heatingSetpoint") - 1
-	log.debug "Setting heat set point down to: ${newSetpoint}"
-	setHeatingSetpoint(newSetpoint)
+	setNewSetPointValue(getHeatTemp().toInteger() - 1)
+}
+
+def setTemperature(value) {
+	log.debug "Executing 'setTemperature with $value'"
+	(value == 0) ? (setNewSetPointValue(getHeatTemp().toInteger() - 1)) : (setNewSetPointValue(getHeatTemp().toInteger() + 1))
+}
+
+def setTemperatureForSlider(value) {
+	log.debug "Executing 'setTemperatureForSlider with $value'"
+	setNewSetPointValue(value)  
+}
+
+def getHeatTemp() { 
+	return state.desiredHeatSetpoint
 }
 
 def off() {
@@ -293,14 +355,17 @@ def setThermostatMode(mode) {
     }
     
     def resp = parent.apiPUT("/nodes/${device.deviceNetworkId}", args)
-	if (resp.status != 200) {
-		log.error("Unexpected result in poll(): [${resp.status}] ${resp.data}")
-		return []
-	}
-    else {
-		mode = mode == 'range' ? 'auto' : mode
-        runIn(4, refresh)
-	}
+	mode = mode == 'range' ? 'auto' : mode
+    runIn(4, refresh)
+}
+
+def refreshBoostLabel() {
+	def boostLabel = "Start $state.boostLength Min Boost"
+    def latestThermostatMode = device.latestState('thermostatMode')  
+    if (latestThermostatMode.stringValue == 'emergency heat' ) {
+    	boostLabel = "Restart $state.boostLength Min Boost"
+    }
+    sendEvent("name":"boostLabel", "value": boostLabel, displayed: false)
 }
 
 def poll() {
@@ -314,7 +379,7 @@ def poll() {
     	data.nodes = resp.data.nodes
         
         //Construct status message
-        def statusMsg = "Currently"
+        def statusMsg = "Mode is"
         
         //Boost button label
         if (state.boostLength == null || state.boostLength == '')
@@ -322,7 +387,7 @@ def poll() {
         	state.boostLength = 60
             sendEvent("name":"boostLength", "value": 60, displayed: true)
         }
-    	def boostLabel = "Start\n$state.boostLength Min Boost"
+    	def boostLabel = "Start $state.boostLength Min Boost"
         
         // get temperature status
         def temperature = data.nodes.attributes.temperature.reportedValue[0]
@@ -334,11 +399,13 @@ def poll() {
         if (heatingSetpoint == "1.0") {
         	heatingSetpoint = "7.0"
         }
-        
         sendEvent(name: 'temperature', value: temperature, unit: "C", state: "heat")
         sendEvent(name: 'heatingSetpoint', value: heatingSetpoint, unit: "C", state: "heat")
         sendEvent(name: 'thermostatSetpoint', value: heatingSetpoint, unit: "C", state: "heat", displayed: false)
         sendEvent(name: 'thermostatFanMode', value: "off", displayed: false)
+        
+        state.desiredHeatSetpoint = (int) Double.parseDouble(heatingSetpoint)
+        sendEvent("name":"desiredHeatSetpoint", "value": state.desiredHeatSetpoint, unit: "C", displayed: false)
         
         // determine hive operating mode
         def activeHeatCoolMode = data.nodes.attributes.activeHeatCoolMode.reportedValue[0]
@@ -351,21 +418,21 @@ def poll() {
         
         if (activeHeatCoolMode == "OFF") {
         	mode = 'off'
-            statusMsg = statusMsg + " set to OFF"
+            statusMsg = statusMsg + " OFF"
         }
         else if (activeHeatCoolMode == "BOOST") {
-        	mode = 'emergency heat'
-            statusMsg = statusMsg + " set to BOOST"
+        	mode = 'emergency heat'          
             def boostTime = data.nodes.attributes.scheduleLockDuration.reportedValue[0]
-            boostLabel = "Boosting for \n" + boostTime + " mins"
+            boostLabel = "Restart $state.boostLength Min Boost"
+            statusMsg = "BOOSTING - " + boostTime + " mins remaining"
             sendEvent("name":"boostTimeRemaining", "value": boostTime + " mins")
         }
         else if (activeHeatCoolMode == "HEAT" && activeScheduleLock) {
         	mode = 'heat'
-            statusMsg = statusMsg + " set to MANUAL"
+            statusMsg = statusMsg + " MANUAL"
         }
         else {
-        	statusMsg = statusMsg + " set to SCHEDULE"
+        	statusMsg = statusMsg + " SCHEDULE"
         }
         sendEvent(name: 'thermostatMode', value: mode) 
         
@@ -376,11 +443,9 @@ def poll() {
         
         if (stateHeatingRelay == "ON") {
         	sendEvent(name: 'thermostatOperatingState', value: "heating")
-            statusMsg = statusMsg + " and is HEATING"
         }       
         else {
         	sendEvent(name: 'thermostatOperatingState', value: "idle")
-            statusMsg = statusMsg + " and is IDLE"
         }  
                
         sendEvent("name":"hiveHeating", "value": statusMsg, displayed: false)  
