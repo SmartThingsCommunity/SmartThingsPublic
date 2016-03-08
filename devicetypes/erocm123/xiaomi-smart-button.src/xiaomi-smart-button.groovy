@@ -17,7 +17,7 @@ metadata {
 	definition (name: "Xiaomi Smart Button", namespace: "erocm123", author: "Eric Maycock") {
 		capability "Button"
         capability "Configuration"
-		    capability "Sensor"
+		capability "Sensor"
         capability "Refresh"
         
         attribute "lastPress", "string"
@@ -25,7 +25,7 @@ metadata {
 	}
     
     simulator {
-   		status "button 1 pressed": "on/off: 0"
+   	  status "button 1 pressed": "on/off: 0"
       status "button 1 released": "on/off: 1"
     }
     

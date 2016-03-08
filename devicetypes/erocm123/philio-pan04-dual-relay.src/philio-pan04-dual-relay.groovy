@@ -28,6 +28,7 @@ capability "Polling"
 capability "Configuration"
 capability "Refresh"
 capability "Energy Meter"
+capability "Power Meter"
 
 attribute "switch1", "string"
 attribute "switch2", "string"
