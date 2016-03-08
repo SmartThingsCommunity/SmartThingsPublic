@@ -24,7 +24,7 @@ definition(
 	category: "SmartThings Labs",
 	iconUrl: "https://s3.amazonaws.com/smartapp-icons/Partner/hue.png",
 	iconX2Url: "https://s3.amazonaws.com/smartapp-icons/Partner/hue@2x.png",
-    singleInstance: true
+        //singleInstance: true
 )
 
 preferences {
