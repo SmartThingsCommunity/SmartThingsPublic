@@ -341,8 +341,12 @@ def ssdpSwitchHandler(evt) {
 			deviceChangedValues = true
 			log.debug "Device's port or ip changed..."
 			def child = getChildDevice(parsedEvent.mac)
-			child.subscribe(parsedEvent.ip, parsedEvent.port)
-			child.poll()
+			if (child) {
+				child.subscribe(parsedEvent.ip, parsedEvent.port)
+				child.poll()
+			} else {
+				log.debug "Device with mac $parsedEvent.mac not found"
+			}
 		}
 	}
 }
@@ -410,8 +414,12 @@ def ssdpLightSwitchHandler(evt) {
 			deviceChangedValues = true
 			log.debug "Device's port or ip changed..."
 			def child = getChildDevice(parsedEvent.mac)
-			log.debug "updating ip and port, and resubscribing, for device with mac ${parsedEvent.mac}"
-			child.subscribe(parsedEvent.ip, parsedEvent.port)
+			if (child) {
+				log.debug "updating ip and port, and resubscribing, for device with mac ${parsedEvent.mac}"
+				child.subscribe(parsedEvent.ip, parsedEvent.port)
+			} else {
+				log.debug "Device with mac $parsedEvent.mac not found"
+			}
 		}
 	}
 }
@@ -463,8 +471,12 @@ def locationHandler(evt) {
 				deviceChangedValues = true
 				log.debug "Device's port or ip changed..."
 				def child = getChildDevice(parsedEvent.mac)
-				child.subscribe(parsedEvent.ip, parsedEvent.port)
-				child.poll()
+				if (child) {
+					child.subscribe(parsedEvent.ip, parsedEvent.port)
+					child.poll()
+				} else {
+					log.debug "Device with mac $parsedEvent.mac not found"
+				}
 			}
 		}
 	}
@@ -518,8 +530,12 @@ def locationHandler(evt) {
 				deviceChangedValues = true
 				log.debug "Device's port or ip changed..."
 				def child = getChildDevice(parsedEvent.mac)
-				log.debug "updating ip and port, and resubscribing, for device with mac ${parsedEvent.mac}"
-				child.subscribe(parsedEvent.ip, parsedEvent.port)
+				if (child) {
+					log.debug "updating ip and port, and resubscribing, for device with mac ${parsedEvent.mac}"
+					child.subscribe(parsedEvent.ip, parsedEvent.port)
+				} else {
+					log.debug "Device with mac $parsedEvent.mac not found"
+				}
 			}
 		}
 	}
