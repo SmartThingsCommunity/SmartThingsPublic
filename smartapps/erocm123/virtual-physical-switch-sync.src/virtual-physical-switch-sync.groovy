@@ -35,6 +35,9 @@ def numberPage() {
         section {
             input "vNumber", "number", title:"Number of virtual switches", description: 2, defaultValue: 2 , required: true
         }
+        section([title:"Available Options", mobileOnly:true]) {
+			label title:"Assign a name for your app (optional)", required:false
+		}
     }
 
 }
