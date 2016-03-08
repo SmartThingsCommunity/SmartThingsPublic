@@ -25,7 +25,7 @@
  *  See Changelog for change history
  *
  */  
-def getVersionNum() { return "0.9.13" }
+def getVersionNum() { return "0.9.14" }
 private def getVersionLabel() { return "Ecobee (Connect) Version ${getVersionNum()}" }
 private def getHelperSmartApps() {
 	return [ 
@@ -2067,7 +2067,14 @@ private def getPollingInterval() {
 }
 
 private def String getTimestamp() {
-	return new Date().format("yyyy-MM-dd HH:mm:ss z", location.timeZone)
+	// There seems to be some possibility that the timeZone will not be returned and will cause a NULL Pointer Exception
+	def timeZone = location?.timeZone ?: ""
+    // LOG("timeZone found as ${timeZone}", 5)
+    if(timeZone == "") {
+    	return new Date().format("yyyy-MM-dd HH:mm:ss z")
+    } else {
+		return new Date().format("yyyy-MM-dd HH:mm:ss z", timeZone)
+	}
 }
 
 private def getTimeOfDay() {
