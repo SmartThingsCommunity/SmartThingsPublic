@@ -25,7 +25,7 @@
  *  See Changelog for change history
  *
  */  
-def getVersionNum() { return "0.9.15" }
+def getVersionNum() { return "0.9.16" }
 private def getVersionLabel() { return "Ecobee (Connect) Version ${getVersionNum()}" }
 private def getHelperSmartApps() {
 	return [ 
@@ -2093,9 +2093,9 @@ private def String getTimestamp() {
 private def getTimeOfDay() {
 	def nowTime 
     if(location.timeZone) {
-    	nowtime = new Date().format("HHmm", location.timeZone).toDouble()
+    	nowTime = new Date().format("HHmm", location.timeZone).toDouble()
     } else {
-    	nowtime = new Date().format("HHmm").toDouble()
+    	nowTime = new Date().format("HHmm").toDouble()
     }
     LOG("getTimeOfDay() - nowTime = ${nowTime}", 4, null, "trace")
     if ( (nowTime < atomicState.sunriseTime) || (nowTime > atomicState.sunsetTime) ) {
