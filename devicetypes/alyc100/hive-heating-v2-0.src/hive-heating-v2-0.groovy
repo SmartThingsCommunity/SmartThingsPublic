@@ -132,8 +132,8 @@ metadata {
 		}
    
         standardTile("thermostatOperatingState", "device.thermostatOperatingState", inactiveLabel: true, decoration: "flat", width: 2, height: 2) {
-			state "idle", action:"polling.poll", label:'${name}', icon: "st.sonos.pause-icon"
-			state "heating", action:"polling.poll", label:'  ', icon: "st.thermostat.heating", backgroundColor:"#EC6E05"
+			state "idle", label:'${currentValue}', icon: "st.Weather.weather2"
+			state "heating", label:'${currentValue}', icon: "st.Weather.weather2", backgroundColor:"#EC6E05"
 		}
         
         standardTile("thermostatMode", "device.thermostatMode", inactiveLabel: true, decoration: "flat", width: 2, height: 2) {
