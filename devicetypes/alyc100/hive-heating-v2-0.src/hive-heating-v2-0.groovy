@@ -52,16 +52,8 @@ metadata {
     
     	multiAttributeTile(name: "thermostat", width: 6, height: 4, type:"thermostat") {
 			tileAttribute("device.temperature", key:"PRIMARY_CONTROL", canChangeBackground: true){
-				attributeState "default", label: '${currentValue}°', unit:"C", backgroundColors: [
-				// Celsius Color Range
-				[value: 0, color: "#50b5dd"],
-                [value: 10, color: "#43a575"],
-                [value: 13, color: "#c5d11b"],
-                [value: 17, color: "#f4961a"],
-                [value: 20, color: "#e75928"],
-                [value: 25, color: "#d9372b"],
-                [value: 29, color: "#b9203b"]
-			]}
+				attributeState "default", label: '${currentValue}°', unit:"C", backgroundColor:"#ec6e05"
+			}
             
             tileAttribute ("hiveHeating", key: "SECONDARY_CONTROL") {
 				attributeState "hiveHeating", label:'${currentValue}'
@@ -163,7 +155,7 @@ metadata {
         	state "default", action:"off", icon:"st.thermostat.heating-cooling-off"
    	 	}
 
-		main(["thermostat"])
+		main(["thermostatOperatingState"])
         details(["thermostat", "mode_auto", "mode_manual", "mode_off", "heatingSetpointUp", "heatingSetpoint", "boost", "boostTimeUp", "heatingSetpointDown", "boostTimeDown", "refresh"])
         
         //Uncomment below for V1 tile layout
