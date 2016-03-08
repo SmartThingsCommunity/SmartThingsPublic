@@ -19,6 +19,7 @@
  *	v2.1 - Introducing button temperature control via improved thermostat multi attribute tile. More responsive temperature control. 
  *		   Improve Boost button behaviour and look.
  *	v2.1.1 - Tweaks to temperature control responsiveness
+ *  v2.1.2 - Minor tweaks to main display
  */
  
 metadata {
