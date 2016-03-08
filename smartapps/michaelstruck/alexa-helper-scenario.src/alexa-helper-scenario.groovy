@@ -2,7 +2,7 @@
  *  Alexa Helper-Child
  *
  *  Copyright © 2016 Michael Struck
- *  Version 2.8.0 3/6/16
+ *  Version 2.8.1 3/8/16
  * 
  *  Version 1.0.0 - Initial release of child app
  *  Version 1.1.0 - Added framework to show version number of child app and copyright
@@ -23,7 +23,8 @@
  *  Version 2.7.0 - Added baseboard heaters scenario type and various code optimizations
  *  Version 2.7.1b - Small syntax changes
  *  Version 2.7.2 - Code optimization
- *  Versopm 2.8.0 - Added voice reporting options
+ *  Version 2.8.0 - Added voice reporting options
+ *  Version 2.8.1 - Syntax clean up, added dimmer to voice reporting options, added speech devices besides speakers
  *
  *  Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except
  *  in compliance with the License. You may obtain a copy of the License at:
@@ -320,23 +321,26 @@ def pageVoice(){
     dynamicPage(name: "pageVoice", title: "Voice Reporting Scenario Settings", install: false, uninstall: false){
         section {
             input "voiceControl", "capability.momentary", title: "Voice Report Control Switch (Momentary)", multiple: false, required: true
-            input "voiceSpeaker", "capability.musicPlayer", title: "Speaker For Voice Report", multiple: false, required: false
-            input "voiceVolume", "number", title: "Volume Of Voice Report", required: false
+            input "voiceSpeaker", "capability.musicPlayer", title: "Voice Report Speaker", multiple: false, required: false, submitOnChange:true
+            if (voiceSpeaker) input "voiceVolume", "number", title: "Speaker Volume", required: false
+            input "voiceDevice", "capability.speechSynthesis", title: "Voice Report Speech Synthesis Device", multiple: false, required: false
         }
         section ("Report Types"){
-            input "voicePre", "text", title: "Speak Message Before Report", description: "Enter a message to play before the report", defaultValue: "This is your SmartThings voice report.", required: false
-            href "pageSwitchReport", title: "Switch Status Report", description: reportDesc(voiceSwitch, "", ""), state: greyOutState(voiceSwitch, "", "")
+            input "voicePre", "text", title: "Pre Message Before Device Report", description: "Enter a message to play before the device report", defaultValue: "This is your SmartThings voice report.", required: false
+            href "pageSwitchReport", title: "Switch/Dimmer Status Report", description: reportDesc(voiceSwitch, voiceDimmer, ""), state: greyOutState(voiceSwitch, voiceDimmer, "")
             href "pageDoorReport", title: "Doors/Windows Report", description: reportDesc(voiceDoorSensors, voiceDoorControls, voiceDoorLocks), state: greyOutState(voiceDoorSensors, voiceDoorControls, voiceDoorLocks)
             href "pageTempReport", title: "Temperatures/Thermostats Report", description: reportDesc(voiceTemperature, voiceTempSettings, ""), state: greyOutState(voiceTemperature, voiceTempSettings, "")
             href "pageHomeReport", title: "Mode and Smart Home Monitor Report", description: reportDesc(voiceMode, voiceSHM, ""), state: "complete"
-            input "voicePost", "text", title: "Speak Message After Report", description: "Enter a message to play after the report", required: false
+            input "voicePost", "text", title: "Post Message After Device Report", description: "Enter a message to play after the device report", required: false
         }
     }
 }
 page(name: "pageSwitchReport", title: "Device Status Report", install: false, uninstall: false){
 	section {
-        input "voiceSwitch", "capability.switch", title: "Switches To Report Their Status...", multiple: true, required: false
-        input "voiceOnSwitchOnly", "bool", title: "Report only switches that are on", defaultValue: false
+        input "voiceSwitch", "capability.switch", title: "Switches To Report Their Status...", multiple: true, required: false 
+        input "voiceOnSwitchOnly", "bool", title: "Report Only Switches That Are On", defaultValue: false
+        input "voiceDimmer", "capability.switchLevel", title: "Dimmers To Report Their Status...", multiple: true, required: false
+        input "voiceOnDimmerOnly", "bool", title: "Report Only Dimmers That Are On", defaultValue: false 
     }
 }
 page(name: "pageDoorReport", title: "Doors/Windows Report", install: false, uninstall: false){
@@ -415,7 +419,7 @@ def initialize() {
         if (panicSwitchOff) subscribe (panicSwitchOff, "switch.on", "panicOff") 
         if (alarmSonos && parent.getSonos() && alarmSonos.name.contains("Sonos") && alarmSonosSound) getAlarmSound()
 	}
-    if (scenarioType == "Voice" && voiceControl) subscribe(voiceControl, "switch.on", "voiceHandler")
+    if (scenarioType == "Voice" && voiceControl && (voiceDevice || voiceSpeaker)) subscribe(voiceControl, "switch.on", "voiceHandler")
 }
 //Handlers
 //Mode/Routine/Devices/HTTP/SHM-----------------------------------------------------------------
@@ -669,22 +673,21 @@ def BBOnOff(status){
 def voiceHandler(evt){
 	if (getOkToRun("Voice Reporting")) {
     	def fullMsg = voicePre ? "${voicePre} " : ""
-        //Device Status Report
         if (voiceOnSwitchOnly) fullMsg += voiceSwitch ? switchOnReport() : ""
         else fullMsg += voiceSwitch ? reportStatus(voiceSwitch, "switch", "Switch") : ""
-        //Temperature Status Report
+        if (voiceOnDimmerOnly) fullMsg += voiceDimmer ? dimmerOnReport() : ""
+        else fullMsg += voiceDimmer ? reportStatus(voiceDimmer, "level", "Dimmer") : ""
         fullMsg += (voiceTemperature) ? reportStatus(voiceTemperature, "temperature", "Temperature") : ""
         if (voiceTempSettingSummary) fullMsg += (voiceTempSettings) ? thermostatSummary(): ""
         else fullMsg += (voiceTempSettings) ? reportStatus(voiceTempSettings, "thermostatSetpoint", "Thermostat Setpoint") : ""
-        //Doors/Windows Report
         fullMsg += voiceDoorSensors || voiceDoorControls || voiceDoorLocks ? doorWindowReport() : ""
-        //Mode/Security Report
         fullMsg += voiceMode ? "The current SmartThings mode is set to, '${location.currentMode}'. " : ""
         fullMsg += voiceSHM ? "The current Smart Home Monitor status is '${location.currentState("alarmSystemStatus")?.value}'. " : ""
         fullMsg += voicePost ? "${voicePost} " : ""
-        log.debug fullMsg
-    	if (voiceVolume) voiceSpeaker.setLevel(voiceVolume as int)
-    	voiceSpeaker.playText(fullMsg)
+        log.info fullMsg
+    	if (voiceVolume && voiceSpeaker) voiceSpeaker.setLevel(voiceVolume as int)
+    	if (voiceSpeaker) voiceSpeaker.playText(fullMsg)
+        if (voiceDevice) voiceDevice?.speak("${fullMsg}")
     }
 }
 //Common Methods-------------
@@ -733,8 +736,14 @@ def scenarioDesc(){
         desc += panicSwitchOn && panicSwitchOff && desc ?"\n'${panicSwitchOff}' switch deactivates panic actions." : ""
     }
     if (scenarioType=="Baseboard") desc = vDimmerBB && tstatBB ? "'${vDimmerBB}' dimmer controls ${parseList(tstatBB)}" : ""
-    if (scenarioType=="Voice") desc = voiceControl && voiceSpeaker ? "'${voiceControl}' controls voice reports on '${voiceSpeaker}'" : ""
-    desc = desc ? desc : "Tap to configure scenario..."
+    if (scenarioType=="Voice"){
+    	def noun = ""
+        if (voiceSpeaker && !voiceDevice) noun = "'${voiceSpeaker}'"
+        else if (!voiceSpeaker && voiceDevice) noun = "'${voiceDevice}'"
+        else if (voiceSpeaker && voiceDevice) noun = "'${voiceSpeaker}' and '${voiceDevice}'}"
+    	desc = voiceControl && noun ? "'${voiceControl}' controls voice reports on ${noun}" : ""
+    }
+    desc = desc ? desc : "Status: UNCONFIGURED - Tap to configure scenario"
 }
 def parseList(list){
     def listSize = list.size()
@@ -911,6 +920,17 @@ def switchOnReport(){
         }
     }
     else result += "All of the monitored switches are off. "
+	result
+}
+def dimmerOnReport(){
+    def result = "Dimmer Status: "
+    if (voiceDimmer.latestValue("switch").contains("on")){
+    	voiceDimmer.each {deviceName->
+        	if (deviceName.latestValue("switch")=="on") result += "${deviceName} on and set to ${deviceName.latestValue("level")}%. "
+        }
+    }
+    else result += "All of the monitored dimmers are off. "
+	result
 }
 def thermostatSummary(){
 	def result =""
@@ -921,7 +941,7 @@ def thermostatSummary(){
     if (!matchCount) result += "All thermostats are set to ${voiceTempTarget} degrees. "
     else if (matchCount == monitorCount) result += "None of the thermostats are set to ${voiceTempTarget} degrees. "
     else if (matchCount != monitorCount && matchCount) {
-    	result += "All of the thermostats are set to ${voiceTempTarget} degrees except"
+    	result += "Some of the thermostats are set to ${voiceTempTarget} degrees except"
         for (device in voiceTempSettings){
         	if (device.latestValue("thermostatSetpoint") as int != voiceTempTarget as int){
             	result += " ${device}"
@@ -1053,5 +1073,5 @@ def getAlarmSound(){
 }
 def sonosSlots(){def slots = parent.getMemCount() as int}
 //Version
-private def textVersion() {def text = "Child App Version: 2.8.0 (03/06/2016)"}
-private def versionInt() {def text = 280}
+private def textVersion() {def text = "Child App Version: 2.8.1 (03/08/2016)"}
+private def versionInt() {def text = 281}
