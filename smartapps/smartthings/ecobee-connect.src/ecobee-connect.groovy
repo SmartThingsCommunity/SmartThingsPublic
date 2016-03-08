@@ -25,7 +25,7 @@
  *  See Changelog for change history
  *
  */  
-def getVersionNum() { return "0.9.14" }
+def getVersionNum() { return "0.9.15" }
 private def getVersionLabel() { return "Ecobee (Connect) Version ${getVersionNum()}" }
 private def getHelperSmartApps() {
 	return [ 
@@ -752,8 +752,13 @@ def initialize() {
     atomicState.timeOfDay = getTimeOfDay()
     
     def sunriseAndSunset = getSunriseAndSunset()
-    atomicState.sunriseTime = sunriseAndSunset.sunrise.format("HHmm", location.timeZone).toDouble()
-    atomicState.sunsetTime = sunriseAndSunset.sunset.format("HHmm", location.timeZone).toDouble()
+    if(location.timeZone) {
+        atomicState.sunriseTime = sunriseAndSunset.sunrise.format("HHmm", location.timeZone).toDouble()
+        atomicState.sunsetTime = sunriseAndSunset.sunset.format("HHmm", location.timeZone).toDouble()
+    } else {
+        atomicState.sunriseTime = sunriseAndSunset.sunrise.format("HHmm").toDouble()
+        atomicState.sunsetTime = sunriseAndSunset.sunset.format("HHmm").toDouble()
+    }
 	    
     // Setup initial polling and determine polling intervals
 	atomicState.pollingInterval = getPollingInterval()
@@ -890,7 +895,11 @@ def sunriseEvent(evt) {
 	atomicState.timeOfDay = "day"
     atomicState.lastSunriseEvent = now()
     atomicState.lastSunriseEventDate = getTimestamp()
-    atomicState.sunriseTime = new Date().format("HHmm", location.timeZone).toInteger()
+    if(location.timeZone) {
+    	atomicState.sunriseTime = new Date().format("HHmm", location.timeZone).toInteger()
+    } else {
+    	atomicState.sunriseTime = new Date().format("HHmm").toInteger()
+    }
     scheduleWatchdog(evt, true)    
 }
 
@@ -899,7 +908,11 @@ def sunsetEvent(evt) {
 	atomicState.timeOfDay = "night"
     atomicState.lastSunsetEvent = now()
     atomicState.lastSunsetEventDate = getTimestamp()
-    atomicState.sunsetTime = new Date().format("HHmm", location.timeZone).toInteger()
+    if(location.timeZone) {
+    	atomicState.sunsetTime = new Date().format("HHmm", location.timeZone).toInteger()
+	} else {
+    	atomicState.sunsetTime = new Date().format("HHmm").toInteger()
+    }
     scheduleWatchdog(evt, true)
 }
 
@@ -2078,7 +2091,12 @@ private def String getTimestamp() {
 }
 
 private def getTimeOfDay() {
-	def nowTime = new Date().format("HHmm", location.timeZone).toDouble()
+	def nowTime 
+    if(location.timeZone) {
+    	nowtime = new Date().format("HHmm", location.timeZone).toDouble()
+    } else {
+    	nowtime = new Date().format("HHmm").toDouble()
+    }
     LOG("getTimeOfDay() - nowTime = ${nowTime}", 4, null, "trace")
     if ( (nowTime < atomicState.sunriseTime) || (nowTime > atomicState.sunsetTime) ) {
     	return "night"
