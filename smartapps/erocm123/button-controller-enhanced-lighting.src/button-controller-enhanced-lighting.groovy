@@ -6,6 +6,7 @@
  *	email: erocmail@gmail.com
  *	Date: 2015-10-22
  * 
+ *  2016-03-08: Better configuration layout. Configurable number of buttons. Ability to rename app.
  *  2016-02-04: Found an execution bug.
  *  2016-02-04: Slight change to still allow choosing on & off for lights  
  *  2016-02-04: Added the ability to toggle lights.
@@ -38,16 +39,8 @@ definition(
 
 preferences {
 	page(name: "selectButton")
-	page(name: "configureButton1")
-	page(name: "configureButton2")
-	page(name: "configureButton3")
-	page(name: "configureButton4")
-	page(name: "configureButton5")
-	page(name: "configureButton6")
-	page(name: "configureButton7")
-	page(name: "configureButton8")
+	page(name: "configureButton")
 	page(name: "configureLight")
-
 	page(name: "timeIntervalInput", title: "Only during a certain time") {
 		section {
 			input "starting", "time", title: "Starting", required: false
@@ -57,61 +50,46 @@ preferences {
 }
 
 def selectButton() {
-	dynamicPage(name: "selectButton", title: "First, select your button device", nextPage: "configureButton1", uninstall: configured()) {
+	dynamicPage(name: "selectButton", title: "First, select your button device", nextPage: null, uninstall: configured(), install: true) {
 		section {
 			input "buttonDevice", "capability.button", title: "Button", multiple: false, required: true, submitOnChange: true
 		}
+        section("Menu") {
+                input "numberOfButtons", "enum", title: "Number of Buttons?", required: true, value: 8, defaultValue: 8, submitOnChange: true, options: [
+                1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24]
+                def configDescription = ""
+                for (int i = 1; i <= (numberOfButtons as Integer); i++){
+                   configDescription = ""
+                   if (settings["lights_${i}"] != null) { 
+                      settings["lights_${i}"].each {
+                         configDescription += "${it.displayName}, "
+                      }
+                      configDescription = configDescription.substring(0, configDescription.length() - 2)
+                   } else {
+                      configDescription = "Click to configure"
+                   }
+                   href "configureButton", title:"Configure Button $i", description:"$configDescription", params: [pbutton: i]
+                }
+        }
         
 		section(title: "More options", hidden: hideOptionsSection(), hideable: true) {
-        
-        	input "debounce", "number", title: "Debounce time in milliseconds", required: true, value: 3000, defaultValue: 3000
-        
-			def timeLabel = timeIntervalLabel()
-
-			href "timeIntervalInput", title: "Only during a certain time", description: timeLabel ?: "Tap to set", state: timeLabel ? "complete" : null
-
-			input "days", "enum", title: "Only on certain days of the week", multiple: true, required: false,
+            input "debounce", "number", title: "Debounce time in milliseconds", required: true, value: 3000, defaultValue: 3000
+            def timeLabel = timeIntervalLabel()
+            href "timeIntervalInput", title: "Only during a certain time", description: timeLabel ?: "Tap to set", state: timeLabel ? "complete" : null
+            input "days", "enum", title: "Only on certain days of the week", multiple: true, required: false,
 				options: ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"]
-
-			input "modes", "mode", title: "Only when mode is", multiple: true, required: false
-            
-            		//input "numberOfButtons", "number", title: "Number of Buttons?", required: false, value: 8
+            input "modes", "mode", title: "Only when mode is", multiple: true, required: false
+		}
+        section([title:"Available Options", mobileOnly:true]) {
+			label title:"Assign a name for your app (optional)", required:false
 		}
 	}
 }
 
-def configureButton1() {
-	dynamicPage(name: "configureButton1", title: "Now let's decide how to use the first button",
-		nextPage: "configureButton2", uninstall: configured(), getButtonSections(1))
-}
-def configureButton2() {
-	dynamicPage(name: "configureButton2", title: "If you have a second button, set it up here",
-		nextPage: "configureButton3", uninstall: configured(), getButtonSections(2))
-}
-
-def configureButton3() {
-	dynamicPage(name: "configureButton3", title: "If you have a third button, you can do even more here",
-		nextPage: "configureButton4", uninstall: configured(), getButtonSections(3))
-}
-def configureButton4() {
-	dynamicPage(name: "configureButton4", title: "If you have a fourth button, set it up here",
-		nextPage: "configureButton5", uninstall: configured(), getButtonSections(4))
-}
-def configureButton5() {
-	dynamicPage(name: "configureButton5", title: "If you have a fifth button, set it up here",
-		nextPage: "configureButton6", uninstall: configured(), getButtonSections(5))
-}
-def configureButton6() {
-	dynamicPage(name: "configureButton6", title: "If you have a sixth button, set it up here",
-		nextPage: "configureButton7", uninstall: configured(), getButtonSections(6))
-}
-def configureButton7() {
-	dynamicPage(name: "configureButton7", title: "If you have a seventh button, set it up here",
-		nextPage: "configureButton8", uninstall: configured(), getButtonSections(7))
-}
-def configureButton8() {
-	dynamicPage(name: "configureButton8", title: "If you have a eighth button, set it up here",
-		install: true, uninstall: true, getButtonSections(8))
+def configureButton(params) {
+    if (params.pbutton != null) state.currentButton = params.pbutton.toInteger() //log.debug "$params.pbutton"
+    dynamicPage(name: "configureButton", title: "Choose the lights that you would like button ${state.currentButton} to control.",
+	uninstall: configured(), getButtonSections(state.currentButton))
 }
 
 def configureLight(params) {
@@ -212,7 +190,9 @@ def buttonEvent(evt){
 		//log.debug "buttonEvent: $evt.name = $evt.value ($evt.data)"
 		log.debug "button: $buttonNumber, value: $value"
         if (value == "held")
-        	buttonNumber = buttonNumber + 4
+        	buttonNumber = buttonNumber + numberOfButtons.toInteger()/2
+        if (value == "double")
+        	buttonNumber = buttonNumber + numberOfButtons.toInteger() 
             
 		def recentEvents = buttonDevice.eventsSince(new Date(now() - debounce)).findAll{it.value == evt.value && it.data == evt.data}
 		log.debug "Found ${recentEvents.size()?:0} events in past ${debounce/1000} seconds"
