@@ -23,7 +23,7 @@
 
 	tiles(scale: 2) {
 		multiAttributeTile(name: "mediaMulti", type:"mediaPlayer", width:6, height:4) {
-            tileAttribute("device.status", key: "PRIMARY_CONTROL") {
+			tileAttribute("device.status", key: "PRIMARY_CONTROL") {
 				attributeState("paused", label:"Paused",)
 				attributeState("playing", label:"Playing")
 				attributeState("stopped", label:"Stopped")
@@ -40,11 +40,11 @@
 				attributeState("default", action:"music Player.nextTrack")
 			}
 			tileAttribute ("device.level", key: "SLIDER_CONTROL") {
-				attributeState("level", action:"media Player.setLevel")
+				attributeState("level", action:"music Player.setLevel")
 			}
 			tileAttribute ("device.mute", key: "MEDIA_MUTED") {
-				attributeState("unmuted", action:"media Player.mute", nextState: "muted")
-				attributeState("muted", action:"media Player.unmute", nextState: "unmuted")
+				attributeState("unmuted", action:"music Player.mute", nextState: "muted")
+				attributeState("muted", action:"music Player.unmute", nextState: "unmuted")
 			}
 			tileAttribute("device.trackDescription", key: "MARQUEE") {
 				attributeState("default", label:"${currentValue}")
@@ -52,7 +52,6 @@
 		}
 
 		main "mediaMulti"
-
 		details(["mediaMulti"])
 	}
 }
@@ -74,7 +73,7 @@ def installed() {
 }
 
 def parse(description) {
-	// Nah, we're good. No parsing necessary.
+	// No parsing will happen with this simulated device.
 }
 
 def play() {
@@ -94,14 +93,14 @@ def stop() {
 def previousTrack() {
 	state.currentTrack = state.currentTrack - 1
 	if (state.currentTrack < 0)
-		state.currentTrack = state.tracks.length-1
+		state.currentTrack = state.tracks.size()-1
 
 	sendEvent(name: "trackDescription", value: state.tracks[state.currentTrack])
 }
 
 def nextTrack() {
 	state.currentTrack = state.currentTrack + 1
-	if (state.currentTrack == state.tracks.length)
+	if (state.currentTrack == state.tracks.size())
 		state.currentTrack = 0
 
 	sendEvent(name: "trackDescription", value: state.tracks[state.currentTrack])
@@ -115,6 +114,6 @@ def unmute() {
 	sendEvent(name: "mute", value: "unmuted")
 }
 
-def setLevel(Double level) {
+def setLevel(level) {
 	sendEvent(name: "level", value: level)
 }
