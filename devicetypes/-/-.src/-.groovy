@@ -1,5 +1,5 @@
 /**
- *  디바이스핸들러
+ *  에너지미터
  *
  *  Copyright 2016 임희진
  *
@@ -14,9 +14,8 @@
  *
  */
 metadata {
-	definition (name: "디바이스핸들러", namespace: "디바이스핸들러", author: "임희진") {
-		capability "Smoke Detector"
-		capability "Sound Sensor"
+	definition (name: "에너지미터", namespace: "에너지미터", author: "임희진") {
+		capability "Energy Meter"
 	}
 
 	simulator {
@@ -31,7 +30,6 @@ metadata {
 // parse events into attributes
 def parse(String description) {
 	log.debug "Parsing '${description}'"
-	// TODO: handle 'smoke' attribute
-	// TODO: handle 'sound' attribute
+	// TODO: handle 'energy' attribute
 
 }
