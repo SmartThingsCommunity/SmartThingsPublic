@@ -17,6 +17,7 @@
  *  v2.0 BETA - New Hive Connect App
  *  v2.0.1 BETA - Fix bug for accounts that do not have capabilities attribute against thermostat nodes.
  *	v2.1 - Improved authentication process and overhaul to UI. Added notification capability.
+ *  v2.1.1 - Bug fix when initially selecting devices for the first time.
  *
  */
 definition(
@@ -86,7 +87,7 @@ def authenticated() {
 }
 
 def devicesSelected() {
-	return (getChildDevices().size > 0) ? "complete" : null
+	return (selectedHeating || selectedHotWater) ? "complete" : null
 }
 
 def preferencesSelected() {
@@ -95,12 +96,20 @@ def preferencesSelected() {
 
 def getDevicesSelectedString() {
 	def listString = ""
-	getChildDevices().each { childDevice -> 
+	selectedHeating.each { childDevice -> 
     	if (listString == "") {
-        	listString += childDevice.name
+        	listString += state.hiveHeatingDevices[childDevice]
         }
         else {
-        	listString += "\n" + childDevice.name
+        	listString += "\n" + state.hiveHeatingDevices[childDevice]
+        }
+    }
+    selectedHotWater.each { childDevice -> 
+    	if (listString == "") {
+        	listString += state.hiveHotWaterDevices[childDevice]
+        }
+        else {
+        	listString += "\n" + state.hiveHotWaterDevices[childDevice]
         }
     }
     return listString
