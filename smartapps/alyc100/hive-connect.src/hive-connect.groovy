@@ -230,6 +230,7 @@ def uninstalled() {
 }
 
 private removeChildDevices(devices) {
+	unsubscribe()
 	devices.each {
 		deleteChildDevice(it.deviceNetworkId) // 'it' is default
 	}
@@ -377,6 +378,7 @@ def updateDevices() {
     getChildDevices().findAll { !selectors.contains("${it.deviceNetworkId}") }.each {
 		log.info("Deleting ${it.deviceNetworkId}")
         try {
+        	unsubscribe(it)
 			deleteChildDevice(it.deviceNetworkId)
         } catch (physicalgraph.exception.NotFoundException e) {
         	log.info("Could not find ${it.deviceNetworkId}. Assuming manually deleted.")
