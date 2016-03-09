@@ -75,7 +75,7 @@ def firstPage() {
 
 def headerSECTION() {
 	return paragraph (image: "https://scontent-lhr3-1.xx.fbcdn.net/hphotos-xfp1/v/t1.0-9/10457773_334250273417145_3395772416845089626_n.png?oh=fb96583154582526d24409597fbccc18&oe=57248CDA",
-                  "Hive (Connect)\nVersion: 2.1\nBuild: 142008032016")
+                  "Hive (Connect)\nVersion: 2.1.1\nBuild: 153009032016")
 }
 
 def stateTokenPresent() {
@@ -246,14 +246,16 @@ def initialize() {
 
     runIn(10, 'refreshDevices') // Asynchronously refresh devices so we don't block
     
-    //subscribe to events for notifications
-    getChildDevices().each { childDevice -> 
-    	if (childDevice.typeName == "Hive Heating V2.0" || childDevice.typeName == "Hive Hot Water V2.0") {
-    		subscribe(childDevice, "thermostatMode", modeHandler)
-        }
-        if (childDevice.typeName == "Hive Heating V2.0") {
-        	subscribe(childDevice, "temperature", tempHandler)
-        }
+    //subscribe to events for notifications if activated
+    if (preferencesSelected() == "complete") {
+    	getChildDevices().each { childDevice -> 
+    		if (childDevice.typeName == "Hive Heating V2.0" || childDevice.typeName == "Hive Hot Water V2.0") {
+    			subscribe(childDevice, "thermostatMode", modeHandler)
+        	}
+        	if (childDevice.typeName == "Hive Heating V2.0") {
+        		subscribe(childDevice, "temperature", tempHandler)
+        	}
+    	}
     }
     state.maxNotificationSent = false
     state.minNotificationSent = false
