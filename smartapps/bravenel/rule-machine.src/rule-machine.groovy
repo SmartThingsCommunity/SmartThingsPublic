@@ -3,10 +3,11 @@
  *
  *  Copyright 2015, 2016 Bruce Ravenel and Mike Maxwell
  *
- *  Version 1.8.1   3 Mar 2016
+ *  Version 1.8.2   9 Mar 2016
  *
  *	Version History
  *
+ *	1.8.2	9 Mar 2016		Changed startup page for installation
  *	1.8.1	3 Mar 2016		Changed method of getting Rule version
  *	1.8.0	2 Mar 2016		Clean up, added Door control
  *	1.7.6	24 Feb 2016		Added User Guide link, fixed Rule truth mechanism
@@ -49,6 +50,7 @@ definition(
 
 preferences {
 	page(name: "mainPage")
+    page(name: "firstPage")
 	page(name: "removePage")
 	//expert pages
 	page(name: "customCommandsPAGE")
@@ -59,23 +61,25 @@ preferences {
 
 def mainPage() {
 	if(!state.setup) firstRun()
-    if(state.ruleState) state.ruleState = null  // obsolete
-    def nApps = childApps.size()
-    dynamicPage(name: "mainPage", title: "Installed Rules, Triggers and Actions " + (nApps > 0 ? "[$nApps]" : ""), install: true, uninstall: false) {
-    	if(!state.setup) initialize(true)
-        section {
-            app(name: "childRules", appName: "Rule", namespace: "bravenel", title: "Create New Rule...", multiple: true)
-        }
-		section ("Expert Features") {
-			href("customCommandsPAGE", title: null, description: anyCustom() ? "Custom Commands..." : "Tap to create Custom Commands", state: anyCustom())
-        }
-        section ("Rule Machine User Guide") {
-			href url:"https://community.smartthings.com/t/rule-machine-user-guide/40176", style:"embedded", required:false, description:"Tap to view User Guide", title: ""
-        }
-        section ("Remove Rule Machine"){
-        	href "removePage", description: "Tap to remove Rule Machine and Rules", title: ""
-        }
-		section ("Version 1.8.1/" + (nApps > 0 ? "${childApps[0].appVersion()}" : "---")) { }
+    else {
+    	if(state.ruleState) state.ruleState = null  // obsolete
+    	def nApps = childApps.size()
+    	dynamicPage(name: "mainPage", title: "Installed Rules, Triggers and Actions " + (nApps > 0 ? "[$nApps]" : ""), install: true, uninstall: false) {
+    		if(!state.setup) initialize(true)
+        	section {
+            	app(name: "childRules", appName: "Rule", namespace: "bravenel", title: "Create New Rule...", multiple: true)
+        	}
+			section ("Expert Features") {
+				href("customCommandsPAGE", title: null, description: anyCustom() ? "Custom Commands..." : "Tap to create Custom Commands", state: anyCustom())
+        	}
+        	section ("Rule Machine User Guide") {
+				href url:"https://community.smartthings.com/t/rule-machine-user-guide/40176", style:"embedded", required:false, description:"Tap to view User Guide", title: ""
+        	}
+        	section ("Remove Rule Machine"){
+        		href "removePage", description: "Tap to remove Rule Machine and Rules", title: ""
+        	}
+			section ("Version 1.8.2/" + (nApps > 0 ? "${childApps[0].appVersion()}" : "---")) { }
+    	}
     }
 }
 
@@ -95,6 +99,7 @@ def updated() {
 def firstRun() {
 	state.setup = true
 	state.ruleSubscribers = [:]
+    dynamicPage(name: "firstPage", title: "Hit Done to install Rule Machine", install: true, uninstall: false) { }
 }
 
 def childVersion() {
