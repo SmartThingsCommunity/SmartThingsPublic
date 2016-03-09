@@ -20,6 +20,7 @@ metadata {
         command "away"
         command "disarm"
         command "instant"
+        command "night"
         command "partition"
         command "reset"
         command "stay"
@@ -34,7 +35,7 @@ metadata {
         multiAttributeTile(name:"status", type: "lighting", width: 6, height: 4){
             tileAttribute ("device.status", key: "PRIMARY_CONTROL") {
                 attributeState "alarm", label:'Alarm', action: 'disarm', icon:"st.security.alarm.off", backgroundColor:"#ff0000"
-                attributeState "away", label:'Armed Away', action: 'stay', icon:"st.security.alarm.on", backgroundColor:"#800000"
+                attributeState "away", label:'Armed Away', action: 'disarm', icon:"st.security.alarm.on", backgroundColor:"#800000"
                 attributeState "disarm", label:'Disarmed', icon:"st.security.alarm.off", backgroundColor:"#79b821"
                 attributeState "entrydelay", label:'Entry Delay', action: 'disarm', icon:"st.security.alarm.on", backgroundColor:"#ff9900"
                 attributeState "exitdelay", label:'Exit Delay', action: 'disarm', icon:"st.security.alarm.on", backgroundColor:"#ff9900"
@@ -66,9 +67,12 @@ metadata {
         standardTile("reset", "capability.momentary", width: 2, height: 2, title: "Sensor Reset"){
             state "reset", label: 'Sensor Reset', action: "reset", icon: "st.Home.home4", backgroundColor: "#008CC1"
         }
+        standardTile("night", "capability.momentary", width: 2, height: 2, title: "Night Mode"){
+            state "night", label: 'Night Mode', action: "night", icon: "st.Home.home4", backgroundColor: "#008CC1"
+        }
 
         main "status"
-        details(["status", "away", "stay", "disarm", "instant", "reset"])
+        details(["status", "away", "stay", "disarm", "instant", "reset", "night"])
 
     }
 }
@@ -138,6 +142,18 @@ def instant() {
         ]
     )
     log.debug "response" : "Request to toggle instant mode received"
+    return result
+}
+
+def night() {
+    def result = new physicalgraph.device.HubAction(
+        method: "GET",
+        path: "/api/alarm/togglenight",
+        headers: [
+            HOST: "$ip:$port"
+        ]
+    )
+    log.debug "response" : "Request to toggle night mode received"
     return result
 }
 

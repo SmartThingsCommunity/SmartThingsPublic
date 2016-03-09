@@ -20,6 +20,7 @@ metadata {
         command "away"
         command "disarm"
         command "instant"
+        command "night"
         command "partition"
         command "reset"
         command "stay"
@@ -41,7 +42,7 @@ metadata {
                 attributeState "notready", label:'Not Ready', icon:"st.security.alarm.off", backgroundColor:"#ffcc00"
                 attributeState "ready", label:'Ready', action: 'away', icon:"st.security.alarm.off", backgroundColor:"#79b821"
                 attributeState "forceready", label:'Force Ready', action: 'away', icon:"st.security.alarm.off", backgroundColor:"#79b821"
-                attributeState "stay", label:'Armed Stay', action: 'away', icon:"st.security.alarm.on", backgroundColor:"#008CC1"
+                attributeState "stay", label:'Armed Stay', action: 'disarm', icon:"st.security.alarm.on", backgroundColor:"#008CC1"
                 attributeState "instantaway", label:'Armed Instant Away', action: 'disarm', icon:"st.security.alarm.on", backgroundColor:"#800000"
                 attributeState "instantstay", label:'Armed Instant Stay', action: 'away', icon:"st.security.alarm.on", backgroundColor:"#008CC1"
             }
@@ -66,9 +67,12 @@ metadata {
         standardTile("reset", "capability.momentary", width: 2, height: 2, title: "Sensor Reset"){
             state "reset", label: 'Sensor Reset', action: "reset", icon: "st.Home.home4", backgroundColor: "#008CC1"
         }
+        standardTile("night", "capability.momentary", width: 2, height: 2, title: "Night Mode"){
+            state "night", label: 'Night Mode', action: "night", icon: "st.Home.home4", backgroundColor: "#008CC1"
+        }
 
         main "status"
-        details(["status", "away", "stay", "disarm", "instant", "reset"])
+        details(["status", "away", "stay", "disarm", "instant", "reset", "night"])
 
     }
 }
@@ -138,6 +142,18 @@ def instant() {
         ]
     )
     log.debug "response" : "Request to toggle instant mode received"
+    return result
+}
+
+def night() {
+    def result = new physicalgraph.device.HubAction(
+        method: "GET",
+        path: "/api/alarm/togglenight",
+        headers: [
+            HOST: "$ip:$port"
+        ]
+    )
+    log.debug "response" : "Request to toggle night mode received"
     return result
 }
 

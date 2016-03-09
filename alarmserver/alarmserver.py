@@ -294,34 +294,31 @@ class EnvisalinkClient(asynchat.async_chat):
                 if event['type'] == 'partition':
                     # If parameters includes extra digits then this next line would fail
                     # without looking at just the first digit which is the partition number
-                    if int(parameters[0]) in self._config.PARTITIONNAMES:
-                        if self._config.PARTITIONNAMES[int(parameters[0])]!=False:
-                            # After partition number can be either a usercode
-                            # or for event 652 a type of arm mode (single digit)
-                            # Usercode is always 4 digits padded with zeros
-                            if len(str(parameters)) == 5:
-                                # We have a usercode
-                                try:
-                                    usercode = int(parameters[1:5])
-                                except:
-                                    usercode = 0
-                                if int(usercode) in self._config.ALARMUSERNAMES:
-                                    if self._config.ALARMUSERNAMES[int(usercode)]!=False:
-                                        alarmusername = self._config.ALARMUSERNAMES[int(usercode)]
-                                    else:
-                                        # Didn't find a username, use the code instead
-                                        alarmusername = usercode
-                                    return event['name'].format(str(self._config.PARTITIONNAMES[int(parameters[0])]), str(alarmusername))
-                            elif len(parameters) == 2:
-                                # We have an arm mode instead, get it's friendly name
-                                armmode = evl_ArmModes[int(parameters[1])]
-                                return event['name'].format(str(self._config.PARTITIONNAMES[int(parameters[0])]), str(armmode))
+                    if self._config.PARTITIONNAMES[int(parameters[0])]:
+                        # After partition number can be either a usercode
+                        # or for event 652 a type of arm mode (single digit)
+                        # Usercode is always 4 digits padded with zeros
+                        if len(str(parameters)) == 5:
+                            # We have a usercode
+                            try:
+                                usercode = int(parameters[1:5])
+                            except:
+                                usercode = 0
+                            if self._config.ALARMUSERNAMES[int(usercode)]:
+                                alarmusername = self._config.ALARMUSERNAMES[int(usercode)]
                             else:
-                                return event['name'].format(str(self._config.PARTITIONNAMES[int(parameters)]))
+                                # Didn't find a username, use the code instead
+                                alarmusername = usercode
+                            return event['name'].format(str(self._config.PARTITIONNAMES[int(parameters[0])]), str(alarmusername))
+                        elif len(parameters) == 2:
+                            # We have an arm mode instead, get it's friendly name
+                            armmode = evl_ArmModes[int(parameters[1])]
+                            return event['name'].format(str(self._config.PARTITIONNAMES[int(parameters[0])]), str(armmode))
+                        else:
+                            return event['name'].format(str(self._config.PARTITIONNAMES[int(parameters)]))
                 elif event['type'] == 'zone':
-                    if int(parameters) in self._config.ZONENAMES:
-                        if self._config.ZONENAMES[int(parameters)]!=False:
-                            return event['name'].format(str(self._config.ZONENAMES[int(parameters)]))
+                    if self._config.ZONENAMES[int(parameters)]:
+                        return event['name'].format(str(self._config.ZONENAMES[int(parameters)]))
 
         return event['name'].format(str(parameters))
 
@@ -342,13 +339,13 @@ class EnvisalinkClient(asynchat.async_chat):
 
             if event['type'] in ('partition', 'zone'):
                 if event['type'] == 'zone':
-                    if int(parameters) in self._config.ZONENAMES:
+                    if self._config.ZONENAMES[int(parameters)]:
                         if not int(parameters) in ALARMSTATE[event['type']]:
                           ALARMSTATE[event['type']][int(parameters)] = {'name' : self._config.ZONENAMES[int(parameters)]}
                     else:
                         if not int(parameters) in ALARMSTATE[event['type']]: ALARMSTATE[event['type']][int(parameters)] = {}
                 elif event['type'] == 'partition':
-                    if int(parameters) in self._config.PARTITIONNAMES:
+                    if self._config.PARTITIONNAMES[int(parameters)]:
                         if not int(parameters) in ALARMSTATE[event['type']]: ALARMSTATE[event['type']][int(parameters)] = {'name' : self._config.PARTITIONNAMES[int(parameters)]}
                     else:
                         if not int(parameters) in ALARMSTATE[event['type']]: ALARMSTATE[event['type']][int(parameters)] = {}
@@ -388,7 +385,7 @@ class EnvisalinkClient(asynchat.async_chat):
            # Check for event type
            if event['type'] == 'partition':
              # Is our partition setup with a custom name?
-             if int(parameters[0]) in self._config.PARTITIONNAMES:
+             if self._config.PARTITIONNAMES[int(parameters[0])]:
                armmode=''
                if str(code) == '652':
                  if message.endswith('Zero Entry Away'):
@@ -498,6 +495,9 @@ class AlarmServer(asyncore.dispatcher):
         elif query.path == '/api/alarm/instantarm':
             channel.pushok(json.dumps({'response' : 'Request to arm in instant mode received'}))
             self._envisalinkclient.send_command('071', '1*9' + alarmcode)
+        elif query.path == '/api/alarm/togglenight':
+            channel.pushok(json.dumps({'response' : 'Request to toggle night mode received'}))
+            self._envisalinkclient.send_command('071', '1**#')
         elif query.path == '/api/alarm/armwithcode':
             channel.pushok(json.dumps({'response' : 'Request to arm with code received'}))
             self._envisalinkclient.send_command('033', '1' + alarmcode)
