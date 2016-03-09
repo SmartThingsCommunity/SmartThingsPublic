@@ -230,7 +230,6 @@ def uninstalled() {
 }
 
 private removeChildDevices(devices) {
-	unsubscribe()
 	devices.each {
 		deleteChildDevice(it.deviceNetworkId) // 'it' is default
 	}
