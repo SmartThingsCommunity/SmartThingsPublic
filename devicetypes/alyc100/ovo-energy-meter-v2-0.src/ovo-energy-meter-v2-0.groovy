@@ -38,18 +38,18 @@ metadata {
 			state "default", label: 'Unit Price:\n${currentValue}'
 		}
         
-        valueTile("totalDemand", "device.averageDailyTotalPower", decoration: "flat", width: 3, height: 2) {
+        valueTile("totalDemand", "device.averageDailyTotalPower", decoration: "flat", width: 3, height: 1) {
 			state "default", label: 'Total Power:\n${currentValue} kWh'
 		}
-        valueTile("totalConsumptionPrice", "device.currentDailyTotalPowerCost", decoration: "flat", width: 3, height: 2) {
+        valueTile("totalConsumptionPrice", "device.currentDailyTotalPowerCost", decoration: "flat", width: 3, height: 1) {
 			state "default", label: 'Total Price:\n${currentValue}'
 		}
         
         valueTile("yesterdayTotalPower", "device.yesterdayTotalPower", decoration: "flat", width: 3, height: 1) {
-			state "default", label: 'Prev. Daily Power :\n${currentValue} kWh'
+			state "default", label: 'Yesterday Total Power :\n${currentValue} kWh'
 		}
         valueTile("yesterdayTotalPowerCost", "device.yesterdayTotalPowerCost", decoration: "flat", width: 3, height: 1) {
-			state "default", label: 'Prev. Daily Cost:\n${currentValue}'
+			state "default", label: 'Yesterday Total Cost:\n${currentValue}'
 		}
         
 		standardTile("refresh", "device.power", inactiveLabel: false, decoration: "flat", width: 2, height: 2) {
