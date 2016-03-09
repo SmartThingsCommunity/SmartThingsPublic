@@ -32,8 +32,8 @@ metadata {
     tiles(scale: 2) {
     	multiAttributeTile(name:"FGFS", type:"lighting", width:6, height:4) {//with generic type secondary control text is not displayed in Android app
         	tileAttribute("device.water", key:"PRIMARY_CONTROL") {
+            	attributeState("dry", icon:"st.alarm.water.dry", backgroundColor:"#79b821")
             	attributeState("wet", icon:"st.alarm.water.wet", backgroundColor:"#ffa81e")
-				attributeState("dry", icon:"st.alarm.water.dry", backgroundColor:"#79b821")
             }
             
             tileAttribute("device.tamper", key:"SECONDARY_CONTROL") {
