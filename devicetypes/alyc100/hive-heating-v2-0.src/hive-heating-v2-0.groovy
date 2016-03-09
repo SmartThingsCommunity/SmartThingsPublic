@@ -20,8 +20,13 @@
  *		   Improve Boost button behaviour and look.
  *	v2.1.1 - Tweaks to temperature control responsiveness
  *  v2.1.2 - Minor tweaks to main display
+ *	v2.1.3 - Allow changing of boost interval amount in device settings.
  */
- 
+preferences 
+{
+	input( "boostInterval", "number", title: "Boost Interval (minutes)", description: "Boost interval amount in minutes", required: false, defaultValue: 10 )
+}
+
 metadata {
 	definition (name: "Hive Heating V2.0", namespace: "alyc100", author: "Alex Lee Yuk Cheung") {
 		capability "Actuator"
@@ -223,14 +228,27 @@ def setBoostLength(minutes) {
     refreshBoostLabel()  
 }
 
+def getBoostIntervalValue() {
+	if (settings.boostInterval == null) {
+    	return 10
+    } 
+    return settings.boostInterval.toInteger()
+}
+
 def boostTimeUp() {
 	log.debug "Executing 'boostTimeUp'"
-	setBoostLength(state.boostLength + 10)
+    //Round down result
+    int boostIntervalValue = getBoostIntervalValue()
+    def newBoostLength = (state.boostLength + boostIntervalValue) - (state.boostLength % boostIntervalValue)
+	setBoostLength(newBoostLength)
 }
 
 def boostTimeDown() {
 	log.debug "Executing 'boostTimeDown'"
-	setBoostLength(state.boostLength - 10)
+    //Round down result
+    int boostIntervalValue = getBoostIntervalValue()
+    def newBoostLength = (state.boostLength - boostIntervalValue) - (state.boostLength % boostIntervalValue)
+	setBoostLength(newBoostLength)
 }
 
 def boostButton() {
