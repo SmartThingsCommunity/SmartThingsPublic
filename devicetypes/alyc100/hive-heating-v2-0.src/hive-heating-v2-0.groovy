@@ -22,11 +22,13 @@
  *  v2.1.2 - Minor tweaks to main display
  *	v2.1.3 - Allow changing of boost interval amount in device settings.
  *  v2.1.4 - Allow changing of boost temperature in device settings.
+ *	v2.1.5 - Option to disable Hive Heating Device for summer. Disable mode stops any automation commands from other smart apps reactivating Hive Heating.
  */
 preferences 
 {
 	input( "boostInterval", "number", title: "Boost Interval (minutes)", description: "Boost interval amount in minutes", required: false, defaultValue: 10 )
     input( "boostTemp", "number", title: "Boost Temperature (°C)", description: "Boost interval amount in Centigrade", required: false, defaultValue: 22 )
+	input( "disableDevice", "bool", title: "Disable Hive Heating?", required: false, defaultValue: false )
 }
 
 metadata {
@@ -198,22 +200,24 @@ def setHeatingSetpoint(temp) {
 	if (temp > 32) {
 		temp = 32
 	}
-    
-    //if thermostat is off, set to manual    
-   	if (latestThermostatMode.stringValue == 'off') {
-    	def args = [
-        	nodes: [	[attributes: [activeHeatCoolMode: [targetValue: "HEAT"], activeScheduleLock: [targetValue: true]]]]
-            ]
-		def resp = parent.apiPUT("/nodes/${device.deviceNetworkId}", args)
+         
+    if (settings.disableDevice == null || settings.disableDevice == false) {
+    	//if thermostat is off, set to manual 
+   		if (latestThermostatMode.stringValue == 'off') {
+    		def args = [
+        		nodes: [	[attributes: [activeHeatCoolMode: [targetValue: "HEAT"], activeScheduleLock: [targetValue: true]]]]
+            	]
+			def resp = parent.apiPUT("/nodes/${device.deviceNetworkId}", args)
 		
-    }
+    	}
     
-    // {"nodes":[{"attributes":{"targetHeatTemperature":{"targetValue":11}}}]}    
-    def args = [
+    	// {"nodes":[{"attributes":{"targetHeatTemperature":{"targetValue":11}}}]}    
+    	def args = [
         	nodes: [	[attributes: [targetHeatTemperature: [targetValue: temp]]]]
             ]               
     
-    def resp = parent.apiPUT("/nodes/${device.deviceNetworkId}", args)
+    	def resp = parent.apiPUT("/nodes/${device.deviceNetworkId}", args)    	
+    }
     runIn(4, refresh)
 }
 
@@ -331,34 +335,36 @@ def auto() {
 }
 
 def setThermostatMode(mode) {
-	mode = mode == 'cool' ? 'heat' : mode
-	log.debug "Executing 'setThermostatMode with mode $mode'"
-    def args = [
+	if (settings.disableDevice == null || settings.disableDevice == false) {
+		mode = mode == 'cool' ? 'heat' : mode
+		log.debug "Executing 'setThermostatMode with mode $mode'"
+    	def args = [
         	nodes: [	[attributes: [activeHeatCoolMode: [targetValue: "HEAT"], scheduleLockDuration: [targetValue: 0], activeScheduleLock: [targetValue: false]]]]
             ]
-    if (mode == 'off') {
+    	if (mode == 'off') {
      	args = [
         	nodes: [	[attributes: [activeHeatCoolMode: [targetValue: "OFF"], scheduleLockDuration: [targetValue: 0], activeScheduleLock: [targetValue: true]]]]
             ]
-    } else if (mode == 'heat') {
+    	} else if (mode == 'heat') {
     	//{"nodes":[{"attributes":{"activeHeatCoolMode":{"targetValue":"HEAT"},"activeScheduleLock":{"targetValue":true}}}]}
     	args = [
         	nodes: [	[attributes: [activeHeatCoolMode: [targetValue: "HEAT"], scheduleLockDuration: [targetValue: 0], activeScheduleLock: [targetValue: true]]]]
             ]
-    } else if (mode == 'emergency heat') {  
-    	if (state.boostLength == null || state.boostLength == '')
-        {
-        	state.boostLength = 60
-            sendEvent("name":"boostLength", "value": 60, displayed: true)
-        }
-    	//{"nodes":[{"attributes":{"activeHeatCoolMode":{"targetValue":"BOOST"},"scheduleLockDuration":{"targetValue":30},"targetHeatTemperature":{"targetValue":22}}}]}
-    	args = [
-        	nodes: [	[attributes: [activeHeatCoolMode: [targetValue: "BOOST"], scheduleLockDuration: [targetValue: state.boostLength], targetHeatTemperature: [targetValue: getBoostTempValue()]]]]
+    	} else if (mode == 'emergency heat') {  
+    		if (state.boostLength == null || state.boostLength == '')
+        	{
+        		state.boostLength = 60
+            	sendEvent("name":"boostLength", "value": 60, displayed: true)
+        	}
+    		//{"nodes":[{"attributes":{"activeHeatCoolMode":{"targetValue":"BOOST"},"scheduleLockDuration":{"targetValue":30},"targetHeatTemperature":{"targetValue":22}}}]}
+    		args = [
+        		nodes: [	[attributes: [activeHeatCoolMode: [targetValue: "BOOST"], scheduleLockDuration: [targetValue: state.boostLength], targetHeatTemperature: [targetValue: getBoostTempValue()]]]]
             ]
-    }
+   		}
     
-    def resp = parent.apiPUT("/nodes/${device.deviceNetworkId}", args)
-	mode = mode == 'range' ? 'auto' : mode
+    	def resp = parent.apiPUT("/nodes/${device.deviceNetworkId}", args)
+		mode = mode == 'range' ? 'auto' : mode    	
+    }
     runIn(4, refresh)
 }
 
@@ -419,7 +425,15 @@ def poll() {
         
         def mode = 'auto'
         
-        if (activeHeatCoolMode == "OFF") {
+        //If Hive heating device is set to disabled, then force off if not already off.
+        if (settings.disableDevice != null && settings.disableDevice == true && activeHeatCoolMode != "OFF") {
+        	def args = [
+        		nodes: [	[attributes: [activeHeatCoolMode: [targetValue: "OFF"], scheduleLockDuration: [targetValue: 0], activeScheduleLock: [targetValue: true]]]]
+            ]
+        	parent.apiPUT("/nodes/${device.deviceNetworkId}", args)
+            mode = 'off'
+        } 
+        else if (activeHeatCoolMode == "OFF") {
         	mode = 'off'
             statusMsg = statusMsg + " OFF"
         }
@@ -437,6 +451,11 @@ def poll() {
         else {
         	statusMsg = statusMsg + " SCHEDULE"
         }
+        
+        if (settings.disableDevice != null && settings.disableDevice == true) {
+        	statusMsg = "DISABLED"
+        }
+        
         sendEvent(name: 'thermostatMode', value: mode) 
         
         // determine if Hive heating relay is on
