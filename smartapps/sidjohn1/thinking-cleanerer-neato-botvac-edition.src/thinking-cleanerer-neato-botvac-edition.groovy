@@ -23,7 +23,7 @@
  *
  *	Modified by Alex Lee Yuk Cheung for Neato Botvac Devices
  *	Version: 1.0 - Initial Version - Added Auto Dock On Pause, Force Clean Option, Changes to Polling behaviour
- *	Version: 1.1 - Fix to setting SHM state when error has occured whilst cleaning
+ *	Version: 1.1 - Fix to setting SHM state when error has occured whilst cleaning 
  */
  
 definition(

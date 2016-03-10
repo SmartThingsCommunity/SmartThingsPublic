@@ -15,6 +15,7 @@
  *  VERSION HISTORY
  *  09.03.2016
  *  v2.0 - New OVO Connect App
+ *  v2.1 - Send notification for daily cost summary and daily usage summary
  *
  */
 definition(
@@ -31,6 +32,7 @@ preferences {
 	page(name:"firstPage", title:"OVO Account Setup", content:"firstPage", install: true)
     page(name: "loginPAGE")
     page(name: "selectDevicePAGE")
+    page(name: "preferencesPAGE")
 	page(name: "accountDetailsPAGE")
 }
 
@@ -55,6 +57,9 @@ def firstPage() {
             if (stateTokenPresent()) {           	
                 section ("Choose your Smart Meters:") {
 					href("selectDevicePAGE", title: null, description: devicesSelected() ? "Devices: " + getDevicesSelectedString() : "Tap to select smart meters", state: devicesSelected())
+        		}
+                section ("Notifications:") {
+					href("preferencesPAGE", title: null, description: preferencesSelected() ? getPreferencesString() : "Tap to configure notifications", state: preferencesSelected())
         		}
                 section ("Account Details:") {
 					href("accountDetailsPAGE", title: null, description: "Tap to view OVO Energy Account Details")
@@ -95,6 +100,20 @@ def getDevicesSelectedString() {
         	listString += "\n" + state.smartMeterDevices[childDevice]
         }
     }
+    return listString
+}
+
+def preferencesSelected() {
+	return (sendPush || sendSMS != null) && (sendDailyCostSummary || sendDailyUsageSummary) ? "complete" : null
+}
+
+def getPreferencesString() {
+	def listString = ""
+    if (sendPush) listString += "Send Push, "
+    if (sendSMS != null) listString += "Send SMS, "
+    if (sendDailyCostSummary) listString += "Daily Cost Summary, "
+    if (sendDailyUsageSummary) listString += "Daily Usage Summary, "
+    if (listString != "") listString = listString.substring(0, listString.length() - 2)
     return listString
 }
 
@@ -140,6 +159,19 @@ def selectDevicePAGE() {
     	section("Select your devices:") {
 			input "selectedMeters", "enum", image: "https://www.ovoenergy.com/binaries/content/gallery/ovowebsitessuite/images/ovo-answers/ihd-screens-15.png/ihd-screens-15.png/ovowebsitessuite%3Acarousel", required:false, title:"Select Smart Meter Devices \n(${state.smartMeterDevices.size() ?: 0} found)", multiple:true, options:state.smartMeterDevices					
 		}
+    }
+}
+
+def preferencesPAGE() {
+	dynamicPage(name: "preferencesPAGE", title: "Preferences", uninstall: false, install: false) {
+    	section {
+    		input "sendPush", "bool", title: "Send as Push?", required: false, defaultValue: false
+			input "sendSMS", "phone", title: "Send as SMS?", required: false, defaultValue: null	
+        }
+    	section("OVO Smart Meter Notifications:") {			
+			input "sendDailyCostSummary", "bool", title: "Send daily cost information?", required: false, defaultValue: false
+            input "sendDailyUsageSummary", "bool", title: "Send daily usage information?", required: false, defaultValue: false
+		}        
     }
 }
 
@@ -200,7 +232,35 @@ def initialize() {
 		addMeters()
 
     runIn(10, 'refreshDevices') // Asynchronously refresh devices so we don't block
-  
+    
+    //subscribe to events for notifications if activated
+    if (preferencesSelected() == "complete") {
+    	getChildDevices().each { childDevice -> 
+        	subscribe(childDevice, "yesterdayTotalPower", evtHandler)
+            subscribe(childDevice, "yesterdayTotalPowerCost", evtHandler)
+    	}
+    }
+}
+
+def evtHandler(evt) {
+	def msg
+    if (evt.name == "yesterdayTotalPowerCost") {
+    	msg = "${evt.displayName} total daily cost was ${evt.value}"
+    	if (settings.sendDailyCostSummary) generateNotification(msg)    
+    } 
+    else if (evt.name == "yesterdayTotalPower") {
+    	msg = "${evt.displayName} total daily usage was ${evt.value} ${evt.unit} "
+    	if (settings.sendDailyUsageSummary) generateNotification(msg)    
+    }
+}
+
+def generateNotification(msg) {
+	if (settings.sendSMS != null) {
+		sendSms(sendSMS, msg) 
+	}	
+	if (settings.sendPush) {
+		sendPush(msg)
+	}
 }
 
 def updateDevices() {
