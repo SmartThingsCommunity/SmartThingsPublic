@@ -17,7 +17,7 @@ metadata {
 
 	tiles(scale: 2) {
      	multiAttributeTile(name:"rich-control"){
-			tileAttribute ("", key: "PRIMARY_CONTROL") {
+			tileAttribute ("device.switch", key: "PRIMARY_CONTROL") {
 	            attributeState "default", label: "Hue Bridge", action: "", icon: "st.Lighting.light99-hue", backgroundColor: "#F3C200"
 			}    
 	        tileAttribute ("serialNumber", key: "SECONDARY_CONTROL") {

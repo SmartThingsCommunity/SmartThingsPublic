@@ -16,41 +16,44 @@ metadata {
 	}
 
 	simulator {
-		// TODO: define status and reply messages here
+
 	}
 
-	tiles {
-		standardTile("switch", "device.switch", width: 2, height: 2, canChangeIcon: true) {
-			state "on", label:'${name}', action:"switch.off", icon:"st.switches.light.on", backgroundColor:"#79b821", nextState:"turningOff"
-			state "off", label:'${name}', action:"switch.on", icon:"st.switches.light.off", backgroundColor:"#ffffff", nextState:"turningOn"
-			state "turningOn", label:'Turning on', action:"switch.off", icon:"st.switches.light.on", backgroundColor:"#79b821", nextState:"turningOff"
-			state "turningOff", label:'Turning off', action:"switch.on", icon:"st.switches.light.off", backgroundColor:"#ffffff", nextState:"turningOn"
-			state "unreachable", label: "?", action:"refresh.refresh", icon:"st.switches.light.off", backgroundColor:"#666666"
+	tiles(scale: 2) {
+		multiAttributeTile(name:"switch", type: "lighting", width: 6, height: 4, canChangeIcon: true){
+			tileAttribute ("device.switch", key: "PRIMARY_CONTROL") {
+				attributeState "unreachable", label: "?", action:"refresh.refresh", icon:"http://hosted.lifx.co/smartthings/v1/196xUnreachable.png", backgroundColor:"#666666"
+				attributeState "on", label:'${name}', action:"switch.off", icon:"http://hosted.lifx.co/smartthings/v1/196xOn.png", backgroundColor:"#79b821", nextState:"turningOff"
+				attributeState "off", label:'${name}', action:"switch.on", icon:"http://hosted.lifx.co/smartthings/v1/196xOff.png", backgroundColor:"#ffffff", nextState:"turningOn"
+				attributeState "turningOn", label:'Turning on', action:"switch.off", icon:"http://hosted.lifx.co/smartthings/v1/196xOn.png", backgroundColor:"#79b821", nextState:"turningOff"
+				attributeState "turningOff", label:'Turning off', action:"switch.on", icon:"http://hosted.lifx.co/smartthings/v1/196xOff.png", backgroundColor:"#ffffff", nextState:"turningOn"
+
+			}
+			tileAttribute ("device.level", key: "SLIDER_CONTROL") {
+				attributeState "level", action:"switch level.setLevel"
+			}
 		}
-		standardTile("refresh", "device.switch", inactiveLabel: false, decoration: "flat") {
+
+		standardTile("refresh", "device.switch", inactiveLabel: false, decoration: "flat", width: 2, height: 2) {
 			state "default", label:"", action:"refresh.refresh", icon:"st.secondary.refresh"
 		}
+
 		valueTile("null", "device.switch", inactiveLabel: false, decoration: "flat") {
 			state "default", label:''
 		}
 
-		controlTile("levelSliderControl", "device.level", "slider", height: 1, width: 3, inactiveLabel: false, range:"(0..100)") {
-			state "level", action:"switch level.setLevel"
-		}
-		valueTile("level", "device.level", inactiveLabel: false, icon: "st.illuminance.illuminance.light", decoration: "flat") {
-			state "level", label: '${currentValue}%'
-		}
-
-		controlTile("colorTempSliderControl", "device.colorTemperature", "slider", height: 1, width: 2, inactiveLabel: false, range:"(2700..6500)") {
+		controlTile("colorTempSliderControl", "device.colorTemperature", "slider", height: 2, width: 4, inactiveLabel: false, range:"(2700..9000)") {
 			state "colorTemp", action:"color temperature.setColorTemperature"
 		}
-		valueTile("colorTemp", "device.colorTemperature", inactiveLabel: false, decoration: "flat") {
+
+		valueTile("colorTemp", "device.colorTemperature", inactiveLabel: false, decoration: "flat", height: 2, width: 2) {
 			state "colorTemp", label: '${currentValue}K'
 		}
 
-		main(["switch"])
-		details(["switch", "refresh", "level", "levelSliderControl", "colorTempSliderControl", "colorTemp"])
+		main "switch"
+		details(["switch", "colorTempSliderControl", "colorTemp", "refresh"])
 	}
+
 }
 
 // parse events into attributes
@@ -72,20 +75,22 @@ def setLevel(percentage) {
 		return off() // if the brightness is set to 0, just turn it off
 	}
 	parent.logErrors(logObject:log) {
-		def resp = parent.apiPUT("/lights/${device.deviceNetworkId}/color", ["color": "brightness:${percentage / 100}"])
+		def resp = parent.apiPUT("/lights/${selector()}/state", [brightness: percentage / 100, power: "on"])
 		if (resp.status < 300) {
 			sendEvent(name: "level", value: percentage)
+			sendEvent(name: "switch.setLevel", value: percentage)
 			sendEvent(name: "switch", value: "on")
 		} else {
 			log.error("Bad setLevel result: [${resp.status}] ${resp.data}")
 		}
 	}
+	return []
 }
 
 def setColorTemperature(kelvin) {
 	log.debug "Executing 'setColorTemperature' to ${kelvin}"
 	parent.logErrors() {
-		def resp = parent.apiPUT("/lights/${device.deviceNetworkId}/color", [color: "kelvin:${kelvin}"])
+		def resp = parent.apiPUT("/lights/${selector()}/state", [color: "kelvin:${kelvin}", power: "on"])
 		if (resp.status < 300) {
 			sendEvent(name: "colorTemperature", value: kelvin)
 			sendEvent(name: "color", value: "#ffffff")
@@ -95,38 +100,47 @@ def setColorTemperature(kelvin) {
 			log.error("Bad setColorTemperature result: [${resp.status}] ${resp.data}")
 		}
 	}
+	return []
 }
 
 def on() {
 	log.debug "Device setOn"
 	parent.logErrors() {
-		if (parent.apiPUT("/lights/${device.deviceNetworkId}/power", [state: "on"]) != null) {
+		if (parent.apiPUT("/lights/${selector()}/state", [power: "on"]) != null) {
 			sendEvent(name: "switch", value: "on")
 		}
 	}
+	return []
 }
 
 def off() {
 	log.debug "Device setOff"
 	parent.logErrors() {
-		if (parent.apiPUT("/lights/${device.deviceNetworkId}/power", [state: "off"]) != null) {
+		if (parent.apiPUT("/lights/${selector()}/state", [power: "off"]) != null) {
 			sendEvent(name: "switch", value: "off")
 		}
 	}
+	return []
 }
 
 def poll() {
 	log.debug "Executing 'poll' for ${device} ${this} ${device.deviceNetworkId}"
-	def resp = parent.apiGET("/lights/${device.deviceNetworkId}")
-	if (resp.status != 200) {
+	def resp = parent.apiGET("/lights/${selector()}")
+	if (resp.status == 404) {
+		sendEvent(name: "switch", value: "unreachable")
+		return []
+	} else if (resp.status != 200) {
 		log.error("Unexpected result in poll(): [${resp.status}] ${resp.data}")
 		return []
 	}
-	def data = resp.data
+	def data = resp.data[0]
 
-	sendEvent(name: "level", value: sprintf("%f", (data.brightness ?: 1) * 100))
+	sendEvent(name: "label", value: data.label)
+	sendEvent(name: "level", value: Math.round((data.brightness ?: 1) * 100))
+	sendEvent(name: "switch.setLevel", value: Math.round((data.brightness ?: 1) * 100))
 	sendEvent(name: "switch", value: data.connected ? data.power : "unreachable")
 	sendEvent(name: "colorTemperature", value: data.color.kelvin)
+	sendEvent(name: "model", value: data.product.name)
 
 	return []
 }
@@ -134,4 +148,12 @@ def poll() {
 def refresh() {
 	log.debug "Executing 'refresh'"
 	poll()
+}
+
+def selector() {
+	if (device.deviceNetworkId.contains(":")) {
+		return device.deviceNetworkId
+	} else {
+		return "id:${device.deviceNetworkId}"
+	}
 }

@@ -13,11 +13,11 @@ definition(
 	iconUrl: "https://s3.amazonaws.com/smartapp-icons/Partner/jawbone-up.png",
 	iconX2Url: "https://s3.amazonaws.com/smartapp-icons/Partner/jawbone-up@2x.png",
 	oauth: true,
-    usePreferencesForAuthorization: false
+    usePreferencesForAuthorization: false,
+    singleInstance: true
 ) {
 	appSetting "clientId"
 	appSetting "clientSecret"
-	appSetting "serverUrl"
 }
 
 preferences {
@@ -28,16 +28,13 @@ mappings {
 	path("/receivedToken") { action: [ POST: "receivedToken", GET: "receivedToken"] }
 	path("/receiveToken") { action: [ POST: "receiveToken", GET: "receiveToken"] }
 	path("/hookCallback") { action: [ POST: "hookEventHandler", GET: "hookEventHandler"] }
+    path("/oauth/initialize") {action: [GET: "oauthInitUrl"]}    
 	path("/oauth/callback") { action: [ GET: "callback" ] }
 }
 
-def getSmartThingsClientId() {
-   return appSettings.clientId
-}
-
-def getSmartThingsClientSecret() {
-   return appSettings.clientSecret
-}
+def getServerUrl() { return "https://graph.api.smartthings.com" }
+def getBuildRedirectUrl() { "${serverUrl}/oauth/initialize?appId=${app.id}&access_token=${state.accessToken}&apiServerUrl=${apiServerUrl}" }
+def buildRedirectUrl(page) { return buildActionUrl(page) }
 
 def callback() {
 	def redirectUrl = null
@@ -63,9 +60,8 @@ def callback() {
 				// SmartThings code, which we ignore, as we don't need to exchange for an access token.
 				// Instead, go initiate the Jawbone OAuth flow.
 				log.debug "Executing callback redirect to auth page"
-			    def stcid = getSmartThingsClientId()
 			    state.oauthInitState = UUID.randomUUID().toString()
-			    def oauthParams = [response_type: "code", client_id: stcid, scope: "move_read sleep_read", redirect_uri: "${serverUrl}/oauth/callback"]
+			    def oauthParams = [response_type: "code", client_id: appSettings.clientId, scope: "move_read sleep_read", redirect_uri: "${serverUrl}/oauth/callback"]
 				redirect(location: "https://jawbone.com/auth/oauth2/auth?${toQueryString(oauthParams)}")
 			}
 		} else {
@@ -84,10 +80,11 @@ def authPage() {
 			createAccessToken()
 		}
         description = "Click to enter Jawbone Credentials"
-        def redirectUrl = oauthInitUrl()
-        // log.debug "RedirectURL = ${redirectUrl}"
-        return dynamicPage(name: "Credentials", title: "Jawbone UP", nextPage: null, uninstall: true, install:false) {
-               section { href url:redirectUrl, style:"embedded", required:true, title:"Jawbone UP", description:description }
+        def redirectUrl = buildRedirectUrl
+        log.debug "RedirectURL = ${redirectUrl}"
+        def donebutton= state.JawboneAccessToken != null 
+        return dynamicPage(name: "Credentials", title: "Jawbone UP", nextPage: null, uninstall: true, install: donebutton) {
+               section { href url:redirectUrl, style:"embedded", required:true, title:"Jawbone UP", state: hast ,description:description }
         }
     } else {
         description = "Jawbone Credentials Already Entered." 
@@ -99,17 +96,14 @@ def authPage() {
 
 def oauthInitUrl() {
     log.debug "oauthInitUrl"
-    def stcid = getSmartThingsClientId()
     state.oauthInitState = UUID.randomUUID().toString()
-    def oauthParams = [ response_type: "code", client_id: stcid, scope: "move_read sleep_read", redirect_uri: buildRedirectUrl("receiveToken") ]
-	return "https://jawbone.com/auth/oauth2/auth?${toQueryString(oauthParams)}"
+    def oauthParams = [ response_type: "code", client_id: appSettings.clientId, scope: "move_read sleep_read", redirect_uri: "${serverUrl}/oauth/callback" ]
+	redirect(location: "https://jawbone.com/auth/oauth2/auth?${toQueryString(oauthParams)}")
 }
 
 def receiveToken(redirectUrl = null) {
 	log.debug "receiveToken"
-    def stcid = getSmartThingsClientId()
-    def oauthClientSecret = getSmartThingsClientSecret()
-    def oauthParams = [ client_id: stcid, client_secret: oauthClientSecret, grant_type: "authorization_code", code: params.code ]
+    def oauthParams = [ client_id: appSettings.clientId, client_secret: appSettings.clientSecret, grant_type: "authorization_code", code: params.code ]
     def params = [
       uri: "https://jawbone.com/auth/oauth2/token?${toQueryString(oauthParams)}",
     ]
@@ -231,18 +225,10 @@ String toQueryString(Map m) {
 	return m.collect { k, v -> "${k}=${URLEncoder.encode(v.toString())}" }.sort().join("&")
 }
 
-def getServerUrl() { return appSettings.serverUrl ?: "https://graph.api.smartthings.com" }
-
-def buildRedirectUrl(page) {
-    // log.debug "buildRedirectUrl"
-    // /api/token/:st_token/smartapps/installations/:id/something
-    return "${serverUrl}/api/token/${state.accessToken}/smartapps/installations/${app.id}/${page}"
-}
-
 def validateCurrentToken() {
 	log.debug "validateCurrentToken"
     def url = "https://jawbone.com/nudge/api/v.1.1/users/@me/refreshToken"
-    def requestBody = "secret=${getSmartThingsClientSecret()}"
+    def requestBody = "secret=${appSettings.clientSecret}"
 	
 	try {
 		httpPost(uri: url, headers: ["Authorization": "Bearer ${state.JawboneAccessToken}" ],  body: requestBody) {response ->
@@ -256,9 +242,7 @@ def validateCurrentToken() {
         if (e.statusCode == 401) { // token is expired
         	log.debug "Access token is expired"
         	if (state.refreshToken) { // if we have this we are okay
-            	def stcid = getSmartThingsClientId()
-    			def oauthClientSecret = getSmartThingsClientSecret()
-    			def oauthParams = [client_id: stcid, client_secret: oauthClientSecret, grant_type: "refresh_token", refresh_token: state.refreshToken]
+    			def oauthParams = [client_id: appSettings.clientId, client_secret: appSettings.clientSecret, grant_type: "refresh_token", refresh_token: state.refreshToken]
         		def tokenUrl = "https://jawbone.com/auth/oauth2/token?${toQueryString(oauthParams)}"
         		def params = [
           			uri: tokenUrl
@@ -287,9 +271,10 @@ def validateCurrentToken() {
 }
 
 def initialize() {
-	def hookUrl = "${serverUrl}/api/token/${state.accessToken}/smartapps/installations/${app.id}/hookCallback"
-    def webhook = "https://jawbone.com/nudge/api/v.1.1/users/@me/pubsub?webhook=$hookUrl"
-    log.debug "Callback URL: $webhook"        
+    log.debug "Callback URL - Webhook"  
+	def localServerUrl = getApiServerUrl() 
+	def hookUrl = "${localServerUrl}/api/token/${state.accessToken}/smartapps/installations/${app.id}/hookCallback"
+    def webhook = "https://jawbone.com/nudge/api/v.1.1/users/@me/pubsub?webhook=$hookUrl"      
 	httpPost(uri: webhook, headers: ["Authorization": "Bearer ${state.JawboneAccessToken}" ])
 }
 
@@ -327,7 +312,6 @@ def setup() {
 }
 
 def installed() {
-	enableCallback()
 	
 	if (!state.accessToken) {
 		log.debug "About to create access token"
@@ -340,7 +324,6 @@ def installed() {
 }
 
 def updated() {
-	enableCallback()
 	
 	if (!state.accessToken) {
 		log.debug "About to create access token"

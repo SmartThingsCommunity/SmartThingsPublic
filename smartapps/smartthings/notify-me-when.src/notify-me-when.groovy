@@ -20,19 +20,19 @@
  *	2014-10-03:	Added capability.button device picker and button.pushed event subscription. For Doorbell.
  */
 definition(
-    name: "Notify Me When",
-    namespace: "smartthings",
-    author: "SmartThings",
-    description: "Receive notifications when anything happens in your home.",
-    category: "Convenience",
-    iconUrl: "https://s3.amazonaws.com/smartapp-icons/Meta/window_contact.png",
-    iconX2Url: "https://s3.amazonaws.com/smartapp-icons/Meta/window_contact@2x.png"
+		name: "Notify Me When",
+		namespace: "smartthings",
+		author: "SmartThings",
+		description: "Receive notifications when anything happens in your home.",
+		category: "Convenience",
+		iconUrl: "https://s3.amazonaws.com/smartapp-icons/Meta/window_contact.png",
+		iconX2Url: "https://s3.amazonaws.com/smartapp-icons/Meta/window_contact@2x.png"
 )
 
 preferences {
 	section("Choose one or more, when..."){
 		input "button", "capability.button", title: "Button Pushed", required: false, multiple: true //tw
-        input "motion", "capability.motionSensor", title: "Motion Here", required: false, multiple: true
+		input "motion", "capability.motionSensor", title: "Motion Here", required: false, multiple: true
 		input "contact", "capability.contactSensor", title: "Contact Opens", required: false, multiple: true
 		input "contactClosed", "capability.contactSensor", title: "Contact Closes", required: false, multiple: true
 		input "acceleration", "capability.accelerationSensor", title: "Acceleration Detected", required: false, multiple: true
@@ -47,10 +47,11 @@ preferences {
 		input "messageText", "text", title: "Message Text", required: false
 	}
 	section("Via a push notification and/or an SMS message"){
-        input("recipients", "contact", title: "Send notifications to") {
-            input "phone", "phone", title: "Phone Number (for SMS, optional)", required: false
-            input "pushAndPhone", "enum", title: "Both Push and SMS?", required: false, options: ["Yes", "No"]
-        }
+		input("recipients", "contact", title: "Send notifications to") {
+			input "phone", "phone", title: "Phone Number (for SMS, optional)", required: false
+			paragraph "If outside the US please make sure to enter the proper country code"
+			input "pushAndPhone", "enum", title: "Both Push and SMS?", required: false, options: ["Yes", "No"]
+		}
 	}
 	section("Minimum time between messages (optional, defaults to every message)") {
 		input "frequency", "decimal", title: "Minutes", required: false
@@ -70,7 +71,7 @@ def updated() {
 
 def subscribeToEvents() {
 	subscribe(button, "button.pushed", eventHandler) //tw
-    subscribe(contact, "contact.open", eventHandler)
+	subscribe(contact, "contact.open", eventHandler)
 	subscribe(contactClosed, "contact.closed", eventHandler)
 	subscribe(acceleration, "acceleration.active", eventHandler)
 	subscribe(motion, "motion.active", eventHandler)
@@ -98,49 +99,55 @@ def eventHandler(evt) {
 }
 
 private sendMessage(evt) {
-	def msg = messageText ?: defaultText(evt)
+	String msg = messageText
+	Map options = [:]
+
+	if (!messageText) {
+		msg = defaultText(evt)
+		options = [translatable: true, triggerEvent: evt]
+	}
 	log.debug "$evt.name:$evt.value, pushAndPhone:$pushAndPhone, '$msg'"
 
-    if (location.contactBookEnabled) {
-        sendNotificationToContacts(msg, recipients)
-    }
-    else {
+	if (location.contactBookEnabled) {
+		sendNotificationToContacts(msg, recipients, options)
+	} else {
+		if (!phone || pushAndPhone != 'No') {
+			log.debug 'sending push'
+			options.method = 'push'
+			//sendPush(msg)
+		}
+		if (phone) {
+			options.phone = phone
+			log.debug 'sending SMS'
+			//sendSms(phone, msg)
+		}
+		sendNotification(msg, options)
+	}
 
-        if (!phone || pushAndPhone != "No") {
-            log.debug "sending push"
-            sendPush(msg)
-        }
-        if (phone) {
-            log.debug "sending SMS"
-            sendSms(phone, msg)
-        }
-    }
 	if (frequency) {
 		state[evt.deviceId] = now()
 	}
 }
 
 private defaultText(evt) {
-	if (evt.name == "presence") {
-		if (evt.value == "present") {
+	if (evt.name == 'presence') {
+		if (evt.value == 'present') {
 			if (includeArticle) {
-				"$evt.linkText has arrived at the $location.name"
+				'{{ triggerEvent.linkText }} has arrived at the {{ location.name }}'
 			}
 			else {
-				"$evt.linkText has arrived at $location.name"
+				'{{ triggerEvent.linkText }} has arrived at {{ location.name }}'
 			}
-		}
-		else {
+		} else {
 			if (includeArticle) {
-				"$evt.linkText has left the $location.name"
+				'{{ triggerEvent.linkText }} has left the {{ location.name }}'
 			}
 			else {
-				"$evt.linkText has left $location.name"
+				'{{ triggerEvent.linkText }} has left {{ location.name }}'
 			}
 		}
-	}
-	else {
-		evt.descriptionText
+	} else {
+		'{{ triggerEvent.descriptionText }}'
 	}
 }
 

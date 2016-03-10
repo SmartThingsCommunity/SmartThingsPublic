@@ -8,6 +8,7 @@ metadata {
   definition (name: "Zen Thermostat", namespace: "zenwithin", author: "ZenWithin") {
     capability "Actuator"
     capability "Thermostat"
+    capability "Temperature Measurement"
     capability "Configuration"
     capability "Refresh"
     capability "Sensor"

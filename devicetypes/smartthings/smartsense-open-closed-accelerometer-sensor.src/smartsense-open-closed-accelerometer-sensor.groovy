@@ -13,6 +13,7 @@
  *  for the specific language governing permissions and limitations under the License.
  *
  */
+//DEPRECATED - Using the smartsense-multi-sensor.groovy DTH for this device. Users need to be moved before deleting this DTH
 
  metadata {
  	definition (name: "SmartSense Open/Closed Accelerometer Sensor", namespace: "smartthings", author: "SmartThings") {
@@ -23,8 +24,7 @@
  		capability "Refresh"
  		capability "Temperature Measurement"
  		command "enrollResponse"
- 		fingerprint inClusters: "0000,0001,0003,0402,0500,0020,0B05,FC02", outClusters: "0019", manufacturer: "CentraLite", model: "3320"
-		fingerprint inClusters: "0000,0001,0003,0402,0500,0020,0B05,FC02", outClusters: "0019", manufacturer: "CentraLite", model: "3321"
+
  	}
 
  	simulator {
@@ -32,8 +32,8 @@
  	}
 
  	preferences {
- 		input description: "This feature allows you to correct any temperature variations by selecting an offset. Ex: If your sensor consistently reports a temp that's 5 degrees too warm, you'd enter \"-5\". If 3 degrees too cold, enter \"+3\".", displayDuringSetup: false, type: "paragraph", element: "paragraph"
- 		input "tempOffset", "number", title: "Temperature Offset", description: "Adjust temperature by this many degrees", range: "*..*", displayDuringSetup: false
+ 		input title: "Temperature Offset", description: "This feature allows you to correct any temperature variations by selecting an offset. Ex: If your sensor consistently reports a temp that's 5 degrees too warm, you'd enter \"-5\". If 3 degrees too cold, enter \"+3\".", displayDuringSetup: false, type: "paragraph", element: "paragraph"
+ 		input "tempOffset", "number", title: "Degrees", description: "Adjust temperature by this many degrees", range: "*..*", displayDuringSetup: false
  	}
 
 	tiles(scale: 2) {
@@ -225,7 +225,8 @@ def getTemperature(value) {
 
 		def volts = rawValue / 10
 		def descriptionText
-		if (volts > 3.5) {
+        if (rawValue == 0 || rawValue == 255) {}
+		else if (volts > 3.5) {
 			result.descriptionText = "${linkText} battery has too much power (${volts} volts)."
 		}
 		else {
@@ -297,29 +298,27 @@ def getTemperature(value) {
 		return refreshCmds + enrollResponse()
 	}
 
-	def configure() {
+def configure() {
 
-		String zigbeeEui = swapEndianHex(device.hub.zigbeeEui)
-		log.debug "Configuring Reporting, IAS CIE, and Bindings."
-		def configCmds = [
-		"zcl global write 0x500 0x10 0xf0 {${zigbeeEui}}",
-		"send 0x${device.deviceNetworkId} 1 1", "delay 500",
+	String zigbeeEui = swapEndianHex(device.hub.zigbeeEui)
+	log.debug "Configuring Reporting, IAS CIE, and Bindings."
+	def configCmds = [
+		"zcl global write 0x500 0x10 0xf0 {${zigbeeEui}}", "delay 200",
+		"send 0x${device.deviceNetworkId} 1 ${endpointId}", "delay 500",
 
-		"zdo bind 0x${device.deviceNetworkId} 1 ${endpointId} 0x20 {${device.zigbeeId}} {}", "delay 200",
-		"zcl global send-me-a-report 1 0x20 0x20 600 3600 {01}",
-		"send 0x${device.deviceNetworkId} 1 1", "delay 500",
+		"zdo bind 0x${device.deviceNetworkId} ${endpointId} 1 1 {${device.zigbeeId}} {}", "delay 200",
+		"zcl global send-me-a-report 1 0x20 0x20 30 21600 {01}",		//checkin time 6 hrs
+		"send 0x${device.deviceNetworkId} 1 ${endpointId}", "delay 500",
 
-		"zdo bind 0x${device.deviceNetworkId} 1 1 0x402 {${device.zigbeeId}} {}", "delay 500",
-		"zcl global send-me-a-report 0x402 0 0x29 300 3600 {6400}",
-		"send 0x${device.deviceNetworkId} 1 1", "delay 500",
+		"zdo bind 0x${device.deviceNetworkId} ${endpointId} 1 0x402 {${device.zigbeeId}} {}", "delay 500",
+		"zcl global send-me-a-report 0x402 0 0x29 30 3600 {6400}",
+		"send 0x${device.deviceNetworkId} 1 ${endpointId}", "delay 500",
 
-		"zdo bind 0x${device.deviceNetworkId} 1 1 0xFC02 {${device.zigbeeId}} {}", "delay 500",
-		"zcl global send-me-a-report 0xFC02 2 0x18 300 3600 {01}",
-		"send 0x${device.deviceNetworkId} 1 1", "delay 500",
-
-		"zdo bind 0x${device.deviceNetworkId} 1 1 1 {${device.zigbeeId}} {}", "delay 500"
-		]
-    return configCmds + refresh() // send refresh cmds as part of config
+		"zdo bind 0x${device.deviceNetworkId} ${endpointId} 1 0xFC02 {${device.zigbeeId}} {}", "delay 500",
+		"zcl global send-me-a-report 0xFC02 2 0x18 30 3600 {01}",
+		"send 0x${device.deviceNetworkId} 1 ${endpointId}", "delay 500"
+	]
+	return configCmds + refresh() // send refresh cmds as part of config
 }
 
 def enrollResponse() {
@@ -327,7 +326,7 @@ def enrollResponse() {
 	String zigbeeEui = swapEndianHex(device.hub.zigbeeEui)
 	[
 		//Resending the CIE in case the enroll request is sent before CIE is written
-		"zcl global write 0x500 0x10 0xf0 {${zigbeeEui}}",
+		"zcl global write 0x500 0x10 0xf0 {${zigbeeEui}}", "delay 200",
 		"send 0x${device.deviceNetworkId} 1 ${endpointId}", "delay 500",
 		//Enroll Response
 		"raw 0x500 {01 23 00 00 00}",

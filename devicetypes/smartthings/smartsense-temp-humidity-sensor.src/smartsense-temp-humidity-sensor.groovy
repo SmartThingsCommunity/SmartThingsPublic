@@ -33,8 +33,8 @@ metadata {
 	}
 
 	preferences {
-		input description: "This feature allows you to correct any temperature variations by selecting an offset. Ex: If your sensor consistently reports a temp that's 5 degrees too warm, you'd enter \"-5\". If 3 degrees too cold, enter \"+3\".", displayDuringSetup: false, type: "paragraph", element: "paragraph"
-		input "tempOffset", "number", title: "Temperature Offset", description: "Adjust temperature by this many degrees", range: "*..*", displayDuringSetup: false
+		input title: "Temperature Offset", description: "This feature allows you to correct any temperature variations by selecting an offset. Ex: If your sensor consistently reports a temp that's 5 degrees too warm, you'd enter \"-5\". If 3 degrees too cold, enter \"+3\".", displayDuringSetup: false, type: "paragraph", element: "paragraph"
+		input "tempOffset", "number", title: "Degrees", description: "Adjust temperature by this many degrees", range: "*..*", displayDuringSetup: false
 	}
 
 	tiles(scale: 2) {
@@ -196,7 +196,8 @@ private Map getBatteryResult(rawValue) {
 
 	def volts = rawValue / 10
 	def descriptionText
-	if (volts > 3.5) {
+    if (rawValue == 0 || rawValue == 255) {}
+    else if (volts > 3.5) {
 		result.descriptionText = "${linkText} battery has too much power (${volts} volts)."
 	}
 	else {
@@ -253,22 +254,19 @@ def configure() {
 
 	log.debug "Configuring Reporting and Bindings."
 	def configCmds = [
+		"zdo bind 0x${device.deviceNetworkId} 1 1 1 {${device.zigbeeId}} {}", "delay 500",
+		"zcl global send-me-a-report 1 0x20 0x20 30 21600 {01}",		//checkin time 6 hrs
+		"send 0x${device.deviceNetworkId} 1 1", "delay 500",
 
-
-        "zcl global send-me-a-report 1 0x20 0x20 600 3600 {0100}", "delay 500",
-        "send 0x${device.deviceNetworkId} 1 1", "delay 1000",
-
-        "zcl global send-me-a-report 0x402 0 0x29 300 3600 {6400}", "delay 200",
-        "send 0x${device.deviceNetworkId} 1 1", "delay 1500",
-
-        "zcl global send-me-a-report 0xFC45 0 0x29 300 3600 {6400}", "delay 200",
-        "send 0x${device.deviceNetworkId} 1 1", "delay 1500",
-
-        "zdo bind 0x${device.deviceNetworkId} 1 1 0xFC45 {${device.zigbeeId}} {}", "delay 1000",
 		"zdo bind 0x${device.deviceNetworkId} 1 1 0x402 {${device.zigbeeId}} {}", "delay 500",
-		"zdo bind 0x${device.deviceNetworkId} 1 1 1 {${device.zigbeeId}} {}"
+		"zcl global send-me-a-report 0x402 0 0x29 30 3600 {6400}",
+		"send 0x${device.deviceNetworkId} 1 1", "delay 500",
+
+		"zdo bind 0x${device.deviceNetworkId} 1 1 0xFC45 {${device.zigbeeId}} {}", "delay 500",
+		"zcl global send-me-a-report 0xFC45 0 0x29 30 3600 {6400}",
+		"send 0x${device.deviceNetworkId} 1 1", "delay 500"
 	]
-    return configCmds + refresh() // send refresh cmds as part of config
+	return configCmds + refresh() // send refresh cmds as part of config
 }
 
 private hex(value) {

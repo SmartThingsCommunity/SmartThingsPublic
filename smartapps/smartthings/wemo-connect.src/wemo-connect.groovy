@@ -16,13 +16,14 @@
  *  Date: 2013-09-06
  */
 definition(
-    name: "Wemo (Connect)",
-    namespace: "smartthings",
-    author: "SmartThings",
-    description: "Allows you to integrate your WeMo Switch and Wemo Motion sensor with SmartThings.",
-    category: "SmartThings Labs",
-    iconUrl: "https://s3.amazonaws.com/smartapp-icons/Partner/wemo.png",
-    iconX2Url: "https://s3.amazonaws.com/smartapp-icons/Partner/wemo@2x.png"
+	name: "Wemo (Connect)",
+	namespace: "smartthings",
+	author: "SmartThings",
+	description: "Allows you to integrate your WeMo Switch and Wemo Motion sensor with SmartThings.",
+	category: "SmartThings Labs",
+	iconUrl: "https://s3.amazonaws.com/smartapp-icons/Partner/wemo.png",
+	iconX2Url: "https://s3.amazonaws.com/smartapp-icons/Partner/wemo@2x.png",
+	singleInstance: true
 )
 
 preferences {
@@ -38,7 +39,7 @@ private getFriendlyName(String deviceNetworkId) {
 	sendHubCommand(new physicalgraph.device.HubAction("""GET /setup.xml HTTP/1.1
 HOST: ${deviceNetworkId}
 
-""", physicalgraph.device.Protocol.LAN, "${deviceNetworkId}"))
+""", physicalgraph.device.Protocol.LAN, "${deviceNetworkId}", [callback: "setupHandler"]))
 }
 
 private verifyDevices() {
@@ -51,6 +52,13 @@ private verifyDevices() {
 	}
 }
 
+void ssdpSubscribe() {
+	subscribe(location, "ssdpTerm.urn:Belkin:device:insight:1", ssdpSwitchHandler)
+	subscribe(location, "ssdpTerm.urn:Belkin:device:controllee:1", ssdpSwitchHandler)
+	subscribe(location, "ssdpTerm.urn:Belkin:device:sensor:1", ssdpMotionHandler)
+	subscribe(location, "ssdpTerm.urn:Belkin:device:lightswitch:1", ssdpLightSwitchHandler)
+}
+
 def firstPage()
 {
 	if(canInstallLabs())
@@ -61,10 +69,7 @@ def firstPage()
 
 		log.debug "REFRESH COUNT :: ${refreshCount}"
 
-		if(!state.subscribe) {
-			subscribe(location, null, locationHandler, [filterEvents:false])
-			state.subscribe = true
-		}
+		ssdpSubscribe()
 
 		//ssdp request every 25 seconds
 		if((refreshCount % 5) == 0) {
@@ -80,7 +85,7 @@ def firstPage()
 		def motionsDiscovered = motionsDiscovered()
 		def lightSwitchesDiscovered = lightSwitchesDiscovered()
 
-		return dynamicPage(name:"firstPage", title:"Discovery Started!", nextPage:"", refreshInterval: refreshInterval, install:true, uninstall: selectedSwitches != null || selectedMotions != null || selectedLightSwitches != null) {
+		return dynamicPage(name:"firstPage", title:"Discovery Started!", nextPage:"", refreshInterval: refreshInterval, install:true, uninstall: true) {
 			section("Select a device...") {
 				input "selectedSwitches", "enum", required:false, title:"Select Wemo Switches \n(${switchesDiscovered.size() ?: 0} found)", multiple:true, options:switchesDiscovered
 				input "selectedMotions", "enum", required:false, title:"Select Wemo Motions \n(${motionsDiscovered.size() ?: 0} found)", multiple:true, options:motionsDiscovered
@@ -107,9 +112,7 @@ def devicesDiscovered() {
 	def motions = getWemoMotions()
 	def lightSwitches = getWemoLightSwitches()
 	def devices = switches + motions + lightSwitches
-	def list = []
-
-	list = devices?.collect{ [app.id, it.ssdpUSN].join('.') }
+	devices?.collect{ [app.id, it.ssdpUSN].join('.') }
 }
 
 def switchesDiscovered() {
@@ -168,21 +171,31 @@ def getWemoLightSwitches()
 def installed() {
 	log.debug "Installed with settings: ${settings}"
 	initialize()
-
-	runIn(5, "subscribeToDevices") //initial subscriptions delayed by 5 seconds
-	runIn(10, "refreshDevices") //refresh devices, delayed by 10 seconds
-	runIn(900, "doDeviceSync" , [overwrite: false]) //setup ip:port syncing every 15 minutes
-
-	// SUBSCRIBE responses come back with TIMEOUT-1801 (30 minutes), so we refresh things a bit before they expire (29 minutes)
-	runIn(1740, "refresh", [overwrite: false])
 }
 
 def updated() {
 	log.debug "Updated with settings: ${settings}"
 	initialize()
+}
 
-	runIn(5, "subscribeToDevices") //subscribe again to new/old devices wait 5 seconds
-	runIn(10, "refreshDevices") //refresh devices again, delayed by 10 seconds
+def initialize() {
+	unsubscribe()
+	unschedule()
+
+	ssdpSubscribe()
+
+	if (selectedSwitches)
+		addSwitches()
+
+	if (selectedMotions)
+		addMotions()
+
+	if (selectedLightSwitches)
+		addLightSwitches()
+
+	runIn(5, "subscribeToDevices") //initial subscriptions delayed by 5 seconds
+	runIn(10, "refreshDevices") //refresh devices, delayed by 10 seconds
+	runEvery5Minutes("refresh")
 }
 
 def resubscribe() {
@@ -192,8 +205,7 @@ def resubscribe() {
 
 def refresh() {
 	log.debug "refresh() called"
-	//reschedule the refreshes
-	runIn(1740, "refresh", [overwrite: false])
+	doDeviceSync()
 	refreshDevices()
 }
 
@@ -229,14 +241,15 @@ def addSwitches() {
 		if (!d) {
 			log.debug "Creating WeMo Switch with dni: ${selectedSwitch.value.mac}"
 			d = addChildDevice("smartthings", "Wemo Switch", selectedSwitch.value.mac, selectedSwitch?.value.hub, [
-					"label": selectedSwitch?.value?.name ?: "Wemo Switch",
-					"data": [
-							"mac": selectedSwitch.value.mac,
-							"ip": selectedSwitch.value.ip,
-							"port": selectedSwitch.value.port
-					]
+				"label": selectedSwitch?.value?.name ?: "Wemo Switch",
+				"data": [
+					"mac": selectedSwitch.value.mac,
+					"ip": selectedSwitch.value.ip,
+					"port": selectedSwitch.value.port
+				]
 			])
-
+			def ipvalue = convertHexToIP(selectedSwitch.value.ip)
+			d.sendEvent(name: "currentIP", value: ipvalue, descriptionText: "IP is ${ipvalue}")
 			log.debug "Created ${d.displayName} with id: ${d.id}, dni: ${d.deviceNetworkId}"
 		} else {
 			log.debug "found ${d.displayName} with id $dni already exists"
@@ -266,7 +279,8 @@ def addMotions() {
 					"port": selectedMotion.value.port
 				]
 			])
-
+			def ipvalue = convertHexToIP(selectedMotion.value.ip)
+			d.sendEvent(name: "currentIP", value: ipvalue, descriptionText: "IP is ${ipvalue}")
 			log.debug "Created ${d.displayName} with id: ${d.id}, dni: ${d.deviceNetworkId}"
 		} else {
 			log.debug "found ${d.displayName} with id $dni already exists"
@@ -296,90 +310,182 @@ def addLightSwitches() {
 					"port": selectedLightSwitch.value.port
 				]
 			])
-
+			def ipvalue = convertHexToIP(selectedLightSwitch.value.ip)
+			d.sendEvent(name: "currentIP", value: ipvalue, descriptionText: "IP is ${ipvalue}")
 			log.debug "created ${d.displayName} with id $dni"
 		} else {
-		   log.debug "found ${d.displayName} with id $dni already exists"
+			log.debug "found ${d.displayName} with id $dni already exists"
 		}
 	}
 }
 
-def initialize() {
-	// remove location subscription afterwards
-	 unsubscribe()
-	 state.subscribe = false
+def ssdpSwitchHandler(evt) {
+	def description = evt.description
+	def hub = evt?.hubId
+	def parsedEvent = parseDiscoveryMessage(description)
+	parsedEvent << ["hub":hub]
+	log.debug parsedEvent
 
-	if (selectedSwitches)
-	{
-		addSwitches()
-	}
-
-	if (selectedMotions)
-	{
-		addMotions()
-	}
-
-	if (selectedLightSwitches)
-	{
-		addLightSwitches()
+	def switches = getWemoSwitches()
+	if (!(switches."${parsedEvent.ssdpUSN.toString()}")) {
+		//if it doesn't already exist
+		switches << ["${parsedEvent.ssdpUSN.toString()}":parsedEvent]
+	} else {
+		log.debug "Device was already found in state..."
+		def d = switches."${parsedEvent.ssdpUSN.toString()}"
+		boolean deviceChangedValues = false
+		log.debug "$d.ip <==> $parsedEvent.ip"
+		if(d.ip != parsedEvent.ip || d.port != parsedEvent.port) {
+			d.ip = parsedEvent.ip
+			d.port = parsedEvent.port
+			deviceChangedValues = true
+			log.debug "Device's port or ip changed..."
+			def child = getChildDevice(parsedEvent.mac)
+			if (child) {
+				child.subscribe(parsedEvent.ip, parsedEvent.port)
+				child.poll()
+			} else {
+				log.debug "Device with mac $parsedEvent.mac not found"
+			}
+		}
 	}
 }
 
+def ssdpMotionHandler(evt) {
+	log.info("ssdpMotionHandler")
+	def description = evt.description
+	def hub = evt?.hubId
+	def parsedEvent = parseDiscoveryMessage(description)
+	parsedEvent << ["hub":hub]
+	log.debug parsedEvent
+
+	def motions = getWemoMotions()
+	if (!(motions."${parsedEvent.ssdpUSN.toString()}")) {
+		//if it doesn't already exist
+		motions << ["${parsedEvent.ssdpUSN.toString()}":parsedEvent]
+	} else { // just update the values
+		log.debug "Device was already found in state..."
+
+		def d = motions."${parsedEvent.ssdpUSN.toString()}"
+		boolean deviceChangedValues = false
+
+		if(d.ip != parsedEvent.ip || d.port != parsedEvent.port) {
+			d.ip = parsedEvent.ip
+			d.port = parsedEvent.port
+			deviceChangedValues = true
+			log.debug "Device's port or ip changed..."
+		}
+
+		if (deviceChangedValues) {
+			def children = getChildDevices()
+			log.debug "Found children ${children}"
+			children.each {
+				if (it.getDeviceDataByName("mac") == parsedEvent.mac) {
+					log.debug "updating ip and port, and resubscribing, for device ${it} with mac ${parsedEvent.mac}"
+					it.subscribe(parsedEvent.ip, parsedEvent.port)
+				}
+			}
+		}
+	}
+}
+
+def ssdpLightSwitchHandler(evt) {
+	log.info("ssdpLightSwitchHandler")
+	def description = evt.description
+	def hub = evt?.hubId
+	def parsedEvent = parseDiscoveryMessage(description)
+	parsedEvent << ["hub":hub]
+	log.debug parsedEvent
+
+	def lightSwitches = getWemoLightSwitches()
+
+	if (!(lightSwitches."${parsedEvent.ssdpUSN.toString()}")) {
+		//if it doesn't already exist
+		lightSwitches << ["${parsedEvent.ssdpUSN.toString()}":parsedEvent]
+	} else {
+		log.debug "Device was already found in state..."
+
+		def d = lightSwitches."${parsedEvent.ssdpUSN.toString()}"
+		boolean deviceChangedValues = false
+
+		if(d.ip != parsedEvent.ip || d.port != parsedEvent.port) {
+			d.ip = parsedEvent.ip
+			d.port = parsedEvent.port
+			deviceChangedValues = true
+			log.debug "Device's port or ip changed..."
+			def child = getChildDevice(parsedEvent.mac)
+			if (child) {
+				log.debug "updating ip and port, and resubscribing, for device with mac ${parsedEvent.mac}"
+				child.subscribe(parsedEvent.ip, parsedEvent.port)
+			} else {
+				log.debug "Device with mac $parsedEvent.mac not found"
+			}
+		}
+	}
+}
+
+void setupHandler(hubResponse) {
+	String contentType = hubResponse?.headers['Content-Type']
+	if (contentType != null && contentType == 'text/xml') {
+		def body = hubResponse.xml
+		def wemoDevices = []
+		String deviceType = body?.device?.deviceType?.text() ?: ""
+		if (deviceType.startsWith("urn:Belkin:device:controllee:1") || deviceType.startsWith("urn:Belkin:device:insight:1")) {
+			wemoDevices = getWemoSwitches()
+		} else if (deviceType.startsWith("urn:Belkin:device:sensor")) {
+			wemoDevices = getWemoMotions()
+		} else if (deviceType.startsWith("urn:Belkin:device:lightswitch")) {
+			wemoDevices = getWemoLightSwitches()
+		}
+
+		def wemoDevice = wemoDevices.find {it?.key?.contains(body?.device?.UDN?.text())}
+		if (wemoDevice) {
+			wemoDevice.value << [name:body?.device?.friendlyName?.text(), verified: true]
+		} else {
+			log.error "/setup.xml returned a wemo device that didn't exist"
+		}
+	}
+}
+
+@Deprecated
 def locationHandler(evt) {
 	def description = evt.description
 	def hub = evt?.hubId
 	def parsedEvent = parseDiscoveryMessage(description)
 	parsedEvent << ["hub":hub]
-    log.debug parsedEvent
+	log.debug parsedEvent
 
 	if (parsedEvent?.ssdpTerm?.contains("Belkin:device:controllee") || parsedEvent?.ssdpTerm?.contains("Belkin:device:insight")) {
-
 		def switches = getWemoSwitches()
-
-		if (!(switches."${parsedEvent.ssdpUSN.toString()}"))
-		{ //if it doesn't already exist
+		if (!(switches."${parsedEvent.ssdpUSN.toString()}")) {
+			//if it doesn't already exist
 			switches << ["${parsedEvent.ssdpUSN.toString()}":parsedEvent]
-		}
-		else
-		{ // just update the values
-
+		} else {
 			log.debug "Device was already found in state..."
-
 			def d = switches."${parsedEvent.ssdpUSN.toString()}"
 			boolean deviceChangedValues = false
-
+			log.debug "$d.ip <==> $parsedEvent.ip"
 			if(d.ip != parsedEvent.ip || d.port != parsedEvent.port) {
 				d.ip = parsedEvent.ip
 				d.port = parsedEvent.port
 				deviceChangedValues = true
 				log.debug "Device's port or ip changed..."
-			}
-
-			if (deviceChangedValues) {
-				def children = getChildDevices()
-				log.debug "Found children ${children}"
-				children.each {
-					if (it.getDeviceDataByName("mac") == parsedEvent.mac) {
-						log.debug "updating ip and port, and resubscribing, for device ${it} with mac ${parsedEvent.mac}"
-						it.subscribe(parsedEvent.ip, parsedEvent.port)
-					}
+				def child = getChildDevice(parsedEvent.mac)
+				if (child) {
+					child.subscribe(parsedEvent.ip, parsedEvent.port)
+					child.poll()
+				} else {
+					log.debug "Device with mac $parsedEvent.mac not found"
 				}
 			}
-
 		}
-
 	}
 	else if (parsedEvent?.ssdpTerm?.contains("Belkin:device:sensor")) {
-
 		def motions = getWemoMotions()
-
-		if (!(motions."${parsedEvent.ssdpUSN.toString()}"))
-		{ //if it doesn't already exist
+		if (!(motions."${parsedEvent.ssdpUSN.toString()}")) {
+			//if it doesn't already exist
 			motions << ["${parsedEvent.ssdpUSN.toString()}":parsedEvent]
-		}
-		else
-		{ // just update the values
-
+		} else { // just update the values
 			log.debug "Device was already found in state..."
 
 			def d = motions."${parsedEvent.ssdpUSN.toString()}"
@@ -412,10 +518,7 @@ def locationHandler(evt) {
 		if (!(lightSwitches."${parsedEvent.ssdpUSN.toString()}"))
 		{ //if it doesn't already exist
 			lightSwitches << ["${parsedEvent.ssdpUSN.toString()}":parsedEvent]
-		}
-		else
-		{ // just update the values
-
+		} else {
 			log.debug "Device was already found in state..."
 
 			def d = lightSwitches."${parsedEvent.ssdpUSN.toString()}"
@@ -426,21 +529,15 @@ def locationHandler(evt) {
 				d.port = parsedEvent.port
 				deviceChangedValues = true
 				log.debug "Device's port or ip changed..."
-			}
-
-			if (deviceChangedValues) {
-				def children = getChildDevices()
-				log.debug "Found children ${children}"
-				children.each {
-					if (it.getDeviceDataByName("mac") == parsedEvent.mac) {
-						log.debug "updating ip and port, and resubscribing, for device ${it} with mac ${parsedEvent.mac}"
-						it.subscribe(parsedEvent.ip, parsedEvent.port)
-					}
+				def child = getChildDevice(parsedEvent.mac)
+				if (child) {
+					log.debug "updating ip and port, and resubscribing, for device with mac ${parsedEvent.mac}"
+					child.subscribe(parsedEvent.ip, parsedEvent.port)
+				} else {
+					log.debug "Device with mac $parsedEvent.mac not found"
 				}
 			}
-
 		}
-
 	}
 	else if (parsedEvent.headers && parsedEvent.body) {
 		String headerString = new String(parsedEvent.headers.decodeBase64())?.toLowerCase()
@@ -505,6 +602,7 @@ def locationHandler(evt) {
 	}
 }
 
+@Deprecated
 private def parseXmlBody(def body) {
 	def decodedBytes = body.decodeBase64()
 	def bodyString
@@ -519,134 +617,71 @@ private def parseXmlBody(def body) {
 }
 
 private def parseDiscoveryMessage(String description) {
-	def device = [:]
+	def event = [:]
 	def parts = description.split(',')
 	parts.each { part ->
 		part = part.trim()
 		if (part.startsWith('devicetype:')) {
-			def valueString = part.split(":")[1].trim()
-			device.devicetype = valueString
+			part -= "devicetype:"
+			event.devicetype = part.trim()
 		}
 		else if (part.startsWith('mac:')) {
-			def valueString = part.split(":")[1].trim()
-			if (valueString) {
-				device.mac = valueString
-			}
+			part -= "mac:"
+			event.mac = part.trim()
 		}
 		else if (part.startsWith('networkAddress:')) {
-			def valueString = part.split(":")[1].trim()
-			if (valueString) {
-				device.ip = valueString
-			}
+			part -= "networkAddress:"
+			event.ip = part.trim()
 		}
 		else if (part.startsWith('deviceAddress:')) {
-			def valueString = part.split(":")[1].trim()
-			if (valueString) {
-				device.port = valueString
-			}
+			part -= "deviceAddress:"
+			event.port = part.trim()
 		}
 		else if (part.startsWith('ssdpPath:')) {
-			def valueString = part.split(":")[1].trim()
-			if (valueString) {
-				device.ssdpPath = valueString
-			}
+			part -= "ssdpPath:"
+			event.ssdpPath = part.trim()
 		}
 		else if (part.startsWith('ssdpUSN:')) {
 			part -= "ssdpUSN:"
-			def valueString = part.trim()
-			if (valueString) {
-				device.ssdpUSN = valueString
-			}
+			event.ssdpUSN = part.trim()
 		}
 		else if (part.startsWith('ssdpTerm:')) {
 			part -= "ssdpTerm:"
-			def valueString = part.trim()
-			if (valueString) {
-				device.ssdpTerm = valueString
-			}
+			event.ssdpTerm = part.trim()
 		}
 		else if (part.startsWith('headers')) {
 			part -= "headers:"
-			def valueString = part.trim()
-			if (valueString) {
-				device.headers = valueString
-			}
+			event.headers = part.trim()
 		}
 		else if (part.startsWith('body')) {
 			part -= "body:"
-			def valueString = part.trim()
-			if (valueString) {
-				device.body = valueString
-			}
+			event.body = part.trim()
 		}
 	}
-
-	device
+	event
 }
 
 def doDeviceSync(){
 	log.debug "Doing Device Sync!"
-	runIn(900, "doDeviceSync" , [overwrite: false]) //schedule to run again in 15 minutes
-
-	if(!state.subscribe) {
-		subscribe(location, null, locationHandler, [filterEvents:false])
-		state.subscribe = true
-	}
-
 	discoverAllWemoTypes()
 }
 
-def pollChildren() {
-	def devices = getAllChildDevices()
-	devices.each { d ->
-		//only poll switches?
-		d.poll()
-	}
+private String convertHexToIP(hex) {
+	[convertHexToInt(hex[0..1]),convertHexToInt(hex[2..3]),convertHexToInt(hex[4..5]),convertHexToInt(hex[6..7])].join(".")
 }
 
-def delayPoll() {
-	log.debug "Executing 'delayPoll'"
-
-	runIn(5, "pollChildren")
+private Integer convertHexToInt(hex) {
+	Integer.parseInt(hex,16)
 }
 
-/*def poll() {
-	log.debug "Executing 'poll'"
-	runIn(600, "poll", [overwrite: false]) //schedule to run again in 10 minutes
-
-	def lastPoll = getLastPollTime()
-	def currentTime = now()
-	def lastPollDiff = currentTime - lastPoll
-	log.debug "lastPoll: $lastPoll, currentTime: $currentTime, lastPollDiff: $lastPollDiff"
-	setLastPollTime(currentTime)
-
-	doDeviceSync()
-}
-
-
-def setLastPollTime(currentTime) {
-	state.lastpoll = currentTime
-}
-
-def getLastPollTime() {
-	state.lastpoll ?: now()
-}
-
-def now() {
-	new Date().getTime()
-}*/
-
-private Boolean canInstallLabs()
-{
+private Boolean canInstallLabs() {
 	return hasAllHubsOver("000.011.00603")
 }
 
-private Boolean hasAllHubsOver(String desiredFirmware)
-{
+private Boolean hasAllHubsOver(String desiredFirmware) {
 	return realHubFirmwareVersions.every { fw -> fw >= desiredFirmware }
 }
 
-private List getRealHubFirmwareVersions()
-{
+private List getRealHubFirmwareVersions() {
 	return location.hubs*.firmwareVersionString.findAll { it }
 }
