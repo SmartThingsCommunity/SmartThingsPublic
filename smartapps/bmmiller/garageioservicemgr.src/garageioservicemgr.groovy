@@ -1,14 +1,16 @@
 /**
- *  GarageioServiceMgr v1.1.1
+ *  GarageioServiceMgr v1.3 - 2016-03-10
  *		
  * 		Changelog
- 			v1.1.1 - Tiny fix for service manager failing to complete
- *			v1.1   - GarageioServiceMgr() and Device Handler impplemented to handle ChildDevice creation, deletion, 
- *				   polling, and ST suggested implementation.
- *			v1.0   - GarageioInit() implementation to handle polling in a Smart App, left this way for quite a while
- *			v0.1   - Initial working integration
+ *			v1.3 	- Added watchdogTask() to restart polling if it stops, inspiration from Pollster
+ *			v1.2 	- Added multiAttributeTile() to make things look prettier. No functionality change.
+ *			v1.1.1 	- Tiny fix for service manager failing to complete
+ *			v1.1   	- GarageioServiceMgr() and Device Handler impplemented to handle ChildDevice creation, deletion, 
+ *				   	polling, and ST suggested implementation.
+ *			v1.0   	- GarageioInit() implementation to handle polling in a Smart App, left this way for quite a while
+ *			v0.1   	- Initial working integration
  *
- *  Copyright 2015 Brandon Miller
+ *  Copyright 2016 Brandon Miller
  *
  *  Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except
  *  in compliance with the License. You may obtain a copy of the License at:
@@ -45,9 +47,9 @@ def about() {
  	dynamicPage(name: "about", install: false, uninstall: true) {
  		section("About") {	
 			paragraph "GarageioServiceMgr, the smartapp that initializes your Garageio device (doors) and polls them on a regular basis"
-			paragraph "Version 1.1.1\n\n" +
+			paragraph "Version 1.3\n\n" +
 				"If you like this app, please support the developer via PayPal:\nbmmiller@gmail.com\n\n" +
-				"Copyright©2015 Brandon Miller"
+				"Copyright©2016 Brandon Miller"
 			href url: "http://github.com/bmmiller", style: "embedded", required: false, title: "More information..."
 		} 
 	}        
@@ -200,7 +202,8 @@ private def create_child_devices() {
 
 def initialize() {
 	log.debug "initialize"
-	state?.exceptionCount=0
+    atomicState.lastpoll = 0
+	state?.exceptionCount = 0
 	state?.msg=null    
 	delete_child_devices()	
 	create_child_devices() 
@@ -212,7 +215,8 @@ def initialize() {
 		runIn(30, "sendMsgWithDelay")
  		return
 	}
-	schedule("0 0/${delay} * * * ?", takeAction)	
+	schedule("0 0/${delay} * * * ?", takeAction)
+    schedule("0 1/15 * * * ?", watchdogTask)
 }
 
 def takeAction() {
@@ -261,6 +265,8 @@ def pollChildren() {
 
 	if (atomicState.token == null || atomicState.userId == null)
     	getAuthToken()
+        
+    atomicState.lastpoll = now()
     
     def args = "auth_token=" + atomicState.token + "&user_id=" + atomicState.userid   
     def devicePollParams = [
@@ -316,6 +322,20 @@ def push(doorId, changeState) {
         return response.data.code
     }
 	
+}
+
+def watchdogTask() {
+    LOG("watchdogTask()")
+
+    if (settings.givenInterval && atomicState.lastpoll) {
+        def t = now() - atomicState.lastpoll
+        if (t > (settings.givenInterval * 120000)) {
+            log.warn "GarageioServiceMgr is toast. Restarting..."
+            sendNotification("GarageioServiceMgr is toast. Restarting...")
+            updated()
+            return
+        }
+    }  
 }
 
 def getChildName() { "Garageio Device" }
