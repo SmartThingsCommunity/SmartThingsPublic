@@ -147,13 +147,16 @@ def accountDetailsPAGE() {
 	def accountData = updateAccountDetails()
 	dynamicPage(name: "accountDetailsPAGE", title: "OVO Energy Account Details", uninstall: false, install: false) {
     	section("Account Holder") {
-    		paragraph "Account ID:\n${accountData.id}\n\nName:\n${accountData.accountHolder}\n\nAddress:\n${accountData.homeAddress.line1}\n${accountData.homeAddress.line2}\n${accountData.homeAddress.town}\n${accountData.homeAddress.county}\n${accountData.homeAddress.postcode}"
+    		paragraph "Account ID:\n${accountData.id}"
+            paragraph "Name:\n${accountData.accountHolder}"
+            paragraph "Address:\n${accountData.homeAddress.line1}\n${accountData.homeAddress.line2}\n${accountData.homeAddress.town}\n${accountData.homeAddress.county}\n${accountData.homeAddress.postcode}"
         }
         section("Balance") {
-        	paragraph "${accountData.balance.amount} ${accountData.balance.currency}"
+        	paragraph "${String.format("%1.2f", accountData.balance.amount as BigDecimal)} ${accountData.balance.currency}"
         }
         section("Direct Debit") {
-        	paragraph "${accountData.directDebit.payment.amount} ${accountData.directDebit.payment.currency}\nNext Payment Date: ${accountData.directDebit.nextPaymentDate}"
+        	paragraph "${String.format("%1.2f", accountData.directDebit.payment.amount as BigDecimal)} ${accountData.directDebit.payment.currency}"
+            paragraph "Next Payment Date: ${accountData.directDebit.nextPaymentDate}"
         }       
     }
 }
