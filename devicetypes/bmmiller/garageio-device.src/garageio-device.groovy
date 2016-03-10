@@ -1,13 +1,16 @@
 /**
- *  Garageio Device v1.1 - 2015-08-25
+ *  Garageio Device v1.3 - 2016-03-10
  *
  * 		Changelog
- *			v1.1 - GarageioServiceMgr() and Device Handler impplemented to handle ChildDevice creation, deletion, 
- *				   polling, and ST suggested implementation.
- *			v1.0 - GarageioInit() implementation to handle polling in a Smart App, left this way for quite a while
- *			v0.1 - Initial working integration
+ *			v1.3 	- Added watchdogTask() to restart polling if it stops, inspiration from Pollster
+ *			v1.2    - Added multiAttributeTile() to make things look prettier. No functionality change.
+ *			v1.1.1 	- Tiny fix for service manager failing to complete
+ *			v1.1    - GarageioServiceMgr() and Device Handler impplemented to handle ChildDevice creation, deletion, 
+ *				    polling, and ST suggested implementation.
+ *			v1.0    - GarageioInit() implementation to handle polling in a Smart App, left this way for quite a while
+ *			v0.1    - Initial working integration
  *
- *  Copyright 2015 Brandon Miller
+ *  Copyright 2016 Brandon Miller
  *
  *  Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except
  *  in compliance with the License. You may obtain a copy of the License at:
@@ -22,30 +25,37 @@
  
 metadata {
 	definition (name: "Garageio Device", namespace: "bmmiller", author: "Brandon Miller") {
-	capability "Contact Sensor"
-    capability "Sensor"
-	capability "Polling"
-    capability "Switch"
-        
-    attribute "status", "string"
+        capability "Contact Sensor"
+        capability "Sensor"
+        capability "Polling"
+        capability "Switch"
+            
+        attribute "status", "string"
 
-	command "push"
-	command "open"
-	command "close"
-}
+        command "push"
+        command "open"
+        command "close"
+    }
     
-    tiles {
-		standardTile("status", "device.status", width: 2, height: 2) {
-			state("closed", label:'${name}', icon:"st.doors.garage.garage-closed", action: "push", backgroundColor:"#79b821", nextState:"opening")
-			state("open", label:'${name}', icon:"st.doors.garage.garage-open", action: "push", backgroundColor:"#ffa81e", nextState:"closing")
-			state("opening", label:'${name}', icon:"st.doors.garage.garage-opening", backgroundColor:"#ffe71e")
-			state("closing", label:'${name}', icon:"st.doors.garage.garage-closing", backgroundColor:"#ffe71e")
-		}
+    tiles(scale: 2) {
+    	multiAttributeTile(name:"status", type:"generic", width: 6, height: 4) {
+            tileAttribute("device.status", key: "PRIMARY_CONTROL") {           
+                attributeState("closed", label: '${name}', icon:"st.doors.garage.garage-closed", action: "push", backgroundColor:"#44b621", nextState:"opening")
+                attributeState("open", label: '${name}', icon:"st.doors.garage.garage-open", action: "push", backgroundColor:"#ff8426", nextState:"closing")
+                attributeState("opening", label:'${name}', icon:"st.doors.garage.garage-opening", backgroundColor:"#ffe71e")
+				attributeState("closing", label:'${name}', icon:"st.doors.garage.garage-closing", backgroundColor:"#ffe71e")
+            }
+            
+            tileAttribute("device.status", key: "SECONDARY_CONTROL") {
+                attributeState("closed", label: '${name}')
+                attributeState("open", label: '${name}')
+            }
+    	}    
         
-        standardTile("open", "device.door", inactiveLabel: false, decoration: "flat") {
+        standardTile("open", "device.door", decoration: "flat", width: 2, height: 2) {
 			state "default", label:'open', action:"push", icon:"st.doors.garage.garage-opening"
 		}
-		standardTile("close", "device.door", inactiveLabel: false, decoration: "flat") {
+		standardTile("close", "device.door", decoration: "flat", width: 2, height: 2) {
 			state "default", label:'close', action:"push", icon:"st.doors.garage.garage-closing"
 		}
         
@@ -54,7 +64,7 @@ metadata {
 			state("closed", label:'${name}', icon:"st.contact.contact.closed", backgroundColor:"#79b821")
 		}
         
-        standardTile("refresh", "device", inactiveLabel: false, decoration: "flat") {
+        standardTile("refresh", "device", decoration: "flat", width: 2, height: 2) {
             state "default", action:"polling.poll", icon:"st.secondary.refresh"
         }
 		
