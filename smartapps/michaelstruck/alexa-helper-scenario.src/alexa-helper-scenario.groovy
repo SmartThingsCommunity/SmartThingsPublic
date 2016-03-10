@@ -2,7 +2,7 @@
  *  Alexa Helper-Child
  *
  *  Copyright © 2016 Michael Struck
- *  Version 2.8.1 3/8/16
+ *  Version 2.8.2 3/9/16
  * 
  *  Version 1.0.0 - Initial release of child app
  *  Version 1.1.0 - Added framework to show version number of child app and copyright
@@ -25,6 +25,7 @@
  *  Version 2.7.2 - Code optimization
  *  Version 2.8.0 - Added voice reporting options
  *  Version 2.8.1 - Syntax clean up, added dimmer to voice reporting options, added speech devices besides speakers
+ *  Version 2.8.2 - Refined voice reporting (removed 'status' headers in announcement) and added date/time variables
  *
  *  Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except
  *  in compliance with the License. You may obtain a copy of the License at:
@@ -326,7 +327,7 @@ def pageVoice(){
             input "voiceDevice", "capability.speechSynthesis", title: "Voice Report Speech Synthesis Device", multiple: false, required: false
         }
         section ("Report Types"){
-            input "voicePre", "text", title: "Pre Message Before Device Report", description: "Enter a message to play before the device report", defaultValue: "This is your SmartThings voice report.", required: false
+            input "voicePre", "text", title: "Pre Message Before Device Report", description: "Enter a message to play before the device report", defaultValue: "This is your SmartThings voice report for %time%, %day%, %date%,.", required: false
             href "pageSwitchReport", title: "Switch/Dimmer Status Report", description: reportDesc(voiceSwitch, voiceDimmer, ""), state: greyOutState(voiceSwitch, voiceDimmer, "")
             href "pageDoorReport", title: "Doors/Windows Report", description: reportDesc(voiceDoorSensors, voiceDoorControls, voiceDoorLocks), state: greyOutState(voiceDoorSensors, voiceDoorControls, voiceDoorLocks)
             href "pageTempReport", title: "Temperatures/Thermostats Report", description: reportDesc(voiceTemperature, voiceTempSettings, ""), state: greyOutState(voiceTemperature, voiceTempSettings, "")
@@ -335,7 +336,7 @@ def pageVoice(){
         }
     }
 }
-page(name: "pageSwitchReport", title: "Device Status Report", install: false, uninstall: false){
+page(name: "pageSwitchReport", title: "Switch/Dimmer Status Report", install: false, uninstall: false){
 	section {
         input "voiceSwitch", "capability.switch", title: "Switches To Report Their Status...", multiple: true, required: false 
         input "voiceOnSwitchOnly", "bool", title: "Report Only Switches That Are On", defaultValue: false
@@ -672,18 +673,18 @@ def BBOnOff(status){
 //Voice Reporting Handlers-----------------------------------------------------------------
 def voiceHandler(evt){
 	if (getOkToRun("Voice Reporting")) {
-    	def fullMsg = voicePre ? "${voicePre} " : ""
+    	def fullMsg = voicePre ? "${replaceVoiceVar(voicePre)} " : ""
         if (voiceOnSwitchOnly) fullMsg += voiceSwitch ? switchOnReport() : ""
-        else fullMsg += voiceSwitch ? reportStatus(voiceSwitch, "switch", "Switch") : ""
+        else fullMsg += voiceSwitch ? reportStatus(voiceSwitch, "switch") : ""
         if (voiceOnDimmerOnly) fullMsg += voiceDimmer ? dimmerOnReport() : ""
-        else fullMsg += voiceDimmer ? reportStatus(voiceDimmer, "level", "Dimmer") : ""
-        fullMsg += (voiceTemperature) ? reportStatus(voiceTemperature, "temperature", "Temperature") : ""
+        else fullMsg += voiceDimmer ? reportStatus(voiceDimmer, "level") : ""
+        fullMsg += (voiceTemperature) ? reportStatus(voiceTemperature, "temperature") : ""
         if (voiceTempSettingSummary) fullMsg += (voiceTempSettings) ? thermostatSummary(): ""
-        else fullMsg += (voiceTempSettings) ? reportStatus(voiceTempSettings, "thermostatSetpoint", "Thermostat Setpoint") : ""
+        else fullMsg += (voiceTempSettings) ? reportStatus(voiceTempSettings, "thermostatSetpoint") : ""
         fullMsg += voiceDoorSensors || voiceDoorControls || voiceDoorLocks ? doorWindowReport() : ""
         fullMsg += voiceMode ? "The current SmartThings mode is set to, '${location.currentMode}'. " : ""
         fullMsg += voiceSHM ? "The current Smart Home Monitor status is '${location.currentState("alarmSystemStatus")?.value}'. " : ""
-        fullMsg += voicePost ? "${voicePost} " : ""
+        fullMsg += voicePost ? "${replaceVoiceVar(voicePost)} " : ""
         log.info fullMsg
     	if (voiceVolume && voiceSpeaker) voiceSpeaker.setLevel(voiceVolume as int)
     	if (voiceSpeaker) voiceSpeaker.playText(fullMsg)
@@ -913,7 +914,7 @@ def saveSelectedSong(slot, song) {
 }
 //Voice report---------------------------------------------------
 def switchOnReport(){
-    def result = "Switch Status: "
+    def result = ""
     if (voiceSwitch.latestValue("switch").contains("on")){
     	voiceSwitch.each {deviceName->
         	if (deviceName.latestValue("switch")=="on") result += "${deviceName} is on. "
@@ -923,7 +924,7 @@ def switchOnReport(){
 	result
 }
 def dimmerOnReport(){
-    def result = "Dimmer Status: "
+    def result = ""
     if (voiceDimmer.latestValue("switch").contains("on")){
     	voiceDimmer.each {deviceName->
         	if (deviceName.latestValue("switch")=="on") result += "${deviceName} on and set to ${deviceName.latestValue("level")}%. "
@@ -952,8 +953,8 @@ def thermostatSummary(){
 	}
     result
 }
-def reportStatus(deviceList, type, properName){
-	def result = "${properName} Status: "
+def reportStatus(deviceList, type){
+	def result = ""
     def appd = type=="temperature" || type=="thermostatSetpoint" ? "degrees" : ""
     if (type!= "thermostatSetpoint") deviceList.each {deviceName->result += "${deviceName} is ${deviceName.latestValue(type)} ${appd}. " }
     else deviceList.each {deviceName->result += "${deviceName} is set to ${deviceName.latestValue(type) as int} ${appd}. " }
@@ -1004,24 +1005,24 @@ def doorWindowReport(){
     }
     def totalCount = countOpenedDoor + countOpened
     if (voiceDoorAll){
-    	if (!opened && !unlocked && !openedDoor) result = "All of the doors and windows are closed and locked. "
+    	if (!opened && !unlocked && !openedDoor) result += "All of the doors and windows are closed and locked. "
         if (!opened && !openedDoor && unlocked){
-   			result = "All of the doors and windows are closed, but the"
-            result = countUnlocked > 1 ? "${result} following are unlocked: ${listUnlocked}. " :"${result} ${listUnlocked} is unlocked. "
+   			result += "All of the doors and windows are closed, but the"
+            result += countUnlocked > 1 ? "${result} following are unlocked: ${listUnlocked}. " :"${result} ${listUnlocked} is unlocked. "
     	}
         if ((opened || openedDoor) && !unlocked){
-   			result = "All of the doors are locked, but the"
+   			result += "All of the doors are locked, but the"
             result += totalCount > 1 ? "following doors or windows are open: ${listOpened}. " : "${listOpened} is open. "
     	}
     }   
 	else {
-		if ((opened || openedDoor) && !unlocked) result = totalCount > 1 ? "The following doors or windows are currently open: ${listOpened}. " : "${listOpened} is open. "
-        if (!opened && !openedDoor && unlocked) result = countUnlocked > 1 ? "The following doors are unlocked: ${listUnlocked}. " : "The ${listUnlocked} is unlocked. "
+		if ((opened || openedDoor) && !unlocked) result += totalCount > 1 ? "The following doors or windows are currently open: ${listOpened}. " : "${listOpened} is open. "
+        if (!opened && !openedDoor && unlocked) result += countUnlocked > 1 ? "The following doors are unlocked: ${listUnlocked}. " : "The ${listUnlocked} is unlocked. "
 	}
     if ((opened || openedDoor) && unlocked){
 		def verb = totalCount > 1 ? "following doors or windows are currently open: ${listOpened}" : "${listOpened} is open"
 		def verb1 = countUnlocked > 1 ? "following are unlocked: ${listUnlocked}" : "${listUnlocked} is unlocked"
-		result = "The ${verb}. Also, the ${verb1}. "
+		result += "The ${verb}. Also, the ${verb1}. "
     }
     result
 }
@@ -1072,6 +1073,25 @@ def getAlarmSound(){
     state.alarmSound = soundUri
 }
 def sonosSlots(){def slots = parent.getMemCount() as int}
+private replaceVoiceVar(msg) {
+    def df = new java.text.SimpleDateFormat("EEEE")
+	location.timeZone ? df.setTimeZone(location.timeZone) : df.setTimeZone(TimeZone.getTimeZone("America/New_York"))
+	def day = df.format(new Date())
+    def time = parseDate("", now(), "h:mm a")
+    def month = parseDate("", now(), "MMMM")
+    def year = parseDate("", now(), "yyyy")
+    def dayNum = parseDate("", now(), "d")
+    msg = msg.replace('%day%', day)
+    msg = msg.replace('%date%', "${month} ${dayNum}, ${year}")
+    msg = msg.replace('%time%', "${time}")
+    msg
+}
+private parseDate(date, epoch, type){
+    def parseDate = ""
+   	long longDate = Long.valueOf(epoch).longValue()
+    parseDate = new Date(longDate).format("yyyy-MM-dd'T'HH:mm:ss.SSSZ", location.timeZone)
+    new Date().parse("yyyy-MM-dd'T'HH:mm:ss.SSSZ", parseDate).format("${type}", timeZone(parseDate))
+}
 //Version
-private def textVersion() {def text = "Child App Version: 2.8.1 (03/08/2016)"}
-private def versionInt() {def text = 281}
+private def textVersion() {def text = "Child App Version: 2.8.2 (03/09/2016)"}
+private def versionInt() {def text = 282}
