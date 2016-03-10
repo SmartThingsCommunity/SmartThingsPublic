@@ -84,7 +84,6 @@ def setHue(percentage) {
 			log.error("Bad setHue result: [${resp.status}] ${resp.data}")
 		}
 	}
-	return []
 }
 
 def setSaturation(percentage) {
@@ -98,7 +97,6 @@ def setSaturation(percentage) {
 			log.error("Bad setSaturation result: [${resp.status}] ${resp.data}")
 		}
 	}
-	return []
 }
 
 def setColor(Map color) {
@@ -124,15 +122,13 @@ def setColor(Map color) {
 	parent.logErrors(logObject:log) {
 		def resp = parent.apiPUT("/lights/${selector()}/state", [color: attrs.join(" "), power: "on"])
 		if (resp.status < 300) {
-			if (color.hex)
-				sendEvent(name: "color", value: color.hex)
+			sendEvent(name: "color", value: color.hex)
 			sendEvent(name: "switch", value: "on")
 			events.each { sendEvent(it) }
 		} else {
 			log.error("Bad setColor result: [${resp.status}] ${resp.data}")
 		}
 	}
-	return []
 }
 
 def setLevel(percentage) {
@@ -154,7 +150,6 @@ def setLevel(percentage) {
 			log.error("Bad setLevel result: [${resp.status}] ${resp.data}")
 		}
 	}
-	return []
 }
 
 def setColorTemperature(kelvin) {
@@ -170,7 +165,6 @@ def setColorTemperature(kelvin) {
 		}
 
 	}
-	return []
 }
 
 def on() {
@@ -180,7 +174,6 @@ def on() {
 			sendEvent(name: "switch", value: "on")
 		}
 	}
-	return []
 }
 
 def off() {
@@ -190,7 +183,6 @@ def off() {
 			sendEvent(name: "switch", value: "off")
 		}
 	}
-	return []
 }
 
 def poll() {
