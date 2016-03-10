@@ -23,6 +23,7 @@
  *	v2.1.3 - Allow changing of boost interval amount in device settings.
  *  v2.1.4 - Allow changing of boost temperature in device settings.
  *	v2.1.5 - Option to disable Hive Heating Device for summer. Disable mode stops any automation commands from other smart apps reactivating Hive Heating.
+ *	v2.1.5b - Bug fix when desired heat set point is null, control stops working.
  */
 preferences 
 {
@@ -304,7 +305,7 @@ def setTemperatureForSlider(value) {
 }
 
 def getHeatTemp() { 
-	return state.desiredHeatSetpoint
+	return state.desiredHeatSetpoint == null ? device.currentValue("heatingSetpoint") : state.desiredHeatSetpoint
 }
 
 def off() {
