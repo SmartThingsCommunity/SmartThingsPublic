@@ -21,10 +21,12 @@
  *	v2.1.1 - Tweaks to temperature control responsiveness
  *  v2.1.2 - Minor tweaks to main display
  *	v2.1.3 - Allow changing of boost interval amount in device settings.
+ *  v2.1.4 - Allow changing of boost temperature in device settings.
  */
 preferences 
 {
 	input( "boostInterval", "number", title: "Boost Interval (minutes)", description: "Boost interval amount in minutes", required: false, defaultValue: 10 )
+    input( "boostTemp", "number", title: "Boost Temperature (°C)", description: "Boost interval amount in Centigrade", required: false, defaultValue: 22 )
 }
 
 metadata {
@@ -235,6 +237,13 @@ def getBoostIntervalValue() {
     return settings.boostInterval.toInteger()
 }
 
+def getBoostTempValue() {
+	if (settings.boostInterval == null) {
+    	return "22"
+    } 
+    return settings.boostTemp
+}
+
 def boostTimeUp() {
 	log.debug "Executing 'boostTimeUp'"
     //Round down result
@@ -344,7 +353,7 @@ def setThermostatMode(mode) {
         }
     	//{"nodes":[{"attributes":{"activeHeatCoolMode":{"targetValue":"BOOST"},"scheduleLockDuration":{"targetValue":30},"targetHeatTemperature":{"targetValue":22}}}]}
     	args = [
-        	nodes: [	[attributes: [activeHeatCoolMode: [targetValue: "BOOST"], scheduleLockDuration: [targetValue: state.boostLength], targetHeatTemperature: [targetValue: "22"]]]]
+        	nodes: [	[attributes: [activeHeatCoolMode: [targetValue: "BOOST"], scheduleLockDuration: [targetValue: state.boostLength], targetHeatTemperature: [targetValue: getBoostTempValue()]]]]
             ]
     }
     
