@@ -16,6 +16,8 @@
  *  09.03.2016
  *  v2.0 - New OVO Connect App
  *  v2.1 - Send notification for daily cost summary and daily usage summary
+ *	v2.2 - Support fetching latest unit prices and standing charge from OVO account.
+ *		   Send notification for specified daily cost level breach.
  *
  */
 definition(
@@ -104,7 +106,7 @@ def getDevicesSelectedString() {
 }
 
 def preferencesSelected() {
-	return (sendPush || sendSMS != null) && (sendDailyCostSummary || sendDailyUsageSummary) ? "complete" : null
+	return (sendPush || sendSMS != null) && (sendDailyCostSummary || sendDailyUsageSummary || costAlertLevel) ? "complete" : null
 }
 
 def getPreferencesString() {
@@ -113,6 +115,7 @@ def getPreferencesString() {
     if (sendSMS != null) listString += "Send SMS, "
     if (sendDailyCostSummary) listString += "Daily Cost Summary, "
     if (sendDailyUsageSummary) listString += "Daily Usage Summary, "
+    if (costAlertLevel) listString += "Daily Cost Level Alert, "
     if (listString != "") listString = listString.substring(0, listString.length() - 2)
     return listString
 }
@@ -171,6 +174,7 @@ def preferencesPAGE() {
     	section("OVO Smart Meter Notifications:") {			
 			input "sendDailyCostSummary", "bool", title: "Send daily cost information?", required: false, defaultValue: false
             input "sendDailyUsageSummary", "bool", title: "Send daily usage information?", required: false, defaultValue: false
+            input "costAlertLevel", "bool", title: "Alert when daily cost exceeds amount?", required: false, defaultValue: false
 		}        
     }
 }
@@ -238,6 +242,7 @@ def initialize() {
     	getChildDevices().each { childDevice -> 
         	subscribe(childDevice, "yesterdayTotalPower", evtHandler)
             subscribe(childDevice, "yesterdayTotalPowerCost", evtHandler)
+            subscribe(childDevice, "costAlertLevelPassed", evtHandler)
     	}
     }
 }
@@ -251,6 +256,10 @@ def evtHandler(evt) {
     else if (evt.name == "yesterdayTotalPower") {
     	msg = "${evt.displayName} total daily usage was ${evt.value} ${evt.unit} "
     	if (settings.sendDailyUsageSummary) generateNotification(msg)    
+    }
+    else if (evt.name == "costAlertLevelPassed" && evt.value != "false") {
+    	msg = "WARNING: ${evt.displayName} daily cost has exceeded ${evt.value}"
+        if (settings.costAlertLevel) generateNotification(msg)
     }
 }
 
@@ -336,6 +345,41 @@ def devicesList() {
 			return []
 		}
 	}
+}
+
+def updateLatestPrices() {
+	log.info("Update latest prices from OVO...")
+	logErrors([]) {
+		def resp = apiGET("https://paym.ovoenergy.com/api/paym/accounts")
+		if (resp.status == 200) {
+        	state.contracts = [:]
+			def contracts = resp.data.contracts[0]
+            contracts.each { contract -> 
+            	if (contract.utility != null) {
+                	def value = [contract.standingCharge.amount.amount, contract.rates.amount.amount]
+                    def key = contract.utility.toUpperCase()
+                    state.contracts["${key}"] = value
+                }
+            }
+      	}
+		else {
+			log.error("Non-200 from device list call. ${resp.status} ${resp.data}")
+		}
+	}
+}
+
+def getUnitPrice(utilityType) {
+	if (state.contracts[utilityType] != null) {
+    	return state.contracts[utilityType][1]
+    }
+	return 0
+}
+
+def getStandingCharge(utilityType) {
+	if (state.contracts[utilityType] != null) {
+    	return state.contracts[utilityType][0]
+    }
+	return 0
 }
 
 def updateAccountDetails() {
