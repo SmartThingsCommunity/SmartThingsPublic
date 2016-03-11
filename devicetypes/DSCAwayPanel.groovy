@@ -56,11 +56,11 @@ metadata {
         standardTile("disarm", "capability.momentary", width: 2, height: 2, title: "Disarm"){
             state "disarm", label: 'Disarm', action: "disarm", icon: "st.Home.home4", backgroundColor: "#79b821"
         }
-        standardTile("away", "capability.momentary", width: 2, height: 2, title: "Armed Away"){
-            state "away", label: 'Arm Away', action: "away", icon: "st.Home.home4", backgroundColor: "#800000"
+        standardTile("away", "capability.momentary", width: 2, height: 2, title: "Away Arm"){
+            state "away", label: 'Away Arm', action: "away", icon: "st.Home.home4", backgroundColor: "#800000"
         }
-        standardTile("stay", "capability.momentary", width: 2, height: 2, title: "Armed Stay"){
-            state "stay", label: 'Arm Stay', action: "stay", icon: "st.Home.home4", backgroundColor: "#008CC1"
+        standardTile("stay", "capability.momentary", width: 2, height: 2, title: "Stay Arm"){
+            state "stay", label: 'Stay Arm', action: "stay", icon: "st.Home.home4", backgroundColor: "#008CC1"
         }
         standardTile("instant", "capability.momentary", width: 2, height: 2, title: "Instant"){
             state "instant", label: 'Instant', action: "instant", icon: "st.Home.home4", backgroundColor: "#00FF00"
