@@ -15,6 +15,7 @@
  *	VERSION HISTORY
  *    25.02.2016
  *    v2.0 BETA - Initial Release
+ *	  v2.0b - Fix blank temperature readings on Android ST app
  */
 
 metadata {
@@ -38,7 +39,7 @@ metadata {
 		multiAttributeTile(name: "hotWaterRelay", width: 6, height: 4, type:"lighting") {
 			tileAttribute("device.thermostatOperatingState", key:"PRIMARY_CONTROL"){
 				attributeState "heating", icon: "st.thermostat.heat", backgroundColor: "#EC6E05"
-  				attributeState "idle", icon: "st.thermostat.heating-cooling-off", backgroundColor: "#ffffff"
+  				attributeState "idle", icon: "st.thermostat.heating-cooling-off"
             }
             tileAttribute ("hiveHotWater", key: "SECONDARY_CONTROL") {
 				attributeState "hiveHotWater", label:'${currentValue}'

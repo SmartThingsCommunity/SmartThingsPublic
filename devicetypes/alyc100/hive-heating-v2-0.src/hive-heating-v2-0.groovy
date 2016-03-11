@@ -25,6 +25,7 @@
  *	v2.1.5 - Option to disable Hive Heating Device for summer. Disable mode stops any automation commands from other smart apps reactivating Hive Heating.
  *	v2.1.5b - Bug fix when desired heat set point is null, control stops working.
  *  v2.1.5c - Fix multitile button behaviour that has changed since ST app 2.1.0. Add colour code to temperature reporting in activity feed.
+ *	v2.1.6d - Fix blank temperature on idle mode. 
  */
 preferences 
 {
@@ -74,7 +75,7 @@ metadata {
     				attributeState("default", action: "setTemperature")
   			}
   			tileAttribute("device.thermostatOperatingState", key: "OPERATING_STATE") {
-    				attributeState("idle", backgroundColor:"#ffffff")
+    				attributeState("idle")
     				attributeState("heating", backgroundColor:"#ec6e05")
   			}
   			tileAttribute("device.thermostatMode", key: "THERMOSTAT_MODE") {
