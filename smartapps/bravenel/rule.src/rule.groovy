@@ -1662,7 +1662,7 @@ def adjustShade(device) {
 
 def toggle(devices, trufal) {
 //	log.debug "toggle: $devices = ${devices*.currentValue('switch')}"
-	def del = trufal ? delayMilTrue : delayMilFalse
+	def del = trufal ? (delayMilTrue ?: 0) : (delayMilFalse ?: 0)
 	if (devices*.currentValue('switch').contains('on')) {
 		if(del) devices.off([delay: del]) else devices.off()
 	}
@@ -1673,14 +1673,14 @@ def toggle(devices, trufal) {
 
 def dimToggle(devices, dimLevel, trufal) {
 //	log.debug "dimToggle: $devices = ${devices*.currentValue('switch')}"
-	def del = trufal ? delayMilTrue : delayMilFalse
+	def del = trufal ? (delayMilTrue ?: 0) : (delayMilFalse ?: 0)
 	if (devices*.currentValue('switch').contains('on')) {if(del) devices.off([delay: del]) else devices.off()}
 	else if(del) devices.setLevel(dimLevel, [delay: del]) else devices.setLevel(dimLevel)
 }
 
 def dimAdjust(devices, dimLevel, trufal) {
 //	log.debug "dimAdjust: $devices = ${devices*.currentValue('level')}"
-	def del = trufal ? delayMilTrue : delayMilFalse
+	def del = trufal ? (delayMilTrue ?: 0) : (delayMilFalse ?: 0)
     devices.each { 
     	def level = it.currentLevel + dimLevel
         if(level > 99) level = 99
