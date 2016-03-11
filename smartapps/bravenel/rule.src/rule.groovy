@@ -3,7 +3,7 @@
  *
  *  Copyright 2015, 2016 Bruce Ravenel
  *
- *  Version 1.8.3f   6 Mar 2016
+ *  Version 1.8.4   11 Mar 2016
  *
  *	Version History
  *
@@ -108,7 +108,7 @@ preferences {
 //
 
 def appVersion() {
-	return "1.8.3f" 
+	return "1.8.4" 
 }
 
 def mainPage() {
@@ -1599,9 +1599,11 @@ def disEval() {
 def evalTerm() {
 	def result = true
     def negate = false
+	if(state.token >= state.eval.size) return false
 	def thisTok = state.eval[state.token]
 	if(thisTok == "NOT") {
     	state.token = state.token + 1
+		if(state.token >= state.eval.size) return false
         thisTok = state.eval[state.token]
         negate = true
     }
@@ -1628,7 +1630,7 @@ def eval() {
 				disEval()
 				return false
 			} 
-		} else if (thisTok == ")") return result
+		} else if (thisTok in [")", null]) return result
 		state.token = state.token + 1
 		result = evalTerm()
 	}
