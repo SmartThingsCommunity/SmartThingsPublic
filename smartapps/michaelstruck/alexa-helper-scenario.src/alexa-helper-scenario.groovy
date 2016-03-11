@@ -2,7 +2,7 @@
  *  Alexa Helper-Child
  *
  *  Copyright © 2016 Michael Struck
- *  Version 2.8.2 3/9/16
+ *  Version 2.8.3 3/10/16
  * 
  *  Version 1.0.0 - Initial release of child app
  *  Version 1.1.0 - Added framework to show version number of child app and copyright
@@ -26,6 +26,7 @@
  *  Version 2.8.0 - Added voice reporting options
  *  Version 2.8.1 - Syntax clean up, added dimmer to voice reporting options, added speech devices besides speakers
  *  Version 2.8.2 - Refined voice reporting (removed 'status' headers in announcement) and added date/time variables
+ *  Version 2.8.3 - Minor code fixes, optimizations, adding 'Apply' heating setpoint for StelPro baseboard heaters
  *
  *  Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except
  *  in compliance with the License. You may obtain a copy of the License at:
@@ -205,7 +206,6 @@ def pagePanic() {
             	input "alarmTimer", "number", title:"Alarm turns off automatically after (minutes)", required: false
             }
             if (alarmSonos && parent.getSonos()  && alarmSonos.name.contains("Sonos")){
-            	//Speaker alarm options
                 input "alarmSonosVolume", "number", title:"Sonos alarm volume", required: false
                 input "alarmSonosSound", "enum", title:"Sonos alarm sound", options: [1:"Alarm 1-European Siren", 2:"Alarm 2-Sci-Fi Siren", 3:"Alarm 3-Police Car Siren", 4:"Alarm 4-Red Alert",5:"Custom-User Defined"], multiple: false, required: false, submitOnChange:true 
                 if (alarmSonosSound == "5") input "alarmSonosCustom", "text", title:"URL/Location of custom sound...", required: false
@@ -475,11 +475,11 @@ def turnOn(){
     }
     if (onLocks && onLocksCMD){onLocks?."$onLocksCMD"()}
 	if (onHTTP){
-    	log.debug "Attempting to run: ${onHTTP}"
+    	log.info "Attempting to run: ${onHTTP}"
         httpGet("${onHTTP}")   
     }
     if (onSHM){
-    	log.debug "Setting Smart Home Monitor to ${onSHM}"
+    	log.info "Setting Smart Home Monitor to ${onSHM}"
         sendLocationEvent(name: "alarmSystemStatus", value: "${onSHM}")
     }
     if (onGarages && onGaragesCMD){onGarages?."$onGaragesCMD"()}
@@ -593,10 +593,8 @@ def speakerVolHandler(evt){
         def speakerLevel = vDimmerSpeaker.currentValue("level") as int
     	if (speakerLevel == 0) vDimmerSpeaker.off()
     	else {
-        	// Get settings between limits
         	speakerLevel = upLimitSpeaker && (vDimmerSpeaker.currentValue("level") > upLimitSpeaker) ? upLimitSpeaker : speakerLevel
 			speakerLevel = lowLimitSpeaker && (vDimmerSpeaker.currentValue("level") < lowLimitSpeaker) ? lowLimitSpeaker : speakerLevel
-            //Turn speaker to proper volume
     		speaker.setLevel(speakerLevel)
 		}
 	}
@@ -642,7 +640,6 @@ def nestAwayHandler(evt){if (getOkToRun("Thermostat mode:Away")) tstat.away()}
 //Thermostat Temp Handler
 def thermoHandler(evt){
     if (getOkToRun("Temperature change")) {
-    // Get settings between limits 
     	def tstatMode=tstat.currentValue("thermostatMode")
         if (tstatMode != "auto" || (tstatMode == "auto" && autoControlTstat)){
         	def tstatLevel = vDimmerTstat.currentValue("level") as int
@@ -651,19 +648,25 @@ def thermoHandler(evt){
 			//Turn thermostat to proper level depending on mode	
     		if (tstatMode == "heat" || tstatMode == "auto") tstat.setHeatingSetpoint(tstatLevel)		
     		if (tstatMode == "cool" || tstatMode == "auto") tstat.setCoolingSetpoint(tstatLevel)	
-    		log.debug "Thermostat set to ${tstatLevel}"
+    		log.info "Thermostat set to ${tstatLevel}"
 		}
     }
 }
 //Baseboard Handlers-----------------------------------------------------------------
-def BBOnOffHandler(evt){if (getOkToRun("Baseboard turned ${evt.value}")) BBOnOff(evt.value)}
+def BBOnOffHandler(evt){if (getOkToRun("Baseboard(s) turned ${evt.value}")) BBOnOff(evt.value)}
 def BBHandler(evt){
 	if (getOkToRun("Baseboard Temperature change")) {
     	def tstatBBLevel = vDimmerBB.currentValue("level") as int
         tstatBBLevel = upLimitTstatBB && vDimmerBB.currentValue("level") > upLimitTstatBB ? upLimitTstatBB : tstatBBLevel
         tstatBBLevel = lowLimitTstatBB && vDimmerBB.currentValue("level") < lowLimitTstatBB ? lowLimitTstatBB : tstatBBLevel
-    	tstatBB?.setHeatingSetpoint(tstatBBLevel)
-        log.debug "Baseboard set to ${tstatBBLevel}"
+        tstatBB.each {
+        	it.setHeatingSetpoint(tstatBBLevel)
+        	log.info "${it} set to '${tstatBBLevel}'"
+            if (it.name.contains("Stelpro")) {
+            	log.info "Applying ${tstatBBLevel} setpoint to '${it}'"
+            	it.applyNow()
+            }
+        }
     }
 }
 def BBOnOff(status){
@@ -695,8 +698,8 @@ def voiceHandler(evt){
 def getOkToRun(module){
 	def result = true
     if (parent.getRestrictions()) result = (!runMode || runMode.contains(location.mode)) && getDayOk(runDay) && getTimeOk(timeStart,timeEnd)   
-	if (result) log.debug "Alexa Helper scenario '${app.label}', '${module}' triggered"
-	else log.debug "Alexa Helper scenario '${app.label}', '${module}' not triggered due to scenario restrictions"
+	if (result) log.info "Alexa Helper scenario '${app.label}', '${module}' triggered"
+	else log.warn "Alexa Helper scenario '${app.label}', '${module}' not triggered due to scenario restrictions"
     result
 }
 def getOkOnOptions(){def result = (!showOptions || showOptions == "1") && (onPhrase || onMode || onSwitches || onDimmers || onColoredLights || onLocks || onGarages || onHTTP || onSHM || onSMSMsg)}
@@ -704,7 +707,7 @@ def getOkOffOptions(){def result = (!showOptions || showOptions == "2") && (offP
 def changeMode(newMode) {
     if (location.mode != newMode) {
 		if (location.modes?.find{it.name == newMode}) setLocationMode(newMode)
-        else log.debug "Unable to change to undefined mode '${newMode}'"
+        else log.warn "Unable to change to undefined mode '${newMode}'"
 	}
 }
 def getTimeLabel(start, end){
@@ -756,7 +759,7 @@ def parseList(list){
     }
     result
 }
-def reportDesc(param1, param2, param3){ def result = param1 || param2 || param3  ? "Status: CONFIGURED - Tap to edit" : "Status: UNCONFIGURED - Tap to configure"}
+def reportDesc(param1, param2, param3) {def result = param1 || param2 || param3  ? "Status: CONFIGURED - Tap to edit" : "Status: UNCONFIGURED - Tap to configure"}
 def getDeviceDesc(type){  
     def result, switches, dimmers, cLights, locks, garages
     def lvl, cLvl, clr
@@ -895,7 +898,7 @@ def songOptions(slot) {
 		def states = speaker.statesSince("trackData", new Date(0), [max:30])
 		def dataMaps = states.collect{it.jsonValue}
 		options.addAll(dataMaps.collect{it.station})
-		log.trace "${options.size()} songs in list"
+		log.trace "${options.size()} song(s) in list"
         options.take(20) as List
 	}
 }
@@ -908,7 +911,7 @@ def saveSelectedSong(slot, song) {
 		def data = songs.find {s -> s.station == thisSong}
 		log.info "Found ${data?.station}"
 		if (data) state."selectedSong${slot}"=data
-		else log.warn "Selected song '$song' not found"
+		else log.warn "'${song}' not found"
 	}
 	catch (Throwable t) {log.error t}
 }
@@ -934,7 +937,7 @@ def dimmerOnReport(){
 	result
 }
 def thermostatSummary(){
-	def result =""
+	def result = ""
     def monitorCount = voiceTempSettings.size()
     def matchCount = 0
     def notMatchList = ""
@@ -967,8 +970,8 @@ def doorWindowReport(){
     def countOpened = 0 
     def countOpenedDoor = 0
     def countUnlocked = 0
-    def result=""
-    def listOpened="" 
+    def result= ""
+    def listOpened= "" 
     def listUnlocked = ""
     if (opened){
     	for (sensor in voiceDoorSensors) if (sensor.latestValue("contact")=="open") countOpened += 1
@@ -1007,11 +1010,11 @@ def doorWindowReport(){
     if (voiceDoorAll){
     	if (!opened && !unlocked && !openedDoor) result += "All of the doors and windows are closed and locked. "
         if (!opened && !openedDoor && unlocked){
-   			result += "All of the doors and windows are closed, but the"
-            result += countUnlocked > 1 ? "${result} following are unlocked: ${listUnlocked}. " :"${result} ${listUnlocked} is unlocked. "
+   			result += "All of the doors and windows are closed, but the "
+            result += countUnlocked > 1 ? "following are unlocked: ${listUnlocked}. " :"${listUnlocked} is unlocked. "
     	}
         if ((opened || openedDoor) && !unlocked){
-   			result += "All of the doors are locked, but the"
+   			result += "All of the doors are locked, but the "
             result += totalCount > 1 ? "following doors or windows are open: ${listOpened}. " : "${listOpened} is open. "
     	}
     }   
@@ -1093,5 +1096,5 @@ private parseDate(date, epoch, type){
     new Date().parse("yyyy-MM-dd'T'HH:mm:ss.SSSZ", parseDate).format("${type}", timeZone(parseDate))
 }
 //Version
-private def textVersion() {def text = "Child App Version: 2.8.2 (03/09/2016)"}
-private def versionInt() {def text = 282}
+private def textVersion() {def text = "Child App Version: 2.8.3 (03/10/2016)"}
+private def versionInt() {def text = 283}
