@@ -94,6 +94,8 @@ private update() {
       '655':"partition disarm",
       '656':"partition exitdelay",
       '657':"partition entrydelay",
+      '663':"partition chime",
+      '664':"partition nochime",
       '701':"partition armed",
       '702':"partition armed",
       '840':"partition trouble",
