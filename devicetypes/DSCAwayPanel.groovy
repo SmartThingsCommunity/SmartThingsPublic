@@ -42,7 +42,7 @@ metadata {
                 attributeState "exitdelay", label:'Exit Delay', action: 'disarm', icon:"st.security.alarm.on", backgroundColor:"#ff9900"
                 attributeState "notready", label:'Not Ready', icon:"st.security.alarm.off", backgroundColor:"#ffcc00"
                 attributeState "ready", label:'Ready', action: 'away', icon:"st.security.alarm.off", backgroundColor:"#79b821"
-                attributeState "forceready", label:'Force Ready', action: 'away', icon:"st.security.alarm.off", backgroundColor:"#79b821"
+                attributeState "forceready", label:'Ready - F', action: 'away', icon:"st.security.alarm.off", backgroundColor:"#79b821"
                 attributeState "stay", label:'Armed Stay', action: 'disarm', icon:"st.security.alarm.on", backgroundColor:"#008CC1"
                 attributeState "instantaway", label:'Armed Instant Away', action: 'disarm', icon:"st.security.alarm.on", backgroundColor:"#800000"
                 attributeState "instantstay", label:'Armed Instant Stay', action: 'away', icon:"st.security.alarm.on", backgroundColor:"#008CC1"
@@ -62,17 +62,17 @@ metadata {
         standardTile("stay", "capability.momentary", width: 2, height: 2, title: "Armed Stay"){
             state "stay", label: 'Arm Stay', action: "stay", icon: "st.Home.home4", backgroundColor: "#008CC1"
         }
-        standardTile("instant", "capability.momentary", width: 2, height: 2, title: "Toggle Instant"){
-            state "instant", label: 'Toggle Instant', action: "instant", icon: "st.Home.home4", backgroundColor: "#008CC1"
+        standardTile("instant", "capability.momentary", width: 2, height: 2, title: "Instant"){
+            state "instant", label: 'Instant', action: "instant", icon: "st.Home.home4", backgroundColor: "#00FF00"
         }
-        standardTile("night", "capability.momentary", width: 2, height: 2, title: "Night Mode"){
-            state "night", label: 'Night Mode', action: "night", icon: "st.Home.home4", backgroundColor: "#008CC1"
+        standardTile("night", "capability.momentary", width: 2, height: 2, title: "Night"){
+            state "night", label: 'Night', action: "night", icon: "st.Home.home4", backgroundColor: "#AA00FF"
         }
-        standardTile("chime", "capability.momentary", width: 2, height: 2, title: "Toggle Chime"){
-            state "night", label: 'Toggle Chime', action: "chime", icon: "st.Home.home4", backgroundColor: "#008CC1"
+        standardTile("chime", "capability.momentary", width: 2, height: 2, title: "Chime"){
+            state "chime", label: 'Chime', action: "chime", icon: "st.Home.home4", backgroundColor: "#EE9D00"
         }
         standardTile("reset", "capability.momentary", width: 2, height: 2, title: "Sensor Reset"){
-            state "reset", label: 'Sensor Reset', action: "reset", icon: "st.Home.home4", backgroundColor: "#008CC1"
+            state "reset", label: 'Sensor Reset', action: "reset", icon: "st.Home.home4", backgroundColor: "#FF3000"
         }
 
         main "status"
