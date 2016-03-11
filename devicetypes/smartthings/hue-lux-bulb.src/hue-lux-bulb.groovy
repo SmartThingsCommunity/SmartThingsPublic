@@ -9,7 +9,6 @@ metadata {
 	definition (name: "Hue Lux Bulb", namespace: "smartthings", author: "SmartThings") {
 		capability "Switch Level"
 		capability "Actuator"
-		capability "Color Temperature"
 		capability "Switch"
 		capability "Refresh"
 		capability "Sensor"
@@ -43,7 +42,7 @@ metadata {
 			state "turningOn", label:'${name}', action:"switch.off", icon:"st.lights.philips.hue-single", backgroundColor:"#79b821", nextState:"turningOff"
 			state "turningOff", label:'${name}', action:"switch.on", icon:"st.lights.philips.hue-single", backgroundColor:"#ffffff", nextState:"turningOn"
         }
-				
+
         controlTile("levelSliderControl", "device.level", "slider", height: 1, width: 2, inactiveLabel: false, range:"(0..100)") {
             state "level", action:"switch level.setLevel"
         }
@@ -53,7 +52,7 @@ metadata {
         }
 
         main(["switch"])
-        details(["rich-control", "colorTempSliderControl","refresh"])
+        details(["rich-control", "refresh"])
     }
 }
 
