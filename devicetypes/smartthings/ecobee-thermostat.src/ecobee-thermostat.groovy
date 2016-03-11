@@ -20,7 +20,6 @@ metadata {
 		capability "Actuator"
 		capability "Thermostat"
 		capability "Temperature Measurement"
-		capability "Polling"
 		capability "Sensor"
 		capability "Refresh"
 		capability "Relative Humidity Measurement"
@@ -134,9 +133,7 @@ def refresh() {
 
 void poll() {
 	log.debug "Executing 'poll' using parent SmartApp"
-
-	def results = parent.pollChild(this)
-	generateEvent(results) //parse received message from parent
+	parent.pollChild()
 }
 
 def generateEvent(Map results) {
