@@ -18,6 +18,7 @@ metadata {
         capability "Switch"
         
         command "away"
+        command "chime"
         command "disarm"
         command "instant"
         command "night"
@@ -64,15 +65,18 @@ metadata {
         standardTile("instant", "capability.momentary", width: 2, height: 2, title: "Toggle Instant"){
             state "instant", label: 'Toggle Instant', action: "instant", icon: "st.Home.home4", backgroundColor: "#008CC1"
         }
-        standardTile("reset", "capability.momentary", width: 2, height: 2, title: "Sensor Reset"){
-            state "reset", label: 'Sensor Reset', action: "reset", icon: "st.Home.home4", backgroundColor: "#008CC1"
-        }
         standardTile("night", "capability.momentary", width: 2, height: 2, title: "Night Mode"){
             state "night", label: 'Night Mode', action: "night", icon: "st.Home.home4", backgroundColor: "#008CC1"
         }
+        standardTile("chime", "capability.momentary", width: 2, height: 2, title: "Toggle Chime"){
+            state "night", label: 'Toggle Chime', action: "chime", icon: "st.Home.home4", backgroundColor: "#008CC1"
+        }
+        standardTile("reset", "capability.momentary", width: 2, height: 2, title: "Sensor Reset"){
+            state "reset", label: 'Sensor Reset', action: "reset", icon: "st.Home.home4", backgroundColor: "#008CC1"
+        }
 
         main "status"
-        details(["status", "away", "stay", "disarm", "instant", "reset", "night"])
+        details(["status", "away", "stay", "disarm", "instant", "night", "chime", "reset"])
 
     }
 }
@@ -118,6 +122,18 @@ def away() {
         ]
     )
     log.debug "response" : "Request to away arm received"
+    return result
+}
+
+def chime() {
+    def result = new physicalgraph.device.HubAction(
+        method: "GET",
+        path: "/api/alarm/togglechime",
+        headers: [
+            HOST: "$ip:$port"
+        ]
+    )
+    log.debug "response" : "Request to toggle chime received"
     return result
 }
 
