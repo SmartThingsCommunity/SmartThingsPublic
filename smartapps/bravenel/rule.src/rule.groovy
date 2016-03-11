@@ -7,6 +7,7 @@
  *
  *	Version History
  *
+ *	1.8.4	11 Mar 2016		Strengthened code pertaining to evaluation of malformed rules
  *	1.8.3	3 Mar 2016		Changed method of reporting version number to Rule Machine
  *	1.8.2	2 Mar 2016		Reorganized UI for selecting Actions, group pages, for speed of mobile app
  *	1.8.1	2 Mar 2016		Added NOT for rules: NOT Condition and NOT (sub-rule) 
