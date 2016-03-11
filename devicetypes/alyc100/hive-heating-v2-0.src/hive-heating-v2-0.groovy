@@ -24,6 +24,7 @@
  *  v2.1.4 - Allow changing of boost temperature in device settings.
  *	v2.1.5 - Option to disable Hive Heating Device for summer. Disable mode stops any automation commands from other smart apps reactivating Hive Heating.
  *	v2.1.5b - Bug fix when desired heat set point is null, control stops working.
+ *  v2.1.5c - Fix multitile button behaviour that has changed since ST app 2.1.0. Add colour code to temperature reporting in activity feed.
  */
 preferences 
 {
@@ -111,6 +112,19 @@ metadata {
 
 		standardTile("heatingSetpointDown", "device.desiredHeatSetpoint", width: 1, height: 1, canChangeIcon: false, inactiveLabel: false, decoration: "flat") {
 			state "heatingSetpointDown", label:'  ', action:"heatingSetpointDown", icon:"st.thermostat.thermostat-down", backgroundColor:"#ffffff"
+		}
+        
+        valueTile("device.temperature", "device.temperature", canChangeBackground: true){
+			state "default", label: '${currentValue}°', unit:"C", 
+            backgroundColors:[
+				[value: 0, color: "#50b5dd"],
+                [value: 10, color: "#43a575"],
+                [value: 13, color: "#c5d11b"],
+                [value: 17, color: "#f4961a"],
+                [value: 20, color: "#e75928"],
+                [value: 25, color: "#d9372b"],
+                [value: 29, color: "#b9203b"]
+			]
 		}
 
 		valueTile("heatingSetpoint", "device.desiredHeatSetpoint", width: 2, height: 2) {
@@ -296,7 +310,9 @@ def heatingSetpointDown(){
 
 def setTemperature(value) {
 	log.debug "Executing 'setTemperature with $value'"
-	(value == 0) ? (setNewSetPointValue(getHeatTemp().toInteger() - 1)) : (setNewSetPointValue(getHeatTemp().toInteger() + 1))
+    def currentTemp = device.currentState("temperature").doubleValue
+	(value < currentTemp) ? (setNewSetPointValue(getHeatTemp().toInteger() - 1)) : (setNewSetPointValue(getHeatTemp().toInteger() + 1))
+
 }
 
 def setTemperatureForSlider(value) {
