@@ -430,7 +430,7 @@ def scheduleCheck() {
              runEvery1Hour(eventCheck)
           break
           case 6:
-             runEvery3Hour(eventCheck)
+             runEvery3Hours(eventCheck)
           break
           default:
              log.debug "No regular check frequency chosen."
