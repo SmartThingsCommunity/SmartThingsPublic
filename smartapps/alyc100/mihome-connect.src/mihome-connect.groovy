@@ -25,8 +25,7 @@
  *	31.01.2016
  *	v1.0.3 - Bug fix to refresh schedule job.
  *
- *  25.02.2016
- *  v1.0.4 - View detected devices in Connect App
+ *	v1.0.3b - Added icons to MiHome device list.
  */
 definition(
 		name: "MiHome (Connect)",
@@ -70,7 +69,7 @@ def firstPage() {
   				}
                 section("Devices Discovered And Automatically Added...") {
 					state.devices.each {devices ->
-                    	paragraph devices.trim()
+                    	paragraph image: "https://mihome4u.co.uk/assets/homepage/mihome4-01bc8a0e478b385df3248b55cc2df7ca.png", devices.trim()
                     }
 					
 				}
