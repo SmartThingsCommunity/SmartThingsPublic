@@ -267,7 +267,6 @@ class EnvisalinkClient(asynchat.async_chat):
         if input != '':
             for client in CONNECTEDCLIENTS:
                 CONNECTEDCLIENTS[client].send_command(input, False)
-
             code=int(input[:3])
             parameters=input[3:][:-2]
             event = getMessageType(int(code))
@@ -294,7 +293,7 @@ class EnvisalinkClient(asynchat.async_chat):
                 if event['type'] == 'partition':
                     # If parameters includes extra digits then this next line would fail
                     # without looking at just the first digit which is the partition number
-                    if self._config.PARTITIONNAMES[int(parameters[0])]:
+                    if int(parameters[0]) in self._config.PARTITIONNAMES and self._config.PARTITIONNAMES[int(parameters[0])]!=False:
                         # After partition number can be either a usercode
                         # or for event 652 a type of arm mode (single digit)
                         # Usercode is always 4 digits padded with zeros
@@ -304,22 +303,24 @@ class EnvisalinkClient(asynchat.async_chat):
                                 usercode = int(parameters[1:5])
                             except:
                                 usercode = 0
-                            if self._config.ALARMUSERNAMES[int(usercode)]:
-                                alarmusername = self._config.ALARMUSERNAMES[int(usercode)]
-                            else:
-                                # Didn't find a username, use the code instead
-                                alarmusername = usercode
-                            return event['name'].format(str(self._config.PARTITIONNAMES[int(parameters[0])]), str(alarmusername))
+                            if int(usercode) in self._config.ALARMUSERNAMES:
+                                if self._config.ALARMUSERNAMES[int(usercode)]!=False:
+                                    alarmusername = self._config.ALARMUSERNAMES[int(usercode)]
+                                else:
+                                    # Didn't find a username, use the code instead
+                                    alarmusername = usercode
+                                return event['name'].format(str(self._config.PARTITIONNAMES[int(parameters[0])]), str(alarmusername))
                         elif len(parameters) == 2:
                             # We have an arm mode instead, get it's friendly name
                             armmode = evl_ArmModes[int(parameters[1])]
                             return event['name'].format(str(self._config.PARTITIONNAMES[int(parameters[0])]), str(armmode))
-                        else:
+                        elif len(parameters) == 1:
                             return event['name'].format(str(self._config.PARTITIONNAMES[int(parameters)]))
+                        else:
+                            return event['name'].format(str(self._config.PARTITIONNAMES[int(parameters[0])]), int(parameters[1:]))
                 elif event['type'] == 'zone':
-                    if self._config.ZONENAMES[int(parameters)]:
+                    if int(parameters) in self._config.ZONENAMES and self._config.ZONENAMES[int(parameters)]!=False:
                         return event['name'].format(str(self._config.ZONENAMES[int(parameters)]))
-
         return event['name'].format(str(parameters))
 
     #envisalink event handlers, some events are unhandeled.
@@ -339,16 +340,18 @@ class EnvisalinkClient(asynchat.async_chat):
 
             if event['type'] in ('partition', 'zone'):
                 if event['type'] == 'zone':
-                    if self._config.ZONENAMES[int(parameters)]:
-                        if not int(parameters) in ALARMSTATE[event['type']]:
-                          ALARMSTATE[event['type']][int(parameters)] = {'name' : self._config.ZONENAMES[int(parameters)]}
-                    else:
-                        if not int(parameters) in ALARMSTATE[event['type']]: ALARMSTATE[event['type']][int(parameters)] = {}
+                    if int(parameters) in self._config.ZONENAMES:
+                        if self._config.ZONENAMES[int(parameters)]!=False:
+                            if not int(parameters) in ALARMSTATE[event['type']]:
+                                ALARMSTATE[event['type']][int(parameters)] = {'name' : self._config.ZONENAMES[int(parameters)]}
+                        else:
+                            if not int(parameters) in ALARMSTATE[event['type']]: ALARMSTATE[event['type']][int(parameters)] = {}
                 elif event['type'] == 'partition':
-                    if self._config.PARTITIONNAMES[int(parameters)]:
-                        if not int(parameters) in ALARMSTATE[event['type']]: ALARMSTATE[event['type']][int(parameters)] = {'name' : self._config.PARTITIONNAMES[int(parameters)]}
-                    else:
-                        if not int(parameters) in ALARMSTATE[event['type']]: ALARMSTATE[event['type']][int(parameters)] = {}
+                    if int(parameters[0]) in self._config.PARTITIONNAMES:
+                        if self._config.PARTITIONNAMES[int(parameters[0])]!=False:
+                            if not int(parameters) in ALARMSTATE[event['type']]: ALARMSTATE[event['type']][int(parameters)] = {'name' : self._config.PARTITIONNAMES[int(parameters)]}
+                        else:
+                            if not int(parameters) in ALARMSTATE[event['type']]: ALARMSTATE[event['type']][int(parameters)] = {}
             else:
                 if not int(parameters) in ALARMSTATE[event['type']]: ALARMSTATE[event['type']][int(parameters)] = {}
 
@@ -385,7 +388,7 @@ class EnvisalinkClient(asynchat.async_chat):
            # Check for event type
            if event['type'] == 'partition':
              # Is our partition setup with a custom name?
-             if self._config.PARTITIONNAMES[int(parameters[0])]:
+             if int(parameters[0]) in self._config.PARTITIONNAMES and self._config.PARTITIONNAMES[int(parameters[0])]!=False:
                armmode=''
                if str(code) == '652':
                  if message.endswith('Zero Entry Away'):
@@ -403,7 +406,7 @@ class EnvisalinkClient(asynchat.async_chat):
                return
            elif event['type'] == 'zone':
              # Is our zone setup with a custom name, if so we care about it
-             if self._config.ZONENAMES[int(parameters)]:
+             if int(parameters) in self._config.ZONENAMES and self._config.ZONENAMES[int(parameters)]!=False:
                myURL = self._config.CALLBACKURL_BASE + '/' + self._config.CALLBACKURL_APP_ID + '/panel/' + str(code) + '/' + str(int(parameters)) + '?access_token=' + self._config.CALLBACKURL_ACCESS_TOKEN
              else:
                # We don't care about this zone
@@ -498,6 +501,9 @@ class AlarmServer(asyncore.dispatcher):
         elif query.path == '/api/alarm/togglenight':
             channel.pushok(json.dumps({'response' : 'Request to toggle night mode received'}))
             self._envisalinkclient.send_command('071', '1**#')
+        elif query.path == '/api/alarm/togglechime':
+            channel.pushok(json.dumps({'response' : 'Request to toggle night mode received'}))
+            self._envisalinkclient.send_command('071', '1*4')
         elif query.path == '/api/alarm/armwithcode':
             channel.pushok(json.dumps({'response' : 'Request to arm with code received'}))
             self._envisalinkclient.send_command('033', '1' + alarmcode)
