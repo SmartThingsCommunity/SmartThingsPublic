@@ -15,7 +15,13 @@
  *  VERSION HISTORY
  *  09.03.2016
  *  v2.0 - Initial V2.0 Release with OVO Energy (Connect) app
+ *  v2.1 - Improve pricing calculations using contract info from OVO. Notification framework for high costs.
+ *		   Enable alert for specified daily cost level breach.
  */
+preferences 
+{
+	input( "costAlertLevel", "number", title: "Set cost alert level (£)", description: "Send alert when daily cost reaches amount", required: false, defaultValue: 10 )
+}
 
 metadata {
 	definition (name: "OVO Energy Meter V2.0", namespace: "alyc100", author: "Alex Lee Yuk Cheung") {
@@ -42,7 +48,7 @@ metadata {
 			state "default", label: 'Total Power:\n${currentValue} kWh'
 		}
         valueTile("totalConsumptionPrice", "device.currentDailyTotalPowerCost", decoration: "flat", width: 3, height: 1) {
-			state "default", label: 'Total Price:\n${currentValue}'
+			state "default", label: 'Total Cost:\n${currentValue}'
 		}
         
         valueTile("yesterdayTotalPower", "device.yesterdayTotalPower", decoration: "flat", width: 3, height: 1) {
@@ -92,14 +98,26 @@ def refreshLiveData() {
         def demand = ((int)Math.round((data.meterlive.consumption.demand as BigDecimal) * 1000))
         def consumptionPrice = (Math.round((data.meterlive.consumption.consumptionPrice.amount as BigDecimal) * 100))/100
         def consumptionPriceCurrency = data.meterlive.consumption.consumptionPrice.currency
-        def unitPrice = (Math.round((data.meterlive.consumption.unitPrice.amount as BigDecimal) * 100))/100
+        def unitPriceBigDecimal = data.meterlive.consumption.unitPrice.amount as BigDecimal
+        def unitPrice = (Math.round((unitPriceBigDecimal) * 100))/100
         def unitPriceCurrency = data.meterlive.consumption.unitPrice.currency
         
         //demand = String.format("%4f",demand)
         consumptionPrice = String.format("%1.2f",consumptionPrice)
         unitPrice = String.format("%1.2f",unitPrice)
         
-        // set local variables       
+        //update unit price and standing charge from more up to date OVO API
+        parent.updateLatestPrices()
+        def latestUnitPrice = ((device.name.contains('Gas')) ? parent.getUnitPrice('GAS') : parent.getUnitPrice('ELECTRICITY')) as BigDecimal
+        if (latestUnitPrice > 0) {
+        	unitPriceBigDecimal = latestUnitPrice
+        	unitPrice = String.format("%1.5f", unitPriceBigDecimal)
+        }
+        
+        def standingCharge = ((device.name.contains('Gas')) ? parent.getStandingCharge('GAS') : parent.getStandingCharge('ELECTRICITY')) as BigDecimal
+        log.debug "unitPrice: ${unitPriceBigDecimal} standingCharge: ${standingCharge}"
+        // set local variables  
+        
         sendEvent(name: 'power', value: "$demand", unit: "W")
         sendEvent(name: 'consumptionPrice', value: "£$consumptionPrice", displayed: false)
         sendEvent(name: 'unitPrice', value: "£$unitPrice", displayed: false)
@@ -119,7 +137,7 @@ def refreshLiveData() {
             	//Store the day's power info as yesterdays
             	def totalPower = getTotalDailyPower()
             	data.yesterdayTotalPower = (Math.round((totalPower as BigDecimal) * 1000))/1000
-                data.yesterdayTotalPowerCost = (Math.round(((totalPower as BigDecimal) * (data.meterlive.consumption.unitPrice.amount as BigDecimal)) * 100))/100
+                data.yesterdayTotalPowerCost = (Math.round((((totalPower as BigDecimal) * unitPriceBigDecimal) + standingCharge) * 100))/100
             	sendEvent(name: 'yesterdayTotalPower', value: "$data.yesterdayTotalPower", unit: "KWh", displayed: false)
         		sendEvent(name: 'yesterdayTotalPowerCost', value: "£$data.yesterdayTotalPowerCost", displayed: false)
                 
@@ -141,7 +159,14 @@ def refreshLiveData() {
         def hourCount = 0
         
         def formattedAverageTotalPower = (Math.round((totalDailyPower as BigDecimal) * 1000))/1000
-        def formattedCurrentTotalPowerCost = (Math.round(((totalDailyPower as BigDecimal) * (data.meterlive.consumption.unitPrice.amount as BigDecimal)) * 100))/100
+        def formattedCurrentTotalPowerCost = (Math.round((((totalDailyPower as BigDecimal) * unitPriceBigDecimal) + standingCharge) * 100))/100
+        
+        //Send event to raise notification on high cost
+        if (formattedCurrentTotalPowerCost > (getCostAlertLevelValue() as BigDecimal)) {
+        	sendEvent(name: 'costAlertLevelPassed', value: "£${getCostAlertLevelValue()}")
+        } else {
+        	sendEvent(name: 'costAlertLevelPassed', value: "false")
+        }
         
         formattedAverageTotalPower = String.format("%1.2f",formattedAverageTotalPower)
         formattedCurrentTotalPowerCost = String.format("%1.2f",formattedCurrentTotalPowerCost)
@@ -162,22 +187,9 @@ private def getTotalDailyPower() {
     return totalDailyPower
 }
 
-def api(method, args = [], success = {}) {
-	log.debug "Executing 'api'"
-	
-	if(!isLoggedIn()) {
-		log.debug "Need to login"
-		login(method, args, success)
-		return
-	}
-    
-	def methods = [
-		'live': [uri: "https://live.ovoenergy.com/api/live/meters/${settings.meterId}/consumptions/instant", type: 'get'],
-		'historical': [uri: "https://live.ovoenergy.com/api/live/meters/${settings.meterId}/consumptions/historical?startTimestamp=${(int)(new Date().getTime())/1000}&period=DAY&dataSource=CAD", type: 'get'],
-    ]
-	
-	def request = methods.getAt(method)
-	
-	log.debug "Starting $method : $args"
-	doRequest(request.uri, args, request.type, success)
+def getCostAlertLevelValue() {
+	if (settings.costAlertLevel == null) {
+    	return "10"
+    } 
+    return settings.costAlertLevel
 }
