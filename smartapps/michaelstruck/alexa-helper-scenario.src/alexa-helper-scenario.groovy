@@ -2,7 +2,7 @@
  *  Alexa Helper-Child
  *
  *  Copyright © 2016 Michael Struck
- *  Version 2.8.4 3/11/16
+ *  Version 2.8.5 3/12/16
  * 
  *  Version 1.0.0 - Initial release of child app
  *  Version 1.1.0 - Added framework to show version number of child app and copyright
@@ -28,6 +28,7 @@
  *  Version 2.8.2 - Refined voice reporting (removed 'status' headers in announcement) and added date/time variables
  *  Version 2.8.3 - Minor code fixes, optimizations, adding 'Apply' heating setpoint for StelPro baseboard heaters
  *  Version 2.8.4 - Added additional voice variables (%temp%); workaround implemented for playTrack() not being operational(as of 3/11)
+ *  Version 2.8.5 - Code optimization, added option to announce name of song for saved stations
  *
  *  Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except
  *  in compliance with the License. You may obtain a copy of the License at:
@@ -260,9 +261,10 @@ def pageSpeaker(){
             for (int i = 1; i <=sonosSlots(); i++) {
                 section ("Sonos Saved Station ${i}"){
 					input "song${i}Switch", "capability.momentary", title: "Saved Station Switch #${i} (Momentary)", multiple: false, required: false, submitOnChange:true
-					if (settings."song${i}Switch") input "song${i}Station", "enum", title: "Song/Station #${i}", description: "Tap to select recently played song/station", multiple: false, 
-							required: false, options: songOptions("${i}")
-				}
+                    if (settings."song${i}Switch") input "song${i}Station", "enum", title: "Song/Station #${i}", description: "Tap to select recently played song/station", multiple: false, 
+							required: false, options: songOptions("${i}"), submitOnChange:true
+					if (settings."song${i}Station") input "announce${i}Song", "bool", title: "Announce Song Name Prior To Playing", defaultValue: false
+                }
 			}
 		}
         if (speaker && !songOptions(1) && parent.getSonos() && speaker.name.contains("Sonos")){
@@ -331,7 +333,7 @@ def pageVoice(){
             input "voicePre", "text", title: "Pre Message Before Device Report", description: "Enter a message to play before the device report", defaultValue: "This is your SmartThings voice report for %time%, %day%, %date%,.", required: false
             href "pageSwitchReport", title: "Switch/Dimmer Status Report", description: reportDesc(voiceSwitch, voiceDimmer, ""), state: greyOutState(voiceSwitch, voiceDimmer, "")
             href "pageDoorReport", title: "Doors/Windows Report", description: reportDesc(voiceDoorSensors, voiceDoorControls, voiceDoorLocks), state: greyOutState(voiceDoorSensors, voiceDoorControls, voiceDoorLocks)
-            href "pageTempReport", title: "Temperatures/Thermostats Report", description: reportDesc(voiceTemperature, voiceTempSettings, ""), state: greyOutState(voiceTemperature, voiceTempSettings, "")
+            href "pageTempReport", title: "Temperatures/Thermostats Report", description: reportDesc(voiceTemperature, voiceTempSettings, voiceTempVar), state: greyOutState(voiceTemperature, voiceTempSettings, voiceTempVar)
             href "pageHomeReport", title: "Mode and Smart Home Monitor Report", description: reportDesc(voiceMode, voiceSHM, ""), state: "complete"
             input "voicePost", "text", title: "Post Message After Device Report", description: "Enter a message to play after the device report", required: false
         }
@@ -356,11 +358,11 @@ page(name: "pageDoorReport", title: "Doors/Windows Report", install: false, unin
 def pageTempReport(){
     dynamicPage(name: "pageTempReport", title: "Temperature Report", install: false, uninstall: false){
         section {
-            input "voiceTempVar", "capability.temperatureMeasurement", title: "Pre/Post Message Device Report (%temp)",multiple: false, required: false
-            input "voiceTemperature", "capability.temperatureMeasurement", title: "Individual Devices To Report Temperatures...",multiple: true, required: false
-            input "voiceTempSettings", "capability.thermostat", title: "Thermostats To Report Their Setpoints...",multiple: true, required: false
-            input "voiceTempSettingSummary", "bool", title: "Consolidate Thermostats Report", defaultValue: false, submitOnChange:true
-            if (voiceTempSettingSummary) input "voiceTempTarget", "number", title: "Thermostat Setpoint Target", required: false, defaultValue: 50
+            input "voiceTempVar", "capability.temperatureMeasurement", title: "Temperature Device Variable (%temp%)",multiple: false, required: false
+            input "voiceTemperature", "capability.temperatureMeasurement", title: "Devices To Report Temperatures...",multiple: true, required: false
+            input "voiceTempSettings", "capability.thermostat", title: "Thermostats To Report Their Setpoints...",multiple: true, required: false, submitOnChange:true
+            if (voiceTempSettings) input "voiceTempSettingSummary", "bool", title: "Consolidate Thermostats Report", defaultValue: false, submitOnChange:true
+            if (voiceTempSettingSummary && voiceTempSettings) input "voiceTempTarget", "number", title: "Thermostat Setpoint Target", required: false, defaultValue: 50
         }
     }
 }
@@ -539,7 +541,7 @@ def panicOn(evt){
             alarmSonos.playSoundAndTrack (state.alarmSound.uri, state.alarmSound.duration,"")
         }
         if (panicSMSnumberOn || panicPushOn || panicContactsOn){ 
-			def smsTxt = panicSMSMsgOn ? panicSMSMsgOn : "Panic was activated without message text input. Please investigate"
+			def smsTxt = panicSMSMsgOn ? panicSMSMsgOn : "Panic was activated without message text input. Please investigate."
             sendMSG(panicSMSnumberOn, smsTxt, panicPushOn, panicContactsOn) 	
 		}
 		if (parent.getNotifyFeed()){
@@ -567,7 +569,7 @@ def panicOff(evt){
 def alarmTurnOn(){alarm?."$alarmType"()}
 def alarmTurnOff(){alarm?.off()}
 //Speaker Handlers-----------------------------------------------------------------
-def speakerControl(cmd, song, songName){
+def speakerControl(cmd, song, songName, announce){
     if (cmd=="station" || cmd=="on") {
     	//Alexa Switch should be used to prevent looping to this point when switch in turned on
         if (speakerInitial){
@@ -577,9 +579,8 @@ def speakerControl(cmd, song, songName){
         else vDimmerSpeaker.setLevel(speaker.currentValue("level") as int)
 		if (cmd=="station"){
     		log.debug "Playing: ${song}"
-            def text = textToSpeech("Now playing: ${songName}.", true)
+            def text = textToSpeech(announce ? "Now playing: ${songName}." : " ", true)
             speaker.playSoundAndTrack(text.uri, text.duration, song)
-            //speaker.playTrack(song) ; removed due to SmartThings internal issue. Items above used to compensate
 		}
     	if (cmd=="on"){
         	speaker.play()
@@ -604,13 +605,13 @@ def speakerVolHandler(evt){
 	}
 }    
 //Speaker on/off
-def speakerOnHandler(evt){if (getOkToRun("Speaker on/off")) {if (evt.value == "on" || evt.value == "off" ) speakerControl(evt.value,"","")}}
+def speakerOnHandler(evt){if (getOkToRun("Speaker on/off")) {if (evt.value == "on" || evt.value == "off" ) speakerControl(evt.value,"","","")}}
 def controlNextHandler(evt){if (getOkToRun("Speaker next track")) speaker.nextTrack()}
 def controlPrevHandler(evt){if (getOkToRun("Speaker previous track")) speaker.previousTrack()}
 def controlSong(evt){
 	def trigger = evt.displayName
     if (getOkToRun("Speaker Saved Song/Station Trigger: ${trigger}")) {
-       	for (int i = 1; i <= sonosSlots(); i++) if (settings."song${i}Switch" && trigger == settings."song${i}Switch".label){speakerControl("station",state."selectedSong${i}", settings."song${i}Station")}
+       	for (int i = 1; i <= sonosSlots(); i++) if (settings."song${i}Switch" && trigger == settings."song${i}Switch".label){speakerControl("station", state."selectedSong${i}", settings."song${i}Station", settings."announce${i}Song")}
 	}
 }
 //Thermostat Handlers-----------------------------------------------------------------
@@ -767,53 +768,45 @@ def reportDesc(param1, param2, param3) {def result = param1 || param2 || param3 
 def getDeviceDesc(type){  
     def result, switches, dimmers, cLights, locks, garages
     def lvl, cLvl, clr
-    def dimmerCMD, switchCMD, cLightCMD, lockCMD, garageCMD
+    def cmd = []
     if (type == "on"){
-        switchCMD = onSwitchesCMD
-        dimmerCMD = onDimmersCMD
-        cLightCMD = onColoredLightsCMD
-        lockCMD = onLocksCMD
-        garageCMD = onGaragesCMD
-        switches = onSwitches && switchCMD ? onSwitches : ""
-        lvl = dimmerCMD == "set" && onDimmersLVL ? onDimmersLVL as int : 0
-        dimmers = onDimmers && dimmerCMD ? onDimmers : ""
-        cLvl = cLightCMD == "set" && onColoredLightsLVL ? onColoredLightsLVL as int : 0
-        clr = cLightCMD == "set" && onColoredLightsCLR ? onColoredLightsCLR  : ""
-        cLights = onColoredLights && cLightCMD ? onColoredLights : ""
-        locks = onLocks && lockCMD ? onLocks : ""
-        garages = onGarages && garageCMD ? onGarages : ""
+        cmd = [switch: onSwitchesCMD, dimmer: onDimmersCMD, cLight: onColoredLightsCMD, lock: onLocksCMD, garage: onGaragesCMD]
+        switches = onSwitches && cmd.switch ? onSwitches : ""
+        lvl = cmd.dimmer == "set" && onDimmersLVL ? onDimmersLVL as int : 0
+        dimmers = onDimmers && cmd.dimmer ? onDimmers : ""
+        cLvl = cmd.cLight == "set" && onColoredLightsLVL ? onColoredLightsLVL as int : 0
+        clr = cmd.cLight == "set" && onColoredLightsCLR ? onColoredLightsCLR  : ""
+        cLights = onColoredLights && cmd.cLight ? onColoredLights : ""
+        locks = onLocks && cmd.lock ? onLocks : ""
+        garages = onGarages && cmd.garage ? onGarages : ""
     }
     if (type == "off"){
-    	switchCMD = offSwitchesCMD
-        dimmerCMD = offDimmersCMD
-        cLightCMD = offColoredLightsCMD
-        lockCMD = offLocksCMD
-        garageCMD = offGaragesCMD
-        switches = offSwitches && switchCMD ? offSwitches : ""
-        lvl = dimmerCMD == "set" && offDimmersLVL ? offDimmersLVL as int : 0
-        dimmers = offDimmers && dimmerCMD ? offDimmers : ""
-        cLvl = cLightCMD == "set" && offColoredLightsLVL ? offColoredLightsLVL as int : 0
-        clr = cLightCMD == "set" && offColoredLightsCLR ? offColoredLightsCLR : ""
-        cLights = offColoredLights && cLightCMD ? offColoredLights : ""
-        locks = offLocks && lockCMD ? offLocks : ""
-        garages = offGarages && garageCMD ? offGarages : ""
+		cmd = [switch: offSwitchesCMD, dimmer: offDimmersCMD, cLight: offColoredLightsCMD, lock: offLocksCMD, garage: offGaragesCMD]
+        switches = offSwitches && cmd.switch ? offSwitches : ""
+        lvl = cmd.dimmer == "set" && offDimmersLVL ? offDimmersLVL as int : 0
+        dimmers = offDimmers && cmd.dimmer ? offDimmers : ""
+        cLvl = cmd.cLight == "set" && offColoredLightsLVL ? offColoredLightsLVL as int : 0
+        clr = cmd.cLight == "set" && offColoredLightsCLR ? offColoredLightsCLR : ""
+        cLights = offColoredLights && cmd.cLight ? offColoredLights : ""
+        locks = offLocks && cmd.lock ? offLocks : ""
+        garages = offGarages && cmd.garage ? offGarages : ""
     }
     lvl = lvl < 0 ? lvl = 0 : lvl >100 ? lvl=100 : lvl
     cLvl = cLvl < 0 ? cLvl = 0 : cLvl >100 ? cLvl=100 : cLvl
     if (switches || dimmers || cLights || locks || garages) {
-    	result = switches  ? "${switches} set to ${switchCMD}" : ""
+    	result = switches  ? "${switches} set to ${cmd.switch}" : ""
         result += result && dimmers ? "\n" : ""
-        result += dimmers && dimmerCMD != "set" ? "${dimmers} set to ${dimmerCMD}" : ""
-        result += dimmers && dimmerCMD == "set" ? "${dimmers} set to ${lvl}%" : ""	
+        result += dimmers && cmd.dimmer != "set" ? "${dimmers} set to ${cmd.dimmer}" : ""
+        result += dimmers && cmd.dimmer == "set" ? "${dimmers} set to ${lvl}%" : ""	
         result += result && cLights ? "\n" : ""
-    	result += cLights && cLightCMD != "set" ? "${cLights} set to ${cLightCMD}":""
-        result += cLights && cLightCMD == "set" ? "${cLights} set to " : ""
-        result += cLights && cLightCMD == "set" && clr ? "${clr} and " : ""
-        result += cLights && cLightCMD == "set" ? "${cLvl}%" : ""
+    	result += cLights && cmd.cLight != "set" ? "${cLights} set to ${cmd.cLight}":""
+        result += cLights && cmd.cLight == "set" ? "${cLights} set to " : ""
+        result += cLights && cmd.cLight == "set" && clr ? "${clr} and " : ""
+        result += cLights && cmd.cLight == "set" ? "${cLvl}%" : ""
         result += result && locks ? "\n":""
-        result += locks ? "${locks} set to ${lockCMD}" : ""
+        result += locks ? "${locks} set to ${cmd.lock}" : ""
         result += result && garages ? "\n" : ""
-        result += garages ? "${garages} set to ${garageCMD}" : ""
+        result += garages ? "${garages} set to ${cmd.garage}" : ""
     }
     result = result ? result : "Status: UNCONFIGURED - Tap to configure"
 }
@@ -921,21 +914,13 @@ def saveSelectedSong(slot, song) {
 //Voice report---------------------------------------------------
 def switchOnReport(){
     def result = ""
-    if (voiceSwitch.latestValue("switch").contains("on")){
-    	voiceSwitch.each {deviceName->
-        	if (deviceName.latestValue("switch")=="on") result += "${deviceName} is on. "
-        }
-    }
+    if (voiceSwitch.latestValue("switch").contains("on")) voiceSwitch.each {deviceName-> if (deviceName.latestValue("switch")=="on") result += "${deviceName} is on. "}
     else result += "All of the monitored switches are off. "
 	result
 }
 def dimmerOnReport(){
     def result = ""
-    if (voiceDimmer.latestValue("switch").contains("on")){
-    	voiceDimmer.each {deviceName->
-        	if (deviceName.latestValue("switch")=="on") result += "${deviceName} is on and set to ${deviceName.latestValue("level")}%. "
-        }
-    }
+    if (voiceDimmer.latestValue("switch").contains("on")) voiceDimmer.each {deviceName-> if (deviceName.latestValue("switch")=="on") result += "${deviceName} is on and set to ${deviceName.latestValue("level")}%. "}
     else result += "All of the monitored dimmers are off. "
 	result
 }
@@ -1100,5 +1085,5 @@ private parseDate(epoch, type){
     new Date().parse("yyyy-MM-dd'T'HH:mm:ss.SSSZ", parseDate).format("${type}", timeZone(parseDate))
 }
 //Version
-private def textVersion() {def text = "Child App Version: 2.8.4 (03/11/2016)"}
-private def versionInt() {def text = 284}
+private def textVersion() {def text = "Child App Version: 2.8.5 (03/12/2016)"}
+private def versionInt() {def text = 285}
