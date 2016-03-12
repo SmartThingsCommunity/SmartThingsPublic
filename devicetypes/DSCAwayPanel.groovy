@@ -75,7 +75,7 @@ metadata {
         standardTile("reset", "capability.momentary", width: 2, height: 2, title: "Sensor Reset"){
             state "reset", label: 'Sensor\u00A0Reset', action: "reset", icon: "st.alarm.smoke.smoke", backgroundColor: "#FF3000"
         }
-        controlTile("bypassSlider", "device.bypass", "slider", height: 1, width: 6, inactiveLabel: false, range:"(1..64)"){
+        controlTile("bypassSlider", "device.bypass", "slider", height: 1, width: 6, inactiveLabel: false, range:"(0..64)"){
             state "bypass", action:"bypassLevel"
         }
         valueTile("bypassValue", "device.bypass", width: 2, height: 2){
