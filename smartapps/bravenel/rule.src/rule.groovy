@@ -3,7 +3,7 @@
  *
  *  Copyright 2015, 2016 Bruce Ravenel
  *
- *  Version 1.8.4   11 Mar 2016
+ *  Version 1.8.4a   12 Mar 2016
  *
  *	Version History
  *
@@ -109,7 +109,7 @@ preferences {
 //
 
 def appVersion() {
-	return "1.8.4" 
+	return "1.8.4a" 
 }
 
 def mainPage() {
@@ -787,37 +787,37 @@ def getActions(trufal) {
 // Delay These Actions
     	def thisPage = "delay" + thisStr + "Page"
         def thisStateStr = trufal ? state.delayStrTrue : state.delayStrFalse
-	href thisPage, title: "Delay These Actions", description: thisStateStr ? (thisStateStr) : "Tap to set", state: thisStateStr ? "complete" : null
+		href thisPage, title: "Delay These Actions", description: thisStateStr ? (thisStateStr) : "Tap to set", state: thisStateStr ? "complete" : null
         if(thisStateStr) setAct(trufal, thisStateStr)
 // Control Switches, Capture/Restore
     	def thisPage1 = "switch" + thisStr + "Page"
         def thisStateStr1 = trufal ? state.switchStrTrue : state.switchStrFalse
-	href thisPage1, title: "Control Switches, Capture/Restore", description: thisStateStr1 ? (thisStateStr1) : "Tap to set", state: thisStateStr1 ? "complete" : null
+		href thisPage1, title: "Control Switches, Capture/Restore", description: thisStateStr1 ? (thisStateStr1) : "Tap to set", state: thisStateStr1 ? "complete" : null
         if(thisStateStr1) setAct(trufal, thisStateStr1)
 // Set Dimmers and Bulbs
     	def thisPage2 = "dimmer" + thisStr + "Page"
         def thisStateStr2 = trufal ? state.dimmerStrTrue : state.dimmerStrFalse
-	href thisPage2, title: "Set Dimmers and Bulbs", description: thisStateStr2 ? (thisStateStr2) : "Tap to set", state: thisStateStr2 ? "complete" : null
+		href thisPage2, title: "Set Dimmers and Bulbs", description: thisStateStr2 ? (thisStateStr2) : "Tap to set", state: thisStateStr2 ? "complete" : null
         if(thisStateStr2) setAct(trufal, thisStateStr2)
 // Control doors, locks, thermostats, fans, valves
     	def thisPage3 = "door" + thisStr + "Page"
         def thisStateStr3 = trufal ? state.doorStrTrue : state.doorStrFalse
-	href thisPage3, title: "Control doors, locks, thermostats, fans, valves", description: thisStateStr3 ? (thisStateStr3) : "Tap to set", state: thisStateStr3 ? "complete" : null
+		href thisPage3, title: "Control doors, locks, thermostats, fans, valves", description: thisStateStr3 ? (thisStateStr3) : "Tap to set", state: thisStateStr3 ? "complete" : null
         if(thisStateStr3) setAct(trufal, thisStateStr3)
 // Send or speak a message        
         def msgPage = "selectMsg" + thisStr
         def msgStr = trufal ? state.msgTrue : state.msgFalse
-	href msgPage, title: "Send or speak a message", description: msgStr ? msgStr : "Tap to set", state: msgStr ? "complete" : null
+		href msgPage, title: "Send or speak a message", description: msgStr ? msgStr : "Tap to set", state: msgStr ? "complete" : null
         if(msgStr) setAct(trufal, msgStr)
 // Set mode, alarm, Routine, photos
     	def thisPage4 = "mode" + thisStr + "Page"
         def thisStateStr4 = trufal ? state.modeStrTrue : state.modeStrFalse
-	href thisPage4, title: "Set mode, alarm, Routine, photos", description: thisStateStr4 ? (thisStateStr4) : "Tap to set", state: thisStateStr4 ? "complete" : null
+		href thisPage4, title: "Set mode, alarm, Routine, photos", description: thisStateStr4 ? (thisStateStr4) : "Tap to set", state: thisStateStr4 ? "complete" : null
         if(thisStateStr4) setAct(trufal, thisStateStr4)
 // Run Rules, Actions, set Boolean
     	def thisPage5 = "rule" + thisStr + "Page"
         def thisStateStr5 = trufal ? state.ruleStrTrue : state.ruleStrFalse
-	href thisPage5, title: "Run Rules, Actions, set Boolean", description: thisStateStr5 ? (thisStateStr5) : "Tap to set", state: thisStateStr5 ? "complete" : null
+		href thisPage5, title: "Run Rules, Actions, set Boolean", description: thisStateStr5 ? (thisStateStr5) : "Tap to set", state: thisStateStr5 ? "complete" : null
         if(thisStateStr5) setAct(trufal, thisStateStr5)
 // Run custom commands        
 		if (state.isExpert){
@@ -934,18 +934,18 @@ def getSwitch(trufal) {
 // Turn on or off these switches after a delay, pending cancellation (default is OFF)        
         if(state.isRule || state.howMany > 1) {
         	def pendedOff = "pendedOff" + thisStr
-		input pendedOff, "capability.switch", title: "Turn on or off these switches after a delay, pending cancellation (default is OFF)", multiple: true, required: false, submitOnChange: true
-		if(settings[pendedOff]) {
-			def pendOnOff = "pendOnOff" + thisStr
-			def pendMinutes = "pendMinutes" + thisStr
-			input pendOnOff, "bool", title: "> Turn ON after the delay?", multiple: false, required: false, defaultValue: false, submitOnChange: true
-			input pendMinutes, "number", title: "> Minutes of delay", required: true, range: "0..*", submitOnChange: true
-			if(settings[pendMinutes] != null) {
-				def pendStr = "Pending "+ (settings[pendOnOff] ? "On:" : "Off:") + " ${settings[pendedOff]}: ${settings[pendMinutes]} minute"
-				if(settings[pendMinutes] > 1 || settings[pendMinutes] == 0) pendStr = pendStr + "s"
-				setAct(trufal, pendStr)
+			input pendedOff, "capability.switch", title: "Turn on or off these switches after a delay, pending cancellation (default is OFF)", multiple: true, required: false, submitOnChange: true
+			if(settings[pendedOff]) {
+				def pendOnOff = "pendOnOff" + thisStr
+				def pendMinutes = "pendMinutes" + thisStr
+				input pendOnOff, "bool", title: "> Turn ON after the delay?", multiple: false, required: false, defaultValue: false, submitOnChange: true
+				input pendMinutes, "number", title: "> Minutes of delay", required: true, range: "0..*", submitOnChange: true
+				if(settings[pendMinutes] != null) {
+					def pendStr = "Pending "+ (settings[pendOnOff] ? "On:" : "Off:") + " ${settings[pendedOff]}: ${settings[pendMinutes]} minute"
+					if(settings[pendMinutes] > 1 || settings[pendMinutes] == 0) pendStr = pendStr + "s"
+					setAct(trufal, pendStr)
+				}
 			}
-		}
         }
 // Capture the state of these switches        
         def capture = "capture"  + thisStr
@@ -958,12 +958,12 @@ def getSwitch(trufal) {
         def restore = "restore" + thisStr
         def restoreDelay = "restoreDelay" + thisStr
         def restoreCancel = "restoreCancel" + thisStr
-	if(settings[capture] || settings[captureNot]) input restore, "bool", title: "Restore the state of captured switches", required: false, submitOnChange: true
+		if(settings[capture] || settings[captureNot]) input restore, "bool", title: "Restore the state of captured switches", required: false, submitOnChange: true
         if(settings[restore]) input restoreDelay, "number", title: "> Restore after a delay?", required: false, submitOnChange: true, description: "0 minutes"
         if(settings[restoreDelay] > 0 && (state.isRule || state.howMany > 1)) input restoreCancel, "bool", title: "> Cancel on truth change?", required: false, submitOnChange: true
-	if(settings[restore] && settings[capture]) setAct(trufal, "Restore: ${settings[capture]}" + (settings[restoreDelay] > 0 ? " after ${settings[restoreDelay]} minutes" + 
+		if(settings[restore] && settings[capture]) setAct(trufal, "Restore: ${settings[capture]}" + (settings[restoreDelay] > 0 ? " after ${settings[restoreDelay]} minutes" + 
         	(settings[restoreCancel] ? " [Cancel]" : "") : ""))
-	else if(settings[restore] && settings[captureNot]) setAct(trufal, "Restore: ${settings[captureNot]}" + (settings[restoreDelay] > 0 ? " after ${settings[restoreDelay]} minutes"  + 
+		else if(settings[restore] && settings[captureNot]) setAct(trufal, "Restore: ${settings[captureNot]}" + (settings[restoreDelay] > 0 ? " after ${settings[restoreDelay]} minutes"  + 
         	(settings[restoreCancel] ? " [Cancel]" : ""): ""))
 	}
 	def result = (trufal ? state.actsTrue : state.actsFalse) - prevStr
@@ -1420,7 +1420,7 @@ def initialize() {
 			case "Smoke detector":
 				subscribe(myDev.value, "smoke" + ((state.isTrig || hasTrig) ? ".$myState" : ""), allHandler)
 				break
-			case ["Presence"]:
+			case "Presence":
 				subscribe(myDev.value, "presence" + ((state.isTrig || hasTrig) ? (myState == "arrives" ? ".present" : ".not present") : ""), allHandler)
 				break
 			case "Button":
@@ -1487,31 +1487,31 @@ def checkCondAny(dev, stateX, cap, rel, relDev) {
     if(stateX == "leaves") stateX = "not present"
     else if(stateX == "arrives") stateX = "present"
 	def result = false
-	if     (cap == "Temperature") 	dev.currentTemperature.each 		{result = result || compare(it, rel, stateX, relDev ? relDev.currentTemperature : null)}
-	else if(cap == "Humidity")	dev.currentHumidity.each    		{result = result || compare(it, rel, stateX, relDev ? relDev.currentHumidity : null)}
-	else if(cap == "Illuminance") 	dev.currentIlluminance.each 		{result = result || compare(it, rel, stateX, relDev ? relDev.currentIlluminance : null)}
+	if     (cap == "Temperature") 	dev.currentTemperature.each 	{result = result || compare(it, rel, stateX, relDev ? relDev.currentTemperature : null)}
+	else if(cap == "Humidity")		dev.currentHumidity.each    	{result = result || compare(it, rel, stateX, relDev ? relDev.currentHumidity : null)}
+	else if(cap == "Illuminance") 	dev.currentIlluminance.each 	{result = result || compare(it, rel, stateX, relDev ? relDev.currentIlluminance : null)}
 	else if(cap == "Dimmer level")	dev.currentLevel.each			{result = result || compare(it, rel, stateX, relDev ? relDev.currentLevel : null)}
 	else if(cap == "Energy meter")	dev.currentEnergy.each			{result = result || compare(it, rel, stateX, relDev ? relDev.currentEnergy : null)}
 	else if(cap == "Power meter")	dev.currentPower.each			{result = result || compare(it, rel, stateX, relDev ? relDev.currentPower : null)}
-	else if(cap == "Battery")	dev.currentBattery.each			{result = result || compare(it, rel, stateX, relDev ? relDev.currentBattery : null)}
+	else if(cap == "Battery")		dev.currentBattery.each			{result = result || compare(it, rel, stateX, relDev ? relDev.currentBattery : null)}
 	else if(cap == "Rule truth")	dev.each {
 		def truth = parent.currentRule(it)
 		result = result || stateX == "$truth"
 	} 
-	else if(cap == "Water sensor")			result = stateX in dev.currentWater
-	else if(cap == "Switch") 			result = stateX in dev.currentSwitch
-	else if(cap == "Motion") 			result = stateX in dev.currentMotion
-	else if(cap == "Acceleration") 			result = stateX in dev.currentAcceleration
-	else if(cap == "Contact") 			result = stateX in dev.currentContact
-	else if(cap == "Presence") 			result = stateX in dev.currentPresence
-	else if(cap == "Smoke detector") 		result = stateX in dev.currentSmoke
+	else if(cap == "Water sensor")				result = stateX in dev.currentWater
+	else if(cap == "Switch") 					result = stateX in dev.currentSwitch
+	else if(cap == "Motion") 					result = stateX in dev.currentMotion
+	else if(cap == "Acceleration") 				result = stateX in dev.currentAcceleration
+	else if(cap == "Contact") 					result = stateX in dev.currentContact
+	else if(cap == "Presence") 					result = stateX in dev.currentPresence
+	else if(cap == "Smoke detector") 			result = stateX in dev.currentSmoke
 	else if(cap == "Carbon monoxide detector") 	result = stateX in dev.currentCarbonMonoxide
-	else if(cap == "Lock") 				result = stateX in dev.currentLock
-	else if(cap == "Garage door")			result = stateX in dev.currentDoor
-	else if(cap == "Door")				result = stateX in dev.currentDoor
-	else if(cap == "Thermostat Mode")		result = stateX in dev.currentThermostatMode
-	else if(cap == "Music player")			result = stateX in dev.currentStatus
-	else if(cap == "Thermostat State")		result = stateX in dev.currentThermostatOperatingState
+	else if(cap == "Lock") 						result = stateX in dev.currentLock
+	else if(cap == "Garage door")				result = stateX in dev.currentDoor
+	else if(cap == "Door")						result = stateX in dev.currentDoor
+	else if(cap == "Thermostat Mode")			result = stateX in dev.currentThermostatMode
+	else if(cap == "Music player")				result = stateX in dev.currentStatus
+	else if(cap == "Thermostat State")			result = stateX in dev.currentThermostatOperatingState
 //	log.debug "CheckAny $cap $result"
 	return result
 }
@@ -1519,31 +1519,31 @@ def checkCondAny(dev, stateX, cap, rel, relDev) {
 
 def checkCondAll(dev, stateX, cap, rel, relDev) {
 	def result = true
-	if     (cap == "Temperature") 		dev.currentTemperature.each 	{result = result && compare(it, rel, stateX, relDev ? relDev.currentTemperature : null)}
-	else if(cap == "Humidity") 		dev.currentHumidity.each    	{result = result && compare(it, rel, stateX, relDev ? relDev.currentHumidity : null)}
-	else if(cap == "Illuminance") 		dev.currentIlluminance.each 	{result = result && compare(it, rel, stateX, relDev ? relDev.currentIlluminance : null)}
+	if     (cap == "Temperature") 		dev.currentTemperature.each {result = result && compare(it, rel, stateX, relDev ? relDev.currentTemperature : null)}
+	else if(cap == "Humidity") 			dev.currentHumidity.each    {result = result && compare(it, rel, stateX, relDev ? relDev.currentHumidity : null)}
+	else if(cap == "Illuminance") 		dev.currentIlluminance.each {result = result && compare(it, rel, stateX, relDev ? relDev.currentIlluminance : null)}
 	else if(cap == "Dimmer level")		dev.currentLevel.each		{result = result && compare(it, rel, stateX, relDev ? relDev.currentLevel : null)}
 	else if(cap == "Energy meter")		dev.currentEnergy.each		{result = result && compare(it, rel, stateX, relDev ? relDev.currentEnergy : null)}
 	else if(cap == "Power meter")		dev.currentPower.each		{result = result && compare(it, rel, stateX, relDev ? relDev.currentPower : null)}
-	else if(cap == "Battery")		dev.currentBattery.each		{result = result && compare(it, rel, stateX, relDev ? relDev.currentBattery : null)}
+	else if(cap == "Battery")			dev.currentBattery.each		{result = result && compare(it, rel, stateX, relDev ? relDev.currentBattery : null)}
 	else if(cap == "Rule truth")		dev.each {
 		def rule = parent.currentRule(it)
 		result = result && "$stateX" == "$rule"
 	}
-	else if(cap == "Water sensor")			dev.currentSwitch.each				{result = result && stateX == it}
-	else if(cap == "Switch") 			dev.currentSwitch.each				{result = result && stateX == it}
-	else if(cap == "Motion") 			dev.currentMotion.each				{result = result && stateX == it}
-	else if(cap == "Acceleration") 			dev.currentAcceleration.each			{result = result && stateX == it}
-	else if(cap == "Contact") 			dev.currentContact.each				{result = result && stateX == it}
-	else if(cap == "Presence") 			dev.currentPresence.each			{result = result && stateX == it}
-	else if(cap == "Smoke detector") 		dev.currentSmoke.each				{result = result && stateX == it}
-	else if(cap == "Carbon monoxide detector") 	dev.currentCarbonMonoxide.each			{result = result && stateX == it}
-	else if(cap == "Lock") 				dev.currentLock.each				{result = result && stateX == it}
-	else if(cap == "Garage door")			dev.currentDoor.each 				{result = result && stateX == it}
-	else if(cap == "Door")				dev.currentDoor.each 				{result = result && stateX == it}
-	else if(cap == "Music player")			dev.currentStatus.each 				{result = result && stateX == it}
-	else if(cap == "Thermostat Mode")		dev.currentThermostatMode.each 			{result = result && stateX == it}
-	else if(cap == "Thermostat State")		dev.currentThermmostatOperatingState.each 	{result = result && stateX == it}
+	else if(cap == "Water sensor")				dev.currentSwitch.each						{result = result && stateX == it}
+	else if(cap == "Switch") 					dev.currentSwitch.each						{result = result && stateX == it}
+	else if(cap == "Motion") 					dev.currentMotion.each						{result = result && stateX == it}
+	else if(cap == "Acceleration") 				dev.currentAcceleration.each				{result = result && stateX == it}
+	else if(cap == "Contact") 					dev.currentContact.each						{result = result && stateX == it}
+	else if(cap == "Presence") 					dev.currentPresence.each					{result = result && stateX == it}
+	else if(cap == "Smoke detector") 			dev.currentSmoke.each						{result = result && stateX == it}
+	else if(cap == "Carbon monoxide detector") 	dev.currentCarbonMonoxide.each				{result = result && stateX == it}
+	else if(cap == "Lock") 						dev.currentLock.each						{result = result && stateX == it}
+	else if(cap == "Garage door")				dev.currentDoor.each 						{result = result && stateX == it}
+	else if(cap == "Door")						dev.currentDoor.each 						{result = result && stateX == it}
+	else if(cap == "Music player")				dev.currentStatus.each 						{result = result && stateX == it}
+	else if(cap == "Thermostat Mode")			dev.currentThermostatMode.each 				{result = result && stateX == it}
+	else if(cap == "Thermostat State")			dev.currentThermmostatOperatingState.each 	{result = result && stateX == it}
 //	log.debug "CheckAll $cap $result"
 	return result
 }
@@ -1775,20 +1775,20 @@ def takeAction(success) {
 	if(success) {
 		if(captureTrue)			capture(captureTrue)
 		if(onSwitchTrue) 		if(delayMilTrue) onSwitchTrue.on([delay: delayMilTrue]) else onSwitchTrue.on()
-		if(toggleSwitchTrue)		toggle(toggleSwitchTrue, true)
-		if(delayedOffTrue)	{   	if(delayMinutesTrue) runIn(delayMinutesTrue * 60, delayOffTrue)
-						if(delaySecondsTrue) runIn(delaySecondsTrue, delayOffTrue)
-						if(delayMillisTrue) {if(delayOnOffTrue) delayedOffTrue.on([delay: delayMillisTrue]) else delayedOffTrue.off([delay: delayMillisTrue])}   }
+		if(toggleSwitchTrue)	toggle(toggleSwitchTrue, true)
+		if(delayedOffTrue)	{   if(delayMinutesTrue) runIn(delayMinutesTrue * 60, delayOffTrue)
+								if(delaySecondsTrue) runIn(delaySecondsTrue, delayOffTrue)
+								if(delayMillisTrue) {if(delayOnOffTrue) delayedOffTrue.on([delay: delayMillisTrue]) else delayedOffTrue.off([delay: delayMillisTrue])}   }
 		if(pendedOffTrue)	{	state.pendingOffTrue = true
-						if(pendMinutesTrue > 0) runIn(pendMinutesTrue * 60, pendingOffTrue) else pendingOffTrue()}
-		if(pendedOffFalse)  		state.pendingOffFalse = false  //unschedule(pendingOffFalse)}
+								if(pendMinutesTrue > 0) runIn(pendMinutesTrue * 60, pendingOffTrue) else pendingOffTrue()}
+		if(pendedOffFalse)  	state.pendingOffFalse = false  //unschedule(pendingOffFalse)}
 		if(dimTrackTrue && dimATrue != null) 		if(state.lastEvtLevel != null) {if(delayMilTrue) dimATrue.setLevel(state.lastEvtLevel, [delay: delayMilTrue]) else dimATrue.setLevel(state.lastEvtLevel)}
-		if(dimATrue && dimLATrue != null) 		if(delayMilTrue) dimATrue.setLevel(dimLATrue, [delay: delayMilTrue]) else dimATrue.setLevel(dimLATrue)
-		if(dimBTrue && dimLBTrue != null) 		if(delayMilTrue) dimBTrue.setLevel(dimLBTrue, [delay: delayMilTrue]) else dimBTrue.setLevel(dimLBTrue)
+		if(dimATrue && dimLATrue != null) 			if(delayMilTrue) dimATrue.setLevel(dimLATrue, [delay: delayMilTrue]) else dimATrue.setLevel(dimLATrue)
+		if(dimBTrue && dimLBTrue != null) 			if(delayMilTrue) dimBTrue.setLevel(dimLBTrue, [delay: delayMilTrue]) else dimBTrue.setLevel(dimLBTrue)
 		if(toggleDimmerTrue && dimTogTrue != null)	dimToggle(toggleDimmerTrue, dimTogTrue, true)
 		if(adjustDimmerTrue && dimAdjTrue != null)	dimAdjust(adjustDimmerTrue, dimAdjTrue, true)
-		if(dimmerModesTrue && dimMTrue)	dimModes(true)
-		if(ctTrue && ctLTrue)   	ctTrue.setColorTemperature(ctLTrue)
+		if(dimmerModesTrue && dimMTrue)				dimModes(true)
+		if(ctTrue && ctLTrue)   ctTrue.setColorTemperature(ctLTrue)
 		if(bulbsTrue)			setColor(true)
 		if(garageOpenTrue)		if(delayMilTrue) garageOpenTrue.open([delay: delayMilTrue]) else garageOpenTrue.open()
 		if(garageCloseTrue)		if(delayMilTrue) garageCloseTrue.close([delay: delayMilTrue]) else garageCloseTrue.close()
@@ -1798,21 +1798,21 @@ def takeAction(success) {
 		if(openValveTrue)		if(delayMilTrue) openValveTrue.open([delay: delayMilTrue]) else openValveTrue.open()
 		if(closeValveTrue)		if(delayMilTrue) closeValveTrue.close([delay: delayMilTrue]) else closeValveTrue.close()
 		if(thermoTrue)		{	if(thermoModeTrue) 	thermoTrue.setThermostatMode(thermoModeTrue)
-						if(thermoSetHeatTrue)	thermoTrue.setHeatingSetpoint(thermoSetHeatTrue)
-                                		if(thermoAdjHeatTrue)	thermoTrue.each{it.setHeatingSetpoint(it.currentHeatingSetpoint + thermoAdjHeatTrue)}
-						if(thermoSetCoolTrue)	thermoTrue.setCoolingSetpoint(thermoSetCoolTrue)
-                                		if(thermoAdjCoolTrue)	thermoTrue.each{it.setCoolingSetpoint(it.currentCoolingSetpoint + thermoAdjCoolTrue)}
-						if(thermoFanTrue) 	thermoTrue.setThermostatFanMode(thermoFanTrue)   }
+								if(thermoSetHeatTrue)	thermoTrue.setHeatingSetpoint(thermoSetHeatTrue)
+                                if(thermoAdjHeatTrue)	thermoTrue.each{it.setHeatingSetpoint(it.currentHeatingSetpoint + thermoAdjHeatTrue)}
+								if(thermoSetCoolTrue)	thermoTrue.setCoolingSetpoint(thermoSetCoolTrue)
+                                if(thermoAdjCoolTrue)	thermoTrue.each{it.setCoolingSetpoint(it.currentCoolingSetpoint + thermoAdjCoolTrue)}
+								if(thermoFanTrue) 	thermoTrue.setThermostatFanMode(thermoFanTrue)   }
 		if(alarmTrue)			sendLocationEvent(name: "alarmSystemStatus", value: "$alarmTrue")
 		if(modeTrue) 			setLocationMode(modeTrue)
 		if(privateTrue)			if(privateDelayTrue) {	if(privateDelayCancelTrue) { state.delayRuleTrue = true
-        									runIn(privateDelayTrue * 60, delayPrivyTrueX) }
-        								else runIn(privateDelayTrue * 60, delayPrivyTrue) }
-        					else if(otherTrue && otherPrivateTrue) parent.setRuleBoolean(otherPrivateTrue, privateTrue, app.label)
-						else state.private = privateTrue // == "true"
+															runIn(privateDelayTrue * 60, delayPrivyTrueX) }
+														else runIn(privateDelayTrue * 60, delayPrivyTrue) }
+								else if(otherTrue && otherPrivateTrue) parent.setRuleBoolean(otherPrivateTrue, privateTrue, app.label)
+								else state.private = privateTrue // == "true"
 		if(ruleTrue)			parent.runRule(ruleTrue, app.label)
 		if(ruleActTrue)			parent.runRuleAct(ruleActTrue, app.label)
-		if(ruleEvalDelayTrue)		if(delayEvalMinutesTrue) runIn(delayEvalMinutesTrue * 60, delayEvalTrue)
+		if(ruleEvalDelayTrue)	if(delayEvalMinutesTrue) runIn(delayEvalMinutesTrue * 60, delayEvalTrue)
 		if(updateTrue)			parent.runUpdate(updateTrue)
 		if(myPhraseTrue)		location.helloHome.execute(myPhraseTrue)
 		if(cameraTrue) 		{	cameraTrue.take() 
@@ -1825,50 +1825,50 @@ def takeAction(success) {
 		if(state.howManyCCtrue > 1)  	execCommands(true)
 		if(offSwitchTrue) 		if(delayMilTrue) offSwitchTrue.off([delay: delayMilTrue]) else offSwitchTrue.off()
 		if(restoreTrue)			if(restoreDelayTrue > 0) { 	if(restoreCancelTrue) { state.delayRuleTrue = true
-        										runIn(restoreDelayTrue * 60, delayRestoreTrue) }
-        									else runIn(restoreDelayTrue * 60, restore) }
-        					else restore()
+																runIn(restoreDelayTrue * 60, delayRestoreTrue) }
+															else runIn(restoreDelayTrue * 60, restore) }
+								else restore()
 	} else {
 		if(captureFalse)		capture(captureFalse)
 		if(onSwitchFalse) 		if(delayMilFalse) onSwitchFalse.on([delay: delayMilFalse]) else onSwitchFalse.on()
-		if(toggleSwitchFalse)		toggle(toggleSwitchFalse, false)
+		if(toggleSwitchFalse)	toggle(toggleSwitchFalse, false)
 		if(delayedOffFalse)	{ 	if(delayMinutesFalse) runIn(delayMinutesFalse * 60, delayOffFalse)
-        					if(delaySecondsFalse) runIn(delaySecondsFalse, delayOffFalse)
+								if(delaySecondsFalse) runIn(delaySecondsFalse, delayOffFalse)
                 				if(delayMillisFalse) {if(delayOnOffFalse) delayedOffFalse.on([delay: delayMillisFalse]) else delayedOffFalse.off([delay: delayMillisFalse])}   }
 		if(pendedOffFalse)	{	state.pendingOffFalse = true
-        					if(pendMinutesFalse > 0) runIn(pendMinutesFalse * 60, pendingOffFalse) else pendingOffFalse()}
+								if(pendMinutesFalse > 0) runIn(pendMinutesFalse * 60, pendingOffFalse) else pendingOffFalse()}
 		if(pendedOffTrue)  		state.pendingOffTrue = false  //unschedule(pendingOffTrue)}
-		if(dimTrackFalse && dimAFalse != null) 		if(state.lastEvtLevel != null) {if(delayMilFalse) dimAFalse.setLevel(state.lastEvtLevel, [delay: delayMilFalse]) else dimAFalse.setLevel(state.lastEvtLevel)}
-		if(dimAFalse && dimLAFalse != null) 		if(delayMilFalse) dimAFalse.setLevel(dimLAFalse, [delay: delayMilFalse]) else dimAFalse.setLevel(dimLAFalse)
-		if(dimBFalse && dimLBFalse != null) 		if(delayMilFalse) dimBFalse.setLevel(dimLBFalse, [delay: delayMilFalse]) else dimBFalse.setLevel(dimLBFalse)
+		if(dimTrackFalse && dimAFalse != null) 			if(state.lastEvtLevel != null) {if(delayMilFalse) dimAFalse.setLevel(state.lastEvtLevel, [delay: delayMilFalse]) else dimAFalse.setLevel(state.lastEvtLevel)}
+		if(dimAFalse && dimLAFalse != null) 			if(delayMilFalse) dimAFalse.setLevel(dimLAFalse, [delay: delayMilFalse]) else dimAFalse.setLevel(dimLAFalse)
+		if(dimBFalse && dimLBFalse != null) 			if(delayMilFalse) dimBFalse.setLevel(dimLBFalse, [delay: delayMilFalse]) else dimBFalse.setLevel(dimLBFalse)
 		if(toggleDimmerFalse && dimTogFalse != null) 	dimToggle(toggleDimmerFalse, dimTogFalse, false)
 		if(adjustDimmerFalse && dimAdjFalse != null) 	dimAdjust(adjustDimmerFalse, dimAdjFalse, false)
-		if(dimmerModesFalse && dimMFalse)		dimModes(false)
+		if(dimmerModesFalse && dimMFalse)				dimModes(false)
 		if(ctFalse)   			ctFalse.setColorTemperature(ctLFalse)
 		if(bulbsFalse)			setColor(false)
 		if(garageOpenFalse)		if(delayMilFalse) garageOpenFalse.open([delay: delayMilFalse]) else garageOpenFalse.open()
-		if(garageCloseFalse)		if(delayMilFalse) garageCloseFalse.close([delay: delayMilFalse]) else garageCloseFalse.close()
+		if(garageCloseFalse)	if(delayMilFalse) garageCloseFalse.close([delay: delayMilFalse]) else garageCloseFalse.close()
 		if(lockFalse) 			if(delayMilFalse) lockFalse.lock([delay: delayMilFalse]) else lockFalse.lock()
 		if(unlockFalse) 		if(delayMilFalse) unlockFalse.unlock([delay: delayMilFalse]) else unlockFalse.unlock()
 		if(fanAdjustFalse)		adjustFan(fanAdjustFalse)
 		if(openValveFalse)		if(delayMilFalse) openValveFalse.open([delay: delayMilFalse]) else openValveFalse.open()
 		if(closeValveFalse)		if(delayMilFalse) closeValveFalse.close([delay: delayMilFalse]) else closeValveFalse.close()
 		if(thermoFalse)		{	if(thermoModeFalse) 	thermoFalse.setThermostatMode(thermoModeFalse)
-						if(thermoSetHeatFalse) 	thermoFalse.setHeatingSetpoint(thermoSetHeatFalse)
-                                		if(thermoAdjHeatFalse)	thermoFalse.each{it.setHeatingSetpoint(it.currentHeatingSetpoint + thermoAdjHeatFalse)}
-						if(thermoSetCoolFalse) 	thermoFalse.setCoolingSetpoint(thermoSetCoolFalse) 	
-                                		if(thermoAdjCoolFalse)	thermoFalse.each{it.setCoolingSetpoint(it.currentCoolingSetpoint + thermoAdjCoolFalse)}
-						if(thermoFanFalse)	thermoFalse.setThermostatFanMode(thermoFanFalse)   }
+								if(thermoSetHeatFalse) 	thermoFalse.setHeatingSetpoint(thermoSetHeatFalse)
+								if(thermoAdjHeatFalse)	thermoFalse.each{it.setHeatingSetpoint(it.currentHeatingSetpoint + thermoAdjHeatFalse)}
+								if(thermoSetCoolFalse) 	thermoFalse.setCoolingSetpoint(thermoSetCoolFalse) 	
+								if(thermoAdjCoolFalse)	thermoFalse.each{it.setCoolingSetpoint(it.currentCoolingSetpoint + thermoAdjCoolFalse)}
+								if(thermoFanFalse)	thermoFalse.setThermostatFanMode(thermoFanFalse)   }
 		if(alarmFalse)			sendLocationEvent(name: "alarmSystemStatus", value: "$alarmFalse")
 		if(modeFalse) 			setLocationMode(modeFalse)
 		if(privateFalse)		if(privateDelayFalse) {	if(privateDelayCancelFalse) { state.delayRuleFalse = true
-										runIn(privateDelayFalse * 60, delayPrivyFalseX) }
-									else runIn(privateDelayFalse * 60, delayPrivyFalse) }
-						else if(otherFalse && otherPrivateFalse) parent.setRuleBoolean(otherPrivateFalse, privateFalse, app.label)
-						else state.private = privateFalse
+															runIn(privateDelayFalse * 60, delayPrivyFalseX) }
+														else runIn(privateDelayFalse * 60, delayPrivyFalse) }
+								else if(otherFalse && otherPrivateFalse) parent.setRuleBoolean(otherPrivateFalse, privateFalse, app.label)
+								else state.private = privateFalse
 		if(ruleFalse)			parent.runRule(ruleFalse, app.label)
 		if(ruleActFalse)		parent.runRuleAct(ruleActFalse, app.label)
-		if(ruleEvalDelayFalse)		if(delayEvalMinutesFalse) runIn(delayEvalMinutesFalse * 60, delayEvalFalse)
+		if(ruleEvalDelayFalse)	if(delayEvalMinutesFalse) runIn(delayEvalMinutesFalse * 60, delayEvalFalse)
 		if(updateFalse)			parent.runUpdate(updateFalse)
 		if(myPhraseFalse) 		location.helloHome.execute(myPhraseFalse)
 		if(cameraFalse) 	{	cameraFalse.take() 
@@ -1877,13 +1877,13 @@ def takeAction(success) {
 		if(noticeFalse)			sendNotificationEvent((msgFalse ?: "Rule $app.label False") + (refDevFalse ? " $state.lastEvtName" : ""))
 		if(phoneFalse)			sendSmsMulti(phoneFalse, (msgFalse ?: "Rule $app.label False") + (refDevFalse ? " $state.lastEvtName" : ""))
 		if(speakFalse)			speakFalseDevice?.speak((msgFalse ?: "Rule $app.label False") + (refDevFalse ? " $state.lastEvtName" : ""))
-		if(mediaFalseDevice)		mediaFalseDevice.playTextAndRestore((msgFalse ?: "Rule $app.label False") + (refDevFalse ? " $state.lastEvtName" : ""), mediaFalseVolume)		
+		if(mediaFalseDevice)	mediaFalseDevice.playTextAndRestore((msgFalse ?: "Rule $app.label False") + (refDevFalse ? " $state.lastEvtName" : ""), mediaFalseVolume)		
 		if(state.howManyCCfalse > 1)  	execCommands(false)
 		if(offSwitchFalse) 		if(delayMilFalse) offSwitchFalse.off([delay: delayMilFalse]) else offSwitchFalse.off()
 		if(restoreFalse)		if(restoreDelayFalse > 0) {	if(restoreCancelFalse) { state.delayRuleFalse = true
-											runIn(restoreDelayFalse * 60, delayRestoreFalse) }
-										else runIn(restoreDelayFalse * 60, restore) }
-						else restore()
+																runIn(restoreDelayFalse * 60, delayRestoreFalse) }
+															else runIn(restoreDelayFalse * 60, restore) }
+								else restore()
 	}
 }
 
@@ -2472,7 +2472,8 @@ def selectCustomActions(){
 			if (truth) {
 				if (state.cmdActTrue) state.cmdActTrue = state.cmdActTrue[0..-2]
 			} else {
-			if (state.cmdActFalse) state.cmdActFalse = state.cmdActFalse[0..-2]
+				if (state.cmdActFalse) state.cmdActFalse = state.cmdActFalse[0..-2]
+            }
 		}   
 	}
 }
