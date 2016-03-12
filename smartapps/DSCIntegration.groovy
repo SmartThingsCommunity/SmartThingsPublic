@@ -45,7 +45,10 @@ preferences {
         'all', 'partition alarm', 'partition armed', 'partition away', 'partition disarm', 'partition entrydelay',
         'partition exitdelay', 'partition forceready', 'partition instantaway', 'partition instantstay',
         'partition notready', 'partition ready', 'partition restore', 'partition stay', 'partition trouble',
-        'zone alarm', 'zone clear', 'zone closed', 'zone fault', 'zone open', 'zone restore', 'zone smoke', 'zone tamper'
+        'ledbacklighton', 'ledbacklightoff', 'ledfireon', 'ledfireoff', 'ledprogramon', 'ledprogramoff',
+        'ledtroubleon', 'ledtroubleoff', 'ledbypasson', 'ledbypassoff', 'ledmemoryon', 'ledmemoryoff',
+        'ledarmedon', 'ledarmedoff', 'ledreadyon', 'ledreadyoff', 'zone alarm', 'zone clear', 'zone closed',
+        'zone fault', 'zone open', 'zone restore', 'zone smoke', 'zone tamper'
       ]
   }
 }
@@ -71,51 +74,76 @@ void updateZoneOrPartition() {
 }
 
 private update() {
-    def zoneorpartition = params.zoneorpart
+  def zoneorpartition = params.zoneorpart
 
-    // Add more events here as needed
-    // Each event maps to a command in your "DSC Panel" device type
-    def eventMap = [
-      '601':"zone alarm",
-      '602':"zone closed",
-      '603':"zone tamper",
-      '604':"zone restore",
-      '605':"zone fault",
-      '606':"zone restore",
-      '609':"zone open",
-      '610':"zone closed",
-      '631':"zone smoke",
-      '632':"zone clear",
-      '650':"partition ready",
-      '651':"partition notready",
-      '652':"partition armed",
-      '653':"partition forceready",
-      '654':"partition alarm",
-      '655':"partition disarm",
-      '656':"partition exitdelay",
-      '657':"partition entrydelay",
-      '663':"partition chime",
-      '664':"partition nochime",
-      '701':"partition armed",
-      '702':"partition armed",
-      '840':"partition trouble",
-      '841':"partition restore",
-      '6520':"partition away",
-      '6521':"partition stay",
-      '6522':"partition instantaway",
-      '6523':"partition instantstay"
-    ]
+  // Add more events here as needed
+  // Each event maps to a command in your "DSC Panel" device type
+  def eventMap = [
+    '510':"partition led",
+    '511':"partition ledflash",
+    '601':"zone alarm",
+    '602':"zone closed",
+    '603':"zone tamper",
+    '604':"zone restore",
+    '605':"zone fault",
+    '606':"zone restore",
+    '609':"zone open",
+    '610':"zone closed",
+    '631':"zone smoke",
+    '632':"zone clear",
+    '650':"partition ready",
+    '651':"partition notready",
+    '652':"partition armed",
+    '653':"partition forceready",
+    '654':"partition alarm",
+    '655':"partition disarm",
+    '656':"partition exitdelay",
+    '657':"partition entrydelay",
+    '663':"partition chime",
+    '664':"partition nochime",
+    '701':"partition armed",
+    '702':"partition armed",
+    '840':"partition trouble",
+    '841':"partition restore",
+    '6520':"partition away",
+    '6521':"partition stay",
+    '6522':"partition instantaway",
+    '6523':"partition instantstay"
+  ]
 
-    // get our passed in eventcode
-    def eventCode = params.eventcode
-    if (eventCode)
-    {
-      // Lookup our eventCode in our eventMap
-      def opts = eventMap."${eventCode}"?.tokenize()
-      // log.debug "Options after lookup: ${opts}"
-      // log.debug "Zone or partition: $zoneorpartition"
-      if (opts[0])
-      {
+  // get our passed in eventcode
+  def eventCode = params.eventcode
+  if (eventCode) {
+    // Lookup our eventCode in our eventMap
+    def opts = eventMap."${eventCode}"?.tokenize()
+    // log.debug "Options after lookup: ${opts}"
+    // log.debug "Zone or partition: $zoneorpartition"
+    if (opts[0]) {
+      if (['510', '511'].contains(eventCode)) {
+        int num = (Integer.parseInt(zoneorpartition, 16));
+        def binary = (Integer.toBinaryString(num));
+        def flash = (opts[1] == 'ledflash') ? 'flash ' : ''
+
+        def ledMap = [
+          '0':'backlight',
+          '1':'fire',
+          '2':'program',
+          '3':'trouble',
+          '4':'bypass',
+          '5':'memory',
+          '6':'armed',
+          '7':'ready'
+        ]
+
+        for (def i = 0; i < 8; i++) {
+          def name = ledMap."${i}"
+          def status = (binary[i] == '1') ? 'on' : 'off'
+          if (notifyEvents && (notifyEvents.contains('all') || notifyEvents.contains('led'+name+status))) {
+            sendMessage("${opts[0]} 1 ${name} led in ${flash}${status} state")
+          }
+        }
+        updatePartitions(paneldevices, '1',"${opts[1]}${zoneorpartition}")
+      } else {
         if (notifyEvents && (notifyEvents.contains('all') || notifyEvents.contains(eventMap[eventCode]))) {
           sendMessage("${opts[0]} ${zoneorpartition} in ${opts[1]} state")
         }
@@ -133,6 +161,7 @@ private update() {
         }
       }
     }
+  }
 }
 
 private updateZoneDevices(zonedevices,zonenum,zonestatus) {

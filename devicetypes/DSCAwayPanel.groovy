@@ -18,6 +18,8 @@ metadata {
         capability "Switch"
         
         command "away"
+        command "bypass"
+        command "bypassLevel"
         command "disarm"
         command "instant"
         command "night"
@@ -73,10 +75,42 @@ metadata {
         standardTile("reset", "capability.momentary", width: 2, height: 2, title: "Sensor Reset"){
             state "reset", label: 'Sensor\u00A0Reset', action: "reset", icon: "st.alarm.smoke.smoke", backgroundColor: "#FF3000"
         }
+        controlTile("bypassSlider", "device.bypass", "slider", height: 1, width: 6, inactiveLabel: false, range:"(1..64)"){
+            state "bypass", action:"bypassLevel"
+        }
+        valueTile("bypassValue", "device.bypass", width: 2, height: 2){
+            state "bypass", label:'${currentValue}'
+        }
+        standardTile("bypass", "capability.momentary", width: 2, height: 2, title: "Bypass"){
+            state "bypass", label: 'Bypass', action: "bypass", icon: "st.locks.lock.unlocked", backgroundColor: "#FFFF00"
+        }
+        valueTile("ledready", "device.ledready", width: 2, height: 1){
+            state "ledready", label:'Ready: ${currentValue}'
+        }
+        valueTile("ledarmed", "device.ledarmed", width: 2, height: 1){
+            state "ledarmed", label:'Armed: ${currentValue}'
+        }
+        valueTile("ledmemory", "device.ledmemory", width: 2, height: 1){
+            state "ledmemory", label:'Memory: ${currentValue}'
+        }
+        valueTile("ledbypass", "device.ledbypass", width: 2, height: 1){
+            state "ledbypass", label:'Bypass: ${currentValue}'
+        }
+        valueTile("ledtrouble", "device.ledtrouble", width: 2, height: 1){
+            state "ledtrouble", label:'Trouble: ${currentValue}'
+        }
+        valueTile("ledprogram", "device.ledprogram", width: 2, height: 1){
+            state "ledprogram", label:'Program: ${currentValue}'
+        }
+        valueTile("ledfire", "device.ledfire", width: 2, height: 1){
+            state "ledfire", label:'Fire: ${currentValue}'
+        }
+        valueTile("ledbacklight", "device.ledbacklight", width: 2, height: 1){
+            state "ledbacklight", label:'Backlight: ${currentValue}'
+        }
 
         main "status"
-        details(["status", "trouble", "chime", "away", "stay", "disarm", "instant", "night", "reset"])
-
+        details(["status", "trouble", "chime", "away", "stay", "disarm", "instant", "night", "reset","bypassSlider","bypassValue","bypass", "ledready", "ledarmed", "ledmemory", "ledbypass", "ledtrouble", "ledprogram", "ledfire", "ledbacklight"])
     }
 }
 
@@ -100,7 +134,7 @@ def partition(String state, String partition) {
 
     if (onList.contains(state)) {
       sendEvent (name: "switch", value: "on")
-    } else if (!(chimeList.contains(state) || troubleMap[state])) {
+    } else if (!(chimeList.contains(state) || troubleMap[state] || state.startsWith('led'))) {
       sendEvent (name: "switch", value: "off")
     }
 
@@ -111,6 +145,27 @@ def partition(String state, String partition) {
     } else if (chimeList.contains(state)) {
         // Send chime event
         sendEvent (name: "chime", value: "${state}")
+    } else if (state.startsWith('led')) {
+        int num = (Integer.parseInt(state.replaceAll(/(^ledflash|^led)/, ''), 16));
+        def binary = (Integer.toBinaryString(num));
+        def flash = (state.startsWith('ledflash')) ? 'flash ' : ''
+
+        def ledMap = [
+          '0':'backlight',
+          '1':'fire',
+          '2':'program',
+          '3':'trouble',
+          '4':'bypass',
+          '5':'memory',
+          '6':'armed',
+          '7':'ready'
+        ]
+
+        for (def i = 0; i < 8; i++) {
+            def name = ledMap."${i}"
+            def status = (binary[i] == '1') ? 'on' : 'off'
+            sendEvent (name: "led${name}", value: "${flash}${status}")
+        }
     } else {
         // Send final event
         sendEvent (name: "status", value: "${state}")
@@ -127,6 +182,24 @@ def away() {
         ]
     )
     log.debug "response" : "Request to away arm received"
+    return result
+}
+
+def bypassLevel(level) {
+    def result = sendEvent (name: "bypass", value: "${level}")
+    log.debug "response" : "Bypass level set to ${level}"
+    return result
+}
+
+def bypass() {
+    def result = new physicalgraph.device.HubAction(
+        method: "GET",
+        path: "/api/alarm/bypass?zone=${device.currentValue("bypass")}",
+        headers: [
+            HOST: "$ip:$port"
+        ]
+    )
+    log.debug "response" : "Request to bypass zone ${device.currentValue("bypass")} received"
     return result
 }
 

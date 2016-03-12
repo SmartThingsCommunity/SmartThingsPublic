@@ -271,7 +271,7 @@ class EnvisalinkClient(asynchat.async_chat):
             parameters=input[3:][:-2]
             event = getMessageType(int(code))
             message = self.format_event(event, parameters)
-            alarmserver_logger('RX < ' +str(code)+' - '+message)
+            alarmserver_logger('RX < ' +str(code)+' - '+str(parameters)+' - '+message)
 
             try:
                 handler = "handle_%s" % evl_ResponseTypes[code]['handler']
@@ -386,7 +386,9 @@ class EnvisalinkClient(asynchat.async_chat):
         if str(code) in myEvents:
            # Now check if Zone has a custom name, if it does then send notice to Smartthings
            # Check for event type
-           if event['type'] == 'partition':
+           if str(code) in ['510','511']:
+             myURL = self._config.CALLBACKURL_BASE + '/' + self._config.CALLBACKURL_APP_ID + '/panel/' + str(code) + '/' + str(parameters) + '?access_token=' + self._config.CALLBACKURL_ACCESS_TOKEN
+           elif event['type'] == 'partition':
              # Is our partition setup with a custom name?
              if int(parameters[0]) in self._config.PARTITIONNAMES and self._config.PARTITIONNAMES[int(parameters[0])]!=False:
                armmode=''
@@ -507,6 +509,15 @@ class AlarmServer(asyncore.dispatcher):
         elif query.path == '/api/alarm/armwithcode':
             channel.pushok(json.dumps({'response' : 'Request to arm with code received'}))
             self._envisalinkclient.send_command('033', '1' + alarmcode)
+        elif query.path == '/api/alarm/bypass':
+            try:
+                zone = str(query_array['zone'][0])
+                if len(zone) == 1: zone = '0' + zone
+                alarmserver_logger("request to bypass zone %s" % zone)
+                channel.pushok(json.dumps({'response' : 'Request to bypass zone received'}))
+                self._envisalinkclient.send_command('071', '1*1' + str(zone))
+            except:
+                channel.pushok(json.dumps({'response' : 'Request to bypass zone received but invalid zone given!'}))
         elif query.path == '/api/alarm/reset':
             channel.pushok(json.dumps({'response' : 'Request to reset sensors received'}))
             self._envisalinkclient.send_command('071', '1*72')
@@ -544,7 +555,7 @@ class AlarmServer(asyncore.dispatcher):
                     channel.push("\r\n")
             else:
                 if (config.LOGURLREQUESTS):
-                                                                        alarmserver_logger("Invalid file requested")
+                    alarmserver_logger("Invalid file requested")
 
                 channel.pushstatus(404, "Not found")
                 channel.push("Content-type: text/html\r\n")
