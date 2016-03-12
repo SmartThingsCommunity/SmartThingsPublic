@@ -2,7 +2,7 @@
  *  Alexa Helper-Child
  *
  *  Copyright © 2016 Michael Struck
- *  Version 2.8.3 3/10/16
+ *  Version 2.8.4 3/11/16
  * 
  *  Version 1.0.0 - Initial release of child app
  *  Version 1.1.0 - Added framework to show version number of child app and copyright
@@ -27,6 +27,7 @@
  *  Version 2.8.1 - Syntax clean up, added dimmer to voice reporting options, added speech devices besides speakers
  *  Version 2.8.2 - Refined voice reporting (removed 'status' headers in announcement) and added date/time variables
  *  Version 2.8.3 - Minor code fixes, optimizations, adding 'Apply' heating setpoint for StelPro baseboard heaters
+ *  Version 2.8.4 - Added additional voice variables (%temp%); workaround implemented for playTrack() not being operational(as of 3/11)
  *
  *  Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except
  *  in compliance with the License. You may obtain a copy of the License at:
@@ -355,10 +356,11 @@ page(name: "pageDoorReport", title: "Doors/Windows Report", install: false, unin
 def pageTempReport(){
     dynamicPage(name: "pageTempReport", title: "Temperature Report", install: false, uninstall: false){
         section {
-            input "voiceTemperature", "capability.temperatureMeasurement", title: "Devices To Report Temperatures...",multiple: true, required: false
+            input "voiceTempVar", "capability.temperatureMeasurement", title: "Pre/Post Message Device Report (%temp)",multiple: false, required: false
+            input "voiceTemperature", "capability.temperatureMeasurement", title: "Individual Devices To Report Temperatures...",multiple: true, required: false
             input "voiceTempSettings", "capability.thermostat", title: "Thermostats To Report Their Setpoints...",multiple: true, required: false
             input "voiceTempSettingSummary", "bool", title: "Consolidate Thermostats Report", defaultValue: false, submitOnChange:true
-            if (voiceTempSettingSummary) input "voiceTempTarget", "number", title: "Thermostat's Setpoint Target", required: false, defaultValue: 50
+            if (voiceTempSettingSummary) input "voiceTempTarget", "number", title: "Thermostat Setpoint Target", required: false, defaultValue: 50
         }
     }
 }
@@ -565,7 +567,7 @@ def panicOff(evt){
 def alarmTurnOn(){alarm?."$alarmType"()}
 def alarmTurnOff(){alarm?.off()}
 //Speaker Handlers-----------------------------------------------------------------
-def speakerControl(cmd,song){
+def speakerControl(cmd, song, songName){
     if (cmd=="station" || cmd=="on") {
     	//Alexa Switch should be used to prevent looping to this point when switch in turned on
         if (speakerInitial){
@@ -575,7 +577,9 @@ def speakerControl(cmd,song){
         else vDimmerSpeaker.setLevel(speaker.currentValue("level") as int)
 		if (cmd=="station"){
     		log.debug "Playing: ${song}"
-			speaker.playTrack(song)
+            def text = textToSpeech("Now playing: ${songName}.", true)
+            speaker.playSoundAndTrack(text.uri, text.duration, song)
+            //speaker.playTrack(song) ; removed due to SmartThings internal issue. Items above used to compensate
 		}
     	if (cmd=="on"){
         	speaker.play()
@@ -600,13 +604,13 @@ def speakerVolHandler(evt){
 	}
 }    
 //Speaker on/off
-def speakerOnHandler(evt){if (getOkToRun("Speaker on/off")) {if (evt.value == "on" || evt.value == "off" ) speakerControl(evt.value,"")}}
+def speakerOnHandler(evt){if (getOkToRun("Speaker on/off")) {if (evt.value == "on" || evt.value == "off" ) speakerControl(evt.value,"","")}}
 def controlNextHandler(evt){if (getOkToRun("Speaker next track")) speaker.nextTrack()}
 def controlPrevHandler(evt){if (getOkToRun("Speaker previous track")) speaker.previousTrack()}
 def controlSong(evt){
 	def trigger = evt.displayName
     if (getOkToRun("Speaker Saved Song/Station Trigger: ${trigger}")) {
-       	for (int i = 1; i <= sonosSlots(); i++) if (settings."song${i}Switch" && trigger == settings."song${i}Switch".label){speakerControl("station",state."selectedSong${i}")}
+       	for (int i = 1; i <= sonosSlots(); i++) if (settings."song${i}Switch" && trigger == settings."song${i}Switch".label){speakerControl("station",state."selectedSong${i}", settings."song${i}Station")}
 	}
 }
 //Thermostat Handlers-----------------------------------------------------------------
@@ -838,7 +842,7 @@ private getTimeOk(startTime, endTime) {
 }
 def getColorOptions(){def colors=[["Soft White":"Soft White"],["White":"White - Concentrate"],["Daylight":"Daylight - Energize"],["Warm White":"Warm White - Relax"],"Red","Green","Blue","Yellow","Orange","Purple","Pink","User Defined"]}
 private setColoredLights(switches, color, level){
-    def hueColor = 0
+    def hueColor = 100
 	def satLevel = 100
 	switch(color) {
 		case "White":
@@ -876,7 +880,6 @@ private setColoredLights(switches, color, level){
 			hueColor = 87
 			break;
 		case "Red":
-			hueColor = 100
 			break;
 		case "Custom-User Defined":
         	hueColor = hueUserDefined ? hueUserDefined : 0
@@ -930,7 +933,7 @@ def dimmerOnReport(){
     def result = ""
     if (voiceDimmer.latestValue("switch").contains("on")){
     	voiceDimmer.each {deviceName->
-        	if (deviceName.latestValue("switch")=="on") result += "${deviceName} on and set to ${deviceName.latestValue("level")}%. "
+        	if (deviceName.latestValue("switch")=="on") result += "${deviceName} is on and set to ${deviceName.latestValue("level")}%. "
         }
     }
     else result += "All of the monitored dimmers are off. "
@@ -1080,21 +1083,22 @@ private replaceVoiceVar(msg) {
     def df = new java.text.SimpleDateFormat("EEEE")
 	location.timeZone ? df.setTimeZone(location.timeZone) : df.setTimeZone(TimeZone.getTimeZone("America/New_York"))
 	def day = df.format(new Date())
-    def time = parseDate("", now(), "h:mm a")
-    def month = parseDate("", now(), "MMMM")
-    def year = parseDate("", now(), "yyyy")
-    def dayNum = parseDate("", now(), "d")
+    def time = parseDate(now(), "h:mm a")
+    def month = parseDate(now(), "MMMM")
+    def year = parseDate(now(), "yyyy")
+    def dayNum = parseDate(now(), "d")
+    def temp = voiceTempVar ? "${voiceTempVar.latestValue("temperature")} degrees" : "undefined device"
     msg = msg.replace('%day%', day)
     msg = msg.replace('%date%', "${month} ${dayNum}, ${year}")
     msg = msg.replace('%time%', "${time}")
+    msg = msg.replace('%temp%', "${temp}")
     msg
 }
-private parseDate(date, epoch, type){
-    def parseDate = ""
+private parseDate(epoch, type){
    	long longDate = Long.valueOf(epoch).longValue()
-    parseDate = new Date(longDate).format("yyyy-MM-dd'T'HH:mm:ss.SSSZ", location.timeZone)
+    def parseDate = new Date(longDate).format("yyyy-MM-dd'T'HH:mm:ss.SSSZ", location.timeZone)
     new Date().parse("yyyy-MM-dd'T'HH:mm:ss.SSSZ", parseDate).format("${type}", timeZone(parseDate))
 }
 //Version
-private def textVersion() {def text = "Child App Version: 2.8.3 (03/10/2016)"}
-private def versionInt() {def text = 283}
+private def textVersion() {def text = "Child App Version: 2.8.4 (03/11/2016)"}
+private def versionInt() {def text = 284}
