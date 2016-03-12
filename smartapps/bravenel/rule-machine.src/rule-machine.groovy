@@ -3,7 +3,7 @@
  *
  *  Copyright 2015, 2016 Bruce Ravenel and Mike Maxwell
  *
- *  Version 1.8.2   9 Mar 2016
+ *  Version 1.8.2a   12 Mar 2016
  *
  *	Version History
  *
@@ -78,7 +78,7 @@ def mainPage() {
         	section ("Remove Rule Machine"){
         		href "removePage", description: "Tap to remove Rule Machine and Rules", title: ""
         	}
-			section ("Version 1.8.2/" + (nApps > 0 ? "${childApps[0].appVersion()}" : "---")) { }
+			section ("Version 1.8.2a/" + (nApps > 0 ? "${childApps[0].appVersion()}" : "---")) { }
     	}
     }
 }
@@ -583,7 +583,7 @@ def getParamsAsList(cpTypes){
 				result << "${cpVal.value}" 
 			} else if (cpType.value == "decimal"){
 				result << cpVal.value.toBigDecimal()
-			} else {
+			} else if (cpType.value == "number"){
 				result << cpVal.value.toInteger() 
 			}
 		} else {
