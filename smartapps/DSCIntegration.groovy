@@ -122,6 +122,7 @@ private update() {
       if (['510', '511'].contains(eventCode)) {
         int num = (Integer.parseInt(zoneorpartition, 16));
         def binary = (Integer.toBinaryString(num));
+        binary = String.format("%08d", binary.toInteger())
         def flash = (opts[1] == 'ledflash') ? 'flash ' : ''
 
         def ledMap = [

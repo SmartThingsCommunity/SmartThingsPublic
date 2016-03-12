@@ -148,6 +148,7 @@ def partition(String state, String partition) {
     } else if (state.startsWith('led')) {
         int num = (Integer.parseInt(state.replaceAll(/(^ledflash|^led)/, ''), 16));
         def binary = (Integer.toBinaryString(num));
+        binary = String.format("%08d", binary.toInteger())
         def flash = (state.startsWith('ledflash')) ? 'flash ' : ''
 
         def ledMap = [
