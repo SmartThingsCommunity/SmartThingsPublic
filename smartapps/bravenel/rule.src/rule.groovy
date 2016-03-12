@@ -1710,10 +1710,10 @@ def sendSmsMulti(phone, msg) {
 def doDelay(time, rand, cancel, trufal) {
 	def myTime = time
 	if(rand) {
-    	myTime = Math.random()*time as Integer
-        if(time > 60 && time % 60 == 0 && myTime < 60) myTime = 60
-        else if(myTime < 10) myTime = 10
-    }
+		myTime = Math.random()*time as Integer
+		if(time > 60 && time % 60 == 0 && myTime < 60) myTime = 60
+		else if(myTime < 10) myTime = 10
+	}
 	if(cancel) {
 		runIn(myTime, trufal ? delayRuleTrue : delayRuleFalse)
 		if(trufal) state.delayRuleTrue = true else state.delayRuleFalse = true
@@ -1731,35 +1731,35 @@ def capture(dev) {
 	def i = 0
 	def switchState = null
 	def dimmerValue = null
-    def hueValue = null
-    def satValue = null
+	def hueValue = null
+	def satValue = null
 	dev.each {
 		switchState = it.currentSwitch
 		dimmerValue = it.currentLevel 
-        hueValue = it.currentHue
-        satValue = it.currentSaturation
+		hueValue = it.currentHue
+		satValue = it.currentSaturation
 		state.lastDevState[i] = [switchState: switchState, dimmerValue: dimmerValue, hueValue: hueValue, satValue: satValue]
 		i++       	
 	}
 }
 
 def restoreDev(switches, switchState, dimmerValue, hueValue, satValue) {
-    int hueX = hueValue in ["null", null] ? 0 : hueValue.toInteger()
-    int satX = satValue in ["null", null] ? 0 : satValue.toInteger()
+	int hueX = hueValue in ["null", null] ? 0 : hueValue.toInteger()
+	int satX = satValue in ["null", null] ? 0 : satValue.toInteger()
 	if(switchState == "off") switches.off()
-    else if(hueX > 0 && satX > 0) {
+	else if(hueX > 0 && satX > 0) {
 		def newValue = [hue: hueX, saturation: satX, level: dimmerValue]
-        switches.setColor(newValue)
-    } else if(dimmerValue) switches.setLevel(dimmerValue)
-    else switches.on()
+		switches.setColor(newValue)
+	} else if(dimmerValue) switches.setLevel(dimmerValue)
+	else switches.on()
 }
 
 def restore() {
 	def i = 0
 	def switchState = null
 	def dimmerValue = null
-    def hueValue = null
-    def satValue = null
+	def hueValue = null
+	def satValue = null
 	state.lastDevState.each {
     	switchState = it.switchState
         dimmerValue = it.dimmerValue
@@ -1775,20 +1775,20 @@ def takeAction(success) {
 	if(success) {
 		if(captureTrue)			capture(captureTrue)
 		if(onSwitchTrue) 		if(delayMilTrue) onSwitchTrue.on([delay: delayMilTrue]) else onSwitchTrue.on()
-		if(toggleSwitchTrue)	toggle(toggleSwitchTrue, true)
-		if(delayedOffTrue)	{   if(delayMinutesTrue) runIn(delayMinutesTrue * 60, delayOffTrue)
-        						if(delaySecondsTrue) runIn(delaySecondsTrue, delayOffTrue)
-								if(delayMillisTrue) {if(delayOnOffTrue) delayedOffTrue.on([delay: delayMillisTrue]) else delayedOffTrue.off([delay: delayMillisTrue])}   }
-		if(pendedOffTrue)		{state.pendingOffTrue = true
-								if(pendMinutesTrue > 0) 	runIn(pendMinutesTrue * 60, pendingOffTrue) else pendingOffTrue()}
-		if(pendedOffFalse)  	state.pendingOffFalse = false  //unschedule(pendingOffFalse)}
-		if(dimTrackTrue && dimATrue != null) if(state.lastEvtLevel != null) {if(delayMilTrue) dimATrue.setLevel(state.lastEvtLevel, [delay: delayMilTrue]) else dimATrue.setLevel(state.lastEvtLevel)}
-		if(dimATrue && dimLATrue != null) if(delayMilTrue) dimATrue.setLevel(dimLATrue, [delay: delayMilTrue]) else dimATrue.setLevel(dimLATrue)
-		if(dimBTrue && dimLBTrue != null) if(delayMilTrue) dimBTrue.setLevel(dimLBTrue, [delay: delayMilTrue]) else dimBTrue.setLevel(dimLBTrue)
+		if(toggleSwitchTrue)		toggle(toggleSwitchTrue, true)
+		if(delayedOffTrue)	{   	if(delayMinutesTrue) runIn(delayMinutesTrue * 60, delayOffTrue)
+						if(delaySecondsTrue) runIn(delaySecondsTrue, delayOffTrue)
+						if(delayMillisTrue) {if(delayOnOffTrue) delayedOffTrue.on([delay: delayMillisTrue]) else delayedOffTrue.off([delay: delayMillisTrue])}   }
+		if(pendedOffTrue)	{	state.pendingOffTrue = true
+						if(pendMinutesTrue > 0) runIn(pendMinutesTrue * 60, pendingOffTrue) else pendingOffTrue()}
+		if(pendedOffFalse)  		state.pendingOffFalse = false  //unschedule(pendingOffFalse)}
+		if(dimTrackTrue && dimATrue != null) 		if(state.lastEvtLevel != null) {if(delayMilTrue) dimATrue.setLevel(state.lastEvtLevel, [delay: delayMilTrue]) else dimATrue.setLevel(state.lastEvtLevel)}
+		if(dimATrue && dimLATrue != null) 		if(delayMilTrue) dimATrue.setLevel(dimLATrue, [delay: delayMilTrue]) else dimATrue.setLevel(dimLATrue)
+		if(dimBTrue && dimLBTrue != null) 		if(delayMilTrue) dimBTrue.setLevel(dimLBTrue, [delay: delayMilTrue]) else dimBTrue.setLevel(dimLBTrue)
 		if(toggleDimmerTrue && dimTogTrue != null)	dimToggle(toggleDimmerTrue, dimTogTrue, true)
 		if(adjustDimmerTrue && dimAdjTrue != null)	dimAdjust(adjustDimmerTrue, dimAdjTrue, true)
-		if(dimmerModesTrue && dimMTrue)		dimModes(true)
-		if(ctTrue && ctLTrue)   ctTrue.setColorTemperature(ctLTrue)
+		if(dimmerModesTrue && dimMTrue)	dimModes(true)
+		if(ctTrue && ctLTrue)   	ctTrue.setColorTemperature(ctLTrue)
 		if(bulbsTrue)			setColor(true)
 		if(garageOpenTrue)		if(delayMilTrue) garageOpenTrue.open([delay: delayMilTrue]) else garageOpenTrue.open()
 		if(garageCloseTrue)		if(delayMilTrue) garageCloseTrue.close([delay: delayMilTrue]) else garageCloseTrue.close()
@@ -1797,22 +1797,22 @@ def takeAction(success) {
 		if(fanAdjustTrue)		adjustFan(fanAdjustTrue)
 		if(openValveTrue)		if(delayMilTrue) openValveTrue.open([delay: delayMilTrue]) else openValveTrue.open()
 		if(closeValveTrue)		if(delayMilTrue) closeValveTrue.close([delay: delayMilTrue]) else closeValveTrue.close()
-		if(thermoTrue)		{	if(thermoModeTrue) 		thermoTrue.setThermostatMode(thermoModeTrue)
-								if(thermoSetHeatTrue)	thermoTrue.setHeatingSetpoint(thermoSetHeatTrue)
-                                if(thermoAdjHeatTrue)	thermoTrue.each{it.setHeatingSetpoint(it.currentHeatingSetpoint + thermoAdjHeatTrue)}
-								if(thermoSetCoolTrue)	thermoTrue.setCoolingSetpoint(thermoSetCoolTrue)
-                                if(thermoAdjCoolTrue)	thermoTrue.each{it.setCoolingSetpoint(it.currentCoolingSetpoint + thermoAdjCoolTrue)}
-								if(thermoFanTrue) 		thermoTrue.setThermostatFanMode(thermoFanTrue)   }
+		if(thermoTrue)		{	if(thermoModeTrue) 	thermoTrue.setThermostatMode(thermoModeTrue)
+						if(thermoSetHeatTrue)	thermoTrue.setHeatingSetpoint(thermoSetHeatTrue)
+                                		if(thermoAdjHeatTrue)	thermoTrue.each{it.setHeatingSetpoint(it.currentHeatingSetpoint + thermoAdjHeatTrue)}
+						if(thermoSetCoolTrue)	thermoTrue.setCoolingSetpoint(thermoSetCoolTrue)
+                                		if(thermoAdjCoolTrue)	thermoTrue.each{it.setCoolingSetpoint(it.currentCoolingSetpoint + thermoAdjCoolTrue)}
+						if(thermoFanTrue) 	thermoTrue.setThermostatFanMode(thermoFanTrue)   }
 		if(alarmTrue)			sendLocationEvent(name: "alarmSystemStatus", value: "$alarmTrue")
 		if(modeTrue) 			setLocationMode(modeTrue)
 		if(privateTrue)			if(privateDelayTrue) {	if(privateDelayCancelTrue) { state.delayRuleTrue = true
-        													runIn(privateDelayTrue * 60, delayPrivyTrueX) }
-        												else runIn(privateDelayTrue * 60, delayPrivyTrue) }
-        						else if(otherTrue && otherPrivateTrue) parent.setRuleBoolean(otherPrivateTrue, privateTrue, app.label)
-								else state.private = privateTrue // == "true"
+        									runIn(privateDelayTrue * 60, delayPrivyTrueX) }
+        								else runIn(privateDelayTrue * 60, delayPrivyTrue) }
+        					else if(otherTrue && otherPrivateTrue) parent.setRuleBoolean(otherPrivateTrue, privateTrue, app.label)
+						else state.private = privateTrue // == "true"
 		if(ruleTrue)			parent.runRule(ruleTrue, app.label)
 		if(ruleActTrue)			parent.runRuleAct(ruleActTrue, app.label)
-		if(ruleEvalDelayTrue)	if(delayEvalMinutesTrue) runIn(delayEvalMinutesTrue * 60, delayEvalTrue)
+		if(ruleEvalDelayTrue)		if(delayEvalMinutesTrue) runIn(delayEvalMinutesTrue * 60, delayEvalTrue)
 		if(updateTrue)			parent.runUpdate(updateTrue)
 		if(myPhraseTrue)		location.helloHome.execute(myPhraseTrue)
 		if(cameraTrue) 		{	cameraTrue.take() 
@@ -1822,53 +1822,53 @@ def takeAction(success) {
 		if(phoneTrue)			sendSmsMulti(phoneTrue, (msgTrue ?: "Rule $app.label True") + (refDevTrue ? " $state.lastEvtName" : ""))
 		if(speakTrue)			speakTrueDevice?.speak((msgTrue ?: "Rule $app.label True") + (refDevTrue ? " $state.lastEvtName" : ""))
 		if(mediaTrueDevice)		mediaTrueDevice.playTextAndRestore((msgTrue ?: "Rule $app.label True") + (refDevTrue ? " $state.lastEvtName" : ""), mediaTrueVolume)
-		if(state.howManyCCtrue > 1)  execCommands(true)
+		if(state.howManyCCtrue > 1)  	execCommands(true)
 		if(offSwitchTrue) 		if(delayMilTrue) offSwitchTrue.off([delay: delayMilTrue]) else offSwitchTrue.off()
-        if(restoreTrue)			if(restoreDelayTrue > 0) {	 if(restoreCancelTrue) { state.delayRuleTrue = true
-        														runIn(restoreDelayTrue * 60, delayRestoreTrue) }
-        													 else runIn(restoreDelayTrue * 60, restore) }
-        						else restore()
+		if(restoreTrue)			if(restoreDelayTrue > 0) { 	if(restoreCancelTrue) { state.delayRuleTrue = true
+        										runIn(restoreDelayTrue * 60, delayRestoreTrue) }
+        									else runIn(restoreDelayTrue * 60, restore) }
+        					else restore()
 	} else {
 		if(captureFalse)		capture(captureFalse)
 		if(onSwitchFalse) 		if(delayMilFalse) onSwitchFalse.on([delay: delayMilFalse]) else onSwitchFalse.on()
-		if(toggleSwitchFalse)	toggle(toggleSwitchFalse, false)
+		if(toggleSwitchFalse)		toggle(toggleSwitchFalse, false)
 		if(delayedOffFalse)	{ 	if(delayMinutesFalse) runIn(delayMinutesFalse * 60, delayOffFalse)
-        						if(delaySecondsFalse) runIn(delaySecondsFalse, delayOffFalse)
+        					if(delaySecondsFalse) runIn(delaySecondsFalse, delayOffFalse)
                 				if(delayMillisFalse) {if(delayOnOffFalse) delayedOffFalse.on([delay: delayMillisFalse]) else delayedOffFalse.off([delay: delayMillisFalse])}   }
-		if(pendedOffFalse)		{state.pendingOffFalse = true
-        						if(pendMinutesFalse > 0) runIn(pendMinutesFalse * 60, pendingOffFalse) else pendingOffFalse()}
+		if(pendedOffFalse)	{	state.pendingOffFalse = true
+        					if(pendMinutesFalse > 0) runIn(pendMinutesFalse * 60, pendingOffFalse) else pendingOffFalse()}
 		if(pendedOffTrue)  		state.pendingOffTrue = false  //unschedule(pendingOffTrue)}
-		if(dimTrackFalse && dimAFalse != null) if(state.lastEvtLevel != null) {if(delayMilFalse) dimAFalse.setLevel(state.lastEvtLevel, [delay: delayMilFalse]) else dimAFalse.setLevel(state.lastEvtLevel)}
-		if(dimAFalse && dimLAFalse != null) if(delayMilFalse) dimAFalse.setLevel(dimLAFalse, [delay: delayMilFalse]) else dimAFalse.setLevel(dimLAFalse)
-		if(dimBFalse && dimLBFalse != null) if(delayMilFalse) dimBFalse.setLevel(dimLBFalse, [delay: delayMilFalse]) else dimBFalse.setLevel(dimLBFalse)
-		if(toggleDimmerFalse && dimTogFalse != null) dimToggle(toggleDimmerFalse, dimTogFalse, false)
-		if(adjustDimmerFalse && dimAdjFalse != null) dimAdjust(adjustDimmerFalse, dimAdjFalse, false)
+		if(dimTrackFalse && dimAFalse != null) 		if(state.lastEvtLevel != null) {if(delayMilFalse) dimAFalse.setLevel(state.lastEvtLevel, [delay: delayMilFalse]) else dimAFalse.setLevel(state.lastEvtLevel)}
+		if(dimAFalse && dimLAFalse != null) 		if(delayMilFalse) dimAFalse.setLevel(dimLAFalse, [delay: delayMilFalse]) else dimAFalse.setLevel(dimLAFalse)
+		if(dimBFalse && dimLBFalse != null) 		if(delayMilFalse) dimBFalse.setLevel(dimLBFalse, [delay: delayMilFalse]) else dimBFalse.setLevel(dimLBFalse)
+		if(toggleDimmerFalse && dimTogFalse != null) 	dimToggle(toggleDimmerFalse, dimTogFalse, false)
+		if(adjustDimmerFalse && dimAdjFalse != null) 	dimAdjust(adjustDimmerFalse, dimAdjFalse, false)
 		if(dimmerModesFalse && dimMFalse)		dimModes(false)
 		if(ctFalse)   			ctFalse.setColorTemperature(ctLFalse)
 		if(bulbsFalse)			setColor(false)
 		if(garageOpenFalse)		if(delayMilFalse) garageOpenFalse.open([delay: delayMilFalse]) else garageOpenFalse.open()
-		if(garageCloseFalse)	if(delayMilFalse) garageCloseFalse.close([delay: delayMilFalse]) else garageCloseFalse.close()
+		if(garageCloseFalse)		if(delayMilFalse) garageCloseFalse.close([delay: delayMilFalse]) else garageCloseFalse.close()
 		if(lockFalse) 			if(delayMilFalse) lockFalse.lock([delay: delayMilFalse]) else lockFalse.lock()
 		if(unlockFalse) 		if(delayMilFalse) unlockFalse.unlock([delay: delayMilFalse]) else unlockFalse.unlock()
 		if(fanAdjustFalse)		adjustFan(fanAdjustFalse)
 		if(openValveFalse)		if(delayMilFalse) openValveFalse.open([delay: delayMilFalse]) else openValveFalse.open()
 		if(closeValveFalse)		if(delayMilFalse) closeValveFalse.close([delay: delayMilFalse]) else closeValveFalse.close()
 		if(thermoFalse)		{	if(thermoModeFalse) 	thermoFalse.setThermostatMode(thermoModeFalse)
-								if(thermoSetHeatFalse) 	thermoFalse.setHeatingSetpoint(thermoSetHeatFalse)
-                                if(thermoAdjHeatFalse)	thermoFalse.each{it.setHeatingSetpoint(it.currentHeatingSetpoint + thermoAdjHeatFalse)}
-								if(thermoSetCoolFalse) 	thermoFalse.setCoolingSetpoint(thermoSetCoolFalse) 	
-                                if(thermoAdjCoolFalse)	thermoFalse.each{it.setCoolingSetpoint(it.currentCoolingSetpoint + thermoAdjCoolFalse)}
-								if(thermoFanFalse)		thermoFalse.setThermostatFanMode(thermoFanFalse)   }
+						if(thermoSetHeatFalse) 	thermoFalse.setHeatingSetpoint(thermoSetHeatFalse)
+                                		if(thermoAdjHeatFalse)	thermoFalse.each{it.setHeatingSetpoint(it.currentHeatingSetpoint + thermoAdjHeatFalse)}
+						if(thermoSetCoolFalse) 	thermoFalse.setCoolingSetpoint(thermoSetCoolFalse) 	
+                                		if(thermoAdjCoolFalse)	thermoFalse.each{it.setCoolingSetpoint(it.currentCoolingSetpoint + thermoAdjCoolFalse)}
+						if(thermoFanFalse)	thermoFalse.setThermostatFanMode(thermoFanFalse)   }
 		if(alarmFalse)			sendLocationEvent(name: "alarmSystemStatus", value: "$alarmFalse")
 		if(modeFalse) 			setLocationMode(modeFalse)
 		if(privateFalse)		if(privateDelayFalse) {	if(privateDelayCancelFalse) { state.delayRuleFalse = true
-        													runIn(privateDelayFalse * 60, delayPrivyFalseX) }
-        												else runIn(privateDelayFalse * 60, delayPrivyFalse) }
-        						else if(otherFalse && otherPrivateFalse) parent.setRuleBoolean(otherPrivateFalse, privateFalse, app.label)
-								else state.private = privateFalse
+										runIn(privateDelayFalse * 60, delayPrivyFalseX) }
+									else runIn(privateDelayFalse * 60, delayPrivyFalse) }
+						else if(otherFalse && otherPrivateFalse) parent.setRuleBoolean(otherPrivateFalse, privateFalse, app.label)
+						else state.private = privateFalse
 		if(ruleFalse)			parent.runRule(ruleFalse, app.label)
 		if(ruleActFalse)		parent.runRuleAct(ruleActFalse, app.label)
-		if(ruleEvalDelayFalse)	if(delayEvalMinutesFalse) runIn(delayEvalMinutesFalse * 60, delayEvalFalse)
+		if(ruleEvalDelayFalse)		if(delayEvalMinutesFalse) runIn(delayEvalMinutesFalse * 60, delayEvalFalse)
 		if(updateFalse)			parent.runUpdate(updateFalse)
 		if(myPhraseFalse) 		location.helloHome.execute(myPhraseFalse)
 		if(cameraFalse) 	{	cameraFalse.take() 
@@ -1877,13 +1877,13 @@ def takeAction(success) {
 		if(noticeFalse)			sendNotificationEvent((msgFalse ?: "Rule $app.label False") + (refDevFalse ? " $state.lastEvtName" : ""))
 		if(phoneFalse)			sendSmsMulti(phoneFalse, (msgFalse ?: "Rule $app.label False") + (refDevFalse ? " $state.lastEvtName" : ""))
 		if(speakFalse)			speakFalseDevice?.speak((msgFalse ?: "Rule $app.label False") + (refDevFalse ? " $state.lastEvtName" : ""))
-		if(mediaFalseDevice)	mediaFalseDevice.playTextAndRestore((msgFalse ?: "Rule $app.label False") + (refDevFalse ? " $state.lastEvtName" : ""), mediaFalseVolume)		
+		if(mediaFalseDevice)		mediaFalseDevice.playTextAndRestore((msgFalse ?: "Rule $app.label False") + (refDevFalse ? " $state.lastEvtName" : ""), mediaFalseVolume)		
 		if(state.howManyCCfalse > 1)  	execCommands(false)
 		if(offSwitchFalse) 		if(delayMilFalse) offSwitchFalse.off([delay: delayMilFalse]) else offSwitchFalse.off()
-        if(restoreFalse)		if(restoreDelayFalse > 0) {	 if(restoreCancelFalse) { state.delayRuleFalse = true
-        														runIn(restoreDelayFalse * 60, delayRestoreFalse) }
-        													 else runIn(restoreDelayFalse * 60, restore) }
-        						else restore()
+		if(restoreFalse)		if(restoreDelayFalse > 0) {	if(restoreCancelFalse) { state.delayRuleFalse = true
+											runIn(restoreDelayFalse * 60, delayRestoreFalse) }
+										else runIn(restoreDelayFalse * 60, restore) }
+						else restore()
 	}
 }
 
@@ -1895,7 +1895,7 @@ def runRule(force) {
 //		unschedule(delayRuleTrue)
 //		unschedule(delayRuleFalse)
 		state.delayRuleTrue = false
-        state.delayRuleFalse = false
+		state.delayRuleFalse = false
 		if     (delayMinTrue > 0 && success) 	doDelay(delayMinTrue * 60, randomTrue, cancelTrue, true)
 		else if(delayMinFalse > 0 && !success) 	doDelay(delayMinFalse * 60, randomFalse, cancelFalse, false)
 		else if(delaySecTrue > 0 && success)	doDelay(delaySecTrue, false, cancelTrue, true)
@@ -1921,7 +1921,7 @@ def getButton(dev, evt, i) {
 	def numNames = ["", "one", "two", "three", "four", "five", "six", "seven", "eight", "nine", "ten",
     	"eleven", "twelve", "thirteen", "fourteen", "fifteen", "sixteen", "seventeen", "eighteen", "nineteen", "twenty"]
 	def buttonNumber = evt.jsonData.buttonNumber.toInteger() 
-    def value = evt.value
+	def value = evt.value
 //	log.debug "buttonEvent: $evt.name = $evt.value ($evt.data)"
 //	log.debug "button: $buttonNumber, value: $value"
 //	log.debug "button json: $evt.jsonData.buttonNumber"
@@ -1939,9 +1939,9 @@ def getButton(dev, evt, i) {
 	}
 	def myState = settings.find {it.key == (state.isTrig ? "state$i" : "tstate$i")}
 	def myButton = settings.find {it.key == (state.isTrig ? "ButtonrDev$i" : "ButtontDev$i")}
-    def result = true
-    if(value in ["pushed", "held"]) result = (value == myState.value) && (thisButton == myButton.value)
-    else if(value.startsWith("button")) result = thisButton == myButton.value // ZWN-SC7
+	def result = true
+	if(value in ["pushed", "held"]) result = (value == myState.value) && (thisButton == myButton.value)
+	else if(value.startsWith("button")) result = thisButton == myButton.value // ZWN-SC7
 }
 
 def testEvt(evt) {
@@ -1965,7 +1965,7 @@ def testEvt(evt) {
 				if(evt.name == "button") result = getButton(myDev, evt, i)
 				else result = getOperand(i, state.isTrig)}
 			}
-        }
+		}
 		if(result) return result
 	}
 	return result
@@ -1975,7 +1975,7 @@ def allHandler(evt) {
 	if(!allOk) return
 	log.info "$app.label: $evt.displayName $evt.name $evt.value"
 	state.lastEvtName = evt.displayName
-    if(evt.name == "level") state.lastEvtLevel = evt.value.toInteger()
+	if(evt.name == "level") state.lastEvtLevel = evt.value.toInteger()
 	def hasTrig = state.howManyT > 1
 	def hasCond = state.howMany > 1
 	def doit = true
@@ -2333,13 +2333,13 @@ private setColor(trufal) {
 			break;
 		case "Custom color":
 			hueColor = trufal ? colorHexTrue : colorHexFalse
-            saturation = trufal ? colorSatTrue : colorSatFalse
+			saturation = trufal ? colorSatTrue : colorSatFalse
 			break;
         case "Random color":
         	hueColor = Math.random()*100 as Integer
-            saturation = Math.random()*100 as Integer
-            log.info "Random color: hue: $hueColor, saturation: $saturation"
-            break;
+		saturation = Math.random()*100 as Integer
+		log.info "Random color: hue: $hueColor, saturation: $saturation"
+		break;
 	}
 	def lightLevel = trufal ? colorLevelTrue : colorLevelFalse
 	def newValue = [hue: hueColor, saturation: saturation, level: lightLevel as Integer ?: 100]
@@ -2411,13 +2411,13 @@ def execCommands(truth){
 
 def selectCustomActions(){
 	def cstCmds = []
-    def cstCapabs = []
-    state.cstCmds.each {
-    	it.each {myT ->
-            cstCmds << [(myT.key):myT.value[0]]
-            cstCapabs << [(myT.key):myT.value[1]]
-        }
-    }
+	def cstCapabs = []
+	state.cstCmds.each {
+		it.each {myT ->
+			cstCmds << [(myT.key):myT.value[0]]
+			cstCapabs << [(myT.key):myT.value[1]]
+		}
+	}
 	def truth = state.ccTruth
 	def devicePrefix
 	def commandPrefix
@@ -2426,7 +2426,7 @@ def selectCustomActions(){
 	def allDevices
 	def allCommands
 	def howMany
-    def capab
+	def capab
 	if (truth) {
 		devicePrefix = "customDeviceTrue"
 		commandPrefix = "ccTrue"
@@ -2453,26 +2453,25 @@ def selectCustomActions(){
 			def crntDevices = settings."${theseDevices}"
 			section("Custom command #${i}"){
 				if(i == 1) thisCommand = commandPrefix
-                else thisCommand = commandPrefix + "${i}"
-                def crntCommand = settings."${thisCommand}"
-                input( name: thisCommand, type: "enum", title: "Run this command", multiple: false, required: false, options: cstCmds, submitOnChange: true)
+				else thisCommand = commandPrefix + "${i}"
+				def crntCommand = settings."${thisCommand}"
+				input( name: thisCommand, type: "enum", title: "Run this command", multiple: false, required: false, options: cstCmds, submitOnChange: true)
 				if (crntCommand) {
 					if (cstCmds.find{it[crntCommand]}) {
-                        capab = cstCapabs.find{it[crntCommand]}[crntCommand]
+						capab = cstCapabs.find{it[crntCommand]}[crntCommand]
 					}
-                	input (name: theseDevices, type: "capability.$capab", title: "On these devices", multiple: true, required: false, submitOnChange: true)
+					input (name: theseDevices, type: "capability.$capab", title: "On these devices", multiple: true, required: false, submitOnChange: true)
 					if (crntDevices){
 						if (cstCmds.find{it[crntCommand]}) {
 							def c = cstCmds.find{it[crntCommand]}[crntCommand]
 							cmdActions("Command: ${c} on ${crntDevices}",truth)    
 						}
 					}
-                }
+				}
 			}
-		}
-		if (truth) {
-			if (state.cmdActTrue) state.cmdActTrue = state.cmdActTrue[0..-2]
-		} else {
+			if (truth) {
+				if (state.cmdActTrue) state.cmdActTrue = state.cmdActTrue[0..-2]
+			} else {
 			if (state.cmdActFalse) state.cmdActFalse = state.cmdActFalse[0..-2]
 		}   
 	}
