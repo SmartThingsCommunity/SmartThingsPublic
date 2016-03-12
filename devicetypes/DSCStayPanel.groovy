@@ -34,7 +34,7 @@ metadata {
     // UI tile definitions
     tiles(scale: 2) {
         standardTile ("status", "device.status", width: 4, height: 4, title: "Status") {
-            state "alarm", label:'Alarm', action: 'disarm', icon:"st.security.alarm.off", backgroundColor:"#ff0000"
+            state "alarm", label:'Alarm', action: 'disarm', icon:"st.security.alarm.alarm", backgroundColor:"#ff0000"
             state "away", label:'Armed Away', action: 'disarm', icon:"st.security.alarm.on", backgroundColor:"#800000"
             state "disarm", label:'Disarmed', icon:"st.security.alarm.off", backgroundColor:"#79b821"
             state "entrydelay", label:'Entry Delay', action: 'disarm', icon:"st.security.alarm.on", backgroundColor:"#ff9900"
@@ -47,31 +47,31 @@ metadata {
             state "instantstay", label:'Armed Instant Stay', action: 'disarm', icon:"st.security.alarm.on", backgroundColor:"#008CC1"
         }
         standardTile("trouble", "device.trouble", width: 2, height: 2, title: "Trouble") {
-          state "detected", label: 'Trouble', icon: "st.contact.contact.open", backgroundColor: "#ffa81e"
-          state "clear", label: 'No Trouble', icon: "st.contact.contact.closed", backgroundColor: "#79b821"
+          state "detected", label: 'Trouble', icon: "st.security.alarm.alarm", backgroundColor: "#ffa81e"
+          state "clear", label: 'No\u00A0Trouble', icon: "st.security.alarm.clear", backgroundColor: "#79b821"
         }
         standardTile("chime", "device.chime", width: 2, height: 2, title: "Chime"){
-            state "togglechime", label: 'Toggling Chime', action: "togglechime", icon: "st.Home.home4", backgroundColor: "#fbd48a"
-            state "chime", label: 'Chime', action: "togglechime", icon: "st.Home.home4", backgroundColor: "#EE9D00"
-            state "nochime", label: 'No Chime', action: "togglechime", icon: "st.Home.home4", backgroundColor: "#796338"
+            state "togglechime", label: 'Toggling\u00A0Chime', action: "togglechime", icon: "st.alarm.beep.beep", backgroundColor: "#fbd48a"
+            state "chime", label: 'Chime', action: "togglechime", icon: "st.alarm.beep.beep", backgroundColor: "#EE9D00"
+            state "nochime", label: 'No\u00A0Chime', action: "togglechime", icon: "st.alarm.beep.beep", backgroundColor: "#796338"
         }
         standardTile("disarm", "capability.momentary", width: 2, height: 2, title: "Disarm"){
-            state "disarm", label: 'Disarm', action: "disarm", icon: "st.Home.home4", backgroundColor: "#79b821"
+            state "disarm", label: 'Disarm', action: "disarm", icon: "st.presence.house.unlocked", backgroundColor: "#79b821"
         }
-        standardTile("away", "capability.momentary", width: 2, height: 2, title: "Away Arm"){
-            state "away", label: 'Away Arm', action: "away", icon: "st.Home.home4", backgroundColor: "#800000"
+        standardTile("away", "capability.momentary", width: 2, height: 2, title: "Away"){
+            state "away", label: 'Away', action: "away", icon: "st.presence.car.car", backgroundColor: "#800000"
         }
-        standardTile("stay", "capability.momentary", width: 2, height: 2, title: "Stay Arm"){
-            state "stay", label: 'Stay Arm', action: "stay", icon: "st.Home.home4", backgroundColor: "#008CC1"
+        standardTile("stay", "capability.momentary", width: 2, height: 2, title: "Stay"){
+            state "stay", label: 'Stay', action: "stay", icon: "st.presence.house.secured", backgroundColor: "#008CC1"
         }
         standardTile("instant", "capability.momentary", width: 2, height: 2, title: "Instant"){
-            state "instant", label: 'Instant', action: "instant", icon: "st.Home.home4", backgroundColor: "#00FF00"
+            state "instant", label: 'Instant', action: "instant", icon: "st.locks.lock.locked", backgroundColor: "#00FF00"
         }
         standardTile("night", "capability.momentary", width: 2, height: 2, title: "Night"){
-            state "night", label: 'Night', action: "night", icon: "st.Home.home4", backgroundColor: "#AA00FF"
+            state "night", label: 'Night', action: "night", icon: "st.Bedroom.bedroom2", backgroundColor: "#AA00FF"
         }
         standardTile("reset", "capability.momentary", width: 2, height: 2, title: "Sensor Reset"){
-            state "reset", label: 'Sensor Reset', action: "reset", icon: "st.Home.home4", backgroundColor: "#FF3000"
+            state "reset", label: 'Sensor\u00A0Reset', action: "reset", icon: "st.alarm.smoke.smoke", backgroundColor: "#FF3000"
         }
 
         main "status"
