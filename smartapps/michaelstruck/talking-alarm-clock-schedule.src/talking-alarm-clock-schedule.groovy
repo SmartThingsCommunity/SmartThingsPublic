@@ -3,7 +3,7 @@
  *
  *  Copyright © 2016 Michael Struck
  *
- *  Version 1.4.2 (2/19/16) - Initial release of child app
+ *  Version 1.4.3 (3/12/16) - Initial release of child app
  *
  *  Version 1.0.0 - Initial release
  *  Version 1.0.1 - Small syntax changes for consistency
@@ -13,6 +13,7 @@
  *  Verison 1.4.0 - Added switches that can trigger alarms in addition to time
  *  Version 1.4.1 - Added the trigger switches to the summary page
  *  Version 1.4.2 - Syntax changes and minor revisions
+ *  Version 1.4.3 - Code Optimizations and work around for playTrack()
  *
  *  Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except
  *  in compliance with the License. You may obtain a copy of the License at:
@@ -46,9 +47,7 @@ def pageSetup() {
         section() {
 			label title:"Alarm Schedule Name", required: true
             def status = parent.getSchedStatus(app.id) ? "ENABLED" : "DISABLED"
-            if (status){
-            	paragraph "This schedule is currently ${status}. To change this status, go to the 'Alarm Summary' page on the Talking Alarm Clock main page"
-            }
+            if (status) paragraph "This schedule is currently ${status}. To change this status, go to the 'Alarm Summary' page on the Talking Alarm Clock main page"
     	}
         section("Alarm Settings"){
         	input "alarmSpeaker", "capability.musicPlayer", title: "Choose a speaker", required: true, submitOnChange:true
@@ -62,12 +61,8 @@ def pageSetup() {
                 input "alarmTrigger", "capability.switch", title: "Trigger alarm when switches turned on...", required: false, multiple: true
                 input "alarmType", "enum", title: "Select a primary alarm type...", multiple: false, required: true, options: [[1:"Alarm sound (up to 20 seconds)"],[3:"Music track/internet radio"],[2:"Voice Greeting"],], submitOnChange:true
                 if (alarmType != "3") {
-                    if (alarmType == "1"){
-                        input "secondAlarm", "enum", title: "Select a second alarm after the first is completed", multiple: false, required: false, options: [[2:"Music track/internet Radio"],[1:"Voice Greeting"]], submitOnChange:true
-                    }
-                    if (alarmType == "2"){
-                        input "secondAlarmMusic", "bool", title: "Play a track after voice greeting", defaultValue: "false", required: false, submitOnChange:true
-                    }
+                    if (alarmType == "1") input "secondAlarm", "enum", title: "Select a second alarm after the first is completed", multiple: false, required: false, options: [[2:"Music track/internet Radio"],[1:"Voice Greeting"]], submitOnChange:true
+                    if (alarmType == "2") input "secondAlarmMusic", "bool", title: "Play a track after voice greeting", defaultValue: "false", required: false, submitOnChange:true
                 }
                 href "pageRestrictions", title: "Alarm Restrictions", description: getRestrictionDesc(), state: greyOutRestrictions()
             }
@@ -78,9 +73,7 @@ def pageSetup() {
                 	options: [[1:"Alien-8 seconds"],[2:"Bell-12 seconds"], [3:"Buzzer-20 seconds"], 
                     [4:"Fire-20 seconds"], [5:"Rooster-2 seconds"], [6:"Siren-20 seconds"],[7:"Custom-User Defined"]], submitOnChange:true
 				if (soundAlarm){
-                	if (soundAlarm == "7"){
-                    	input "alarmCustom", "text", title:"URL/Location of custom sound...", required: false	
-                    }
+                	if (soundAlarm == "7") input "alarmCustom", "text", title:"URL/Location of custom sound...", required: false	
                     input "soundLength", "number", title: "Maximum time to play sound (empty=use sound default)", description: "1-20", required: false        
        			}
             }
@@ -130,9 +123,7 @@ def pageRestrictions(){
             input "alarmDay", "enum", options: ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"], title: "Alarm on certain days of the week...", multiple: true, required: false
             input "alarmMode", "mode", title: "Alarm only during the following modes...", multiple: true, required: false
             input "alarmPresence", "capability.presenceSensor", title: "Alarm only when present...", multiple: true, required: false, submitOnChange:true
-            if (alarmPresence && alarmPresence.size()>1){
-				input "alarmPresAll", "bool", title: "Off=Any present; On=All present", defaultValue: false
-			}
+            if (alarmPresence && alarmPresence.size()>1) input "alarmPresAll", "bool", title: "Off=Any present; On=All present", defaultValue: false
             input "alarmSwitchActive", "capability.switch", title: "Alarm only when these switches are on...", multiple: true, required: false
             input "alarmSwitchNotActive", "capability.switch", title: "Alarm only when these switches are off...", multiple: true, required: false
         }
@@ -179,13 +170,11 @@ def updated() {
     initialize()
 }
 def initialize() {
-	if (alarmType =="1" && soundAlarm){
-    	alarmSoundUri()
-    }
+	if (alarmType =="1" && soundAlarm) alarmSoundUri()
     if ((alarmStart || alarmTrigger) && alarmSpeaker && alarmType){
-        if (alarmStart){schedule (alarmStart, alarmHandler)}
-        if (alarmTrigger) {subscribe (alarmTrigger, "switch.on", alarmHandler)}
-        if (musicTrack){saveSelectedSong()}
+        if (alarmStart) schedule (alarmStart, alarmHandler)
+        if (alarmTrigger) subscribe (alarmTrigger, "switch.on", alarmHandler)
+        if (musicTrack) saveSelectedSong()
 	}
 }
 //Handlers----------------
@@ -214,35 +203,20 @@ def alarmHandler(evt) {
         }
         if (triggerPhrase) {location.helloHome.execute(triggerPhrase)}
         if (triggerMode && location.mode != triggerMode) {
-			if (location.modes?.find{it.name == triggerMode}) {
-				setLocationMode(triggerMode)
-			} 
-            else {
-				log.debug "Unable to change to undefined mode '${triggerMode}'"
-			}
+			if (location.modes?.find{it.name == triggerMode}) setLocationMode(triggerMode)
+            else log.debug "Unable to change to undefined mode '${triggerMode}'"
 		}
         if (alarmVolume) {alarmSpeaker.setLevel(alarmVolume)}
-        
         if (alarmType == "2" || (alarmType == "1" && secondAlarm =="1")) {
         	state.fullMsg = ""
-            if (wakeMsg) {getGreeting(wakeMsg)}
-            if (speakWeather || LocalHumidity || includeTemp || localTemp) {
-				getWeatherReport()
-			}
-        	if (includeSunrise || includeSunset) {
-        		getSunriseSunset()
-        	}
+            if (wakeMsg) getGreeting(wakeMsg)
+            if (speakWeather || LocalHumidity || includeTemp || localTemp) getWeatherReport()
+        	if (includeSunrise || includeSunset) getSunriseSunset()
             if ((switches || dimmers || thermostats) && confirmSwitches) {
 				def msg = ""
-                if ((switches || dimmers) && !thermostats) {
-                    msg = "All switches"	
-                }
-                if (!switches && !dimmers && thermostats) {
-                    msg = "All Thermostats"
-                }
-                if ((switches || dimmers) && thermostats) {
-                    msg = "All switches and thermostats"
-                } 
+                if ((switches || dimmers) && !thermostats) msg = "All switches"	
+                if (!switches && !dimmers && thermostats) msg = "All Thermostats"
+                if ((switches || dimmers) && thermostats) msg = "All switches and thermostats"
                 msg = "${msg} are now on and set. "
               	compileMsg(msg)
        		}
@@ -257,26 +231,17 @@ def alarmHandler(evt) {
             state.sound = textToSpeech(state.fullMsg, true)
 		}
         if (alarmType == "1"){
-        	if (secondAlarm == "1" && state.soundAlarm){
-            	alarmSpeaker.playSoundAndTrack (state.soundAlarm.uri, state.soundAlarm.duration, state.sound.uri)	
-        	}
-            if (secondAlarm == "2" && state.selectedSong && state.soundAlarm){
-            	alarmSpeaker.playSoundAndTrack (state.soundAlarm.uri, state.soundAlarm.duration, state.selectedSong)
-            }
-            if (!secondAlarm){
-            	alarmSpeaker.playSoundAndTrack(state.soundAlarm.uri, state.soundAlarm.duration, "")
-            }
+        	if (secondAlarm == "1" && state.soundAlarm) alarmSpeaker.playSoundAndTrack (state.soundAlarm.uri, state.soundAlarm.duration, state.sound.uri)	
+            if (secondAlarm == "2" && state.selectedSong && state.soundAlarm) alarmSpeaker.playSoundAndTrack (state.soundAlarm.uri, state.soundAlarm.duration, state.selectedSong)
+            if (!secondAlarm) alarmSpeaker.playSoundAndTrack(state.soundAlarm.uri, state.soundAlarm.duration, "")
         }
         if (alarmType == "2") {
-        	if (secondAlarmMusic && state.selectedSong){
-                alarmSpeaker.playSoundAndTrack (state.sound.uri, state.sound.duration, state.selectedSong)
-            }
-            else {
-                alarmSpeaker.playTrack(state.sound.uri)
-            }
+        	if (secondAlarmMusic && state.selectedSong) alarmSpeaker.playSoundAndTrack (state.sound.uri, state.sound.duration, state.selectedSong)
+            else alarmSpeaker.playTrack(state.sound.uri)
         }
         if (alarmType == "3") {
-	       	alarmSpeaker.playTrack(state.selectedSong)
+        	def text = textToSpeech(" ", true)
+            alarmSpeaker.playSoundAndTrack(text.uri,text.duration,state.selectedSong)
         }
 	}
 }
@@ -294,82 +259,53 @@ def getAlarmDesc() {
             for (dayName in alarmDay) {
  				desc += " ${dayName}"
     			dayListSize = dayListSize -1
-                if (dayListSize) {
-            		desc += ", "
-        		}
+                if (dayListSize) desc += ", "
         	}
         }
-        else {
-    		desc += " every day"
-    	}    	
+        else desc += " every day"   	
         if (alarmPresence){
         	def presListSize = alarmPresence.size()
             desc += " when "
             def verb = "are"
-            if (presListSize > 1 && !alarmPresAll){
-            	desc += "either "
-            }
-            if (presListSize > 1 && alarmPresAll){
-            	verb += " all are"
-            }  
-            if (presListSize == 1){
-            	verb = "is"
-            }
+            if (presListSize > 1 && !alarmPresAll) desc += "either "
+            if (presListSize > 1 && alarmPresAll) verb += " all are"
+            if (presListSize == 1) verb = "is"
             desc += getPresenceNames(1)
         	desc += " ${verb} present"
         }
         if (alarmMode) {
     		def modeListSize = alarmMode.size()
-        	def modePrefix =" in the following modes: "
-        	if (modeListSize == 1) {
-        		modePrefix = " in the following mode: "
-        	}
+        	def modePrefix = modeListSize == 1 ? " in the following mode: " : " in the following modes: "
             desc += "${modePrefix}" 
        		for (modeName in alarmMode) {
         		desc += "'${modeName}'"
     			modeListSize = modeListSize -1
-            	if (modeListSize) {
-            		desc += ", "
-            	}
+            	if (modeListSize) desc += ", "
         	}
 		}
-     	else {
-    		desc += " in all modes"
-        }
+     	else desc += " in all modes"
         if (alarmSwitchActive){
         	def switchOnSize = alarmSwitchActive.size()
-            def switchPrefix =" when the following switches are on: "
-            if (switchOnSize == 1) {
-        		switchPrefix = " when the following switch is on: "
-        	}
+            def switchPrefix =switchOnSize == 1 ? " when the following switch is on: " : " when the following switches are on: "
             desc += "${switchPrefix}"
             for (switchName in alarmSwitchActive) {
             	desc += "'${switchName}'"
                 switchOnSize = switchOnSize -1
-                if (switchOnSize) {
-                	desc += ", "
-                }
+                if (switchOnSize) desc += ", "
 			}
         }
         if (alarmSwitchNotActive){
         	def switchOffSize = alarmSwitchNotActive.size()
-            def switchPrefix =" when the following switches are off: "
-            if (switchOffSize == 1) {
-        		switchPrefix = " when the following switch is off: "
-        	}
+            def switchPrefix = switchOffSize == 1 ? " when the following switch is off: " : " when the following switches are off: "
             desc += "${switchPrefix}"
             for (switchName in alarmSwitchNotActive) {
             	desc += "'${switchName}'"
                 switchOffSize = switchOffSize -1
-                if (switchOffSize) {
-                	desc += ", "
-                }
+                if (switchOffSize) desc += ", "
 			}
         }
     }
-    else {
-		desc = "No time or trigger for this alarm schedule set."
-    }
+    else desc = "No time or trigger for this alarm schedule set."
 	desc
 }
 def getWeatherDesc() {
@@ -386,20 +322,14 @@ def getWeatherDesc() {
 }
 def getAlarmMethod(){
 	def result = ""
-    if (alarmStart) {result += "for ${parseDate(alarmStart, "", "h:mm a")}"}
-    if (alarmStart && alarmTrigger) {result += " and "}
-    if (alarmTrigger) { result += "to trigger when switches activated"}
+    if (alarmStart) result += "for ${parseDate(alarmStart, "", "h:mm a")}"
+    if (alarmStart && alarmTrigger) result += " and "
+    if (alarmTrigger) result += "to trigger when switches activated"
 	result    
 }
-def greyOut(){
-	def result = speakWeather || includeSunrise || includeSunset || includeTemp || localHumidity || localTemp? "complete" : ""
-}
-def dimmerDesc(){
-	def desc = dimmers && dimmersLevel ? "${dimmers} set to ${dimmersLevel}%" : "Tap to set dimmers settings"
-}
-def greyOutDimmer(){
-	def result = dimmers && dimmersLevel  ? "complete" : ""
-}
+def greyOut(){def result = speakWeather || includeSunrise || includeSunset || includeTemp || localHumidity || localTemp? "complete" : ""}
+def dimmerDesc(){def desc = dimmers && dimmersLevel ? "${dimmers} set to ${dimmersLevel}%" : "Tap to set dimmers settings"}
+def greyOutDimmer(){def result = dimmers && dimmersLevel  ? "complete" : ""}
 def tstatDesc(){
 	def desc = thermostats ? "${thermostats}" : "Tap to set thermostat settings"
 	desc += thermostats && (temperatureH || temperatureC)  ? " set to ": ""
@@ -425,16 +355,12 @@ def getRestrictionDesc(){
     result += alarmSwitchNotActive ? "Switches (OFF): ${alarmSwitchNotActive} " : ""
     result = result ? result : "Tap to configure alarm restrictions"
 }
-def greyOutRestrictions(){
-	def result = alarmDay || alarmMode || alarmPresence || alarmSwitchActive || alarmSwitchNotActive ? "complete" : ""
-}
+def greyOutRestrictions(){def result = alarmDay || alarmMode || alarmPresence || alarmSwitchActive || alarmSwitchNotActive ? "complete" : ""}
 private getPresenceNames(param){
     def nameList = ""
     if (!param){
     	def presentCount = 0
-        for (sensor in alarmPresence){
-    		if (sensor.currentPresence == "present"){presentCount ++}
-		}
+        for (sensor in alarmPresence) if (sensor.currentPresence == "present"){presentCount ++}
         for (presName in alarmPresence){
         	if (presName.currentPresence == "present"){
             	nameList += "${presName}"
@@ -469,12 +395,8 @@ private getDay(){
 }
 private everyoneIsPresent() {
     def result = true
-    if (alarmPresAll && alarmPresence){
-        result = alarmPresence.find {it.currentPresence == "not present"} ? false : true
-    }
-    else if (!alarmPresAll && alarmPresence) {
-    	result = alarmPresence.find {it.currentPresence == "present"}
-    }
+    if (alarmPresAll && alarmPresence) result = alarmPresence.find {it.currentPresence == "not present"} ? false : true
+    else if (!alarmPresAll && alarmPresence) result = alarmPresence.find {it.currentPresence == "present"}
     log.debug "Presence: ${result}"
     result
 }
@@ -498,15 +420,9 @@ private getSunriseSunset(){
     	def currTime = now()
         def verb1 = currTime >= s.sunrise.time ? "rose" : "will rise"
         def verb2 = currTime >= s.sunset.time ? "set" : "will set"
-        if (includeSunrise && includeSunset) {
-			msg = "The sun ${verb1} this morning at ${riseTime} and ${verb2} at ${setTime}. "
-    	}
-    	else if (includeSunrise && !includeSunset) {
-    		msg = "The sun ${verb1} this morning at ${riseTime}. "
-    	}
-    	else if (!includeSunrise && includeSunset) {
-    		msg = "The sun ${verb2} tonight at ${setTime}. "
-    	}
+        if (includeSunrise && includeSunset) msg = "The sun ${verb1} this morning at ${riseTime} and ${verb2} at ${setTime}. "
+    	else if (includeSunrise && !includeSunset) msg = "The sun ${verb1} this morning at ${riseTime}. "
+    	else if (!includeSunrise && includeSunset) msg = "The sun ${verb2} tonight at ${setTime}. "
     	compileMsg(msg)
 	}
 	else {
@@ -520,28 +436,16 @@ private getWeatherReport() {
         def sb = new StringBuilder()
         if (includeTemp){
         	def current = getWeatherFeature("conditions", zipCode)
-        	if (isMetric) {
-        		sb << "The current temperature from the weather service is ${Math.round(current.current_observation.temp_c)} degrees. "
-        	}
-        	else {
-        		sb << "The current temperature from the weather service is ${Math.round(current.current_observation.temp_f)} degrees. "
-        	}
+        	if (isMetric) sb << "The current temperature from the weather service is ${Math.round(current.current_observation.temp_c)} degrees. "
+        	else sb << "The current temperature from the weather service is ${Math.round(current.current_observation.temp_f)} degrees. "
         }
-        if (localTemp){
-			sb << "The temperature from your Smart Things device, ${localTemp.label}, is ${Math.round(localTemp.currentTemperature)} degrees. "
-        }
-        if (localHumidity) {
-        	sb << "The relative humidity from your Smart Things device, ${localHumidity.label}, is ${localHumidity.currentValue("humidity")}%. "
-        }
+        if (localTemp) sb << "The temperature from your Smart Things device, ${localTemp.label}, is ${Math.round(localTemp.currentTemperature)} degrees. "
+        if (localHumidity) sb << "The relative humidity from your Smart Things device, ${localHumidity.label}, is ${localHumidity.currentValue("humidity")}%. "
         if (speakWeather) {
             def weather = getWeatherFeature("forecast", zipCode)
             sb << "Today's forecast is "
-			if (isMetric) {
-        		sb << weather.forecast.txt_forecast.forecastday[0].fcttext_metric 
-        	}
-        	else {
-          		sb << weather.forecast.txt_forecast.forecastday[0].fcttext
-        	}
+			if (isMetric) sb << weather.forecast.txt_forecast.forecastday[0].fcttext_metric 
+        	else sb << weather.forecast.txt_forecast.forecastday[0].fcttext
         }
 		def msg = sb.toString()
         //message pronunciation filters....
@@ -593,12 +497,8 @@ private songOptions() {
     if (alarmSpeaker) {
 		// Make sure current selection is in the set
 		def options = new LinkedHashSet()
-           	if (state.selectedSong?.station) {
-				options << state.selectedSong.station
-			}
-			else if (state.selectedSong?.description) {
-				options << state.selectedSong.description
-			}
+           	if (state.selectedSong?.station) options << state.selectedSong.station
+			else if (state.selectedSong?.description) options << state.selectedSong.description
         // Query for recent tracks
 		def states = alarmSpeaker.statesSince("trackData", new Date(0), [max:30])
 		def dataMaps = states.collect{it.jsonValue}
@@ -630,9 +530,7 @@ private parseDate(date, epoch, type){
     	long longDate = Long.valueOf(epoch).longValue()
         parseDate = new Date(longDate).format("yyyy-MM-dd'T'HH:mm:ss.SSSZ", location.timeZone)
     }
-    else {
-    	parseDate = date
-    }
+    else parseDate = date
     new Date().parse("yyyy-MM-dd'T'HH:mm:ss.SSSZ", parseDate).format("${type}", timeZone(parseDate))
 }
 private saveSelectedSong() {
@@ -641,7 +539,6 @@ private saveSelectedSong() {
 		log.info "Looking for $thisSong"
 		def songs = alarmSpeaker.statesSince("trackData", new Date(0), [max:30]).collect{it.jsonValue}
 		log.info "Searching ${songs.size()} records"
-
 		def data = songs.find {s -> s.station == thisSong}
 		log.info "Found ${data?.station}"
 		if (data) {
@@ -660,6 +557,4 @@ private saveSelectedSong() {
 	}
 }
 //Version
-private def textVersion() {
-    def text = "Child App Version: 1.4.2 (02/19/2016)"
-}
+private def textVersion() {def text = "Child App Version: 1.4.3 (03/12/2016)"}
