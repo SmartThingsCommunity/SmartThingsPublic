@@ -146,9 +146,7 @@ def partition(String state, String partition) {
         // Send chime event
         sendEvent (name: "chime", value: "${state}")
     } else if (state.startsWith('led')) {
-        int num = (Integer.parseInt(state.replaceAll(/(^ledflash|^led)/, ''), 16));
-        def binary = (Integer.toBinaryString(num));
-        binary = String.format("%08d", binary.toInteger())
+        def binary = state.replaceAll(/(^ledflash|^led)/, '')
         def flash = (state.startsWith('ledflash')) ? 'flash ' : ''
 
         def ledMap = [
