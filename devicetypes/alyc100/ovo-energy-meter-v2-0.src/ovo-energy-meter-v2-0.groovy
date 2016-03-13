@@ -17,10 +17,11 @@
  *  v2.0 - Initial V2.0 Release with OVO Energy (Connect) app
  *  v2.1 - Improve pricing calculations using contract info from OVO. Notification framework for high costs.
  *		   Enable alert for specified daily cost level breach.
+ *	v2.1b - Allow cost alert level to be decimal
  */
 preferences 
 {
-	input( "costAlertLevel", "number", title: "Set cost alert level (£)", description: "Send alert when daily cost reaches amount", required: false, defaultValue: 10 )
+	input( "costAlertLevel", "decimal", title: "Set cost alert level (£)", description: "Send alert when daily cost reaches amount", required: false, defaultValue: 10.00 )
 }
 
 metadata {
