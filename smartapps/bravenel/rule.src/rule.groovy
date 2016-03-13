@@ -3,10 +3,11 @@
  *
  *  Copyright 2015, 2016 Bruce Ravenel
  *
- *  Version 1.8.4a   12 Mar 2016
+ *  Version 1.8.5   13 Mar 2016
  *
  *	Version History
  *
+ *	1.8.5	13 Mar 2016		Added support for single button device, more private Boolean options, emergency heat
  *	1.8.4	11 Mar 2016		Strengthened code pertaining to evaluation of malformed rules
  *	1.8.3	3 Mar 2016		Changed method of reporting version number to Rule Machine
  *	1.8.2	2 Mar 2016		Reorganized UI for selecting Actions, group pages, for speed of mobile app
@@ -109,7 +110,7 @@ preferences {
 //
 
 def appVersion() {
-	return "1.8.4a" 
+	return "1.8.5" 
 }
 
 def mainPage() {
@@ -161,7 +162,7 @@ def mainPage() {
 		else if(state.howManyT > 1) 								getCTrigger()   // Existing Conditional Trigger
 		else if(app.label != "Rule" && app.label != null) 			getActions()	// Existing Actions
         else {																		// New Rule, Trigger, Conditional Trigger or Actions
-            section("A Rule uses events for conditions and then\ntests a rule to run actions") 							{href "selectRule", title: "Define a Rule", description: "Tap to set"}
+            section("A Rule uses events for conditions and then\ntests a rule to run actions") 						{href "selectRule", title: "Define a Rule", description: "Tap to set"}
             section("A Trigger uses events to run actions") 														{href "selectTrig", title: "Define a Trigger", description: "Tap to set"}
             section("A Conditional Trigger uses events to run actions\nbased on conditions tested under a rule") 	{href "selectCTrig", title: "Define a Conditional Trigger", description: "Tap to set"}
             section("Other Rules can run these Actions") 															{href "selectActions", title: "Define Actions", description: "Tap to set"}
@@ -242,7 +243,7 @@ def getActions() {
 def getMoreOptions() {
 	section(title: "Restrictions", hidden: hideOptionsSection(), hideable: true) {
 		def timeLabel = timeIntervalLabel()
-		href "certainTime", title: "Only during a certain time", description: timeLabel ?: "Tap to set", state: timeLabel ? "complete" : null
+		href "certainTime", title: "Only between two times", description: timeLabel ?: "Tap to set", state: timeLabel ? "complete" : null
 		input "daysY", "enum", title: "Only on certain days of the week", multiple: true, required: false,
 			options: ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"]
 		input "modesY", "mode", title: "Only when mode is", multiple: true, required: false            
@@ -254,7 +255,7 @@ def getMoreOptions() {
 }
 
 def certainTime() {
-	dynamicPage(name: "certainTime", title: "Only during a certain time", uninstall: false) {
+	dynamicPage(name: "certainTime", title: "Between two times", uninstall: false) {
 		section() {
 			input "startingX", "enum", title: "Starting at", options: ["A specific time", "Sunrise", "Sunset"], defaultValue: "A specific time", submitOnChange: true, required: false
 			if(startingX in [null, "A specific time"]) input "starting", "time", title: "Start time", required: false
@@ -442,8 +443,10 @@ def getButton(dev) {
 		def numButtons = settings.find{it.key == "numButtons$dev"}
 		numButtons = numButtons ? numButtons.value : 4
 		def butOpts = ["one"]
-		if(numButtons > 1) for (int i = 1; i < numButtons; i++) butOpts[i] = numNames[i]
-		input "Button$dev", "enum", title: "Button number", required: true, multiple: false, submitOnChange: true, options: butOpts
+		if(numButtons > 1) {
+        	for (int i = 1; i < numButtons; i++) butOpts[i] = numNames[i]
+			input "Button$dev", "enum", title: "Button number", required: true, multiple: false, submitOnChange: true, options: butOpts
+        }
 	}
 }
 
@@ -483,7 +486,7 @@ def getState(myCapab, n, isTrig) {
 		def myDev = settings.find {it.key == myIsDev}
 		if(myDev && myDev.value) {
 			getDevs(myCapab, myRelDev, false)
-			if(myCapab == "Temperature") 				result = input myState, "decimal",	title: "Temperature offset ", 	range: "*..*",		defaultValue: 0
+			if     (myCapab == "Temperature") 			result = input myState, "decimal",	title: "Temperature offset ", 	range: "*..*",		defaultValue: 0
 			else if(myCapab == "Humidity") 				result = input myState, "number", 	title: "Humidity offset", 		range: "-100..100",	defaultValue: 0
 			else if(myCapab == "Illuminance") 			result = input myState, "number", 	title: "Illuminance offset",	range: "*..*",		defaultValue: 0
 			else if(myCapab == "Dimmer level")			result = input myState, "number", 	title: "Dimmer offset", 		range: "-100..100",	defaultValue: 0
@@ -506,7 +509,7 @@ def getState(myCapab, n, isTrig) {
 		result = input modeVar, "enum", title: "Select mode(s)", multiple: true, required: false, options: myModes.sort()
 	} else if(myCapab == "Time of day") {
 		def timeLabel = timeIntervalLabelX()
-		href "certainTimeX", title: "During a certain time", description: timeLabel ?: "Tap to set", state: timeLabel ? "complete" : null
+		href "certainTimeX", title: "Between two times", description: timeLabel ?: "Tap to set", state: timeLabel ? "complete" : null
 	} else if(myCapab == "Certain Time") {
 		def atTimeLabel = atTimeLabel()
 		href "atCertainTime", title: "At a certain time", description: atTimeLabel ?: "Tap to set", state: atTimeLabel ? "complete" : null
@@ -518,7 +521,7 @@ def getState(myCapab, n, isTrig) {
 }
 
 def certainTimeX() {
-	dynamicPage(name: "certainTimeX", title: "Only during a certain time", uninstall: false) {
+	dynamicPage(name: "certainTimeX", title: "Between two times", uninstall: false) {
 		section() {
 			input "startingXX", "enum", title: "Starting at", options: ["A specific time", "Sunrise", "Sunset"], defaultValue: "A specific time", submitOnChange: true
 			if(startingXX in [null, "A specific time"]) input "startingA", "time", title: "Start time", required: false
@@ -607,11 +610,13 @@ def conditionLabelN(i, isTrig) {
 	} else {
 		def thisDev = settings.find {it.key == (isTrig ? "tDev$i" : "rDev$i")}
 		if(!thisDev) return result
+        thisDev = thisDev.value
 		def thisAll = settings.find {it.key == (isTrig ? "AlltDev$i" : "AllrDev$i")}
 //		def myAny = thisAll && thisDev.value.size() > 1 ? "any " : ""
 		def myButton = settings.find {it.key == (isTrig ? "ButtontDev$i" : "ButtonrDev$i")}
         def myAny = ""
-        if((thisAll || !myButton) && thisDev.value.size() > 1) myAny = "any "
+//        if((thisAll || !myButton) && thisDev.size() > 1) myAny = "any "
+        if((thisAll || !(thisCapab.value == "Button")) && thisDev.size() > 1) myAny = "any "
 		if     (thisCapab.value == "Temperature") 	result = "Temperature $phrase "
 		else if(thisCapab.value == "Humidity") 		result = "Humidity $phrase "
 		else if(thisCapab.value == "Illuminance")	result = "Illuminance $phrase "
@@ -621,7 +626,7 @@ def conditionLabelN(i, isTrig) {
 		else if(thisCapab.value == "Battery")		result = "Battery level $phrase "
 		else if(thisCapab.value == "Rule truth") 	result = "Rule truth $phrase "
 		else if(thisCapab.value == "Button") {
-			result = "$thisDev.value button $myButton.value "                
+			result = "$thisDev " + (myButton ? "button $myButton.value " : "")
 			def thisState = settings.find {it.key == (isTrig ? "tstate$i" : "state$i")}
 			result = result + thisState.value
 			return result
@@ -661,8 +666,8 @@ def rulLabl() {
 	def result = state.str
 	if(state.eval && state.str) {
 		state.token = 0
-		def tru = eval()
-		result = result + "\n[" + (tru ? "TRUE" : "FALSE") + "]"
+		def truth = eval()
+		result = result + "\n[" + (truth ? "TRUE" : "FALSE") + "]"
 	}
 }
 
@@ -1106,7 +1111,7 @@ def getDoor(trufal) {
 			def thermoSetCool = "thermoSetCool" + thisStr
 			def thermoAdjCool = "thermoAdjCool" + thisStr
 			def thermoFan = "thermoFan" + thisStr
-			input thermoMode, "enum", title: "> Select thermostat mode", multiple: false, required: false, options: ["auto", "heat", "cool", "off"], submitOnChange: true
+			input thermoMode, "enum", title: "> Select thermostat mode", multiple: false, required: false, options: ["auto", "heat", "cool", "off", "emergency heat"], submitOnChange: true
 			input thermoSetHeat, "decimal", title: "> Set heating point", multiple: false, required: false, submitOnChange: true
 			input thermoAdjHeat, "decimal", title: "> Adjust heating point", multiple: false, required: false, submitOnChange: true, range: "*..*"
 			input thermoSetCool, "decimal", title: "> Set cooling point", multiple: false, required: false, submitOnChange: true 
@@ -1229,15 +1234,18 @@ def getRule(trufal) {
 		input privateV, "enum", title: "Set private Boolean", required: false, submitOnChange: true, options: ["true", "false"]
 		if(settings[privateV]) {
 			def other = "other" + thisStr
+            def thisB = "thisB" + thisStr
 			def otherPrivate = "otherPrivate" + thisStr
 			def privateDelay = "privateDelay" + thisStr
 			def privateDelayCancel = "privateDelayCancel" + thisStr
-			input other, "bool", title: "> For this Rule (default) or others?", required: false, submitOnChange: true
+            input thisB, "bool", title: "> For this Rule (default)?", required: false, submitOnChange: true, defaultValue: true
+			input other, "bool", title: "> And/Or for other Rules?", required: false, submitOnChange: true
 			if(settings[other]) input otherPrivate, "enum", title: "> Select Rules to set Boolean", required: false, multiple: true, options: theseRules.sort(), submitOnChange: true
 			input privateDelay, "number", title: "> Set after a delay?", required: false, submitOnChange: true, description: "0 minutes"
 			if(settings[privateDelay] > 0 && (state.isRule || state.howMany > 1)) input privateDelayCancel, "bool", title: "> Cancel on truth change?", required: false, submitOnChange: true
+            if(settings[thisB]) setAct(trufal, "Private Boolean: ${settings[privateV]}" + (settings[privateDelay] ? ": Delay ${settings[privateDelay]} minutes" + (settings[privateDelayCancel] ? " [Cancel]" : "") : ""))
 			if(settings[otherPrivate]) setAct(trufal, "Rule Boolean: ${settings[otherPrivate]}: ${settings[privateV]}" + (settings[privateDelay] ? ": Delay ${settings[privateDelay]} minutes" + (settings[privateDelayCancel] ? " [Cancel]" : "") : ""))
-			else setAct(trufal, "Private Boolean: ${settings[privateV]}" + (settings[privateDelay] ? ": Delay ${settings[privateDelay]} minutes" + (settings[privateDelayCancel] ? " [Cancel]" : "") : ""))
+//			else setAct(trufal, "Private Boolean: ${settings[privateV]}" + (settings[privateDelay] ? ": Delay ${settings[privateDelay]} minutes" + (settings[privateDelayCancel] ? " [Cancel]" : "") : ""))
 		}
 	}
 	def result = (trufal ? state.actsTrue : state.actsFalse) - prevStr
@@ -1319,7 +1327,7 @@ def scheduleTimeOfDay() {
 	schedule(start, "startHandler")
 	schedule(stop, "stopHandler")
 	if(startingXX in ["Sunrise", "Sunset"] || endingXX in ["Sunrise", "Sunset"])
-		schedule("2015-01-09T00:15:29.000" + gmtOffset(), "scheduleTimeOfDay") // in case sunset/sunrise; change daily
+		schedule("2015-01-09T02:05:29.000" + gmtOffset(), "scheduleTimeOfDay") // in case sunset/sunrise; change daily
 }
 
 def scheduleAtTime() {
@@ -1329,7 +1337,7 @@ def scheduleAtTime() {
 	else if(timeX == "Sunset") myTime = s.sunset.time
 	else myTime = timeToday(atTime, location.timeZone).time
 	schedule(myTime, "timeHandler")
-	if(timeX in ["Sunrise", "Sunset"]) schedule("2015-01-09T00:15:29.000" + gmtOffset(), "scheduleAtTime") // in case sunset/sunrise; change daily
+	if(timeX in ["Sunrise", "Sunset"]) schedule("2015-01-09T02:05:29.000" + gmtOffset(), "scheduleAtTime") // in case sunset/sunrise; change daily
 }
 
 def installed() {
@@ -1809,7 +1817,7 @@ def takeAction(success) {
 															runIn(privateDelayTrue * 60, delayPrivyTrueX) }
 														else runIn(privateDelayTrue * 60, delayPrivyTrue) }
 								else if(otherTrue && otherPrivateTrue) parent.setRuleBoolean(otherPrivateTrue, privateTrue, app.label)
-								else state.private = privateTrue // == "true"
+								if(thisBTrue) state.private = privateTrue // == "true"
 		if(ruleTrue)			parent.runRule(ruleTrue, app.label)
 		if(ruleActTrue)			parent.runRuleAct(ruleActTrue, app.label)
 		if(ruleEvalDelayTrue)	if(delayEvalMinutesTrue) runIn(delayEvalMinutesTrue * 60, delayEvalTrue)
@@ -1865,7 +1873,7 @@ def takeAction(success) {
 															runIn(privateDelayFalse * 60, delayPrivyFalseX) }
 														else runIn(privateDelayFalse * 60, delayPrivyFalse) }
 								else if(otherFalse && otherPrivateFalse) parent.setRuleBoolean(otherPrivateFalse, privateFalse, app.label)
-								else state.private = privateFalse
+								if(thisBFalse) state.private = privateFalse
 		if(ruleFalse)			parent.runRule(ruleFalse, app.label)
 		if(ruleActFalse)		parent.runRuleAct(ruleActFalse, app.label)
 		if(ruleEvalDelayFalse)	if(delayEvalMinutesFalse) runIn(delayEvalMinutesFalse * 60, delayEvalFalse)
@@ -1920,7 +1928,12 @@ def doTrigger() {
 def getButton(dev, evt, i) {
 	def numNames = ["", "one", "two", "three", "four", "five", "six", "seven", "eight", "nine", "ten",
     	"eleven", "twelve", "thirteen", "fourteen", "fifteen", "sixteen", "seventeen", "eighteen", "nineteen", "twenty"]
-	def buttonNumber = evt.jsonData.buttonNumber.toInteger() 
+	def numButtons = settings.find{it.key == "numButtons$dev"}
+	numButtons = numButtons ? numButtons.value : 4
+    def buttonNumber
+	if(numButtons > 1) buttonNumber = evt.jsonData.buttonNumber.toInteger() 
+    else buttonNumber = 1
+    log.debug "getButton: $buttonNumber"
 	def value = evt.value
 //	log.debug "buttonEvent: $evt.name = $evt.value ($evt.data)"
 //	log.debug "button: $buttonNumber, value: $value"
@@ -2055,7 +2068,7 @@ def delayRuleFalseForce() {
 
 def delayPrivyTrue() {
 	if(otherTrue && otherPrivateTrue) parent.setRuleBoolean(otherPrivateTrue, privateTrue, app.label)
-	else {
+	if(thisBTrue) {
     	state.private = privateTrue // == "true"
 		if(state.isRule || (state.howMany > 1 && state.howManyT <= 1)) runRule(false)
         else doTrigger()
@@ -2068,7 +2081,7 @@ def delayPrivyTrueX() {
 
 def delayPrivyFalse() {
 	if(otherFalse && otherPrivateFalse) parent.setRuleBoolean(otherPrivateFalse, privateFalse, app.label)
-	else {
+	if(thisBFalse) {
     	state.private = privateFalse
 		if(state.isRule || (state.howMany > 1 && state.howManyT <= 1)) runRule(false)
     }
