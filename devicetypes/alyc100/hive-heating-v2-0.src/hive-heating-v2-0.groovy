@@ -27,11 +27,12 @@
  *  v2.1.5c - Fix multitile button behaviour that has changed since ST app 2.1.0. Add colour code to temperature reporting in activity feed.
  *	v2.1.6d - Fix blank temperature readings on Android ST app 
  *	v2.1.6e - Another attempt to fix blank temperature reading on Android.
+ *	v2.1.6f - Allow decimal value for boost temperature. Changes to VALUE_CONTROL method to match latest ST docs.
  */
 preferences 
 {
 	input( "boostInterval", "number", title: "Boost Interval (minutes)", description: "Boost interval amount in minutes", required: false, defaultValue: 10 )
-    input( "boostTemp", "number", title: "Boost Temperature (°C)", description: "Boost interval amount in Centigrade", required: false, defaultValue: 22 )
+    input( "boostTemp", "decimal", title: "Boost Temperature (°C)", description: "Boost interval amount in Centigrade", required: false, defaultValue: 22, range: "5..32" )
 	input( "disableDevice", "bool", title: "Disable Hive Heating?", required: false, defaultValue: false )
 }
 
@@ -54,7 +55,6 @@ metadata {
         command "setHeatingSetpoint"
         command "setTemperatureForSlider"
         command "setBoostLength"
-        command "setTemperature"
         command "boostButton"
 	}
 
@@ -73,7 +73,8 @@ metadata {
 				attributeState "hiveHeating", label:'${currentValue}'
 			}
   			tileAttribute("device.temperature", key: "VALUE_CONTROL") {
-    				attributeState("default", action: "setTemperature")
+    				attributeState("VALUE_UP", action: "heatingSetpointUp")
+    				attributeState("VALUE_DOWN", action: "heatingSetpointDown")
   			}
   			tileAttribute("device.thermostatOperatingState", key: "OPERATING_STATE") {
     				attributeState("idle", backgroundColor:"#bbbbbb")
@@ -308,13 +309,6 @@ def heatingSetpointUp(){
 def heatingSetpointDown(){
 	log.debug "Executing 'heatingSetpointDown'"
 	setNewSetPointValue(getHeatTemp().toInteger() - 1)
-}
-
-def setTemperature(value) {
-	log.debug "Executing 'setTemperature with $value'"
-    def currentTemp = device.currentState("temperature").doubleValue
-	(value < currentTemp) ? (setNewSetPointValue(getHeatTemp().toInteger() - 1)) : (setNewSetPointValue(getHeatTemp().toInteger() + 1))
-
 }
 
 def setTemperatureForSlider(value) {
