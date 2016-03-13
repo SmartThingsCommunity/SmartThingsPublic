@@ -3,7 +3,7 @@
  *
  *  Copyright 2015, 2016 Bruce Ravenel
  *
- *  Version 1.8.5   13 Mar 2016
+ *  Version 1.8.5a   13 Mar 2016
  *
  *	Version History
  *
@@ -110,7 +110,7 @@ preferences {
 //
 
 def appVersion() {
-	return "1.8.5" 
+	return "1.8.5a" 
 }
 
 def mainPage() {
@@ -610,13 +610,12 @@ def conditionLabelN(i, isTrig) {
 	} else {
 		def thisDev = settings.find {it.key == (isTrig ? "tDev$i" : "rDev$i")}
 		if(!thisDev) return result
-        thisDev = thisDev.value
 		def thisAll = settings.find {it.key == (isTrig ? "AlltDev$i" : "AllrDev$i")}
 //		def myAny = thisAll && thisDev.value.size() > 1 ? "any " : ""
 		def myButton = settings.find {it.key == (isTrig ? "ButtontDev$i" : "ButtonrDev$i")}
         def myAny = ""
 //        if((thisAll || !myButton) && thisDev.size() > 1) myAny = "any "
-        if((thisAll || !(thisCapab.value == "Button")) && thisDev.size() > 1) myAny = "any "
+        if((thisAll || !(thisCapab.value == "Button")) && thisDev.value.size() > 1) myAny = "any "
 		if     (thisCapab.value == "Temperature") 	result = "Temperature $phrase "
 		else if(thisCapab.value == "Humidity") 		result = "Humidity $phrase "
 		else if(thisCapab.value == "Illuminance")	result = "Illuminance $phrase "
@@ -626,7 +625,7 @@ def conditionLabelN(i, isTrig) {
 		else if(thisCapab.value == "Battery")		result = "Battery level $phrase "
 		else if(thisCapab.value == "Rule truth") 	result = "Rule truth $phrase "
 		else if(thisCapab.value == "Button") {
-			result = "$thisDev " + (myButton ? "button $myButton.value " : "")
+			result = "$thisDev.value " + (myButton ? "button $myButton.value " : "")
 			def thisState = settings.find {it.key == (isTrig ? "tstate$i" : "state$i")}
 			result = result + thisState.value
 			return result
