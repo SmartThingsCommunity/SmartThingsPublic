@@ -2,7 +2,7 @@
  *  Alexa Helper-Child
  *
  *  Copyright © 2016 Michael Struck
- *  Version 2.8.5 3/12/16
+ *  Version 2.8.6 3/13/16
  * 
  *  Version 1.0.0 - Initial release of child app
  *  Version 1.1.0 - Added framework to show version number of child app and copyright
@@ -29,6 +29,7 @@
  *  Version 2.8.3 - Minor code fixes, optimizations, adding 'Apply' heating setpoint for StelPro baseboard heaters
  *  Version 2.8.4 - Added additional voice variables (%temp%); workaround implemented for playTrack() not being operational(as of 3/11)
  *  Version 2.8.5 - Code optimization, added option to announce name of song for saved stations
+ *  Version 2.8.6 - Fixed issue with the 'Contacts' SMS and Push Notification
  *
  *  Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except
  *  in compliance with the License. You may obtain a copy of the License at:
@@ -105,7 +106,7 @@ def pageControl() {
             	href "pageSTDevicesOn", title: "SmartThings Device Control...", description: getDeviceDesc("on")
             	input "onHTTP", "text", title:"Run this HTTP request...", required: false
             	input "delayOn", "number", title: "Delay in minutes", defaultValue: 0, required: false
-                input ("onContacts", "contact", title: "Send notifications to...") {
+                input ("onContacts", "contact", title: "Send notifications to...", required: false) {
                 	input "onSMSNum", "phone", title: "Send SMS message (phone number)...", required: false
                 	input "onPushMsg", "bool", title: "Send Push message", defaultValue: false
 				}
@@ -120,7 +121,7 @@ def pageControl() {
                 href "pageSTDevicesOff", title: "SmartThings Device Control...", description: getDeviceDesc("off")
                 input "offHTTP", "text", title:"Run this HTTP request...", required: false
                 input "delayOff", "number", title: "Delay in minutes", defaultValue: 0, required: false
-                input ("offContacts", "contact", title: "Send notifications to...") {
+                input ("offContacts", "contact", title: "Send notifications to...", required: false) {
                 	input "offSMSNum", "phone", title: "Send SMS message (phone number)...", required: false
                 	input "offPushMsg", "bool", title: "Send Push message", defaultValue: false
                 }
@@ -216,7 +217,7 @@ def pagePanic() {
             if (alarmSonos && parent.getSonos()  && !alarmSonos.name.contains("Sonos")){
             	paragraph "You have chosen a speaker for your alarm that is not supported. Currently, only Sonos speakers can be used as alarms. Please choose a Sonos speaker."
             }
-            input ("panicContactsOn", "contact", title: "Send notifications to...") {
+            input ("panicContactsOn", "contact", title: "Send notifications to...", required: false) {
             	input "panicSMSnumberOn", "phone", title: "Send SMS message to (phone number)...", required: false
             	input "panicPushOn", "bool", title: "Send Push Message", defaultValue: false
             }
@@ -225,7 +226,7 @@ def pagePanic() {
         if (panicSwitchOn && panicSwitchOff){
         	section ("When panic is deactivated..."){
         		if (alarm || alarmSonos) input "alarmOff", "bool", title: "Turn off alarm?", defaultValue: false
-            	input ("panicContactsOff", "contact", title: "Send notifications to...") {
+            	input ("panicContactsOff", "contact", title: "Send notifications to...", required: false) {
                 	input "panicSMSnumberOff", "phone", title: "Send SMS message to (phone number)...", required: false
                 	input "panicPushOff", "bool", title: "Send Push Message", defaultValue: false
             	}
@@ -1085,5 +1086,5 @@ private parseDate(epoch, type){
     new Date().parse("yyyy-MM-dd'T'HH:mm:ss.SSSZ", parseDate).format("${type}", timeZone(parseDate))
 }
 //Version
-private def textVersion() {def text = "Child App Version: 2.8.5 (03/12/2016)"}
-private def versionInt() {def text = 285}
+private def textVersion() {def text = "Child App Version: 2.8.6 (03/13/2016)"}
+private def versionInt() {def text = 286}
