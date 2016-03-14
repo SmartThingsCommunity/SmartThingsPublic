@@ -3,7 +3,7 @@
  *
  *  Copyright 2015, 2016 Bruce Ravenel
  *
- *  Version 1.8.5d   14 Mar 2016
+ *  Version 1.8.5e   14 Mar 2016
  *
  *	Version History
  *
@@ -110,7 +110,7 @@ preferences {
 //
 
 def appVersion() {
-	return "1.8.5d" 
+	return "1.8.5e" 
 }
 
 def mainPage() {
@@ -794,11 +794,6 @@ def getActions(trufal) {
         def thisStateStr = trufal ? state.delayStrTrue : state.delayStrFalse
 		href thisPage, title: "Delay These Actions", description: thisStateStr ? (thisStateStr) : "Tap to set", state: thisStateStr ? "complete" : null
         if(thisStateStr) setAct(trufal, thisStateStr)
-// Run Rules, Actions, set Boolean
-    	def thisPage5 = "rule" + thisStr + "Page"
-        def thisStateStr5 = trufal ? state.ruleStrTrue : state.ruleStrFalse
-		href thisPage5, title: "Run Rules, Actions, set Boolean", description: thisStateStr5 ? (thisStateStr5) : "Tap to set", state: thisStateStr5 ? "complete" : null
-        if(thisStateStr5) setAct(trufal, thisStateStr5)
 // Control Switches, Capture/Restore
     	def thisPage1 = "switch" + thisStr + "Page"
         def thisStateStr1 = trufal ? state.switchStrTrue : state.switchStrFalse
@@ -824,6 +819,11 @@ def getActions(trufal) {
         def thisStateStr4 = trufal ? state.modeStrTrue : state.modeStrFalse
 		href thisPage4, title: "Set mode, alarm, Routine, photos", description: thisStateStr4 ? (thisStateStr4) : "Tap to set", state: thisStateStr4 ? "complete" : null
         if(thisStateStr4) setAct(trufal, thisStateStr4)
+// Run Rules, Actions, set Boolean
+    	def thisPage5 = "rule" + thisStr + "Page"
+        def thisStateStr5 = trufal ? state.ruleStrTrue : state.ruleStrFalse
+		href thisPage5, title: "Run Rules, Actions, set Boolean", description: thisStateStr5 ? (thisStateStr5) : "Tap to set", state: thisStateStr5 ? "complete" : null
+        if(thisStateStr5) setAct(trufal, thisStateStr5)
 // Run custom commands        
 		if (state.isExpert){
 			if (state.cstCmds){
