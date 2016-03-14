@@ -18,6 +18,7 @@
  *		   Enable alert for specified daily cost level breach.
  *	v2.1b - Allow cost alert level to be decimal
  *	v2.2 - Percentage comparison from previous cost values added into display
+ *	v2.2.1 - Add current consumption price based on unit price from OVO account API not OVO live API
  */
 preferences 
 {
@@ -95,25 +96,27 @@ def refreshLiveData() {
 	
     	data.meterlive = resp.data
         
-        // get electricity readings
-        def demand = ((int)Math.round((data.meterlive.consumption.demand as BigDecimal) * 1000))
-        def consumptionPrice = (Math.round((data.meterlive.consumption.consumptionPrice.amount as BigDecimal) * 100))/100
-        def consumptionPriceCurrency = data.meterlive.consumption.consumptionPrice.currency
+        //update unit price from OVO Live API
         def unitPriceBigDecimal = data.meterlive.consumption.unitPrice.amount as BigDecimal
         def unitPrice = (Math.round((unitPriceBigDecimal) * 100))/100
         def unitPriceCurrency = data.meterlive.consumption.unitPrice.currency
-        
-        //demand = String.format("%4f",demand)
-        consumptionPrice = String.format("%1.2f",consumptionPrice)
         unitPrice = String.format("%1.2f",unitPrice)
         
-        //update unit price and standing charge from more up to date OVO API
+        //update unit price and standing charge from more up to date OVO Account API if available
         parent.updateLatestPrices()
         def latestUnitPrice = ((device.name.contains('Gas')) ? parent.getUnitPrice('GAS') : parent.getUnitPrice('ELECTRICITY')) as BigDecimal
         if (latestUnitPrice > 0) {
         	unitPriceBigDecimal = latestUnitPrice
         	unitPrice = String.format("%1.5f", unitPriceBigDecimal)
         }
+        
+        // get electricity readings
+        def demand = ((int)Math.round((data.meterlive.consumption.demand as BigDecimal) * 1000))
+        def consumptionPrice = (Math.round(((unitPriceBigDecimal as BigDecimal) * (data.meterlive.consumption.demand as BigDecimal)) * 100))/100
+        def consumptionPriceCurrency = data.meterlive.consumption.consumptionPrice.currency
+        
+        //demand = String.format("%4f",demand)
+        consumptionPrice = String.format("%1.2f",consumptionPrice)
         
         def standingCharge = ((device.name.contains('Gas')) ? parent.getStandingCharge('GAS') : parent.getStandingCharge('ELECTRICITY')) as BigDecimal
         log.debug "unitPrice: ${unitPriceBigDecimal} standingCharge: ${standingCharge}"
