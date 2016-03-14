@@ -381,10 +381,12 @@ def getDataByName(String name) {
 
 def setThermostatMode(String value) {
 	log.debug "setThermostatMode({$value})"
+	switchToMode(value)
 }
 
 def setThermostatFanMode(String value) {
 	log.debug "setThermostatFanMode({$value})"
+	switchToFanMode(value)
 }
 
 def generateModeEvent(mode) {
