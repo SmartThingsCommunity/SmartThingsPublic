@@ -2,7 +2,7 @@
  *  Alexa Helper-Child
  *
  *  Copyright © 2016 Michael Struck
- *  Version 2.8.6 3/13/16
+ *  Version 2.8.6 3/14/16
  * 
  *  Version 1.0.0 - Initial release of child app
  *  Version 1.1.0 - Added framework to show version number of child app and copyright
@@ -30,6 +30,7 @@
  *  Version 2.8.4 - Added additional voice variables (%temp%); workaround implemented for playTrack() not being operational(as of 3/11)
  *  Version 2.8.5 - Code optimization, added option to announce name of song for saved stations
  *  Version 2.8.6 - Fixed issue with the 'Contacts' SMS and Push Notification
+ *  Version 2.8.7 - Code optimizations/Syntax changes/Bug fixes
  *
  *  Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except
  *  in compliance with the License. You may obtain a copy of the License at:
@@ -148,10 +149,10 @@ def pageSTDevicesOn(){
             if (onColoredLightsCMD == "set" && onColoredLights){
         		input "onColoredLightsCLR", "enum", title: "Choose a color...", required: false, multiple:false, options: getColorOptions(), submitOnChange:true
                 if (onColoredLightsCLR == "User Defined"){
-                	input "hueUserDefined", "number", title: "Colored lights hue", description: "Set colored light hue (0 to 100)", required: false, defaultValue: 0
-                	input "satUserDefined", "number", title: "Colored lights saturation", description: "Set colored light saturation (0 to 100)", required: false, defaultValue: 0
+                	input "hueUserDefinedOn", "number", title: "Colored lights hue", description: "Set colored light hue (0 to 100)", required: false, defaultValue: 0
+                	input "satUserDefinedOn", "number", title: "Colored lights saturation", description: "Set colored lights saturation (0 to 100)", required: false, defaultValue: 0
                 }
-                input "onColoredLightsLVL", "number", title: "Colored lights level", description: "Set colored light level", required: false, defaultValue: 0
+                input "onColoredLightsLVL", "number", title: "Colored lights level", description: "Set colored lights level", required: false, defaultValue: 0
             }
     	}
         section ("Locks"){
@@ -169,18 +170,22 @@ def pageSTDevicesOff(){
 	dynamicPage (name: "pageSTDevicesOff", title: "SmartThings Device Control", install: false, uninstall: false) {
 		section ("Switches"){
     		input "offSwitches", "capability.switch", title: "Control these switches...", multiple: true, required: false, submitOnChange:true
-        	if (offSwitches) input "offSwitchesCMD", "enum", title: "Command to send to switches", options:["on":"Turn on","off":"Turn off", "toggle":"Toggle the switches state"], multiple: false, required: false
+        	if (offSwitches) input "offSwitchesCMD", "enum", title: "Command to send to switches", options:["on":"Turn on","off":"Turn off", "toggle":"Toggle the switches' on/off state"], multiple: false, required: false
     	}
     	section ("Dimmers"){
     		input "offDimmers", "capability.switchLevel", title: "Control these dimmers...", multiple: true, required: false , submitOnChange:true
-        	if (offDimmers) input "offDimmersCMD", "enum", title: "Command to send to dimmers", options:["on":"Turn on","off":"Turn off","set":"Set level", "toggle":"Toggle the switches state"], multiple: false, required: false, submitOnChange:true
+        	if (offDimmers) input "offDimmersCMD", "enum", title: "Command to send to dimmers", options:["on":"Turn on","off":"Turn off","set":"Set level", "toggle":"Toggle the dimmers' on/off state"], multiple: false, required: false, submitOnChange:true
         	if (offDimmersCMD == "set" && offDimmers) input "offDimmersLVL", "number", title: "Dimmers level", description: "Set dimmer level", required: false, defaultValue: 0
    		}
         section ("Colored Lights"){
         	input "offColoredLights", "capability.colorControl", title: "Control these colored lights...", multiple: true, required: false, submitOnChange:true
-			if (offColoredLights) input "offColoredLightsCMD", "enum", title: "Command to send to colored lights", options:["on":"Turn on","off":"Turn off","set":"Set color and level", "toggle":"Toggle the switches state"], multiple: false, required: false, submitOnChange:true
+			if (offColoredLights) input "offColoredLightsCMD", "enum", title: "Command to send to colored lights", options:["on":"Turn on","off":"Turn off","set":"Set color and level", "toggle":"Toggle the lights' on/off state"], multiple: false, required: false, submitOnChange:true
             if (offColoredLightsCMD == "set" && offColoredLights){
         		input "offColoredLightsCLR", "enum", title: "Choose a color...", required: false, multiple:false, options: getColorOptions()
+                if (offColoredLightsCLR == "User Defined"){
+                	input "hueUserDefinedOff", "number", title: "Colored lights hue", description: "Set colored light hue (0 to 100)", required: false, defaultValue: 0
+                	input "satUserDefinedOff", "number", title: "Colored lights saturation", description: "Set colored lights saturation (0 to 100)", required: false, defaultValue: 0
+                }
                 input "offColoredLightsLVL", "number", title: "Colored light level", description: "Set colored lights level", required: false, defaultValue: 0
         	}
     	}
@@ -436,8 +441,7 @@ def switchHandler(evt) {
             else {
             	runIn(delayOn*60, turnOn, [overwrite: true])
 				if (parent.getNotifyFeed()){
-    				def logText = "Alexa Helper Scenario: '${app.label}' ON triggered. Will activate in ${delayOn} minutes."
-                    sendNotificationEvent(logText)
+    				sendNotificationEvent("Alexa Helper Scenario: '${app.label}' ON triggered. Will activate in ${delayOn} minutes.")
     			}
             }          
     	} 
@@ -446,8 +450,7 @@ def switchHandler(evt) {
             else {
             	runIn(delayOff*60, turnOff, [overwrite: true])
                 if (parent.getNotifyFeed()){
-    				def logText = "Alexa Helper Scenario: '${app.label}' OFF triggered. Will activate in ${delayOn} minutes."
-                    sendNotificationEvent(logText)
+    				sendNotificationEvent("Alexa Helper Scenario: '${app.label}' OFF triggered. Will activate in ${delayOn} minutes.")
     			}
             }
     	}
@@ -464,7 +467,7 @@ def turnOn(){
     if (onDimmers && onDimmersCMD){
         if (onDimmersCMD == "set"){
         	def level = onDimmersLVL ? onDimmersLVL as int : 0
-        	level = level < 0 ? level=0 : level >100 ? level=100 : level
+        	level = level < 0 ? 0 : level >100 ? 100 : level
         	onDimmers?.setLevel(level)
         }
         else onDimmersCMD == "toggle" ? toggleState(onDimmers) : onDimmers?."$onDimmersCMD"()
@@ -472,8 +475,8 @@ def turnOn(){
     if (onColoredLights && onColoredLightsCMD){
     	if (onColoredLightsCMD == "set"){
         	def level = onColoredLightsLVL ? onColoredLightsLVL as int : 0
-            level = level < 0 ? level=0 : level >100 ? level=100 : level
-            onColoredLightsCLR ? setColoredLights(onColoredLights, onColoredLightsCLR, level) : onColoredLights?.setLevel(level)
+            level = level < 0 ? 0 : level >100 ? 100 : level
+            onColoredLightsCLR ? setColoredLights(onColoredLights, onColoredLightsCLR, level, "on") : onColoredLights?.setLevel(level)
         }
         else if (onColoredLightsCMD == "toggle") toggleState(onColoredLights)	
         else onColoredLights?."$onColoredLightsCMD"()
@@ -501,7 +504,7 @@ def turnOff(){
     if (offDimmers && offDimmersCMD){
     	if (offDimmersCMD == "set"){
         	def level = offDimmersLVL ? offDimmersLVL as int : 0
-        	level = level < 0 ? level=0 : level >100 ? level=100 : level
+        	level = level < 0 ?  0 : level >100 ? 100 : level
         	offDimmers?.setLevel(level)
         }
         else offDimmersCMD == "toggle" ? toggleState(offDimmers) : offDimmers?."$offDimmersCMD"()
@@ -509,19 +512,19 @@ def turnOff(){
     if (offColoredLights && offColoredLightsCMD){
     	if (offColoredLightsCMD == "set"){
         	def level = offColoredLightsLVL ? offColoredLightsLVL as int : 0
-            level = level < 0 ? level=0 : level >100 ? level=100 : level
-            offColoredLightsCLR ? setColoredLights(offColoredLights, offColoredLightsCLR, level) : offColoredLights?.setLevel(level)
+            level = level < 0 ? 0 : level >100 ? 100 : level
+            offColoredLightsCLR ? setColoredLights(offColoredLights, offColoredLightsCLR, level, "off") : offColoredLights?.setLevel(level)
         }
         else if (offColoredLightsCMD == "toggle") toggleState(offColoredLights)	
         else offColoredLights?."$offColoredLightsCMD"()
     }
     if (offLocks && offLocksCMD) offLocks?."$offLocksCMD"()
     if (offHTTP){
-    	log.debug "Attempting to run: ${offHTTP}"
+    	log.info "Attempting to run: ${offHTTP}"
         httpGet("${offHTTP}")
     }
     if (offSHM){
-    	log.debug "Setting Smart Home Monitor to ${offSHM}"
+    	log.info "Setting Smart Home Monitor to ${offSHM}"
         sendLocationEvent(name: "alarmSystemStatus", value: "${offSHM}")
     }
     if (offGarages && offGaragesCMD) offGarages?."$offGaragesCMD"()
@@ -545,10 +548,7 @@ def panicOn(evt){
 			def smsTxt = panicSMSMsgOn ? panicSMSMsgOn : "Panic was activated without message text input. Please investigate."
             sendMSG(panicSMSnumberOn, smsTxt, panicPushOn, panicContactsOn) 	
 		}
-		if (parent.getNotifyFeed()){
-			def logText = "Alexa Helper Scenario: '${app.label}' PANIC ON activated."
-			sendNotificationEvent(logText)
-		}        
+		if (parent.getNotifyFeed()) sendNotificationEvent("Alexa Helper Scenario: '${app.label}' PANIC ON activated.")    
 	}
 }
 def panicOff(evt){
@@ -561,10 +561,7 @@ def panicOff(evt){
 			def smsTxt = panicSMSMsgOff ? panicSMSMsgOff : "Panic was deactivated without message text input. Please investigate"
             sendMSG(panicSMSnumberOff, smsTxt, panicPushOff, panicContactsOff) 	
 		}
-        if (parent.getNotifyFeed()){
-			def logText = "Alexa Helper Scenario: '${app.label}' PANIC OFF activated."
-			sendNotificationEvent(logText)
-		}
+        if (parent.getNotifyFeed()) sendNotificationEvent ("Alexa Helper Scenario: '${app.label}' PANIC OFF activated.")
 	}
 }
 def alarmTurnOn(){alarm?."$alarmType"()}
@@ -651,7 +648,6 @@ def thermoHandler(evt){
         	def tstatLevel = vDimmerTstat.currentValue("level") as int
     		tstatLevel = upLimitTstat && vDimmerTstat.currentValue("level") > upLimitTstat ? upLimitTstat : tstatLevel
         	tstatLevel = lowLimitTstat && vDimmerTstat.currentValue("level") < lowLimitTstat ? lowLimitTstat : tstatLevel
-			//Turn thermostat to proper level depending on mode	
     		if (tstatMode == "heat" || tstatMode == "auto") tstat.setHeatingSetpoint(tstatLevel)		
     		if (tstatMode == "cool" || tstatMode == "auto") tstat.setCoolingSetpoint(tstatLevel)	
     		log.info "Thermostat set to ${tstatLevel}"
@@ -770,28 +766,15 @@ def getDeviceDesc(type){
     def result, switches, dimmers, cLights, locks, garages
     def lvl, cLvl, clr
     def cmd = []
-    if (type == "on"){
-        cmd = [switch: onSwitchesCMD, dimmer: onDimmersCMD, cLight: onColoredLightsCMD, lock: onLocksCMD, garage: onGaragesCMD]
-        switches = onSwitches && cmd.switch ? onSwitches : ""
-        lvl = cmd.dimmer == "set" && onDimmersLVL ? onDimmersLVL as int : 0
-        dimmers = onDimmers && cmd.dimmer ? onDimmers : ""
-        cLvl = cmd.cLight == "set" && onColoredLightsLVL ? onColoredLightsLVL as int : 0
-        clr = cmd.cLight == "set" && onColoredLightsCLR ? onColoredLightsCLR  : ""
-        cLights = onColoredLights && cmd.cLight ? onColoredLights : ""
-        locks = onLocks && cmd.lock ? onLocks : ""
-        garages = onGarages && cmd.garage ? onGarages : ""
-    }
-    if (type == "off"){
-		cmd = [switch: offSwitchesCMD, dimmer: offDimmersCMD, cLight: offColoredLightsCMD, lock: offLocksCMD, garage: offGaragesCMD]
-        switches = offSwitches && cmd.switch ? offSwitches : ""
-        lvl = cmd.dimmer == "set" && offDimmersLVL ? offDimmersLVL as int : 0
-        dimmers = offDimmers && cmd.dimmer ? offDimmers : ""
-        cLvl = cmd.cLight == "set" && offColoredLightsLVL ? offColoredLightsLVL as int : 0
-        clr = cmd.cLight == "set" && offColoredLightsCLR ? offColoredLightsCLR : ""
-        cLights = offColoredLights && cmd.cLight ? offColoredLights : ""
-        locks = offLocks && cmd.lock ? offLocks : ""
-        garages = offGarages && cmd.garage ? offGarages : ""
-    }
+    cmd = [switch: settings."${type}SwitchesCMD", dimmer: settings."${type}DimmersCMD", cLight: settings."${type}ColoredLightsCMD", lock: settings."${type}LocksCMD", garage: settings."${type}GaragesCMD"]
+	switches = settings."${type}Switches" && cmd.switch ? settings."${type}Switches" : ""
+	lvl = cmd.dimmer == "set" && settings."${type}DimmersLVL" ? settings."${type}DimmersLVL" as int : 0
+	dimmers = settings."${type}Dimmers" && cmd.dimmer ? settings."${type}Dimmers" : ""
+	cLvl = cmd.cLight == "set" && settings."${type}ColoredLightsLVL" ? settings."${type}ColoredLightsLVL" as int : 0
+	clr = cmd.cLight == "set" && settings."${type}ColoredLightsCLR" ? settings."${type}ColoredLightsCLR"  : ""
+	cLights = settings."${type}ColoredLights" && cmd.cLight ? settings."${type}ColoredLights" : ""
+	locks = settings."${type}Locks" && cmd.lock ? settings."${type}Locks" : ""
+	garages = settings."${type}Garages" && cmd.garage ? settings."${type}Garages" : ""
     lvl = lvl < 0 ? lvl = 0 : lvl >100 ? lvl=100 : lvl
     cLvl = cLvl < 0 ? cLvl = 0 : cLvl >100 ? cLvl=100 : cLvl
     if (switches || dimmers || cLights || locks || garages) {
@@ -835,7 +818,7 @@ private getTimeOk(startTime, endTime) {
     result
 }
 def getColorOptions(){def colors=[["Soft White":"Soft White"],["White":"White - Concentrate"],["Daylight":"Daylight - Energize"],["Warm White":"Warm White - Relax"],"Red","Green","Blue","Yellow","Orange","Purple","Pink","User Defined"]}
-private setColoredLights(switches, color, level){
+private setColoredLights(switches, color, level, onOff){
     def hueColor = 100
 	def satLevel = 100
 	switch(color) {
@@ -876,10 +859,10 @@ private setColoredLights(switches, color, level){
 		case "Red":
 			break;
 		case "Custom-User Defined":
-        	hueColor = hueUserDefined ? hueUserDefined : 0
-            satLevel = satUserDefined ? satUserDefined : 0
-            hueColor = hueColor>100 ? hueColor=100 : hueColor<0 ? hueColor=0 : hueColor
-            satLevel = satLevel>100 ? satLevel=100 : satLevel<0 ? satLevel=0 : satLevel
+            hueColor = settings."hueUserDefined${onOff}" ?  settings."hueUserDefined${onOff}"  : 0
+            satLevel = settings."satUserDefined${onOff}" ? settings."satUserDefined${onOff}" : 0
+            hueColor = hueColor > 100 ? hueColor=100 : hueColor < 0 ? hueColor=0 : hueColor
+            satLevel = satLevel > 100 ? satLevel=100 : satLevel < 0 ? satLevel=0 : satLevel
             break;
 	}
     def newValue = [hue: hueColor as int, saturation: satLevel as int, level: level as int]
@@ -887,11 +870,9 @@ private setColoredLights(switches, color, level){
 }
 def songOptions(slot) {
     if (speaker) {
-		// Make sure current selection is in the set
 		def options = new LinkedHashSet()
         if (state."selectedSong${slot}"?.station) options << state."selectedSong${slot}".station
 		else if (state."selectedSong${slot}"?.description) options << state."selectedSong${slot}".description
-        // Query for recent tracks
 		def states = speaker.statesSince("trackData", new Date(0), [max:30])
 		def dataMaps = states.collect{it.jsonValue}
 		options.addAll(dataMaps.collect{it.station})
@@ -1043,25 +1024,10 @@ def toggleState(swDevices){
 }
 //Get Sonos Alarm Sound uri
 def getAlarmSound(){
-	def soundUri
+	//def soundUri
     def soundLength = alarmSonosTimer && alarmSonosTimer < 60 ? alarmSonosTimer : 60
-    switch(alarmSonosSound) {
-    	case "1":
-            soundUri = [uri: "https://raw.githubusercontent.com/MichaelStruck/SmartThings/master/Other-SmartApps/AlexaHelper/AlarmSirens/AlarmSiren1.mp3", duration: "${soundLength}"]
-        	break;
-        case "2":
-            soundUri = [uri: "https://raw.githubusercontent.com/MichaelStruck/SmartThings/master/Other-SmartApps/AlexaHelper/AlarmSirens/AlarmSiren2.mp3", duration: "${soundLength}"]
-        	break;
-        case "3":
-            soundUri = [uri: "https://raw.githubusercontent.com/MichaelStruck/SmartThings/master/Other-SmartApps/AlexaHelper/AlarmSirens/AlarmSiren3.mp3", duration: "${soundLength}"]
-        	break;
-		case "4":
-            soundUri = [uri: "https://raw.githubusercontent.com/MichaelStruck/SmartThings/master/Other-SmartApps/AlexaHelper/AlarmSirens/AlarmSiren4.mp3", duration: "${soundLength}"]
-        	break;
-        case "5":
-        	soundUri =[uri: "${alarmSonosCustom}", duration: "${soundLength}"]
-            break;
-    }
+    def soundUri = [uri: "https://raw.githubusercontent.com/MichaelStruck/SmartThings/master/Other-SmartApps/AlexaHelper/AlarmSirens/AlarmSiren${alarmSonosSound}.mp3", duration: "${soundLength}"]
+    if (alarmSonosSound == "5") soundUri =[uri: "${alarmSonosCustom}", duration: "${soundLength}"]
     state.alarmSound = soundUri
 }
 def sonosSlots(){def slots = parent.getMemCount() as int}
@@ -1086,5 +1052,5 @@ private parseDate(epoch, type){
     new Date().parse("yyyy-MM-dd'T'HH:mm:ss.SSSZ", parseDate).format("${type}", timeZone(parseDate))
 }
 //Version
-private def textVersion() {def text = "Child App Version: 2.8.6 (03/13/2016)"}
-private def versionInt() {def text = 286}
+private def textVersion() {def text = "Child App Version: 2.8.7 (03/14/2016)"}
+private def versionInt() {def text = 287}
