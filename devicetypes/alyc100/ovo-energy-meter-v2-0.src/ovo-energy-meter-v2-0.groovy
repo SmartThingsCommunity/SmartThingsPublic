@@ -133,7 +133,6 @@ def refreshLiveData() {
         	data.yesterdayPowerHistory = [:]
         }
         //Get current hour
-        
         //data.hour = null
         def currentHour = new Date().getAt(Calendar.HOUR_OF_DAY)
         if ((data.hour == null) || (data.hour != currentHour)) {
@@ -172,7 +171,7 @@ def refreshLiveData() {
         
         def totalDailyPower = getTotalDailyPower()
         def hourCount = 0
-        def costDailyComparison = calculatePercentChange(getTotalDailyPower() as BigDecimal, getYesterdayPower(data.currentHour) as BigDecimal)
+        def costDailyComparison = calculatePercentChange(getTotalDailyPower() as BigDecimal, getYesterdayPower(data.hour) as BigDecimal)
         def formattedAverageTotalPower = (Math.round((totalDailyPower as BigDecimal) * 1000))/1000
         def formattedCurrentTotalPowerCost = (Math.round((((totalDailyPower as BigDecimal) * unitPriceBigDecimal) + standingCharge) * 100))/100
         def formattedCostDailyComparison
@@ -212,9 +211,9 @@ private def getTotalDailyPower() {
 
 private def getYesterdayPower(currentHour) {
 	def totalDailyPower = 0
-    for (int i=0; i<currentHour; i++) {
-    	totalDailyPower += data.yesterdayPowerHistory[currentHour]
-    }
+    for (int i=0; i<=currentHour.toInteger(); i++) {
+    	totalDailyPower += data.yesterdayPowerHistory["Hour $i"]
+    }    
     return totalDailyPower
 }
 
