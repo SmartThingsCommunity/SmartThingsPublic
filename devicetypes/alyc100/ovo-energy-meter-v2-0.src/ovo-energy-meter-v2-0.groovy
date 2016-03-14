@@ -13,11 +13,11 @@
  *  for the specific language governing permissions and limitations under the License.
  *
  *  VERSION HISTORY
- *  09.03.2016
  *  v2.0 - Initial V2.0 Release with OVO Energy (Connect) app
  *  v2.1 - Improve pricing calculations using contract info from OVO. Notification framework for high costs.
  *		   Enable alert for specified daily cost level breach.
  *	v2.1b - Allow cost alert level to be decimal
+ *	v2.2 - Percentage comparison from previous cost values added into display
  */
 preferences 
 {
@@ -128,6 +128,10 @@ def refreshLiveData() {
         {
         	data.dailyPowerHistory = [:]
         }
+        if (data.yesterdayPowerHistory == null)
+        {
+        	data.yesterdayPowerHistory = [:]
+        }
         //Get current hour
         
         //data.hour = null
@@ -138,11 +142,21 @@ def refreshLiveData() {
             	//Store the day's power info as yesterdays
             	def totalPower = getTotalDailyPower()
             	data.yesterdayTotalPower = (Math.round((totalPower as BigDecimal) * 1000))/1000
-                data.yesterdayTotalPowerCost = (Math.round((((totalPower as BigDecimal) * unitPriceBigDecimal) + standingCharge) * 100))/100
+                def newYesterdayTotalPowerCost = (Math.round((((totalPower as BigDecimal) * unitPriceBigDecimal) + standingCharge) * 100))/100
+                def costYesterdayComparison = calculatePercentChange(newYesterdayTotalPowerCost as BigDecimal, data.yesterdayTotalPowerCost as BigDecimal)
+                def formattedCostYesterdayComparison
+                if (costYesterdayComparison >= 0) {
+        			formattedCostYesterdayComparison = "+" + costYesterdayComparison
+        		}
+        		else {
+        			formattedCostYesterdayComparison = "-" + costYesterdayComparison
+        		}
+                data.yesterdayTotalPowerCost = newYesterdayTotalPowerCost
             	sendEvent(name: 'yesterdayTotalPower', value: "$data.yesterdayTotalPower", unit: "KWh", displayed: false)
-        		sendEvent(name: 'yesterdayTotalPowerCost', value: "£$data.yesterdayTotalPowerCost", displayed: false)
+        		sendEvent(name: 'yesterdayTotalPowerCost', value: "£$data.yesterdayTotalPowerCost (" + formattedCostYesterdayComparison + "%)", displayed: false)
                 
                 //Reset power history
+                data.yesterdayPowerHistory =  data.dailyPowerHistory
                 data.dailyPowerHistory = [:]
             }       	
         	data.hour = currentHour
@@ -158,9 +172,16 @@ def refreshLiveData() {
         
         def totalDailyPower = getTotalDailyPower()
         def hourCount = 0
-        
+        def costDailyComparison = calculatePercentChange(getTotalDailyPower() as BigDecimal, getYesterdayPower(data.currentHour) as BigDecimal)
         def formattedAverageTotalPower = (Math.round((totalDailyPower as BigDecimal) * 1000))/1000
         def formattedCurrentTotalPowerCost = (Math.round((((totalDailyPower as BigDecimal) * unitPriceBigDecimal) + standingCharge) * 100))/100
+        def formattedCostDailyComparison
+        if (costDailyComparison >= 0) {
+        	formattedCostDailyComparison = "+" + costDailyComparison
+        }
+        else {
+        	formattedCostDailyComparison = "-" + costDailyComparison
+        }
         
         //Send event to raise notification on high cost
         if (formattedCurrentTotalPowerCost > (getCostAlertLevelValue() as BigDecimal)) {
@@ -171,6 +192,7 @@ def refreshLiveData() {
         
         formattedAverageTotalPower = String.format("%1.2f",formattedAverageTotalPower)
         formattedCurrentTotalPowerCost = String.format("%1.2f",formattedCurrentTotalPowerCost)
+        formattedCurrentTotalPowerCost += " (" + formattedCostDailyComparison + "%)"
         
         sendEvent(name: 'averageDailyTotalPower', value: "$formattedAverageTotalPower", unit: "KWh", displayed: false)
         sendEvent(name: 'currentDailyTotalPowerCost', value: "£$formattedCurrentTotalPowerCost", displayed: false)
@@ -183,9 +205,28 @@ def refreshLiveData() {
 private def getTotalDailyPower() {
 	def totalDailyPower = 0
 	data.dailyPowerHistory.each { hour, averagePower ->
-    	totalDailyPower = totalDailyPower + averagePower
+    	totalDailyPower += averagePower
 	};
     return totalDailyPower
+}
+
+private def getYesterdayPower(currentHour) {
+	def totalDailyPower = 0
+    for (int i=0; i<currentHour; i++) {
+    	totalDailyPower += data.yesterdayPowerHistory[currentHour]
+    }
+    return totalDailyPower
+}
+
+private def calculatePercentChange(current, previous) {
+	def delta = current - previous
+    if (previous != 0) {
+    	return  Math.round((delta / previous) * 100)
+    } else {
+    	if (delta > 0) return 1000
+        else if (delta == 0) return 0
+        else return -1000
+    }    
 }
 
 def getCostAlertLevelValue() {
