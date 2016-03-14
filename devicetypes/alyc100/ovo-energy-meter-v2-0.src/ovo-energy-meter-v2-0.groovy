@@ -212,7 +212,7 @@ private def getTotalDailyPower() {
 private def getYesterdayPower(currentHour) {
 	def totalDailyPower = 0
     for (int i=0; i<=currentHour.toInteger(); i++) {
-    	totalDailyPower += data.yesterdayPowerHistory["Hour $i"]
+    	if (data.yesterdayPowerHistory["Hour $i"] != null) totalDailyPower += data.yesterdayPowerHistory["Hour $i"]
     }    
     return totalDailyPower
 }
