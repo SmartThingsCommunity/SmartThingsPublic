@@ -3,7 +3,7 @@
  *
  *  Copyright 2015, 2016 Bruce Ravenel
  *
- *  Version 1.8.5a   13 Mar 2016
+ *  Version 1.8.5c   14 Mar 2016
  *
  *	Version History
  *
@@ -110,7 +110,7 @@ preferences {
 //
 
 def appVersion() {
-	return "1.8.5a" 
+	return "1.8.5c" 
 }
 
 def mainPage() {
@@ -457,6 +457,7 @@ def getState(myCapab, n, isTrig) {
 	def myRelDev = isTrig ? "reltDevice$n" : "relDevice$n"
 	def isRule = state.isRule || (state.howMany > 1 && !isTrig)
 	def phrase = isRule ? "state" : "becomes"
+    def presPhrase = isRule ? "state" : " ..."
 	def swphrase = isRule ? "state" : "turns"
 	def presoptions = isRule ? ["present", "not present"] : ["arrives", "leaves"]
 	def presdefault = isRule ? "present" : "arrives"
@@ -467,7 +468,7 @@ def getState(myCapab, n, isTrig) {
 	else if(myCapab == "Motion")					result = input myState, "enum", title: "Motion $phrase", 			options: ["active", "inactive"], 			defaultValue: "active"
 	else if(myCapab == "Acceleration")				result = input myState, "enum", title: "Acceleration $phrase", 		options: ["active", "inactive"], 			defaultValue: "active"
 	else if(myCapab == "Contact")					result = input myState, "enum", title: "Contact $phrase", 			options: ["open", "closed"], 				defaultValue: "open"
-	else if(myCapab == "Presence")					result = input myState, "enum", title: "Presence $phrase", 			options: presoptions, 						defaultValue: presdefault
+	else if(myCapab == "Presence")					result = input myState, "enum", title: "Presence $presPhrase", 		options: presoptions, 						defaultValue: presdefault
 	else if(myCapab == "Garage door")				result = input myState, "enum", title: "Garage door $phrase", 		options: ["closed", "open", "opening", "closing", "unknown"], defaultValue: "open"
 	else if(myCapab == "Door")						result = input myState, "enum", title: "Door $phrase", 				options: ["closed", "open", "opening", "closing", "unknown"], defaultValue: "open"
 	else if(myCapab == "Lock")						result = input myState, "enum", title: "Lock $lockphrase", 			options: ["locked", "unlocked"], 			defaultValue: "unlocked"
@@ -2067,7 +2068,7 @@ def delayRuleFalseForce() {
 
 def delayPrivyTrue() {
 	if(otherTrue && otherPrivateTrue) parent.setRuleBoolean(otherPrivateTrue, privateTrue, app.label)
-	if(thisBTrue) {
+	if(privateTrue != null) {
     	state.private = privateTrue // == "true"
 		if(state.isRule || (state.howMany > 1 && state.howManyT <= 1)) runRule(false)
         else doTrigger()
@@ -2080,7 +2081,7 @@ def delayPrivyTrueX() {
 
 def delayPrivyFalse() {
 	if(otherFalse && otherPrivateFalse) parent.setRuleBoolean(otherPrivateFalse, privateFalse, app.label)
-	if(thisBFalse) {
+	if(privateFalse != null) {
     	state.private = privateFalse
 		if(state.isRule || (state.howMany > 1 && state.howManyT <= 1)) runRule(false)
     }
@@ -2349,9 +2350,10 @@ private setColor(trufal) {
 			break;
         case "Random color":
         	hueColor = Math.random()*100 as Integer
-		saturation = Math.random()*100 as Integer
-		log.info "Random color: hue: $hueColor, saturation: $saturation"
-		break;
+			saturation = Math.random()*100 as Integer
+            if(saturation < 50) saturation += 50
+			log.info "Random color: hue: $hueColor, saturation: $saturation"
+			break;
 	}
 	def lightLevel = trufal ? colorLevelTrue : colorLevelFalse
 	def newValue = [hue: hueColor, saturation: saturation, level: lightLevel as Integer ?: 100]
