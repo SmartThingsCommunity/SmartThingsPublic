@@ -469,7 +469,6 @@ def pollChild(){
 
 	if (pollChildren()){
 		devices.each { child ->
-			log.info "***found $child"
 			if (!child.device.deviceNetworkId.startsWith("ecobee_sensor")){
 				if(atomicState.thermostats[child.device.deviceNetworkId] != null) {
 					def tData = atomicState.thermostats[child.device.deviceNetworkId]
