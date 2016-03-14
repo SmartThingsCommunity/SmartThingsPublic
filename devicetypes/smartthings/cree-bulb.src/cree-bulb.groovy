@@ -1,7 +1,7 @@
 /**
  *  Cree Bulb
  *
- *  Copyright 2014 SmartThings
+ *  Copyright 2016 SmartThings
  *
  *  Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except
  *  in compliance with the License. You may obtain a copy of the License at:
@@ -15,29 +15,29 @@
  */
  
 metadata {
-	definition (name: "Cree Bulb", namespace: "smartthings", author: "SmartThings") {
+    definition (name: "Cree Bulb", namespace: "smartthings", author: "SmartThings") {
 
-		capability "Actuator"
+        capability "Actuator"
         capability "Configuration"
-		capability "Refresh"
-		capability "Switch"
-		capability "Switch Level"
+        capability "Refresh"
+        capability "Switch"
+        capability "Switch Level"
 
-		fingerprint profileId: "C05E", inClusters: "0000,0003,0004,0005,0006,0008,1000", outClusters: "0000,0019"
-	}
+        fingerprint profileId: "C05E", inClusters: "0000,0003,0004,0005,0006,0008,1000", outClusters: "0000,0019"
+    }
 
-	// simulator metadata
-	simulator {
-		// status messages
-		status "on": "on/off: 1"
-		status "off": "on/off: 0"
+    // simulator metadata
+    simulator {
+        // status messages
+        status "on": "on/off: 1"
+        status "off": "on/off: 0"
 
-		// reply messages
-		reply "zcl on-off on": "on/off: 1"
-		reply "zcl on-off off": "on/off: 0"
-	}
+        // reply messages
+        reply "zcl on-off on": "on/off: 1"
+        reply "zcl on-off off": "on/off: 0"
+    }
 
-	// UI tile definitions
+    // UI tile definitions
     tiles(scale: 2) {
         multiAttributeTile(name:"switch", type: "lighting", width: 6, height: 4, canChangeIcon: true){
             tileAttribute ("device.switch", key: "PRIMARY_CONTROL") {
@@ -62,18 +62,12 @@ metadata {
 def parse(String description) {
     log.debug "description is $description"
 
-    def resultMap = zigbee.getKnownDescription(description)
+    def resultMap = zigbee.getEvent(description)
     if (resultMap) {
-        log.info resultMap
-        if (resultMap.type == "update") {
-            log.info "$device updates: ${resultMap.value}"
-        }
-        else {
-            sendEvent(name: resultMap.type, value: resultMap.value)
-        }
+        sendEvent(resultMap)
     }
     else {
-        log.warn "DID NOT PARSE MESSAGE for description : $description"
+        log.debug "DID NOT PARSE MESSAGE for description : $description"
         log.debug zigbee.parseDescriptionAsMap(description)
     }
 }
@@ -87,7 +81,7 @@ def on() {
 }
 
 def setLevel(value) {
-    zigbee.setLevel(value)
+    zigbee.setLevel(value) + ["delay 500"] + zigbee.levelRefresh()         //adding refresh because of ZLL bulb not conforming to send-me-a-report
 }
 
 def refresh() {

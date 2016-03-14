@@ -22,6 +22,8 @@ metadata {
 		capability "Battery"
 
 		fingerprint profileId: "FC01", deviceId: "0139"
+
+		attribute "status", "string"
 	}
 
 	simulator {
@@ -72,15 +74,12 @@ metadata {
 				]
 			)
 		}
-		valueTile("3axis", "device.threeAxis", decoration: "flat", wordWrap: false, width: 2, height: 2) {
-			state("threeAxis", label:'${currentValue}', unit:"", backgroundColor:"#ffffff")
-		}
 		valueTile("battery", "device.battery", decoration: "flat", inactiveLabel: false, width: 2, height: 2) {
 			state "battery", label:'${currentValue}% battery', unit:""
 		}
 
 		main(["contact", "acceleration", "temperature"])
-		details(["contact", "acceleration", "temperature", "3axis", "battery"])
+		details(["contact", "acceleration", "temperature", "battery"])
 	}
 }
 
@@ -102,7 +101,7 @@ def parse(String description) {
 
 }
 
-private Map parseSingleMessage(description) {
+private List parseSingleMessage(description) {
 
 	def name = parseName(description)
 	def value = parseValue(description)
@@ -111,8 +110,9 @@ private Map parseSingleMessage(description) {
 	def handlerName = value == 'open' ? 'opened' : value
 	def isStateChange = isStateChange(device, name, value)
 
-	def results = [
-		name: name,
+	def results = []
+	results << createEvent(
+		name: "contact",
 		value: value,
 		unit: null,
 		linkText: linkText,
@@ -120,8 +120,18 @@ private Map parseSingleMessage(description) {
 		handlerName: handlerName,
 		isStateChange: isStateChange,
 		displayed: displayed(description, isStateChange)
-	]
-	log.debug "Parse results for $device: $results"
+	)
+
+	results << createEvent(
+		name: "status",
+		value: value,
+		unit: null,
+		linkText: linkText,
+		descriptionText: descriptionText,
+		handlerName: handlerName,
+		isStateChange: isStateChange,
+		displayed: displayed(description, isStateChange)
+	)
 
 	results
 }
@@ -272,7 +282,7 @@ private List parseRssiLqiMessage(String description) {
 	results
 }
 
-private getContactResult(part, description) {
+private List getContactResult(part, description) {
 	def name = "contact"
 	def value = part.endsWith("1") ? "open" : "closed"
 	def handlerName = value == 'open' ? 'opened' : value
@@ -280,16 +290,30 @@ private getContactResult(part, description) {
 	def descriptionText = "$linkText was $handlerName"
 	def isStateChange = isStateChange(device, name, value)
 
-	[
-		name: name,
-		value: value,
-		unit: null,
-		linkText: linkText,
-		descriptionText: descriptionText,
-		handlerName: handlerName,
-		isStateChange: isStateChange,
-		displayed: displayed(description, isStateChange)
-	]
+	def results = []
+	results << createEvent(
+			name: "contact",
+			value: value,
+			unit: null,
+			linkText: linkText,
+			descriptionText: descriptionText,
+			handlerName: handlerName,
+			isStateChange: isStateChange,
+			displayed:false
+	)
+
+	results << createEvent(
+			name: "status",
+			value: value,
+			unit: null,
+			linkText: linkText,
+			descriptionText: descriptionText,
+			handlerName: handlerName,
+			isStateChange: isStateChange,
+			displayed: displayed(description, isStateChange)
+	)
+
+	results
 }
 
 private getAccelerationResult(part, description) {
@@ -452,6 +476,7 @@ private Boolean isOrientationMessage(String description) {
 	description ==~ /x:.*y:.*z:.*rssi:.*lqi:.*/
 }
 
+//Note: Not using this method anymore
 private String parseName(String description) {
 	if (isSupportedDescription(description)) {
 		return "contact"

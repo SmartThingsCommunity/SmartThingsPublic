@@ -16,17 +16,18 @@
  
 metadata {
 	definition (name: "SmartSense Open/Closed Sensor", namespace: "smartthings", author: "SmartThings") {
-    	capability "Battery"
+		capability "Battery"
 		capability "Configuration"
-        capability "Contact Sensor"
+		capability "Contact Sensor"
 		capability "Refresh"
 		capability "Temperature Measurement"
         
-        command "enrollResponse"
+		command "enrollResponse"
  
  
 		fingerprint inClusters: "0000,0001,0003,0402,0500,0020,0B05", outClusters: "0019", manufacturer: "CentraLite", model: "3300-S"
-        fingerprint inClusters: "0000,0001,0003,0402,0500,0020,0B05", outClusters: "0019", manufacturer: "CentraLite", model: "3300"
+		fingerprint inClusters: "0000,0001,0003,0402,0500,0020,0B05", outClusters: "0019", manufacturer: "CentraLite", model: "3300"
+		fingerprint inClusters: "0000,0001,0003,0020,0402,0500,0B05", outClusters: "0019", manufacturer: "CentraLite", model: "3320-L", deviceJoinName: "Iris Contact Sensor"
 	}
  
 	simulator {
@@ -219,7 +220,8 @@ private Map getBatteryResult(rawValue) {
     
 	def volts = rawValue / 10
 	def descriptionText
-	if (volts > 3.5) {
+    if (rawValue == 0 || rawValue == 255) {}
+    else if (volts > 3.5) {
 		result.descriptionText = "${linkText} battery has too much power (${volts} volts)."
 	}
 	else {

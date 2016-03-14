@@ -12,14 +12,14 @@ metadata {
 		capability "Switch"
 		capability "Refresh"
 		capability "Sensor"
-       
-        command "refresh"       
+
+        command "refresh"
 	}
 
 	simulator {
 		// TODO: define status and reply messages here
 	}
-    
+
     tiles(scale: 2) {
         multiAttributeTile(name:"rich-control", type: "lighting", canChangeIcon: true){
             tileAttribute ("device.switch", key: "PRIMARY_CONTROL") {
@@ -35,25 +35,25 @@ metadata {
 	            attributeState "level", label: 'Level ${currentValue}%'
 			}
         }
-    
+
 		standardTile("switch", "device.switch", width: 2, height: 2, canChangeIcon: true) {
 			state "on", label:'${name}', action:"switch.off", icon:"st.lights.philips.hue-single", backgroundColor:"#79b821", nextState:"turningOff"
 			state "off", label:'${name}', action:"switch.on", icon:"st.lights.philips.hue-single", backgroundColor:"#ffffff", nextState:"turningOn"
 			state "turningOn", label:'${name}', action:"switch.off", icon:"st.lights.philips.hue-single", backgroundColor:"#79b821", nextState:"turningOff"
 			state "turningOff", label:'${name}', action:"switch.on", icon:"st.lights.philips.hue-single", backgroundColor:"#ffffff", nextState:"turningOn"
         }
-        
+
         controlTile("levelSliderControl", "device.level", "slider", height: 1, width: 2, inactiveLabel: false, range:"(0..100)") {
             state "level", action:"switch level.setLevel"
         }
-           
-        standardTile("refresh", "device.switch", inactiveLabel: false, height: 2, width: 2, decoration: "flat") {
+
+        standardTile("refresh", "device.switch", inactiveLabel: false, decoration: "flat", width: 2, height: 2) {
             state "default", label:"", action:"refresh.refresh", icon:"st.secondary.refresh"
-        }        
+        }
 
         main(["switch"])
         details(["rich-control", "refresh"])
-    }    
+    }
 }
 
 // parse events into attributes
@@ -74,23 +74,23 @@ def parse(description) {
 }
 
 // handle commands
-def on() {
+void on() {
 	parent.on(this)
 	sendEvent(name: "switch", value: "on")
 }
 
-def off() {
+void off() {
 	parent.off(this)
 	sendEvent(name: "switch", value: "off")
 }
 
-def setLevel(percent) {
+void setLevel(percent) {
 	log.debug "Executing 'setLevel'"
 	parent.setLevel(this, percent)
 	sendEvent(name: "level", value: percent)
 }
 
-def refresh() {
+void refresh() {
 	log.debug "Executing 'refresh'"
 	parent.manualRefresh()
 }
