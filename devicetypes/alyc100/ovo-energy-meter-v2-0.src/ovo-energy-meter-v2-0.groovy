@@ -147,9 +147,9 @@ def refreshLiveData() {
             	data.yesterdayTotalPower = (Math.round((totalPower as BigDecimal) * 1000))/1000
                 def newYesterdayTotalPowerCost = (Math.round((((totalPower as BigDecimal) * unitPriceBigDecimal) + standingCharge) * 100))/100
                 def costYesterdayComparison = calculatePercentChange(newYesterdayTotalPowerCost as BigDecimal, data.yesterdayTotalPowerCost as BigDecimal)
-                def formattedCostYesterdayComparison
+                def formattedCostYesterdayComparison = costDailyComparison
                 if (costYesterdayComparison >= 0) {
-        			formattedCostYesterdayComparison = "+" + costYesterdayComparison
+        			formattedCostYesterdayComparison = "+" + formattedCostYesterdayComparison
         		}
                 data.yesterdayTotalPowerCost = newYesterdayTotalPowerCost
             	sendEvent(name: 'yesterdayTotalPower', value: "$data.yesterdayTotalPower", unit: "KWh", displayed: false)
@@ -175,9 +175,9 @@ def refreshLiveData() {
         def costDailyComparison = calculatePercentChange(getTotalDailyPower() as BigDecimal, getYesterdayPower(data.hour) as BigDecimal)
         def formattedAverageTotalPower = (Math.round((totalDailyPower as BigDecimal) * 1000))/1000
         def formattedCurrentTotalPowerCost = (Math.round((((totalDailyPower as BigDecimal) * unitPriceBigDecimal) + standingCharge) * 100))/100
-        def formattedCostDailyComparison
+        def formattedCostDailyComparison = costDailyComparison
         if (costDailyComparison >= 0) {
-        	formattedCostDailyComparison = "+" + costDailyComparison
+        	formattedCostDailyComparison = "+" + formattedCostDailyComparison
         }
         
         //Send event to raise notification on high cost
@@ -217,6 +217,7 @@ private def getYesterdayPower(currentHour) {
 
 private def calculatePercentChange(current, previous) {
 	def delta = current - previous
+    log.debug "Calculating %age: DELTA $delta CURRENT $current PREVIOUS $previous"
     if (previous != 0) {
     	return  Math.round((delta / previous) * 100)
     } else {
