@@ -105,12 +105,21 @@ class AlarmServerConfig():
             LOGTOFILE = True
 
         self.PARTITIONNAMES={}
+        self.PARTITIONS={}
         for i in range(1, MAXPARTITIONS+1):
             self.PARTITIONNAMES[i]=self.read_config_var('alarmserver', 'partition'+str(i), False, 'str', True)
+            if self.PARTITIONNAMES[i]!=False:
+                self.PARTITIONS[i]=self.PARTITIONNAMES[i]
 
+        self.ZONES={}
         self.ZONENAMES={}
         for i in range(1, MAXZONES+1):
-            self.ZONENAMES[i]=self.read_config_var('alarmserver', 'zone'+str(i), False, 'str', True)
+            self.ZONENAMES[i]=self.read_config_var('zone'+str(i), 'name', False, 'str', True)
+            type = self.read_config_var('zone'+str(i), 'type', False, 'str', True)
+            if(self.ZONENAMES[i]!=False and type!=False):
+                self.ZONES[i] = {}
+                self.ZONES[i]['name'] = self.ZONENAMES[i]
+                self.ZONES[i]['type'] = type
 
         self.ALARMUSERNAMES={}
         for i in range(1, MAXALARMUSERS+1):
@@ -133,6 +142,28 @@ class AlarmServerConfig():
         except (ConfigParser.NoSectionError, ConfigParser.NoOptionError):
             self.defaulting(section, variable, default, quiet)
             return default
+
+class DeviceSetup():
+    def __init__(self, config):
+        self._config = config
+
+        # prepare partition and zone json for device creation
+        partitionjson = json.dumps(config.PARTITIONS)
+        zonejson = json.dumps(config.ZONES)
+
+        headers = {'content-type': 'application/json'}
+
+        # create zone devices
+        myURL = config.CALLBACKURL_BASE + '/' + config.CALLBACKURL_APP_ID + '/installzones' + '?access_token=' + config.CALLBACKURL_ACCESS_TOKEN
+        if (config.LOGURLREQUESTS):
+            alarmserver_logger('myURL: %s' % myURL)
+        requests.post(myURL, data=zonejson, headers=headers)
+
+        # create partition devices
+        myURL = config.CALLBACKURL_BASE + '/' + config.CALLBACKURL_APP_ID + '/installpartitions' + '?access_token=' + config.CALLBACKURL_ACCESS_TOKEN
+        if (config.LOGURLREQUESTS):
+            alarmserver_logger('myURL: %s' % myURL)
+        requests.post(myURL, data=partitionjson, headers=headers)
 
 class HTTPChannel(asynchat.async_chat):
     def __init__(self, server, sock, addr):
@@ -387,7 +418,8 @@ class EnvisalinkClient(asynchat.async_chat):
            # Now check if Zone has a custom name, if it does then send notice to Smartthings
            # Check for event type
            if str(code) in ['510','511']:
-             myURL = self._config.CALLBACKURL_BASE + '/' + self._config.CALLBACKURL_APP_ID + '/panel/' + str(code) + '/' + str(parameters) + '?access_token=' + self._config.CALLBACKURL_ACCESS_TOKEN
+             binary = bin(int(str(parameters), 16))[2:].zfill(8)
+             myURL = self._config.CALLBACKURL_BASE + '/' + self._config.CALLBACKURL_APP_ID + '/panel/' + str(code) + '/' + str(binary) + '?access_token=' + self._config.CALLBACKURL_ACCESS_TOKEN
            elif event['type'] == 'partition':
              # Is our partition setup with a custom name?
              if int(parameters[0]) in self._config.PARTITIONNAMES and self._config.PARTITIONNAMES[int(parameters[0])]!=False:
@@ -675,6 +707,7 @@ if __name__=="__main__":
     alarmserver_logger('and on a DSC-1832 + EVL-2DS')
     alarmserver_logger('and on a DSC-1864 v4.6 + EVL-3')
 
+    DeviceSetup(config)
     server = AlarmServer(config)
     proxy = EnvisalinkProxy(config, server)
 

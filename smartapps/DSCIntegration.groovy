@@ -8,24 +8,22 @@
 
 definition(
     name: "DSC Integration",
-    namespace: "",
+    namespace: "dsc",
     author: "Jordan <jordan@xeron.cc>",
     description: "DSC Integration App",
     category: "My Apps",
     iconUrl: "https://dl.dropboxusercontent.com/u/2760581/dscpanel_small.png",
     iconX2Url: "https://dl.dropboxusercontent.com/u/2760581/dscpanel_large.png",
-    oauth: true
+    oauth: true,
+   	singleInstance: true
 )
 
 import groovy.json.JsonBuilder
 
 preferences {
-
-  section("Alarm Panel:") {
-    input "paneldevices", "capability.switch", title: "Alarm Panel (required)", multiple: true, required: false
-  }
-  section("Zone Devices:") {
-    input "zonedevices", "capability.sensor", title: "DSC Zone Devices (required)", multiple: true, required: false
+  section("Alarmserver Setup:") {
+    input("ip", "text", title: "IP", description: "The IP of your alarmserver (required)", required: true)
+    input("port", "text", title: "Port", description: "The port (required)", required: true)
   }
   section("XBMC Notifications (optional):") {
   	// TODO: put inputs here
@@ -54,12 +52,154 @@ preferences {
 }
 
 mappings {
-  path("/panel/:eventcode/:zoneorpart") {
-    action: [
-      GET: "updateZoneOrPartition"
-    ]
+  path("/panel/:eventcode/:zoneorpart") { action: [GET: "updateZoneOrPartition"] }
+  path("/installzones")                 { action: [POST: "installzones"] }
+  path("/installpartitions")            { action: [POST: "installpartitions"] }
+
+}
+
+def installzones() {
+  def children = getChildDevices()
+  def zones = request.JSON
+
+  def zoneMap = [
+    'contact':'DSC Zone Contact',
+    'motion':'DSC Zone Motion',
+    'smoke':'DSC Zone Smoke',
+    'co':'DSC Zone CO',
+  ]
+
+  log.debug "children are ${children}"
+  for (zone in zones) {
+    def id = zone.key
+    def padId = String.format("%02d", id.toInteger())
+    def type = zone.value.'type'
+    def device = zoneMap."${type}"
+    def name = zone.value.'name'
+    def networkId = "dsczone${id}"
+    def zoneDevice = children.find { item -> item.device.deviceNetworkId == networkId }
+
+    if (zoneDevice == null) {
+      log.debug "add new child: id: ${id} type: ${type} name: ${name} ${networkId} ${padId}"
+      zoneDevice = addChildDevice("dsc", "${device}", networkId, null, [name: "DSC Zone ${padId}", label:"DSC Zone ${padId} ${name}", completedSetup: true])
+    } else {
+      log.debug "zone device was ${zoneDevice}"
+      try {
+        log.debug "trying name update for ${padId}"
+        zoneDevice.name = "DSC Zone ${padId}"
+        log.debug "trying label update for ${padId}"
+        zoneDevice.label = "DSC Zone ${padId} ${name}"
+      } catch(IllegalArgumentException e) {
+        log.debug "excepted for ${padId}"
+         if ("${e}".contains('identifier required')) {
+           log.debug "Attempted update but device didn't exist. Creating ${networkId}"
+           zoneDevice = addChildDevice("dsc", "${device}", networkId, null, [name: "DSC Zone ${padId}", label:"DSC Zone ${padId} ${name}", completedSetup: true])
+         } else {
+           log.error "${e}"
+         }
+      }
+    }
+  }
+
+  for (child in children) {
+    if (child.device.deviceNetworkId.contains("dsczone}")) {
+      def zone = child.device.deviceNetworkId.minus('dsczone')
+      def jsonZone = zones.find { x -> "${x.key}" == "${zone}"}
+      if (jsonZone == null) {
+        try {
+          log.debug "Deleting device ${child.device.deviceNetworkId} ${child.device.name} as it was not in the config"
+          deleteChildDevice(child.device.deviceNetworkId)
+        } catch(MissingMethodException e) {
+          if ("${e}".contains('types: (null) values: [null]')) {
+            log.debug "Device ${child.device.deviceNetworkId} was empty, likely deleted already."
+          } else {
+             log.error e
+          }
+        }
+      }
+    }
   }
 }
+
+def installpartitions() {
+  def children = getChildDevices()
+  def partitions = request.JSON
+
+  def partMap = [
+    'stay':'DSC Stay Panel',
+    'away':'DSC Away Panel',
+  ]
+
+  log.debug "children are ${children}"
+  for (part in partitions) {
+    def id = part.key
+    def padId = String.format("%02d", id.toInteger())
+    def name = part.value
+
+    for (p in ['stay', 'away']) {
+      def networkId = "dsc${p}${id}"
+      def partDevice = children.find { item -> item.device.deviceNetworkId == networkId }
+      def device = partMap."${p}"
+
+      if (partDevice == null) {
+        log.debug "add new child: id: ${padId} name: ${name} nId: ${networkId} device: ${device}"
+        partDevice = addChildDevice("dsc", "${device}", networkId, null, [name: "${device} ${padId}", label:"${device} ${padId} ${name}", completedSetup: true])
+      } else {
+        log.debug "part device was ${partDevice}"
+        try {
+          log.debug "trying name update for ${device} ${padId}"
+          partDevice.name = "${device} ${padId}"
+          log.debug "trying label update for ${device} ${padId} ${name}"
+          partDevice.label = "${device} ${padId} ${name}"
+        } catch(IllegalArgumentException e) {
+          log.debug "excepted for ${device} ${padId}"
+           if ("${e}".contains('identifier required')) {
+             log.debug "Attempted update but device didn't exist. Creating ${networkId}"
+             partDevice = addChildDevice("dsc", "${device}", networkId, null, [name: "${device} ${padId}", label:"${device} ${padId} ${name}", completedSetup: true])
+           } else {
+             log.error "${e}"
+           }
+        }
+      }
+    }
+  }
+
+  for (child in children) {
+    for (p in ['stay', 'away']) {
+        if (child.device.deviceNetworkId.contains("dsc${p}")) {
+        def part = child.device.deviceNetworkId.minus("dsc${p}")
+        def jsonPart = partitions.find { x -> "${x.key}" == "${part}"}
+        if (jsonPart== null) {
+          try {
+            log.debug "Deleting device ${child.device.deviceNetworkId} ${child.device.name} as it was not in the config"
+            deleteChildDevice(child.device.deviceNetworkId)
+          } catch(MissingMethodException e) {
+            if ("${e}".contains('types: (null) values: [null]')) {
+              log.debug "Device ${child.device.deviceNetworkId} was empty, likely deleted already."
+            } else {
+              log.error e
+            }
+          }
+        }
+      }
+    }
+  }
+}
+
+def sendUrl(url) {
+    def result = new physicalgraph.device.HubAction(
+        method: "GET",
+        path: "/api/alarm/${url}",
+        headers: [
+            HOST: "${settings.ip}:${settings.port}"
+        ]
+    )
+	sendHubCommand(result)
+
+	log.debug "response" : "Request to send url: ${url} received"
+    return result
+}
+
 
 def installed() {
   log.debug "Installed!"
@@ -140,7 +280,7 @@ private update() {
             sendMessage("${opts[0]} 1 ${name} led in ${flash}${status} state")
           }
         }
-        updatePartitions(paneldevices, '1',"${opts[1]}${zoneorpartition}")
+        updatePartitions('1',"${opts[1]}${zoneorpartition}")
       } else {
         if (notifyEvents && (notifyEvents.contains('all') || notifyEvents.contains(eventMap[eventCode]))) {
           sendMessage("${opts[0]} ${zoneorpartition} in ${opts[1]} state")
@@ -151,23 +291,25 @@ private update() {
         // log.debug "Test: ${opts[0]} and: ${opts[1]} for $zoneorpartition"
         if ("${opts[0]}" == 'zone') {
            //log.debug "It was a zone...  ${opts[1]}"
-           updateZoneDevices(zonedevices,"$zoneorpartition","${opts[1]}")
+           updateZoneDevices("$zoneorpartition","${opts[1]}")
         }
         if ("${opts[0]}" == 'partition') {
            //log.debug "It was a zone...  ${opts[1]}"
-           updatePartitions(paneldevices, "$zoneorpartition","${opts[1]}")
+           updatePartitions("$zoneorpartition","${opts[1]}")
         }
       }
     }
   }
 }
 
-private updateZoneDevices(zonedevices,zonenum,zonestatus) {
-  log.debug "zonedevices: $zonedevices - ${zonenum} is ${zonestatus}"
+private updateZoneDevices(zonenum,zonestatus) {
+  def children = getChildDevices()
+  log.debug "zone: ${zonenum} is ${zonestatus}"
   // log.debug "zonedevices.id are $zonedevices.id"
   // log.debug "zonedevices.displayName are $zonedevices.displayName"
   // log.debug "zonedevices.deviceNetworkId are $zonedevices.deviceNetworkId"
-  def zonedevice = zonedevices.find { it.deviceNetworkId == "dsczone${zonenum}" }
+  def zonedevice = children.find { item -> item.device.deviceNetworkId == "dsczone${zonenum}"}
+  //def zonedevice = zonedevices.find { it.deviceNetworkId == "dsczone${zonenum}" }
   if (zonedevice) {
       log.debug "Was True... Zone Device: $zonedevice.displayName at $zonedevice.deviceNetworkId is ${zonestatus}"
       //Was True... Zone Device: Front Door Sensor at zone1 is closed
@@ -186,21 +328,22 @@ private updateZoneDevices(zonedevices,zonenum,zonestatus) {
     }
 }
 
-private updatePartitions(paneldevices, partitionnum, partitionstatus) {
-  log.debug "paneldevices: $paneldevices - ${partitionnum} is ${partitionstatus}"
-  def paneldevice = paneldevices.find { it.deviceNetworkId == "dscpanel${partitionnum}" }
+private updatePartitions(partitionnum, partitionstatus) {
+  def children = getChildDevices()
+  log.debug "partition: ${partitionnum} is ${partitionstatus}"
+  def paneldevice = children.find { item -> item.device.deviceNetworkId == "dscpanel${partitionnum}"}
   if (paneldevice) {
     log.debug "Was True... Panel device: $paneldevice.displayName at $paneldevice.deviceNetworkId is ${partitionstatus}"
     //Was True... Zone Device: Front Door Sensor at zone1 is closed
     paneldevice.partition("${partitionstatus}", "${partitionnum}")
   }
-  def awayswitch = paneldevices.find { it.deviceNetworkId == "dscaway${partitionnum}" }
+  def awayswitch = children.find { item -> item.device.deviceNetworkId == "dscaway${partitionnum}"}
   if (awayswitch) {
     log.debug "Was True... Away Switch device: $awayswitch.displayName at $awayswitch.deviceNetworkId is ${partitionstatus}"
     //Was True... Zone Device: Front Door Sensor at zone1 is closed
     awayswitch.partition("${partitionstatus}", "${partitionnum}")
   }
-  def stayswitch = paneldevices.find { it.deviceNetworkId == "dscstay${partitionnum}" }
+  def stayswitch = children.find { item -> item.device.deviceNetworkId == "dscstay${partitionnum}"}
   if (stayswitch) {
     log.debug "Was True... Stay Switch device: $stayswitch.displayName at $stayswitch.deviceNetworkId is ${partitionstatus}"
     //Was True... Zone Device: Front Door Sensor at zone1 is closed

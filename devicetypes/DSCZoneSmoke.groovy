@@ -1,17 +1,17 @@
 /*
- *  DSC Zone Motion Device
+ *  DSC Smoke Device (wireless & 4-wire zone-attached types only)
  *
  *  Author: Jordan <jordan@xeron.cc>
- *  Original Author: Matt Martz <matt.martz@gmail.com>
- *  Modified to be a motion device: Kent Holloway <drizit@gmail.com>
+ *  Originally by: Matt Martz <matt.martz@gmail.com>
+ *  Modified by: Kent Holloway <drizit@gmail.com>
  *  Date: 2016-02-27
  */
 
 // for the UI
 metadata {
-  definition (name: "DSC Zone Motion", author: "jordan@xeron.cc", namespace: 'dsc') {
+  definition (name: "DSC Zone Smoke", author: "jordan@xeron.cc", namespace: 'dsc') {
     // Change or define capabilities here as needed
-    capability "Motion Sensor"
+    capability "Smoke Detector"
     capability "Sensor"
 
     // Add commands as needed
@@ -24,10 +24,10 @@ metadata {
   }
 
   tiles(scale: 2) {
-    standardTile ("zone", "device.motion", width: 4, height: 4, title: "Zone") {
-      state "active",   label:'motion',    icon:"st.motion.motion.active",   backgroundColor:"#53a7c0"
-      state "inactive", label:'no motion', icon:"st.motion.motion.inactive", backgroundColor:"#ffffff"
-      state "alarm",    label:'ALARM',     icon:"st.motion.motion.active",   backgroundColor:"#ff0000"
+    standardTile ("zone", "device.smoke", width: 4, height: 4, title: "Zone") {
+      state "clear",  label: 'clear',  icon: "st.alarm.smoke.clear", backgroundColor: "#ffffff"
+      state "detected",  label: 'SMOKE',  icon: "st.alarm.smoke.smoke", backgroundColor: "#e86d13"
+      state "tested", label: 'TESTED', icon: "st.alarm.smoke.test",  backgroundColor: "#e86d13"
     }
     standardTile ("trouble", "device.trouble", width: 2, height: 2, title: "Trouble") {
       state "restore", label: 'No\u00A0Trouble', icon: "st.security.alarm.clear", backgroundColor: "#79b821"
@@ -63,15 +63,15 @@ def zone(String state) {
     // Send final event
     sendEvent (name: "trouble", value: "${state}")
   } else {
-    // Since this is a motion sensor device we need to convert open to active and closed to inactive
+    // Since this is a smoke device we need to convert the values to match the device capabilities
     // before sending the event
     def eventMap = [
-     'open':"active",
-     'closed':"inactive",
-     'alarm':"alarm"
+     'open':"tested",
+     'closed':"clear",
+     'alarm':"detected"
     ]
     def newState = eventMap."${state}"
     // Send final event
-    sendEvent (name: "motion", value: "${newState}")
+    sendEvent (name: "smoke", value: "${newState}")
   }
 }
