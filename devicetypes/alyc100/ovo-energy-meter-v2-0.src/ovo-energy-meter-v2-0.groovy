@@ -19,6 +19,7 @@
  *	v2.1b - Allow cost alert level to be decimal
  *	v2.2 - Percentage comparison from previous cost values added into display
  *	v2.2.1 - Add current consumption price based on unit price from OVO account API not OVO live API
+ *	v2.2.1b - Remove double negative on percentage values.
  */
 preferences 
 {
@@ -150,9 +151,6 @@ def refreshLiveData() {
                 if (costYesterdayComparison >= 0) {
         			formattedCostYesterdayComparison = "+" + costYesterdayComparison
         		}
-        		else {
-        			formattedCostYesterdayComparison = "-" + costYesterdayComparison
-        		}
                 data.yesterdayTotalPowerCost = newYesterdayTotalPowerCost
             	sendEvent(name: 'yesterdayTotalPower', value: "$data.yesterdayTotalPower", unit: "KWh", displayed: false)
         		sendEvent(name: 'yesterdayTotalPowerCost', value: "£$data.yesterdayTotalPowerCost (" + formattedCostYesterdayComparison + "%)", displayed: false)
@@ -180,9 +178,6 @@ def refreshLiveData() {
         def formattedCostDailyComparison
         if (costDailyComparison >= 0) {
         	formattedCostDailyComparison = "+" + costDailyComparison
-        }
-        else {
-        	formattedCostDailyComparison = "-" + costDailyComparison
         }
         
         //Send event to raise notification on high cost
