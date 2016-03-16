@@ -15,15 +15,15 @@ definition(
     iconUrl: "https://dl.dropboxusercontent.com/u/2760581/dscpanel_small.png",
     iconX2Url: "https://dl.dropboxusercontent.com/u/2760581/dscpanel_large.png",
     oauth: true,
-   	singleInstance: true
+    singleInstance: true
 )
 
 import groovy.json.JsonBuilder
 
 preferences {
   section("Alarmserver Setup:") {
-    input("ip", "text", title: "IP", description: "The IP of your alarmserver (required)", required: true)
-    input("port", "text", title: "Port", description: "The port (required)", required: true)
+    input("ip", "text", title: "IP", description: "The IP of your alarmserver (required)", required: false)
+    input("port", "text", title: "Port", description: "The port (required)", required: false)
   }
   section("XBMC Notifications (optional):") {
   	// TODO: put inputs here
