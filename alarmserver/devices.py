@@ -51,19 +51,25 @@ class AlarmServerConfig():
         self.PARTITIONNAMES={}
         self.PARTITIONS={}
         for i in range(1, MAXPARTITIONS+1):
-            self.PARTITIONNAMES[i]=self.read_config_var('alarmserver', 'partition'+str(i), False, 'str', True)
-            if self.PARTITIONNAMES[i]!=False:
-              self.PARTITIONS[i]=self.PARTITIONNAMES[i]
+            self.PARTITIONNAMES[i]=self.read_config_var('partition'+str(i), 'name', False, 'str', True)
+            stay=self.read_config_var('partition'+str(i), 'stay', False, 'str', True)
+            away=self.read_config_var('partition'+str(i), 'away', False, 'str', True)
+            if stay!=False or away!=False:
+                self.PARTITIONS[i] = {}
+                if away!=False:
+                    self.PARTITIONS[i]['away']=away
+                if stay!=False:
+                    self.PARTITIONS[i]['stay']=stay
 
         self.ZONES={}
         self.ZONENAMES={}
         for i in range(1, MAXZONES+1):
-          self.ZONENAMES[i]=self.read_config_var('zone'+str(i), 'name', False, 'str', True)
-          type = self.read_config_var('zone'+str(i), 'type', False, 'str', True)
-          if(self.ZONENAMES[i]!=False and type!=False):
-            self.ZONES[i] = {}
-            self.ZONES[i]['name'] = self.ZONENAMES[i]
-            self.ZONES[i]['type'] = type
+            self.ZONENAMES[i]=self.read_config_var('zone'+str(i), 'name', False, 'str', True)
+            type = self.read_config_var('zone'+str(i), 'type', False, 'str', True)
+            if(self.ZONENAMES[i]!=False and type!=False):
+                self.ZONES[i] = {}
+                self.ZONES[i]['name'] = self.ZONENAMES[i]
+                self.ZONES[i]['type'] = type
 
     def defaulting(self, section, variable, default, quiet = False):
         if quiet == False:
@@ -87,27 +93,26 @@ class DeviceSetup():
 
         # prepare partition and zone json for device creation
         if delete:
-          partitionjson = json.dumps({})
-          zonejson = json.dumps({})
+            partitionjson = json.dumps({})
+            zonejson = json.dumps({})
         else:
-          partitionjson = json.dumps(config.PARTITIONS)
-          zonejson = json.dumps(config.ZONES)
+            partitionjson = json.dumps(config.PARTITIONS)
+            zonejson = json.dumps(config.ZONES)
 
         headers = {'content-type': 'application/json'}
 
         # create zone devices
         myURL = config.CALLBACKURL_BASE + '/' + config.CALLBACKURL_APP_ID + '/installzones' + '?access_token=' + config.CALLBACKURL_ACCESS_TOKEN
-
-        if (config.LOGURLREQUESTS):
-          print('myURL: %s' % myURL)
-
-        requests.post(myURL, data=zonejson, headers=headers)
+        print('myURL: %s' % myURL)
+        r = requests.post(myURL, data=zonejson, headers=headers)
+        print('zonejson: %s\nStatus: %s\nMessage: %s' % (zonejson, r.status_code, r.text))
 
         # create partition devices
         myURL = config.CALLBACKURL_BASE + '/' + config.CALLBACKURL_APP_ID + '/installpartitions' + '?access_token=' + config.CALLBACKURL_ACCESS_TOKEN
-        if (config.LOGURLREQUESTS):
-          print('myURL: %s' % myURL)
-        requests.post(myURL, data=partitionjson, headers=headers)
+        print('myURL: %s' % myURL)
+        r = requests.post(myURL, data=partitionjson, headers=headers)
+        print('partitionjson: %s\nStatus: %s\nMessage: %s' % (partitionjson, r.status_code, r.text))
+
 
 
 def usage():

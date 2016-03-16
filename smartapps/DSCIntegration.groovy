@@ -26,7 +26,7 @@ preferences {
     input("port", "text", title: "Port", description: "The port (required)", required: false)
   }
   section("XBMC Notifications (optional):") {
-  	// TODO: put inputs here
+    // TODO: put inputs here
     input "xbmcserver", "text", title: "XBMC IP", description: "IP Address", required: false
     input "xbmcport", "number", title: "XBMC Port", description: "Port", required: false
   }
@@ -72,7 +72,6 @@ def installzones() {
   log.debug "children are ${children}"
   for (zone in zones) {
     def id = zone.key
-    def padId = String.format("%02d", id.toInteger())
     def type = zone.value.'type'
     def device = zoneMap."${type}"
     def name = zone.value.'name'
@@ -80,20 +79,20 @@ def installzones() {
     def zoneDevice = children.find { item -> item.device.deviceNetworkId == networkId }
 
     if (zoneDevice == null) {
-      log.debug "add new child: id: ${id} type: ${type} name: ${name} ${networkId} ${padId}"
-      zoneDevice = addChildDevice("dsc", "${device}", networkId, null, [name: "DSC Zone ${padId}", label:"DSC Zone ${padId} ${name}", completedSetup: true])
+      log.debug "add new child: device: ${device} networkId: ${networkId} name: ${name}"
+      zoneDevice = addChildDevice("dsc", "${device}", networkId, null, [name: "${name}", label:"${name}", completedSetup: true])
     } else {
       log.debug "zone device was ${zoneDevice}"
       try {
-        log.debug "trying name update for ${padId}"
-        zoneDevice.name = "DSC Zone ${padId}"
-        log.debug "trying label update for ${padId}"
-        zoneDevice.label = "DSC Zone ${padId} ${name}"
+        log.debug "trying name update for ${networkId}"
+        zoneDevice.name = "${name}"
+        log.debug "trying label update for ${networkId}"
+        zoneDevice.label = "${name}"
       } catch(IllegalArgumentException e) {
-        log.debug "excepted for ${padId}"
+        log.debug "excepted for ${networkId}"
          if ("${e}".contains('identifier required')) {
            log.debug "Attempted update but device didn't exist. Creating ${networkId}"
-           zoneDevice = addChildDevice("dsc", "${device}", networkId, null, [name: "DSC Zone ${padId}", label:"DSC Zone ${padId} ${name}", completedSetup: true])
+           zoneDevice = addChildDevice("dsc", "${device}", networkId, null, [name: "${name}", label:"${name}", completedSetup: true])
          } else {
            log.error "${e}"
          }
@@ -102,7 +101,7 @@ def installzones() {
   }
 
   for (child in children) {
-    if (child.device.deviceNetworkId.contains("dsczone}")) {
+    if (child.device.deviceNetworkId.contains('dsczone')) {
       def zone = child.device.deviceNetworkId.minus('dsczone')
       def jsonZone = zones.find { x -> "${x.key}" == "${zone}"}
       if (jsonZone == null) {
@@ -133,29 +132,29 @@ def installpartitions() {
   log.debug "children are ${children}"
   for (part in partitions) {
     def id = part.key
-    def padId = String.format("%02d", id.toInteger())
-    def name = part.value
 
-    for (p in ['stay', 'away']) {
-      def networkId = "dsc${p}${id}"
+    for (p in part.value) {
+      def type = p.key
+      def name = p.value
+      def networkId = "dsc${type}${id}"
       def partDevice = children.find { item -> item.device.deviceNetworkId == networkId }
-      def device = partMap."${p}"
+      def device = partMap."${type}"
 
       if (partDevice == null) {
-        log.debug "add new child: id: ${padId} name: ${name} nId: ${networkId} device: ${device}"
-        partDevice = addChildDevice("dsc", "${device}", networkId, null, [name: "${device} ${padId}", label:"${device} ${padId} ${name}", completedSetup: true])
+        log.debug "add new child: device: ${device} networkId: ${networkId} name: ${name}"
+        partDevice = addChildDevice("dsc", "${device}", networkId, null, [name: "${name}", label:"${name}", completedSetup: true])
       } else {
         log.debug "part device was ${partDevice}"
         try {
-          log.debug "trying name update for ${device} ${padId}"
-          partDevice.name = "${device} ${padId}"
-          log.debug "trying label update for ${device} ${padId} ${name}"
-          partDevice.label = "${device} ${padId} ${name}"
+          log.debug "trying name update for ${networkId}"
+          partDevice.name = "${name}"
+          log.debug "trying label update for ${networkId}"
+          partDevice.label = "${name}"
         } catch(IllegalArgumentException e) {
-          log.debug "excepted for ${device} ${padId}"
+          log.debug "excepted for ${networkId}"
            if ("${e}".contains('identifier required')) {
              log.debug "Attempted update but device didn't exist. Creating ${networkId}"
-             partDevice = addChildDevice("dsc", "${device}", networkId, null, [name: "${device} ${padId}", label:"${device} ${padId} ${name}", completedSetup: true])
+             partDevice = addChildDevice("dsc", "${device}", networkId, null, [name: "${name}", label:"${name}", completedSetup: true])
            } else {
              log.error "${e}"
            }
@@ -168,7 +167,7 @@ def installpartitions() {
     for (p in ['stay', 'away']) {
         if (child.device.deviceNetworkId.contains("dsc${p}")) {
         def part = child.device.deviceNetworkId.minus("dsc${p}")
-        def jsonPart = partitions.find { x -> "${x.key}" == "${part}"}
+        def jsonPart = partitions.find { x -> x.value."${p}" }
         if (jsonPart== null) {
           try {
             log.debug "Deleting device ${child.device.deviceNetworkId} ${child.device.name} as it was not in the config"
@@ -195,7 +194,6 @@ def sendUrl(url) {
         ]
     )
 	sendHubCommand(result)
-
 	log.debug "response" : "Request to send url: ${url} received"
     return result
 }

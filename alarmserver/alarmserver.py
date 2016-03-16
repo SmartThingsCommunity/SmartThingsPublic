@@ -107,9 +107,15 @@ class AlarmServerConfig():
         self.PARTITIONNAMES={}
         self.PARTITIONS={}
         for i in range(1, MAXPARTITIONS+1):
-            self.PARTITIONNAMES[i]=self.read_config_var('alarmserver', 'partition'+str(i), False, 'str', True)
-            if self.PARTITIONNAMES[i]!=False:
-                self.PARTITIONS[i]=self.PARTITIONNAMES[i]
+            self.PARTITIONNAMES[i]=self.read_config_var('partition'+str(i), 'name', False, 'str', True)
+            stay=self.read_config_var('partition'+str(i), 'stay', False, 'str', True)
+            away=self.read_config_var('partition'+str(i), 'away', False, 'str', True)
+            if stay!=False or away!=False:
+                self.PARTITIONS[i] = {}
+                if away!=False:
+                    self.PARTITIONS[i]['away']=away
+                if stay!=False:
+                    self.PARTITIONS[i]['stay']=stay
 
         self.ZONES={}
         self.ZONENAMES={}
