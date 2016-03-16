@@ -1351,25 +1351,30 @@ def pollChildren(child = null) {
 <<<<<<< HEAD
 =======
 // Poll Child is invoked from the Child Device itself as part of the Poll Capability
-def pollChild(child){
+def pollChild(){
 
-	if (pollChildren(child)){
-		if (!child.device.deviceNetworkId.startsWith("ecobee_sensor")){
-			if(atomicState.thermostats[child.device.deviceNetworkId] != null) {
-				def tData = atomicState.thermostats[child.device.deviceNetworkId]
-				log.info "pollChild(child)>> data for ${child.device.deviceNetworkId} : ${tData.data}"
-				child.generateEvent(tData.data) //parse received message from parent
-			} else if(atomicState.thermostats[child.device.deviceNetworkId] == null) {
-				log.error "ERROR: Device connection removed? no data for ${child.device.deviceNetworkId}"
-				return null
+	def devices = getChildDevices()
+
+	if (pollChildren()){
+		devices.each { child ->
+			if (!child.device.deviceNetworkId.startsWith("ecobee_sensor")){
+				if(atomicState.thermostats[child.device.deviceNetworkId] != null) {
+					def tData = atomicState.thermostats[child.device.deviceNetworkId]
+					log.info "pollChild(child)>> data for ${child.device.deviceNetworkId} : ${tData.data}"
+					child.generateEvent(tData.data) //parse received message from parent
+				} else if(atomicState.thermostats[child.device.deviceNetworkId] == null) {
+					log.error "ERROR: Device connection removed? no data for ${child.device.deviceNetworkId}"
+					return null
+				}
 			}
 		}
 	} else {
-		log.info "ERROR: pollChildren(child) for ${child.device.deviceNetworkId} after polling"
+		log.info "ERROR: pollChildren()"
 		return null
 	}
 
 }
+<<<<<<< HEAD
 >>>>>>> SmartThingsCommunity/master
 
 // poll() will be called on a regular interval using a runEveryX command
@@ -1394,6 +1399,11 @@ def poll() {
 	state.lastPollDate = getTimestamp()
 	LOG("poll() - Polling children with pollChildren(null)", 4)
 	return pollChildren(null) // Poll ALL the children at the same time for efficiency    
+=======
+
+void poll() {
+	pollChild()
+>>>>>>> pr/40
 }
 
 

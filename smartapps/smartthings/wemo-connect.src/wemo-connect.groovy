@@ -234,7 +234,7 @@ def addSwitches() {
 		def d
 		if (selectedSwitch) {
 			d = getChildDevices()?.find {
-				it.dni == selectedSwitch.value.mac || it.device.getDataValue("mac") == selectedSwitch.value.mac
+				it.deviceNetworkId == selectedSwitch.value.mac || it.device.getDataValue("mac") == selectedSwitch.value.mac
 			}
 		}
 
@@ -265,7 +265,7 @@ def addMotions() {
 		def d
 		if (selectedMotion) {
 			d = getChildDevices()?.find {
-				it.dni == selectedMotion.value.mac || it.device.getDataValue("mac") == selectedMotion.value.mac
+				it.deviceNetworkId == selectedMotion.value.mac || it.device.getDataValue("mac") == selectedMotion.value.mac
 			}
 		}
 
@@ -296,7 +296,7 @@ def addLightSwitches() {
 		def d
 		if (selectedLightSwitch) {
 			d = getChildDevices()?.find {
-				it.dni == selectedLightSwitch.value.mac || it.device.getDataValue("mac") == selectedLightSwitch.value.mac
+				it.deviceNetworkId == selectedLightSwitch.value.mac || it.device.getDataValue("mac") == selectedLightSwitch.value.mac
 			}
 		}
 

@@ -1,16 +1,28 @@
-/**
- *  Copyright 2015 SmartThings
+/*
+===============================================================================
+ *  Copyright 2016 SmartThings
  *
- *  Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except
- *  in compliance with the License. You may obtain a copy of the License at:
+ *  Licensed under the Apache License, Version 2.0 (the "License"); you may not
+ *  use this file except in compliance with the License. You may obtain a copy 
+ *  of the License at:
  *
  *      http://www.apache.org/licenses/LICENSE-2.0
  *
- *  Unless required by applicable law or agreed to in writing, software distributed under the License is distributed
- *  on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the License
- *  for the specific language governing permissions and limitations under the License.
+ *  Unless required by applicable law or agreed to in writing, software 
+ *  distributed under the License is distributed on an "AS IS" BASIS, WITHOUT 
+ *  WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the 
+ *  License for the specific language governing permissions and limitations 
+ *  under the License.
+===============================================================================
+ *  Purpose: Mobile Presence DTH File
  *
+ *  Filename: mobile-presence.src/mobile-presence.groovy
+ *
+ *  Change History:
+ *  1. 20160205 TW - Update/Edit to support i18n translations
+===============================================================================
  */
+ 
 metadata {
 	definition (name: "Mobile Presence", namespace: "smartthings", author: "SmartThings") {
 		capability "Presence Sensor"
@@ -41,6 +53,7 @@ def parse(String description) {
 	def isStateChange = isStateChange(device, name, value)
 
 	def results = [
+    	translatable: true,
 		name: name,
 		value: value,
 		unit: null,
@@ -72,8 +85,8 @@ private String parseValue(String description) {
 
 private parseDescriptionText(String linkText, String value, String description) {
 	switch(value) {
-		case "present": return "$linkText has arrived"
-		case "not present": return "$linkText has left"
+		case "present": return "{{ linkText }} has arrived"
+		case "not present": return "{{ linkText }} has left"
 		default: return value
 	}
 }

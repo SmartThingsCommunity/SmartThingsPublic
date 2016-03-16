@@ -33,6 +33,7 @@ metadata {
 		capability "Actuator"
 		capability "Thermostat"
 		capability "Temperature Measurement"
+<<<<<<< HEAD
 		capability "Polling"
 <<<<<<< HEAD
         capability "Sensor"
@@ -46,6 +47,8 @@ metadata {
 		command "setTemperature"
         command "auxHeatOnly"
 =======
+=======
+>>>>>>> pr/40
 		capability "Sensor"
 		capability "Refresh"
 		capability "Relative Humidity Measurement"
@@ -504,8 +507,13 @@ def refresh() {
 }
 
 void poll() {
+<<<<<<< HEAD
 	LOG("Executing 'poll' using parent SmartApp")
     parent.pollChildren(this)
+=======
+	log.debug "Executing 'poll' using parent SmartApp"
+	parent.pollChild()
+>>>>>>> pr/40
 }
 
 
@@ -928,6 +936,7 @@ def getDataByName(String name) {
 }
 
 <<<<<<< HEAD
+<<<<<<< HEAD
 def generateQuickEvent(name, value) {
 	generateQuickEvent(name, value, 0)
 }
@@ -938,10 +947,18 @@ def generateQuickEvent(name, value, pollIn) {
 =======
 def setThermostatMode(String value) {
 	log.debug "setThermostatMode({$value})"
+=======
+def setThermostatMode(String mode) {
+	log.debug "setThermostatMode($mode)"
+	mode = mode.toLowerCase()
+	switchToMode(mode)
+>>>>>>> pr/40
 }
 
-def setThermostatFanMode(String value) {
-	log.debug "setThermostatFanMode({$value})"
+def setThermostatFanMode(String mode) {
+	log.debug "setThermostatFanMode($mode)"
+	mode = mode.toLowerCase()
+	switchToFanMode(mode)
 }
 
 def generateModeEvent(mode) {
