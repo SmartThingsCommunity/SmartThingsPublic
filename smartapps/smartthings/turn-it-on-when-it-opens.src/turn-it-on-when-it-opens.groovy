@@ -45,7 +45,6 @@ def updated()
 	unsubscribe()
 	subscribe(contact1, "contact.open", contactOpenHandler)
     subscribe(contact1, "contact.closed", contactCloseHandler)
-    contactCloseHandler
 }
 
 def contactOpenHandler(evt) {
