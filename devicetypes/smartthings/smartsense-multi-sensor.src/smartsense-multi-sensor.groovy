@@ -471,15 +471,15 @@ def configure() {
 		"send 0x${device.deviceNetworkId} 1 ${endpointId}", "delay 500",
 
 		"zcl mfg-code ${manufacturerCode}", "delay 200",
-		"zcl global send-me-a-report 0xFC02 0x0012 0x29 1 3600 {01}", "delay 200",
+		"zcl global send-me-a-report 0xFC02 0x0012 0x29 1 3600 {0100}", "delay 200",
 		"send 0x${device.deviceNetworkId} 1 ${endpointId}", "delay 500",
 
 		"zcl mfg-code ${manufacturerCode}", "delay 200",
-		"zcl global send-me-a-report 0xFC02 0x0013 0x29 1 3600 {01}", "delay 200",
+		"zcl global send-me-a-report 0xFC02 0x0013 0x29 1 3600 {0100}", "delay 200",
 		"send 0x${device.deviceNetworkId} 1 ${endpointId}", "delay 500",
 
 		"zcl mfg-code ${manufacturerCode}", "delay 200",
-		"zcl global send-me-a-report 0xFC02 0x0014 0x29 1 3600 {01}", "delay 200",
+		"zcl global send-me-a-report 0xFC02 0x0014 0x29 1 3600 {0100}", "delay 200",
 		"send 0x${device.deviceNetworkId} 1 ${endpointId}", "delay 500"
 		]
 
