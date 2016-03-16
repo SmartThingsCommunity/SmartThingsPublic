@@ -1,7 +1,7 @@
 /**
  *  Cloud Interface
  *
- *  Version 1.1.1 - 2/26/16 Copyright © 2016 Michael Struck
+ *  Version 1.2.0 - 3/15/16 Copyright © 2016 Michael Struck
  *  
  *  Version 1.0.0 - Initial release
  *  Version 1.0.1 - Fixed code syntax
@@ -10,6 +10,7 @@
  *  Version 1.0.4 - Changed name to allow it to be used with other SmartApps instead of associating it with Alexa Helper
  *  Version 1.1.0 - Code optimization and URL page improvements
  *  Version 1.1.1 - GUI clean up
+ *  Version 1.2.0 - Address URL accesses via API instead of hard coding it
  *
  *  Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except
  *  in compliance with the License. You may obtain a copy of the License at:
@@ -47,7 +48,7 @@ def mainPage() {
 					OAuthToken()
 				}
                 if (state.accessToken != null){
-                    href url:"https://graph.api.smartthings.com/api/smartapps/installations/${app.id}/l?access_token=${state.accessToken}", style:"embedded", required:false, title:"Show URLs", description: none
+                    href url:"${getApiServerUrl()}/api/smartapps/installations/${app.id}/l?access_token=${state.accessToken}", style:"embedded", required:false, title:"Show URLs", description: none
                 }
                 else {
                 	paragraph "URLs cannot be created. Access Token not defined. OAuth may not be enabled. Go to the SmartApp IDE settings to enable OAuth."
@@ -136,10 +137,10 @@ def displayURLS(){
 	def display = "<div style='padding:10px'>Copy the URLs of the switches you want to control.<br>Paste them to your control applications.</div><div style='padding:10px'>Click DONE to return to the Cloud Interface SmartApp.</div>"
 	switches.each {
     	display += "<div style='padding:10px'>${it.label} ON:</div>"
-		display += "<textarea rows='5' style='font-size:10px; width: 100%'>https://graph.api.smartthings.com/api/smartapps/installations/${app.id}/w?l=${it.label}&c=on&access_token=${state.accessToken}</textarea>"
+		display += "<textarea rows='5' style='font-size:10px; width: 100%'>${getApiServerUrl()}/api/smartapps/installations/${app.id}/w?l=${it.label}&c=on&access_token=${state.accessToken}</textarea>"
 		if (urlOnOff){
         	display += "<div style='padding:10px'>${it.label} OFF:</div>"
-        	display += "<textarea rows='5' style='font-size:10px; width: 100%'>https://graph.api.smartthings.com/api/smartapps/installations/${app.id}/w?l=${it.label}&c=off&access_token=${state.accessToken}</textarea>"
+        	display += "<textarea rows='5' style='font-size:10px; width: 100%'>${getApiServerUrl()}/api/smartapps/installations/${app.id}/w?l=${it.label}&c=off&access_token=${state.accessToken}</textarea>"
 		}
 		display += "<hr>"
     }
@@ -150,7 +151,7 @@ private def textAppName() {
 	def text = "Cloud Interface"
 }	
 private def textVersion() {
-    def text = "Version 1.1.1 (02/26/2016)"
+    def text = "Version 1.2.0 (03/15/2016)"
 }
 private def textCopyright() {
     def text = "Copyright © 2016 Michael Struck"
