@@ -9,7 +9,6 @@ metadata {
 	definition (name: "Hue Lux Bulb", namespace: "smartthings", author: "SmartThings") {
 		capability "Switch Level"
 		capability "Actuator"
-		capability "Color Temperature"
 		capability "Switch"
 		capability "Refresh"
 		capability "Sensor"
@@ -37,30 +36,16 @@ metadata {
 			}
         }
 
-		standardTile("switch", "device.switch", width: 2, height: 2, canChangeIcon: true) {
-			state "on", label:'${name}', action:"switch.off", icon:"st.lights.philips.hue-single", backgroundColor:"#79b821", nextState:"turningOff"
-			state "off", label:'${name}', action:"switch.on", icon:"st.lights.philips.hue-single", backgroundColor:"#ffffff", nextState:"turningOn"
-			state "turningOn", label:'${name}', action:"switch.off", icon:"st.lights.philips.hue-single", backgroundColor:"#79b821", nextState:"turningOff"
-			state "turningOff", label:'${name}', action:"switch.on", icon:"st.lights.philips.hue-single", backgroundColor:"#ffffff", nextState:"turningOn"
-        }
-
         controlTile("levelSliderControl", "device.level", "slider", height: 1, width: 2, inactiveLabel: false, range:"(0..100)") {
             state "level", action:"switch level.setLevel"
         }
 
-        controlTile("colorTempSliderControl", "device.colorTemperature", "slider", width: 4, height: 2, inactiveLabel: false, range:"(2000..6500)") {
-            state "colorTemperature", action:"color temperature.setColorTemperature"
-        }
-        valueTile("colorTemp", "device.colorTemperature", inactiveLabel: false, decoration: "flat", width: 2, height: 2) {
-            state "colorTemperature", label: '${currentValue} K'
-        }
-
-        standardTile("refresh", "device.switch", inactiveLabel: false, decoration: "flat") {
+        standardTile("refresh", "device.switch", inactiveLabel: false, decoration: "flat", width: 2, height: 2) {
             state "default", label:"", action:"refresh.refresh", icon:"st.secondary.refresh"
         }
 
-        main(["switch"])
-        details(["rich-control", "colorTempSliderControl", "colorTemp", "refresh"])
+        main(["rich-control"])
+        details(["rich-control", "refresh"])
     }
 }
 
@@ -96,14 +81,6 @@ void setLevel(percent) {
 	log.debug "Executing 'setLevel'"
 	parent.setLevel(this, percent)
 	sendEvent(name: "level", value: percent)
-}
-
-void setColorTemperature(value) {
-	if (value) {
-        log.trace "setColorTemperature: ${value}k"
-        parent.setColorTemperature(this, value)
-        sendEvent(name: "colorTemperature", value: value)
-	}
 }
 
 void refresh() {

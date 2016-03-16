@@ -463,29 +463,32 @@ def pollChildren(child = null) {
 }
 
 // Poll Child is invoked from the Child Device itself as part of the Poll Capability
-def pollChild(child){
+def pollChild(){
 
-	if (pollChildren(child)){
-		if (!child.device.deviceNetworkId.startsWith("ecobee_sensor")){
-			if(atomicState.thermostats[child.device.deviceNetworkId] != null) {
-				def tData = atomicState.thermostats[child.device.deviceNetworkId]
-				log.info "pollChild(child)>> data for ${child.device.deviceNetworkId} : ${tData.data}"
-				child.generateEvent(tData.data) //parse received message from parent
-			} else if(atomicState.thermostats[child.device.deviceNetworkId] == null) {
-				log.error "ERROR: Device connection removed? no data for ${child.device.deviceNetworkId}"
-				return null
+	def devices = getChildDevices()
+
+	if (pollChildren()){
+		devices.each { child ->
+			if (!child.device.deviceNetworkId.startsWith("ecobee_sensor")){
+				if(atomicState.thermostats[child.device.deviceNetworkId] != null) {
+					def tData = atomicState.thermostats[child.device.deviceNetworkId]
+					log.info "pollChild(child)>> data for ${child.device.deviceNetworkId} : ${tData.data}"
+					child.generateEvent(tData.data) //parse received message from parent
+				} else if(atomicState.thermostats[child.device.deviceNetworkId] == null) {
+					log.error "ERROR: Device connection removed? no data for ${child.device.deviceNetworkId}"
+					return null
+				}
 			}
 		}
 	} else {
-		log.info "ERROR: pollChildren(child) for ${child.device.deviceNetworkId} after polling"
+		log.info "ERROR: pollChildren()"
 		return null
 	}
 
 }
 
 void poll() {
-	def devices = getChildDevices()
-	devices.each {pollChild(it)}
+	pollChild()
 }
 
 def availableModes(child) {

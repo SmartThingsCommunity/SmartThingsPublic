@@ -36,155 +36,71 @@
  *				Slider range from 0..100
  *	Change 9:	2015-03-06	(Juan Risso)
  *				Setlevel -> value to integer (to prevent smartapp calling this function from not working).
+ *	Change 10: 	2016-03-06	(Vinay Rao/Tom Manley)
+ *				changed 2/3rds of the file to clean up code and add zigbee library improvements
  *
  */
 
 metadata {
-	definition (name: "GE Link Bulb", namespace: "smartthings", author: "SmartThings") {
+    definition (name: "GE Link Bulb", namespace: "smartthings", author: "SmartThings") {
 
-    	capability "Actuator"
+        capability "Actuator"
         capability "Configuration"
         capability "Refresh"
-		capability "Sensor"
+        capability "Sensor"
         capability "Switch"
-		capability "Switch Level"
+        capability "Switch Level"
         capability "Polling"
 
         fingerprint profileId: "0104", inClusters: "0000,0003,0004,0005,0006,0008,1000", outClusters: "0019", manufacturer: "GE_Appliances", model: "ZLL Light", deviceJoinName: "GE Link Bulb"
-	}
+    }
 
 	// UI tile definitions
-	tiles {
-		standardTile("switch", "device.switch", width: 2, height: 2, canChangeIcon: true) {
-			state "on", label: '${name}', action: "switch.off", icon: "st.switches.light.on", backgroundColor: "#79b821", nextState:"turningOff"
-			state "off", label: '${name}', action: "switch.on", icon: "st.switches.light.off", backgroundColor: "#ffffff", nextState:"turningOn"
- 			state "turningOn", label:'${name}', action: "switch.off", icon:"st.switches.light.on", backgroundColor:"#79b821", nextState:"turningOff"
-            state "turningOff", label:'${name}', action: "switch.on", icon:"st.switches.light.off", backgroundColor:"#ffffff", nextState:"turningOn"
-		}
-		standardTile("refresh", "device.switch", inactiveLabel: false, decoration: "flat") {
-			state "default", label:"", action:"refresh.refresh", icon:"st.secondary.refresh"
-		}
-		controlTile("levelSliderControl", "device.level", "slider", height: 1, width: 3, inactiveLabel: false, range:"(0..100)") {
-			state "level", action:"switch level.setLevel"
-		}
-		valueTile("level", "device.level", inactiveLabel: false, decoration: "flat") {
-			state "level", label: 'Level ${currentValue}%'
-		}
+    tiles(scale: 2) {
+        multiAttributeTile(name:"switch", type: "lighting", width: 6, height: 4, canChangeIcon: true){
+            tileAttribute ("device.switch", key: "PRIMARY_CONTROL") {
+                attributeState "on", label:'${name}', action:"switch.off", icon:"st.switches.light.on", backgroundColor:"#79b821", nextState:"turningOff"
+                attributeState "off", label:'${name}', action:"switch.on", icon:"st.switches.light.off", backgroundColor:"#ffffff", nextState:"turningOn"
+                attributeState "turningOn", label:'${name}', action:"switch.off", icon:"st.switches.light.on", backgroundColor:"#79b821", nextState:"turningOff"
+                attributeState "turningOff", label:'${name}', action:"switch.on", icon:"st.switches.light.off", backgroundColor:"#ffffff", nextState:"turningOn"
+            }
+            tileAttribute ("device.level", key: "SLIDER_CONTROL") {
+                attributeState "level", action:"switch level.setLevel"
+            }
+        }
+        standardTile("refresh", "device.refresh", inactiveLabel: false, decoration: "flat", width: 2, height: 2) {
+            state "default", label:"", action:"refresh.refresh", icon:"st.secondary.refresh"
+        }
+        main "switch"
+        details(["switch", "refresh"])
+    }
 
-		main(["switch"])
-		details(["switch", "level", "levelSliderControl", "refresh"])
-	}
-
-	    preferences {
-
-        	input("dimRate", "enum", title: "Dim Rate", options: ["Instant", "Normal", "Slow", "Very Slow"], defaultValue: "Normal", required: false, displayDuringSetup: true)
-            input("dimOnOff", "enum", title: "Dim transition for On/Off commands?", options: ["Yes", "No"], defaultValue: "No", required: false, displayDuringSetup: true)
-
+    preferences {
+        input("dimRate", "enum", title: "Dim Rate", options: ["Instant", "Normal", "Slow", "Very Slow"], defaultValue: "Normal", required: false, displayDuringSetup: true)
+        input("dimOnOff", "enum", title: "Dim transition for On/Off commands?", options: ["Yes", "No"], defaultValue: "No", required: false, displayDuringSetup: true)
     }
 }
 
 // Parse incoming device messages to generate events
 def parse(String description) {
-	log.trace description
-
-    if (description?.startsWith("on/off:")) {
-		log.debug "The bulb was sent a command to do something just now..."
-		if (description[-1] == "1") {
-        	def result = createEvent(name: "switch", value: "on")
-            log.debug "On command was sent maybe from manually turning on? : Parse returned ${result?.descriptionText}"
-            return result
-        } else if (description[-1] == "0") {
-        	def result = createEvent(name: "switch", value: "off")
-            log.debug "Off command was sent : Parse returned ${result?.descriptionText}"
-            return result
+    def resultMap = zigbee.getEvent(description)
+    if (resultMap) {
+        if ((resultMap.name == "level" && state.trigger == "setLevel") || resultMap.name != "level") {  //doing this to account for weird level reporting bug with GE Link Bulbs
+            sendEvent(resultMap)
         }
     }
-
-    def msg = zigbee.parse(description)
-
-	if (description?.startsWith("catchall:")) {
-		// log.trace msg
-		// log.trace "data: $msg.data"
-
-        def x = description[-4..-1]
-        // log.debug x
-
-        switch (x)
-        {
-
-        	case "0000":
-
-            	def result = createEvent(name: "switch", value: "off")
-            	log.debug "${result?.descriptionText}"
-           		return result
-                break
-
-            case "1000":
-
-            	def result = createEvent(name: "switch", value: "off")
-            	log.debug "${result?.descriptionText}"
-           		return result
-                break
-
-            case "0100":
-
-            	def result = createEvent(name: "switch", value: "on")
-            	log.debug "${result?.descriptionText}"
-           		return result
-                break
-
-            case "1001":
-
-            	def result = createEvent(name: "switch", value: "on")
-            	log.debug "${result?.descriptionText}"
-           		return result
-                break
-        }
+    else {
+        log.debug "DID NOT PARSE MESSAGE for description : $description"
+        log.debug zigbee.parseDescriptionAsMap(description)
     }
-
-    if (description?.startsWith("read attr")) {
-
-        // log.trace description[27..28]
-        // log.trace description[-2..-1]
-
-    	if (description[27..28] == "0A") {
-
-        	// log.debug description[-2..-1]
-        	def i = Math.round(convertHexToInt(description[-2..-1]) / 256 * 100 )
-			sendEvent( name: "level", value: i )
-        	sendEvent( name: "switch.setLevel", value: i) //added to help subscribers
-
-    	}
-
-    	else {
-
-    		if (description[-2..-1] == "00" && state.trigger == "setLevel") {
-        		// log.debug description[-2..-1]
-        		def i = Math.round(convertHexToInt(description[-2..-1]) / 256 * 100 )
-				sendEvent( name: "level", value: i )
-        		sendEvent( name: "switch.setLevel", value: i) //added to help subscribers
-        	}
-
-        	if (description[-2..-1] == state.lvl) {
-        		// log.debug description[-2..-1]
-        		def i = Math.round(convertHexToInt(description[-2..-1]) / 256 * 100 )
-				sendEvent( name: "level", value: i )
-        		sendEvent( name: "switch.setLevel", value: i) //added to help subscribers
-        	}
-
-    	}
-    }
-
 }
 
 def poll() {
-
-    [
-	"st rattr 0x${device.deviceNetworkId} 1 6 0", "delay 500",
-    "st rattr 0x${device.deviceNetworkId} 1 8 0", "delay 500",
-    "st wattr 0x${device.deviceNetworkId} 1 8 0x10 0x21 {${state?.dOnOff ?: '0000'}}"
+    def refreshCmds = [
+        "st wattr 0x${device.deviceNetworkId} 1 8 0x10 0x21 {${state?.dOnOff ?: '0000'}}", "delay 500"
     ]
 
+    return refreshCmds + zigbee.onOffRefresh() + zigbee.levelRefresh()
 }
 
 def updated() {
@@ -270,109 +186,63 @@ def updated() {
 }
 
 def on() {
-	state.lvl = "00"
     state.trigger = "on/off"
-
-    // log.debug "on()"
-	sendEvent(name: "switch", value: "on")
-	"st cmd 0x${device.deviceNetworkId} 1 6 1 {}"
+    zigbee.on()
 }
 
 def off() {
-	state.lvl = "00"
     state.trigger = "on/off"
-
-    // log.debug "off()"
-	sendEvent(name: "switch", value: "off")
-	"st cmd 0x${device.deviceNetworkId} 1 6 0 {}"
+    zigbee.off()
 }
 
 def refresh() {
-
-    [
-	"st rattr 0x${device.deviceNetworkId} 1 6 0", "delay 500",
-    "st rattr 0x${device.deviceNetworkId} 1 8 0", "delay 500",
-    "st wattr 0x${device.deviceNetworkId} 1 8 0x10 0x21 {${state?.dOnOff ?: '0000'}}"
+    def refreshCmds = [
+        "st wattr 0x${device.deviceNetworkId} 1 8 0x10 0x21 {${state?.dOnOff ?: '0000'}}", "delay 500"
     ]
-    poll()
 
+    return refreshCmds + zigbee.onOffRefresh() + zigbee.levelRefresh() + zigbee.onOffConfig()
 }
 
 def setLevel(value) {
-
-    def cmds = []
-	value = value as Integer
-	if (value == 0) {
-		sendEvent(name: "switch", value: "off")
-		cmds << "st cmd 0x${device.deviceNetworkId} 1 8 0 {0000 ${state.rate}}"
-	}
-	else if (device.latestValue("switch") == "off") {
-		sendEvent(name: "switch", value: "on")
-	}
-
-    sendEvent(name: "level", value: value)
-    value = (value * 255 / 100)
-    def level = hex(value);
-
     state.trigger = "setLevel"
-    state.lvl = "${level}"
-
+    def cmd
+    def delayForRefresh = 500
     if (dimRate && (state?.rate != null)) {
-    	cmds << "st cmd 0x${device.deviceNetworkId} 1 8 4 {${level} ${state.rate}}"
+        def computedRate = convertRateValue(state.rate)
+        cmd = zigbee.setLevel(value, computedRate)
+        delayForRefresh += computedRate * 100       //converting tenth of second to milliseconds
     }
     else {
-    	cmds << "st cmd 0x${device.deviceNetworkId} 1 8 4 {${level} 1500}"
+        cmd = zigbee.setLevel(value, 20)
+        delayForRefresh += 2000
     }
+    cmd + ["delay $delayForRefresh"] + zigbee.levelRefresh()
+}
 
-    log.debug cmds
-    cmds
+int convertRateValue(rate) {
+    int convertedRate = 0
+    switch (rate)
+    {
+        case "0000":
+            convertedRate = 0
+            break
+
+        case "1500":
+            convertedRate = 20      //0015 hex in int is 2.1
+            break
+
+        case "2500":
+            convertedRate = 35      //0025 hex in int is 3.7
+            break
+
+        case "3500":
+            convertedRate = 50      //0035 hex in int is 5.1
+            break
+    }
+    convertedRate
 }
 
 def configure() {
-
-	log.debug "Configuring Reporting and Bindings."
-	def configCmds = [
-
-        //Switch Reporting
-        "zcl global send-me-a-report 6 0 0x10 0 3600 {01}", "delay 500",
-        "send 0x${device.deviceNetworkId} 1 1", "delay 1000",
-
-        //Level Control Reporting
-        "zcl global send-me-a-report 8 0 0x20 5 3600 {0010}", "delay 200",
-        "send 0x${device.deviceNetworkId} 1 1", "delay 1500",
-
-        "zdo bind 0x${device.deviceNetworkId} 1 1 6 {${device.zigbeeId}} {}", "delay 1000",
-		"zdo bind 0x${device.deviceNetworkId} 1 1 8 {${device.zigbeeId}} {}", "delay 500",
-	]
-    return configCmds + refresh() // send refresh cmds as part of config
-}
-
-private hex(value, width=2) {
-	def s = new BigInteger(Math.round(value).toString()).toString(16)
-	while (s.size() < width) {
-		s = "0" + s
-	}
-	s
-}
-
-private Integer convertHexToInt(hex) {
-	Integer.parseInt(hex,16)
-}
-
-private String swapEndianHex(String hex) {
-    reverseArray(hex.decodeHex()).encodeHex()
-}
-
-private byte[] reverseArray(byte[] array) {
-    int i = 0;
-    int j = array.length - 1;
-    byte tmp;
-    while (j > i) {
-        tmp = array[j];
-        array[j] = array[i];
-        array[i] = tmp;
-        j--;
-        i++;
-    }
-    return array
+    log.debug "Configuring Reporting and Bindings."
+    return zigbee.onOffConfig() + zigbee.onOffRefresh() + zigbee.levelRefresh()
 }
