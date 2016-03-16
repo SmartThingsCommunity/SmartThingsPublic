@@ -3,7 +3,7 @@
  *
  *  Copyright 2015, 2016 Bruce Ravenel
  *
- *  Version 1.8.5e   14 Mar 2016
+ *  Version 1.8.5f   15 Mar 2016
  *
  *	Version History
  *
@@ -110,7 +110,7 @@ preferences {
 //
 
 def appVersion() {
-	return "1.8.5e" 
+	return "1.8.5f" 
 }
 
 def mainPage() {
@@ -1653,7 +1653,7 @@ def adjustFan(device) {
 	if(device.currentSwitch == 'off') device.setLevel(15)
 	else if (currentLevel < 34) device.setLevel(50)
   	else if (currentLevel < 67) device.setLevel(90)
-	else device.off()
+	else device.setLevel(0)
 }
 
 def adjustShade(device) {
@@ -1928,12 +1928,12 @@ def doTrigger() {
 def getButton(dev, evt, i) {
 	def numNames = ["", "one", "two", "three", "four", "five", "six", "seven", "eight", "nine", "ten",
     	"eleven", "twelve", "thirteen", "fourteen", "fifteen", "sixteen", "seventeen", "eighteen", "nineteen", "twenty"]
-	def numButtons = settings.find{it.key == "numButtons$dev"}
+	def numButtons = settings.find{it.key == (state.isTrig ? "numButtonsrDev$i" : "numButtonstDev$i")}
 	numButtons = numButtons ? numButtons.value : 4
     def buttonNumber
 	if(numButtons > 1) buttonNumber = evt.jsonData.buttonNumber.toInteger() 
     else buttonNumber = 1
-    log.debug "getButton: $buttonNumber"
+//    log.debug "getButton: $buttonNumber"
 	def value = evt.value
 //	log.debug "buttonEvent: $evt.name = $evt.value ($evt.data)"
 //	log.debug "button: $buttonNumber, value: $value"
@@ -1951,10 +1951,12 @@ def getButton(dev, evt, i) {
 //		log.debug "Found recent button press events for $buttonNumber with value $value"
 	}
 	def myState = settings.find {it.key == (state.isTrig ? "state$i" : "tstate$i")}
-	def myButton = settings.find {it.key == (state.isTrig ? "ButtonrDev$i" : "ButtontDev$i")}
+    def myButton = "one"
+	if(numButtons > 1) myButton = (settings.find {it.key == (state.isTrig ? "ButtonrDev$i" : "ButtontDev$i")}).value
 	def result = true
-	if(value in ["pushed", "held"]) result = (value == myState.value) && (thisButton == myButton.value)
+	if(value in ["pushed", "held"]) result = (value == myState.value) && (thisButton == myButton)
 	else if(value.startsWith("button")) result = thisButton == myButton.value // ZWN-SC7
+    return result
 }
 
 def testEvt(evt) {
