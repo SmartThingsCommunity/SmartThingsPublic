@@ -145,13 +145,14 @@ def refreshLiveData() {
             	//Store the day's power info as yesterdays
             	def totalPower = getTotalDailyPower()
             	data.yesterdayTotalPower = (Math.round((totalPower as BigDecimal) * 1000))/1000
+                
                 def newYesterdayTotalPowerCost = (Math.round((((totalPower as BigDecimal) * unitPriceBigDecimal) + standingCharge) * 100))/100
                 def costYesterdayComparison = calculatePercentChange(newYesterdayTotalPowerCost as BigDecimal, data.yesterdayTotalPowerCost as BigDecimal)
                 def formattedCostYesterdayComparison = costYesterdayComparison
                 if (costYesterdayComparison >= 0) {
         			formattedCostYesterdayComparison = "+" + formattedCostYesterdayComparison
         		}
-                data.yesterdayTotalPowerCost = newYesterdayTotalPowerCost
+                data.yesterdayTotalPowerCost = String.format("%1.2f",newYesterdayTotalPowerCost)
             	sendEvent(name: 'yesterdayTotalPower', value: "$data.yesterdayTotalPower", unit: "KWh", displayed: false)
         		sendEvent(name: 'yesterdayTotalPowerCost', value: "£$data.yesterdayTotalPowerCost (" + formattedCostYesterdayComparison + "%)", displayed: false)
                 
