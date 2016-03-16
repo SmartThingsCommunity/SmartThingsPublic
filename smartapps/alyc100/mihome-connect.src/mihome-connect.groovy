@@ -26,14 +26,15 @@
  *	v1.0.3 - Bug fix to refresh schedule job.
  *
  *	v1.0.3b - Added icons to MiHome device list.
+ *	v1.0.4 - Move external icon references into Github
  */
 definition(
 		name: "MiHome (Connect)",
 		namespace: "alyc100",
 		author: "Alex Lee Yuk Cheung",
 		description: "Connect your MiHome devices to SmartThings.",
-		iconUrl: "https://mihome4u.co.uk/assets/homepage/mihome-icon-89db7a9bfb5c8b066ffb4e50c8d68235.png",
-		iconX2Url: "https://mihome4u.co.uk/assets/homepage/mihome-icon-89db7a9bfb5c8b066ffb4e50c8d68235.png",
+		iconUrl: "https://raw.githubusercontent.com/alyc100/SmartThingsPublic/master/smartapps/alyc100/mihome-icon-89db7a9bfb5c8b066ffb4e50c8d68235.png",
+		iconX2Url: "https://raw.githubusercontent.com/alyc100/SmartThingsPublic/master/smartapps/alyc100/mihome-icon-89db7a9bfb5c8b066ffb4e50c8d68235.png",
         singleInstance: true
 ) 
 
@@ -69,7 +70,7 @@ def firstPage() {
   				}
                 section("Devices Discovered And Automatically Added...") {
 					state.devices.each {devices ->
-                    	paragraph image: "https://mihome4u.co.uk/assets/homepage/mihome4-01bc8a0e478b385df3248b55cc2df7ca.png", devices.trim()
+                    	paragraph image: "https://raw.githubusercontent.com/alyc100/SmartThingsPublic/master/smartapps/alyc100/mihome4-01bc8a0e478b385df3248b55cc2df7ca.png", devices.trim()
                     }
 					
 				}

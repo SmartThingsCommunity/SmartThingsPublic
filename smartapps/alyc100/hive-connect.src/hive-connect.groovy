@@ -18,6 +18,7 @@
  *  v2.0.1 BETA - Fix bug for accounts that do not have capabilities attribute against thermostat nodes.
  *	v2.1 - Improved authentication process and overhaul to UI. Added notification capability.
  *  v2.1.1 - Bug fix when initially selecting devices for the first time.
+ *	v2.1.2 - Move external icon references into Github
  *
  */
 definition(
@@ -25,8 +26,8 @@ definition(
 		namespace: "alyc100",
 		author: "Alex Lee Yuk Cheung",
 		description: "Connect your Hive devices to SmartThings.",
-		iconUrl: "https://scontent-lhr3-1.xx.fbcdn.net/hphotos-xfp1/v/t1.0-9/10457773_334250273417145_3395772416845089626_n.png?oh=fb96583154582526d24409597fbccc18&oe=57248CDA",
-		iconX2Url: "https://scontent-lhr3-1.xx.fbcdn.net/hphotos-xfp1/v/t1.0-9/10457773_334250273417145_3395772416845089626_n.png?oh=fb96583154582526d24409597fbccc18&oe=57248CDA",
+		iconUrl: "https://raw.githubusercontent.com/alyc100/SmartThingsPublic/master/smartapps/alyc100/10457773_334250273417145_3395772416845089626_n.png",
+		iconX2Url: "https://raw.githubusercontent.com/alyc100/SmartThingsPublic/master/smartapps/alyc100/10457773_334250273417145_3395772416845089626_n.png",
         singleInstance: true
 ) 
 
@@ -74,7 +75,7 @@ def firstPage() {
 }
 
 def headerSECTION() {
-	return paragraph (image: "https://scontent-lhr3-1.xx.fbcdn.net/hphotos-xfp1/v/t1.0-9/10457773_334250273417145_3395772416845089626_n.png?oh=fb96583154582526d24409597fbccc18&oe=57248CDA",
+	return paragraph (image: "https://raw.githubusercontent.com/alyc100/SmartThingsPublic/master/smartapps/alyc100/10457773_334250273417145_3395772416845089626_n.png",
                   "Hive (Connect)\nVersion: 2.1.1\nBuild: 153009032016")
 }
 
@@ -171,8 +172,8 @@ def selectDevicePAGE() {
 	dynamicPage(name: "selectDevicePAGE", title: "Devices", uninstall: false, install: false) {
     	section { headerSECTION() }
     	section("Select your devices:") {
-			input "selectedHeating", "enum", image: "https://www.hivehome.com/assets/thermostat-frame-6c75d5394d102f52cb8cf73704855446.png", required:false, title:"Select Hive Heating Devices \n(${state.hiveHeatingDevices.size() ?: 0} found)", multiple:true, options:state.hiveHeatingDevices
-			input "selectedHotWater", "enum", image: "https://www.hivehome.com/assets/thermostat-frame-6c75d5394d102f52cb8cf73704855446.png", required:false, title:"Select Hive Hot Water Devices \n(${state.hiveHotWaterDevices.size() ?: 0} found)", multiple:true, options:state.hiveHotWaterDevices
+			input "selectedHeating", "enum", image: "https://raw.githubusercontent.com/alyc100/SmartThingsPublic/master/smartapps/alyc100/thermostat-frame-6c75d5394d102f52cb8cf73704855446.png", required:false, title:"Select Hive Heating Devices \n(${state.hiveHeatingDevices.size() ?: 0} found)", multiple:true, options:state.hiveHeatingDevices
+			input "selectedHotWater", "enum", image: "https://raw.githubusercontent.com/alyc100/SmartThingsPublic/master/smartapps/alyc100/thermostat-frame-6c75d5394d102f52cb8cf73704855446.png", required:false, title:"Select Hive Hot Water Devices \n(${state.hiveHotWaterDevices.size() ?: 0} found)", multiple:true, options:state.hiveHotWaterDevices
 					
 		}
     }

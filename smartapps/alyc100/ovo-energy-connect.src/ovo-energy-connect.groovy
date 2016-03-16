@@ -18,6 +18,7 @@
  *  v2.1 - Send notification for daily cost summary and daily usage summary
  *	v2.2 - Support fetching latest unit prices and standing charge from OVO account.
  *		   Send notification for specified daily cost level breach.
+ *	v2.2.1 - Move external icon references to Github
  *
  */
 definition(
@@ -25,8 +26,8 @@ definition(
 		namespace: "alyc100",
 		author: "Alex Lee Yuk Cheung",
 		description: "Connect your OVO Energy Account to SmartThings. (Requires OVO Smart Gateway)",
-		iconUrl: "http://a1.mzstatic.com/eu/r30/Purple69/v4/a8/75/b1/a875b13e-a6f1-fe8d-8063-6f36517fc272/icon175x175.jpeg",
-		iconX2Url: "http://a1.mzstatic.com/eu/r30/Purple69/v4/a8/75/b1/a875b13e-a6f1-fe8d-8063-6f36517fc272/icon175x175.jpeg",
+		iconUrl: "https://raw.githubusercontent.com/alyc100/SmartThingsPublic/master/smartapps/alyc100/icon175x175.jpeg",
+		iconX2Url: "https://raw.githubusercontent.com/alyc100/SmartThingsPublic/master/smartapps/alyc100/icon175x175.jpeg",
         singleInstance: true
 ) 
 
@@ -76,7 +77,7 @@ def firstPage() {
 }
 
 def headerSECTION() {
-	return paragraph (image: "http://a1.mzstatic.com/eu/r30/Purple69/v4/a8/75/b1/a875b13e-a6f1-fe8d-8063-6f36517fc272/icon175x175.jpeg",
+	return paragraph (image: "https://raw.githubusercontent.com/alyc100/SmartThingsPublic/master/smartapps/alyc100/icon175x175.jpeg",
                   "OVO Energy (Connect)\nVersion: 2.0\nBuild: 103009032016")
 }
 
@@ -160,7 +161,7 @@ def selectDevicePAGE() {
 	dynamicPage(name: "selectDevicePAGE", title: "Devices", uninstall: false, install: false) {
     	section { headerSECTION() }
     	section("Select your devices:") {
-			input "selectedMeters", "enum", image: "https://www.ovoenergy.com/binaries/content/gallery/ovowebsitessuite/images/ovo-answers/ihd-screens-15.png/ihd-screens-15.png/ovowebsitessuite%3Acarousel", required:false, title:"Select Smart Meter Devices \n(${state.smartMeterDevices.size() ?: 0} found)", multiple:true, options:state.smartMeterDevices					
+			input "selectedMeters", "enum", image: "https://raw.githubusercontent.com/alyc100/SmartThingsPublic/master/smartapps/alyc100/ovowebsitessuite-carousel.png", required:false, title:"Select Smart Meter Devices \n(${state.smartMeterDevices.size() ?: 0} found)", multiple:true, options:state.smartMeterDevices					
 		}
     }
 }
