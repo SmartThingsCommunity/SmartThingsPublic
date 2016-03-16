@@ -28,6 +28,7 @@
  *	Neato Version: 1.0.1 - Improved Botvac connection detection
  *	Neato Version: 1.0.2 - Added Please Clear My Path Error message
  *  Neato Version: 1.0.3 - Added Navigation No Progress Error message
+ *	Neato Version: 1.0.4 - Added Neato icons
  */
 import groovy.json.JsonSlurper
 
@@ -55,8 +56,8 @@ metadata {
 	tiles(scale: 2) {
     	multiAttributeTile(name: "clean", width: 6, height: 4, type:"lighting") {
 			tileAttribute("device.switch", key:"PRIMARY_CONTROL", canChangeBackground: true){
-				attributeState("off", label: 'STOPPED', action: "on", icon: "st.Appliances.appliances13", backgroundColor: "#ffffff")
-				attributeState("on", label: 'CLEANING', action: "off", icon: "st.Appliances.appliances13", backgroundColor: "#79b821")
+				attributeState("off", label: 'STOPPED', action: "on", icon: "https://raw.githubusercontent.com/alyc100/SmartThingsPublic/master/devicetypes/alyc100/laser-guided-navigation.png", backgroundColor: "#ffffff")
+				attributeState("on", label: 'CLEANING', action: "off", icon: "https://raw.githubusercontent.com/alyc100/SmartThingsPublic/master/devicetypes/alyc100/best-pet-hair-cleaning.png", backgroundColor: "#79b821")
 			}
             tileAttribute ("statusMsg", key: "SECONDARY_CONTROL") {
 				attributeState "statusMsg", label:'${currentValue}'
@@ -89,16 +90,16 @@ metadata {
 		}
         standardTile("status", "device.status", width: 2, height: 2, inactiveLabel: false, canChangeIcon: false) {
 			state ("unknown", label:'${currentValue}', icon: "st.unknown.unknown.unknown")
-			state ("cleaning", label:'${currentValue}', icon: "st.Appliances.appliances13", backgroundColor: "#79b821")
-			state ("ready", label:'${currentValue}', icon: "st.Appliances.appliances13", backgroundColor: "#79b821")
-			state ("error", label:'${currentValue}', icon: "st.Appliances.appliances13", backgroundColor: "#bc2323")
-			state ("paused", label:'${currentValue}', icon: "st.Appliances.appliances13")
+			state ("cleaning", label:'${currentValue}', icon: "https://raw.githubusercontent.com/alyc100/SmartThingsPublic/master/devicetypes/alyc100/best-pet-hair-cleaning.png")
+			state ("ready", label:'${currentValue}', icon: "https://raw.githubusercontent.com/alyc100/SmartThingsPublic/master/devicetypes/alyc100/laser-guided-navigation.png")
+			state ("error", label:'${currentValue}', icon: "https://raw.githubusercontent.com/alyc100/SmartThingsPublic/master/devicetypes/alyc100/laser-guided-navigation.png", backgroundColor: "#bc2323")
+			state ("paused", label:'${currentValue}', icon: "https://raw.githubusercontent.com/alyc100/SmartThingsPublic/master/devicetypes/alyc100/laser-guided-navigation.png")
 		}
         
         standardTile("dockStatus", "device.dockStatus", width: 2, height: 2, inactiveLabel: false, canChangeIcon: false) {
-         	state ("docked", label:'Docked', icon: "st.Transportation.transportation13", backgroundColor: "#79b821")
-			state ("dockable", label:'Send To Dock', action: "dock", icon: "st.Transportation.transportation2", backgroundColor: "#E5E500")
-            state ("undocked", label:'Undocked', icon: "st.Transportation.transportation13", backgroundColor: "#E5E500")
+         	state ("docked", label:'DOCKED', icon: "https://raw.githubusercontent.com/alyc100/SmartThingsPublic/master/devicetypes/alyc100/auto-charge-resume.png")
+			state ("dockable", label:'DOCK', action: "dock", icon: "https://raw.githubusercontent.com/alyc100/SmartThingsPublic/master/devicetypes/alyc100/neato_staub.png")
+            state ("undocked", label:'UNDOCKED', icon: "https://raw.githubusercontent.com/alyc100/SmartThingsPublic/master/devicetypes/alyc100/laser-guided-navigation.png")
 		}
         
         standardTile("scheduled", "device.scheduled", width: 2, height: 2, inactiveLabel: false, canChangeIcon: false) {
