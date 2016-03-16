@@ -23,7 +23,7 @@
  *
  *	Modified by Alex Lee Yuk Cheung for Neato Botvac Devices
  *	Version: 1.0 - Initial Version - Added Auto Dock On Pause, Force Clean Option, Changes to Polling behaviour
- *	Version: 1.1 - Fix to setting SHM state when error has occured whilst cleaning 
+ *	Version: 1.1 - Fix to setting SHM state when error has occured whilst cleaning
  */
  
 definition(
@@ -32,9 +32,9 @@ definition(
 	author: "Sidney Johnson",
 	description: "Handles polling and job notification for Neato Botvac",
 	category: "Convenience",
-	iconUrl: "http://cdn.device-icons.smartthings.com/Appliances/appliances13-icn.png",
-	iconX2Url: "http://cdn.device-icons.smartthings.com/Appliances/appliances13-icn@2x.png",
-	iconX3Url: "http://cdn.device-icons.smartthings.com/Appliances/appliances13-icn@3x.png",
+	iconUrl: "https://raw.githubusercontent.com/alyc100/SmartThingsPublic/master/devicetypes/alyc100/neato-icons_1x.png",
+	iconX2Url: "https://raw.githubusercontent.com/alyc100/SmartThingsPublic/master/devicetypes/alyc100/neato-icons_1x.png",
+	iconX3Url: "https://raw.githubusercontent.com/alyc100/SmartThingsPublic/master/devicetypes/alyc100/neato-icons_1x.png",
 	singleInstance: true)
 
 preferences {
@@ -106,7 +106,7 @@ def updated() {
 }
 
 def initialize() {
-	log.info "Thinking Cleanerer Neaeto Botvac Edition ${textVersion()} ${textCopyright()}"
+	log.info "Thinking Cleanerer Neato Botvac Edition ${textVersion()} ${textCopyright()}"
 	subscribe(switch1, "status.cleaning", eventHandler)
 	subscribe(switch1, "status.ready", eventHandler)
 	subscribe(switch1, "status.error", eventHandler)
