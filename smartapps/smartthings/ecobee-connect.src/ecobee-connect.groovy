@@ -548,10 +548,19 @@ def connectionStatus(message, redirectUrl = null) {
 }
 // End OAuth Callback URL and helpers
 
+<<<<<<< HEAD
 // Get the list of Ecobee Thermostats for use in the settings pages
 def getEcobeeThermostats() {	
 	LOG("====> getEcobeeThermostats() entered", 5)    
  	def requestBody = '{"selection":{"selectionType":"registered","selectionMatch":"","includeRuntime":true,"includeSensors":true,"includeProgram":true}}'
+=======
+def getEcobeeThermostats() {
+	log.debug "getting device list"
+	atomicState.remoteSensors = []
+
+	def requestBody = '{"selection":{"selectionType":"registered","selectionMatch":"","includeRuntime":true,"includeSensors":true}}'
+
+>>>>>>> SmartThingsCommunity/master
 	def deviceListParams = [
 			uri: apiEndpoint,
 			path: "/1/thermostat",
@@ -598,7 +607,7 @@ def getEcobeeThermostats() {
 
 			if (resp.status == 200) {
 				resp.data.thermostatList.each { stat ->
-					atomicState.remoteSensors = stat.remoteSensors
+					atomicState.remoteSensors = atomicState.remoteSensors == null ? stat.remoteSensors : atomicState.remoteSensors <<  stat.remoteSensors
 					def dni = [app.id, stat.identifier].join('.')
 					stats[dni] = getThermostatDisplayName(stat)
 				}
@@ -620,6 +629,7 @@ def getEcobeeThermostats() {
 	return stats
 }
 
+<<<<<<< HEAD
 // Get the list of Ecobee Sensors for use in the settings pages (Only include the sensors that are tied to a thermostat that was selected)
 // NOTE: getEcobeeThermostats() should be called prior to getEcobeeSensors to refresh the full data of all thermostats
 Map getEcobeeSensors() {	
@@ -648,6 +658,18 @@ Map getEcobeeSensors() {
                         
             LOG("getEcobeeSensors() - singleStat.remoteSensors: ${singleStat.remoteSensors}", 4)
             LOG("getEcobeeSensors() - state.remoteSensors: ${state.remoteSensors}", 4)
+=======
+Map sensorsDiscovered() {
+	def map = [:]
+	log.info "list ${atomicState.remoteSensors}"
+	atomicState.remoteSensors.each { sensors ->
+		sensors.each {
+			if (it.type != "thermostat") {
+				def value = "${it?.name}"
+				def key = "ecobee_sensor-"+ it?.id + "-" + it?.code
+				map["${key}"] = value
+			}
+>>>>>>> SmartThingsCommunity/master
 		}
         
 		// WORKAROUND: Iterate over remoteSensors list and add in the thermostat DNI
@@ -1329,25 +1351,30 @@ def pollChildren(child = null) {
 <<<<<<< HEAD
 =======
 // Poll Child is invoked from the Child Device itself as part of the Poll Capability
-def pollChild(child){
+def pollChild(){
 
-	if (pollChildren(child)){
-		if (!child.device.deviceNetworkId.startsWith("ecobee_sensor")){
-			if(atomicState.thermostats[child.device.deviceNetworkId] != null) {
-				def tData = atomicState.thermostats[child.device.deviceNetworkId]
-				log.info "pollChild(child)>> data for ${child.device.deviceNetworkId} : ${tData.data}"
-				child.generateEvent(tData.data) //parse received message from parent
-			} else if(atomicState.thermostats[child.device.deviceNetworkId] == null) {
-				log.error "ERROR: Device connection removed? no data for ${child.device.deviceNetworkId}"
-				return null
+	def devices = getChildDevices()
+
+	if (pollChildren()){
+		devices.each { child ->
+			if (!child.device.deviceNetworkId.startsWith("ecobee_sensor")){
+				if(atomicState.thermostats[child.device.deviceNetworkId] != null) {
+					def tData = atomicState.thermostats[child.device.deviceNetworkId]
+					log.info "pollChild(child)>> data for ${child.device.deviceNetworkId} : ${tData.data}"
+					child.generateEvent(tData.data) //parse received message from parent
+				} else if(atomicState.thermostats[child.device.deviceNetworkId] == null) {
+					log.error "ERROR: Device connection removed? no data for ${child.device.deviceNetworkId}"
+					return null
+				}
 			}
 		}
 	} else {
-		log.info "ERROR: pollChildren(child) for ${child.device.deviceNetworkId} after polling"
+		log.info "ERROR: pollChildren()"
 		return null
 	}
 
 }
+<<<<<<< HEAD
 >>>>>>> SmartThingsCommunity/master
 
 // poll() will be called on a regular interval using a runEveryX command
@@ -1372,6 +1399,11 @@ def poll() {
 	state.lastPollDate = getTimestamp()
 	LOG("poll() - Polling children with pollChildren(null)", 4)
 	return pollChildren(null) // Poll ALL the children at the same time for efficiency    
+=======
+
+void poll() {
+	pollChild()
+>>>>>>> pr/40
 }
 
 
@@ -1462,10 +1494,15 @@ def updateSensorData() {
 =======
 				it.capability.each {
 					if (it.type == "temperature") {
-						if (location.temperatureScale == "F") {
-							temperature = Math.round(it.value.toDouble() / 10)
+						if (it.value == "unknown") {
+							temperature = "--"
 						} else {
-							temperature = convertFtoC(it.value.toDouble() / 10)
+							if (location.temperatureScale == "F") {
+								temperature = Math.round(it.value.toDouble() / 10)
+							} else {
+								temperature = convertFtoC(it.value.toDouble() / 10)
+							}
+
 						}
 
 					} else if (it.type == "occupancy") {

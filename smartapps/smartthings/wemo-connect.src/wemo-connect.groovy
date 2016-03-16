@@ -234,7 +234,7 @@ def addSwitches() {
 		def d
 		if (selectedSwitch) {
 			d = getChildDevices()?.find {
-				it.dni == selectedSwitch.value.mac || it.device.getDataValue("mac") == selectedSwitch.value.mac
+				it.deviceNetworkId == selectedSwitch.value.mac || it.device.getDataValue("mac") == selectedSwitch.value.mac
 			}
 		}
 
@@ -265,7 +265,7 @@ def addMotions() {
 		def d
 		if (selectedMotion) {
 			d = getChildDevices()?.find {
-				it.dni == selectedMotion.value.mac || it.device.getDataValue("mac") == selectedMotion.value.mac
+				it.deviceNetworkId == selectedMotion.value.mac || it.device.getDataValue("mac") == selectedMotion.value.mac
 			}
 		}
 
@@ -296,7 +296,7 @@ def addLightSwitches() {
 		def d
 		if (selectedLightSwitch) {
 			d = getChildDevices()?.find {
-				it.dni == selectedLightSwitch.value.mac || it.device.getDataValue("mac") == selectedLightSwitch.value.mac
+				it.deviceNetworkId == selectedLightSwitch.value.mac || it.device.getDataValue("mac") == selectedLightSwitch.value.mac
 			}
 		}
 
@@ -341,8 +341,12 @@ def ssdpSwitchHandler(evt) {
 			deviceChangedValues = true
 			log.debug "Device's port or ip changed..."
 			def child = getChildDevice(parsedEvent.mac)
-			child.subscribe(parsedEvent.ip, parsedEvent.port)
-			child.poll()
+			if (child) {
+				child.subscribe(parsedEvent.ip, parsedEvent.port)
+				child.poll()
+			} else {
+				log.debug "Device with mac $parsedEvent.mac not found"
+			}
 		}
 	}
 }
@@ -410,8 +414,12 @@ def ssdpLightSwitchHandler(evt) {
 			deviceChangedValues = true
 			log.debug "Device's port or ip changed..."
 			def child = getChildDevice(parsedEvent.mac)
-			log.debug "updating ip and port, and resubscribing, for device with mac ${parsedEvent.mac}"
-			child.subscribe(parsedEvent.ip, parsedEvent.port)
+			if (child) {
+				log.debug "updating ip and port, and resubscribing, for device with mac ${parsedEvent.mac}"
+				child.subscribe(parsedEvent.ip, parsedEvent.port)
+			} else {
+				log.debug "Device with mac $parsedEvent.mac not found"
+			}
 		}
 	}
 }
@@ -463,8 +471,12 @@ def locationHandler(evt) {
 				deviceChangedValues = true
 				log.debug "Device's port or ip changed..."
 				def child = getChildDevice(parsedEvent.mac)
-				child.subscribe(parsedEvent.ip, parsedEvent.port)
-				child.poll()
+				if (child) {
+					child.subscribe(parsedEvent.ip, parsedEvent.port)
+					child.poll()
+				} else {
+					log.debug "Device with mac $parsedEvent.mac not found"
+				}
 			}
 		}
 	}
@@ -518,8 +530,12 @@ def locationHandler(evt) {
 				deviceChangedValues = true
 				log.debug "Device's port or ip changed..."
 				def child = getChildDevice(parsedEvent.mac)
-				log.debug "updating ip and port, and resubscribing, for device with mac ${parsedEvent.mac}"
-				child.subscribe(parsedEvent.ip, parsedEvent.port)
+				if (child) {
+					log.debug "updating ip and port, and resubscribing, for device with mac ${parsedEvent.mac}"
+					child.subscribe(parsedEvent.ip, parsedEvent.port)
+				} else {
+					log.debug "Device with mac $parsedEvent.mac not found"
+				}
 			}
 		}
 	}

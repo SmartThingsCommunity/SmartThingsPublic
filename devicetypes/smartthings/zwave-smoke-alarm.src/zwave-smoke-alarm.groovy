@@ -158,6 +158,11 @@ def zwaveEvent(physicalgraph.zwave.commands.sensoralarmv1.SensorAlarmReport cmd,
 }
 
 def zwaveEvent(physicalgraph.zwave.commands.wakeupv1.WakeUpNotification cmd, results) {
+	// Check battery if we don't have a recent battery event
+	def prevBattery = device.currentState("battery")
+	if (!prevBattery || (new Date().time - prevBattery.date.time)/60000 >= 60 * 53) {
+		results << new physicalgraph.device.HubAction(zwave.batteryV1.batteryGet().format())
+	}
 	results << new physicalgraph.device.HubAction(zwave.wakeUpV1.wakeUpNoMoreInformation().format())
 	results << createEvent(descriptionText: "$device.displayName woke up", isStateChange: false)
 }

@@ -1,7 +1,5 @@
 /**
- *  Ecobee Sensor
- *
- *  Copyright 2015 Juan Risso
+ *  Copyright 2015 SmartThings
  *
  *  Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except
  *  in compliance with the License. You may obtain a copy of the License at:
@@ -14,9 +12,15 @@
  * 
  *  See Changelog for change history
  *
+<<<<<<< HEAD
  *  Current Version: 0.7.5
  *  Release Date: 20160125
  *  See separate Changelog for change history
+=======
+ *	Ecobee Sensor
+ *
+ *	Author: SmartThings
+>>>>>>> SmartThingsCommunity/master
  */
 
 def getVersionNum() { return "0.9.0" }
@@ -28,11 +32,11 @@ metadata {
 		capability "Temperature Measurement"
 		capability "Motion Sensor"
 		capability "Refresh"
-		capability "Polling"
 	}
 
 	tiles {
 		valueTile("temperature", "device.temperature", width: 2, height: 2) {
+<<<<<<< HEAD
             state("temperature", defaultState: true, label:'${currentValue}°', unit:"dF",
 				backgroundColors:[
                 	// Celsius Color Range
@@ -62,13 +66,39 @@ metadata {
 					[value: 99, color: "#d04e00"],
 					[value: 451, color: "#ffa81e"] // Nod to the book and temp that paper burns. Used to catch when the device is offline
 				]
+=======
+			state("temperature", label:'${currentValue}°', unit:"F",
+					backgroundColors:[
+							// Celsius
+							[value: 0, color: "#153591"],
+							[value: 7, color: "#1e9cbb"],
+							[value: 15, color: "#90d2a7"],
+							[value: 23, color: "#44b621"],
+							[value: 28, color: "#f1d801"],
+							[value: 35, color: "#d04e00"],
+							[value: 37, color: "#bc2323"],
+							// Fahrenheit
+							[value: 40, color: "#153591"],
+							[value: 44, color: "#1e9cbb"],
+							[value: 59, color: "#90d2a7"],
+							[value: 74, color: "#44b621"],
+							[value: 84, color: "#f1d801"],
+							[value: 95, color: "#d04e00"],
+							[value: 96, color: "#bc2323"]
+					]
+>>>>>>> SmartThingsCommunity/master
 			)
 		}
 
 		standardTile("motion", "device.motion") {
+<<<<<<< HEAD
 			state("active", label:'Motion', icon:"st.motion.motion.active", backgroundColor:"#53a7c0")
 			state("inactive", label:'No Motion', icon:"st.motion.motion.inactive", backgroundColor:"#ffffff")
             state("unknown", label:'Offline', icon:"st.contact.contact.open", backgroundColor:"ffa81e")
+=======
+			state("inactive", label:'no motion', icon:"st.motion.motion.inactive", backgroundColor:"#ffffff")
+			state("active", label:'motion', icon:"st.motion.motion.active", backgroundColor:"#53a7c0")
+>>>>>>> SmartThingsCommunity/master
 		}
 
 		standardTile("refresh", "device.refresh", inactiveLabel: false, decoration: "flat") {
@@ -87,7 +117,7 @@ def refresh() {
 
 void poll() {
 	log.debug "Executing 'poll' using parent SmartApp"
-	parent.pollChild(this)
+	parent.pollChild()
 
 <<<<<<< HEAD
 
