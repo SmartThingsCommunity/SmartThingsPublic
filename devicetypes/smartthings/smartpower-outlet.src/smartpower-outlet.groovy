@@ -1,20 +1,28 @@
-/**
- *  Copyright 2015 SmartThings
+/*
+===============================================================================
+ *  Copyright 2016 SmartThings
  *
- *  Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except
- *  in compliance with the License. You may obtain a copy of the License at:
+ *  Licensed under the Apache License, Version 2.0 (the "License"); you may not
+ *  use this file except in compliance with the License. You may obtain a copy 
+ *  of the License at:
  *
  *      http://www.apache.org/licenses/LICENSE-2.0
  *
- *  Unless required by applicable law or agreed to in writing, software distributed under the License is distributed
- *  on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the License
- *  for the specific language governing permissions and limitations under the License.
+ *  Unless required by applicable law or agreed to in writing, software 
+ *  distributed under the License is distributed on an "AS IS" BASIS, WITHOUT 
+ *  WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the 
+ *  License for the specific language governing permissions and limitations 
+ *  under the License.
+===============================================================================
+ *  Purpose: SmartPower Outlet DTH File
  *
- *	SmartPower Outlet (CentraLite)
+ *  Filename: SmartPower-Outlet.src/SmartPower-Outlet.groovy
  *
- *	Author: SmartThings
- *	Date: 2015-08-23
+ *  Change History:
+ *  1. 20160117 TW - Update/Edit to support i18n translations
+===============================================================================
  */
+
 metadata {
 	// Automatically generated. Make future change here.
 	definition (name: "SmartPower Outlet", namespace: "smartthings", author: "SmartThings") {
@@ -91,22 +99,24 @@ def parse(String description) {
 		finalResult = getPowerDescription(zigbee.parseDescriptionAsMap(description))
 
 	if (finalResult) {
-		log.info finalResult
+		log.info "final result = $finalResult"
 		if (finalResult.type == "update") {
 			log.info "$device updates: ${finalResult.value}"
 		}
 		else if (finalResult.type == "power") {
-			def powerValue = (finalResult.value as Integer)/10
-			sendEvent(name: "power", value: powerValue)
+			def value = (finalResult.value as Integer)/10
+			createEvent(name: "power", value: value, descriptionText: '{{ device.displayName }} power is {{ value }} Watts', translatable: true )
 			/*
 				Dividing by 10 as the Divisor is 10000 and unit is kW for the device. AttrId: 0302 and 0300. Simplifying to 10
-
 				power level is an integer. The exact power level with correct units needs to be handled in the device type
 				to account for the different Divisor value (AttrId: 0302) and POWER Unit (AttrId: 0300). CLUSTER for simple metering is 0702
 			*/
 		}
 		else {
-			sendEvent(name: finalResult.type, value: finalResult.value)
+        	if ( finalResult.value == "on" )
+				createEvent(name: finalResult.type, value: finalResult.value, descriptionText: '{{ device.displayName }} is On', translatable: true)
+            else
+            	createEvent(name: finalResult.type, value: finalResult.value, descriptionText: '{{ device.displayName }} is Off', translatable: true)
 		}
 	}
 	else {
