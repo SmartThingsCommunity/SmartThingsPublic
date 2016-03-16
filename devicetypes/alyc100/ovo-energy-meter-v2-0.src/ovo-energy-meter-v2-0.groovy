@@ -147,7 +147,7 @@ def refreshLiveData() {
             	data.yesterdayTotalPower = (Math.round((totalPower as BigDecimal) * 1000))/1000
                 def newYesterdayTotalPowerCost = (Math.round((((totalPower as BigDecimal) * unitPriceBigDecimal) + standingCharge) * 100))/100
                 def costYesterdayComparison = calculatePercentChange(newYesterdayTotalPowerCost as BigDecimal, data.yesterdayTotalPowerCost as BigDecimal)
-                def formattedCostYesterdayComparison = costDailyComparison
+                def formattedCostYesterdayComparison = costYesterdayComparison
                 if (costYesterdayComparison >= 0) {
         			formattedCostYesterdayComparison = "+" + formattedCostYesterdayComparison
         		}
