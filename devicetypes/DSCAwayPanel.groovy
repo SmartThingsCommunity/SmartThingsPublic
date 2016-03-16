@@ -105,7 +105,7 @@ metadata {
 def parse(String description) {
 }
 
-def partition(String state, String partition) {
+def partition(String state, String partition, Map parameters) {
   // state will be a valid state for the panel (ready, notready, armed, etc)
   // partition will be a partition number, for most users this will always be 1
 
@@ -134,24 +134,9 @@ def partition(String state, String partition) {
     // Send chime event
     sendEvent (name: "chime", value: "${state}")
   } else if (state.startsWith('led')) {
-    def binary = state.replaceAll(/(^ledflash|^led)/, '')
     def flash = (state.startsWith('ledflash')) ? 'flash ' : ''
-
-    def ledMap = [
-      '0':'backlight',
-      '1':'fire',
-      '2':'program',
-      '3':'trouble',
-      '4':'bypass',
-      '5':'memory',
-      '6':'armed',
-      '7':'ready'
-    ]
-
-    for (def i = 0; i < 8; i++) {
-      def name = ledMap."${i}"
-      def status = (binary[i] == '1') ? 'on' : 'off'
-      sendEvent (name: "led${name}", value: "${flash}${status}")
+    for (p in parameters) {
+      sendEvent (name: "led${p.key}", value: "${flash}${p.value}")
     }
   } else {
     // Send final event

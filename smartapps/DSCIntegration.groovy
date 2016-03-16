@@ -43,19 +43,18 @@ preferences {
         'all', 'partition alarm', 'partition armed', 'partition away', 'partition disarm', 'partition entrydelay',
         'partition exitdelay', 'partition forceready', 'partition instantaway', 'partition instantstay',
         'partition notready', 'partition ready', 'partition restore', 'partition stay', 'partition trouble',
-        'ledbacklighton', 'ledbacklightoff', 'ledfireon', 'ledfireoff', 'ledprogramon', 'ledprogramoff',
-        'ledtroubleon', 'ledtroubleoff', 'ledbypasson', 'ledbypassoff', 'ledmemoryon', 'ledmemoryoff',
-        'ledarmedon', 'ledarmedoff', 'ledreadyon', 'ledreadyoff', 'zone alarm', 'zone clear', 'zone closed',
+        'led backlight on', 'led backlight off', 'led fire on', 'led fire off', 'led program on', 'led program off',
+        'led trouble on', 'led trouble off', 'led bypass on', 'led bypass off', 'led memory on', 'led memory off',
+        'led armed on', 'led armed off', 'led ready on', 'led ready off', 'zone alarm', 'zone clear', 'zone closed',
         'zone fault', 'zone open', 'zone restore', 'zone smoke', 'zone tamper'
       ]
   }
 }
 
 mappings {
-  path("/panel/:eventcode/:zoneorpart") { action: [GET: "updateZoneOrPartition"] }
-  path("/installzones")                 { action: [POST: "installzones"] }
-  path("/installpartitions")            { action: [POST: "installpartitions"] }
-
+  path("/update")            { action: [POST: "update"] }
+  path("/installzones")      { action: [POST: "installzones"] }
+  path("/installpartitions") { action: [POST: "installpartitions"] }
 }
 
 def installzones() {
@@ -207,96 +206,24 @@ def updated() {
   log.debug "Updated!"
 }
 
-void updateZoneOrPartition() {
-  update()
-}
-
 private update() {
-  def zoneorpartition = params.zoneorpart
+  def update = request.JSON
 
-  // Add more events here as needed
-  // Each event maps to a command in your "DSC Panel" device type
-  def eventMap = [
-    '510':"partition led",
-    '511':"partition ledflash",
-    '601':"zone alarm",
-    '602':"zone closed",
-    '603':"zone tamper",
-    '604':"zone restore",
-    '605':"zone fault",
-    '606':"zone restore",
-    '609':"zone open",
-    '610':"zone closed",
-    '631':"zone smoke",
-    '632':"zone clear",
-    '650':"partition ready",
-    '651':"partition notready",
-    '652':"partition armed",
-    '653':"partition forceready",
-    '654':"partition alarm",
-    '655':"partition disarm",
-    '656':"partition exitdelay",
-    '657':"partition entrydelay",
-    '663':"partition chime",
-    '664':"partition nochime",
-    '701':"partition armed",
-    '702':"partition armed",
-    '840':"partition trouble",
-    '841':"partition restore",
-    '6520':"partition away",
-    '6521':"partition stay",
-    '6522':"partition instantaway",
-    '6523':"partition instantstay"
-  ]
-
-  // get our passed in eventcode
-  def eventCode = params.eventcode
-  if (eventCode) {
-    // Lookup our eventCode in our eventMap
-    def opts = eventMap."${eventCode}"?.tokenize()
-    // log.debug "Options after lookup: ${opts}"
-    // log.debug "Zone or partition: $zoneorpartition"
-    if (opts[0]) {
-      if (['510', '511'].contains(eventCode)) {
-        def flash = (opts[1] == 'ledflash') ? 'flash ' : ''
-
-        def ledMap = [
-          '0':'backlight',
-          '1':'fire',
-          '2':'program',
-          '3':'trouble',
-          '4':'bypass',
-          '5':'memory',
-          '6':'armed',
-          '7':'ready'
-        ]
-
-        for (def i = 0; i < 8; i++) {
-          def name = ledMap."${i}"
-          def status = (zoneorpartition[i] == '1') ? 'on' : 'off'
-          if (notifyEvents && (notifyEvents.contains('all') || notifyEvents.contains('led'+name+status))) {
-            sendMessage("${opts[0]} 1 ${name} led in ${flash}${status} state")
-          }
-        }
-        updatePartitions('1',"${opts[1]}${zoneorpartition}")
-      } else {
-        if (notifyEvents && (notifyEvents.contains('all') || notifyEvents.contains(eventMap[eventCode]))) {
-          sendMessage("${opts[0]} ${zoneorpartition} in ${opts[1]} state")
-        }
-
-        // We have some stuff to send to the device now
-        // this looks something like panel.zone("open", "1")
-        // log.debug "Test: ${opts[0]} and: ${opts[1]} for $zoneorpartition"
-        if ("${opts[0]}" == 'zone') {
-           //log.debug "It was a zone...  ${opts[1]}"
-           updateZoneDevices("$zoneorpartition","${opts[1]}")
-        }
-        if ("${opts[0]}" == 'partition') {
-           //log.debug "It was a zone...  ${opts[1]}"
-           updatePartitions("$zoneorpartition","${opts[1]}")
-        }
+  if (update.'parameters') {
+    for (p in update.'parameters') {
+      if (notifyEvents && (notifyEvents.contains('all') || notifyEvents.contains("led ${p.key} ${p.value}".toString()))) {
+        sendMessage("${update.'type'} ${update.'value'} in ${update.'status'} ${p.key} ${p.value} state")
       }
     }
+  } else {
+    if (notifyEvents && (notifyEvents.contains('all') || notifyEvents.contains("${update.'type'} ${update.'status'}".toString()))) {
+      sendMessage("${update.'type'} ${update.'value'} in ${update.'status'} state")
+    }
+  }
+  if ("${update.'type'}" == 'zone') {
+    updateZoneDevices(update.'value', update.'status')
+  } else if ("${update.'type'}" == 'partition') {
+    updatePartitions(update.'value', update.'status', update.'parameters')
   }
 }
 
@@ -309,52 +236,46 @@ private updateZoneDevices(zonenum,zonestatus) {
   def zonedevice = children.find { item -> item.device.deviceNetworkId == "dsczone${zonenum}"}
   //def zonedevice = zonedevices.find { it.deviceNetworkId == "dsczone${zonenum}" }
   if (zonedevice) {
-      log.debug "Was True... Zone Device: $zonedevice.displayName at $zonedevice.deviceNetworkId is ${zonestatus}"
-      //Was True... Zone Device: Front Door Sensor at zone1 is closed
-      zonedevice.zone("${zonestatus}")
-      if ("${settings.xbmcserver}" != "") {  //Note: I haven't tested this if statement, but it looks like it would work.
-        def lanaddress = "${settings.xbmcserver}:${settings.xbmcport}"
-        def deviceNetworkId = "1234"
-        def json = new JsonBuilder()
-        def messagetitle = "$zonedevice.displayName".replaceAll(' ','%20')
-        log.debug "$messagetitle"
-        json.call("jsonrpc":"2.0","method":"GUI.ShowNotification","params":[title: "$messagetitle",message: "${zonestatus}"],"id":1)
-        def xbmcmessage = "/jsonrpc?request="+json.toString()
-        def result = new physicalgraph.device.HubAction("""GET $xbmcmessage HTTP/1.1\r\nHOST: $lanaddress\r\n\r\n""", physicalgraph.device.Protocol.LAN, "${deviceNetworkId}")
-        sendHubCommand(result)
-      }
+    log.debug "Was True... Zone Device: $zonedevice.displayName at $zonedevice.deviceNetworkId is ${zonestatus}"
+    //Was True... Zone Device: Front Door Sensor at zone1 is closed
+    zonedevice.zone("${zonestatus}")
+    if ("${settings.xbmcserver}" != "") {  //Note: I haven't tested this if statement, but it looks like it would work.
+      def lanaddress = "${settings.xbmcserver}:${settings.xbmcport}"
+      def deviceNetworkId = "1234"
+      def json = new JsonBuilder()
+      def messagetitle = "$zonedevice.displayName".replaceAll(' ','%20')
+      log.debug "$messagetitle"
+      json.call("jsonrpc":"2.0","method":"GUI.ShowNotification","params":[title: "$messagetitle",message: "${zonestatus}"],"id":1)
+      def xbmcmessage = "/jsonrpc?request="+json.toString()
+      def result = new physicalgraph.device.HubAction("""GET $xbmcmessage HTTP/1.1\r\nHOST: $lanaddress\r\n\r\n""", physicalgraph.device.Protocol.LAN, "${deviceNetworkId}")
+      sendHubCommand(result)
     }
+  }
 }
 
-private updatePartitions(partitionnum, partitionstatus) {
+private updatePartitions(partitionnum, partitionstatus, partitionparams) {
   def children = getChildDevices()
   log.debug "partition: ${partitionnum} is ${partitionstatus}"
-  def paneldevice = children.find { item -> item.device.deviceNetworkId == "dscpanel${partitionnum}"}
-  if (paneldevice) {
-    log.debug "Was True... Panel device: $paneldevice.displayName at $paneldevice.deviceNetworkId is ${partitionstatus}"
+  def awaypanel = children.find { item -> item.device.deviceNetworkId == "dscaway${partitionnum}"}
+  if (awaypanel) {
+    log.debug "Was True... Away Switch device: $awaypanel.displayName at $awaypanel.deviceNetworkId is ${partitionstatus}"
     //Was True... Zone Device: Front Door Sensor at zone1 is closed
-    paneldevice.partition("${partitionstatus}", "${partitionnum}")
+    awaypanel.partition("${partitionstatus}", "${partitionnum}", partitionparams)
   }
-  def awayswitch = children.find { item -> item.device.deviceNetworkId == "dscaway${partitionnum}"}
-  if (awayswitch) {
-    log.debug "Was True... Away Switch device: $awayswitch.displayName at $awayswitch.deviceNetworkId is ${partitionstatus}"
+  def staypanel = children.find { item -> item.device.deviceNetworkId == "dscstay${partitionnum}"}
+  if (staypanel) {
+    log.debug "Was True... Stay Switch device: $staypanel.displayName at $staypanel.deviceNetworkId is ${partitionstatus}"
     //Was True... Zone Device: Front Door Sensor at zone1 is closed
-    awayswitch.partition("${partitionstatus}", "${partitionnum}")
-  }
-  def stayswitch = children.find { item -> item.device.deviceNetworkId == "dscstay${partitionnum}"}
-  if (stayswitch) {
-    log.debug "Was True... Stay Switch device: $stayswitch.displayName at $stayswitch.deviceNetworkId is ${partitionstatus}"
-    //Was True... Zone Device: Front Door Sensor at zone1 is closed
-    stayswitch.partition("${partitionstatus}", "${partitionnum}")
+    staypanel.partition("${partitionstatus}", "${partitionnum}", partitionparams)
   }
 }
 
 private sendMessage(msg) {
-    def newMsg = "Alarm Notification: $msg"
-    if (phone1) {
-        sendSms(phone1, newMsg)
-    }
-    if (sendPush == "Yes") {
-        sendPush(newMsg)
-    }
+  def newMsg = "Alarm Notification: $msg"
+  if (phone1) {
+    sendSms(phone1, newMsg)
+  }
+  if (sendPush == "Yes") {
+    sendPush(newMsg)
+  }
 }
