@@ -10,9 +10,9 @@ definition(
     author: "Daniel",
     description: "Allows Vinli users to connect their car to SmartThings",
     category: "SmartThings Labs",
-    iconUrl: "https://d3azp77rte0gip.cloudfront.net/smartapps/baeb2e5d-ebd0-49fe-a4ec-e92417ae20bb/images/vinli_oauth_60.png",
-    iconX2Url: "https://d3azp77rte0gip.cloudfront.net/smartapps/baeb2e5d-ebd0-49fe-a4ec-e92417ae20bb/images/vinli_oauth_120.png",
-    iconX3Url: "https://d3azp77rte0gip.cloudfront.net/smartapps/baeb2e5d-ebd0-49fe-a4ec-e92417ae20bb/images/vinli_oauth_120.png",
+    iconUrl: "https://s3.amazonaws.com/smartapp-icons/Convenience/Cat-Convenience.png",
+    iconX2Url: "https://s3.amazonaws.com/smartapp-icons/Convenience/Cat-Convenience@2x.png",
+    iconX3Url: "https://s3.amazonaws.com/smartapp-icons/Convenience/Cat-Convenience@2x.png",
     oauth: true)
   
 preferences {
@@ -67,11 +67,11 @@ mappings {
 def listAllDevices() {
    	def resp = []
    	switches.each {
-      resp << [name: it.name, label: it.label, value: it.currentValue("switch"), type: "switch", id: it.id, hub: it.hub.name]
+      resp << [name: it.name, label: it.label, value: it.currentValue("switch"), type: "switch", id: it.id, hub: it.hub?.name]
     }
     
     locks.each {
-      resp << [name: it.name, label: it.label, value: it.currentValue("lock"), type: "lock", id: it.id, hub: it.hub.name]
+      resp << [name: it.name, label: it.label, value: it.currentValue("lock"), type: "lock", id: it.id, hub: it.hub?.name]
     }
     return resp
 }
