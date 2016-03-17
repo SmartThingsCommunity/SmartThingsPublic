@@ -17,6 +17,7 @@ metadata {
         command "disarm"
         command "instant"
         command "night"
+        command "nopanic"
         command "partition"
         command "panic"
         command "panicfire"
@@ -102,7 +103,7 @@ metadata {
       }
       standardTile("panic", "device.panic", width: 2, height: 2, title: "Panic"){
         state "nopanic", label: 'Panic\u00A0Off', action: "panic", icon: "st.illuminance.illuminance.dark", backgroundColor: "#7B3516", defaultState: true
-        state "panic", label: 'Panic\u00A0On', action: "panic", icon: "st.illuminance.illuminance.light", backgroundColor: "#FF6E2E"
+        state "panic", label: 'Panic\u00A0On', action: "nopanic", icon: "st.illuminance.illuminance.light", backgroundColor: "#FF6E2E"
       }
       standardTile("panicfire", "capability.momentary", width: 2, height: 2, title: "Panic Fire"){
         state "panicfire", label: 'Panic\u00A0Fire', action: "panicfire", icon: "st.Home.home29", backgroundColor: "#FF2400"
@@ -178,6 +179,10 @@ def night() {
   parent.sendUrl('togglenight')
 }
 
+def nopanic() {
+  sendEvent (name: "panic", value: "nopanic")
+}
+
 def on() {
   stay()
 }
@@ -187,11 +192,7 @@ def off() {
 }
 
 def panic() {
-  if ("${device.currentValue("panic")}" == 'panic') {
-    sendEvent (name: "panic", value: "nopanic")
-  } else {
-    sendEvent (name: "panic", value: "panic")
-  }
+  sendEvent (name: "panic", value: "panic")
 }
 
 def panicfire() {
