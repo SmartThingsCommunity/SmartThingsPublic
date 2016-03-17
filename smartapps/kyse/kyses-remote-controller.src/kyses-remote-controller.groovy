@@ -47,8 +47,8 @@ def pageSettingsMain() {
             }
         }
         section (hideable: true, hidden: false, "Other Settings") {
-        	if (!getNumButtons())
-	        	input(name: "numButtons", type: "number", title: "Specify the number of buttons for ${getRemote()}", required: !getNumButtons(), multiple: false, submitOnChange: true)
+        	if (getRemote() && !getNumButtons())
+	        	input(name: "numButtons", type: "number", title: "Specify the number of buttons for ${getRemote()}", required: true, multiple: false, submitOnChange: true)
         	//input(name: "dedupe", type: "number", title: "Dedupe time (miliseconds)", defaultValue: 1000, required: true, multiple: false)
         	label(name: "label", title: "Assign a name", required: false, multiple: false)
             //mode(title: "Set for specific mode(s)")
