@@ -24,6 +24,8 @@ metadata {
 		capability "Sensor"
         
 		attribute "numButtons", "STRING"
+        
+        // Virtual Button Attributes for defining button labels.
         attribute "lblPush1", "STRING"
         attribute "lblHold1", "STRING"
         attribute "lblPush2", "STRING"
@@ -33,7 +35,6 @@ metadata {
         attribute "lblPush4", "STRING"
         attribute "lblHold4", "STRING"
         
-
 		command "pushed"
         command "held"
         command "pushed", [int]
@@ -147,9 +148,9 @@ def buttonEvent(button, held) {
 	// Leaving value as pushed or held to stay compatible with Buton Controller Smart App for now.
 	button = button as Integer
 	if (held) {
-		createEvent(name: "button", value: "held", data: [buttonNumber: button, action: (held ? "held" : "pushed")], descriptionText: "$device.displayName button $button was held", isStateChange: true)
+		createEvent(name: "button", value: "held", data: [buttonNumber: button, action: (held ? "held" : "pushed")], source: "DEVICE", descriptionText: "$device.displayName button $button was held", isStateChange: true)
 	} else {
-		createEvent(name: "button", value: "pushed", data: [buttonNumber: button, action: (held ? "held" : "pushed")], descriptionText: "$device.displayName button $button was pushed", isStateChange: true)
+		createEvent(name: "button", value: "pushed", data: [buttonNumber: button, action: (held ? "held" : "pushed")], source: "DEVICE", descriptionText: "$device.displayName button $button was pushed", isStateChange: true)
 	}
 }
 
@@ -208,7 +209,7 @@ def push4() {
 }
 
 def pushed(button) {
-	sendEvent(name: "button", value: "pushed", data: [buttonNumber: button, action: "pushed"], descriptionText: "$device.displayName button $button was pushed", isStateChange: true)
+	sendEvent(name: "button", value: "pushed", data: [buttonNumber: button, action: "pushed"], source: "COMMAND", descriptionText: "$device.displayName button $button was pushed", isStateChange: true)
 }
 
 def hold1() {
@@ -228,5 +229,5 @@ def hold4() {
 }
 
 def held(button) {
-    sendEvent(name: "button", value: "held", data: [buttonNumber: button, action: "held"], descriptionText: "$device.displayName button $button was held", isStateChange: true)
+    sendEvent(name: "button", value: "held", data: [buttonNumber: button, action: "held"], source: "COMMAND", descriptionText: "$device.displayName button $button was held", isStateChange: true)
 }
