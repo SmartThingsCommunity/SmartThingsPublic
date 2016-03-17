@@ -13,6 +13,7 @@ metadata {
     // Change or define capabilities here as needed
     capability "Motion Sensor"
     capability "Sensor"
+    capability "Momentary"
 
     // Add commands as needed
     command "zone"
@@ -50,6 +51,10 @@ metadata {
 def bypass() {
   def zone = device.deviceNetworkId.minus('dsczone')
   parent.sendUrl("bypass?zone=${zone}")  
+}
+
+def push() {
+  bypass()
 }
 
 def zone(String state) {
