@@ -19,6 +19,7 @@ metadata {
 		capability "Contact Sensor"
 		capability "Sensor"
         capability "Configuration"
+        capability "Tamper Alert"
         
         capability "Temperature Measurement"
 
