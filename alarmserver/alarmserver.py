@@ -626,6 +626,14 @@ class AlarmServer(asyncore.dispatcher):
                 self._envisalinkclient.send_command('071', '1*1' + str(zone)+ '#')
             except:
                 channel.pushok(json.dumps({'response' : 'Request to bypass zone received but invalid zone given!'}))
+        elif query.path == '/api/alarm/panic':
+            try:
+                type = str(query_array['type'][0])
+                alarmserver_logger("request to panic type %s" % type)
+                channel.pushok(json.dumps({'response' : 'Request to panic received'}))
+                self._envisalinkclient.send_command('060', str(type))
+            except:
+                channel.pushok(json.dumps({'response' : 'Request to panic received but invalid type given!'}))
         elif query.path == '/api/alarm/reset':
             channel.pushok(json.dumps({'response' : 'Request to reset sensors received'}))
             self._envisalinkclient.send_command('071', '1*72#')

@@ -18,6 +18,10 @@ metadata {
         command "instant"
         command "night"
         command "partition"
+        command "panic"
+        command "panicfire"
+        command "panicambulance"
+        command "panicpolice"
         command "reset"
         command "stay"
         command "togglechime"
@@ -96,13 +100,23 @@ metadata {
       valueTile("ledbacklight", "device.ledbacklight", width: 2, height: 1){
         state "ledbacklight", label:'Backlight: ${currentValue}'
       }
+      standardTile("panic", "device.panic", width: 2, height: 2, title: "Panic"){
+        state "nopanic", label: 'Panic\u00A0Off', action: "panic", icon: "st.illuminance.illuminance.dark", backgroundColor: "#7B3516", defaultState: true
+        state "panic", label: 'Panic\u00A0On', action: "panic", icon: "st.illuminance.illuminance.light", backgroundColor: "#FF6E2E"
+      }
+      standardTile("panicfire", "capability.momentary", width: 2, height: 2, title: "Panic Fire"){
+        state "panicfire", label: 'Panic\u00A0Fire', action: "panicfire", icon: "st.Home.home29", backgroundColor: "#FF2400"
+      }
+      standardTile("panicambulance", "capability.momentary", width: 2, height: 2, title: "Panic Ambulance"){
+        state "panicambulance", label: 'Panic\u00A0Ambulance', action: "panicambulance", icon: "st.Transportation.transportation7", backgroundColor: "#DD0000"
+      }
+      standardTile("panicpolice", "capability.momentary", width: 2, height: 2, title: "Panic Fire"){
+        state "panicpolice", label: 'Panic\u00A0Police', action: "panicpolice", icon: "st.Transportation.transportation9", backgroundColor: "#000fd5"
+      }
 
       main "status"
-      details(["status", "trouble", "chime", "away", "stay", "disarm", "instant", "night", "reset","bypassoff", "ledready", "ledarmed", "ledmemory", "ledbypass", "ledtrouble", "ledprogram", "ledfire", "ledbacklight"])
+      details(["status", "trouble", "chime", "away", "stay", "disarm", "instant", "night", "reset", "bypassoff", "ledready", "ledarmed", "ledmemory", "ledbypass", "panic", "ledtrouble", "ledprogram", "ledfire", "ledbacklight", "panicfire", "panicambulance", "panicpolice"])
     }
-}
-
-def parse(String description) {
 }
 
 def partition(String state, String partition, Map parameters) {
@@ -170,6 +184,32 @@ def on() {
 
 def off() {
   disarm()
+}
+
+def panic() {
+  if ("${device.currentValue("panic")}" == 'panic') {
+    sendEvent (name: "panic", value: "nopanic")
+  } else {
+    sendEvent (name: "panic", value: "panic")
+  }
+}
+
+def panicfire() {
+  if ("${device.currentValue("panic")}" == 'panic') {
+    parent.sendUrl('panic?type=1')
+  }
+}
+
+def panicambulance() {
+  if ("${device.currentValue("panic")}" == 'panic') {
+    parent.sendUrl('panic?type=2')
+  }
+}
+
+def panicpolice() {
+  if ("${device.currentValue("panic")}" == 'panic') {
+    parent.sendUrl('panic?type=3')
+  }
 }
 
 def reset() {
