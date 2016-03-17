@@ -5,19 +5,38 @@ alarm integration.
 
 ## Instructions
 
-### Setup device types
+### Warnings about upgrading from an older version
+Device setup is done automatically in the new version. If you are upgrading from a previous version, please delete all the zone or panel devices you created first. These
+would have been created with networkId's like "dsczone1" or "dscstay1." Do not delete the device handlers, or smartapps, they can be updated to the latest versions
+after you delete the existing devices and panels. This will allow you to avoid having to re-do the oauth setup. You will need to go into the DSC Integration smartapp
+and unselect all the panel and zone devices before it will allow you to remove them. If you already updated the smartapp to the latest version, this option will
+no longer be there and you'll have to add the following lines under the prefences {} block in order to remove the devices:
 
-Using the Smartthings IDE create the new device types using the code from the devicetypes directory.
+  section("Alarm Panel:") {
+    input "paneldevices", "capability.switch", title: "Alarm Panel (required)", multiple: true, required: false
+  }
+  section("Zone Devices:") {
+    input "zonedevices", "capability.sensor", title: "DSC Zone Devices (required)", multiple: true, required: false
+  }
 
-There are 6 types of devices you can create:
+Alternatively, downgrade to this version here and then remove the devices and upgrade back again afterwards:
+https://raw.githubusercontent.com/LXXero/DSCAlarm/8428bb57cbc9038976511ce79cd613cb28e74017/smartapps/DSCIntegration.groovy
+
+You'll also need to update alarmserver.cfg to the latest format, which involves the zones and partitions being defined at the bottom in their own sections, with
+the addition of the requirement of specifying the zone type, and the stay/away panel names, which are used for the automatic device creation.
+
+### Setup device handlers
+
+Using the Smartthings IDE create the new device handlers using the code from the devicetypes directory.
+
+There are 6 types of devices handlers you can create:
 
 * DSC Stay Panel  - (Shows partition status info and provides Stay switch that can be used in routines)
 * DSC Away Panel  - (Shows partition status info and provides Away switch that can be used in routines)
 * DSC Zone Contact - (contact device open/close)
 * DSC Zone Motion  - (motion device active/inactive)
-* DSC Zone Smoke 4w  - (4-wire smoke device, alarm/clear/test. It's nearly the same as motion or contact, as it's attached to a zone.)
-* DSC Zone Smoke 2w  - (2-wire smoke device, alarm/clear, UNTESTED, Probably doesn't work right now and I have no way to test it. 2 wire devices create their own alarm type that isn't attached to a zone.)
-
+* DSC Zone Smoke - (wireless/4-wire smoke device, detected/clear/test. It's nearly the same as motion or contact, as it's attached to a zone.)
+* DSC Zone CO - (wireless/4-wire carbon monoxide device, detected/clear/test. It's similar to DSC Zone Smoke.)
 
 At a minimum you'll probably want the Stay/Away panels, Contact, and Motion.
 
@@ -25,36 +44,32 @@ In the Web IDE for Smartthings create a new device type for each of the above de
 
 For all the device types make sure you save them and then publish them for yourself.
 
-### Create panel devices
+### Smartapp Setup
 
-Create a new device and choose the type of "DSC Panel", "DSC Stay Panel" or "DSC Away Panel" that you published earlier. The network id needs to be **dscpanel1**, **dscstay1** or **dscaway1** depending on the panel type. Be sure your hub is selected as well. Once the devices are created - edit the configuration via smartthings app to setup the IP and port of your alarmserver.
-
-### Create individual zones
-Create a new "Zone Device" for each Zone you want Smartthings to show you status for. 
-
-The network id needs to be the word 'zone' followed by the matching zone number that your DSC system sees it as.
-
-For example: **dsczone1** or **dsczone5**
-
-And again, ensure your hub is selected in the device settings.
-
-### The rest of the setup
-
-1. Create a new Smartthings App in the IDE, call it 'DSC Integration' or whatever you like. Use the code from dscAlarmIntegrationSmarththingsApp.groovy file for the new smartapp.
+1. Create a new Smartthings App in the IDE. Use the code from DSCIntegration.groovy in the smartapps folder for the new smartapp. Save and publish as needed.
 
 2. Click "Enable OAuth in Smart App" and copy down the generated "OAuth Client ID" and the "OAuth Client Secret", you will need them later to generate an access code.
-   Click "Create" and when the code section comes up select all the text and replace it with the code from the file 'dscAlarmIntegrationSmarththingsApp.groovy'.
-   Click "Save" then "Publish" -> "For Me".
+   Again make sure you save and apply this before you leave the page, as the oauth information displayed isn't actually applied until you do so.
 
-2. Now the hard part, we need to authorize this Smarttthings app to be used via the REST API.
+3. Now the hard part, we need to authorize this Smarttthings app to be used via the REST API.
    It's going to take a few steps but all you need is a web browser and your OAuth ID's from the app setup page.
    Follow the RESTAPISetup.md document in this same repo to finish the setup.
 
-3. Edit 'alarmserver.cfg' and add in the OAuth/Access Code information to the callback_url_app_id and callbackurl_access_token values,
-   adjust your zones/partitions and callback event codes as needed.
-   Leaving them at the defaults is likely what you already want.
+4. Once OAuth setup is completed, edit the settings for the DSC Integration app on your phone, and fill in the IP/Port with the correct information for your alarmserver.
+   The port is typically the "httpsport" setting in your alarmserver.cfg, and the IP should be the IP of your alarmserver and not your envisalink device. If need be, setup
+   any push notifications here as well.
 
-4. Fire up the AlarmServer, you should see your events from the server show up within 1-2 seconds on your Smartphone.
+### Alarmserver Setup
+
+1. First, edit 'alarmserver.cfg' and add in the OAuth/Access Code information to the callback_url_app_id and callbackurl_access_token values,
+   and adjust your zones/partitions at the bottom of the file. If you're upgrading, be sure to update the list of callback event codes to match
+   the upstream config example. Leaving them at the defaults is likely what you already want.
+
+2. The alarm panels and zone devices get created/deleted automatically when alarmserver starts. Ensure all your zones and partitions are properly
+   defined as per the included alarmserver.cfg example.
+
+4. Fire up the AlarmServer. Your devices should get created in smartthings, and you should start seeing events pushed to them within a few moments
+   on your smart phone.
 
 ## Thanks!
 Thanks goes out to the following people, without their previous work none of this would have been possible:
