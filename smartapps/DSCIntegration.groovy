@@ -40,13 +40,15 @@ preferences {
   section("Notification events (optional):") {
     input "notifyEvents", "enum", title: "Which Events?", description: "Events to notify on", required: false, multiple: true,
       options: [
-        'all', 'partition alarm', 'partition armed', 'partition away', 'partition disarm', 'partition entrydelay',
-        'partition exitdelay', 'partition forceready', 'partition instantaway', 'partition instantstay',
-        'partition notready', 'partition ready', 'partition restore', 'partition stay', 'partition trouble',
-        'led backlight on', 'led backlight off', 'led fire on', 'led fire off', 'led program on', 'led program off',
-        'led trouble on', 'led trouble off', 'led bypass on', 'led bypass off', 'led memory on', 'led memory off',
-        'led armed on', 'led armed off', 'led ready on', 'led ready off', 'zone alarm', 'zone clear', 'zone closed',
-        'zone fault', 'zone open', 'zone restore', 'zone smoke', 'zone tamper'
+        'all', 'partition alarm', 'partition armed', 'partition away', 'partition disarm', 'partition duress',
+        'partition entrydelay', 'partition exitdelay', 'partition forceready', 'partition instantaway',
+        'partition instantstay', 'partition notready', 'partition ready', 'partition restore', 'partition stay',
+        'partition trouble', 'partition keyfirealarm', 'partition keyfirerestore', 'partition keyauxalarm',
+        'partition keyauxrestore', 'partition keypanicalarm', 'partition keypanicrestore', 'led backlight on',
+        'led backlight off', 'led fire on', 'led fire off', 'led program on', 'led program off', 'led trouble on',
+        'led trouble off', 'led bypass on', 'led bypass off', 'led memory on', 'led memory off', 'led armed on',
+        'led armed off', 'led ready on', 'led ready off', 'zone alarm', 'zone clear', 'zone closed', 'zone fault',
+        'zone open', 'zone restore', 'zone smoke', 'zone tamper'
       ]
   }
 }

@@ -422,7 +422,13 @@ class EnvisalinkClient(asynchat.async_chat):
         # Determine what events we are sending to smartthings then send if we match
         if str(code) in myEvents:
            # Check for events with no type by code instead
-           if str(code) in ['510','511']:
+           if str(code) == '620':
+             update = {
+               'type': 'partition',
+               'value': '1',
+               'status': 'duress'
+             }
+           elif str(code) in ['510','511']:
              codeMap = {
                '510':'led',
                '511':'ledflash',
@@ -451,7 +457,21 @@ class EnvisalinkClient(asynchat.async_chat):
              for i in range(0, 7):
                value = 'on' if (binary[i] == '1') else 'off'
                update['parameters'][ledMap[str(i)]]=value
+           elif event['type'] == 'system':
+             codeMap = {
+               '621':'keyfirealarm',
+               '622':'keyfirerestore',
+               '623':'keyauxalarm',
+               '624':'keyauxrestore',
+               '625':'keypanicalarm',
+               '626':'keypanicrestore',
+             }
 
+             update = {
+               'type': 'partition',
+               'value': '1',
+               'status': codeMap[str(code)],
+             }
            elif event['type'] == 'partition':
              # Is our partition setup with a custom name?
              if int(parameters[0]) in self._config.PARTITIONNAMES and self._config.PARTITIONNAMES[int(parameters[0])]!=False:
@@ -475,7 +495,6 @@ class EnvisalinkClient(asynchat.async_chat):
                  'type': 'partition',
                  'value': str(int(parameters[0]))
                }
-
                if str(code) == '652':
                  if message.endswith('Zero Entry Away'):
                    update['status']='instantaway'
