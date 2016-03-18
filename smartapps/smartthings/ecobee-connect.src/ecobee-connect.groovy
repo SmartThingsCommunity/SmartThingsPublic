@@ -545,10 +545,15 @@ def updateSensorData() {
 				def occupancy = ""
 				it.capability.each {
 					if (it.type == "temperature") {
-						if (location.temperatureScale == "F") {
-							temperature = Math.round(it.value.toDouble() / 10)
+						if (it.value == "unknown") {
+							temperature = "--"
 						} else {
-							temperature = convertFtoC(it.value.toDouble() / 10)
+							if (location.temperatureScale == "F") {
+								temperature = Math.round(it.value.toDouble() / 10)
+							} else {
+								temperature = convertFtoC(it.value.toDouble() / 10)
+							}
+
 						}
 
 					} else if (it.type == "occupancy") {
