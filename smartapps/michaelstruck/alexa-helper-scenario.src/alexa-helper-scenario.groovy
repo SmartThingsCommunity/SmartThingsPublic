@@ -2,7 +2,7 @@
  *  Alexa Helper-Child
  *
  *  Copyright © 2016 Michael Struck
- *  Version 2.9.0 3/18/16
+ *  Version 2.9.0a 3/18/16
  * 
  *  Version 1.0.0 - Initial release of child app
  *  Version 1.1.0 - Added framework to show version number of child app and copyright
@@ -31,7 +31,7 @@
  *  Version 2.8.5 - Code optimization, added option to announce name of song for saved stations
  *  Version 2.8.6 - Fixed issue with the 'Contacts' SMS and Push Notification
  *  Version 2.8.7 - Code optimizations/Syntax changes/Bug fixes
- *  Version 2.9.0 - Major code opimization/Bug fixes/Added thermostat as an option for on/off control scenario
+ *  Version 2.9.0a - Major code opimization/Bug fixes/Added thermostat as an option for on/off control scenario
  *
  *  Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except
  *  in compliance with the License. You may obtain a copy of the License at:
@@ -110,7 +110,7 @@ def controlOnOff(type){
         input "${type}SHM", "enum",title: "Change Smart Home Monitor to...", options: ["away":"Arm(Away)", "stay":"Arm(Stay)", "off":"Disarm"], required: false
         href "${type}PageSTDevices", title: "SmartThings Device Control...", description: getDeviceDesc("${type}")
         input "${type}HTTP", "text", title:"Run this HTTP request...", required: false
-        input "${type}delay", "number", title: "Delay in minutes", defaultValue: 0, required: false
+        input "${type}Delay", "number", title: "Delay in minutes", defaultValue: 0, required: false
         input ("${type}Contacts", "contact", title: "Send notifications to...", required: false, submitOnChange:true) {
         	input "${type}SMSNum", "phone", title: "Send SMS message (phone number)...", required: false, submitOnChange:true
         	input "${type}PushMsg", "bool", title: "Send Push message", defaultValue: false, submitOnChange:true
@@ -402,21 +402,24 @@ def initialize() {
 def switchHandler(evt) {
     if (getOkToRun("Control Scenario on/off")) {    
         if (evt.value == "on" && getOkOnOptions()) {
+            
             if (!onDelay || onDelay == 0) turnOnOff("on") 
             else {
-            	runIn(onDelay*60, turnOnOff("on") , [overwrite: true])
+            	runIn(onDelay*60, turnOn, [overwrite: true])
 				if (parent.getNotifyFeed()) sendNotificationEvent("Alexa Helper Scenario: '${app.label}' ON triggered. Will activate in ${onDelay} minutes.")
             }          
     	} 
     	else if (evt.value == "off" && getOkOffOptions()) {
         	if (!offDelay || offDelay == 0) turnOnOff("off") 
             else {
-            	runIn(offDelay*60, turnOnOff("off") , [overwrite: true])
+            	runIn(offDelay*60, turnOff , [overwrite: true])
                 if (parent.getNotifyFeed()) sendNotificationEvent("Alexa Helper Scenario: '${app.label}' OFF triggered. Will activate in ${offDelay} minutes.")
             }
     	}
 	}
 }
+def turnOn() {turnOnOff("on")}
+def turnOff() {turnOnOff("off")}
 def turnOnOff(type){
 	parent.getNotifyFeed() && type == "on" ? sendNotificationEvent("Alexa Helper Scenario: '${app.label}' ON activated.") : sendNotificationEvent("Alexa Helper Scenario: '${app.label}' OFF activated.")
     def cmd = [switch: settings."${type}SwitchesCMD", dimmer: settings."${type}DimmersCMD", cLight: settings."${type}ColoredLightsCMD", tstat: settings."${type}TstatsCMD", lock: settings."${type}LocksCMD", garage: settings."${type}GaragesCMD"]
@@ -941,5 +944,5 @@ private parseDate(time, type){
     new Date().parse("yyyy-MM-dd'T'HH:mm:ss.SSSZ", formattedDate).format("${type}", timeZone(formattedDate))
 }
 //Version
-private def textVersion() {return "Child App Version: 2.9.0 (03/18/2016)"}
+private def textVersion() {return "Child App Version: 2.9.0a (03/18/2016)"}
 private def versionInt() {return 290}
