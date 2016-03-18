@@ -67,11 +67,11 @@ mappings {
 def listAllDevices() {
    	def resp = []
    	switches.each {
-      resp << [name: it.name, label: it.label, value: it.currentValue("switch"), type: "switch", id: it.id, hub: it.hub.name]
+      resp << [name: it.name, label: it.label, value: it.currentValue("switch"), type: "switch", id: it.id, hub: it.hub?.name]
     }
     
     locks.each {
-      resp << [name: it.name, label: it.label, value: it.currentValue("lock"), type: "lock", id: it.id, hub: it.hub.name]
+      resp << [name: it.name, label: it.label, value: it.currentValue("lock"), type: "lock", id: it.id, hub: it.hub?.name]
     }
     return resp
 }
