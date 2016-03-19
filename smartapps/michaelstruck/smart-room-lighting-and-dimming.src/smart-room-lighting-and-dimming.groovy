@@ -9,7 +9,7 @@
  *  Version - 1.2.0 8/28/15 Added option to turn off dimmers if set to anything above 0 when lux threshold is exceeded
  *  Version - 2.0.0 11/24/15 Modified to allow more scenarios via parent/child app structure
  *  Version - 2.0.1 1/16/16 Allow ability to see child app version within parent app and moved the remove button
- *  Version - 2.0.2 2/26/16 GUI clean up
+ *  Version - 2.0.2 2/26/16 GUI clean up and app icons
  * 
  *  Copyright © 2016 Michael Struck - Uses code from Lighting Director by Tim Slagle & Michael Struck
  *
@@ -53,9 +53,15 @@ def mainPage() {
 }
 
 def pageAbout() {
-    dynamicPage(name: "pageAbout", title: "About ${textAppName()}", uninstall: true) {
+    dynamicPage(name: "pageAbout", uninstall: true) {
         section {
-            paragraph "${textVersion()}\n${textCopyright()}\n\n${textLicense()}\n"
+        	paragraph "${textAppName()}\n${textCopyright()}", image: "https://raw.githubusercontent.com/MichaelStruck/SmartThings/master/Other-SmartApps/Smart-Room-Lighting-and-Dimming/SmartLight@2x.png"
+        }
+        section ("SmartApp Versions") {
+            paragraph "${textVersion()}"
+        }
+        section ("Apache License"){
+            paragraph "${textLicense()}"
         }
         section("Instructions") {
             paragraph textHelp()
