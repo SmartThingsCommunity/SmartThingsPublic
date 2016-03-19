@@ -2,7 +2,7 @@
  *  Alexa Helper-Parent
  *
  *  Copyright © 2016 Michael Struck
- *  Version 4.4.6 3/17/16
+ *  Version 4.5.0 3/19/16
  * 
  *  Version 1.0.0 - Initial release
  *  Version 2.0.0 - Added 6 slots to allow for one app to control multiple on/off actions
@@ -31,6 +31,7 @@
  *  Version 4.4.4 - Fixed bug in hub ID
  *  Version 4.4.5 - Added voice reporting in the help section
  *  Version 4.4.6 - Small syntax fixes
+ *  Version 4.5.0 - Added icon to app about page
  *
  *  Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except
  *  in compliance with the License. You may obtain a copy of the License at:
@@ -82,9 +83,15 @@ def mainPage() {
 	}
 }
 def pageAbout(){
-	dynamicPage(name: "pageAbout", title: "About ${textAppName()}", uninstall: true) {
+	dynamicPage(name: "pageAbout", uninstall: true) {
 		section {
-    		paragraph "${textVersion()}\n${textCopyright()}\n\n${textLicense()}\n"
+        	paragraph "${textAppName()}\n${textCopyright()}", image: "https://raw.githubusercontent.com/MichaelStruck/SmartThings/master/Other-SmartApps/AlexaHelper/Alexa@2x.png"
+        }
+        section ("SmartApp/Switch Versions") {
+    		paragraph "${textVersion()}"
+        }    
+        section ("Apache License") {
+        	paragraph "${textLicense()}"
     	}
     	section("Instructions") {
         	paragraph textHelp()
@@ -205,7 +212,7 @@ private def textAppName() {
 	def text = "Alexa Helper"
 }	
 private def textVersion() {
-    def version = "Parent App Version: 4.4.6 (03/17/2016)"
+    def version = "Parent App Version: 4.5.0 (03/19/2016)"
     def childCount = childApps.size()
     def deviceCount= getChildDevices().size()
     def childVersion = childCount ? childApps[0].textVersion() : "No scenarios installed"
@@ -214,7 +221,7 @@ private def textVersion() {
     return "${version}\n${childVersion}"
 }
 private def versionInt(){
-	def text = 446
+	def text = 450
 }
 private def textCopyright() {
     def text = "Copyright © 2016 Michael Struck"

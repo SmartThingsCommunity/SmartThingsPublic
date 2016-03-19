@@ -1,7 +1,7 @@
 /**
  *  Cloud Interface
  *
- *  Version 1.2.0 - 3/15/16 Copyright © 2016 Michael Struck
+ *  Version 1.3.0 - 3/19/16 Copyright © 2016 Michael Struck
  *  
  *  Version 1.0.0 - Initial release
  *  Version 1.0.1 - Fixed code syntax
@@ -11,6 +11,7 @@
  *  Version 1.1.0 - Code optimization and URL page improvements
  *  Version 1.1.1 - GUI clean up
  *  Version 1.2.0 - Address URL accesses via API instead of hard coding it
+ *  Version 1.3.0 - Added icon to app about page
  *
  *  Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except
  *  in compliance with the License. You may obtain a copy of the License at:
@@ -62,14 +63,20 @@ def mainPage() {
 	}
 }
 def pageAbout(){
-	dynamicPage(name: "pageAbout", title: "About ${textAppName()}", uninstall: true ) {
+	dynamicPage(name: "pageAbout", uninstall: true ) {
         section {
+        	paragraph "${textAppName()}\n${textCopyright()}",image: "https://raw.githubusercontent.com/MichaelStruck/SmartThings/master/Other-SmartApps/AlexaHelper/CloudInterface@2x.png"
+        }
+        section ("SmartApp Version/Access Token"){
             if (!state.accessToken) {
 				OAuthToken()
 			}
             def msg = state.accessToken != null ? state.accessToken : "Could not create Access Token. OAuth may not be enabled. Go to the SmartApp IDE settings to enable OAuth."
-            paragraph "${textVersion()}\n${textCopyright()}\n\nAccess Token:\n${msg}\n\n${textLicense()}"
+            paragraph "${textVersion()}\n\nAccess Token:\n${msg}"
     	}
+        section ("Apache License"){
+        	paragraph "${textLicense()}"
+        }
     	section("Instructions") {
         	paragraph textHelp()
     	}
@@ -151,7 +158,7 @@ private def textAppName() {
 	def text = "Cloud Interface"
 }	
 private def textVersion() {
-    def text = "Version 1.2.0 (03/15/2016)"
+    def text = "Version 1.3.0 (03/19/2016)"
 }
 private def textCopyright() {
     def text = "Copyright © 2016 Michael Struck"
