@@ -3,10 +3,11 @@
  *
  *  Copyright 2015, 2016 Bruce Ravenel
  *
- *  Version 1.8.5f   15 Mar 2016
+ *  Version 1.8.6   19 Mar 2016
  *
  *	Version History
  *
+ *	1.8.6	19 Mar 2016		Bug fixes re private Boolean as trigger event
  *	1.8.5	13 Mar 2016		Added support for single button device, more private Boolean options, emergency heat
  *	1.8.4	11 Mar 2016		Strengthened code pertaining to evaluation of malformed rules
  *	1.8.3	3 Mar 2016		Changed method of reporting version number to Rule Machine
@@ -110,7 +111,7 @@ preferences {
 //
 
 def appVersion() {
-	return "1.8.5f" 
+	return "1.8.6" 
 }
 
 def mainPage() {
@@ -2137,7 +2138,7 @@ def setBoolean(truth, appLabel) {
     else for(int i = 1; i < state.howManyT; i++) {
 		def myCap = settings.find {it.key == "tCapab$i"}
 		if(myCap.value == "Private Boolean") if(getOperand(i, false)) {
-        	doTrigger()
+        	if(state.isRule || state.howMany > 1) runRule(true) else doTrigger()
             return
         }
     }
