@@ -2,7 +2,7 @@
  *  Alexa Switch
  *
  *  Copyright 2016 Michael Struck
- *  Version 2.0.5 3/3/16
+ *  Version 2.0.6 3/18/16
  *
  *  Version 1.0.0 - Initial release
  *  Version 1.1.0 - Updated the interface to better match SmartThings dimmers (thanks to @BoruGee)
@@ -12,6 +12,7 @@
  *  Version 2.0.3 - Reverted back to original icons for better GUI experience
  *  Version 2.0.4 - Added dynamic feedback to user on code version of switch
  *  Version 2.0.5 - Remove state of dimmer level, allowing the switch to act as a pass through
+ *  Version 2.0.6 - Added PNG style icons to better differenciate the Alexa Helper created devices
  * 
  *  Uses code from SmartThings
  *
@@ -42,10 +43,10 @@ metadata {
 	tiles(scale: 2) {
 		multiAttributeTile(name: "switch", type: "lighting", width: 6, height: 4, canChangeIcon: true, canChangeBackground: true) {
 			tileAttribute("device.switch", key: "PRIMARY_CONTROL") {
-    			attributeState "off", label: '${name}', action: "switch.on", backgroundColor: "#ffffff",icon: "st.switches.light.off", nextState: "turningOn"
-		      	attributeState "on", label: '${name}', action: "switch.off", backgroundColor: "#79b821",icon: "st.switches.light.on",  nextState: "turningOff"
-				attributeState "turningOff", label: '${name}', action: "switch.on",backgroundColor: "#ffffff", icon: "st.switches.light.off",  nextState: "turningOn"
-		      	attributeState "turningOn", label: '${name}', action: "switch.off",backgroundColor: "#79b821", icon: "st.switches.light.on", nextState: "turningOff"
+    			attributeState "off", label: '${name}', action: "switch.on", backgroundColor: "#ffffff",icon: "https://raw.githubusercontent.com/MichaelStruck/SmartThings/master/Other-SmartApps/AlexaHelper/AH-Off.png", nextState: "turningOn"
+		      	attributeState "on", label: '${name}', action: "switch.off", backgroundColor: "#79b821",icon: "https://raw.githubusercontent.com/MichaelStruck/SmartThings/master/Other-SmartApps/AlexaHelper/AH-On.png",  nextState: "turningOff"
+				attributeState "turningOff", label: '${name}', action: "switch.on",backgroundColor: "#ffffff", icon: "https://raw.githubusercontent.com/MichaelStruck/SmartThings/master/Other-SmartApps/AlexaHelper/AH-Off.png",  nextState: "turningOn"
+		      	attributeState "turningOn", label: '${name}', action: "switch.off",backgroundColor: "#79b821", icon: "https://raw.githubusercontent.com/MichaelStruck/SmartThings/master/Other-SmartApps/AlexaHelper/AH-On.png", nextState: "turningOff"
         	}
         		tileAttribute("device.level", key: "SLIDER_CONTROL") {
             		attributeState "level", action:"switch level.setLevel"
@@ -58,7 +59,7 @@ metadata {
             state "default", label:'${currentValue}'
 		}
         valueTile("lValue", "device.level", inactiveLabel: true, height:2, width:2, decoration: "flat") {  
-			state "levelValue", label:'${currentValue}%', unit:"", backgroundColor: "#53a7c0"  
+			state "levelValue", label:'${currentValue}%', unit:""
         }  
         standardTile("on", "device.switch", inactiveLabel: false, decoration: "flat", width: 2, height: 2) {
 			state "default", label:'on', action:"switch.on", icon:"st.switches.light.on"
@@ -112,14 +113,13 @@ def setLevel(val){
     }
 }
 def showVersion(){
-	def versionTxt = "${appName()}\n"
+	def versionTxt = "${appName()}: ${versionNum()}\n"
     try {if (parent.getSwitchAbout()){versionTxt += parent.getSwitchAbout()}}
     catch(e){versionTxt +="Installed from the SmartThings IDE"}
-	versionTxt += "\nSwitch code version: ${versionNum()}"
 	sendEvent (name: "about", value:versionTxt) 
 }
 def versionNum(){
-	def txt = "2.0.5 (03/03/16)"
+	def txt = "2.0.6 (03/18/16)"
 }
 def appName(){
 	def txt="Alexa Switch"

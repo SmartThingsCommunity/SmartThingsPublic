@@ -2,11 +2,12 @@
  *  Momentary Button Tile
  *
  *  Copyright 2016 Michael Struck
- *  Version 1.0.2 3/2/16
+ *  Version 1.0.3 3/18/16
  *
  *  Version 1.0.0 Initial release
  *  Version 1.0.1 Reverted back to original icons for better GUI experience
  *  Version 1.0.2 Added dynamic feedback to user on code version of switch
+ *  Version 1.0.3 Added PNG style icons to better differenciate the Alexa Helper created devices
  *
  *  Uses code from SmartThings
  *
@@ -37,8 +38,8 @@ metadata {
 	tiles(scale: 2) {
 		multiAttributeTile(name: "switch", type: "generic", width: 6, height: 4, canChangeIcon: true, canChangeBackground: true) {
 			tileAttribute("device.switch", key: "PRIMARY_CONTROL") {
-				attributeState "off", label: 'push', action: "momentary.push", backgroundColor: "#ffffff",icon: "st.contact.contact.closed", nextState: "on"
-				attributeState "on", label: 'push', action: "momentary.push", backgroundColor: "#79b821",icon: "st.contact.contact.closed"
+				attributeState "off", label: 'push', action: "momentary.push", backgroundColor: "#ffffff",icon: "https://raw.githubusercontent.com/MichaelStruck/SmartThings/master/Other-SmartApps/AlexaHelper/AH-Off.png", nextState: "on"
+				attributeState "on", label: 'push', action: "momentary.push", backgroundColor: "#79b821",icon: "https://raw.githubusercontent.com/MichaelStruck/SmartThings/master/Other-SmartApps/AlexaHelper/AH-On.png"
 			}
         }
         valueTile("aboutTxt", "device.about", inactiveLabel: false, decoration: "flat", width: 6, height:2) {
@@ -70,14 +71,13 @@ def off() {
 	push()
 }
 def showVersion(){
-	def versionTxt = "${appName()}\n"
+	def versionTxt = "${appName()}: ${versionNum()}\n"
     try {if (parent.getSwitchAbout()){versionTxt += parent.getSwitchAbout()}}
     catch(e){versionTxt +="Installed from the SmartThings IDE"}
-	versionTxt += "\nSwitch code version: ${versionNum()}"
 	sendEvent (name: "about", value:versionTxt) 
 }
 def versionNum(){
-	def txt = "1.0.2 (03/02/16)"
+	def txt = "1.0.3 (03/18/16)"
 }
 def appName(){
 	def txt="Momentary Button Tile"
