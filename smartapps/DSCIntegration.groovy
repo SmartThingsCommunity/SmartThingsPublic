@@ -24,6 +24,10 @@ preferences {
   section('Alarmserver Setup:') {
     input('ip', 'text', title: 'IP', description: 'The IP of your alarmserver (required)', required: false)
     input('port', 'text', title: 'Port', description: 'The port (required)', required: false)
+    input 'shmSync', 'enum', title: 'Smart Home Monitor Sync', required: false,
+      metadata: [
+       values: ['Yes','No']
+      ]
   }
   section('XBMC Notifications (optional):') {
     // TODO: put inputs here
@@ -60,12 +64,45 @@ mappings {
 }
 
 def initialize() {
-  subscribe(location, 'alarmSystemStatus', alarmHandler)
+  if (settings.shmSync == 'Yes') {
+    subscribe(location, 'alarmSystemStatus', shmHandler)
+  }
 }
 
-def alarmHandler(evt) {
-  log.debug "Alarm Handler value: ${evt.value}"
-  log.debug "alarm state: ${location.currentState("alarmSystemStatus")?.value}"
+def shmHandler(evt) {
+  if (settings.shmSync == 'Yes') {
+    log.debug "shmHandler: shm changed state to: ${evt.value}"
+    def children = getChildDevices()
+    def child = children.find { item -> item.device.deviceNetworkId in ['dscstay1', 'dscaway1'] }
+    if (child != null) {
+      log.debug "shmHandler: using panel: ${child.device.deviceNetworkId} state: ${child.currentStatus}"
+      //map DSC states to simplified values for comparison
+      def dscMap = [
+        'alarm': 'on',
+        'away':'away',
+        'entrydelay': 'on',
+        'exitdelay': 'on',
+        'forceready':'off',
+        'instantaway':'away',
+        'instantstay':'stay',
+        'ready':'off',
+        'stay':'stay',
+      ]
+
+      if (dscMap[child.currentStatus] && evt.value != dscMap[child.currentStatus]) {
+        if (evt.value == 'off' && dscMap[child.currentStatus] in ['stay', 'away', 'on'] ) {
+          sendUrl('disarm')
+          log.debug "shmHandler: ${evt.value} is valid action for ${child.currentStatus}, disarm sent"
+        } else if (evt.value == 'away' && dscMap[child.currentStatus] in ['stay', 'off'] ) {
+          sendUrl('arm')
+          log.debug "shmHandler: ${evt.value} is valid action for ${child.currentStatus}, arm sent"
+        } else if (evt.value == 'stay' && dscMap[child.currentStatus] in ['away', 'off'] ) {
+          sendUrl('stayarm')
+          log.debug "shmHandler: ${evt.value} is valid action for ${child.currentStatus}, stayarm sent"
+        }
+      }
+    }
+  }
 }
 
 def installzones() {
@@ -214,6 +251,8 @@ def installed() {
 }
 
 def updated() {
+  unsubscribe()
+  unschedule()
   initialize()
   log.debug 'Updated!'
 }
@@ -235,21 +274,22 @@ private update() {
   if ("${update.'type'}" == 'zone') {
     updateZoneDevices(update.'value', update.'status')
   } else if ("${update.'type'}" == 'partition') {
-    // Map DSC modes to smart home monitor modes
-    def shmMap = [
-      'away':'away',
-      'disarm':'off',
-      'forceready':'off',
-      'instantaway':'away',
-      'instantstay':'stay',
-      'notready':'off',
-      'ready':'off',
-      'stay':'stay',
-    ]
+    if (settings.shmSync == 'Yes') {
+      // Map DSC states to SHM modes, only using absolute states for now, no exit/entry delay
+      def shmMap = [
+        'away':'away',
+        'forceready':'off',
+        'instantaway':'away',
+        'instantstay':'stay',
+        'notready':'off',
+        'ready':'off',
+        'stay':'stay',
+      ]
 
-    if (shmMap[update.'status']) {
-      log.debug "sending smart home monitor: ${shmMap[update.'status']} for status: ${update.'status'}"
-      sendLocationEvent(name: "alarmSystemStatus", value: shmMap[update.'status'])
+      if (shmMap[update.'status']) {
+        log.debug "sending smart home monitor: ${shmMap[update.'status']} for status: ${update.'status'}"
+        sendLocationEvent(name: "alarmSystemStatus", value: shmMap[update.'status'])
+      }
     }
     updatePartitions(update.'value', update.'status', update.'parameters')
   }
