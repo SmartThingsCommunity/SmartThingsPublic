@@ -2,7 +2,7 @@
  *  Alexa Helper-Child
  *
  *  Copyright © 2016 Michael Struck
- *  Version 2.9.0a 3/18/16
+ *  Version 2.9.1 3/20/16
  * 
  *  Version 1.0.0 - Initial release of child app
  *  Version 1.1.0 - Added framework to show version number of child app and copyright
@@ -32,6 +32,7 @@
  *  Version 2.8.6 - Fixed issue with the 'Contacts' SMS and Push Notification
  *  Version 2.8.7 - Code optimizations/Syntax changes/Bug fixes
  *  Version 2.9.0a - Major code opimization/Bug fixes/Added thermostat as an option for on/off control scenario
+ *  Version 2.9.1 - Fixed issue with SMS messaging 
  *
  *  Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except
  *  in compliance with the License. You may obtain a copy of the License at:
@@ -115,7 +116,7 @@ def controlOnOff(type){
         	input "${type}SMSNum", "phone", title: "Send SMS message (phone number)...", required: false, submitOnChange:true
         	input "${type}PushMsg", "bool", title: "Send Push message", defaultValue: false, submitOnChange:true
         }
-		if (settings."${type}Contacts" || settings."${type}SMSNum" || settings."${type}PushMsg") input "${type}SMSMsg", "text", title: "Message to send...", required: false
+		input "${type}SMSMsg", "text", title: "Message to send...", required: false
 	}
 }
 // Show "onPageSTDevices" page
@@ -944,5 +945,5 @@ private parseDate(time, type){
     new Date().parse("yyyy-MM-dd'T'HH:mm:ss.SSSZ", formattedDate).format("${type}", timeZone(formattedDate))
 }
 //Version
-private def textVersion() {return "Child App Version: 2.9.0a (03/18/2016)"}
-private def versionInt() {return 290}
+private def textVersion() {return "Child App Version: 2.9.1 (03/20/2016)"}
+private def versionInt() {return 291}
