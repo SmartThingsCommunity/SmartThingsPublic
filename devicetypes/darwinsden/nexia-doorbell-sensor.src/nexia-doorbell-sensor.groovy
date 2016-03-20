@@ -138,7 +138,7 @@ private notificationReport(cmd) {
     {
       def desc = "Doorbell is silent"
 	  logDebug("$desc")
-	  sendEvent(name: "status", value: "silent", descriptionText: "${device.displayName} $desc", isStateChange: true)
+	  sendEvent(name: "status", value: "off", descriptionText: "${device.displayName} $desc", isStateChange: true)
 	  sendEvent(name: "switch", value: "off", displayed: false, isStateChange: true)
     }
  
