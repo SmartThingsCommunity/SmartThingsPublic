@@ -28,6 +28,10 @@ preferences {
       metadata: [
        values: ['Yes','No']
       ]
+    input 'shmBypass', 'enum', title: 'SHM Stay/Away Bypass', required: false,
+      metadata: [
+       values: ['Yes','No']
+      ]
   }
   section('XBMC Notifications (optional):') {
     // TODO: put inputs here
@@ -287,8 +291,10 @@ private update() {
       ]
 
       if (shmMap[update.'status']) {
-        log.debug "sending smart home monitor: ${shmMap[update.'status']} for status: ${update.'status'}"
-        sendLocationEvent(name: "alarmSystemStatus", value: shmMap[update.'status'])
+        if (settings.shmBypass != 'Yes' || !(location.currentState("alarmSystemStatus")?.value in ['away','stay'] && shmMap[update.'status'] in ['away','stay'])) {
+          log.debug "sending smart home monitor: ${shmMap[update.'status']} for status: ${update.'status'}"
+          sendLocationEvent(name: "alarmSystemStatus", value: shmMap[update.'status'])
+        }
       }
     }
     updatePartitions(update.'value', update.'status', update.'parameters')
