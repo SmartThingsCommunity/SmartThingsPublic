@@ -204,9 +204,9 @@ def updated() {
 
 def initialize(){
 
-	//if (newMode != null) {
-	//	subscribe(location, modeChangeHandler)
-    //}
+    if (newMode != null) {
+	subscribe(location, modeChangeHandler)
+    }
     if (starting != null) {
     	schedule(starting, modeChangeHandler)
     }
