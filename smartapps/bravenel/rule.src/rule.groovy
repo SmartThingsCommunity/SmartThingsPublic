@@ -3,7 +3,7 @@
  *
  *  Copyright 2015, 2016 Bruce Ravenel
  *
- *  Version 1.8.6   19 Mar 2016
+ *  Version 1.8.6a   21 Mar 2016
  *
  *	Version History
  *
@@ -110,7 +110,7 @@ preferences {
 //
 
 def appVersion() {
-	return "1.8.6" 
+	return "1.8.6a" 
 }
 
 def mainPage() {
@@ -2485,11 +2485,11 @@ def selectCustomActions(){
 					}
 				}
 			}
-			if (truth) {
-				if (state.cmdActTrue) state.cmdActTrue = state.cmdActTrue[0..-2]
-			} else {
-				if (state.cmdActFalse) state.cmdActFalse = state.cmdActFalse[0..-2]
-            }
+//			if (truth) {
+//				if (state.cmdActTrue) state.cmdActTrue = state.cmdActTrue[0..-2]
+//			} else {
+//				if (state.cmdActFalse) state.cmdActFalse = state.cmdActFalse[0..-2]
+//            }
 		}   
 	}
 }
