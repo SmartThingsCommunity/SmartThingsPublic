@@ -2,7 +2,7 @@
  *  Talking Alarm Clock-Parent
  *
  *  Copyright © 2016 Michael Struck
- *  Version 2.2.0 3/19/16
+ *  Version 2.2.1 3/21/16
  * 
  *  Version 2.0.0 - Initial release of parent/client app. 1.4.5 was released to SmartThings production
  *  Version 2.0.1 - Changed the default of new schedules to 'enabled'
@@ -11,6 +11,7 @@
  *  Version 2.1.2 - Added trigger switches to the verbal summary information
  *  Version 2.1.3 - GUI cleanup
  *  Version 2.2.0 - Added icon to app about page
+ *  Version 2.2.1 - Code optimization
  *
  *  Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except
  *  in compliance with the License. You may obtain a copy of the License at:
@@ -56,10 +57,10 @@ def pageAbout(){
         	paragraph "${textAppName()}\n${textCopyright()}", image: "https://raw.githubusercontent.com/MichaelStruck/SmartThings/master/Other-SmartApps/Talking-Alarm-Clock/Talkingclock@2x.png"
         }
         section ("SmartApp Versions") {
-    		paragraph "${textVersion()}"
+    		paragraph textVersion()
         }
         section("Apache License"){    
-        	paragraph "${textLicense()}"
+        	paragraph textLicense()
     	}
     	section("Instructions") {
         	paragraph textHelp()
@@ -96,10 +97,6 @@ def pageSummary(){
                 input "summaryMode", "mode", title: "Speak summary in the following modes...", multiple: true, required: false
             }
  		}
-    }
-}
-page(name: "pageSettings", title: "Settings", install: false, uninstall: false) {	
-	section {
     }
 }
 def installed() {
@@ -154,7 +151,7 @@ private def textAppName() {
 	def text = "Talking Alarm Clock"
 }	
 private def textVersion() {
-    def version = "Parent App Version: 2.2.0 (03/19/2016)"
+    def version = "Parent App Version: 2.2.1 (03/21/2016)"
     def childCount = childApps.size()
     def childVersion = childCount ? childApps[0].textVersion() : "No alarm schedules installed"
     return "${version}\n${childVersion}"
@@ -185,5 +182,4 @@ private def textHelp() {
 		"From the main SmartApp convenience page, tapping the 'Talking Alarm Clock' icon (if enabled within the app) will "+ 
 		"speak a summary of the alarms enabled or disabled without having to go into the application itself. This " + 
 		"functionality is optional and can be configured from the Alarm Summary page. You may also use a real or virtual switch to get a summary." 
-
 }
