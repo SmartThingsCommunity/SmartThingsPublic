@@ -25,7 +25,7 @@ definition(
     namespace: "tslagle13",
     author: "Tim Slagle",
     category: "Safety & Security",
-    description: "Randomly turn on/off lights to simulate the appearance of a occupied home while you are away.",
+    description: "Randomly turn on/off lights to simulate the appearance of an occupied home while you are away.",
     iconUrl: "http://icons.iconarchive.com/icons/custom-icon-design/mono-general-2/512/settings-icon.png",
     iconX2Url: "http://icons.iconarchive.com/icons/custom-icon-design/mono-general-2/512/settings-icon.png"
 )
@@ -51,7 +51,7 @@ def pageSetup() {
 	return dynamicPage(pageProperties) {
     	section(""){
         	paragraph "This app can be used to make your home seem occupied anytime you are away from your home. " +
-			"Please use each othe the sections below to setup the different preferences to your liking. " +
+			"Please use each of the sections below to setup the different preferences to your liking. " +
 			"I recommend this app be used with at least two away modes.  An example would be 'Away Day' 'and Away Night'. " 
         }
         section("Setup Menu") {
@@ -100,7 +100,7 @@ def Setup() {
         name:       "people",
         type:       "capability.presenceSensor",
         title:      "If these people are home do not change light status",
-        required:	true,
+        required:	false,
         multiple:	true
     ]
     
@@ -114,9 +114,9 @@ def Setup() {
 
     return dynamicPage(pageProperties) {
 
-		section(""){            
-                    paragraph "In this section you need to setup the deatils of how you want your lighting to be affected while " +
-                    paragraph "you are away.  All of these settings are required in order for the simulator to run correctly."
+	section(""){            
+                    paragraph "In this section you need to setup the details of how you want your lighting to be affected while " +
+                    "you are away.  All of these settings are required in order for the simulator to run correctly."
         }
         section("Which mode change triggers the simulator? (This app will only run in selected mode(s))") {
                     input newMode           
@@ -165,9 +165,9 @@ def Settings() {
 
     return dynamicPage(pageProperties) {
 
-		section(""){              
+	section(""){              
                     paragraph "In this section you can restrict how your simulator runs.  For instance you can restrict on which days it will run " +
-                    paragraph "as well as a delay for the simulator to start after it is in the correct mode.  Delaying the simulator helps with false starts based on a incorrect mode change."
+                    "as well as a delay for the simulator to start after it is in the correct mode.  Delaying the simulator helps with false starts based on a incorrect mode change."
         }
         section("Delay to start simulator") {
                     input falseAlarmThreshold
@@ -348,7 +348,7 @@ def getTimeLabel(starting, ending){
 	timeLabel
 }
 
-//fomrats time to readable format for time label
+//formats time to readable format for time label
 private hhmm(time, fmt = "h:mm a")
 {
 	def t = timeToday(time, location.timeZone)
@@ -359,7 +359,7 @@ private hhmm(time, fmt = "h:mm a")
 
 //sets complete/not complete for the setup section on the main dynamic page
 def greyedOut(){
-	def result = ""
+    def result = ""
     if (switches) {
     	result = "complete"	
     }
@@ -368,7 +368,7 @@ def greyedOut(){
 
 //sets complete/not complete for the settings section on the main dynamic page
 def greyedOutSettings(){
-	def result = ""
+    def result = ""
     if (starting || ending || days || falseAlarmThreshold) {
     	result = "complete"	
     }
@@ -377,7 +377,7 @@ def greyedOutSettings(){
 
 //sets complete/not complete for time restriction section in settings
 def greyedOutTime(starting, ending){
-	def result = ""
+    def result = ""
     if (starting || ending) {
     	result = "complete"	
     }
