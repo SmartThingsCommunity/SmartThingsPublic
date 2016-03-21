@@ -40,9 +40,9 @@ There are 6 types of devices handlers you can create:
 
 At a minimum you'll probably want the Stay/Away panels, Contact, and Motion.
 
-In the Web IDE for Smartthings create a new device type for each of the above devices and paste in the code for each device from the corresponding groovy files in the repo.
+In the Web IDE for Smartthings create a new device type for each of the above devices and paste in the code for each device from the corresponding groovy files in the repo. Alternatively, setup github integration, create a new github repository with "LXXero" as owner, "DSCAlarm" as name, and "master" as branch. Once you have setup this repo, you can easily add all the devices. Be sure to check the publish checkbox at the bottom.
 
-For all the device types make sure you save them and then publish them for yourself.
+For all the device types, make sure publish them. If you're using github, use the "publish" checkbox. If you forget, or installed the code manually via copy/paste, you'll have to go into each one and click "publish -> for me" again.
 
 ### Smartapp Setup
 
