@@ -100,9 +100,6 @@ metadata {
 				]
 			)
 		}
-		valueTile("3axis", "device.threeAxis", decoration: "flat", wordWrap: false, width: 2, height: 2) {
-			state("threeAxis", label:'${currentValue}', unit:"", backgroundColor:"#ffffff")
-		}
 		valueTile("battery", "device.battery", decoration: "flat", inactiveLabel: false, width: 2, height: 2) {
 			state "battery", label:'${currentValue}% battery', unit:""
 		}
@@ -112,7 +109,7 @@ metadata {
 
 
 		main(["status", "acceleration", "temperature"])
-		details(["status", "acceleration", "temperature", "3axis", "battery", "refresh"])
+		details(["status", "acceleration", "temperature", "battery", "refresh"])
 	}
  }
 
