@@ -118,6 +118,7 @@ def refresh() {
 void poll() {
 	log.debug "Executing 'poll' using parent SmartApp"
 	parent.pollChild()
+<<<<<<< HEAD
 
 <<<<<<< HEAD
 
@@ -169,6 +170,8 @@ def generateEvent(Map results) {
 }
 
 
+=======
+>>>>>>> SmartThingsCommunity/master
 
 //generate custom mobile activity feeds event
 def generateActivityFeedsEvent(notificationMessage) {

@@ -1403,7 +1403,10 @@ def poll() {
 
 void poll() {
 	pollChild()
+<<<<<<< HEAD
 >>>>>>> pr/40
+=======
+>>>>>>> SmartThingsCommunity/master
 }
 
 
