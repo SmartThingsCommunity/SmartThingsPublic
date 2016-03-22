@@ -119,6 +119,7 @@ void poll() {
 	log.debug "Executing 'poll' using parent SmartApp"
 	parent.pollChild()
 <<<<<<< HEAD
+<<<<<<< HEAD
 
 <<<<<<< HEAD
 
@@ -170,6 +171,8 @@ def generateEvent(Map results) {
 }
 
 
+=======
+>>>>>>> SmartThingsCommunity/master
 =======
 >>>>>>> SmartThingsCommunity/master
 

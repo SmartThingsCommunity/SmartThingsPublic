@@ -3,15 +3,26 @@
  *  Copyright 2016 SmartThings
  *
  *  Licensed under the Apache License, Version 2.0 (the "License"); you may not
+<<<<<<< HEAD
  *  use this file except in compliance with the License. You may obtain a copy 
+=======
+ *  use this file except in compliance with the License. You may obtain a copy
+>>>>>>> SmartThingsCommunity/master
  *  of the License at:
  *
  *      http://www.apache.org/licenses/LICENSE-2.0
  *
+<<<<<<< HEAD
  *  Unless required by applicable law or agreed to in writing, software 
  *  distributed under the License is distributed on an "AS IS" BASIS, WITHOUT 
  *  WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the 
  *  License for the specific language governing permissions and limitations 
+=======
+ *  Unless required by applicable law or agreed to in writing, software
+ *  distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+ *  WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
+ *  License for the specific language governing permissions and limitations
+>>>>>>> SmartThingsCommunity/master
  *  under the License.
 ===============================================================================
  *  Purpose: SmartSense Moisture Sensor DTH File
@@ -118,6 +129,7 @@ def parse(String description) {
 }
  
 private Map parseCatchAllMessage(String description) {
+<<<<<<< HEAD
     Map resultMap = [:]
     def cluster = zigbee.parse(description)
     if (shouldProcessMessage(cluster)) {
@@ -125,6 +137,15 @@ private Map parseCatchAllMessage(String description) {
             case 0x0001:
             	resultMap = getBatteryResult(cluster.data.last())
                 break
+=======
+	Map resultMap = [:]
+	def cluster = zigbee.parse(description)
+	if (shouldProcessMessage(cluster)) {
+		switch(cluster.clusterId) {
+			case 0x0001:
+				resultMap = getBatteryResult(cluster.data.last())
+				break
+>>>>>>> SmartThingsCommunity/master
 
             case 0x0402:
                 // temp is last 2 data values. reverse to swap endian
@@ -256,8 +277,12 @@ private Map getBatteryResult(rawValue) {
 				def pct = batteryMap[volts]
 				if (pct != null) {
 					result.value = pct
+<<<<<<< HEAD
                     def value = pct
 					result.descriptionText = "{{ device.displayName }} battery was {{ value }}"
+=======
+					result.descriptionText = "{{ device.displayName }} battery was {{ value }}%"
+>>>>>>> SmartThingsCommunity/master
 				}
 			}
 			else {
@@ -265,7 +290,11 @@ private Map getBatteryResult(rawValue) {
 				def maxVolts = 3.0
 				def pct = (volts - minVolts) / (maxVolts - minVolts)
 				result.value = Math.min(100, (int) pct * 100)
+<<<<<<< HEAD
 				result.descriptionText = "{{ device.displayName }} battery was {{ value }}"
+=======
+				result.descriptionText = "{{ device.displayName }} battery was {{ value }}%"
+>>>>>>> SmartThingsCommunity/master
 			}
 		}
 	}
@@ -281,9 +310,15 @@ private Map getTemperatureResult(value) {
 	}
     def descriptionText
     if ( temperatureScale == 'C' )
+<<<<<<< HEAD
     	descriptionText = '{{ device.displayName }} was {{ value }}°C'
     else
     	descriptionText = '{{ device.displayName }} was {{ value }}°F'
+=======
+    	descriptionText = '{{ device.displayName }} was {{ value }}Â°C'
+    else
+    	descriptionText = '{{ device.displayName }} was {{ value }}Â°F'
+>>>>>>> SmartThingsCommunity/master
 
 	return [
 		name: 'temperature',
@@ -294,7 +329,11 @@ private Map getTemperatureResult(value) {
 }
 
 private Map getMoistureResult(value) {
+<<<<<<< HEAD
 	log.debug "water" 
+=======
+	log.debug "water"
+>>>>>>> SmartThingsCommunity/master
     def descriptionText
     if ( value == "wet" )
     	descriptionText = '{{ device.displayName }} is wet'

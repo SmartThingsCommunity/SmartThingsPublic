@@ -35,6 +35,7 @@ metadata {
 		capability "Temperature Measurement"
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 		capability "Polling"
 <<<<<<< HEAD
         capability "Sensor"
@@ -50,6 +51,8 @@ metadata {
 =======
 =======
 >>>>>>> pr/40
+=======
+>>>>>>> SmartThingsCommunity/master
 =======
 >>>>>>> SmartThingsCommunity/master
 		capability "Sensor"
@@ -517,7 +520,10 @@ void poll() {
 	log.debug "Executing 'poll' using parent SmartApp"
 	parent.pollChild()
 <<<<<<< HEAD
+<<<<<<< HEAD
 >>>>>>> pr/40
+=======
+>>>>>>> SmartThingsCommunity/master
 =======
 >>>>>>> SmartThingsCommunity/master
 }
@@ -944,6 +950,7 @@ def getDataByName(String name) {
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 def generateQuickEvent(name, value) {
 	generateQuickEvent(name, value, 0)
 }
@@ -957,12 +964,17 @@ def setThermostatMode(String value) {
 =======
 =======
 >>>>>>> SmartThingsCommunity/master
+=======
+>>>>>>> SmartThingsCommunity/master
 def setThermostatMode(String mode) {
 	log.debug "setThermostatMode($mode)"
 	mode = mode.toLowerCase()
 	switchToMode(mode)
 <<<<<<< HEAD
+<<<<<<< HEAD
 >>>>>>> pr/40
+=======
+>>>>>>> SmartThingsCommunity/master
 =======
 >>>>>>> SmartThingsCommunity/master
 }
