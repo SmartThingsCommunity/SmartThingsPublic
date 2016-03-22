@@ -19,7 +19,7 @@ definition(
 	name: "Wemo (Connect)",
 	namespace: "smartthings",
 	author: "SmartThings",
-	description: "Allows you to integrate your WeMo Switch and Wemo Motion sensor with SmartThings.",
+	description: "Allows you to integrate your WeMo Switch and WeMo Motion sensor with SmartThings.",
 	category: "SmartThings Labs",
 	iconUrl: "https://s3.amazonaws.com/smartapp-icons/Partner/wemo.png",
 	iconX2Url: "https://s3.amazonaws.com/smartapp-icons/Partner/wemo@2x.png",
@@ -27,7 +27,7 @@ definition(
 )
 
 preferences {
-	page(name:"firstPage", title:"Wemo Device Setup", content:"firstPage")
+	page(name:"firstPage", title:"WeMo Device Setup", content:"firstPage")
 }
 
 private discoverAllWemoTypes()
@@ -87,9 +87,9 @@ def firstPage()
 
 		return dynamicPage(name:"firstPage", title:"Discovery Started!", nextPage:"", refreshInterval: refreshInterval, install:true, uninstall: true) {
 			section("Select a device...") {
-				input "selectedSwitches", "enum", required:false, title:"Select Wemo Switches \n(${switchesDiscovered.size() ?: 0} found)", multiple:true, options:switchesDiscovered
-				input "selectedMotions", "enum", required:false, title:"Select Wemo Motions \n(${motionsDiscovered.size() ?: 0} found)", multiple:true, options:motionsDiscovered
-				input "selectedLightSwitches", "enum", required:false, title:"Select Wemo Light Switches \n(${lightSwitchesDiscovered.size() ?: 0} found)", multiple:true, options:lightSwitchesDiscovered
+				input "selectedSwitches", "enum", required:false, title:"Select WeMo Switches \n(${switchesDiscovered.size() ?: 0} found)", multiple:true, options:switchesDiscovered
+				input "selectedMotions", "enum", required:false, title:"Select WeMo Motions \n(${motionsDiscovered.size() ?: 0} found)", multiple:true, options:motionsDiscovered
+				input "selectedLightSwitches", "enum", required:false, title:"Select WeMo Light Switches \n(${lightSwitchesDiscovered.size() ?: 0} found)", multiple:true, options:lightSwitchesDiscovered
 			}
 		}
 	}
@@ -241,7 +241,7 @@ def addSwitches() {
 		if (!d) {
 			log.debug "Creating WeMo Switch with dni: ${selectedSwitch.value.mac}"
 			d = addChildDevice("smartthings", "Wemo Switch", selectedSwitch.value.mac, selectedSwitch?.value.hub, [
-				"label": selectedSwitch?.value?.name ?: "Wemo Switch",
+				"label": selectedSwitch?.value?.name ?: "WeMo Switch",
 				"data": [
 					"mac": selectedSwitch.value.mac,
 					"ip": selectedSwitch.value.ip,
@@ -272,7 +272,7 @@ def addMotions() {
 		if (!d) {
 			log.debug "Creating WeMo Motion with dni: ${selectedMotion.value.mac}"
 			d = addChildDevice("smartthings", "Wemo Motion", selectedMotion.value.mac, selectedMotion?.value.hub, [
-				"label": selectedMotion?.value?.name ?: "Wemo Motion",
+				"label": selectedMotion?.value?.name ?: "WeMo Motion",
 				"data": [
 					"mac": selectedMotion.value.mac,
 					"ip": selectedMotion.value.ip,
@@ -303,7 +303,7 @@ def addLightSwitches() {
 		if (!d) {
 			log.debug "Creating WeMo Light Switch with dni: ${selectedLightSwitch.value.mac}"
 			d = addChildDevice("smartthings", "Wemo Light Switch", selectedLightSwitch.value.mac, selectedLightSwitch?.value.hub, [
-				"label": selectedLightSwitch?.value?.name ?: "Wemo Light Switch",
+				"label": selectedLightSwitch?.value?.name ?: "WeMo Light Switch",
 				"data": [
 					"mac": selectedLightSwitch.value.mac,
 					"ip": selectedLightSwitch.value.ip,
@@ -442,7 +442,7 @@ void setupHandler(hubResponse) {
 		if (wemoDevice) {
 			wemoDevice.value << [name:body?.device?.friendlyName?.text(), verified: true]
 		} else {
-			log.error "/setup.xml returned a wemo device that didn't exist"
+			log.error "/setup.xml returned a WeMo device that didn't exist"
 		}
 	}
 }
@@ -553,7 +553,7 @@ def locationHandler(evt) {
 				}
 				else
 				{
-					log.error "/setup.xml returned a wemo device that didn't exist"
+					log.error "/setup.xml returned a WeMo device that didn't exist"
 				}
 			}
 
@@ -567,7 +567,7 @@ def locationHandler(evt) {
 				}
 				else
 				{
-					log.error "/setup.xml returned a wemo device that didn't exist"
+					log.error "/setup.xml returned a WeMo device that didn't exist"
 				}
 			}
 
@@ -581,7 +581,7 @@ def locationHandler(evt) {
 				}
 				else
 				{
-					log.error "/setup.xml returned a wemo device that didn't exist"
+					log.error "/setup.xml returned a WeMo device that didn't exist"
 				}
 			}
 
@@ -595,7 +595,7 @@ def locationHandler(evt) {
 				}
 				else
 				{
-					log.error "/setup.xml returned a wemo device that didn't exist"
+					log.error "/setup.xml returned a WeMo device that didn't exist"
 				}
 			}
 		}
