@@ -168,6 +168,7 @@ def zwaveEvent(physicalgraph.zwave.commands.sensoralarmv1.SensorAlarmReport cmd,
 def zwaveEvent(physicalgraph.zwave.commands.wakeupv1.WakeUpNotification cmd, results) {
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 	// Check battery if we don't have a recent battery event
 	def prevBattery = device.currentState("battery")
 	if (!prevBattery || (new Date().time - prevBattery.date.time)/60000 >= 60 * 53) {
@@ -178,6 +179,8 @@ def zwaveEvent(physicalgraph.zwave.commands.wakeupv1.WakeUpNotification cmd, res
 >>>>>>> SmartThingsCommunity/master
 =======
 >>>>>>> SmartThingsCommunity/master
+=======
+>>>>>>> pr/27
 	results << createEvent(descriptionText: "$device.displayName woke up", isStateChange: false)
 	if (!state.lastbatt || (now() - state.lastbatt) >= 56*60*60*1000) {
 		results << response(zwave.batteryV1.batteryGet(), "delay 2000", zwave.wakeUpV1.wakeUpNoMoreInformation())

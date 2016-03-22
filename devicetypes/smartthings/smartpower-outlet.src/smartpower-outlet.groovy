@@ -5,6 +5,7 @@
  *  Licensed under the Apache License, Version 2.0 (the "License"); you may not
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
  *  use this file except in compliance with the License. You may obtain a copy 
 =======
  *  use this file except in compliance with the License. You may obtain a copy
@@ -12,10 +13,14 @@
 =======
  *  use this file except in compliance with the License. You may obtain a copy
 >>>>>>> SmartThingsCommunity/master
+=======
+ *  use this file except in compliance with the License. You may obtain a copy
+>>>>>>> pr/27
  *  of the License at:
  *
  *      http://www.apache.org/licenses/LICENSE-2.0
  *
+<<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
  *  Unless required by applicable law or agreed to in writing, software 
@@ -25,14 +30,19 @@
 =======
 =======
 >>>>>>> SmartThingsCommunity/master
+=======
+>>>>>>> pr/27
  *  Unless required by applicable law or agreed to in writing, software
  *  distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
  *  WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
  *  License for the specific language governing permissions and limitations
 <<<<<<< HEAD
+<<<<<<< HEAD
 >>>>>>> SmartThingsCommunity/master
 =======
 >>>>>>> SmartThingsCommunity/master
+=======
+>>>>>>> pr/27
  *  under the License.
 ===============================================================================
  *  Purpose: SmartPower Outlet DTH File
@@ -132,9 +142,12 @@ def parse(String description) {
 			def powerValue = (finalResult.value as Integer)/10
 			sendEvent(name: "power", value: powerValue, descriptionText: '{{ device.displayName }} power is {{ value }} Watts', translatable: true )
 <<<<<<< HEAD
+<<<<<<< HEAD
 >>>>>>> SmartThingsCommunity/master
 =======
 >>>>>>> SmartThingsCommunity/master
+=======
+>>>>>>> pr/27
 			/*
 				Dividing by 10 as the Divisor is 10000 and unit is kW for the device. AttrId: 0302 and 0300. Simplifying to 10
 				power level is an integer. The exact power level with correct units needs to be handled in the device type
@@ -142,6 +155,7 @@ def parse(String description) {
 			*/
 		}
 		else {
+<<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
         	if ( finalResult.value == "on" )
@@ -156,6 +170,10 @@ def parse(String description) {
 			def descriptionText = finalResult.value == "on" ? '{{ device.displayName }} is On' : '{{ device.displayName }} is Off'
 			sendEvent(name: finalResult.type, value: finalResult.value, descriptionText: descriptionText, translatable: true)
 >>>>>>> SmartThingsCommunity/master
+=======
+			def descriptionText = finalResult.value == "on" ? '{{ device.displayName }} is On' : '{{ device.displayName }} is Off'
+			sendEvent(name: finalResult.type, value: finalResult.value, descriptionText: descriptionText, translatable: true)
+>>>>>>> pr/27
 		}
 	}
 	else {

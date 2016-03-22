@@ -1406,6 +1406,7 @@ void poll() {
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 >>>>>>> pr/40
 =======
 >>>>>>> SmartThingsCommunity/master
@@ -1413,6 +1414,8 @@ void poll() {
 >>>>>>> SmartThingsCommunity/master
 =======
 >>>>>>> SmartThingsCommunity/master
+=======
+>>>>>>> pr/27
 }
 
 

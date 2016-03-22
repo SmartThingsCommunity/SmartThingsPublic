@@ -37,6 +37,7 @@ metadata {
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 		capability "Polling"
 <<<<<<< HEAD
         capability "Sensor"
@@ -58,6 +59,8 @@ metadata {
 >>>>>>> SmartThingsCommunity/master
 =======
 >>>>>>> SmartThingsCommunity/master
+=======
+>>>>>>> pr/27
 		capability "Sensor"
 		capability "Refresh"
 		capability "Relative Humidity Measurement"
@@ -525,6 +528,7 @@ void poll() {
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 >>>>>>> pr/40
 =======
 >>>>>>> SmartThingsCommunity/master
@@ -532,6 +536,8 @@ void poll() {
 >>>>>>> SmartThingsCommunity/master
 =======
 >>>>>>> SmartThingsCommunity/master
+=======
+>>>>>>> pr/27
 }
 
 
@@ -958,6 +964,7 @@ def getDataByName(String name) {
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 def generateQuickEvent(name, value) {
 	generateQuickEvent(name, value, 0)
 }
@@ -975,10 +982,13 @@ def setThermostatMode(String value) {
 >>>>>>> SmartThingsCommunity/master
 =======
 >>>>>>> SmartThingsCommunity/master
+=======
+>>>>>>> pr/27
 def setThermostatMode(String mode) {
 	log.debug "setThermostatMode($mode)"
 	mode = mode.toLowerCase()
 	switchToMode(mode)
+<<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
@@ -989,6 +999,8 @@ def setThermostatMode(String mode) {
 >>>>>>> SmartThingsCommunity/master
 =======
 >>>>>>> SmartThingsCommunity/master
+=======
+>>>>>>> pr/27
 }
 
 def setThermostatFanMode(String mode) {
