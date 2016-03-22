@@ -33,6 +33,9 @@ metadata {
 	            attributeState "default", label:'SN: ${currentValue}'
 			}
         }
+<<<<<<< HEAD
+>>>>>>> SmartThingsCommunity/master
+=======
 >>>>>>> SmartThingsCommunity/master
 		valueTile("serialNumber", "device.serialNumber", decoration: "flat", height: 1, width: 2, inactiveLabel: false) {
 			state "default", label:'SN: ${currentValue}'
@@ -45,9 +48,12 @@ metadata {
 		}        
 
 <<<<<<< HEAD
+<<<<<<< HEAD
 		main (["icon"])
 		details(["networkAddress","serialNumber","refresh"])
 =======
+=======
+>>>>>>> SmartThingsCommunity/master
 		main (["rich-control"])
 		details(["rich-control", "networkAddress"])
 >>>>>>> SmartThingsCommunity/master

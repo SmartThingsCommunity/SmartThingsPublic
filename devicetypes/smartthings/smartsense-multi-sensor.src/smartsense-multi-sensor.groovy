@@ -4,7 +4,11 @@
  *
  *  Licensed under the Apache License, Version 2.0 (the "License"); you may not
 <<<<<<< HEAD
+<<<<<<< HEAD
  *  use this file except in compliance with the License. You may obtain a copy 
+=======
+ *  use this file except in compliance with the License. You may obtain a copy
+>>>>>>> SmartThingsCommunity/master
 =======
  *  use this file except in compliance with the License. You may obtain a copy
 >>>>>>> SmartThingsCommunity/master
@@ -13,15 +17,21 @@
  *      http://www.apache.org/licenses/LICENSE-2.0
  *
 <<<<<<< HEAD
+<<<<<<< HEAD
  *  Unless required by applicable law or agreed to in writing, software 
  *  distributed under the License is distributed on an "AS IS" BASIS, WITHOUT 
  *  WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the 
  *  License for the specific language governing permissions and limitations 
 =======
+=======
+>>>>>>> SmartThingsCommunity/master
  *  Unless required by applicable law or agreed to in writing, software
  *  distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
  *  WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
  *  License for the specific language governing permissions and limitations
+<<<<<<< HEAD
+>>>>>>> SmartThingsCommunity/master
+=======
 >>>>>>> SmartThingsCommunity/master
  *  under the License.
 ===============================================================================
@@ -87,7 +97,11 @@
 		}
 		section {
 <<<<<<< HEAD
+<<<<<<< HEAD
  			input("garageSensor", "enum", title: "Do you want to use this sensor on a garage door?", translatable: true, description: "Tap to set", options: ["Yes","No"], defaultValue: "No", required: false, displayDuringSetup: false)
+=======
+			input("garageSensor", "enum", title: "Do you want to use this sensor on a garage door?", description: "Tap to set", options: ["Yes", "No"], defaultValue: "No", required: false, displayDuringSetup: false)
+>>>>>>> SmartThingsCommunity/master
 =======
 			input("garageSensor", "enum", title: "Do you want to use this sensor on a garage door?", description: "Tap to set", options: ["Yes", "No"], defaultValue: "No", required: false, displayDuringSetup: false)
 >>>>>>> SmartThingsCommunity/master
@@ -356,8 +370,12 @@ private Map getBatteryResult(rawValue) {
 				if (pct != null) {
 					result.value = pct
 <<<<<<< HEAD
+<<<<<<< HEAD
                     def value = pct
 					result.descriptionText = "{{ device.displayName }} battery was {{ value }}"
+=======
+					result.descriptionText = "{{ device.displayName }} battery was {{ value }}%"
+>>>>>>> SmartThingsCommunity/master
 =======
 					result.descriptionText = "{{ device.displayName }} battery was {{ value }}%"
 >>>>>>> SmartThingsCommunity/master
@@ -369,7 +387,11 @@ private Map getBatteryResult(rawValue) {
 				def pct = (volts - minVolts) / (maxVolts - minVolts)
 				result.value = Math.min(100, (int) pct * 100)
 <<<<<<< HEAD
+<<<<<<< HEAD
 				result.descriptionText = "{{ device.displayName }} battery was {{ value }}"
+=======
+				result.descriptionText = "{{ device.displayName }} battery was {{ value }}%"
+>>>>>>> SmartThingsCommunity/master
 =======
 				result.descriptionText = "{{ device.displayName }} battery was {{ value }}%"
 >>>>>>> SmartThingsCommunity/master
@@ -386,12 +408,16 @@ private Map getTemperatureResult(value) {
     def name = "temperature"
 =======
 	log.debug "Temperature"
+<<<<<<< HEAD
+>>>>>>> SmartThingsCommunity/master
+=======
 >>>>>>> SmartThingsCommunity/master
 	if (tempOffset) {
 		def offset = tempOffset as int
 		def v = value as int
 		value = v + offset
 	}
+<<<<<<< HEAD
 <<<<<<< HEAD
     
     def descriptionText
@@ -406,6 +432,8 @@ private Map getTemperatureResult(value) {
 		descriptionText: descriptionText,
         translatable: true
 =======
+=======
+>>>>>>> SmartThingsCommunity/master
 	def descriptionText = temperatureScale == 'C' ? '{{ device.displayName }} was {{ value }}°C':
 			'{{ device.displayName }} was {{ value }}°F'
 
@@ -414,12 +442,16 @@ private Map getTemperatureResult(value) {
 	value: value,
 	descriptionText: descriptionText,
     translatable: true
+<<<<<<< HEAD
+>>>>>>> SmartThingsCommunity/master
+=======
 >>>>>>> SmartThingsCommunity/master
 	]
 }
 
 private Map getContactResult(value) {
 	log.debug "Contact: ${device.displayName} value = ${value}"
+<<<<<<< HEAD
 <<<<<<< HEAD
     def name = "contact"
     
@@ -444,6 +476,11 @@ private Map getContactResult(value) {
 	sendEvent(name: 'contact', value: value, descriptionText: descriptionText, displayed: false, translatable: true)
 	sendEvent(name: 'status', value: value, descriptionText: descriptionText, translatable: true)
 >>>>>>> SmartThingsCommunity/master
+=======
+	def descriptionText = value == 'open' ? '{{ device.displayName }} was opened' : '{{ device.displayName }} was closed'
+	sendEvent(name: 'contact', value: value, descriptionText: descriptionText, displayed: false, translatable: true)
+	sendEvent(name: 'status', value: value, descriptionText: descriptionText, translatable: true)
+>>>>>>> SmartThingsCommunity/master
 }
 
 private getAccelerationResult(numValue) {
@@ -452,7 +489,11 @@ private getAccelerationResult(numValue) {
     def value
     def descriptionText
 <<<<<<< HEAD
+<<<<<<< HEAD
     
+=======
+
+>>>>>>> SmartThingsCommunity/master
 =======
 
 >>>>>>> SmartThingsCommunity/master
@@ -561,6 +602,9 @@ def configure() {
 
 		"zcl mfg-code ${manufacturerCode}", "delay 200",
 		"zcl global send-me-a-report 0xFC02 0x0014 0x29 1 3600 {0100}", "delay 200",
+<<<<<<< HEAD
+>>>>>>> SmartThingsCommunity/master
+=======
 >>>>>>> SmartThingsCommunity/master
 		"send 0x${device.deviceNetworkId} 1 ${endpointId}", "delay 500"
 	]
@@ -630,6 +674,7 @@ def garageEvent(zValue) {
 	}
 	if (contactValue != null){
 <<<<<<< HEAD
+<<<<<<< HEAD
 		def linkText = getLinkText(device)
         if ( contactValue == 'open' ) {
         	descriptionText: '{{ device.displayName }} was opened'
@@ -639,6 +684,11 @@ def garageEvent(zValue) {
 			sendEvent(name: 'contact', value: contactValue, descriptionText: '{{ device.displayName }} was closed', displayed:false, translatable: true)
             sendEvent(name: 'status', value: garageValue, descriptionText: '{{ device.displayName }} status was closed', translatable: true)
         }
+=======
+		def descriptionText = contactValue == 'open' ? '{{ device.displayName }} was opened' :'{{ device.displayName }} was closed'
+		sendEvent(name: 'contact', value: contactValue, descriptionText: descriptionText, displayed:false, translatable: true)
+		sendEvent(name: 'status', value: garageValue, descriptionText: descriptionText, translatable: true)
+>>>>>>> SmartThingsCommunity/master
 =======
 		def descriptionText = contactValue == 'open' ? '{{ device.displayName }} was opened' :'{{ device.displayName }} was closed'
 		sendEvent(name: 'contact', value: contactValue, descriptionText: descriptionText, displayed:false, translatable: true)

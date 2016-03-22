@@ -120,6 +120,7 @@ void poll() {
 	parent.pollChild()
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 
 <<<<<<< HEAD
 
@@ -171,6 +172,8 @@ def generateEvent(Map results) {
 }
 
 
+=======
+>>>>>>> SmartThingsCommunity/master
 =======
 >>>>>>> SmartThingsCommunity/master
 =======
