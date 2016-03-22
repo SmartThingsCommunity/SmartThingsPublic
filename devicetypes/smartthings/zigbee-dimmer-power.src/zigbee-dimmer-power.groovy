@@ -56,21 +56,17 @@ metadata {
 def parse(String description) {
     log.debug "description is $description"
 
-    def resultMap = zigbee.getKnownDescription(description)
-    if (resultMap) {
-        log.info resultMap
-        if (resultMap.type == "update") {
-            log.info "$device updates: ${resultMap.value}"
-        }
-        else if (resultMap.type == "power") {
-            def powerValue
+    def event = zigbee.getEvent(description)
+    if (event) {
+        log.info event
+        if (event.name == "power") {
             if (device.getDataValue("manufacturer") != "OSRAM") {       //OSRAM devices do not reliably update power
-                powerValue = (resultMap.value as Integer)/10            //TODO: The divisor value needs to be set as part of configuration
-                sendEvent(name: "power", value: powerValue)
+                event.value = (event.value as Integer) / 10             //TODO: The divisor value needs to be set as part of configuration
+                sendEvent(event)
             }
         }
         else {
-            sendEvent(name: resultMap.type, value: resultMap.value)
+            sendEvent(event)
         }
     }
     else {
@@ -92,10 +88,24 @@ def setLevel(value) {
 }
 
 def refresh() {
-    zigbee.onOffRefresh() + zigbee.levelRefresh() + zigbee.simpleMeteringPowerRefresh() + zigbee.electricMeasurementPowerRefresh() + zigbee.onOffConfig() + zigbee.levelConfig() + zigbee.simpleMeteringPowerConfig() + zigbee.electricMeasurementPowerConfig()
+    return zigbee.readAttribute(0x0006, 0x0000) +
+           zigbee.readAttribute(0x0008, 0x0000) +
+           zigbee.readAttribute(0x0702, 0x0400) +
+           zigbee.readAttribute(0x0B04, 0x050B) +
+           zigbee.configureReporting(0x0006, 0x0000, 0x10, 0, 600, null) +
+           zigbee.configureReporting(0x0008, 0x0000, 0x20, 1, 3600, 0x01) +
+           zigbee.configureReporting(0x0702, 0x0400, 0x2A, 1, 600, 0x05) +
+           zigbee.configureReporting(0x0B04, 0x050B, 0x29, 1, 600, 0x0005)
 }
 
 def configure() {
     log.debug "Configuring Reporting and Bindings."
-    zigbee.onOffConfig() + zigbee.levelConfig() + zigbee.simpleMeteringPowerConfig() + zigbee.electricMeasurementPowerConfig() + zigbee.onOffRefresh() + zigbee.levelRefresh() + zigbee.simpleMeteringPowerRefresh() + zigbee.electricMeasurementPowerRefresh()
+    return zigbee.configureReporting(0x0006, 0x0000, 0x10, 0, 600, null) +
+	   zigbee.configureReporting(0x0008, 0x0000, 0x20, 1, 3600, 0x01) +
+	   zigbee.configureReporting(0x0702, 0x0400, 0x2A, 1, 600, 0x05) +
+	   zigbee.configureReporting(0x0B04, 0x050B, 0x29, 1, 600, 0x0005) +
+	   zigbee.readAttribute(0x0006, 0x0000) +
+	   zigbee.readAttribute(0x0008, 0x0000) +
+	   zigbee.readAttribute(0x0702, 0x0400) +
+	   zigbee.readAttribute(0x0B04, 0x050B)
 }
