@@ -40,6 +40,7 @@
  * 	v1.3.1 - Bug fixes.
  *  v1.3.2 - Stop possible infinite loop when handlers create events themselves.
  *	v1.3.3 - Label change for Boost
+ *  v1.4 - 	 Option added to restrict Auto Mode rules to specific days and time of day.
  */
 
 definition(
@@ -112,8 +113,11 @@ def configurePage() {
         }
   
   		section( "Additional configuration" ) {
-  			input ("temp", "number", title: "If setting to Manual, set the temperature to this", required: false, defaultValue: 21)
-  		}
+            input "days", "enum", title: "Only on certain days of the week", multiple: true, required: false,
+				options: ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"]
+            href "timeIntervalInput", title: "Only during a certain time", description: getTimeLabel(starting, ending), state: greyedOutTime(starting, ending), refreshAfterSelection:true
+  			input ("temp", "decimal", title: "If setting to Manual, set the temperature to this", required: false, defaultValue: 21)
+        }
   
   		section( "Notifications" ) {
         	input ("sendPushMessage", "enum", title: "Send a push notification?",
@@ -125,6 +129,13 @@ def configurePage() {
         	label title: "Assign a name", required: false
         }
   	}
+}
+
+page(name: "timeIntervalInput", title: "Only during a certain time", refreshAfterSelection:true) {
+	section {
+			input "starting", "time", title: "Starting", required: false 
+			input "ending", "time", title: "Ending", required: false 
+	}
 }
 
 def installed() {
@@ -183,12 +194,14 @@ def updated() {
 
 //Handler and action for switch detection
 def switchHandler(evt) {
-	log.debug "evt.value: $evt.value"
-    log.debug "state.internalSwitchEvent: $state.internalSwitchEvent"
-    if (state.internalSwitchEvent == false) {
-    	takeActionForSwitch(evt.value)   
+	if(allOk) {
+		log.debug "evt.value: $evt.value"
+    	log.debug "state.internalSwitchEvent: $state.internalSwitchEvent"
+    	if (state.internalSwitchEvent == false) {
+    		takeActionForSwitch(evt.value)   
+    	}
+    	state.internalSwitchEvent = false
     }
-    state.internalSwitchEvent = false
 }
 
 def takeActionForSwitch(switchState) {
@@ -242,8 +255,10 @@ def takeActionForSwitch(switchState) {
 
 //Handler and action for mode detection
 def modeeventHandler(evt) {
-    log.debug "evt.value: $evt.value"
-    takeActionForMode(evt.value)   
+	if(allOk) {
+    	log.debug "evt.value: $evt.value"
+    	takeActionForMode(evt.value)   
+    }
 }
 
 def takeActionForMode(mode) {
@@ -318,7 +333,7 @@ def thermostateventHandler(evt) {
             		theSwitch.on()
                 }
             }
-        } 
+       	 } 
     
     	//If boost mode is selected as resumed state, need to set thermostat mode as per preference
     	if (state.boostingReset) {
@@ -374,4 +389,82 @@ private send(msg) {
     }
 
     log.debug msg
+}
+
+private getAllOk() {
+	daysOk && timeOk
+}
+
+private getDaysOk() {
+	def result = true
+	if (days) {
+		def df = new java.text.SimpleDateFormat("EEEE")
+		if (location.timeZone) {
+			df.setTimeZone(location.timeZone)
+		}
+		else {
+			df.setTimeZone(TimeZone.getTimeZone("Europe/London"))
+		}
+		def day = df.format(new Date())
+		result = days.contains(day)
+	}
+	log.trace "daysOk = $result"
+	result
+}
+
+private getTimeOk() {
+	def result = true
+	if (starting && ending) {
+		def currTime = now()
+		def start = timeToday(starting).time
+		def stop = timeToday(ending).time
+		result = start < stop ? currTime >= start && currTime <= stop : currTime <= stop || currTime >= start
+	}
+	log.trace "timeOk = $result"
+	result
+}
+
+private hhmm(time, fmt = "h:mm a")
+{
+	def t = timeToday(time, location.timeZone)
+	def f = new java.text.SimpleDateFormat(fmt)
+	f.setTimeZone(location.timeZone ?: timeZone(time))
+	f.format(t)
+}
+
+def getTimeLabel(starting, ending){
+
+	def timeLabel = "Tap to set"
+	
+    if(starting && ending){
+    	timeLabel = "Between" + " " + hhmm(starting) + " "  + "and" + " " +  hhmm(ending)
+    }
+    else if (starting) {
+		timeLabel = "Start at" + " " + hhmm(starting)
+    }
+    else if(ending){
+    timeLabel = "End at" + hhmm(ending)
+    }
+	timeLabel
+}
+
+private hideOptionsSection() {
+	(starting || ending || days || modes) ? false : true
+}
+
+
+def greyedOutSettings(){
+	def result = ""
+    if (starting || ending || days || falseAlarmThreshold) {
+    	result = "complete"	
+    }
+    result
+}
+
+def greyedOutTime(starting, ending){
+	def result = ""
+    if (starting || ending) {
+    	result = "complete"	
+    }
+    result
 }
