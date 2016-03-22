@@ -32,14 +32,15 @@ metadata {
 				attributeState("default", label:'${currentValue}', unit:"dF")
 			}
 			tileAttribute("device.temperature", key: "VALUE_CONTROL") {
-				attributeState("default", action: "setTemperature")
+				attributeState("VALUE_UP", action: "tempUp")
+				attributeState("VALUE_DOWN", action: "tempDown")
 			}
 			tileAttribute("device.humidity", key: "SECONDARY_CONTROL") {
 				attributeState("default", label:'${currentValue}%', unit:"%")
 			}
 			tileAttribute("device.thermostatOperatingState", key: "OPERATING_STATE") {
 				attributeState("idle", backgroundColor:"#44b621")
-				attributeState("heating", backgroundColor:"#ffa81e")
+				attributeState("heating", backgroundColor:"#ea5462")
 				attributeState("cooling", backgroundColor:"#269bd2")
 			}
 			tileAttribute("device.thermostatMode", key: "THERMOSTAT_MODE") {

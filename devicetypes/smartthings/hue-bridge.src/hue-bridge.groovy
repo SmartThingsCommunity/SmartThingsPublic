@@ -17,16 +17,13 @@ metadata {
 
 	tiles(scale: 2) {
      	multiAttributeTile(name:"rich-control"){
-			tileAttribute ("device.switch", key: "PRIMARY_CONTROL") {
+			tileAttribute ("", key: "PRIMARY_CONTROL") {
 	            attributeState "default", label: "Hue Bridge", action: "", icon: "st.Lighting.light99-hue", backgroundColor: "#F3C200"
-			}    
+			}
 	        tileAttribute ("serialNumber", key: "SECONDARY_CONTROL") {
 	            attributeState "default", label:'SN: ${currentValue}'
-			}    
-        }    
-		standardTile("icon", "icon", width: 1, height: 1, canChangeIcon: false, inactiveLabel: true, canChangeBackground: false) {
-			state "default", label: "Hue Bridge", action: "", icon: "st.Lighting.light99-hue", backgroundColor: "#FFFFFF"
-		}
+			}
+        }
 		valueTile("serialNumber", "device.serialNumber", decoration: "flat", height: 1, width: 2, inactiveLabel: false) {
 			state "default", label:'SN: ${currentValue}'
 		}
@@ -34,7 +31,7 @@ metadata {
 			state "default", label:'${currentValue}', height: 1, width: 2, inactiveLabel: false
 		}
 
-		main (["icon"])
+		main (["rich-control"])
 		details(["rich-control", "networkAddress"])
 	}
 }
@@ -75,6 +72,7 @@ def parse(description) {
 				}
 				else if (contentType?.contains("xml")) {
 					log.debug "HUE BRIDGE ALREADY PRESENT"
+                    parent.hubVerification(device.hub.id, msg.body)
 				}
 			}
 		}

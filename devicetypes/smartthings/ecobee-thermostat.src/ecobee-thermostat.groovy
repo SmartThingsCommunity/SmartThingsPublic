@@ -20,7 +20,6 @@ metadata {
 		capability "Actuator"
 		capability "Thermostat"
 		capability "Temperature Measurement"
-		capability "Polling"
 		capability "Sensor"
 		capability "Refresh"
 		capability "Relative Humidity Measurement"
@@ -134,9 +133,7 @@ def refresh() {
 
 void poll() {
 	log.debug "Executing 'poll' using parent SmartApp"
-
-	def results = parent.pollChild(this)
-	generateEvent(results) //parse received message from parent
+	parent.pollChild()
 }
 
 def generateEvent(Map results) {
@@ -382,12 +379,16 @@ def getDataByName(String name) {
 	state[name] ?: device.getDataValue(name)
 }
 
-def setThermostatMode(String value) {
-	log.debug "setThermostatMode({$value})"
+def setThermostatMode(String mode) {
+	log.debug "setThermostatMode($mode)"
+	mode = mode.toLowerCase()
+	switchToMode(mode)
 }
 
-def setThermostatFanMode(String value) {
-	log.debug "setThermostatFanMode({$value})"
+def setThermostatFanMode(String mode) {
+	log.debug "setThermostatFanMode($mode)"
+	mode = mode.toLowerCase()
+	switchToFanMode(mode)
 }
 
 def generateModeEvent(mode) {
