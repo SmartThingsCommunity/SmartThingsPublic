@@ -1405,11 +1405,17 @@ void poll() {
 	pollChild()
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
+<<<<<<< HEAD
 >>>>>>> pr/40
 =======
 >>>>>>> SmartThingsCommunity/master
 =======
 >>>>>>> SmartThingsCommunity/master
+=======
+>>>>>>> SmartThingsCommunity/master
+=======
+>>>>>>> pr/27
 }
 
 

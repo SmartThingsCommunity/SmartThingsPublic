@@ -120,6 +120,8 @@ void poll() {
 	parent.pollChild()
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
+<<<<<<< HEAD
 
 <<<<<<< HEAD
 
@@ -175,6 +177,10 @@ def generateEvent(Map results) {
 >>>>>>> SmartThingsCommunity/master
 =======
 >>>>>>> SmartThingsCommunity/master
+=======
+>>>>>>> SmartThingsCommunity/master
+=======
+>>>>>>> pr/27
 
 //generate custom mobile activity feeds event
 def generateActivityFeedsEvent(notificationMessage) {

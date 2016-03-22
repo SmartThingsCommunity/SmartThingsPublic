@@ -4,25 +4,45 @@
  *
  *  Licensed under the Apache License, Version 2.0 (the "License"); you may not
 <<<<<<< HEAD
+<<<<<<< HEAD
+<<<<<<< HEAD
  *  use this file except in compliance with the License. You may obtain a copy 
 =======
  *  use this file except in compliance with the License. You may obtain a copy
 >>>>>>> SmartThingsCommunity/master
+=======
+ *  use this file except in compliance with the License. You may obtain a copy
+>>>>>>> SmartThingsCommunity/master
+=======
+ *  use this file except in compliance with the License. You may obtain a copy
+>>>>>>> pr/27
  *  of the License at:
  *
  *      http://www.apache.org/licenses/LICENSE-2.0
  *
+<<<<<<< HEAD
+<<<<<<< HEAD
 <<<<<<< HEAD
  *  Unless required by applicable law or agreed to in writing, software 
  *  distributed under the License is distributed on an "AS IS" BASIS, WITHOUT 
  *  WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the 
  *  License for the specific language governing permissions and limitations 
 =======
+=======
+>>>>>>> SmartThingsCommunity/master
+=======
+>>>>>>> pr/27
  *  Unless required by applicable law or agreed to in writing, software
  *  distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
  *  WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
  *  License for the specific language governing permissions and limitations
+<<<<<<< HEAD
+<<<<<<< HEAD
 >>>>>>> SmartThingsCommunity/master
+=======
+>>>>>>> SmartThingsCommunity/master
+=======
+>>>>>>> pr/27
  *  under the License.
 ===============================================================================
  *  Purpose: SmartSense Moisture Sensor DTH File
@@ -145,7 +165,13 @@ private Map parseCatchAllMessage(String description) {
 			case 0x0001:
 				resultMap = getBatteryResult(cluster.data.last())
 				break
+<<<<<<< HEAD
+<<<<<<< HEAD
 >>>>>>> SmartThingsCommunity/master
+=======
+>>>>>>> SmartThingsCommunity/master
+=======
+>>>>>>> pr/27
 
             case 0x0402:
                 // temp is last 2 data values. reverse to swap endian
@@ -278,11 +304,19 @@ private Map getBatteryResult(rawValue) {
 				if (pct != null) {
 					result.value = pct
 <<<<<<< HEAD
+<<<<<<< HEAD
+<<<<<<< HEAD
                     def value = pct
 					result.descriptionText = "{{ device.displayName }} battery was {{ value }}"
 =======
 					result.descriptionText = "{{ device.displayName }} battery was {{ value }}%"
 >>>>>>> SmartThingsCommunity/master
+=======
+					result.descriptionText = "{{ device.displayName }} battery was {{ value }}%"
+>>>>>>> SmartThingsCommunity/master
+=======
+					result.descriptionText = "{{ device.displayName }} battery was {{ value }}%"
+>>>>>>> pr/27
 				}
 			}
 			else {
@@ -291,10 +325,18 @@ private Map getBatteryResult(rawValue) {
 				def pct = (volts - minVolts) / (maxVolts - minVolts)
 				result.value = Math.min(100, (int) pct * 100)
 <<<<<<< HEAD
+<<<<<<< HEAD
+<<<<<<< HEAD
 				result.descriptionText = "{{ device.displayName }} battery was {{ value }}"
 =======
 				result.descriptionText = "{{ device.displayName }} battery was {{ value }}%"
 >>>>>>> SmartThingsCommunity/master
+=======
+				result.descriptionText = "{{ device.displayName }} battery was {{ value }}%"
+>>>>>>> SmartThingsCommunity/master
+=======
+				result.descriptionText = "{{ device.displayName }} battery was {{ value }}%"
+>>>>>>> pr/27
 			}
 		}
 	}
@@ -311,6 +353,8 @@ private Map getTemperatureResult(value) {
     def descriptionText
     if ( temperatureScale == 'C' )
 <<<<<<< HEAD
+<<<<<<< HEAD
+<<<<<<< HEAD
     	descriptionText = '{{ device.displayName }} was {{ value }}캜'
     else
     	descriptionText = '{{ device.displayName }} was {{ value }}캟'
@@ -319,6 +363,16 @@ private Map getTemperatureResult(value) {
     else
     	descriptionText = '{{ device.displayName }} was {{ value }}째F'
 >>>>>>> SmartThingsCommunity/master
+=======
+    	descriptionText = '{{ device.displayName }} was {{ value }}째C'
+    else
+    	descriptionText = '{{ device.displayName }} was {{ value }}째F'
+>>>>>>> SmartThingsCommunity/master
+=======
+    	descriptionText = '{{ device.displayName }} was {{ value }}째C'
+    else
+    	descriptionText = '{{ device.displayName }} was {{ value }}째F'
+>>>>>>> pr/27
 
 	return [
 		name: 'temperature',
@@ -330,10 +384,18 @@ private Map getTemperatureResult(value) {
 
 private Map getMoistureResult(value) {
 <<<<<<< HEAD
+<<<<<<< HEAD
+<<<<<<< HEAD
 	log.debug "water" 
 =======
 	log.debug "water"
 >>>>>>> SmartThingsCommunity/master
+=======
+	log.debug "water"
+>>>>>>> SmartThingsCommunity/master
+=======
+	log.debug "water"
+>>>>>>> pr/27
     def descriptionText
     if ( value == "wet" )
     	descriptionText = '{{ device.displayName }} is wet'

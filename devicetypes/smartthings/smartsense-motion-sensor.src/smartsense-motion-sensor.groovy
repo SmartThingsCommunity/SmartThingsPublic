@@ -4,25 +4,45 @@
  *
  *  Licensed under the Apache License, Version 2.0 (the "License"); you may not
 <<<<<<< HEAD
+<<<<<<< HEAD
+<<<<<<< HEAD
  *  use this file except in compliance with the License. You may obtain a copy 
 =======
  *  use this file except in compliance with the License. You may obtain a copy
 >>>>>>> SmartThingsCommunity/master
+=======
+ *  use this file except in compliance with the License. You may obtain a copy
+>>>>>>> SmartThingsCommunity/master
+=======
+ *  use this file except in compliance with the License. You may obtain a copy
+>>>>>>> pr/27
  *  of the License at:
  *
  *      http://www.apache.org/licenses/LICENSE-2.0
  *
+<<<<<<< HEAD
+<<<<<<< HEAD
 <<<<<<< HEAD
  *  Unless required by applicable law or agreed to in writing, software 
  *  distributed under the License is distributed on an "AS IS" BASIS, WITHOUT 
  *  WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the 
  *  License for the specific language governing permissions and limitations 
 =======
+=======
+>>>>>>> SmartThingsCommunity/master
+=======
+>>>>>>> pr/27
  *  Unless required by applicable law or agreed to in writing, software
  *  distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
  *  WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
  *  License for the specific language governing permissions and limitations
+<<<<<<< HEAD
+<<<<<<< HEAD
 >>>>>>> SmartThingsCommunity/master
+=======
+>>>>>>> SmartThingsCommunity/master
+=======
+>>>>>>> pr/27
  *  under the License.
 ===============================================================================
  *  Purpose: SmartSense Motion Sensor DTH File
@@ -284,10 +304,18 @@ private Map getBatteryResult(rawValue) {
 					result.value = pct
                     def value = pct
 <<<<<<< HEAD
+<<<<<<< HEAD
+<<<<<<< HEAD
 					result.descriptionText = "{{ device.displayName }} battery was {{ value }}"
 =======
 					result.descriptionText = "{{ device.displayName }} battery was {{ value }}%"
 >>>>>>> SmartThingsCommunity/master
+=======
+					result.descriptionText = "{{ device.displayName }} battery was {{ value }}%"
+>>>>>>> SmartThingsCommunity/master
+=======
+					result.descriptionText = "{{ device.displayName }} battery was {{ value }}%"
+>>>>>>> pr/27
 				}
 			}
 			else {
@@ -296,10 +324,18 @@ private Map getBatteryResult(rawValue) {
 				def pct = (volts - minVolts) / (maxVolts - minVolts)
 				result.value = Math.min(100, (int) pct * 100)
 <<<<<<< HEAD
+<<<<<<< HEAD
+<<<<<<< HEAD
 				result.descriptionText = "{{ device.displayName }} battery was {{ value }}"
 =======
 				result.descriptionText = "{{ device.displayName }} battery was {{ value }}%"
 >>>>>>> SmartThingsCommunity/master
+=======
+				result.descriptionText = "{{ device.displayName }} battery was {{ value }}%"
+>>>>>>> SmartThingsCommunity/master
+=======
+				result.descriptionText = "{{ device.displayName }} battery was {{ value }}%"
+>>>>>>> pr/27
 			}
 		}
 	}
@@ -332,9 +368,15 @@ private Map getMotionResult(value) {
 	log.debug 'motion'
 	String descriptionText = value == 'active' ? "{{ device.displayName }} detected motion" : "{{ device.displayName }} motion has stopped"
 <<<<<<< HEAD
+<<<<<<< HEAD
+<<<<<<< HEAD
     //String descriptionText = '{{ device.displayName }} is {{ value | translate }}'
 =======
 >>>>>>> SmartThingsCommunity/master
+=======
+>>>>>>> SmartThingsCommunity/master
+=======
+>>>>>>> pr/27
 	return [
 		name: 'motion',
 		value: value,
