@@ -679,6 +679,11 @@ def setColor(childDevice, huesettings) {
 
 	log.debug "sending command $value"
 	put("lights/${getId(childDevice)}/state", value)
+
+    if (huesettings.switch == "off")
+		put("lights/${getId(childDevice)}/state", [on: false])
+
+    return "Bulb changed color"
 }
 
 def nextLevel(childDevice) {
