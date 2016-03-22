@@ -14,6 +14,8 @@
  *
  */
 
+//DEPRECATED - Using the smartsense-motion-sensor.groovy DTH for this device. Users need to be moved before deleting this DTH
+
 metadata {
 	definition (name: "SmartSense Motion/Temp Sensor", namespace: "smartthings", author: "SmartThings") {
 		capability "Motion Sensor"
@@ -25,10 +27,6 @@ metadata {
         
         command "enrollResponse"
 
-		fingerprint inClusters: "0000,0001,0003,0402,0500,0020,0B05", outClusters: "0019", manufacturer: "CentraLite", model: "3305-S"
-        fingerprint inClusters: "0000,0001,0003,0402,0500,0020,0B05", outClusters: "0019", manufacturer: "CentraLite", model: "3305"
-        fingerprint inClusters: "0000,0001,0003,0402,0500,0020,0B05", outClusters: "0019", manufacturer: "CentraLite", model: "3325"
-        fingerprint inClusters: "0000,0001,0003,0402,0500,0020,0B05", outClusters: "0019", manufacturer: "CentraLite", model: "3326"
 	}
 
 	simulator {
@@ -233,7 +231,7 @@ private Map getBatteryResult(rawValue) {
 	def volts = rawValue / 10
 	def descriptionText
 
-	if (rawValue == 0) {}
+    if (rawValue == 0 || rawValue == 255) {}
 	else {
 		if (volts > 3.5) {
 			result.descriptionText = "${linkText} battery has too much power (${volts} volts)."
