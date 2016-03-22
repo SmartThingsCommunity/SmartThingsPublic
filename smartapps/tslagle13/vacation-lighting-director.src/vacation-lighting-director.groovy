@@ -1,11 +1,17 @@
 /**
  *  Vacation Lighting Director
  * 
- *  Version  2.4 - Added information paragraphs
+ * Version  2.5 - Moved scheduling over to Cron and added time as a trigger. 
+ *				  Cleaned up formatting and some typos.
+ *                Updated license.
+ *                Made people option optional
+ * 				  Added sttement to unschedule on mode change if people option is not selected
+ *
+ * Version  2.4 - Added information paragraphs
  * 
  *  Source code can be found here: https://github.com/tslagle13/SmartThings/blob/master/smartapps/tslagle13/vacation-lighting-director.groovy
  *
- *  Copyright 2015 Tim Slagle
+ *  Copyright 2016 Tim Slagle
  *
  *  Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except
  *  in compliance with the License. You may obtain a copy of the License at:
@@ -51,8 +57,7 @@ def pageSetup() {
 	return dynamicPage(pageProperties) {
     	section(""){
         	paragraph "This app can be used to make your home seem occupied anytime you are away from your home. " +
-			"Please use each othe the sections below to setup the different preferences to your liking. " +
-			"I recommend this app be used with at least two away modes.  An example would be 'Away Day' 'and Away Night'. " 
+			"Please use each of the the sections below to setup the different preferences to your liking. " 
         }
         section("Setup Menu") {
             href "Setup", title: "Setup", description: "", state:greyedOut()
@@ -70,7 +75,7 @@ def Setup() {
     def newMode = [
         name:       	"newMode",
         type:       	"mode",
-        title:      	"Which?",
+        title:      	"Modes",
         multiple:   	true,
         required:   	true
     ]
@@ -96,14 +101,6 @@ def Setup() {
         required:	true,
     ]
     
-    def people = [
-        name:       "people",
-        type:       "capability.presenceSensor",
-        title:      "If these people are home do not change light status",
-        required:	true,
-        multiple:	true
-    ]
-    
     def pageName = "Setup"
     
     def pageProperties = [
@@ -116,10 +113,11 @@ def Setup() {
 
 		section(""){            
                     paragraph "In this section you need to setup the deatils of how you want your lighting to be affected while " +
-                    paragraph "you are away.  All of these settings are required in order for the simulator to run correctly."
+                    "you are away.  All of these settings are required in order for the simulator to run correctly."
         }
-        section("Which mode change triggers the simulator? (This app will only run in selected mode(s))") {
-                    input newMode           
+        section("Simulator Triggers") {
+                    input newMode  
+                    href "timeIntervalInput", title: "Times", description: getTimeLabel(starting, ending), state: greyedOutTime(starting, ending), refreshAfterSelection:true
         }
         section("Light switches to turn on/off") {
                     input switches           
@@ -130,9 +128,6 @@ def Setup() {
         section("Number of active lights at any given time") {
                     input number_of_active_lights           
         }    
-        section("People") {
-                    input people            
-        }
     }
     
 }
@@ -162,18 +157,29 @@ def Settings() {
         title:      "Settings",
         nextPage:   "pageSetup"
     ]
+    
+    def people = [
+        name:       "people",
+        type:       "capability.presenceSensor",
+        title:      "If these people are home do not change light status",
+        required:	false,
+        multiple:	true
+    ]
 
     return dynamicPage(pageProperties) {
 
 		section(""){              
                     paragraph "In this section you can restrict how your simulator runs.  For instance you can restrict on which days it will run " +
-                    paragraph "as well as a delay for the simulator to start after it is in the correct mode.  Delaying the simulator helps with false starts based on a incorrect mode change."
+                    "as well as a delay for the simulator to start after it is in the correct mode.  Delaying the simulator helps with false starts based on a incorrect mode change."
         }
         section("Delay to start simulator") {
                     input falseAlarmThreshold
         }
+        section("People") {
+        			paragraph "Not using this setting may cause some lights to remain on when you arrive home"
+                    input people            
+        }
         section("More options") {
-                    href "timeIntervalInput", title: "Only during a certain time", description: getTimeLabel(starting, ending), state: greyedOutTime(starting, ending), refreshAfterSelection:true
                     input days
         } 
     }   
@@ -198,13 +204,16 @@ def updated() {
 
 def initialize(){
 
-	if (newMode != null) {
-		subscribe(location, modeChangeHandler)
+    if (newMode != null) {
+	subscribe(location, modeChangeHandler)
     }
+    if (starting != null) {
+    	schedule(starting, modeChangeHandler)
+    }
+    log.debug "Installed with settings: ${settings}"
 }
 
 def modeChangeHandler(evt) {
-	log.debug "Mode change to: ${evt.value}"
 		def delay = (falseAlarmThreshold != null && falseAlarmThreshold != "") ? falseAlarmThreshold * 60 : 2 * 60  
     	runIn(delay, scheduleCheck)
 }
@@ -212,48 +221,54 @@ def modeChangeHandler(evt) {
 
 //Main logic to pick a random set of lights from the large set of lights to turn on and then turn the rest off
 def scheduleCheck(evt) {
-if(allOk){
-log.debug("Running")
-  // turn off all the switches
-  switches.off()
-
-  // grab a random switch
-  def random = new Random()
-  def inactive_switches = switches
-  for (int i = 0 ; i < number_of_active_lights ; i++) {
-    // if there are no inactive switches to turn on then let's break
-    if (inactive_switches.size() == 0){
-      break
+    if(allOk){
+        log.debug("Running")
+        // turn off all the switches
+        switches.off()
+        
+        // grab a random switch
+        def random = new Random()
+        def inactive_switches = switches
+        for (int i = 0 ; i < number_of_active_lights ; i++) {
+            // if there are no inactive switches to turn on then let's break
+            if (inactive_switches.size() == 0){
+                break
+            }
+            
+            // grab a random switch and turn it on
+            def random_int = random.nextInt(inactive_switches.size())
+            inactive_switches[random_int].on()
+            
+            // then remove that switch from the pool off switches that can be turned on
+            inactive_switches.remove(random_int)
+        }
+        
+        // re-run again when the frequency demands it
+        schedule("0 0/${frequency_minutes} * 1/1 * ? *", scheduleCheck)
     }
-
-    // grab a random switch and turn it on
-    def random_int = random.nextInt(inactive_switches.size())
-    inactive_switches[random_int].on()
-
-    // then remove that switch from the pool off switches that can be turned on
-    inactive_switches.remove(random_int)
-  }
-
-  // re-run again when the frequency demands it
-  runIn(frequency_minutes * 60, scheduleCheck)
-}
-//Check to see if mode is ok but not time/day.  If mode is still ok, check again after frequency period.
-else if (modeOk) {
-	log.debug("mode OK.  Running again")
-	runIn(frequency_minutes * 60, scheduleCheck)
-    switches.off()
-}
-//if none is ok turn off frequency check and turn off lights.
-else if(people){
-    //don't turn off lights if anyone is home
-		if(someoneIsHome()){
-		log.debug("Stopping Check for Light")
+    //Check to see if mode is ok but not time/day.  If mode is still ok, check again after frequency period.
+    else if (modeOk) {
+        log.debug("mode OK.  Running again")
+        switches.off()
+    }
+    //if none is ok turn off frequency check and turn off lights.
+    else {
+    	if(people){
+        	//don't turn off lights if anyone is home
+        	if(someoneIsHome()){
+        	    log.debug("Stopping Check for Light")
+        	    unschedule()
+        	}
+        	else{
+        	    log.debug("Stopping Check for Light and turning off all lights")
+        	    switches.off()
+        	    unschedule()
+        	}
     	}
-        else{
-    log.debug("Stopping Check for Light and turning off all lights")
-	switches.off()
+        else if (!modeOk) {
+        	unschedule()
+        }
     }
-}
 }      
 
 
