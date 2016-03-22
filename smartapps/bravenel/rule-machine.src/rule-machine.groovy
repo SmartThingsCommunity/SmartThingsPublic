@@ -3,7 +3,7 @@
  *
  *  Copyright 2015, 2016 Bruce Ravenel and Mike Maxwell
  *
- *  Version 1.8.2c   13 Mar 2016
+ *  Version 1.8.2d   22 Mar 2016
  *
  *	Version History
  *
@@ -77,7 +77,7 @@ def mainPage() {
         	section ("Remove Rule Machine"){
         		href "removePage", description: "Tap to remove Rule Machine and Rules", title: ""
         	}
-			section ("Version 1.8.2c/" + (nApps > 0 ? "${childApps[0].appVersion()}" : "---")) { }
+			section ("Version 1.8.2d/" + (nApps > 0 ? "${childApps[0].appVersion()}" : "---")) { }
     	}
     }
 }
@@ -554,7 +554,7 @@ def parameterLabel(){
 		for (int i = 1; i <= howMany; i++) {
 			result = result + parameterLabelN(i) + "\n"
 		}
-		result = result[0..-2]
+//		result = result[0..-2]
 	}
 	return result
 }
