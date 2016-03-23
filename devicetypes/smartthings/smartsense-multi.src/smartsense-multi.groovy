@@ -203,7 +203,7 @@ private List parseContactMessage(String description) {
 	parts.each { part ->
 		part = part.trim()
 		if (part.startsWith('contactState:')) {
-			results << getContactResult(part, description)
+			results.addAll(getContactResult(part, description))
 		}
 		else if (part.startsWith('accelerationState:')) {
 			results << getAccelerationResult(part, description)
@@ -316,7 +316,7 @@ private List getContactResult(part, description) {
 	results
 }
 
-private getAccelerationResult(part, description) {
+private Map getAccelerationResult(part, description) {
 	def name = "acceleration"
 	def value = part.endsWith("1") ? "active" : "inactive"
 	def linkText = getLinkText(device)
@@ -335,7 +335,7 @@ private getAccelerationResult(part, description) {
 	]
 }
 
-private getTempResult(part, description) {
+private Map getTempResult(part, description) {
 	def name = "temperature"
 	def temperatureScale = getTemperatureScale()
 	def value = zigbee.parseSmartThingsTemperatureValue(part, "temp: ", temperatureScale)
@@ -360,7 +360,7 @@ private getTempResult(part, description) {
 	]
 }
 
-private getXyzResult(results, description) {
+private Map getXyzResult(results, description) {
 	def name = "threeAxis"
 	def value = "${results.x},${results.y},${results.z}"
 	def linkText = getLinkText(device)
@@ -379,7 +379,7 @@ private getXyzResult(results, description) {
 	]
 }
 
-private getBatteryResult(part, description) {
+private Map getBatteryResult(part, description) {
 	def batteryDivisor = description.split(",").find {it.split(":")[0].trim() == "batteryDivisor"} ? description.split(",").find {it.split(":")[0].trim() == "batteryDivisor"}.split(":")[1].trim() : null
 	def name = "battery"
 	def value = zigbee.parseSmartThingsBatteryValue(part, batteryDivisor)
@@ -400,7 +400,7 @@ private getBatteryResult(part, description) {
 	]
 }
 
-private getRssiResult(part, description, lastHop=false) {
+private Map getRssiResult(part, description, lastHop=false) {
 	def name = lastHop ? "lastHopRssi" : "rssi"
 	def valueString = part.split(":")[1].trim()
 	def value = (Integer.parseInt(valueString) - 128).toString()
@@ -431,7 +431,7 @@ private getRssiResult(part, description, lastHop=false) {
  * Note: To make the signal strength indicator more accurate, we could combine
  * LQI with RSSI.
  */
-private getLqiResult(part, description, lastHop=false) {
+private Map getLqiResult(part, description, lastHop=false) {
 	def name = lastHop ? "lastHopLqi" : "lqi"
 	def valueString = part.split(":")[1].trim()
 	def percentageOf = 255
