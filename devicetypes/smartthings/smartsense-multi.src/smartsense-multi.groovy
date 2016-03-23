@@ -203,7 +203,8 @@ private List parseContactMessage(String description) {
 	parts.each { part ->
 		part = part.trim()
 		if (part.startsWith('contactState:')) {
-			results << getContactResult(part, description)
+			results << getContactResult(part, description)[0]
+			results << getContactResult(part, description)[1]
 		}
 		else if (part.startsWith('accelerationState:')) {
 			results << getAccelerationResult(part, description)
