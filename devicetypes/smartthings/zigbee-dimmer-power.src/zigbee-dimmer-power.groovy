@@ -56,21 +56,17 @@ metadata {
 def parse(String description) {
     log.debug "description is $description"
 
-    def resultMap = zigbee.getKnownDescription(description)
-    if (resultMap) {
-        log.info resultMap
-        if (resultMap.type == "update") {
-            log.info "$device updates: ${resultMap.value}"
-        }
-        else if (resultMap.type == "power") {
-            def powerValue
+    def event = zigbee.getEvent(description)
+    if (event) {
+        log.info event
+        if (event.name == "power") {
             if (device.getDataValue("manufacturer") != "OSRAM") {       //OSRAM devices do not reliably update power
-                powerValue = (resultMap.value as Integer)/10            //TODO: The divisor value needs to be set as part of configuration
-                sendEvent(name: "power", value: powerValue)
+                event.value = (event.value as Integer) / 10             //TODO: The divisor value needs to be set as part of configuration
+                sendEvent(event)
             }
         }
         else {
-            sendEvent(name: resultMap.type, value: resultMap.value)
+            sendEvent(event)
         }
     }
     else {
