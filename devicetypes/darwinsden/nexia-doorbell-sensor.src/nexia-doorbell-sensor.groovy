@@ -24,6 +24,8 @@
  *
  *	0.1 (03/20/2016)
  *		-	Initial Release
+ *	0.2 (03/22/2016)
+ *		-	handle missed button press and release events
  *
  */
  
@@ -125,23 +127,35 @@ private batteryHealthReport(cmd) {
 	logInfo("Battery: $batteryLevel")
 }
 
+def turnOffSwitch() {
+     def desc = "Doorbell verification check"
+	 logDebug("$desc")
+	 sendEvent(name: "status", value: "off", descriptionText: "${device.displayName} $desc", isStateChange: true)
+	 sendEvent(name: "switch", value: "off", displayed: false, isStateChange: true)
+}
+
 private notificationReport(cmd) {
     def notificationEvent = cmd.event
-    if (notificationEvent == 1)
+    
+    //Set switch "on" if its a button press, or if it's a button release and the button hasn't been
+    //pressed in the last 10 seconds (likely a missed press)
+    
+    if (notificationEvent == 1 || (!state.lastBellRing  || (new Date().time) - state.lastBellRing  > 10*1000))
     {
-	  def desc = "Doorbell is ringing"
+	  def desc = "Doorbell button is pressed"
 	  logDebug("$desc")
 	  sendEvent(name: "status", value: "doorbell", descriptionText: "${device.displayName} $desc", isStateChange: true)
 	  sendEvent(name: "switch", value: "on", displayed: false, isStateChange: true)
+      state.lastBellRing = new Date().time
+      runIn(10, turnOffSwitch) //turn off switch in 10 seconds in case button release event is missed   
     }
-    else
+    else // it's a button release and it's within 10 seconds of the button press
     {
-      def desc = "Doorbell is silent"
+      def desc = "Doorbell button is released"
 	  logDebug("$desc")
 	  sendEvent(name: "status", value: "off", descriptionText: "${device.displayName} $desc", isStateChange: true)
 	  sendEvent(name: "switch", value: "off", displayed: false, isStateChange: true)
     }
- 
 }
 
 // Unexpected command received
@@ -164,15 +178,19 @@ def zwaveEvent(physicalgraph.zwave.commands.notificationv3.NotificationReport  c
 
 // Parses incoming message warns if not paired securely
 def parse(description) {
+    log.debug("'$description'")
 	def result = null
 	if (description.startsWith("Err 106")) {
 		state.sec = 0
 		result = createEvent(descriptionText: description, isStateChange: true)
 	} else if (description != "updated") {
-		def cmd = zwave.parse(description, [0x20: 1, 0x25: 1, 0x70: 1, 0x98: 1])
+		//def cmd = zwave.parse(description)
+        //def cmd = zwave.parse(description, [0x20: 1, 0x25: 1, 0x70: 1, 0x98: 1])
+        def cmd = zwave.parse(description, [0x71: 3, 0x80: 1])
+
 		if (cmd) {
 			result = zwaveEvent(cmd)
-			log.debug("'$description' parsed to $result")
+			//log.debug("'$description' parsed to $result")
 		} else {
 			log.debug("Couldn't zwave.parse '$description'")
 		}
