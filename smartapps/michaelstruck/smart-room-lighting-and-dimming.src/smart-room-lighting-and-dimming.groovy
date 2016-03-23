@@ -11,6 +11,7 @@
  *  Version - 2.0.1 1/16/16 Allow ability to see child app version within parent app and moved the remove button
  *  Version - 2.0.2 2/26/16 GUI clean up
  *  Version - 2.1.0 3/19/16 Added about screen icon
+ *  Version - 2.1.1 3/23/16 Added icons to main menu
  * 
  *  Copyright © 2016 Michael Struck - Uses code from Lighting Director by Tim Slagle & Michael Struck
  *
@@ -48,7 +49,8 @@ def mainPage() {
                     app(name: "childScenarios", appName: "Smart Room Lighting and Dimming-Scenario", namespace: "MichaelStruck", title: "Create New Scenario...", multiple: true)
             }
             section([title:"Options", mobileOnly:true]) {
-            	href "pageAbout", title: "About ${textAppName()}", description: "Tap to get application version, license, instructions or to remove the application"
+            	href "pageAbout", title: "About ${textAppName()}", description: "Tap to get application version, license, instructions or to remove the application",
+	            	image: "https://raw.githubusercontent.com/MichaelStruck/SmartThings/master/img/info.png"
         	}
     }
 }
@@ -94,7 +96,7 @@ private def textAppName() {
 }	
 
 private def textVersion() {
-    def version = "Parent App Version: 2.1.0 (03/19/2016)"
+    def version = "Parent App Version: 2.1.1 (03/23/2016)"
     def childCount = childApps.size()
     def childVersion = childCount ? childApps[0].textVersion() : "No scenarios installed"  
     return "${version}\n${childVersion}"

@@ -1,7 +1,7 @@
 /**
  *  Smart Bathroom Ventilation-Parent
  *
- *  Version - 2.1.1 3/20/16
+ *  Version - 2.1.2 3/23/16
  * 
  *  Version 1.0.0 - Initial release
  *  Version 1.1.0 - Added restrictions for time that fan goes on to allow for future features along with logic fixes
@@ -10,6 +10,7 @@
  *  Version 2.0.1 - Allow ability to see child app version in parent app and moved the remove button
  *  Version 2.1.0 - Added icon on about page
  *  Version 2.1.1 - Removed label from parent app
+ *  Version 2.1.2 - Added icons to the main menu
  *
  * 
  *  Copyright 2016 Michael Struck - Uses code from Lighting Director by Tim Slagle & Michael Struck
@@ -48,7 +49,8 @@ def mainPage(){
         	app(name: "childScenarios", appName: "Smart Bathroom Ventilation-Scenario", namespace: "MichaelStruck", title: "Create New Scenario...", multiple: true)
 		}
 		section([title:"Options", mobileOnly:true]) {
-			href "pageAbout", title: "About ${textAppName()}", description: "Tap to get application version, license, instructions or to remove the application"
+			href "pageAbout", title: "About ${textAppName()}", description: "Tap to get application version, license, instructions or to remove the application",
+            	image: "https://raw.githubusercontent.com/MichaelStruck/SmartThings/master/img/info.png"
 		}
 	}
 }
@@ -94,7 +96,7 @@ private def textAppName() {
 }	
 
 private def textVersion() {
-    def version = "Parent App Version: 2.1.1 (03/20/2016)"
+    def version = "Parent App Version: 2.1.2 (03/23/2016)"
     def childCount = childApps.size()
     def childVersion = childCount ? childApps[0].textVersion() : "No scenarios installed"  
     return "${version}\n${childVersion}"
