@@ -1,4 +1,6 @@
-/**
+private hideOptionsSection() {
+	(starting || ending || days || modes) ? false : true
+}/**
  *  Copyright 2015 SmartThings
  *
  *  Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except
@@ -313,9 +315,7 @@ private hhmm(time, fmt = "h:mm a")
 	f.format(t)
 }
 
-private hideOptionsSection() {
-	(starting || ending || days || modes) ? false : true
-}
+
 
 private timeIntervalLabel() {
 	(starting && ending) ? hhmm(starting) + "-" + hhmm(ending, "h:mm a z") : ""
