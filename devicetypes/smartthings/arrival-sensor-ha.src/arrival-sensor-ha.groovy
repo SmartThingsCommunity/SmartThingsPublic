@@ -11,6 +11,17 @@
  *  for the specific language governing permissions and limitations under the License.
  *
  */
+ 
+ /*
+ *  Purpose: Arrival Sensor HA DTH File
+ *
+ *  Filename: Arrival-Sensor-HA.src/Arrival-Sensor-HA.groovy
+ *
+ *  Change History:
+ *  1. 20160115 TW - Update/Edit to support i18n translations
+ *  2. 20160121 TW - Update to V4 battery calcs, added pref's page title translations
+ */
+ 
 metadata {
     definition (name: "Arrival Sensor HA", namespace: "smartthings", author: "SmartThings") {
         capability "Tone"
@@ -32,7 +43,7 @@ metadata {
                 ])
         }
         section {
-            input "checkInterval", "enum", title: "Presence timeout (minutes)",
+            input "checkInterval", "enum", title: "Presence timeout (minutes)", description: "Tap to set",
                     defaultValue:"2", options: ["2", "3", "5"], displayDuringSetup: false
         }
     }
@@ -82,7 +93,6 @@ def parse(String description) {
 
 private handleReportAttributeMessage(String description) {
     def descMap = zigbee.parseDescriptionAsMap(description)
-
     if (descMap.clusterInt == 0x0001 && descMap.attrInt == 0x0020) {
         handleBatteryEvent(Integer.parseInt(descMap.value, 16))
     }
@@ -94,6 +104,7 @@ private handleReportAttributeMessage(String description) {
  * @param volts Battery voltage in .1V increments
  */
 private handleBatteryEvent(volts) {
+	def descriptionText
     if (volts == 0 || volts == 255) {
         log.debug "Ignoring invalid value for voltage (${volts/10}V)"
     }
@@ -107,15 +118,17 @@ private handleBatteryEvent(volts) {
             volts = minVolts
         else if (volts > maxVolts)
             volts = maxVolts
-        def pct = batteryMap[volts]
-        if (pct != null) {
+        def value = batteryMap[volts]
+        if (value != null) {
             def linkText = getLinkText(device)
+            descriptionText = '{{ linkText }} battery was {{ value }}'
             def eventMap = [
                 name: 'battery',
-                value: pct,
-                descriptionText: "${linkText} battery was ${pct}%"
+                value: value,
+                descriptionText: descriptionText,
+                translatable: true
             ]
-            log.debug "Creating battery event for voltage=${volts/10}V: ${eventMap}"
+            log.debug "Creating battery event for voltage=${volts/10}V: ${linkText} ${eventMap.name} is ${eventMap.value}%"
             sendEvent(eventMap)
         }
     }
@@ -131,13 +144,19 @@ private handlePresenceEvent(present) {
         stopTimer()
     }
     def linkText = getLinkText(device)
+    def descriptionText
+    if ( present )
+    	descriptionText = "{{ linkText }} has arrived"
+    else
+    	descriptionText = "{{ linkText }} has left"
     def eventMap = [
         name: "presence",
         value: present ? "present" : "not present",
         linkText: linkText,
-        descriptionText: "${linkText} has ${present ? 'arrived' : 'left'}",
+        descriptionText: descriptionText,
+        translatable: true
     ]
-    log.debug "Creating presence event: ${eventMap}"
+    log.debug "Creating presence event: ${device.displayName} ${eventMap.name} is ${eventMap.value}"
     sendEvent(eventMap)
 }
 
