@@ -1,7 +1,7 @@
 /**
  *  Cloud Interface
  *
- *  Version 1.3.0 - 3/19/16 Copyright © 2016 Michael Struck
+ *  Version 1.3.1 - 3/23/16 Copyright © 2016 Michael Struck
  *  
  *  Version 1.0.0 - Initial release
  *  Version 1.0.1 - Fixed code syntax
@@ -12,6 +12,7 @@
  *  Version 1.1.1 - GUI clean up
  *  Version 1.2.0 - Address URL accesses via API instead of hard coding it
  *  Version 1.3.0 - Added icon to app about page
+ *  Version 1.3.1 - Added icons to main menu, minor GUI tweaks
  *
  *  Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except
  *  in compliance with the License. You may obtain a copy of the License at:
@@ -43,13 +44,14 @@ preferences {
 def mainPage() {
     dynamicPage(name: "mainPage", title:"", install: true, uninstall: false) {
 		section("External control") {
-        	input "switches", "capability.switch", title: "Choose Switches", multiple: true, required: false, submitOnChange:true
+        	input "switches", "capability.switch", title: "Choose Switches", multiple: true, required: false, submitOnChange:true, image: "https://raw.githubusercontent.com/MichaelStruck/SmartThings/master/img/add.png"
 			if (switches){
             	if (!state.accessToken) {
 					OAuthToken()
 				}
                 if (state.accessToken != null){
-                    href url:"${getApiServerUrl()}/api/smartapps/installations/${app.id}/l?access_token=${state.accessToken}", style:"embedded", required:false, title:"Show URLs", description: none
+                    href url:"${getApiServerUrl()}/api/smartapps/installations/${app.id}/l?access_token=${state.accessToken}", style:"embedded", required:false, title:"Show URLs", description: none,
+                    	image: "https://raw.githubusercontent.com/MichaelStruck/SmartThings/master/img/url.png"
                 }
                 else {
                 	paragraph "URLs cannot be created. Access Token not defined. OAuth may not be enabled. Go to the SmartApp IDE settings to enable OAuth."
@@ -57,25 +59,26 @@ def mainPage() {
 			}
         }
         section([title:"Options", mobileOnly:true]) {
-			href "pageSettings", title: "Settings", description: none
-			href "pageAbout", title: "About ${textAppName()}", description: "Tap to get application version, license, instructions or remove the application"
+			href "pageSettings", title: "Settings", description: none, image: "https://raw.githubusercontent.com/MichaelStruck/SmartThings/master/img/settings.png"
+			href "pageAbout", title: "About ${textAppName()}", description: "Tap to get application version, license, instructions or remove the application",
+            	image: "https://raw.githubusercontent.com/MichaelStruck/SmartThings/master/img/info.png"
         }
 	}
 }
 def pageAbout(){
 	dynamicPage(name: "pageAbout", uninstall: true ) {
         section {
-        	paragraph "${textAppName()}\n${textCopyright()}",image: "https://raw.githubusercontent.com/MichaelStruck/SmartThings/master/Other-SmartApps/AlexaHelper/CloudInterface@2x.png"
+        	paragraph "${textAppName()}\n${textVersion()}\n${textCopyright()}",image: "https://raw.githubusercontent.com/MichaelStruck/SmartThings/master/Other-SmartApps/AlexaHelper/CloudInterface@2x.png"
         }
-        section ("SmartApp Version/Access Token"){
+        section ("Access Token"){
             if (!state.accessToken) {
 				OAuthToken()
 			}
             def msg = state.accessToken != null ? state.accessToken : "Could not create Access Token. OAuth may not be enabled. Go to the SmartApp IDE settings to enable OAuth."
-            paragraph "${textVersion()}\n\nAccess Token:\n${msg}"
+            paragraph "\nAccess Token:\n${msg}"
     	}
         section ("Apache License"){
-        	paragraph "${textLicense()}"
+        	paragraph textLicense()
         }
     	section("Instructions") {
         	paragraph textHelp()
@@ -129,7 +132,7 @@ def writeData() {
 	}
 }
 def listURLs() {
-	render contentType: "text/html", data: """<!DOCTYPE html><html><head><meta charset="UTF-8" /></head><body style="margin: 0;">${displayURLS()}</body></html>"""
+	render contentType: "text/html", data: """<!DOCTYPE html><html><head><meta charset="UTF-8" /><meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=0"/></head><body style="margin: 0;">${displayURLS()}</body></html>"""
 }
 //Common Code
 def OAuthToken(){
@@ -141,13 +144,13 @@ def OAuthToken(){
 	}
 }
 def displayURLS(){
-	def display = "<div style='padding:10px'>Copy the URLs of the switches you want to control.<br>Paste them to your control applications.</div><div style='padding:10px'>Click DONE to return to the Cloud Interface SmartApp.</div>"
+	def display = "<div style='padding:10px'>Copy the URLs of the switches you want to control.<br>Paste them to your control applications.</div><div style='padding:10px'>Click '<' above to return to the Cloud Interface SmartApp.</div>"
 	switches.each {
-    	display += "<div style='padding:10px'>${it.label} ON:</div>"
-		display += "<textarea rows='5' style='font-size:10px; width: 100%'>${getApiServerUrl()}/api/smartapps/installations/${app.id}/w?l=${it.label}&c=on&access_token=${state.accessToken}</textarea>"
+    	display += "<div style='padding:10px;'><b>${it.label} ON:</b></div>"
+		display += "<textarea rows='5' style='width: 99%'>${getApiServerUrl()}/api/smartapps/installations/${app.id}/w?l=${it.label}&c=on&access_token=${state.accessToken}</textarea>"
 		if (urlOnOff){
-        	display += "<div style='padding:10px'>${it.label} OFF:</div>"
-        	display += "<textarea rows='5' style='font-size:10px; width: 100%'>${getApiServerUrl()}/api/smartapps/installations/${app.id}/w?l=${it.label}&c=off&access_token=${state.accessToken}</textarea>"
+        	display += "<div style='padding:10px'><b>${it.label} OFF:</b></div>"
+        	display += "<textarea rows='5' style='width: 99%'>${getApiServerUrl()}/api/smartapps/installations/${app.id}/w?l=${it.label}&c=off&access_token=${state.accessToken}</textarea>"
 		}
 		display += "<hr>"
     }
@@ -158,7 +161,7 @@ private def textAppName() {
 	def text = "Cloud Interface"
 }	
 private def textVersion() {
-    def text = "Version 1.3.0 (03/19/2016)"
+    def text = "Version 1.3.1 (03/23/2016)"
 }
 private def textCopyright() {
     def text = "Copyright © 2016 Michael Struck"
