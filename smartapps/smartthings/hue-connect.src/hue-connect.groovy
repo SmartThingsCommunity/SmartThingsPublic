@@ -657,39 +657,53 @@ def setColorTemperature(childDevice, huesettings) {
 }
 
 def setColor(childDevice, huesettings) {
-	log.debug "Executing 'setColor($huesettings)'"
+    log.debug "Executing 'setColor($huesettings)'"
+    
+    def value = [:]
     def hue = null
     def sat = null
     def xy = null
-    if (huesettings.hex) {
-    	xy = getHextoXY(huesettings.hex)
-    } else if (huesettings.hue && huesettings.saturation) {
-		hue = Math.min(Math.round(huesettings.hue * 65535 / 100), 65535)
-		sat = Math.min(Math.round(huesettings.saturation * 255 / 100), 255)
+    
+    if (huesettings.hex != null) {
+        value.xy = getHextoXY(huesettings.hex)
+    } else {
+        if (huesettings.hue != null)
+            value.hue = Math.min(Math.round(huesettings.hue * 65535 / 100), 65535)
+        if (huesettings.saturation != null)   
+            value.sat = Math.min(Math.round(huesettings.saturation * 255 / 100), 255)
     }
-    def alert = huesettings.alert ? huesettings.alert : "none"
-    def transition = huesettings.transition ? huesettings.transition : 4
+    
+    // Default behavior is to turn light on 
+    value.on = true
 
-	def value = [xy: xy, sat: sat, hue: hue, alert: alert, transitiontime: transition, on: true]
+    if (huesettings.level != null) {
+        if (huesettings.level <= 0)
+            value.on = false
+        else if (huesettings.level == 1)
+            value.bri = 1
+        else 
+            value.bri = Math.min(Math.round(huesettings.level * 255 / 100), 255)
+    }
+    value.alert = huesettings.alert ? huesettings.alert : "none"
+    value.transition = huesettings.transition ? huesettings.transition : 4
 
-	if (huesettings.level != null) {
-        if (huesettings.level == 1) value.bri = 1 else value.bri = Math.min(Math.round(huesettings.level * 255 / 100), 255)
-		value.on = value.bri > 0
-	}
+    // Make sure to turn off light if requested
+    if (huesettings.switch == "off")
+        value.on = false
 
-	log.debug "sending command $value"
-	put("lights/${getId(childDevice)}/state", value)
+    log.debug "sending command $value"
+    put("lights/${getId(childDevice)}/state", value)
+    return "Color set to $value"
 }
 
 def nextLevel(childDevice) {
-	def level = device.latestValue("level") as Integer ?: 0
-	if (level < 100) {
-		level = Math.min(25 * (Math.round(level / 25) + 1), 100) as Integer
-	}
-	else {
-		level = 25
-	}
-	setLevel(childDevice,level)
+    def level = device.latestValue("level") as Integer ?: 0
+    if (level < 100) {
+        level = Math.min(25 * (Math.round(level / 25) + 1), 100) as Integer
+    } else {
+        level = 25
+    }
+    setLevel(childDevice,level)
 }
 
 private getId(childDevice) {
@@ -788,16 +802,14 @@ private getHextoXY(String colorStr) {
 
     // Make green more vivid
     if (normalizedToOne[1] > 0.04045) {
-        green = (float) Math.pow((normalizedToOne[1] + 0.055)
-                / (1.0 + 0.055), 2.4);
+        green = (float) Math.pow((normalizedToOne[1] + 0.055) / (1.0 + 0.055), 2.4);
     } else {
         green = (float) (normalizedToOne[1] / 12.92);
     }
 
     // Make blue more vivid
     if (normalizedToOne[2] > 0.04045) {
-        blue = (float) Math.pow((normalizedToOne[2] + 0.055)
-                / (1.0 + 0.055), 2.4);
+        blue = (float) Math.pow((normalizedToOne[2] + 0.055) / (1.0 + 0.055), 2.4);
     } else {
         blue = (float) (normalizedToOne[2] / 12.92);
     }
@@ -806,8 +818,8 @@ private getHextoXY(String colorStr) {
     float Y = (float) (red * 0.234327 + green * 0.743075 + blue * 0.022598);
     float Z = (float) (red * 0.0000000 + green * 0.053077 + blue * 1.035763);
 
-    float x = X / (X + Y + Z);
-    float y = Y / (X + Y + Z);
+    float x = (X != 0 ? X / (X + Y + Z) : 0);
+    float y = (Y != 0 ? Y / (X + Y + Z) : 0);
 
     double[] xy = new double[2];
     xy[0] = x;
