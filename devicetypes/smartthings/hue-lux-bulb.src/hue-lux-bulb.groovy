@@ -79,8 +79,12 @@ void off() {
 
 void setLevel(percent) {
 	log.debug "Executing 'setLevel'"
-	parent.setLevel(this, percent)
-	sendEvent(name: "level", value: percent)
+    if (percent != null && percent >= 0 && percent <= 100) {
+		parent.setLevel(this, percent)
+		sendEvent(name: "level", value: percent)
+	} else {
+    	log.warn "$percent is not 0-100"
+    }
 }
 
 void refresh() {
