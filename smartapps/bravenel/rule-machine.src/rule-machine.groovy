@@ -1,12 +1,13 @@
 /**
  *  Rule Machine
  *
- *  Copyright 2015, 2016 Bruce Ravenel and Mike Maxwell
+ *  Copyright 2015, 2016 Bruce Ravenel
  *
- *  Version 1.8.2e   22 Mar 2016
+ *  Version 1.9.0   24 Mar 2016
  *
  *	Version History
  *
+ *	1.9.0	24 Mar 2016		Updates for Rule, small bug fixes
  *	1.8.2	9 Mar 2016		Changed startup page for installation
  *	1.8.1	3 Mar 2016		Changed method of getting Rule version
  *	1.8.0	2 Mar 2016		Clean up, added Door control
@@ -77,7 +78,7 @@ def mainPage() {
         	section ("Remove Rule Machine"){
         		href "removePage", description: "Tap to remove Rule Machine and Rules", title: ""
         	}
-			section ("Version 1.8.2e/" + (nApps > 0 ? "${childApps[0].appVersion()}" : "---")) { }
+			section ("Version 1.9.0/" + (nApps > 0 ? "${childApps[0].appVersion()}" : "---")) { }
     	}
     }
 }

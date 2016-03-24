@@ -3,10 +3,11 @@
  *
  *  Copyright 2015, 2016 Bruce Ravenel
  *
- *  Version 1.8.6a   21 Mar 2016
+ *  Version 1.9.0   24 Mar 2016
  *
  *	Version History
  *
+ *	1.9.0	24 Mar 2016		Added periodic trigger, disable logging, bug fixes re ZWN buttons
  *	1.8.6	19 Mar 2016		Bug fixes re private Boolean as trigger event
  *	1.8.5	13 Mar 2016		Added support for single button device, more private Boolean options, emergency heat
  *	1.8.4	11 Mar 2016		Strengthened code pertaining to evaluation of malformed rules
@@ -86,6 +87,7 @@ preferences {
 	page(name: "certainTime")
 	page(name: "certainTimeX")
 	page(name: "atCertainTime")
+	page(name: "periodic")
 	page(name: "selectActionsTrue")
 	page(name: "selectActionsFalse")
 	page(name: "delayTruePage")
@@ -110,7 +112,7 @@ preferences {
 //
 
 def appVersion() {
-	return "1.8.6a" 
+	return "1.9.0" 
 }
 
 def mainPage() {
@@ -122,6 +124,7 @@ def mainPage() {
 	}
 	catch (e) {log.error "Please update Rule Machine to V1.6 or later"}
 	if(state.private == null) state.private = "true"
+    if(state.logging == null) state.logging = true
 	def myTitle = "Define a Rule, Trigger or Actions\n"
 	if(state.howManyT > 1 || state.isTrig) myTitle = "Define a Trigger"
 	else if(state.howMany > 1) myTitle = "Define a Rule"
@@ -247,10 +250,11 @@ def getMoreOptions() {
 		input "daysY", "enum", title: "Only on certain days of the week", multiple: true, required: false,
 			options: ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"]
 		input "modesY", "mode", title: "Only when mode is", multiple: true, required: false            
-		input "disabled", "capability.switch", title: "Switch to disable Rule", required: false, multiple: false, submitOnChange: true
+		input "disabled", "capability.switch", title: "Switch to disable Rule", required: false, multiple: false
         if(disabled) input "disabledOff", "bool", title: "Disable when Off? On is default", required: false, defaultValue: false
         def privy = state.private
-        input "usePrivateDisable", "bool", title: "Enable/Disable with private Boolean? [$privy]", required: false, submitOnChange: true
+        input "usePrivateDisable", "bool", title: "Enable/Disable with private Boolean? [$privy]", required: false
+        input "enableLogging", "bool", title: "Enable/Disable Logging", required: false, defaultValue: true
 	}    
 }
 
@@ -291,7 +295,7 @@ def selectTrigCond(isTrig) {
 	def howMany = ct.size() + 1
 	if(isTrig) state.howManyT = howMany 
 	else state.howMany = howMany
-	def excludes = (state.isTrig || isTrig) ? ["Certain Time", "Mode", "Routine", "Button", "Smart Home Monitor", "Private Boolean"] : ["Time of day", "Days of week", "Mode", "Smart Home Monitor", "Private Boolean"]
+	def excludes = (state.isTrig || isTrig) ? ["Certain Time", "Periodic", "Mode", "Routine", "Button", "Smart Home Monitor", "Private Boolean"] : ["Time of day", "Days of week", "Mode", "Smart Home Monitor", "Private Boolean"]
 	def pageName = isTrig ? "selectTriggers" : "selectConditions"
 	dynamicPage(name: pageName, title: (state.isTrig || isTrig) ? "Select Trigger Events (ANY will trigger)" : "Select Conditions", uninstall: false) {
 		for (int i = 1; i <= howMany; i++) {
@@ -320,7 +324,7 @@ def getCapab(myCapab, isTrig, isReq) {
 	if(state.isRule || !isTrig) myOptions = ["Acceleration", "Battery", "Carbon monoxide detector", "Contact", "Days of week", "Dimmer level", "Energy meter", "Garage door", "Humidity", "Illuminance", "Lock", 
     	"Mode", "Motion", "Power meter", "Presence", "Rule truth", "Smart Home Monitor", "Smoke detector", "Switch", "Temperature", "Private Boolean", "Door", 
         "Thermostat Mode", "Thermostat State", "Time of day", "Water sensor", "Music player"]
-	if(state.isTrig || isTrig) myOptions = ["Acceleration", "Battery", "Button", "Carbon monoxide detector", "Certain Time", "Contact", "Dimmer level", "Energy meter", "Garage door", "Humidity", "Illuminance", 
+	if(state.isTrig || isTrig) myOptions = ["Acceleration", "Battery", "Button", "Carbon monoxide detector", "Certain Time", "Periodic", "Contact", "Dimmer level", "Energy meter", "Garage door", "Humidity", "Illuminance", 
     	"Lock", "Mode", "Motion", "Physical Switch", "Power meter", "Presence", "Routine", "Rule truth", "Smart Home Monitor", "Smoke detector", "Switch", "Temperature", "Door",
         "Thermostat Mode", "Thermostat State", "Water sensor", "Private Boolean", "Music player"]
 	def result = input myCapab, "enum", title: "Select capability", required: isReq, options: myOptions.sort(), submitOnChange: true
@@ -514,6 +518,9 @@ def getState(myCapab, n, isTrig) {
 	} else if(myCapab == "Certain Time") {
 		def atTimeLabel = atTimeLabel()
 		href "atCertainTime", title: "At a certain time", description: atTimeLabel ?: "Tap to set", state: atTimeLabel ? "complete" : null
+	} else if(myCapab == "Periodic") {
+		def periodLabel = periodicLabel()
+		href "periodic", title: "Periodic schedule", description: periodLabel ?: "Tap to set", state: periodLabel ? "complete" : null
 	} else if(myCapab == "Routine") {
 		def phrases = location.helloHome?.getPhrases()*.label
         result = input myState, "enum", title: "When this routine runs", multiple: false, required: false, options: phrases
@@ -555,6 +562,176 @@ def atCertainTime() {
 	}
 }
 
+def periodic() {
+	dynamicPage(name: "periodic", title: "Periodic schedule", uninstall: false) {
+		section() {
+        	input "whichPeriod", "enum", title: "Select periodic frequency", submitOnChange: true, required: true, options: ["Minutes", "Hourly", "Daily", "Weekly", "Monthly"]
+            switch(whichPeriod) {
+                case "Minutes": 
+                	if(!selectMinutesC) input "everyNMinutesC", "bool", title: " > Every n minutes?", submitOnChange: true, required: false
+                	if(everyNMinutesC) input "everyNC", "number", title: " > number of minutes", range: "1..59", submitOnChange: true, required: false, defaultValue: 1
+                	if(!everyNMinutesC) input "selectMinutesC", "enum", title: " > Each selected minute", submitOnChange: true, required: false, multiple: true,
+                		options: [	 "0",  "1",  "2",  "3",  "4",  "5",  "6",  "7",  "8",  "9",
+                    				"10", "11", "12", "13", "14", "15", "16", "17", "18", "19",
+                    				"20", "21", "22", "23", "24", "25", "26", "27", "28", "29",
+                    				"30", "31", "32", "33", "34", "35", "36", "37", "38", "39",
+                    				"40", "41", "42", "43", "44", "45", "46", "47", "48", "49",
+                    				"50", "51", "52", "53", "54", "55", "56", "57", "58", "59"]
+            		break
+                case "Hourly": 
+                	if(!selectHoursC) input "everyNHoursC", "bool", title: " > Every n hours?", submitOnChange: true, required: false
+                	if(everyNHoursC) {
+                		input "everyNHC", "number", title: " > number of hours", range: "1..23", submitOnChange: true, required: false, defaultValue: 1
+//                    	input "startingHC", "time", title: " > Starting at", submitOnChange: true, required: false, defaultValue: "2016-03-23T12:00:00.000" + gmtOffset()
+                	}
+                	if(!everyNHoursC) {
+                    	input "selectHoursC", "enum", title: " > Each selected hour", submitOnChange: true, required: false, multiple: true,
+                			options: [	 "0",  "1",  "2",  "3",  "4",  "5",  "6",  "7",  "8",  "9",
+                    					"10", "11", "12", "13", "14", "15", "16", "17", "18", "19",
+                    					"20", "21", "22", "23"]
+                        input "startingHCX", "number", title: " > Starting minutes after the hour", submitOnChange: true, required: false, range: "0..59", defaultValue: 0
+                    }
+            		break
+                case "Daily":
+            		if(!selectDoMC && !everyWeekDay) input "everyNDoMC", "bool", title: " > Every n days?", submitOnChange: true, required: false
+                	if(everyNDoMC) input "everyNDC", "number", title: " > number of days", range: "1..31", submitOnChange: true, required: false, defaultValue: 1
+                	if(!selectDoMC && !everyNDoMC) input "everyWeekDay", "bool", title: " > Every weekday?", submitOnChange: true, required: false
+                	if(!everyNDoMC && !everyWeekDay) input "selectDoMC", "enum", title: " > Each selected day of the month", submitOnChange: true, required: false, multiple: true,
+                		options: [	       "1",  "2",  "3",  "4",  "5",  "6",  "7",  "8",  "9",
+                    				"10", "11", "12", "13", "14", "15", "16", "17", "18", "19",
+                    				"20", "21", "22", "23", "24", "25", "26", "27", "28", "29",
+                    				"30", "31"]
+                	input "startingDC", "time", title: " > At time", submitOnChange: true, required: false, defaultValue: "2016-03-23T12:00:00.000" + gmtOffset()
+            		break
+                case "Weekly":
+                	if(!everyDoWC) input "selectDoWC", "enum", title: " > Each selected day of the week", submitOnChange: true, required: false, multiple: true,
+                		options: ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"]
+                	input "startingWC", "time", title: " > Starting at", submitOnChange: true, required: false, defaultValue: "2016-03-23T12:00:00.000" + gmtOffset()
+                    break
+                case "Monthly":
+                	if(!weeklyMC) input "dayMC", "number", title: " > On day number", range: "1..31", submitOnChange: true, required: false
+                	if(!selectMonthC && !weeklyMC) input "everyNMC", "number", title: " > Of every n months", range: "1..12", submitOnChange: true, required: false
+                	if(!everyNMC && !weeklyMC) input "selectMonthC", "enum", title: " > Of each selected month", submitOnChange: true, required: false, multiple: true,
+                		options: ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"]
+                    if(!selectMonthC && !everyNMC) {
+                    	input "weeklyMC", "enum", title: " > In the week of month ...", submitOnChange: true, required: false, options: ["First", "Second", "Third", "Fourth"]
+                        if(weeklyMC) {
+                        	input "dailyMC", "enum", title: " > On day of week ...", submitOnChange: true, required: false, options: ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"]
+                        	input "everyNMCX", "number", title: " > Of every n months", range: "1..12", submitOnChange: true, required: false, defaultValue: 1
+                        }
+                    }
+                	input "startingMC", "time", title: " > Starting at", submitOnChange: true, required: false, defaultValue: "2016-03-23T12:00:00.000" + gmtOffset()
+                    break
+            }
+		}
+	}
+}
+
+def periodicLabel() {
+	def result
+    switch(whichPeriod) {
+		case "Minutes": 
+        	if(everyNMinutesC) result = "Every $everyNC minute" + (everyNC > 1 ? "s" : "")
+            if(selectMinutesC) {
+            	def str = "$selectMinutesC"[1..-2]
+            	result = "Each of these minutes\n   $str"
+            }
+        	break
+		case "Hourly": 
+        	if(everyNHoursC) result = "Every $everyNHC hour" + (everyNHC > 1 ? "s" : "")// + " starting at ${hhmm(startingHC)}"
+            if(selectHoursC) {
+            	def str = "$selectHoursC"[1..-2]
+                def str2 = ""
+                for(int i = 0; i < str.size(); i++) {
+                	if(str[i] == ",") str2 = str2 + ":00"
+                    str2 = str2 + str[i]
+                }
+            	result = "Each of these hours\n   $str2:00\n   At $startingHCX minutes after the hour"
+            }
+        	break
+		case "Daily":
+        	if(everyNDoMC) result = "Every " + (everyNDC == 1 ? "" : "$everyNDC ") + "day" + (everyNDC > 1 ? "s" : "") + " at ${hhmm(startingDC)}"
+            if(everyWeekDay) result = "Every weekday at ${hhmm(startingDC)}"
+            if(selectDoMC) {
+            	def str = "$selectDoMC"[1..-2]
+            	result = "Each of these days of the month\n   $str: At ${hhmm(startingDC)}"
+            }
+        	break
+        case "Weekly":
+        	if(selectDoWC) {
+            	def str = "$selectDoWC"[1..-2]
+                result = "Each of these days of the week\n   $str: At ${hhmm(startingWC)}"
+            }
+        	break
+        case "Monthly":  
+        	if(everyNMC) result = "On day $dayMC of every $everyNMC month" + (everyNMC > 1 ? "s" : "") + " At ${hhmm(startingMC)}"
+            if(selectMonthC) {
+            	def str = "$selectMonthC"[1..-2]
+                result = "On day $dayMC of each of these months\n   $str: At ${hhmm(startingMC)}"
+            }
+            if(weeklyMC) result = "On the $weeklyMC $dailyMC of every " + (everyNMCX > 1 ? "$everyNMCX month" : "month") + (everyNMCX > 1 ? "s" : "") + " at ${hhmm(startingMC)}"
+        	break
+	}
+    return result
+}
+
+def cronString() {
+	def dayOrd = ["Sunday" : "SUN", "Monday" : "MON", "Tuesday" : "TUE", "Wednesday" : "WED", "Thursday" : "THU", "Friday" : "FRI", "Saturday" : "SAT"]
+    def monthOrd = ["January" : 1, "February" : 2, "March" : 3, "April" : 4, "May" : 5, "June" : 6, "July" : 7, "August" : 8, "September" : 9, "October" : 10, "November" : 11, "December" : 12]
+    def weekOrd = ["First" : 1, "Second" : 2, "Third" : 3, "Fourth" : 4]
+	def result
+    switch(whichPeriod) {
+		case "Minutes": 
+        	if(everyNMinutesC) result = "11 */$everyNC * * * ?"
+            if(selectMinutesC) {
+            	def str = stripBrackSpace("$selectMinutesC")
+            	result = "11 $str * * * ?"
+            }
+        	break
+		case "Hourly": 
+			if(everyNHoursC) result = "11 0 */$everyNHC * * ?"
+			if(selectHoursC) {
+				def str = stripBrackSpace("$selectHoursC") as String
+				result = "11 $startingHCX $str 1/1 * ?"
+			}
+			break
+		case "Daily":
+        	def hrmn = hhmm(startingDC, "HH:mm")
+            def hr = hrmn[0..1] 
+            def mn = hrmn[3..4]
+        	if(everyNDoMC) result = "11 $mn $hr */$everyNDC * ?"
+            if(everyWeekDay) result = "11 $mn $hr ? * 1,2,3,4,5"
+            if(selectDoMC) {
+            	def str = stripBrackSpace("$selectDoMC")
+            	result = "11 $mn $hr $str * ?"
+            }
+        	break
+        case "Weekly":
+        	def hrmn = hhmm(startingWC, "HH:mm")
+            def hr = hrmn[0..1]
+            def mn = hrmn[3..4]
+        	if(selectDoWC) {
+            	def str = ""
+                selectDoWC.each {str = str + (str ? "," : "") + "${dayOrd["$it"]}"}
+                result = "11 $mn $hr ? * $str"
+            }
+        	break
+        case "Monthly":  
+        	def hrmn = hhmm(startingMC, "HH:mm")
+            def hr = hrmn[0..1]
+            def mn = hrmn[3..4]
+        	if(everyNMC) result = "11 $mn $hr $dayMC */$everyNMC ?"
+            if(selectMonthC) {
+            	def str = ""
+                selectMonthC.each {str = str + (str ? "," : "") + "${monthOrd["$it"]}"}
+                result = "11 $mn $hr $dayMC $str ?"
+            }
+            if(weeklyMC) result = "11 $mn $hr ? */$everyNMCX ${dayOrd[dailyMC]}#${weekOrd["$weeklyMC"]}"
+        	break
+	}
+    return result + " *"
+}
+
 def triggerLabel() {
 	def howMany = state.howManyT
 	def result = ""
@@ -594,6 +771,7 @@ def conditionLabelN(i, isTrig) {
 	def thisCapab = settings.find {it.key == (isTrig ? "tCapab$i" : "rCapab$i")}
 	if(thisCapab.value == "Time of day") result = "Time between " + timeIntervalLabelX()
 	else if(thisCapab.value == "Certain Time")  result = "When time is " + atTimeLabel()
+    else if(thisCapab.value == "Periodic") result = periodicLabel()
 	else if(thisCapab.value == "Smart Home Monitor") {
     		def thisState = (settings.find {it.key == (isTrig ? "tstate$i" : "state$i")}).value
     		result = "SHM state $SHMphrase " + (thisState in ["away", "stay"] ? "Arm ($thisState)" : "Disarm")
@@ -1370,6 +1548,7 @@ def gmtOffset() {
 }
 
 def initialize() {
+	state.logging = !(enableLogging == false)
 	def hasTrig = state.howManyT > 1
 	def howMany = hasTrig ? state.howManyT : state.howMany
 	for (int i = 1; i < howMany; i++) {
@@ -1393,6 +1572,9 @@ def initialize() {
 				break
 			case "Certain Time":
 				scheduleAtTime()
+				break
+			case "Periodic":
+				schedule(cronString(), "cronHandler")
 				break
 			case "Dimmer level":
 				subscribe(myDev.value, "level", allHandler)
@@ -1726,6 +1908,7 @@ def doDelay(time, rand, cancel, trufal) {
 		runIn(myTime, trufal ? delayRuleTrue : delayRuleFalse)
 		if(trufal) state.delayRuleTrue = true else state.delayRuleFalse = true
 	} else runIn(myTime, trufal ? delayRuleTrueForce : delayRuleFalseForce)
+    if(state.logging == false) return
 	def isMins = myTime % 60 == 0
 	if(isMins) myTime = myTime / 60
 	def delayStr = isMins ? "minute" : "seconds"
@@ -1911,7 +2094,7 @@ def runRule(force) {
 		else takeAction(success)
 		parent.setRuleTruth(app.label, success)
 		state.success = success
-		log.info (success ? "$app.label is now True" : "$app.label is now False")
+		if(state.logging != false) log.info (success ? "$app.label is now True" : "$app.label is now False")
 	} // else log.info "$app.label evaluated " + (success ? "true" : "false")
 }
 
@@ -1920,7 +2103,7 @@ def doTrigger() {
 	if     (delayMinTrue > 0)	doDelay(delayMinTrue * 60, randomTrue, true, true)
 	else if(delaySecTrue > 0)	doDelay(delaySecTrue, false, true, true)	 
 	else takeAction(true)
-	log.info ("$app.label Triggered")
+	if(state.logging != false) log.info ("$app.label Triggered")
 }
 
 // Event Handler code follows
@@ -1928,35 +2111,18 @@ def doTrigger() {
 def getButton(dev, evt, i) {
 	def numNames = ["", "one", "two", "three", "four", "five", "six", "seven", "eight", "nine", "ten",
     	"eleven", "twelve", "thirteen", "fourteen", "fifteen", "sixteen", "seventeen", "eighteen", "nineteen", "twenty"]
-	def numButtons = settings.find{it.key == (state.isTrig ? "numButtonsrDev$i" : "numButtonstDev$i")}
-	numButtons = numButtons ? numButtons.value : 4
-    def buttonNumber
-	if(numButtons > 1) buttonNumber = evt.jsonData.buttonNumber.toInteger() 
-    else buttonNumber = 1
-//    log.debug "getButton: $buttonNumber"
-	def value = evt.value
-//	log.debug "buttonEvent: $evt.name = $evt.value ($evt.data)"
-//	log.debug "button: $buttonNumber, value: $value"
-//	log.debug "button json: $evt.jsonData.buttonNumber"
+	def buttonNumber = evt.jsonData.buttonNumber.toInteger() 
+    def value = evt.value
 	def recentEvents = dev.eventsSince(new Date(now() - 3000)).findAll{it.value == evt.value && it.data == evt.data}
-//	log.debug "Found ${recentEvents.size()?:0} events in past second"
 	def thisButton = 0
 	def firstEventId = 0
-	if (recentEvents.size() != 0) {
-		firstEventId = recentEvents[0].id
-	} 
-	if(firstEventId == evt.id){
-		thisButton = numNames[buttonNumber]
-//	} else {
-//		log.debug "Found recent button press events for $buttonNumber with value $value"
-	}
+	if (recentEvents.size() != 0) firstEventId = recentEvents[0].id
+	if(firstEventId == evt.id) thisButton = numNames[buttonNumber]
 	def myState = settings.find {it.key == (state.isTrig ? "state$i" : "tstate$i")}
-    def myButton = "one"
-	if(numButtons > 1) myButton = (settings.find {it.key == (state.isTrig ? "ButtonrDev$i" : "ButtontDev$i")}).value
-	def result = true
-	if(value in ["pushed", "held"]) result = (value == myState.value) && (thisButton == myButton)
-	else if(value.startsWith("button")) result = thisButton == myButton.value // ZWN-SC7
-    return result
+	def myButton = settings.find {it.key == (state.isTrig ? "ButtonrDev$i" : "ButtontDev$i")}
+    def result = true
+    if(value in ["pushed", "held"]) result = (value == myState.value) && (thisButton == myButton.value)
+    else if(value.startsWith("button")) result = thisButton == myButton.value // ZWN-SC7
 }
 
 def testEvt(evt) {
@@ -1988,7 +2154,7 @@ def testEvt(evt) {
 
 def allHandler(evt) {
 	if(!allOk) return
-	log.info "$app.label: $evt.displayName $evt.name $evt.value"
+	if(state.logging != false) log.info "$app.label: $evt.displayName $evt.name $evt.value"
 	state.lastEvtName = evt.displayName
 	if(evt.name == "level") state.lastEvtLevel = evt.value.toInteger()
 	def hasTrig = state.howManyT > 1
@@ -2018,6 +2184,11 @@ def dayHandler() {
 }
 
 def timeHandler() {
+	if(state.howMany > 1 && !state.isTrig) runRule(true)
+	else if(state.isTrig || state.howManyT > 1) doTrigger()
+}
+
+def cronHandler() {
 	if(state.howMany > 1 && !state.isTrig) runRule(true)
 	else if(state.isTrig || state.howManyT > 1) doTrigger()
 }
@@ -2109,18 +2280,18 @@ def disabledHandler(evt) {
 // Rule evaluation and action handlers follow
 
 def ruleHandler(rule, truth) {
-	log.info "$app.label: $rule is $truth"
+	if(state.logging != false) log.info "$app.label: $rule is $truth"
 	if(state.isRule || state.howMany > 1) runRule(false) else doTrigger()
 }
 
 def ruleEvaluator(rule) {
-	log.info "$app.label: $rule evaluate"
+	if(state.logging != false) log.info "$app.label: $rule evaluate"
 	runRule(true)
 }
 
 def ruleActions(rule) {
 	if(!allOk) return
-	log.info "$app.label: $rule evaluate"
+	if(state.logging != false) log.info "$app.label: $rule evaluate"
 	if     (delayMinTrue > 0)	doDelay(delayMinTrue * 60, randomTrue, true, true)
 	else if(delaySecTrue > 0)	doDelay(delaySecTrue, false, true, true)	 
 	else takeAction(true)
@@ -2131,7 +2302,7 @@ def revealSuccess() {
 }
 
 def setBoolean(truth, appLabel) {
-	log.info "$app.label: Set Boolean from $appLabel: $truth"
+	if(state.logging != false) log.info "$app.label: Set Boolean from $appLabel: $truth"
 	state.private = truth // == "true"
 	if(state.isRule || (state.howMany > 1 && state.howManyT <= 1)) runRule(false) 
     else for(int i = 1; i < state.howManyT; i++) {
@@ -2150,6 +2321,18 @@ private atTimeLabel() {
 	if     (timeX == "Sunrise") result = "Sunrise" + offset(atSunriseOffset)
 	else if(timeX == "Sunset")  result = "Sunset" + offset(atSunsetOffset)
 	else if(atTime) result = hhmm(atTime)
+}
+
+private stripBrackSpace(str) {
+	def result = ""
+    def myStr = ""
+	def i = str.indexOf('[')
+	def j = str.indexOf(']')
+	if(i >= 0 && j > i) myStr = str.substring(0, i) + str.substring(i + 1, j) + str.substring(j + 1)
+    for(i = 0; i < myStr.size(); i++) {
+    	if(myStr[i] != " ") result = result + myStr[i]
+    }
+	return result
 }
 
 private hhmm(time, fmt = "h:mm a") {
