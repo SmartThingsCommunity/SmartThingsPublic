@@ -29,14 +29,37 @@ definition(
     iconX2Url: "https://s3.amazonaws.com/myhouseapp/st/my-house-src-st@2x.png",
     iconX3Url: "https://s3.amazonaws.com/myhouseapp/st/my-house-src-st@3x.png")
 
-def LEAVINGPHRASETITLE = "I'm leaving..."
-def WATCHINGMOVIEPHRASETITLE = "I'm watching a movie..."
-def FINISHEDWATCHINGMOVIEPHRASETITLE = "I'm finished watching a movie..."
-def HAVINGPARTYPHRASETITLE = "I'm having a party..."
-def BACKPHRASETITLE = "I'm back..."
-def CLEANINGPHRASETITLE = "I'm cleaning..."
-def SLEEPPHRASETITLE = "I'm going to sleep..."
-def AWAKEPHRASETITLE = "I'm awake..."
+def getLeavingPhraseTitle() {
+  return "I'm leaving..."
+}
+
+def getWatchingMoviePhraseTitle() {
+  return "I'm watching a movie..."
+}
+
+def getFinishedWatchingMoviePhraseTitle() {
+  return "I'm finished watching a movie..."
+}
+
+def getHavingPartyPhraseTitle() {
+  return "I'm having a party..."
+}
+
+def getBackPhraseTitle() {
+  return "I'm back..."
+}
+
+def getCleaningPhraseTitle() {
+  return "I'm cleaning..."
+}
+
+def getSleepPhraseTitle() {
+  return "I'm going to sleep..."
+}
+
+def getAwakePhraseTitle() {
+  return "I'm awake..."
+}
 
 // displays the preferences
 preferences(oauthPage: "deviceAuthorization") {
@@ -401,49 +424,49 @@ def executePhrase() {
     	case "leaving":
         	delay = leavingPhraseDelay
             routineName = leavingPhraseRoutine
-            phraseTitle = LEAVINGPHRASETITLE
+            phraseTitle = getLeavingPhraseTitle()
             phraseHandler = "runScheduledLeavingPhraseHandler"
         	break
         case "watchingMovie":
         	delay = watchingMoviePhraseDelay
             routineName = watchingMoviePhraseRoutine
-            phraseTitle = WATCHINGMOVIEPHRASETITLE
+            phraseTitle = getWatchingMoviePhraseTitle()
             phraseHandler = "runScheduledWatchingMoviePhraseHandler"
         	break
         case "finishedWatchingMovie":
         	delay = finishedWatchingMoviePhraseDelay
             routineName = finishedWatchingMoviePhraseRoutine
-            phraseTitle = FINISHEDWATCHINGMOVIEPHRASETITLE
+            phraseTitle = getFinishedWatchingMoviePhraseTitle()
             phraseHandler = "runScheduledFinishedWatchingMoviePhraseHandler"
         	break
         case "havingParty":
         	delay = havingPartyPhraseDelay
             routineName = havingPartyPhraseRoutine
-            phraseTitle = HAVINGPARTYPHRASETITLE
+            phraseTitle = getHavingPartyPhraseTitle()
             phraseHandler = "runScheduledHavingPartyPhraseHandler"
             break
         case "back":
         	delay = backPhraseDelay
             routineName = backPhraseRoutine
-            phraseTitle = BACKPHRASETITLE
+            phraseTitle = getBackPhraseTitle()
           	phraseHandler = "runScheduledBackPhraseHandler"
             break
         case "cleaning":
         	delay = cleaningPhraseDelay
             routineName = cleaningPhraseRoutine
-            phraseTitle = CLEANINGPHRASETITLE
+            phraseTitle = getCleaningPhraseTitle()
             phraseHandler = "runScheduledCleaningPhraseHandler"
             break
         case "sleep":
         	delay = sleepPhraseDelay
             routineName = sleepPhraseRoutine
-            phraseTitle = SLEEPPHRASETITLE
+            phraseTitle = getSleepPhraseTitle()
             phraseHandler = "runScheduledSleepPhraseHandler"
             break
         case "awake":
         	delay = awakePhraseDelay
             routineName = awakePhraseRoutine
-            phraseTitle = AWAKEPHRASETITLE
+            phraseTitle = getAwakePhraseTitle()
             phraseHandler = "runScheduledAwakePhraseHandler"
             break
         default:
