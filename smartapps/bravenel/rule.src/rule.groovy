@@ -3,7 +3,7 @@
  *
  *  Copyright 2015, 2016 Bruce Ravenel
  *
- *  Version 1.9.0c   24 Mar 2016
+ *  Version 1.9.0d   24 Mar 2016
  *
  *	Version History
  *
@@ -112,7 +112,7 @@ preferences {
 //
 
 def appVersion() {
-	return "1.9.0c" 
+	return "1.9.0d" 
 }
 
 def mainPage() {
@@ -689,10 +689,7 @@ def cronString() {
             }
         	break
 		case "Hourly": 
-        	def hrmn = hhmm(startingHC, "HH:mm")
-            def hr = hrmn[0..1] 
-            def mn = hrmn[3..4]
-			if(everyNHoursC) result = "11 $mn $hr/$everyNHC * * ?"
+			if(everyNHoursC) result = "11 0 */$everyNHC * * ?"
 			if(selectHoursC) {
 				def str = stripBrackSpace("$selectHoursC") as String
 				result = "11 $startingHCX $str 1/1 * ?"
@@ -1550,6 +1547,10 @@ def gmtOffset() {
 	def result = String.format("%s%02d%02d", offsetSign, offsetHour, offMin);    
 }
 
+def startCron() {
+	schedule(cronString(), "cronHandler")
+}
+
 def initialize() {
 	state.logging = !(enableLogging == false)
 	def hasTrig = state.howManyT > 1
@@ -1577,7 +1578,10 @@ def initialize() {
 				scheduleAtTime()
 				break
 			case "Periodic":
-				schedule(cronString(), "cronHandler")
+            	if(whichPeriod == "Hourly" && everyNHoursC) {
+					def strtcron = timeToday(startingHC, location.timeZone)
+                	runOnce(strtcron, startCron)
+				} else schedule(cronString(), "cronHandler")
 				break
 			case "Dimmer level":
 				subscribe(myDev.value, "level", allHandler)
