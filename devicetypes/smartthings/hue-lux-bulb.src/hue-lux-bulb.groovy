@@ -9,7 +9,6 @@ metadata {
 	definition (name: "Hue Lux Bulb", namespace: "smartthings", author: "SmartThings") {
 		capability "Switch Level"
 		capability "Actuator"
-		capability "Color Temperature"
 		capability "Switch"
 		capability "Refresh"
 		capability "Sensor"
@@ -37,13 +36,6 @@ metadata {
 			}
         }
 
-		standardTile("switch", "device.switch", width: 2, height: 2, canChangeIcon: true) {
-			state "on", label:'${name}', action:"switch.off", icon:"st.lights.philips.hue-single", backgroundColor:"#79b821", nextState:"turningOff"
-			state "off", label:'${name}', action:"switch.on", icon:"st.lights.philips.hue-single", backgroundColor:"#ffffff", nextState:"turningOn"
-			state "turningOn", label:'${name}', action:"switch.off", icon:"st.lights.philips.hue-single", backgroundColor:"#79b821", nextState:"turningOff"
-			state "turningOff", label:'${name}', action:"switch.on", icon:"st.lights.philips.hue-single", backgroundColor:"#ffffff", nextState:"turningOn"
-        }
-				
         controlTile("levelSliderControl", "device.level", "slider", height: 1, width: 2, inactiveLabel: false, range:"(0..100)") {
             state "level", action:"switch level.setLevel"
         }
@@ -52,8 +44,8 @@ metadata {
             state "default", label:"", action:"refresh.refresh", icon:"st.secondary.refresh"
         }
 
-        main(["switch"])
-        details(["rich-control", "colorTempSliderControl","refresh"])
+        main(["rich-control"])
+        details(["rich-control", "refresh"])
     }
 }
 
@@ -87,8 +79,12 @@ void off() {
 
 void setLevel(percent) {
 	log.debug "Executing 'setLevel'"
-	parent.setLevel(this, percent)
-	sendEvent(name: "level", value: percent)
+    if (percent != null && percent >= 0 && percent <= 100) {
+		parent.setLevel(this, percent)
+		sendEvent(name: "level", value: percent)
+	} else {
+    	log.warn "$percent is not 0-100"
+    }
 }
 
 void refresh() {
