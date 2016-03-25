@@ -1,18 +1,13 @@
 /**
  *  
- *	Enerwave RSM2 Dual Relay Device Type
+ *	Enerwave RSM2 Dual Relay Switch Device Type
  *  
  *	Author: Eric Maycock (erocm123)
  *	email: erocmail@gmail.com
- *	Date: 2015-10-29
- * 
- *  2016-01-13: Fixed an error in the MultiChannelCmdEncap method that was stopping the instant status
- *              update from working correctly. Also removed some unnecessary code.
- *  2015-11-17: Added the ability to change config parameters through the device preferences	
- * 
+ *	Date: 2016-03-25
  * 	 
- *	Device Type supports all the feautres of the Pan04 device including both switches, 
- *	current energy consumption in W and cumulative energy consumption in kWh.
+ *	Device Type supports all the feautres of the Enerwave RSM2 device including both switches, 
+ *	and the AllOn/AllOff functionality. 
  */
  
 metadata {
