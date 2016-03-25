@@ -3,7 +3,7 @@
  *
  *  Copyright 2015, 2016 Bruce Ravenel
  *
- *  Version 1.9.0a   24 Mar 2016
+ *  Version 1.9.0b   24 Mar 2016
  *
  *	Version History
  *
@@ -112,7 +112,7 @@ preferences {
 //
 
 def appVersion() {
-	return "1.9.0a" 
+	return "1.9.0b" 
 }
 
 def mainPage() {
@@ -582,7 +582,7 @@ def periodic() {
                 	if(!selectHoursC) input "everyNHoursC", "bool", title: " > Every n hours?", submitOnChange: true, required: false
                 	if(everyNHoursC) {
                 		input "everyNHC", "number", title: " > number of hours", range: "1..23", submitOnChange: true, required: false, defaultValue: 1
-                    	input "startingHC", "time", title: " > Starting at", submitOnChange: true, required: false, defaultValue: "2016-03-24T12:00:00.000" + gmtOffset()
+                    	input "startingHC", "time", title: " > Starting at", submitOnChange: true, required: false, defaultValue: "2016-03-23T12:00:00.000" + gmtOffset()
                 	}
                 	if(!everyNHoursC) {
                     	input "selectHoursC", "enum", title: " > Each selected hour", submitOnChange: true, required: false, multiple: true,
@@ -601,12 +601,12 @@ def periodic() {
                     				"10", "11", "12", "13", "14", "15", "16", "17", "18", "19",
                     				"20", "21", "22", "23", "24", "25", "26", "27", "28", "29",
                     				"30", "31"]
-                	input "startingDC", "time", title: " > At time", submitOnChange: true, required: false, defaultValue: "2016-03-24T12:00:00.000" + gmtOffset()
+                	input "startingDC", "time", title: " > At time", submitOnChange: true, required: false, defaultValue: "2016-03-23T12:00:00.000" + gmtOffset()
             		break
                 case "Weekly":
                 	if(!everyDoWC) input "selectDoWC", "enum", title: " > Each selected day of the week", submitOnChange: true, required: false, multiple: true,
                 		options: ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"]
-                	input "startingWC", "time", title: " > Starting at", submitOnChange: true, required: false, defaultValue: "2016-03-24T12:00:00.000" + gmtOffset()
+                	input "startingWC", "time", title: " > Starting at", submitOnChange: true, required: false, defaultValue: "2016-03-23T12:00:00.000" + gmtOffset()
                     break
                 case "Monthly":
                 	if(!weeklyMC) input "dayMC", "number", title: " > On day number", range: "1..31", submitOnChange: true, required: false
@@ -620,7 +620,7 @@ def periodic() {
                         	input "everyNMCX", "number", title: " > Of every n months", range: "1..12", submitOnChange: true, required: false, defaultValue: 1
                         }
                     }
-                	input "startingMC", "time", title: " > Starting at", submitOnChange: true, required: false, defaultValue: "2016-03-24T12:00:00.000" + gmtOffset()
+                	input "startingMC", "time", title: " > Starting at", submitOnChange: true, required: false, defaultValue: "2016-03-23T12:00:00.000" + gmtOffset()
                     break
             }
 		}
@@ -1578,8 +1578,8 @@ def initialize() {
 				scheduleAtTime()
 				break
 			case "Periodic":
-//            	log.debug "Initialize: $startingHC"
-            	if(whichPeriod == "Hourly" && everyNHoursC) runOnce(startingHC, startCron)
+				def strtcron = timeToday(startingHC, location.timeZone)
+            	if(whichPeriod == "Hourly" && everyNHoursC) runOnce(strtcron, startCron)
 				else schedule(cronString(), "cronHandler")
 				break
 			case "Dimmer level":
