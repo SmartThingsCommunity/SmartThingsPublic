@@ -2,7 +2,7 @@
  *  Alexa Helper-Parent
  *
  *  Copyright © 2016 Michael Struck
- *  Version 4.5.0 3/19/16
+ *  Version 4.5.1 3/25/16
  * 
  *  Version 1.0.0 - Initial release
  *  Version 2.0.0 - Added 6 slots to allow for one app to control multiple on/off actions
@@ -32,6 +32,7 @@
  *  Version 4.4.5 - Added voice reporting in the help section
  *  Version 4.4.6 - Small syntax fixes
  *  Version 4.5.0 - Added icon to app about page
+ *  Version 4.5.1 - Minor syntax changes, added main menu icons
  *
  *  Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except
  *  in compliance with the License. You may obtain a copy of the License at:
@@ -66,7 +67,7 @@ def mainPage() {
         	def childCount = childApps.size()
         	if (childCount){
         		def childVersion = childApps[0].versionInt()
-            	if (childVersion < 290){
+            	if (childVersion < 292){
             		paragraph "You are using a version of the child app that is older than the recommended version. Please upgrade "+
                     	"to the latest version to ensure you have the latest features and bug fixes."
             	}
@@ -74,11 +75,15 @@ def mainPage() {
 			app(name: "childScenarios", appName: "Alexa Helper-Scenario", namespace: "MichaelStruck", title: "Create New Alexa Scenario...", multiple: true)
 		}
 		section("Options") {
-			href "pageSettings", title: "Configure Settings", description: none
-            if (showAddSwitches){
-				href "pageSwitches", title: "View/Add Virtual Switches", description: none	
-        	}
-			href "pageAbout", title: "About ${textAppName()}", description: "Tap to get application version, license, instructions or to remove the application"
+			href "pageSettings", title: "Configure Settings", description: none, 
+            	image: "https://raw.githubusercontent.com/MichaelStruck/SmartThings/master/img/settings.png"
+            if (showAddSwitches) {
+            	def titleTxt = getChildDevices().size() > 0 ? "Add/View Virtual Switches" : "Add Virtual Switches"
+                def descTxt = getChildDevices().size() > 1 ? "${getChildDevices().size()} virtual switches created" : getChildDevices().size() == 1 ? "One virtual switch created" : ""
+                href "pageSwitches", title: "${titleTxt}", description: "${descTxt}", image: "https://raw.githubusercontent.com/MichaelStruck/SmartThings/master/img/add.png"
+			}
+            href "pageAbout", title: "About ${textAppName()}", description: "Tap to get application version, license, instructions or to remove the application",
+            	image: "https://raw.githubusercontent.com/MichaelStruck/SmartThings/master/img/info.png"
 		}
 	}
 }
@@ -101,7 +106,7 @@ def pageAbout(){
 	}
 }
 def pageSettings(){
-    dynamicPage(name: "pageSettings", title: "Settings", install: false, uninstall: false) {	
+    dynamicPage(name: "pageSettings", title: "Configure Settings", install: false, uninstall: false) {	
         section {
             input "speakerSonos", "bool", title: "Show Sonos options", defaultValue: false, submitOnChange:true
                 if (speakerSonos){
@@ -115,7 +120,7 @@ def pageSettings(){
     }
 }
 def pageSwitches() {
-    dynamicPage(name: "pageSwitches", title: "Switches", install: false, uninstall: false) {
+    dynamicPage(name: "pageSwitches", title: "Add/View Virtual Switches", install: false, uninstall: false) {
     	section("New switch information"){
             input "addSwitchName", "text", title: "Switch Label", description: "Enter a unique label name for the virtual switch", required: false, submitOnChange:true
             input "addSwitchType", "enum", title: "Switch Type...", description: "Choose a switch type", options:["Alexa Switch","Momentary Button Tile"], required: false, submitOnChange:true	
@@ -212,7 +217,7 @@ private def textAppName() {
 	def text = "Alexa Helper"
 }	
 private def textVersion() {
-    def version = "Parent App Version: 4.5.0 (03/19/2016)"
+    def version = "Parent App Version: 4.5.1 (03/25/2016)"
     def childCount = childApps.size()
     def deviceCount= getChildDevices().size()
     def childVersion = childCount ? childApps[0].textVersion() : "No scenarios installed"
@@ -221,7 +226,7 @@ private def textVersion() {
     return "${version}\n${childVersion}"
 }
 private def versionInt(){
-	def text = 450
+	def text = 451
 }
 private def textCopyright() {
     def text = "Copyright © 2016 Michael Struck"
