@@ -1,4 +1,4 @@
-//#1.5   Mar 4, 2016
+//#1.6   Mar 25, 2016
 
 /**
  *  Blue Iris Integration
@@ -71,20 +71,24 @@ def installed() {
 def updated() {
     log.debug "Updated with settings: ${settings}"
     unsubscribe()
-    subscribe(location, "mode", modeChange)    
+    subscribe(location, modeChange)    
 }
 
 def modeChange(evt)
 {
-    log.debug "BI_modeChange detected."
+    if (evt.name != "mode") {return;}
+    log.debug "BI_modeChange detected. " + evt.value
     def checkMode = ""
     
     //easiest way to get mode by id. Didnt want to use names.
     location.modes.each { mode ->
-        if (mode.name == evt.value){checkMode = "mode-" + mode.id}
+        if (mode.name == evt.value){
+            checkMode = "mode-" + mode.id
+            log.debug "BI_modeChange matched to " + mode.name
+        }
     }
     
-    if (settings[checkMode]){
+    if (checkMode != "" && settings[checkMode]){
         log.debug "BI_Found profile " + settings[checkMode]
         takeAction(settings[checkMode].toInteger());
     }
