@@ -15,7 +15,6 @@
  *  on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the License
  *  for the specific language governing permissions and limitations under the License.
  *
- *	Aeon Siren
  *
  *	Author: Darwin (DarwinsDen.com)
  *	Date: 2016-03-20
@@ -26,6 +25,8 @@
  *		-	Initial Release
  *	0.2 (03/22/2016)
  *		-	handle missed button press and release events
+ *	0.3 (03/25/2016)
+ *		-	Reset 10 second fail timer on successful button release. Call createEvent vs sendEvent in parse
  *
  */
  
@@ -127,53 +128,63 @@ private batteryHealthReport(cmd) {
 	logInfo("Battery: $batteryLevel")
 }
 
-def turnOffSwitch() {
-     def desc = "Doorbell verification check"
-	 logDebug("$desc")
-	 sendEvent(name: "status", value: "off", descriptionText: "${device.displayName} $desc", isStateChange: true)
-	 sendEvent(name: "switch", value: "off", displayed: false, isStateChange: true)
-}
-
-private notificationReport(cmd) {
-    def notificationEvent = cmd.event
-    
-    //Set switch "on" if its a button press, or if it's a button release and the button hasn't been
-    //pressed in the last 10 seconds (likely a missed press)
-    
-    if (notificationEvent == 1 || (!state.lastBellRing  || (new Date().time) - state.lastBellRing  > 10*1000))
-    {
-	  def desc = "Doorbell button is pressed"
-	  logDebug("$desc")
-	  sendEvent(name: "status", value: "doorbell", descriptionText: "${device.displayName} $desc", isStateChange: true)
-	  sendEvent(name: "switch", value: "on", displayed: false, isStateChange: true)
-      state.lastBellRing = new Date().time
-      runIn(10, turnOffSwitch) //turn off switch in 10 seconds in case button release event is missed   
-    }
-    else // it's a button release and it's within 10 seconds of the button press
-    {
-      def desc = "Doorbell button is released"
-	  logDebug("$desc")
-	  sendEvent(name: "status", value: "off", descriptionText: "${device.displayName} $desc", isStateChange: true)
-	  sendEvent(name: "switch", value: "off", displayed: false, isStateChange: true)
-    }
-}
-
 // Unexpected command received
 def zwaveEvent (physicalgraph.zwave.Command cmd) {
 	logDebug("Unhandled Command: $cmd")
 	createEvent(descriptionText: cmd.toString(), isStateChange: false)
 }
 
-//Battery Level received
-def zwaveEvent(physicalgraph.zwave.commands.batteryv1.BatteryReport cmd) {
-   logDebug("Battery Level: $cmd")
-   batteryHealthReport(cmd)
+def turnOffSwitch() {
+	 sendEvent(name: "status", value: "off", descriptionText: "${device.displayName} $desc", isStateChange: true)
+	 sendEvent(name: "switch", value: "off", displayed: false, isStateChange: true)
 }
 
-//Notifical received
-def zwaveEvent(physicalgraph.zwave.commands.notificationv3.NotificationReport  cmd) {
-   logDebug("Notification Report: $cmd")
-   notificationReport(cmd)
+//Battery Level received
+def zwaveEvent(physicalgraph.zwave.commands.batteryv1.BatteryReport cmd) {
+    def result = null
+    state.lastBatteryReport = new Date().time
+    def batteryLevel = cmd.batteryLevel
+    log.info("Battery: $batteryLevel")
+    result = createEvent(name: "battery", value: batteryLevel, unit: "%", descriptionText: "Battery%: $batteryLevel", isStateChange: true)   
+    return result
+}
+
+def buttonPressed() {
+	  def evt1 = createEvent(name: "status", value: "doorbell", descriptionText: "Button pressed", isStateChange: true)
+	  def evt2 = createEvent(name: "switch", value: "on", displayed: false, isStateChange: true)
+      def evt3 = createEvent(name: "momentary", value: "pushed", displayed: false, isStateChange: true)
+      state.lastBellRing = new Date().time
+      return [evt1, evt2, evt3]
+}
+
+def buttonReleased() {
+	  def evt1 = createEvent(name: "status", value: "off", descriptionText: "Button released", isStateChange: true)
+	  def evt2 = createEvent(name: "switch", value: "off", displayed: false, isStateChange: true)
+      return [evt1, evt2]
+}
+
+//Notification received
+def zwaveEvent(physicalgraph.zwave.commands.notificationv3.NotificationReport cmd) {
+    def notificationEvent = cmd.event
+    def result = null
+    
+    //Set switch "on" if its a button press, or if it's a button release and the button hasn't been
+    //pressed in the last 10 seconds (likely a missed press or messages are out of order)
+    
+    if (notificationEvent == 1 || (!state.lastBellRing  || (new Date().time) - state.lastBellRing  > 10*1000)) {
+	  log.debug("Button is pressed")
+      result = buttonPressed()
+      
+      state.lastBellRing = new Date().time
+      runIn(10, turnOffSwitch) //turn off switch in 10 seconds in case button release event is missed   
+    }
+    else // it's a button release and it's within 10 seconds of the button press
+    {
+      log.debug("Button is released")
+      result = buttonReleased() 
+      state.lastBellRing = null
+   } 
+   return result
 }
 
 // Parses incoming message warns if not paired securely
@@ -181,11 +192,9 @@ def parse(description) {
     log.debug("'$description'")
 	def result = null
 	if (description.startsWith("Err 106")) {
-		state.sec = 0
 		result = createEvent(descriptionText: description, isStateChange: true)
 	} else if (description != "updated") {
-		//def cmd = zwave.parse(description)
-        //def cmd = zwave.parse(description, [0x20: 1, 0x25: 1, 0x70: 1, 0x98: 1])
+
         def cmd = zwave.parse(description, [0x71: 3, 0x80: 1])
 
 		if (cmd) {
@@ -195,8 +204,9 @@ def parse(description) {
 			log.debug("Couldn't zwave.parse '$description'")
 		}
 	}
-	result
+	return result
 }
+
 
 def zwaveEvent(physicalgraph.zwave.commands.securityv1.SecurityMessageEncapsulation cmd) {
 	def encapsulatedCommand = cmd.encapsulatedCommand([0x20: 1, 0x25: 1])
@@ -208,11 +218,12 @@ def zwaveEvent(physicalgraph.zwave.commands.securityv1.SecurityMessageEncapsulat
 
 // Send configuration
 def updated() {
+		log.debug("hrrmm?")
 	if (!isDuplicateCommand(state.lastUpdated, 500)) {		
 		state.lastUpdated = new Date().time
 		state.debugOutput = validateBool(debugOutput, true)
 		
-		logDebug("Updating")
+		log.debug("Updating and refreshing device attr")
 			
 		response(refreshDeviceAttr())
 	}
