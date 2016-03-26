@@ -3,7 +3,7 @@
  *
  *  Copyright 2015, 2016 Bruce Ravenel
  *
- *  Version 1.9.0   24 Mar 2016
+ *  Version 1.9.0a   25 Mar 2016
  *
  *	Version History
  *
@@ -65,7 +65,6 @@ def mainPage() {
     	if(state.ruleState) state.ruleState = null  // obsolete
     	def nApps = childApps.size()
     	dynamicPage(name: "mainPage", title: "Installed Rules, Triggers and Actions " + (nApps > 0 ? "[$nApps]" : ""), install: true, uninstall: false) {
-    		if(!state.setup) initialize(true)
         	section {
             	app(name: "childRules", appName: "Rule", namespace: "bravenel", title: "Create New Rule...", multiple: true)
         	}
@@ -78,7 +77,7 @@ def mainPage() {
         	section ("Remove Rule Machine"){
         		href "removePage", description: "Tap to remove Rule Machine and Rules", title: ""
         	}
-			section ("Version 1.9.0/" + (nApps > 0 ? "${childApps[0].appVersion()}" : "---")) { }
+			section ("Version 1.9.0a/" + (nApps > 0 ? "${childApps[0].appVersion()}" : "---")) { }
     	}
     }
 }

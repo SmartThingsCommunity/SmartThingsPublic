@@ -3,10 +3,11 @@
  *
  *  Copyright 2015, 2016 Bruce Ravenel
  *
- *  Version 1.9.0d   24 Mar 2016
+ *  Version 1.9.1   26 Mar 2016
  *
  *	Version History
  *
+ *	1.9.1	26 Mar 2016		Added yearly period, and two periodic trigger events
  *	1.9.0	24 Mar 2016		Added periodic trigger, disable logging, bug fixes re ZWN buttons
  *	1.8.6	19 Mar 2016		Bug fixes re private Boolean as trigger event
  *	1.8.5	13 Mar 2016		Added support for single button device, more private Boolean options, emergency heat
@@ -112,7 +113,7 @@ preferences {
 //
 
 def appVersion() {
-	return "1.9.0d" 
+	return "1.9.1" 
 }
 
 def mainPage() {
@@ -456,6 +457,7 @@ def getButton(dev) {
 
 def getState(myCapab, n, isTrig) {
 	def result = null
+    def param = [n: n]
 	def myState = isTrig ? "tstate$n" : "state$n"
 	def myIsDev = isTrig ? "istDev$n" : "isDev$n"
 	def myRelDev = isTrig ? "reltDevice$n" : "relDevice$n"
@@ -519,8 +521,9 @@ def getState(myCapab, n, isTrig) {
 		def atTimeLabel = atTimeLabel()
 		href "atCertainTime", title: "At a certain time", description: atTimeLabel ?: "Tap to set", state: atTimeLabel ? "complete" : null
 	} else if(myCapab == "Periodic") {
-		def periodLabel = periodicLabel()
-		href "periodic", title: "Periodic schedule", description: periodLabel ?: "Tap to set", state: periodLabel ? "complete" : null
+        state.thisN = n
+		def periodLabel = periodicLabel(n)
+		href "periodic", title: "Periodic schedule", description: periodLabel ?: "Tap to set", state: periodLabel ? "complete" : null, params: param
 	} else if(myCapab == "Routine") {
 		def phrases = location.helloHome?.getPhrases()*.label
         result = input myState, "enum", title: "When this routine runs", multiple: false, required: false, options: phrases
@@ -562,15 +565,18 @@ def atCertainTime() {
 	}
 }
 
-def periodic() {
+def periodic(param) {
 	dynamicPage(name: "periodic", title: "Periodic schedule", uninstall: false) {
+//    	def n = param.n
+		def n = state.thisN
 		section() {
-        	input "whichPeriod", "enum", title: "Select periodic frequency", submitOnChange: true, required: true, options: ["Minutes", "Hourly", "Daily", "Weekly", "Monthly"]
-            switch(whichPeriod) {
+        	input "whichPeriod$n", "enum", title: "Select periodic frequency", submitOnChange: true, required: true, options: ["Minutes", "Hourly", "Daily", "Weekly", "Monthly", "Yearly"]
+//            log.debug "periodic: ${settings["whichPeriod$n"]}"
+            switch(settings["whichPeriod$n"]) {
                 case "Minutes": 
-                	if(!selectMinutesC) input "everyNMinutesC", "bool", title: " > Every n minutes?", submitOnChange: true, required: false
-                	if(everyNMinutesC) input "everyNC", "number", title: " > number of minutes", range: "1..59", submitOnChange: true, required: false, defaultValue: 1
-                	if(!everyNMinutesC) input "selectMinutesC", "enum", title: " > Each selected minute", submitOnChange: true, required: false, multiple: true,
+                	if(!settings["selectMinutesC$n"]) input "everyNMinutesC$n", "bool", title: " > Every n minutes?", submitOnChange: true, required: false
+                	if(settings["everyNMinutesC$n"]) input "everyNC$n", "number", title: " > number of minutes", range: "1..59", submitOnChange: true, required: false, defaultValue: 1
+                	if(!settings["everyNMinutesC$n"]) input "selectMinutesC$n", "enum", title: " > Each selected minute", submitOnChange: true, required: false, multiple: true,
                 		options: [	 "0",  "1",  "2",  "3",  "4",  "5",  "6",  "7",  "8",  "9",
                     				"10", "11", "12", "13", "14", "15", "16", "17", "18", "19",
                     				"20", "21", "22", "23", "24", "25", "26", "27", "28", "29",
@@ -579,154 +585,178 @@ def periodic() {
                     				"50", "51", "52", "53", "54", "55", "56", "57", "58", "59"]
             		break
                 case "Hourly": 
-                	if(!selectHoursC) input "everyNHoursC", "bool", title: " > Every n hours?", submitOnChange: true, required: false
-                	if(everyNHoursC) {
-                		input "everyNHC", "number", title: " > number of hours", range: "1..23", submitOnChange: true, required: false, defaultValue: 1
-                    	input "startingHC", "time", title: " > Starting at", submitOnChange: true, required: false, defaultValue: "2016-03-23T12:00:00.000" + gmtOffset()
+                	if(!settings["selectHoursC$n"]) input "everyNHoursC$n", "bool", title: " > Every n hours?", submitOnChange: true, required: false
+                	if(settings["everyNHoursC$n"]) {
+                		input "everyNHC$n", "number", title: " > number of hours", range: "1..23", submitOnChange: true, required: false, defaultValue: 1
+                    	input "startingHC$n", "time", title: " > Starting at", submitOnChange: true, required: false, defaultValue: "2016-03-23T12:00:00.000" + gmtOffset()
                 	}
-                	if(!everyNHoursC) {
-                    	input "selectHoursC", "enum", title: " > Each selected hour", submitOnChange: true, required: false, multiple: true,
+                	if(!settings["everyNHoursC$n"]) {
+                    	input "selectHoursC$n", "enum", title: " > Each selected hour", submitOnChange: true, required: false, multiple: true,
                 			options: [	 "0",  "1",  "2",  "3",  "4",  "5",  "6",  "7",  "8",  "9",
                     					"10", "11", "12", "13", "14", "15", "16", "17", "18", "19",
                     					"20", "21", "22", "23"]
-                        input "startingHCX", "number", title: " > Starting minutes after the hour", submitOnChange: true, required: false, range: "0..59", defaultValue: 0
+                        input "startingHCX$n", "number", title: " > Starting minutes after the hour", submitOnChange: true, required: false, range: "0..59", defaultValue: 0
                     }
             		break
                 case "Daily":
-            		if(!selectDoMC && !everyWeekDay) input "everyNDoMC", "bool", title: " > Every n days?", submitOnChange: true, required: false
-                	if(everyNDoMC) input "everyNDC", "number", title: " > number of days", range: "1..31", submitOnChange: true, required: false, defaultValue: 1
-                	if(!selectDoMC && !everyNDoMC) input "everyWeekDay", "bool", title: " > Every weekday?", submitOnChange: true, required: false
-                	if(!everyNDoMC && !everyWeekDay) input "selectDoMC", "enum", title: " > Each selected day of the month", submitOnChange: true, required: false, multiple: true,
+            		if(!settings["selectDoMC$n"] && !settings["everyWeekDay$n"]) input "everyNDoMC$n", "bool", title: " > Every n days?", submitOnChange: true, required: false
+                	if(settings["everyNDoMC$n"]) input "everyNDC$n", "number", title: " > number of days", range: "1..31", submitOnChange: true, required: false, defaultValue: 1
+                	if(!settings["selectDoMC$n"] && !settings["everyNDoMC$n"]) input "everyWeekDay$n", "bool", title: " > Every weekday?", submitOnChange: true, required: false
+                	if(!settings["everyNDoMC$n"] && !settings["everyWeekDay$n"]) input "selectDoMC$n", "enum", title: " > Each selected day of the month", submitOnChange: true, required: false, multiple: true,
                 		options: [	       "1",  "2",  "3",  "4",  "5",  "6",  "7",  "8",  "9",
                     				"10", "11", "12", "13", "14", "15", "16", "17", "18", "19",
                     				"20", "21", "22", "23", "24", "25", "26", "27", "28", "29",
                     				"30", "31"]
-                	input "startingDC", "time", title: " > At time", submitOnChange: true, required: false, defaultValue: "2016-03-23T12:00:00.000" + gmtOffset()
+                	input "startingDC$n", "time", title: " > At time", submitOnChange: true, required: false, defaultValue: "2016-03-23T12:00:00.000" + gmtOffset()
             		break
                 case "Weekly":
-                	if(!everyDoWC) input "selectDoWC", "enum", title: " > Each selected day of the week", submitOnChange: true, required: false, multiple: true,
+                	if(!settings["everyDoWC$n"]) input "selectDoWC$n", "enum", title: " > Each selected day of the week", submitOnChange: true, required: false, multiple: true,
                 		options: ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"]
-                	input "startingWC", "time", title: " > Starting at", submitOnChange: true, required: false, defaultValue: "2016-03-23T12:00:00.000" + gmtOffset()
+                	input "startingWC$n", "time", title: " > Starting at", submitOnChange: true, required: false, defaultValue: "2016-03-23T12:00:00.000" + gmtOffset()
                     break
                 case "Monthly":
-                	if(!weeklyMC) input "dayMC", "number", title: " > On day number", range: "1..31", submitOnChange: true, required: false
-                	if(!selectMonthC && !weeklyMC) input "everyNMC", "number", title: " > Of every n months", range: "1..12", submitOnChange: true, required: false
-                	if(!everyNMC && !weeklyMC) input "selectMonthC", "enum", title: " > Of each selected month", submitOnChange: true, required: false, multiple: true,
+                	if(!settings["weeklyMC$n"]) input "dayMC$n", "number", title: " > On day number", range: "1..31", submitOnChange: true, required: false
+                	if(!settings["selectMonthC$n"] && !settings["weeklyMC$n"]) input "everyNMC$n", "number", title: " > Of every n months", range: "1..12", submitOnChange: true, required: false
+                	if(!settings["everyNMC$n"] && !settings["weeklyMC$n"]) input "selectMonthC$n", "enum", title: " > Of each selected month", submitOnChange: true, required: false, multiple: true,
                 		options: ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"]
-                    if(!selectMonthC && !everyNMC) {
-                    	input "weeklyMC", "enum", title: " > In the week of month ...", submitOnChange: true, required: false, options: ["First", "Second", "Third", "Fourth"]
-                        if(weeklyMC) {
-                        	input "dailyMC", "enum", title: " > On day of week ...", submitOnChange: true, required: false, options: ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"]
-                        	input "everyNMCX", "number", title: " > Of every n months", range: "1..12", submitOnChange: true, required: false, defaultValue: 1
+                    if(!settings["selectMonthC$n"] && !settings["everyNMC$n"]) {
+                    	input "weeklyMC$n", "enum", title: " > In the week of month ...", submitOnChange: true, required: false, options: ["First", "Second", "Third", "Fourth"]
+                        if(settings["weeklyMC$n"]) {
+                        	input "dailyMC$n", "enum", title: " > On day of week ...", submitOnChange: true, required: false, options: ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"]
+                        	input "everyNMCX$n", "number", title: " > Of every n months", range: "1..12", submitOnChange: true, required: false, defaultValue: 1
                         }
                     }
-                	input "startingMC", "time", title: " > Starting at", submitOnChange: true, required: false, defaultValue: "2016-03-23T12:00:00.000" + gmtOffset()
+                	input "startingMC$n", "time", title: " > Starting at", submitOnChange: true, required: false, defaultValue: "2016-03-23T12:00:00.000" + gmtOffset()
+                    break
+                case "Yearly":
+                	if(!settings["weeklyYC$n"]) input "yearlyMonthC$n", "enum", title: " > In the month of ...", submitOnChange: true, required: false, multiple: false,
+                		options: ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"]
+                    if(settings["yearlyMonthC$n"]) input "yearlyDayC$n", "number", title: " > On this day of month ...", description: "1..31", range: "1..31", submitOnChange: true, required: false, multiple: false
+                    if(!settings["yearlyMonthC$n"]) input "weeklyYC$n", "enum", title: " > In the week of month ...", submitOnChange: true, required: false, options: ["First", "Second", "Third", "Fourth"]
+                    if(settings["weeklyYC$n"]) {
+                        input "dailyYC$n", "enum", title: " > On day of week ...", submitOnChange: true, required: false, options: ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"]
+                		input "yearlyMonthCX$n", "enum", title: " > In the month of ...", submitOnChange: true, required: false, multiple: false,
+                			options: ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"]
+                    }
+                	input "startingYC$n", "time", title: " > Starting at", submitOnChange: true, required: false, defaultValue: "2016-03-23T12:00:00.000" + gmtOffset()
                     break
             }
 		}
 	}
 }
 
-def periodicLabel() {
+def periodicLabel(n) {
 	def result
-    switch(whichPeriod) {
+    switch(settings["whichPeriod$n"]) {
 		case "Minutes": 
-        	if(everyNMinutesC) result = "Every $everyNC minute" + (everyNC > 1 ? "s" : "")
-            if(selectMinutesC) {
-            	def str = "$selectMinutesC"[1..-2]
+            if(settings["everyNMinutesC$n"]) result = "Every ${settings["everyNC$n"]} minute" + (settings["everyNC$n"] > 1 ? "s" : "")
+            if(settings["selectMinutesC$n"]) {
+            	def str = settings["selectMinutesC$n"][1..-2]
             	result = "Each of these minutes\n   $str"
             }
         	break
 		case "Hourly": 
-        	if(everyNHoursC) result = "Every $everyNHC hour" + (everyNHC > 1 ? "s" : "") + " starting at ${hhmm(startingHC)}"
-            if(selectHoursC) {
-            	def str = "$selectHoursC"[1..-2]
+        	if(settings["everyNHoursC$n"]) result = "Every ${settings["everyNHC$n"]} hour" + (settings["everyNHC$n"] > 1 ? "s" : "") + " starting at ${hhmm(settings["startingHC$n"])}"
+            if(settings["selectHoursC$n"]) {
+            	def str = settings["selectHoursC$n"][1..-2]
                 def str2 = ""
                 for(int i = 0; i < str.size(); i++) {
                 	if(str[i] == ",") str2 = str2 + ":00"
                     str2 = str2 + str[i]
                 }
-            	result = "Each of these hours\n   $str2:00\n   At $startingHCX minutes after the hour"
+            	result = "Each of these hours\n   $str2:00\n   At ${settings["startingHCX$n"]} minutes after the hour"
             }
         	break
 		case "Daily":
-        	if(everyNDoMC) result = "Every " + (everyNDC == 1 ? "" : "$everyNDC ") + "day" + (everyNDC > 1 ? "s" : "") + " at ${hhmm(startingDC)}"
-            if(everyWeekDay) result = "Every weekday at ${hhmm(startingDC)}"
-            if(selectDoMC) {
-            	def str = "$selectDoMC"[1..-2]
-            	result = "Each of these days of the month\n   $str: At ${hhmm(startingDC)}"
+        	if(settings["everyNDoMC$n"]) result = "Every " + (settings["everyNDC$n"] == 1 ? "" : "${settings["everyNDC$n"]} ") + "day" + (settings["everyNDC$n"] > 1 ? "s" : "") + " at ${hhmm(settings["startingDC$n"])}"
+            if(settings["everyWeekDay$n"]) result = "Every weekday at ${hhmm(settings["startingDC$n"])}"
+            if(settings["selectDoMC$n"]) {
+            	def str = settings["selectDoMC$n"][1..-2]
+            	result = "Each of these days of the month\n   $str: At ${hhmm(settings["startingDC$n"])}"
             }
         	break
         case "Weekly":
-        	if(selectDoWC) {
-            	def str = "$selectDoWC"[1..-2]
-                result = "Each of these days of the week\n   $str: At ${hhmm(startingWC)}"
+        	if(settings["selectDoWC$n"]) {
+            	def str = settings["selectDoWC$n"][1..-2]
+                result = "Each of these days of the week\n   $str: At ${hhmm(settings["startingWC$n"])}"
             }
         	break
         case "Monthly":  
-        	if(everyNMC) result = "On day $dayMC of every $everyNMC month" + (everyNMC > 1 ? "s" : "") + " At ${hhmm(startingMC)}"
-            if(selectMonthC) {
-            	def str = "$selectMonthC"[1..-2]
-                result = "On day $dayMC of each of these months\n   $str: At ${hhmm(startingMC)}"
+        	if(settings["everyNMC$n"]) result = "On day ${settings["dayMC$n"]} of every ${settings["everyNMC$n"]} month" + (settings["everyNMC$n"] > 1 ? "s" : "") + " At ${hhmm(settings["startingMC$n"])}"
+            if(settings["selectMonthC$n"]) {
+            	def str = settings["selectMonthC$n"][1..-2]
+                result = "On day ${settings["dayMC$n"]} of each of these months\n   $str: At ${hhmm(settings["startingMC$n"])}"
             }
-            if(weeklyMC) result = "On the $weeklyMC $dailyMC of every " + (everyNMCX > 1 ? "$everyNMCX month" : "month") + (everyNMCX > 1 ? "s" : "") + " at ${hhmm(startingMC)}"
+            if(settings["weeklyMC$n"]) result = "On the ${settings["weeklyMC$n"]} ${settings["dailyMC$n"]} of every " + (settings["everyNMCX$n"] > 1 ? "${settings["everyNMCX$n"]} month" : "month") + 
+            	(settings["everyNMCX$n"] > 1 ? "s" : "") + " at ${hhmm(settings["startingMC$n"])}"
+        	break
+        case "Yearly":  
+        	if(settings["yearlyMonthC$n"]) result = "Every year on ${settings["yearlyDayC$n"]} of ${settings["yearlyMonthC$n"]}" + (settings["everyNMC$n"] > 1 ? "s" : "") + "\n  At ${hhmm(settings["startingYC$n"])}"
+            if(settings["weeklyYC$n"]) result = "On the ${settings["weeklyYC$n"]} ${settings["dailyYC$n"]} of ${settings["yearlyMonthCX$n"]} at ${hhmm(settings["startingYC$n"])}"
         	break
 	}
     return result
 }
 
-def cronString() {
+def cronString(n) {
 	def dayOrd = ["Sunday" : "SUN", "Monday" : "MON", "Tuesday" : "TUE", "Wednesday" : "WED", "Thursday" : "THU", "Friday" : "FRI", "Saturday" : "SAT"]
     def monthOrd = ["January" : 1, "February" : 2, "March" : 3, "April" : 4, "May" : 5, "June" : 6, "July" : 7, "August" : 8, "September" : 9, "October" : 10, "November" : 11, "December" : 12]
     def weekOrd = ["First" : 1, "Second" : 2, "Third" : 3, "Fourth" : 4]
 	def result
-    switch(whichPeriod) {
+    switch(settings["whichPeriod$n"]) {
 		case "Minutes": 
-        	if(everyNMinutesC) result = "11 */$everyNC * * * ?"
-            if(selectMinutesC) {
-            	def str = stripBrackSpace("$selectMinutesC")
+        	if(settings["everyNMinutesC$n"]) result = "11 */${settings["everyNC$n"]} * * * ?"
+            if(settings["selectMinutesC$n"]) {
+            	def str = stripBrackSpace("${settings["selectMinutesC$n"]}")
             	result = "11 $str * * * ?"
             }
         	break
 		case "Hourly": 
-			if(everyNHoursC) result = "11 0 */$everyNHC * * ?"
-			if(selectHoursC) {
-				def str = stripBrackSpace("$selectHoursC") as String
-				result = "11 $startingHCX $str 1/1 * ?"
+			if(settings["everyNHoursC$n"]) result = "11 0 */${settings["everyNHC$n"]} * * ?"
+			if(settings["selectHoursC$n"]) {
+				def str = stripBrackSpace("${settings["selectHoursC$n"]}") as String
+				result = "11 ${settings["startingHCX$n"]} $str 1/1 * ?"
 			}
 			break
 		case "Daily":
-        	def hrmn = hhmm(startingDC, "HH:mm")
+        	def hrmn = hhmm(settings["startingDC$n"], "HH:mm")
             def hr = hrmn[0..1] 
             def mn = hrmn[3..4]
-        	if(everyNDoMC) result = "11 $mn $hr */$everyNDC * ?"
-            if(everyWeekDay) result = "11 $mn $hr ? * 1,2,3,4,5"
-            if(selectDoMC) {
-            	def str = stripBrackSpace("$selectDoMC")
+        	if(settings["everyNDoMC$n"]) result = "11 $mn $hr */${settings["everyNDC$n"]} * ?"
+            if(settings["everyWeekDay$n"]) result = "11 $mn $hr ? * 1,2,3,4,5"
+            if(settings["selectDoMC$n"]) {
+            	def str = stripBrackSpace("${settings["selectDoMC$n"]}")
             	result = "11 $mn $hr $str * ?"
             }
         	break
         case "Weekly":
-        	def hrmn = hhmm(startingWC, "HH:mm")
+        	def hrmn = hhmm(settings["startingWC$n"], "HH:mm")
             def hr = hrmn[0..1]
             def mn = hrmn[3..4]
-        	if(selectDoWC) {
+        	if(settings["selectDoWC$n"]) {
             	def str = ""
-                selectDoWC.each {str = str + (str ? "," : "") + "${dayOrd["$it"]}"}
+                settings["selectDoWC$n"].each {str = str + (str ? "," : "") + "${dayOrd["$it"]}"}
                 result = "11 $mn $hr ? * $str"
             }
         	break
         case "Monthly":  
-        	def hrmn = hhmm(startingMC, "HH:mm")
+        	def hrmn = hhmm(settings["startingMC$n"], "HH:mm")
             def hr = hrmn[0..1]
             def mn = hrmn[3..4]
-        	if(everyNMC) result = "11 $mn $hr $dayMC */$everyNMC ?"
-            if(selectMonthC) {
+        	if(settings["everyNMC$n"]) result = "11 $mn $hr ${settings["dayMC$n"]} */${settings["everyNMC$n"]} ?"
+            if(settings["selectMonthC$n"]) {
             	def str = ""
-                selectMonthC.each {str = str + (str ? "," : "") + "${monthOrd["$it"]}"}
-                result = "11 $mn $hr $dayMC $str ?"
+                settings["selectMonthC$n"].each {str = str + (str ? "," : "") + "${monthOrd["$it"]}"}
+                result = "11 $mn $hr ${settings["dayMC$n"]} $str ?"
             }
-            if(weeklyMC) result = "11 $mn $hr ? */$everyNMCX ${dayOrd[dailyMC]}#${weekOrd["$weeklyMC"]}"
+            if(settings["weeklyMC$n"]) result = "11 $mn $hr ? */${settings["everyNMCX$n"]} ${dayOrd[settings["dailyMC$n"]]}#${weekOrd[settings["weeklyMC$n"]]}"
+        	break
+        case "Yearly":
+        	def hrmn = hhmm(settings["startingYC$n"], "HH:mm")
+            def hr = hrmn[0..1]
+            def mn = hrmn[3..4]
+            if(settings["yearlyMonthC$n"]) result = "11 $mn $hr ${settings["yearlyDayC$n"]} ${settings["yearlyMonthC$n"]} ?"
+            if(settings["weeklyYC$n"]) result = "11 $mn $hr ? ${monthOrd[settings["yearlyMonthCX$n"]]} ${dayOrd[settings["dailyYC$n"]]}#${weekOrd[settings["weeklyYC$n"]]}"
         	break
 	}
     return result + " *"
@@ -771,7 +801,7 @@ def conditionLabelN(i, isTrig) {
 	def thisCapab = settings.find {it.key == (isTrig ? "tCapab$i" : "rCapab$i")}
 	if(thisCapab.value == "Time of day") result = "Time between " + timeIntervalLabelX()
 	else if(thisCapab.value == "Certain Time")  result = "When time is " + atTimeLabel()
-    else if(thisCapab.value == "Periodic") result = periodicLabel()
+    else if(thisCapab.value == "Periodic") result = periodicLabel(i)
 	else if(thisCapab.value == "Smart Home Monitor") {
     		def thisState = (settings.find {it.key == (isTrig ? "tstate$i" : "state$i")}).value
     		result = "SHM state $SHMphrase " + (thisState in ["away", "stay"] ? "Arm ($thisState)" : "Disarm")
@@ -1547,8 +1577,12 @@ def gmtOffset() {
 	def result = String.format("%s%02d%02d", offsetSign, offsetHour, offMin);    
 }
 
-def startCron() {
-	schedule(cronString(), "cronHandler")
+def startCron1() {
+	schedule(cronString(1), "cron1Handler")
+}
+
+def startCron2() {
+	schedule(cronString(2), "cron2Handler")
 }
 
 def initialize() {
@@ -1578,10 +1612,10 @@ def initialize() {
 				scheduleAtTime()
 				break
 			case "Periodic":
-            	if(whichPeriod == "Hourly" && everyNHoursC) {
-					def strtcron = timeToday(startingHC, location.timeZone)
-                	runOnce(strtcron, startCron)
-				} else schedule(cronString(), "cronHandler")
+            	if(settings["whichPeriod$i"] == "Hourly" && settings["everyNHoursC$i"]) {
+					def strtcron = timeToday(settings["startingHC$i"], location.timeZone)
+                	runOnce(strtcron, i == 1 ? startCron1 : startCron2)
+				} else schedule(cronString(i), i == 1 ? "cron1Handler" : "cron2Handler")
 				break
 			case "Dimmer level":
 				subscribe(myDev.value, "level", allHandler)
@@ -2195,7 +2229,12 @@ def timeHandler() {
 	else if(state.isTrig || state.howManyT > 1) doTrigger()
 }
 
-def cronHandler() {
+def cron1Handler() {
+	if(state.howMany > 1 && !state.isTrig) runRule(true)
+	else if(state.isTrig || state.howManyT > 1) doTrigger()
+}
+
+def cron2Handler() {
 	if(state.howMany > 1 && !state.isTrig) runRule(true)
 	else if(state.isTrig || state.howManyT > 1) doTrigger()
 }
