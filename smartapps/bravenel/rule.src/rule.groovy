@@ -3,7 +3,7 @@
  *
  *  Copyright 2015, 2016 Bruce Ravenel
  *
- *  Version 1.9.1   26 Mar 2016
+ *  Version 1.9.1a   26 Mar 2016
  *
  *	Version History
  *
@@ -113,7 +113,7 @@ preferences {
 //
 
 def appVersion() {
-	return "1.9.1" 
+	return "1.9.1a" 
 }
 
 def mainPage() {
@@ -1579,7 +1579,7 @@ def gmtOffset() {
 }
 
 def startCron1() {
-	schedule(cronString(1), "cron1Handler")
+	schedule(cronString(1), "cronHandler")
 }
 
 def startCron2() {
@@ -1616,7 +1616,7 @@ def initialize() {
             	if(settings["whichPeriod$i"] == "Hourly" && settings["everyNHoursC$i"]) {
 					def strtcron = timeToday(settings["startingHC$i"], location.timeZone)
                 	runOnce(strtcron, i == 1 ? startCron1 : startCron2)
-				} else schedule(cronString(i), i == 1 ? "cron1Handler" : "cron2Handler")
+				} else schedule(cronString(i), i == 1 ? "cronHandler" : "cron2Handler")
 				break
 			case "Dimmer level":
 				subscribe(myDev.value, "level", allHandler)
@@ -2230,7 +2230,7 @@ def timeHandler() {
 	else if(state.isTrig || state.howManyT > 1) doTrigger()
 }
 
-def cron1Handler() {
+def cronHandler() {
 	if(state.howMany > 1 && !state.isTrig) runRule(true)
 	else if(state.isTrig || state.howManyT > 1) doTrigger()
 }
