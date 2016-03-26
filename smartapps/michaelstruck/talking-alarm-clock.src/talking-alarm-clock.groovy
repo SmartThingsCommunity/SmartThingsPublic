@@ -2,7 +2,7 @@
  *  Talking Alarm Clock-Parent
  *
  *  Copyright © 2016 Michael Struck
- *  Version 2.2.2 3/23/16
+ *  Version 2.2.2 3/25/16
  * 
  *  Version 2.0.0 - Initial release of parent/client app. 1.4.5 was released to SmartThings production
  *  Version 2.0.1 - Changed the default of new schedules to 'enabled'
@@ -13,6 +13,7 @@
  *  Version 2.2.0 - Added icon to app about page
  *  Version 2.2.1 - Code optimization
  *  Version 2.2.2 - Added icons to the main menu
+ *  Version 2.2.3 - Minor syntax updates
  *
  *  Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except
  *  in compliance with the License. You may obtain a copy of the License at:
@@ -77,7 +78,7 @@ def pageSummary(){
             childApps.each {child ->
                 section("${child.label}"){
                     paragraph "${child.getAlarmDesc()}"
-                    input "${child.id}", "bool", title: "Enable this schedule", defaultValue: true
+                    input "${child.id}", "bool", title: "Enable This Schedule", defaultValue: true
                 }
             }
 		}
@@ -87,16 +88,16 @@ def pageSummary(){
 			}
         }
         section ("Voice Summary Settings") { 
-			input "summaryEnable", "bool", title: "Enable voice summary from SmartApp page", defaultValue: false,  submitOnChange: true
-            input "summaryEnableSW", "bool", title: "Enable voice summary when switches turned on", defaultValue: false,  submitOnChange: true
+			input "summaryEnable", "bool", title: "Enable Voice Summary From SmartApp Page", defaultValue: false,  submitOnChange: true
+            input "summaryEnableSW", "bool", title: "Enable Voice Summary When Switches Turned On", defaultValue: false,  submitOnChange: true
             if (summaryEnableSW){
-            	input "summarySwitch", "capability.switch", title: "Choose switches to activate summary", multiple: true, required: false	
+            	input "summarySwitch", "capability.switch", title: "Choose Switches To Activate Summary", multiple: true, required: false	
             }
             if (summaryEnable || summaryEnableSW ){
-                input "summarySpeaker", "capability.musicPlayer", title: "Choose a speaker", required: false 
-                input "summaryVolume", "number", title: "Set the summary volume", description: "0-100%", required: false 
-                input "summaryDisabled", "bool", title: "Include disabled alarms in summary", defaultValue: false 
-                input "summaryMode", "mode", title: "Speak summary in the following modes...", multiple: true, required: false
+                input "summarySpeaker", "capability.musicPlayer", title: "Choose A Speaker", required: false 
+                input "summaryVolume", "number", title: "Set The Summary Volume", description: "0-100%", required: false 
+                input "summaryDisabled", "bool", title: "Include Disabled Alarms In Summary", defaultValue: false 
+                input "summaryMode", "mode", title: "Speak Summary In The Following Modes...", multiple: true, required: false
             }
  		}
     }
@@ -153,7 +154,7 @@ private def textAppName() {
 	def text = "Talking Alarm Clock"
 }	
 private def textVersion() {
-    def version = "Parent App Version: 2.2.2 (03/23/2016)"
+    def version = "Parent App Version: 2.2.3 (03/25/2016)"
     def childCount = childApps.size()
     def childVersion = childCount ? childApps[0].textVersion() : "No alarm schedules installed"
     return "${version}\n${childVersion}"

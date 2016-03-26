@@ -3,7 +3,7 @@
  *
  *  Copyright © 2016 Michael Struck
  *
- *  Version 1.4.3 (3/12/16) - Initial release of child app
+ *  Version 1.4.4 (3/25/16) - Initial release of child app
  *
  *  Version 1.0.0 - Initial release
  *  Version 1.0.1 - Small syntax changes for consistency
@@ -14,6 +14,7 @@
  *  Version 1.4.1 - Added the trigger switches to the summary page
  *  Version 1.4.2 - Syntax changes and minor revisions
  *  Version 1.4.3 - Code Optimizations and work around for playTrack()
+ *  Version 1.4.4 - Minor syntax updates
  *
  *  Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except
  *  in compliance with the License. You may obtain a copy of the License at:
@@ -50,66 +51,66 @@ def pageSetup() {
             if (status) paragraph "This schedule is currently ${status}. To change this status, go to the 'Alarm Summary' page on the Talking Alarm Clock main page"
     	}
         section("Alarm Settings"){
-        	input "alarmSpeaker", "capability.musicPlayer", title: "Choose a speaker", required: true, submitOnChange:true
+        	input "alarmSpeaker", "capability.musicPlayer", title: "Choose A Speaker", required: true, submitOnChange:true
             if (alarmSpeaker){
             	if (!alarmSpeaker.name.contains("Sonos")){
                 	paragraph "This application is intended to be used with Sonos speakers only. You may get undesired results if you "+
                     	"attempt to use this application with your ${alarmSpeaker} speaker."
                 }
-                input "alarmVolume", "number", title: "Alarm volume", description: "0-100%", required: false
-                input "alarmStart", "time", title: "Time to trigger alarm", required: false
-                input "alarmTrigger", "capability.switch", title: "Trigger alarm when switches turned on...", required: false, multiple: true
-                input "alarmType", "enum", title: "Select a primary alarm type...", multiple: false, required: true, options: [[1:"Alarm sound (up to 20 seconds)"],[3:"Music track/internet radio"],[2:"Voice Greeting"],], submitOnChange:true
+                input "alarmVolume", "number", title: "Alarm Volume", description: "0-100%", required: false
+                input "alarmStart", "time", title: "Time To Trigger Alarm", required: false
+                input "alarmTrigger", "capability.switch", title: "Trigger Alarm When Switches Turned On...", required: false, multiple: true
+                input "alarmType", "enum", title: "Select A Primary Alarm Type...", multiple: false, required: true, options: [[1:"Alarm sound (up to 20 seconds)"],[3:"Music track/internet radio"],[2:"Voice Greeting"],], submitOnChange:true
                 if (alarmType != "3") {
-                    if (alarmType == "1") input "secondAlarm", "enum", title: "Select a second alarm after the first is completed", multiple: false, required: false, options: [[2:"Music track/internet Radio"],[1:"Voice Greeting"]], submitOnChange:true
-                    if (alarmType == "2") input "secondAlarmMusic", "bool", title: "Play a track after voice greeting", defaultValue: "false", required: false, submitOnChange:true
+                    if (alarmType == "1") input "secondAlarm", "enum", title: "Select A Second Alarm After The First Is Completed", multiple: false, required: false, options: [[2:"Music track/internet Radio"],[1:"Voice Greeting"]], submitOnChange:true
+                    if (alarmType == "2") input "secondAlarmMusic", "bool", title: "Play A Track After Voice Greeting", defaultValue: "false", required: false, submitOnChange:true
                 }
                 href "pageRestrictions", title: "Alarm Restrictions", description: getRestrictionDesc(), state: greyOutRestrictions()
             }
 		}
         if (alarmType == "1"){
         	section ("Alarm sound options"){
-				input "soundAlarm", "enum", title: "Play this sound...", required:false, multiple: false, 
+				input "soundAlarm", "enum", title: "Play This Sound...", required:false, multiple: false, 
                 	options: [[1:"Alien-8 seconds"],[2:"Bell-12 seconds"], [3:"Buzzer-20 seconds"], 
                     [4:"Fire-20 seconds"], [5:"Rooster-2 seconds"], [6:"Siren-20 seconds"],[7:"Custom-User Defined"]], submitOnChange:true
 				if (soundAlarm){
-                	if (soundAlarm == "7") input "alarmCustom", "text", title:"URL/Location of custom sound...", required: false	
+                	if (soundAlarm == "7") input "alarmCustom", "text", title:"URL/Location Of Custom Sound...", required: false	
                     input "soundLength", "number", title: "Maximum time to play sound (empty=use sound default)", description: "1-20", required: false        
        			}
             }
 		}
         if (alarmType == "2" || (alarmType == "1" && secondAlarm =="1")) {
         	section ("Voice greeting options") {
-            	input "wakeMsg", "text", title: "Wake voice message", defaultValue: "Good morning! It is %time% on %day%, %date%.", required: false
+            	input "wakeMsg", "text", title: "Wake Voice Message", defaultValue: "Good morning! It is %time% on %day%, %date%.", required: false
 				href "pageWeatherSettings", title: "Weather Reporting Settings", description: getWeatherDesc(), state: greyOut()
 			}
         }
         if (alarmType == "3" || (alarmType == "1" && secondAlarm =="2") || (alarmType == "2" && secondAlarmMusic)){
         	section ("Music track/internet radio options"){
-            	input "musicTrack", "enum", title: "Play this track/internet radio station", required:false, multiple: false, options: songOptions()
+            	input "musicTrack", "enum", title: "Play This Track/Internet Radio Station", required:false, multiple: false, options: songOptions()
         	}
       	}
         if (alarmSpeaker){
             section("Devices to control at alarm time") {
-                input "switches", "capability.switch",title: "Turn on the following switches...", multiple: true, required: false, submitOnChange:true
+                input "switches", "capability.switch",title: "Turn On The Following Switches...", multiple: true, required: false, submitOnChange:true
                 href "pageDimmers", title: "Dimmer Settings", description: dimmerDesc(), state: greyOutDimmer(), submitOnChange:true
                 href "pageThermostats", title: "Thermostat Settings", description: tstatDesc(), state: greyOutTstat(), submitOnChange:true
                 if ((switches || dimmers || thermostats) && (alarmType == "2" || (alarmType == "1" && secondAlarm =="1"))){
-                    input "confirmSwitches", "bool", title: "Confirm switches/thermostats status in voice message", defaultValue: "false"
+                    input "confirmSwitches", "bool", title: "Confirm Switches/Thermostats Status In Voice Message", defaultValue: "false"
                 }
             }
             section ("Other actions at alarm time"){
                 def phrases = location.helloHome?.getPhrases()*.label
                 if (phrases) {
                     phrases.sort()
-                    input "triggerPhrase", "enum", title: "Alarm triggers the following routine", required: false, options: phrases, multiple: false, submitOnChange:true
+                    input "triggerPhrase", "enum", title: "Alarm Triggers The Following Routine", required: false, options: phrases, multiple: false, submitOnChange:true
                     if (triggerPhrase  && (alarmType == "2" || (alarmType == "1" && secondAlarm =="1"))){
-                        input "confirmPhrase", "bool", title: "Confirm routine in voice message", defaultValue: "false"
+                        input "confirmPhrase", "bool", title: "Confirm Routine In Voice Message", defaultValue: "false"
                     }
                 }
-                input "triggerMode", "mode", title: "Alarm triggers the following mode", required: false, submitOnChange:true
+                input "triggerMode", "mode", title: "Alarm Triggers The Following Mode", required: false, submitOnChange:true
                 if (triggerMode  && (alarmType == "2" || (alarmType == "1" && secondAlarm =="1"))){
-                    input "confirmMode", "bool", title: "Confirm mode in voice message", defaultValue: "false"
+                    input "confirmMode", "bool", title: "Confirm Mode In Voice Message", defaultValue: "false"
                 }
             }
         }
@@ -120,42 +121,42 @@ def pageSetup() {
 def pageRestrictions(){
     dynamicPage(name: "pageRestrictions", title: "Alarm Restrictions", install: false, uninstall: false){
         section{
-            input "alarmDay", "enum", options: ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"], title: "Alarm on certain days of the week...", multiple: true, required: false
-            input "alarmMode", "mode", title: "Alarm only during the following modes...", multiple: true, required: false
-            input "alarmPresence", "capability.presenceSensor", title: "Alarm only when present...", multiple: true, required: false, submitOnChange:true
-            if (alarmPresence && alarmPresence.size()>1) input "alarmPresAll", "bool", title: "Off=Any present; On=All present", defaultValue: false
-            input "alarmSwitchActive", "capability.switch", title: "Alarm only when these switches are on...", multiple: true, required: false
-            input "alarmSwitchNotActive", "capability.switch", title: "Alarm only when these switches are off...", multiple: true, required: false
+            input "alarmDay", "enum", options: ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"], title: "Alarm On Certain Days Of The Week...", multiple: true, required: false
+            input "alarmMode", "mode", title: "Alarm Only During The Following Modes...", multiple: true, required: false
+            input "alarmPresence", "capability.presenceSensor", title: "Alarm Only When Present...", multiple: true, required: false, submitOnChange:true
+            if (alarmPresence && alarmPresence.size()>1) input "alarmPresAll", "bool", title: "Off=Any Present; On=All Present", defaultValue: false
+            input "alarmSwitchActive", "capability.switch", title: "Alarm Only When These Switches Are On...", multiple: true, required: false
+            input "alarmSwitchNotActive", "capability.switch", title: "Alarm Only When These Switches Are Off...", multiple: true, required: false
         }
     }
 }
 page(name: "pageDimmers", title: "Dimmer Settings", install: false, uninstall: false) {
 	section {
-       	input "dimmers", "capability.switchLevel", title: "Dim the following...", multiple: true, required: false	
+       	input "dimmers", "capability.switchLevel", title: "Dim The Following...", multiple: true, required: false	
 		input "dimmersLevel", "enum", options: [[5:"5%"],[10:"10%"],[20:"20%"],[30:"30%"],[40:"40%"],[50:"50%"],[60:"60%"],[70:"70%"],[80:"80%"],[90:"90%"],[100:"100%"]],title: "Set dimmers to this level", multiple: false, required: false
 	}
 }
 page(name: "pageThermostats", title: "Thermostat Settings", install: false, uninstall: false) {
 	section {
-       	input "thermostats", "capability.thermostat", title: "Thermostat to control...", multiple: false, required: false
+       	input "thermostats", "capability.thermostat", title: "Thermostat To Control...", multiple: false, required: false
 	}
     section {
-        input "temperatureH", "number", title: "Heating setpoint", required: false, description: "Temperature when in heat mode"
-		input "temperatureC", "number", title: "Cooling setpoint", required: false, description: "Temperature when in cool mode"
+        input "temperatureH", "number", title: "Heating Setpoint", required: false, description: "Temperature when in heat mode"
+		input "temperatureC", "number", title: "Cooling Setpoint", required: false, description: "Temperature when in cool mode"
 	}
 }
 def pageWeatherSettings() {
 	dynamicPage(name: "pageWeatherSettings", title: "Weather Reporting Settings", install: false, uninstall: false) {
 		section {
-            input "includeTemp", "bool", title: "Speak current temperature (from local forecast)", defaultValue: false
-        	input "localTemp", "capability.temperatureMeasurement", title: "Speak local temperature (from device)", required: false, multiple: false
-        	input "localHumidity", "capability.relativeHumidityMeasurement", title: "Speak local humidity (from device)", required: false, multiple: false
-        	input "speakWeather", "bool", title: "Speak today's weather forecast", defaultValue: false
-        	input "includeSunrise", "bool", title: "Speak today's sunrise", defaultValue: false
-    		input "includeSunset", "bool", title: "Speak today's sunset", defaultValue: false
+            input "includeTemp", "bool", title: "Speak Current Temperature (From Local Forecast)", defaultValue: false
+        	input "localTemp", "capability.temperatureMeasurement", title: "Speak Local Temperature (From Device)", required: false, multiple: false
+        	input "localHumidity", "capability.relativeHumidityMeasurement", title: "Speak Local Humidity (From Device)", required: false, multiple: false
+        	input "speakWeather", "bool", title: "Speak Today's Weather Forecast", defaultValue: false
+        	input "includeSunrise", "bool", title: "Speak Today's Sunrise", defaultValue: false
+    		input "includeSunset", "bool", title: "Speak Today's Sunset", defaultValue: false
 		}
         section ("Zip code") {
-        	input "zipCode", "text", title: "Zip code for weather report", required: false
+        	input "zipCode", "text", title: "Zip Code For Weather Report", required: false
 		}
 	}
 }
@@ -557,4 +558,4 @@ private saveSelectedSong() {
 	}
 }
 //Version
-private def textVersion() {def text = "Child App Version: 1.4.3 (03/12/2016)"}
+private def textVersion() {def text = "Child App Version: 1.4.4 (03/25/2016)"}
