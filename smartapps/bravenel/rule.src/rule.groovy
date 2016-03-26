@@ -568,6 +568,7 @@ def atCertainTime() {
 def periodic(param) {
 	dynamicPage(name: "periodic", title: "Periodic schedule", uninstall: false) {
 //    	def n = param.n
+		if(param.n != null) state.thisN = param.n
 		def n = state.thisN
 		section() {
         	input "whichPeriod$n", "enum", title: "Select periodic frequency", submitOnChange: true, required: true, options: ["Minutes", "Hourly", "Daily", "Weekly", "Monthly", "Yearly"]
