@@ -63,8 +63,16 @@ def refresh() {
  }
 
 def zwaveEvent(physicalgraph.zwave.commands.wakeupv2.WakeUpNotification cmd) {
-       log.debug("${device.displayName} woke up")
-       return createEvent(descriptionText: "${device.displayName} woke up", isStateChange: false)
+    def event = createEvent(descriptionText: "${device.displayName} woke up", displayed: false)
+    def result = []
+    
+    // Request battery info on wake up if levels have not been received within last 24 hours
+	if (!state.lastBatteryReport || (new Date().time) - state.lastBatteryReport > 24*60*60*1000) {
+       result += response(zwave.batteryV1.batteryGet().format())
+       result += response("delay 1200")
+    }
+    result += response(zwave.wakeUpV1.wakeUpNoMoreInformation().format()) 
+    return result
 }
 
 // Unexpected command received
