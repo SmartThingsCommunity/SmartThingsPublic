@@ -420,7 +420,7 @@ def pollChildren(child = null) {
 							temperature: (stat.runtime.actualTemperature / 10),
 							heatingSetpoint: stat.runtime.desiredHeat / 10,
 							coolingSetpoint: stat.runtime.desiredCool / 10,
-							thermostatMode: stat.settings.hvacMode,
+							thermostatMode: (stat.settings.hvacMode == "auxHeatOnly") ? "emergency heat" : stat.settings.hvacMode,
 							humidity: stat.runtime.actualHumidity,
 							thermostatFanMode: stat.runtime.desiredFanMode
 					]
