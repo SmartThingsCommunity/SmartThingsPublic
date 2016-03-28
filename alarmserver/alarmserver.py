@@ -495,6 +495,7 @@ class EnvisalinkClient(asynchat.async_chat):
                  'type': 'partition',
                  'value': str(int(parameters[0]))
                }
+
                if str(code) == '652':
                  if message.endswith('Zero Entry Away'):
                    update['status']='instantaway'
@@ -656,6 +657,9 @@ class AlarmServer(asyncore.dispatcher):
         elif query.path == '/api/alarm/reset':
             channel.pushok(json.dumps({'response' : 'Request to reset sensors received'}))
             self._envisalinkclient.send_command('071', '1*72#')
+        elif query.path == '/api/alarm/refresh':
+            channel.pushok(json.dumps({'response' : 'Request to refresh received'}))
+            self._envisalinkclient.send_command('001', '')
         elif query.path == '/api/pgm':
             channel.pushok(json.dumps({'response' : 'Request to trigger PGM'}))
             #self._envisalinkclient.send_command('020', '1' + str(query_array['pgmnum'][0]))
