@@ -169,8 +169,11 @@ def levelConfig() {
 }
 
 def setColorTemperature(value) {
-    if(value<101){
-        value = (value*38) + 2700		//Calculation of mapping 0-100 to 2700-6500
+    if(value < 2700){
+        value = 2700
+    }
+    if(value > 6500){
+        value = 6500
     }
 
     def tempInMired = Math.round(1000000/value)
