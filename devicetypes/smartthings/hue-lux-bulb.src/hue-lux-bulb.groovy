@@ -1,6 +1,8 @@
 /**
  *  Hue Lux Bulb
  *
+ *  Philips Hue Type "Dimmable Light"
+ *
  *  Author: SmartThings
  */
 // for the UI
@@ -68,12 +70,12 @@ def parse(description) {
 
 // handle commands
 void on() {
-	parent.on(this)
+	log.trace parent.on(this)
 	sendEvent(name: "switch", value: "on")
 }
 
 void off() {
-	parent.off(this)
+	log.trace parent.off(this)
 	sendEvent(name: "switch", value: "off")
 }
 
@@ -82,6 +84,7 @@ void setLevel(percent) {
     if (percent != null && percent >= 0 && percent <= 100) {
 		parent.setLevel(this, percent)
 		sendEvent(name: "level", value: percent)
+		sendEvent(name: "switch", value: "on")
 	} else {
     	log.warn "$percent is not 0-100"
     }

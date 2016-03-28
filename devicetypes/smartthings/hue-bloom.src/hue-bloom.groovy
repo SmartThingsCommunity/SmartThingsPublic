@@ -1,7 +1,7 @@
 /**
- *  Hue Bulb
+ *  Hue Bloom
  *
- *  Philips Hue Type "Extended Color Light"
+ *  Philips Hue Type "Color Light"
  *
  *  Author: SmartThings
  */
@@ -9,11 +9,10 @@
 // for the UI
 metadata {
 	// Automatically generated. Make future change here.
-	definition (name: "Hue Bulb", namespace: "smartthings", author: "SmartThings") {
+	definition (name: "Hue Bloom", namespace: "smartthings", author: "SmartThings") {
 		capability "Switch Level"
 		capability "Actuator"
 		capability "Color Control"
-		capability "Color Temperature"
 		capability "Switch"
 		capability "Refresh"
 		capability "Sensor"
@@ -45,14 +44,6 @@ metadata {
 				attributeState "color", action:"setAdjustedColor"
 			}
 		}
-
-        controlTile("colorTempSliderControl", "device.colorTemperature", "slider", width: 4, height: 2, inactiveLabel: false, range:"(2000..6500)") {
-            state "colorTemperature", action:"color temperature.setColorTemperature"
-        }
-
-        valueTile("colorTemp", "device.colorTemperature", inactiveLabel: false, decoration: "flat", width: 2, height: 2) {
-            state "colorTemperature", label: '${currentValue} K'
-        }
 
 		standardTile("reset", "device.reset", height: 2, width: 2, inactiveLabel: false, decoration: "flat") {
 			state "default", label:"Reset Color", action:"reset", icon:"st.lights.philips.hue-single"
