@@ -236,6 +236,10 @@ def zwaveEvent(physicalgraph.zwave.commands.multichannelv3.MultiChannelCmdEncap 
     }
 }
 
+def zwaveEvent(physicalgraph.zwave.commands.configurationv2.ConfigurationReport cmd) {
+    log.debug "${device.displayName} parameter '${cmd.parameterNumber}' with a byte size of '${cmd.size}' is set to '${cmd2Integer(cmd.configurationValue)}'"
+}
+
 def zwaveEvent(physicalgraph.zwave.Command cmd) {
     // This will capture any commands not handled by other instances of zwaveEvent
     // and is recommended for development so you can see every command the device sends
@@ -282,6 +286,7 @@ def configure() {
     if ( settings."parameter${n}" != null ) {
         if ( settings."parameter${n}".value != "" ){
             log.debug "Setting parameter: ${n} to value: ${settings."parameter${n}".value}"
+            log.debug "The converted value for this parameter is: ${valueCheck(n, (settings."parameter${n}".value as String).toInteger())}"
             cmds << zwave.configurationV1.configurationSet(parameterNumber: n, scaledConfigurationValue: valueCheck(n, (settings."parameter${n}".value as String).toInteger())).format()	// Set switch to report values for both Relay1 and Relay2
             cmds << zwave.configurationV1.configurationGet(parameterNumber: n).format()
         } 
@@ -363,4 +368,18 @@ private valueCheck(number, value) {
           return value
        break
     }
+}
+
+def cmd2Integer(array) { 
+switch(array.size()) {
+	case 1:
+		array[0]
+    break
+	case 2:
+    	((array[0] & 0xFF) << 8) | (array[1] & 0xFF)
+    break
+	case 4:
+    	((array[0] & 0xFF) << 24) | ((array[1] & 0xFF) << 16) | ((array[2] & 0xFF) << 8) | (array[3] & 0xFF)
+	break
+}
 }
