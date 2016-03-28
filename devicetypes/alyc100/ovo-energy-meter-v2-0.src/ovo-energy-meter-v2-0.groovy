@@ -147,7 +147,7 @@ def refreshLiveData() {
 		else {
 			df.setTimeZone(TimeZone.getTimeZone("Europe/London"))
 		}
-		def currentHour = df.format(new Date())
+		def currentHour = df.format(new Date()).toInteger()
         if ((data.hour == null) || (data.hour != currentHour)) {
         	//Reset at midnight or initial call
         	if ((data.hour == null) || (currentHour == 0)) {  
