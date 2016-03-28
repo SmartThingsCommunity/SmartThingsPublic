@@ -3,7 +3,7 @@
  *
  *  Copyright 2015, 2016 Bruce Ravenel
  *
- *  Version 1.9.1b   28 Mar 2016
+ *  Version 1.9.1c   28 Mar 2016
  *
  *	Version History
  *
@@ -113,7 +113,7 @@ preferences {
 //
 
 def appVersion() {
-	return "1.9.1b" 
+	return "1.9.1c" 
 }
 
 def mainPage() {
@@ -658,8 +658,9 @@ def periodicLabel(n) {
         	break
 		case "Hourly": 
         	if(settings["everyNHoursC$n"]) result = "Every ${settings["everyNHC$n"]} hour" + (settings["everyNHC$n"] > 1 ? "s" : "") + " starting at ${hhmm(settings["startingHC$n"])}"
-            if(settings["selectHoursC$n"]) {
-            	def str = settings["selectHoursC$n"][1..-2]
+            if(settings["selectHoursC$n"] != null) {
+            	def mystr = "selectHoursC$n"
+            	def str = settings["selectHoursC$n"][0] != "0" ? settings["selectHoursC$n"][1..-2] : "00"
                 def str2 = ""
                 for(int i = 0; i < str.size(); i++) {
                 	if(str[i] == ",") str2 = str2 + ":00"
