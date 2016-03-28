@@ -5,7 +5,7 @@
  *	Author: Eric Maycock (erocm123)
  *	email: erocmail@gmail.com
  *	Date: 2015-10-22
- * 
+ *  2016-03-28: Changed how toggle works. Now it checks to see if all lights are on/off and does the opposite.
  *  2016-03-08: Better configuration layout. Configurable number of buttons. Ability to rename app.
  *  2016-02-04: Found an execution bug.
  *  2016-02-04: Slight change to still allow choosing on & off for lights  
@@ -246,8 +246,20 @@ def executeHandlers(buttonNumber) {
     def lightsConfigured = settings["lights_${buttonNumber}"]
     def toggle = false
 
-    if (!(state.previousState) && state.previousScene == buttonNumber && (settings["lights_${buttonNumber}_toggle"])) toggle = true
+    if ((settings["lights_${buttonNumber}_toggle"])) {
+       if (lightsConfigured != null) {
+          //If another source turned the lights on or off, we need to do the opposite
+           def lightOn = false
+           lightsConfigured.each {light ->
+              if (light.currentValue("switch") == "on")
+                  lightOn = true
+              if (!lightOn) toggle = false
+              else toggle = true
+           }
+       }
+    }
     if (lightsConfigured != null) {
+        
         lightsConfigured.each {light ->
             setLight(light, "$light.name", "$light.capabilities", "$buttonNumber", "${light.id}", toggle)
         }
