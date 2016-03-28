@@ -11,6 +11,7 @@ metadata {
     // Automatically generated. Make future change here.
     definition (name: "DSC Stay Panel", author: "Jordan <jordan@xeron.cc>", namespace: 'dsc') {
         capability "Switch"
+        capability "Refresh"
 
         command "away"
         command "bypassoff"
@@ -118,9 +119,13 @@ metadata {
         state "restore", label: 'Panic\u00A0Key', action: "keypanic", icon: "st.Transportation.transportation9", backgroundColor: "#000fd5"
         state "alarm", label: 'Panic\u00A0Key\u00A0Alarm', action: "keypanic", icon: "st.Transportation.transportation9", backgroundColor: "#000fd5"
       }
+      standardTile("refresh", "device.refresh", inactiveLabel: false, decoration: "flat", width: 2, height: 2) {
+        state "default", action:"refresh.refresh", icon:"st.secondary.refresh"
+      }
+
 
       main "status"
-      details(["status", "trouble", "chime", "away", "stay", "disarm", "instant", "night", "reset", "bypassoff", "ledready", "ledarmed", "ledmemory", "ledbypass", "key", "ledtrouble", "ledprogram", "ledfire", "ledbacklight", "keyfire", "keyaux", "keypanic"])
+      details(["status", "trouble", "chime", "away", "stay", "disarm", "instant", "night", "reset", "bypassoff", "ledready", "ledarmed", "ledmemory", "ledbypass", "key", "ledtrouble", "ledprogram", "ledfire", "ledbacklight", "keyfire", "keyaux", "keypanic", "refresh"])
     }
 }
 
@@ -219,6 +224,10 @@ def keypanic() {
   if ("${device.currentValue("key")}" == 'key') {
     parent.sendUrl('panic?type=3')
   }
+}
+
+def refresh() {
+  parent.sendUrl('refresh')
 }
 
 def reset() {
