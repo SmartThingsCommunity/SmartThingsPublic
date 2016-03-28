@@ -20,6 +20,7 @@
  *	v2.2 - Percentage comparison from previous cost values added into display
  *	v2.2.1 - Add current consumption price based on unit price from OVO account API not OVO live API
  *	v2.2.1b - Remove double negative on percentage values.
+ *	v2.2.2 - Change current hour logic to accommodate GMT/BST.
  */
 preferences 
 {
@@ -138,7 +139,14 @@ def refreshLiveData() {
         }
         //Get current hour
         //data.hour = null
-        def currentHour = new Date().getAt(Calendar.HOUR_OF_DAY)
+        def df = new java.text.SimpleDateFormat("kk")
+        if (location.timeZone) {
+			df.setTimeZone(location.timeZone)
+		}
+		else {
+			df.setTimeZone(TimeZone.getTimeZone("Europe/London"))
+		}
+		def currentHour = df.format(new Date())
         if ((data.hour == null) || (data.hour != currentHour)) {
         	//Reset at midnight or initial call
         	if ((data.hour == null) || (currentHour == 0)) {  
