@@ -21,6 +21,7 @@
  *	v2.2.1 - Add current consumption price based on unit price from OVO account API not OVO live API
  *	v2.2.1b - Remove double negative on percentage values.
  *	v2.2.2 - Change current hour logic to accommodate GMT/BST.
+ *	v2.2.2b - Alter Simple Date Format hour string
  */
 preferences 
 {
@@ -139,7 +140,7 @@ def refreshLiveData() {
         }
         //Get current hour
         //data.hour = null
-        def df = new java.text.SimpleDateFormat("kk")
+        def df = new java.text.SimpleDateFormat("HH")
         if (location.timeZone) {
 			df.setTimeZone(location.timeZone)
 		}
