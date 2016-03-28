@@ -3,7 +3,7 @@
  *
  *  Copyright 2015, 2016 Bruce Ravenel
  *
- *  Version 1.9.1a   26 Mar 2016
+ *  Version 1.9.1b   28 Mar 2016
  *
  *	Version History
  *
@@ -113,7 +113,7 @@ preferences {
 //
 
 def appVersion() {
-	return "1.9.1a" 
+	return "1.9.1b" 
 }
 
 def mainPage() {
@@ -450,7 +450,7 @@ def getButton(dev) {
 		def butOpts = ["one"]
 		if(numButtons > 1) {
         	for (int i = 1; i < numButtons; i++) butOpts[i] = numNames[i]
-			input "Button$dev", "enum", title: "Button number", required: true, multiple: false, submitOnChange: true, options: butOpts
+			input "Button$dev", "enum", title: "Button number", required: true, multiple: false, submitOnChange: true, options: butOpts, defaultValue: "one"
         }
 	}
 }
