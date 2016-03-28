@@ -3,7 +3,7 @@
  *
  *  Copyright 2015, 2016 Bruce Ravenel
  *
- *  Version 1.9.1c   28 Mar 2016
+ *  Version 1.9.1d   28 Mar 2016
  *
  *	Version History
  *
@@ -113,7 +113,7 @@ preferences {
 //
 
 def appVersion() {
-	return "1.9.1c" 
+	return "1.9.1d" 
 }
 
 def mainPage() {
@@ -652,15 +652,14 @@ def periodicLabel(n) {
 		case "Minutes": 
             if(settings["everyNMinutesC$n"]) result = "Every ${settings["everyNC$n"]} minute" + (settings["everyNC$n"] > 1 ? "s" : "")
             if(settings["selectMinutesC$n"]) {
-            	def str = settings["selectMinutesC$n"][1..-2]
+            	def str = stripBrackSpace("${settings["selectMinutesC$n"]}")
             	result = "Each of these minutes\n   $str"
             }
         	break
 		case "Hourly": 
         	if(settings["everyNHoursC$n"]) result = "Every ${settings["everyNHC$n"]} hour" + (settings["everyNHC$n"] > 1 ? "s" : "") + " starting at ${hhmm(settings["startingHC$n"])}"
             if(settings["selectHoursC$n"] != null) {
-            	def mystr = "selectHoursC$n"
-            	def str = settings["selectHoursC$n"][0] != "0" ? settings["selectHoursC$n"][1..-2] : "00"
+            	def str = stripBrackSpace("${settings["selectHoursC$n"]}")
                 def str2 = ""
                 for(int i = 0; i < str.size(); i++) {
                 	if(str[i] == ",") str2 = str2 + ":00"
@@ -673,20 +672,20 @@ def periodicLabel(n) {
         	if(settings["everyNDoMC$n"]) result = "Every " + (settings["everyNDC$n"] == 1 ? "" : "${settings["everyNDC$n"]} ") + "day" + (settings["everyNDC$n"] > 1 ? "s" : "") + " at ${hhmm(settings["startingDC$n"])}"
             if(settings["everyWeekDay$n"]) result = "Every weekday at ${hhmm(settings["startingDC$n"])}"
             if(settings["selectDoMC$n"]) {
-            	def str = settings["selectDoMC$n"][1..-2]
+            	def str = stripBrackSpace("${settings["selectDoMC$n"]}")
             	result = "Each of these days of the month\n   $str: At ${hhmm(settings["startingDC$n"])}"
             }
         	break
         case "Weekly":
         	if(settings["selectDoWC$n"]) {
-            	def str = settings["selectDoWC$n"][1..-2]
+            	def str = stripBrackSpace("${settings["selectDoWC$n"]}")
                 result = "Each of these days of the week\n   $str: At ${hhmm(settings["startingWC$n"])}"
             }
         	break
         case "Monthly":  
         	if(settings["everyNMC$n"]) result = "On day ${settings["dayMC$n"]} of every ${settings["everyNMC$n"]} month" + (settings["everyNMC$n"] > 1 ? "s" : "") + " At ${hhmm(settings["startingMC$n"])}"
             if(settings["selectMonthC$n"]) {
-            	def str = settings["selectMonthC$n"][1..-2]
+            	def str = stripBrackSpace("${settings["selectMonthC$n"]}")
                 result = "On day ${settings["dayMC$n"]} of each of these months\n   $str: At ${hhmm(settings["startingMC$n"])}"
             }
             if(settings["weeklyMC$n"]) result = "On the ${settings["weeklyMC$n"]} ${settings["dailyMC$n"]} of every " + (settings["everyNMCX$n"] > 1 ? "${settings["everyNMCX$n"]} month" : "month") + 
@@ -716,7 +715,7 @@ def cronString(n) {
 		case "Hourly": 
 			if(settings["everyNHoursC$n"]) result = "11 0 */${settings["everyNHC$n"]} * * ?"
 			if(settings["selectHoursC$n"]) {
-				def str = stripBrackSpace("${settings["selectHoursC$n"]}") as String
+				def str = stripBrackSpace("${settings["selectHoursC$n"]}")
 				result = "11 ${settings["startingHCX$n"]} $str 1/1 * ?"
 			}
 			break
