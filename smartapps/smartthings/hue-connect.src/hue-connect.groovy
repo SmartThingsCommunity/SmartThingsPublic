@@ -289,7 +289,7 @@ def bulbListHandler(hub, data = "") {
         def object = new groovy.json.JsonSlurper().parseText(data)
         object.each { k,v ->
             if (v instanceof Map)
-                bulbs[k] = [id: k, name: v.name, type: v.type, hub:hub]
+                bulbs[k] = [id: k, name: v.name, type: v.type, modelid: v.modelid, hub:hub]
         }
     }
     def bridge = null
@@ -298,6 +298,40 @@ def bulbListHandler(hub, data = "") {
     bridge.sendEvent(name: "bulbList", value: hub, data: bulbs, isStateChange: true, displayed: false)
     msg = "${bulbs.size()} bulbs found. ${bulbs}"
 	return msg
+}
+
+private upgradeDeviceType(device, newHueType) {
+	def deviceType = getDeviceType(newHueType)
+
+	// Automatically change users Hue bulbs to correct device types
+	if (deviceType && !(device?.typeName?.equalsIgnoreCase(deviceType))) {
+		log.debug "Update device type: \"$device.label\" ${device?.typeName}->$deviceType"
+		device.setDeviceType(deviceType)
+	}
+}
+
+private getDeviceType(hueType) {
+	// Determine ST device type based on Hue classification of light
+	if (hueType?.equalsIgnoreCase("Dimmable light"))
+		return "Hue Lux Bulb"
+	else if (hueType?.equalsIgnoreCase("Extended Color Light"))
+		return "Hue Bulb"
+	else if (hueType?.equalsIgnoreCase("Color Light"))
+		return "Hue Bloom"
+	else
+		return null
+}
+
+private addChildBulb(dni, hueType, name, hub, update=false, device = null) {
+	def deviceType = getDeviceType(hueType)
+
+	if (deviceType) {
+		return addChildDevice("smartthings", deviceType, dni, hub, ["label": name])
+	}
+	else {
+		log.warn "Device type $hueType not supported"
+		return null
+	}
 }
 
 def addBulbs() {
@@ -309,11 +343,7 @@ def addBulbs() {
 			if (bulbs instanceof java.util.Map) {
 				newHueBulb = bulbs.find { (app.id + "/" + it.value.id) == dni }
                 if (newHueBulb != null) {
-                    if (newHueBulb?.value?.type?.equalsIgnoreCase("Dimmable light") ) {
-                        d = addChildDevice("smartthings", "Hue Lux Bulb", dni, newHueBulb?.value.hub, ["label":newHueBulb?.value.name])
-                    } else {
-                        d = addChildDevice("smartthings", "Hue Bulb", dni, newHueBulb?.value.hub, ["label":newHueBulb?.value.name])
-                    }
+                    d = addChildBulb(dni, newHueBulb?.value?.type, newHueBulb?.value?.name, newHueBulb?.value?.hub)
                     log.debug "created ${d.displayName} with id $dni"
                     d.refresh()
                 } else {
@@ -322,16 +352,15 @@ def addBulbs() {
 			} else {
             	//backwards compatable
 				newHueBulb = bulbs.find { (app.id + "/" + it.id) == dni }
-				d = addChildDevice("smartthings", "Hue Bulb", dni, newHueBulb?.hub, ["label":newHueBulb?.name])
+				d = addChildBulb(dni, "Extended Color Light", newHueBulb?.value?.name, newHueBulb?.value?.hub)
                 d.refresh()
 			}
 		} else {
 			log.debug "found ${d.displayName} with id $dni already exists, type: '$d.typeName'"
 			if (bulbs instanceof java.util.Map) {
+				// Update device type if incorrect
             	def newHueBulb = bulbs.find { (app.id + "/" + it.value.id) == dni }
-				if (newHueBulb?.value?.type?.equalsIgnoreCase("Dimmable light") && d.typeName == "Hue Bulb") {
-					d.setDeviceType("Hue Lux Bulb")
-				}
+				upgradeDeviceType(d, newHueBulb?.value?.type)
 			}
 		}
 	}
@@ -473,7 +502,7 @@ def locationHandler(evt) {
 					def bulbs = getHueBulbs()
 					log.debug "Adding bulbs to state!"
 					body.each { k,v ->
-						bulbs[k] = [id: k, name: v.name, type: v.type, hub:parsedEvent.hub]
+						bulbs[k] = [id: k, name: v.name, type: v.type, modelid: v.modelid, hub:parsedEvent.hub]
 					}
 				}
 			}
@@ -836,7 +865,7 @@ def convertBulbListToMap() {
 		if (state.bulbs instanceof java.util.List) {
 			def map = [:]
 			state.bulbs.unique {it.id}.each { bulb ->
-				map << ["${bulb.id}":["id":bulb.id, "name":bulb.name, "hub":bulb.hub]]
+				map << ["${bulb.id}":["id":bulb.id, "name":bulb.name, "type": bulb.type, "modelid": bulb.modelid, "hub":bulb.hub]]
 			}
 			state.bulbs = map
 		}
