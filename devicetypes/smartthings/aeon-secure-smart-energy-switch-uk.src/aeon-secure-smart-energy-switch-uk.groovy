@@ -24,6 +24,12 @@ metadata {
 		capability "Sensor"
 		capability "Configuration"
 
+	   	attribute "ManufacturerCode", "string"
+		attribute "ProductCode", "string"
+		attribute "ProduceTypeCode", "string"
+		attribute "WirelessConfig", "string"
+
+
 		command "reset"
         command "configureAfterSecure"
 
@@ -183,9 +189,9 @@ def configureAfterSecure() {
 		zwave.configurationV1.configurationSet(parameterNumber: 92, size: 1, scaledConfigurationValue: 5),	// The value here represents minimum change in wattage percent (in terms of percentage) for a REPORT to be sent (Valid values 0‐100).
 		zwave.configurationV1.configurationSet(parameterNumber: 101, size: 4, scaledConfigurationValue: 4),	// Which reports need to send in Report group 1 (See flags in table below).
 		// Disable a time interval to receive immediate updates of power change.
-		//zwave.configurationV1.configurationSet(parameterNumber: 111, size: 4, scaledConfigurationValue: 300),	// The time interval of sending Report group 1 (Valid values 0x01‐0xFFFFFFFF).
+		zwave.configurationV1.configurationSet(parameterNumber: 111, size: 4, scaledConfigurationValue: 300),	// The time interval of sending Report group 1 (Valid values 0x01‐0xFFFFFFFF). report every 5 mins
 		zwave.configurationV1.configurationSet(parameterNumber: 102, size: 4, scaledConfigurationValue: 8),	// Which reports need to send in Report group 2 (See flags in table below).
-		zwave.configurationV1.configurationSet(parameterNumber: 112, size: 4, scaledConfigurationValue: 300),	// The time interval of sending Report group 2 (Valid values 0x01‐0xFFFFFFFF).
+		zwave.configurationV1.configurationSet(parameterNumber: 112, size: 4, scaledConfigurationValue: 1200),	// The time interval of sending Report group 2 (Valid values 0x01‐0xFFFFFFFF). report every 20 mins
 		zwave.configurationV1.configurationSet(parameterNumber: 252, size: 1, scaledConfigurationValue: 1),	// Enable/disable Configuration Locked (0 =disable, 1 = enable).
 
 		// Register for Group 1
@@ -211,4 +217,23 @@ private secure(physicalgraph.zwave.Command cmd) {
 
 private secureSequence(commands, delay=200) {
 	delayBetween(commands.collect{ secure(it) }, delay)
+}
+
+
+def zwaveEvent(physicalgraph.zwave.commands.manufacturerspecificv2.ManufacturerSpecificReport cmd) {
+	def result = []
+
+	def manufacturerCode = String.format("%04X", cmd.manufacturerId)
+	def productCode = String.format("%04X", cmd.productId)
+	def produceTypeCode = String.format("%04X", cmd.productTypeId)
+	def wirelessConfig = "ZWP"
+	
+	sendEvent(name: "ManufacturerCode", value: manufacturerCode)
+	sendEvent(name: "ProductCode", value: productCode)
+	sendEvent(name: "ProduceTypeCode", value: produceTypeCode)
+	sendEvent(name: "WirelessConfig", value: wirelessConfig)
+	
+	result << createEvent(descriptionText: "$device.displayName", isStateChange: false)
+
+	return result
 }
