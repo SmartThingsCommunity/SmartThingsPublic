@@ -3,12 +3,12 @@
  *
  *  Copyright 2015, 2016 Bruce Ravenel
  *
- *  Version 1.9.1d   28 Mar 2016
+ *  Version 1.9.1e   28 Mar 2016
  *
  *	Version History
  *
  *	1.9.1	26 Mar 2016		Added yearly period, and two periodic trigger events
- *	1.9.0	24 Mar 2016		Added periodic trigger, disable logging, bug fixes re ZWN buttons
+ *	1.9.0	24 Mar 2016		Added periodic trigger, bug fixes re ZWN buttons
  *	1.8.6	19 Mar 2016		Bug fixes re private Boolean as trigger event
  *	1.8.5	13 Mar 2016		Added support for single button device, more private Boolean options, emergency heat
  *	1.8.4	11 Mar 2016		Strengthened code pertaining to evaluation of malformed rules
@@ -113,7 +113,7 @@ preferences {
 //
 
 def appVersion() {
-	return "1.9.1d" 
+	return "1.9.1e" 
 }
 
 def mainPage() {
@@ -125,7 +125,6 @@ def mainPage() {
 	}
 	catch (e) {log.error "Please update Rule Machine to V1.6 or later"}
 	if(state.private == null) state.private = "true"
-    if(state.logging == null) state.logging = true
 	def myTitle = "Define a Rule, Trigger or Actions\n"
 	if(state.howManyT > 1 || state.isTrig) myTitle = "Define a Trigger"
 	else if(state.howMany > 1) myTitle = "Define a Rule"
@@ -255,7 +254,6 @@ def getMoreOptions() {
         if(disabled) input "disabledOff", "bool", title: "Disable when Off? On is default", required: false, defaultValue: false
         def privy = state.private
         input "usePrivateDisable", "bool", title: "Enable/Disable with private Boolean? [$privy]", required: false
-        input "enableLogging", "bool", title: "Enable/Disable Logging", required: false, defaultValue: true
 	}    
 }
 
@@ -1587,7 +1585,6 @@ def startCron2() {
 }
 
 def initialize() {
-	state.logging = !(enableLogging == false)
 	def hasTrig = state.howManyT > 1
 	def howMany = hasTrig ? state.howManyT : state.howMany
 	for (int i = 1; i < howMany; i++) {
@@ -1950,7 +1947,6 @@ def doDelay(time, rand, cancel, trufal) {
 		runIn(myTime, trufal ? delayRuleTrue : delayRuleFalse)
 		if(trufal) state.delayRuleTrue = true else state.delayRuleFalse = true
 	} else runIn(myTime, trufal ? delayRuleTrueForce : delayRuleFalseForce)
-    if(state.logging == false) return
 	def isMins = myTime % 60 == 0
 	if(isMins) myTime = myTime / 60
 	def delayStr = isMins ? "minute" : "seconds"
@@ -2136,7 +2132,7 @@ def runRule(force) {
 		else takeAction(success)
 		parent.setRuleTruth(app.label, success)
 		state.success = success
-		if(state.logging != false) log.info (success ? "$app.label is now True" : "$app.label is now False")
+		log.info (success ? "$app.label is now True" : "$app.label is now False")
 	} // else log.info "$app.label evaluated " + (success ? "true" : "false")
 }
 
@@ -2145,7 +2141,7 @@ def doTrigger() {
 	if     (delayMinTrue > 0)	doDelay(delayMinTrue * 60, randomTrue, true, true)
 	else if(delaySecTrue > 0)	doDelay(delaySecTrue, false, true, true)	 
 	else takeAction(true)
-	if(state.logging != false) log.info ("$app.label Triggered")
+	log.info ("$app.label Triggered")
 }
 
 // Event Handler code follows
@@ -2196,7 +2192,7 @@ def testEvt(evt) {
 
 def allHandler(evt) {
 	if(!allOk) return
-	if(state.logging != false) log.info "$app.label: $evt.displayName $evt.name $evt.value"
+	log.info "$app.label: $evt.displayName $evt.name $evt.value"
 	state.lastEvtName = evt.displayName
 	if(evt.name == "level") state.lastEvtLevel = evt.value.toInteger()
 	def hasTrig = state.howManyT > 1
@@ -2327,18 +2323,20 @@ def disabledHandler(evt) {
 // Rule evaluation and action handlers follow
 
 def ruleHandler(rule, truth) {
-	if(state.logging != false) log.info "$app.label: $rule is $truth"
+	if(!allOk) return
+	log.info "$app.label: $rule is $truth"
 	if(state.isRule || state.howMany > 1) runRule(false) else doTrigger()
 }
 
 def ruleEvaluator(rule) {
-	if(state.logging != false) log.info "$app.label: $rule evaluate"
+	if(!allOk) return
+	log.info "$app.label: $rule evaluate"
 	runRule(true)
 }
 
 def ruleActions(rule) {
 	if(!allOk) return
-	if(state.logging != false) log.info "$app.label: $rule evaluate"
+	log.info "$app.label: $rule evaluate"
 	if     (delayMinTrue > 0)	doDelay(delayMinTrue * 60, randomTrue, true, true)
 	else if(delaySecTrue > 0)	doDelay(delaySecTrue, false, true, true)	 
 	else takeAction(true)
@@ -2349,7 +2347,7 @@ def revealSuccess() {
 }
 
 def setBoolean(truth, appLabel) {
-	if(state.logging != false) log.info "$app.label: Set Boolean from $appLabel: $truth"
+	log.info "$app.label: Set Boolean from $appLabel: $truth"
 	state.private = truth // == "true"
 	if(state.isRule || (state.howMany > 1 && state.howManyT <= 1)) runRule(false) 
     else for(int i = 1; i < state.howManyT; i++) {
