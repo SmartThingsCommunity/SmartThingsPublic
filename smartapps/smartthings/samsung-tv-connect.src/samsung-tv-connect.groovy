@@ -22,7 +22,8 @@ definition(
 	description: "Allows you to control your Samsung TV from the SmartThings app. Perform basic functions like power Off, source, volume, channels and other remote control functions.",
 	category: "SmartThings Labs",
     iconUrl: "https://s3.amazonaws.com/smartapp-icons/Samsung/samsung-remote%402x.png",
-    iconX2Url: "https://s3.amazonaws.com/smartapp-icons/Samsung/samsung-remote%403x.png"
+    iconX2Url: "https://s3.amazonaws.com/smartapp-icons/Samsung/samsung-remote%403x.png",
+    singleInstance: true
 )
 
 preferences {
@@ -315,60 +316,40 @@ private def parseEventMessage(String description) {
 	parts.each { part ->
 		part = part.trim()
 		if (part.startsWith('devicetype:')) {
-			def valueString = part.split(":")[1].trim()
-			event.devicetype = valueString
+			part -= "devicetype:"
+			event.devicetype = part.trim()
 		}
 		else if (part.startsWith('mac:')) {
-			def valueString = part.split(":")[1].trim()
-			if (valueString) {
-				event.mac = valueString
-			}
+			part -= "mac:"
+			event.mac = part.trim()
 		}
 		else if (part.startsWith('networkAddress:')) {
-			def valueString = part.split(":")[1].trim()
-			if (valueString) {
-				event.ip = valueString
-			}
+			part -= "networkAddress:"
+			event.ip = part.trim()
 		}
 		else if (part.startsWith('deviceAddress:')) {
-			def valueString = part.split(":")[1].trim()
-			if (valueString) {
-				event.port = valueString
-			}
+			part -= "deviceAddress:"
+			event.port = part.trim()
 		}
 		else if (part.startsWith('ssdpPath:')) {
-			def valueString = part.split(":")[1].trim()
-			if (valueString) {
-				event.ssdpPath = valueString
-			}
+			part -= "ssdpPath:"
+			event.ssdpPath = part.trim()
 		}
 		else if (part.startsWith('ssdpUSN:')) {
 			part -= "ssdpUSN:"
-			def valueString = part.trim()
-			if (valueString) {
-				event.ssdpUSN = valueString
-			}
+			event.ssdpUSN = part.trim()
 		}
 		else if (part.startsWith('ssdpTerm:')) {
 			part -= "ssdpTerm:"
-			def valueString = part.trim()
-			if (valueString) {
-				event.ssdpTerm = valueString
-			}
+			event.ssdpTerm = part.trim()
 		}
 		else if (part.startsWith('headers')) {
 			part -= "headers:"
-			def valueString = part.trim()
-			if (valueString) {
-				event.headers = valueString
-			}
+			event.headers = part.trim()
 		}
 		else if (part.startsWith('body')) {
 			part -= "body:"
-			def valueString = part.trim()
-			if (valueString) {
-				event.body = valueString
-			}
+			event.body = part.trim()
 		}
 	}
 	event

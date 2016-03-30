@@ -1,18 +1,60 @@
-/**
- *  SmartSense Moisture Sensor
+/*
+===============================================================================
+ *  Copyright 2016 SmartThings
  *
- *  Copyright 2014 SmartThings
- *
- *  Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except
- *  in compliance with the License. You may obtain a copy of the License at:
+ *  Licensed under the Apache License, Version 2.0 (the "License"); you may not
+<<<<<<< HEAD
+<<<<<<< HEAD
+<<<<<<< HEAD
+ *  use this file except in compliance with the License. You may obtain a copy 
+=======
+ *  use this file except in compliance with the License. You may obtain a copy
+>>>>>>> SmartThingsCommunity/master
+=======
+ *  use this file except in compliance with the License. You may obtain a copy
+>>>>>>> SmartThingsCommunity/master
+=======
+ *  use this file except in compliance with the License. You may obtain a copy
+>>>>>>> pr/27
+ *  of the License at:
  *
  *      http://www.apache.org/licenses/LICENSE-2.0
  *
- *  Unless required by applicable law or agreed to in writing, software distributed under the License is distributed
- *  on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the License
- *  for the specific language governing permissions and limitations under the License.
+<<<<<<< HEAD
+<<<<<<< HEAD
+<<<<<<< HEAD
+ *  Unless required by applicable law or agreed to in writing, software 
+ *  distributed under the License is distributed on an "AS IS" BASIS, WITHOUT 
+ *  WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the 
+ *  License for the specific language governing permissions and limitations 
+=======
+=======
+>>>>>>> SmartThingsCommunity/master
+=======
+>>>>>>> pr/27
+ *  Unless required by applicable law or agreed to in writing, software
+ *  distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+ *  WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
+ *  License for the specific language governing permissions and limitations
+<<<<<<< HEAD
+<<<<<<< HEAD
+>>>>>>> SmartThingsCommunity/master
+=======
+>>>>>>> SmartThingsCommunity/master
+=======
+>>>>>>> pr/27
+ *  under the License.
+===============================================================================
+ *  Purpose: SmartSense Moisture Sensor DTH File
  *
+ *  Filename: SmartSense-Moisture-Sensor.src/SmartSense-Moisture-Sensor.groovy
+ *
+ *  Change History:
+ *  1. 20160116 TW - Update/Edit to support i18n translations
+ *  2. 20160125 TW = Incorporated new battery mapping from TM
+===============================================================================
  */
+
 metadata {
 	definition (name: "SmartSense Moisture Sensor",namespace: "smartthings", author: "SmartThings") {
 		capability "Configuration"
@@ -23,11 +65,10 @@ metadata {
         
         command "enrollResponse"
 
-
 		fingerprint inClusters: "0000,0001,0003,0402,0500,0020,0B05", outClusters: "0019", manufacturer: "CentraLite",  model: "3315-S", deviceJoinName: "Water Leak Sensor"
 		fingerprint inClusters: "0000,0001,0003,0402,0500,0020,0B05", outClusters: "0019", manufacturer: "CentraLite",  model: "3315"
 		fingerprint inClusters: "0000,0001,0003,0402,0500,0020,0B05", outClusters: "0019", manufacturer: "CentraLite",  model: "3315-Seu", deviceJoinName: "Water Leak Sensor"
-
+		fingerprint inClusters: "0000,0001,0003,000F,0020,0402,0500", outClusters: "0019", manufacturer: "SmartThings", model: "moisturev4", deviceJoinName: "Water Leak Sensor"
 	}
  
 	simulator {
@@ -43,8 +84,8 @@ metadata {
 				])
 		}
 		section {
-			input description: "This feature allows you to correct any temperature variations by selecting an offset. Ex: If your sensor consistently reports a temp that's 5 degrees too warm, you'd enter \"-5\". If 3 degrees too cold, enter \"+3\".", displayDuringSetup: false, type: "paragraph", element: "paragraph"
-			input "tempOffset", "number", title: "Temperature Offset", description: "Adjust temperature by this many degrees", range: "*..*", displayDuringSetup: false
+			input title: "Temperature Offset", description: "This feature allows you to correct any temperature variations by selecting an offset. Ex: If your sensor consistently reports a temp that's 5 degrees too warm, you'd enter '-5'. If 3 degrees too cold, enter '+3'.", displayDuringSetup: false, type: "paragraph", element: "paragraph"
+			input "tempOffset", "number", title: "Degrees", description: "Adjust temperature by this many degrees", range: "*..*", displayDuringSetup: false
 		}
 	}
  
@@ -56,7 +97,7 @@ metadata {
 			}
 		}
 		valueTile("temperature", "device.temperature", inactiveLabel: false, width: 2, height: 2) {
-			state "temperature", label:'${currentValue}째',
+			state "temperature", label:'${currentValue}�',
 				backgroundColors:[
 					[value: 31, color: "#153591"],
 					[value: 44, color: "#1e9cbb"],
@@ -108,6 +149,7 @@ def parse(String description) {
 }
  
 private Map parseCatchAllMessage(String description) {
+<<<<<<< HEAD
     Map resultMap = [:]
     def cluster = zigbee.parse(description)
     if (shouldProcessMessage(cluster)) {
@@ -115,6 +157,21 @@ private Map parseCatchAllMessage(String description) {
             case 0x0001:
             	resultMap = getBatteryResult(cluster.data.last())
                 break
+=======
+	Map resultMap = [:]
+	def cluster = zigbee.parse(description)
+	if (shouldProcessMessage(cluster)) {
+		switch(cluster.clusterId) {
+			case 0x0001:
+				resultMap = getBatteryResult(cluster.data.last())
+				break
+<<<<<<< HEAD
+<<<<<<< HEAD
+>>>>>>> SmartThingsCommunity/master
+=======
+>>>>>>> SmartThingsCommunity/master
+=======
+>>>>>>> pr/27
 
             case 0x0402:
                 // temp is last 2 data values. reverse to swap endian
@@ -215,52 +272,140 @@ def getTemperature(value) {
 }
 
 private Map getBatteryResult(rawValue) {
-	log.debug 'Battery'
+	log.debug "Battery rawValue = ${rawValue}"
 	def linkText = getLinkText(device)
-    
-    def result = [
-    	name: 'battery'
-    ]
-    
+
+	def result = [
+		name: 'battery',
+		value: '--',
+		translatable: true
+	]
+
 	def volts = rawValue / 10
-	def descriptionText
-	if (volts > 3.5) {
-		result.descriptionText = "${linkText} battery has too much power (${volts} volts)."
-	}
+
+	if (rawValue == 0 || rawValue == 255) {}
 	else {
-		def minVolts = 2.1
-    	def maxVolts = 3.0
-		def pct = (volts - minVolts) / (maxVolts - minVolts)
-		result.value = Math.min(100, (int) pct * 100)
-		result.descriptionText = "${linkText} battery was ${result.value}%"
+		if (volts > 3.5) {
+			result.descriptionText = "{{ device.displayName }} battery has too much power: (> 3.5) volts."
+		}
+		else {
+			if (device.getDataValue("manufacturer") == "SmartThings") {         
+				volts = rawValue // For the batteryMap to work the key needs to be an int
+				def batteryMap = [28:100, 27:100, 26:100, 25:90, 24:90, 23:70,
+								  22:70, 21:50, 20:50, 19:30, 18:30, 17:15, 16:1, 15:0]
+				def minVolts = 15
+				def maxVolts = 28
+
+				if (volts < minVolts)
+					volts = minVolts
+				else if (volts > maxVolts)
+					volts = maxVolts
+				def pct = batteryMap[volts]
+				if (pct != null) {
+					result.value = pct
+<<<<<<< HEAD
+<<<<<<< HEAD
+<<<<<<< HEAD
+                    def value = pct
+					result.descriptionText = "{{ device.displayName }} battery was {{ value }}"
+=======
+					result.descriptionText = "{{ device.displayName }} battery was {{ value }}%"
+>>>>>>> SmartThingsCommunity/master
+=======
+					result.descriptionText = "{{ device.displayName }} battery was {{ value }}%"
+>>>>>>> SmartThingsCommunity/master
+=======
+					result.descriptionText = "{{ device.displayName }} battery was {{ value }}%"
+>>>>>>> pr/27
+				}
+			}
+			else {
+				def minVolts = 2.1
+				def maxVolts = 3.0
+				def pct = (volts - minVolts) / (maxVolts - minVolts)
+				result.value = Math.min(100, (int) pct * 100)
+<<<<<<< HEAD
+<<<<<<< HEAD
+<<<<<<< HEAD
+				result.descriptionText = "{{ device.displayName }} battery was {{ value }}"
+=======
+				result.descriptionText = "{{ device.displayName }} battery was {{ value }}%"
+>>>>>>> SmartThingsCommunity/master
+=======
+				result.descriptionText = "{{ device.displayName }} battery was {{ value }}%"
+>>>>>>> SmartThingsCommunity/master
+=======
+				result.descriptionText = "{{ device.displayName }} battery was {{ value }}%"
+>>>>>>> pr/27
+			}
+		}
 	}
 
 	return result
 }
-
 private Map getTemperatureResult(value) {
 	log.debug 'TEMP'
-	def linkText = getLinkText(device)
 	if (tempOffset) {
 		def offset = tempOffset as int
 		def v = value as int
 		value = v + offset
 	}
-	def descriptionText = "${linkText} was ${value}째${temperatureScale}"
+    def descriptionText
+    if ( temperatureScale == 'C' )
+<<<<<<< HEAD
+<<<<<<< HEAD
+<<<<<<< HEAD
+    	descriptionText = '{{ device.displayName }} was {{ value }}캜'
+    else
+    	descriptionText = '{{ device.displayName }} was {{ value }}캟'
+=======
+    	descriptionText = '{{ device.displayName }} was {{ value }}째C'
+    else
+    	descriptionText = '{{ device.displayName }} was {{ value }}째F'
+>>>>>>> SmartThingsCommunity/master
+=======
+    	descriptionText = '{{ device.displayName }} was {{ value }}째C'
+    else
+    	descriptionText = '{{ device.displayName }} was {{ value }}째F'
+>>>>>>> SmartThingsCommunity/master
+=======
+    	descriptionText = '{{ device.displayName }} was {{ value }}째C'
+    else
+    	descriptionText = '{{ device.displayName }} was {{ value }}째F'
+>>>>>>> pr/27
+
 	return [
 		name: 'temperature',
 		value: value,
-		descriptionText: descriptionText
+		descriptionText: descriptionText,
+        translatable: true
 	]
 }
 
 private Map getMoistureResult(value) {
-	log.debug 'water'
-	String descriptionText = "${device.displayName} is ${value}"
+<<<<<<< HEAD
+<<<<<<< HEAD
+<<<<<<< HEAD
+	log.debug "water" 
+=======
+	log.debug "water"
+>>>>>>> SmartThingsCommunity/master
+=======
+	log.debug "water"
+>>>>>>> SmartThingsCommunity/master
+=======
+	log.debug "water"
+>>>>>>> pr/27
+    def descriptionText
+    if ( value == "wet" )
+    	descriptionText = '{{ device.displayName }} is wet'
+    else
+    	descriptionText = '{{ device.displayName }} is dry'
 	return [
 		name: 'water',
 		value: value,
-		descriptionText: descriptionText
+		descriptionText: descriptionText,
+        translatable: true
 	]
 }
 

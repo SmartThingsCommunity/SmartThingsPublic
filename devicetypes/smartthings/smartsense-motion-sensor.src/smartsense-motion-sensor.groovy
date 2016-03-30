@@ -1,17 +1,58 @@
-/**
- *  SmartSense Motion/Temp Sensor
+/*
+===============================================================================
+ *  Copyright 2016 SmartThings
  *
- *  Copyright 2014 SmartThings
- *
- *  Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except
- *  in compliance with the License. You may obtain a copy of the License at:
+ *  Licensed under the Apache License, Version 2.0 (the "License"); you may not
+<<<<<<< HEAD
+<<<<<<< HEAD
+<<<<<<< HEAD
+ *  use this file except in compliance with the License. You may obtain a copy 
+=======
+ *  use this file except in compliance with the License. You may obtain a copy
+>>>>>>> SmartThingsCommunity/master
+=======
+ *  use this file except in compliance with the License. You may obtain a copy
+>>>>>>> SmartThingsCommunity/master
+=======
+ *  use this file except in compliance with the License. You may obtain a copy
+>>>>>>> pr/27
+ *  of the License at:
  *
  *      http://www.apache.org/licenses/LICENSE-2.0
  *
- *  Unless required by applicable law or agreed to in writing, software distributed under the License is distributed
- *  on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the License
- *  for the specific language governing permissions and limitations under the License.
+<<<<<<< HEAD
+<<<<<<< HEAD
+<<<<<<< HEAD
+ *  Unless required by applicable law or agreed to in writing, software 
+ *  distributed under the License is distributed on an "AS IS" BASIS, WITHOUT 
+ *  WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the 
+ *  License for the specific language governing permissions and limitations 
+=======
+=======
+>>>>>>> SmartThingsCommunity/master
+=======
+>>>>>>> pr/27
+ *  Unless required by applicable law or agreed to in writing, software
+ *  distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+ *  WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
+ *  License for the specific language governing permissions and limitations
+<<<<<<< HEAD
+<<<<<<< HEAD
+>>>>>>> SmartThingsCommunity/master
+=======
+>>>>>>> SmartThingsCommunity/master
+=======
+>>>>>>> pr/27
+ *  under the License.
+===============================================================================
+ *  Purpose: SmartSense Motion Sensor DTH File
  *
+ *  Filename: SmartSense-Motion-Sensor.src/SmartSense-Motion-Sensor.groovy
+ *
+ *  Change History:
+ *  1. 20160116 TW - Update/Edit to support i18n translations
+ *  2. 20160125 TW = Incorporated new battery mapping from TM
+===============================================================================
  */
 
 metadata {
@@ -29,6 +70,7 @@ metadata {
         fingerprint inClusters: "0000,0001,0003,0402,0500,0020,0B05", outClusters: "0019", manufacturer: "CentraLite", model: "3305"
         fingerprint inClusters: "0000,0001,0003,0402,0500,0020,0B05", outClusters: "0019", manufacturer: "CentraLite", model: "3325"
         fingerprint inClusters: "0000,0001,0003,0402,0500,0020,0B05", outClusters: "0019", manufacturer: "CentraLite", model: "3326"
+        fingerprint inClusters: "0000,0001,0003,000F,0020,0402,0500", outClusters: "0019", manufacturer: "SmartThings", model: "motionv4", deviceJoinName: "Motion Sensor"
 	}
 
 	simulator {
@@ -45,8 +87,8 @@ metadata {
 				])
 		}
 		section {
-			input description: "This feature allows you to correct any temperature variations by selecting an offset. Ex: If your sensor consistently reports a temp that's 5 degrees too warm, you'd enter \"-5\". If 3 degrees too cold, enter \"+3\".", displayDuringSetup: false, type: "paragraph", element: "paragraph"
-			input "tempOffset", "number", title: "Temperature Offset", description: "Adjust temperature by this many degrees", range: "*..*", displayDuringSetup: false
+			input title: "Temperature Offset", description: "This feature allows you to correct any temperature variations by selecting an offset. Ex: If your sensor consistently reports a temp that's 5 degrees too warm, you'd enter '-5'. If 3 degrees too cold, enter '+3'.", displayDuringSetup: false, type: "paragraph", element: "paragraph"
+			input "tempOffset", "number", title: "Degrees", description: "Adjust temperature by this many degrees", range: "*..*", displayDuringSetup: false
 		}
 	}
 
@@ -229,30 +271,72 @@ def getTemperature(value) {
 }
 
 private Map getBatteryResult(rawValue) {
-	log.debug 'Battery'
+	log.debug "Battery rawValue = ${rawValue}"
 	def linkText = getLinkText(device)
-
-	log.debug rawValue
 
 	def result = [
 		name: 'battery',
-		value: '--'
+		value: '--',
+		translatable: true
 	]
 
 	def volts = rawValue / 10
-	def descriptionText
 
-	if (rawValue == 0) {}
+	if (rawValue == 0 || rawValue == 255) {}
 	else {
 		if (volts > 3.5) {
-			result.descriptionText = "${linkText} battery has too much power (${volts} volts)."
+			result.descriptionText = "{{ device.displayName }} battery has too much power: (> 3.5) volts."
 		}
-		else if (volts > 0){
-			def minVolts = 2.1
-			def maxVolts = 3.0
-			def pct = (volts - minVolts) / (maxVolts - minVolts)
-			result.value = Math.min(100, (int) pct * 100)
-			result.descriptionText = "${linkText} battery was ${result.value}%"
+		else {
+			if (device.getDataValue("manufacturer") == "SmartThings") {         
+				volts = rawValue // For the batteryMap to work the key needs to be an int
+				def batteryMap = [28:100, 27:100, 26:100, 25:90, 24:90, 23:70,
+								  22:70, 21:50, 20:50, 19:30, 18:30, 17:15, 16:1, 15:0]
+				def minVolts = 15
+				def maxVolts = 28
+
+				if (volts < minVolts)
+					volts = minVolts
+				else if (volts > maxVolts)
+					volts = maxVolts
+				def pct = batteryMap[volts]
+				if (pct != null) {
+					result.value = pct
+                    def value = pct
+<<<<<<< HEAD
+<<<<<<< HEAD
+<<<<<<< HEAD
+					result.descriptionText = "{{ device.displayName }} battery was {{ value }}"
+=======
+					result.descriptionText = "{{ device.displayName }} battery was {{ value }}%"
+>>>>>>> SmartThingsCommunity/master
+=======
+					result.descriptionText = "{{ device.displayName }} battery was {{ value }}%"
+>>>>>>> SmartThingsCommunity/master
+=======
+					result.descriptionText = "{{ device.displayName }} battery was {{ value }}%"
+>>>>>>> pr/27
+				}
+			}
+			else {
+				def minVolts = 2.1
+				def maxVolts = 3.0
+				def pct = (volts - minVolts) / (maxVolts - minVolts)
+				result.value = Math.min(100, (int) pct * 100)
+<<<<<<< HEAD
+<<<<<<< HEAD
+<<<<<<< HEAD
+				result.descriptionText = "{{ device.displayName }} battery was {{ value }}"
+=======
+				result.descriptionText = "{{ device.displayName }} battery was {{ value }}%"
+>>>>>>> SmartThingsCommunity/master
+=======
+				result.descriptionText = "{{ device.displayName }} battery was {{ value }}%"
+>>>>>>> SmartThingsCommunity/master
+=======
+				result.descriptionText = "{{ device.displayName }} battery was {{ value }}%"
+>>>>>>> pr/27
+			}
 		}
 	}
 
@@ -261,33 +345,48 @@ private Map getBatteryResult(rawValue) {
 
 private Map getTemperatureResult(value) {
 	log.debug 'TEMP'
-	def linkText = getLinkText(device)
 	if (tempOffset) {
 		def offset = tempOffset as int
 		def v = value as int
 		value = v + offset
 	}
-	def descriptionText = "${linkText} was ${value}°${temperatureScale}"
+    def descriptionText
+    if ( temperatureScale == 'C' )
+    	descriptionText = '{{ device.displayName }} was {{ value }}°C'
+    else
+    	descriptionText = '{{ device.displayName }} was {{ value }}°F'
+
 	return [
 		name: 'temperature',
 		value: value,
-		descriptionText: descriptionText
+		descriptionText: descriptionText,
+        translatable: true
 	]
 }
 
 private Map getMotionResult(value) {
 	log.debug 'motion'
-	String linkText = getLinkText(device)
-	String descriptionText = value == 'active' ? "${linkText} detected motion" : "${linkText} motion has stopped"
+	String descriptionText = value == 'active' ? "{{ device.displayName }} detected motion" : "{{ device.displayName }} motion has stopped"
+<<<<<<< HEAD
+<<<<<<< HEAD
+<<<<<<< HEAD
+    //String descriptionText = '{{ device.displayName }} is {{ value | translate }}'
+=======
+>>>>>>> SmartThingsCommunity/master
+=======
+>>>>>>> SmartThingsCommunity/master
+=======
+>>>>>>> pr/27
 	return [
 		name: 'motion',
 		value: value,
-		descriptionText: descriptionText
+		descriptionText: descriptionText,
+        translatable: true
 	]
 }
 
 def refresh() {
-	log.debug "refresh called"
+	log.debug "refresh executed"
 	def refreshCmds = [
 		"st rattr 0x${device.deviceNetworkId} 1 0x402 0", "delay 200",
 		"st rattr 0x${device.deviceNetworkId} 1 1 0x20", "delay 200"

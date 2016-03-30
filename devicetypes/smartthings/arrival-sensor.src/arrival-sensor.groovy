@@ -43,7 +43,7 @@ metadata {
 	tiles {
 		standardTile("presence", "device.presence", width: 2, height: 2, canChangeBackground: true) {
 			state "present", labelIcon:"st.presence.tile.present", backgroundColor:"#53a7c0"
-			state "not present", labelIcon:"st.presence.tile.not-present", backgroundColor:"#ffffff"
+			state "not present", labelIcon:"st.presence.tile.not-present", backgroundColor:"#ebeef2"
 		}
 		standardTile("beep", "device.beep", decoration: "flat") {
 			state "beep", label:'', action:"tone.beep", icon:"st.secondary.beep", backgroundColor:"#ffffff"
