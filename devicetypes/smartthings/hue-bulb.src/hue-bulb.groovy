@@ -1,6 +1,8 @@
 /**
  *  Hue Bulb
  *
+ *  Philips Hue Type "Extended Color Light"
+ *
  *  Author: SmartThings
  */
 
@@ -69,11 +71,13 @@ metadata {
 def parse(description) {
 	log.debug "parse() - $description"
 	def results = []
+
 	def map = description
 	if (description instanceof String)  {
 		log.debug "Hue Bulb stringToMap - ${map}"
 		map = stringToMap(description)
 	}
+
 	if (map?.name && map?.value) {
 		results << createEvent(name: "${map?.name}", value: "${map?.value}")
 	}
@@ -112,25 +116,59 @@ void setLevel(percent) {
 }
 
 void setSaturation(percent) {
-	log.debug "Executing 'setSaturation'"
-	parent.setSaturation(this, percent)
-	sendEvent(name: "saturation", value: percent, displayed: false)
+    log.debug "Executing 'setSaturation'"
+    if (verifyPercent(percent)) {
+        parent.setSaturation(this, percent)
+        sendEvent(name: "saturation", value: percent, displayed: false)
+    }
 }
 
 void setHue(percent) {
-	log.debug "Executing 'setHue'"
-	parent.setHue(this, percent)
-	sendEvent(name: "hue", value: percent, displayed: false)
+    log.debug "Executing 'setHue'"
+    if (verifyPercent(percent)) {
+        parent.setHue(this, percent)
+        sendEvent(name: "hue", value: percent, displayed: false)
+    }
 }
 
 void setColor(value) {
-	log.debug "setColor: ${value}, $this"
-	parent.setColor(this, value)
-	if (value.hue) { sendEvent(name: "hue", value: value.hue, displayed: false)}
-	if (value.saturation) { sendEvent(name: "saturation", value: value.saturation, displayed: false)}
-	if (value.hex) { sendEvent(name: "color", value: value.hex)}
-	if (value.level) { sendEvent(name: "level", value: value.level, descriptionText: "Level has changed to ${value.level}%")}
-	sendEvent(name: "switch", value: "on")
+    log.debug "setColor: ${value}, $this"
+    def events = []
+    def validValues = [:]
+
+    if (verifyPercent(value.hue)) {
+        events << createEvent(name: "hue", value: value.hue, displayed: false)
+        validValues.hue = value.hue
+    }
+    if (verifyPercent(value.saturation)) {
+        events << createEvent(name: "saturation", value: value.saturation, displayed: false)
+        validValues.saturation = value.saturation
+    }
+    if (value.hex != null) {
+        if (value.hex ==~ /^\#([A-Fa-f0-9]){6}$/) {
+            events << createEvent(name: "color", value: value.hex)
+            validValues.hex = value.hex
+        } else {
+            log.warn "$value.hex is not a valid color"
+        }
+    }
+    if (verifyPercent(value.level)) {
+        events << createEvent(name: "level", value: value.level, descriptionText: "Level has changed to ${value.level}%")
+        validValues.level = value.level
+    }
+    if (value.switch == "off" || (value.level != null && value.level <= 0)) {
+        events << createEvent(name: "switch", value: "off")
+        validValues.switch = "off"
+    } else {
+        events << createEvent(name: "switch", value: "on")
+        validValues.switch = "on"
+    }
+    if (!events.isEmpty()) {
+        parent.setColor(this, validValues)
+    }
+    events.each {
+        sendEvent(it)
+    }
 }
 
 void reset() {
