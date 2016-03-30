@@ -29,6 +29,7 @@
  *	Neato Version: 1.0.2 - Added Please Clear My Path Error message
  *  Neato Version: 1.0.3 - Added Navigation No Progress Error message
  *	Neato Version: 1.0.4 - Added Neato icons
+ *	Neato Version: 1.0.4b - Display error message when serial/secret on Pi is incorrect.
  */
 import groovy.json.JsonSlurper
 
@@ -135,12 +136,22 @@ def parse(String description) {
 		slurper = new JsonSlurper()
 		result = slurper.parseText(bodyString)
         log.debug result
-        
+        //Show error if the Pi app cannot find robot with provided serial/secret credentials
+        if (result.containsKey("message")) {
+        	switch (result.message) {
+            	case "Could not find robot_serial for specified vendor_name":
+                	setOffline()
+        			sendEvent(name: 'status', value: "error" as String)
+        			statusMsg += 'Robot serial and/or secret is not correct'
+					log.debug headerString
+                break;
+            }
+        }
         if (result.containsKey("state")) {
-        //state 1 - Ready to clean
-        //state 2 - Cleaning
-        //state 3 - Paused
-        //state 4 - Error
+        	//state 1 - Ready to clean
+        	//state 2 - Cleaning
+        	//state 3 - Paused
+       		//state 4 - Error
             switch (result.state) {
         		case "1":
             		sendEvent(name: 'status', value: "ready" as String)
