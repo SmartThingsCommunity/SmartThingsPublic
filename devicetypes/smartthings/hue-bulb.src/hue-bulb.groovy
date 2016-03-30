@@ -1,6 +1,8 @@
 /**
  *  Hue Bulb
  *
+ *  Philips Hue Type "Extended Color Light"
+ *
  *  Author: SmartThings
  */
 
@@ -69,11 +71,13 @@ metadata {
 def parse(description) {
 	log.debug "parse() - $description"
 	def results = []
+
 	def map = description
 	if (description instanceof String)  {
 		log.debug "Hue Bulb stringToMap - ${map}"
 		map = stringToMap(description)
 	}
+
 	if (map?.name && map?.value) {
 		results << createEvent(name: "${map?.name}", value: "${map?.value}")
 	}
