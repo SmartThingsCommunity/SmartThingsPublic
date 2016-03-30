@@ -161,7 +161,7 @@ private sendDeveloperReq() {
 		headers: [
 			HOST: host
 		],
-		body: [devicetype: "$token-0", username: "$token-0"]], "${selectedHue}"))
+		body: [devicetype: "$token-0"]], "${selectedHue}"))
 }
 
 private discoverHueBulbs() {
@@ -289,7 +289,7 @@ def bulbListHandler(hub, data = "") {
         def object = new groovy.json.JsonSlurper().parseText(data)
         object.each { k,v ->
             if (v instanceof Map)
-                bulbs[k] = [id: k, name: v.name, type: v.type, hub:hub]
+                bulbs[k] = [id: k, name: v.name, type: v.type, modelid: v.modelid, hub:hub]
         }
     }
     def bridge = null
@@ -298,6 +298,40 @@ def bulbListHandler(hub, data = "") {
     bridge.sendEvent(name: "bulbList", value: hub, data: bulbs, isStateChange: true, displayed: false)
     msg = "${bulbs.size()} bulbs found. ${bulbs}"
 	return msg
+}
+
+private upgradeDeviceType(device, newHueType) {
+	def deviceType = getDeviceType(newHueType)
+
+	// Automatically change users Hue bulbs to correct device types
+	if (deviceType && !(device?.typeName?.equalsIgnoreCase(deviceType))) {
+		log.debug "Update device type: \"$device.label\" ${device?.typeName}->$deviceType"
+		device.setDeviceType(deviceType)
+	}
+}
+
+private getDeviceType(hueType) {
+	// Determine ST device type based on Hue classification of light
+	if (hueType?.equalsIgnoreCase("Dimmable light"))
+		return "Hue Lux Bulb"
+	else if (hueType?.equalsIgnoreCase("Extended Color Light"))
+		return "Hue Bulb"
+	else if (hueType?.equalsIgnoreCase("Color Light"))
+		return "Hue Bloom"
+	else
+		return null
+}
+
+private addChildBulb(dni, hueType, name, hub, update=false, device = null) {
+	def deviceType = getDeviceType(hueType)
+
+	if (deviceType) {
+		return addChildDevice("smartthings", deviceType, dni, hub, ["label": name])
+	}
+	else {
+		log.warn "Device type $hueType not supported"
+		return null
+	}
 }
 
 def addBulbs() {
@@ -309,11 +343,7 @@ def addBulbs() {
 			if (bulbs instanceof java.util.Map) {
 				newHueBulb = bulbs.find { (app.id + "/" + it.value.id) == dni }
                 if (newHueBulb != null) {
-                    if (newHueBulb?.value?.type?.equalsIgnoreCase("Dimmable light") ) {
-                        d = addChildDevice("smartthings", "Hue Lux Bulb", dni, newHueBulb?.value.hub, ["label":newHueBulb?.value.name])
-                    } else {
-                        d = addChildDevice("smartthings", "Hue Bulb", dni, newHueBulb?.value.hub, ["label":newHueBulb?.value.name])
-                    }
+                    d = addChildBulb(dni, newHueBulb?.value?.type, newHueBulb?.value?.name, newHueBulb?.value?.hub)
                     log.debug "created ${d.displayName} with id $dni"
                     d.refresh()
                 } else {
@@ -322,16 +352,15 @@ def addBulbs() {
 			} else {
             	//backwards compatable
 				newHueBulb = bulbs.find { (app.id + "/" + it.id) == dni }
-				d = addChildDevice("smartthings", "Hue Bulb", dni, newHueBulb?.hub, ["label":newHueBulb?.name])
+				d = addChildBulb(dni, "Extended Color Light", newHueBulb?.value?.name, newHueBulb?.value?.hub)
                 d.refresh()
 			}
 		} else {
 			log.debug "found ${d.displayName} with id $dni already exists, type: '$d.typeName'"
 			if (bulbs instanceof java.util.Map) {
+				// Update device type if incorrect
             	def newHueBulb = bulbs.find { (app.id + "/" + it.value.id) == dni }
-				if (newHueBulb?.value?.type?.equalsIgnoreCase("Dimmable light") && d.typeName == "Hue Bulb") {
-					d.setDeviceType("Hue Lux Bulb")
-				}
+				upgradeDeviceType(d, newHueBulb?.value?.type)
 			}
 		}
 	}
@@ -473,7 +502,7 @@ def locationHandler(evt) {
 					def bulbs = getHueBulbs()
 					log.debug "Adding bulbs to state!"
 					body.each { k,v ->
-						bulbs[k] = [id: k, name: v.name, type: v.type, hub:parsedEvent.hub]
+						bulbs[k] = [id: k, name: v.name, type: v.type, modelid: v.modelid, hub:parsedEvent.hub]
 					}
 				}
 			}
@@ -657,26 +686,41 @@ def setColorTemperature(childDevice, huesettings) {
 }
 
 def setColor(childDevice, huesettings) {
-	log.debug "Executing 'setColor($huesettings)'"
+    log.debug "Executing 'setColor($huesettings)'"
+    
+    def value = [:]
     def hue = null
     def sat = null
     def xy = null
-    if (huesettings.hex) {
-    	xy = getHextoXY(huesettings.hex)
-    } else if (huesettings.hue && huesettings.saturation) {
-		hue = Math.min(Math.round(huesettings.hue * 65535 / 100), 65535)
-		sat = Math.min(Math.round(huesettings.saturation * 255 / 100), 255)
+    
+    if (huesettings.hex != null) {
+        value.xy = getHextoXY(huesettings.hex)
+    } else {
+        if (huesettings.hue != null)
+            value.hue = Math.min(Math.round(huesettings.hue * 65535 / 100), 65535)
+        if (huesettings.saturation != null)   
+            value.sat = Math.min(Math.round(huesettings.saturation * 255 / 100), 255)
     }
-    def alert = huesettings.alert ? huesettings.alert : "none"
-    def transition = huesettings.transition ? huesettings.transition : 4
+    
+    // Default behavior is to turn light on 
+    value.on = true
 
-	def value = [xy: xy, sat: sat, hue: hue, alert: alert, transitiontime: transition, on: true]
+    if (huesettings.level != null) {
+        if (huesettings.level <= 0)
+            value.on = false
+        else if (huesettings.level == 1)
+            value.bri = 1
+        else 
+            value.bri = Math.min(Math.round(huesettings.level * 255 / 100), 255)
+    }
+    value.alert = huesettings.alert ? huesettings.alert : "none"
+    value.transition = huesettings.transition ? huesettings.transition : 4
 
-	if (huesettings.level != null) {
-        if (huesettings.level == 1) value.bri = 1 else value.bri = Math.min(Math.round(huesettings.level * 255 / 100), 255)
-		value.on = value.bri > 0
-	}
+    // Make sure to turn off light if requested
+    if (huesettings.switch == "off")
+        value.on = false
 
+<<<<<<< HEAD
 	log.debug "sending command $value"
 	put("lights/${getId(childDevice)}/state", value)
 
@@ -684,17 +728,21 @@ def setColor(childDevice, huesettings) {
 		put("lights/${getId(childDevice)}/state", [on: false])
 
     return "Bulb changed color"
+=======
+    log.debug "sending command $value"
+    put("lights/${getId(childDevice)}/state", value)
+    return "Color set to $value"
+>>>>>>> SmartThingsCommunity/master
 }
 
 def nextLevel(childDevice) {
-	def level = device.latestValue("level") as Integer ?: 0
-	if (level < 100) {
-		level = Math.min(25 * (Math.round(level / 25) + 1), 100) as Integer
-	}
-	else {
-		level = 25
-	}
-	setLevel(childDevice,level)
+    def level = device.latestValue("level") as Integer ?: 0
+    if (level < 100) {
+        level = Math.min(25 * (Math.round(level / 25) + 1), 100) as Integer
+    } else {
+        level = 25
+    }
+    setLevel(childDevice,level)
 }
 
 private getId(childDevice) {
@@ -793,16 +841,14 @@ private getHextoXY(String colorStr) {
 
     // Make green more vivid
     if (normalizedToOne[1] > 0.04045) {
-        green = (float) Math.pow((normalizedToOne[1] + 0.055)
-                / (1.0 + 0.055), 2.4);
+        green = (float) Math.pow((normalizedToOne[1] + 0.055) / (1.0 + 0.055), 2.4);
     } else {
         green = (float) (normalizedToOne[1] / 12.92);
     }
 
     // Make blue more vivid
     if (normalizedToOne[2] > 0.04045) {
-        blue = (float) Math.pow((normalizedToOne[2] + 0.055)
-                / (1.0 + 0.055), 2.4);
+        blue = (float) Math.pow((normalizedToOne[2] + 0.055) / (1.0 + 0.055), 2.4);
     } else {
         blue = (float) (normalizedToOne[2] / 12.92);
     }
@@ -811,8 +857,8 @@ private getHextoXY(String colorStr) {
     float Y = (float) (red * 0.234327 + green * 0.743075 + blue * 0.022598);
     float Z = (float) (red * 0.0000000 + green * 0.053077 + blue * 1.035763);
 
-    float x = X / (X + Y + Z);
-    float y = Y / (X + Y + Z);
+    float x = (X != 0 ? X / (X + Y + Z) : 0);
+    float y = (Y != 0 ? Y / (X + Y + Z) : 0);
 
     double[] xy = new double[2];
     xy[0] = x;
@@ -829,7 +875,7 @@ def convertBulbListToMap() {
 		if (state.bulbs instanceof java.util.List) {
 			def map = [:]
 			state.bulbs.unique {it.id}.each { bulb ->
-				map << ["${bulb.id}":["id":bulb.id, "name":bulb.name, "hub":bulb.hub]]
+				map << ["${bulb.id}":["id":bulb.id, "name":bulb.name, "type": bulb.type, "modelid": bulb.modelid, "hub":bulb.hub]]
 			}
 			state.bulbs = map
 		}

@@ -1,5 +1,7 @@
 /**
- *  Hue Bulb
+ *  Hue Bloom
+ *
+ *  Philips Hue Type "Color Light"
  *
  *  Author: SmartThings
  */
@@ -7,11 +9,10 @@
 // for the UI
 metadata {
 	// Automatically generated. Make future change here.
-	definition (name: "Hue Bulb", namespace: "smartthings", author: "SmartThings") {
+	definition (name: "Hue Bloom", namespace: "smartthings", author: "SmartThings") {
 		capability "Switch Level"
 		capability "Actuator"
 		capability "Color Control"
-		capability "Color Temperature"
 		capability "Switch"
 		capability "Refresh"
 		capability "Sensor"
@@ -44,14 +45,6 @@ metadata {
 			}
 		}
 
-        controlTile("colorTempSliderControl", "device.colorTemperature", "slider", width: 4, height: 2, inactiveLabel: false, range:"(2000..6500)") {
-            state "colorTemperature", action:"color temperature.setColorTemperature"
-        }
-
-        valueTile("colorTemp", "device.colorTemperature", inactiveLabel: false, decoration: "flat", width: 2, height: 2) {
-            state "colorTemperature", label: '${currentValue} K'
-        }
-
 		standardTile("reset", "device.reset", height: 2, width: 2, inactiveLabel: false, decoration: "flat") {
 			state "default", label:"Reset Color", action:"reset", icon:"st.lights.philips.hue-single"
 		}
@@ -69,11 +62,13 @@ metadata {
 def parse(description) {
 	log.debug "parse() - $description"
 	def results = []
+
 	def map = description
 	if (description instanceof String)  {
 		log.debug "Hue Bulb stringToMap - ${map}"
 		map = stringToMap(description)
 	}
+
 	if (map?.name && map?.value) {
 		results << createEvent(name: "${map?.name}", value: "${map?.value}")
 	}
@@ -112,56 +107,95 @@ void setLevel(percent) {
 }
 
 void setSaturation(percent) {
-	log.debug "Executing 'setSaturation'"
-	parent.setSaturation(this, percent)
-	sendEvent(name: "saturation", value: percent, displayed: false)
+    log.debug "Executing 'setSaturation'"
+    if (verifyPercent(percent)) {
+        parent.setSaturation(this, percent)
+        sendEvent(name: "saturation", value: percent, displayed: false)
+    }
 }
 
 void setHue(percent) {
-	log.debug "Executing 'setHue'"
-	parent.setHue(this, percent)
-	sendEvent(name: "hue", value: percent, displayed: false)
+    log.debug "Executing 'setHue'"
+    if (verifyPercent(percent)) {
+        parent.setHue(this, percent)
+        sendEvent(name: "hue", value: percent, displayed: false)
+    }
 }
 
 void setColor(value) {
-	log.debug "setColor: ${value}, $this"
-	parent.setColor(this, value)
-	if (value.hue) { sendEvent(name: "hue", value: value.hue, displayed: false)}
-	if (value.saturation) { sendEvent(name: "saturation", value: value.saturation, displayed: false)}
-	if (value.hex) { sendEvent(name: "color", value: value.hex)}
-	if (value.level) { sendEvent(name: "level", value: value.level, descriptionText: "Level has changed to ${value.level}%")}
-	sendEvent(name: "switch", value: "on")
+    log.debug "setColor: ${value}, $this"
+    def events = []
+    def validValues = [:]
+
+    if (verifyPercent(value.hue)) {
+        events << createEvent(name: "hue", value: value.hue, displayed: false)
+        validValues.hue = value.hue
+    }
+    if (verifyPercent(value.saturation)) {
+        events << createEvent(name: "saturation", value: value.saturation, displayed: false)
+        validValues.saturation = value.saturation
+    }
+    if (value.hex != null) {
+        if (value.hex ==~ /^\#([A-Fa-f0-9]){6}$/) {
+            events << createEvent(name: "color", value: value.hex)
+            validValues.hex = value.hex
+        } else {
+            log.warn "$value.hex is not a valid color"
+        }
+    }
+    if (verifyPercent(value.level)) {
+        events << createEvent(name: "level", value: value.level, descriptionText: "Level has changed to ${value.level}%")
+        validValues.level = value.level
+    }
+    if (value.switch == "off" || (value.level != null && value.level <= 0)) {
+        events << createEvent(name: "switch", value: "off")
+        validValues.switch = "off"
+    } else {
+        events << createEvent(name: "switch", value: "on")
+        validValues.switch = "on"
+    }
+    if (!events.isEmpty()) {
+        parent.setColor(this, validValues)
+    }
+    events.each {
+        sendEvent(it)
+    }
 }
 
 void reset() {
-	log.debug "Executing 'reset'"
+    log.debug "Executing 'reset'"
     def value = [level:100, saturation:56, hue:23]
     setAdjustedColor(value)
-	parent.poll()
+    parent.poll()
 }
 
 void setAdjustedColor(value) {
-	if (value) {
+    if (value) {
         log.trace "setAdjustedColor: ${value}"
         def adjusted = value + [:]
         adjusted.hue = adjustOutgoingHue(value.hue)
         // Needed because color picker always sends 100
         adjusted.level = null
         setColor(adjusted)
+    } else {
+        log.warn "Invalid color input"
     }
 }
 
 void setColorTemperature(value) {
-	if (value) {
+    if (value) {
         log.trace "setColorTemperature: ${value}k"
         parent.setColorTemperature(this, value)
         sendEvent(name: "colorTemperature", value: value)
-	}
+        sendEvent(name: "switch", value: "on")
+    } else {
+        log.warn "Invalid color temperature"
+    }
 }
 
 void refresh() {
-	log.debug "Executing 'refresh'"
-	parent.manualRefresh()
+    log.debug "Executing 'refresh'"
+    parent.manualRefresh()
 }
 
 def adjustOutgoingHue(percent) {
@@ -179,4 +213,15 @@ def adjustOutgoingHue(percent) {
 	}
 	log.info "percent: $percent, adjusted: $adjusted"
 	adjusted
+}
+
+def verifyPercent(percent) {
+    if (percent == null)
+        return false
+    else if (percent >= 0 && percent <= 100) {
+        return true
+    } else {
+        log.warn "$percent is not 0-100"
+        return false
+    }
 }
