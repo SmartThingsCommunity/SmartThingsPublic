@@ -865,7 +865,7 @@ def convertBulbListToMap() {
 		if (state.bulbs instanceof java.util.List) {
 			def map = [:]
 			state.bulbs.unique {it.id}.each { bulb ->
-				map << ["${bulb.id}":["id":bulb.id, "name":bulb.name, "hub":bulb.hub]]
+				map << ["${bulb.id}":["id":bulb.id, "name":bulb.name, "type": bulb.type, "modelid": bulb.modelid, "hub":bulb.hub]]
 			}
 			state.bulbs = map
 		}
