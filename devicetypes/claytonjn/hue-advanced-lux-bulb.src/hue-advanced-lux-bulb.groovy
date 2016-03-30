@@ -1,14 +1,14 @@
 /**
- *  Hue Lux Bulb
+ *  Hue Advanced Lux Bulb
  *
  *  Philips Hue Type "Dimmable Light"
  *
- *  Author: SmartThings
+ *  Author: claytonjn
  */
 // for the UI
 metadata {
 	// Automatically generated. Make future change here.
-	definition (name: "Hue Lux Bulb", namespace: "smartthings", author: "SmartThings") {
+	definition (name: "Hue Advanced Lux Bulb", namespace: "claytonjn", author: "claytonjn") {
 		capability "Switch Level"
 		capability "Actuator"
 		capability "Switch"
@@ -58,7 +58,7 @@ def parse(description) {
 
 	def map = description
 	if (description instanceof String)  {
-		log.debug "Hue Bulb stringToMap - ${map}"
+		log.debug "Hue Advanced Lux Bulb stringToMap - ${map}"
 		map = stringToMap(description)
 	}
 

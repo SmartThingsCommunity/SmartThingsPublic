@@ -1,9 +1,10 @@
 /**
- *  Hue Service Manager
+ *  Hue Advanced Service Manager
  *
- *  Author: Juan Risso (juan@smartthings.com)
+ *  Author: Clayton (claytonjn)
  *
  *  Copyright 2015 SmartThings
+ *  Copyright 2016 claytonjn
  *
  *  Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except
  *  in compliance with the License. You may obtain a copy of the License at:
@@ -17,11 +18,11 @@
  */
 
 definition(
-	name: "Hue (Connect)",
-	namespace: "smartthings",
-	author: "SmartThings",
+	name: "Hue Advanced (Connect)",
+	namespace: "claytonjn",
+	author: "claytonjn",
 	description: "Allows you to connect your Philips Hue lights with SmartThings and control them from your Things area or Dashboard in the SmartThings Mobile app. Adjust colors by going to the Thing detail screen for your Hue lights (tap the gear on Hue tiles).\n\nPlease update your Hue Bridge first, outside of the SmartThings app, using the Philips Hue app.",
-	category: "SmartThings Labs",
+	category: "My Apps",
 	iconUrl: "https://s3.amazonaws.com/smartapp-icons/Partner/hue.png",
 	iconX2Url: "https://s3.amazonaws.com/smartapp-icons/Partner/hue@2x.png",
     singleInstance: true
@@ -313,11 +314,11 @@ private upgradeDeviceType(device, newHueType) {
 private getDeviceType(hueType) {
 	// Determine ST device type based on Hue classification of light
 	if (hueType?.equalsIgnoreCase("Dimmable light"))
-		return "Hue Lux Bulb"
+		return "Hue Advanced Lux Bulb"
 	else if (hueType?.equalsIgnoreCase("Extended Color Light"))
-		return "Hue Bulb"
+		return "Hue Advanced Bulb"
 	else if (hueType?.equalsIgnoreCase("Color Light"))
-		return "Hue Bloom"
+		return "Hue Advanced Bloom"
 	else
 		return null
 }
@@ -326,7 +327,7 @@ private addChildBulb(dni, hueType, name, hub, update=false, device = null) {
 	def deviceType = getDeviceType(hueType)
 
 	if (deviceType) {
-		return addChildDevice("smartthings", deviceType, dni, hub, ["label": name])
+		return addChildDevice("claytonjn", deviceType, dni, hub, ["label": name])
 	}
 	else {
 		log.warn "Device type $hueType not supported"
@@ -389,7 +390,7 @@ def addBridge() {
                 }
             }
         	if (newbridge) {
-				d = addChildDevice("smartthings", "Hue Bridge", selectedHue, vbridge.value.hub)
+				d = addChildDevice("claytonjn", "Hue Advanced Bridge", selectedHue, vbridge.value.hub)
  				log.debug "created ${d.displayName} with id ${d.deviceNetworkId}"
                 def childDevice = getChildDevice(d.deviceNetworkId)
                 childDevice.sendEvent(name: "serialNumber", value: vbridge.value.serialNumber)
@@ -471,7 +472,7 @@ def locationHandler(evt) {
 		}
 	}
 	else if (parsedEvent.headers && parsedEvent.body) {
-		log.trace "HUE BRIDGE RESPONSES"
+		log.trace "HUE ADVANCED BRIDGE RESPONSES"
 		def headerString = parsedEvent.headers.toString()
 		if (headerString?.contains("xml")) {
             log.trace "description.xml response (application/xml)"
@@ -687,22 +688,22 @@ def setColorTemperature(childDevice, huesettings) {
 
 def setColor(childDevice, huesettings) {
     log.debug "Executing 'setColor($huesettings)'"
-    
+
     def value = [:]
     def hue = null
     def sat = null
     def xy = null
-    
+
     if (huesettings.hex != null) {
         value.xy = getHextoXY(huesettings.hex)
     } else {
         if (huesettings.hue != null)
             value.hue = Math.min(Math.round(huesettings.hue * 65535 / 100), 65535)
-        if (huesettings.saturation != null)   
+        if (huesettings.saturation != null)
             value.sat = Math.min(Math.round(huesettings.saturation * 255 / 100), 255)
     }
-    
-    // Default behavior is to turn light on 
+
+    // Default behavior is to turn light on
     value.on = true
 
     if (huesettings.level != null) {
@@ -710,7 +711,7 @@ def setColor(childDevice, huesettings) {
             value.on = false
         else if (huesettings.level == 1)
             value.bri = 1
-        else 
+        else
             value.bri = Math.min(Math.round(huesettings.level * 255 / 100), 255)
     }
     value.alert = huesettings.alert ? huesettings.alert : "none"

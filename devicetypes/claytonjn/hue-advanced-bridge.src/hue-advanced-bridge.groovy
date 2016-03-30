@@ -1,12 +1,12 @@
 /**
- *  Hue Bridge
+ *  Hue Advanced Bridge
  *
- *  Author: SmartThings
+ *  Author: claytonjn
  */
 // for the UI
 metadata {
 	// Automatically generated. Make future change here.
-	definition (name: "Hue Bridge", namespace: "smartthings", author: "SmartThings") {
+	definition (name: "Hue Advanced Bridge", namespace: "claytonjn", author: "claytonjn") {
 		attribute "serialNumber", "string"
 		attribute "networkAddress", "string"
 	}
@@ -18,7 +18,7 @@ metadata {
 	tiles(scale: 2) {
      	multiAttributeTile(name:"rich-control"){
 			tileAttribute ("", key: "PRIMARY_CONTROL") {
-	            attributeState "default", label: "Hue Bridge", action: "", icon: "st.Lighting.light99-hue", backgroundColor: "#F3C200"
+	            attributeState "default", label: "Hue Advanced Bridge", action: "", icon: "st.Lighting.light99-hue", backgroundColor: "#F3C200"
 			}
 	        tileAttribute ("serialNumber", key: "SECONDARY_CONTROL") {
 	            attributeState "default", label:'SN: ${currentValue}'
@@ -42,18 +42,18 @@ def parse(description) {
 	def results = []
 	def result = parent.parse(this, description)
 	if (result instanceof physicalgraph.device.HubAction){
-		log.trace "HUE BRIDGE HubAction received -- DOES THIS EVER HAPPEN?"
+		log.trace "HUE ADVANCED BRIDGE HubAction received -- DOES THIS EVER HAPPEN?"
 		results << result
 	} else if (description == "updated") {
 		//do nothing
-		log.trace "HUE BRIDGE was updated"
+		log.trace "HUE ADVANCED BRIDGE was updated"
 	} else {
 		def map = description
 		if (description instanceof String)  {
 			map = stringToMap(description)
 		}
 		if (map?.name && map?.value) {
-			log.trace "HUE BRIDGE, GENERATING EVENT: $map.name: $map.value"
+			log.trace "HUE ADVANCED BRIDGE, GENERATING EVENT: $map.name: $map.value"
 			results << createEvent(name: "${map.name}", value: "${map.value}")
 		} else {
         	log.trace "Parsing description"
@@ -71,7 +71,7 @@ def parse(description) {
 					}
 				}
 				else if (contentType?.contains("xml")) {
-					log.debug "HUE BRIDGE ALREADY PRESENT"
+					log.debug "HUE ADVANCED BRIDGE ALREADY PRESENT"
                     parent.hubVerification(device.hub.id, msg.body)
 				}
 			}
