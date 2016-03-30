@@ -158,7 +158,11 @@ def parse(String description) {
 }
 
 def installed() {
-	runPeriodically(3600, poll)
+	runHourly(new Date(now()+5000), poll)
+}
+
+def updated() {
+	runHourly(new Date(now()+5000), poll)
 }
 
 def uninstalled() {
