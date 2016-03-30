@@ -3,18 +3,27 @@
  *
  *  Author: SmartThings
  */
-// for the UI
+ // for the UI
 metadata {
 	// Automatically generated. Make future change here.
 	definition (name: "Hue Bridge", namespace: "smartthings", author: "SmartThings") {
-		attribute "serialNumber", "string"
-		attribute "networkAddress", "string"
+    	capability "refresh"
+        
+    	attribute "networkAddress", "string"
+        attribute "serialNumber", "string"
+        
 	}
 
 	simulator {
 		// TODO: define status and reply messages here
 	}
 
+<<<<<<< HEAD
+	tiles {
+		standardTile("icon", "icon", width: 1, height: 1, canChangeIcon: false, inactiveLabel: true, canChangeBackground: false) {
+			state "default", label: "Hue Bridge", action: "", icon: "st.Lighting.light99-hue", backgroundColor: "#FFFFFF"
+		}
+=======
 	tiles(scale: 2) {
      	multiAttributeTile(name:"rich-control"){
 			tileAttribute ("", key: "PRIMARY_CONTROL") {
@@ -24,15 +33,36 @@ metadata {
 	            attributeState "default", label:'SN: ${currentValue}'
 			}
         }
+<<<<<<< HEAD
+<<<<<<< HEAD
+>>>>>>> SmartThingsCommunity/master
+=======
+>>>>>>> SmartThingsCommunity/master
+=======
+>>>>>>> pr/27
 		valueTile("serialNumber", "device.serialNumber", decoration: "flat", height: 1, width: 2, inactiveLabel: false) {
 			state "default", label:'SN: ${currentValue}'
 		}
-		valueTile("networkAddress", "device.networkAddress", decoration: "flat", height: 2, width: 4, inactiveLabel: false) {
-			state "default", label:'${currentValue}', height: 1, width: 2, inactiveLabel: false
+		valueTile("networkAddress", "device.networkAddress", decoration: "flat", height: 1, width: 2, inactiveLabel: false) {
+			state "default", label:'${currentValue}'
 		}
+		standardTile("refresh", "device.switch", inactiveLabel: false, decoration: "flat") {
+			state "default", label:'', action:"refresh.refresh", icon:"st.secondary.refresh"
+		}        
 
+<<<<<<< HEAD
+<<<<<<< HEAD
+<<<<<<< HEAD
+		main (["icon"])
+		details(["networkAddress","serialNumber","refresh"])
+=======
+=======
+>>>>>>> SmartThingsCommunity/master
+=======
+>>>>>>> pr/27
 		main (["rich-control"])
 		details(["rich-control", "networkAddress"])
+>>>>>>> SmartThingsCommunity/master
 	}
 }
 
@@ -41,18 +71,22 @@ def parse(description) {
 	log.debug "Parsing '${description}'"
 	def results = []
 	def result = parent.parse(this, description)
+
 	if (result instanceof physicalgraph.device.HubAction){
-		log.trace "HUE BRIDGE HubAction received -- DOES THIS EVER HAPPEN?"
 		results << result
 	} else if (description == "updated") {
 		//do nothing
-		log.trace "HUE BRIDGE was updated"
+		log.debug "Hue Bridge was updated"
 	} else {
 		def map = description
 		if (description instanceof String)  {
+			log.debug "Hue Bridge stringToMap - ${map}"
 			map = stringToMap(description)
 		}
 		if (map?.name && map?.value) {
+<<<<<<< HEAD
+			results << createEvent(name: "${map?.name}", value: "${map?.value}")
+=======
 			log.trace "HUE BRIDGE, GENERATING EVENT: $map.name: $map.value"
 			results << createEvent(name: "${map.name}", value: "${map.value}")
 		} else {
@@ -75,7 +109,20 @@ def parse(description) {
                     parent.hubVerification(device.hub.id, msg.body)
 				}
 			}
+>>>>>>> SmartThingsCommunity/master
 		}
 	}
 	results
+}
+
+def refresh() {
+	def result = new physicalgraph.device.HubAction(
+    	method: "GET",
+		path:    "/api/${parent.username()}/lights",
+		action:  action,
+		body:    body,
+		headers: [Host: device.currentValue("networkAddress")]
+	)
+	log.debug result
+    result
 }
