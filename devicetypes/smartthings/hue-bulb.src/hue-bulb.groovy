@@ -134,34 +134,39 @@ void setColor(value) {
 }
 
 void reset() {
-	log.debug "Executing 'reset'"
+    log.debug "Executing 'reset'"
     def value = [level:100, saturation:56, hue:23]
     setAdjustedColor(value)
-	parent.poll()
+    parent.poll()
 }
 
 void setAdjustedColor(value) {
-	if (value) {
+    if (value) {
         log.trace "setAdjustedColor: ${value}"
         def adjusted = value + [:]
         adjusted.hue = adjustOutgoingHue(value.hue)
         // Needed because color picker always sends 100
         adjusted.level = null
         setColor(adjusted)
+    } else {
+        log.warn "Invalid color input"
     }
 }
 
 void setColorTemperature(value) {
-	if (value) {
+    if (value) {
         log.trace "setColorTemperature: ${value}k"
         parent.setColorTemperature(this, value)
         sendEvent(name: "colorTemperature", value: value)
-	}
+        sendEvent(name: "switch", value: "on")
+    } else {
+        log.warn "Invalid color temperature"
+    }
 }
 
 void refresh() {
-	log.debug "Executing 'refresh'"
-	parent.manualRefresh()
+    log.debug "Executing 'refresh'"
+    parent.manualRefresh()
 }
 
 def adjustOutgoingHue(percent) {
@@ -179,4 +184,15 @@ def adjustOutgoingHue(percent) {
 	}
 	log.info "percent: $percent, adjusted: $adjusted"
 	adjusted
+}
+
+def verifyPercent(percent) {
+    if (percent == null)
+        return false
+    else if (percent >= 0 && percent <= 100) {
+        return true
+    } else {
+        log.warn "$percent is not 0-100"
+        return false
+    }
 }
