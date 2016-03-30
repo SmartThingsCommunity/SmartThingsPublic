@@ -3,6 +3,11 @@
  *
  *  Copyright 2016 DarwinsDen.com
  *
+ *  For installation instructions, DB100Z device review information, documentation and images,
+ *  or for questions or to provide feedback on this device handler, please visit: 
+ *
+ *      darwinsden.com/db100z
+ *
  *  Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except
  *  in compliance with the License. You may obtain a copy of the License at:
  *
