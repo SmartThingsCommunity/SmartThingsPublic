@@ -2055,7 +2055,7 @@ def setFanMode(child, heating, cooling, deviceId, sendHoldType, fanMode) {
 	int c = cooling * 10
 
 
-	def jsonRequestBody = '{"selection":{"selectionType":"thermostats","selectionMatch":"' + deviceId + '","includeRuntime":true},"functions": [{ "type": "setHold", "params": { "coolHoldTemp": '+c+',"heatHoldTemp": '+h+', "holdType": '+sendHoldType+', "fan": '+fanMode+' } } ]}'
+	def jsonRequestBody = '{"selection":{"selectionType":"thermostats","selectionMatch":"' + deviceId + '"},"functions": [{ "type": "setHold", "params": { "coolHoldTemp": '+c+',"heatHoldTemp": '+h+', "holdType": '+sendHoldType+', "fan": '+fanMode+', "isTemperatureAbsolute":false, "isTemperatureRelative":false } } ]}'
 	def result = sendJson(child, jsonRequestBody)
 	return result
 }
