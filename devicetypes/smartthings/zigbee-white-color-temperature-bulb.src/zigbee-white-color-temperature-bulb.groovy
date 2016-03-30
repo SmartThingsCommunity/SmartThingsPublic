@@ -73,16 +73,9 @@ metadata {
 // Parse incoming device messages to generate events
 def parse(String description) {
     log.debug "description is $description"
-
-    def finalResult = zigbee.getKnownDescription(description)
-    if (finalResult) {
-        log.info finalResult
-        if (finalResult.type == "update") {
-            log.info "$device updates: ${finalResult.value}"
-        }
-        else {
-            sendEvent(name: finalResult.type, value: finalResult.value)
-        }
+    def event = zigbee.getEvent(description)
+    if (event) {
+        sendEvent(event)
     }
     else {
         log.warn "DID NOT PARSE MESSAGE for description : $description"
