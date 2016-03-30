@@ -7,9 +7,10 @@ apply plugin: 'smartthings-hipchat'
 
 buildscript {
     dependencies {
-        classpath "com.smartthings.deployment:executable-deployment-scripts:1.0.3"
+        classpath "com.smartthings.deployment:executable-deployment-scripts:1.0.6"
     }
     repositories {
+        mavenLocal()
         jcenter()
         maven {
             credentials {
