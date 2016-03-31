@@ -74,10 +74,17 @@ def setLevel(value) {
 }
 
 def refresh() {
-    zigbee.onOffRefresh() + zigbee.levelRefresh() + zigbee.onOffConfig() + zigbee.levelConfig()
+    return zigbee.readAttribute(0x0006, 0x0000) +
+           zigbee.readAttribute(0x0008, 0x0000) +
+           zigbee.configureReporting(0x0006, 0x0000, 0x10, 0, 600, null) +
+           zigbee.configureReporting(0x0008, 0x0000, 0x20, 1, 3600, 0x01)
 }
 
 def configure() {
     log.debug "Configuring Reporting and Bindings."
-    zigbee.onOffConfig() + zigbee.levelConfig() + zigbee.onOffRefresh() + zigbee.levelRefresh()
+
+    return zigbee.configureReporting(0x0006, 0x0000, 0x10, 0, 600, null) +
+           zigbee.configureReporting(0x0008, 0x0000, 0x20, 1, 3600, 0x01) +
+           zigbee.readAttribute(0x0006, 0x0000) +
+           zigbee.readAttribute(0x0008, 0x0000)
 }
