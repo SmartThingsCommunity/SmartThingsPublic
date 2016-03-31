@@ -83,19 +83,19 @@ metadata {
 	tiles(scale: 2) {
 		multiAttributeTile(name:"status", type: "generic", width: 6, height: 4){
 			tileAttribute ("device.status", key: "PRIMARY_CONTROL") {
-				attributeState "open", label:'${name}', icon:"st.contact.contact.open", backgroundColor:"#ffa81e"
-				attributeState "closed", label:'${name}', icon:"st.contact.contact.closed", backgroundColor:"#79b821"
+				attributeState "open", label:'Open', icon:"st.contact.contact.open", backgroundColor:"#ffa81e"
+				attributeState "closed", label:'Closed', icon:"st.contact.contact.closed", backgroundColor:"#79b821"
 				attributeState "garage-open", label:'Open', icon:"st.doors.garage.garage-open", backgroundColor:"#ffa81e"
 				attributeState "garage-closed", label:'Closed', icon:"st.doors.garage.garage-closed", backgroundColor:"#79b821"
 			}
 		}
 		standardTile("contact", "device.contact", width: 2, height: 2) {
-			state("open", label:'${name}', icon:"st.contact.contact.open", backgroundColor:"#ffa81e")
-			state("closed", label:'${name}', icon:"st.contact.contact.closed", backgroundColor:"#79b821")
+			state("open", label:'Open', icon:"st.contact.contact.open", backgroundColor:"#ffa81e")
+			state("closed", label:'Closed', icon:"st.contact.contact.closed", backgroundColor:"#79b821")
 		}
 		standardTile("acceleration", "device.acceleration", width: 2, height: 2) {
-			state("active", label:'${name}', icon:"st.motion.acceleration.active", backgroundColor:"#53a7c0")
-			state("inactive", label:'${name}', icon:"st.motion.acceleration.inactive", backgroundColor:"#ffffff")
+			state("active", label:'Active', icon:"st.motion.acceleration.active", backgroundColor:"#53a7c0")
+			state("inactive", label:'Inactive', icon:"st.motion.acceleration.inactive", backgroundColor:"#ffffff")
 		}
 		valueTile("temperature", "device.temperature", width: 2, height: 2) {
 			state("temperature", label:'${currentValue}°',
