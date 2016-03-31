@@ -57,7 +57,6 @@ metadata {
 
 
 preferences {
- //input("tzOffset", "number", title: "Time zone offset +/-x?", required: false, range: "-12..14", defaultValue: -5, description: "Time Zone Offset ie -5.")  
   }
 
 	// simulator metadata
@@ -317,14 +316,7 @@ log.debug "in sensor multilevel v2 cmd type = $cmd.sensorType";
 		map.unit = getTemperatureScale()
 		map.value = convertTemperatureIfNeeded(cmd.scaledSensorValue, cmd.scale == 1 ? "F" : "C", cmd.precision)
         
-       // if (settings.tzOffset == null)
- 		//   settings.tzOffset = -5
- 
-       // def now = new Date()
-       // def tf = new java.text.SimpleDateFormat("MM/dd/yyyy h:mm a")
-       // tf.setTimeZone(TimeZone.getTimeZone("GMT${settings.tzOffset}"))
-       // def newtime = "${tf.format(now)}" as String   
-            def now = new Date().format('MM/dd/yyyy h:mm a',location.timeZone)
+        def now = new Date().format('MM/dd/yyyy h:mm a',location.timeZone)
         sendEvent(name: "lastUpdate", value: now, descriptionText: "Last Update: $now")
 
 	} else if (cmd.sensorType == 5) {
@@ -588,11 +580,6 @@ def setCoolingSetpoint(Double degrees, Integer delay = 40000) {
 
 def configure() {
 
- //if (settings.tzOffset == null)
-  //{
-  //  settings.tzOffset = "-5"
-  //  log.debug "tzOffset was null ... set to -5!"
- // }
 
 	delayBetween([
 		zwave.thermostatModeV2.thermostatModeSupportedGet().format(),
@@ -799,9 +786,5 @@ def heatLevelDown(){
 
 def input()
 {
- //if (settings.tzOffset == null)
- // {
-   // settings.tzOffset = "-5"
-   // log.debug "tzOffset was null ... set to -5!"
- // }
+ 
 }

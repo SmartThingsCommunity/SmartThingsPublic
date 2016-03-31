@@ -801,9 +801,7 @@ log.debug "https://www.mytotalconnectcomfort.com/portal/Device/CheckDataSession/
         sendEvent(name: 'temperature', value: finalTemp, state: switchPos)
         sendEvent(name: 'relativeHumidity', value: curHumidity as Integer)
         
-      // if (settings.tzOffset == null)
-        //settings.tzOffset = -5
-        
+       
 		//log.debug "location = $location.name tz = $location.timeZone"
         def now = new Date().format('MM/dd/yyyy h:mm a',location.timeZone)
        

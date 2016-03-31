@@ -64,8 +64,7 @@ preferences {
     input("ReportTime", "number", title: "Report Timeout Interval?", description: "The time in minutes after which an update is sent?", defaultValue: 180, required: false)
     input("TempOffset", "number", title: "Temperature Offset/Adjustment -10 to +10 in Degrees?",range: "-10..10", description: "If your temperature is innacurate this will offset/adjust it by this many degrees.", defaultValue: 0, required: false)
     input("HumidOffset", "number", title: "Humidity Offset/Adjustment -10 to +10 in percent?",range: "-10..10", description: "If your humidty is innacurate this will offset/adjust it by this percent.", defaultValue: 0, required: false)
-  	//input("tzOffset", "number", title: "Time zone offset +/-x?", required: false, range: "-12..14", defaultValue: -5, description: "Time Zone Offset ie -5.")
- }
+   }
 
 	simulator 
 	{
@@ -272,13 +271,7 @@ def zwaveEvent(physicalgraph.zwave.commands.sensormultilevelv2.SensorMultilevelR
             //map.value = convertTemperatureIfNeeded(cmd.scaledSensorValue, cmd.scale == 1 ? "F" : "C", cmd.precision)
             map.unit = getTemperatureScale()
 			map.name = "temperature"
-           //if (settings.tzOffset == null)
- 			//	settings.tzOffset = -5
- 
-           // def now = new Date()
-           // def tf = new java.text.SimpleDateFormat("MM/dd/yyyy h:mm a")
-           // tf.setTimeZone(TimeZone.getTimeZone("GMT${settings.tzOffset}"))
-            //def newtime = "${tf.format(now)}" as String   
+         
             def now = new Date().format('MM/dd/yyyy h:mm a',location.timeZone)
             sendEvent(name: "lastUpdate", value: now, descriptionText: "Last Update: $npw")
 
@@ -327,20 +320,15 @@ if (settings.TempOffset == null)
   settings.TempOffset = 0
 if (settings.HumidOffset == null)
   settings.HumidOffset = 0
-//if (settings.tzOffset == null)
- // settings.tzOffset = -5
+
   
 log.debug "ST814: In configure timeout value = $settings.ReportTime"
 log.debug "Temperature change value = $settings.TempChangeAmount"
 log.debug "Humidity change value = $settings.HumidChangeAmount"
 log.debug "Temperature adjust = $settings.TempOffset"
 log.debug "Humidity adjust = $settings.HumidOffset"
-//log.debug "Tz Offset = $settings.tzOffset"
 
-//def now = new Date()
-//def tf = new java.text.SimpleDateFormat("MM/dd/yyyy h:mm a")
-//tf.setTimeZone(TimeZone.getTimeZone("GMT${settings.tzOffset}"))
-//def newtime = "${tf.format(now)}" as String   
+
      def now = new Date().format('MM/dd/yyyy h:mm a',location.timeZone)
 sendEvent(name: "lastUpdate", value: now, descriptionText: "Configured: $now")
       
@@ -374,8 +362,7 @@ if (settings.TempOffset == null)
   settings.TempOffset = 0
 if (settings.HumidOffset == null)
   settings.HumidOffset = 0
-//if (settings.tzOffset == null)
-//  settings.TzOffset = -5
+
   
 // fix interval if bad
 if (settings.ReportTime <1)
