@@ -1,7 +1,9 @@
 /**
- *  Hue Advanced Bulb
+ *  Hue Advanced Bulb/Group
  *
  *  Philips Hue Type "Extended Color Light"
+ *  Philips Hue Type "LightGroup"
+ *  Philips Hue Type "Room"
  *
  *  Author: claytonjn
  */
@@ -9,7 +11,7 @@
 // for the UI
 metadata {
 	// Automatically generated. Make future change here.
-	definition (name: "Hue Advanced Bulb", namespace: "claytonjn", author: "claytonjn") {
+	definition (name: "Hue Advanced Bulb/Group", namespace: "claytonjn", author: "claytonjn") {
 		capability "Switch Level"
 		capability "Actuator"
 		capability "Color Control"
@@ -74,7 +76,7 @@ def parse(description) {
 
 	def map = description
 	if (description instanceof String)  {
-		log.debug "Hue Advanced Bulb stringToMap - ${map}"
+		log.debug "Hue Advanced Bulb/Group stringToMap - ${map}"
 		map = stringToMap(description)
 	}
 
@@ -86,12 +88,12 @@ def parse(description) {
 
 // handle commands
 void on() {
-	log.trace parent.on(this)
+	log.trace parent.on(this, state.deviceType)
 	sendEvent(name: "switch", value: "on")
 }
 
 void off() {
-	log.trace parent.off(this)
+	log.trace parent.off(this, state.deviceType)
 	sendEvent(name: "switch", value: "off")
 }
 
@@ -109,7 +111,7 @@ void nextLevel() {
 void setLevel(percent) {
     log.debug "Executing 'setLevel'"
     if (verifyPercent(percent)) {
-        parent.setLevel(this, percent)
+        parent.setLevel(this, percent, state.deviceType)
         sendEvent(name: "level", value: percent, descriptionText: "Level has changed to ${percent}%")
         sendEvent(name: "switch", value: "on")
     }
@@ -118,7 +120,7 @@ void setLevel(percent) {
 void setSaturation(percent) {
     log.debug "Executing 'setSaturation'"
     if (verifyPercent(percent)) {
-        parent.setSaturation(this, percent)
+        parent.setSaturation(this, percent, state.deviceType)
         sendEvent(name: "saturation", value: percent, displayed: false)
     }
 }
@@ -126,7 +128,7 @@ void setSaturation(percent) {
 void setHue(percent) {
     log.debug "Executing 'setHue'"
     if (verifyPercent(percent)) {
-        parent.setHue(this, percent)
+        parent.setHue(this, percent, state.deviceType)
         sendEvent(name: "hue", value: percent, displayed: false)
     }
 }
@@ -164,7 +166,7 @@ void setColor(value) {
         validValues.switch = "on"
     }
     if (!events.isEmpty()) {
-        parent.setColor(this, validValues)
+        parent.setColor(this, validValues, state.deviceType)
     }
     events.each {
         sendEvent(it)
@@ -194,7 +196,7 @@ void setAdjustedColor(value) {
 void setColorTemperature(value) {
     if (value) {
         log.trace "setColorTemperature: ${value}k"
-        parent.setColorTemperature(this, value)
+        parent.setColorTemperature(this, value, state.deviceType)
         sendEvent(name: "colorTemperature", value: value)
         sendEvent(name: "switch", value: "on")
     } else {
@@ -233,4 +235,8 @@ def verifyPercent(percent) {
         log.warn "$percent is not 0-100"
         return false
     }
+}
+
+void initialize(deviceType) {
+	state.deviceType = deviceType
 }
