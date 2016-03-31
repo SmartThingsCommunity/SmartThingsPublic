@@ -24,7 +24,7 @@ definition(
 	category: "SmartThings Labs",
 	iconUrl: "https://s3.amazonaws.com/smartapp-icons/Partner/hue.png",
 	iconX2Url: "https://s3.amazonaws.com/smartapp-icons/Partner/hue@2x.png",
-        //singleInstance: true
+    singleInstance: true
 )
 
 preferences {
@@ -68,7 +68,7 @@ def bridgeDiscovery(params=[:])
 	}
 
 	//setup.xml request every 3 seconds except on discoveries
-	if(((bridgeRefreshCount % 1) == 0) && ((bridgeRefreshCount % 5) != 0)) {
+	if(((bridgeRefreshCount % 3) == 0) && ((bridgeRefreshCount % 5) != 0)) {
 		verifyHueBridges()
 	}
 
@@ -161,7 +161,7 @@ private sendDeveloperReq() {
 		headers: [
 			HOST: host
 		],
-		body: [devicetype: "$token-0", username: "$token-0"]], "${selectedHue}"))
+		body: [devicetype: "$token-0"]], "${selectedHue}"))
 }
 
 private discoverHueBulbs() {
@@ -175,6 +175,7 @@ private discoverHueBulbs() {
 }
 
 private verifyHueBridge(String deviceNetworkId, String host) {
+	log.trace "Verify Hue Bridge $deviceNetworkId"
 	sendHubCommand(new physicalgraph.device.HubAction([
 		method: "GET",
 		path: "/description.xml",
@@ -602,6 +603,20 @@ def parse(childDevice, description) {
 	}
 }
 
+def hubVerification(bodytext) {
+	log.trace "Bridge sent back description.xml for verification"
+    def body = new XmlSlurper().parseText(bodytext)
+    if (body?.device?.modelName?.text().startsWith("Philips hue bridge")) {
+        def bridges = getHueBridges()
+        def bridge = bridges.find {it?.key?.contains(body?.device?.UDN?.text())}
+        if (bridge) {
+            bridge.value << [name:body?.device?.friendlyName?.text(), serialNumber:body?.device?.serialNumber?.text(), verified: true]
+        } else {
+            log.error "/description.xml returned a bridge that didn't exist"
+        }
+    }
+}
+
 def on(childDevice) {
 	log.debug "Executing 'on'"
 	put("lights/${getId(childDevice)}/state", [on: true])
@@ -642,35 +657,53 @@ def setColorTemperature(childDevice, huesettings) {
 }
 
 def setColor(childDevice, huesettings) {
-	log.debug "Executing 'setColor($huesettings)'"
-	def hue = Math.min(Math.round(huesettings.hue * 65535 / 100), 65535)
-	def sat = Math.min(Math.round(huesettings.saturation * 255 / 100), 255)
-    def alert = huesettings.alert ? huesettings.alert : "none"
-    def transition = huesettings.transition ? huesettings.transition : 4
+    log.debug "Executing 'setColor($huesettings)'"
+    
+    def value = [:]
+    def hue = null
+    def sat = null
+    def xy = null
+    
+    if (huesettings.hex != null) {
+        value.xy = getHextoXY(huesettings.hex)
+    } else {
+        if (huesettings.hue != null)
+            value.hue = Math.min(Math.round(huesettings.hue * 65535 / 100), 65535)
+        if (huesettings.saturation != null)   
+            value.sat = Math.min(Math.round(huesettings.saturation * 255 / 100), 255)
+    }
+    
+    // Default behavior is to turn light on 
+    value.on = true
 
-	def value = [sat: sat, hue: hue, alert: alert, transitiontime: transition]
-	if (huesettings.level != null) {
-        if (huesettings.level == 1) value.bri = 1 else value.bri = Math.min(Math.round(huesettings.level * 255 / 100), 255)
-		value.on = value.bri > 0
-	}
+    if (huesettings.level != null) {
+        if (huesettings.level <= 0)
+            value.on = false
+        else if (huesettings.level == 1)
+            value.bri = 1
+        else 
+            value.bri = Math.min(Math.round(huesettings.level * 255 / 100), 255)
+    }
+    value.alert = huesettings.alert ? huesettings.alert : "none"
+    value.transition = huesettings.transition ? huesettings.transition : 4
 
-	if (huesettings.switch) {
-		value.on = huesettings.switch == "on"
-	}
+    // Make sure to turn off light if requested
+    if (huesettings.switch == "off")
+        value.on = false
 
-	log.debug "sending command $value"
-	put("lights/${getId(childDevice)}/state", value)
+    log.debug "sending command $value"
+    put("lights/${getId(childDevice)}/state", value)
+    return "Color set to $value"
 }
 
 def nextLevel(childDevice) {
-	def level = device.latestValue("level") as Integer ?: 0
-	if (level < 100) {
-		level = Math.min(25 * (Math.round(level / 25) + 1), 100) as Integer
-	}
-	else {
-		level = 25
-	}
-	setLevel(childDevice,level)
+    def level = device.latestValue("level") as Integer ?: 0
+    if (level < 100) {
+        level = Math.min(25 * (Math.round(level / 25) + 1), 100) as Integer
+    } else {
+        level = 25
+    }
+    setLevel(childDevice,level)
 }
 
 private getId(childDevice) {
@@ -741,6 +774,57 @@ private getBridgeIP() {
         log.trace "Bridge: $selectedHue - Host: $host"
     }
     return host
+}
+
+private getHextoXY(String colorStr) {
+    // For the hue bulb the corners of the triangle are:
+    // -Red: 0.675, 0.322
+    // -Green: 0.4091, 0.518
+    // -Blue: 0.167, 0.04
+
+    def cred = Integer.valueOf( colorStr.substring( 1, 3 ), 16 )
+    def cgreen = Integer.valueOf( colorStr.substring( 3, 5 ), 16 )
+    def cblue = Integer.valueOf( colorStr.substring( 5, 7 ), 16 )
+
+    double[] normalizedToOne = new double[3];
+    normalizedToOne[0] = (cred / 255);
+    normalizedToOne[1] = (cgreen / 255);
+    normalizedToOne[2] = (cblue / 255);
+    float red, green, blue;
+
+    // Make red more vivid
+    if (normalizedToOne[0] > 0.04045) {
+        red = (float) Math.pow(
+                (normalizedToOne[0] + 0.055) / (1.0 + 0.055), 2.4);
+    } else {
+        red = (float) (normalizedToOne[0] / 12.92);
+    }
+
+    // Make green more vivid
+    if (normalizedToOne[1] > 0.04045) {
+        green = (float) Math.pow((normalizedToOne[1] + 0.055) / (1.0 + 0.055), 2.4);
+    } else {
+        green = (float) (normalizedToOne[1] / 12.92);
+    }
+
+    // Make blue more vivid
+    if (normalizedToOne[2] > 0.04045) {
+        blue = (float) Math.pow((normalizedToOne[2] + 0.055) / (1.0 + 0.055), 2.4);
+    } else {
+        blue = (float) (normalizedToOne[2] / 12.92);
+    }
+
+    float X = (float) (red * 0.649926 + green * 0.103455 + blue * 0.197109);
+    float Y = (float) (red * 0.234327 + green * 0.743075 + blue * 0.022598);
+    float Z = (float) (red * 0.0000000 + green * 0.053077 + blue * 1.035763);
+
+    float x = (X != 0 ? X / (X + Y + Z) : 0);
+    float y = (Y != 0 ? Y / (X + Y + Z) : 0);
+
+    double[] xy = new double[2];
+    xy[0] = x;
+    xy[1] = y;
+    return xy;
 }
 
 private Integer convertHexToInt(hex) {
