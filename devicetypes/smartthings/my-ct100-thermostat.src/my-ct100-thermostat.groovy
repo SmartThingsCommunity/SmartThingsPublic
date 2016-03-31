@@ -17,6 +17,8 @@ note: there is a new input preferernce toffset which defaults to -5 and you must
 v 7 forgot to add the preference section added now.
 v8 turn on extra debugging to figure out why direct sets are failing from routines
 v9 fixed issue with routines not setting temps.. it was silently timing out with no error.. needed to up delay times
+v 10 figured out how to do time without user input timezone and handles daylight saving correctly.
+
 even the stock one with a delay time would only set the heat setpoint from a routine (first call) and would timeout on the cool
 one.. I upped the delays to 45 seconds and it seems to set both. Then i passed in a smaller delay from the toggle buttons so you
 still can go up or down a temp in 1/2 sec.. otherwise it would only update every 30 or 45 secs etc.
@@ -55,7 +57,7 @@ metadata {
 
 
 preferences {
- input("tzOffset", "number", title: "Time zone offset +/-x?", required: false, range: "-12..14", defaultValue: -5, description: "Time Zone Offset ie -5.")  
+ //input("tzOffset", "number", title: "Time zone offset +/-x?", required: false, range: "-12..14", defaultValue: -5, description: "Time Zone Offset ie -5.")  
   }
 
 	// simulator metadata
@@ -315,14 +317,15 @@ log.debug "in sensor multilevel v2 cmd type = $cmd.sensorType";
 		map.unit = getTemperatureScale()
 		map.value = convertTemperatureIfNeeded(cmd.scaledSensorValue, cmd.scale == 1 ? "F" : "C", cmd.precision)
         
-        if (settings.tzOffset == null)
- 		   settings.tzOffset = -5
+       // if (settings.tzOffset == null)
+ 		//   settings.tzOffset = -5
  
-        def now = new Date()
-        def tf = new java.text.SimpleDateFormat("MM/dd/yyyy h:mm a")
-        tf.setTimeZone(TimeZone.getTimeZone("GMT${settings.tzOffset}"))
-        def newtime = "${tf.format(now)}" as String   
-        sendEvent(name: "lastUpdate", value: newtime, descriptionText: "Last Update: $newtime")
+       // def now = new Date()
+       // def tf = new java.text.SimpleDateFormat("MM/dd/yyyy h:mm a")
+       // tf.setTimeZone(TimeZone.getTimeZone("GMT${settings.tzOffset}"))
+       // def newtime = "${tf.format(now)}" as String   
+            def now = new Date().format('MM/dd/yyyy h:mm a',location.timeZone)
+        sendEvent(name: "lastUpdate", value: now, descriptionText: "Last Update: $now")
 
 	} else if (cmd.sensorType == 5) {
 		map.name = "humidity"
@@ -585,11 +588,11 @@ def setCoolingSetpoint(Double degrees, Integer delay = 40000) {
 
 def configure() {
 
- if (settings.tzOffset == null)
-  {
-    settings.tzOffset = "-5"
-    log.debug "tzOffset was null ... set to -5!"
-  }
+ //if (settings.tzOffset == null)
+  //{
+  //  settings.tzOffset = "-5"
+  //  log.debug "tzOffset was null ... set to -5!"
+ // }
 
 	delayBetween([
 		zwave.thermostatModeV2.thermostatModeSupportedGet().format(),
@@ -796,9 +799,9 @@ def heatLevelDown(){
 
 def input()
 {
- if (settings.tzOffset == null)
-  {
-    settings.tzOffset = "-5"
-    log.debug "tzOffset was null ... set to -5!"
-  }
+ //if (settings.tzOffset == null)
+ // {
+   // settings.tzOffset = "-5"
+   // log.debug "tzOffset was null ... set to -5!"
+ // }
 }

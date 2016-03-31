@@ -171,7 +171,7 @@ preferences {
 			}
             
 		
-  		 valueTile("label1", "device.Label1", width: 4, height: 1, decoration: "flat") {
+  		valueTile("label1", "device.Label1", width: 4, height: 1, decoration: "flat") {
 			state "default", label: '${currentValue}'
             }
         valueTile("label2", "device.Label2", width: 4, height: 1, decoration: "flat") {
@@ -189,9 +189,7 @@ preferences {
         valueTile("label6", "device.Label6", width: 4, height: 1, decoration: "flat") {
 			state "default", label: '${currentValue}'
             }
-		standardTile("blank1", "blank1", width: 2, height: 1, decoration: "flat") {
-			state "default", label: " "
-            }
+	
         standardTile("blank1", "blank1", width: 2, height: 1, decoration: "flat") {
 			state "default", label: " "
             }
