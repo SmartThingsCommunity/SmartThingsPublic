@@ -25,7 +25,7 @@ Unless required by applicable law or agreed to in writing, software distributed 
 #Installation
 1. Login at <a href=http://graph.api.smartthings.com>http://graph.api.smartthings.com</a>
 2. Go to "**My SmartApps**" section and click on the "**+ New SmartApp**" button on the right.
-3. On the "*New SmartApp*" page, Select the Tab "**From Code**" , Copy the BigTalker source code from GitHub (*BigTalker.groovy*) and paste it into the IDE editor window.
+3. On the "*New SmartApp*" page, Select the Tab "**From Code**" , Copy the BigTalker source code from GitHub (*https://github.com/rayzurbock/SmartThings-BigTalker/tree/master/smartapps/rayzurbock/big-talker.src/BigTalker.groovy*) and paste it into the IDE editor window.
 4. Click the "**Create**" button at the bottom.
 6. Click the blue "**Save**" button above the editor window.
 7. Click the "**Publish**" button next to it and select "**For Me**". You have now self-published your SmartApp.
