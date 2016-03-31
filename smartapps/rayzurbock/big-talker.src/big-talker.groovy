@@ -1,4 +1,4 @@
-/**  Testing GitHub Integration
+/**  
  *  BIG TALKER -- Version 1.1.5 -- A SmartApp for SmartThings Home Automation System
  *  Copyright 2014-2016 - rayzur@rayzurbock.com - Brian S. Lowrance
  *  For the latest version, development and test releases visit http://www.github.com/rayzurbock
