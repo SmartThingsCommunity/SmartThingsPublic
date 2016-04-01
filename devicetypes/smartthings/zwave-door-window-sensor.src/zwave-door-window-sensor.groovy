@@ -25,7 +25,10 @@ metadata {
 
 		fingerprint deviceId: "0x2001", inClusters: "0x30,0x80,0x84,0x85,0x86,0x72"
 		fingerprint deviceId: "0x07", inClusters: "0x30"
+		fingerprint deviceId: "0x0701", inClusters: "0x5E,0x98"
 		fingerprint deviceId: "0x0701", inClusters: "0x5E,0x86,0x72,0x98", outClusters: "0x5A,0x82"
+		fingerprint deviceId: "0x0701", inClusters: "0x5E,0x80,0x71,0x85,0x70,0x72,0x86,0x30,0x31,0x84,0x59,0x73,0x5A,0x8F,0x98,0x7A", outClusters:"0x20" // Philio multi+
+		fingerprint deviceId: "0x0701", inClusters: "0x5E,0x72,0x5A,0x80,0x73,0x86,0x84,0x85,0x59,0x71,0x70,0x7A,0x98" // Vision door/window
 	}
 
 	// simulator metadata
@@ -240,7 +243,7 @@ def batteryGetCommand() {
 def retypeBasedOnMSR() {
 	switch (state.MSR) {
 		case "0086-0002-002D":
-			log.debug("Changing device type to Z-Wave Water Sensor")
+			log.debug "Changing device type to Z-Wave Water Sensor"
 			setDeviceType("Z-Wave Water Sensor")
 			break
 		case "011F-0001-0001":  // Schlage motion
@@ -249,9 +252,16 @@ def retypeBasedOnMSR() {
 		case "0060-0001-0002":  // Everspring SP814
 		case "0060-0001-0003":  // Everspring HSP02
 		case "011A-0601-0901":  // Enerwave ZWN-BPC
-			log.debug("Changing device type to Z-Wave Motion Sensor")
+			log.debug "Changing device type to Z-Wave Motion Sensor"
 			setDeviceType("Z-Wave Motion Sensor")
 			break
-		
+		case "013C-0002-000D":  // Philio multi +
+			log.debug "Changing device type to 3-in-1 Multisensor Plus (SG)"
+			setDeviceType("3-in-1 Multisensor Plus (SG)")
+			break
+		case "0109-2001-0106":  // Vision door/window
+			log.debug "Changing device type to Door / Window Sensor Plus (SG)"
+			setDeviceType("Door / Window Sensor Plus (SG)")
+			break
 	}
 }
