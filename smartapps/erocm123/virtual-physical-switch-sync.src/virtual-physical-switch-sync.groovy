@@ -77,37 +77,18 @@ def initialize() {
 
 def virtualHandler(evt) {
   log.debug "virtualHandler called with event: deviceId ${evt.deviceId} name:${evt.name} source:${evt.source} value:${evt.value} isStateChange: ${evt.isStateChange()} isPhysical: ${evt.isPhysical()} isDigital: ${evt.isDigital()} data: ${evt.data} device: ${evt.device}"
-  
     for (int i = 1; i <= vNumber; i++){
        if (evt.deviceId == settings["virtual${i}"].id) {
-          switch (evt.value) {
-             case 'on':
-             //log.debug "switch ${i} on"
-             physical."on${i}"()
-             //eval(physical.on+${i}())
-             break
-             case 'off':
-             //log.debug "switch ${i} off"
-             physical."off${i}"()
-             break
-          }
+             physical."${evt.value}${i}"()
        }
     }
 }
 
 def physicalHandler(evt) {
   log.debug "physicalHandler called with event:  name:${evt.name} source:${evt.source} value:${evt.value} isStateChange: ${evt.isStateChange()} isPhysical: ${evt.isPhysical()} isDigital: ${evt.isDigital()} data: ${evt.data} device: ${evt.device}"
-  
   for (int i = 1; i <= vNumber; i++){
        if (evt.name == "switch${i}") {
-          switch (evt.value) {
-             case 'on':
-             settings["virtual${i}"].onPhysical()
-             break
-             case 'off':
-             settings["virtual${i}"].offPhysical()
-             break
-          }
+             sendEvent(settings["virtual${i}"], [name:"switch", value:"$evt.value", type:"physical"])
        }
     }
 }
@@ -116,7 +97,7 @@ def powerHandler(evt) {
    log.debug "powerHandler called with event:  name:${evt.name} source:${evt.source} value:${evt.value} isStateChange: ${evt.isStateChange()} isPhysical: ${evt.isPhysical()} isDigital: ${evt.isDigital()} data: ${evt.data} device: ${evt.device}"
    for (int i = 1; i <= vNumber; i++){
        if (evt.name == "power${i}") {
-          settings["virtual${i}"].power(evt.value)
+          sendEvent(settings["virtual${i}"], [name:"power", value:"$evt.value"])
        }
    }
 }
@@ -125,7 +106,7 @@ def energyHandler(evt) {
    log.debug "energyHandler called with event:  name:${evt.name} source:${evt.source} value:${evt.value} isStateChange: ${evt.isStateChange()} isPhysical: ${evt.isPhysical()} isDigital: ${evt.isDigital()} data: ${evt.data} device: ${evt.device}"
    for (int i = 1; i <= vNumber; i++){
        if (evt.name == "energy${i}") {
-          settings["virtual${i}"].energy(evt.value)
+          sendEvent(settings["virtual${i}"], [name:"energy", value:"$evt.value"])
        }
    }
 }
