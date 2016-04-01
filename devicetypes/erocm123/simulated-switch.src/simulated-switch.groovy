@@ -1,5 +1,5 @@
 /**
- *  Copyright 2015 Eric Maycock
+ *  Copyright 2015 SmartThings
  *
  *  Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except
  *  in compliance with the License. You may obtain a copy of the License at:
@@ -13,11 +13,9 @@
  */
 metadata {
 	
-    definition (name: "Simulated Energy Switch", namespace: "erocm123", author: "Eric Maycock") {
+    definition (name: "Simulated Switch", namespace: "erocm123", author: "Eric Maycock") {
 		capability "Switch"
         capability "Relay Switch"
-        capability "Energy Meter"
-		capability "Power Meter"
 
 		command "onPhysical"
 		command "offPhysical"
@@ -34,14 +32,8 @@ metadata {
 		standardTile("off", "device.switch", decoration: "flat") {
 			state "default", label: 'Off', action: "offPhysical", backgroundColor: "#ffffff"
 		}
-        valueTile("power", "power", decoration: "flat") {
-			state "default", label:'${currentValue} W'
-		}
-		valueTile("energy", "energy", decoration: "flat") {
-			state "default", label:'${currentValue} kWh'
-		}
         main "switch"
-		details(["switch", "power", "energy"])
+		details(["switch","on","off"])
 	}
 }
 
