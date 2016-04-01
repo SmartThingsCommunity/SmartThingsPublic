@@ -88,7 +88,13 @@ def physicalHandler(evt) {
   log.debug "physicalHandler called with event:  name:${evt.name} source:${evt.source} value:${evt.value} isStateChange: ${evt.isStateChange()} isPhysical: ${evt.isPhysical()} isDigital: ${evt.isDigital()} data: ${evt.data} device: ${evt.device}"
   for (int i = 1; i <= vNumber; i++){
        if (evt.name == "switch${i}") {
-             sendEvent(settings["virtual${i}"], [name:"switch", value:"$evt.value", type:"physical"])
+            try {
+                sendEvent(settings["virtual${i}"], [name:"switch", value:"$evt.value", type:"physical"])
+			} catch (e) {
+                log.trace "Caught error: Likely caused by not using my specialized Simulated Switches"
+				log.trace e
+                settings["virtual${i}"]."${evt.value}Physical"()		
+			}
        }
     }
 }
