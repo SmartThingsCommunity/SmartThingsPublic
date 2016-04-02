@@ -3,7 +3,7 @@
  *
  *  Copyright © 2016 Michael Struck
  *
- *  Version 1.5.1 (4/2/16)
+ *  Version 1.5.2 (4/2/16)
  *
  *  Version 1.0.0 - Initial release
  *  Version 1.0.1 - Small syntax changes for consistency
@@ -16,7 +16,8 @@
  *  Version 1.4.3 - Code Optimizations and work around for playTrack()
  *  Version 1.4.4 - Minor syntax updates
  *  Version 1.5.0 - Added additional triggers to set off alarm
- *  Version 1.5.1 - Added time restricitions to allow for new triggers
+ *  Version 1.5.1a - Added time restricitions to allow for new triggers
+ *  Version 1.5.2 - Added delay after presence option
  *
  *  Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except
  *  in compliance with the License. You may obtain a copy of the License at:
@@ -43,6 +44,7 @@ preferences {
 	page name:"pageSetup"
     page name:"pageWeatherSettings"
     page name:"pageRestrictions"
+    page name:"pageAlarmTriggers"
 }
 // Show setup page
 def pageSetup() {
@@ -119,12 +121,15 @@ def pageSetup() {
 		}
 	}
 }
-page(name: "pageAlarmTriggers", title: "Alarm Triggers", install: false, uninstall: false) {
-	section{
-        input "alarmStart", "time", title: "Trigger Alarm At Certain Time", required: false
-        input "alarmTrigger", "capability.switch", title: "Trigger Alarm When Switches Turned On...", required: false, multiple: true
-        input "alarmPresenceTrigger", "capability.presenceSensor", title: "Trigger Alarm When Someone Arrives...", multiple: true, required: false
-	}
+def pageAlarmTriggers(){
+    dynamicPage(name: "pageAlarmTriggers", title: "Alarm Triggers", install: false, uninstall: false) {
+        section{
+            input "alarmStart", "time", title: "Trigger Alarm At Certain Time", required: false
+            input "alarmTrigger", "capability.switch", title: "Trigger Alarm When Switches Turned On...", required: false, multiple: true
+            input "alarmPresenceTrigger", "capability.presenceSensor", title: "Trigger Alarm When Someone Arrives...", multiple: true, required: false, submitOnChange:true
+            if (alarmPresenceTrigger) input "alarmPresenceTriggerTime", "number", title: "Minutes After Presence to Alarm", defaultValue: 0
+        }
+    }
 }
 def pageRestrictions(){
     dynamicPage(name: "pageRestrictions", title: "Alarm Restrictions", install: false, uninstall: false){
@@ -139,7 +144,7 @@ def pageRestrictions(){
         }
     }
 }
-page(name: "timeIntervalInput", title: "Only during a certain time") {
+page(name: "timeIntervalInput", title: "Alarm Triggers Only During A Certain Time") {
 	section {
 		input "timeStart", "time", title: "Starting", required: false
 		input "timeEnd", "time", title: "Ending", required: false
@@ -190,14 +195,18 @@ def initialize() {
     if ((alarmStart || alarmTrigger) && alarmSpeaker && alarmType){
         if (alarmStart) schedule (alarmStart, alarmHandler)
         if (alarmTrigger) subscribe (alarmTrigger, "switch.on", alarmHandler)
-        if (alarmPresenceTrigger) subscribe (alarmTrigger, "presence.present", alarmHandler)
+        if (alarmPresenceTrigger) subscribe (alarmTrigger, "presence.present", alarmHandlerTrigger)
         if (musicTrack) saveSelectedSong()
 	}
 }
 //Handlers----------------
+def alarmHandlerTrigger(evt){
+	if (alarmPresenceTriggerTime && alarmPresenceTriggerTime > 0) alarmHandler()
+    else runIn (alarmPresenceTriggerTime*60, alarmHandler, [overwrite: true])
+}
 def alarmHandler(evt) {
     log.debug "Alarm time: Evaluating restrictions"
-    if (parent.getSchedStatus(app.id) && (!alarmMode || alarmMode.contains(location.mode)) && getDayOk() &&getTimeOk(timeStart,timeEnd) && everyoneIsPresent() && switchesOnStatus() && switchesOffStatus()) {	
+    if (parent.getSchedStatus(app.id) && (!alarmMode || alarmMode.contains(location.mode)) && getDayOk() && getTimeOk(timeStart,timeEnd) && everyoneIsPresent() && switchesOnStatus() && switchesOffStatus()) {	
         if (switches || dimmers || thermostats) {
         	def dimLevel = dimmersLevel as Integer
             switches?.on()
@@ -601,4 +610,4 @@ private getTimeOk(startTime, endTime) {
     result
 }
 //Version
-private def textVersion() {def text = "Child App Version: 1.5.1 (04/02/2016)"}
+private def textVersion() {def text = "Child App Version: 1.5.2 (04/02/2016)"}
