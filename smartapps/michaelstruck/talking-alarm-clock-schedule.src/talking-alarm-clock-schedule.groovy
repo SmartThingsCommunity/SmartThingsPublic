@@ -3,7 +3,7 @@
  *
  *  Copyright © 2016 Michael Struck
  *
- *  Version 1.4.4 (3/25/16) - Initial release of child app
+ *  Version 1.5.0 (4/2/16)
  *
  *  Version 1.0.0 - Initial release
  *  Version 1.0.1 - Small syntax changes for consistency
@@ -15,6 +15,7 @@
  *  Version 1.4.2 - Syntax changes and minor revisions
  *  Version 1.4.3 - Code Optimizations and work around for playTrack()
  *  Version 1.4.4 - Minor syntax updates
+ *  Version 1.5.0 - Added additional triggers to set off alarm
  *
  *  Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except
  *  in compliance with the License. You may obtain a copy of the License at:
@@ -58,8 +59,7 @@ def pageSetup() {
                     	"attempt to use this application with your ${alarmSpeaker} speaker."
                 }
                 input "alarmVolume", "number", title: "Alarm Volume", description: "0-100%", required: false
-                input "alarmStart", "time", title: "Time To Trigger Alarm", required: false
-                input "alarmTrigger", "capability.switch", title: "Trigger Alarm When Switches Turned On...", required: false, multiple: true
+                href "pageAlarmTriggers", title: "Alarm Triggers...", description: getTriggersDesc(), state: greyOutTriggers()
                 input "alarmType", "enum", title: "Select A Primary Alarm Type...", multiple: false, required: true, options: [[1:"Alarm sound (up to 20 seconds)"],[3:"Music track/internet radio"],[2:"Voice Greeting"],], submitOnChange:true
                 if (alarmType != "3") {
                     if (alarmType == "1") input "secondAlarm", "enum", title: "Select A Second Alarm After The First Is Completed", multiple: false, required: false, options: [[2:"Music track/internet Radio"],[1:"Voice Greeting"]], submitOnChange:true
@@ -116,6 +116,13 @@ def pageSetup() {
         }
         section("Tap the button below to remove this alarm schedule only"){
 		}
+	}
+}
+page(name: "pageAlarmTriggers", title: "Alarm Triggers", install: false, uninstall: false) {
+	section{
+        input "alarmStart", "time", title: "Trigger Alarm At Certain Time", required: false
+        input "alarmTrigger", "capability.switch", title: "Trigger Alarm When Switches Turned On...", required: false, multiple: true
+        input "alarmPresenceTrigger", "capability.presenceSensor", title: "Trigger Alarm When Someone Arrives...", multiple: true, required: false
 	}
 }
 def pageRestrictions(){
@@ -175,6 +182,7 @@ def initialize() {
     if ((alarmStart || alarmTrigger) && alarmSpeaker && alarmType){
         if (alarmStart) schedule (alarmStart, alarmHandler)
         if (alarmTrigger) subscribe (alarmTrigger, "switch.on", alarmHandler)
+        if (alarmPresenceTrigger) subscribe (alarmTrigger, "presence.present", alarmHandler)
         if (musicTrack) saveSelectedSong()
 	}
 }
@@ -328,9 +336,6 @@ def getAlarmMethod(){
     if (alarmTrigger) result += "to trigger when switches activated"
 	result    
 }
-def greyOut(){def result = speakWeather || includeSunrise || includeSunset || includeTemp || localHumidity || localTemp? "complete" : ""}
-def dimmerDesc(){def desc = dimmers && dimmersLevel ? "${dimmers} set to ${dimmersLevel}%" : "Tap to set dimmers settings"}
-def greyOutDimmer(){def result = dimmers && dimmersLevel  ? "complete" : ""}
 def tstatDesc(){
 	def desc = thermostats ? "${thermostats}" : "Tap to set thermostat settings"
 	desc += thermostats && (temperatureH || temperatureC)  ? " set to ": ""
@@ -339,8 +344,13 @@ def tstatDesc(){
     desc += thermostats && temperatureC ? " ${temperatureC} (cooling)" : ""
 	desc
 }
-def greyOutTstat(){
-	def result = thermostats && (temperatureH || temperatureC)  ? "complete" : ""
+def getTriggersDesc(){
+	def result = alarmStart ? "Time: " + parseDate(alarmStart,"", "h:mm a") : ""
+    result += result && alarmTrigger   ? "\n" :""
+    result += alarmTrigger ? "Switches: ${alarmTrigger}" : ""
+    result += result && alarmPresenceTrigger   ? "\n" :""
+    result += alarmPresenceTrigger ? "Arrival: ${alarmPresenceTrigger}" : ""
+	result = result ? result : "Tap to configure alarm triggers"
 }
 def getRestrictionDesc(){
 	def result = alarmDay ? "Days: ${alarmDay}" : ""
@@ -356,7 +366,12 @@ def getRestrictionDesc(){
     result += alarmSwitchNotActive ? "Switches (OFF): ${alarmSwitchNotActive} " : ""
     result = result ? result : "Tap to configure alarm restrictions"
 }
+def greyOut(){def result = speakWeather || includeSunrise || includeSunset || includeTemp || localHumidity || localTemp? "complete" : ""}
+def dimmerDesc(){def desc = dimmers && dimmersLevel ? "${dimmers} set to ${dimmersLevel}%" : "Tap to set dimmers settings"}
+def greyOutDimmer(){def result = dimmers && dimmersLevel  ? "complete" : ""}
 def greyOutRestrictions(){def result = alarmDay || alarmMode || alarmPresence || alarmSwitchActive || alarmSwitchNotActive ? "complete" : ""}
+def greyOutTriggers(){def result = alarmStart || alarmTrigger || alarmPresenceTrigger ? "complete" : ""}
+def greyOutTstat(){def result = thermostats && (temperatureH || temperatureC)  ? "complete" : ""}
 private getPresenceNames(param){
     def nameList = ""
     if (!param){
@@ -558,4 +573,4 @@ private saveSelectedSong() {
 	}
 }
 //Version
-private def textVersion() {def text = "Child App Version: 1.4.4 (03/25/2016)"}
+private def textVersion() {def text = "Child App Version: 1.5.0 (04/02/2016)"}
