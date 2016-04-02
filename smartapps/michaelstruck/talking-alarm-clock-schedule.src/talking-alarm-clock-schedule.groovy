@@ -3,7 +3,7 @@
  *
  *  Copyright © 2016 Michael Struck
  *
- *  Version 1.5.0 (4/2/16)
+ *  Version 1.5.1 (4/2/16)
  *
  *  Version 1.0.0 - Initial release
  *  Version 1.0.1 - Small syntax changes for consistency
@@ -16,6 +16,7 @@
  *  Version 1.4.3 - Code Optimizations and work around for playTrack()
  *  Version 1.4.4 - Minor syntax updates
  *  Version 1.5.0 - Added additional triggers to set off alarm
+ *  Version 1.5.1 - Added time restricitions to allow for new triggers
  *
  *  Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except
  *  in compliance with the License. You may obtain a copy of the License at:
@@ -129,6 +130,7 @@ def pageRestrictions(){
     dynamicPage(name: "pageRestrictions", title: "Alarm Restrictions", install: false, uninstall: false){
         section{
             input "alarmDay", "enum", options: ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"], title: "Alarm On Certain Days Of The Week...", multiple: true, required: false
+            href "timeIntervalInput", title: "Alarm Triggers Only During A Certain Time...", description: getTimeLabel(timeStart, timeEnd), state: greyOutState(timeStart, timeEnd)
             input "alarmMode", "mode", title: "Alarm Only During The Following Modes...", multiple: true, required: false
             input "alarmPresence", "capability.presenceSensor", title: "Alarm Only When Present...", multiple: true, required: false, submitOnChange:true
             if (alarmPresence && alarmPresence.size()>1) input "alarmPresAll", "bool", title: "Off=Any Present; On=All Present", defaultValue: false
@@ -137,6 +139,12 @@ def pageRestrictions(){
         }
     }
 }
+page(name: "timeIntervalInput", title: "Only during a certain time") {
+	section {
+		input "timeStart", "time", title: "Starting", required: false
+		input "timeEnd", "time", title: "Ending", required: false
+	}
+} 
 page(name: "pageDimmers", title: "Dimmer Settings", install: false, uninstall: false) {
 	section {
        	input "dimmers", "capability.switchLevel", title: "Dim The Following...", multiple: true, required: false	
@@ -189,7 +197,7 @@ def initialize() {
 //Handlers----------------
 def alarmHandler(evt) {
     log.debug "Alarm time: Evaluating restrictions"
-    if (parent.getSchedStatus(app.id) && (!alarmMode || alarmMode.contains(location.mode)) && getDayOk() && everyoneIsPresent() && switchesOnStatus() && switchesOffStatus()) {	
+    if (parent.getSchedStatus(app.id) && (!alarmMode || alarmMode.contains(location.mode)) && getDayOk() &&getTimeOk(timeStart,timeEnd) && everyoneIsPresent() && switchesOnStatus() && switchesOffStatus()) {	
         if (switches || dimmers || thermostats) {
         	def dimLevel = dimmersLevel as Integer
             switches?.on()
@@ -317,6 +325,13 @@ def getAlarmDesc() {
     else desc = "No time or trigger for this alarm schedule set."
 	desc
 }
+def getTimeLabel(start, end){
+	def timeLabel = "Tap to set"
+    if(start && end) timeLabel = "Between " + parseDate("${start}","","h:mm a") + " and " +  parseDate("${end}","", "h:mm a")
+    else if (start) timeLabel = "After " + parseDate("${start}","", "h:mm a")
+    else if (end) timeLabel = "Before " + parseDate("${end}","", "h:mm a")
+	timeLabel	
+}
 def getWeatherDesc() {
 	def desc = includeTemp || localTemp ? "Speak temperature" : ""
     desc += desc && localHumidity ? " and humidity" : ""
@@ -354,6 +369,8 @@ def getTriggersDesc(){
 }
 def getRestrictionDesc(){
 	def result = alarmDay ? "Days: ${alarmDay}" : ""
+    result += result && getTimeLabel(timeStart, timeEnd) != "Tap to set" ? "\n" : ""
+    result += getTimeLabel(timeStart, timeEnd) != "Tap to set" ? "Time: "+ getTimeLabel(timeStart, timeEnd) : ""
     result += result && alarmMode ? "\n" : ""
     result += alarmMode ? "Modes: ${alarmMode}" : ""
     result += result && alarmPresence ? "\n" : ""
@@ -367,6 +384,7 @@ def getRestrictionDesc(){
     result = result ? result : "Tap to configure alarm restrictions"
 }
 def greyOut(){def result = speakWeather || includeSunrise || includeSunset || includeTemp || localHumidity || localTemp? "complete" : ""}
+def greyOutState(param1, param2){def result = param1 || param2 ? "complete" : ""}
 def dimmerDesc(){def desc = dimmers && dimmersLevel ? "${dimmers} set to ${dimmersLevel}%" : "Tap to set dimmers settings"}
 def greyOutDimmer(){def result = dimmers && dimmersLevel  ? "complete" : ""}
 def greyOutRestrictions(){def result = alarmDay || alarmMode || alarmPresence || alarmSwitchActive || alarmSwitchNotActive ? "complete" : ""}
@@ -572,5 +590,15 @@ private saveSelectedSong() {
 		log.error t
 	}
 }
+private getTimeOk(startTime, endTime) {
+	def result = true
+    def currTime = now()
+	def start = startTime ? timeToday(startTime).time : null
+	def stop = endTime ? timeToday(endTime).time : null
+	if (startTime && endTime) result = start < stop ? currTime >= start && currTime <= stop : currTime <= stop || currTime >= start
+	else if (startTime) result = currTime >= start
+    else if (endTime) result = currTime <= stop
+    result
+}
 //Version
-private def textVersion() {def text = "Child App Version: 1.5.0 (04/02/2016)"}
+private def textVersion() {def text = "Child App Version: 1.5.1 (04/02/2016)"}
