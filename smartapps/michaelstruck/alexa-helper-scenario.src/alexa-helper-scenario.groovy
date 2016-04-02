@@ -2,7 +2,7 @@
  *  Alexa Helper-Child
  *
  *  Copyright © 2016 Michael Struck
- *  Version 2.9.2 3/25/16
+ *  Version 2.9.3 4/1/16
  * 
  *  Version 1.0.0 - Initial release of child app
  *  Version 1.1.0 - Added framework to show version number of child app and copyright
@@ -34,6 +34,7 @@
  *  Version 2.9.0a - Major code opimization/Bug fixes/Added thermostat as an option for on/off control scenario
  *  Version 2.9.1 - Fixed issue with SMS messaging
  *  Version 2.9.2 - Minor syntax changes/updates, added delay to voice reporting, trapped Sonos-clone speaker errors
+ *  Version 2.9.3 - Added advanced options for internal HTTP functions to be triggered, code opimization
  *
  *  Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except
  *  in compliance with the License. You may obtain a copy of the License at:
@@ -65,6 +66,8 @@ preferences {
     page name: "pageVoice"
     page name: "pageTempReport"
     page name: "pageHomeReport"
+    page name: "onPageHTTP"
+    page name: "offPageHTTP"
 }
 def pageStart() {
 	dynamicPage(name: "pageStart", title: "Scenario Settings", uninstall: true, install: true) {
@@ -96,7 +99,7 @@ def pageControl() {
 	dynamicPage(name: "pageControl", title: "Control Scenario Settings", install: false, uninstall: false) {
         section {
 			input "AlexaSwitch", "capability.switch", title: "Control Switch (On/Off, Momentary)", multiple: false, required: true
-    		input "showOptions", "enum", title: "Switch States To React To...", options: ["":"On/Off", "1":"On Only", "2":"Off Only"] , required: false, submitOnChange:true
+    		input "showOptions", "enum", title: "Switch States To React To...", options: ["":"On/Off", "1":"On Only", "2":"Off Only"] , required: false, submitOnChange:true, defaultValue: ""
         }
         if (!showOptions || showOptions == "1") controlOnOff("on")
         if (!showOptions || showOptions == "2") controlOnOff("off")
@@ -110,7 +113,7 @@ def controlOnOff(type){
         input "${type}Mode", "mode", title: "Change To This Mode", required: false
         input "${type}SHM", "enum",title: "Change Smart Home Monitor To...", options: ["away":"Arm(Away)", "stay":"Arm(Stay)", "off":"Disarm"], required: false
         href "${type}PageSTDevices", title: "SmartThings Device Control...", description: getDeviceDesc("${type}")
-        input "${type}HTTP", "text", title:"Run This HTTP Request...", required: false
+        href "${type}PageHTTP", title: "HTTP Request...", description: getHTTPDesc("${type}"), state: greyOutStateHTTP("${type}")
         input "${type}Delay", "number", title: "Delay (Minutes) To Activate After Trigger", defaultValue: 0, required: false
         input ("${type}Contacts", "contact", title: "Send Notifications To...", required: false, submitOnChange:true) {
         	input "${type}SMSNum", "phone", title: "Send SMS Message (Phone Number)...", required: false, submitOnChange:true
@@ -118,6 +121,29 @@ def controlOnOff(type){
         }
 		input "${type}SMSMsg", "text", title: "Message To Send...", required: false
 	}
+}
+//Show "onPageHTTP" page
+def onPageHTTP (){
+    dynamicPage(name: "onPageHTTP", title: "HTTP Request", install: false, uninstall: false){
+    	pageHTTPOnOff("on")
+    }
+}
+//Show "offPageHTTP" page
+def offPageHTTP (){
+    dynamicPage(name: "offPageHTTP", title: "HTTP Request", install: false, uninstall: false){
+    	pageHTTPOnOff("off")
+    }
+}
+def pageHTTPOnOff(type){
+	section{
+    	input "${type}ExtInt", "enum", title: "Choose HTTP Command Type", options:["0":"External REST","1":"Internal (IP, port, command)"], defaultValue: 0, submitOnChange:true
+        if (settings."${type}ExtInt" == "0") input "${type}HTTP", "text", title:"HTTP Address...", required: false
+    	else {
+        	input "${type}IP", "text", title: "Internal IP Address", description: "IPv4 address xx.xx.xx.xx format", required: false
+            input "${type}Port", "number", title: "Internal Port", description: "Enter a port number 0 to 65536", required: false 
+            input "${type}Command", "text", title: "Command", description: "Enter REST commands", required: false 
+		}
+    }
 }
 // Show "onPageSTDevices" page
 def onPageSTDevices(){
@@ -404,7 +430,6 @@ def initialize() {
 def switchHandler(evt) {
     if (getOkToRun("Control Scenario on/off")) {    
         if (evt.value == "on" && getOkOnOptions()) {
-            
             if (!onDelay || onDelay == 0) turnOnOff("on") 
             else {
             	runIn(onDelay*60, turnOn, [overwrite: true])
@@ -448,10 +473,15 @@ def turnOnOff(type){
         def tLevel = settings."${type}TstatLVL" < 0 ?  0 : settings."${type}TstatLVL" >100 ? 100 : settings."${type}TstatLVL" as int
     	cmd.tstat == "heat" ? settings."${type}Tstats"?.setHeatingSetpoint(tLevel) : settings."${type}Tstats"?.setCoolingSetpoint(tLevel)
 	}
-    if (settings."${type}HTTP"){
-    	def httpAddr = settings."${type}HTTP"
-        log.info "Attempting to run: ${httpAddr}"
-        httpGet(httpAddr)
+    def param = [http:settings."${type}HTTP", ip:settings."${type}IP", port:settings."${type}Port", cmd:settings."${type}Command"]
+    if (settings."${type}ExtInt" == "0" && param.http){
+        log.info "Attempting to run: ${param.http}"
+        httpGet(param.http)
+    }
+	if (settings."${type}ExtInt" == "1" && param.ip && param.port && param.cmd){
+        def deviceHexID  = convertToHex (param.ip, param.port)
+        log.info "Device Network Id set to ${deviceHexID}"
+        sendHubCommand(new physicalgraph.device.HubAction("""GET /${param.cmd} HTTP/1.1\r\nHOST: ${param.ip}:${param.port}\r\n\r\n""", physicalgraph.device.Protocol.LAN, "${deviceHexID}"))    
     }
     if (settings."${type}SHM"){
     	log.info "Setting Smart Home Monitor to " + settings."${type}SHM"
@@ -505,12 +535,8 @@ def speakerControl(cmd, song, songName, announce){
     		vDimmerSpeaker.setLevel(speakerLevel)
         }
         else {
-        	try { 
-            	vDimmerSpeaker.setLevel(speaker.currentValue("level") as int) 
-            }
-          	catch(e) { 
-            	log.debug "Can't get current speaker level...may not be a true Sonos."
-            }
+        	try { vDimmerSpeaker.setLevel(speaker.currentValue("level") as int) }
+          	catch(e) { log.debug "Can't get current speaker level...may not be a true Sonos." }
         }    	
 		if (cmd=="station"){
     		log.debug "Playing: ${song}"
@@ -632,6 +658,11 @@ def voiceReport(){
     }
 }
 //Common Methods-------------
+private String convertToHex(ipAddress, port){
+	String hexIP = ipAddress.tokenize( '.' ).collect {  String.format( '%02x', it.toInteger() ) }.join()
+    String hexPort = port.toString().format( '%04x', port.toInteger() )
+    return "${hexIP}:${hexPort}"
+}
 def getOkToRun(module){
 	def result = true
     if (parent.getRestrictions()) result = (!runMode || runMode.contains(location.mode)) && getDayOk(runDay) && getTimeOk(timeStart,timeEnd)   
@@ -639,8 +670,8 @@ def getOkToRun(module){
 	else log.warn "Alexa Helper scenario '${app.label}', '${module}' not triggered due to scenario restrictions"
     result
 }
-def getOkOnOptions(){def result = (!showOptions || showOptions == "1") && (onPhrase || onMode || onSwitches || onDimmers || onColoredLights || onLocks || onGarages || onTstats || onHTTP || onSHM || onSMSMsg)}
-def getOkOffOptions(){def result = (!showOptions || showOptions == "2") && (offPhrase || offMode || offSwitches || offDimmers || offColoredLights || offLocks || offGarages || offTstats || offHTTP || offSHM || offSMSMsg)}
+def getOkOnOptions(){def result = (!showOptions || showOptions == "1") && (onPhrase || onMode || onSwitches || onDimmers || onColoredLights || onLocks || onGarages || onTstats || onHTTP || onIP || onSHM || onSMSMsg)}
+def getOkOffOptions(){def result = (!showOptions || showOptions == "2") && (offPhrase || offMode || offSwitches || offDimmers || offColoredLights || offLocks || offGarages || offTstats || offHTTP || offIP || offSHM || offSMSMsg)}
 def changeMode(newMode) {
     if (location.mode != newMode) {
 		if (location.modes?.find{it.name == newMode}) setLocationMode(newMode)
@@ -735,7 +766,18 @@ def getDeviceDesc(type){
     }
     result = result ? result : "Status: UNCONFIGURED - Tap to configure"
 }
+def getHTTPDesc(type){
+	def result = ""
+    def param = [http:settings."${type}HTTP", ip:settings."${type}IP", port:settings."${type}Port", cmd:settings."${type}Command"]
+    if (settings."${type}ExtInt" == "0" && param.http) result += param.http
+    else if (settings."${type}ExtInt" == "1" && param.ip && param.port && param.cmd) result += "http://${param.ip}:${param.port}/${param.cmd}"
+    result = result ? result : "Status: UNCONFIGURED - Tap to configure"
+}
 def greyOutState(param1, param2, param3){def result = param1 || param2 || param3 ? "complete" : ""}
+def greyOutStateHTTP(type){
+    def param = [http:settings."${type}HTTP", ip:settings."${type}IP", port:settings."${type}Port", cmd:settings."${type}Command"]
+    def result = (settings."${type}ExtInt" == "0" && param.http) || (settings."${type}ExtInt" == "1" && param.ip && param.port && param.cmd) ? "complete" : ""
+}
 def greyOutScen(){def result = (scenarioType=="Control" && AlexaSwitch) || (scenarioType=="Speaker" && vDimmerSpeaker && speaker) || (scenarioType=="Thermostat" && vDimmerTstat && tstat) || (scenarioType=="Panic" && panicSwitchOn && panicSwitchOff) ? "complete" : ""}
 private getDayOk(dayList) {
 	def result = true
@@ -759,19 +801,12 @@ private getTimeOk(startTime, endTime) {
 }
 def fillColorSettings(){ 
 	def colorData = []
-    colorData << [name: "Soft White", hue: 23, sat: 56]   
-    colorData << [name: "White - Concentrate", hue: 52, sat: 19] 
-    colorData << [name: "Daylight - Energize", hue: 52, sat: 16]
-    colorData << [name: "Warm White - Relax", hue: 13, sat: 30]
-    colorData << [name: "Red", hue: 100, sat: 100]
-    colorData << [name: "Green", hue: 37, sat: 100]
-	colorData << [name: "Blue", hue: 64, sat: 100]
-    colorData << [name: "Yellow", hue: 16, sat: 100]
-    colorData << [name: "Orange", hue: 8, sat: 100]
-    colorData << [name: "Purple", hue: 78, sat: 100]
-    colorData << [name: "Pink", hue: 87, sat: 100]
-    colorData << [name: "Custom-User Defined", hue: 0, sat: 0]
-    colorData
+    colorData << [name: "Soft White", hue: 23, sat: 56] << [name: "White - Concentrate", hue: 52, sat: 19]  
+    colorData << [name: "Daylight - Energize", hue: 52, sat: 16] << [name: "Warm White - Relax", hue: 13, sat: 30]
+    colorData << [name: "Red", hue: 100, sat: 100] << [name: "Green", hue: 37, sat: 100]
+	colorData << [name: "Blue", hue: 64, sat: 100] << [name: "Yellow", hue: 16, sat: 100]
+    colorData << [name: "Orange", hue: 8, sat: 100] << [name: "Purple", hue: 78, sat: 100]
+    colorData << [name: "Pink", hue: 87, sat: 100] << [name: "Custom-User Defined", hue: 0, sat: 0]
 }
 private setColoredLights(switches, color, level, type){
 	def getColorData = fillColorSettings().find {it.name==color}
@@ -809,9 +844,7 @@ def saveSelectedSong(slot, song) {
 		if (data) state."selectedSong${slot}"=data
 		else log.warn "'${song}' not found"
 	}
-	catch (Throwable t) {
-    	log.error t
-	}
+	catch (Throwable t) { log.error t }
 }
 //Voice report---------------------------------------------------
 def switchReport(devices, type){
@@ -826,9 +859,7 @@ def switchReport(devices, type){
 	result
 }
 def thermostatSummary(){
-	def result = ""
-    def monitorCount = voiceTempSettings.size()
-    def matchCount = 0
+	def result = "", monitorCount = voiceTempSettings.size(), matchCount = 0
     for (device in voiceTempSettings) {if (device.latestValue("thermostatSetpoint") as int == voiceTempTarget as int) matchCount ++}
     def difCount = monitorCount - matchCount
     if (monitorCount == 1 &&  difCount==1) result +="The monitored thermostat, ${voiceTempSettings}, is not set to ${voiceTempTarget} degrees. "
@@ -864,12 +895,8 @@ def reportStatus(deviceList, type){
     result
 }
 def doorWindowReport(){
-	def countOpened = 0 
-    def countOpenedDoor = 0
-    def countUnlocked = 0
-    def result = ""
-    def listOpened = "" 
-    def listUnlocked = ""
+	def countOpened = 0, countOpenedDoor = 0, countUnlocked = 0
+    def result = "", listOpened = "", listUnlocked = ""
     if (voiceDoorSensors && voiceDoorSensors.latestValue("contact").contains("open")){
     	for (sensor in voiceDoorSensors) if (sensor.latestValue("contact")=="open") countOpened ++
         listOpened = listDevices(voiceDoorSensors, "contact", "open", countOpened )
@@ -951,11 +978,7 @@ def sonosSlots(){def slots = parent.getMemCount() as int}
 private replaceVoiceVar(msg) {
     def df = new java.text.SimpleDateFormat("EEEE")
 	location.timeZone ? df.setTimeZone(location.timeZone) : df.setTimeZone(TimeZone.getTimeZone("America/New_York"))
-	def day = df.format(new Date())
-    def time = parseDate("","h:mm a")
-    def month = parseDate("","MMMM")
-    def year = parseDate("","yyyy")
-    def dayNum = parseDate("","d")
+	def day = df.format(new Date()), time = parseDate("","h:mm a"), month = parseDate("","MMMM"), year = parseDate("","yyyy"), dayNum = parseDate("","d")
     def temp = voiceTempVar ? "${voiceTempVar.latestValue("temperature")} degrees" : "undefined device"
     msg = msg.replace('%day%', day)
     msg = msg.replace('%date%', "${month} ${dayNum}, ${year}")
@@ -968,5 +991,5 @@ private parseDate(time, type){
     new Date().parse("yyyy-MM-dd'T'HH:mm:ss.SSSZ", formattedDate).format("${type}", timeZone(formattedDate))
 }
 //Version
-private def textVersion() {return "Child App Version: 2.9.2 (03/25/2016)"}
-private def versionInt() {return 292}
+private def textVersion() {return "Child App Version: 2.9.3 (04/01/2016)"}
+private def versionInt() {return 293}
