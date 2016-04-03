@@ -3,7 +3,7 @@
  *
  *  Copyright 2015, 2016 Bruce Ravenel
  *
- *  Version 1.9.1e   28 Mar 2016
+ *  Version 1.9.1f   3 Apr 2016
  *
  *	Version History
  *
@@ -113,7 +113,7 @@ preferences {
 //
 
 def appVersion() {
-	return "1.9.1e" 
+	return "1.9.1f" 
 }
 
 def mainPage() {
@@ -250,7 +250,7 @@ def getMoreOptions() {
 		input "daysY", "enum", title: "Only on certain days of the week", multiple: true, required: false,
 			options: ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"]
 		input "modesY", "mode", title: "Only when mode is", multiple: true, required: false            
-		input "disabled", "capability.switch", title: "Switch to disable Rule", required: false, multiple: false
+		input "disabled", "capability.switch", title: "Switch to disable Rule", required: false, multiple: false, submitOnChange: true
         if(disabled) input "disabledOff", "bool", title: "Disable when Off? On is default", required: false, defaultValue: false
         def privy = state.private
         input "usePrivateDisable", "bool", title: "Enable/Disable with private Boolean? [$privy]", required: false
