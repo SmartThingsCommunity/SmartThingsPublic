@@ -3,7 +3,7 @@
  *
  *  Copyright © 2016 Michael Struck
  *
- *  Version 1.5.2 (4/2/16)
+ *  Version 1.5.3 (4/3/16)
  *
  *  Version 1.0.0 - Initial release
  *  Version 1.0.1 - Small syntax changes for consistency
@@ -17,7 +17,8 @@
  *  Version 1.4.4 - Minor syntax updates
  *  Version 1.5.0 - Added additional triggers to set off alarm
  *  Version 1.5.1a - Added time restricitions to allow for new triggers
- *  Version 1.5.2 - Added delay after presence option
+ *  Version 1.5.2a - Added delay after presence option
+ *  Version 1.5.3 - Cleaned up reporting after addition of new triggers
  *
  *  Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except
  *  in compliance with the License. You may obtain a copy of the License at:
@@ -127,7 +128,7 @@ def pageAlarmTriggers(){
             input "alarmStart", "time", title: "Trigger Alarm At Certain Time", required: false
             input "alarmTrigger", "capability.switch", title: "Trigger Alarm When Switches Turned On...", required: false, multiple: true
             input "alarmPresenceTrigger", "capability.presenceSensor", title: "Trigger Alarm When Someone Arrives...", multiple: true, required: false, submitOnChange:true
-            if (alarmPresenceTrigger) input "alarmPresenceTriggerTime", "number", title: "Minutes After Presence to Alarm", defaultValue: 0
+            if (alarmPresenceTrigger) input "alarmPresenceTriggerTime", "number", title: "Minutes After Presence to Alarm", defaultValue: 0, required: false
         }
     }
 }
@@ -274,10 +275,25 @@ def alarmHandler(evt) {
 //Common Methods-------------
 def getAlarmDesc() {
 	def desc = ""
-	if (alarmStart || alarmTrigger) {
+	if (alarmStart || alarmTrigger || alarmPresenceTrigger) {
     	def triggerMethod = alarmStart ? "at " + parseDate(alarmStart,"", "h:mm a") : ""
-        triggerMethod += alarmStart && alarmTrigger ? " and " : ""
+        triggerMethod += triggerMethod && alarmTrigger ? " or " : ""
         triggerMethod += alarmTrigger ? "when switches are activated" : ""
+        triggerMethod += triggerMethod && alarmPresenceTrigger ? " or " : ""
+        if (alarmPresenceTrigger) {
+        	triggerMethod += "when "
+            def aptCount = alarmPresenceTrigger.size()
+            def verb = aptCount == 1 ? " arrives" : " arrive"
+            def nameList = ""
+            for (aptName in alarmPresenceTrigger){
+            	nameList += "${aptName}"
+                aptCount = aptCount -1
+                if (aptCount == 1) nameList += " or "
+                if (aptCount > 1) nameList += ", "
+            }
+            triggerMethod += nameList + verb
+            triggerMethod += alarmPresenceTriggerTime == 0 || !alarmPresenceTriggerTime ? "" : alarmPresenceTriggerTime > 1 ? " (after ${alarmPresenceTriggerTime} minutes)" : " (after one minute)"
+        }
         desc = "Alarm plays on ${alarmSpeaker} ${triggerMethod}"		
         def dayListSize = alarmDay ? alarmDay.size() : 7            
         if (alarmDay && dayListSize < 7) {
@@ -356,8 +372,10 @@ def getWeatherDesc() {
 def getAlarmMethod(){
 	def result = ""
     if (alarmStart) result += "for ${parseDate(alarmStart, "", "h:mm a")}"
-    if (alarmStart && alarmTrigger) result += " and "
-    if (alarmTrigger) result += "to trigger when switches activated"
+    if (alarmStart && alarmTrigger) result += ", or "
+    if (alarmTrigger) result += "to trigger when switches are activated"
+    if (result && alarmPresenceTrigger) result += ", or "
+    if (alarmPresenceTrigger) result += "when people arrive"
 	result    
 }
 def tstatDesc(){
@@ -374,7 +392,8 @@ def getTriggersDesc(){
     result += alarmTrigger ? "Switches: ${alarmTrigger}" : ""
     result += result && alarmPresenceTrigger   ? "\n" :""
     result += alarmPresenceTrigger ? "Arrival: ${alarmPresenceTrigger}" : ""
-	result = result ? result : "Tap to configure alarm triggers"
+	result += alarmPresenceTrigger && alarmPresenceTriggerTime ? " (after ${alarmPresenceTriggerTime} min)" : ""
+    result = result ? result : "Tap to configure alarm triggers"
 }
 def getRestrictionDesc(){
 	def result = alarmDay ? "Days: ${alarmDay}" : ""
@@ -610,4 +629,4 @@ private getTimeOk(startTime, endTime) {
     result
 }
 //Version
-private def textVersion() {def text = "Child App Version: 1.5.2 (04/02/2016)"}
+private def textVersion() {def text = "Child App Version: 1.5.3 (04/03/2016)"}
