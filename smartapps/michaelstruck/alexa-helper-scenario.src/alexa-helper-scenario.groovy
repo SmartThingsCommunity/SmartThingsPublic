@@ -2,7 +2,7 @@
  *  Alexa Helper-Child
  *
  *  Copyright © 2016 Michael Struck
- *  Version 2.9.3 4/1/16
+ *  Version 2.9.4 4/3/16
  * 
  *  Version 1.0.0 - Initial release of child app
  *  Version 1.1.0 - Added framework to show version number of child app and copyright
@@ -35,6 +35,7 @@
  *  Version 2.9.1 - Fixed issue with SMS messaging
  *  Version 2.9.2 - Minor syntax changes/updates, added delay to voice reporting, trapped Sonos-clone speaker errors
  *  Version 2.9.3 - Added advanced options for internal HTTP functions to be triggered, code opimization
+ *  Version 2.9.4 - Added additional restriction icons and syntax updates
  *
  *  Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except
  *  in compliance with the License. You may obtain a copy of the License at:
@@ -80,9 +81,11 @@ def pageStart() {
 		}
 		if (scenarioType && parent.getRestrictions()){
 			section("Restrictions") {            
-				input "runDay", "enum", options: ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"], title: "Only on certain days of the week...",  multiple: true, required: false
-        		href "timeIntervalInput", title: "Only During A Certain Time...", description: getTimeLabel(timeStart, timeEnd), state: greyOutState(timeStart, timeEnd,"")
-            	input "runMode", "mode", title: "Only During The Following Modes...", multiple: true, required: false
+				input "runDay", "enum", options: ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"], title: "Only Certain Days Of The Week...",  multiple: true, required: false,
+                	image: "https://raw.githubusercontent.com/MichaelStruck/SmartThings/master/img/calendar.png"
+        		href "timeIntervalInput", title: "Only During Certain Times...", description: getTimeLabel(timeStart, timeEnd), state: greyOutState(timeStart, timeEnd,""),
+                	image: "https://raw.githubusercontent.com/MichaelStruck/SmartThings/master/img/clock.png"
+            	input "runMode", "mode", title: "Only In The Following Modes...", multiple: true, required: false, image: "https://raw.githubusercontent.com/MichaelStruck/SmartThings/master/img/modes.png"
 			}
         }
         section("Tap the button below to remove this scenario"){}
@@ -991,5 +994,5 @@ private parseDate(time, type){
     new Date().parse("yyyy-MM-dd'T'HH:mm:ss.SSSZ", formattedDate).format("${type}", timeZone(formattedDate))
 }
 //Version
-private def textVersion() {return "Child App Version: 2.9.3 (04/01/2016)"}
-private def versionInt() {return 293}
+private def textVersion() {return "Child App Version: 2.9.4 (04/03/2016)"}
+private def versionInt() {return 294}
