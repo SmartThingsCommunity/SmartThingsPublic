@@ -26,24 +26,48 @@ definition(
 )
 
 preferences {
-	section("When the door opens.. Call a webservice.") {
-		input "contact1", "capability.contactSensor", title: "Where?"
+	section {
+		input "humiditySensor", "capability.relativeHumidityMeasurement"
 	}
 }
 
 def installed()
 {
-	subscribe(contact1, "contact.open", contactOpenHandler)
-    subscribe(contact1, "contact.closed", contactCloseHandler)
+	sendIfHumidityTooLow()
+	runEvery5Minutes(sendIfHumidityTooLow)
+	/*subscribe(contact1, "contact.open", contactOpenHandler)
+    subscribe(contact1, "contact.closed", contactCloseHandler)*/
 }
 
+def sendIfHumidityTooLow()
+{
+	def currentState = humiditySensor.currentState("temperature")
+
+    	log.debug "temperature is too low! ${currentState.value}"
+        callWebPostService("${currentState.value}")
+        //postTemperature("${currentState.value}")
+
+}
+
+def sendHumidity()
+{	
+	def currentState = humiditySensor.currentState("temperature")
+   
+	log.debug "humidity value as a string: ${currentState.value}"
+	log.debug "time this humidity record was created: ${currentState.date}"
+	//
+	//
+}
+
+/*
 def updated()
 {
+sendHumidity()
 	unsubscribe()
 	subscribe(contact1, "contact.open", contactOpenHandler)
     subscribe(contact1, "contact.closed", contactCloseHandler)
 }
-
+*/
 def contactCloseHandler(evt) {
 	def message = "deviceId:$evt.deviceId,name:$evt.name,value:$evt.value" 
 	log.trace "$evt.value: $evt, $settings"
@@ -55,6 +79,11 @@ def contactOpenHandler(evt) {
 	def message = "deviceId:$evt.deviceId,name:$evt.name,value:$evt.value" 
 	log.trace "$evt.value: $evt, $settings"
 	log.debug "$contact1 was opened, calling webservice" 
+    
+    def currentState = contact1.currentState("temperature")
+log.debug "temperature value as a string: ${currentState.value}"
+log.debug "time this temperature record was created: ${currentState.date}"
+
     callWebService("FromOpen:" + message)
 }
 
@@ -88,20 +117,45 @@ def callWebService(String stringJson) {
 	}
 }
 
+def postTemperature(String tempJson) {
+	def params = [
+		uri: "https://hackathonapi.qa.mycaremanager.com.au/api/values",
+		body: [
+		param1: ["temperature": "${tempJson}",
+				subparam2: "${tempJson}"],
+		param2: "${tempJson}"
+		]
+	]
+try {
+	httpPostJson(params) { resp ->
+	resp.headers.each {
+			log.debug "${it.name} : ${it.value}"
+			}
+    log.debug "response contentType: ${resp. contentType}"
+            log.debug "${body}"
+	}
+} catch (e) {
+log.debug "something went wrong: $e"
+}
+
+}
+
 def callWebPostService(String stringJson) {
-	/*def params = [
-    	uri: "https://hackathonapi.qa.mycaremanager.com.au/api/values",
-        body: stringJson,
-        contentType: 'application/json'
-	]*/
-    
+	def params = [
+    	uri: "https://hackathonapi.qa.mycaremanager.com.au/api/Temperature",
+        body: [Data : "${stringJson}"],
+		contentType:"application/json",
+
+	]
+
     try {
-    	httpPost("https://hackathonapi.qa.mycaremanager.com.au/api/values", "value=" + stringJson) { resp ->
+    	httpPost(params) { resp ->
             log.debug "Start httpPost"
         	resp.headers.each {
             log.debug "${it.name} : ${it.value}"
         }
-        log.debug "response contentType: ${resp.    contentType}"
+        log.debug "response contentType: ${resp.contentType}"
+        log.debug "${params}"
     }
 	} catch (e) {
     	log.debug "something went wrong: $e"
