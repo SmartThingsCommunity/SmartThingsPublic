@@ -3,7 +3,7 @@
  *
  *  Copyright © 2016 Michael Struck
  *
- *  Version 1.5.3b (4/3/16)
+ *  Version 1.5.3c (4/3/16)
  *
  *  Version 1.0.0 - Initial release
  *  Version 1.0.1 - Small syntax changes for consistency
@@ -18,7 +18,7 @@
  *  Version 1.5.0 - Added additional triggers to set off alarm
  *  Version 1.5.1a - Added time restricitions to allow for new triggers
  *  Version 1.5.2a - Added delay after presence option
- *  Version 1.5.3b - Cleaned up reporting after addition of new triggers
+ *  Version 1.5.3c - Cleaned up reporting after addition of new triggers
  *
  *  Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except
  *  in compliance with the License. You may obtain a copy of the License at:
@@ -193,7 +193,7 @@ def updated() {
 }
 def initialize() {
 	if (alarmType =="1" && soundAlarm) alarmSoundUri()
-    if ((alarmStart || alarmTrigger) && alarmSpeaker && alarmType){
+    if ((alarmStart || alarmTrigger || alarmPresenceTrigger) && alarmSpeaker && alarmType){
         if (alarmStart) schedule (alarmStart, alarmHandler)
         if (alarmTrigger) subscribe (alarmTrigger, "switch.on", alarmHandler)
         if (alarmPresenceTrigger) subscribe (alarmPresenceTrigger, "presence.present", alarmHandlerTrigger)
@@ -629,4 +629,4 @@ private getTimeOk(startTime, endTime) {
     result
 }
 //Version
-private def textVersion() {def text = "Child App Version: 1.5.3b (04/03/2016)"}
+private def textVersion() {def text = "Child App Version: 1.5.3c (04/03/2016)"}
