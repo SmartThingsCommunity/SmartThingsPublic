@@ -320,7 +320,7 @@ def refresh() {
     unschedule()
     
 	refreshDevices()
-    runEvery15Minutes("refreshDevices")
+    runEvery5Minutes("refreshDevices")
 }
 
 
@@ -399,7 +399,7 @@ def initialize() {
     pollHandler()
     
     refreshDevices()
-    runEvery15Minutes("refreshDevices")
+    runEvery5Minutes("refreshDevices")
 }
 
 
@@ -452,9 +452,10 @@ def pollChild( child )
 		atomicState.lastPollMillis = currentTime
 
 		def tData = atomicState.sensibo[child.device.deviceNetworkId]
-		tData.Error = false
-        
-		if(!tData)
+        debugEvent ("Error in Poll ${tData.data.Error}",false)
+        //tData.Error = false
+        //tData.data.Error = "Failed"
+		if(tData.data.Error != "Success")
 		{
 			log.error "ERROR: Device connection removed? no data for ${child.device.deviceNetworkId} after polling"
 
@@ -521,7 +522,16 @@ def setACStates(child,String PodUid, on, mode, targetTemperature, fanLevel)
         tData.data.thermostatFanMode = fanLevel
         tData.data.on = on
         tData.data.mode = mode
-        tData.data.thermostatMode = mode
+        log.debug "Thermostat mode " + on
+        if (on=="off") {
+        	tData.data.thermostatMode = "off"
+        }
+        else {
+        	 tData.data.thermostatMode = mode
+             if (mode=="fan") {
+                tData.data.thermostatMode = "auto"
+             }
+        }
         tData.data.targetTemperature = targetTemperature
         tData.data.coolingSetpoint = targetTemperature
         tData.data.heatingSetpoint = targetTemperature
@@ -544,7 +554,7 @@ def getACState(PodUid)
     	uri: "${getServerUrl()}",
     	path: "/api/v2/pods/${PodUid}/acStates",
     	requestContentType: "application/json",
-    	query: [apiKey:"${getapikey()}", type:"json", limit:10, fields:"status,acState"]]
+    	query: [apiKey:"${getapikey()}", type:"json", limit:1, fields:"status,acState"]]
     
     try {
        httpGet(pollParams) { resp ->
@@ -570,13 +580,23 @@ def getACState(PodUid)
 						if (TemperatureUnit() == "F") {
                     		stemp = Math.round(cToF(stemp))
                     	}
-                        
+                        def tMode                        
+                        if (OnOff=="off") {
+        					tMode = "off"
+        				}
+				        else {
+        	 				tMode = stat.acState.mode
+                        }
+                        if (tMode=="fan") {
+                        		tMode = "auto"
+        				}
                         data = [
                             targetTemperature : stemp,
                             fanLevel : stat.acState.fanLevel,
                             mode : stat.acState.mode,
                             on : OnOff.toString(),
-                            thermostatMode: stat.acState.mode,
+                            switch: OnOff.toString(),
+                            thermostatMode: tMode,
                             thermostatFanMode : stat.acState.fanLevel,
                             coolingSetpoint : stemp,
                             heatingSetpoint : stemp,
@@ -597,6 +617,7 @@ def getACState(PodUid)
                  fanLevel : "--",
                  mode : "--",
                  on : "--",
+                 switch : "--",
                  thermostatMode: "--",
                  thermostatFanMode : "--",
                  coolingSetpoint : "0",
@@ -620,6 +641,7 @@ def getACState(PodUid)
             fanLevel : "--",
             mode : "--",
             on : "--",
+            switch : "--",
             thermostatMode: "--",
             thermostatFanMode : "--",
             coolingSetpoint : "0",
@@ -679,7 +701,7 @@ def pollChildren(PodUid)
     	uri: "${getServerUrl()}",
     	path: "/api/v2/pods/${thermostatIdsString}/measurements",
     	requestContentType: "application/json",
-    	query: [apiKey:"${getapikey()}", type:"json"]]
+    	query: [apiKey:"${getapikey()}", type:"json", fields:"batteryVoltage,temperature,humidity,time"]]
 
 	debugEvent ("Before HTTPGET to Sensibo.")
 
@@ -694,17 +716,30 @@ def pollChildren(PodUid)
 			if(resp.status == 200) {
 				log.debug "poll results returned"
 				def setTemp = getACState(thermostatIdsString)
-				atomicState.sensibo = resp.data.result.inject([:]) { collector, stat ->
+                if (setTemp.Error != "Failed") {
+                
+				 atomicState.sensibo = resp.data.result.inject([:]) { collector, stat ->
 
 					def dni = thermostatIdsString
 					
 					log.debug "updating dni $dni"
                     
-                    def stemp = stat.temperature.toInteger()
+                    def stemp = stat.temperature.toDouble()
                     if (TemperatureUnit() == "F") {
-                    	stemp = Math.round(cToF(stemp))
+                    	//stemp = Math.round(cToF(stemp))
+                        stemp = cToF(stemp).round(1)
                     }
 
+					def tMode                        
+                    if (setTemp.on=="off") {
+        				tMode = "off"
+        			}
+				    else {
+        	 			tMode = setTemp.mode
+                    }
+                    if (tMode=="fan") {
+                    	tMode = "auto"
+        			}
 					def data = [
 						temperature: stemp,
 						humidity: stat.humidity,
@@ -712,22 +747,27 @@ def pollChildren(PodUid)
                         fanLevel: setTemp.fanLevel,
                         mode: setTemp.mode,
                         on: setTemp.on,
-                        thermostatMode: setTemp.mode,
+                        switch : setTemp.on,
+                        thermostatMode: tMode,
                         thermostatFanMode: setTemp.fanLevel,
                         coolingSetpoint: setTemp.targetTemperature,
                         heatingSetpoint: setTemp.targetTemperature,
                         temperatureUnit : TemperatureUnit(),
+                        battvoltage : stat.batteryVoltage,
+                        //battery : stat.batteryVoltage,
                         Error: setTemp.Error
 					]
                     
-					debugEvent ("Event Data = ${data}")
+					debugEvent ("Event Data = ${data}",false)
 
 					collector[dni] = [data:data]
                     
 					return collector
-				}				
+				 }				
+                }
                 
 				log.debug "updated ${atomicState.sensibo[thermostatIdsString].size()} stats: ${atomicState.sensibo[thermostatIdsString]}"
+                debugEvent ("TEST TEST ${atomicState.sensibo[thermostatIdsString]}",false)
 			}
 			else
 			{
