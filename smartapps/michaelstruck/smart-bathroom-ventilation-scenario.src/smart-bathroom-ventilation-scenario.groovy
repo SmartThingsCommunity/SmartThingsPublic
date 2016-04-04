@@ -3,6 +3,7 @@
  *
  *  Version 1.0.0 (11/27/15) - Initial release of child app
  *  Version 1.0.1 (1/17/16) - Allow for parent app to see version of child app, added refresh of sensor
+ *  Version 1.0.2 (4/4/16) - Added icons to restriction items
  * 
  * 
  *  Copyright 2016 Michael Struck - Uses code from Lighting Director by Tim Slagle & Michael Struck
@@ -60,9 +61,12 @@ def pageSetup() {
             input "A_manualFan", title: "If ventilation fans are turned on manually, turn them off automatically using settings above", "bool", defaultValue: "false"
         }
 		section("Restrictions") {            
-			input "A_day", "enum", options: ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"], title: "Only on certain days of the week...",  multiple: true, required: false
-        	href "timeIntervalInputA", title: "Only during a certain time...", description: getTimeLabel(A_timeStart, A_timeEnd), state: greyedOutTime(A_timeStart, A_timeEnd)
-            input "A_mode", "mode", title: "Only during the following modes...", multiple: true, required: false
+			input "A_day", "enum", options: ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"], title: "Only Certain Days Of The Week...",  multiple: true, required: false,
+            	image: "https://raw.githubusercontent.com/MichaelStruck/SmartThings/master/img/calendar.png"
+        	href "timeIntervalInputA", title: "Only During Certain Times...", description: getTimeLabel(A_timeStart, A_timeEnd), state: greyedOutTime(A_timeStart, A_timeEnd),
+            	image: "https://raw.githubusercontent.com/MichaelStruck/SmartThings/master/img/clock.png"
+            input "A_mode", "mode", title: "Only In The Following Modes...", multiple: true, required: false, 
+            	image: "https://raw.githubusercontent.com/MichaelStruck/SmartThings/master/img/modes.png"
 		}
         section("Tap the button below to remove this scenario only"){
         }
@@ -235,5 +239,5 @@ private getTimeOk(startTime,endTime) {
 }
 //Version
 private def textVersion() {
-    def text = "Child App Version: 1.0.1 (01/17/2016)"
+    def text = "Child App Version: 1.0.2 (04/04/2016)"
 }
