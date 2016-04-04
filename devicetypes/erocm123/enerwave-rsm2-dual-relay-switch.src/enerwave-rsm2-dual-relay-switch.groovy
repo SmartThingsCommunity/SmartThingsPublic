@@ -211,7 +211,8 @@ def poll() {
 def configure() {
 	log.debug "configure() called"
     def cmds = []
-    //if (deviceType.value == deviceType.value) log.debug "Statement True"
+    cmds << zwave.configurationV1.configurationSet(parameterNumber: 3, configurationValue: [1]).format()
+    cmds << zwave.configurationV1.configurationGet(parameterNumber: 3).format()
     if (switchType != null && switchType.value != null) {
     switch (switchType.value as String) {
        case "1":
