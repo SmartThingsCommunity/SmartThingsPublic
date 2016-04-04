@@ -31,6 +31,7 @@ metadata {
 		capability "Configuration"
 		capability "Refresh"
 		capability "Sensor"
+		capability "Health Check"
 
 		// indicates that device keeps track of heartbeat (in state.heartbeat)
 		attribute "heartbeat", "string"

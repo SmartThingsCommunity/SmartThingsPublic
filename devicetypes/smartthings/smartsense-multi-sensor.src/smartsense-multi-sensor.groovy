@@ -35,6 +35,7 @@ metadata {
  		capability "Acceleration Sensor"
  		capability "Refresh"
  		capability "Temperature Measurement"
+		capability "Health Check"
 
  		command "enrollResponse"
  		fingerprint inClusters: "0000,0001,0003,0402,0500,0020,0B05,FC02", outClusters: "0019", manufacturer: "CentraLite", model: "3320"
