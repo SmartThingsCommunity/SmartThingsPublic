@@ -3,7 +3,7 @@
  *
  *  Copyright © 2016 Michael Struck
  *
- *  Version 1.5.3c (4/3/16)
+ *  Version 1.5.4 (4/4/16)
  *
  *  Version 1.0.0 - Initial release
  *  Version 1.0.1 - Small syntax changes for consistency
@@ -19,6 +19,7 @@
  *  Version 1.5.1a - Added time restricitions to allow for new triggers
  *  Version 1.5.2a - Added delay after presence option
  *  Version 1.5.3c - Cleaned up reporting after addition of new triggers
+ *  Version 1.5.4 - Icons for restrictions
  *
  *  Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except
  *  in compliance with the License. You may obtain a copy of the License at:
@@ -125,9 +126,12 @@ def pageSetup() {
 def pageAlarmTriggers(){
     dynamicPage(name: "pageAlarmTriggers", title: "Alarm Triggers", install: false, uninstall: false) {
         section{
-            input "alarmStart", "time", title: "Trigger Alarm At Certain Time", required: false
-            input "alarmTrigger", "capability.switch", title: "Trigger Alarm When Switches Turned On...", required: false, multiple: true
-            input "alarmPresenceTrigger", "capability.presenceSensor", title: "Trigger Alarm When Someone Arrives...", multiple: true, required: false, submitOnChange:true
+            input "alarmStart", "time", title: "At Specific Time", required: false,
+            	image: "https://raw.githubusercontent.com/MichaelStruck/SmartThings/master/img/clock.png"
+            input "alarmTrigger", "capability.switch", title: "When Switches Turned On...", required: false, multiple: true,
+            	image: "https://raw.githubusercontent.com/MichaelStruck/SmartThings/master/img/on.png"
+            input "alarmPresenceTrigger", "capability.presenceSensor", title: "When Someone Arrives...", multiple: true, required: false, submitOnChange:true,
+            	image: "https://raw.githubusercontent.com/MichaelStruck/SmartThings/master/img/people.png"
             if (alarmPresenceTrigger) input "alarmPresenceTriggerTime", "number", title: "Minutes After Presence to Alarm", defaultValue: 0, required: false
         }
     }
@@ -135,13 +139,19 @@ def pageAlarmTriggers(){
 def pageRestrictions(){
     dynamicPage(name: "pageRestrictions", title: "Alarm Restrictions", install: false, uninstall: false){
         section{
-            input "alarmDay", "enum", options: ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"], title: "Alarm On Certain Days Of The Week...", multiple: true, required: false
-            href "timeIntervalInput", title: "Alarm Triggers Only During A Certain Time...", description: getTimeLabel(timeStart, timeEnd), state: greyOutState(timeStart, timeEnd)
-            input "alarmMode", "mode", title: "Alarm Only During The Following Modes...", multiple: true, required: false
-            input "alarmPresence", "capability.presenceSensor", title: "Alarm Only When Present...", multiple: true, required: false, submitOnChange:true
+            input "alarmDay", "enum", options: ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"], title: "Only Certain Days Of The Week...", multiple: true, required: false,
+            	image: "https://raw.githubusercontent.com/MichaelStruck/SmartThings/master/img/calendar.png"
+            href "timeIntervalInput", title: "Only During Certain Times...", description: getTimeLabel(timeStart, timeEnd), state: greyOutState(timeStart, timeEnd),
+            	image: "https://raw.githubusercontent.com/MichaelStruck/SmartThings/master/img/clock.png"
+            input "alarmMode", "mode", title: "Only In The Following Modes...", multiple: true, required: false,
+            	image: "https://raw.githubusercontent.com/MichaelStruck/SmartThings/master/img/modes.png"
+            input "alarmPresence", "capability.presenceSensor", title: "Only When Present...", multiple: true, required: false, submitOnChange:true,
+            	image: "https://raw.githubusercontent.com/MichaelStruck/SmartThings/master/img/people.png"
             if (alarmPresence && alarmPresence.size()>1) input "alarmPresAll", "bool", title: "Off=Any Present; On=All Present", defaultValue: false
-            input "alarmSwitchActive", "capability.switch", title: "Alarm Only When These Switches Are On...", multiple: true, required: false
-            input "alarmSwitchNotActive", "capability.switch", title: "Alarm Only When These Switches Are Off...", multiple: true, required: false
+            input "alarmSwitchActive", "capability.switch", title: "Only When Switches Are On...", multiple: true, required: false,
+            	image: "https://raw.githubusercontent.com/MichaelStruck/SmartThings/master/img/on.png"
+            input "alarmSwitchNotActive", "capability.switch", title: "Only When Switches Are Off...", multiple: true, required: false,
+            	image: "https://raw.githubusercontent.com/MichaelStruck/SmartThings/master/img/off.png"
         }
     }
 }
@@ -629,4 +639,4 @@ private getTimeOk(startTime, endTime) {
     result
 }
 //Version
-private def textVersion() {def text = "Child App Version: 1.5.3c (04/03/2016)"}
+private def textVersion() {def text = "Child App Version: 1.5.4 (04/04/2016)"}
