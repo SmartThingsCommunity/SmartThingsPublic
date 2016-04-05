@@ -2,7 +2,7 @@
  *  Alexa Helper-Child
  *
  *  Copyright © 2016 Michael Struck
- *  Version 2.9.4 4/3/16
+ *  Version 2.9.5 4/4/16
  * 
  *  Version 1.0.0 - Initial release of child app
  *  Version 1.1.0 - Added framework to show version number of child app and copyright
@@ -36,6 +36,7 @@
  *  Version 2.9.2 - Minor syntax changes/updates, added delay to voice reporting, trapped Sonos-clone speaker errors
  *  Version 2.9.3 - Added advanced options for internal HTTP functions to be triggered, code opimization
  *  Version 2.9.4 - Added additional restriction icons and syntax updates
+ *  Version 2.9.5 - Fixed issue with garage door open/close selection
  *
  *  Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except
  *  in compliance with the License. You may obtain a copy of the License at:
@@ -193,7 +194,7 @@ def pageSTDevicesOnOff(type){
 	}
 	section("Garage Doors"){
 		input "${type}Garages","capability.garageDoorControl", title: "Control These Garage Doors...", multiple: true, required: false, submitOnChange:true
-		if (settings."${type}offGarages") input "${type}GaragesCMD", "enum", title: "Command To Send To Garage Doors", options:["open":"Open","close":"Close"], multiple: false, required: false
+		if (settings."${type}Garages") input "${type}GaragesCMD", "enum", title: "Command To Send To Garage Doors", options:["open":"Open","close":"Close"], multiple: false, required: false
 	}
 }
 // Show "Panic" page
@@ -994,5 +995,5 @@ private parseDate(time, type){
     new Date().parse("yyyy-MM-dd'T'HH:mm:ss.SSSZ", formattedDate).format("${type}", timeZone(formattedDate))
 }
 //Version
-private def textVersion() {return "Child App Version: 2.9.4 (04/03/2016)"}
-private def versionInt() {return 294}
+private def textVersion() {return "Child App Version: 2.9.5 (04/04/2016)"}
+private def versionInt() {return 295}
