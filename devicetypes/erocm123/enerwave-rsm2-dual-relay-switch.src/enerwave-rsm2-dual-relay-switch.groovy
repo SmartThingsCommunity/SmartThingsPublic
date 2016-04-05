@@ -66,11 +66,12 @@ tiles(scale: 2){
     main(["switch","switch1", "switch2"])
     details(["switch","switch1","switch2","refresh","configure"])
 }
+    /* Waiting to hear back from manufacturer regarding what preferences can be set for this device. 
 	preferences {
         input "switchType", "enum", title: "Switch Type", defaultValue: "1", displayDuringSetup: true, required: false, options: [
                 "1":"Toggle",
                 "2":"Momentary"]
-  }
+  }*/
 }
 
 def parse(String description) {
