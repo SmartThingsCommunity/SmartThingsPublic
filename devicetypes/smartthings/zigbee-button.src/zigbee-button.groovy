@@ -15,7 +15,7 @@
  *
  */
 metadata {
-	definition (name: "Iris Smart Fob", namespace: "mitchpond", author: "Mitch Pond") {
+	definition (name: "ZigBee Button", namespace: "smartthings", author: "Mitch Pond") {
 		capability "Battery"
 		capability "Button"
         capability "Configuration"
