@@ -106,51 +106,52 @@ fingerprint deviceId: "0x1001", inClusters: "0x5E, 0x86, 0x72, 0x5A, 0x85, 0x59,
 def parse(String description) {
 	def result = null
 	def cmd = zwave.parse(description, [0x20: 1, 0x70: 1])
-	if (cmd) {
-		result = createEvent(zwaveEvent(cmd))
+	
+    if (cmd) {
+		result = zwaveEvent(cmd)
 	}
-	if (result?.name == 'hail' && hubFirmwareLessThan("000.011.00602")) {
-		result = [result, response(zwave.basicV1.basicGet())]
-		log.debug "Was hailed: requesting state update"
-	} else {
-		log.debug "Parse returned ${result?.descriptionText}"
-	}
+    if (!result){
+        log.debug "Parse returned ${result} for command ${cmd}"
+    }
+    else {
+		log.debug "Parse returned ${result}"
+    }   
 	return result
 }
 
 def zwaveEvent(physicalgraph.zwave.commands.basicv1.BasicReport cmd) {
-	[name: "switch", value: cmd.value ? "on" : "off", type: "physical"]
+	createEvent([name: "switch", value: cmd.value ? "on" : "off", type: "physical"])
 }
 
 def zwaveEvent(physicalgraph.zwave.commands.basicv1.BasicSet cmd) {
-	[name: "switch", value: cmd.value ? "on" : "off", type: "physical"]
+	createEvent([name: "switch", value: cmd.value ? "on" : "off", type: "physical"])
 }
 
 def zwaveEvent(physicalgraph.zwave.commands.switchbinaryv1.SwitchBinaryReport cmd) {
-	[name: "switch", value: cmd.value ? "on" : "off", type: "digital"]
+	createEvent([name: "switch", value: cmd.value ? "on" : "off", type: "digital"])
 }
 
 def zwaveEvent(physicalgraph.zwave.commands.configurationv1.ConfigurationReport cmd) {
 	def value = "when off"
 	if (cmd.configurationValue[0] == 1) {value = "when on"}
 	if (cmd.configurationValue[0] == 2) {value = "never"}
-	[name: "indicatorStatus", value: value, display: false]
+	createEvent([name: "indicatorStatus", value: value, display: false])
 }
 
 def zwaveEvent(physicalgraph.zwave.commands.hailv1.Hail cmd) {
-	[name: "hail", value: "hail", descriptionText: "Switch button was pressed", displayed: false]
+	createEvent([name: "hail", value: "hail", descriptionText: "Switch button was pressed", displayed: false])
 }
 
 def zwaveEvent(physicalgraph.zwave.commands.manufacturerspecificv2.ManufacturerSpecificReport cmd) {
 	if (state.manufacturer != cmd.manufacturerName) {
-		updateDataValue("manufacturer", cmd.manufacturerName)
+		createEvent(updateDataValue("manufacturer", cmd.manufacturerName))
 	}
 }
 
 def zwaveEvent(physicalgraph.zwave.Command cmd) {
 	// Handles all Z-Wave commands we aren't interested in
     log.debug (cmd)
-	[:]
+	createEvent([:])
 }
 
 def on() {
@@ -178,7 +179,7 @@ def refresh() {
 	delayBetween([
 		zwave.switchBinaryV1.switchBinaryGet().format(),
 		zwave.manufacturerSpecificV1.manufacturerSpecificGet().format()
-	])    
+	]) 
 }
 
 def indicatorWhenOn() {
@@ -206,65 +207,75 @@ def invertSwitch(invert=true) {
 }
 
 def zwaveEvent(physicalgraph.zwave.commands.centralscenev1.CentralSceneNotification cmd) {
-    log.debug("sceneNumber: $cmd.sceneNumber")
-    log.debug("keyAttributes: $cmd.keyAttributes")
-    def result = null
+    log.debug("sceneNumber: ${cmd.sceneNumber} keyAttributes: ${cmd.keyAttributes}")
+    def result = []
     
     switch (cmd.sceneNumber) {
       case 1:
           // Up
           switch (cmd.keyAttributes) {
+              case 0:
+                  // Handle the occasional 0 case (currently an undocumented/unknown Up attribute)
+                  result=createEvent([name: "switch", value: "on", type: "physical"])
+                  break
+ 
               case 1:
                   // Press Once
-                  result=[name: "switch", value: "on", type: "physical"]
+                  result=createEvent([name: "switch", value: "on", type: "physical"])
                   break
               case 2:
                   // Hold
-                  result=holdUpResponse("physical")
+                  result += createEvent([name: "switch", value: "on", type: "physical"])    
+                  result += response("delay 100")
+                  result += createEvent(holdUpResponse("physical"))               
                   break
               case 3: 
                   // 2 Times
-                  result=tapUp2Response("physical")
+                  result=createEvent(tapUp2Response("physical"))
                   break
               case 4:
                   // 3 Three times
-                  result=tapUp3Response("physical")
+                  result=createEvent(tapUp3Response("physical"))
                   break
               default:
                   log.debug ("unexpected up press keyAttribute: $cmd.keyAttributes")
-                  result=null
           }
           break
           
       case 2:
           // Down
           switch (cmd.keyAttributes) {
+              case 0:
+                  // Handle the occasional 0 case (currently an undocumented/unknown Up attribute)
+                  result=createEvent([name: "switch", value: "off", type: "physical"])
+                  break
+
               case 1:
                   // Press Once
-                  result=[name: "switch", value: "off", type: "physical"]
+                  result=createEvent([name: "switch", value: "off", type: "physical"])
                   break
               case 2:
                   // Hold
-                  result=holdDownResponse("physical")
+                  result += createEvent([name: "switch", value: "off", type: "physical"]) 
+                  result += response("delay 100")
+                  result += createEvent(holdDownResponse("physical"))
                   break
               case 3: 
                   // 2 Times
-                  result=tapDown2Response("physical")
+                  result=createEvent(tapDown2Response("physical"))
                   break
               case 4:
                   // 3 Times
-                  result=tapDown3Response("physical")
+                  result=createEvent(tapDown3Response("physical"))
                   break
               default:
                   log.debug ("unexpected down press keyAttribute: $cmd.keyAttributes")
-                  result=null
            } 
            break
            
       default:
            // unexpected case
            log.debug ("unexpected scene: $cmd.sceneNumber")
-           result=null
    }  
    return result
 }
@@ -322,15 +333,3 @@ def holdUp() {
 def holdDown() {
 	sendEvent(holdDownResponse("digital"))
 } 
-
-def configure() {
-    def commands = [ ]
-	log.debug "Setting Device Parameters for SmartThings"
-	def cmds = []
-    cmds << zwave.associationV1.associationSet(groupingIdentifier: 1, nodeId: zwaveHubNodeId).format()
-    cmds << zwave.associationV1.associationSet(groupingIdentifier: 2, nodeId: zwaveHubNodeId).format()
-    cmds << zwave.associationV1.associationSet(groupingIdentifier: 3, nodeId: zwaveHubNodeId).format()
-    cmds << zwave.associationV1.associationSet(groupingIdentifier: 4, nodeId: zwaveHubNodeId).format()
-    cmds << zwave.associationV1.associationSet(groupingIdentifier: 5, nodeId: zwaveHubNodeId).format()   
-    delayBetween(cmds, 500)
-}  
