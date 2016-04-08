@@ -37,7 +37,7 @@ def updated() {
 
 def initialize() {
 	def deviceId = selectedSwitch.id
-    def deviceName = selectedSwitch.name
+    def deviceName = selectedSwitch.label
     def slaveDeviceId = deviceId + "Switch2"
     def slaveDeviceName = deviceName + " Switch 2"
     def slaveDevice = getChildDevice(slaveDeviceId)
