@@ -26,6 +26,7 @@
  *		-	Initial 0.1 Beta
  *
  */
+ 
 metadata {
 	definition (name: "WD100+ Z-Wave Switch", namespace: "darwinsden", author: "darwin@darwinsden.com") {
 		capability "Actuator"
@@ -225,9 +226,10 @@ def zwaveEvent(physicalgraph.zwave.commands.centralscenev1.CentralSceneNotificat
                   break
               case 2:
                   // Hold
-                  result += createEvent([name: "switch", value: "on", type: "physical"])    
+                  result += createEvent(holdUpResponse("physical"))  
                   result += response("delay 100")
-                  result += createEvent(holdUpResponse("physical"))               
+                  result += createEvent([name: "switch", value: "on", type: "physical"])    
+
                   break
               case 3: 
                   // 2 Times
@@ -256,9 +258,9 @@ def zwaveEvent(physicalgraph.zwave.commands.centralscenev1.CentralSceneNotificat
                   break
               case 2:
                   // Hold
-                  result += createEvent([name: "switch", value: "off", type: "physical"]) 
-                  result += response("delay 100")
                   result += createEvent(holdDownResponse("physical"))
+                  result += response("delay 100")
+                  result += createEvent([name: "switch", value: "off", type: "physical"]) 
                   break
               case 3: 
                   // 2 Times
