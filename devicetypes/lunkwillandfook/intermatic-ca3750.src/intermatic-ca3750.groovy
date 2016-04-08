@@ -99,7 +99,6 @@ def zwaveEvent(physicalgraph.zwave.commands.multiinstancev1.MultiInstanceCmdEnca
         }
         if (cmd.parameter == [255]) {
             map.value = "on"
-            sendEvent(name:switchName, value:"on", displayed:true)
         }
 
         map

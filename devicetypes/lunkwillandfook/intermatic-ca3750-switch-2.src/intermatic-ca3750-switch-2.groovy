@@ -36,8 +36,8 @@ metadata {
 	// tile definitions
     tiles {
         standardTile("switch", "device.switch", width: 2, height: 2, canChangeIcon: true) {
-            state "on", label: '${name}', action: "off", icon: "st.switches.switch.on", backgroundColor: "#79b821"
             state "off", label: '${name}', action: "on", icon: "st.switches.switch.off", backgroundColor: "#ffffff"
+            state "on", label: '${name}', action: "off", icon: "st.switches.switch.on", backgroundColor: "#79b821"
         }
         standardTile("refresh", "device.switch", inactiveLabel: false, decoration: "flat") {
             state "default", label:"", action:"refresh", icon:"st.secondary.refresh"
