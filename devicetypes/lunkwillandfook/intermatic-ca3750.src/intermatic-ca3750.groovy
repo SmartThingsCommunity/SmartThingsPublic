@@ -21,25 +21,16 @@ metadata {
 		capability "Polling"
 		capability "Refresh"
 
-
 		fingerprint inClusters: "0x91 0x73 0x72 0x86 0x60 0x25 0x27"
         
 		attribute "switch1", "string"
 		attribute "switch2", "string"
-		attribute "switch3", "string"
 
 		command "on"
 		command "off"
-
-		command "on1"
-		command "off1"
 		command "on2"
 		command "off2"
 	}
-    
-    preferences {
-    	input(name: "switchBehavior", type: "enum", title: "Primary Switch Behavior", required: true, options: ["Switch All", "Switch 1", "Switch 2"], defaultValue: "Switch All")
-    }
     
 	simulator {
 		// TODO: define status and reply messages here
@@ -47,24 +38,21 @@ metadata {
     
 	// tile definitions
     tiles {
-        standardTile("switch", "device.switch", width: 2, height: 2, canChangeIcon: true) {
+        standardTile("switch1", "device.switch", width: 2, height: 2, canChangeIcon: true) {
             state "on", label: '${name}', action: "off", icon: "st.switches.switch.on", backgroundColor: "#79b821"
             state "off", label: '${name}', action: "on", icon: "st.switches.switch.off", backgroundColor: "#ffffff"
         }
-        standardTile("switch1", "device.switch1",canChangeIcon: false) {
-            state "on", label: "Switch 1", action: "off1", icon: "st.switches.switch.on", backgroundColor: "#79b821"
-            state "off", label: "Switch 1", action: "on1", icon: "st.switches.switch.off", backgroundColor: "#ffffff"
-        }
         standardTile("switch2", "device.switch2",canChangeIcon: false) {
-            state "on", label: "Switch 2", action: "off2", icon: "st.switches.switch.on", backgroundColor: "#79b821"
-            state "off", label: "Switch 2", action: "on2", icon: "st.switches.switch.off", backgroundColor: "#ffffff"
+            state "on", label: "", action: "off2", icon: "st.switches.switch.on", backgroundColor: "#79b821"
+            state "off", label: "", action: "on2", icon: "st.switches.switch.off", backgroundColor: "#ffffff"
         }
         standardTile("refresh", "device.switch", inactiveLabel: false, decoration: "flat") {
             state "default", label:"", action:"refresh", icon:"st.secondary.refresh"
         }
-        main "switch"
+        
+        main "switch1"
 
-        details(["switch","switch1","switch2","refresh"])
+        details(["switch1","switch2","refresh"])
     }
 }
 
@@ -103,16 +91,17 @@ def zwaveEvent(physicalgraph.zwave.commands.switchbinaryv1.SwitchBinaryReport cm
 
 def zwaveEvent(physicalgraph.zwave.commands.multiinstancev1.MultiInstanceCmdEncap cmd) {
     log.debug "Miv1 $cmd - $cmd?.instance - $cmd?.commandClass"
+
     def map = [ name: "switch$cmd.instance" ]
     if (cmd.commandClass == 37){
-    	if (cmd.parameter == [0]) {
-        	map.value = "off"
+        if (cmd.parameter == [0]) {
+            map.value = "off"
         }
         if (cmd.parameter == [255]) {
             map.value = "on"
-        	sendEvent(name:"switch", value:"on", displayed:true)
+            sendEvent(name:switchName, value:"on", displayed:true)
         }
-        
+
         map
     }
 }
@@ -138,7 +127,7 @@ def poll() {
     	zwave.multiChannelV3.multiInstanceCmdEncap(instance: 1).encapsulate(zwave.switchBinaryV1.switchBinaryGet()).format(),
     	zwave.multiChannelV3.multiInstanceCmdEncap(instance: 2).encapsulate(zwave.switchBinaryV1.switchBinaryGet()).format(),
 		zwave.manufacturerSpecificV1.manufacturerSpecificGet().format(),
-	], 300)
+	], 100)
 }
 
 def refresh() {
@@ -148,69 +137,27 @@ def refresh() {
     	zwave.multiChannelV3.multiInstanceCmdEncap(instance: 1).encapsulate(zwave.switchBinaryV1.switchBinaryGet()).format(),
     	zwave.multiChannelV3.multiInstanceCmdEncap(instance: 2).encapsulate(zwave.switchBinaryV1.switchBinaryGet()).format(),
 		zwave.manufacturerSpecificV1.manufacturerSpecificGet().format(),
-	], 300)
+	], 100)
 }
 
 def setlevel1(value) { setleveX(1, value) }; def setlevel2(value) { setlevelX(2, value) }
-//def on1() { swOn(1) }; def off1() { swOff(1) }
-//def on2() { swOn(1) }; def off2() { swOff(1) }
 
 def on() {
-	switch(switchBehavior) {
-        case "Switch 1":
-            log.debug "Switch 1 On"
-            on1()
-        	break;
-        case "Switch 2":
-            log.debug "Switch 2 On"
-            on2()
-        	break;
-        default:
-            log.debug "All On"
-            delayBetween([
-                on1(),
-                on2()
-            ],100)
-           	break;
-    }
-}
- 
-def off() {
-	switch(switchBehavior) {
-        case "Switch 1":
-            log.debug "Switch 1 Off"
-            off1()
-        	break;
-        case "Switch 2":
-            log.debug "Switch 2 Off"
-            off2()
-        	break;
-        default:
-            log.debug "All Off"
-            delayBetween([
-                off1(),
-                off2()
-            ],100)
-           	break;
-    }
-}
-
-def on1() {
 	delayBetween([
 		zwave.multiChannelV3.multiInstanceCmdEncap(instance:1, commandClass:37, command:1, parameter:[255]).format(),
         zwave.switchBinaryV1.switchBinaryGet().format(),
     	zwave.multiChannelV3.multiInstanceCmdEncap(instance: 1).encapsulate(zwave.switchBinaryV1.switchBinaryGet()).format(),
     	zwave.multiChannelV3.multiInstanceCmdEncap(instance: 2).encapsulate(zwave.switchBinaryV1.switchBinaryGet()).format(),
-    ], 200)
+    ], 100)
 }
 
-def off1() {
+def off() {
 	delayBetween([
         zwave.multiChannelV3.multiInstanceCmdEncap(instance:1, commandClass:37, command:1, parameter:[0]).format(),
         zwave.switchBinaryV1.switchBinaryGet().format(),
         zwave.multiChannelV3.multiInstanceCmdEncap(instance: 1).encapsulate(zwave.switchBinaryV1.switchBinaryGet()).format(),
         zwave.multiChannelV3.multiInstanceCmdEncap(instance: 2).encapsulate(zwave.switchBinaryV1.switchBinaryGet()).format(),
-    ], 200)
+    ], 100)
 }
 
 def on2() {
@@ -219,7 +166,7 @@ def on2() {
         zwave.switchBinaryV1.switchBinaryGet().format(),
         zwave.multiChannelV3.multiInstanceCmdEncap(instance: 1).encapsulate(zwave.switchBinaryV1.switchBinaryGet()).format(),
         zwave.multiChannelV3.multiInstanceCmdEncap(instance: 2).encapsulate(zwave.switchBinaryV1.switchBinaryGet()).format(),
-    ], 200)
+    ], 100)
 }
 
 def off2() {
@@ -228,7 +175,7 @@ def off2() {
         zwave.switchBinaryV1.switchBinaryGet().format(),
         zwave.multiChannelV3.multiInstanceCmdEncap(instance: 1).encapsulate(zwave.switchBinaryV1.switchBinaryGet()).format(),
     	zwave.multiChannelV3.multiInstanceCmdEncap(instance: 2).encapsulate(zwave.switchBinaryV1.switchBinaryGet()).format(),
-    ], 200)
+    ], 100)
 }
 
 def configure() {
