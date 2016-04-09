@@ -174,7 +174,7 @@ def pagePanic() {
           	if (panicSwitchOn) input "panicSwitchOff", "capability.momentary", title: "OFF Control Switch (Momentary)", multiple: false, required: false, submitOnChange:true
         }
         section ("When panic is activated..."){
-        	input "alarm", "capability.alarm", title: "Activate alarms...", multiple: true, required: false, submitOnChange:true
+        	input "alarm", "capability.alarm", title: "Activate Alarms...", multiple: true, required: false, submitOnChange:true
             if (parent.getSonos()) input "alarmSonos", "capability.musicPlayer", title: "Use Sonos As Alarm...", multiple: false , required: false , submitOnChange:true
             if (alarm){
             	input "alarmType", "enum", title: "Select Alarm Type", options: ["strobe":"Strobe light", "siren":"Siren", "both":"Both stobe and siren"], multiple: false, required: false  
