@@ -2,9 +2,9 @@
  *  Alexa Helper-Child
  *
  *  Copyright © 2016 Michael Struck
- *  Version 2.9.7 4/9/16
+ *  Version 2.9.7a 4/9/16
  * 
- *  Version 2.9.7 - Added ability to resume music/track after voice report
+ *  Version 2.9.7a - Added ability to resume music/track after voice report
  *  See https://github.com/MichaelStruck/SmartThings/blob/master/Other-SmartApps/AlexaHelper/version%20history.md for additional version history
  *
  *  Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except
@@ -640,11 +640,16 @@ def voiceReport(){
         fullMsg += voiceSHM ? "The current Smart Home Monitor status is '${location.currentState("alarmSystemStatus")?.value}'. " : ""
         fullMsg += voicePost ? "${replaceVoiceVar(voicePost)} " : ""
         log.info fullMsg
-    	if (voiceVolume && voiceSpeaker) voiceSpeaker.setLevel(voiceVolume as int)
+    	def reportVol = voiceSpeaker ? voiceSpeaker.currentValue("level") : 0
+        if (voiceVolume && voiceSpeaker) reportVol = voiceVolume as int
     	if (voiceSpeaker){
         	voiceSpeaker.refresh()
-            voiceResume ? voiceSpeaker.playTextAndResume(fullMsg) : voiceSpeaker.playText(fullMsg)
-		}
+            if (voiceResume) voiceSpeaker.playTextAndResume(fullMsg, reportVol) 
+            else {
+            	voiceSpeaker.setLevel(reportVol)
+                voiceSpeaker.playText(fullMsg)
+			}
+        }
 		if (voiceDevice) voiceDevice?.speak("${fullMsg}")
     }
 }
@@ -998,5 +1003,5 @@ private parseDate(time, type){
     new Date().parse("yyyy-MM-dd'T'HH:mm:ss.SSSZ", formattedDate).format("${type}", timeZone(formattedDate))
 }
 //Version
-private def textVersion() {return "Child App Version: 2.9.7 (04/09/2016)"}
+private def textVersion() {return "Child App Version: 2.9.7a (04/09/2016)"}
 private def versionInt() {return 297}
