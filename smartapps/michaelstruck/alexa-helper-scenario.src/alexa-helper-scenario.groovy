@@ -2,9 +2,9 @@
  *  Alexa Helper-Child
  *
  *  Copyright © 2016 Michael Struck
- *  Version 2.9.6 4/8/16
+ *  Version 2.9.7 4/9/16
  * 
- *  Version 2.9.6 - Added presence sensors to voice reporting, added additional options for thermostat setpoint reporting
+ *  Version 2.9.7 - Added ability to resume music/track after voice report
  *  See https://github.com/MichaelStruck/SmartThings/blob/master/Other-SmartApps/AlexaHelper/version%20history.md for additional version history
  *
  *  Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except
@@ -301,6 +301,7 @@ def pageVoice(){
             if (voiceSpeaker) input "voiceVolume", "number", title: "Speaker Volume", required: false
             input "voiceDevice", "capability.speechSynthesis", title: "Voice Report Speech Synthesis Device", multiple: false, required: false
 			input "voiceDelay", "number", title: "Delay (Minutes) To Play After Trigger", defaultValue: 0, required: false
+            input "voiceResume", "bool", title: "Resume Music/Track After Voice Report", defaultValue: false
         }
         section ("Report Types"){
             input "voicePre", "text", title: "Pre Message Before Device Report", description: "Enter a message to play before the device report", defaultValue: "This is your SmartThings voice report for %time%, %day%, %date%.", required: false
@@ -640,7 +641,10 @@ def voiceReport(){
         fullMsg += voicePost ? "${replaceVoiceVar(voicePost)} " : ""
         log.info fullMsg
     	if (voiceVolume && voiceSpeaker) voiceSpeaker.setLevel(voiceVolume as int)
-    	if (voiceSpeaker) voiceSpeaker.playText(fullMsg)
+    	if (voiceSpeaker){
+        	voiceSpeaker.refresh()
+            voiceResume ? voiceSpeaker.playTextAndResume(fullMsg) : voiceSpeaker.playText(fullMsg)
+		}
 		if (voiceDevice) voiceDevice?.speak("${fullMsg}")
     }
 }
@@ -994,5 +998,5 @@ private parseDate(time, type){
     new Date().parse("yyyy-MM-dd'T'HH:mm:ss.SSSZ", formattedDate).format("${type}", timeZone(formattedDate))
 }
 //Version
-private def textVersion() {return "Child App Version: 2.9.6 (04/08/2016)"}
-private def versionInt() {return 296}
+private def textVersion() {return "Child App Version: 2.9.7 (04/09/2016)"}
+private def versionInt() {return 297}
