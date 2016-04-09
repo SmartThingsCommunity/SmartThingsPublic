@@ -941,7 +941,7 @@ def listDevices(devices, type, condition, count){
 		if (deviceName.latestValue("${type}") == "${condition}"){
 			result += " ${deviceName}"
 			count = count - 1
-			if (count == 1) result += "and the "
+			if (count == 1) result += " and the "
 			else if (count> 1) result += ", "
 		}
 	}
