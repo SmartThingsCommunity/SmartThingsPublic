@@ -2,41 +2,10 @@
  *  Alexa Helper-Child
  *
  *  Copyright © 2016 Michael Struck
- *  Version 2.9.5 4/4/16
+ *  Version 2.9.6 4/8/16
  * 
- *  Version 1.0.0 - Initial release of child app
- *  Version 1.1.0 - Added framework to show version number of child app and copyright
- *  Version 1.1.1 - Code optimization
- *  Version 1.2.0 - Added the ability to add a HTTP request on specific actions
- *  Version 1.2.1 - Added child app version information into main app
- *  Version 1.3.0 - Added ability to change the Smart Home Monitor status and added a section for the remove button
- *  Version 2.0.0 - Added in speaker and thermostat scenarios from main app to allow for more than one of these devices
- *  Version 2.0.1 - Fixed an issue with the getTimeOk routine
- *  Version 2.1.0 - Many changes; added switches, dimmers and colored lights as control devices. Modified Thermostat logic and modified GUI
- *  Version 2.2.0a - Added SMS to on/off control scenarios, and allow  'toggle' to change the lights; added Sonos as an alarm type
- *  Version 2.2.1a - Code and syntax optimization; added routine to turn off Sonos speaker if used as alarm
- *  Version 2.3.0 - Code optimization and configuration for additional memory slots for Sonos (advanced users only)
- *  Version 2.4.0 - Added GUI (in parent app) to allow for variable number of Sonos memory slots, added speaker pause toggle
- *  Version 2.5.0 - Added switch functions when speaker on/off issued
- *  Version 2.5.1 - Fixed issue with songs not initalizing
- *  Version 2.6.0 - Refined notification methods; displays action on notification feed and added push notifications; code optimization
- *  Version 2.7.0 - Added baseboard heaters scenario type and various code optimizations
- *  Version 2.7.1b - Small syntax changes
- *  Version 2.7.2 - Code optimization
- *  Version 2.8.0 - Added voice reporting options
- *  Version 2.8.1 - Syntax clean up, added dimmer to voice reporting options, added speech devices besides speakers
- *  Version 2.8.2 - Refined voice reporting (removed 'status' headers in announcement) and added date/time variables
- *  Version 2.8.3 - Minor code fixes, optimizations, adding 'Apply' heating setpoint for StelPro baseboard heaters
- *  Version 2.8.4 - Added additional voice variables (%temp%); workaround implemented for playTrack() not being operational(as of 3/11)
- *  Version 2.8.5 - Code optimization, added option to announce name of song for saved stations
- *  Version 2.8.6 - Fixed issue with the 'Contacts' SMS and Push Notification
- *  Version 2.8.7 - Code optimizations/Syntax changes/Bug fixes
- *  Version 2.9.0a - Major code opimization/Bug fixes/Added thermostat as an option for on/off control scenario
- *  Version 2.9.1 - Fixed issue with SMS messaging
- *  Version 2.9.2 - Minor syntax changes/updates, added delay to voice reporting, trapped Sonos-clone speaker errors
- *  Version 2.9.3 - Added advanced options for internal HTTP functions to be triggered, code opimization
- *  Version 2.9.4 - Added additional restriction icons and syntax updates
- *  Version 2.9.5 - Fixed issue with garage door open/close selection
+ *  Version 2.9.6 - Added presence sensors to voice reporting, added additional options for thermostat setpoint reporting
+ *  See https://github.com/MichaelStruck/SmartThings/blob/master/Other-SmartApps/AlexaHelper/version%20history.md for additional version history
  *
  *  Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except
  *  in compliance with the License. You may obtain a copy of the License at:
@@ -114,8 +83,8 @@ def controlOnOff(type){
 	if (phrases) phrases.sort()	
     section ("When switch is ${type}..."){
 		if (phrases) input "${type}Phrase", "enum", title: "Perform This Routine", options: phrases, required: false
-        input "${type}Mode", "mode", title: "Change To This Mode", required: false
-        input "${type}SHM", "enum",title: "Change Smart Home Monitor To...", options: ["away":"Arm(Away)", "stay":"Arm(Stay)", "off":"Disarm"], required: false
+        input "${type}Mode", "mode", title: "Set Mode To...", required: false
+        input "${type}SHM", "enum",title: "Set Smart Home Monitor To...", options: ["away":"Arm(Away)", "stay":"Arm(Stay)", "off":"Disarm"], required: false
         href "${type}PageSTDevices", title: "SmartThings Device Control...", description: getDeviceDesc("${type}")
         href "${type}PageHTTP", title: "HTTP Request...", description: getHTTPDesc("${type}"), state: greyOutStateHTTP("${type}")
         input "${type}Delay", "number", title: "Delay (Minutes) To Activate After Trigger", defaultValue: 0, required: false
@@ -208,7 +177,7 @@ def pagePanic() {
         	input "alarm", "capability.alarm", title: "Activate alarms...", multiple: true, required: false, submitOnChange:true
             if (parent.getSonos()) input "alarmSonos", "capability.musicPlayer", title: "Use Sonos As Alarm...", multiple: false , required: false , submitOnChange:true
             if (alarm){
-            	input "alarmType", "enum", title: "Choose An Alarm Type", options: ["strobe":"Strobe light", "siren":"Siren", "both":"Both stobe and siren"], multiple: false, required: false  
+            	input "alarmType", "enum", title: "Select Alarm Type", options: ["strobe":"Strobe light", "siren":"Siren", "both":"Both stobe and siren"], multiple: false, required: false  
             	input "alarmTimer", "number", title:"Alarm Turns Off Automatically After (Minutes)", required: false
             }
             if (alarmSonos && parent.getSonos()  && alarmSonos.name.contains("Sonos")){
@@ -334,16 +303,23 @@ def pageVoice(){
 			input "voiceDelay", "number", title: "Delay (Minutes) To Play After Trigger", defaultValue: 0, required: false
         }
         section ("Report Types"){
-            input "voicePre", "text", title: "Pre Message Before Device Report", description: "Enter a message to play before the device report", defaultValue: "This is your SmartThings voice report for %time%, %day%, %date%,.", required: false
-            href "pageSwitchReport", title: "Switch/Dimmer Status Report", description: reportDesc(voiceSwitch, voiceDimmer, ""), state: greyOutState(voiceSwitch, voiceDimmer, "")
-            href "pageDoorReport", title: "Doors/Windows Report", description: reportDesc(voiceDoorSensors, voiceDoorControls, voiceDoorLocks), state: greyOutState(voiceDoorSensors, voiceDoorControls, voiceDoorLocks)
-            href "pageTempReport", title: "Temperatures/Thermostats Report", description: reportDesc(voiceTemperature, voiceTempSettings, voiceTempVar), state: greyOutState(voiceTemperature, voiceTempSettings, voiceTempVar)
+            input "voicePre", "text", title: "Pre Message Before Device Report", description: "Enter a message to play before the device report", defaultValue: "This is your SmartThings voice report for %time%, %day%, %date%.", required: false
+            href "pageSwitchReport", title: "Switch/Dimmer Report", description: reportDesc(voiceSwitch, voiceDimmer, ""), state: greyOutState(voiceSwitch, voiceDimmer, "")
+            href "pagePresenceReport", title: "Presence Report", description: reportDesc(voicePresence, "", ""), state: greyOutState(voicePresence, "", "")
+            href "pageDoorReport", title: "Door/Window Report", description: reportDesc(voiceDoorSensors, voiceDoorControls, voiceDoorLocks), state: greyOutState(voiceDoorSensors, voiceDoorControls, voiceDoorLocks)
+            href "pageTempReport", title: "Temperature/Thermostat Report", description: reportDesc(voiceTemperature, voiceTempSettings, voiceTempVar), state: greyOutState(voiceTemperature, voiceTempSettings, voiceTempVar)
             href "pageHomeReport", title: "Mode and Smart Home Monitor Report", description: reportDesc(voiceMode, voiceSHM, ""), state: "complete"
             input "voicePost", "text", title: "Post Message After Device Report", description: "Enter a message to play after the device report", required: false
         }
     }
 }
-page(name: "pageSwitchReport", title: "Switch/Dimmer Status Report", install: false, uninstall: false){
+page(name: "pagePresenceReport", title: "Presence Report", install: false, uninstall: false){
+	section {
+        input "voicePresence", "capability.presenceSensor", title: "Presence Sensors To Report Their Status...", multiple: true, required: false 
+        input "voicePresentOnly", "bool", title: "Report Only Sensors That Are 'Not Present'", defaultValue: false 
+    }
+}
+page(name: "pageSwitchReport", title: "Switch/Dimmer Report", install: false, uninstall: false){
 	section {
         input "voiceSwitch", "capability.switch", title: "Switches To Report Their Status...", multiple: true, required: false 
         input "voiceOnSwitchOnly", "bool", title: "Report Only Switches That Are On", defaultValue: false
@@ -351,21 +327,27 @@ page(name: "pageSwitchReport", title: "Switch/Dimmer Status Report", install: fa
         input "voiceOnDimmerOnly", "bool", title: "Report Only Dimmers That Are On", defaultValue: false 
     }
 }
-page(name: "pageDoorReport", title: "Doors/Windows Report", install: false, uninstall: false){
+page(name: "pageDoorReport", title: "Door/Window Report", install: false, uninstall: false){
 	section {
-		input "voiceDoorSensors", "capability.contactSensor", title: "Check Which Doors/Windows Sensors...", multiple: true, required: false
-		input "voiceDoorControls", "capability.doorControl", title: "Check Which Door Controls...", multiple: true, required: false
-		input "voiceDoorLocks", "capability.lock", title: "Check Which Locks...", multiple: true, required: false
+		input "voiceDoorSensors", "capability.contactSensor", title: "Doors/Windows Sensors To Report Their Status...", multiple: true, required: false
+		input "voiceDoorControls", "capability.doorControl", title: "Door Controls To Report Their Status...", multiple: true, required: false
+		input "voiceDoorLocks", "capability.lock", title: "Locks To Report Their Status...", multiple: true, required: false
         input "voiceDoorAll", "bool", title: "Report Door/Window Summary Even When All Are Closed And Locked", defaultValue: false
 	}
 }
 def pageTempReport(){
-    dynamicPage(name: "pageTempReport", title: "Temperature Report", install: false, uninstall: false){
+    dynamicPage(name: "pageTempReport", title: "Temperature/Thermostat Report", install: false, uninstall: false){
         section {
             input "voiceTempVar", "capability.temperatureMeasurement", title: "Temperature Device Variable (%temp%)",multiple: false, required: false
             input "voiceTemperature", "capability.temperatureMeasurement", title: "Devices To Report Temperatures...",multiple: true, required: false
+		}
+        section ("Thermostat Setpoint Reporting") {
             input "voiceTempSettings", "capability.thermostat", title: "Thermostats To Report Their Setpoints...",multiple: true, required: false, submitOnChange:true
-            if (voiceTempSettings) input "voiceTempSettingSummary", "bool", title: "Consolidate Thermostats Report", defaultValue: false, submitOnChange:true
+            if (voiceTempSettings) {
+            	input "voiceTempSettingsType", "enum", title: "Which Setpoint To Report", defaultValue: "heatingSetpoint", 
+                	options: ["heatingSetpoint": "Heating Setpoint","coolingSetpoint":"Cooling Setpoint","thermostatSetpoint":"Single Setpoint (Not compatible with all thermostats)"]
+            	input "voiceTempSettingSummary", "bool", title: "Consolidate Thermostat Report", defaultValue: false, submitOnChange:true
+            }
             if (voiceTempSettingSummary && voiceTempSettings) input "voiceTempTarget", "number", title: "Thermostat Setpoint Target", required: false, defaultValue: 50
         }
     }
@@ -648,9 +630,10 @@ def voiceReport(){
         else fullMsg += voiceSwitch ? reportStatus(voiceSwitch, "switch") : ""
         if (voiceOnDimmerOnly) fullMsg += voiceDimmer ? switchReport(voiceDimmer, "dimmers") : ""
         else fullMsg += voiceDimmer ? reportStatus(voiceDimmer, "level") : ""
+        fullMsg += voicePresence ? presenceReport() : ""
         fullMsg += (voiceTemperature) ? reportStatus(voiceTemperature, "temperature") : ""
-        if (voiceTempSettingSummary) fullMsg += (voiceTempSettings) ? thermostatSummary(): ""
-        else fullMsg += (voiceTempSettings) ? reportStatus(voiceTempSettings, "thermostatSetpoint") : ""
+        if (voiceTempSettingSummary && voiceTempSettingsType) fullMsg += (voiceTempSettings) ? thermostatSummary(): ""
+        else fullMsg += (voiceTempSettings && voiceTempSettingsType) ? reportStatus(voiceTempSettings, voiceTempSettingsType) : ""
         fullMsg += voiceDoorSensors || voiceDoorControls || voiceDoorLocks ? doorWindowReport() : ""
         fullMsg += voiceMode ? "The current SmartThings mode is set to, '${location.currentMode}'. " : ""
         fullMsg += voiceSHM ? "The current Smart Home Monitor status is '${location.currentState("alarmSystemStatus")?.value}'. " : ""
@@ -735,8 +718,7 @@ def scenarioDesc(){
 }
 def reportDesc(param1, param2, param3) {def result = param1 || param2 || param3  ? "Status: CONFIGURED - Tap to edit" : "Status: UNCONFIGURED - Tap to configure"}
 def getDeviceDesc(type){  
-    def result, switches, dimmers, cLights, locks, garages, tstats
-    def lvl, cLvl, clr, tLvl
+    def result, switches, dimmers, cLights, locks, garages, tstats, lvl, cLvl, clr, tLvl
     def cmd = [switch: settings."${type}SwitchesCMD", dimmer: settings."${type}DimmersCMD", cLight: settings."${type}ColoredLightsCMD", tstat: settings."${type}TstatsCMD", lock: settings."${type}LocksCMD", garage: settings."${type}GaragesCMD"]
 	switches = settings."${type}Switches" && cmd.switch ? settings."${type}Switches" : ""
 	lvl = cmd.dimmer == "set" && settings."${type}DimmersLVL" ? settings."${type}DimmersLVL" as int : 0
@@ -794,8 +776,7 @@ private getDayOk(dayList) {
     result
 }
 private getTimeOk(startTime, endTime) {
-	def result = true
-    def currTime = now()
+	def result = true, currTime = now()
 	def start = startTime ? timeToday(startTime).time : null
 	def stop = endTime ? timeToday(endTime).time : null
 	if (startTime && endTime) result = start < stop ? currTime >= start && currTime <= stop : currTime <= stop || currTime >= start
@@ -805,12 +786,10 @@ private getTimeOk(startTime, endTime) {
 }
 def fillColorSettings(){ 
 	def colorData = []
-    colorData << [name: "Soft White", hue: 23, sat: 56] << [name: "White - Concentrate", hue: 52, sat: 19]  
-    colorData << [name: "Daylight - Energize", hue: 52, sat: 16] << [name: "Warm White - Relax", hue: 13, sat: 30]
-    colorData << [name: "Red", hue: 100, sat: 100] << [name: "Green", hue: 37, sat: 100]
-	colorData << [name: "Blue", hue: 64, sat: 100] << [name: "Yellow", hue: 16, sat: 100]
-    colorData << [name: "Orange", hue: 8, sat: 100] << [name: "Purple", hue: 78, sat: 100]
-    colorData << [name: "Pink", hue: 87, sat: 100] << [name: "Custom-User Defined", hue: 0, sat: 0]
+    colorData << [name: "Soft White", hue: 23, sat: 56] << [name: "White - Concentrate", hue: 52, sat: 19]  << [name: "Daylight - Energize", hue: 52, sat: 16] 
+    colorData << [name: "Warm White - Relax", hue: 13, sat: 30] << [name: "Red", hue: 100, sat: 100] << [name: "Green", hue: 37, sat: 100]
+	colorData << [name: "Blue", hue: 64, sat: 100] << [name: "Yellow", hue: 16, sat: 100] << [name: "Orange", hue: 8, sat: 100]
+    colorData << [name: "Purple", hue: 78, sat: 100] << [name: "Pink", hue: 87, sat: 100] << [name: "Custom-User Defined", hue: 0, sat: 0]
 }
 private setColoredLights(switches, color, level, type){
 	def getColorData = fillColorSettings().find {it.name==color}
@@ -863,39 +842,59 @@ def switchReport(devices, type){
 	result
 }
 def thermostatSummary(){
-	def result = "", monitorCount = voiceTempSettings.size(), matchCount = 0
-    for (device in voiceTempSettings) {if (device.latestValue("thermostatSetpoint") as int == voiceTempTarget as int) matchCount ++}
-    def difCount = monitorCount - matchCount
-    if (monitorCount == 1 &&  difCount==1) result +="The monitored thermostat, ${voiceTempSettings}, is not set to ${voiceTempTarget} degrees. "
-    else if (monitorCount == 1 && !difCount) result +="The monitored thermostat, ${voiceTempSettings}, is set to ${voiceTempTarget} degrees. "
-    if (monitorCount > 1) {
-        if (!difCount) result += "All thermostats are set to ${voiceTempTarget} degrees. "
-        else if (difCount==monitorCount) result += "None of the thermostats are set to ${voiceTempTarget} degrees. "
-        else if (matchCount==1) {
-            for (device in voiceTempSettings){
-                if (device.latestValue("thermostatSetpoint") as int == voiceTempTarget as int){
-                    result += "Of the ${monitorCount} monitored thermostats, only ${device} is set to ${voiceTempTarget} degrees. "
+	def result = "", monitorCount = voiceTempSettings.size(), matchCount = 0, err = false
+    for (device in voiceTempSettings) {
+    	try{ if (device.latestValue(voiceTempSettingsType) as int == voiceTempTarget as int)  matchCount ++ }
+        catch (e) { err=true }
+    }
+    if (!err){
+        def difCount = monitorCount - matchCount
+        if (monitorCount == 1 &&  difCount==1) result +="The monitored thermostat, ${voiceTempSettings}, is not set to ${voiceTempTarget} degrees. "
+        else if (monitorCount == 1 && !difCount) result +="The monitored thermostat, ${voiceTempSettings}, is set to ${voiceTempTarget} degrees. "
+        if (monitorCount > 1) {
+            if (!difCount) result += "All thermostats are set to ${voiceTempTarget} degrees. "
+            else if (difCount==monitorCount) result += "None of the thermostats are set to ${voiceTempTarget} degrees. "
+            else if (matchCount==1) {
+                for (device in voiceTempSettings){
+                    if (device.latestValue(voiceTempSettingsType) as int == voiceTempTarget as int){
+                        result += "Of the ${monitorCount} monitored thermostats, only ${device} is set to ${voiceTempTarget} degrees. "
+                    }
                 }
             }
-        }
-        else if (difCount && matchCount>1) {
-            result += "Some of the thermostats are set to ${voiceTempTarget} degrees except"
-            for (device in voiceTempSettings){
-                if (device.latestValue("thermostatSetpoint") as int != voiceTempTarget as int){
-                    result += " ${device}"
-                    difCount = difCount -1
-                    result += difCount && difCount == 1 ? " and" : difCount && difCount > 1 ? ", " : ". "
+            else if (difCount && matchCount>1) {
+                result += "Some of the thermostats are set to ${voiceTempTarget} degrees except"
+                for (device in voiceTempSettings){
+                    if (device.latestValue(voiceTempSettingsType) as int != voiceTempTarget as int){
+                        result += " ${device}"
+                        difCount = difCount -1
+                        result += difCount && difCount == 1 ? " and" : difCount && difCount > 1 ? ", " : ". "
+                    }
                 }
             }
         }
     }
+    else result="Some of your thermostats are not able to provide their setpoint. Please choose another setpoint type to report on. " 
     result
 }
 def reportStatus(deviceList, type){
 	def result = ""
-    def appd = type=="temperature" || type=="thermostatSetpoint" ? "degrees" : ""
-    if (type!= "thermostatSetpoint") deviceList.each {deviceName->result += "${deviceName} is ${deviceName.latestValue(type)} ${appd}. " }
-    else deviceList.each {deviceName->result += "${deviceName} is set to ${deviceName.latestValue(type) as int} ${appd}. " }
+    def appd = type=="temperature" || type=="thermostatSetpoint" || type == "heatingSetpoint" || type=="coolingSetpoint" ? "degrees" : ""
+    if (type != "thermostatSetpoint" && type == "heatingSetpoint" && type=="coolingSetpoint" ) deviceList.each {deviceName->result += "${deviceName} is ${deviceName.latestValue(type)} ${appd}. " }
+    else deviceList.each { deviceName->
+    	try { result += "${deviceName} is set to ${deviceName.latestValue(type) as int} ${appd}. " }
+    	catch (e) { result = "${deviceName} is not able to provide its setpoint. Please choose another setpoint type to report on. " }
+    }
+    result
+}
+def presenceReport(){
+	def result = ""
+    if (voicePresentOnly){
+    	if (voicePresence.latestValue("presence").contains("not present")) devices.each { deviceName->
+            if (deviceName.latestValue("presence")=="not present") result += "${deviceName} is not present"
+    	}
+    	else result += "All of the monitored presence sensors are present. "
+    	}
+    else  voicePresence.each {deviceName->result += "${deviceName} is " + deviceName.latestValue("presence") + ". " }
     result
 }
 def doorWindowReport(){
@@ -995,5 +994,5 @@ private parseDate(time, type){
     new Date().parse("yyyy-MM-dd'T'HH:mm:ss.SSSZ", formattedDate).format("${type}", timeZone(formattedDate))
 }
 //Version
-private def textVersion() {return "Child App Version: 2.9.5 (04/04/2016)"}
-private def versionInt() {return 295}
+private def textVersion() {return "Child App Version: 2.9.6 (04/08/2016)"}
+private def versionInt() {return 296}
