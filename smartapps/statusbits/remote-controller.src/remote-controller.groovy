@@ -202,7 +202,7 @@ private def pageEditButton(params) {
                 settings.hues?.each() {
                     def buttonValue = "btn_${button}_${mode}_${it.id}"
                     def description = "Tap to edit. level:" + settings[buttonValue+'_level']+' hue:'+settings[buttonValue+'_hue']+' sat:'+settings[buttonValue+'_sat']
-                    href "pageEditHue", params:[button:button,mode:mode,name:it.displayName,id:it.id], title:it.displayName, description:description
+                    href 'pageEditHue', params:[button:button,mode:mode,name:it.displayName,id:it.id], title:it.displayName, description:description
                 }
             }
         }
@@ -213,12 +213,13 @@ private def pageEditHue(params) {
     LOG("pageEditHue()")
     LOG("hues: ${params.button} ${params.mode} ${params.name} ${params.id}")
 
+    def button = params.button.toInteger()
     def textHelp = "Configure color bulb hue/saturation/level"
 
     def pageProperties = [
         name:       "pageEditHue",
         title:      "Configure ${params.name}",
-        nextPage:   "pageEditButton",
+        nextPage:   "pageSetup",
     ]
 
 
@@ -228,9 +229,10 @@ private def pageEditHue(params) {
         }
 
         section("Bulb settings") {
-            input "btn_${params.button}_${params.mode}_${params.id}_level", "number", title:"${params.name} level", required:false
-            input "btn_${params.button}_${params.mode}_${params.id}_hue", "number", title:"${params.name} hue", required:false
-            input "btn_${params.button}_${params.mode}_${params.id}_sat", "number", title:"${params.name} saturation", required:false
+            input "btn_${button}_${params.mode}_${params.id}_level", "number", title:"${params.name} level", required:false
+            input "btn_${button}_${params.mode}_${params.id}_hue", "number", title:"${params.name} hue", required:false
+            input "btn_${button}_${params.mode}_${params.id}_sat", "number", title:"${params.name} saturation", required:false
+            href 'pageEditButton', params:[button:button], title:'Go Back', description:'Back to button edit page'
         }
     }
 }
