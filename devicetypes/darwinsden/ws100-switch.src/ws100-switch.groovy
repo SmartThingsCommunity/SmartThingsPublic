@@ -36,7 +36,6 @@ metadata {
 		capability "Polling"
 		capability "Refresh"
 		capability "Sensor"
-        capability "Configuration"
         
         command "tapUp2"
         command "tapDown2"
