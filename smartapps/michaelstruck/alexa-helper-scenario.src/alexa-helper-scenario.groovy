@@ -2,9 +2,9 @@
  *  Alexa Helper-Child
  *
  *  Copyright © 2016 Michael Struck
- *  Version 2.9.7a 4/9/16
+ *  Version 2.9.7b 4/10/16
  * 
- *  Version 2.9.7a - Added ability to resume music/track after voice report
+ *  Version 2.9.7b - Added ability to resume music/track after voice report
  *  See https://github.com/MichaelStruck/SmartThings/blob/master/Other-SmartApps/AlexaHelper/version%20history.md for additional version history
  *
  *  Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except
@@ -254,7 +254,7 @@ def pageThermostat(){
         section {
             input "vDimmerTstat", "capability.switchLevel", title: "Control Switch (Dimmer)", multiple: false, required:false
             input "tstat", "capability.thermostat", title: "Thermostat To Control", multiple: false , required: false
-            input "autoControlTstat", "bool", title: "Control thermostat In 'Auto' Mode", defaultValue: false
+            input "autoControlTstat", "bool", title: "Control Thermostat In 'Auto' Mode", defaultValue: false
         }
         section ("Thermostat Temperature Limits") {
             input "upLimitTstat", "number", title: "Thermostat Upper Limit", required: false
@@ -1003,5 +1003,5 @@ private parseDate(time, type){
     new Date().parse("yyyy-MM-dd'T'HH:mm:ss.SSSZ", formattedDate).format("${type}", timeZone(formattedDate))
 }
 //Version
-private def textVersion() {return "Child App Version: 2.9.7a (04/09/2016)"}
+private def textVersion() {return "Child App Version: 2.9.7b (04/10/2016)"}
 private def versionInt() {return 297}
