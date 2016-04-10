@@ -43,7 +43,7 @@ preferences {
     page(name:"pageSetup")
     page(name:"pageAddButton")
     page(name:"pageEditButton")
-    page(name:"pageEditHue")
+    page(name:"pageEditBulb")
 }
 
 // Show "Setup Menu" page
@@ -92,6 +92,14 @@ private def pageSetup() {
         required:   false
     ]
 
+    def inputTemp = [
+        name        : "temp",
+        type        : "capability.colorControl",
+        title       : "Select Color Temperature",
+        multiple:   true,
+        required:   false
+    ]
+
     def pageProperties = [
         name:       "pageSetup",
         //title:      "Setup",
@@ -111,6 +119,7 @@ private def pageSetup() {
             input inputDimmers
             input inputSwitches
             input inputHues
+            input inputTemp
             href "pageAddButton", title:"Add button", description:"Tap to open"
             buttons.each() { button ->
                 href "pageEditButton", params:[button:button], title:"Configure button ${button}",
@@ -201,23 +210,28 @@ private def pageEditButton(params) {
                 }
                 settings.hues?.each() {
                     def buttonValue = "btn_${button}_${mode}_${it.id}"
-                    def description = "Tap to edit. level:" + settings[buttonValue+'_level']+' hue:'+settings[buttonValue+'_hue']+' sat:'+settings[buttonValue+'_sat']
-                    href 'pageEditHue', params:[button:button,mode:mode,name:it.displayName,id:it.id], title:it.displayName, description:description
+                    def description = "Tap to edit. level:"+settings[buttonValue+'_level']+' hue:'+settings[buttonValue+'_hue']+' sat:'+settings[buttonValue+'_sat']
+                    href 'pageEditBulb', params:[button:button,mode:mode,name:it.displayName,id:it.id,type:'color'], title:it.displayName, description:description
+                }
+                settings.temp?.each() {
+                    def buttonValue = "btn_${button}_${mode}_${it.id}"
+                    def description = "Tap to edit. level:"+settings[buttonValue+'_level']+' temp:'+settings[buttonValue+'_temp']
+                    href 'pageEditBulb', params:[button:button,mode:mode,name:it.displayName,id:it.id,type:'temperature'], title:it.displayName, description:description
                 }
             }
         }
     }
 }
 
-private def pageEditHue(params) {
-    LOG("pageEditHue()")
-    LOG("hues: ${params.button} ${params.mode} ${params.name} ${params.id}")
-
+private def pageEditBulb(params) {
+    LOG("pageEditBulb()")
     def button = params.button.toInteger()
-    def textHelp = "Configure color bulb hue/saturation/level"
+    LOG("bulb: ${button} ${params.mode} ${params.name} ${params.id} ${params.type}")
+
+    def textHelp = "Configure bulb ${params.type}"
 
     def pageProperties = [
-        name:       "pageEditHue",
+        name:       "pageEditBulb",
         title:      "Configure ${params.name}",
         nextPage:   "pageSetup",
     ]
@@ -230,8 +244,16 @@ private def pageEditHue(params) {
 
         section("Bulb settings") {
             input "btn_${button}_${params.mode}_${params.id}_level", "number", title:"${params.name} level", required:false
-            input "btn_${button}_${params.mode}_${params.id}_hue", "number", title:"${params.name} hue", required:false
-            input "btn_${button}_${params.mode}_${params.id}_sat", "number", title:"${params.name} saturation", required:false
+            if (params.type == 'color') {
+                input "btn_${button}_${params.mode}_${params.id}_hue", "number", title:"${params.name} hue", required:false
+                input "btn_${button}_${params.mode}_${params.id}_sat", "number", title:"${params.name} saturation", required:false
+            }
+            if (params.type == 'temperature') {
+                input "btn_${button}_${params.mode}_${params.id}_temp", "number", title:"${params.name} temperature", required:false
+            }
+            input "btn_${button}_${params.mode}_${params.id}_toggle", "enum", title:"${params.name} toggle",
+                metadata:[values: ["on", "off"]], required:false
+
             href 'pageEditButton', params:[button:button], title:'Go Back', description:'Back to button edit page'
         }
     }
@@ -280,6 +302,7 @@ def onButtonEvent(evt) {
         allSwitches.addAll(settings.hues)
 
     items.each() { item ->
+        LOG("item was ${item}")
         if (item.key.endsWith('_routine')) {
             executeRoutine(item.value)
         } else if (item.key.endsWith('_mode')) {
@@ -289,7 +312,12 @@ def onButtonEvent(evt) {
         } else if (item.key.endsWith('_level')) {
             def dev = allSwitches.find { it.id == item.key.minus("btn_${button}_${evt.value}_").minus('_level') }
             if (dev != null) {
-                if (item.value == 'on') {
+                def toggle = settings[item.key.minus('_level')+'_toggle']
+                LOG("Device ${dev.displayName} found, dump: ${dev.currentSwitch} toggle: ${toggle}")
+                if (toggle == 'on' && dev.currentSwitch == 'on') {
+                    LOG("Toggling '${dev.displayName}' off")
+                    dev.off()
+                } else if (item.value == 'on') {
                     LOG("Turning '${dev.displayName}' on")
                     dev.on()
                 } else if (item.value == 'off') {
@@ -297,18 +325,23 @@ def onButtonEvent(evt) {
                     dev.off()
                 } else {
                     def value = item.value.toInteger()
-                    def hue = settings[item.key+'_hue']
-                    def sat = settings[item.key+'_sat']
+                    def hue = settings[item.key.minus('_level')+'_hue']
+                    def sat = settings[item.key.minus('_level')+'_sat']
+                    def temp = settings[item.key.minus('_level')+'_temp']
 
                     if (value > 99) value = 99
              
                     if (hue != null) {
                         if (sat == null) {
-                          sat='100'
+                          sat='99'
                         }
                         LOG("Setting '${dev.displayName}' hue/sat/level to ${hue}/${sat}/${value}")
-                        def newValue = [hue: hue, saturation: sat, level: value as Integer ?: 100]
+                        def newValue = [hue: hue.toInteger(), saturation: sat.toInteger(), level: value as Integer ?: 100]
                         dev.setColor(newValue)
+                    } else if (temp != null) { 
+                        LOG("Setting '${dev.displayName}' temp/level to ${temp}/${value}")
+                        dev.setColorTemperature(temp.toInteger())
+                        dev.setLevel(value)
                     } else {
                         LOG("Setting '${dev.displayName}' level to ${value}")
                         dev.setLevel(value)
