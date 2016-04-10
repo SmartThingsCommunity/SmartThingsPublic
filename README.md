@@ -1,9 +1,15 @@
 # SmartThings Repo
 
 My samsung smartthings modules. Modified alarmserver and control panel for DSC
-alarm integration.
+alarm integration. Also, my modified version of "Dim and Dimmer" for routines and
+with color bulb support:
 
-## Instructions
+See this thread for more info about DSC Alarm:
+https://community.smartthings.com/t/dsc-evl-3-4-alarmserver-smartthings/36604/126
+
+And this thread for info about Dim and Dimmer Routine:
+
+## Alarmserver Instructions
 
 ### Warnings about upgrading from an older version
 Device setup is done automatically in the new version. If you are upgrading from a previous version, please delete all the zone or panel devices you created first. These
@@ -82,3 +88,5 @@ Thanks goes out to the following people, without their previous work none of thi
 * Leaberry <leaberry@gmail.com>
 * Kent Holloway <drizit@gmail.com>
 * Matt Martz <matt.martz@gmail.com>
+
+And for Dim and Dimmer, Geko / Statusbits
