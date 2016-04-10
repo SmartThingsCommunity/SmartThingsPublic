@@ -200,7 +200,8 @@ private def pageEditButton(params) {
                         metadata:[values: ["on", "off"]], required:false
                 }
                 settings.hues?.each() {
-                    def description = "Tap to edit. level:" + settings[button+'_'+mode+'_'+it.id]+' hue:'+settings[button+'_'+mode+'_'+it.id+'_hue']+' sat:'+settings[button+'_'+mode+'_'+it.id+'_sat']
+                    def buttonValue = "btn_${button}_${mode}_${it.id}"
+                    def description = "Tap to edit. level:" + settings[buttonValue+'_level']+' hue:'+settings[buttonValue+'_hue']+' sat:'+settings[buttonValue+'_sat']
                     href "pageEditHue", params:[button:button,mode:mode,name:it.displayName,id:it.id], title:it.displayName, description:description
                 }
             }
