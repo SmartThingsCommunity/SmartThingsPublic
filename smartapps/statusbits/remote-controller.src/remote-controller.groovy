@@ -43,7 +43,7 @@ preferences {
     page(name:"pageSetup")
     page(name:"pageAddButton")
     page(name:"pageEditButton")
-    page(name:"pageEditBulb")
+    page(name:"pageEditLight")
 }
 
 // Show "Setup Menu" page
@@ -85,7 +85,7 @@ private def pageSetup() {
     ]
 
     def inputHues = [
-        name        : "hues",
+        name        : "color",
         type        : "capability.colorControl",
         title       : "Select Color Bulbs",
         multiple:   true,
@@ -202,36 +202,39 @@ private def pageEditButton(params) {
                         options:alarmModes, required:false
 
                 settings.dimmers?.each() {
-                    input "btn_${button}_${mode}_${it.id}_level", "number", title:it.displayName, required:false
+                    def buttonValue = "btn_${button}_${mode}_${it.id}"
+                    def description = "Tap to edit. toggle:"+settings[buttonValue+'_toggle']+" level:"+settings[buttonValue+'_level']
+                    href 'pageEditLight', params:[button:button,mode:mode,name:it.displayName,id:it.id,type:'dimmer'], title:it.displayName, description:description
                 }
                 settings.switches?.each() {
-                    input "btn_${button}_${mode}_${it.id}_level", "enum", title:it.displayName,
-                        metadata:[values: ["on", "off"]], required:false
-                }
-                settings.hues?.each() {
                     def buttonValue = "btn_${button}_${mode}_${it.id}"
-                    def description = "Tap to edit. level:"+settings[buttonValue+'_level']+' hue:'+settings[buttonValue+'_hue']+' sat:'+settings[buttonValue+'_sat']
-                    href 'pageEditBulb', params:[button:button,mode:mode,name:it.displayName,id:it.id,type:'color'], title:it.displayName, description:description
+                    def description = "Tap to edit. toggle:"+settings[buttonValue+'_toggle']+" level:"+settings[buttonValue+'_level']
+                    href 'pageEditLight', params:[button:button,mode:mode,name:it.displayName,id:it.id,type:'switch'], title:it.displayName, description:description
+                }
+                settings.color?.each() {
+                    def buttonValue = "btn_${button}_${mode}_${it.id}"
+                    def description = "Tap to edit. toggle:"+settings[buttonValue+'_toggle']+" level:"+settings[buttonValue+'_level']+' hue:'+settings[buttonValue+'_hue']+' sat:'+settings[buttonValue+'_sat']
+                    href 'pageEditLight', params:[button:button,mode:mode,name:it.displayName,id:it.id,type:'color'], title:it.displayName, description:description
                 }
                 settings.temp?.each() {
                     def buttonValue = "btn_${button}_${mode}_${it.id}"
-                    def description = "Tap to edit. level:"+settings[buttonValue+'_level']+' temp:'+settings[buttonValue+'_temp']
-                    href 'pageEditBulb', params:[button:button,mode:mode,name:it.displayName,id:it.id,type:'temperature'], title:it.displayName, description:description
+                    def description = "Tap to edit. toggle:"+settings[buttonValue+'_toggle']+" level:"+settings[buttonValue+'_level']+' temp:'+settings[buttonValue+'_temp']
+                    href 'pageEditLight', params:[button:button,mode:mode,name:it.displayName,id:it.id,type:'temperature'], title:it.displayName, description:description
                 }
             }
         }
     }
 }
 
-private def pageEditBulb(params) {
-    LOG("pageEditBulb()")
+private def pageEditLight(params) {
+    LOG("pageEditLight()")
     def button = params.button.toInteger()
     LOG("bulb: ${button} ${params.mode} ${params.name} ${params.id} ${params.type}")
 
     def textHelp = "Configure bulb ${params.type}"
 
     def pageProperties = [
-        name:       "pageEditBulb",
+        name:       "pageEditLight",
         title:      "Configure ${params.name}",
         nextPage:   "pageSetup",
     ]
@@ -242,8 +245,14 @@ private def pageEditBulb(params) {
             paragraph textHelp
         }
 
-        section("Bulb settings") {
-            input "btn_${button}_${params.mode}_${params.id}_level", "number", title:"${params.name} level", required:false
+        section("Light settings") {
+
+            if (params.type == 'switch') {
+                input "btn_${button}_${params.mode}_${params.id}_level", "enum", title:"${params.name} on/off",
+                    metadata:[values: ["on", "off"]], required:false
+            } else {
+                input "btn_${button}_${params.mode}_${params.id}_level", "number", title:"${params.name} level", required:false
+            }
             if (params.type == 'color') {
                 input "btn_${button}_${params.mode}_${params.id}_hue", "number", title:"${params.name} hue", required:false
                 input "btn_${button}_${params.mode}_${params.id}_sat", "number", title:"${params.name} saturation", required:false
@@ -298,8 +307,10 @@ def onButtonEvent(evt) {
         allSwitches.addAll(settings.dimmers)
     if (settings.switches)
         allSwitches.addAll(settings.switches)
-    if (settings.hues)
-        allSwitches.addAll(settings.hues)
+    if (settings.color)
+        allSwitches.addAll(settings.color)
+    if (settings.temp)
+        allSwitches.addAll(settings.temp)
 
     items.each() { item ->
         LOG("item was ${item}")
@@ -333,7 +344,7 @@ def onButtonEvent(evt) {
              
                     if (hue != null) {
                         if (sat == null) {
-                          sat='99'
+                          sat=100
                         }
                         LOG("Setting '${dev.displayName}' hue/sat/level to ${hue}/${sat}/${value}")
                         def newValue = [hue: hue.toInteger(), saturation: sat.toInteger(), level: value as Integer ?: 100]
