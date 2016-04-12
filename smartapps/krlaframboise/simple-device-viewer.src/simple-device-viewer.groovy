@@ -5,7 +5,7 @@
  *    Kevin LaFramboise (krlaframboise)
  *
  *  URL to documentation:
- *    https://community.smartthings.com/t/release-simple-device-viewer/42481/15?u=krlaframboise
+ *    https://community.smartthings.com/t/release-simple-device-viewer/42481?u=krlaframboise
  *
  *  Changelog:
  *
