@@ -70,9 +70,9 @@ definition(
     author: "Kevin LaFramboise",
     description: "Provides information about the state of the specified devices.",
     category: "My Apps",
-    iconUrl: "https://raw.githubusercontent.com/krlaframboise/Resources/master/simple-device-viewer-icon.png",
-    iconX2Url: "https://raw.githubusercontent.com/krlaframboise/Resources/master/simple-device-viewer-icon-2x.png",
-    iconX3Url: "https://raw.githubusercontent.com/krlaframboise/Resources/master/simple-device-viewer-icon-3x.png")
+		iconUrl: "https://raw.githubusercontent.com/krlaframboise/SmartThingsPublic/master/smartapps/krlaframboise/simple-device-viewer.src/simple-device-viewer-icon.png",
+    iconX2Url: "https://raw.githubusercontent.com/krlaframboise/SmartThingsPublic/master/smartapps/krlaframboise/simple-device-viewer.src/simple-device-viewer-icon-2x.png",
+    iconX3Url: "https://raw.githubusercontent.com/krlaframboise/SmartThingsPublic/master/smartapps/krlaframboise/simple-device-viewer.src/simple-device-viewer-icon-3x.png")
 
  preferences {
 	page(name:"mainPage", uninstall:true, install:true)
@@ -778,7 +778,7 @@ private boolean tempIsLow(val) {
 
 private String getImagePath(imageName) {
 	if (iconsAreEnabled()) {
-		return "https://raw.githubusercontent.com/krlaframboise/Resources/master/$imageName"
+		return "https://raw.githubusercontent.com/krlaframboise/SmartThingsPublic/master/smartapps/krlaframboise/simple-device-viewer.src/$imageName"
 	}
 }
 
