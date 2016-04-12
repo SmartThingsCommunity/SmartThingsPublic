@@ -1,17 +1,17 @@
 /*
- *  DSC Carbon Monoxide Device
+ *  DSC Zone Flood Device
  *
  *  Author: Jordan <jordan@xeron.cc>
- *  Originally by: Matt Martz <matt.martz@gmail.com>
- *  Modified by: Kent Holloway <drizit@gmail.com>
+ *  Original Author: Matt Martz <matt.martz@gmail.com>
+ *  Modified to be a motion device: Kent Holloway <drizit@gmail.com>
  *  Date: 2016-02-27
  */
 
 // for the UI
 metadata {
-  definition (name: "DSC Zone CO", author: "jordan@xeron.cc", namespace: 'dsc') {
+  definition (name: "DSC Zone Flood", author: "jordan@xeron.cc", namespace: 'dsc') {
     // Change or define capabilities here as needed
-    capability "Carbon Monoxide Detector"
+    capability "Water Sensor"
     capability "Sensor"
     capability "Momentary"
 
@@ -25,10 +25,10 @@ metadata {
   }
 
   tiles(scale: 2) {
-    standardTile ("zone", "device.carbonMonoxide", width: 4, height: 4, title: "Zone") {
-      state "clear",  label: 'clear',  icon: "st.alarm.carbon-monoxide.clear", backgroundColor: "#ffffff"
-      state "detected",  label: 'SMOKE',  icon: "st.alarm.carbon-monoxide.carbon-monoxide", backgroundColor: "#e86d13"
-      state "tested", label: 'TESTED', icon: "st.alarm.carbon-monoxide.test",  backgroundColor: "#e86d13"
+    standardTile ("zone", "device.water", width: 4, height: 4, title: "Zone") {
+      state "wet", label:'wet', icon:"st.alarm.water.wet", backgroundColor:"#53a7c0"
+      state "dry", label:'dry', icon:"st.alarm.water.dry", backgroundColor:"#ffffff"
+      state "alarm", label:'ALARM', icon:"st.alarm.water.wet", backgroundColor:"#ff0000"
     }
     standardTile ("trouble", "device.trouble", width: 2, height: 2, title: "Trouble") {
       state "restore", label: 'No\u00A0Trouble', icon: "st.security.alarm.clear", backgroundColor: "#79b821"
@@ -68,15 +68,15 @@ def zone(String state) {
     // Send final event
     sendEvent (name: "trouble", value: "${state}")
   } else {
-    // Since this is a carbonMonoxide device we need to convert the values to match the device capabilities
+    // Since this is a water sensor device we need to convert open to active and closed to inactive
     // before sending the event
     def eventMap = [
-     'open':"tested",
-     'closed':"clear",
-     'alarm':"detected"
+     'open':"wet",
+     'closed':"dry",
+     'alarm':"alarm"
     ]
     def newState = eventMap."${state}"
     // Send final event
-    sendEvent (name: "carbonMonoxide", value: "${newState}")
+    sendEvent (name: "water", value: "${newState}")
   }
 }

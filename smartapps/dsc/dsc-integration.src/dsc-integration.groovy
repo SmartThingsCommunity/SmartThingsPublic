@@ -118,6 +118,7 @@ def installzones() {
     'motion':'DSC Zone Motion',
     'smoke':'DSC Zone Smoke',
     'co':'DSC Zone CO',
+    'flood':'DSC Zone Flood',
   ]
 
   log.debug "children are ${children}"

@@ -313,7 +313,6 @@ def onButtonEvent(evt) {
         allSwitches.addAll(settings.temp)
 
     items.each() { item ->
-        LOG("item was ${item}")
         if (item.key.endsWith('_routine')) {
             executeRoutine(item.value)
         } else if (item.key.endsWith('_mode')) {

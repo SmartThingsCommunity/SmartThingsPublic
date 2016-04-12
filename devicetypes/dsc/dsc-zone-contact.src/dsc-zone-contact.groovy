@@ -49,7 +49,7 @@ metadata {
 // handle commands
 def bypass() {
   def zone = device.deviceNetworkId.minus('dsczone')
-  parent.sendUrl("bypass?zone=${zone}")  
+  parent.sendUrl("bypass?zone=${zone}")
 }
 
 def push() {
