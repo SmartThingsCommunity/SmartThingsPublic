@@ -245,6 +245,7 @@ def retypeBasedOnMSR() {
 			break
 		case "011F-0001-0001":  // Schlage motion
 		case "014A-0001-0001":  // Ecolink motion
+		case "014A-0004-0001":  // Ecolink motion +
 		case "0060-0001-0002":  // Everspring SP814
 		case "0060-0001-0003":  // Everspring HSP02
 		case "011A-0601-0901":  // Enerwave ZWN-BPC
