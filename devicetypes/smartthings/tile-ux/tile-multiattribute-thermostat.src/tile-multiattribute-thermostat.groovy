@@ -164,7 +164,7 @@ metadata {
 
 		main("thermostatFull")
 		details([
-			"thermostatFull", "thermostatNoHumidity", "thermostatBasic"
+			"thermostatFull", "thermostatNoHumidity", "thermostatBasic",
 			"temperature","tempDown","tempUp",
 			"mode", "fanMode", "operatingState",
 			"heatingSetpoint", "heatDown", "heatUp",
