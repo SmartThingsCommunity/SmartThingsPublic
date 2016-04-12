@@ -357,16 +357,18 @@ def setLight(light, lightName, lightCapabilities, buttonNumber, lightId, toggle)
 		    		hueColor = rand.nextInt(max+1)
                     break;
                 }
-                //def colorValue = [hue: hueColor, saturation: saturation, level: level as Integer ?: 100, colorTemperature: (((level as Integer) / 100 * 6500) + 2500) as Integer ?: 9000]
                 def rgbValue = huesatToRGB(hueColor, saturation)
                 def hexValue = rgbToHex(r: rgbValue[0], g: rgbValue[1], b: rgbValue[2])
                 def colorValue
                 if (colorTemperature != null) {
-                	colorValue = [alpha: 1.0, red: rgbValue[0], green: rgbValue[1], blue: rgbValue[2], hex: hexValue, hue: hueColor as double, saturation: saturation, level: level as Integer ?: 100, colorTemperature: colorTemperature]
+                    // Changing the amount of data that is sent because of hue device handler change
+                	// colorValue = [alpha: 1.0, red: rgbValue[0], green: rgbValue[1], blue: rgbValue[2], hex: hexValue, hue: hueColor as double, saturation: saturation, level: level as Integer ?: 100, colorTemperature: colorTemperature]
+                    colorValue = [hue: hueColor as double, saturation: saturation, level: level as Integer ?: 100, colorTemperature: colorTemperature]
                 } else {
-                	colorValue = [alpha: 1.0, red: rgbValue[0], green: rgbValue[1], blue: rgbValue[2], hex: hexValue, hue: hueColor as double, saturation: saturation, level: level as Integer ?: 100]
+                    // Changing the amount of data that is sent because of hue device handler change
+                	// colorValue = [alpha: 1.0, red: rgbValue[0], green: rgbValue[1], blue: rgbValue[2], hex: hexValue, hue: hueColor as double, saturation: saturation, level: level as Integer ?: 100]
+                    colorValue = [hue: hueColor as double, saturation: saturation, level: level as Integer ?: 100]
                 }
-                //setColor [level:1.0, red:255, hex:#FF4213, saturation:92.54902, blue:19, green:66, hue:3.319209, alpha:1.0]
                 light.setColor(colorValue)
         		break
 		}
