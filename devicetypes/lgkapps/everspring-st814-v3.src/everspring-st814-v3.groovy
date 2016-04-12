@@ -273,7 +273,7 @@ def zwaveEvent(physicalgraph.zwave.commands.sensormultilevelv2.SensorMultilevelR
 			map.name = "temperature"
          
             def now = new Date().format('MM/dd/yyyy h:mm a',location.timeZone)
-            sendEvent(name: "lastUpdate", value: now, descriptionText: "Last Update: $npw")
+            sendEvent(name: "lastUpdate", value: now, descriptionText: "Last Update: $now")
 
 			break;
 		case 5:

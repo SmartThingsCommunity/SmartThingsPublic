@@ -80,7 +80,7 @@ metadata {
 			state "never", action:"indicator.indicatorWhenOff", icon:"st.indicators.never-lit"
 		}
 		standardTile("refresh", "device.switch", height: 2, width: 2, inactiveLabel: false, decoration: "flat") {
-			state "default", label:"", action:"refresh.refresh", icon:"st.secondary.refresh"
+			state "default", label:"", action:"refresh", icon:"st.secondary.refresh"
 		}
 
 		main(["switch"])
@@ -228,7 +228,9 @@ def poll() {
 	zwave.switchMultilevelV1.switchMultilevelGet().format()
 }
 
-def refresh() {
+def refresh()
+{ log.debug "in refresh"
+   // invertSwitch()
 	zwave.switchMultilevelV1.switchMultilevelGet().format()
 }
 
@@ -248,10 +250,12 @@ def indicatorNever() {
 }
 
 def invertSwitch(invert=true) {
+log.debug "in invert"
 	if (invert) {
 		zwave.configurationV1.configurationSet(configurationValue: [1], parameterNumber: 4, size: 1).format()
 	}
 	else {
+    log.debug "turn off invert"
 		zwave.configurationV1.configurationSet(configurationValue: [0], parameterNumber: 4, size: 1).format()
 	}
 }
