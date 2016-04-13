@@ -30,6 +30,7 @@
  *  Neato Version: 1.0.3 - Added Navigation No Progress Error message
  *	Neato Version: 1.0.4 - Added Neato icons
  *	Neato Version: 1.0.4b - Display error message when serial/secret on Pi is incorrect.
+ *	Neato Version: 1.0.4c - Stop continuous error message on bad link.
  */
 import groovy.json.JsonSlurper
 
@@ -129,9 +130,7 @@ def parse(String description) {
     unschedule('setOffline')
 	map = stringToMap(description)
 	headerString = new String(map.headers.decodeBase64())    
-	if (headerString.contains("200 OK")) {
-    	
-    	sendEvent(name: 'network', value: "Connected" as String)
+	if (headerString.contains("200 OK")) {	
 		bodyString = new String(map.body.decodeBase64())
 		slurper = new JsonSlurper()
 		result = slurper.parseText(bodyString)
@@ -148,6 +147,7 @@ def parse(String description) {
             }
         }
         if (result.containsKey("state")) {
+        	sendEvent(name: 'network', value: "Connected" as String)
         	//state 1 - Ready to clean
         	//state 2 - Cleaning
         	//state 3 - Paused
