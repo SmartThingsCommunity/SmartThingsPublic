@@ -62,6 +62,10 @@ metadata {
 		reply "2001FF,delay 100,2502": "command: 2503, payload: FF"
 		reply "200100,delay 100,2502": "command: 2503, payload: 00"
 	}
+    
+    preferences {
+        input("enableDebugging", "boolean", title:"Enable Debugging", value:false, required:false, displayDuringSetup:false)
+    }
 
 	// tile definitions
 	tiles(scale: 2) {
@@ -144,14 +148,14 @@ metadata {
 }
 
 def parse(String description) {
-	def result = null
+	def result = []
 	if (description.startsWith("Err")) {
 		result = createEvent(descriptionText:description, isStateChange:true)
 	} else if (description != "updated") {
 		def cmd = zwave.parse(description, [0x60: 3, 0x32: 3, 0x25: 1, 0x20: 1])
-        log.debug "Command: ${cmd}"
+        //log.debug "Command: ${cmd}"
 		if (cmd) {
-			result = zwaveEvent(cmd, null)
+			result += zwaveEvent(cmd, null)
 		}
 	}
     
@@ -159,12 +163,13 @@ def parse(String description) {
     if (device.currentState('power') && device.currentState('energy')) statusTextmsg = "${device.currentState('power').value} W ${device.currentState('energy').value} kWh"
     sendEvent("name":"statusText", "value":statusTextmsg)
     
-    log.debug "parsed '${description}' to ${result.inspect()}"
+    //log.debug "parsed '${description}' to ${result.inspect()}"
 
 	result
 }
 
 def endpointEvent(endpoint, map) {
+    logging("endpointEvent($endpoint, $map)")
 	if (endpoint) {
 		map.name = map.name + endpoint.toString()
 	}
@@ -172,6 +177,7 @@ def endpointEvent(endpoint, map) {
 }
 
 def zwaveEvent(physicalgraph.zwave.commands.multichannelv3.MultiChannelCmdEncap cmd, ep) {
+    logging("MultiChannelCmdEncap")
 	def encapsulatedCommand = cmd.encapsulatedCommand([0x32: 3, 0x25: 1, 0x20: 1])
 	if (encapsulatedCommand) {
 		if (encapsulatedCommand.commandClassId == 0x32) {
@@ -194,11 +200,18 @@ def zwaveEvent(physicalgraph.zwave.commands.multichannelv3.MultiChannelCmdEncap 
 }
 
 def zwaveEvent(physicalgraph.zwave.commands.basicv1.BasicReport cmd, endpoint) {
-    // BasicReport not used/needed in this device type
-    log.debug "${device.displayName}: Unhandled ${cmd}" + (ep ? " from endpoint $ep" : "")
+    logging("BasicReport")
+    def cmds = []
+    (1..4).each { n ->
+            cmds << encap(zwave.switchBinaryV1.switchBinaryGet(), n)
+            cmds << "delay 1000"
+    }
+
+    return response(cmds)
 }
 
 def zwaveEvent(physicalgraph.zwave.commands.switchbinaryv1.SwitchBinaryReport cmd, endpoint) {
+    logging("SwitchBinaryReport")
 	def map = [name: "switch", value: (cmd.value ? "on" : "off")]
 	def events = [endpointEvent(endpoint, map)]
 	def cmds = []
@@ -227,6 +240,7 @@ def zwaveEvent(physicalgraph.zwave.commands.switchbinaryv1.SwitchBinaryReport cm
 }
 
 def zwaveEvent(physicalgraph.zwave.commands.meterv3.MeterReport cmd, ep) {
+    logging("MeterReport")
 	def event = [:]
 	def cmds = []
 	if (cmd.scale < 2) {
@@ -248,14 +262,15 @@ def zwaveEvent(physicalgraph.zwave.commands.meterv3.MeterReport cmd, ep) {
 
 def zwaveEvent(physicalgraph.zwave.commands.manufacturerspecificv2.ManufacturerSpecificReport cmd, ep) {
 	updateDataValue("MSR", String.format("%04X-%04X-%04X", cmd.manufacturerId, cmd.productTypeId, cmd.productId))
-	null
+	return null
 }
 
 def zwaveEvent(physicalgraph.zwave.Command cmd, ep) {
-	log.debug "${device.displayName}: Unhandled ${cmd}" + (ep ? " from endpoint $ep" : "")
+	logging("${device.displayName}: Unhandled ${cmd}" + (ep ? " from endpoint $ep" : ""))
 }
 
 def onOffCmd(value, endpoint = null) {
+    logging("onOffCmd($value, $endpoint)")
 	[
 		encap(zwave.basicV1.basicSet(value: value), endpoint),
 		"delay 500",
@@ -279,6 +294,7 @@ def off3() { onOffCmd(0, 3) }
 def off4() { onOffCmd(0, 4) }
 
 def refresh() {
+    logging("refresh")
 	def cmds = [
 		zwave.basicV1.basicGet().format(),
 		zwave.meterV3.meterGet(scale: 0).format(),
@@ -286,7 +302,7 @@ def refresh() {
 		encap(zwave.basicV1.basicGet(), 1)  // further gets are sent from the basic report handler
 	]
             cmds << encap(zwave.switchBinaryV1.switchBinaryGet(), null)
-    (1..6).each { endpoint ->
+    (1..4).each { endpoint ->
             cmds << encap(zwave.switchBinaryV1.switchBinaryGet(), endpoint)
     }
     (1..6).each { endpoint ->
@@ -300,6 +316,7 @@ def refresh() {
 }
 
 def resetCmd(endpoint = null) {
+    logging("resetCmd($endpoint)")
 	delayBetween([
 		encap(zwave.meterV2.meterReset(), endpoint),
 		encap(zwave.meterV2.meterGet(scale: 0), endpoint)
@@ -307,6 +324,7 @@ def resetCmd(endpoint = null) {
 }
 
 def reset() {
+    logging("reset()")
 	delayBetween([resetCmd(null), reset1(), reset2(), reset3(), reset4(), reset5(), reset6()])
 }
 
@@ -318,6 +336,8 @@ def reset5() { resetCmd(5) }
 def reset6() { resetCmd(6) }
 
 def configure() {
+    state.enableDebugging = settings.enableDebugging
+    logging("configure()")
 	def cmds = [
         // Configuration of what to include in reports and how often to send them (if the below "change" conditions are met
         // Parameter 101 & 111: Send energy reports every 60 seconds (if conditions are met)
@@ -343,6 +363,16 @@ def configure() {
 	]
 
 	delayBetween(cmds, 1000) + "delay 5000" + refresh()
+}
+
+def installed() {
+    logging("installed()")
+    configure()
+}
+
+def updated() {
+    logging("updated()")
+    configure()
 }
 
 private encap(cmd, endpoint) {
@@ -390,4 +420,8 @@ def convertTemp(value) {
    lowbit = lowbit * 0.00390625
    
    return highbit+lowbit
+}
+
+private def logging(message) {
+    if (state.enableDebugging == "true") log.debug message
 }
