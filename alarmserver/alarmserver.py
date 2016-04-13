@@ -110,12 +110,18 @@ class AlarmServerConfig():
             self.PARTITIONNAMES[i]=self.read_config_var('partition'+str(i), 'name', False, 'str', True)
             stay=self.read_config_var('partition'+str(i), 'stay', False, 'str', True)
             away=self.read_config_var('partition'+str(i), 'away', False, 'str', True)
-            if stay!=False or away!=False:
+            simplestay=self.read_config_var('partition'+str(i), 'stay', False, 'str', True)
+            simpleaway=self.read_config_var('partition'+str(i), 'away', False, 'str', True)
+            if stay!=False or away!=Falset or simplestay!=False or simpleaway!=False:
                 self.PARTITIONS[i] = {}
                 if away!=False:
                     self.PARTITIONS[i]['away']=away
                 if stay!=False:
                     self.PARTITIONS[i]['stay']=stay
+                if simpleaway!=False:
+                    self.PARTITIONS[i]['simpleaway']=simpleaway
+                if simplestay!=False:
+                    self.PARTITIONS[i]['simplestay']=simplestay
 
         self.ZONES={}
         self.ZONENAMES={}
@@ -493,6 +499,7 @@ class EnvisalinkClient(asynchat.async_chat):
 
                update = {
                  'type': 'partition',
+                 'name': self._config.PARTITIONNAMES[int(parameters[0])],
                  'value': str(int(parameters[0]))
                }
 

@@ -179,6 +179,8 @@ def installpartitions() {
   def partMap = [
     'stay':'DSC Stay Panel',
     'away':'DSC Away Panel',
+    'simplestay':'DSC Simple Stay Panel',
+    'simpleaway':'DSC Simple Away Panel',
   ]
 
   log.debug "children are ${children}"
