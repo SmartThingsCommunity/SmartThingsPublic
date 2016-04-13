@@ -2,10 +2,10 @@
  *  Alexa Helper-Child
  *
  *  Copyright © 2016 Michael Struck
- *  Version 2.9.8 4/13/16
+ *  Version 2.9.8a 4/13/16
  * 
  *  Version 2.9.7b - Added ability to resume music/track after voice report
- *  Version 2.9.8 - Allow voice report to be pushed to app instead of spoken
+ *  Version 2.9.8a - Allow voice report to be pushed to app instead of spoken
  *  See https://github.com/MichaelStruck/SmartThings/blob/master/Other-SmartApps/AlexaHelper/version%20history.md for additional version history
  *
  *  Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except
@@ -303,7 +303,7 @@ def pageVoice(){
             input "voiceDevice", "capability.speechSynthesis", title: "Voice Report Speech Synthesis Device", multiple: false, required: false
 			input "voiceDelay", "number", title: "Delay (Minutes) After Trigger To Report", defaultValue: 0, required: false
             if (voiceSpeaker) input "voiceResume", "bool", title: "Resume Music/Track After Voice Report", defaultValue: false
-            input "voiceNotification", "bool", title: "Push/SMS Of Report", defaultValue: false, submitOnChange:true
+            input "voiceNotification", "bool", title: "Push/SMS Notification Of Report", defaultValue: false, submitOnChange:true
             if (voiceNotification){
             	input ("voiceContacts", "contact", title: "Send Notifications To...", required: false) {
                 	input "voiceSMSnumber", "phone", title: "Send SMS Message To (Phone Number)...", required: false
@@ -725,12 +725,14 @@ def scenarioDesc(){
         desc = vDimmerBB && tstatBB ? "'${vDimmerBB}' dimmer controls ${noun}${tstatBB}." : ""
     }
     if (scenarioType=="Voice"){
-    	def noun = ""
-        if (voiceSpeaker && !voiceDevice) noun = "'${voiceSpeaker}'"
-        else if (!voiceSpeaker && voiceDevice) noun = "'${voiceDevice}'"
-        else if (voiceSpeaker && voiceDevice) noun = "'${voiceSpeaker}' and '${voiceDevice}'}"
+        def pushTxt = voiceNotification && (voiceContacts || voiceSMSnumber || voicePush)
+        def noun = pushTxt ? "Push/SMS Notification" : ""
+        noun += pushTxt && (voiceSpeaker || voiceDevice) ? ", " : ""
+        noun += voiceSpeaker && !voiceDevice ? "'${voiceSpeaker}'" : ""
+        noun += !voiceSpeaker && voiceDevice ? "'${voiceDevice}'" : ""
+        noun += voiceSpeaker && voiceDevice ? "'${voiceSpeaker}' and '${voiceDevice}'}" : ""
         def delayTime = voiceDelay && voiceDelay>1 ? "${voiceDelay} minutes" : voiceDelay && voiceDelay==1 ? "${voiceDelay} minute" : "immediately"
-    	desc = voiceControl && noun ? "'${voiceControl}' controls voice reports on ${noun}. Report plays ${delayTime} after triggered." : ""
+    	desc = voiceControl && noun ? "'${voiceControl}' controls voice reports via ${noun}. Report generated ${delayTime} after triggered." : ""
     }
     desc = desc ? desc : "Status: UNCONFIGURED - Tap to configure scenario"
 }
@@ -1012,5 +1014,5 @@ private parseDate(time, type){
     new Date().parse("yyyy-MM-dd'T'HH:mm:ss.SSSZ", formattedDate).format("${type}", timeZone(formattedDate))
 }
 //Version
-private def textVersion() {return "Child App Version: 2.9.8 (04/13/2016)"}
+private def textVersion() {return "Child App Version: 2.9.8a (04/13/2016)"}
 private def versionInt() {return 298}
