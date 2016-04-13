@@ -2,9 +2,10 @@
  *  Alexa Helper-Child
  *
  *  Copyright © 2016 Michael Struck
- *  Version 2.9.7b 4/10/16
+ *  Version 2.9.8 4/13/16
  * 
  *  Version 2.9.7b - Added ability to resume music/track after voice report
+ *  Version 2.9.8 - Allow voice report to be pushed to app instead of spoken
  *  See https://github.com/MichaelStruck/SmartThings/blob/master/Other-SmartApps/AlexaHelper/version%20history.md for additional version history
  *
  *  Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except
@@ -300,8 +301,15 @@ def pageVoice(){
             input "voiceSpeaker", "capability.musicPlayer", title: "Voice Report Speaker", multiple: false, required: false, submitOnChange:true
             if (voiceSpeaker) input "voiceVolume", "number", title: "Speaker Volume", required: false
             input "voiceDevice", "capability.speechSynthesis", title: "Voice Report Speech Synthesis Device", multiple: false, required: false
-			input "voiceDelay", "number", title: "Delay (Minutes) To Play After Trigger", defaultValue: 0, required: false
-            input "voiceResume", "bool", title: "Resume Music/Track After Voice Report", defaultValue: false
+			input "voiceDelay", "number", title: "Delay (Minutes) After Trigger To Report", defaultValue: 0, required: false
+            if (voiceSpeaker) input "voiceResume", "bool", title: "Resume Music/Track After Voice Report", defaultValue: false
+            input "voiceNotification", "bool", title: "Push/SMS Of Report", defaultValue: false, submitOnChange:true
+            if (voiceNotification){
+            	input ("voiceContacts", "contact", title: "Send Notifications To...", required: false) {
+                	input "voiceSMSnumber", "phone", title: "Send SMS Message To (Phone Number)...", required: false
+                	input "voicePush", "bool", title: "Send Push Message", defaultValue: false
+            	}
+			}
         }
         section ("Report Types"){
             input "voicePre", "text", title: "Pre Message Before Device Report", description: "Enter a message to play before the device report", defaultValue: "This is your SmartThings voice report for %time%, %day%, %date%.", required: false
@@ -651,6 +659,7 @@ def voiceReport(){
 			}
         }
 		if (voiceDevice) voiceDevice?.speak("${fullMsg}")
+        if (voiceNotification && (voiceContacts || voiceSMSnumber || voicePush))  sendMSG(voiceSMSnumber, fullMsg, voicePush, voiceContacts) 		
     }
 }
 //Common Methods-------------
@@ -1003,5 +1012,5 @@ private parseDate(time, type){
     new Date().parse("yyyy-MM-dd'T'HH:mm:ss.SSSZ", formattedDate).format("${type}", timeZone(formattedDate))
 }
 //Version
-private def textVersion() {return "Child App Version: 2.9.7b (04/10/2016)"}
-private def versionInt() {return 297}
+private def textVersion() {return "Child App Version: 2.9.8 (04/13/2016)"}
+private def versionInt() {return 298}
