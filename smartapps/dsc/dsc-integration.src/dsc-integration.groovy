@@ -333,17 +333,15 @@ private updateZoneDevices(zonenum,zonestatus) {
 private updatePartitions(partitionnum, partitionstatus, partitionparams) {
   def children = getChildDevices()
   log.debug "partition: ${partitionnum} is ${partitionstatus}"
-  def awaypanel = children.find { item -> item.device.deviceNetworkId == "dscaway${partitionnum}"}
-  if (awaypanel) {
-    log.debug "Was True... Away Switch device: $awaypanel.displayName at $awaypanel.deviceNetworkId is ${partitionstatus}"
-    //Was True... Zone Device: Front Door Sensor at zone1 is closed
-    awaypanel.partition("${partitionstatus}", "${partitionnum}", partitionparams)
-  }
-  def staypanel = children.find { item -> item.device.deviceNetworkId == "dscstay${partitionnum}"}
-  if (staypanel) {
-    log.debug "Was True... Stay Switch device: $staypanel.displayName at $staypanel.deviceNetworkId is ${partitionstatus}"
-    //Was True... Zone Device: Front Door Sensor at zone1 is closed
-    staypanel.partition("${partitionstatus}", "${partitionnum}", partitionparams)
+
+  panelList = ['stay', 'away', 'simplestay', 'simpleaway']
+  
+  for (panel in panelList) {
+    def panel = children.find { item -> item.device.deviceNetworkId == "dsc${panel}${partitionnum}"}
+    if (panel) {
+      log.debug "partition: ${panel.capitalize()} Panel device: $panel.displayName at $panel.deviceNetworkId is ${partitionstatus}"
+      panel.partition("${partitionstatus}", "${partitionnum}", partitionparams)
+    }
   }
 }
 
