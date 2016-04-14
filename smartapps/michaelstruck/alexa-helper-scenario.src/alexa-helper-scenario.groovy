@@ -2,10 +2,9 @@
  *  Alexa Helper-Child
  *
  *  Copyright © 2016 Michael Struck
- *  Version 2.9.8c 4/14/16
+ *  Version 2.9.8d 4/14/16
  * 
- *  Version 2.9.7b - Added ability to resume music/track after voice report
- *  Version 2.9.8c - Allow voice report to be pushed to app instead of spoken
+ *  Version 2.9.8d - Allow voice report to be pushed to app instead of spoken, moved icon location
  *  See https://github.com/MichaelStruck/SmartThings/blob/master/Other-SmartApps/AlexaHelper/version%20history.md for additional version history
  *
  *  Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except
@@ -24,9 +23,9 @@ definition(
 	description: "Child app (do not publish) that allows various SmartThings devices to be tied to switches controlled by Amazon Echo('Alexa').",
 	category: "Convenience",
 	parent: "MichaelStruck:Alexa Helper",
-	iconUrl: "https://raw.githubusercontent.com/MichaelStruck/SmartThings/master/Other-SmartApps/AlexaHelper/Alexa.png",
-	iconX2Url: "https://raw.githubusercontent.com/MichaelStruck/SmartThings/master/Other-SmartApps/AlexaHelper/Alexa@2x.png",
-	iconX3Url: "https://raw.githubusercontent.com/MichaelStruck/SmartThings/master/Other-SmartApps/AlexaHelper/Alexa@2x.png")    
+	iconUrl: "https://raw.githubusercontent.com/MichaelStruck/SmartThingsPublic/master/smartapps/michaelstruck/alexa-helper-scenario.src/Alexa.png",
+	iconX2Url: "https://raw.githubusercontent.com/MichaelStruck/SmartThingsPublic/master/smartapps/michaelstruck/alexa-helper-scenario.src/Alexa%402x.png",
+	iconX3Url: "https://raw.githubusercontent.com/MichaelStruck/SmartThingsPublic/master/smartapps/michaelstruck/alexa-helper-scenario.src/Alexa%402x.png")    
 preferences {
 	page name: "pageStart"
 	page name: "pageControl"
@@ -53,10 +52,10 @@ def pageStart() {
 		if (scenarioType && parent.getRestrictions()){
 			section("Restrictions") {            
 				input "runDay", "enum", options: ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"], title: "Only Certain Days Of The Week...",  multiple: true, required: false,
-                	image: "https://raw.githubusercontent.com/MichaelStruck/SmartThings/master/img/calendar.png"
+                	image: "https://raw.githubusercontent.com/MichaelStruck/SmartThingsPublic/master/img/calendar.png"
         		href "timeIntervalInput", title: "Only During Certain Times...", description: getTimeLabel(timeStart, timeEnd), state: greyOutState(timeStart, timeEnd,""),
-                	image: "https://raw.githubusercontent.com/MichaelStruck/SmartThings/master/img/clock.png"
-            	input "runMode", "mode", title: "Only In The Following Modes...", multiple: true, required: false, image: "https://raw.githubusercontent.com/MichaelStruck/SmartThings/master/img/modes.png"
+                	image: "https://raw.githubusercontent.com/MichaelStruck/SmartThingsPublic/master/img/clock.png"
+            	input "runMode", "mode", title: "Only In The Following Modes...", multiple: true, required: false, image: "https://raw.githubusercontent.com/MichaelStruck/SmartThingsPublic/master/img/modes.png"
 			}
         }
         section("Tap the button below to remove this scenario"){}
@@ -994,8 +993,8 @@ def toggleState(swDevices){
 }
 //Get Sonos Alarm Sound uri
 def getAlarmSound(){
-    def soundLength = alarmSonosTimer && alarmSonosTimer < 60 ? alarmSonosTimer : 60
-    def soundUri = [uri: "https://raw.githubusercontent.com/MichaelStruck/SmartThings/master/Other-SmartApps/AlexaHelper/AlarmSirens/AlarmSiren${alarmSonosSound}.mp3", duration: "${soundLength}"]
+    def soundLength = alarmSonosTimer && alarmSonosTimer < 60 ? alarmSonosTimer : 60   
+    def soundUri = [uri: "https://raw.githubusercontent.com/MichaelStruck/SmartThingsPublic/master/smartapps/michaelstruck/alexa-helper-scenario.src/AlarmSirens/AlarmSiren${alarmSonosSound}.mp3", duration: "${soundLength}"]
     if (alarmSonosSound == "5") soundUri =[uri: "${alarmSonosCustom}", duration: "${soundLength}"]
     state.alarmSound = soundUri
 }
@@ -1016,5 +1015,5 @@ private parseDate(time, type){
     new Date().parse("yyyy-MM-dd'T'HH:mm:ss.SSSZ", formattedDate).format("${type}", timeZone(formattedDate))
 }
 //Version
-private def textVersion() {return "Child App Version: 2.9.8c (04/14/2016)"}
+private def textVersion() {return "Child App Version: 2.9.8d (04/14/2016)"}
 private def versionInt() {return 298}
