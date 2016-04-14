@@ -313,7 +313,7 @@ private update() {
       if (update.'name') {
         sendMessage("${update.'type'.capitalize()} ${update.'name'} ${messageBody}")
       } else {
-        sendMessage("${messageBody})
+        sendMessage(messageBody)
       }
     }
   }
