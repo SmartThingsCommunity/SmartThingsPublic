@@ -32,12 +32,12 @@ metadata {
      }
     }
     standardTile ("trouble", "device.trouble", width: 3, height: 2, title: "Trouble") {
-      state "restore", label: 'No\u00A0Trouble', icon: "st.security.alarm.clear", backgroundColor: "#79b821"
+      state "restore", label: 'No\u00A0Trouble', icon: "st.security.alarm.clear"
       state "tamper", label: 'Tamper', icon: "st.security.alarm.alarm", backgroundColor: "#ffa81e"
       state "fault", label: 'Fault', icon: "st.security.alarm.alarm", backgroundColor: "#ff1e1e"
     }
     standardTile("bypass", "capability.momentary", width: 3, height: 2, title: "Bypass"){
-      state "bypass", label: 'Bypass', action: "bypass", icon: "st.locks.lock.unlocked", backgroundColor: "#FFFF00"
+      state "bypass", label: 'Bypass', action: "bypass", icon: "st.locks.lock.unlocked"
     }
 
     // This tile will be the tile that is displayed on the Hub page.
