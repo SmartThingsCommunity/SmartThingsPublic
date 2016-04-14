@@ -537,6 +537,7 @@ class EnvisalinkClient(asynchat.async_chat):
 
                update = {
                  'type': 'zone',
+                 'name': self._config.ZONENAMES[int(parameters)],
                  'value': str(int(parameters)),
                  'status': codeMap[str(code)]
                }
