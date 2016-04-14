@@ -2,10 +2,10 @@
  *  Alexa Helper-Child
  *
  *  Copyright © 2016 Michael Struck
- *  Version 2.9.8b 4/13/16
+ *  Version 2.9.8c 4/14/16
  * 
  *  Version 2.9.7b - Added ability to resume music/track after voice report
- *  Version 2.9.8b - Allow voice report to be pushed to app instead of spoken
+ *  Version 2.9.8c - Allow voice report to be pushed to app instead of spoken
  *  See https://github.com/MichaelStruck/SmartThings/blob/master/Other-SmartApps/AlexaHelper/version%20history.md for additional version history
  *
  *  Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except
@@ -901,7 +901,7 @@ def thermostatSummary(){
 def reportStatus(deviceList, type){
 	def result = ""
     def appd = type=="temperature" || type=="thermostatSetpoint" || type == "heatingSetpoint" || type=="coolingSetpoint" ? "degrees" : ""
-    if (type != "thermostatSetpoint" && type == "heatingSetpoint" && type=="coolingSetpoint" ) deviceList.each {deviceName->result += "${deviceName} is ${deviceName.latestValue(type)} ${appd}. " }
+    if (type != "thermostatSetpoint" && type != "heatingSetpoint" && type !="coolingSetpoint") deviceList.each {deviceName->result += "${deviceName} is ${deviceName.latestValue(type)} ${appd}. " }
     else deviceList.each { deviceName->
     	try { result += "${deviceName} is set to ${deviceName.latestValue(type) as int} ${appd}. " }
     	catch (e) { result = "${deviceName} is not able to provide its setpoint. Please choose another setpoint type to report on. " }
@@ -1016,5 +1016,5 @@ private parseDate(time, type){
     new Date().parse("yyyy-MM-dd'T'HH:mm:ss.SSSZ", formattedDate).format("${type}", timeZone(formattedDate))
 }
 //Version
-private def textVersion() {return "Child App Version: 2.9.8b (04/13/2016)"}
+private def textVersion() {return "Child App Version: 2.9.8c (04/14/2016)"}
 private def versionInt() {return 298}
