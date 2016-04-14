@@ -373,7 +373,7 @@ private updatePartitions(partitionnum, partitionstatus, partitionparams) {
   def children = getChildDevices()
   log.debug "partition: ${partitionnum} is ${partitionstatus}"
 
-  panelList = ['stay', 'away', 'simplestay', 'simpleaway']
+  def panelList = ['stay', 'away', 'simplestay', 'simpleaway']
   
   for (paneltype in panelList) {
     def panel = children.find { item -> item.device.deviceNetworkId == "dsc${paneltype}${partitionnum}"}
