@@ -26,10 +26,10 @@ metadata {
   tiles(scale: 2) {
     multiAttributeTile(name:"zone", type: "generic", width: 6, height: 4){
       tileAttribute ("device.contact", key: "PRIMARY_CONTROL") {
-        attributeState "open",   label: '${name}', icon: "st.contact.contact.open",   backgroundColor: "#ffa81e"
+        attributeState "open", label: '${name}', icon: "st.contact.contact.open", backgroundColor: "#ffa81e"
         attributeState "closed", label: '${name}', icon: "st.contact.contact.closed", backgroundColor: "#79b821"
-        attributeState "alarm",  label: '${name}', icon: "st.contact.contact.open",   backgroundColor: "#ff0000"
-     }
+        attributeState "alarm", label: '${name}', icon: "st.contact.contact.open", backgroundColor: "#ff0000"
+      }
     }
     standardTile ("trouble", "device.trouble", width: 3, height: 2, title: "Trouble") {
       state "restore", label: 'No\u00A0Trouble', icon: "st.security.alarm.clear"

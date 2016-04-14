@@ -25,18 +25,20 @@ metadata {
   }
 
   tiles(scale: 2) {
-    standardTile ("zone", "device.smoke", width: 4, height: 4, title: "Zone") {
-      state "clear",  label: 'clear',  icon: "st.alarm.smoke.clear", backgroundColor: "#ffffff"
-      state "detected",  label: 'SMOKE',  icon: "st.alarm.smoke.smoke", backgroundColor: "#e86d13"
-      state "tested", label: 'TESTED', icon: "st.alarm.smoke.test",  backgroundColor: "#e86d13"
+    multiAttributeTile(name:"zone", type: "generic", width: 6, height: 4){
+      tileAttribute ("device.smoke", key: "PRIMARY_CONTROL") {
+        attributeState "clear",  label: 'clear',  icon: "st.alarm.smoke.clear", backgroundColor: "#ffffff"
+        attributeState "detected",  label: 'SMOKE',  icon: "st.alarm.smoke.smoke", backgroundColor: "#e86d13"
+        attributeState "tested", label: 'TESTED', icon: "st.alarm.smoke.test",  backgroundColor: "#e86d13"
+      }
     }
-    standardTile ("trouble", "device.trouble", width: 2, height: 2, title: "Trouble") {
-      state "restore", label: 'No\u00A0Trouble', icon: "st.security.alarm.clear", backgroundColor: "#79b821"
+    standardTile ("trouble", "device.trouble", width: 3, height: 2, title: "Trouble") {
+      state "restore", label: 'No\u00A0Trouble', icon: "st.security.alarm.clear"
       state "tamper", label: 'Tamper', icon: "st.security.alarm.alarm", backgroundColor: "#ffa81e"
       state "fault", label: 'Fault', icon: "st.security.alarm.alarm", backgroundColor: "#ff1e1e"
     }
-    standardTile("bypass", "capability.momentary", width: 2, height: 2, title: "Bypass"){
-      state "bypass", label: 'Bypass', action: "bypass", icon: "st.locks.lock.unlocked", backgroundColor: "#FFFF00"
+    standardTile("bypass", "capability.momentary", width: 3, height: 2, title: "Bypass", decoration: "flat"){
+      state "bypass", label: 'Bypass', action: "bypass", icon: "st.locks.lock.unlocked"
     }
 
     // This tile will be the tile that is displayed on the Hub page.
