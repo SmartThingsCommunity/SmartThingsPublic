@@ -2,7 +2,7 @@
  *  Alexa Helper-Parent
  *
  *  Copyright © 2016 Michael Struck
- *  Version 4.5.1a 4/14/16
+ *  Version 4.5.1b 4/14/16
  * 
  *  Version 1.0.0 - Initial release
  *  Version 2.0.0 - Added 6 slots to allow for one app to control multiple on/off actions
@@ -32,7 +32,7 @@
  *  Version 4.4.5 - Added voice reporting in the help section
  *  Version 4.4.6 - Small syntax fixes
  *  Version 4.5.0 - Added icon to app about page
- *  Version 4.5.1a - Minor syntax changes, added main menu icons, new location for icons
+ *  Version 4.5.1b - Minor syntax changes, added main menu icons, new location for icons
  *
  *  Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except
  *  in compliance with the License. You may obtain a copy of the License at:
@@ -76,21 +76,21 @@ def mainPage() {
 		}
 		section("Options") {
 			href "pageSettings", title: "Configure Settings", description: none, 
-            	image: "https://raw.githubusercontent.com/MichaelStruck/SmartThings/master/img/settings.png"
+            	image: "https://raw.githubusercontent.com/MichaelStruck/SmartThingsPublic/master/img/settings.png"
             if (showAddSwitches) {
             	def titleTxt = getChildDevices().size() > 0 ? "Add/View Virtual Switches" : "Add Virtual Switches"
                 def descTxt = getChildDevices().size() > 1 ? "${getChildDevices().size()} virtual switches created" : getChildDevices().size() == 1 ? "One virtual switch created" : ""
-                href "pageSwitches", title: "${titleTxt}", description: "${descTxt}", image: "https://raw.githubusercontent.com/MichaelStruck/SmartThings/master/img/add.png"
+                href "pageSwitches", title: "${titleTxt}", description: "${descTxt}", image: "https://raw.githubusercontent.com/MichaelStruck/SmartThingsPublic/master/img/add.png"
 			}
             href "pageAbout", title: "About ${textAppName()}", description: "Tap to get application version, license, instructions or to remove the application",
-            	image: "https://raw.githubusercontent.com/MichaelStruck/SmartThings/master/img/info.png"
+            	image: "https://raw.githubusercontent.com/MichaelStruck/SmartThingsPublic/master/img/info.png"
 		}
 	}
 }
 def pageAbout(){
 	dynamicPage(name: "pageAbout", uninstall: true) {
 		section {
-        	paragraph "${textAppName()}\n${textCopyright()}", image: "https://raw.githubusercontent.com/MichaelStruck/SmartThings/master/Other-SmartApps/AlexaHelper/Alexa@2x.png"
+        	paragraph "${textAppName()}\n${textCopyright()}", image: "https://raw.githubusercontent.com/MichaelStruck/SmartThingsPublic/master/smartapps/michaelstruck/alexa-helper.src/Alexa@2x.png"
         }
         section ("SmartApp/Switch Versions") {
     		paragraph "${textVersion()}"
@@ -217,7 +217,7 @@ private def textAppName() {
 	def text = "Alexa Helper"
 }	
 private def textVersion() {
-    def version = "Parent App Version: 4.5.1a (04/14/2016)"
+    def version = "Parent App Version: 4.5.1b (04/14/2016)"
     def childCount = childApps.size()
     def deviceCount= getChildDevices().size()
     def childVersion = childCount ? childApps[0].textVersion() : "No scenarios installed"

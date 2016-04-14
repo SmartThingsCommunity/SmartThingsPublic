@@ -4,7 +4,7 @@
  *  Copyright © 2016 Michael Struck
  *  Version 2.9.8d 4/14/16
  * 
- *  Version 2.9.8d - Allow voice report to be pushed to app instead of spoken, moved icon location
+ *  Version 2.9.8d - Allow voice report to be pushed to app instead of spoken, moved icon location in GitHub
  *  See https://github.com/MichaelStruck/SmartThings/blob/master/Other-SmartApps/AlexaHelper/version%20history.md for additional version history
  *
  *  Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except
