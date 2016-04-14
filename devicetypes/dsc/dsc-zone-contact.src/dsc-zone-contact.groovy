@@ -36,7 +36,7 @@ metadata {
       state "tamper", label: 'Tamper', icon: "st.security.alarm.alarm", backgroundColor: "#ffa81e"
       state "fault", label: 'Fault', icon: "st.security.alarm.alarm", backgroundColor: "#ff1e1e"
     }
-    standardTile("bypass", "capability.momentary", width: 3, height: 2, title: "Bypass"){
+    standardTile("bypass", "capability.momentary", width: 3, height: 2, title: "Bypass", decoration: "flat"){
       state "bypass", label: 'Bypass', action: "bypass", icon: "st.locks.lock.unlocked"
     }
 
