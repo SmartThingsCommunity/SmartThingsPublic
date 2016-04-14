@@ -2,10 +2,10 @@
  *  Alexa Helper-Child
  *
  *  Copyright © 2016 Michael Struck
- *  Version 2.9.8a 4/13/16
+ *  Version 2.9.8b 4/13/16
  * 
  *  Version 2.9.7b - Added ability to resume music/track after voice report
- *  Version 2.9.8a - Allow voice report to be pushed to app instead of spoken
+ *  Version 2.9.8b - Allow voice report to be pushed to app instead of spoken
  *  See https://github.com/MichaelStruck/SmartThings/blob/master/Other-SmartApps/AlexaHelper/version%20history.md for additional version history
  *
  *  Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except
@@ -418,7 +418,9 @@ def initialize() {
         if (panicSwitchOff) subscribe (panicSwitchOff, "switch.on", "panicOff") 
         if (alarmSonos && parent.getSonos() && alarmSonos.name.contains("Sonos") && alarmSonosSound) getAlarmSound()
 	}
-    if (scenarioType == "Voice" && voiceControl && (voiceDevice || voiceSpeaker)) subscribe(voiceControl, "switch.on", "voiceHandler")
+    if (scenarioType == "Voice" && (voiceControl && (voiceDevice || voiceSpeaker)) || (voiceNotification && (voiceContacts || voiceSMSnumber || voicePush))) { 
+    	subscribe(voiceControl, "switch.on", "voiceHandler")
+	}
 }
 //Handlers
 //Mode/Routine/Devices/HTTP/SHM-----------------------------------------------------------------
@@ -1014,5 +1016,5 @@ private parseDate(time, type){
     new Date().parse("yyyy-MM-dd'T'HH:mm:ss.SSSZ", formattedDate).format("${type}", timeZone(formattedDate))
 }
 //Version
-private def textVersion() {return "Child App Version: 2.9.8a (04/13/2016)"}
+private def textVersion() {return "Child App Version: 2.9.8b (04/13/2016)"}
 private def versionInt() {return 298}
