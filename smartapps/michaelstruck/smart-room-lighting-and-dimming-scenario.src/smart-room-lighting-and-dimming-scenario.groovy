@@ -7,6 +7,7 @@
  *  Version 1.1.0 (12/17/15) - Added sunset/sunrise to option for time restrictions
  *  Version 1.1.1 (1/18/16) - Added ability to see child app version with parent app and added additional section for remove button
  *  Version 1.1.2 (4/4/16) - Added icons to restriction items
+ *  Version 1.1.3 (4/14/16) - Moved icons within GitHub
  *
  *  Copyright 2016 Michael Struck - Uses code from Lighting Director by Tim Slagle & Michael Struck
  *
@@ -28,9 +29,9 @@ definition(
     description: "Child app (do not publish) that allows for control of light/dimmers based on motion and lux levels.",
     category: "Convenience",
     parent: "MichaelStruck:Smart Room Lighting and Dimming",
-    iconUrl: "https://raw.githubusercontent.com/MichaelStruck/SmartThings/master/Other-SmartApps/Smart-Room-Lighting-and-Dimming/SmartLight.png",
-    iconX2Url: "https://raw.githubusercontent.com/MichaelStruck/SmartThings/master/Other-SmartApps/Smart-Room-Lighting-and-Dimming/SmartLight@2x.png",
-	iconX3Url: "https://raw.githubusercontent.com/MichaelStruck/SmartThings/master/Other-SmartApps/Smart-Room-Lighting-and-Dimming/SmartLight@2x.png"
+    iconUrl: "https://raw.githubusercontent.com/MichaelStruck/SmartThingsPublic/master/smartapps/michaelstruck/smart-room-lighting-and-dimming-scenario.src/SmartLight.png",
+    iconX2Url: "https://raw.githubusercontent.com/MichaelStruck/SmartThingsPublic/master/smartapps/michaelstruck/smart-room-lighting-and-dimming-scenario.src/SmartLight@2x.png",
+	iconX3Url: "https://raw.githubusercontent.com/MichaelStruck/SmartThingsPublic/master/smartapps/michaelstruck/smart-room-lighting-and-dimming-scenario.src/SmartLight@2x.png"
     )
 
 preferences {
@@ -80,11 +81,11 @@ def pageSetup() {
         	}
             input name: "A_switchDisable", type:"bool", title: "Stop triggering if physical switches/dimmers are turned off...", defaultValue:false
         	input name:  "A_day", type: "enum", options: ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"], title: "Only Certain Days Of The Week...",  multiple: true, required: false,
-            	image: "https://raw.githubusercontent.com/MichaelStruck/SmartThings/master/img/calendar.png"
+            	image: "https://raw.githubusercontent.com/MichaelStruck/SmartThingsPublic/master/img/calendar.png"
             href "timeIntervalInputA", title: "Only During Certain Times...", description: getTimeLabel(A_timeStart, A_timeEnd), state: greyedOutTime(A_timeStart, A_timeEnd),
-            	image: "https://raw.githubusercontent.com/MichaelStruck/SmartThings/master/img/clock.png"
+            	image: "https://raw.githubusercontent.com/MichaelStruck/SmartThingsPublic/master/img/clock.png"
         	input name: "A_mode", type: "mode", title: "Only In The Following Modes...", multiple: true, required: false,
-            	image: "https://raw.githubusercontent.com/MichaelStruck/SmartThings/master/img/modes.png"
+            	image: "https://raw.githubusercontent.com/MichaelStruck/SmartThingsPublic/master/img/modes.png"
 		}
         section("Tap the button below to remove this scenario only"){
         }
@@ -452,5 +453,5 @@ private getDayOk(dayList) {
 }
 
 private def textVersion() {
-    def text = "Child App Version: 1.1.2 (04/04/2016)"
+    def text = "Child App Version: 1.1.3 (04/14/2016)"
 }

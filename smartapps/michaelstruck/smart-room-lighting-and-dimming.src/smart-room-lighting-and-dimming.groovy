@@ -12,6 +12,7 @@
  *  Version - 2.0.2 2/26/16 GUI clean up
  *  Version - 2.1.0 3/19/16 Added about screen icon
  *  Version - 2.1.1 3/23/16 Added icons to main menu
+ *  Version - 2.1.2 4/14/16 Moved icons within GitHub
  * 
  *  Copyright © 2016 Michael Struck - Uses code from Lighting Director by Tim Slagle & Michael Struck
  *
@@ -33,9 +34,9 @@ definition(
     author: "Michael Struck",
     description: "Control multiple scenarios of light/dimmers based on motion and lux levels.",
     category: "My Apps",
-    iconUrl: "https://raw.githubusercontent.com/MichaelStruck/SmartThings/master/Other-SmartApps/Smart-Room-Lighting-and-Dimming/SmartLight.png",
-    iconX2Url: "https://raw.githubusercontent.com/MichaelStruck/SmartThings/master/Other-SmartApps/Smart-Room-Lighting-and-Dimming/SmartLight@2x.png",
-	iconX3Url: "https://raw.githubusercontent.com/MichaelStruck/SmartThings/master/Other-SmartApps/Smart-Room-Lighting-and-Dimming/SmartLight@2x.png"
+    iconUrl: "https://raw.githubusercontent.com/MichaelStruck/SmartThingsPublic/master/smartapps/michaelstruck/smart-room-lighting-and-dimming.src/SmartLight.png",
+    iconX2Url: "https://raw.githubusercontent.com/MichaelStruck/SmartThingsPublic/master/smartapps/michaelstruck/smart-room-lighting-and-dimming.src/SmartLight@2x.png",
+	iconX3Url: "https://raw.githubusercontent.com/MichaelStruck/SmartThingsPublic/master/smartapps/michaelstruck/smart-room-lighting-and-dimming.src/SmartLight@2x.png"
     )
     
 preferences {
@@ -50,7 +51,7 @@ def mainPage() {
             }
             section([title:"Options", mobileOnly:true]) {
             	href "pageAbout", title: "About ${textAppName()}", description: "Tap to get application version, license, instructions or to remove the application",
-	            	image: "https://raw.githubusercontent.com/MichaelStruck/SmartThings/master/img/info.png"
+	            	image: "https://raw.githubusercontent.com/MichaelStruck/SmartThingsPublic/master/img/info.png"
         	}
     }
 }
@@ -58,7 +59,7 @@ def mainPage() {
 def pageAbout() {
     dynamicPage(name: "pageAbout", uninstall: true) {
         section {
-        	paragraph "${textAppName()}\n${textCopyright()}", image: "https://raw.githubusercontent.com/MichaelStruck/SmartThings/master/Other-SmartApps/Smart-Room-Lighting-and-Dimming/SmartLight@2x.png"
+        	paragraph "${textAppName()}\n${textCopyright()}", image: "https://raw.githubusercontent.com/MichaelStruck/SmartThingsPublic/master/smartapps/michaelstruck/smart-room-lighting-and-dimming.src/SmartLight@2x.png"
         }
         section ("SmartApp Versions") {
             paragraph "${textVersion()}"
@@ -96,7 +97,7 @@ private def textAppName() {
 }	
 
 private def textVersion() {
-    def version = "Parent App Version: 2.1.1 (03/23/2016)"
+    def version = "Parent App Version: 2.1.2 (04/14/2016)"
     def childCount = childApps.size()
     def childVersion = childCount ? childApps[0].textVersion() : "No scenarios installed"  
     return "${version}\n${childVersion}"
