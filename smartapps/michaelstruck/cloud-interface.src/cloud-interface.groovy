@@ -1,7 +1,7 @@
 /**
  *  Cloud Interface
  *
- *  Version 1.3.1 - 3/23/16 Copyright © 2016 Michael Struck
+ *  Version 1.3.1a - 4/14/16 Copyright © 2016 Michael Struck
  *  
  *  Version 1.0.0 - Initial release
  *  Version 1.0.1 - Fixed code syntax
@@ -12,7 +12,7 @@
  *  Version 1.1.1 - GUI clean up
  *  Version 1.2.0 - Address URL accesses via API instead of hard coding it
  *  Version 1.3.0 - Added icon to app about page
- *  Version 1.3.1 - Added icons to main menu, minor GUI tweaks
+ *  Version 1.3.1a - Added icons to main menu, minor GUI tweaks, moved icons
  *
  *  Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except
  *  in compliance with the License. You may obtain a copy of the License at:
@@ -30,9 +30,9 @@ definition(
     author: "Michael Struck",
     description: "Allows for URL cloud interfacing to control SmartThings devices.",
     category: "Convenience",
-    iconUrl: "https://raw.githubusercontent.com/MichaelStruck/SmartThings/master/Other-SmartApps/AlexaHelper/CloudInterface.png",
-    iconX2Url: "https://raw.githubusercontent.com/MichaelStruck/SmartThings/master/Other-SmartApps/AlexaHelper/CloudInterface@2x.png",
-    iconX3Url: "https://raw.githubusercontent.com/MichaelStruck/SmartThings/master/Other-SmartApps/AlexaHelper/CloudInterface@2x.png",
+    iconUrl: "https://raw.githubusercontent.com/MichaelStruck/SmartThingsPublic/master/smartapps/michaelstruck/cloud-interface.src/CloudInterface.png",
+    iconX2Url: "https://raw.githubusercontent.com/MichaelStruck/SmartThingsPublic/master/smartapps/michaelstruck/cloud-interface.src/CloudInterface@2x.png",
+    iconX3Url: "https://raw.githubusercontent.com/MichaelStruck/SmartThingsPublic/master/smartapps/michaelstruck/cloud-interface.src/CloudInterface@2x.png",
   	oauth: true)
 preferences {
     page name:"mainPage"
@@ -44,14 +44,15 @@ preferences {
 def mainPage() {
     dynamicPage(name: "mainPage", title:"", install: true, uninstall: false) {
 		section("External control") {
-        	input "switches", "capability.switch", title: "Choose Switches", multiple: true, required: false, submitOnChange:true, image: "https://raw.githubusercontent.com/MichaelStruck/SmartThings/master/img/add.png"
+        	input "switches", "capability.switch", title: "Choose Switches", multiple: true, required: false, submitOnChange:true, 
+            	image: "https://raw.githubusercontent.com/MichaelStruck/SmartThingsPublic/master/img/add.png"
 			if (switches){
             	if (!state.accessToken) {
 					OAuthToken()
 				}
                 if (state.accessToken != null){
                     href url:"${getApiServerUrl()}/api/smartapps/installations/${app.id}/l?access_token=${state.accessToken}", style:"embedded", required:false, title:"Show URLs", description: none,
-                    	image: "https://raw.githubusercontent.com/MichaelStruck/SmartThings/master/img/url.png"
+                    	image: "https://raw.githubusercontent.com/MichaelStruck/SmartThingsPublic/master/img/url.png"
                 }
                 else {
                 	paragraph "URLs cannot be created. Access Token not defined. OAuth may not be enabled. Go to the SmartApp IDE settings to enable OAuth."
@@ -59,16 +60,17 @@ def mainPage() {
 			}
         }
         section([title:"Options", mobileOnly:true]) {
-			href "pageSettings", title: "Settings", description: none, image: "https://raw.githubusercontent.com/MichaelStruck/SmartThings/master/img/settings.png"
+			href "pageSettings", title: "Settings", description: none, 
+            	image: "https://raw.githubusercontent.com/MichaelStruck/SmartThingsPublic/master/img/settings.png"
 			href "pageAbout", title: "About ${textAppName()}", description: "Tap to get application version, license, instructions or remove the application",
-            	image: "https://raw.githubusercontent.com/MichaelStruck/SmartThings/master/img/info.png"
+            	image: "https://raw.githubusercontent.com/MichaelStruck/SmartThingsPublic/master/img/info.png"
         }
 	}
 }
 def pageAbout(){
 	dynamicPage(name: "pageAbout", uninstall: true ) {
         section {
-        	paragraph "${textAppName()}\n${textVersion()}\n${textCopyright()}",image: "https://raw.githubusercontent.com/MichaelStruck/SmartThings/master/Other-SmartApps/AlexaHelper/CloudInterface@2x.png"
+        	paragraph "${textAppName()}\n${textVersion()}\n${textCopyright()}",image: "https://raw.githubusercontent.com/MichaelStruck/SmartThingsPublic/master/smartapps/michaelstruck/cloud-interface.src/CloudInterface@2x.png"
         }
         section ("Access Token"){
             if (!state.accessToken) {
@@ -161,7 +163,7 @@ private def textAppName() {
 	def text = "Cloud Interface"
 }	
 private def textVersion() {
-    def text = "Version 1.3.1 (03/23/2016)"
+    def text = "Version 1.3.1a (04/14/2016)"
 }
 private def textCopyright() {
     def text = "Copyright © 2016 Michael Struck"
