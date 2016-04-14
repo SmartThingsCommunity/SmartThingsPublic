@@ -112,7 +112,7 @@ class AlarmServerConfig():
             away=self.read_config_var('partition'+str(i), 'away', False, 'str', True)
             simplestay=self.read_config_var('partition'+str(i), 'simplestay', False, 'str', True)
             simpleaway=self.read_config_var('partition'+str(i), 'simpleaway', False, 'str', True)
-            if stay!=False or away!=Falset or simplestay!=False or simpleaway!=False:
+            if stay!=False or away!=False or simplestay!=False or simpleaway!=False:
                 self.PARTITIONS[i] = {}
                 if away!=False:
                     self.PARTITIONS[i]['away']=away
