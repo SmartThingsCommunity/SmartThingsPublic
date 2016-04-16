@@ -35,7 +35,8 @@ preferences {
 
 def getProxyHost() { "192.168.1.96:595" }
 def getChildNamespace() { "trentfoley" }
-def getChildName() { "NX-595e Alarm Module Zone" }
+def getChildName() { "NX-595e Zone" }
+def getChimeSwitchDeviceName() { "NX-595e Chime" }
 
 private debugEvent(message, displayEvent = false) {
 	def results = [
@@ -65,21 +66,45 @@ def installed() {
 def updated() {
     debugEvent("updated()")
     unsubscribe()
-    state.subscribe = false
+    state.subscribed = false
+    state.zonesSubscribed = false
     initialize()
 }
 
 def initialize() {
-    debugEvent("initialize()")
+    debugEvent("initialize() subscribe state is ${state.subscribe}")
     
-    if(!state.subscribe) {
-        log.debug "subscribe to location"
-        subscribe(location, null, locationHandler, [filterEvents:false])
-	    subscribe(contactSensors, "contact", contactHandler)
-        state.subscribe = true
+    // Ensure chime device exists
+    def dni = getDeviceNetworkId(99)
+    def chimeDevice = getChildDevice(dni)
+    if(!chimeDevice) {
+        chimeDevice = addChildDevice(childNamespace, chimeSwitchDeviceName, dni, null, [ label: "Alarm Chime" ])
+        debugEvent("Created ${chimeDevice.displayName} with device network id: ${dni}")
+    } else {
+        debugEvent("Found already existing ${chimeDevice.displayName} with device network id: ${dni}")
     }
     
-    def hubAction = new physicalgraph.device.HubAction(
+    if(!state.subscribed) {
+        subscribeToCommand(chimeDevice, "on", chimeCommand)
+        subscribeToCommand(chimeDevice, "off", chimeCommand)
+
+        log.debug "subscribe to location"
+        subscribe(location, null, locationHandler, [filterEvents:false])
+        subscribe(location, "alarmSystemStatus", alarmHandler)
+        subscribe(contactSensors, "contact", contactHandler)
+        state.subscribed = true
+    }
+    
+    requestZones()
+}
+
+def contactHandler(evt) {
+    debugEvent("contactHandler()")
+	requestZones()
+}
+
+def requestZones() {
+	def hubAction = new physicalgraph.device.HubAction(
         method: "GET",
         path: "/zone",
         headers: [
@@ -90,10 +115,6 @@ def initialize() {
     sendHubCommand(hubAction)
 }
 
-def contactHandler(evt) {
-    log.debug "one of the configured contact sensors changed states"
-}
-
 /**
  * Called when location has changed, contains information from
  * network transactions.
@@ -102,36 +123,70 @@ def contactHandler(evt) {
  */
 def locationHandler(evt) {
 	debugEvent("locationHandler()")
-
-    // Convert the event into something we can use
-    def zoneListResponse = parseLanMessage(evt.description)
-    def zones = zoneListResponse.json
-
-    state.zoneDevices = zones.collect { zone ->
-    	def dni = getDeviceNetworkId(zone.Index)
-        def device = getChildDevice(dni)
-        if(!device) {
-            device = addChildDevice(childNamespace, childName, dni, null, [ label: "Alarm Zone: ${zone.Name}" ])
-            debugEvent("Created ${device.displayName} with device network id: ${dni}")
-        } else {
-        	debugEvent("Found already existing ${device.displayName} with device network id: ${dni}")
-        }
-       
-        device.setZoneStatus(zone.Status)
-        
-        return device
-    }
     
-	
+	if ("${evt.source}" == "HUB") {
+        // Convert the event into something we can use
+        def parsedMessage = parseLanMessage(evt.description)
+        // log.debug "parsedMessage: ${parsedMessage}"
+        
+        def zones = parsedMessage?.json    
+        if (zones) {
+            zones.each { zone ->
+                def zoneIndex = zone.Index
+            	def zoneName = zone.Name
+                def zoneStatus = zone.Status
+                if (zoneName && zoneStatus) {
+                    def dni = getDeviceNetworkId(zoneIndex)
+                    def device = getChildDevice(dni)
+                    if(!device) {
+                        device = addChildDevice(childNamespace, childName, dni, null, [ label: "${zoneName}" ])
+                        debugEvent("Created ${device.displayName} with device network id: ${dni}")
+                        subscribeToZone(device)
+                    } else {
+                        debugEvent("Found already existing ${device.displayName} with device network id: ${dni}")
+                        if(!state.zonesSubscribed) {
+                            subscribeToZone(device)
+                        }
+                    }
+                    
+                    device.setZoneIndex(zoneIndex)
+                    device.setZoneStatus(zoneStatus)
+                }
+            }
+            
+            state.zonesSubscribed = true
+        }
+    }
 }
 
 private String getDeviceNetworkId(int zoneIndex) {
 	return [ app.id, zoneIndex ].join('.')
 }
 
-// Poll Child is invoked from the Child Device itself as part of the Poll Capability
-def pollChild(child) {
-    def deviceNetworkId = child.device.deviceNetworkId
-    debugEvent("pollChild(${deviceNetworkId})")
+private subscribeToZone(device) {
+	debugEvent("subscribeToZone(${device.displayName})")
+	subscribeToCommand(device, "on", bypassCommand)
+    subscribeToCommand(device, "off", bypassCommand)
+}
 
+def chimeCommand(evt) {
+	log.debug "chimeCommand(${evt.value})"
+
+}
+
+def bypassCommand(evt) {
+    log.debug "bypassCommand(${evt.value}) ${evt.device.displayName} (${evt.device.currentZoneIndex})"
+    
+    
+}
+
+def alarmHandler(evt) {
+	debugEvent("alarmHandler()")
+    log.debug "the source of this event: ${evt.source}"
+    log.debug "Alarm Handler value: ${evt.value}"
+    log.debug "alarmSystemStatus: ${location.currentState("alarmSystemStatus")?.value}"
+    
+    // "off"
+    // "away"
+    // "stay"
 }
