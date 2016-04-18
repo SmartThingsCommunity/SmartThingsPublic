@@ -36,7 +36,7 @@ preferences {
 def getProxyHost() { "192.168.1.96:595" }
 def getChildNamespace() { "trentfoley" }
 def getChildName() { "NX-595e Zone" }
-def getChimeSwitchDeviceName() { "NX-595e Chime" }
+def getAlarmDeviceName() { "NX-595e Alarm" }
 
 private debugEvent(message, displayEvent = false) {
 	def results = [
@@ -44,7 +44,7 @@ private debugEvent(message, displayEvent = false) {
 		descriptionText: message,
 		displayed: displayEvent
 	]
-	log.debug "${results}"
+	log.debug "${message}"
 	sendEvent(results)
 }
 
@@ -54,7 +54,7 @@ private errorEvent(message, displayEvent = true) {
 		descriptionText: message,
 		displayed: displayEvent
 	]
-	log.error "${results}"
+	log.error "${message}"
 	sendEvent(results)
 }
 
@@ -67,27 +67,23 @@ def updated() {
     debugEvent("updated()")
     unsubscribe()
     state.subscribed = false
-    state.zonesSubscribed = false
     initialize()
 }
 
 def initialize() {
     debugEvent("initialize() subscribe state is ${state.subscribe}")
     
-    // Ensure chime device exists
-    def dni = getDeviceNetworkId(99)
-    def chimeDevice = getChildDevice(dni)
-    if(!chimeDevice) {
-        chimeDevice = addChildDevice(childNamespace, chimeSwitchDeviceName, dni, null, [ label: "Alarm Chime" ])
-        debugEvent("Created ${chimeDevice.displayName} with device network id: ${dni}")
+    // Ensure alarm device exists
+    def dni = getAlarmDeviceNetworkId()
+    def alarmDevice = getChildDevice(dni)
+    if(!alarmDevice) {
+        alarmDevice = addChildDevice(childNamespace, alarmDeviceName, dni, null, [ label: "Alarm System" ])
+        debugEvent("Created ${alarmDevice.displayName} with device network id: ${dni}")
     } else {
-        debugEvent("Found already existing ${chimeDevice.displayName} with device network id: ${dni}")
+        debugEvent("Found already existing ${alarmDevice.displayName} with device network id: ${dni}")
     }
     
     if(!state.subscribed) {
-        subscribeToCommand(chimeDevice, "on", chimeCommand)
-        subscribeToCommand(chimeDevice, "off", chimeCommand)
-
         log.debug "subscribe to location"
         subscribe(location, null, locationHandler, [filterEvents:false])
         subscribe(location, "alarmSystemStatus", alarmHandler)
@@ -95,18 +91,18 @@ def initialize() {
         state.subscribed = true
     }
     
-    requestZones()
+    requestStatus()
 }
 
 def contactHandler(evt) {
     debugEvent("contactHandler()")
-	requestZones()
+	requestStatus()
 }
 
-def requestZones() {
+def requestStatus() {
 	def hubAction = new physicalgraph.device.HubAction(
         method: "GET",
-        path: "/zone",
+        path: "/alarm/status",
         headers: [
             HOST: getProxyHost()
         ]
@@ -125,68 +121,112 @@ def locationHandler(evt) {
 	debugEvent("locationHandler()")
     
 	if ("${evt.source}" == "HUB") {
-        // Convert the event into something we can use
         def parsedMessage = parseLanMessage(evt.description)
-        // log.debug "parsedMessage: ${parsedMessage}"
+        def alarmStatus = parsedMessage?.json
         
-        def zones = parsedMessage?.json    
-        if (zones) {
-            zones.each { zone ->
+        debugEvent(alarmStatus)
+        def armType = alarmStatus?.ArmType
+        if (armType) {
+        	def systemStatus = alarmStatus.SystemStatus
+        	debugEvent("Alarm System Status: ${armType}: ${systemStatus}")
+            
+            // Update system status
+        	def alarmDevice = getChildDevice(getAlarmDeviceNetworkId())
+            alarmDevice.sendEvent(name: "armType", value: armType, descriptionText: armType == "away" ? "Armed Away" : armType == "stay" ? "Armed Stay" : "Off");
+            alarmDevice.sendEvent(name: "status", value: systemStatus, descriptionText: systemStatus);
+        	alarmDevice.sendEvent(
+            	name: "switch",
+                value: alarmStatus.IsChimeEnabled ? "on" : "off",
+                descriptionText: alarmStatus.IsChimeEnabled ? "Chime Enabled" : "Chime Disabled"
+            )
+            
+            // Update zones
+            alarmStatus?.Zones?.each { zone ->
                 def zoneIndex = zone.Index
-            	def zoneName = zone.Name
+                def zoneName = zone.Name
                 def zoneStatus = zone.Status
                 if (zoneName && zoneStatus) {
                     def dni = getDeviceNetworkId(zoneIndex)
                     def device = getChildDevice(dni)
                     if(!device) {
                         device = addChildDevice(childNamespace, childName, dni, null, [ label: "${zoneName}" ])
-                        debugEvent("Created ${device.displayName} with device network id: ${dni}")
-                        subscribeToZone(device)
+                        debugEvent("Created ${device.displayName} (${zoneStatus}, ${zone.IsBypassed ? "Bypassed" : "Not Bypassed"}) with device network id: ${dni}")
                     } else {
-                        debugEvent("Found already existing ${device.displayName} with device network id: ${dni}")
-                        if(!state.zonesSubscribed) {
-                            subscribeToZone(device)
-                        }
+                        debugEvent("Found already existing ${device.displayName} (${zoneStatus}, ${zone.IsBypassed ? "Bypassed" : "Not Bypassed"}) with device network id: ${dni}")
                     }
+
+                    // Update zone attributes
+                    device.sendEvent(name: "zoneIndex", value: zoneIndex, displayed: false)
+
+                    device.sendEvent(
+                    	name: "switch",
+                        value: zone.IsBypassed ? "on" : "off",
+                        descriptionText: zone.IsBypassed ? "Zone Bypassed" : "Zone Not Bypassed",
+                    )
                     
-                    device.setZoneIndex(zoneIndex)
-                    device.setZoneStatus(zoneStatus)
+                    device.sendEvent(name: "status", value: zone.IsBypassed ? "Bypass" : zoneStatus)
+
+                    def contactValue = zoneStatus == "Ready" ? "closed" : "open"
+                    device.sendEvent(name: "contact", value: contactValue, displayed: false)
                 }
             }
-            
-            state.zonesSubscribed = true
         }
     }
+}
+
+private getAlarmDeviceNetworkId() {
+	return getDeviceNetworkId(99)
 }
 
 private String getDeviceNetworkId(int zoneIndex) {
 	return [ app.id, zoneIndex ].join('.')
 }
 
-private subscribeToZone(device) {
-	debugEvent("subscribeToZone(${device.displayName})")
-	subscribeToCommand(device, "on", bypassCommand)
-    subscribeToCommand(device, "off", bypassCommand)
+// Called from Alarm System child device
+def refresh() {
+	debugEvent("refresh()")
+	requestStatus()
 }
 
-def chimeCommand(evt) {
-	log.debug "chimeCommand(${evt.value})"
+def bypass(device) {
+	debugEvent("bypass(${device.currentZoneIndex})")
+    
+	def hubAction = new physicalgraph.device.HubAction(
+        method: "POST",
+        path: "/zone/bypass/${device.currentZoneIndex}",
+        headers: [
+            HOST: getProxyHost()
+        ]
+    )
 
+    sendHubCommand(hubAction)
 }
 
-def bypassCommand(evt) {
-    log.debug "bypassCommand(${evt.value}) ${evt.device.displayName} (${evt.device.currentZoneIndex})"
-    
-    
+def chime() {
+	debugEvent("chime()")
+	
+    def hubAction = new physicalgraph.device.HubAction(
+        method: "POST",
+        path: "/alarm/chime",
+        headers: [
+            HOST: getProxyHost()
+        ]
+    )
+
+    sendHubCommand(hubAction)
 }
 
 def alarmHandler(evt) {
-	debugEvent("alarmHandler()")
-    log.debug "the source of this event: ${evt.source}"
-    log.debug "Alarm Handler value: ${evt.value}"
-    log.debug "alarmSystemStatus: ${location.currentState("alarmSystemStatus")?.value}"
+	debugEvent("alarmHandler(${evt.value})")
     
-    // "off"
-    // "away"
-    // "stay"
+    // "off", "away", "stay"
+    def hubAction = new physicalgraph.device.HubAction(
+        method: "POST",
+        path: "/alarm/arm/${evt.value}",
+        headers: [
+            HOST: getProxyHost()
+        ]
+    )
+
+    sendHubCommand(hubAction)
 }
