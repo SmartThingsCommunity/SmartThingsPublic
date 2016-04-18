@@ -27,6 +27,8 @@ definition(
 preferences {
 	page(name: "hrefPage",nextPage: "page2")
 	page(name: "switchPage")
+    page(name: "thermometerPage")
+    page(name: "locksPage")
     page(name:"page2",install: false, uninstall: true)
 	}
     
@@ -39,13 +41,47 @@ def hrefPage() {
             required: false,
             page: "switchPage")
         }
+        section() {
+            href(name: "href",
+            title: "Thermometer Listing page",
+            required: false,
+            page: "thermometerPage")
+        }
+        section() {
+            href(name: "href",
+            title: "Lock Listing page",
+            required: false,
+            page: "locksPage")
+        }
+        
    	}
 }
 
 def switchPage() {
     dynamicPage(name: "switchPage", title: "Show Switch Status") {
         section("Switch List") {
-            paragraph getAllDevices();
+            //paragraph getAllDevices();
+            paragraph image: "https://s3.amazonaws.com/smartapp-icons/Convenience/Cat-Convenience.png",
+                      title: "Lightsss",                      
+                      getAllDevices();
+        }
+    }
+}
+
+def thermometerPage() {
+    dynamicPage(name: "thermometerPage", title: "Show Thermometer Status") {
+        section("Thermometer List") {
+            paragraph image: "https://s3.amazonaws.com/smartapp-icons/Convenience/Cat-Convenience.png",
+                      title: "Lightsss",                      
+                      "Some thermometers are at high temp";
+        }
+    }
+}
+
+def locksPage() {
+    dynamicPage(name: "locksPage", title: "Show Locks Status") {
+        section("Locks List") {
+            paragraph "Show All Lock Status"
         }
     }
 }
