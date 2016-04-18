@@ -21,10 +21,7 @@ metadata {
         capability "Sensor"
 
 		attribute "zoneIndex", "number"
-		attribute "status", "string"
-        
-        command "setZoneIndex", ["number"]
-        command "setStatus", ["string"]
+        attribute "status", "string"
 	}
 
 	tiles(scale: 2) {
@@ -53,28 +50,15 @@ metadata {
 	}
 }
 
-def setZoneIndex(zoneIndex) {
-	sendEvent(name: "zoneIndex", value: zoneIndex)
-}
-
-def setStatus(status) {
-	log.debug "setStatus(${status})"
-	
-    def contactValue = status == "Ready" ? "closed" : "open"
-    
-    sendEvent(name: "status", value: status)
-    sendEvent(name: "contact", value: contactValue, displayed: false)
-}
-
 // parse events into attributes
 def parse(String description) {
 	log.debug "Parsing '${description}'"
 }
 
 def on() {
-	sendEvent(name: "switch", value: "on")
+	parent.bypass(this)
 }
 
 def off() {
-	sendEvent(name: "switch", value: "off")
+	parent.bypass(this)
 }
