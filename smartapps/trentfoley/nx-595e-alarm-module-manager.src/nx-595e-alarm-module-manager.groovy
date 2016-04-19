@@ -35,8 +35,8 @@ preferences {
 
 def getProxyHost() { "192.168.1.96:595" }
 def getChildNamespace() { "trentfoley" }
-def getChildName() { "NX-595e Zone" }
-def getAlarmDeviceName() { "NX-595e Alarm" }
+def getZoneChildDeviceName() { "NX-595e Zone" }
+def getAlarmChildDeviceName() { "NX-595e Alarm" }
 
 private debugEvent(message, displayEvent = false) {
 	def results = [
@@ -77,7 +77,7 @@ def initialize() {
     def dni = getAlarmDeviceNetworkId()
     def alarmDevice = getChildDevice(dni)
     if(!alarmDevice) {
-        alarmDevice = addChildDevice(childNamespace, alarmDeviceName, dni, null, [ label: "Alarm System" ])
+        alarmDevice = addChildDevice(childNamespace, alarmChildDeviceName, dni, null, [ label: "Alarm System" ])
         debugEvent("Created ${alarmDevice.displayName} with device network id: ${dni}")
     } else {
         debugEvent("Found already existing ${alarmDevice.displayName} with device network id: ${dni}")
@@ -100,6 +100,7 @@ def contactHandler(evt) {
 }
 
 def requestStatus() {
+	debugEvent("requestStatus()")
 	def hubAction = new physicalgraph.device.HubAction(
         method: "GET",
         path: "/alarm/status",
@@ -107,7 +108,7 @@ def requestStatus() {
             HOST: getProxyHost()
         ]
     )
-
+    debugEvent(hubAction)
     sendHubCommand(hubAction)
 }
 
@@ -149,7 +150,7 @@ def locationHandler(evt) {
                     def dni = getDeviceNetworkId(zoneIndex)
                     def device = getChildDevice(dni)
                     if(!device) {
-                        device = addChildDevice(childNamespace, childName, dni, null, [ label: "${zoneName}" ])
+                        device = addChildDevice(childNamespace, zoneChildDeviceName, dni, null, [ label: "${zoneName}" ])
                         debugEvent("Created ${device.displayName} (${zoneStatus}, ${zone.IsBypassed ? "Bypassed" : "Not Bypassed"}) with device network id: ${dni}")
                     } else {
                         debugEvent("Found already existing ${device.displayName} (${zoneStatus}, ${zone.IsBypassed ? "Bypassed" : "Not Bypassed"}) with device network id: ${dni}")
@@ -188,17 +189,17 @@ def refresh() {
 	requestStatus()
 }
 
-def bypass(device) {
-	debugEvent("bypass(${device.currentZoneIndex})")
+def bypass(child) {
+	debugEvent("bypass(${child.device.currentValue("zoneIndex")})")
     
 	def hubAction = new physicalgraph.device.HubAction(
         method: "POST",
-        path: "/zone/bypass/${device.currentZoneIndex}",
+        path: "/zone/bypass/${child.device.currentValue("zoneIndex")}",
         headers: [
             HOST: getProxyHost()
         ]
     )
-
+	debugEvent(hubAction)
     sendHubCommand(hubAction)
 }
 
@@ -212,7 +213,7 @@ def chime() {
             HOST: getProxyHost()
         ]
     )
-
+	debugEvent(hubAction)
     sendHubCommand(hubAction)
 }
 
@@ -227,6 +228,6 @@ def alarmHandler(evt) {
             HOST: getProxyHost()
         ]
     )
-
+	debugEvent(hubAction)
     sendHubCommand(hubAction)
 }
