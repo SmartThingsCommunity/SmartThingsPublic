@@ -1,7 +1,7 @@
 /**
  *  Cloud Interface
  *
- *  Version 1.3.1a - 4/14/16 Copyright © 2016 Michael Struck
+ *  Version 1.3.2 - 4/19/16 Copyright © 2016 Michael Struck
  *  
  *  Version 1.0.0 - Initial release
  *  Version 1.0.1 - Fixed code syntax
@@ -13,6 +13,7 @@
  *  Version 1.2.0 - Address URL accesses via API instead of hard coding it
  *  Version 1.3.0 - Added icon to app about page
  *  Version 1.3.1a - Added icons to main menu, minor GUI tweaks, moved icons
+ *  Version 1.3.2 - Fixed interface issue with settings page
  *
  *  Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except
  *  in compliance with the License. You may obtain a copy of the License at:
@@ -39,6 +40,7 @@ preferences {
     page name:"showURLs"
     page name:"pageReset"
     page name:"pageAbout"
+    page name:"pageSettings"
 }
 //Show main page
 def mainPage() {
@@ -89,13 +91,15 @@ def pageAbout(){
         }
 	}
 }
-page(name: "pageSettings", title: "Settings"){
-	section("URL Settings"){
-    	input "urlOnOff", "bool", title: "Show both ON/OFF links on 'Show URLs' page (default=show ON only)", defaultValue: Off
+def pageSettings(){
+    dynamicPage(name: "pageSettings", title: "Settings", uninstall: true){
+        section("URL Settings"){
+            input "urlOnOff", "bool", title: "Show both ON/OFF links on 'Show URLs' page (default=show ON only)", defaultValue: Off
+        }
+        section("Security Settings"){
+            href "pageReset", title: "Reset Access Token", description: "Tap to revoke access token. All current URLs in use will need to be re-generated"
+        }
     }
-    section("Security Settings"){
-    	href "pageReset", title: "Reset Access Token", description: "Tap to revoke access token. All current URLs in use will need to be re-generated"
-	}
 }
 def pageReset(){
 	dynamicPage(name: "pageReset", title: "Access Token Reset"){
@@ -163,7 +167,7 @@ private def textAppName() {
 	def text = "Cloud Interface"
 }	
 private def textVersion() {
-    def text = "Version 1.3.1a (04/14/2016)"
+    def text = "Version 1.3.2 (04/19/2016)"
 }
 private def textCopyright() {
     def text = "Copyright © 2016 Michael Struck"
