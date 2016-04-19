@@ -19,6 +19,7 @@ metadata {
         capability "Switch"
         capability "Sensor"
         capability "Refresh"
+        capability "Polling"
         
         attribute "armType", "string"
         attribute "status", "string"
@@ -27,9 +28,9 @@ metadata {
 	tiles(scale: 2) {
     	multiAttributeTile(name:"armType", type:"generic", width: 6, height: 4) {
         	tileAttribute("device.armType", key: "PRIMARY_CONTROL") {
-            	attributeState "off", label: 'Off', backgroundColor: "#79b821"
-                attributeState "away", label: 'Armed Away', backgroundColor: "#bc2323"
-                attributeState "stay", label: 'Armed Stay', backgroundColor: "#ffa81e"
+            	attributeState "off", label: 'Off', icon: "st.Home.home2", backgroundColor: "#79b821"
+                attributeState "away", label: 'Armed Away', icon: "st.Home.home3", backgroundColor: "#bc2323"
+                attributeState "stay", label: 'Armed Stay', icon: "st.Home.home4", backgroundColor: "#ffa81e"
             }
 		}
         valueTile("status", "device.status", decoration: "flat", width: 6, height: 2) {
@@ -59,5 +60,9 @@ def off() {
 }
 
 def refresh() {
+	parent.refresh()
+}
+
+def poll() {
 	parent.refresh()
 }

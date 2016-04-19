@@ -29,21 +29,21 @@ metadata {
         	tileAttribute("device.status", key: "PRIMARY_CONTROL") {
             	attributeState "Ready", label: '${name}', icon: "st.contact.contact.closed", backgroundColor: "#79b821"
                 attributeState "Not Ready", label: '${name}', icon: "st.contact.contact.open", backgroundColor: "#ffa81e"
-                attributeState "Tamper", label: '${name}', icon: "st.contact.contact.open", backgroundColor: "#ffa81e"
-                attributeState "Trouble", label: '${name}', icon: "st.contact.contact.open", backgroundColor: "#ffa81e"
-                attributeState "Bypass", label: '${name}', icon: "st.contact.contact.open", backgroundColor: "#ffffff"
-                attributeState "Inhibited", label: '${name}', icon: "st.contact.contact.open", backgroundColor: "#ffa81e"
-                attributeState "Alarm", label: '${name}', icon: "st.alarm.alarm.alarm", backgroundColor: "#ffa81e"
+                attributeState "Tamper", label: '${name}', icon: "st.contact.contact.open", backgroundColor: "#bc2323"
+                attributeState "Trouble", label: '${name}', icon: "st.contact.contact.open", backgroundColor: "#bc2323"
+                attributeState "Bypass", label: '${name}', icon: "st.contact.contact.open", backgroundColor: "#ffa81e"
+                attributeState "Inhibited", label: '${name}', icon: "st.contact.contact.open", backgroundColor: "#bc2323"
+                attributeState "Alarm", label: '${name}', icon: "st.alarm.alarm.alarm", backgroundColor: "#bc2323"
                 attributeState "Low Battery", label: '${name}', icon: "st.contact.contact.closed", backgroundColor: "#ffa81e"
-                attributeState "Supervision Fault", label: '${name}', icon: "st.contact.contact.open", backgroundColor: "#ffa81e"
+                attributeState "Supervision Fault", label: '${name}', icon: "st.contact.contact.open", backgroundColor: "#bc2323"
             }
 		}
         valueTile("zoneIndex", "device.zoneIndex", decoration: "flat", width: 3, height: 3) {
             state "zoneIndex", label: 'Zone ${currentValue}'
         }
         standardTile("bypass", "device.switch", width: 3, height: 3, canChangeIcon: true) {
-			state "off", label: 'Bypass', action: "switch.on", backgroundColor: "#ffffff", nextState: "on"
-			state "on", label: 'Bypass', action: "switch.off", backgroundColor: "#ffa81e", nextState: "off"
+			state "off", label: 'Bypass', action: "switch.on", icon: "st.Home.home3", backgroundColor: "#ffffff", nextState: "on"
+			state "on", label: 'Bypass', action: "switch.off", icon: "st.Home.home2", backgroundColor: "#ffa81e", nextState: "off"
 		}
         main "zone"
 		details(["zone", "zoneIndex", "bypass"])
