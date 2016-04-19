@@ -91,7 +91,7 @@ metadata {
 			state "zero", label:'Zero', action: 'zero'
 		}
 		main (["waterState"])
-		details(["flowHistory", "chartMode", "take1", "temperature", "gpm", "waterState", "battery", "zeroTile"])
+		details(["flowHistory", "chartMode", "take1", "temperature", "gpm", "waterState", "battery"])
 	}
     
 }
