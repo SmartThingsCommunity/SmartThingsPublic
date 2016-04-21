@@ -3,7 +3,7 @@
  *
  *  Copyright © 2016 Michael Struck
  *
- *  Version 1.5.4 (4/4/16)
+ *  Version 1.5.5 (4/21/16)
  *
  *  Version 1.0.0 - Initial release
  *  Version 1.0.1 - Small syntax changes for consistency
@@ -20,6 +20,8 @@
  *  Version 1.5.2a - Added delay after presence option
  *  Version 1.5.3c - Cleaned up reporting after addition of new triggers
  *  Version 1.5.4 - Icons for restrictions
+ *  Version 1.5.5 - Minor GUI changes to accomodate new mobile app structure
+ *  
  *
  *  Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except
  *  in compliance with the License. You may obtain a copy of the License at:
@@ -119,7 +121,7 @@ def pageSetup() {
                 }
             }
         }
-        section("Tap the button below to remove this alarm schedule only"){
+        section("Tap below to remove this alarm schedule only"){
 		}
 	}
 }
@@ -639,4 +641,4 @@ private getTimeOk(startTime, endTime) {
     result
 }
 //Version
-private def textVersion() {def text = "Child App Version: 1.5.4 (04/04/2016)"}
+private def textVersion() {def text = "Child App Version: 1.5.5 (04/21/2016)"}
