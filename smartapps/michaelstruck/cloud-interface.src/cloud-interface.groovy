@@ -1,7 +1,7 @@
 /**
  *  Cloud Interface
  *
- *  Version 1.3.3a - 4/21/16 Copyright © 2016 Michael Struck
+ *  Version 1.3.4 - 4/21/16 Copyright © 2016 Michael Struck
  *  
  *  Version 1.0.0 - Initial release
  *  Version 1.0.1 - Fixed code syntax
@@ -15,6 +15,7 @@
  *  Version 1.3.1a - Added icons to main menu, minor GUI tweaks, moved icons
  *  Version 1.3.2 - Fixed interface issue with settings page
  *  Version 1.3.3a - Added a proper revoke for access token
+ *  Version 1.3.4 - Minor GUI changes to accomodate new mobile app structure 
  *
  *  Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except
  *  in compliance with the License. You may obtain a copy of the License at:
@@ -73,14 +74,14 @@ def mainPage() {
 def pageAbout(){
 	dynamicPage(name: "pageAbout", uninstall: true ) {
         section {
-        	paragraph "${textAppName()}\n${textVersion()}\n${textCopyright()}",image: "https://raw.githubusercontent.com/MichaelStruck/SmartThingsPublic/master/smartapps/michaelstruck/cloud-interface.src/CloudInterface@2x.png"
+        	paragraph "${textAppName()} - ${textVersion()}\n${textCopyright()}",image: "https://raw.githubusercontent.com/MichaelStruck/SmartThingsPublic/master/smartapps/michaelstruck/cloud-interface.src/CloudInterface@2x.png"
         }
         section ("Access Token"){
             if (!state.accessToken) {
 				OAuthToken()
 			}
             def msg = state.accessToken != null ? state.accessToken : "Could not create Access Token. OAuth may not be enabled. Go to the SmartApp IDE settings to enable OAuth."
-            paragraph "\nAccess Token:\n${msg}"
+            paragraph "Access Token:\n${msg}"
     	}
         section ("Apache License"){
         	paragraph textLicense()
@@ -88,7 +89,7 @@ def pageAbout(){
     	section("Instructions") {
         	paragraph textHelp()
     	}
-        section("Tap button below to remove the application"){
+        section("Tap below to remove the application"){
         }
 	}
 }
@@ -169,7 +170,7 @@ private def textAppName() {
 	def text = "Cloud Interface"
 }	
 private def textVersion() {
-    def text = "Version 1.3.3a (04/21/2016)"
+    def text = "Version 1.3.4 (04/21/2016)"
 }
 private def textCopyright() {
     def text = "Copyright © 2016 Michael Struck"
