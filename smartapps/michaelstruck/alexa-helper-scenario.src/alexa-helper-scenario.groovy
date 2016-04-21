@@ -2,9 +2,9 @@
  *  Alexa Helper-Child
  *
  *  Copyright © 2016 Michael Struck
- *  Version 2.9.8d 4/14/16
+ *  Version 2.9.9 4/21/16
  * 
- *  Version 2.9.8d - Allow voice report to be pushed to app instead of spoken, moved icon location in GitHub
+ *  Version 2.9.9 - Minor GUI changes to accomodate new mobile app structure
  *  See https://github.com/MichaelStruck/SmartThings/blob/master/Other-SmartApps/AlexaHelper/version%20history.md for additional version history
  *
  *  Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except
@@ -43,7 +43,7 @@ preferences {
 def pageStart() {
 	dynamicPage(name: "pageStart", title: "Scenario Settings", uninstall: true, install: true) {
 		section {
-			if (parent.versionInt() < 451) paragraph "You are using a version of the parent app that is older than the recommended version. Please upgrade "+
+			if (parent.versionInt() < 452) paragraph "You are using a version of the parent app that is older than the recommended version. Please upgrade "+
 					"to the latest version to ensure you have the latest features and bug fixes."
             label title:"Scenario Name", required:true
     	   	input "scenarioType", "enum", title: "Scenario Type...", options: [["Baseboard":"Baseboard Heater Control"],["Thermostat":"Heating/Cooling Thermostat Control"],["Control":"Modes/Routines/Devices/HTTP/SHM Control"],["Panic":"Panic Commands"],["Speaker":"Speaker Control"],["Voice":"Voice Reporting"]], required: false, multiple: false, submitOnChange:true
@@ -58,7 +58,7 @@ def pageStart() {
             	input "runMode", "mode", title: "Only In The Following Modes...", multiple: true, required: false, image: "https://raw.githubusercontent.com/MichaelStruck/SmartThingsPublic/master/img/modes.png"
 			}
         }
-        section("Tap the button below to remove this scenario"){}
+        section("Tap below to remove this scenario"){}
 	}
 }
 page(name: "timeIntervalInput", title: "Only during a certain time") {
@@ -1015,5 +1015,5 @@ private parseDate(time, type){
     new Date().parse("yyyy-MM-dd'T'HH:mm:ss.SSSZ", formattedDate).format("${type}", timeZone(formattedDate))
 }
 //Version
-private def textVersion() {return "Child App Version: 2.9.8d (04/14/2016)"}
-private def versionInt() {return 298}
+private def textVersion() {return "Child App Version: 2.9.9 (04/21/2016)"}
+private def versionInt() {return 299}

@@ -2,7 +2,7 @@
  *  Alexa Helper-Parent
  *
  *  Copyright © 2016 Michael Struck
- *  Version 4.5.1b 4/14/16
+ *  Version 4.5.2 4/21/16
  * 
  *  Version 1.0.0 - Initial release
  *  Version 2.0.0 - Added 6 slots to allow for one app to control multiple on/off actions
@@ -33,6 +33,7 @@
  *  Version 4.4.6 - Small syntax fixes
  *  Version 4.5.0 - Added icon to app about page
  *  Version 4.5.1b - Minor syntax changes, added main menu icons, new location for icons
+ *  Version 4.5.2 - Minor GUI changes to accomodate new mobile app structure
  *
  *  Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except
  *  in compliance with the License. You may obtain a copy of the License at:
@@ -101,7 +102,7 @@ def pageAbout(){
     	section("Instructions") {
         	paragraph textHelp()
     	}
-        section("Tap button below to remove all scenarios, switches and application"){
+        section("Tap below to remove all scenarios, switches and application"){
         }
 	}
 }
@@ -217,7 +218,7 @@ private def textAppName() {
 	def text = "Alexa Helper"
 }	
 private def textVersion() {
-    def version = "Parent App Version: 4.5.1b (04/14/2016)"
+    def version = "Parent App Version: 4.5.2 (04/21/2016)"
     def childCount = childApps.size()
     def deviceCount= getChildDevices().size()
     def childVersion = childCount ? childApps[0].textVersion() : "No scenarios installed"
@@ -226,7 +227,7 @@ private def textVersion() {
     return "${version}\n${childVersion}"
 }
 private def versionInt(){
-	def text = 451
+	def text = 452
 }
 private def textCopyright() {
     def text = "Copyright © 2016 Michael Struck"
