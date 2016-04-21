@@ -1,7 +1,7 @@
 /**
  *  Cloud Interface
  *
- *  Version 1.3.3 - 4/20/16 Copyright © 2016 Michael Struck
+ *  Version 1.3.3a - 4/21/16 Copyright © 2016 Michael Struck
  *  
  *  Version 1.0.0 - Initial release
  *  Version 1.0.1 - Fixed code syntax
@@ -14,7 +14,7 @@
  *  Version 1.3.0 - Added icon to app about page
  *  Version 1.3.1a - Added icons to main menu, minor GUI tweaks, moved icons
  *  Version 1.3.2 - Fixed interface issue with settings page
- *  Version 1.3.3 - Added a proper revoke for access token
+ *  Version 1.3.3a - Added a proper revoke for access token
  *
  *  Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except
  *  in compliance with the License. You may obtain a copy of the License at:
@@ -105,8 +105,8 @@ def pageSettings(){
 def pageReset(){
 	dynamicPage(name: "pageReset", title: "Access Token Reset"){
         section{
-			state.accessToken = null
-            revokeAccessToken()
+			revokeAccessToken()
+            state.accessToken = null
             OAuthToken()
             def msg = state.accessToken != null ? "New access token:\n${state.accessToken}\n\nClick 'Done' above to return to the previous menu." : "Could not reset Access Token. OAuth may not be enabled. Go to the SmartApp IDE settings to enable OAuth."
 	    	paragraph "${msg}"
@@ -169,7 +169,7 @@ private def textAppName() {
 	def text = "Cloud Interface"
 }	
 private def textVersion() {
-    def text = "Version 1.3.3 (04/20/2016)"
+    def text = "Version 1.3.3a (04/21/2016)"
 }
 private def textCopyright() {
     def text = "Copyright © 2016 Michael Struck"
