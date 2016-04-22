@@ -31,6 +31,7 @@ metadata {
 		capability "Battery"
 		capability "Temperature Measurement"
 		capability "Refresh"
+		capability "Health Check"
 
 		command "enrollResponse"
 
