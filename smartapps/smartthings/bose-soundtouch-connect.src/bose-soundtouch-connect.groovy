@@ -21,7 +21,8 @@
     category: "SmartThings Labs",
     iconUrl: "https://s3.amazonaws.com/smartapp-icons/Convenience/Cat-Convenience.png",
     iconX2Url: "https://s3.amazonaws.com/smartapp-icons/Convenience/Cat-Convenience@2x.png",
-    iconX3Url: "https://s3.amazonaws.com/smartapp-icons/Convenience/Cat-Convenience@2x.png"
+    iconX3Url: "https://s3.amazonaws.com/smartapp-icons/Convenience/Cat-Convenience@2x.png",
+    singleInstance: true
 )
 
 preferences {
@@ -352,7 +353,7 @@ def onLocation(evt) {
     }
     else if (
         lanEvent.headers && lanEvent.body &&
-        lanEvent.headers."content-type".contains("xml")
+        lanEvent.headers."content-type"?.contains("xml")
         )
     {
         def parsers = getParsers()

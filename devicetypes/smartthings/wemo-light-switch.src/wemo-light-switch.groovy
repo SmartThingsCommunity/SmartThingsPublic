@@ -25,6 +25,8 @@ metadata {
 		capability "Refresh"
 		capability "Sensor"
 
+    attribute "currentIP", "string"
+
 		command "subscribe"
 		command "resubscribe"
 		command "unsubscribe"
@@ -34,21 +36,36 @@ metadata {
 	// simulator metadata
 	simulator {}
 
-	// UI tile definitions
-	tiles {
-		standardTile("switch", "device.switch", width: 2, height: 2, canChangeIcon: true) {
-			state "on", label:'${name}', action:"switch.off", icon:"st.switches.switch.on", backgroundColor:"#79b821", nextState:"turningOff"
-			state "off", label:'${name}', action:"switch.on", icon:"st.switches.switch.off", backgroundColor:"#ffffff", nextState:"turningOn"
-			state "turningOn", label:'${name}', icon:"st.switches.switch.on", backgroundColor:"#79b821"
-			state "turningOff", label:'${name}', icon:"st.switches.switch.off", backgroundColor:"#ffffff"
-		}
-        standardTile("refresh", "device.switch", inactiveLabel: false, decoration: "flat") {
-			state "default", label:'', action:"refresh.refresh", icon:"st.secondary.refresh"
-		}
+ // UI tile definitions
+    tiles(scale: 2) {
+        multiAttributeTile(name:"rich-control", type: "switch", canChangeIcon: true){
+            tileAttribute ("device.switch", key: "PRIMARY_CONTROL") {
+                 attributeState "on", label:'${name}', action:"switch.off", icon:"st.Home.home30", backgroundColor:"#79b821", nextState:"turningOff"
+                 attributeState "off", label:'${name}', action:"switch.on", icon:"st.Home.home30", backgroundColor:"#ffffff", nextState:"turningOn"
+                 attributeState "turningOn", label:'${name}', action:"switch.off", icon:"st.Home.home30", backgroundColor:"#79b821", nextState:"turningOff"
+                 attributeState "turningOff", label:'${name}', action:"switch.on", icon:"st.Home.home30", backgroundColor:"#ffffff", nextState:"turningOn"
+                 attributeState "offline", label:'${name}', icon:"st.Home.home30", backgroundColor:"#ff0000"
+ 			}
+            tileAttribute ("currentIP", key: "SECONDARY_CONTROL") {
+             	 attributeState "currentIP", label: ''
+ 			}
+        }
 
-		main "switch"
-		details (["switch", "refresh"])
-	}
+        standardTile("switch", "device.switch", width: 2, height: 2, canChangeIcon: true) {
+            state "on", label:'${name}', action:"switch.off", icon:"st.Home.home30", backgroundColor:"#79b821", nextState:"turningOff"
+            state "off", label:'${name}', action:"switch.on", icon:"st.Home.home30", backgroundColor:"#ffffff", nextState:"turningOn"
+            state "turningOn", label:'${name}', action:"switch.off", icon:"st.Home.home30", backgroundColor:"#79b821", nextState:"turningOff"
+            state "turningOff", label:'${name}', action:"switch.on", icon:"st.Home.home30", backgroundColor:"#ffffff", nextState:"turningOn"
+            state "offline", label:'${name}', icon:"st.Home.home30", backgroundColor:"#ff0000"
+        }
+
+        standardTile("refresh", "device.switch", inactiveLabel: false, height: 2, width: 2, decoration: "flat") {
+            state "default", label:"", action:"refresh.refresh", icon:"st.secondary.refresh"
+        }
+
+        main(["switch"])
+        details(["rich-control", "refresh"])
+    }
 }
 
 // parse events into attributes
@@ -68,6 +85,7 @@ def parse(String description) {
 	def result = []
 	def bodyString = msg.body
 	if (bodyString) {
+		unschedule("setOffline")
 		def body = new XmlSlurper().parseText(bodyString)
 
 		if (body?.property?.TimeSyncRequest?.text()) {
@@ -78,13 +96,14 @@ def parse(String description) {
 		} else if (body?.property?.BinaryState?.text()) {
 			def value = body?.property?.BinaryState?.text().toInteger() == 1 ? "on" : "off"
 			log.trace "Notify: BinaryState = ${value}"
-			result << createEvent(name: "switch", value: value)
+			          result << createEvent(name: "switch", value: value, descriptionText: "Switch is ${value}")
 		} else if (body?.property?.TimeZoneNotification?.text()) {
 			log.debug "Notify: TimeZoneNotification = ${body?.property?.TimeZoneNotification?.text()}"
 		} else if (body?.Body?.GetBinaryStateResponse?.BinaryState?.text()) {
 			def value = body?.Body?.GetBinaryStateResponse?.BinaryState?.text().toInteger() == 1 ? "on" : "off"
 			log.trace "GetBinaryResponse: BinaryState = ${value}"
-			result << createEvent(name: "switch", value: value)
+			def dispaux = device.currentValue("switch") != value
+			result << createEvent(name: "switch", value: value, descriptionText: "Switch is ${value}", displayed: dispaux)
 		}
 	}
 
@@ -99,14 +118,6 @@ private getTime() {
 
 private getCallBackAddress() {
 	device.hub.getDataValue("localIP") + ":" + device.hub.getDataValue("localSrvPortTCP")
-}
-
-private Integer convertHexToInt(hex) {
-    Integer.parseInt(hex,16)
-}
-
-private String convertHexToIP(hex) {
-    [convertHexToInt(hex[0..1]),convertHexToInt(hex[2..3]),convertHexToInt(hex[4..5]),convertHexToInt(hex[6..7])].join(".")
 }
 
 private getHostAddress() {
@@ -195,6 +206,8 @@ def subscribe(ip, port) {
 	if (ip && ip != existingIp) {
 		log.debug "Updating ip from $existingIp to $ip"
 		updateDataValue("ip", ip)
+    	def ipvalue = convertHexToIP(getDataValue("ip"))
+        sendEvent(name: "currentIP", value: ipvalue, descriptionText: "IP changed to ${ipvalue}")
 	}
 	if (port && port != existingPort) {
 		log.debug "Updating port from $existingPort to $port"
@@ -259,6 +272,8 @@ User-Agent: CyberGarage-HTTP/1.0
 
 def poll() {
 log.debug "Executing 'poll'"
+if (device.currentValue("currentIP") != "Offline")
+    runIn(30, setOffline)
 new physicalgraph.device.HubAction("""POST /upnp/control/basicevent1 HTTP/1.1
 SOAPACTION: "urn:Belkin:service:basicevent:1#GetBinaryState"
 Content-Length: 277
@@ -273,4 +288,16 @@ User-Agent: CyberGarage-HTTP/1.0
 </u:GetBinaryState>
 </s:Body>
 </s:Envelope>""", physicalgraph.device.Protocol.LAN)
+}
+
+def setOffline() {
+    sendEvent(name: "switch", value: "offline", descriptionText: "The device is offline")
+}
+
+private Integer convertHexToInt(hex) {
+ 	Integer.parseInt(hex,16)
+}
+
+private String convertHexToIP(hex) {
+ 	[convertHexToInt(hex[0..1]),convertHexToInt(hex[2..3]),convertHexToInt(hex[4..5]),convertHexToInt(hex[6..7])].join(".")
 }

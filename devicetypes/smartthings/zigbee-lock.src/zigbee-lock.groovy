@@ -23,15 +23,14 @@
         capability "Battery"
         capability "Configuration"
 
-        fingerprint profileId: "0104", inClusters: "0000,0001,0003,0004,0005,0009,0020,0101,0402,0B05,FDBD", outClusters: "000A,0019",
-                        manufacturer: "Kwikset", model: "SMARTCODE_DEADBOLT_5", deviceJoinName: "Kwikset 5-Button Deadbolt"
-        fingerprint profileId: "0104", inClusters: "0000,0001,0003,0004,0005,0009,0020,0101,0402,0B05,FDBD", outClusters: "000A,0019",
-                        manufacturer: "Kwikset", model: "SMARTCODE_LEVER_5", deviceJoinName: "Kwikset 5-Button Lever"
-        fingerprint profileId: "0104", inClusters: "0000,0001,0003,0004,0005,0009,0020,0101,0402,0B05,FDBD", outClusters: "000A,0019",
-                        manufacturer: "Kwikset", model: "SMARTCODE_DEADBOLT_10", deviceJoinName: "Kwikset 10-Button Deadbolt"
-        fingerprint profileId: "0104", inClusters: "0000,0001,0003,0004,0005,0009,0020,0101,0402,0B05,FDBD", outClusters: "000A,0019",
-                        manufacturer: "Kwikset", model: "SMARTCODE_DEADBOLT_10T", deviceJoinName: "Kwikset 10-Button Touch Deadbolt"
-
+        fingerprint profileId: "0104", inClusters: "0000,0001,0003,0004,0005,0009,0020,0101,0402,0B05,FDBD", outClusters: "000A,0019", manufacturer: "Kwikset", model: "SMARTCODE_DEADBOLT_5", deviceJoinName: "Kwikset 5-Button Deadbolt"
+        fingerprint profileId: "0104", inClusters: "0000,0001,0003,0004,0005,0009,0020,0101,0402,0B05,FDBD", outClusters: "000A,0019", manufacturer: "Kwikset", model: "SMARTCODE_LEVER_5", deviceJoinName: "Kwikset 5-Button Lever"
+        fingerprint profileId: "0104", inClusters: "0000,0001,0003,0004,0005,0009,0020,0101,0402,0B05,FDBD", outClusters: "000A,0019", manufacturer: "Kwikset", model: "SMARTCODE_DEADBOLT_10", deviceJoinName: "Kwikset 10-Button Deadbolt"
+        fingerprint profileId: "0104", inClusters: "0000,0001,0003,0004,0005,0009,0020,0101,0402,0B05,FDBD", outClusters: "000A,0019", manufacturer: "Kwikset", model: "SMARTCODE_DEADBOLT_10T", deviceJoinName: "Kwikset 10-Button Touch Deadbolt"
+        fingerprint profileId: "0104", inClusters: "0000,0001,0003,0009,000A,0101,0020", outClusters: "000A,0019", manufacturer: "Yale", model: "YRL220 TS LL", deviceJoinName: "Yale Touch Screen Lever Lock"
+        fingerprint profileId: "0104", inClusters: "0000,0001,0003,0009,000A,0101,0020", outClusters: "000A,0019", manufacturer: "Yale", model: "YRD210 PB DB", deviceJoinName: "Yale Push Button Deadbolt Lock"
+        fingerprint profileId: "0104", inClusters: "0000,0001,0003,0009,000A,0101,0020", outClusters: "000A,0019", manufacturer: "Yale", model: "YRD220/240 TSDB", deviceJoinName: "Yale Touch Screen Deadbolt Lock"
+        fingerprint profileId: "0104", inClusters: "0000,0001,0003,0009,000A,0101,0020", outClusters: "000A,0019", manufacturer: "Yale", model: "YRL210 PB LL", deviceJoinName: "Yale Push Button Lever Lock"
     }
 
     tiles(scale: 2) {
@@ -53,7 +52,7 @@
 		valueTile("battery", "device.battery", inactiveLabel:false, decoration:"flat", width:2, height:2) {
 			state "battery", label:'${currentValue}% battery', unit:""
 		}
-		standardTile("refresh", "device.lock", inactiveLabel:false, decoration:"flat", width:2, height:2) {
+		standardTile("refresh", "device.refresh", inactiveLabel:false, decoration:"flat", width:2, height:2) {
 			state "default", label:'', action:"refresh.refresh", icon:"st.secondary.refresh"
 		}
 
@@ -85,18 +84,18 @@ def uninstalled() {
 
 def configure() {
     def cmds =
-        zigbee.configSetup("${CLUSTER_DOORLOCK}", "${DOORLOCK_ATTR_LOCKSTATE}",
-                           "${TYPE_ENUM8}", 0, 3600, "{01}") +
-        zigbee.configSetup("${CLUSTER_POWER}", "${POWER_ATTR_BATTERY_PERCENTAGE_REMAINING}",
-                           "${TYPE_U8}", 3600, 3600, "{01}")
+        zigbee.configureReporting(CLUSTER_DOORLOCK, DOORLOCK_ATTR_LOCKSTATE,
+                                  TYPE_ENUM8, 0, 3600, null) +
+        zigbee.configureReporting(CLUSTER_POWER, POWER_ATTR_BATTERY_PERCENTAGE_REMAINING,
+                                  TYPE_U8, 600, 21600, 0x01)
     log.info "configure() --- cmds: $cmds"
     return cmds + refresh() // send refresh cmds as part of config
 }
 
 def refresh() {
     def cmds =
-        zigbee.refreshData("${CLUSTER_DOORLOCK}", "${DOORLOCK_ATTR_LOCKSTATE}") +
-        zigbee.refreshData("${CLUSTER_POWER}", "${POWER_ATTR_BATTERY_PERCENTAGE_REMAINING}")
+        zigbee.readAttribute(CLUSTER_DOORLOCK, DOORLOCK_ATTR_LOCKSTATE) +
+        zigbee.readAttribute(CLUSTER_POWER, POWER_ATTR_BATTERY_PERCENTAGE_REMAINING)
     log.info "refresh() --- cmds: $cmds"
     return cmds
 }
@@ -109,49 +108,52 @@ def parse(String description) {
         map = parseReportAttributeMessage(description)
     }
 
-    log.debug "parse() --- Parse returned $map"
     def result = map ? createEvent(map) : null
+    log.debug "parse() --- returned: $result"
     return result
 }
 
 // Lock capability commands
 def lock() {
-    def cmds = zigbee.zigbeeCommand("${CLUSTER_DOORLOCK}", "${DOORLOCK_CMD_LOCK_DOOR}", "{}")
+    def cmds = zigbee.command(CLUSTER_DOORLOCK, DOORLOCK_CMD_LOCK_DOOR)
     log.info "lock() -- cmds: $cmds"
     return cmds
 }
 
 def unlock() {
-    def cmds = zigbee.zigbeeCommand("${CLUSTER_DOORLOCK}", "${DOORLOCK_CMD_UNLOCK_DOOR}", "{}")
+    def cmds = zigbee.command(CLUSTER_DOORLOCK, DOORLOCK_CMD_UNLOCK_DOOR)
     log.info "unlock() -- cmds: $cmds"
     return cmds
 }
 
 // Private methods
 private Map parseReportAttributeMessage(String description) {
-    log.trace "parseReportAttributeMessage() --- description: $description"
-
     Map descMap = zigbee.parseDescriptionAsMap(description)
-
-    log.debug "parseReportAttributeMessage() --- descMap: $descMap"
-
     Map resultMap = [:]
     if (descMap.clusterInt == CLUSTER_POWER && descMap.attrInt == POWER_ATTR_BATTERY_PERCENTAGE_REMAINING) {
         resultMap.name = "battery"
-        // BatteryPercentageRemaining is specified in .5% increments
-        resultMap.value = Integer.parseInt(descMap.value, 16) / 2
-        log.info "parseReportAttributeMessage() --- battery: ${resultMap.value}"
+        resultMap.value = Math.round(Integer.parseInt(descMap.value, 16) / 2)
+        if (device.getDataValue("manufacturer") == "Yale") {            //Handling issue with Yale locks incorrect battery reporting
+            resultMap.value = Integer.parseInt(descMap.value, 16)
+        }
     }
     else if (descMap.clusterInt == CLUSTER_DOORLOCK && descMap.attrInt == DOORLOCK_ATTR_LOCKSTATE) {
         def value = Integer.parseInt(descMap.value, 16)
+        def linkText = getLinkText(device)
         resultMap.name = "lock"
-        resultMap.putAll([0:["value":"unknown",
-                             "descriptionText":"Not fully locked"],
-                          1:["value":"locked"],
-                          2:["value":"unlocked"]].get(value,
-                                                      ["value":"unknown",
-                                                       "descriptionText":"Unknown lock state"]))
-        log.info "parseReportAttributeMessage() --- lock: ${resultMap.value}"
+        if (value == 0) {
+            resultMap.value = "unknown"
+            resultMap.descriptionText = "${linkText} is not fully locked"
+        } else if (value == 1) {
+            resultMap.value = "locked"
+            resultMap.descriptionText = "${linkText} is locked"
+        } else if (value == 2) {
+            resultMap.value = "unlocked"
+            resultMap.descriptionText = "${linkText} is unlocked"
+        } else {
+            resultMap.value = "unknown"
+            resultMap.descriptionText = "${linkText} is in unknown lock state"
+        }
     }
     else {
         log.debug "parseReportAttributeMessage() --- ignoring attribute"

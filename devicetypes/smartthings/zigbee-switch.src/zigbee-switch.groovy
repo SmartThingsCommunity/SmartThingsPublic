@@ -17,7 +17,6 @@ metadata {
         capability "Actuator"
         capability "Configuration"
         capability "Refresh"
-        capability "Sensor"
         capability "Switch"
 
         fingerprint profileId: "0104", inClusters: "0000, 0003, 0004, 0005, 0006"
@@ -43,7 +42,7 @@ metadata {
                 attributeState "turningOff", label:'${name}', action:"switch.on", icon:"st.switches.light.off", backgroundColor:"#ffffff", nextState:"turningOn"
             }
         }
-        standardTile("refresh", "device.switch", inactiveLabel: false, decoration: "flat", width: 2, height: 2) {
+        standardTile("refresh", "device.refresh", inactiveLabel: false, decoration: "flat", width: 2, height: 2) {
             state "default", label:"", action:"refresh.refresh", icon:"st.secondary.refresh"
         }
         main "switch"
@@ -54,16 +53,9 @@ metadata {
 // Parse incoming device messages to generate events
 def parse(String description) {
     log.debug "description is $description"
-
-    def resultMap = zigbee.getKnownDescription(description)
-    if (resultMap) {
-        log.info resultMap
-        if (resultMap.type == "update") {
-            log.info "$device updates: ${resultMap.value}"
-        }
-        else {
-            sendEvent(name: resultMap.type, value: resultMap.value)
-        }
+    def event = zigbee.getEvent(description)
+    if (event) {
+        sendEvent(event)
     }
     else {
         log.warn "DID NOT PARSE MESSAGE for description : $description"
