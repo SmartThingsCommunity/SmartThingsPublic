@@ -65,31 +65,31 @@ def getAwakePhraseTitle() {
 preferences(oauthPage: "deviceAuthorization") {
     page(name: "deviceAuthorization", title: "", nextPage: "routinesPage", install: false, uninstall: true) {
         section ("Allow Alexa to control these switches...") {
-            input "selectedSwitches", "capability.switch", multiple: true, required: false
+            input "selectedSwitches", "capability.switch", title: "switches", multiple: true, required: false
         }
         section ("Allow Alexa to control these thermostats...") {
-            input "selectedThermostats", "capability.thermostat", multiple: true, required: false
+            input "selectedThermostats", "capability.thermostat", title: "thermostats", multiple: true, required: false
         }
         //section ("Allow Alexa to control these colored bulbs...") {
         //    input "selectedColorControls", "capability.colorControl", multiple: true, required: false
         //}
         section ("Allow Alexa to read these contact sensors...") {
-            input "selectedContactSensors", "capability.contactSensor", multiple: true, required: false
+            input "selectedContactSensors", "capability.contactSensor", title: "contact sensors", multiple: true, required: false
         }
         section ("Allow Alexa to read these humidity sensors...") {
-            input "selectedHumiditySensors", "capability.relativeHumidityMeasurement", multiple: true, required: false
+            input "selectedHumiditySensors", "capability.relativeHumidityMeasurement", title: "humidity sensors", multiple: true, required: false
         }
         section ("Allow Alexa to read these temperature sensors...") {
-            input "selectedTemperatureSensors", "capability.temperatureMeasurement", multiple: true, required: false
+            input "selectedTemperatureSensors", "capability.temperatureMeasurement", title: "temperature sensors", multiple: true, required: false
         }
         //section ("Allow Alexa to read these water sensors...") {
         //    input "selectedWaterSensors", "capability.waterSensor", multiple: true, required: false
         //}
        section ("Allow Alexa to read these smoke detectors...") {
-            input "selectedSmokeDetectors", "capability.smokeDetector", multiple: true, required: false
+            input "selectedSmokeDetectors", "capability.smokeDetector", title: "smoke detectors", multiple: true, required: false
         }
        section ("Allow Alexa to read these battery powered devices...") {
-            input "selectedBatteries", "capability.battery", multiple: true, required: false
+            input "selectedBatteries", "capability.battery", title: "battery powered devices", multiple: true, required: false
         }
     }
     page(name: "routinesPage")
@@ -487,8 +487,10 @@ def executePhrase() {
         
         if(canExecute) {
         	if(delay == null || delay == 0) {
+                log.debug "running ${phraseHandler} now"
             	runIn(1, phraseHandler)
             } else {
+                log.debug "running ${phraseHandler} in ${delay * 60} minutes"
             	runIn(delay * 60, phraseHandler)
             }
             resp << [routine: executeName, delay: delay]
@@ -497,8 +499,10 @@ def executePhrase() {
         }
     } else {
     	if(isValidPhrase == false) {
+            log.debug "phrase is invalid"
         	resp << [error: "InvalidPhrase", name: name]
         } else {
+            log.debug "routine is not configured"
             resp << [error: "NotConfigured", phrase: phraseTitle]
         }
     }
@@ -524,6 +528,7 @@ def runScheduledLeavingPhraseHandler() {
 
 // runs the watching movie phrase routine when the phrase is executed
 def runScheduledWatchingMoviePhraseHandler() {
+    log.debug "running scheduled watching movie handler"
     def canExecute = false
     
     selectedRoutines.each {
