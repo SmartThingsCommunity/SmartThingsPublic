@@ -35,7 +35,8 @@ metadata {
     
     preferences {
         input("ip", "string", title:"IP Address", description: "192.168.1.150" ,required: true, displayDuringSetup: true)
-        input("port", "string", title:"Port", description: "80" , required: true, displayDuringSetup: true)
+        // Port should always be 80
+        //input("port", "string", title:"Port", description: "80" , required: true, displayDuringSetup: true)
 	}
 
 	tiles (scale: 2){      
@@ -88,7 +89,7 @@ def configure() {
     sendEvent(name:"hubInfo", value:"Sonoff switch still being configured")
     if (state.MAC != null) state.dni = setDeviceNetworkId(state.MAC)
     else 
-    if (ip != null && port != null) state.dni = setDeviceNetworkId(ip, port)
+    if (ip != null) state.dni = setDeviceNetworkId(ip, "80")
     state.hubIP = device.hub.getDataValue("localIP")
     response(setupDevices() + setupRules() + refresh())
 }
@@ -292,7 +293,7 @@ private updateDNI() {
 }
 
 private getHostAddress() {
-	return "${ip}:${port}"
+	return "${ip}:80"
 }
 
 private String convertIPtoHex(ipAddress) { 
