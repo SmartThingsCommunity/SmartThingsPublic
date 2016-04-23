@@ -21,6 +21,7 @@
         capability "Actuator"
         capability "Switch"
         capability "Contact Sensor"
+        capability "Momentary"
         capability "Polling"
         capability "Refresh"
         capability "Sensor"
@@ -53,7 +54,7 @@
 		multiAttributeTile(name: "main", type: "generic", width: 6, height: 4, canChangeIcon: true) {
         	tileAttribute ("device.switch", key: "PRIMARY_CONTROL") {
             	attributeState "momentary", label: "Activate", action: "switch.on", icon: "st.switches.switch.on", backgroundColor: "#9bceff", nextState: "activating"
-                attributeState "activating", label:'Activating', icon:"st.switches.switch.on", backgroundColor:"#c4e2ff"
+                attributeState "activating", label:'Activating', action: "nothing", icon:"st.switches.switch.on", backgroundColor:"#c4e2ff", nextState: "activating"
                 attributeState "on", label:'On', action:"switch.off", icon:"st.switches.switch.off", backgroundColor:"#79b821", nextState:"turningOff"
                 attributeState "off", label:'Off', action:"switch.on", icon:"st.switches.switch.on", backgroundColor:"#ffffff", nextState:"turningOn"
                 attributeState "turningOn", label:'Turning On', action:"switch.off", icon:"st.switches.switch.off", backgroundColor:"#79b821", nextState:"turningOff"
@@ -62,14 +63,15 @@
             }
             
              tileAttribute ("device.contact", key: "SECONDARY_CONTROL") {
-	            attributeState "contact", label: 'Contact ${currentValue}'
+	            attributeState "contact", label: 'Contact ${currentValue}', defaultState: true
+                attributeState "disabled", label: ''
 			}
 		}
         
         standardTile("contact", "device.contact", width: 3, height: 2, canChangeIcon: true, decoration: "flat") {
             state "open", label:'Open', icon:"st.contact.contact.open", backgroundColor:"#ffa81e"
             state "closed", label:'Closed', icon:"st.contact.contact.closed", backgroundColor:"#ffffff"
-            state "disabled", label:'Disabled', backgroundColor:"#cccccc"
+            state "disabled", label:'Disabled', icon:"st.contact.contact.closed", backgroundColor:"#ffffff"
 			state "offline", label:'Offline', backgroundColor:"#ff0000"
         }
         
@@ -95,72 +97,69 @@
 
 // ---- SETUP ---- //
 def installed() {
-    poll()
+    refresh()
 }
 
 def updated() {
-    poll()
+    refresh()
 }
 // ---- /SETUP ---- //
 
 // ---- COMMANDS ---- //
+def nothing() {
+}
+
+def push() {
+	log.debug "Executing 'push'"
+	trigger()
+}
+
 def on() {
-	if (device.currentValue("switchMode") == "momentary")
-        sendEvent(name: "switch", value: "momentary", descriptionText: "Switch was triggered", displayed: true, isStateChange: true) 
-        
-    trigger()
+	log.debug "Executing 'on'"
+	trigger()
 }
 
 def trigger() {
-def turnOn = new physicalgraph.device.HubAction("""POST /upnp/control/basicevent1 HTTP/1.1
-SOAPAction: "urn:Belkin:service:basicevent:1#SetBinaryState"
-Host: ${getHostAddress()}
-Content-Type: text/xml
-Content-Length: 333
+	if (device.currentValue("switchMode") == "momentary")
+        sendEvent(name: "switch", value: "activating", descriptionText: "Switch was triggered", displayed: true, isStateChange: true) 
 
-<?xml version="1.0"?>
-<SOAP-ENV:Envelope xmlns:SOAP-ENV="http://schemas.xmlsoap.org/soap/envelope/" SOAP-ENV:encodingStyle="http://schemas.xmlsoap.org/soap/encoding/">
-<SOAP-ENV:Body>
- <m:SetBinaryState xmlns:m="urn:Belkin:service:basicevent:1">
-<BinaryState>1</BinaryState>
- </m:SetBinaryState>
-</SOAP-ENV:Body>
-</SOAP-ENV:Envelope>""", physicalgraph.device.Protocol.LAN)
+    getSoapRequest(
+    	path: "/upnp/control/basicevent1",
+        urn: "urn:Belkin:service:basicevent:1",
+        action: "SetBinaryState",
+        body: ["BinaryState": 1]
+    )
 }
 
 def off() {
 	if (device.currentValue("switchMode") != "toggle")
     	return
-    
-log.debug "Executing 'off'"
-def turnOff = new physicalgraph.device.HubAction("""POST /upnp/control/basicevent1 HTTP/1.1
-SOAPAction: "urn:Belkin:service:basicevent:1#SetBinaryState"
-Host: ${getHostAddress()}
-Content-Type: text/xml
-Content-Length: 333
-
-<?xml version="1.0"?>
-<SOAP-ENV:Envelope xmlns:SOAP-ENV="http://schemas.xmlsoap.org/soap/envelope/" SOAP-ENV:encodingStyle="http://schemas.xmlsoap.org/soap/encoding/">
-<SOAP-ENV:Body>
- <m:SetBinaryState xmlns:m="urn:Belkin:service:basicevent:1">
-<BinaryState>0</BinaryState>
- </m:SetBinaryState>
-</SOAP-ENV:Body>
-</SOAP-ENV:Envelope>""", physicalgraph.device.Protocol.LAN)
+       
+    getSoapRequest(
+    	path: "/upnp/control/basicevent1",
+        urn: "urn:Belkin:service:basicevent:1",
+        action: "SetBinaryState",
+        body: ["BinaryState": 0]
+    )
 }
 
 def subscribe(hostAddress) {
-log.debug "Executing 'subscribe()'"
-def address = getCallBackAddress()
-new physicalgraph.device.HubAction("""SUBSCRIBE /upnp/event/basicevent1 HTTP/1.1
-HOST: ${hostAddress}
-CALLBACK: <http://${address}/>
-NT: upnp:event
-TIMEOUT: Second-5400
-User-Agent: CyberGarage-HTTP/1.0
+	log.debug "Executing 'subscribe()'"
+	def address = getCallBackAddress()
 
-
-""", physicalgraph.device.Protocol.LAN)
+    def action = new physicalgraph.device.HubAction(
+        method: "SUBSCRIBE",
+        path: "/upnp/event/basicevent1",
+        headers: [
+            HOST: hostAddress,
+            CALLBACK: "<http://${address}/>",
+            NT: "upnp:event",
+            TIMEOUT: "Second-5400"
+        ]
+    )
+    
+    log.debug "Subscribe Request ID: ${action.requestId}"
+    return action
 }
 
 def subscribe() {
@@ -191,86 +190,82 @@ def subscribe(ip, port) {
 def resubscribe() {
     log.debug "Executing 'resubscribe()'"
     def sid = getDeviceDataByName("subscriptionId")
-new physicalgraph.device.HubAction("""SUBSCRIBE /upnp/event/basicevent1 HTTP/1.1
-HOST: ${getHostAddress()}
-SID: uuid:${sid}
-TIMEOUT: Second-5400
-
-
-""", physicalgraph.device.Protocol.LAN)
+    
+    def action = new physicalgraph.device.HubAction(
+        method: "SUBSCRIBE",
+        path: "/upnp/event/basicevent1",
+        headers: [
+            HOST: getHostAddress(),
+            SID: "uuid:${sid}",
+            TIMEOUT: "Second-5400"
+        ]
+    )
+    log.debug "Resubscribe Request ID: ${action.requestId}"
+    return action
 }
 
 
 def unsubscribe() {
     def sid = getDeviceDataByName("subscriptionId")
-new physicalgraph.device.HubAction("""UNSUBSCRIBE publisher path HTTP/1.1
-HOST: ${getHostAddress()}
-SID: uuid:${sid}
-
-
-""", physicalgraph.device.Protocol.LAN)
+    
+    def action = new physicalgraph.device.HubAction(
+        method: "UNSUBSCRIBE",
+        path: "/upnp/event/basicevent1",
+        headers: [
+            HOST: getHostAddress(),
+            SID: "uuid:${sid}"
+        ]
+    )
+    
+    sendHubCommand(action)
 }
 
 
 //TODO: Use UTC Timezone
 def timeSyncResponse() {
-log.debug "Executing 'timeSyncResponse()'"
-new physicalgraph.device.HubAction("""POST /upnp/control/timesync1 HTTP/1.1
-Content-Type: text/xml; charset="utf-8"
-SOAPACTION: "urn:Belkin:service:timesync:1#TimeSync"
-Content-Length: 376
-HOST: ${getHostAddress()}
-User-Agent: CyberGarage-HTTP/1.0
+	log.debug "Executing 'timeSyncResponse()'"
+	def timeZone = location.timeZone
+    def dst = timeZone.inDaylightTime(new Date())
+    def offset = timeZone.getOffset(new Date().getTime())
 
-<?xml version="1.0" encoding="utf-8"?>
-<s:Envelope xmlns:s="http://schemas.xmlsoap.org/soap/envelope/" s:encodingStyle="http://schemas.xmlsoap.org/soap/encoding/">
- <s:Body>
-  <u:TimeSync xmlns:u="urn:Belkin:service:timesync:1">
-   <UTC>${getTime()}</UTC>
-   <TimeZone>-05.00</TimeZone>
-   <dst>1</dst>
-   <DstSupported>1</DstSupported>
-  </u:TimeSync>
- </s:Body>
-</s:Envelope>
-""", physicalgraph.device.Protocol.LAN)
+	getSoapRequest(
+    	path: "/upnp/control/timesync1",
+        urn: "urn:Belkin:service:timesync:1",
+        action: "TimeSync",
+        body: ["UTC": getTime(), "TimeZone": tzString, "dst": dst ? "1" : "0", "DstSupported": timeZone.observesDaylightTime() ? "1" : "0"]
+    )
 }
 
 def setOffline() {
 	//sendEvent(name: "currentIP", value: "Offline", displayed: false)
     sendEvent(name: "switch", value: "offline", descriptionText: "The device is offline")
     sendEvent(name: "contact", value: "offline", descriptionText: "The device is offline", displayed: false)
-    sendEvent(name: "switchMode", value: "offline", descriptionText: "The device is offline", displayed: false)
 }
 
 def poll() {
-log.debug "Executing 'poll'"
-if (device.currentValue("currentIP") != "Offline")
-    runIn(30, setOffline)
-new physicalgraph.device.HubAction("""POST /upnp/control/deviceevent1 HTTP/1.1
-SOAPACTION: "urn:Belkin:service:deviceevent:1#GetAttributes"
-Content-Length: 279
-Content-Type: text/xml; charset="utf-8"
-HOST: ${getHostAddress()}
-User-Agent: CyberGarage-HTTP/1.0
-
-<?xml version="1.0" encoding="utf-8"?>
-<s:Envelope xmlns:s="http://schemas.xmlsoap.org/soap/envelope/" s:encodingStyle="http://schemas.xmlsoap.org/soap/encoding/">
-<s:Body>
-<u:GetAttributes xmlns:u="urn:Belkin:service:deviceevent:1">null</u:GetAttributes>
-</s:Body>
-</s:Envelope>""", physicalgraph.device.Protocol.LAN)
+	log.debug "Executing 'poll'"
+    if (device.currentValue("currentIP") != "Offline")
+        runIn(30, setOffline)
+    
+    getSoapRequest(
+    	path: "/upnp/control/deviceevent1",
+        urn: "urn:Belkin:service:deviceevent:1",
+        action: "GetAttributes",
+        body: ["GetAttributes": null]
+    )
 }
 
 // ---- /COMMANDS ---- //
 
 // ---- EVENTS ---- //
-// parse events into attributes
 def parse(String description) {
-	log.debug "Event received."
-
+	log.debug "Data received, parsing..."
     def msg = parseLanMessage(description)
     def headerString = msg.header
+    
+    if (msg.status && msg.status != 200) {
+    	log.error "Failure: " + msg
+    }
 
     if (headerString?.contains("SID: uuid:")) {
         def sid = (headerString =~ /SID: uuid:.*/) ? ( headerString =~ /SID: uuid:.*/)[0] : "0"
@@ -293,7 +288,7 @@ def parse(String description) {
         handleGetAttributesResponse(body, result)
  	}
     
- return result
+     return result
 }
 
 private handleTimeSyncRequest(body, result) {
@@ -384,13 +379,18 @@ private processAttributeList(list, result) {
     
     if (values["SensorPresent"]) {
     	log.debug "SensorPresent = ${values['SensorPresent']}"
-    	sensorPresent =	values["SensorPresent"] == "1"
-    	result << updateSensorPresent(sensorPresent ? "on" : "off")
+        def newSensorPresent = values["SensorPresent"] == "1"
+        
+        if (sensorPresent != newSensorPresent && newSensorPresent && !values["Sensor"])
+        	values["Sensor"] = "0"
+        
+    	result << updateSensorPresent(newSensorPresent ? "on" : "off")
+        sensorPresent = newSensorPresent
 	}
     
-    if (!sensorPresent)
+    if (!sensorPresent) {
     	result << updateSensor("disabled")
-    else if (values["Sensor"]) {
+    } else if (values["Sensor"]) {
     	log.debug "Sensor = ${values['Sensor']}"
     	def checkValue = sensorInvert ? "1" : "0"
     	def sensorValue = values["Sensor"] == checkValue ? "closed" : "open"
@@ -402,10 +402,13 @@ private processAttributeList(list, result) {
     if (values["SwitchMode"]) {
     	log.debug "SwitchMode = ${values['SwitchMode']}"
     	switchMode = values["SwitchMode"] == "0" ? "toggle" : "momentary"
-        result << updateSwitchMode(switchMode)
-        
+                
         if (switchMode == "momentary" && device.currentValue("switch") != "momentary")
         	result << updateSwitch("momentary")
+        else if (!values["Switch"] && switchMode == "toggle" && device.currentValue("switch") != "toggle")
+        	values["Switch"] = "0"
+        
+        result << updateSwitchMode(switchMode)
     }
     
     if (values["Switch"]) {
@@ -486,4 +489,18 @@ private getHostAddress() {
  	log.debug "Using ip: ${ip} and port: ${port} for device: ${device.id}"
  	return convertHexToIP(ip) + ":" + convertHexToInt(port)
 }
+
+private getSoapRequest(params) {
+	def request = new physicalgraph.device.HubSoapAction(
+    	path: params.path,
+        urn: params.urn,
+        action: params.action,
+        body: params.body,
+        headers: [Host: getHostAddress(), CONNECTION: "close"]
+    )
+    
+    log.debug "SOAP Request ID: ${request.requestId} => ${getHostAddress()}${params.path}"
+    return request
+}
+
 // ---- /UTILS ---- //
