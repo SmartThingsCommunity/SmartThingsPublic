@@ -148,9 +148,9 @@ if (allOk) {
        def myEvents = settings["lights_${roomNumber}"].find{it.id == evt.deviceId}.eventsSince(new Date(now() - 3000), [all:true, max: 5]).findAll{(it.source as String) == "APP_COMMAND"}
        if (myEvents) {
           if (debugBool) log.debug "A SmartApp triggered these events: ${myEvents?.source}"
-          roomTrue(roomNumber)
-          if (settings.numberOfSeconds == null || settings.numberOfSeconds == "") settings.numberOfSeconds = 60
-          runIn(settings.numberOfSeconds, "roomFalse$roomNumber")
+          def myTime = now()
+          if (debugBool) log.debug "Setting room$roomNumber to $myTime"
+          state."room${roomNumber}" = myTime   
        }
     }
 }
@@ -164,7 +164,8 @@ if (allOk) {
        if (settings["motion_${i}"].find{it.id == evt.deviceId}) roomNumber = i
    }
    if (roomNumber) {
-      if (state."room${roomNumber}" && state."room${roomNumber}".toBoolean() == true) {
+      if (settings.numberOfSeconds == null || settings.numberOfSeconds == "") settings.numberOfSeconds = 60
+      if (state."room${roomNumber}" && now() - state."room${roomNumber}" < (settings.numberOfSeconds * 1000)) {
           if (debugBool) log.debug "We need to turn the lights on" 
           settings["lights_${roomNumber}"].on()
       } else {
@@ -172,16 +173,6 @@ if (allOk) {
       }
    }
 }
-}
-
-def roomTrue(roomNumber){
-   state."room${roomNumber}" = true
-   if (debugBool) log.debug "Setting room$roomNumber to ${state."room${roomNumber}"}"
-}
-
-def roomFalse(roomNumber){
-   state."room${roomNumber}" = false
-   if (debugBool) log.debug "Setting room$roomNumber to ${state."room${roomNumber}"}"
 }
 
 // execution filter methods
@@ -238,196 +229,4 @@ private hideOptionsSection() {
 
 private timeIntervalLabel() {
 	(starting && ending) ? hhmm(starting) + "-" + hhmm(ending, "h:mm a z") : ""
-}
-
-def roomTrue1() {
-   roomTrue(1)
-}
-
-def roomFalse1() {
-   roomFalse(1)
-}
-
-def roomTrue2() {
-   roomTrue(2)
-}
-
-def roomFalse2() {
-   roomFalse(2)
-}
-
-def roomTrue3() {
-   roomTrue(3)
-}
-
-def roomFalse3() {
-   roomFalse(3)
-}
-
-def roomTrue4() {
-   roomTrue(4)
-}
-
-def roomFalse4() {
-   roomFalse(4)
-}
-
-def roomTrue5() {
-   roomTrue(5)
-}
-
-def roomFalse5() {
-   roomFalse(5)
-}
-
-def roomTrue6() {
-   roomTrue(6)
-}
-
-def roomFalse6() {
-   roomFalse(6)
-}
-
-def roomTrue7() {
-   roomTrue(7)
-}
-
-def roomFalse7() {
-   roomFalse(7)
-}
-
-def roomTrue8() {
-   roomTrue(8)
-}
-
-def roomFalse8() {
-   roomFalse(8)
-}
-
-def roomTrue9() {
-   roomTrue(9)
-}
-
-def roomFalse9() {
-   roomFalse(9)
-}
-
-def roomTrue10() {
-   roomTrue(10)
-}
-
-def roomFalse10() {
-   roomFalse(10)
-}
-
-def roomTrue11() {
-   roomTrue(11)
-}
-
-def roomFalse11() {
-   roomFalse(11)
-}
-
-def roomTrue12() {
-   roomTrue(12)
-}
-
-def roomFalse12() {
-   roomFalse(12)
-}
-
-def roomTrue13() {
-   roomTrue(13)
-}
-
-def roomFalse13() {
-   roomFalse(13)
-}
-
-def roomTrue14() {
-   roomTrue(14)
-}
-
-def roomFalse14() {
-   roomFalse(14)
-}
-
-def roomTrue15() {
-   roomTrue(15)
-}
-
-def roomFalse15() {
-   roomFalse(15)
-}
-
-def roomTrue16() {
-   roomTrue(16)
-}
-
-def roomFalse16() {
-   roomFalse(16)
-}
-
-def roomTrue17() {
-   roomTrue(17)
-}
-
-def roomFalse17() {
-   roomFalse(17)
-}
-
-def roomTrue18() {
-   roomTrue(18)
-}
-
-def roomFalse18() {
-   roomFalse(18)
-}
-
-def roomTrue19() {
-   roomTrue(19)
-}
-
-def roomFalse19() {
-   roomFalse(19)
-}
-
-def roomTrue20() {
-   roomTrue(20)
-}
-
-def roomFalse20() {
-   roomFalse(20)
-}
-
-def roomTrue21() {
-   roomTrue(21)
-}
-
-def roomFalse21() {
-   roomFalse(21)
-}
-
-def roomTrue22() {
-   roomTrue(22)
-}
-
-def roomFalse22() {
-   roomFalse(22)
-}
-
-def roomTrue23() {
-   roomTrue(23)
-}
-
-def roomFalse23() {
-   roomFalse(23)
-}
-
-def roomTrue24() {
-   roomTrue(24)
-}
-
-def roomFalse24() {
-   roomFalse(24)
 }
