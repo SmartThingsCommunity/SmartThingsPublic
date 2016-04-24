@@ -61,8 +61,8 @@ def parse(description) {
 			if (msg.body) {
 				def contentType = msg.headers["Content-Type"]
 				if (contentType?.contains("json")) {
-					def bulbs = new groovy.json.JsonSlurper().parseText(msg.body)
-					if (bulbs.state) {
+					def devices = new groovy.json.JsonSlurper().parseText(msg.body)
+					if (devices.state || devices.action) {
 						log.info "Bridge response: $msg.body"
 					} else {
 						// Sending Bulbs List to parent"
