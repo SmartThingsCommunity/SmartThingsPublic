@@ -2,9 +2,9 @@
  *  Alexa Helper-Child
  *
  *  Copyright © 2016 Michael Struck
- *  Version 2.9.9 4/21/16
+ *  Version 2.9.9a 4/24/16
  * 
- *  Version 2.9.9 - Minor GUI changes to accomodate new mobile app structure
+ *  Version 2.9.9a - Minor GUI changes to accomodate new mobile app structure
  *  See https://github.com/MichaelStruck/SmartThings/blob/master/Other-SmartApps/AlexaHelper/version%20history.md for additional version history
  *
  *  Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except
@@ -316,7 +316,7 @@ def pageVoice(){
             href "pagePresenceReport", title: "Presence Report", description: reportDesc(voicePresence, "", ""), state: greyOutState(voicePresence, "", "")
             href "pageDoorReport", title: "Door/Window Report", description: reportDesc(voiceDoorSensors, voiceDoorControls, voiceDoorLocks), state: greyOutState(voiceDoorSensors, voiceDoorControls, voiceDoorLocks)
             href "pageTempReport", title: "Temperature/Thermostat Report", description: reportDesc(voiceTemperature, voiceTempSettings, voiceTempVar), state: greyOutState(voiceTemperature, voiceTempSettings, voiceTempVar)
-            href "pageHomeReport", title: "Mode and Smart Home Monitor Report", description: reportDesc(voiceMode, voiceSHM, ""), state: "complete"
+            href "pageHomeReport", title: "Mode and Smart Home Monitor Report", description: reportDescMSHM(), state: greyOutState(voiceMode, voiceSHM, "")
             input "voicePost", "text", title: "Post Message After Device Report", description: "Enter a message to play after the device report", required: false
         }
     }
@@ -738,6 +738,11 @@ def scenarioDesc(){
     desc = desc ? desc : "Status: UNCONFIGURED - Tap to configure scenario"
 }
 def reportDesc(param1, param2, param3) {def result = param1 || param2 || param3  ? "Status: CONFIGURED - Tap to edit" : "Status: UNCONFIGURED - Tap to configure"}
+def reportDescMSHM() {
+	def result= "Status: "
+    result += voiceMode ? "Report Mode: On" : "Report Mode: Off"
+    result += voiceSHM ? ", Report SHM: On" : ", Report SHM: Off"
+}
 def getDeviceDesc(type){  
     def result, switches, dimmers, cLights, locks, garages, tstats, lvl, cLvl, clr, tLvl
     def cmd = [switch: settings."${type}SwitchesCMD", dimmer: settings."${type}DimmersCMD", cLight: settings."${type}ColoredLightsCMD", tstat: settings."${type}TstatsCMD", lock: settings."${type}LocksCMD", garage: settings."${type}GaragesCMD"]
@@ -1015,5 +1020,5 @@ private parseDate(time, type){
     new Date().parse("yyyy-MM-dd'T'HH:mm:ss.SSSZ", formattedDate).format("${type}", timeZone(formattedDate))
 }
 //Version
-private def textVersion() {return "Child App Version: 2.9.9 (04/21/2016)"}
+private def textVersion() {return "Child App Version: 2.9.9a (04/24/2016)"}
 private def versionInt() {return 299}
