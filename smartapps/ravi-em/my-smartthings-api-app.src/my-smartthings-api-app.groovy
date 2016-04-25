@@ -29,7 +29,8 @@ preferences(oauthPage: "deviceAuthorization") {
 page(name: "deviceAuthorization"){
 	section("Allow Endpoint to Control These Things...") {
 		input "switches", "capability.switch", title: "Which Switches?", multiple: true, required: false
-		input "locks", "capability.lock", title: "Which Locks?", multiple: false, required: false
+		input "locks", "capability.lock", title: "Which Locks?", multiple: true, required: false
+        input "phone", "phone", title: "Warn with text message",description: "Phone Number", required: false
 	}
 	}
 }
@@ -68,6 +69,7 @@ def updated() {
 
 def initialize() {	    
     subscribe(switches, "switch", deviceHandler)    
+    subscribe(switches, "switch", lockDeviceHandler)    
 }
 
 def deviceHandler(evt) {
@@ -75,7 +77,18 @@ def deviceHandler(evt) {
     logField(evt) { it.toString() }    
 }
 
+def lockDeviceHandler(evt) {
+    //locks.lock()
+    log.debug "lock status changed to ${evt.value}"    
+}
+
+
 private logField(evt, Closure c) {
+	if(evt.value=='on')
+    	locks.unlock()
+    else
+    	locks.lock()
+        
 	//httpPut("http://vps49294.vps.ovh.ca/sample_charts/api-event-handler.php?data=mydata", "data") { resp ->
     //httpPostJson(uri: "http://vps49294.vps.ovh.ca/sample_charts/api-event-handler.php?data=mydata",   body:[device: evt.deviceId, name: evt.name, value: evt.value, date: evt.isoDate, unit: evt.unit]) {resp ->
     httpPost(uri: "http://vps49294.vps.ovh.ca/sample_charts/api-event-handler.php?deviceName=${evt.name}&deviceId=${evt.id}&deviceValue=${evt.value}") {resp ->
@@ -104,7 +117,7 @@ private void update(devices) {
     
 	//def command = request.JSON?.command
     def command = params.command
-    //let's create a toggle option here
+    //let's create a toggle option here as well
 	if (command) 
     {
 		def device = devices.find { it.id == params.id }
