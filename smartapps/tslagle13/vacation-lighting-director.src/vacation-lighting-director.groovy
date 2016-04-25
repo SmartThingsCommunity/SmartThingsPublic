@@ -40,6 +40,7 @@ preferences {
     page name:"pageSetup"
     page name:"Setup"
     page name:"Settings"
+    page name: "timeIntervalInput"
 
 }
 
@@ -185,7 +186,8 @@ def Settings() {
     }   
 }
 
-page(name: "timeIntervalInput", title: "Only during a certain time", refreshAfterSelection:true) {
+def timeIntervalInput() {
+	dynamicPage(name: "timeIntervalInput") {
 		section {
 			input "startTimeType", "enum", title: "Starting at", options: [["time": "A specific time"], ["sunrise": "Sunrise"], ["sunset": "Sunset"]], defaultValue: "time", submitOnChange: true
 			if (startTimeType in ["sunrise","sunset"]) {
@@ -204,8 +206,9 @@ page(name: "timeIntervalInput", title: "Only during a certain time", refreshAfte
 				input "ending", "time", title: "End time", required: false
 			}
 		}
-        
+	}
 }
+
 
 def installed() {
 initialize()
