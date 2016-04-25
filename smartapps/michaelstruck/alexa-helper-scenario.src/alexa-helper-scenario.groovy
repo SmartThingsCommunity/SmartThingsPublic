@@ -2,9 +2,9 @@
  *  Alexa Helper-Child
  *
  *  Copyright © 2016 Michael Struck
- *  Version 2.9.9a 4/24/16
+ *  Version 2.9.9b 4/25/16
  * 
- *  Version 2.9.9a - Minor GUI changes to accomodate new mobile app structure
+ *  Version 2.9.9b - Minor GUI changes to accomodate new mobile app structure
  *  See https://github.com/MichaelStruck/SmartThings/blob/master/Other-SmartApps/AlexaHelper/version%20history.md for additional version history
  *
  *  Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except
@@ -915,7 +915,7 @@ def reportStatus(deviceList, type){
 def presenceReport(){
 	def result = ""
     if (voicePresentOnly){
-    	if (voicePresence.latestValue("presence").contains("not present")) devices.each { deviceName->
+    	if (voicePresence.latestValue("presence").contains("not present")) voicePresence.each { deviceName->
             if (deviceName.latestValue("presence")=="not present") result += "${deviceName} is not present"
     	}
     	else result += "All of the monitored presence sensors are present. "
@@ -1020,5 +1020,5 @@ private parseDate(time, type){
     new Date().parse("yyyy-MM-dd'T'HH:mm:ss.SSSZ", formattedDate).format("${type}", timeZone(formattedDate))
 }
 //Version
-private def textVersion() {return "Child App Version: 2.9.9a (04/24/2016)"}
+private def textVersion() {return "Child App Version: 2.9.9b (04/25/2016)"}
 private def versionInt() {return 299}
