@@ -137,6 +137,7 @@ def refresh() {
 }
 
 def configure() {
+	sendEvent(name: "checkInterval", value: 1200, displayed: false)
 	zigbee.onOffConfig() + powerConfig() + refresh()
 }
 
