@@ -23,6 +23,8 @@ metadata {
 		command "setAdjustedColor"
         command "reset"
         command "refresh"
+
+		attribute "deviceSwitch", "enum", ["lightsOn", "lightsOff", "lightsTurningOn", "lightsTurningOff", "groupsOn", "groupsOff", "groupsTurningOn", "groupsTurningOff"]
 	}
 
 	simulator {
@@ -31,11 +33,15 @@ metadata {
 
 	tiles (scale: 2){
 		multiAttributeTile(name:"rich-control", type: "lighting", width: 6, height: 4, canChangeIcon: true){
-			tileAttribute ("device.switch", key: "PRIMARY_CONTROL") {
-				attributeState "on", label:'${name}', action:"switch.off", icon:"st.lights.philips.hue-single", backgroundColor:"#79b821", nextState:"turningOff"
-				attributeState "off", label:'${name}', action:"switch.on", icon:"st.lights.philips.hue-single", backgroundColor:"#ffffff", nextState:"turningOn"
-				attributeState "turningOn", label:'${name}', action:"switch.off", icon:"st.lights.philips.hue-single", backgroundColor:"#79b821", nextState:"turningOff"
-				attributeState "turningOff", label:'${name}', action:"switch.on", icon:"st.lights.philips.hue-single", backgroundColor:"#ffffff", nextState:"turningOn"
+			tileAttribute ("deviceSwitch", key: "PRIMARY_CONTROL") {
+				attributeState "lightsOn", label:'ON', action:"switch.off", icon:"st.lights.philips.hue-single", backgroundColor:"#79b821", nextState:"lightsTurningOff"
+				attributeState "lightsOff", label:'OFF', action:"switch.on", icon:"st.lights.philips.hue-single", backgroundColor:"#ffffff", nextState:"lightsTurningOn"
+				attributeState "lightsTurningOn", label:'TURNING ON', action:"switch.off", icon:"st.lights.philips.hue-single", backgroundColor:"#79b821", nextState:"lightsTurningOff"
+				attributeState "lightsTurningOff", label:'TURNING OFF', action:"switch.on", icon:"st.lights.philips.hue-single", backgroundColor:"#ffffff", nextState:"lightsTurningOn"
+				attributeState "groupsOn", label:'ON', action:"switch.off", icon:"st.lights.philips.hue-multi", backgroundColor:"#79b821", nextState:"groupsTurningOff"
+				attributeState "groupsOff", label:'OFF', action:"switch.on", icon:"st.lights.philips.hue-multi", backgroundColor:"#ffffff", nextState:"groupsTurningOn"
+				attributeState "groupsTurningOn", label:'TURNING ON', action:"switch.off", icon:"st.lights.philips.hue-multi", backgroundColor:"#79b821", nextState:"groupsTurningOff"
+				attributeState "groupsTurningOff", label:'TURNING OFF', action:"switch.on", icon:"st.lights.philips.hue-multi", backgroundColor:"#ffffff", nextState:"groupsTurningOn"
 			}
 			tileAttribute ("device.level", key: "SLIDER_CONTROL") {
 				attributeState "level", action:"switch level.setLevel", range:"(0..100)"
@@ -89,11 +95,13 @@ def parse(description) {
 // handle commands
 void on() {
 	log.trace parent.on(this, state.deviceType)
+	sendEvent(name: "deviceSwitch", value: "${state.deviceType}On", displayed: false)
 	sendEvent(name: "switch", value: "on")
 }
 
 void off() {
 	log.trace parent.off(this, state.deviceType)
+	sendEvent(name: "deviceSwitch", value: "${state.deviceType}Off", displayed: false)
 	sendEvent(name: "switch", value: "off")
 }
 
@@ -113,7 +121,8 @@ void setLevel(percent) {
     if (verifyPercent(percent)) {
         parent.setLevel(this, percent, state.deviceType)
         sendEvent(name: "level", value: percent, descriptionText: "Level has changed to ${percent}%")
-        sendEvent(name: "switch", value: "on")
+		sendEvent(name: "deviceSwitch", value: "${state.deviceType}On", displayed: false)
+		sendEvent(name: "switch", value: "on")
     }
 }
 
@@ -198,7 +207,8 @@ void setColorTemperature(value) {
         log.trace "setColorTemperature: ${value}k"
         parent.setColorTemperature(this, value, state.deviceType)
         sendEvent(name: "colorTemperature", value: value)
-        sendEvent(name: "switch", value: "on")
+		sendEvent(name: "deviceSwitch", value: "${state.deviceType}On", displayed: false)
+		sendEvent(name: "switch", value: "on")
     } else {
         log.warn "Invalid color temperature"
     }
