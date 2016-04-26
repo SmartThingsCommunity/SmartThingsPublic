@@ -824,7 +824,7 @@ def setColor(childDevice, huesettings) {
             value.bri = Math.min(Math.round(huesettings.level * 255 / 100), 255)
     }
     value.alert = huesettings.alert ? huesettings.alert : "none"
-    value.transition = huesettings.transition ? huesettings.transition : 4
+    value.transitiontime = huesettings.transitiontime ? huesettings.transitiontime : 4
 
     // Make sure to turn off light if requested
     if (huesettings.switch == "off")
