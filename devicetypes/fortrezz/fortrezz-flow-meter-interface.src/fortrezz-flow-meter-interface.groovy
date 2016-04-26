@@ -108,10 +108,10 @@ def parse(String description) {
 		}
 	}
 	//log.debug "\"$description\" parsed to ${results.inspect()}"
-    if(gallonThreshhold != device.currentValue("lastThreshhold"))
+    /*if(gallonThreshhold != device.currentValue("lastThreshhold"))
     {
     	results << setThreshhold(gallonThreshhold)
-    }
+    }*/
 	log.debug "zwave parsed to ${results.inspect()}"
 	return results
 }
@@ -139,6 +139,7 @@ def take() {
 
 def chartMode(string) {
 	def state = device.currentValue("chartMode")
+    log.debug "Chart Mode ${state}"
     def tempValue = ""
 	switch(state)
     {
