@@ -65,9 +65,11 @@ metadata {
         valueTile("gpm", "device.gpm", inactiveLabel: false, width: 2, height: 2) {
 			state "gpm", label:'${currentValue}gpm', unit:""
 		}
-		standardTile("powerState", "device.powerState", width: 2, height: 2) {
+		standardTile("powerState", "device.powerState", width: 2, height: 2) { 
 			state "reconnected", icon:"http://swiftlet.technology/wp-content/uploads/2016/02/Connected-64.png", backgroundColor:"#cccccc"
 			state "disconnected", icon:"http://swiftlet.technology/wp-content/uploads/2016/02/Disconnected-64.png", backgroundColor:"#cc0000"
+			state "batteryReplaced", icon:"http://swiftlet.technology/wp-content/uploads/2016/04/Full-Battery-96.png", backgroundColor:"#cccccc"
+			state "noBattery", icon:"http://swiftlet.technology/wp-content/uploads/2016/04/No-Battery-96.png", backgroundColor:"#cc0000"
 		}
 		standardTile("waterState", "device.waterState", width: 2, height: 2, canChangeIcon: true) {
 			state "none", icon:"http://cdn.device-icons.smartthings.com/Weather/weather12-icn@2x.png", backgroundColor:"#cccccc", label: "No Flow"
@@ -139,7 +141,6 @@ def take() {
 
 def chartMode(string) {
 	def state = device.currentValue("chartMode")
-    log.debug "Chart Mode ${state}"
     def tempValue = ""
 	switch(state)
     {
@@ -220,7 +221,7 @@ def zwaveEvent(physicalgraph.zwave.commands.sensormultilevelv5.SensorMultilevelR
 	        map.value = cmd.scaledSensorValue
         }
         map.unit = location.temperatureScale
-	} else if(cmd.sensorType == 2) {
+	} /* else if(cmd.sensorType == 2) {
     	map = [name: "waterState"]
         if(cmd.sensorValue[0] == 0x80) {
         	map.value = "flow"
@@ -233,7 +234,7 @@ def zwaveEvent(physicalgraph.zwave.commands.sensormultilevelv5.SensorMultilevelR
             sendEvent(name: "water", value: "wet")
             sendAlarm("waterOverflow")
         }
-	}
+	} */
 	map
 }
 
@@ -254,7 +255,7 @@ def zwaveEvent(physicalgraph.zwave.commands.alarmv2.AlarmReport cmd)
 	def map = [:]
     if (cmd.zwaveAlarmType == 8) // Power Alarm
     {
-    	map.name = "powerState"
+    	map.name = "powerState" // For Tile (shows in "Recently")
         if (cmd.zwaveAlarmEvent == 2) // AC Mains Disconnected
         {
             map.value = "disconnected"
@@ -267,8 +268,13 @@ def zwaveEvent(physicalgraph.zwave.commands.alarmv2.AlarmReport cmd)
         }
         else if (cmd.zwaveAlarmEvent == 0x0B) // Replace Battery Now
         {
-            map.value = "reconnected"
+            map.value = "noBattery"
             sendAlarm("replaceBatteryNow")
+        }
+        else if (cmd.zwaveAlarmEvent == 0x00) // Battery Replaced
+        {
+            map.value = "batteryReplaced"
+            sendAlarm("batteryReplaced")
         }
     }
     else if (cmd.zwaveAlarmType == 4) // Heat Alarm
@@ -295,17 +301,20 @@ def zwaveEvent(physicalgraph.zwave.commands.alarmv2.AlarmReport cmd)
         if (cmd.zwaveAlarmEvent == 0) // Normal
         {
             map.value = "none"
+            sendEvent(name: "water", value: "dry")
         }
         else if (cmd.zwaveAlarmEvent == 6) // Flow Detected
         {
         	if(cmd.eventParameter[0] == 2)
             {
                 map.value = "flow"
+                sendEvent(name: "water", value: "dry")
             }
             else if(cmd.eventParameter[0] == 3)
             {
             	map.value = "overflow"
                 sendAlarm("waterOverflow")
+                sendEvent(name: "water", value: "wet")
             }
         }
     }
