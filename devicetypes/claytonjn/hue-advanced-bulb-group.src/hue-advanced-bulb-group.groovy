@@ -88,6 +88,7 @@ def parse(description) {
 
 	if (map?.name && map?.value) {
 		results << createEvent(name: "${map?.name}", value: "${map?.value}")
+		if (map?.name == "switch") { results << createEvent(name: "deviceSwitch", value: state.deviceType + map?.value.capitalize(), displayed: false) }
 	}
 	results
 }
@@ -168,10 +169,12 @@ void setColor(value) {
         validValues.level = value.level
     }
     if (value.switch == "off" || (value.level != null && value.level <= 0)) {
-        events << createEvent(name: "switch", value: "off")
+		events << createEvent(name: "deviceSwitch", value: "${state.deviceType}Off", displayed: false)
+		events << createEvent(name: "switch", value: "off")
         validValues.switch = "off"
     } else {
-        events << createEvent(name: "switch", value: "on")
+		events << createEvent(name: "deviceSwitch", value: "${state.deviceType}On", displayed: false)
+		events << createEvent(name: "switch", value: "on")
         validValues.switch = "on"
     }
     if (!events.isEmpty()) {
