@@ -164,7 +164,6 @@ def groupDiscovery() {
 	}
     state.bridgeRefreshCount = 0
 	def groupoptions = devicesDiscovered(deviceType) ?: [:]
-	log.warn groupoptions
 	def numFound = groupoptions.size() ?: 0
     if (numFound == 0)
     	app.updateSetting("selectedGroups", "")
@@ -252,13 +251,13 @@ Map devicesDiscovered(deviceType) {
 	if (devices instanceof java.util.Map) {
 		devices.each {
 			def value = "${it.value.name}"
-			def key = app.id +"/"+ it.value.id
+			def key = app.id +"/${deviceType}/"+ it.value.id
 			devicemap["${key}"] = value
 		}
 	} else { //backwards compatable
 		devices.each {
 			def value = "${it.name}"
-			def key = app.id +"/"+ it.id
+			def key = app.id +"/${deviceType}/"+ it.id
             logg += "$value - $key, "
 			devicemap["${key}"] = value
 		}
@@ -404,7 +403,7 @@ def addBulbs() {
 		if(!d) {
 			def newHueBulb
 			if (bulbs instanceof java.util.Map) {
-				newHueBulb = bulbs.find { (app.id + "/" + it.value.id) == dni }
+				newHueBulb = bulbs.find { (app.id + "/lights/" + it.value.id) == dni }
                 if (newHueBulb != null) {
                     d = addChild(dni, newHueBulb?.value?.type, newHueBulb?.value?.name, newHueBulb?.value?.hub)
 					d.initialize("lights")
@@ -415,7 +414,7 @@ def addBulbs() {
                 }
 			} else {
             	//backwards compatable
-				newHueBulb = bulbs.find { (app.id + "/" + it.id) == dni }
+				newHueBulb = bulbs.find { (app.id + "/lights/" + it.id) == dni }
 				d = addChild(dni, "Extended Color Light", newHueBulb?.value?.name, newHueBulb?.value?.hub)
 				d.initialize("lights")
                 d.refresh()
@@ -424,7 +423,7 @@ def addBulbs() {
 			log.debug "found ${d.displayName} with id $dni already exists, type: '$d.typeName'"
 			if (bulbs instanceof java.util.Map) {
 				// Update device type if incorrect
-            	def newHueBulb = bulbs.find { (app.id + "/" + it.value.id) == dni }
+            	def newHueBulb = bulbs.find { (app.id + "/lights/" + it.value.id) == dni }
 				upgradeDeviceType(d, newHueBulb?.value?.type)
 			}
 		}
@@ -438,7 +437,7 @@ def addGroups() {
 		if(!d) {
 			def newHueGroup
 			if (groups instanceof java.util.Map) {
-				newHueGroup = groups.find { (app.id + "/" + it.value.id) == dni }
+				newHueGroup = groups.find { (app.id + "/groups/" + it.value.id) == dni }
 					 if (newHueGroup != null) {
 						d = addChild(dni, newHueGroup?.value?.type, newHueGroup?.value?.name, newHueGroup?.value?.hub)
 						d.initialize("groups")
@@ -449,7 +448,7 @@ def addGroups() {
 					 }
 			} else {
 				//backwards compatable
-				newHueGroup = groups.find { (app.id + "/" + it.id) == dni }
+				newHueGroup = groups.find { (app.id + "/groups/" + it.id) == dni }
 				d = addChild(dni, "LightGroup", newHueGroup?.value?.name, newHueGroup?.value?.hub)
 				d.initialize("groups")
 				d.refresh()
@@ -458,7 +457,7 @@ def addGroups() {
 			log.debug "found ${d.displayName} with id $dni already exists, type: '$d.typeName'"
 			if (groups instanceof java.util.Map) {
 				// Update device type if incorrect
-				def newHueGroup = groups.find { (app.id + "/" + it.value.id) == dni }
+				def newHueGroup = groups.find { (app.id + "/groups/" + it.value.id) == dni }
 				upgradeDeviceType(d, newHueGroup?.value?.type)
 			}
 		}
@@ -772,7 +771,7 @@ def parse(childDevice, description) {
             	//poll response
                 def devices = getChildDevices()
                 for (device in body) {
-                    def d = devices.find{it.deviceNetworkId == "${app.id}/${device.key}"}
+                    def d = devices.find{it.deviceNetworkId == "${app.id}/${getDeviceType(device.value.type)}/${device.key}"}
                     if (d) {
 						def deviceType = getDeviceType(device.value.type)
 						def api = getApi(deviceType)
@@ -812,7 +811,7 @@ def parse(childDevice, description) {
                         def childDeviceNetworkId = app.id + "/"
                         def eventType
                         body?.success[0].each { k,v ->
-                            childDeviceNetworkId += k.split("/")[2]
+                            childDeviceNetworkId += k.split("/")[1] + "/" + k.split("/")[2]
                             if (!hsl[childDeviceNetworkId]) hsl[childDeviceNetworkId] = [:]
                             eventType = k.split("/")[4]
                             log.debug "eventType: $eventType"
