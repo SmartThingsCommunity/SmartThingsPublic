@@ -902,7 +902,7 @@ def setHue(childDevice, percent, deviceType) {
 
 def setColorTemperature(childDevice, huesettings, deviceType) {
 	log.debug "Executing 'setColorTemperature($huesettings)'"
-	def ct = Math.round(Math.abs((huesettings / 12.96829971181556) - 654))
+	def ct = (1000000 / huesettings) as Integer
 	def value = [ct: ct, on: true]
 	log.trace "sending command $value"
 	put("${deviceType}/${getId(childDevice)}/${getApi(deviceType)}", value)
