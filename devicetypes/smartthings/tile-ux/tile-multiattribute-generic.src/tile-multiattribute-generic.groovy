@@ -67,14 +67,47 @@ metadata {
 				attributeState "VALUE_DOWN", action: "levelDown"
 			}
 		}
+		multiAttributeTile(name:"lengthyTile", type:"generic", width:6, height:4) {
+			tileAttribute("device.lengthyText", key: "PRIMARY_CONTROL") {
+				attributeState "default", label:'The value of this tile is long and should wrap to two lines', backgroundColor:"#79b821"
+			}
+			tileAttribute("device.lengthyText", key: "SECONDARY_CONTROL") {
+				attributeState "default", label:'The value of this tile is long and should wrap to two lines', backgroundColor:"#79b821"
+			}
+		}
+		multiAttributeTile(name:"multilineTile", type:"generic", width:6, height:4) {
+			tileAttribute("device.multilineText", key: "PRIMARY_CONTROL") {
+				attributeState "default", label:'Line 1 YES\nLine 2 YES\nLine 3 NO', backgroundColor:"#79b821"
+			}
+			tileAttribute("device.multilineText", key: "SECONDARY_CONTROL") {
+				attributeState "default", label:'Line 1 YES\nLine 2 YES\nLine 3 NO', backgroundColor:"#79b821"
+			}
+		}
+		multiAttributeTile(name:"lengthyTileWithIcon", type:"generic", width:6, height:4) {
+			tileAttribute("device.lengthyText", key: "PRIMARY_CONTROL") {
+				attributeState "default", label:'The value of this tile is long and should wrap to two lines', backgroundColor:"#79b821", icon: "st.switches.switch.on"
+			}
+			tileAttribute("device.lengthyText", key: "SECONDARY_CONTROL") {
+				attributeState "default", label:'The value of this tile is long and should wrap to two lines', backgroundColor:"#79b821", icon: "st.switches.switch.on"
+			}
+		}
+		multiAttributeTile(name:"multilineTileWithIcon", type:"generic", width:6, height:4) {
+			tileAttribute("device.multilineText", key: "PRIMARY_CONTROL") {
+				attributeState "default", label:'Line 1 YES\nLine 2 YES\nLine 3 NO', backgroundColor:"#79b821", icon: "st.switches.switch.on"
+			}
+			tileAttribute("device.multilineText", key: "SECONDARY_CONTROL") {
+				attributeState "default", label:'Line 1 YES\nLine 2 YES\nLine 3 NO', backgroundColor:"#79b821", icon: "st.switches.switch.on"
+			}
+		}
 
 		main(["basicTile"])
-		details(["basicTile", "sliderTile", "valueTile"])
+		details(["basicTile", "sliderTile", "valueTile", "lengthyTile", "multilineTile", "lengthyTileWithIcon", "multilineTileWithIcon"])
 	}
 }
 
 def installed() {
-
+	sendEvent(name: "lengthyText", value: "The value of this tile is long and should wrap to two lines")
+	sendEvent(name: "multilineText", value: "Line 1 YES\nLine 2 YES\nLine 3 NO")
 }
 
 def parse() {
