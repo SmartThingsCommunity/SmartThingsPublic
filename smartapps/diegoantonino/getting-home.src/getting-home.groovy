@@ -19,13 +19,13 @@ definition(
     author: "Diego",
     description: "If I arrive home after sunset and mode is \"away\", turn on a light and set mode to Home.\r\nif  I arrive home before sunset and mode is \"away\", set mode to Home.",
     category: "Convenience",
-    iconUrl: "https://s3.amazonaws.com/smartapp-icons/Partner/nest-home-app.png",
-    iconX2Url: "https://s3.amazonaws.com/smartapp-icons/Partner/nest-home-app@2x.png",
-    iconX3Url: "https://s3.amazonaws.com/smartapp-icons/Partner/nest-home-app@3x.png")
+    iconUrl: "https://s3.amazonaws.com/smartapp-icons/SafetyAndSecurity/App-MindYourHome.png",
+    iconX2Url: "https://s3.amazonaws.com/smartapp-icons/SafetyAndSecurity/App-MindYourHome@2x.png",
+    iconX3Url: "https://s3.amazonaws.com/smartapp-icons/SafetyAndSecurity/App-MindYourHome@2x.png")
 
 
 preferences {
-	section("When Someone arrive and leave..."){
+	section("When Someone arrive..."){
 		input "presence1", "capability.presenceSensor", title: "Who?", multiple: true
 	}
 	section("Turn On a light..."){
