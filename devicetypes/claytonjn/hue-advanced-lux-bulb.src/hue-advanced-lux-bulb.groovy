@@ -70,19 +70,19 @@ def parse(description) {
 
 // handle commands
 void on() {
-	log.trace parent.on(this)
+	log.trace parent.on(this, deviceType)
 	sendEvent(name: "switch", value: "on")
 }
 
 void off() {
-	log.trace parent.off(this)
+	log.trace parent.off(this, deviceType)
 	sendEvent(name: "switch", value: "off")
 }
 
 void setLevel(percent) {
 	log.debug "Executing 'setLevel'"
     if (percent != null && percent >= 0 && percent <= 100) {
-		parent.setLevel(this, percent)
+		parent.setLevel(this, percent, deviceType)
 		sendEvent(name: "level", value: percent)
 		sendEvent(name: "switch", value: "on")
 	} else {
@@ -94,3 +94,5 @@ void refresh() {
 	log.debug "Executing 'refresh'"
 	parent.manualRefresh()
 }
+
+def getDeviceType() { return "lights" }
