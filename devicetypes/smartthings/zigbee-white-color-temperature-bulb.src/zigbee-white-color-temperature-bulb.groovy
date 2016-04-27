@@ -84,14 +84,17 @@ def parse(String description) {
 }
 
 def off() {
+    sendEvent(name: "switch", value: "off")
     zigbee.off()
 }
 
 def on() {
+    sendEvent(name: "switch", value: "on")
     zigbee.on()
 }
 
 def setLevel(value) {
+    sendEvent(name: "level", value: value)
     zigbee.setLevel(value)
 }
 
