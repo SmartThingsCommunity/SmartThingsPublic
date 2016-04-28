@@ -14,7 +14,7 @@
  *
  */
 metadata {
-	definition (name: "Orvibo Motion Sensor", namespace: "kriskit", author: "Chris Kitch") {
+	definition (name: "Orvibo Motion Sensor", namespace: "kriskit.orvibo", author: "Chris Kitch") {
 		capability "Motion Sensor"
 		capability "Sensor"
 
