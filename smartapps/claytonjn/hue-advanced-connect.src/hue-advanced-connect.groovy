@@ -389,8 +389,7 @@ private addChild(dni, hueType, name, hub, update=false, device = null) {
 
 	if (deviceType) {
 		return addChildDevice("claytonjn", deviceType, dni, hub, ["label": name])
-	}
-	else {
+	} else {
 		log.warn "Device type $hueType not supported"
 		return null
 	}
@@ -407,8 +406,10 @@ def addBulbs() {
                 if (newHueBulb != null) {
                     d = addChild(dni, newHueBulb?.value?.type, newHueBulb?.value?.name, newHueBulb?.value?.hub)
 					d.initialize("lights")
-                    log.debug "created ${d.displayName} with id $dni"
-                    d.refresh()
+                    if (d) {
+						log.debug "created ${d.displayName} with id $dni"
+                    	d.refresh()
+					}
                 } else {
                 	log.debug "$dni in not longer paired to the Hue Bridge or ID changed"
                 }
@@ -416,8 +417,8 @@ def addBulbs() {
             	//backwards compatable
 				newHueBulb = bulbs.find { (app.id + "/lights/" + it.id) == dni }
 				d = addChild(dni, "Extended Color Light", newHueBulb?.value?.name, newHueBulb?.value?.hub)
-				d.initialize("lights")
-                d.refresh()
+				d?.initialize("lights")
+                d?.refresh()
 			}
 		} else {
 			log.debug "found ${d.displayName} with id $dni already exists, type: '$d.typeName'"
