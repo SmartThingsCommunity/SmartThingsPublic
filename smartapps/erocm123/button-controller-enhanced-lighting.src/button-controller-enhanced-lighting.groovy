@@ -73,7 +73,7 @@ def selectButton() {
         }
         
 		section(title: "More options", hidden: hideOptionsSection(), hideable: true) {
-            input "debounce", "number", title: "Debounce time in milliseconds", required: true, value: 3000, defaultValue: 3000
+            input "debounce", "number", title: "Debounce time in milliseconds (set to 0 to disable)", required: true, value: 3000, defaultValue: 3000
             def timeLabel = timeIntervalLabel()
             href "timeIntervalInput", title: "Only during a certain time", description: timeLabel ?: "Tap to set", state: timeLabel ? "complete" : null
             input "days", "enum", title: "Only on certain days of the week", multiple: true, required: false,
@@ -193,15 +193,19 @@ def buttonEvent(evt){
         	buttonNumber = buttonNumber + numberOfButtons.toInteger()/2
         if (value == "double")
         	buttonNumber = buttonNumber + numberOfButtons.toInteger() 
-            
-		def recentEvents = buttonDevice.eventsSince(new Date(now() - debounce)).findAll{it.value == evt.value && it.data == evt.data}
-		log.debug "Found ${recentEvents.size()?:0} events in past ${debounce/1000} seconds"
-        if (recentEvents.size() != 0){
-            log.debug "First Event ID: ${recentEvents[0].id}"
-            firstEventId = recentEvents[0].id
-        }
-        else {
-            firstEventId = 0
+        
+        if(debounce > 0) {
+            def recentEvents = buttonDevice.eventsSince(new Date(now() - debounce)).findAll{it.value == evt.value && it.data == evt.data}
+            log.debug "Found ${recentEvents.size()?:0} events in past ${debounce/1000} seconds"
+            if (recentEvents.size() != 0){
+                log.debug "First Event ID: ${recentEvents[0].id}"
+                firstEventId = recentEvents[0].id
+            }
+            else {
+                firstEventId = 0
+            }
+        } else {
+            firstEventId = evt.id
         }
         
         log.debug "This Event ID: ${evt.id}"
