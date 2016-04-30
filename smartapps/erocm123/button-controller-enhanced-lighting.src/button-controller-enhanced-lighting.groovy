@@ -194,7 +194,7 @@ def buttonEvent(evt){
         if (value == "double")
         	buttonNumber = buttonNumber + numberOfButtons.toInteger() 
         
-        if(debounce > 0) {
+        if(debounce != null && debounce != "" && debounce > 0) {
             def recentEvents = buttonDevice.eventsSince(new Date(now() - debounce)).findAll{it.value == evt.value && it.data == evt.data}
             log.debug "Found ${recentEvents.size()?:0} events in past ${debounce/1000} seconds"
             if (recentEvents.size() != 0){
