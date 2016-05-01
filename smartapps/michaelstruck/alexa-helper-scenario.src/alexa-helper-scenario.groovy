@@ -2,7 +2,7 @@
  *  Alexa Helper-Child
  *
  *  Copyright © 2016 Michael Struck
- *  Version 2.9.9c 4/29/16
+ *  Version 2.9.9d 4/29/16
  * 
  *  Version 2.9.9c - Minor GUI changes to accomodate new mobile app structure
  *  See https://github.com/MichaelStruck/SmartThings/blob/master/Other-SmartApps/AlexaHelper/version%20history.md for additional version history
@@ -722,7 +722,7 @@ def scenarioDesc(){
         desc += panicSwitchOn && panicSwitchOff && desc ?"\n'${panicSwitchOff}' switch deactivates panic actions." : ""
     }
     if (scenarioType=="Baseboard") {
-    	def noun = tstatBB.size() == 1 ? "baseboard heater: " : "baseboard heaters: "
+        def noun = tstatBB && tstatBB.size() == 1 ? "baseboard heater: " : "baseboard heaters: "
         desc = vDimmerBB && tstatBB ? "'${vDimmerBB}' dimmer controls ${noun}${tstatBB}." : ""
     }
     if (scenarioType=="Voice"){
@@ -1020,5 +1020,5 @@ private parseDate(time, type){
     new Date().parse("yyyy-MM-dd'T'HH:mm:ss.SSSZ", formattedDate).format("${type}", timeZone(formattedDate))
 }
 //Version
-private def textVersion() {return "Child App Version: 2.9.9c (04/29/2016)"}
+private def textVersion() {return "Child App Version: 2.9.9d (04/29/2016)"}
 private def versionInt() {return 299}
