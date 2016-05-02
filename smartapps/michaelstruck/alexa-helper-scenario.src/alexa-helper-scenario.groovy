@@ -2,9 +2,9 @@
  *  Alexa Helper-Child
  *
  *  Copyright © 2016 Michael Struck
- *  Version 2.9.9d 5/1/16
+ *  Version 2.9.9e 5/1/16
  * 
- *  Version 2.9.9d - Minor GUI changes to accomodate new mobile app structure
+ *  Version 2.9.9e - Minor GUI changes to accomodate new mobile app structure
  *  See https://github.com/MichaelStruck/SmartThings/blob/master/Other-SmartApps/AlexaHelper/version%20history.md for additional version history
  *
  *  Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except
@@ -109,7 +109,7 @@ def offPageHTTP (){
 }
 def pageHTTPOnOff(type){
 	section{
-    	input "${type}ExtInt", "enum", title: "Choose HTTP Command Type", options:["0":"External REST","1":"Internal (IP, port, command)"], defaultValue: 0, submitOnChange:true
+    	input "${type}ExtInt", "enum", title: "Choose HTTP Command Type", options:[0:"External REST",1:"Internal (IP, port, command)"], defaultValue: "External REST", submitOnChange:true
         if (settings."${type}ExtInt" == "0") input "${type}HTTP", "text", title:"HTTP Address...", required: false
     	else {
         	input "${type}IP", "text", title: "Internal IP Address", description: "IPv4 address xx.xx.xx.xx format", required: false
@@ -1020,5 +1020,5 @@ private parseDate(time, type){
     new Date().parse("yyyy-MM-dd'T'HH:mm:ss.SSSZ", formattedDate).format("${type}", timeZone(formattedDate))
 }
 //Version
-private def textVersion() {return "Child App Version: 2.9.9d (05/01/2016)"}
+private def textVersion() {return "Child App Version: 2.9.9e (05/01/2016)"}
 private def versionInt() {return 299}
