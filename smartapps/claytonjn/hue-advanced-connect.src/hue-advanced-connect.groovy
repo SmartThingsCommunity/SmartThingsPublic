@@ -39,6 +39,17 @@ preferences {
 			paragraph	"Choose how long bulbs should take to transition between on/off and color changes by default. This can be modified per-device."
 			input		"selectedTransition", "number", required:true, title:"Transition Time (seconds)", value:1
 		}
+		section("Circadian Daylight Integration") {
+			paragraph	"Add buttons to each device page, allowing you to enable/disable automatic color changes and dynamic brightness per-device, on the fly."
+			href(		name:        "circadianDaylightLink",
+						title:       "More Info",
+						required:    false,
+						style:       "external", //TODO: change to "external" when that works on Android
+						url:         "https://community.smartthings.com/t/circadian-daylight-smartthings-smart-bulbs/",
+						description: "Tap to view more information about the Circadian Daylight SmartApp.",
+						image:       "https://raw.githubusercontent.com/claytonjn/SmartThingsPublic/Circadian-Daylight/smartapp-icons/PNG/circadian-daylight@2x.png"	)
+			input		name:"circadianDalightIntegration", type:"bool", title:"Circadian Daylight Integration", defaultValue:false
+		}
 	}
 }
 
@@ -1122,4 +1133,9 @@ def getApi(deviceType) {
 
 def getSelectedTransition() {
 	return settings.selectedTransition
+}
+
+def getHandlerType() {
+	if(settings.circadianDalightIntegration == true) { return "CD" }
+	else { return "" }
 }
