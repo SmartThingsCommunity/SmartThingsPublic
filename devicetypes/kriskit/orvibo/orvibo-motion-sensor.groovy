@@ -18,7 +18,7 @@ metadata {
 		capability "Motion Sensor"
 		capability "Sensor"
 
-		fingerprint inClusters: "0000,0001,0003,0009,0500,0020", manufacturer: "欧瑞", model: "585fdfb8c2304119a2432e9845cf2623"
+		fingerprint inClusters: "0000,0001,0003,0009,0500,0020", manufacturer: "\u6B27\u745E", model: "585fdfb8c2304119a2432e9845cf2623"
 	}
 
 	// simulator metadata
