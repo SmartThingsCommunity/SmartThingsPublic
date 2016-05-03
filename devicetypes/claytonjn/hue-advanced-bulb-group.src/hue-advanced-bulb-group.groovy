@@ -75,7 +75,7 @@ metadata {
 			state "setTransitionTime", action: "setTransitionTime"
 		}
 		valueTile("transTime", "device.transitionTime", inactiveLabel: false, decoration: "flat", width: 1, height: 1) {
-			state "transitionTime", label: 'Transition Time: ${currentValue}'
+			state "transitionTime", label: 'Transition Time: ${currentValue} s'
 		}
 
 		main(["rich-control"])
