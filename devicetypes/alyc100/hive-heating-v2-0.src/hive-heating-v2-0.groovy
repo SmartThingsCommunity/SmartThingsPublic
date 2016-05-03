@@ -25,9 +25,10 @@
  *	v2.1.5 - Option to disable Hive Heating Device for summer. Disable mode stops any automation commands from other smart apps reactivating Hive Heating.
  *	v2.1.5b - Bug fix when desired heat set point is null, control stops working.
  *  v2.1.5c - Fix multitile button behaviour that has changed since ST app 2.1.0. Add colour code to temperature reporting in activity feed.
- *	v2.1.6d - Fix blank temperature readings on Android ST app 
- *	v2.1.6e - Another attempt to fix blank temperature reading on Android.
- *	v2.1.6f - Allow decimal value for boost temperature. Changes to VALUE_CONTROL method to match latest ST docs.
+ *	v2.1.5d - Fix blank temperature readings on Android ST app 
+ *	v2.1.5e - Another attempt to fix blank temperature reading on Android.
+ *	v2.1.5f - Allow decimal value for boost temperature. Changes to VALUE_CONTROL method to match latest ST docs.
+ *	v2.1.5g - Changes to tile display for iOS app v2.1.2
  */
 preferences 
 {
@@ -401,7 +402,7 @@ def poll() {
     	data.nodes = resp.data.nodes
         
         //Construct status message
-        def statusMsg = "Mode is"
+        def statusMsg = ""
         
         //Boost button label
         if (state.boostLength == null || state.boostLength == '')
@@ -415,7 +416,7 @@ def poll() {
         def temperature = data.nodes.attributes.temperature.reportedValue[0]
         def heatingSetpoint = data.nodes.attributes.targetHeatTemperature.reportedValue[0]
         temperature = String.format("%2.1f",temperature)
-       	heatingSetpoint = convertTemperatureIfNeeded(heatingSetpoint, "C", 1)
+       	heatingSetpoint = String.format("%2.1f",heatingSetpoint)
         
         // convert temperature reading of 1 degree to 7 as Hive app does
         if (heatingSetpoint == "1.0") {
@@ -454,7 +455,7 @@ def poll() {
         	mode = 'emergency heat'          
             def boostTime = data.nodes.attributes.scheduleLockDuration.reportedValue[0]
             boostLabel = "Restart\n$state.boostLength Min Boost"
-            statusMsg = "BOOSTING - " + boostTime + " mins remaining"
+            statusMsg = boostTime + " MINS"
             sendEvent("name":"boostTimeRemaining", "value": boostTime + " mins")
         }
         else if (activeHeatCoolMode == "HEAT" && activeScheduleLock) {
