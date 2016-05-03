@@ -449,21 +449,21 @@ def poll() {
         } 
         else if (activeHeatCoolMode == "OFF") {
         	mode = 'off'
-            statusMsg = statusMsg + " OFF"
+            //statusMsg = statusMsg + " OFF"
         }
         else if (activeHeatCoolMode == "BOOST") {
         	mode = 'emergency heat'          
             def boostTime = data.nodes.attributes.scheduleLockDuration.reportedValue[0]
             boostLabel = "Restart\n$state.boostLength Min Boost"
-            statusMsg = boostTime + " MINS"
+            statusMsg = "Boost " + boostTime + "min"
             sendEvent("name":"boostTimeRemaining", "value": boostTime + " mins")
         }
         else if (activeHeatCoolMode == "HEAT" && activeScheduleLock) {
         	mode = 'heat'
-            statusMsg = statusMsg + " MANUAL"
+            statusMsg = statusMsg + " Manual"
         }
         else {
-        	statusMsg = statusMsg + " SCHEDULE"
+        	statusMsg = statusMsg + " Schedule"
         }
         
         if (settings.disableDevice != null && settings.disableDevice == true) {
