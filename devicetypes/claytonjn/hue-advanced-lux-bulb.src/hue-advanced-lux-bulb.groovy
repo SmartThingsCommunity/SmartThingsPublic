@@ -16,6 +16,9 @@ metadata {
 		capability "Sensor"
 
         command "refresh"
+		command "setTransitionTime"
+
+		attribute "transitionTime", "NUMBER"
 	}
 
 	simulator {
@@ -46,8 +49,15 @@ metadata {
             state "default", label:"", action:"refresh.refresh", icon:"st.secondary.refresh"
         }
 
+		controlTile("transitionTimeSliderControl", "device.transitionTime", "slider", inactiveLabel: false, width: 5, height: 1, range: "(0..4)") {
+			state "setTransitionTime", action: "setTransitionTime"
+		}
+		valueTile("transTime", "device.transitionTime", inactiveLabel: false, decoration: "flat", width: 1, height: 1) {
+			state "transitionTime", label: 'Transition Time: ${currentValue}'
+		}
+
         main(["rich-control"])
-        details(["rich-control", "refresh"])
+        details(["rich-control", "transitionTimeSliderControl", "transTime", "refresh"])
     }
 }
 
@@ -69,20 +79,31 @@ def parse(description) {
 }
 
 // handle commands
-void on() {
-	log.trace parent.on(this, deviceType)
+void setTransitionTime(transitionTime) {
+	log.trace "Transition time set to ${transitionTime}"
+	sendEvent(name: "transitionTime", value: transitionTime)
+}
+
+void on(transitionTime = device.currentValue("transitionTime")) {
+	if(transitionTime == null) { transitionTime = parent.getSelectedTransition() ?: 1 }
+
+	log.trace parent.on(this, transitionTime, deviceType)
 	sendEvent(name: "switch", value: "on")
 }
 
-void off() {
-	log.trace parent.off(this, deviceType)
+void off(transitionTime = device.currentValue("transitionTime")) {
+	if(transitionTime == null) { transitionTime = parent.getSelectedTransition() ?: 1 }
+
+	log.trace parent.off(this, transitionTime, deviceType)
 	sendEvent(name: "switch", value: "off")
 }
 
-void setLevel(percent) {
+void setLevel(percent, transitionTime = device.currentValue("transitionTime")) {
+	if(transitionTime == null) { transitionTime = parent.getSelectedTransition() ?: 1 }
+
 	log.debug "Executing 'setLevel'"
     if (percent != null && percent >= 0 && percent <= 100) {
-		parent.setLevel(this, percent, deviceType)
+		parent.setLevel(this, percent, transitionTime, deviceType)
 		sendEvent(name: "level", value: percent)
 		sendEvent(name: "switch", value: "on")
 	} else {
@@ -93,6 +114,10 @@ void setLevel(percent) {
 void refresh() {
 	log.debug "Executing 'refresh'"
 	parent.manualRefresh()
+}
+
+void initialize(deviceType) {
+	setTransitionTime(parent.getSelectedTransition())
 }
 
 def getDeviceType() { return "lights" }

@@ -23,7 +23,9 @@ metadata {
 		command "setAdjustedColor"
         command "reset"
         command "refresh"
+		command "setTransitionTime"
 
+		attribute "transitionTime", "NUMBER"
 		attribute "deviceSwitch", "enum", ["lightsOn", "lightsOff", "lightsTurningOn", "lightsTurningOff", "groupsOn", "groupsOff", "groupsTurningOn", "groupsTurningOff"]
 	}
 
@@ -57,7 +59,6 @@ metadata {
         controlTile("colorTempSliderControl", "device.colorTemperature", "slider", width: 4, height: 2, inactiveLabel: false, range:"(2000..6500)") {
             state "colorTemperature", action:"color temperature.setColorTemperature"
         }
-
         valueTile("colorTemp", "device.colorTemperature", inactiveLabel: false, decoration: "flat", width: 2, height: 2) {
             state "colorTemperature", label: '${currentValue} K'
         }
@@ -70,8 +71,15 @@ metadata {
 			state "default", label:"", action:"refresh.refresh", icon:"st.secondary.refresh"
 		}
 
+		controlTile("transitionTimeSliderControl", "device.transitionTime", "slider", inactiveLabel: false, width: 5, height: 1, range: "(0..4)") {
+			state "setTransitionTime", action: "setTransitionTime"
+		}
+		valueTile("transTime", "device.transitionTime", inactiveLabel: false, decoration: "flat", width: 1, height: 1) {
+			state "transitionTime", label: 'Transition Time: ${currentValue}'
+		}
+
 		main(["rich-control"])
-		details(["rich-control", "colorTempSliderControl", "colorTemp", "reset", "refresh"])
+		details(["rich-control", "colorTempSliderControl", "colorTemp", "transitionTimeSliderControl", "transTime", "reset", "refresh"])
 	}
 }
 
@@ -94,19 +102,30 @@ def parse(description) {
 }
 
 // handle commands
-void on() {
-	log.trace parent.on(this, state.deviceType)
+void setTransitionTime(transitionTime) {
+	log.trace "Transition time set to ${transitionTime}"
+	sendEvent(name: "transitionTime", value: transitionTime)
+}
+
+void on(transitionTime = device.currentValue("transitionTime")) {
+	if(transitionTime == null) { transitionTime = parent.getSelectedTransition() ?: 1 }
+
+	log.trace parent.on(this, transitionTime, state.deviceType)
 	sendEvent(name: "deviceSwitch", value: "${state.deviceType}On", displayed: false)
 	sendEvent(name: "switch", value: "on")
 }
 
-void off() {
-	log.trace parent.off(this, state.deviceType)
+void off(transitionTime = device.currentValue("transitionTime")) {
+	if(transitionTime == null) { transitionTime = parent.getSelectedTransition() ?: 1 }
+
+	log.trace parent.off(this, transitionTime, state.deviceType)
 	sendEvent(name: "deviceSwitch", value: "${state.deviceType}Off", displayed: false)
 	sendEvent(name: "switch", value: "off")
 }
 
-void nextLevel() {
+void nextLevel(transitionTime = device.currentValue("transitionTime")) {
+	if(transitionTime == null) { transitionTime = parent.getSelectedTransition() ?: 1 }
+
 	def level = device.latestValue("level") as Integer ?: 0
 	if (level <= 100) {
 		level = Math.min(25 * (Math.round(level / 25) + 1), 100) as Integer
@@ -114,31 +133,37 @@ void nextLevel() {
 	else {
 		level = 25
 	}
-	setLevel(level)
+	setLevel(level, transitionTime)
 }
 
-void setLevel(percent) {
+void setLevel(percent, transitionTime = device.currentValue("transitionTime")) {
+	if(transitionTime == null) { transitionTime = parent.getSelectedTransition() ?: 1 }
+
     log.debug "Executing 'setLevel'"
     if (verifyPercent(percent)) {
-        parent.setLevel(this, percent, state.deviceType)
+        parent.setLevel(this, percent, transitionTime, state.deviceType)
         sendEvent(name: "level", value: percent, descriptionText: "Level has changed to ${percent}%")
 		sendEvent(name: "deviceSwitch", value: "${state.deviceType}On", displayed: false)
 		sendEvent(name: "switch", value: "on")
     }
 }
 
-void setSaturation(percent) {
+void setSaturation(percent, transitionTime = device.currentValue("transitionTime")) {
+	if(transitionTime == null) { transitionTime = parent.getSelectedTransition() ?: 1 }
+
     log.debug "Executing 'setSaturation'"
     if (verifyPercent(percent)) {
-        parent.setSaturation(this, percent, state.deviceType)
+        parent.setSaturation(this, percent, transitionTime, state.deviceType)
         sendEvent(name: "saturation", value: percent, displayed: false)
     }
 }
 
-void setHue(percent) {
+void setHue(percent, transitionTime = device.currentValue("transitionTime")) {
+	if(transitionTime == null) { transitionTime = parent.getSelectedTransition() ?: 1 }
+
     log.debug "Executing 'setHue'"
     if (verifyPercent(percent)) {
-        parent.setHue(this, percent, state.deviceType)
+        parent.setHue(this, percent, transitionTime, state.deviceType)
         sendEvent(name: "hue", value: percent, displayed: false)
     }
 }
@@ -148,6 +173,11 @@ void setColor(value) {
     def events = []
     def validValues = [:]
 
+	if (value.transitionTime) { validValues.transitionTime = value.transitionTime }
+	else {
+		def transitionTime = (device.currentValue("transitionTime")) ?: parent.getSelectedTransition() ?: 3
+		validValues.transitionTime = transitionTime
+	}
     if (verifyPercent(value.hue)) {
         events << createEvent(name: "hue", value: value.hue, displayed: false)
         validValues.hue = value.hue
@@ -205,10 +235,12 @@ void setAdjustedColor(value) {
     }
 }
 
-void setColorTemperature(value) {
+void setColorTemperature(value, transitionTime = device.currentValue("transitionTime")) {
+	if(transitionTime == null) { transitionTime = parent.getSelectedTransition() ?: 1 }
+
     if (value) {
         log.trace "setColorTemperature: ${value}k"
-        parent.setColorTemperature(this, value, state.deviceType)
+        parent.setColorTemperature(this, value, transitonTime, state.deviceType)
         sendEvent(name: "colorTemperature", value: value)
 		sendEvent(name: "deviceSwitch", value: "${state.deviceType}On", displayed: false)
 		sendEvent(name: "switch", value: "on")
@@ -252,4 +284,5 @@ def verifyPercent(percent) {
 
 void initialize(deviceType) {
 	state.deviceType = deviceType
+	parent.getSelectedTransition()
 }

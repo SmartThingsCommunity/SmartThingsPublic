@@ -34,6 +34,12 @@ preferences {
 	page(name:"bridgeBtnPush", title:"Linking with your Hue", content:"bridgeLinking", refreshTimeout:5)
 	page(name:"bulbDiscovery", title:"Hue Device Setup", content:"bulbDiscovery", refreshTimeout:5)
 	page(name:"groupDiscovery", title:"Hue Device Setup", content:"groupDiscovery", refreshTimeout:5)
+	page(name:"advancedSettings", title:"Advanced Settings", nextPage:"", install:true, uninstall:true) {
+		section("Default Transition") {
+			paragraph	"Choose how long bulbs should take to transition between on/off and color changes by default. This can be modified per-device."
+			input		"selectedTransition", "number", required:true, title:"Transition Time (seconds)", value:1
+		}
+	}
 }
 
 def mainPage() {
@@ -870,41 +876,41 @@ def hubVerification(bodytext) {
     }
 }
 
-def on(childDevice, deviceType) {
+def on(childDevice, transitionTime, deviceType) {
 	log.debug "Executing 'on'"
-	put("${deviceType}/${getId(childDevice)}/${getApi(deviceType)}", [on: true])
+	put("${deviceType}/${getId(childDevice)}/${getApi(deviceType)}", [on: true, transitiontime: transitionTime * 10])
     return "Device is On"
 }
 
-def off(childDevice, deviceType) {
+def off(childDevice, transitionTime, deviceType) {
 	log.debug "Executing 'off'"
-	put("${deviceType}/${getId(childDevice)}/${getApi(deviceType)}", [on: false])
+	put("${deviceType}/${getId(childDevice)}/${getApi(deviceType)}", [on: false]) //, transitiontime: transitionTime * 10]) TODO: uncomment when bug resolved. See http://www.developers.meethue.com/content/using-transitiontime-onfalse-resets-bri-1
     return "Device is Off"
 }
 
-def setLevel(childDevice, percent, deviceType) {
+def setLevel(childDevice, percent, transitionTime, deviceType) {
 	log.debug "Executing 'setLevel'"
     def level
     if (percent == 1) level = 1 else level = Math.min(Math.round(percent * 255 / 100), 255)
-	put("${deviceType}/${getId(childDevice)}/${getApi(deviceType)}", [bri: level, on: percent > 0])
+	put("${deviceType}/${getId(childDevice)}/${getApi(deviceType)}", [bri: level, on: percent > 0, transitiontime: transitionTime * 10])
 }
 
-def setSaturation(childDevice, percent, deviceType) {
+def setSaturation(childDevice, percent, transitionTime, deviceType) {
 	log.debug "Executing 'setSaturation($percent)'"
 	def level = Math.min(Math.round(percent * 255 / 100), 255)
-	put("${deviceType}/${getId(childDevice)}/${getApi(deviceType)}", [sat: level])
+	put("${deviceType}/${getId(childDevice)}/${getApi(deviceType)}", [sat: level, transitiontime: transitionTime * 10])
 }
 
-def setHue(childDevice, percent, deviceType) {
+def setHue(childDevice, percent, transitionTime, deviceType) {
 	log.debug "Executing 'setHue($percent)'"
 	def level =	Math.min(Math.round(percent * 65535 / 100), 65535)
-	put("${deviceType}/${getId(childDevice)}/${getApi(deviceType)}", [hue: level])
+	put("${deviceType}/${getId(childDevice)}/${getApi(deviceType)}", [hue: level, transitiontime: transitionTime * 10])
 }
 
-def setColorTemperature(childDevice, huesettings, deviceType) {
+def setColorTemperature(childDevice, huesettings, transitionTime, deviceType) {
 	log.debug "Executing 'setColorTemperature($huesettings)'"
 	def ct = (1000000 / huesettings) as Integer
-	def value = [ct: ct, on: true]
+	def value = [ct: ct, on: true, transitiontime: transitionTime * 10]
 	log.trace "sending command $value"
 	put("${deviceType}/${getId(childDevice)}/${getApi(deviceType)}", value)
 }
@@ -938,7 +944,7 @@ def setColor(childDevice, huesettings, deviceType) {
             value.bri = Math.min(Math.round(huesettings.level * 255 / 100), 255)
     }
     value.alert = huesettings.alert ? huesettings.alert : "none"
-    value.transitiontime = huesettings.transitiontime ? huesettings.transitiontime : 4
+    value.transitiontime = huesettings.transitiontime ? huesettings.transitiontime : 10
 
     // Make sure to turn off light if requested
     if (huesettings.switch == "off")
@@ -1112,4 +1118,8 @@ private List getRealHubFirmwareVersions() {
 def getApi(deviceType) {
 	if (deviceType == "lights") { return "state" }
 	else if (deviceType == "groups") { return "action" }
+}
+
+def getSelectedTransition() {
+	return settings.selectedTransition
 }
