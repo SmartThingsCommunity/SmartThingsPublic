@@ -49,7 +49,7 @@ metadata {
             state "default", label:"", action:"refresh.refresh", icon:"st.secondary.refresh"
         }
 
-		controlTile("transitionTimeSliderControl", "device.transitionTime", "slider", inactiveLabel: false, width: 5, height: 1, range: "(0..4)") {
+		controlTile("transitionTimeSliderControl", "device.transitionTime", "slider", width: 5, height: 1, inactiveLabel: false, range:"(0..10)") {
 			state "setTransitionTime", action: "setTransitionTime"
 		}
 		valueTile("transTime", "device.transitionTime", inactiveLabel: false, decoration: "flat", width: 1, height: 1) {

@@ -56,10 +56,10 @@ metadata {
 			}
 		}
 
-        controlTile("colorTempSliderControl", "device.colorTemperature", "slider", width: 4, height: 2, inactiveLabel: false, range:"(2000..6500)") {
+        controlTile("colorTempSliderControl", "device.colorTemperature", "slider", width: 5, height: 1, inactiveLabel: false, range:"(2000..6500)") {
             state "colorTemperature", action:"color temperature.setColorTemperature"
         }
-        valueTile("colorTemp", "device.colorTemperature", inactiveLabel: false, decoration: "flat", width: 2, height: 2) {
+        valueTile("colorTemp", "device.colorTemperature", inactiveLabel: false, decoration: "flat", width: 1, height: 1) {
             state "colorTemperature", label: '${currentValue} K'
         }
 
@@ -71,7 +71,7 @@ metadata {
 			state "default", label:"", action:"refresh.refresh", icon:"st.secondary.refresh"
 		}
 
-		controlTile("transitionTimeSliderControl", "device.transitionTime", "slider", inactiveLabel: false, width: 5, height: 1, range: "(0..4)") {
+		controlTile("transitionTimeSliderControl", "device.transitionTime", "slider", width: 5, height: 1, inactiveLabel: false, range:"(0..10)") {
 			state "setTransitionTime", action: "setTransitionTime"
 		}
 		valueTile("transTime", "device.transitionTime", inactiveLabel: false, decoration: "flat", width: 1, height: 1) {
@@ -240,7 +240,7 @@ void setColorTemperature(value, transitionTime = device.currentValue("transition
 
     if (value) {
         log.trace "setColorTemperature: ${value}k"
-        parent.setColorTemperature(this, value, transitonTime, state.deviceType)
+        parent.setColorTemperature(this, value, transitionTime, state.deviceType)
         sendEvent(name: "colorTemperature", value: value)
 		sendEvent(name: "deviceSwitch", value: "${state.deviceType}On", displayed: false)
 		sendEvent(name: "switch", value: "on")
