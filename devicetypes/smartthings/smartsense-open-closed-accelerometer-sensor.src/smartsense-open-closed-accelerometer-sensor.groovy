@@ -23,8 +23,9 @@
  		capability "Acceleration Sensor"
  		capability "Refresh"
  		capability "Temperature Measurement"
- 		command "enrollResponse"
+		capability "Health Check"
 
+		command "enrollResponse"
  	}
 
  	simulator {
