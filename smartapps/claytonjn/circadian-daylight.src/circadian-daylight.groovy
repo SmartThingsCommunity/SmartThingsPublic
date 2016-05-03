@@ -316,7 +316,7 @@ def ctToRGB(ct) {
     if(b > 255) { b = 255 }
 
     def rgb = [:]
-    rgb = [r: r as Integer, g: g as Integer, b: b as Integer]
+    rgb = [r: Math.round(r) as Integer, g: Math.round(g) as Integer, b: Math.round(b) as Integer]
     rgb
 }
 
@@ -356,5 +356,5 @@ def rgbToHSV(rgb) {
     def degreesRange = (360 - 0)
     def percentRange = (100 - 0)
 
-    return [h: ((h * percentRange) / degreesRange) as Integer, s: ((s * percentRange) / degreesRange) as Integer, v: v as Integer]
+    return [h: Math.round((h * percentRange) / degreesRange) as Integer, s: Math.round((s * percentRange) / degreesRange) as Integer, v: Math.round(v) as Integer]
 }
