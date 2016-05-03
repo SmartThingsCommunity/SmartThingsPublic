@@ -895,7 +895,7 @@ def on(childDevice, transitionTime, deviceType) {
 
 def off(childDevice, transitionTime, deviceType) {
 	log.debug "Executing 'off'"
-	put("${deviceType}/${getId(childDevice)}/${getApi(deviceType)}", [on: false, transitiontime: transitionTime * 10])
+	put("${deviceType}/${getId(childDevice)}/${getApi(deviceType)}", [on: false]) //, transitiontime: transitionTime * 10]) TODO: uncomment when bug resolved. See http://www.developers.meethue.com/content/using-transitiontime-onfalse-resets-bri-1
     return "Device is Off"
 }
 
