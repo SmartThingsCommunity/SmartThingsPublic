@@ -336,4 +336,3 @@ private timeIntervalLabel()
 	(starting && ending) ? hhmm(starting) + "-" + hhmm(ending, "h:mm a z") : ""
 }
 // TODO - End Centralize
-
