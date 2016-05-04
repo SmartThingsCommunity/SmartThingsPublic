@@ -283,5 +283,5 @@ def verifyPercent(percent) {
 
 void initialize(deviceType) {
 	state.deviceType = deviceType
-	parent.getSelectedTransition()
+	setTransitionTime(parent.getSelectedTransition())
 }
