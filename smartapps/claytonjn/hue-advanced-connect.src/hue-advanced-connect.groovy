@@ -920,6 +920,16 @@ def setHue(childDevice, percent, transitionTime, deviceType) {
 
 def setColorTemperature(childDevice, huesettings, transitionTime, deviceType) {
 	log.debug "Executing 'setColorTemperature($huesettings)'"
+	if(huesettings <= 100 && huesettings >= 0) { //Workaround for broken controlTile range parameter
+		huesettings = (huesettings == 0) ? 1 : huesettings
+		def stMax = 100
+		def stMin = 0
+		def stRange = (stMax - stMin)
+		def hueMax = 6500
+		def hueMin = 2000
+		def hueRange = (hueMax - hueMin)
+		huesettings = (((huesettings - stMin) * hueRange) / stRange) + hueMin
+	}
 	def ct = (1000000 / huesettings) as Integer
 	def value = [ct: ct, on: true, transitiontime: transitionTime * 10]
 	log.trace "sending command $value"

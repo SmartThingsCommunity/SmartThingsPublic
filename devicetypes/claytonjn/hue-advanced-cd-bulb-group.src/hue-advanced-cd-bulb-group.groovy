@@ -237,7 +237,7 @@ void setAdjustedColor(value) {
 void setColorTemperature(value, transitionTime = device.currentValue("transitionTime")) {
 	if(transitionTime == null) { transitionTime = parent.getSelectedTransition() ?: 1 }
 
-    if (value) {
+    if (value >= 0) {
         log.trace "setColorTemperature: ${value}k"
         parent.setColorTemperature(this, value, transitionTime, state.deviceType)
         sendEvent(name: "colorTemperature", value: value)
