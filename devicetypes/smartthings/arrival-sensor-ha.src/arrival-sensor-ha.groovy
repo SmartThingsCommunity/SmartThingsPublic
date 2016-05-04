@@ -12,16 +12,6 @@
  *
  */
  
- /*
- *  Purpose: Arrival Sensor HA DTH File
- *
- *  Filename: Arrival-Sensor-HA.src/Arrival-Sensor-HA.groovy
- *
- *  Change History:
- *  1. 20160115 TW - Update/Edit to support i18n translations
- *  2. 20160121 TW - Update to V4 battery calcs, added pref's page title translations
- */
- 
 metadata {
     definition (name: "Arrival Sensor HA", namespace: "smartthings", author: "SmartThings") {
         capability "Tone"
