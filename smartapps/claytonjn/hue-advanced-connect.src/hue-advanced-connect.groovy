@@ -804,17 +804,19 @@ def parse(childDevice, description) {
                                 sendEvent(d.deviceNetworkId, [name: "hue", value: hue])
                                 sendEvent(d.deviceNetworkId, [name: "saturation", value: sat])
                             }
+							if (device.value[api].ct) { sendEvent(d.deviceNetworkId, [name: "colorTemperature", value: Math.round(1000000 / device.value[api].ct)]) }
                         } else {
                             sendEvent(d.deviceNetworkId, [name: "switch", value: "off"])
                             sendEvent(d.deviceNetworkId, [name: "level", value: 100])
                             if (device.value[api].sat) {
-                                def hue = 23
-                                def sat = 56
-                                def hex = colorUtil.hslToHex(23, 56)
+                                def hue = 8
+                                def sat = 18
+                                def hex = colorUtil.hslToHex(8, 18)
                                 sendEvent(d.deviceNetworkId, [name: "color", value: hex])
                                 sendEvent(d.deviceNetworkId, [name: "hue", value: hue])
                                 sendEvent(d.deviceNetworkId, [name: "saturation", value: sat])
                             }
+							if (device.value[api].ct) { sendEvent(d.deviceNetworkId, [name: "colorTemperature", value: 2710 ]) }
                         }
                     }
                 }
@@ -846,6 +848,9 @@ def parse(childDevice, description) {
                                 case "hue":
                                     hsl[childDeviceNetworkId].hue = Math.min(Math.round(v * 100 / 65535), 65535) as int
                                     break
+								case "ct":
+									sendEvent(childDeviceNetworkId, [name: "colorTemperature", value: Math.round(1000000 / v)])
+									break
                             }
                         }
 
