@@ -382,11 +382,11 @@ private upgradeDeviceType(device, newHueType) {
 private getDeviceHandler(hueType) {
 	// Determine ST device type based on Hue classification of light
 	if (hueType?.equalsIgnoreCase("Dimmable light"))
-		return "Hue Advanced Lux Bulb"
+		return "Hue Advanced${handlerType} Lux Bulb"
 	else if (hueType?.equalsIgnoreCase("Extended Color Light") || hueType?.equalsIgnoreCase("LightGroup") || hueType?.equalsIgnoreCase("Room"))
-		return "Hue Advanced Bulb/Group"
+		return "Hue Advanced${handlerType} Bulb/Group"
 	else if (hueType?.equalsIgnoreCase("Color Light"))
-		return "Hue Advanced Bloom"
+		return "Hue Advanced${handlerType} Bloom"
 	else
 		return null
 }
@@ -1136,6 +1136,6 @@ def getSelectedTransition() {
 }
 
 def getHandlerType() {
-	if(settings.circadianDalightIntegration == true) { return "CD" }
+	if(settings.circadianDalightIntegration == true) { return " -CD-" }
 	else { return "" }
 }
