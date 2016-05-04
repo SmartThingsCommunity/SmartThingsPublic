@@ -11,6 +11,9 @@
  *  for the specific language governing permissions and limitations under the License.
  *
  */
+
+//@Deprecated - Moved to zll-rgbw-bulb
+
 /* Philips Hue (via Zigbee)
 
 Capabilities:
@@ -22,10 +25,10 @@ Capabilities:
   Sensor
   Switch
   Switch Level
-  
+
 Custom Commands:
   setAdjustedColor
-    
+
 */
 
 metadata {
@@ -41,7 +44,7 @@ metadata {
 
 		command "setAdjustedColor"
 
-		fingerprint profileId: "C05E", inClusters: "0000,0003,0004,0005,0006,0008,0300,1000", outClusters: "0019"
+		//fingerprint profileId: "C05E", inClusters: "0000,0003,0004,0005,0006,0008,0300,1000", outClusters: "0019"
 	}
 
 	// simulator metadata
