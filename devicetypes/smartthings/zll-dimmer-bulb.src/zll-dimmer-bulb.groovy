@@ -1,6 +1,4 @@
 /**
- *  Cree Bulb
- *
  *  Copyright 2016 SmartThings
  *
  *  Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except
@@ -14,9 +12,8 @@
  *
  */
 
-//@Deprecated: Moved to ZLL Dimmer Bulb
 metadata {
-    definition (name: "Cree Bulb", namespace: "smartthings", author: "SmartThings") {
+    definition (name: "ZLL Dimmer Bulb", namespace: "smartthings", author: "SmartThings") {
 
         capability "Actuator"
         capability "Configuration"
@@ -25,7 +22,9 @@ metadata {
         capability "Switch"
         capability "Switch Level"
 
-        //fingerprint profileId: "C05E", inClusters: "0000,0003,0004,0005,0006,0008,1000", outClusters: "0000,0019"
+        fingerprint profileId: "C05E", inClusters: "0000, 0003, 0004, 0005, 0006, 0008, 1000", outClusters: "0000,0019"
+        fingerprint profileId: "C05E", inClusters: "0000, 0003, 0004, 0005, 0006, 0008, 1000", outClusters: "0000,0019", manufacturer: "CREE", model: "Connected A-19 60W Equivalent", deviceJoinName: "Cree Connected Bulb"
+        fingerprint profileId: "C05E", inClusters: "0000, 0003, 0004, 0005, 0006, 0008, 1000, 0B04, FC0F", outClusters: "0019", manufacturer: "OSRAM", model: "Classic A60 W clear", deviceJoinName: "OSRAM LIGHTIFY LED Smart Connected Light"
     }
 
     // simulator metadata
@@ -75,23 +74,23 @@ def parse(String description) {
 }
 
 def off() {
-    zigbee.off()
+    zigbee.off() + ["delay 1500"] + zigbee.onOffRefresh()
 }
 
 def on() {
-    zigbee.on()
+    zigbee.on() + ["delay 1500"] + zigbee.onOffRefresh()
 }
 
 def setLevel(value) {
-    zigbee.setLevel(value) + ["delay 500"] + zigbee.levelRefresh()         //adding refresh because of ZLL bulb not conforming to send-me-a-report
+    zigbee.setLevel(value) + ["delay 1500"] + zigbee.levelRefresh()         //adding refresh because of ZLL bulb not conforming to send-me-a-report
 }
 
 def refresh() {
-    zigbee.onOffRefresh() + zigbee.levelRefresh() + zigbee.onOffConfig() + zigbee.levelConfig()
+    zigbee.onOffRefresh() + zigbee.levelRefresh()
 }
 
 def poll() {
-    zigbee.onOffRefresh() + zigbee.levelRefresh()
+    refresh()
 }
 
 def configure() {
