@@ -56,11 +56,11 @@ metadata {
 			state "default", label:"", action:"refresh.refresh", icon:"st.secondary.refresh"
 		}
 
-		controlTile("transitionTimeSliderControl", "device.transitionTime", "slider", width: 5, height: 1, inactiveLabel: false, range:"(0..10)") {
+		controlTile("transitionTimeSliderControl", "device.transitionTime", "slider", width: 4, height: 1, inactiveLabel: false, range:"(0..10)") {
 			state "setTransitionTime", action: "setTransitionTime"
 		}
-		valueTile("transTime", "device.transitionTime", inactiveLabel: false, decoration: "flat", width: 1, height: 1) {
-			state "transitionTime", label: 'Transition Time: ${currentValue} s'
+		valueTile("transTime", "device.transitionTime", inactiveLabel: false, decoration: "flat", width: 2, height: 1) {
+			state "transitionTime", label: 'Transition:              ${currentValue} s'
 		}
 
 		main(["rich-control"])
