@@ -24,9 +24,13 @@ metadata {
         command "reset"
         command "refresh"
 		command "setTransitionTime"
+		command "enableCDColor"
+		command "disableCDColor"
+		command "tileSetAdjustedColor"
 
 		attribute "transitionTime", "NUMBER"
 		attribute "deviceSwitch", "enum", ["lightsOn", "lightsOff", "lightsTurningOn", "lightsTurningOff", "groupsOn", "groupsOff", "groupsTurningOn", "groupsTurningOff"]
+		attribute "cdColor", "enum", ["true", "false"]
 	}
 
 	simulator {
@@ -52,7 +56,7 @@ metadata {
 	            attributeState "level", label: 'Level ${currentValue}%'
 			}
 			tileAttribute ("device.color", key: "COLOR_CONTROL") {
-				attributeState "color", action:"setAdjustedColor"
+				attributeState "color", action:"tileSetAdjustedColor"
 			}
 		}
 
@@ -78,8 +82,14 @@ metadata {
 			state "transitionTime", label: 'Transition:              ${currentValue} s'
 		}
 
+		valueTile("cdColorControl", "device.cdColor", inactiveLabel: false, decoration: "flat", width: 3, height: 1) {
+			state "true", label: "Circadian Color On", action: "disableCDColor", nextState: "updating"
+			state "false", label: "Circadian Color Off", action: "enableCDColor", nextState: "updating"
+			state "updating", label: "Working"
+		}
+
 		main(["rich-control"])
-		details(["rich-control", "colorTempSliderControl", "colorTemp", "transitionTimeSliderControl", "transTime", "reset", "refresh"])
+		details(["rich-control", "colorTempSliderControl", "colorTemp", "transitionTimeSliderControl", "transTime", "cdColorControl", "reset", "refresh"])
 	}
 }
 
@@ -148,22 +158,24 @@ void setLevel(percent, transitionTime = device.currentValue("transitionTime")) {
     }
 }
 
-void setSaturation(percent, transitionTime = device.currentValue("transitionTime")) {
+void setSaturation(percent, transitionTime = device.currentValue("transitionTime"), disableCDColor = false) {
 	if(transitionTime == null) { transitionTime = parent.getSelectedTransition() ?: 1 }
 
     log.debug "Executing 'setSaturation'"
     if (verifyPercent(percent)) {
         parent.setSaturation(this, percent, transitionTime, state.deviceType)
+		if(disableCDColor == true) { sendEvent(name: "cdColor", value: "false", descriptionText: "Circadian Color has been disabled") }
         sendEvent(name: "saturation", value: percent, displayed: false)
     }
 }
 
-void setHue(percent, transitionTime = device.currentValue("transitionTime")) {
+void setHue(percent, transitionTime = device.currentValue("transitionTime"), disableCDColor = false) {
 	if(transitionTime == null) { transitionTime = parent.getSelectedTransition() ?: 1 }
 
     log.debug "Executing 'setHue'"
     if (verifyPercent(percent)) {
         parent.setHue(this, percent, transitionTime, state.deviceType)
+		if(disableCDColor == true) { sendEvent(name: "cdColor", value: "false", descriptionText: "Circadian Color has been disabled") }
         sendEvent(name: "hue", value: percent, displayed: false)
     }
 }
@@ -207,6 +219,7 @@ void setColor(value) {
 		events << createEvent(name: "switch", value: "on")
         validValues.switch = "on"
     }
+	if (value.disableCDColor == true) { events << createEvent(name: "cdColor", value: "false", descriptionText: "Circadian Color has been disabled") }
     if (!events.isEmpty()) {
         parent.setColor(this, validValues, state.deviceType)
     }
@@ -219,6 +232,11 @@ void reset() {
     log.debug "Executing 'reset'"
     setColorTemperature(2710)
     parent.poll()
+}
+
+void tileSetAdjustedColor(value) {
+	value.disableCDColor = true
+	setAdjustedColor(value)
 }
 
 void setAdjustedColor(value) {
@@ -234,12 +252,13 @@ void setAdjustedColor(value) {
     }
 }
 
-void setColorTemperature(value, transitionTime = device.currentValue("transitionTime")) {
+void setColorTemperature(value, transitionTime = device.currentValue("transitionTime"), disableCDColor = false) {
 	if(transitionTime == null) { transitionTime = parent.getSelectedTransition() ?: 1 }
 
     if (value >= 0) {
         log.trace "setColorTemperature: ${value}k"
         parent.setColorTemperature(this, value, transitionTime, state.deviceType)
+		if(disableCDColor == true) { sendEvent(name: "cdColor", value: "false", descriptionText: "Circadian Color has been disabled") }
         sendEvent(name: "colorTemperature", value: value)
 		sendEvent(name: "deviceSwitch", value: "${state.deviceType}On", displayed: false)
 		sendEvent(name: "switch", value: "on")
@@ -284,4 +303,15 @@ def verifyPercent(percent) {
 void initialize(deviceType) {
 	state.deviceType = deviceType
 	setTransitionTime(parent.getSelectedTransition())
+	sendEvent(name: "cdColor", value: "true", displayed: false)
+}
+
+void enableCDColor() {
+	log.debug "Executing 'enableCDColor'"
+	sendEvent(name: "cdColor", value: "true", descriptionText: "Circadian Color has been enabled", isStateChange: true)
+}
+
+void disableCDColor() {
+	log.debug "Executing 'disableCDColor'"
+	sendEvent(name: "cdColor", value: "false", descriptionText: "Circadian Color has been disabled", isStateChange: true)
 }
