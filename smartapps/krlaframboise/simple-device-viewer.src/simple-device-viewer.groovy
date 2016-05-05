@@ -1,5 +1,5 @@
 /**
- *  Simple Device Viewer v 1.6.3b
+ *  Simple Device Viewer v 1.7.1
  *
  *  Author: 
  *    Kevin LaFramboise (krlaframboise)
@@ -9,34 +9,38 @@
  *
  *  Changelog:
  *
+ *    1.7.1 (05/04/2016)
+ *      - Fixed bug with new feature that caused last event
+ *        to display N/A when they fall outside the threshold.
+ *
+ *    1.7 (05/04/2016)
+ *      - Added optional check for last event time that
+ *        detects activity from hidden events.
+ *
  *    1.6.3 (04/26/2016)
+ *      - Fixed condensed view bug introduced in version 1.5.
+ *      - Fixed duplicate notifications in message list bug.
+ *      - Documented public methods for publication.
  *      - Accidentally removed modes option in one of the last
  *        test versions so reverting back to version before those
  *        changes.
  *
- *    1.6 (04/09/2016)
- *      - Fixed condensed view bug introduced in version 1.5.
- *      - Fixed duplicate notifications in message list bug.
- *      - Documented public methods for publication.
- *
  *    1.5.1 (03/27/2016)
- *      - Bug fix for random N/A notifications.
- *
- *    1.5 (03/24/2016)
  *      - Added Icons for Contact Sensors, Motion Sensors, 
  *        Presence Sensors, Locks, and Switches.
  *      - Added Exclude Device options for Battery, Temp,
  *        and Last Event Notifications.
+ *      - Bug fix for random N/A notifications.
  *
- *    1.4 (03/20/2016)
+ *    1.4.4 (03/22/2016)
  *      - Added Temp, Battery, and Last Event notifications.
  *      - Added Condensed View option.
  *      - Created Custom Icon
- *      - 1.4.1 - Changed title formatting of capability screens.
- *      - 1.4.2 - Turned off unnecessary logging
- *      - 1.4.3 - Fixed bug caused by decimals in numeric fields.
- *      - 1.4.4 - Fixed bug caused by settings object that has 
- *                the property ID, but is not a device. (3/22)
+ *      - Changed title formatting of capability screens.
+ *      - Turned off unnecessary logging
+ *      - Fixed bug caused by decimals in numeric fields.
+ *      - Fixed bug caused by settings object that has 
+ *        the property ID, but is not a device. (3/22)
  *
  *    1.3 (03/19/2016)
  *      - Added "Setup Thresholds" section that allows you
@@ -143,7 +147,6 @@ def mainPage() {
 				page: "otherSettingsPage",
 				required: false
 			)
-			paragraph ""
 		}
 	}
 }
@@ -307,6 +310,10 @@ def otherSettingsPage() {
 				required: false
 			input "condensedViewEnabled", "bool",
 				title: "Condensed View Enabled?",
+				defaultValue: false,
+				required: false
+			input "lastEventByStateEnabled", "bool",
+				title: "Advanced Last Event Check Enabled?\n(When enabled, an additional check is performed on devices that have no displayed events within the threshold.  The check can determine if there's been activity within the threshold, but it can't determine the time of that activity so if it finds activity, it sets the last event time to the threshold.)",
 				defaultValue: false,
 				required: false
 			input "debugLogEnabled", "bool",
@@ -518,10 +525,36 @@ private getDeviceLastEventListItem(device) {
 }
 
 private getDeviceLastEventTime(device) {
-	def lastEventTime = device.events(max: 1)?.date?.time
-	if (lastEventTime && lastEventTime.size() > 0) {
-		return lastEventTime[0]
+	def lastEvents = device.events(max: 1)?.date?.time
+	def lastEventTime
+	def lastStateTime
+	
+	if (lastEvents && lastEvents.size() > 0) {
+		lastEventTime = lastEvents[0]
+	}	
+	
+	if (lastEventIsOld(lastEventTime) && settings.lastEventByStateEnabled) {		
+		lastStateTime = getDeviceLastEventTimeByState(device)
 	}
+	return lastStateTime ? lastStateTime : lastEventTime
+}
+
+private getDeviceLastEventTimeByState(device) {
+	def lastEventTime = null
+	def lastEventCutoff = new Date((new Date().time - getLastEventThresholdMS())+1000)
+	
+	try {		
+		def found = device.supportedAttributes.find { attr ->
+			device.statesSince("$attr", lastEventCutoff, [max:1])?.size() > 0
+		}
+		if (found) {
+			lastEventTime = lastEventCutoff.time
+		}
+	}
+	catch (e) {
+		log.warn "${device.displayName} Error: $e"
+	}
+	return lastEventTime
 }
 
 private getTimeSinceLastEvent(ms) {
