@@ -1,5 +1,5 @@
 /**
- *  Simple Device Viewer v 1.6
+ *  Simple Device Viewer v 1.7
  *
  *  Author: 
  *    Kevin LaFramboise (krlaframboise)
@@ -9,29 +9,34 @@
  *
  *  Changelog:
  *
- *    1.6 (04/09/2016)
+ *    1.7 (05/04/2016)
+ *      - Added optional check for last event time that
+ *        detects activity from hidden events.
+ *
+ *    1.6.3 (04/26/2016)
  *      - Fixed condensed view bug introduced in version 1.5.
  *      - Fixed duplicate notifications in message list bug.
  *      - Documented public methods for publication.
+ *      - Accidentally removed modes option in one of the last
+ *        test versions so reverting back to version before those
+ *        changes.
  *
  *    1.5.1 (03/27/2016)
- *      - Bug fix for random N/A notifications.
- *
- *    1.5 (03/24/2016)
  *      - Added Icons for Contact Sensors, Motion Sensors, 
  *        Presence Sensors, Locks, and Switches.
  *      - Added Exclude Device options for Battery, Temp,
  *        and Last Event Notifications.
+ *      - Bug fix for random N/A notifications.
  *
- *    1.4 (03/20/2016)
+ *    1.4.4 (03/22/2016)
  *      - Added Temp, Battery, and Last Event notifications.
  *      - Added Condensed View option.
  *      - Created Custom Icon
- *      - 1.4.1 - Changed title formatting of capability screens.
- *      - 1.4.2 - Turned off unnecessary logging
- *      - 1.4.3 - Fixed bug caused by decimals in numeric fields.
- *      - 1.4.4 - Fixed bug caused by settings object that has 
- *                the property ID, but is not a device. (3/22)
+ *      - Changed title formatting of capability screens.
+ *      - Turned off unnecessary logging
+ *      - Fixed bug caused by decimals in numeric fields.
+ *      - Fixed bug caused by settings object that has 
+ *        the property ID, but is not a device. (3/22)
  *
  *    1.3 (03/19/2016)
  *      - Added "Setup Thresholds" section that allows you
@@ -75,7 +80,7 @@ definition(
     iconX3Url: "https://raw.githubusercontent.com/krlaframboise/SmartThingsPublic/master/smartapps/krlaframboise/simple-device-viewer.src/simple-device-viewer-icon-3x.png")
 
  preferences {
-	page(name:"mainPage", uninstall:true, install:true)
+	page(name:"mainPage")
   page(name:"capabilityPage")
 	page(name:"lastEventPage")
 	page(name:"toggleSwitchPage")
@@ -90,7 +95,7 @@ def mainPage() {
 	if (!state.capabilitySettings) {
 		storeCapabilitySettings()
 	}
-	dynamicPage(name:"mainPage") {				
+	dynamicPage(name:"mainPage", uninstall:true, install:true) {				
 		section() {	
 			if (getAllDevices().size() != 0) {
 				state.lastCapabilitySetting = null
@@ -98,8 +103,8 @@ def mainPage() {
 					name: "lastEventLink", 
 					title: "All Devices - Last Event",
 					description: "",
-					page: "lastEventPage", 
-					params: []
+					page: "lastEventPage",
+					required: false
 				)
 				getCapabilityPageLink(null)			
 			}		
@@ -115,30 +120,29 @@ def mainPage() {
 				title: "Choose Devices & Capabilities",
 				description: "",
 				page: "devicesPage", 
-				params: []
+				required: false
 			)			
 			href(
 				name: "thresholdsLink", 
 				title: "Threshold Settings",
 				description: "",
 				page: "thresholdsPage", 
-				params: []
+				required: false
 			)
 			href(
 				name: "notificationsLink", 
 				title: "Notification Settings",
 				description: "",
 				page: "notificationsPage", 
-				params: []
+				required: false
 			)
 			href(
 				name: "otherSettingsLink", 
 				title: "Other Settings",
 				description: "",
-				page: "otherSettingsPage", 
-				params: []
+				page: "otherSettingsPage",
+				required: false
 			)
-			paragraph ""
 		}
 	}
 }
@@ -304,6 +308,10 @@ def otherSettingsPage() {
 				title: "Condensed View Enabled?",
 				defaultValue: false,
 				required: false
+			input "lastEventByStateEnabled", "bool",
+				title: "Advanced Last Event Check Enabled?\n(When enabled, an additional check is performed on devices that have no displayed events within the threshold.  The check can determine if there's been activity within the threshold, but it can't determine the time of that activity so if it finds activity, it sets the last event time to the threshold.)",
+				defaultValue: false,
+				required: false
 			input "debugLogEnabled", "bool",
 				title: "Debug Logging Enabled?",
 				defaultValue: false,
@@ -384,7 +392,8 @@ def capabilityPage(params) {
 						name: "allOffSwitchLink", 
 						title: "Turn Off All Switches",
 						description: "",
-						page: "toggleSwitchPage"
+						page: "toggleSwitchPage",
+						required: false
 					)
 					getSwitchToggleLinks(getDeviceCapabilityListItems(capSetting))
 				}
@@ -412,6 +421,7 @@ private getSwitchToggleLinks(listItems) {
 			title: "${it.title}",
 			description: "",
 			page: "toggleSwitchPage", 
+			required: false,
 			params: [deviceId: it.deviceId]
 		)
 	}
@@ -442,6 +452,7 @@ private getCapabilityPageLink(cap) {
 		title: cap ? "${getPluralName(cap)}" : "All Devices - States",
 		description: "",
 		page: "capabilityPage", 
+		required: false,
 		params: [capabilitySetting: cap]
 	)	
 }
@@ -510,10 +521,35 @@ private getDeviceLastEventListItem(device) {
 }
 
 private getDeviceLastEventTime(device) {
-	def lastEventTime = device.events(max: 1)?.date?.time
-	if (lastEventTime && lastEventTime.size() > 0) {
-		return lastEventTime[0]
+	def lastEvents = device.events(max: 1)?.date?.time
+	def lastEventTime
+	
+	if (lastEvents && lastEvents.size() > 0) {
+		lastEventTime = lastEvents[0]
+	}	
+	
+	if (lastEventIsOld(lastEventTime) && settings.lastEventByStateEnabled) {		
+		lastEventTime = getDeviceLastEventTimeByState(device)
+	}	
+	return lastEventTime
+}
+
+private getDeviceLastEventTimeByState(device) {
+	def lastEventTime = null
+	def lastEventCutoff = new Date((new Date().time - getLastEventThresholdMS())+1000)
+	
+	try {		
+		def found = device.supportedAttributes.find { attr ->
+			device.statesSince("$attr", lastEventCutoff, [max:1])?.size() > 0
+		}
+		if (found) {
+			lastEventTime = lastEventCutoff.time
+		}
 	}
+	catch (e) {
+		log.warn "${device.displayName} Error: $e"
+	}
+	return lastEventTime
 }
 
 private getTimeSinceLastEvent(ms) {
@@ -562,54 +598,65 @@ private String getDeviceStatusTitle(device, status) {
 }
 
 private getDeviceCapabilityStatusItem(device, cap) {
-	def item = [
-		image: "",
-		sortValue: device.displayName,
-		value: device.currentValue(getAttributeName(cap)).toString()
-	]
-	item.status = item.value
-	if ("${item.status}" != "null") {
-	
-		if (item.status == getActiveState(cap)) {
-			item.status = "*${item.status}"
-		}
+	try {
+		def item = [
+			image: "",
+			sortValue: device.displayName,
+			value: device.currentValue(getAttributeName(cap)).toString()
+		]
+		item.status = item.value
+		if ("${item.status}" != "null") {
 		
-		switch (cap.name) {
-			case "Battery":			
-				item.status = "${item.status}%"
-				item.image = getBatteryImage(item.value)
-				if (batterySortByValue) {
-					item.sortValue = safeToInteger(item.value)
-				}				
-				break
-			case "Temperature Measurement":
-				item.status = "${item.status}°${location.temperatureScale}"
-				item.image = getTemperatureImage(item.value)
-				if (tempSortByValue) {
-					item.sortValue = safeToInteger(item.value)
-				}
-				break
-			case "Contact Sensor":
-				item.image = getContactImage(item.value)
-				break
-			case "Lock":
-				item.image = getLockImage(item.value)
-				break
-			case "Motion Sensor":
-				item.image = getMotionImage(item.value)
-				break
-			case "Presence Sensor":
-				item.image = getPresenceImage(item.value)
-				break
-			case "Switch":
-				item.image = getSwitchImage(item.value)
-				break
+			if (item.status == getActiveState(cap)) {
+				item.status = "*${item.status}"
+			}
+			
+			switch (cap.name) {
+				case "Battery":			
+					item.status = "${item.status}%"
+					item.image = getBatteryImage(item.value)
+					if (batterySortByValue) {
+						item.sortValue = safeToInteger(item.value)
+					}				
+					break
+				case "Temperature Measurement":
+					item.status = "${item.status}°${location.temperatureScale}"
+					item.image = getTemperatureImage(item.value)
+					if (tempSortByValue) {
+						item.sortValue = safeToInteger(item.value)
+					}
+					break
+				case "Contact Sensor":
+					item.image = getContactImage(item.value)
+					break
+				case "Lock":
+					item.image = getLockImage(item.value)
+					break
+				case "Motion Sensor":
+					item.image = getMotionImage(item.value)
+					break
+				case "Presence Sensor":
+					item.image = getPresenceImage(item.value)
+					break
+				case "Switch":
+					item.image = getSwitchImage(item.value)
+					break
+			}
 		}
+		else {
+			item.status = "N/A"
+		}
+		return item
 	}
-	else {
-		item.status = "N/A"
+	catch (e) {
+		log.error "Device: ${device?.displayName} - Capability: $cap - Error: $e"
+		return [
+			image: "",
+			sortValue: device?.displayName,
+			value: "",
+			status: "N/A"
+		]
 	}
-	return item
 }
 
 private int safeToInteger(val, defaultVal=0) {
