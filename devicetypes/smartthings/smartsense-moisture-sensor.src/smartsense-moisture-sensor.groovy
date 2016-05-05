@@ -1,5 +1,4 @@
 /*
-===============================================================================
  *  Copyright 2016 SmartThings
  *
  *  Licensed under the Apache License, Version 2.0 (the "License"); you may not
@@ -13,15 +12,6 @@
  *  WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
  *  License for the specific language governing permissions and limitations
  *  under the License.
-===============================================================================
- *  Purpose: SmartSense Moisture Sensor DTH File
- *
- *  Filename: SmartSense-Moisture-Sensor.src/SmartSense-Moisture-Sensor.groovy
- *
- *  Change History:
- *  1. 20160116 TW - Update/Edit to support i18n translations
- *  2. 20160125 TW = Incorporated new battery mapping from TM
-===============================================================================
  */
 
 metadata {
