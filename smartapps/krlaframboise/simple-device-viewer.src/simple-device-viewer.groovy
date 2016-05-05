@@ -1,5 +1,5 @@
 /**
- *  Simple Device Viewer v 1.7
+ *  Simple Device Viewer v 1.7.1
  *
  *  Author: 
  *    Kevin LaFramboise (krlaframboise)
@@ -8,6 +8,10 @@
  *    https://community.smartthings.com/t/release-simple-device-viewer/42481?u=krlaframboise
  *
  *  Changelog:
+ *
+ *    1.7.1 (05/04/2016)
+ *      - Fixed bug with new feature that caused last event
+ *        to display N/A when they fall outside the threshold.
  *
  *    1.7 (05/04/2016)
  *      - Added optional check for last event time that
@@ -523,15 +527,16 @@ private getDeviceLastEventListItem(device) {
 private getDeviceLastEventTime(device) {
 	def lastEvents = device.events(max: 1)?.date?.time
 	def lastEventTime
+	def lastStateTime
 	
 	if (lastEvents && lastEvents.size() > 0) {
 		lastEventTime = lastEvents[0]
 	}	
 	
 	if (lastEventIsOld(lastEventTime) && settings.lastEventByStateEnabled) {		
-		lastEventTime = getDeviceLastEventTimeByState(device)
-	}	
-	return lastEventTime
+		lastStateTime = getDeviceLastEventTimeByState(device)
+	}
+	return lastStateTime ? lastStateTime : lastEventTime
 }
 
 private getDeviceLastEventTimeByState(device) {
