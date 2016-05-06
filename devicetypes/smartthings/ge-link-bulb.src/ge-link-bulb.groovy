@@ -1,7 +1,7 @@
 /**
  *  GE Link Bulb
  *
- *  Copyright 2014 SmartThings
+ *  Copyright 2016 SmartThings
  *
  *  Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except
  *  in compliance with the License. You may obtain a copy of the License at:
@@ -53,6 +53,8 @@ metadata {
         capability "Polling"
 
         fingerprint profileId: "0104", inClusters: "0000,0003,0004,0005,0006,0008,1000", outClusters: "0019", manufacturer: "GE_Appliances", model: "ZLL Light", deviceJoinName: "GE Link Bulb"
+        fingerprint profileId: "0104", inClusters: "0000,0003,0004,0005,0006,0008,1000", outClusters: "0019", manufacturer: "GE", model: "SoftWhite", deviceJoinName: "GE Link Soft White Bulb"
+        fingerprint profileId: "0104", inClusters: "0000,0003,0004,0005,0006,0008,1000", outClusters: "0019", manufacturer: "GE", model: "Daylight", deviceJoinName: "GE Link Daylight Bulb"
     }
 
 	// UI tile definitions
