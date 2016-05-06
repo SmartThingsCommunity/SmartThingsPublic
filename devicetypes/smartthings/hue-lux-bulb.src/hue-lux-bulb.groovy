@@ -33,9 +33,6 @@ metadata {
             tileAttribute ("device.level", key: "SLIDER_CONTROL") {
               attributeState "level", action:"switch level.setLevel", range:"(0..100)"
             }
-            tileAttribute ("device.level", key: "SECONDARY_CONTROL") {
-	            attributeState "level", label: 'Level ${currentValue}%'
-			}
         }
 
         controlTile("levelSliderControl", "device.level", "slider", height: 1, width: 2, inactiveLabel: false, range:"(0..100)") {
