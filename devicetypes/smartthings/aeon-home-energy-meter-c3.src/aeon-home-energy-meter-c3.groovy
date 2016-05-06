@@ -94,11 +94,11 @@ def parse(String description) {
 	def cmd = zwave.parse(description, [0x31: 1, 0x32: 1, 0x60: 3])
 	if (cmd) {
 		result = createEvent(zwaveEvent(cmd))
+		log.debug "Parse returned ${result?.descriptionText}"
+        storeGraphData(result.name, result.value)
+	}else{
+		log.debug "Null zwave command"
 	}
-	log.debug "Parse returned ${result?.descriptionText}"
-
-	storeGraphData(result.name, result.value)
-
 	return result
 }
 
