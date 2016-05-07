@@ -77,7 +77,7 @@ metadata {
         state "autobypass", label: 'Auto-Bypass', action: "autobypass", icon: "st.locks.lock.unlocked"
       }
       standardTile("bypassoff", "capability.momentary", width: 2, height: 2, title: "Bypass Off", decoration:"flat"){
-        state "bypassoff", label: 'Bypass Off', action: "bypassoff", icon: "st.locks.lock.unlocked"
+        state "bypassoff", label: 'Bypass Off', action: "bypassoff", icon: "st.locks.lock.locked"
       }
       standardTile("instant", "capability.momentary", width: 2, height: 2, title: "Instant", decoration:"flat"){
         state "instant", label: 'Instant', action: "instant", icon: "st.Health & Wellness.health7", backgroundColor: "#00FF00"
