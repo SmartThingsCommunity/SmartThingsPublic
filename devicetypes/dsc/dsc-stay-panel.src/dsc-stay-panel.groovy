@@ -56,37 +56,37 @@ metadata {
           attributeState "clear", label: 'No Trouble', icon: "st.security.alarm.clear"
         }
       }
-      standardTile("disarm", "capability.momentary", width: 2, height: 2, title: "Disarm"){
+      standardTile("disarm", "capability.momentary", width: 2, height: 2, title: "Disarm", decoration:"flat"){
         state "disarm", label: 'Disarm', action: "disarm", icon: "st.presence.house.unlocked", backgroundColor: "#79b821"
       }
-      standardTile("away", "capability.momentary", width: 2, height: 2, title: "Away"){
+      standardTile("away", "capability.momentary", width: 2, height: 2, title: "Away", decoration:"flat"){
         state "away", label: 'Away', action: "away", icon: "st.presence.car.car", backgroundColor: "#800000"
       }
-      standardTile("stay", "capability.momentary", width: 2, height: 2, title: "Stay"){
+      standardTile("stay", "capability.momentary", width: 2, height: 2, title: "Stay", decoration:"flat"){
         state "stay", label: 'Stay', action: "stay", icon: "st.presence.house.secured", backgroundColor: "#008CC1"
       }
       standardTile("refresh", "device.refresh", inactiveLabel: false, decoration: "flat", width: 2, height: 2) {
         state "default", action:"refresh.refresh", icon:"st.secondary.refresh"
+      }     
+      standardTile("chime", "device.chime", width: 2, height: 2, title: "Chime", decoration:"flat"){
+        state "togglechime", label: 'Toggling Chime', action: "togglechime", icon: "st.alarm.beep.beep"
+        state "chime", label: 'Chime', action: "togglechime", icon: "st.custom.sonos.unmuted"
+        state "nochime", label: 'No Chime', action: "togglechime", icon: "st.custom.sonos.muted"
       }
-      standardTile("chime", "device.chime", width: 2, height: 2, title: "Chime"){
-        state "togglechime", label: 'Toggling\u00A0Chime', action: "togglechime", icon: "st.alarm.beep.beep", backgroundColor: "#fbd48a"
-        state "chime", label: 'Chime', action: "togglechime", icon: "st.alarm.beep.beep", backgroundColor: "#EE9D00"
-        state "nochime", label: 'No\u00A0Chime', action: "togglechime", icon: "st.alarm.beep.beep", backgroundColor: "#796338"
+      standardTile("autobypass", "capability.momentary", width: 2, height: 2, title: "Auto-Bypass", decoration:"flat"){
+        state "autobypass", label: 'Auto-Bypass', action: "autobypass", icon: "st.locks.lock.unlocked"
       }
-      standardTile("autobypass", "capability.momentary", width: 2, height: 2, title: "Bypass Off"){
-        state "autobypass", label: 'Auto-Bypass', action: "autobypass", icon: "st.locks.lock.unlocked", backgroundColor: "#FFFF00"
+      standardTile("bypassoff", "capability.momentary", width: 2, height: 2, title: "Bypass Off", decoration:"flat"){
+        state "bypassoff", label: 'Bypass Off', action: "bypassoff", icon: "st.locks.lock.unlocked"
       }
-      standardTile("bypassoff", "capability.momentary", width: 2, height: 2, title: "Bypass Off"){
-        state "bypassoff", label: 'Bypass Off', action: "bypassoff", icon: "st.locks.lock.unlocked", backgroundColor: "#FFFF00"
-      }
-      standardTile("instant", "capability.momentary", width: 2, height: 2, title: "Instant"){
+      standardTile("instant", "capability.momentary", width: 2, height: 2, title: "Instant", decoration:"flat"){
         state "instant", label: 'Instant', action: "instant", icon: "st.locks.lock.locked", backgroundColor: "#00FF00"
       }
-      standardTile("night", "capability.momentary", width: 2, height: 2, title: "Night"){
+      standardTile("night", "capability.momentary", width: 2, height: 2, title: "Night", decoration:"flat"){
         state "night", label: 'Night', action: "night", icon: "st.Bedroom.bedroom2", backgroundColor: "#AA00FF"
       }
-      standardTile("reset", "capability.momentary", width: 2, height: 2, title: "Sensor Reset"){
-        state "reset", label: 'Sensor Reset', action: "reset", icon: "st.alarm.smoke.smoke", backgroundColor: "#FF3000"
+      standardTile("reset", "capability.momentary", width: 2, height: 2, title: "Sensor Reset", decoration:"flat"){
+        state "reset", label: 'Sensor Reset', action: "reset", icon: "st.alarm.smoke.smoke"
       }
       valueTile("ledready", "device.ledready", width: 2, height: 1){
         state "ledready", label:'Ready: ${currentValue}'
@@ -112,26 +112,25 @@ metadata {
       valueTile("ledbacklight", "device.ledbacklight", width: 2, height: 1){
         state "ledbacklight", label:'Backlight: ${currentValue}'
       }
-      standardTile("key", "device.key", width: 2, height: 2, title: "Key"){
-        state "nokey", label: 'Alarm\u00A0Keys\u00A0Off', action: "key", icon: "st.illuminance.illuminance.dark", backgroundColor: "#7B3516", defaultState: true
-        state "key", label: 'Alarm\u00A0Keys\u00A0On', action: "nokey", icon: "st.illuminance.illuminance.light", backgroundColor: "#FF6E2E"
+      standardTile("key", "device.key", width: 2, height: 2, title: "Key", decoration:"flat"){
+        state "nokey", label: 'Alarm Keys Off', action: "key", icon: "st.illuminance.illuminance.dark", defaultState: true
+        state "key", label: 'Alarm Keys On', action: "nokey", icon: "st.illuminance.illuminance.light"
       }
-      standardTile("keyfire", "device.keyfire", width: 2, height: 2, title: "Fire Key"){
-        state "restore", label: 'Fire\u00A0Key', action: "keyfire", icon: "st.Home.home29", backgroundColor: "#FF2400"
-        state "alarm", label: 'Fire\u00A0Key\u00A0Alarm', action: "keyfire", icon: "st.Home.home29", backgroundColor: "#FF2400"
+      standardTile("keyfire", "device.keyfire", width: 2, height: 2, title: "Fire Key", decoration:"flat"){
+        state "restore", label: 'Fire Key', action: "keyfire", icon: "st.Home.home29", backgroundColor: "#FF2400"
+        state "alarm", label: 'Fire Key Alarm', action: "keyfire", icon: "st.Home.home29", backgroundColor: "#FF2400"
       }
-      standardTile("keyaux", "device.keyaux", width: 2, height: 2, title: "Aux Key"){
-        state "restore", label: 'Aux\u00A0Key', action: "keyaux", icon: "st.Transportation.transportation7", backgroundColor: "#DD0000"
-        state "alarm", label: 'Aux\u00A0Key\u00A0Alarm', action: "keyaux", icon: "st.Transportation.transportation7", backgroundColor: "#DD0000"
+      standardTile("keyaux", "device.keyaux", width: 2, height: 2, title: "Aux Key", decoration:"flat"){
+        state "restore", label: 'Aux Key', action: "keyaux", icon: "st.Transportation.transportation7", backgroundColor: "#DD0000"
+        state "alarm", label: 'Aux Key Alarm', action: "keyaux", icon: "st.Transportation.transportation7", backgroundColor: "#DD0000"
       }
-      standardTile("keypanic", "device.keypanic", width: 2, height: 2, title: "Panic Key"){
-        state "restore", label: 'Panic\u00A0Key', action: "keypanic", icon: "st.Transportation.transportation9", backgroundColor: "#000fd5"
-        state "alarm", label: 'Panic\u00A0Key\u00A0Alarm', action: "keypanic", icon: "st.Transportation.transportation9", backgroundColor: "#000fd5"
+      standardTile("keypanic", "device.keypanic", width: 2, height: 2, title: "Panic Key", decoration:"flat"){
+        state "restore", label: 'Panic Key', action: "keypanic", icon: "st.Transportation.transportation9", backgroundColor: "#000fd5"
+        state "alarm", label: 'Panic Key Alarm', action: "keypanic", icon: "st.Transportation.transportation9", backgroundColor: "#000fd5"
       }
-
 
       main "status"
-      details(["status", "away", "stay", "disarm", "refresh", "chime", "autobypass", "bypassoff", "instant", "night", "reset", "ledready", "ledarmed", "ledmemory", "ledbypass", "key", "ledtrouble", "ledprogram", "ledfire", "ledbacklight", "keyfire", "keyaux", "keypanic"])
+      details(["status", "away", "stay", "disarm", "instant", "night", "refresh", "chime", "autobypass", "bypassoff", "reset", "ledready", "ledarmed", "ledmemory", "ledbypass", "key", "ledtrouble", "ledprogram", "ledfire", "ledbacklight", "keyfire", "keyaux", "keypanic"])
     }
 }
 
