@@ -85,21 +85,21 @@ void setTransitionTime(transitionTime) {
 }
 
 void on(transitionTime = device.currentValue("transitionTime")) {
-	if(transitionTime == null) { transitionTime = parent.getSelectedTransition() ?: 1 }
+	if(transitionTime == null) { transitionTime = device.currentValue("transitionTime") ?: parent.getSelectedTransition() ?: 1 }
 
 	log.trace parent.on(this, transitionTime, deviceType)
 	sendEvent(name: "switch", value: "on")
 }
 
 void off(transitionTime = device.currentValue("transitionTime")) {
-	if(transitionTime == null) { transitionTime = parent.getSelectedTransition() ?: 1 }
+	if(transitionTime == null) { transitionTime = device.currentValue("transitionTime") ?: parent.getSelectedTransition() ?: 1 }
 
 	log.trace parent.off(this, transitionTime, deviceType)
 	sendEvent(name: "switch", value: "off")
 }
 
 void setLevel(percent, transitionTime = device.currentValue("transitionTime")) {
-	if(transitionTime == null) { transitionTime = parent.getSelectedTransition() ?: 1 }
+	if(transitionTime == null) { transitionTime = device.currentValue("transitionTime") ?: parent.getSelectedTransition() ?: 1 }
 
 	log.debug "Executing 'setLevel'"
     if (percent != null && percent >= 0 && percent <= 100) {

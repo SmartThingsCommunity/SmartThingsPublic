@@ -92,21 +92,21 @@ void setTransitionTime(transitionTime) {
 }
 
 void on(transitionTime = device.currentValue("transitionTime")) {
-	if(transitionTime == null) { transitionTime = parent.getSelectedTransition() ?: 1 }
+	if(transitionTime == null) { transitionTime = device.currentValue("transitionTime") ?: parent.getSelectedTransition() ?: 1 }
 
 	log.trace parent.on(this, transitionTime, deviceType)
 	sendEvent(name: "switch", value: "on")
 }
 
 void off(transitionTime = device.currentValue("transitionTime")) {
-	if(transitionTime == null) { transitionTime = parent.getSelectedTransition() ?: 1 }
+	if(transitionTime == null) { transitionTime = device.currentValue("transitionTime") ?: parent.getSelectedTransition() ?: 1 }
 
 	log.trace parent.off(this, transitionTime, deviceType)
 	sendEvent(name: "switch", value: "off")
 }
 
 void nextLevel(transitionTime = device.currentValue("transitionTime")) {
-	if(transitionTime == null) { transitionTime = parent.getSelectedTransition() ?: 1 }
+	if(transitionTime == null) { transitionTime = device.currentValue("transitionTime") ?: parent.getSelectedTransition() ?: 1 }
 
 	def level = device.latestValue("level") as Integer ?: 0
 	if (level <= 100) {
@@ -119,7 +119,7 @@ void nextLevel(transitionTime = device.currentValue("transitionTime")) {
 }
 
 void setLevel(percent, transitionTime = device.currentValue("transitionTime")) {
-	if(transitionTime == null) { transitionTime = parent.getSelectedTransition() ?: 1 }
+	if(transitionTime == null) { transitionTime = device.currentValue("transitionTime") ?: parent.getSelectedTransition() ?: 1 }
 
     log.debug "Executing 'setLevel'"
     if (verifyPercent(percent)) {
@@ -130,7 +130,7 @@ void setLevel(percent, transitionTime = device.currentValue("transitionTime")) {
 }
 
 void setSaturation(percent, transitionTime = device.currentValue("transitionTime")) {
-	if(transitionTime == null) { transitionTime = parent.getSelectedTransition() ?: 1 }
+	if(transitionTime == null) { transitionTime = device.currentValue("transitionTime") ?: parent.getSelectedTransition() ?: 1 }
 
     log.debug "Executing 'setSaturation'"
     if (verifyPercent(percent)) {
@@ -140,7 +140,7 @@ void setSaturation(percent, transitionTime = device.currentValue("transitionTime
 }
 
 void setHue(percent, transitionTime = device.currentValue("transitionTime")) {
-	if(transitionTime == null) { transitionTime = parent.getSelectedTransition() ?: 1 }
+	if(transitionTime == null) { transitionTime = device.currentValue("transitionTime") ?: parent.getSelectedTransition() ?: 1 }
 
     log.debug "Executing 'setHue'"
     if (verifyPercent(percent)) {
@@ -215,7 +215,7 @@ void setAdjustedColor(value) {
 }
 
 void setColorTemperature(value, transitionTime = device.currentValue("transitionTime")) {
-	if(transitionTime == null) { transitionTime = parent.getSelectedTransition() ?: 1 }
+	if(transitionTime == null) { transitionTime = device.currentValue("transitionTime") ?: parent.getSelectedTransition() ?: 1 }
 
     if (value) {
         log.trace "setColorTemperature: ${value}k"

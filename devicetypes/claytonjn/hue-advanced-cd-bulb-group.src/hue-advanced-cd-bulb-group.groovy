@@ -27,6 +27,8 @@ metadata {
 		command "enableCDColor"
 		command "disableCDColor"
 		command "tileSetAdjustedColor"
+		command "tileReset"
+		command "tileSetColorTemperature"
 
 		attribute "transitionTime", "NUMBER"
 		attribute "deviceSwitch", "enum", ["lightsOn", "lightsOff", "lightsTurningOn", "lightsTurningOff", "groupsOn", "groupsOff", "groupsTurningOn", "groupsTurningOff"]
@@ -61,14 +63,14 @@ metadata {
 		}
 
         controlTile("colorTempSliderControl", "device.colorTemperature", "slider", width: 4, height: 1, inactiveLabel: false, range:"(2000..6500)") {
-            state "colorTemperature", action:"color temperature.setColorTemperature"
+            state "colorTemperature", action:"tileSetColorTemperature"
         }
         valueTile("colorTemp", "device.colorTemperature", inactiveLabel: false, decoration: "flat", width: 2, height: 1) {
             state "colorTemperature", label: 'Temperature: ${currentValue} K'
         }
 
 		standardTile("reset", "device.reset", height: 2, width: 2, inactiveLabel: false, decoration: "flat") {
-			state "default", label:"Reset Color", action:"reset", icon:"st.lights.philips.hue-single"
+			state "default", label:"Reset Color", action:"tileReset", icon:"st.lights.philips.hue-single"
 		}
 
 		standardTile("refresh", "device.refresh", height: 2, width: 2, inactiveLabel: false, decoration: "flat") {
@@ -118,7 +120,7 @@ void setTransitionTime(transitionTime) {
 }
 
 void on(transitionTime = device.currentValue("transitionTime")) {
-	if(transitionTime == null) { transitionTime = parent.getSelectedTransition() ?: 1 }
+	if(transitionTime == null) { transitionTime = device.currentValue("transitionTime") ?: parent.getSelectedTransition() ?: 1 }
 
 	log.trace parent.on(this, transitionTime, state.deviceType)
 	sendEvent(name: "deviceSwitch", value: "${state.deviceType}On", displayed: false)
@@ -126,7 +128,7 @@ void on(transitionTime = device.currentValue("transitionTime")) {
 }
 
 void off(transitionTime = device.currentValue("transitionTime")) {
-	if(transitionTime == null) { transitionTime = parent.getSelectedTransition() ?: 1 }
+	if(transitionTime == null) { transitionTime = device.currentValue("transitionTime") ?: parent.getSelectedTransition() ?: 1 }
 
 	log.trace parent.off(this, transitionTime, state.deviceType)
 	sendEvent(name: "deviceSwitch", value: "${state.deviceType}Off", displayed: false)
@@ -134,7 +136,7 @@ void off(transitionTime = device.currentValue("transitionTime")) {
 }
 
 void nextLevel(transitionTime = device.currentValue("transitionTime")) {
-	if(transitionTime == null) { transitionTime = parent.getSelectedTransition() ?: 1 }
+	if(transitionTime == null) { transitionTime = device.currentValue("transitionTime") ?: parent.getSelectedTransition() ?: 1 }
 
 	def level = device.latestValue("level") as Integer ?: 0
 	if (level <= 100) {
@@ -147,7 +149,7 @@ void nextLevel(transitionTime = device.currentValue("transitionTime")) {
 }
 
 void setLevel(percent, transitionTime = device.currentValue("transitionTime")) {
-	if(transitionTime == null) { transitionTime = parent.getSelectedTransition() ?: 1 }
+	if(transitionTime == null) { transitionTime = device.currentValue("transitionTime") ?: parent.getSelectedTransition() ?: 1 }
 
     log.debug "Executing 'setLevel'"
     if (verifyPercent(percent)) {
@@ -159,7 +161,7 @@ void setLevel(percent, transitionTime = device.currentValue("transitionTime")) {
 }
 
 void setSaturation(percent, transitionTime = device.currentValue("transitionTime"), disableCDColor = false) {
-	if(transitionTime == null) { transitionTime = parent.getSelectedTransition() ?: 1 }
+	if(transitionTime == null) { transitionTime = device.currentValue("transitionTime") ?: parent.getSelectedTransition() ?: 1 }
 
     log.debug "Executing 'setSaturation'"
     if (verifyPercent(percent)) {
@@ -170,7 +172,7 @@ void setSaturation(percent, transitionTime = device.currentValue("transitionTime
 }
 
 void setHue(percent, transitionTime = device.currentValue("transitionTime"), disableCDColor = false) {
-	if(transitionTime == null) { transitionTime = parent.getSelectedTransition() ?: 1 }
+	if(transitionTime == null) { transitionTime = device.currentValue("transitionTime") ?: parent.getSelectedTransition() ?: 1 }
 
     log.debug "Executing 'setHue'"
     if (verifyPercent(percent)) {
@@ -228,13 +230,19 @@ void setColor(value) {
     }
 }
 
-void reset() {
+private tileReset() {
+	reset(null, true)
+}
+
+void reset(transitionTime = device.currentValue("transitionTime"), disableCDColor = false) {
+	if(transitionTime == null) { transitionTime = device.currentValue("transitionTime") ?: parent.getSelectedTransition() ?: 1 }
+
     log.debug "Executing 'reset'"
-    setColorTemperature(2710)
+    setColorTemperature(2710, transitionTime, disableCDColor)
     parent.poll()
 }
 
-void tileSetAdjustedColor(value) {
+private tileSetAdjustedColor(value) {
 	value.disableCDColor = true
 	setAdjustedColor(value)
 }
@@ -252,8 +260,12 @@ void setAdjustedColor(value) {
     }
 }
 
+private tileSetColorTemperature(value) {
+	setColorTemperature(value, null, true)
+}
+
 void setColorTemperature(value, transitionTime = device.currentValue("transitionTime"), disableCDColor = false) {
-	if(transitionTime == null) { transitionTime = parent.getSelectedTransition() ?: 1 }
+	if(transitionTime == null) { transitionTime = device.currentValue("transitionTime") ?: parent.getSelectedTransition() ?: 1 }
 
     if (value >= 0) {
         log.trace "setColorTemperature: ${value}k"
