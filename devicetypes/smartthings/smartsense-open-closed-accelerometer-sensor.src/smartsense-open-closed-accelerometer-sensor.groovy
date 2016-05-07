@@ -300,6 +300,7 @@ def getTemperature(value) {
 	}
 
 def configure() {
+	sendEvent(name: "checkInterval", value: 7200, displayed: false)
 
 	String zigbeeEui = swapEndianHex(device.hub.zigbeeEui)
 	log.debug "Configuring Reporting, IAS CIE, and Bindings."

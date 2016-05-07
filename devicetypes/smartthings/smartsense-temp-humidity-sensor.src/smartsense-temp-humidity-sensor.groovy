@@ -252,6 +252,7 @@ def refresh()
 }
 
 def configure() {
+	sendEvent(name: "checkInterval", value: 7200, displayed: false)
 
 	log.debug "Configuring Reporting and Bindings."
 	def configCmds = [
