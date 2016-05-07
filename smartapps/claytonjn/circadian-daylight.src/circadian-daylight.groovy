@@ -1,5 +1,5 @@
 /**
-* Circadian Daylight 3.0
+* Circadian Daylight 3.1
 *
 * This SmartApp synchronizes your color changing lights with local perceived color
 * temperature of the sky throughout the day. This gives your environment a more
