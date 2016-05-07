@@ -14,6 +14,7 @@ metadata {
         capability "Refresh"
 
         command "away"
+        command "autobypass"
         command "bypassoff"
         command "disarm"
         command "instant"
@@ -179,6 +180,10 @@ def partition(String state, String partition, Map parameters) {
 
 def away() {
   parent.sendUrl('arm')
+}
+
+def autobypass() {
+  parent.autoBypass
 }
 
 def bypassoff() {

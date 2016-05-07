@@ -239,6 +239,16 @@ def installpartitions() {
   }
 }
 
+def autoBypass() {
+  def closedList = ['clear','closed','dry','inactive']
+  def children = getChildDevices()
+  def zones = children.findAll { it.device.deviceNetworkId.startsWith("dsczone") }
+
+  for (zone in zones) {
+    log.debug "${zone} ${zone.device} ${zone.device.status}"
+  }
+}
+
 def sendUrl(url) {
     def result = new physicalgraph.device.HubAction(
         method: 'GET',
