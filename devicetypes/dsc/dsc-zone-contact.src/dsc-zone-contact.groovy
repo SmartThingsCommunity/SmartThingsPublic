@@ -24,19 +24,19 @@ metadata {
   }
 
   tiles(scale: 2) {
-    multiAttributeTile(name:"zone", type: "generic", width: 6, height: 4){
+    multiAttributeTile(name:"zone", type: "generic", width: 6, height: 4) {
       tileAttribute ("device.contact", key: "PRIMARY_CONTROL") {
         attributeState "open", label: '${name}', icon: "st.contact.contact.open", backgroundColor: "#ffa81e"
         attributeState "closed", label: '${name}', icon: "st.contact.contact.closed", backgroundColor: "#79b821"
         attributeState "alarm", label: '${name}', icon: "st.contact.contact.open", backgroundColor: "#ff0000"
       }
+      tileAttribute ("device.trouble", key: "SECONDARY_CONTROL") {
+        attributeState "restore", label: 'No Trouble', icon: "st.security.alarm.clear"
+        attributeState "tamper", label: 'Tamper', icon: "st.security.alarm.alarm"
+        attributeState "fault", label: 'Fault', icon: "st.security.alarm.alarm"
+      }
     }
-    standardTile ("trouble", "device.trouble", width: 3, height: 2, title: "Trouble") {
-      state "restore", label: 'No\u00A0Trouble', icon: "st.security.alarm.clear"
-      state "tamper", label: 'Tamper', icon: "st.security.alarm.alarm", backgroundColor: "#ffa81e"
-      state "fault", label: 'Fault', icon: "st.security.alarm.alarm", backgroundColor: "#ff1e1e"
-    }
-    standardTile("bypass", "capability.momentary", width: 3, height: 2, title: "Bypass", decoration: "flat"){
+    standardTile("bypass", "capability.momentary", width: 6, height: 2, title: "Bypass", decoration: "flat"){
       state "bypass", label: 'Bypass', action: "bypass", icon: "st.locks.lock.unlocked"
     }
 
@@ -44,7 +44,7 @@ metadata {
     main "zone"
 
     // These tiles will be displayed when clicked on the device, in the order listed here.
-    details(["zone", "trouble", "bypass"])
+    details(["zone", "bypass"])
   }
 }
 

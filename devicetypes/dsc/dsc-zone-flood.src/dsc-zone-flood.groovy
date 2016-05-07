@@ -25,19 +25,19 @@ metadata {
   }
 
   tiles(scale: 2) {
-    multiAttributeTile(name:"zone", type: "generic", width: 6, height: 4){
+    multiAttributeTile(name:"zone", type: "generic", width: 6, height: 4) {
       tileAttribute ("device.water", key: "PRIMARY_CONTROL") {
         attributeState "wet", label:'wet', icon:"st.alarm.water.wet", backgroundColor:"#53a7c0"
         attributeState "dry", label:'dry', icon:"st.alarm.water.dry", backgroundColor:"#ffffff"
         attributeState "alarm", label:'ALARM', icon:"st.alarm.water.wet", backgroundColor:"#ff0000"
       }
+      tileAttribute ("device.trouble", key: "SECONDARY_CONTROL") {
+        attributeState "restore", label: 'No Trouble', icon: "st.security.alarm.clear"
+        attributeState "tamper", label: 'Tamper', icon: "st.security.alarm.alarm"
+        attributeState "fault", label: 'Fault', icon: "st.security.alarm.alarm"
+      }
     }
-    standardTile ("trouble", "device.trouble", width: 3, height: 2, title: "Trouble") {
-      state "restore", label: 'No\u00A0Trouble', icon: "st.security.alarm.clear"
-      state "tamper", label: 'Tamper', icon: "st.security.alarm.alarm", backgroundColor: "#ffa81e"
-      state "fault", label: 'Fault', icon: "st.security.alarm.alarm", backgroundColor: "#ff1e1e"
-    }
-    standardTile("bypass", "capability.momentary", width: 3, height: 2, title: "Bypass", decoration: "flat"){
+    standardTile("bypass", "capability.momentary", width: 6, height: 2, title: "Bypass", decoration: "flat"){
       state "bypass", label: 'Bypass', action: "bypass", icon: "st.locks.lock.unlocked"
     }
 
@@ -45,7 +45,7 @@ metadata {
     main "zone"
 
     // These tiles will be displayed when clicked on the device, in the order listed here.
-    details(["zone", "trouble", "bypass"])
+    details(["zone", "bypass"])
   }
 }
 
