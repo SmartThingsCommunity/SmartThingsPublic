@@ -80,7 +80,7 @@ metadata {
         state "bypassoff", label: 'Bypass Off', action: "bypassoff", icon: "st.locks.lock.unlocked"
       }
       standardTile("instant", "capability.momentary", width: 2, height: 2, title: "Instant", decoration:"flat"){
-        state "instant", label: 'Instant', action: "instant", icon: "st.locks.lock.locked", backgroundColor: "#00FF00"
+        state "instant", label: 'Instant', action: "instant", icon: "st.Health & Wellness.health7", backgroundColor: "#00FF00"
       }
       standardTile("night", "capability.momentary", width: 2, height: 2, title: "Night", decoration:"flat"){
         state "night", label: 'Night', action: "night", icon: "st.Bedroom.bedroom2", backgroundColor: "#AA00FF"
