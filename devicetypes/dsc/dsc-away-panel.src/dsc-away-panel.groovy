@@ -14,6 +14,7 @@ metadata {
         capability "Refresh"
 
         command "away"
+        command "autobypass"
         command "bypassoff"
         command "disarm"
         command "instant"
@@ -64,13 +65,19 @@ metadata {
       standardTile("stay", "capability.momentary", width: 2, height: 2, title: "Stay"){
         state "stay", label: 'Stay', action: "stay", icon: "st.presence.house.secured", backgroundColor: "#008CC1"
       }
+      standardTile("refresh", "device.refresh", inactiveLabel: false, decoration: "flat", width: 2, height: 2) {
+        state "default", action:"refresh.refresh", icon:"st.secondary.refresh"
+      }
       standardTile("chime", "device.chime", width: 2, height: 2, title: "Chime"){
         state "togglechime", label: 'Toggling\u00A0Chime', action: "togglechime", icon: "st.alarm.beep.beep", backgroundColor: "#fbd48a"
         state "chime", label: 'Chime', action: "togglechime", icon: "st.alarm.beep.beep", backgroundColor: "#EE9D00"
         state "nochime", label: 'No\u00A0Chime', action: "togglechime", icon: "st.alarm.beep.beep", backgroundColor: "#796338"
       }
-      standardTile("refresh", "device.refresh", inactiveLabel: false, decoration: "flat", width: 2, height: 2) {
-        state "default", action:"refresh.refresh", icon:"st.secondary.refresh"
+      standardTile("autobypass", "capability.momentary", width: 2, height: 2, title: "Bypass Off"){
+        state "autobypass", label: 'Auto-Bypass', action: "autobypass", icon: "st.locks.lock.unlocked", backgroundColor: "#FFFF00"
+      }
+      standardTile("bypassoff", "capability.momentary", width: 2, height: 2, title: "Bypass Off"){
+        state "bypassoff", label: 'Bypass Off', action: "bypassoff", icon: "st.locks.lock.unlocked", backgroundColor: "#FFFF00"
       }
       standardTile("instant", "capability.momentary", width: 2, height: 2, title: "Instant"){
         state "instant", label: 'Instant', action: "instant", icon: "st.locks.lock.locked", backgroundColor: "#00FF00"
@@ -79,10 +86,7 @@ metadata {
         state "night", label: 'Night', action: "night", icon: "st.Bedroom.bedroom2", backgroundColor: "#AA00FF"
       }
       standardTile("reset", "capability.momentary", width: 2, height: 2, title: "Sensor Reset"){
-        state "reset", label: 'Sensor\u00A0Reset', action: "reset", icon: "st.alarm.smoke.smoke", backgroundColor: "#FF3000"
-      }
-      standardTile("bypassoff", "capability.momentary", width: 2, height: 2, title: "Bypass Off"){
-        state "bypassoff", label: 'Bypass\u00A0Off', action: "bypassoff", icon: "st.locks.lock.unlocked", backgroundColor: "#FFFF00"
+        state "reset", label: 'Sensor Reset', action: "reset", icon: "st.alarm.smoke.smoke", backgroundColor: "#FF3000"
       }
       valueTile("ledready", "device.ledready", width: 2, height: 1){
         state "ledready", label:'Ready: ${currentValue}'
@@ -127,7 +131,7 @@ metadata {
 
 
       main "status"
-      details(["status", "away", "stay", "disarm", "chime", "refresh", "instant", "night", "reset", "bypassoff", "ledready", "ledarmed", "ledmemory", "ledbypass", "key", "ledtrouble", "ledprogram", "ledfire", "ledbacklight", "keyfire", "keyaux", "keypanic"])
+      details(["status", "away", "stay", "disarm", "refresh", "chime", "autobypass", "bypassoff", "instant", "night", "reset", "ledready", "ledarmed", "ledmemory", "ledbypass", "key", "ledtrouble", "ledprogram", "ledfire", "ledbacklight", "keyfire", "keyaux", "keypanic"])
     }
 }
 
@@ -176,6 +180,10 @@ def partition(String state, String partition, Map parameters) {
 
 def away() {
   parent.sendUrl('arm')
+}
+
+def autobypass() {
+  parent.autoBypass
 }
 
 def bypassoff() {

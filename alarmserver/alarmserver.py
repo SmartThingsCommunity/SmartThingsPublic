@@ -652,6 +652,7 @@ class AlarmServer(asyncore.dispatcher):
                 alarmserver_logger("request to bypass zone %s" % zone)
                 channel.pushok(json.dumps({'response' : 'Request to bypass zone received'}))
                 self._envisalinkclient.send_command('071', '1*1' + str(zone)+ '#')
+                time.sleep(1)
             except:
                 channel.pushok(json.dumps({'response' : 'Request to bypass zone received but invalid zone given!'}))
         elif query.path == '/api/alarm/panic':
