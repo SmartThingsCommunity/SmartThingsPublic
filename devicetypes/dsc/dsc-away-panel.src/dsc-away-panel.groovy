@@ -35,7 +35,7 @@ metadata {
 
     // UI tile definitions
     tiles(scale: 2) {
-      multiAttributeTile(name:"status", type: "general", width: 6, height: 4){
+      multiAttributeTile(name:"status", type: "generic", width: 6, height: 4){
         tileAttribute ("device.status", key: "PRIMARY_CONTROL") {
           attributeState "alarm", label:'Alarm', action: 'disarm', icon:"st.security.alarm.alarm", backgroundColor:"#ff0000"
           attributeState "away", label:'Armed Away', action: 'disarm', icon:"st.security.alarm.on", backgroundColor:"#800000"
