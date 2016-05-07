@@ -183,7 +183,7 @@ def away() {
 }
 
 def autobypass() {
-  parent.autoBypass
+  parent.autoBypass()
 }
 
 def bypassoff() {
