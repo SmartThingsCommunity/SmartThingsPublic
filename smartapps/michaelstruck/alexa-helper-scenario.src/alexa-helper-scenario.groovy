@@ -88,9 +88,9 @@ def controlOnOff(type){
         href "${type}PageSTDevices", title: "SmartThings Device Control...", description: getDeviceDesc("${type}"), state: getDeviceState("${type}")
         href "${type}PageHTTP", title: "HTTP Request...", description: getHTTPDesc("${type}"), state: greyOutStateHTTP("${type}")
         input "${type}Delay", "number", title: "Delay (Minutes) To Activate After Trigger", defaultValue: 0, required: false
-        input ("${type}Contacts", "contact", title: "Send Notifications To...", required: false, submitOnChange:true) {
-        	input "${type}SMSNum", "phone", title: "Send SMS Message (Phone Number)...", required: false, submitOnChange:true
-        	input "${type}PushMsg", "bool", title: "Send Push Message", defaultValue: false, submitOnChange:true
+        input ("${type}Contacts", "contact", title: "Send Notifications To...", required: false) {
+        	input "${type}SMSNum", "phone", title: "Send SMS Message (Phone Number)...", required: false
+        	input "${type}PushMsg", "bool", title: "Send Push Message", defaultValue: false
         }
 		input "${type}SMSMsg", "text", title: "Message To Send...", required: false
 	}
