@@ -2,9 +2,9 @@
  *  Alexa Helper-Child
  *
  *  Copyright © 2016 Michael Struck
- *  Version 2.9.9e 5/1/16
+ *  Version 2.9.9f 5/8/16
  * 
- *  Version 2.9.9e - Minor GUI changes to accomodate new mobile app structure
+ *  Version 2.9.9f - Minor GUI changes to accomodate new mobile app structure
  *  See https://github.com/MichaelStruck/SmartThings/blob/master/Other-SmartApps/AlexaHelper/version%20history.md for additional version history
  *
  *  Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except
@@ -85,7 +85,7 @@ def controlOnOff(type){
 		if (phrases) input "${type}Phrase", "enum", title: "Perform This Routine", options: phrases, required: false
         input "${type}Mode", "mode", title: "Set Mode To...", required: false
         input "${type}SHM", "enum",title: "Set Smart Home Monitor To...", options: ["away":"Arm(Away)", "stay":"Arm(Stay)", "off":"Disarm"], required: false
-        href "${type}PageSTDevices", title: "SmartThings Device Control...", description: getDeviceDesc("${type}")
+        href "${type}PageSTDevices", title: "SmartThings Device Control...", description: getDeviceDesc("${type}"), state: getDeviceState("${type}")
         href "${type}PageHTTP", title: "HTTP Request...", description: getHTTPDesc("${type}"), state: greyOutStateHTTP("${type}")
         input "${type}Delay", "number", title: "Delay (Minutes) To Activate After Trigger", defaultValue: 0, required: false
         input ("${type}Contacts", "contact", title: "Send Notifications To...", required: false, submitOnChange:true) {
@@ -109,9 +109,9 @@ def offPageHTTP (){
 }
 def pageHTTPOnOff(type){
 	section{
-    	input "${type}ExtInt", "enum", title: "Choose HTTP Command Type", options:[0:"External REST",1:"Internal (IP, port, command)"], defaultValue: "External REST", submitOnChange:true
+    	input "${type}ExtInt", "enum", title: "Choose HTTP Command Type", options:[0:"External REST",1:"Internal (IP, port, command)"], submitOnChange:true , required: false
         if (settings."${type}ExtInt" == "0") input "${type}HTTP", "text", title:"HTTP Address...", required: false
-    	else {
+    	else if (settings."${type}ExtInt" == "1"){
         	input "${type}IP", "text", title: "Internal IP Address", description: "IPv4 address xx.xx.xx.xx format", required: false
             input "${type}Port", "number", title: "Internal Port", description: "Enter a port number 0 to 65536", required: false 
             input "${type}Command", "text", title: "Command", description: "Enter REST commands", required: false 
@@ -778,6 +778,9 @@ def getDeviceDesc(type){
     }
     result = result ? result : "Status: UNCONFIGURED - Tap to configure"
 }
+def getDeviceState(type){
+	def result = getDeviceDesc("${type}") == "Status: UNCONFIGURED - Tap to configure" ? "" : "complete"
+}
 def getHTTPDesc(type){
 	def result = ""
     def param = [http:settings."${type}HTTP", ip:settings."${type}IP", port:settings."${type}Port", cmd:settings."${type}Command"]
@@ -1020,5 +1023,5 @@ private parseDate(time, type){
     new Date().parse("yyyy-MM-dd'T'HH:mm:ss.SSSZ", formattedDate).format("${type}", timeZone(formattedDate))
 }
 //Version
-private def textVersion() {return "Child App Version: 2.9.9e (05/01/2016)"}
+private def textVersion() {return "Child App Version: 2.9.9f (05/08/2016)"}
 private def versionInt() {return 299}
