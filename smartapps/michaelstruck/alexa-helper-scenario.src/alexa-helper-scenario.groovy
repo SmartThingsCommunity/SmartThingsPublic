@@ -2,9 +2,9 @@
  *  Alexa Helper-Child
  *
  *  Copyright © 2016 Michael Struck
- *  Version 2.9.9f 5/8/16
+ *  Version 2.9.9g 5/9/16
  * 
- *  Version 2.9.9f - Minor GUI changes to accomodate new mobile app structure
+ *  Version 2.9.9g - Minor GUI changes to accomodate new mobile app structure
  *  See https://github.com/MichaelStruck/SmartThings/blob/master/Other-SmartApps/AlexaHelper/version%20history.md for additional version history
  *
  *  Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except
@@ -47,7 +47,8 @@ def pageStart() {
 					"to the latest version to ensure you have the latest features and bug fixes."
             label title:"Scenario Name", required:true
     	   	input "scenarioType", "enum", title: "Scenario Type...", options: [["Baseboard":"Baseboard Heater Control"],["Thermostat":"Heating/Cooling Thermostat Control"],["Control":"Modes/Routines/Devices/HTTP/SHM Control"],["Panic":"Panic Commands"],["Speaker":"Speaker Control"],["Voice":"Voice Reporting"]], required: false, multiple: false, submitOnChange:true
-        	if (scenarioType) href "page${scenarioType}", title: "${scenarioType} Scenario Settings", description: scenarioDesc(), state: greyOutScen()
+        	def fullScenarioName = [Baseboard:"Baseboard Heater",Thermostat:"Heating/Cooling Thermostat",Control:"Control Scenario",Panic:"Panic Commands",Speaker:"Speaker",Voice:"Voice Reporting"][scenarioType] ?: scenarioType
+            if (scenarioType) href "page${scenarioType}", title: "${fullScenarioName} Settings", description: scenarioDesc(), state: greyOutScen()
 		}
 		if (scenarioType && parent.getRestrictions()){
 			section("Restrictions") {            
@@ -168,7 +169,7 @@ def pageSTDevicesOnOff(type){
 }
 // Show "Panic" page
 def pagePanic() {
-	dynamicPage(name: "pagePanic", title: "Panic Scenario Settings", install: false, uninstall: false) {
+	dynamicPage(name: "pagePanic", title: "Panic Commands Settings", install: false, uninstall: false) {
         section {
 			input "panicSwitchOn", "capability.momentary", title: "ON Control Switch (Momentary)", multiple: false, required: true, submitOnChange:true
           	if (panicSwitchOn) input "panicSwitchOff", "capability.momentary", title: "OFF Control Switch (Momentary)", multiple: false, required: false, submitOnChange:true
@@ -209,7 +210,7 @@ def pagePanic() {
 }
 // Show "pageSpeaker" page
 def pageSpeaker(){
-	dynamicPage(name: "pageSpeaker", title: "Speaker Scenario Settings", install: false, uninstall: false) {
+	dynamicPage(name: "pageSpeaker", title: "Speaker Settings", install: false, uninstall: false) {
 		section {
         	input "vDimmerSpeaker", "capability.switchLevel", title: "Control Switch (Dimmer)", multiple: false, required:false, submitOnChange:true
             input "speaker", "capability.musicPlayer", title: "Speaker To Control", multiple: false , required: false, submitOnChange:true
@@ -250,7 +251,7 @@ def pageSpeaker(){
 }
 // Show "pageThermostat" page
 def pageThermostat(){
-    dynamicPage(name: "pageThermostat", title: "Thermostat Scenario Settings", install: false, uninstall: false) {
+    dynamicPage(name: "pageThermostat", title: "Heating/Cooling Thermostat Settings", install: false, uninstall: false) {
         section {
             input "vDimmerTstat", "capability.switchLevel", title: "Control Switch (Dimmer)", multiple: false, required:false
             input "tstat", "capability.thermostat", title: "Thermostat To Control", multiple: false , required: false
@@ -278,7 +279,7 @@ def pageThermostat(){
     }
 }
 // Show "pageBaseboard" page
-page(name: "pageBaseboard", title: "Baseboard Scenario Settings", install: false, uninstall: false) {
+page(name: "pageBaseboard", title: "Baseboard Heater Settings", install: false, uninstall: false) {
 	section {
 		input "vDimmerBB", "capability.switchLevel", title: "Control Switch (Dimmer)", multiple: false, required:false
 		input "tstatBB", "capability.thermostat", title: "Thermostat To Control", multiple: true, required: false
@@ -294,7 +295,7 @@ page(name: "pageBaseboard", title: "Baseboard Scenario Settings", install: false
 }
 //Show "pageVoice" page
 def pageVoice(){
-    dynamicPage(name: "pageVoice", title: "Voice Reporting Scenario Settings", install: false, uninstall: false){
+    dynamicPage(name: "pageVoice", title: "Voice Reporting Settings", install: false, uninstall: false){
         section {
             input "voiceControl", "capability.momentary", title: "Voice Report Control Switch (Momentary)", multiple: false, required: true
             input "voiceSpeaker", "capability.musicPlayer", title: "Voice Report Speaker", multiple: false, required: false, submitOnChange:true
@@ -1023,5 +1024,5 @@ private parseDate(time, type){
     new Date().parse("yyyy-MM-dd'T'HH:mm:ss.SSSZ", formattedDate).format("${type}", timeZone(formattedDate))
 }
 //Version
-private def textVersion() {return "Child App Version: 2.9.9f (05/08/2016)"}
+private def textVersion() {return "Child App Version: 2.9.9g (05/08/2016)"}
 private def versionInt() {return 299}
