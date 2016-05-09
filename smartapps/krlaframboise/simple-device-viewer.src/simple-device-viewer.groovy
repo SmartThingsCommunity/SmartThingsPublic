@@ -1,5 +1,5 @@
 /**
- *  Simple Device Viewer v 1.7.1
+ *  Simple Device Viewer v 1.8
  *
  *  Author: 
  *    Kevin LaFramboise (krlaframboise)
@@ -9,13 +9,21 @@
  *
  *  Changelog:
  *
- *    1.7.1 (05/04/2016)
- *      - Fixed bug with new feature that caused last event
- *        to display N/A when they fall outside the threshold.
+ *    1.8 (05/08/2016)
+ *      - Fixed bug with new feature that caused duplicates
+ *        on the last event screen.
+ *      - Added option to poll devices supporting poll command.
+ *      - Added icons for Switches, Smoke/Carbon, Water,
+ *        Alarms, Normal Battery, Normal Last Event
+ *      - Added Light Device Type so that switches selected
+ *        from that preference will appear on the Lights
+ *        screen instead of the Switches screen.
  *
- *    1.7 (05/04/2016)
+ *    1.7.1 (05/04/2016)
  *      - Added optional check for last event time that
  *        detects activity from hidden events.
+ *      - Fixed bug with new feature that caused last event
+ *        to display N/A when they fall outside the threshold.
  *
  *    1.6.3 (04/26/2016)
  *      - Fixed condensed view bug introduced in version 1.5.
@@ -96,7 +104,7 @@ definition(
 
 // Main Menu Page
 def mainPage() {
-	if (!state.capabilitySettings) {
+	if (!state.capabilitySettings || (state.lastRequiredVersion != requiredVersion())) {
 		storeCapabilitySettings()
 	}
 	dynamicPage(name:"mainPage", uninstall:true, install:true) {				
@@ -113,7 +121,7 @@ def mainPage() {
 				getCapabilityPageLink(null)			
 			}		
 			getSelectedCapabilitySettings().each {
-				if (devicesHaveCapability(it.name)) {
+				if (devicesHaveCapability(getCapabilityName(it))) {
 					getCapabilityPageLink(it)
 				}
 			}
@@ -164,9 +172,9 @@ def devicesPage() {
 				title: "Which Sensors?",
 				multiple: true,
 				required: false			
-			state.capabilitySettings.each {
+			state.capabilitySettings.each {				
 				input "${getPrefName(it)}Devices",
-					"capability.${getPrefName(it)}",
+					"capability.${getPrefType(it)}",
 					title: "Which ${getPluralName(it)}?",
 					multiple: true,
 					required: false
@@ -177,7 +185,7 @@ def devicesPage() {
 			input "selectedCapabilities", "enum",
 				title: "Display Which Capabilities?",
 				multiple: true,
-				options: getCapabilityNames(),
+				options: getCapabilitySettingNames(),
 				required: false
 		}
 	}
@@ -335,6 +343,18 @@ def otherSettingsPage() {
 				defaultValue: false,
 				required: false			
 		}
+		section ("Device Polling") {
+			paragraph "If you enable the polling feature, the devices that support the Polling Capability will be polled at a regular interval."  
+			input "pollingEnabled", "bool",
+				title: "Poll Devices?",
+				defaultValue: false,
+				required: false
+			input "pollingInterval", "number",
+				title: "Polling Interval in Minutes:\n(Must be between 5 and ${6 * 24 * 60})",
+				defaultValue: 5,
+				range: "5..${6 * 24 * 60}",
+				required: false		
+		}
 		section ("Scheduling") {
 			paragraph "Leave this field empty unless you're using an external timer to turn on a switch at regular intervals.  If you select a switch, the application will check to see if notifications need to be sent when its turned on instead of using SmartThings scheduler to check every 5 minutes."
 
@@ -349,7 +369,7 @@ def otherSettingsPage() {
 def lastEventPage() {
 	dynamicPage(name:"lastEventPage") {		
 		section ("Time Since Last Event") {
-			getParagraphs(getAllDeviceLastEventListItems())			
+			getParagraphs(getAllDeviceLastEventListItems()?.unique())			
 		}		
 	}
 }
@@ -358,6 +378,7 @@ def lastEventPage() {
 def toggleSwitchPage(params) {
 	dynamicPage(name:"toggleSwitchPage") {		
 		section () {
+			paragraph "Wait a few seconds before pressing Done to ensure that the previous page refreshes correctly."
 			if (params.deviceId) {
 				def device = params.deviceId ? getAllDevices().find { it.id == params.deviceId } : null
 				toggleSwitch(device, device?.currentSwitch == "off" ? "on" : "off")
@@ -378,7 +399,7 @@ private toggleSwitch(device, newState) {
 		}
 		else {
 			device.off()
-		}
+		}		
 		paragraph "Turned ${device.displayName} ${newState.toUpperCase()}"
 	}
 }
@@ -391,17 +412,17 @@ def capabilityPage(params) {
 		if (capSetting) {
 			state.lastCapabilitySetting = capSetting
 			section("${getPluralName(capSetting)}") {
-				if (capSetting.name == "Switch") {
+				if (capSetting.name in ["Switch","Light"]) {
 					href(
 						name: "allOffSwitchLink", 
-						title: "Turn Off All Switches",
+						title: "Turn Off All ${getPluralName(capSetting)}",
 						description: "",
 						page: "toggleSwitchPage",
 						required: false
 					)
 					getSwitchToggleLinks(getDeviceCapabilityListItems(capSetting))
 				}
-				else {
+				else {				
 					getParagraphs(getDeviceCapabilityListItems(capSetting))
 				}
 			}
@@ -450,12 +471,12 @@ private getParagraphs(listItems) {
 	}
 }
 
-private getCapabilityPageLink(cap) {		
+private getCapabilityPageLink(cap) {
 	return href(
 		name: cap ? "${getPrefName(cap)}Link" : "allDevicesLink", 
 		title: cap ? "${getPluralName(cap)}" : "All Devices - States",
 		description: "",
-		page: "capabilityPage", 
+		page: "capabilityPage",
 		required: false,
 		params: [capabilitySetting: cap]
 	)	
@@ -477,7 +498,7 @@ private getDeviceAllCapabilitiesListItem(device) {
 		sortValue: device.displayName
 	]	
 	getSelectedCapabilitySettings().each {
-		if (device.hasCapability(it.name)) {
+		if (device.hasCapability(getCapabilityName(it))) {
 			listItem.status = (listItem.status ? "${listItem.status}, " : "").concat(getDeviceCapabilityStatusItem(device, it).status)
 		}
 	}
@@ -486,17 +507,35 @@ private getDeviceAllCapabilitiesListItem(device) {
 }
 
 private getDeviceCapabilityListItems(cap) {
-	getDevicesByCapability(cap.name)?.collect {
-		def listItem = getDeviceCapabilityStatusItem(it, cap)
-		listItem.deviceId = "${it.id}"
-		if (listItem.image && cap.imageOnly && !condensedViewEnabled) {
-			listItem.title = "${it.displayName}"
+	def items = []
+	getDevicesByCapability(getCapabilityName(cap))?.each { 
+		if (deviceMatchesSharedCapability(it, cap)) {
+			items << getDeviceCapabilityListItem(it, cap)
 		}
-		else {
-			listItem.title = "${getDeviceStatusTitle(it, listItem.status)}"
-		}
-		listItem
 	}
+	return items
+}
+
+private deviceMatchesSharedCapability(device, cap) {
+	if (cap.name in ["Switch", "Light"]) {
+		def isLight = (lightDevices?.find { it.id == device.id }) ? true : false				
+		return ((cap.name == "Light") == isLight)
+	}
+	else {
+		return true
+	}
+}
+
+private getDeviceCapabilityListItem(device, cap) {
+	def listItem = getDeviceCapabilityStatusItem(device, cap)
+	listItem.deviceId = "${device.id}"
+	if (listItem.image && cap.imageOnly && !condensedViewEnabled) {
+		listItem.title = "${device.displayName}"
+	}
+	else {
+		listItem.title = "${getDeviceStatusTitle(device, listItem.status)}"
+	}
+	listItem
 }
 
 private getCapabilitySettingByName(name) {
@@ -631,6 +670,9 @@ private getDeviceCapabilityStatusItem(device, cap) {
 						item.sortValue = safeToInteger(item.value)
 					}
 					break
+				case "Alarm":
+					item.image = getAlarmImage(item.value)
+					break
 				case "Contact Sensor":
 					item.image = getContactImage(item.value)
 					break
@@ -643,8 +685,17 @@ private getDeviceCapabilityStatusItem(device, cap) {
 				case "Presence Sensor":
 					item.image = getPresenceImage(item.value)
 					break
+				case ["Smoke Detector", "Carbon Monoxide Detector"]:
+					item.image = getSmokeCO2Image(item.value)
+					break
 				case "Switch":
 					item.image = getSwitchImage(item.value)
+					break
+				case "Light":
+					item.image = getLightImage(item.value)
+					break
+				case "Water Sensor":
+					item.image = getWaterImage(item.value)
 					break
 			}
 		}
@@ -683,7 +734,7 @@ private int safeToInteger(val, defaultVal=0) {
 }
 
 private getSelectedCapabilitySettings() {
-	if (!selectedCapabilities || selectedCapabilities.size() == 0) {
+	if (!selectedCapabilities) {
 		return state.capabilitySettings
 	}
 	else {
@@ -691,34 +742,41 @@ private getSelectedCapabilitySettings() {
 	}
 }
 
-private getCapabilityNames() {
-	state.capabilitySettings.collect { it.name }
+private getCapabilitySettingNames() {
+	state.capabilitySettings.collect { it.name }?.unique()
+}
+
+private getCapabilityName(capabilitySetting) {
+	capabilitySetting.capabilityName ?: capabilitySetting.name
 }
 
 private String getAttributeName(capabilitySetting) {
-	capabilitySetting.attributeName ? capabilitySetting.attributeName : capabilitySetting.name.toLowerCase()
+	capabilitySetting.attributeName ?: capabilitySetting.name.toLowerCase()
 }
 
 private String getActiveState(capabilitySetting) {
-	capabilitySetting.activeState ? capabilitySetting.activeState : capabilitySetting.name.toLowerCase()
+	capabilitySetting.activeState ?: capabilitySetting.name.toLowerCase()
 }
 
 private String getPrefName(capabilitySetting) {
-	capabilitySetting.prefName ? capabilitySetting.prefName : capabilitySetting.name.toLowerCase()
+	capabilitySetting.prefName ?: getPrefType(capabilitySetting)
+}
+
+private String getPrefType(capabilitySetting) {
+	capabilitySetting.prefType ?: capabilitySetting.name.toLowerCase()
 }
 
 private String getPluralName(capabilitySetting) {
-	capabilitySetting.pluralName ? capabilitySetting.pluralName : "${capabilitySetting.name}s"
+	capabilitySetting.pluralName ?: "${capabilitySetting.name}s"
 }
 
-private getAllDeviceCapabilities() {
-	def allCapabilities = getAllDevices()?.collect { it.capabilities }.flatten()
-	return allCapabilities.collect { it.toString() }.unique().sort()
-}
+// private getAllDeviceCapabilities() {
+	// def allCapabilities = getAllDevices()?.collect { it.capabilities }.flatten()
+	// return allCapabilities.collect { it.toString() }.unique().sort()	
+// }
 
 private getAllDevices() {
-	def values = settings.collect {k, device -> device}
-	return values.findAll { isDevice(it) }.flatten().unique()
+	return settings.collectMany {k, device -> isDevice(device) ? device : []}?.flatten()?.unique { it.deviceNetworkId }
 }
 
 private boolean isDevice(obj) {
@@ -738,9 +796,8 @@ private boolean isDevice(obj) {
 }
 
 private String getLastEventImage(lastEventTime) {
-	if (lastEventIsOld(lastEventTime)) {		
-		return getImagePath("warning.png")
-	}
+	def status = lastEventIsOld(lastEventTime) ? "warning" : "ok"
+	return getImagePath("${status}.png")
 }
 
 private boolean lastEventIsOld(lastEventTime) {	
@@ -777,8 +834,8 @@ def threshold = lastEventThreshold ? lastEventThreshold : 7
 }
 
 private String getPresenceImage(currentState) {
-	def name = currentState == "present" ? "present" : "not-present"
-	return getImagePath("${name}.png")
+	def status = (currentState == "present") ? "present" : "not-present"
+	return getImagePath("${status}.png")
 }
 
 private String getContactImage(currentState) {
@@ -790,18 +847,34 @@ private String getLockImage(currentState) {
 }
 
 private String getMotionImage(currentState) {
-	def name = currentState == "active" ? "motion" : "no-motion"
-	return  getImagePath("${name}.png")	
+	def status = (currentState == "active") ? "motion" : "no-motion"
+	return  getImagePath("${status}.png")	
 }
 
 private String getSwitchImage(currentState) {
-	return  getImagePath("light-${currentState}.png")	
+	return  getImagePath("switch-${currentState}.png")	
+}
+
+private String getLightImage(currentState) {
+	return  getImagePath("light-${currentState}.png")
+}
+
+private String getAlarmImage(currentState) {
+	return  getImagePath("alarm-${currentState}.png")	
+}
+
+private String getWaterImage(currentState) {
+	return  getImagePath("${currentState}.png")	
+}
+
+private String getSmokeCO2Image(currentState) {
+	def status = (currentState == "detected") ? "detected" : "clear"
+	return getImagePath("smoke-${status}.png")	
 }
 
 private String getBatteryImage(batteryLevel) {
-	if (batteryIsLow(batteryLevel)) {
-		return  getImagePath("low-battery.png")
-	}
+	def status = batteryIsLow(batteryLevel) ? "low" : "normal"
+	return  getImagePath("${status}-battery.png")	
 }
 
 private boolean batteryIsLow(batteryLevel) {
@@ -809,15 +882,14 @@ private boolean batteryIsLow(batteryLevel) {
 }
 
 private String getTemperatureImage(tempVal) {		
+	def status = "normal"
 	if (tempIsHigh(tempVal)) {
-		return getImagePath("high-temp.png")
+		status = "high"
 	}
 	else if (tempIsLow(tempVal)) {
-		return getImagePath("low-temp.png")
-	}
-	else {
-		return getImagePath("normal-temp.png")
-	}
+		status = "low"
+	}	
+	return getImagePath("${status}-temp.png")
 }
 
 private boolean tempIsHigh(val) {
@@ -860,18 +932,24 @@ def updated() {
 
 private initialize() {
 	logDebug "Initializing"
-	
+	state.nextPollTime = null
 	state.nextCheckTime = null
-		if (!state.sentNotifications) {
+
+	if (!state.sentNotifications) {
 		state.sentNotifications = []
 	}
 	
 	storeCapabilitySettings()
+	state.lastRequiredVersion = requiredVersion()
+	
 	if (timerSwitch) {
 		subscribe(timerSwitch, "switch.on", timerSwitchEventHandler)
 	}
 	else {
 		runEvery5Minutes(checkAllDeviceThresholds)
+		if (canPollDevices()) {
+			runEvery5Minutes(pollDevices)
+		}
 	}
 }
 
@@ -885,22 +963,31 @@ private void storeCapabilitySettings() {
 		imageOnly: true
 	]
 	state.capabilitySettings << [
+		name: "Light",
+		prefName: "light",
+		prefType: "switch",
+		capabilityName: "Switch",
+		attributeName: "switch",
+		activeState: "on",		
+		imageOnly: true
+	]
+	state.capabilitySettings << [
 		name: "Motion Sensor", 
-		prefName: "motionSensor",
+		prefType: "motionSensor",
 		attributeName: "motion",
 		activeState: "active",
 		imageOnly: true
 	]
 	state.capabilitySettings << [
 		name: "Contact Sensor",
-		prefName: "contactSensor",
+		prefType: "contactSensor",
 		attributeName: "contact",
 		activeState: "open",
 		imageOnly: true
 	]
 	state.capabilitySettings << [
 		name: "Presence Sensor",
-		prefName: "presenceSensor",
+		prefType: "presenceSensor",
 		attributeName: "presence",
 		activeState: "present",
 		imageOnly: true
@@ -911,13 +998,15 @@ private void storeCapabilitySettings() {
 	]
 	state.capabilitySettings << [
 		name: "Water Sensor",
-		prefName: "waterSensor",
+		prefType: "waterSensor",
 		attributeName: "water",
-		activeState: "wet"
+		activeState: "wet",
+		imageOnly: true
 	]
 	state.capabilitySettings << [
 		name: "Alarm",
-		activeState: "off"
+		activeState: "off",
+		imageOnly: true
 	]
 	state.capabilitySettings << [
 		name: "Lock",
@@ -927,33 +1016,39 @@ private void storeCapabilitySettings() {
 	state.capabilitySettings << [
 		name: "Temperature Measurement",
 		pluralName: "Temperature Sensors",
-		prefName: "temperatureMeasurement",
+		prefType: "temperatureMeasurement",
 		attributeName: "temperature"
 	]
 	state.capabilitySettings << [
 		name: "Smoke Detector",
-		prefName: "smokeDetector",
+		prefType: "smokeDetector",
 		attributeName: "smoke",
-		activeState: "detected"
+		activeState: "detected",
+		imageOnly: true
 	]
 	state.capabilitySettings << [
 		name: "Carbon Monoxide Detector",
-		prefName: "carbonMonoxideDetector",
+		prefType: "carbonMonoxideDetector",
 		attributeName: "carbonMonoxide",
-		activeState: "detected"
+		activeState: "detected",
+		imageOnly: true
 	]	
 	state.capabilitySettings.sort { it.name }
 }
 
 // Used to genrate notifications when external timer is being used instead of relying on SmartThings scheduler. 
 def timerSwitchEventHandler(evt) {
+	if (canPollDevices()) {
+		runIn(15000, pollDevices, [overwrite: false])
+	}
 	checkAllDeviceThresholds()
 }
 
 // Generates notifications if device attributes fall outside of specified thresholds and ensures that notifications are spaced at least 5 minutes apart.
 def checkAllDeviceThresholds() {
-	if (!state.nextCheckTime || timeElapsed(state.nextCheckTime)) {
-		state.nextCheckTime = addMinutesToCurrentTime(5)		
+	if (timeElapsed(state.nextCheckTime, true)) {
+		log.debug "Checking All Device Thresholds"
+		state.nextCheckTime = addMinutesToCurrentTime(4)		
 		state.currentCheckSent = 0
 		
 		if (batteryNotificationsEnabled) {
@@ -966,6 +1061,23 @@ def checkAllDeviceThresholds() {
 			checkLastEvents()
 		}
 	}
+	else {
+		log.debug "Skipped - Checking All Device Thresholds"
+	}
+}
+
+def pollDevices() {
+	if (canPollDevices()) {
+		logDebug "Polling Devices"
+		getDevicesByCapability("Polling")*.poll()
+		state.nextPollTime = addMinutesToCurrentTime(safeToInteger(settings.pollingInterval)-1)
+	}
+}
+
+private canPollDevices() {
+	return settings.pollingEnabled &&
+		safeToInteger(settings.pollingInterval) &&
+		timeElapsed(state.nextPollTime, true)
 }
 
 private checkTemperatures() {
@@ -1011,7 +1123,7 @@ private checkLastEvents() {
 }
 
 private removeExcludedDevices(deviceList, excludeList) {
-	if (excludeList && excludeList?.size() > 0) {
+	if (excludeList) {
 		def result = []
 		deviceList.each {
 			def displayName = "${it.displayName}"
@@ -1093,13 +1205,18 @@ private long addMinutesToCurrentTime(minutes) {
 	return (currentTime + (minutes * msMinute()))	
 }
 
-private boolean timeElapsed(timeValue) {
+private boolean timeElapsed(timeValue, nullResult=false) {
 	if (timeValue != null) {
 		def currentTime = new Date().time
 		return (timeValue <= currentTime)
 	} else {
-		return false
+		return nullResult
 	}
+}
+
+private requiredVersion() {
+	//v 1.8
+	return 10800 
 }
 
 private logDebug(msg) {
