@@ -134,9 +134,13 @@ void setLevel(percent, transitionTime = device.currentValue("transitionTime")) {
 
     log.debug "Executing 'setLevel'"
     if (verifyPercent(percent)) {
-        parent.setLevel(this, percent, transitionTime, deviceType)
-        sendEvent(name: "level", value: percent, descriptionText: "Level has changed to ${percent}%")
-        sendEvent(name: "switch", value: "on")
+		if (percent == 0) {
+			off()
+		} else {
+	        parent.setLevel(this, percent, transitionTime, deviceType)
+	        sendEvent(name: "level", value: percent, descriptionText: "Level has changed to ${percent}%")
+	        sendEvent(name: "switch", value: "on")
+		}
     }
 }
 
@@ -188,7 +192,7 @@ void setColor(value) {
             log.warn "$value.hex is not a valid color"
         }
     }
-    if (verifyPercent(value.level)) {
+    if (verifyPercent(value.level) && value.level > 0) {
         events << createEvent(name: "level", value: value.level, descriptionText: "Level has changed to ${value.level}%")
         validValues.level = value.level
     }

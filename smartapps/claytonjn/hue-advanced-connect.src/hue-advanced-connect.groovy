@@ -795,7 +795,7 @@ def parse(childDevice, description) {
 						def api = getApi(deviceType)
                         if (device.value.state?.reachable || deviceType == "groups") {
                             sendEvent(d.deviceNetworkId, [name: "switch", value: device.value[api].on ? "on" : "off"])
-                            sendEvent(d.deviceNetworkId, [name: "level", value: Math.round(device.value[api].bri * 100 / 255)])
+                            sendEvent(d.deviceNetworkId, [name: "level", value: hueBritoST(device.value[api].bri)])
                             if (device.value[api].sat) {
                                 def hue = Math.min(Math.round(device.value[api].hue * 100 / 65535), 65535) as int
                                 def sat = Math.round(device.value[api].sat * 100 / 255) as int
@@ -840,7 +840,7 @@ def parse(childDevice, description) {
                                     sendEvent(childDeviceNetworkId, [name: "switch", value: (v == true) ? "on" : "off"])
                                     break
                                 case "bri":
-                                    sendEvent(childDeviceNetworkId, [name: "level", value: Math.round(v * 100 / 255)])
+                                    sendEvent(childDeviceNetworkId, [name: "level", value: hueBritoST(v)])
                                     break
                                 case "sat":
                                     hsl[childDeviceNetworkId].saturation = Math.round(v * 100 / 255) as int
@@ -906,8 +906,7 @@ def off(childDevice, transitionTime, deviceType) {
 
 def setLevel(childDevice, percent, transitionTime, deviceType) {
 	log.debug "Executing 'setLevel'"
-    def level
-    if (percent == 1) level = 1 else level = Math.min(Math.round(percent * 255 / 100), 255)
+    def level = stLeveltoHue(percent)
 	put("${deviceType}/${getId(childDevice)}/${getApi(deviceType)}", [bri: level, on: percent > 0, transitiontime: transitionTime * 10])
 }
 
@@ -964,10 +963,7 @@ def setColor(childDevice, huesettings, deviceType) {
     if (huesettings.level != null) {
         if (huesettings.level <= 0)
             value.on = false
-        else if (huesettings.level == 1)
-            value.bri = 1
-        else
-            value.bri = Math.min(Math.round(huesettings.level * 255 / 100), 255)
+        value.bri = stLeveltoHue(huesettings.level)
     }
     value.alert = huesettings.alert ? huesettings.alert : "none"
     value.transitiontime = huesettings.transitiontime ? huesettings.transitiontime : 10
@@ -1153,4 +1149,16 @@ def getSelectedTransition() {
 def getHandlerType() {
 	if(settings.circadianDalightIntegration == true) { return " -CD-" }
 	else { return "" }
+}
+
+def hueBritoST(bri) {
+	def hueRange = (254 - 1)
+	def stRange = (100 - 1)
+	return Math.round((((bri - 1) * stRange) / hueRange) + 1)
+}
+
+def stLeveltoHue(level) {
+	def stRange = (100 - 1)
+	def hueRange = (254 - 1)
+	return Math.round((((level - 1) * hueRange) / stRange) + 1)
 }
