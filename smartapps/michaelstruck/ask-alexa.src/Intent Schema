@@ -1,1 +1,76 @@
-Place holder....Thought you were going to get something without it being officially released?
+{
+  "intents": [
+    {
+      "intent": "DeviceOperation",
+      "slots": [
+        {
+          "name" : "Operator",
+          "type" : "LIST_OF_OPERATORS"
+        },
+        {
+          "name" : "Device",
+          "type" : "LIST_OF_DEVICES"
+        },
+        {
+          "name" : "Num",
+          "type" : "AMAZON.NUMBER"
+        },
+        {
+          "name" : "Param",
+          "type" : "LIST_OF_PARAMS"
+        }
+        
+        ]
+    },
+    {
+      "intent": "ReportOperation",
+      "slots": [
+        {
+          "name" : "Report",
+          "type" : "LIST_OF_REPORTS"
+        }
+        
+        ]
+    },
+    {
+      "intent": "ListOperation",
+      "slots": [
+        {
+          "name" : "Type",
+          "type" : "DEVICE_TYPE_LIST"
+        }
+        
+        ]
+    },
+    {
+      "intent": "DeviceStatus",
+      "slots": [
+        {
+          "name" : "Status",
+          "type" : "LIST_OF_DEVICES"
+        }
+        
+        ]
+    },
+    {
+      "intent": "VersionOperation"
+    },
+    {
+      "intent": "SmartHomeOperation",
+      "slots": [
+        {
+          "name" : "SHCmd",
+          "type" : "LIST_OF_SHCMD"
+        },
+        {
+          "name" : "SHParam",
+          "type" : "LIST_OF_SHPARAM"
+        }
+        
+        ]
+    },
+    {
+      "intent": "AMAZON.HelpIntent"
+    }
+	]
+}
