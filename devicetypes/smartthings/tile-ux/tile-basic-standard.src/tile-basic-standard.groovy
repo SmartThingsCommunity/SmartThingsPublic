@@ -80,19 +80,31 @@ metadata {
 			state "default", label:''
 		}
 
-		main("standard1")
+		// multi-line text (explicit newlines)
+		standardTile("multiLine", "device.multiLine", width: 2, height: 2) {
+			state "default", label: '${currentValue}'
+		}
+
+		standardTile("multiLineWithIcon", "device.multiLine", width: 2, height: 2) {
+			state "default", label: '${currentValue}', icon: "st.switches.switch.off"
+		}
+
+		main("actionRings")
 		details([
 			"actionRings", "actionFlat", "noActionFlat",
 
 			"flatLabel", "flatIconLabel", "flatIcon",
 
 			"flatDefaultState", "flatImplicitDefaultState1", "flatImplicitDefaultState2",
+
+			"multiLine", "multiLineWithIcon"
 		])
 	}
 }
 
 def installed() {
 	sendEvent(name: "switch", value: "off")
+	sendEvent(name: "multiLine", value: "Line 1\nLine 2\nLine 3")
 }
 
 def parse(String description) {

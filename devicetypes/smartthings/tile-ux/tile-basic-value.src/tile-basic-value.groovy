@@ -69,8 +69,16 @@ metadata {
 			]
 		}
 
-		valueTile("noValue", "device.nada", width: 2, height: 2) {
+		valueTile("noValue", "device.nada", width: 4, height: 2) {
 			state "default", label:'${currentValue}'
+		}
+
+		valueTile("multiLine", "device.multiLine", width: 3, height: 2) {
+			state "default", label: '${currentValue}'
+		}
+
+		valueTile("multiLineWithIcon", "device.multiLine", width: 3, height: 2) {
+			state "default", label: '${currentValue}', icon: "st.switches.switch.off"
 		}
 
 		main("text")
@@ -78,7 +86,8 @@ metadata {
 			"text", "longText", "integer", 
             "integerFloat", "pi", "floatAsText",
             "bgColor", "bgColorRange", "bgColorRangeSingleItem",
-            "bgColorRangeConflict", "noValue"
+            "bgColorRangeConflict", "noValue",
+            "multiLine", "multiLineWithIcon"
 		])
 	}
 }
@@ -90,6 +99,7 @@ def installed() {
 	sendEvent(name: "integerFloat", value: 47.0)
 	sendEvent(name: "pi", value: 3.14159)
 	sendEvent(name: "floatAsText", value: "3.14159")
+	sendEvent(name: "multiLine", value: "Line 1\nLine 2\nLine 3")
 }
 
 def parse(String description) {
