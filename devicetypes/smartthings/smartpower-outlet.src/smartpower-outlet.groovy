@@ -1,5 +1,4 @@
 /*
-===============================================================================
  *  Copyright 2016 SmartThings
  *
  *  Licensed under the Apache License, Version 2.0 (the "License"); you may not
@@ -13,15 +12,8 @@
  *  WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
  *  License for the specific language governing permissions and limitations
  *  under the License.
-===============================================================================
- *  Purpose: SmartPower Outlet DTH File
- *
- *  Filename: SmartPower-Outlet.src/SmartPower-Outlet.groovy
- *
- *  Change History:
- *  1. 20160117 TW - Update/Edit to support i18n translations
-===============================================================================
  */
+
 metadata {
 	// Automatically generated. Make future change here.
 	definition (name: "SmartPower Outlet", namespace: "smartthings", author: "SmartThings") {
@@ -137,6 +129,7 @@ def refresh() {
 }
 
 def configure() {
+	sendEvent(name: "checkInterval", value: 1200, displayed: false)
 	zigbee.onOffConfig() + powerConfig() + refresh()
 }
 

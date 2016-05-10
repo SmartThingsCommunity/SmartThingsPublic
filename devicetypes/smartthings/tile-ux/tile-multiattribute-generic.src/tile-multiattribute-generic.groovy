@@ -110,7 +110,7 @@ def installed() {
 	sendEvent(name: "multilineText", value: "Line 1 YES\nLine 2 YES\nLine 3 NO")
 }
 
-def parse() {
+def parse(String description) {
 	// This is a simulated device. No incoming data to parse.
 }
 
