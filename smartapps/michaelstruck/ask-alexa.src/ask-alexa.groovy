@@ -1,10 +1,11 @@
 /**
  *  Ask Alexa 
  *
- *  Version 1.0.0 - 5/10/16 Copyright © 2016 Michael Struck
+ *  Version 1.0.0a - 5/10/16 Copyright © 2016 Michael Struck
  *  Special thanks for Keith DeLong for code and assistance
  *  
  *  Version 1.0.0 - Initial release
+ *  Version 1.0.0a - Same day release. Bugs fixed: nulls in the device label now trapped and ensure LIST_OF_PARAMS and LIST_OF_REPORTS is always created
  *
  *  Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except
  *  in compliance with the License. You may obtain a copy of the License at:
@@ -619,17 +620,15 @@ def setupData(){
     result += locks ? "lock<br>unlock<br>" : ""
     result += doors ? "open<br>close<br>" : ""
     result += speakers ?"play<br>stop<br>pause<br>mute<br>unmute<br>next track<br>previous track<br>" : ""
+    result += "<br><b>LIST_OF_REPORTS</b><br><br>"
     if (childApps.size()) {
-    	result += "<br><b>LIST_OF_REPORTS</b><br><br>"
     	childApps.each { result += it.label.toLowerCase().replaceAll(" report", "")+"<br>" }
 	}
-    if (tstats || cLights) {
-    	result += "<br><b>LIST_OF_PARAMS</b><br><br>"
-        if (tstats) result += "heat<br>cool<br>heating<br>cooling<br>auto<br>automatic<br>"
-        devices?.find{it.label.toLowerCase() == dev}
-        if (tstats?.find{it.name.contains("Stelpro")}) result += "eco<br>comfort<br>"
-        if (cLights) fillColorSettings(); state.colorData.each {result += it.name.toLowerCase()+"<br>"}
-    }
+    result += "<br><b>LIST_OF_PARAMS</b><br><br>"
+	if (tstats) result += "heat<br>cool<br>heating<br>cooling<br>auto<br>automatic<br>"
+    //devices?.find{it.label.toLowerCase() == dev}
+    if (tstats?.find{it.name.contains("Stelpro")}) result += "eco<br>comfort<br>"
+    if (cLights) fillColorSettings(); state.colorData.each {result += it.name.toLowerCase()+"<br>"}
     if (modes || routines || SHM) {
         result +="<br><b>LIST_OF_SHPARAM</b><br><br>"
         def cmd = "<br><b>LIST_OF_SHCMD</b><br><br>"
@@ -683,17 +682,22 @@ def getList(items){
 }
 def getDeviceList(readOnly){
 	def result = []
-    if (switches) switches.collect{ result << [name: it.label.toLowerCase(), type: "switch", devices: switches] }
-    if (dimmers) dimmers.collect{ result << [name: it.label.toLowerCase(), type:"level", devices: dimmers]  }
-    if (cLights) cLights.collect{ result << [name: it.label.toLowerCase(), type:"color", devices: cLights] }
-    if (doors) doors.collect{ result << [name: it.label.toLowerCase(), type:"door", devices: doors]  }
-    if (locks) locks.collect{ result << [name: it.label.toLowerCase(), type:"lock", devices: locks] }
-    if (tstats) tstats.collect{ result << [name: it.label.toLowerCase(), type:"thermostat", devices: tstats] }
-    if (speakers) speakers.collect{ result << [name: it.label.toLowerCase(), type:"music", devices: speakers] }
-    if (temps && readOnly) temps.collect{ result << [name: it.label.toLowerCase(), type:"temperature", devices: temps] }
-    if (humid && readOnly) humid.collect{ result << [name: it.label.toLowerCase(), type:"humidity", devices: humid] }
-    if (ocSensors && readOnly) ocSensors.collect{ result << [name: it.label.toLowerCase(), type:"contact", devices: ocSensors] }
-    if (water && readOnly) water.collect{ result << [name: it.label.toLowerCase(), type:"water", devices: water] }
+    try {
+        if (switches) switches.collect{ result << [name: it.label.toLowerCase(), type: "switch", devices: switches] }
+        if (dimmers) dimmers.collect{ result << [name: it.label.toLowerCase(), type:"level", devices: dimmers]  }
+        if (cLights) cLights.collect{ result << [name: it.label.toLowerCase(), type:"color", devices: cLights] }
+        if (doors) doors.collect{ result << [name: it.label.toLowerCase(), type:"door", devices: doors]  }
+        if (locks) locks.collect{ result << [name: it.label.toLowerCase(), type:"lock", devices: locks] }
+        if (tstats) tstats.collect{ result << [name: it.label.toLowerCase(), type:"thermostat", devices: tstats] }
+        if (speakers) speakers.collect{ result << [name: it.label.toLowerCase(), type:"music", devices: speakers] }
+        if (temps && readOnly) temps.collect{ result << [name: it.label.toLowerCase(), type:"temperature", devices: temps] }
+        if (humid && readOnly) humid.collect{ result << [name: it.label.toLowerCase(), type:"humidity", devices: humid] }
+        if (ocSensors && readOnly) ocSensors.collect{ result << [name: it.label.toLowerCase(), type:"contact", devices: ocSensors] }
+        if (water && readOnly) water.collect{ result << [name: it.label.toLowerCase(), type:"water", devices: water] }
+    }
+    catch (e) {
+    	log.warn "There was an issue parsing the device labels. Be sure all of the devices are uniquley named/labeled and that none of them are blank (null). "
+    }
     result
 }
 def fillTypeList(){
@@ -704,13 +708,13 @@ def fillTypeList(){
 //Version/Copyright/Information/Help
 private def textAppName() { def text = "Ask Alexa" }	
 private def textVersion() {
-    def version = "Parent App Version: 1.0.0 (05/10/2016)"
+    def version = "Parent App Version: 1.0.0a (05/10/2016)"
     def childCount = childApps.size()
     def childVersion = childCount ? childApps[0].textVersion() : "No voice reports installed"
     return "${version}\n${childVersion}"
 }
 private def versionInt(){ return 100 }
-private def versionLong(){ return "1.0.0" }
+private def versionLong(){ return "1.0.0a" }
 private def textCopyright() {return "Copyright © 2016 Michael Struck" }
 private def textLicense() {
 	def text = "Licensed under the Apache License, Version 2.0 (the 'License'); "+
