@@ -1,1 +1,108 @@
-Placeholder...why are you looking in here...nothing to see here...move along....
+ListOperation list {Type}
+ListOperation {Type}
+ListOperation about {Type}
+ListOperation for a list of {Type}
+
+DeviceOperation to turn {Operator} the {Device}
+DeviceOperation to turn {Device} {Operator}
+DeviceOperation to turn the {Device} {Operator}
+DeviceOperation {Device} {Operator}
+DeviceOperation to {Operator} the {Device}
+DeviceOperation to {Operator} the {Device} password {Num}
+
+DeviceStatus the status of {Status}
+DeviceStatus the status of the {Status}
+DeviceStatus play the {Status} status
+DeviceStatus play {Status} status
+DeviceStatus to play {Status} status
+DeviceStatus to play the {Status} status
+DeviceStatus {Status}
+DeviceStatus {Status} status
+DeviceStatus {Status} state
+DeviceStatus about {Status}
+DeviceStatus about the {Status}
+DeviceStatus status of {Status}
+DeviceStatus the state of {Status}
+DeviceStatus to give me the status of {Status}
+DeviceStatus if the {Status} is open
+DeviceStatus if the {Status} is locked
+DeviceStatus if the {Status} is unlocked
+DeviceStatus if the {Status} is closed
+
+DeviceOperation set {Device} to {Num} 
+DeviceOperation set the {Device} to {Num} 
+DeviceOperation to set {Device} to {Num} 
+DeviceOperation to set the {Device} to {Num}
+DeviceOperation set {Device} to {Num} percent
+DeviceOperation set the {Device} to {Num} percent
+DeviceOperation to set {Device} to {Num} percent
+DeviceOperation to set the {Device} to {Num} percent
+DeviceOperation to turn {Device} to {Num} percent
+DeviceOperation to turn the {Device} to {Num} percent
+DeviceOperation to turn {Device} to {Num} 
+DeviceOperation to turn the {Device} to {Num}
+
+DeviceOperation set {Device} to {Param} 
+DeviceOperation set the {Device} to {Param}
+DeviceOperation set the color of {Device} to {Param} and set level to {Num}
+DeviceOperation set the {Device} to {Param} and {Num}
+
+ReportOperation {Report} report
+ReportOperation {Report} reports
+ReportOperation for the {Report} report
+ReportOperation report {Report}
+ReportOperation reports {Report}
+ReportOperation to report {Report}
+ReportOperation play the {Report} report
+ReportOperation to play {Report}
+ReportOperation to play the {Report} report
+ReportOperation to give me the {Report} report
+ReportOperation to tell me the {Report} report
+ReportOperation turn on {Report} report
+ReportOperation turn on the {Report} report
+
+DeviceOperation set {Param} of {Device} to {Num} degrees
+DeviceOperation set {Param} of {Device} to {Num} 
+DeviceOperation set the {Param} of {Device} to {Num} degrees
+DeviceOperation set the {Param} of {Device} to {Num} 
+DeviceOperation set {Param} setpoint of {Device} to {Num} degrees
+DeviceOperation set {Param} setpoint of {Device} to {Num} 
+DeviceOperation set the {Param} setpoint of {Device} to {Num} degrees
+DeviceOperation set the {Param} setpoint of {Device} to {Num} 
+DeviceOperation to set {Param} setpoint of {Device} to {Num} degrees
+DeviceOperation to set {Param} setpoint of {Device} to {Num} 
+DeviceOperation to set the {Param} setpoint of {Device} to {Num} degrees
+DeviceOperation to set the {Param} setpoint of {Device} to {Num} 
+DeviceOperation to set {Device} {Param} to {Num} degrees
+DeviceOperation to set {Device} {Param} to {Num} 
+DeviceOperation set the {Device} {Param} to {Num} degrees
+DeviceOperation set the {Device} {Param} to {Num}
+DeviceOperation set the {Device} to {Num} 
+DeviceOperation to set the temperature of the {Device} to {Num} degrees
+DeviceOperation to set the temperature to {Num} in {Device}
+DeviceOperation turn {Device} {Param} mode to {Operator}
+DeviceOperation turn {Operator} {Device} {Param} mode
+DeviceOperation set the {Device} to {Param} mode
+
+SmartHomeOperation to set {SHCmd} to {SHParam}
+SmartHomeOperation set the {SHCmd} to {SHParam}
+SmartHomeOperation {SHCmd} status
+SmartHomeOperation status of {SHCmd}
+SmartHomeOperation the status of home {SHCmd}
+SmartHomeOperation {SHCmd} state
+SmartHomeOperation settings of {SHCmd}
+SmartHomeOperation run {SHCmd} {SHParam}
+SmartHomeOperation to run {SHCmd} {SHParam}
+SmartHomeOperation what is the current {SHCmd}
+SmartHomeOperation the current {SHCmd}
+SmartHomeOperation to change the {SHCmd} to {SHParam}
+SmartHomeOperation {SHParam} {SHCmd}
+SmartHomeOperation execute the {SHParam} {SHCmd}
+SmartHomeOperation about {SHCmd}
+SmartHomeOperation about the {SHCmd}
+
+VersionOperation version
+VersionOperation tell me the version
+VersionOperation about the Ask Alexa smartapp
+VersionOperation about Ask Alexa
+VersionOperation about the smartapp version
