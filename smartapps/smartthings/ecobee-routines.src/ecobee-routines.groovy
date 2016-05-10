@@ -14,7 +14,7 @@
  *  for the specific language governing permissions and limitations under the License.
  *
  */
-def getVersionNum() { return "0.1.3" }
+def getVersionNum() { return "0.1.3a" }
 private def getVersionLabel() { return "ecobee Routines Version ${getVersionNum()}" }
 
 
@@ -87,7 +87,7 @@ def mainPage() {
                 }
             } // End if myThermostats size
             section(title: "Temporarily Disable?") {
-            	input(name: "tempDisable", title: "Temporarily Disable Handler? ", type: "bool", required: false, description: false, submitOnChange: true)                
+            	input(name: "tempDisable", title: "Temporarily Disable Handler? ", type: "bool", required: false, description: "", submitOnChange: true)                
         	}
         
         section (getVersionLabel())
