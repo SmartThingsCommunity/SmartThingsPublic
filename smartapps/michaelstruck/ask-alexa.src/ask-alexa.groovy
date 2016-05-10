@@ -128,7 +128,7 @@ def pageSensors(){
 }
 def pageHomeControl(){
 	dynamicPage(name: "pageHomeControl", title:none, uninstall: false) {
-        section { paragraph "Modes/Routines/SHM Control", image: "https://raw.githubusercontent.com/MichaelStruck/SmartThingsPublic/master/img/modes.png" }
+        section { paragraph "Modes/Routines/SHM", image: "https://raw.githubusercontent.com/MichaelStruck/SmartThingsPublic/master/img/modes.png" }
         section ("Choose the features you require voice control over") {
         	input "modes", "bool", title: "Modes (Change/Status)", defaultValue: false
             input "SHM", "bool", title: "Smart Home Monitor (Change/Status)", defaultValue: false

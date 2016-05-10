@@ -81,7 +81,7 @@ page(name: "pageOtherReport", title: "Other Sensor Report", install: false, unin
     }
 }
 def pageTempReport(){
-    dynamicPage(name: "pageTempReport", title: "Temperature/Thermostat Report", install: false, uninstall: false){
+    dynamicPage(name: "pageTempReport", title: "Temperature/Humidity/Thermostat Report", install: false, uninstall: false){
         section ("Variables for pre/post messages") {
             input "voiceTempVar", "capability.temperatureMeasurement", title: "Temperature Device Variable (%temp%)",multiple: true, required: false, submitOnChange: true
             input "voiceHumidVar", "capability.relativeHumidityMeasurement", title:"Humidity Device Variable (%humid%)",multiple: true, required: false, submitOnChange: true
