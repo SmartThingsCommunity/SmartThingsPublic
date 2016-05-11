@@ -1,11 +1,12 @@
 /**
  *  Ask Alexa 
  *
- *  Version 1.0.0a - 5/10/16 Copyright © 2016 Michael Struck
+ *  Version 1.0.0b - 5/11/16 Copyright © 2016 Michael Struck
  *  Special thanks for Keith DeLong for code and assistance
  *  
  *  Version 1.0.0 - Initial release
  *  Version 1.0.0a - Same day release. Bugs fixed: nulls in the device label now trapped and ensure LIST_OF_PARAMS and LIST_OF_REPORTS is always created
+ *  Version 1.0.0b - Remove punctuation from the device, mode and routine names. Fixed bug where numbers were removed in modes and routine names 
  *
  *  Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except
  *  in compliance with the License. You may obtain a copy of the License at:
@@ -250,7 +251,7 @@ def processDevice() {
     log.debug "Num: " + num
     log.debug "Param: " + param
     def outputTxt = "", deviceList, count = 0
-    getDeviceList(false).each{if (it.name==dev.toLowerCase()) {deviceList=it; count++}}
+    getDeviceList(false).each{if (it.name==dev.replaceAll("[^a-zA-Z0-9 ]", "").toLowerCase()) {deviceList=it; count++}}
 	if (count > 1) outputTxt ="You have multiple devices that are named '${dev}' in your SmartThings SmartApp. Please rename these items to something unique so I may properly utlize them. "   
     else if (deviceList) outputTxt = getReply (deviceList.devices,deviceList.type, dev.toLowerCase(), op, num, param)
     if (outputTxt=="" && op != "report") outputTxt = "I had some problems finding the device you specified. Please try again." 
@@ -358,7 +359,7 @@ def processStatus(){
     def dev = params.Device     //Device asking for status
     log.debug "Device Status: " + dev
     def outputTxt = "", deviceList, count = 0 
-    getDeviceList(true).each {if (it.name==dev.toLowerCase()) {deviceList=it; count++}}
+    getDeviceList(true).each {if (it.name==dev.replaceAll("[^a-zA-Z0-9 ]", "").toLowerCase()) {deviceList=it; count++}}
     if (count > 1) outputTxt ="You have multiple devices that are named '${dev}' in your SmartThings setup. Please rename these items to something unique so I may properly utlize them. "
     else if (deviceList) outputTxt = getReply (deviceList.devices,deviceList.type, dev.toLowerCase(), "status", "", "") 
     if (outputTxt=="") outputTxt = "I had some problems finding the device you specified. Please try again."   
@@ -407,7 +408,7 @@ def processSmartHome() {
 	}
     if (cmd=="routine"){
     	def phrases = location.helloHome?.getPhrases()*.label
-        def runRoutine = phrases.find{it.replaceAll("[^a-zA-Z ]", "").toLowerCase()==param}
+        def runRoutine = phrases.find{it.replaceAll("[^a-zA-Z0-9 ]", "").toLowerCase()==param}
         if (runRoutine) {
         	location.helloHome?.execute(runRoutine)
             outputTxt="I am executing the '${param}' routine. "
@@ -433,7 +434,7 @@ def getReply(devices, type, dev, op, num, param){
 	def result = ""
     log.debug "Type: " + type
 	try {
-    	def STdevice = devices?.find{it.label.toLowerCase() == dev}
+    	def STdevice = devices?.find{it.label.replaceAll("[^a-zA-Z0-9 ]", "").toLowerCase() == dev}
         def supportedCaps = STdevice.capabilities
         if (op=="status") {
             if (type == "temperature"){
@@ -626,7 +627,6 @@ def setupData(){
 	}
     result += "<br><b>LIST_OF_PARAMS</b><br><br>"
 	if (tstats) result += "heat<br>cool<br>heating<br>cooling<br>auto<br>automatic<br>"
-    //devices?.find{it.label.toLowerCase() == dev}
     if (tstats?.find{it.name.contains("Stelpro")}) result += "eco<br>comfort<br>"
     if (cLights) fillColorSettings(); state.colorData.each {result += it.name.toLowerCase()+"<br>"}
     if (modes || routines || SHM) {
@@ -635,7 +635,7 @@ def setupData(){
         if (routines){
             cmd += "routine<br>"
             def phrases = location.helloHome?.getPhrases()*.label
-            if (phrases) phrases.each{result += it.replaceAll("[^a-zA-Z ]", "").toLowerCase() + "<br>"}
+            if (phrases) phrases.each{result += it.replaceAll("[^a-zA-Z0-9 ]", "").toLowerCase() + "<br>"}
         }
         if (SHM) {
         	cmd += "security<br>smart home<br>smart home monitor<br>"
@@ -643,7 +643,7 @@ def setupData(){
         }
         if (modes) {
         	cmd += "mode<br>"
-            location.modes.each {result += it.name.replaceAll("[^a-zA-Z ]", "").toLowerCase() + "<br>"}
+            location.modes.each {result += it.name.replaceAll("[^a-zA-Z0-9 ]", "").toLowerCase() + "<br>"}
         }
 	result += cmd
     }	
@@ -683,17 +683,17 @@ def getList(items){
 def getDeviceList(readOnly){
 	def result = []
     try {
-        if (switches) switches.collect{ result << [name: it.label.toLowerCase(), type: "switch", devices: switches] }
-        if (dimmers) dimmers.collect{ result << [name: it.label.toLowerCase(), type:"level", devices: dimmers]  }
-        if (cLights) cLights.collect{ result << [name: it.label.toLowerCase(), type:"color", devices: cLights] }
-        if (doors) doors.collect{ result << [name: it.label.toLowerCase(), type:"door", devices: doors]  }
-        if (locks) locks.collect{ result << [name: it.label.toLowerCase(), type:"lock", devices: locks] }
-        if (tstats) tstats.collect{ result << [name: it.label.toLowerCase(), type:"thermostat", devices: tstats] }
-        if (speakers) speakers.collect{ result << [name: it.label.toLowerCase(), type:"music", devices: speakers] }
-        if (temps && readOnly) temps.collect{ result << [name: it.label.toLowerCase(), type:"temperature", devices: temps] }
-        if (humid && readOnly) humid.collect{ result << [name: it.label.toLowerCase(), type:"humidity", devices: humid] }
-        if (ocSensors && readOnly) ocSensors.collect{ result << [name: it.label.toLowerCase(), type:"contact", devices: ocSensors] }
-        if (water && readOnly) water.collect{ result << [name: it.label.toLowerCase(), type:"water", devices: water] }
+        if (switches) switches.collect{ result << [name: it.label.replaceAll("[^a-zA-Z0-9 ]", "").toLowerCase(), type: "switch", devices: switches] }
+        if (dimmers) dimmers.collect{ result << [name: it.label.replaceAll("[^a-zA-Z0-9 ]", "").toLowerCase(), type:"level", devices: dimmers]  }
+        if (cLights) cLights.collect{ result << [name: it.label.replaceAll("[^a-zA-Z0-9 ]", "").toLowerCase(), type:"color", devices: cLights] }
+        if (doors) doors.collect{ result << [name: it.label.replaceAll("[^a-zA-Z0-9 ]", "").toLowerCase(), type:"door", devices: doors]  }
+        if (locks) locks.collect{ result << [name: it.label.replaceAll("[^a-zA-Z0-9 ]", "").toLowerCase(), type:"lock", devices: locks] }
+        if (tstats) tstats.collect{ result << [name: it.label.replaceAll("[^a-zA-Z0-9 ]", "").toLowerCase(), type:"thermostat", devices: tstats] }
+        if (speakers) speakers.collect{ result << [name: it.label.replaceAll("[^a-zA-Z0-9 ]", "").toLowerCase(), type:"music", devices: speakers] }
+        if (temps && readOnly) temps.collect{ result << [name: it.label.replaceAll("[^a-zA-Z0-9 ]", "").toLowerCase(), type:"temperature", devices: temps] }
+        if (humid && readOnly) humid.collect{ result << [name: it.label.replaceAll("[^a-zA-Z0-9 ]", "").toLowerCase(), type:"humidity", devices: humid] }
+        if (ocSensors && readOnly) ocSensors.collect{ result << [name: it.label.replaceAll("[^a-zA-Z0-9 ]", "").toLowerCase(), type:"contact", devices: ocSensors] }
+        if (water && readOnly) water.collect{ result << [name: it.label.replaceAll("[^a-zA-Z0-9 ]", "").toLowerCase(), type:"water", devices: water] }
     }
     catch (e) {
     	log.warn "There was an issue parsing the device labels. Be sure all of the devices are uniquley named/labeled and that none of them are blank (null). "
@@ -708,13 +708,13 @@ def fillTypeList(){
 //Version/Copyright/Information/Help
 private def textAppName() { def text = "Ask Alexa" }	
 private def textVersion() {
-    def version = "Parent App Version: 1.0.0a (05/10/2016)"
+    def version = "Parent App Version: 1.0.0b (05/11/2016)"
     def childCount = childApps.size()
     def childVersion = childCount ? childApps[0].textVersion() : "No voice reports installed"
     return "${version}\n${childVersion}"
 }
 private def versionInt(){ return 100 }
-private def versionLong(){ return "1.0.0a" }
+private def versionLong(){ return "1.0.0b" }
 private def textCopyright() {return "Copyright © 2016 Michael Struck" }
 private def textLicense() {
 	def text = "Licensed under the Apache License, Version 2.0 (the 'License'); "+
