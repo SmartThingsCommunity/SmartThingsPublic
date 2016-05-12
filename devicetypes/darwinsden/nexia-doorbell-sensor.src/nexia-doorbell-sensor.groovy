@@ -1,5 +1,5 @@
 /**
- *  Nexia Doorbell Sensor
+ *  Nexia Doorbell Sensor - DB100Z
  *
  *  Copyright 2016 DarwinsDen.com
  *
@@ -22,15 +22,17 @@
  *
  *	Changelog:
  *
- *	1.0 (03/26/2016)
- *		-	Initial 1.0 Release
+ *	1.0 (03/26/2016) -	Initial 1.0 Release
+ *  1.1 (05/11/2016) -  Added Button capability option
  *
  */
  
 metadata {
 	definition (name: "Nexia Doorbell Sensor", namespace: "darwinsden", author: "Darwin") {
+		capability "Actuator"
 		capability "Switch"
         capability "Momentary"
+        capability "Button"
 		capability "Battery"
 		capability "Refresh"
 		attribute "status", "enum", ["off", "doorbell"]
@@ -88,12 +90,12 @@ def zwaveEvent (physicalgraph.zwave.Command cmd) {
 
 def switchOffVerification() {
        if (state.bellIsRinging) {
-            state.bellIsRinging = false
             log.debug("${device.displayName} switchOffVerification setting switch off")
             sendEvent(name: "status", value: "off", descriptionText: "Button released via verification check", isStateChange: true)
-	        sendEvent(name: "status", value: "off", displayed: false, isStateChange: true)
-	        sendEvent(name: "switch", value: "off", displayed: false, isStateChange: true)
        }
+       state.bellIsRinging = false
+       sendEvent(name: "status", value: "off", displayed: false, isStateChange: true)
+	   sendEvent(name: "switch", value: "off", displayed: false, isStateChange: true)
 }
 
 //Battery Level received
@@ -121,6 +123,7 @@ def zwaveEvent(physicalgraph.zwave.commands.notificationv3.NotificationReport cm
 	       result += createEvent(name: "status", value: "doorbell", descriptionText: "Button pressed", isStateChange: true)
 	       result += createEvent(name: "switch", value: "on", displayed: false, isStateChange: true)
            result += createEvent(name: "momentary", value: "pushed", displayed: false, isStateChange: true)
+           result += createEvent(name: "button", value: "pushed", data: [buttonNumber: "1"], displayed: false, isStateChange: true)
        } else {
            // bell is ringing - signal a button release
            state.bellIsRinging = false
@@ -133,6 +136,7 @@ def zwaveEvent(physicalgraph.zwave.commands.notificationv3.NotificationReport cm
 
 def parse(description) {
 	  def result = null
+      log.debug (description)
 	  if (description.startsWith("Err")) {
 		   result = createEvent(descriptionText: description, isStateChange: true)
 	  } else if (description != "updated") {
