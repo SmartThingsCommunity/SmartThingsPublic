@@ -181,7 +181,7 @@ def pageSettings(){
 		if (dimmers || tstats || cLights || speakers){
         	section("Increase / Decrease default value (When no values are requested)"){
             	if (dimmers || cLights) input "lightAmt", "number", title: "Dimmer/Colored Lights", defaultValue: 20, required: false
-        		if (tstats) input "tstatAmt", "number", title: "Thermostate Temperature", defaultValue: 5, required: false
+        		if (tstats) input "tstatAmt", "number", title: "Thermostat Temperature", defaultValue: 5, required: false
             	if (speakers) input "speakerAmt", "number", title: "Speaker Volume", defaultValue: 5, required: false
         	}
         }	
