@@ -29,7 +29,8 @@ DeviceStatus if the {Status} is locked
 DeviceStatus if the {Status} is unlocked
 DeviceStatus if the {Status} is closed
 
-DeviceOperation set {Device} to {Num} 
+DeviceOperation set {Device} to {Num}
+DeviceOperation {Device} to {Num}
 DeviceOperation set the {Device} to {Num} 
 DeviceOperation to set {Device} to {Num} 
 DeviceOperation to set the {Device} to {Num}
@@ -46,6 +47,20 @@ DeviceOperation set {Device} to {Param}
 DeviceOperation set the {Device} to {Param}
 DeviceOperation set the color of {Device} to {Param} and set level to {Num}
 DeviceOperation set the {Device} to {Param} and {Num}
+DeviceOperation {Operator} {Device} by {Num}
+DeviceOperation turn {Device} {Operator} by {Num}
+DeviceOperation turn the {Device} {Operator} by {Num} percent
+DeviceOperation turn {Device} {Operator}
+DeviceOperation {Operator} the {Device}
+DeviceOperation to {Operator} the {Device} volume
+DeviceOperation to {Operator} the {Device} temperature
+DeviceOperation to {Operator} the {Device} {Param} temperature
+DeviceOperation to {Operator} the {Device} level
+DeviceOperation to {Operator} the {Device} brightness
+DeviceOperation {Operator} brightness of the {Device}
+DeviceOperation {Operator} level of the {Device}
+DeviceOperation {Operator} temperature of the {Device}
+DeviceOperation {Operator} volume of the {Device}
 
 ReportOperation {Report} report
 ReportOperation {Report} reports
@@ -60,6 +75,7 @@ ReportOperation to give me the {Report} report
 ReportOperation to tell me the {Report} report
 ReportOperation turn on {Report} report
 ReportOperation turn on the {Report} report
+ReportOperation give me the {Report} report
 
 DeviceOperation set {Param} of {Device} to {Num} degrees
 DeviceOperation set {Param} of {Device} to {Num} 
