@@ -1,13 +1,13 @@
 /**
  *  Ask Alexa 
  *
- *  Version 1.0.1a - 5/12/16 Copyright © 2016 Michael Struck
+ *  Version 1.0.1b - 5/12/16 Copyright © 2016 Michael Struck
  *  Special thanks for Keith DeLong for code and assistance
  *  
  *  Version 1.0.0 - Initial release
  *  Version 1.0.0a - Same day release. Bugs fixed: nulls in the device label now trapped and ensure LIST_OF_PARAMS and LIST_OF_REPORTS is always created
  *  Version 1.0.0b - Remove punctuation from the device, mode and routine names. Fixed bug where numbers were removed in modes and routine names 
- *  Version 1.0.1a - Added presense sensors; added up/down/lower/increase/decrease as commands for various devices
+ *  Version 1.0.1b - Added presense sensors; added up/down/lower/increase/decrease as commands for various devices
  *
  *  Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except
  *  in compliance with the License. You may obtain a copy of the License at:
@@ -296,7 +296,7 @@ def processList(){
     }
     if (listType=="presence" || listType=="presence sensor" || listType=="presence sensors"){
      	outputTxt = presence && presence.size()>1 ? "The available presence sensors are: " +  getList(presence)  
-        	: humid && humid.size()==1 ? "The "+ getList(presence)+ " is the only presence sensor available. "    
+        	: presence && presence.size()==1 ? "The "+ getList(presence)+ " is the only presence sensor available. "    
        			: "You don't have any presence sensors selected in your Ask Alexa SmartApp. "
     }
     if (listType=="dimmer" || listType=="dimmers"){
@@ -763,13 +763,13 @@ def upDown(device, type, op, num){
 //Version/Copyright/Information/Help
 private def textAppName() { def text = "Ask Alexa" }	
 private def textVersion() {
-    def version = "Parent App Version: 1.0.1a (05/12/2016)"
+    def version = "Parent App Version: 1.0.1b (05/12/2016)"
     def childCount = childApps.size()
     def childVersion = childCount ? childApps[0].textVersion() : "No voice reports installed"
     return "${version}\n${childVersion}"
 }
 private def versionInt(){ return 101 }
-private def versionLong(){ return "1.0.1a" }
+private def versionLong(){ return "1.0.1b" }
 private def textCopyright() {return "Copyright © 2016 Michael Struck" }
 private def textLicense() {
 	def text = "Licensed under the Apache License, Version 2.0 (the 'License'); "+
