@@ -1,13 +1,13 @@
 /**
  *  Ask Alexa 
  *
- *  Version 1.0.1b - 5/12/16 Copyright © 2016 Michael Struck
+ *  Version 1.0.1c - 5/12/16 Copyright © 2016 Michael Struck
  *  Special thanks for Keith DeLong for code and assistance
  *  
  *  Version 1.0.0 - Initial release
  *  Version 1.0.0a - Same day release. Bugs fixed: nulls in the device label now trapped and ensure LIST_OF_PARAMS and LIST_OF_REPORTS is always created
  *  Version 1.0.0b - Remove punctuation from the device, mode and routine names. Fixed bug where numbers were removed in modes and routine names 
- *  Version 1.0.1b - Added presense sensors; added up/down/lower/increase/decrease as commands for various devices
+ *  Version 1.0.1c - Added presense sensors; added up/down/lower/increase/decrease as commands for various devices
  *
  *  Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except
  *  in compliance with the License. You may obtain a copy of the License at:
@@ -650,9 +650,9 @@ def setupData(){
 	if (tstats) result += "heat<br>cool<br>heating<br>cooling<br>auto<br>automatic<br>"
     if (tstats?.find{it.name.contains("Stelpro")}) result += "eco<br>comfort<br>"
     if (cLights) fillColorSettings(); state.colorData.each {result += it.name.toLowerCase()+"<br>"}
+    result +="<br><b>LIST_OF_SHPARAM</b><br><br>"
+    def cmd = "<br><b>LIST_OF_SHCMD</b><br><br>"
     if (modes || routines || SHM) {
-        result +="<br><b>LIST_OF_SHPARAM</b><br><br>"
-        def cmd = "<br><b>LIST_OF_SHCMD</b><br><br>"
         if (routines){
             cmd += "routine<br>"
             def phrases = location.helloHome?.getPhrases()*.label
@@ -763,13 +763,13 @@ def upDown(device, type, op, num){
 //Version/Copyright/Information/Help
 private def textAppName() { def text = "Ask Alexa" }	
 private def textVersion() {
-    def version = "Parent App Version: 1.0.1b (05/12/2016)"
+    def version = "Parent App Version: 1.0.1c (05/12/2016)"
     def childCount = childApps.size()
     def childVersion = childCount ? childApps[0].textVersion() : "No voice reports installed"
     return "${version}\n${childVersion}"
 }
 private def versionInt(){ return 101 }
-private def versionLong(){ return "1.0.1b" }
+private def versionLong(){ return "1.0.1c" }
 private def textCopyright() {return "Copyright © 2016 Michael Struck" }
 private def textLicense() {
 	def text = "Licensed under the Apache License, Version 2.0 (the 'License'); "+
