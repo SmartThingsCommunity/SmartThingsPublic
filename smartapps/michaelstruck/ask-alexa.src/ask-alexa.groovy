@@ -57,7 +57,7 @@ def mainPage() {
             	image: "https://raw.githubusercontent.com/MichaelStruck/SmartThingsPublic/master/img/temp.png"
             href "pageSpeakers", title: "Connected Speakers", description: getDesc(speakers, "", ""), state: getState(speakers, "", ""),
             	image: "https://raw.githubusercontent.com/MichaelStruck/SmartThingsPublic/master/img/speaker.png"     
-            href "pageSensors", title: "Other Sensors", description:getDesc(water, "", ""), state: getState (water, "", ""),
+            href "pageSensors", title: "Other Sensors", description:getDesc(water, presence, ""), state: getState (water, presence, ""),
             	image: "https://raw.githubusercontent.com/MichaelStruck/SmartThingsPublic/master/img/water.png"
             href "pageHomeControl", title: "Modes/Routines/SHM", description: getDesc(modes, routines, SHM), state: getState(modes, routines, SHM),
             	image: "https://raw.githubusercontent.com/MichaelStruck/SmartThingsPublic/master/img/modes.png"        
