@@ -1,12 +1,13 @@
 /**
  *  Ask Alexa 
  *
- *  Version 1.0.0b - 5/11/16 Copyright © 2016 Michael Struck
+ *  Version 1.0.1 - 5/12/16 Copyright © 2016 Michael Struck
  *  Special thanks for Keith DeLong for code and assistance
  *  
  *  Version 1.0.0 - Initial release
  *  Version 1.0.0a - Same day release. Bugs fixed: nulls in the device label now trapped and ensure LIST_OF_PARAMS and LIST_OF_REPORTS is always created
  *  Version 1.0.0b - Remove punctuation from the device, mode and routine names. Fixed bug where numbers were removed in modes and routine names 
+ *  Version 1.0.1 - Added presense sensors; added up/down/lower/increase/decrease as commands for various devices
  *
  *  Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except
  *  in compliance with the License. You may obtain a copy of the License at:
@@ -47,7 +48,7 @@ preferences {
 def mainPage() {
     dynamicPage(name: "mainPage", title:"", install: true, uninstall: false) {
         if (!state.deviceTypes) fillTypeList()
-        section("Items To Interface to Alexa") {
+        section("Items to interface to Alexa") {
         	href "pageSwitches", title: "Switches/Dimmers/Colored Lights", description: getDesc(switches, dimmers ,cLights), state: getState(switches, dimmers, cLights),
             	image: "https://raw.githubusercontent.com/MichaelStruck/SmartThingsPublic/master/img/power.png"
             href "pageDoors", title: "Doors/Locks", description: getDesc(doors, locks, ocSensors), state: getState(doors, locks, ocSensors),
@@ -61,7 +62,7 @@ def mainPage() {
             href "pageHomeControl", title: "Modes/Routines/SHM", description: getDesc(modes, routines, SHM), state: getState(modes, routines, SHM),
             	image: "https://raw.githubusercontent.com/MichaelStruck/SmartThingsPublic/master/img/modes.png"        
         }
-        section("Configure Voice Report"){
+        section("Configure voice reports"){
         	href "pageReports", title: "Voice Reports", description: reportDesc(), state: reportGrey(), image: "https://raw.githubusercontent.com/MichaelStruck/SmartThingsPublic/master/img/speak.png"
         }
         section("Options") {
@@ -124,14 +125,15 @@ def pageSensors(){
     dynamicPage(name: "pageSensors", title: none, install: false, uninstall: false) {
         section {paragraph "Other Sensors", image: "https://raw.githubusercontent.com/MichaelStruck/SmartThingsPublic/master/img/water.png"}
         section("Choose the devices to interface") {
-            input "water", "capability.waterSensor", title: "Choose Water Sensors (Status)", multiple: true, required: false 
+            input "water", "capability.waterSensor", title: "Choose Water Sensors (Status)", multiple: true, required: false
+            input "presence", "capability.presenceSensor", title: "Choose Presence Sensors (Status)", multiple: true, required: false
         }
     }
 }
 def pageHomeControl(){
 	dynamicPage(name: "pageHomeControl", title:none, uninstall: false) {
         section { paragraph "Modes/Routines/SHM", image: "https://raw.githubusercontent.com/MichaelStruck/SmartThingsPublic/master/img/modes.png" }
-        section ("Choose the features you require voice control over") {
+        section ("Choose the features to have voice control over") {
         	input "modes", "bool", title: "Modes (Change/Status)", defaultValue: false
             input "SHM", "bool", title: "Smart Home Monitor (Change/Status)", defaultValue: false
             input "routines", "bool", title: "Routines (Execute)", defaultValue: false
@@ -141,7 +143,7 @@ def pageHomeControl(){
 def pageReports() {
     dynamicPage(name: "pageReports", title: none, install: false, uninstall: false) {
         section{ paragraph "Voice Reports", image: "https://raw.githubusercontent.com/MichaelStruck/SmartThingsPublic/master/img/speak.png" }
-        if (childApps.size()) section("Reports Available"){}
+        if (childApps.size()) section("Reports available"){}
         section(" "){
             app(name: "childReports", appName: "Ask Alexa - Report", namespace: "MichaelStruck", title: "Create New Voice Report...", description: "Tap to create new voice report", multiple: true, 
                     image: "https://raw.githubusercontent.com/MichaelStruck/SmartThingsPublic/master/img/add.png")
@@ -155,13 +157,13 @@ def pageAbout(){
 	dynamicPage(name: "pageAbout", uninstall: true) {
         section {paragraph "${textAppName()}\n${textCopyright()}",
             	image: "https://raw.githubusercontent.com/MichaelStruck/SmartThingsPublic/master/smartapps/michaelstruck/ask-alexa.src/AskAlexa@2x.png"}
-        section ("SmartApp/Voice Report Version") { paragraph "${textVersion()}" } 
-        section ("Access Token / Application ID"){
+        section ("SmartApp / Voice report version") { paragraph "${textVersion()}" } 
+        section ("Access token / Application ID"){
             if (!state.accessToken) OAuthToken()
             def msg = state.accessToken != null ? state.accessToken : "Could not create Access Token. OAuth may not be enabled. Go to the SmartApp IDE settings to enable OAuth."
             paragraph "Access Token:\n${msg}\n\nApplication ID:\n${app.id}"
     	}
-        section ("Apache License"){ paragraph textLicense() }
+        section ("Apache license"){ paragraph textLicense() }
     	section("Instructions") { paragraph textHelp() }
         section("Tap below to remove the application and all reports"){}
 	}
@@ -169,14 +171,21 @@ def pageAbout(){
 def pageSettings(){
     dynamicPage(name: "pageSettings", title: none, uninstall: false){
         section { paragraph "Settings", image: "https://raw.githubusercontent.com/MichaelStruck/SmartThings/master/img/settings.png" }
-        section ("SmartApp Settings"){ 
+        section ("Additional voice settings"){ 
         	input "otherStatus", "bool", title: "Speak Addition Status Attributes Of Devices", defaultValue: false, submitOnChange: true
             input "batteryWarn", "bool", title: "Speak Battery Level When Below Threshold", defaultValue: false, submitOnChange: true
             if (batteryWarn) input "batteryThres", "enum", title: "Battery Status Threshold", required: false, defaultValue: 20, options: [5:"<5%",10:"<10%",20:"<20%",30:"<30%",40:"<40%",50:"<50%",60:"<60%",70:"<70%",80:"<80%",90:"<90%",101:"Always play battery level"]  
         	if (doors || locks) input "pwNeeded", "bool", title: "Password (PIN) Required For Lock Or Door Commands", defaultValue: false, submitOnChange: true
-            if ((doors || locks) && pwNeeded) input "password", "num", title: "Numeric Password(PIN)", description: "Enter a short numeric PIN (i.e. 1234)", required: false
+            if ((doors || locks) && pwNeeded) input "password", "num", title: "Numeric Password (PIN)", description: "Enter a short numeric PIN (i.e. 1234)", required: false
+		}        	
+		if (dimmers || tstats || cLights || speakers){
+        	section("Increase / Decrease default value (When no values are requested)"){
+            	if (dimmers || cLights) input "lightAmt", "number", title: "Dimmer/Colored Lights", defaultValue: 20, required: false
+        		if (tstats) input "tstatAmt", "number", title: "Thermostate Temperature", defaultValue: 5, required: false
+            	if (speakers) input "speakerAmt", "number", title: "Speaker Volume", defaultValue: 5, required: false
+        	}
         }	
-        section ("Setup Variables (for Amazon Lambda/Developer Site)"){
+        section ("Setup variables (For Amazon Lambda / Developer site)"){
         	if (!state.accessToken) OAuthToken()
             href url:"${getApiServerUrl()}/api/smartapps/installations/${app.id}/setup?access_token=${state.accessToken}", style:"embedded", required:false, title:"Show Setup Information", description: none
         }
@@ -189,7 +198,7 @@ def pageSettings(){
 def pageConfirmation(){
 	dynamicPage(name: "pageConfirmation", title: "Revoke/Reset Access Token Confirmation", uninstall: false){
         section {
-		href "pageReset", title: "Revoke/Reset Access Token", description: "Tap to take action - READ WARNING BELOW", 
+		href "pageReset", title: "Revoke / Reset Access Token", description: "Tap to take action - READ WARNING BELOW", 
             	image: "https://raw.githubusercontent.com/MichaelStruck/SmartThingsPublic/master/img/warning.png"
         	    paragraph "PLEASE CONFIRM! By resetting the access token you will disable the ability to interface this SmartApp with "+        	
         		"your Amazon Echo. You will need to copy the new access token to your Amazon Lambda code to re-enable access." +
@@ -282,8 +291,13 @@ def processList(){
     }
     if (listType=="humidity"){
      	outputTxt = humid && humid.size()>1 ? "The available humidity sensors include the following: " +  getList(humid)  
-        	: humid && humid.size()==1 ? "The "+ getList(humid)+ " is the only humidity sensors available. "    
+        	: humid && humid.size()==1 ? "The "+ getList(humid)+ " is the only humidity sensor available. "    
        			: "You don't have any humidity sensors selected in your Ask Alexa SmartApp. "
+    }
+    if (listType=="presence" || listType=="presence sensor" || listType=="presence sensors"){
+     	outputTxt = presence && presence.size()>1 ? "The available presence sensors are: " +  getList(presence)  
+        	: humid && humid.size()==1 ? "The "+ getList(presence)+ " is the only presence sensor available. "    
+       			: "You don't have any presence sensors selected in your Ask Alexa SmartApp. "
     }
     if (listType=="dimmer" || listType=="dimmers"){
      	outputTxt = dimmers && dimmers.size()>1 ? "You have the following dimmers selected in your SmartApp: " +  getList(dimmers) 
@@ -418,18 +432,6 @@ def processSmartHome() {
 	log.debug outputTxt
     return ["voiceOutput":outputTxt]
 }
-//Version operation
-def processVersion(){
-	log.debug "Version command received with params $params"
-	def ver = params.Ver 		//Lambda Code Verisons
-    log.debug "Lambda Code Version: " + ver
-   	def outputTxt = "The Ask Alexa SmartApp was developed by Michael Struck to intergrate the SmartThings platform with the Amazon Echo. "+
-    	"The Parent SmartApp version is: "  +  versionLong() + ". "
-    outputTxt += childApps.size()>0 ? "The Child SmartApp version is: " + childApps[0].versionLong() + ". " : "There are no child apps installed yet. "
-	outputTxt += "And the Amazon Lambda code version is: " + ver + ". "
-    log.debug outputTxt
-    return ["voiceOutput":outputTxt]
-}
 def getReply(devices, type, dev, op, num, param){
 	def result = ""
     log.debug "Type: " + type
@@ -445,6 +447,9 @@ def getReply(devices, type, dev, op, num, param){
                     result += lux ? " In addition, the illuminance is currently at ${lux} lux." : ""
                     result += wet ? "Also, this device is a leak sensor, and it is currently ${wet}. " : ""
 				}
+            }
+            else if (type == "presence"){
+            	result = "The presence sensor, ${STdevice}, is showing ${STdevice.currentValue(type)}. "
             }
             else if (type == "humidity"){
                 result = "The relative humidity at the ${STdevice} is ${STdevice.currentValue(type)}%"
@@ -500,6 +505,10 @@ def getReply(devices, type, dev, op, num, param){
         }
         else {
             if (type == "thermostat"){
+                if ((op == "increase" || op=="raise" || op=="up" || op == "decrease" || op=="down" || op=="lower")){
+                     def newValues = upDown(STdevice, type, op, num) 
+                     num = newValues.newLevel
+                }
                 if ((param=="heat" || param=="heating" || param =="cool" || param=="cooling" || param =="auto" || param=="automatic" || param=="eco" || param=="comfort") && num == 0 && op=="undefined") op="on"
                 if (op == "on" || op=="off") {
                 	if (param == "undefined" && op == "on") result="You must designate 'heating mode' or 'cooling mode' when turning the ${STdevice} on. "
@@ -530,16 +539,23 @@ def getReply(devices, type, dev, op, num, param){
                 }
             }
             if (type == "color" || type == "level" || type=="switch"){
-            	if ((type == "switch") || ((type=="level" || type == "color") && num==0 )){
+				def overRideMsg = ""               
+                if ((op == "increase" || op=="raise" || op=="up" || op == "decrease" || op=="down" || op=="lower") && (type == "color" || type == "level")){
+                     def newValues = upDown(STdevice, type, op, num) 
+                     num = newValues.newLevel
+                     op= num > 0 ? "on" : "off"
+                     overRideMsg = newValues.msg
+                }
+                if ((type == "switch") || ((type=="level" || type == "color") && num==0 )){
                		if ((type=="level" || type == "color") && num==0 && op=="undefined" && param=="undefined") op="off"
                 	if (op=="on" || op=="off"){
                 		STdevice."$op"() 
-                		result = "I am turning the ${STdevice} ${op}."
+                		result = overRideMsg ? overRideMsg: "I am turning the ${STdevice} ${op}."
                 	}
             	}
                 if ((type == "color" || type == "level") && num > 0) {
                 	STdevice.setLevel(num)
-                    result = "I am setting the ${STdevice} to ${num}%. "                    
+                    result = overRideMsg ? overRideMsg : "I am setting the ${STdevice} to ${num}%. "                    
 				}
                 if (type == "color" && param !="undefined" && supportedCaps.name.contains("Color Control")){
                     def getColorData = state.colorData.find {it.name.toLowerCase()==param}
@@ -560,8 +576,13 @@ def getReply(devices, type, dev, op, num, param){
                     "say, 'tell SmartThings to list the colors'. "
                 }
             }
-            if (type == "music"){
-				if (op=="off" || op=="stop") {STdevice.stop(); result = "I am stopping the  ${STdevice}. "}
+            if (type == "music"){             
+                if ((op == "increase" || op=="raise" || op=="up" || op == "decrease" || op=="down" || op=="lower")){
+                     def newValues = upDown(STdevice, type, op, num) 
+                     num = newValues.newLevel
+                     if (num==0) op= "off"
+                }
+                if (op=="off" || op=="stop") {STdevice.stop(); result = "I am turning off the ${STdevice}. "}
                 else if (op == "play" || op=="on") {STdevice.play(); result = "I am playing the ${STdevice}. "}
                 else if (op=="mute") {STdevice.mute(); result = "I am muting the ${STdevice}. "}
                 else if (op=="unmute") {STdevice.unmute(); result = "I am unmuting the ${STdevice}. "}
@@ -569,7 +590,7 @@ def getReply(devices, type, dev, op, num, param){
                 else if (op=="next track") {STdevice.nextTrack(); result = "I am playing the next track on the ${STdevice}. "}
             	else if (op=="previous track") {STdevice.previousTrack(); result = "I am playing the next track on the ${STdevice}. "}
                 else result = "I didn't understand what you wanted me to do with the ${STdevice} speaker. "
-                if (num > 0) {STdevice.setLevel(num); result = "I am setting the volume of the ${STdevice} to ${num}. "}
+                if (num > 0) {STdevice.setLevel(num); result = "I am setting the volume of the ${STdevice} to ${num}%. "}
         	}
             if (type == "door"){
                 def currentDoorState = STdevice.currentValue(type)
@@ -599,9 +620,9 @@ def getReply(devices, type, dev, op, num, param){
         	}
 		}
         if (STdevice.currentValue("battery") && batteryWarn){
-                def battery = STdevice.currentValue("battery")
-                def battThresLevel = batteryThres as int
-				result += battery && battery < battThresLevel ? "Please note, the battery in this device is at ${battery}%. " : ""
+			def battery = STdevice.currentValue("battery")
+			def battThresLevel = batteryThres as int
+			result += battery && battery < battThresLevel ? "Please note, the battery in this device is at ${battery}%. " : ""
 		}
     }
 	catch (e){ result = "I could not process your request on ${dev}. Ensure you are using the correct commands with the device and try again. " }
@@ -617,7 +638,7 @@ def setupData(){
     def deviceList = getDeviceList(true), deviceNames = deviceList.name.unique()
     if (deviceNames) result += deviceList.name != deviceNames ? "<b>**NOTICE:</b> You have duplicated device names that have been<br>removed from the list below. Be sure to have unique names for<br>each device.**<br><br>" : ""
     if (deviceNames) deviceNames.each{result += it + "<br>" }
-    result += "<br><b>LIST_OF_OPERATORS</b><br><br>on<br>off<br>"
+    result += "<br><b>LIST_OF_OPERATORS</b><br><br>on<br>off<br>up<br>down<br>increase<br>decrease<br>lower<br>raise<br>"
     result += locks ? "lock<br>unlock<br>" : ""
     result += doors ? "open<br>close<br>" : ""
     result += speakers ?"play<br>stop<br>pause<br>mute<br>unmute<br>next track<br>previous track<br>" : ""
@@ -651,6 +672,18 @@ def setupData(){
 }
 def displayData(){
 	render contentType: "text/html", data: """<!DOCTYPE html><html><head><meta charset="UTF-8" /><meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=0"/></head><body style="margin: 0;">${setupData()}</body></html>"""
+}
+//Version operation
+def processVersion(){
+	log.debug "Version command received with params $params"
+	def ver = params.Ver 		//Lambda Code Verisons
+    log.debug "Lambda Code Version: " + ver
+   	def outputTxt = "The Ask Alexa SmartApp was developed by Michael Struck to intergrate the SmartThings platform with the Amazon Echo. "+
+    	"The Parent SmartApp version is: "  +  versionLong() + ". "
+    outputTxt += childApps.size()>0 ? "The Child SmartApp version is: " + childApps[0].versionLong() + ". " : "There are no child apps installed yet. "
+	outputTxt += "And the Amazon Lambda code version is: " + ver + ". "
+    log.debug outputTxt
+    return ["voiceOutput":outputTxt]
 }
 //Common Code
 def OAuthToken(){
@@ -694,6 +727,7 @@ def getDeviceList(readOnly){
         if (humid && readOnly) humid.collect{ result << [name: it.label.replaceAll("[^a-zA-Z0-9 ]", "").toLowerCase(), type:"humidity", devices: humid] }
         if (ocSensors && readOnly) ocSensors.collect{ result << [name: it.label.replaceAll("[^a-zA-Z0-9 ]", "").toLowerCase(), type:"contact", devices: ocSensors] }
         if (water && readOnly) water.collect{ result << [name: it.label.replaceAll("[^a-zA-Z0-9 ]", "").toLowerCase(), type:"water", devices: water] }
+        if (presence && readOnly) presence.collect{ result << [name: it.label.replaceAll("[^a-zA-Z0-9 ]", "").toLowerCase(), type:"presence", devices: presence] }
     }
     catch (e) {
     	log.warn "There was an issue parsing the device labels. Be sure all of the devices are uniquley named/labeled and that none of them are blank (null). "
@@ -703,18 +737,39 @@ def getDeviceList(readOnly){
 def fillTypeList(){
 	state.deviceTypes =["reports","report","switches","switch","dimmers","dimmer","colored lights","color","colors","speakers","speaker","water sensor","water sensors","water",
     	"lock","locks","thermostats","thermostat","temperature sensors","modes","routines","smart home monitor","SHM","security","temperature","door","doors", "humidity", "humidity sensor", 
-        "humidity sensors"]    	  
+        "humidity sensors, presence, presence sensors"]    	  
+}
+def upDown(device, type, op, num){
+    def numChange, newLevel, currLevel, defMove, txtRsp = ""
+    if (type=="color" || type=="level") { defMove = lightAmt ; currLevel = device.currentValue("switch")=="on" ? device.currentValue("level") as int : 0 } 
+    if (type=="music") { defMove = speakerAmt ; currLevel = device.currentValue("level") as int }
+    if (type=="thermostat") { defMove=tstatAmt ; currLevel =device.currentValue("temperature") as int }
+    if (op == "increase" || op=="raise" || op=="up")  numChange = num == 0 ? defMove : num > 0 ? num : 0
+    if (op == "decrease" || op=="down" || op=="lower") numChange = num == 0 ? -defMove : num > 0 ? -num  : 0
+    newLevel = currLevel + numChange; newLevel = newLevel > 100 ? 100 : newLevel < 0 ? 0 : newLevel
+    if (type =="level" || type=="color"){
+        if (device.currentValue("switch")=="on") {
+            if (newLevel < 100 && newLevel > 0 ) txtRsp="I am setting the ${device} to a new value of ${newLevel}%. "
+            if (newLevel == 0) txtRsp= "The new value would be zero or below, so I am turning the ${device} off. "	
+        }
+        if (device.currentValue("switch")=="off") {
+            if (newLevel == 0) txtRsp= "The ${device} is off. I am taking no action. "
+            if (newLevel < 100 && newLevel > 0 ) txtRsp="I am turning ${device} on and setting it to level of ${newLevel}%. "
+        }
+    	if (newLevel == 100) txtRsp= currLevel < 99 ? "I am increasing the level of the ${device} to its maximum level. " : "The ${device} is at its maximum level. "      
+    }
+    def response = [newLevel: newLevel, msg:txtRsp]
 }
 //Version/Copyright/Information/Help
 private def textAppName() { def text = "Ask Alexa" }	
 private def textVersion() {
-    def version = "Parent App Version: 1.0.0b (05/11/2016)"
+    def version = "Parent App Version: 1.0.1 (05/12/2016)"
     def childCount = childApps.size()
     def childVersion = childCount ? childApps[0].textVersion() : "No voice reports installed"
     return "${version}\n${childVersion}"
 }
-private def versionInt(){ return 100 }
-private def versionLong(){ return "1.0.0b" }
+private def versionInt(){ return 101 }
+private def versionLong(){ return "1.0.1" }
 private def textCopyright() {return "Copyright © 2016 Michael Struck" }
 private def textLicense() {
 	def text = "Licensed under the Apache License, Version 2.0 (the 'License'); "+
