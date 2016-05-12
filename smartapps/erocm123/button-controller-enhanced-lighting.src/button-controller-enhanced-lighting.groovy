@@ -367,13 +367,20 @@ def setLight(light, lightName, lightCapabilities, buttonNumber, lightId, toggle)
                 if (colorTemperature != null) {
                     // Changing the amount of data that is sent because of hue device handler change
                 	// colorValue = [alpha: 1.0, red: rgbValue[0], green: rgbValue[1], blue: rgbValue[2], hex: hexValue, hue: hueColor as double, saturation: saturation, level: level as Integer ?: 100, colorTemperature: colorTemperature]
-                    colorValue = [hue: hueColor as double, saturation: saturation, level: level as Integer ?: 100, colorTemperature: colorTemperature]
+                    colorValue = [hue: hueColor as Integer, saturation: saturation, level: level as Integer ?: 100, colorTemperature: colorTemperature]
+                    try{
+                       delayBetween(light.setColorTemperature(colorTemperature),
+                       light.setLevel(level as Integer ?: 100), 1000)
+                    }catch(e){
+                       light.setColor(colorValue)
+                    }
                 } else {
                     // Changing the amount of data that is sent because of hue device handler change
                 	// colorValue = [alpha: 1.0, red: rgbValue[0], green: rgbValue[1], blue: rgbValue[2], hex: hexValue, hue: hueColor as double, saturation: saturation, level: level as Integer ?: 100]
-                    colorValue = [hue: hueColor as double, saturation: saturation, level: level as Integer ?: 100]
+                    colorValue = [hue: hueColor as Integer, saturation: saturation, level: level as Integer ?: 100]
+                    light.setColor(colorValue)
                 }
-                light.setColor(colorValue)
+                
         		break
 		}
     }
