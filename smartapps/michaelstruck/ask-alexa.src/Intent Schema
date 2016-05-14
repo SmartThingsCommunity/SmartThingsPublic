@@ -43,16 +43,6 @@
         ]
     },
     {
-      "intent": "DeviceStatus",
-      "slots": [
-        {
-          "name" : "Status",
-          "type" : "LIST_OF_DEVICES"
-        }
-        
-        ]
-    },
-    {
       "intent": "VersionOperation"
     },
     {
