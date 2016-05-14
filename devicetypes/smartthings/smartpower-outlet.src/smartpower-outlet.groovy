@@ -25,9 +25,6 @@ metadata {
 		capability "Sensor"
 		capability "Health Check"
 
-		// indicates that device keeps track of heartbeat (in state.heartbeat)
-		attribute "heartbeat", "string"
-
 		fingerprint profileId: "0104", inClusters: "0000,0003,0004,0005,0006,0B04,0B05", outClusters: "0019", manufacturer: "CentraLite",  model: "3200", deviceJoinName: "Outlet"
 		fingerprint profileId: "0104", inClusters: "0000,0003,0004,0005,0006,0B04,0B05", outClusters: "0019", manufacturer: "CentraLite",  model: "3200-Sgb", deviceJoinName: "Outlet"
 		fingerprint profileId: "0104", inClusters: "0000,0003,0004,0005,0006,0B04,0B05", outClusters: "0019", manufacturer: "CentraLite",  model: "4257050-RZHAC", deviceJoinName: "Outlet"
@@ -81,9 +78,6 @@ metadata {
 def parse(String description) {
 	log.debug "description is $description"
 
-	// save heartbeat (i.e. last time we got a message from device)
-	state.heartbeat = Calendar.getInstance().getTimeInMillis()
-
 	def finalResult = zigbee.getKnownDescription(description)
 
 	//TODO: Remove this after getKnownDescription can parse it automatically
@@ -124,7 +118,6 @@ def on() {
 }
 
 def refresh() {
-	sendEvent(name: "heartbeat", value: "alive", displayed:false)
 	zigbee.onOffRefresh() + zigbee.refreshData("0x0B04", "0x050B")
 }
 
