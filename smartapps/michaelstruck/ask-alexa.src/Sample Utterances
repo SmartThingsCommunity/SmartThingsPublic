@@ -10,25 +10,6 @@ DeviceOperation {Device} {Operator}
 DeviceOperation to {Operator} the {Device}
 DeviceOperation to {Operator} the {Device} password {Num}
 
-DeviceStatus the status of {Status}
-DeviceStatus the status of the {Status}
-DeviceStatus play the {Status} status
-DeviceStatus play {Status} status
-DeviceStatus to play {Status} status
-DeviceStatus to play the {Status} status
-DeviceStatus {Status}
-DeviceStatus {Status} status
-DeviceStatus {Status} state
-DeviceStatus about {Status}
-DeviceStatus about the {Status}
-DeviceStatus status of {Status}
-DeviceStatus the state of {Status}
-DeviceStatus to give me the status of {Status}
-DeviceStatus if the {Status} is open
-DeviceStatus if the {Status} is locked
-DeviceStatus if the {Status} is unlocked
-DeviceStatus if the {Status} is closed
-
 DeviceOperation set {Device} to {Num}
 DeviceOperation {Device} to {Num}
 DeviceOperation set the {Device} to {Num} 
@@ -63,6 +44,8 @@ DeviceOperation {Operator} temperature of the {Device}
 DeviceOperation {Operator} volume of the {Device}
 
 ReportOperation {Report} report
+ReportOperation for {Report} reports
+ReportOperation for the {Report} reports
 ReportOperation {Report} reports
 ReportOperation for the {Report} report
 ReportOperation report {Report}
@@ -113,6 +96,8 @@ SmartHomeOperation what is the current {SHCmd}
 SmartHomeOperation the current {SHCmd}
 SmartHomeOperation to change the {SHCmd} to {SHParam}
 SmartHomeOperation {SHParam} {SHCmd}
+SmartHomeOperation {SHParam}
+SmartHomeOperation {SHCmd}
 SmartHomeOperation execute the {SHParam} {SHCmd}
 SmartHomeOperation about {SHCmd}
 SmartHomeOperation about the {SHCmd}
@@ -122,3 +107,20 @@ VersionOperation tell me the version
 VersionOperation about the Ask Alexa smartapp
 VersionOperation about Ask Alexa
 VersionOperation about the smartapp version
+
+DeviceOperation about {Device}
+DeviceOperation about {Device} {Operator}
+DeviceOperation about the {Device} {Operator}
+DeviceOperation about the {Device}
+DeviceOperation {Device} {Operator}
+DeviceOperation {Operator} of {Device}
+DeviceOperation for the {Operator} of {Device}
+DeviceOperation for the last {Num} {Operator} of {Device}
+DeviceOperation for the last {Num} {Operator} of the {Device}
+DeviceOperation for the last {Num} {Device} {Operator}
+DeviceOperation last {Num} {Operator} on {Device}
+DeviceOperation play the last {Num} {Operator} on {Device}
+DeviceOperation play the last {Num} {Operator} from {Device}
+DeviceOperation play the last {Num} {Operator} from the {Device}
+DeviceOperation to give me the last {Operator} for the {Device}
+DeviceOperation to give me the last {Num} {Operator} for the {Device}
