@@ -1,10 +1,11 @@
 /**
  *  Ask Alexa - Lambda Code
  *
- *  Version 1.0.0 - 5/10/16 Copyright © 2016 Michael Struck
+ *  Version 1.0.1 - 5/14/16 Copyright © 2016 Michael Struck
  *  Special thanks for Keith DeLong for code and assistance
  *  
  *  Version 1.0.0 - Initial release
+ *  Version 1.0.1 - Removed dedicated status operation; added version code
  *
  *  Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except
  *  in compliance with the License. You may obtain a copy of the License at:
@@ -18,7 +19,8 @@
  */
 'use strict';
 exports.handler = function( event, context ) {
-   var version = '1.0.0';
+   var versionTxt = '1.0.1';
+   var versionNum = '101';
    var https = require( 'https' );
    // Paste app code here between the breaks------------------------------------------------
     var STappID = '';
@@ -42,37 +44,31 @@ exports.handler = function( event, context ) {
             var Device = event.request.intent.slots.Device.value;
             var Num = event.request.intent.slots.Num.value;
             var Param = event.request.intent.slots.Param.value;
-            url += 'd?Device=' + Device + '&Operator=' + Operator + '&Num=' + Num + '&Param=' + Param; 
+            url += 'd?Device=' + Device + '&Operator=' + Operator + '&Num=' + Num + '&Param=' + Param + '&lVer=' + versionNum; 
             process = true;
-            cardName = "SmartThings Device Operation";
+            cardName = "SmartThings Devices";
         } 
         else if (intentName == "ReportOperation") {
             var Report = event.request.intent.slots.Report.value;
-            url += 'r?Report=' + Report;
+            url += 'r?Report=' + Report + '&lVer=' + versionNum;
             process = true; 
             cardName = "SmartThings Reports";
         }
-        else if (intentName == "DeviceStatus") {
-            var Status = event.request.intent.slots.Status.value;
-            url += 's?Device=' + Status;
-            process = true;
-            cardName = "SmartThings Status Report";
-        }
         else if (intentName == "ListOperation") {
             var Type = event.request.intent.slots.Type.value;
-            url += 'l?Type=' + Type;
+            url += 'l?Type=' + Type + '&lVer=' + versionNum;
             process = true;
             cardName = "SmartThings Help";
         }
         else if (intentName == "VersionOperation") {
-            url += 'v?Ver=' + version;
+            url += 'v?Ver=' + versionTxt + '&lVer=' + versionNum;
             process = true;
             cardName = "SmartThings Version Help";
         }
         else if (intentName == "SmartHomeOperation") {
             var SHCmd = event.request.intent.slots.SHCmd.value;
             var SHParam = event.request.intent.slots.SHParam.value;
-            url += 'h?SHCmd=' + SHCmd + '&SHParam=' + SHParam;
+            url += 'h?SHCmd=' + SHCmd + '&SHParam=' + SHParam + '&lVer=' + versionNum;
             process = true;
             cardName = "SmartThings Home Operation";
         }
@@ -85,7 +81,7 @@ exports.handler = function( event, context ) {
             "close status, or find out the temperature in a room. To use this function, just give "+
             "me the device name. For example, you could say, 'ask SmartThings about the patio'. and I will "+
             "give you all of the common attributes I find with that device, including battery levels. "+
-            "For those who are curious, this is version" + version +" of the Lambda code, written by Michael Struck.";
+            "For those who are curious, this is version" + versionTxt +" of the Lambda code, written by Michael Struck. ";
             output(help, context, "Ask Alexa Help");
         }
         if (!process) {
