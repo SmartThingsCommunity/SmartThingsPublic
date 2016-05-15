@@ -164,8 +164,8 @@ def pageWeatherReport(){
         	input "voiceSunrise", "bool", title: "Speak Today's Sunrise", defaultValue: false
     		input "voiceSunset", "bool", title: "Speak Today's Sunset", defaultValue: false	
         }
-        section ("Zip code") {
-        	input "zipCode", "text", title: "Zip Code For Weather Report", required: false
+        section ("Location (If blank, will use your SmartThings location settings)") {
+        	input "zipCode", "text", title: "Zip Code", required: false
 		}
     }
 }
