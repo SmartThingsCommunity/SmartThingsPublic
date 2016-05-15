@@ -1,14 +1,14 @@
 /**
  *  Ask Alexa 
  *
- *  Version 1.0.2 - 5/14/16 Copyright © 2016 Michael Struck
+ *  Version 1.0.2a - 5/15/16 Copyright © 2016 Michael Struck
  *  Special thanks for Keith DeLong for code and assistance
  *  
  *  Version 1.0.0 - Initial release
  *  Version 1.0.0a - Same day release. Bugs fixed: nulls in the device label now trapped and ensure LIST_OF_PARAMS and LIST_OF_REPORTS is always created
  *  Version 1.0.0b - Remove punctuation from the device, mode and routine names. Fixed bug where numbers were removed in modes and routine names 
  *  Version 1.0.1c - Added presense sensors; added up/down/lower/increase/decrease as commands for various devices
- *  Version 1.0.2 - Added motion sensors and a new function, "events" to list to the last events for a device; code optimization, bugs removed
+ *  Version 1.0.2a - Added motion sensors and a new function, "events" to list to the last events for a device; code optimization, bugs removed
  *
  *  Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except
  *  in compliance with the License. You may obtain a copy of the License at:
@@ -144,15 +144,24 @@ def pageHomeControl(){
 }
 def pageReports() {
     dynamicPage(name: "pageReports", install: false, uninstall: false) {
-        section{ paragraph "Voice Reports", image: "https://raw.githubusercontent.com/MichaelStruck/SmartThingsPublic/master/img/speak.png" }
-        if (childApps.size()) section("Reports available"){}
-        section(" "){
-            app(name: "childReports", appName: "Ask Alexa - Report", namespace: "MichaelStruck", title: "Create New Voice Report...", description: "Tap to create new voice report", multiple: true, 
-                    image: "https://raw.githubusercontent.com/MichaelStruck/SmartThingsPublic/master/img/add.png")
+    	if (childApps.size() && childApps[0].versionInt() <102){
+        	section{
+            	paragraph "You report (child app) version is less than the recommended version. Be sure to keep up-to-date on the latest versions "+
+                	"of both the parent and the child app. You cannot continue with creating reports until you upgrade.", 
+                    image: "https://raw.githubusercontent.com/MichaelStruck/SmartThingsPublic/master/img/warning.png"
+            }
         }
-  		section ("Please note") {
-			paragraph "Be sure each report has a unique name."
-        }
+        else{
+            section{ paragraph "Voice Reports", image: "https://raw.githubusercontent.com/MichaelStruck/SmartThingsPublic/master/img/speak.png" }
+            if (childApps.size()) section("Reports available"){}
+            section(" "){
+                app(name: "childReports", appName: "Ask Alexa - Report", namespace: "MichaelStruck", title: "Create New Voice Report...", description: "Tap to create new voice report", multiple: true, 
+                        image: "https://raw.githubusercontent.com/MichaelStruck/SmartThingsPublic/master/img/add.png")
+            }
+            section ("Please note") {
+                paragraph "Be sure each report has a unique name."
+            }
+		}
     }
 }
 def pageAbout(){
@@ -714,12 +723,6 @@ def displayData(){
 	render contentType: "text/html", data: """<!DOCTYPE html><html><head><meta charset="UTF-8" /><meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=0"/></head><body style="margin: 0;">${setupData()}</body></html>"""
 }
 //Common Code
-def sendJSON(outputTxt, lVer){
-	def LambdaVersion = lVer as int
-    if (LambdaVersion < 101) outputTxt = "I am unable to complete your request. The version of the Lambda code you are using is out-of-date. Please install the latest code and try again. "
-    log.debug outputTxt
-    return ["voiceOutput":outputTxt]
-}
 def OAuthToken(){
 	try {
         createAccessToken()
@@ -817,16 +820,22 @@ def getLastEvent(device, count) {
     if (evtCount==0) result="There were no past events in the device log. "
     return result
 }
+def sendJSON(outputTxt, lVer){
+	def LambdaVersion = lVer as int
+    if (LambdaVersion != 101) outputTxt = "I am unable to complete your request. The version of the Lambda code you are using is out-of-date. Please install the latest code and try again. "
+    log.debug outputTxt
+    return ["voiceOutput":outputTxt]
+}
 //Version/Copyright/Information/Help
 private def textAppName() { def text = "Ask Alexa" }	
 private def textVersion() {
-    def version = "Parent App Version: 1.0.2 (05/14/2016)"
+    def version = "Parent App Version: 1.0.2a (05/15/2016)"
     def childCount = childApps.size()
     def childVersion = childCount ? childApps[0].textVersion() : "No voice reports installed"
     return "${version}\n${childVersion}"
 }
 private def versionInt(){ return 102 }
-private def versionLong(){ return "1.0.2" }
+private def versionLong(){ return "1.0.2a" }
 private def textCopyright() {return "Copyright © 2016 Michael Struck" }
 private def textLicense() {
 	def text = "Licensed under the Apache License, Version 2.0 (the 'License'); "+
