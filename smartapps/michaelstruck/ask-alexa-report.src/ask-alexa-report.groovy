@@ -1,10 +1,10 @@
 /**
  *  Ask Alexa - Report
  *
- *  Version 1.0.1 - 5/14/16 Copyright © 2016 Michael Struck
+ *  Version 1.0.1a - 5/15/16 Copyright © 2016 Michael Struck
  *  
  *  Version 1.0.0 - Initial release
- *  Version 1.0.1 - Added motion sensor reports; added events report to various sensors
+ *  Version 1.0.1a - Added motion sensor reports; added events report to various sensors
  *
  *  Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except
  *  in compliance with the License. You may obtain a copy of the License at:
@@ -365,22 +365,6 @@ def reportDescMSHM() {
     result += voiceSHM ? ", SHM: On" : ", SHM: Off"
 }
 def greyOutState(param1, param2, param3, param4, param5){def result = param1 || param2 || param3 || param4 || param5 ? "complete" : ""}
-def reportDesc(){
-	def desc = voicePre ? "Pre-message" : ""
-    desc += desc && (voiceSwitch || voiceDimmer) ? "\n" : ""
-    desc += voiceSwitch || voiceDimmer ? "Switch/Dimmer" : ""
-	desc += desc && voicePresence ? "\n" : ""
-    desc += voicePresence ? "Presence Sensor" : ""
-    desc += desc && (voiceDoorSensors || voiceDoorControls || voiceDoorLocks)  ? "\n" : ""
-    desc += voiceDoorSensors || voiceDoorControls || voiceDoorLocks ? "Door/Window" : ""
-    desc += desc && voiceTemperature || voiceHumidity ? "\n" : ""
-    desc += voiceTemperature || voiceHumidity ? "Temperature/Humidity/Thermostat" : ""
-    desc += desc && (voiceMode || voiceSHM) ? "\n" : ""
-    desc += voiceMode || voiceSHM ? "Mode/Smart Home Monitor" : ""
-    desc += desc && voicePost ? "\n" : ""
-    desc += voicePost ? "Post-message" : ""
-	desc = desc ? "Voice report includes:\n${desc}" : "UNCONFIGURED - Tap to configure"
-}
 def reportGreyOut(){ def result = reportDesc() == "UNCONFIGURED - Tap to configure" ? "" : "complete" }
 private getLastEvt(devGroup, evtTxt, searchVal, devTxt){
     def devEvt, evtLog=[],  lastEvt="I could not find any ${evtTxt} events in the log. "
@@ -423,6 +407,6 @@ private parseDate(time, type){
     new Date().parse("yyyy-MM-dd'T'HH:mm:ss.SSSZ", formattedDate).format("${type}", timeZone(formattedDate))
 }
 //Version 
-private def textVersion() {return "Voice Reports Version: 1.0.1 (05/14/2016)"}
+private def textVersion() {return "Voice Reports Version: 1.0.1a (05/15/2016)"}
 private def versionInt() {return 101}
-private def versionLong() {return "1.0.1"}
+private def versionLong() {return "1.0.1a"}
