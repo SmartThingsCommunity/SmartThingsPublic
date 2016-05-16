@@ -95,10 +95,16 @@ def zwaveEvent(physicalgraph.zwave.commands.hailv1.Hail cmd) {
 }
 
 def zwaveEvent(physicalgraph.zwave.commands.manufacturerspecificv2.ManufacturerSpecificReport cmd) {
-	if (state.manufacturer != cmd.manufacturerName) {
-		updateDataValue("manufacturer", cmd.manufacturerName)
-	}
+	log.debug "manufacturerId:   ${cmd.manufacturerId}"
+	log.debug "manufacturerName: ${cmd.manufacturerName}"
+	log.debug "productId:        ${cmd.productId}"
+	log.debug "productTypeId:    ${cmd.productTypeId}"
+	def msr = String.format("%04X-%04X-%04X", cmd.manufacturerId, cmd.productTypeId, cmd.productId)
+	updateDataValue("MSR", msr)
+	updateDataValue("manufacturer", cmd.manufacturerName)
+	createEvent([descriptionText: "$device.displayName MSR: $msr", isStateChange: false])
 }
+
 
 def zwaveEvent(physicalgraph.zwave.Command cmd) {
 	// Handles all Z-Wave commands we aren't interested in

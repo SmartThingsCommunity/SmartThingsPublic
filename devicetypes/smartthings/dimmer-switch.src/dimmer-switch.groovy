@@ -138,6 +138,7 @@ def zwaveEvent(physicalgraph.zwave.commands.manufacturerspecificv2.ManufacturerS
 	log.debug "productTypeId:    ${cmd.productTypeId}"
 	def msr = String.format("%04X-%04X-%04X", cmd.manufacturerId, cmd.productTypeId, cmd.productId)
 	updateDataValue("MSR", msr)
+	updateDataValue("manufacturer", cmd.manufacturerName)
 	createEvent([descriptionText: "$device.displayName MSR: $msr", isStateChange: false])
 }
 
