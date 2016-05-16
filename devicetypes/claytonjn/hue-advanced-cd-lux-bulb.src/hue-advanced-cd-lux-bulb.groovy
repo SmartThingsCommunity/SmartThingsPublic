@@ -17,8 +17,12 @@ metadata {
 
         command "refresh"
 		command "setTransitionTime"
+        command "enableCDBrightness"
+        command "disableCDBrightness"
+        command "tileSetLevel"
 
 		attribute "transitionTime", "NUMBER"
+        attribute "cdBrightness", "enum", ["true", "false"]
 	}
 
 	simulator {
@@ -34,12 +38,12 @@ metadata {
               attributeState "turningOff", label:'${name}', action:"switch.on", icon:"st.lights.philips.hue-single", backgroundColor:"#ffffff", nextState:"turningOn"
             }
             tileAttribute ("device.level", key: "SLIDER_CONTROL") {
-              attributeState "level", action:"switch level.setLevel", range:"(0..100)"
+              attributeState "level", action:"tileSetLevel", range:"(0..100)"
             }
         }
 
         controlTile("levelSliderControl", "device.level", "slider", height: 1, width: 2, inactiveLabel: false, range:"(0..100)") {
-            state "level", action:"switch level.setLevel"
+            state "level", action:"tileSetLevel"
         }
 
         standardTile("refresh", "device.switch", inactiveLabel: false, decoration: "flat", width: 2, height: 2) {
@@ -53,8 +57,14 @@ metadata {
 			state "transitionTime", label: 'Transition:              ${currentValue} s'
 		}
 
+        valueTile("cdBrightnessControl", "device.cdBrightness", inactiveLabel: false, decoration: "flat", width: 3, height: 1) {
+			state "true", label: "Circadian Brightness On", action: "disableCDBrightness", nextState: "updating"
+			state "false", label: "Circadian Brightness Off", action: "enableCDBrightness", nextState: "updating"
+			state "updating", label: "Working"
+		}
+
         main(["rich-control"])
-        details(["rich-control", "transitionTimeSliderControl", "transTime", "refresh"])
+        details(["rich-control", "transitionTimeSliderControl", "transTime", "refresh", "cdBrightnessControl"])
     }
 }
 
@@ -95,7 +105,11 @@ void off(transitionTime = device.currentValue("transitionTime")) {
 	sendEvent(name: "switch", value: "off")
 }
 
-void setLevel(percent, transitionTime = device.currentValue("transitionTime")) {
+void tileSetLevel(percent) {
+	setLevel(percent, null, true)
+}
+
+void setLevel(percent, transitionTime = device.currentValue("transitionTime"), disableCDB = false) {
 	if(transitionTime == null) { transitionTime = device.currentValue("transitionTime") ?: parent.getSelectedTransition() ?: 1 }
 
 	log.debug "Executing 'setLevel'"
@@ -104,6 +118,7 @@ void setLevel(percent, transitionTime = device.currentValue("transitionTime")) {
 			off()
 		} else {
 			parent.setLevel(this, percent, transitionTime, deviceType)
+			if(disableCDB == true) { disableCDBrightness() }
 			sendEvent(name: "level", value: percent)
 			sendEvent(name: "switch", value: "on")
 		}
@@ -119,6 +134,17 @@ void refresh() {
 
 void initialize(deviceType) {
 	setTransitionTime(parent.getSelectedTransition())
+	sendEvent(name: "cdBrightness", value: "true", displayed: false)
 }
 
 def getDeviceType() { return "lights" }
+
+void enableCDBrightness() {
+	log.debug "Executing 'enableCDBrightness'"
+	sendEvent(name: "cdBrightness", value: "true", descriptionText: "Circadian Brightness has been enabled")
+}
+
+void disableCDBrightness() {
+	log.debug "Executing 'disableCDBrightness'"
+	sendEvent(name: "cdBrightness", value: "false", descriptionText: "Circadian Brightness has been disabled")
+}
