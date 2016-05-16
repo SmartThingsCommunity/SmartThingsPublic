@@ -1,11 +1,11 @@
 /**
  *  Ask Alexa - Report
  *
- *  Version 1.0.2a - 5/15/16 Copyright © 2016 Michael Struck
+ *  Version 1.0.2b - 5/15/16 Copyright © 2016 Michael Struck
  *  
  *  Version 1.0.0 - Initial release
  *  Version 1.0.1 - Added motion sensor reports; added events report to various sensors
- *  Version 1.0.2a - Added weather reports which include forecast, sunrise and sunset
+ *  Version 1.0.2b - Added weather reports which include forecast, sunrise and sunset
  *
  *  Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except
  *  in compliance with the License. You may obtain a copy of the License at:
@@ -195,7 +195,6 @@ def reportResults(){
         fullMsg += voiceHumidity ? reportStatus(voiceHumidity,"humidity") : ""
         if (voiceTempSettingSummary && voiceTempSettingsType) fullMsg += (voiceTempSettings) ? thermostatSummary(): ""
         else fullMsg += (voiceTempSettings && voiceTempSettingsType) ? reportStatus(voiceTempSettings, voiceTempSettingsType) : ""
-        log.debug voiceWeather || voiceSunset || voiceSunrise
         fullMsg += voiceWeather || voiceSunset || voiceSunrise ? getWeatherReport() : ""
         fullMsg += voiceWater && waterReport() ? waterReport() : voiceWater ? "All monitored water sensors are dry. " : ""
         fullMsg += voicePresence ? presenceReport() : ""
@@ -402,7 +401,8 @@ private getLastEvt(devGroup, evtTxt, searchVal, devTxt){
         def eventDay = new Date(evtLog.time[0]).format("EEEE, MMMM dd, yyyy", location.timeZone)
         def voiceDay = today == eventDay ? "today" : "On " + eventDay  
         def evtTime = new Date(evtLog.time[0]).format("h:mm aa", location.timeZone)
-        lastEvt = "The last ${evtTxt} event within the monitored group was the ${evtLog.device[0]} ${devTxt} ${voiceDay} at ${evtTime}. " 
+        def multipleTxt = devGroup.size() >1 ? "within the monitored group was the ${evtLog.device[0]} ${devTxt}" : "was"
+        lastEvt = "The last ${evtTxt} event ${multipleTxt} ${voiceDay} at ${evtTime}. " 
     }    
     return lastEvt
 }
@@ -466,6 +466,6 @@ private getWeatherReport(){
     return msg
 }
 //Version 
-private def textVersion() {return "Voice Reports Version: 1.0.2a (05/15/2016)"}
+private def textVersion() {return "Voice Reports Version: 1.0.2b (05/15/2016)"}
 private def versionInt() {return 102}
-private def versionLong() {return "1.0.2a"}
+private def versionLong() {return "1.0.2b"}

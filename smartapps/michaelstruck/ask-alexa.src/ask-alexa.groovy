@@ -1,14 +1,14 @@
 /**
  *  Ask Alexa 
  *
- *  Version 1.0.2a - 5/15/16 Copyright © 2016 Michael Struck
+ *  Version 1.0.2b - 5/15/16 Copyright © 2016 Michael Struck
  *  Special thanks for Keith DeLong for code and assistance
  *  
  *  Version 1.0.0 - Initial release
  *  Version 1.0.0a - Same day release. Bugs fixed: nulls in the device label now trapped and ensure LIST_OF_PARAMS and LIST_OF_REPORTS is always created
  *  Version 1.0.0b - Remove punctuation from the device, mode and routine names. Fixed bug where numbers were removed in modes and routine names 
  *  Version 1.0.1c - Added presense sensors; added up/down/lower/increase/decrease as commands for various devices
- *  Version 1.0.2a - Added motion sensors and a new function, "events" to list to the last events for a device; code optimization, bugs removed
+ *  Version 1.0.2b - Added motion sensors and a new function, "events" to list to the last events for a device; code optimization, bugs removed
  *
  *  Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except
  *  in compliance with the License. You may obtain a copy of the License at:
@@ -399,8 +399,10 @@ def processReport() {
     log.debug "Lambda Ver: " + lVer
     def outputTxt = "", count = 0
     if (childApps.size()){
-        childApps.each {child -> if (child.label.toLowerCase().replaceAll(" report", "") == rep) { outputTxt = child.reportResults(); count ++;}}
-        if (!outputTxt) outputTxt = "I could not find the ${rep} report. Please check the name of the report and try again." 
+        childApps.each {child -> 
+        def reportName=child.label.replaceAll("[^a-zA-Z0-9 ]", "")
+        if (reportName.toLowerCase().replaceAll(" report", "") == rep) { outputTxt = child.reportResults(); count ++;}}
+        if (!outputTxt) outputTxt = "I could not find the report named ${rep}. Please check the name of the report and try again." 
     }
     if (count > 1) outputTxt ="You have multiple reports named '${rep}' in your Ask Alexa SmartApp. Please rename these reports to something unique so I may properly utlize them. "
     sendJSON(outputTxt, lVer)
@@ -693,7 +695,10 @@ def setupData(){
     result += speakers ?"play<br>stop<br>pause<br>mute<br>unmute<br>next track<br>previous track<br>" : ""
     result += "<br><b>LIST_OF_REPORTS</b><br><br>"
     if (childApps.size()) {
-    	childApps.each { result += it.label.toLowerCase().replaceAll(" report", "")+"<br>" }
+    	childApps.each { 
+        	def reportParsed = it.label.toLowerCase().replaceAll(" report", "")
+            result += reportParsed.replaceAll("[^a-zA-Z0-9 ]", "").toLowerCase() + "<br>"
+        }       
 	}
     result += "<br><b>LIST_OF_PARAMS</b><br><br>"
 	if (tstats) result += "heat<br>cool<br>heating<br>cooling<br>auto<br>automatic<br>"
@@ -829,13 +834,13 @@ def sendJSON(outputTxt, lVer){
 //Version/Copyright/Information/Help
 private def textAppName() { def text = "Ask Alexa" }	
 private def textVersion() {
-    def version = "Parent App Version: 1.0.2a (05/15/2016)"
+    def version = "Parent App Version: 1.0.2b (05/15/2016)"
     def childCount = childApps.size()
     def childVersion = childCount ? childApps[0].textVersion() : "No voice reports installed"
     return "${version}\n${childVersion}"
 }
 private def versionInt(){ return 102 }
-private def versionLong(){ return "1.0.2a" }
+private def versionLong(){ return "1.0.2b" }
 private def textCopyright() {return "Copyright © 2016 Michael Struck" }
 private def textLicense() {
 	def text = "Licensed under the Apache License, Version 2.0 (the 'License'); "+
