@@ -15,7 +15,7 @@
  */
 
 metadata {
-	definition (name: "SmartSense Moisture Sensor",namespace: "smartthings", author: "SmartThings") {
+	definition (name: "SmartSense Moisture Sensor",namespace: "smartthings", author: "SmartThings", category: "C2") {
 		capability "Configuration"
 		capability "Battery"
 		capability "Refresh"

@@ -16,7 +16,7 @@
 //DEPRECATED - Using the smartsense-multi-sensor.groovy DTH for this device. Users need to be moved before deleting this DTH
 
  metadata {
- 	definition (name: "SmartSense Open/Closed Accelerometer Sensor", namespace: "smartthings", author: "SmartThings") {
+ 	definition (name: "SmartSense Open/Closed Accelerometer Sensor", namespace: "smartthings", author: "SmartThings", category: "C2") {
  		capability "Battery"
  		capability "Configuration"
  		capability "Contact Sensor"
