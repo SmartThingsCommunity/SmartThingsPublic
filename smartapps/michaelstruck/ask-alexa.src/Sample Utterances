@@ -24,7 +24,13 @@ DeviceOperation to turn the {Device} to {Num} percent
 DeviceOperation to turn {Device} to {Num} 
 DeviceOperation to turn the {Device} to {Num}
 
-DeviceOperation set {Device} to {Param} 
+DeviceOperation turn {Device} {Param} 
+DeviceOperation turn {Device} to {Param}
+DeviceOperation turn the {Device} {Param}
+DeviceOperation turn the {Device} to {Param}
+DeviceOperation set {Device} {Param} 
+DeviceOperation set {Device} to {Param}
+DeviceOperation set the {Device} {Param}
 DeviceOperation set the {Device} to {Param}
 DeviceOperation set the color of {Device} to {Param} and set level to {Num}
 DeviceOperation set the {Device} to {Param} and {Num}
