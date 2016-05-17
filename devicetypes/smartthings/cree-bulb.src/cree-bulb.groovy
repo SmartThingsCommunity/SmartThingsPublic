@@ -14,7 +14,6 @@
  *
  */
 
-//@Deprecated: Moved to ZLL Dimmer Bulb
 metadata {
     definition (name: "Cree Bulb", namespace: "smartthings", author: "SmartThings") {
 
@@ -25,7 +24,7 @@ metadata {
         capability "Switch"
         capability "Switch Level"
 
-        //fingerprint profileId: "C05E", inClusters: "0000,0003,0004,0005,0006,0008,1000", outClusters: "0000,0019"
+        fingerprint profileId: "C05E", inClusters: "0000,0003,0004,0005,0006,0008,1000", outClusters: "0000,0019"
     }
 
     // simulator metadata
