@@ -394,9 +394,9 @@ def discovery() {
         }
 	} catch (java.net.SocketTimeoutException e) {
 		log.warn "Connection to the hub timed out. Please restart the hub and try again."
-        state.resethub = true
+    state.resethub = true
  	} catch (e) {
-		log.warn "Hostname in certificate didn't match. Please try again later."
+    log.info "Logitech Harmony - Error: $e"
 	}
     return null
 }
@@ -528,7 +528,7 @@ def poll() {
         	log.warn "Connection to the hub timed out. Please restart the hub and try again."
               state.resethub = true
         } catch (e) {
-        	log.warn "Hostname in certificate didn't match. Please try again later."
+        	log.info "Logitech Harmony - Error: $e"
         }
     }
 }
