@@ -22,7 +22,7 @@ metadata {
 
 	tiles(scale: 2) {
 		valueTile("currentColor", "device.color") {
-			state "default", label: '${currentValue}'
+			state "color", label: '${currentValue}', defaultState: true
 		}
 
 		controlTile("rgbSelector", "device.color", "color", height: 6, width: 6, inactiveLabel: false) {
@@ -39,6 +39,13 @@ metadata {
 // parse events into attributes
 def parse(String description) {
 	log.debug "Parsing '${description}'"
+}
+
+def setColor(value) {
+	log.debug "setting color: $value"
+    if (value.hex) { sendEvent(name: "color", value: value.hex) }
+    if (value.hue) { sendEvent(name: "hue", value: value.hue) }
+    if (value.saturation) { sendEvent(name: "saturation", value: value.saturation) }
 }
 
 def setSaturation(percent) {
