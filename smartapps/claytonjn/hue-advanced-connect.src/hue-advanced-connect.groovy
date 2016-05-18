@@ -987,6 +987,11 @@ def nextLevel(childDevice) {
     setLevel(childDevice,level)
 }
 
+def setEffect(childDevice, effect, deviceType) {
+	log.debug "setEffect: Effect ${effect}."
+	put("${deviceType}/${getId(childDevice)}/${getApi(deviceType)}", [effect: effect])
+}
+
 private getId(childDevice) {
 	if (childDevice.device?.deviceNetworkId?.startsWith("HUE")) {
 		return childDevice.device?.deviceNetworkId[3..-1]

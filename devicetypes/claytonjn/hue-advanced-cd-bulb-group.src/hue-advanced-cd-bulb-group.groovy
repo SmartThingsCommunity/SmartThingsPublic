@@ -24,6 +24,8 @@ metadata {
         command "reset"
         command "refresh"
 		command "setTransitionTime"
+		command "colorloopOn"
+		command "colorloopOff"
 		command "enableCDBrightness"
         command "disableCDBrightness"
 		command "enableCDColor"
@@ -35,6 +37,7 @@ metadata {
 
 		attribute "deviceSwitch", "enum", ["lightsOn", "lightsOff", "lightsTurningOn", "lightsTurningOff", "groupsOn", "groupsOff", "groupsTurningOn", "groupsTurningOff"]
 		attribute "transitionTime", "NUMBER"
+		attribute "effect", "enum", ["none", "colorloop"]
 		attribute "cdBrightness", "enum", ["true", "false"]
 		attribute "cdColor", "enum", ["true", "false"]
 	}
@@ -85,6 +88,12 @@ metadata {
 			state "transitionTime", label: 'Transition:              ${currentValue} s'
 		}
 
+		standardTile("effectControl", "device.effect", height: 2, width: 2, inactiveLabel: false, decoration: "flat") {
+			state "none", label:"Colorloop Off", action:"colorloopOn", nextState: "updating", icon:"https://raw.githubusercontent.com/claytonjn/SmartThingsPublic/tree/Hue-Advanced-Development/smartapp-icons/hue/png/colorloop-off.png"
+			state "colorloop", label:"Colorloop On", action:"colorloopOff", nextState: "updating", icon:"https://raw.githubusercontent.com/claytonjn/SmartThingsPublic/tree/Hue-Advanced-Development/smartapp-icons/hue/png/colorloop-on.png"
+			state "updating", label:"Working", icon: "st.secondary.secondary"
+		}
+
 		valueTile("cdBrightnessControl", "device.cdBrightness", inactiveLabel: false, decoration: "flat", width: 3, height: 1) {
 			state "true", label: "Circadian Brightness On", action: "disableCDBrightness", nextState: "updating"
 			state "false", label: "Circadian Brightness Off", action: "enableCDBrightness", nextState: "updating"
@@ -98,7 +107,7 @@ metadata {
 		}
 
 		main(["rich-control"])
-		details(["rich-control", "colorTempSliderControl", "colorTemp", "transitionTimeSliderControl", "transTime", "cdBrightnessControl", "cdColorControl", "reset", "refresh"])
+		details(["rich-control", "colorTempSliderControl", "colorTemp", "transitionTimeSliderControl", "transTime", "cdBrightnessControl", "cdColorControl", "effectControl", "reset", "refresh"])
 	}
 }
 
@@ -129,6 +138,7 @@ void setTransitionTime(transitionTime) {
 void on(transitionTime = device.currentValue("transitionTime")) {
 	if(transitionTime == null) { transitionTime = device.currentValue("transitionTime") ?: parent.getSelectedTransition() ?: 1 }
 
+	colorloopOff()
 	log.trace parent.on(this, transitionTime, state.deviceType)
 	sendEvent(name: "deviceSwitch", value: "${state.deviceType}On", displayed: false)
 	sendEvent(name: "switch", value: "on")
@@ -137,6 +147,7 @@ void on(transitionTime = device.currentValue("transitionTime")) {
 void off(transitionTime = device.currentValue("transitionTime")) {
 	if(transitionTime == null) { transitionTime = device.currentValue("transitionTime") ?: parent.getSelectedTransition() ?: 1 }
 
+	colorloopOff()
 	log.trace parent.off(this, transitionTime, state.deviceType)
 	sendEvent(name: "deviceSwitch", value: "${state.deviceType}Off", displayed: false)
 	sendEvent(name: "switch", value: "off")
@@ -180,6 +191,7 @@ void setSaturation(percent, transitionTime = device.currentValue("transitionTime
 	if(transitionTime == null) { transitionTime = device.currentValue("transitionTime") ?: parent.getSelectedTransition() ?: 1 }
 
     log.debug "Executing 'setSaturation'"
+	colorloopOff()
     if (verifyPercent(percent)) {
         parent.setSaturation(this, percent, transitionTime, state.deviceType)
 		if(disableCDC == true) { disableCDColor() }
@@ -191,6 +203,7 @@ void setHue(percent, transitionTime = device.currentValue("transitionTime"), dis
 	if(transitionTime == null) { transitionTime = device.currentValue("transitionTime") ?: parent.getSelectedTransition() ?: 1 }
 
     log.debug "Executing 'setHue'"
+	colorloopOff()
     if (verifyPercent(percent)) {
         parent.setHue(this, percent, transitionTime, state.deviceType)
 		if(disableCDC == true) { disableCDColor() }
@@ -200,6 +213,7 @@ void setHue(percent, transitionTime = device.currentValue("transitionTime"), dis
 
 void setColor(value) {
     log.debug "setColor: ${value}, $this"
+	colorloopOff()
     def events = []
     def validValues = [:]
 
@@ -255,6 +269,7 @@ void reset(transitionTime = device.currentValue("transitionTime"), disableCDC = 
 	if(transitionTime == null) { transitionTime = device.currentValue("transitionTime") ?: parent.getSelectedTransition() ?: 1 }
 
     log.debug "Executing 'reset'"
+	colorloopOff()
     setColorTemperature(2710, transitionTime, disableCDC)
     parent.poll()
 }
@@ -283,7 +298,7 @@ private tileSetColorTemperature(value) {
 
 void setColorTemperature(value, transitionTime = device.currentValue("transitionTime"), disableCDC = false) {
 	if(transitionTime == null) { transitionTime = device.currentValue("transitionTime") ?: parent.getSelectedTransition() ?: 1 }
-
+	colorloopOff()
     if (value >= 0) {
         log.trace "setColorTemperature: ${value}k"
         parent.setColorTemperature(this, value, transitionTime, state.deviceType)
@@ -299,6 +314,19 @@ void setColorTemperature(value, transitionTime = device.currentValue("transition
 void refresh() {
     log.debug "Executing 'refresh'"
     parent.manualRefresh()
+}
+
+void colorloopOn() {
+	log.debug "Executing 'colorloopOn'"
+	if(device.latestValue("switch") != "on") { on() }
+	parent.setEffect(this, "colorloop", state.deviceType)
+	sendEvent(name: "effect", value: "colorloop", descriptionText: "Colorloop has been turned on", isStateChange: true)
+}
+
+void colorloopOff() {
+	log.debug "Executing 'colorloopOff'"
+	parent.setEffect(this, "none", state.deviceType)
+	sendEvent(name: "effect", value: "none", descriptionText: "Colorloop has been turned off", isStateChange: true)
 }
 
 def adjustOutgoingHue(percent) {
