@@ -15,7 +15,7 @@
  */
 
 metadata {
-	definition (name: "SmartSense Motion Sensor", namespace: "smartthings", author: "SmartThings") {
+	definition (name: "SmartSense Motion Sensor", namespace: "smartthings", author: "SmartThings", category: "C2") {
 		capability "Motion Sensor"
 		capability "Configuration"
 		capability "Battery"

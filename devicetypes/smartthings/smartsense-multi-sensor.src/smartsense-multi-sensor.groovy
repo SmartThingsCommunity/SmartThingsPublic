@@ -15,7 +15,7 @@
  */
 
 metadata {
-	definition (name: "SmartSense Multi Sensor", namespace: "smartthings", author: "SmartThings") {
+	definition (name: "SmartSense Multi Sensor", namespace: "smartthings", author: "SmartThings", category: "C2") {
 
 		capability "Three Axis"
 		capability "Battery"

@@ -32,14 +32,14 @@ metadata {
 	tiles(scale: 2) {
 		multiAttributeTile(name:"thermostatFull", type:"thermostat", width:6, height:4) {
 			tileAttribute("device.temperature", key: "PRIMARY_CONTROL") {
-				attributeState("default", label:'${currentValue}', unit:"dF")
+				attributeState("temp", label:'${currentValue}', unit:"dF", defaultState: true)
 			}
 			tileAttribute("device.temperature", key: "VALUE_CONTROL") {
 				attributeState("VALUE_UP", action: "tempUp")
 				attributeState("VALUE_DOWN", action: "tempDown")
 			}
 			tileAttribute("device.humidity", key: "SECONDARY_CONTROL") {
-				attributeState("default", label:'${currentValue}%', unit:"%")
+				attributeState("humidity", label:'${currentValue}%', unit:"%", defaultState: true)
 			}
 			tileAttribute("device.thermostatOperatingState", key: "OPERATING_STATE") {
 				attributeState("idle", backgroundColor:"#44b621")
@@ -53,15 +53,16 @@ metadata {
 				attributeState("auto", label:'${name}')
 			}
 			tileAttribute("device.heatingSetpoint", key: "HEATING_SETPOINT") {
-				attributeState("default", label:'${currentValue}', unit:"dF")
+				attributeState("heatingSetpoint", label:'${currentValue}', unit:"dF", defaultState: true)
 			}
 			tileAttribute("device.coolingSetpoint", key: "COOLING_SETPOINT") {
-				attributeState("default", label:'${currentValue}', unit:"dF")
+				attributeState("coolingSetpoint", label:'${currentValue}', unit:"dF", defaultState: true)
 			}
 		}
 		multiAttributeTile(name:"thermostatNoHumidity", type:"thermostat", width:6, height:4) {
 			tileAttribute("device.temperature", key: "PRIMARY_CONTROL") {
-				attributeState("default", label:'${currentValue}', unit:"dF")
+                attributeState("coolingSetpoint", label:'${currentValue}', unit:"dF", defaultState: true)
+				attributeState("temp", label:'${currentValue}', unit:"dF")
 			}
 			tileAttribute("device.temperature", key: "VALUE_CONTROL") {
 				attributeState("VALUE_UP", action: "tempUp")
@@ -79,15 +80,16 @@ metadata {
 				attributeState("auto", label:'${name}')
 			}
 			tileAttribute("device.heatingSetpoint", key: "HEATING_SETPOINT") {
-				attributeState("default", label:'${currentValue}', unit:"dF")
+                attributeState("coolingSetpoint", label:'${currentValue}', unit:"dF", defaultState: true)
+				attributeState("heatingSetpoint", label:'${currentValue}', unit:"dF")
 			}
 			tileAttribute("device.coolingSetpoint", key: "COOLING_SETPOINT") {
-				attributeState("default", label:'${currentValue}', unit:"dF")
+				attributeState("coolingSetpoint", label:'${currentValue}', unit:"dF", defaultState: true)
 			}
 		}
 		multiAttributeTile(name:"thermostatBasic", type:"thermostat", width:6, height:4) {
 			tileAttribute("device.temperature", key: "PRIMARY_CONTROL") {
-				attributeState("default", label:'${currentValue}', unit:"dF",
+				attributeState("temp", label:'${currentValue}', unit:"dF", defaultState: true,
 				backgroundColors:[
 					[value: 31, color: "#153591"],
 					[value: 44, color: "#1e9cbb"],
@@ -118,30 +120,30 @@ metadata {
 			)
 		}
 		standardTile("tempDown", "device.temperature", width: 2, height: 2, inactiveLabel: false, decoration: "flat") {
-			state "default", label:'down', action:"tempDown"
+			state "tempDown", label:'down', action:"tempDown", defaultState: true
 		}
 		standardTile("tempUp", "device.temperature", width: 2, height: 2, inactiveLabel: false, decoration: "flat") {
-			state "default", label:'up', action:"tempUp"
+			state "tempUp", label:'up', action:"tempUp", defaultState: true
 		}
 
 		valueTile("heatingSetpoint", "device.heatingSetpoint", width: 2, height: 2, inactiveLabel: false, decoration: "flat") {
 			state "heat", label:'${currentValue} heat', unit: "F", backgroundColor:"#ffffff"
 		}
 		standardTile("heatDown", "device.temperature", width: 2, height: 2, inactiveLabel: false, decoration: "flat") {
-			state "default", label:'down', action:"heatDown"
+			state "heatDown", label:'down', action:"heatDown", defaultState: true
 		}
 		standardTile("heatUp", "device.temperature", width: 2, height: 2, inactiveLabel: false, decoration: "flat") {
-			state "default", label:'up', action:"heatUp"
+			state "heatUp", label:'up', action:"heatUp", defaultState: true
 		}
 
 		valueTile("coolingSetpoint", "device.coolingSetpoint", width: 2, height: 2, inactiveLabel: false, decoration: "flat") {
 			state "cool", label:'${currentValue} cool', unit:"F", backgroundColor:"#ffffff"
 		}
 		standardTile("coolDown", "device.temperature", width: 2, height: 2, inactiveLabel: false, decoration: "flat") {
-			state "default", label:'down', action:"coolDown"
+			state "coolDown", label:'down', action:"coolDown", defaultState: true
 		}
 		standardTile("coolUp", "device.temperature", width: 2, height: 2, inactiveLabel: false, decoration: "flat") {
-			state "default", label:'up', action:"coolUp"
+			state "coolUp", label:'up', action:"coolUp", defaultState: true
 		}
 
 		standardTile("mode", "device.thermostatMode", width: 2, height: 2, inactiveLabel: false, decoration: "flat") {

@@ -37,10 +37,10 @@ metadata {
 				attributeState("stopped", label:"Stopped", action:"music Player.play", nextState: "playing")
 			}
 			tileAttribute("device.status", key: "PREVIOUS_TRACK") {
-				attributeState("default", action:"music Player.previousTrack")
+				attributeState("status", action:"music Player.previousTrack", defaultState: true)
 			}
 			tileAttribute("device.status", key: "NEXT_TRACK") {
-				attributeState("default", action:"music Player.nextTrack")
+				attributeState("status", action:"music Player.nextTrack", defaultState: true)
 			}
 			tileAttribute ("device.level", key: "SLIDER_CONTROL") {
 				attributeState("level", action:"music Player.setLevel")
@@ -50,7 +50,7 @@ metadata {
 				attributeState("muted", action:"music Player.unmute", nextState: "unmuted")
 			}
 			tileAttribute("device.trackDescription", key: "MARQUEE") {
-				attributeState("default", label:"${currentValue}")
+				attributeState("trackDescription", label:"${currentValue}", defaultState: true)
 			}
 		}
 

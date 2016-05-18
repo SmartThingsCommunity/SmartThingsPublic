@@ -22,68 +22,68 @@ metadata {
 
 	tiles(scale: 2) {
 		valueTile("text", "device.text", width: 2, height: 2) {
-			state "default", label:'${currentValue}'
+			state "val", label:'${currentValue}', defaultState: true
 		}
 
 		valueTile("longText", "device.longText", width: 2, height: 2) {
-			state "default", label:'${currentValue}'
+			state "val", label:'${currentValue}', defaultState: true
 		}
 
 		valueTile("integer", "device.integer", width: 2, height: 2) {
-			state "default", label:'${currentValue}'
+			state "val", label:'${currentValue}', defaultState: true
 		}
 
 		valueTile("integerFloat", "device.integerFloat", width: 2, height: 2) {
-			state "default", label:'${currentValue}'
+			state "val", label:'${currentValue}', defaultState: true
 		}
 
 		valueTile("pi", "device.pi", width: 2, height: 2) {
-			state "default", label:'${currentValue}'
+			state "val", label:'${currentValue}', defaultState: true
 		}
 
 		valueTile("floatAsText", "device.floatAsText", width: 2, height: 2) {
-			state "default", label:'${currentValue}'
+			state "val", label:'${currentValue}', defaultState: true
 		}
 
 		valueTile("bgColor", "device.integer", width: 2, height: 2) {
-			state "default", label:'${currentValue}', backgroundColor: "#e86d13"
+			state "val", label:'${currentValue}', backgroundColor: "#e86d13", defaultState: true
 		}
 
 		valueTile("bgColorRange", "device.integer", width: 2, height: 2) {
-			state "default", label:'${currentValue}', backgroundColors: [
+			state "val", label:'${currentValue}', defaultState: true, backgroundColors: [
 				[value: 10, color: "#ff0000"],
 				[value: 90, color: "#0000ff"]
 			]
 		}
 
 		valueTile("bgColorRangeSingleItem", "device.integer", width: 2, height: 2) {
-			state "default", label:'${currentValue}', backgroundColors: [
+			state "val", label:'${currentValue}', defaultState: true, backgroundColors: [
 				[value: 10, color: "#333333"]
 			]
 		}
 
 		valueTile("bgColorRangeConflict", "device.integer", width: 2, height: 2) {
-			state "default", label:'${currentValue}', backgroundColors: [
+			state "valWithConflict", label:'${currentValue}', defaultState: true, backgroundColors: [
 				[value: 10, color: "#990000"],
 				[value: 10, color: "#000099"]
 			]
 		}
 
 		valueTile("noValue", "device.nada", width: 4, height: 2) {
-			state "default", label:'${currentValue}'
+			state "noval", label:'${currentValue}', defaultState: true
 		}
 
 		valueTile("multiLine", "device.multiLine", width: 3, height: 2) {
-			state "default", label: '${currentValue}'
+			state "val", label: '${currentValue}', defaultState: true
 		}
 
 		valueTile("multiLineWithIcon", "device.multiLine", width: 3, height: 2) {
-			state "default", label: '${currentValue}', icon: "st.switches.switch.off"
+			state "val", label: '${currentValue}', icon: "st.switches.switch.off", defaultState: true
 		}
 
 		main("text")
 		details([
-			"text", "longText", "integer", 
+			"text", "longText", "integer",
             "integerFloat", "pi", "floatAsText",
             "bgColor", "bgColorRange", "bgColorRangeSingleItem",
             "bgColorRangeConflict", "noValue",
