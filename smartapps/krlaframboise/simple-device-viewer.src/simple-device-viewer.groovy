@@ -1,5 +1,5 @@
 /**
- *  Simple Device Viewer v 1.8
+ *  Simple Device Viewer v 1.9.1
  *
  *  Author: 
  *    Kevin LaFramboise (krlaframboise)
@@ -9,7 +9,14 @@
  *
  *  Changelog:
  *
- *    1.8 (05/08/2016)
+ *    1.9.1 (05/18/2016)
+ *      - Added Event/State Caching
+ *      - Added accuracy level for retrieving events so it can
+ *        check between 50 and 1,250 events based on accuracy
+ *        and performance needs.
+ *      - Added option to exclude devices from polling.
+ *
+ *    1.8.2 (05/10/2016)
  *      - Fixed bug with new feature that caused duplicates
  *        on the last event screen.
  *      - Added option to poll devices supporting poll command.
@@ -18,6 +25,11 @@
  *      - Added Light Device Type so that switches selected
  *        from that preference will appear on the Lights
  *        screen instead of the Switches screen.
+ *      - Modified the Last Event check so that it only
+ *        uses DEVICE events because polling the device
+ *        creates an APP COMMAND event.
+ *      - Added workaround for the 50 event limit so the N/A
+ *        last event time should no longer be a problem.
  *
  *    1.7.1 (05/04/2016)
  *      - Added optional check for last event time that
@@ -95,19 +107,18 @@ definition(
 	page(name:"mainPage")
   page(name:"capabilityPage")
 	page(name:"lastEventPage")
+	page(name:"refreshLastEventPage")
 	page(name:"toggleSwitchPage")
 	page(name:"devicesPage")
 	page(name:"thresholdsPage")
 	page(name:"notificationsPage")
+	page(name:"pollingPage")
 	page(name:"otherSettingsPage")
 }
 
 // Main Menu Page
-def mainPage() {
-	if (!state.capabilitySettings || (state.lastRequiredVersion != requiredVersion())) {
-		storeCapabilitySettings()
-	}
-	dynamicPage(name:"mainPage", uninstall:true, install:true) {				
+def mainPage() {	
+	dynamicPage(name:"mainPage", uninstall:true, install:true) {			
 		section() {	
 			if (getAllDevices().size() != 0) {
 				state.lastCapabilitySetting = null
@@ -149,6 +160,13 @@ def mainPage() {
 				required: false
 			)
 			href(
+				name: "polliningLink", 
+				title: "Polling Settings",
+				description: "",
+				page: "pollingPage", 
+				required: false
+			)
+			href(
 				name: "otherSettingsLink", 
 				title: "Other Settings",
 				description: "",
@@ -172,7 +190,7 @@ def devicesPage() {
 				title: "Which Sensors?",
 				multiple: true,
 				required: false			
-			state.capabilitySettings.each {				
+			capabilitySettings().each {				
 				input "${getPrefName(it)}Devices",
 					"capability.${getPrefType(it)}",
 					title: "Which ${getPluralName(it)}?",
@@ -296,6 +314,40 @@ def notificationsPage() {
 	}
 }
 
+// Page for Polling settings
+def pollingPage() {
+	dynamicPage(name:"pollingPage") {
+		section ("Polling Settings") {
+			paragraph "If you enable the polling feature, the devices that support the Polling Capability will be polled at a regular interval."  
+			input "pollingEnabled", "bool",
+				title: "Polling Enabled",
+				defaultValue: false,
+				required: false
+			input "pollingInterval", "number",
+				title: "How often should the devices be polled? (minutes)\n(Must be between 5 and ${6 * 24 * 60})",
+				defaultValue: 60,
+				range: "5..${6 * 24 * 60}",
+				required: false
+		}
+		section("Polling Restrictions") {
+			/*input "pollingExcludeRecent", "bool",
+				title: "Exclude devices with recent activity?",
+				defaultValue: false,
+				required: false			
+			input "pollingRecentLimit", "number",
+				title: "Recent activity is what percentage of Last Event threshold?\n(If Last Event Threshold is 8 Hours, the limit will be 2 Hours if you user 25)",
+				defaultValue: 25,
+				range: "1..100",
+				required: false*/
+			input "pollingExcluded", "enum",
+				title: "Exclude these devices from Polling",
+				multiple: true,
+				required: false,
+				options: getExcludedDeviceOptions("Polling")
+		}
+	}
+}
+
 private getExcludedDeviceOptions(capabilityName) {
 	if (capabilityName) {
 		getDevicesByCapability(capabilityName).collect { it.displayName }?.sort()
@@ -319,14 +371,21 @@ def otherSettingsPage() {
 			input "condensedViewEnabled", "bool",
 				title: "Condensed View Enabled?",
 				defaultValue: false,
-				required: false
-			input "lastEventByStateEnabled", "bool",
-				title: "Advanced Last Event Check Enabled?\n(When enabled, an additional check is performed on devices that have no displayed events within the threshold.  The check can determine if there's been activity within the threshold, but it can't determine the time of that activity so if it finds activity, it sets the last event time to the threshold.)",
-				defaultValue: false,
-				required: false
+				required: false			
 			input "debugLogEnabled", "bool",
 				title: "Debug Logging Enabled?",
 				defaultValue: false,
+				required: false
+		}
+		section ("Last Event Accuracy") {
+			input "lastEventAccuracy", "number",
+				title: "Accuracy Level (1-25)\n(Setting this to a higher number will improve the accuracy for devices that generate a lot of events, but if you're seeing timeout errors in Live Logging, you should set this to a lower number.)",
+				defaultValue: 15,
+				range: "1..25",
+				required: false		
+			input "lastEventByStateEnabled", "bool",
+				title: "Advanced Last Event Check Enabled?\n(When enabled, the devices events and state changes are used to determine the most recent activity.)",
+				defaultValue: true,
 				required: false
 		}
 		section ("Sorting") {
@@ -342,19 +401,7 @@ def otherSettingsPage() {
 				title: "Sort by Last Event Value?",
 				defaultValue: false,
 				required: false			
-		}
-		section ("Device Polling") {
-			paragraph "If you enable the polling feature, the devices that support the Polling Capability will be polled at a regular interval."  
-			input "pollingEnabled", "bool",
-				title: "Poll Devices?",
-				defaultValue: false,
-				required: false
-			input "pollingInterval", "number",
-				title: "Polling Interval in Minutes:\n(Must be between 5 and ${6 * 24 * 60})",
-				defaultValue: 5,
-				range: "5..${6 * 24 * 60}",
-				required: false		
-		}
+		}		
 		section ("Scheduling") {
 			paragraph "Leave this field empty unless you're using an external timer to turn on a switch at regular intervals.  If you select a switch, the application will check to see if notifications need to be sent when its turned on instead of using SmartThings scheduler to check every 5 minutes."
 
@@ -369,7 +416,30 @@ def otherSettingsPage() {
 def lastEventPage() {
 	dynamicPage(name:"lastEventPage") {		
 		section ("Time Since Last Event") {
+			href(
+				name: "refreshLastEventLink", 
+				title: "Refresh Data",
+				description: "${getRefreshLastEventLinkDescription()}",
+				page: "refreshLastEventPage",
+				required: false
+			)
 			getParagraphs(getAllDeviceLastEventListItems()?.unique())			
+		}		
+	}
+}
+
+private getRefreshLastEventLinkDescription() {
+	def stateRefreshed = (state.stateCachedTime) ? getTimeSinceLastActivity(new Date().time - state.stateCachedTime) : "?"
+	def eventsRefreshed = (state.eventCachedTime) ? getTimeSinceLastActivity(new Date().time - state.eventCachedTime) : "?"
+	return "Events refreshed ${eventsRefreshed.toLowerCase()} ago.\nState refreshed ${stateRefreshed.toLowerCase()} ago."
+}
+
+def refreshLastEventPage() {
+	dynamicPage(name:"refreshLastEventPage") {		
+		section () {
+			refreshDeviceEventCache()
+			refreshDeviceStateCache()
+			paragraph "The last event times have been refreshed."
 		}		
 	}
 }
@@ -487,10 +557,10 @@ private devicesHaveCapability(name) {
 	return getAllDevices().find { it.hasCapability(name) } ? true : false
 }
 
-private getDevicesByCapability(name) {
-	return getAllDevices()
+private getDevicesByCapability(name, excludeList=null) {
+	removeExcludedDevices(getAllDevices()
 		.findAll { it.hasCapability(name.toString()) }
-		.sort() { it.displayName.toLowerCase() }		
+		.sort() { it.displayName.toLowerCase() }, excludeList)	
 }
 
 private getDeviceAllCapabilitiesListItem(device) {
@@ -539,7 +609,7 @@ private getDeviceCapabilityListItem(device, cap) {
 }
 
 private getCapabilitySettingByName(name) {
-	state.capabilitySettings.find { it.name == name }
+	capabilitySettings().find { it.name == name }
 }
 
 private getAllDeviceLastEventListItems() {
@@ -550,53 +620,93 @@ private getAllDeviceLastEventListItems() {
 
 private getDeviceLastEventListItem(device) {
 	def now = new Date().time
-	def lastEventTime = getDeviceLastEventTime(device)
+	def lastActivity = getDeviceLastActivity(device)
+	def lastEventTime = lastActivity?.time ?: 0
 	
 	def listItem = [
 		value: lastEventTime ? now - lastEventTime : Long.MAX_VALUE,
-		status: lastEventTime ? "${getTimeSinceLastEvent(now - lastEventTime)}" : "N/A"
+		status: lastEventTime ? "${getTimeSinceLastActivity(now - lastEventTime)}" : "N/A"
 	]
 	
 	listItem.title = getDeviceStatusTitle(device, listItem.status)
-	listItem.sortValue = lastEventSortByValue ? listItem.value : device.displayName
+	listItem.sortValue = settings.lastEventSortByValue ? listItem.value : device.displayName
 	listItem.image = getLastEventImage(lastEventTime)
 	return listItem
 }
 
-private getDeviceLastEventTime(device) {
-	def lastEvents = device.events(max: 1)?.date?.time
-	def lastEventTime
-	def lastStateTime
+private getDeviceLastActivity(device) {
+	def activity = getDeviceCache(device.deviceNetworkId)?.activity
+	if (activity?.size()) {
+		return activity.sort { it.time }.last()
+	}
+}
+
+/*There's currently a bug that limits the number
+of events returned to 50 so this method loops
+through the list until it finds one that has 
+a source containing "DEVICE".*/
+private getDeviceLastDeviceEvent(device) {
+	def totalLoops = safeToInteger(settings.lastEventAccuracy, 5)
+	def startDate = new Date() - 7
+	def endDate = new Date()
+	def lastEvent
 	
-	if (lastEvents && lastEvents.size() > 0) {
-		lastEventTime = lastEvents[0]
+	for (int index= 0; index < totalLoops; index++) {
+		def events = device.eventsBetween(startDate, endDate, [max:50]).flatten()
+		
+		if (events) {			
+			lastEvent = events?.find { "${it.source}".startsWith("DEVICE") }
+		
+			if (lastEvent?.date?.time) {
+				// Found an event with the correct source so stop checking.
+				index = totalLoops
+			}
+			else {
+				// Haven't found an event with the correct so move the
+				// end date so the next 50 events will be retrieved.
+				endDate = events.last()?.date
+			}
+		}
+		else {
+			// Checked all the events so stop checking.
+			index = totalLoops
+		}
+	}
+	if (lastEvent) {		
+		return [
+			name: lastEvent.name,
+			value: lastEvent.value,			
+			time: lastEvent.date.time,
+			type: "event"
+		]
+	}
+}
+
+private getDeviceLastStateChange(device) {
+	if (settings.lastEventByStateEnabled != false) {
+		
+		def lastState
+		device.supportedAttributes.each {
+			def attributeState = device.currentState("$it")
+			if (attributeState) {
+				if (!lastState || lastState.date.time < attributeState.date.time) {
+					lastState = attributeState
+				}
+			}
+		}
+		
+		if (lastState) {
+			return [
+				name: lastState.name,
+				value: lastState.value,
+				time: lastState.date?.time,
+				type: "state"
+			]				
+		}		
 	}	
-	
-	if (lastEventIsOld(lastEventTime) && settings.lastEventByStateEnabled) {		
-		lastStateTime = getDeviceLastEventTimeByState(device)
-	}
-	return lastStateTime ? lastStateTime : lastEventTime
 }
 
-private getDeviceLastEventTimeByState(device) {
-	def lastEventTime = null
-	def lastEventCutoff = new Date((new Date().time - getLastEventThresholdMS())+1000)
-	
-	try {		
-		def found = device.supportedAttributes.find { attr ->
-			device.statesSince("$attr", lastEventCutoff, [max:1])?.size() > 0
-		}
-		if (found) {
-			lastEventTime = lastEventCutoff.time
-		}
-	}
-	catch (e) {
-		log.warn "${device.displayName} Error: $e"
-	}
-	return lastEventTime
-}
-
-private getTimeSinceLastEvent(ms) {
+private getTimeSinceLastActivity(ms) {
 	if (ms < msSecond()) {
 		return "$ms MS"
 	}
@@ -612,22 +722,6 @@ private getTimeSinceLastEvent(ms) {
 	else {
 		return "${calculateTimeSince(ms, msDay())} DAYS"
 	}		
-}
-
-private long msSecond() {
-	return 1000
-}
-
-private long msMinute() {
-	return msSecond() * 60
-}
-
-private long msHour() {
-	return msMinute() * 60
-}
-
-private long msDay() {
-	return msHour() * 24
 }
 
 private calculateTimeSince(ms, divisor) {
@@ -715,68 +809,39 @@ private getDeviceCapabilityStatusItem(device, cap) {
 	}
 }
 
-private int safeToInteger(val, defaultVal=0) {
-	try {
-		if (val) {
-			return val.toFloat().round().toInteger()
-		}
-		else if (defaultVal != 0){
-			return safeToInteger(defaultVal, 0)
-		}
-		else {
-			return defaultVal
-		}
-	}
-	catch (e) {
-		logDebug "safeToInteger($val, $defaultVal) failed with error $e"
-		return 0
-	}
-}
-
 private getSelectedCapabilitySettings() {
-	if (!selectedCapabilities) {
-		return state.capabilitySettings
+	if (!settings.selectedCapabilities) {
+		return capabilitySettings()
 	}
 	else {
-		return state.capabilitySettings.findAll { it.name in selectedCapabilities }		
+		return capabilitySettings().findAll { it.name in settings.selectedCapabilities }
 	}
 }
 
-private getCapabilitySettingNames() {
-	state.capabilitySettings.collect { it.name }?.unique()
+private getAllDNIs() {
+	return getAllDevices().collect { it.deviceNetworkId }
 }
-
-private getCapabilityName(capabilitySetting) {
-	capabilitySetting.capabilityName ?: capabilitySetting.name
-}
-
-private String getAttributeName(capabilitySetting) {
-	capabilitySetting.attributeName ?: capabilitySetting.name.toLowerCase()
-}
-
-private String getActiveState(capabilitySetting) {
-	capabilitySetting.activeState ?: capabilitySetting.name.toLowerCase()
-}
-
-private String getPrefName(capabilitySetting) {
-	capabilitySetting.prefName ?: getPrefType(capabilitySetting)
-}
-
-private String getPrefType(capabilitySetting) {
-	capabilitySetting.prefType ?: capabilitySetting.name.toLowerCase()
-}
-
-private String getPluralName(capabilitySetting) {
-	capabilitySetting.pluralName ?: "${capabilitySetting.name}s"
-}
-
-// private getAllDeviceCapabilities() {
-	// def allCapabilities = getAllDevices()?.collect { it.capabilities }.flatten()
-	// return allCapabilities.collect { it.toString() }.unique().sort()	
-// }
 
 private getAllDevices() {
-	return settings.collectMany {k, device -> isDevice(device) ? device : []}?.flatten()?.unique { it.deviceNetworkId }
+	def devices = []
+	getDeviceInputs().each { deviceInput ->
+		settings["$deviceInput"].each { device ->
+			if (!devices.find { it.deviceNetworkId == device.deviceNetworkId }) {
+				devices << device
+			}
+		}
+	}
+	//return settings.collectMany {k, device -> isDevice(device) ? device : []}?.flatten()?.unique { it.deviceNetworkId }
+	return devices
+}
+
+private getDeviceInputs() {
+	def deviceInputs = capabilitySettings().collect {
+		"${getPrefName(it)}Devices" 
+	}
+	deviceInputs << "sensors"
+	deviceInputs << "actuators"
+	return deviceInputs
 }
 
 private boolean isDevice(obj) {
@@ -812,25 +877,6 @@ private boolean lastEventIsOld(lastEventTime) {
 	catch (e) {
 		return true
 	}
-}
-
-private long getLastEventThresholdMS() {
-def threshold = lastEventThreshold ? lastEventThreshold : 7
-	def unitMS
-	switch (lastEventThresholdUnit) {
-		case "seconds":
-			unitMS = msSecond()
-			break
-		case "minutes":
-			unitMS = msMinute()
-			break
-		case "hours":
-			unitMS = msHour()
-			break
-		default:
-			unitMS = msDay()
-	}
-	return (threshold * unitMS)
 }
 
 private String getPresenceImage(currentState) {
@@ -877,10 +923,6 @@ private String getBatteryImage(batteryLevel) {
 	return  getImagePath("${status}-battery.png")	
 }
 
-private boolean batteryIsLow(batteryLevel) {
-	return isBelowThreshold(batteryLevel, lowBatteryThreshold, 25)
-}
-
 private String getTemperatureImage(tempVal) {		
 	def status = "normal"
 	if (tempIsHigh(tempVal)) {
@@ -890,14 +932,6 @@ private String getTemperatureImage(tempVal) {
 		status = "low"
 	}	
 	return getImagePath("${status}-temp.png")
-}
-
-private boolean tempIsHigh(val) {
-	return isAboveThreshold(val, highTempThreshold, 73)
-}
-
-private boolean tempIsLow(val) {
-	return isBelowThreshold(val, lowTempThreshold, 63)
 }
 
 private String getImagePath(imageName) {
@@ -910,14 +944,6 @@ private boolean iconsAreEnabled() {
 	return (iconsEnabled || iconsEnabled == null)
 }
 
-private boolean isAboveThreshold(val, threshold, int defaultThreshold) {
-	return safeToInteger(val) > safeToInteger(threshold, defaultThreshold)	
-}
-
-private boolean isBelowThreshold(val, threshold, int defaultThreshold) {
-	return safeToInteger(val) < safeToInteger(threshold,defaultThreshold)	
-}
-
 // Subscribes to events, starts schedules and initializes all settings.
 def installed() {
 	initialize()
@@ -927,164 +953,177 @@ def installed() {
 def updated() {
 	unsubscribe()
 	unschedule()
+	
+	if (state.capabilitySettings) {
+		cleanState()
+	}
+	
 	initialize()
+	
+	//logDebug "State Used: ${(state.toString().length() / 100000)*100}%"
 }
 
 private initialize() {
-	logDebug "Initializing"
-	state.nextPollTime = null
-	state.nextCheckTime = null
-
 	if (!state.sentNotifications) {
 		state.sentNotifications = []
 	}
 	
-	storeCapabilitySettings()
-	state.lastRequiredVersion = requiredVersion()
-	
-	if (timerSwitch) {
+	if (settings.timerSwitch) {
 		subscribe(timerSwitch, "switch.on", timerSwitchEventHandler)
 	}
+	else {		
+		runEvery5Minutes(performScheduledTasks)
+	}
+	
+	initializeDevicesCache()
+}
+
+// Starting with version 1.9, the capabilitySettings are
+// no longer stored in state so this cleans up the old data.
+private cleanState() {
+	def sentNotifications = state.sentNotifications
+	def devicesCache = state.devicesCache
+	state.clear()
+	state.sentNotifications = sentNotifications
+	state.devicesCache = devicesCache
+}
+
+// Remove cached data for devices no longer selected and
+// add cached data for newly selected devices.
+void initializeDevicesCache() {
+	def dnis = getAllDNIs()
+	
+	state.devicesCache?.removeAll { cache ->
+		!dnis?.find { dni -> cache.dni == dni }
+	}	
+}
+
+// Used to generate notifications when external timer is being used instead of relying on SmartThings scheduler. 
+def timerSwitchEventHandler(evt) {
+	performScheduledTasks()	
+}
+
+def performScheduledTasks() {
+	if (canCheckDevices(state.lastDeviceCheck)) {
+		runIn(45, checkDevices)
+	}
+	if (canPollDevices(state.lastDevicePoll)) {
+		runIn(20, refreshDeviceActivityCache)
+		pollDevices()
+	}
 	else {
-		runEvery5Minutes(checkAllDeviceThresholds)
-		if (canPollDevices()) {
-			runEvery5Minutes(pollDevices)
+		refreshDeviceActivityCache()
+	}
+}
+
+void pollDevices() {
+	logDebug "Polling Devices"
+	state.lastDevicePoll = new Date().time	
+	getDevicesByCapability("Polling", pollingExcluded)*.poll()
+}
+
+private canPollDevices(lastPoll) {
+	return settings.pollingEnabled &&
+		timeElapsed((lastPoll ?: 0) + msMinute(safeToInteger(settings.pollingInterval, 5)), true)
+}
+
+void refreshDeviceActivityCache() {
+	runIn(25, refreshDeviceStateCache)
+	refreshDeviceEventCache()		
+}
+
+void refreshDeviceStateCache() {
+	refreshDeviceActivityTypeCache("state")
+}
+
+void refreshDeviceEventCache() {
+	refreshDeviceActivityTypeCache("event")	
+}
+
+void refreshDeviceActivityTypeCache(activityType) {
+	def cachedTime = new Date().time
+	
+	getAllDevices().each { device ->		
+		def lastActivity 
+		if (activityType == "event") {
+			lastActivity = getDeviceLastDeviceEvent(device)
+		}
+		else {
+			lastActivity = getDeviceLastStateChange(device)		
+		}
+		
+		if (lastActivity) {
+			lastActivity.cachedTime = cachedTime
+			saveLastActivityToDeviceCache(device.deviceNetworkId, lastActivity)
+		}		
+	}
+	state."${activityType}CachedTime" = cachedTime
+	//logDebug "${activityType.toUpperCase()} cache refreshed in ${getTimeSinceLastActivity(new Date().time - cachedTime)}"	
+}
+
+void saveLastActivityToDeviceCache(dni, lastActivity) {
+	def found = false
+	def activity = getDeviceCache(dni).activity.collect {
+		if (it.type == lastActivity.type) {
+			found = true
+			return (it.time < lastActivity.time) ? lastActivity : it
+		}
+		else {
+			return it
 		}
 	}
-}
 
-private void storeCapabilitySettings() {
-	state.capabilitySettings = []
-	
-	state.capabilitySettings << [
-		name: "Switch",
-		pluralName: "Switches",		
-		activeState: "on",
-		imageOnly: true
-	]
-	state.capabilitySettings << [
-		name: "Light",
-		prefName: "light",
-		prefType: "switch",
-		capabilityName: "Switch",
-		attributeName: "switch",
-		activeState: "on",		
-		imageOnly: true
-	]
-	state.capabilitySettings << [
-		name: "Motion Sensor", 
-		prefType: "motionSensor",
-		attributeName: "motion",
-		activeState: "active",
-		imageOnly: true
-	]
-	state.capabilitySettings << [
-		name: "Contact Sensor",
-		prefType: "contactSensor",
-		attributeName: "contact",
-		activeState: "open",
-		imageOnly: true
-	]
-	state.capabilitySettings << [
-		name: "Presence Sensor",
-		prefType: "presenceSensor",
-		attributeName: "presence",
-		activeState: "present",
-		imageOnly: true
-	]
-	state.capabilitySettings << [
-		name: "Battery",
-		pluralName: "Batteries"
-	]
-	state.capabilitySettings << [
-		name: "Water Sensor",
-		prefType: "waterSensor",
-		attributeName: "water",
-		activeState: "wet",
-		imageOnly: true
-	]
-	state.capabilitySettings << [
-		name: "Alarm",
-		activeState: "off",
-		imageOnly: true
-	]
-	state.capabilitySettings << [
-		name: "Lock",
-		activeState: "locked",
-		imageOnly: true
-	]
-	state.capabilitySettings << [
-		name: "Temperature Measurement",
-		pluralName: "Temperature Sensors",
-		prefType: "temperatureMeasurement",
-		attributeName: "temperature"
-	]
-	state.capabilitySettings << [
-		name: "Smoke Detector",
-		prefType: "smokeDetector",
-		attributeName: "smoke",
-		activeState: "detected",
-		imageOnly: true
-	]
-	state.capabilitySettings << [
-		name: "Carbon Monoxide Detector",
-		prefType: "carbonMonoxideDetector",
-		attributeName: "carbonMonoxide",
-		activeState: "detected",
-		imageOnly: true
-	]	
-	state.capabilitySettings.sort { it.name }
-}
-
-// Used to genrate notifications when external timer is being used instead of relying on SmartThings scheduler. 
-def timerSwitchEventHandler(evt) {
-	if (canPollDevices()) {
-		runIn(15000, pollDevices, [overwrite: false])
+	if (!found) {
+		activity << lastActivity
 	}
-	checkAllDeviceThresholds()
+		
+	getDeviceCache(dni).activity = activity
 }
+
+private getDeviceCache(dni) {
+	if (!state.devicesCache) {
+		state.devicesCache = []
+	}
+	
+	def deviceCache = state.devicesCache.find { cache -> "$dni" == "${cache.dni}" }
+	if (!deviceCache) {
+		deviceCache = [dni: "$dni", activity: [ ]]
+		state.devicesCache << deviceCache
+	}
+	return deviceCache
+}
+
 
 // Generates notifications if device attributes fall outside of specified thresholds and ensures that notifications are spaced at least 5 minutes apart.
-def checkAllDeviceThresholds() {
-	if (timeElapsed(state.nextCheckTime, true)) {
-		log.debug "Checking All Device Thresholds"
-		state.nextCheckTime = addMinutesToCurrentTime(4)		
-		state.currentCheckSent = 0
+def checkDevices() {
+	logDebug "Checking Device Thresholds"
+	
+	state.lastDeviceCheck = new Date().time
+	state.currentCheckSent = 0
 		
-		if (batteryNotificationsEnabled) {
-			checkBatteries()
-		}			
-		if (temperatureNotificationsEnabled) {
-			checkTemperatures()
-		}			
-		if (lastEventNotificationsEnabled) {
-			checkLastEvents()
-		}
-	}
-	else {
-		log.debug "Skipped - Checking All Device Thresholds"
-	}
+	if (settings.batteryNotificationsEnabled) {
+		checkBatteries()
+	}			
+	if (settings.temperatureNotificationsEnabled) {
+		checkTemperatures()
+	}			
+	if (settings.lastEventNotificationsEnabled) {
+		checkLastEvents()
+	}	
 }
 
-def pollDevices() {
-	if (canPollDevices()) {
-		logDebug "Polling Devices"
-		getDevicesByCapability("Polling")*.poll()
-		state.nextPollTime = addMinutesToCurrentTime(safeToInteger(settings.pollingInterval)-1)
-	}
-}
-
-private canPollDevices() {
-	return settings.pollingEnabled &&
-		safeToInteger(settings.pollingInterval) &&
-		timeElapsed(state.nextPollTime, true)
+private canCheckDevices(lastCheck) {	
+	return (settings.batteryNotificationsEnabled ||
+		settings.temperatureNotificationsEnabled ||
+		settings.lastEventNotificationsEnabled) &&
+		timeElapsed((lastCheck ?: 0) + msMinute(5), true)
 }
 
 private checkTemperatures() {
 	logDebug "Checking Temperatures"
 	def cap = getCapabilitySettingByName("Temperature Measurement")
 	
-	removeExcludedDevices(getDevicesByCapability("Temperature Measurement"), temperatureNotificationsExcluded)?.each {	
+	getDevicesByCapability("Temperature Measurement", temperatureNotificationsExcluded)?.each {	
 		def item = getDeviceCapabilityStatusItem(it, cap)
 		
 		def message = null
@@ -1099,11 +1138,19 @@ private checkTemperatures() {
 	}
 }
 
+private boolean tempIsHigh(val) {
+	isAboveThreshold(val, highTempThreshold, 73)
+}
+
+private boolean tempIsLow(val) {
+	isBelowThreshold(val, lowTempThreshold, 63)
+}
+
 private checkBatteries() {
 	logDebug "Checking Batteries"
 	def cap = getCapabilitySettingByName("Battery")
 
-	removeExcludedDevices(getDevicesByCapability("Battery"), batteryNotificationsExcluded)?.each {
+	getDevicesByCapability("Battery", batteryNotificationsExcluded)?.each {
 		def item = getDeviceCapabilityStatusItem(it, cap)
 		
 		def message = batteryIsLow(item.value) ? "Low Battery Alert - ${getDeviceStatusTitle(it, item.status)}" : null
@@ -1112,15 +1159,82 @@ private checkBatteries() {
 	}
 }
 
+private boolean batteryIsLow(batteryLevel) {
+	isBelowThreshold(batteryLevel, lowBatteryThreshold, 25)
+}
+
+private boolean isAboveThreshold(val, threshold, int defaultThreshold) {
+	safeToInteger(val) > safeToInteger(threshold, defaultThreshold)	
+}
+
+private boolean isBelowThreshold(val, threshold, int defaultThreshold) {
+	safeToInteger(val) < safeToInteger(threshold,defaultThreshold)	
+}
+
+private int safeToInteger(val, defaultVal=0) {
+	try {
+		if (val) {
+			return val.toFloat().round().toInteger()
+		}
+		else if (defaultVal != 0){
+			return safeToInteger(defaultVal, 0)
+		}
+		else {
+			return defaultVal
+		}
+	}
+	catch (e) {
+		logDebug "safeToInteger($val, $defaultVal) failed with error $e"
+		return 0
+	}
+}
+
 private checkLastEvents() {
 	logDebug "Checking Last Events"
 	removeExcludedDevices(getAllDevices(), lastEventNotificationsExcluded)?.each {
+		
 		def item = getDeviceLastEventListItem(it)
 		def message = item.value > getLastEventThresholdMS() ? "Last Event Alert - ${getDeviceStatusTitle(it, item.status)}" : null
 		
 		handleDeviceNotification(it, message, "lastEvent", lastEventNotificationsRepeat)
 	}
 }
+
+private long getLastEventThresholdMS() {
+	def threshold = lastEventThreshold ? lastEventThreshold : 7
+	def unitMS
+	switch (lastEventThresholdUnit) {
+		case "seconds":
+			unitMS = msSecond()
+			break
+		case "minutes":
+			unitMS = msMinute()
+			break
+		case "hours":
+			unitMS = msHour()
+			break
+		default:
+			unitMS = msDay()
+	}
+	return (threshold * unitMS)
+}
+
+private long msSecond(multiplier=1) {
+	return (1000 * multiplier)
+}
+
+private long msMinute(multiplier=1) {
+	return (msSecond(60) * multiplier)
+}
+
+private long msHour(multiplier=1) {
+	return (msMinute(60) * multiplier)
+}
+
+private long msDay(multiplier=1) {
+	return (msHour(24) * multiplier)
+}
+
 
 private removeExcludedDevices(deviceList, excludeList) {
 	if (excludeList) {
@@ -1142,7 +1256,7 @@ private handleDeviceNotification(device, message, notificationType, notification
 	def id = "$notificationType${device.id}"
 	def lastSentMap = state.sentNotifications.find { it.id == id }
 	def lastSent = lastSentMap?.lastSent
-	def repeatMS = notificationRepeat ? (notificationRepeat * msHour()) : 0	
+	def repeatMS = notificationRepeat ? msHour(notificationRepeat) : 0	
 	def unknownStatus = message?.contains("- N/A --") ? true : false
 			
 	if (message && !unknownStatus) {
@@ -1200,11 +1314,6 @@ private sendNotificationMessage(message) {
 	}
 }
 
-private long addMinutesToCurrentTime(minutes) {
-	def currentTime = new Date().time
-	return (currentTime + (minutes * msMinute()))	
-}
-
 private boolean timeElapsed(timeValue, nullResult=false) {
 	if (timeValue != null) {
 		def currentTime = new Date().time
@@ -1214,9 +1323,116 @@ private boolean timeElapsed(timeValue, nullResult=false) {
 	}
 }
 
-private requiredVersion() {
-	//v 1.8
-	return 10800 
+
+private getCapabilitySettingNames() {
+	capabilitySettings().collect { it.name }?.unique()
+}
+
+private getCapabilityName(capabilitySetting) {
+	capabilitySetting.capabilityName ?: capabilitySetting.name
+}
+
+private String getAttributeName(capabilitySetting) {
+	capabilitySetting.attributeName ?: capabilitySetting.name.toLowerCase()
+}
+
+private String getActiveState(capabilitySetting) {
+	capabilitySetting.activeState ?: capabilitySetting.name.toLowerCase()
+}
+
+private String getPrefName(capabilitySetting) {
+	capabilitySetting.prefName ?: getPrefType(capabilitySetting)
+}
+
+private String getPrefType(capabilitySetting) {
+	capabilitySetting.prefType ?: capabilitySetting.name.toLowerCase()
+}
+
+private String getPluralName(capabilitySetting) {
+	capabilitySetting.pluralName ?: "${capabilitySetting.name}s"
+}
+
+
+private capabilitySettings() {
+	[	
+		[
+			name: "Alarm",
+			activeState: "off",
+			imageOnly: true
+		],
+		[
+			name: "Battery",
+			pluralName: "Batteries"
+		],
+		[
+			name: "Carbon Monoxide Detector",
+			prefType: "carbonMonoxideDetector",
+			attributeName: "carbonMonoxide",
+			activeState: "detected",
+			imageOnly: true
+		],
+		[
+			name: "Contact Sensor",
+			prefType: "contactSensor",
+			attributeName: "contact",
+			activeState: "open",
+			imageOnly: true
+		],		
+		[
+			name: "Light",
+			prefName: "light",
+			prefType: "switch",
+			capabilityName: "Switch",
+			attributeName: "switch",
+			activeState: "on",		
+			imageOnly: true
+		],
+		[
+			name: "Lock",
+			activeState: "locked",
+			imageOnly: true
+		],		
+		[
+			name: "Motion Sensor", 
+			prefType: "motionSensor",
+			attributeName: "motion",
+			activeState: "active",
+			imageOnly: true
+		],
+		[
+			name: "Presence Sensor",
+			prefType: "presenceSensor",
+			attributeName: "presence",
+			activeState: "present",
+			imageOnly: true
+		],
+		[
+			name: "Smoke Detector",
+			prefType: "smokeDetector",
+			attributeName: "smoke",
+			activeState: "detected",
+			imageOnly: true
+		],
+		[
+			name: "Switch",
+			pluralName: "Switches",		
+			activeState: "on",
+			imageOnly: true
+		],		
+		[
+			name: "Temperature Measurement",
+			pluralName: "Temperature Sensors",
+			prefType: "temperatureMeasurement",
+			attributeName: "temperature"
+		],		
+		[
+			name: "Water Sensor",
+			prefType: "waterSensor",
+			attributeName: "water",
+			activeState: "wet",
+			imageOnly: true
+		]
+	]
 }
 
 private logDebug(msg) {
