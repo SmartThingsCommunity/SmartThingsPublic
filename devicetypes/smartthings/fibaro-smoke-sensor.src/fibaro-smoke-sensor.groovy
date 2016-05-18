@@ -18,9 +18,10 @@ metadata {
         capability "Sensor"
         capability "Smoke Detector" //attributes: smoke ("detected","clear","tested")
         capability "Temperature Measurement" //attributes: temperature
-        attribute "tamper", "enum", ["detected", "clear"]
-        attribute "heatAlarm", "enum", ["overheat detected", "clear", "rapid temperature rise", "underheat detected"]
+        attribute "tamper", "enum", ["active", "inactive"]//capability "Tamper Alert"// <- yields "java.lang.RuntimeException: Metadata Error: Capability 'Tamper Alert' not found" error
+        attribute "heatAlarm", "enum", ["overheat", "inactive"]
         fingerprint deviceId: "0x0701", inClusters: "0x5E, 0x86, 0x72, 0x5A, 0x59, 0x85, 0x73, 0x84, 0x80, 0x71, 0x56, 0x70, 0x31, 0x8E, 0x22, 0x9C, 0x98, 0x7A", outClusters: "0x20, 0x8B"
+        fingerprint deviceId: "0x0701", inClusters: "0x5E, 0x86, 0x72, 0x5A, 0x59, 0x85, 0x73, 0x84, 0x80, 0x71, 0x56, 0x70, 0x31, 0x8E, 0x22, 0x9C, 0x98, 0x7A"
     }
     simulator {
         //battery
@@ -50,7 +51,7 @@ metadata {
         input description: "Please consult Fibaro Smoke Sensor operating manual for advanced setting options. You can skip this configuration to use default settings",
                 title: "Advanced Configuration", displayDuringSetup: true, type: "paragraph", element: "paragraph"
         input "smokeSensorSensitivity", "enum", title: "Smoke Sensor Sensitivity", options: ["High","Medium","Low"], defaultValue: "${smokeSensorSensitivity}", displayDuringSetup: true
-        input "zwaveNotificationStatus", "enum", title: "Notifications Status", options: ["disabled","casing opened","exceeding temperature threshold", "lack of Z-Wave range", "all notifications"],
+        input "zwaveNotificationStatus", "enum", title: "Notifications Status", options: ["disabled","casing opened","exceeding temperature threshold","all notifications"],
                 defaultValue: "${zwaveNotificationStatus}", displayDuringSetup: true
         input "visualIndicatorNotificationStatus", "enum", title: "Visual Indicator Notifications Status",
                 options: ["disabled","casing opened","exceeding temperature threshold", "lack of Z-Wave range", "all notifications"],
@@ -61,44 +62,47 @@ metadata {
         input "temperatureReportInterval", "enum", title: "Temperature Report Interval",
                 options: ["reports inactive", "5 minutes", "15 minutes", "30 minutes", "1 hour", "6 hours", "12 hours", "18 hours", "24 hours"], defaultValue: "${temperatureReportInterval}", displayDuringSetup: true
         input "temperatureReportHysteresis", "number", title: "Temperature Report Hysteresis", description: "Available settings: 1-100 C", range: "1..100", displayDuringSetup: true
-        input "temperatureThreshold", "number", title: "Overheat Temperature Threshold", description: "Available settings: 0 or 2-100 C", range: "0..100", displayDuringSetup: true
+        input "temperatureThreshold", "number", title: "Overheat Temperature Threshold", description: "Available settings: 1-100 C", range: "1..100", displayDuringSetup: true
         input "excessTemperatureSignalingInterval", "enum", title: "Excess Temperature Signaling Interval",
                 options: ["5 minutes", "15 minutes", "30 minutes", "1 hour", "6 hours", "12 hours", "18 hours", "24 hours"], defaultValue: "${excessTemperatureSignalingInterval}", displayDuringSetup: true
         input "lackOfZwaveRangeIndicationInterval", "enum", title: "Lack of Z-Wave Range Indication Interval",
                 options: ["5 minutes", "15 minutes", "30 minutes", "1 hour", "6 hours", "12 hours", "18 hours", "24 hours"], defaultValue: "${lackOfZwaveRangeIndicationInterval}", displayDuringSetup: true
     }
     tiles (scale: 2){
-        multiAttributeTile(name:"smoke", type: "lighting", width: 6, height: 4){
+        multiAttributeTile(name:"FGSD", type: "lighting", width: 6, height: 4){
             tileAttribute ("device.smoke", key: "PRIMARY_CONTROL") {
                 attributeState("clear", label:"CLEAR", icon:"st.alarm.smoke.clear", backgroundColor:"#ffffff")
                 attributeState("detected", label:"SMOKE", icon:"st.alarm.smoke.smoke", backgroundColor:"#e86d13")
                 attributeState("tested", label:"TEST", icon:"st.alarm.smoke.test", backgroundColor:"#e86d13")
-                attributeState("replacement required", label:"REPLACE", icon:"st.alarm.smoke.test", backgroundColor:"#FFFF66")
                 attributeState("unknown", label:"UNKNOWN", icon:"st.alarm.smoke.test", backgroundColor:"#ffffff")
             }
-            tileAttribute ("device.battery", key: "SECONDARY_CONTROL") {
-                attributeState "battery", label:'Battery: ${currentValue}%', unit:"%"
-            }
+            tileAttribute("device.tamper", key:"SECONDARY_CONTROL") {
+				attributeState("active", label:'tamper active', backgroundColor:"#53a7c0")
+				attributeState("inactive", label:'tamper inactive', backgroundColor:"#ffffff")
+			}  
         }
         valueTile("battery", "device.battery", inactiveLabel: false, decoration: "flat", width: 2, height: 2) {
             state "battery", label:'${currentValue}% battery', unit:"%"
         }
-        valueTile("temperature", "device.temperature", inactiveLabel: false, decoration: "flat", width: 2, height: 2) {
-            state "temperature", label:'${currentValue}°', unit:"C"
-        }
-        valueTile("heatAlarm", "device.heatAlarm", inactiveLabel: false, decoration: "flat", width: 2, height: 2) {
-            state "clear", label:'TEMPERATURE OK', backgroundColor:"#ffffff"
-            state "overheat detected", label:'OVERHEAT DETECTED', backgroundColor:"#ffffff"
-            state "rapid temperature rise", label:'RAPID TEMP RISE', backgroundColor:"#ffffff"
-            state "underheat detected", label:'UNDERHEAT DETECTED', backgroundColor:"#ffffff"
-        }
-        valueTile("tamper", "device.tamper", inactiveLabel: false, decoration: "flat", width: 2, height: 2) {
-            state "clear", label:'NO TAMPER', backgroundColor:"#ffffff"
-            state "detected", label:'TAMPER DETECTED', backgroundColor:"#ffffff"
+        valueTile("temperature", "device.temperature", inactiveLabel: false, width: 2, height: 2) {
+			state "temperature", label:'${currentValue}°',
+			backgroundColors:[
+				[value: 31, color: "#153591"],
+				[value: 44, color: "#1e9cbb"],
+				[value: 59, color: "#90d2a7"],
+				[value: 74, color: "#44b621"],
+				[value: 84, color: "#f1d801"],
+				[value: 95, color: "#d04e00"],
+				[value: 96, color: "#bc2323"]
+			]
+		}
+        valueTile("heatAlarm", "device.heatAlarm", inactiveLabel: false, width: 2, height: 2) {
+            state "inactive", label:'TEMPERATURE OK', backgroundColor:"#ffffff"
+            state "overheat", label:'OVERHEAT DETECTED', backgroundColor:"#bc2323"
         }
 
-        main "smoke"
-        details(["smoke","temperature"])
+        main "FGSD"
+        details(["FGSD","temperature", "battery", "heatAlarm"])
     }
 }
 
@@ -117,7 +121,7 @@ def parse(String description) {
                         "If you are unable to control it via SmartThings, you must remove it from your network and add it again.")
     } else if (description != "updated") {
         log.debug "parse() >> zwave.parse(description)"
-        def cmd = zwave.parse(description, [0x31: 5, 0x71: 3, 0x84: 1])
+        def cmd = zwave.parse(description, [0x31: 5, 0x5A: 1, 0x71: 3, 0x72: 2, 0x84: 1, 0x86: 1, 0x8B: 1, 0x9C: 1])
         if (cmd) {
             result = zwaveEvent(cmd)
         }
@@ -126,14 +130,40 @@ def parse(String description) {
     return result
 }
 
-def zwaveEvent(physicalgraph.zwave.commands.versionv1.VersionReport cmd) {
-    log.info "Executing zwaveEvent 86 (VersionV1): 12 (VersionReport) with cmd: $cmd"
-    def fw = "${cmd.applicationVersion}.${cmd.applicationSubVersion}"
-    updateDataValue("fw", fw)
-    def text = "$device.displayName: firmware version: $fw, Z-Wave version: ${cmd.zWaveProtocolVersion}.${cmd.zWaveProtocolSubVersion}"
-    createEvent(descriptionText: text, isStateChange: false)
+//security
+def zwaveEvent(physicalgraph.zwave.commands.securityv1.SecurityMessageEncapsulation cmd) {
+    setSecured()
+    def encapsulatedCommand = cmd.encapsulatedCommand([0x31: 5, 0x5A: 1, 0x71: 3, 0x84: 1, 0x9C: 1])
+    if (encapsulatedCommand) {
+        log.debug "command: 98 (Security) 81(SecurityMessageEncapsulation) encapsulatedCommand:  $encapsulatedCommand"
+        zwaveEvent(encapsulatedCommand)
+    } else {
+        log.warn "Unable to extract encapsulated cmd from $cmd"
+        createEvent(descriptionText: cmd.toString())
+    }
 }
 
+//crc16
+def zwaveEvent(physicalgraph.zwave.commands.crc16encapv1.Crc16Encap cmd)
+{
+    def versions = [0x31: 5, 0x72: 2, 0x86: 1, 0x8B: 1]
+	def version = versions[cmd.commandClass as Integer]
+	def ccObj = version ? zwave.commandClass(cmd.commandClass, version) : zwave.commandClass(cmd.commandClass)
+	def encapsulatedCommand = ccObj?.command(cmd.command)?.parse(cmd.data)
+	if (!encapsulatedCommand) {
+		log.debug "Could not extract command from $cmd"
+	} else {
+		zwaveEvent(encapsulatedCommand)
+	}
+}
+
+def zwaveEvent(physicalgraph.zwave.commands.versionv1.VersionReport cmd) {
+    log.info "Executing zwaveEvent 86 (VersionV1): 12 (VersionReport) with cmd: $cmd"
+    def version = "${cmd.applicationVersion}.${cmd.applicationSubVersion}"
+    updateDataValue("version", fw)
+    def text = "$device.displayName: firmware version: $version, Z-Wave version: ${cmd.zWaveProtocolVersion}.${cmd.zWaveProtocolSubVersion}"
+    createEvent(descriptionText: text, isStateChange: false)
+}
 
 def zwaveEvent(physicalgraph.zwave.commands.batteryv1.BatteryReport cmd) {
     def map = [ name: "battery", unit: "%" ]
@@ -159,18 +189,6 @@ def zwaveEvent(physicalgraph.zwave.commands.applicationstatusv1.ApplicationBusy 
 
 def zwaveEvent(physicalgraph.zwave.commands.applicationstatusv1.ApplicationRejectedRequest cmd) {
     createEvent(displayed: true, descriptionText: "$device.displayName rejected the last request")
-}
-
-def zwaveEvent(physicalgraph.zwave.commands.securityv1.SecurityMessageEncapsulation cmd) {
-    setSecured()
-    def encapsulatedCommand = cmd.encapsulatedCommand([0x31: 5, 0x71: 3, 0x84: 1])
-    if (encapsulatedCommand) {
-        log.debug "command: 98 (Security) 81(SecurityMessageEncapsulation) encapsulatedCommand:  $encapsulatedCommand"
-        zwaveEvent(encapsulatedCommand)
-    } else {
-        log.warn "Unable to extract encapsulated cmd from $cmd"
-        createEvent(descriptionText: cmd.toString())
-    }
 }
 
 def zwaveEvent(physicalgraph.zwave.commands.securityv1.SecurityCommandsSupportedReport cmd) {
@@ -199,18 +217,31 @@ def zwaveEvent(physicalgraph.zwave.commands.notificationv3.NotificationReport cm
     if (cmd.notificationType == 7) {
         switch (cmd.event) {
             case 0:
-                result << createEvent(name: "tamper", value: "clear", displayed: false)
+                result << createEvent(name: "tamper", value: "inactive", displayed: false)
                 break
             case 3:
-                result << createEvent(name: "tamper", value: "detected", descriptionText: "$device.displayName casing was opened")
+                result << createEvent(name: "tamper", value: "active", descriptionText: "$device.displayName casing was opened")
                 break
         }
     } else if (cmd.notificationType == 1) { //Smoke Alarm (V2)
         log.debug "notificationv3.NotificationReport: for Smoke Alarm (V2)"
         result << smokeAlarmEvent(cmd.event)
-    }  else if (cmd.notificationType == 4) { // Heat Alarm (V2)
+    } else if (cmd.notificationType == 4) { // Heat Alarm (V2)
         log.debug "notificationv3.NotificationReport: for Heat Alarm (V2)"
         result << heatAlarmEvent(cmd.event)
+    } else if (cmd.notificationType == 8) {  
+    	if (cmd.event == 0x0A) {
+            def map = [:]
+            map.name = "battery"
+            map.value = 1
+            map.unit = "%"
+            map.displayed = true
+            result << createEvent(map)
+        }
+    } else if (cmd.notificationType == 9) {
+    	if (cmd.event == 0x01) {
+        	result << createEvent(descriptionText: "Warning: $device.displayName system hardware failure", isStateChange: true)	
+        }
     } else {
         log.warn "Need to handle this cmd.notificationType: ${cmd.notificationType}"
         result << createEvent(descriptionText: cmd.toString(), isStateChange: false)
@@ -221,7 +252,7 @@ def zwaveEvent(physicalgraph.zwave.commands.notificationv3.NotificationReport cm
 def smokeAlarmEvent(value) {
     log.debug "smokeAlarmEvent(value): $value"
     def map = [name: "smoke"]
-    if (value == 1 || value == 2) {
+    if (value == 2) {
         map.value = "detected"
         map.descriptionText = "$device.displayName detected smoke"
     } else if (value == 0) {
@@ -230,9 +261,6 @@ def smokeAlarmEvent(value) {
     } else if (value == 3) {
         map.value = "tested"
         map.descriptionText = "$device.displayName smoke alarm test"
-    } else if (value == 4) {
-        map.value = "replacement required"
-        map.descriptionText = "$device.displayName replacement required"
     } else {
         map.value = "unknown"
         map.descriptionText = "$device.displayName unknown event"
@@ -243,18 +271,12 @@ def smokeAlarmEvent(value) {
 def heatAlarmEvent(value) {
     log.debug "heatAlarmEvent(value): $value"
     def map = [name: "heatAlarm"]
-    if (value == 1 || value == 2) {
-        map.value = "overheat detected"
+    if (value == 2) {
+        map.value = "overheat"
         map.descriptionText = "$device.displayName overheat detected"
     } else if (value == 0) {
-        map.value = "clear"
+        map.value = "inactive"
         map.descriptionText = "$device.displayName heat alarm cleared (no overheat)"
-    } else if (value == 3 || value == 4) {
-        map.value = "rapid temperature rise"
-        map.descriptionText = "$device.displayName rapid temperature rise"
-    } else if (value == 5 || value == 6) {
-        map.value = "underheat detected"
-        map.descriptionText = "$device.displayName underheat detected"
     } else {
         map.value = "unknown"
         map.descriptionText = "$device.displayName unknown event"
@@ -274,12 +296,14 @@ def zwaveEvent(physicalgraph.zwave.commands.wakeupv1.WakeUpNotification cmd) {
         //Only ask for battery if we haven't had a BatteryReport in a while
         if (!state.lastbatt || (new Date().time) - state.lastbatt > 24*60*60*1000) {
             log.debug("Device has been configured sending >> batteryGet()")
-            cmds << zwave.securityV1.securityMessageEncapsulation().encapsulate(zwave.batteryV1.batteryGet()).format()
-            cmds << "delay 1200"
+            cmds << zwave.batteryV1.batteryGet()
         }
+        cmds << zwave.sensorAlarmV1.sensorAlarmGet(sensorType: 0)
+        cmds << zwave.sensorAlarmV1.sensorAlarmGet(sensorType: 1)
+        cmds << zwave.sensorAlarmV1.sensorAlarmGet(sensorType: 4)
         log.debug("Device has been configured sending >> wakeUpNoMoreInformation()")
-        cmds << zwave.wakeUpV1.wakeUpNoMoreInformation().format()
-        result << response(cmds) //tell device back to sleep
+        cmds << zwave.wakeUpV1.wakeUpNoMoreInformation()
+        result << response(commands(cmds,500)) //tell device back to sleep
     }
     result
 }
@@ -317,8 +341,26 @@ def zwaveEvent(physicalgraph.zwave.commands.manufacturerspecificv2.ManufacturerS
     log.debug "After device is securely joined, send commands to update tiles"
     result << zwave.batteryV1.batteryGet()
     result << zwave.sensorMultilevelV5.sensorMultilevelGet(sensorType: 0x01)
-    result << zwave.wakeUpV1.wakeUpNoMoreInformation()
-    [[descriptionText:"${device.displayName} MSR report"], response(commands(result, 5000))]
+    //always send wakeUpNoMoreInformation as secure (at this point "secured" property is not set)
+    [[descriptionText:"${device.displayName} MSR report"], response(commands(result, 500) << "delay 1000" << secure(zwave.wakeUpV1.wakeUpNoMoreInformation()))]
+}
+
+def zwaveEvent(physicalgraph.zwave.commands.manufacturerspecificv2.DeviceSpecificReport cmd) { 
+	log.debug "deviceIdData:                ${cmd.deviceIdData}"
+    log.debug "deviceIdDataFormat:          ${cmd.deviceIdDataFormat}"
+    log.debug "deviceIdDataLengthIndicator: ${cmd.deviceIdDataLengthIndicator}"
+    log.debug "deviceIdType:                ${cmd.deviceIdType}"
+    
+    if (cmd.deviceIdType == 1 && cmd.deviceIdDataFormat == 1) {//serial number in binary format
+		String serialNumber = "h'"
+        
+        cmd.deviceIdData.each{ data ->
+        	serialNumber += "${String.format("%02X", data)}"
+        }
+        
+        updateDataValue("serialNumber", serialNumber)
+        log.debug "${device.displayName} - serial number: ${serialNumber}"
+    }
 }
 
 def zwaveEvent(physicalgraph.zwave.commands.associationv2.AssociationReport cmd) {
@@ -330,6 +372,37 @@ def zwaveEvent(physicalgraph.zwave.commands.associationv2.AssociationReport cmd)
         result << response(zwave.associationV1.associationSet(groupingIdentifier:cmd.groupingIdentifier, nodeId:zwaveHubNodeId))
     }
     result
+}
+
+def zwaveEvent(physicalgraph.zwave.commands.sensoralarmv1.SensorAlarmReport cmd) {
+	def map = [:]
+	switch (cmd.sensorType) {
+    	case 0:
+        	map.name = "tamper"
+            map.value = cmd.sensorState == 0xFF ? "active" : "inactive"
+            map.descriptionText = cmd.sensorState == 0xFF ? "$device.displayName casing was opened" : ""
+        	break
+        case 1:
+        	map.name = "smoke"
+            map.value = cmd.sensorState == 0xFF ? "detected" : "clear"
+            map.descriptionText = cmd.sensorState == 0xFF ? "$device.displayName detected smoke" : "$device.displayName is clear (no smoke)"
+        	break
+        case 4:
+        	map.name = "heatAlarm"
+        	map.value = cmd.sensorState == 0xFF ? "overheat" : "inactive"
+            map.descriptionText = cmd.sensorState == 0xFF ? "$device.displayName overheat detected" : "$device.displayName heat alarm cleared (no overheat)"
+        	break
+    }
+    
+    createEvent(map)
+}
+
+def zwaveEvent(physicalgraph.zwave.commands.timeparametersv1.TimeParametersGet cmd) {
+	log.info "Executing zwaveEvent 8B (TimeParametersV1) : 02 (TimeParametersGet) with cmd: $cmd"
+	def nowCal = Calendar.getInstance(TimeZone.getTimeZone("UTC"))
+    //Time Parameters are requested by an un-encapsulated frame
+	response(zwave.timeParametersV1.timeParametersReport(year: nowCal.get(Calendar.YEAR), month: (nowCal.get(Calendar.MONTH) + 1), day: nowCal.get(Calendar.DAY_OF_MONTH), 
+    	hourUtc: nowCal.get(Calendar.HOUR_OF_DAY), minuteUtc: nowCal.get(Calendar.MINUTE), secondUtc: nowCal.get(Calendar.SECOND)).format())
 }
 
 def zwaveEvent(physicalgraph.zwave.Command cmd) {
@@ -360,7 +433,7 @@ def configure() {
         }
         //3. Z-Wave notification status: 0-all disabled (default), 1-casing open enabled, 2-exceeding temp enable
         if (zwaveNotificationStatus && zwaveNotificationStatus != "null"){
-            request += zwave.configurationV1.configurationSet(parameterNumber: 2, size: 1, scaledConfigurationValue: notificationOptionValueMap[zwaveNotificationStatus] ?: 0)
+            request += zwave.configurationV1.configurationSet(parameterNumber: 2, size: 1, scaledConfigurationValue: zwaveNotificationOptionValueMap[zwaveNotificationStatus] ?: 0)
         }
         //4. Visual indicator notification status: 0-all disabled (default), 1-casing open enabled, 2-exceeding temp enable, 4-lack of range notification
         if (visualIndicatorNotificationStatus && visualIndicatorNotificationStatus != "null") {
@@ -402,7 +475,16 @@ def configure() {
         //12. get temperature reading from device
         request += zwave.sensorMultilevelV5.sensorMultilevelGet(sensorType: 0x01)
 
-        commands(request) + ["delay 10000", zwave.wakeUpV1.wakeUpNoMoreInformation().format()]
+		//13. set association group
+		request += zwave.associationV2.associationSet(groupingIdentifier:1, nodeId:[zwaveHubNodeId])
+
+		//14. get version
+        request += zwave.versionV1.versionGet()
+
+		//15. get serial number
+        request += zwave.manufacturerSpecificV2.deviceSpecificGet()
+        
+        commands(request) + ["delay 1000", command(zwave.wakeUpV1.wakeUpNoMoreInformation())]
     }
 }
 
@@ -418,22 +500,40 @@ private def getTimeOptionValueMap() { [
         "reports inactive" : 0,
 ]}
 
+private def getZwaveNotificationOptionValueMap() { [
+	"disabled" : 0,
+    "casing opened" : 1,
+    "exceeding temperature threshold" : 2,
+    "all notifications" : 3	
+]}
+
 private def getNotificationOptionValueMap() { [
-        "disabled" : 0,
-        "casing opened" : 1,
-        "exceeding temperature threshold" : 2,
-        "lack of Z-Wave range" : 4,
-        "all notifications" : 7,
+    "disabled" : 0,
+    "casing opened" : 1,
+    "exceeding temperature threshold" : 2,
+    "lack of Z-Wave range" : 4,
+    "all notifications" : 7
 ]}
 
 private command(physicalgraph.zwave.Command cmd) {
-    if (isSecured()) {
+    def secureClasses = [0x20, 0x5A, 0x70, 0x71, 0x84, 0x85, 0x8E, 0x9C]
+    
+    if (isSecured() && secureClasses.find{ it == cmd.commandClassId }) {
         log.info "Sending secured command: ${cmd}"
-        zwave.securityV1.securityMessageEncapsulation().encapsulate(cmd).format()
+        secure(cmd)
     } else {
         log.info "Sending unsecured command: ${cmd}"
-        cmd.format()
+        crc16(cmd)
     }
+}
+
+private secure(physicalgraph.zwave.Command cmd) {
+	zwave.securityV1.securityMessageEncapsulation().encapsulate(cmd).format()
+}
+
+private crc16(physicalgraph.zwave.Command cmd) {
+	//zwave.crc16encapV1.crc16Encap().encapsulate(cmd).format()
+    "5601${cmd.format()}0000"
 }
 
 private commands(commands, delay=200) {
