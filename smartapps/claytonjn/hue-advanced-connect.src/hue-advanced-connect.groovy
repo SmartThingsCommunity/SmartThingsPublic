@@ -960,6 +960,8 @@ def setColor(childDevice, huesettings, deviceType) {
             value.hue = Math.min(Math.round(huesettings.hue * 65535 / 100), 65535)
         if (huesettings.saturation != null)
             value.sat = Math.min(Math.round(huesettings.saturation * 255 / 100), 255)
+		if (huesettings.xy != null)
+			value.xy = huesettings.xy
     }
 
     // Default behavior is to turn light on
@@ -1114,6 +1116,29 @@ private getHextoXY(String colorStr) {
     xy[0] = x;
     xy[1] = y;
     return xy;
+}
+
+Boolean getXYtoHex(xy, level) {
+	float x = xy[0]
+	float y = xy[1]
+	float z = 1.0 - x - y
+	float Y = level
+	float X = (Y / y) * x
+	float Z = (Y / y) * z
+
+	float r = X * 1.612 - Y * 0.203 - Z * 0.302
+	float g = -X * 0.509 + Y * 1.412 + Z * 0.066
+	float b = X * 0.026 - Y * 0.072 + Z * 0.962
+
+	r = r <= 0.0031308 ? (float) 12.92 * r : (float) (1.0 + 0.055) * Math.pow(r, (1.0 / 2.4)) - 0.055
+	g = g <= 0.0031308 ? (float) 12.92 * g : (float) (1.0 + 0.055) * Math.pow(g, (1.0 / 2.4)) - 0.055
+	b = b <= 0.0031308 ? (float) 12.92 * b : (float) (1.0 + 0.055) * Math.pow(b, (1.0 / 2.4)) - 0.055
+
+	r = Math.round(r * 255)
+	g = Math.round(g * 255)
+	b = Math.round(b * 255)
+
+	return "#" + Integer.toHexString(r).padLeft(2,'0') + Integer.toHexString(g).padLeft(2,'0') + Integer.toHexString(b).padLeft(2,'0')
 }
 
 private Integer convertHexToInt(hex) {

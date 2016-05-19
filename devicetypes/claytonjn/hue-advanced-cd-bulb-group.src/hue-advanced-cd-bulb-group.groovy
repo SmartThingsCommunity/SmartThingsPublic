@@ -118,7 +118,7 @@ def parse(description) {
 
 	def map = description
 	if (description instanceof String)  {
-		log.debug "Hue Advanced Bulb/Group stringToMap - ${map}"
+		log.debug "Hue Advanced -CD- Bulb/Group stringToMap - ${map}"
 		map = stringToMap(description)
 	}
 
@@ -230,6 +230,14 @@ void setColor(value) {
         events << createEvent(name: "saturation", value: value.saturation, displayed: false)
         validValues.saturation = value.saturation
     }
+	if (value.xy != null) {
+		if (value.xy[0] < 0 || value.xy[0] > 1 || value.xy[1] < 0 || value.xy[1] > 1) {
+			log.warn "$value.xy is not a valid color"
+		} else if (verifyPercent(value.level)) {
+			events << createEvent(name: "color", value: parent.getXYtoHex(value.xy, value.level))
+			validValues.xy = value.xy
+		}
+	}
     if (value.hex != null) {
         if (value.hex ==~ /^\#([A-Fa-f0-9]){6}$/) {
             events << createEvent(name: "color", value: value.hex)

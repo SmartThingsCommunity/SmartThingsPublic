@@ -1,5 +1,5 @@
 /**
- *  Hue Advanced Bloom
+ *  Hue Advanced -CD- LivingColors
  *
  *  Philips Hue Type "Color Light"
  *
@@ -9,7 +9,7 @@
 // for the UI
 metadata {
 	// Automatically generated. Make future change here.
-	definition (name: "Hue Advanced Bloom", namespace: "claytonjn", author: "claytonjn") {
+	definition (name: "Hue Advanced -CD- LivingColors", namespace: "claytonjn", author: "claytonjn") {
 		capability "Switch Level"
 		capability "Actuator"
 		capability "Color Control"
@@ -23,9 +23,18 @@ metadata {
 		command "setTransitionTime"
 		command "colorloopOn"
 		command "colorloopOff"
+		command "enableCDBrightness"
+        command "disableCDBrightness"
+		command "enableCDColor"
+		command "disableCDColor"
+		command "tileSetLevel"
+		command "tileSetAdjustedColor"
+        command "tileReset"
 
 		attribute "transitionTime", "NUMBER"
 		attribute "effect", "enum", ["none", "colorloop"]
+		attribute "cdBrightness", "enum", ["true", "false"]
+		attribute "cdColor", "enum", ["true", "false"]
 	}
 
 	simulator {
@@ -41,15 +50,15 @@ metadata {
 				attributeState "turningOff", label:'${name}', action:"switch.on", icon:"st.lights.philips.hue-single", backgroundColor:"#ffffff", nextState:"turningOn"
 			}
 			tileAttribute ("device.level", key: "SLIDER_CONTROL") {
-				attributeState "level", action:"switch level.setLevel", range:"(0..100)"
+				attributeState "level", action:"tileSetLevel", range:"(0..100)"
             }
 			tileAttribute ("device.color", key: "COLOR_CONTROL") {
-				attributeState "color", action:"setAdjustedColor"
+				attributeState "color", action:"tileSetAdjustedColor"
 			}
 		}
 
 		standardTile("reset", "device.reset", height: 2, width: 2, inactiveLabel: false, decoration: "flat") {
-			state "default", label:"Reset Color", action:"reset", icon:"st.lights.philips.hue-single"
+			state "default", label:"Reset Color", action:"tileReset", icon:"st.lights.philips.hue-single"
 		}
 
 		standardTile("refresh", "device.refresh", height: 2, width: 2, inactiveLabel: false, decoration: "flat") {
@@ -69,8 +78,20 @@ metadata {
 			state "updating", label:"Working", icon: "st.secondary.secondary"
 		}
 
+		valueTile("cdBrightnessControl", "device.cdBrightness", inactiveLabel: false, decoration: "flat", width: 3, height: 1) {
+			state "true", label: "Circadian Brightness On", action: "disableCDBrightness", nextState: "updating"
+			state "false", label: "Circadian Brightness Off", action: "enableCDBrightness", nextState: "updating"
+			state "updating", label: "Working"
+		}
+
+		valueTile("cdColorControl", "device.cdColor", inactiveLabel: false, decoration: "flat", width: 3, height: 1) {
+			state "true", label: "Circadian Color On", action: "disableCDColor", nextState: "updating"
+			state "false", label: "Circadian Color Off", action: "enableCDColor", nextState: "updating"
+			state "updating", label: "Working"
+		}
+
 		main(["rich-control"])
-		details(["rich-control", "transitionTimeSliderControl", "transTime", "effectControl", "reset", "refresh"])
+		details(["rich-control", "transitionTimeSliderControl", "transTime", "cdBrightnessControl", "cdColorControl", "effectControl", "reset", "refresh"])
 	}
 }
 
@@ -81,7 +102,7 @@ def parse(description) {
 
 	def map = description
 	if (description instanceof String)  {
-		log.debug "Hue Advanced Bloom stringToMap - ${map}"
+		log.debug "Hue Advanced -CD- LivingColors stringToMap - ${map}"
 		map = stringToMap(description)
 	}
 
@@ -113,7 +134,7 @@ void off(transitionTime = device.currentValue("transitionTime")) {
 	sendEvent(name: "switch", value: "off")
 }
 
-void nextLevel(transitionTime = device.currentValue("transitionTime")) {
+void nextLevel(transitionTime = device.currentValue("transitionTime"), disableCDB = false) {
 	if(transitionTime == null) { transitionTime = device.currentValue("transitionTime") ?: parent.getSelectedTransition() ?: 1 }
 
 	def level = device.latestValue("level") as Integer ?: 0
@@ -123,10 +144,14 @@ void nextLevel(transitionTime = device.currentValue("transitionTime")) {
 	else {
 		level = 25
 	}
-	setLevel(level, transitionTime)
+	setLevel(level, transitionTime, disableCDB)
 }
 
-void setLevel(percent, transitionTime = device.currentValue("transitionTime")) {
+void tileSetLevel(percent) {
+	setLevel(percent, null, true)
+}
+
+void setLevel(percent, transitionTime = device.currentValue("transitionTime"), disableCDB = false) {
 	if(transitionTime == null) { transitionTime = device.currentValue("transitionTime") ?: parent.getSelectedTransition() ?: 1 }
 
     log.debug "Executing 'setLevel'"
@@ -135,30 +160,33 @@ void setLevel(percent, transitionTime = device.currentValue("transitionTime")) {
 			off()
 		} else {
 	        parent.setLevel(this, percent, transitionTime, deviceType)
+			if(disableCDB == true) { disableCDBrightness() }
 	        sendEvent(name: "level", value: percent, descriptionText: "Level has changed to ${percent}%")
 	        sendEvent(name: "switch", value: "on")
 		}
     }
 }
 
-void setSaturation(percent, transitionTime = device.currentValue("transitionTime")) {
+void setSaturation(percent, transitionTime = device.currentValue("transitionTime"), disableCDC = false) {
 	if(transitionTime == null) { transitionTime = device.currentValue("transitionTime") ?: parent.getSelectedTransition() ?: 1 }
 
 	colorloopOff()
     log.debug "Executing 'setSaturation'"
     if (verifyPercent(percent)) {
         parent.setSaturation(this, percent, transitionTime, deviceType)
+		if(disableCDC == true) { disableCDColor() }
         sendEvent(name: "saturation", value: percent, displayed: false)
     }
 }
 
-void setHue(percent, transitionTime = device.currentValue("transitionTime")) {
+void setHue(percent, transitionTime = device.currentValue("transitionTime"), disableCDC = false) {
 	if(transitionTime == null) { transitionTime = device.currentValue("transitionTime") ?: parent.getSelectedTransition() ?: 1 }
 
 	colorloopOff()
     log.debug "Executing 'setHue'"
     if (verifyPercent(percent)) {
         parent.setHue(this, percent, transitionTime, deviceType)
+		if(disableCDC == true) { disableCDColor() }
         sendEvent(name: "hue", value: percent, displayed: false)
     }
 }
@@ -182,6 +210,14 @@ void setColor(value) {
         events << createEvent(name: "saturation", value: value.saturation, displayed: false)
         validValues.saturation = value.saturation
     }
+	if (value.xy != null) {
+		if (value.xy[0] < 0 || value.xy[0] > 1 || value.xy[1] < 0 || value.xy[1] > 1) {
+			log.warn "$value.xy is not a valid color"
+		} else if (verifyPercent(value.level)) {
+			events << createEvent(name: "color", value: parent.getXYtoHex(value.xy, value.level))
+			validValues.xy = value.xy
+		}
+	}
     if (value.hex != null) {
         if (value.hex ==~ /^\#([A-Fa-f0-9]){6}$/) {
             events << createEvent(name: "color", value: value.hex)
@@ -201,6 +237,8 @@ void setColor(value) {
         events << createEvent(name: "switch", value: "on")
         validValues.switch = "on"
     }
+	if (value.disableCDBrightness == true) { disableCDBrightness() }
+	if (value.disableCDColor == true) { disableCDColor() }
     if (!events.isEmpty()) {
         parent.setColor(this, validValues, deviceType)
     }
@@ -209,12 +247,23 @@ void setColor(value) {
     }
 }
 
-void reset() {
+private tileReset() {
+    reset(null, true)
+}
+
+void reset(transitionTime = device.currentValue("transitionTime"), disableCDC = false) {
+    if(transitionTime == null) { transitionTime = device.currentValue("transitionTime") ?: parent.getSelectedTransition() ?: 1 }
+
     log.debug "Executing 'reset'"
-    def value = [level:100, saturation:18, hue:8]
+    def value = [level:100, saturation:18, hue:8, transitiontime:transitionTime, disableCDColor:disableCDC]
 	colorloopOff()
     setAdjustedColor(value)
     parent.poll()
+}
+
+void tileSetAdjustedColor(value) {
+	value.disableCDColor = true
+	setAdjustedColor(value)
 }
 
 void setAdjustedColor(value) {
@@ -278,6 +327,28 @@ def verifyPercent(percent) {
 
 void initialize(deviceType) {
 	setTransitionTime(parent.getSelectedTransition())
+	sendEvent(name: "cdBrightness", value: "true", displayed: false)
+	sendEvent(name: "cdColor", value: "true", displayed: false)
 }
 
 def getDeviceType() { return "lights" }
+
+void enableCDBrightness() {
+	log.debug "Executing 'enableCDBrightness'"
+	sendEvent(name: "cdBrightness", value: "true", descriptionText: "Circadian Brightness has been enabled")
+}
+
+void disableCDBrightness() {
+	log.debug "Executing 'disableCDBrightness'"
+	sendEvent(name: "cdBrightness", value: "false", descriptionText: "Circadian Brightness has been disabled")
+}
+
+void enableCDColor() {
+	log.debug "Executing 'enableCDColor'"
+	sendEvent(name: "cdColor", value: "true", descriptionText: "Circadian Color has been enabled")
+}
+
+void disableCDColor() {
+	log.debug "Executing 'disableCDColor'"
+	sendEvent(name: "cdColor", value: "false", descriptionText: "Circadian Color has been disabled")
+}
