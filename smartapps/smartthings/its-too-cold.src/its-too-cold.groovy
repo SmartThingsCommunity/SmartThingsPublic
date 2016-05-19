@@ -73,7 +73,8 @@ def temperatureHandler(evt) {
 			// TODO: Send "Temperature back to normal" SMS, turn switch off
 		} else {
 			log.debug "Temperature dropped below $tooCold:  sending SMS to $phone1 and activating $mySwitch"
-			send("${temperatureSensor1.displayName} is too cold, reporting a temperature of ${evt.value}${evt.unit?:"F"}")
+			def tempScale = location.temperatureScale ?: "F"
+			send("${temperatureSensor1.displayName} is too cold, reporting a temperature of ${evt.value}${evt.unit?:tempScale}")
 			switch1?.on()
 		}
 	}
