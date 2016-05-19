@@ -48,7 +48,7 @@ def configure() {
 def backupPage() {
 	dynamicPage(name: "backupPage", uninstall: false, install: false) {
     	def kids = getChildAppOptions()
-        
+
         section {
         	if (kids) {
         		paragraph "Hello!"
@@ -199,7 +199,13 @@ def performRestore(data) {
 	if (!data)
     	return
 
-	data?.each {
-    	addChildApp("Backup Child", "kriskit", it)
+	data?.each { bkp ->
+    	def existingApp = childApps?.find { app -> app.label == bkp.label }
+       	
+        if (existingApp) {
+        	log.debug "Existing app found ${bkp.label} updating settings..."
+            existingApp.update(bkp.settings)
+        } else
+    		addChildApp("Backup Child", "kriskit", bkp)
     }
 }
