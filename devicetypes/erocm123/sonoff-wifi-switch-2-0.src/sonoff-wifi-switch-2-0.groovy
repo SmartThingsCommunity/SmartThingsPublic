@@ -83,9 +83,6 @@ def updated() {
 def configure() {
 	log.debug "configure()"
 	log.debug "Configuring Device For SmartThings Use"
-    state.ruleConfigured = false
-    state.switchConfigured = false
-    state.buttonConfigured = false
     sendEvent(name:"hubInfo", value:"Sonoff switch still being configured")
     //if (state.MAC != null) state.dni = setDeviceNetworkId(state.MAC)
     //else 
@@ -146,7 +143,7 @@ def parse(description) {
         if (result.System.containsKey("Uptime")) log.debug "System has been up ${result.System.Uptime.toInteger() / 60} hours"
     }
     if (result.containsKey("success")) {
-        if (result.success == "true") events << createEvent(name:"hubInfo", value:"Switch has been configured.")
+        if (result.success == "true") events << createEvent(name:"hubInfo", value:"Switch has been configured")
     }
     } else {
         //log.debug "Response is not JSON: $body"
