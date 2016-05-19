@@ -87,8 +87,8 @@ def configure() {
     state.switchConfigured = false
     state.buttonConfigured = false
     sendEvent(name:"hubInfo", value:"Sonoff switch still being configured")
-    if (state.MAC != null) state.dni = setDeviceNetworkId(state.MAC)
-    else 
+    //if (state.MAC != null) state.dni = setDeviceNetworkId(state.MAC)
+    //else 
     if (ip != null) state.dni = setDeviceNetworkId(ip, "80")
     state.hubIP = device.hub.getDataValue("localIP")
     response(configureInstant(state.hubIP, "39500"))
