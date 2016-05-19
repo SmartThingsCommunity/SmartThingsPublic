@@ -52,11 +52,15 @@ def updated() {
 }
 
 def initialize() {
-	// TODO: subscribe to attributes, devices, locations, etc.
+	subscribe(switches, "switch", onSwitchChange)
+}
+
+def onSwitchChange(evt) {
+	log.debug "Switch state changed ${evt}"
 }
 
 public getDescriptor() {
-	def result = [label: "${app.label} Backup", settings: [aValue: aValue, switches: switches?.collect { it.id }]]
+	def result = [label: "${app.label} Backup", settings: [aValue: [type: "text", value: aValue], switches: [type: "capability.switch", value: switches?.collect { it.id }]]]
     log.debug result
     return result
 }
