@@ -796,6 +796,7 @@ def parse(childDevice, description) {
                         if (device.value.state?.reachable || deviceType == "groups") {
                             sendEvent(d.deviceNetworkId, [name: "switch", value: device.value[api].on ? "on" : "off"])
                             sendEvent(d.deviceNetworkId, [name: "level", value: hueBritoST(device.value[api].bri)])
+                            sendEvent(d.deviceNetworkId, [name: "effect", value: device.value[api].effect])
                             if (device.value[api].sat) {
                                 def hue = Math.min(Math.round(device.value[api].hue * 100 / 65535), 65535) as int
                                 def sat = Math.round(device.value[api].sat * 100 / 255) as int
@@ -808,6 +809,7 @@ def parse(childDevice, description) {
                         } else {
                             sendEvent(d.deviceNetworkId, [name: "switch", value: "off"])
                             sendEvent(d.deviceNetworkId, [name: "level", value: 100])
+                            sendEvent(d.deviceNetworkId, [name: "effect", value: "none"])
                             if (device.value[api].sat) {
                                 def hue = 8
                                 def sat = 18
@@ -841,6 +843,9 @@ def parse(childDevice, description) {
                                     break
                                 case "bri":
                                     sendEvent(childDeviceNetworkId, [name: "level", value: hueBritoST(v)])
+                                    break
+                                case "effect":
+                                    sendEvent(childDeviceNetworkId, [name: "effect", value: v])
                                     break
                                 case "sat":
                                     hsl[childDeviceNetworkId].saturation = Math.round(v * 100 / 255) as int
