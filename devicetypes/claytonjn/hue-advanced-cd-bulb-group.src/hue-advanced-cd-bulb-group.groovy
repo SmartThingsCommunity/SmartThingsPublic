@@ -333,13 +333,13 @@ void colorloopOn() {
 	log.debug "Executing 'colorloopOn'"
 	if(device.latestValue("switch") != "on") { on() }
 	parent.setEffect(this, "colorloop", state.deviceType)
-	sendEvent(name: "effect", value: "colorloop", descriptionText: "Colorloop has been turned on", isStateChange: true)
+	sendEvent(name: "effect", value: "colorloop", descriptionText: "Colorloop has been turned on")
 }
 
 void colorloopOff() {
 	log.debug "Executing 'colorloopOff'"
 	parent.setEffect(this, "none", state.deviceType)
-	sendEvent(name: "effect", value: "none", descriptionText: "Colorloop has been turned off", isStateChange: true)
+	sendEvent(name: "effect", value: "none", descriptionText: "Colorloop has been turned off")
 }
 
 def adjustOutgoingHue(percent) {
