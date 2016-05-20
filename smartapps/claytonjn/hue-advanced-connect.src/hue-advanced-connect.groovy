@@ -34,23 +34,7 @@ preferences {
 	page(name:"bridgeBtnPush", title:"Linking with your Hue", content:"bridgeLinking", refreshTimeout:5)
 	page(name:"bulbDiscovery", title:"Hue Device Setup", content:"bulbDiscovery", refreshTimeout:5)
 	page(name:"groupDiscovery", title:"Hue Device Setup", content:"groupDiscovery", refreshTimeout:5)
-	page(name:"advancedSettings", title:"Advanced Settings", nextPage:"", install:true, uninstall:true) {
-		section("Default Transition") {
-			paragraph	"Choose how long bulbs should take to transition between on/off and color changes by default. This can be modified per-device."
-			input		"selectedTransition", "number", required:true, title:"Transition Time (seconds)", defaultValue:1
-		}
-		section("Circadian Daylight Integration") {
-			paragraph	"Add buttons to each device page, allowing you to enable/disable automatic color changes and dynamic brightness per-device, on the fly."
-			href(		name:        "circadianDaylightLink",
-						title:       "More Info",
-						required:    false,
-						style:       "embeded", //TODO: change to "external" when that works on Android
-						url:         "https://community.smartthings.com/t/circadian-daylight-smartthings-smart-bulbs/",
-						description: "Tap to view more information about the Circadian Daylight SmartApp.",
-						image:       "https://raw.githubusercontent.com/claytonjn/SmartThingsPublic/Circadian-Daylight/smartapp-icons/PNG/circadian-daylight@2x.png"	)
-			input		name:"circadianDalightIntegration", type:"bool", title:"Circadian Daylight Integration", defaultValue:false
-		}
-	}
+	page(name:"advancedSettings", title:"Advanced Settings", content:"advancedSettings")
 }
 
 def mainPage() {
@@ -201,6 +185,47 @@ def groupDiscovery() {
 	}
 }
 
+def advancedSettings() {
+
+	return dynamicPage(name:"advancedSettings", title:"Advanced Settings", nextPage:"", install:true, uninstall:true) {
+		section("Default Transition") {
+			paragraph	"Choose how long bulbs should take to transition between on/off and color changes by default. This can be modified per-device."
+			input		"selectedTransition", "number", required:true, title:"Transition Time (seconds)", defaultValue:1
+		}
+		section("Circadian Daylight Integration") {
+			paragraph	"Add buttons to each device page, allowing you to enable/disable automatic color changes and dynamic brightness per-device, on the fly."
+			href(		name:        "circadianDaylightLink",
+						title:       "More Info",
+						required:    false,
+						style:       "embeded", //TODO: change to "external" when that works on Android
+						url:         "https://community.smartthings.com/t/circadian-daylight-smartthings-smart-bulbs/",
+						description: "Tap to view more information about the Circadian Daylight SmartApp.",
+						image:       "https://raw.githubusercontent.com/claytonjn/SmartThingsPublic/Circadian-Daylight/smartapp-icons/PNG/circadian-daylight@2x.png"	)
+			input		name:"circadianDalightIntegration", type:"bool", title:"Circadian Daylight Integration", defaultValue:false
+		}
+		section("Update Notifications") {
+			paragraph 	"Get push notifications when an update is pushed to GitHub."
+			input(		name: 			"updateNotifications",
+						type:			"bool",
+						title:			"Update Notifications",
+						submitOnChange:	true	)
+			if (updateNotifications) {
+				input("recipients", "contact", title: "Send notifications to") {
+					input "updatePush", "bool", title: "Send push notifications", required: false
+				}
+				input(		name:			"gitHubBranch",
+							type:			"enum",
+							title: 			"Branch",
+							description:	"Get notifications for the stable or beta branch?",
+							options:		["Stable", "Beta"],
+							defaultValue:	"Stable",
+							multiple:		true,
+							required:		true	)
+			}
+		}
+	}
+}
+
 private discoverBridges() {
 	sendHubCommand(new physicalgraph.device.HubAction("lan discovery urn:schemas-upnp-org:device:basic:1", physicalgraph.device.Protocol.LAN))
 }
@@ -324,9 +349,9 @@ def initialize() {
     state.inDeviceDiscovery = false
     state.bridgeRefreshCount = 0
     state.bulbRefreshCount = 0
-	 state.groupRefreshCount = 0
+	state.groupRefreshCount = 0
 	if (selectedHue) {
-   		addBridge()
+		addBridge()
         addBulbs()
 		addGroups()
         doDeviceSync()
@@ -761,11 +786,45 @@ def doDeviceSync(){
 	poll()
 	ssdpSubscribe()
 	discoverBridges()
+	if (updateNotifications == true) { checkForUpdates() }
 }
 
 def isValidSource(macAddress) {
 	def vbridges = getVerifiedHueBridges()
 	return (vbridges?.find {"${it.value.mac}" == macAddress}) != null
+}
+
+void checkForUpdates() {
+	for (branch in settings.gitHubBranch) {
+		def branchName
+		if (branch == "Stable") { branchName = "Hue-Advanced" }
+		if (branch == "Beta") { branchName = "Hue-Advanced-Development" }
+
+		def url = "https://api.github.com/repos/claytonjn/SmartThingsPublic/branches/${branchName}"
+
+		def result = null
+
+		try {
+			httpGet(uri: url) {response ->
+				result = response
+			}
+			def latestCommitTime = new Date().parse("y-M-d'T'k:m:s'Z'", result.data.commit.commit.author.date)
+			def lastUpdate = new Date().parse("y-M-d'T'k:m:s'Z'", state."last${branch}Update")
+			if (latestCommitTime > lastUpdate) {
+				def message = "Hue Advanced ${branch} branch updated with message ${result.data.commit.commit.message}"
+				// check that contact book is enabled and recipients selected
+				if (location.contactBookEnabled && recipients) {
+				    sendNotificationToContacts(message, recipients, [event: false])
+				} else if (updatePush) { // check that the user did select a phone number
+				    sendPushMessage(message)
+				}
+			}
+			state."last${branch}Update" = latestCommitTime
+		}
+		catch (e) {
+			log.warn e
+		}
+	}
 }
 
 /////////////////////////////////////
