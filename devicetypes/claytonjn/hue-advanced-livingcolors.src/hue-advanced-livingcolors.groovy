@@ -21,6 +21,7 @@ metadata {
         command "reset"
         command "refresh"
 		command "setTransitionTime"
+		command "alert"
 		command "colorloopOn"
 		command "colorloopOff"
 
@@ -266,16 +267,21 @@ void refresh() {
     parent.manualRefresh()
 }
 
+void alert(alert) {
+	log.debug "Executing 'alert'"
+	parent.setAlert(this, alert, deviceType)
+}
+
 void colorloopOn() {
 	log.debug "Executing 'colorloopOn'"
 	if(device.latestValue("switch") != "on") { on() }
-	parent.setEffect(this, "colorloop", state.deviceType)
+	parent.setEffect(this, "colorloop", deviceType)
 	sendEvent(name: "effect", value: "colorloop", descriptionText: "Colorloop has been turned on")
 }
 
 void colorloopOff() {
 	log.debug "Executing 'colorloopOff'"
-	parent.setEffect(this, "none", state.deviceType)
+	parent.setEffect(this, "none", deviceType)
 	sendEvent(name: "effect", value: "none", descriptionText: "Colorloop has been turned off")
 }
 

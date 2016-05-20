@@ -17,6 +17,7 @@ metadata {
 
         command "refresh"
 		command "setTransitionTime"
+		command "alert"
         command "enableCDBrightness"
         command "disableCDBrightness"
         command "tileSetLevel"
@@ -136,6 +137,11 @@ void setLevel(percent, transitionTime = device.currentValue("transitionTime"), d
 void refresh() {
 	log.debug "Executing 'refresh'"
 	parent.manualRefresh()
+}
+
+void alert(alert) {
+	log.debug "Executing 'alert'"
+	parent.setAlert(this, alert, deviceType)
 }
 
 void initialize(deviceType) {

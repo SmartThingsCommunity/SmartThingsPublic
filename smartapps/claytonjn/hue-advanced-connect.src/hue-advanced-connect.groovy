@@ -1007,6 +1007,11 @@ def nextLevel(childDevice) {
     setLevel(childDevice,level)
 }
 
+def setAlert(childDevice, alert, deviceType) {
+	log.debug "setAlert: ${alert}"
+	put("${deviceType}/${getId(childDevice)}/${getApi(deviceType)}", [alert: alert])
+}
+
 def setEffect(childDevice, effect, deviceType) {
 	log.debug "setEffect: Effect ${effect}."
 	put("${deviceType}/${getId(childDevice)}/${getApi(deviceType)}", [effect: effect])

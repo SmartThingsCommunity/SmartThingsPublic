@@ -24,6 +24,7 @@ metadata {
         command "reset"
         command "refresh"
 		command "setTransitionTime"
+		command "alert"
 		command "colorloopOn"
 		command "colorloopOff"
 
@@ -300,6 +301,11 @@ void setColorTemperature(value, transitionTime = device.currentValue("transition
 void refresh() {
     log.debug "Executing 'refresh'"
     parent.manualRefresh()
+}
+
+void alert(alert) {
+	log.debug "Executing 'alert'"
+	parent.setAlert(this, alert, state.deviceType)
 }
 
 void colorloopOn() {

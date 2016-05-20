@@ -17,6 +17,7 @@ metadata {
 
         command "refresh"
 		command "setTransitionTime"
+		command "alert"
 
 		attribute "transitionTime", "NUMBER"
 		attribute "reachable", "enum", ["true", "false"]
@@ -121,6 +122,11 @@ void setLevel(percent, transitionTime = device.currentValue("transitionTime")) {
 void refresh() {
 	log.debug "Executing 'refresh'"
 	parent.manualRefresh()
+}
+
+void alert(alert) {
+	log.debug "Executing 'alert'"
+	parent.setAlert(this, alert, deviceType)
 }
 
 void initialize(deviceType) {
