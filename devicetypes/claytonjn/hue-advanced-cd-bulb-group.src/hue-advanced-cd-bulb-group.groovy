@@ -40,6 +40,7 @@ metadata {
 		attribute "xy", "json_object"
 		attribute "effect", "enum", ["none", "colorloop"]
 		attribute "colormode", "enum", ["hs", "xy", "ct"]
+		attribute "reachable", "enum", ["true", "false"]
 		attribute "cdBrightness", "enum", ["true", "false"]
 		attribute "cdColor", "enum", ["true", "false"]
 	}
@@ -100,6 +101,11 @@ metadata {
 			state "default", label: 'Colormode: ${currentValue}'
 		}
 
+		valueTile("reachable", "device.reachable", inactiveLabel: false, decoration: "flat", width: 4, height: 1) {
+			state "true", label: 'Reachable'
+			state "false", label: 'Not Reachable!'
+		}
+
 		valueTile("cdBrightnessControl", "device.cdBrightness", inactiveLabel: false, decoration: "flat", width: 3, height: 1) {
 			state "true", label: "Circadian Brightness On", action: "disableCDBrightness", nextState: "updating"
 			state "false", label: "Circadian Brightness Off", action: "enableCDBrightness", nextState: "updating"
@@ -113,7 +119,7 @@ metadata {
 		}
 
 		main(["rich-control"])
-		details(["rich-control", "colorTempSliderControl", "colorTemp", "transitionTimeSliderControl", "transTime", "cdBrightnessControl", "cdColorControl", "effectControl", "colormode", "reset", "refresh"])
+		details(["rich-control", "colorTempSliderControl", "colorTemp", "transitionTimeSliderControl", "transTime", "cdBrightnessControl", "cdColorControl", "effectControl", "colormode", "reachable", "reset", "refresh"])
 	}
 }
 

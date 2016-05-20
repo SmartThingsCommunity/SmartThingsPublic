@@ -794,7 +794,8 @@ def parse(childDevice, description) {
 						def deviceType = getDeviceType(device.value.type)
 						def api = getApi(deviceType)
                         if (device.value.state?.reachable || deviceType == "groups") {
-                            sendEvent(d.deviceNetworkId, [name: "switch", value: device.value[api].on ? "on" : "off"])
+							sendEvent(d.deviceNetworkId, [name: "reachable", value: device.value[api].reachable])
+							sendEvent(d.deviceNetworkId, [name: "switch", value: device.value[api].on ? "on" : "off"])
                             sendEvent(d.deviceNetworkId, [name: "level", value: hueBritoST(device.value[api].bri)])
                             if (device.value[api].sat) {
                                 def hue = Math.min(Math.round(device.value[api].hue * 100 / 65535), 65535) as int
@@ -809,7 +810,8 @@ def parse(childDevice, description) {
                             }
 							if (device.value[api].ct) { sendEvent(d.deviceNetworkId, [name: "colorTemperature", value: Math.round(1000000 / device.value[api].ct)]) }
                         } else {
-                            sendEvent(d.deviceNetworkId, [name: "switch", value: "off"])
+							sendEvent(d.deviceNetworkId, [name: "reachable", value: "false"])
+							sendEvent(d.deviceNetworkId, [name: "switch", value: "off"])
                             sendEvent(d.deviceNetworkId, [name: "level", value: 100])
                             if (device.value[api].sat) {
                                 def hue = 8
@@ -863,6 +865,9 @@ def parse(childDevice, description) {
                                     break
 								case "colormode":
                                     sendEvent(childDeviceNetworkId, [name: "colormode", value: v])
+                                    break
+								case "reachable":
+                                    sendEvent(childDeviceNetworkId, [name: "reachable", value: v])
                                     break
                             }
                         }

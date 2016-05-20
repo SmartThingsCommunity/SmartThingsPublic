@@ -32,6 +32,7 @@ metadata {
 		attribute "xy", "json_object"
 		attribute "effect", "enum", ["none", "colorloop"]
 		attribute "colormode", "enum", ["hs", "xy", "ct"]
+		attribute "reachable", "enum", ["true", "false"]
 	}
 
 	simulator {
@@ -90,8 +91,13 @@ metadata {
 			state "default", label: 'Colormode: ${currentValue}'
 		}
 
+		valueTile("reachable", "device.reachable", inactiveLabel: false, decoration: "flat", width: 4, height: 1) {
+			state "true", label: 'Reachable'
+			state "false", label: 'Not Reachable!'
+		}
+
 		main(["rich-control"])
-		details(["rich-control", "colorTempSliderControl", "colorTemp", "transitionTimeSliderControl", "transTime", "effectControl", "colormode", "reset", "refresh"])
+		details(["rich-control", "colorTempSliderControl", "colorTemp", "transitionTimeSliderControl", "transTime", "effectControl", "colormode", "reachable", "reset", "refresh"])
 	}
 }
 

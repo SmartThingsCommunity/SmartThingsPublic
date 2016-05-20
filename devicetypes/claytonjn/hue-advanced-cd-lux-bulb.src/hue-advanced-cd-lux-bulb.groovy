@@ -22,6 +22,7 @@ metadata {
         command "tileSetLevel"
 
 		attribute "transitionTime", "NUMBER"
+		attribute "reachable", "enum", ["true", "false"]
         attribute "cdBrightness", "enum", ["true", "false"]
 	}
 
@@ -57,14 +58,19 @@ metadata {
 			state "transitionTime", label: 'Transition:              ${currentValue} s'
 		}
 
-        valueTile("cdBrightnessControl", "device.cdBrightness", inactiveLabel: false, decoration: "flat", width: 3, height: 1) {
+		valueTile("reachable", "device.reachable", inactiveLabel: false, decoration: "flat", width: 4, height: 1) {
+			state "true", label: 'Reachable'
+			state "false", label: 'Not Reachable!'
+		}
+
+        valueTile("cdBrightnessControl", "device.cdBrightness", inactiveLabel: false, decoration: "flat", width: 4, height: 1) {
 			state "true", label: "Circadian Brightness On", action: "disableCDBrightness", nextState: "updating"
 			state "false", label: "Circadian Brightness Off", action: "enableCDBrightness", nextState: "updating"
 			state "updating", label: "Working"
 		}
 
         main(["rich-control"])
-        details(["rich-control", "transitionTimeSliderControl", "transTime", "refresh", "cdBrightnessControl"])
+        details(["rich-control", "transitionTimeSliderControl", "transTime", "cdBrightnessControl", "refresh", "reachable"])
     }
 }
 

@@ -19,6 +19,7 @@ metadata {
 		command "setTransitionTime"
 
 		attribute "transitionTime", "NUMBER"
+		attribute "reachable", "enum", ["true", "false"]
 	}
 
 	simulator {
@@ -53,8 +54,13 @@ metadata {
 			state "transitionTime", label: 'Transition:              ${currentValue} s'
 		}
 
+		valueTile("reachable", "device.reachable", inactiveLabel: false, decoration: "flat", width: 4, height: 1) {
+			state "true", label: 'Reachable'
+			state "false", label: 'Not Reachable!'
+		}
+
         main(["rich-control"])
-        details(["rich-control", "transitionTimeSliderControl", "transTime", "refresh"])
+        details(["rich-control", "transitionTimeSliderControl", "transTime", "reachable", "refresh"])
     }
 }
 
