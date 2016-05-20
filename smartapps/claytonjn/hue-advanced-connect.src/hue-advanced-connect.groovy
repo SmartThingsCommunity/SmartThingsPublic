@@ -1008,13 +1008,18 @@ def nextLevel(childDevice) {
 }
 
 def setAlert(childDevice, alert, deviceType) {
-	log.debug "setAlert: ${alert}"
+	log.debug "Executing 'setAlert($alert)'"
 	put("${deviceType}/${getId(childDevice)}/${getApi(deviceType)}", [alert: alert])
 }
 
 def setEffect(childDevice, effect, deviceType) {
-	log.debug "setEffect: Effect ${effect}."
+	log.debug "Executing 'setEffect($effect)'"
 	put("${deviceType}/${getId(childDevice)}/${getApi(deviceType)}", [effect: effect])
+}
+
+def bri_inc(childDevice, value, deviceType) {
+	log.debug "Executing 'bri_inc($value)'"
+	put("${deviceType}/${getId(childDevice)}/${getApi(deviceType)}", [bri_inc: value])
 }
 
 private getId(childDevice) {

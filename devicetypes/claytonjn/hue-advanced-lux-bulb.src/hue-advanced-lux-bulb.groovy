@@ -18,6 +18,7 @@ metadata {
         command "refresh"
 		command "setTransitionTime"
 		command "alert"
+		command "bri_inc"
 
 		attribute "transitionTime", "NUMBER"
 		attribute "reachable", "enum", ["true", "false"]
@@ -127,6 +128,11 @@ void refresh() {
 void alert(alert) {
 	log.debug "Executing 'alert'"
 	parent.setAlert(this, alert, deviceType)
+}
+
+void bri_inc(value) {
+	log.debug "Executing 'bri_inc'"
+	parent.bri_inc(this, value, deviceType)
 }
 
 void initialize(deviceType) {

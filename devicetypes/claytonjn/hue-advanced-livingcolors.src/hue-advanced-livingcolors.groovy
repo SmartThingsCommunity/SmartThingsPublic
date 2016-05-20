@@ -24,6 +24,7 @@ metadata {
 		command "alert"
 		command "colorloopOn"
 		command "colorloopOff"
+		command "bri_inc"
 
 		attribute "transitionTime", "NUMBER"
 		attribute "xy", "json_object"
@@ -283,6 +284,11 @@ void colorloopOff() {
 	log.debug "Executing 'colorloopOff'"
 	parent.setEffect(this, "none", deviceType)
 	sendEvent(name: "effect", value: "none", descriptionText: "Colorloop has been turned off")
+}
+
+void bri_inc(value) {
+	log.debug "Executing 'bri_inc'"
+	parent.bri_inc(this, value, deviceType)
 }
 
 def adjustOutgoingHue(percent) {
