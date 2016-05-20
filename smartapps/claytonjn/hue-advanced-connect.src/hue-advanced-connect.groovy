@@ -1037,6 +1037,11 @@ def ct_inc(childDevice, value, deviceType) {
 	put("${deviceType}/${getId(childDevice)}/${getApi(deviceType)}", [ct_inc: value])
 }
 
+def xy_inc(childDevice, values, deviceType) {
+	log.debug "Executing 'xy_inc($values)'"
+	put("${deviceType}/${getId(childDevice)}/${getApi(deviceType)}", [xy_inc: values])
+}
+
 private getId(childDevice) {
 	if (childDevice.device?.deviceNetworkId?.startsWith("HUE")) {
 		return childDevice.device?.deviceNetworkId[3..-1]
