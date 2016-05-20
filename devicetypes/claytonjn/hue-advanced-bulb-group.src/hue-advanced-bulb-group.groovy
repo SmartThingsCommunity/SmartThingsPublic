@@ -29,6 +29,7 @@ metadata {
 		command "colorloopOff"
 		command "bri_inc"
 		command "sat_inc"
+		command "hue_inc"
 
 		attribute "deviceSwitch", "enum", ["lightsOn", "lightsOff", "lightsTurningOn", "lightsTurningOff", "groupsOn", "groupsOff", "groupsTurningOn", "groupsTurningOff"]
 		attribute "transitionTime", "NUMBER"
@@ -331,6 +332,11 @@ void bri_inc(value) {
 void sat_inc(value) {
 	log.debug "Executing 'sat_inc'"
 	parent.sat_inc(this, value, state.deviceType)
+}
+
+void hue_inc(value) {
+	log.debug "Executing 'hue_inc'"
+	parent.hue_inc(this, value, state.deviceType)
 }
 
 def adjustOutgoingHue(percent) {
