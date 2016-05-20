@@ -1032,6 +1032,11 @@ def hue_inc(childDevice, value, deviceType) {
 	put("${deviceType}/${getId(childDevice)}/${getApi(deviceType)}", [hue_inc: value])
 }
 
+def ct_inc(childDevice, value, deviceType) {
+	log.debug "Executing 'ct_inc($value)'"
+	put("${deviceType}/${getId(childDevice)}/${getApi(deviceType)}", [ct_inc: value])
+}
+
 private getId(childDevice) {
 	if (childDevice.device?.deviceNetworkId?.startsWith("HUE")) {
 		return childDevice.device?.deviceNetworkId[3..-1]

@@ -30,6 +30,7 @@ metadata {
 		command "bri_inc"
 		command "sat_inc"
 		command "hue_inc"
+		command "ct_inc"
 		command "enableCDBrightness"
         command "disableCDBrightness"
 		command "enableCDColor"
@@ -383,6 +384,11 @@ void sat_inc(value) {
 void hue_inc(value) {
 	log.debug "Executing 'hue_inc'"
 	parent.hue_inc(this, value, state.deviceType)
+}
+
+void ct_inc(value) {
+	log.debug "Executing 'ct_inc'"
+	parent.ct_inc(this, value, state.deviceType)
 }
 
 def adjustOutgoingHue(percent) {

@@ -27,6 +27,7 @@ metadata {
 		command "bri_inc"
 		command "sat_inc"
 		command "hue_inc"
+		command "ct_inc"
 
 		attribute "transitionTime", "NUMBER"
 		attribute "xy", "json_object"
@@ -301,6 +302,11 @@ void sat_inc(value) {
 void hue_inc(value) {
 	log.debug "Executing 'hue_inc'"
 	parent.hue_inc(this, value, deviceType)
+}
+
+void ct_inc(value) {
+	log.debug "Executing 'ct_inc'"
+	parent.ct_inc(this, value, deviceType)
 }
 
 def adjustOutgoingHue(percent) {
