@@ -33,6 +33,7 @@ metadata {
 
 		attribute "transitionTime", "NUMBER"
 		attribute "effect", "enum", ["none", "colorloop"]
+		attribute "colormode", "enum", ["hs", "xy"]
 		attribute "cdBrightness", "enum", ["true", "false"]
 		attribute "cdColor", "enum", ["true", "false"]
 	}
@@ -73,9 +74,13 @@ metadata {
 		}
 
 		standardTile("effectControl", "device.effect", height: 2, width: 2, inactiveLabel: false, decoration: "flat") {
-			state "none", label:"Colorloop Off", action:"colorloopOn", nextState: "updating", icon:"https://raw.githubusercontent.com/claytonjn/SmartThingsPublic/tree/Hue-Advanced-Development/smartapp-icons/hue/png/colorloop-off.png"
-			state "colorloop", label:"Colorloop On", action:"colorloopOff", nextState: "updating", icon:"https://raw.githubusercontent.com/claytonjn/SmartThingsPublic/tree/Hue-Advanced-Development/smartapp-icons/hue/png/colorloop-on.png"
+			state "none", label:"Colorloop Off", action:"colorloopOn", nextState: "updating", icon:"https://raw.githubusercontent.com/claytonjn/SmartThingsPublic/Hue-Advanced-Development/smartapp-icons/hue-advanced/png/colorloop-off.png"
+			state "colorloop", label:"Colorloop On", action:"colorloopOff", nextState: "updating", icon:"https://raw.githubusercontent.com/claytonjn/SmartThingsPublic/Hue-Advanced-Development/smartapp-icons/hue-advanced/png/colorloop-on.png"
 			state "updating", label:"Working", icon: "st.secondary.secondary"
+		}
+
+		valueTile("colormode", "device.colormode", inactiveLabel: false, decoration: "flat", width: 4, height: 1) {
+			state "default", label: 'Colormode: ${currentValue}'
 		}
 
 		valueTile("cdBrightnessControl", "device.cdBrightness", inactiveLabel: false, decoration: "flat", width: 3, height: 1) {
@@ -91,7 +96,7 @@ metadata {
 		}
 
 		main(["rich-control"])
-		details(["rich-control", "transitionTimeSliderControl", "transTime", "cdBrightnessControl", "cdColorControl", "effectControl", "reset", "refresh"])
+		details(["rich-control", "transitionTimeSliderControl", "transTime", "cdBrightnessControl", "cdColorControl", "effectControl", "colormode", "reset", "refresh"])
 	}
 }
 
