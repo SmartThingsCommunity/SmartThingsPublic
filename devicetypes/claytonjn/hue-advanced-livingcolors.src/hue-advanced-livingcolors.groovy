@@ -25,6 +25,7 @@ metadata {
 		command "colorloopOff"
 
 		attribute "transitionTime", "NUMBER"
+		attribute "xy", "json_object"
 		attribute "effect", "enum", ["none", "colorloop"]
 		attribute "colormode", "enum", ["hs", "xy"]
 	}
@@ -195,6 +196,9 @@ void setColor(value) {
 		if (value.xy[0] < 0 || value.xy[0] > 1 || value.xy[1] < 0 || value.xy[1] > 1) {
 			log.warn "$value.xy is not a valid color"
 		} else if (verifyPercent(value.level)) {
+			value.xy[0] = value.xy[0].round(4)
+			value.xy[1] = value.xy[1].round(4)
+			events << createEvent(name: "xy", value: groovy.json.JsonOutput.toJson([value.xy[0], value.xy[1]]))
 			events << createEvent(name: "color", value: parent.getXYtoHex(value.xy, value.level))
 			events << createEvent(name: "colormode", value: "xy")
 			validValues.xy = value.xy
@@ -203,6 +207,8 @@ void setColor(value) {
     if (value.hex != null) {
         if (value.hex ==~ /^\#([A-Fa-f0-9]){6}$/) {
             events << createEvent(name: "color", value: value.hex)
+			def xy = parent.getHextoXY(value.hex)
+			events << createEvent(name: "xy", value: groovy.json.JsonOutput.toJson([xy[0], xy[1]]))
 			events << createEvent(name: "colormode", value: "xy")
             validValues.hex = value.hex
         } else {

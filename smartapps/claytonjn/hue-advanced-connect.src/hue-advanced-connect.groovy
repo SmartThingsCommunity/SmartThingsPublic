@@ -803,6 +803,7 @@ def parse(childDevice, description) {
                                 sendEvent(d.deviceNetworkId, [name: "color", value: hex])
                                 sendEvent(d.deviceNetworkId, [name: "hue", value: hue])
                                 sendEvent(d.deviceNetworkId, [name: "saturation", value: sat])
+								sendEvent(d.deviceNetworkId, [name: "xy", value: device.value[api].xy])
 								sendEvent(d.deviceNetworkId, [name: "effect", value: device.value[api].effect])
 								sendEvent(d.deviceNetworkId, [name: "colormode", value: device.value[api].colormode])
                             }
@@ -845,21 +846,24 @@ def parse(childDevice, description) {
                                 case "bri":
                                     sendEvent(childDeviceNetworkId, [name: "level", value: hueBritoST(v)])
                                     break
-                                case "effect":
-                                    sendEvent(childDeviceNetworkId, [name: "effect", value: v])
-                                    break
-								case "colormode":
-                                    sendEvent(childDeviceNetworkId, [name: "colormode", value: v])
-                                    break
                                 case "sat":
                                     hsl[childDeviceNetworkId].saturation = Math.round(v * 100 / 255) as int
                                     break
                                 case "hue":
                                     hsl[childDeviceNetworkId].hue = Math.min(Math.round(v * 100 / 65535), 65535) as int
                                     break
+								case "xy":
+                                    sendEvent(childDeviceNetworkId, [name: "xy", value: v])
+                                    break
 								case "ct":
 									sendEvent(childDeviceNetworkId, [name: "colorTemperature", value: Math.round(1000000 / v)])
 									break
+								case "effect":
+                                    sendEvent(childDeviceNetworkId, [name: "effect", value: v])
+                                    break
+								case "colormode":
+                                    sendEvent(childDeviceNetworkId, [name: "colormode", value: v])
+                                    break
                             }
                         }
 
@@ -1071,7 +1075,7 @@ private getBridgeIP() {
     return host
 }
 
-private getHextoXY(String colorStr) {
+def getHextoXY(String colorStr) {
     // For the hue bulb the corners of the triangle are:
     // -Red: 0.675, 0.322
     // -Green: 0.4091, 0.518
@@ -1116,13 +1120,13 @@ private getHextoXY(String colorStr) {
     float x = (X != 0 ? X / (X + Y + Z) : 0);
     float y = (Y != 0 ? Y / (X + Y + Z) : 0);
 
-    double[] xy = new double[2];
-    xy[0] = x;
-    xy[1] = y;
+    float[] xy = new float[2];
+	xy[0] = x.round(4);
+    xy[1] = y.round(4);
     return xy;
 }
 
-Boolean getXYtoHex(xy, level) {
+def getXYtoHex(xy, level) {
 	float x = xy[0]
 	float y = xy[1]
 	float z = 1.0 - x - y
