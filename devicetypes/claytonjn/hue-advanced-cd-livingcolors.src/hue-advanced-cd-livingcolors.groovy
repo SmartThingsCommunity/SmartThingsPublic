@@ -25,6 +25,7 @@ metadata {
 		command "colorloopOn"
 		command "colorloopOff"
 		command "bri_inc"
+		command "sat_inc"
 		command "enableCDBrightness"
         command "disableCDBrightness"
 		command "enableCDColor"
@@ -330,6 +331,11 @@ void colorloopOff() {
 void bri_inc(value) {
 	log.debug "Executing 'bri_inc'"
 	parent.bri_inc(this, value, deviceType)
+}
+
+void sat_inc(value) {
+	log.debug "Executing 'sat_inc'"
+	parent.sat_inc(this, value, deviceType)
 }
 
 def adjustOutgoingHue(percent) {

@@ -1022,6 +1022,11 @@ def bri_inc(childDevice, value, deviceType) {
 	put("${deviceType}/${getId(childDevice)}/${getApi(deviceType)}", [bri_inc: value])
 }
 
+def sat_inc(childDevice, value, deviceType) {
+	log.debug "Executing 'sat_inc($value)'"
+	put("${deviceType}/${getId(childDevice)}/${getApi(deviceType)}", [sat_inc: value])
+}
+
 private getId(childDevice) {
 	if (childDevice.device?.deviceNetworkId?.startsWith("HUE")) {
 		return childDevice.device?.deviceNetworkId[3..-1]
