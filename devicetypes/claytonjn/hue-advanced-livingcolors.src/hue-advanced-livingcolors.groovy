@@ -58,7 +58,7 @@ metadata {
 		}
 
 		standardTile("reset", "device.reset", height: 2, width: 2, inactiveLabel: false, decoration: "flat") {
-			state "default", label:"Reset Color", action:"reset", icon:"st.lights.philips.hue-single"
+			state "default", label:"Reset", action:"reset", icon:"st.lights.philips.hue-single"
 		}
 
 		standardTile("refresh", "device.refresh", height: 2, width: 2, inactiveLabel: false, decoration: "flat") {
@@ -246,11 +246,13 @@ void setColor(value) {
     }
 }
 
-void reset() {
-    log.debug "Executing 'reset'"
-    def value = [level:100, saturation:18, hue:8]
+void reset(transitionTime = device.currentValue("transitionTime")) {
+    if(transitionTime == null) { transitionTime = device.currentValue("transitionTime") ?: parent.getSelectedTransition() ?: 1 }
+
+	log.debug "Executing 'reset'"
+    def value = [level:100, saturation:18, hue:8, transitionTime:transitionTime]
 	colorloopOff()
-    setAdjustedColor(value)
+    setAdjustedColor(value, transitionTime)
     parent.poll()
 }
 

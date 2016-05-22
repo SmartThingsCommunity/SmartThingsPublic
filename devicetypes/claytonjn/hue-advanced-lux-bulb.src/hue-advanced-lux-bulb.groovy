@@ -15,7 +15,8 @@ metadata {
 		capability "Refresh"
 		capability "Sensor"
 
-        command "refresh"
+        command "reset"
+		command "refresh"
 		command "setTransitionTime"
 		command "alert"
 		command "bri_inc"
@@ -45,6 +46,10 @@ metadata {
             state "level", action:"switch level.setLevel"
         }
 
+		standardTile("reset", "device.reset", height: 2, width: 2, inactiveLabel: false, decoration: "flat") {
+			state "default", label:"Reset", action:"reset", icon:"st.lights.philips.hue-single"
+		}
+
         standardTile("refresh", "device.switch", inactiveLabel: false, decoration: "flat", width: 2, height: 2) {
             state "default", label:"", action:"refresh.refresh", icon:"st.secondary.refresh"
         }
@@ -56,13 +61,13 @@ metadata {
 			state "transitionTime", label: 'Transition:              ${currentValue} s'
 		}
 
-		valueTile("reachable", "device.reachable", inactiveLabel: false, decoration: "flat", width: 4, height: 1) {
+		valueTile("reachable", "device.reachable", inactiveLabel: false, decoration: "flat", width: 2, height: 1) {
 			state "true", label: 'Reachable'
 			state "false", label: 'Not Reachable!'
 		}
 
         main(["rich-control"])
-        details(["rich-control", "transitionTimeSliderControl", "transTime", "reachable", "refresh"])
+        details(["rich-control", "transitionTimeSliderControl", "transTime", "reachable", "reset", "refresh"])
     }
 }
 
@@ -118,6 +123,14 @@ void setLevel(percent, transitionTime = device.currentValue("transitionTime")) {
 	} else {
     	log.warn "$percent is not 0-100"
     }
+}
+
+void reset(transitionTime = device.currentValue("transitionTime")) {
+	if(transitionTime == null) { transitionTime = device.currentValue("transitionTime") ?: parent.getSelectedTransition() ?: 1 }
+
+    log.debug "Executing 'reset'"
+	setLevel(100, transitionTime)
+    parent.poll()
 }
 
 void refresh() {

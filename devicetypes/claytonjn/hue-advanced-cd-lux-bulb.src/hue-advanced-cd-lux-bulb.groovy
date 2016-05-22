@@ -15,13 +15,15 @@ metadata {
 		capability "Refresh"
 		capability "Sensor"
 
-        command "refresh"
+        command "reset"
+		command "refresh"
 		command "setTransitionTime"
 		command "alert"
 		command "bri_inc"
         command "enableCDBrightness"
         command "disableCDBrightness"
         command "tileSetLevel"
+		command "tileReset"
 
 		attribute "transitionTime", "NUMBER"
 		attribute "reachable", "enum", ["true", "false"]
@@ -49,6 +51,10 @@ metadata {
             state "level", action:"tileSetLevel"
         }
 
+		standardTile("reset", "device.reset", height: 2, width: 2, inactiveLabel: false, decoration: "flat") {
+			state "default", label:"Reset", action:"tileReset", icon:"st.lights.philips.hue-single"
+		}
+
         standardTile("refresh", "device.switch", inactiveLabel: false, decoration: "flat", width: 2, height: 2) {
             state "default", label:"", action:"refresh.refresh", icon:"st.secondary.refresh"
         }
@@ -60,19 +66,19 @@ metadata {
 			state "transitionTime", label: 'Transition:              ${currentValue} s'
 		}
 
-		valueTile("reachable", "device.reachable", inactiveLabel: false, decoration: "flat", width: 4, height: 1) {
+		valueTile("reachable", "device.reachable", inactiveLabel: false, decoration: "flat", width: 3, height: 1) {
 			state "true", label: 'Reachable'
 			state "false", label: 'Not Reachable!'
 		}
 
-        valueTile("cdBrightnessControl", "device.cdBrightness", inactiveLabel: false, decoration: "flat", width: 4, height: 1) {
+        valueTile("cdBrightnessControl", "device.cdBrightness", inactiveLabel: false, decoration: "flat", width: 3, height: 1) {
 			state "true", label: "Circadian Brightness On", action: "disableCDBrightness", nextState: "updating"
 			state "false", label: "Circadian Brightness Off", action: "enableCDBrightness", nextState: "updating"
 			state "updating", label: "Working"
 		}
 
         main(["rich-control"])
-        details(["rich-control", "transitionTimeSliderControl", "transTime", "cdBrightnessControl", "refresh", "reachable"])
+        details(["rich-control", "transitionTimeSliderControl", "transTime", "cdBrightnessControl", "reachable", "reset", "refresh"])
     }
 }
 
@@ -133,6 +139,18 @@ void setLevel(percent, transitionTime = device.currentValue("transitionTime"), d
 	} else {
     	log.warn "$percent is not 0-100"
     }
+}
+
+private tileReset() {
+	reset(null, true)
+}
+
+void reset(transitionTime = device.currentValue("transitionTime"), disableCDB = false) {
+	if(transitionTime == null) { transitionTime = device.currentValue("transitionTime") ?: parent.getSelectedTransition() ?: 1 }
+
+    log.debug "Executing 'reset'"
+	setLevel(100, transitionTime, disableCDB)
+    parent.poll()
 }
 
 void refresh() {
