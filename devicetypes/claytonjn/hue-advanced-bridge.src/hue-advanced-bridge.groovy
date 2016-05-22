@@ -7,6 +7,10 @@
 metadata {
 	// Automatically generated. Make future change here.
 	definition (name: "Hue Advanced Bridge", namespace: "claytonjn", author: "claytonjn") {
+		capability "Refresh"
+
+		command "refresh"
+
 		attribute "serialNumber", "string"
 		attribute "networkAddress", "string"
 	}
@@ -24,15 +28,19 @@ metadata {
 	            attributeState "default", label:'SN: ${currentValue}'
 			}
         }
-		valueTile("serialNumber", "device.serialNumber", decoration: "flat", height: 1, width: 2, inactiveLabel: false) {
+		valueTile("serialNumber", "device.serialNumber", decoration: "flat", height: 1, width: 4, inactiveLabel: false) {
 			state "default", label:'SN: ${currentValue}'
 		}
-		valueTile("networkAddress", "device.networkAddress", decoration: "flat", height: 2, width: 4, inactiveLabel: false) {
-			state "default", label:'${currentValue}', height: 1, width: 2, inactiveLabel: false
+		valueTile("networkAddress", "device.networkAddress", decoration: "flat", height: 1, width: 4, inactiveLabel: false) {
+			state "default", label:'IP: ${currentValue}'
+		}
+
+		standardTile("refresh", "device.refresh", height: 2, width: 2, inactiveLabel: false, decoration: "flat") {
+			state "default", label:"", action:"refresh.refresh", icon:"st.secondary.refresh"
 		}
 
 		main (["rich-control"])
-		details(["rich-control", "networkAddress"])
+		details(["rich-control", "serialNumber", "refresh", "networkAddress"])
 	}
 }
 
@@ -78,4 +86,9 @@ def parse(description) {
 		}
 	}
 	results
+}
+
+void refresh() {
+    log.debug "Executing 'refresh'"
+    parent.manualRefresh()
 }
