@@ -811,7 +811,7 @@ void checkForUpdates() {
 			def latestCommitTime = new Date().parse("y-M-d'T'k:m:s'Z'", result.data.commit.commit.author.date)
 			def lastUpdate = new Date().parse("y-M-d'T'k:m:s'Z'", state."last${branch}Update")
 			if (latestCommitTime > lastUpdate) {
-				def message = "Hue Advanced ${branch} branch updated with message ${result.data.commit.commit.message}"
+				def message = "Hue Advanced ${branch} branch updated with message: ${result.data.commit.commit.message}"
 				// check that contact book is enabled and recipients selected
 				if (location.contactBookEnabled && recipients) {
 				    sendNotificationToContacts(message, recipients, [event: false])
