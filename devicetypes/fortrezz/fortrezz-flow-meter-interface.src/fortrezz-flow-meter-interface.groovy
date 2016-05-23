@@ -1,7 +1,7 @@
 /**
  *  FortrezZ Flow Meter Interface
  *
- *  Copyright 2016 Daniel Kurin
+ *  Copyright 2016 FortrezZ, LLC
  *
  *  Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except
  *  in compliance with the License. You may obtain a copy of the License at:
@@ -41,7 +41,8 @@ metadata {
 	}
     
     preferences {
-       //input "gallonThreshhold", "number", title: "High Flow Rate Threshhold", description: "Flow rate (in gpm) that will trigger a notification.", defaultValue: 5, required: false, displayDuringSetup: true
+       input "gallonThreshhold", "decimal", title: "High Flow Rate Threshhold", description: "Flow rate (in gpm) that will trigger a notification.", defaultValue: 5, required: false, displayDuringSetup: true
+       input("registerEmail", type: "email", required: false, title: "Email Address", description: "Register your device with FortrezZ", displayDuringSetup: true)
     }
 
 	tiles(scale: 2) {
@@ -110,10 +111,10 @@ def parse(String description) {
 		}
 	}
 	//log.debug "\"$description\" parsed to ${results.inspect()}"
-    /*if(gallonThreshhold != device.currentValue("lastThreshhold"))
+    if(gallonThreshhold != device.currentValue("lastThreshhold"))
     {
     	results << setThreshhold(gallonThreshhold)
-    }*/
+    }
 	log.debug "zwave parsed to ${results.inspect()}"
 	return results
 }
@@ -351,10 +352,12 @@ def sendDataToCloud(double data)
         path: "/fortrezz/post.php",
         body: [
             id: device.id,
-            value: data
+            value: data,
+            email: registerEmail
         ]
     ]
 
+	//log.debug("POST parameters: ${params}")
     try {
         httpPostJson(params) { resp ->
             resp.headers.each {
@@ -419,7 +422,7 @@ def setThreshhold(rate)
     
     def event = createEvent(name: "lastThreshhold", value: rate, displayed: false)
     def cmds = []
-    cmds << zwave.configurationV2.configurationSet(configurationValue: [Math.round(rate*10)], parameterNumber: 5, size: 1).format()
+    cmds << zwave.configurationV2.configurationSet(configurationValue: [(int)Math.round(rate*10)], parameterNumber: 5, size: 1).format()
     sendEvent(event)
     response(cmds) // return a list containing the event and the result of response()
 }
