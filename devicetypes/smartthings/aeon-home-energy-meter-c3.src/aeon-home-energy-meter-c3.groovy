@@ -95,7 +95,11 @@ def parse(String description) {
 	if (cmd) {
 		result = createEvent(zwaveEvent(cmd))
 		log.debug "Parse returned ${result?.descriptionText}"
+		if(result.name&&result.value){
 		storeGraphData(result.name, result.value)
+	    } else {
+	    log.debug "event result has null value in name or value"	
+	    }
 	} else {
 		log.debug "zwave.parse returned null command. Cannot create event"
 	}
