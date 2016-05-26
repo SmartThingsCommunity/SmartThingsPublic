@@ -23,7 +23,7 @@ Licensed under the Apache License, Version 2.0 (the "License"); you may not use 
 http://www.apache.org/licenses/LICENSE-2.0 <br />
 Unless required by applicable law or agreed to in writing, software distributed under the License is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the License for the specific language governing permissions and limitations under the License. <br/>
 
-#Installation
+#Installation (Manual)
 1. Login at <a href=http://graph.api.smartthings.com>http://graph.api.smartthings.com</a>
 2. Go to "**My SmartApps**" section and click on the "**+ New SmartApp**" button on the right.
 3. On the "*New SmartApp*" page, Select the Tab "**From Code**" , Copy the BigTalker source code from GitHub (*https://github.com/rayzurbock/SmartThings-BigTalker/blob/master/smartapps/rayzurbock/big-talker.src/big-talker.groovy*) and paste it into the IDE editor window.
@@ -37,7 +37,7 @@ Unless required by applicable law or agreed to in writing, software distributed 
   * Android users have reported having to logout of the SmartThings app, closing it, and logging back in before new apps will show up.
 11. Tap **Configure** to start setting up your talking events.  Setup as many or as few as you like, but try not to setup events that would fire rapidly back to back or they will conflict with each other.
 
-#SmartThings IDE GitHub Integration
+#Installation (SmartThings IDE GitHub Integration)
 * To install the SmartApp using GitHub integration
 1. Login at <a href=http://graph.api.smartthings.com>http://graph.api.smartthings.com</a>
 2. Click "**My SmartApps**"
