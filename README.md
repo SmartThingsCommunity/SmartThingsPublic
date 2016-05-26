@@ -4,7 +4,7 @@ Big Talker is a SmartApp for SmartThings that can make your house talk depending
 Pair it with a SmartThings compatible audio device such as Sonos, Ubi, LANnouncer, VLC Thing, or a DLNA device using the "Generic MediaRenderer" SmartApp/Device! <br />  
 See <b>More Details</b> section below for more features.<br />
 
-Version: 1.1.5 <br />
+Version: 1.1.6 <br />
 
 #Support the project
  This SmartApp is free. Donations to support development efforts are accepted via:
@@ -67,6 +67,7 @@ Voice phrases support the following variables (to be filled in at runtime)
 * **%lastmode%** = Last home mode; home, away, etc...
 * **%mode%** = Current home mode; home, away, etc...
 * **%time%** = Current time; HH:mm am/pm
+* **%shmstatus%** = SmartHome Monitor Status (Disarmed, Armed Stay, Armed Away)
 * **%weathercurrent%** = Current weather (from Weather Underground; based on SmartThings Hub Zipcode)
 * **%weathertoday%** = Today's weather forecast (from Weather Underground; based on SmartThings Hub Zipcode)
 * **%weathertonight%** = Tonight's weather forecast (from Weather Underground; based on SmartThings Hub Zipcode)
@@ -157,3 +158,5 @@ Keep in mind, if you configure highly active or too many devices, it may get ann
   * BugFix: Replace special characters found in phrase (ie: URL tokens) such as those that end up in weather reports which cause LANnouncer to not speak when expected.
   * BugFix: Fix Talk() routine for speechSynthesis only devices which typically do TTS on the phrase passed to them on their own or within their deviceType.
   * BugFix: Talk() function has been further optimized and more bugs have been resolved.
+* 5/5/2016 - 5/25/2016
+  * Added phrase token %shmstatus% to speak your current SmartHome Monitor Status (Disarmed, Armed Away, Armed Stay)  ** Note this is not documented at this time by SmartThings and may stop working at any time and/or be removed in a future version. 
