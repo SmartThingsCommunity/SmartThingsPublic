@@ -59,6 +59,11 @@ Unless required by applicable law or agreed to in writing, software distributed 
   * Android users have reported having to logout of the SmartThings app, closing it, and logging back in before new apps will show up.
 19. Tap **Configure** to start setting up your talking events.  Setup as many or as few as you like, but try not to setup events that would fire rapidly back to back or they will conflict with each other.
 
+#ISSUES?
+Please check the latest posts on the SmartThings community for known issues and file bug reports / feature requests on GitHub for better tracking:
+* <a href=https://community.smartthings.com/t/big-talker-talk-when-events-occur/8076>SmartThings BigTalker Community</a>
+* <a href=https://github.com/rayzurbock/SmartThings-BigTalker/issues>GitHub Issue Tracker>
+
 # More Details
 Have you ever wanted a talking house? Now you can! With my Big Talker SmartApp ( http://github.com/rayzurbock/SmartThings-BigTalker )
 
