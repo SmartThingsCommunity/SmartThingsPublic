@@ -11,7 +11,7 @@ Version: 1.1.6 <br />
  * PayPal to: rayzur [at] rayzurbock.com
  * Link: <a href='https://www.paypal.com/cgi-bin/webscr?cmd=_s-xclick&hosted_button_id=WKB9N9MPUGTZS'>PayPal Donation (for supporters with or without a Paypal account)</a>
  * Link: <a href=https://cash.me/$Lowrance>Cash.me/$Lowrance</a> (Debit cards = free, Credit cards charge 3% on top of your donation)
- * Link: <a href='https://squareup.com/market/brian-lowrance#category-a58f6ff3-7380-471b-8432-7e5881654e2c'>Square Marketplace</a>
+ * Link: <a href='https://squareup.com/market/brian-lowrance#category-a58f6ff3-7380-471b-8432-7e5881654e2c'>Square Marketplace</a> (Donation is reduced by 2.9% + .30)
 
 #License
 **BIG TALKER -- A SmartApp for SmartThings Home Automation System** <br />
