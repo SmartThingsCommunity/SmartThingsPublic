@@ -38,7 +38,6 @@ Unless required by applicable law or agreed to in writing, software distributed 
 11. Tap **Configure** to start setting up your talking events.  Setup as many or as few as you like, but try not to setup events that would fire rapidly back to back or they will conflict with each other.
 
 #Installation (SmartThings IDE GitHub Integration)
-* To install the SmartApp using GitHub integration
 1. Login at <a href=http://graph.api.smartthings.com>http://graph.api.smartthings.com</a>
 2. Click "**My SmartApps**"
 3. Click "**Settings**"
