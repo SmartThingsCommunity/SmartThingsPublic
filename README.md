@@ -62,7 +62,7 @@ Unless required by applicable law or agreed to in writing, software distributed 
 #ISSUES?
 Please check the latest posts on the SmartThings community for known issues and file bug reports / feature requests on GitHub for better tracking:
 * <a href=https://community.smartthings.com/t/big-talker-talk-when-events-occur/8076>SmartThings BigTalker Community</a>
-* <a href=https://github.com/rayzurbock/SmartThings-BigTalker/issues>GitHub Issue Tracker>
+* <a href=https://github.com/rayzurbock/SmartThings-BigTalker/issues>GitHub Issue Tracker</a>
 
 # More Details
 Have you ever wanted a talking house? Now you can! With my Big Talker SmartApp ( http://github.com/rayzurbock/SmartThings-BigTalker )
