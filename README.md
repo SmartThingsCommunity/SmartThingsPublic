@@ -7,9 +7,10 @@ See <b>More Details</b> section below for more features.<br />
 Version: 1.1.6 <br />
 
 #Support the project
- This SmartApp is free. Donations to support development efforts are accepted via:
+ This SmartApp is free. Donations to support development efforts are accepted via (non-refundable, no gurantee of service/support):
  * PayPal to: rayzur [at] rayzurbock.com
  * Link: <a href='https://www.paypal.com/cgi-bin/webscr?cmd=_s-xclick&hosted_button_id=WKB9N9MPUGTZS'>PayPal Donation (for supporters with or without a Paypal account)</a>
+ * Link: <a href=https://cash.me/$Lowrance>Cash.me/$Lowrance</a> (Debit cards = free, Credit cards charge 3% on top of your donation)
  * Link: <a href='https://squareup.com/market/brian-lowrance#category-a58f6ff3-7380-471b-8432-7e5881654e2c'>Square Marketplace</a>
 
 #License
