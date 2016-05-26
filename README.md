@@ -37,6 +37,29 @@ Unless required by applicable law or agreed to in writing, software distributed 
   * Android users have reported having to logout of the SmartThings app, closing it, and logging back in before new apps will show up.
 11. Tap **Configure** to start setting up your talking events.  Setup as many or as few as you like, but try not to setup events that would fire rapidly back to back or they will conflict with each other.
 
+#SmartThings IDE GitHub Integration
+* To install the SmartApp using GitHub integration
+1. Login at <a href=http://graph.api.smartthings.com>http://graph.api.smartthings.com</a>
+2. Click "**My SmartApps**"
+3. Click "**Settings**"
+4. Click "**Add new repository**"
+  * Owner: **rayzurbock**
+  * Name: **SmartThings-BigTalker**
+  * Branch: **master**
+8. Click "**Save**"
+9. Click "**Update from Repo**"
+10. Click "**SmartThings-BigTalker (master)**"
+11. If there is an update you should see it in the Obsolete box. Check BigTalker.src in the Obsolete box.
+12. Check "**Public**"
+13. Click "**Execute Update**"
+14. (If you are just updating your existing BigTalker with a new version, you are done at this step)
+15. Open SmartThings mobile app and go to the Market Place (star burst icon).
+16. Press "**SmartApps**"
+17. Press "**My Apps**"
+18. "**BigTalker**" app should be available in the list of SmartApps that appears. Tap it.
+  * Android users have reported having to logout of the SmartThings app, closing it, and logging back in before new apps will show up.
+19. Tap **Configure** to start setting up your talking events.  Setup as many or as few as you like, but try not to setup events that would fire rapidly back to back or they will conflict with each other.
+
 # More Details
 Have you ever wanted a talking house? Now you can! With my Big Talker SmartApp ( http://github.com/rayzurbock/SmartThings-BigTalker )
 
