@@ -159,4 +159,4 @@ Keep in mind, if you configure highly active or too many devices, it may get ann
   * BugFix: Fix Talk() routine for speechSynthesis only devices which typically do TTS on the phrase passed to them on their own or within their deviceType.
   * BugFix: Talk() function has been further optimized and more bugs have been resolved.
 * 5/5/2016 - 5/25/2016
-  * Added phrase token %shmstatus% to speak your current SmartHome Monitor Status (Disarmed, Armed Away, Armed Stay)  ** Note this is not documented at this time by SmartThings and may stop working at any time and/or be removed in a future version. 
+  * Added phrase token %shmstatus% to speak your current SmartHome Monitor Status (Disarmed, Armed Away, Armed Stay)  ** Note this is not documented at this time by SmartThings and may stop working at any time and/or be removed in a future version.  Thanks STCommunity: @bsanker for the request and STCommunity: @MichaelS for the tip on implementing.
