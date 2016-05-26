@@ -1,5 +1,5 @@
 /**  
- *  BIG TALKER -- Version 1.1.5 -- A SmartApp for SmartThings Home Automation System
+ *  BIG TALKER -- Version 1.1.6 -- A SmartApp for SmartThings Home Automation System
  *  Copyright 2014-2016 - rayzur@rayzurbock.com - Brian S. Lowrance
  *  For the latest version, development and test releases visit http://www.github.com/rayzurbock
  *
@@ -1594,6 +1594,7 @@ def pageHelpPhraseTokens(){
            AvailTokens += "%lastmode% = Last hub mode; home, away, etc\n\n"
            AvailTokens += "%mode% = Current hub mode; home, away, etc\n\n"
            AvailTokens += "%time% = Current hub time; HH:mm am/pm\n\n"
+           AvailTokens += "%shmstatus% = SmartHome Monitor Status (Disarmed, Armed Stay, Armed Away)\n\n"
            AvailTokens += "%weathercurrent% = Current weather based on hub location\n\n"
            AvailTokens += "%weathercurrent(00000)% = Current weather* based on custom zipcode (replace 00000)\n\n"
            AvailTokens += "%weathertoday% = Today's weather forecast* based on hub location\n\n"
@@ -2921,6 +2922,13 @@ def processPhraseVariables(phrase, evt){
         if (phrase.contains(",")) { phrase = phrase.replace(","," - ") }
         //if (phrase.contains(".")) { phrase = phrase.replace("."," - ") }
     }
+    if (phrase.toLowerCase().contains("%shmstatus%")) {
+    	def shmstatus = location.currentState("alarmSystemStatus")?.value
+        LOGDEBUG("SHMSTATUS=${shmstatus}")
+		def shmmessage = [off : "Disarmed", away: "Armed, away", stay: "Armed, stay"][shmstatus] ?: shmstatus
+        LOGDEBUG("SHMMESSAGE=${shmmessage}")
+        phrase = phrase.replace("%shmstatus%", shmmessage)
+    }
     if (phrase.contains('"')) { phrase = phrase.replace('"',"") }
     if (phrase.contains("'")) { phrase = phrase.replace("'","") }
     if (phrase.contains("10S")) { phrase = phrase.replace("10S","tens") }
@@ -3910,5 +3918,5 @@ def LOGERROR(txt){
 }
 
 def setAppVersion(){
-    state.appversion = "1.1.5"
+    state.appversion = "1.1.6"
 }
