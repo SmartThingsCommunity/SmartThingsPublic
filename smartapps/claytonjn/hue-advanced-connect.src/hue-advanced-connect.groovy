@@ -411,7 +411,9 @@ private getDeviceHandler(hueType) {
 	else if (hueType?.equalsIgnoreCase("Extended Color Light") || hueType?.equalsIgnoreCase("LightGroup") || hueType?.equalsIgnoreCase("Room"))
 		return "Hue Advanced${handlerType} Bulb/Group"
 	else if (hueType?.equalsIgnoreCase("Color Light"))
-		return "Hue Advanced${handlerType} Bloom"
+		return "Hue Advanced${handlerType} LivingColors"
+	else if (hueType?.equalsIgnoreCase("Color Temperature Light"))
+		return "Hue Advanced${handlerType} White Ambiance Bulb"
 	else
 		return null
 }
