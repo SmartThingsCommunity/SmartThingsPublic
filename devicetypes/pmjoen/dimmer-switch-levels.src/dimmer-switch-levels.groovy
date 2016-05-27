@@ -10,6 +10,7 @@
 	 * pmjoen@yahoo.com
 	 * 20160517
 	 *
+     * v1.5 - Modified color for low/med.
      * v1.4 - Modified text for preferences.
 	 * v1.3 - Improvement select stepper value up/down shows adjusting in multiAttributeTile
 	 * v1.2 - Bug fix modify icon for current state in multiAttributeTile 
@@ -51,8 +52,8 @@
 				tileAttribute ("device.currentState", key: "PRIMARY_CONTROL") {
 					attributeState "default", label:'ADJUSTING', action:"refresh.refresh",icon:"st.Lighting.light13", backgroundColor:"#2179b8", nextState: "turningOff"
 					attributeState "HIGH", label:'HIGH', action:"switch.off", icon:"st.illuminance.illuminance.bright", backgroundColor:"#79b821", nextState:"turningOff"
-					attributeState "MED", label:'MED', action:"switch.off", icon:"st.illuminance.illuminance.light", backgroundColor:"#79b821", nextState:"turningOff" 
-					attributeState "LOW", label:'LOW', action:"switch.off", icon:"st.Weather.weather4", backgroundColor:"#79b821", nextState:"turningOff" 
+					attributeState "MED", label:'MED', action:"switch.off", icon:"st.illuminance.illuminance.light", backgroundColor:"#60931a", nextState:"turningOff" 
+					attributeState "LOW", label:'LOW', action:"switch.off", icon:"st.Weather.weather4", backgroundColor:"#486e13", nextState:"turningOff" 
 					attributeState "OFF", label:'OFF', action:"switch.on", icon:"st.Lighting.light13", backgroundColor:"#ffffff", nextState: "turningOn"
 	                attributeState "on", label:'ON', action:"switch.off", icon:"st.Lighting.light11", backgroundColor:"#79b821", nextState:"turningOff"
 	                attributeState "turningOn", action:"switch.on", label:'TURNINGON', icon:"st.Lighting.light11", backgroundColor:"#2179b8", nextState: "turningOn"
@@ -88,13 +89,13 @@
 
 	        standardTile("low", "device.currentState", inactiveLabel: false, width: 2, height: 2, canChangeBackground: false) {
 	        	state "default", label: 'LOW', action: "low", icon:"st.Weather.weather4", backgroundColor: "#ffffff"
-	            state "LOW", label:'LOW', action: "low", icon:"st.Weather.weather4", backgroundColor: "#79b821"
+	            state "LOW", label:'LOW', action: "low", icon:"st.Weather.weather4", backgroundColor: "#486e13"
 	            state "ADJUSTING.LOW", label:'LOW', action: "low", icon:"st.Weather.weather4", backgroundColor: "#2179b8"
 	  		}
 	        
 	        standardTile("med", "device.currentState", inactiveLabel: false, width: 2, height: 2, canChangeBackground: false) {
 				state "default", label: 'MED', action: "med", icon:"st.illuminance.illuminance.light", backgroundColor: "#ffffff"
-	            state "MED", label: 'MED', action: "med", icon:"st.illuminance.illuminance.light", backgroundColor: "#79b821"
+	            state "MED", label: 'MED', action: "med", icon:"st.illuminance.illuminance.light", backgroundColor: "#60931a"
 				state "ADJUSTING.MED", label:'MED', action: "med", icon:"st.illuminance.illuminance.light", backgroundColor: "#2179b8"
 			}
 	            
