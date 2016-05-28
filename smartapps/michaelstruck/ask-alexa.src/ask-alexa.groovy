@@ -9,7 +9,7 @@
  *  Version 1.0.0b - Remove punctuation from the device, mode and routine names. Fixed bug where numbers were removed in modes and routine names 
  *  Version 1.0.1c - Added presense sensors; added up/down/lower/increase/decrease as commands for various devices
  *  Version 1.0.2b - Added motion sensors and a new function, "events" to list to the last events for a device; code optimization, bugs removed
- *	Version 1.1.0 - Changed voice reports to macros, added toggle commands to switches, bug fixes and code optimization
+ *  Version 1.1.0 - Changed voice reports to macros, added toggle commands to switches, bug fixes and code optimization
  *
  *  Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except
  *  in compliance with the License. You may obtain a copy of the License at:
