@@ -31,8 +31,8 @@
  *
  *	Changelog:
  *
- *	0.1 (05/22/2016)
- *		-	Initial 0.1 Beta
+ *	0.10 (05/22/2016) -	Initial 0.1 Beta
+ *  0.11 (05/28/2016) - Set numberOfButtons attribute for ease of use with CoRE and other SmartApps
  *
  */
  metadata {
@@ -43,7 +43,7 @@
         capability "Configuration"
         capability "Indicator"
         capability "Sensor"
-
+        
         command "button1"
         command "button2"
         command "button3"
@@ -384,6 +384,8 @@ def setButtonLabels() {
     sendEvent(name: "label13", value: state.buttonLabels[12], isStateChange: true)
     sendEvent(name: "label14", value: state.buttonLabels[13], isStateChange: true)
     sendEvent(name: "label15", value: state.buttonLabels[14], isStateChange: true)
+    
+    sendEvent(name: "numberOfButtons", value: 15, displayed: false)
 }
 
 // Configure the device button types and corresponding scene numbers
@@ -397,6 +399,7 @@ def configurationCmds() {
        // set configuration for each button to zero (scene control momontary)
        commands << zwave.configurationV1.configurationSet(configurationValue: [0], parameterNumber: buttonNum + 1, size: 1).format()
     }
+
     commands << zwave.batteryV1.batteryGet().format()
     commands << associateHub()
        
@@ -421,7 +424,6 @@ def associateHub() {
 
           // Associate the hub with the button so we will get status updates
           commands << zwave.associationV1.associationSet(groupingIdentifier: buttonNum, nodeId: zwaveHubNodeId).format() 
-         // commands << zwave.associationV1.associationSet(groupingIdentifier: buttonNum, nodeId: 1).format() 
     }
     return commands
 }

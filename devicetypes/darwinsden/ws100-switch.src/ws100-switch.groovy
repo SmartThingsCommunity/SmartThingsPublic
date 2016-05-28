@@ -1,5 +1,5 @@
 /**
- *  HomeSeer/Dragontech WS100+
+ *  HomeSeer HS-WS100+
  *
  *  Copyright 2016 DarwinsDen.com
  *
@@ -22,8 +22,8 @@
  *
  *	Changelog:
  *
- *	0.1 (04/08/2016)
- *		-	Initial 0.1 Beta
+ *	0.10 (04/08/2016) -	Initial 0.1 Beta
+ *  0.11 (05/28/2016) - Set numberOfButtons attribute for ease of use with CoRE and other SmartApps. Corrected physical/digital states.
  *
  */
  
@@ -36,6 +36,7 @@ metadata {
 		capability "Polling"
 		capability "Refresh"
 		capability "Sensor"
+        capability "Configuration"
         
         command "tapUp2"
         command "tapDown2"
@@ -176,6 +177,7 @@ def poll() {
 }
 
 def refresh() {
+    configure()
 	delayBetween([
 		zwave.switchBinaryV1.switchBinaryGet().format(),
 		zwave.manufacturerSpecificV1.manufacturerSpecificGet().format()
@@ -283,32 +285,32 @@ def zwaveEvent(physicalgraph.zwave.commands.centralscenev1.CentralSceneNotificat
 
 def tapUp2Response(String buttonType) {
 	[name: "button", value: "pushed", data: [buttonNumber: "1"], descriptionText: "$device.displayName Tap-Up-2 (button 1) pressed", 
-       isStateChange: true, type: $buttonType]
+       isStateChange: true, type: "$buttonType"]
 }
 
 def tapDown2Response(String buttontype) {
 	[name: "button", value: "pushed", data: [buttonNumber: "2"], descriptionText: "$device.displayName Tap-Down-2 (button 2) pressed", 
-      isStateChange: true, type: $buttonType]
+      isStateChange: true, type: "$buttonType"]
 }
 
 def tapUp3Response(String buttonType) {
 	[name: "button", value: "pushed", data: [buttonNumber: "3"], descriptionText: "$device.displayName Tap-Up-3 (button 3) pressed", 
-    isStateChange: true, type: $buttonType]
+    isStateChange: true, type: "$buttonType"]
 }
 
 def tapDown3Response(String buttonType) {
 	[name: "button", value: "pushed", data: [buttonNumber: "4"], descriptionText: "$device.displayName Tap-Down-3 (button 4) pressed", 
-    isStateChange: true, type: $buttonType]
+    isStateChange: true, type: "$buttonType"]
 }
 
 def holdUpResponse(String buttonType) {
 	[name: "button", value: "pushed", data: [buttonNumber: "5"], descriptionText: "$device.displayName Hold-Up (button 5) pressed", 
-    isStateChange: true, type: $buttonType]
+    isStateChange: true, type: "$buttonType"]
 }
 
 def holdDownResponse(String buttonType) {
 	[name: "button", value: "pushed", data: [buttonNumber: "6"], descriptionText: "$device.displayName Hold-Down (button 6) pressed", 
-    isStateChange: true, type: $buttonType]
+    isStateChange: true, type: "$buttonType"]
 }
 
 def tapUp2() {
@@ -334,3 +336,7 @@ def holdUp() {
 def holdDown() {
 	sendEvent(holdDownResponse("digital"))
 } 
+
+def configure() {
+     sendEvent(name: "numberOfButtons", value: 6, displayed: false)
+}

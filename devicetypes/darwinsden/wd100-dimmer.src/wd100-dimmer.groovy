@@ -1,5 +1,5 @@
 /**
- *  HomeSeer/Dragontech WD100+
+ *  HomeSeer HS-WD100+
  *
  *  Copyright 2016 DarwinsDen.com
  *
@@ -22,8 +22,8 @@
  *
  *	Changelog:
  *
- *	0.1 (04/10/2016)
- *		-	Initial 0.1 Beta
+ *	0.10 (04/10/2016) -	Initial 0.1 Beta
+ *  0.11 (05/28/2016) - Set numberOfButtons attribute for ease of use with CoRE and other SmartApps. Corrected physical/digital states.
  *
  */
  
@@ -37,6 +37,7 @@ metadata {
 		capability "Refresh"
 		capability "Sensor"
         capability "Button"
+        capability "Configuration"
         
         command "tapUp2"
         command "tapDown2"
@@ -164,7 +165,6 @@ private dimmerEvents(physicalgraph.zwave.Command cmd) {
 	return result
 }
 
-
 def zwaveEvent(physicalgraph.zwave.commands.configurationv1.ConfigurationReport cmd) {
 	log.debug "ConfigurationReport $cmd"
 	def value = "when off"
@@ -239,6 +239,7 @@ def poll() {
 
 def refresh() {
 	log.debug "refresh() is called"
+    configure()
 	def commands = []
 	commands << zwave.switchMultilevelV1.switchMultilevelGet().format()
 	if (getDataValue("MSR") == null) {
@@ -280,12 +281,10 @@ def zwaveEvent(physicalgraph.zwave.commands.centralscenev1.CentralSceneNotificat
           // Up
           switch (cmd.keyAttributes) {
               case 0:
-                  // Handle the occasional 0 case (currently an undocumented/unknown Up attribute)
                   result=createEvent([name: "switch", value: "on", type: "physical"])
                   break
  
               case 1:
-                  // Press Once
                   result=createEvent([name: "switch", value: "on", type: "physical"])
                   break
               case 2:
@@ -312,12 +311,10 @@ def zwaveEvent(physicalgraph.zwave.commands.centralscenev1.CentralSceneNotificat
           // Down
           switch (cmd.keyAttributes) {
               case 0:
-                  // Handle the occasional 0 case (currently an undocumented/unknown Up attribute)
                   result=createEvent([name: "switch", value: "off", type: "physical"])
                   break
 
               case 1:
-                  // Press Once
                   result=createEvent([name: "switch", value: "off", type: "physical"])
                   break
               case 2:
@@ -348,32 +345,32 @@ def zwaveEvent(physicalgraph.zwave.commands.centralscenev1.CentralSceneNotificat
 
 def tapUp2Response(String buttonType) {
 	[name: "button", value: "pushed", data: [buttonNumber: "1"], descriptionText: "$device.displayName Tap-Up-2 (button 1) pressed", 
-       isStateChange: true, type: $buttonType]
+       isStateChange: true, type: "$buttonType"]
 }
 
 def tapDown2Response(String buttontype) {
 	[name: "button", value: "pushed", data: [buttonNumber: "2"], descriptionText: "$device.displayName Tap-Down-2 (button 2) pressed", 
-      isStateChange: true, type: $buttonType]
+      isStateChange: true, type: "$buttonType"]
 }
 
 def tapUp3Response(String buttonType) {
 	[name: "button", value: "pushed", data: [buttonNumber: "3"], descriptionText: "$device.displayName Tap-Up-3 (button 3) pressed", 
-    isStateChange: true, type: $buttonType]
+    isStateChange: true, type: "$buttonType"]
 }
 
 def tapDown3Response(String buttonType) {
 	[name: "button", value: "pushed", data: [buttonNumber: "4"], descriptionText: "$device.displayName Tap-Down-3 (button 4) pressed", 
-    isStateChange: true, type: $buttonType]
+    isStateChange: true, type: "$buttonType"]
 }
 
 def holdUpResponse(String buttonType) {
 	[name: "button", value: "pushed", data: [buttonNumber: "5"], descriptionText: "$device.displayName Hold-Up (button 5) pressed", 
-    isStateChange: true, type: $buttonType]
+    isStateChange: true, type: "$buttonType"]
 }
 
 def holdDownResponse(String buttonType) {
 	[name: "button", value: "pushed", data: [buttonNumber: "6"], descriptionText: "$device.displayName Hold-Down (button 6) pressed", 
-    isStateChange: true, type: $buttonType]
+    isStateChange: true, type: "$buttonType"]
 }
 
 def tapUp2() {
@@ -399,3 +396,7 @@ def holdUp() {
 def holdDown() {
 	sendEvent(holdDownResponse("digital"))
 } 
+
+def configure() {
+     sendEvent(name: "numberOfButtons", value: 6, displayed: false)
+}
