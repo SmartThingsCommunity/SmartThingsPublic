@@ -21,7 +21,7 @@
 'use strict';
 exports.handler = function( event, context ) {
    var versionTxt = '1.1.0';
-   var versionDate= '05/27/2016'
+   var versionDate= '05/27/2016';
    var versionNum = '110';
    var https = require( 'https' );
    // Paste app code here between the breaks------------------------------------------------
