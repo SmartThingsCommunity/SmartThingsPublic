@@ -1,7 +1,7 @@
 /**
  *  Ask Alexa - Macro
  *
- *  Version 2.0.0 - 5/27/16 Copyright © 2016 Michael Struck
+ *  Version 2.0.0 - 5/28/16 Copyright © 2016 Michael Struck
  *  
  *  Version 1.0.0 - Initial release
  *  Version 1.0.1 - Added motion sensor reports; added events report to various sensors
@@ -25,9 +25,9 @@ definition(
     description: "Provide interfacing to control and report on SmartThings devices with the Amazon Echo ('Alexa').",
     category: "Convenience",
     parent: "MichaelStruck:Ask Alexa",
-    iconUrl: "https://raw.githubusercontent.com/MichaelStruck/SmartThingsPublic/master/smartapps/michaelstruck/ask-alexa-report.src/AskAlexa.png",
-    iconX2Url: "https://raw.githubusercontent.com/MichaelStruck/SmartThingsPublic/master/smartapps/michaelstruck/ask-alexa-report.src/AskAlexa@2x.png",
-    iconX3Url: "https://raw.githubusercontent.com/MichaelStruck/SmartThingsPublic/master/smartapps/michaelstruck/ask-alexa-report.src/AskAlexa@2x.png"
+    iconUrl: "https://raw.githubusercontent.com/MichaelStruck/SmartThingsPublic/master/smartapps/michaelstruck/ask-alexa-macro.src/AskAlexa.png",
+    iconX2Url: "https://raw.githubusercontent.com/MichaelStruck/SmartThingsPublic/master/smartapps/michaelstruck/ask-alexa-macro.src/AskAlexa@2x.png",
+    iconX3Url: "https://raw.githubusercontent.com/MichaelStruck/SmartThingsPublic/master/smartapps/michaelstruck/ask-alexa-macro.src/AskAlexa@2x.png"
     )
 preferences {
     page name:"mainSelection"
@@ -895,6 +895,6 @@ private setColoredLights(switches, color, level, type){
 	switches?.setColor(newValue)
 }
 //Version 
-private def textVersion() {return "Voice Macros Version: 2.0.0 (05/27/2016)"}
+private def textVersion() {return "Voice Macros Version: 2.0.0 (05/28/2016)"}
 private def versionInt() {return 200}
 private def versionLong() {return "2.0.0"}
