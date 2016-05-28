@@ -1,7 +1,7 @@
 /**
  *  Ask Alexa - Lambda Code
  *
- *  Version 1.1.0 - 5/27/16 Copyright Â© 2016 Michael Struck
+ *  Version 1.1.0 - 5/27/16 Copyright © 2016 Michael Struck
  *  Special thanks for Keith DeLong for code and assistance
  *  
  *  Version 1.0.0 - Initial release
