@@ -32,12 +32,15 @@ DeviceOperation set {Device} {Param}
 DeviceOperation set {Device} to {Param}
 DeviceOperation set the {Device} {Param}
 DeviceOperation set the {Device} to {Param}
+DeviceOperation set the color of {Device} to {Param}
+DeviceOperation set the color of the {Device} to {Param}
 DeviceOperation set the color of {Device} to {Param} and set level to {Num}
 DeviceOperation set the {Device} to {Param} and {Num}
+
 DeviceOperation {Operator} {Device} by {Num}
+DeviceOperation {Operator} the {Device} by {Num}
 DeviceOperation turn {Device} {Operator} by {Num}
 DeviceOperation turn the {Device} {Operator} by {Num} percent
-DeviceOperation turn {Device} {Operator}
 DeviceOperation {Operator} the {Device}
 DeviceOperation to {Operator} the {Device} volume
 DeviceOperation to {Operator} the {Device} temperature
@@ -49,22 +52,12 @@ DeviceOperation {Operator} level of the {Device}
 DeviceOperation {Operator} temperature of the {Device}
 DeviceOperation {Operator} volume of the {Device}
 
-ReportOperation {Report} report
-ReportOperation for {Report} reports
-ReportOperation for the {Report} reports
-ReportOperation {Report} reports
-ReportOperation for the {Report} report
-ReportOperation report {Report}
-ReportOperation reports {Report}
-ReportOperation to report {Report}
-ReportOperation play the {Report} report
-ReportOperation to play {Report}
-ReportOperation to play the {Report} report
-ReportOperation to give me the {Report} report
-ReportOperation to tell me the {Report} report
-ReportOperation turn on {Report} report
-ReportOperation turn on the {Report} report
-ReportOperation give me the {Report} report
+DeviceOperation {Device} to {Operator}
+DeviceOperation turn {Device} {Operator}
+DeviceOperation turn {Device} to {Operator}
+DeviceOperation set {Device} to {Operator}
+DeviceOperation to turn the {Device} to {Operator}
+DeviceOperation to set the {Device} to {Operator}
 
 DeviceOperation set {Param} of {Device} to {Num} degrees
 DeviceOperation set {Param} of {Device} to {Num} 
@@ -83,6 +76,7 @@ DeviceOperation to set {Device} {Param} to {Num}
 DeviceOperation set the {Device} {Param} to {Num} degrees
 DeviceOperation set the {Device} {Param} to {Num}
 DeviceOperation set the {Device} to {Num} 
+DeviceOperation set the {Device} to {Num} degrees
 DeviceOperation to set the temperature of the {Device} to {Num} degrees
 DeviceOperation to set the temperature to {Num} in {Device}
 DeviceOperation turn {Device} {Param} mode to {Operator}
@@ -90,6 +84,7 @@ DeviceOperation turn {Operator} {Device} {Param} mode
 DeviceOperation set the {Device} to {Param} mode
 
 SmartHomeOperation to set {SHCmd} to {SHParam}
+SmartHomeOperation to set the {SHCmd} to {SHParam}
 SmartHomeOperation set the {SHCmd} to {SHParam}
 SmartHomeOperation {SHCmd} status
 SmartHomeOperation status of {SHCmd}
@@ -97,6 +92,7 @@ SmartHomeOperation the status of home {SHCmd}
 SmartHomeOperation {SHCmd} state
 SmartHomeOperation settings of {SHCmd}
 SmartHomeOperation run {SHCmd} {SHParam}
+SmartHomeOperation run the {SHParam} {SHCmd} 
 SmartHomeOperation to run {SHCmd} {SHParam}
 SmartHomeOperation what is the current {SHCmd}
 SmartHomeOperation the current {SHCmd}
@@ -118,8 +114,8 @@ DeviceOperation about {Device}
 DeviceOperation about {Device} {Operator}
 DeviceOperation about the {Device} {Operator}
 DeviceOperation about the {Device}
-DeviceOperation {Device} {Operator}
 DeviceOperation {Operator} of {Device}
+DeviceOperation the {Operator} of {Device}
 DeviceOperation for the {Operator} of {Device}
 DeviceOperation for the last {Num} {Operator} of {Device}
 DeviceOperation for the last {Num} {Operator} of the {Device}
@@ -130,3 +126,98 @@ DeviceOperation play the last {Num} {Operator} from {Device}
 DeviceOperation play the last {Num} {Operator} from the {Device}
 DeviceOperation to give me the last {Operator} for the {Device}
 DeviceOperation to give me the last {Num} {Operator} for the {Device}
+
+MacroOperation set {Macro} to {MNum}
+MacroOperation {Macro} to {MNum}
+MacroOperation {Macro} {MNum} percent
+MacroOperation set the level of {Macro} to {MNum} percent
+MacroOperation set the level of {Macro} to {MNum}
+MacroOperation set the {Macro} to {MNum}
+MacroOperation to set {Macro} to {MNum}
+MacroOperation to set the {Macro} to {MNum}
+MacroOperation set {Macro} to {MNum} percent
+MacroOperation set the {Macro} to {MNum} percent
+MacroOperation to set {Macro} to {MNum} percent
+MacroOperation to set the {Macro} to {MNum} percent
+MacroOperation to turn {Macro} to {MNum} percent
+MacroOperation to turn the {Macro} to {MNum} percent
+MacroOperation to turn {Macro} to {MNum}
+MacroOperation to turn the {Macro} to {MNum}
+
+MacroOperation to turn {MCmd} the {Macro}
+MacroOperation to turn {MCmd} {Macro}
+MacroOperation to turn {Macro} {MCmd}
+MacroOperation to turn the {Macro} {MCmd}
+MacroOperation to turn the {Macro} to {MCmd}
+MacroOperation {Macro} {MCmd}
+MacroOperation {Macro} to {MCmd}
+MacroOperation set {Macro} to {MCmd}
+MacroOperation to set {Macro} to {MCmd}
+MacroOperation to set the {Macro} to {MCmd}
+MacroOperation {MCmd} to {Macro} 
+MacroOperation to {MCmd} the {Macro}
+MacroOperation to {MCmd} the {Macro} password {MNum}
+
+MacroOperation to turn {MCmd} the {Macro} and {MNum}
+MacroOperation to turn {Macro} {MCmd} {MNum}
+MacroOperation to turn the {Macro} {MCmd} and {MNum}
+MacroOperation to turn the {Macro} to {MNum} and {MCmd}
+MacroOperation {Macro} {MCmd} {MNum} 
+MacroOperation {Macro} to {MCmd} and {MNum}
+MacroOperation set {Macro} to {MCmd} {MNum}
+MacroOperation to set {Macro} to {MCmd} {MNum}
+MacroOperation to set the {Macro} to {MCmd} {MNum}
+
+MacroOperation {Macro}
+MacroOperation {Macro} in {MNum} minute
+MacroOperation {Macro} in {MNum} minutes
+MacroOperation run {Macro}
+MacroOperation to run {Macro}
+MacroOperation run {Macro} in {MNum}
+MacroOperation run {Macro} in {MNum} minutes
+MacroOperation run {Macro} in {MNum} minute
+MacroOperation to run {Macro} in {MNum}
+MacroOperation to run {Macro} in {MNum} minutes
+MacroOperation to run {Macro} in {MNum} minute
+MacroOperation for {Macro}
+MacroOperation for the {Macro}
+MacroOperation report {Macro}
+MacroOperation reports {Macro}
+MacroOperation to report {Macro}
+MacroOperation play the {Macro}
+MacroOperation to play {Macro}
+MacroOperation to play the {Macro} 
+MacroOperation to give me the {Macro}
+MacroOperation to tell me the {Macro} 
+MacroOperation turn on {Macro} report
+MacroOperation turn on the {Macro}
+MacroOperation give me the {Macro} 
+MacroOperation execute the {Macro}
+MacroOperation report on the {Macro}
+MacroOperation control the {Macro}
+MacroOperation delay {Macro} by {MNum}
+MacroOperation delay {Macro} by {MNum} minutes
+MacroOperation delay {Macro} by {MNum} minute
+MacroOperation delay the {Macro} by {MNum}
+MacroOperation delay the {Macro} by {MNum} minutes
+MacroOperation delay the {Macro} by {MNum} minute
+MacroOperation {Macro} by {MNum} minutes
+MacroOperation {Macro} by {MNum} minute
+
+MacroOperation {Cancel} {Macro}
+MacroOperation {Macro} {Cancel}
+
+MacroOperation turn {Macro} {MParam} 
+MacroOperation turn {Macro} to {MParam}
+MacroOperation turn the {Macro} {MParam}
+MacroOperation turn the {Macro} to {MParam}
+MacroOperation set {Macro} {MParam} 
+MacroOperation set {Macro} to {MParam}
+MacroOperation set the {Macro} {MParam}
+MacroOperation set the {Macro} to {MParam}
+MacroOperation set the color of {Macro} to {MParam} and set level to {MNum}
+MacroOperation set the color of {Macro} to {MParam} and {MCmd}
+MacroOperation set the {Macro} to {MParam} and {MCmd}
+MacroOperation set the {Macro} to {MParam} and {MNum}
+MacroOperation {MCmd} the {Macro} by {MNum}
+MacroOperation {MCmd} the {Macro} by {MNum} percent
