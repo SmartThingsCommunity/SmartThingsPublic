@@ -14,12 +14,13 @@
  *
  */
 metadata {
-	definition (name: "SmartSense Temp/Humidity Sensor",namespace: "smartthings", author: "SmartThings") {
+	definition (name: "SmartSense Temp/Humidity Sensor",namespace: "smartthings", author: "SmartThings", category: "C2") {
 		capability "Configuration"
 		capability "Battery"
 		capability "Refresh"
 		capability "Temperature Measurement"
 		capability "Relative Humidity Measurement"
+		capability "Health Check"
 
 		fingerprint endpointId: "01", inClusters: "0001,0003,0020,0402,0B05,FC45", outClusters: "0019,0003"
 	}
@@ -251,6 +252,7 @@ def refresh()
 }
 
 def configure() {
+	sendEvent(name: "checkInterval", value: 7200, displayed: false)
 
 	log.debug "Configuring Reporting and Bindings."
 	def configCmds = [

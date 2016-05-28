@@ -13,12 +13,13 @@
  *  for the specific language governing permissions and limitations under the License.
  *
  */
- 
+
 metadata {
     definition (name: "Cree Bulb", namespace: "smartthings", author: "SmartThings") {
 
         capability "Actuator"
         capability "Configuration"
+        capability "Polling"
         capability "Refresh"
         capability "Switch"
         capability "Switch Level"
@@ -86,6 +87,10 @@ def setLevel(value) {
 
 def refresh() {
     zigbee.onOffRefresh() + zigbee.levelRefresh() + zigbee.onOffConfig() + zigbee.levelConfig()
+}
+
+def poll() {
+    zigbee.onOffRefresh() + zigbee.levelRefresh()
 }
 
 def configure() {

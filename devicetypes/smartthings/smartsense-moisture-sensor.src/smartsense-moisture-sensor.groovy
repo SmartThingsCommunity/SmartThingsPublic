@@ -1,5 +1,4 @@
 /*
-===============================================================================
  *  Copyright 2016 SmartThings
  *
  *  Licensed under the Apache License, Version 2.0 (the "License"); you may not
@@ -13,24 +12,16 @@
  *  WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
  *  License for the specific language governing permissions and limitations
  *  under the License.
-===============================================================================
- *  Purpose: SmartSense Moisture Sensor DTH File
- *
- *  Filename: SmartSense-Moisture-Sensor.src/SmartSense-Moisture-Sensor.groovy
- *
- *  Change History:
- *  1. 20160116 TW - Update/Edit to support i18n translations
- *  2. 20160125 TW = Incorporated new battery mapping from TM
-===============================================================================
  */
 
 metadata {
-	definition (name: "SmartSense Moisture Sensor",namespace: "smartthings", author: "SmartThings") {
+	definition (name: "SmartSense Moisture Sensor",namespace: "smartthings", author: "SmartThings", category: "C2") {
 		capability "Configuration"
 		capability "Battery"
 		capability "Refresh"
 		capability "Temperature Measurement"
 		capability "Water Sensor"
+		capability "Health Check"
 
 		command "enrollResponse"
 
@@ -320,6 +311,8 @@ def refresh() {
 }
 
 def configure() {
+	sendEvent(name: "checkInterval", value: 7200, displayed: false)
+
 	String zigbeeEui = swapEndianHex(device.hub.zigbeeEui)
 	log.debug "Configuring Reporting, IAS CIE, and Bindings."
 	def configCmds = [

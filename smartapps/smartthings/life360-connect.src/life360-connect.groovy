@@ -27,7 +27,6 @@ definition(
 ) {
 	appSetting "clientId"
 	appSetting "clientSecret"
-    appSetting "serverUrl"
 }
 
 preferences {
@@ -192,7 +191,7 @@ def getSmartThingsClientId() {
    return "pREqugabRetre4EstetherufrePumamExucrEHuc"
 }
 
-def getServerUrl() { appSettings.serverUrl }
+def getServerUrl() { getApiServerUrl() }
 
 def buildRedirectUrl()
 {
