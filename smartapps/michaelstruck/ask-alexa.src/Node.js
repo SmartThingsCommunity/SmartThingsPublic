@@ -76,7 +76,7 @@ exports.handler = function( event, context ) {
         else if (intentName == "SmartHomeOperation") {
             var SHCmd = event.request.intent.slots.SHCmd.value;
             var SHParam = event.request.intent.slots.SHParam.value;
-            url += 'h?SHCmd=' + SHCmd + '&SHParam=' + SHParam
+            url += 'h?SHCmd=' + SHCmd + '&SHParam=' + SHParam;
             process = true;
             cardName = "SmartThings Home Operation";
         }
