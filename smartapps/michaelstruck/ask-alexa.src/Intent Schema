@@ -21,15 +21,30 @@
         }
         
         ]
-    },
-    {
-      "intent": "ReportOperation",
+    },  
+	{
+      "intent": "MacroOperation",
       "slots": [
         {
-          "name" : "Report",
-          "type" : "LIST_OF_REPORTS"
+          "name" : "Macro",
+          "type" : "LIST_OF_MACROS"
+        },
+        {
+          "name" : "MNum",
+          "type" : "AMAZON.NUMBER"
+        },
+        {
+          "name" : "MCmd",
+          "type" : "LIST_OF_OPERATORS"
+        },
+        {
+          "name" : "Cancel",
+          "type" : "CANCEL_CMDS"
+        },
+        {
+          "name" : "MParam",
+          "type" : "LIST_OF_PARAMS"
         }
-        
         ]
     },
     {
@@ -39,7 +54,6 @@
           "name" : "Type",
           "type" : "DEVICE_TYPE_LIST"
         }
-        
         ]
     },
     {
@@ -56,7 +70,6 @@
           "name" : "SHParam",
           "type" : "LIST_OF_SHPARAM"
         }
-        
         ]
     },
     {
