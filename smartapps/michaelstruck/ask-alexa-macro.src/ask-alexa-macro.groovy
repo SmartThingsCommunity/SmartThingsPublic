@@ -1,12 +1,12 @@
 /**
  *  Ask Alexa - Macro
  *
- *  Version 2.0.0 - 5/28/16 Copyright © 2016 Michael Struck
+ *  Version 2.0.0a - 5/29/16 Copyright © 2016 Michael Struck
  *  
  *  Version 1.0.0 - Initial release
  *  Version 1.0.1 - Added motion sensor reports; added events report to various sensors
  *  Version 1.0.2c - Added weather reports which include forecast, sunrise and sunset
- *  Version 2.0.0 - Modified child app to make it a 'macro' application. Still does voice reports, includes bug fixes as well.
+ *  Version 2.0.0a - Modified child app to make it a 'macro' application. Still does voice reports, includes bug fixes as well.
  *
  *  Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except
  *  in compliance with the License. You may obtain a copy of the License at:
@@ -151,7 +151,7 @@ def pageSTDevices(){
             input "cLights", "capability.colorControl", title: "Control These Colored Lights...", multiple: true, required: false, submitOnChange:true
             if (cLights) input "cLightsCMD", "enum", title: "Command To Send To Colored Lights", options:["on":"Turn on","off":"Turn off","set":"Set color and level", "toggle":"Toggle the lights' on/off state"], multiple: false, required: false, submitOnChange:true
             if (cLightsCMD == "set" && cLights){
-                input "cLightsCLR", "enum", title: "Choose A Color...", required: false, multiple:false, options: fillColorSettings().name, submitOnChange:true
+                input "cLightsCLR", "enum", title: "Choose A Color...", required: false, multiple:false, options: parent.fillColorSettings().name, submitOnChange:true
                 if (cLightsCLR == "Custom-User Defined"){
                     input "hueUserDefined", "number", title: "Colored Lights Hue", description: "Set colored light hue (0 to 100)", required: false, defaultValue: 0
                     input "satUserDefined", "number", title: "Colored Lights Saturation", description: "Set colored lights saturation (0 to 100)", required: false, defaultValue: 0
@@ -882,7 +882,7 @@ def toggleState(swDevices){
     }
 }
 private setColoredLights(switches, color, level, type){
-	def getColorData = fillColorSettings().find {it.name==color}
+	def getColorData = parent.fillColorSettings().find {it.name==color}
     def hueColor = getColorData.hue
 	def satLevel = getColorData.sat
 	if (color == "Custom-User Defined"){
@@ -895,6 +895,6 @@ private setColoredLights(switches, color, level, type){
 	switches?.setColor(newValue)
 }
 //Version 
-private def textVersion() {return "Voice Macros Version: 2.0.0 (05/28/2016)"}
+private def textVersion() {return "Voice Macros Version: 2.0.0a (05/29/2016)"}
 private def versionInt() {return 200}
-private def versionLong() {return "2.0.0"}
+private def versionLong() {return "2.0.0a"}
