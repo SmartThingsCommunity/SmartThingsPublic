@@ -1,7 +1,7 @@
 /**
  *  Ask Alexa 
  *
- *  Version 1.1.0 - 5/27/16 Copyright © 2016 Michael Struck
+ *  Version 1.1.0a - 5/28/16 Copyright © 2016 Michael Struck
  *  Special thanks for Keith DeLong for code and assistance
  *  
  *  Version 1.0.0 - Initial release
@@ -9,7 +9,7 @@
  *  Version 1.0.0b - Remove punctuation from the device, mode and routine names. Fixed bug where numbers were removed in modes and routine names 
  *  Version 1.0.1c - Added presense sensors; added up/down/lower/increase/decrease as commands for various devices
  *  Version 1.0.2b - Added motion sensors and a new function, "events" to list to the last events for a device; code optimization, bugs removed
- *  Version 1.1.0 - Changed voice reports to macros, added toggle commands to switches, bug fixes and code optimization
+ *  Version 1.1.0a - Changed voice reports to macros, added toggle commands to switches, bug fixes and code optimization
  *
  *  Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except
  *  in compliance with the License. You may obtain a copy of the License at:
@@ -971,14 +971,14 @@ def sendJSON(outputTxt, lVer){
 //Version/Copyright/Information/Help
 private def textAppName() { def text = "Ask Alexa" }	
 private def textVersion() {
-    def version = "Parent App Version: 1.1.0 (05/27/2016)"
+    def version = "Parent App Version: 1.1.0a (05/28/2016)"
     def childCount = childApps.size()
     def childVersion = childCount ? childApps[0].textVersion() : "No voice macros installed"
     childVersion += state.lambdaCode ? "\n"+ state.lambdaCode : ""
     return "${version}\n${childVersion}"
 }
 private def versionInt(){ return 110 }
-private def versionLong(){ return "1.1.0" }
+private def versionLong(){ return "1.1.0a" }
 private def textCopyright() {return "Copyright © 2016 Michael Struck" }
 private def textLicense() {
 	def text = "Licensed under the Apache License, Version 2.0 (the 'License'); "+
@@ -994,7 +994,7 @@ private def textLicense() {
 		"limitations under the License."
 }
 private def textHelp() { 
-	def text = "This SmartApp allows provides an interface to control and "+
+	def text = "This SmartApp provides an interface to control and "+
     	"query the SmartThings environment via the Amazon Echo ('Alexa'). "+
     	"For more information, go to http://thingsthataresmart.wiki/index.php?title=Ask_Alexa."
 }
