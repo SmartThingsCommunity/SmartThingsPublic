@@ -32,6 +32,8 @@ DeviceOperation set {Device} {Param}
 DeviceOperation set {Device} to {Param}
 DeviceOperation set the {Device} {Param}
 DeviceOperation set the {Device} to {Param}
+DeviceOperation to set the {Device} to {Param}
+DeviceOperation to set the {Device} to a color of {Param}
 DeviceOperation set the color of {Device} to {Param}
 DeviceOperation set the color of the {Device} to {Param}
 DeviceOperation set the color of {Device} to {Param} and set level to {Num}
