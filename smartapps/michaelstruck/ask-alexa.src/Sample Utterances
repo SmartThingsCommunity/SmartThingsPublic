@@ -217,6 +217,8 @@ MacroOperation set {Macro} {MParam}
 MacroOperation set {Macro} to {MParam}
 MacroOperation set the {Macro} {MParam}
 MacroOperation set the {Macro} to {MParam}
+MacroOperation to set the {Macro} to {MParam}
+MacroOperation to set the {Macro} to a color of {MParam}
 MacroOperation set the color of {Macro} to {MParam} and set level to {MNum}
 MacroOperation set the color of {Macro} to {MParam} and {MCmd}
 MacroOperation set the {Macro} to {MParam} and {MCmd}
