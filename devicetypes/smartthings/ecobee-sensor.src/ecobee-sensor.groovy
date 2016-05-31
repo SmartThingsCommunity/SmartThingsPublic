@@ -18,7 +18,6 @@ metadata {
 	definition (name: "Ecobee Sensor", namespace: "smartthings", author: "SmartThings") {
 		capability "Sensor"
 		capability "Temperature Measurement"
-		capability "Motion Sensor"
 		capability "Refresh"
 	}
 
