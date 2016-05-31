@@ -323,6 +323,8 @@ private getDeviceType(hueType) {
 		return "Hue Bulb"
 	else if (hueType?.equalsIgnoreCase("Color Light"))
 		return "Hue Bloom"
+	else if (hueType?.equalsIgnoreCase("Color Temperature Light"))
+		return "Hue White Ambiance Bulb"
 	else
 		return null
 }
