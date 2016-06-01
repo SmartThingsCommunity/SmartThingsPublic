@@ -45,27 +45,16 @@ metadata {
 	}
 
 	preferences {
-		section {
-			input description: "This feature allows you to correct any temperature variations by selecting an offset. Ex: If your sensor consistently reports a temp that's 5 degrees too warm, you'd enter \"-5\". If 3 degrees too cold, enter \"+3\".", displayDuringSetup: false, type: "paragraph", element: "paragraph"
-			input "tempOffset", "number", title: "Temperature Offset", description: "Adjust temperature by this many degrees", range: "*..*", displayDuringSetup: false
-		}
-		section {
-			input("garageSensor", "enum", title: "Do you want to use this sensor on a garage door?", options: ["Yes", "No"], defaultValue: "No", required: false, displayDuringSetup: false)
-		}
+		input title: "Temperature Offset", description: "This feature allows you to correct any temperature variations by selecting an offset. Ex: If your sensor consistently reports a temp that's 5 degrees too warm, you'd enter \"-5\". If 3 degrees too cold, enter \"+3\".", displayDuringSetup: false, type: "paragraph", element: "paragraph"
+		input "tempOffset", "number", title: "Degrees", description: "Adjust temperature by this many degrees", range: "*..*", displayDuringSetup: false
 	}
 
 	tiles(scale: 2) {
-		multiAttributeTile(name:"status", type: "generic", width: 6, height: 4){
-			tileAttribute ("device.status", key: "PRIMARY_CONTROL") {
-				attributeState "closed", label:'${name}', icon:"st.contact.contact.closed", backgroundColor:"#79b821"
+		multiAttributeTile(name:"contact", type: "generic", width: 6, height: 4){
+			tileAttribute ("device.contact", key: "PRIMARY_CONTROL") {
 				attributeState "open", label:'${name}', icon:"st.contact.contact.open", backgroundColor:"#ffa81e"
-				attributeState "garage-closed", label:'Closed', icon:"st.doors.garage.garage-closed", backgroundColor:"#79b821"
-				attributeState "garage-open", label:'Open', icon:"st.doors.garage.garage-open", backgroundColor:"#ffa81e"
+				attributeState "closed", label:'${name}', icon:"st.contact.contact.closed", backgroundColor:"#79b821"
 			}
-		}
-		standardTile("contact", "device.contact", width: 2, height: 2) {
-			state("open", label:'${name}', icon:"st.contact.contact.open", backgroundColor:"#ffa81e")
-			state("closed", label:'${name}', icon:"st.contact.contact.closed", backgroundColor:"#79b821")
 		}
 
 		standardTile("acceleration", "device.acceleration", width: 2, height: 2) {
@@ -89,8 +78,8 @@ metadata {
 			state "battery", label:'${currentValue}% battery', unit:""
 		}
 
-		main(["status", "acceleration", "temperature"])
-		details(["status", "acceleration", "temperature", "battery"])
+		main(["contact", "acceleration", "temperature"])
+		details(["contact", "acceleration", "temperature", "battery"])
 	}
 }
 
@@ -98,9 +87,7 @@ def parse(String description) {
 	def results
 
 	if (!isSupportedDescription(description) || zigbee.isZoneType19(description)) {
-		if (garageSensor != "Yes") {
-			results = parseSingleMessage(description)
-		}
+		results = parseSingleMessage(description)
 	}
 	else if (description == 'updated') {
 		//TODO is there a better way to handle this like the other device types?
@@ -216,9 +203,7 @@ private List parseContactMessage(String description) {
 	parts.each { part ->
 		part = part.trim()
 		if (part.startsWith('contactState:')) {
-			if (garageSensor != "Yes") {
-				results.addAll(getContactResult(part, description))
-			}
+			results.addAll(getContactResult(part, description))
 		}
 		else if (part.startsWith('accelerationState:')) {
 			results << getAccelerationResult(part, description)
@@ -238,29 +223,6 @@ private List parseContactMessage(String description) {
 	}
 
 	results
-}
-
-def updated() {
-	log.debug "updated called"
-	log.info "garage value : $garageSensor"
-	if (garageSensor == "Yes") {
-		def descriptionText = "Updating device to garage sensor"
-		if (device.latestValue("status") == "open") {
-			sendEvent(name: 'status', value: 'garage-open', descriptionText: descriptionText)
-		}
-		else if (device.latestValue("status") == "closed") {
-			sendEvent(name: 'status', value: 'garage-closed', descriptionText: descriptionText)
-		}
-	}
-	else {
-		def descriptionText = "Updating device to open/close sensor"
-		if (device.latestValue("status") == "garage-open") {
-			sendEvent(name: 'status', value: 'open', descriptionText: descriptionText)
-		}
-		else if (device.latestValue("status") == "garage-closed") {
-			sendEvent(name: 'status', value: 'closed', descriptionText: descriptionText)
-		}
-	}
 }
 
 private List parseOrientationMessage(String description) {
@@ -292,34 +254,7 @@ private List parseOrientationMessage(String description) {
 		}
 	}
 
-	def xyz = getXyzResult(xyzResults, description)
-	results << xyz
-
-	if (garageSensor == "Yes") {
-		// Looks for Z-axis orientation as virtual contact state
-		def a = xyz.value.split(',').collect{it.toInteger()}
-		def absValueXY = Math.max(Math.abs(a[0]), Math.abs(a[1]))
-		def absValueZ = Math.abs(a[2])
-		log.debug "absValueXY: $absValueXY, absValueZ: $absValueZ"
-
-		def contactValue = null
-		def garageValue = null
-
-		if (absValueZ > 825 && absValueXY < 175) {
-			contactValue = 'open'
-			garageValue = 'garage-open'
-			log.debug "STATUS: open"
-		}
-		else if (absValueZ < 75 && absValueXY > 825) {
-			contactValue = 'closed'
-			garageValue = 'garage-closed'
-			log.debug "STATUS: closed"
-		}
-		def linkText = getLinkText(device)
-		def descriptionText = "${linkText} was ${contactValue == 'open' ? 'opened' : 'closed'}"
-		results << createEvent(name: "contact", value: contactValue, descriptionText: descriptionText, unit: "", displayed: false)
-		results << createEvent(name: "status", value: garageValue, descriptionText: descriptionText, unit: "")
-	}
+	results << getXyzResult(xyzResults, description)
 
 	results
 }
