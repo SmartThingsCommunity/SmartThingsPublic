@@ -28,8 +28,7 @@ metadata {
 		command "resetTamper"
 		command "testTamper"
         
-		fingerprint endpointId: "01", profileId: "0104", deviceId: "0402", inClusters: "0000,0001,0003,0500,0020,0B05", outClusters: "0003,0019"//, manufacturer: "Quirky", model: "Tripper"//need to verify this info
-        	fingerprint endpointId: "01", profileId: "0104", deviceId: "0402", inClusters: "0000,0001,0003,0500,0020,0B05", outClusters: "0003,0019", manufacturer: "Sercomm Corp.", model: "Tripper"
+		fingerprint endpointId: "01", profileId: "0104", deviceId: "0402", inClusters: "0000,0001,0003,0500,0020,0B05", outClusters: "0003,0019", manufacturer: "Sercomm Corp.", model: "Tripper"
 	}
 
 	// UI tile definitions
@@ -106,7 +105,7 @@ def configure() {
 		"zdo bind 0x${device.deviceNetworkId} 1 1 1 {${device.zigbeeId}} {}", "delay 500",
 		"st rattr 0x${device.deviceNetworkId} 1 1 0x20"
 		]
-	cmd//+ zigbee.refreshData(0,4)+zigbee.refreshData(0,5)
+	cmd
 }
 
 //Sends IAS Zone Enroll response
