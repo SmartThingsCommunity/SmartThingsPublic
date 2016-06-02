@@ -452,7 +452,8 @@ def addBulbs() {
 					d.initialize("lights")
                     if (d) {
 						log.debug "created ${d.displayName} with id $dni"
-                    	d.refresh()
+						d.completedSetup = true
+						d.refresh()
 					}
                 } else {
                 	log.debug "$dni in not longer paired to the Hue Bridge or ID changed"
@@ -462,6 +463,7 @@ def addBulbs() {
 				newHueBulb = bulbs.find { (app.id + "/lights/" + it.id) == dni }
 				d = addChild(dni, "Extended Color Light", newHueBulb?.value?.name, newHueBulb?.value?.hub)
 				d?.initialize("lights")
+				d?.completedSetup = true
                 d?.refresh()
 			}
 		} else {
@@ -486,6 +488,7 @@ def addGroups() {
 					 if (newHueGroup != null) {
 						d = addChild(dni, newHueGroup?.value?.type, newHueGroup?.value?.name, newHueGroup?.value?.hub)
 						d.initialize("groups")
+						d.completedSetup = true
 						log.debug "created ${d.displayName} with id $dni"
 						d.refresh()
 					 } else {
@@ -496,6 +499,7 @@ def addGroups() {
 				newHueGroup = groups.find { (app.id + "/groups/" + it.id) == dni }
 				d = addChild(dni, "LightGroup", newHueGroup?.value?.name, newHueGroup?.value?.hub)
 				d.initialize("groups")
+				d.completedSetup = true
 				d.refresh()
 			}
 		} else {
@@ -534,6 +538,7 @@ def addBridge() {
             }
         	if (newbridge) {
 				d = addChildDevice("claytonjn", "Hue Advanced Bridge", selectedHue, vbridge.value.hub)
+				d?.completedSetup = true
 				log.debug "created ${d.displayName} with id ${d.deviceNetworkId}"
                 def childDevice = getChildDevice(d.deviceNetworkId)
                 childDevice.sendEvent(name: "serialNumber", value: vbridge.value.serialNumber)
