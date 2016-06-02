@@ -14,9 +14,9 @@ definition(
     author: "Eric Maycock (erocm123)",
     description: "Sonoff Connect",
     category: "Convenience",
-    iconUrl:   "https://github.com/erocm123/SmartThingsPublic/blob/master/smartapps/erocm123/sonoff-connect.src/sonoff-connect-icon.png",
-    iconX2Url: "https://github.com/erocm123/SmartThingsPublic/blob/master/smartapps/erocm123/sonoff-connect.src/sonoff-connect-icon-2x.png",
-    iconX3Url: "https://github.com/erocm123/SmartThingsPublic/blob/master/smartapps/erocm123/sonoff-connect.src/sonoff-connect-icon-3x.png"
+    iconUrl:   "https://raw.githubusercontent.com/erocm123/SmartThingsPublic/master/smartapps/erocm123/sonoff-connect.src/sonoff-connect-icon.png",
+    iconX2Url: "https://raw.githubusercontent.com/erocm123/SmartThingsPublic/master/smartapps/erocm123/sonoff-connect.src/sonoff-connect-icon-2x.png",
+    iconX3Url: "https://raw.githubusercontent.com/erocm123/SmartThingsPublic/master/smartapps/erocm123/sonoff-connect.src/sonoff-connect-icon-3x.png"
 )
 
 preferences {
