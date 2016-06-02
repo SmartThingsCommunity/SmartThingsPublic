@@ -34,9 +34,8 @@ metadata {
 	}
     
     preferences {
-        input("ip", "string", title:"IP Address", description: "192.168.1.150" ,required: true, displayDuringSetup: true)
-        // Port should always be 80
-        //input("port", "string", title:"Port", description: "80" , required: true, displayDuringSetup: true)
+        input("override", "boolean", title:"Override detected IP Address", required: false, displayDuringSetup: false)
+        input("ip", "string", title:"IP Address", description: "192.168.1.150", required: false, displayDuringSetup: false)
 	}
 
 	tiles (scale: 2){      
@@ -83,12 +82,11 @@ def updated() {
 def configure() {
 	log.debug "configure()"
 	log.debug "Configuring Device For SmartThings Use"
-    sendEvent(name:"hubInfo", value:"Sonoff switch still being configured")
-    //if (state.MAC != null) state.dni = setDeviceNetworkId(state.MAC)
-    //else 
-    if (ip != null) state.dni = setDeviceNetworkId(ip, "80")
+    sendEvent(name:"hubInfo", value:"Sonoff switch still being configured") 
+    if (ip != null && override == true) state.dni = setDeviceNetworkId(ip, "80")
     state.hubIP = device.hub.getDataValue("localIP")
-    response(configureInstant(state.hubIP, "39500"))
+    state.hubPort = device.hub.getDataValue("localSrvPortTCP")
+    response(configureInstant(state.hubIP, state.hubPort))
 }
 
 def configureInstant(ip, port){
@@ -102,19 +100,16 @@ def parse(description) {
     def descMap = parseDescriptionAsMap(description)
     def body
     //log.debug "descMap: ${descMap}"
-    
 
-    if (!state.MAC || state.MAC != descMap["mac"]) {
+    if (!state.mac || state.mac != descMap["mac"]) {
 		log.debug "Mac address of device found ${descMap["mac"]}"
-        updateDataValue("MAC", descMap["mac"])
+        updateDataValue("mac", descMap["mac"])
 	}
     
-    if (state.MAC != null && state.dni != state.MAC) state.dni = setDeviceNetworkId(state.MAC)
+    if (state.mac != null && state.dni != state.mac) state.dni = setDeviceNetworkId(state.mac)
     if (descMap["body"]) body = new String(descMap["body"].decodeBase64())
 
     if (body && body != "") {
-    log.debug body
-
     
     if(body.startsWith("{") || body.startsWith("[")) {
     def slurper = new JsonSlurper()
@@ -147,20 +142,11 @@ def parse(description) {
     }
     } else {
         //log.debug "Response is not JSON: $body"
-        def ruleSearch = "OnBUTTONSwitchdoifSWITCHSwitch0gpio121elsegpio120endifendonOnSWITCHSwitchdoifSWITCHSwitch1gpio130elsegpio131endifendon"
-        if (body.replaceAll("\\W", "").indexOf(ruleSearch) > 0) state.ruleConfigured = true
-
     }
     } else {
         cmds = refresh()
     }
     
-    
-    
-    if (settings.ip == null || settings.ip == "") {
-        events << createEvent(name:"hubInfo", value:"IP address of the switch not entered. Please do so in device preferences.") 
-    }
-
     if (cmds) return cmds else return events
 
 }
@@ -239,7 +225,14 @@ private updateDNI() {
 }
 
 private getHostAddress() {
-	return "${ip}:80"
+    if (override == true && ip != null && ip != ""){
+        return "${ip}:80"
+    }
+    else if(getDeviceDataByName("ip") && getDeviceDataByName("port")){
+        return "${getDeviceDataByName("ip")}:${getDeviceDataByName("port")}"
+    }else{
+	    return "${ip}:80"
+    }
 }
 
 private String convertIPtoHex(ipAddress) { 
