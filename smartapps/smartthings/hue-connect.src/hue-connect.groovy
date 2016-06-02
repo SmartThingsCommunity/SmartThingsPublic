@@ -323,6 +323,8 @@ private getDeviceType(hueType) {
 		return "Hue Bulb"
 	else if (hueType?.equalsIgnoreCase("Color Light"))
 		return "Hue Bloom"
+	else if (hueType?.equalsIgnoreCase("Color Temperature Light"))
+		return "Hue White Ambiance Bulb"
 	else
 		return null
 }
@@ -350,6 +352,7 @@ def addBulbs() {
                     d = addChildBulb(dni, newHueBulb?.value?.type, newHueBulb?.value?.name, newHueBulb?.value?.hub)
 					if (d) {
 						log.debug "created ${d.displayName} with id $dni"
+						d.completedSetup = true
 						d.refresh()
 					}
                 } else {
@@ -359,6 +362,7 @@ def addBulbs() {
             	//backwards compatable
 				newHueBulb = bulbs.find { (app.id + "/" + it.id) == dni }
 				d = addChildBulb(dni, "Extended Color Light", newHueBulb?.value?.name, newHueBulb?.value?.hub)
+				d?.completedSetup = true
 				d?.refresh()
 			}
 		} else {
@@ -397,6 +401,7 @@ def addBridge() {
             }
         	if (newbridge) {
 				d = addChildDevice("smartthings", "Hue Bridge", selectedHue, vbridge.value.hub)
+				d?.completedSetup = true
  				log.debug "created ${d.displayName} with id ${d.deviceNetworkId}"
                 def childDevice = getChildDevice(d.deviceNetworkId)
                 childDevice.sendEvent(name: "serialNumber", value: vbridge.value.serialNumber)
