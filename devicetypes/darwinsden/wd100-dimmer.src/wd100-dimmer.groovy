@@ -24,7 +24,7 @@
  *
  *	0.10 (04/10/2016) -	Initial 0.1 Beta.
  *  0.11 (05/28/2016) - Set numberOfButtons attribute for ease of use with CoRE and other SmartApps. Corrected physical/digital states.
- *  0.11 (06/03/2016) - Added press type indicator to display last tap/hold press status
+ *  0.12 (06/03/2016) - Added press type indicator to display last tap/hold press status
  *
  */
  
