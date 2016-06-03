@@ -1,13 +1,13 @@
 /**
  *  Ask Alexa - Macro
  *
- *  Version 2.0.1 - 6/2/16 Copyright © 2016 Michael Struck
+ *  Version 2.0.1a - 6/2/16 Copyright © 2016 Michael Struck
  *  
  *  Version 1.0.0 - Initial release
  *  Version 1.0.1 - Added motion sensor reports; added events report to various sensors
  *  Version 1.0.2c - Added weather reports which include forecast, sunrise and sunset
  *  Version 2.0.0a - Modified child app to make it a 'macro' application. Still does voice reports, includes bug fixes as well.
- *  Version 2.0.1 - Fixed an issue with dimmer voice reporting, added averages for report parameters, added thermostat device groups and Nest support, various other syntax fixes.
+ *  Version 2.0.1a - Fixed an issue with dimmer voice reporting, added averages for report parameters, added thermostat device groups and Nest support, various other syntax fixes.
  *
  *  Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except
  *  in compliance with the License. You may obtain a copy of the License at:
@@ -465,7 +465,7 @@ def controlResults(sDelay){
     if (cDelay>0 || sDelay>0) delay = sDelay==0 ? cDelay as int : sDelay as int
     if (macroDesc() !="Status: UNCONFIGURED - Tap to configure macro"){	
 		result = (!delay || delay == 0) ? "I am running the '${app.label}' control macro. " : delay==1 ? "I'll run the '${app.label}' control macro in ${delay} minute. " : "I'll run the '${app.label}' control macro in ${delay} minutes. "
-		if (delay == 9999) { 
+		if (sdelay == 9999) { 
         	result = "I am cancelling all scheduled executions of the control macro, '${app.label}'. "  
             state.scheduled = false
             unschedule() 
@@ -970,6 +970,6 @@ private setColoredLights(switches, color, level, type){
 	switches?.setColor(newValue)
 }
 //Version 
-private def textVersion() {return "Voice Macros Version: 2.0.1 (06/02/2016)"}
+private def textVersion() {return "Voice Macros Version: 2.0.1a (06/02/2016)"}
 private def versionInt() {return 201}
-private def versionLong() {return "2.0.1"}
+private def versionLong() {return "2.0.1a"}
