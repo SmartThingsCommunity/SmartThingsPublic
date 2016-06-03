@@ -1,12 +1,13 @@
 /**
  *  Ask Alexa - Macro
  *
- *  Version 2.0.0a - 5/29/16 Copyright © 2016 Michael Struck
+ *  Version 2.0.1 - 6/2/16 Copyright © 2016 Michael Struck
  *  
  *  Version 1.0.0 - Initial release
  *  Version 1.0.1 - Added motion sensor reports; added events report to various sensors
  *  Version 1.0.2c - Added weather reports which include forecast, sunrise and sunset
  *  Version 2.0.0a - Modified child app to make it a 'macro' application. Still does voice reports, includes bug fixes as well.
+ *  Version 2.0.1 - Fixed an issue with dimmer voice reporting, added averages for report parameters, added thermostat device groups and Nest support, various other syntax fixes.
  *
  *  Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except
  *  in compliance with the License. You may obtain a copy of the License at:
@@ -48,7 +49,7 @@ preferences {
 def mainSelection(){
 	dynamicPage(name: "mainSelection", title: "Voice Macro Settings", install: true, uninstall: true) {
     	section {
-			if (parent.versionInt() < 110) paragraph "You are using a version of the parent app that is older than the recommended version. Please upgrade "+
+			if (parent.versionInt() < 111) paragraph "You are using a version of the parent app that is older than the recommended version. Please upgrade "+
 					"to the latest version to ensure you have the latest features and bug fixes.", 
                     image: "https://raw.githubusercontent.com/MichaelStruck/SmartThingsPublic/master/img/warning.png"
             label title:"Voice Macro Name", required: true, image: "https://raw.githubusercontent.com/MichaelStruck/SmartThingsPublic/master/img/speak.png"
@@ -80,8 +81,14 @@ def pageGroup() {
 	dynamicPage(name: "pageGroup", install: false, uninstall: false) {
 		section { paragraph "Device Group Settings", image: "https://raw.githubusercontent.com/MichaelStruck/SmartThingsPublic/master/img/folder.png" }
         section (" ") {
-            input "groupType", "enum", title: "Group Type...", options: [["switch":"Switch (On/Off/Toggle)"],["switchLevel":"Dimmer (On/Off/Toggle/Level)"],["colorControl": "Colored Light (On/Off/Toggle/Level/Color)"],["lock":"Lock (Lock/Unlock)"],["doorControl": "Door (Open/Close)"]], required: false, multiple: false, submitOnChange:true
+            input "groupType", "enum", title: "Group Type...", options: [["colorControl": "Colored Light (On/Off/Toggle/Level/Color)"],["switchLevel":"Dimmer (On/Off/Toggle/Level)"],["doorControl": "Door (Open/Close)"],["lock":"Lock (Lock/Unlock)"],["switch":"Switch (On/Off/Toggle)"],["thermostat":"Thermostat (Mode/Off/Setpoint)"]], required: false, multiple: false, submitOnChange:true
     		if (groupType) input "groupDevice${groupType}", "capability.${groupType}", title: "Choose devices...", required: false, multiple: true
+        }
+        if (groupType == "thermostat"){
+        	section ("Thermostat Group Options"){
+                if (!tstatDefaultCool) input "tstatDefaultHeat", "bool", title: "Set Heating Setpoint By Default", defaultValue:false, submitOnChange:true
+            	if (!tstatDefaultHeat) input "tstatDefaultCool", "bool", title: "Set Cooling Setpoint By Default", defaultValue:false, submitOnChange:true
+            }
         }
         section("Custom acknowledgment"){
              if (!noAck) input "voicePost", "text", title: "Acknowledgement Message", description: "Enter a short statement to play after macro runs", required: false 
@@ -121,6 +128,8 @@ def pageControl() {
             	image: "https://raw.githubusercontent.com/MichaelStruck/SmartThingsPublic/master/img/smartthings.png"
             href "pageHTTP", title: "Run This HTTP Request...", description: getHTTPDesc(), state: greyOutStateHTTP(),
             	image: "https://raw.githubusercontent.com/MichaelStruck/SmartThingsPublic/master/img/network.png"
+            input "cDelay", "number", title: "Default Delay (Minutes) To Activate", defaultValue: 0, required: false,
+            	image: "https://raw.githubusercontent.com/MichaelStruck/SmartThingsPublic/master/img/stopwatch.png"
             input ("contacts", "contact", title: "Send Notifications To...", required: false, 
             	image: "https://raw.githubusercontent.com/MichaelStruck/SmartThingsPublic/master/img/sms.png") {
                 input "smsNum", "phone", title: "Send SMS Message To (Phone Number)...", required: false,
@@ -161,8 +170,12 @@ def pageSTDevices(){
         }
         section ("Thermostats"){
             input "tstats", "capability.thermostat", title: "Control These Thermostats...", multiple: true, required: false, submitOnChange:true
-            if (tstats) input "tstatsCMD", "enum", title: "Command To Send To Thermostats", options:["heat":"Set heating temperature","cool":"Set cooling temperature"], multiple: false, required: false, submitOnChange:true
-            if (tstatsCMD) input "tstatLVL", "number", title: "Temperature Level", description: "Set temperature level", required: false
+            if (tstats) {
+            	def tstatOptions=["heat":"Set heating temperature","cool":"Set cooling temperature"]
+                if (parent.isNest()) tstatOptions += ["away":"Nest 'Away' Presence","home":"Nest 'Home' Presence"]
+                input "tstatsCMD", "enum", title: "Command To Send To Thermostats", options :tstatOptions , multiple: false, required: false, submitOnChange:true
+            }
+            if (tstatsCMD =="heat" || tstatsCMD =="cool") input "tstatLVL", "number", title: "Temperature Level", description: "Set temperature level", required: false
         }
         section ("Locks"){
             input "locks","capability.lock", title: "Control These Locks...", multiple: true, required: false, submitOnChange:true
@@ -210,7 +223,12 @@ def pageVoice() {
             	image:"https://raw.githubusercontent.com/MichaelStruck/SmartThingsPublic/master/img/battery.png"
             input "voicePost", "text", title: "Post Message After Device Report", description: "Use variables like %time%, %day%, %date% here.", required: false
         }
-	}
+        if (parent.getAdvEnabled()){
+        	section("Advanced"){
+            	input "voiceRepFilter", "text", title: "Filter Report Output", description: "Delimit items with comma (ex. xxxxx,yyyyy,zzzzz)", required: false
+			}
+    	}
+    }
 }
 def pageSwitchReport(){
     dynamicPage(name: "pageSwitchReport", install: false, uninstall: false){
@@ -263,16 +281,20 @@ def pageOtherReport(){
 def pageTempReport(){
     dynamicPage(name: "pageTempReport", install: false, uninstall: false){
         section { paragraph "Temperature/Humidity/Thermostat Report", image: "https://raw.githubusercontent.com/MichaelStruck/SmartThingsPublic/master/img/temp.png" }
-        section ("Temperature/Humidity Reporting"){
-            input "voiceTemperature", "capability.temperatureMeasurement", title: "Devices To Report Temperatures...",multiple: true, required: false
-			input "voiceHumidity", "capability.relativeHumidityMeasurement", title: "Devices To Report Humidity...",multiple: true, required: false
+        section ("Temperature Reporting"){
+            input "voiceTemperature", "capability.temperatureMeasurement", title: "Devices To Report Temperatures...",multiple: true, required: false, submitOnChange: true
+			if (voiceTemperature && voiceTemperature.size() > 1) input "voiceTempAvg", "bool", title: "Report Average Of Temperature Readings", defaultValue: false	
+        }
+        section ("Humidity Reporting"){	
+            input "voiceHumidity", "capability.relativeHumidityMeasurement", title: "Devices To Report Humidity...",multiple: true, required: false, submitOnChange: true
+        	if (voiceHumidity && voiceHumidity.size() > 1) input "voiceHumidAvg", "bool", title: "Report Average Of Humidity Readings", defaultValue: false
         }
         section ("Thermostat Setpoint Reporting") {
             input "voiceTempSettings", "capability.thermostat", title: "Thermostats To Report Their Setpoints...",multiple: true, required: false, submitOnChange:true
             if (voiceTempSettings) {
             	input "voiceTempSettingsType", "enum", title: "Which Setpoint To Report", defaultValue: "heatingSetpoint", 
                 	options: ["heatingSetpoint": "Heating Setpoint","coolingSetpoint":"Cooling Setpoint","thermostatSetpoint":"Single Setpoint (Not compatible with all thermostats)"]
-            	input "voiceTempSettingSummary", "bool", title: "Consolidate Thermostat Report", defaultValue: false, submitOnChange:true
+            	input "voiceTempSettingSummary", "bool", title: "Report Only Thermostats Not At Desired Setpoint", defaultValue: false, submitOnChange:true
             }
             if (voiceTempSettingSummary && voiceTempSettings) input "voiceTempTarget", "number", title: "Thermostat Setpoint Target", required: false, defaultValue: 50
         }
@@ -326,7 +348,7 @@ def initialize() {
     state.scheduled=false
 }
 //Group Handler-----------------------------------------------------------
-def groupResults(num, op, colorData, param){
+def groupResults(num, op, colorData, param){   
     def result= "", noun="", valueWord, proNoun=""
     num = num < 0 ? 0 : num >99 ? 100 : num
     proNoun = settings."groupDevice${groupType}".size()==1 ? "its" : "their"
@@ -400,16 +422,51 @@ def groupResults(num, op, colorData, param){
         }
         else { result = "For a door group, you must use an 'open' or 'close' command. "}
     }
+    else if (groupType=="thermostat"){
+        noun=settings."groupDevice${groupType}".size()==1 ? "thermostat in the group named '${app.label}'" : "thermostats in the group named '${app.label}'"
+        if (num>0) num = num < parent.getTstatLimits().hi && num > parent.getTstatLimits().lo ? num : num > parent.getTstatLimits().hi ? parent.getTstatLimits().hi : parent.getTstatLimits().lo 
+        if (op == "on" || op=="off") {
+        	if (param == "undefined" && op == "on") result="You must designate 'heating mode' or 'cooling mode' when turning on a thermostat group. "
+            if (param =="heat" || param=="heating") {result="I am setting the ${noun} to 'heating' mode. "; settings."groupDevice${groupType}"?.heat()}
+			if (param =="cool" || param=="cooling") {result="I am setting the ${noun} to 'cooling' mode. "; settings."groupDevice${groupType}"?.cool()}
+			if (param =="auto" || param=="automatic") {result="I am setting the ${noun} to 'auto' mode. Please note, "+
+				"to properly set the temperature in 'auto' mode, you must specify the heating or cooling setpoints separately. " ; settings."groupDevice${groupType}"?.auto()}
+            if (op == "off") result = "I am turning off the ${noun}. "
+            if (parent.isStelpro() && param=="eco"){ result="I am setting the ${noun} to 'eco' mode. "; settings."groupDevice${groupType}"?.setThermostatMode("eco") }
+			if (parent.isStelpro()  && param=="comfort"){ result="I am setting the ${noun} to 'comfort' mode. "; settings."groupDevice${groupType}"?.setThermostatMode("comfort") }
+        	if (param=="home" && parent.isNest()) { result="I am setting the ${noun} to 'home' mode. "; settings."groupDevice${groupType}"?.present() }
+            if (param=="away" && parent.isNest()) { 
+            	result="I am setting the ${noun} to 'away' mode. Please note that Nest thermostats will not temperature changes while in 'away' status."
+                settings."groupDevice${groupType}"?.away()
+            }
+        }
+        else {
+            param = tstatDefaultCool && param == "undefined" ? "cool" : tstatDefaultHeat && param == "undefined" ? "heat" : param
+			if (param == "undefined") result = "You must designate a 'heating' or 'cooling' parameter when setting the temperature of a thermostat group. "
+            if ((param =="heat" || param =="heating") && num > 0) {
+				result="I am setting the heating setpoint of the ${noun} to ${num} degrees. "
+				settings."groupDevice${groupType}"?.setHeatingSetpoint(num) 
+				if (parent.isStelpro()) settings."groupDevice${groupType}"?.applyNow()
+			}
+			if ((param =="cool" || param =="cooling") && num>0) {
+				result="I am setting the cooling setpoint of the ${noun} to ${num} degrees. "
+				settings."groupDevice${groupType}"?.setCoolingSetpoint(num)
+			}
+            if (num == parent.getTstatLimits().hi) result += "This is the maximum temperature I can set for this device group. "
+            if (num == parent.getTstatLimits().lo) result += "This is the minimum temperature I can set for this device group. "
+		} 
+    }
     else result = "I did not understand what you are attempting to do with the group named '${app.label}'. Be sure it is configured correctly within the SmartApp. " 
     result
 }
 //Control Handler-----------------------------------------------------------
-def controlResults(delay){	
-	def result = ""
+def controlResults(sDelay){	
+	def result = "", delay
+    if (cDelay>0 || sDelay>0) delay = sDelay==0 ? cDelay as int : sDelay as int
     if (macroDesc() !="Status: UNCONFIGURED - Tap to configure macro"){	
 		result = (!delay || delay == 0) ? "I am running the '${app.label}' control macro. " : delay==1 ? "I'll run the '${app.label}' control macro in ${delay} minute. " : "I'll run the '${app.label}' control macro in ${delay} minutes. "
 		if (delay == 9999) { 
-        	result = "I am cancelling all scheduled execution of the control macro, '${app.label}'. "  
+        	result = "I am cancelling all scheduled executions of the control macro, '${app.label}'. "  
             state.scheduled = false
             unschedule() 
         }
@@ -448,9 +505,12 @@ def controlHandler(){
         else cLights?."${cmd.cLight}"()
     }
     if (locks && cmd.lock) locks?."${cmd.lock}"()
-    if (tstats && tstatLVL){
-        def tLevel = tstatLVL < 0 ?  0 : tstatLVL >100 ? 100 : tstatLVL as int
-    	cmd.tstat == "heat" ? tstats?.setHeatingSetpoint(tLevel) : tstats?.setCoolingSetpoint(tLevel)
+    if (tstats && cmd.tstat){
+        if ((cmd.tstat == "heat" || cmd.tstat == "cool") && tstatLVL) {
+        	def tLevel = tstatLVL < 0 ?  0 : tstatLVL > 100 ? 100 : tstatLVL as int
+    		cmd.tstat == "heat" ? tstats?.setHeatingSetpoint(tLevel) : tstats?.setCoolingSetpoint(tLevel)
+        }
+        if (cmd.tstat == "home" || cmd.tstat == "away") tstats?."${cmd.tstat}"()
 	}
     if (extInt == "0" && http){
         log.info "Attempting to run: ${http}"
@@ -473,42 +533,44 @@ def macroResults(num, cmd, colorData, param){ def result = macroType == "Voice" 
 //Report Handler-------------------------------------------------------------
 def reportResults(){
     def fullMsg=""
-    try {
+	try {
         fullMsg = voicePre ? "${replaceVoiceVar(voicePre)} " : ""
-        if (voiceOnSwitchOnly) fullMsg += voiceSwitch ? switchReport(voiceSwitch, "switches") : ""
+        if (voiceOnSwitchOnly) fullMsg += voiceSwitch ? switchOnReport(voiceSwitch, "switches") : ""
         else fullMsg += voiceSwitch ? reportStatus(voiceSwitch, "switch") : ""
         if (voiceOnSwitchEvt) fullMsg += getLastEvt(voiceSwitch, "'switch on'", "on", "switch")
-        if (voiceOnDimmerOnly) fullMsg += voiceDimmer ? switchReport(voiceDimmer, "dimmers") : ""
+        if (voiceOnDimmerOnly) fullMsg += voiceDimmer ? switchOnReport(voiceDimmer, "dimmers") : ""
         else fullMsg += voiceDimmer ? reportStatus(voiceDimmer, "level") : ""
  		if (voiceOnDimmerEvt) fullMsg += getLastEvt(voiceDimmer, "'dimmer on'", "on", "dimmer")
         fullMsg += voiceDoorSensors || voiceDoorControls || voiceDoorLocks ? doorWindowReport() : ""
-        fullMsg += voiceTemperature ? reportStatus(voiceTemperature, "temperature") : ""
-        fullMsg += voiceHumidity ? reportStatus(voiceHumidity,"humidity") : ""
+        if (voiceTemperature && (voiceTemperature.size() == 1 || !voiceTempAvg)) fullMsg += reportStatus(voiceTemperature, "temperature")
+        else if (voiceTemperature && voiceTemperature.size() > 1 && voiceTempAvg) fullMsg += "The average of the monitored temperature devices is: " + parent.getAverage(voiceTemperature, "temperature") + " degrees. "
+        if (voiceHumidity && (voiceHumidity.size() == 1 || !voiceHumidAvg)) fullMsg += reportStatus(voiceHumidity, "humidity")
+        else if (voiceHumidity  && voiceHumidity.size() > 1 && voiceHumidAvg) fullMsg += "The average of the monitored humidity devices is " + parent.getAverage(voiceHumidity, "humidity") + "%. "
         if (voiceTempSettingSummary && voiceTempSettingsType) fullMsg += (voiceTempSettings) ? thermostatSummary(): ""
         else fullMsg += (voiceTempSettings && voiceTempSettingsType) ? reportStatus(voiceTempSettings, voiceTempSettingsType) : ""
         fullMsg += voiceWeather || voiceSunset || voiceSunrise ? getWeatherReport() : ""
-        fullMsg += voiceWater && waterReport() ? waterReport() : voiceWater ? "All monitored water sensors are dry. " : ""
+        fullMsg += voiceWater && waterReport() ? waterReport() : ""
         fullMsg += voicePresence ? presenceReport() : ""
-        fullMsg += voiceMotion && motionReport() ? motionReport() : voiceMotion ? "All monitored motion sensors are reading no movement. " : ""
+        fullMsg += voiceMotion && motionReport() ? motionReport() : ""
         fullMsg += voiceMode ? "The current SmartThings mode is set to, '${location.currentMode}'. " : ""
         fullMsg += voiceSHM ? "The current Smart Home Monitor status is '${location.currentState("alarmSystemStatus")?.value}'. " : ""
-        fullMsg += voiceBattery && batteryReport() ? batteryReport() : voiceBattery ? "All monitored batteries are above threshold. " : ""
+        fullMsg += voiceBattery && batteryReport() ? batteryReport() : ""
         fullMsg += voicePost ? "${replaceVoiceVar(voicePost)} " : ""
 	}
     catch(e){ fullMsg = "There was an error processing the report. Please try again. If this error continues, please contact the author of Ask Alexa. " }
-    if (!fullMsg) fullMsg = "The voice report '${app.label}' did not share any output. Please check the configuration of the report within the SmartApp. "  
+    if (!fullMsg) fullMsg = "The voice report, '${app.label}', did not produce any output. Please check the configuration of the report within the SmartApp. "  
+    if (parent.getAdvEnabled() && voiceRepFilter) fullMsg = reportFilter(fullMsg)
     return fullMsg
 }
 //Voice report sections---------------------------------------------------
-def switchReport(devices, type){
+def switchOnReport(devices, type){
 	def result = ""
     if (devices.latestValue("switch").contains("on")) devices.each { deviceName->
     	if (deviceName.latestValue("switch")=="on") {
         	result += "The ${deviceName} is on"
-        	result += type == "dimmers" ? " and set to ${deviceName.latestValue("level")}%. " : ". "
+        	result += type == "dimmers" && deviceName.latestValue("level") ? " and set to ${deviceName.latestValue("level") as int}%. " : ". "
 		}
     }
-    else result += "All of the monitored ${type} are off. "
 	result
 }
 def thermostatSummary(){
@@ -522,8 +584,7 @@ def thermostatSummary(){
         if (monitorCount == 1 &&  difCount==1) result +="The monitored thermostat, ${voiceTempSettings}, is not set to ${voiceTempTarget} degrees. "
         else if (monitorCount == 1 && !difCount) result +="The monitored thermostat, ${voiceTempSettings}, is set to ${voiceTempTarget} degrees. "
         if (monitorCount > 1) {
-            if (!difCount) result += "All thermostats are set to ${voiceTempTarget} degrees. "
-            else if (difCount==monitorCount) result += "None of the thermostats are set to ${voiceTempTarget} degrees. "
+            if (difCount==monitorCount) result += "None of the thermostats are set to ${voiceTempTarget} degrees. "
             else if (matchCount==1) {
                 for (device in voiceTempSettings){
                     if (device.latestValue(voiceTempSettingsType) as int == voiceTempTarget as int){
@@ -543,15 +604,21 @@ def thermostatSummary(){
             }
         }
     }
-    else result="Some of your thermostats are not able to provide their setpoint. Please choose another setpoint type to report on. " 
+    else result="Some of your thermostats are not able to provide their setpoint. Please choose another device type to report on. " 
     result
 }
 def reportStatus(deviceList, type){
 	def result = ""
-    def appd = type=="temperature" || type=="thermostatSetpoint" || type == "heatingSetpoint" || type=="coolingSetpoint" ? "degrees" : type == "humidity" ? "percent relative humidity" : ""
-    if (type != "thermostatSetpoint" && type != "heatingSetpoint" && type !="coolingSetpoint") deviceList.each {deviceName->result += "The ${deviceName} is ${deviceName.latestValue(type)} ${appd}. " }
-    else deviceList.each { deviceName->
-    	try { result += "${deviceName} is set to ${deviceName.latestValue(type) as int} ${appd}. " }
+    def appd = type=="temperature" || type=="thermostatSetpoint" || type == "heatingSetpoint" || type=="coolingSetpoint" ? " degrees" : type == "humidity" ? " percent relative humidity" : ""
+    if (type != "thermostatSetpoint" && type != "heatingSetpoint" && type !="coolingSetpoint") {
+		deviceList.each {deviceName->
+			if (type=="level" && deviceName.latestValue("switch")=="on") result += "The ${deviceName} is on and set to ${deviceName.latestValue(type) as int}%. "
+            else if (type=="level" && deviceName.latestValue("switch")=="off") result += "The ${deviceName} is off. "
+            else result += "The ${deviceName} is ${deviceName.latestValue(type)}${appd}. " 
+		}
+    }
+	else deviceList.each { deviceName->
+    	try { result += "${deviceName} is set to ${deviceName.latestValue(type) as int}${appd}. " }
     	catch (e) { result = "${deviceName} is not able to provide its setpoint. Please choose another setpoint type to report on. " }
     }
     result
@@ -564,8 +631,7 @@ def presenceReport(){
             	if (deviceName.latestValue("presence")=="not present") result += "${deviceName} is not present. "
     		}
         }
-    	else result += "All of the monitored presence sensors are present. "
-    	}
+	}
     else voicePresence.each {deviceName->result += "${deviceName} is " + deviceName.latestValue("presence") + ". " }
     if (voicePresentEvt) result += getLastEvt(voicePresence, "arrival", "present", "presence sensor")
     if (voiceGoneEvt) result += getLastEvt(voicePresence, "departure", "not present", "presence sensor")
@@ -579,7 +645,6 @@ def motionReport(){
             	if (deviceName.latestValue("motion")=="active") result += "${deviceName} is reading motion. "
     		}
         }
-    	else result += "All of the motion sensors are reading no movement. "
     }
 	else {
 		voiceMotion.each {deviceName->
@@ -721,8 +786,11 @@ def macroDesc(){
         	desc= "Voice Report CONFIGURED - Tap to edit" 
 	}
 	if (macroType =="Group" && groupType && settings."groupDevice${groupType}") {
-    	def groupDesc =[switch:"Switch Group",switchLevel:"Dimmer Group",colorControl:"Colored Light Group",lock:"Lock Group",doorControl: "Door Group"][groupType] ?: groupType
+    	def groupDesc =[switch:"Switch Group",switchLevel:"Dimmer Group",thermostat:"Thermostat Group",colorControl:"Colored Light Group",lock:"Lock Group",doorControl: "Door Group"][groupType] ?: groupType
         def countDesc = settings."groupDevice${groupType}".size() == 1 ? "one device" : settings."groupDevice${groupType}".size() + " devices"
+        if (parent.isStelpro()) customAck = "- Accepts Stelpro baseboard heater commands" + customAck
+        if (parent.isNest()) customAck = "- Accepts Nest 'Home'/'Away' commands" + + customAck
+        customAck = tstatDefaultHeat ? "- Sends heating setpoint by default" + customAck : tstatDefaultCool ? "- Sends cooling setpoint by default" + customAck : customAck
         desc = "${groupDesc} CONFIGURED with ${countDesc}${customAck} - Tap to edit" 
     }
     if (macroType =="GroupM" &&  groupMacros) {
@@ -805,6 +873,12 @@ private replaceVoiceVar(msg) {
     def temp = varList[0].temp
     def humid = varList[0].humid
     def people = varList[0].people
+    def fullMacroType=[GroupM: "Macro Group", Control:"Control Macro", Group:"Device Group", Voice:"Voice Reporting"][macroType] ?: macroType
+	def fullDeviceType=[colorControl: "Colored Light",switchLevel:"Dimmer" ,doorControl:"Door",lock:"Lock",switch:"Switch",thermostat:"Thermostat"][groupType] ?: groupType
+    msg = macroType=="Group" ? msg.replace('%dtype%', "${fullDeviceType}") : msg.replace('%dtype%', "")
+    msg = macroType=="Group" && groupType =="switch" ? msg.replace('%dtypes%', "Switches") :  macroType=="Group" && groupType !="switch" ? msg.replace('%dtypes%', "${fullDeviceType}s") : msg.replace('%dtypes%', "")
+    msg = msg.replace('%mtype%', "${fullMacroType}")
+    msg = msg.replace('%macro%', "${app.label}")
     msg = msg.replace('%day%', day)
     msg = msg.replace('%date%', "${month} ${dayNum}, ${year}")
     msg = msg.replace('%time%', "${time}")
@@ -812,6 +886,11 @@ private replaceVoiceVar(msg) {
     msg = msg.replace('%humid%', "${humid}")
     msg = msg.replace('%people%', "${people}")
     msg
+}
+private reportFilter(msg){
+    def textFilter=voiceRepFilter.toLowerCase().tokenize(",")
+    textFilter.each{ msg= msg.toLowerCase().replace(it,"") }
+	return msg
 }
 private timeParse(time, type) { new Date().parse("yyyy-MM-dd'T'HH:mm:ss.SSSZ", time).format("${type}", timeZone(formattedDate))}
 private parseDate(time, type){
@@ -858,15 +937,11 @@ def translateTxt(){
     wordCvt <<[txt:" NW ",cvt: " North West "] << [txt:" SW ",cvt: " South West "] << [txt:" NE ",cvt: " North East "] << [txt:" SE ",cvt: " South East "]
 	wordCvt <<[txt:" NNW ",cvt: " North-North West "] << [txt:" SSW ",cvt: " South-South West "] << [txt:" NNE ",cvt: " North-North East "] << [txt:" SSE ",cvt: " South-South East "]
 	wordCvt <<[txt:" WNW ",cvt: " West-North West "] << [txt:" WSW ",cvt: " West-South West "] << [txt:" ENE ",cvt: " East-North East "] << [txt:" ESE ",cvt: " East-South East "]
-	wordCvt <<[txt: /([0-9]+)C/, cvt: '$1 degrees'] << [txt: /([0-9]+)F/, cvt: '$1 degrees']
+	wordCvt <<[txt: /([0-9]+)C/, cvt: '$1 degrees'] << [txt: /([0-9]+)F/, cvt: '$1 degrees']<<[txt: "mph", cvt: "miles per hour"]
+
 }
 //Send Messages
 def sendMSG(num, msg, push, recipients){
-    def logText =""
-    if (num) {logText = "SMS Message '${msg}' sent to ${num}"}
-    if (push) {logText = "Message '${msg}' pushed to SmartApp"}
-    if (num && push) {logText = "Message '${msg}' sent to ${num} and pushed to SmartApp"}
-    if (location.contactBookEnabled && recipients) {logText = "Message '${msg}' sent to ${recipients}"}
     if (location.contactBookEnabled && recipients) sendNotificationToContacts(msg, recipients)
     else {
     	if (num) {sendSmsMessage(num,"${msg}")}
@@ -895,6 +970,6 @@ private setColoredLights(switches, color, level, type){
 	switches?.setColor(newValue)
 }
 //Version 
-private def textVersion() {return "Voice Macros Version: 2.0.0a (05/29/2016)"}
-private def versionInt() {return 200}
-private def versionLong() {return "2.0.0a"}
+private def textVersion() {return "Voice Macros Version: 2.0.1 (06/02/2016)"}
+private def versionInt() {return 201}
+private def versionLong() {return "2.0.1"}
