@@ -658,27 +658,71 @@ def updateDevice() {
 	def data = request.JSON
 	def command = data.command
 	def arguments = data.arguments
-
 	log.debug "updateDevice, params: ${params}, request: ${data}"
 	if (!command) {
 		render status: 400, data: '{"msg": "command is required"}'
 	} else {
 		def device = allDevices.find { it.id == params.id }
-		if (device) {
-        	if (device.hasCommand("$command")) {
-                if (arguments) {
-                    device."$command"(*arguments)
-                } else {
-                    device."$command"()
-                }
-                render status: 204, data: "{}"
-           	} else {
-				render status: 404, data: '{"msg": "Command not supported by this Device"}'
-			}
-		} else {
-			render status: 404, data: '{"msg": "Device not found"}'
-		}
+    if (device) {
+        if (validateCommand(device, command)) {
+            if (arguments) {
+                device."$command"(*arguments)
+            } else {
+                device."$command"()
+            }
+            render status: 204, data: "{}"
+        } else {
+          render status: 403, data: '{"msg": "Access denied. This command is not supported by current capability."}'
+        }
+    } else {
+      render status: 404, data: '{"msg": "Device not found"}'
+    }
+  }
+}
+
+/**
+ * Validating the command passed by the user based on capability.
+ * @return boolean
+ */
+def validateCommand(device, command) {
+	def capabilityCommands = getDeviceCapabilityCommands(device.capabilities)
+	def currentDeviceCapability = getCapabilityName(device)
+	if (currentDeviceCapability != "" && capabilityCommands[currentDeviceCapability]) {
+		return command in capabilityCommands[currentDeviceCapability] ? true : false
+	} else {
+		// Handling other device types here, which don't accept commands
+		httpError(400, "Bad request.")
 	}
+}
+
+/**
+ * Need to get the attribute name to do the lookup. Only
+ * doing it for the device types which accept commands
+ * @return attribute name of the device type
+ */
+def getCapabilityName(device) {
+    def capName = ""
+    if (switches.find{it.id == device.id})
+			capName = "Switch"
+		else if (alarms.find{it.id == device.id})
+			capName = "Alarm"
+		else if (locks.find{it.id == device.id})
+			capName = "Lock"
+    log.trace "Device: $device - Capability Name: $capName"
+		return capName
+}
+
+/**
+ * Constructing the map over here of
+ * supported commands by device capability
+ * @return a map of device capability -> supported commands
+ */
+def getDeviceCapabilityCommands(deviceCapabilities) {
+	def map = [:]
+	deviceCapabilities.collect {
+		map[it.name] = it.commands.collect{ it.name.toString() }
+	}
+	return map
 }
 
 def listSubscriptions() {
