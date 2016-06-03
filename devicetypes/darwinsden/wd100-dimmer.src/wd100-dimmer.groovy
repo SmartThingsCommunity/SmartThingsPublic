@@ -22,8 +22,9 @@
  *
  *	Changelog:
  *
- *	0.10 (04/10/2016) -	Initial 0.1 Beta
+ *	0.10 (04/10/2016) -	Initial 0.1 Beta.
  *  0.11 (05/28/2016) - Set numberOfButtons attribute for ease of use with CoRE and other SmartApps. Corrected physical/digital states.
+ *  0.11 (06/03/2016) - Added press type indicator to display last tap/hold press status
  *
  */
  
@@ -78,6 +79,9 @@ metadata {
 			tileAttribute ("device.level", key: "SLIDER_CONTROL") {
 				attributeState "level", action:"switch level.setLevel"
 			}
+            tileAttribute("device.status", key: "SECONDARY_CONTROL") {
+                attributeState("default", label:'${currentValue}', unit:"")
+            }
 		}
 
 		standardTile("indicator", "device.indicatorStatus", width: 2, height: 2, inactiveLabel: false, decoration: "flat") {
@@ -344,31 +348,37 @@ def zwaveEvent(physicalgraph.zwave.commands.centralscenev1.CentralSceneNotificat
 }
 
 def tapUp2Response(String buttonType) {
+    sendEvent(name: "status" , value: "Tap ▲▲")
 	[name: "button", value: "pushed", data: [buttonNumber: "1"], descriptionText: "$device.displayName Tap-Up-2 (button 1) pressed", 
        isStateChange: true, type: "$buttonType"]
 }
 
 def tapDown2Response(String buttontype) {
+    sendEvent(name: "status" , value: "Tap ▼▼")
 	[name: "button", value: "pushed", data: [buttonNumber: "2"], descriptionText: "$device.displayName Tap-Down-2 (button 2) pressed", 
       isStateChange: true, type: "$buttonType"]
 }
 
 def tapUp3Response(String buttonType) {
+    sendEvent(name: "status" , value: "Tap ▲▲▲")
 	[name: "button", value: "pushed", data: [buttonNumber: "3"], descriptionText: "$device.displayName Tap-Up-3 (button 3) pressed", 
     isStateChange: true, type: "$buttonType"]
 }
 
 def tapDown3Response(String buttonType) {
+    sendEvent(name: "status" , value: "Tap ▼▼▼")
 	[name: "button", value: "pushed", data: [buttonNumber: "4"], descriptionText: "$device.displayName Tap-Down-3 (button 4) pressed", 
     isStateChange: true, type: "$buttonType"]
 }
 
 def holdUpResponse(String buttonType) {
+    sendEvent(name: "status" , value: "Hold ▲")
 	[name: "button", value: "pushed", data: [buttonNumber: "5"], descriptionText: "$device.displayName Hold-Up (button 5) pressed", 
     isStateChange: true, type: "$buttonType"]
 }
 
 def holdDownResponse(String buttonType) {
+    sendEvent(name: "status" , value: "Hold ▼")
 	[name: "button", value: "pushed", data: [buttonNumber: "6"], descriptionText: "$device.displayName Hold-Down (button 6) pressed", 
     isStateChange: true, type: "$buttonType"]
 }
