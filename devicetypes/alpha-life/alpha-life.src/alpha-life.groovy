@@ -61,11 +61,11 @@ def parse(String description) {
 }
 
 def off() {
-    zigbee.off() + zigbee.levelRefresh() 
+    zigbee.off() 
 }
 
 def on() {
-    zigbee.on() + zigbee.levelRefresh() 
+    zigbee.on() 
 }
 
 def setLevel(value) {
