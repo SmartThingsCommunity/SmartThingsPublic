@@ -842,9 +842,8 @@ void checkForUpdates() {
 			httpGet(uri: url) {response ->
 				result = response
 			}
-			def latestCommitTime = new Date().parse("y-M-d'T'k:m:s'Z'", result.data.commit.commit.author.date)
-			def lastUpdate = new Date().parse("y-M-d'T'k:m:s'Z'", state."last${branch}Update")
-			if (latestCommitTime > lastUpdate) {
+			def latestCommitTime = result.data.commit.commit.author.date
+			if (latestCommitTime != state."last${branch}Update") {
 				def message = "Hue Advanced ${branch} branch updated with message: ${result.data.commit.commit.message}"
 				// check that contact book is enabled and recipients selected
 				if (location.contactBookEnabled && recipients) {
@@ -852,8 +851,8 @@ void checkForUpdates() {
 				} else if (updatePush) { // check that the user did select a phone number
 				    sendPushMessage(message)
 				}
+				state."last${branch}Update" = result.data.commit.commit.author.date
 			}
-			state."last${branch}Update" = latestCommitTime
 		}
 		catch (e) {
 			log.warn e
