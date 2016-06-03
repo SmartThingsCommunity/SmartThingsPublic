@@ -275,3 +275,14 @@ def reboot() {
     def uri = "/reboot"
     getAction(uri)
 }
+
+def sync(ip, port) {
+    def existingIp = getDataValue("ip")
+    def existingPort = getDataValue("port")
+    if (ip && ip != existingIp) {
+        updateDataValue("ip", ip)
+    }
+    if (port && port != existingPort) {
+        updateDataValue("port", port)
+    }
+}
