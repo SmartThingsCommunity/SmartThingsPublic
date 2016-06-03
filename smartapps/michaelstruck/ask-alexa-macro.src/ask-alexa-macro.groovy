@@ -465,7 +465,7 @@ def controlResults(sDelay){
     if (cDelay>0 || sDelay>0) delay = sDelay==0 ? cDelay as int : sDelay as int
     if (macroDesc() !="Status: UNCONFIGURED - Tap to configure macro"){	
 		result = (!delay || delay == 0) ? "I am running the '${app.label}' control macro. " : delay==1 ? "I'll run the '${app.label}' control macro in ${delay} minute. " : "I'll run the '${app.label}' control macro in ${delay} minutes. "
-		if (sdelay == 9999) { 
+		if (sDelay == 9999) { 
         	result = "I am cancelling all scheduled executions of the control macro, '${app.label}'. "  
             state.scheduled = false
             unschedule() 
