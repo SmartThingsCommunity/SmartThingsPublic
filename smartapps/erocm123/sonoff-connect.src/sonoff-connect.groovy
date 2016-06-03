@@ -232,6 +232,8 @@ def ssdpHandler(evt) {
     
     if (devices."${ssdpUSN}") {
         def d = devices."${ssdpUSN}"
+        //log.debug "networkAddress: ${convertHexToIP(d.networkAddress)} - ${convertHexToIP(parsedEvent.networkAddress)}"
+        //log.debug "deviceAddress: ${convertHexToInt(d.deviceAddress)} - ${convertHexToInt(parsedEvent.deviceAddress)}"
         if (d.networkAddress != parsedEvent.networkAddress || d.deviceAddress != parsedEvent.deviceAddress) {
             d.networkAddress = parsedEvent.networkAddress
             d.deviceAddress = parsedEvent.deviceAddress
