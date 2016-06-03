@@ -83,6 +83,7 @@ DeviceOperation to set the temperature of the {Device} to {Num} degrees
 DeviceOperation to set the temperature to {Num} in {Device}
 DeviceOperation turn {Device} {Param} mode to {Operator}
 DeviceOperation turn {Operator} {Device} {Param} mode
+DeviceOperation turn {Operator} {Device} to {Param}
 DeviceOperation set the {Device} to {Param} mode
 
 SmartHomeOperation to set {SHCmd} to {SHParam}
@@ -105,12 +106,15 @@ SmartHomeOperation {SHCmd}
 SmartHomeOperation execute the {SHParam} {SHCmd}
 SmartHomeOperation about {SHCmd}
 SmartHomeOperation about the {SHCmd}
+SmartHomeOperation about the current {SHCmd}
+SmartHomeOperation what is the current {SHCmd}
 
 VersionOperation version
 VersionOperation tell me the version
 VersionOperation about the Ask Alexa smartapp
 VersionOperation about Ask Alexa
 VersionOperation about the smartapp version
+VersionOperation what is the current version
 
 DeviceOperation about {Device}
 DeviceOperation about {Device} {Operator}
@@ -225,3 +229,28 @@ MacroOperation set the {Macro} to {MParam} and {MCmd}
 MacroOperation set the {Macro} to {MParam} and {MNum}
 MacroOperation {MCmd} the {Macro} by {MNum}
 MacroOperation {MCmd} the {Macro} by {MNum} percent
+
+MacroOperation set {MParam} of {Macro} to {MNum} degrees
+MacroOperation set {MParam} of {Macro} to {MNum} 
+MacroOperation set the {MParam} of {Macro} to {MNum} degrees
+MacroOperation set the {MParam} of {Macro} to {MNum} 
+MacroOperation set {MParam} setpoint of {Macro} to {MNum} degrees
+MacroOperation set {MParam} setpoint of {Macro} to {MNum} 
+MacroOperation set the {MParam} setpoint of {Macro} to {MNum} degrees
+MacroOperation set the {MParam} setpoint of {Macro} to {MNum} 
+MacroOperation to set {MParam} setpoint of {Macro} to {MNum} degrees
+MacroOperation to set {MParam} setpoint of {Macro} to {MNum} 
+MacroOperation to set the {MParam} setpoint of {Macro} to {MNum} degrees
+MacroOperation to set the {MParam} setpoint of {Macro} to {MNum} 
+MacroOperation to set {Macro} {MParam} to {MNum} degrees
+MacroOperation to set {Macro} {MParam} to {MNum} 
+MacroOperation set the {Macro} {MParam} to {MNum} degrees
+MacroOperation set the {Macro} {MParam} to {MNum}
+MacroOperation set the {Macro} to {MNum} 
+MacroOperation set the {Macro} to {MNum} degrees
+MacroOperation to set the temperature of the {Macro} to {MNum} degrees
+MacroOperation to set the temperature to {MNum} in {Macro}
+MacroOperation turn {Macro} {MParam} mode to {MCmd}
+MacroOperation turn {MCmd} {Macro} {MParam} mode
+MacroOperation turn {MCmd} {Macro} to {MParam}
+MacroOperation set the {Macro} to {MParam} mode
