@@ -163,7 +163,7 @@ private discoverDevices() {
 }
 
 def configured() {
-	return buttonDevice || buttonConfigured(1) || buttonConfigured(2) || buttonConfigured(3) || buttonConfigured(4) || buttonConfigured(5) || buttonConfigured(6) || buttonConfigured(7) || buttonConfigured(8)
+	
 }
 
 def buttonConfigured(idx) {
@@ -232,8 +232,8 @@ def ssdpHandler(evt) {
     
     if (devices."${ssdpUSN}") {
         def d = devices."${ssdpUSN}"
-        //log.debug "networkAddress: ${convertHexToIP(d.networkAddress)} - ${convertHexToIP(parsedEvent.networkAddress)}"
-        //log.debug "deviceAddress: ${convertHexToInt(d.deviceAddress)} - ${convertHexToInt(parsedEvent.deviceAddress)}"
+        log.debug "networkAddress: ${convertHexToIP(d.networkAddress)} - ${convertHexToIP(parsedEvent.networkAddress)}"
+        log.debug "deviceAddress: ${convertHexToInt(d.deviceAddress)} - ${convertHexToInt(parsedEvent.deviceAddress)}"
         if (d.networkAddress != parsedEvent.networkAddress || d.deviceAddress != parsedEvent.deviceAddress) {
             d.networkAddress = parsedEvent.networkAddress
             d.deviceAddress = parsedEvent.deviceAddress
@@ -292,14 +292,14 @@ def addDevices() {
             log.debug "Creating Sonoff Switch with dni: ${selectedDevice.value.mac}"
             log.debug Integer.parseInt(selectedDevice.value.deviceAddress,16)
             addChildDevice("erocm123", "Sonoff Wifi Switch", selectedDevice.value.mac, selectedDevice?.value.hub, [
-                "label": selectedDevice?.value?.name ?: "Sonoff Wifi Switch 2.0",
+                "label": selectedDevice?.value?.name ?: "Sonoff Wifi Switch",
                 "data": [
                     "mac": selectedDevice.value.mac,
                     "ip": convertHexToIP(selectedDevice.value.networkAddress),
                     "port": "" + Integer.parseInt(selectedDevice.value.deviceAddress,16)
                 ]
             ])
-            sectionText = sectionText + "Succesfully added Sonoff Wifi Switch 2.0 with ip address ${convertHexToIP(selectedDevice.value.networkAddress)} \r\n"
+            sectionText = sectionText + "Succesfully added Sonoff Wifi Switch with ip address ${convertHexToIP(selectedDevice.value.networkAddress)} \r\n"
         }
         
 	} 
