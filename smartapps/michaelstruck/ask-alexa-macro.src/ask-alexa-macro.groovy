@@ -1,13 +1,13 @@
 /**
  *  Ask Alexa - Macro
  *
- *  Version 2.0.1a - 6/3/16 Copyright © 2016 Michael Struck
+ *  Version 2.0.1b - 6/3/16 Copyright © 2016 Michael Struck
  *  
  *  Version 1.0.0 - Initial release
  *  Version 1.0.1 - Added motion sensor reports; added events report to various sensors
  *  Version 1.0.2c - Added weather reports which include forecast, sunrise and sunset
  *  Version 2.0.0a - Modified child app to make it a 'macro' application. Still does voice reports, includes bug fixes as well.
- *  Version 2.0.1a - Fixed an issue with dimmer voice reporting, added averages for report parameters, added thermostat device groups and Nest support, various other syntax fixes.
+ *  Version 2.0.1b - Fixed an issue with dimmer voice reporting, added averages for report parameters, added thermostat device groups and Nest support, various other syntax fixes.
  *
  *  Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except
  *  in compliance with the License. You may obtain a copy of the License at:
@@ -350,9 +350,11 @@ def initialize() {
 //Group Handler-----------------------------------------------------------
 def groupResults(num, op, colorData, param){   
     def result= "", noun="", valueWord, proNoun=""
-    num = num < 0 ? 0 : num >99 ? 100 : num
     proNoun = settings."groupDevice${groupType}".size()==1 ? "its" : "their"
-    valueWord = num ==100 ? "${proNoun} maximum brightness" :  op =="low" || op=="medium" || op=="high" ? "${op}, or a value of ${num}%" : "${num}%"
+    if (groupType=="colorControl" || groupType=="switchLevel"){
+    	num = num < 0 ? 0 : num >99 ? 100 : num
+    	valueWord = num ==100 ? "${proNoun} maximum brightness" :  op =="low" || op=="medium" || op=="high" ? "${op}, or a value of ${num}%" : "${num}%"
+    }
     if (groupType=="switch"){
     	noun=settings."groupDevice${groupType}".size()==1 ? "device" : "devices"
         if (op == "on" || op == "off") { settings."groupDevice${groupType}"?."$op"();result = voicePost && !noAck ? replaceVoiceVar(voicePost) : noAck ? " " : "I am turning ${op} the ${noun} in the group named '${app.label}'. " }
@@ -360,7 +362,7 @@ def groupResults(num, op, colorData, param){
         else { result = "For a switch group, be sure to give an 'on', 'off' or 'toggle' command. "}
     }
     else if (groupType=="switchLevel"){
-		noun=settings."groupDevice${groupType}".size()==1 ? "dimmer" : "dimmers"
+	noun=settings."groupDevice${groupType}".size()==1 ? "dimmer" : "dimmers"
         if (num==0 && op=="undefined") op="off"
         if (op=="on" || op=="off"){ settings."groupDevice${groupType}"?."$op"();result = voicePost ? replaceVoiceVar(voicePost) : noAck ? " " :  "I am turning ${op} the ${noun} in the group named '${app.label}'. "}
         else if (op == "toggle") { toggleState(settings."groupDevice${groupType}");result = voicePost ? replaceVoiceVar(voicePost) : noAck ? " " : "I am toggling the ${noun} in the group named '${app.label}'. " }
@@ -970,6 +972,6 @@ private setColoredLights(switches, color, level, type){
 	switches?.setColor(newValue)
 }
 //Version 
-private def textVersion() {return "Voice Macros Version: 2.0.1a (06/03/2016)"}
+private def textVersion() {return "Voice Macros Version: 2.0.1b (06/03/2016)"}
 private def versionInt() {return 201}
-private def versionLong() {return "2.0.1a"}
+private def versionLong() {return "2.0.1b"}
