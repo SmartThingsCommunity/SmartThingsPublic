@@ -1,7 +1,7 @@
 /**
  *  Ask Alexa 
  *
- *  Version 1.1.0a - 5/28/16 Copyright © 2016 Michael Struck
+ *  Version 1.1.1 - 5/31/16 Copyright © 2016 Michael Struck
  *  Special thanks for Keith DeLong for code and assistance
  *  
  *  Version 1.0.0 - Initial release
@@ -10,6 +10,7 @@
  *  Version 1.0.1c - Added presense sensors; added up/down/lower/increase/decrease as commands for various devices
  *  Version 1.0.2b - Added motion sensors and a new function, "events" to list to the last events for a device; code optimization, bugs removed
  *  Version 1.1.0a - Changed voice reports to macros, added toggle commands to switches, bug fixes and code optimization
+ *  Version 1.1.1 - Added limits to temperature and speaker values; additional macros device types added
  *
  *  Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except
  *  in compliance with the License. You may obtain a copy of the License at:
@@ -45,6 +46,8 @@ preferences {
             page name:"pageReset"
             	page name:"pageConfirmation"
             page name:"pageDefaultValue"
+            page name:"pageCustomDevices"
+            page name:"pageLimitValue"
             page name:"pageGlobalVariables"   
         page name:"pageAbout"
 }
@@ -154,7 +157,7 @@ def pageHomeControl(){
 }
 def pageMacros() {
     dynamicPage(name: "pageMacros", install: false, uninstall: false) {
-    	if (childApps.size() && childApps[0].versionInt() <200){
+    	if (childApps.size() && childApps[0].versionInt() <201){
         	section{
             	paragraph "Your voice macro (child app) version is less than the recommended version. Be sure to keep up-to-date on the latest versions "+
                 	"of both the parent and the child app. You cannot continue with creating macros until you upgrade.", 
@@ -172,7 +175,7 @@ def pageMacros() {
                 }
         	}
             section(" "){
-                app(name: "childMacros", appName: "Ask Alexa - Macro", namespace: "MichaelStruck", title: "Create A New Macro...", description: "Tap to create a new voice macro", multiple: true, 
+               app(name: "childMacros", appName: "Ask Alexa - Macro", namespace: "MichaelStruck", title: "Create A New Macro...", description: "Tap to create a new voice macro", multiple: true, 
                         image: "https://raw.githubusercontent.com/MichaelStruck/SmartThingsPublic/master/img/add.png") 
             }
 		}
@@ -190,7 +193,7 @@ def pageAbout(){
     	}
         section ("Apache license"){ paragraph textLicense() }
     	section("Instructions") { paragraph textHelp() }
-        section("Tap below to remove the application and all reports"){}
+        section("Tap below to remove the application and all macros"){}
 	}
 }
 def pageSettings(){
@@ -208,14 +211,19 @@ def pageSettings(){
         	if (dimmers || tstats || cLights || speakers){
 				href "pageDefaultValue", title: "Default Command Values (Dimmers, Volume, etc.)", description: "", state: "complete"
             }
+            if (speakers || tstats){
+            	href "pageLimitValue", title: "Device Minimum/Maximum Values", description: "", state: "complete"
+            }
         	if (!state.accessToken) OAuthToken()
             href url:"${getApiServerUrl()}/api/smartapps/installations/${app.id}/setup?access_token=${state.accessToken}", style:"embedded", required:false, title:"Setup Variables (For Amazon Developer sites)", description: none
         	href "pageGlobalVariables", title: "Text Field Variables", description: none, state: getState(voiceTempVar, voiceHumidVar, "")
             input "invocationName", title: "Invocation Name (Only Used For Examples)", defaultValue: "SmartThings", required: false
         }	
         section ("Advanced") { 
-        	href "pageConfirmation", title: "Revoke/Reset Access Token", description: "Tap to confirm this action",
+            href "pageConfirmation", title: "Revoke/Reset Access Token", description: "Tap to confirm this action",
             	image: "https://raw.githubusercontent.com/MichaelStruck/SmartThingsPublic/master/img/warning.png"
+            href "pageCustomDevices", title: "Device Specific Commands", description: none, state: getState (nestCMD, stelproCMD, "")
+            input "advReportOutput", "bool", title: "Advanced Voice Report Filter", defaultValue: false  
         }
     }
 }
@@ -233,6 +241,29 @@ def pageDefaultValue(){
             	input "dimmerLow", "number", title: "Low Value", defaultValue: 10, required: false
                 input "dimmerMed", "number", title: "Medium Value", defaultValue: 50, required: false
                 input "dimmerHigh", "number", title: "High Value", defaultValue: 100, required: false
+            }
+        }
+    }
+}
+def pageCustomDevices(){
+    dynamicPage(name: "pageCustomDevices", title: "Device Specific Commands", uninstall: false){
+		section {
+            input "nestCMD", "bool", title: "Allow Nest-Specific Thermostat Commands (Home/Away)", defaultValue: false
+            input "stelproCMD", "bool", title: "Stelpro Baseboard Thermostat Controls", defaultValue:false
+    	}
+	}
+}
+def pageLimitValue(){
+    dynamicPage(name: "pageLimitValue", uninstall: false){
+        if (speakers){
+            section("Speaker Volume Limits"){
+				input "speakerHighLimit", "number", title: "Speaker Maximum Volume", defaultValue:20, required: false
+            }
+        }
+        if (tstats){
+        	section("Thermostat Setpoint Limits"){
+            	input "tstatLowLimit", "number", title: "Thermostat Minimum Value ", defaultValue: 55, required: false
+                input "tstatHighLimit", "number", title: "Theremostat Maximum Value", defaultValue: 85, required: false
             }
         }
     }
@@ -617,6 +648,10 @@ def getReply(devices, type, dev, op, num, param){
                     cool = opState=="cool" || opState =="auto" ?  STdevice.currentValue("coolingSetpoint") : "" 
                     result += opState ? ", and the thermostat's mode is: '${opState}'." : ". "
                     result += humidity ? " The relative humidity reading is ${humidity}%." : ""
+                    if (nestCMD && supportedCaps.name.contains("Presence Sensor")){
+                    	result += " This thermostat's presence sensor is reading "
+                        result += STdevice.currentValue("presence")=="present" ? "'Home'. " : "'Away'. "
+                    }
                     result += heat ? " The heating setpoint is set to ${heat as int} degrees. " : ""
                     result += heat && cool ? " and finally, " : ""
                     result += cool ? " The cooling setpoint is set to ${cool as int} degrees. " : ""
@@ -636,36 +671,41 @@ def getReply(devices, type, dev, op, num, param){
         else {
             if (type == "thermostat"){
                 if ((op == "increase" || op=="raise" || op=="up" || op == "decrease" || op=="down" || op=="lower")){
-                     def newValues = upDown(STdevice, type, op, num) 
+                     def newValues = upDown(STdevice, type, op, num)  
                      num = newValues.newLevel
                 }
-                if ((param=="heat" || param=="heating" || param =="cool" || param=="cooling" || param =="auto" || param=="automatic" || param=="eco" || param=="comfort") && num == 0 && op=="undefined") op="on"
+                if (num>0) num = num < tstatHighLimit && num > tstatLowLimit ? num : num > tstatHighLimit ? tstatHighLimit : tstatLowLimit 
+                if ((param=="heat" || param=="heating" || param =="cool" || param=="cooling" || param =="auto" || param=="automatic" || param=="eco" || param=="comfort" || param=="home" || param=="away") && num == 0 && op=="undefined") op="on"
                 if (op == "on" || op=="off") {
                 	if (param == "undefined" && op == "on") result="You must designate 'heating mode' or 'cooling mode' when turning the ${STdevice} on. "
                     if (param =="heat" || param=="heating") {result="I am setting the ${STdevice} to 'heating' mode. "; STdevice.heat()}
                     if (param =="cool" || param=="cooling") {result="I am setting the ${STdevice} to 'cooling' mode. "; STdevice.cool()}
                     if (param =="auto" || param=="automatic") {result="I am setting the ${STdevice} to 'auto' mode. Please note, "+
                     	"to properly set the temperature in 'auto' mode, you must specify the heating or cooling setpoints separately. " ; STdevice.auto()}
+                    if (param =="home" && nestCMD) {result = "I am setting the ${STdevice} to 'home'. "; STdevice.present()} 
+                    if (param =="away" && nestCMD) {result = "I am setting the ${STdevice} to 'away'. Please note that Nest thermostats will not temperature changes while in 'away' status. "; STdevice.away()} 
                     if (op =="off") {result = "I am turning the ${STdevice} ${op}. "; STdevice.off()}
-                    if (STdevice.name.contains("Stelpro") && param=="eco"){ result="I am setting the ${STdevice} to 'eco' mode. "; STdevice.setThermostatMode("eco") }
-                    if (STdevice.name.contains("Stelpro") && param=="comfort"){ result="I am setting the ${STdevice} to 'comfort' mode. "; STdevice.setThermostatMode("comfort") }
+                    if (stelproCMD && param=="eco"){ result="I am setting the ${STdevice} to 'eco' mode. "; STdevice.setThermostatMode("eco") }
+                    if (stelproCMD && param=="comfort"){ result="I am setting the ${STdevice} to 'comfort' mode. "; STdevice.setThermostatMode("comfort") }
                 }
                 else {
-                    if (param == "undefined") 
+                    if (param == "undefined"){ 
                         if (STdevice.currentValue("thermostatMode")=="heat") param = "heat"
                         else if (STdevice.currentValue("thermostatMode")=="cool") param = "cool"
                         else result = "You must designate a 'heating' or 'cooling' parameter when setting the temperature. "+
                             "The thermostat will not accept a generic setpoint in its current mode. For example, you could simply say, 'ask ${getIName()} to set the ${STdevice} heating to 65 degrees'. "
-                    if (num == 0) result = "I didn't understand the temperature setting. Please try again. "
+					}
                     if ((param =="heat" || param =="heating") && num > 0) {
                         result="I am setting the heating setpoint of the ${STdevice} to ${num} degrees. "
                         STdevice.setHeatingSetpoint(num) 
-                        if (STdevice.name.contains("Stelpro")) STdevice.applyNow()
+                        if (stelproCMD) STdevice.applyNow()
                     }
                     if ((param =="cool" || param =="cooling") && num>0) {
                         result="I am setting the cooling setpoint of the ${STdevice} to ${num} degrees. "
                         STdevice.setCoolingSetpoint(num)
                     }
+                    if (num == tstatHighLimit) result += "This is the maximum temperature I can set for this device. "
+                    if (num == tstatLowLimit) result += "This is the minimum temperature I can set for this device. "
                 }
             }
             if (type == "color" || type == "level" || type=="switch"){
@@ -684,7 +724,7 @@ def getReply(devices, type, dev, op, num, param){
                     if (num==0) overRideMsg = "You don't have a default value set up for the '${op}' level. I am not making any changes to the ${STdevice}. "
                 }
                 if ((type == "switch") || ((type=="level" || type == "color") && num==0 )){
-               		if ((type=="level" || type == "color") && num==0 && op=="undefined" && param=="undefined") op="off"
+                    if ((type=="level" || type == "color") && num==0 && op=="undefined" && param=="undefined") op="off"
                 	if (op=="on" || op=="off"){
                 		STdevice."$op"() 
                         result = overRideMsg ? overRideMsg: "I am turning the ${STdevice} ${op}."
@@ -725,16 +765,18 @@ def getReply(devices, type, dev, op, num, param){
                      num = newValues.newLevel
                      if (num==0) op= "off"
                 }
-                if (op=="off" || op=="stop") {STdevice.stop(); result = "I am turning off the ${STdevice}. "}
-                else if (op == "play" || op=="on") {STdevice.play(); result = "I am playing the ${STdevice}. "}
-                else if (op=="mute") {STdevice.mute(); result = "I am muting the ${STdevice}. "}
-                else if (op=="unmute") {STdevice.unmute(); result = "I am unmuting the ${STdevice}. "}
-                else if (op=="pause") {STdevice.pause(); result = "I am pausing the ${STdevice} speaker. "}
-                else if (op=="next track") {STdevice.nextTrack(); result = "I am playing the next track on the ${STdevice}. "}
-            	else if (op=="previous track") {STdevice.previousTrack(); result = "I am playing the next track on the ${STdevice}. "}
+                if (num != 0 && num < speakerHighLimit) num = speakerHighLimit
+                if (op=="off" || op=="stop") { STdevice.stop(); result = "I am turning off the ${STdevice}. " }
+                else if (op == "play" || op=="on") { STdevice.play(); result = "I am playing the ${STdevice}. " }
+                else if (op=="mute") { STdevice.mute(); result = "I am muting the ${STdevice}. " }
+                else if (op=="unmute") { STdevice.unmute(); result = "I am unmuting the ${STdevice}. " }
+                else if (op=="pause") { STdevice.pause(); result = "I am pausing the ${STdevice} speaker. " }
+                else if (op=="next track") {  STdevice.nextTrack(); result = "I am playing the next track on the ${STdevice}. " }
+            	else if (op=="previous track") { STdevice.previousTrack(); result = "I am playing the next track on the ${STdevice}. " }
                 else result = "I didn't understand what you wanted me to do with the ${STdevice} speaker. "
-                if (num > 0) {STdevice.setLevel(num); result = "I am setting the volume of the ${STdevice} to ${num}%. "}
-        	}
+                if (num > 0) { STdevice.setLevel(num); result = "I am setting the volume of the ${STdevice} to ${num}%. " }
+                if (num == speakerHighLimit) result += "This is the maximum volume level you have set up. " 
+            }
             if (type == "door"){
                 def currentDoorState = STdevice.currentValue(type)
 				if (currentDoorState==op || (currentDoorState == "closed" && op=="close")) result = "The ${STdevice} is already ${currentDoorState}. "
@@ -764,7 +806,7 @@ def getReply(devices, type, dev, op, num, param){
 		}
         if (otherStatus && op=="status"){
             def temp =STdevice.currentValue("temperature"), accel=STdevice.currentValue("acceleration"), motion=STdevice.currentValue("motion"), lux =STdevice.currentValue("illuminance") 
-            result += lux ? "The illuminance at this devices' location is ${lux} lux. " : ""
+            result += lux ? "The illuminance at this device's location is ${lux} lux. " : ""
             result += temp && type != "thermostat" && type != "humidity" && type != "temperature" ? "In addition, the temperature reading from this device is ${temp as int} degrees. " : ""
 			result += motion == "active" && type != "motion" ? "This device is also a motion sensor, and it is currently reading movement. " : ""
 			result += accel == "active" ? "This device has a vibration sensor, and it is currently reading movement. " : ""
@@ -818,7 +860,8 @@ def setupData(){
     result += speakers ?"play<br>stop<br>pause<br>mute<br>unmute<br>next track<br>previous track<br>" : ""
     result += "<br><b>LIST_OF_PARAMS</b><br><br>"
 	if (tstats) result += "heat<br>cool<br>heating<br>cooling<br>auto<br>automatic<br>"
-    if (tstats?.find{it.name.contains("Stelpro")}) result += "eco<br>comfort<br>"
+    if (stelproCMD) result += "eco<br>comfort<br>"
+    if (tstats && nestCMD) result += "home<br>away<br>"
     if (cLights || childApps.size()) { fillColorSettings(); state.colorData.each {result += it.name.toLowerCase()+"<br>"}}
     result +="<br><b>LIST_OF_SHPARAM</b><br><br>arm<br>disarm<br>stay<br>armed stay<br>armed away<br>off<br>"  
 	def phrases = location.helloHome?.getPhrases()*.label
@@ -854,11 +897,15 @@ def getVariableList(){
 }
 private getAverage(device,type){
 	def total = 0
-	device.each {total += it.latestValue(type) }
+	device.each {total += it.latestValue(type)}
     def result = ((total/device.size()) + 0.5) as int
 }
 def getLightIncVal(){ return lightAmt }
 def getIName(){ return invocationName }
+def getTstatLimits() { return [hi:tstatHighLimit, lo: tstatLowLimit] }
+def getAdvEnabled() { return advReportOutput }
+def isNest() { return nestCMD }
+def isStelpro() { return stelproCMD }
 //Common Code
 def OAuthToken(){
 	try {
@@ -963,22 +1010,22 @@ def getLastEvent(device, count) {
     return result
 }
 def sendJSON(outputTxt, lVer){
-	def LambdaVersion = lVer as int
-    if (LambdaVersion < 110) outputTxt = "I am unable to complete your request. The version of the Lambda code you are using is out-of-date. Please install the latest code and try again. "
+    def LambdaVersion = lVer as int
+    if (LambdaVersion < 111) outputTxt = "I am unable to complete your request. The version of the Lambda code you are using is out-of-date. Please install the latest code and try again. "
     log.debug outputTxt
     return ["voiceOutput":outputTxt]
 }
 //Version/Copyright/Information/Help
 private def textAppName() { def text = "Ask Alexa" }	
 private def textVersion() {
-    def version = "Parent App Version: 1.1.0a (05/28/2016)"
+    def version = "Parent App Version: 1.1.1 (05/31/2016)"
     def childCount = childApps.size()
     def childVersion = childCount ? childApps[0].textVersion() : "No voice macros installed"
     childVersion += state.lambdaCode ? "\n"+ state.lambdaCode : ""
     return "${version}\n${childVersion}"
 }
-private def versionInt(){ return 110 }
-private def versionLong(){ return "1.1.0a" }
+private def versionInt(){ return 111 }
+private def versionLong(){ return "1.1.1" }
 private def textCopyright() {return "Copyright © 2016 Michael Struck" }
 private def textLicense() {
 	def text = "Licensed under the Apache License, Version 2.0 (the 'License'); "+
