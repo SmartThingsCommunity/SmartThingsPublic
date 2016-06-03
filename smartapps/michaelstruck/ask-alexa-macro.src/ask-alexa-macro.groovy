@@ -1,7 +1,7 @@
 /**
  *  Ask Alexa - Macro
  *
- *  Version 2.0.1a - 6/2/16 Copyright © 2016 Michael Struck
+ *  Version 2.0.1a - 6/3/16 Copyright © 2016 Michael Struck
  *  
  *  Version 1.0.0 - Initial release
  *  Version 1.0.1 - Added motion sensor reports; added events report to various sensors
@@ -970,6 +970,6 @@ private setColoredLights(switches, color, level, type){
 	switches?.setColor(newValue)
 }
 //Version 
-private def textVersion() {return "Voice Macros Version: 2.0.1a (06/02/2016)"}
+private def textVersion() {return "Voice Macros Version: 2.0.1a (06/03/2016)"}
 private def versionInt() {return 201}
 private def versionLong() {return "2.0.1a"}
