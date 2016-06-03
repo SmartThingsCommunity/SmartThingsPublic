@@ -1,12 +1,13 @@
 /**
  *  Ask Alexa - Lambda Code
  *
- *  Version 1.1.0 - 5/27/16 Copyright © 2016 Michael Struck
+ *  Version 1.1.0 - 5/29/16 Copyright © 2016 Michael Struck
  *  Special thanks for Keith DeLong for code and assistance
  *  
  *  Version 1.0.0 - Initial release
  *  Version 1.0.1 - Removed dedicated status operation; added version code
  *  Version 1.1.0 - Added two addition intent types for groups and macros
+ *  Version 1.1.1 - Added messages to indicate bad OAuth or Application ID
  *
  *  Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except
  *  in compliance with the License. You may obtain a copy of the License at:
@@ -20,18 +21,17 @@
  */
 'use strict';
 exports.handler = function( event, context ) {
-   var versionTxt = '1.1.0';
-   var versionDate= '05/27/2016';
-   var versionNum = '110';
+   var versionTxt = '1.1.1';
+   var versionDate= '05/29/2016';
+   var versionNum = '111';
    var https = require( 'https' );
    // Paste app code here between the breaks------------------------------------------------
     var IName = 'SmartThings';
-    var STappID = '';
-    var STtoken = '';
+    var STappID = 'f42605b0-5e04-40d6-a042-8efec7ef7172';
+    var STtoken = 'acf9f8da-cd3b-45b5-8907-1edea3ebde41';
     var url='https://graph.api.smartthings.com:443/api/smartapps/installations/' + STappID + '/' ;
    //---------------------------------------------------------------------------------------
    var cardName ="";
-   console.log (event.request.type);
    if (event.request.type == "LaunchRequest") {
         var speech = "Simply give me a device and a command, or ask me the status of a device, and I will carry out your request.";
         cardName = "Ask Alexa Help";
@@ -100,8 +100,12 @@ exports.handler = function( event, context ) {
             https.get( url, function( response ) {
                 response.on( 'data', function( data ) {
                 var resJSON = JSON.parse(data);
-                var speechText = "The SmartThings SmartApp returned an error. I was unable to complete your request";
+                var speechText;
                 if (resJSON.voiceOutput) { speechText = resJSON.voiceOutput; }
+                if (resJSON.error) speechText = "There was error with the Ask Alexa SmartApp execution. If this continues, please contact the author of the SmartApp. ";
+                if (resJSON.error === "invalid_token" || resJSON.type === "AccessDenied") {
+                    speechText = "There was error accessing the SmartThings cloud environment. Please check your security token and application ID and try again. ";
+                }
                 console.log(speechText);
                 output(speechText, context, cardName);
                 } );
