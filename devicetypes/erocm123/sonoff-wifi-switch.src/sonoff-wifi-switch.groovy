@@ -83,7 +83,7 @@ def configure() {
 	log.debug "configure()"
 	log.debug "Configuring Device For SmartThings Use"
     sendEvent(name:"hubInfo", value:"Sonoff switch still being configured") 
-    if (ip != null && override == true) state.dni = setDeviceNetworkId(ip, "80")
+    if (ip != null && ip != "" && override == "true") state.dni = setDeviceNetworkId(ip, "80")
     state.hubIP = device.hub.getDataValue("localIP")
     state.hubPort = device.hub.getDataValue("localSrvPortTCP")
     response(configureInstant(state.hubIP, state.hubPort))
@@ -151,7 +151,7 @@ def parse(description) {
     if (getDeviceDataByName("ip") != null && getDeviceDataByName("ip") != "") {
         hubInfoText = "IP Address: ${getDeviceDataByName("ip")} - "
     }
-    if (override == true && ip != null && ip != "") {
+    if (override == "true" && ip != null && ip != "") {
         hubInfoText = "IP Address: $ip - "
     }
     if (state.uptime) {
@@ -163,7 +163,7 @@ def parse(description) {
         hubInfoText = hubInfoText + "\r\nSwitch has not been configured"
     }
     
-    events << createEvent(name:"hubInfo", value:hubInfoText)
+    events << createEvent(name:"hubInfo", value:hubInfoText, displayed:false)
     
     if (cmds) return cmds else return events
 
@@ -243,7 +243,7 @@ private updateDNI() {
 }
 
 private getHostAddress() {
-    if (override == true && ip != null && ip != ""){
+    if (override == "true" && ip != null && ip != ""){
         return "${ip}:80"
     }
     else if(getDeviceDataByName("ip") && getDeviceDataByName("port")){
