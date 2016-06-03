@@ -1,11 +1,19 @@
 /**
- *  
- *	Sonoff (Connect)
- *  
- *	Author: Eric Maycock (erocm123)
- *	email: erocmail@gmail.com
- *	Date: 2016-05-28
- *  
+ *  Copyright 2016 Eric Maycock
+ *
+ *  Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except
+ *  in compliance with the License. You may obtain a copy of the License at:
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ *  Unless required by applicable law or agreed to in writing, software distributed under the License is distributed
+ *  on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the License
+ *  for the specific language governing permissions and limitations under the License.
+ *
+ *  Sonoff (Connect)
+ *
+ *  Author: Eric Maycock (erocm123)
+ *  Date: 2016-06-02
  */
 
 definition(
@@ -281,7 +289,7 @@ def addDevices() {
         if (!d) {
             log.debug "Creating Sonoff Switch with dni: ${selectedDevice.value.mac}"
             log.debug Integer.parseInt(selectedDevice.value.deviceAddress,16)
-            addChildDevice("erocm123", "Sonoff Wifi Switch 2.0", selectedDevice.value.mac, selectedDevice?.value.hub, [
+            addChildDevice("erocm123", "Sonoff Wifi Switch", selectedDevice.value.mac, selectedDevice?.value.hub, [
                 "label": selectedDevice?.value?.name ?: "Sonoff Wifi Switch 2.0",
                 "data": [
                     "mac": selectedDevice.value.mac,
