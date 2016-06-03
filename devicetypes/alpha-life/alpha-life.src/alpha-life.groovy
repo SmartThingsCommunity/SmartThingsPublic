@@ -13,7 +13,7 @@
  */
 
 metadata {
-    definition (name: "Alpha Life", namespace: "Alpha Life", author: "Alpha Life") {
+    definition (name: "GRE Smart Dim", namespace: "GRE Smart Dim", author: "GRE Smart Dim") {
         capability "Actuator"
         capability "Configuration"
         capability "Refresh"
@@ -61,11 +61,11 @@ def parse(String description) {
 }
 
 def off() {
-    zigbee.off() + ["delay 500"] + zigbee.levelRefresh() + ["delay 500"] + zigbee.onOffRefresh() 
+    zigbee.off() 
 }
 
 def on() {
-    zigbee.on() + ["delay 500"] +  zigbee.levelRefresh() + ["delay 500"] + zigbee.onOffRefresh() 
+    zigbee.on() 
 }
 
 def setLevel(value) {
