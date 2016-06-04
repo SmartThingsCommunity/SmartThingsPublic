@@ -24,6 +24,7 @@
  *
  *	0.10 (04/08/2016) -	Initial 0.1 Beta
  *  0.11 (05/28/2016) - Set numberOfButtons attribute for ease of use with CoRE and other SmartApps. Corrected physical/digital states.
+ *  0.12 (06/03/2016) - Added press type indicator to display last tap/hold press status
  *
  */
  
@@ -58,49 +59,53 @@ fingerprint deviceId: "0x1001", inClusters: "0x5E, 0x86, 0x72, 0x5A, 0x85, 0x59,
 		reply "200100,delay 100,2502": "command: 2503, payload: 00"
 	}
 
-	// tile definitions
-	tiles(scale: 1) { 
-        standardTile("switch", "device.switch", width: 2, height: 2, canChangeIcon: false) {
-			state "off", label: 'Off', action: "switch.on", icon: "st.Home.home30", backgroundColor: "#ffffff", nextState: "on"
-			state "on", label: 'On', action: "switch.off", icon: "st.home.home30", backgroundColor: "#79b821", nextState: "off"
-		}        
-
-        standardTile("tapUp2", "device.button", width: 1, height: 1, decoration: "flat") {
+	tiles(scale: 2) {
+		multiAttributeTile(name:"switch", type: "lighting", width: 6, height: 4, canChangeIcon: true){
+			tileAttribute ("device.switch", key: "PRIMARY_CONTROL") {
+				attributeState "on", label: '${name}', action: "switch.off", icon: "st.Home.home30", backgroundColor: "#79b821"
+				attributeState "off", label: '${name}', action: "switch.on", icon: "st.Home.home30", backgroundColor: "#ffffff"
+			}
+            tileAttribute("device.status", key: "SECONDARY_CONTROL") {
+                attributeState("default", label:'${currentValue}', unit:"")
+            }
+		}
+        
+        standardTile("tapUp2", "device.button", width: 2, height: 2, decoration: "flat") {
 			state "default", label: "Tap ▲▲", backgroundColor: "#ffffff", action: "tapUp2", icon: "st.Home.home30"
 		}     
  
-        standardTile("tapDown2", "device.button", width: 1, height: 1, decoration: "flat") {
+        standardTile("tapDown2", "device.button", width: 2, height: 2, decoration: "flat") {
 			state "default", label: "Tap ▼▼", backgroundColor: "#ffffff", action: "tapDown2", icon: "st.Home.home30"
 		} 
 
-        standardTile("tapUp3", "device.button", width: 1, height: 1, decoration: "flat") {
+        standardTile("tapUp3", "device.button", width: 2, height: 2, decoration: "flat") {
 			state "default", label: "Tap ▲▲▲", backgroundColor: "#ffffff", action: "tapUp3", icon: "st.Home.home30"
 		} 
 
-        standardTile("tapDown3", "device.button", width: 1, height: 1, decoration: "flat") {
+        standardTile("tapDown3", "device.button", width: 2, height: 2, decoration: "flat") {
 			state "default", label: "Tap ▼▼▼", backgroundColor: "#ffffff", action: "tapDown3", icon: "st.Home.home30"
 		} 
 
-        standardTile("holdUp", "device.button", width: 1, height: 1, decoration: "flat") {
+        standardTile("holdUp", "device.button", width: 2, height: 2, decoration: "flat") {
 			state "default", label: "Hold ▲", backgroundColor: "#ffffff", action: "holdUp", icon: "st.Home.home30"
 		} 
 
-        standardTile("holdDown", "device.button", width: 1, height: 1, decoration: "flat") {
+        standardTile("holdDown", "device.button", width: 2, height: 2, decoration: "flat") {
 			state "default", label: "Hold ▼", backgroundColor: "#ffffff", action: "holdDown", icon: "st.Home.home30"
 		} 
 
-        standardTile("indicator", "device.indicatorStatus", width: 1, height: 1, inactiveLabel: false, decoration: "flat") {
+        standardTile("indicator", "device.indicatorStatus", width: 2, height: 2, inactiveLabel: false, decoration: "flat") {
 			state "when off", action:"indicator.indicatorWhenOn", icon:"st.indicators.lit-when-off"
 			state "when on", action:"indicator.indicatorNever", icon:"st.indicators.lit-when-on"
 			state "never", action:"indicator.indicatorWhenOff", icon:"st.indicators.never-lit"
 		}
  
-		standardTile("refresh", "device.switch", width: 1, height: 1, inactiveLabel: false, decoration: "flat") {
+		standardTile("refresh", "device.switch", width: 2, height: 2, inactiveLabel: false, decoration: "flat") {
 			state "default", label:'', action:"refresh.refresh", icon:"st.secondary.refresh"
 		}
      
 		main "switch"
-		details(["switch","indicator","refresh","tapUp2","tapUp3","holdUp","tapDown2","tapDown3","holdDown"])
+		details(["switch","tapUp2","tapUp3","holdUp","tapDown2","tapDown3","holdDown","indicator","refresh"])
 	}
 }
 
@@ -217,7 +222,6 @@ def zwaveEvent(physicalgraph.zwave.commands.centralscenev1.CentralSceneNotificat
           // Up
           switch (cmd.keyAttributes) {
               case 0:
-                  // Handle the occasional 0 case (currently an undocumented/unknown Up attribute)
                   result=createEvent([name: "switch", value: "on", type: "physical"])
                   break
  
@@ -249,7 +253,6 @@ def zwaveEvent(physicalgraph.zwave.commands.centralscenev1.CentralSceneNotificat
           // Down
           switch (cmd.keyAttributes) {
               case 0:
-                  // Handle the occasional 0 case (currently an undocumented/unknown Up attribute)
                   result=createEvent([name: "switch", value: "off", type: "physical"])
                   break
 
@@ -284,31 +287,37 @@ def zwaveEvent(physicalgraph.zwave.commands.centralscenev1.CentralSceneNotificat
 }
 
 def tapUp2Response(String buttonType) {
+    sendEvent(name: "status" , value: "Tap ▲▲")
 	[name: "button", value: "pushed", data: [buttonNumber: "1"], descriptionText: "$device.displayName Tap-Up-2 (button 1) pressed", 
        isStateChange: true, type: "$buttonType"]
 }
 
 def tapDown2Response(String buttontype) {
+    sendEvent(name: "status" , value: "Tap ▼▼")
 	[name: "button", value: "pushed", data: [buttonNumber: "2"], descriptionText: "$device.displayName Tap-Down-2 (button 2) pressed", 
       isStateChange: true, type: "$buttonType"]
 }
 
 def tapUp3Response(String buttonType) {
+    sendEvent(name: "status" , value: "Tap ▲▲▲")
 	[name: "button", value: "pushed", data: [buttonNumber: "3"], descriptionText: "$device.displayName Tap-Up-3 (button 3) pressed", 
     isStateChange: true, type: "$buttonType"]
 }
 
 def tapDown3Response(String buttonType) {
+    sendEvent(name: "status" , value: "Tap ▼▼▼")
 	[name: "button", value: "pushed", data: [buttonNumber: "4"], descriptionText: "$device.displayName Tap-Down-3 (button 4) pressed", 
     isStateChange: true, type: "$buttonType"]
 }
 
 def holdUpResponse(String buttonType) {
+    sendEvent(name: "status" , value: "Hold ▲")
 	[name: "button", value: "pushed", data: [buttonNumber: "5"], descriptionText: "$device.displayName Hold-Up (button 5) pressed", 
     isStateChange: true, type: "$buttonType"]
 }
 
 def holdDownResponse(String buttonType) {
+    sendEvent(name: "status" , value: "Hold ▼")
 	[name: "button", value: "pushed", data: [buttonNumber: "6"], descriptionText: "$device.displayName Hold-Down (button 6) pressed", 
     isStateChange: true, type: "$buttonType"]
 }
