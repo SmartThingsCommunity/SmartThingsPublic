@@ -1025,7 +1025,7 @@ private def textVersion() {
     return "${version}\n${childVersion}"
 }
 private def versionInt(){ return 111 }
-private def versionLong(){ return "1.1.1b" }
+private def versionLong(){ return "1.1.1c" }
 private def textCopyright() {return "Copyright © 2016 Michael Struck" }
 private def textLicense() {
 	def text = "Licensed under the Apache License, Version 2.0 (the 'License'); "+
