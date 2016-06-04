@@ -33,6 +33,7 @@ metadata {
         command "testCmd"
         command "sendInvalidKeycodeResponse"
         command "acknowledgeArmRequest"
+        command "testPanelBeep"
         
         fingerprint endpointId: "01", profileId: "0104", deviceId: "0401", inClusters: "0000,0001,0003,0020,0402,0500,0B05", outClusters: "0019,0501", manufacturer: "CentraLite", model: "3400"
         fingerprint endpointId: "01", profileId: "0104", deviceId: "0401", inClusters: "0000,0001,0003,0020,0402,0500,0501,0B05,FC04", outClusters: "0019,0501", manufacturer: "CentraLite", model: "3405-L"
@@ -76,7 +77,7 @@ def parse(String description) {
     
 	//------Miscellaneous Zigbee message------//
 	if (description?.startsWith('catchall:')) {
-    	//log.debug zigbee.parse(description);
+    	log.debug zigbee.parse(description);
 		def message = zigbee.parse(description);
         
         //------Profile-wide command (rattr responses, errors, etc.)------//
@@ -149,9 +150,7 @@ def configure() {
     
     //------Set up binding------//
     "zdo bind 0x${device.deviceNetworkId} ${endpointId} 1 0x500 {${device.zigbeeId}} {}", "delay 100",
-    "send 0x${device.deviceNetworkId} 1 ${endpointId}", "delay 1000",
     "zdo bind 0x${device.deviceNetworkId} ${endpointId} 1 0x501 {${device.zigbeeId}} {}", "delay 100",
-    "send 0x${device.deviceNetworkId} 1 ${endpointId}", "delay 1000",
     
     //------Configure temperature reporting------//
     "zdo bind 0x${device.deviceNetworkId} ${endpointId} 1 0x402 {${device.zigbeeId}} {}", "delay 200",
@@ -413,6 +412,16 @@ def sendInvalidKeycodeResponse(){
                  
     log.trace 'Method: sendInvalidKeycodeResponse(): '+cmds
     return (cmds?.collect { new physicalgraph.device.HubAction(it) }) + sendStatusToDevice()
+}
+
+def testPanelBeep(){
+	//zigbee.command(0x0501, 0x08, "00", "00")
+    List cmds = ["raw 0x501 {09 01 04 0514}",
+    			 "send 0x${device.deviceNetworkId} 1 1", 'delay 100']
+                 
+    def results = cmds?.collect { new physicalgraph.device.HubAction(it) };
+    log.trace 'Method: sendStatusToDevice(): '+results
+    return results
 }
 
 //------Utility methods------//
