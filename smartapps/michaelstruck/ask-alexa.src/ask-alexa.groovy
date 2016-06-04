@@ -1,7 +1,7 @@
 /**
  *  Ask Alexa 
  *
- *  Version 1.1.1b - 6/3/16 Copyright © 2016 Michael Struck
+ *  Version 1.1.1c - 6/3/16 Copyright © 2016 Michael Struck
  *  Special thanks for Keith DeLong for code and assistance
  *  
  *  Version 1.0.0 - Initial release
@@ -10,7 +10,7 @@
  *  Version 1.0.1c - Added presense sensors; added up/down/lower/increase/decrease as commands for various devices
  *  Version 1.0.2b - Added motion sensors and a new function, "events" to list to the last events for a device; code optimization, bugs removed
  *  Version 1.1.0a - Changed voice reports to macros, added toggle commands to switches, bug fixes and code optimization
- *  Version 1.1.1b - Added limits to temperature and speaker values; additional macros device types added
+ *  Version 1.1.1c - Added limits to temperature and speaker values; additional macros device types added
  *
  *  Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except
  *  in compliance with the License. You may obtain a copy of the License at:
@@ -765,7 +765,7 @@ def getReply(devices, type, dev, op, num, param){
                      num = newValues.newLevel
                      if (num==0) op= "off"
                 }
-                if (num != 0 && num < speakerHighLimit) num = speakerHighLimit
+                if (num != 0 && num > speakerHighLimit) num = speakerHighLimit
                 if (op=="off" || op=="stop") { STdevice.stop(); result = "I am turning off the ${STdevice}. " }
                 else if (op == "play" || op=="on") { STdevice.play(); result = "I am playing the ${STdevice}. " }
                 else if (op=="mute") { STdevice.mute(); result = "I am muting the ${STdevice}. " }
@@ -1018,7 +1018,7 @@ def sendJSON(outputTxt, lVer){
 //Version/Copyright/Information/Help
 private def textAppName() { def text = "Ask Alexa" }	
 private def textVersion() {
-    def version = "Parent App Version: 1.1.1b (06/03/2016)"
+    def version = "Parent App Version: 1.1.1c (06/03/2016)"
     def childCount = childApps.size()
     def childVersion = childCount ? childApps[0].textVersion() : "No voice macros installed"
     childVersion += state.lambdaCode ? "\n"+ state.lambdaCode : ""
