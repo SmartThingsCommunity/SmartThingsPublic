@@ -21,6 +21,7 @@ metadata {
         capability "Temperature Measurement"
         capability "Refresh"
         capability "Lock Codes"
+        capability "button"
         
         attribute "armMode", "String"
         
@@ -62,7 +63,7 @@ metadata {
         standardTile("configure", "device.configure", inactiveLabel: false, decoration: "flat", width: 1, height: 1) {
         	state "default", action:"configuration.configure", icon:"st.secondary.configure"
     	}
-        main ("battery")
+        main ("temperature")
         //TODO: armMode is in here for debug purposes. Remove later.
         details (["temperature","battery","armMode","configure","refresh"])
 	}
@@ -110,6 +111,9 @@ def parse(String description) {
                     results = sendStatusToDevice();
                     log.trace results
                 }
+                else if (message?.command == 0x04) {
+                	results = createEvent(name: "button", value: "pushed", data: [buttonNumber: 1], descriptionText: "$device.displayName panic button was pushed", isStateChange: true)
+                }
                 else if (message?.command == 0x00) {
                     results = handleArmRequest(message)
                     log.trace results
@@ -128,6 +132,9 @@ def parse(String description) {
     else if (description?.startsWith('read attr -')) {
 		results = parseReportAttributeMessage(description)
 	}
+    else if (description?.startsWith('zone status ')) {
+    	results = parseIasMessage(description)
+    }
    
 	return results
 }
@@ -210,6 +217,62 @@ private parseTempAttributeMsg(message) {
     createEvent(getTemperatureResult(getTemperature(temp.encodeHex() as String)))
 }
 
+private Map parseIasMessage(String description) {
+    List parsedMsg = description.split(' ')
+    String msgCode = parsedMsg[2]
+    
+    Map resultMap = [:]
+    switch(msgCode) {
+        case '0x0020': // Closed/No Motion/Dry
+        	resultMap = getContactResult('closed')
+            break
+
+        case '0x0021': // Open/Motion/Wet
+        	resultMap = getContactResult('open')
+            break
+
+        case '0x0022': // Tamper Alarm
+            break
+
+        case '0x0023': // Battery Alarm
+            break
+
+        case '0x0024': // Supervision Report
+        	resultMap = getContactResult('closed')
+            break
+
+        case '0x0025': // Restore Report
+        	resultMap = getContactResult('open')
+            break
+
+        case '0x0026': // Trouble/Failure
+            break
+
+        case '0x0028': // Test Mode
+            break
+        case '0x0000':
+        	resultMap = [name: "button", value: "holdRelease", data: [buttonNumber: 2], descriptionText: "$device.displayName tamper reset", isStateChange: true]
+            break
+        case '0x0004':
+        	resultMap = [name: "button", value: "held", data: [buttonNumber: 2], descriptionText: "$device.displayName tamper alarmed", isStateChange: true]
+            break;
+        default:
+        	log.debug "Invalid message code in IAS message: ${msgCode}"
+    }
+    return resultMap
+}
+
+
+private Map getContactResult(value) {
+	log.debug 'Contact Status'
+	def linkText = getLinkText(device)
+	def descriptionText = "${linkText} was ${value == 'open' ? 'opened' : 'closed'}"
+	return [
+		name: 'contact',
+		value: value,
+		descriptionText: descriptionText
+	]
+}
 
 //TODO: find actual good battery voltage range and update this method with proper values for min/max
 //
