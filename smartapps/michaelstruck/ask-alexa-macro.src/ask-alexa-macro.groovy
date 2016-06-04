@@ -1,14 +1,14 @@
 /**
  *  Ask Alexa - Macro
  *
- *  Version 2.0.2 - 6/3/16 Copyright © 2016 Michael Struck
+ *  Version 2.0.2a - 6/4/16 Copyright © 2016 Michael Struck
  *  
  *  Version 1.0.0 - Initial release
  *  Version 1.0.1 - Added motion sensor reports; added events report to various sensors
  *  Version 1.0.2c - Added weather reports which include forecast, sunrise and sunset
  *  Version 2.0.0a - Modified child app to make it a 'macro' application. Still does voice reports, includes bug fixes as well.
  *  Version 2.0.1a - Fixed an issue with dimmer voice reporting, added averages for report parameters, added thermostat device groups and Nest support, various other syntax fixes.
- *  Versopm 2.0.2 - Added speakers to the list of voice reports. Minor bug fixes.
+ *  Versopm 2.0.2a - Added speakers to the list of voice reports. Minor bug fixes. Added multiple weather reports to voice reports.
  *
  *  Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except
  *  in compliance with the License. You may obtain a copy of the License at:
@@ -337,10 +337,13 @@ def pageHomeReport(){
 def pageWeatherReport(){
 	dynamicPage(name: "pageWeatherReport", install: false, uninstall: false) {
     	section { paragraph "Weather Report", image: "https://raw.githubusercontent.com/MichaelStruck/SmartThingsPublic/master/img/weather.png" }
-        section(" ") {
-        	input "voiceWeather", "enum", title: "Choose A Weather Report Type...", required: false,
-            	options: [0: "Today's weather forecast", 1: "Tonight's weather forecast", 2: "Tomorrow's weather forecast"]
-        	input "voiceSunrise", "bool", title: "Speak Today's Sunrise", defaultValue: false
+        section("Weather Forecasts") {
+        	input "voiceWeatherToday", "bool", title: "Speak Today's Weather Forecast", defaultValue: false
+            input "voiceWeatherTonight", "bool", title: "Speak Tonight's Weather Forecast", defaultValue: false
+            input "voiceWeatherTomorrow", "bool", title: "Speak Tomorrow's Weather Forecast", defaultValue: false
+        }
+        section ("Sunrise/Sunset"){    
+            input "voiceSunrise", "bool", title: "Speak Today's Sunrise", defaultValue: false
     		input "voiceSunset", "bool", title: "Speak Today's Sunset", defaultValue: false	
         }
         section ("Location") {
@@ -552,7 +555,7 @@ def macroResults(num, cmd, colorData, param){ def result = macroType == "Voice" 
 def reportResults(){
     def fullMsg=""
 	try {
-        fullMsg = voicePre
+        fullMsg = voicePre ?  voicePre + " ": ""
         if (voiceOnSwitchOnly) fullMsg += voiceSwitch ? switchOnReport(voiceSwitch, "switches") : ""
         else fullMsg += voiceSwitch ? reportStatus(voiceSwitch, "switch") : ""
         if (voiceOnSwitchEvt) fullMsg += getLastEvt(voiceSwitch, "'switch on'", "on", "switch")
@@ -564,7 +567,7 @@ def reportResults(){
         else if (voiceTemperature && voiceTemperature.size() > 1 && voiceTempAvg) fullMsg += "The average of the monitored temperature devices is: " + parent.getAverage(voiceTemperature, "temperature") + " degrees. "
         if (voiceHumidity && (voiceHumidity.size() == 1 || !voiceHumidAvg)) fullMsg += reportStatus(voiceHumidity, "humidity")
         else if (voiceHumidity  && voiceHumidity.size() > 1 && voiceHumidAvg) fullMsg += "The average of the monitored humidity devices is " + parent.getAverage(voiceHumidity, "humidity") + "%. "
-        if (voiceTempSettingSummary && voiceTempSettingsType) fullMsg += (voiceTempSettings) ? thermostatSummary(): ""
+        if (voiceTempSettingSummary && voiceTempSettingsType) fullMsg += voiceTempSettings ? thermostatSummary(): ""
         else fullMsg += (voiceTempSettings && voiceTempSettingsType) ? reportStatus(voiceTempSettings, voiceTempSettingsType) : ""
         fullMsg += voiceSpeaker ? speakerReport() : ""
         fullMsg += voiceWeather || voiceSunset || voiceSunrise ? getWeatherReport() : ""
@@ -574,7 +577,7 @@ def reportResults(){
         fullMsg += voiceMode ? "The current SmartThings mode is set to, '${location.currentMode}'. " : ""
         fullMsg += voiceSHM ? "The current Smart Home Monitor status is '${location.currentState("alarmSystemStatus")?.value}'. " : ""
         fullMsg += voiceBattery && batteryReport() ? batteryReport() : ""
-        fullMsg += voicePost
+        fullMsg += voicePost ? voicePost : ""
 	}
     catch(e){ fullMsg = "There was an error processing the report. Please try again. If this error continues, please contact the author of Ask Alexa. " }
     if (!fullMsg) fullMsg = "The voice report, '${app.label}', did not produce any output. Please check the configuration of the report within the SmartApp. "  
@@ -637,8 +640,8 @@ def reportStatus(deviceList, type){
 		}
     }
 	else deviceList.each { deviceName->
-    	try { result += "${deviceName} is set to ${deviceName.latestValue(type) as int}${appd}. " }
-    	catch (e) { result = "${deviceName} is not able to provide its setpoint. Please choose another setpoint type to report on. " }
+    	try { result += "The ${deviceName} is set to ${deviceName.latestValue(type) as int}${appd}. " }
+    	catch (e) { result = "The ${deviceName} is not able to provide its setpoint. Please choose another setpoint type to report on. " }
     }
     result
 }
@@ -856,8 +859,8 @@ def reportDescMSHM() {
     result += voiceSHM ? ", SHM: On" : ", SHM: Off"
 }
 def greyOutState(param1, param2, param3, param4, param5){def result = param1 || param2 || param3 || param4 || param5 ? "complete" : ""}
-def weatherDesc(){ def result = voiceWeather || voiceSunrise || voiceSunset ? "Status: CONFIGURED - Tap to edit" : "Status: UNCONFIGURED - Tap to configure" }
-def greyOutWeather(){ def result = voiceWeather || voiceSunrise || voiceSunset ? "complete" : "" }
+def weatherDesc(){ def result = voiceWeatherToday || voiceWeatherTonight || voiceWeatherTomorrow || voiceSunrise || voiceSunset ? "Status: CONFIGURED - Tap to edit" : "Status: UNCONFIGURED - Tap to configure" }
+def greyOutWeather(){ def result = voiceWeatherToday || voiceWeatherTonight || voiceWeatherTomorrow || voiceSunrise || voiceSunset ? "complete" : "" }
 def deviceGreyOut(){ def result = getDeviceDesc() == "Status: UNCONFIGURED - Tap to configure" ? "" : "complete" }
 def getDeviceDesc(){  
     def result,lvl, cLvl, clr, tLvl
@@ -904,8 +907,8 @@ private getLastEvt(devGroup, evtTxt, searchVal, devTxt){
     if (evtLog.size()>0){
         evtLog.sort({it.time})
         evtLog.reverse(true)
-        def today = new Date(now()).format("EEEE, MMMM dd, yyyy", location.timeZone)
-        def eventDay = new Date(evtLog.time[0]).format("EEEE, MMMM dd, yyyy", location.timeZone)
+        def today = new Date(now()).format("EEEE, MMMM d, yyyy", location.timeZone)
+        def eventDay = new Date(evtLog.time[0]).format("EEEE, MMMM d, yyyy", location.timeZone)
         def voiceDay = today == eventDay ? "today" : "On " + eventDay  
         def evtTime = new Date(evtLog.time[0]).format("h:mm aa", location.timeZone)
         def multipleTxt = devGroup.size() >1 ? "within the monitored group was the ${evtLog.device[0]} ${devTxt}" : "was"
@@ -935,7 +938,7 @@ private replaceVoiceVar(msg) {
     msg = msg.replace('%people%', "${people}")
     if (parent.getAdvEnabled() && voiceRepFilter) {
     	def textFilter=voiceRepFilter.toLowerCase().tokenize(",")
-    	textFilter.each{ msg = msg.toLowerCase().replace(it,"") }
+    	textFilter.each{ msg = msg.toLowerCase().replace("${it}","") }
     }
     msg
 }
@@ -951,15 +954,21 @@ private getWeatherReport(){
 		def sb = new StringBuilder(), weatherName=""
         def isMetric = location.temperatureScale == "C"
 		def weather = getWeatherFeature("forecast", zipCode)
-        def weatherType = voiceWeather ? voiceWeather as int: null        
-        if (weatherType == 0  || weatherType){
-            weatherName = weatherType == 0 ? "Today's forecast is " : weatherType == 1 ? "Tonight's forecast is " : "Tomorrow's forecast is "
-            sb << "${weatherName}"
-            if (isMetric) sb << weather.forecast.txt_forecast.forecastday[weatherType].fcttext_metric 
-            else sb << weather.forecast.txt_forecast.forecastday[weatherType].fcttext
+        if (voiceWeatherToday  || voiceWeatherTonight || voiceWeatherTomorrow ){
+            if (voiceWeatherToday){
+                sb << "Today's forecast is "
+                if (isMetric) sb << weather.forecast.txt_forecast.forecastday[0].fcttext_metric else sb << weather.forecast.txt_forecast.forecastday[0].fcttext + " "
+            }
+            if (voiceWeatherTonight){
+                sb << "Tonight's forecast is "
+                if (isMetric) sb << weather.forecast.txt_forecast.forecastday[1].fcttext_metric else sb << weather.forecast.txt_forecast.forecastday[1].fcttext + " "
+            }
+            if (voiceWeatherTomorrow){
+                sb << "Tomorrow's forecast is "
+                if (isMetric) sb << weather.forecast.txt_forecast.forecastday[2].fcttext_metric  else sb << weather.forecast.txt_forecast.forecastday[2].fcttext + " "
+            }
             msg = sb.toString()
             translateTxt().each {msg = msg.replaceAll(it.txt,it.cvt)}
-            msg = msg + " "
         }
         if (voiceSunrise || voiceSunset){
             def todayDate = new Date()
@@ -1017,6 +1026,6 @@ private setColoredLights(switches, color, level, type){
 	switches?.setColor(newValue)
 }
 //Version 
-private def textVersion() {return "Voice Macros Version: 2.0.2 (06/03/2016)"}
+private def textVersion() {return "Voice Macros Version: 2.0.2a (06/04/2016)"}
 private def versionInt() {return 202}
-private def versionLong() {return "2.0.2"}
+private def versionLong() {return "2.0.2a"}
