@@ -9,6 +9,7 @@ DeviceOperation to turn the {Device} {Operator}
 DeviceOperation {Device} {Operator}
 DeviceOperation to {Operator} the {Device}
 DeviceOperation to {Operator} the {Device} password {Num}
+DeviceOperation {Operator} {Device} password {Num}
 
 DeviceOperation set {Device} to {Num}
 DeviceOperation {Device} to {Num}
