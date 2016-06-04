@@ -388,3 +388,11 @@ void initialize(deviceType) {
 	state.deviceType = deviceType
 	setTransitionTime(parent.getSelectedTransition())
 }
+
+void setHADeviceHandler(circadianDaylightIntegration) {
+	if (circadianDaylightIntegration == true) {
+		setDeviceType("Hue Advanced -CD- Bulb/Group")
+	} else {
+		setDeviceType("Hue Advanced Bulb/Group")
+	}
+}

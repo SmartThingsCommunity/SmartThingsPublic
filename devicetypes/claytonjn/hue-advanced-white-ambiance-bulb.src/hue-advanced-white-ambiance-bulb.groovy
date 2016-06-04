@@ -212,3 +212,11 @@ void initialize(deviceType) {
 }
 
 def getDeviceType() { return "lights" }
+
+void setHADeviceHandler(circadianDaylightIntegration) {
+	if (circadianDaylightIntegration == true) {
+		setDeviceType("Hue Advanced -CD- White Ambiance Bulb")
+	} else {
+		setDeviceType("Hue Advanced White Ambiance Bulb")
+	}
+}

@@ -31,6 +31,7 @@ definition(
 preferences {
 	page(name:"mainPage", title:"Hue Device Setup", content:"mainPage", refreshTimeout:5)
 	page(name:"bridgeDiscovery", title:"Hue Bridge Discovery", content:"bridgeDiscovery", refreshTimeout:5)
+	page(name:"bridgeDiscoveryFailed", title:"Bridge Discovery Failed", content:"bridgeDiscoveryFailed", refreshTimeout:0)
 	page(name:"bridgeBtnPush", title:"Linking with your Hue", content:"bridgeLinking", refreshTimeout:5)
 	page(name:"bulbDiscovery", title:"Hue Device Setup", content:"bulbDiscovery", refreshTimeout:5)
 	page(name:"groupDiscovery", title:"Hue Device Setup", content:"groupDiscovery", refreshTimeout:5)
@@ -56,12 +57,21 @@ def bridgeDiscovery(params=[:])
 	def options = bridges ?: []
 	def numFound = options.size() ?: 0
 
-	if (numFound == 0 && state.bridgeRefreshCount > 25) {
-    	log.trace "Cleaning old bridges memory"
-    	state.bridges = [:]
-        state.bridgeRefreshCount = 0
-        app.updateSetting("selectedHue", "")
-    }
+	if (numFound == 0) {
+		if (state.bridgeRefreshCount == 25) {
+			log.trace "Cleaning old bridges memory"
+			state.bridges = [:]
+			app.updateSetting("selectedHue", "")
+		} else if (state.bridgeRefreshCount > 100) {
+			// five minutes have passed, give up
+			// there seems to be a problem going back from discovey failed page in some instances (compared to pressing next)
+			// however it is probably a SmartThings settings issue
+			state.bridges = [:]
+			app.updateSetting("selectedHue", "")
+			state.bridgeRefreshCount = 0
+			return bridgeDiscoveryFailed()
+		}
+	}
 
 	ssdpSubscribe()
 
@@ -82,6 +92,13 @@ def bridgeDiscovery(params=[:])
 	}
 }
 
+def bridgeDiscoveryFailed() {
+	return dynamicPage(name:"bridgeDiscoveryFailed", title: "Bridge Discovery Failed", nextPage: "bridgeDiscovery") {
+		section("Failed to discover any Hue Bridges. Please confirm that the Hue Bridge is connected to the same network as your SmartThings Hub, and that it has power.") {
+		}
+	}
+}
+
 def bridgeLinking()
 {
 	int linkRefreshcount = !state.linkRefreshcount ? 0 : state.linkRefreshcount as int
@@ -91,19 +108,15 @@ def bridgeLinking()
 	def nextPage = ""
 	def title = "Linking with your Hue"
     def paragraphText
-    def hueimage = null
 	if (selectedHue) {
 		paragraphText = "Press the button on your Hue Bridge to setup a link. "
-        hueimage = "http://huedisco.mediavibe.nl/wp-content/uploads/2013/09/pair-bridge.png"
     } else {
     	paragraphText = "You haven't selected a Hue Bridge, please Press \"Done\" and select one before clicking next."
-        hueimage = null
     }
 	if (state.username) { //if discovery worked
 		nextPage = "bulbDiscovery"
 		title = "Success!"
 		paragraphText = "Linking to your hub was a success! Please click 'Next'!"
-        hueimage = null
 	}
 
 	if((linkRefreshcount % 2) == 0 && !state.username) {
@@ -113,8 +126,6 @@ def bridgeLinking()
 	return dynamicPage(name:"bridgeBtnPush", title:title, nextPage:nextPage, refreshInterval:refreshInterval) {
 		section("") {
 			paragraph """${paragraphText}"""
-            if (hueimage != null)
-            	image "${hueimage}"
 		}
 	}
 }
@@ -139,13 +150,14 @@ def bulbDiscovery() {
 	if((bulbRefreshCount % 5) == 0) {
 		discoverHueDevices(deviceType)
 	}
+	def selectedBridge = state.bridges.find { key, value -> value?.serialNumber?.equalsIgnoreCase(selectedHue) }
+	def title = selectedBridge?.value?.name ?: "Find bridges"
 
 	return dynamicPage(name:"bulbDiscovery", title:"Bulb Discovery Started!", nextPage:"groupDiscovery", refreshInterval:refreshInterval, uninstall: true) {
 		section("Please wait while we discover your Hue Bulbs. Discovery can take five minutes or more, so sit back and relax! Select your device below once discovered.") {
 			input "selectedBulbs", "enum", required:false, title:"Select Hue Bulbs (${numFound} found)", multiple:true, options:bulboptions
 		}
 		section {
-			def title = getBridgeIP() ? "Hue bridge (${getBridgeIP()})" : "Find bridges"
 			href "bridgeDiscovery", title: title, description: "", state: selectedHue ? "complete" : "incomplete", params: [override: true]
 
 		}
@@ -201,7 +213,7 @@ def advancedSettings() {
 						url:         "https://community.smartthings.com/t/circadian-daylight-smartthings-smart-bulbs/",
 						description: "Tap to view more information about the Circadian Daylight SmartApp.",
 						image:       "https://raw.githubusercontent.com/claytonjn/SmartThingsPublic/Circadian-Daylight/smartapp-icons/PNG/circadian-daylight@2x.png"	)
-			input		name:"circadianDalightIntegration", type:"bool", title:"Circadian Daylight Integration", defaultValue:false
+			input		name:"circadianDaylightIntegration", type:"bool", title:"Circadian Daylight Integration", defaultValue:false
 		}
 		section("Update Notifications") {
 			paragraph 	"Get push notifications when an update is pushed to GitHub."
@@ -341,6 +353,17 @@ def updated() {
 	unsubscribe()
     unschedule()
 	initialize()
+	if (state.circadianDaylightIntegration != settings.circadianDaylightIntegration) {
+		selectedBulbs?.each { dni ->
+			def d = getChildDevice(dni)
+			d.setHADeviceHandler(settings.circadianDaylightIntegration)
+		}
+		selectedGroups?.each { dni ->
+			def d = getChildDevice(dni)
+			d.setHADeviceHandler(settings.circadianDaylightIntegration)
+		}
+		state.circadianDaylightIntegration = settings.circadianDaylightIntegration
+	}
 }
 
 def initialize() {
@@ -447,21 +470,24 @@ def addBulbs() {
 			def newHueBulb
 			if (bulbs instanceof java.util.Map) {
 				newHueBulb = bulbs.find { (app.id + "/lights/" + it.value.id) == dni }
-                if (newHueBulb != null) {
+
+				if (newHueBulb != null) {
                     d = addChild(dni, newHueBulb?.value?.type, newHueBulb?.value?.name, newHueBulb?.value?.hub)
 					d.initialize("lights")
                     if (d) {
 						log.debug "created ${d.displayName} with id $dni"
-                    	d.refresh()
+						d.completedSetup = true
+						d.refresh()
 					}
-                } else {
-                	log.debug "$dni in not longer paired to the Hue Bridge or ID changed"
-                }
+				} else {
+					log.debug "$dni in not longer paired to the Hue Bridge or ID changed"
+				}
 			} else {
             	//backwards compatable
 				newHueBulb = bulbs.find { (app.id + "/lights/" + it.id) == dni }
 				d = addChild(dni, "Extended Color Light", newHueBulb?.value?.name, newHueBulb?.value?.hub)
 				d?.initialize("lights")
+				d?.completedSetup = true
                 d?.refresh()
 			}
 		} else {
@@ -486,6 +512,7 @@ def addGroups() {
 					 if (newHueGroup != null) {
 						d = addChild(dni, newHueGroup?.value?.type, newHueGroup?.value?.name, newHueGroup?.value?.hub)
 						d.initialize("groups")
+						d.completedSetup = true
 						log.debug "created ${d.displayName} with id $dni"
 						d.refresh()
 					 } else {
@@ -496,6 +523,7 @@ def addGroups() {
 				newHueGroup = groups.find { (app.id + "/groups/" + it.id) == dni }
 				d = addChild(dni, "LightGroup", newHueGroup?.value?.name, newHueGroup?.value?.hub)
 				d.initialize("groups")
+				d.completedSetup = true
 				d.refresh()
 			}
 		} else {
@@ -534,6 +562,7 @@ def addBridge() {
             }
         	if (newbridge) {
 				d = addChildDevice("claytonjn", "Hue Advanced Bridge", selectedHue, vbridge.value.hub)
+				d?.completedSetup = true
 				log.debug "created ${d.displayName} with id ${d.deviceNetworkId}"
                 def childDevice = getChildDevice(d.deviceNetworkId)
                 childDevice.sendEvent(name: "serialNumber", value: vbridge.value.serialNumber)
@@ -621,7 +650,21 @@ void bridgeDescriptionHandler(physicalgraph.device.HubResponse hubResponse) {
 		def bridges = getHueBridges()
 		def bridge = bridges.find {it?.key?.contains(body?.device?.UDN?.text())}
 		if (bridge) {
-			bridge.value << [name:body?.device?.friendlyName?.text(), serialNumber:body?.device?.serialNumber?.text(), verified: true]
+			// serialNumber from API is in format of 0017882413ad (mac address), however on the actual bridge only last six
+			// characters are printed on the back so using that to identify bridge
+			def idNumber = body?.device?.serialNumber?.text()
+			if (idNumber?.size() >= 6)
+				idNumber = idNumber[-6..-1].toUpperCase()
+
+			// usually in form of bridge name followed by (ip), i.e. defaults to Philips Hue (192.168.1.2)
+			// replace IP with serial number to make it easier for user to identify
+			def name = body?.device?.friendlyName?.text()
+			def index = name?.indexOf('(')
+			if (index != -1) {
+				name = name.substring(0,index)
+				name += " ($idNumber)"
+			}
+			bridge.value << [name:name, serialNumber:body?.device?.serialNumber?.text(), verified: true]
 		} else {
 			log.error "/description.xml returned a bridge that didn't exist"
 		}
@@ -810,9 +853,8 @@ void checkForUpdates() {
 			httpGet(uri: url) {response ->
 				result = response
 			}
-			def latestCommitTime = new Date().parse("y-M-d'T'k:m:s'Z'", result.data.commit.commit.author.date)
-			def lastUpdate = new Date().parse("y-M-d'T'k:m:s'Z'", state."last${branch}Update")
-			if (latestCommitTime > lastUpdate) {
+			def latestCommitTime = result.data.commit.commit.author.date
+			if (latestCommitTime != state."last${branch}Update") {
 				def message = "Hue Advanced ${branch} branch updated with message: ${result.data.commit.commit.message}"
 				// check that contact book is enabled and recipients selected
 				if (location.contactBookEnabled && recipients) {
@@ -820,8 +862,8 @@ void checkForUpdates() {
 				} else if (updatePush) { // check that the user did select a phone number
 				    sendPushMessage(message)
 				}
+				state."last${branch}Update" = result.data.commit.commit.author.date
 			}
-			state."last${branch}Update" = latestCommitTime
 		}
 		catch (e) {
 			log.warn e
@@ -1286,7 +1328,7 @@ def getSelectedTransition() {
 }
 
 def getHandlerType() {
-	if(settings.circadianDalightIntegration == true) { return " -CD-" }
+	if(settings.circadianDaylightIntegration == true) { return " -CD-" }
 	else { return "" }
 }
 
