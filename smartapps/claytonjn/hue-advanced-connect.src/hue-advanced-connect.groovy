@@ -213,7 +213,7 @@ def advancedSettings() {
 						url:         "https://community.smartthings.com/t/circadian-daylight-smartthings-smart-bulbs/",
 						description: "Tap to view more information about the Circadian Daylight SmartApp.",
 						image:       "https://raw.githubusercontent.com/claytonjn/SmartThingsPublic/Circadian-Daylight/smartapp-icons/PNG/circadian-daylight@2x.png"	)
-			input		name:"circadianDalightIntegration", type:"bool", title:"Circadian Daylight Integration", defaultValue:false
+			input		name:"circadianDaylightIntegration", type:"bool", title:"Circadian Daylight Integration", defaultValue:false
 		}
 		section("Update Notifications") {
 			paragraph 	"Get push notifications when an update is pushed to GitHub."
@@ -353,6 +353,17 @@ def updated() {
 	unsubscribe()
     unschedule()
 	initialize()
+	if (state.circadianDaylightIntegration != settings.circadianDaylightIntegration) {
+		selectedBulbs?.each { dni ->
+			def d = getChildDevice(dni)
+			d.setHADeviceHandler(settings.circadianDaylightIntegration)
+		}
+		selectedGroups?.each { dni ->
+			def d = getChildDevice(dni)
+			d.setHADeviceHandler(settings.circadianDaylightIntegration)
+		}
+		state.circadianDaylightIntegration = settings.circadianDaylightIntegration
+	}
 }
 
 def initialize() {
@@ -1317,7 +1328,7 @@ def getSelectedTransition() {
 }
 
 def getHandlerType() {
-	if(settings.circadianDalightIntegration == true) { return " -CD-" }
+	if(settings.circadianDaylightIntegration == true) { return " -CD-" }
 	else { return "" }
 }
 

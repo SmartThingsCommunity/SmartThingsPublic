@@ -435,6 +435,14 @@ void initialize(deviceType) {
 	sendEvent(name: "cdColor", value: "true", displayed: false)
 }
 
+void setHADeviceHandler(circadianDaylightIntegration) {
+	if (circadianDaylightIntegration == true) {
+		setDeviceType("Hue Advanced -CD- Bulb/Group")
+	} else {
+		setDeviceType("Hue Advanced Bulb/Group")
+	}
+}
+
 void enableCDBrightness() {
 	log.debug "Executing 'enableCDBrightness'"
 	sendEvent(name: "cdBrightness", value: "true", descriptionText: "Circadian Brightness has been enabled")

@@ -394,6 +394,14 @@ void initialize(deviceType) {
 
 def getDeviceType() { return "lights" }
 
+void setHADeviceHandler(circadianDaylightIntegration) {
+	if (circadianDaylightIntegration == true) {
+		setDeviceType("Hue Advanced -CD- LivingColors")
+	} else {
+		setDeviceType("Hue Advanced LivingColors")
+	}
+}
+
 void enableCDBrightness() {
 	log.debug "Executing 'enableCDBrightness'"
 	sendEvent(name: "cdBrightness", value: "true", descriptionText: "Circadian Brightness has been enabled")

@@ -92,3 +92,7 @@ void refresh() {
     log.debug "Executing 'refresh'"
     parent.manualRefresh()
 }
+
+void setHADeviceHandler(circadianDaylightIntegration) {
+	return
+}
