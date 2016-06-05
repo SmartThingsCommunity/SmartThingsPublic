@@ -1,7 +1,7 @@
 /**
  *  Ask Alexa - Macro
  *
- *  Version 2.0.3b - 6/5/16 Copyright © 2016 Michael Struck
+ *  Version 2.0.3c - 6/5/16 Copyright © 2016 Michael Struck
  *  Special thanks to Barry Burke for weather reporting code
  *  
  *  Version 1.0.0 - Initial release
@@ -10,7 +10,7 @@
  *  Version 2.0.0a - Modified child app to make it a 'macro' application. Still does voice reports, includes bug fixes as well.
  *  Version 2.0.1a - Fixed an issue with dimmer voice reporting, added averages for report parameters, added thermostat device groups and Nest support, various other syntax fixes.
  *  Version 2.0.2a - Added speakers to the list of voice reports. Minor bug fixes. Added multiple weather reports to voice reports.
- *  Version 2.0.3b - Added extensive current conditions weather reporting (thanks @storageanarchy (Barry).
+ *  Version 2.0.3c - Added extensive current conditions weather reporting (thanks @storageanarchy (Barry))
  *
  *  Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except
  *  in compliance with the License. You may obtain a copy of the License at:
@@ -598,7 +598,7 @@ def reportResults(){
         else fullMsg += (voiceTempSettings && voiceTempSettingsType) ? reportStatus(voiceTempSettings, voiceTempSettingsType) : ""
         fullMsg += voiceSpeaker ? speakerReport() : ""
         fullMsg += voiceWeatherTemp|| voiceWeatherHumid || voiceWeatherDew || voiceWeatherSolar || voiceWeatherVisiblity || voiceWeatherPrecip ? getWeatherReport() : ""
-        fullMsg += voiceWeather || voiceSunset || voiceSunrise ? getWeatherForecast() : ""
+        fullMsg += voiceWeatherToday  || voiceWeatherTonight || voiceWeatherTomorrow || voiceSunset || voiceSunrise ? getWeatherForecast() : ""
         fullMsg += voiceWater && waterReport() ? waterReport() : ""
         fullMsg += voicePresence ? presenceReport() : ""
         fullMsg += voiceMotion && motionReport() ? motionReport() : ""
@@ -1140,6 +1140,6 @@ private setColoredLights(switches, color, level, type){
 	switches?.setColor(newValue)
 }
 //Version 
-private def textVersion() {return "Voice Macros Version: 2.0.3b (06/05/2016)"}
+private def textVersion() {return "Voice Macros Version: 2.0.3c (06/05/2016)"}
 private def versionInt() {return 203}
-private def versionLong() {return "2.0.3b"}
+private def versionLong() {return "2.0.3c"}
