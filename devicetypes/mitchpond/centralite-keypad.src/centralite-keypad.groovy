@@ -133,31 +133,25 @@ def parse(String description) {
 }
 
 def configure() {
-	log.debug "Configure called for device ${device.displayName}."
+
 	String zigbeeEui = swapEndianHex(device.hub.zigbeeEui)
-	def cmd = [
-    //------IAS Zone/CIE setup------//
-    "zcl global write 0x500 0x10 0xf0 {${zigbeeEui}}", "delay 200",
-    "send 0x${device.deviceNetworkId} 1 ${endpointId}", "delay 500",
-    
-    //------Set up binding------//
-    "zdo bind 0x${device.deviceNetworkId} ${endpointId} 1 0x500 {${device.zigbeeId}} {}", "delay 100",
-    "send 0x${device.deviceNetworkId} 1 ${endpointId}", "delay 1000",
-    "zdo bind 0x${device.deviceNetworkId} ${endpointId} 1 0x501 {${device.zigbeeId}} {}", "delay 100",
-    "send 0x${device.deviceNetworkId} 1 ${endpointId}", "delay 1000",
-    
-    //------Configure temperature reporting------//
-    "zdo bind 0x${device.deviceNetworkId} ${endpointId} 1 0x402 {${device.zigbeeId}} {}", "delay 200",
-	"zcl global send-me-a-report 0x402 0 0x29 30 3600 {6400}", "delay 200",
-	"send 0x${device.deviceNetworkId} 1 ${endpointId}", "delay 500",
-    
-    //------Configure battery reporting------//
-    "zdo bind 0x${device.deviceNetworkId} ${endpointId} 1 1 {${device.zigbeeId}} {}", "delay 200",
-	"zcl global send-me-a-report 1 0x20 0x20 30 21600 {01}", "delay 200",		//checkin time 6 hrs
-	"send 0x${device.deviceNetworkId} 1 ${endpointId}", "delay 500",
+	log.debug "Configuring Reporting, IAS CIE, and Bindings."
+	def configCmds = [
+		"zcl global write 0x500 0x10 0xf0 {${zigbeeEui}}", "delay 200",
+		"send 0x${device.deviceNetworkId} 1 1", "delay 500",
+
+		"zdo bind 0x${device.deviceNetworkId} ${endpointId} 1 0x501 {${device.zigbeeId}} {}", "delay 200",
+		"zdo bind 0x${device.deviceNetworkId} ${endpointId} 1 0x500 {${device.zigbeeId}} {}", "delay 200",
+        
+		"zdo bind 0x${device.deviceNetworkId} ${endpointId} 1 1 {${device.zigbeeId}} {}", "delay 200",
+		"zcl global send-me-a-report 1 0x20 0x20 30 21600 {01}",		//checkin time 6 hrs
+		"send 0x${device.deviceNetworkId} 1 ${endpointId}", "delay 500",
+
+		"zdo bind 0x${device.deviceNetworkId} ${endpointId} 1 0x402 {${device.zigbeeId}} {}", "delay 200",
+		"zcl global send-me-a-report 0x402 0 0x29 30 3600 {6400}",
+		"send 0x${device.deviceNetworkId} 1 ${endpointId}", "delay 500"
 	]
-    
-    return cmd + refresh()
+    return configCmds + refresh() // send refresh cmds as part of config
 }
 
 def refresh() {
@@ -173,14 +167,15 @@ def refresh() {
 
 //------Generate IAS Zone Enroll response------//
 def enrollResponse() {
-	String hubZigbeeId = swapEndianHex(device.hub.zigbeeId)
+
+	String zigbeeEui = swapEndianHex(device.hub.zigbeeEui)
 	log.debug "Sending enroll response"
-	[	
-    //Send CIE in case enroll request sent early.
-    "zcl global write 0x500 0x10 0xf0 {${hubZigbeeId}}",
-	"send 0x${device.deviceNetworkId} 1 1", "delay 100",
+	[
+    //------IAS Zone/CIE setup------//
+    "zcl global write 0x500 0x10 0xf0 {${zigbeeEui}}",
+    "send 0x${device.deviceNetworkId} 1 ${endpointId}", "delay 100",
 	"raw 0x500 {01 23 00 00 00}",
-	"send 0x${device.deviceNetworkId} 1 1", "delay 100"
+	"send 0x${device.deviceNetworkId} 1 ${endpointId}", "delay 100",
 	]
 }
 
