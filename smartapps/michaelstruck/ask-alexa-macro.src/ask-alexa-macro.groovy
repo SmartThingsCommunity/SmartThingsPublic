@@ -343,7 +343,7 @@ def pageWeatherReport(){
     	section { paragraph "Weather Report", image: "https://raw.githubusercontent.com/MichaelStruck/SmartThingsPublic/master/img/weather.png" }
         section("Weather Reporting") {
         	 href "pageWeatherCurrent", title: "Current Weather Reporting Options", description: none, state: 
-             	greyOutState(voiceWeatherTemp, voiceWeatherHumid, voiceWeatherDew, voiceWeatherSolar, voiceWeatherVisiblity, voiceWeatherPercip)	
+             	greyOutState(voiceWeatherTemp, voiceWeatherHumid, voiceWeatherDew, voiceWeatherSolar, voiceWeatherVisiblity, voiceWeatherPrecip)	
              href "pageWeatherForecast", title: "Weather Forecast Options", description: none, state: greyOutState(voiceWeatherToday, voiceWeatherTonight,  voiceWeatherTomorrow , "", "","")	
         }
         section ("Sunrise/Sunset"){    
@@ -376,7 +376,7 @@ def pageWeatherCurrent(){
             input "voiceWeatherDew", "bool", title: "Dew Point", defaultValue: false
             input "voiceWeatherSolar", "bool", title: "Solar and UV Radiation", defaultValue: false
             input "voiceWeatherVisiblity", "bool", title: "Visibility", defaultValue: false
-            input "voiceWeatherPercip", "bool", title: "Parcipitation", defaultValue: false
+            input "voiceWeatherPrecip", "bool", title: "Precipitation", defaultValue: false
         }
     }
 }
@@ -597,7 +597,7 @@ def reportResults(){
         if (voiceTempSettingSummary && voiceTempSettingsType) fullMsg += voiceTempSettings ? thermostatSummary(): ""
         else fullMsg += (voiceTempSettings && voiceTempSettingsType) ? reportStatus(voiceTempSettings, voiceTempSettingsType) : ""
         fullMsg += voiceSpeaker ? speakerReport() : ""
-        fullMsg += voiceWeatherTemp|| voiceWeatherHumid || voiceWeatherDew || voiceWeatherSolar || voiceWeatherVisiblity || voiceWeatherPercip ? getWeatherReport() : ""
+        fullMsg += voiceWeatherTemp|| voiceWeatherHumid || voiceWeatherDew || voiceWeatherSolar || voiceWeatherVisiblity || voiceWeatherPrecip ? getWeatherReport() : ""
         fullMsg += voiceWeather || voiceSunset || voiceSunrise ? getWeatherForcast() : ""
         fullMsg += voiceWater && waterReport() ? waterReport() : ""
         fullMsg += voicePresence ? presenceReport() : ""
@@ -889,7 +889,7 @@ def reportDescMSHM() {
 def greyOutState(param1, param2, param3, param4, param5, param6){def result = param1 || param2 || param3 || param4 || param5 || param6 ? "complete" : ""}
 def weatherDesc(){ def result = greyOutWeather() ? "Status: CONFIGURED - Tap to edit" : "Status: UNCONFIGURED - Tap to configure" }
 def greyOutWeather(){ def result = voiceWeatherToday || voiceWeatherTonight || voiceWeatherTomorrow || voiceSunrise || voiceSunset ||
-	voiceWeatherTemp|| voiceWeatherHumid || voiceWeatherDew || voiceWeatherSolar || voiceWeatherVisiblity || voiceWeatherPercip? "complete" : "" }
+	voiceWeatherTemp|| voiceWeatherHumid || voiceWeatherDew || voiceWeatherSolar || voiceWeatherVisiblity || voiceWeatherPrecip? "complete" : "" }
 def deviceGreyOut(){ def result = getDeviceDesc() == "Status: UNCONFIGURED - Tap to configure" ? "" : "complete" }
 def getDeviceDesc(){  
     def result,lvl, cLvl, clr, tLvl
@@ -1041,7 +1041,7 @@ private getWeatherReport(){
         	sb << "Visibility is "
      		if (isMetric) sb << Math.round(cond.visibility_km.toFloat()) + " kilometers. " else sb << Math.round(cond.visibility_mi.toFloat()) + " miles. "
      	}
-        if (voiceWeatherPercip) {    
+        if (voiceWeatherPrecip) {    
             sb << "There has been "
             if (isMetric) { if (cond.precip_today_metric == "0") sb << "no " else sb << cond.precip_today_metric + " millimeters of " }
             else { if (cond.precip_today_in == "0.00") sb << "no " else sb << cond.precip_today_in + " inches of " }
