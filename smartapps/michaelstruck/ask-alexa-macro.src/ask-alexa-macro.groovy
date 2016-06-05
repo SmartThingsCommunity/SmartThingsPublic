@@ -1,7 +1,7 @@
 /**
  *  Ask Alexa - Macro
  *
- *  Version 2.0.3 - 6/5/16 Copyright © 2016 Michael Struck
+ *  Version 2.0.3a - 6/5/16 Copyright © 2016 Michael Struck
  *  Special thanks to Barry Burke for weather reporting code
  *  
  *  Version 1.0.0 - Initial release
@@ -10,7 +10,7 @@
  *  Version 2.0.0a - Modified child app to make it a 'macro' application. Still does voice reports, includes bug fixes as well.
  *  Version 2.0.1a - Fixed an issue with dimmer voice reporting, added averages for report parameters, added thermostat device groups and Nest support, various other syntax fixes.
  *  Version 2.0.2a - Added speakers to the list of voice reports. Minor bug fixes. Added multiple weather reports to voice reports.
- *  Version 2.0.3 - Added extensive current conditions weather reporting (thanks @storageanarchy (Barry).
+ *  Version 2.0.3a - Added extensive current conditions weather reporting (thanks @storageanarchy (Barry).
  *
  *  Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except
  *  in compliance with the License. You may obtain a copy of the License at:
@@ -581,7 +581,7 @@ def macroResults(num, cmd, colorData, param){ def result = macroType == "Voice" 
 //Report Handler-------------------------------------------------------------
 def reportResults(){
     def fullMsg=""
-	//try {
+	try {
         fullMsg = voicePre ?  voicePre + " ": ""
         if (voiceOnSwitchOnly) fullMsg += voiceSwitch ? switchOnReport(voiceSwitch, "switches") : ""
         else fullMsg += voiceSwitch ? reportStatus(voiceSwitch, "switch") : ""
@@ -598,7 +598,7 @@ def reportResults(){
         else fullMsg += (voiceTempSettings && voiceTempSettingsType) ? reportStatus(voiceTempSettings, voiceTempSettingsType) : ""
         fullMsg += voiceSpeaker ? speakerReport() : ""
         fullMsg += voiceWeatherTemp|| voiceWeatherHumid || voiceWeatherDew || voiceWeatherSolar || voiceWeatherVisiblity || voiceWeatherPrecip ? getWeatherReport() : ""
-        fullMsg += voiceWeather || voiceSunset || voiceSunrise ? getWeatherForcast() : ""
+        fullMsg += voiceWeather || voiceSunset || voiceSunrise ? getWeatherForecast() : ""
         fullMsg += voiceWater && waterReport() ? waterReport() : ""
         fullMsg += voicePresence ? presenceReport() : ""
         fullMsg += voiceMotion && motionReport() ? motionReport() : ""
@@ -606,8 +606,8 @@ def reportResults(){
         fullMsg += voiceSHM ? "The current Smart Home Monitor status is '${location.currentState("alarmSystemStatus")?.value}'. " : ""
         fullMsg += voiceBattery && batteryReport() ? batteryReport() : ""
         fullMsg += voicePost ? voicePost : ""
-	//}
-    //catch(e){ fullMsg = "There was an error processing the report. Please try again. If this error continues, please contact the author of Ask Alexa. " }
+	}
+    catch(e){ fullMsg = "There was an error processing the report. Please try again. If this error continues, please contact the author of Ask Alexa. " }
     if (!fullMsg) fullMsg = "The voice report, '${app.label}', did not produce any output. Please check the configuration of the report within the SmartApp. "  
     if ((parent.getAdvEnabled() && voiceRepFilter) || voicePre || voicePost) fullMsg = replaceVoiceVar(fullMsg)
     return fullMsg
@@ -887,7 +887,14 @@ def reportDescMSHM() {
     result += voiceSHM ? ", SHM: On" : ", SHM: Off"
 }
 def greyOutState(param1, param2, param3, param4, param5, param6){def result = param1 || param2 || param3 || param4 || param5 || param6 ? "complete" : ""}
-def weatherDesc(){ def result = greyOutWeather() ? "Status: CONFIGURED - Tap to edit" : "Status: UNCONFIGURED - Tap to configure" }
+def weatherDesc(){ 
+	def result = voiceWeatherTemp|| voiceWeatherHumid || voiceWeatherDew || voiceWeatherSolar || voiceWeatherVisiblity || voiceWeatherPrecip ? "Weather" : ""
+	if (result && (voiceWeatherToday || voiceWeatherTonight || voiceWeatherTomorrow)) result +=", "
+    result += voiceWeatherToday || voiceWeatherTonight || voiceWeatherTomorrow ? "Forecast" : ""
+    if (result && (voiceSunrise || voiceSunset)) result +=", "
+    result += voiceSunrise && voiceSunset ? "Sunrise/Sunset" : voiceSunrise ? "Sunrise" : voiceSunset ? "Sunset" : ""
+	result = result ? "Reports: ${result}" : "Status: UNCONFIGURED - Tap to configure"
+}
 def greyOutWeather(){ def result = voiceWeatherToday || voiceWeatherTonight || voiceWeatherTomorrow || voiceSunrise || voiceSunset ||
 	voiceWeatherTemp|| voiceWeatherHumid || voiceWeatherDew || voiceWeatherSolar || voiceWeatherVisiblity || voiceWeatherPrecip? "complete" : "" }
 def deviceGreyOut(){ def result = getDeviceDesc() == "Status: UNCONFIGURED - Tap to configure" ? "" : "complete" }
@@ -1131,6 +1138,6 @@ private setColoredLights(switches, color, level, type){
 	switches?.setColor(newValue)
 }
 //Version 
-private def textVersion() {return "Voice Macros Version: 2.0.3 (06/05/2016)"}
+private def textVersion() {return "Voice Macros Version: 2.0.3a (06/05/2016)"}
 private def versionInt() {return 203}
-private def versionLong() {return "2.0.3"}
+private def versionLong() {return "2.0.3a"}
