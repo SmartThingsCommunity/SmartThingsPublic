@@ -1,6 +1,6 @@
 /**
  *  Ask Alexa 
- *
+ * 
  *  Version 1.1.2 - 6/5/16 Copyright © 2016 Michael Struck
  *  Special thanks for Keith DeLong for code and assistance
  *  
