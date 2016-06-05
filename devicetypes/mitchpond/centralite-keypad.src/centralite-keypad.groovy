@@ -143,26 +143,6 @@ def parse(String description) {
 def configure() {
 
 	String zigbeeEui = swapEndianHex(device.hub.zigbeeEui)
-<<<<<<< HEAD
-	def cmd = [
-    //------IAS Zone/CIE setup------//
-    "zcl global write 0x500 0x10 0xf0 {${zigbeeEui}}", "delay 200",
-    "send 0x${device.deviceNetworkId} 1 ${endpointId}", "delay 500",
-    
-    //------Set up binding------//
-    "zdo bind 0x${device.deviceNetworkId} ${endpointId} 1 0x500 {${device.zigbeeId}} {}", "delay 100",
-    "zdo bind 0x${device.deviceNetworkId} ${endpointId} 1 0x501 {${device.zigbeeId}} {}", "delay 100",
-    
-    //------Configure temperature reporting------//
-    "zdo bind 0x${device.deviceNetworkId} ${endpointId} 1 0x402 {${device.zigbeeId}} {}", "delay 200",
-	"zcl global send-me-a-report 0x402 0 0x29 30 3600 {6400}", "delay 200",
-	"send 0x${device.deviceNetworkId} 1 ${endpointId}", "delay 500",
-    
-    //------Configure battery reporting------//
-    "zdo bind 0x${device.deviceNetworkId} ${endpointId} 1 1 {${device.zigbeeId}} {}", "delay 200",
-	"zcl global send-me-a-report 1 0x20 0x20 30 21600 {01}", "delay 200",		//checkin time 6 hrs
-	"send 0x${device.deviceNetworkId} 1 ${endpointId}", "delay 500",
-=======
 	log.debug "Configuring Reporting, IAS CIE, and Bindings."
 	def configCmds = [
 		"zcl global write 0x500 0x10 0xf0 {${zigbeeEui}}", "delay 200",
@@ -178,7 +158,7 @@ def configure() {
 		"zdo bind 0x${device.deviceNetworkId} ${endpointId} 1 0x402 {${device.zigbeeId}} {}", "delay 200",
 		"zcl global send-me-a-report 0x402 0 0x29 30 3600 {6400}",
 		"send 0x${device.deviceNetworkId} 1 ${endpointId}", "delay 500"
->>>>>>> refs/remotes/origin/iris-constantblink
+
 	]
     return configCmds + refresh() // send refresh cmds as part of config
 }
