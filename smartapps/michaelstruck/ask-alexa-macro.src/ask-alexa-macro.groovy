@@ -1,14 +1,16 @@
 /**
  *  Ask Alexa - Macro
  *
- *  Version 2.0.2a - 6/4/16 Copyright © 2016 Michael Struck
+ *  Version 2.0.3 - 6/5/16 Copyright © 2016 Michael Struck
+ *  Special thanks to Barry Burke for weather reporting code
  *  
  *  Version 1.0.0 - Initial release
  *  Version 1.0.1 - Added motion sensor reports; added events report to various sensors
  *  Version 1.0.2c - Added weather reports which include forecast, sunrise and sunset
  *  Version 2.0.0a - Modified child app to make it a 'macro' application. Still does voice reports, includes bug fixes as well.
  *  Version 2.0.1a - Fixed an issue with dimmer voice reporting, added averages for report parameters, added thermostat device groups and Nest support, various other syntax fixes.
- *  Versopm 2.0.2a - Added speakers to the list of voice reports. Minor bug fixes. Added multiple weather reports to voice reports.
+ *  Version 2.0.2a - Added speakers to the list of voice reports. Minor bug fixes. Added multiple weather reports to voice reports.
+ *  Version 2.0.3 - Added extensive current conditions weather reporting (thanks @storageanarchy (Barry).
  *
  *  Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except
  *  in compliance with the License. You may obtain a copy of the License at:
@@ -46,6 +48,8 @@ preferences {
     		page name:"pageDoorReport"
     		page name:"pageSwitchReport"
     		page name:"pageWeatherReport"
+            	page name:"pageWeatherCurrent"
+            	page name:"pageWeatherForecast"
             page name:"pageSpeakerReport"
 }
 def mainSelection(){
@@ -63,7 +67,7 @@ def mainSelection(){
             section("Restrictions") {            
                     input "runDay", "enum", options: ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"], title: "Only Certain Days Of The Week...",  multiple: true, required: false,
                         image: "https://raw.githubusercontent.com/MichaelStruck/SmartThingsPublic/master/img/calendar.png"
-                    href "timeIntervalInput", title: "Only During Certain Times...", description: getTimeLabel(timeStart, timeEnd), state: greyOutState(timeStart, timeEnd,"","",""),
+                    href "timeIntervalInput", title: "Only During Certain Times...", description: getTimeLabel(timeStart, timeEnd), state: greyOutState(timeStart, timeEnd,"","","",""),
                         image: "https://raw.githubusercontent.com/MichaelStruck/SmartThingsPublic/master/img/clock.png"
                     input "runMode", "mode", title: "Only In The Following Modes...", multiple: true, required: false, image: "https://raw.githubusercontent.com/MichaelStruck/SmartThingsPublic/master/img/modes.png"
             }
@@ -208,21 +212,21 @@ def pageVoice() {
         section { paragraph "Voice Reporting Settings", image: "https://raw.githubusercontent.com/MichaelStruck/SmartThingsPublic/master/img/voice.png" }
         section (" ") {
             input "voicePre", "text", title: "Pre Message Before Device Report", description: "Use variables like %time%, %day%, %date% here.", required: false
-            href "pageSwitchReport", title: "Switch/Dimmer Report", description: reportDesc(voiceSwitch, voiceDimmer, "", "", ""), state: greyOutState(voiceSwitch, voiceDimmer, "", "", ""),
+            href "pageSwitchReport", title: "Switch/Dimmer Report", description: reportDesc(voiceSwitch, voiceDimmer, "", "", ""), state: greyOutState(voiceSwitch, voiceDimmer, "", "", "", ""),
             	image:"https://raw.githubusercontent.com/MichaelStruck/SmartThingsPublic/master/img/power.png"
-            href "pageDoorReport", title: "Door/Window/Lock Report", description: reportDesc(voiceDoorSensors, voiceDoorControls, voiceDoorLocks, "", ""), state: greyOutState(voiceDoorSensors, voiceDoorControls, voiceDoorLocks, "", ""),
+            href "pageDoorReport", title: "Door/Window/Lock Report", description: reportDesc(voiceDoorSensors, voiceDoorControls, voiceDoorLocks, "", ""), state: greyOutState(voiceDoorSensors, voiceDoorControls, voiceDoorLocks, "", "", ""),
             	image:"https://raw.githubusercontent.com/MichaelStruck/SmartThingsPublic/master/img/lock.png"
-            href "pageTempReport", title: "Temperature/Humidity/Thermostat Report", description: reportDesc(voiceTemperature, voiceTempSettings, voiceTempVar, voiceHumidVar, voiceHumidity), state: greyOutState(voiceTemperature, voiceTempSettings, voiceTempVar, voiceHumidVar, voiceHumidity),
+            href "pageTempReport", title: "Temperature/Humidity/Thermostat Report", description: reportDesc(voiceTemperature, voiceTempSettings, voiceTempVar, voiceHumidVar, voiceHumidity), state: greyOutState(voiceTemperature, voiceTempSettings, voiceTempVar, voiceHumidVar, voiceHumidity, ""),
             	image:"https://raw.githubusercontent.com/MichaelStruck/SmartThingsPublic/master/img/temp.png"
-            href "pageSpeakerReport", title: "Speaker Report", description: reportDesc(voiceSpeaker, "","","",""), state: greyOutState(voiceSpeaker, "","","",""),
+            href "pageSpeakerReport", title: "Speaker Report", description: reportDesc(voiceSpeaker, "","","",""), state: greyOutState(voiceSpeaker, "","","","",""),
             	image:"https://raw.githubusercontent.com/MichaelStruck/SmartThingsPublic/master/img/speaker.png"
 			href "pageWeatherReport", title: "Weather Report", description: weatherDesc(), state: greyOutWeather(),
             	image : "https://raw.githubusercontent.com/MichaelStruck/SmartThingsPublic/master/img/weather.png"
-            href "pageOtherReport", title: "Other Sensors Report", description: reportDesc(voiceWater, voiceMotion, voicePresence, "", ""), state: greyOutState(voiceWater, voiceMotion, voicePresence, "", ""),
+            href "pageOtherReport", title: "Other Sensors Report", description: reportDesc(voiceWater, voiceMotion, voicePresence, "", ""), state: greyOutState(voiceWater, voiceMotion, voicePresence, "", "",""),
             	image:"https://raw.githubusercontent.com/MichaelStruck/SmartThingsPublic/master/img/sensor.png"
-            href "pageHomeReport", title: "Mode and Smart Home Monitor Report", description: reportDescMSHM(), state: greyOutState(voiceMode, voiceSHM, "", "", ""),
+            href "pageHomeReport", title: "Mode and Smart Home Monitor Report", description: reportDescMSHM(), state: greyOutState(voiceMode, voiceSHM, "", "", "", ""),
             	image:"https://raw.githubusercontent.com/MichaelStruck/SmartThingsPublic/master/img/modes.png"
-            href "pageBatteryReport",title: "Battery Report", description: reportDesc(voiceBattery, "", "", "", ""), state: greyOutState(voiceBattery, "", "", "", ""),
+            href "pageBatteryReport",title: "Battery Report", description: reportDesc(voiceBattery, "", "", "", ""), state: greyOutState(voiceBattery, "", "", "", "", ""),
             	image:"https://raw.githubusercontent.com/MichaelStruck/SmartThingsPublic/master/img/battery.png"
             input "voicePost", "text", title: "Post Message After Device Report", description: "Use variables like %time%, %day%, %date% here.", required: false
         }
@@ -337,10 +341,10 @@ def pageHomeReport(){
 def pageWeatherReport(){
 	dynamicPage(name: "pageWeatherReport", install: false, uninstall: false) {
     	section { paragraph "Weather Report", image: "https://raw.githubusercontent.com/MichaelStruck/SmartThingsPublic/master/img/weather.png" }
-        section("Weather Forecasts") {
-        	input "voiceWeatherToday", "bool", title: "Speak Today's Weather Forecast", defaultValue: false
-            input "voiceWeatherTonight", "bool", title: "Speak Tonight's Weather Forecast", defaultValue: false
-            input "voiceWeatherTomorrow", "bool", title: "Speak Tomorrow's Weather Forecast", defaultValue: false
+        section("Weather Reporting") {
+        	 href "pageWeatherCurrent", title: "Current Weather Reporting Options", description: none, state: 
+             	greyOutState(voiceWeatherTemp, voiceWeatherHumid, voiceWeatherDew, voiceWeatherSolar, voiceWeatherVisiblity, voiceWeatherPercip)	
+             href "pageWeatherForecast", title: "Weather Forecast Options", description: none, state: greyOutState(voiceWeatherToday, voiceWeatherTonight,  voiceWeatherTomorrow , "", "","")	
         }
         section ("Sunrise/Sunset"){    
             input "voiceSunrise", "bool", title: "Speak Today's Sunrise", defaultValue: false
@@ -354,6 +358,29 @@ def pageWeatherReport(){
 		}
     }
 }
+def pageWeatherForecast(){
+	dynamicPage(name: "pageWeatherForecast", install: false, uninstall: false) {
+        section ("Weather Forecast Options") {
+        	input "voiceWeatherToday", "bool", title: "Speak Today's Weather Forecast", defaultValue: false
+            input "voiceWeatherTonight", "bool", title: "Speak Tonight's Weather Forecast", defaultValue: false
+            input "voiceWeatherTomorrow", "bool", title: "Speak Tomorrow's Weather Forecast", defaultValue: false
+        }
+    }
+}
+def pageWeatherCurrent(){
+	dynamicPage(name: "pageWeatherCurrent", install: false, uninstall: false) {
+        section ("Items to include in current weather report\n(Data obtained from local weather service)") {
+			input "voiceWeatherLoc", "bool", title: "Speak Location Of Weather Report", defaultValue: false
+            input "voiceWeatherTemp", "bool", title: "Temperature (With Conditions)", defaultValue: false
+            input "voiceWeatherHumid", "bool", title: "Humidity (With Winds And Pressure)", defaultValue: false
+            input "voiceWeatherDew", "bool", title: "Dew Point", defaultValue: false
+            input "voiceWeatherSolar", "bool", title: "Solar and UV Radiation", defaultValue: false
+            input "voiceWeatherVisiblity", "bool", title: "Visibility", defaultValue: false
+            input "voiceWeatherPercip", "bool", title: "Parcipitation", defaultValue: false
+        }
+    }
+}
+//--------------------------------
 def installed() {
     log.debug "Installed with settings: ${settings}"
     initialize()
@@ -554,7 +581,7 @@ def macroResults(num, cmd, colorData, param){ def result = macroType == "Voice" 
 //Report Handler-------------------------------------------------------------
 def reportResults(){
     def fullMsg=""
-	try {
+	//try {
         fullMsg = voicePre ?  voicePre + " ": ""
         if (voiceOnSwitchOnly) fullMsg += voiceSwitch ? switchOnReport(voiceSwitch, "switches") : ""
         else fullMsg += voiceSwitch ? reportStatus(voiceSwitch, "switch") : ""
@@ -570,7 +597,8 @@ def reportResults(){
         if (voiceTempSettingSummary && voiceTempSettingsType) fullMsg += voiceTempSettings ? thermostatSummary(): ""
         else fullMsg += (voiceTempSettings && voiceTempSettingsType) ? reportStatus(voiceTempSettings, voiceTempSettingsType) : ""
         fullMsg += voiceSpeaker ? speakerReport() : ""
-        fullMsg += voiceWeather || voiceSunset || voiceSunrise ? getWeatherReport() : ""
+        fullMsg += voiceWeatherTemp|| voiceWeatherHumid || voiceWeatherDew || voiceWeatherSolar || voiceWeatherVisiblity || voiceWeatherPercip ? getWeatherReport() : ""
+        fullMsg += voiceWeather || voiceSunset || voiceSunrise ? getWeatherForcast() : ""
         fullMsg += voiceWater && waterReport() ? waterReport() : ""
         fullMsg += voicePresence ? presenceReport() : ""
         fullMsg += voiceMotion && motionReport() ? motionReport() : ""
@@ -578,8 +606,8 @@ def reportResults(){
         fullMsg += voiceSHM ? "The current Smart Home Monitor status is '${location.currentState("alarmSystemStatus")?.value}'. " : ""
         fullMsg += voiceBattery && batteryReport() ? batteryReport() : ""
         fullMsg += voicePost ? voicePost : ""
-	}
-    catch(e){ fullMsg = "There was an error processing the report. Please try again. If this error continues, please contact the author of Ask Alexa. " }
+	//}
+    //catch(e){ fullMsg = "There was an error processing the report. Please try again. If this error continues, please contact the author of Ask Alexa. " }
     if (!fullMsg) fullMsg = "The voice report, '${app.label}', did not produce any output. Please check the configuration of the report within the SmartApp. "  
     if ((parent.getAdvEnabled() && voiceRepFilter) || voicePre || voicePost) fullMsg = replaceVoiceVar(fullMsg)
     return fullMsg
@@ -731,7 +759,7 @@ def doorWindowReport(){
             result += countUnlocked > 1 ? "following are unlocked: ${listUnlocked}. " :"${listUnlocked} is unlocked. "
     	}
         if ((countOpened || countOpenedDoor) && !countUnlocked){
-   			result += voiceDoorLocks ? "All of the doors are locked, but the " : "The"
+   			result += voiceDoorLocks ? "All of the doors are locked, but the " : "The "
             result += totalCount > 1 ? "following doors or windows are open: ${listOpened}. " : "${listOpened} is open. "
     	}
     }   
@@ -858,9 +886,10 @@ def reportDescMSHM() {
     result += voiceMode ? "Mode: On" : "Mode: Off"
     result += voiceSHM ? ", SHM: On" : ", SHM: Off"
 }
-def greyOutState(param1, param2, param3, param4, param5){def result = param1 || param2 || param3 || param4 || param5 ? "complete" : ""}
-def weatherDesc(){ def result = voiceWeatherToday || voiceWeatherTonight || voiceWeatherTomorrow || voiceSunrise || voiceSunset ? "Status: CONFIGURED - Tap to edit" : "Status: UNCONFIGURED - Tap to configure" }
-def greyOutWeather(){ def result = voiceWeatherToday || voiceWeatherTonight || voiceWeatherTomorrow || voiceSunrise || voiceSunset ? "complete" : "" }
+def greyOutState(param1, param2, param3, param4, param5, param6){def result = param1 || param2 || param3 || param4 || param5 || param6 ? "complete" : ""}
+def weatherDesc(){ def result = greyOutWeather() ? "Status: CONFIGURED - Tap to edit" : "Status: UNCONFIGURED - Tap to configure" }
+def greyOutWeather(){ def result = voiceWeatherToday || voiceWeatherTonight || voiceWeatherTomorrow || voiceSunrise || voiceSunset ||
+	voiceWeatherTemp|| voiceWeatherHumid || voiceWeatherDew || voiceWeatherSolar || voiceWeatherVisiblity || voiceWeatherPercip? "complete" : "" }
 def deviceGreyOut(){ def result = getDeviceDesc() == "Status: UNCONFIGURED - Tap to configure" ? "" : "complete" }
 def getDeviceDesc(){  
     def result,lvl, cLvl, clr, tLvl
@@ -949,9 +978,85 @@ private parseDate(time, type){
     new Date().parse("yyyy-MM-dd'T'HH:mm:ss.SSSZ", formattedDate).format("${type}", timeZone(formattedDate))
 }
 private getWeatherReport(){
+	def msg = ""
+    if (location.timeZone || zipCode) {
+    	def sb = new StringBuilder()
+        def isMetric = location.temperatureScale == "C"
+		def cond = getWeatherFeature("conditions", zipCode).current_observation
+        if (voiceWeatherLoc) sb << "This weather report comes from  " + cond.observation_location.full + ". "
+        if (voiceWeatherTemp){
+        	sb << "The current temperature is "
+            if (isMetric) sb << cond.temp_c.toString() else sb << cond.temp_f.toString()
+            sb << " degrees with " + cond.weather 
+            switch (cond.weather) {
+            case "Overcast":
+            case "Clear":
+            case "Partly Cloudy":
+            case "Mostly Cloudy": 
+                sb << " skies. "
+                break
+            case "Unknown":
+            case "Thunderstorm":
+            case "Light Thunderstorm":
+            case "Heavy Thunderstorm":
+            case "Sandstorm":
+            case "Light Sandstorm":
+            case "Heavy Sandstorm":
+                sb << " conditions."
+                break
+            default:
+                sb << ". "
+    		}
+        }
+        if (voiceWeatherHumid){
+            sb << "The relative humidity is " + cond.relative_humidity + " and the winds are "
+            if ((cond.wind_kph.toFloat() + cond.wind_gust_kph.toFloat()) == 0.0) sb << "calm. "
+            else if (isMetric) sb << "From the " + cond.wind_dir + " at " + cond.wind_kph + " kph Gusting to " + cond.wind_gust_kph + " kph. "
+            else sb << cond.wind_string + ". "
+         	sb << "The barometric pressure is "
+    		if (isMetric) sb << cond.pressure_mb + " millibars" else sb << cond.pressure_in + " inches"
+    		switch (cond.pressure_trend) {
+    		case "+":
+        		sb << " and rising. "
+            	break
+        	case "-":
+        		sb << " and falling. "
+        		break
+        	default:
+        		sb << ". "
+     		}   
+       	}
+        if (voiceWeatherDew){
+        	sb << "The dewpoint is "
+            if (isMetric) sb << cond.dewpoint_c else sb << cond.dewpoint_f
+            sb << " degrees, and the 'Feels Like' temperature is "
+            if (isMetric) sb << cond.feelslike_c + " degrees. " else sb << cond.feelslike_f + " degrees. "
+        }
+        if (voiceWeatherSolar){
+            if (cond.solarradiation != "--" && cond.UV != "") sb << "The solar radiation level is " + cond.solarradiation + ", and the UV index is " + cond.UV + ". "
+            if (cond.solarradiation != "--" && cond.UV == "") sb << "The solar radiation level is " + cond.solarradiation + ". "
+            if (cond.solarradiation == "--" && cond.UV != "")  sb << "The UV index is " + cond.UV + ". "
+		}
+        if (voiceWeatherVisiblity) {
+        	sb << "Visibility is "
+     		if (isMetric) sb << Math.round(cond.visibility_km.toFloat()) + " kilometers. " else sb << Math.round(cond.visibility_mi.toFloat()) + " miles. "
+     	}
+        if (voiceWeatherPercip) {    
+            sb << "There has been "
+            if (isMetric) { if (cond.precip_today_metric == "0") sb << "no " else sb << cond.precip_today_metric + " millimeters of " }
+            else { if (cond.precip_today_in == "0.00") sb << "no " else sb << cond.precip_today_in + " inches of " }
+        	sb << "precipitation today. "
+    	}
+	   	msg = sb.toString()
+        translateTxt().each {msg = msg.replaceAll(it.txt,it.cvt)}
+    }
+    else  msg = "Please set the location of your hub with the SmartThings mobile app, or enter a zip code to receive weather forecasts. "
+    return msg
+}
+private getWeatherForecast(){
     def msg = ""
     if (location.timeZone || zipCode) {
-		def sb = new StringBuilder(), weatherName=""
+		def sb = new StringBuilder()
         def isMetric = location.temperatureScale == "C"
 		def weather = getWeatherFeature("forecast", zipCode)
         if (voiceWeatherToday  || voiceWeatherTonight || voiceWeatherTomorrow ){
@@ -993,8 +1098,8 @@ def translateTxt(){
     wordCvt <<[txt:" NW ",cvt: " North West "] << [txt:" SW ",cvt: " South West "] << [txt:" NE ",cvt: " North East "] << [txt:" SE ",cvt: " South East "]
 	wordCvt <<[txt:" NNW ",cvt: " North-North West "] << [txt:" SSW ",cvt: " South-South West "] << [txt:" NNE ",cvt: " North-North East "] << [txt:" SSE ",cvt: " South-South East "]
 	wordCvt <<[txt:" WNW ",cvt: " West-North West "] << [txt:" WSW ",cvt: " West-South West "] << [txt:" ENE ",cvt: " East-North East "] << [txt:" ESE ",cvt: " East-South East "]
-	wordCvt <<[txt: /([0-9]+)C/, cvt: '$1 degrees'] << [txt: /([0-9]+)F/, cvt: '$1 degrees']<<[txt: "mph", cvt: "miles per hour"]
-
+	wordCvt <<[txt: /([0-9]+)C/, cvt: '$1 degrees'] << [txt: /([0-9]+)F/, cvt: '$1 degrees']<<[txt: "mph", cvt: "miles per hour"]<<[txt: "kph", cvt: "kilometers per hour"]
+	wordCvt <<[txt: "MPH", cvt: "miles per hour"]
 }
 //Send Messages
 def sendMSG(num, msg, push, recipients){
@@ -1026,6 +1131,6 @@ private setColoredLights(switches, color, level, type){
 	switches?.setColor(newValue)
 }
 //Version 
-private def textVersion() {return "Voice Macros Version: 2.0.2a (06/04/2016)"}
-private def versionInt() {return 202}
-private def versionLong() {return "2.0.2a"}
+private def textVersion() {return "Voice Macros Version: 2.0.3 (06/05/2016)"}
+private def versionInt() {return 203}
+private def versionLong() {return "2.0.3"}
