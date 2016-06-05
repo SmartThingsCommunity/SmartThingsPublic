@@ -1,7 +1,7 @@
 /**
  *  Ask Alexa 
  *
- *  Version 1.1.1c - 6/3/16 Copyright © 2016 Michael Struck
+ *  Version 1.1.2 - 6/5/16 Copyright © 2016 Michael Struck
  *  Special thanks for Keith DeLong for code and assistance
  *  
  *  Version 1.0.0 - Initial release
@@ -10,7 +10,8 @@
  *  Version 1.0.1c - Added presense sensors; added up/down/lower/increase/decrease as commands for various devices
  *  Version 1.0.2b - Added motion sensors and a new function, "events" to list to the last events for a device; code optimization, bugs removed
  *  Version 1.1.0a - Changed voice reports to macros, added toggle commands to switches, bug fixes and code optimization
- *  Version 1.1.1c - Added limits to temperature and speaker values; additional macros device types added
+ *  Version 1.1.1d - Added limits to temperature and speaker values; additional macros device types added
+ *  Version 1.1.2 - Updated averages of temp/humidity with proper math function
  *
  *  Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except
  *  in compliance with the License. You may obtain a copy of the License at:
@@ -246,8 +247,8 @@ def pageDefaultValue(){
     }
 }
 def pageCustomDevices(){
-    dynamicPage(name: "pageCustomDevices", title: "Device Specific Commands", uninstall: false){
-		section {
+    dynamicPage(name: "pageCustomDevices", uninstall: false){
+		section("Device Specific Commands"){
             input "nestCMD", "bool", title: "Allow Nest-Specific Thermostat Commands (Home/Away)", defaultValue: false
             input "stelproCMD", "bool", title: "Stelpro Baseboard Thermostat Controls", defaultValue:false
     	}
@@ -652,7 +653,7 @@ def getReply(devices, type, dev, op, num, param){
                         result += STdevice.currentValue("presence")=="present" ? "'Home'. " : "'Away'. "
                     }
                     result += heat ? " The heating setpoint is set to ${heat as int} degrees. " : ""
-                    result += heat && cool ? " and finally, " : ""
+                    result += heat && cool ? "And finally, " : ""
                     result += cool ? " The cooling setpoint is set to ${cool as int} degrees. " : ""
             	}           
             }
@@ -898,7 +899,7 @@ def getVariableList(){
 private getAverage(device,type){
 	def total = 0
 	device.each {total += it.latestValue(type)}
-    def result = ((total/device.size()) + 0.5) as int
+    def result = Math.round(total/device.size())
 }
 def getLightIncVal(){ return lightAmt }
 def getIName(){ return invocationName }
@@ -1018,14 +1019,14 @@ def sendJSON(outputTxt, lVer){
 //Version/Copyright/Information/Help
 private def textAppName() { def text = "Ask Alexa" }	
 private def textVersion() {
-    def version = "Parent App Version: 1.1.1c (06/03/2016)"
+    def version = "Parent App Version: 1.1.2 (06/05/2016)"
     def childCount = childApps.size()
     def childVersion = childCount ? childApps[0].textVersion() : "No voice macros installed"
     childVersion += state.lambdaCode ? "\n"+ state.lambdaCode : ""
     return "${version}\n${childVersion}"
 }
-private def versionInt(){ return 111 }
-private def versionLong(){ return "1.1.1c" }
+private def versionInt(){ return 112 }
+private def versionLong(){ return "1.1.2" }
 private def textCopyright() {return "Copyright © 2016 Michael Struck" }
 private def textLicense() {
 	def text = "Licensed under the Apache License, Version 2.0 (the 'License'); "+
