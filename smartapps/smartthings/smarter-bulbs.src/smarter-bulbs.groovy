@@ -1,7 +1,7 @@
 /**
  *  Smarter Bulbs
  *
- *  Copyright 2014 SmartThings, Inc.
+ *  Copyright 2016 Nick Sweet.
  *
  *  Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except
  *  in compliance with the License. You may obtain a copy of the License at:
@@ -49,7 +49,7 @@ def updated() {
 def initialize() {
     subscribe(slaves, "switch", saveStates)
     subscribe(canary,"switch.on", checkRestore)
-	runEvery5Minutes(someEventHandler)
+	runEvery5Minutes(checkRestore)
     saveStates()
 }
 
@@ -67,7 +67,6 @@ def saveStates(evt) {
 }
 
 def checkRestore(evt) {
-   
     log.debug "Canary is ${canary.currentSwitch}"
     if ("on" == canary.currentSwitch) { 
     	log.debug "Turning stuff off"
