@@ -153,23 +153,26 @@ def parse(String description) {
 
 def configure() {
 	log.debug "Configure called for device ${device.displayName}."
+	String zigbeeEui = swapEndianHex(device.hub.zigbeeEui)
+    
 	def cmd = [
+    	"zcl global write 0x500 0x10 0xf0 {${zigbeeEui}}", "delay 200",
+		"send 0x${device.deviceNetworkId} 1 ${endpointId}", "delay 1000",
 		//------Set up binding------//
 		"zdo bind 0x${device.deviceNetworkId} ${endpointId} 1 0x0001 {${device.zigbeeId}} {}", "delay 200",
 		"zdo bind 0x${device.deviceNetworkId} ${endpointId} 1 0x0500 {${device.zigbeeId}} {}", "delay 200",
 		"zdo bind 0x${device.deviceNetworkId} ${endpointId} 1 0x0501 {${device.zigbeeId}} {}", "delay 200"
 	] +
-	zigbee.iasZoneConfig() +
 	zigbee.configureReporting(1,0x20,0x20,3600,43200,0x01) + 		//battery reporting
 	zigbee.configureReporting(0x0402,0x00,0x29,30,3600,0x0064)		//temperature reporting  
 	
-	return cmd + refresh() 
+	return cmd + refresh()
 }
 
 def refresh() {
 	 return sendStatusToDevice() +
 			zigbee.readAttribute(0x0001,0x20) + 
-			zigbee.readAttribute(0x0402,0x00)           
+			zigbee.readAttribute(0x0402,0x00)
 }
 
 private parseReportAttributeMessage(String description) {
@@ -336,7 +339,7 @@ def sendInvalidKeycodeResponse(){
 	return (cmds?.collect { new physicalgraph.device.HubAction(it) }) + sendStatusToDevice()
 }
 
-def beep() {
+def beep(def beepLength = settings.beepLength) {
 	def len = zigbee.convertToHexString(beepLength, 2)
 	List cmds = ["raw 0x501 {09 01 04 05${len}}", 'delay 200',
 				 "send 0x${device.deviceNetworkId} 1 1", 'delay 500']
@@ -366,14 +369,14 @@ private byte[] reverseArray(byte[] array) {
 
 private testCmd(){
 	//log.trace zigbee.parse('catchall: 0104 0501 01 01 0140 00 4F2D 01 00 0000 07 00 ')
-	
+	beep(10)
 	//test exit delay
 	//log.debug device.zigbeeId
 	//testingTesting()
 	//discoverCmds()
 	//zigbee.configureReporting(1,0x20,0x20,3600,43200,0x01)		//battery reporting
-	["raw 0x0001 {00 00 06 00 2000 20 100E FEFF 01}",
-	"send 0x${device.deviceNetworkId} 1 1"]
+	//["raw 0x0001 {00 00 06 00 2000 20 100E FEFF 01}",
+	//"send 0x${device.deviceNetworkId} 1 1"]
 	//zigbee.command(0x0003, 0x00, "0500") //Identify: blinks connection light
 }
 
