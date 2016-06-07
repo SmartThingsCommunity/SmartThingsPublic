@@ -159,7 +159,7 @@ def configure() {
 		"zdo bind 0x${device.deviceNetworkId} ${endpointId} 1 0x0500 {${device.zigbeeId}} {}", "delay 200",
 		"zdo bind 0x${device.deviceNetworkId} ${endpointId} 1 0x0501 {${device.zigbeeId}} {}", "delay 200"
 	] +
-	zigbee.iasZoneConfig() +										//IAS Zone config
+	zigbee.iasZoneConfig() +
 	zigbee.configureReporting(1,0x20,0x20,3600,43200,0x01) + 		//battery reporting
 	zigbee.configureReporting(0x0402,0x00,0x29,30,3600,0x0064)		//temperature reporting  
 	
@@ -300,29 +300,13 @@ def notifyPanelStatusChanged(status) {
 }
 //------------------------//
 
-def setDisarmed() {
-	sendEvent([name: "armMode", value: "disarmed", isStateChange: true])
-	refresh()
-}
+def setDisarmed() { setModeHelper("disarmed",0) }
+def setArmedAway(def delay=0) { setModeHelper("armedAway",delay) }
+def setArmedStay(def delay=0) { setModeHelper("armedStay",delay) }
+def setArmedNight(def delay=0) { setModeHelper("armedNight",delay) }
 
-def setArmedAway(def delay) {
-	delay = delay ?: 0
-	sendEvent([name: "armMode", value: "armedAway", 
-				data: [delay: delay as int], isStateChange: true])
-	refresh()
-}
-
-def setArmedStay(def delay) {
-	delay = delay ?: 0
-	sendEvent([name: "armMode", value: "armedStay", 
-				data: [delay: delay as int], isStateChange: true])
-	refresh()
-}
-
-def setArmedNight(def delay) {
-	delay = delay ?: 0
-	sendEvent([name: "armMode", value: "armedNight", 
-				data: [delay: delay as int], isStateChange: true])
+private setModeHelper(String armMode, delay) {
+	sendEvent([name: "armMode", value: armMode, data: [delay: delay as int], isStateChange: true])
 	refresh()
 }
 
