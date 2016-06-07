@@ -26,7 +26,6 @@ metadata {
 		
 		attribute "armMode", "String"
 		
-		command "enrollResponse"
 		command "setDisarmed"
 		command "setArmedAway"
 		command "setArmedStay"
@@ -136,9 +135,8 @@ def parse(String description) {
 	}
 	//------IAS Zone Enroll request------//
 	else if (description?.startsWith('enroll request')) {
-		List cmds = enrollResponse()
-		log.debug "enroll response: ${cmds}"
-		results = cmds?.collect { new physicalgraph.device.HubAction(it) }
+		log.debug "Sending IAS enroll response..."
+		results = zigbee.enrollResponse()
 	}
 	//------Read Attribute response------//
 	else if (description?.startsWith('read attr -')) {
@@ -155,42 +153,23 @@ def parse(String description) {
 
 def configure() {
 	log.debug "Configure called for device ${device.displayName}."
-	String hubZigbeeId = swapEndianHex(device.hub.zigbeeId)
 	def cmd = [
-	//------IAS Zone/CIE setup------//
-	"zcl global write 0x500 0x10 0xf0 {${hubZigbeeId}}", "delay 100",
-	"send 0x${device.deviceNetworkId} 1 1", "delay 200",
-	
-	//------Set up binding------//
-	"zdo bind 0x${device.deviceNetworkId} 1 1 0x0001 {${device.zigbeeId}} {}", "delay 200",
-	"zdo bind 0x${device.deviceNetworkId} 1 1 0x500 {${device.zigbeeId}} {}", "delay 200",
-	"zdo bind 0x${device.deviceNetworkId} 1 1 0x501 {${device.zigbeeId}} {}", "delay 200"
+		//------Set up binding------//
+		"zdo bind 0x${device.deviceNetworkId} ${endpointId} 1 0x0001 {${device.zigbeeId}} {}", "delay 200",
+		"zdo bind 0x${device.deviceNetworkId} ${endpointId} 1 0x0500 {${device.zigbeeId}} {}", "delay 200",
+		"zdo bind 0x${device.deviceNetworkId} ${endpointId} 1 0x0501 {${device.zigbeeId}} {}", "delay 200"
 	] +
+	zigbee.iasZoneConfig() +										//IAS Zone config
 	zigbee.configureReporting(1,0x20,0x20,3600,43200,0x01) + 		//battery reporting
-	zigbee.configureReporting(0x0402,0x00,0x29,30,3600,0x0064)		//temperature reporting
+	zigbee.configureReporting(0x0402,0x00,0x29,30,3600,0x0064)		//temperature reporting  
 	
-	return cmd + refresh()
+	return cmd + refresh() 
 }
 
 def refresh() {
 	 return sendStatusToDevice() +
 			zigbee.readAttribute(0x0001,0x20) + 
-			zigbee.readAttribute(0x0402,0x00)
-			
-}
-
-//------Generate IAS Zone Enroll response------//
-def enrollResponse() {
-	log.debug "Sending enroll response"
-	return zigbee.enrollResponse()
-	//String hubZigbeeId = swapEndianHex(device.hub.zigbeeId)
-	/*[	
-	//Send CIE in case enroll request sent early.
-	"zcl global write 0x500 0x10 0xf0 {${hubZigbeeId}}",
-	"send 0x${device.deviceNetworkId} 1 1", "delay 100",
-	"raw 0x500 {01 23 00 00 00}",
-	"send 0x${device.deviceNetworkId} 1 1", "delay 100"
-	]*/
+			zigbee.readAttribute(0x0402,0x00)           
 }
 
 private parseReportAttributeMessage(String description) {
