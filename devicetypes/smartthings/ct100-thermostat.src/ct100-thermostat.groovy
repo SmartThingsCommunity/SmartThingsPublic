@@ -464,7 +464,7 @@ def modes() {
 }
 
 def switchMode() {
-	def currentMode = device.currentState("thermostatMode")?.value ?: "off"
+	def currentMode = device.currentState("thermostatMode")?.value
 	def lastTriedMode = state.lastTriedMode ?: currentMode ?: "off"
 	def supportedModes = getDataByName("supportedModes")
 	def modeOrder = modes()
@@ -708,3 +708,4 @@ def heatLevelDown() {
     log.debug "Setting heat set point down to: ${nextLevel}"
     quickSetHeat(nextLevel)
 }
+
