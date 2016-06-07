@@ -403,39 +403,21 @@ def refresh() {
 
 	if (device.getDataValue("manufacturer") == "SmartThings") {
 		log.debug "Refreshing Values for manufacturer: SmartThings "
-		refreshCmds = refreshCmds + [
-			/* These values of Motion Threshold Multiplier(01) and Motion Threshold (7602)
-				seem to be giving pretty accurate results for the XYZ co-ordinates for this manufacturer.
-				Separating these out in a separate if-else because I do not want to touch Centralite part
-				as of now.
-			*/
-
-			"zcl mfg-code ${manufacturerCode}", "delay 200",
-			"zcl global write 0xFC02 0 0x20 {01}", "delay 200",
-			"send 0x${device.deviceNetworkId} 1 1", "delay 400",
-
-			"zcl mfg-code ${manufacturerCode}", "delay 200",
-			"zcl global write 0xFC02 2 0x21 {7602}", "delay 200",
-			"send 0x${device.deviceNetworkId} 1 1", "delay 400",
-		]
+		/* These values of Motion Threshold Multiplier(0x01) and Motion Threshold (0x0276)
+            seem to be giving pretty accurate results for the XYZ co-ordinates for this manufacturer.
+            Separating these out in a separate if-else because I do not want to touch Centralite part
+            as of now.
+        */
+		refreshCmds += zigbee.writeAttribute(0xFC02, 0x0000, 0x20, 0x01, [mfgCode: manufacturerCode])
+		refreshCmds += zigbee.writeAttribute(0xFC02, 0x0002, 0x21, 0x0276, [mfgCode: manufacturerCode])
 	} else {
-		refreshCmds = refreshCmds + [
-			/* sensitivity - default value (8) */
-			"zcl mfg-code ${manufacturerCode}", "delay 200",
-			"zcl global write 0xFC02 0 0x20 {02}", "delay 200",
-			"send 0x${device.deviceNetworkId} 1 1", "delay 400",
-		]
+		refreshCmds += zigbee.writeAttribute(0xFC02, 0x0000, 0x20, 0x02, [mfgCode: manufacturerCode])
 	}
 
 	//Common refresh commands
-	refreshCmds = refreshCmds + [
-		"st rattr 0x${device.deviceNetworkId} 1 0x402 0", "delay 200",
-		"st rattr 0x${device.deviceNetworkId} 1 1 0x20", "delay 200",
-
-		"zcl mfg-code ${manufacturerCode}", "delay 200",
-		"zcl global read 0xFC02 0x0010",
-		"send 0x${device.deviceNetworkId} 1 1","delay 400"
-	]
+	refreshCmds += zigbee.readAttribute(0x0402, 0x0000) +
+			zigbee.readAttribute(0x0001, 0x0020) +
+			zigbee.readAttribute(0xFC02, 0x0010, [mfgCode: manufacturerCode])
 
 	return refreshCmds + enrollResponse()
 }
@@ -443,38 +425,15 @@ def refresh() {
 def configure() {
 	sendEvent(name: "checkInterval", value: 7200, displayed: false)
 
-	String zigbeeEui = swapEndianHex(device.hub.zigbeeEui)
 	log.debug "Configuring Reporting"
 
-	def configCmds = [
-		"zcl global write 0x500 0x10 0xf0 {${zigbeeEui}}", "delay 200",
-		"send 0x${device.deviceNetworkId} 1 ${endpointId}", "delay 500",
-
-		"zdo bind 0x${device.deviceNetworkId} ${endpointId} 1 1 {${device.zigbeeId}} {}", "delay 200",
-		"zcl global send-me-a-report 1 0x20 0x20 30 21600 {01}", "delay 200",		//checkin time 6 hrs
-		"send 0x${device.deviceNetworkId} 1 ${endpointId}", "delay 500",
-
-		"zdo bind 0x${device.deviceNetworkId} ${endpointId} 1 0x402 {${device.zigbeeId}} {}", "delay 200",
-		"zcl global send-me-a-report 0x402 0 0x29 30 3600 {6400}", "delay 200",
-		"send 0x${device.deviceNetworkId} 1 ${endpointId}", "delay 500",
-
-		"zdo bind 0x${device.deviceNetworkId} ${endpointId} 1 0xFC02 {${device.zigbeeId}} {}", "delay 200",
-		"zcl mfg-code ${manufacturerCode}", "delay 200",
-		"zcl global send-me-a-report 0xFC02 0x0010 0x18 10 3600 {01}", "delay 200",
-		"send 0x${device.deviceNetworkId} 1 ${endpointId}", "delay 500",
-
-		"zcl mfg-code ${manufacturerCode}", "delay 200",
-		"zcl global send-me-a-report 0xFC02 0x0012 0x29 1 3600 {0100}", "delay 200",
-		"send 0x${device.deviceNetworkId} 1 ${endpointId}", "delay 500",
-
-		"zcl mfg-code ${manufacturerCode}", "delay 200",
-		"zcl global send-me-a-report 0xFC02 0x0013 0x29 1 3600 {0100}", "delay 200",
-		"send 0x${device.deviceNetworkId} 1 ${endpointId}", "delay 500",
-
-		"zcl mfg-code ${manufacturerCode}", "delay 200",
-		"zcl global send-me-a-report 0xFC02 0x0014 0x29 1 3600 {0100}", "delay 200",
-		"send 0x${device.deviceNetworkId} 1 ${endpointId}", "delay 500"
-		]
+	def configCmds = enrollResponse() +
+			zigbee.batteryConfig() +
+			zigbee.temperatureConfig() +
+			zigbee.configureReporting(0xFC02, 0x0010, 0x18, 10, 3600, 0x01, [mfgCode: manufacturerCode]) +
+			zigbee.configureReporting(0xFC02, 0x0012, 0x29, 1, 3600, 0x0001, [mfgCode: manufacturerCode]) +
+			zigbee.configureReporting(0xFC02, 0x0013, 0x29, 1, 3600, 0x0001, [mfgCode: manufacturerCode]) +
+			zigbee.configureReporting(0xFC02, 0x0014, 0x29, 1, 3600, 0x0001, [mfgCode: manufacturerCode])
 
 	return configCmds + refresh()
 }
