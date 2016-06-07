@@ -339,7 +339,7 @@ def initialize() {
 	state.aux = 0
 	if (selectedhubs || selectedactivities) {
 		addDevice()
-        runEvery5Minutes("discovery")
+        runEvery5Minutes("poll")
 	}
 }
 
@@ -394,9 +394,9 @@ def discovery() {
         }
 	} catch (java.net.SocketTimeoutException e) {
 		log.warn "Connection to the hub timed out. Please restart the hub and try again."
-        state.resethub = true
+    state.resethub = true
  	} catch (e) {
-		log.warn "Hostname in certificate didn't match. Please try again later."
+    log.info "Logitech Harmony - Error: $e"
 	}
     return null
 }
@@ -474,7 +474,7 @@ def activity(dni,mode) {
 def poll() {
 	// GET THE LIST OF ACTIVITIES
     if (state.HarmonyAccessToken) {
-    	getActivityList()
+    	  getActivityList()
         def Params = [auth: state.HarmonyAccessToken]
         def url = "https://home.myharmony.com/cloudapi/state?${toQueryString(Params)}"
         try {
@@ -520,14 +520,17 @@ def poll() {
                 return "Poll completed $map - $state.hubs"
             }
         } catch (groovyx.net.http.HttpResponseException e) {
-            if (e.statusCode == 401) { // token is expired
-                state.remove("HarmonyAccessToken")
-                return "Harmony Access token has expired"
-            }
-		} catch(Exception e) {
-        	log.trace e
-		}
-	}
+              if (e.statusCode == 401) { // token is expired
+                  state.remove("HarmonyAccessToken")
+                  log.warn "Harmony Access token has expired"
+              }
+        } catch (java.net.SocketTimeoutException e) {
+        	log.warn "Connection to the hub timed out. Please restart the hub and try again."
+              state.resethub = true
+        } catch (e) {
+        	log.info "Logitech Harmony - Error: $e"
+        }
+    }
 }
 
 

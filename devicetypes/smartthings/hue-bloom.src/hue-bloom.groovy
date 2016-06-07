@@ -37,9 +37,6 @@ metadata {
 			tileAttribute ("device.level", key: "SLIDER_CONTROL") {
 				attributeState "level", action:"switch level.setLevel", range:"(0..100)"
             }
-            tileAttribute ("device.level", key: "SECONDARY_CONTROL") {
-	            attributeState "level", label: 'Level ${currentValue}%'
-			}
 			tileAttribute ("device.color", key: "COLOR_CONTROL") {
 				attributeState "color", action:"setAdjustedColor"
 			}
