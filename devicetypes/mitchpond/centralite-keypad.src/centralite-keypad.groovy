@@ -15,140 +15,140 @@
  */
 metadata {
 	definition (name: "Centralite Keypad", namespace: "mitchpond", author: "Mitch Pond") {
-        capability "Battery"
-        capability "Configuration"
-        capability "Sensor"
-        capability "Temperature Measurement"
-        capability "Refresh"
-        capability "Lock Codes"
-        //capability "Tamper Alert" //TODO
-        capability "Tone"
-        
-        attribute "armMode", "String"
-        
-        command "enrollResponse"
-        command "setDisarmed"
-        command "setArmedAway"
-        command "setArmedStay"
-        command "setArmedNight"
-        command "testCmd"
-        command "sendInvalidKeycodeResponse"
-        command "acknowledgeArmRequest"
-        
-        fingerprint endpointId: "01", profileId: "0104", deviceId: "0401", inClusters: "0000,0001,0003,0020,0402,0500,0B05", outClusters: "0019,0501", manufacturer: "CentraLite", model: "3400", deviceJoinName: "Xfinity 3400-X Keypad"
-        fingerprint endpointId: "01", profileId: "0104", deviceId: "0401", inClusters: "0000,0001,0003,0020,0402,0500,0501,0B05,FC04", outClusters: "0019,0501", manufacturer: "CentraLite", model: "3405-L", deviceJoinName: "Iris 3405-L Keypad"
+		capability "Battery"
+		capability "Configuration"
+		capability "Sensor"
+		capability "Temperature Measurement"
+		capability "Refresh"
+		capability "Lock Codes"
+		//capability "Tamper Alert" //TODO
+		capability "Tone"
+		
+		attribute "armMode", "String"
+		
+		command "enrollResponse"
+		command "setDisarmed"
+		command "setArmedAway"
+		command "setArmedStay"
+		command "setArmedNight"
+		command "testCmd"
+		command "sendInvalidKeycodeResponse"
+		command "acknowledgeArmRequest"
+		
+		fingerprint endpointId: "01", profileId: "0104", deviceId: "0401", inClusters: "0000,0001,0003,0020,0402,0500,0B05", outClusters: "0019,0501", manufacturer: "CentraLite", model: "3400", deviceJoinName: "Xfinity 3400-X Keypad"
+		fingerprint endpointId: "01", profileId: "0104", deviceId: "0401", inClusters: "0000,0001,0003,0020,0402,0500,0501,0B05,FC04", outClusters: "0019,0501", manufacturer: "CentraLite", model: "3405-L", deviceJoinName: "Iris 3405-L Keypad"
 	}
-    
-    preferences{
-        input ("tempOffset", "number", title: "Enter an offset to adjust the reported temperature",
-        		defaultValue: 0, displayDuringSetup: false)
-        input ("beepLength", "number", title: "Enter length of beep in seconds",
-        		defaultValue: 3, displayDuringSetup: false)
-    }
+	
+	preferences{
+		input ("tempOffset", "number", title: "Enter an offset to adjust the reported temperature",
+				defaultValue: 0, displayDuringSetup: false)
+		input ("beepLength", "number", title: "Enter length of beep in seconds",
+				defaultValue: 3, displayDuringSetup: false)
+	}
 
 	tiles {
-        valueTile("battery", "device.battery", decoration: "flat") {
+		valueTile("battery", "device.battery", decoration: "flat") {
 			state "battery", label:'${currentValue}% battery', unit:""
 		}
-        valueTile("temperature", "device.temperature") {
-        	state "temperature", label: '${currentValue}°',
-                backgroundColors:[
-                        [value: 31, color: "#153591"],
-                        [value: 44, color: "#1e9cbb"],
-                        [value: 59, color: "#90d2a7"],
-                        [value: 74, color: "#44b621"],
-                        [value: 84, color: "#f1d801"],
-                        [value: 95, color: "#d04e00"],
-                        [value: 96, color: "#bc2323"]
-                    ]
-        }
-        valueTile("armMode", "device.armMode", decoration: "flat") {
-        	state "armMode", label: '${currentValue}'
-        }
-        standardTile("refresh", "device.refresh", decoration: "flat", width: 1, height: 1) {
-        	state "default", action:"refresh.refresh", icon:"st.secondary.refresh"
-    	}
-        standardTile("configure", "device.configure", decoration: "flat", width: 1, height: 1) {
-        	state "default", action:"configuration.configure", icon:"st.secondary.configure"
-    	}
-        standardTile("beep", "device.beep", decoration: "flat", width: 1, height: 1) {
-        	state "default", action:"tone.beep", icon:"st.secondary.beep", backgroundColor:"#ffffff"
-    	}
-        standardTile("test", "device.testCmd", decoration: "flat", width: 1, height: 1) {
-        	state "default", action:"testCmd", icon:"st.secondary.tools", label: "Test", backgroundColor:"#ffffff"
-    	}
-        main ("battery")
-        //TODO: armMode is in here for debug purposes. Remove later.
-        details (["temperature","battery","armMode","configure","refresh","beep","test"])
+		valueTile("temperature", "device.temperature") {
+			state "temperature", label: '${currentValue}°',
+				backgroundColors:[
+						[value: 31, color: "#153591"],
+						[value: 44, color: "#1e9cbb"],
+						[value: 59, color: "#90d2a7"],
+						[value: 74, color: "#44b621"],
+						[value: 84, color: "#f1d801"],
+						[value: 95, color: "#d04e00"],
+						[value: 96, color: "#bc2323"]
+					]
+		}
+		valueTile("armMode", "device.armMode", decoration: "flat") {
+			state "armMode", label: '${currentValue}'
+		}
+		standardTile("refresh", "device.refresh", decoration: "flat", width: 1, height: 1) {
+			state "default", action:"refresh.refresh", icon:"st.secondary.refresh"
+		}
+		standardTile("configure", "device.configure", decoration: "flat", width: 1, height: 1) {
+			state "default", action:"configuration.configure", icon:"st.secondary.configure"
+		}
+		standardTile("beep", "device.beep", decoration: "flat", width: 1, height: 1) {
+			state "default", action:"tone.beep", icon:"st.secondary.beep", backgroundColor:"#ffffff"
+		}
+		standardTile("test", "device.testCmd", decoration: "flat", width: 1, height: 1) {
+			state "default", action:"testCmd", icon:"st.secondary.tools", label: "Test", backgroundColor:"#ffffff"
+		}
+		main ("battery")
+		//TODO: armMode is in here for debug purposes. Remove later.
+		details (["temperature","battery","armMode","configure","refresh","beep","test"])
 	}
 }
 
 // parse events into attributes
 def parse(String description) {
 	log.debug "Parsing '${description}'";
-    def results = [];
-    
+	def results = [];
+	
 	//------Miscellaneous Zigbee message------//
 	if (description?.startsWith('catchall:')) {
-    	//log.debug zigbee.parse(description);
+		//log.debug zigbee.parse(description);
 		def message = zigbee.parse(description);
-        
-        //------Profile-wide command (rattr responses, errors, etc.)------//
-        if (message?.isClusterSpecific == false) {
-        	//------Default response------//
-            if (message?.command == 0x0B) {
-                if (message?.data[1] == 0x81) 
-                    log.error "Device: unrecognized command: "+description;
-                else if (message?.data[1] == 0x80) 
-                    log.error "Device: malformed command: "+description;
-            }
-            //------Read attributes responses------//
-            else if (message?.command == 0x01) {
-            	if (message?.clusterId == 0x0402) {
+		
+		//------Profile-wide command (rattr responses, errors, etc.)------//
+		if (message?.isClusterSpecific == false) {
+			//------Default response------//
+			if (message?.command == 0x0B) {
+				if (message?.data[1] == 0x81) 
+					log.error "Device: unrecognized command: "+description;
+				else if (message?.data[1] == 0x80) 
+					log.error "Device: malformed command: "+description;
+			}
+			//------Read attributes responses------//
+			else if (message?.command == 0x01) {
+				if (message?.clusterId == 0x0402) {
 					log.debug "Device: read attribute response: "+description;
-                    results = parseTempAttributeMsg(message)
-                }}
-            else 
-            	log.debug "Unhandled profile-wide command: "+description;
-        }
-        //------Cluster specific commands------//
-        else if (message?.isClusterSpecific) {
-        	//------IAS ACE------//
-        	if (message?.clusterId == 0x0501) {
-                if (message?.command == 0x07) {
-                //---------------------------------------//
-                //Not sure what the device is doing here. It doesn't look like an ACE client should be sending this.
-                //Plus, the command isn't sent with a payload which doesn't seem to follow the spec.
-                //I'm assuming that they're using it as a sort of heartbeat (??)
-                // *** This does not correlate to motion events ***
-                //---------------------------------------//
-                    log.debug "${device.displayName} awake and requesting status"
-                    results = sendStatusToDevice();
-                    log.trace results
-                }
-                else if (message?.command == 0x00) {
-                    results = handleArmRequest(message)
-                    log.trace results
-                }
-        	}
-            else log.debug "Unhandled cluster-specific command: "+description
-        }
+					results = parseTempAttributeMsg(message)
+				}}
+			else 
+				log.debug "Unhandled profile-wide command: "+description;
+		}
+		//------Cluster specific commands------//
+		else if (message?.isClusterSpecific) {
+			//------IAS ACE------//
+			if (message?.clusterId == 0x0501) {
+				if (message?.command == 0x07) {
+				//---------------------------------------//
+				//Not sure what the device is doing here. It doesn't look like an ACE client should be sending this.
+				//Plus, the command isn't sent with a payload which doesn't seem to follow the spec.
+				//I'm assuming that they're using it as a sort of heartbeat (??)
+				// *** This does not correlate to motion events ***
+				//---------------------------------------//
+					log.debug "${device.displayName} awake and requesting status"
+					results = sendStatusToDevice();
+					log.trace results
+				}
+				else if (message?.command == 0x00) {
+					results = handleArmRequest(message)
+					log.trace results
+				}
+			}
+			else log.debug "Unhandled cluster-specific command: "+description
+		}
 	}
-    //------IAS Zone Enroll request------//
-    else if (description?.startsWith('enroll request')) {
+	//------IAS Zone Enroll request------//
+	else if (description?.startsWith('enroll request')) {
 		List cmds = enrollResponse()
 		log.debug "enroll response: ${cmds}"
 		results = cmds?.collect { new physicalgraph.device.HubAction(it) }
 	}
-    //------Read Attribute response------//
-    else if (description?.startsWith('read attr -')) {
+	//------Read Attribute response------//
+	else if (description?.startsWith('read attr -')) {
 		results = parseReportAttributeMessage(description)
 	}
-    //------Temperature Report------//
-    else if (description?.startsWith('temperature: ')) {
-    	log.debug "Got ST-style temperature report.."
-    	results = createEvent(getTemperatureResult(zigbee.parseHATemperatureValue(description, "temperature: ", getTemperatureScale())))
-        log.debug results
+	//------Temperature Report------//
+	else if (description?.startsWith('temperature: ')) {
+		log.debug "Got ST-style temperature report.."
+		results = createEvent(getTemperatureResult(zigbee.parseHATemperatureValue(description, "temperature: ", getTemperatureScale())))
+		log.debug results
 	}   
 	return results
 }
@@ -157,36 +157,36 @@ def configure() {
 	log.debug "Configure called for device ${device.displayName}."
 	String hubZigbeeId = swapEndianHex(device.hub.zigbeeId)
 	def cmd = [
-    //------IAS Zone/CIE setup------//
-    "zcl global write 0x500 0x10 0xf0 {${hubZigbeeId}}", "delay 100",
+	//------IAS Zone/CIE setup------//
+	"zcl global write 0x500 0x10 0xf0 {${hubZigbeeId}}", "delay 100",
 	"send 0x${device.deviceNetworkId} 1 1", "delay 200",
-    
-    //------Set up binding------//
-    "zdo bind 0x${device.deviceNetworkId} 1 1 0x0001 {${device.zigbeeId}} {}", "delay 200",
-    "zdo bind 0x${device.deviceNetworkId} 1 1 0x500 {${device.zigbeeId}} {}", "delay 200",
-    "zdo bind 0x${device.deviceNetworkId} 1 1 0x501 {${device.zigbeeId}} {}", "delay 200"
+	
+	//------Set up binding------//
+	"zdo bind 0x${device.deviceNetworkId} 1 1 0x0001 {${device.zigbeeId}} {}", "delay 200",
+	"zdo bind 0x${device.deviceNetworkId} 1 1 0x500 {${device.zigbeeId}} {}", "delay 200",
+	"zdo bind 0x${device.deviceNetworkId} 1 1 0x501 {${device.zigbeeId}} {}", "delay 200"
 	] +
-    zigbee.configureReporting(1,0x20,0x20,3600,43200,0x01) + 		//battery reporting
-    zigbee.configureReporting(0x0402,0x00,0x29,30,3600,0x0064)		//temperature reporting
-    
-    return cmd + refresh()
+	zigbee.configureReporting(1,0x20,0x20,3600,43200,0x01) + 		//battery reporting
+	zigbee.configureReporting(0x0402,0x00,0x29,30,3600,0x0064)		//temperature reporting
+	
+	return cmd + refresh()
 }
 
 def refresh() {
-     return sendStatusToDevice() +
-     		zigbee.readAttribute(0x0001,0x20) + 
-     		zigbee.readAttribute(0x0402,0x00)
-            
+	 return sendStatusToDevice() +
+			zigbee.readAttribute(0x0001,0x20) + 
+			zigbee.readAttribute(0x0402,0x00)
+			
 }
 
 //------Generate IAS Zone Enroll response------//
 def enrollResponse() {
 	log.debug "Sending enroll response"
-    return zigbee.enrollResponse()
-    //String hubZigbeeId = swapEndianHex(device.hub.zigbeeId)
+	return zigbee.enrollResponse()
+	//String hubZigbeeId = swapEndianHex(device.hub.zigbeeId)
 	/*[	
-    //Send CIE in case enroll request sent early.
-    "zcl global write 0x500 0x10 0xf0 {${hubZigbeeId}}",
+	//Send CIE in case enroll request sent early.
+	"zcl global write 0x500 0x10 0xf0 {${hubZigbeeId}}",
 	"send 0x${device.deviceNetworkId} 1 1", "delay 100",
 	"raw 0x500 {01 23 00 00 00}",
 	"send 0x${device.deviceNetworkId} 1 1", "delay 100"
@@ -201,12 +201,12 @@ private parseReportAttributeMessage(String description) {
 	//log.debug "Desc Map: $descMap"
 
 	def results = []
-    
+	
 	if (descMap.cluster == "0001" && descMap.attrId == "0020") {
 		log.debug "Received battery level report"
 		results = createEvent(getBatteryResult(Integer.parseInt(descMap.value, 16)))
 	}
-    else if (descMap.cluster == "0402" && descMap.attrId == "0000") {
+	else if (descMap.cluster == "0402" && descMap.attrId == "0000") {
 		def value = getTemperature(descMap.value)
 		results = createEvent(getTemperatureResult(value))
 	}
@@ -216,7 +216,7 @@ private parseReportAttributeMessage(String description) {
 
 private parseTempAttributeMsg(message) {
 	byte[] temp = message.data[-2..-1].reverse()
-    createEvent(getTemperatureResult(getTemperature(temp.encodeHex() as String)))
+	createEvent(getTemperatureResult(getTemperature(temp.encodeHex() as String)))
 }
 
 
@@ -274,25 +274,25 @@ private Map getTemperatureResult(value) {
 //------Command handlers------//
 private handleArmRequest(message){
 	def keycode = new String(message.data[2..-2] as byte[],'UTF-8')
-    def reqArmMode = message.data[0]
-    //state.lastKeycode = keycode
+	def reqArmMode = message.data[0]
+	//state.lastKeycode = keycode
 	log.debug "Received arm command with keycode/armMode: ${keycode}/${reqArmMode}"
 
 	//Acknowledge the command. This may not be *technically* correct, but it works
-    /*List cmds = [
-                 "raw 0x501 {09 01 00 0${reqArmMode}}", "delay 200",
-                 "send 0x${device.deviceNetworkId} 1 1", "delay 500"
-                ]
-    def results = cmds?.collect { new physicalgraph.device.HubAction(it) } + createCodeEntryEvent(keycode, reqArmMode)
+	/*List cmds = [
+				 "raw 0x501 {09 01 00 0${reqArmMode}}", "delay 200",
+				 "send 0x${device.deviceNetworkId} 1 1", "delay 500"
+				]
+	def results = cmds?.collect { new physicalgraph.device.HubAction(it) } + createCodeEntryEvent(keycode, reqArmMode)
 	*/
-    def results = createCodeEntryEvent(keycode, reqArmMode)
-    log.trace "Method: handleArmRequest(message): "+results
-    return results
+	def results = createCodeEntryEvent(keycode, reqArmMode)
+	log.trace "Method: handleArmRequest(message): "+results
+	return results
 }
 
 def createCodeEntryEvent(keycode, armMode) {
 	createEvent(name: "codeEntered", value: keycode as String, data: armMode as String, 
-    			isStateChange: true, displayed: false)
+				isStateChange: true, displayed: false)
 }
 
 //
@@ -300,20 +300,20 @@ def createCodeEntryEvent(keycode, armMode) {
 //
 private sendStatusToDevice() {
 	log.debug 'Sending status to device...'
-    def armMode = device.currentValue("armMode")
-    log.trace 'Arm mode: '+armMode
+	def armMode = device.currentValue("armMode")
+	log.trace 'Arm mode: '+armMode
 	def status = '00'
-    if (armMode == 'disarmed') status = '00'
-    else if (armMode == 'armedAway') status = '03'
-    else if (armMode == 'armedStay') status = '01'
-    else if (armMode == 'armedNight') status = '02'
-    
-    List cmds = ["raw 0x501 {09 01 04 ${status}00}",
-    			 "send 0x${device.deviceNetworkId} 1 1", 'delay 100']
-                 
-    def results = cmds?.collect { new physicalgraph.device.HubAction(it) };
-    log.trace 'Method: sendStatusToDevice(): '+results
-    return results
+	if (armMode == 'disarmed') status = '00'
+	else if (armMode == 'armedAway') status = '03'
+	else if (armMode == 'armedStay') status = '01'
+	else if (armMode == 'armedNight') status = '02'
+	
+	List cmds = ["raw 0x501 {09 01 04 ${status}00}",
+				 "send 0x${device.deviceNetworkId} 1 1", 'delay 100']
+				 
+	def results = cmds?.collect { new physicalgraph.device.HubAction(it) };
+	log.trace 'Method: sendStatusToDevice(): '+results
+	return results
 }
 
 def notifyPanelStatusChanged(status) {
@@ -323,61 +323,61 @@ def notifyPanelStatusChanged(status) {
 
 def setDisarmed() {
 	sendEvent([name: "armMode", value: "disarmed", isStateChange: true])
-    refresh()
+	refresh()
 }
 
 def setArmedAway(def delay) {
 	delay = delay ?: 0
 	sendEvent([name: "armMode", value: "armedAway", 
-    			data: [delay: delay as int], isStateChange: true])
-    refresh()
+				data: [delay: delay as int], isStateChange: true])
+	refresh()
 }
 
 def setArmedStay(def delay) {
 	delay = delay ?: 0
 	sendEvent([name: "armMode", value: "armedStay", 
-    			data: [delay: delay as int], isStateChange: true])
-    refresh()
+				data: [delay: delay as int], isStateChange: true])
+	refresh()
 }
 
 def setArmedNight(def delay) {
 	delay = delay ?: 0
 	sendEvent([name: "armMode", value: "armedNight", 
-    			data: [delay: delay as int], isStateChange: true])
-    refresh()
+				data: [delay: delay as int], isStateChange: true])
+	refresh()
 }
 
 private setKeypadArmMode(armMode){
 	Map mode = [disarmed: '00', armedAway: '03', armedStay: '01', armedNight: '02']
-    List cmds = ["raw 0x501 {09 01 04 ${mode[armMode]}00}",
-    			 "send 0x${device.deviceNetworkId} 1 1", 'delay 100']
+	List cmds = ["raw 0x501 {09 01 04 ${mode[armMode]}00}",
+				 "send 0x${device.deviceNetworkId} 1 1", 'delay 100']
 }
 
 def acknowledgeArmRequest(armMode){
 	List cmds = [
-                 "raw 0x501 {09 01 00 0${armMode}}",
-                 "send 0x${device.deviceNetworkId} 1 1", "delay 100"
-                ]
-    def results = cmds?.collect { new physicalgraph.device.HubAction(it) }
-    log.trace "Method: acknowledgeArmRequest(armMode): "+results
-    return results
+				 "raw 0x501 {09 01 00 0${armMode}}",
+				 "send 0x${device.deviceNetworkId} 1 1", "delay 100"
+				]
+	def results = cmds?.collect { new physicalgraph.device.HubAction(it) }
+	log.trace "Method: acknowledgeArmRequest(armMode): "+results
+	return results
 }
 
 def sendInvalidKeycodeResponse(){
 	List cmds = [
-    			 "raw 0x501 {09 01 00 04}",
-                 "send 0x${device.deviceNetworkId} 1 1", "delay 100"
-                ]
-                 
-    log.trace 'Method: sendInvalidKeycodeResponse(): '+cmds
-    return (cmds?.collect { new physicalgraph.device.HubAction(it) }) + sendStatusToDevice()
+				 "raw 0x501 {09 01 00 04}",
+				 "send 0x${device.deviceNetworkId} 1 1", "delay 100"
+				]
+				 
+	log.trace 'Method: sendInvalidKeycodeResponse(): '+cmds
+	return (cmds?.collect { new physicalgraph.device.HubAction(it) }) + sendStatusToDevice()
 }
 
 def beep() {
 	def len = zigbee.convertToHexString(beepLength, 2)
 	List cmds = ["raw 0x501 {09 01 04 05${len}}", 'delay 200',
-    			 "send 0x${device.deviceNetworkId} 1 1", 'delay 500']
-    cmds
+				 "send 0x${device.deviceNetworkId} 1 1", 'delay 500']
+	cmds
 }
 
 //------Utility methods------//
@@ -403,26 +403,26 @@ private byte[] reverseArray(byte[] array) {
 
 private testCmd(){
 	//log.trace zigbee.parse('catchall: 0104 0501 01 01 0140 00 4F2D 01 00 0000 07 00 ')
-    
-    //test exit delay
-    //log.debug device.zigbeeId
+	
+	//test exit delay
+	//log.debug device.zigbeeId
 	//testingTesting()
 	//discoverCmds()
-    //zigbee.configureReporting(1,0x20,0x20,3600,43200,0x01)		//battery reporting
-    ["raw 0x0001 {00 00 06 00 2000 20 100E FEFF 01}",
-    "send 0x${device.deviceNetworkId} 1 1"]
-    //zigbee.command(0x0003, 0x00, "0500") //Identify: blinks connection light
+	//zigbee.configureReporting(1,0x20,0x20,3600,43200,0x01)		//battery reporting
+	["raw 0x0001 {00 00 06 00 2000 20 100E FEFF 01}",
+	"send 0x${device.deviceNetworkId} 1 1"]
+	//zigbee.command(0x0003, 0x00, "0500") //Identify: blinks connection light
 }
 
 private discoverCmds(){
 	List cmds = ["raw 0x0501 {08 01 11 0011}", 'delay 200',
-    			 "send 0x${device.deviceNetworkId} 1 1", 'delay 500']
-    cmds
+				 "send 0x${device.deviceNetworkId} 1 1", 'delay 500']
+	cmds
 }
 
 private testingTesting() {
 	log.debug "Delay: "+device.currentState("armMode").toString()
 	List cmds = ["raw 0x501 {09 01 04 050A}", 'delay 200',
-    			 "send 0x${device.deviceNetworkId} 1 1", 'delay 500']
-    cmds
+				 "send 0x${device.deviceNetworkId} 1 1", 'delay 500']
+	cmds
 }
