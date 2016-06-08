@@ -338,14 +338,14 @@ def setArmedStay(def delay=0) { setModeHelper("armedStay",delay) }
 def setArmedNight(def delay=0) { setModeHelper("armedNight",delay) }
 
 def setEntryDelay(delay=30) {
+	setModeHelper("entryDelay", delay)
 	sendRawStatus(5, delay) // Entry delay beeps
 	sendRawStatus(8, 0)     // Flashing red status?
-	setModeHelper("entryDelay", delay)
 }
 
 def setExitDelay(delay=30) {
-	sendRawStatus(10, delay)  // Exit delay
 	setModeHelper("exitDelay", delay)
+	sendRawStatus(10, delay)  // Exit delay
 }
 
 private setModeHelper(String armMode, delay) {
@@ -354,9 +354,12 @@ private setModeHelper(String armMode, delay) {
 }
 
 private setKeypadArmMode(armMode){
-	Map mode = [disarmed: '00', armedAway: '03', armedStay: '01', armedNight: '02']
-	List cmds = ["raw 0x501 {09 01 04 ${mode[armMode]}00}",
+	Map mode = [disarmed: '00', armedAway: '03', armedStay: '01', armedNight: '02', entryDelay: '', exitDelay: '']
+    if (mode[armMode] != '')
+    {
+		return ["raw 0x501 {09 01 04 ${mode[armMode]}00}",
 				 "send 0x${device.deviceNetworkId} 1 1", 'delay 100']
+    }
 }
 
 def acknowledgeArmRequest(armMode){
