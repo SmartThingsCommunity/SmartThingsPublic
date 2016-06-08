@@ -15,6 +15,7 @@
  */
 
 //DEPRECATED - Using the smartsense-motion-sensor.groovy DTH for this device. Users need to be moved before deleting this DTH
+import physicalgraph.zigbee.clusters.iaszone.ZoneStatus
 
 metadata {
 	definition (name: "SmartSense Motion/Temp Sensor", namespace: "smartthings", author: "SmartThings") {
@@ -168,44 +169,8 @@ private Map parseCustomMessage(String description) {
 }
 
 private Map parseIasMessage(String description) {
-    List parsedMsg = description.split(' ')
-    String msgCode = parsedMsg[2]
-
-    Map resultMap = [:]
-    switch(msgCode) {
-        case '0x0020': // Closed/No Motion/Dry
-        	resultMap = getMotionResult('inactive')
-            break
-
-        case '0x0021': // Open/Motion/Wet
-        	resultMap = getMotionResult('active')
-            break
-
-        case '0x0022': // Tamper Alarm
-        	log.debug 'motion with tamper alarm'
-        	resultMap = getMotionResult('active')
-            break
-
-        case '0x0023': // Battery Alarm
-            break
-
-        case '0x0024': // Supervision Report
-        	log.debug 'no motion with tamper alarm'
-        	resultMap = getMotionResult('inactive')
-            break
-
-        case '0x0025': // Restore Report
-            break
-
-        case '0x0026': // Trouble/Failure
-        	log.debug 'motion with failure alarm'
-        	resultMap = getMotionResult('active')
-            break
-
-        case '0x0028': // Test Mode
-            break
-    }
-    return resultMap
+	ZoneStatus zs = zigbee.parseZoneStatus(description)
+	return zs.isAlarm1Set() ? getMotionResult('active') : getMotionResult('inactive')
 }
 
 def getTemperature(value) {
