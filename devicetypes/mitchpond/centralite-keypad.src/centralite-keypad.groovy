@@ -293,7 +293,7 @@ private sendStatusToDevice() {
 	else if (armMode == 'armedNight') status = 2
 	
 	// If we're not in one of the 4 basic modes, don't update the status, don't want to override beep timings, exit delay is dependent on it being correct
-	if status != ''
+	if (status != '')
 	{
 		return sendRawStatus(status)
 	}
