@@ -1,7 +1,7 @@
 /**
  *  Ask Alexa 
  *
- *  Version 2.0.0 - 6/7/16 Copyright © 2016 Michael Struck
+ *  Version 2.0.0a - 6/8/16 Copyright © 2016 Michael Struck
  *  Special thanks for Keith DeLong for overall code and assistance and Barry Burke for weather reporting code
  * 
  *  Version 1.0.0 - Initial release
@@ -12,7 +12,7 @@
  *  Version 1.1.0a - Changed voice reports to macros, added toggle commands to switches, bug fixes and code optimization
  *  Version 1.1.1d - Added limits to temperature and speaker values; additional macros device types added
  *  Version 1.1.2 - Updated averages of temp/humidity with proper math function
- *  Version 2.0.0 - Code consolidated from Parent/Child to a single code base. Added CoRE Trigger and CoRE support. Many fixes
+ *  Version 2.0.0a - Code consolidated from Parent/Child to a single code base. Added CoRE Trigger and CoRE support. Many fixes
  *
  *  Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except
  *  in compliance with the License. You may obtain a copy of the License at:
@@ -384,6 +384,12 @@ def pageCoRE() {
              if (!noAck) input "voicePost", "text", title: "Acknowledgement Message", description: "Enter a short statement to play after macro runs", required: false 
              input "noAck", "bool", title: "No Acknowledgement Message", defaultValue: false, submitOnChange: true
         }
+        if (!parent.listPistons()){
+        	section("Missing CoRE Pistons"){
+				paragraph "It looks like you don't have the CoRE SmartApp installed, or you haven't created any pistons yet. To use this capability, please install CoRE or, "+
+                	"if already installed, create some pistons first, then try again."
+            }
+        }	
     }
 }
 //Group Macro----------------------------------------------------
@@ -675,7 +681,7 @@ def updated() {
 	initialize()
 }
 def childUninstalled() {
-	def data = [macros:parent.getCoREMacroList()]
+	def data = [macros:getCoREMacroList()]
 	sendLocationEvent(name: "askAlexa", value: "refresh", data: data, isStateChange: true, descriptionText: "Ask Alexa macro list refresh")
 }
 def initialize() {
@@ -688,9 +694,9 @@ def initialize() {
     else{
     	unschedule()
     	state.scheduled=false
-        def data = [macros:parent.getCoREMacroList()]
-        sendLocationEvent(name: "askAlexa", value: "refresh", data: data, isStateChange: true, descriptionText: "Ask Alexa macro list refresh")  
+        def data = [macros:parent.getCoREMacroList()]  
     }
+    sendLocationEvent(name: "askAlexa", value: "refresh", data: data, isStateChange: true, descriptionText: "Ask Alexa macro list refresh")
 }
 //--------------------------------------------------------------
 mappings {
@@ -2080,10 +2086,10 @@ def getMacroList(callingGrp){
     result
 }
 def coreHandler(evt) {
-	log.debug "made it here"
-    if (evt.value =="refresh") {
-		if (evt.jsonData && evt.jsonData?.pistons) state.CoREPistons = evt.jsonData.pistons
-    }
+	log.debug "Refreshing CoRE Piston List"
+    if (evt.value =="refresh") { 
+    	state.CoREPistons = evt.jsonData && evt.jsonData?.pistons ? evt.jsonData.pistons : []
+	}
 }
 def getCoREMacroList(){
     def result =[]
@@ -2220,12 +2226,12 @@ def sendJSON(outputTxt, lVer){
 //Version/Copyright/Information/Help-----------------------------------------------------------
 private def textAppName() { def text = "Ask Alexa" }	
 private def textVersion() {
-    def version = "SmartApp Version: 2.0.0 (06/07/2016)"
+    def version = "SmartApp Version: 2.0.0a (06/08/2016)"
     def lambdaVersion = state.lambdaCode ? "\n" + state.lambdaCode : ""
     return "${version}${lambdaVersion}"
 }
 private def versionInt(){ return 200 }
-private def versionLong(){ return "2.0.0" }
+private def versionLong(){ return "2.0.0a" }
 private def textCopyright() {return "Copyright © 2016 Michael Struck" }
 private def textLicense() {
 	def text = "Licensed under the Apache License, Version 2.0 (the 'License'); "+
