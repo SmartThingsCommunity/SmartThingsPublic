@@ -30,6 +30,8 @@ metadata {
 		command "setArmedAway"
 		command "setArmedStay"
 		command "setArmedNight"
+        command "setExitDelay", ['number']
+        command "setEntryDelay", ['number']
 		command "testCmd"
 		command "sendInvalidKeycodeResponse"
 		command "acknowledgeArmRequest"
@@ -284,18 +286,45 @@ private sendStatusToDevice() {
 	log.debug 'Sending status to device...'
 	def armMode = device.currentValue("armMode")
 	log.trace 'Arm mode: '+armMode
-	def status = '00'
-	if (armMode == 'disarmed') status = '00'
-	else if (armMode == 'armedAway') status = '03'
-	else if (armMode == 'armedStay') status = '01'
-	else if (armMode == 'armedNight') status = '02'
+	def status = ''
+	if (armMode == 'disarmed') status = 0
+	else if (armMode == 'armedAway') status = 3
+	else if (armMode == 'armedStay') status = 1
+	else if (armMode == 'armedNight') status = 2
 	
-	List cmds = ["raw 0x501 {09 01 04 ${status}00}",
-				 "send 0x${device.deviceNetworkId} 1 1", 'delay 100']
-				 
-	def results = cmds?.collect { new physicalgraph.device.HubAction(it) };
-	log.trace 'Method: sendStatusToDevice(): '+results
-	return results
+	// If we're not in one of the 4 basic modes, don't update the status, don't want to override beep timings, exit delay is dependent on it being correct
+	if status != ''
+	{
+		return sendRawStatus(status)
+	}
+}
+
+
+// Statuses:
+// 00 - Disarmed
+// 01 - Armed partial
+// 02 - Armed partial
+// 03 - Armed Away
+// 04 - ?
+// 05 - Fast beep (1 per second)
+// 05 - Entry delay (Uses seconds) Appears to keep the status lights as it was
+// 06 - Amber status blink (Ignores seconds)
+// 07 - ?
+// 08 - Red status blink
+// 09 - ?
+// 10 - Exit delay Slow beep (2 per second, accelerating to 1 beep per second for the last 10 seconds) - With red flashing status - Uses seconds
+// 11 - ?
+// 12 - ?
+// 13 - ?
+
+private sendRawStatus(status, seconds = 00) {
+	log.debug "Sending Status ${zigbee.convertToHexString(status)}${zigbee.convertToHexString(seconds)} to device..."
+    
+    List cmds = ["raw 0x501 {09 01 04 ${zigbee.convertToHexString(status)}${zigbee.convertToHexString(seconds)}}",
+    			 "send 0x${device.deviceNetworkId} 1 1", 'delay 100']
+                 
+    def results = cmds?.collect { new physicalgraph.device.HubAction(it) };
+    return results
 }
 
 def notifyPanelStatusChanged(status) {
@@ -308,9 +337,20 @@ def setArmedAway(def delay=0) { setModeHelper("armedAway",delay) }
 def setArmedStay(def delay=0) { setModeHelper("armedStay",delay) }
 def setArmedNight(def delay=0) { setModeHelper("armedNight",delay) }
 
+def setEntryDelay(delay=30) {
+	sendRawStatus(5, delay) // Entry delay beeps
+	sendRawStatus(8, 0)     // Flashing red status?
+	setModeHelper("entryDelay", delay)
+}
+
+def setExitDelay(delay=30) {
+	sendRawStatus(10, delay)  // Exit delay
+	setModeHelper("exitDelay", delay)
+}
+
 private setModeHelper(String armMode, delay) {
 	sendEvent([name: "armMode", value: armMode, data: [delay: delay as int], isStateChange: true])
-	refresh()
+	sendStatusToDevice()
 }
 
 private setKeypadArmMode(armMode){
