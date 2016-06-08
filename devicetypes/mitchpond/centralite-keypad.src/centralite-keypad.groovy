@@ -23,6 +23,7 @@ metadata {
 		capability "Lock Codes"
 		//capability "Tamper Alert" //TODO
 		capability "Tone"
+        capability "button"
 		
 		attribute "armMode", "String"
 		
@@ -125,6 +126,9 @@ def parse(String description) {
 					results = sendStatusToDevice();
 					log.trace results
 				}
+                else if (message?.command == 0x04) {
+                	results = createEvent(name: "button", value: "pushed", data: [buttonNumber: 1], descriptionText: "$device.displayName panic button was pushed", isStateChange: true)
+                }
 				else if (message?.command == 0x00) {
 					results = handleArmRequest(message)
 					log.trace results
