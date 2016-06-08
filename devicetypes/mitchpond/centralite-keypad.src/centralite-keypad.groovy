@@ -21,7 +21,7 @@ metadata {
 		capability "Temperature Measurement"
 		capability "Refresh"
 		capability "Lock Codes"
-		//capability "Tamper Alert" //TODO
+		capability "Tamper Alert"
 		capability "Tone"
 		
 		attribute "armMode", "String"
@@ -147,7 +147,10 @@ def parse(String description) {
 		log.debug "Got ST-style temperature report.."
 		results = createEvent(getTemperatureResult(zigbee.parseHATemperatureValue(description, "temperature: ", getTemperatureScale())))
 		log.debug results
-	}   
+	}
+    else if (description?.startsWith('zone status ')) {
+    	results = parseIasMessage(description)
+    }
 	return results
 }
 
@@ -201,6 +204,50 @@ private parseTempAttributeMsg(message) {
 	createEvent(getTemperatureResult(getTemperature(temp.encodeHex() as String)))
 }
 
+private Map parseIasMessage(String description) {
+    List parsedMsg = description.split(' ')
+    String msgCode = parsedMsg[2]
+    
+    Map resultMap = [:]
+    switch(msgCode) {
+        case '0x0020': // Closed/No Motion/Dry
+        	resultMap = getContactResult('closed')
+            break
+
+        case '0x0021': // Open/Motion/Wet
+        	resultMap = getContactResult('open')
+            break
+
+        case '0x0022': // Tamper Alarm
+            break
+
+        case '0x0023': // Battery Alarm
+            break
+
+        case '0x0024': // Supervision Report
+        	resultMap = getContactResult('closed')
+            break
+
+        case '0x0025': // Restore Report
+        	resultMap = getContactResult('open')
+            break
+
+        case '0x0026': // Trouble/Failure
+            break
+
+        case '0x0028': // Test Mode
+            break
+        case '0x0000':
+			resultMap = createEvent(name: "tamper", value: "cleared", isStateChange: true, displayed: false)
+            break
+        case '0x0004':
+			resultMap = createEvent(name: "tamper", value: "detected", isStateChange: true, displayed: false)
+            break;
+        default:
+        	log.debug "Invalid message code in IAS message: ${msgCode}"
+    }
+    return resultMap
+}
 
 //TODO: find actual good battery voltage range and update this method with proper values for min/max
 //
