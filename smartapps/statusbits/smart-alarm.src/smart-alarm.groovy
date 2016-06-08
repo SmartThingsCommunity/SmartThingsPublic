@@ -471,6 +471,14 @@ def pageArmingOptions() {
         "is armed without setting off an alarm. You can optionally disable " +
         "entry and exit delay when the alarm is armed in Stay mode."
 
+	def inputKeypads = [
+    	name:		"keypads",
+        type: 		"capability.lockCodes",
+        title: 		"Keypads for Exit / Entry delay",
+        multiple:	true,
+        required:	false
+    ]
+
     def inputAwayModes = [
         name:       "awayModes",
         type:       "mode",
@@ -524,6 +532,10 @@ def pageArmingOptions() {
             paragraph helpArming
         }
 
+		section("Keypads") {
+        	input inputKeypads
+        }
+        
         section("Modes") {
             input inputAwayModes
             input inputStayModes
@@ -1268,6 +1280,7 @@ private def onZoneEvent(evt, sensorType) {
         if (zone.zoneType == "alert" || !zone.delay || (state.stay && settings.stayDelayOff)) {
             activateAlarm()
         } else {
+        	keypads?.each() { it.setEntryDelay(state.delay) }
             myRunIn(state.delay, activateAlarm)
         }
     }
@@ -1335,6 +1348,8 @@ def disarm() {
                 it.armed = false
             }
         }
+        
+        keypads?.each() { it.setDisarmed() }
 
         reset()
     }
@@ -1383,6 +1398,16 @@ def exitDelayExpired() {
             it.armed = true
         }
     }
+    
+ 	if(stay)
+    {
+   		keypads?.each() { it.setArmedStay() }
+    }
+    else
+    {
+     	keypads?.each() { it.setArmedAway() }
+    }
+    	
 
     def msg = "${location.name}: all "
     if (stay) {
@@ -1426,7 +1451,19 @@ private def armPanel(stay) {
 
     def delay = armDelay && !(stay && settings.stayDelayOff) ? atomicState.delay : 0
     if (delay) {
+    	keypads?.each() { it.setExitDelay(delay) }
         myRunIn(delay, exitDelayExpired)
+    }
+    else
+    {
+    	if(stay)
+        {
+    		keypads?.each() { it.setArmedStay() }
+        }
+        else
+        {
+        	keypads?.each() { it.setArmedAway() }
+        }
     }
 
     def mode = stay ? "STAY" : "AWAY"
