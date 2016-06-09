@@ -1,13 +1,14 @@
 /**
  *  Ask Alexa - Lambda Code
  *
- *  Version 1.1.1 - 5/29/16 Copyright © 2016 Michael Struck
+ *  Version 1.1.2 - 6/9/16 Copyright © 2016 Michael Struck
  *  Special thanks for Keith DeLong for code and assistance
  *  
  *  Version 1.0.0 - Initial release
  *  Version 1.0.1 - Removed dedicated status operation; added version code
  *  Version 1.1.0 - Added two addition intent types for groups and macros
  *  Version 1.1.1 - Added messages to indicate bad OAuth or Application ID
+ *  Version 1.1.2 - Fixed small syntax error in a couple responses
  *
  *  Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except
  *  in compliance with the License. You may obtain a copy of the License at:
@@ -21,9 +22,9 @@
  */
 'use strict';
 exports.handler = function( event, context ) {
-   var versionTxt = '1.1.1';
-   var versionDate= '05/29/2016';
-   var versionNum = '111';
+   var versionTxt = '1.1.2';
+   var versionDate= '06/09/2016';
+   var versionNum = '112';
    var https = require( 'https' );
    // Paste app code here between the breaks------------------------------------------------
     var IName = 'SmartThings';
@@ -102,9 +103,9 @@ exports.handler = function( event, context ) {
                 var resJSON = JSON.parse(data);
                 var speechText;
                 if (resJSON.voiceOutput) { speechText = resJSON.voiceOutput; }
-                if (resJSON.error) speechText = "There was error with the Ask Alexa SmartApp execution. If this continues, please contact the author of the SmartApp. ";
+                if (resJSON.error) speechText = "There was an error with the Ask Alexa SmartApp execution. If this continues, please contact the author of the SmartApp. ";
                 if (resJSON.error === "invalid_token" || resJSON.type === "AccessDenied") {
-                    speechText = "There was error accessing the SmartThings cloud environment. Please check your security token and application ID and try again. ";
+                    speechText = "There was an error accessing the SmartThings cloud environment. Please check your security token and application ID and try again. ";
                 }
                 console.log(speechText);
                 output(speechText, context, cardName);
