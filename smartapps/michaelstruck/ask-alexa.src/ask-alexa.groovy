@@ -1,7 +1,7 @@
 /**
  *  Ask Alexa 
  *
- *  Version 2.0.0a - 6/8/16 Copyright © 2016 Michael Struck
+ *  Version 2.0.0b - 6/8/16 Copyright © 2016 Michael Struck
  *  Special thanks for Keith DeLong for overall code and assistance and Barry Burke for weather reporting code
  * 
  *  Version 1.0.0 - Initial release
@@ -12,7 +12,7 @@
  *  Version 1.1.0a - Changed voice reports to macros, added toggle commands to switches, bug fixes and code optimization
  *  Version 1.1.1d - Added limits to temperature and speaker values; additional macros device types added
  *  Version 1.1.2 - Updated averages of temp/humidity with proper math function
- *  Version 2.0.0a - Code consolidated from Parent/Child to a single code base. Added CoRE Trigger and CoRE support. Many fixes
+ *  Version 2.0.0b - Code consolidated from Parent/Child to a single code base. Added CoRE Trigger and CoRE support. Many fixes
  *
  *  Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except
  *  in compliance with the License. You may obtain a copy of the License at:
@@ -681,8 +681,7 @@ def updated() {
 	initialize()
 }
 def childUninstalled() {
-	def data = [macros:getCoREMacroList()]
-	sendLocationEvent(name: "askAlexa", value: "refresh", data: data, isStateChange: true, descriptionText: "Ask Alexa macro list refresh")
+	sendLocationEvent(name: "askAlexa", value: "refresh", data: [macros: parent ? parent.getCoREMacroList() : getCoREMacroList()] , isStateChange: true, descriptionText: "Ask Alexa macro list refresh")
 }
 def initialize() {
 	if (!parent){
@@ -693,10 +692,9 @@ def initialize() {
 	}
     else{
     	unschedule()
-    	state.scheduled=false
-        def data = [macros:parent.getCoREMacroList()]  
+    	state.scheduled=false 
     }
-    sendLocationEvent(name: "askAlexa", value: "refresh", data: data, isStateChange: true, descriptionText: "Ask Alexa macro list refresh")
+	sendLocationEvent(name: "askAlexa", value: "refresh", data: [macros: parent ? parent.getCoREMacroList() : getCoREMacroList()] , isStateChange: true, descriptionText: "Ask Alexa macro list refresh")
 }
 //--------------------------------------------------------------
 mappings {
@@ -2226,12 +2224,12 @@ def sendJSON(outputTxt, lVer){
 //Version/Copyright/Information/Help-----------------------------------------------------------
 private def textAppName() { def text = "Ask Alexa" }	
 private def textVersion() {
-    def version = "SmartApp Version: 2.0.0a (06/08/2016)"
+    def version = "SmartApp Version: 2.0.0b (06/08/2016)"
     def lambdaVersion = state.lambdaCode ? "\n" + state.lambdaCode : ""
     return "${version}${lambdaVersion}"
 }
 private def versionInt(){ return 200 }
-private def versionLong(){ return "2.0.0a" }
+private def versionLong(){ return "2.0.0b" }
 private def textCopyright() {return "Copyright © 2016 Michael Struck" }
 private def textLicense() {
 	def text = "Licensed under the Apache License, Version 2.0 (the 'License'); "+
