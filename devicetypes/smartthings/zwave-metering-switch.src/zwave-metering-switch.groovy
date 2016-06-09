@@ -25,6 +25,7 @@ metadata {
 		command "reset"
 
 		fingerprint inClusters: "0x25,0x32"
+		fingerprint inClusters: "0x5E,0x86,0x72,0x98,0x5A,0x85,0x59,0x73,0x25,0x20,0x27,0x32,0x70,0x71,0x75,0x7A" // Philio Smart Energy Plug
 	}
 
 	// simulator metadata
@@ -81,10 +82,13 @@ def updated() {
 
 def parse(String description) {
 	def result = null
-	if(description == "updated") return 
-	def cmd = zwave.parse(description, [0x20: 1, 0x32: 1, 0x72: 2])
-	if (cmd) {
-		result = zwaveEvent(cmd)
+	if (description.startsWith("Err 106")) {
+		state.sec = 0
+	} else if (description != "updated") {
+		def cmd = zwave.parse(description, [0x20: 1, 0x32: 1, 0x72: 2])
+		if (cmd) {
+			result = zwaveEvent(cmd)
+		}
 	}
 	return result
 }
@@ -137,6 +141,8 @@ def zwaveEvent(physicalgraph.zwave.commands.manufacturerspecificv2.ManufacturerS
 			zwave.meterV2.meterGet(scale: 0).format(),
 			zwave.meterV2.meterGet(scale: 2).format(),
 		]))
+	} else if (msr == "013C-0001-0011") {
+		setDeviceType("Philio Smart Energy Plug in Switch")
 	} else {
 		result << response(delayBetween([
 			zwave.meterV2.meterGet(scale: 0).format(),
