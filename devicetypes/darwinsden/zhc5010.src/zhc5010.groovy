@@ -49,7 +49,7 @@ metadata {
 			state "default", label:'', action:"refresh.refresh", icon:"st.secondary.refresh"
 		}
      
-		main "switch"
+		main "buttonTile"
 		details(["buttonTile","refresh"])
 	}
 }
