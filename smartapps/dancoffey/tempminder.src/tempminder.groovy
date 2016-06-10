@@ -54,9 +54,9 @@ def updated()
 	subscribe(temperatureSensor1, "temperature", temperatureHandler)
     
     // if the override is on, turn off the switch and exit
-    if (override)
+    if (settings.override)
     {
-    	switch1.off()
+    	settings.switch1.off()
         return
     }
     else
@@ -68,7 +68,7 @@ def updated()
             if (settings.temperatureSensor1.currentValue("temperature") < temperature1)
             {
                 log.trace("Updated prefs, turning on switch since the current temp is below $temperature1")
-                switch1.on()
+                settings.switch1.on()
             }
         }
         // use with AC
@@ -78,7 +78,7 @@ def updated()
             if (settings.temperatureSensor1.currentValue("temperature") > temperature1)
             {
                 log.trace("Updated prefs, turning on switch since the current temp is above $temperature1 (summerMode active)")
-                switch1.on()
+                settings.switch1.on()
             }
         }
     }
@@ -87,6 +87,15 @@ def updated()
 def temperatureHandler(evt) 
 {
 	log.trace "temperature: $evt.value, $evt"
+    
+    // turn the switch off if we're in override mode
+    if (settings.override)
+    {
+    	// ensure the switch is off and return
+        log.trace("Override is active, ensuring switch is off...")
+    	settings.switch1.off()
+    	return
+    }
 
 	def switchOn = false
 	if (settings.switch1.currentValue("switch") == "on")
@@ -121,7 +130,7 @@ def temperatureHandler(evt)
 
             def msg = "Temperature dropped below $tooCold, turning on $mySwitch"
             log.debug(msg)
-            switch1.on()
+            settings.switch1.on()
             sendPush(msg)
         } 
         else if (evt.doubleValue > tooHot) 
@@ -134,7 +143,7 @@ def temperatureHandler(evt)
 
             def msg = "Temperature rose above $tooHot, turning off $mySwitch"
             log.debug(msg)
-            switch1.off()
+            settings.switch1.off()
             sendPush(msg)
         }
         else 
@@ -157,7 +166,7 @@ def temperatureHandler(evt)
 
             def msg = "Temperature rose above below $tooHot, turning on $mySwitch"
             log.debug(msg)
-            switch1.on()
+            settings.switch1.on()
             sendPush(msg)
         } 
         else if (evt.doubleValue < tooCold) 
@@ -170,7 +179,7 @@ def temperatureHandler(evt)
 
             def msg = "Temperature dropped below $tooCold, turning off $mySwitch"
             log.debug(msg)
-            switch1.off()
+            settings.switch1.off()
             sendPush(msg)
         }
         else 
