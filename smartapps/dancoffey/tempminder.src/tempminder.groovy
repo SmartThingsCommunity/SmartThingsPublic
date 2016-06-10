@@ -44,6 +44,7 @@ def installed()
 {
 	// setup the app on first install
 	subscribe(temperatureSensor1, "temperature", temperatureHandler)
+    runEvery5Minutes(manual)
 }
 
 def updated() 
@@ -84,9 +85,18 @@ def updated()
     }
 }
 
+def manual()
+{
+	log.debug("sending manual")
+	def evt = [value: settings.temperatureSensor1.currentValue("temperature"), doubleValue: settings.temperatureSensor1.currentValue("temperature") * 1.0]
+    temperatureHandler(evt)
+    log.debug("sent manual")
+}
+
 def temperatureHandler(evt) 
 {
-	log.trace "temperature: $evt.value, $evt"
+	log.debug("in handler, $evt")
+  
     
     // turn the switch off if we're in override mode
     if (settings.override)
