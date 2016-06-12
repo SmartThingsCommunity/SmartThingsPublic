@@ -1,7 +1,7 @@
 /**
  *  Ask Alexa 
  *
- *  Version 2.0.0c - 6/10/16 Copyright © 2016 Michael Struck
+ *  Version 2.0.1 - 6/12/16 Copyright © 2016 Michael Struck
  *  Special thanks for Keith DeLong for overall code and assistance and Barry Burke for weather reporting code
  * 
  *  Version 1.0.0 - Initial release
@@ -12,7 +12,8 @@
  *  Version 1.1.0a - Changed voice reports to macros, added toggle commands to switches, bug fixes and code optimization
  *  Version 1.1.1d - Added limits to temperature and speaker values; additional macros device types added
  *  Version 1.1.2 - Updated averages of temp/humidity with proper math function
- *  Version 2.0.0c - Code consolidated from Parent/Child to a single code base. Added CoRE Trigger and CoRE support. Many fixes
+ *  Version 2.0.0b - Code consolidated from Parent/Child to a single code base. Added CoRE Trigger and CoRE support. Many fixes
+ *  Version 2.0.1 - Fixed issue with listing CoRE macros; fixed syntax issues and improved acknowledgment message in Group Macros, more CoRE output behind-the-scenes
  *
  *  Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except
  *  in compliance with the License. You may obtain a copy of the License at:
@@ -29,6 +30,7 @@ definition(
     namespace: "MichaelStruck",
     singleInstance: true,
     author: "Michael Struck",
+    parent: parent ? "MichaelStruck.Ask Alexa" : null,
     description: "Provide interfacing to control and report on SmartThings devices with the Amazon Echo ('Alexa').",
     category: "My Apps",
     iconUrl: "https://raw.githubusercontent.com/MichaelStruck/SmartThingsPublic/master/smartapps/michaelstruck/ask-alexa.src/AskAlexa.png",
@@ -89,21 +91,21 @@ def mainPageParent() {
             }
         }
         section("Items to interface to Alexa") {
-        	href "pageSwitches", title: "Switches/Dimmers/Colored Lights", description: getDesc(switches, dimmers ,cLights), state: getState(switches, dimmers, cLights),
+        	href "pageSwitches", title: "Switches/Dimmers/Colored Lights", description: getDesc(switches, dimmers ,cLights), state: (switches || dimmers || cLights ? "complete" : null),
             	image: "https://raw.githubusercontent.com/MichaelStruck/SmartThingsPublic/master/img/power.png"
-            href "pageDoors", title: "Doors/Windows/Locks", description: getDesc(doors, locks, ocSensors), state: getState(doors, locks, ocSensors),
+            href "pageDoors", title: "Doors/Windows/Locks", description: getDesc(doors, locks, ocSensors), state: (doors || locks || ocSensors ? "complete" : null),
             	image: "https://raw.githubusercontent.com/MichaelStruck/SmartThingsPublic/master/img/lock.png"
-            href "pageTemps", title: "Thermostats/Temperature/Humidity", description:getDesc(tstats, temps, humid), state: getState (tstats, temps, humid),
+            href "pageTemps", title: "Thermostats/Temperature/Humidity", description:getDesc(tstats, temps, humid), state: (tstats || temps || humid ? "complete" : null),
             	image: "https://raw.githubusercontent.com/MichaelStruck/SmartThingsPublic/master/img/temp.png"
-            href "pageSpeakers", title: "Connected Speakers", description: getDesc(speakers, "", ""), state: getState(speakers, "", ""),
+            href "pageSpeakers", title: "Connected Speakers", description: getDesc(speakers, "", ""), state: (speakers ? "complete" : null),
             	image: "https://raw.githubusercontent.com/MichaelStruck/SmartThingsPublic/master/img/speaker.png"     
-            href "pageSensors", title: "Other Sensors", description:getDesc(water, presence, motion), state: getState (water, presence, motion),
+            href "pageSensors", title: "Other Sensors", description:getDesc(water, presence, motion), state: (water|| presence|| motion ? "complete" : null),
             	image: "https://raw.githubusercontent.com/MichaelStruck/SmartThingsPublic/master/img/sensor.png"
-            href "pageHomeControl", title: "Modes/SHM/Routines", description: getDescMRS(), state: getState(modes, routines, SHM),
+            href "pageHomeControl", title: "Modes/SHM/Routines", description: getDescMRS(), state: (modes|| routines|| SHM? "complete" : null),
             	image: "https://raw.githubusercontent.com/MichaelStruck/SmartThingsPublic/master/img/modes.png"        
         }
         section("Configure Macros"){
-        	href "pageMacros", title: "Voice Macros", description: macroDesc(), state: macroGrey(), image: "https://raw.githubusercontent.com/MichaelStruck/SmartThingsPublic/master/img/speak.png"
+        	href "pageMacros", title: "Voice Macros", description: macroDesc(), state: (childApps.size() ? "complete" : null), image: "https://raw.githubusercontent.com/MichaelStruck/SmartThingsPublic/master/img/speak.png"
         }
         section("Options") {
 			href "pageSettings", title: "Settings", description: "Tap to configure app settings, get setup information or to reset the access token",
@@ -234,13 +236,13 @@ def pageSettings(){
         	if (!state.accessToken) OAuthToken()
             if (!state.accessToken) paragraph "**You must enable OAuth via the IDE to setup this app**"
             else href url:"${getApiServerUrl()}/api/smartapps/installations/${app.id}/setup?access_token=${state.accessToken}", style:"embedded", required:false, title:"Setup Variables (For Amazon Developer sites)", description: none
-        	href "pageGlobalVariables", title: "Text Field Variables", description: none, state: getState(voiceTempVar, voiceHumidVar, "")
+        	href "pageGlobalVariables", title: "Text Field Variables", description: none, state: (voiceTempVar || voiceHumidVar ? "complete" : null)
             input "invocationName", title: "Invocation Name (Only Used For Examples)", defaultValue: "SmartThings", required: false
         }	
         section ("Advanced") { 
             href "pageConfirmation", title: "Revoke/Reset Access Token", description: "Tap to confirm this action",
             	image: "https://raw.githubusercontent.com/MichaelStruck/SmartThingsPublic/master/img/warning.png"
-            href "pageCustomDevices", title: "Device Specific Commands", description: none, state: getState (nestCMD, stelproCMD, "")
+            href "pageCustomDevices", title: "Device Specific Commands", description: none, state: (nestCMD || stelproCMD ? "complete" : null)
             input "advReportOutput", "bool", title: "Advanced Voice Report Filter", defaultValue: false
         }
     }
@@ -336,11 +338,12 @@ def mainPageChild(){
         }
         if (macroType && macroType !="GroupM" && macroType !="Group"){
             section("Restrictions") {            
-                    input "runDay", "enum", options: ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"], title: "Only Certain Days Of The Week...",  multiple: true, required: false,
-                        image: "https://raw.githubusercontent.com/MichaelStruck/SmartThingsPublic/master/img/calendar.png"
-                    href "timeIntervalInput", title: "Only During Certain Times...", description: getTimeLabel(timeStart, timeEnd), state: greyOutState(timeStart, timeEnd,"","","",""),
-                        image: "https://raw.githubusercontent.com/MichaelStruck/SmartThingsPublic/master/img/clock.png"
-                    input "runMode", "mode", title: "Only In The Following Modes...", multiple: true, required: false, image: "https://raw.githubusercontent.com/MichaelStruck/SmartThingsPublic/master/img/modes.png"
+				input "runDay", "enum", options: ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"], title: "Only Certain Days Of The Week...",  multiple: true, required: false,
+				image: "https://raw.githubusercontent.com/MichaelStruck/SmartThingsPublic/master/img/calendar.png"
+				href "timeIntervalInput", title: "Only During Certain Times...", description: getTimeLabel(timeStart, timeEnd), state: (timeStart || timeEnd ? "complete":null),
+					image: "https://raw.githubusercontent.com/MichaelStruck/SmartThingsPublic/master/img/clock.png"
+				input "runMode", "mode", title: "Only In The Following Modes...", multiple: true, required: false, image: "https://raw.githubusercontent.com/MichaelStruck/SmartThingsPublic/master/img/modes.png"
+				input "muteRestrictions", "bool", title: "Mute Restriction Messages In Macro Group", defaultValue: false
             }
         }
         section("Tap below to remove this macro"){}
@@ -367,8 +370,8 @@ def pageGroup() {
             }
         }
         section("Custom acknowledgment"){
-             if (!noAck) input "voicePost", "text", title: "Acknowledgement Message", description: "Enter a short statement to play after macro runs", required: false 
-             input "noAck", "bool", title: "No Acknowledgement Message", defaultValue: false, submitOnChange: true
+             if (!noAck) input "voicePost", "text", title: "Acknowledgment Message", description: "Enter a short statement to play after macro runs", required: false, capitalization: "sentences"
+             input "noAck", "bool", title: "No Acknowledgment Message", defaultValue: false, submitOnChange: true
         }
 	}
 }
@@ -381,8 +384,8 @@ def pageCoRE() {
         	input "cDelay", "number", title: "Default Delay (Minutes) To Trigger", defaultValue: 0, required: false
         }
         section("Custom acknowledgment"){
-             if (!noAck) input "voicePost", "text", title: "Acknowledgement Message", description: "Enter a short statement to play after macro runs", required: false 
-             input "noAck", "bool", title: "No Acknowledgement Message", defaultValue: false, submitOnChange: true
+             if (!noAck) input "voicePost", "text", title: "Acknowledgment Message", description: "Enter a short statement to play after macro runs", required: false, capitalization: "sentences"
+             input "noAck", "bool", title: "No Acknowledgment Message", defaultValue: false, submitOnChange: true
         }
         if (!parent.listPistons()){
         	section("Missing CoRE Pistons"){
@@ -396,15 +399,12 @@ def pageCoRE() {
 def pageGroupM() {
 	dynamicPage(name: "pageGroupM", install: false, uninstall: false) {
 		section { paragraph "Macro Group Settings", image: "https://raw.githubusercontent.com/MichaelStruck/SmartThingsPublic/master/img/macrofolder.png" }
-        section (" ") { input "groupMacros", "enum", title: "Macros To Run (Control/CoRE/Voice Reports)...", options: parent.getMacroList(app.label), required: false, multiple: true }
-        section("Custom acknowledgment"){ 
-            if (!noAck) input "voicePost", "text", title: "Acknowledgement Message", description: "Enter a short statement to play after macro runs", required: false
-            input "noAck", "bool", title: "No Acknowledgement Message", defaultValue: false, submitOnChange: true
+        section (" ") { input "groupMacros", "enum", title: "Child Macros To Run (Control/CoRE/Voice Reports)...", options: parent.getMacroList(app.label), required: false, multiple: true }
+        section("Acknowledgment options"){ 
+            if (!noAck) input "voicePost", "text", title: "Custom Acknowledgment Message", description: "Enter a short statement to play after group macro runs", required: false, capitalization: "sentences"
+            if (!noAck) input  "addPost", "bool", title: "Append Default/Custom Acknowledgment Message To Any Output Of Child Messages, Otherwise Replace Child Messages", defaultValue: false
+            input "noAck", "bool", title: "No Acknowledgment Messages", defaultValue: false, submitOnChange: true
 		}
-        section("Please note"){
-        	paragraph "Any acknowledgement message, or activating the 'no acknowledgement message' above will disable any output from the macros, " +
-            	"including voice reports."
-        }
 	}
 }
 //Control Macro----------------------------------------------------
@@ -435,8 +435,8 @@ def pageControl() {
             input "smsMsg", "text", title: "Send This Message...", required: false
         }
         section("Custom acknowledgment"){
-             if (!noAck) input "voicePost", "text", title: "Acknowledgement Message", description: "Enter a short statement to play after macro runs", required: false
-             input "noAck", "bool", title: "No Acknowledgement Message", defaultValue: false, submitOnChange: true
+             if (!noAck) input "voicePost", "text", title: "Acknowledgment Message", description: "Enter a short statement to play after macro runs", required: false, capitalization: "sentences"
+             input "noAck", "bool", title: "No Acknowledgment Message", defaultValue: false, submitOnChange: true
         }
 	}
 }
@@ -502,24 +502,25 @@ def pageVoice() {
 	dynamicPage(name: "pageVoice", install: false, uninstall: false) {
         section { paragraph "Voice Reporting Settings", image: "https://raw.githubusercontent.com/MichaelStruck/SmartThingsPublic/master/img/voice.png" }
         section (" ") {
-            input "voicePre", "text", title: "Pre Message Before Device Report", description: "Use variables like %time%, %day%, %date% here.", required: false
-            href "pageSwitchReport", title: "Switch/Dimmer Report", description: reportDesc(voiceSwitch, voiceDimmer, "", "", ""), state: greyOutState(voiceSwitch, voiceDimmer, "", "", "", ""),
+            input "voicePre", "text", title: "Pre Message Before Device Report", description: "Use variables like %time%, %day%, %date% here.", required: false, capitalization: "sentences"
+            href "pageSwitchReport", title: "Switch/Dimmer Report", description: reportSwitches(), state: (voiceSwitch || voiceDimmer ? "complete" : null),
             	image:"https://raw.githubusercontent.com/MichaelStruck/SmartThingsPublic/master/img/power.png"
-            href "pageDoorReport", title: "Door/Window/Lock Report", description: reportDesc(voiceDoorSensors, voiceDoorControls, voiceDoorLocks, "", ""), state: greyOutState(voiceDoorSensors, voiceDoorControls, voiceDoorLocks, "", "", ""),
+            href "pageDoorReport", title: "Door/Window/Lock Report", description: reportDoors(), state: (voiceDoorSensors || voiceDoorControls || voiceDoorLocks ? "complete": null),
             	image:"https://raw.githubusercontent.com/MichaelStruck/SmartThingsPublic/master/img/lock.png"
-            href "pageTempReport", title: "Temperature/Humidity/Thermostat Report", description: reportDesc(voiceTemperature, voiceTempSettings, voiceTempVar, voiceHumidVar, voiceHumidity), state: greyOutState(voiceTemperature, voiceTempSettings, voiceTempVar, voiceHumidVar, voiceHumidity, ""),
+            href "pageTempReport", title: "Temperature/Humidity/Thermostat Report", description: reportTemp(), state:(voiceTemperature || voiceTempSettings || voiceHumidity? "complete" : null),
             	image:"https://raw.githubusercontent.com/MichaelStruck/SmartThingsPublic/master/img/temp.png"
-            href "pageSpeakerReport", title: "Speaker Report", description: speakerDesc(), state: greyOutState(voiceSpeaker, "","","","",""),
+            href "pageSpeakerReport", title: "Speaker Report", description: speakerDesc(), state: (voiceSpeaker ? "complete": null),
             	image:"https://raw.githubusercontent.com/MichaelStruck/SmartThingsPublic/master/img/speaker.png"
 			href "pageWeatherReport", title: "Weather Report", description: weatherDesc(), state: greyOutWeather(),
             	image : "https://raw.githubusercontent.com/MichaelStruck/SmartThingsPublic/master/img/weather.png"
-            href "pageOtherReport", title: "Other Sensors Report", description: reportDesc(voiceWater, voiceMotion, voicePresence, "", ""), state: greyOutState(voiceWater, voiceMotion, voicePresence, "", "",""),
+            href "pageOtherReport", title: "Other Sensors Report", description: reportSensors(), state: (voiceWater|| voiceMotion|| voicePresence ? "complete" :null),
             	image:"https://raw.githubusercontent.com/MichaelStruck/SmartThingsPublic/master/img/sensor.png"
-            href "pageHomeReport", title: "Mode and Smart Home Monitor Report", description: reportDescMSHM(), state: greyOutState(voiceMode, voiceSHM, "", "", "", ""),
+            href "pageHomeReport", title: "Mode and Smart Home Monitor Report", description: reportDescMSHM(), state: (voiceMode|| voiceSHM? "complete": null),
             	image:"https://raw.githubusercontent.com/MichaelStruck/SmartThingsPublic/master/img/modes.png"
-            href "pageBatteryReport",title: "Battery Report", description: batteryDesc(), state: greyOutState(voiceBattery, "", "", "", "", ""),
+            href "pageBatteryReport",title: "Battery Report", description: batteryDesc(), state: (voiceBattery ? "complete" : null),
             	image:"https://raw.githubusercontent.com/MichaelStruck/SmartThingsPublic/master/img/battery.png"
-            input "voicePost", "text", title: "Post Message After Device Report", description: "Use variables like %time%, %day%, %date% here.", required: false
+            input "voicePost", "text", title: "Post Message After Device Report", description: "Use variables like %time%, %day%, %date% here.", required: false, capitalization: "sentences"
+        	input "allowNullRpt", "bool", title: "Allow For Empty Report (For Group Macros)", defaultValue: false
         }
         if (parent.getAdvEnabled()){
         	section("Advanced"){
@@ -633,19 +634,20 @@ def pageWeatherReport(){
 	dynamicPage(name: "pageWeatherReport", install: false, uninstall: false) {
     	section { paragraph "Weather Report", image: "https://raw.githubusercontent.com/MichaelStruck/SmartThingsPublic/master/img/weather.png" }
         section("Weather Reporting") {
-        	 href "pageWeatherCurrent", title: "Current Weather Reporting Options", description: none, state: 
-             	greyOutState(voiceWeatherTemp, voiceWeatherHumid, voiceWeatherDew, voiceWeatherSolar, voiceWeatherVisiblity, voiceWeatherPrecip)	
-             href "pageWeatherForecast", title: "Weather Forecast Options", description: none, state: greyOutState(voiceWeatherToday, voiceWeatherTonight,  voiceWeatherTomorrow , "", "","")	
+        	 href "pageWeatherCurrent", title: "Current Weather Report Options", description: none, state: (voiceWeatherTemp || voiceWeatherHumid || voiceWeatherDew || voiceWeatherSolar || voiceWeatherVisiblity || voiceWeatherPrecip ? "complete" : null)	
+             href "pageWeatherForecast", title: "Weather Forecast Options", description: none, state: (voiceWeatherToday||voiceWeatherTonight||voiceWeatherTomorrow ? "complete" : null)	
         }
         section ("Sunrise/Sunset"){    
             input "voiceSunrise", "bool", title: "Speak Today's Sunrise", defaultValue: false
     		input "voiceSunset", "bool", title: "Speak Today's Sunset", defaultValue: false	
         }
         section ("Location") {
-        	input "zipCode", "text", title: "Zip Code", required: false
+        	if (voiceWeatherTemp || voiceWeatherHumid || voiceWeatherDew || voiceWeatherSolar || voiceWeatherVisiblity || voiceWeatherPrecip ||
+            voiceWeatherToday||voiceWeatherTonight||voiceWeatherTomorrow) input "voiceWeatherLoc", "bool", title: "Speak Location Of Weather Report/Forecast", defaultValue: false
+            input "zipCode", "text", title: "Zip Code", required: false
             paragraph "Please Note:\nYour SmartThings location is currently set to: ${location.zipCode}. If you leave "+
             	"the area above blank the report will use your SmartThings location. Enter a zip code above if you "+
-                "want to report on a different location."
+                "want to report on a different location.\n\nData obtained from Weather Underground."
 		}
     }
 }
@@ -660,8 +662,7 @@ def pageWeatherForecast(){
 }
 def pageWeatherCurrent(){
 	dynamicPage(name: "pageWeatherCurrent", install: false, uninstall: false) {
-        section ("Items to include in current weather report\n(Data obtained from local weather service)") {
-			input "voiceWeatherLoc", "bool", title: "Speak Location Of Weather Report", defaultValue: false
+        section ("Items to include in current weather report") {
             input "voiceWeatherTemp", "bool", title: "Temperature (With Conditions)", defaultValue: false
             input "voiceWeatherHumid", "bool", title: "Humidity (With Winds And Pressure)", defaultValue: false
             input "voiceWeatherDew", "bool", title: "Dew Point", defaultValue: false
@@ -821,6 +822,7 @@ def processList(){
         outputTxt = parseMacroLists("Group","device group","control")
 	}
     if (listType == "control" ||  listType == "controls" || listType == "control macro" || listType == "control macros") outputTxt = parseMacroLists("Control","control macro","run")
+    if (listType =="core" || listType =="core trigger" || listType =="core triggers" || listType =="core macro" || listType =="core macros") outputTxt = parseMacroLists("CoRE","core trigger","run")
     if (listType == "macro group" || listType == "macro groups") outputTxt = parseMacroLists("GroupM","macro group","run")
     if (listType=="events") { outputTxt = "To list events, you must give me a device name to query. For example, you could say, 'tell ${getIName()} to give me the last events for "+ 
         "the Bedroom'. You may also include the number of events you would like to hear. An example would be, 'tell ${getIName()} to give me the last 4 events for " +
@@ -832,12 +834,12 @@ def processList(){
 }
 def parseMacroLists(type, noun, action){
     def macName = "", count = 0
-	childApps.each{if (it.getType()==type) count++}
-    def extraTxt = type == "Control" && count ? "Please note: You can also delay the execution of a control macro by adding a time, in minutes, after the name. For example,  " +
+	childApps.each{if (it.macroType==type) count++}
+    def extraTxt = (type == "Control" || type=="CoRE") && count ? "Please note: You can also delay the execution ${noun}s by adding a time, in minutes, after the name. For example,  " +
     	"you could say, 'tell ${getIName()} to run the Macro in 5 minutes'. " : ""
 	macName = count==1 ? "You only have one ${noun} called: " : count> 1 ? "You can ask me to ${action} the following ${noun}s: " : "You don't have any ${noun}s for me to ${action}"
 	if (count){
-		childApps.each{if (it.getType()==type){
+		childApps.each{if (it.macroType==type){
 			macName += it.label ; count= count-1
 			macName += count>1 ? ", " : count==1 ? " and " : ""
 			}	
@@ -846,22 +848,32 @@ def parseMacroLists(type, noun, action){
 	return macName + ". " + extraTxt
 }
 //Macro Group
-def processMacroGroup(macroList, msg){
+def processMacroGroup(macroList, msg, append, noMsg, macLabel){
     def result = "", runCount=0
     if (macroList){ 
         macroList.each{
             childApps.each{child->
                 if (child.label.toLowerCase().replaceAll("[^a-zA-Z0-9 ]", "") == (it.toLowerCase().replaceAll("[^a-zA-Z0-9 ]", ""))){ 
-                    result += child.getOkToRun() ? child.macroResults(0,"","","") : "You have restrictions on '${child.label}' that prevented it from running. "             
+                    result += child.getOkToRun() ? child.macroResults(0,"","","")  : child.muteRestrictions ? "" : "You have restrictions on '${child.label}' that prevented it from running. "             
                     runCount++
                 }
             }
         }
         def extraTxt = runCount > 1 ? "macros" : "macro"
-        if (runCount == macroList.size()) result = msg ? msg : result + "I ran ${runCount} ${extraTxt} in this macro group. "
-        else result = "There was a problem running one or more of the macros in the macro group."
+        if (runCount == macroList.size()) {
+            if (!noMsg) {
+                if (msg && append) result += msg
+                if (msg && !append)  result = msg
+                if (append && !msg) result += "I ran ${runCount} ${extraTxt} in this macro group. "
+                if (!append && !msg) result = "I ran ${runCount} ${extraTxt} in this macro group. "
+        	}
+            else result = " "
+        }
+        else result = "There was a problem running one or more of the macros in the macro group. "
     }
     else result="There were no macros present within this macro group. Please check your Ask Alexa SmartApp and try again. "
+    def data = [alexaOutput: result, num: "undefined", cmd: "undefined", color: "undefined", param: "undefined"]
+	sendLocationEvent(name: "askAlexaMacro", value: app.label, data: data, displayed: true, isStateChange: true, descriptionText: "Ask Alexa ran '${macLabel}' macro group.")	
     return result
 }
 //Macro Processing
@@ -900,10 +912,9 @@ def processMacro() {
         if (count == 1){
             childApps.each {child -> 
                 if (child.label.toLowerCase().replaceAll("[^a-zA-Z0-9 ]", "") == mac.toLowerCase()) {         
-                    macroType = child.getType()
-                    fullMacroName = [GroupM: "Macro Group",CoRE: "CoRE Trigger", Control:"Control Macro", Group:"Device Group", Voice:"Voice Report"][macroType] ?: macroType
-                    if (child.getType() != "GroupM") outputTxt = child.getOkToRun() ? child.macroResults(num, cmd, colorData, param) : "You have restrictions within the ${fullMacroName} named, '${child.label}', that prevent it from running. Check your settings and try again. "
-                    else outputTxt = processMacroGroup(child.groupMacroList(), child.voicePost)
+                    fullMacroName = [GroupM: "Macro Group",CoRE: "CoRE Trigger", Control:"Control Macro", Group:"Device Group", Voice:"Voice Report"][child.macroType] ?: child.macroType
+                    if (child.macroType != "GroupM") outputTxt = child.getOkToRun() ? child.macroResults(num, cmd, colorData, param) : "You have restrictions within the ${fullMacroName} named, '${child.label}', that prevent it from running. Check your settings and try again. "
+                    else outputTxt = processMacroGroup(child.groupMacros, child.voicePost, child.addPost, child.noAck, child.label)
                 }
             }
         }
@@ -980,9 +991,17 @@ def getReply(devices, type, dev, op, num, param){
     try {
     	def STdevice = devices?.find{it.label.replaceAll("[^a-zA-Z0-9 ]", "").toLowerCase() == dev}
         def supportedCaps = STdevice.capabilities
+		def isMetric = location.temperatureScale == "C"
         if (op=="status") {
             if (type == "temperature"){
-                result = "The temperature of the ${STdevice} is ${Math.round(STdevice.currentValue(type))} degrees"
+                def temp= STdevice.currentValue(type)
+            	if (isMetric){
+                	String t = temp as String
+            		if (t.endsWith(".0")) t = t - ".0"
+					temp=t.toFloat()
+     			}
+                else temp = Math.round(temp)
+                result = "The temperature of the ${STdevice} is ${temp} degrees"
                 if (otherStatus) {
                     def humidity = STdevice.currentValue("humidity"), wet=STdevice.currentValue("water")
                     result += humidity ? ", and the relative humidity is ${humidity}%. " : ". "
@@ -998,7 +1017,13 @@ def getReply(devices, type, dev, op, num, param){
             else if (type == "humidity"){
                 result = "The relative humidity at the ${STdevice} is ${STdevice.currentValue(type)}%"
                 if (otherStatus) {
-                    def temp =Math.round(STdevice.currentValue("temperature"))
+                    def temp =STdevice.currentValue("temperature")
+                    if (isMetric){
+                		String t = temp as String
+            			if (t.endsWith(".0")) t = t - ".0"
+						temp=t.toFloat()
+     				}
+                	else temp = Math.round(temp)
                     result += temp ? ", and the temperature is ${temp} degrees." : ". "
 				}
             }
@@ -1013,12 +1038,29 @@ def getReply(devices, type, dev, op, num, param){
             }
             else if (type == "thermostat"){
                 def temp = STdevice.currentValue("temperature")
+                if (isMetric){
+                	String t = temp as String
+            		if (t.endsWith(".0")) t = t - ".0"
+					temp=t.toFloat()
+     			}
+                else temp = Math.round(temp)
                 result = "The ${STdevice} temperature reading is currently ${temp} degrees"
                 if (otherStatus){
-                    def heat, cool
                     def humidity = STdevice.currentValue("humidity"), opState = STdevice.currentValue("thermostatMode")
-                    heat = opState=="heat" || opState =="auto" ? STdevice.currentValue("heatingSetpoint") : ""
-                    cool = opState=="cool" || opState =="auto" ?  STdevice.currentValue("coolingSetpoint") : "" 
+                    def heat = opState=="heat" || opState =="auto" ? STdevice.currentValue("heatingSetpoint") : ""
+                    if (heat && isMetric) {
+                    	String h = heat as String
+                    	if (h.endsWith(".0")) t = t - ".0"
+                        heat=h.toFloat()
+                    }
+                    else if (heat) heat = Math.round(heat)
+                    def cool = opState=="cool" || opState =="auto" ?  STdevice.currentValue("coolingSetpoint") : "" 
+                    if (cool && isMetric) {
+                    	String c = heat as String
+                    	if (c.endsWith(".0")) t = t - ".0"
+                        cool=c.toFloat()
+                    }
+                    else if (cool) cool = Math.round(cool)
                     result += opState ? ", and the thermostat's mode is: '${opState}'." : ". "
                     result += humidity ? " The relative humidity reading is ${humidity}%." : ""
                     if (nestCMD && supportedCaps.name.contains("Presence Sensor")){
@@ -1180,6 +1222,12 @@ def getReply(devices, type, dev, op, num, param){
 		}
         if (otherStatus && op=="status"){
             def temp = STdevice.currentValue("temperature"), accel=STdevice.currentValue("acceleration"), motion=STdevice.currentValue("motion"), lux =STdevice.currentValue("illuminance") 
+            if (isMetric && temp){
+                	String t = temp as String
+            		if (t.endsWith(".0")) t = t - ".0"
+					temp=t.toFloat()
+     			}
+			else if (temp) temp = Math.round(temp)
             result += lux ? "The illuminance at this device's location is ${lux} lux. " : ""
             result += temp && type != "thermostat" && type != "humidity" && type != "temperature" ? "In addition, the temperature reading from this device is ${temp} degrees. " : ""
 			result += motion == "active" && type != "motion" ? "This device is also a motion sensor, and it is currently reading movement. " : ""
@@ -1254,16 +1302,20 @@ def displayData(){
 //Child code pieces here----------------------------------------
 //Macro Handler
 def macroResults(num, cmd, colorData, param){ 
-	def result 
+	def result, data
     if (macroType == "Voice") result = reportResults() 
     if (macroType == "Control") result = controlResults(num)
     if (macroType == "Group") result = groupResults(num, cmd, colorData, param)
 	if (macroType == "CoRE") {
     	result = CoREResults(num)
-        sendLocationEvent (name: "CoRE", value: "execute", data: [ pistonName: CoREName], descriptionText: "Ask Alexa triggered '${CoREName}' piston.") 
+        data = [ pistonName: CoREName, args: result]
+        sendLocationEvent (name: "CoRE", value: "execute", data: data , descriptionText: "Ask Alexa triggered '${CoREName}' piston.") 
     }
-    else sendLocationEvent(name: "askAlexaMacro", value: app.label, displayed: true, isStateChange: true, descriptionText: "Ask Alexa ran '${app.label}'.")
-	return result
+    else if (macroType == "Voice" ||  macroType == "Control" || macroType == "Group") {
+    	data = [alexaOutput: result, num: num, cmd: cmd, color: colorData, param:param]
+        sendLocationEvent(name: "askAlexaMacro", value: app.label, data: data, displayed: true, isStateChange: true, descriptionText: "Ask Alexa ran '${app.label}' macro.")
+	}
+    return result
 }
 //Group Handler
 def groupResults(num, op, colorData, param){   
@@ -1414,7 +1466,7 @@ def controlResults(sDelay){
 		if (!state.scheduled) {
         	if (!delay || delay == 0) controlHandler() 
             else if (delay < 9999) { runIn(delay*60, controlHandler, [overwrite: true]) ; state.scheduled=true}
-            result = voicePost && !noAck ? replaceVoiceVar(voicePost) : noAck ? " " : result
+            result = voicePost && !noAck ? replaceVoiceVar(voicePost) : noAck ? "" : result
 		}
         else result = "The control macro, '${app.label}', is already scheduled to run. You must cancel the execution or wait until it runs before you can run it again. "
     }
@@ -1473,7 +1525,7 @@ def controlHandler(){
 def reportResults(){
     def fullMsg=""
     try {
-        fullMsg = voicePre ?  voicePre + " ": ""
+        fullMsg = voicePre ?  voicePre : ""
         if (voiceOnSwitchOnly) fullMsg += voiceSwitch ? switchOnReport(voiceSwitch, "switches") : ""
         else fullMsg += voiceSwitch ? reportStatus(voiceSwitch, "switch") : ""
         if (voiceOnSwitchEvt) fullMsg += getLastEvt(voiceSwitch, "'switch on'", "on", "switch")
@@ -1488,6 +1540,14 @@ def reportResults(){
         if (voiceTempSettingSummary && voiceTempSettingsType && voiceTempSettingsType !="autoAll") fullMsg += voiceTempSettings ? thermostatSummary(): ""
         else fullMsg += (voiceTempSettings && voiceTempSettingsType) ? reportStatus(voiceTempSettings, voiceTempSettingsType) : ""
         fullMsg += voiceSpeaker ? speakerReport() : ""
+        if (voiceWeatherLoc && (location.timeZone || zipCode)){
+        	def type
+            if (voiceWeatherTemp|| voiceWeatherHumid || voiceWeatherDew || voiceWeatherSolar || voiceWeatherVisiblity || voiceWeatherPrecip) type = "report"
+            if ((voiceWeatherToday  || voiceWeatherTonight || voiceWeatherTomorrow) && type) type += " and forecast"
+            else if ((voiceWeatherToday  || voiceWeatherTonight || voiceWeatherTomorrow) && !type) type = "forecast"
+            def cond = getWeatherFeature("conditions", zipCode).current_observation
+        	if (type) fullMsg += "The following weather ${type} comes from  " + cond.observation_location.full + ": "
+        }
         fullMsg += voiceWeatherTemp|| voiceWeatherHumid || voiceWeatherDew || voiceWeatherSolar || voiceWeatherVisiblity || voiceWeatherPrecip ? getWeatherReport() : ""
         fullMsg += voiceWeatherToday  || voiceWeatherTonight || voiceWeatherTomorrow || voiceSunset || voiceSunrise ? getWeatherForecast() : ""
         fullMsg += voiceWater && waterReport() ? waterReport() : ""
@@ -1499,7 +1559,7 @@ def reportResults(){
         fullMsg += voicePost ? voicePost : ""
 	}
     catch(e){ fullMsg = "There was an error processing the report. Please try again. If this error continues, please contact the author of Ask Alexa. " }
-    if (!fullMsg) fullMsg = "The voice report, '${app.label}', did not produce any output. Please check the configuration of the report within the SmartApp. "  
+    if (!fullMsg && !allowNullRpt) fullMsg = "The voice report, '${app.label}', did not produce any output. Please check the configuration of the report within the SmartApp. "  
     if ((parent.getAdvEnabled() && voiceRepFilter) || voicePre || voicePost) fullMsg = replaceVoiceVar(fullMsg)
     return fullMsg
 }
@@ -1719,8 +1779,6 @@ def waterReport(){
 }
 //Parent Code Access (from Child)-----------------------------------------------------------
 def getOkToRun(){ def result = (!runMode || runMode.contains(location.mode)) && getDayOk(runDay) && getTimeOk(timeStart,timeEnd) }
-def getType(){ return macroType }
-def groupMacroList(){ return groupMacros }
 def listPistons() { return state.CoREPistons }
 //Common Code(Child)-----------------------------------------------------------
 def upDown(device, op, num){
@@ -1759,12 +1817,12 @@ def getTimeLabel(start, end){
 }
 def macroTypeDesc(){
 	def desc = ""
-    def customAck = voicePost && !noAck ? "; includes a custom acknowledgement message" : noAck ? "; there will be no acknowledgement message" : ""
+    def customAck = !noAck && !voicePost ? "; uses standard acknowledgment message" : !noAck  && voicePost ? "; includes a custom acknowledgment message" :  "; there will be no acknowledgment messages"
     if (macroType == "Control" && (phrase || setMode || SHM || getDeviceDesc() != "Status: UNCONFIGURED - Tap to configure" || 
     	getHTTPDesc() !="Status: UNCONFIGURED - Tap to configure" || (contacts && smsMsg) || (smsNum && pushMsg && smsMsg))) 
         	desc= "Control Macro CONFIGURED${customAck} - Tap to edit" 
     if (macroType =="Voice" && (voicePre || voiceSwitch || voiceDimmer || voiceDoorSensors || voiceDoorControls || voiceDoorLocks || 
-    	voiceTemperature ||  voiceTempSettings || voiceTempVar || voiceHumidVar || voiceHumidity || weatherDesc()=="Status: CONFIGURED - Tap to edit" ||
+    	voiceTemperature ||  voiceTempSettings || voiceTempVar || voiceHumidVar || voiceHumidity || greyOutWeather()=="complete" ||
         voiceWater || voiceMotion || voicePresence || voiceBattery || voicePost || voiceMode || voiceSHM)) { 
         	desc= "Voice Report CONFIGURED - Tap to edit" 
 	}
@@ -1777,7 +1835,8 @@ def macroTypeDesc(){
         desc = "${groupDesc} CONFIGURED with ${countDesc}${customAck} - Tap to edit" 
     }
     if (macroType =="GroupM" &&  groupMacros) {
-    	def countDesc = groupMacros.size() == 1 ? "one macro" : groupMacros.size() + " macros"
+        customAck += addPost && !noAck ? " appended to the child macro messages" : noAck ? "" : " replacing the child macro messages"
+        def countDesc = groupMacros.size() == 1 ? "one macro" : groupMacros.size() + " macros"
         desc = "Macro Group CONFIGURED with ${countDesc}${customAck} - Tap to edit" 
     }
     if (macroType =="CoRE" && CoREName) {
@@ -1788,10 +1847,77 @@ def macroTypeDesc(){
 }
 def greyOutMacro(){ def result = macroTypeDesc() == "Status: UNCONFIGURED - Tap to configure macro" ? "" : "complete" }
 def greyOutStateHTTP(){ def result = getHTTPDesc() == "Status: UNCONFIGURED - Tap to configure" ? "" : "complete" }
-def reportDesc(param1, param2, param3, param4, param5) {def result = param1 || param2 || param3 || param4 || param5  ? "Status: CONFIGURED - Tap to edit" : "Status: UNCONFIGURED - Tap to configure"}
+def reportSwitches(){
+	def result="Status: UNCONFIGURED - Tap to configure"
+    if (voiceSwitch || voiceDimmer){
+        def switchEvt = voiceOnSwitchEvt ? "/Event" : ""
+        def dimmerEvt =voiceOnDimmerEvt ? "/Event" : ""
+    	def switchOn = voiceOnSwitchOnly ? "(On${switchEvt})" : "(On/Off${switchEvt})"
+        def dimmer = voiceOnDimmerOnly ? "(On${dimmerEvt})" : "(On/Off${dimmerEvt})"
+        result  = voiceSwitch && voiceSwitch.size()>1 ? "Switches ${switchOn}" : voiceSwitch && voiceSwitch.size()==1 ? "Switch ${switchOn}" : ""
+        if (voiceDimmer) result  += voiceSwitch && voiceDimmer.size()>1 ? " and dimmers ${dimmer}" : voiceSwitch && voiceDimmer.size()==1 ? " and dimmer ${dimmer}" : ""
+        if (voiceDimmer) result  += !voiceSwitch &&  voiceDimmer.size()>1 ? "Dimmers ${dimmer}" : !voiceSwitch && voiceDimmer.size()==1 ? "Dimmer ${dimmer}" : ""
+		result += (voiceSwitch && voiceDimmer) || (voiceSwitch && voiceSwitch.size()>1) || (voiceDimmer && voiceDimmer .size()>1) ? " report status" : " reports status"
+    }
+    return result
+}
+def reportDoors(){
+	def result="Status: UNCONFIGURED - Tap to configure"
+    if (voiceDoorSensors || voiceDoorControls || voiceDoorLocks ){
+        def doorEvt = voiceDoorEvt ? " with door & window events" : ""
+        def lockEvt = voiceLockEvt ?"/lock events${doorEvt}":"${doorEvt}"
+        def status = voiceDoorAll ? "full status${lockEvt}" : "open/unlocked status${lockEvt}"
+        result  = voiceDoorSensors && voiceDoorSensors.size()>1 ? "Door/Window sensors" : voiceDoorSensors && voiceDoorSensors.size()==1 ? "Door/Window sensor" : ""
+        if (voiceDoorControls) result  += voiceDoorSensors && voiceDoorControls.size()>1 && voiceDoorLocks ? ", door controls" : voiceDoorSensors && voiceDoorControls.size()==1 && voiceDoorLocks ? ", door control" : ""
+        if (voiceDoorControls) result  += voiceDoorSensors && voiceDoorControls.size()>1 && !voiceDoorLocks ? " and door controls" : voiceDoorSensors && voiceDoorControls.size()==1 && !voiceDoorLocks ? " and door control" : ""
+        if (voiceDoorControls) result  += !result && voiceDoorControls.size()>1 ? "Door controls" : !result && voiceDoorControls.size()==1 ? "Door control" : ""
+		if (voiceDoorLocks) result  += result  && voiceDoorLocks.size()>1 ? " and locks" : result && voiceDoorLocks.size()==1 ? " and lock" : ""
+        if (voiceDoorLocks) result  += !result && voiceDoorLocks.size()>1 ? "Locks" : !result && voiceDoorLocks.size()==1 ? "Lock" : ""
+        result += (voiceDoorSensors && voiceDoorControls && voiceDoorLocks) || (voiceDoorSensors && voiceDoorControls) || (voiceDoorControls && voiceDoorLocks) || (voiceDoorSensors && voiceDoorLocks) ||
+        	(voiceDoorSensors && voiceDoorSensors.size()>1) || (voiceDoorControls && voiceDoorControls.size()>1) || (voiceDoorLocks && voiceDoorLocks.size()>1 ) ? " report ${status}" : " reports ${status}"
+    }
+    return result
+}
+def reportSensors(){
+	def result="Status: UNCONFIGURED - Tap to configure"
+    if (voiceWater || voiceMotion || voicePresence ){
+    	def water = voiceWetOnly ? "(Wet)" : "(Wet/Dry)"
+        def arriveEvt = voicePresentEvt ? "/Arrival" : ""
+        def departEvt = voiceGoneEvt ? "/Departure" : ""
+        def present = voicePresentOnly ? "(Present${arriveEvt}${departEvt})" : "(Present/Away${arriveEvt}${departEvt})"
+        def motionEvt = voiceMotionEvt ? "/Event" : ""
+        def motion = voiceMotionOnly ? "(Active${motionEvt})" : "(Active/Not Active${motionEvt})"
+        result  = voiceWater && voiceWater.size()>1 ? "Water sensors ${water}" : voiceWater && voiceWater.size()==1 ? "Water sensor ${water}" : ""
+        if (voicePresence) result  += result && voicePresence.size()>1 && !voiceMotion ? " and presence sensors ${present}" : result && voicePresence.size()==1 && !voiceMotion ? " and presence sensor ${present}" : ""
+        if (voicePresence) result  += !result && voicePresence.size()>1 ? "Presence sensors ${present}" : !result && voicePresence.size()==1 ? "Presence sensor ${present}" : ""
+        if (voicePresence) result  += result && voicePresence.size()>1 && voiceMotion ? ", presence sensors ${present}" : result && voicePresence.size()==1 && voiceMotion  ? ", presence sensor ${present}" : ""
+        if (voiceMotion) result += result && voiceMotion.size()>1 ? " and motion sensors ${motion}" : result && voiceMotion.size()==1 ? " and motion sensor ${motion}" : ""
+        if (voiceMotion) result += !result && voiceMotion.size()>1 ? "Motion sensors ${motion}" : !result && voiceMotion.size()==1 ? "Motion sensor ${motion}" : ""
+        result += (voiceWater && voiceMotion && voicePresence) || (voiceWater && voiceMotion) || (voicePresence && voiceMotion) || (voiceWater && voicePresence) || 
+        	(voiceWater && voiceWater.size()>1) || (voiceMotion && voiceMotion.size()>1) || (voicePresence && voicePresence.size()>1 ) ? " report status" : " reports status"
+    }
+    return result
+}
+def reportTemp(){
+	def result="Status: UNCONFIGURED - Tap to configure"
+    if (voiceTemperature || voiceHumidity || voiceTempSettings ){
+		def tempAvg = voiceTempAvg ? " (Average)" : ""
+        def humidAvg = voiceHumidAvg  ? " (Average)" : ""
+        def tstatSet = voiceTempSettingSummary && voiceTempSettings && voiceTempSettingsType !="autoAll" && voiceTempTarget ? "(Setpoint summary target: ${voiceTempTarget} degrees)":"(Setpoint)" 
+        result  = voiceTemperature && voiceTemperature.size()>1 ? "Temperature sensors${tempAvg}" : voiceTemperature && voiceTemperature.size()==1 ? "Temperature sensor${tempAvg}" : ""
+        if (voiceHumidity) result  += result && voiceHumidity.size()>1 && voiceTempSettings ? ", humidity sensors${humidAvg}" : result && voiceHumidity.size()==1 && voiceTempSettings ? ", humidity sensor${humidAvg}" : ""
+        if (voiceHumidity) result  += result && voiceHumidity.size()>1 && !voiceTempSettings ? " and humidity sensors${humidAvg}" : result && voiceHumidity.size()==1 && !voiceTempSettings ? " and humidity sensor${humidAvg}" : ""
+        if (voiceHumidity) result  += !result && voiceHumidity.size()>1 ? "Humidity sensors${humidAvg}" : !result && voiceHumidity.size()==1 ? "Humidity sensor${humidAvg}" : ""
+		if (voiceTempSettings) result  += result  && voiceTempSettings.size()>1 ? " and thermostats ${tstatSet}" : result && voiceTempSettings.size()==1 ? " and thermostat${tstatSet}" : ""
+        if (voiceTempSettings) result  += !result && voiceTempSettings.size()>1 ? "Thermostats ${tstatSet}" : !result && voiceTempSettings.size()==1 ? "Thermostat ${tstatSet}" : ""
+        result += (voiceTemperature && voiceHumidity && voiceTempSettings) || (voiceTemperature && voiceHumidity) || (voiceHumidity && voiceTempSettings) || (voiceTemperature && voiceTempSettings) || 
+        	(voiceTemperature && voiceTemperature.size()>1) || (voiceHumidity && voiceHumidity.size()>1) || (voiceTempSettings && voiceTempSettings.size()>1 ) ? " report status" : " reports status"
+    }
+    return result
+}
 def batteryDesc(){
 	def result = "Status: UNCONFIGURED - Tap to configure"
-    if (voiceBattery && batteryThreshold) result = voiceBattery.size()>1 ? "Batteries report when level < ${batteryThreshold}%" : "Battery reports when level < ${batteryThreshold}%"
+    if (voiceBattery && batteryThreshold) result = voiceBattery.size()>1 ? "Batteries report when level < ${batteryThreshold}%" : "One battery reports when level < ${batteryThreshold}%"
 	return result
 }
 def reportDescMSHM() {
@@ -1807,21 +1933,21 @@ def reportDescMSHM() {
 def speakerDesc(){
 	def result = "Status: UNCONFIGURED - Tap to configure"
     if (voiceSpeaker && voiceSpeakerOn) result = voiceSpeaker.size()>1 ? "The active speakers" : "The active speaker"
-    else if (voiceSpeaker && !voiceSpeakerOn) result = voiceSpeaker.size()>1 ? "All speakers" : "One speaker"
-    if (voiceSpeaker) result += voiceBattery.size()>1 ? " report status" : " reports status" 
+    else if (voiceSpeaker && !voiceSpeakerOn) result = voiceSpeaker.size()>1 ? "Speakers" : "One speaker"
+    if (voiceSpeaker) result += voiceSpeaker.size()>1 ? " report status" : " reports status" 
 	return result
 }
-def greyOutState(param1, param2, param3, param4, param5, param6){def result = param1 || param2 || param3 || param4 || param5 || param6 ? "complete" : ""}
 def weatherDesc(){ 
-	def result = voiceWeatherTemp|| voiceWeatherHumid || voiceWeatherDew || voiceWeatherSolar || voiceWeatherVisiblity || voiceWeatherPrecip ? "Weather" : ""
+	def result = voiceWeatherTemp|| voiceWeatherHumid || voiceWeatherDew || voiceWeatherSolar || voiceWeatherVisiblity || voiceWeatherPrecip ? "Current weather" : ""
 	if (result && (voiceWeatherToday || voiceWeatherTonight || voiceWeatherTomorrow)) result +=", "
-    result += voiceWeatherToday || voiceWeatherTonight || voiceWeatherTomorrow ? "Forecast" : ""
+    result += (voiceWeatherToday && voiceWeatherTonight && voiceWeatherTomorrow) || (voiceWeatherToday && voiceWeatherTonight) || (voiceWeatherTonight && voiceWeatherTomorrow) ||
+    	(voiceWeatherToday && voiceWeatherTomorrow) ? "Forecasts" : voiceWeatherToday || voiceWeatherTonight || voiceWeatherTomorrow ? "Forecast" : ""
     if (result && (voiceSunrise || voiceSunset)) result +=", "
     result += voiceSunrise && voiceSunset ? "Sunrise/Sunset" : voiceSunrise ? "Sunrise" : voiceSunset ? "Sunset" : ""
 	result = result ? "Reports: ${result}" : "Status: UNCONFIGURED - Tap to configure"
 }
 def greyOutWeather(){ def result = voiceWeatherToday || voiceWeatherTonight || voiceWeatherTomorrow || voiceSunrise || voiceSunset ||
-	voiceWeatherTemp|| voiceWeatherHumid || voiceWeatherDew || voiceWeatherSolar || voiceWeatherVisiblity || voiceWeatherPrecip? "complete" : "" }
+	voiceWeatherTemp|| voiceWeatherHumid || voiceWeatherDew || voiceWeatherSolar || voiceWeatherVisiblity || voiceWeatherPrecip ? "complete" : "" }
 def deviceGreyOut(){ def result = getDeviceDesc() == "Status: UNCONFIGURED - Tap to configure" ? "" : "complete" }
 def getDeviceDesc(){  
     def result,lvl, cLvl, clr, tLvl
@@ -1879,10 +2005,17 @@ private getLastEvt(devGroup, evtTxt, searchVal, devTxt){
 }
 private replaceVoiceVar(msg) {
     def df = new java.text.SimpleDateFormat("EEEE")
+    def isMetric = location.temperatureScale == "C"
 	location.timeZone ? df.setTimeZone(location.timeZone) : df.setTimeZone(TimeZone.getTimeZone("America/New_York"))
 	def day = df.format(new Date()), time = parseDate("","h:mm a"), month = parseDate("","MMMM"), year = parseDate("","yyyy"), dayNum = parseDate("","d")
     def varList = parent.getVariableList()
     def temp = varList[0].temp
+    if (isMetric && temp !="undefined device") {
+    	String t = temp as String
+        if (t.endsWith(".0")) t = t - ".0"
+        temp=t.toFloat() + " degrees"
+    }
+    else if (temp !="undefined device") temp = Math.round(temp) + " degrees"
     def humid = varList[0].humid
     def people = varList[0].people
     def fullMacroType=[GroupM: "Macro Group", Control:"Control Macro", Group:"Device Group", Voice:"Voice Reporting"][macroType] ?: macroType
@@ -1910,16 +2043,21 @@ private parseDate(time, type){
     new Date().parse("yyyy-MM-dd'T'HH:mm:ss.SSSZ", formattedDate).format("${type}", timeZone(formattedDate))
 }
 private getWeatherReport(){
-	def msg = ""
+	def msg = "", temp
     if (location.timeZone || zipCode) {
     	def sb = new StringBuilder()
         def isMetric = location.temperatureScale == "C"
 		def cond = getWeatherFeature("conditions", zipCode).current_observation
-        if (voiceWeatherLoc) sb << "This weather report comes from  " + cond.observation_location.full + ". "
         if (voiceWeatherTemp){
         	sb << "The current temperature is "
-            if (isMetric) sb << Math.round(cond.temp_c) else sb << Math.round(cond.temp_f)
-            sb << " degrees with " + cond.weather 
+            if (isMetric) { 
+            	temp = cond.temp_c 
+                String t = temp as String 
+                if (t.endsWith(".0")) t = t - ".0" 
+                temp=t.toFloat()
+            } 
+            else temp = Math.round(cond.temp_f) 
+            sb << temp + " degrees with " + cond.weather
             switch (cond.weather) {
             case "Overcast":
             case "Clear":
@@ -1965,10 +2103,21 @@ private getWeatherReport(){
      		}   
        	}
         if (voiceWeatherDew){
-        	sb << "The dewpoint is "
-            if (isMetric) sb << Math.round(cond.dewpoint_c) else sb << Math.round(cond.dewpoint_f)
+            sb << "The dewpoint is "
+			if (isMetric) { 
+            	temp = cond.dewpoint_c 
+                String t = temp as String 
+                if (t.endsWith(".0")) t = t - ".0" 
+                temp=t.toFloat() 
+            } else temp = Math.round(cond.dewpoint_f)            
             sb << " degrees, and the 'feels like' temperature is "
-            if (isMetric) sb << Math.round(cond.feelslike_c.toFloat()) + " degrees. " else sb << Math.round(cond.feelslike_f.toFloat()) + " degrees. "
+            if (isMetric) { 
+            	temp = cond.feelslike_c.toFloat() 
+                String t = temp as String 
+                if (t.endsWith(".0")) t = t - ".0" 
+                temp=t.toFloat() 
+			} else temp = Math.round(cond.feelslike_f) as Integer 
+            sb << temp + "degrees. "
         }
         if (voiceWeatherSolar){
             if (cond.solarradiation != "--" && cond.UV != "") sb << "The solar radiation level is " + cond.solarradiation + ", and the UV index is " + cond.UV + ". "
@@ -1981,7 +2130,8 @@ private getWeatherReport(){
             String t = visibility as String
             if (visibility >1  && t.endsWith(".0")) t = t - ".0"
             else if (visibility < 1 ) t=t.toFloat()
-     		if (isMetric) sb << t + " kilometers. " else sb << t + " miles. "
+            if (visibility == 1) if (isMetric) sb << t + " kilometer. " else sb << t + " mile. " 
+            else if (isMetric) sb << t + " kilometers. " else sb << t + " miles. " 
      	}
         if (voiceWeatherPrecip) {    
             sb << "There has been "
@@ -2003,7 +2153,7 @@ private getWeatherForecast(){
 		def weather = getWeatherFeature("forecast", zipCode)
         if (voiceWeatherToday  || voiceWeatherTonight || voiceWeatherTomorrow ){
             if (voiceWeatherToday){
-                sb << "Today's forecast call for "
+                sb << "Today's forecast calls for "
                 def formattedWeather = isMetric ? weather.forecast.txt_forecast.forecastday[0].fcttext_metric : weather.forecast.txt_forecast.forecastday[0].fcttext 
                 sb << formattedWeather[0].toLowerCase() + formattedWeather.substring(1) + " "
             }
@@ -2096,7 +2246,7 @@ def getCoREMacroList(){
 }
 def getVariableList(){
 	def result = []
-	def temp = voiceTempVar ? getAverage(voiceTempVar, "temperature") + " degrees" : "undefined device"
+	def temp = voiceTempVar ? getAverage(voiceTempVar, "temperature") : "undefined device"
     def humid = voiceHumidVar ? getAverage(voiceHumidVar, "humidity") + " percent relative humidity"	: "undefined device"
     def present = voicePresenceVar.findAll{it.currentValue("presence")=="present"}
    	def people = present ? getList(present) : "No people present"
@@ -2120,13 +2270,11 @@ def OAuthToken(){
 	} catch (e) { log.error "Access Token not defined. OAuth may not be enabled. Go to the SmartApp IDE settings to enable OAuth." }
 }
 def macroDesc(){def results = childApps.size() ? childApps.size()==1 ? "One Voice Macro Configured" : childApps.size() + " Voice Macro Configured" : "No Voices Macros Configured\nTap to create new macro"}
-def macroGrey(){def results =childApps.size() ? "complete" : ""}
 def getDesc(param1, param2, param3) {def result = param1 || param2 || param3 ? "Status: CONFIGURED - Tap to edit/view" : "Status: UNCONFIGURED - Tap to configure"}
 def getDescMRS() {
 	def mStat=modes ? "On": "Off", rStat=routines ? "On": "Off", sStat=SHM ? "On": "Off"
     def result = modes || routines || SHM ? "Modes: ${mStat}, SHM: ${sStat}, Routines: ${rStat}" : "Status: UNCONFIGURED - Tap to configure"
 } 
-def getState(param1, param2, param3) {def result = param1 || param2 || param3 ? "complete" : ""}
 def fillColorSettings(){ 
 	def colorData = []
     colorData << [name: "White", hue: 10, sat: 56] << [name: "Orange", hue: 8, sat: 100] << [name: "Red", hue: 100, sat: 100]
@@ -2171,7 +2319,7 @@ def fillTypeList(){
     	"lock","locks","thermostats","thermostat","temperature sensors","modes","routines","smart home monitor","SHM","security","temperature","door","doors", "humidity", "humidity sensor", 
         "humidity sensors", "presence", "presence sensors", "motion", "motion sensor", "motion sensors", "door sensor", "door sensors", "window sensor", "window sensors", "open close sensors",
         "colored light", "events", "macro", "macros", "group", "groups", "voice reports", "voice report", "device group", "device groups","control macro", "control macros","control", "controls",
-        "macro group","macro groups","device macros","device macro","device group macro", "device group macros"]    	  
+        "macro group","macro groups","device macros","device macro","device group macro","device group macros","core","core trigger","core macro","core macros","core triggers"]    	  
 }
 def upDown(device, type, op, num){
     def numChange, newLevel, currLevel, defMove, txtRsp = ""
@@ -2224,12 +2372,12 @@ def sendJSON(outputTxt, lVer){
 //Version/Copyright/Information/Help-----------------------------------------------------------
 private def textAppName() { def text = "Ask Alexa" }	
 private def textVersion() {
-    def version = "SmartApp Version: 2.0.0c (06/10/2016)"
+    def version = "SmartApp Version: 2.0.1 (06/12/2016)"
     def lambdaVersion = state.lambdaCode ? "\n" + state.lambdaCode : ""
     return "${version}${lambdaVersion}"
 }
-private def versionInt(){ return 200 }
-private def versionLong(){ return "2.0.0c" }
+private def versionInt(){ return 201 }
+private def versionLong(){ return "2.0.1" }
 private def textCopyright() {return "Copyright © 2016 Michael Struck" }
 private def textLicense() {
 	def text = "Licensed under the Apache License, Version 2.0 (the 'License'); "+
