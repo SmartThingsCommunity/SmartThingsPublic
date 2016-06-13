@@ -25,6 +25,7 @@
  *	0.10 (04/10/2016) -	Initial 0.1 Beta.
  *  0.11 (05/28/2016) - Set numberOfButtons attribute for ease of use with CoRE and other SmartApps. Corrected physical/digital states.
  *  0.12 (06/03/2016) - Added press type indicator to display last tap/hold press status
+ *  0.13 (06/13/2016) - Added dim level ramp-up option for remote dim commands
  *
  */
  
@@ -68,6 +69,12 @@ metadata {
 		reply "200163,delay 5000,2602": "command: 2603, payload: 63"
 	}
 
+    preferences {
+        input "remoteDimFadeUpEnabled", "bool", title: "Enable remote dim fade-up",  defaultValue: false,  displayDuringSetup: true, required: false	
+        input "remoteDimDurationPerLevel", "number", title: "Remote dim rate ms duration per level (default is 20) [1-1000]",  defaultValue: 20,  displayDuringSetup: true, required: false	
+		input "remoteSizeOfDimLevels", "number", title: "Remote dim rate % size of each level (default is 5) [1-50]",  defaultValue: 5,  displayDuringSetup: true, required: false	
+    }
+    
 	tiles(scale: 2) {
 		multiAttributeTile(name:"switch", type: "lighting", width: 6, height: 4, canChangeIcon: true){
 			tileAttribute ("device.switch", key: "PRIMARY_CONTROL") {
@@ -145,7 +152,7 @@ def parse(String description) {
 }
 
 def zwaveEvent(physicalgraph.zwave.commands.basicv1.BasicReport cmd) {
-	dimmerEvents(cmd)
+ 	dimmerEvents(cmd)
 }
 
 def zwaveEvent(physicalgraph.zwave.commands.basicv1.BasicSet cmd) {
@@ -153,7 +160,7 @@ def zwaveEvent(physicalgraph.zwave.commands.basicv1.BasicSet cmd) {
 }
 
 def zwaveEvent(physicalgraph.zwave.commands.switchmultilevelv1.SwitchMultilevelReport cmd) {
-	dimmerEvents(cmd)
+    dimmerEvents(cmd) 
 }
 
 def zwaveEvent(physicalgraph.zwave.commands.switchmultilevelv1.SwitchMultilevelSet cmd) {
@@ -163,8 +170,9 @@ def zwaveEvent(physicalgraph.zwave.commands.switchmultilevelv1.SwitchMultilevelS
 private dimmerEvents(physicalgraph.zwave.Command cmd) {
 	def value = (cmd.value ? "on" : "off")
 	def result = [createEvent(name: "switch", value: value)]
+    state.lastLevel = cmd.value
 	if (cmd.value && cmd.value <= 100) {
-		result << createEvent(name: "level", value: cmd.value, unit: "%")
+		result << createEvent(name: "level", value: cmd.value, unit: "%")   
 	}
 	return result
 }
@@ -217,24 +225,32 @@ def off() {
 def setLevel(value) {
 	log.debug "setLevel >> value: $value"
 	def valueaux = value as Integer
-	def level = Math.max(Math.min(valueaux, 99), 0)
-	if (level > 0) {
+    def level = Math.max(Math.min(valueaux, 99), 0)
+    def result = []
+    def statusDelay = 5000
+	if (remoteDimFadeUpEnabled && state.lastLevel != null && level > state.lastLevel) 
+    {
+         //Workaround for HS-D100+ current lack of support for remote dim level rate configuration
+         for (def i = state.lastLevel + state.remoteSizeOfDimLevels; i < level; i=i+state.remoteSizeOfDimLevels) {  
+            result << zwave.basicV1.basicSet(value: i).format()
+            result << "delay $state.remoteDimDurationPerLevel"
+         }
+         statusDelay = state.remoteDimDurationPerLevel * state.remoteSizeOfDimLevels + 3000
+    }
+
+    result << zwave.basicV1.basicSet(value: level).format()
+   
+    if (level > 0) {
 		sendEvent(name: "switch", value: "on")
-	} else {
+    } else {
 		sendEvent(name: "switch", value: "off")
 	}
-	sendEvent(name: "level", value: level, unit: "%")
-	delayBetween ([zwave.basicV1.basicSet(value: level).format(), zwave.switchMultilevelV1.switchMultilevelGet().format()], 5000)
-}
-
-def setLevel(value, duration) {
-	log.debug "setLevel >> value: $value, duration: $duration"
-	def valueaux = value as Integer
-	def level = Math.max(Math.min(valueaux, 99), 0)
-	def dimmingDuration = duration < 128 ? duration : 128 + Math.round(duration / 60)
-	def getStatusDelay = duration < 128 ? (duration*1000)+2000 : (Math.round(duration / 60)*60*1000)+2000
-	delayBetween ([zwave.switchMultilevelV2.switchMultilevelSet(value: level, dimmingDuration: dimmingDuration).format(),
-				   zwave.switchMultilevelV1.switchMultilevelGet().format()], getStatusDelay)
+    state.lastLevel = level
+    sendEvent (name: "level", value: level, unit: "%")
+    result << "delay $statusDelay"
+	result << zwave.switchMultilevelV1.switchMultilevelGet().format()
+    result << "delay 3000"
+	result << zwave.switchMultilevelV1.switchMultilevelGet().format()
 }
 
 def poll() {
@@ -408,5 +424,50 @@ def holdDown() {
 } 
 
 def configure() {
-     sendEvent(name: "numberOfButtons", value: 6, displayed: false)
+    setDimRatePrefs()
+    sendEvent(name: "numberOfButtons", value: 6, displayed: false)
+    zwave.switchMultilevelV1.switchMultilevelGet().format()
+}
+
+def setDimRatePrefs() 
+{
+   log.debug ("set prefs")
+   if (remoteSizeOfDimLevels == null)
+   {
+      state.remoteSizeOfDimLevels = 5
+   }
+   else if (remoteSizeOfDimLevels < 1)
+   {
+      state.remoteSizeOfDimLevels = 1
+   }
+   else if (remoteSizeOfDimLevels > 50)
+   {
+      state.remoteSizeOfDimLevels = 50
+   }
+   else
+   {
+      state.remoteSizeOfDimLevels = remoteSizeOfDimLevels
+   }
+   
+   if (remoteDimDurationPerLevel == null)
+   {
+      state.remoteDimDurationPerLevel = 20
+   }
+   else if (remoteDimDurationPerLevel < 1)
+   {
+      state.remoteDimDurationPerLevel = 1
+   }
+   else if (remoteDimDurationPerLevel > 1000)
+   {
+      state.remoteDimDurationPerLevel = 1000
+   }
+   else
+   {
+     state.remoteDimDurationPerLevel = remoteDimDurationPerLevel
+   }  
+}
+
+def updated()
+{
+   setDimRatePrefs()
 }
