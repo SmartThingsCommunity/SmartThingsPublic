@@ -1,12 +1,12 @@
 /**
 * Circadian Daylight 3.1
 *
-* This SmartApp synchronizes your color changing lights with local perceived color
+* This SmartApp synchronizes your color changing lights with perceived color
 * temperature of the sky throughout the day. This gives your environment a more
-* natural feel, with cooler whites during the midday and warmer tints near twilight
-* and dawn.
+* natural feel, with cooler whites during the midday and warmer tints near
+* twilight and dawn.
 *
-* In addition, the SmartApp sets your lights to a nice cool white at 1% in
+* In addition, the SmartApp sets your lights to a nice warm white at 1% in
 * "Sleep" mode, which is far brighter than starlight but won't reset your
 * circadian rhythm or break down too much rhodopsin in your eyes.
 *
@@ -129,6 +129,7 @@ def miscPreferences() {
 						type:			"bool",
 						title:			"Update Notifications",
 						submitOnChange:	true	)
+            paragraph   "NOTE: You should only enable this for a single Circadian Daylight instance or you will get duplicate notifications!"
 			if (updateNotifications) {
 				input("recipients", "contact", title: "Send notifications to") {
 					input "updatePush", "bool", title: "Send push notifications", required: false
