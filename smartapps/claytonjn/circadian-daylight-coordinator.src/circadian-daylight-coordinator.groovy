@@ -61,12 +61,25 @@ singleInstance: true
 )
 
 preferences {
-    page(name: "childInstances", nextPage: "locationPreferences", install: false, uninstall: true) {
-        section {
-            app(appName: "Circadian Daylight", namespace: "claytonjn", title: "New Circadian Daylight Setup", multiple: true)
+    page(name: "childInstances", content: "childInstances")
+    page(name: "locationPreferences", content: "locationPreferences")
+    page(name: "updatePreferences", content:"updatePreferences")
+}
+
+def childInstances() {
+    if(settings.updateNotifications != NULL) { //use this because boolean input should always have some value
+        return dynamicPage(name: "childInstances", nextPage: "locationPreferences", install: false, uninstall: true) {
+            section {
+                app(appName: "Circadian Daylight", namespace: "claytonjn", title: "New Circadian Daylight Setup", multiple: true)
+            }
         }
+    } else {
+        return locationPreferences()
     }
-    page(name: "locationPreferences", nextPage: "updatePreferences", install: false, uninstall: true) {
+}
+
+def locationPreferences() {
+    return dynamicPage(name: "locationPreferences", nextPage: "updatePreferences", install: false, uninstall: true) {
         section("Zip Code Override") {
             input "lZip", "number", title: "Change if you want to simulate behavior of a zip code other than the one set for your SmartThings hub, or if you don't have a location set for your SmartThings hub.", required: false, defaultValue: location.zipCode
         }
@@ -86,7 +99,6 @@ preferences {
             input "lSunsetTime", "time", title: "Enter a specific time you want Circadian Daylight to use for sunset.", required: false
         }
     }
-    page(name: "updatePreferences", content:"updatePreferences")
 }
 
 def updatePreferences() {
@@ -96,6 +108,7 @@ def updatePreferences() {
 			input(		name: 			"updateNotifications",
 						type:			"bool",
 						title:			"Update Notifications",
+                        defaultValue:   false,
 						submitOnChange:	true	)
 			if (updateNotifications) {
 				input("recipients", "contact", title: "Send notifications to") {
