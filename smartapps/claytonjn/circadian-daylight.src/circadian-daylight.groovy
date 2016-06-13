@@ -246,16 +246,19 @@ private void calcBrightness(sunriseAndSunset) {
             def nowTime = nowDate.getTime()
             def sunsetTime = sunriseAndSunset.sunset.getTime()
             def sunriseTime = sunriseAndSunset.sunrise.getTime()
-            if((nowDate..sunriseAndSunset.sunrise).size() == 1) { //If sunrise time hasn't updated yet for the next day, estimate tomorrow's sunrise from today's
-                sunriseTime = (sunsetTime - sunriseAndSunset.sunrise.getTime()) + sunsetTime
+            if(nowTime < sunriseTime) { //If it's morning, use estimated sunset from the night before
+                sunsetTime = sunriseAndSunset.sunset.getTime() - (1000*60*60*24)
             }
-            def dayLength = sunriseTime - sunsetTime
+            if(nowTime > sunsetTime) { //If it's evening, use estimated sunset for the next day
+                sunriseTime = sunriseAndSunset.sunrise.getTime() + (1000*60*60*24)
+            }
+            def nightLength = sunriseTime - sunsetTime
 
             //Generate brightness parabola from points
             //Specify double type or calculations fail
             double x1 = sunsetTime
             double y1 = bMax
-            double x2 = sunsetTime+(dayLength/2)
+            double x2 = sunsetTime+(nightLength/2)
             double y2 = bMin
             double x3 = sunriseTime
             double y3 = bMax
