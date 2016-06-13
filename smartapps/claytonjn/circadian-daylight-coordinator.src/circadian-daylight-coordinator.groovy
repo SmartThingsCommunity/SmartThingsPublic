@@ -153,29 +153,7 @@ private def initialize() {
     subscribe(location, "mode", setHandler)
     schedule("0 */15 * * * ?", setHandler)
 
-    def branches = ["Stable", "Beta"]
-    for (branch in branches) {
-        def branchName
-        if (branch == "Stable") { branchName = "Circadian-Daylight" }
-        if (branch == "Beta") { branchName = "Circadian-Daylight-Development" }
-
-        def url = "https://api.github.com/repos/claytonjn/SmartThingsPublic/branches/${branchName}"
-
-        def result = null
-
-        try {
-            httpGet(uri: url) {response ->
-                result = response
-            }
-            def latestCommitTime = result.data.commit.commit.author.date
-            if (latestCommitTime != state."last${branch}Update") {
-                state."last${branch}Update" = result.data.commit.commit.author.date
-            }
-        }
-        catch (e) {
-            log.warn e
-        }
-    }
+    checkForUpdates()
 
     setHandler() //Set state variables from initial install
 }
@@ -185,7 +163,16 @@ void setHandler(evt) {
     if(lSunriseTime) { sunriseAndSunset.sunrise = lSunriseTime }
     if(lSunsetTime) { sunriseAndSunset.sunset = lSunsetTime }
 
-    if (settings.updateNotifications == true) { checkForUpdates() }
+    if (settings.updateNotifications == true) {
+		for (message in checkForUpdates()) {
+            // check that contact book is enabled and recipients selected
+            if (location.contactBookEnabled && recipients) {
+                sendNotificationToContacts(message, recipients, [event: false])
+            } else if (updatePush) { // check that the user did select a phone number
+                sendPushMessage(message)
+            }
+        }
+	}
 
     calcColorTemperature(sunriseAndSunset)
     calcBrightness(sunriseAndSunset)
@@ -279,7 +266,8 @@ def getBrightness() { return state.brightness }
 
 def getColorTemperature() { return state.colorTemperature }
 
-void checkForUpdates() {
+def checkForUpdates() {
+	def messages = []
 	for (branch in settings.gitHubBranch) {
 		def branchName
 		if (branch == "Stable") { branchName = "Circadian-Daylight" }
@@ -295,18 +283,13 @@ void checkForUpdates() {
 			}
 			def latestCommitTime = result.data.commit.commit.author.date
 			if (latestCommitTime != state."last${branch}Update") {
-				def message = "Circadian Daylight ${branch} branch updated with message: ${result.data.commit.commit.message}"
-				// check that contact book is enabled and recipients selected
-				if (location.contactBookEnabled && recipients) {
-				    sendNotificationToContacts(message, recipients, [event: false])
-				} else if (updatePush) { // check that the user did select a phone number
-				    sendPushMessage(message)
-				}
 				state."last${branch}Update" = result.data.commit.commit.author.date
+                messages << "Circadian Daylight ${branch} branch updated with message: ${result.data.commit.commit.message}"
 			}
 		}
 		catch (e) {
 			log.warn e
 		}
 	}
+	return messages
 }
