@@ -148,6 +148,31 @@ private def initialize() {
     subscribe(location, "sunset", setHandler)
     subscribe(location, "mode", setHandler)
     schedule("0 */15 * * * ?", setHandler)
+
+    def branches = ["Stable", "Beta"]
+    for (branch in branches) {
+        def branchName
+        if (branch == "Stable") { branchName = "Circadian-Daylight" }
+        if (branch == "Beta") { branchName = "Circadian-Daylight-Development" }
+
+        def url = "https://api.github.com/repos/claytonjn/SmartThingsPublic/branches/${branchName}"
+
+        def result = null
+
+        try {
+            httpGet(uri: url) {response ->
+                result = response
+            }
+            def latestCommitTime = result.data.commit.commit.author.date
+            if (latestCommitTime != state."last${branch}Update") {
+                state."last${branch}Update" = result.data.commit.commit.author.date
+            }
+        }
+        catch (e) {
+            log.warn e
+        }
+    }
+
     setHandler() //Set state variables from initial install
 }
 
