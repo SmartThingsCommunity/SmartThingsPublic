@@ -62,9 +62,6 @@ iconX3Url: "https://raw.githubusercontent.com/claytonjn/SmartThingsPublic/Circad
 
 preferences {
     page(name: "bulbsPreferences", nextPage: "dimmingPreferences", install: false, uninstall: true) {
-        section {
-            paragraph "Thank you for installing Circadian Daylight! This application adjusts your lights to simulate the light of the sun, which has been proven to aid in cognitive functions and restfulness."
-        }
         section("Select each bulb in only one section. Color Temperature bulbs should be most accurate at reflecting natural light.") {
             input "ctBulbs", "capability.colorTemperature", title: "Color Temperature Bulbs", multiple: true, required: false
             input "cBulbs", "capability.colorControl", title: "Color Bulbs", multiple: true, required: false

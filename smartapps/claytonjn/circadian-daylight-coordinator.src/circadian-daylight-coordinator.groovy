@@ -74,7 +74,11 @@ def childInstances() {
             }
         }
     } else {
-        return locationPreferences()
+        return dynamicPage(name: "childInstances", nextPage: "locationPreferences", install: false, uninstall: true) {
+            section {
+                paragraph "Thank you for installing Circadian Daylight! This application adjusts your lights to simulate the light of the sun, which has been proven to aid in cognitive functions and restfulness."
+            }
+        }
     }
 }
 
