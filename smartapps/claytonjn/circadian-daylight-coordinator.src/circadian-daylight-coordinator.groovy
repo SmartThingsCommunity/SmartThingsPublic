@@ -63,7 +63,7 @@ singleInstance: true
 preferences {
     page(name: "childInstances", nextPage: "locationPreferences", install: false, uninstall: true) {
         section {
-            app(appName: "Circadian Daylight", namespace: "claytonjn", multiple: true)
+            app(appName: "Circadian Daylight", namespace: "claytonjn", title: "New Circadian Daylight Setup", multiple: true)
         }
     }
     page(name: "locationPreferences", nextPage: "updatePreferences", install: false, uninstall: true) {
