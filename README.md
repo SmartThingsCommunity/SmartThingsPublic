@@ -63,7 +63,7 @@ For all the device types, make sure publish them. If you're using github, use th
 
 4. Once OAuth setup is completed, edit the settings for the DSC Integration app on your phone, and fill in the IP/Port with the correct information for your alarmserver.
    The port is typically the "httpsport" setting in your alarmserver.cfg, and the IP should be the IP of your alarmserver and not your envisalink device. If need be, setup
-   any push notifications here as well.
+   any push notifications here as well. NOTE: THIS MUST BE THE IP ADDRESS! THE CODE DOES NOT RESOLVE HOSTNAMES/DNS AT THIS TIME. See TODO.
 
 ### Alarmserver Setup
 
