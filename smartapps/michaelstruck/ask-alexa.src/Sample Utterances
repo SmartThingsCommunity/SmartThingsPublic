@@ -13,9 +13,11 @@ DeviceOperation {Operator} {Device} password {Num}
 
 DeviceOperation set {Device} to {Num}
 DeviceOperation {Device} to {Num}
+DeviceOperation {Device} {Num}
 DeviceOperation set the {Device} to {Num} 
 DeviceOperation to set {Device} to {Num} 
 DeviceOperation to set the {Device} to {Num}
+DeviceOperation {Device} {Num} percent
 DeviceOperation set {Device} to {Num} percent
 DeviceOperation set the {Device} to {Num} percent
 DeviceOperation to set {Device} to {Num} percent
@@ -136,6 +138,7 @@ DeviceOperation to give me the last {Num} {Operator} for the {Device}
 
 MacroOperation set {Macro} to {MNum}
 MacroOperation {Macro} to {MNum}
+MacroOperation {Macro} {MNum}
 MacroOperation {Macro} {MNum} percent
 MacroOperation set the level of {Macro} to {MNum} percent
 MacroOperation set the level of {Macro} to {MNum}
