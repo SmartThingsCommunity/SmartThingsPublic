@@ -337,10 +337,10 @@ def initialize() {
 
 	settings.devices.each {
 		def deviceId = it
-		def detail = state.deviceDetail[deviceId]
+		def detail = state?.deviceDetail[deviceId]
 
 		try {
-			switch(detail.type) {
+			switch(detail?.type) {
 				case 'NAMain':
 					log.debug "Base station"
 					createChildDevice("Netatmo Basestation", deviceId, "${detail.type}.${deviceId}", detail.module_name)
@@ -487,12 +487,12 @@ def poll() {
     log.debug "State: ${state.deviceState}"
 
 	settings.devices.each { deviceId ->
-		def detail = state.deviceDetail[deviceId]
-		def data = state.deviceState[deviceId]
-		def child = children.find { it.deviceNetworkId == deviceId }
+		def detail = state?.deviceDetail[deviceId]
+		def data = state?.deviceState[deviceId]
+		def child = children?.find { it.deviceNetworkId == deviceId }
 
 		log.debug "Update: $child";
-		switch(detail.type) {
+		switch(detail?.type) {
 			case 'NAMain':
 				log.debug "Updating NAMain $data"
 				child?.sendEvent(name: 'temperature', value: cToPref(data['Temperature']) as float, unit: getTemperatureScale())
