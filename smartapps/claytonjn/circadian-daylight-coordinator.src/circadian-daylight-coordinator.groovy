@@ -160,8 +160,8 @@ private def initialize() {
 
 void setHandler(evt) {
     def sunriseAndSunset = getSunriseAndSunset(zipCode: settings.lZip, sunriseOffset: settings.lSunriseOffset, sunsetOffset: settings.lSunsetOffset)
-    if(lSunriseTime) { sunriseAndSunset.sunrise = lSunriseTime }
-    if(lSunsetTime) { sunriseAndSunset.sunset = lSunsetTime }
+    if(lSunriseTime) { sunriseAndSunset.sunrise = new Date().parse("yyyy-MM-dd'T'HH:mm:ss.SSSZ", lSunriseTime) }
+    if(lSunsetTime) { sunriseAndSunset.sunset = new Date().parse("yyyy-MM-dd'T'HH:mm:ss.SSSZ", lSunsetTime) }
 
     if (settings.updateNotifications == true) {
 		for (message in checkForUpdates()) {
