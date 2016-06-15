@@ -159,9 +159,13 @@ private def initialize() {
 }
 
 void setHandler(evt) {
-    def sunriseAndSunset = getSunriseAndSunset(zipCode: settings.lZip, sunriseOffset: settings.lSunriseOffset, sunsetOffset: settings.lSunsetOffset)
-    if(lSunriseTime) { sunriseAndSunset.sunrise = new Date().parse("yyyy-MM-dd'T'HH:mm:ss.SSSZ", lSunriseTime) }
-    if(lSunsetTime) { sunriseAndSunset.sunset = new Date().parse("yyyy-MM-dd'T'HH:mm:ss.SSSZ", lSunsetTime) }
+    def locationParameters = [:]
+    if (settings.lZip != NULL && settings.lZip != "" && settings.lZip != "000000") { locationParameters.put("zipCode", settings.lZip) }
+    if (settings.lSunriseOffset != NULL && settings.lSunriseOffset != "" && settings.lSunriseOffset != "0") { locationParameters.put("sunriseOffset", settings.lSunriseOffset) }
+    if (settings.lSunsetOffset != NULL && settings.lSunsetOffset != "" && settings.lSunsetOffset != "0") { locationParameters.put("sunsetOffset", settings.lSunsetOffset) }
+    def sunriseAndSunset = getSunriseAndSunset(locationParameters)
+    if (lSunriseTime) { sunriseAndSunset.sunrise = new Date().parse("yyyy-MM-dd'T'HH:mm:ss.SSSZ", lSunriseTime) }
+    if (lSunsetTime) { sunriseAndSunset.sunset = new Date().parse("yyyy-MM-dd'T'HH:mm:ss.SSSZ", lSunsetTime) }
 
     if (settings.updateNotifications == true) {
 		for (message in checkForUpdates()) {
