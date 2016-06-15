@@ -175,8 +175,7 @@ void setHandler(evt) {
 	}
 
     calcColorTemperature(sunriseAndSunset)
-    calcBrightness(sunriseAndSunset)
-    bulbsHandler()
+    bulbsHandler(sunriseAndSunset)
 }
 
 private void calcColorTemperature(sunriseAndSunset) {
@@ -214,55 +213,12 @@ private void calcColorTemperature(sunriseAndSunset) {
     }
 }
 
-private void calcBrightness(sunriseAndSunset) {
-    def nowDate = new Date()
-    def bMin = 1
-    def bMax = 100
-    if (nowDate > sunriseAndSunset.sunrise && nowDate < sunriseAndSunset.sunset) { state.brightness = bMax } //Before sunset/after sunrise
-    else {
-        def nowTime = nowDate.getTime()
-        def sunsetTime = sunriseAndSunset.sunset.getTime()
-        def sunriseTime = sunriseAndSunset.sunrise.getTime()
-        if(nowTime < sunriseTime) { //If it's morning, use estimated sunset from the night before
-            sunsetTime = sunriseAndSunset.sunset.getTime() - (1000*60*60*24)
-        }
-        if(nowTime > sunsetTime) { //If it's evening, use estimated sunset for the next day
-            sunriseTime = sunriseAndSunset.sunrise.getTime() + (1000*60*60*24)
-        }
-        def nightLength = sunriseTime - sunsetTime
-
-        //Generate brightness parabola from points
-        //Specify double type or calculations fail
-        double x1 = sunsetTime
-        double y1 = bMax
-        double x2 = sunsetTime+(nightLength/2)
-        double y2 = bMin
-        double x3 = sunriseTime
-        double y3 = bMax
-        double a1 = -x1**2+x2**2
-        double b1 = -x1+x2
-        double d1 = -y1+y2
-        double a2 = -x2**2+x3**2
-        double b2 = -x2+x3
-        double d2 = -y2+y3
-        double bm = -(b2/b1)
-        double a3 = bm*a1+a2
-        double d3 = bm*d1+d2
-        double a = d3/a3
-        double b = (d1-a1*a)/b1
-        double c = y1-a*x1**2-b*x1
-        state.brightness = a*nowTime**2+b*nowTime+c
-    }
-}
-
-def bulbsHandler() {
+def bulbsHandler(sunriseAndSunset) {
     def children = getChildApps()
     children.each { child ->
-        child.bulbsHandler()
+        child.bulbsHandler(NULL, sunriseAndSunset)
     }
 }
-
-def getBrightness() { return state.brightness }
 
 def getColorTemperature() { return state.colorTemperature }
 

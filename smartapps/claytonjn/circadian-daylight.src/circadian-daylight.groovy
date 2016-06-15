@@ -68,13 +68,7 @@ preferences {
             input "dBulbs", "capability.switchLevel", title: "Dimming Bulbs", multiple: true, required: false
         }
     }
-    page(name: "dimmingPreferences", nextPage: "sleepPreferences", install: false, uninstall: true) {
-        section {
-            paragraph "Dynamic Brightness automatically dims your lights based on natural light.";
-            input "dBright", "bool", title: "Dynamic Brightness", required: false, defaultValue: false
-            paragraph "NOTE: Bulbs selected as Dimming Bulbs use dynamic brightness regardless of this selection."
-        }
-    }
+    page(name: "dimmingPreferences", content: "dimmingPreferences")
     page(name: "sleepPreferences", title: "Sleep Settings", nextPage: "disablePreferences", install: false, uninstall: true) {
         section {
             input "sModes", "mode", title: "When in the selected mode(s), Circadian Daylight will follow the behavior specified below.", multiple:true, required: false
@@ -98,6 +92,20 @@ preferences {
     page(name: "miscPreferences", install: true, uninstall: true) {
         section("Child SmartApp Name"){
             label title: "Assign a name", required: false
+        }
+    }
+}
+
+def dimmingPreferences() {
+    return dynamicPage(name: "dimmingPreferences", nextPage: "sleepPreferences", install: false, uninstall: true) {
+        section {
+            paragraph "Dynamic Brightness automatically dims your lights based on natural light.";
+            input "dBright", "bool", title: "Dynamic Brightness", required: false, defaultValue: false, submitOnChange: true
+            paragraph "NOTE: Bulbs selected as Dimming Bulbs use dynamic brightness regardless of this selection."
+            if (dBright) {
+                input "bMin", "number", title: "Minimum Brightness (1-100)", required: true, defaultValue: 1
+                input "bMax", "number", title: "Minimum Brightness (1-100)", required: true, defaultValue: 100
+            }
         }
     }
 }
@@ -134,6 +142,45 @@ private def initialize() {
 		subscribe(settings.dBulbs, "switch.on", dBulbHandler)
 		subscribe(settings.dBulbs, "cdBrightness.true", dBulbHandler)
 	}
+}
+
+private void calcBrightness(sunriseAndSunset) {
+    def nowDate = new Date()
+    if (nowDate > sunriseAndSunset.sunrise && nowDate < sunriseAndSunset.sunset) { state.brightness = settings.bMax } //Before sunset/after sunrise
+    else {
+        def nowTime = nowDate.getTime()
+        def sunsetTime = sunriseAndSunset.sunset.getTime()
+        def sunriseTime = sunriseAndSunset.sunrise.getTime()
+        if(nowTime < sunriseTime) { //If it's morning, use estimated sunset from the night before
+            sunsetTime = sunriseAndSunset.sunset.getTime() - (1000*60*60*24)
+        }
+        if(nowTime > sunsetTime) { //If it's evening, use estimated sunset for the next day
+            sunriseTime = sunriseAndSunset.sunrise.getTime() + (1000*60*60*24)
+        }
+        def nightLength = sunriseTime - sunsetTime
+
+        //Generate brightness parabola from points
+        //Specify double type or calculations fail
+        double x1 = sunsetTime
+        double y1 = settings.bMax
+        double x2 = sunsetTime+(nightLength/2)
+        double y2 = settings.bMin
+        double x3 = sunriseTime
+        double y3 = settings.bMax
+        double a1 = -x1**2+x2**2
+        double b1 = -x1+x2
+        double d1 = -y1+y2
+        double a2 = -x2**2+x3**2
+        double b2 = -x2+x3
+        double d2 = -y2+y3
+        double bm = -(b2/b1)
+        double a3 = bm*a1+a2
+        double d3 = bm*d1+d2
+        double a = d3/a3
+        double b = (d1-a1*a)/b1
+        double c = y1-a*x1**2-b*x1
+        state.brightness = a*nowTime**2+b*nowTime+c
+    }
 }
 
 private void calcSleepColorTemperature() {
@@ -190,14 +237,14 @@ private void calcSleepBrightness() {
     }
 }
 
-def bulbsHandler(evt = NULL) {
+def bulbsHandler(evt = NULL, sunriseAndSunset = NULL) {
     if(!settings.dModes.contains(location.mode) && !settings.sModes.contains(location.mode)) { return }
 
     for (dSwitch in settings.dSwitches) {
         if(dSwitch.currentSwitch == "on") { return }
     }
 
-    state.brightness = parent.getBrightness()
+    if (sunriseAndSunset != NULL) { calcBrightness(sunriseAndSunset) }
     state.colorTemperature = parent.getColorTemperature()
 
     //Behavior in sleep mode
@@ -236,7 +283,6 @@ def bulbHandler(evt, type) {
         if(dSwitch.currentSwitch == "on") { return }
     }
 
-    state.brightness = parent.getBrightness()
     state.colorTemperature = parent.getColorTemperature()
 
     //Behavior in sleep mode
