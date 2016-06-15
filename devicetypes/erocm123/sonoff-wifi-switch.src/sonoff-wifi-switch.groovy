@@ -34,6 +34,7 @@ metadata {
 	}
     
     preferences {
+        input("powerOnState", "enum", title:"Boot Up State", description: "State of the relay when it boots up", required: false, displayDuringSetup: false, options: [[0:"Off"],[1:"On"],[2:"Previous State"]])
         input("override", "boolean", title:"Override detected IP Address", required: false, displayDuringSetup: false)
         input("ip", "string", title:"IP Address", description: "192.168.1.150", required: false, displayDuringSetup: false)
 	}
@@ -86,11 +87,11 @@ def configure() {
     if (ip != null && ip != "" && override == "true") state.dni = setDeviceNetworkId(ip, "80")
     state.hubIP = device.hub.getDataValue("localIP")
     state.hubPort = device.hub.getDataValue("localSrvPortTCP")
-    response(configureInstant(state.hubIP, state.hubPort))
+    response(configureInstant(state.hubIP, state.hubPort, powerOnState))
 }
 
-def configureInstant(ip, port){
-    return [getAction("/config?haip=${ip}&haport=${port}")]
+def configureInstant(ip, port, pos){
+    return [getAction("/config?haip=${ip}&haport=${port}&pos=${pos}")]
 }
 
 def parse(description) {
@@ -158,9 +159,9 @@ def parse(description) {
         hubInfoText = hubInfoText + "Uptime: " + state.uptime
     }
     if (state.configured == true) {
-        hubInfoText = hubInfoText + "\r\nSwitch has been configured"
+        hubInfoText = hubInfoText + "\r\n - Configured: Yes"
     } else {
-        hubInfoText = hubInfoText + "\r\nSwitch has not been configured"
+        hubInfoText = hubInfoText + "\r\n - Configured: NO"
     }
     
     events << createEvent(name:"hubInfo", value:hubInfoText, displayed:false)
@@ -203,6 +204,7 @@ def refresh() {
 private getAction(uri){ 
   updateDNI()
   def headers = getHeader()
+  log.debug headers
   def hubAction = new physicalgraph.device.HubAction(
     method: "GET",
     path: uri,
