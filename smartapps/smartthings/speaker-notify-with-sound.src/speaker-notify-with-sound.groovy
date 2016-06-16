@@ -92,7 +92,7 @@ def mainPage() {
 			input "message","text",title:"Play this message", required:false, multiple: false
 		}
 		section {
-			input "sonos", "capability.musicPlayer", title: "On this Speaker player", required: true
+			input "sonos", "capability.audioNotification", title: "On this Speaker player", required: true
 		}
 		section("More options", hideable: true, hidden: true) {
 			input "resumePlaying", "bool", title: "Resume currently playing music after notification", required: false, defaultValue: true
