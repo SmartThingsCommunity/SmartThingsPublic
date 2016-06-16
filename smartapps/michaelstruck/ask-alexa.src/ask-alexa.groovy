@@ -2007,8 +2007,7 @@ private replaceVoiceVar(msg) {
     def df = new java.text.SimpleDateFormat("EEEE")
     def isMetric = location.temperatureScale == "C"
 	location.timeZone ? df.setTimeZone(location.timeZone) : df.setTimeZone(TimeZone.getTimeZone("America/New_York"))
-	def day = df.format(new Date()), time = 
-	("","h:mm a"), month = parseDate("","MMMM"), year = parseDate("","yyyy"), dayNum = parseDate("","d")
+	def day = df.format(new Date()), time = parseDate("","h:mm a"), month = parseDate("","MMMM"), year = parseDate("","yyyy"), dayNum = parseDate("","d")
     def varList = parent.getVariableList()
     def temp = varList[0].temp
     if (isMetric && temp !="undefined device") {
