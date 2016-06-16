@@ -238,7 +238,14 @@ private void calcSleepBrightness() {
 }
 
 def bulbsHandler(evt = NULL, sunriseAndSunset = NULL) {
-    if(!settings.dModes.contains(location.mode) && !settings.sModes.contains(location.mode)) { return }
+    if (settings.dModes != NULL) {
+        if (!settings.dModes.contains(location.mode)) {
+            if (settings.sModes == NULL) { return }
+            if (settings.sModes != NULL) {
+                if (!settings.sModes.contains(location.mode)) { return }
+            }
+        }
+    }
 
     for (dSwitch in settings.dSwitches) {
         if(dSwitch.currentSwitch == "on") { return }
@@ -277,7 +284,14 @@ def dBulbHandler(evt) {
 }
 
 def bulbHandler(evt, type) {
-    if(!settings.dModes.contains(location.mode) && !settings.sModes.contains(location.mode)) { return }
+    if (settings.dModes != NULL) {
+        if (!settings.dModes.contains(location.mode)) {
+            if (settings.sModes == NULL) { return }
+            if (settings.sModes != NULL) {
+                if (!settings.sModes.contains(location.mode)) { return }
+            }
+        }
+    }
 
     for (dSwitch in settings.dSwitches) {
         if(dSwitch.currentSwitch == "on") { return }
