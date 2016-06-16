@@ -108,7 +108,7 @@ def configureLight(params) {
 					break
 				case ~/.*Dimmer.*/:
                     input "lights_${params.buttonNumber}_${params.lightId}_power", "bool", title: "Turn the light on or off", submitOnChange: false
-                    input "lights_${params.buttonNumber}_${params.lightId}_lightLevel", "enum", title: "Light Level?", required: false, options: [[10:"10%"],[20:"20%"],[30:"30%"],[40:"40%"],[50:"50%"],[60:"60%"],[70:"70%"],[80:"80%"],[90:"90%"],[100:"100%"]]
+                    input "lights_${params.buttonNumber}_${params.lightId}_lightLevel", "enum", title: "Light Level?", required: false, options: [[1:"1%"],[5:"5%"],[10:"10%"],[20:"20%"],[30:"30%"],[40:"40%"],[50:"50%"],[60:"60%"],[70:"70%"],[80:"80%"],[90:"90%"],[100:"100%"]]
 					break
 				case ~/.*Color.*/:
                     input "lights_${params.buttonNumber}_${params.lightId}_power", "bool", title: "Turn the light on or off", submitOnChange: false
@@ -118,7 +118,7 @@ def configureLight(params) {
 					["Daylight":"Daylight - Energize"],
 					["Warm White":"Warm White - Relax"],
 					"Red","Green","Blue","Yellow","Orange","Purple","Pink","Random"]
-					input "lights_${params.buttonNumber}_${params.lightId}_lightLevel", "enum", title: "Light Level?", required: false, options: [[10:"10%"],[20:"20%"],[30:"30%"],[40:"40%"],[50:"50%"],[60:"60%"],[70:"70%"],[80:"80%"],[90:"90%"],[100:"100%"]]
+					input "lights_${params.buttonNumber}_${params.lightId}_lightLevel", "enum", title: "Light Level?", required: false, options: [[1:"1%"],[5:"5%"],[10:"10%"],[20:"20%"],[30:"30%"],[40:"40%"],[50:"50%"],[60:"60%"],[70:"70%"],[80:"80%"],[90:"90%"],[100:"100%"]]
 					break
             }
         }
