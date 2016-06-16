@@ -1,7 +1,7 @@
 /**
  *  Ask Alexa 
  *
- *  Version 2.0.1b - 6/16/16 Copyright © 2016 Michael Struck
+ *  Version 2.0.1a - 6/12/16 Copyright © 2016 Michael Struck
  *  Special thanks for Keith DeLong for overall code and assistance and Barry Burke for weather reporting code
  * 
  *  Version 1.0.0 - Initial release
@@ -13,7 +13,7 @@
  *  Version 1.1.1d - Added limits to temperature and speaker values; additional macros device types added
  *  Version 1.1.2 - Updated averages of temp/humidity with proper math function
  *  Version 2.0.0b - Code consolidated from Parent/Child to a single code base. Added CoRE Trigger and CoRE support. Many fixes
- *  Version 2.0.1b - Fixed issue with listing CoRE macros; fixed syntax issues and improved acknowledgment message in Group Macros, more CoRE output behind-the-scenes
+ *  Version 2.0.1a - Fixed issue with listing CoRE macros; fixed syntax issues and improved acknowledgment message in Group Macros, more CoRE output behind-the-scenes
  *
  *  Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except
  *  in compliance with the License. You may obtain a copy of the License at:
@@ -2036,7 +2036,7 @@ private replaceVoiceVar(msg) {
     }
     msg
 }
-private timeParse(time, type) { new Date().parse("yyyy-MM-dd'T'HH:mm:ss.SSSZ", time).format("${type}", location.timeZone)}
+private timeParse(time, type) { new Date().parse("yyyy-MM-dd'T'HH:mm:ss.SSSZ", time).format("${type}", timeZone(formattedDate))}
 private parseDate(time, type){
     long longDate = time ? Long.valueOf(time).longValue() : now()
     def formattedDate = new Date(longDate).format("yyyy-MM-dd'T'HH:mm:ss.SSSZ", location.timeZone)
@@ -2372,12 +2372,12 @@ def sendJSON(outputTxt, lVer){
 //Version/Copyright/Information/Help-----------------------------------------------------------
 private def textAppName() { def text = "Ask Alexa" }	
 private def textVersion() {
-    def version = "SmartApp Version: 2.0.1b (06/16/2016)"
+    def version = "SmartApp Version: 2.0.1a (06/12/2016)"
     def lambdaVersion = state.lambdaCode ? "\n" + state.lambdaCode : ""
     return "${version}${lambdaVersion}"
 }
 private def versionInt(){ return 201 }
-private def versionLong(){ return "2.0.1b" }
+private def versionLong(){ return "2.0.1a" }
 private def textCopyright() {return "Copyright © 2016 Michael Struck" }
 private def textLicense() {
 	def text = "Licensed under the Apache License, Version 2.0 (the 'License'); "+
@@ -2397,3 +2397,4 @@ private def textHelp() {
     	"query the SmartThings environment via the Amazon Echo ('Alexa'). "+
     	"For more information, go to http://thingsthataresmart.wiki/index.php?title=Ask_Alexa."
 }
+
