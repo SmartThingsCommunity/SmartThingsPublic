@@ -145,42 +145,44 @@ private def initialize() {
 }
 
 private void calcBrightness(sunriseAndSunset) {
-    def nowDate = new Date()
-    if (nowDate > sunriseAndSunset.sunrise && nowDate < sunriseAndSunset.sunset) { state.brightness = settings.bMax } //Before sunset/after sunrise
-    else {
-        def nowTime = nowDate.getTime()
-        def sunsetTime = sunriseAndSunset.sunset.getTime()
-        def sunriseTime = sunriseAndSunset.sunrise.getTime()
-        if(nowTime < sunriseTime) { //If it's morning, use estimated sunset from the night before
-            sunsetTime = sunriseAndSunset.sunset.getTime() - (1000*60*60*24)
-        }
-        if(nowTime > sunsetTime) { //If it's evening, use estimated sunset for the next day
-            sunriseTime = sunriseAndSunset.sunrise.getTime() + (1000*60*60*24)
-        }
-        def nightLength = sunriseTime - sunsetTime
+    if (settings.dBright == true) {
+        def nowDate = new Date()
+        if (nowDate > sunriseAndSunset.sunrise && nowDate < sunriseAndSunset.sunset) { state.brightness = settings.bMax } //Before sunset/after sunrise
+        else {
+            def nowTime = nowDate.getTime()
+            def sunsetTime = sunriseAndSunset.sunset.getTime()
+            def sunriseTime = sunriseAndSunset.sunrise.getTime()
+            if(nowTime < sunriseTime) { //If it's morning, use estimated sunset from the night before
+                sunsetTime = sunriseAndSunset.sunset.getTime() - (1000*60*60*24)
+            }
+            if(nowTime > sunsetTime) { //If it's evening, use estimated sunset for the next day
+                sunriseTime = sunriseAndSunset.sunrise.getTime() + (1000*60*60*24)
+            }
+            def nightLength = sunriseTime - sunsetTime
 
-        //Generate brightness parabola from points
-        //Specify double type or calculations fail
-        double x1 = sunsetTime
-        double y1 = settings.bMax
-        double x2 = sunsetTime+(nightLength/2)
-        double y2 = settings.bMin
-        double x3 = sunriseTime
-        double y3 = settings.bMax
-        double a1 = -x1**2+x2**2
-        double b1 = -x1+x2
-        double d1 = -y1+y2
-        double a2 = -x2**2+x3**2
-        double b2 = -x2+x3
-        double d2 = -y2+y3
-        double bm = -(b2/b1)
-        double a3 = bm*a1+a2
-        double d3 = bm*d1+d2
-        double a = d3/a3
-        double b = (d1-a1*a)/b1
-        double c = y1-a*x1**2-b*x1
-        state.brightness = a*nowTime**2+b*nowTime+c
-    }
+            //Generate brightness parabola from points
+            //Specify double type or calculations fail
+            double x1 = sunsetTime
+            double y1 = settings.bMax
+            double x2 = sunsetTime+(nightLength/2)
+            double y2 = settings.bMin
+            double x3 = sunriseTime
+            double y3 = settings.bMax
+            double a1 = -x1**2+x2**2
+            double b1 = -x1+x2
+            double d1 = -y1+y2
+            double a2 = -x2**2+x3**2
+            double b2 = -x2+x3
+            double d2 = -y2+y3
+            double bm = -(b2/b1)
+            double a3 = bm*a1+a2
+            double d3 = bm*d1+d2
+            double a = d3/a3
+            double b = (d1-a1*a)/b1
+            double c = y1-a*x1**2-b*x1
+            state.brightness = a*nowTime**2+b*nowTime+c
+        }
+    } else { state.brightness = NULL }
 }
 
 private void calcSleepColorTemperature() {
@@ -319,7 +321,7 @@ def bulbHandler(evt) {
 
 private void setCTBulb(ctBulb, brightness = state.brightness, colorTemperature = state.colorTemperature) {
     if(ctBulb.currentValue("switch") == "on") {
-        if((dBright == true && ctBulb.currentValue("cdBrightness") != "false")) {
+        if(brightness != NULL && ctBulb.currentValue("cdBrightness") != "false") {
             if(ctBulb.currentValue("level") != brightness) {
                 ctBulb.setLevel(brightness)
             }
@@ -332,15 +334,15 @@ private void setCTBulb(ctBulb, brightness = state.brightness, colorTemperature =
     }
 }
 
-private void setCBulb(cBulb, brightness, hex = rgbToHex(ctToRGB(state.colorTemperature)).toUpperCase(), hsv = rgbToHSV(ctToRGB(state.colorTemperature))) {
+private void setCBulb(cBulb, brightness = state.brightness, hex = rgbToHex(ctToRGB(state.colorTemperature)).toUpperCase(), hsv = rgbToHSV(ctToRGB(state.colorTemperature))) {
     def color = [hex: hex, hue: hsv.h, saturation: hsv.s]
 
     if(cBulb.currentValue("switch") == "on") {
+        if(brightness != NULL && cBulb.currentValue("cdBrightness") != "false")  {
+            color.level = brightness
+        }
         if(cBulb.currentValue("cdColor") != "false") {
-            if((cBulb.currentValue("colormode") != "xy" && cBulb.currentValue("colormode") != "hs") || (cBulb.currentValue("color") != hex && cBulb.currentValue("level") != brightness)) {
-                if(dBright == true && cBulb.currentValue("cdBrightness") != "false") {
-                    color.level = brightness
-                }
+            if((cBulb.currentValue("colormode") != "xy" && cBulb.currentValue("colormode") != "hs") || cBulb.currentValue("color") != hex) {
                 cBulb.setColor(color)
             }
         }
