@@ -101,7 +101,6 @@ def dimmingPreferences() {
         section {
             paragraph "Dynamic Brightness automatically dims your lights based on natural light.";
             input "dBright", "bool", title: "Dynamic Brightness", required: false, defaultValue: false, submitOnChange: true
-            paragraph "NOTE: Bulbs selected as Dimming Bulbs use dynamic brightness regardless of this selection."
             if (dBright) {
                 input "bMin", "number", title: "Minimum Brightness (1-100)", required: true, defaultValue: 1
                 input "bMax", "number", title: "Maximum Brightness (1-100)", required: true, defaultValue: 100
@@ -338,7 +337,7 @@ private void setCBulb(cBulb, brightness = state.brightness, hex = rgbToHex(ctToR
     def color = [hex: hex, hue: hsv.h, saturation: hsv.s]
 
     if(cBulb.currentValue("switch") == "on") {
-        if(brightness != NULL && cBulb.currentValue("cdBrightness") != "false")  {
+        if(brightness != NULL && cBulb.currentValue("cdBrightness") != "false") {
             color.level = brightness
         }
         if(cBulb.currentValue("cdColor") != "false") {
@@ -351,7 +350,7 @@ private void setCBulb(cBulb, brightness = state.brightness, hex = rgbToHex(ctToR
 
 private void setDBulb(dBulb, brightness = state.brightness) {
     if(dBulb.currentValue("switch") == "on") {
-        if(dBulb.currentValue("cdBrightness") != "false") {
+        if(brightness != NULL && dBulb.currentValue("cdBrightness") != "false") {
             if(dBulb.currentValue("level") != brightness) {
                 dBulb.setLevel(brightness)
             }
