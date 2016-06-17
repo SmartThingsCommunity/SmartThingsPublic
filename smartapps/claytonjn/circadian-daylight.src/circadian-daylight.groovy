@@ -129,18 +129,18 @@ private def initialize() {
     if(settings.dSwitches) { subscribe(settings.dSwitches, "switch.off", bulbsHandler) }
 
     if(settings.ctBulbs) {
-		subscribe(settings.ctBulbs, "switch.on", ctBulbHandler)
-		subscribe(settings.ctBulbs, "cdBrightness.true", ctBulbHandler)
-		subscribe(settings.ctBulbs, "cdColor.true", ctBulbHandler)
+		subscribe(settings.ctBulbs, "switch.on", bulbHandler)
+		subscribe(settings.ctBulbs, "cdBrightness.true", bulbHandler)
+		subscribe(settings.ctBulbs, "cdColor.true", bulbHandler)
 	}
     if(settings.cBulbs) {
-		subscribe(settings.cBulbs, "switch.on", cBulbHandler)
-		subscribe(settings.cBulbs, "cdBrightness.true", cBulbHandler)
-		subscribe(settings.cBulbs, "cdColor.true", cBulbHandler)
+		subscribe(settings.cBulbs, "switch.on", bulbHandler)
+		subscribe(settings.cBulbs, "cdBrightness.true", bulbHandler)
+		subscribe(settings.cBulbs, "cdColor.true", bulbHandler)
 	}
     if(settings.dBulbs) {
-		subscribe(settings.dBulbs, "switch.on", dBulbHandler)
-		subscribe(settings.dBulbs, "cdBrightness.true", dBulbHandler)
+		subscribe(settings.dBulbs, "switch.on", bulbHandler)
+		subscribe(settings.dBulbs, "cdBrightness.true", bulbHandler)
 	}
 }
 
@@ -271,19 +271,7 @@ def bulbsHandler(evt = NULL, sunriseAndSunset = NULL) {
     for(dBulb in settings.dBulbs) { setDBulb(dBulb, brightness) }
 }
 
-def ctBulbHandler(evt) {
-    bulbHandler(evt, "ctBulbs")
-}
-
-def cBulbHandler(evt) {
-    bulbHandler(evt, "cBulbs")
-}
-
-def dBulbHandler(evt) {
-    bulbHandler(evt, "dBulbs")
-}
-
-def bulbHandler(evt, type) {
+def bulbHandler(evt) {
     if (settings.dModes != NULL) {
         if (!settings.dModes.contains(location.mode)) {
             if (settings.sModes == NULL) { return }
@@ -305,14 +293,14 @@ def bulbHandler(evt, type) {
         calcSleepColorTemperature()
     }
 
-    if(type == "ctBulbs") {
+    if(evt.device.deviceNetworkId in settings.ctBulbs?.deviceNetworkId) {
         //Minimize reading state variables
         def brightness = state.brightness
         def colorTemperature = state.colorTemperature
 
         setCTBulb(evt.device, brightness, colorTemperature)
     }
-    if(type == "cBulbs") {
+    if(evt.device.deviceNetworkId in settings.cBulbs?.deviceNetworkId) {
         //Minimize reading state variables
         def brightness = state.brightness
         def colorTemperature = state.colorTemperature
@@ -321,7 +309,7 @@ def bulbHandler(evt, type) {
 
         setCBulb(evt.device)
     }
-    if(type == "dBulbs") {
+    if(evt.device.deviceNetworkId in settings.dBulbs?.deviceNetworkId) {
         //Minimize reading state variables
         def brightness = state.brightness
 
