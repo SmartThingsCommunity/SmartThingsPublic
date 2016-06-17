@@ -104,7 +104,7 @@ def dimmingPreferences() {
             paragraph "NOTE: Bulbs selected as Dimming Bulbs use dynamic brightness regardless of this selection."
             if (dBright) {
                 input "bMin", "number", title: "Minimum Brightness (1-100)", required: true, defaultValue: 1
-                input "bMax", "number", title: "Minimum Brightness (1-100)", required: true, defaultValue: 100
+                input "bMax", "number", title: "Maximum Brightness (1-100)", required: true, defaultValue: 100
             }
         }
     }
