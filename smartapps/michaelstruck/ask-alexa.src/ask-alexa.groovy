@@ -1,7 +1,7 @@
 /**
  *  Ask Alexa 
  *
- *  Version 2.0.2 - 6/15/16 Copyright © 2016 Michael Struck
+ *  Version 2.0.2a - 6/17/16 Copyright © 2016 Michael Struck
  *  Special thanks for Keith DeLong for overall code and assistance and Barry Burke for weather reporting code
  * 
  *  Version 1.0.0 - Initial release
@@ -14,7 +14,7 @@
  *  Version 1.1.2 - Updated averages of temp/humidity with proper math function
  *  Version 2.0.0b - Code consolidated from Parent/Child to a single code base. Added CoRE Trigger and CoRE support. Many fixes
  *  Version 2.0.1 - Fixed issue with listing CoRE macros; fixed syntax issues and improved acknowledgment message in Group Macros, more CoRE output behind-the-scenes
- *  Version 2.0.2 - Added %delay% macro for custom acknowledgment for pre/post text areas, dimmer/group fixes and added lunar phases (thanks again to Barry Burke), 2nd level acknowledgments in Alexa
+ *  Version 2.0.2a - Added %delay% macro for custom acknowledgment for pre/post text areas, dimmer/group fixes and added lunar phases (thanks again to Barry Burke), 2nd level acknowledgments in Alexa
  *
  *  Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except
  *  in compliance with the License. You may obtain a copy of the License at:
@@ -1287,7 +1287,7 @@ def setupData(){
     }
     if (deviceNames) deviceNames.each{result += it + "<br>" }
 	result += "<br><b>LIST_OF_OPERATORS</b><br><br>on<br>off<br>toggle<br>up<br>down<br>increase<br>decrease<br>lower<br>raise<br>" +
-    	"status<br>events<br>event<br>low<br>medium<br>high<br>lock<br>unlock<br>lock<br>unlock<br>open<br>close<br>maximum<br>"
+    	"status<br>events<br>event<br>low<br>medium<br>high<br>lock<br>unlock<br>open<br>close<br>maximum<br>"
     result += speakers ?"play<br>stop<br>pause<br>mute<br>unmute<br>next track<br>previous track<br>" : ""
     result += "<br><b>LIST_OF_PARAMS</b><br><br>"
 	result += "heat<br>cool<br>heating<br>cooling<br>auto<br>automatic<br>"
@@ -1660,9 +1660,7 @@ def speakerReport(){
     if (voiceSpeakerOn) {
         if (voiceSpeaker.latestValue("status").contains("playing")) {
         	voiceSpeaker.each { deviceName->
-            	def level = deviceName.currentValue("level") as int
-                def track = deviceName.currentValue("trackDescription")
-                def mute = deviceName.currentValue("mute")
+            	def level = deviceName.currentValue("level"), track = deviceName.currentValue("trackDescription"), mute = deviceName.currentValue("mute")
                 if (deviceName.latestValue("status")=="playing") {
                 	result += "${deviceName} is playing"
                     if (track) result += ": ${track}"
@@ -1672,17 +1670,17 @@ def speakerReport(){
 		}
 	}
 	else{
-    	voiceSpeaker.each { deviceName->
-			def onOffStatus = deviceName.currentValue("status")
-            def level = deviceName.currentValue("level") as int
-            def track = deviceName.currentValue("trackDescription")
-			def mute = deviceName.currentValue("mute")
-			result += "${deviceName} is ${onOffStatus}"
-			result += onOffStatus =="stopped" ? ". " : onOffStatus=="playing" && track ? ": '${track}'" : ""
-			result += onOffStatus == "playing" && level && mute =="unmuted" ? ", and it's volume is set to ${level}%. " : mute =="muted" ? ", and it's currently muted. " :""
-		}
+        voiceSpeaker.each { deviceName->
+            def onOffStatus = deviceName.currentValue("status"), level = deviceName.currentValue("level"), track = deviceName.currentValue("trackDescription"), mute = deviceName.currentValue("mute")
+            if (onOffStatus) {
+            	result += "${deviceName} is ${onOffStatus}"
+				result += onOffStatus =="stopped" ? ". " : onOffStatus=="playing" && track ? ": '${track}'" : ""
+				result += onOffStatus == "playing" && level && mute =="unmuted" ? ", and it's volume is set to ${level}%. " : mute =="muted" ? ", and it's currently muted. " :""
+			}
+            else result += "${deviceName} is not reporting any status. "
+        }
 	}
-    result
+    return result
 }
 def presenceReport(){
 	def result = ""
@@ -2484,12 +2482,12 @@ def sendJSON(outputTxt, lVer){
 //Version/Copyright/Information/Help-----------------------------------------------------------
 private def textAppName() { def text = "Ask Alexa" }	
 private def textVersion() {
-    def version = "SmartApp Version: 2.0.2 (06/15/2016)"
+    def version = "SmartApp Version: 2.0.2a (06/17/2016)"
     def lambdaVersion = state.lambdaCode ? "\n" + state.lambdaCode : ""
     return "${version}${lambdaVersion}"
 }
 private def versionInt(){ return 202 }
-private def versionLong(){ return "2.0.2" }
+private def versionLong(){ return "2.0.2a" }
 private def textCopyright() {return "Copyright © 2016 Michael Struck" }
 private def textLicense() {
 	def text = "Licensed under the Apache License, Version 2.0 (the 'License'); "+
