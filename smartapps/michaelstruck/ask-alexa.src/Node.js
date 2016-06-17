@@ -1,7 +1,7 @@
 /**
  *  Ask Alexa - Lambda Code
  *
- *  Version 1.1.2 - 6/9/16 Copyright © 2016 Michael Struck
+ *  Version 1.1.3 - 6/15/16 Copyright © 2016 Michael Struck
  *  Special thanks for Keith DeLong for code and assistance
  *  
  *  Version 1.0.0 - Initial release
@@ -9,7 +9,8 @@
  *  Version 1.1.0 - Added two addition intent types for groups and macros
  *  Version 1.1.1 - Added messages to indicate bad OAuth or Application ID
  *  Version 1.1.2 - Fixed small syntax error in a couple responses
- *
+ *  Version 1.1.3 - Fixed additional syntax items; added stop/cancel/end/yes options
+ * 
  *  Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except
  *  in compliance with the License. You may obtain a copy of the License at:
  *
@@ -22,9 +23,9 @@
  */
 'use strict';
 exports.handler = function( event, context ) {
-   var versionTxt = '1.1.2';
-   var versionDate= '06/09/2016';
-   var versionNum = '112';
+   var versionTxt = '1.1.3';
+   var versionDate= '06/15/2016';
+   var versionNum = '113';
    var https = require( 'https' );
    // Paste app code here between the breaks------------------------------------------------
     var IName = 'SmartThings';
@@ -34,11 +35,11 @@ exports.handler = function( event, context ) {
    //---------------------------------------------------------------------------------------
    var cardName ="";
    if (event.request.type == "LaunchRequest") {
-        var speech = "Simply give me a device and a command, or ask me the status of a device, and I will carry out your request.";
+        var speech = "Simply give me a device and a command, or ask me the status of a device, and I will carry out your request. Would you like to try something? ";
         cardName = "Ask Alexa Help";
-        output(speech, context, cardName);
+        output(speech, context, cardName, false);
    }
-   else if (event.request.type === "SessionEndedRequest"){
+   else if (event.request.type == "SessionEndedRequest"){
    }
    else if (event.request.type == "IntentRequest") {
         var process = false;
@@ -81,20 +82,32 @@ exports.handler = function( event, context ) {
             process = true;
             cardName = "SmartThings Home Operation";
         }
+        else if (event.request.intent.name == "AMAZON.YesIntent") {
+            output(" Ok. Simply say what you want me to do with your SmartThings devices or macros. ", context, "SmartThings Alexa Yes Command", false);
+        }
+        else if (event.request.intent.name == "AMAZON.NoIntent") {
+            output(" Ok. Maybe later. ", context, "SmartThings Alexa End Command", true);
+        }
+        else if (event.request.intent.name == "AMAZON.StopIntent") {
+            output(" Stopping. ", context, "Amazon Stop", true);
+        }
+        else if (event.request.intent.name == "AMAZON.CancelIntent") {
+            output(" Cancelling. ", context, "Amazon Cancel", true);
+        }
         else if (intentName == "AMAZON.HelpIntent") {
             var help = "With the Ask Alexa SmartApp, you can interface your "+
-            "SmartThings household with me. This will allow you to give me commands "+
+            "SmartThings' household with me. This will allow you to give me commands "+
             "to turn off a light, or unlock a door. As an example you can simply say, "+
             "'tell "+ IName +" to turn off the living room', and I'll turn off that device. " +
             "In addition, you can query your devices to get information such as open or "+
             "close status, or find out the temperature in a room. To use this function, just give "+
-            "me the device name. For example, you could say, 'ask "+ IName +" about the patio'. and I will "+
+            "me the device name. For example, you could say, 'ask "+ IName +" about the patio', and I'll "+
             "give you all of the common attributes I find with that device, including battery levels. "+
             "For those who are curious, this is version" + versionTxt +" of the Lambda code, written by Michael Struck. ";
-            output(help, context, "Ask Alexa Help");
+            output(help, context, "Ask Alexa Help", true);
         }
         if (!process) {
-            output("I am not sure what you are asking. Please try again", context, "Ask Alexa Error");   
+            output("I am not sure what you are asking. Would you like to try again?", context, "Ask Alexa Error", false);   
         }
         else {
             url += '&lVer=' + versionNum + '&access_token=' + STtoken;
@@ -102,20 +115,31 @@ exports.handler = function( event, context ) {
                 response.on( 'data', function( data ) {
                 var resJSON = JSON.parse(data);
                 var speechText;
+                var endSession = true;
                 if (resJSON.voiceOutput) { speechText = resJSON.voiceOutput; }
+                if (speechText.endsWith("%1error%")) { 
+                	speechText = speechText.slice(0, -8);
+                	speechText += "Would you like to try again? ";
+                    endSession = false; 
+                }
+                if (speechText.endsWith("%2error%")) { 
+                	speechText = speechText.slice(0, -8);
+                	speechText += "Want to try again? ";
+                    endSession= false;
+                }
                 if (resJSON.error) speechText = "There was an error with the Ask Alexa SmartApp execution. If this continues, please contact the author of the SmartApp. ";
                 if (resJSON.error === "invalid_token" || resJSON.type === "AccessDenied") {
                     speechText = "There was an error accessing the SmartThings cloud environment. Please check your security token and application ID and try again. ";
                 }
                 console.log(speechText);
-                output(speechText, context, cardName);
+                output(speechText, context, cardName, endSession);
                 } );
             } );
         }
     }
 };
 
-function output( text, context, card ) { 
+function output( text, context, card, complete ) { 
    var response = {
       outputSpeech: {
          type: "PlainText",
@@ -126,7 +150,7 @@ function output( text, context, card ) {
          title: card,
          content: text
       },
-   shouldEndSession: true
+   shouldEndSession: complete
    };
    context.succeed( { response: response } );
 }
