@@ -141,6 +141,8 @@ private def initialize() {
 		subscribe(settings.dBulbs, "switch.on", bulbHandler)
 		subscribe(settings.dBulbs, "cdBrightness.true", bulbHandler)
 	}
+
+    subscribe(location, "mode", modeChangeHandler)
 }
 
 private void calcBrightness(sunriseAndSunset) {
@@ -323,7 +325,12 @@ private void setCTBulb(ctBulb, brightness = state.brightness, colorTemperature =
     if(ctBulb.currentValue("switch") == "on") {
         if(brightness != NULL && ctBulb.currentValue("cdBrightness") != "false") {
             if(ctBulb.currentValue("level") != brightness) {
-                ctBulb.setLevel(brightness)
+                if(settings.dBright != true && settings.sModes != NULL && !settings.sModes.contains(location.currentMode) && state.sBulbs.containsKey(ctBulb.deviceNetworkId)) {
+                    ctBulb.setLevel(state.sBulbs.get(ctBulb.deviceNetworkId))
+                    state.sBulbs.remove(ctBulb.deviceNetworkId)
+                } else {
+                    ctBulb.setLevel(brightness)
+                }
             }
         }
         if(ctBulb.currentValue("cdColor") != "false") {
@@ -339,7 +346,12 @@ private void setCBulb(cBulb, brightness = state.brightness, hex = rgbToHex(ctToR
 
     if(cBulb.currentValue("switch") == "on") {
         if(brightness != NULL && cBulb.currentValue("cdBrightness") != "false") {
-            color.level = brightness
+            if(settings.dBright != true && settings.sModes != NULL && !settings.sModes.contains(location.currentMode) && state.sBulbs.containsKey(cBulb.deviceNetworkId)) {
+                color.level = state.sBulbs.get(cBulb.deviceNetworkId)
+                state.sBulbs.remove(cBulb.deviceNetworkId)
+            } else {
+                color.level = brightness
+            }
         }
         if(cBulb.currentValue("cdColor") != "false") {
             if((cBulb.currentValue("colormode") != "xy" && cBulb.currentValue("colormode") != "hs") || cBulb.currentValue("color") != hex) {
@@ -353,9 +365,35 @@ private void setDBulb(dBulb, brightness = state.brightness) {
     if(dBulb.currentValue("switch") == "on") {
         if(brightness != NULL && dBulb.currentValue("cdBrightness") != "false") {
             if(dBulb.currentValue("level") != brightness) {
-                dBulb.setLevel(brightness)
+                if(settings.dBright != true && settings.sModes != NULL && !settings.sModes.contains(location.currentMode) && state.sBulbs.containsKey(dBulb.deviceNetworkId)) {
+                    dBulb.setLevel(state.sBulbs.get(dBulb.deviceNetworkId))
+                    state.sBulbs.remove(dBulb.deviceNetworkId)
+                } else {
+                    dBulb.setLevel(brightness)
+                }
             }
         }
+    }
+}
+
+def modeChangeHandler(evt) {
+    if (evt.value in settings.sModes) {
+        for (ctBulb in settings.ctBulbs) {
+            if (state.sBulbs == NULL || !state.sBulbs.containsKey(ctBulb.deviceNetworkId)) {
+                state.sBulbs.put(ctBulb.deviceNetworkId, ctBulb.currentValue("level"))
+            }
+        }
+        for (cBulb in settings.cBulbs) {
+            if (state.sBulbs == NULL || !state.sBulbs.containsKey(cBulb.deviceNetworkId)) {
+                state.sBulbs.put(cBulb.deviceNetworkId, cBulb.currentValue("level"))
+            }
+        }
+        for (dBulb in settings.dBulbs) {
+            if (state.sBulbs == NULL || !state.sBulbs.containsKey(dBulb.deviceNetworkId)) {
+                state.sBulbs.put(dBulb.deviceNetworkId, dBulb.currentValue("level"))
+            }
+        }
+        state.sModes = true
     }
 }
 
