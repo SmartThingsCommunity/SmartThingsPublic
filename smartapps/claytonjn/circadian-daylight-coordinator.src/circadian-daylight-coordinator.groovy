@@ -222,7 +222,8 @@ private void calcColorTemperature(sunriseAndSunset) {
         double a = d3/a3
         double b = (d1-a1*a)/b1
         double c = y1-a*x1**2-b*x1
-        state.colorTemperature = a*nowTime**2+b*nowTime+c
+        double colorTemperature = a*nowTime**2+b*nowTime+c
+        state.colorTemperature = Math.round(colorTemperature) as Integer
     }
 }
 

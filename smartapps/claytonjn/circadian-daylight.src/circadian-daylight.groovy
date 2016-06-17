@@ -179,7 +179,8 @@ private void calcBrightness(sunriseAndSunset) {
             double a = d3/a3
             double b = (d1-a1*a)/b1
             double c = y1-a*x1**2-b*x1
-            state.brightness = a*nowTime**2+b*nowTime+c
+            double brightness = a*nowTime**2+b*nowTime+c
+            state.brightness = Math.round(brightness) as Integer
         }
     } else { state.brightness = NULL }
 }
