@@ -62,22 +62,33 @@ singleInstance: true
 
 preferences {
     page(name: "childInstances", content: "childInstances")
+    page(name: "ctPreferences", content: "ctPreferences")
     page(name: "locationPreferences", content: "locationPreferences")
     page(name: "updatePreferences", content:"updatePreferences")
 }
 
 def childInstances() {
     if(settings.updateNotifications != NULL) { //use this because boolean input should always have some value
-        return dynamicPage(name: "childInstances", nextPage: "locationPreferences", install: false, uninstall: true) {
+        return dynamicPage(name: "childInstances", nextPage: "ctPreferences", install: false, uninstall: true) {
             section {
                 app(appName: "Circadian Daylight", namespace: "claytonjn", title: "New Circadian Daylight Setup", multiple: true)
             }
         }
     } else {
-        return dynamicPage(name: "childInstances", nextPage: "locationPreferences", install: false, uninstall: true) {
+        return dynamicPage(name: "childInstances", nextPage: "ctPreferences", install: false, uninstall: true) {
             section {
                 paragraph "Thank you for installing Circadian Daylight! This application adjusts your lights to simulate the light of the sun, which has been proven to aid in cognitive functions and restfulness."
             }
+        }
+    }
+}
+
+def ctPreferences() {
+    return dynamicPage(name: "ctPreferences", nextPage: "locationPreferences", install: false, uninstall: true) {
+        section {
+            input "ctMin", "number", title: "Minimum Color Temperature (K)", required: true, defaultValue: 2700
+            input "ctMax", "number", title: "Maximum Color Temperature (K)", required: true, defaultValue: 5500
+            paragraph "NOTE: Changing these values may have a negative impact on your circadian rhythm!"
         }
     }
 }
@@ -184,9 +195,7 @@ void setHandler(evt) {
 
 private void calcColorTemperature(sunriseAndSunset) {
     def nowDate = new Date()
-    def ctMin = 2700
-    def ctMax = 5500
-    if (nowDate < sunriseAndSunset.sunrise || nowDate > sunriseAndSunset.sunset) { state.colorTemperature = ctMin } //before sunrise / after sunset
+    if (nowDate < sunriseAndSunset.sunrise || nowDate > sunriseAndSunset.sunset) { state.colorTemperature = settings.ctMin } //before sunrise / after sunset
     else {
         def nowTime = nowDate.getTime()
         def sunriseTime = sunriseAndSunset.sunrise.getTime()
@@ -196,11 +205,11 @@ private void calcColorTemperature(sunriseAndSunset) {
         //Generate color temperature parabola from points
         //Specify double type or calculations fail
         double x1 = sunriseTime
-        double y1 = ctMin
+        double y1 = settings.ctMin
         double x2 = sunriseTime+(dayLength/2)
-        double y2 = ctMax
+        double y2 = settings.ctMax
         double x3 = sunsetTime
-        double y3 = ctMin
+        double y3 = settings.ctMin
         double a1 = -x1**2+x2**2
         double b1 = -x1+x2
         double d1 = -y1+y2
