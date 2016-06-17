@@ -17,7 +17,7 @@
 
 ## Installation
 
-**Unfortunately, due to platform limitations, you _must_ remove all Hue bulbs and the Hue (Connect) service manager before attempting to use Hue Advanced (Connect)**
+**Unfortunately, due to platform limitations, you _must_ remove the Hue (Connect) service manager and all Hue bulbs from SmartThings before attempting to use Hue Advanced (Connect)**
 
 Although it appears to be more work to install through GitHub, this method allows for much easier updating of the SmartApp and Device Handlers in the future.
 
