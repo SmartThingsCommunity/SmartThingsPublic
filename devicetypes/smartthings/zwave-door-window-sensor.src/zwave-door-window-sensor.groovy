@@ -175,7 +175,7 @@ def zwaveEvent(physicalgraph.zwave.commands.wakeupv1.WakeUpNotification cmd)
 	if (!state.lastbat || now() - state.lastbat > 53*60*60*1000) {
 		cmds << command(zwave.batteryV1.batteryGet())
 	} else {
-		cmds << zwave.wakeUpV1.wakeUpNoMoreInformation().format()
+		cmds << zwave.wakeUpV1.wakeUpNoMoreInformation()
 	}
 	[event, response(cmds)]
 }
