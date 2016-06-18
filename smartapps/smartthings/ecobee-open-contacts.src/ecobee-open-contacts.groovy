@@ -14,6 +14,10 @@
  *  for the specific language governing permissions and limitations under the License.
  *
  */
+ 
+ /**
+  * TODO: Add support for more than on/off such as programs
+  */
 def getVersionNum() { return "0.1.0" }
 private def getVersionLabel() { return "ecobee Routines Version ${getVersionNum()}" }
 
@@ -47,13 +51,27 @@ def mainPage() {
         	if(settings.tempDisable == true) paragraph "WARNING: Temporarily Disabled as requested. Turn back on to activate handler."
         	input ("myThermostats", "capability.Thermostat", title: "Pick Ecobee Thermostat(s)", required: true, multiple: true, submitOnChange: true)            
 		}
+	
+		if (myThermostats?.size() > 0) {
+
+			section(title: "Select Contact Sensors") {
+				input(name: "contactSensors", title: "Contact Sensors: ", type: "capability.contactSensor", required: true, multiple: true, description: "")
+			}
         
+			section(title: "Timers") {
+				input(name: "offDelay", title: "Delay time (in minutes) before turning off HVAC [Default=5]", type: "enum", required: true, metadata: [values: [2, 3, 4, 5, 10, 15, 30]], defaultValue: 5)
+				input(name: "onDelay", title: "Delay time (in minutes) before turning HVAC back on [Default=0]", type: "enum", required: true, metadata: [values: [0, 1, 2, 3, 4, 5, 10, 15, 30]], defaultValue: 0)        	
+	        }
+		} // End if (myThermostats?.size() > 0)
+	
+// Saved from Routines SmartApp for now
+/*        
         section(title: "Select Mode or Routine") {
         	// Settings option for using Mode or Routine
             input(name: "modeOrRoutine", title: "Use Mode Change, Routine Execution: ", type: "enum", required: true, multiple: false, description: "Tap to choose...", metadata:[values:["Mode", "Routine"]], submitOnChange: true)
-		}
+	}
         
-	        if (myThermostats?.size() > 0) {
+	if (myThermostats?.size() > 0) {
             	if(settings.modeOrRoutine == "Mode") {
 	    	    	// Start defining which Modes(s) to allow the SmartApp to execute in
                     // TODO: Need to run in all modes now and then filter on which modes were selected!!!
@@ -86,9 +104,12 @@ def mainPage() {
                   input(name: "useSunriseSunset", title: "Also at Sunrise or Sunset?\n(Optional) ", type: "enum", required: false, multiple: true, description: "Tap to choose...", metadata:[values:["Sunrise", "Sunset"]], submitOnChange: true)                
                 }
             } // End if myThermostats size
-            section(title: "Temporarily Disable?") {
-            	input(name: "tempDisable", title: "Temporarily Disable Handler? ", type: "bool", required: false, description: "", submitOnChange: true)                
-        	}
+            
+*/
+
+		section(title: "Temporarily Disable?") {
+			input(name: "tempDisable", title: "Temporarily Disable Handler? ", type: "bool", required: false, description: "", submitOnChange: true)                
+        }
         
         section (getVersionLabel())
     }
@@ -104,98 +125,50 @@ def installed() {
 def updated() {
 	LOG("updated() entered", 5)
 	unsubscribe()
-    initialize()
-	
+	unschedule()
+	initialize()
 }
 
 def initialize() {
 	LOG("initialize() entered")
-    if(tempDisable == true) {
-    	LOG("Teporarily Disapabled as per request.", 2, null, "warn")
-    	return true
-    }
-	
-	if (settings.modeOrRoutine == "Routine") {
-    	subscribe(location, "routineExecuted", changeProgramHandler)
-    } else {
-    	subscribe(location, "mode", changeProgramHandler)
-    }	   
-   
-    if(useSunriseSunset?.size() > 0) {
-		// Setup subscriptions for sunrise and/or sunset as well
-        if( useSunriseSunset.contains("Sunrise") ) subscribe(location, "sunrise", changeProgramHandler)
-        if( useSunriseSunset.contains("Sunset") ) subscribe(location, "sunset", changeProgramHandler)
-    }
-    
-	// Normalize settings data
-    normalizeSettings()
-    LOG("initialize() exiting")
-}
-
-// get the combined set of Ecobee Programs applicable for these thermostats
-private def getEcobeePrograms() {
-	def programs
-
-	if (myThermostats?.size() > 0) {
-		myThermostats.each { stat ->
-        	def DNI = stat.device.deviceNetworkId
-            LOG("Getting list of programs for stat (${stat}) with DNI (${DNI})", 4)
-        	if (!programs) {
-            	LOG("No programs yet, adding to the list", 5)
-                programs = parent.getAvailablePrograms(stat)
-            } else {
-            	LOG("Already have some programs, need to create the set of overlapping", 5)
-                programs = programs.intersect(parent.getAvailablePrograms(stat))
-            }
-        }
-	} 
-    LOG("getEcobeePrograms: returning ${programs}", 4)
-    return programs
-}
-
-private def normalizeSettings() {
-	// whichProgram
-	state.programParam = ""
-	if (whichProgram != null && whichProgram != "") {
-    	if (whichProgram == "Resume Program") {
-        	state.doResumeProgram = true
-        } else {        	
-    		state.programParam = whichProgram.toLowerCase()
-    	}
+	if(tempDisable == true) {
+		LOG("Teporarily Disapabled as per request.", 2, null, "warn")
+		return true
 	}
-    
-    // fanMode
-    state.fanCommand = ""
-    if (fanMode != null && fanMode != "") {
-    	if (fanMode == "On") {
-        	state.fanCommand = "fanOn"
-        } else if (fanMode == "Auto") {
-        	state.fanCommand = "fanAuto"
-        } else {
-        	state.fanCommand = ""
-        }
-    }
-    
-    // holdType
-    state.holdTypeParam = null
-    if (holdType != null && holdType != "") {
-    	if (holdType == "Until I Change") {
-        	state.holdTypeParam = "indefinite"
-        } else if (holdType == "Until Next Program") {
-        	state.holdTypeParam = "nextTransition"
-        } else {
-        	state.holdTypeParam = null
-        }
-    }
-    
-	if (settings.modeOrRoutine == "Routine") {
-    	state.expectedEvent = settings.action
-    } else {
-    	state.expectedEvent = settings.modes
-    }
-	LOG("state.expectedEvent set to ${state.expectedEvent}", 4)
 
+	// TODO: Create an array of sensors for states?
+
+	subscribe(contactSensors, "contact.open", sensorOpened)
+	subscribe(contactSensors, "contact.closed", sensorClosed)
+	
+	// Normalize settings data
+	// normalizeSettings()
+	buildSensorStateArray()
+	LOG("initialize() exiting")
 }
+
+private buildSensorStateArray() {
+	// Create an array for all of the sensors and their current states
+	def tempSensorStateArray = [:]
+	
+}
+
+def sensorOpened(evt) {
+	// A sensor (door/window) was opened
+	LOG("sensorOpened() entered with evt: ${evt}", 5)
+	
+	def gotEvent = evt.value?.toLowerCase()
+	LOG("Event name received (in lowercase): ${gotEvent}  and current expected: ${state.expectedEvent}", 5)
+}
+
+def sensorClosed(evt) {
+	// A sensor (door/window) was closed
+	LOG("sensorClosed() entered with evt: ${evt}", 5)
+	
+}
+
+
+
 
 def changeProgramHandler(evt) {
 	LOG("changeProgramHander() entered with evt: ${evt}", 5)
