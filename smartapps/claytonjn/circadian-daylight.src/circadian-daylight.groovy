@@ -155,8 +155,7 @@ private void calcBrightness(sunriseAndSunset) {
             def sunriseTime = sunriseAndSunset.sunrise.getTime()
             if(nowTime < sunriseTime) { //If it's morning, use estimated sunset from the night before
                 sunsetTime = sunriseAndSunset.sunset.getTime() - (1000*60*60*24)
-            }
-            if(nowTime > sunsetTime) { //If it's evening, use estimated sunset for the next day
+            } else if(nowTime > sunsetTime) { //If it's evening, use estimated sunset for the next day
                 sunriseTime = sunriseAndSunset.sunrise.getTime() + (1000*60*60*24)
             }
             def nightLength = sunriseTime - sunsetTime
