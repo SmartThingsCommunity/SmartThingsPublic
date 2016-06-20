@@ -181,7 +181,10 @@ private void calcBrightness(sunriseAndSunset) {
             double b = (d1-a1*a)/b1
             double c = y1-a*x1**2-b*x1
             double brightness = a*nowTime**2+b*nowTime+c
-            state.brightness = Math.round(brightness) as Integer
+            double stRange = (100 - 1)
+        	double hueRange = (254 - 1)
+        	double hueBri = Math.round((((brightness - 1) * hueRange) / stRange) + 1) //Round to Hue brightness range
+            state.brightness = (((hueBri - 1) * stRange) / hueRange) + 1
         }
     } else { state.brightness = NULL }
 }
@@ -333,7 +336,7 @@ private void setCTBulb(ctBulb, brightness = state.brightness, colorTemperature =
             }
         }
         if(ctBulb.currentValue("cdColor") != "false") {
-            if(ctBulb.currentValue("colormode") != "ct" || ctBulb.currentValue("colorTemperature") != colorTemperature) {
+            if(ctBulb.currentValue("colormode") != "ct" || ctBulb.currentValue("colorTemperature") != Math.round(colorTemperature) as Integer) {
                 ctBulb.setColorTemperature(colorTemperature)
             }
         }
