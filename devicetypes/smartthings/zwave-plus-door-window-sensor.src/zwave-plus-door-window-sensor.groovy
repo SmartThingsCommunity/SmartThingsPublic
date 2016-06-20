@@ -11,14 +11,13 @@
 *	on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the License
 *	for the specific language governing permissions and limitations under the License.
 *
-*	Z-Wave Plus Motion Sensor with Temperature Measurement, ZP3102*-5
+*	Z-Wave Plus Door/Window Sensor, ZD2102*-5
 *
 */
 
 metadata {
-	definition (name: "Z-Wave Plus Motion/Temp Sensor", namespace: "smartthings", author: "SmartThings") {
-		capability "Motion Sensor"
-		capability "Temperature Measurement"
+	definition (name: "Z-Wave Plus Door/Window Sensor", namespace: "smartthings", author: "SmartThings") {
+		capability "Contact Sensor"
 		capability "Configuration"
 		capability "Battery"
 		capability "Sensor"
@@ -29,42 +28,38 @@ metadata {
 		attribute "ProductCode", "string"
 		attribute "WakeUp", "string"
 		attribute "WirelessConfig", "string"
-				
-		fingerprint deviceId: "0x0701", inClusters: "0x5E, 0x98, 0x86, 0x72, 0x5A, 0x85, 0x59, 0x73, 0x80, 0x71, 0x31, 0x70, 0x84, 0x7A"
-		fingerprint type:"8C07", inClusters: "5E,98,86,72,5A,31,71"
-		fingerprint mfr:"0109", prod:"2002", model:"0205"  // not using deviceJoinName because it's sold under different brand names
+
+		fingerprint deviceId: "0x0701", inClusters: "0x5E, 0x98, 0x86, 0x72, 0x5A, 0x85, 0x59, 0x73, 0x80, 0x71, 0x70, 0x84, 0x7A"
+		fingerprint type:"8C07", inClusters: "5E,98,86,72,5A,71"
+		fingerprint mfr:"0109", prod:"2001", model:"0106"  // not using deviceJoinName because it's sold under different brand names
 	}
 
-	tiles {
-		standardTile("motion", "device.motion", width: 3, height: 2) {
-			state "active", label:'motion', icon:"st.motion.motion.active", backgroundColor:"#53a7c0"
-			state "inactive", label:'no motion', icon:"st.motion.motion.inactive", backgroundColor:"#ffffff"
+	tiles(scale: 2) {
+		multiAttributeTile(name:"contact", type: "generic", width: 6, height: 4){
+			tileAttribute ("device.contact", key: "PRIMARY_CONTROL") {
+				attributeState "open", label:'${name}', icon:"st.contact.contact.open", backgroundColor:"#ffa81e"
+				attributeState "closed", label:'${name}', icon:"st.contact.contact.closed", backgroundColor:"#79b821"
+			}
+		}
+		valueTile("battery", "device.battery", decoration: "flat", inactiveLabel: false, width: 2, height: 2) {
+			state "battery", label:'${currentValue}% battery', unit:""
 		}
 
-		valueTile("temperature", "device.temperature", inactiveLabel: false) {
-			state "temperature", label:'${currentValue}°',
-				backgroundColors:[
-					[value: 31, color: "#153591"],
-					[value: 44, color: "#1e9cbb"],
-					[value: 59, color: "#90d2a7"],
-					[value: 74, color: "#44b621"],
-					[value: 84, color: "#f1d801"],
-					[value: 95, color: "#d04e00"],
-					[value: 96, color: "#bc2323"]
-				]
-		}
-		valueTile("battery", "device.battery", inactiveLabel: false, decoration: "flat") {
-			state "battery", label:'${currentValue}% battery', unit:"%"
-		}
-
-		main(["motion", "temperature"])
-		details(["motion", "temperature", "battery"])
+		main (["contact"])
+		details(["contact","battery"])
 	}
-}
 
-def updated() {
-	if (!device.currentState("ManufacturerCode")) {
-		response(secure(zwave.manufacturerSpecificV2.manufacturerSpecificGet()))
+	simulator {
+		// messages the device returns in response to commands it receives
+		status "open (basic)" : "command: 9881, payload: 00 20 01 FF"
+		status "closed (basic)" : "command: 9881 payload: 00 20 01 00"
+		status "open (notification)" : "command: 9881, payload: 00 71 05 06 FF 00 FF 06 16 00 00"
+		status "closed (notification)" : "command: 9881, payload: 00 71 05 06 00 00 FF 06 17 00 00"
+		status "tamper: enclosure opened" : "command: 9881, payload: 00 71 05 07 FF 00 FF 07 03 00 00"
+		status "tamper: enclosure replaced" : "command: 9881, payload: 00 71 05 07 00 00 FF 07 00 00 00"
+		status "wake up" : "command: 9881, payload: 00 84 07"
+		status "battery (100%)" : "command: 9881, payload: 00 80 03 64"
+		status "battery low" : "command: 9881, payload: 00 80 03 FF"
 	}
 }
 
@@ -80,7 +75,6 @@ def configure() {
 	cmds += secureSequence([
 		zwave.manufacturerSpecificV2.manufacturerSpecificGet(),
 		zwave.batteryV1.batteryGet(),
-		zwave.sensorMultilevelV5.sensorMultilevelGet(sensorType:1, scale:1)
 	], 500)
 
 	cmds << "delay 8000"
@@ -102,8 +96,8 @@ private getCommandClassVersions() {
 		0x72: 2,  // ManufacturerSpecific
 		0x73: 1,  // Powerlevel
 		0x98: 1,  // Security
-		0x31: 5,  // SensorMultilevel
-		0x84: 2	  // WakeUp
+		0x84: 2,  // WakeUp
+		0x86: 1,  // Version
 	]
 }
 
@@ -145,15 +139,11 @@ def zwaveEvent(physicalgraph.zwave.commands.securityv1.SecurityMessageEncapsulat
 }
 
 def sensorValueEvent(value) {
-	def result = []
 	if (value) {
-		log.debug "sensorValueEvent($value) : active"
-		result << createEvent(name: "motion", value: "active", descriptionText: "$device.displayName detected motion")
+		createEvent(name: "contact", value: "open", descriptionText: "$device.displayName is open")
 	} else {
-		log.debug "sensorValueEvent($value) : inactive"
-		result << createEvent(name: "motion", value: "inactive", descriptionText: "$device.displayName motion has stopped")
+		createEvent(name: "contact", value: "closed", descriptionText: "$device.displayName is closed")
 	}
-	return result
 }
 
 def zwaveEvent(physicalgraph.zwave.commands.basicv1.BasicReport cmd) {
@@ -161,10 +151,6 @@ def zwaveEvent(physicalgraph.zwave.commands.basicv1.BasicReport cmd) {
 }
 
 def zwaveEvent(physicalgraph.zwave.commands.basicv1.BasicSet cmd) {
-	return sensorValueEvent(cmd.value)
-}
-
-def zwaveEvent(physicalgraph.zwave.commands.switchbinaryv1.SwitchBinaryReport cmd) {
 	return sensorValueEvent(cmd.value)
 }
 
@@ -178,35 +164,34 @@ def zwaveEvent(physicalgraph.zwave.commands.sensoralarmv1.SensorAlarmReport cmd)
 
 def zwaveEvent(physicalgraph.zwave.commands.notificationv3.NotificationReport cmd) {
 	def result = []
-	if (cmd.notificationType == 0x07) {
-		if (cmd.event == 0x01 || cmd.event == 0x02) {
-			result << sensorValueEvent(1)
-		} else if (cmd.event == 0x03) {
-			result << createEvent(descriptionText: "$device.displayName covering was removed", isStateChange: true)
-			result << response(secure(zwave.manufacturerSpecificV2.manufacturerSpecificGet()))
-		} else if (cmd.event == 0x05 || cmd.event == 0x06) {
-			result << createEvent(descriptionText: "$device.displayName detected glass breakage", isStateChange: true)
-		} else if (cmd.event == 0x07) {
-			result << sensorValueEvent(1)
-		} else if (cmd.event == 0x08) {
-			result << sensorValueEvent(1)
-		} else if (cmd.event == 0x00) {
-			if (cmd.eventParametersLength && cmd.eventParameter[0] == 3) {
+	if (cmd.notificationType == 0x06 && cmd.event == 0x16) {
+		result << sensorValueEvent(1)
+	} else if (cmd.notificationType == 0x06 && cmd.event == 0x17) {
+		result << sensorValueEvent(0)
+	} else if (cmd.notificationType == 0x07) {
+		if (cmd.event == 0x00) {
+			if (cmd.eventParametersLength == 0 || cmd.eventParameter[0] != 3) {
 				result << createEvent(descriptionText: "$device.displayName covering replaced", isStateChange: true, displayed: false)
 			} else {
 				result << sensorValueEvent(0)
 			}
-		} else if (cmd.event == 0xFF) {
+		} else if (cmd.event == 0x01 || cmd.event == 0x02) {
 			result << sensorValueEvent(1)
+		} else if (cmd.event == 0x03) {
+			result << createEvent(descriptionText: "$device.displayName covering was removed", isStateChange: true)
+			if (!device.currentState("ManufacturerCode")) {
+				result << response(secure(zwave.manufacturerSpecificV2.manufacturerSpecificGet()))
+			}
+		} else if (cmd.event == 0x05 || cmd.event == 0x06) {
+			result << createEvent(descriptionText: "$device.displayName detected glass breakage", isStateChange: true)
 		} else {
-			result << createEvent(descriptionText: "$device.displayName sent event $cmd.event")
+			result << createEvent(descriptionText: "$device.displayName event $cmd.event ${cmd.eventParameter.inspect()}", isStateChange: true, displayed: false)
 		}
 	} else if (cmd.notificationType) {
-		def text = "Notification $cmd.notificationType: event ${([cmd.event] + cmd.eventParameter).join(", ")}"
-		result << createEvent(name: "notification$cmd.notificationType", value: "$cmd.event", descriptionText: text, displayed: false)
+		result << createEvent(descriptionText: "$device.displayName notification $cmd.notificationType event $cmd.event ${cmd.eventParameter.inspect()}", isStateChange: true, displayed: false)
 	} else {
 		def value = cmd.v1AlarmLevel == 255 ? "active" : cmd.v1AlarmLevel ?: "inactive"
-		result << createEvent(name: "alarm $cmd.v1AlarmType", value: value, displayed: false)
+		result << createEvent(name: "alarm $cmd.v1AlarmType", value: value, isStateChange: true, displayed: false)
 	}
 	return result
 }
@@ -234,7 +219,6 @@ def zwaveEvent(physicalgraph.zwave.commands.wakeupv2.WakeUpNotification cmd) {
 }
 
 def zwaveEvent(physicalgraph.zwave.commands.batteryv1.BatteryReport cmd) {
-	def result = []
 	def map = [ name: "battery", unit: "%" ]
 	if (cmd.batteryLevel == 0xFF) {
 		map.value = 1
@@ -253,38 +237,6 @@ def zwaveEvent(physicalgraph.zwave.commands.batteryv1.BatteryReport cmd) {
 	return [event]
 }
 
-def zwaveEvent(physicalgraph.zwave.commands.sensormultilevelv5.SensorMultilevelReport cmd) {
-	def result = []
-	def map = [:]
-	switch (cmd.sensorType) {
-		case 1:
-			def cmdScale = cmd.scale == 1 ? "F" : "C"
-			map.name = "temperature"
-			map.value = convertTemperatureIfNeeded(cmd.scaledSensorValue, cmdScale, cmd.precision)
-			map.unit = getTemperatureScale()
-			break;
-		case 3:
-			map.name = "illuminance"
-			map.value = cmd.scaledSensorValue.toInteger().toString()
-			map.unit = "lux"
-			break;
-		case 5:
-			map.name = "humidity"
-			map.value = cmd.scaledSensorValue.toInteger().toString()
-			map.unit = cmd.scale == 0 ? "%" : ""
-			break;
-		case 0x1E:
-			map.name = "loudness"
-			map.unit = cmd.scale == 1 ? "dBA" : "dB"
-			map.value = cmd.scaledSensorValue.toString()
-			break;
-		default:
-			map.descriptionText = cmd.toString()
-	}
-	result << createEvent(map)
-	return result
-}
-
 def zwaveEvent(physicalgraph.zwave.commands.manufacturerspecificv2.ManufacturerSpecificReport cmd) {
 	def result = []
 	def manufacturerCode = String.format("%04X", cmd.manufacturerId)
@@ -292,20 +244,11 @@ def zwaveEvent(physicalgraph.zwave.commands.manufacturerspecificv2.ManufacturerS
 	def productCode = String.format("%04X", cmd.productId)
 	def wirelessConfig = "ZWP"
 	log.debug "MSR ${manufacturerCode} ${productTypeCode} ${productCode}"
-	
+
 	result << createEvent(name: "ManufacturerCode", value: manufacturerCode)
 	result << createEvent(name: "ProduceTypeCode", value: productTypeCode)
 	result << createEvent(name: "ProductCode", value: productCode)
 	result << createEvent(name: "WirelessConfig", value: wirelessConfig)
-
-	if (manufacturerCode == "0109" && productTypeCode == "2002") {
-		result << response(secureSequence([
-			// Change re-trigger duration to 1 minute
-			zwave.configurationV1.configurationSet(parameterNumber: 1, configurationValue: [1], size: 1),
-			zwave.batteryV1.batteryGet(),
-			zwave.sensorMultilevelV5.sensorMultilevelGet(sensorType:1, scale:1)
-		], 400))
-	}
 
 	return result
 }
