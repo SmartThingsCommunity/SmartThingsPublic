@@ -262,8 +262,8 @@ def retypeBasedOnMSR() {
 			setDeviceType("3-in-1 Multisensor Plus (SG)")
 			break
 		case "0109-2001-0106":  // Vision door/window
-			log.debug "Changing device type to Door / Window Sensor Plus (SG)"
-			setDeviceType("Door / Window Sensor Plus (SG)")
+			log.debug "Changing device type to Z-Wave Plus Door/Window Sensor"
+			setDeviceType("Z-Wave Plus Door/Window Sensor")
 			break
 		case "0109-2002-0205": // Vision Motion
 			log.debug "Changing device type to Z-Wave Plus Motion/Temp Sensor"
