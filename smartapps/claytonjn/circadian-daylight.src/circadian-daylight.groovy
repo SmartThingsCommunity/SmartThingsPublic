@@ -185,6 +185,7 @@ private void calcBrightness(sunriseAndSunset) {
         	double hueRange = (254 - 1)
         	double hueBri = Math.round((((brightness - 1) * hueRange) / stRange) + 1) //Round to Hue brightness range
             state.brightness = (((hueBri - 1) * stRange) / hueRange) + 1
+            log.debug "Brightness set to ${state.brightness}"
         }
     } else { state.brightness = NULL }
 }
@@ -198,6 +199,7 @@ private void calcSleepColorTemperature() {
             state.colorTemperature = 4100
             break
     }
+    log.debug "Color Temperature set to ${state.colorTemperature}"
 }
 
 private void calcSleepBrightness() {
@@ -241,6 +243,7 @@ private void calcSleepBrightness() {
             state.brightness = 100
             break
     }
+    log.debug "Brightness set to ${state.brightness}"
 }
 
 def bulbsHandler(evt = NULL, sunriseAndSunset = NULL) {
@@ -259,6 +262,7 @@ def bulbsHandler(evt = NULL, sunriseAndSunset = NULL) {
 
     if (sunriseAndSunset != NULL) { calcBrightness(sunriseAndSunset) }
     state.colorTemperature = parent.getColorTemperature()
+    log.debug "Color Temperature set to ${state.colorTemperature}"
 
     //Behavior in sleep mode
     if(location.mode in settings.sModes) {
@@ -292,6 +296,7 @@ def bulbHandler(evt) {
     }
 
     state.colorTemperature = parent.getColorTemperature()
+    log.debug "Color Temperature set to ${state.colorTemperature}"
 
     //Behavior in sleep mode
     if(location.mode in settings.sModes) {
@@ -329,15 +334,18 @@ private void setCTBulb(ctBulb, brightness = state.brightness, colorTemperature =
             if(ctBulb.currentValue("level") != brightness) {
                 if(settings.dBright != true && settings.sModes != NULL && !settings.sModes.contains(location.currentMode) && state.sBulbs.containsKey(ctBulb.deviceNetworkId)) {
                     ctBulb.setLevel(state.sBulbs.get(ctBulb.deviceNetworkId))
+                    log.debug "${ctBulb} level restored to ${state.sBulbs.get(ctBulb.deviceNetworkId)}"
                     state.sBulbs.remove(ctBulb.deviceNetworkId)
                 } else {
                     ctBulb.setLevel(brightness)
+                    log.debug "${ctBulb} level set to ${brightness}"
                 }
             }
         }
         if(ctBulb.currentValue("cdColor") != "false") {
             if(ctBulb.currentValue("colormode") != "ct" || ctBulb.currentValue("colorTemperature") != Math.round(colorTemperature) as Integer) {
                 ctBulb.setColorTemperature(colorTemperature)
+                log.debug "${ctBulb} color temperature set to ${colorTemperature}"
             }
         }
     }
@@ -350,14 +358,17 @@ private void setCBulb(cBulb, brightness = state.brightness, hex = rgbToHex(ctToR
         if(brightness != NULL && cBulb.currentValue("cdBrightness") != "false") {
             if(settings.dBright != true && settings.sModes != NULL && !settings.sModes.contains(location.currentMode) && state.sBulbs.containsKey(cBulb.deviceNetworkId)) {
                 color.level = state.sBulbs.get(cBulb.deviceNetworkId)
+                log.debug "${cBulb} level restored to ${state.sBulbs.get(cBulb.deviceNetworkId)}"
                 state.sBulbs.remove(cBulb.deviceNetworkId)
             } else {
                 color.level = brightness
+                log.debug "${cBulb} level set to ${brightness}"
             }
         }
         if(cBulb.currentValue("cdColor") != "false") {
             if((cBulb.currentValue("colormode") != "xy" && cBulb.currentValue("colormode") != "hs") || cBulb.currentValue("color") != hex) {
                 cBulb.setColor(color)
+                log.debug "${cBulb} color set to ${color}"
             }
         }
     }
@@ -369,9 +380,11 @@ private void setDBulb(dBulb, brightness = state.brightness) {
             if(dBulb.currentValue("level") != brightness) {
                 if(settings.dBright != true && settings.sModes != NULL && !settings.sModes.contains(location.currentMode) && state.sBulbs.containsKey(dBulb.deviceNetworkId)) {
                     dBulb.setLevel(state.sBulbs.get(dBulb.deviceNetworkId))
+                    log.debug "${dBulb} level restored to ${state.sBulbs.get(dBulb.deviceNetworkId)}"
                     state.sBulbs.remove(dBulb.deviceNetworkId)
                 } else {
                     dBulb.setLevel(brightness)
+                    log.debug "${dBulb} level set to ${brightness}"
                 }
             }
         }

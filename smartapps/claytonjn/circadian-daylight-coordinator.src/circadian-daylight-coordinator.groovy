@@ -225,6 +225,7 @@ private void calcColorTemperature(sunriseAndSunset) {
         double colorTemperature = a*nowTime**2+b*nowTime+c
         double mirekCT = Math.round(1000000 / colorTemperature) as Integer //Round to mireks because thats what Hue uses
         state.colorTemperature = 1000000 / mirekCT
+        log.debug "Color Temperature set to ${state.colorTemperature}"
     }
 }
 
