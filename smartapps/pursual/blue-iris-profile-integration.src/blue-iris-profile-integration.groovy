@@ -53,11 +53,11 @@ def selectModes() {
 def BISettings() {
     dynamicPage(name:"BISettings", "title":"Blue Iris Login Info", uninstall:true, install:true) {
         section( "" ) {
-            input "host", "string", title: "BI Webserver Host(include http://)", required:true
-            input "port", "number", title: "BI Webserver Port (81?)", required:true, default:81
+            input "host", "string", title: "BI WAN Server Host(include http://)", required:true
+            input "port", "number", title: "BI WAN Server Port (81?)", required:true, default:81
             input "username", "string", title: "BI Username", required: true
             input "password", "string", title: "BI Password", required: true
-            paragraph "Currently, BI only allows Admin Users to toggle profiles."
+            paragraph "Currently, BI only allows Admin Users to toggle profiles. ST only allows WAN traffic, so internal IPs will not work. Use a DDNS service to get a WAN address."
         }
     }
 }
