@@ -650,12 +650,13 @@ class AlarmServer(asyncore.dispatcher):
             self._envisalinkclient.send_command('033', '1' + alarmcode)
         elif query.path == '/api/alarm/bypass':
             try:
-                zone = str(query_array['zone'][0])
-                if len(zone) == 1: zone = '0' + zone
-                alarmserver_logger("request to bypass zone %s" % zone)
-                channel.pushok(json.dumps({'response' : 'Request to bypass zone received'}))
-                self._envisalinkclient.send_command('071', '1*1' + str(zone)+ '#')
-                time.sleep(1)
+                zones = str(query_array['zone'][0]).split(',')
+                for zone in zones:
+                    if len(zone) == 1: zone = '0' + zone
+                    alarmserver_logger("request to bypass zone %s" % zone)
+                    channel.pushok(json.dumps({'response' : 'Request to bypass zone received'}))
+                    self._envisalinkclient.send_command('071', '1*1' + str(zone)+ '#')
+                    time.sleep(2)
             except:
                 channel.pushok(json.dumps({'response' : 'Request to bypass zone received but invalid zone given!'}))
         elif query.path == '/api/alarm/panic':

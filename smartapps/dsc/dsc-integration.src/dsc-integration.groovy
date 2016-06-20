@@ -244,16 +244,20 @@ def autoBypass() {
   def deviceList = ['carbonMonoxide','contact','motion','smoke','water']
   def children = getChildDevices()
   def zones = children.findAll { it.device.deviceNetworkId.startsWith("dsczone") }
+  def bypassList = []
 
   for (zone in zones) {
     for (device in deviceList) {
       if (zone.currentValue(device)) {
         if (!closedList.contains(zone.currentValue(device))) {
           def bypass = zone.deviceNetworkId.minus('dsczone')
-          sendUrl("bypass?zone=${bypass}")
+          bypassList.add(bypass)
         }
       }
     }
+  }
+  if (bypassList) {
+    sendUrl("bypass?zone=${bypassList.sort().unique().join(',')}")
   }
 }
 
