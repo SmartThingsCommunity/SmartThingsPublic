@@ -310,25 +310,28 @@ class EnvisalinkClient(asynchat.async_chat):
         if input != '':
             for client in CONNECTEDCLIENTS:
                 CONNECTEDCLIENTS[client].send_command(input, False)
-            code=int(input[:3])
-            parameters=input[3:][:-2]
-            event = getMessageType(int(code))
-            message = self.format_event(event, parameters)
-            alarmserver_logger('RX < ' +str(code)+' - '+str(parameters)+' - '+message)
-
             try:
-                handler = "handle_%s" % evl_ResponseTypes[code]['handler']
-            except KeyError:
-                #call general event handler
-                self.handle_event(code, parameters, event, message)
-                return
+                code=int(input[:3])
+                parameters=input[3:][:-2]
+                event = getMessageType(int(code))
+                message = self.format_event(event, parameters)
+                alarmserver_logger('RX < ' +str(code)+' - '+str(parameters)+' - '+message)
 
-            try:
-                func = getattr(self, handler)
-            except AttributeError:
-                raise CodeError("Handler function doesn't exist")
+                try:
+                    handler = "handle_%s" % evl_ResponseTypes[code]['handler']
+                except KeyError:
+                    #call general event handler
+                    self.handle_event(code, parameters, event, message)
+                    return
 
-            func(code, parameters, event, message)
+                try:
+                    func = getattr(self, handler)
+                except AttributeError:
+                    raise CodeError("Handler function doesn't exist")
+
+                func(code, parameters, event, message)
+            except:
+                alarmserver_logger('Unsupported input! This could be a bug. Input was:' +str(input))
 
     def format_event(self, event, parameters):
         if 'type' in event:
