@@ -1055,7 +1055,7 @@ def setColorTemperature(childDevice, huesettings, transitionTime, deviceType) {
 		def hueRange = (hueMax - hueMin)
 		huesettings = (((huesettings - stMin) * hueRange) / stRange) + hueMin
 	}
-	def ct = (1000000 / huesettings) as Integer
+	def ct = Math.round(1000000 / huesettings) as Integer
 	def value = [ct: ct, on: true, transitiontime: transitionTime * 10]
 	log.trace "sending command $value"
 	put("${deviceType}/${getId(childDevice)}/${getApi(deviceType)}", value)

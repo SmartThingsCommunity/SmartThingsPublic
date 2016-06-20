@@ -174,11 +174,10 @@ void setColorTemperature(value, transitionTime = device.currentValue("transition
 
     colorloopOff()
     if (value >= 0) {
-        value = Math.round(value) as Integer
         log.trace "setColorTemperature: ${value}k"
         parent.setColorTemperature(this, value, transitionTime, deviceType)
         if(disableCDC == true) { disableCDColor() }
-        sendEvent(name: "colorTemperature", value: value)
+        sendEvent(name: "colorTemperature", value: Math.round(value) as Integer)
         sendEvent(name: "switch", value: "on")
     } else {
         log.warn "Invalid color temperature"

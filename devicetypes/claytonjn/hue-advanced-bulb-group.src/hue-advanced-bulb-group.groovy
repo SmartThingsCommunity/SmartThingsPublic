@@ -295,10 +295,9 @@ void setColorTemperature(value, transitionTime = device.currentValue("transition
 
 	colorloopOff()
     if (value >= 0) {
-		value = Math.round(value) as Integer
         log.trace "setColorTemperature: ${value}k"
         parent.setColorTemperature(this, value, transitionTime, state.deviceType)
-        sendEvent(name: "colorTemperature", value: value)
+        sendEvent(name: "colorTemperature", value: Math.round(value) as Integer)
 		sendEvent(name: "colormode", value: "ct")
 		sendEvent(name: "deviceSwitch", value: "${state.deviceType}On", displayed: false)
 		sendEvent(name: "switch", value: "on")
