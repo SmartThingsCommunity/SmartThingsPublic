@@ -21,6 +21,13 @@ metadata {
 		capability "Motion Sensor"
 		capability "Sensor"
 		capability "Battery"
+
+		fingerprint mfr: "011F", prod: "0001", model: "0001", deviceJoinName: "Schlage Motion Sensor"  // Schlage motion
+		fingerprint mfr: "014A", prod: "0001", model: "0001", deviceJoinName: "Ecolink Motion Sensor"  // Ecolink motion
+		fingerprint mfr: "014A", prod: "0004", model: "0001", deviceJoinName: "Ecolink Motion Sensor"  // Ecolink motion +
+		fingerprint mfr: "0060", prod: "0001", model: "0002", deviceJoinName: "Everspring Motion Sensor"  // Everspring SP814
+		fingerprint mfr: "0060", prod: "0001", model: "0003", deviceJoinName: "Everspring Motion Sensor"  // Everspring HSP02
+		fingerprint mfr: "011A", prod: "0601", model: "0901", deviceJoinName: "Enerwave Motion Sensor"  // Enerwave ZWN-BPC
 	}
 
 	simulator {
@@ -57,7 +64,7 @@ def parse(String description) {
 	return result
 }
 
-def sensorValueEvent(Short value) {
+def sensorValueEvent(value) {
 	if (value) {
 		createEvent(name: "motion", value: "active", descriptionText: "$device.displayName detected motion")
 	} else {
@@ -94,24 +101,24 @@ def zwaveEvent(physicalgraph.zwave.commands.notificationv3.NotificationReport cm
 {
 	def result = []
 	if (cmd.notificationType == 0x07) {
-		if (cmd.event == 0x01 || cmd.event == 0x02) {
+		if (cmd.v1AlarmType == 0x07) {  // special case for nonstandard messages from Monoprice ensors
+			result << sensorValueEvent(cmd.v1AlarmLevel)
+		} else if (cmd.event == 0x01 || cmd.event == 0x02 || cmd.event == 0x07 || cmd.event == 0x08) {
 			result << sensorValueEvent(1)
+		} else if (cmd.event == 0x00) {
+			result << sensorValueEvent(0)
 		} else if (cmd.event == 0x03) {
-			result << createEvent(descriptionText: "$device.displayName covering was removed", isStateChange: true)
-			result << response(zwave.wakeUpV1.wakeUpIntervalSet(seconds:4*3600, nodeid:zwaveHubNodeId))
-			if(!state.MSR) result << response(zwave.manufacturerSpecificV2.manufacturerSpecificGet())
+			result << createEvent(name: "tamper", value: "detected", descriptionText: "$device.displayName covering was removed", isStateChange: true)
+			result << response(zwave.batteryV1.batteryGet())
 		} else if (cmd.event == 0x05 || cmd.event == 0x06) {
 			result << createEvent(descriptionText: "$device.displayName detected glass breakage", isStateChange: true)
-		} else if (cmd.event == 0x07) {
-			if(!state.MSR) result << response(zwave.manufacturerSpecificV2.manufacturerSpecificGet())
-			result << sensorValueEvent(1)
 		}
 	} else if (cmd.notificationType) {
 		def text = "Notification $cmd.notificationType: event ${([cmd.event] + cmd.eventParameter).join(", ")}"
-		result << createEvent(name: "notification$cmd.notificationType", value: "$cmd.event", descriptionText: text, displayed: false)
+		result << createEvent(name: "notification$cmd.notificationType", value: "$cmd.event", descriptionText: text, isStateChange: true, displayed: false)
 	} else {
 		def value = cmd.v1AlarmLevel == 255 ? "active" : cmd.v1AlarmLevel ?: "inactive"
-		result << createEvent(name: "alarm $cmd.v1AlarmType", value: value, displayed: false)
+		result << createEvent(name: "alarm $cmd.v1AlarmType", value: value, isStateChange: true, displayed: false)
 	}
 	result
 }
@@ -119,11 +126,15 @@ def zwaveEvent(physicalgraph.zwave.commands.notificationv3.NotificationReport cm
 def zwaveEvent(physicalgraph.zwave.commands.wakeupv1.WakeUpNotification cmd)
 {
 	def result = [createEvent(descriptionText: "${device.displayName} woke up", isStateChange: false)]
+
+	if (state.MSR == "011A-0601-0901" && device.currentState('motion') == null) {  // Enerwave motion doesn't always get the associationSet that the hub sends on join
+		result << response(zwave.associationV1.associationSet(groupingIdentifier:1, nodeId:zwaveHubNodeId))
+	}
 	if (!state.lastbat || (new Date().time) - state.lastbat > 53*60*60*1000) {
 		result << response(zwave.batteryV1.batteryGet())
-		result << response("delay 1200")
+	} else {
+		result << response(zwave.wakeUpV1.wakeUpNoMoreInformation())
 	}
-	result << response(zwave.wakeUpV1.wakeUpNoMoreInformation())
 	result
 }
 

@@ -21,6 +21,7 @@ metadata {
         attribute "tamper", "enum", ["detected", "clear"]
         attribute "heatAlarm", "enum", ["overheat detected", "clear", "rapid temperature rise", "underheat detected"]
         fingerprint deviceId: "0x0701", inClusters: "0x5E, 0x86, 0x72, 0x5A, 0x59, 0x85, 0x73, 0x84, 0x80, 0x71, 0x56, 0x70, 0x31, 0x8E, 0x22, 0x9C, 0x98, 0x7A", outClusters: "0x20, 0x8B"
+        fingerprint mfr:"010F", prod:"0C02", model:"1002"
     }
     simulator {
         //battery

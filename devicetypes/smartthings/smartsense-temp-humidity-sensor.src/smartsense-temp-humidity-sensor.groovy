@@ -14,12 +14,13 @@
  *
  */
 metadata {
-	definition (name: "SmartSense Temp/Humidity Sensor",namespace: "smartthings", author: "SmartThings") {
+	definition (name: "SmartSense Temp/Humidity Sensor",namespace: "smartthings", author: "SmartThings", category: "C2") {
 		capability "Configuration"
 		capability "Battery"
 		capability "Refresh"
 		capability "Temperature Measurement"
 		capability "Relative Humidity Measurement"
+		capability "Health Check"
 
 		fingerprint endpointId: "01", inClusters: "0001,0003,0020,0402,0B05,FC45", outClusters: "0019,0003"
 	}
@@ -196,7 +197,8 @@ private Map getBatteryResult(rawValue) {
 
 	def volts = rawValue / 10
 	def descriptionText
-	if (volts > 3.5) {
+    if (rawValue == 0 || rawValue == 255) {}
+    else if (volts > 3.5) {
 		result.descriptionText = "${linkText} battery has too much power (${volts} volts)."
 	}
 	else {
@@ -250,6 +252,7 @@ def refresh()
 }
 
 def configure() {
+	sendEvent(name: "checkInterval", value: 7200, displayed: false)
 
 	log.debug "Configuring Reporting and Bindings."
 	def configCmds = [

@@ -13,18 +13,19 @@
  *  for the specific language governing permissions and limitations under the License.
  *
  */
+//DEPRECATED - Using the smartsense-multi-sensor.groovy DTH for this device. Users need to be moved before deleting this DTH
 
  metadata {
- 	definition (name: "SmartSense Open/Closed Accelerometer Sensor", namespace: "smartthings", author: "SmartThings") {
+ 	definition (name: "SmartSense Open/Closed Accelerometer Sensor", namespace: "smartthings", author: "SmartThings", category: "C2") {
  		capability "Battery"
  		capability "Configuration"
  		capability "Contact Sensor"
  		capability "Acceleration Sensor"
  		capability "Refresh"
  		capability "Temperature Measurement"
- 		command "enrollResponse"
- 		fingerprint inClusters: "0000,0001,0003,0402,0500,0020,0B05,FC02", outClusters: "0019", manufacturer: "CentraLite", model: "3320"
-		fingerprint inClusters: "0000,0001,0003,0402,0500,0020,0B05,FC02", outClusters: "0019", manufacturer: "CentraLite", model: "3321"
+		capability "Health Check"
+
+		command "enrollResponse"
  	}
 
  	simulator {
@@ -225,7 +226,8 @@ def getTemperature(value) {
 
 		def volts = rawValue / 10
 		def descriptionText
-		if (volts > 3.5) {
+        if (rawValue == 0 || rawValue == 255) {}
+		else if (volts > 3.5) {
 			result.descriptionText = "${linkText} battery has too much power (${volts} volts)."
 		}
 		else {
@@ -298,6 +300,7 @@ def getTemperature(value) {
 	}
 
 def configure() {
+	sendEvent(name: "checkInterval", value: 7200, displayed: false)
 
 	String zigbeeEui = swapEndianHex(device.hub.zigbeeEui)
 	log.debug "Configuring Reporting, IAS CIE, and Bindings."
