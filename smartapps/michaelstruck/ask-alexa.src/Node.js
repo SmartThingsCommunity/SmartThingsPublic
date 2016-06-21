@@ -1,7 +1,7 @@
 /**
  *  Ask Alexa - Lambda Code
  *
- *  Version 1.1.3 - 6/15/16 Copyright © 2016 Michael Struck
+ *  Version 1.1.4 - 6/19/16 Copyright © 2016 Michael Struck
  *  Special thanks for Keith DeLong for code and assistance
  *  
  *  Version 1.0.0 - Initial release
@@ -10,6 +10,7 @@
  *  Version 1.1.1 - Added messages to indicate bad OAuth or Application ID
  *  Version 1.1.2 - Fixed small syntax error in a couple responses
  *  Version 1.1.3 - Fixed additional syntax items; added stop/cancel/end/yes options
+ *  Version 1.1.4 - Added some randomization to responses
  * 
  *  Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except
  *  in compliance with the License. You may obtain a copy of the License at:
@@ -23,9 +24,9 @@
  */
 'use strict';
 exports.handler = function( event, context ) {
-   var versionTxt = '1.1.3';
-   var versionDate= '06/15/2016';
-   var versionNum = '113';
+   var versionTxt = '1.1.4';
+   var versionDate= '06/19/2016';
+   var versionNum = '114';
    var https = require( 'https' );
    // Paste app code here between the breaks------------------------------------------------
     var IName = 'SmartThings';
@@ -83,16 +84,24 @@ exports.handler = function( event, context ) {
             cardName = "SmartThings Home Operation";
         }
         else if (event.request.intent.name == "AMAZON.YesIntent") {
-            output(" Ok. Simply say what you want me to do with your SmartThings devices or macros. ", context, "SmartThings Alexa Yes Command", false);
+            var responses = [" Ok. Simply say what you want me to do with your SmartThings devices or macros. ", " Ok. What would you like to do? ", " Ok. Ready for your command. ", " Go ahead. "];
+            var resText =responses[Math.floor(Math.random() * 4)];
+            output(resText, context, "SmartThings Alexa Yes Command", false);
         }
         else if (event.request.intent.name == "AMAZON.NoIntent") {
-            output(" Ok. Maybe later. ", context, "SmartThings Alexa End Command", true);
+            var responses = [" Ok. ", " Ok. Maybe later. ", " Ok. I am here if you ever need me. ", " "];
+            var resText =responses[Math.floor(Math.random() * 4)];
+            output(resText, context, "SmartThings Alexa End Command", true);
         }
         else if (event.request.intent.name == "AMAZON.StopIntent") {
-            output(" Stopping. ", context, "Amazon Stop", true);
+            var responses = [" Stopping. ", " Ok. Stopping. ", " "];
+            var resText =responses[Math.floor(Math.random() * 3)];
+            output(resText, context, "Amazon Stop", true);
         }
         else if (event.request.intent.name == "AMAZON.CancelIntent") {
-            output(" Cancelling. ", context, "Amazon Cancel", true);
+            var responses = [" Cancelling. ", " Ok. Cancelling. ", " "];
+            var resText =responses[Math.floor(Math.random() * 3)];
+            output(resText, context, "Amazon Cancel", true);
         }
         else if (intentName == "AMAZON.HelpIntent") {
             var help = "With the Ask Alexa SmartApp, you can interface your "+
@@ -107,7 +116,9 @@ exports.handler = function( event, context ) {
             output(help, context, "Ask Alexa Help", true);
         }
         if (!process) {
-            output("I am not sure what you are asking. Would you like to try again?", context, "Ask Alexa Error", false);   
+            var responses = ["I am not sure what you are asking. Would you like to try again? ", " Sorry, I didn't understand. Want to try again? ", "I did not understand what you want me to do. Like to try again? "];
+            var resText =responses[Math.floor(Math.random() * 3)];
+            output(resText, context, "Ask Alexa Error", false);   
         }
         else {
             url += '&lVer=' + versionNum + '&access_token=' + STtoken;
