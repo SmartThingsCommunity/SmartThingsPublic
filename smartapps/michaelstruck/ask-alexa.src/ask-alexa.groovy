@@ -1,7 +1,7 @@
 /**
  *  Ask Alexa 
  *
- *  Version 2.0.2a - 6/17/16 Copyright © 2016 Michael Struck
+ *  Version 2.0.3 - 6/19/16 Copyright © 2016 Michael Struck
  *  Special thanks for Keith DeLong for overall code and assistance and Barry Burke for weather reporting code
  * 
  *  Version 1.0.0 - Initial release
@@ -15,6 +15,7 @@
  *  Version 2.0.0b - Code consolidated from Parent/Child to a single code base. Added CoRE Trigger and CoRE support. Many fixes
  *  Version 2.0.1 - Fixed issue with listing CoRE macros; fixed syntax issues and improved acknowledgment message in Group Macros, more CoRE output behind-the-scenes
  *  Version 2.0.2a - Added %delay% macro for custom acknowledgment for pre/post text areas, dimmer/group fixes and added lunar phases (thanks again to Barry Burke), 2nd level acknowledgments in Alexa
+ *  Version 2.0.3 - Filter of power meters in reports. Added Weather Advisories.
  *
  *  Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except
  *  in compliance with the License. You may obtain a copy of the License at:
@@ -77,9 +78,7 @@ preferences {
             	page name:"pageWeatherForecast"
             page name:"pageSpeakerReport"
 }
-def pageMain() {
-	if (!parent) mainPageParent() else mainPageChild()
-}
+def pageMain() { if (!parent) mainPageParent() else mainPageChild() }
 //Show main page
 def mainPageParent() {
     dynamicPage(name: "mainPageParent", install: true, uninstall: false) {
@@ -87,8 +86,13 @@ def mainPageParent() {
         def duplicates = getDeviceList().name.findAll{getDeviceList().name.count(it)>1}.unique()
         if (duplicates){
         	section ("**WARNING**"){
-            	paragraph "You have the following device(s) used multiple times within Alexa Helper:\n\n${getList(duplicates)}\n\nA device should be uniquely named and appear only once in the categories below.",
+            	paragraph "You have the following device(s) used multiple times within Ask Alexa:\n\n${getList(duplicates)}\n\nA device should be uniquely named and appear only once in the categories below.",
             	image: "https://raw.githubusercontent.com/MichaelStruck/SmartThingsPublic/master/img/caution.png"
+            }
+        }
+        if (findNullDevices()) {
+        	section ("**WARNING**"){
+            	paragraph findNullDevices(), image: "https://raw.githubusercontent.com/MichaelStruck/SmartThingsPublic/master/img/caution.png"
             }
         }
         section("Items to interface to Alexa") {
@@ -578,6 +582,7 @@ def pageOtherReport(){
         }
         section("Power Meters"){
        		input "voicePower", "capability.powerMeter", title: "Power Meters To Report Energy Use...", multiple: true, required: false
+            if (voicePower) input "voicePowerOn", "bool", title: "Report Only Meters Drawing Power", defaultValue: false
         }
     }
 }
@@ -646,7 +651,9 @@ def pageWeatherReport(){
     		input "voiceSunset", "bool", title: "Speak Today's Sunset", defaultValue: false	
         }
         section ("Other Weather Underground Information"){
-        	input "voiceMoon", "bool", title: "Lunar Phases", defaultValue:false  
+        	input "voiceMoon", "bool", title: "Lunar Phases", defaultValue:false
+            if (voiceWeatherTemp || voiceWeatherHumid || voiceWeatherDew || voiceWeatherSolar || voiceWeatherVisiblity || voiceWeatherPrecip ||
+            	voiceWeatherToday||voiceWeatherTonight||voiceWeatherTomorrow) input "voiceWeatherWarnFull", "bool", title: "Give Full Weather Advisory (If Present)", defaultValue: false
         }
         section ("Location") {
         	if (voiceWeatherTemp || voiceWeatherHumid || voiceWeatherDew || voiceWeatherSolar || voiceWeatherVisiblity || voiceWeatherPrecip ||
@@ -1567,6 +1574,8 @@ def reportResults(){
         }
         fullMsg += voiceWeatherTemp|| voiceWeatherHumid || voiceWeatherDew || voiceWeatherSolar || voiceWeatherVisiblity || voiceWeatherPrecip ? getWeatherReport() : ""
         fullMsg += voiceWeatherToday  || voiceWeatherTonight || voiceWeatherTomorrow || voiceSunset || voiceSunrise ? getWeatherForecast() : ""
+        fullMsg += voiceWeatherTemp|| voiceWeatherHumid || voiceWeatherDew || voiceWeatherSolar || voiceWeatherVisiblity || voiceWeatherPrecip ||
+        	voiceWeatherToday  || voiceWeatherTonight || voiceWeatherTomorrow || voiceSunset || voiceSunrise ? weatherAlerts() : ""
         fullMsg += voiceMoon ? getMoonInfo() : ""
         fullMsg += voiceWater && waterReport() ? waterReport() : ""
         fullMsg += voicePresence ? presenceReport() : ""
@@ -1719,7 +1728,8 @@ def powerReport(){
     voicePower.each { deviceName->
 		currVal = deviceName.currentValue("power")
         if (currVal == null) currVal=0
-        result += "The ${deviceName} is reading " + currVal  + " watts. "
+        if (voicePowerOn)  result += currVal>0 ? "The ${deviceName} is reading " + currVal  + " watts. " : ""
+        else result += "The ${deviceName} is reading " + currVal  + " watts. "
 	}
     return result 
 }
@@ -1916,6 +1926,7 @@ def reportSensors(){
         def present = voicePresentOnly ? "(Present${arriveEvt}${departEvt})" : "(Present/Away${arriveEvt}${departEvt})"
         def motionEvt = voiceMotionEvt ? "/Event" : ""
         def motion = voiceMotionOnly ? "(Active${motionEvt})" : "(Active/Not Active${motionEvt})"
+        def power = voicePowerOn ? "(Active)" : "(Active/Not Active)"
         result  = voiceWater && voiceWater.size()>1 ? "Water sensors ${water}" : voiceWater && voiceWater.size()==1 ? "Water sensor ${water}" : ""
         if (voicePresence) result  += result && voicePresence.size()>1 && !voiceMotion ? " and presence sensors ${present}" : result && voicePresence.size()==1 && !voiceMotion ? " and presence sensor ${present}" : ""
         if (voicePresence) result  += !result && voicePresence.size()>1 ? "Presence sensors ${present}" : !result && voicePresence.size()==1 ? "Presence sensor ${present}" : ""
@@ -1923,7 +1934,7 @@ def reportSensors(){
         if (voiceMotion) result += result && voiceMotion.size()>1 ? ", motion sensors ${motion}" : result && voiceMotion.size()==1 ? ", motion sensor ${motion}" : ""
         if (voiceMotion) result += !result && voiceMotion.size()>1 ? "Motion sensors ${motion}" : !result && voiceMotion.size()==1 ? "Motion sensor ${motion}" : ""
         if (voicePower) result += result && voicePower.size()>1 ? " and power meters" : result && voicePower.size()==1 ? " and power meter" : ""
-        if (voicePower) result += !result && voicePower.size()>1 ? "Power meters" : !result && voicePower.size()==1 ? "Power meter" : ""
+        if (voicePower) result += !result && voicePower.size()>1 ? "Power meters ${power}" : !result && voicePower.size()==1 ? "Power meter ${power}" : ""
         result += (voiceWater && voicePresence && voiceMotion && voicePower) || (voiceWater && voicePresence && voiceMotion) || (voiceWater && voicePresence && voicePower) ||
         (voiceWater && voiceMotion && voicePower) && (voiceWater && voicePresence) || (voiceWater && voiceMotion) || (voiceWater && voicePower) || (voicePresence && voiceMotion)||
         (voicePresence && voicePower) || ( voiceMotion && voicePower) || (voicePower && voicePower.size()>1) || (voiceWater && voiceWater.size()>1) ||
@@ -2236,7 +2247,7 @@ private getWeatherForecast(){
             else if (!voiceSunrise && voiceSunset) msg += "The sun ${verb2} tonight at ${setTime}. "
         }
     }
-    else  msg = "Please set the location of your hub with the SmartThings mobile app, or enter a zip code to receive weather forecasts."
+    else  msg = "Please set the location of your hub with the SmartThings mobile app, or enter a zip code to receive weather forecasts. "
     return msg
 }
 def getMoonInfo(){
@@ -2275,8 +2286,60 @@ def getMoonInfo(){
                 msg += ". "
         }
     }
-    else  msg = "Please set the location of your hub with the SmartThings mobile app, or enter a zip code to receive lunar information ."
+    else  msg = "Please set the location of your hub with the SmartThings mobile app, or enter a zip code to receive lunar information. "
     log.debug msg
+    return msg
+}
+def weatherAlerts(){
+	def msg = "", brief = false
+    if (location.timeZone || zipCode) {
+        def alerts = getWeatherFeature("alerts", zipCode).alerts
+        if ( alerts.size() > 0 ) {
+            if ( alerts.size() == 1 ) msg += "There is one active advisory for this area"
+            else msg += "There are ${alerts.size()} active advisories for this area"
+            def warn
+            if (voiceWeatherWarnFull) {
+                if (alerts[0].date_epoch == "NA") {
+                    def explained = []
+                    alerts.each {
+                        msg += "${it.wtype_meteoalarm_name} Advisory"
+                        if (it.level_meteoalarm != "") msg += ", level ${it.level_meteoalarm}"
+                        if (it.level_meteoalarm_name != "") msg += ", color ${it.level_meteoalarm_name}"
+                        msg += ". "
+                        if (brief) warn = " ${it.description} Advisory issued ${it.date}, expires ${it.expires}. "
+                        else {
+                            if (it.level_meteoalarm == "") {
+                                if (it.level_meteoalarm_description != "") msg += "${it.level_meteoalarm_description} "
+                            } else if (!explained.contains(it.level_meteoalarm)) {
+                                if (it.level_meteoalarm_description != "") msg += "${it.level_meteoalarm_description} "                       	
+                                    explained.add(it.level_meteoalarm)
+                                }
+                                warn = "${it.description} This advisory was issued on ${it.date} and it expires on ${it.expires}. "
+                        }
+                        warn = warn.replaceAll("kn\\, ", " knots, ").replaceAll("Bft ", " Beaufort level ").replaceAll("\\s+", " ").trim()
+                        if (!warn.endsWith(".")) warn += "."
+                        msg += "${warn} " 
+                    }
+                } else {
+                    alerts.each {
+                        if ( brief ) msg += "A ${it.description} is in effect from ${it.date} until ${it.expires}. "
+                        else {
+                            warn = it.message.replaceAll("\\.\\.\\.", ": ").replaceAll("\\* ", " ")
+                            warn = warn.replaceAll( "\\s+", " ").replaceAll(/\b(\d+)(\d\d) (.[mM])\b/, /$1:$2 $3/) 
+                            def m = warn.indexOf("Lat, Lon")
+                            if (m > 0) warn = warn.take(m-1)
+                            warn = warn.trim()
+                            if (!warn.endsWith(".")) warn += "."
+                            msg += "${warn} "
+                        }
+                    }	
+                }
+            }
+            else msg += ". To hear more about this advisory, configure your SmartApp to give you the full message. "
+        }
+    }
+    else msg = "Please set the location of your hub with the SmartThings mobile app, or enter a zip code to receive advisory information. "
+    translateTxt().each {msg = msg.replaceAll(it.txt,it.cvt)}
     return msg
 }
 //Translate Maxtrix-----------------------------------------------------------
@@ -2286,8 +2349,9 @@ def translateTxt(){
     wordCvt <<[txt:" NW ",cvt: " north west "] << [txt:" SW ",cvt: " south west "] << [txt:" NE ",cvt: " north east "] << [txt:" SE ",cvt: " south east "]
 	wordCvt <<[txt:" NNW ",cvt: " north-north west "] << [txt:" SSW ",cvt: " south-south west "] << [txt:" NNE ",cvt: " north-north east "] << [txt:" SSE ",cvt: " south-south east "]
 	wordCvt <<[txt:" WNW ",cvt: " west-north west "] << [txt:" WSW ",cvt: " west-south west "] << [txt:" ENE ",cvt: " east-north east "] << [txt:" ESE ",cvt: " east-south east "]
-	wordCvt <<[txt: /([0-9]+)C/, cvt: '$1 degrees'] << [txt: /([0-9]+)F/, cvt: '$1 degrees'] << [txt: "mph", cvt: "miles per hour"]<<[txt: "kph", cvt: "kilometers per hour"]
-	wordCvt <<[txt: "MPH", cvt: "miles per hour"]
+	wordCvt <<[txt: /([0-9]+)C/, cvt: '$1 degrees'] << [txt: /([0-9]+)F/, cvt: '$1 degrees'] << [txt: "mph", cvt: "mi/h"]<<[txt: "kph", cvt: "km/h"]
+	wordCvt <<[txt: "MPH", cvt: "mi/h"]<< [txt: "PDT", cvt: "pacific daylight time"]<< [txt: "MDT", cvt: "mountain daylight time"]<< [txt: "MDT", cvt: "eastern daylight time"]
+	wordCvt <<[txt: "CDT", cvt: "central daylight time"]<<[txt: /\\.0 /, cvt: / /]
 }
 //Send Messages-----------------------------------------------------------
 def sendMSG(num, msg, push, recipients){
@@ -2402,26 +2466,26 @@ def getDeviceList(){
     }
     catch (e) {
     	log.warn "There was an issue parsing the device labels. Be sure all of the devices are uniquely named/labeled and that none of them are blank (null). "
-        log.warn findNullDevices()
     }
     return result
 }
 def findNullDevices(){
 	def result=""
-    if (switches) switches.each { result += !it.label ? it.name + " has a null label\n" : "" }
-    if (dimmers) dimmers.each{ result += !it.label ? it.name + " has a null label\n" : "" }
-	if (cLights) cLights.each{ result += !it.label ? it.name + " has a null label\n" : "" }
-	if (doors) doors.each{ result += !it.label ? it.name + " has a null label\n" : "" }
-	if (locks) locks.each{ result += !it.label ? it.name + " has a null label\n" : "" }
-	if (tstats) tstats.each{ result += !it.label ? it.name + " has a null label\n" : "" }
-	if (speakers) speakers.each{ result += !it.label ? it.name + " has a null label\n" : "" }
-	if (temps) temps.each{ result += !it.label ? it.name + " has a null label\n" : "" }
-	if (humid) humid.each{ result += !it.label ? it.name + " has a null label\n" : "" }
-	if (ocSensors) ocSensors.each{ result += !it.label ? it.name + " has a null label\n" : "" }
-	if (water) water.each{ result += !it.label ? it.name + " has a null label\n" : "" }
-	if (motion) motion.each{ result += !it.label ? it.name + " has a null label\n" : "" }
-	if (presence) presence.each{ result += !it.label ? it.name + " has a null label\n" : "" }
-	return result
+    if (switches) switches.each { result += !it.label ? it.name + "\n" : "" }
+    if (dimmers) dimmers.each{ result += !it.label ? it.name + "\n" : "" }
+	if (cLights) cLights.each{ result += !it.label ? it.name + "\n" : "" }
+	if (doors) doors.each{ result += !it.label ? it.name + "\n" : "" }
+	if (locks) locks.each{ result += !it.label ? it.name + "\n" : "" }
+	if (tstats) tstats.each{ result += !it.label ? it.name + "\n" : "" }
+	if (speakers) speakers.each{ result += !it.label ? it.name + "\n" : "" }
+	if (temps) temps.each{ result += !it.label ? it.name + "\n" : "" }
+	if (humid) humid.each{ result += !it.label ? it.name + "\n" : "" }
+	if (ocSensors) ocSensors.each{ result += !it.label ? it.name + "\n" : "" }
+	if (water) water.each{ result += !it.label ? it.name + "\n" : "" }
+	if (motion) motion.each{ result += !it.label ? it.name + "\n" : "" }
+	if (presence) presence.each{ result += !it.label ? it.name + "\n" : "" }
+	if (result) result = "You have the following device(s) with a blank (null) label:\n\n" + result + "\nBe sure all of the devices are uniquely labeled and that none of them are blank(null)."
+    return result
 }
 def fillTypeList(){
 	state.deviceTypes =["reports","report","switches","switch","dimmers","dimmer","colored lights","color","colors","speakers","speaker","water sensor","water sensors","water",
@@ -2482,12 +2546,12 @@ def sendJSON(outputTxt, lVer){
 //Version/Copyright/Information/Help-----------------------------------------------------------
 private def textAppName() { def text = "Ask Alexa" }	
 private def textVersion() {
-    def version = "SmartApp Version: 2.0.2a (06/17/2016)"
+    def version = "SmartApp Version: 2.0.3 (06/19/2016)"
     def lambdaVersion = state.lambdaCode ? "\n" + state.lambdaCode : ""
     return "${version}${lambdaVersion}"
 }
-private def versionInt(){ return 202 }
-private def versionLong(){ return "2.0.2a" }
+private def versionInt(){ return 203 }
+private def versionLong(){ return "2.0.3" }
 private def textCopyright() {return "Copyright © 2016 Michael Struck" }
 private def textLicense() {
 	def text = "Licensed under the Apache License, Version 2.0 (the 'License'); "+
