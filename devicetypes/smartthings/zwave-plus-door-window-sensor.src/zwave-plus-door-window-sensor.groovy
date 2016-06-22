@@ -69,7 +69,7 @@ def configure() {
 
 	if (state.sec != 1) {
 		// secure inclusion may not be complete yet
-		cmds << "delay 3000"
+		cmds << "delay 1000"
 	}
 
 	cmds += secureSequence([
