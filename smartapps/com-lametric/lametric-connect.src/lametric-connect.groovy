@@ -753,7 +753,9 @@ def sendNotificationMessageToDevice(dni, data)
             body: data,
             headers: [
                 HOST: "${localIp}:8080",
-                Authorization: "Basic ${"${localApiUser}:${apiKey}".bytes.encodeBase64()}"
+                Authorization: "Basic ${"${localApiUser}:${apiKey}".bytes.encodeBase64()}",
+                "Content-type":"application/json",
+                "Accept":"application/json"
             ]]))
     }
 }
@@ -766,7 +768,7 @@ def getAllInfoFromDevice(localIp, apiKey)
         sendHubCommand(new physicalgraph.device.HubAction([
             method: "GET",
             path: localApiIndexPath,
-            query:[info:1,bluetooth:1,wifi:1,audio:1,display:1],
+            query:["fields": ["info","wifi", "volume", "bluetooth"]],
             headers: [
                 HOST: "${localIp}:8080",
                 Authorization: "Basic ${"${localApiUser}:${apiKey}".bytes.encodeBase64()}"

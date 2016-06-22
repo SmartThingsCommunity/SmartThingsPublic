@@ -124,7 +124,7 @@ def getDefaultIconData() { """data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAgA
 
 def mainPage() {
     def iconRequestOptions = [headers: ["Accept": "application/json"],
-						    uri: "${lametricHost}/api/v2/icons", query:["fields":"id,title,type,code"]];
+						    uri: "${lametricHost}/api/v2/icons", query:["fields":"id,title,type,code", "order":"title"]]
 
     	def icons = getIconsList();
         def iconLabels = getIconLabels();
