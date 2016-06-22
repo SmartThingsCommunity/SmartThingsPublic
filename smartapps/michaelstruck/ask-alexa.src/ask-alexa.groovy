@@ -1,7 +1,7 @@
 /**
  *  Ask Alexa 
  *
- *  Version 2.0.3 - 6/19/16 Copyright © 2016 Michael Struck
+ *  Version 2.0.3a - 6/21/16 Copyright © 2016 Michael Struck
  *  Special thanks for Keith DeLong for overall code and assistance and Barry Burke for weather reporting code
  * 
  *  Version 1.0.0 - Initial release
@@ -15,7 +15,7 @@
  *  Version 2.0.0b - Code consolidated from Parent/Child to a single code base. Added CoRE Trigger and CoRE support. Many fixes
  *  Version 2.0.1 - Fixed issue with listing CoRE macros; fixed syntax issues and improved acknowledgment message in Group Macros, more CoRE output behind-the-scenes
  *  Version 2.0.2a - Added %delay% macro for custom acknowledgment for pre/post text areas, dimmer/group fixes and added lunar phases (thanks again to Barry Burke), 2nd level acknowledgments in Alexa
- *  Version 2.0.3 - Filter of power meters in reports. Added Weather Advisories.
+ *  Version 2.0.3a - Filter of power meters in reports. Added Weather Advisories.
  *
  *  Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except
  *  in compliance with the License. You may obtain a copy of the License at:
@@ -2120,7 +2120,7 @@ private getWeatherReport(){
             case "Sandstorm":
             case "Light Sandstorm":
             case "Heavy Sandstorm":
-                sb << " conditions."
+                sb << " conditions. "
                 break
             default:
                 sb << ". "
@@ -2324,7 +2324,7 @@ def weatherAlerts(){
                     alerts.each {
                         if ( brief ) msg += "A ${it.description} is in effect from ${it.date} until ${it.expires}. "
                         else {
-                            warn = it.message.replaceAll("\\.\\.\\.", ": ").replaceAll("\\* ", " ")
+                            warn = it.message.replaceAll("\\.\\.\\.", ", ").replaceAll("\\* ", " ")
                             warn = warn.replaceAll( "\\s+", " ").replaceAll(/\b(\d+)(\d\d) (.[mM])\b/, /$1:$2 $3/) 
                             def m = warn.indexOf("Lat, Lon")
                             if (m > 0) warn = warn.take(m-1)
@@ -2546,12 +2546,12 @@ def sendJSON(outputTxt, lVer){
 //Version/Copyright/Information/Help-----------------------------------------------------------
 private def textAppName() { def text = "Ask Alexa" }	
 private def textVersion() {
-    def version = "SmartApp Version: 2.0.3 (06/19/2016)"
+    def version = "SmartApp Version: 2.0.3 (06/21/2016)"
     def lambdaVersion = state.lambdaCode ? "\n" + state.lambdaCode : ""
     return "${version}${lambdaVersion}"
 }
 private def versionInt(){ return 203 }
-private def versionLong(){ return "2.0.3" }
+private def versionLong(){ return "2.0.3a" }
 private def textCopyright() {return "Copyright © 2016 Michael Struck" }
 private def textLicense() {
 	def text = "Licensed under the Apache License, Version 2.0 (the 'License'); "+
