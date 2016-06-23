@@ -824,17 +824,51 @@ def deviceHandler(evt) {
 
 def sendToHarmony(evt, String callbackUrl) {
 	def callback = new URI(callbackUrl)
-	def host = callback.port != -1 ? "${callback.host}:${callback.port}" : callback.host
-	def path = callback.query ? "${callback.path}?${callback.query}".toString() : callback.path
-	sendHubCommand(new physicalgraph.device.HubAction(
-		method: "POST",
-		path: path,
-		headers: [
-			"Host": host,
-			"Content-Type": "application/json"
-		],
-		body: [evt: [deviceId: evt.deviceId, name: evt.name, value: evt.value]]
-	))
+  if(isIP(callback.host)){
+  	def host = callback.port != -1 ? "${callback.host}:${callback.port}" : callback.host
+  	def path = callback.query ? "${callback.path}?${callback.query}".toString() : callback.path
+  	sendHubCommand(new physicalgraph.device.HubAction(
+  		method: "POST",
+  		path: path,
+  		headers: [
+  			"Host": host,
+  			"Content-Type": "application/json"
+  		],
+  		body: [evt: [deviceId: evt.deviceId, name: evt.name, value: evt.value]]
+  	))
+  } else {
+    def params = [
+      uri: callbackUrl,
+      body: [evt: [deviceId: evt.deviceId, name: evt.name, value: evt.value]]
+    ]
+    try {
+        log.debug "Sending data to Harmony Cloud: $params"
+        httpPostJson(params) { resp ->
+            log.debug "Harmony Cloud - Response: ${resp.status}"
+        }
+    } catch (e) {
+        log.error "Harmony Cloud - Something went wrong: $e"
+    }
+  }
+}
+
+public static boolean isIP(String str) {
+    try {
+         String[] parts = str.split("\\.");
+         if (parts.length != 4) return false;
+         for (int i = 0; i < 4; ++i) {
+             int p
+             try {
+               p = Integer.parseInt(parts[i]);
+             } catch (Exception e) {
+               return false;
+             }
+             if (p > 255 || p < 0) return false;
+         }
+         return true;
+    } catch (Exception e) {
+        return false;
+    }
 }
 
 def listHubs() {
