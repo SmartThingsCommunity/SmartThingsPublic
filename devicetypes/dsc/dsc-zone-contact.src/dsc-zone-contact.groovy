@@ -36,7 +36,11 @@ metadata {
         attributeState "fault", label: 'Fault', icon: "st.security.alarm.alarm"
       }
     }
-    standardTile("bypass", "capability.momentary", width: 6, height: 2, title: "Bypass", decoration: "flat"){
+    standardTile("bypass", "device.bypass", width: 3, height: 2, title: "Bypass Status", decoration:"flat"){
+      state "off", label: 'Enabled'
+      state "on", label: 'Bypassed'
+    }
+    standardTile("bypassbutton", "capability.momentary", width: 3, height: 2, title: "Bypass Button", decoration: "flat"){
       state "bypass", label: 'Bypass', action: "bypass", icon: "st.locks.lock.unlocked"
     }
 
@@ -44,7 +48,7 @@ metadata {
     main "zone"
 
     // These tiles will be displayed when clicked on the device, in the order listed here.
-    details(["zone", "bypass"])
+    details(["zone", "bypass", "bypassbutton"])
   }
 }
 
@@ -64,10 +68,13 @@ def zone(String state) {
   log.debug "Zone: ${state}"
 
   def troubleList = ['fault','tamper','restore']
+  def bypassList = ['on','off']
 
   if (troubleList.contains(state)) {
     // Send final event
     sendEvent (name: "trouble", value: "${state}")
+  } else if (bypasseList.contains(state)) {
+    sendEvent (name: "bypass", value: "${state}")
   } else {
     sendEvent (name: "contact", value: "${state}")
   }

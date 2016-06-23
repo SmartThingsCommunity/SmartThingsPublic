@@ -29,8 +29,8 @@ class CodeError(Exception): pass
 
 ALARMSTATE={'version' : 0.1}
 MAXPARTITIONS=16
-MAXZONES=128
-MAXALARMUSERS=47
+MAXZONES=64
+MAXALARMUSERS=95
 CONNECTEDCLIENTS={}
 
 def dict_merge(a, b):
@@ -437,6 +437,29 @@ class EnvisalinkClient(asynchat.async_chat):
                'value': '1',
                'status': 'duress'
              }
+           elif str(code) == '616':
+             update = {
+               'type': 'bypass',
+               'status': 'bypass',
+               'parameters': {}
+             }
+
+             begin=0
+             end=2
+             count=8
+             binary = bin(int(str(parameters[begin:end]), 16))[2:].zfill(8)
+
+             for zone in range(1, MAXZONES+1):
+               if count < 1:
+                 count = 8
+                 begin = begin + 2
+                 end = end + 2
+                 binary = bin(int(str(parameters[begin:end]), 16))[2:].zfill(8)
+               count = count - 1
+               # Is our zone setup with a custom name, if so we care about it
+               if zone in self._config.ZONENAMES and self._config.ZONENAMES[zone]!=False:
+                 value = 'on' if (binary[count] == '1') else 'off'
+                 update['parameters'][str(zone)]=value
            elif str(code) in ['510','511']:
              codeMap = {
                '510':'led',

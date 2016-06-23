@@ -289,7 +289,7 @@ def updated() {
 private update() {
   def update = request.JSON
 
-  if (update.'parameters') {
+  if (update.'parameters' && "${update.'type'}" == 'partition') {
     for (p in update.'parameters') {
       if (notifyEvents && (notifyEvents.contains('all') || notifyEvents.contains("led ${p.key} ${p.value}".toString()))) {
         def flash = (update.'status'.startsWith('ledflash')) ? 'flashing ' : ''
@@ -302,6 +302,7 @@ private update() {
         'alarm':'ALARMING!',
         'armed':'armed',
         'away':'armed away',
+        'bypass':'zone bypass refresh',
         'clear':'sensor cleared',
         'closed':'closed',
         'chime':'chime enabled',
@@ -362,6 +363,10 @@ private update() {
       }
     }
     updatePartitions(update.'value', update.'status', update.'parameters')
+  } else if ("${update.'type'}" == 'bypass') {
+    for (p in update.'parameters') {
+      updateZoneDevices(p.key, p.value)
+    }
   }
 }
 
