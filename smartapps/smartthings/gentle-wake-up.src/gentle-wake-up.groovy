@@ -528,14 +528,16 @@ def updateDimmers(percentComplete) {
 		} else {
 
 			def shouldChangeColors = (colorize && colorize != "false")
-			def canChangeColors = hasSetColorCommand(dimmer)
 
-			log.debug "Setting ${deviceLabel(dimmer)} to ${nextLevel}"
-
-			if (shouldChangeColors && canChangeColors) {
-				dimmer.setColor([hue: getHue(dimmer, nextLevel), saturation: 100, level: nextLevel])
-			} else {
+			if (shouldChangeColors && hasSetColorCommand(dimmer)) {
+				def hue = getHue(dimmer, nextLevel)
+				log.debug "Setting ${deviceLabel(dimmer)} level to ${nextLevel} and hue to ${hue}"
+				dimmer.setColor([hue: hue, saturation: 100, level: nextLevel])
+			} else if (hasSetLevelCommand(dimmer)) {
+				log.debug "Setting ${deviceLabel(dimmer)} level to ${nextLevel}"
 				dimmer.setLevel(nextLevel)
+			} else {
+				log.warn "${deviceLabel(dimmer)} does not have setColor or setLevel commands."
 			}
 
 		}
@@ -818,23 +820,15 @@ private getRedHue(level) {
 }
 
 private hasSetLevelCommand(device) {
-	def isDimmer = false
-	device.supportedCommands.each {
-		if (it.name.contains("setLevel")) {
-			isDimmer = true
-		}
-	}
-	return isDimmer
+	return hasCommand(device, "setLevel")
 }
 
 private hasSetColorCommand(device) {
-	def hasColor = false
-	device.supportedCommands.each {
-		if (it.name.contains("setColor")) {
-			hasColor = true
-		}
-	}
-	return hasColor
+	return hasCommand(device, "setColor")
+}
+
+private hasCommand(device, String command) {
+	return (device.supportedCommands.find { it.name == command } != null)
 }
 
 private dimmersWithSetColorCommand() {
