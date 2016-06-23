@@ -37,8 +37,8 @@ metadata {
       }
     }
     standardTile("bypass", "device.bypass", width: 3, height: 2, title: "Bypass Status", decoration:"flat"){
-      state "off", label: 'Enabled'
-      state "on", label: 'Bypassed'
+      state "off", label: 'Enabled', backgroundColor: "#27e833"
+      state "on", label: 'Bypassed', backgroundColor: "#f9152f"
     }
     standardTile("bypassbutton", "capability.momentary", width: 3, height: 2, title: "Bypass Button", decoration: "flat"){
       state "bypass", label: 'Bypass', action: "bypass", icon: "st.locks.lock.unlocked"
