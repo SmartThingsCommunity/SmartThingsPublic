@@ -73,7 +73,7 @@ def zone(String state) {
   if (troubleList.contains(state)) {
     // Send final event
     sendEvent (name: "trouble", value: "${state}")
-  } else if (bypasseList.contains(state)) {
+  } else if (bypassList.contains(state)) {
     sendEvent (name: "bypass", value: "${state}")
   } else {
     sendEvent (name: "contact", value: "${state}")
