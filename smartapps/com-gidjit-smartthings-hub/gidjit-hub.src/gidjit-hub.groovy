@@ -24,17 +24,24 @@ definition(
     iconX3Url: "http://www.gidjit.com/appicon@3x.png",
     oauth: [displayName: "Gidjit", displayLink: "www.gidjit.com"])
 
+preferences(oauthPage: "deviceAuthorization") {
+    // deviceAuthorization page is simply the devices to authorize
+    page(name: "deviceAuthorization", title: "Device Authorization", nextPage: "instructionPage",
+         install: false, uninstall: true) {
+  		section ("Allow Gidjit to have access, thereby allowing you to quickly control and monitor your following devices. Privacy Policy can be found at http://priv.gidjit.com/privacy.html") {
+    		input "switches", "capability.switch", title: "Control/Monitor your switches", multiple: true, required: false
+    		input "thermostats", "capability.thermostat", title: "Control/Monitor your thermostats", multiple: true, required: false
+    		input "windowShades", "capability.windowShade", title: "Control/Monitor your window shades", multiple: true, required: false //windowShade
+        }
 
-
-preferences {
-  section ("Allow Gidjit to have access, there by allowing you to quickly control and monitor the following devices") {
-    input "switches", "capability.switch", title: "Control/Monitor your switches", multiple: true, required: false
-    input "thermostats", "capability.thermostat", title: "Control/Monitor your thermostats", multiple: true, required: false
-    input "windowShades", "capability.windowShade", title: "Control/Monitor your window shades", multiple: true, required: false //windowShade
-    //input "bulbs", "capability.colorControl", title: "Control your lights", multiple: true, required: false //windowShade
-
-  }
+    }
+    page(name: "instructionPage", title: "Device Discovery", install: true) {
+        section() {
+            paragraph "Now the process is complete return to the Devices section of the Detected Screen. From there and you can add actions to each of your device panels, including launching SmartThings routines."
+        }
+    }
 }
+
 mappings {
   path("/structureinfo") {
     action: [
