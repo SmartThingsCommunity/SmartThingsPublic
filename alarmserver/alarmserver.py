@@ -376,6 +376,8 @@ class EnvisalinkClient(asynchat.async_chat):
             self.send_command('005', self._config.ENVISALINKPASS)
         if parameters == '1':
             self.send_command('001', '')
+            time.sleep(2)
+            self.send_command('071', '1*1#')
         if parameters == '0':
             alarmserver_logger('Incorrect envisalink password')
             sys.exit(0)
@@ -507,6 +509,9 @@ class EnvisalinkClient(asynchat.async_chat):
            elif event['type'] == 'partition':
              # Is our partition setup with a custom name?
              if int(parameters[0]) in self._config.PARTITIONNAMES and self._config.PARTITIONNAMES[int(parameters[0])]!=False:
+               if str(code) == '655':
+                 self.send_command('071', '1*1#')
+
                codeMap = {
                  '650':'ready',
                  '651':'notready',
@@ -696,6 +701,8 @@ class AlarmServer(asyncore.dispatcher):
         elif query.path == '/api/alarm/refresh':
             channel.pushok(json.dumps({'response' : 'Request to refresh received'}))
             self._envisalinkclient.send_command('001', '')
+            time.sleep(2)
+            self._envisalinkclient.send_command('071', '1*1#')
         elif query.path == '/api/pgm':
             channel.pushok(json.dumps({'response' : 'Request to trigger PGM'}))
             #self._envisalinkclient.send_command('020', '1' + str(query_array['pgmnum'][0]))
@@ -705,9 +712,6 @@ class AlarmServer(asyncore.dispatcher):
         elif query.path == '/api/alarm/disarm':
             channel.pushok(json.dumps({'response' : 'Request to disarm received'}))
             self._envisalinkclient.send_command('040', '1' + alarmcode)
-        elif query.path == '/api/refresh':
-            channel.pushok(json.dumps({'response' : 'Request to refresh data received'}))
-            self._envisalinkclient.send_command('001', '')
         elif query.path == '/api/config/eventtimeago':
             channel.pushok(json.dumps({'eventtimeago' : str(self._config.EVENTTIMEAGO)}))
         elif query.path == '/img/glyphicons-halflings.png':
