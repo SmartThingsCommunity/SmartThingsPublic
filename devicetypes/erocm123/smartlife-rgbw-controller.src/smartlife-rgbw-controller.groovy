@@ -44,7 +44,7 @@ metadata {
 	}
     
     preferences {
-        input("ip", "string", title:"IP Address", description: "10.37.20.150", defaultValue: "10.37.20.150" ,required: true, displayDuringSetup: true)
+        input("ip", "string", title:"IP Address", description: "192.168.1.150", required: false, displayDuringSetup: true)
         //input("port", "string", title:"Port", description: "88", defaultValue: "88" , required: true, displayDuringSetup: true)
         //input("deviceId", "string", title:"Device ID", description: "99", defaultValue: "99" , required: true, displayDuringSetup: true)
 	}
