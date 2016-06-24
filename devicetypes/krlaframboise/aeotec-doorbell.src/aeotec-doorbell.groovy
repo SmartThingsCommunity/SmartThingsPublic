@@ -1,5 +1,5 @@
 /**
- *  Aeotec Doorbell v 1.5
+ *  Aeotec Doorbell v 1.6
  *  (https://community.smartthings.com/t/release-aeon-labs-aeotec-doorbell/39166/16?u=krlaframboise)
  *
  *  Capabilities:
@@ -9,6 +9,9 @@
  *    Kevin LaFramboise (krlaframboise)
  *
  *  Changelog:
+ *
+ *  1.6 (06/23/2016)
+ *    - Bug fix for implicit int to string cast
  *
  *  1.5 (03/24/2016)
  *    - UI Enhancements			
@@ -525,7 +528,9 @@ int validateTrack(track) {
 }
 
 int validateRange(val, defaultVal, minVal, maxVal) {
+	val = val instanceof String ? (val.isInteger() ? val.toInteger() : 0) : val
 	def result = val
+	
 	if (!val) {
 		result = defaultVal
 	} else if (val > maxVal) {
