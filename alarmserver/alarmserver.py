@@ -488,7 +488,7 @@ class EnvisalinkClient(asynchat.async_chat):
 
              binary = bin(int(str(parameters), 16))[2:].zfill(8)
 
-             for i in range(0, 7):
+             for i in range(0, 8):
                value = 'on' if (binary[i] == '1') else 'off'
                update['parameters'][ledMap[str(i)]]=value
            elif event['type'] == 'system':
