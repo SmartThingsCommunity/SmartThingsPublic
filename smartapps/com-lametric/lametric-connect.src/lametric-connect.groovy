@@ -15,53 +15,52 @@
  *
  */
  
-import groovy.json.JsonOutput
- 
 definition(
-        name: "LaMetric (Connect)",
-        namespace: "com.lametric",
-        author: "Mykola Kirichuk",
-        description: "Lametric connect",
-        category: "Fun & Social",
-        iconUrl: "https://developer.lametric.com/assets/smart_things/smart_things_60.png",
-        iconX2Url: "https://developer.lametric.com/assets/smart_things/smart_things_120.png",
-        iconX3Url: "https://developer.lametric.com/assets/smart_things/smart_things_120.png",
-        singleInstance: true)
-    {
-	    appSetting "clientId"
-        appSetting "clientSecret"
-    }
+    name: "LaMetric (Connect)",
+    namespace: "com.lametric",
+    author: "Mykola Kirichuk",
+    description: "Control your LaMetric Time smart display",
+    category: "Family",
+    iconUrl: "https://developer.lametric.com/assets/smart_things/smart_things_60.png",
+    iconX2Url: "https://developer.lametric.com/assets/smart_things/smart_things_120.png",
+    iconX3Url: "https://developer.lametric.com/assets/smart_things/smart_things_120.png",
+    singleInstance: true)
+{
+    appSetting "clientId"
+    appSetting "clientSecret"
+}
 
 preferences {
-	page(name: "auth", title: "LaMetric", nextPage:"", content:"authPage", uninstall: true, install:true)
-	page(name:"deviceDiscovery", title:"Device Setup", content:"deviceDiscovery", refreshTimeout:5);
+    page(name: "auth", title: "LaMetric", nextPage:"", content:"authPage", uninstall: true, install:true)
+    page(name:"deviceDiscovery", title:"Device Setup", content:"deviceDiscovery", refreshTimeout:5);
 }
 
 mappings {
-	path("/oauth/initialize") {action: [GET: "oauthInitUrl"]}
-	path("/oauth/callback") {action: [GET: "callback"]}
+    path("/oauth/initialize") {action: [GET: "oauthInitUrl"]}
+    path("/oauth/callback") {action: [GET: "callback"]}
 }
 
+import groovy.json.JsonOutput
 
 def getEventNameListOfUserDeviceParsed(){ "EventListOfUserRemoteDevicesParsed" }
 def getEventNameTokenRefreshed(){ "EventAuthTokenRefreshed" }
 
 def installed() {
-	log.debug "Installed with settings: ${settings}"
-	initialize()
+    log.debug "Installed with settings: ${settings}"
+    initialize()
 }
 
 def updated() {
-	log.debug "Updated with settings: ${settings}"
-	sendEvent(name:"Updated", value:true)
-	unsubscribe()
-	initialize()
-    
-    
+    log.debug "Updated with settings: ${settings}"
+    sendEvent(name:"Updated", value:true)
+    unsubscribe()
+    initialize()
+
+
 }
 
 def initialize() {
-	// TODO: subscribe to attributes, devices, locations, etc.
+    // TODO: subscribe to attributes, devices, locations, etc.
     log.debug("initialize");
     state.subscribe  = false;
     if (selecteddevice) {
@@ -72,50 +71,50 @@ def initialize() {
 }
 
 /**
- * Get the name of the new device to instantiate in the user's smartapps
- * This must be an app owned by the namespace (see #getNameSpace).
- *
- * @return name
- */
- 
+* Get the name of the new device to instantiate in the user's smartapps
+* This must be an app owned by the namespace (see #getNameSpace).
+*
+* @return name
+*/
+
 def getDeviceName() {
     return "LaMetric"
 }
 
 /**
- * Returns the namespace this app and siblings use
- *
- * @return namespace
- */
+* Returns the namespace this app and siblings use
+*
+* @return namespace
+*/
 def getNameSpace() {
     return "com.lametric"
 }
 
 
 /**
- * Returns all discovered devices or an empty array if none
- *
- * @return array of devices
- */
+* Returns all discovered devices or an empty array if none
+*
+* @return array of devices
+*/
 def getDevices() {
-	state.remoteDevices = state.remoteDevices ?: [:]
+    state.remoteDevices = state.remoteDevices ?: [:]
 }
 
 /**
- * Returns an array of devices which have been verified
- *
- * @return array of verified devices
- */
+* Returns an array of devices which have been verified
+*
+* @return array of verified devices
+*/
 def getVerifiedDevices() {
     getDevices().findAll{ it?.value?.verified == true }
 }
 
 /**
- * Generates a Map object which can be used with a preference page
- * to represent a list of devices detected and verified.
- *
- * @return Map with zero or more devices
- */
+* Generates a Map object which can be used with a preference page
+* to represent a list of devices detected and verified.
+*
+* @return Map with zero or more devices
+*/
 Map getSelectableDevice() {
     def devices = getVerifiedDevices()
     def map = [:]
@@ -128,36 +127,36 @@ Map getSelectableDevice() {
 }
 
 /**
- * Starts the refresh loop, making sure to keep us up-to-date with changes
- *
- */
+* Starts the refresh loop, making sure to keep us up-to-date with changes
+*
+*/
 private refreshDevices(){
-	log.debug "refresh device list"
-	listOfUserRemoteDevices()
+    log.debug "refresh device list"
+    listOfUserRemoteDevices()
     //every 30 min
     runIn(1800, "refreshDevices")
 }
 
 /**
- * The deviceDiscovery page used by preferences. Will automatically
- * make calls to the underlying discovery mechanisms as well as update
- * whenever new devices are discovered AND verified.
- *
- * @return a dynamicPage() object
- */
+* The deviceDiscovery page used by preferences. Will automatically
+* make calls to the underlying discovery mechanisms as well as update
+* whenever new devices are discovered AND verified.
+*
+* @return a dynamicPage() object
+*/
 /******************************************************************************************************************
-											DEVICE DISCOVERY AND VALIDATION
+DEVICE DISCOVERY AND VALIDATION
 ******************************************************************************************************************/
 def deviceDiscovery()
 {
-//    if(canInstallLabs())
-	if (1)
+    //    if(canInstallLabs())
+    if (1)
     {
-//    	userDeviceList();
-	    log.debug("deviceDiscovery")
+        //    	userDeviceList();
+        log.debug("deviceDiscovery")
         def refreshInterval = 3 // Number of seconds between refresh
         int deviceRefreshCount = !state.deviceRefreshCount ? 0 : state.deviceRefreshCount as int
-        state.deviceRefreshCount = deviceRefreshCount + refreshInterval
+            state.deviceRefreshCount = deviceRefreshCount + refreshInterval
 
         def devices = getSelectableDevice()
         def numFound = devices.size() ?: 0
@@ -166,13 +165,13 @@ def deviceDiscovery()
         subscribeNetworkEvents()
 
         //device discovery request every 15s
-//        if((deviceRefreshCount % 15) == 0) {
-//            discoverLaMetrics()
-//        }
+        //        if((deviceRefreshCount % 15) == 0) {
+        //            discoverLaMetrics()
+        //        }
 
         // Verify request every 3 seconds except on discoveries
         if(((deviceRefreshCount % 5) == 0)) {
-           verifyDevices()
+            verifyDevices()
         }
 
         log.trace "Discovered devices: ${devices}"
@@ -200,69 +199,69 @@ To update your Hub, access Location Settings in the Main Menu (tap the gear next
 /**
 
 /**
- * Starts a subscription for network events
- *
- * @param force If true, will unsubscribe and subscribe if necessary (Optional, default false)
- */
+* Starts a subscription for network events
+*
+* @param force If true, will unsubscribe and subscribe if necessary (Optional, default false)
+*/
 private subscribeNetworkEvents(force=false) {
     if (force) {
         unsubscribe()
         state.subscribe = false
     }
     if(!state.subscribe) {
-    	log.debug("subscribe on network events")
+        log.debug("subscribe on network events")
         subscribe(location, null, locationHandler, [filterEvents:false])
-//        subscribe(app, appHandler)
+        //        subscribe(app, appHandler)
         state.subscribe = true
     }
 }
 
 private verifyDevices()
 {
-	log.debug "verify.devices"
-	def devices = getDevices();
-	for (it in devices) {
-    	log.trace ("verify device ${it.value}")
-    	def localIp = it?.value?.ipv4_internal;
-	    def apiKey = it?.value?.api_key;
-    	getAllInfoFromDevice(localIp, apiKey);
+    log.debug "verify.devices"
+    def devices = getDevices();
+    for (it in devices) {
+        log.trace ("verify device ${it.value}")
+        def localIp = it?.value?.ipv4_internal;
+        def apiKey = it?.value?.api_key;
+        getAllInfoFromDevice(localIp, apiKey);
     }
 }
 def appHandler(evt)
 {
-	log.debug("application event handler ${evt.name}")
-	if (evt.name == eventNameListOfUserDeviceParsed)
+    log.debug("application event handler ${evt.name}")
+    if (evt.name == eventNameListOfUserDeviceParsed)
     {
-    	log.debug ("new account device list received ${evt.value}")
+        log.debug ("new account device list received ${evt.value}")
         def newRemoteDeviceList
         try {
-        	newRemoteDeviceList = parseJson(evt.value)
+            newRemoteDeviceList = parseJson(evt.value)
         } catch (e)
         {
-        	log.debug "Wrong value ${e}"
+            log.debug "Wrong value ${e}"
         }
- 		if (newRemoteDeviceList)
+        if (newRemoteDeviceList)
         {
-        	def remoteDevices = getDevices();
-        	newRemoteDeviceList.each{deviceInfo ->
-	            if (deviceInfo) {
-					def device = remoteDevices[deviceInfo.id]?:[:];
-                    log.debug "before list ${device} ${deviceInfo} ${deviceInfo.id} ${remoteDevices[deviceInfo.id]}";
+            def remoteDevices = getDevices();
+            newRemoteDeviceList.each{deviceInfo ->
+                if (deviceInfo) {
+                    def device = remoteDevices[deviceInfo.id]?:[:];
+                        log.debug "before list ${device} ${deviceInfo} ${deviceInfo.id} ${remoteDevices[deviceInfo.id]}";
                     deviceInfo.each() {
-                    	device[it.key] = it.value;
-					}
-					remoteDevices[deviceInfo.id] = device;
-            	} else {
-	                log.debug ("empty device info")
+                        device[it.key] = it.value;
+                    }
+                    remoteDevices[deviceInfo.id] = device;
+                } else {
+                    log.debug ("empty device info")
                 }
             }
             verifyDevices();
         } else {
-        	log.debug "wrong value ${newRemoteDeviceList}"
+            log.debug "wrong value ${newRemoteDeviceList}"
         }
     } else if (evt.name == getEventNameTokenRefreshed())
     {
-    	log.debug "token refreshed"
+        log.debug "token refreshed"
         state.refreshToken = evt.refreshToken
         state.authToken = evt.access_token
     }
@@ -270,36 +269,36 @@ def appHandler(evt)
 
 def locationHandler(evt)
 {
-	log.debug("network event handler ${evt.name}")
+    log.debug("network event handler ${evt.name}")
     if (evt.name == "ssdpTerm")
     {
-    	log.debug "ignore ssdp"
+        log.debug "ignore ssdp"
     } else {
-    	def lanEvent = parseLanMessage(evt.description, true)
+        def lanEvent = parseLanMessage(evt.description, true)
         log.debug lanEvent.headers;
         if (lanEvent.body)
         {
-        	log.trace "lan event ${lanEvent}";
+            log.trace "lan event ${lanEvent}";
             def parsedJsonBody;
             try {
-            	parsedJsonBody = parseJson(lanEvent.body);
+                parsedJsonBody = parseJson(lanEvent.body);
             } catch (e)
             {
-            	log.debug ("not json responce ignore $e");
+                log.debug ("not json responce ignore $e");
             }
             if (parsedJsonBody)
             {
                 log.trace (parsedJsonBody)
-                log.debug("responce for device ${parsedJsonBody?.server_id}")
+                log.debug("responce for device ${parsedJsonBody?.id}")
                 //put or post response
                 if (parsedJsonBody.success)
                 {
-                	
+
                 } else {
-	                //poll response
+                    //poll response
                     log.debug "poll responce"
-                    log.debug ("poll responce ${parsedJsonBody?.info}")
-                    def deviceId = parsedJsonBody?.info?.server_id;
+                    log.debug ("poll responce ${parsedJsonBody}")
+                    def deviceId = parsedJsonBody?.id;
                     if (deviceId)
                     {
                         def devices = getDevices();
@@ -314,9 +313,9 @@ def locationHandler(evt)
                         //update device info
                         if (childDevice)
                         {
-	                        log.debug("send event to ${childDevice}")
-                        	childDevice.sendEvent(name:"currentIP",value:device?.ipv4_internal);
-                        	childDevice.sendEvent(name:"volume",value:device?.volume);
+                            log.debug("send event to ${childDevice}")
+                            childDevice.sendEvent(name:"currentIP",value:device?.ipv4_internal);
+                            childDevice.sendEvent(name:"volume",value:device?.volume);
                             childDevice.setOnline();
                         }
                         log.trace device
@@ -328,10 +327,10 @@ def locationHandler(evt)
 }
 
 /**
- * Adds the child devices based on the user's selection
- *
- * Uses selecteddevice defined in the deviceDiscovery() page
- */
+* Adds the child devices based on the user's selection
+*
+* Uses selecteddevice defined in the deviceDiscovery() page
+*/
 def addDevice() {
     def devices = getVerifiedDevices()
     def devlist
@@ -345,9 +344,9 @@ def addDevice() {
     }
 
     log.trace "These are being installed: ${devlist}"
-	log.debug ("devlist" +  devlist)
+    log.debug ("devlist" +  devlist)
     devlist.each { dni ->
-	    def newDevice = devices[dni];
+        def newDevice = devices[dni];
         if (newDevice)
         {
             def d = getChildDevice(newDevice.dni)
@@ -384,326 +383,305 @@ def getApiTokenPath()				{ "/api/v2/oauth2/token" }
 def getApiUserMeDevicesList()		{ "/api/v2/users/me/devices" }
 
 def toQueryString(Map m) {
-	return m.collect { k, v -> "${k}=${URLEncoder.encode(v.toString())}" }.sort().join("&")
+    return m.collect { k, v -> "${k}=${URLEncoder.encode(v.toString())}" }.sort().join("&")
 }
 def composeScope(List scopes)
 {
-	def result = "";
-	scopes.each(){ scope ->
-    	result += "${scope} "
+    def result = "";
+    scopes.each(){ scope ->
+        result += "${scope} "
     }
     if (result.length())
-	    return result.substring(0, result.length() - 1);
+    return result.substring(0, result.length() - 1);
     return "";
 }
 
 def authPage() {
-	log.debug "authPage()"
+    log.debug "authPage()"
 
-	if(!state.accessToken) { //this is to access token for 3rd party to make a call to connect app
-		state.accessToken = createAccessToken()
-	}
+    if(!state.accessToken) { //this is to access token for 3rd party to make a call to connect app
+        state.accessToken = createAccessToken()
+    }
 
-	def description
-	def uninstallAllowed = false
-	def oauthTokenProvided = false
+    def description
+    def uninstallAllowed = false
+    def oauthTokenProvided = false
 
-	if(state.authToken) {
-		description = "You are connected."
-		uninstallAllowed = true
-		oauthTokenProvided = true
-	} else {
-		description = "Click to enter LaMetric Credentials"
-	}
+    if(state.authToken) {
+        description = "You are connected."
+        uninstallAllowed = true
+        oauthTokenProvided = true
+    } else {
+        description = "Click to enter LaMetric Credentials"
+    }
 
-	def redirectUrl = buildRedirectUrl
-	log.debug "RedirectUrl = ${redirectUrl}"
-	// get rid of next button until the user is actually auth'd
-	if (!oauthTokenProvided) {
-		return dynamicPage(name: "auth", title: "Login", nextPage: "", uninstall:uninstallAllowed) {
-			section(){
-				paragraph "Tap below to log in to the LaMatric service and authorize SmartThings access. Be sure to scroll down on page 2 and press the 'Allow' button."
-				href url:redirectUrl, style:"embedded", required:true, title:"LaMetric", description:description
-			}
-		}
-	} else {
-	    subscribeNetworkEvents()
-		listOfUserRemoteDevices()
+    def redirectUrl = buildRedirectUrl
+    log.debug "RedirectUrl = ${redirectUrl}"
+    // get rid of next button until the user is actually auth'd
+    if (!oauthTokenProvided) {
+        return dynamicPage(name: "auth", title: "Login", nextPage: "", uninstall:uninstallAllowed) {
+            section(){
+                paragraph "Tap below to log in to the LaMatric service and authorize SmartThings access. Be sure to scroll down on page 2 and press the 'Allow' button."
+                href url:redirectUrl, style:"embedded", required:true, title:"LaMetric", description:description
+            }
+        }
+    } else {
+        subscribeNetworkEvents()
+        listOfUserRemoteDevices()
         return deviceDiscovery();
-     /*
- 	    return deviceDiscovery();
-
-		def stats = getEcobeeThermostats()
-		log.debug "thermostat list: $stats"
-		log.debug "sensor list: ${sensorsDiscovered()}"
-		return dynamicPage(name: "auth", title: "Select Your Thermostats", uninstall: true) {
-			section(""){
-				paragraph "Tap below to see the list of ecobee thermostats available in your ecobee account and select the ones you want to connect to SmartThings."
-				input(name: "thermostats", title:"", type: "enum", required:true, multiple:true, description: "Tap to choose", metadata:[values:stats])
-			}
-
-			def options = sensorsDiscovered() ?: []
-			def numFound = options.size() ?: 0
-			if (numFound > 0)  {
-				section(""){
-					paragraph "Tap below to see the list of ecobee sensors available in your ecobee account and select the ones you want to connect to SmartThings."
-					input(name: "ecobeesensors", title:"Select Ecobee Sensors (${numFound} found)", type: "enum", required:false, description: "Tap to choose", multiple:true, options:options)
-				}
-			}
-		}*/
-	}
+    }
 }
 
 
 private refreshAuthToken() {
-	log.debug "refreshing auth token"
+    log.debug "refreshing auth token"
 
-	if(!state.refreshToken) {
-		log.warn "Can not refresh OAuth token since there is no refreshToken stored"
-	} else {
-		def refreshParams = [
-				method: 'POST',
-				uri   : apiEndpoint,
-				path  : apiTokenPath,
-				body : [grant_type: 'refresh_token', 
-                		refresh_token: "${state.refreshToken}", 
-                        client_id : smartThingsClientId,
-                        client_secret: smartThingsClientSecret,
-                        redirect_uri: callbackUrl],
-		]
+    if(!state.refreshToken) {
+        log.warn "Can not refresh OAuth token since there is no refreshToken stored"
+    } else {
+        def refreshParams = [
+            method: 'POST',
+            uri   : apiEndpoint,
+            path  : apiTokenPath,
+            body : [grant_type: 'refresh_token', 
+                    refresh_token: "${state.refreshToken}", 
+                    client_id : smartThingsClientId,
+                    client_secret: smartThingsClientSecret,
+                    redirect_uri: callbackUrl],
+        ]
 
-		log.debug refreshParams
+        log.debug refreshParams
 
-		def notificationMessage = "is disconnected from SmartThings, because the access credential changed or was lost. Please go to the LaMetric (Connect) SmartApp and re-enter your account login credentials."
-		//changed to httpPost
-		try {
-			def jsonMap
-			httpPost(refreshParams) { resp ->
-				if(resp.status == 200) {
-					log.debug "Token refreshed...calling saved RestAction now! $resp.data"
-					jsonMap = resp.data
-					if(resp.data) {
-                    	state.refreshToken = resp?.data?.refresh_token
-				        state.authToken = resp?.data?.access_token
-						if(state.action && state.action != "") {
-							log.debug "Executing next action: ${state.action}"
+        def notificationMessage = "is disconnected from SmartThings, because the access credential changed or was lost. Please go to the LaMetric (Connect) SmartApp and re-enter your account login credentials."
+        //changed to httpPost
+        try {
+            def jsonMap
+            httpPost(refreshParams) { resp ->
+                if(resp.status == 200) {
+                    log.debug "Token refreshed...calling saved RestAction now! $resp.data"
+                    jsonMap = resp.data
+                    if(resp.data) {
+                        state.refreshToken = resp?.data?.refresh_token
+                        state.authToken = resp?.data?.access_token
+                        if(state.action && state.action != "") {
+                            log.debug "Executing next action: ${state.action}"
 
-							"${state.action}"()
+                            "${state.action}"()
 
-							state.action = ""
-						}
+                            state.action = ""
+                        }
 
-					} else {
-                    	log.warn ("No data in refresh token!");
+                    } else {
+                        log.warn ("No data in refresh token!");
                     }
-					state.action = ""
-				}
-			}
-		} catch (groovyx.net.http.HttpResponseException e) {
-			log.error "refreshAuthToken() >> Error: e.statusCode ${e.statusCode}"
+                    state.action = ""
+                }
+            }
+        } catch (groovyx.net.http.HttpResponseException e) {
+            log.error "refreshAuthToken() >> Error: e.statusCode ${e.statusCode}"
             log.debug e.response.data;
-			def reAttemptPeriod = 300 // in sec
-			if (e.statusCode != 401) { // this issue might comes from exceed 20sec app execution, connectivity issue etc.
-				runIn(reAttemptPeriod, "refreshAuthToken")
-			} else if (e.statusCode == 401) { // unauthorized
-				state.reAttempt = state.reAttempt + 1
-				log.warn "reAttempt refreshAuthToken to try = ${state.reAttempt}"
-				if (state.reAttempt <= 3) {
-					runIn(reAttemptPeriod, "refreshAuthToken")
-				} else {
-					sendPushAndFeeds(notificationMessage)
-					state.reAttempt = 0
-				}
-			}
-		}
-	}
+            def reAttemptPeriod = 300 // in sec
+            if (e.statusCode != 401) { // this issue might comes from exceed 20sec app execution, connectivity issue etc.
+                runIn(reAttemptPeriod, "refreshAuthToken")
+            } else if (e.statusCode == 401) { // unauthorized
+                state.reAttempt = state.reAttempt + 1
+                log.warn "reAttempt refreshAuthToken to try = ${state.reAttempt}"
+                if (state.reAttempt <= 3) {
+                    runIn(reAttemptPeriod, "refreshAuthToken")
+                } else {
+                    sendPushAndFeeds(notificationMessage)
+                    state.reAttempt = 0
+                }
+            }
+        }
+    }
 }
 
 def callback() {
-	log.debug "callback()>> params: $params, params.code ${params.code}"
+    log.debug "callback()>> params: $params, params.code ${params.code}"
 
-	def code = params.code
-	def oauthState = params.state
+    def code = params.code
+    def oauthState = params.state
 
-	if (oauthState == state.oauthInitState){
+    if (oauthState == state.oauthInitState){
 
-		def tokenParams = [
-				grant_type: "authorization_code",
-				code      : code,
-				client_id : smartThingsClientId,
-                client_secret: smartThingsClientSecret,
-				redirect_uri: callbackUrl
-		]
-		log.trace tokenParams
+        def tokenParams = [
+            grant_type: "authorization_code",
+            code      : code,
+            client_id : smartThingsClientId,
+            client_secret: smartThingsClientSecret,
+            redirect_uri: callbackUrl
+        ]
+        log.trace tokenParams
         log.trace tokenUrl
-		try {
+        try {
             httpPost(uri: tokenUrl, body: tokenParams) { resp ->
                 log.debug "swapped token: $resp.data"
                 state.refreshToken = resp.data.refresh_token
                 state.authToken = resp.data.access_token
             }
-		} catch (e)
+        } catch (e)
         {
-        	log.debug "fail ${e}";
+            log.debug "fail ${e}";
         }
-		if (state.authToken) {
-			success()
-		} else {
-			fail()
-		}
-	} else {
-		log.error "callback() failed oauthState != state.oauthInitState"
-	}
+        if (state.authToken) {
+            success()
+        } else {
+            fail()
+        }
+    } else {
+        log.error "callback() failed oauthState != state.oauthInitState"
+    }
 
 }
 
 def oauthInitUrl() {
-	log.debug "oauthInitUrl with callback: ${callbackUrl}"
+    log.debug "oauthInitUrl with callback: ${callbackUrl}"
 
-	state.oauthInitState = UUID.randomUUID().toString()
+    state.oauthInitState = UUID.randomUUID().toString()
 
-	def oauthParams = [
-			response_type: "code",
-			scope: composeScope(authScope),
-			client_id: smartThingsClientId,
-			state: state.oauthInitState,
-			redirect_uri: callbackUrl
-	]
+    def oauthParams = [
+        response_type: "code",
+        scope: composeScope(authScope),
+        client_id: smartThingsClientId,
+        state: state.oauthInitState,
+        redirect_uri: callbackUrl
+    ]
     log.debug oauthParams
     log.debug "${apiEndpoint}/api/v2/oauth2/authorize?${toQueryString(oauthParams)}"
 
-	redirect(location: "${apiEndpoint}/api/v2/oauth2/authorize?${toQueryString(oauthParams)}")
+    redirect(location: "${apiEndpoint}/api/v2/oauth2/authorize?${toQueryString(oauthParams)}")
 }
 
 def success() {
-	def message = """
-    <p>Your LaMetric Account is now connected to SmartThings!</p>
-    <p>Click 'Done' to finish setup.</p>
-    """
-	connectionStatus(message)
+    def message = """
+<p>Your LaMetric Account is now connected to SmartThings!</p>
+<p>Click 'Done' to finish setup.</p>
+"""
+    connectionStatus(message)
 }
 
 def fail() {
-	def message = """
-        <p>The connection could not be established!</p>
-        <p>Click 'Done' to return to the menu.</p>
-    """
-	connectionStatus(message)
+    def message = """
+<p>The connection could not be established!</p>
+<p>Click 'Done' to return to the menu.</p>
+"""
+    connectionStatus(message)
 }
 
 def connectionStatus(message, redirectUrl = null) {
-	def redirectHtml = ""
-	if (redirectUrl) {
-		redirectHtml = """
-			<meta http-equiv="refresh" content="3; url=${redirectUrl}" />
-		"""
-	}
+    def redirectHtml = ""
+    if (redirectUrl) {
+        redirectHtml = """
+<meta http-equiv="refresh" content="3; url=${redirectUrl}" />
+"""
+    }
 
-	def html = """
+    def html = """
 <!DOCTYPE html>
 <html lang="en"><head>
-    <meta charset="UTF-8">
-    <meta content="width=device-width" id="viewport" name="viewport">
-    <style>
-        @font-face {
-            font-family: 'latoRegular';
-            src: url("https://developer.lametric.com/assets/fonts/lato-regular-webfont.eot");
-            src: url("https://developer.lametric.com/assets/fonts/lato-regular-webfont.eot?#iefix") format("embedded-opentype"),
-            url("https://developer.lametric.com/assets/fonts/lato-regular-webfont.woff") format("woff"),
-            url("https://developer.lametric.com/assets/fonts/lato-regular-webfont.ttf") format("truetype"),
-            url("https://developer.lametric.com/assets/fonts/lato-regular-webfont.svg#latoRegular") format("svg");
-            font-style: normal;
-            font-weight: normal; }
-        .clearfix:after, .mobile .connect:after {
-            content: "";
-            clear: both;
-            display: table; }
+<meta charset="UTF-8">
+<meta content="width=device-width" id="viewport" name="viewport">
+<style>
+@font-face {
+font-family: 'latoRegular';
+src: url("https://developer.lametric.com/assets/fonts/lato-regular-webfont.eot");
+src: url("https://developer.lametric.com/assets/fonts/lato-regular-webfont.eot?#iefix") format("embedded-opentype"),
+url("https://developer.lametric.com/assets/fonts/lato-regular-webfont.woff") format("woff"),
+url("https://developer.lametric.com/assets/fonts/lato-regular-webfont.ttf") format("truetype"),
+url("https://developer.lametric.com/assets/fonts/lato-regular-webfont.svg#latoRegular") format("svg");
+font-style: normal;
+font-weight: normal; }
+.clearfix:after, .mobile .connect:after {
+content: "";
+clear: both;
+display: table; }
 
-        .transition {
-            transition: all .3s ease 0s; }
-        html, body {
-            height: 100%;
-        }
-        body{
-            margin: 0;
-            padding: 0;
-            background: #f0f0f0;
-            color: #5c5c5c;
-            min-width: 1149px;
-            font-family: 'latoRegular', 'Lato';
-        }
-        .fixed-page #page {
-            min-height: 100%;
-            background: url(https://developer.lametric.com/assets/smart_things/page-bg.png) 50% 0 repeat-y;
-        }
-        .mobile {
-            min-width: 100%;
-            color: #757575; }
-        .mobile .wrap {
-            margin: 0 auto;
-            padding: 0;
-            max-width: 640px;
-            min-width: inherit; }
-        .mobile .connect {
-            width: 100%;
-            padding-top: 230px;
-            margin-bottom: 50px;
-            text-align: center; }
-        .mobile .connect img {
-            max-width: 100%;
-            height: auto;
-            vertical-align: middle;
-            display: inline-block;
-            margin-left: 2%;
-            border-radius: 15px; }
-        .mobile .connect img:first-child {
-            margin-left: 0; }
-        .mobile .info {
-            width: 100%;
-            margin: 0 auto;
-            margin-top: 50px;
-            margin-bottom: 50px; }
-        .mobile .info p {
-            max-width: 80%;
-            margin: 0 auto;
-            margin-top: 50px;
-            font-size: 28px;
-            line-height: 50px;
-            text-align: center; }
+.transition {
+transition: all .3s ease 0s; }
+html, body {
+height: 100%;
+}
+body{
+margin: 0;
+padding: 0;
+background: #f0f0f0;
+color: #5c5c5c;
+min-width: 1149px;
+font-family: 'latoRegular', 'Lato';
+}
+.fixed-page #page {
+min-height: 100%;
+background: url(https://developer.lametric.com/assets/smart_things/page-bg.png) 50% 0 repeat-y;
+}
+.mobile {
+min-width: 100%;
+color: #757575; }
+.mobile .wrap {
+margin: 0 auto;
+padding: 0;
+max-width: 640px;
+min-width: inherit; }
+.mobile .connect {
+width: 100%;
+padding-top: 230px;
+margin-bottom: 50px;
+text-align: center; }
+.mobile .connect img {
+max-width: 100%;
+height: auto;
+vertical-align: middle;
+display: inline-block;
+margin-left: 2%;
+border-radius: 15px; }
+.mobile .connect img:first-child {
+margin-left: 0; }
+.mobile .info {
+width: 100%;
+margin: 0 auto;
+margin-top: 50px;
+margin-bottom: 50px; }
+.mobile .info p {
+max-width: 80%;
+margin: 0 auto;
+margin-top: 50px;
+font-size: 28px;
+line-height: 50px;
+text-align: center; }
 
-        @media screen and (max-width: 639px) {
-            .mobile .connect{
-                padding-top: 100px; }
-            .mobile .wrap {
-                margin: 0 20px; }
-            .mobile .connect img {
-                width: 16%; }
-            .mobile .connect img:first-child, .mobile .connect img:last-child {
-                width: 40%; }
-            .mobile .info p{
-                font-size: 18px;
-                line-height: 24px;
-                margin-top: 20px; }
-        }
-    </style>
+@media screen and (max-width: 639px) {
+.mobile .connect{
+padding-top: 100px; }
+.mobile .wrap {
+margin: 0 20px; }
+.mobile .connect img {
+width: 16%; }
+.mobile .connect img:first-child, .mobile .connect img:last-child {
+width: 40%; }
+.mobile .info p{
+font-size: 18px;
+line-height: 24px;
+margin-top: 20px; }
+}
+</style>
 </head>
 <body class="fixed-page mobile">
 
 <div id="page">
-    <div class="wrap">
+<div class="wrap">
 
-        <div class="connect">
-            <img src="https://developer.lametric.com/assets/smart_things/product.png" width="190" height="190"><img src="https://developer.lametric.com/assets/smart_things/connected.png" width="87" height="19"><img src="https://developer.lametric.com/assets/smart_things/product-1.png" width="192" height="192">
-        </div>
-        
-        <div class="info">
-            ${message}
-        </div>
-    </div>
+<div class="connect">
+<img src="https://developer.lametric.com/assets/smart_things/product.png" width="190" height="190"><img src="https://developer.lametric.com/assets/smart_things/connected.png" width="87" height="19"><img src="https://developer.lametric.com/assets/smart_things/product-1.png" width="192" height="192">
+</div>
+
+<div class="info">
+${message}
+</div>
+</div>
 </div>
 </body></html>
 """
-	render contentType: 'text/html', data: html
+    render contentType: 'text/html', data: html
 }
 
 
@@ -713,8 +691,8 @@ def connectionStatus(message, redirectUrl = null) {
 //******************************************************************************************************************
 
 def getLocalApiDeviceInfoPath() 		{ "/api/v2/info" }
-def getLocalApiSendNotificationPath()	{ "/api/v2/notifications" }
-def getLocalApiIndexPath()				{ "/api/v2" }
+def getLocalApiSendNotificationPath()	{ "/api/v2/device/notifications" }
+def getLocalApiIndexPath()				{ "/api/v2/device" }
 def getLocalApiUser()					{ "dev" }
 
 
@@ -722,8 +700,8 @@ void requestDeviceInfo(localIp, apiKey)
 {
     if (localIp && apiKey)
     {
-    	log.debug("request info ${localIp}");
-		def command = new physicalgraph.device.HubAction([
+        log.debug("request info ${localIp}");
+        def command = new physicalgraph.device.HubAction([
             method: "GET",
             path: localApiDeviceInfoPath,
             headers: [
@@ -734,14 +712,14 @@ void requestDeviceInfo(localIp, apiKey)
         sendHubCommand(command)
         command;
     } else {
-    	log.debug ("Unknown api key or ip address ${localIp} ${apiKey}")
+        log.debug ("Unknown api key or ip address ${localIp} ${apiKey}")
     }
 }
 
 def sendNotificationMessageToDevice(dni, data)
 {
-	log.debug "send something"
-	def device = resolveDNI2Device(dni);
+    log.debug "send something"
+    def device = resolveDNI2Device(dni);
     def localIp = device?.ipv4_internal;
     def apiKey = device?.api_key;
     if (localIp && apiKey)
@@ -762,17 +740,18 @@ def sendNotificationMessageToDevice(dni, data)
 
 def getAllInfoFromDevice(localIp, apiKey)
 {
-	log.debug "send something"
+    log.debug "send something"
     if (localIp && apiKey)
     {
-        sendHubCommand(new physicalgraph.device.HubAction([
+    	def hubCommand = new physicalgraph.device.HubAction([
             method: "GET",
-            path: localApiIndexPath,
-            query:["fields": ["info","wifi", "volume", "bluetooth"]],
+            path: localApiIndexPath+"?fields=info,wifi,volume,bluetooth,id,name,mode,model,serial_number,os_version",
             headers: [
                 HOST: "${localIp}:8080",
                 Authorization: "Basic ${"${localApiUser}:${apiKey}".bytes.encodeBase64()}"
-            ]]))
+            ]])
+        log.debug "sending request ${hubCommand}"
+        sendHubCommand(hubCommand)
     }
 }
 //******************************************************************************************************************
@@ -781,22 +760,22 @@ def getAllInfoFromDevice(localIp, apiKey)
 
 def resolveDNI2Device(dni)
 {
-	getDevices().find { it?.value?.dni == dni }?.value;
+    getDevices().find { it?.value?.dni == dni }?.value;
 }
 
 def requestRefreshDeviceInfo (dni)
 {
-	log.debug "device ${dni} request refresh";
-//	def devices = getDevices();
-//    def concreteDevice = devices[dni];
-//    requestDeviceInfo(conreteDevice);
+    log.debug "device ${dni} request refresh";
+    //	def devices = getDevices();
+    //    def concreteDevice = devices[dni];
+    //    requestDeviceInfo(conreteDevice);
 }
 
 private poll(dni) {
-	def device = resolveDNI2Device(dni);
+    def device = resolveDNI2Device(dni);
     def localIp = device?.ipv4_internal;
     def apiKey = device?.api_key;
-	getAllInfoFromDevice(localIp, apiKey);
+    getAllInfoFromDevice(localIp, apiKey);
 }
 
 //******************************************************************************************************************
@@ -806,29 +785,29 @@ private poll(dni) {
 
 void listOfUserRemoteDevices()
 {
-	log.debug "get user device list"
+    log.debug "get user device list"
     def deviceList = []
-	if (state.accessToken)
+    if (state.accessToken)
     {
         def deviceListParams = [
-                uri: apiEndpoint,
-                path: apiUserMeDevicesList,
-                headers: ["Content-Type": "text/json", "Authorization": "Bearer ${state.authToken}"]
+            uri: apiEndpoint,
+            path: apiUserMeDevicesList,
+            headers: ["Content-Type": "text/json", "Authorization": "Bearer ${state.authToken}"]
         ]
         log.debug "making request ${deviceListParams}"
         def result;
         try {
-        	httpGet(deviceListParams){ resp ->
-            	if (resp.status == 200)
+            httpGet(deviceListParams){ resp ->
+                if (resp.status == 200)
                 {
-	                deviceList = resp.data
-                    
-	                def remoteDevices = getDevices();
+                    deviceList = resp.data
+
+                    def remoteDevices = getDevices();
                     for (deviceInfo in deviceList) {
                         if (deviceInfo)
                         {
                             def device = remoteDevices."${deviceInfo.id}"?:[:];
-                            log.debug "before list ${device} ${deviceInfo} ${deviceInfo.id} ${remoteDevices[deviceInfo.id]}";
+                                log.debug "before list ${device} ${deviceInfo} ${deviceInfo.id} ${remoteDevices[deviceInfo.id]}";
                             for (it in deviceInfo ) {
                                 device."${it.key}" = it.value;
                             }
@@ -837,30 +816,24 @@ void listOfUserRemoteDevices()
                             log.debug ("empty device info")
                         }
                     }
-//                    state.remoteDevices = remoteDevices;
                     verifyDevices();
-//                    return
-//                    def serializedData = new JsonOutput().toJson(notification);
-//					app.sendEvent(name: "EventListOfUserRemoteDevicesParsed", value: serializedData)
-//                    app.sendEvent(name: "parsed", value: true)
- //                   log.debug "Sending 'save new list' event ${result}"
                 } else {
-                	log.debug "http status: ${resp.status}"
+                    log.debug "http status: ${resp.status}"
                 }
             }
         } catch (groovyx.net.http.HttpResponseException e)
         {
-        	log.debug("failed to get device list ${e}")
+            log.debug("failed to get device list ${e}")
             def status = e.response.status
             if (status == 401) {
-            	state.action = "refreshDevices"
-    	        log.debug "Refreshing your auth_token!"
-	            refreshAuthToken()
+                state.action = "refreshDevices"
+                log.debug "Refreshing your auth_token!"
+                refreshAuthToken()
             }
             return;
         }
     } else {
-    	log.debug ("no access token to fetch user device list");
+        log.debug ("no access token to fetch user device list");
         return;
     }
 }

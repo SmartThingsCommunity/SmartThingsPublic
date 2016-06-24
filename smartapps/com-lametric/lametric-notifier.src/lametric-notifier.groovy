@@ -20,8 +20,8 @@ definition(
     name: "LaMetric Notifier",
     namespace: "com.lametric",
     author: "Mykola Kirichuk",
-    description: "Notify about changes with sound and message on your LaMetric",
-    category: "Fun & Social",
+    description: "Allows you to send notifications to your LaMetric Time when something happens in your home to notify the whole family.",
+    category: "Family",
     iconUrl: "https://developer.lametric.com/assets/smart_things/weather_60.png",
     iconX2Url: "https://developer.lametric.com/assets/smart_things/weather_120.png",
     iconX3Url: "https://developer.lametric.com/assets/smart_things/weather_120.png")
@@ -387,21 +387,8 @@ def eventHandler(evt) {
     def value = evt?.value;
     
 	if (allOk) {
-		log.trace "allOk"
-//		def lastTime = state[frequencyKey(evt)]
-//		if (oncePerDayOk(lastTime)) {
-        /*
-			if (frequency) {
-				if (lastTime == null || now() - lastTime >= frequency * 60000) {
-					takeAction(evt)
-				}
-				else {
-					log.debug "Not taking action because $frequency minutes have not elapsed since last action"
-				}
-/*			}
-			else {*/
-				takeAction(evt)
-//			}
+			log.trace "allOk"
+ 			takeAction(evt)
 		}
 		else {
 			log.debug "Not taking action because it was already taken today"
