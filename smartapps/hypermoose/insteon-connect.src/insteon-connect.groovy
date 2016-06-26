@@ -582,7 +582,7 @@ def switchOn(child, deviceNetworkId) {
 	def result = sendJson(jsonRequestBody)
     
     if (result) {
-    	deviceStatus[deviceNetworkId] = '{level: 100}'
+    	deviceStatus[deviceNetworkId] = [level: 100]
         atomicState.deviceStatus = deviceStatus
     }
 	return result
@@ -597,7 +597,7 @@ def switchOff(child, deviceNetworkId) {
 	def jsonRequestBody = '{ "command": "off", "device_id": ' + "${deviceId}" + ' }'
 	def result = sendJson(jsonRequestBody)
     if (result) {
-    	deviceStatus[deviceNetworkId] = '{level: 0}'
+    	deviceStatus[deviceNetworkId] = [level: 0]
         atomicState.deviceStatus = deviceStatus
     }
 	return result
