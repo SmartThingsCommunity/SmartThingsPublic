@@ -20,6 +20,9 @@ metadata {
 		capability "Configuration"
 		capability "Sensor"
 		capability "Battery"
+		capability "Health Check"
+
+		command "configureAfterSecure"
 
 		fingerprint deviceId: "0x0701", inClusters: "0x5E,0x86,0x72,0x59,0x85,0x73,0x71,0x84,0x80,0x30,0x31,0x70,0x98,0x7A", outClusters:"0x5A"
 	}
@@ -214,6 +217,9 @@ def zwaveEvent(physicalgraph.zwave.Command cmd) {
 
 def configureAfterSecure() {
     // log.debug "configureAfterSecure()"
+
+	// allow device 16 min to check in; double the periodic reporting interval
+	sendEvent(name: "checkInterval", value: 2*8*60, displayed: false)
 
     def request = [
 		// send temperature, humidity, and illuminance every 8 minutes
