@@ -97,9 +97,27 @@ The SmartApp provides the following capabilities:
 
 
 ## <a name="features-routines-sa">`ecobee Routines` SmartApp</a>
-The `ecobee Routines` SmartApp provides the ability to change the running Program (Comfort Setting) when a SmartThings Mode is changed (for example, by running a Routine). 
+The `ecobee Routines` SmartApp provides the ability to change the running Program (Comfort Setting) when a SmartThings Mode is changed (for example, by running a Routine) or a Routine is run. 
 
->**NOTE**: There is an open issue where we only use Mode changes to trigger an event today. An update is planned that will also use a Routine execution to trigger the events. 
+Features include:
+- Change one or multiple thermostats
+- Trigger based on Mode Change or Routine Execution
+- Choose any (including custom) Ecobee Programs to switch to. Or can even choose to Resume Program instead
+- Change the Fan Mode (Optional)
+- Set the Fan Minimum Runtime (Optional)
+- Also execute at Sunrise or Sunset (Optional)
+- Temporarily Disable app without having to delete and recreate!
+
+## <a name="features-opencontact-sa">`Open Contacts` SmartApp</a>
+The `Open Contacts` SmartApp can detect when one (or more) contact sensors (such as doors and windows) are left open for a configurable amount of time and can automatically turn off the HVAC and/or send a notification when it is detected.
+
+Features include:
+- Change one or multiple thermostats
+- Trigger based on one or multiple contact sensors
+- Configurable delay timers (for trigger and reset)
+- Configurable actions: Notify Only, HVAC Only or Both
+- Support for Contact Book or simply SMS for notifications
+- Temporarily Disable app without having to delete and recreate!
 
 
 -----------------------------
