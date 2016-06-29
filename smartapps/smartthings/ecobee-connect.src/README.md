@@ -39,6 +39,8 @@ The intent is to provide an Open Source Licensed ecobee-to-SmartThings implement
 
 The ultimate goal would be to have these capabilities become part of the stock drivers on the "master" branch. But until that time they will be maintained as a fork providing good visibility to any changes upstream.
 
+>NOTE: I've tried submitting several enhancements back upstream but they have simply sat in their queue and have been ignored, even after being reviewed by the ST engineers. Until SmartThings has a better process for accepting fixes/enhancements I will simply focus on continuing to improve the codebase. Once they are ready then I can start to backport fixes.
+
 ## <a name="quicklinks">Quick Links</a>
 - README.md (this file): <https://github.com/StrykerSKS/SmartThingsPublic/blob/StrykerSKS-Ecobee3/smartapps/smartthings/ecobee-connect.src/README.md>
 - Ecobee (Connect) SmartApp: <https://github.com/StrykerSKS/SmartThingsPublic/tree/StrykerSKS-Ecobee3/smartapps/smartthings/ecobee-connect.src>
