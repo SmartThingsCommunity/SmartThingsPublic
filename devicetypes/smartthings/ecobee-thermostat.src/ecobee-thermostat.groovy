@@ -24,7 +24,7 @@
  *
  */
 
-def getVersionNum() { return "0.9.10" }
+def getVersionNum() { return "0.9.11" }
 private def getVersionLabel() { return "Ecobee Thermostat Version ${getVersionNum()}" }
 
  
@@ -32,7 +32,6 @@ metadata {
 	definition (name: "Ecobee Thermostat", namespace: "smartthings", author: "SmartThings") {
 		capability "Actuator"
 		capability "Thermostat"
-		capability "Polling"
         capability "Sensor"
 		capability "Refresh"
 		capability "Relative Humidity Measurement"
@@ -462,7 +461,7 @@ void poll() {
 
 def generateEvent(Map results) {
 	LOG("generateEvent(): parsing data $results", 4)
-    LOG("Debug level of parent: ${parent.settings?.debugLevel}")
+    LOG("Debug level of parent: ${parent.settings?.debugLevel}", 4, null, "debug")
 	def linkText = getLinkText(device)
 
 	if(results) {
@@ -486,7 +485,7 @@ def generateEvent(Map results) {
                 return
             } else if (name=="apiConnected") {
             	// Treat as if always changed to ensure an updated value is shown on mobile device and in feed
-                isChange = true;
+                isChange = isStateChange(device,name,value.toString());
                 isDisplayed = isChange
                 event << [value: value.toString(), isStateChange: isChange, displayed: isDisplayed]
             } else if (name=="weatherSymbol" && device.currentValue("timeOfDay") == "night") {
@@ -905,15 +904,15 @@ def fanOff() {
 }
 
 def generateSetpointEvent() {
-	LOG("Generate SetPoint Event", 5)
+	LOG("Generate SetPoint Event", 5, null, "trace")
 
 	def mode = device.currentValue("thermostatMode")    
     def heatingSetpoint = device.currentValue("heatingSetpoint")
 	def coolingSetpoint = device.currentValue("coolingSetpoint")
     
-	LOG("Current Mode = ${mode}")
-	LOG("Heating Setpoint = ${heatingSetpoint}")
-	LOG("Cooling Setpoint = ${coolingSetpoint}")    
+	LOG("Current Mode = ${mode}", 4, null, "debug")
+	LOG("Heating Setpoint = ${heatingSetpoint}", 4, null, "debug")
+	LOG("Cooling Setpoint = ${coolingSetpoint}", 4, null, "debug")
 
 	if (mode == "heat") {
 		sendEvent("name":"thermostatSetpoint", "value":heatingSetpoint.toString())
