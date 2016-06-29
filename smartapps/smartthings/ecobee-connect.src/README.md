@@ -9,6 +9,7 @@ Ecobee Thermostat SmartApp(s) and related Device Types for use with the SmartThi
 	- [Thermostat and Sensor Device User Interfaces](#features-therm-ui)
 	- [Ecobee (Connect) SmartApp](#features-connect-sa)
     - [ecobee Routines SmartApp](#features-routines-sa)
+    - [ecobee Open Contacts SmartApp](#features-opencontact-sa)
 - [Installation](#installation)
   - [Install Device Handlers](#install-device-types)
   - [Install SmartApp in IDE](#install-smartapp)
@@ -41,7 +42,8 @@ The ultimate goal would be to have these capabilities become part of the stock d
 ## <a name="quicklinks">Quick Links</a>
 - README.md (this file): <https://github.com/StrykerSKS/SmartThingsPublic/blob/StrykerSKS-Ecobee3/smartapps/smartthings/ecobee-connect.src/README.md>
 - Ecobee (Connect) SmartApp: <https://github.com/StrykerSKS/SmartThingsPublic/tree/StrykerSKS-Ecobee3/smartapps/smartthings/ecobee-connect.src>
-- ecobee Routines ChildSmartApp: <https://github.com/StrykerSKS/SmartThingsPublic/tree/StrykerSKS-Ecobee3/smartapps/smartthings/ecobee-routines.src>
+- ecobee Routines Child SmartApp: <https://github.com/StrykerSKS/SmartThingsPublic/tree/StrykerSKS-Ecobee3/smartapps/smartthings/ecobee-routines.src>
+- ecobee Open Contacts Child SmartApp: <https://github.com/StrykerSKS/SmartThingsPublic/tree/StrykerSKS-Ecobee3/smartapps/smartthings/ecobee-open-contacts.src>
 - Ecobee Thermostat Device: <https://github.com/StrykerSKS/SmartThingsPublic/tree/StrykerSKS-Ecobee3/devicetypes/smartthings/ecobee-thermostat.src>
 - Ecobee Sensor Device: <https://github.com/StrykerSKS/SmartThingsPublic/tree/StrykerSKS-Ecobee3/devicetypes/smartthings/ecobee-sensor.src>
 - SmartThings IDE: <https://graph.api.smartthings.com>
