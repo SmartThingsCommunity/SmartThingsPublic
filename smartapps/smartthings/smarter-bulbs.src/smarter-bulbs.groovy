@@ -49,12 +49,15 @@ def updated() {
 def initialize() {
     subscribe(slaves, "switch", saveStates)
     subscribe(canary,"switch.on", checkRestore)
+    canary.poll()
+    saveStates() 
 	runEvery5Minutes(checkRestore)
-    saveStates()
+    
 }
 
 def saveStates(evt) {
-	if ("off" == canary.currentSwitch ) {
+	log.debug "Checking States"
+    if ("off" == canary.currentSwitch ) {
     	def lightsOff = [:]
     	slaves?.each {
 			if (it.currentSwitch == "off"){
@@ -67,12 +70,15 @@ def saveStates(evt) {
 }
 
 def checkRestore(evt) {
+    log.debug "Checking Restore"  
+    canary.poll() 
     log.debug "Canary is ${canary.currentSwitch}"
     if ("on" == canary.currentSwitch) { 
     	log.debug "Turning stuff off"
         restoreState()
+        canary.off()
         }
-    canary.off()
+    
 }
 
 private restoreState() {
@@ -83,4 +89,3 @@ private restoreState() {
                 }
 			}
 		}
-    
