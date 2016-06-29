@@ -25,14 +25,17 @@
  *  See Changelog for change history
  *
  */  
-def getVersionNum() { return "0.9.16a" }
+def getVersionNum() { return "0.9.17" }
 private def getVersionLabel() { return "Ecobee (Connect) Version ${getVersionNum()}" }
 private def getHelperSmartApps() {
 	return [ 
     		[name: "ecobeeRoutinesChild", appName: "ecobee Routines",  
             	namespace: "smartthings", multiple: true, 
-                title: "Create new Routines Handler..."]
-             ]    
+                title: "Create new Routines Handler..."], 
+			[name: "ecobeeContactsChild", appName: "ecobee Open Contacts",  
+            	namespace: "smartthings", multiple: true, 
+                title: "Create new Open Contacts SmartApp..."]                 
+			]
 }
  
 definition(
@@ -1967,8 +1970,9 @@ private def LOG(message, level=3, child=null, logType="debug", event=false, disp
     
     if ( logType == "error" ) { 
     	atomicState.lastLOGerror = "${message} @ ${getTimestamp()}"
-        atomicState.LastLOGerrorDate = getTimestamp()
+        atomicState.LastLOGerrorDate = getTimestamp()        
 	}
+    if ( debugLevel(0) ) { return }
 	if ( debugLevel(5) ) { prefix = "LOG: " }
 	if ( debugLevel(level) ) { 
     	log."${logType}" "${prefix}${message}"        
@@ -2226,8 +2230,11 @@ private def whatHoldType() {
 private debugLevel(level=3) {
 	def debugLvlNum = settings.debugLevel?.toInteger() ?: 3
     def wantedLvl = level?.toInteger()
-    
-    return ( debugLvlNum >= wantedLvl )
+    if(debugLvlNum == 0) { 
+    	return false 
+	} else {
+    	return ( debugLvlNum >= wantedLvl )
+    }
 }
 
 

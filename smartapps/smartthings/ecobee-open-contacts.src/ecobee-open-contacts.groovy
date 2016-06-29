@@ -18,7 +18,7 @@
  /**
   * TODO: Add support for more than on/off such as programs
   */
-def getVersionNum() { return "0.1.0" }
+def getVersionNum() { return "0.1.1" }
 private def getVersionLabel() { return "ecobee Routines Version ${getVersionNum()}" }
 
 
@@ -42,8 +42,8 @@ preferences {
 // Preferences Pages
 def mainPage() {
 	dynamicPage(name: "mainPage", title: "Setup Routines", uninstall: true, install: true) {
-    	section(title: "Name for Routine Handler") {
-        	label title: "Name this Routine Handler", required: true
+    	section(title: "Name for Open Contacts Handler") {
+        	label title: "Name this Open Contacts Handler", required: true
         
         }
         
@@ -59,53 +59,20 @@ def mainPage() {
 			}
         
 			section(title: "Timers") {
-				input(name: "offDelay", title: "Delay time (in minutes) before turning off HVAC [Default=5]", type: "enum", required: true, metadata: [values: [2, 3, 4, 5, 10, 15, 30]], defaultValue: 5)
-				input(name: "onDelay", title: "Delay time (in minutes) before turning HVAC back on [Default=0]", type: "enum", required: true, metadata: [values: [0, 1, 2, 3, 4, 5, 10, 15, 30]], defaultValue: 0)        	
+				input(name: "offDelay", title: "Delay time (in minutes) before turning off HVAC or Sending Notification [Default=5]", type: "enum", required: true, metadata: [values: [0, 1, 2, 3, 4, 5, 10, 15, 30]], defaultValue: 5)
+				input(name: "onDelay", title: "Delay time (in minutes) before turning HVAC back on  or Sending Notification [Default=0]", type: "enum", required: true, metadata: [values: [0, 1, 2, 3, 4, 5, 10, 15, 30]], defaultValue: "0")        	
 	        }
-		} // End if (myThermostats?.size() > 0)
-	
-// Saved from Routines SmartApp for now
-/*        
-        section(title: "Select Mode or Routine") {
-        	// Settings option for using Mode or Routine
-            input(name: "modeOrRoutine", title: "Use Mode Change, Routine Execution: ", type: "enum", required: true, multiple: false, description: "Tap to choose...", metadata:[values:["Mode", "Routine"]], submitOnChange: true)
-	}
-        
-	if (myThermostats?.size() > 0) {
-            	if(settings.modeOrRoutine == "Mode") {
-	    	    	// Start defining which Modes(s) to allow the SmartApp to execute in
-                    // TODO: Need to run in all modes now and then filter on which modes were selected!!!
-    	            //mode(title: "When Hello Mode(s) changes to: ", required: true)
-                    section(title: "Modes") {
-                    	input(name: "modes", type: "mode", title: "When Hello Mode(s) change to: ", required: true, multiple: true)
-					}
-                } else if(settings.modeOrRoutine == "Routine") {
-                	// Routine based inputs
-                     def actions = location.helloHome?.getPhrases()*.label
-					if (actions) {
-            			// sort them alphabetically
-            			actions.sort()
-						LOG("Actions found: ${actions}", 4)
-						// use the actions as the options for an enum input
-                        section(title: "Routines") {
-							input(name:"action", type:"enum", title: "When these Routines execute: ", options: actions, required: true, multiple: true)
-                        }
-					} // End if (actions)
-                } // Mode or Routine If/Then/Else
-
-				section(title: "Actions") {
-                	def programs = getEcobeePrograms()
-                    programs = programs + ["Resume Program"]
-                	LOG("Found the following programs: ${programs}", 4)
-                    
-                  input(name: "whichProgram", title: "Switch to this Ecobee Program: ", type: "enum", required: true, multiple:false, description: "Tap to choose...", options: programs, submitOnChange: true)
-                  input(name: "fanMode", title: "Select a Fan Mode to use\n(Optional) ", type: "enum", required: false, multiple: false, description: "Tap to choose...", metadata:[values:["On", "Auto", "default"]], submitOnChange: true)
-                  if(settings.whichProgram != "Resume Program") input(name: "holdType", title: "Select the Hold Type to use\n(Optional) ", type: "enum", required: false, multiple: false, description: "Tap to choose...", metadata:[values:["Until I Change", "Until Next Program", "default"]], submitOnChange: true)
-                  input(name: "useSunriseSunset", title: "Also at Sunrise or Sunset?\n(Optional) ", type: "enum", required: false, multiple: true, description: "Tap to choose...", metadata:[values:["Sunrise", "Sunset"]], submitOnChange: true)                
-                }
-            } // End if myThermostats size
             
-*/
+            section(title: "Action Preferences") {
+            	input(name: "whichAction", title: "Select which actions to take [Default=Notify Only]", type: "enum", required: true, metadata: [values: ["Notify Only", "HVAC Only", "Notify and HVAC"]], defaultValue: "Notify Only", submitOnChange: true)
+				if (settings.whichAction != "HVAC Only") {
+					input("recipients", "contact", title: "Send notifications to") {
+						input "phone", "phone", title: "Warn with text message (optional)", description: "Phone Number", required: false
+        			}                
+                }
+            }
+            
+		} // End if (myThermostats?.size() > 0)
 
 		section(title: "Temporarily Disable?") {
 			input(name: "tempDisable", title: "Temporarily Disable Handler? ", type: "bool", required: false, description: "", submitOnChange: true)                
@@ -127,6 +94,10 @@ def updated() {
 	unsubscribe()
 	unschedule()
 	initialize()
+/*    if(tempDisable == false) {
+    	// make sure states are consistent with the existing sensor values
+        // TODO
+    } */
 }
 
 def initialize() {
@@ -135,22 +106,20 @@ def initialize() {
 		LOG("Teporarily Disapabled as per request.", 2, null, "warn")
 		return true
 	}
-
-	// TODO: Create an array of sensors for states?
+    
+    // TODO: update based on real status?
+    if (allClosed()) {
+    	state.openedState = "closed"
+    } else {
+    	state.openedState = "opened"
+    }
 
 	subscribe(contactSensors, "contact.open", sensorOpened)
 	subscribe(contactSensors, "contact.closed", sensorClosed)
+    
+    // TODO: Subscribe to the thermostat states to be notified when the HVAC is turned on or off outside of the SmartApp?
 	
-	// Normalize settings data
-	// normalizeSettings()
-	buildSensorStateArray()
 	LOG("initialize() exiting")
-}
-
-private buildSensorStateArray() {
-	// Create an array for all of the sensors and their current states
-	def tempSensorStateArray = [:]
-	
 }
 
 def sensorOpened(evt) {
@@ -158,52 +127,187 @@ def sensorOpened(evt) {
 	LOG("sensorOpened() entered with evt: ${evt}", 5)
 	
 	def gotEvent = evt.value?.toLowerCase()
-	LOG("Event name received (in lowercase): ${gotEvent}  and current expected: ${state.expectedEvent}", 5)
+	LOG("--- Event name received (in lowercase): ${gotEvent}", 5)
+    LOG("--- Event data received: ${evt.data}", 5)
+    LOG("--- Event descriptionText: ${evt.descriptionText}", 5)
+    LOG("--- Event device: ${evt.device}", 5)
+    LOG("--- Event deviceId: ${evt.deviceId}", 5)
+    
+    if(state.openedState == "closed_pending") {
+    	// Just need to cancel the close
+        state.openedState = "opened"
+    	try {
+        	unschedule(closedScheduledActions)
+		} catch (Exception e) {
+        	LOG("Failed to unschedule, possibly nothing scheduled. ${e}", 4)
+        }
+    } else if(state.openedState == "closed" || state.openedState == "closed_pending") {
+    	state.openedState = "open_pending"
+    	try {
+        	unschedule(closedScheduledActions)
+		} catch (Exception e) {
+        	LOG("Failed to unschedule, possibly nothing scheduled. ${e}", 4)
+        }
+        
+		int delay = settings.offDelay?.toInteger()
+        LOG("The off delay is ${delay} from ${settings.offDelay}", 5)
+
+
+		if(delay > 0) {
+        	LOG("Delay is greater than zero (0)", 5)
+        	runIn(delay*60, openedScheduledActions)
+        } else if (delay == 0) {
+        	// turn on immediately
+            turnoffHVAC()
+        }  
+	}
+}
+
+def openedScheduledActions() {
+	LOG("openedScheduledActions entered", 5)
+    turnoffHVAC()
+
 }
 
 def sensorClosed(evt) {
 	// A sensor (door/window) was closed
-	LOG("sensorClosed() entered with evt: ${evt}", 5)
-	
+    LOG("sensorClosed() entered with evt: ${evt}", 5)
+    
+    def gotEvent = evt.value?.toLowerCase()	
+	LOG("Event name received (in lowercase): ${gotEvent}", 5)
+    
+    if ( allClosed() == true) {
+    	if (state.openedState == "open_pending" ) {
+        	// Cancel the open pending and just return to closed
+        	state.openedState = "closed"
+           	try {
+				unschedule(openedScheduledActions)
+			} catch (Exception e) {
+    	    	LOG("Failed to unschedule, possibly nothing scheduled. ${e}", 4)
+        	} 
+        
+        } else {
+    		// Process based on timers
+	        LOG("All Contact Sensors are now closed, initiating actions.", 5)		
+        
+        	state.openedState = "closed_pending"
+	        // If all the windows are now closed, we don't want to continue with any scheduled actions
+    	     
+        	try {
+				unschedule(openedScheduledActions)
+			} catch (Exception e) {
+    	    	LOG("Failed to unschedule, possibly nothing scheduled. ${e}", 4)
+        	} 
+         
+	        int delay = settings.onDelay?.toInteger()
+    	    LOG("The on delay is ${delay} from ${settings.onDelay}", 5)
+
+
+			if(delay > 0) {
+    	    	LOG("Delay is on greater than zero (0)", 5)
+        		runIn(delay*60, closedScheduledActions)
+	        } else if (delay == 0) {
+    	    	// turn on immediately
+                LOG("Delay is zero, turning on now...", 5)
+        	    turnonHVAC()
+	        }  
+    	}
+	} else {
+    	LOG("Some Contact Sensors are still open, no action to perform yet...", 5)
+    }
 }
 
+def closedScheduledActions() {
+	LOG("closedScheduledActions entered", 5)
+	turnonHVAC()
+}
 
-
-
-def changeProgramHandler(evt) {
-	LOG("changeProgramHander() entered with evt: ${evt}", 5)
-	
-    def gotEvent 
-    if (settings.modeOrRoutine == "Routine") {
-    	gotEvent = evt.displayName?.toLowerCase()
-    } else {
-    	gotEvent = evt.value?.toLowerCase()
+private turnoffHVAC() {
+	// Save current states
+    LOG("turnoffHVAC() called...", 5)
+        
+    def tmpThermSavedState = [:]
+    settings.myThermostats.each() { therm ->
+    	LOG("Got therm: ${therm}", 5)
+    	tmpThermSavedState[therm.id] = therm.latestValue("thermostatMode")
+        LOG("Updated state: ${therm.latestValue("thermostatMode")}", 5)
     }
-    LOG("Event name received (in lowercase): ${gotEvent}  and current expected: ${state.expectedEvent}", 5)
-
-    if ( !state.expectedEvent*.toLowerCase().contains(gotEvent) ) {
-    	LOG("Received an mode/routine that we aren't watching. Nothing to do.", 4)
-        return true
+    state.thermSavedState.clear()
+    state.thermSavedState = tmpThermSavedState
+    LOG("Turning off HVACs per action.", 5)
+    if( settings.whichAction.contains("HVAC") ) {
+    	settings.myThermostats*.off()
+	}
+    
+    if( settings.whichAction.contains("Notify") ) {
+    	sendNotification("Door or Window left open for at least ${settings.offDelay} minutes")
     }
     
-    settings.myThermostats.each { stat ->
-    	LOG("In each loop: Working on stat: ${stat}", 4, null, "trace")
-    	// First let's change the Thermostat Program
-        if(state.doResumeProgram == true) {
-        	LOG("Resuming Program for ${stat}", 4, null, "trace")
-        	stat.resumeProgram()
-        } else {
-        	LOG("Setting Thermostat Program to programParam: ${state.programParam} and holdType: ${state.holdTypeParam}", 4, null, "trace")
-        	stat.setThermostatProgram(state.programParam, state.holdTypeParam)
-		}
-        if (state.fanCommand != "" && state.fanCommand != null) stat."${state.fanCommand}"()
-    }
-    return true
+    state.openedState = "opened"
+    LOG("turnoffHVAC() exiting...", 5)
 }
 
+private turnonHVAC() {
+	// Restore previous state
+	LOG("turnonHVAC() entered", 5)
+    
+    def action = settings.whichAction
+    if( action.contains("HVAC") ) { LOG("whichAction contains HVAC", 5) } else { LOG("whichAction didn't contain HVAC?", 5) }
+    if( action.contains("HVAC") ) {
+	   	// Restore to previous state 
+        LOG("Restoring to previous state", 5) 
+        
+        settings.myThermostats.each { therm ->
+			LOG("Working on thermostat: ${therm}", 5)
+            def thermId = therm.id
+            def mode = state.thermSavedState[thermId] 
+            
+			LOG("Setting the thermostat ${thermId}", 4)
+            LOG("And mode to ${mode}", 4)
+			therm.setThermostatMode(mode)
+		} 
+	}
+    
+	if( settings.whichAction.contains("Notify") ) {
+    	sendNotification("All Door or Window contacts have now been closed")
+    }    
+    
+    state.openedState = "closed"
+    LOG("turnonHVAC() exited", 5)
+}
+
+private Boolean allClosed() {
+	// Check if all Sensors are closed   
+    LOG("allClosed() entered", 5)
+    def response = true
+    
+    settings.contactSensors.each() {
+    	LOG("Sensor ${it.name} state is ${it}", 5)
+    	if (it.latestValue("contact") == "open") {
+        	LOG("Sensor ${it.name} is open. Returning false", 5)
+            response = false
+        }
+    }
+    
+    if (response) LOG("All Contact Sensors are closed, returning true")
+    return response
+	
+}
 
 
 // Helper Functions
+private def sendNotification(message) {	
+    if (location.contactBookEnabled && recipients) {
+        LOG("Contact Book enabled!", 5)
+        sendNotificationToContacts(message, recipients)
+    } else {
+        LOG("Contact Book not enabled", 5)
+        if (phone) {
+            sendSms(phone, message)
+        }
+    }
+}
+
 private def LOG(message, level=3, child=null, logType="debug", event=true, displayEvent=true) {
 	message = "${app.label} ${message}"
 	parent.LOG(message, level, child, logType, event, displayEvent)
