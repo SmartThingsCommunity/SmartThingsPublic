@@ -25,7 +25,7 @@
  *  See Changelog for change history
  *
  */  
-def getVersionNum() { return "0.9.17" }
+def getVersionNum() { return "0.9.17a" }
 private def getVersionLabel() { return "Ecobee (Connect) Version ${getVersionNum()}" }
 private def getHelperSmartApps() {
 	return [ 
@@ -1972,7 +1972,7 @@ private def LOG(message, level=3, child=null, logType="debug", event=false, disp
     	atomicState.lastLOGerror = "${message} @ ${getTimestamp()}"
         atomicState.LastLOGerrorDate = getTimestamp()        
 	}
-    if ( debugLevel(0) ) { return }
+    // if ( debugLevel(0) ) { return }
 	if ( debugLevel(5) ) { prefix = "LOG: " }
 	if ( debugLevel(level) ) { 
     	log."${logType}" "${prefix}${message}"        
@@ -2228,13 +2228,17 @@ private def whatHoldType() {
 }
 
 private debugLevel(level=3) {
-	def debugLvlNum = settings.debugLevel?.toInteger() ?: 3
-    def wantedLvl = level?.toInteger()
-    if(debugLvlNum == 0) { 
+	// log.trace("debugLevel() -- settings.debugLevel == ${settings.debugLevel}")
+    if(settings.debugLevel == "0") { 
+    	// log.trace("debugLevel() - debugLvlNum == 0 triggered")
     	return false 
-	} else {
-    	return ( debugLvlNum >= wantedLvl )
-    }
+	}
+    
+	def debugLvlNum = settings.debugLevel.toInteger() ?: 3
+    def wantedLvl = level?.toInteger()    
+    // log.trace("debugLvlNum = ${debugLvlNum}; wantedLvl = ${wantedLvl}")
+	return ( debugLvlNum >= wantedLvl )
+    
 }
 
 
