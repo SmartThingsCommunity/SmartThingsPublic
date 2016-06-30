@@ -70,6 +70,9 @@ def initialize() {
     // how many minutes to look in the past from the reminder time, for an open draw
     state.minutesToCheckOpenDraw = 60
     
+    // is true when LED notification is set after exceeding 10 minutes past reminder time
+    state.ledNotificationTriggered = false
+    
     // Set a timer to run once a day to notify if draw wasn't opened yet
     schedule(reminderTime, checkOpenDrawInPast)
    
@@ -78,9 +81,11 @@ def initialize() {
 // Should turn off any LED notification on OPEN state
 def contactHandler(evt){
 	if (evt.value == "open") {
-        // always call out to stop any possible LED notification
-        log.debug "Cabinet opened. Sending reset to LED"
-        resetLEDNotification()
+        // if LED notification triggered, reset it.
+        log.debug "Cabinet opened"
+        if (state.ledNotificationTriggered) {
+            resetLEDNotification()
+        }
 	}
 }
 
@@ -150,6 +155,8 @@ def isOpened(minutes){
 // Saves current color and sets the light to RED
 def setLEDNotification(){
 
+	state.ledNotificationTriggered = true
+    
 	// turn light back off when reset is called if it was originally off
  	state.ledState = deviceLight.currentValue("switch")
 
@@ -165,9 +172,13 @@ def setLEDNotification(){
 // Sets the color back to the original saved color
 def resetLEDNotification(){
 
+	state.ledNotificationTriggered = false
+    
     // return color to original
     log.debug "Reset LED color to: $state.origColor"
-    deviceLight.setHue(state.origColor)
+    if (state.origColor != null) {
+    	deviceLight.setHue(state.origColor)
+    }
     
     // if the light was turned on just for the notification, turn it back off now
     if (state.ledState == "off") {
