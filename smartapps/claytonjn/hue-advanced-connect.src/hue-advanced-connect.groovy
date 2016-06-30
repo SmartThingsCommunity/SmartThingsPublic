@@ -888,7 +888,7 @@ def parse(childDevice, description) {
             	log.warn "Parsing Body failed - trying again..."
                 poll()
             }
-            if (body instanceof java.util.HashMap) {
+            if (body instanceof java.util.HashMap || body instanceof groovy.json.internal.LazyMap) {
             	//poll response
                 def devices = getChildDevices()
                 for (device in body) {
