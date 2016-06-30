@@ -1,12 +1,12 @@
 /**
-* Circadian Daylight 3.1
+* Circadian Daylight 4.1
 *
-* This SmartApp synchronizes your color changing lights with local perceived color
+* This SmartApp synchronizes your color changing lights with perceived color
 * temperature of the sky throughout the day. This gives your environment a more
-* natural feel, with cooler whites during the midday and warmer tints near twilight
-* and dawn.
+* natural feel, with cooler whites during the midday and warmer tints near
+* twilight and dawn.
 *
-* In addition, the SmartApp sets your lights to a nice cool white at 1% in
+* In addition, the SmartApp sets your lights to a nice warm white at 1% in
 * "Sleep" mode, which is far brighter than starlight but won't reset your
 * circadian rhythm or break down too much rhodopsin in your eyes.
 *
@@ -26,6 +26,8 @@
 * * The app doesn't calculate a true "Blue Hour" -- it just sets the lights to
 * 2700K (warm white) until your hub goes into Night mode
 *
+* Version 4.1: June 30, 2016 - Fix checking mode, streamline bulb handlers, fix for allowing night brightness independant from sleep, change dimming bulbs to respect dynamic brightness setting, attempt to return to previous brightness after sleep, fix brightness algorighm. 
+* Version 4.0: June 13, 2016 - Complete re-write of app. Parent/Child setup; with new ct/brightness algorithms, separate handlers for scheduled and bulb events, and additional settings.
 * Version 3.1: May 7, 2016 - Fix a bunch of copy/paste errors resulting in references to the wrong bulb types. No longer need to prevent CD from disabling itself.
 * Version 3.0: April 22, 2016 - Taking over the project from Kristopher. Original repo was https://github.com/KristopherKubicki/smartapp-circadian-daylight/
 * Version 2.6: March 26, 2016 - Fixes issue with hex colors.  Move your color changing bulbs to Color Temperature instead
@@ -51,7 +53,8 @@ definition(
 name: "Circadian Daylight",
 namespace: "claytonjn",
 author: "claytonjn",
-description: "Sync your color changing lights and dimmers with natural daylight hues to improve your cognitive functions and restfulness.",
+parent: "claytonjn:Circadian Daylight Coordinator",
+description: "DO NOT SELECT, USE COORDINATOR!",
 category: "Green Living",
 iconUrl: "https://raw.githubusercontent.com/claytonjn/SmartThingsPublic/Circadian-Daylight/smartapp-icons/PNG/circadian-daylight.png",
 iconX2Url: "https://raw.githubusercontent.com/claytonjn/SmartThingsPublic/Circadian-Daylight/smartapp-icons/PNG/circadian-daylight@2x.png",
@@ -59,27 +62,51 @@ iconX3Url: "https://raw.githubusercontent.com/claytonjn/SmartThingsPublic/Circad
 )
 
 preferences {
-    section("Thank you for installing Circadian Daylight! This application dims and adjusts the color temperature of your lights to match the state of the sun, which has been proven to aid in cognitive functions and restfulness. The default options are well suited for most users, but feel free to tweak accordingly!") {
+    page(name: "bulbsPreferences", nextPage: "dimmingPreferences", install: false, uninstall: true) {
+        section("Select each bulb in only one section. Color Temperature bulbs should be most accurate at reflecting natural light.") {
+            input "ctBulbs", "capability.colorTemperature", title: "Color Temperature Bulbs", multiple: true, required: false
+            input "cBulbs", "capability.colorControl", title: "Color Bulbs", multiple: true, required: false
+            input "dBulbs", "capability.switchLevel", title: "Dimming Bulbs", multiple: true, required: false
+        }
     }
-    section("Control these bulbs; Select each bulb only once") {
-        input "ctbulbs", "capability.colorTemperature", title: "Which Temperature Changing Bulbs?", multiple:true, required: false
-        input "cbulbs", "capability.colorControl", title: "Which Color Changing Bulbs?", multiple:true, required: false
-        input "dimmers", "capability.switchLevel", title: "Which Dimmers?", multiple:true, required: false
+    page(name: "dimmingPreferences", content: "dimmingPreferences")
+    page(name: "sleepPreferences", title: "Sleep Settings", nextPage: "disablePreferences", install: false, uninstall: true) {
+        section {
+            input "sModes", "mode", title: "When in the selected mode(s), Circadian Daylight will follow the behavior specified below.", multiple:true, required: false
+            paragraph "Protip: You can pick 'Nap' modes as well!"
+        }
+        section("Color Temperature") {
+            input "sTemp", "enum", title: "Campfire is easier on your eyes with a yellower hue, Moonlight is a whiter light.", options: ["Campfire", "Moonlight"], required: false, defaultValue: "Campfire"
+            paragraph "Note: Moonlight will likely disrupt your circadian rhythm."
+        }
+        section("Brightness") {
+            input "sBright", "enum", title: "Select the desired bulb brightness during sleep modes.", options: ["Don't adjust brightness in Sleep modes", "Automatic", "1%", "10%", "20%", "30%", "40%", "50%", "60%", "70%", "80%", "90%", "100%", ], defaultValue: "1%", required: false
+            paragraph "Note: Anything other than 1% may result in Rhodopsin Bleaching."
+        }
     }
-    section("What are your 'Sleep' modes? The modes you pick here will dim your lights and filter light to a softer, yellower hue to help you fall asleep easier. Protip: You can pick 'Nap' modes as well!") {
-        input "smodes", "mode", title: "What are your Sleep modes?", multiple:true, required: false
+    page(name: "disablePreferences", nextPage: "miscPreferences", install: false, uninstall: true) {
+        section {
+            input "dModes", "mode", title: "Set for specific mode(s)", multiple:true, required: false
+            input "dSwitches","capability.switch", title: "Disable Circadian Daylight when these switches are on", multiple:true, required: false
+        }
     }
-    section("Override Constant Brightness (default) with Dynamic Brightness? If you'd like your lights to dim as the sun goes down, override this option. Most people don't like it, but it can look good in some settings.") {
-        input "dbright","bool", title: "On or off?", required: false
+    page(name: "miscPreferences", install: true, uninstall: true) {
+        section("Child SmartApp Name"){
+            label title: "Assign a name", required: false
+        }
     }
-    section("Override night time Campfire (default) with Moonlight? Circadian Daylight by default is easier on your eyes with a yellower hue at night. However if you'd like a whiter light instead, override this option. Note: this will likely disrupt your circadian rhythm.") {
-        input "dcamp","bool", title: "On or off?", required: false
-    }
-    section("Override night time Dimming (default) with Rhodopsin Bleaching? Override this option if you would not like Circadian Daylight to dim your lights during your Sleep modes. This is definitely not recommended!") {
-        input "ddim","bool", title: "On or off?", required: false
-    }
-    section("Disable Circadian Daylight when the following switches are on:") {
-        input "dswitches","capability.switch", title: "Switches", multiple:true, required: false
+}
+
+def dimmingPreferences() {
+    return dynamicPage(name: "dimmingPreferences", nextPage: "sleepPreferences", install: false, uninstall: true) {
+        section {
+            paragraph "Dynamic Brightness automatically dims your lights based on natural light.";
+            input "dBright", "bool", title: "Dynamic Brightness", required: false, defaultValue: false, submitOnChange: true
+            if (dBright) {
+                input "bMin", "number", title: "Minimum Brightness (1-100)", required: true, defaultValue: 1
+                input "bMax", "number", title: "Maximum Brightness (1-100)", required: true, defaultValue: 100
+            }
+        }
     }
 }
 
@@ -97,188 +124,294 @@ def updated() {
 
 private def initialize() {
     log.debug("initialize() with settings: ${settings}")
-    if(ctbulbs) {
-		subscribe(ctbulbs, "switch.on", modeHandler)
-		subscribe(ctbulbs, "cdBrightness.true", modeHandler)
-		subscribe(ctbulbs, "cdColor.true", modeHandler)
-	}
-    if(cbulbs) {
-		subscribe(cbulbs, "switch.on", modeHandler)
-		subscribe(cbulbs, "cdBrightness.true", modeHandler)
-		subscribe(cbulbs, "cdColor.true", modeHandler)
-	}
-    if(dimmers) {
-		subscribe(dimmers, "switch.on", modeHandler)
-		subscribe(dimmers, "cdBrightness.true", modeHandler)
-	}
-    if(dswitches) { subscribe(dswitches, "switch.off", modeHandler) }
-    subscribe(location, "mode", modeHandler)
 
-    // revamped for sunset handling instead of motion events
-    subscribe(location, "sunset", modeHandler)
-    subscribe(location, "sunrise", modeHandler)
-    schedule("0 */15 * * * ?", modeHandler)
-    subscribe(app,modeHandler)
-    subscribe(location, "sunsetTime", scheduleTurnOn)
-    // rather than schedule a cron entry, fire a status update a little bit in the future recursively
-    scheduleTurnOn()
+    subscribe(app, bulbsHandler)
+    if(settings.dSwitches) { subscribe(settings.dSwitches, "switch.off", bulbsHandler) }
+
+    if(settings.ctBulbs) {
+		subscribe(settings.ctBulbs, "switch.on", bulbHandler)
+		subscribe(settings.ctBulbs, "cdBrightness.true", bulbHandler)
+		subscribe(settings.ctBulbs, "cdColor.true", bulbHandler)
+	}
+    if(settings.cBulbs) {
+		subscribe(settings.cBulbs, "switch.on", bulbHandler)
+		subscribe(settings.cBulbs, "cdBrightness.true", bulbHandler)
+		subscribe(settings.cBulbs, "cdColor.true", bulbHandler)
+	}
+    if(settings.dBulbs) {
+		subscribe(settings.dBulbs, "switch.on", bulbHandler)
+		subscribe(settings.dBulbs, "cdBrightness.true", bulbHandler)
+	}
+
+    subscribe(location, "mode", modeChangeHandler)
 }
 
-def scheduleTurnOn() {
-    def int iterRate = 20
-
-    // get sunrise and sunset times
-    def sunRiseSet = getSunriseAndSunset()
-    def sunriseTime = sunRiseSet.sunrise
-    log.debug("sunrise time ${sunriseTime}")
-    def sunsetTime = sunRiseSet.sunset
-    log.debug("sunset time ${sunsetTime}")
-
-    if(sunriseTime.time > sunsetTime.time) {
-        sunriseTime = new Date(sunriseTime.time - (24 * 60 * 60 * 1000))
-    }
-
-    def runTime = new Date(now() + 60*15*1000)
-    for (def i = 0; i < iterRate; i++) {
-        def long uts = sunriseTime.time + (i * ((sunsetTime.time - sunriseTime.time) / iterRate))
-        def timeBeforeSunset = new Date(uts)
-        if(timeBeforeSunset.time > now()) {
-            runTime = timeBeforeSunset
-            last
-        }
-    }
-
-    log.debug "checking... ${runTime.time} : $runTime"
-    if(state.nextTime != runTime.time) {
-        state.nextTimer = runTime.time
-        log.debug "Scheduling next step at: $runTime (sunset is $sunsetTime) :: ${state.nextTimer}"
-        runOnce(runTime, modeHandler)
-    }
-}
-
-
-// Poll all bulbs, and modify the ones that differ from the expected state
-def modeHandler(evt) {
-    for (dswitch in dswitches) {
-        if(dswitch.currentSwitch == "on") {
-            return
-        }
-    }
-
-    def ct = getCT()
-    def hex = getHex()
-    def hsv = getHSV()
-    def bright = getBright()
-
-    for(ctbulb in ctbulbs) {
-        if(ctbulb.currentValue("switch") == "on") {
-            if((settings.dbright == true && ctbulb.currentValue("cdBrightness") != "false") || location.mode in settings.smodes) {
-				if(ctbulb.currentValue("level") != bright) {
-					ctbulb.setLevel(bright)
-				}
-			}
-			if(ctbulb.currentValue("cdColor") != "false") {
-				if(ctbulb.currentValue("colormode") != "ct" || ctbulb.currentValue("colorTemperature") != ct) {
-					ctbulb.setColorTemperature(ct)
-				}
-			}
-        }
-    }
-    def color = [hex: hex, hue: hsv.h, saturation: hsv.s, level: bright]
-    for(cbulb in cbulbs) {
-        if(cbulb.currentValue("switch") == "on") {
-			def tmp = cbulb.currentValue("color")
-			if(cbulb.currentValue("cdColor") != "false") {
-				if((cbulb.currentValue("colormode") != "xy" && cbulb.currentValue("colormode") != "hs") || cbulb.currentValue("color") != hex) {
-					if((settings.dbright == true && cbulb.currentValue("cdBrightness") != "false") || location.mode in settings.smodes) {
-						color.value = bright
-					} else {
-						color.value = cbulb.currentValue("level")
-					}
-					cbulb.setColor(color)
-				}
-			}
-        }
-    }
-    for(dimmer in dimmers) {
-        if(dimmer.currentValue("switch") == "on") {
-        	if(dimmer.currentValue("cdBrightness") != "false" || location.mode in settings.smodes) {
-				if(dimmer.currentValue("level") != bright) {
-					dimmer.setLevel(bright)
-				}
-			}
-        }
-    }
-
-    scheduleTurnOn()
-}
-
-def getCTBright() {
-    def after = getSunriseAndSunset()
-    def midDay = after.sunrise.time + ((after.sunset.time - after.sunrise.time) / 2)
-
-    def currentTime = now()
-    def float brightness = 1
-    def int colorTemp = 2700
-    if(currentTime > after.sunrise.time && currentTime < after.sunset.time) {
-        if(currentTime < midDay) {
-            colorTemp = 2700 + ((currentTime - after.sunrise.time) / (midDay - after.sunrise.time) * 3800)
-            brightness = ((currentTime - after.sunrise.time) / (midDay - after.sunrise.time))
-        }
+private void calcBrightness(sunriseAndSunset) {
+    if (settings.dBright == true) {
+        def nowDate = new Date()
+        if (nowDate > sunriseAndSunset.sunrise && nowDate < sunriseAndSunset.sunset) { state.brightness = settings.bMax } //Before sunset/after sunrise
         else {
-            colorTemp = 6500 - ((currentTime - midDay) / (after.sunset.time - midDay) * 3800)
-            brightness = 1 - ((currentTime - midDay) / (after.sunset.time - midDay))
+            def nowTime = nowDate.getTime()
+            def sunsetTime = sunriseAndSunset.sunset.getTime()
+            def sunriseTime = sunriseAndSunset.sunrise.getTime()
+            if(nowTime < sunriseTime) { //If it's morning, use estimated sunset from the night before
+                sunsetTime = sunriseAndSunset.sunset.getTime() - (1000*60*60*24)
+            } else if(nowTime > sunsetTime) { //If it's evening, use estimated sunset for the next day
+                sunriseTime = sunriseAndSunset.sunrise.getTime() + (1000*60*60*24)
+            }
+            def nightLength = sunriseTime - sunsetTime
 
+            //Generate brightness parabola from points
+            //Specify double type or calculations fail
+            double x1 = sunsetTime
+            double y1 = settings.bMax
+            double x2 = sunsetTime+(nightLength/2)
+            double y2 = settings.bMin
+            double x3 = sunriseTime
+            double y3 = settings.bMax
+            double a1 = -x1**2+x2**2
+            double b1 = -x1+x2
+            double d1 = -y1+y2
+            double a2 = -x2**2+x3**2
+            double b2 = -x2+x3
+            double d2 = -y2+y3
+            double bm = -(b2/b1)
+            double a3 = bm*a1+a2
+            double d3 = bm*d1+d2
+            double a = d3/a3
+            double b = (d1-a1*a)/b1
+            double c = y1-a*x1**2-b*x1
+            double brightness = a*nowTime**2+b*nowTime+c
+            double stRange = (100 - 1)
+        	double hueRange = (254 - 1)
+        	double hueBri = Math.round((((brightness - 1) * hueRange) / stRange) + 1) //Round to Hue brightness range
+            state.brightness = (((hueBri - 1) * stRange) / hueRange) + 1
+            log.debug "Brightness set to ${state.brightness}"
+        }
+    } else { state.brightness = NULL }
+}
+
+private void calcSleepColorTemperature() {
+    switch (settings.sTemp) {
+        case "Campfire":
+            state.colorTemperature = 2000
+            break
+        case "Moonlight":
+            state.colorTemperature = 4100
+            break
+    }
+    log.debug "Color Temperature set to ${state.colorTemperature}"
+}
+
+private void calcSleepBrightness() {
+    switch (settings.sBright) {
+        case "Don't adjust brightness in Sleep modes":
+            state.brightness = NULL
+            break
+        case "Automatic":
+            break
+        case "1%":
+            state.brightness = 1
+            break
+        case "10%":
+            state.brightness = 10
+            break
+        case "20%":
+            state.brightness = 20
+            break
+        case "30%":
+            state.brightness = 30
+            break
+        case "40%":
+            state.brightness = 40
+            break
+        case "50%":
+            state.brightness = 50
+            break
+        case "60%":
+            state.brightness = 60
+            break
+        case "70%":
+            state.brightness = 70
+            break
+        case "80%":
+            state.brightness = 80
+            break
+        case "90%":
+            state.brightness = 90
+            break
+        case "100%":
+            state.brightness = 100
+            break
+    }
+    log.debug "Brightness set to ${state.brightness}"
+}
+
+def bulbsHandler(evt = NULL, sunriseAndSunset = NULL) {
+    if (settings.dModes != NULL) {
+        if (!settings.dModes.contains(location.mode)) {
+            if (settings.sModes == NULL) { return }
+            if (settings.sModes != NULL) {
+                if (!settings.sModes.contains(location.mode)) { return }
+            }
         }
     }
 
-    if(settings.dbright == false) {
-        brightness = 1
+    for (dSwitch in settings.dSwitches) {
+        if(dSwitch.currentSwitch == "on") { return }
     }
 
-	if(location.mode in settings.smodes) {
-		if(currentTime > after.sunset.time) {
-			if(settings.dcamp == true) {
-				colorTemp = 6500
-			}
-			else {
-				colorTemp = 2000
-			}
-		}
-		if(settings.ddim == false) {
-			brightness = 0.01
-		}
-	}
+    if (sunriseAndSunset != NULL) { calcBrightness(sunriseAndSunset) }
+    state.colorTemperature = parent.getColorTemperature()
+    log.debug "Color Temperature set to ${state.colorTemperature}"
 
-    def ct = [:]
-    ct = [colorTemp: colorTemp, brightness: Math.round(brightness * 100)]
-    ct
+    //Behavior in sleep mode
+    if(location.mode in settings.sModes) {
+        calcSleepBrightness()
+        calcSleepColorTemperature()
+    }
+
+    //Minimize reading state variables
+    def brightness = state.brightness
+    def colorTemperature = state.colorTemperature
+    def hex = rgbToHex(ctToRGB(colorTemperature)).toUpperCase()
+    def hsv = rgbToHSV(ctToRGB(colorTemperature))
+
+    for(ctBulb in settings.ctBulbs) { setCTBulb(ctBulb, brightness, colorTemperature) }
+    for(cBulb in settings.cBulbs) { setCBulb(cBulb, brightness, hex, hsv) }
+    for(dBulb in settings.dBulbs) { setDBulb(dBulb, brightness) }
 }
 
-def getCT() {
-	def ctb = getCTBright()
-    //log.debug "Color Temperature: " + ctb.colorTemp
-    return ctb.colorTemp
+def bulbHandler(evt) {
+    if (settings.dModes != NULL) {
+        if (!settings.dModes.contains(location.mode)) {
+            if (settings.sModes == NULL) { return }
+            if (settings.sModes != NULL) {
+                if (!settings.sModes.contains(location.mode)) { return }
+            }
+        }
+    }
+
+    for (dSwitch in settings.dSwitches) {
+        if(dSwitch.currentSwitch == "on") { return }
+    }
+
+    state.colorTemperature = parent.getColorTemperature()
+    log.debug "Color Temperature set to ${state.colorTemperature}"
+
+    //Behavior in sleep mode
+    if(location.mode in settings.sModes) {
+        calcSleepBrightness()
+        calcSleepColorTemperature()
+    }
+
+    if(evt.device.deviceNetworkId in settings.ctBulbs?.deviceNetworkId) {
+        //Minimize reading state variables
+        def brightness = state.brightness
+        def colorTemperature = state.colorTemperature
+
+        setCTBulb(evt.device, brightness, colorTemperature)
+    }
+    if(evt.device.deviceNetworkId in settings.cBulbs?.deviceNetworkId) {
+        //Minimize reading state variables
+        def brightness = state.brightness
+        def colorTemperature = state.colorTemperature
+        def hex = rgbToHex(ctToRGB(colorTemperature)).toUpperCase()
+        def hsv = rgbToHSV(ctToRGB(colorTemperature))
+
+        setCBulb(evt.device)
+    }
+    if(evt.device.deviceNetworkId in settings.dBulbs?.deviceNetworkId) {
+        //Minimize reading state variables
+        def brightness = state.brightness
+
+        setDBulb(evt.device, brightness)
+    }
 }
 
-def getHex() {
-	def ct = getCT()
-    //log.debug "Hex: " + rgbToHex(ctToRGB(ct)).toUpperCase()
-    return rgbToHex(ctToRGB(ct)).toUpperCase()
+private void setCTBulb(ctBulb, brightness = state.brightness, colorTemperature = state.colorTemperature) {
+    if(ctBulb.currentValue("switch") == "on") {
+        if(brightness != NULL && ctBulb.currentValue("cdBrightness") != "false") {
+            if(ctBulb.currentValue("level") != brightness) {
+                if(settings.dBright != true && settings.sModes != NULL && !settings.sModes.contains(location.currentMode) && state.sBulbs.containsKey(ctBulb.deviceNetworkId)) {
+                    ctBulb.setLevel(state.sBulbs.get(ctBulb.deviceNetworkId))
+                    log.debug "${ctBulb} level restored to ${state.sBulbs.get(ctBulb.deviceNetworkId)}"
+                    state.sBulbs.remove(ctBulb.deviceNetworkId)
+                } else {
+                    ctBulb.setLevel(brightness)
+                    log.debug "${ctBulb} level set to ${brightness}"
+                }
+            }
+        }
+        if(ctBulb.currentValue("cdColor") != "false") {
+            if(ctBulb.currentValue("colormode") != "ct" || ctBulb.currentValue("colorTemperature") != Math.round(colorTemperature) as Integer) {
+                ctBulb.setColorTemperature(colorTemperature)
+                log.debug "${ctBulb} color temperature set to ${colorTemperature}"
+            }
+        }
+    }
 }
 
-def getHSV() {
-	def ct = getCT()
-    //log.debug "HSV: " + rgbToHSV(ctToRGB(ct))
-    return rgbToHSV(ctToRGB(ct))
+private void setCBulb(cBulb, brightness = state.brightness, hex = rgbToHex(ctToRGB(state.colorTemperature)).toUpperCase(), hsv = rgbToHSV(ctToRGB(state.colorTemperature))) {
+    def color = [hex: hex, hue: hsv.h, saturation: hsv.s]
+
+    if(cBulb.currentValue("switch") == "on") {
+        if(brightness != NULL && cBulb.currentValue("cdBrightness") != "false") {
+            if(settings.dBright != true && settings.sModes != NULL && !settings.sModes.contains(location.currentMode) && state.sBulbs.containsKey(cBulb.deviceNetworkId)) {
+                color.level = state.sBulbs.get(cBulb.deviceNetworkId)
+                log.debug "${cBulb} level restored to ${state.sBulbs.get(cBulb.deviceNetworkId)}"
+                state.sBulbs.remove(cBulb.deviceNetworkId)
+            } else {
+                color.level = brightness
+                log.debug "${cBulb} level set to ${brightness}"
+            }
+        }
+        if(cBulb.currentValue("cdColor") != "false") {
+            if((cBulb.currentValue("colormode") != "xy" && cBulb.currentValue("colormode") != "hs") || cBulb.currentValue("color") != hex) {
+                cBulb.setColor(color)
+                log.debug "${cBulb} color set to ${color}"
+            }
+        }
+    }
 }
 
-def getBright() {
-	def ctb = getCTBright()
-    //log.debug "Brightness: " + ctb.brightness
-    return ctb.brightness
+private void setDBulb(dBulb, brightness = state.brightness) {
+    if(dBulb.currentValue("switch") == "on") {
+        if(brightness != NULL && dBulb.currentValue("cdBrightness") != "false") {
+            if(dBulb.currentValue("level") != brightness) {
+                if(settings.dBright != true && settings.sModes != NULL && !settings.sModes.contains(location.currentMode) && state.sBulbs.containsKey(dBulb.deviceNetworkId)) {
+                    dBulb.setLevel(state.sBulbs.get(dBulb.deviceNetworkId))
+                    log.debug "${dBulb} level restored to ${state.sBulbs.get(dBulb.deviceNetworkId)}"
+                    state.sBulbs.remove(dBulb.deviceNetworkId)
+                } else {
+                    dBulb.setLevel(brightness)
+                    log.debug "${dBulb} level set to ${brightness}"
+                }
+            }
+        }
+    }
 }
 
+def modeChangeHandler(evt) {
+    if (evt.value in settings.sModes) {
+        for (ctBulb in settings.ctBulbs) {
+            if (state.sBulbs == NULL || !state.sBulbs.containsKey(ctBulb.deviceNetworkId)) {
+                state.sBulbs.put(ctBulb.deviceNetworkId, ctBulb.currentValue("level"))
+            }
+        }
+        for (cBulb in settings.cBulbs) {
+            if (state.sBulbs == NULL || !state.sBulbs.containsKey(cBulb.deviceNetworkId)) {
+                state.sBulbs.put(cBulb.deviceNetworkId, cBulb.currentValue("level"))
+            }
+        }
+        for (dBulb in settings.dBulbs) {
+            if (state.sBulbs == NULL || !state.sBulbs.containsKey(dBulb.deviceNetworkId)) {
+                state.sBulbs.put(dBulb.deviceNetworkId, dBulb.currentValue("level"))
+            }
+        }
+        state.sModes = true
+    }
+}
 
 // Based on color temperature converter from
 // http://www.tannerhelland.com/4435/convert-temperature-rgb-algorithm-code/
