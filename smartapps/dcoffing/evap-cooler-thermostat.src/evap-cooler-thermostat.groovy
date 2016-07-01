@@ -1,6 +1,6 @@
 /*
    Virtual Thermostat for Evaporative Coolers 
-   Copyright 2016 Dale Coffing
+   Copyright 2016 Dale Coffing, SmartThings
    
    This smartapp provides automatic control for Evaporative Coolers (single or two-speed) using 
    any temperature sensor. On a call for cooling the water pump is turned on and given two minutes
@@ -15,6 +15,7 @@
    or Monoprice #11989 Z-Wave In-Wall On/Off module
     
   Change Log
+  2016-06-30 added dynamic temperature display readout to Room Setpoint Temp input for ease of troubleshooting
   2016-06-28 x.1 version update
   			added submitOnChange for motion so to skip minutes input next if no motion selected
  			changed order of inputs for better logic flow
@@ -45,7 +46,7 @@
 definition(
     name: "Evap Cooler Thermostat",
     namespace: "dcoffing",
-    author: "Dale Coffing",
+    author: "Dale Coffing, SmartThings",
     description: "Automatic control for an Evaporative Cooler with a 2-speed motor, water pump and any temp sensor.",
     category: "My Apps",
 	iconUrl: "https://raw.githubusercontent.com/dcoffing/SmartThingsPublic/master/smartapps/dcoffing/evap-cooler-thermostat.src/ect125x125.png", 
@@ -63,12 +64,18 @@ def mainPage() {
 	dynamicPage(name: "mainPage", title: "Select your devices and settings", install: true, uninstall: true){
    	
     	section("Select a room temperature sensor to control the Evap Cooler..."){
-			input "tempSensor", "capability.temperatureMeasurement",
-        	multiple:false, title: "Temperature Sensor", required: true 
+			input "tempSensor", "capability.temperatureMeasurement", multiple:false, title: "Temperature Sensor", required: true, submitOnChange: true  
 		}
-    	section("Enter the desired room temperature (ie 72.5)..."){
-			input "setpoint", "decimal", title: "Room Setpoint Temp", required: true
-		}
+        if (tempSensor) {  //protects from a null error
+    		section("Enter the desired room temperature setpoint...\n" + "NOTE: ${tempSensor.displayName} room temp is ${tempSensor.currentTemperature}° currently"){
+        		input "setpoint", "decimal", title: "Room Setpoint Temp", defaultValue: tempSensor.currentTemperature, required: true
+    		}
+        }
+        else 
+        	section("Enter the desired room temperature setpoint..."){
+        		input "setpoint", "decimal", title: "Room Setpoint Temp", required: true
+    		} 	 
+
     	section("Select the Evap Cooler fan motor switch hardware..."){
 			input "fanMotor", "capability.switch", 
 	    	multiple:false, title: "Fan Motor On-Off Control device", required: true
@@ -82,16 +89,16 @@ def mainPage() {
         	page: "optionsPage"
         	)
         }
-	section("Version Info, User's Guide") {
 // VERSION
-       href (name: "aboutPage", 
-       title: "Evap Cooler Thermostat \n"+"Version: 1.0.160628 \n"+"Copyright © 2016 Dale Coffing", 
-       description: "Tap to get user's guide.",
-       image: "https://raw.githubusercontent.com/dcoffing/SmartThingsPublic/master/smartapps/dcoffing/evap-cooler-thermostat.src/ect250x250.png",
-       required: false,
-       page: "aboutPage"
- 	   )
-   	}	
+		section("Version Info, User's Guide") {
+			href (name: "aboutPage", 
+            title: "Evap Cooler Thermostat \n"+"Version: 1.0.160630 \n"+"Copyright © 2016 Dale Coffing", 
+            description: "Tap to get user's guide.",
+            image: "https://raw.githubusercontent.com/dcoffing/SmartThingsPublic/master/smartapps/dcoffing/evap-cooler-thermostat.src/ect250x250.png",
+            required: false,
+            page: "aboutPage"
+			)
+   		}	
     }
 }
 
