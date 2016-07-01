@@ -15,13 +15,14 @@
  */
  
 metadata {
-	definition (name: "Tyco Door/Window Sensor", namespace: "smartthings", author: "SmartThings") {
+	definition (name: "Tyco Door/Window Sensor", namespace: "smartthings", author: "SmartThings", category: "C2") {
 		capability "Battery"
 		capability "Configuration"
 		capability "Contact Sensor"
 		capability "Refresh"
 		capability "Temperature Measurement"
-        
+		capability "Health Check"
+
 		command "enrollResponse"
  
  
@@ -269,6 +270,7 @@ def refresh()
 }
 
 def configure() {
+	sendEvent(name: "checkInterval", value: 7200, displayed: false)
 
 	String zigbeeEui = swapEndianHex(device.hub.zigbeeEui)
 		log.debug "Configuring Reporting, IAS CIE, and Bindings."

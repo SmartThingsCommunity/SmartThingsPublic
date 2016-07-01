@@ -15,13 +15,14 @@
  */
  
 metadata {
-	definition (name: "NYCE Open/Closed Sensor", namespace: "smartthings", author: "NYCE") {
+	definition (name: "NYCE Open/Closed Sensor", namespace: "smartthings", author: "NYCE", category: "C2") {
     	capability "Battery"
 		capability "Configuration"
         capability "Contact Sensor"
 		capability "Refresh"
-        
-        command "enrollResponse"
+		capability "Health Check"
+
+		command "enrollResponse"
  
  
  		fingerprint inClusters: "0000,0001,0003,0500,0020", manufacturer: "NYCE", model: "3010", deviceJoinName: "NYCE Door Hinge Sensor"
@@ -281,6 +282,8 @@ private List parseIasMessage(String description) {
 }
 
 def configure() {
+	sendEvent(name: "checkInterval", value: 7200, displayed: false)
+
 	String zigbeeEui = swapEndianHex(device.hub.zigbeeEui)
 
 	def configCmds = [

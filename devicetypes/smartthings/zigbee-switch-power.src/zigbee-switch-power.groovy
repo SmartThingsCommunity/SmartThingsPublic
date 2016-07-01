@@ -13,13 +13,14 @@
  */
 
 metadata {
-    definition (name: "ZigBee Switch Power", namespace: "smartthings", author: "SmartThings") {
+    definition (name: "ZigBee Switch Power", namespace: "smartthings", author: "SmartThings", category: "C1") {
         capability "Actuator"
         capability "Configuration"
         capability "Refresh"
         capability "Power Meter"
         capability "Sensor"
         capability "Switch"
+        capability "Health Check"
 
         fingerprint profileId: "0104", inClusters: "0000, 0003, 0004, 0005, 0006, 0B04"
         fingerprint profileId: "0104", inClusters: "0000, 0003, 0004, 0005, 0006, 0702"
@@ -81,6 +82,8 @@ def refresh() {
 }
 
 def configure() {
+    sendEvent(name: "checkInterval", value: 1200, displayed: false)
+
     log.debug "Configuring Reporting and Bindings."
     zigbee.onOffConfig() + zigbee.simpleMeteringPowerConfig() + zigbee.electricMeasurementPowerConfig() + zigbee.onOffRefresh() + zigbee.simpleMeteringPowerRefresh() + zigbee.electricMeasurementPowerRefresh()
 }
