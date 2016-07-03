@@ -78,7 +78,8 @@ def checkRestore(evt) {
         restoreState()
         canary.off()
         }
-    
+    slaves*.poll()
+    saveStates(evt)
 }
 
 private restoreState() {
