@@ -1,7 +1,7 @@
 /**
  *  Cloud Interface
  *
- *  Version 1.3.5 - 6/12/16 Copyright © 2016 Michael Struck
+ *  Version 1.3.5a - 6/12/16 Copyright © 2016 Michael Struck
  *  
  *  Version 1.0.0 - Initial release
  *  Version 1.0.1 - Fixed code syntax
@@ -16,7 +16,7 @@
  *  Version 1.3.2 - Fixed interface issue with settings page
  *  Version 1.3.3a - Added a proper revoke for access token
  *  Version 1.3.4 - Minor GUI changes to accomodate new mobile app structure
- *  Version 1.3.5 - Added a toggle function in addition to the on/off options
+ *  Version 1.3.5a - Added a toggle function in addition to the on/off options
  *
  *  Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except
  *  in compliance with the License. You may obtain a copy of the License at:
@@ -97,7 +97,7 @@ def pageAbout(){
 def pageSettings(){
     dynamicPage(name: "pageSettings", title: "Settings", uninstall: false){
         section("URL Settings"){
-            input "urlOnOff", "bool", title: "Show both ON/OFF/Toggle links on 'Show URLs' page (default=show ON only)", defaultValue: false
+            input "urlOnOff", "bool", title: "Show ON/OFF/Toggle links on 'Show URLs' page (default=show ON only)", defaultValue: false
         }
         section("Security Settings"){
             href "pageReset", title: "Reset Access Token", description: "Tap to revoke access token. All current URLs in use will need to be re-generated"
@@ -177,7 +177,7 @@ private def textAppName() {
 	def text = "Cloud Interface"
 }	
 private def textVersion() {
-    def text = "Version 1.3.5 (06/12/2016)"
+    def text = "Version 1.3.5a (06/12/2016)"
 }
 private def textCopyright() {
     def text = "Copyright © 2016 Michael Struck"
