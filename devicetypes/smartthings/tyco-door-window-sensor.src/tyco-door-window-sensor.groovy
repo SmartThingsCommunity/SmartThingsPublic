@@ -270,7 +270,7 @@ def refresh()
 }
 
 def configure() {
-	sendEvent(name: "checkInterval", value: 7200, displayed: false)
+	sendEvent(name: "checkInterval", value: 2*60*60, displayed: false)
 
 	String zigbeeEui = swapEndianHex(device.hub.zigbeeEui)
 		log.debug "Configuring Reporting, IAS CIE, and Bindings."

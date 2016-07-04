@@ -82,7 +82,7 @@ def refresh() {
 }
 
 def configure() {
-    sendEvent(name: "checkInterval", value: 1200, displayed: false)
+    sendEvent(name: "checkInterval", value: 2*10*60, displayed: false)
 
     log.debug "Configuring Reporting and Bindings."
     zigbee.onOffConfig() + zigbee.simpleMeteringPowerConfig() + zigbee.electricMeasurementPowerConfig() + zigbee.onOffRefresh() + zigbee.simpleMeteringPowerRefresh() + zigbee.electricMeasurementPowerRefresh()
