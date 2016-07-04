@@ -226,6 +226,7 @@ def setLevel(value) {
 	log.debug "setLevel >> value: $value"
 	def valueaux = value as Integer
     def level = Math.max(Math.min(valueaux, 99), 0)
+    if (level > 0 && level < 60) {level = 60}
     def result = []
     def statusDelay = 5000
 	if (remoteDimFadeUpEnabled && state.lastLevel != null && level > state.lastLevel) 
