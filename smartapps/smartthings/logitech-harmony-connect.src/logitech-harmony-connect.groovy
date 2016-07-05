@@ -314,8 +314,6 @@ def installed() {
 }
 
 def updated() {
-	unsubscribe()
-  unschedule()
 	if (!state.accessToken) {
 		log.debug "About to create access token"
 		createAccessToken()
