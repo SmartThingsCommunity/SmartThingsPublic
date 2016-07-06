@@ -689,7 +689,7 @@ def parse(childDevice, description) {
             	log.warn "Parsing Body failed - trying again..."
                 poll()
             }
-			if (body instanceof java.util.HashMap || body instanceof groovy.json.internal.LazyMap) {
+            if (body instanceof java.util.HashMap) {
             	//poll response
                 def bulbs = getChildDevices()
                 for (bulb in body) {
@@ -830,22 +830,22 @@ def setColorTemperature(childDevice, huesettings) {
 
 def setColor(childDevice, huesettings) {
     log.debug "Executing 'setColor($huesettings)'"
-
+    
     def value = [:]
     def hue = null
     def sat = null
     def xy = null
-
+    
     if (huesettings.hex != null) {
         value.xy = getHextoXY(huesettings.hex)
     } else {
         if (huesettings.hue != null)
             value.hue = Math.min(Math.round(huesettings.hue * 65535 / 100), 65535)
-        if (huesettings.saturation != null)
+        if (huesettings.saturation != null)   
             value.sat = Math.min(Math.round(huesettings.saturation * 255 / 100), 255)
     }
-
-    // Default behavior is to turn light on
+    
+    // Default behavior is to turn light on 
     value.on = true
 
     if (huesettings.level != null) {
@@ -853,7 +853,7 @@ def setColor(childDevice, huesettings) {
             value.on = false
         else if (huesettings.level == 1)
             value.bri = 1
-        else
+        else 
             value.bri = Math.min(Math.round(huesettings.level * 255 / 100), 255)
     }
     value.alert = huesettings.alert ? huesettings.alert : "none"
