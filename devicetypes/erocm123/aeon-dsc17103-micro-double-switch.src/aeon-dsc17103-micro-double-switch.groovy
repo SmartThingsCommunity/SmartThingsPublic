@@ -70,7 +70,7 @@ tiles(scale: 2){
     standardTile("configure", "device.switch", inactiveLabel: false, decoration: "flat", width: 2, height: 2) {
 		state "default", label:"", action:"configure", icon:"st.secondary.configure"
     }
-    standardTile("reset", "device.energy", inactiveLabel: false, decoration: "flat", width: 2, height: 2) {
+    valueTile("reset", "device.energy", inactiveLabel: false, decoration: "flat", width: 2, height: 2) {
 		state "default", label:'reset kWh', action:"reset"
 	}
     valueTile("energy", "device.energy", decoration: "flat", width: 2, height: 2) {
