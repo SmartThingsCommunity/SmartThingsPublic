@@ -5,6 +5,7 @@
  *	Author: Eric Maycock (erocm123)
  *	email: erocmail@gmail.com
  *	Date: 2016-07-06
+ *  Copyright Eric Maycock
  * 	 
  *	Device Type supports all the feautres of the DSC17103 device including both switches, 
  *	current energy consumption in W and cumulative energy consumption in kWh.
