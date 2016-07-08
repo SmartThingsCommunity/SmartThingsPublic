@@ -15,7 +15,7 @@
  */
 
 metadata {
-    definition (name: "Cree Bulb", namespace: "smartthings", author: "SmartThings") {
+    definition (name: "Cree Bulb", namespace: "smartthings", author: "SmartThings", category: "C6") {
 
         capability "Actuator"
         capability "Configuration"
@@ -23,6 +23,7 @@ metadata {
         capability "Refresh"
         capability "Switch"
         capability "Switch Level"
+        capability "Health Check"
 
         fingerprint profileId: "C05E", inClusters: "0000,0003,0004,0005,0006,0008,1000", outClusters: "0000,0019"
     }
@@ -94,6 +95,8 @@ def poll() {
 }
 
 def configure() {
+    sendEvent(name: "checkInterval", value: 2*10*60, displayed: false)
+
     log.debug "Configuring Reporting and Bindings."
     zigbee.onOffConfig() + zigbee.levelConfig() + zigbee.onOffRefresh() + zigbee.levelRefresh()
 }
