@@ -16,7 +16,7 @@
  
 metadata {
 	definition (name: "NYCE Open/Closed Sensor", namespace: "smartthings", author: "NYCE", category: "C2") {
-    	capability "Battery"
+        capability "Battery"
 		capability "Configuration"
         capability "Contact Sensor"
 		capability "Refresh"
