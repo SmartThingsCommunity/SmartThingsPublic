@@ -49,6 +49,7 @@ metadata {
 		}
 
 	} //end simulator
+
     
     tiles (scale: 2){      
 		multiAttributeTile(name:"switch", type: "lighting", width: 6, height: 4, canChangeIcon: true){
@@ -82,16 +83,23 @@ metadata {
 				[value: 90, color: "#fb3a01"],
 				[value: 95, color: "#fb0801"]  // red=hot
 			]
-		} // icons to use would be st.Weather.weather2 or st.alarm.temperature.normal - see http://scripts.3dgo.net/smartthings/icons/ for a list of icons
+		}
+
+        // icons to use would be st.Weather.weather2 or st.alarm.temperature.normal - see http://scripts.3dgo.net/smartthings/icons/ for a list of icons
 		valueTile("illuminance", "device.illuminance", width: 2, height: 2, inactiveLabel: false) {
 // jrs 4/7/2015 - Null on display
-//			state "luminosity", label:'${currentValue} ${unit}'
-			state "luminosity", label:'${currentValue}%', unit:"%", icon:"",
+			//state "luminosity", label:'${currentValue} ${unit}'
+			state "luminosity", label:'${currentValue}', unit:'${currentValue}', icon:"",
 			backgroundColors:[
 				[value: 25, color: "#404040"],
 				[value: 50, color: "#808080"],
 				[value: 75, color: "#a0a0a0"],
-				[value: 90, color: "#e0e0e0"]
+				[value: 90, color: "#e0e0e0"],
+                //lux measurement values
+                [value: 150, color: "#404040"],
+				[value: 300, color: "#808080"],
+				[value: 600, color: "#a0a0a0"],
+				[value: 900, color: "#e0e0e0"]
 			]
 		}
 		standardTile("refresh", "device.switch", inactiveLabel: false, decoration: "flat", width: 2, height: 2) {
@@ -101,11 +109,14 @@ metadata {
 			state "configure", label:'', action:"configuration.configure", icon:"st.secondary.configure"
 		}
 
-		main (["motion", "switch", "temperature"])
+		main (["temperature","motion", "switch"])
 		details(["switch", "motion", "temperature", "illuminance", "refresh", "configure"])
 	}  // end tiles
     
 	preferences {
+       input("lum", "enum", title:"Illuminance Measurement", description: "Percent or Lux", defaultValue: 1 ,required: true, displayDuringSetup: true, options:
+          [1:"Percent",
+           2:"Lux"])
        input "OnTime",  "number", title: "No Motion Interval", description: "N minutes lights stay on after no motion detected [0, 1-127]", range: "0..127", defaultValue: 10, displayDuringSetup: true, required: false
        input "OnLevel", "number", title: "Dimmer Onlevel", description: "Dimmer OnLevel for associated node 2 lights [-1, 0, 1-99]", range: "-1..99", defaultValue: -1, displayDuringSetup: true, required: false
        input "LiteMin", "number", title: "Luminance Report Frequency", description: "Luminance report sent every N minutes [0-127]", range: "0..127", defaultValue: 10, displayDuringSetup: true, required: false
@@ -127,7 +138,7 @@ def parse(String description){
     
     def statusTextmsg = ""
     if (device.currentState('temperature') != null && device.currentState('illuminance') != null) {
-		statusTextmsg = "Temperature is ${device.currentState('temperature').value} °F\nRelative Luminance is ${device.currentState('illuminance').value}%"
+		statusTextmsg = "Temperature is ${device.currentState('temperature').value} °F - Relative Luminance is ${device.currentState('illuminance').value}%"
     	sendEvent("name":"statusText", "value":statusTextmsg, displayed:false)
    		 //log.debug statusTextmsg
 	}
@@ -151,7 +162,8 @@ def zwaveEvent(physicalgraph.zwave.commands.sensormultilevelv5.SensorMultilevelR
 			break;
 		case 0x03 :				// SENSOR_TYPE_LUMINANCE_VERSION_1
 			map.value = cmd.scaledSensorValue.toInteger().toString()
-			map.unit = "%"
+            if(lum == "" || lum == null || lum == 1) map.unit = "%"
+            else map.unit = "lux"
 			map.name = "illuminance"
 			log.debug "Luminance report"
 			break;

@@ -48,12 +48,16 @@ metadata {
 }
 
 def parse(String description) {
-	log.debug "Parsing '${description}'"
+  log.debug "Parsing '${description}'"
+  def value = zigbee.parse(description)?.text
+  log.debug "Parse: $value"
   def descMap = zigbee.parseDescriptionAsMap(description)
-	def results = []
+  def results = []
   if (description?.startsWith('on/off: '))
 		results = parseCustomMessage(description)
-	return results;
+  if (description?.startsWith('catchall:')) 
+		results = parseCatchAllMessage(description)
+  return results;
 }
 
 def configure(){
@@ -61,6 +65,75 @@ def configure(){
 }
 
 def refresh(){
+}
+
+private boolean shouldProcessMessage(cluster) {
+	// 0x0B is default response indicating message got through
+	// 0x07 is bind message
+	boolean ignoredMessage = cluster.profileId != 0x0104 ||
+	cluster.command == 0x0B ||
+	cluster.command == 0x07 ||
+	(cluster.data.size() > 0 && cluster.data.first() == 0x3e)
+	return !ignoredMessage
+}
+
+private Map parseCatchAllMessage(String description) {
+	Map resultMap = [:]
+	def cluster = zigbee.parse(description)
+	log.debug cluster
+	if (cluster) {
+		switch(cluster.clusterId) {
+			case 0x0000:
+			resultMap = getBatteryResult(cluster.data.last())
+			break
+
+			case 0xFC02:
+			log.debug 'ACCELERATION'
+			break
+
+			case 0x0402:
+			log.debug 'TEMP'
+				// temp is last 2 data values. reverse to swap endian
+				String temp = cluster.data[-2..-1].reverse().collect { cluster.hex1(it) }.join()
+				def value = getTemperature(temp)
+				resultMap = getTemperatureResult(value)
+				break
+		}
+	}
+
+	return resultMap
+}
+
+private Map getBatteryResult(rawValue) {
+	log.debug 'Battery'
+	def linkText = getLinkText(device)
+
+	log.debug rawValue
+
+	def result = [
+		name: 'battery',
+		value: '--'
+	]
+    result.descriptionText = "${linkText} battery was ${rawValue}%"
+	def volts = rawValue / 10
+	def descriptionText
+    log.debug volts
+
+	if (rawValue == 0) {}
+	else {
+		if (volts > 3.5) {
+			result.descriptionText = "${linkText} battery has too much power (${volts} volts)."
+		}
+		else if (volts > 0){
+			def minVolts = 2.1
+			def maxVolts = 3.0
+			def pct = (volts - minVolts) / (maxVolts - minVolts)
+			result.value = Math.min(100, (int) pct * 100)
+			result.descriptionText = "${linkText} battery was ${result.value}%"
+		}
+	}
+
+	return result
 }
 
 private Map parseCustomMessage(String description) {

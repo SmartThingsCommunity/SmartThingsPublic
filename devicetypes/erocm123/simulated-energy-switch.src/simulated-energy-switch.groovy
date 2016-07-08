@@ -56,6 +56,7 @@ def parse(Map description) {
     def eventMap
     if (description.type == null) eventMap = [name:"$description.name", value:"$description.value"]
     else eventMap = [name:"$description.name", value:"$description.value", type:"$description.type"]
+    log.debug  eventMap
     createEvent(eventMap)
 }
 

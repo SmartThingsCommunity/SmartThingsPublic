@@ -28,22 +28,21 @@
 		capability "Sensor"
 		capability "Battery"
         capability "Refresh"
+        capability "Tamper Alert"
         
         command "resetBatteryRuntime"
 		
-		attribute "tamper", "enum", ["detected", "clear"]
         attribute   "needUpdate", "string"
         
+        fingerprint deviceId: "0x2101", inClusters: "0x5E,0x86,0x72,0x59,0x85,0x73,0x71,0x84,0x80,0x30,0x31,0x70,0xEF,0x5A,0x98,0x7A"
         fingerprint deviceId: "0x2101", inClusters: "0x5E,0x86,0x72,0x59,0x85,0x73,0x71,0x84,0x80,0x30,0x31,0x70,0x7A,0x5A,0xEF" 
-		}
-        preferences {
+        fingerprint mfr: "0134", prod: "0258", model: "0100"
+	}
+    preferences {
         
         input description: "Once you change values on this page, the \"Synced\" Status will become \"Pending\" status. You can then force the sync by triple clicking the device button or just wait for the next WakeUp (60 minutes).", displayDuringSetup: false, type: "paragraph", element: "paragraph"
         
 		generate_preferences(configuration_model())
-        /*input "secureSwitch", "enum", title: "Security", displayDuringSetup: false, required: false, options: [
-                "0":"No",
-                "1":"Yes"]*/
         
     }
 	simulator {
@@ -68,7 +67,7 @@
         standardTile("motion","device.motion", width: 2, height: 2) {
             	state "active",label:'motion',icon:"st.motion.motion.active",backgroundColor:"#53a7c0"
                 state "inactive",label:'no motion',icon:"st.motion.motion.inactive",backgroundColor:"#ffffff"
-			}
+		}
 		valueTile("temperature","device.temperature", width: 2, height: 2) {
             	state "temperature",label:'${currentValue}°',backgroundColors:[
                 	[value: 32, color: "#153591"],
@@ -79,10 +78,10 @@
 					[value: 92, color: "#d04e00"],
 					[value: 98, color: "#bc2323"]
 				]
-			}
+		}
 		valueTile("humidity","device.humidity", width: 2, height: 2) {
            	state "humidity",label:'RH ${currentValue} %',unit:""
-			}
+		}
 		valueTile(
         	"illuminance","device.illuminance", width: 2, height: 2) {
             	state "luminosity",label:'${currentValue} ${unit}', unit:"lux", backgroundColors:[
@@ -95,22 +94,20 @@
 					[value: 128, color: "#F3F2E9"],
                     [value: 1000, color: "#FFFFFF"]
 				]
-			}
+		}
 		valueTile(
         	"ultravioletIndex","device.ultravioletIndex", width: 2, height: 2) {
 				state "ultravioletIndex",label:'${currentValue} UV INDEX',unit:""
-			}
+		}
 		standardTile("acceleration", "device.acceleration", width: 2, height: 2) {
 			state("active", label:'tamper', icon:"st.motion.acceleration.active", backgroundColor:"#f39c12")
 			state("inactive", label:'clear', icon:"st.motion.acceleration.inactive", backgroundColor:"#ffffff")
 		}
-		/*standardTile(
-        	"tamper","device.tamper", width: 2, height: 2) {
-				state "tamper",label:'tamper',icon:"st.motion.motion.active",backgroundColor:"#ff0000"
-                state "clear",label:'clear',icon:"st.motion.motion.inactive",backgroundColor:"#00ff00"
-			}*/
-		valueTile(
-			"battery", "device.battery", decoration: "flat", width: 2, height: 2) {
+        valueTile("tamper", "device.tamper", decoration: "flat", width: 2, height: 2) {
+			state("detected", label:'tamper active', backgroundColor:"#f39c12")
+			state("clear", label:'tamper clear', backgroundColor:"#53a7c0")
+		}
+		valueTile("battery", "device.battery", decoration: "flat", width: 2, height: 2) {
 			state "battery", label:'${currentValue}% battery', unit:""
 		}
         valueTile(
@@ -126,14 +123,21 @@
         }
         valueTile(
 			"batteryRuntime", "device.batteryRuntime", decoration: "flat", width: 2, height: 2) {
-			state "batteryRuntime", label:'Battery Runtime: ${currentValue} Tap to reset counter', unit:"", action:"resetBatteryRuntime"
+			state "batteryRuntime", label:'Battery: ${currentValue} Double tap to reset counter', unit:"", action:"resetBatteryRuntime"
+		}
+        valueTile(
+			"statusText2", "device.statusText2", decoration: "flat", width: 2, height: 2) {
+			state "statusText2", label:'${currentValue}', unit:"", action:"resetBatteryRuntime"
 		}
         
 		main([
         	"main", "motion"
             ])
 		details([
-        	"main","humidity","illuminance","ultravioletIndex","motion","acceleration","battery", "refresh", "configure", "currentFirmware", "batteryRuntime"
+        	"main",
+            "humidity","illuminance","ultravioletIndex",
+            "motion","tamper","battery", 
+            "refresh", "configure", "statusText2", 
             ])
 	}
 }
@@ -163,17 +167,8 @@ def parse(String description)
 			}
         break
 	}
-
-    if(state.batteryRuntimeStart != null){
-        result << createEvent(name:"batteryRuntime", value:getBatteryRuntime(), displayed:false)
-        if (device.currentValue('currentFirmware') != null){
-            result << createEvent(name:"statusText", value: "Battery: ${getBatteryRuntime()} - Firmware: v${device.currentValue('currentFirmware')}", displayed:false)
-        } else {
-            result << createEvent(name:"statusText", value: "Battery: ${getBatteryRuntime()}", displayed:false)
-        }
-    } else {
-        state.batteryRuntimeStart = now()
-    }
+    
+    updateStatus()
 
 	if ( result[0] != null ) { result }
 }
@@ -195,51 +190,22 @@ def zwaveEvent(physicalgraph.zwave.commands.securityv1.SecurityCommandsSupported
 
 def zwaveEvent(physicalgraph.zwave.commands.configurationv2.ConfigurationReport cmd) {
     if (cmd.parameterNumber.toInteger() == 81 && cmd.configurationValue == [255]) {
-           update_current_properties([parameterNumber: "81", configurationValue: [1]])
-         log.debug "${device.displayName} parameter '${cmd.parameterNumber}' with a byte size of '${cmd.size}' is set to '1'"
-       } else {
-           update_current_properties(cmd)
-           log.debug "${device.displayName} parameter '${cmd.parameterNumber}' with a byte size of '${cmd.size}' is set to '${cmd2Integer(cmd.configurationValue)}'"
-        }
-    //if(cmd.parameterNumber.toInteger() == 111 && settings."111".toInteger() < 3600) {
-       //log.debug "Device is battery powered and interval is set to < 3600"
-       //log.debug "${device.displayName} parameter '${cmd.parameterNumber}' with a byte size of '${cmd.size}' is set to '${cmd2Integer(cmd.configurationValue)}'"
-    //} else {
-       //if (cmd.parameterNumber.toInteger() == 81 && cmd.configurationValue == [255]) {
-           //update_current_properties([parameterNumber: "81", configurationValue: [1]])
-           //log.debug "${device.displayName} parameter '${cmd.parameterNumber}' with a byte size of '${cmd.size}' is set to '1'"
-       //} else {
-           //update_current_properties(cmd)
-           //log.debug "${device.displayName} parameter '${cmd.parameterNumber}' with a byte size of '${cmd.size}' is set to '${cmd2Integer(cmd.configurationValue)}'"
-       //}
-       
-    
-    /*if(cmd.parameterNumber.toInteger() == 111 &&settings."101".toInteger() == 241 && settings."111".toInteger() < 3600 && device.currentValue("currentFirmware") == "1.08") {
-       log.debug "Device is battery powered and interval is set to < 3600"
+        update_current_properties([parameterNumber: "81", configurationValue: [1]])
+        log.debug "${device.displayName} parameter '${cmd.parameterNumber}' with a byte size of '${cmd.size}' is set to '1'"
     } else {
-       update_current_properties(cmd)
-       log.debug "${device.displayName} parameter '${cmd.parameterNumber}' with a byte size of '${cmd.size}' is set to '${cmd2Integer(cmd.configurationValue)}'"
-    }*/
-    
+        update_current_properties(cmd)
+        log.debug "${device.displayName} parameter '${cmd.parameterNumber}' with a byte size of '${cmd.size}' is set to '${cmd2Integer(cmd.configurationValue)}'"
+    }
 }
 
 def zwaveEvent(physicalgraph.zwave.commands.wakeupv1.WakeUpIntervalReport cmd)
 {
 	log.debug "WakeUpIntervalReport ${cmd.toString()}"
     state.wakeInterval = cmd.seconds
-    //if(settings."111".toInteger() < 3600) {
-    //   update_current_properties([parameterNumber: "111", configurationValue: [cmd.seconds]])
-    //}
-    //if(settings."101".toInteger() == 241 && settings."111".toInteger() < 3600 && device.currentValue("currentFirmware") == "1.08") {
-    //   update_current_properties([parameterNumber: "111", configurationValue: [cmd.seconds]])
-    //}
-    //else if(settings."111".toInteger() < 3600 && device.currentValue("currentFirmware") == "1.08") {
-    //   update_current_properties([parameterNumber: "111", configurationValue: [cmd.seconds]])
-    //}  
 }
 
 def zwaveEvent(physicalgraph.zwave.commands.batteryv1.BatteryReport cmd) {
-log.debug "Battery Report: $cmd"
+    log.debug "Battery Report: $cmd"
 	def map = [ name: "battery", unit: "%" ]
 	if (cmd.batteryLevel == 0xFF) {
 		map.value = 1
@@ -266,7 +232,7 @@ def zwaveEvent(physicalgraph.zwave.commands.sensormultilevelv5.SensorMultilevelR
 		case 3:
 			map.name = "illuminance"
             state.realLuminance = cmd.scaledSensorValue.toInteger()
-			map.value = getAdjustedIlluminance(cmd.scaledSensorValue.toInteger())
+			map.value = getAdjustedLuminance(cmd.scaledSensorValue.toInteger())
 			map.unit = "lux"
 			break;
         case 5:
@@ -314,10 +280,12 @@ def zwaveEvent(physicalgraph.zwave.commands.notificationv3.NotificationReport cm
 		switch (cmd.event) {
 			case 0:
 				result << motionEvent(0)
-				result << createEvent(name: "acceleration", value: "inactive", descriptionText: "$device.displayName tamper cleared")
+				result << createEvent(name: "tamper", value: "clear", descriptionText: "$device.displayName tamper cleared")
+                result << createEvent(name: "acceleration", value: "inactive", descriptionText: "$device.displayName tamper cleared")
 				break
 			case 3:
-				result << createEvent(name: "acceleration", value: "active", descriptionText: "$device.displayName was moved")
+				result << createEvent(name: "tamper", value: "detected", descriptionText: "$device.displayName was moved")
+                result << createEvent(name: "acceleration", value: "active", descriptionText: "$device.displayName was moved")
 				break
 			case 7:
 				result << motionEvent(1)
@@ -335,13 +303,12 @@ def zwaveEvent(physicalgraph.zwave.commands.wakeupv1.WakeUpNotification cmd)
 
     def request = sync_properties()
 
-    /*if(request != null){
+    if(request != []){
        response(commands(request) + ["delay 5000", zwave.wakeUpV1.wakeUpNoMoreInformation().format()])
-    }else{
+    } else {
        log.debug "No commands to send"
        response([zwave.wakeUpV1.wakeUpNoMoreInformation().format()])
-    }*/
-    response(commands(request) + ["delay 5000", zwave.wakeUpV1.wakeUpNoMoreInformation().format()])
+    }
 }
 
 def zwaveEvent(physicalgraph.zwave.commands.firmwareupdatemdv2.FirmwareMdReport cmd){
@@ -368,18 +335,11 @@ def zwaveEvent(physicalgraph.zwave.Command cmd) {
     log.debug "Unknown Z-Wave Command: ${cmd.toString()}"
 }
 
-private getRoundedInterval(number) {
-    double tempDouble = (number / 60)
-    if (tempDouble == tempDouble.round())
-       return (tempDouble * 60).toInteger()
-    else 
-       return ((tempDouble.round() + 1) * 60).toInteger()
-}
-
 def refresh() {
    	log.debug "Aeon Multisensor 6 refresh()"
+
     def request = []
-    if (state.lastRefresh != null && now() - state.lastRefresh < 3000) {
+    if (state.lastRefresh != null && now() - state.lastRefresh < 5000) {
         log.debug "Refresh Double Press"
         def configuration = parseXml(configuration_model())
         configuration.Value.each
@@ -392,11 +352,11 @@ def refresh() {
         request << zwave.wakeUpV1.wakeUpIntervalGet()
     }
     state.lastRefresh = now()
-    request << zwave.wakeUpV1.wakeUpIntervalGet()
-    request << zwave.configurationV1.configurationGet(parameterNumber: 111)
+    request << zwave.batteryV1.batteryGet()
     request << zwave.sensorMultilevelV5.sensorMultilevelGet(sensorType:1, scale:1)
     request << zwave.sensorMultilevelV5.sensorMultilevelGet(sensorType:3, scale:1)
     request << zwave.sensorMultilevelV5.sensorMultilevelGet(sensorType:5, scale:1)
+    request << zwave.sensorMultilevelV5.sensorMultilevelGet(sensorType:27, scale:1)
     commands(request)
 }
 
@@ -411,8 +371,7 @@ def configure() {
 def updated()
 {
     log.debug "updated() is being called"
-    // Only used to toggle the status if update is needed
-    if(settings."101" == "240") sendEvent(name:"battery", value: "USB Powered 100")
+    if(settings."101" != null && settings."101" == "240") sendEvent(name:"battery", value: "USB Powered 100")
     else sendEvent(name:"battery", value: "Waiting for report ?")
     ["201", "202", "203", "204"].each { i ->
         if(settings.i == null)
@@ -425,14 +384,16 @@ def updated()
        resetBatteryRuntime()
        device.updateSetting("0", false)
     }
-       
-    if(settings.secureSwitch == "0") state.sec = 0
-    updateDataValue("firmware", "")
+    
+    if (state.realTemperature != null) sendEvent(name:"temperature", value: getAdjustedTemp(state.realTemperature))
+    if (state.realHumidity != null) sendEvent(name:"humidity", value: getAdjustedHumidity(state.realHumidity))
+    if (state.realLuminance != null) sendEvent(name:"illuminance", value: getAdjustedLuminance(state.realLuminance))
+    if (state.realUV != null) sendEvent(name:"ultravioletIndex", value: getAdjustedUV(state.realUV))
+    
+    updateStatus()
+    
     update_needed_settings()
-    if (state.realTemperature) sendEvent(name:"temperature", value: getAdjustedTemp(state.realTemperature))
-    if (state.realHumidity) sendEvent(name:"humidity", value: getAdjustedHumidity(state.realHumidity))
-    if (state.realLuminance) sendEvent(name:"illuminance", value: getAdjustedLuminance(state.realLuminance))
-    if (state.realUV) sendEvent(name:"ultravioletIndex", value: getAdjustedUV(state.realUV))
+    
     sendEvent(name:"needUpdate", value: device.currentValue("needUpdate"), displayed:false, isStateChange: true)
 }
 
@@ -451,21 +412,20 @@ def sync_properties()
     configuration.Value.each
     {
         if ( "${it.@setting_type}" == "zwave" ) {
-        if (! currentProperties."${it.@index}" || currentProperties."${it.@index}" == null)
-        {
-            if(it.@index == "81"){
-                if(device.currentValue("currentFirmware") == "1.08"){
+            if (! currentProperties."${it.@index}" || currentProperties."${it.@index}" == null)
+            {
+                if(it.@index == "81"){
+                    if(device.currentValue("currentFirmware") == "1.08"){
+                        log.debug "Looking for current value of parameter ${it.@index}"
+                        cmds << zwave.configurationV1.configurationGet(parameterNumber: it.@index.toInteger())
+                    }
+                } else {
                     log.debug "Looking for current value of parameter ${it.@index}"
                     cmds << zwave.configurationV1.configurationGet(parameterNumber: it.@index.toInteger())
                 }
-            } else {
-                log.debug "Looking for current value of parameter ${it.@index}"
-                cmds << zwave.configurationV1.configurationGet(parameterNumber: it.@index.toInteger())
             }
         }
-        }
     }
-    
     
     if (device.currentValue("needUpdate") == "YES") { cmds += update_needed_settings() }
     return cmds
@@ -528,36 +488,9 @@ def update_current_properties(cmd)
             sendEvent(name:"needUpdate", value:"YES", displayed:false, isStateChange: true)
         }
     }
-    
+
     state.currentProperties = currentProperties
 }
-
-private getGoodWake(){
-def wakeValue
-if (device.currentValue("currentFirmware") == "1.08"){
-                          if (settings."101".toInteger() == 241){   
-                             if (settings."111".toInteger() <= 3600){
-                                wakeValue = getRoundedInterval(settings."111")
-                             } else {
-                                wakeValue = 3600
-                             }
-                          } else {
-                             wakeValue = 1800
-                          }
-                       } else {
-                          if (settings."101".toInteger() == 241){   
-                             if (settings."111".toInteger() <= 3600){
-                                wakeValue = getRoundedInterval(settings."111")
-                             } else {
-                                wakeValue = getRoundedInterval(settings."111".toInteger() % 2)
-                             }
-                          } else {
-                             wakeValue = 240
-                          }
-                       }
-                       return wakeValue.toInteger()
-}
-
 
 def update_needed_settings()
 {
@@ -566,78 +499,49 @@ def update_needed_settings()
      
     def configuration = parseXml(configuration_model())
     def isUpdateNeeded = "NO"
-    
-     
-           if(state.wakeInterval == null || state.wakeInterval != getGoodWake()){
-              isUpdateNeeded = "YES"
-              log.debug "Setting Wake Interval to ${getGoodWake()}"
-              cmds <<zwave.wakeUpV1.wakeUpIntervalSet(seconds: getGoodWake(), nodeid:zwaveHubNodeId)
-                    cmds << zwave.wakeUpV1.wakeUpIntervalGet()
-           }
-        
-            
-                
-                    
-    
+
+    if(state.wakeInterval == null || state.wakeInterval != getAdjustedWake()){
+        isUpdateNeeded = "YES"
+        log.debug "Setting Wake Interval to ${getAdjustedWake()}"
+        cmds <<zwave.wakeUpV1.wakeUpIntervalSet(seconds: getAdjustedWake(), nodeid:zwaveHubNodeId)
+        cmds << zwave.wakeUpV1.wakeUpIntervalGet()
+    }
+   
     configuration.Value.each
-    {   
-       
-        
+    {     
         if ("${it.@setting_type}" == "zwave"){
-        if (currentProperties."${it.@index}" == null && it.@index == "81")
-        {
-            if(device.currentValue("currentFirmware") == "1.08"){
+            if (currentProperties."${it.@index}" == null && it.@index == "81")
+            {
+                if(device.currentValue("currentFirmware") == "1.08"){
+                    log.debug "Current value of parameter ${it.@index} is unknown"
+                    isUpdateNeeded = "YES"
+                }
+            }
+            else if (currentProperties."${it.@index}" == null)
+            {
                 log.debug "Current value of parameter ${it.@index} is unknown"
                 isUpdateNeeded = "YES"
             }
-        }
-        else if (currentProperties."${it.@index}" == null)
-        {
-            log.debug "Current value of parameter ${it.@index} is unknown"
-            isUpdateNeeded = "YES"
-        }
-        else if (settings."${it.@index}" != null && convertParam(it.@index.toInteger(), cmd2Integer(currentProperties."${it.@index}")) != settings."${it.@index}".toInteger() && it.@index != "201" && it.@index != "202" && it.@index != "203" && it.@index != "204" && it.@index != "111")
-        { 
-            isUpdateNeeded = "YES"
-            
-            log.debug "Parameter ${it.@index} will be updated to " + settings."${it.@index}"
-            def convertedConfigurationValue = convertParam(it.@index.toInteger(), settings."${it.@index}".toInteger())
-            switch(it.@byteSize)
-            {
-                case "1":
-                    cmds << zwave.configurationV1.configurationSet(configurationValue: [convertedConfigurationValue], parameterNumber: it.@index.toInteger(), size: 1)
-                break
-                case "2":
-                    def short valueLow   = convertedConfigurationValue & 0xFF
-                    def short valueHigh = (convertedConfigurationValue >> 8) & 0xFF
-                    def value = [valueHigh, valueLow]
-                    cmds << zwave.configurationV1.configurationSet(configurationValue: integer2Cmd(convertedConfigurationValue, 2), parameterNumber: it.@index.toInteger(), size: 2)
-                break
-                case "4":
-                    def short value1 = convertedConfigurationValue & 0xFF
-                    def short value2 = (convertedConfigurationValue >> 8) & 0xFF
-                    def short value3 = (convertedConfigurationValue >> 16) & 0xFF
-                    def short value4 = (convertedConfigurationValue >> 24) & 0xFF
-                    def value = [value4, value3, value2, value1]
-                	cmds << zwave.configurationV1.configurationSet(configurationValue: integer2Cmd(convertedConfigurationValue, 4), parameterNumber: it.@index.toInteger(), size: 4)
+            else if (settings."${it.@index}" != null && convertParam(it.@index.toInteger(), cmd2Integer(currentProperties."${it.@index}")) != settings."${it.@index}".toInteger() && it.@index != "201" && it.@index != "202" && it.@index != "203" && it.@index != "204" && it.@index != "111")
+            { 
+                isUpdateNeeded = "YES"
 
-                break
-            
+                log.debug "Parameter ${it.@index} will be updated to " + settings."${it.@index}"
+                def convertedConfigurationValue = convertParam(it.@index.toInteger(), settings."${it.@index}".toInteger())
+                cmds << zwave.configurationV1.configurationSet(configurationValue: integer2Cmd(convertedConfigurationValue, it.@byteSize.toInteger()), parameterNumber: it.@index.toInteger(), size: it.@byteSize.toInteger())
+                cmds << zwave.configurationV1.configurationGet(parameterNumber: it.@index.toInteger())
             } 
-            cmds << zwave.configurationV1.configurationGet(parameterNumber: it.@index.toInteger())
-        } 
-        
-        else if (it.@index == "111" && convertParam(it.@index.toInteger(), cmd2Integer(currentProperties."${it.@index}")) != getRoundedInterval(settings."111".toInteger()))
-        {   
-            isUpdateNeeded = "YES"
-            
-            log.debug "Parameter ${it.@index} will be updated to " + getRoundedInterval(settings."${it.@index}")
-            cmds << zwave.configurationV1.configurationSet(configurationValue: integer2Cmd(getRoundedInterval(settings."111".toInteger()), 4), parameterNumber: it.@index.toInteger(), size: 4)
-            cmds << zwave.configurationV1.configurationGet(parameterNumber: it.@index.toInteger())
-        }}
+            else if (settings."${it.@index}" != null && it.@index == "111" && convertParam(it.@index.toInteger(), cmd2Integer(currentProperties."${it.@index}")) != getRoundedInterval(settings."111".toInteger()))
+            {   
+                isUpdateNeeded = "YES"
+
+                log.debug "Parameter ${it.@index} will be updated to " + getRoundedInterval(settings."${it.@index}")
+                cmds << zwave.configurationV1.configurationSet(configurationValue: integer2Cmd(getRoundedInterval(settings."111".toInteger()), 4), parameterNumber: it.@index.toInteger(), size: 4)
+                cmds << zwave.configurationV1.configurationGet(parameterNumber: it.@index.toInteger())
+            }
+        }
     }
     sendEvent(name:"needUpdate", value: isUpdateNeeded, displayed:false, isStateChange: true)
-
     return cmds
 }
 
@@ -737,18 +641,18 @@ def generate_preferences(configuration_model)
 }
 
 private getBatteryRuntime() {
-  def currentmillis = now() - state.batteryRuntimeStart
-  def days=0
-  def hours=0
-  def mins=0
-  def secs=0
-  secs = (currentmillis/1000).toInteger() 
-  mins=(secs/60).toInteger() 
-  hours=(mins/60).toInteger() 
-  days=(hours/24).toInteger() 
-  secs=(secs-(mins*60)).toString().padLeft(2, '0') 
-  mins=(mins-(hours*60)).toString().padLeft(2, '0') 
-  hours=(hours-(days*24)).toString().padLeft(2, '0') 
+   def currentmillis = now() - state.batteryRuntimeStart
+   def days=0
+   def hours=0
+   def mins=0
+   def secs=0
+   secs = (currentmillis/1000).toInteger() 
+   mins=(secs/60).toInteger() 
+   hours=(mins/60).toInteger() 
+   days=(hours/24).toInteger() 
+   secs=(secs-(mins*60)).toString().padLeft(2, '0') 
+   mins=(mins-(hours*60)).toString().padLeft(2, '0') 
+   hours=(hours-(days*24)).toString().padLeft(2, '0') 
  
 
   if (days>0) { 
@@ -756,6 +660,44 @@ private getBatteryRuntime() {
   } else {
       return "$hours:$mins:$secs"
   }
+}
+
+private getRoundedInterval(number) {
+    double tempDouble = (number / 60)
+    if (tempDouble == tempDouble.round())
+       return (tempDouble * 60).toInteger()
+    else 
+       return ((tempDouble.round() + 1) * 60).toInteger()
+}
+
+private getAdjustedWake(){
+    def wakeValue
+    if (device.currentValue("currentFirmware") != null && settings."101" != null && settings."111" != null){
+        if (device.currentValue("currentFirmware") == "1.08"){
+            if (settings."101".toInteger() == 241){   
+                if (settings."111".toInteger() <= 3600){
+                    wakeValue = getRoundedInterval(settings."111")
+                } else {
+                    wakeValue = 3600
+                }
+            } else {
+                wakeValue = 1800
+            }
+        } else {
+            if (settings."101".toInteger() == 241){   
+                if (settings."111".toInteger() <= 3600){
+                    wakeValue = getRoundedInterval(settings."111")
+                } else {
+                    wakeValue = getRoundedInterval(settings."111".toInteger() % 2)
+                }
+            } else {
+                wakeValue = 240
+            }
+        }
+    } else {
+        wakeValue = 3600
+    }
+    return wakeValue.toInteger()
 }
 
 private getAdjustedTemp(value) {
@@ -782,7 +724,7 @@ private getAdjustedHumidity(value) {
     
 }
 
-private getAdjustedLuminanace(value) {
+private getAdjustedLuminance(value) {
     
     value = Math.round((value as Double) * 100) / 100
 
@@ -807,8 +749,39 @@ private getAdjustedUV(value) {
 }
 
 def resetBatteryRuntime() {
-    state.batteryRuntimeStart = now()
-    sendEvent(name:"batteryRuntime", value:getBatteryRuntime())
+    if (state.lastReset != null && now() - state.lastReset < 5000) {
+        log.debug "Reset Double Press"
+        state.batteryRuntimeStart = now()
+        updateStatus()
+    }
+    state.lastReset = now()
+}
+
+private updateStatus(){
+   def result = []
+   if(state.batteryRuntimeStart != null){
+        sendEvent(name:"batteryRuntime", value:getBatteryRuntime(), displayed:false)
+        if (device.currentValue('currentFirmware') != null){
+            sendEvent(name:"statusText2", value: "Firmware: v${device.currentValue('currentFirmware')} - Battery: ${getBatteryRuntime()} Double tap to reset", displayed:false)
+        } else {
+            sendEvent(name:"statusText2", value: "Battery: ${getBatteryRuntime()} Double tap to reset", displayed:false)
+        }
+    } else {
+        state.batteryRuntimeStart = now()
+    }
+
+    String statusText = ""
+    if(device.currentValue('humidity') != null)
+        statusText = "RH ${device.currentValue('humidity')}% - "
+    if(device.currentValue('illuminance') != null)
+        statusText = statusText + "LUX ${device.currentValue('illuminance')} - "
+    if(device.currentValue('ultravioletIndex') != null)
+        statusText = statusText + "UV ${device.currentValue('ultravioletIndex')} - "
+        
+    if (statusText != ""){
+        statusText = statusText.substring(0, statusText.length() - 2)
+        sendEvent(name:"statusText", value: statusText, displayed:false)
+    }
 }
 
 def configuration_model()
@@ -869,13 +842,12 @@ Note:
   </Value>
   <Value type="decimal" byteSize="1" index="201" label="Temperature offset" min="-10" max="10" value="">
     <Help>
-Range: -100~100
+Range: -10~10
 Default: 0
 Note: 
-1. The value contains one decimal point. E.g. if the value is set to 20, the calibration value is 2.0 F (EU/AU version) or 2.0 ℉(US version)
-2. The calibration value = standard value - measure value.
-E.g. If measure value =25.3℃ and the standard value = 23.2℃, so the calibration value = 23.2℃ - 25.3℃= -2.1℃.
-If the measure value =30.1℃ and the standard value = 33.2℃, so the calibration value = 33.2℃ - 30.1℃=3.1℃. 
+1. The calibration value = standard value - measure value.
+E.g. If measure value =85.3F and the standard value = 83.2F, so the calibration value = 83.2F - 85.3F = -2.1F.
+If the measure value =60.1F and the standard value = 63.2F, so the calibration value = 63.2F - 60.1℃ = 3.1F. 
     </Help>
   </Value>
   <Value type="decimal" byteSize="1" index="202" label="Humidity offset" min="-50" max="50" value="">
@@ -884,7 +856,7 @@ Range: -50~50
 Default: 0
 Note:
 The calibration value = standard value - measure value.
-E.g. If measure value = 80RH and the standard value = 75RH, so the calibration value = 75RH – 80RH= -5RH.
+E.g. If measure value = 80RH and the standard value = 75RH, so the calibration value = 75RH – 80RH = -5RH.
 If the measure value = 85RH and the standard value = 90RH, so the calibration value = 90RH – 85RH = 5RH. 
     </Help>
   </Value>
@@ -906,16 +878,6 @@ Note:
 The calibration value = standard value - measure value.
 E.g. If measure value = 9 and the standard value = 8, so the calibration value = 8 – 9 = -1.
 If the measure value = 7 and the standard value = 9, so the calibration value = 9 – 7 = 2. 
-    </Help>
-  </Value>
-  <Value type="boolean" index="0" label="Reset Battery Counter?" min="false" max="true" value="false" byteSize="0">
-    <Help>
-
-    </Help>	
-  </Value>
-  <Value type="none" byteSize="1" index="-1" label="Wake Interval" min="5" max="2678400" value="">
-    <Help>
-
     </Help>
   </Value>
 </configuration>

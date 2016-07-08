@@ -103,7 +103,7 @@ metadata {
     }
 
 	main(["switch"])
-	details(["switch", "levelSliderControl", "rgbSelector",
+	details(["switch", "levelSliderControl",
              "whiteSliderControl", "whiteValueTile",
              "fade", "flash", "candle",
              "rainbowflash", "rainbowfade", "refresh" ])
@@ -113,21 +113,30 @@ def installed() {
 	log.debug "installed()"
 	configure()
 }
+
 def updated() {
 	log.debug "updated()"
-    //configure()
+    configure()
 }
+
 def configure() {
 	log.debug "configure()"
 	log.debug "Configuring Device For SmartThings Use"
     state.previousColor="00ffffff"
     state.previousEffect="00000000"
+    if (ip != null && port != null) state.dni = setDeviceNetworkId(ip, port)
 }
+
 def parse(description) {
 	//log.debug "Parsing: ${description}"
     def map = [:]
     def descMap = parseDescriptionAsMap(description)
     //log.debug "descMap: ${descMap}"
+    
+    if (!state.MAC || state.MAC != descMap["mac"]) {
+		log.debug "Mac address of device found ${descMap["mac"]}"
+        updateDataValue("MAC", descMap["mac"])
+	}
     
     def body = new String(descMap["body"].decodeBase64())
     
@@ -174,7 +183,7 @@ private toggleTiles(value) {
 
 private getScaledColor(color) {
    def rgb = color.findAll(/[0-9a-fA-F]{2}/).collect { Integer.parseInt(it, 16) }
-   def maxNumber = 0
+   def maxNumber = 1
    for (int i = 0; i < 3; i++){
      if (rgb[i] > maxNumber) {
 	    maxNumber = rgb[i]
@@ -208,6 +217,7 @@ def on() {
        }
        else {
           setColor(pow: state.previousColor)
+          //setColor(pow: "ff000000")
        }
     }
     else {
@@ -241,29 +251,87 @@ def setHue(value) {
 	log.debug "setHue($value)"
 	setColor(hue: value)
 }
+def getWhite(value) {
+	log.debug "getWhite($value)"
+	def level = Math.min(value as Integer, 99)    
+    level = 255 * level/99 as Integer
+	log.debug "level: ${level}"
+	return hex(level)
+}
 def setColor(value) {
     log.debug "setColor being called with ${value}"
     def uri
+    
     
     if ( !(value.hex) && (value.saturation) && (value.hue)) {
 		def rgb = huesatToRGB(value.hue as Integer, value.saturation as Integer)
         value.hex = rgbToHex([r:rgb[0], g:rgb[1], b:rgb[2]])
     } 
     if ( value.level > 1 ) {
-		setLevel(value.level as Integer)
+		sendEvent("name":"level", "value": value.level)
     } 
 
-	if (value.pow) {
+    if (value.hue == 23 && value.saturation == 56) {
+       log.debug "setting color Soft White"
+       def whiteLevel = getWhite(value.level)
+       if (state.previousEffect != "00000000") {
+          uri = "/playbulb.php?device=${deviceId}&setting=${whiteLevel}000000${state.previousEffect}"
+       } else {
+          uri = "/playbulb.php?device=${deviceId}&setting=${whiteLevel}000000"
+       }
+       state.previousColor = "${whiteLevel}000000"
+    }
+    else if (value.hue == 52 && value.saturation == 19) {
+       log.debug "setting color White"
+       def whiteLevel = getWhite(value.level)
+       if (state.previousEffect != "00000000") {
+          uri = "/playbulb.php?device=${deviceId}&setting=${whiteLevel}000000${state.previousEffect}"
+       } else {
+          uri = "/playbulb.php?device=${deviceId}&setting=${whiteLevel}000000"
+       }
+       state.previousColor = "${whiteLevel}000000"
+    } 
+    else if (value.hue == 53 && value.saturation == 91) {
+       log.debug "setting color Daylight"
+       def whiteLevel = getWhite(value.level)
+       if (state.previousEffect != "00000000") {
+          uri = "/playbulb.php?device=${deviceId}&setting=${whiteLevel}000000${state.previousEffect}"
+       } else {
+          uri = "/playbulb.php?device=${deviceId}&setting=${whiteLevel}000000"
+       }
+       state.previousColor = "${whiteLevel}000000"
+    } 
+    else if (value.hue == 20 && value.saturation == 80) {
+       log.debug "setting color Warm White"
+       def whiteLevel = getWhite(value.level)
+       if (state.previousEffect != "00000000") {
+          uri = "/playbulb.php?device=${deviceId}&setting=${whiteLevel}000000${state.previousEffect}"
+       } else {
+          uri = "/playbulb.php?device=${deviceId}&setting=${whiteLevel}000000"
+       }
+       state.previousColor = "${whiteLevel}000000"
+    } 
+    else if (value.colorTemperature) {
+       log.debug "setting color with color temperature"
+	   def whiteLevel = getWhite(value.level)
+       if (state.previousEffect != "00000000") {
+          uri = "/playbulb.php?device=${deviceId}&setting=${whiteLevel}000000${state.previousEffect}"
+       } else {
+          uri = "/playbulb.php?device=${deviceId}&setting=${whiteLevel}000000"
+       }
+       state.previousColor = "${whiteLevel}000000"
+    }
+	else if (value.pow) {
        log.debug "setting color with MiPow setting"
        uri = "/playbulb.php?device=${deviceId}&setting=${value.pow}"
        state.previousColor = "${value.pow}"
     }
 	else if (value.hex) {
        log.debug "setting color with hex"
-       def rgb = value.hex.findAll(/[0-9a-fA-F]{2}/).collect { Integer.parseInt(it, 16) }
-       def myred = rgb[0] >=128 ? 255 : 0
-       def mygreen = rgb[1] >=128 ? 255 : 0
-       def myblue = rgb[2] >=128 ? 255 : 0
+       def rgb = hexToRgb(getScaledColor(value.hex.substring(1)))
+       def myred = rgb.r
+       def mygreen = rgb.g
+       def myblue = rgb.b
        def dimmedColor = getDimmedColor(rgbToHex([r:myred, g:mygreen, b:myblue]))
        if (state.previousEffect == "00000000") {
           uri = "/playbulb.php?device=${deviceId}&setting=00${dimmedColor.substring(1)}"
@@ -325,10 +393,10 @@ def setColor(value) {
     else {
        // A valid color was not chosen. Setting to white
        uri = "/playbulb.php?device=${deviceId}&setting=ff000000"
-       state.previousColor = "$ff000000"
+       state.previousColor = "ff000000"
     }
     
-    postAction(uri)
+    if (uri != null) postAction(uri)
 
 }
 
@@ -422,10 +490,9 @@ def rgbToHex(rgb) {
     hexColor
 }
 
-private postAction(uri){
-  setDeviceNetworkId(ip,port) 
+private postAction(uri){ 
   log.debug "uri ${uri}"
-  
+  updateDNI()
   def headers = getHeader()
   //log.debug("headders: " + headers) 
   
@@ -437,11 +504,23 @@ private postAction(uri){
   hubAction    
 }
 
-private setDeviceNetworkId(ip,port){
-  	def iphex = convertIPtoHex(ip)
-  	def porthex = convertPortToHex(port)
-  	device.deviceNetworkId = "$iphex:$porthex"
-  	log.debug "Device Network Id set to ${iphex}:${porthex}"
+private setDeviceNetworkId(ip, port = null){
+    def myDNI
+    if (port == null) {
+        myDNI = ip
+    } else {
+  	    def iphex = convertIPtoHex(ip)
+  	    def porthex = convertPortToHex(port)
+        myDNI = "$iphex:$porthex"
+    }
+    log.debug "Device Network Id set to ${myDNI}"
+    return myDNI
+}
+
+private updateDNI() { 
+    if (device.deviceNetworkId != state.dni) {
+        device.deviceNetworkId = state.dni
+    }
 }
 
 private getHostAddress() {

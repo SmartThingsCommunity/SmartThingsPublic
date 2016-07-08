@@ -53,7 +53,8 @@ metadata {
 
 def parse(String description) {
 	log.debug "description: $description"
-    
+    def value = zigbee.parse(description)?.text
+    log.debug "Parse: $value"
 	Map map = [:]
 	if (description?.startsWith('catchall:')) {
 		map = parseCatchAllMessage(description)
@@ -75,10 +76,40 @@ def parse(String description) {
 }
 
 private Map parseCatchAllMessage(String description) {
-    Map resultMap = [:]
-    def cluster = zigbee.parse(description)
+	Map resultMap = [:]
+	def cluster = zigbee.parse(description)
+	log.debug cluster
+	if (shouldProcessMessage(cluster)) {
+		switch(cluster.clusterId) {
+			case 0x0001:
+			resultMap = getBatteryResult(cluster.data.last())
+			break
 
-    return resultMap
+			case 0xFC02:
+			log.debug 'ACCELERATION'
+			break
+
+			case 0x0402:
+			log.debug 'TEMP'
+				// temp is last 2 data values. reverse to swap endian
+				String temp = cluster.data[-2..-1].reverse().collect { cluster.hex1(it) }.join()
+				def value = getTemperature(temp)
+				resultMap = getTemperatureResult(value)
+				break
+		}
+	}
+
+	return resultMap
+}
+
+private boolean shouldProcessMessage(cluster) {
+	// 0x0B is default response indicating message got through
+	// 0x07 is bind message
+	boolean ignoredMessage = cluster.profileId != 0x0104 ||
+	cluster.command == 0x0B ||
+	cluster.command == 0x07 ||
+	(cluster.data.size() > 0 && cluster.data.first() == 0x3e)
+	return !ignoredMessage
 }
 
 private Map parseReportAttributeMessage(String description) {

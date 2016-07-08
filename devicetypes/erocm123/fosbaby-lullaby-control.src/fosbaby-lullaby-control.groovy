@@ -47,7 +47,6 @@ metadata {
         input("port", "string", title:"Port", description: "88", required: true, displayDuringSetup: true)
         input("userName", "string", title:"User Name", required:true, displayDuringSetup:true)
         input("password", "password", title:"Password", required:false, displayDuringSetup:true)
-        //input("mac", "string", title: "MAC Address", description: "No spaces or colons", required: false, displayDuringSetup: true)
         input("enableDebugging", "boolean", title:"Enable Debugging", value:false, required:false, displayDuringSetup:false)
 	}
 
