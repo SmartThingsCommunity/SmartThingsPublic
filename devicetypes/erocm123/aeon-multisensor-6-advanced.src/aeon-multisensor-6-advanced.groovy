@@ -5,7 +5,7 @@
  *	github: Eric Maycock (erocm123)
  *	email: erocmail@gmail.com
  *	Date: 2016-07-07
- *  Copyright Eric Maycock
+ *	Copyright Eric Maycock
  *
  *  Code has elements from other community sources @CyrilPeponnet, @Robert_Vandervoort. Greatly reworked and 
  *  optimized for improved battery life (hopefully) :) and ease of advanced configuration. I tried to get it
