@@ -2647,8 +2647,8 @@ private def textVersion() {
     def lambdaVersion = state.lambdaCode ? "\n" + state.lambdaCode : ""
     return "${version}${lambdaVersion}"
 }
-private def versionInt(){ return 204 }
-private def versionLong(){ return "2.0.4" }
+private def versionInt(){ return 205 }
+private def versionLong(){ return "2.0.5" }
 private def textCopyright() {return "Copyright © 2016 Michael Struck" }
 private def textLicense() {
 	def text = "Licensed under the Apache License, Version 2.0 (the 'License'); "+
