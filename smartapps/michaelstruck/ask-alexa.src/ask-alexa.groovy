@@ -1,7 +1,7 @@
 /**
  *  Ask Alexa 
  *
- *  Version 2.0.4 - 7/8/16 Copyright © 2016 Michael Struck
+ *  Version 2.0.5 - 7/9/16 Copyright © 2016 Michael Struck
  *  Special thanks for Keith DeLong for overall code and assistance and Barry Burke for weather reporting/advisory/lunar phases code
  * 
  *  Version 1.0.0 - Initial release
@@ -17,6 +17,7 @@
  *  Version 2.0.2a (6/17/16) Added %delay% macro for custom acknowledgment for pre/post text areas, dimmer/group fixes and added lunar phases (thanks again to Barry Burke), 2nd level acknowledgments in Alexa
  *  Version 2.0.3a (6/21/16) Filter of power meters in reports. Added Weather Advisories.
  *  Version 2.0.4 (7/8/16) Code fixes/optimizations, added additional options for secondary responses
+ *  Version 2.0.5 (7/9/16) Fix for null String issues
  *
  *  Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except
  *  in compliance with the License. You may obtain a copy of the License at:
@@ -234,8 +235,8 @@ def pageSettings(){
         }
         section ("Continuation of commands..."){
         	input "contError", "bool", title: "After Error", defaultValue: false
-            input "contStatus", "bool", title: "After Device Status/List", defaultValue: false
-            input "contAction", "bool", title: "After Device Action/Event History", defaultValue: false
+            input "contStatus", "bool", title: "After Status/List", defaultValue: false
+            input "contAction", "bool", title: "After Action/Event History", defaultValue: false
             input "contMacro", "bool", title: "After Macro Execution", defaultValue: false
         }
         section ("Other Values/Variables"){
@@ -741,7 +742,8 @@ def processDevice() {
     log.debug "Param: " + param
     log.debug "Lambda Ver: " + lVer
 	def num = numVal == "undefined" ? 0 : numVal as int
-    def outputTxt = "", deviceList, count = 0
+    String outputTxt = ""
+    def deviceList, count = 0
     getDeviceList().each{if (it.name==dev.replaceAll("[^a-zA-Z0-9 ]", "").toLowerCase()) {deviceList=it; count++}}
 	if (count > 1) outputTxt ="The device named '${dev}' is used multiple times in your SmartThings SmartApp. Please rename or remove duplicate items so I may properly utlize them. "   
     else if (deviceList) {
@@ -765,7 +767,7 @@ def processList(){
     def lVer = params.lVer		//Version number of Lambda code
     log.debug "List Type: " + listType
     log.debug "Lambda Ver: " + lVer
-    def outputTxt = ""
+    String outputTxt = ""
 	if (listType=="mode" || listType=="modes" ){
 		outputTxt = location.modes.size() >1 ? "The available modes include the following: " + getList(location.modes) + ". " : location.modes.size()==1 ? "You have one mode available named " + getList(location.modes) + ". " : "There are no modes defined within your SmartThings' account. "
 	}
@@ -917,7 +919,8 @@ def processMacro() {
     log.debug "Lambda Ver: " + lVer
     if (mNum == "0" && cmd=="undefined" && param == "undefined") cmd="off"
     def num = mNum == "undefined" ? 0 : mNum as int
-    def outputTxt = "", count = 0, macroType="", fullMacroName, colorData, err=false
+    String outputTxt = ""
+    def count = 0, macroType="", fullMacroName, colorData, err=false
     if (cmd == "low" || cmd=="medium" || cmd=="high"){
         if (cmd=="low" && dimmerLow) num = dimmerLow else if (cmd=="low" && !dimmerLow) err=true 
 		if (cmd=="medium" && dimmerMed) num = dimmerMed else if (cmd=="medium" && !dimmerMed) err=true 
@@ -959,7 +962,7 @@ def processSmartHome() {
     log.debug "Cmd: " + cmd
     log.debug "Param: " + param
     log.debug "Lambda Ver: " + lVer
-   	def outputTxt = ""
+    String outputTxt = ""
     if (cmd =="undefined") {
     	if (param=="off") { outputTxt="Be sure to specify a device, or the word 'security', when using the 'off' command. %1%" }
         if (location.modes?.find{it.name.toLowerCase()==param} && param != currMode) cmd = "mode"
@@ -979,7 +982,7 @@ def processSmartHome() {
                 else if (param == currMode) outputTxt ="The current SmartThings mode is already set to '${currMode}'. No changes are being made. "
                 if (!outputTxt) outputTxt = "I did not understand the mode you wanted to set. For a list of available modes, simply say, 'ask ${invocationName} for mode list'. %1%"
             }
-			else if (!outputTxt) outputTxt = "You can not change your mode because you do not have this option enabled within your SmartApp. Please enable this and try again. " 
+			else if (!outputTxt) outputTxt = "You can not change your mode because you do not have this option enabled within your SmartApp. Please enable this and try again. %1%" 
     }
     if (cmd=="security" || cmd=="smart home" || cmd=="smart home monitor" || cmd=="SHM" ){
     	def SHMstatus = location.currentState("alarmSystemStatus")?.value
@@ -1013,10 +1016,11 @@ def processSmartHome() {
         else if (!routines) outputTxt = "You can not run SmartThings Routines because you do not have this option enabled in the Ask Alexa SmartApp. Please enable this feature and try again. "
     }
     if (!outputTxt) outputTxt = "I didn't understand what you wanted me to do. %1%" 
-	sendJSON(outputTxt, lVer)
+    if (outputTxt && !outputTxt.endsWith("%")) outputTxt +="%2%"
+    sendJSON(outputTxt, lVer)
 }
 def getReply(devices, type, dev, op, num, param){
-	def result = ""
+	String result = ""
     log.debug "Type: " + type
     try {
     	def STdevice = devices?.find{it.label.replaceAll("[^a-zA-Z0-9 ]", "").toLowerCase() == dev}
@@ -1167,14 +1171,14 @@ def getReply(devices, type, dev, op, num, param){
                 	if (op=="low" && dimmerLow) num = dimmerLow else if (op=="low" && dimmerLow=="") num =0 
                     if (op=="medium" && dimmerMed) num = dimmerMed else if (op=="medium" && !dimmerMed) num = 0 
                     if (op=="high" && dimmerHigh) num = dimmerHigh else if (op=="high" && !dimmerhigh) num = 0 
-                    if (num>0) overRideMsg = "I am turning the ${STdevice} to ${op}, or a value of ${num}%."
+                    if (num>0) overRideMsg = "I am turning the ${STdevice} to ${op}, or a value of ${num}%. "
                     if (num==0) overRideMsg = "You don't have a default value set up for the '${op}' level. I am not making any changes to the ${STdevice}. "
                 }
                 if ((type == "switch") || ((type=="level" || type == "color") && num==0 )){
                     if ((type=="level" || type == "color") && num==0 && op=="undefined" && param=="undefined") op="off"
                 	if (op=="on" || op=="off"){
                 		STdevice."$op"() 
-                        result = overRideMsg ? overRideMsg: "I am turning the ${STdevice} ${op}."
+                        result = overRideMsg ? overRideMsg: "I am turning the ${STdevice} ${op}. "
                     }
                     if (op=="toggle") {
         				def oldstate = STdevice.currentValue("switch")
@@ -1274,7 +1278,7 @@ def getReply(devices, type, dev, op, num, param){
         }
 	}
     catch (e){ result = "I could not process your request for the '${dev}'. Ensure you are using the correct commands with the device. %1%" }
-    if (op=="status" && result) result += "%2%"
+    if (op=="status" && result && !result.endsWith("%")) result += "%2%"
     if (op!="status" && result && !result.endsWith("%")) result += "%3%"
     if (!result) result = "Sorry, I had a problem understanding your request. %1%"
     return result
@@ -1286,7 +1290,7 @@ def processVersion(){
     def lVer = params.lVer		//Version number of Lambda code
     def date = params.Date		//Version date of Lambda code
     state.lambdaCode = "Lambda Code Version: ${ver} (${date})"
-   	def outputTxt = "The Ask Alexa SmartApp was developed by Michael Struck to intergrate the SmartThings platform with the Amazon Echo. "+
+   	String outputTxt = "The Ask Alexa SmartApp was developed by Michael Struck to intergrate the SmartThings platform with the Amazon Echo. "+
     	"The SmartApp version is: "  +  versionLong() + ". "
 	outputTxt += "And the Amazon Lambda code version is: " + ver + ". %2%"
     sendJSON(outputTxt, lVer)
@@ -1350,7 +1354,8 @@ def macroResults(num, cmd, colorData, param){
 }
 //Group Handler
 def groupResults(num, op, colorData, param){   
-    def result= "", noun="", valueWord, proNoun="", verb=""
+    String result= ""
+    def noun="", valueWord, proNoun="", verb=""
     proNoun = settings."groupDevice${groupType}".size()==1 ? "its" : "their"
     if (groupType=="colorControl" || groupType=="switchLevel"){
     	num = num < 0 ? 0 : num >99 ? 100 : num
@@ -1471,7 +1476,8 @@ def groupResults(num, op, colorData, param){
 }
 //CoRE Handler-----------------------------------------------------------
 def CoREResults(sDelay){	
-	def result = "", delay
+	String result = ""
+    def delay
     if (cDelay>0 || sDelay>0) delay = sDelay==0 ? cDelay as int : sDelay as int
 	result = (!delay || delay == 0) ? "I am triggering the CORE macro named '${app.label}'. " : delay==1 ? "I'll trigger the '${app.label}' CORE macro in ${delay} minute. " : "I'll trigger the '${app.label}' CORE macro in ${delay} minutes. "
 		if (sDelay == 9999) { 
@@ -1492,7 +1498,8 @@ def CoREHandler(){
 }
 //Control Handler-----------------------------------------------------------
 def controlResults(sDelay){	
-	def result = "", delay
+	String result = ""
+    def delay
     if (cDelay>0 || sDelay>0) delay = sDelay==0 ? cDelay as int : sDelay as int
     if (macroTypeDesc() !="Status: UNCONFIGURED - Tap to configure macro"){	
 		result = (!delay || delay == 0) ? "I am running the '${app.label}' control macro. " : delay==1 ? "I'll run the '${app.label}' control macro in ${delay} minute. " : "I'll run the '${app.label}' control macro in ${delay} minutes. "
@@ -1561,7 +1568,7 @@ def controlHandler(){
 }
 //Report Handler-------------------------------------------------------------
 def reportResults(){
-    def fullMsg=""
+    String fullMsg=""
     try {
         fullMsg = voicePre ?  voicePre + " " : ""
         if (voiceOnSwitchOnly) fullMsg += voiceSwitch ? switchOnReport(voiceSwitch, "switches") : ""
@@ -1602,11 +1609,12 @@ def reportResults(){
     catch(e){ fullMsg = "There was an error processing the report. Please try again. If this error continues, please contact the author of Ask Alexa. " }
     if (!fullMsg && !allowNullRpt) fullMsg = "The voice report, '${app.label}', did not produce any output. Please check the configuration of the report within the SmartApp. "  
     if ((parent.getAdvEnabled() && voiceRepFilter) || voicePre || voicePost) fullMsg = replaceVoiceVar(fullMsg,"")
+    if (fullMsg && !fullMsg.endsWith(" ")) fullMsg += " "
     return fullMsg
 }
 //Voice report sections---------------------------------------------------
 def switchOnReport(devices, type){
-	def result = ""
+	String result = ""
     if (devices.latestValue("switch").contains("on")) devices.each { deviceName->
     	if (deviceName.latestValue("switch")=="on") {
         	result += "The ${deviceName} is on"
@@ -1616,7 +1624,8 @@ def switchOnReport(devices, type){
 	result
 }
 def thermostatSummary(){
-	def result = "", monitorCount = voiceTempSettings.size(), matchCount = 0, err = false
+	String result = ""
+    def monitorCount = voiceTempSettings.size(), matchCount = 0, err = false
     for (device in voiceTempSettings) {
         if (parent.isNest()) try { device.poll() } catch(e) { }
         try{ if (device.latestValue(voiceTempSettingsType) as int == voiceTempTarget as int)  matchCount ++ }
@@ -1653,7 +1662,7 @@ def thermostatSummary(){
     return result
 }
 def reportStatus(deviceList, type){
-	def result = ""
+	String result = ""
     def appd = type=="temperature" || type=="thermostatSetpoint" || type == "heatingSetpoint" || type=="coolingSetpoint" || type == "autoAll" ? " degrees" : type == "humidity" ? " percent relative humidity" : ""
     if (type != "thermostatSetpoint" && type != "heatingSetpoint" && type !="coolingSetpoint" && type != "autoAll") {
 		deviceList.each {deviceName->
@@ -1678,7 +1687,7 @@ def reportStatus(deviceList, type){
     result
 }
 def speakerReport(){
-	def result = ""
+	String result = ""
     if (voiceSpeakerOn) {
         if (voiceSpeaker.latestValue("status").contains("playing")) {
         	voiceSpeaker.each { deviceName->
@@ -1705,7 +1714,7 @@ def speakerReport(){
     return result
 }
 def presenceReport(){
-	def result = ""
+	String result = ""
     if (voicePresentOnly) {
         if (voicePresence.latestValue("presence").contains("not present")) {
         	voicePresence.each { deviceName->
@@ -1719,7 +1728,8 @@ def presenceReport(){
     result
 }
 def motionReport(){
-	def result = "", currVal
+	String result = "" 
+    def currVal
     if (voiceMotionOnly) {
         if (voiceMotion.latestValue("motion").contains("active")) {
         	voiceMotion.each { deviceName->
@@ -1737,7 +1747,8 @@ def motionReport(){
     return result 
 }
 def powerReport(){
-	def result = "", currVal
+	String result = ""
+    def currVal
     voicePower.each { deviceName->
 		currVal = deviceName.currentValue("power")
         if (currVal == null) currVal=0
@@ -1747,8 +1758,8 @@ def powerReport(){
     return result 
 }
 def doorWindowReport(){
-	def countOpened = 0, countOpenedDoor = 0, countUnlocked = 0
-    def result = "", listOpened = "", listUnlocked = ""
+	def countOpened = 0, countOpenedDoor = 0, countUnlocked = 0, listOpened = "", listUnlocked = ""
+    String result = ""
     if (voiceDoorSensors && voiceDoorSensors.latestValue("contact").contains("open")){
     	for (sensor in voiceDoorSensors) if (sensor.latestValue("contact")=="open") countOpened ++
         listOpened = listDevices(voiceDoorSensors, "contact", "open", countOpened )
@@ -1790,7 +1801,7 @@ def doorWindowReport(){
     result
 }
 def listDevices(devices, type, condition, count){
-    def result = ""
+    String result = ""
 	for (deviceName in devices){	
 		if (deviceName.latestValue("${type}") == "${condition}"){
 			result += "${deviceName}"
@@ -1802,7 +1813,8 @@ def listDevices(devices, type, condition, count){
     result
 }
 def batteryReport(){
-    def result = "", count = 0, batteryThresholdLevel = batteryThreshold as int, nullCount =0
+    String result = ""
+    def count = 0, batteryThresholdLevel = batteryThreshold as int, nullCount =0
 	for (device in voiceBattery) if (device.latestValue("battery")< batteryThresholdLevel) count ++
     for (deviceName in voiceBattery){	
 		if (deviceName.latestValue("battery") < batteryThresholdLevel){
@@ -1814,7 +1826,8 @@ def batteryReport(){
     result
 }
 def waterReport(){
-    def result = "", count = 0
+    String result = ""
+    def count = 0
 	for (device in voiceWater) if (device.latestValue("water") != "dry") count ++
         if (!voiceWetOnly) for (deviceName in voiceWater) { result += "The ${deviceName} is ${deviceName.latestValue("water")}. " }
         else if (count){
@@ -2630,7 +2643,7 @@ def sendJSON(outputTxt, lVer){
 //Version/Copyright/Information/Help-----------------------------------------------------------
 private def textAppName() { def text = "Ask Alexa" }	
 private def textVersion() {
-    def version = "SmartApp Version: 2.0.4 (07/08/2016)"
+    def version = "SmartApp Version: 2.0.5 (07/09/2016)"
     def lambdaVersion = state.lambdaCode ? "\n" + state.lambdaCode : ""
     return "${version}${lambdaVersion}"
 }
