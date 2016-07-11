@@ -287,9 +287,6 @@ def zwaveEvent(physicalgraph.zwave.commands.wakeupv1.WakeUpNotification cmd)
 {
     log.debug "Device ${device.displayName} woke up"
 
-    if (state.lastWake != null) update_current_properties([parameterNumber: "300", configurationValue: [Math.round(((now() - state.lastWake) / 1000 / 60) as Double).toInteger()]])
-    state.lastWake = now()
-
     def request = sync_properties()
     
     if (!state.lastBatteryReport || (now() - state.lastBatteryReport) / 60000 >= 60 * 24)
@@ -467,39 +464,11 @@ def update_needed_settings()
                 def convertedConfigurationValue = convertParam(it.@index.toInteger(), settings."${it.@index}".toInteger())
                 cmds << zwave.configurationV1.configurationSet(configurationValue: integer2Cmd(convertedConfigurationValue, it.@byteSize.toInteger()), parameterNumber: it.@index.toInteger(), size: it.@byteSize.toInteger())
                 cmds << zwave.configurationV1.configurationGet(parameterNumber: it.@index.toInteger())
-            } 
-        } else if ("${it.@setting_type}" == "wake") {
-            if (currentProperties."${it.@index}" == null)
-            {
-                log.debug "Current value of Z-Wave Wake Interval has not been calculated yet."
-                isUpdateNeeded = "YES"
-            }
-            else if (settings."${it.@index}" != null && getWakeTruth(currentProperties."${it.@index}"[0], settings."${it.@index}".toInteger()))
-            {
-                isUpdateNeeded = "YES"
-                
-                log.debug "Current value of Z-Wave Wake Interval may be incorrect"
-                log.debug "Setting Wake Interval to ${settings."${it.@index}"} minutes"
-                cmds << zwave.wakeUpV2.wakeUpIntervalSet(seconds: (settings."${it.@index}".toInteger() * 60), nodeid:zwaveHubNodeId)
             }
         }
     }
     sendEvent(name:"needUpdate", value: isUpdateNeeded, displayed:false, isStateChange: true)
     return cmds
-}
-
-private getWakeTruth(currentValue, setting){
-    if (currentValue <= setting - 10 || currentValue >= setting + 10) {
-        if (!state.wakeCounter) state.wakeCounter = 1
-        else state.wakeCounter = state.wakeCounter + 1
-    } else {
-        state.wakeCounter = 0
-    }
-
-    if (state.wakeCounter > 1)
-        return true
-    else
-        return false
 }
 
 /**
@@ -782,13 +751,6 @@ Note:
 The calibration value = standard value - measure value.
 E.g. If measure value = 800Lux and the standard value = 750Lux, so the calibration value = 750 – 800 = -50.
 If the measure value = 850Lux and the standard value = 900Lux, so the calibration value = 900 – 850 = 50.
-    </Help>
-  </Value>
-  <Value type="short" byteSize="1" index="300" label="Wake Interval" min="10" max="10080" value="3" setting_type="wake">
-    <Help>
-Wake Interval in Minutes. Decreasing this value means you will get temperature, humidity, and luminance reports more frequently, but battery life will decrease.
-Range: 10~10080
-Default: 60 minutes
     </Help>
   </Value>
 </configuration>

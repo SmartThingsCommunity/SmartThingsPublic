@@ -90,7 +90,7 @@
 		}
 		valueTile(
         	"illuminance","device.illuminance", width: 2, height: 2) {
-            	state "luminosity",label:'${currentValue} ${unit}', unit:"lux", backgroundColors:[
+            	state "luminosity",label:'${currentValue} lux', unit:"lux", backgroundColors:[
                 	[value: 0, color: "#000000"],
                     [value: 1, color: "#060053"],
                     [value: 3, color: "#3E3900"],
@@ -220,7 +220,7 @@ def zwaveEvent(physicalgraph.zwave.commands.batteryv1.BatteryReport cmd) {
 	} else {
 		map.value = cmd.batteryLevel
 	}
-	state.lastbatt = now()
+    state.lastBatteryReport = now()
 	createEvent(map)
 }
 
@@ -308,6 +308,12 @@ def zwaveEvent(physicalgraph.zwave.commands.wakeupv1.WakeUpNotification cmd)
     log.debug "Device ${device.displayName} woke up"
 
     def request = sync_properties()
+    
+    if (!state.lastBatteryReport || (now() - state.lastBatteryReport) / 60000 >= 60 * 24)
+    {
+        log.debug "Over 24hr since last battery report. Requesting report"
+        request << zwave.batteryV1.batteryGet()
+    }
 
     if(request != []){
        response(commands(request) + ["delay 5000", zwave.wakeUpV1.wakeUpNoMoreInformation().format()])
@@ -384,11 +390,6 @@ def updated()
             update_current_properties([parameterNumber: i, configurationValue: ["0"]])
         else
             update_current_properties([parameterNumber: i, configurationValue: [settings.i]])
-    }
-    
-    if(settings."0" == true) {
-       resetBatteryRuntime()
-       device.updateSetting("0", false)
     }
     
     if (state.realTemperature != null) sendEvent(name:"temperature", value: getAdjustedTemp(state.realTemperature))
