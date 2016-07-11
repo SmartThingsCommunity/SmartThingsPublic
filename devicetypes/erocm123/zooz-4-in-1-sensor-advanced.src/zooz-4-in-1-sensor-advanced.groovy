@@ -43,7 +43,7 @@
 	}
     preferences {
         
-        input description: "Once you change values on this page, the \"Synced\" Status will become \"Pending\" status. You can then force the sync by triple clicking the device button or just wait for the next WakeUp (60 minutes).", displayDuringSetup: false, type: "paragraph", element: "paragraph"
+        input description: "Once you change values on this page, the \"Synced\" Status will become \"Pending\" status. You can then force the sync by clicking the device button or just wait for the next WakeUp (60 minutes).", displayDuringSetup: false, type: "paragraph", element: "paragraph"
         
 		generate_preferences(configuration_model())
         
@@ -723,9 +723,9 @@ Note:
 The amount by which the luminance must change in order for the sensor to send a report. Value is in %.
     </Help>
   </Value>
-  <Value type="decimal" byteSize="1" index="302" label="Temperature offset" min="-10" max="10" value="">
+  <Value type="decimal" byteSize="1" index="302" label="Temperature offset" min="-25" max="25" value="">
     <Help>
-Range: -10~10
+Range: -25~25
 Default: 0
 Note: 
 1. The calibration value = standard value - measure value.
@@ -743,14 +743,14 @@ E.g. If measure value = 80RH and the standard value = 75RH, so the calibration v
 If the measure value = 85RH and the standard value = 90RH, so the calibration value = 90RH – 85RH = 5RH. 
     </Help>
   </Value>
-    <Value type="decimal" byteSize="2" index="304" label="Luminance offset" min="-1000" max="1000" value="">
+    <Value type="decimal" byteSize="2" index="304" label="Luminance offset" min="-50" max="50" value="">
     <Help>
-Range: -1000~1000
+Range: -50~50
 Default: 0
 Note:
 The calibration value = standard value - measure value.
-E.g. If measure value = 800Lux and the standard value = 750Lux, so the calibration value = 750 – 800 = -50.
-If the measure value = 850Lux and the standard value = 900Lux, so the calibration value = 900 – 850 = 50.
+E.g. If measure value = 80% Lux and the standard value = 75% Lux, so the calibration value = 75 – 80 = -5.
+If the measure value = 85% Lux and the standard value = 90% Lux, so the calibration value = 90 – 85 = 5.
     </Help>
   </Value>
 </configuration>
