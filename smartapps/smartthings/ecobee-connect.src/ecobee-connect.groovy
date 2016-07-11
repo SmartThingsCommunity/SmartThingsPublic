@@ -25,7 +25,7 @@
  *  See Changelog for change history
  *
  */  
-def getVersionNum() { return "0.9.17a" }
+def getVersionNum() { return "0.9.17b" }
 private def getVersionLabel() { return "Ecobee (Connect) Version ${getVersionNum()}" }
 private def getHelperSmartApps() {
 	return [ 
@@ -2234,7 +2234,7 @@ private debugLevel(level=3) {
     	return false 
 	}
     
-	def debugLvlNum = settings.debugLevel.toInteger() ?: 3
+	def debugLvlNum = settings.debugLevel?.toInteger() ?: 3
     def wantedLvl = level?.toInteger()    
     // log.trace("debugLvlNum = ${debugLvlNum}; wantedLvl = ${wantedLvl}")
 	return ( debugLvlNum >= wantedLvl )
