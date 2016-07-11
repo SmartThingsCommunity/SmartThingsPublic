@@ -688,7 +688,7 @@ def validateCommand(device, command) {
 	def capabilityCommands = getDeviceCapabilityCommands(device.capabilities)
 	def currentDeviceCapability = getCapabilityName(device)
 	if (currentDeviceCapability != "" && capabilityCommands[currentDeviceCapability]) {
-		return command in capabilityCommands[currentDeviceCapability] ? true : false
+    return (command in capabilityCommands[currentDeviceCapability] || (currentDeviceCapability == "Switch" && command == "setLevel" && device.hasCommand("setLevel"))) ? true : false
 	} else {
 		// Handling other device types here, which don't accept commands
 		httpError(400, "Bad request.")
