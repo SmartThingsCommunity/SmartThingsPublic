@@ -720,7 +720,7 @@ def completionPercentage() {
 
 	def now = new Date().getTime()
 	def timeElapsed = now - atomicState.start
-	def totalRunTime = totalRunTimeMillis()
+	def totalRunTime = totalRunTimeMillis() ?: 1
 	def percentComplete = timeElapsed / totalRunTime * 100
 	log.debug "percentComplete: ${percentComplete}"
 
