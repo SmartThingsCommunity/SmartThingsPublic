@@ -42,7 +42,8 @@
         
         fingerprint deviceId: "0x2101", inClusters: "0x5E,0x86,0x72,0x59,0x85,0x73,0x71,0x84,0x80,0x30,0x31,0x70,0xEF,0x5A,0x98,0x7A"
         fingerprint deviceId: "0x2101", inClusters: "0x5E,0x86,0x72,0x59,0x85,0x73,0x71,0x84,0x80,0x30,0x31,0x70,0x7A,0x5A,0xEF" 
-        fingerprint mfr: "0134", prod: "0258", model: "0100"
+        fingerprint deviceId: "0x2101", inClusters: "0x5E,0x86,0x72,0x59,0x85,0x73,0x71,0x84,0x80,0x30,0x31,0x70,0x7A", outClusters: "0x5A"
+
 	}
     preferences {
         
@@ -195,7 +196,6 @@ def zwaveEvent(physicalgraph.zwave.commands.securityv1.SecurityCommandsSupported
 }
 
 def zwaveEvent(physicalgraph.zwave.commands.configurationv2.ConfigurationReport cmd) {
-    log.debug cmd.configurationValue
     if (cmd.parameterNumber.toInteger() == 81 && cmd.configurationValue == [255]) {
         update_current_properties([parameterNumber: "81", configurationValue: [1]])
         log.debug "${device.displayName} parameter '${cmd.parameterNumber}' with a byte size of '${cmd.size}' is set to '1'"
@@ -364,18 +364,13 @@ def refresh() {
         request << zwave.firmwareUpdateMdV2.firmwareMdGet()
         request << zwave.wakeUpV1.wakeUpIntervalGet()
     }
-    log.debug "Setting parameter 41 to 10 ~ 5 times"
-    [[00,14,02]].each {
-        request << zwave.configurationV1.configurationSet(configurationValue: it, parameterNumber: 41, size: 3)
-        request << zwave.configurationV1.configurationGet(parameterNumber: 41)
-    }
     state.lastRefresh = now()
     request << zwave.batteryV1.batteryGet()
     request << zwave.sensorMultilevelV5.sensorMultilevelGet(sensorType:1, scale:1)
     request << zwave.sensorMultilevelV5.sensorMultilevelGet(sensorType:3, scale:1)
     request << zwave.sensorMultilevelV5.sensorMultilevelGet(sensorType:5, scale:1)
     request << zwave.sensorMultilevelV5.sensorMultilevelGet(sensorType:27, scale:1)
-    commands(request, 5000)
+    commands(request)
 }
 
 def configure() {
