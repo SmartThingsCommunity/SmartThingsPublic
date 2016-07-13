@@ -195,6 +195,7 @@ def zwaveEvent(physicalgraph.zwave.commands.securityv1.SecurityCommandsSupported
 }
 
 def zwaveEvent(physicalgraph.zwave.commands.configurationv2.ConfigurationReport cmd) {
+    log.debug cmd.configurationValue
     if (cmd.parameterNumber.toInteger() == 81 && cmd.configurationValue == [255]) {
         update_current_properties([parameterNumber: "81", configurationValue: [1]])
         log.debug "${device.displayName} parameter '${cmd.parameterNumber}' with a byte size of '${cmd.size}' is set to '1'"
@@ -306,7 +307,7 @@ def zwaveEvent(physicalgraph.zwave.commands.notificationv3.NotificationReport cm
 def zwaveEvent(physicalgraph.zwave.commands.wakeupv1.WakeUpNotification cmd)
 {
     log.debug "Device ${device.displayName} woke up"
-
+    
     def request = sync_properties()
     
     if (!state.lastBatteryReport || (now() - state.lastBatteryReport) / 60000 >= 60 * 24)
@@ -363,13 +364,18 @@ def refresh() {
         request << zwave.firmwareUpdateMdV2.firmwareMdGet()
         request << zwave.wakeUpV1.wakeUpIntervalGet()
     }
+    log.debug "Setting parameter 41 to 10 ~ 5 times"
+    [[00,14,02]].each {
+        request << zwave.configurationV1.configurationSet(configurationValue: it, parameterNumber: 41, size: 3)
+        request << zwave.configurationV1.configurationGet(parameterNumber: 41)
+    }
     state.lastRefresh = now()
     request << zwave.batteryV1.batteryGet()
     request << zwave.sensorMultilevelV5.sensorMultilevelGet(sensorType:1, scale:1)
     request << zwave.sensorMultilevelV5.sensorMultilevelGet(sensorType:3, scale:1)
     request << zwave.sensorMultilevelV5.sensorMultilevelGet(sensorType:5, scale:1)
     request << zwave.sensorMultilevelV5.sensorMultilevelGet(sensorType:27, scale:1)
-    commands(request)
+    commands(request, 5000)
 }
 
 def configure() {
@@ -391,6 +397,8 @@ def updated()
         else
             update_current_properties([parameterNumber: i, configurationValue: [settings.i]])
     }
+    
+    updateDataValue("firmware", "")
     
     if (state.realTemperature != null) sendEvent(name:"temperature", value: getAdjustedTemp(state.realTemperature))
     if (state.realHumidity != null) sendEvent(name:"humidity", value: getAdjustedHumidity(state.realHumidity))
@@ -440,6 +448,13 @@ def sync_properties()
 
 def convertParam(number, value) {
 	switch (number){
+        case 41:
+            //This parameter is seriously different than documented. This is a temp workaround do show sync status
+        	if (settings."41".toInteger() != null && device.currentValue("currentFirmware") != "1.06")
+            	(value * 256) + 2
+            else
+                value
+        break
     	case 201:
         	if (value < 0)
             	256 + value
@@ -481,18 +496,32 @@ def convertParam(number, value) {
 def update_current_properties(cmd)
 {
     def currentProperties = state.currentProperties ?: [:]
-    def convertedConfigurationValue = convertParam("${cmd.parameterNumber}".toInteger(), cmd2Integer(cmd.configurationValue))
+    
     currentProperties."${cmd.parameterNumber}" = cmd.configurationValue
 
     if (settings."${cmd.parameterNumber}" != null)
     {
-        if (settings."${cmd.parameterNumber}".toInteger() == convertedConfigurationValue)
+        if ("${cmd.parameterNumber}".toInteger() == 41)
         {
-            sendEvent(name:"needUpdate", value:"NO", displayed:false, isStateChange: true)
+            if (convertParam("${cmd.parameterNumber}".toInteger(), settings."${cmd.parameterNumber}".toInteger()) == cmd2Integer(cmd.configurationValue))
+            {
+                sendEvent(name:"needUpdate", value:"NO", displayed:false, isStateChange: true)
+            }
+            else
+            {
+                sendEvent(name:"needUpdate", value:"YES", displayed:false, isStateChange: true)
+            }
         }
-        else
+        else 
         {
-            sendEvent(name:"needUpdate", value:"YES", displayed:false, isStateChange: true)
+            if (settings."${cmd.parameterNumber}".toInteger() == convertParam("${cmd.parameterNumber}".toInteger(), cmd2Integer(cmd.configurationValue)))
+            {
+                sendEvent(name:"needUpdate", value:"NO", displayed:false, isStateChange: true)
+            }
+            else
+            {
+                sendEvent(name:"needUpdate", value:"YES", displayed:false, isStateChange: true)
+            }
         }
     }
 
@@ -529,7 +558,7 @@ def update_needed_settings()
                 log.debug "Current value of parameter ${it.@index} is unknown"
                 isUpdateNeeded = "YES"
             }
-            else if (settings."${it.@index}" != null && convertParam(it.@index.toInteger(), cmd2Integer(currentProperties."${it.@index}")) != settings."${it.@index}".toInteger() && it.@index != "201" && it.@index != "202" && it.@index != "203" && it.@index != "204" && it.@index != "111")
+            else if (settings."${it.@index}" != null && convertParam(it.@index.toInteger(), cmd2Integer(currentProperties."${it.@index}")) != settings."${it.@index}".toInteger() && it.@index != "41" && it.@index != "111")
             { 
                 isUpdateNeeded = "YES"
 
@@ -544,6 +573,16 @@ def update_needed_settings()
 
                 log.debug "Parameter ${it.@index} will be updated to " + getRoundedInterval(settings."${it.@index}")
                 cmds << zwave.configurationV1.configurationSet(configurationValue: integer2Cmd(getRoundedInterval(settings."111".toInteger()), 4), parameterNumber: it.@index.toInteger(), size: 4)
+                cmds << zwave.configurationV1.configurationGet(parameterNumber: it.@index.toInteger())
+            }
+            else if (settings."${it.@index}" != null && it.@index == "41" && cmd2Integer(currentProperties."${it.@index}") != convertParam(it.@index.toInteger(), settings."${it.@index}".toInteger()))            {   
+                isUpdateNeeded = "YES"
+                
+                log.debug "Parameter ${it.@index} will be updated to " + settings."${it.@index}"
+                if (device.currentValue("currentFirmware") == "1.06" )
+                    cmds << zwave.configurationV1.configurationSet(configurationValue: integer2Cmd(convertParam(it.@index.toInteger(), settings."${it.@index}".toInteger()), 2), parameterNumber: it.@index.toInteger(), size: 2)
+                else
+                    cmds << zwave.configurationV1.configurationSet(configurationValue: integer2Cmd(convertParam(it.@index.toInteger(), settings."${it.@index}".toInteger()), 3), parameterNumber: it.@index.toInteger(), size: 3)
                 cmds << zwave.configurationV1.configurationGet(parameterNumber: it.@index.toInteger())
             }
         }
@@ -563,6 +602,9 @@ switch(array.size()) {
 	case 2:
     	((array[0] & 0xFF) << 8) | (array[1] & 0xFF)
     break
+    case 3:
+    	((array[0] & 0xFF) << 16) | ((array[1] & 0xFF) << 8) | (array[2] & 0xFF)
+    break
 	case 4:
     	((array[0] & 0xFF) << 24) | ((array[1] & 0xFF) << 16) | ((array[2] & 0xFF) << 8) | (array[3] & 0xFF)
 	break
@@ -578,6 +620,12 @@ def integer2Cmd(value, size) {
     	def short value1   = value & 0xFF
         def short value2 = (value >> 8) & 0xFF
         [value2, value1]
+    break
+    case 3:
+    	def short value1   = value & 0xFF
+        def short value2 = (value >> 8) & 0xFF
+        def short value3 = (value >> 16) & 0xFF
+        [value3, value2, value1]
     break
 	case 4:
     	def short value1 = value & 0xFF
@@ -619,7 +667,7 @@ def generate_preferences(configuration_model)
         {
             case ["byte","short","four"]:
                 input "${it.@index}", "number",
-                    title:"${it.@index} - ${it.@label}\n" + "${it.Help}",
+                    title:"${it.@label}\n" + "${it.Help}",
                     range: "${it.@min}..${it.@max}",
                     defaultValue: "${it.@value}"
             break
@@ -627,13 +675,13 @@ def generate_preferences(configuration_model)
                 def items = []
                 it.Item.each { items << ["${it.@value}":"${it.@label}"] }
                 input "${it.@index}", "enum",
-                    title:"${it.@index} - ${it.@label}\n" + "${it.Help}",
+                    title:"${it.@label}\n" + "${it.Help}",
                     defaultValue: "${it.@value}",
                     options: items
             break
             case "decimal":
                input "${it.@index}", "decimal",
-                    title:"${it.@index} - ${it.@label}\n" + "${it.Help}",
+                    title:"${it.@label}\n" + "${it.Help}",
                     //range: "${it.@min}..${it.@max}",
                     defaultValue: "${it.@value}"
             break
@@ -804,13 +852,64 @@ Is the device powered by battery or usb?
   </Value>
   <Value type="list" index="40" label="Enable selective reporting?" min="0" max="1" value="0" byteSize="1" setting_type="zwave">
     <Help>
-Enable/disable the selective reporting only when measurements reach a certain threshold or percentage set in 41-44 below. This is used to reduce network traffic.
-Default: No (Recommended for USB/Battery)
+Enable/disable the selective reporting only when measurements reach a certain threshold or percentage set below. This is used to reduce network traffic.
+Default: No (Enable for Better Battery Life)
     </Help>
         <Item label="No" value="0" />
         <Item label="Yes" value="1" />
   </Value>
-  <Value type="short" byteSize="2" index="3" label="PIR reset time" min="10" max="3600" value="20" setting_type="zwave">
+  <Value type="short" byteSize="2" index="41" label="Temperature Threshold" min="1" max="3600" value="20" setting_type="zwave">
+    <Help>
+Threshold change in temperature to induce an automatic report.
+Range: 1~3600.
+Default: 20
+Note:
+Only used if selective reporting is enabled.
+1. The unit is Fahrenheit for US version, Celsius for EU/AU version.
+2. The value contains one decimal point. E.g. if the value is set to 20, the threshold value =2.0 ℃ (EU/AU version) or 2.0 ℉ (US version). When the current temperature gap is more then 2.0, which will induce a temperature report to be sent out.
+    </Help>
+  </Value>
+  <Value type="short" byteSize="3" index="42" label="Humidity Threshold" min="1" max="3600" value="10" setting_type="zwave">
+    <Help>
+Threshold change in humidity to induce an automatic report.
+Range: 1~3600.
+Default: 10
+Note:
+Only used if selective reporting is enabled.
+1. The unit is %.
+2. The default value is 10, which means that if the current humidity gap is more than 10%, it will send out a humidity report.
+    </Help>
+  </Value>
+  <Value type="short" byteSize="2" index="43" label="Luminance Threshold" min="1" max="3600" value="100" setting_type="zwave">
+    <Help>
+Threshold change in luminance to induce an automatic report.
+Range: 1~3600.
+Default: 100
+Note:
+Only used if selective reporting is enabled.
+    </Help>
+  </Value>
+  <Value type="byte" byteSize="1" index="44" label="Battery Threshold" min="1" max="50" value="10" setting_type="zwave">
+    <Help>
+Threshold change in battery level to induce an automatic report.
+Range: 1~50.
+Default: 10
+Note:
+Only used if selective reporting is enabled.
+1. The unit is %.
+2. The default value is 10, which means that if the current battery level gap is more than 10%, it will send out a battery report.
+    </Help>
+  </Value>
+  <Value type="byte" byteSize="1" index="45" label="Ultraviolet Threshold" min="1" max="250" value="2" setting_type="zwave">
+    <Help>
+Threshold change in ultraviolet to induce an automatic report.
+Range: 1~250.
+Default: 2
+Note:
+Only used if selective reporting is enabled.
+    </Help>
+  </Value>
+  <Value type="short" byteSize="2" index="3" label="PIR reset time" min="10" max="3600" value="240" setting_type="zwave">
     <Help>
 Number of seconds to wait to report motion cleared after a motion event if there is no motion detected.
 Range: 10~3600.
@@ -847,9 +946,9 @@ Note:
 2. If battery power, the minimum interval time is 60 minutes by default, for example, if the value is set to be more than 5 and less than 3600, the interval time is 60 minutes, if the value is set to be more than 3600 and less than 7200, the interval time is 120 minutes. You can also change the minimum interval time to 4 minutes via setting the interval value(3 bytes) to 240 in Wake Up Interval Set CC
     </Help>
   </Value>
-  <Value type="decimal" byteSize="1" index="201" label="Temperature offset" min="-10" max="10" value="">
+  <Value type="decimal" byteSize="1" index="201" label="Temperature offset" min="" max="" value="">
     <Help>
-Range: -10~10
+Range: None
 Default: 0
 Note: 
 1. The calibration value = standard value - measure value.
@@ -857,9 +956,9 @@ E.g. If measure value =85.3F and the standard value = 83.2F, so the calibration 
 If the measure value =60.1F and the standard value = 63.2F, so the calibration value = 63.2F - 60.1℃ = 3.1F. 
     </Help>
   </Value>
-  <Value type="decimal" byteSize="1" index="202" label="Humidity offset" min="-50" max="50" value="">
+  <Value type="decimal" byteSize="1" index="202" label="Humidity offset" min="" max="" value="">
     <Help>
-Range: -50~50
+Range: None
 Default: 0
 Note:
 The calibration value = standard value - measure value.
@@ -867,9 +966,9 @@ E.g. If measure value = 80RH and the standard value = 75RH, so the calibration v
 If the measure value = 85RH and the standard value = 90RH, so the calibration value = 90RH – 85RH = 5RH. 
     </Help>
   </Value>
-    <Value type="decimal" byteSize="2" index="203" label="Luminance offset" min="-1000" max="1000" value="">
+    <Value type="decimal" byteSize="2" index="203" label="Luminance offset" min="" max="" value="">
     <Help>
-Range: -1000~1000
+Range: None
 Default: 0
 Note:
 The calibration value = standard value - measure value.
@@ -877,9 +976,9 @@ E.g. If measure value = 800Lux and the standard value = 750Lux, so the calibrati
 If the measure value = 850Lux and the standard value = 900Lux, so the calibration value = 900 – 850 = 50.
     </Help>
   </Value>
-    <Value type="decimal" byteSize="1" index="204" label="Ultraviolet offset" min="-10" max="10" value="">
+    <Value type="decimal" byteSize="1" index="204" label="Ultraviolet offset" min="" max="" value="">
     <Help>
-Range: -10~10
+Range: None
 Default: 0
 Note:
 The calibration value = standard value - measure value.
