@@ -364,6 +364,7 @@ def refresh() {
         request << zwave.firmwareUpdateMdV2.firmwareMdGet()
         request << zwave.wakeUpV1.wakeUpIntervalGet()
     }
+
     state.lastRefresh = now()
     request << zwave.batteryV1.batteryGet()
     request << zwave.sensorMultilevelV5.sensorMultilevelGet(sensorType:1, scale:1)
@@ -677,7 +678,7 @@ def generate_preferences(configuration_model)
             case "decimal":
                input "${it.@index}", "decimal",
                     title:"${it.@label}\n" + "${it.Help}",
-                    //range: "${it.@min}..${it.@max}",
+                    range: "${it.@min}..${it.@max}",
                     defaultValue: "${it.@value}"
             break
             case "boolean":
@@ -941,7 +942,7 @@ Note:
 2. If battery power, the minimum interval time is 60 minutes by default, for example, if the value is set to be more than 5 and less than 3600, the interval time is 60 minutes, if the value is set to be more than 3600 and less than 7200, the interval time is 120 minutes. You can also change the minimum interval time to 4 minutes via setting the interval value(3 bytes) to 240 in Wake Up Interval Set CC
     </Help>
   </Value>
-  <Value type="decimal" byteSize="1" index="201" label="Temperature offset" min="" max="" value="">
+  <Value type="byte" byteSize="1" index="201" label="Temperature offset" min="*" max="*" value="">
     <Help>
 Range: None
 Default: 0
@@ -951,7 +952,7 @@ E.g. If measure value =85.3F and the standard value = 83.2F, so the calibration 
 If the measure value =60.1F and the standard value = 63.2F, so the calibration value = 63.2F - 60.1℃ = 3.1F. 
     </Help>
   </Value>
-  <Value type="decimal" byteSize="1" index="202" label="Humidity offset" min="" max="" value="">
+  <Value type="byte" byteSize="1" index="202" label="Humidity offset" min="*" max="*" value="">
     <Help>
 Range: None
 Default: 0
@@ -961,7 +962,7 @@ E.g. If measure value = 80RH and the standard value = 75RH, so the calibration v
 If the measure value = 85RH and the standard value = 90RH, so the calibration value = 90RH – 85RH = 5RH. 
     </Help>
   </Value>
-    <Value type="decimal" byteSize="2" index="203" label="Luminance offset" min="" max="" value="">
+    <Value type="byte" byteSize="2" index="203" label="Luminance offset" min="*" max="*" value="">
     <Help>
 Range: None
 Default: 0
@@ -971,7 +972,7 @@ E.g. If measure value = 800Lux and the standard value = 750Lux, so the calibrati
 If the measure value = 850Lux and the standard value = 900Lux, so the calibration value = 900 – 850 = 50.
     </Help>
   </Value>
-    <Value type="decimal" byteSize="1" index="204" label="Ultraviolet offset" min="" max="" value="">
+    <Value type="byte" byteSize="1" index="204" label="Ultraviolet offset" min="*" max="*" value="">
     <Help>
 Range: None
 Default: 0
