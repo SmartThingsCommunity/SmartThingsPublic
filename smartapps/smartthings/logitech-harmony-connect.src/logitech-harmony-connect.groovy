@@ -688,7 +688,7 @@ def validateCommand(device, command) {
 	def capabilityCommands = getDeviceCapabilityCommands(device.capabilities)
 	def currentDeviceCapability = getCapabilityName(device)
 	if (currentDeviceCapability != "" && capabilityCommands[currentDeviceCapability]) {
-		return command in capabilityCommands[currentDeviceCapability] ? true : false
+    return (command in capabilityCommands[currentDeviceCapability] || (currentDeviceCapability == "Switch" && command == "setLevel" && device.hasCommand("setLevel"))) ? true : false
 	} else {
 		// Handling other device types here, which don't accept commands
 		httpError(400, "Bad request.")
@@ -823,8 +823,8 @@ def deviceHandler(evt) {
 }
 
 def sendToHarmony(evt, String callbackUrl) {
-	def callback = new URI(callbackUrl)
-  if(isIP(callback.host)){
+  def callback = new URI(callbackUrl)
+  if (callback.port != -1) {
   	def host = callback.port != -1 ? "${callback.host}:${callback.port}" : callback.host
   	def path = callback.query ? "${callback.path}?${callback.query}".toString() : callback.path
   	sendHubCommand(new physicalgraph.device.HubAction(
@@ -850,25 +850,6 @@ def sendToHarmony(evt, String callbackUrl) {
         log.error "Harmony Cloud - Something went wrong: $e"
     }
   }
-}
-
-public static boolean isIP(String str) {
-    try {
-         String[] parts = str.split("\\.");
-         if (parts.length != 4) return false;
-         for (int i = 0; i < 4; ++i) {
-             int p
-             try {
-               p = Integer.parseInt(parts[i]);
-             } catch (Exception e) {
-               return false;
-             }
-             if (p > 255 || p < 0) return false;
-         }
-         return true;
-    } catch (Exception e) {
-        return false;
-    }
 }
 
 def listHubs() {
