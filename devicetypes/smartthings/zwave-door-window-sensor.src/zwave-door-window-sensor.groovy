@@ -36,6 +36,7 @@ metadata {
 		// status messages
 		status "open":  "command: 2001, payload: FF"
 		status "closed": "command: 2001, payload: 00"
+		status "wake up": "command: 8407, payload: "
 	}
 
 	// UI tile definitions
