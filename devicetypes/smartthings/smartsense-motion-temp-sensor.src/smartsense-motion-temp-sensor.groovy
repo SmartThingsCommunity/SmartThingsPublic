@@ -24,7 +24,7 @@ metadata {
         capability "Temperature Measurement"
 		capability "Refresh"
 		capability "Sensor"
-        
+
         command "enrollResponse"
 
 	}
@@ -73,7 +73,7 @@ metadata {
 
 def parse(String description) {
 	log.debug "description: $description"
-    
+
 	Map map = [:]
 	if (description?.startsWith('catchall:')) {
 		map = parseCatchAllMessage(description)
@@ -87,10 +87,10 @@ def parse(String description) {
     else if (description?.startsWith('zone status')) {
 	    map = parseIasMessage(description)
     }
- 
+
 	log.debug "Parse returned $map"
 	def result = map ? createEvent(map) : null
-    
+
     if (description?.startsWith('enroll request')) {
     	List cmds = enrollResponse()
         log.debug "enroll response: ${cmds}"
@@ -128,7 +128,7 @@ private Map parseCatchAllMessage(String description) {
 private boolean shouldProcessMessage(cluster) {
     // 0x0B is default response indicating message got through
     // 0x07 is bind message
-    boolean ignoredMessage = cluster.profileId != 0x0104 || 
+    boolean ignoredMessage = cluster.profileId != 0x0104 ||
         cluster.command == 0x0B ||
         cluster.command == 0x07 ||
         (cluster.data.size() > 0 && cluster.data.first() == 0x3e)
@@ -141,7 +141,7 @@ private Map parseReportAttributeMessage(String description) {
 		map += [(nameAndValue[0].trim()):nameAndValue[1].trim()]
 	}
 	log.debug "Desc Map: $descMap"
- 
+
 	Map resultMap = [:]
 	if (descMap.cluster == "0402" && descMap.attrId == "0000") {
 		def value = getTemperature(descMap.value)
@@ -153,11 +153,11 @@ private Map parseReportAttributeMessage(String description) {
     else if (descMap.cluster == "0406" && descMap.attrId == "0000") {
     	def value = descMap.value.endsWith("01") ? "active" : "inactive"
     	resultMap = getMotionResult(value)
-    } 
- 
+    }
+
 	return resultMap
 }
- 
+
 private Map parseCustomMessage(String description) {
 	Map resultMap = [:]
 	if (description?.startsWith('temperature: ')) {
@@ -170,7 +170,7 @@ private Map parseCustomMessage(String description) {
 private Map parseIasMessage(String description) {
     List parsedMsg = description.split(' ')
     String msgCode = parsedMsg[2]
-    
+
     Map resultMap = [:]
     switch(msgCode) {
         case '0x0020': // Closed/No Motion/Dry
@@ -240,7 +240,8 @@ private Map getBatteryResult(rawValue) {
 			def minVolts = 2.1
 			def maxVolts = 3.0
 			def pct = (volts - minVolts) / (maxVolts - minVolts)
-			result.value = Math.min(100, (int) pct * 100)
+			def roundedPct = Math.round(pct * 100)
+			result.value = Math.min(100, roundedPct)
 			result.descriptionText = "${linkText} battery was ${result.value}%"
 		}
 	}
