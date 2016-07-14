@@ -888,7 +888,7 @@ def parse(childDevice, description) {
             	log.warn "Parsing Body failed - trying again..."
                 poll()
             }
-            if (body instanceof java.util.HashMap) {
+            if (body instanceof java.util.Map) {
             	//poll response
                 def devices = getChildDevices()
                 for (device in body) {
