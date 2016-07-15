@@ -1,7 +1,7 @@
 /**
  *  Ask Alexa 
  *
- *  Version 2.0.5 - 7/9/16 Copyright © 2016 Michael Struck
+ *  Version 2.0.6 - 7/14/16 Copyright © 2016 Michael Struck
  *  Special thanks for Keith DeLong for overall code and assistance and Barry Burke for weather reporting/advisory/lunar phases code
  * 
  *  Version 1.0.0 - Initial release
@@ -18,6 +18,7 @@
  *  Version 2.0.3a (6/21/16) Filter of power meters in reports. Added Weather Advisories.
  *  Version 2.0.4 (7/8/16) Code fixes/optimizations, added additional options for secondary responses
  *  Version 2.0.5 (7/9/16) Fix for null String issues
+ *  Version 2.0.6 (7/14/16) Syntax fixes, additional filters on voice reports, expanded secondary responses, CoRE Macro fix
  *
  *  Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except
  *  in compliance with the License. You may obtain a copy of the License at:
@@ -538,6 +539,7 @@ def pageVoice() {
         if (parent.getAdvEnabled()){
         	section("Advanced"){
             	input "voiceRepFilter", "text", title: "Filter Report Output", description: "Delimit items with comma (ex. xxxxx,yyyyy,zzzzz)", required: false
+                input "voiceEvtTimeDate", "bool", title: "Speak Only Time/Date During Event Reports", defaultValue: false
 			}
     	}
     }
@@ -715,7 +717,7 @@ def initialize() {
 	}
     else{
     	unschedule()
-    	state.scheduled=false 
+    	state.scheduled=false
     }
 	sendLocationEvent(name: "askAlexa", value: "refresh", data: [macros: parent ? parent.getCoREMacroList() : getCoREMacroList()] , isStateChange: true, descriptionText: "Ask Alexa macro list refresh")
 }
@@ -1002,7 +1004,7 @@ def processSmartHome() {
             else if (SHMstatus==newSHM) outputTxt ="The Smart Home Monitor is already set to '${SHMFullStat}'. No changes are being made. " 
        	}
         else if (!outputTxt){
-        	outputTxt = "You can not change your Smart Home Monitor settings because you do not have this option enabled within your SmartApp. Please enable this and try again. "
+        	outputTxt = "You can not change your Smart Home Monitor settings because you do not have this option enabled within your SmartApp. Please enable this and try again. %1%"
     	}
     }
     if (cmd=="routine" && routines){
@@ -1013,7 +1015,7 @@ def processSmartHome() {
             outputTxt="I am executing the '${param}' routine. "
         }
         if (!outputTxt) outputTxt ="To run SmartThings' routines, ask me to run the routine by its full name. For a list of available routines, simply say, 'ask ${invocationName} to list routines'. %1%"
-        else if (!routines) outputTxt = "You can not run SmartThings Routines because you do not have this option enabled in the Ask Alexa SmartApp. Please enable this feature and try again. "
+        else if (!routines) outputTxt = "You can not run SmartThings Routines because you do not have this option enabled in the Ask Alexa SmartApp. Please enable this feature and try again. %1%"
     }
     if (!outputTxt) outputTxt = "I didn't understand what you wanted me to do. %1%" 
     if (outputTxt && !outputTxt.endsWith("%")) outputTxt +="%2%"
@@ -1104,7 +1106,8 @@ def getReply(devices, type, dev, op, num, param){
                     result += heat ? " The heating setpoint is set to ${heat} degrees. " : ""
                     result += heat && cool ? "And finally, " : ""
                     result += cool ? " The cooling setpoint is set to ${cool} degrees. " : ""
-            	}           
+            	}
+                else result += ". "
             }
             else if (type == "contact") result = "The ${STdevice} is currently ${STdevice.currentValue(type)}. "
             else if (type == "music"){
@@ -1142,7 +1145,7 @@ def getReply(devices, type, dev, op, num, param){
                         if (STdevice.currentValue("thermostatMode")=="heat") param = "heat"
                         else if (STdevice.currentValue("thermostatMode")=="cool") param = "cool"
                         else result = "You must designate a 'heating' or 'cooling' parameter when setting the temperature. "+
-                            "The thermostat will not accept a generic setpoint in its current mode. For example, you could simply say, 'ask ${invocationName} to set the ${STdevice} heating to 65 degrees'. "
+                            "The thermostat will not accept a generic setpoint in its current mode. For example, you could simply say, 'ask ${invocationName} to set the ${STdevice} heating to 65 degrees'. %1%"
 					}
                     if ((param =="heat" || param =="heating") && num > 0) {
                         result="I am setting the heating setpoint of the ${STdevice} to ${num} degrees. "
@@ -1172,7 +1175,7 @@ def getReply(devices, type, dev, op, num, param){
                     if (op=="medium" && dimmerMed) num = dimmerMed else if (op=="medium" && !dimmerMed) num = 0 
                     if (op=="high" && dimmerHigh) num = dimmerHigh else if (op=="high" && !dimmerhigh) num = 0 
                     if (num>0) overRideMsg = "I am turning the ${STdevice} to ${op}, or a value of ${num}%. "
-                    if (num==0) overRideMsg = "You don't have a default value set up for the '${op}' level. I am not making any changes to the ${STdevice}. "
+                    if (num==0) overRideMsg = "You don't have a default value set up for the '${op}' level. I am not making any changes to the ${STdevice}. %1%"
                 }
                 if ((type == "switch") || ((type=="level" || type == "color") && num==0 )){
                     if ((type=="level" || type == "color") && num==0 && op=="undefined" && param=="undefined") op="off"
@@ -1203,11 +1206,11 @@ def getReply(devices, type, dev, op, num, param){
                 	}
                 }
             	if (!result){
-                	if (type=="switch") result = "For the ${STdevice} switch, be sure to give an 'on', 'off' or 'toggle' command. "
-            		if (type=="level") result = overRideMsg ? overRideMsg: "For the ${STdevice} dimmer, be sure to use an 'on', 'off', 'toggle' command or brightness level setting. "
+                	if (type=="switch") result = "For the ${STdevice} switch, be sure to give an 'on', 'off' or 'toggle' command. %1%"
+            		if (type=="level") result = overRideMsg ? overRideMsg: "For the ${STdevice} dimmer, be sure to use an 'on', 'off', 'toggle' command or brightness level setting. %1%"
             		if (type=="color") result = overRideMsg ? overRideMsg: "For the ${STdevice} color controller, remember it can be operated like a switch. You can ask me to turn "+  
                     "it on, off, toggle the on and off states, or set a brightness level. You can also set it to a variety of common colors. For listing of these colors, simply "+
-                    "say, 'tell SmartThings to list the colors'. "
+                    "say, 'tell SmartThings to list the colors'. %1%"
                 }
             }
             if (type == "music"){             
@@ -1224,7 +1227,7 @@ def getReply(devices, type, dev, op, num, param){
                 else if (op=="pause") { STdevice.pause(); result = "I am pausing the ${STdevice} speaker. " }
                 else if (op=="next track") {  STdevice.nextTrack(); result = "I am playing the next track on the ${STdevice}. " }
             	else if (op=="previous track") { STdevice.previousTrack(); result = "I am playing the next track on the ${STdevice}. " }
-                else result = "I didn't understand what you wanted me to do with the ${STdevice} speaker. "
+                else result = "I didn't understand what you wanted me to do with the ${STdevice} speaker. %1%"
                 if (num > 0) { STdevice.setLevel(num); result = "I am setting the volume of the ${STdevice} to ${num}%. " }
                 if (num == speakerHighLimit) result += "This is the maximum volume level you have set up. " 
             }
@@ -1232,9 +1235,9 @@ def getReply(devices, type, dev, op, num, param){
                 def currentDoorState = STdevice.currentValue(type)
 				if (currentDoorState==op || (currentDoorState == "closed" && op=="close")) result = "The ${STdevice} is already ${currentDoorState}. "
                 else {
-                    if (op != "open" || op != "close") result ="For the ${STdevice}, you must give an 'open' or 'close' command. "
-                    if ((op=="open" || op=="close") && (pwNeeded && password && num == 0)) result="You must say your password to ${op} the ${STdevice}. "
-                    if ((op=="open" || op=="close") && (pwNeeded && password && num>0 && num != password as int)) result="Sorry, I did not hear the correct password to ${op} the ${STdevice}. "
+                    if (op != "open" || op != "close") result ="For the ${STdevice}, you must give an 'open' or 'close' command. %1%"
+                    if ((op=="open" || op=="close") && (pwNeeded && password && num == 0)) result="You must say your password to ${op} the ${STdevice}. %1%"
+                    if ((op=="open" || op=="close") && (pwNeeded && password && num>0 && num != password as int)) result="Sorry, I did not hear the correct password to ${op} the ${STdevice}. %1%"
                     else if ((op=="open" || op=="close") && (!pwNeeded || (password && pwNeeded && num ==password as int) || !password)) {
                         STdevice."$op"() 
                         if (op == "close") op="clos"
@@ -1245,9 +1248,9 @@ def getReply(devices, type, dev, op, num, param){
             if (type == "lock"){
                 if (STdevice.currentValue("lock") == op+"ed") result = "The ${STdevice} is already ${op}ed. "
                 else {
-                    if (op != "lock" || op != "unlock" ) result= "For the ${STdevice}, you must give a 'lock' or 'unlock' command. "
-                    if ((op=="lock" || op=="unlock") && (pwNeeded && password && num ==0)) result= "You must say your password to ${op} the ${STdevice}. "
-                    if ((op=="lock" || op=="unlock") && (pwNeeded && password && num>0 && num != password as int)) result="Sorry, I did not hear the correct password to ${op} the ${STdevice}. "
+                    if (op != "lock" || op != "unlock" ) result= "For the ${STdevice}, you must give a 'lock' or 'unlock' command. %1%"
+                    if ((op=="lock" || op=="unlock") && (pwNeeded && password && num ==0)) result= "You must say your password to ${op} the ${STdevice}. %1%"
+                    if ((op=="lock" || op=="unlock") && (pwNeeded && password && num>0 && num != password as int)) result="Sorry, I did not hear the correct password to ${op} the ${STdevice}. %1%"
                     else if ((op=="lock" || op=="unlock") && (!pwNeeded || (password && pwNeeded && num ==password as int) || !password)) {
                         STdevice."$op"()
                         result = "I am ${op}ing the ${STdevice}. "
@@ -1343,8 +1346,8 @@ def macroResults(num, cmd, colorData, param){
     if (macroType == "Group") result = groupResults(num, cmd, colorData, param)
 	if (macroType == "CoRE") {
     	result = CoREResults(num)
-        data = [ pistonName: CoREName, args: result]
-        sendLocationEvent (name: "CoRE", value: "execute", data: data , descriptionText: "Ask Alexa triggered '${CoREName}' piston.") 
+        data = [pistonName: CoREName, args: result]
+        sendLocationEvent (name: "CoRE", value: "execute", data: data, isStateChange: true, descriptionText: "Ask Alexa triggered '${CoREName}' piston.") 
     }
     else if (macroType == "Voice" ||  macroType == "Control" || macroType == "Group") {
     	data = [alexaOutput: result, num: num, cmd: cmd, color: colorData, param:param]
@@ -1406,7 +1409,7 @@ def groupResults(num, op, colorData, param){
                 	if (count > 0 && count < settings."groupDevice${groupType}".size()) result += "Some of the ${noun} ${verb} now off. "
                 }
             }
-            else result = "The default increase or decrease value is set to zero within the SmartApp. I am taking no action. "
+            else result = "The default increase or decrease value is set to zero within the SmartApp. I am taking no action. %1%"
         }
         else if (groupType=="switchLevel") result = "For a dimmer group, be sure to use an 'on', 'off', 'toggle' or brightness level setting. %1%" 
 		else if (groupType=="colorControl") result = "For a colored light group, be sure to give me an 'on', 'off', 'toggle', brightness level or color command. %1%" 
@@ -1448,7 +1451,7 @@ def groupResults(num, op, colorData, param){
 			if (parent.isStelpro()  && param=="comfort"){ result="I am setting the ${noun} to 'comfort' mode. "; settings."groupDevice${groupType}"?.setThermostatMode("comfort") }
         	if (param=="home" && parent.isNest()) { result="I am setting the ${noun} to 'home' mode. "; settings."groupDevice${groupType}"?.present() }
             if (param=="away" && parent.isNest()) { 
-            	result="I am setting the ${noun} to 'away' mode. Please note that Nest thermostats will not accept temperature changes while in 'away' status."
+            	result="I am setting the ${noun} to 'away' mode. Please note that Nest thermostats will not accept temperature changes while in 'away' status. "
                 settings."groupDevice${groupType}"?.away()
             }
         }
@@ -1467,8 +1470,8 @@ def groupResults(num, op, colorData, param){
 				result="I am setting the cooling setpoint of the ${noun} to ${num} degrees. "
 				settings."groupDevice${groupType}"?.setCoolingSetpoint(num)
 			}
-            if (num == parent.getTstatLimits().hi) result += "This is the maximum temperature I can set for this device group. "
-            if (num == parent.getTstatLimits().lo) result += "This is the minimum temperature I can set for this device group. "
+            if (num == parent.getTstatLimits().hi) result += "This is the maximum temperature I can set for this device group. %1%"
+            if (num == parent.getTstatLimits().lo) result += "This is the minimum temperature I can set for this device group. %1%"
 		}
     }
     else result = "I did not understand what you are attempting to do with the group named '${app.label}'. Be sure it is configured correctly within the SmartApp. %1%" 
@@ -1490,7 +1493,7 @@ def CoREResults(sDelay){
 		else if (delay < 9999) { runIn(delay*60, CoREHandler, [overwrite: true]) ; state.scheduled=true}
 		if (delay < 9999) result = voicePost && !noAck ? replaceVoiceVar(voicePost, delay) : noAck ? " " : result
 	}
-	else result = "The CORE macro, '${app.label}', is already scheduled to run. You must cancel the execution or wait until it runs before you can run it again. "
+	else result = "The CORE macro, '${app.label}', is already scheduled to run. You must cancel the execution or wait until it runs before you can run it again. %1%"
 	return result
 }
 def CoREHandler(){
@@ -1513,10 +1516,10 @@ def controlResults(sDelay){
             else if (delay < 9999) { runIn(delay*60, controlHandler, [overwrite: true]) ; state.scheduled=true}
             if (delay < 9999) result = voicePost && !noAck ? replaceVoiceVar(voicePost, delay) : noAck ? "" : result
 		}
-        else result = "The control macro, '${app.label}', is already scheduled to run. You must cancel the execution or wait until it runs before you can run it again. "
+        else result = "The control macro, '${app.label}', is already scheduled to run. You must cancel the execution or wait until it runs before you can run it again. %1%"
     }
-    else result="The control macro, '${app.label}' is not properly configured. Use your SmartApp to configure the macro. "
-	return result
+    else result="The control macro, '${app.label}', is not properly configured. Use your SmartApp to configure the macro. %1%"
+    return result
 }
 def controlHandler(){
    	state.scheduled = false
@@ -1861,7 +1864,7 @@ private getDayOk(dayList) {
 		def day = df.format(new Date())
 		result = dayList.contains(day)
 	}
-    result
+    return result
 }
 private getTimeOk(startTime, endTime) {
 	def result = true, currTime = now()
@@ -1870,14 +1873,14 @@ private getTimeOk(startTime, endTime) {
 	if (startTime && endTime) result = start < stop ? currTime >= start && currTime <= stop : currTime <= stop || currTime >= start
 	else if (startTime) result = currTime >= start
     else if (endTime) result = currTime <= stop
-    result
+    return result
 }
 def getTimeLabel(start, end){
 	def timeLabel = "Tap to set"
     if(start && end) timeLabel = "Between " + timeParse("${start}", "h:mm a") + " and " +  timeParse("${end}", "h:mm a")
     else if (start) timeLabel = "Start at " + timeParse("${start}", "h:mm a")
     else if (end) timeLabel = "End at " + timeParse("${end}", "h:mm a")
-	timeLabel	
+	return timeLabel	
 }
 def macroTypeDesc(){
 	def desc = ""
@@ -2070,8 +2073,11 @@ private getLastEvt(devGroup, evtTxt, searchVal, devTxt){
         def eventDay = new Date(evtLog.time[0]).format("EEEE, MMMM d, yyyy", location.timeZone)
         def voiceDay = today == eventDay ? "today" : "On " + eventDay  
         def evtTime = new Date(evtLog.time[0]).format("h:mm aa", location.timeZone)
-        def multipleTxt = devGroup.size() >1 ? "within the monitored group was the ${evtLog.device[0]} ${devTxt}" : "was"
-        lastEvt = "The last ${evtTxt} event ${multipleTxt} ${voiceDay} at ${evtTime}. " 
+        if (voiceEvtTimeDate && parent.getAdvEnabled()) lastEvt = "${voiceDay} at ${evtTime}. "
+        else {
+        	def multipleTxt = devGroup.size() >1 ? "within the monitored group was the ${evtLog.device[0]} ${devTxt}" : "was"
+        	lastEvt = "The last ${evtTxt} event ${multipleTxt} ${voiceDay} at ${evtTime}. " 
+        }
     }    
     return lastEvt
 }
@@ -2108,7 +2114,7 @@ private replaceVoiceVar(msg, delay) {
     	def textFilter=voiceRepFilter.toLowerCase().tokenize(",")
     	textFilter.each{ msg = msg.toLowerCase().replace("${it}","") }
     }
-    msg
+    return msg
 }
 private timeParse(time, type) { new Date().parse("yyyy-MM-dd'T'HH:mm:ss.SSSZ", time).format("${type}", location.timeZone)}
 private parseDate(time, type){
@@ -2232,7 +2238,7 @@ private getWeatherReport(){
 	   	msg = sb.toString()
         translateTxt().each {msg = msg.replaceAll(it.txt,it.cvt)}
     }
-    else  msg = 'Please set the location of your hub with the SmartThings mobile app, or enter a zip code to receive weather reports. '
+    else msg = "Please set the location of your hub with the SmartThings mobile app, or enter a zip code to receive weather reports. "
     return msg
 }
 private getWeatherForecast(){
@@ -2273,7 +2279,7 @@ private getWeatherForecast(){
             else if (!voiceSunrise && voiceSunset) msg += "The sun ${verb2} tonight at ${setTime}. "
         }
     }
-    else  msg = 'Please set the location of your hub with the SmartThings mobile app, or enter a zip code to receive weather forecasts. '
+    else  msg = "Please set the location of your hub with the SmartThings mobile app, or enter a zip code to receive weather forecasts. "
     return msg
 }
 def getMoonInfo(){
@@ -2327,7 +2333,8 @@ def getMoonInfo(){
     return msg
 }
 def weatherAlerts(){
-	def msg = "", brief = false
+	String msg = ""
+    def brief = false
     if (location.timeZone || zipCode) {
         def alerts = getWeatherFeature('alerts', zipCode).alerts
         if ( alerts.size() > 0 ) {
@@ -2643,12 +2650,12 @@ def sendJSON(outputTxt, lVer){
 //Version/Copyright/Information/Help-----------------------------------------------------------
 private def textAppName() { def text = "Ask Alexa" }	
 private def textVersion() {
-    def version = "SmartApp Version: 2.0.5 (07/09/2016)"
+    def version = "SmartApp Version: 2.0.6 (07/14/2016)"
     def lambdaVersion = state.lambdaCode ? "\n" + state.lambdaCode : ""
     return "${version}${lambdaVersion}"
 }
-private def versionInt(){ return 205 }
-private def versionLong(){ return "2.0.5" }
+private def versionInt(){ return 206 }
+private def versionLong(){ return "2.0.6" }
 private def textCopyright() {return "Copyright © 2016 Michael Struck" }
 private def textLicense() {
 	def text = "Licensed under the Apache License, Version 2.0 (the 'License'); "+
