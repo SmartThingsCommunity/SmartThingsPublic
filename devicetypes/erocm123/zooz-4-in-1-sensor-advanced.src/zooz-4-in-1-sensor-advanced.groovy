@@ -600,8 +600,8 @@ private getAdjustedTemp(value) {
     
     value = Math.round((value as Double) * 100) / 100
 
-	if (settings."2") {
-	   return value =  value + Math.round(settings."2" * 100) /100
+	if (settings."302") {
+	   return value =  value + Math.round(settings."302" * 100) /100
 	} else {
        return value
     }
@@ -612,8 +612,8 @@ private getAdjustedHumidity(value) {
     
     value = Math.round((value as Double) * 100) / 100
 
-	if (settings."3") {
-	   return value =  value + Math.round(settings."3" * 100) /100
+	if (settings."303") {
+	   return value =  value + Math.round(settings."303" * 100) /100
 	} else {
        return value
     }
@@ -624,8 +624,8 @@ private getAdjustedLuminance(value) {
     
     value = Math.round((value as Double) * 100) / 100
 
-	if (settings."4") {
-	   return value =  value + Math.round(settings."4" * 100) /100
+	if (settings."304") {
+	   return value =  value + Math.round(settings."304" * 100) /100
 	} else {
        return value
     }
@@ -723,9 +723,9 @@ Note:
 The amount by which the luminance must change in order for the sensor to send a report. Value is in %.
     </Help>
   </Value>
-  <Value type="decimal" byteSize="1" index="302" label="Temperature offset" min="-25" max="25" value="">
+  <Value type="byte" byteSize="1" index="302" label="Temperature offset" min="*" max="*" value="">
     <Help>
-Range: -25~25
+Range: None
 Default: 0
 Note: 
 1. The calibration value = standard value - measure value.
@@ -733,9 +733,9 @@ E.g. If measure value =85.3F and the standard value = 83.2F, so the calibration 
 If the measure value =60.1F and the standard value = 63.2F, so the calibration value = 63.2F - 60.1℃ = 3.1F. 
     </Help>
   </Value>
-  <Value type="decimal" byteSize="1" index="303" label="Humidity offset" min="-50" max="50" value="">
+  <Value type="byte" byteSize="1" index="303" label="Humidity offset" min="*" max="*" value="">
     <Help>
-Range: -50~50
+Range: None
 Default: 0
 Note:
 The calibration value = standard value - measure value.
@@ -743,9 +743,9 @@ E.g. If measure value = 80RH and the standard value = 75RH, so the calibration v
 If the measure value = 85RH and the standard value = 90RH, so the calibration value = 90RH – 85RH = 5RH. 
     </Help>
   </Value>
-    <Value type="decimal" byteSize="2" index="304" label="Luminance offset" min="-50" max="50" value="">
+    <Value type="byte" byteSize="2" index="304" label="Luminance offset" min="*" max="*" value="">
     <Help>
-Range: -50~50
+Range: None
 Default: 0
 Note:
 The calibration value = standard value - measure value.
