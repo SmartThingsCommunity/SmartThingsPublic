@@ -13,6 +13,7 @@ DeviceOperation to {Operator} the {Device} password {Num}
 DeviceOperation {Operator} {Device} password {Num}
 DeviceOperation {Operator} {Device}
 DeviceOperation to {Operator} {Device}
+DeviceOperation {Operator} the {Device}
 
 DeviceOperation set {Device} to {Num}
 DeviceOperation {Device} to {Num}
@@ -49,7 +50,6 @@ DeviceOperation {Operator} {Device} by {Num}
 DeviceOperation {Operator} the {Device} by {Num}
 DeviceOperation turn {Device} {Operator} by {Num}
 DeviceOperation turn the {Device} {Operator} by {Num} percent
-DeviceOperation {Operator} the {Device}
 DeviceOperation to {Operator} the {Device} volume
 DeviceOperation to {Operator} the {Device} temperature
 DeviceOperation to {Operator} the {Device} {Param} temperature
