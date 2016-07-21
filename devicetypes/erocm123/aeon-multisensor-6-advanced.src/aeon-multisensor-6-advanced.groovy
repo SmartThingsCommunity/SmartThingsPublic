@@ -40,9 +40,10 @@
 		
         attribute   "needUpdate", "string"
         
-        fingerprint deviceId: "0x2101", inClusters: "0x5E,0x86,0x72,0x59,0x85,0x73,0x71,0x84,0x80,0x30,0x31,0x70,0xEF,0x5A,0x98,0x7A"
-        fingerprint deviceId: "0x2101", inClusters: "0x5E,0x86,0x72,0x59,0x85,0x73,0x71,0x84,0x80,0x30,0x31,0x70,0x7A,0x5A,0xEF" 
-        fingerprint deviceId: "0x2101", inClusters: "0x5E,0x86,0x72,0x59,0x85,0x73,0x71,0x84,0x80,0x30,0x31,0x70,0x7A", outClusters: "0x5A"
+		fingerprint deviceId: "0x2101", inClusters: "0x5E,0x86,0x72,0x59,0x85,0x73,0x71,0x84,0x80,0x30,0x31,0x70,0x98,0x7A,0x5A" // 1.07 & 1.08 Secure
+        fingerprint deviceId: "0x2101", inClusters: "0x5E,0x86,0x72,0x59,0x85,0x73,0x71,0x84,0x80,0x30,0x31,0x70,0x7A,0x5A" // 1.07 & 1.08
+        
+        fingerprint deviceId: "0x2101", inClusters: "0x5E,0x86,0x72,0x59,0x85,0x73,0x71,0x84,0x80,0x30,0x31,0x70,0x7A", outClusters: "0x5A" // 1.06
 
 	}
     preferences {
@@ -162,7 +163,8 @@ def parse(String description)
 			descriptionText: "This sensor failed to complete the network security key exchange. If you are unable to control it via SmartThings, you must remove it from your network and add it again.")
         break
 		case "updated":
-        	logging("Update is hit when the device is paired.")
+        	result = createEvent( name: "Inclusion", value: "paired", isStateChange: true,
+			descriptionText: "Update is hit when the device is paired")
             result << response(zwave.wakeUpV1.wakeUpIntervalSet(seconds: 3600, nodeid:zwaveHubNodeId).format())
             result << response(zwave.batteryV1.batteryGet().format())
             result << response(zwave.versionV1.versionGet().format())
@@ -239,6 +241,7 @@ def zwaveEvent(physicalgraph.zwave.commands.batteryv1.BatteryReport cmd) {
 
 def zwaveEvent(physicalgraph.zwave.commands.sensormultilevelv5.SensorMultilevelReport cmd)
 {
+    logging("SensorMultiLevelReport: $cmd")
 	def map = [:]
 	switch (cmd.sensorType) {
 		case 1:
@@ -269,7 +272,14 @@ def zwaveEvent(physicalgraph.zwave.commands.sensormultilevelv5.SensorMultilevelR
 		default:
 			map.descriptionText = cmd.toString()
 	}
-	createEvent(map)
+    def request = update_needed_settings()
+    
+    if(request != []){
+       return [createEvent(map), response(commands(request))]
+    } else {
+       logging("SensorMultiLevelReport: No commands to send")
+       return createEvent(map)
+    }   
 }
 
 def motionEvent(value) {
@@ -320,16 +330,7 @@ def zwaveEvent(physicalgraph.zwave.commands.wakeupv1.WakeUpNotification cmd)
 {
     logging("Device ${device.displayName} woke up")
     
-    def request = sync_properties()
-    //def request = []
-
-    if (!state.lastBatteryReport || (now() - state.lastBatteryReport) / 60000 >= 60 * 24)
-    {
-        logging("Over 24hr since last battery report. Requesting report")
-        request << zwave.batteryV1.batteryGet()
-    }
-    
-    state.lastWake = now()
+    def request = update_needed_settings()
 
     if(request != []){
        response(commands(request) + ["delay 5000", zwave.wakeUpV1.wakeUpNoMoreInformation().format()])
@@ -370,6 +371,8 @@ def refresh() {
     def request = []
     if (state.lastRefresh != null && now() - state.lastRefresh < 5000) {
         logging("Refresh Double Press")
+        state.currentProperties."111" = null
+        state.wakeInterval = null
         def configuration = parseXml(configuration_model())
         configuration.Value.each
         {
@@ -379,14 +382,16 @@ def refresh() {
         } 
         request << zwave.firmwareUpdateMdV2.firmwareMdGet()
         request << zwave.wakeUpV1.wakeUpIntervalGet()
+    } else {
+        request << zwave.batteryV1.batteryGet()
+        request << zwave.sensorMultilevelV5.sensorMultilevelGet(sensorType:1, scale:1)
+        request << zwave.sensorMultilevelV5.sensorMultilevelGet(sensorType:3, scale:1)
+        request << zwave.sensorMultilevelV5.sensorMultilevelGet(sensorType:5, scale:1)
+        request << zwave.sensorMultilevelV5.sensorMultilevelGet(sensorType:27, scale:1)
     }
 
     state.lastRefresh = now()
-    request << zwave.batteryV1.batteryGet()
-    request << zwave.sensorMultilevelV5.sensorMultilevelGet(sensorType:1, scale:1)
-    request << zwave.sensorMultilevelV5.sensorMultilevelGet(sensorType:3, scale:1)
-    request << zwave.sensorMultilevelV5.sensorMultilevelGet(sensorType:5, scale:1)
-    request << zwave.sensorMultilevelV5.sensorMultilevelGet(sensorType:27, scale:1)
+    
     commands(request)
 }
 
@@ -395,8 +400,8 @@ def configure() {
     logging("Configuring Device For SmartThings Use")
     def cmds = []
 
-    cmds += sync_properties()
-    commands(cmds)
+    cmds = update_needed_settings()
+    if (cmds != []) commands(cmds)
 }
 
 def updated()
@@ -429,48 +434,18 @@ def updated()
     sendEvent(name:"needUpdate", value: device.currentValue("needUpdate"), displayed:false, isStateChange: true)
 }
 
-def sync_properties()
-{   
-    def currentProperties = state.currentProperties ?: [:]
-    def configuration = parseXml(configuration_model())
-
-    def cmds = []
-    
-    if(!state.needfwUpdate || state.needfwUpdate == ""){
-       logging("Requesting device firmware version")
-       cmds << zwave.firmwareUpdateMdV2.firmwareMdGet()
-    }
-   
-    configuration.Value.each
-    {
-        if ( "${it.@setting_type}" == "zwave" ) {
-            if (! currentProperties."${it.@index}" || currentProperties."${it.@index}" == null)
-            {
-                if (device.currentValue("currentFirmware") == null || "${it.@fw}".indexOf(device.currentValue("currentFirmware")) >= 0){
-                
-                        logging("Looking for current value of parameter ${it.@index}")
-                        cmds << zwave.configurationV1.configurationGet(parameterNumber: it.@index.toInteger())
-                } 
-            }
-        }
-    }
-    
-    if (device.currentValue("needUpdate") == "YES") { cmds += update_needed_settings() }
-    return cmds
-}
-
 def convertParam(number, value) {
 	switch (number){
         case 41:
             //Parameter difference between firmware versions
-        	if (settings."41".toInteger() != null && device.currentValue("currentFirmware") != "1.06")
+        	if (settings."41".toInteger() != null && device.currentValue("currentFirmware") != null && device.currentValue("currentFirmware") != "1.06")
             	(value * 256) + 2
             else
                 value
         break
         case 45:
             //Parameter difference between firmware versions
-        	if (settings."45".toInteger() != null && device.currentValue("currentFirmware") != "1.08")
+        	if (settings."45".toInteger() != null && device.currentValue("currentFirmware") != null && device.currentValue("currentFirmware") != "1.08")
             	settings."45".toInteger()
             else
                 value
@@ -555,9 +530,13 @@ def update_needed_settings()
      
     def configuration = parseXml(configuration_model())
     def isUpdateNeeded = "NO"
+    
+    if(!state.needfwUpdate || state.needfwUpdate == ""){
+       logging("Requesting device firmware version")
+       cmds << zwave.firmwareUpdateMdV2.firmwareMdGet()
+    }    
 
     if(state.wakeInterval == null || state.wakeInterval != getAdjustedWake()){
-        isUpdateNeeded = "YES"
         logging("Setting Wake Interval to ${getAdjustedWake()}")
         cmds << zwave.wakeUpV1.wakeUpIntervalSet(seconds: getAdjustedWake(), nodeid:zwaveHubNodeId)
         cmds << zwave.wakeUpV1.wakeUpIntervalGet()
@@ -569,26 +548,31 @@ def update_needed_settings()
             if (currentProperties."${it.@index}" == null)
             {
                 if (device.currentValue("currentFirmware") == null || "${it.@fw}".indexOf(device.currentValue("currentFirmware")) >= 0){
-                    logging("Current value of parameter ${it.@index} is unknown")
                     isUpdateNeeded = "YES"
+                    logging("Current value of parameter ${it.@index} is unknown")
+                    cmds << zwave.configurationV1.configurationGet(parameterNumber: it.@index.toInteger())
                 }
             }
             else if (settings."${it.@index}" != null && convertParam(it.@index.toInteger(), cmd2Integer(currentProperties."${it.@index}")) != settings."${it.@index}".toInteger() && it.@index != "41" && it.@index != "111")
             { 
-                isUpdateNeeded = "YES"
+                if (device.currentValue("currentFirmware") == null || "${it.@fw}".indexOf(device.currentValue("currentFirmware")) >= 0){
+                    isUpdateNeeded = "YES"
 
-                logging("Parameter ${it.@index} will be updated to " + settings."${it.@index}")
-                def convertedConfigurationValue = convertParam(it.@index.toInteger(), settings."${it.@index}".toInteger())
-                cmds << zwave.configurationV1.configurationSet(configurationValue: integer2Cmd(convertedConfigurationValue, it.@byteSize.toInteger()), parameterNumber: it.@index.toInteger(), size: it.@byteSize.toInteger())
-                cmds << zwave.configurationV1.configurationGet(parameterNumber: it.@index.toInteger())
+                    logging("Parameter ${it.@index} will be updated to " + settings."${it.@index}")
+                    def convertedConfigurationValue = convertParam(it.@index.toInteger(), settings."${it.@index}".toInteger())
+                    cmds << zwave.configurationV1.configurationSet(configurationValue: integer2Cmd(convertedConfigurationValue, it.@byteSize.toInteger()), parameterNumber: it.@index.toInteger(), size: it.@byteSize.toInteger())
+                    cmds << zwave.configurationV1.configurationGet(parameterNumber: it.@index.toInteger())
+                }
             } 
             else if (settings."${it.@index}" != null && it.@index == "111" && convertParam(it.@index.toInteger(), cmd2Integer(currentProperties."${it.@index}")) != getRoundedInterval(settings."111".toInteger()))
             {   
-                isUpdateNeeded = "YES"
+                if (device.currentValue("currentFirmware") == null || "${it.@fw}".indexOf(device.currentValue("currentFirmware")) >= 0){
+                    isUpdateNeeded = "YES"
 
-                logging("Parameter ${it.@index} will be updated to " + getRoundedInterval(settings."${it.@index}"))
-                cmds << zwave.configurationV1.configurationSet(configurationValue: integer2Cmd(getRoundedInterval(settings."111".toInteger()), 4), parameterNumber: it.@index.toInteger(), size: 4)
-                cmds << zwave.configurationV1.configurationGet(parameterNumber: it.@index.toInteger())
+                    logging("Parameter ${it.@index} will be updated to " + getRoundedInterval(settings."${it.@index}"))
+                    cmds << zwave.configurationV1.configurationSet(configurationValue: integer2Cmd(getRoundedInterval(settings."111".toInteger()), 4), parameterNumber: it.@index.toInteger(), size: 4)
+                    cmds << zwave.configurationV1.configurationGet(parameterNumber: it.@index.toInteger())
+                }
             }
             else if (settings."${it.@index}" != null && it.@index == "41" && cmd2Integer(currentProperties."${it.@index}") != convertParam(it.@index.toInteger(), settings."${it.@index}".toInteger()))            {   
                 isUpdateNeeded = "YES"
@@ -685,7 +669,8 @@ def generate_preferences(configuration_model)
                 input "${it.@index}", "number",
                     title:"${it.@label}\n" + "${it.Help}",
                     range: "${it.@min}..${it.@max}",
-                    defaultValue: "${it.@value}"
+                    defaultValue: "${it.@value}",
+                    displayDuringSetup: "${it.@displayDuringSetup}"
             break
             case "list":
                 def items = []
@@ -693,19 +678,21 @@ def generate_preferences(configuration_model)
                 input "${it.@index}", "enum",
                     title:"${it.@label}\n" + "${it.Help}",
                     defaultValue: "${it.@value}",
+                    displayDuringSetup: "${it.@displayDuringSetup}",
                     options: items
             break
             case "decimal":
                input "${it.@index}", "decimal",
                     title:"${it.@label}\n" + "${it.Help}",
                     range: "${it.@min}..${it.@max}",
-                    defaultValue: "${it.@value}"
+                    defaultValue: "${it.@value}",
+                    displayDuringSetup: "${it.@displayDuringSetup}"
             break
             case "boolean":
                input "${it.@index}", "boolean",
                     title:"${it.@label}\n" + "${it.Help}",
-                    //range: "${it.@min}..${it.@max}",
-                    defaultValue: "${it.@value}"
+                    defaultValue: "${it.@value}",
+                    displayDuringSetup: "${it.@displayDuringSetup}"
             break
         }  
     }
@@ -760,7 +747,7 @@ private getAdjustedWake(){
                 if (settings."111".toInteger() <= 3600){
                     wakeValue = getRoundedInterval(settings."111")
                 } else {
-                    wakeValue = getRoundedInterval(settings."111".toInteger() % 2)
+                    wakeValue = getRoundedInterval(settings."111".toInteger() / 2)
                 }
             } else {
                 wakeValue = 240
@@ -857,14 +844,14 @@ private updateStatus(){
 }
 
 private def logging(message) {
-    if (state.enableDebugging == "true") log.debug "$message"
+    if (state.enableDebugging == null || state.enableDebugging == "true") log.debug "$message"
 }
 
 def configuration_model()
 {
 '''
 <configuration>
-    <Value type="list" index="101" label="Battery or USB?" min="240" max="241" value="241" byteSize="4" fw="1.06,1.07,1.08">
+    <Value type="list" index="101" label="Battery or USB?" min="240" max="241" value="241" byteSize="4" fw="1.06,1.07,1.08" displayDuringSetup="true">
     <Help>
 Is the device powered by battery or usb?
     </Help>
@@ -930,7 +917,7 @@ Note: Firmware 1.06 and 1.07 only support a value of 2.
 Only used if selective reporting is enabled.
     </Help>
   </Value>
-  <Value type="short" byteSize="2" index="3" label="PIR reset time" min="10" max="3600" value="240" setting_type="zwave" fw="1.06,1.07,1.08">
+  <Value type="short" byteSize="2" index="3" label="PIR reset time" min="10" max="3600" value="240" setting_type="zwave" fw="1.06,1.07,1.08" displayDuringSetup="true">
     <Help>
 Number of seconds to wait to report motion cleared after a motion event if there is no motion detected.
 Range: 10~3600.
@@ -942,14 +929,14 @@ a), Interval time =Value/60, if the interval time can be divided by 60 and witho
 b), Interval time= (Value/60) +1, if the interval time can be divided by 60 and has remainder.
     </Help>
   </Value>
-    <Value type="byte" byteSize="1" index="4" label="PIR motion sensitivity" min="0" max="5" value="" setting_type="zwave" fw="1.06,1.07,1.08">
+    <Value type="byte" byteSize="1" index="4" label="PIR motion sensitivity" min="0" max="5" value="" setting_type="zwave" fw="1.06,1.07,1.08" displayDuringSetup="true">
     <Help>
 A value from 0-5, from disabled to high sensitivity
 Range: 0~5
 Default: 5
     </Help>
   </Value>
-    <Value type="byte" byteSize="4" index="111" label="Reporting Interval" min="5" max="2678400" value="" setting_type="zwave" fw="1.06,1.07,1.08">
+    <Value type="byte" byteSize="4" index="111" label="Reporting Interval" min="5" max="2678400" value="" setting_type="zwave" fw="1.06,1.07,1.08" displayDuringSetup="true">
     <Help>
 The interval time of sending reports in Report group 1
 Range: 5~
@@ -1015,7 +1002,7 @@ Default: 30
 Note: May help if config parameters aren't making it before device goes back to sleep.
     </Help>
   </Value>
-  <Value type="boolean" index="enableDebugging" label="Enable Debug Logging?" value="false" setting_type="preference" fw="1.06,1.07,1.08">
+  <Value type="boolean" index="enableDebugging" label="Enable Debug Logging?" value="true" setting_type="preference" fw="1.06,1.07,1.08">
     <Help>
 
     </Help>
