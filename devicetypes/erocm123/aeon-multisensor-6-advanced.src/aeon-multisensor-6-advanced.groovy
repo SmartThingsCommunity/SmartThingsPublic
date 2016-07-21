@@ -108,12 +108,12 @@
 				state "ultravioletIndex",label:'${currentValue} UV INDEX',unit:""
 		}
 		standardTile("acceleration", "device.acceleration", width: 2, height: 2) {
-			state("active", label:'tamper', icon:"st.motion.acceleration.active", backgroundColor:"#f39c12")
 			state("inactive", label:'clear', icon:"st.motion.acceleration.inactive", backgroundColor:"#ffffff")
+            state("active", label:'tamper', icon:"st.motion.acceleration.active", backgroundColor:"#f39c12")
 		}
         valueTile("tamper", "device.tamper", decoration: "flat", width: 2, height: 2) {
-			state("detected", label:'tamper active', backgroundColor:"#f39c12")
 			state("clear", label:'tamper clear', backgroundColor:"#53a7c0")
+            state("detected", label:'tamper active', backgroundColor:"#f39c12")
 		}
 		valueTile("battery", "device.battery", decoration: "flat", width: 2, height: 2) {
 			state "battery", label:'${currentValue}% battery', unit:""
@@ -272,6 +272,7 @@ def zwaveEvent(physicalgraph.zwave.commands.sensormultilevelv5.SensorMultilevelR
 		default:
 			map.descriptionText = cmd.toString()
 	}
+    
     def request = update_needed_settings()
     
     if(request != []){
@@ -295,7 +296,6 @@ def motionEvent(value) {
 }
 
 def zwaveEvent(physicalgraph.zwave.commands.sensorbinaryv2.SensorBinaryReport cmd) {
-	setConfigured()
 	motionEvent(cmd.sensorValue)
 }
 
@@ -401,6 +401,7 @@ def configure() {
     def cmds = []
 
     cmds = update_needed_settings()
+    
     if (cmds != []) commands(cmds)
 }
 
@@ -427,11 +428,19 @@ def updated()
     if (state.realLuminance != null) sendEvent(name:"illuminance", value: getAdjustedLuminance(state.realLuminance))
     if (state.realUV != null) sendEvent(name:"ultravioletIndex", value: getAdjustedUV(state.realUV))
     
+    def cmds = update_needed_settings()
+    
+    if (device.currentValue("battery") == null) cmds << zwave.batteryV1.batteryGet()
+    if (device.currentValue("temperature") == null) cmds << zwave.sensorMultilevelV5.sensorMultilevelGet(sensorType:1, scale:1)
+    if (device.currentValue("humidity") == null) cmds << zwave.sensorMultilevelV5.sensorMultilevelGet(sensorType:3, scale:1)
+    if (device.currentValue("illuminance") == null) cmds << zwave.sensorMultilevelV5.sensorMultilevelGet(sensorType:5, scale:1)
+    if (device.currentValue("ultravioletIndex") == null) cmds << zwave.sensorMultilevelV5.sensorMultilevelGet(sensorType:27, scale:1)
+        
     updateStatus()
     
-    update_needed_settings()
-    
     sendEvent(name:"needUpdate", value: device.currentValue("needUpdate"), displayed:false, isStateChange: true)
+    
+    response(commands(cmds))
 }
 
 def convertParam(number, value) {
@@ -586,6 +595,7 @@ def update_needed_settings()
             }
         }
     }
+    
     sendEvent(name:"needUpdate", value: isUpdateNeeded, displayed:false, isStateChange: true)
     return cmds
 }
@@ -634,14 +644,6 @@ def integer2Cmd(value, size) {
 		[value4, value3, value2, value1]
 	break
 	}
-}
-
-private setConfigured() {
-	updateDataValue("configured", "true")
-}
-
-private isConfigured() {
-	getDataValue("configured") == "true"
 }
 
 private command(physicalgraph.zwave.Command cmd) {
@@ -727,7 +729,6 @@ private getRoundedInterval(number) {
     else 
        return ((tempDouble.round() + 1) * 60).toInteger()
 }
-
 
 private getAdjustedWake(){
     def wakeValue
@@ -844,7 +845,7 @@ private updateStatus(){
 }
 
 private def logging(message) {
-    if (state.enableDebugging == null || state.enableDebugging == "true") log.debug "$message"
+    if (state.enableDebugging == "true") log.debug "$message"
 }
 
 def configuration_model()
