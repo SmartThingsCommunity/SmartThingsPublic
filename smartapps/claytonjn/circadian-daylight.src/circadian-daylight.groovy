@@ -26,7 +26,7 @@
 * * The app doesn't calculate a true "Blue Hour" -- it just sets the lights to
 * 2700K (warm white) until your hub goes into Night mode
 *
-* Version 4.1: June 30, 2016 - Fix checking mode, streamline bulb handlers, fix for allowing night brightness independant from sleep, change dimming bulbs to respect dynamic brightness setting, attempt to return to previous brightness after sleep, fix brightness algorighm. 
+* Version 4.1: June 30, 2016 - Fix checking mode, streamline bulb handlers, fix for allowing night brightness independant from sleep, change dimming bulbs to respect dynamic brightness setting, attempt to return to previous brightness after sleep, fix brightness algorighm.
 * Version 4.0: June 13, 2016 - Complete re-write of app. Parent/Child setup; with new ct/brightness algorithms, separate handlers for scheduled and bulb events, and additional settings.
 * Version 3.1: May 7, 2016 - Fix a bunch of copy/paste errors resulting in references to the wrong bulb types. No longer need to prevent CD from disabling itself.
 * Version 3.0: April 22, 2016 - Taking over the project from Kristopher. Original repo was https://github.com/KristopherKubicki/smartapp-circadian-daylight/
@@ -184,8 +184,8 @@ private void calcBrightness(sunriseAndSunset) {
             double brightness = a*nowTime**2+b*nowTime+c
             double stRange = (100 - 1)
         	double hueRange = (254 - 1)
-        	double hueBri = Math.round((((brightness - 1) * hueRange) / stRange) + 1) //Round to Hue brightness range
-            state.brightness = (((hueBri - 1) * stRange) / hueRange) + 1
+        	double hueBri = Math.round((((brightness - 1) * hueRange) / stRange) + 1) as Integer //Round to Hue brightness range
+            state.brightness = Math.round((((hueBri - 1) * stRange) / hueRange) + 1) as Integer
             log.debug "Brightness set to ${state.brightness}"
         }
     } else { state.brightness = NULL }
