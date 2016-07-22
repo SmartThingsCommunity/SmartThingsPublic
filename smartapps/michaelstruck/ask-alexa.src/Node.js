@@ -1,7 +1,7 @@
 /**
  *  Ask Alexa - Lambda Code
  *
- *  Version 1.1.5 - 7/4/16 Copyright © 2016 Michael Struck
+ *  Version 1.1.6 - 7/21/16 Copyright © 2016 Michael Struck
  *  Special thanks for Keith DeLong for code and assistance
  *  
  *  Version 1.0.0 - Initial release
@@ -12,6 +12,7 @@
  *  Version 1.1.3 - Fixed additional syntax items; added stop/cancel/end/yes options
  *  Version 1.1.4 - Added some randomization to responses
  *  Version 1.1.5 - Code optimization, more responses
+ *  Version 1.1.6 - Minor code/syntax changes. Organized code to allow for more custom responses
  * 
  *  Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except
  *  in compliance with the License. You may obtain a copy of the License at:
@@ -25,26 +26,20 @@
  */
 'use strict';
 exports.handler = function( event, context ) {
-   var versionTxt = '1.1.5';
-   var versionDate= '07/04/2016';
-   var versionNum = '115';
+   var versionTxt = '1.1.6';
+   var versionDate= '07/21/2016';
+   var versionNum = '116';
    var https = require( 'https' );
    // Paste app code here between the breaks------------------------------------------------
-    var IName = 'SmartThings';
-    var STappID = '';
-    var STtoken = '';
-    var url='https://graph.api.smartthings.com:443/api/smartapps/installations/' + STappID + '/' ;
+   var IName = '';
+   var STappID = '';
+   var STtoken = '';
+   var url='' ;
    //---------------------------------------------------------------------------------------
    var cardName ="";
-   var responses = "";
    var resText = "";
-   if (event.request.type == "LaunchRequest") {
-        responses= ["Simply give me a device and a command, or ask me the status of a device, and I will carry out your request. Would you like to try something? ", "What would you like to do with your SmartThings environment? ","Would you like to try something? "];
-        resText = resText = responses[Math.floor(Math.random() * 3)];
-        output(resText, context, "Ask Alexa Help", false);
-   }
-   else if (event.request.type == "SessionEndedRequest"){
-   }
+   if (event.request.type == "LaunchRequest") { output(getResponse("Launch"), context, "Ask Alexa Help", false); }
+   else if (event.request.type == "SessionEndedRequest"){}
    else if (event.request.type == "IntentRequest") {
         var process = false;
         var intentName = event.request.intent.name;
@@ -87,42 +82,26 @@ exports.handler = function( event, context ) {
             cardName = "SmartThings Home Operation";
         }
         else if (event.request.intent.name == "AMAZON.YesIntent") {
-            responses = [" Ok. Simply say what you want me to do with your SmartThings devices or macros. ", " Ok. What would you like to do? ", " Ok. Ready for your commands. ", " Go ahead. "];
-            resText =responses[Math.floor(Math.random() * 4)];
-            output(resText, context, "SmartThings Alexa Yes Command", false);
+            output(getResponse("Yes"), context, "SmartThings Alexa Yes Command", false);
         }
         else if (event.request.intent.name == "AMAZON.NoIntent") {
-            responses = [" Ok. ", " Ok. Maybe later. ", " Ok. I am here if you ever need me. ", " "];
-            resText =responses[Math.floor(Math.random() * 4)];
-            output(resText, context, "SmartThings Alexa End Command", true);
+            output(getResponse("No"), context, "SmartThings Alexa End Command", true);
         }
         else if (event.request.intent.name == "AMAZON.StopIntent") {
-            responses = [" Stopping. ", " Ok. Stopping. ", " "];
-            resText =responses[Math.floor(Math.random() * 3)];
-            output(resText, context, "Amazon Stop", true);
+            output(getResponse("Stop"), context, "Amazon Stop", true);
         }
         else if (event.request.intent.name == "AMAZON.CancelIntent") {
-            responses = [" Cancelling. ", " Ok. Cancelling. ", " "];
-            resText =responses[Math.floor(Math.random() * 3)];
-            output(resText, context, "Amazon Cancel", true);
+            output(getResponse("Cancel"), context, "Amazon Cancel", true);
         }
         else if (intentName == "AMAZON.HelpIntent") {
-            resText = "With the Ask Alexa SmartApp, you can interface your "+
-            "SmartThings' household with me. This will allow you to give me commands "+
-            "to turn off a light, or unlock a door. As an example you can simply say, "+
-            "'tell "+ IName +" to turn off the living room', and I'll turn off that device. " +
-            "In addition, you can query your devices to get information such as open or "+
-            "close status, or find out the temperature in a room. To use this function, just give "+
-            "me the device name. For example, you could say, 'ask "+ IName +" about the patio', and I'll "+
-            "give you all of the common attributes I find with that device, including battery levels. "+
+            resText = "With the Ask Alexa SmartApp, you can integrate your SmartThings household with me. This will allow you to give me commands "+
+            "to turn off a light, or unlock a door. For example, you can simply say, 'tell "+ IName +" to turn off the living room', and I'll turn off that device. " +
+            "In addition, you can query your devices to get information such as open or close status, or find out the temperature in a room. To use this function, just give "+
+            "me the device name. For example, you could say, 'ask "+ IName +" about the patio', and I'll give you all of the common attributes with that device, including battery levels. "+
             "For those who are curious, this is version" + versionTxt +" of the Lambda code, written by Michael Struck. ";
             output(resText, context, "Ask Alexa Help", true);
         }
-        if (!process) {
-            responses = [" I am not sure what you are asking. Would you like to try again? ", " Sorry, I didn't understand. Want to try again? ", " I did not understand what you want me to do. Like to try again? "];
-            resText =responses[Math.floor(Math.random() * 3)];
-            output(resText, context, "Ask Alexa Error", false);   
-        }
+        if (!process) { output(getResponse("respError"), context, "Ask Alexa Error", false); }
         else {
             url += '&lVer=' + versionNum + '&access_token=' + STtoken;
             https.get( url, function( response ) {
@@ -135,10 +114,8 @@ exports.handler = function( event, context ) {
                 if (resJSON.continue) { contOptions = resJSON.continue; }
                 if (speechText.endsWith("%1%")) { 
                 	if (contOptions.startsWith("1")){
-                    	responses = ["Would you like to try again? ","Want to try again? ","Do you want to try again? "];
-                    	resText =responses[Math.floor(Math.random() * 3)];
                     	speechText = speechText.slice(0, -3);
-                    	speechText += resText;
+                    	speechText += getResponse("appError");
                         endSession = false;
                 	}
                 	else {
@@ -147,10 +124,8 @@ exports.handler = function( event, context ) {
                 }
                 if (speechText.endsWith("%2%")) { 
                 	if (contOptions.slice(1,-2)=="1"){
-                    	responses = ["Would you like to do something else? ","Want anything else? ","Do you want anything else? "];
-                    	resText =responses[Math.floor(Math.random() * 3)];
                     	speechText = speechText.slice(0, -3);
-                    	speechText += resText;
+                    	speechText += getResponse("Ending");
                         endSession = false;
                 	}
                 	else {
@@ -159,10 +134,8 @@ exports.handler = function( event, context ) {
                 }
                 if (speechText.endsWith("%3%")) { 
                 	if (contOptions.slice(2,-1)=="1"){
-                    	responses = ["Would you like to do something else? ","Need anything else? ","Do you need anything else? "];
-                    	resText =responses[Math.floor(Math.random() * 3)];
                     	speechText = speechText.slice(0, -3);
-                    	speechText += resText;
+                    	speechText += getResponse("Ending");
                         endSession = false;
                 	}
                 	else {
@@ -171,10 +144,8 @@ exports.handler = function( event, context ) {
                 }
                 if (speechText.endsWith("%4%")) { 
                 	if (contOptions.endsWith("1")){
-                    	responses = ["Do you want anything else? ","Want to do something else? ","Do you want to do anything else? "];
-                    	resText =responses[Math.floor(Math.random() * 3)];
                     	speechText = speechText.slice(0, -3);
-                    	speechText += resText;
+                    	speechText += getResponse("Ending");
                         endSession = false;
                 	}
                 	else {
@@ -207,4 +178,41 @@ function output( text, context, card, complete ) {
    shouldEndSession: complete
    };
    context.succeed( { response: response } );
+}
+
+function getResponse(respType){
+    var responses;
+    if (respType == "appError"){
+        responses = ["Would you like to try again? ","Want to try again? ","Do you want to try again? "];    
+    }
+    else if (respType == "Launch"){
+        responses= ["Simply give me a device and a command, or ask me the status of a device, and I will carry out your request. Would you like to try something? " 
+                    ,"What would you like to do with your SmartThings environment? ","Would you like to try something? "];
+    }
+    else if (respType == "respError"){
+        responses = [" I am not sure what you are asking. Would you like to try again? "
+                    , " Sorry, I didn't understand. Want to try again? "
+                    , " I did not understand what you want me to do. Like to try again? "];
+    }
+    else if (respType =="Cancel"){
+        responses = [" Cancelling. ", " Ok. Cancelling. ", "Ok. ", " "];
+    }
+    else if (respType == "Stop"){
+        responses = [" Stopping. ", " Ok. Stopping. ", "Ok. ", " "];
+    }
+    else if (respType == "No"){
+        responses = [" Ok. ", " Ok. Maybe later. ", " Ok. I am here if you need me. " 
+                    ," Ok. Let me know if you need anything later. ", " "];
+    }
+    else if (respType == "Yes" ){
+        responses = [" Ok. Simply say what you want me to do with your SmartThings devices or macros. "
+                    , " Ok. What would you like to do? ", " Ok. Ready for your commands. ", " Ok. Go ahead. "];       
+    }
+    else if (respType == "Ending") {
+        responses = ["Would you like to do something else? ","Want anything else? ","Do you want anything else? " 
+                    ,"Need anything else? ","Do you need anything else? ", "Want to do something else? "
+                    ,"Do you want to do anything else? ", "Can I help with anything else? ", "Anything else? "];
+    }
+    var response = responses[Math.floor(Math.random() * responses.length)];
+    return response;
 }
