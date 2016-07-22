@@ -4,7 +4,7 @@
  *   
  *	github: Eric Maycock (erocm123)
  *	email: erocmail@gmail.com
- *	Date: 2016-07-07
+ *	Date: 2016-07-22 7:39AM
  *	Copyright Eric Maycock
  *
  *  Code has elements from other community sources @CyrilPeponnet, @Robert_Vandervoort. Greatly reworked and 
@@ -37,6 +37,7 @@
         capability "Tamper Alert"
         
         command "resetBatteryRuntime"
+        command "resetTamperAlert"
 		
         attribute   "needUpdate", "string"
         
@@ -73,8 +74,8 @@
 			}
 		}
         standardTile("motion","device.motion", width: 2, height: 2) {
-            	state "active",label:'motion',icon:"st.motion.motion.active",backgroundColor:"#53a7c0"
                 state "inactive",label:'no motion',icon:"st.motion.motion.inactive",backgroundColor:"#ffffff"
+                state "active",label:'motion',icon:"st.motion.motion.active",backgroundColor:"#53a7c0"
 		}
 		valueTile("temperature","device.temperature", width: 2, height: 2) {
             	state "temperature",label:'${currentValue}°',backgroundColors:[
@@ -111,9 +112,9 @@
 			state("inactive", label:'clear', icon:"st.motion.acceleration.inactive", backgroundColor:"#ffffff")
             state("active", label:'tamper', icon:"st.motion.acceleration.active", backgroundColor:"#f39c12")
 		}
-        valueTile("tamper", "device.tamper", decoration: "flat", width: 2, height: 2) {
-			state("clear", label:'tamper clear', backgroundColor:"#53a7c0")
-            state("detected", label:'tamper active', backgroundColor:"#f39c12")
+        standardTile("tamper", "device.tamper", decoration: "flat", width: 2, height: 2) {
+			state("clear", label:'clear', icon:"st.contact.contact.closed", backgroundColor:"#53a7c0", action: "resetTamperAlert")
+            state("detected", label:'tamper', icon:"st.contact.contact.open", backgroundColor:"#f39c12", action: "resetTamperAlert")
 		}
 		valueTile("battery", "device.battery", decoration: "flat", width: 2, height: 2) {
 			state "battery", label:'${currentValue}% battery', unit:""
@@ -276,11 +277,11 @@ def zwaveEvent(physicalgraph.zwave.commands.sensormultilevelv5.SensorMultilevelR
     def request = update_needed_settings()
     
     if(request != []){
-       return [createEvent(map), response(commands(request))]
+        return [response(commands(request)), createEvent(map)]
     } else {
-       logging("SensorMultiLevelReport: No commands to send")
-       return createEvent(map)
-    }   
+        return createEvent(map)
+    }
+
 }
 
 def motionEvent(value) {
@@ -304,6 +305,7 @@ def zwaveEvent(physicalgraph.zwave.commands.basicv1.BasicSet cmd) {
 }
 
 def zwaveEvent(physicalgraph.zwave.commands.notificationv3.NotificationReport cmd) {
+    logging("NotificationReport: $cmd")
 	def result = []
 	if (cmd.notificationType == 7) {
 		switch (cmd.event) {
@@ -313,7 +315,7 @@ def zwaveEvent(physicalgraph.zwave.commands.notificationv3.NotificationReport cm
                 result << createEvent(name: "acceleration", value: "inactive", descriptionText: "$device.displayName tamper cleared")
 				break
 			case 3:
-				result << createEvent(name: "tamper", value: "detected", descriptionText: "$device.displayName was moved")
+				result << createEvent(name: "tamper", value: "detected", descriptionText: "$device.displayName was tampered")
                 result << createEvent(name: "acceleration", value: "active", descriptionText: "$device.displayName was moved")
 				break
 			case 7:
@@ -321,6 +323,7 @@ def zwaveEvent(physicalgraph.zwave.commands.notificationv3.NotificationReport cm
 				break
 		}
 	} else {
+        logging("Need to handle this cmd.notificationType: ${cmd.notificationType}")
 		result << createEvent(descriptionText: cmd.toString(), isStateChange: false)
 	}
 	result
@@ -441,6 +444,11 @@ def updated()
     sendEvent(name:"needUpdate", value: device.currentValue("needUpdate"), displayed:false, isStateChange: true)
     
     response(commands(cmds))
+}
+
+def resetTamperAlert() {
+    sendEvent(name: "tamper", value: "clear", descriptionText: "$device.displayName tamper cleared")
+    sendEvent(name: "acceleration", value: "inactive", descriptionText: "$device.displayName tamper cleared")
 }
 
 def convertParam(number, value) {
@@ -604,6 +612,7 @@ def update_needed_settings()
 * Convert 1 and 2 bytes values to integer
 */
 def cmd2Integer(array) { 
+try {
 switch(array.size()) {
 	case 1:
 		array[0]
@@ -618,9 +627,13 @@ switch(array.size()) {
     	((array[0] & 0xFF) << 24) | ((array[1] & 0xFF) << 16) | ((array[2] & 0xFF) << 8) | (array[3] & 0xFF)
 	break
 }
+}catch (e) {
+log.debug "Error: cmd2Integer $e"
+}
 }
 
 def integer2Cmd(value, size) {
+    try{
 	switch(size) {
 	case 1:
 		[value]
@@ -644,6 +657,9 @@ def integer2Cmd(value, size) {
 		[value4, value3, value2, value1]
 	break
 	}
+    } catch (e) {
+        log.debug "Error: integer2Cmd $e Value: $value"
+    }
 }
 
 private command(physicalgraph.zwave.Command cmd) {
@@ -845,7 +861,7 @@ private updateStatus(){
 }
 
 private def logging(message) {
-    if (state.enableDebugging == "true") log.debug "$message"
+    if (state.enableDebugging == null || state.enableDebugging == "true") log.debug "$message"
 }
 
 def configuration_model()
@@ -930,14 +946,14 @@ a), Interval time =Value/60, if the interval time can be divided by 60 and witho
 b), Interval time= (Value/60) +1, if the interval time can be divided by 60 and has remainder.
     </Help>
   </Value>
-    <Value type="byte" byteSize="1" index="4" label="PIR motion sensitivity" min="0" max="5" value="" setting_type="zwave" fw="1.06,1.07,1.08" displayDuringSetup="true">
+    <Value type="byte" byteSize="1" index="4" label="PIR motion sensitivity" min="0" max="5" value="5" setting_type="zwave" fw="1.06,1.07,1.08" displayDuringSetup="true">
     <Help>
 A value from 0-5, from disabled to high sensitivity
 Range: 0~5
 Default: 5
     </Help>
   </Value>
-    <Value type="byte" byteSize="4" index="111" label="Reporting Interval" min="5" max="2678400" value="" setting_type="zwave" fw="1.06,1.07,1.08" displayDuringSetup="true">
+    <Value type="byte" byteSize="4" index="111" label="Reporting Interval" min="5" max="2678400" value="3600" setting_type="zwave" fw="1.06,1.07,1.08" displayDuringSetup="true">
     <Help>
 The interval time of sending reports in Report group 1
 Range: 5~
