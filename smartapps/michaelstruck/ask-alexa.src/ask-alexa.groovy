@@ -1,7 +1,7 @@
 /**
  *  Ask Alexa 
  *
- *  Version 2.0.7 - 7/21/16 Copyright © 2016 Michael Struck
+ *  Version 2.0.7a - 7/22/16 Copyright © 2016 Michael Struck
  *  Special thanks for Keith DeLong for overall code and assistance and Barry Burke for weather reporting/advisory/lunar phases code
  * 
  *  Version 1.0.0 - Initial release
@@ -19,7 +19,7 @@
  *  Version 2.0.4 (7/8/16) Code fixes/optimizations, added additional options for secondary responses
  *  Version 2.0.5 (7/9/16) Fix for null String issues
  *  Version 2.0.6 (7/14/16) Syntax fixes, additional filters on voice reports, expanded secondary responses, CoRE Macro fix
- *  Version 2.0.7 (7/21/16) Small code/syntax/interface fixes, code optimization. Allows you to place an entry into the Notification Event Log when a macro is run. Fixed CoRE Macro activation logic
+ *  Version 2.0.7a (7/21/16) Small code/syntax/interface fixes, code optimization. Allows you to place an entry into the Notification Event Log when a macro is run. Fixed CoRE Macro activation logic
  *
  *  Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except
  *  in compliance with the License. You may obtain a copy of the License at:
@@ -1617,10 +1617,10 @@ def reportStatus(deviceList, type){
     def appd = type=="temperature" || type=="thermostatSetpoint" || type == "heatingSetpoint" || type=="coolingSetpoint" || type == "autoAll" ? " degrees" : type == "humidity" ? " percent relative humidity" : ""
     if (type != "thermostatSetpoint" && type != "heatingSetpoint" && type !="coolingSetpoint" && type != "autoAll") {
 		deviceList.each {deviceName->
-			if (type=="level" && deviceName.latestValue("switch")=="on") result += "The ${deviceName} is on and set to ${deviceName.latestValue(type) as int}%. "
+			if (type=="level" && deviceName.latestValue("switch")=="on") result += "The ${deviceName} is on, and set to ${deviceName.latestValue(type) as int}%. "
             else if (type=="level" && deviceName.latestValue("switch")=="off") result += "The ${deviceName} is off. "
             else {
-                def n = roundValue(deviceName.latestValue(type))
+                def n = type=="temperature" ? roundValue(deviceName.latestValue(type)) : deviceName.latestValue(type)
                 result += "The ${deviceName} is ${n}${appd}. " 
 			}
         }
@@ -2617,12 +2617,12 @@ def setupData(){
 //Version/Copyright/Information/Help-----------------------------------------------------------
 private def textAppName() { def text = "Ask Alexa" }	
 private def textVersion() {
-    def version = "SmartApp Version: 2.0.7 (07/21/2016)"
+    def version = "SmartApp Version: 2.0.7a (07/22/2016)"
     def lambdaVersion = state.lambdaCode ? "\n" + state.lambdaCode : ""
     return "${version}${lambdaVersion}"
 }
 private def versionInt(){ return 207 }
-private def versionLong(){ return "2.0.7" }
+private def versionLong(){ return "2.0.7a" }
 private def textCopyright() {return "Copyright © 2016 Michael Struck" }
 private def textLicense() {
 	def text = "Licensed under the Apache License, Version 2.0 (the 'License'); you may not use this file except in compliance with the License. "+
