@@ -4,7 +4,7 @@
  *   
  *	github: Eric Maycock (erocm123)
  *	email: erocmail@gmail.com
- *	Date: 2016-07-22 7:39AM
+ *	Date: 2016-07-23 3:05PM
  *	Copyright Eric Maycock
  *
  *  Code has elements from other community sources @CyrilPeponnet, @Robert_Vandervoort. Greatly reworked and 
@@ -356,11 +356,17 @@ def zwaveEvent(physicalgraph.zwave.commands.firmwareupdatemdv2.FirmwareMdReport 
        case "42699":
           firmwareVersion = "1.08"
        break;
+       case "11942":
+          firmwareVersion = "1.06EU"
+       break;
+       case "14569":
+          firmwareVersion = "1.07EU"
+       break;
        default:
           firmwareVersion = cmd.checksum
     }
     state.needfwUpdate = "false"
-    updateDataValue("firmware", firmwareVersion)
+    updateDataValue("firmware", firmwareVersion.toString())
     createEvent(name: "currentFirmware", value: firmwareVersion)
 }
 
@@ -455,10 +461,17 @@ def convertParam(number, value) {
 	switch (number){
         case 41:
             //Parameter difference between firmware versions
-        	if (settings."41".toInteger() != null && device.currentValue("currentFirmware") != null && device.currentValue("currentFirmware") != "1.06")
-            	(value * 256) + 2
-            else
+        	if (settings."41".toInteger() != null && device.currentValue("currentFirmware") != null) {
+                if (device.currentValue("currentFirmware") == "1.07" || device.currentValue("currentFirmware") == "1.08") {
+                    (value * 256) + 2
+                } else if (device.currentValue("currentFirmware") == "1.07EU" || device.currentValue("currentFirmware") == "1.08EU") {
+                    (value * 256) + 1
+                } else {
+                    value
+                }	
+            } else {
                 value
+            }
         break
         case 45:
             //Parameter difference between firmware versions
@@ -595,7 +608,7 @@ def update_needed_settings()
                 isUpdateNeeded = "YES"
                 
                 logging("Parameter ${it.@index} will be updated to " + settings."${it.@index}")
-                if (device.currentValue("currentFirmware") == "1.06" )
+                if (device.currentValue("currentFirmware") == "1.06" || device.currentValue("currentFirmware") == "1.06EU")
                     cmds << zwave.configurationV1.configurationSet(configurationValue: integer2Cmd(convertParam(it.@index.toInteger(), settings."${it.@index}".toInteger()), 2), parameterNumber: it.@index.toInteger(), size: 2)
                 else
                     cmds << zwave.configurationV1.configurationSet(configurationValue: integer2Cmd(convertParam(it.@index.toInteger(), settings."${it.@index}".toInteger()), 3), parameterNumber: it.@index.toInteger(), size: 3)
@@ -868,14 +881,14 @@ def configuration_model()
 {
 '''
 <configuration>
-    <Value type="list" index="101" label="Battery or USB?" min="240" max="241" value="241" byteSize="4" fw="1.06,1.07,1.08" displayDuringSetup="true">
+    <Value type="list" index="101" label="Battery or USB?" min="240" max="241" value="241" byteSize="4" fw="1.06,1.07,1.08,1.06EU,1.07EU" displayDuringSetup="true">
     <Help>
 Is the device powered by battery or usb?
     </Help>
         <Item label="Battery" value="241" />
         <Item label="USB" value="240" />
   </Value>
-  <Value type="list" index="40" label="Enable selective reporting?" min="0" max="1" value="0" byteSize="1" setting_type="zwave" fw="1.06,1.07,1.08">
+  <Value type="list" index="40" label="Enable selective reporting?" min="0" max="1" value="0" byteSize="1" setting_type="zwave" fw="1.06,1.07,1.08,1.06EU,1.07EU">
     <Help>
 Enable/disable the selective reporting only when measurements reach a certain threshold or percentage set below. This is used to reduce network traffic.
 Default: No (Enable for Better Battery Life)
@@ -883,7 +896,7 @@ Default: No (Enable for Better Battery Life)
         <Item label="No" value="0" />
         <Item label="Yes" value="1" />
   </Value>
-  <Value type="short" byteSize="2" index="41" label="Temperature Threshold" min="1" max="5000" value="20" setting_type="zwave" fw="1.06,1.07,1.08">
+  <Value type="short" byteSize="2" index="41" label="Temperature Threshold" min="1" max="5000" value="20" setting_type="zwave" fw="1.06,1.07,1.08,1.06EU,1.07EU">
     <Help>
 Threshold change in temperature to induce an automatic report.
 Range: 1~5000.
@@ -894,7 +907,7 @@ Only used if selective reporting is enabled.
 2. The value contains one decimal point. E.g. if the value is set to 20, the threshold value =2.0 ℃ (EU/AU version) or 2.0 ℉ (US version). When the current temperature gap is more then 2.0, which will induce a temperature report to be sent out.
     </Help>
   </Value>
-  <Value type="byte" byteSize="1" index="42" label="Humidity Threshold" min="1" max="255" value="10" setting_type="zwave" fw="1.06,1.07,1.08">
+  <Value type="byte" byteSize="1" index="42" label="Humidity Threshold" min="1" max="255" value="10" setting_type="zwave" fw="1.06,1.07,1.08,1.06EU,1.07EU">
     <Help>
 Threshold change in humidity to induce an automatic report.
 Range: 1~255.
@@ -905,7 +918,7 @@ Only used if selective reporting is enabled.
 2. The default value is 10, which means that if the current humidity gap is more than 10%, it will send out a humidity report.
     </Help>
   </Value>
-  <Value type="short" byteSize="2" index="43" label="Luminance Threshold" min="1" max="30000" value="100" setting_type="zwave" fw="1.06,1.07,1.08">
+  <Value type="short" byteSize="2" index="43" label="Luminance Threshold" min="1" max="30000" value="100" setting_type="zwave" fw="1.06,1.07,1.08,1.06EU,1.07EU">
     <Help>
 Threshold change in luminance to induce an automatic report.
 Range: 1~30000.
@@ -914,7 +927,7 @@ Note:
 Only used if selective reporting is enabled.
     </Help>
   </Value>
-  <Value type="byte" byteSize="1" index="44" label="Battery Threshold" min="1" max="99" value="10" setting_type="zwave" fw="1.06,1.07,1.08">
+  <Value type="byte" byteSize="1" index="44" label="Battery Threshold" min="1" max="99" value="10" setting_type="zwave" fw="1.06,1.07,1.08,1.06EU,1.07EU">
     <Help>
 Threshold change in battery level to induce an automatic report.
 Range: 1~99.
@@ -925,7 +938,7 @@ Only used if selective reporting is enabled.
 2. The default value is 10, which means that if the current battery level gap is more than 10%, it will send out a battery report.
     </Help>
   </Value>
-  <Value type="byte" byteSize="1" index="45" label="Ultraviolet Threshold" min="1" max="11" value="2" setting_type="zwave" fw="1.06,1.07,1.08">
+  <Value type="byte" byteSize="1" index="45" label="Ultraviolet Threshold" min="1" max="11" value="2" setting_type="zwave" fw="1.06,1.07,1.08,1.06EU,1.07EU">
     <Help>
 Threshold change in ultraviolet to induce an automatic report.
 Range: 1~11.
@@ -934,7 +947,7 @@ Note: Firmware 1.06 and 1.07 only support a value of 2.
 Only used if selective reporting is enabled.
     </Help>
   </Value>
-  <Value type="short" byteSize="2" index="3" label="PIR reset time" min="10" max="3600" value="240" setting_type="zwave" fw="1.06,1.07,1.08" displayDuringSetup="true">
+  <Value type="short" byteSize="2" index="3" label="PIR reset time" min="10" max="3600" value="240" setting_type="zwave" fw="1.06,1.07,1.08,1.06EU,1.07EU" displayDuringSetup="true">
     <Help>
 Number of seconds to wait to report motion cleared after a motion event if there is no motion detected.
 Range: 10~3600.
@@ -946,14 +959,14 @@ a), Interval time =Value/60, if the interval time can be divided by 60 and witho
 b), Interval time= (Value/60) +1, if the interval time can be divided by 60 and has remainder.
     </Help>
   </Value>
-    <Value type="byte" byteSize="1" index="4" label="PIR motion sensitivity" min="0" max="5" value="5" setting_type="zwave" fw="1.06,1.07,1.08" displayDuringSetup="true">
+    <Value type="byte" byteSize="1" index="4" label="PIR motion sensitivity" min="0" max="5" value="5" setting_type="zwave" fw="1.06,1.07,1.08,1.06EU,1.07EU" displayDuringSetup="true">
     <Help>
 A value from 0-5, from disabled to high sensitivity
 Range: 0~5
 Default: 5
     </Help>
   </Value>
-    <Value type="byte" byteSize="4" index="111" label="Reporting Interval" min="5" max="2678400" value="3600" setting_type="zwave" fw="1.06,1.07,1.08" displayDuringSetup="true">
+    <Value type="byte" byteSize="4" index="111" label="Reporting Interval" min="5" max="2678400" value="3600" setting_type="zwave" fw="1.06,1.07,1.08,1.06EU,1.07EU" displayDuringSetup="true">
     <Help>
 The interval time of sending reports in Report group 1
 Range: 5~
@@ -1019,7 +1032,7 @@ Default: 30
 Note: May help if config parameters aren't making it before device goes back to sleep.
     </Help>
   </Value>
-  <Value type="boolean" index="enableDebugging" label="Enable Debug Logging?" value="true" setting_type="preference" fw="1.06,1.07,1.08">
+  <Value type="boolean" index="enableDebugging" label="Enable Debug Logging?" value="true" setting_type="preference" fw="1.06,1.07,1.08,1.06EU,1.07EU">
     <Help>
 
     </Help>
