@@ -1,7 +1,7 @@
 /**
  *  Ask Alexa 
  *
- *  Version 2.0.7a - 7/22/16 Copyright © 2016 Michael Struck
+ *  Version 2.0.7b - 7/23/16 Copyright © 2016 Michael Struck
  *  Special thanks for Keith DeLong for overall code and assistance and Barry Burke for weather reporting/advisory/lunar phases code
  * 
  *  Version 1.0.0 - Initial release
@@ -19,7 +19,7 @@
  *  Version 2.0.4 (7/8/16) Code fixes/optimizations, added additional options for secondary responses
  *  Version 2.0.5 (7/9/16) Fix for null String issues
  *  Version 2.0.6 (7/14/16) Syntax fixes, additional filters on voice reports, expanded secondary responses, CoRE Macro fix
- *  Version 2.0.7a (7/21/16) Small code/syntax/interface fixes, code optimization. Allows you to place an entry into the Notification Event Log when a macro is run. Fixed CoRE Macro activation logic
+ *  Version 2.0.7a (7/23/16) Small code/syntax/interface fixes, code optimization. Allows you to place an entry into the Notification Event Log when a macro is run. Fixed CoRE Macro activation logic
  *
  *  Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except
  *  in compliance with the License. You may obtain a copy of the License at:
@@ -2035,7 +2035,7 @@ private replaceVoiceVar(msg, delay) {
 	location.timeZone ? df.setTimeZone(location.timeZone) : df.setTimeZone(TimeZone.getTimeZone("America/New_York"))
 	def day = df.format(new Date()), time = parseDate("","h:mm a"), month = parseDate("","MMMM"), year = parseDate("","yyyy"), dayNum = parseDate("","d")
     def varList = parent.getVariableList()
-    def temp = roundValue(varList[0].temp) + " degrees" 
+    def temp = varList[0].temp != "undefined device" ? roundValue(varList[0].temp) + " degrees" : varList[0].temp
     def humid = varList[0].humid
     def people = varList[0].people
     def fullMacroType=[GroupM: "Macro Group", Control:"Control Macro", Group:"Device Group", Voice:"Voice Reporting"][macroType] ?: macroType
@@ -2617,12 +2617,12 @@ def setupData(){
 //Version/Copyright/Information/Help-----------------------------------------------------------
 private def textAppName() { def text = "Ask Alexa" }	
 private def textVersion() {
-    def version = "SmartApp Version: 2.0.7a (07/22/2016)"
+    def version = "SmartApp Version: 2.0.7b (07/23/2016)"
     def lambdaVersion = state.lambdaCode ? "\n" + state.lambdaCode : ""
     return "${version}${lambdaVersion}"
 }
 private def versionInt(){ return 207 }
-private def versionLong(){ return "2.0.7a" }
+private def versionLong(){ return "2.0.7b" }
 private def textCopyright() {return "Copyright © 2016 Michael Struck" }
 private def textLicense() {
 	def text = "Licensed under the Apache License, Version 2.0 (the 'License'); you may not use this file except in compliance with the License. "+
