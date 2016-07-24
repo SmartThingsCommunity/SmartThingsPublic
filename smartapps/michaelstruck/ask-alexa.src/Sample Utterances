@@ -50,6 +50,7 @@ DeviceOperation {Operator} {Device} by {Num}
 DeviceOperation {Operator} the {Device} by {Num}
 DeviceOperation turn {Device} {Operator} by {Num}
 DeviceOperation turn the {Device} {Operator} by {Num} percent
+DeviceOperation {Operator} the {Device}
 DeviceOperation to {Operator} the {Device} volume
 DeviceOperation to {Operator} the {Device} temperature
 DeviceOperation to {Operator} the {Device} {Param} temperature
@@ -88,6 +89,7 @@ DeviceOperation set the {Device} to {Num} degrees
 DeviceOperation to set the temperature of the {Device} to {Num} degrees
 DeviceOperation to set the temperature to {Num} in {Device}
 DeviceOperation turn {Device} {Param} mode to {Operator}
+DeviceOperation set {Device} {Param} to {Operator}
 DeviceOperation turn {Operator} {Device} {Param} mode
 DeviceOperation turn {Operator} {Device} to {Param}
 DeviceOperation set the {Device} to {Param} mode
@@ -258,6 +260,7 @@ MacroOperation set the {Macro} to {MNum} degrees
 MacroOperation to set the temperature of the {Macro} to {MNum} degrees
 MacroOperation to set the temperature to {MNum} in {Macro}
 MacroOperation turn {Macro} {MParam} mode to {MCmd}
+MacroOperation set {Macro} {MParam} to {MCmd}
 MacroOperation turn {MCmd} {Macro} {MParam} mode
 MacroOperation turn {MCmd} {Macro} to {MParam}
 MacroOperation set the {Macro} to {MParam} mode
