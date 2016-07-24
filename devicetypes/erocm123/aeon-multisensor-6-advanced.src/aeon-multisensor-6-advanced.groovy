@@ -4,7 +4,7 @@
  *   
  *	github: Eric Maycock (erocm123)
  *	email: erocmail@gmail.com
- *	Date: 2016-07-23 3:05PM
+ *	Date: 2016-07-07
  *	Copyright Eric Maycock
  *
  *  Code has elements from other community sources @CyrilPeponnet, @Robert_Vandervoort. Greatly reworked and 
@@ -607,11 +607,13 @@ def update_needed_settings()
             else if (settings."${it.@index}" != null && it.@index == "41" && cmd2Integer(currentProperties."${it.@index}") != convertParam(it.@index.toInteger(), settings."${it.@index}".toInteger()))            {   
                 isUpdateNeeded = "YES"
                 
-                logging("Parameter ${it.@index} will be updated to " + settings."${it.@index}")
-                if (device.currentValue("currentFirmware") == "1.06" || device.currentValue("currentFirmware") == "1.06EU")
+                logging("Parameter ${it.@index} will be updated to " + convertParam(it.@index.toInteger(), settings."${it.@index}".toInteger()))
+                
+                if (device.currentValue("currentFirmware") == "1.06" || device.currentValue("currentFirmware") == "1.06EU") {
                     cmds << zwave.configurationV1.configurationSet(configurationValue: integer2Cmd(convertParam(it.@index.toInteger(), settings."${it.@index}".toInteger()), 2), parameterNumber: it.@index.toInteger(), size: 2)
-                else
+                } else {
                     cmds << zwave.configurationV1.configurationSet(configurationValue: integer2Cmd(convertParam(it.@index.toInteger(), settings."${it.@index}".toInteger()), 3), parameterNumber: it.@index.toInteger(), size: 3)
+                }
                 cmds << zwave.configurationV1.configurationGet(parameterNumber: it.@index.toInteger())
             }
         }
@@ -969,11 +971,10 @@ Default: 5
     <Value type="byte" byteSize="4" index="111" label="Reporting Interval" min="5" max="2678400" value="3600" setting_type="zwave" fw="1.06,1.07,1.08,1.06EU,1.07EU" displayDuringSetup="true">
     <Help>
 The interval time of sending reports in Report group 1
-Range: 5~
+Range: 30~
 Default: 3600 seconds
 Note:
-1. The unit of interval time is second if USB power.
-2. If battery power, the minimum interval time is 60 minutes by default, for example, if the value is set to be more than 5 and less than 3600, the interval time is 60 minutes, if the value is set to be more than 3600 and less than 7200, the interval time is 120 minutes. You can also change the minimum interval time to 4 minutes via setting the interval value(3 bytes) to 240 in Wake Up Interval Set CC
+The unit of interval time is in seconds. Minimum interval time is 30 seconds when USB powered and 240 seconds (4 minutes) when battery powered.
     </Help>
   </Value>
   <Value type="byte" byteSize="1" index="201" label="Temperature offset" min="*" max="*" value="">
@@ -1016,7 +1017,7 @@ E.g. If measure value = 9 and the standard value = 8, so the calibration value =
 If the measure value = 7 and the standard value = 9, so the calibration value = 9 – 7 = 2. 
     </Help>
   </Value>
-  <Value type="list" index="81" label="Disable LED?" min="0" max="1" value="0" byteSize="1" setting_type="zwave" fw="1.08">
+  <Value type="list" index="81" label="Disable LED?" min="0" max="1" value="0" byteSize="1" setting_type="zwave" fw="1.08,1.08EU">
     <Help>
 Disable/Enable LED function. (Works on Firmware v1.08 only)
 Default: Enabled
@@ -1024,7 +1025,7 @@ Default: Enabled
         <Item label="No" value="0" />
         <Item label="Yes" value="1" />
   </Value>
-  <Value type="byte" index="8" label="Stay Awake Time?" min="8" max="255" value="30" byteSize="1" setting_type="zwave" fw="1.08">
+  <Value type="byte" index="8" label="Stay Awake Time?" min="8" max="255" value="30" byteSize="1" setting_type="zwave" fw="1.08,1.08EU">
     <Help>
 Set the timeout of awake after the Wake Up CC is sent out. (Works on Firmware v1.08 only)
 Range: 8~255
