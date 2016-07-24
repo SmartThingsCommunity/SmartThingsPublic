@@ -123,7 +123,7 @@ def parse(String description) {
     
     def statusTextmsg = ""
     if (device.currentState('power') && device.currentState('energy')) statusTextmsg = "${device.currentState('power').value} W ${device.currentState('energy').value} kWh"
-    sendEvent("name":"statusText", "value":statusTextmsg)
+    sendEvent(name:"statusText", value:statusTextmsg, displayed:false)
     
     return result
 }

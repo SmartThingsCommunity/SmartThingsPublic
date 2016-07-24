@@ -161,7 +161,7 @@ def parse(String description) {
     
     def statusTextmsg = ""
     if (device.currentState('power') && device.currentState('energy')) statusTextmsg = "${device.currentState('power').value} W ${device.currentState('energy').value} kWh"
-    sendEvent("name":"statusText", "value":statusTextmsg)
+    sendEvent(name:"statusText", value:statusTextmsg, displayed:false)
     
     //log.debug "parsed '${description}' to ${result.inspect()}"
 
@@ -177,7 +177,6 @@ def endpointEvent(endpoint, map) {
 }
 
 def zwaveEvent(physicalgraph.zwave.commands.multichannelv3.MultiChannelCmdEncap cmd, ep) {
-    logging("MultiChannelCmdEncap")
 	def encapsulatedCommand = cmd.encapsulatedCommand([0x32: 3, 0x25: 1, 0x20: 1])
 	if (encapsulatedCommand) {
 		if (encapsulatedCommand.commandClassId == 0x32) {
