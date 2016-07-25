@@ -1,5 +1,5 @@
 /**
- *  Simple Device Viewer v 1.9.1
+ *  Simple Device Viewer v 1.9.2
  *
  *  Author: 
  *    Kevin LaFramboise (krlaframboise)
@@ -8,6 +8,10 @@
  *    https://community.smartthings.com/t/release-simple-device-viewer/42481?u=krlaframboise
  *
  *  Changelog:
+ *
+ *    1.9.2 (05/31/2016)
+ *      - Increased default polling interval to 4 hours.
+ *      - Added polling disclaimer.
  *
  *    1.9.1 (05/18/2016)
  *      - Added Event/State Caching
@@ -318,14 +322,15 @@ def notificationsPage() {
 def pollingPage() {
 	dynamicPage(name:"pollingPage") {
 		section ("Polling Settings") {
-			paragraph "If you enable the polling feature, the devices that support the Polling Capability will be polled at a regular interval."  
+			paragraph "If you enable the polling feature, the devices that support the Polling Capability will be polled at a regular interval."
+			paragraph "Polling your devices too frequently can cause them to stop responding or miss other commands that get sent to it."
 			input "pollingEnabled", "bool",
 				title: "Polling Enabled",
 				defaultValue: false,
 				required: false
 			input "pollingInterval", "number",
 				title: "How often should the devices be polled? (minutes)\n(Must be between 5 and ${6 * 24 * 60})",
-				defaultValue: 60,
+				defaultValue: (4 * 60),
 				range: "5..${6 * 24 * 60}",
 				required: false
 		}
