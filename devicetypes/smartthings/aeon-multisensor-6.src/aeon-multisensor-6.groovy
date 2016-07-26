@@ -329,7 +329,7 @@ def zwaveEvent(physicalgraph.zwave.Command cmd) {
 
 def configure() {
 	// allow device user configured or default 16 min to check in; double the periodic reporting interval
-	sendEvent(name: "checkInterval", value: 2* timeOptionValueMap[reportInterval] ?: 2*8*60, displayed: false)
+	sendEvent(name: "checkInterval", value: 2* (timeOptionValueMap[reportInterval] ?: (2*8*60)), displayed: false)
 
 	// This sensor joins as a secure device if you double-click the button to include it
 	log.debug "${device.displayName} is configuring its settings"
@@ -357,7 +357,7 @@ def configure() {
 									motionSensitivity == "minimum" ? 0 : 64)
 
 	//5. report every x minutes (threshold reports don't work on battery power, default 8 mins)
-	request << zwave.configurationV1.configurationSet(parameterNumber: 111, size: 4, scaledConfigurationValue: timeOptionValueMap[reportInterval] ?: 8*60) //association group 1
+	request << zwave.configurationV1.configurationSet(parameterNumber: 111, size: 4, scaledConfigurationValue: timeOptionValueMap[reportInterval] ?: (8*60)) //association group 1
 
 	request << zwave.configurationV1.configurationSet(parameterNumber: 112, size: 4, scaledConfigurationValue: 6*60*60)  //association group 2
 
