@@ -1,8 +1,8 @@
 /**
  *  Ask Alexa - Lambda Code
  *
- *  Version 1.1.6 - 7/21/16 Copyright © 2016 Michael Struck
- *  Special thanks for Keith DeLong for code and assistance
+ *  Version 1.1.7 - 7/29/16 Copyright © 2016 Michael Struck
+ *  Special thanks for Keith DeLong for code and assistance 
  *  
  *  Version 1.0.0 - Initial release
  *  Version 1.0.1 - Removed dedicated status operation; added version code
@@ -13,6 +13,7 @@
  *  Version 1.1.4 - Added some randomization to responses
  *  Version 1.1.5 - Code optimization, more responses
  *  Version 1.1.6 - Minor code/syntax changes. Organized code to allow for more custom responses
+ *  Version 1.1.7 - Code reorganization to allow for future functions
  * 
  *  Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except
  *  in compliance with the License. You may obtain a copy of the License at:
@@ -26,143 +27,164 @@
  */
 'use strict';
 exports.handler = function( event, context ) {
-   var versionTxt = '1.1.6';
-   var versionDate= '07/21/2016';
-   var versionNum = '116';
-   var https = require( 'https' );
-   // Paste app code here between the breaks------------------------------------------------
-   var IName = '';
-   var STappID = '';
-   var STtoken = '';
-   var url='' ;
-   //---------------------------------------------------------------------------------------
-   var cardName ="";
-   var resText = "";
-   if (event.request.type == "LaunchRequest") { output(getResponse("Launch"), context, "Ask Alexa Help", false); }
-   else if (event.request.type == "SessionEndedRequest"){}
-   else if (event.request.type == "IntentRequest") {
-        var process = false;
-        var intentName = event.request.intent.name;
-        if (intentName == "DeviceOperation") {
-            var Operator = event.request.intent.slots.Operator.value;
-            var Device = event.request.intent.slots.Device.value;
-            var Num = event.request.intent.slots.Num.value;
-            var Param = event.request.intent.slots.Param.value;
-            url += 'd?Device=' + Device + '&Operator=' + Operator + '&Num=' + Num + '&Param=' + Param; 
-            process = true;
-            cardName = "SmartThings Devices";
-        } 
-        else if (intentName == "ListOperation") {
-            var Type = event.request.intent.slots.Type.value;
-            url += 'l?Type=' + Type;
-            process = true;
-            cardName = "SmartThings Help";
-        }
-        else if (intentName == "MacroOperation") {
-            var Macro = event.request.intent.slots.Macro.value;
-            var MNum = event.request.intent.slots.MNum.value;
-            var MCmd = event.request.intent.slots.MCmd.value;
-            var MParam = event.request.intent.slots.MParam.value;
-            var Cancel = event.request.intent.slots.Cancel.value;
-            if (Cancel) {MNum = 9999}
-            url += 'm?Macro=' + Macro + '&Param=' + MParam + '&Cmd=' + MCmd + '&Num=' + MNum;
-            process = true;
-            cardName = "SmartThings Voice Macro";
-        }
-        else if (intentName == "VersionOperation") {
-            url += 'v?Ver=' + versionTxt + '&Date=' + versionDate;
-            process = true;
-            cardName = "SmartThings Version Help";
-        }
-        else if (intentName == "SmartHomeOperation") {
-            var SHCmd = event.request.intent.slots.SHCmd.value;
-            var SHParam = event.request.intent.slots.SHParam.value;
-            url += 'h?SHCmd=' + SHCmd + '&SHParam=' + SHParam;
-            process = true;
-            cardName = "SmartThings Home Operation";
-        }
-        else if (event.request.intent.name == "AMAZON.YesIntent") {
-            output(getResponse("Yes"), context, "SmartThings Alexa Yes Command", false);
-        }
-        else if (event.request.intent.name == "AMAZON.NoIntent") {
-            output(getResponse("No"), context, "SmartThings Alexa End Command", true);
-        }
-        else if (event.request.intent.name == "AMAZON.StopIntent") {
-            output(getResponse("Stop"), context, "Amazon Stop", true);
-        }
-        else if (event.request.intent.name == "AMAZON.CancelIntent") {
-            output(getResponse("Cancel"), context, "Amazon Cancel", true);
-        }
-        else if (intentName == "AMAZON.HelpIntent") {
-            resText = "With the Ask Alexa SmartApp, you can integrate your SmartThings household with me. This will allow you to give me commands "+
-            "to turn off a light, or unlock a door. For example, you can simply say, 'tell "+ IName +" to turn off the living room', and I'll turn off that device. " +
-            "In addition, you can query your devices to get information such as open or close status, or find out the temperature in a room. To use this function, just give "+
-            "me the device name. For example, you could say, 'ask "+ IName +" about the patio', and I'll give you all of the common attributes with that device, including battery levels. "+
-            "For those who are curious, this is version" + versionTxt +" of the Lambda code, written by Michael Struck. ";
-            output(resText, context, "Ask Alexa Help", true);
-        }
-        if (!process) { output(getResponse("respError"), context, "Ask Alexa Error", false); }
-        else {
-            url += '&lVer=' + versionNum + '&access_token=' + STtoken;
-            https.get( url, function( response ) {
-                response.on( 'data', function( data ) {
-                var resJSON = JSON.parse(data);
-                var speechText;
-                var contOptions; 
-                var endSession = true;
-                if (resJSON.voiceOutput) { speechText = resJSON.voiceOutput; }
-                if (resJSON.continue) { contOptions = resJSON.continue; }
-                if (speechText.endsWith("%1%")) { 
-                	if (contOptions.startsWith("1")){
-                    	speechText = speechText.slice(0, -3);
-                    	speechText += getResponse("appError");
-                        endSession = false;
-                	}
-                	else {
-                	    speechText = speechText.slice(0, -3);   
-                	}
+    var versionTxt = '1.1.7';
+    var versionDate= '07/29/2016';
+    var versionNum = '117';
+    var https = require( 'https' );
+    // Paste app code here between the breaks------------------------------------------------
+    
+    
+    
+    //---------------------------------------------------------------------------------------
+    var cardName ="";
+    var endSession = true;
+    var processedText;
+    //Get SmartThings parameters
+    var beginURL = url + 'b?Ver=' + versionTxt + '&Date=' + versionDate + '&lVer=' + versionNum + '&access_token=' + STtoken;
+    https.get( beginURL, function( response ) {
+        response.on( 'data', function( data ) {
+            var beginJSON = JSON.parse(data);
+            var contOptions = beginJSON.continue; 
+            var personality = beginJSON.personality;
+            var STver = beginJSON.SmartAppVer;
+            var IName = beginJSON.IName;
+            if (beginJSON.OOD) { amzRespose("OutOfDate", context, IName, versionTxt, personality, STver, contOptions); }
+            if (beginJSON.error) { output("There was an error with the Ask Alexa SmartApp execution. If this continues, please contact the author of the SmartApp. ", context, "Lambda Error", endSession); }
+            if (beginJSON.error === "invalid_token" || beginJSON.type === "AccessDenied") {
+                output("There was an error accessing the SmartThings cloud environment. Please check your security token and application ID and try again. ", context, "Lambda Error", endSession); 
+            }
+            if (event.request.type == "LaunchRequest") { amzRespose( "LaunchRequest", context, IName, versionTxt, personality, STver, contOptions); }
+            else if (event.request.type == "SessionEndedRequest"){}
+            else if (event.request.type == "IntentRequest") {
+                var process = false;
+                var intentName = event.request.intent.name;
+                if (intentName.startsWith("AMAZON") && intentName.endsWith("Intent")) { amzRespose( intentName, context, IName, versionTxt, personality, STver, contOptions); }
+                else if (intentName == "VersionOperation") { amzRespose( "VersionOperation", context, IName, versionTxt, personality, STver, contOptions); }
+                else if (intentName == "DeviceOperation") {
+                    var Operator = event.request.intent.slots.Operator.value;
+                    var Device = event.request.intent.slots.Device.value;
+                    var Num = event.request.intent.slots.Num.value;
+                    var Param = event.request.intent.slots.Param.value;
+                    url += 'd?Device=' + Device + '&Operator=' + Operator + '&Num=' + Num + '&Param=' + Param; 
+                    process = true;
+                    cardName = "SmartThings Devices";
+                } 
+                else if (intentName == "ListOperation") {
+                    var Type = event.request.intent.slots.Type.value;
+                    url += 'l?Type=' + Type;
+                    process = true;
+                    cardName = "SmartThings Help";
                 }
-                if (speechText.endsWith("%2%")) { 
-                	if (contOptions.slice(1,-2)=="1"){
-                    	speechText = speechText.slice(0, -3);
-                    	speechText += getResponse("Ending");
-                        endSession = false;
-                	}
-                	else {
-                	    speechText = speechText.slice(0, -3);   
-                	}
+                else if (intentName == "MacroOperation") {
+                    var Macro = event.request.intent.slots.Macro.value;
+                    var MNum = event.request.intent.slots.MNum.value;
+                    var MCmd = event.request.intent.slots.MCmd.value;
+                    var MParam = event.request.intent.slots.MParam.value;
+                    var Cancel = event.request.intent.slots.Cancel.value;
+                    if (Cancel) {MNum = 9999}
+                    url += 'm?Macro=' + Macro + '&Param=' + MParam + '&Cmd=' + MCmd + '&Num=' + MNum;
+                    process = true;
+                    cardName = "SmartThings Voice Macro";
                 }
-                if (speechText.endsWith("%3%")) { 
-                	if (contOptions.slice(2,-1)=="1"){
-                    	speechText = speechText.slice(0, -3);
-                    	speechText += getResponse("Ending");
-                        endSession = false;
-                	}
-                	else {
-                	    speechText = speechText.slice(0, -3);   
-                	}
+                else if (intentName == "SmartHomeOperation") {
+                    var SHCmd = event.request.intent.slots.SHCmd.value;
+                    var SHParam = event.request.intent.slots.SHParam.value;
+                    url += 'h?SHCmd=' + SHCmd + '&SHParam=' + SHParam;
+                    process = true;
+                    cardName = "SmartThings Home Operation";
                 }
-                if (speechText.endsWith("%4%")) { 
-                	if (contOptions.endsWith("1")){
-                    	speechText = speechText.slice(0, -3);
-                    	speechText += getResponse("Ending");
-                        endSession = false;
-                	}
-                	else {
-                	    speechText = speechText.slice(0, -3);   
-                	}
+                if (!process) { output(getResponse("respError"), context, "Ask Alexa Error", false); }
+                else {
+                    url += '&access_token=' + STtoken;
+                    https.get( url, function( response ) {
+                        response.on( 'data', function( data ) {
+                        var resJSON = JSON.parse(data);
+                        var speechText;
+                        if (resJSON.voiceOutput) { 
+                            speechText = resJSON.voiceOutput; 
+                            if (speechText.endsWith("%")){
+                                processedText = processOutput(speechText, personality, contOptions);
+                                speechText = processedText[0];
+                                endSession = processedText[1];
+                            }
+                        }
+                        console.log(speechText);
+                        output(speechText, context, cardName, endSession);
+                        } );
+                    } );
                 }
-                if (resJSON.error) speechText = "There was an error with the Ask Alexa SmartApp execution. If this continues, please contact the author of the SmartApp. ";
-                if (resJSON.error === "invalid_token" || resJSON.type === "AccessDenied") {
-                    speechText = "There was an error accessing the SmartThings cloud environment. Please check your security token and application ID and try again. ";
-                }
-                console.log(speechText);
-                output(speechText, context, cardName, endSession);
-                } );
-            } );
-        }
-    }
+            }
+        } );
+    } );
 };
+
+function processOutput(speechText, personality, contOptions){
+    var endSession = true;
+    if (speechText.endsWith("%1%")) { 
+        if (contOptions.startsWith("1")){
+            speechText = speechText.slice(0, -3);
+            speechText += getResponse("appError", personality);
+            endSession = false;
+        }
+        else { speechText = speechText.slice(0, -3); }
+    }
+    if (speechText.endsWith("%2%")) { 
+        if (contOptions.slice(1,-2)=="1"){
+            speechText = speechText.slice(0, -3);
+        	speechText += getResponse("Ending", personality);
+            endSession = false;
+        }
+        else { speechText = speechText.slice(0, -3); }
+    }
+    if (speechText.endsWith("%3%")) { 
+        if (contOptions.slice(2,-1)=="1"){
+            speechText = speechText.slice(0, -3);
+            speechText += getResponse("Ending", personality);
+            endSession = false;
+        }
+        else { speechText = speechText.slice(0, -3); }
+    }
+    if (speechText.endsWith("%4%")) { 
+        if (contOptions.endsWith("1")){
+        	speechText = speechText.slice(0, -3);
+        	speechText += getResponse("Ending", personality);
+            endSession = false;
+        }
+        else { speechText = speechText.slice(0, -3); }
+    }
+    return [speechText,endSession];
+}
+
+function amzRespose(type, context, IName, versionTxt, personality, STver, contOptions){
+    var resText;
+    var processedText;
+    if (type == "AMAZON.YesIntent") { output(getResponse("Yes",personality), context, "SmartThings Alexa Yes Command", false); }
+    else if (type == "OutOfDate") { output(getResponse("OOD",personality), context, "Lambda Code Version Error", true); }
+    else if (type == "AMAZON.NoIntent") { output(getResponse("No",personality), context, "SmartThings Alexa End Command", true); }
+    else if (type == "AMAZON.StopIntent") { output(getResponse("Stop",personality), context, "Amazon Stop", true); }
+    else if (type == "AMAZON.CancelIntent") { output(getResponse("Cancel",personality), context, "Amazon Cancel", true); }
+    else if (type == "LaunchRequest") { output(getResponse("Launch", personality), context, "Ask Alexa Help", false); }
+    else if (type == "AMAZON.HelpIntent") {
+        resText = "With the Ask Alexa SmartApp, you can integrate your SmartThings household with me; this will allow you to give me commands "+
+        "to turn off a light, or unlock a door. For example, you can simply say, 'tell "+ IName +" to turn off the living room', and I'll turn off that device. " +
+        "In addition, you can query your devices to get information such as open or close status, or find out the temperature in a room. To use this function, just give "+
+        "me the name of the device. For example, you could say, 'ask "+ IName +" about the patio', and I'll give you all of the common attributes with that device, including battery levels. "+
+        "For those who are curious, you are running SmartApp version " + STver + ", and version "+ versionTxt +" of the Lambda code, both written by Michael Struck. %2%";
+        processedText = processOutput(resText, personality, contOptions);
+        output(processedText[0], context, "Ask Alexa Help", processedText[1]);
+    }
+    else if (type == "VersionOperation") {
+        resText = "The Ask Alexa SmartApp was developed by Michael Struck to intergrate the SmartThings platform with the Amazon Echo. The SmartApp version is: "  +  STver + ". And the Amazon Lambda code version is: " + versionTxt + ". %2%";
+        processedText = processOutput(resText, personality, contOptions);
+        output(processedText[0], context, "SmartThings Version Help", processedText[1]);
+    }
+}
+
+function getResponse(respType, style){
+    var response;
+    if (style == "Normal") { response = responseNormal(respType); }
+    return response;
+}
 
 function output( text, context, card, complete ) { 
    var response = {
@@ -180,8 +202,12 @@ function output( text, context, card, complete ) {
    context.succeed( { response: response } );
 }
 
-function getResponse(respType){
+function responseNormal(respType){
     var responses;
+    if (respType == "OOD"){
+        responses = ["I am unable to complete your request. The version of the Lambda code you are using is out-of-date. Please install the latest code and try again. "
+                    , "The version of the Lambda code you are using is out-of-date. Please install the latest code and try again. "];    
+    }
     if (respType == "appError"){
         responses = ["Would you like to try again? ","Want to try again? ","Do you want to try again? "];    
     }
