@@ -2783,7 +2783,7 @@ def setupData(){
 //Version/Copyright/Information/Help-----------------------------------------------------------
 private def textAppName() { return "Ask Alexa" }	
 private def textVersion() {
-    def version = "SmartApp Version: 2.0.8 (07/29/2016)"
+    def version = "SmartApp Version: 2.0.8a (07/29/2016)"
     def lambdaVersion = state.lambdaCode ? "\n" + state.lambdaCode : ""
     return "${version}${lambdaVersion}"
 }
