@@ -1,8 +1,8 @@
 /**
  *  Ask Alexa 
  *
- *  Version 2.0.7b - 7/23/16 Copyright © 2016 Michael Struck
- *  Special thanks for Keith DeLong for overall code and assistance and Barry Burke for weather reporting/advisory/lunar phases code
+ *  Version 2.0.8 - 7/28/16 Copyright © 2016 Michael Struck
+ *  Special thanks for Keith DeLong for overall code and assistance and Barry Burke for weather reporting/advisory/lunar phases/tide code
  * 
  *  Version 1.0.0 - Initial release
  *  Version 1.0.0a - Same day release. Bugs fixed: nulls in the device label now trapped and ensure LIST_OF_PARAMS and LIST_OF_REPORTS is always created
@@ -19,7 +19,8 @@
  *  Version 2.0.4 (7/8/16) Code fixes/optimizations, added additional options for secondary responses
  *  Version 2.0.5 (7/9/16) Fix for null String issues
  *  Version 2.0.6 (7/14/16) Syntax fixes, additional filters on voice reports, expanded secondary responses, CoRE Macro fix
- *  Version 2.0.7a (7/23/16) Small code/syntax/interface fixes, code optimization. Allows you to place an entry into the Notification Event Log when a macro is run. Fixed CoRE Macro activation logic
+ *  Version 2.0.7b (7/23/16) Small code/syntax/interface fixes, code optimization. Allows you to place an entry into the Notification Event Log when a macro is run. Fixed CoRE Macro activation logic
+ *  Version 2.0.8 (7/28/16) Restructured code to allow future personality features; fixed thermostat heating/cooling logic; added minium value command to theromstat, added tide information; added window shade control
  *
  *  Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except
  *  in compliance with the License. You may obtain a copy of the License at:
@@ -97,15 +98,15 @@ def mainPageParent() {
             }
         }
         section("Items to interface to Alexa") {
-        	href "pageSwitches", title: "Switches/Dimmers/Colored Lights", description: getDesc(switches, dimmers ,cLights), state: (switches || dimmers || cLights ? "complete" : null),
+        	href "pageSwitches", title: "Switches/Dimmers/Colored Lights", description: getDesc(switches, dimmers ,cLights, ""), state: (switches || dimmers || cLights ? "complete" : null),
             	image: "https://raw.githubusercontent.com/MichaelStruck/SmartThingsPublic/master/img/power.png"
-            href "pageDoors", title: "Doors/Windows/Locks", description: getDesc(doors, locks, ocSensors), state: (doors || locks || ocSensors ? "complete" : null),
+            href "pageDoors", title: "Doors/Windows/Locks", description: getDesc(doors, locks, ocSensors, shades), state: (doors || locks || ocSensors || shades ? "complete" : null),
             	image: "https://raw.githubusercontent.com/MichaelStruck/SmartThingsPublic/master/img/lock.png"
-            href "pageTemps", title: "Thermostats/Temperature/Humidity", description:getDesc(tstats, temps, humid), state: (tstats || temps || humid ? "complete" : null),
+            href "pageTemps", title: "Thermostats/Temperature/Humidity", description:getDesc(tstats, temps, humid, ""), state: (tstats || temps || humid ? "complete" : null),
             	image: "https://raw.githubusercontent.com/MichaelStruck/SmartThingsPublic/master/img/temp.png"
-            href "pageSpeakers", title: "Connected Speakers", description: getDesc(speakers, "", ""), state: (speakers ? "complete" : null),
+            href "pageSpeakers", title: "Connected Speakers", description: getDesc(speakers, "", "",""), state: (speakers ? "complete" : null),
             	image: "https://raw.githubusercontent.com/MichaelStruck/SmartThingsPublic/master/img/speaker.png"     
-            href "pageSensors", title: "Other Sensors", description:getDesc(water, presence, motion), state: (water|| presence|| motion ? "complete" : null),
+            href "pageSensors", title: "Other Sensors", description:getDesc(water, presence, motion,""), state: (water|| presence|| motion ? "complete" : null),
             	image: "https://raw.githubusercontent.com/MichaelStruck/SmartThingsPublic/master/img/sensor.png"
             href "pageHomeControl", title: "Modes/SHM/Routines", description: getDescMRS(), state: (modes|| routines|| SHM? "complete" : null),
             	image: "https://raw.githubusercontent.com/MichaelStruck/SmartThingsPublic/master/img/modes.png"        
@@ -143,6 +144,7 @@ def pageDoors() {
         section { paragraph "Doors/Windows/Locks", image: "https://raw.githubusercontent.com/MichaelStruck/SmartThingsPublic/master/img/lock.png" }
         section("Choose the devices to interface") {
             input "doors", "capability.doorControl", title: "Choose Door Controls (Open/Close/Status)" , multiple: true, required: false
+            input "shades", "capability.windowShade", title: "Choose Window Shade Controls (Open/Close/Status)", multiple: true, required: false
             input "ocSensors", "capability.contactSensor", title: "Open/Close Sensors (Status)", multiple: true, required: false
             input "locks", "capability.lock", title: "Choose Locks (Lock/Unlock/Status)", multiple: true, required: false  
         }
@@ -173,9 +175,9 @@ def pageSensors(){
     dynamicPage(name: "pageSensors",  install: false, uninstall: false) {
         section {paragraph "Other Sensors", image: "https://raw.githubusercontent.com/MichaelStruck/SmartThingsPublic/master/img/sensor.png"}
         section("Choose the devices to interface") {
-            input "water", "capability.waterSensor", title: "Choose Water Sensors (Status)", multiple: true, required: false
-            input "presence", "capability.presenceSensor", title: "Choose Presence Sensors (Status)", multiple: true, required: false
             input "motion", "capability.motionSensor", title: "Choose Motion Sensors (Status)", multiple: true, required: false
+            input "presence", "capability.presenceSensor", title: "Choose Presence Sensors (Status)", multiple: true, required: false
+            input "water", "capability.waterSensor", title: "Choose Water Sensors (Status)", multiple: true, required: false
         }
     }
 }
@@ -228,10 +230,10 @@ def pageSettings(){
         	input "otherStatus", "bool", title: "Speak Additional Status Attributes Of Devices", defaultValue: false, submitOnChange: true
             input "batteryWarn", "bool", title: "Speak Battery Level When Below Threshold", defaultValue: false, submitOnChange: true
             if (batteryWarn) input "batteryThres", "enum", title: "Battery Status Threshold", required: false, defaultValue: 20, options: [5:"<5%",10:"<10%",20:"<20%",30:"<30%",40:"<40%",50:"<50%",60:"<60%",70:"<70%",80:"<80%",90:"<90%",101:"Always play battery level"]
-			if (doors || locks) input "pwNeeded", "bool", title: "Password (PIN) Required For Lock Or Door Commands", defaultValue: false, submitOnChange: true
+			if (doors || locks) input "pwNeeded", "bool", title: "Password (PIN) Option Enabled", defaultValue: false, submitOnChange: true
             if ((doors || locks) && pwNeeded) input "password", "num", title: "Numeric Password (PIN)", description: "Enter a short numeric PIN (i.e. 1234)", required: false
        		input "eventCt", "enum", title: "Default Number Of Past Events to Report", options: [[1:"1"],[2:"2"],[3:"3"],[4:"4"],[5:"5"],[6:"6"],[7:"7"],[8:"8"],[9:"9"]], required: false, defaultValue: 1 	
-        	href "pageContCommands", title: "Continuation Of Commands", description: none, state: (contError || contStatus || contAction || contMacro ? "complete" : null)
+        	href "pageContCommands", title: "Continuation Of Commands/Personality", description: none, state: (contError || contStatus || contAction || contMacro ? "complete" : null)
         }
         section ("Other Values/Variables"){
         	if (dimmers || tstats || cLights || speakers){
@@ -242,7 +244,8 @@ def pageSettings(){
             }
         	if (!state.accessToken) OAuthToken()
             if (!state.accessToken) paragraph "**You must enable OAuth via the IDE to setup this app**"
-            else href url:"${getApiServerUrl()}/api/smartapps/installations/${app.id}/setup?access_token=${state.accessToken}", style:"embedded", required:false, title:"Setup Variables (For Amazon Developer sites)", description: none
+            else href url:"${getApiServerUrl()}/api/smartapps/installations/${app.id}/setup?access_token=${state.accessToken}", style:"embedded", required:false, title:"Setup Variables (For Amazon Developer sites)", description: none,
+            	image: "https://raw.githubusercontent.com/MichaelStruck/SmartThingsPublic/master/img/amazon.png"
         	href "pageGlobalVariables", title: "Text Field Variables", description: none, state: (voiceTempVar || voiceHumidVar || voicePresenceVar ? "complete" : null)
             input "invocationName", title: "Invocation Name (Only Used For Examples)", defaultValue: "SmartThings", required: false
         }	
@@ -279,6 +282,7 @@ def pageContCommands(){
                 input "contStatus", "bool", title: "After Status/List", defaultValue: false
                 input "contAction", "bool", title: "After Action/Event History", defaultValue: false
                 input "contMacro", "bool", title: "After Macro Execution", defaultValue: false
+                input "Personality", "enum", title: "Response Personality Style", options: ["Normal"], defaultValue: "Normal"
 		}
     }
 }
@@ -382,7 +386,8 @@ def pageGroup() {
 	dynamicPage(name: "pageGroup", install: false, uninstall: false) {
 		section { paragraph "Device Group Settings", image: "https://raw.githubusercontent.com/MichaelStruck/SmartThingsPublic/master/img/folder.png" }
         section (" ") {
-            input "groupType", "enum", title: "Group Type...", options: [["colorControl": "Colored Light (On/Off/Toggle/Level/Color)"],["switchLevel":"Dimmer (On/Off/Toggle/Level)"],["doorControl": "Door (Open/Close)"],["lock":"Lock (Lock/Unlock)"],["switch":"Switch (On/Off/Toggle)"],["thermostat":"Thermostat (Mode/Off/Setpoint)"]], required: false, multiple: false, submitOnChange:true
+            input "groupType", "enum", title: "Group Type...", options: [["colorControl": "Colored Light (On/Off/Toggle/Level/Color)"],["switchLevel":"Dimmer (On/Off/Toggle/Level)"],["doorControl": "Door (Open/Close)"],["lock":"Lock (Lock/Unlock)"],
+            	["switch":"Switch (On/Off/Toggle)"],["thermostat":"Thermostat (Mode/Off/Setpoint)"],["windowShade": "Window Shades (Open/Close)"]],required: false, multiple: false, submitOnChange:true
     		if (groupType) input "groupDevice${groupType}", "capability.${groupType}", title: "Choose devices...", required: false, multiple: true
         }
         if (groupType == "thermostat"){
@@ -505,6 +510,10 @@ def pageSTDevices(){
             input "garages","capability.garageDoorControl", title: "Control These Garage Doors...", multiple: true, required: false, submitOnChange:true
             if (garages) input "garagesCMD", "enum", title: "Command To Send To Garage Doors", options:["open":"Open","close":"Close"], multiple: false, required: false
         }
+        section("Window Shades"){
+            input "shades","capability.windowShade", title: "Control These Window Shades...", multiple: true, required: false, submitOnChange:true
+            if (shades) input "shadesCMD", "enum", title: "Command To Send To Window Shades", options:["open":"Open","close":"Close"], multiple: false, required: false
+        }
     }
 }
 def pageHTTP (){
@@ -529,7 +538,7 @@ def pageVoice() {
             input "voicePre", "text", title: "Pre Message Before Device Report", description: "Use variables like %time%, %day%, %date% here.", required: false, capitalization: "sentences"
             href "pageSwitchReport", title: "Switch/Dimmer Report", description: reportSwitches(), state: (voiceSwitch || voiceDimmer ? "complete" : null),
             	image:"https://raw.githubusercontent.com/MichaelStruck/SmartThingsPublic/master/img/power.png"
-            href "pageDoorReport", title: "Door/Window/Lock Report", description: reportDoors(), state: (voiceDoorSensors || voiceDoorControls || voiceDoorLocks ? "complete": null),
+            href "pageDoorReport", title: "Door/Window/Lock Report", description: reportDoors(), state: (voiceDoorSensors || voiceDoorControls || voiceDoorLocks || voiceWindowShades ? "complete": null),
             	image:"https://raw.githubusercontent.com/MichaelStruck/SmartThingsPublic/master/img/lock.png"
             href "pageTempReport", title: "Temperature/Humidity/Thermostat Report", description: reportTemp(), state:(voiceTemperature || voiceTempSettings || voiceHumidity? "complete" : null),
             	image:"https://raw.githubusercontent.com/MichaelStruck/SmartThingsPublic/master/img/temp.png"
@@ -572,7 +581,7 @@ def pageSwitchReport(){
 def pageDoorReport(){
     dynamicPage(name: "pageDoorReport", install: false, uninstall: false){
         section { paragraph "Doors/Windows/Locks", image: "https://raw.githubusercontent.com/MichaelStruck/SmartThingsPublic/master/img/lock.png" }
-        section(" ") {
+        section("Doors/Windows/Locks Reporting"){
             input "voiceDoorSensors", "capability.contactSensor", title: "Doors/Windows Sensors To Report Their Status...", multiple: true, required: false, submitOnChange: true
             input "voiceDoorControls", "capability.doorControl", title: "Door Controls To Report Their Status...", multiple: true, required: false, submitOnChange: true
             input "voiceDoorLocks", "capability.lock", title: "Locks To Report Their Status...", multiple: true, required: false, submitOnChange: true
@@ -580,6 +589,10 @@ def pageDoorReport(){
             if (voiceDoorSensors || voiceDoorControls)input "voiceDoorEvt", "bool",title: "Report The Time Of The Last Door/Window Opening", defaultValue: false
             if (voiceDoorLocks)input "voiceLockEvt", "bool",title: "Report The Time Of The Last Lock Unlocking", defaultValue: false
         }
+        section("Window Shades Reporting"){
+        	input "voiceWindowShades", "capability.windowShade", title: "Window Shades To Report Their Status...", multiple: true, required: false
+        }
+        
     }
 }
 def pageOtherReport(){
@@ -672,6 +685,7 @@ def pageWeatherReport(){
         }
         section ("Other Weather Underground Information"){
         	input "voiceMoon", "bool", title: "Lunar Phases", defaultValue:false
+            input "voiceTide", "bool", title: "Tide Information", defaultValue: false
             if (voiceWeatherTemp || voiceWeatherHumid || voiceWeatherDew || voiceWeatherSolar || voiceWeatherVisiblity || voiceWeatherPrecip ||
             	voiceWeatherToday||voiceWeatherTonight||voiceWeatherTomorrow) input "voiceWeatherWarnFull", "bool", title: "Give Full Weather Advisories (If Present)", defaultValue: false
         }
@@ -737,22 +751,39 @@ mappings {
       path("/m") { action: [GET: "processMacro"] }
       path("/h") { action: [GET: "processSmartHome"] }
       path("/l") { action: [GET: "processList"] }
-      path("/v") { action: [GET: "processVersion"] }
+      path("/b") { action: [GET: "processBegin"] }
       path("/setup") { action: [GET: "displayData"] }
 }
 //--------------------------------------------------------------
+def processBegin(){
+	log.debug "--Begin commands received--"
+    def ver = params.Ver 		//Lambda Code Verisons
+    def lVer = params.lVer		//Version number of Lambda code
+    def date = params.Date		//Version date of Lambda code
+    state.lambdaCode = "Lambda Code Version: ${ver} (${date})"
+    def LambdaVersion = lVer as int
+    def OOD = LambdaVersion < LambdaReq() ? "true" : null
+    def persType = Personality ? Personality : "Normal"
+    def contOption = contError ? "1" : "0"
+    contOption += contStatus ? "1" : "0"
+    contOption += contAction ? "1" : "0"
+    contOption += contMacro ? "1" : "0"
+    return ["OOD":OOD, "continue":contOption,"personality":persType, "SmartAppVer": versionLong(),"IName":invocationName ]
+}
+def sendJSON(outputTxt){
+    log.debug outputTxt
+    return ["voiceOutput":outputTxt]
+}
 def processDevice() {    
-    log.debug "Device command received with params $params"
+    log.debug "-Device command received-"
 	def dev = params.Device 	//Label of device
 	def op = params.Operator	//Operation to perform
     def numVal = params.Num     //Number for dimmer/PIN type settings
     def param = params.Param	//Other parameter (color)
-    def lVer = params.lVer		//Version number of Lambda code 
     log.debug "Dev: " + dev
     log.debug "Op: " + op
     log.debug "Num: " + numVal
     log.debug "Param: " + param
-    log.debug "Lambda Ver: " + lVer
 	def num = numVal == "undefined" ? 0 : numVal as int
     String outputTxt = ""
     def deviceList, count = 0
@@ -770,15 +801,13 @@ def processDevice() {
         else outputTxt = getReply (deviceList.devices,deviceList.type, dev.toLowerCase(), op, num, param)
     }
     if (!count) { outputTxt = "I had some problems finding the device you specified. %1%" }
-    sendJSON(outputTxt, lVer)
+    sendJSON(outputTxt)
 }
 //List Request
 def processList(){
-	log.debug "List command received with params $params"
+	log.debug "-List command received-"
 	def listType = params.Type	//Help type
-    def lVer = params.lVer		//Version number of Lambda code
     log.debug "List Type: " + listType
-    log.debug "Lambda Ver: " + lVer
     String outputTxt = ""
 	if (listType=="mode" || listType=="modes" ){
 		outputTxt = location.modes.size() >1 ? "The available modes include the following: " + getList(location.modes) + ". " : location.modes.size()==1 ? "You have one mode available named " + getList(location.modes) + ". " : "There are no modes defined within your SmartThings' account. "
@@ -793,65 +822,58 @@ def processList(){
     }
     if (listType=="thermostats" || listType=="thermostat"){
      	outputTxt = tstats && tstats.size()>1 ? "The available thermostats are as follows: " +  getList(tstats) + ". "
-        	: tstats && tstats.size()==1 ? "The only available thermostat is the " +  getList(tstats) + ". "
-        		: "You don't have any thermostats defined within your Ask Alexa SmartApp. "
+        	: tstats && tstats.size()==1 ? "The only available thermostat is the " +  getList(tstats) + ". " :"%thermostats%"
     }
     if (listType=="humidity"){
      	outputTxt = humid && humid.size()>1 ? "The available humidity sensors include the following: " +  getList(humid) + ". "  
-        	: humid && humid.size()==1 ? "The "+ getList(humid)+ " is the only humidity sensor available. "    
-       			: "You don't have any humidity sensors selected in your Ask Alexa SmartApp. "
+        	: humid && humid.size()==1 ? "The "+ getList(humid)+ " is the only humidity sensor available. " : "%humidity sensors%"  
     }
     if (listType=="presence" || listType=="presence sensor" || listType=="presence sensors"){
      	outputTxt = presence && presence.size()>1 ? "The available presence sensors are: " +  getList(presence) + ". " 
-        	: presence && presence.size()==1 ? "The "+ getList(presence)+ " is the only presence sensor available. "    
-       			: "You don't have any presence sensors selected in your Ask Alexa SmartApp. "
+        	: presence && presence.size()==1 ? "The "+ getList(presence)+ " is the only presence sensor available. " : "%presence sensors%"   
     }
     if (listType=="motion" || listType=="motion sensor" || listType=="motion sensors"){
      	outputTxt = motion && motion.size()>1 ? "The available motion sensors are: " +  getList(motion) + ". "
-        	: motion && motion.size()==1 ? "The "+ getList(motion)+ " is the only motion sensor available. "    
-       			: "You don't have any motion sensors selected in your Ask Alexa SmartApp. "
+        	: motion && motion.size()==1 ? "The "+ getList(motion)+ " is the only motion sensor available. " : "%motion sensors%"    
     }
     if (listType=="door sensor" || listType=="window sensor" || listType=="door sensors" || listType=="window sensors" || listType=="open close sensors"){
      	outputTxt = ocSensors && ocSensors.size()>1 ? "The available open close sensors are: " +  getList(ocSensors) + ". " 
-        	: ocSensors && ocSensors.size()==1 ? "The "+ getList(ocSensors)+ " is the only open close sensor available. "    
-       			: "You don't have any open close sensors selected in your Ask Alexa SmartApp. "
+        	: ocSensors && ocSensors.size()==1 ? "The "+ getList(ocSensors)+ " is the only open close sensor available. " : "%open close sensors%"   
     }
     if (listType=="dimmer" || listType=="dimmers"){
      	outputTxt = dimmers && dimmers.size()>1 ? "You have the following dimmers selected in your SmartApp: " +  getList(dimmers) + ". "
-        	: dimmers && dimmers.size()==1 ? "You only have one dimmer selected in your SmartApp named " +  getList(dimmers) + ". "
-            	: "You don't have any dimmers selected in the Ask Alexa SmartApp. "
+        	: dimmers && dimmers.size()==1 ? "You only have one dimmer selected in your SmartApp named " +  getList(dimmers) + ". " : "%dimmmers%"
     }
     if (listType=="speakers" || listType=="speaker"){
      	outputTxt = speakers && speakers.size()>1 ? "You can control following speakers: " +  getList(speakers) + ". "
-        	: speakers && speakers.size()==1 ? "The " + getList(speakers) + " is the only speaker you can control. "
-            	:"You don't have any speakers selected in the Ask Alexa SmartApp. "
+        	: speakers && speakers.size()==1 ? "The " + getList(speakers) + " is the only speaker you can control. " : "%speakers%"
     }
     if (listType=="doors" || listType=="door"){
      	outputTxt = doors && doors.size()>1 ? "You have the following doors you can open or close: " +  getList(doors) + ". "
-        	: doors && doors.size()==1 ? "You have one door, " + getList(doors)+ ", selected that you can open or close."
-        		: "You don't have any doors selected in your Ask Alexa SmartApp. "	
+        	: doors && doors.size()==1 ? "You have one door, " + getList(doors)+ ", selected that you can open or close." : "%doors%"
+    }
+    if (listType=="shades" || listType=="window shades" || listType=="window shade" || listType=="shade"){
+     	outputTxt = shades && shades.size()>1 ? "You have the following window shades you can open or close: " +  getList(shades) + ". "
+        	: shades && shades.size()==1 ? "You have one window shade, " + getList(shades)+ ", selected that you can open or close." :"%window shades%"	
     }
     if (listType=="locks" || listType=="lock" ){
      	outputTxt = locks && locks.size()>1 ? "You have the following locks you can lock or unlock: " +  getList(locks) + ". "
-        	: locks && locks.size()==1 ? "You have one lock named '" + getList(locks)+ "' that you can control. "
-        		:"You don't have any locks selected in your Ask Alexa SmartApp. "	
+        	: locks && locks.size()==1 ? "You have one lock named '" + getList(locks)+ "' that you can control. " :"%locks%"	
     }
     if (listType=="colored lights" || listType =="colored light"){
      	outputTxt = cLights && cLights.size()>1 ? "You have the following colored lights you can control: " +  getList(cLights) + ". "
-        	: cLights && cLights.size()==1 ? "You have one colored light you can control named '" +  getList(cLights) + "'. "	
-            	: "You don't have any colored lights selected within your Ask Alexa SmartApp. "
+        	: cLights && cLights.size()==1 ? "You have one colored light you can control named '" +  getList(cLights) + "'. " : "%colored lights%"
     }
-    if (listType=="switch" || listType=="switches") outputTxt = switches? "You can turn on, off or toggle the following switches: " +  getList(switches) + ". " : "You don't have any switches defined selected your Ask Alexa SmartApp. "	
+    if (listType=="switch" || listType=="switches") outputTxt = switches? "You can turn on, off or toggle the following switches: " +  getList(switches) + ". " : "%switches%"	
     if (listType=="routine" || listType=="routines" ){
 		def phrases = location.helloHome?.getPhrases()*.label
-		outputTxt= phrases.size() >0 ? "The available routines include the following: " + getList(phrases) + ". " : "There are no routines set up within your Ask Alexa SmartApp. "
+		outputTxt= phrases.size() >0 ? "The available routines include the following: " + getList(phrases) + ". " : "%routines%"
 	}
     if (listType=="water" || listType=="water sensor" || listType=="water sensors" ){
 		outputTxt= water && water.size()>1 ? "The available water sensors include the following: " + getList(water) + ". "
-        	: water && water.size()==1 ? "The only available water sensor is the " + getList(water)  + ". "
-        		: "There are no water sensors set up within your Ask Alexa SmartApp. "
+        	: water && water.size()==1 ? "The only available water sensor is the " + getList(water)  + ". " : "%water sensors%"
 	}
-    if (listType =="colors" || listType =="color") outputTxt = cLights ? "The available colors to use with colored lights include: " + getList(state.colorData.name) + ". " : "You don't have any colored lights selected within your Ask Alexa SmartApp. "
+    if (listType =="colors" || listType =="color") outputTxt = cLights ? "The available colors to use with colored lights include: " + getList(state.colorData.name) + ". " : "%colored lights%"
     if (listType == "report" || listType == "reports" || listType == "voice report" || listType == "voice reports")  outputTxt = parseMacroLists("Voice","voice report","play")
     if (listType == "device group" || listType == "device groups" || listType == "device macros" || listType == "device macro" || listType == "device group macro" || listType == "device group macros") {
         outputTxt = parseMacroLists("Group","device group","control")
@@ -863,14 +885,17 @@ def processList(){
         "the Bedroom'. You may also include the number of events you would like to hear. An example would be, 'tell ${invocationName} to give me the last 4 events for " +
         "the Bedroom'. "
     }
-    if (listType == "group" || listType == "groups" || listType == "macro" || listType == "macros") outputTxt ="Please be a bit more specific about which group or macros you want me to list. You can ask me about 'macro groups', 'device groups', 'control macros' and 'voice reports'.  "
-    if (listType == "sensor" || listType == "sensors") outputTxt ="Please be a bit more specific about what kind of sensors you want me to list. You can ask me to list items like 'water sensors', 'door sensors', 'presence sensors' or 'motion sensors'. "
-    
+    if (listType == "group" || listType == "groups" || listType == "macro" || listType == "macros") outputTxt ="Please be a bit more specific about which group or macros you want me to list. You can ask me about 'macro groups', 'device groups', 'control macros' and 'voice reports'. %1%"
+    if (listType == "sensor" || listType == "sensors") outputTxt ="Please be a bit more specific about what kind of sensors you want me to list. You can ask me to list items like 'water sensors', 'door sensors', 'presence sensors' or 'motion sensors'. %1%"
+    if (listType =="light" || listType =="lights") outputTxt ="Please be a bit more specific about what kind of lighting devices you are to list. You can ask me to list devices like 'switches', 'dimmers' or 'colored lights'. %1%"
+    if (outputTxt.startsWith("%") && outputTxt.endsWith("%")) outputTxt = "There are no" + outputTxt.replaceAll("%", " ") + "set up within your Ask Alexa SmartApp. "
     if (outputTxt == "") { 
-    	outputTxt = "I didn't understand what you wanted information about. Be sure you have properly run the setup and populated the developer section with the device names and try again. %1%"
+    	outputTxt = "I didn't understand what you wanted information about. " 
+    	if (Math.abs(new Random().nextInt() % 2)==1) outputTxt += "Be sure you have populated the developer section with the device names. "
+    	outputTxt += "%1%"
     }
-    else outputTxt += "%2%"
-    sendJSON(outputTxt, lVer)
+    else if (!outputTxt.endsWith("%")) outputTxt += "%2%"
+    sendJSON(outputTxt)
 }
 def parseMacroLists(type, noun, action){
     def macName = "", count = 0
@@ -921,17 +946,15 @@ def processMacroGroup(macroList, msg, append, noMsg, macLabel,macFeed,macFeedDat
 }
 //Macro Processing
 def processMacro() {
-    log.debug "Macro command received with params $params"
+    log.debug "-Macro command received-"
 	def mac = params.Macro 		//Macro name
     def mNum = params.Num		//Number variable-Typically delay to run
     def cmd = params.Cmd		//Group Command
     def param = params.Param	//Parameter
-    def lVer = params.lVer		//Version number of Lambda code
     log.debug "Macro Name: " + mac
     log.debug "mNum: " + mNum
     log.debug "Cmd: " + cmd
     log.debug "Param: " + param
-    log.debug "Lambda Ver: " + lVer
     if (mNum == "0" && cmd=="undefined" && param == "undefined") cmd="off"
     def num = mNum == "undefined" ? 0 : mNum as int
     String outputTxt = ""
@@ -967,17 +990,15 @@ def processMacro() {
     }
     if (outputTxt && !outputTxt.endsWith("%") && !outputTxt.endsWith(" ")) outputTxt += " "
     if (outputTxt && !outputTxt.endsWith("%")) outputTxt += "%4%"
-    sendJSON(outputTxt, lVer)
+    sendJSON(outputTxt)
 }
 //Smart Home Commands
 def processSmartHome() {
-    log.debug "Smart home command received with params $params"
+    log.debug "-Smart home command received-"
 	def cmd = params.SHCmd 						//Smart Home Command
 	def param = params.SHParam.toLowerCase()	//Smart Home Parameter
-	def lVer = params.lVer						//Version number of Lambda code
     log.debug "Cmd: " + cmd
     log.debug "Param: " + param
-    log.debug "Lambda Ver: " + lVer
     String outputTxt = ""
     if (cmd =="undefined") {
     	if (param=="off") { outputTxt="Be sure to specify a device, or the word 'security', when using the 'off' command. %1%" }
@@ -1034,7 +1055,7 @@ def processSmartHome() {
     if (!outputTxt) outputTxt = "I didn't understand what you wanted me to do. %1%" 
     if (outputTxt && !outputTxt.endsWith("%") && !outputTxt.endsWith(" ")) outputTxt += " "
     if (outputTxt && !outputTxt.endsWith("%")) outputTxt +="%2%"
-    sendJSON(outputTxt, lVer)
+    sendJSON(outputTxt)
 }
 def getReply(devices, type, dev, op, num, param){
 	String result = ""
@@ -1103,7 +1124,8 @@ def getReply(devices, type, dev, op, num, param){
                 result += onOffStatus =="stopped" ? ". " : onOffStatus=="playing" && track ? ": '${track}'" : ""
                 result += onOffStatus == "playing" && level && mute =="unmuted" ? ", and it's volume is set to ${level}%. " : mute =="muted" ? ", and it's currently muted. " :""
             }
-            else if (type == "water") result = "The water sensor, ${STdevice}, is currently ${STdevice.currentValue(type)}. "
+            else if (type == "water") result = "The water sensor, '${STdevice}', is currently ${STdevice.currentValue(type)}. "
+            else if (type == "shade") result = "The window shade, '${STdevice}', is currently " + STdevice.currentValue('windowShade') +". "
             else result = "The ${STdevice} is currently ${STdevice.currentValue(type)}. "
         }
         else {
@@ -1112,7 +1134,12 @@ def getReply(devices, type, dev, op, num, param){
                      def newValues = upDown(STdevice, type, op, num)  
                      num = newValues.newLevel
                 }
-                if (num>0) num = num <= tstatHighLimit && num >= tstatLowLimit ? num : num > tstatHighLimit ? tstatHighLimit : tstatLowLimit 
+                if (num>0) {
+                	if (tstatHighLimit) num = num <= tstatHighLimit ? num : tstatHighLimit 
+                    if (tstatLowLimit) num = num >= tstatLowLimit ? num : tstatLowLimit
+                }
+                if (op =="maximum" && tstatHighLimit) num = tstatHighLimit
+                if (op =="minimum" && tstatLowLimit) num = tstatLowLimit
                 if ((param=="heat" || param=="heating" || param =="cool" || param=="cooling" || param =="auto" || param=="automatic" || param=="eco" || param=="comfort" || param=="home" || param=="away") && num == 0 && op=="undefined") op="on"
                 if (op == "on" || op=="off") {
                 	if (param == "undefined" && op == "on") result="You must designate 'heating mode' or 'cooling mode' when turning the ${STdevice} on. "
@@ -1133,6 +1160,14 @@ def getReply(devices, type, dev, op, num, param){
                         else result = "You must designate a 'heating' or 'cooling' parameter when setting the temperature. "+
                             "The thermostat will not accept a generic setpoint in its current mode. For example, you could simply say, 'ask ${invocationName} to set the ${STdevice} heating to 65 degrees'. %1%"
 					}
+                    if (op =="maximum" && !tstatHighLimit) {
+            			result = "You do not have a maximum thermostat setpoint defined within your SmartApp. %1%"
+                		param = "undefined"
+            		}
+                    if (op =="minimum" && !tstatLowLimit) {
+            			result = "You do not have a minimum thermostat setpoint defined within your SmartApp. %1%"
+                		param = "undefined"
+            		}
                     if ((param =="heat" || param =="heating") && num > 0) {
                         result="I am setting the heating setpoint of the ${STdevice} to ${num} degrees. "
                         STdevice.setHeatingSetpoint(num) 
@@ -1142,8 +1177,8 @@ def getReply(devices, type, dev, op, num, param){
                         result="I am setting the cooling setpoint of the ${STdevice} to ${num} degrees. "
                         STdevice.setCoolingSetpoint(num)
                     }
-                    if (num == tstatHighLimit) result += "This is the maximum temperature I can set for this device. "
-                    if (num == tstatLowLimit) result += "This is the minimum temperature I can set for this device. "
+                    if (param != "undefined" && tstatHighLimit && num >= tstatHighLimit) result += "This is the maximum temperature I can set for this device. "
+                    if (param != "undefined" && tstatLowLimit && num <= tstatLowLimit) result += "This is the minimum temperature I can set for this device. "
                 }
             }
             if (type == "color" || type == "level" || type=="switch"){
@@ -1205,7 +1240,7 @@ def getReply(devices, type, dev, op, num, param){
                      num = newValues.newLevel
                      if (num==0) op= "off"
                 }
-                if (num != 0 && num > speakerHighLimit) num = speakerHighLimit
+                if ((num != 0 && speakerHighLimit && num > speakerHighLimit)|| (op=="maximum" && speakerHighLimit)) num = speakerHighLimit    
                 if (op=="off" || op=="stop") { STdevice.stop(); result = "I am turning off the ${STdevice}. " }
                 else if (op == "play" || op=="on") { STdevice.play(); result = "I am playing the ${STdevice}. " }
                 else if (op=="mute") { STdevice.mute(); result = "I am muting the ${STdevice}. " }
@@ -1215,7 +1250,8 @@ def getReply(devices, type, dev, op, num, param){
             	else if (op=="previous track") { STdevice.previousTrack(); result = "I am playing the next track on the ${STdevice}. " }
                 else result = "I didn't understand what you wanted me to do with the ${STdevice} speaker. %1%"
                 if (num > 0) { STdevice.setLevel(num); result = "I am setting the volume of the ${STdevice} to ${num}%. " }
-                if (num == speakerHighLimit) result += "This is the maximum volume level you have set up. " 
+                if (speakerHighLimit && num == speakerHighLimit) result += "This is the maximum volume level you have set up. "
+                if (op=="maximum" && !speakerHighLimit) result = "You have not set a maximum volume level in the SmartApp. %1%"
             }
             if (type == "door"){
                 def currentDoorState = STdevice.currentValue(type)
@@ -1226,10 +1262,20 @@ def getReply(devices, type, dev, op, num, param){
                     if ((op=="open" || op=="close") && (pwNeeded && password && num>0 && num != password as int)) result="Sorry, I did not hear the correct password to ${op} the ${STdevice}. %1%"
                     else if ((op=="open" || op=="close") && (!pwNeeded || (password && pwNeeded && num ==password as int) || !password)) {
                         STdevice."$op"() 
-                        if (op == "close") op="clos"
-                        result = "I am ${op}ing the ${STdevice}. "
+                        result = op=="close" ? "I am closing the ${STdevice}. " : "I am opening the ${STdevice}. "
                     }
              	}
+			}
+            if (type == "shade"){
+                def currentShadeState = STdevice.currentValue("windowShade")
+                if (currentShadeState==op || (currentShadeState == "closed" && op=="close")) result = "The ${STdevice} is already ${currentShadeState}. "
+                else {
+                    if (op != "open" && op != "close") result ="For the ${STdevice}, you must give an 'open' or 'close' command. %1%"
+                    else { 
+                        STdevice."$op"() 
+                    	result = op=="close" ? "I am closing the ${STdevice}. " : "I am opening the ${STdevice}. "
+                	}
+                }
 			}
             if (type == "lock"){
                 if (STdevice.currentValue("lock") == op+"ed") result = "The ${STdevice} is already ${op}ed. "
@@ -1266,18 +1312,6 @@ def getReply(devices, type, dev, op, num, param){
     if (op!="status" && result && !result.endsWith("%")) result += "%3%"
     if (!result) result = "Sorry, I had a problem understanding your request. %1%"
     return result
-}
-//Version operation
-def processVersion(){
-	log.debug "Version command received with params $params"
-	def ver = params.Ver 		//Lambda Code Verisons
-    def lVer = params.lVer		//Version number of Lambda code
-    def date = params.Date		//Version date of Lambda code
-    state.lambdaCode = "Lambda Code Version: ${ver} (${date})"
-   	String outputTxt = "The Ask Alexa SmartApp was developed by Michael Struck to intergrate the SmartThings platform with the Amazon Echo. "+
-    	"The SmartApp version is: "  +  versionLong() + ". "
-	outputTxt += "And the Amazon Lambda code version is: " + ver + ". %2%"
-    sendJSON(outputTxt, lVer)
 }
 def displayData(){
 	render contentType: "text/html", data: """<!DOCTYPE html><html><head><meta charset="UTF-8" /><meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=0"/></head><body style="margin: 0;">${setupData()}</body></html>"""
@@ -1364,25 +1398,39 @@ def groupResults(num, op, colorData, param){
 				settings."groupDevice${groupType}"?."$op"()
 				result = voicePost && !noAck ? replaceVoiceVar(voicePost,"") : noAck ? " " : "I am ${op}ing the ${noun} in the group named '${app.label}'. " 
 			}
-			else result = "To lock or unlock a group, you must say use the proper password. %1%"
+			else result = "To lock or unlock a group, you must use the proper password. %1%"
         }
         else { result = "For a lock group, you must use a 'lock' or 'unlock' command. %1%" }
     }
     else if (groupType=="doorControl"){
      	noun=settings."groupDevice${groupType}".size()==1 ? "door" : "doors"
         if (op == "open"|| op == "close" ){
-        	if (param && param == num){
-            	settings."groupDevice${groupType}"?."$cmd"()
+        	if (param =="undefined" || (param !="undefined" && param == num)){
+            	settings."groupDevice${groupType}"?."$op"()
             	def condition = op=="close" ? "closing" : "opening"
             	result = voicePost && !noAck  ? replaceVoiceVar(voicePost,"") : noAck ? " " :  "I am ${condition} the ${noun} in the group named '${app.label}'. "
         	}
-            else result = "To open or close a group of doors, you must say use the proper password. %1%"
+            else result = "To open or close a group of doors, you must use the proper password. %1%"
         }
-        else { result = "For a door group, you must use an 'open' or 'close' command. %1%"}
+        else result = "For a door group, you must use an 'open' or 'close' command. %1%"
+    }
+    else if (groupType=="windowShade"){
+        noun=settings."groupDevice${groupType}".size()==1 ? "window shade" : "window shades"
+        if (op == "open"|| op == "close" ){
+          	settings."groupDevice${groupType}"?."$op"()
+           	def condition = op=="close" ? "closing" : "opening"
+           	result = voicePost && !noAck  ? replaceVoiceVar(voicePost,"") : noAck ? " " :  "I am ${condition} the ${noun} in the group named '${app.label}'. "
+        }
+        else result = "For a window shade device group, you must use an 'open' or 'close' command. %1%"
     }
     else if (groupType=="thermostat"){
         noun=settings."groupDevice${groupType}".size()==1 ? "thermostat in the group named '${app.label}'" : "thermostats in the group named '${app.label}'"
-        if (num>0) num = num < parent.getTstatLimits().hi && num > parent.getTstatLimits().lo ? num : num > parent.getTstatLimits().hi ? parent.getTstatLimits().hi : parent.getTstatLimits().lo 
+        if (num>0) {
+        	if (parent.getTstatLimits().hi) num = num <= parent.getTstatLimits().hi ? num : parent.getTstatLimits().hi
+            if (parent.getTstatLimits().lo) num = num >= parent.getTstatLimits().lo ? num : parent.getTstatLimits().lo
+        }
+        if (op =="maximum" && parent.getTstatLimits().hi) num = parent.getTstatLimits().hi
+        if (op =="minimum" && parent.getTstatLimits().lo) num = parent.getTstatLimits().lo
         if (op == "on" || op=="off") {
         	if (param == "undefined" && op == "on") result="You must designate 'heating mode' or 'cooling mode' when turning on a thermostat group. %1%"
             if (param =="heat" || param=="heating") {result="I am setting the ${noun} to 'heating' mode. "; settings."groupDevice${groupType}"?.heat()}
@@ -1404,6 +1452,14 @@ def groupResults(num, op, colorData, param){
         else {
             param = tstatDefaultCool && param == "undefined" ? "cool" : tstatDefaultHeat && param == "undefined" ? "heat" : param
 			if (param == "undefined") result = "You must designate a 'heating' or 'cooling' parameter when setting the temperature of a thermostat group. %1%"
+            if (op =="maximum" && !parent.getTstatLimits().hi) {
+            	result = "You do not have a maximum thermostat setpoint defined within your SmartApp. %1%"
+                param = "undefined"
+            }
+            if (op =="minimum" && !parent.getTstatLimits().lo) {
+            	result = "You do not have a minimum thermostat setpoint defined within your SmartApp. %1%"
+                param = "undefined"
+            }
             if ((param =="heat" || param =="heating") && num > 0) {
 				result="I am setting the heating setpoint of the ${noun} to ${num} degrees. "
 				settings."groupDevice${groupType}"?.setHeatingSetpoint(num) 
@@ -1413,8 +1469,8 @@ def groupResults(num, op, colorData, param){
 				result="I am setting the cooling setpoint of the ${noun} to ${num} degrees. "
 				settings."groupDevice${groupType}"?.setCoolingSetpoint(num)
 			}
-            if (num == parent.getTstatLimits().hi) result += "This is the maximum temperature I can set for this device group. %1%"
-            if (num == parent.getTstatLimits().lo) result += "This is the minimum temperature I can set for this device group. %1%"
+            if (param !="undefined" && parent.getTstatLimits().hi && num >= parent.getTstatLimits().hi) result += "This is the maximum temperature I can set for this device group. "
+            if (param !="undefined" && parent.getTstatLimits().lo && num <= parent.getTstatLimits().lo) result += "This is the minimum temperature I can set for this device group. "
 		}
     }
     else result = "I did not understand what you are attempting to do with the group named '${app.label}'. Be sure it is configured correctly within the SmartApp. %1%" 
@@ -1469,7 +1525,7 @@ def controlResults(sDelay){
 }
 def controlHandler(){
    	state.scheduled = false
-   	def cmd = [switch: switchesCMD, dimmer: dimmersCMD, cLight: cLightsCMD, tstat: tstatsCMD, lock: locksCMD, garage: garagesCMD]
+   	def cmd = [switch: switchesCMD, dimmer: dimmersCMD, cLight: cLightsCMD, tstat: tstatsCMD, lock: locksCMD, garage: garagesCMD, shade: shadesCMD]
     if (phrase) location.helloHome.execute(phrase)
 	if (setMode && location.mode != setMode) {
 		if (location.modes?.find{it.name == setMode}) setLocationMode(setMode)
@@ -1499,6 +1555,8 @@ def controlHandler(){
         }
         if (cmd.tstat == "home" || cmd.tstat == "away") tstats?."${cmd.tstat}"()
 	}
+    if (garages && cmd.garage) garages?."${cmd.garage}"()
+    if (shades && cmd.shade) shades?."${cmd.shade}"()
     if (extInt == "0" && http){
         log.info "Attempting to run: ${http}"
         httpGet(http)
@@ -1512,7 +1570,6 @@ def controlHandler(){
     	log.info "Setting Smart Home Monitor to " + SHM
         sendLocationEvent(name: "alarmSystemStatus", value: SHM)
     }
-    if (garages && cmd.garage) garages?."${cmd.garage}"()
    	if ((pushMsg || smsNum || contacts) && smsMsg) sendMSG(smsNum, smsMsg, pushMsg, contacts)
     def data = [args: "I am activating the Control Macro: '${app.label}'."]
     sendLocationEvent(name: "askAlexaMacro", value: app.label, data: data, displayed: true, isStateChange: true, descriptionText: "Ask Alexa activated '${app.label}' macro.")	
@@ -1530,6 +1587,7 @@ def reportResults(){
         else fullMsg += voiceDimmer ? reportStatus(voiceDimmer, "level") : ""
  		if (voiceOnDimmerEvt) fullMsg += getLastEvt(voiceDimmer, "'dimmer on'", "on", "dimmer")
         fullMsg += voiceDoorSensors || voiceDoorControls || voiceDoorLocks ? doorWindowReport() : ""
+        fullMsg += voiceWindowShades ? shadeReport() : ""
         if (voiceTemperature && (voiceTemperature.size() == 1 || !voiceTempAvg)) fullMsg += reportStatus(voiceTemperature, "temperature")
         else if (voiceTemperature && voiceTemperature.size() > 1 && voiceTempAvg) fullMsg += "The average of the monitored temperature devices is: " + getAverage(voiceTemperature, "temperature") + " degrees. "
         if (voiceHumidity && (voiceHumidity.size() == 1 || !voiceHumidAvg)) fullMsg += reportStatus(voiceHumidity, "humidity")
@@ -1542,13 +1600,14 @@ def reportResults(){
             if ((voiceWeatherToday  || voiceWeatherTonight || voiceWeatherTomorrow) && type) type += " and forecast"
             else if ((voiceWeatherToday  || voiceWeatherTonight || voiceWeatherTomorrow) && !type) type = "forecast"
             def cond = getWeatherFeature("conditions", zipCode).current_observation
-        	if (type) fullMsg += "The following weather ${type} comes from " + cond.observation_location.full + ": "
+        	if (type) fullMsg += "The following weather ${type} comes from " + cond.observation_location.full.replaceAll(',', '') + ": "
         }
         fullMsg += voiceWeatherTemp|| voiceWeatherHumid || voiceWeatherDew || voiceWeatherSolar || voiceWeatherVisiblity || voiceWeatherPrecip ||
         	voiceWeatherToday  || voiceWeatherTonight || voiceWeatherTomorrow || voiceSunset || voiceSunrise ? weatherAlerts() : ""
         fullMsg += voiceWeatherTemp|| voiceWeatherHumid || voiceWeatherDew || voiceWeatherSolar || voiceWeatherVisiblity || voiceWeatherPrecip ? getWeatherReport() : ""
         fullMsg += voiceWeatherToday  || voiceWeatherTonight || voiceWeatherTomorrow || voiceSunset || voiceSunrise ? getWeatherForecast() : ""
         fullMsg += voiceMoon ? getMoonInfo() : ""
+        fullMsg += voiceTide ? tideInfo(): ""
         fullMsg += voiceWater && waterReport() ? waterReport() : ""
         fullMsg += voicePresence ? presenceReport() : ""
         fullMsg += voiceMotion && motionReport() ? motionReport() : ""
@@ -1711,9 +1770,18 @@ def powerReport(){
 	}
     return result 
 }
+def shadeReport(){
+	def currVal
+    String result = ""
+    voiceWindowShades.each { deviceName->
+		currVal = deviceName.currentValue("windowShade")
+        result += "The ${deviceName} is " + currVal  + ". "
+	}
+    return result
+}
 def doorWindowReport(){
 	def countOpened = 0, countOpenedDoor = 0, countUnlocked = 0, listOpened = "", listUnlocked = ""
-    String result = ""
+    String result = ""   
     if (voiceDoorSensors && voiceDoorSensors.latestValue("contact").contains("open")){
     	for (sensor in voiceDoorSensors) if (sensor.latestValue("contact")=="open") countOpened ++
         listOpened = listDevices(voiceDoorSensors, "contact", "open", countOpened )
@@ -1845,7 +1913,7 @@ def macroTypeDesc(){
         	desc= "Voice Report CONFIGURED - Tap to edit" 
 	}
 	if (macroType =="Group" && groupType && settings."groupDevice${groupType}") {
-    	def groupDesc =[switch:"Switch Group",switchLevel:"Dimmer Group",thermostat:"Thermostat Group",colorControl:"Colored Light Group",lock:"Lock Group",doorControl: "Door Group"][groupType] ?: groupType
+    	def groupDesc =[switch:"Switch Group",switchLevel:"Dimmer Group",thermostat:"Thermostat Group",colorControl:"Colored Light Group",lock:"Lock Group",doorControl: "Door Group",windowShade: "Window Shade Group"][groupType] ?: groupType
         def countDesc = settings."groupDevice${groupType}".size() == 1 ? "one device" : settings."groupDevice${groupType}".size() + " devices"
         if (parent.stelproCMD && groupType=="thermostat") customAck = "- Accepts Stelpro baseboard heater commands" + customAck
         if (parent.nestCMD && groupType=="thermostat") customAck = "- Accepts Nest 'Home'/'Away' commands" + customAck
@@ -1880,9 +1948,10 @@ def reportSwitches(){
 }
 def reportDoors(){
 	def result="Status: UNCONFIGURED - Tap to configure"
-    if (voiceDoorSensors || voiceDoorControls || voiceDoorLocks ){
+    if (voiceDoorSensors || voiceDoorControls || voiceDoorLocks || voiceWindowShades ){
         def doorEvt = voiceDoorEvt ? " with door & window events" : ""
         def lockEvt = voiceLockEvt ?"/lock events${doorEvt}":"${doorEvt}"
+        def shadeRpt = voiceWindowShades && voiceWindowShades.size()>1  ? "Window shades report" : voiceWindowShades && voiceWindowShades.size()==1 ? "Window shade report" :""	
         def status = voiceDoorAll ? "full status${lockEvt}" : "open/unlocked status${lockEvt}"
         result  = voiceDoorSensors && voiceDoorSensors.size()>1 ? "Door/Window sensors" : voiceDoorSensors && voiceDoorSensors.size()==1 ? "Door/Window sensor" : ""
         if (voiceDoorControls) result  += voiceDoorSensors && voiceDoorControls.size()>1 && voiceDoorLocks ? ", door controls" : voiceDoorSensors && voiceDoorControls.size()==1 && voiceDoorLocks ? ", door control" : ""
@@ -1892,12 +1961,14 @@ def reportDoors(){
         if (voiceDoorLocks) result  += !result && voiceDoorLocks.size()>1 ? "Locks" : !result && voiceDoorLocks.size()==1 ? "Lock" : ""
         result += (voiceDoorSensors && voiceDoorControls && voiceDoorLocks) || (voiceDoorSensors && voiceDoorControls) || (voiceDoorControls && voiceDoorLocks) || (voiceDoorSensors && voiceDoorLocks) ||
         	(voiceDoorSensors && voiceDoorSensors.size()>1) || (voiceDoorControls && voiceDoorControls.size()>1) || (voiceDoorLocks && voiceDoorLocks.size()>1 ) ? " report ${status}" : " reports ${status}"
+    	result += voiceWindowShades ? ". Includes ${shadeRpt.toLowerCase()}" : ""
+        if (!voiceDoorSensors && !voiceDoorControls && !voiceDoorLocks && voiceWindowShades) result = shadeRpt
     }
     return result
 }
 def reportSensors(){
 	def result="Status: UNCONFIGURED - Tap to configure"
-    if (voiceWater || voiceMotion || voicePresence||voicePower){
+    if (voiceWater || voiceMotion || voicePresence|| voicePower){
     	def water = voiceWetOnly ? "(Wet)" : "(Wet/Dry)"
         def arriveEvt = voicePresentEvt ? "/Arrival" : ""
         def departEvt = voiceGoneEvt ? "/Departure" : ""
@@ -1968,14 +2039,16 @@ def weatherDesc(){
     result += voiceSunrise && voiceSunset ? "Sunrise/Sunset" : voiceSunrise ? "Sunrise" : voiceSunset ? "Sunset" : ""
 	if (result && voiceMoon) result +=", "
     result += voiceMoon ? "Lunar phases" : ""
+    if (result && voiceTide) result +=", "
+    result += voiceTide ?"Tide Information" : ""
     result = result ? "Reports: ${result}" : "Status: UNCONFIGURED - Tap to configure"
 }
-def greyOutWeather(){ def result = voiceWeatherToday || voiceWeatherTonight || voiceWeatherTomorrow || voiceSunrise || voiceSunset || voiceMoon ||
+def greyOutWeather(){ def result = voiceWeatherToday || voiceWeatherTonight || voiceWeatherTomorrow || voiceSunrise || voiceSunset || voiceMoon || voiceTide ||
 	voiceWeatherTemp|| voiceWeatherHumid || voiceWeatherDew || voiceWeatherSolar || voiceWeatherVisiblity || voiceWeatherPrecip ? "complete" : "" }
 def deviceGreyOut(){ def result = getDeviceDesc() == "Status: UNCONFIGURED - Tap to configure" ? "" : "complete" }
 def getDeviceDesc(){  
     def result,lvl, cLvl, clr, tLvl
-    def cmd = [switch: switchesCMD, dimmer: dimmersCMD, cLight: coloredLightsCMD, tstat: tstatsCMD, lock: locksCMD, garage: garagesCMD]
+    def cmd = [switch: switchesCMD, dimmer: dimmersCMD, cLight: coloredLightsCMD, tstat: tstatsCMD, lock: locksCMD, garage: garagesCMD, shade: shadesCMD]
 	lvl = cmd.dimmer == "set" && dimmersLVL ? dimmersLVL as int : 0
 	cLvl = cmd.cLight == "set" && cLightsLVL ? cLightsLVL as int : 0
 	clr = cmd.cLight == "set" && cLightsCLR ? cLightsCLR  : ""
@@ -1983,7 +2056,7 @@ def getDeviceDesc(){
     lvl = lvl < 0 ? lvl = 0 : lvl >100 ? lvl=100 : lvl
     tLvl = tLvl < 0 ? tLvl = 0 : tLvl >100 ? tLvl=100 : tLvl
     cLvl = cLvl < 0 ? cLvl = 0 : cLvl >100 ? cLvl=100 : cLvl
-    if (switches || dimmers || cLights || tstats || locks || garages) {
+    if (switches || dimmers || cLights || tstats || locks || garages || shades) {
     	result = switches && cmd.switch ? "${switches} set to ${cmd.switch}" : ""
         result += result && dimmers && cmd.dimmer ? "\n" : ""
         result += dimmers && cmd.dimmer && cmd.dimmer  != "set" ? "${dimmers} set to ${cmd.dimmer}" : ""
@@ -1999,6 +2072,8 @@ def getDeviceDesc(){
         result += locks && cmd.lock ? "${locks} set to ${cmd.lock}" : ""
         result += result && garages && cmd.garage ? "\n" : ""
         result += garages && cmd.garage ? "${garages} set to ${cmd.garage}" : ""
+        result += result && shades && cmd.shade ? "\n" : ""
+        result += shades && cmd.shade ? "${shades} set to ${cmd.shade}" : ""
     }
     result = result ? result : "Status: UNCONFIGURED - Tap to configure"
 }
@@ -2079,7 +2154,12 @@ private getWeatherReport(){
     if (location.timeZone || zipCode) {
     	def sb = new StringBuilder()
         def isMetric = location.temperatureScale == 'C'
-		def cond = getWeatherFeature('conditions', zipCode).current_observation
+		Map conditions = getWeatherFeature('conditions', zipCode)
+        if ((conditions == null) || conditions.response.containsKey('error')) {
+        	msg = "Your hub location or supplied Zip Code is unrecognized by Weather Underground. "
+    		return msg
+        }
+		def cond = conditions.current_observation        
         if (voiceWeatherTemp){
         	sb << 'The current temperature is '
             temp = isMetric ? roundValue(cond.temp_c) : Math.round(cond.temp_f)
@@ -2182,20 +2262,24 @@ private getWeatherForecast(){
     if (location.timeZone || zipCode) {
 		def sb = new StringBuilder()
         def isMetric = location.temperatureScale == 'C'
-		def weather = getWeatherFeature('forecast', zipCode)
+		Map weather = getWeatherFeature('forecast', zipCode)
+		if ((weather == null) || weather.response.containsKey('error')) {
+			msg = "Your hub location or supplied Zip Code is unrecognized by Weather Underground. "
+			return msg
+		}        
         if (voiceWeatherToday  || voiceWeatherTonight || voiceWeatherTomorrow ){
             if (voiceWeatherToday){
-                sb << 'Today\'s forecast calls for '
+                sb << "${weather.forecast.txt_forecast.forecastday[0].title}'s forecast calls for "
                 def formattedWeather = isMetric ? weather.forecast.txt_forecast.forecastday[0].fcttext_metric : weather.forecast.txt_forecast.forecastday[0].fcttext 
                 sb << formattedWeather[0].toLowerCase() + formattedWeather.substring(1) + " "
             }
             if (voiceWeatherTonight){
-                sb << 'For tonight\'s forecast you can expect '
+                sb << "For ${weather.forecast.txt_forecast.forecastday[1].title}'s forecast you can expect "
                 def formattedWeather = isMetric ? weather.forecast.txt_forecast.forecastday[1].fcttext_metric : weather.forecast.txt_forecast.forecastday[1].fcttext
                 sb << formattedWeather[0].toLowerCase() + formattedWeather.substring(1) + " "
             }
             if (voiceWeatherTomorrow){
-                sb << 'Tomorrow your forecast is '
+                sb << "Your forecast for ${weather.forecast.txt_forecast.forecastday[2].title} is "
 				def formattedWeather = isMetric ? weather.forecast.txt_forecast.forecastday[2].fcttext_metric : weather.forecast.txt_forecast.forecastday[2].fcttext
                 sb << formattedWeather[0].toLowerCase() + formattedWeather.substring(1) + " "
             }
@@ -2221,7 +2305,12 @@ private getWeatherForecast(){
 def getMoonInfo(){
 	def msg = "", dir, nxt, days, sss =""
     if (location.timeZone || zipCode) {
-        def moon = getWeatherFeature( 'astronomy', zipCode ).moon_phase
+    	Map astronomy = getWeatherFeature( 'astronomy', zipCode )
+		if ((astronomy == null) || astronomy.response.containsKey('error')) {
+			msg = "Your hub location or supplied Zip Code is unrecognized by Weather Underground. "
+			return msg
+		}    
+        def moon = astronomy.moon_phase
         def m = moon.ageOfMoon.toInteger()
 		msg += "The moon is ${m} days old at ${moon.percentIlluminated}%, "
         if (m < 8) {
@@ -2244,22 +2333,22 @@ def getMoonInfo(){
         if (days.toInteger() != 1) sss = 's'
         switch (moon.percentIlluminated.toInteger()) {
             case 0:
-                msg += 'New Moon, and the next First Quarter moon is in 7 days. '
+                msg += 'New Moon, and the First Quarter moon is in 7 days. '
                 break
             case 1..49:
-                msg += "${dir} Crescent, and the next ${nxt} moon is "
+                msg += "${dir} Crescent, and the ${nxt} moon is "
                 if (days == 0) msg+= "later today. " else msg+= " in ${days} day${sss}. "               
                 break
             case 50:
                 if (dir == "Waxing") msg += "First Quarter, " else msg += "Third Quarter, "
-                msg += "and the next ${nxt} Moon is in ${days} day${sss}. "
+                msg += "and the ${nxt} Moon is in ${days} day${sss}. "
                 break
             case 51..99:
-                msg += "${dir} Gibbous, and the next ${nxt} moon is "
+                msg += "${dir} Gibbous, and the ${nxt} moon is "
                 if (days == 0) msg += "later today. " else msg += "in ${days} day${sss}. "
                 break
             case 100:
-                msg += 'Full Moon, and the next Third Quarter moon is in 7 days. '
+                msg += 'Full Moon, and the Third Quarter moon is in 7 days. '
                 break
             default:
                 msg += '. '
@@ -2272,8 +2361,13 @@ def weatherAlerts(){
 	String msg = ""
     def brief = false
     if (location.timeZone || zipCode) {
-        def alerts = getWeatherFeature('alerts', zipCode).alerts
-        if ( alerts.size() > 0 ) {
+    	Map advisories = getWeatherFeature('alerts', zipCode)
+        if ((advisories == null) || advisories.response.containsKey('error')) {
+			msg = "Your hub location or supplied Zip Code is unrecognized by Weather Underground. "
+			return msg
+		}
+		def alerts = advisories.alerts
+        if ((alerts != null) && (alerts.size() > 0)) {
             if ( alerts.size() == 1 ) msg += 'There is one active advisory for this area. '
             else msg += "There are ${alerts.size()} active advisories for this area. "
             def warn
@@ -2317,7 +2411,7 @@ def weatherAlerts(){
                             		def d = warn.indexOf(ddate)
                                 	warnings[i] = warn.take(d-1)
                                 	warn = warn.drop(d+ddate.size())
-                                    i=i+1
+                                    i ++
                                 } else {
                                 	warnings[i] = warn
                                    	warn = ""
@@ -2369,7 +2463,7 @@ def weatherAlerts(){
                                 }
                             }
                         }
-                    }	
+                    } 	
                 }
             }
             else msg += 'Configure your SmartApp to give you full advisory information. '
@@ -2378,6 +2472,89 @@ def weatherAlerts(){
     else msg = 'Please set the location of your hub with the SmartThings mobile app, or enter a zip code to receive advisory information. '
     translateTxt().each {msg = msg.replaceAll(it.txt,it.cvt)}
     return msg
+}
+private tideInfo() {
+	String msg = ""
+    if (location.timeZone || zipCode) {
+        Map tideMap = getWeatherFeature('tide', zipCode)        
+        if ((tideMap == null) || tideMap.response.containsKey('error')) {
+			msg = "Your hub location or supplied Zip Code is unrecognized by Weather Underground. "
+			return msg
+		}       
+		def tideSite = tideMap.tide.tideInfo.tideSite.join(",").replaceAll(',', '' )
+		if (tideSite == "") {
+			msg = "No tide station found near this location"
+			if (zipCode) msg += " (${zipCode}). " else msg+= '. '
+			return msg
+		}        
+		Map astronomy = getWeatherFeature('astronomy', zipCode)
+		if ((astronomy == null) || astronomy.response.containsKey('error')) {
+			msg = "An error occured getting the tide information. "
+			return msg
+		}
+		Integer cur_hour = astronomy.moon_phase.current_time.hour.toInteger()				// get time at requested location
+		Integer cur_minute = astronomy.moon_phase.current_time.minute.toInteger()			// may not be the same as the SmartThings hub location
+		Integer cur_mins = (cur_hour * 60) + cur_minute
+		String timeZoneTxt = tideMap.tide.tideSummary[0].date.pretty.replaceAll(/\d+:\d+ .{2} (.{3}) .*/, /$1/)
+		Integer count = 0
+        Integer index = 0
+   	    while (count < 4) {	
+			def tide = tideMap.tide.tideSummary[index]
+            index ++
+            if ((tide.data.type == 'High Tide') || (tide.data.type == 'Low Tide')) {
+				count ++
+				Integer tide_hour = tide.date.hour.toInteger()
+				Integer tide_min = tide.date.min.toInteger()
+				Integer tide_mins = (tide_hour * 60) + tide_min	               
+				String dayTxt = 'this'
+				if (tide_mins < cur_mins) {														// tide event is tomorrow
+					dayTxt = 'tomorrow'
+					tide_mins = tide_mins + 1440
+				}
+				Integer minsUntil = tide_mins - cur_mins
+				Integer whenHour = minsUntil / 60
+				Integer whenMin = minsUntil % 60				
+                String ampm = 'am'
+				String whenTxt = 'morning'
+				if (tide_hour > 11) {
+                	ampm = 'pm'
+					if ( tide_hour < 18) whenTxt = 'afternoon'                       
+					else if (tide_hour < 20) whenTxt = 'evening'
+					else {
+						if (dayTxt == 'this') {
+							whenTxt = 'tonight' 
+							dayTxt = ''
+						} else whenTxt = 'night'
+					}
+				}                
+				if (count <= 2) msg += 'The next '
+				else if (count == 3) msg += 'Then '
+				else msg += 'followed by '	
+				msg += tide.data.type + ' '
+				if (tide_hour > 12) tide_hour = tide_hour - 12
+                String tide_minTxt
+                if (tide_min < 10) tide_minTxt = '0'+tide_min else tide_minTxt = tide_min                
+				if (count == 1) {
+					msg += "at ${tideSite} will be in "
+					if (whenHour > 0) {
+						msg += "${whenHour} hour"
+						if (whenHour > 1) msg +='s'
+						if (whenMin > 0) msg += ' and'
+					}
+					if (whenMin > 0) {
+						msg += " ${whenMin} minute"
+						if (whenMin > 1) msg +='s'
+					}
+					msg += " at ${tide_hour}:${tide_minTxt} ${ampm} ${dayTxt} ${whenTxt} (all times ${timeZoneTxt}). "
+				} else if (count == 2) msg += "will be ${dayTxt} ${whenTxt} at ${tide_hour}:${tide_minTxt} ${ampm}. "
+				else if (count == 3) msg += "again ${dayTxt} ${whenTxt} at ${tide_hour}:${tide_minTxt} ${ampm}, "
+				else msg += "at ${tide_hour}:${tide_minTxt} ${ampm} ${dayTxt} ${whenTxt}. "
+			}
+		}
+    }
+	else msg = 'Please set the location of your hub with the SmartThings mobile app, or enter a zip code to receive tide information. '    
+	msg = msg.replaceAll( "\\s+", ' ' ) 
+    return msg		
 }
 //Translate Maxtrix-----------------------------------------------------------
 def translateTxt(){
@@ -2456,7 +2633,7 @@ def OAuthToken(){
 	} catch (e) { log.error "Access Token not defined. OAuth may not be enabled. Go to the SmartApp IDE settings to enable OAuth." }
 }
 def macroDesc(){def results = childApps.size() ? childApps.size()==1 ? "One Voice Macro Configured" : childApps.size() + " Voice Macros Configured" : "No Voices Macros Configured\nTap to create new macro"}
-def getDesc(param1, param2, param3) {def result = param1 || param2 || param3 ? "Status: CONFIGURED - Tap to edit/view" : "Status: UNCONFIGURED - Tap to configure"}
+def getDesc(param1, param2, param3, param4) {def result = param1 || param2 || param3 || param4 ? "Status: CONFIGURED - Tap to edit/view" : "Status: UNCONFIGURED - Tap to configure"}
 def getDescMRS() {
 	def mStat=modes ? "On": "Off", rStat=routines ? "On": "Off", sStat=SHM ? "On": "Off"
     def result = modes || routines || SHM ? "Modes: ${mStat}, SHM: ${sStat}, Routines: ${rStat}" : "Status: UNCONFIGURED - Tap to configure"
@@ -2485,6 +2662,7 @@ def getDeviceList(){
         if (dimmers) dimmers.collect{ result << [name: it.label.replaceAll("[^a-zA-Z0-9 ]", "").toLowerCase(), type:"level", devices: dimmers]  }
         if (cLights) cLights.collect{ result << [name: it.label.replaceAll("[^a-zA-Z0-9 ]", "").toLowerCase(), type:"color", devices: cLights] }
         if (doors) doors.collect{ result << [name: it.label.replaceAll("[^a-zA-Z0-9 ]", "").toLowerCase(), type:"door", devices: doors]  }
+        if (shades) shades.collect{ result << [name: it.label.replaceAll("[^a-zA-Z0-9 ]", "").toLowerCase(), type:"shade", devices: shades]  } 
         if (locks) locks.collect{ result << [name: it.label.replaceAll("[^a-zA-Z0-9 ]", "").toLowerCase(), type:"lock", devices: locks] }
         if (tstats) tstats.collect{ result << [name: it.label.replaceAll("[^a-zA-Z0-9 ]", "").toLowerCase(), type:"thermostat", devices: tstats] }
         if (speakers) speakers.collect{ result << [name: it.label.replaceAll("[^a-zA-Z0-9 ]", "").toLowerCase(), type:"music", devices: speakers] }
@@ -2495,9 +2673,7 @@ def getDeviceList(){
         if (motion) motion.collect{ result << [name: it.label.replaceAll("[^a-zA-Z0-9 ]", "").toLowerCase(), type:"motion", devices: motion] }
         if (presence) presence.collect{ result << [name: it.label.replaceAll("[^a-zA-Z0-9 ]", "").toLowerCase(), type:"presence", devices: presence] }
     }
-    catch (e) {
-    	log.warn "There was an issue parsing the device labels. Be sure all of the devices are uniquely named/labeled and that none of them are blank (null). "
-    }
+    catch (e) { log.warn "There was an issue parsing the device labels. Be sure all of the devices are uniquely named/labeled and that none of them are blank (null). " }
     return result
 }
 def findNullDevices(){
@@ -2506,6 +2682,7 @@ def findNullDevices(){
     if (dimmers) dimmers.each{ result += !it.label ? it.name + "\n" : "" }
 	if (cLights) cLights.each{ result += !it.label ? it.name + "\n" : "" }
 	if (doors) doors.each{ result += !it.label ? it.name + "\n" : "" }
+    if (shades) shades.each{ result += !it.label ? it.name + "\n" : "" }
 	if (locks) locks.each{ result += !it.label ? it.name + "\n" : "" }
 	if (tstats) tstats.each{ result += !it.label ? it.name + "\n" : "" }
 	if (speakers) speakers.each{ result += !it.label ? it.name + "\n" : "" }
@@ -2523,7 +2700,8 @@ def fillTypeList(){
     	"lock","locks","thermostats","thermostat","temperature sensors","modes","routines","smart home monitor","SHM","security","temperature","door","doors", "humidity", "humidity sensor", 
         "humidity sensors", "presence", "presence sensors", "motion", "motion sensor", "motion sensors", "door sensor", "door sensors", "window sensor", "window sensors", "open close sensors",
         "colored light", "events", "macro", "macros", "group", "groups", "voice reports", "voice report", "device group", "device groups","control macro", "control macros","control", "controls",
-        "macro group","macro groups","device macros","device macro","device group macro","device group macros","core","core trigger","core macro","core macros","core triggers","sensor", "sensors"]    	  
+        "macro group","macro groups","device macros","device macro","device group macro","device group macros","core","core trigger","core macro","core macros","core triggers","sensor", "sensors",
+        "shades", "window shades","shade", "window shade"]    	  
 }
 def upDown(device, type, op, num){
     def numChange, newLevel, currLevel, defMove, txtRsp = ""
@@ -2568,21 +2746,11 @@ def getLastEvent(device, count) {
     if (evtCount==0) result="There were no past events in the device log. "
     return result
 }
-def sendJSON(outputTxt, lVer){
-    def LambdaVersion = lVer as int, contOption=""
-    if (LambdaVersion < 116) outputTxt = "I am unable to complete your request. The version of the Lambda code you are using is out-of-date. Please install the latest code and try again. "
-    log.debug outputTxt
-    contOption = contError ? "1" : "0"
-    contOption += contStatus ? "1" : "0"
-    contOption += contAction ? "1" : "0"
-    contOption += contMacro ? "1" : "0"
-    return ["voiceOutput":outputTxt,"continue":contOption]
-}
 def setupData(){
 	log.info "Set up web page located at : ${getApiServerUrl()}/api/smartapps/installations/${app.id}/setup?access_token=${state.accessToken}"
-    def result ="<div style='padding:10px'><i><b>Lambda code variables:</b></i><br><br>var IName = '${invocationName}';<br>var STappID = '${app.id}';<br>var STtoken = '${state.accessToken}';<br>"
+    def result ="<div style='padding:10px'><i><b><a href='http://aws.amazon.com' target='_blank'>Lambda</a> code variables:</b></i><br><br>var STappID = '${app.id}';<br>var STtoken = '${state.accessToken}';<br>"
     result += "var url='${getApiServerUrl()}/api/smartapps/installations/' + STappID + '/' ;<br><br><hr>"
-	result += "<i><b>Amazon ASK Custom Slot Information:</b></i><br><br><b>CANCEL_CMDS</b><br><br>cancel<br>stop<br>unschedule<br><br><b>DEVICE_TYPE_LIST</b><br><br>"
+	result += "<i><b><a href='http://developer.amazon.com' target='_blank'>Amazon ASK</a> Custom Slot Information:</b></i><br><br><b>CANCEL_CMDS</b><br><br>cancel<br>stop<br>unschedule<br><br><b>DEVICE_TYPE_LIST</b><br><br>"
     state.deviceTypes.each{result += it + "<br>"}
     result += "<br><b>LIST_OF_DEVICES</b><br><br>"
     def deviceList = getDeviceList(), deviceNames = deviceList.name.unique()
@@ -2595,7 +2763,7 @@ def setupData(){
     if (deviceNames) deviceNames.each{result += it + "<br>" }
     else result +="None<br>"
 	result += "<br><b>LIST_OF_OPERATORS</b><br><br>on<br>off<br>toggle<br>up<br>down<br>increase<br>decrease<br>lower<br>raise<br>" +
-    	"status<br>events<br>event<br>low<br>medium<br>high<br>lock<br>unlock<br>open<br>close<br>maximum<br>"
+    	"status<br>events<br>event<br>low<br>medium<br>high<br>lock<br>unlock<br>open<br>close<br>maximum<br>minimum<br>"
     result += speakers ?"play<br>stop<br>pause<br>mute<br>unmute<br>next track<br>previous track<br>" : ""
     result += "<br><b>LIST_OF_PARAMS</b><br><br>"
 	result += "heat<br>cool<br>heating<br>cooling<br>auto<br>automatic<br>"
@@ -2608,21 +2776,20 @@ def setupData(){
     location.modes.each {result += it.name.replaceAll("[^a-zA-Z0-9 ]", "").toLowerCase() + "<br>"}
     result += "<br><b>LIST_OF_SHCMD</b><br><br>routine<br>security<br>smart home<br>SHM<br>smart home monitor<br>mode<br>" 
     result += "<br><b>LIST_OF_MACROS</b><br><br>"
-    if (childApps.size()) {
-    	childApps.each { result += it.label.replaceAll("[^a-zA-Z0-9 ]", "").toLowerCase() + "<br>" }       
-	}
+    if (childApps.size()) childApps.each { result += it.label.replaceAll("[^a-zA-Z0-9 ]", "").toLowerCase() + "<br>" }       
     else result +="None<br>"
 	result += "<br><hr><br><i><b>URL of this setup page:</b></i><br><br>${getApiServerUrl()}/api/smartapps/installations/${app.id}/setup?access_token=${state.accessToken}<br><br><hr></div>"
 }
 //Version/Copyright/Information/Help-----------------------------------------------------------
-private def textAppName() { def text = "Ask Alexa" }	
+private def textAppName() { return "Ask Alexa" }	
 private def textVersion() {
-    def version = "SmartApp Version: 2.0.7b (07/23/2016)"
+    def version = "SmartApp Version: 2.0.8 (07/28/2016)"
     def lambdaVersion = state.lambdaCode ? "\n" + state.lambdaCode : ""
     return "${version}${lambdaVersion}"
 }
-private def versionInt(){ return 207 }
-private def versionLong(){ return "2.0.7b" }
+private def versionInt(){ return 208 }
+private def LambdaReq() { return 117 }
+private def versionLong(){ return "2.0.8" }
 private def textCopyright() {return "Copyright © 2016 Michael Struck" }
 private def textLicense() {
 	def text = "Licensed under the Apache License, Version 2.0 (the 'License'); you may not use this file except in compliance with the License. "+
