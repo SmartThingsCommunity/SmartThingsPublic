@@ -2,6 +2,7 @@ ListOperation list {Type}
 ListOperation {Type}
 ListOperation about {Type}
 ListOperation for a list of {Type}
+ListOperation list
 
 DeviceOperation to turn {Operator} the {Device}
 DeviceOperation to turn {Operator} {Device}
