@@ -20,7 +20,10 @@ metadata {
 		capability "Refresh"
 		capability "Sensor"
 
-		fingerprint inClusters: "0x25"
+		fingerprint mfr:"0063", prod:"4952"
+		fingerprint mfr:"0063", prod:"5257"
+		fingerprint mfr:"0063", prod:"5052"
+		fingerprint mfr:"0113", prod:"5257"
 	}
 
 	// simulator metadata
@@ -60,15 +63,7 @@ metadata {
 	}
 }
 
-def installed(){
-	initialized()
-}
-
 def updated(){
-	initialized()
-}
-
-def initialized() {
   switch (ledIndicator) {
         case "on":
             indicatorWhenOn()
