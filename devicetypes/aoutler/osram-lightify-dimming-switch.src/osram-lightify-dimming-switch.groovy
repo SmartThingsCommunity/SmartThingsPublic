@@ -48,8 +48,7 @@ metadata {
         input("end4", "string", title:"Device Endpoint ID 4", description: "Device Endpoint ID 4", defaultValue: "" ,required: false, displayDuringSetup: false)
         input("device5", "string", title:"Device Network ID 5", description: "Device Network ID 5", defaultValue: "" ,required: false, displayDuringSetup: false)
         input("end5", "string", title:"Device Endpoint ID 5", description: "Device Endpoint ID 5", defaultValue: "" ,required: false, displayDuringSetup: false)
-        input("dim1", "number", title:"Dim Level Uppper", description: "Dim Level Upppr", defaultValue: "95" , required: false, displayDuringSetup: false)
-        input("dim2", "number", title:"Dim Level Lower", description: "Dim Level Lower", defaultValue: "10" , required: false, displayDuringSetup: false)
+
 	}
 
 
@@ -79,29 +78,29 @@ def parse(String description) {
     map = parseCatchAllMessage(description)
     if (device1 == null) {} else {
 		if (map.value == "pushed") {
+            List cmds
     		if (map.data.buttonNumber == 1) {
-        		List cmds = onResponse()
-    			log.trace "Sending current state to device ${cmds}"
-        		result = cmds?.collect { new physicalgraph.device.HubAction(it) }  
-        		return result
+        		cmds = onResponse()
     		} else {
-        		List cmds = offResponse()
-    			log.trace "Sending current state to device ${cmds}"
-        		result = cmds?.collect { new physicalgraph.device.HubAction(it) }  
-        		return result
-        	}
+        		cmds = offResponse()
+    		}
+            log.trace "Sending current state to device ${cmds}"
+        	result = cmds?.collect { new physicalgraph.device.HubAction(it) }  
+        	return result
     	}
     }
 	if (device1 == null) {} else {
         if (map.value == "held") {
             List cmds
         	if (map.data.buttonNumber == 1) {
-        		cmds = dim1Response()
+               cmds = dim1Response()
+            
     		} else {
         		cmds = dim2Response()
        	   }
            log.trace "Sending current state to device ${cmds}"
            result = cmds?.collect { new physicalgraph.device.HubAction(it) }  
+           cmds?.collect { new physicalgraph.device.HubAction(it)} 
            return result
         }
     }
@@ -151,57 +150,62 @@ private Map parseReadMessage(String description) {
   return result
 }
 
+
 private Map parseCatchAllMessage(String description) {
   // Create a map from the raw zigbee message to make parsing more intuitive
   def msg = zigbee.parse(description)
   def value="pushed"
   def button=0
-  log.debug "test"+msg
   String data= "[buttonnumber:"+msg.command +"]"
-   Map result = [:]
+  Map result = [:]
 
   
   switch(msg.clusterId) {
-    case 1:
+    case 1: // battery message
       // call getBatteryResult method to parse battery message into event map
       log.debug 'BATTERY MESSAGE'
       return getBatteryResult(Integer.parseInt(msg.value, 16))
       break
-    case 6:
+      
+    case 6: //button pressed
       button = (msg.command == 1 ? 1 : 2)
       value="pushed"
-      
       break
-    case 8:
+ 
+    case 8: //button held
       button=(msg.command == 1 ? 1 : 2)
+      
       switch(msg.command) {
         case 1: // brightness decrease command
-        value=held
-        button=2
-        break
+          value="held"
+          button=2
+          state.dimming=true
+          break
+           
         case 3: // brightness change stop command
           value="released"
-          log.debug "Recieved stop command, not currently implemented!"
+          state.dimming=false
           break
+          
         case 5: // brightness increase command
-         button=1
-         value="held"
-         break
-
+          value="held"
+          button=1
+          state.dimming=true
+          break
       }
-      
-  }
-         log.debug 'message '+value+ " button " + button
+    }
+    log.debug 'message '+value+ " button " + button + ". brightness " + state.brightness
 
-       result = [
-        name: 'button',
-        value: value,
-        data: [buttonNumber: button],
-        descriptionText: "$device.displayName button $button was " + value,
-        isStateChange: true
-      ]
-      log.debug "Parse returned ${result?.descriptionText}"
-      return result
+    result = [
+      name: 'button',
+      value: value,
+      data: [buttonNumber: button],
+      descriptionText: "$device.displayName button $button was $value",
+      brightness: state.brightness,
+      isStateChange: true
+    ]
+    log.info "${result?.descriptionText}"
+    return result
 }
 
 //obtained from other examples, converts battery message into event map
@@ -249,7 +253,7 @@ private ArrayList createListOfNotNullDevices(allDevices){
     return list
 }
 def onResponse() {
-	log.debug "Creating on response aaa "
+    state.brightness=200
     def on1 =createOnResponse(device1,end1)
     def on2 =createOnResponse(device2,end2)
     def on3 =createOnResponse(device3,end3)
@@ -262,7 +266,7 @@ def onResponse() {
 
 
 def offResponse() {
-	log.debug "Creating off response"
+    state.brightness=0
     def off1 = createOffResponse(device1,end1)
     def off2 = createOffResponse(device2,end2)
     def off3 = createOffResponse(device3,end3)
@@ -288,14 +292,23 @@ def dimResponse(level) {
     return createListOfNotNullDevices([d1,d2,d3,d4,d5]).toArray()
 }
 
+private controlMinMaxDim(){
+  if (state.brightness>95) state.brightness=95
+  if (state.brightness<10) state.brightness=10
+}
+
 
 def dim1Response() {
-    def level = hexString(Math.round(dim1 * 255/100))
-    return dimResponse(level)
+    if (state.brightness==0) state.brightness=5 //convience to turn it on immediately
+    state.brightness=state.brightness+10
+    controlMinMaxDim()
+    return dimResponse(state.brightness)
 }
 
 def dim2Response() {
     log.debug("performing dim2 response")
-    def level = hexString(Math.round(dim2 * 255/100))
-    return dimResponse(level)
+    
+    state.brightness=state.brightness-10
+    controlMinMaxDim()
+    return dimResponse(state.brightness)
 }
