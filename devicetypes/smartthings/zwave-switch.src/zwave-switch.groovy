@@ -15,7 +15,7 @@ metadata {
 	definition (name: "Z-Wave Switch", namespace: "smartthings", author: "SmartThings") {
 		capability "Actuator"
 		capability "Indicator"
-		capability "Switch"
+ 		capability "Switch"
 		capability "Polling"
 		capability "Refresh"
 		capability "Sensor"
@@ -31,6 +31,10 @@ metadata {
 		// reply messages
 		reply "2001FF,delay 100,2502": "command: 2503, payload: FF"
 		reply "200100,delay 100,2502": "command: 2503, payload: 00"
+	}
+
+	preferences {
+		input "ledIndicator", "enum", title: "LED Indicator", description: "Turn LED indicator... ", required: false, options:["on": "When On", "off": "When Off", "never": "Never"], defaultValue: "off"
 	}
 
 	// tile definitions
@@ -52,8 +56,33 @@ metadata {
 		}
 
 		main "switch"
-		details(["switch","refresh","indicator"])
+		details(["switch","refresh"])
 	}
+}
+
+def installed(){
+	initialized()
+}
+
+def updated(){
+	initialized()
+}
+
+def initialized() {
+  switch (ledIndicator) {
+        case "on":
+            indicatorWhenOn()
+            break
+        case "off":
+            indicatorWhenOff()
+            break
+        case "never":
+            indicatorNever()
+            break
+        default:
+            indicatorWhenOn()
+            break
+    }
 }
 
 def parse(String description) {
@@ -139,19 +168,19 @@ def refresh() {
 	])
 }
 
-def indicatorWhenOn() {
+void indicatorWhenOn() {
 	sendEvent(name: "indicatorStatus", value: "when on", display: false)
-	zwave.configurationV1.configurationSet(configurationValue: [1], parameterNumber: 3, size: 1).format()
+	sendHubCommand(new physicalgraph.device.HubAction(zwave.configurationV1.configurationSet(configurationValue: [1], parameterNumber: 3, size: 1).format()))
 }
 
-def indicatorWhenOff() {
+void indicatorWhenOff() {
 	sendEvent(name: "indicatorStatus", value: "when off", display: false)
-	zwave.configurationV1.configurationSet(configurationValue: [0], parameterNumber: 3, size: 1).format()
+	sendHubCommand(new physicalgraph.device.HubAction(zwave.configurationV1.configurationSet(configurationValue: [0], parameterNumber: 3, size: 1).format()))
 }
 
-def indicatorNever() {
+void indicatorNever() {
 	sendEvent(name: "indicatorStatus", value: "never", display: false)
-	zwave.configurationV1.configurationSet(configurationValue: [2], parameterNumber: 3, size: 1).format()
+	sendHubCommand(new physicalgraph.device.HubAction(zwave.configurationV1.configurationSet(configurationValue: [2], parameterNumber: 3, size: 1).format()))
 }
 
 def invertSwitch(invert=true) {
