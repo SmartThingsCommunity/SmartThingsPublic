@@ -14,7 +14,6 @@
 metadata {
 	definition (name: "Z-Wave Switch", namespace: "smartthings", author: "SmartThings") {
 		capability "Actuator"
-		capability "Indicator"
  		capability "Switch"
 		capability "Polling"
 		capability "Refresh"
@@ -33,10 +32,6 @@ metadata {
 		reply "200100,delay 100,2502": "command: 2503, payload: 00"
 	}
 
-	preferences {
-		input "ledIndicator", "enum", title: "LED Indicator", description: "Turn LED indicator... ", required: false, options:["on": "When On", "off": "When Off", "never": "Never"], defaultValue: "off"
-	}
-
 	// tile definitions
 	tiles(scale: 2) {
 		multiAttributeTile(name:"switch", type: "lighting", width: 6, height: 4, canChangeIcon: true){
@@ -46,11 +41,6 @@ metadata {
 			}
 		}
 
-		standardTile("indicator", "device.indicatorStatus", width: 2, height: 2, inactiveLabel: false, decoration: "flat") {
-			state "when off", action:"indicator.indicatorWhenOn", icon:"st.indicators.lit-when-off"
-			state "when on", action:"indicator.indicatorNever", icon:"st.indicators.lit-when-on"
-			state "never", action:"indicator.indicatorWhenOff", icon:"st.indicators.never-lit"
-		}
 		standardTile("refresh", "device.switch", width: 2, height: 2, inactiveLabel: false, decoration: "flat") {
 			state "default", label:'', action:"refresh.refresh", icon:"st.secondary.refresh"
 		}
@@ -58,31 +48,6 @@ metadata {
 		main "switch"
 		details(["switch","refresh"])
 	}
-}
-
-def installed(){
-	initialized()
-}
-
-def updated(){
-	initialized()
-}
-
-def initialized() {
-  switch (ledIndicator) {
-        case "on":
-            indicatorWhenOn()
-            break
-        case "off":
-            indicatorWhenOff()
-            break
-        case "never":
-            indicatorNever()
-            break
-        default:
-            indicatorWhenOn()
-            break
-    }
 }
 
 def parse(String description) {
@@ -134,7 +99,6 @@ def zwaveEvent(physicalgraph.zwave.commands.manufacturerspecificv2.ManufacturerS
 	createEvent([descriptionText: "$device.displayName MSR: $msr", isStateChange: false])
 }
 
-
 def zwaveEvent(physicalgraph.zwave.Command cmd) {
 	// Handles all Z-Wave commands we aren't interested in
 	[:]
@@ -166,21 +130,6 @@ def refresh() {
 		zwave.switchBinaryV1.switchBinaryGet().format(),
 		zwave.manufacturerSpecificV1.manufacturerSpecificGet().format()
 	])
-}
-
-void indicatorWhenOn() {
-	sendEvent(name: "indicatorStatus", value: "when on", display: false)
-	sendHubCommand(new physicalgraph.device.HubAction(zwave.configurationV1.configurationSet(configurationValue: [1], parameterNumber: 3, size: 1).format()))
-}
-
-void indicatorWhenOff() {
-	sendEvent(name: "indicatorStatus", value: "when off", display: false)
-	sendHubCommand(new physicalgraph.device.HubAction(zwave.configurationV1.configurationSet(configurationValue: [0], parameterNumber: 3, size: 1).format()))
-}
-
-void indicatorNever() {
-	sendEvent(name: "indicatorStatus", value: "never", display: false)
-	sendHubCommand(new physicalgraph.device.HubAction(zwave.configurationV1.configurationSet(configurationValue: [2], parameterNumber: 3, size: 1).format()))
 }
 
 def invertSwitch(invert=true) {
