@@ -52,9 +52,9 @@ metadata {
 		valueTile("level", "device.level", inactiveLabel: false, decoration: "flat", width: 2, height: 2) {
 			state "level", label: 'Level ${currentValue}%'
 		}
-   	    valueTile("battery", "device.battery", decoration: "flat", inactiveLabel: false, width: 2, height: 2) {
-      		state "battery", label:'${currentValue}% battery'
-    	}
+        valueTile("battery", "device.battery", decoration: "flat", inactiveLabel: false, width: 2, height: 2) {
+            state "battery", label:'${currentValue}% battery'
+        }
 		standardTile("refresh", "device.power", inactiveLabel: false, decoration: "flat", width: 2, height: 2) {
 			state "default", label:'', action:"refresh.refresh", icon:"st.secondary.refresh"
 		}
@@ -97,6 +97,7 @@ def configure() {
 }
 
 def refresh() {
+  sendEvent(name: 'battery', value: state.battery)
   def refreshCmds = [
     zigbee.readAttribute(0x0001, 0x0020)
   ]
@@ -163,25 +164,29 @@ private Map getBatteryResult(rawValue) {
   def linkText = getLinkText(device)
   def result = [
     name: 'battery',
-    value: '--'
+    value: state.battery
   ]
   def volts = rawValue / 10
   def descriptionText
   if (rawValue == 0) {
+     state.battery="unknown"
   } else {
     if (volts > 3.5) {
       result.descriptionText = "${linkText} battery has too much power (${volts} volts)."
+      state.battery="overvoltage"
     } else if (volts > 0){
       def minVolts = 2.1
       def maxVolts = 3.0
       def pct = (volts - minVolts) / (maxVolts - minVolts)
       result.value = Math.min(100, (int) pct * 100)
+      state.battery="${result.value}"
       result.descriptionText = "${linkText} battery was ${result.value}%"
     }
   }
   log.debug "Parse returned ${result?.descriptionText}"
   return result
 }
+
 def on() {
 	sendEvent(name: "switch", value: "on")
     if (state.dimmer < 1) {
