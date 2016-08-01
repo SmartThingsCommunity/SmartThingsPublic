@@ -35,6 +35,7 @@ metadata {
     
     preferences {
         input("powerOnState", "enum", title:"Boot Up State", description: "State of the relay when it boots up", required: false, displayDuringSetup: false, options: [[0:"Off"],[1:"On"],[2:"Previous State"]])
+        input("password", "password", title:"Password", required:false, displayDuringSetup:true)
         input("override", "boolean", title:"Override detected IP Address", required: false, displayDuringSetup: false)
         input("ip", "string", title:"IP Address", description: "192.168.1.150", required: false, displayDuringSetup: false)
 	}
@@ -203,8 +204,14 @@ def refresh() {
 
 private getAction(uri){ 
   updateDNI()
-  def headers = getHeader()
-  log.debug headers
+  
+  def userpass
+  
+  if(password != null && password != "") 
+    userpass = encodeCredentials("admin", password)
+    
+  def headers = getHeader(userpass)
+
   def hubAction = new physicalgraph.device.HubAction(
     method: "GET",
     path: uri,
@@ -215,7 +222,14 @@ private getAction(uri){
 
 private postAction(uri, data){ 
   updateDNI()
-  def headers = getHeader()
+  
+  def userpass
+  
+  if(password != null && password != "") 
+    userpass = encodeCredentials("admin", password)
+  
+  def headers = getHeader(userpass)
+  
   def hubAction = new physicalgraph.device.HubAction(
     method: "POST",
     path: uri,
@@ -265,10 +279,18 @@ private String convertPortToHex(port) {
     return hexport
 }
 
-private getHeader(){
+private encodeCredentials(username, password){
+	def userpassascii = "${username}:${password}"
+    def userpass = "Basic " + userpassascii.encodeAsBase64().toString()
+    return userpass
+}
+
+private getHeader(userpass = null){
     def headers = [:]
     headers.put("Host", getHostAddress())
     headers.put("Content-Type", "application/x-www-form-urlencoded")
+    if (userpass != null)
+       headers.put("Authorization", userpass)
     return headers
 }
 
