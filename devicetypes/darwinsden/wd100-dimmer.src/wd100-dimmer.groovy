@@ -26,6 +26,7 @@
  *  0.11 (05/28/2016) - Set numberOfButtons attribute for ease of use with CoRE and other SmartApps. Corrected physical/digital states.
  *  0.12 (06/03/2016) - Added press type indicator to display last tap/hold press status
  *  0.13 (06/13/2016) - Added dim level ramp-up option for remote dim commands
+ *  0.14 (08/01/2016) - Corrected 60% dim rate limit test that was inadvertently pulled into repository
  *
  */
  
@@ -226,7 +227,6 @@ def setLevel(value) {
 	log.debug "setLevel >> value: $value"
 	def valueaux = value as Integer
     def level = Math.max(Math.min(valueaux, 99), 0)
-    if (level > 0 && level < 60) {level = 60}
     def result = []
     def statusDelay = 5000
 	if (remoteDimFadeUpEnabled && state.lastLevel != null && level > state.lastLevel) 
