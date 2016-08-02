@@ -31,6 +31,7 @@
  *
  *	Changelog:
  *
+ *  0.20 (08/02/2016) -	Added preference option for allowd time between presses to eliminate duplicate notifications on some systems
  *	0.10 (06/13/2016) -	Initial 0.1 pre-beta Test Code
  *
  */
@@ -50,6 +51,10 @@ metadata {
     simulator {
     
     }
+    
+    preferences {
+        input "timeBetweenPresses", "number", title: "Seconds allowed between presses (increase this value to eliminate duplicate notifications)",  defaultValue: 10,  displayDuringSetup: true, required: false	
+    } 
  
 	tiles(scale: 2) {
 		standardTile("button1", "device.button1", width: 3, height: 3) {
@@ -189,11 +194,11 @@ private Map getDoorbellPressResult(cluster) {
     def buttonNumber = (cluster.command as int)
     def result = [:]
     
-    // map buttons per Huges described defaults for green and yellow wires
+    // map buttons per Hughes described defaults for green and yellow wires
     
     switch(buttonNumber) {
         case 0: 
-            if (!isDuplicateCall(state.lastButton2Updated, 3) )
+            if (!isDuplicateCall(state.lastButton2Updated, state.timeBetweenPresses) )
             {
 		       //log.debug ("BUTTON2 PRESS!")               
                result = [ name: 'button', value: "pushed", data: [buttonNumber: 2], isStateChange: true ]
@@ -204,7 +209,7 @@ private Map getDoorbellPressResult(cluster) {
             break
 
         case 1: 
-            if (!isDuplicateCall(state.lastButton1Updated, 3) )
+            if (!isDuplicateCall(state.lastButton1Updated, state.timeBetweenPresses) )
             {		
 		       //log.debug ("BUTTON1 PRESS!")
                result = [ name: 'button', value: "pushed", data: [buttonNumber: 1], isStateChange: true]
@@ -236,11 +241,14 @@ def refresh() {
     button1DisplayReset()
     button2DisplayReset()
     
+    setPrefs()
+    
 	return refreshCmds + enrollResponse()
 }
 
 def configure() {
 
+    setPrefs()
 	String zigbeeEui = swapEndianHex(device.hub.zigbeeEui)
 	log.debug "Configuring Reporting, IAS CIE, and Bindings."
 	def configCmds = [
@@ -277,6 +285,28 @@ private isDuplicateCall(lastRun, allowedEverySeconds) {
 		result =((new Date().time) - lastRun) < (allowedEverySeconds * 1000)
 	}
 	result
+}
+
+def setPrefs() 
+{
+   log.debug ("setting preferences")
+   if (timeBetweenPresses == null)
+   {
+      state.timeBetweenPresses = 10
+   }
+      else if (timeBetweenPresses < 0)
+   {
+      state.timeBetweenPresses = 0
+   }
+   else
+   {
+      state.timeBetweenPresses = timeBetweenPresses
+   }  
+}
+
+def updated()
+{
+   setPrefs()
 }
 
 private getEndpointId() {
