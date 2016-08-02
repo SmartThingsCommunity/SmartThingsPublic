@@ -12,7 +12,7 @@
  *
  */
 metadata {
-	definition (name: "Z-Wave Switch (Generic)", namespace: "smartthings", author: "SmartThings") {
+	definition (name: "Z-Wave Switch Generic", namespace: "smartthings", author: "SmartThings") {
 		capability "Actuator"
  		capability "Switch"
 		capability "Polling"

@@ -12,7 +12,7 @@
  *
  */
 metadata {
-	definition (name: "Z-wave Dimmer Switch (Generic)", namespace: "smartthings", author: "SmartThings") {
+	definition (name: "Z-wave Dimmer Switch Generic", namespace: "smartthings", author: "SmartThings") {
 		capability "Switch Level"
 		capability "Actuator"
 		capability "Switch"
