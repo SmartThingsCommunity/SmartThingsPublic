@@ -1,7 +1,7 @@
 /**
  *  Ask Alexa 
  *
- *  Version 2.0.8b - 7/29/16 Copyright © 2016 Michael Struck
+ *  Version 2.0.8c - 8/2/16 Copyright © 2016 Michael Struck
  *  Special thanks for Keith DeLong for overall code and assistance and Barry Burke for weather reporting/advisory/lunar phases/tide code
  * 
  *  Version 1.0.0 - Initial release
@@ -20,7 +20,7 @@
  *  Version 2.0.5 (7/9/16) Fix for null String issues
  *  Version 2.0.6 (7/14/16) Syntax fixes, additional filters on voice reports, expanded secondary responses, CoRE Macro fix
  *  Version 2.0.7b (7/23/16) Small code/syntax/interface fixes, code optimization. Allows you to place an entry into the Notification Event Log when a macro is run. Fixed CoRE Macro activation logic
- *  Version 2.0.8b (7/29/16) Restructured code to allow future personality features; fixed thermostat heating/cooling logic; added minium value command to theromstat, added tide information; added window shade control
+ *  Version 2.0.8c (8/2/16) Restructured code to allow future personality features; fixed thermostat heating/cooling logic; added minium value command to theromstat, added tide information; added window shade control
  *
  *  Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except
  *  in compliance with the License. You may obtain a copy of the License at:
@@ -2212,7 +2212,7 @@ private getWeatherReport(){
             sb << 'The dewpoint is '
             temp = isMetric ? roundValue(cond.dewpoint_c) : Math.round(cond.dewpoint_f) 
             sb << temp + " degrees, and the 'feels like' temperature is "
-            temp = isMetric ? roundValue(feelslike_c.toFloat()) : Math.round(cond.feelslike_f.toFloat()) as Integer
+            temp = isMetric ? roundValue(cond.feelslike_c) : Math.round(cond.feelslike_f.toFloat()) as Integer
             sb << temp + " degrees. "
         }
         if (voiceWeatherSolar){
@@ -2783,13 +2783,13 @@ def setupData(){
 //Version/Copyright/Information/Help-----------------------------------------------------------
 private def textAppName() { return "Ask Alexa" }	
 private def textVersion() {
-    def version = "SmartApp Version: 2.0.8b (07/29/2016)"
+    def version = "SmartApp Version: 2.0.8c (08/02/2016)"
     def lambdaVersion = state.lambdaCode ? "\n" + state.lambdaCode : ""
     return "${version}${lambdaVersion}"
 }
 private def versionInt(){ return 208 }
 private def LambdaReq() { return 117 }
-private def versionLong(){ return "2.0.8b" }
+private def versionLong(){ return "2.0.8c" }
 private def textCopyright() {return "Copyright © 2016 Michael Struck" }
 private def textLicense() {
 	def text = "Licensed under the Apache License, Version 2.0 (the 'License'); you may not use this file except in compliance with the License. "+
