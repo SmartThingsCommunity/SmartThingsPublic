@@ -4,7 +4,7 @@
  *   
  *	github: Eric Maycock (erocm123)
  *	email: erocmail@gmail.com
- *	Date: 2016-07-07
+ *	Date: 2016-08-03 9:57 AM
  *	Copyright Eric Maycock
  *
  *  Code has elements from other community sources @CyrilPeponnet, @Robert_Vandervoort. Greatly reworked and 
@@ -73,11 +73,11 @@
 				attributeState "statusText", label:'${currentValue}'
 			}
 		}
-        standardTile("motion","device.motion", width: 2, height: 2) {
+        standardTile("motion","device.motion", inactiveLabel: false, width: 2, height: 2) {
                 state "inactive",label:'no motion',icon:"st.motion.motion.inactive",backgroundColor:"#ffffff"
                 state "active",label:'motion',icon:"st.motion.motion.active",backgroundColor:"#53a7c0"
 		}
-		valueTile("temperature","device.temperature", width: 2, height: 2) {
+		valueTile("temperature","device.temperature", inactiveLabel: false, width: 2, height: 2) {
             	state "temperature",label:'${currentValue}°',backgroundColors:[
                 	[value: 32, color: "#153591"],
                     [value: 44, color: "#1e9cbb"],
@@ -88,12 +88,12 @@
 					[value: 98, color: "#bc2323"]
 				]
 		}
-		valueTile("humidity","device.humidity", width: 2, height: 2) {
-           	state "humidity",label:'RH ${currentValue} %',unit:""
+		valueTile("humidity","device.humidity", inactiveLabel: false, width: 2, height: 2) {
+           	state "humidity",label:'RH ${currentValue} %'
 		}
-		valueTile(
-        	"illuminance","device.illuminance", width: 2, height: 2) {
-            	state "luminosity",label:'${currentValue} lux', unit:"lux", backgroundColors:[
+		valueTile("illuminance", "device.illuminance", inactiveLabel: false, width: 2, height: 2) {
+           state "luminosity", label:'${currentValue} lux', unit:"lux", 
+                backgroundColors:[
                 	[value: 0, color: "#000000"],
                     [value: 1, color: "#060053"],
                     [value: 3, color: "#3E3900"],
@@ -104,41 +104,42 @@
                     [value: 1000, color: "#FFFFFF"]
 				]
 		}
+        
 		valueTile(
-        	"ultravioletIndex","device.ultravioletIndex", width: 2, height: 2) {
+        	"ultravioletIndex","device.ultravioletIndex", inactiveLabel: false, width: 2, height: 2) {
 				state "ultravioletIndex",label:'${currentValue} UV INDEX',unit:""
 		}
-		standardTile("acceleration", "device.acceleration", width: 2, height: 2) {
+		standardTile("acceleration", "device.acceleration", inactiveLabel: false, width: 2, height: 2) {
 			state("inactive", label:'clear', icon:"st.motion.acceleration.inactive", backgroundColor:"#ffffff")
             state("active", label:'tamper', icon:"st.motion.acceleration.active", backgroundColor:"#f39c12")
 		}
-        standardTile("tamper", "device.tamper", decoration: "flat", width: 2, height: 2) {
+        standardTile("tamper", "device.tamper", inactiveLabel: false, decoration: "flat", width: 2, height: 2) {
 			state("clear", label:'clear', icon:"st.contact.contact.closed", backgroundColor:"#53a7c0", action: "resetTamperAlert")
             state("detected", label:'tamper', icon:"st.contact.contact.open", backgroundColor:"#f39c12", action: "resetTamperAlert")
 		}
-		valueTile("battery", "device.battery", decoration: "flat", width: 2, height: 2) {
+		valueTile("battery", "device.battery", inactiveLabel: false, decoration: "flat", width: 2, height: 2) {
 			state "battery", label:'${currentValue}% battery', unit:""
 		}
-        valueTile("batteryTile", "device.batteryTile", decoration: "flat", width: 2, height: 2) {
+        valueTile("batteryTile", "device.batteryTile", inactiveLabel: false, decoration: "flat", width: 2, height: 2) {
 			state "batteryTile", label:'${currentValue}', unit:""
 		}
         valueTile(
-			"currentFirmware", "device.currentFirmware", decoration: "flat", width: 2, height: 2) {
+			"currentFirmware", "device.currentFirmware", inactiveLabel: false, decoration: "flat", width: 2, height: 2) {
 			state "currentFirmware", label:'Firmware: v${currentValue}', unit:""
 		}
-        standardTile("refresh", "device.switch", decoration: "flat", width: 2, height: 2) {
+        standardTile("refresh", "device.switch", inactiveLabel: false, decoration: "flat", width: 2, height: 2) {
 			state "default", label:'Refresh', action:"refresh.refresh", icon:"st.secondary.refresh-icon"
 		}
-        valueTile("configure", "device.needUpdate", decoration: "flat", width: 2, height: 2) {
+        valueTile("configure", "device.needUpdate", inactiveLabel: false, decoration: "flat", width: 2, height: 2) {
             state("NO" , label:'Synced', action:"configuration.configure", backgroundColor:"#8acb47")
             state("YES", label:'Pending', action:"configuration.configure", backgroundColor:"#f39c12")
         }
         valueTile(
-			"batteryRuntime", "device.batteryRuntime", decoration: "flat", width: 2, height: 2) {
+			"batteryRuntime", "device.batteryRuntime", inactiveLabel: false, decoration: "flat", width: 2, height: 2) {
 			state "batteryRuntime", label:'Battery: ${currentValue} Double tap to reset counter', unit:"", action:"resetBatteryRuntime"
 		}
         valueTile(
-			"statusText2", "device.statusText2", decoration: "flat", width: 2, height: 2) {
+			"statusText2", "device.statusText2", inactiveLabel: false, decoration: "flat", width: 2, height: 2) {
 			state "statusText2", label:'${currentValue}', unit:"", action:"resetBatteryRuntime"
 		}
         
@@ -242,7 +243,7 @@ def zwaveEvent(physicalgraph.zwave.commands.batteryv1.BatteryReport cmd) {
 
 def zwaveEvent(physicalgraph.zwave.commands.sensormultilevelv5.SensorMultilevelReport cmd)
 {
-    logging("SensorMultiLevelReport: $cmd")
+    //logging("SensorMultiLevelReport: $cmd")
 	def map = [:]
 	switch (cmd.sensorType) {
 		case 1:
@@ -251,24 +252,28 @@ def zwaveEvent(physicalgraph.zwave.commands.sensormultilevelv5.SensorMultilevelR
             state.realTemperature = convertTemperatureIfNeeded(cmd.scaledSensorValue, cmdScale, cmd.precision)
 			map.value = getAdjustedTemp(state.realTemperature)
 			map.unit = getTemperatureScale()
+            logging("Temperature Report: $map.value")
 			break;
 		case 3:
 			map.name = "illuminance"
             state.realLuminance = cmd.scaledSensorValue.toInteger()
 			map.value = getAdjustedLuminance(cmd.scaledSensorValue.toInteger())
 			map.unit = "lux"
+            logging("Illuminance Report: $map.value")
 			break;
         case 5:
 			map.name = "humidity"
             state.realHumidity = cmd.scaledSensorValue.toInteger()
 			map.value = getAdjustedHumidity(cmd.scaledSensorValue.toInteger())
 			map.unit = "%"
+            logging("Humidity Report: $map.value")
 			break;
 		case 27:
         	map.name = "ultravioletIndex"
             state.realUV = cmd.scaledSensorValue.toInteger()
             map.value = getAdjustedUV(cmd.scaledSensorValue.toInteger())
             map.unit = ""
+            logging("UV Report: $map.value")
             break;
 		default:
 			map.descriptionText = cmd.toString()
@@ -876,7 +881,7 @@ private updateStatus(){
 }
 
 private def logging(message) {
-    if (state.enableDebugging == null || state.enableDebugging == "true") log.debug "$message"
+    if (state.enableDebugging == "true") log.debug "$message"
 }
 
 def configuration_model()
@@ -1016,6 +1021,14 @@ The calibration value = standard value - measure value.
 E.g. If measure value = 9 and the standard value = 8, so the calibration value = 8 – 9 = -1.
 If the measure value = 7 and the standard value = 9, so the calibration value = 9 – 7 = 2. 
     </Help>
+  </Value>
+  <Value type="list" index="5" label="Command Option" min="1" max="2" value="1" byteSize="1" setting_type="zwave" fw="1.06,1.07,1.08,1.06EU,1.07EU">
+    <Help>
+Which command should be sent when the motion sensor is triggered
+Default: Basic Set
+    </Help>
+        <Item label="Basic Set" value="1" />
+        <Item label="Sensor Binary" value="2" />
   </Value>
   <Value type="list" index="81" label="Disable LED?" min="0" max="1" value="0" byteSize="1" setting_type="zwave" fw="1.08,1.08EU">
     <Help>
