@@ -31,11 +31,11 @@ metadata {
     }
     
     tiles(scale: 2) {
-    	multiAttributeTile(name:"FGMS", type:"lighting", width:6, height:4) {//with generic type secondary control text is not displayed in Android app
-        	tileAttribute("device.motion", key:"PRIMARY_CONTROL") {
-            	attributeState("inactive", icon:"st.motion.motion.inactive", backgroundColor:"#79b821")
-            	attributeState("active", icon:"st.motion.motion.active", backgroundColor:"#ffa81e")   
-            }
+		multiAttributeTile(name:"motion", type: "generic", width: 6, height: 4){
+			tileAttribute ("device.motion", key: "PRIMARY_CONTROL") {
+				attributeState "active", label:'motion', icon:"st.motion.motion.active", backgroundColor:"#53a7c0"
+				attributeState "inactive", label:'no motion', icon:"st.motion.motion.inactive", backgroundColor:"#ffffff"
+			}
             
             tileAttribute("device.tamper", key:"SECONDARY_CONTROL") {
 				attributeState("active", label:'tamper active', backgroundColor:"#53a7c0")
@@ -64,11 +64,10 @@ metadata {
             state "battery", label:'${currentValue}% battery', unit:""
         }
         
-        main "FGMS"
-        details(["FGMS","battery","temperature","illuminance"])
+        main "motion"
+        details(["motion","battery","temperature","illuminance"])
     }
 }
-
 // parse events into attributes
 def parse(String description) {
 	log.debug "Parsing '${description}'"        
