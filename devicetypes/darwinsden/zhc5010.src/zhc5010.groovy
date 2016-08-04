@@ -18,6 +18,7 @@
  *	Changelog:
  *
  *	0.01 (06/08/2016) -	Initial 0.01 Test Code/Beta
+ *	0.02 (08/04/2016) -	Added double and triple tap (increments button by +4, and +8 respectively)
  *
  */
  
@@ -107,30 +108,41 @@ def zwaveEvent(physicalgraph.zwave.commands.centralscenev1.CentralSceneNotificat
     switch (cmd.keyAttributes) {
        case 0:
            //pressed
-           sendEvent(name: "buttonNum" , value: "Btn: $cmd.sceneNumber pushed")
-           result=createEvent([name: "button", value: "pushed", data: [buttonNumber: "$cmd.sceneNumber"], 
-               descriptionText: "$device.displayName $cmd.sceneNumber pressed", isStateChange: true, type: "physical"])
+           def buttonResult = cmd.sceneNumber
+           sendEvent(name: "buttonNum" , value: "Btn: $buttonResult pushed")
+           result=createEvent([name: "button", value: "pushed", data: [buttonNumber: "$buttonResult"], 
+               descriptionText: "$device.displayName $buttonResult pressed", isStateChange: true, type: "physical"])
            break
  
        case 1:
            //released
-           sendEvent(name: "buttonNum" , value: "Btn: $cmd.sceneNumber released")
-           result=createEvent([name: "button", value: "released", data: [buttonNumber: "$cmd.sceneNumber"], 
-                         descriptionText: "$device.displayName $btn released", isStateChange: true, type: "physical"])
+           def buttonResult = cmd.sceneNumber
+           sendEvent(name: "buttonNum" , value: "Btn: $buttonResult released")
+           result=createEvent([name: "button", value: "released", data: [buttonNumber: "$buttonResult"], 
+                         descriptionText: "$device.displayName $buttonResult released", isStateChange: true, type: "physical"])
            break
        
        case 2:
            //held
-           sendEvent(name: "buttonNum" , value: "Btn: $cmd.sceneNumber held")
-           result=createEvent([name: "button", value: "held", data: [buttonNumber: "$cmd.sceneNumber"], 
-                         descriptionText: "$device.displayName $cmd.sceneNumber held", isStateChange: true, type: "physical"])
+           def buttonResult = cmd.sceneNumber
+           result=createEvent([name: "button", value: "held", data: [buttonNumber: "$buttonResult"], 
+                         descriptionText: "$device.displayName $buttonResult held", isStateChange: true, type: "physical"])
            break
     
        case 3:
            //double press
-           sendEvent(name: "buttonNum" , value: "Btn: $cmd.sceneNumber double press")
-           result=createEvent([name: "button", value: "double-pressed", data: [buttonNumber: "$cmd.sceneNumber"], 
-                         descriptionText: "$device.displayName $cmd.sceneNumber double-pressed", isStateChange: true, type: "physical"])
+           def buttonResult = cmd.sceneNumber + 4
+           sendEvent(name: "buttonNum" , value: "Btn: $buttonResult double press")
+           result=createEvent([name: "button", value: "pushed", data: [buttonNumber: "$buttonResult"], 
+                         descriptionText: "$device.displayName $buttonResult double-pressed", isStateChange: true, type: "physical"])
+           break                  
+
+       case 4:
+           //triple press?
+           def buttonResult = cmd.sceneNumber + 8
+           sendEvent(name: "buttonNum" , value: "Btn: $buttonResult double press")
+           result=createEvent([name: "button", value: "pushed", data: [buttonNumber: "$buttonResult"], 
+                         descriptionText: "$device.displayName $buttonResult double-pressed", isStateChange: true, type: "physical"])
            break                  
 
 
