@@ -15,6 +15,7 @@ metadata {
 	// Automatically generated. Make future change here.
 	definition (name: "Simulated Contact Sensor", namespace: "smartthings/testing", author: "bob") {
 		capability "Contact Sensor"
+		capability "Sensor"
 
 		command "open"
 		command "close"

@@ -15,6 +15,7 @@ metadata {
 	// Automatically generated. Make future change here.
 	definition (name: "Simulated Water Sensor", namespace: "smartthings/testing", author: "SmartThings") {
 		capability "Water Sensor"
+		capability "Sensor"
         
         command "wet"
         command "dry"

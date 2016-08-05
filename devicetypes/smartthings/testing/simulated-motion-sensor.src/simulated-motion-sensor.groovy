@@ -15,6 +15,7 @@ metadata {
 	// Automatically generated. Make future change here.
 	definition (name: "Simulated Motion Sensor", namespace: "smartthings/testing", author: "bob") {
 		capability "Motion Sensor"
+		capability "Sensor"
 
 		command "active"
 		command "inactive"
