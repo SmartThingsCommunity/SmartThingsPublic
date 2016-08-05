@@ -28,7 +28,7 @@ metadata {
         capability "Switch"
         capability "Switch Level"
 
-        fingerprint profileId: "0102", inClusters: "0000,0003,0006,0008,0300", outClusters: "0000", manufacturer: "GRE Alpha", model: "SLD-SmartColor", deviceJoinName: "GRE Color Life"
+        fingerprint profileId: "0105", inClusters: "0000,0003,0006,0008,0300", outClusters: "0000"
     }
 
     // UI tile definitions
