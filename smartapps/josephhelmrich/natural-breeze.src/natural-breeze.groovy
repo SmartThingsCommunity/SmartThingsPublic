@@ -27,9 +27,9 @@ definition(
 preferences {
 	section("Setup") {
     	input "fans", "capability.switchLevel", title: "Select Your Ceiling Fans", required: true, multiple: true
-        input "offDelay", "number", title: "How often (seconds) do you want to cycle the fan?"
-        input "onDelay", "number", title: "How long do you run the fan?"
-        input "fanLevel", "number", title: "Enter a Fan Level"
+        input "offDelay", "number", title: "How often (seconds) do you want to cycle the fan?", required: true, defaultValue: 180
+        input "onDelay", "number", title: "How long do you run the fan?", required: true, defaultValue: 5
+        input "fanLevel", "number", title: "Enter a Fan Level", required: false
         input "runMode", "mode", title: "Only run in these Modes", required: true, multiple: true
 	}
 }
@@ -57,12 +57,13 @@ def modeChangeHandler(evt) {
     }    
     if (rightMode)
     {
-    	log.info "Starting..."
+    	log.info "Started"
     	timerHandler()
     }
     else
     {
-    	log.info "Stopping..."
+    	fans.off()
+    	log.info "Stopped"
     }
 }
 
@@ -79,12 +80,24 @@ def timerHandler() {
     	}    
     
     	if (onSwitches) {
-        	fans.setLevel(0)
+            if (null != fanLevel && 0 != fanLevel) {
+        		fans.setLevel(0)
+            }
+            else {
+        		fans.off()
+            }
 	    	runIn(offDelay, timerHandler) 
         }
         else {
-        	log.info "Cycled Fans"
-        	fans.setLevel(fanLevel)
+        	
+            if (null != fanLevel && 0 != fanLevel) {
+            	log.info "Cycled Fans: ${fanLevel}%"
+        		fans.setLevel(fanLevel)
+            }
+            else {
+            	log.info "Cycled Fans"
+        		fans.on()
+            }            
 	    	runIn(onDelay, timerHandler)
         }
     }
