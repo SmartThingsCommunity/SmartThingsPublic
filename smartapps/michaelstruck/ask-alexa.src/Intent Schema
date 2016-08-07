@@ -69,6 +69,10 @@
         {
           "name" : "SHParam",
           "type" : "LIST_OF_SHPARAM"
+        },
+        {
+          "name" : "SHNum",
+          "type" : "AMAZON.NUMBER"
         }
         ]
     },
