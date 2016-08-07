@@ -95,24 +95,24 @@ DeviceOperation turn {Operator} {Device} {Param} mode
 DeviceOperation turn {Operator} {Device} to {Param}
 DeviceOperation set the {Device} to {Param} mode
 
-SmartHomeOperation to set {SHCmd} to {SHParam}
-SmartHomeOperation to set the {SHCmd} to {SHParam}
-SmartHomeOperation set the {SHCmd} to {SHParam}
+SmartHomeOperation to set {SHCmd} to {SHParam} password {SHNum}
+SmartHomeOperation to set the {SHCmd} to {SHParam} password {SHNum}
+SmartHomeOperation set the {SHCmd} to {SHParam} password {SHNum}
 SmartHomeOperation {SHCmd} status
 SmartHomeOperation status of {SHCmd}
 SmartHomeOperation the status of home {SHCmd}
 SmartHomeOperation {SHCmd} state
 SmartHomeOperation settings of {SHCmd}
-SmartHomeOperation run {SHCmd} {SHParam}
-SmartHomeOperation run the {SHParam} {SHCmd} 
-SmartHomeOperation to run {SHCmd} {SHParam}
+SmartHomeOperation run {SHCmd} {SHParam} password {SHNum}
+SmartHomeOperation run the {SHParam} {SHCmd} password {SHNum}
+SmartHomeOperation to run {SHCmd} {SHParam} password {SHNum}
 SmartHomeOperation what is the current {SHCmd}
 SmartHomeOperation the current {SHCmd}
-SmartHomeOperation to change the {SHCmd} to {SHParam}
-SmartHomeOperation {SHParam} {SHCmd}
-SmartHomeOperation {SHParam}
+SmartHomeOperation to change the {SHCmd} to {SHParam} password {SHNum}
+SmartHomeOperation {SHParam} {SHCmd} password {SHNum}
+SmartHomeOperation {SHParam} password {SHNum}
 SmartHomeOperation {SHCmd}
-SmartHomeOperation execute the {SHParam} {SHCmd}
+SmartHomeOperation execute the {SHParam} {SHCmd} password {SHNum}
 SmartHomeOperation about {SHCmd}
 SmartHomeOperation about the {SHCmd}
 SmartHomeOperation about the current {SHCmd}
