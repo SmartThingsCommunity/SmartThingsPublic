@@ -158,3 +158,6 @@ def zwaveEvent(physicalgraph.zwave.commands.centralscenev1.CentralSceneNotificat
 def configure() {
      sendEvent(name: "numberOfButtons", value: 12, displayed: false)
 }
+def refresh() {
+  configure()
+}
