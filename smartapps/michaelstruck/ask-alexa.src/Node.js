@@ -1,7 +1,7 @@
 /**
  *  Ask Alexa - Lambda Code
  *
- *  Version 1.2.0 - 8/7/16 Copyright © 2016 Michael Struck
+ *  Version 1.2.0a - 8/7/16 Copyright © 2016 Michael Struck
  *  Special thanks for Keith DeLong for code and assistance 
  *  
  *  Version 1.0.0 - Initial release
@@ -14,7 +14,7 @@
  *  Version 1.1.5 - Code optimization, more responses
  *  Version 1.1.6 - Minor code/syntax changes. Organized code to allow for more custom responses
  *  Version 1.1.7 - Code reorganization to allow for future functions
- *  Version 1.2.0 - Addition of courtesy personality responses
+ *  Version 1.2.0a - Addition of courtesy personality responses
  * 
  *  Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except
  *  in compliance with the License. You may obtain a copy of the License at:
@@ -28,14 +28,14 @@
  */
 'use strict';
 exports.handler = function( event, context ) {
-    var versionTxt = '1.2.0';
+    var versionTxt = '1.2.0a';
     var versionDate= '08/07/2016';
     var versionNum = '120';
     var https = require( 'https' );
     // Paste app code here between the breaks------------------------------------------------
- 
- 
- 
+
+
+
     //---------------------------------------------------------------------------------------
     var cardName ="";
     var endSession = true;
@@ -193,13 +193,13 @@ function getResponse(respType, style){
 
 function output( text, context, card, complete, pName) { 
     if (text) {
-        if (Math.floor(Math.random() * 2 ) !==0) { 
+        if (!pName || Math.floor(Math.random() * 2) !==0) { 
             pName="";
             text=text.replace("%N%", ""); 
             text=text.replace("%Nc%","");
             text=text.replace("%cN%","");
         }
-        if (pName !=="") { 
+        if (pName) { 
             text=text.replace("%N%", " " + pName); 
             text=text.replace("%Nc%", " " + pName +",");
             text=text.replace("%cN%", ", " + pName);
