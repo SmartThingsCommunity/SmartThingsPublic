@@ -62,7 +62,9 @@ def modeChangeHandler(evt) {
     }
     else
     {
-    	fans.off()
+    	if (fans != null) {
+    		fans.off()
+       	}
     	log.info "Stopped"
     }
 }
@@ -72,33 +74,33 @@ def timerHandler() {
         m == location.mode ? true : false
     }    
 
-	if (rightMode)
+    if (rightMode)
     {
-    	def currSwitches = fans.currentSwitch
-		def onSwitches = currSwitches.findAll { switchVal ->
-        	switchVal == "on" ? true : false
-    	}    
-    
-    	if (onSwitches) {
+        def currSwitches = fans.currentSwitch
+        def onSwitches = currSwitches.findAll { switchVal ->
+            switchVal == "on" ? true : false
+        }    
+
+        if (onSwitches) {
             if (null != fanLevel && 0 != fanLevel) {
-        		fans.setLevel(0)
+                fans.setLevel(0)
             }
             else {
-        		fans.off()
+                fans.off()
             }
-	    	runIn(offDelay, timerHandler) 
+            runIn(offDelay, timerHandler) 
         }
         else {
-        	
+
             if (null != fanLevel && 0 != fanLevel) {
-            	log.info "Cycled Fans: ${fanLevel}%"
-        		fans.setLevel(fanLevel)
+                log.info "Cycled Fans: ${fanLevel}%"
+                fans.setLevel(fanLevel)
             }
             else {
-            	log.info "Cycled Fans"
-        		fans.on()
+                log.info "Cycled Fans"
+                fans.on()
             }            
-	    	runIn(onDelay, timerHandler)
+            runIn(onDelay, timerHandler)
         }
     }
 }
