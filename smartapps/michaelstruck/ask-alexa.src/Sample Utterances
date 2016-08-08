@@ -95,6 +95,13 @@ DeviceOperation turn {Operator} {Device} {Param} mode
 DeviceOperation turn {Operator} {Device} to {Param}
 DeviceOperation set the {Device} to {Param} mode
 
+DeviceOperation to {Operator} {Param} on the {Device}
+DeviceOperation to {Operator} {Device} with {Param}
+DeviceOperation to {Operator} {Param} with {Device}
+DeviceOperation {Operator} {Device} {Param}
+DeviceOperation {Operator} {Param} {Device}
+DeviceOperation {Device} {Operator} {Param} 
+
 SmartHomeOperation to set {SHCmd} to {SHParam} password {SHNum}
 SmartHomeOperation to set the {SHCmd} to {SHParam} password {SHNum}
 SmartHomeOperation set the {SHCmd} to {SHParam} password {SHNum}
@@ -111,6 +118,7 @@ SmartHomeOperation the current {SHCmd}
 SmartHomeOperation to change the {SHCmd} to {SHParam} password {SHNum}
 SmartHomeOperation {SHParam} {SHCmd} password {SHNum}
 SmartHomeOperation {SHParam} password {SHNum}
+SmartHomeOperation {SHParam} 
 SmartHomeOperation {SHCmd}
 SmartHomeOperation execute the {SHParam} {SHCmd} password {SHNum}
 SmartHomeOperation about {SHCmd}
