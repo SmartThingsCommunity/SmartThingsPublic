@@ -43,7 +43,7 @@ def pageSetup() {
             href "VirtualThermostat", title: "(optional) Run a Virtual Thermostat (for a back up heater or AC)", description: ""
             href "Options", title: "Choose options such as central sensor, neutral interval to turn off units, doors sensors, outside sensor...", description: ""
             href "EnergySaving", title: "Save some Energy", description: ""
-            href "RefreshRates", title: "Force Smartthings to be more reactive ", description: ""
+            //href "RefreshRates", title: "Force Smartthings to be more reactive ", description: ""
             //href "Notifications", title: "Notifications / push messages", description: "", state:greyedOut()
         }
         section([title:"Options", mobileOnly:true]) {
@@ -65,7 +65,8 @@ def Thermostats() {
         name: "thermostat2", 
         type: "capability.thermostat", 
         title: "Second Thermostat", 
-        required: true, 
+        submitOnChange: true,
+        required: false, 
         multiple: false
     ]
 
@@ -73,10 +74,10 @@ def Thermostats() {
         name: "thermostat3", 
         type: "capability.thermostat", 
         title: "Third Thermostat", 
-        required: true, 
+        submitOnChange: true,
+        required: false, 
         multiple: false
     ] 
-
 
     def pageName = "Thermostats"
 
@@ -92,14 +93,15 @@ def Thermostats() {
             input thermostat
         }
 
-
-        section("Select the second thermostat you want to control"){
-            input thermostat2
+        section (""){
+            input(name: "MoreThermostats", type: "bool", title: "Do you have more than 1 thermostat?", options: ["true","false"], 
+                  submitOnChange: true, required: true, default: false)
         }
-
-        section("Select the third thermostat you want to control"){
-            input thermostat3
-
+        if (MoreThermostats) {
+            section {
+                input(name: "thermostat2", type: "capability.thermostat", title: "choose a second thermostat", required: true)
+                input(name: "thermostat3", type: "capability.thermostat", title: "choose a third thermostat", required: true)
+            }
         }
     }
 }
@@ -222,7 +224,7 @@ def TemperaturesSettings() {
     def HSAWAY = [
         name: "HSAWAY", 
         type : "decimal", 
-        title: "choose Heating temperature for Away mode (will apply to all thermostats)", 
+        title: "choose Heating temperature for $AWAYMODE mode (will apply to all thermostats)", 
         multiple: false, 
         required: true
     ]
@@ -230,7 +232,7 @@ def TemperaturesSettings() {
     def CSAWAY = [
         name: "CSAWAY", 
         type : "decimal", 
-        title: "choose Cooling temperature for Away mode (will apply to all thermostats)", 
+        title: "choose Cooling temperature for $AWAYMODE mode (will apply to all thermostats)", 
         multiple: false, 
         required: true
     ]
@@ -238,86 +240,86 @@ def TemperaturesSettings() {
     // if in Main Mode (Home Mode) apply these settings instead
 
     def heatingSetpoint = [
-        name: "heatingSetpoint", type: "decimal", title: "Home Heating temp. for Thermostat 1", required: true
+        name: "heatingSetpoint", type: "decimal", title: "$MainMode Heating temp. for $thermostat", required: true
     ]
     def heatingSetpoint2 = [
-        name: "heatingSetpoint2", type: "decimal", title: "Home Heating temp. for Thermostat 2", required: true
+        name: "heatingSetpoint2", type: "decimal", title: "$MainMode Heating temp. for $thermostat2", required: false
     ]
     def heatingSetpoint3 = [
-        name: "heatingSetpoint3", type: "decimal", title: "Home Heating temp. for Thermostat 3", required: true 
+        name: "heatingSetpoint3", type: "decimal", title: "$MainMode Heating temp. for $thermostat3", required: false 
     ]
 
     def coolingSetpoint = [
-        name: "coolingSetpoint", type: "decimal", title: "Home Cooling temp. for Thermostat 1", required: true
+        name: "coolingSetpoint", type: "decimal", title: "$MainMode Cooling temp. for $thermostat", required: true
     ]
     def coolingSetpoint2 = [ 
-        name: "coolingSetpoint2", type: "decimal", title: "Home Cooling temp. for Thermostat 2", required: true
+        name: "coolingSetpoint2", type: "decimal", title: "$MainMode Cooling temp. for $thermostat2", required: false
     ]
     def coolingSetpoint3 = [ 
-        name: "coolingSetpoint3", type: "decimal", title: "Home Cooling temp. for Thermostat 3", required: true 
+        name: "coolingSetpoint3", type: "decimal", title: "$MainMode Cooling temp. for $thermostat3", required: false 
     ]
 
     // if in NightMode apply these settings instead
 
     def heatingSetpointBIS = [
-        name: "heatingSetpointBIS", type: "decimal", title: "Night Heating Temp for Thermostat 1", required: true 
+        name: "heatingSetpointBIS", type: "decimal", title: "$NightMode Heating Temp for $thermostat", required: true 
     ]
     def heatingSetpoint2BIS = [ 
-        name: "heatingSetpoint2BIS", type: "decimal", title: "Night Heating Temp for Thermostat 2", required: true 
+        name: "heatingSetpoint2BIS", type: "decimal", title: "$NightMode Heating Temp for $thermostat2", required: false 
     ]
     def heatingSetpoint3BIS = [ 
-        name: "heatingSetpoint3BIS",type: "decimal", title: "Night Heating Temp for Thermostat 3", required: true 
+        name: "heatingSetpoint3BIS",type: "decimal", title: "$NightMode Heating Temp for $thermostat3", required: false 
     ]
     def coolingSetpointBIS = [
-        name: "coolingSetpointBIS", type: "decimal", title: "Night cooling Temp for Thermostat 1", required: true 
+        name: "coolingSetpointBIS", type: "decimal", title: "$NightMode cooling Temp for $thermostat", required: true 
     ]
     def coolingSetpoint2BIS = [ 
-        name: "coolingSetpoint2BIS", type: "decimal", title: "Night cooling Temp for Thermostat 2", required: true 
+        name: "coolingSetpoint2BIS", type: "decimal", title: "$NightMode cooling Temp for $thermostat2", required: false 
     ]
     def coolingSetpoint3BIS = [ 
-        name: "coolingSetpoint3BIS",type: "decimal", title: "Night cooling Temp for Thermostat 3", required: true 
+        name: "coolingSetpoint3BIS",type: "decimal", title: "$NightMode cooling Temp for $thermostat3", required: false 
     ]  
 
     // SPECIAL MODE TEMPERATURE SETTINGS
 
     def heatingSetpointSPEC = [
-        name: "heatingSetpointSPEC", type: "decimal", title: "SPECIAL MODE Heat Temp for Thermostat 1", required: false 
+        name: "heatingSetpointSPEC", type: "decimal", title: "$SPECIALMODE Heat Temp for $thermostat", required: false 
     ]
     def heatingSetpointSPEC2 = [ 
-        name: "heatingSetpointSPEC2", type: "decimal", title: "SPECIAL MODE Heat Temp for Thermostat 2", required: false 
+        name: "heatingSetpointSPEC2", type: "decimal", title: "$SPECIALMODE Heat Temp for $thermostat2", required: false 
     ]
     def heatingSetpointSPEC3 = [ 
-        name: "heatingSetpointSPEC3",type: "decimal", title: "SPECIAL MODE Heat Temp for Thermostat 3", required: false 
+        name: "heatingSetpointSPEC3",type: "decimal", title: "$SPECIALMODE Heat Temp for $thermostat3", required: false 
     ]
     def coolingSetpointSPEC = [
-        name: "coolingSetpointSPEC", type: "decimal", title: "SPECIAL MODE cooling Temp for Thermostat 1", required: false 
+        name: "coolingSetpointSPEC", type: "decimal", title: "$SPECIALMODE cooling Temp for $thermostat", required: false 
     ]
     def coolingSetpointSPEC2 = [ 
-        name: "coolingSetpointSPEC2", type: "decimal", title: "SPECIAL MODE cooling Temp for Thermostat 2", required: false 
+        name: "coolingSetpointSPEC2", type: "decimal", title: "$SPECIALMODE cooling Temp for $thermostat2", required: false 
     ]
     def coolingSetpointSPEC3 = [ 
-        name: "coolingSetpointSPEC3",type: "decimal", title: "SPECIAL MODE cooling Temp for Thermostat 3", required: false 
+        name: "coolingSetpointSPEC3",type: "decimal", title: "$SPECIALMODE cooling Temp for $thermostat3", required: false 
     ]  
 
     // DEEP NIGHT MODE TEMPERATURE SETTINGS
 
     def heatingSetpointDEEP = [
-        name: "heatingSetpointDEEP", type: "decimal", title: "DEEP NIGHT MODE Heat Temp for Thermostat 1", required: false 
+        name: "heatingSetpointDEEP", type: "decimal", title: "$DEEPNIGHT MODE Heat Temp for $thermostat", required: false 
     ]
     def heatingSetpointDEEP2 = [ 
-        name: "heatingSetpointDEEP2", type: "decimal", title: "DEEP NIGHT MODE Heat Temp for Thermostat 2", required: false 
+        name: "heatingSetpointDEEP2", type: "decimal", title: "$DEEPNIGHT MODE Heat Temp for $thermostat2", required: false 
     ]
     def heatingSetpointDEEP3 = [ 
-        name: "heatingSetpointDEEP3",type: "decimal", title: "DEEP NIGHT MODE Heat Temp for Thermostat 3", required: false 
+        name: "heatingSetpointDEEP3",type: "decimal", title: "$DEEPNIGHT MODE Heat Temp for $thermostat3", required: false 
     ]
     def coolingSetpointDEEP = [
-        name: "coolingSetpointDEEP", type: "decimal", title: "DEEP NIGHT MODE cooling Temp for Thermostat 1", required: false 
+        name: "coolingSetpointDEEP", type: "decimal", title: "$DEEPNIGHT MODE cooling Temp for $thermostat", required: false 
     ]
     def coolingSetpointDEEP2 = [ 
-        name: "coolingSetpointDEEP2", type: "decimal", title: "DEEP NIGHT MODE cooling Temp for Thermostat 2", required: false 
+        name: "coolingSetpointDEEP2", type: "decimal", title: "$DEEPNIGHT MODE cooling Temp for $thermostat2", required: false 
     ]
     def coolingSetpointDEEP3 = [ 
-        name: "coolingSetpointDEEP3",type: "decimal", title: "DEEP NIGHT MODE cooling Temp for Thermostat 3", required: false 
+        name: "coolingSetpointDEEP3",type: "decimal", title: "$DEEPNIGHT MODE cooling Temp for $thermostat3", required: false 
     ]  
 
     def pageName = "TemperaturesSettings"
@@ -336,45 +338,84 @@ def TemperaturesSettings() {
         section("Set the unique cooling tempertaure to apply to all thermostats when you're Away"){
             input CSAWAY
         }
-        section("Set the desired heating themperatures for Home mode and for each thermostat (in the same order than the list of thermostats"){
+
+        section("Set the desired heating themperatures for $MainMode"){
             input heatingSetpoint
-            input heatingSetpoint2
-            input heatingSetpoint3
+
+            if(thermostat2){
+                input(name: "heatingSetpoint2", type: "decimal", title: "$MainMode temperature on $thermostat2", required: true)
+
+            }
+            if(thermostat3){
+                input(name: "heatingSetpoint3", type: "decimal", title: "$MainMode temperature on $thermostat3", required: true)
+            }
         }
-        section("Set the desired cooling themperatures for Home mode and for each thermostat (in the same order than the list of thermostats"){
+
+        section("Set the desired cooling themperatures for $MainMode"){
             input coolingSetpoint
-            input coolingSetpoint2
-            input coolingSetpoint3
+            if(thermostat2){
+                input(name: "coolingSetpoint2", type: "decimal", title: "$MainMode temperature on $thermostat2", required: true)
+
+            }
+            if(thermostat3){
+                input(name: "coolingSetpoint3", type: "decimal", title: "$MainMode temperature on $thermostat3", required: true)
+            }
         }
-        section("Set the desired heating themperatures for Night mode and for each thermostat (in the same order than the list of thermostats"){
+        section("Set the desired heating themperatures for $NightMode"){
             input heatingSetpointBIS
-            input heatingSetpoint2BIS
-            input heatingSetpoint3BIS
+            if(thermostat2){
+                input(name: "heatingSetpointBIS2", type: "decimal", title: "$NightMode temperature on $thermostat2", required: true)
+
+            }
+            if(thermostat3){
+                input(name: "heatingSetpointBIS3", type: "decimal", title: "$NightMode temperature on $thermostat3", required: true)
+            }
         }
-        section("Set the desired cooling themperatures for Night mode and for each thermostat (in the same order than the list of thermostats"){
+        section("Set the desired cooling themperatures for $NightMode"){
             input coolingSetpointBIS
-            input coolingSetpoint2BIS
-            input coolingSetpoint3BIS
+            if(thermostat2){
+                input(name: "coolingSetpointBIS2", type: "decimal", title: "$NightMode temperature on $thermostat2", required: true)
+
+            }
+            if(thermostat3){
+                input(name: "coolingSetpointBIS3", type: "decimal", title: "$NightMode temperature on $thermostat3", required: true)
+            }
         }
-        section("Set the desired heating themperatures for SPECIAL MODE (in the same order than the list of thermostats"){
+        section("Set the desired heating themperatures for $SPECIALMODE"){
             input heatingSetpointSPEC
-            input heatingSetpointSPEC2
-            input heatingSetpointSPEC3
+            if(thermostat2){
+                input(name: "heatingSetpointSPEC2", type: "decimal", title: "$SPECIALMODE temperature on $thermostat2", required: true)
+            }
+            if(thermostat3){
+                input(name: "heatingSetpointSPEC3", type: "decimal", title: "$SPECIALMODE temperature on  $thermostat3", required: true)
+            }
         }
-        section("Set the desired cooling themperatures for SPECIAL MODE and for each thermostat (in the same order than the list of thermostats"){
+        section("Set the desired cooling themperatures for $SPECIALMODE"){
             input coolingSetpointSPEC
-            input coolingSetpointSPEC2
-            input coolingSetpointSPEC3
+            if(thermostat2){
+                input(name: "coolingSetpointSPEC2", type: "decimal", title: "$SPECIALMODE temperature on  $thermostat2", required: true)
+            }
+            if(thermostat3){
+                input(name: "coolingSetpointSPEC3", type: "decimal", title: "$SPECIALMODE temperature on $thermostat3", required: true)
+            }
         }
-        section("Set the desired heating themperatures for DEEP NIGHT MODE (in the same order than the list of thermostats"){
+        section("Set the desired heating themperatures for $DEEPNIGHT MODE "){
             input heatingSetpointDEEP
-            input heatingSetpointDEEP2
-            input heatingSetpointDEEP3
+            if(thermostat2){
+                input(name: "heatingSetpointDEEP2", type: "decimal", title: "$DEEPNIGHT temperature on  $thermostat2", required: true)
+            }
+            if(thermostat3){
+                input(name: "heatingSetpointDEEP3", type: "decimal", title: "$DEEPNIGHT temperature on $thermostat3", required: true)
+            }
         }
-        section("Set the desired cooling themperatures for DEEP NIGHT MODE and for each thermostat (in the same order than the list of thermostats"){
+        section("Set the desired cooling themperatures for $DEEPNIGHT MODE"){
             input coolingSetpointDEEP
-            input coolingSetpointDEEP2
-            input coolingSetpointDEEP3
+            if(thermostat2){
+                input(name: "coolingSetpointDEEP2", type: "decimal", title: "$DEEPNIGHT temperature on $thermostat2", required: true)
+            }
+            if(thermostat3){
+                input(name: "coolingSetpointDEEP3", type: "decimal", title: "$DEEPNIGHT temperature on $thermostat3", required: true)
+            }
         }
 
 
@@ -510,6 +551,8 @@ def EnergySaving() {
     }
 }
 
+//////////////////////////////////////SETUP AND UPDATE///////////////////////////////
+
 def installed() {	 
     log.debug "enter installed, state: $state"	
     log.debug "Installation function is RESETING STATE COUNT"
@@ -522,7 +565,7 @@ def updated() {
     log.debug "enter updated, state: $state"   
     log.debug "Current mode = ${location.mode}" 
 
-    state.fanonalreadyrun == false
+    
     state.CriticalTemp = false
     state.AllunitsMessage = 0
 
@@ -530,9 +573,9 @@ def updated() {
     unsubscribe()
 
     subscribeToEvents()
+    AverageTemp()
     limitOutsideTempValue()
     ThermostatRefresh()
-    runIn(60, temperatureHandler)
 
     // checking every minute for need of FanCirculate (done by fancirculate itself) 
     //without having to run evaluate thus permiting user' manual settings
@@ -548,10 +591,6 @@ def subscribeToEvents() {
     subscribe(thermostat3, "temperature", temperatureHandler)
     subscribe(ExceptionThermostat, "temperature", temperatureHandler)
 
-
-    subscribe(thermostat, "thermostatFanMode", ThermostatFanModeHandler)
-    subscribe(thermostat2, "thermostatFanMode", ThermostatFanModeHandler)
-    subscribe(thermostat3, "thermostatFanMode", ThermostatFanModeHandler)
 
     subscribe(VirtualThermostat, "LowTempLimit", temperatureHandler)
     subscribe(VirtualThermostat, "temperature", temperatureHandler)
@@ -578,6 +617,7 @@ def subscribeToEvents() {
     if (state.modeStartTime == null) {
         state.modeStartTime = 0
     }   
+    variables()
     evaluate()
 
 }
@@ -606,17 +646,18 @@ def routineChanged(evt) {
 
 def temperatureHandler(evt) { 
 
-    runIn(60, temperatureHandler)
-    ThermostatRefresh()
+	
 
     variables()
     CriticalTemp()  //  get the averageTemp value needed for FanCirculate Evaluation
 
     log.debug "temperatureHandler(evt) running"
-    if(OutsideSensor){
-        FanCirculate()
-        log.debug "TemperatureHandler and FanCirculate scheduled to run every minute"
 
+    if(OutsideSensor){
+        if(NeedFanOnly()){
+            FanCirculate()
+            log.debug "TemperatureHandler running FanCirculate"
+        }
     }
 
     // evaluate() // running evaluate with this handler renders useless any manual setting by users. 
@@ -636,7 +677,7 @@ def ChangedModeHandler(evt) {
     def CurrMode = location.currentMode
 
     state.countmessageHeat = 0
-    state.fanonalreadyrun == false
+   
 
     log.debug "now evaluating"
     RunVirtualThermostat()
@@ -647,7 +688,6 @@ def contactHandler(evt) {
 
     log.trace "state.ct = $state.ct, stat.CoolSet = $state.CoolSet, state.ct2 = $state.ct2, stat.CoolSet2 = $state.CoolSet2, state.ct3 = $state.ct3, stat.CoolSet3 = $state.CoolSet3"
 
-    state.fanonalreadyrun == false
     state.countmessageHeat = 0
     state.messageDoors = 0 
     state.messageFansOn = 0
@@ -673,64 +713,63 @@ def contactHandler(evt) {
 
         evaluate()
 
-        //log.debug "doublecheck in 60 seconds"
-        //runIn(60, doublecheck)
     }      
-}
-
-def ThermostatFanModeHandler(evt){
-
-    log.debug "$evt.displayName Event is : $evt.stringValue / $evt.value / $evt.id / $evt.name"
-
-    if(evt.value == "fanAuto" || evt.value == "off"){
-        def message = "$evt.displayName was manually set to $evt.value"
-        state.fanonalreadyrun = true
-        send(message)
-        // will forbid further evaluation by fanCirculate (the part which runs the fans)
-    }
-    else {
-        state.fanonalreadyrun = false // will reinitialize fanCirculate Loop and allow it to evaluate again, once
-    	log.debug "state.fanonalreadyrun set to 'false' by fanmodehandler"
-    }
 }
 
 def coolingSetpointHandler(evt) {
     // for backward compatibility with existing subscriptions
     log.debug "coolingSetpointHandler()"
-    state.fanonalreadyrun == false
-
+    
 }
 
 def heatingSetpointHandler(evt) {
     // for backward compatibility with existing subscriptions
     log.debug "heatingSetpointHandler()"
-    state.fanonalreadyrun == false
+
 }
 
 ////////////////////////MAIN EVAL LOOPS///////////////////////////////
 
 def variables() {
 
+
     state.threshold = 1
     state.tm = thermostat.currentThermostatMode
-    state.tm2 = thermostat2.currentThermostatMode
-    state.tm3 = thermostat3.currentThermostatMode
-
     state.ct = thermostat.currentTemperature
-    state.ct2 = thermostat2.currentTemperature
-    state.ct3 = thermostat3.currentTemperature
-
     state.fanMode = thermostat.currentthermostatFanMode
-    state.fanMode2 = thermostat2.currentthermostatFanMode
-    state.fanMode3 = thermostat3.currentthermostatFanMode
-
     state.TSH = thermostat.currentHeatingSetpoint
-    state.TSH2 = thermostat3.currentHeatingSetpoint
-    state.TSH3 = thermostat3.currentHeatingSetpoint
-
     state.TSC = thermostat.currentCoolingSetpoint
-    state.TSC2 = thermostat2.currentCoolingSetpoint
-    state.TSC3 = thermostat3.currentCoolingSetpoint
+
+    if(thermostat2){
+        state.tm2 = thermostat2.currentThermostatMode
+        state.ct2 = thermostat2.currentTemperature
+        state.fanMode2 = thermostat2.currentthermostatFanMode
+        state.TSH2 = thermostat3.currentHeatingSetpoint 
+        state.TSC2 = thermostat2.currentCoolingSetpoint
+    }
+    else {
+        state.tm2 = state.tm
+        state.ct2 = state.ct
+        state.fanMode2 = state.fanMode
+        state.TSH2 = state.TSH
+        state.TSC2 = state.TSC 
+    }
+
+    if(thermostat3){
+        state.tm3 = thermostat3.currentThermostatMode
+        state.ct3 = thermostat3.currentTemperature
+        state.fanMode3 = thermostat3.currentthermostatFanMode
+        state.TSH3 = thermostat3.currentHeatingSetpoint
+        state.TSC3 = thermostat3.currentCoolingSetpoint
+
+    }
+    else {
+        state.tm3 = state.tm
+        state.ct3 = state.ct
+        state.fanMode3 = state.fanMode
+        state.TSH3 = state.TSH
+        state.TSC3 = state.TSC 
+    }
 
     if(OutsideSensor) {
         state.outsideTemp = OutsideSensor.currentTemperature
@@ -883,10 +922,18 @@ private TurnOffDoors() {
         log.debug "state.CriticalTemp is : ${state.CriticalTemp}, TURNING OFF ALL UNITS"
         thermostat.off()
         thermostat.fanAuto()
-        thermostat2.off()
-        thermostat2.fanAuto()
-        thermostat3.off()
-        thermostat3.fanAuto()
+        if(thermostat2){
+            thermostat2.off()
+            thermostat2.fanAuto()
+        }
+        else { def thermostat2 = "not selected"
+             }
+        if(thermostat3){
+            thermostat3.off()
+            thermostat3.fanAuto()
+        }
+        else { def thermostat3 = "not selected"
+             }
         def messageDoors = "I turned off ${thermostat},  ${thermostat2} and ${thermostat3} because some doors or windows are open"
         log.info messageDoors
         state.TurnOffDoors = state.TurnOffDoors + 1 // variable allowing to turn units on manually RESET by contactHandler
@@ -904,17 +951,58 @@ private TurnOffDoors() {
 private setToAuto() { 
     log.debug "running setToAuto"
     thermostat.setThermostatMode("auto")
-    thermostat2.setThermostatMode("auto")
-    thermostat3.setThermostatMode("auto") 
+    if(thermostat2){
+        thermostat2.setThermostatMode("auto")
+    }
+    if(thermostat3){
+        thermostat3.setThermostatMode("auto") 
+    }
 }
 
+private ThermostatRefresh(){
+
+runIn(60, ThermostatRefresh)
+log.debug "ThermostatRefresh Scheduled to run every 1 minute"
+
+    log.debug "refreshing thermostats"
+    thermostat.refresh()
+    if(thermostat2){
+        thermostat2.refresh()
+    }
+    if(thermostat3){
+        thermostat3.poll()
+    }
+}
+
+private logtrace() { 
+
+
+    log.trace("evaluate: $thermostat , Fan Mode: $state.fanMode, mode: $state.tm -- temp: $state.ct, heatSET: $state.HeatSet, coolSET: $state.CoolSet, coolCURR = $state.TSC" )
+    if(thermostat2){
+        log.trace("evaluate: $thermostat2, Fan Mode: $state.fanMode2, mode: $state.tm2 -- temp: $state.ct2, heatSET: $state.HeatSet2, coolSET: $state.CoolSet2, coolCURR = $state.TSC2")
+    }
+    if(thermostat3){
+        log.trace("evaluate: $thermostat3, Fan Mode: $state.fanMode3, mode: $state.tm3 -- temp: $state.ct3, heatSET: $state.HeatSet3, coolSET: $state.CoolSet3, coolCURR = $state.TSC3")
+    }
+
+    if(state.TSC != state.CoolSet || state.TSC2 != state.CoolSet2 || state.TSC3 != state.CoolSet3) {
+        log.debug "SOMETHING IS WRONG!!!!! (logtrace)"
+        variables()
+        SettingsCool()
+        SettingsHeat()
+    }
+
+    if(OutsideSensor) {
+        log.trace("evaluate: $OutsideSensor, temp: $state.outsideTemp")
+    }
+}
+
+/////////////////////////////////// TEMPERATURE AND ENERGY MANAGEMENT//////////////////
 private needToCool() { 
 
     def result = null
 
-    state.ct = thermostat.currentTemperature
-    state.ct2 = thermostat2.currentTemperature
-    state.ct3 = thermostat3.currentTemperature
+    variables()
 
     if(state.ct >= state.CoolSet || state.ct2 >= state.CoolSet2 || state.ct3 >= state.CoolSet3) 
     {
@@ -931,9 +1019,7 @@ private needToCool() {
 
 private needToHeat() { 
 
-    state.ct = thermostat.currentTemperature
-    state.ct2 = thermostat2.currentTemperature
-    state.ct3 = thermostat3.currentTemperature
+    variables()
 
     def result = false
 
@@ -963,6 +1049,7 @@ private NeedFanOnly() {
 }
 
 private TooHotOutside() {
+
     def result = null
 
     if(state.outsideTemp >= state.AverageTemp + state.limitOutsideTemp  ) {
@@ -989,6 +1076,45 @@ private limitOutsideTempValue() {
 
 }
 
+private JustHeat() {
+
+    // set to heat if too cold
+    if(doorsOk()) {
+        if(needToHeat()) {
+            thermostat.setThermostatMode("heat")
+            thermostat.setThermostatMode("fanAuto")
+            if(thermostat2){
+                thermostat2.setThermostatMode("heat")
+                thermostat2.setThermostatMode("fanAuto")
+            }
+            if(thermostat3){
+                thermostat3.setThermostatMode("heat")
+                thermostat3.setThermostatMode("fanAuto")
+            }
+        }
+    }
+    else { 
+        log.debug "some doors are open, so skipping JustHeat" 
+    }
+}
+
+private JustCool() { 
+
+    log.debug "JustCool() is running"
+
+    if (doorsOk()) {
+        if (needToCool()) {            
+            Cool()
+            log.debug "Setting thermostats to cool because average temperature is too high"   
+        }
+        else {
+            log.debug "No need to cool, so just setting HVAC to Auto"
+            setToAuto()
+        }
+    }
+    log.debug "some doors are open, so skipping JustCool" 
+}
+
 private FanCirculate() {
 
     def result = false
@@ -998,7 +1124,7 @@ private FanCirculate() {
 
     log.debug "outsideTemp is $state.outsideTemp (FanCirculate())"
     log.debug "HighTempLimit for inside's average temp is $HighTempLimit"
-    log.debug "state.fanonalreadyrun = $state.fanonalreadyrun"
+
 
     if(doorsOk()){
         if(NeedFanOnly() == false) {  
@@ -1042,13 +1168,13 @@ private FanCirculate() {
     }
 
     if(state.AverageTemp >= HighTempLimit) {
-       
-            FansOn()
-            
-            message = "Running Fans despite the fact that windows are open because average temp is superior to ${HighTempLimit}°"
-            if(state.messageFansOn == 0){
-                send(message)
-                state.messageFansOn = state.messageFansOn + 1        
+
+        FansOn()
+
+        message = "Running Fans despite the fact that windows are open because average temp is superior to ${HighTempLimit}°"
+        if(state.messageFansOn == 0){
+            send(message)
+            state.messageFansOn = state.messageFansOn + 1        
         }
     }
     else {
@@ -1064,124 +1190,84 @@ private FansOff(){
         if(state.Fancirculate == false){
             log.debug "All thermostats are turned off NO EXCEPTION because even ${ExceptionThermostat}'s temperature is OK"
             thermostat.setThermostatFanMode("auto")
-            thermostat2.setThermostatFanMode("auto")
-            thermostat3.setThermostatFanMode("auto")
+            if(thermostat2){
+                thermostat2.setThermostatFanMode("auto")
+            }
+            if(thermostat3){
+                thermostat3.setThermostatFanMode("auto")
+            }
         }
         else if(ExceptionThermostat.currentTemperature == thermostat.currentTemperature){
             log.debug "turning off all fans but not $ExceptionThermostat"
-            thermostat2.setThermostatFanMode("auto")
-            thermostat3.setThermostatFanMode("auto")
+            if(thermostat2){
+                thermostat2.setThermostatFanMode("auto")
+            }
+            if(thermostat3){
+                thermostat3.setThermostatFanMode("auto")
+            }
         }
         else if(ExceptionThermostat.currentTemperature == thermostat2.currentTemperature){
             log.debug "turning off all fans but not $ExceptionThermostat"
             thermostat.setThermostatFanMode("auto")
-            thermostat3.setThermostatFanMode("auto")
+            if(thermostat3){
+                thermostat3.setThermostatFanMode("auto")
+            }
         }
         else if(ExceptionThermostat.currentTemperature == thermostat3.currentTemperature){
             log.debug "turning off all fans but not $ExceptionThermostat"
-            thermostat2.setThermostatFanMode("auto")
+            if(thermostat2){
+                thermostat2.setThermostatFanMode("auto")
+            }
             thermostat.setThermostatFanMode("auto")
         }
         else {
             log.debug "user seems to have picked a different thermostat as an Exception, so stopping all fans for all 3 main units"
             thermostat.setThermostatFanMode("auto")
-            thermostat2.setThermostatFanMode("auto")
-            thermostat3.setThermostatFanMode("auto")
+            if(thermostat2){
+                thermostat2.setThermostatFanMode("auto")
+            }
+            if(thermostat3){
+                thermostat3.setThermostatFanMode("auto")
+            }
         }
 
     } 
     else { 
         log.debug "all fans are turned off"
         thermostat.setThermostatFanMode("auto")
-        thermostat2.setThermostatFanMode("auto")
-        thermostat3.setThermostatFanMode("auto")
+        if(thermostat2){
+            thermostat2.setThermostatFanMode("auto")
+        }
+        if(thermostat3){
+            thermostat3.setThermostatFanMode("auto")
+        }
     }
-    state.fanonalreadyrun == false
+
 }
 
 private FansOn(){ 
 
-    if(state.fanonalreadyrun != true){
 
-        thermostat.setThermostatMode("off")
+
+    thermostat.setThermostatMode("off")
+    if(thermostat2){
         thermostat2.setThermostatMode("off")
+    }
+    if(thermostat3){
         thermostat3.setThermostatMode("off")
+    }
 
-        thermostat.setThermostatFanMode("on")
+    thermostat.setThermostatFanMode("on")
+    if(thermostat2){
         thermostat2.setThermostatFanMode("on")
+    }
+    if(thermostat3){
         thermostat3.setThermostatFanMode("on")
-
-        state.fanonalreadyrun = true
-    }
-
-    else { 
-        log.debug "FAN ALREADY RUNNING SO DOING NOTHING"
-    }
-}
-
-private JustHeat() {
-
-    // set to heat if too cold
-    if(doorsOk()) {
-        if(needToHeat()) {
-            thermostat.setThermostatMode("heat")
-            thermostat.setThermostatMode("fanAuto")
-
-            thermostat2.setThermostatMode("heat")
-            thermostat2.setThermostatMode("fanAuto")
-
-            thermostat3.setThermostatMode("heat")
-            thermostat3.setThermostatMode("fanAuto")
-        }
-    }
-    else { 
-        log.debug "some doors are open, so skipping JustHeat" 
-    }
-}
-
-private JustCool() { 
-
-    log.debug "JustCool() is running"
-
-    if (doorsOk()) {
-        if (needToCool()) {            
-            Cool()
-            log.debug "Setting thermostats to cool because average temperature is too high"   
-        }
-        else {
-            log.debug "No need to cool, so just setting HVAC to Auto"
-            setToAuto()
-        }
-    }
-    log.debug "some doors are open, so skipping JustCool" 
-}
-
-private ThermostatRefresh(){
-
-    log.debug "refreshing thermostats"
-    thermostat.refresh()
-    thermostat2.refresh()
-    thermostat3.poll()
-}
-
-private logtrace() { 
-    log.trace("evaluate: $thermostat , Fan Mode: $state.fanMode, mode: $state.tm -- temp: $state.ct, heatSET: $state.HeatSet, coolSET: $state.CoolSet, coolCURR = $state.TSC" )
-    log.trace("evaluate: $thermostat2, Fan Mode: $state.fanMode2, mode: $state.tm2 -- temp: $state.ct2, heatSET: $state.HeatSet2, coolSET: $state.CoolSet2, coolCURR = $state.TSC2")
-    log.trace("evaluate: $thermostat3, Fan Mode: $state.fanMode3, mode: $state.tm3 -- temp: $state.ct3, heatSET: $state.HeatSet3, coolSET: $state.CoolSet3, coolCURR = $state.TSC3")
-
-    if(state.TSC != state.CoolSet || state.TSC2 != state.CoolSet2 || state.TSC3 != state.CoolSet3) {
-        log.debug "SOMETHING IS WRONG!!!!! (logtrace)"
-        variables()
-        SettingsCool()
-        SettingsHeat()
-    }
-
-    if(OutsideSensor) {
-        log.trace("evaluate: $OutsideSensor, temp: $state.outsideTemp")
     }
 }
 
 private AverageTemp(){
+
 
     def sumtemps = state.ct + state.ct2 + state.ct3
     log.debug "sumtemps is: ${sumtemps}"
@@ -1206,8 +1292,6 @@ private CriticalTemp() {
 
     def result = false
     state.CriticalTemp = false
-
-
     log.debug "Low Emergency Limit Temperature is : ${LowTempLimit}" 
     log.debug "state.AverageTemp is : ${state.AverageTemp}"
 
@@ -1221,10 +1305,14 @@ private CriticalTemp() {
 
         thermostat.setThermostatMode(heat)
         thermostat.setThermostatFanMode(auto)
-        thermostat2.setThermostatMode(heat)
-        thermostat2.setThermostatFanMode(auto)
-        thermostat3.setThermostatMode(heat)
-        thermostat3.setThermostatFanMode(auto)
+        if(thermostat2){
+            thermostat2.setThermostatMode(heat)
+            thermostat2.setThermostatFanMode(auto)
+        }
+        if(thermostat3){
+            thermostat3.setThermostatMode(heat)
+            thermostat3.setThermostatFanMode(auto)
+        }
 
     }
 
@@ -1237,18 +1325,25 @@ private Cool() {
     thermostat.setThermostatMode("cool")
     thermostat.setThermostatFanMode("fanAuto")
 
-    thermostat2.setThermostatMode("cool")
-    thermostat2.setThermostatFanMode("fanAuto")
-
-    thermostat3.setThermostatMode("cool")
-    thermostat3.setThermostatFanMode("fanAuto")
+    if(thermostat2){
+        thermostat2.setThermostatMode("cool")
+        thermostat2.setThermostatFanMode("fanAuto")
+    }
+    if(thermostat3){
+        thermostat3.setThermostatMode("cool")
+        thermostat3.setThermostatFanMode("fanAuto")
+    }
 }
 
 private SettingsHeat() {
 
     thermostat.setHeatingSetpoint(state.HeatSet)
-    thermostat2.setHeatingSetpoint(state.HeatSet2)
-    thermostat3.setHeatingSetpoint(state.HeatSet3)
+    if(thermostat2){
+        thermostat2.setHeatingSetpoint(state.HeatSet2)
+    }
+    if(thermostat3){
+        thermostat3.setHeatingSetpoint(state.HeatSet3)
+    }
     log.debug "thermostats are now set to desired heating"
 
     JustHeat() // Will run heat if required
@@ -1258,8 +1353,12 @@ private SettingsHeat() {
 private SettingsCool() { 
 
     thermostat.setCoolingSetpoint(state.CoolSet)
-    thermostat2.setCoolingSetpoint(state.CoolSet2)
-    thermostat3.setCoolingSetpoint(state.CoolSet3)
+    if(thermostat2){
+        thermostat2.setCoolingSetpoint(state.CoolSet2)
+    }
+    if(thermostat3){
+        thermostat3.setCoolingSetpoint(state.CoolSet3)
+    }
     log.debug "thermostats are now set to desired cooling  " 
 
     // set to cool if too hot      
@@ -1272,26 +1371,44 @@ private SettingsCool() {
     }
 }
 
-// gets the false alarm threshold, in minutes. Defaults to
-// 2 minutes if the preference is not defined.	
-private findFalseAlarmThreshold() {
-    // In Groovy, the return statement is implied, and not required.
-    // We check to see if the variable we set in the preferences
-    // is defined and non-empty, and if it is, return it.  Otherwise,
-    // return our default value of 10
-    (falseAlarmThreshold != null && falseAlarmThreshold != "") ? falseAlarmThreshold : 2
+////////////////////////////////// LOCATION MODES //////////////////////////////
+private MainMode() {
+    log.debug "MainModeS loop running. Current mode is Home, adjusting VARIABLES accordingly (MainModeS loop)"
 
+    state.HeatSet = heatingSetpoint
+    state.CoolSet = coolingSetpoint
+    if(thermostat2){
+        state.CoolSet2 = coolingSetpoint2
+        state.HeatSet2 = heatingSetpoint2
+    }
+    if(thermostat3){
+        state.CoolSet3 = coolingSetpoint3
+        state.HeatSet3 = heatingSetpoint3
+    }
+
+    if (doorsOk() && state.CriticalTemp == false) {
+
+        log.debug "now running temp SettingsHeat loop"
+        SettingsHeat()
+
+        log.debug "now running temp SettingsCool loops"
+        SettingsCool()            
+
+    }
 }
-
 private NightMode() {
     log.debug "NightModes loop running"
     log.debug "Current mode is Night, adjusting VARIABLES accordingly (NightModeS loop)"
     state.CoolSet = coolingSetpointBIS
-    state.CoolSet2 = coolingSetpoint2BIS 
-    state.CoolSet3 = coolingSetpoint3BIS
     state.HeatSet = heatingSetpointBIS
-    state.HeatSet2 = heatingSetpoint2BIS
-    state.HeatSet3 = heatingSetpoint3BIS
+    if(thermostat2){
+        state.CoolSet2 = coolingSetpoint2BIS 
+        state.HeatSet2 = heatingSetpoint2BIS
+    }
+    if(thermostat3){
+        state.CoolSet3 = coolingSetpoint3BIS
+        state.HeatSet3 = heatingSetpoint3BIS
+    }
 
     if (doorsOk() && state.CriticalTemp == false) {
 
@@ -1303,36 +1420,18 @@ private NightMode() {
         SettingsCool()            
     }
 }
-
-private MainMode() {
-    log.debug "MainModeS loop running. Current mode is Home, adjusting VARIABLES accordingly (MainModeS loop)"
-    state.CoolSet = coolingSetpoint
-    state.CoolSet2 = coolingSetpoint2
-    state.CoolSet3 = coolingSetpoint3
-    state.HeatSet = heatingSetpoint
-    state.HeatSet2 = heatingSetpoint2
-    state.HeatSet3 = heatingSetpoint3
-
-    if (doorsOk() && state.CriticalTemp == false) {
-
-        log.debug "now running temp SettingsHeat loop"
-        SettingsHeat()
-
-        log.debug "now running temp SettingsCool loops"
-        SettingsCool()            
-
-    }
-}
-
 private AWAYMODE() {
     log.debug "Home is in Away Mode, setting one temp for all thermostats (AWAYMODE Loop)"
     state.CoolSet = CSAWAY
-    state.CoolSet2 = CSAWAY
-    state.CoolSet3 = CSAWAY
     state.HeatSet = HSAWAY
-    state.HeatSet2 = HSAWAY
-    state.HeatSet3 = HSAWAY
-
+    if(thermostat2){
+        state.CoolSet2 = CSAWAY
+        state.HeatSet2 = HSAWAY
+    }
+    if(thermostat3){
+        state.CoolSet3 = CSAWAY
+        state.HeatSet3 = HSAWAY
+    }
 
     if (doorsOk() && state.CriticalTemp == false) {
 
@@ -1347,15 +1446,16 @@ private AWAYMODE() {
 private SPECIALMODE() {
     log.debug "Current mode is SPECIALMODE, adjusting VARIABLES accordingly -----------------------------------------------------------------"
     state.CoolSet = coolingSetpointSPEC
-    state.CoolSet2 = coolingSetpointSPEC2 
-    state.CoolSet3 = coolingSetpointSPEC3
     state.HeatSet = heatingSetpointSPEC
-    state.HeatSet2 = heatingSetpointSPEC2
-    state.HeatSet3 = heatingSetpointSPEC3
-
+    if(thermostat2){
+        state.CoolSet2 = coolingSetpointSPEC2 
+        state.HeatSet2 = heatingSetpointSPEC2
+    }
+    if(thermostat3){
+        state.CoolSet3 = coolingSetpointSPEC3
+        state.HeatSet3 = heatingSetpointSPEC3
+    }
     if (doorsOk() && state.CriticalTemp == false) {
-
-
         log.debug "now running temp SettingsHeat loop"
         SettingsHeat()
 
@@ -1363,16 +1463,19 @@ private SPECIALMODE() {
         SettingsCool()            
     }
 }
-
 private DEEPNIGHT() {
     log.debug "Current mode is DEEPNIGHT, adjusting VARIABLES accordingly (DEEPNIGHT loop)"
     state.CoolSet = coolingSetpointDEEP
-    state.CoolSet2 = coolingSetpointDEEP2 
-    state.CoolSet3 = coolingSetpointDEEP3
     state.HeatSet = heatingSetpointDEEP
-    state.HeatSet2 = heatingSetpointDEEP2
-    state.HeatSet3 = heatingSetpointDEEP3
 
+    if(thermostat2){
+        state.CoolSet2 = coolingSetpointDEEP2
+        state.HeatSet2 = heatingSetpointDEEP2
+    }
+    if(thermostat3){
+        state.CoolSet3 = coolingSetpointDEEP3
+        state.HeatSet3 = heatingSetpointDEEP3
+    }
 
     if (doorsOk() && state.CriticalTemp == false) {
 
@@ -1384,3 +1487,4 @@ private DEEPNIGHT() {
         SettingsCool()            
     }
 }
+
