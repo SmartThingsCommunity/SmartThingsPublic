@@ -36,8 +36,9 @@ def settings() {
         // 1st SWITCH
         section("This section defines a switch which can work with several optional conditions and routines based on power time, current mode and power consumption and other switches"){
         }
-        section("Choose a switch to use...") {
-            input "controlSwitch1", "capability.switch", title: "Switch", multiple: false, required: true
+        section("Choose a switch or a dimmer to use...") {
+            input "controlSwitch1", "capability.switch", title: "Switch", multiple: false, required: true 
+
         }
         section("When this switch is ON, run this routine")
         // get the available Routines
@@ -51,6 +52,17 @@ def settings() {
                 input "RunRoutine1", "enum", title: "Select a routine to execute", options: Routine, required: true 
             }
         }
+        section("Do you want to dimm some lights?"){
+            input "dimmer", "bool", title: "select preference", submitOnChange: true, default: false
+
+
+            if(dimmer){
+                input "controlSwitch1Level", "capability.switchLevel", title: "LevelSwitch", multiple: false
+                input "levelTVon", "decimal", title:"when $controlSwitch1 is on, set to this level"
+                input "levelTVoff", "decimal", title: "when $controlSwitch1 is off, set to this level"
+            }
+        }
+
         section ("OPTIONAL FEATURES available only for the first switch") {
         }
         section {
@@ -101,7 +113,7 @@ def settings() {
             input(name: "meter", type: "capability.powerMeter", title: "When This Power Meter is below threshodl", required: false, multiple: false, description: null)
             input "SwitchesToPwOff", "capability.switch", title: "Turn off these swithces ", multiple: true, required: false
             input(name: "threshold", type: "number", title: "power threshold", required: false, description: "in either watts or kw.")
-			input(name: "delay", type: "number", title: "After how long?", required: false, description: "time in minutes.")
+            input(name: "delay", type: "number", title: "After how long?", required: false, description: "time in minutes.")
         }
 
         section("SWITCHES AND ROUTINES with no extra features"){
@@ -113,6 +125,7 @@ def settings() {
         // 2ND SWITCH
         section("Choose a switch to use...") {
             input "controlSwitch2", "capability.switch", title: "Switch", multiple: false, required: false
+
         }
         section("When this switch is ON, run this routine")
         // get the available Routines
@@ -216,7 +229,7 @@ def MeterCountHandler(evt) {
         if(delay) {
             def delayValue = delay * 60 as int
                 runIn(delayValue, powerOff)
-                log.debug "checking $SwitchesToPwOff's power consumption in $delay minutes"
+            log.debug "checking $SwitchesToPwOff's power consumption in $delay minutes"
         } 
     else { 
         log.debug "no delay for power event was selected, so running powerOff() immediately" 
@@ -242,6 +255,10 @@ def switchHandler1(evt) {
 
     if (evt.value == "off"){
 
+        if(dimmer){
+            controlSwitch1Level.setLevel(levelTVoff)
+        }
+
         if (Back == true){
             def now = new Date()
             def startCheck = timeToday(timeBegin, location.timeZone)
@@ -266,6 +283,7 @@ def switchHandler1(evt) {
                 log.debug "$controlSwitch1 is $evt.value"
                 log.debug "Now running $RunRoutine1C routine because time is between $startCheck and $stopCheck"
                 location.helloHome?.execute(settings.RunRoutine1C)
+
             }
             else if (between2) {
                 log.debug "$controlSwitch1 is $evt.value"
@@ -288,12 +306,14 @@ def switchHandler1(evt) {
         }
     }
     else if (evt.value == "on") {
+        if(dimmer){
+            controlSwitch1Level.setLevel(levelTVon)
+        }
         location.helloHome?.execute(settings.RunRoutine1)
         log.debug "Now running $RunRoutine1 routine"
         log.debug "$controlSwitch1 is $evt.value"
     }
 }
-
 
 def switchHandler2(evt) {
 
@@ -306,7 +326,6 @@ def switchHandler2(evt) {
     }
 }
 
-
 def switchHandler3(evt) {
 
     location.helloHome?.execute(settings.RunRoutine3)
@@ -317,7 +336,6 @@ def switchHandler3(evt) {
         switchesoff()
     }
 }
-
 
 def switchHandler4(evt) {
 
