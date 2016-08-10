@@ -13,6 +13,7 @@
  *  for the specific language governing permissions and limitations under the License.
  *
  */
+import physicalgraph.zigbee.clusters.iaszone.ZoneStatus
 
 metadata {
 	definition (name: "Tyco Door/Window Sensor", namespace: "smartthings", author: "SmartThings") {
@@ -161,40 +162,9 @@ private Map parseCustomMessage(String description) {
 }
 
 private Map parseIasMessage(String description) {
-    List parsedMsg = description.split(' ')
-    String msgCode = parsedMsg[2]
+	ZoneStatus zs = zigbee.parseZoneStatus(description)
 
-    Map resultMap = [:]
-    switch(msgCode) {
-        case '0x0020': // Closed/No Motion/Dry
-        	resultMap = getContactResult('closed')
-            break
-
-        case '0x0021': // Open/Motion/Wet
-        	resultMap = getContactResult('open')
-            break
-
-        case '0x0022': // Tamper Alarm
-            break
-
-        case '0x0023': // Battery Alarm
-            break
-
-        case '0x0024': // Supervision Report
-        	resultMap = getContactResult('closed')
-            break
-
-        case '0x0025': // Restore Report
-        	resultMap = getContactResult('open')
-            break
-
-        case '0x0026': // Trouble/Failure
-            break
-
-        case '0x0028': // Test Mode
-            break
-    }
-    return resultMap
+	return zs.isAlarm1Set() ? getContactResult('open') : getContactResult('closed')
 }
 
 def getTemperature(value) {
