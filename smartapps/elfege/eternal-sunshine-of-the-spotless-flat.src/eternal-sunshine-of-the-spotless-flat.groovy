@@ -1,5 +1,5 @@
 /**
-*  Eternal Sunshine of the Spotless Flat
+*  Eternal Sunshine
 *
 *  Copyright 2016 Elfege
 *
@@ -14,7 +14,7 @@
 *
 */
 definition(
-    name: "Eternal Sunshine of the Spotless Flat",
+    name: "Eternal Sunshine",
     namespace: "elfege",
     author: "Elfege",
     description: "Adjusts dimmer lever with light sensor (requires modified Lux Sensor Device Handler, contact me for details elfege@elfege.com)",
