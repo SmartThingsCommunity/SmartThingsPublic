@@ -31,12 +31,12 @@ preferences {
     page(name: "settings", title: "Select your preferences", install: true, uninstall: true) 
 }
 def settings() {
-    dynamicPage(name: "settings", title: "Choose Switch and a routine", install:true, uninstall: true) {
+    dynamicPage(name: "settings", title: "Select a Switch and a routine", install:true, uninstall: true) {
 
         // 1st SWITCH
         section("This section defines a switch which can work with several optional conditions and routines based on power time, current mode and power consumption and other switches"){
         }
-        section("Choose a switch or a dimmer to use...") {
+        section("Select a switch") {
             input "controlSwitch1", "capability.switch", title: "Switch", multiple: false, required: true 
 
         }
@@ -69,7 +69,7 @@ def settings() {
             input(name: "Back", type: "bool", title: "Optional : Do you wish to run another routine once this same switch is off?", options: ["true","false"], required: false, default: false)             
             input(name: "ExceptionMode", type: "mode", title: "But do not run this other routine if I'm already in the following mode:", required: false) 
         }
-        section("Choose the optional routine which will run once the switch is off:")
+        section("Select the optional routine which will run once the switch is off:")
         // get the available Routines
         if(Routine) {
             // sort them alphabetically
@@ -123,7 +123,7 @@ def settings() {
             input(name:"Toggle", type: "enum", title: "yes? No?", options:["yes", "no"], default:"yes")
         }
         // 2ND SWITCH
-        section("Choose a switch to use...") {
+        section("Select a switch to use...") {
             input "controlSwitch2", "capability.switch", title: "Switch", multiple: false, required: false
 
         }
@@ -132,7 +132,7 @@ def settings() {
         if(Routine) {
             // sort them alphabetically
             Routine.sort()
-            section("Pick a routine") {
+            section("Select a routine") {
                 log.trace Routine
                 // use the actions as the options for an enum input
                 input "RunRoutine2", "enum", title: "Select a routine to execute", options: Routine, required: false 
@@ -140,7 +140,7 @@ def settings() {
         }
 
         // 3RD SWITCH
-        section("Choose a switch to use...") {
+        section("Select a switch to use...") {
             input "controlSwitch3", "capability.switch", title: "Switch", multiple: false, required: false
         }
         section("When this switch is ON, run this routine")
@@ -155,7 +155,7 @@ def settings() {
             }
         }
         // 4TH SWITCH
-        section("Choose a switch to use...") {
+        section("Select a switch") {
             input "controlSwitch4", "capability.switch", title: "Switch", multiple: false, required: false
         }
         section("When this switch is ON, run this routine")
@@ -163,14 +163,14 @@ def settings() {
         if(Routine) {
             // sort them alphabetically
             Routine.sort()
-            section("Pick a routine") {
+            section("Select a routine") {
                 log.trace Routine
                 // use the actions as the options for an enum input
                 input "RunRoutine4", "enum", title: "Select a routine to execute", options: Routine, required: false 
             }
         }
         // 5TH SWITCH
-        section("Choose a switch to use...") {
+        section("Select a switch") {
             input "controlSwitch5", "capability.switch", title: "Switch", multiple: false, required: false
         }
         section("When this switch is ON, run this routine")
@@ -178,7 +178,7 @@ def settings() {
         if(Routine) {
             // sort them alphabetically
             Routine.sort()
-            section("Pick a routine") {
+            section("Select a routine") {
                 log.trace Routine
                 // use the actions as the options for an enum input
                 input "RunRoutine5", "enum", title: "Select a routine to execute", options: Routine, required: false 
