@@ -15,6 +15,7 @@ metadata {
 	// Automatically generated. Make future change here.
 	definition (name: "Simulated Presence Sensor", namespace: "smartthings/testing", author: "bob") {
 		capability "Presence Sensor"
+		capability "Sensor"
 
 		command "arrived"
 		command "departed"

@@ -25,6 +25,7 @@ import physicalgraph.zigbee.clusters.iaszone.ZoneStatus
  		capability "Refresh"
  		capability "Temperature Measurement"
 		capability "Health Check"
+		capability "Sensor"
 
 		command "enrollResponse"
  	}

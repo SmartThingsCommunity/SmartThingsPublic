@@ -24,6 +24,7 @@ metadata {
 		capability "Temperature Measurement"
 		capability "Water Sensor"
 		capability "Health Check"
+		capability "Sensor"		
 
 		command "enrollResponse"
 

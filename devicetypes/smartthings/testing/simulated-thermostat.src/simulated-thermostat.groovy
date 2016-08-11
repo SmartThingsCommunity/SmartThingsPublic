@@ -16,6 +16,8 @@ metadata {
 	definition (name: "Simulated Thermostat", namespace: "smartthings/testing", author: "SmartThings") {
 		capability "Thermostat"
 		capability "Relative Humidity Measurement"
+		capability "Sensor"
+		capability "Actuator"
 
 		command "tempUp"
 		command "tempDown"
