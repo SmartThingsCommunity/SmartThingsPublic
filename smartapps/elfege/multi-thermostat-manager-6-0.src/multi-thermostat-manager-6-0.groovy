@@ -608,12 +608,8 @@ def subscribeToEvents() {
     if (state.modeStartTime == null) {
         state.modeStartTime = 0
     }   
-    //variables()
 
-
-    evaluate()
-
-
+    variables()
 }
 
 ////////////////////////////EVENT HANDLERS////////////////////////////////////////
@@ -634,13 +630,14 @@ def routineChanged(evt) {
     // descriptionText will be the name of the routine, followed by the action
     // e.g., "I'm Back! was executed" or "Goodbye! was executed"
     log.debug "evt descriptionText: ${evt.descriptionText}"
-
-    //evaluate()
+    
+    state.evaluateMustNotRun = false
 }
 
 def temperatureHandler(evt) { 
-
-    variables()
+ 	
+    state.evaluateMustNotRun = true // to be reset to false by other evts handlers
+ 
     CriticalTemp()  //  get the averageTemp value needed for FanCirculate Evaluation
 
     log.debug "temperatureHandler(evt) running"
@@ -651,12 +648,22 @@ def temperatureHandler(evt) {
             log.debug "TemperatureHandler running FanCirculate"
         }
     }
-
+    
+    AverageTemp()
+    limitOutsideTempValue()
+    
     // evaluate() // running evaluate with this handler renders useless any manual setting by users. 
+    // must not run variables() either from here, same reason but we need evaluation of temp for FanCirculate()
+    // so setting a variable to indicate that this command comes from mode handler so variables() can run but not evaluate()
+    
+   
+    variables()
 }
 
 def ChangedModeHandler(evt) {
+	state.evaluateMustNotRun = false
     variables()
+
     state.modeStartTime = now() 
 
     log.debug "Current mode = ${location.mode}"
@@ -670,14 +677,15 @@ def ChangedModeHandler(evt) {
 
     state.countmessageHeat = 0
 
-
     log.debug "now evaluating"
+    AverageTemp()
+    limitOutsideTempValue()
     RunVirtualThermostat()
-    evaluate()
+
 }
 
 def contactHandler(evt) {
-
+state.evaluateMustNotRun = false
     log.trace "state.ct = $state.ct, stat.CoolSet = $state.CoolSet, state.ct2 = $state.ct2, stat.CoolSet2 = $state.CoolSet2, state.ct3 = $state.ct3, stat.CoolSet3 = $state.CoolSet3"
 
     state.countmessageHeat = 0
@@ -703,7 +711,7 @@ def contactHandler(evt) {
         log.info messageBackOn
         send(messageBackOn)
 
-        evaluate()
+        variables() // variables runs evaluate()
 
     }      
 }
@@ -723,7 +731,6 @@ def heatingSetpointHandler(evt) {
 ////////////////////////MAIN EVAL LOOPS///////////////////////////////
 
 def variables() {
-
 
     state.threshold = 1
     state.tm = thermostat.currentThermostatMode
@@ -769,8 +776,14 @@ def variables() {
 
     log.debug "variables ________________________________________________ successfully updated!"
 
-    AverageTemp()
-    limitOutsideTempValue()
+	if(state.evaluateMustNotRun != true){
+    evaluate()
+    }
+    else {
+    log.debug "evaluate is not running because it variables() was run by temperatureHandler"
+    }
+
+    
 }
 
 def evaluate() {
@@ -890,7 +903,7 @@ private RunVirtualThermostat(){
                 }
             }
             else { 
-                log.debug "Home is in ${location.currentMode} so Virtual Thermostat is NOT RUNNING - turning switches off" 
+                log.debug "Home is in ${location.currentMode} mode so Virtual Thermostat is NOT RUNNING - turning switches off" 
                 switches.off()
             }
         } 
@@ -965,13 +978,6 @@ private logtrace() {
         log.trace("evaluate: $thermostat3, Fan Mode: $state.fanMode3, mode: $state.tm3 -- temp: $state.ct3, heatSET: $state.HeatSet3, coolSET: $state.CoolSet3, coolCURR = $state.TSC3")
     }
 
-    if(state.TSC != state.CoolSet || state.TSC2 != state.CoolSet2 || state.TSC3 != state.CoolSet3) {
-        log.debug "SOMETHING IS WRONG!!!!! (logtrace)"
-        variables()
-        SettingsCool()
-        SettingsHeat()
-    }
-
     if(OutsideSensor) {
         log.trace("evaluate: $OutsideSensor, temp: $state.outsideTemp")
     }
@@ -980,11 +986,7 @@ private logtrace() {
 /////////////////////////////////// TEMPERATURE AND ENERGY MANAGEMENT//////////////////
 private needToCool() { 
 
-    variables()
-
     def result = null
-
-    variables()
 
     if(state.ct >= state.CoolSet || state.ct2 >= state.CoolSet2 || state.ct3 >= state.CoolSet3) 
     {
@@ -1000,8 +1002,6 @@ private needToCool() {
 }
 
 private needToHeat() { 
-
-    variables()
 
     def result = false
 
@@ -1036,7 +1036,7 @@ private TooHotOutside() {
 
     if(state.outsideTemp >= state.AverageTemp + state.limitOutsideTemp  ) {
         result = true 
-        log.debug "Outside Temperature is TOO HIGH enough to run fancirculate"  
+        log.debug "Outside Temperature is TOO HIGH to run fancirculate"  
     } 
     else { 
         result = false 
@@ -1107,11 +1107,9 @@ private FanCirculate() {
     log.debug "outsideTemp is $state.outsideTemp (FanCirculate())"
     log.debug "HighTempLimit for inside's average temp is $HighTempLimit"
 
-
     if(doorsOk()){
         if(NeedFanOnly() == false) {  
             if(needToCool()) {
-
                 log.debug "running cool() from fancirculate"
                 Cool()   
                 result = false // means "No fanCirculate option not running because not needed"
@@ -1319,8 +1317,6 @@ private Cool() {
 
 private SettingsHeat() {
 
-    variables()
-
     thermostat.setHeatingSetpoint(state.HeatSet)
     if(thermostat2){
         thermostat2.setHeatingSetpoint(state.HeatSet2)
@@ -1335,11 +1331,13 @@ private SettingsHeat() {
 }
 
 private SettingsCool() { 
-    variables()
+
+    runIn(60, doublechecktemps)
 
     thermostat.setCoolingSetpoint(state.CoolSet)
     if(thermostat2){
         thermostat2.setCoolingSetpoint(state.CoolSet2)
+
     }
     if(thermostat3){
         thermostat3.setCoolingSetpoint(state.CoolSet3)
@@ -1354,6 +1352,34 @@ private SettingsCool() {
         JustCool() // will run AC without checking outside temperature, if cooling is required
 
     }
+}
+
+def doublechecktemps(){
+
+    // check that all thermostats have received commands for required settings
+
+    if(thermostat.currentCoolingSetpoint != state.CoolSet){
+
+        thermostat.setCoolingSetpoint(state.CoolSet)
+        thermostat.setHeatingSetpoint(state.HeatSet)
+        log.debug "$thermostat was not set properly. Fixing this now."
+
+    }
+    if(thermostat2){
+        if(thermostat2.currentCoolingSetpoint != state.CoolSet2){
+            thermostat2.setCoolingSetpoint(state.CoolSet2)
+            thermostat2.setHeatingSetpoint(state.HeatSet3)
+            log.debug "$thermostat2 was not set properly. Fixing this now."
+        }
+    }
+    if(thermostat3){
+        if(thermostat3.currentCoolingSetpoint != state.CoolSet3){
+            thermostat3.setCoolingSetpoint(state.CoolSet3)
+            thermostat3.setHeatingSetpoint(state.HeatSet3)
+            log.debug "$thermostat3 was not set properly. Fixing this now."
+        }
+    }
+    log.debug "DOUBLE CHECK OK"
 }
 
 ////////////////////////////////// LOCATION MODES //////////////////////////////
