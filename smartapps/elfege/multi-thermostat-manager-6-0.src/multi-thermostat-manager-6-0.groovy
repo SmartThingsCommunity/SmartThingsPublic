@@ -565,7 +565,7 @@ def updated() {
     log.debug "enter updated, state: $state"   
     log.debug "Current mode = ${location.mode}" 
 
-    
+
     state.CriticalTemp = false
     state.AllunitsMessage = 0
 
@@ -573,15 +573,6 @@ def updated() {
     unsubscribe()
 
     subscribeToEvents()
-    AverageTemp()
-    limitOutsideTempValue()
-    ThermostatRefresh()
-
-    // checking every minute for need of FanCirculate (done by fancirculate itself) 
-    //without having to run evaluate thus permiting user' manual settings
-
-
-
 }
 
 def subscribeToEvents() {
@@ -617,8 +608,11 @@ def subscribeToEvents() {
     if (state.modeStartTime == null) {
         state.modeStartTime = 0
     }   
-    variables()
+    //variables()
+
+
     evaluate()
+
 
 }
 
@@ -641,12 +635,10 @@ def routineChanged(evt) {
     // e.g., "I'm Back! was executed" or "Goodbye! was executed"
     log.debug "evt descriptionText: ${evt.descriptionText}"
 
-    evaluate()
+    //evaluate()
 }
 
 def temperatureHandler(evt) { 
-
-	
 
     variables()
     CriticalTemp()  //  get the averageTemp value needed for FanCirculate Evaluation
@@ -677,7 +669,7 @@ def ChangedModeHandler(evt) {
     def CurrMode = location.currentMode
 
     state.countmessageHeat = 0
-   
+
 
     log.debug "now evaluating"
     RunVirtualThermostat()
@@ -719,7 +711,7 @@ def contactHandler(evt) {
 def coolingSetpointHandler(evt) {
     // for backward compatibility with existing subscriptions
     log.debug "coolingSetpointHandler()"
-    
+
 }
 
 def heatingSetpointHandler(evt) {
@@ -776,6 +768,9 @@ def variables() {
     }
 
     log.debug "variables ________________________________________________ successfully updated!"
+
+    AverageTemp()
+    limitOutsideTempValue()
 }
 
 def evaluate() {
@@ -959,21 +954,6 @@ private setToAuto() {
     }
 }
 
-private ThermostatRefresh(){
-
-runIn(60, ThermostatRefresh)
-log.debug "ThermostatRefresh Scheduled to run every 1 minute"
-
-    log.debug "refreshing thermostats"
-    thermostat.refresh()
-    if(thermostat2){
-        thermostat2.refresh()
-    }
-    if(thermostat3){
-        thermostat3.poll()
-    }
-}
-
 private logtrace() { 
 
 
@@ -999,6 +979,8 @@ private logtrace() {
 
 /////////////////////////////////// TEMPERATURE AND ENERGY MANAGEMENT//////////////////
 private needToCool() { 
+
+    variables()
 
     def result = null
 
@@ -1337,6 +1319,8 @@ private Cool() {
 
 private SettingsHeat() {
 
+    variables()
+
     thermostat.setHeatingSetpoint(state.HeatSet)
     if(thermostat2){
         thermostat2.setHeatingSetpoint(state.HeatSet2)
@@ -1351,6 +1335,7 @@ private SettingsHeat() {
 }
 
 private SettingsCool() { 
+    variables()
 
     thermostat.setCoolingSetpoint(state.CoolSet)
     if(thermostat2){
