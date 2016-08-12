@@ -22,9 +22,9 @@ definition(
     author: "Eric Maycock (erocm123)",
     description: "Service Manager for SmartLife RGBW lights",
     category: "Convenience",
-    iconUrl: "https://raw.githubusercontent.com/erocm123/SmartThingsPublic/master/smartapps/erocm123/smartlife-wifi-rgbw-controller-connect.src/smartlife-rgbw-icon.png",
-    iconX2Url: "https://raw.githubusercontent.com/erocm123/SmartThingsPublic/master/smartapps/erocm123/smartlife-wifi-rgbw-controller-connect.src/smartlife-rgbw-icon-2x.png",
-    iconX3Url: "https://raw.githubusercontent.com/erocm123/SmartThingsPublic/master/smartapps/erocm123/smartlife-wifi-rgbw-controller-connect.src/smartlife-rgbw-icon-3x.png"
+    iconUrl: "https://raw.githubusercontent.com/erocm123/SmartThingsPublic/master/smartapps/erocm123/smartlife-rgbw-light-connect.src/smartlife-rgbw-icon.png",
+    iconX2Url: "https://raw.githubusercontent.com/erocm123/SmartThingsPublic/master/smartapps/erocm123/smartlife-rgbw-light-connect.src/smartlife-rgbw-icon-2x.png",
+    iconX3Url: "https://raw.githubusercontent.com/erocm123/SmartThingsPublic/master/smartapps/erocm123/smartlife-rgbw-light-connect.src/smartlife-rgbw-icon-3x.png"
 )
 
 preferences {
@@ -62,11 +62,7 @@ def mainPage() {
                }
               
         }
-        }
-        //section([title:"Available Options", mobileOnly:true]) {
-		//	label title:"Assign a name for your app (optional)", required:false
-		//}
-        
+        }    
     }
 }
 
@@ -79,8 +75,7 @@ def configurePDevice(params){
                   state.currentDisplayName = it.displayName
                }      
    }
-   log.debug "deviceid: $state.currentDeviceId"
-   log.debug "name: $state.currentDisplayName"
+
    dynamicPage(name: "configurePDevice", title: "Configure RGBW Controllers created with this app", nextPage: null) {
 		section {
             app.updateSetting("${state.currentDeviceId}_label", getChildDevice(state.currentDeviceId).label)
@@ -190,7 +185,6 @@ private discoverDevices() {
 }
 
 def configureProgramMain(){
-log.debug state.currentDeviceId
    dynamicPage(name: "configureProgramMain", title: "Choose which program you would like to configure", nextPage: null) {
 		section {
    for (int i = 1; i <= 6; i++){
@@ -287,7 +281,6 @@ def isConfigured(){
 
 def isVirtualConfigured(did){ 
     //if(getChildDevices().findAll { !it?.contains(did) }.size() > 0) return true else return false
-    log.debug did
     def foundDevice = false
     getChildDevices().each {
        if(it.deviceNetworkId != null){
@@ -353,8 +346,14 @@ def configureProgram(params){
                    if (settings["${state.currentDeviceId}_programs_${state.currentProgram}_${i}_lightLevel"] != null) { 
                       configDescription = configDescription + " (" + settings["${state.currentDeviceId}_programs_${state.currentProgram}_${i}_lightLevel"] + "%) "
                    }
-                   if (settings["${state.currentDeviceId}_programs_${state.currentProgram}_${i}_duration"] != null) { 
-                      configDescription = configDescription + "for " + settings["${state.currentDeviceId}_programs_${state.currentProgram}_${i}_duration"] + " milliseconds"
+                   if (settings["${state.currentDeviceId}_programs_${state.currentProgram}_${i}_random_duration"] == "true") { 
+                       if (settings["${state.currentDeviceId}_programs_${state.currentProgram}_${i}_min_duration"] != null && settings["${state.currentDeviceId}_programs_${state.currentProgram}_${i}_max_duration"] != null){
+                           configDescription = configDescription + "for a random time between " + settings["${state.currentDeviceId}_programs_${state.currentProgram}_${i}_min_duration"] + " & " + settings["${state.currentDeviceId}_programs_${state.currentProgram}_${i}_max_duration"] + " milliseconds"
+                       }
+                   } else {
+                       if (settings["${state.currentDeviceId}_programs_${state.currentProgram}_${i}_duration"] != null) {
+                           configDescription = configDescription + "for " + settings["${state.currentDeviceId}_programs_${state.currentProgram}_${i}_duration"] + " milliseconds"
+                       }
                    }
                    if (configDescription == ""){
                       configDescription = "Click to configure"
@@ -391,7 +390,31 @@ def getActionSections(programNumber, actionNumber) {
 			input "${state.currentDeviceId}_programs_${programNumber}_${actionNumber}_transition", "enum", title: "Which Transition?", required: false, options: [[1:"Fade"],[2:"Flash"]]
 		}
         section ("Duration"){
-            input "${state.currentDeviceId}_programs_${programNumber}_${actionNumber}_duration", "number", title: "In milliseconds (stay above 100)", submitOnChange: false, required: false
+            /*input "${state.currentDeviceId}_programs_${programNumber}_${actionNumber}_duration", "enum", title: "In milliseconds", submitOnChange: true, required: false, options: [
+            [0:"Random"],[100:"100"],[250:"250"],[500:"500"],[1000:"1000"],[2000:"2000"],[3000:"3000"],[4000:"4000"],[5000:"5000"],
+            [6000:"6000"],[7000:"7000"],[8000:"8000"],[9000:"9000"],[10000:"10000"],[11000:"11000"],[12000:"12000"],[13000:"13000"],[14000:"14000"],[15000:"15000"],
+            [16000:"16000"],[17000:"17000"],[18000:"18000"],[19000:"19000"],[20000:"20000"],[21000:"21000"],[22000:"22000"],[23000:"23000"],[24000:"24000"],[25000:"25000"],
+            [26000:"26000"],[27000:"27000"],[28000:"28000"],[29000:"29000"],[30000:"300000"]]*/
+            input "${state.currentDeviceId}_programs_${programNumber}_${actionNumber}_random_duration", "boolean", title: "Random Duration", submitOnChange: true, required: false
+            
+            if (settings["${state.currentDeviceId}_programs_${programNumber}_${actionNumber}_random_duration"] == "true"){
+                input "${state.currentDeviceId}_programs_${programNumber}_${actionNumber}_min_duration", "number", title: "Minimum Duration (milliseconds)", range: "100..1000000", submitOnChange: false, required: false
+                input "${state.currentDeviceId}_programs_${programNumber}_${actionNumber}_max_duration", "number", title: "Maximum Duration (milliseconds)", range: "100..1000000", submitOnChange: false, required: false
+                /*input "${state.currentDeviceId}_programs_${programNumber}_${actionNumber}_min_duration", "enum", title: "Minumum Duration (In milliseconds)", required: false, options: [
+                [100:"100"],[250:"250"],[500:"500"],[1000:"1000"],[2000:"2000"],[3000:"3000"],[4000:"4000"],[5000:"5000"],
+                [6000:"6000"],[7000:"7000"],[8000:"8000"],[9000:"9000"],[10000:"10000"],[11000:"11000"],[12000:"12000"],[13000:"13000"],[14000:"14000"],[15000:"15000"],
+                [16000:"16000"],[17000:"17000"],[18000:"18000"],[19000:"19000"],[20000:"20000"],[21000:"21000"],[22000:"22000"],[23000:"23000"],[24000:"24000"],[25000:"25000"],
+                [26000:"26000"],[27000:"27000"],[28000:"28000"],[29000:"29000"],[30000:"300000"]]
+
+                input "${state.currentDeviceId}_programs_${programNumber}_${actionNumber}_max_duration", "enum", title: "Maximum Duration (In milliseconds)", required: false, options: [
+                [100:"100"],[250:"250"],[500:"500"],[1000:"1000"],[2000:"2000"],[3000:"3000"],[4000:"4000"],[5000:"5000"],
+                [6000:"6000"],[7000:"7000"],[8000:"8000"],[9000:"9000"],[10000:"10000"],[11000:"11000"],[12000:"12000"],[13000:"13000"],[14000:"14000"],[15000:"15000"],
+                [16000:"16000"],[17000:"17000"],[18000:"18000"],[19000:"19000"],[20000:"20000"],[21000:"21000"],[22000:"22000"],[23000:"23000"],[24000:"24000"],[25000:"25000"],
+                [26000:"26000"],[27000:"27000"],[28000:"28000"],[29000:"29000"],[30000:"300000"]]*/
+
+            } else {
+                input "${state.currentDeviceId}_programs_${programNumber}_${actionNumber}_duration", "number", title: "Duration (milliseconds)", range: "100..1000000", submitOnChange: false, required: false
+            }
         }
 	}
 }
@@ -478,13 +501,10 @@ def ssdpHandler(evt) {
 void verifyDevices() {
 log.debug "verifyDevices()"
     def devices = getDevices().findAll { it?.value?.verified != true }
-    log.debug devices
     devices.each {
         def ip = convertHexToIP(it.value.networkAddress)
         def port = convertHexToInt(it.value.deviceAddress)
         String host = "${ip}:${port}"
-        log.debug host
-        log.debug it.value.ssdpPath
         sendHubCommand(new physicalgraph.device.HubAction("""GET ${it.value.ssdpPath} HTTP/1.1\r\nHOST: $host\r\n\r\n""", physicalgraph.device.Protocol.LAN, host, [callback: deviceDescriptionHandler]))
     }
 }
@@ -524,9 +544,7 @@ def addDevices() {
         }
         
         if (!d && selectedDevice != null) {
-            log.debug "${selectedDevice}"
             log.debug "Creating RGBW Controller device with dni: ${selectedDevice.value.mac}"
-            log.debug Integer.parseInt(selectedDevice.value.deviceAddress,16)
             addChildDevice("erocm123", "SmartLife RGBW Controller", selectedDevice.value.mac, selectedDevice?.value.hub, [
                 "label": selectedDevice?.value?.name ?: "SmartLife RGBW Controller",
                 "data": [
@@ -539,7 +557,6 @@ def addDevices() {
         }
         
 	} 
-    log.debug sectionText
         return dynamicPage(name:"addDevices", title:"Devices Added", nextPage:"mainPage",  uninstall: true) {
         if(sectionText != ""){
 		section("Add RGBW Results:") {
@@ -596,20 +613,33 @@ def configurePrograms(){
    for (int i = 1; i <= 6; i++){
    def programString = ""
    def transition = ""
-   log.debug it.deviceNetworkId
       for (int j = 1; j <= (settings["${it.deviceNetworkId}_programs_${i}_numberOfActions"] as Integer); j++){
-         def color = getDimmedColor(getHexColor(settings["${it.deviceNetworkId}_programs_${i}_${j}_color"]), settings["${it.deviceNetworkId}_programs_${i}_${j}_lightLevel"])
+         def color
+         if (settings["${it.deviceNetworkId}_programs_${i}_${j}_color"] != null && settings["${it.deviceNetworkId}_programs_${i}_${j}_lightLevel"] != null && 
+             settings["${it.deviceNetworkId}_programs_${i}_${j}_transition"] != null && ((settings["${it.deviceNetworkId}_programs_${i}_${j}_min_duration"] != null && settings["${it.deviceNetworkId}_programs_${i}_${j}_max_duration"] != null) || settings["${it.deviceNetworkId}_programs_${i}_${j}_duration"] != null)
+             ){
+         if (getHexColor(settings["${it.deviceNetworkId}_programs_${i}_${j}_color"]) != "xxxxxx"){
+            color = getDimmedColor(getHexColor(settings["${it.deviceNetworkId}_programs_${i}_${j}_color"]), settings["${it.deviceNetworkId}_programs_${i}_${j}_lightLevel"])
+         } else {
+            color = getHexColor(settings["${it.deviceNetworkId}_programs_${i}_${j}_color"])
+         }
          if(settings["${it.deviceNetworkId}_programs_${i}_${j}_color"] == "Soft White" || settings["${it.deviceNetworkId}_programs_${i}_${j}_color"] == "Warm White") {
             transition = getTransition(settings["${it.deviceNetworkId}_programs_${i}_${j}_transition"] as Integer, true)
          }else{
             transition = getTransition(settings["${it.deviceNetworkId}_programs_${i}_${j}_transition"] as Integer, false)
          }
-         programString = programString + transition + color + settings["${it.deviceNetworkId}_programs_${i}_${j}_duration"] + ","
+         if (settings["${it.deviceNetworkId}_programs_${i}_${j}_random_duration"] == "true") {
+             programString = programString + transition + color + "~" + settings["${it.deviceNetworkId}_programs_${i}_${j}_min_duration"] + "-" + settings["${it.deviceNetworkId}_programs_${i}_${j}_max_duration"] + "_"
+         } else {
+             programString = programString + transition + color + "~" + settings["${it.deviceNetworkId}_programs_${i}_${j}_duration"] + "_"
+         }} else {
+         log.debug "Configuration for this action is incomplete"
+      }
       }
       if(programString != ""){
          log.debug programString.substring(0, programString.length() - 1) + "&repeat=" + settings["${it.deviceNetworkId}_programs_${i}_repeat"] + "&off=" + settings["${it.deviceNetworkId}_programs_${i}_off"]
          getChildDevice(it.deviceNetworkId).setProgram(programString.substring(0, programString.length() - 1) + "&repeat=" + settings["${it.deviceNetworkId}_programs_${i}_repeat"], i) + "&off=" + settings["${it.deviceNetworkId}_programs_${i}_off"]
-      }
+      } 
    }}}
 }
 
@@ -717,12 +747,13 @@ def color = ""
     color = "000000"
     break;
     case "Random":
-    Random rand = new Random()
+    /*Random rand = new Random()
     int max = 255
     r = Integer.toHexString(rand.nextInt(max+1))
     g = Integer.toHexString(rand.nextInt(max+1))
     b = Integer.toHexString(rand.nextInt(max+1))
-    color = r+g+b
+    color = r+g+b*/
+    color = "xxxxxx"
     break; 
 }
    return color
@@ -733,19 +764,19 @@ private getTransition(value, isWhite){
   if(isWhite){
       switch(value){
         case 1:
-        transition = "w-"
+        transition = "w~"
         break;
         case 2:
-        transition = "x-"
+        transition = "x~"
         break;
       }
 	} else {
       switch(value){
         case 1:
-        transition = "f-"
+        transition = "f~"
         break;
         case 2:
-        transition = "g-"
+        transition = "g~"
         break;
       }
     }
@@ -753,8 +784,6 @@ private getTransition(value, isWhite){
 }
 
 private getDimmedColor(color, level) {
-log.debug color
-log.debug level
    if(color.size() > 2){
       def rgb = color.findAll(/[0-9a-fA-F]{2}/).collect { Integer.parseInt(it, 16) }
       def myred = rgb[0]
