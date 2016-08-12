@@ -37,6 +37,23 @@ metadata {
         command "reset"
         command "setProgram"
         command "setWhiteLevel"
+        
+        command "rOn"
+        command "rOff"
+        command "gOn"
+        command "gOff"
+        command "bOn"
+        command "bOff"
+        command "w1On"
+        command "w1Off"
+        command "w2On"
+        command "w2Off"
+        
+ 		command "setRLevel"
+        command "setGLevel"
+        command "setBLevel"
+        command "setW1Level"
+        command "setW2Level"
 
 	}
 
@@ -44,9 +61,13 @@ metadata {
 	}
     
     preferences {
-        input("ip", "string", title:"IP Address", description: "192.168.1.150", required: false, displayDuringSetup: true)
-        //input("port", "string", title:"Port", description: "88", defaultValue: "88" , required: true, displayDuringSetup: true)
-        //input("deviceId", "string", title:"Device ID", description: "99", defaultValue: "99" , required: true, displayDuringSetup: true)
+        //input("powerOnState", "enum", title:"Boot Up State", description: "State of the relay when it boots up", required: false, displayDuringSetup: false, options: [[0:"Off"],[1:"On"],[2:"Previous State"]])
+        input("password", "password", title:"Password", required:false, displayDuringSetup:true)
+        input("transition", "enum", title:"Default Transition", required:false, displayDuringSetup:true, options:
+        [["true":"fade"],["false":"flash"]])
+        input("channels", "boolean", title:"Mutually Exclusive RGB & White.\nOnly allow one or the other", required:false, displayDuringSetup:true)
+        //input("override", "boolean", title:"Override detected IP Address", required: false, displayDuringSetup: false)
+        //input("ip", "string", title:"IP Address", description: "192.168.1.150", required: false, displayDuringSetup: false)
 	}
 
 	tiles (scale: 2){      
@@ -71,12 +92,62 @@ metadata {
         standardTile("configure", "device.configure", inactiveLabel: false, width: 2, height: 2, decoration: "flat") {
 			state "configure", label:'', action:"configuration.configure", icon:"st.secondary.configure"
 		}
-        controlTile("whiteSliderControl", "device.whiteLevel", "slider", height: 2, width: 4, inactiveLabel: false) {
-			state "whiteLevel", action:"setWhiteLevel"
+        
+        standardTile("red", "device.red", height: 1, width: 1, inactiveLabel: false, canChangeIcon: false) {
+            state "off", label:"R", action:"rOn", icon:"st.illuminance.illuminance.dark", backgroundColor:"#D8D8D8"
+            state "on", label:"R", action:"rOff", icon:"st.illuminance.illuminance.bright", backgroundColor:"#FF0000"
+        }
+        controlTile("redSliderControl", "device.redLevel", "slider", height: 1, width: 4, inactiveLabel: false) {
+			state "redLevel", action:"setRLevel"
 		}
-        valueTile("whiteValueTile", "device.whiteLevel", decoration: "flat", height: 2, width: 2) {
-        	state "whiteLevel", label:'${currentValue}%', backgroundColor:"#FFFFFF"
+        valueTile("redValueTile", "device.redLevel", decoration: "flat", height: 1, width: 1) {
+        	state "redLevel", label:'${currentValue}%'
+        }     
+        
+        standardTile("green", "device.green", height: 1, width: 1, inactiveLabel: false, canChangeIcon: false) {
+            state "off", label:"G", action:"gOn", icon:"st.illuminance.illuminance.dark", backgroundColor:"#D8D8D8"
+            state "on", label:"G", action:"gOff", icon:"st.illuminance.illuminance.bright", backgroundColor:"#00FF00"
+        }
+        controlTile("greenSliderControl", "device.greenLevel", "slider", height: 1, width: 4, inactiveLabel: false) {
+			state "greenLevel", action:"setGLevel"
+		}
+        valueTile("greenValueTile", "device.greenLevel", decoration: "flat", height: 1, width: 1) {
+        	state "greenLevel", label:'${currentValue}%'
+        }    
+        
+        standardTile("blue", "device.blue", height: 1, width:1, inactiveLabel: false, canChangeIcon: false) {
+            state "off", label:"B", action:"bOn", icon:"st.illuminance.illuminance.dark", backgroundColor:"#D8D8D8"
+            state "on", label:"B", action:"bOff", icon:"st.illuminance.illuminance.bright", backgroundColor:"#0000FF"
+        }
+        controlTile("blueSliderControl", "device.blueLevel", "slider", height: 1, width: 4, inactiveLabel: false) {
+			state "blueLevel", action:"setBLevel"
+		}
+        valueTile("blueValueTile", "device.blueLevel", decoration: "flat", height: 1, width: 1) {
+        	state "blueLevel", label:'${currentValue}%'
+        }  
+        
+        standardTile("white1", "device.white1", height: 1, width: 1, inactiveLabel: false, canChangeIcon: false) {
+            state "off", label:"W1", action:"w1On", icon:"st.illuminance.illuminance.dark", backgroundColor:"#D8D8D8"
+            state "on", label:"W1", action:"w1Off", icon:"st.illuminance.illuminance.bright", backgroundColor:"#FFFFFF"
+        }
+        controlTile("white1SliderControl", "device.white1Level", "slider", height: 1, width: 4, inactiveLabel: false) {
+			state "white1Level", action:"setW1Level"
+		}
+        valueTile("white1ValueTile", "device.white1Level", decoration: "flat", height: 1, width: 1) {
+        	state "white1Level", label:'${currentValue}%'
         } 
+        standardTile("white2", "device.white2", height: 1, width: 1, inactiveLabel: false, canChangeIcon: false) {
+            state "off", label:"W2", action:"w2On", icon:"st.illuminance.illuminance.dark", backgroundColor:"#D8D8D8"
+            state "on", label:"W2", action:"w2Off", icon:"st.illuminance.illuminance.bright", backgroundColor:"#FFFFFF"
+        }
+        controlTile("white2SliderControl", "device.white2Level", "slider", height: 1, width: 4, inactiveLabel: false) {
+			state "white2Level", action:"setW2Level"
+		}
+        valueTile("white2ValueTile", "device.white2Level", decoration: "flat", height: 1, width: 1) {
+        	state "white2Level", label:'${currentValue}%'
+        } 
+        
+        
         (1..6).each { n ->
 			standardTile("switch$n", "switch$n", canChangeIcon: true, width: 2, height: 2) {
 				state "on", label: "$n", action: "off$n", icon: "st.switches.switch.on", backgroundColor: "#79b821"
@@ -87,7 +158,12 @@ metadata {
 
 	main(["switch"])
 	details(["switch", "levelSliderControl",
-             "whiteSliderControl", "whiteValueTile",
+             //"whiteSliderControl", "whiteValueTile",
+             "red", "redSliderControl", "redValueTile", 
+             "green", "greenSliderControl", "greenValueTile",
+             "blue", "blueSliderControl", "blueValueTile",
+             "white1", "white1SliderControl", "white1ValueTile",
+             "white2", "white2SliderControl", "white2ValueTile",
              "switch1", "switch2", "switch3",
              "switch4", "switch5", "switch6",
              "refresh", "configure" ])
@@ -106,9 +182,9 @@ def updated() {
 def configure() {
 	log.debug "configure()"
 	log.debug "Configuring Device For SmartThings Use"
-    state.program1 = "l-0000ff100,l-ff0000100&repeat=-1"
-    state.program2 = "f-00ff004000,f-ff00004000,f-0000ff4000&repeat=5"
-    state.program3 = "f-0000ff2000,f-ff00002000&repeat=10"
+    state.program1 = null
+    state.program2 = null
+    state.program3 = null
     state.program4 = null
     state.program5 = null
     state.program6 = null
@@ -126,8 +202,11 @@ def parse(description) {
 	//log.debug "Parsing: ${description}"
     def map = [:]
     def events = []
+    def cmds = []
     def descMap = parseDescriptionAsMap(description)
     //log.debug "descMap: ${descMap}"
+    
+    if (!state.configSuccess || state.configSuccess == "false") cmds << configureInstant(device.hub.getDataValue("localIP"), device.hub.getDataValue("localSrvPortTCP"))
     
     if (!state.mac || state.mac != descMap["mac"]) {
 		log.debug "Mac address of device found ${descMap["mac"]}"
@@ -147,16 +226,53 @@ def parse(description) {
         events << createEvent(name: "switch", value: result.power)
         toggleTiles("all")
     }
-    if (result.containsKey("color")) {
-       if (result.color.size() > 2) {
-          events << createEvent(name:"color", value:"$result.color")
-          events << createEvent(name: "whiteLevel", value: 0)
+    if (result.containsKey("rgb")) {
+       events << createEvent(name:"color", value:"#$result.rgb")
+    }
+    if (result.containsKey("r")) {
+       events << createEvent(name:"redLevel", value: Integer.parseInt(result.r,16)/255 * 100 as Integer)
+       if ((Integer.parseInt(result.r,16)/255 * 100 as Integer) > 0 ) {
+          events << createEvent(name:"red", value: "on")
        } else {
-          events << createEvent(name: "whiteLevel", value: Integer.parseInt(result.color,16)/255 * 100 as Integer)
+    	  events << createEvent(name:"red", value: "off")
        }
     }
-    if (result.containsKey("white1")) {
-       events << createEvent(name: "whiteLevel", value: Integer.parseInt(result.white1,16)/255 * 100 as Integer)
+    if (result.containsKey("g")) {
+       events << createEvent(name:"greenLevel", value: Integer.parseInt(result.g,16)/255 * 100 as Integer)
+       if ((Integer.parseInt(result.g,16)/255 * 100 as Integer) > 0 ) {
+          events << createEvent(name:"green", value: "on")
+       } else {
+    	  events << createEvent(name:"green", value: "off")
+       }
+    }
+    if (result.containsKey("b")) {
+       events << createEvent(name:"blueLevel", value: Integer.parseInt(result.b,16)/255 * 100 as Integer)
+       if ((Integer.parseInt(result.b,16)/255 * 100 as Integer) > 0 ) {
+          events << createEvent(name:"blue", value: "on")
+       } else {
+    	  events << createEvent(name:"blue", value: "off")
+       }
+    }
+    if (result.containsKey("w1")) {
+       events << createEvent(name: "whiteLevel", value: Integer.parseInt(result.w1,16)/255 * 100 as Integer)
+       events << createEvent(name:"white1Level", value: Integer.parseInt(result.w1,16)/255 * 100 as Integer)
+       if ((Integer.parseInt(result.w1,16)/255 * 100 as Integer) > 0 ) {
+          events << createEvent(name:"white1", value: "on")
+       } else {
+    	  events << createEvent(name:"white1", value: "off")
+       }
+    }
+    if (result.containsKey("w2")) {
+       events << createEvent(name:"white2Level", value: Integer.parseInt(result.w2,16)/255 * 100 as Integer)
+       if ((Integer.parseInt(result.w2,16)/255 * 100 as Integer) > 0 ) {
+          events << createEvent(name:"white2", value: "on")
+       } else {
+    	  events << createEvent(name:"white2", value: "off")
+       }
+    }
+
+    if (result.containsKey("success")) {
+       if (result.success == "true") state.configSuccess = "true" else state.configSuccess = "false" 
     }
     if (result.containsKey("program")) {
         if (result.running == "false") {
@@ -167,7 +283,8 @@ def parse(description) {
             events << createEvent(name:"switch$result.program", value: "on")
         }
     }
-    if (events != null) return events
+    //if (cmds != [] && events != null) return [events, response(cmds)] else if (cmds != []) return response(cmds) else return events
+    return events
 }
 
 private toggleTiles(value) {
@@ -208,7 +325,7 @@ def on() {
 
 def off() {
 	log.debug "off()"
-    postAction("/off")
+    postAction("/off?transition=$transition")
 }
 
 def setLevel(level) {
@@ -250,31 +367,31 @@ def setColor(value) {
     if (value.hue == 23 && value.saturation == 56) {
        log.debug "setting color Soft White"
        def whiteLevel = getWhite(value.level)
-       uri = "/white1?value=${whiteLevel}"
+       uri = "/w1?value=${whiteLevel}"
        state.previousColor = "${whiteLevel}"
     }
     else if (value.hue == 52 && value.saturation == 19) {
        log.debug "setting color White"
        def whiteLevel = getWhite(value.level)
-       uri = "/white1?value=${whiteLevel}"
+       uri = "/w1?value=${whiteLevel}"
        state.previousColor = "${whiteLevel}"
     } 
     else if (value.hue == 53 && value.saturation == 91) {
        log.debug "setting color Daylight"
        def whiteLevel = getWhite(value.level)
-       uri = "/white1?value=${whiteLevel}"
+       uri = "/w1?value=${whiteLevel}"
        state.previousColor = "${whiteLevel}"
     } 
     else if (value.hue == 20 && value.saturation == 80) {
        log.debug "setting color Warm White"
        def whiteLevel = getWhite(value.level)
-       uri = "/white1?value=${whiteLevel}"
+       uri = "/w1?value=${whiteLevel}"
        state.previousColor = "${whiteLevel}"
     } 
     else if (value.colorTemperature) {
        log.debug "setting color with color temperature"
        def whiteLevel = getWhite(value.level)
-       uri = "/white1?value=${whiteLevel}"
+       uri = "/w1?value=${whiteLevel}"
        state.previousColor = "${whiteLevel}"
     }
 	else if (value.hex) {
@@ -291,24 +408,24 @@ def setColor(value) {
        //def mygreen = rgb.g
        //def myblue = rgb.b
        def dimmedColor = getDimmedColor(rgbToHex([r:myred, g:mygreen, b:myblue]))
-       uri = "/color?value=${dimmedColor.substring(1)}"
+       uri = "/rgb?value=${dimmedColor.substring(1)}"
        state.previousColor = "${dimmedColor.substring(1)}"
     }
     else if (value.white) {
-       uri = "/white1?value=${value.white}"
+       uri = "/w1?value=${value.white}"
        state.previousColor = "${value.white}"
     }
     else if (value.aLevel) {
-       uri = "/color?value=${getDimmedColor(state.previousColor).substring(1)}"
+       uri = "/rgb?value=${getDimmedColor(state.previousColor).substring(1)}"
        state.previousColor = "${getDimmedColor(state.previousColor).substring(1)}"
     }
     else {
        // A valid color was not chosen. Setting to white
-       uri = "/white1?value=ff"
+       uri = "/w1?value=ff"
        state.previousColor = "ff"
     }
     
-    if (uri != null) postAction(uri)
+    if (uri != null) postAction("$uri&channels=$channels&transition=$transition")
 
 }
 
@@ -412,10 +529,22 @@ def sync(ip, port) {
     }
 }
 
+private encodeCredentials(username, password){
+	def userpassascii = "${username}:${password}"
+    def userpass = "Basic " + userpassascii.encodeAsBase64().toString()
+    return userpass
+}
+
 private postAction(uri){ 
   log.debug "uri ${uri}"
   updateDNI()
-  def headers = getHeader()
+  
+  def userpass
+  
+  if(password != null && password != "") 
+    userpass = encodeCredentials("admin", password)
+    
+  def headers = getHeader(userpass)
   
   def hubAction = new physicalgraph.device.HubAction(
     method: "GET",
@@ -471,9 +600,12 @@ def parseDescriptionAsMap(description) {
 	}
 }
 
-private getHeader(){
+private getHeader(userpass = null){
     def headers = [:]
-    headers.put("HOST", getHostAddress())
+    headers.put("Host", getHostAddress())
+    headers.put("Content-Type", "application/x-www-form-urlencoded")
+    if (userpass != null)
+       headers.put("Authorization", userpass)
     return headers
 }
 
@@ -526,4 +658,90 @@ def setProgram(value, program){
 
 def hex2int(value){
    return Integer.parseInt(value, 10)
+}
+
+def rOn() {
+	log.debug "redOn()"
+    postAction("/r?value=ff&channels=$channels&transition=$transition")
+}
+def rOff() {
+	log.debug "redOff()"
+    postAction("/r?value=00&channels=$channels&transition=$transition")
+}
+
+def setRLevel(value) {
+	log.debug "setRedLevel: ${value}"
+    def level = Math.min(value as Integer, 99)    
+    level = 255 * level/99 as Integer
+	log.debug "level: ${level}"
+	level = hex(level)
+    postAction("/r?value=$level&channels=$channels&transition=$transition")
+}
+def gOn() {
+	log.debug "greenOn()"
+    postAction("/g?value=ff&channels=$channels&transition=$transition")
+}
+def gOff() {
+	log.debug "greenOff()"
+    postAction("/g?value=00&channels=$channels&transition=$transition")
+}
+
+def setGLevel(value) {
+	log.debug "setGreenLevel: ${value}"
+    def level = Math.min(value as Integer, 99)    
+    level = 255 * level/99 as Integer
+	log.debug "level: ${level}"
+	level = hex(level)
+    postAction("/g?value=$level&channels=$channels&transition=$transition")
+}
+def bOn() {
+	log.debug "blueOn()"
+    postAction("/b?value=ff&channels=$channels&transition=$transition")
+}
+def bOff() {
+	log.debug "blueOff()"
+    postAction("/b?value=00&channels=$channels&transition=$transition")
+}
+
+def setBLevel(value) {
+	log.debug "setBlueLevel: ${value}"
+    def level = Math.min(value as Integer, 99)    
+    level = 255 * level/99 as Integer
+	log.debug "level: ${level}"
+	level = hex(level)
+    postAction("/b?value=$level&channels=$channels&transition=$transition")
+}
+def w1On() {
+	log.debug "white1On()"
+    postAction("/w1?value=ff&channels=$channels&transition=$transition")
+}
+def w1Off() {
+	log.debug "white1Off()"
+    postAction("/w1?value=00&channels=$channels&transition=$transition")
+}
+
+def setW1Level(value) {
+	log.debug "setwhite1Level: ${value}"
+    def level = Math.min(value as Integer, 99)    
+    level = 255 * level/99 as Integer
+	log.debug "level: ${level}"
+	def whiteLevel = hex(level)
+    postAction("/w1?value=$whiteLevel&channels=$channels&transition=$transition")
+}
+def w2On() {
+	log.debug "white2On()"
+    postAction("/w2?value=ff&channels=$channels&transition=$transition")
+}
+def w2Off() {
+	log.debug "white2Off()"
+    postAction("/w2?value=00&channels=$channels&transition=$transition")
+}
+
+def setW2Level(value) {
+	log.debug "setwhite2Level: ${value}"
+    def level = Math.min(value as Integer, 99)    
+    level = 255 * level/99 as Integer
+	log.debug "level: ${level}"
+	def whiteLevel = hex(level)
+    postAction("/w2?value=$whiteLevel&channels=$channels&transition=$transition")
 }
