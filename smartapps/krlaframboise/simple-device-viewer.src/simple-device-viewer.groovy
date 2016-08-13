@@ -107,9 +107,9 @@ definition(
     author: "Kevin LaFramboise",
     description: "Provides information about the state of the specified devices.",
     category: "My Apps",
-		iconUrl: "https://raw.githubusercontent.com/krlaframboise/Resources/master/simple-device-viewer/simple-device-viewer-icon.png",
-    iconX2Url: "https://raw.githubusercontent.com/krlaframboise/Resources/master/simple-device-viewer/simple-device-viewer-icon-2x.png",
-    iconX3Url: "https://raw.githubusercontent.com/krlaframboise/Resources/master/simple-device-viewer/simple-device-viewer-icon-3x.png")
+		iconUrl: "https://raw.githubusercontent.com/krlaframboise/SmartThingsPublic/master/smartapps/krlaframboise/simple-device-viewer.src/simple-device-viewer-icon.png",
+    iconX2Url: "https://raw.githubusercontent.com/krlaframboise/SmartThingsPublic/master/smartapps/krlaframboise/simple-device-viewer.src/simple-device-viewer-icon-2x.png",
+    iconX3Url: "https://raw.githubusercontent.com/krlaframboise/SmartThingsPublic/master/smartapps/krlaframboise/simple-device-viewer.src/simple-device-viewer-icon-3x.png")
 
  preferences {
 	page(name:"mainPage")
@@ -442,7 +442,7 @@ def otherSettingsPage() {
 			paragraph "If you want to be able to use different icons, fork krlaframboise's GitHub Resources repository and change this url to the forked path.  If you do change this setting, make sure that the new location contains all the Required Files."
 			href "", title: "View Required Resource List", 
 				style: "external", 
-				url: 			"http://htmlpreview.github.com/?https://github.com/krlaframboise/Resources/blob/master/simple-device-viewer/required-resources.html"
+				url: 			"http://htmlpreview.github.io/?https://raw.githubusercontent.com/krlaframboise/SmartThingsPublic/master/smartapps/krlaframboise/simple-device-viewer.src/required-resources.html"
 			input "resourcesUrl", "text",
 				title: "Resources Url:",
 				required: false,
@@ -1094,7 +1094,7 @@ private boolean iconsAreEnabled() {
 }
 
 private getResourcesUrl() {
-	def url = "https://raw.githubusercontent.com/krlaframboise/Resources/master/simple-device-viewer"
+	def url = "https://raw.githubusercontent.com/krlaframboise/SmartThingsPublic/master/smartapps/krlaframboise/simple-device-viewer.src"
 
 	if (settings?.resourcesUrl) {
 		url = settings.resourcesUrl
