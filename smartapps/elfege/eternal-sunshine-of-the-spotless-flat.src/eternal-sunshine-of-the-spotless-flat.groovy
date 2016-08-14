@@ -45,23 +45,22 @@ def settings() {
         section("Select Optional Rules") {    
             input "OnlyIfNotOff", "bool", title: "Run this app only if ${dimmer} isn't turned off", default: false
             paragraph "Below you can set a maximum value above which your lights won't be set. Useful after watching a movie or when you want your night mode to be more intimate..."        
-            input "Partvalue", "bool", title: "optional: set a max dim up value?", required:false, default: false, submitOnChange: true
+            input "Partvalue", "bool", title: "optional: set a maximum light level?", required:false, default: false, submitOnChange: true
             if(Partvalue){
-                input "SetPartvalue", "decimal", title: "set a max percentage", range: "1..100", required: true
+                input "SetPartvalue", "decimal", title: "Set a maximul value", range: "1..100", required: true
                 input "exceptionMode", "bool", title: "Apply this threshold only when on specific Modes?", required: false, default: false, submitOnChange: true     
 
                 if(exceptionMode){
                     input "ExceptionMode", "mode", title: "select which mode", required: true, multiple: false, submitOnChange: true
                     if(ExceptionMode){
-                        paragraph "MAKE SURE TO SELECT below the modes that you just selected in the options above, if any"
+                        input "ExceptionMode2", "mode", title: "Optional: select another mode", required: false, multiple: false, submitOnChange: true
+                        if(ExceptionMode2){
+                            input "SetPartvalue2", "decimal", title: "What maximum value in this mode?", range: "1..100", required: true
+                        }
                     }
-                    input "ExceptionMode2", "mode", title: "Optional: select another mode", required: false, multiple: false, submitOnChange: true
-                    if(ExceptionMode2){
-                        input "SetPartvalue2", "decimal", title: "What maximum value in this mode?", range: "1..100", required: true
-                    }
+                     paragraph "MAKE SURE TO SELECT below the modes that you just selected in the options above"
                 }
             }
-
             mode(title: "Run this app only under these modes")
         }
     }
