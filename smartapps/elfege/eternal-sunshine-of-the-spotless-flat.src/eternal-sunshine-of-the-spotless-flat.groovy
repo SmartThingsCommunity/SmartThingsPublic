@@ -44,48 +44,45 @@ def settings() {
         }
         section("Select Optional Rules") {    
             input "OnlyIfNotOff", "bool", title: "Run this app only if ${dimmer} isn't turned off", default: false
-            paragraph: "Below you can set a maximul value above which your lights won't be set. Useful after watching a movie or when you want your night mode to be more intimate..."        
-            input "halfvalue", "bool", title: "optional: set a max dim up value?", required:false, default: false, submitOnChange: true
-            input "exceptionMode", "bool", title: "Apply this threshold only when on a specific Mode?", required: false, default: false, submitOnChange: true     
-            if(halfvalue){
-                input "SetHalfValue", "decimal", title: "set a max percentage", range: "1..100", required: true
-            }
-            if(exceptionMode){
-                input "ExceptionMode", "mode", title: "select which mode", required: true
+            paragraph "Below you can set a maximum value above which your lights won't be set. Useful after watching a movie or when you want your night mode to be more intimate..."        
+            input "Partvalue", "bool", title: "optional: set a max dim up value?", required:false, default: false, submitOnChange: true
+            if(Partvalue){
+                input "SetPartvalue", "decimal", title: "set a max percentage", range: "1..100", required: true
+                input "exceptionMode", "bool", title: "Apply this threshold only when on specific Modes?", required: false, default: false, submitOnChange: true     
+
+                if(exceptionMode){
+                    input "ExceptionMode", "mode", title: "select which mode", required: true, multiple: false, submitOnChange: true
+                    if(ExceptionMode){
+                        paragraph "MAKE SURE TO SELECT below the modes that you just selected in the options above, if any"
+                    }
+                    input "ExceptionMode2", "mode", title: "Optional: select another mode", required: false, multiple: false, submitOnChange: true
+                    if(ExceptionMode2){
+                        input "SetPartvalue2", "decimal", title: "What maximum value in this mode?", range: "1..100", required: true
+                    }
+                }
             }
 
             mode(title: "Run this app only under these modes")
-
-            if(exceptionMode){
-                paragraph: "BE SURE TO SELECT the mode that you set in the options, if any"
-            }
         }
     }
 }
 
 def installed() {
     log.debug "Installed with settings: ${settings}"
-
     initialize()
 }
-
 def updated() {
     log.debug "Updated with settings: ${settings}"
-
     unsubscribe()
     initialize()
 }
-
 def initialize() {
     subscribe(lightSensor, "illuminance", illuminanceHandler)
     subscribe(dimmer, "switch", SwitchHandler)
-
 }
 
 def SwitchHandler(evt){ 
-
     log.debug "dimmer.currentSwitch is $dimmer.currentSwitch"
-
     if(evt.value == "on"){
         state.dimmer = "on"
         log.debug "Now Eternal Sunshine resumes its automation"
@@ -93,20 +90,15 @@ def SwitchHandler(evt){
     else { 
         state.dimmer = "off"
     }
-
 }
 
 def illuminanceHandler(evt){
-
     log.debug "illuminance is $evt.integerValue"
-
-
-    state.value = evt.integerValue
-
+    state.luxvalue = evt.integerValue
     if(OnlyIfNotOff){
         if(state.dimmer == "off"){
 
-            log.debug "doing nothing because switch was previously turned off"
+            log.debug "doing nothing because switch is off"
         }
         else {
             DIM()
@@ -118,28 +110,34 @@ def illuminanceHandler(evt){
 }
 
 private DIM(){
-
-
-
     int dim = 0 
     def maxlux = 1000
-
     def ProportionLux = 0
+    def CurrMode = location.currentMode
 
-    if(state.value != 0){
-        ProportionLux = (maxlux / state.value) 
+    log.debug "CurrMode is $CurrMode"
+    log.debug "ExceptionMode is $ExceptionMode"
+
+    if(state.luxvalue != 0){
+        ProportionLux = (maxlux / state.luxvalue) 
     }
     else{
         ProportionLux = 100
     }
+
     log.debug "ProportionLux value returns $ProportionLux"
 
-
     if ( ProportionLux == 1) {
-        dim = 0    
+        // this is the case when lux is max at 1000
+        if(Partvalue){
+            dim = 1 // don't set to 0 to avoid creating an event that will turn off the entire app
+        }
+        else {
+            dim = 0
+            log.debug "ProportionLux is 1 so dim set to 0"
+        }
     }
     else {
-
         dim = (ProportionLux * DimIncrVal) 
         // example 1000 / 500 = 2 so dim = 2 * 5 light will be dimmed down or up? by 10%
         // example 1000 / 58 = 17.xxx so dim = 17 * 5 so if lux is 58 then light will be set to 85%.
@@ -148,21 +146,33 @@ private DIM(){
         dim = 100
     } 
 
-    if(halfvalue){
+    if(Partvalue){
+        log.debug "PartValue eval"
         if(exceptionMode){
-            if(location.currentMode == ExceptionMode){
-                if(dim >= SetHalfValue){
-                    dim = SetHalfValue
+            log.debug "exceptionMode eval"
+            if(CurrMode == ExceptionMode){
+                log.debug "currentMode eval"
+                if(dim >= SetPartvalue){
+                    dim = SetPartvalue
+                }
+            } 
+            else if(CurrMode == ExceptionMode2){
+                if(dim >= SetPartvalue2){
+                    dim = SetPartvalue2
                 }
             }
-        } 
-        else { 
-            if(dim >= SetHalfValue){
-                dim = SetHalfValue
+        }
+        else {
+            log.debug "Just PartValue eval"
+            if(dim >= SetPartvalue){
+                dim = SetPartvalue
             }
         }
 
     }
+
+
+
 
     dimmer.setLevel(dim) 
     log.debug "light set to $dim %"
