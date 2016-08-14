@@ -321,7 +321,7 @@ String getBrightnessHex(int length) {
 }
 
 /**
-*formats a hex value with leading 0's
+*formats a decimal value with leading 0's
 *value - the value to be formatted
 *length - the size of the number after leading 0's have been added
 */ 
@@ -330,10 +330,10 @@ String formatNumber(int value, int length) {
 }
 
 /**
-*performs configuration and bindingds
+*performs configuration and bindings
 */
 def configure() {
- log.debug "Confuguring Reporting and Bindings."
+ log.debug "Configuring Reporting and Bindings."
  installed()
  def configCmds = [
   // Bind the outgoing on/off cluster from remote to hub, so the hub receives messages when On/Off buttons pushed
@@ -419,7 +419,7 @@ def refresh() {
 }
 
 /**
-* Returns true if the switch is commanded on.  false if off.
+* Returns true if the switch is on.  false if off.
 */
 Boolean getOnState(){
     return (state.on == "on")
@@ -434,7 +434,7 @@ def poll() {
 }
 
 /**
-*takes a command and data, generates a "st cmd" array 
+*takes a command and data, generates an "st cmd" array 
 *command- string representing the command and data to be send to the device
 *returns the command for all devices on the switch
 */
@@ -467,7 +467,6 @@ def reportOnState(boolean on) {
 def updateButtonState(def value) {
  state.value = value
  sendEvent(name: "button", value: value, unit: "")
-  //  sendEvent(name: "button", value: state.value)
 }
 
 /**
@@ -493,10 +492,8 @@ def toggle() {
 */
 boolean doubleTapped(boolean commanded) {
  boolean on=(state.on=="on")
-
  if (on && commanded|| !on && !commanded) return true
  return false
- 
 }
 
 /**
