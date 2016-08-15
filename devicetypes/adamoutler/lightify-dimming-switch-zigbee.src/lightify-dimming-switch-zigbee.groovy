@@ -157,7 +157,7 @@ def installed() {
 /**
 *Parse events into attributes.
 */
-def parse(String msgFromST) {
+def parse(String msgFromST) {https://graph-na02-useast1.api.smartthings.com/ide/device/editor/2ef74e51-ce01-44d1-8b1a-8d08c55f44e8#
  if (msgFromST?.startsWith('catchall:')) {
   def value = handleMessage(msgFromST)
   fireCommands(value.command)
@@ -170,16 +170,23 @@ def parse(String msgFromST) {
  return getStatus()
 }
 
+
 /**
 *fire commands into the hub
 *commands - an array of string commands to be fired
 */
 private fireCommands(List commands) {
- if (commands != null && commands.size() > 0) {
-  log.trace("Executing commands: " + commands + " state:" + state)
-  sendHubCommand(commands?.collect {
-   new physicalgraph.device.HubAction(it)
+
+
+  if (commands != null && commands.size() > 0) {
+  log.trace("Executing commands-- state:" + state)
+  for (String value : commands){
+     log.trace("Executing commands: " + value )
+   sendHubCommand([value].collect {new physicalgraph.device.HubAction(it)
+   
+  
   })
+  }
  }
 }
 
@@ -439,12 +446,12 @@ def poll() {
 *returns the command for all devices on the switch
 */
 def Map createStCommand(String command) {
- ArrayList output = new ArrayList([])
+ List<String> output = []
  LinkedHashMap result = getStatus()
  for (item in getDevices()) {
   output.add("st cmd 0x" + item[0] + " 0x" + item[1] + " " + command)
  }
- result['command'] = output
+ result['command'] = (List)output.flatten()
  return result
 }
 
