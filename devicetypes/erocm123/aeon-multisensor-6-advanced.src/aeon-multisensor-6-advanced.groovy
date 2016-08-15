@@ -4,7 +4,7 @@
  *   
  *	github: Eric Maycock (erocm123)
  *	email: erocmail@gmail.com
- *	Date: 2016-08-03 9:57 AM
+ *	Date: 2016-08-15 1:59 PM
  *	Copyright Eric Maycock
  *
  *  Code has elements from other community sources @CyrilPeponnet, @Robert_Vandervoort. Greatly reworked and 
@@ -177,7 +177,11 @@ def parse(String description)
         default:
 			def cmd = zwave.parse(description, [0x31: 5, 0x30: 2, 0x84: 1])
 			if (cmd) {
+                try {
 				result += zwaveEvent(cmd)
+                } catch (e) {
+                log.debug "error: $e"
+                }
 			}
         break
 	}
@@ -302,10 +306,12 @@ def motionEvent(value) {
 }
 
 def zwaveEvent(physicalgraph.zwave.commands.sensorbinaryv2.SensorBinaryReport cmd) {
+    logging("SensorBinaryReport: $cmd")
 	motionEvent(cmd.sensorValue)
 }
 
 def zwaveEvent(physicalgraph.zwave.commands.basicv1.BasicSet cmd) {
+    logging("BasicSet: $cmd")
 	motionEvent(cmd.value)
 }
 
@@ -315,7 +321,7 @@ def zwaveEvent(physicalgraph.zwave.commands.notificationv3.NotificationReport cm
 	if (cmd.notificationType == 7) {
 		switch (cmd.event) {
 			case 0:
-				result << motionEvent(0)
+				//result << motionEvent(0)
 				result << createEvent(name: "tamper", value: "clear", descriptionText: "$device.displayName tamper cleared")
                 result << createEvent(name: "acceleration", value: "inactive", descriptionText: "$device.displayName tamper cleared")
 				break
@@ -324,7 +330,7 @@ def zwaveEvent(physicalgraph.zwave.commands.notificationv3.NotificationReport cm
                 result << createEvent(name: "acceleration", value: "active", descriptionText: "$device.displayName was moved")
 				break
 			case 7:
-				result << motionEvent(1)
+				//result << motionEvent(1)
 				break
 		}
 	} else {
@@ -485,6 +491,17 @@ def convertParam(number, value) {
             else
                 value
         break
+        case 101:
+        	if (settings."40".toInteger() != null) {
+                if (settings."40".toInteger() == 1) {
+                   0
+                } else {
+                   value
+                }	
+            } else {
+                241
+            }
+        break
     	case 201:
         	if (value < 0)
             	256 + value
@@ -531,7 +548,7 @@ def update_current_properties(cmd)
 
     if (settings."${cmd.parameterNumber}" != null)
     {
-        if ("${cmd.parameterNumber}".toInteger() == 41)
+        if ("${cmd.parameterNumber}".toInteger() == 41 || "${cmd.parameterNumber}".toInteger() == 101)
         {
             if (convertParam("${cmd.parameterNumber}".toInteger(), settings."${cmd.parameterNumber}".toInteger()) == cmd2Integer(cmd.configurationValue))
             {
@@ -588,7 +605,7 @@ def update_needed_settings()
                     cmds << zwave.configurationV1.configurationGet(parameterNumber: it.@index.toInteger())
                 }
             }
-            else if (settings."${it.@index}" != null && convertParam(it.@index.toInteger(), cmd2Integer(currentProperties."${it.@index}")) != settings."${it.@index}".toInteger() && it.@index != "41" && it.@index != "111")
+            else if (settings."${it.@index}" != null && convertParam(it.@index.toInteger(), cmd2Integer(currentProperties."${it.@index}")) != settings."${it.@index}".toInteger() && it.@index != "41" && it.@index != "111" && it.@index != "101")
             { 
                 if (device.currentValue("currentFirmware") == null || "${it.@fw}".indexOf(device.currentValue("currentFirmware")) >= 0){
                     isUpdateNeeded = "YES"
@@ -596,6 +613,17 @@ def update_needed_settings()
                     logging("Parameter ${it.@index} will be updated to " + settings."${it.@index}")
                     def convertedConfigurationValue = convertParam(it.@index.toInteger(), settings."${it.@index}".toInteger())
                     cmds << zwave.configurationV1.configurationSet(configurationValue: integer2Cmd(convertedConfigurationValue, it.@byteSize.toInteger()), parameterNumber: it.@index.toInteger(), size: it.@byteSize.toInteger())
+                    cmds << zwave.configurationV1.configurationGet(parameterNumber: it.@index.toInteger())
+                }
+            } 
+            else if (settings."${it.@index}" != null  && it.@index == "101" && cmd2Integer(currentProperties."${it.@index}") != convertParam(it.@index.toInteger(), settings."${it.@index}".toInteger()))
+            { 
+                if (device.currentValue("currentFirmware") == null || "${it.@fw}".indexOf(device.currentValue("currentFirmware")) >= 0){
+                    isUpdateNeeded = "YES"
+
+                    logging("Parameter ${it.@index} will be updated to " + convertParam(it.@index.toInteger(), settings."${it.@index}".toInteger()))
+                    def convertedConfigurationValue = convertParam(it.@index.toInteger(), settings."${it.@index}".toInteger())
+                    cmds << zwave.configurationV1.configurationSet(configurationValue: integer2Cmd(convertParam(it.@index.toInteger(), settings."${it.@index}".toInteger()), it.@byteSize.toInteger()), parameterNumber: it.@index.toInteger(), size: it.@byteSize.toInteger())
                     cmds << zwave.configurationV1.configurationGet(parameterNumber: it.@index.toInteger())
                 }
             } 
@@ -888,7 +916,7 @@ def configuration_model()
 {
 '''
 <configuration>
-    <Value type="list" index="101" label="Battery or USB?" min="240" max="241" value="241" byteSize="4" fw="1.06,1.07,1.08,1.06EU,1.07EU" displayDuringSetup="true">
+    <Value type="list" index="101" label="Battery or USB?" min="240" max="241" value="241" byteSize="4" setting_type="zwave" fw="1.06,1.07,1.08,1.06EU,1.07EU" displayDuringSetup="true">
     <Help>
 Is the device powered by battery or usb?
     </Help>
