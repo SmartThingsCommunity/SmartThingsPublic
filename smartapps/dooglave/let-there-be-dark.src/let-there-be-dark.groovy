@@ -29,7 +29,7 @@ def installed() {
 
 def updated() {
 	unsubscribe()
-    subscribe(switch1, "switch.off", switchOffHandler)
+	subscribe(contact1, "contact", contactHandler)
 }
 
 def contactHandler(evt) {
