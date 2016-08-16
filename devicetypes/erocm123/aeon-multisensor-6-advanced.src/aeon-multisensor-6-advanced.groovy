@@ -4,7 +4,7 @@
  *   
  *	github: Eric Maycock (erocm123)
  *	email: erocmail@gmail.com
- *	Date: 2016-08-15 1:59 PM
+ *	Date: 2016-08-16 12:02 PM
  *	Copyright Eric Maycock
  *
  *  Code has elements from other community sources @CyrilPeponnet, @Robert_Vandervoort. Greatly reworked and 
@@ -236,7 +236,7 @@ def zwaveEvent(physicalgraph.zwave.commands.batteryv1.BatteryReport cmd) {
     events << createEvent(map)
     if(settings."101" == null || settings."101" == "241") {
         try {
-            events << createEvent([name: "batteryTile", value: "Battery ${device.currentValue("battery")}%", displayed:false])
+            events << createEvent([name: "batteryTile", value: "Battery ${cmd.batteryLevel}%", displayed:false])
         } catch (e) {
             logging("$e")
         }
@@ -247,7 +247,6 @@ def zwaveEvent(physicalgraph.zwave.commands.batteryv1.BatteryReport cmd) {
 
 def zwaveEvent(physicalgraph.zwave.commands.sensormultilevelv5.SensorMultilevelReport cmd)
 {
-    //logging("SensorMultiLevelReport: $cmd")
 	def map = [:]
 	switch (cmd.sensorType) {
 		case 1:
@@ -323,11 +322,11 @@ def zwaveEvent(physicalgraph.zwave.commands.notificationv3.NotificationReport cm
 			case 0:
 				//result << motionEvent(0)
 				result << createEvent(name: "tamper", value: "clear", descriptionText: "$device.displayName tamper cleared")
-                result << createEvent(name: "acceleration", value: "inactive", descriptionText: "$device.displayName tamper cleared")
+                result << createEvent(name: "acceleration", value: "inactive", descriptionText: "$device.displayName tamper cleared", displayed:false)
 				break
 			case 3:
 				result << createEvent(name: "tamper", value: "detected", descriptionText: "$device.displayName was tampered")
-                result << createEvent(name: "acceleration", value: "active", descriptionText: "$device.displayName was moved")
+                result << createEvent(name: "acceleration", value: "active", descriptionText: "$device.displayName was moved", displayed:false)
 				break
 			case 7:
 				//result << motionEvent(1)
@@ -909,7 +908,7 @@ private updateStatus(){
 }
 
 private def logging(message) {
-    if (state.enableDebugging == "true") log.debug "$message"
+    if (state.enableDebugging == null || state.enableDebugging == "true") log.debug "$message"
 }
 
 def configuration_model()
