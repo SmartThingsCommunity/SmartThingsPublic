@@ -13,6 +13,8 @@
  *  License for the specific language governing permissions and limitations
  *  under the License.
  */
+import physicalgraph.zigbee.clusters.iaszone.ZoneStatus
+
 
 metadata {
 	definition (name: "SmartSense Motion Sensor", namespace: "smartthings", author: "SmartThings", category: "C2") {
@@ -22,6 +24,7 @@ metadata {
 		capability "Temperature Measurement"
 		capability "Refresh"
 		capability "Health Check"
+		capability "Sensor"		
 
 		command "enrollResponse"
 
@@ -182,44 +185,10 @@ private Map parseCustomMessage(String description) {
 }
 
 private Map parseIasMessage(String description) {
-	List parsedMsg = description.split(' ')
-	String msgCode = parsedMsg[2]
+	ZoneStatus zs = zigbee.parseZoneStatus(description)
 
-	Map resultMap = [:]
-	switch(msgCode) {
-		case '0x0020': // Closed/No Motion/Dry
-			resultMap = getMotionResult('inactive')
-			break
-
-		case '0x0021': // Open/Motion/Wet
-			resultMap = getMotionResult('active')
-			break
-
-		case '0x0022': // Tamper Alarm
-			log.debug 'motion with tamper alarm'
-			resultMap = getMotionResult('active')
-			break
-
-		case '0x0023': // Battery Alarm
-			break
-
-		case '0x0024': // Supervision Report
-			log.debug 'no motion with tamper alarm'
-			resultMap = getMotionResult('inactive')
-			break
-
-		case '0x0025': // Restore Report
-			break
-
-		case '0x0026': // Trouble/Failure
-			log.debug 'motion with failure alarm'
-			resultMap = getMotionResult('active')
-			break
-
-		case '0x0028': // Test Mode
-			break
-	}
-	return resultMap
+	// Some sensor models that use this DTH use alarm1 and some use alarm2 to signify motion
+	return (zs.isAlarm1Set() || zs.isAlarm2Set()) ? getMotionResult('active') : getMotionResult('inactive')
 }
 
 def getTemperature(value) {
