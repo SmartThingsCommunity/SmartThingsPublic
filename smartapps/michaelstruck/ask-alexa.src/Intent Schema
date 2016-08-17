@@ -44,6 +44,10 @@
         {
           "name" : "MParam",
           "type" : "LIST_OF_PARAMS"
+        },
+        {
+          "name" : "MPW",
+          "type" : "AMAZON.NUMBER"
         }
         ]
     },
