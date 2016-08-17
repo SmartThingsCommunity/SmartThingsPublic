@@ -43,13 +43,13 @@ metadata {
 			}
 		}
 
-        controlTile("colorTempSliderControl", "device.colorTemperature", "slider", width: 4, height: 2, inactiveLabel: false, range:"(2000..6500)") {
-            state "colorTemperature", action:"color temperature.setColorTemperature"
-        }
+    controlTile("colorTempSliderControl", "device.colorTemperature", "slider", width: 4, height: 2, inactiveLabel: false, range:"(2000..6500)") {
+        state "colorTemperature", action:"color temperature.setColorTemperature"
+    }
 
-        valueTile("colorTemp", "device.colorTemperature", inactiveLabel: false, decoration: "flat", width: 2, height: 2) {
-            state "colorTemperature", label: '${currentValue} K'
-        }
+    valueTile("colorTemp", "device.colorTemperature", inactiveLabel: false, decoration: "flat", width: 2, height: 2) {
+        state "colorTemperature", label: 'WHITES'
+    }
 
 		standardTile("reset", "device.reset", height: 2, width: 2, inactiveLabel: false, decoration: "flat") {
 			state "default", label:"Reset Color", action:"reset", icon:"st.lights.philips.hue-single"
