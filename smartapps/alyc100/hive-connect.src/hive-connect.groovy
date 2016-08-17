@@ -22,6 +22,7 @@
  *
  *	17.08.2016
  *  v2.1.3 - Fix null pointer on state variable corruption
+ *	v2.1.3b - Fix device failure on API timeout
  *
  */
 definition(
@@ -601,14 +602,14 @@ def logErrors(options = [errorReturn: null, logObject: log], Closure c) {
 	try {
 		return c()
 	} catch (groovyx.net.http.HttpResponseException e) {
-		options.logObject.error("got error: ${e}, body: ${e.getResponse().getData()}")
+		log.error("got error: ${e}, body: ${e.getResponse().getData()}")
 		if (e.statusCode == 401) { // token is expired
 			state.remove("hiveAccessToken")
-			options.logObject.warn "Access token is not valid"
+			log.warn "Access token is not valid"
 		}
 		return options.errorReturn
 	} catch (java.net.SocketTimeoutException e) {
-		options.logObject.warn "Connection timed out, not much we can do here"
+		log.warn "Connection timed out, not much we can do here"
 		return options.errorReturn
 	}
 }
