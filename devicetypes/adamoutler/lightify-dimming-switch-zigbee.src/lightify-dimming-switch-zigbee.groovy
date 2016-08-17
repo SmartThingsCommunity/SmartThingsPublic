@@ -44,6 +44,7 @@ metadata {
   command "refresh"
   command "poll"
   command "toggle"
+  command "configure"
   fingerprint profileId: "0104", deviceId: "0001", inClusters: "0000, 0001, 0003, 0020, 0402, 0B05", outClusters: "0003, 0006, 0008, 0019", manufacturer: "OSRAM", model: "LIGHTIFY Dimming Switch", deviceJoinName: "OSRAM Lightify Dimming Switch"
  }
 
@@ -351,6 +352,7 @@ def configure() {
   // Bind the incoming battery info cluster from remote to hub, so the hub receives battery updates
   "zdo bind 0x${device.deviceNetworkId} 0x01 0x01 0x0001 {${device.zigbeeId}} {}",
  ]
+ fireCommands(configCmds)
  return configCmds
 }
 
