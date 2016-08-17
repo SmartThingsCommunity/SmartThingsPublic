@@ -18,7 +18,10 @@
  *  v2.0.1 BETA - Fix bug for accounts that do not have capabilities attribute against thermostat nodes.
  *	v2.1 - Improved authentication process and overhaul to UI. Added notification capability.
  *  v2.1.1 - Bug fix when initially selecting devices for the first time.
- *	v2.1.2 - Move external icon references into Github
+ *	v2.1.2 - Move external icon references into Github\
+ *
+ *	17.08.2016
+ *  v2.1.3 - Fix null pointer on state variable corruption
  *
  */
 definition(
@@ -76,7 +79,7 @@ def firstPage() {
 
 def headerSECTION() {
 	return paragraph (image: "https://raw.githubusercontent.com/alyc100/SmartThingsPublic/master/smartapps/alyc100/10457773_334250273417145_3395772416845089626_n.png",
-                  "Hive (Connect)\nVersion: 2.1.2\nDate: 16032016(1130)")
+                  "Hive (Connect)\nVersion: 2.1.3\nDate: 17082016(1000)")
 }
 
 def stateTokenPresent() {
@@ -96,21 +99,32 @@ def preferencesSelected() {
 }
 
 def getDevicesSelectedString() {
+	if (state.hiveHeatingDevices == null || state.hiveHotWaterDevices == null) {
+    	updateDevices()
+    }
 	def listString = ""
 	selectedHeating.each { childDevice -> 
     	if (listString == "") {
-        	listString += state.hiveHeatingDevices[childDevice]
+        	if (null != state.hiveHeatingDevices) {
+        		listString += state.hiveHeatingDevices[childDevice]
+            }
         }
         else {
-        	listString += "\n" + state.hiveHeatingDevices[childDevice]
+        	if (null != state.hiveHeatingDevices) {
+        		listString += "\n" + state.hiveHeatingDevices[childDevice]
+            }
         }
     }
     selectedHotWater.each { childDevice -> 
     	if (listString == "") {
-        	listString += state.hiveHotWaterDevices[childDevice]
+        	if (null != state.hiveHotWaterDevices) {
+        		listString += state.hiveHotWaterDevices[childDevice]
+            }
         }
         else {
-        	listString += "\n" + state.hiveHotWaterDevices[childDevice]
+        	if (null != state.hiveHotWaterDevices) {
+        		listString += "\n" + state.hiveHotWaterDevices[childDevice]
+            }
         }
     }
     return listString
