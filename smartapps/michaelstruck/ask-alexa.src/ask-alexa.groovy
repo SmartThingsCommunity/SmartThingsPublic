@@ -1,27 +1,13 @@
 /**
  *  Ask Alexa 
  *
- *  Version 2.1.0 - 8/7/16 Copyright © 2016 Michael Struck
+ *  Version 2.1.1 - 8/17/16 Copyright © 2016 Michael Struck
  *  Special thanks for Keith DeLong for overall code and assistance and Barry Burke for Weather Underground Integration
  * 
- *  Version 1.0.0 - Initial release
- *  Version 1.0.0a - Same day release. Bugs fixed: nulls in the device label now trapped and ensure LIST_OF_PARAMS and LIST_OF_REPORTS is always created
- *  Version 1.0.0b - Remove punctuation from the device, mode and routine names. Fixed bug where numbers were removed in modes and routine names 
- *  Version 1.0.1c - Added presense sensors; added up/down/lower/increase/decrease as commands for various devices
- *  Version 1.0.2b - Added motion sensors and a new function, "events" to list to the last events for a device; code optimization, bugs removed
- *  Version 1.1.0a - Changed voice reports to macros, added toggle commands to switches, bug fixes and code optimization
- *  Version 1.1.1d - Added limits to temperature and speaker values; additional macros device types added
- *  Version 1.1.2 (6/5/16) Updated averages of temp/humidity with proper math function
- *  Version 2.0.0b (6/10/16) Code consolidated from Parent/Child to a single code base. Added CoRE Trigger and CoRE support. Many fixes
- *  Version 2.0.1 (6/12/16) Fixed issue with listing CoRE macros; fixed syntax issues and improved acknowledgment message in Group Macros, more CoRE output behind-the-scenes
- *  Version 2.0.2a (6/17/16) Added %delay% macro for custom acknowledgment for pre/post text areas, dimmer/group fixes and added lunar phases (thanks again to Barry Burke), 2nd level acknowledgments in Alexa
- *  Version 2.0.3a (6/21/16) Filter of power meters in reports. Added Weather Advisories.
- *  Version 2.0.4 (7/8/16) Code fixes/optimizations, added additional options for secondary responses
- *  Version 2.0.5 (7/9/16) Fix for null String issues
- *  Version 2.0.6 (7/14/16) Syntax fixes, additional filters on voice reports, expanded secondary responses, CoRE Macro fix
- *  Version 2.0.7b (7/23/16) Small code/syntax/interface fixes, code optimization. Allows you to place an entry into the Notification Event Log when a macro is run. Fixed CoRE Macro activation logic
- *  Version 2.0.8c (8/2/16) Restructured code to allow future personality features; fixed thermostat heating/cooling logic; added minium value command to theromstat, added tide information; added window shade control
+ *  Version information prior to 2.1.0 listed here: https://github.com/MichaelStruck/SmartThingsPublic/blob/master/smartapps/michaelstruck/ask-alexa.src/Ask%20Alexa%20Version%20History.md
+ *
  *  Version 2.1.0 (8/7/16) Code fixes/optimization, added moon rise/set, added Courtesy personality; added 'easter egg' command for thermostats:AC
+ *  Version 2.1.1 (8/17/16) Added SONOS code to allow for memory slots; added Snarky personality; allow for PINs used in macros
  *
  *  Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except
  *  in compliance with the License. You may obtain a copy of the License at:
@@ -53,6 +39,8 @@ preferences {
         page name:"pageDoors"
         page name:"pageTemps"
         page name:"pageSpeakers"
+        	page name: "pageMemorySlots"
+            	page name: "pageSONOSReset"
         page name:"pageSensors"
         page name:"pageHomeControl"
         page name:"pageMacros"
@@ -98,7 +86,7 @@ def mainPageParent() {
             }
         }
         section("Items to interface to Alexa") {
-        	href "pageSwitches", title: "Switches/Dimmers/Colored Lights", description: getDesc(switches, dimmers ,cLights, ""), state: (switches || dimmers || cLights ? "complete" : null),
+        	href "pageSwitches", title: "Switches/Dimmers/Colored Lights", description:getDesc(switches, dimmers ,cLights, "") , state: (switches || dimmers || cLights ? "complete" : null),
             	image: "https://raw.githubusercontent.com/MichaelStruck/SmartThingsPublic/master/img/power.png"
             href "pageDoors", title: "Doors/Windows/Locks", description: getDesc(doors, locks, ocSensors, shades), state: (doors || locks || ocSensors || shades ? "complete" : null),
             	image: "https://raw.githubusercontent.com/MichaelStruck/SmartThingsPublic/master/img/lock.png"
@@ -167,10 +155,22 @@ def pageSpeakers(){
         section {paragraph "Connected Speakers", image: "https://raw.githubusercontent.com/MichaelStruck/SmartThingsPublic/master/img/speaker.png"}
         section("Choose the devices to interface") {
             input "speakers", "capability.musicPlayer", title: "Choose Speakers (Speaker Control, Status)", multiple: true, required: false 
+        	if (sonosCMD && speakers) {
+            	href "pageMemorySlots", title: "SONOS Memory Slots", description: memoryDesc(), state: memoryState()
+            }
+        }	
+    }
+}
+def pageMemorySlots(){
+    dynamicPage(name: "pageMemorySlots") {
+        section {paragraph "SONOS Memory Slots", image: "https://raw.githubusercontent.com/MichaelStruck/SmartThingsPublic/master/img/music.png"}
+        def songList = songOptions()
+        for (int i=1; i<5; i++){
+            section ("Memory slot ${i}"){
+                input "sonosSlot${i}Name", "text", title: "Memory Slot ${i} Name", required: false
+                input "sonosSlot${i}Music", "enum", title: "Song/Channel", required:false, multiple: false, options: songList
+            }
         }
-        section("Speaker Control"){
-        	paragraph "Speaker control consists of the following:\nPlay, Stop, Pause\nMute, Un-mute\nNext Track, Previous Track\nLevel (Volume)"
-		}
     }
 }
 def pageSensors(){
@@ -295,9 +295,14 @@ def pageContCommands(){
             input "contMacro", "bool", title: "After Macro Execution", defaultValue: false
 		}
         section ("Personality"){
-			input "Personality", "enum", title: "Response Personality Style", options: ["Normal","Courtesy"], defaultValue: "Normal", submitOnChange: true
-            input "personalName", "text", title: "Name To Address You By (Optional)", description: "%people% variable is available if set up", required: false 
-		}
+			input "Personality", "enum", title: "Response Personality Style", options: ["Normal","Courtesy","Snarky"], defaultValue: "Normal", submitOnChange: true
+            input "personalName", "text", title: "Name To Address You By (Optional)", description: "%people% variable is available if set up", required: false
+            if (Personality=="Snarky") input "randomSnarkName", "bool", title: "Randomize Snarky Response Name", defaultValue: false, submitOnChange: true
+			if (Personality=="Snarky" && randomSnarkName){
+            	input "snarkName1", "text", title: "Random Snarky Name 1", description: "Knucklehead", required: false
+                input "snarkName2", "text", title: "Random Snarky Name 2", description: "Silly", required: false
+			}
+        }
         section("Other Options"){
         	input "invocationName", title: "Invocation Name (Only Used For Examples)", defaultValue: "SmartThings", required: false
         }
@@ -308,7 +313,22 @@ def pageCustomDevices(){
 		section("Device Specific Commands"){
             input "nestCMD", "bool", title: "Allow Nest-Specific Thermostat Commands (Home/Away)", defaultValue: false
             input "stelproCMD", "bool", title: "Stelpro Baseboard Thermostat Controls (Eco/Comfort)", defaultValue:false
-    	}
+            input "sonosCMD", "bool", title: "SONOS Memory Slots", defaultValue: false, submitOnChange: true
+            if (sonosCMD) paragraph "To reset the database of SONOS songs listed in the memory slots, tap the area below. "+
+     			"It is recommended you do this ONLY if you are having issues playing the songs in the list. The database will be "+
+                "rebuilt from the recently played songs from the speakers upon exiting the SmartApp."
+            if (sonosCMD) href "pageSONOSReset", title: "Reset Song Database", description: "Tap to reset database",
+                    image: "https://raw.githubusercontent.com/MichaelStruck/SmartThingsPublic/master/img/warning.png"
+		}
+	}
+}
+def pageSONOSReset(){
+    dynamicPage(name: "pageSONOSReset",title: "Song Database Reset", uninstall: false){
+		state.songLoc = []
+    	section{
+			paragraph "The SONOS song database has been reset. It is recommended you now go into the memory slots, choose the "+
+        	"songs you wish to play in each slot, then properly exit the SmartApp. This will rebuild the database."
+		}
 	}
 }
 def pageLimitValue(){
@@ -408,8 +428,8 @@ def pageGroup() {
             	["switch":"Switch (On/Off/Toggle)"],["thermostat":"Thermostat (Mode/Off/Setpoint)"],["windowShade": "Window Shades (Open/Close)"]],required: false, multiple: false, submitOnChange:true
     		if (groupType) input "groupDevice${groupType}", "capability.${groupType}", title: "Choose devices...", required: false, multiple: true, submitOnChange:true
         	if (((groupType == "doorControl" && parent.pwNeeded) || (groupType=="lock" && parent.pwNeeded)) && settings."groupDevice${groupType}" ){
-        	input "usePW", "bool", title: "Require PIN For Actions", defaultValue: false
-        }
+        		input "usePW", "bool", title: "Require PIN For Actions", defaultValue: false
+        	}	
         }
         if (groupType == "thermostat"){
         	section ("Thermostat Group Options"){
@@ -430,6 +450,9 @@ def pageCoRE() {
 		section (" "){
    			input "CoREName", "enum", title: "Choose CoRE Piston", options: parent.state.CoREPistons, required: false, multiple: false
         	input "cDelay", "number", title: "Default Delay (Minutes) To Trigger", defaultValue: 0, required: false
+            if (parent.pwNeeded){
+        		input "usePW", "bool", title: "Require PIN To Run This CoRE Macro", defaultValue: false
+        	}
         }
         section("Custom acknowledgment"){
              if (!noAck) input "voicePost", "text", title: "Acknowledgment Message", description: "Enter a short statement to play after macro runs", required: false, capitalization: "sentences"
@@ -449,6 +472,9 @@ def pageGroupM() {
 		section { paragraph "Macro Group Settings", image: "https://raw.githubusercontent.com/MichaelStruck/SmartThingsPublic/master/img/macrofolder.png" }
         section (" ") { 
         	input "groupMacros", "enum", title: "Child Macros To Run (Control/CoRE/Voice Reports)...", options: parent.getMacroList(app.label), required: false, multiple: true
+        	if (parent.pwNeeded){
+        		input "usePW", "bool", title: "Require PIN To Run This Macro", defaultValue: false
+        	}
         }
         section("Acknowledgment options"){ 
             if (!noAck) input "voicePost", "text", title: "Custom Acknowledgment Message", description: "Enter a short statement to play after group macro runs", required: false, capitalization: "sentences"
@@ -483,6 +509,9 @@ def pageControl() {
                 input "pushMsg", "bool", title: "Send Push Message", defaultValue: false
             }
             input "smsMsg", "text", title: "Send This Message...", required: false, capitalization: "sentences"
+            if (parent.pwNeeded){
+        		input "usePW", "bool", title: "Require PIN To Run This Macro", defaultValue: false
+        	}
         }
         section("Custom acknowledgment"){
              if (!noAck) input "voicePost", "text", title: "Acknowledgment Message", description: "Enter a short statement to play after macro runs", required: false, capitalization: "sentences"
@@ -759,10 +788,12 @@ def initialize() {
         if (!state.accessToken) log.error "Access token not defined. Ensure OAuth is enabled in the SmartThings IDE."
         fillColorSettings()
         subscribe(location, "CoRE", coreHandler)
+        if (sonosCMD && ((sonosSlot1Name && sonosSlot1Music) || (sonosSlot2Name && sonosSlot2Music) || (sonosSlot3Name && sonosSlot3Music) ||
+        	(sonosSlot4Name && sonosSlot4Music ))) songLocations()
 	}
     else{
     	unschedule()
-    	state.scheduled=false
+    	state.scheduled=false 
     }
 	sendLocationEvent(name: "askAlexa", value: "refresh", data: [macros: parent ? parent.getCoREMacroList() : getCoREMacroList()] , isStateChange: true, descriptionText: "Ask Alexa macro list refresh")
 }
@@ -786,11 +817,18 @@ def processBegin(){
     def OOD = LambdaVersion < LambdaReq() ? "true" : null
     def persType = Personality ? Personality : "Normal"
     def pName = personalName ? personalName.replaceAll("%people%", getVariableList().people) : ""
+    if (randomSnarkName) {
+    	def newPName = []
+        def newSName1 = snarkName1 ? snarkName1 : ""
+        def newSName2 = snarkName2 ? snarkName2 : ""
+    	newPName << pName << newSName1 << newSName2
+        pName = newPName[Math.abs(new Random().nextInt() % 3)]
+    }
     def contOption = contError ? "1" : "0"
     contOption += contStatus ? "1" : "0"
     contOption += contAction ? "1" : "0"
     contOption += contMacro ? "1" : "0"
-    return ["OOD":OOD, "continue":contOption,"personality":persType, "SmartAppVer": versionLong(),"IName":invocationName,"pName":pName ]
+    return ["OOD":OOD, "continue":contOption,"personality":persType, "SmartAppVer": versionLong(),"IName":invocationName,"pName":pName]
 }
 def sendJSON(outputTxt){
     log.debug outputTxt
@@ -942,7 +980,7 @@ def processMacroGroup(macroList, msg, append, noMsg, macLabel,macFeed,macFeedDat
         macroList.each{
             childApps.each{child->
                 if (child.label.toLowerCase().replaceAll("[^a-zA-Z0-9 ]", "") == (it.toLowerCase().replaceAll("[^a-zA-Z0-9 ]", ""))){ 
-                    result += child.getOkToRun() ? child.macroResults(0,"","","")  : child.muteRestrictions ? "" : "You have restrictions on '${child.label}' that prevented it from running. %1%"             
+                    result += child.getOkToRun() ? child.macroResults(0,"","","","")  : child.muteRestrictions ? "" : "You have restrictions on '${child.label}' that prevented it from running. %1%"             
                     runCount++
                     if (result.endsWith("%")) result = result.take(result.length()-3)
                 }
@@ -974,10 +1012,12 @@ def processMacro() {
     def mNum = params.Num		//Number variable-Typically delay to run
     def cmd = params.Cmd		//Group Command
     def param = params.Param	//Parameter
+    def mPW = params.MPW		//Macro Password
     log.debug "Macro Name: " + mac
     log.debug "mNum: " + mNum
     log.debug "Cmd: " + cmd
     log.debug "Param: " + param
+    log.debug "mPW: " + mPW
     if (mNum == "0" && cmd=="undefined" && param == "undefined") cmd="off"
     def num = mNum == "undefined" ? 0 : mNum as int
     String outputTxt = ""
@@ -991,18 +1031,29 @@ def processMacro() {
     def getColorData = state.colorData.find {it.name.toLowerCase()==param}
     if (getColorData){
         def hueColor = getColorData.hue, satLevel = getColorData.sat
-        colorData = [hue: hueColor as int, saturation: satLevel as int, level: num] 
+        colorData = [hue: hueColor as int, saturation: satLevel as int] 
     }
 	def count = getChildApps().count {it.label.toLowerCase().replaceAll("[^a-zA-Z0-9 ]", "") == mac.toLowerCase()}
-    if ((cmd == "lock" || cmd == "unlock" || cmd == "close" || cmd == "open") && pwNeeded) param = password as int
     if (!err){
         if (count == 1){
+            def pwPass = true
             def child = getChildApps().find {it.label.toLowerCase().replaceAll("[^a-zA-Z0-9 ]", "") == mac.toLowerCase()}
-            playContMsg = child.overRideMsg ? false : true
-            def fullMacroName = [GroupM: "Macro Group",CoRE: "CoRE Trigger", Control:"Control Macro", Group:"Device Group", Voice:"Voice Report"][child.macroType] ?: child.macroType
-            if (child.macroType != "GroupM") outputTxt = child.getOkToRun() ? child.macroResults(num, cmd, colorData, param) : "You have restrictions within the ${fullMacroName} named, '${child.label}', that prevent it from running. Check your settings and try again. %1%"
-            else outputTxt = processMacroGroup(child.groupMacros, child.voicePost, child.addPost, child.noAck, child.label, child.noteFeed, child.noteFeedData)   
-        }
+            if (child.usePW && pwNeeded && password && mPW != password && ((child.macroType == "Group" && child.groupType == "lock") || child.macroType == "GroupM" ||
+            	(child.macroType == "Group" && child.groupType == "doorControl") || child.macroType == "Control" || child.macroType == "CoRE")){
+                pwPass = false
+                if (child.macroType == "Group" && child.groupType == "lock") outputTxt = "To lock or unlock a group, you must use the proper password. %1%"
+				if (child.macroType == "Group" && child.groupType == "doorControl") outputTxt = "To open or close a group, you must use the proper password. %1%"
+                if (child.macroType == "CoRE") outputTxt = "To activate a Core Trigger, you must use the proper password. %1%"
+                if (child.macroType == "Control") outputTxt = "To activate a Control Macro, you must use the proper password. %1%"
+                if (child.macroType == "GroupM") outputTxt = "To activate a Group Macro, you must use the proper password. %1%"
+			}
+            if (pwPass){
+            	playContMsg = child.overRideMsg ? false : true
+            	def fullMacroName = [GroupM: "Macro Group",CoRE: "CoRE Trigger", Control:"Control Macro", Group:"Device Group", Voice:"Voice Report"][child.macroType] ?: child.macroType
+            	if (child.macroType != "GroupM") outputTxt = child.getOkToRun() ? child.macroResults(num, cmd, colorData, param, mNum) : "You have restrictions within the ${fullMacroName} named, '${child.label}', that prevent it from running. Check your settings and try again. %1%"
+            	else outputTxt = processMacroGroup(child.groupMacros, child.voicePost, child.addPost, child.noAck, child.label, child.noteFeed, child.noteFeedData)   
+        	}
+		}
         if (count > 1) outputTxt ="You have duplicate macros named '${mac}'. Please check your SmartApp to fix this conflict. %1%"
         if (!count) { outputTxt = "I could not find a macro named '${mac}'. %1%" }
     }
@@ -1184,9 +1235,8 @@ def getReply(devices, type, dev, op, num, param){
                     if (param =="home" && nestCMD) {result = "I am setting the ${STdevice} to 'home'. "; STdevice.present()} 
                     if (param =="away" && nestCMD) {result = "I am setting the ${STdevice} to 'away'. Please note that Nest thermostats will not temperature changes while in 'away' status. "; STdevice.away()} 
                     if (op =="off") {result = "I am turning the ${STdevice} ${op}. "; STdevice.off()}
-                    if (stelproCMD && param=="eco"){ result="I am setting the ${STdevice} to 'eco' mode. "; STdevice.setThermostatMode("eco") }
-                    if (stelproCMD && param=="comfort"){ result="I am setting the ${STdevice} to 'comfort' mode. "; STdevice.setThermostatMode("comfort") }
-                }
+                    if (stelproCMD && (param=="eco" || param=="comfort")) { result="I am setting the ${STdevice} to '${param}' mode. "; STdevice.setThermostatMode("${param}") }
+				}
                 else {
                     if (param == "undefined"){ 
                         if (STdevice.currentValue("thermostatMode")=="heat") param = "heat"
@@ -1276,7 +1326,29 @@ def getReply(devices, type, dev, op, num, param){
                 }
                 if ((num != 0 && speakerHighLimit && num > speakerHighLimit)|| (op=="maximum" && speakerHighLimit)) num = speakerHighLimit    
                 if (op=="off" || op=="stop") { STdevice.stop(); result = "I am turning off the ${STdevice}. " }
-                else if (op == "play" || op=="on") { STdevice.play(); result = "I am playing the ${STdevice}. " }
+                else if ((op == "play" || op=="on") && param=="undefined") { 
+                	STdevice.play()
+                    result = "I am playing the ${STdevice}. " 
+                }
+                else if ((op == "play" || op=="on") && param!="undefined") { 
+                	if (sonosCMD){
+                        if ((sonosSlot1Name && sonosSlot1Music) || (sonosSlot2Name && sonosSlot2Music) || (sonosSlot3Name && sonosSlot3Music) ||(sonosSlot4Name && sonosSlot4Music)){
+                            def song = ""
+                            if (sonosSlot1Name && sonosSlot1Name.replaceAll("[^a-zA-Z0-9 ]", "").toLowerCase() == param) song = sonosSlot1Music 
+                            if (sonosSlot2Name && sonosSlot2Name.replaceAll("[^a-zA-Z0-9 ]", "").toLowerCase() == param) song = sonosSlot2Music
+                            if (sonosSlot3Name && sonosSlot3Name.replaceAll("[^a-zA-Z0-9 ]", "").toLowerCase() == param) song = sonosSlot3Music
+                            if (sonosSlot4Name && sonosSlot4Name.replaceAll("[^a-zA-Z0-9 ]", "").toLowerCase() == param) song = sonosSlot4Music
+                            def playSong = state.songLoc.find{it.station==song}
+                            if (playSong){
+                                STdevice.playTrack(playSong)
+                                result = "I am playing '${song}' on the ${STdevice}. "
+                            }
+                            else result = "I could not play the song you requested. Check your Sonos memory slots in the SmartApp. %1%"
+                        }
+                        else result = "You don't have any music set up in the Sonos memory slot in your Ask Alexa SmartApp. %1%"
+                    }
+                    else result = "You do not have the Sonos memory slots enable in your SmartApp. %1%"
+                }
                 else if (op=="mute") { STdevice.mute(); result = "I am muting the ${STdevice}. " }
                 else if (op=="unmute") { STdevice.unmute(); result = "I am unmuting the ${STdevice}. " }
                 else if (op=="pause") { STdevice.pause(); result = "I am pausing the ${STdevice} speaker. " }
@@ -1351,12 +1423,12 @@ def displayData(){
 	render contentType: "text/html", data: """<!DOCTYPE html><html><head><meta charset="UTF-8" /><meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=0"/></head><body style="margin: 0;">${setupData()}</body></html>"""
 }
 //Child code pieces here---Macro Handler-------------------------------------
-def macroResults(num, cmd, colorData, param){ 
+def macroResults(num, cmd, colorData, param,mNum){ 
 	String result="", feedData=""
     def data
     if (macroType == "Voice") result = reportResults()      
     if (macroType == "Control") result = controlResults(num)
-    if (macroType == "Group") result = groupResults(num, cmd, colorData, param)
+    if (macroType == "Group") result = groupResults(num, cmd, colorData, param, mNum)
 	if (macroType == "CoRE") result = CoREResults(num)
     else if (macroType == "Voice" || macroType == "Group") {
     	data = [alexaOutput: result, num: num, cmd: cmd, color: colorData, param:param]
@@ -1367,7 +1439,7 @@ def macroResults(num, cmd, colorData, param){
     return result
 }
 //Group Handler
-def groupResults(num, op, colorData, param){   
+def groupResults(num, op, colorData, param, mNum){   
     String result= "", noun, valueWord, proNoun, verb
     proNoun = settings."groupDevice${groupType}".size()==1 ? "its" : "their"
     if (groupType=="colorControl" || groupType=="switchLevel"){
@@ -1385,12 +1457,14 @@ def groupResults(num, op, colorData, param){
         if (groupType=="switchLevel") noun=settings."groupDevice${groupType}".size()==1 ? "dimmer" : "dimmers"
         if (groupType=="colorControl") noun=settings."groupDevice${groupType}".size()==1 ? "colored light" : "colored lights"
         verb=settings."groupDevice${groupType}".size()==1 ? "is" : "are"
-        if (num==0 && op=="undefined") op="off"
+        log.debug mNum
+        if (num==0 && op=="undefined" && param=="undefined" && mNum!="undefined") op="off"
         if (op=="on" || op=="off"){ settings."groupDevice${groupType}"?."$op"();result = voicePost ? replaceVoiceVar(voicePost,"") : noAck ? " " :  "I am turning ${op} the ${noun} in the group named '${app.label}'. "}
         else if (op == "toggle") { toggleState(settings."groupDevice${groupType}");result = voicePost ? replaceVoiceVar(voicePost,"") : noAck ? " " : "I am toggling the ${noun} in the group named '${app.label}'. " }
 		else if (groupType=="switchLevel" && num > 0 && op =="undefined") { settings."groupDevice${groupType}"?.setLevel(num); result = voicePost ? replaceVoiceVar(voicePost,"") : noAck ? " " : "I am setting the ${noun} in the ${app.label} to ${valueWord}. " }
 		else if (groupType=="colorControl" && num > 0 && !colorData && op =="undefined") { settings."groupDevice${groupType}"?.setLevel(num); result = voicePost && !noAck  ? replaceVoiceVar(voicePost,"") :  noAck ? " " :"I am setting the ${noun} in the '${app.label}' group to ${valueWord}. " }
-        else if (groupType=="colorControl" && colorData && param) { 
+        else if (groupType=="colorControl" && colorData && param) {
+        	if (num>0) colorData = [hue:colorData.hue, saturation: colorData.saturation, level: num]
         	settings."groupDevice${groupType}"?.setColor(colorData)
             if (!voicePost && !noAck){
             	result ="I am setting the ${noun} in the ${app.label} to ${param}"
@@ -1427,23 +1501,17 @@ def groupResults(num, op, colorData, param){
     else if (groupType=="lock"){
         noun=settings."groupDevice${groupType}".size()==1 ? "device" : "devices"
 		if ((op == "lock"|| op == "unlock")){         
-            if ((param !="undefined" && param == num && usePW && parent.pwNeeded) || !usePW || !parent.pwNeeded){
-				settings."groupDevice${groupType}"?."$op"()
-		 		result = voicePost && !noAck ? replaceVoiceVar(voicePost,"") : noAck ? " " : "I am ${op}ing the ${noun} in the group named '${app.label}'. " 
-			}
-			else result = "To lock or unlock a group, you must use the proper password. %1%"
-        }
-		else { result = "For a lock group, you must use a 'lock' or 'unlock' command. %1%" }
+			settings."groupDevice${groupType}"?."$op"()
+			result = voicePost && !noAck ? replaceVoiceVar(voicePost,"") : noAck ? " " : "I am ${op}ing the ${noun} in the group named '${app.label}'. " 
+		}
+		else result = "For a lock group, you must use a 'lock' or 'unlock' command. %1%" 
     }
     else if (groupType=="doorControl"){
      	noun=settings."groupDevice${groupType}".size()==1 ? "door" : "doors"
         if (op == "open"|| op == "close" ){
-        	if ((param !="undefined" && param == num && usePW && parent.pwNeeded) || !usePW || !parent.pwNeeded){
-            	settings."groupDevice${groupType}"?."$op"()
-            	def condition = op=="close" ? "closing" : "opening"
-            	result = voicePost && !noAck  ? replaceVoiceVar(voicePost,"") : noAck ? " " :  "I am ${condition} the ${noun} in the group named '${app.label}'. "
-        	}
-            else result = "To open or close a group of doors, you must use the proper password. %1%"
+			settings."groupDevice${groupType}"?."$op"()
+			def condition = op=="close" ? "closing" : "opening"
+			result = voicePost && !noAck  ? replaceVoiceVar(voicePost,"") : noAck ? " " :  "I am ${condition} the ${noun} in the group named '${app.label}'. "
         }
         else result = "For a door group, you must use an 'open' or 'close' command. %1%"
     }
@@ -1544,11 +1612,17 @@ def controlResults(sDelay){
 		if (sDelay == 9999) { 
         	result = "I am cancelling all scheduled executions of the control macro, '${app.label}'. "  
             state.scheduled = false
-            unschedule() 
+            def data = [args: "I am cancelling the timer for Control Macro: '${app.label}'."]
+    		sendLocationEvent(name: "askAlexaMacro", value: app.label, data: data, displayed: true, isStateChange: true, descriptionText: "Ask Alexa cancelled '${app.label}' macro timer.")	
+        	unschedule()
         }
 		if (!state.scheduled) {
         	if (!delay || delay == 0) controlHandler() 
-            else if (delay < 9999) { runIn(delay*60, controlHandler, [overwrite: true]) ; state.scheduled=true}
+            else if (delay < 9999) {
+            	def data = [args: "I am starting the timer for Control Macro: '${app.label}'."]
+    			sendLocationEvent(name: "askAlexaMacro", value: app.label, data: data, displayed: true, isStateChange: true, descriptionText: "Ask Alexa started '${app.label}' macro timer for ${delay} minute(s).")	
+            	runIn(delay*60, controlHandler, [overwrite: true]) ; state.scheduled=true
+            }
             if (delay < 9999) result = voicePost && !noAck ? replaceVoiceVar(voicePost, delay) : noAck ? "" : result
 		}
         else result = "The control macro, '${app.label}', is already scheduled to run. You must cancel the execution or wait until it runs before you can run it again. %1%"
@@ -1942,14 +2016,16 @@ def getTimeLabel(start, end){
 }
 def macroTypeDesc(){
 	def desc = ""
+    def PIN = (macroType =="CoRE" || macroType == "Control" || (macroType == "Group" && groupType == "lock") || macroType=="GroupM" ||
+    	(macroType == "Group" && groupType == "doorControl") || desc) && usePW ? " - PIN Required" : ""
     def customAck = !noAck && !voicePost ? "; uses standard acknowledgment message" : !noAck  && voicePost ? "; includes a custom acknowledgment message" :  "; there will be no acknowledgment messages"
     if (macroType == "Control" || macroType =="CoRE") customAck += cDelay>1 ? "; activates ${cDelay} minutes after triggered" : cDelay==1 ? "; activates one minute after triggered" : ""
-    if (macroType == "Control" && (phrase || setMode || SHM || getDeviceDesc() != "Status: UNCONFIGURED - Tap to configure" || 
+    if (macroType == "Control" && (phrase || setMode || SHM || getDeviceDesc() != "Status: UNCONFIGURED${PIN} - Tap to configure" || 
     	getHTTPDesc() !="Status: UNCONFIGURED - Tap to configure" || (contacts && smsMsg) || (smsNum && pushMsg && smsMsg))) 
-        	desc= "Control Macro CONFIGURED${customAck} - Tap to edit" 
+        	desc= "Control Macro CONFIGURED${customAck}${PIN} - Tap to edit" 
     if (macroType =="Voice" && (voicePre || voiceSwitch || voiceDimmer || voiceDoorSensors || voiceDoorControls || voiceDoorLocks || 
     	voiceTemperature ||  voiceTempSettings || voiceTempVar || voiceHumidVar || voiceHumidity || greyOutWeather()=="complete" ||
-        voiceWater || voiceMotion || voicePresence || voiceBattery || voicePost || voiceMode || voiceSHM)) { 
+        voiceWater || voiceMotion || voicePresence || voiceBattery || voicePost || voiceMode || voiceSHM || voicePower)) { 
         	desc= "Voice Report CONFIGURED - Tap to edit" 
 	}
 	if (macroType =="Group" && groupType && settings."groupDevice${groupType}") {
@@ -1958,15 +2034,15 @@ def macroTypeDesc(){
         if (parent.stelproCMD && groupType=="thermostat") customAck = "- Accepts Stelpro baseboard heater commands" + customAck
         if (parent.nestCMD && groupType=="thermostat") customAck = "- Accepts Nest 'Home'/'Away' commands" + customAck
         customAck = tstatDefaultHeat && groupType=="thermostat" ? "- Sends heating setpoint by default" + customAck : tstatDefaultCool && groupType=="thermostat" ? "- Sends cooling setpoint by default" + customAck : customAck
-        desc = "${groupDesc} CONFIGURED with ${countDesc}${customAck} - Tap to edit" 
+        desc = "${groupDesc} CONFIGURED with ${countDesc}${customAck}${PIN} - Tap to edit" 
     }
     if (macroType =="GroupM" &&  groupMacros) {
         customAck += addPost && !noAck ? " appended to the child macro messages" : noAck ? "" : " replacing the child macro messages"
         def countDesc = groupMacros.size() == 1 ? "one macro" : groupMacros.size() + " macros"
-        desc = "Macro Group CONFIGURED with ${countDesc}${customAck} - Tap to edit" 
+        desc = "Macro Group CONFIGURED with ${countDesc}${customAck}${PIN} - Tap to edit" 
     }
     if (macroType =="CoRE" && CoREName) {
-        desc = "Trigger '${CoREName}' piston${customAck} - Tap to edit" 
+        desc = "Trigger '${CoREName}' piston${customAck}${PIN} - Tap to edit" 
     }
     desc = desc ? desc : "Status: UNCONFIGURED - Tap to configure macro"
 }
@@ -2290,9 +2366,7 @@ private getWeatherReport(){
     return msg
 }
 private getWeatherForecast(){
-    def msg = ""
-	def sb = new StringBuilder()
-    def isMetric = location.temperatureScale == 'C'
+    def msg = "", sb = new StringBuilder(), isMetric = location.temperatureScale == 'C'
 	Map weather = getWeatherFeature('forecast', zipCode)
     if ((weather == null) || weather.response.containsKey('error')) return "There was an error in the weather data received Weather Underground. "
     if (voiceWeatherToday  || voiceWeatherTonight || voiceWeatherTomorrow ){
@@ -2344,11 +2418,11 @@ def getMoonInfo(){
 	Integer cur_hour = astronomy.moon_phase.current_time.hour.toInteger()				// get time at requested location
 	Integer cur_min = astronomy.moon_phase.current_time.minute.toInteger()				// may not be the same as the SmartThings hub location
 	Integer cur_mins = (cur_hour * 60) + cur_min
-    Integer rise_hour = astronomy.moon_phase.moonrise.hour.toInteger()
-    Integer rise_min = astronomy.moon_phase.moonrise.minute.toInteger()
-    Integer rise_mins = (rise_hour * 60) + rise_min
-    Integer set_hour = astronomy.moon_phase.moonset.hour.toInteger()
-    Integer set_min = astronomy.moon_phase.moonset.minute.toInteger()
+    Integer rise_hour = astronomy.moon_phase.moonrise.hour.isInteger()? astronomy.moon_phase.moonrise.hour.toInteger() : -1
+	Integer rise_min = astronomy.moon_phase.moonrise.minute.isInteger()? astronomy.moon_phase.moonrise.minute.toInteger() : -1
+	Integer rise_mins = (rise_hour * 60) + rise_min
+	Integer set_hour = astronomy.moon_phase.moonset.hour.isInteger()? astronomy.moon_phase.moonset.hour.toInteger() : -1
+	Integer set_min = astronomy.moon_phase.moonset.minute.isInteger()? astronomy.moon_phase.moonset.minute.toInteger() : -1
     Integer set_mins = (set_hour * 60) + set_min
     String verb1 = cur_mins >= rise_mins ? 'rose' : 'will rise'
     String verb2 = cur_mins >= set_mins ? 'set' : 'will set'
@@ -2363,7 +2437,9 @@ def getMoonInfo(){
     String riseTxt = "${verb1} at ${rise_hour}:${rise_minTxt} ${rise_ampm}"
     String setTxt =  "${verb2} at ${set_hour}:${set_minTxt} ${set_ampm}"
     msg += 'The moon '
-    msg += rise_mins < set_mins ? "${riseTxt} and ${setTxt}. " : "${setTxt} and ${riseTxt}. "    
+	if (set_mins < 0) msg += "${riseTxt}. "  
+	else if (rise_mins < 0) msg += "${setTxt}. "
+	else msg += rise_mins < set_mins ? "${riseTxt} and ${setTxt}. " : "${setTxt} and ${riseTxt}. "    
     def moon = astronomy.moon_phase
     def m = moon.ageOfMoon.toInteger()
     sss = m == 1 ? "" : "s"
@@ -2517,24 +2593,22 @@ def weatherAlerts(){
 }
 private tideInfo() {
 	String msg = ""
-    Map tideMap = getWeatherFeature('tide', zipCode)
-    if ((tideMap == null) || tideMap.response.containsKey('error')) return "There was an error in the tide data received Weather Underground. "
-	def tideSite = tideMap.tide.tideInfo.tideSite.join(",").replaceAll(',', '' )
+    Map wdata = getWeatherFeature("tide/astronomy", zipcode)
+    if ((wdata == null) || wdata.response.containsKey('error')) return "There was an error in the tide data received Weather Underground. "
+	def tideSite = wdata.tide.tideInfo.tideSite.join(",").replaceAll(',', '' )
 	if (tideSite == "") {
 		msg = "No tide station found near this location"
 		if (zipCode) msg += " (${zipCode}). " else msg+= '. '
 		return msg
 	}        
-	Map astronomy = getWeatherFeature('astronomy', zipCode)
-	if ((astronomy == null) || astronomy.response.containsKey('error')) return "There was an error in the lunar data received Weather Underground. "
-	Integer cur_hour = astronomy.moon_phase.current_time.hour.toInteger()				// get time at requested location
-	Integer cur_minute = astronomy.moon_phase.current_time.minute.toInteger()			// may not be the same as the SmartThings hub location
+	Integer cur_hour = wdata.moon_phase.current_time.hour.toInteger()				// get time at requested location
+	Integer cur_minute = wdata.moon_phase.current_time.minute.toInteger()			// may not be the same as the SmartThings hub location
 	Integer cur_mins = (cur_hour * 60) + cur_minute
-	String timeZoneTxt = tideMap.tide.tideSummary[0].date.pretty.replaceAll(/\d+:\d+ .{2} (.{3}) .*/, /$1/)
+	String timeZoneTxt = wdata.tide.tideSummary[0].date.pretty.replaceAll(/\d+:\d+ .{2} (.{3}) .*/, /$1/)
 	Integer count = 0
     Integer index = 0
 	while (count < 4) {	
-		def tide = tideMap.tide.tideSummary[index]
+		def tide = wdata.tide.tideSummary[index]
         index ++
 		if ((tide.data.type == 'High Tide') || (tide.data.type == 'Low Tide')) {
 			count ++
@@ -2567,6 +2641,7 @@ private tideInfo() {
 			else msg += 'followed by '	
 			msg += tide.data.type + ' '
 			if (tide_hour > 12) tide_hour = tide_hour - 12
+            if (tide_hour==0) tide_hour = 12
             String tide_minTxt
             if (tide_min < 10) tide_minTxt = '0'+tide_min else tide_minTxt = tide_min                
 			if (count == 1) {
@@ -2617,6 +2692,48 @@ private setColoredLights(switches, color, level, type){
 	switches?.setColor(newValue)
 }
 //Common Code (Parent)---------------------------------
+private songOptions() {
+    if (speakers) {
+        def options = new LinkedHashSet()
+        state.songLoc.each { options << it.station }
+        speakers.each {speaker->
+            def states = speaker.statesSince("trackData", new Date(0), [max:30])
+            def dataMaps = states.collect{it.jsonValue}
+            dataMaps.station.each{ options << it }
+		}
+        options.take(20) as List
+    }
+}
+private songLocations(){
+    if (!state.songLoc) state.songLoc=[]
+    speakers.each{speaker->
+		for(int i = 1 ; i < 5 ; i++ ) {
+			if (settings."sonosSlot${i}Music" && settings."sonosSlot${i}Name"){
+            	def song = settings."sonosSlot${i}Music"
+            	def songs = speaker.statesSince("trackData", new Date(0), [max:30]).collect{it.jsonValue}
+            	def data = songs.find {s -> s.station == song}
+                if (data && !state.songLoc.find{it.station==song}){
+                	log.debug "I added the song " + settings."sonosSlot${i}Music" + " to the database."
+                    state.songLoc << data
+               }
+        	}
+    	}
+    }
+}
+def memoryState(){
+	def result = (sonosSlot1Name && sonosSlot1Music) ||(sonosSlot2Name && sonosSlot2Music) ||(sonosSlot3Name && sonosSlot3Music) ||(sonosSlot4Name && sonosSlot4Music) ? "complete" : ""
+}
+def memoryDesc(){
+	def result = "No memory slots configured - Tap to configure"
+    if ((sonosSlot1Name && sonosSlot1Music) ||(sonosSlot2Name && sonosSlot2Music) ||(sonosSlot3Name && sonosSlot3Music) ||(sonosSlot4Name && sonosSlot4Music)) {
+    	result = ""
+        for (int i =1; i<5 ;i++) {
+        	result += settings."sonosSlot${i}Name" && settings."sonosSlot${i}Music" ?  "Slot ${i} Name: " + settings."sonosSlot${i}Name" : ""
+        	if (i<4 && result && settings."sonosSlot${i+1}Name" && settings."sonosSlot${i+1}Music") result +="\n"
+        }
+    }
+    return result
+}
 def getMacroList(callingGrp){
     def result = []
     childApps.each{child->
@@ -2772,16 +2889,14 @@ def setupData(){
 	result += "heat<br>cool<br>heating<br>cooling<br>auto<br>automatic<br>AC<br>"
     if (tstats && stelproCMD) result += "eco<br>comfort<br>"
     if (tstats && nestCMD) result += "home<br>away<br>"
+    for (int i=1;i<5;i++){
+    	if (settings."sonosSlot${i}Name" && settings."sonosSlot${i}Music") result += settings."sonosSlot${i}Name".replaceAll("[^a-zA-Z0-9 ]", "").toLowerCase() +"<br>"
+    }
     if (cLights || childApps.size()) { fillColorSettings(); state.colorData.each {result += it.name.toLowerCase()+"<br>"}}
     result +="<br><b>LIST_OF_SHPARAM</b><br><br>"  
     if (listSHM || listRoutines || listModes){
         def SHPARAM =[]
-        if (listSHM){
-            if (listSHM.find {it=="Arm (Stay)"} || listSHM.find {it=="Arm (Away)"}) SHPARAM << "arm"
-            if (listSHM.find {it=="Arm (Stay)"}) { SHPARAM << "stay"; SHPARAM <<"armed stay" }
-            if (listSHM.find {it=="Arm (Away)"}) SHPARAM << "armed away"
-            if (listSHM.find {it=="Disarm"}) { SHPARAM << "disarm"; SHPARAM << "off" }
-        }
+        if (listSHM) SHPARAM << "arm" << "armed stay" << "armed away" << "disarm" << "off"
         if (listRoutines) listRoutines.each { if (it) SHPARAM << it.replaceAll("[^a-zA-Z0-9 ]", "").toLowerCase() }
         if (listModes) listModes.each { if (it) SHPARAM << it.replaceAll("[^a-zA-Z0-9 ]", "").toLowerCase() }
         duplicates = SHPARAM.findAll{SHPARAM.count(it)>1}.unique()
@@ -2809,13 +2924,13 @@ def fillTypeList(){
 //Version/Copyright/Information/Help-----------------------------------------------------------
 private def textAppName() { return "Ask Alexa" }	
 private def textVersion() {
-    def version = "SmartApp Version: 2.1.0 (08/07/2016)"
+    def version = "SmartApp Version: 2.1.1 (08/17/2016)"
     def lambdaVersion = state.lambdaCode ? "\n" + state.lambdaCode : ""
     return "${version}${lambdaVersion}"
 }
-private def versionInt(){ return 210 }
-private def LambdaReq() { return 120 }
-private def versionLong(){ return "2.1.0" }
+private def versionInt(){ return 211 }
+private def LambdaReq() { return 121 }
+private def versionLong(){ return "2.1.1" }
 private def textCopyright() {return "Copyright © 2016 Michael Struck" }
 private def textLicense() {
 	def text = "Licensed under the Apache License, Version 2.0 (the 'License'); you may not use this file except in compliance with the License. "+
