@@ -20,6 +20,9 @@
  *		   Send notification for specified daily cost level breach.
  *	v2.2.1 - Move external icon references to Github
  *
+ *	17.08.2016
+ *	v2.2.2 - Fix device failure on API timeout
+ *
  */
 definition(
 		name: "OVO Energy (Connect)",
@@ -94,13 +97,20 @@ def devicesSelected() {
 }
 
 def getDevicesSelectedString() {
+	if (state.smartMeterDevices == null) {
+    	updateDevices()
+    }
 	def listString = ""
 	selectedMeters.each { childDevice -> 
     	if (listString == "") {
-        	listString += state.smartMeterDevices[childDevice]
+        	if (null != state.smartMeterDevices) {
+        		listString += state.smartMeterDevices[childDevice]
+            }
         }
         else {
-        	listString += "\n" + state.smartMeterDevices[childDevice]
+        	if (null != state.smartMeterDevices) {
+        		listString += "\n" + state.smartMeterDevices[childDevice]
+            }
         }
     }
     return listString
@@ -489,14 +499,14 @@ def logErrors(options = [errorReturn: null, logObject: log], Closure c) {
 	try {
 		return c()
 	} catch (groovyx.net.http.HttpResponseException e) {
-		options.logObject.error("got error: ${e}, body: ${e.getResponse().getData()}")
+		log.error("got error: ${e}, body: ${e.getResponse().getData()}")
 		if (e.statusCode == 401) { // token is expired
 			state.remove("ovoAccessToken")
-			options.logObject.warn "Access token is not valid"
+			log.warn "Access token is not valid"
 		}
 		return options.errorReturn
 	} catch (java.net.SocketTimeoutException e) {
-		options.logObject.warn "Connection timed out, not much we can do here"
+		log.warn "Connection timed out, not much we can do here"
 		return options.errorReturn
 	}
 }
