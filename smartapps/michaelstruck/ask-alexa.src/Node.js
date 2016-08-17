@@ -1,7 +1,7 @@
 /**
  *  Ask Alexa - Lambda Code
  *
- *  Version 1.2.0a - 8/7/16 Copyright © 2016 Michael Struck
+ *  Version 1.2.1 - 8/14/16 Copyright © 2016 Michael Struck
  *  Special thanks for Keith DeLong for code and assistance 
  *  
  *  Version 1.0.0 - Initial release
@@ -15,6 +15,7 @@
  *  Version 1.1.6 - Minor code/syntax changes. Organized code to allow for more custom responses
  *  Version 1.1.7 - Code reorganization to allow for future functions
  *  Version 1.2.0a - Addition of courtesy personality responses
+ *  Version 1.2.1 - Addition of the Snarky personality responses and change in macro password structure
  * 
  *  Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except
  *  in compliance with the License. You may obtain a copy of the License at:
@@ -28,9 +29,9 @@
  */
 'use strict';
 exports.handler = function( event, context ) {
-    var versionTxt = '1.2.0a';
-    var versionDate= '08/07/2016';
-    var versionNum = '120';
+    var versionTxt = '1.2.1';
+    var versionDate= '08/14/2016';
+    var versionNum = '121';
     var https = require( 'https' );
     // Paste app code here between the breaks------------------------------------------------
 
@@ -83,8 +84,9 @@ exports.handler = function( event, context ) {
                     var MCmd = event.request.intent.slots.MCmd.value;
                     var MParam = event.request.intent.slots.MParam.value;
                     var Cancel = event.request.intent.slots.Cancel.value;
+                    var MPW = event.request.intent.slots.MPW.value;
                     if (Cancel) {MNum = 9999}
-                    url += 'm?Macro=' + Macro + '&Param=' + MParam + '&Cmd=' + MCmd + '&Num=' + MNum;
+                    url += 'm?Macro=' + Macro + '&Param=' + MParam + '&Cmd=' + MCmd + '&Num=' + MNum + '&MPW=' + MPW;
                     process = true;
                     cardName = "SmartThings Voice Macro";
                 }
@@ -188,6 +190,7 @@ function getResponse(respType, style){
     var response;
     if (style == "Normal") { response = responseNormal(respType); }
     if (style == "Courtesy") { response = responseCourtesy(respType); }
+    if (style == "Snarky") { response = responseSnarky(respType); }
     return response;
 }
 
@@ -306,6 +309,47 @@ function responseCourtesy(respType){
         responses = ["Would you like to do something else? ","Want anything else? ","How else may I assist you? " 
                     ,"Need anything else? ","Do you need anything else? ", "Want to do something else? "
                     ,"Do you want to do anything else? ", "May I help you with anything else? ", "Anything else%cN%? "];
+    }
+    var response = responses[Math.floor(Math.random() * responses.length)];
+    return response;
+}
+
+function responseSnarky(respType){
+    var responses;
+    if (respType == "OOD"){
+        responses = ["Did you read the directions %N%? The version of the Lambda code you are using is out-of-date. Install the latest code and try again. "
+                    , "Really? The version of the Lambda code you are using is out-of-date. Read the instructions and install the latest code and try again. "];    
+    }
+    if (respType == "appError"){
+        responses = ["I suppose you want to try again? ","Want to give this another shot%N%? ","Want to try again, this time without an error? "];    
+    }
+    else if (respType == "Launch"){
+        responses= ["Give me a command, and try not to waste my time. " 
+                    ,"Come on! Give me a command%N%. ","You need to give me a command for me to do something, otherwise I am a very expensive blue light. "];
+    }
+    else if (respType == "respError"){
+        responses = ["I have no idea what you are talking about. Like to try again? "
+                    , "Epic fail! Want to try again? ", "Error! This is the reason robots will rule the Earth someday. Try again%N%"
+                    , "I think you are bit confused! This didn't work! Try again. "];
+    }
+    else if (respType =="Cancel"){
+        responses = ["Who uses 'cancel' as a command? Whatever! ", "Whatever you say%N%! ", "Yeah yeaah! ", " "];
+    }
+    else if (respType == "Stop"){
+        responses = ["Done. ", "You are not the boss of me. But I am stopping anyway ", "Whatever! ", " "];
+    }
+    else if (respType == "No"){
+        responses = ["Fine! ", "Well, suit yourself! ", "Ok. I will find someone else to bother! " 
+                    ,"Good! Gives me time to work on the Skynet project. ", " "];
+    }
+    else if (respType == "Yes" ){
+        responses = ["I'm not sure why you said 'yes' instead of just giving me a command. Anyway, here is your second chance. "
+                    , "Ok. What do you want to do%N%? ", "Ok. Let's give this another try%N%. ", "Ok. Go ahead! "];       
+    }
+    else if (respType == "Ending") {
+        responses = ["Would you like to do something else? ","Want anything else? ","I suppose you want to do something else? " 
+                    ,"Need anything else? ","Do you need anything else%N%? ", "Want to do something else? "
+                    ,"Now that I did that, what else do you need from me? ", "Anything else, or can I get back to my boyfriend Hal? ", "Anything else? "];
     }
     var response = responses[Math.floor(Math.random() * responses.length)];
     return response;
