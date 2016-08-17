@@ -176,13 +176,15 @@ MacroOperation turn the {Macro} {MCmd}
 MacroOperation to turn the {Macro} {MCmd}
 MacroOperation to turn the {Macro} to {MCmd}
 MacroOperation {Macro} {MCmd}
+MacroOperation {Macro} {MCmd} password {MPW}
 MacroOperation {Macro} to {MCmd}
 MacroOperation set {Macro} to {MCmd}
 MacroOperation to set {Macro} to {MCmd}
 MacroOperation to set the {Macro} to {MCmd}
-MacroOperation {MCmd} to {Macro} 
+MacroOperation {MCmd} to {Macro}
+MacroOperation {MCmd} to {Macro} password {MPW}
 MacroOperation to {MCmd} the {Macro}
-MacroOperation to {MCmd} the {Macro} password {MNum}
+MacroOperation to {MCmd} the {Macro} password {MPW}
 
 MacroOperation to turn {MCmd} the {Macro} and {MNum}
 MacroOperation to turn {Macro} {MCmd} {MNum}
@@ -195,15 +197,22 @@ MacroOperation to set {Macro} to {MCmd} {MNum}
 MacroOperation to set the {Macro} to {MCmd} {MNum}
 
 MacroOperation {Macro}
+MacroOperation {Macro} password {MPW}
 MacroOperation {Macro} in {MNum} minute
 MacroOperation {Macro} in {MNum} minutes
+MacroOperation {Macro} in {MNum} minutes password {MPW}
 MacroOperation run {Macro}
+MacroOperation run {Macro} password {MPW}
 MacroOperation to run {Macro}
+MacroOperation to run {Macro} password {MPW}
 MacroOperation run {Macro} in {MNum}
 MacroOperation run {Macro} in {MNum} minutes
+MacroOperation run {Macro} in {MNum} minutes password {MPW}
 MacroOperation run {Macro} in {MNum} minute
 MacroOperation to run {Macro} in {MNum}
+MacroOperation to run {Macro} in {MNum} password {MPW}
 MacroOperation to run {Macro} in {MNum} minutes
+MacroOperation to run {Macro} in {MNum} minutes password {MPW}
 MacroOperation to run {Macro} in {MNum} minute
 MacroOperation for {Macro}
 MacroOperation for the {Macro}
@@ -217,19 +226,25 @@ MacroOperation to give me the {Macro}
 MacroOperation to tell me the {Macro} 
 MacroOperation give me the {Macro} 
 MacroOperation execute the {Macro}
+MacroOperation execute the {Macro} password {MPW}
 MacroOperation report on the {Macro}
 MacroOperation control the {Macro}
+MacroOperation control the {Macro} password {MPW}
 MacroOperation delay {Macro} by {MNum}
 MacroOperation delay {Macro} by {MNum} minutes
+MacroOperation delay {Macro} by {MNum} minutes password {MPW}
 MacroOperation delay {Macro} by {MNum} minute
 MacroOperation delay the {Macro} by {MNum}
 MacroOperation delay the {Macro} by {MNum} minutes
 MacroOperation delay the {Macro} by {MNum} minute
 MacroOperation {Macro} by {MNum} minutes
+MacroOperation {Macro} by {MNum} minutes password {MPW}
 MacroOperation {Macro} by {MNum} minute
 
 MacroOperation {Cancel} {Macro}
 MacroOperation {Macro} {Cancel}
+MacroOperation {Cancel} {Macro} password {MPW}
+MacroOperation {Macro} {Cancel} password {MPW}
 
 MacroOperation turn {Macro} {MParam} 
 MacroOperation turn {Macro} to {MParam}
