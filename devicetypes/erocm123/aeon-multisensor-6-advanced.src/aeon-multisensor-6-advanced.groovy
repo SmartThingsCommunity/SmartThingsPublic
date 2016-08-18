@@ -4,7 +4,7 @@
  *   
  *	github: Eric Maycock (erocm123)
  *	email: erocmail@gmail.com
- *	Date: 2016-08-16 12:02 PM
+ *	Date: 2016-08-18 6:45 PM
  *	Copyright Eric Maycock
  *
  *  Code has elements from other community sources @CyrilPeponnet, @Robert_Vandervoort. Greatly reworked and 
@@ -180,7 +180,7 @@ def parse(String description)
                 try {
 				result += zwaveEvent(cmd)
                 } catch (e) {
-                log.debug "error: $e"
+                log.debug "error: $e cmd: $cmd description $description"
                 }
 			}
         break
@@ -233,14 +233,15 @@ def zwaveEvent(physicalgraph.zwave.commands.batteryv1.BatteryReport cmd) {
 	} else {
 		map.value = cmd.batteryLevel
 	}
-    events << createEvent(map)
     if(settings."101" == null || settings."101" == "241") {
         try {
-            events << createEvent([name: "batteryTile", value: "Battery ${cmd.batteryLevel}%", displayed:false])
+            events << createEvent([name: "batteryTile", value: "Battery ${map.value}%", displayed:false])
         } catch (e) {
             logging("$e")
         }
     }
+    events << createEvent(map)
+    
     state.lastBatteryReport = now()
     return events
 }
@@ -486,7 +487,7 @@ def convertParam(number, value) {
         case 45:
             //Parameter difference between firmware versions
         	if (settings."45".toInteger() != null && device.currentValue("currentFirmware") != null && device.currentValue("currentFirmware") != "1.08")
-            	settings."45".toInteger()
+            	2
             else
                 value
         break
@@ -546,9 +547,7 @@ def update_current_properties(cmd)
     currentProperties."${cmd.parameterNumber}" = cmd.configurationValue
 
     if (settings."${cmd.parameterNumber}" != null)
-    {
-        if ("${cmd.parameterNumber}".toInteger() == 41 || "${cmd.parameterNumber}".toInteger() == 101)
-        {
+    {   
             if (convertParam("${cmd.parameterNumber}".toInteger(), settings."${cmd.parameterNumber}".toInteger()) == cmd2Integer(cmd.configurationValue))
             {
                 sendEvent(name:"needUpdate", value:"NO", displayed:false, isStateChange: true)
@@ -557,18 +556,6 @@ def update_current_properties(cmd)
             {
                 sendEvent(name:"needUpdate", value:"YES", displayed:false, isStateChange: true)
             }
-        }
-        else 
-        {
-            if (settings."${cmd.parameterNumber}".toInteger() == convertParam("${cmd.parameterNumber}".toInteger(), cmd2Integer(cmd.configurationValue)))
-            {
-                sendEvent(name:"needUpdate", value:"NO", displayed:false, isStateChange: true)
-            }
-            else
-            {
-                sendEvent(name:"needUpdate", value:"YES", displayed:false, isStateChange: true)
-            }
-        }
     }
 
     state.currentProperties = currentProperties
@@ -603,51 +590,27 @@ def update_needed_settings()
                     logging("Current value of parameter ${it.@index} is unknown")
                     cmds << zwave.configurationV1.configurationGet(parameterNumber: it.@index.toInteger())
                 }
-            }
-            else if (settings."${it.@index}" != null && convertParam(it.@index.toInteger(), cmd2Integer(currentProperties."${it.@index}")) != settings."${it.@index}".toInteger() && it.@index != "41" && it.@index != "111" && it.@index != "101")
-            { 
-                if (device.currentValue("currentFirmware") == null || "${it.@fw}".indexOf(device.currentValue("currentFirmware")) >= 0){
-                    isUpdateNeeded = "YES"
-
-                    logging("Parameter ${it.@index} will be updated to " + settings."${it.@index}")
-                    def convertedConfigurationValue = convertParam(it.@index.toInteger(), settings."${it.@index}".toInteger())
-                    cmds << zwave.configurationV1.configurationSet(configurationValue: integer2Cmd(convertedConfigurationValue, it.@byteSize.toInteger()), parameterNumber: it.@index.toInteger(), size: it.@byteSize.toInteger())
-                    cmds << zwave.configurationV1.configurationGet(parameterNumber: it.@index.toInteger())
-                }
             } 
-            else if (settings."${it.@index}" != null  && it.@index == "101" && cmd2Integer(currentProperties."${it.@index}") != convertParam(it.@index.toInteger(), settings."${it.@index}".toInteger()))
+            else if (settings."${it.@index}" != null && cmd2Integer(currentProperties."${it.@index}") != convertParam(it.@index.toInteger(), settings."${it.@index}".toInteger()))
             { 
                 if (device.currentValue("currentFirmware") == null || "${it.@fw}".indexOf(device.currentValue("currentFirmware")) >= 0){
                     isUpdateNeeded = "YES"
 
                     logging("Parameter ${it.@index} will be updated to " + convertParam(it.@index.toInteger(), settings."${it.@index}".toInteger()))
-                    def convertedConfigurationValue = convertParam(it.@index.toInteger(), settings."${it.@index}".toInteger())
-                    cmds << zwave.configurationV1.configurationSet(configurationValue: integer2Cmd(convertParam(it.@index.toInteger(), settings."${it.@index}".toInteger()), it.@byteSize.toInteger()), parameterNumber: it.@index.toInteger(), size: it.@byteSize.toInteger())
+                    
+                    if (it.@index == "41") {
+                        if (device.currentValue("currentFirmware") == "1.06" || device.currentValue("currentFirmware") == "1.06EU") {
+                            cmds << zwave.configurationV1.configurationSet(configurationValue: integer2Cmd(convertParam(it.@index.toInteger(), settings."${it.@index}".toInteger()), 2), parameterNumber: it.@index.toInteger(), size: 2)
+                        } else {
+                            cmds << zwave.configurationV1.configurationSet(configurationValue: integer2Cmd(convertParam(it.@index.toInteger(), settings."${it.@index}".toInteger()), 3), parameterNumber: it.@index.toInteger(), size: 3)
+                        }
+                    } else {
+                        cmds << zwave.configurationV1.configurationSet(configurationValue: integer2Cmd(convertParam(it.@index.toInteger(), settings."${it.@index}".toInteger()), it.@byteSize.toInteger()), parameterNumber: it.@index.toInteger(), size: it.@byteSize.toInteger())
+                    }
+
                     cmds << zwave.configurationV1.configurationGet(parameterNumber: it.@index.toInteger())
                 }
             } 
-            else if (settings."${it.@index}" != null && it.@index == "111" && convertParam(it.@index.toInteger(), cmd2Integer(currentProperties."${it.@index}")) != getRoundedInterval(settings."111".toInteger()))
-            {   
-                if (device.currentValue("currentFirmware") == null || "${it.@fw}".indexOf(device.currentValue("currentFirmware")) >= 0){
-                    isUpdateNeeded = "YES"
-
-                    logging("Parameter ${it.@index} will be updated to " + getRoundedInterval(settings."${it.@index}"))
-                    cmds << zwave.configurationV1.configurationSet(configurationValue: integer2Cmd(getRoundedInterval(settings."111".toInteger()), 4), parameterNumber: it.@index.toInteger(), size: 4)
-                    cmds << zwave.configurationV1.configurationGet(parameterNumber: it.@index.toInteger())
-                }
-            }
-            else if (settings."${it.@index}" != null && it.@index == "41" && cmd2Integer(currentProperties."${it.@index}") != convertParam(it.@index.toInteger(), settings."${it.@index}".toInteger()))            {   
-                isUpdateNeeded = "YES"
-                
-                logging("Parameter ${it.@index} will be updated to " + convertParam(it.@index.toInteger(), settings."${it.@index}".toInteger()))
-                
-                if (device.currentValue("currentFirmware") == "1.06" || device.currentValue("currentFirmware") == "1.06EU") {
-                    cmds << zwave.configurationV1.configurationSet(configurationValue: integer2Cmd(convertParam(it.@index.toInteger(), settings."${it.@index}".toInteger()), 2), parameterNumber: it.@index.toInteger(), size: 2)
-                } else {
-                    cmds << zwave.configurationV1.configurationSet(configurationValue: integer2Cmd(convertParam(it.@index.toInteger(), settings."${it.@index}".toInteger()), 3), parameterNumber: it.@index.toInteger(), size: 3)
-                }
-                cmds << zwave.configurationV1.configurationGet(parameterNumber: it.@index.toInteger())
-            }
         }
     }
     
