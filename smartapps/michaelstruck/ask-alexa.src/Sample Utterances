@@ -68,6 +68,7 @@ DeviceOperation turn {Device} to {Operator}
 DeviceOperation set {Device} to {Operator}
 DeviceOperation to turn the {Device} to {Operator}
 DeviceOperation to set the {Device} to {Operator}
+DeviceOperation to tell the {Device} to {Operator}
 
 DeviceOperation set {Param} of {Device} to {Num} degrees
 DeviceOperation set {Param} of {Device} to {Num} 
