@@ -95,7 +95,7 @@ preferences {
    state "brightness", label: 'brightness\n${currentValue}%'
   }
   standardTile("refresh", "device.button", decoration: "flat", width: 2, height: 2) {
-   state "default", label: "", action: "refresh.refresh", icon: "st.secondary.refresh"
+   state "default", label: "", action: "refresh", icon: "st.secondary.refresh"
   }
   controlTile("levelSliderControl", "device.level", "slider", height: 2, width: 6, inactiveLabel: false, range:"(1..100)") {
     state "level", action:"setLevel"
@@ -144,6 +144,7 @@ final ArrayList < String[] > getDevices() {
 */
 def installed() {
  log.info(device.name + " installed!!!")
+ 
  state.on = false
  state.lastAction = 0
  state.brightness = 0
@@ -153,12 +154,27 @@ def installed() {
  state.battery = 100
  state.dimming = false
  reportOnState(getOnState())
+ def retval=configure()
+ refresh()
+ return retval
 }
+
+def updated(){
+ log.info("updated")
+}
+
+
+
+def initialize(){
+ log.info("initialize")
+}
+
 
 /**
 *Parse events into attributes.
 */
-def parse(String msgFromST) {https://graph-na02-useast1.api.smartthings.com/ide/device/editor/2ef74e51-ce01-44d1-8b1a-8d08c55f44e8#
+def parse(String msgFromST) {
+ log.debug(msgFromST)
  if (msgFromST?.startsWith('catchall:')) {
   def value = handleMessage(msgFromST)
   fireCommands(value.command)
@@ -212,7 +228,17 @@ Map handleMessage(String msgFromST) {
    break
  }
 }
-
+/**
+Messages to be handled in order to fully support this switch
+0104 0500 01 01 0140 00 D757 00 00 0000 0B 01 0081
+0104 0500 01 01 0140 00 D757 00 00 0000 04 01 861000
+0104 0006 03 01 0040 00 5B32 00 00 0000 0B 01 0100
+0104 0008 03 01 0040 00 5B32 00 00 0000 0B 01 0400
+0000 8021 00 00 0040 00 D757 00 00 0000 00 79 00
+0104 0008 01 01 0140 00 D757 00 00 0000 07 01 86000000
+*/
+ 
+ 
 /**
 * This is the handler for button presses.  Map is routed here once a button press has been detected
 */
@@ -351,11 +377,26 @@ def configure() {
 
   // Bind the incoming battery info cluster from remote to hub, so the hub receives battery updates
   "zdo bind 0x${device.deviceNetworkId} 0x01 0x01 0x0001 {${device.zigbeeId}} {}",
+  refresh()
  ]
- fireCommands(configCmds)
+ 
+  def retval=zigbee.onOffConfig() + zigbee.levelConfig() + zigbee.readAttribute(0x0001, 0x20) + configCmds
+ 
+ log.debug (retval)
+ 
  return configCmds
 }
 
+/**
+*Refresh support.  Causes battery status update and others
+*/ 
+def refresh() {
+// reportOnState(getOnState())
+  //when refresh button is pushed, read updated status
+ def retval=zigbee.onOffRefresh() + zigbee.levelRefresh() + zigbee.onOffConfig() + zigbee.levelConfig() + zigbee.readAttribute(0x0001, 0x0020)
+ log.debug("refresh returned:" + retval)
+ return zigbee.readAttribute(0x0001, 0x0020)
+}
 
 
 /**
@@ -412,19 +453,6 @@ def setLevel(Double level, Double duration) {
 */
 def setLevel(Double level) {
  setLevel(level, 1000)
-}
-
-/**
-*Refresh support.  Causes battery status update and others
-*/ 
-def refresh() {
- log.debug("Executing Refresh")
- def refreshCmds = [
-  zigbee.readAttribute(0x0001, 0x0020)
- ]
- reportOnState(getOnState())
- //when refresh button is pushed, read updated status
- return refreshCmds
 }
 
 /**
@@ -513,6 +541,7 @@ Map on() {
  log.debug(device.displayName + " commanded on")
  if (doubleTapped(true)) setLevel(100, 1000)
  reportOnState(true)
+
  return createStCommand("6 1 {}")
 }
 
