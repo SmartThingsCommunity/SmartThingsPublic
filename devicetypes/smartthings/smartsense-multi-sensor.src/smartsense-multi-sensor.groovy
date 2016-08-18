@@ -127,6 +127,13 @@ def parse(String description) {
 		map = parseIasMessage(description)
 	}
 
+	// Temporary fix for the case when Device is OFFLINE and is connected again
+	if (state.lastActivity == null){
+		state.lastActivity = now()
+		sendEvent(name: "deviceWatch-lastActivity", value: state.lastActivity, description: "Last Activity is on ${new Date((long)state.lastActivity)}", displayed: false, isStateChange: true)
+	}
+	state.lastActivity = now()
+
 	def result = map ? createEvent(map) : null
 
 	if (description?.startsWith('enroll request')) {
@@ -228,9 +235,9 @@ private Map parseIasMessage(String description) {
 	ZoneStatus zs = zigbee.parseZoneStatus(description)
 	Map resultMap = [:]
 
-	if(garageSensor !=  "Yes") {
+			if (garageSensor != "Yes"){
 		resultMap = zs.isAlarm1Set() ? getContactResult('open') : getContactResult('closed')
-	}
+			}
 
 	return resultMap
 }
@@ -364,6 +371,21 @@ private getAccelerationResult(numValue) {
 	]
 }
 
+/**
+ * PING is used by Device-Watch in attempt to reach the Device
+ * */
+def ping() {
+
+	if (state.lastActivity < (now() - (1000 * device.currentValue("checkInterval"))) ){
+		log.info "ping, alive=no, lastActivity=${state.lastActivity}"
+		state.lastActivity = null
+		return zigbee.readAttribute(0x001, 0x0020) // Read the Battery Level
+	} else {
+		log.info "ping, alive=yes, lastActivity=${state.lastActivity}"
+		sendEvent(name: "deviceWatch-lastActivity", value: state.lastActivity, description: "Last Activity is on ${new Date((long)state.lastActivity)}", displayed: false, isStateChange: true)
+	}
+}
+
 def refresh() {
 	log.debug "Refreshing Values "
 
@@ -391,7 +413,7 @@ def refresh() {
 }
 
 def configure() {
-	sendEvent(name: "checkInterval", value: 7200, displayed: false)
+	sendEvent(name: "checkInterval", value: 7200, displayed: false, data: [protocol: "zigbee"])
 
 	log.debug "Configuring Reporting"
 

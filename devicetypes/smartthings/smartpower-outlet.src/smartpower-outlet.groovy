@@ -102,11 +102,11 @@ def parse(String description) {
 			def descriptionText = finalResult.value == "on" ? '{{ device.displayName }} is On' : '{{ device.displayName }} is Off'
 			sendEvent(name: finalResult.type, value: finalResult.value, descriptionText: descriptionText, translatable: true)
 			// Temporary fix for the case when Device is OFFLINE and is connected again
-			if (state.lastOnOff == null){
-				state.lastOnOff = now()
-				sendEvent(name: "deviceWatch-lastActivity", value: state.lastOnOff, description: "Last Activity is on ${new Date(state.lastOnOff)}", displayed: false, isStateChange: true)
+			if (state.lastActivity == null){
+				state.lastActivity = now()
+				sendEvent(name: "deviceWatch-lastActivity", value: state.lastActivity, description: "Last Activity is on ${new Date((long)state.lastActivity)}", displayed: false, isStateChange: true)
 			}
-			state.lastOnOff = now()
+			state.lastActivity = now()
 		}
 	}
 	else {
@@ -123,18 +123,17 @@ def on() {
 	zigbee.on()
 }
 /**
- * PING is used by Device-Watch in attempt to reach the Outlet
+ * PING is used by Device-Watch in attempt to reach the Device
  * */
 def ping() {
 
-	// send read attribute onOFF if the last time we heard from the outlet is outside of the checkInterval
-	if (state.lastOnOff < (now() - (1000 * device.currentValue("checkInterval"))) ){
-		log.info "ping, alive=no, lastOnOff=${new Date(state.lastOnOff)}"
-		state.lastOnOff = null
+	if (state.lastActivity < (now() - (1000 * device.currentValue("checkInterval"))) ){
+		log.info "ping, alive=no, lastActivity=${state.lastActivity}"
+		state.lastActivity = null
 		return zigbee.onOffRefresh()
-	} else { // if the last onOff activity is within the checkInterval we artificially create a Device-Watch event
-		log.info "ping, alive=yes, lastOnOff=${new Date(state.lastOnOff)}"
-		sendEvent(name: "deviceWatch-lastActivity", value: state.lastOnOff, description: "Last Activity is on ${new Date(state.lastOnOff)}", displayed: false, isStateChange: true)
+	} else {
+		log.info "ping, alive=yes, lastActivity=${state.lastActivity}"
+		sendEvent(name: "deviceWatch-lastActivity", value: state.lastActivity, description: "Last Activity is on ${new Date((long)state.lastActivity)}", displayed: false, isStateChange: true)
 	}
 }
 
@@ -143,7 +142,7 @@ def refresh() {
 }
 
 def configure() {
-	sendEvent(name: "checkInterval", value: 1200, displayed: false)
+	sendEvent(name: "checkInterval", value: 1200, displayed: false, data: [protocol: "zigbee"])
 	zigbee.onOffConfig() + powerConfig() + refresh()
 }
 
