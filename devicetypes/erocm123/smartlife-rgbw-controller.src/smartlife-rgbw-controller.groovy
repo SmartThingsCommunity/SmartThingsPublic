@@ -13,7 +13,7 @@
  *  SmartLife RGBW Controller
  *
  *  Author: Eric Maycock (erocm123)
- *  Date: 2016-04-30
+ *  Date: 2016-08-18 6:34 PM
  */
 
 import groovy.json.JsonSlurper
@@ -66,6 +66,17 @@ metadata {
         input("transition", "enum", title:"Default Transition", required:false, displayDuringSetup:true, options:
         [["true":"fade"],["false":"flash"]])
         input("channels", "boolean", title:"Mutually Exclusive RGB & White.\nOnly allow one or the other", required:false, displayDuringSetup:true)
+
+		input("color", "enum", title: "Default Color", required: false, multiple:false, value: "Previous", options: [
+                    ["Previous":"Previous"],
+					["Soft White":"Soft White - Default"],
+					["White":"White - Concentrate"],
+					["Daylight":"Daylight - Energize"],
+					["Warm White":"Warm White - Relax"],
+					"Red","Green","Blue","Yellow","Orange","Purple","Pink","Cyan","Random"])
+		
+        input("level", "enum", title: "Default Level", required: false, value: 100, options: [[0:"Previous"],[10:"10%"],[20:"20%"],[30:"30%"],[40:"40%"],[50:"50%"],[60:"60%"],[70:"70%"],[80:"80%"],[90:"90%"],[100:"100%"]])
+
         //input("override", "boolean", title:"Override detected IP Address", required: false, displayDuringSetup: false)
         //input("ip", "string", title:"IP Address", description: "192.168.1.150", required: false, displayDuringSetup: false)
 	}
@@ -158,7 +169,6 @@ metadata {
 
 	main(["switch"])
 	details(["switch", "levelSliderControl",
-             //"whiteSliderControl", "whiteValueTile",
              "red", "redSliderControl", "redValueTile", 
              "green", "greenSliderControl", "greenValueTile",
              "blue", "blueSliderControl", "blueValueTile",
@@ -182,20 +192,37 @@ def updated() {
 def configure() {
 	log.debug "configure()"
 	log.debug "Configuring Device For SmartThings Use"
-    state.program1 = null
-    state.program2 = null
-    state.program3 = null
-    state.program4 = null
-    state.program5 = null
-    state.program6 = null
+    def responses = []
     if (ip != null) state.dni = setDeviceNetworkId(ip, "80")
     state.hubIP = device.hub.getDataValue("localIP")
     state.hubPort = device.hub.getDataValue("localSrvPortTCP")
-    response(configureInstant(state.hubIP, state.hubPort))
+    responses << configureInstant(state.hubIP, state.hubPort)
+    responses << configureDefault()
+    return response(responses)
+}
+
+def configureDefault(){
+    if(settings.color == "Previous") {
+        return postAction("/config?dcolor=Previous")
+    } else if(settings.color == "Random") {
+        return postAction("/config?dcolor=f~${getHexColor(settings.color)}")
+    } else if(settings.color == "Soft White" || settings.color == "Warm White") {
+        if (settings.level == "0") {
+            return postAction("/config?dcolor=w~${getDimmedColor(getHexColor(settings.color), "100")}")
+        } else {
+            return postAction("/config?dcolor=w~${getDimmedColor(getHexColor(settings.color), settings.level)}")
+        }
+    }else{
+        if (settings.level == "0") {
+            return postAction("/config?dcolor=f~${getDimmedColor(getHexColor(settings.color), "100")}")
+        } else {
+            return postAction("/config?dcolor=f~${getDimmedColor(getHexColor(settings.color), settings.level)}")
+        }
+    }
 }
 
 def configureInstant(ip, port){
-    return [postAction("/config?haip=${ip}&haport=${port}")]
+    return postAction("/config?haip=${ip}&haport=${port}")
 }
 
 def parse(description) {
@@ -314,13 +341,7 @@ private getScaledColor(color) {
 
 def on() {
 	log.debug "on()"
-    if (state.previousColor != null && state.previousColor != "000000") {
-       if(state.previousColor.size() == 2) setColor(white: "$state.previousColor")
-       else setColor(hex: "#$state.previousColor")
-    }
-    else {
-       setColor(white: "ff")
-    }
+    postAction("/on?transition=$transition")
 }
 
 def off() {
@@ -426,6 +447,28 @@ def setColor(value) {
     }
     
     if (uri != null) postAction("$uri&channels=$channels&transition=$transition")
+
+}
+
+private getDimmedColor(color, level) {
+   if(color.size() > 2){
+      def rgb = color.findAll(/[0-9a-fA-F]{2}/).collect { Integer.parseInt(it, 16) }
+      def myred = rgb[0]
+      def mygreen = rgb[1]
+      def myblue = rgb[2]
+    
+      color = rgbToHex([r:myred, g:mygreen, b:myblue])
+      def c = hexToRgb(color)
+    
+      def r = hex(c.r * (level.toInteger()/100))
+      def g = hex(c.g * (level.toInteger()/100))
+      def b = hex(c.b * (level.toInteger()/100))
+
+      return "${r + g + b}"
+   }else{
+      color = Integer.parseInt(color, 16)
+      return hex(color * (level.toInteger()/100))
+   }
 
 }
 
@@ -744,4 +787,56 @@ def setW2Level(value) {
 	log.debug "level: ${level}"
 	def whiteLevel = hex(level)
     postAction("/w2?value=$whiteLevel&channels=$channels&transition=$transition")
+}
+
+private getHexColor(value){
+def color = ""
+  switch(value){
+    case "Previous":
+    color = "Previous"
+    break;
+    case "White":
+    color = "ffffff"
+    break;
+    case "Daylight":
+    color = "ffffff"
+    break;
+    case "Soft White":
+    color = "ff"
+    break;
+    case "Warm White":
+    color = "ff"
+    break;
+    case "Blue":
+    color = "0000ff"
+    break;
+    case "Green":
+    color = "00ff00"
+    break;
+    case "Yellow":
+    color = "ffff00"
+    break;
+    case "Orange":
+    color = "ff5a00"
+    break;
+    case "Purple":
+    color = "5a00ff"
+    break;
+    case "Pink":
+    color = "ff00ff"
+    break;
+    case "Cyan":
+    color = "00ffff"
+    break;
+    case "Red":
+    color = "ff0000"
+    break;
+    case "Off":
+    color = "000000"
+    break;
+    case "Random":
+    color = "xxxxxx"
+    break;
+}
+   return color
 }
