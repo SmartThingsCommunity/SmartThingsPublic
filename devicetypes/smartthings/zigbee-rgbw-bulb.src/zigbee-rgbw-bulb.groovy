@@ -81,7 +81,10 @@ def parse(String description) {
     def finalResult = zigbee.getEvent(description)
     if (finalResult) {
         log.debug finalResult
-        sendEvent(finalResult)
+        if (finalResult.name=="level" && finalResult.value==0) {}
+        else {
+            sendEvent(finalResult)
+        }
     }
     else {
         def zigbeeMap = zigbee.parseDescriptionAsMap(description)

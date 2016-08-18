@@ -75,7 +75,10 @@ def parse(String description) {
     log.debug "description is $description"
     def event = zigbee.getEvent(description)
     if (event) {
-        sendEvent(event)
+        if (event.name=="level" && event.value==0) {}
+        else {
+            sendEvent(event)
+        }
     }
     else {
         log.warn "DID NOT PARSE MESSAGE for description : $description"
