@@ -73,6 +73,9 @@ def parse(String description) {
     def event = zigbee.getEvent(description)
     if (event) {
         if (event.name=="level" && event.value==0) {}
+        else if (event.name=="colorTemperature") {
+            runIn(5, "sendColorTemperatureEvent", [data: [value: event.value], overwrite: true])
+        }
         else {
             sendEvent(event)
         }
@@ -107,6 +110,11 @@ def configure() {
 def setColorTemperature(value) {
     setGenericName(value)
     zigbee.setColorTemperature(value)
+}
+
+void sendColorTemperatureEvent(cct) {
+    setGenericName(cct.value)
+    sendEvent(name:"colorTemperature", value:cct.value)
 }
 
 //Naming based on the wiki article here: http://en.wikipedia.org/wiki/Color_temperature

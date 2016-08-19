@@ -85,6 +85,9 @@ def parse(String description) {
     if (finalResult) {
         log.debug finalResult
         if (finalResult.name=="level" && finalResult.value==0) {}
+        else if (finalResult.name=="colorTemperature") {
+            runIn(5, "sendColorTemperatureEvent", [data: [value: finalResult.value], overwrite: true])
+        }
         else {
             sendEvent(finalResult)
         }
@@ -146,6 +149,11 @@ def setGenericName(value){
         }
         sendEvent(name: "colorName", value: genericName)
     }
+}
+
+void sendColorTemperatureEvent(cct) {
+    setGenericName(cct.value)
+    sendEvent(name:"colorTemperature", value:cct.value)
 }
 
 def setLevel(value) {
