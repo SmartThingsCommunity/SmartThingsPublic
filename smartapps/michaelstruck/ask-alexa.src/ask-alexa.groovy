@@ -1,13 +1,13 @@
 /**
  *  Ask Alexa 
  *
- *  Version 2.1.1a - 8/17/16 Copyright © 2016 Michael Struck
+ *  Version 2.1.1b - 8/17/16 Copyright © 2016 Michael Struck
  *  Special thanks for Keith DeLong for overall code and assistance and Barry Burke for Weather Underground Integration
  * 
  *  Version information prior to 2.1.0 listed here: https://github.com/MichaelStruck/SmartThingsPublic/blob/master/smartapps/michaelstruck/ask-alexa.src/Ask%20Alexa%20Version%20History.md
  *
  *  Version 2.1.0 (8/7/16) Code fixes/optimization, added moon rise/set, added Courtesy personality; added 'easter egg' command for thermostats:AC
- *  Version 2.1.1a (8/17/16) Added SONOS code to allow for memory slots; added Snarky personality; allow for PINs used in macros
+ *  Version 2.1.1b (8/17/16) Added SONOS code to allow for memory slots; added Snarky personality; allow for PINs used in macros
  *
  *  Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except
  *  in compliance with the License. You may obtain a copy of the License at:
@@ -844,7 +844,7 @@ def processDevice() {
     log.debug "Op: " + op
     log.debug "Num: " + numVal
     log.debug "Param: " + param
-	def num = numVal == "undefined" ? 0 : numVal as int
+    def num = numVal == "undefined" || numVal == "?" ? 0 : numVal as int
     String outputTxt = ""
     def deviceList, count = 0
     getDeviceList().each{if (it.name==dev.replaceAll("[^a-zA-Z0-9 ]", "").toLowerCase()) {deviceList=it; count++}}
@@ -1019,7 +1019,7 @@ def processMacro() {
     log.debug "Param: " + param
     log.debug "mPW: " + mPW
     if (mNum == "0" && cmd=="undefined" && param == "undefined") cmd="off"
-    def num = mNum == "undefined" ? 0 : mNum as int
+    def num = mNum == "undefined" || mNum == "?" ? 0 : mNum as int
     String outputTxt = ""
     def macroType="", colorData, err=false, playContMsg
     if (cmd == "low" || cmd=="medium" || cmd=="high"){
@@ -2924,7 +2924,7 @@ def fillTypeList(){
 //Version/Copyright/Information/Help-----------------------------------------------------------
 private def textAppName() { return "Ask Alexa" }	
 private def textVersion() {
-    def version = "SmartApp Version: 2.1.1a (08/17/2016)"
+    def version = "SmartApp Version: 2.1.1b (08/17/2016)"
     def lambdaVersion = state.lambdaCode ? "\n" + state.lambdaCode : ""
     return "${version}${lambdaVersion}"
 }
