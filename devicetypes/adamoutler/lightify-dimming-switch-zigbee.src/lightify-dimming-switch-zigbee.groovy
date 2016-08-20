@@ -179,11 +179,6 @@ private fireCommands(List commands) {
 Map handleMessage(String msgFromST) {
  Map msg = zigbee.parseDescriptionAsMap(msgFromST)
  switch (Integer.parseInt(msg.clusterId)) {
- //TODO: figure out if this is needed here
-  case 1: //battery message              WHY IS THIS HERE AND IN THE PARSE FUNCTION?
-   def returnval = batteryHandler(msg)
-   return returnval
-   break
   case 6: //button press
    def returnval = handleButtonPress(msg)
    updateButtonState("pressed")
@@ -207,11 +202,6 @@ Map handleMessage(String msgFromST) {
    break
  }
 }
-/**
-Messages to be handled in order to fully support this switch
-0000 8034 00 00 0040 00 7F11 00 00 0000 00 4E C8
-
-*/
  
  
 /**
@@ -559,6 +549,13 @@ boolean doubleTapped(boolean commanded) {
  return false
 }
 
+/**
+*This switch does not support pressing the same button in rapid sucession
+*this check finds out if user tapped one button and then the other within 1.5 seconds.
+*/
+boolean onOffTapped(){
+ return (state.lastAction < now()+1500)
+}
 
 //TODO create a up-down tapped mechanism. 
 
@@ -569,6 +566,10 @@ boolean doubleTapped(boolean commanded) {
 */
 Map on() {
  log.debug(device.displayName + " commanded on" )
+ if (onOffTapped){
+    
+ }
+ state.lastAction=now()
  if (doubleTapped(true)) setLevel(100, 1000)
  reportOnState(true)
  return createStCommand("6 1 {}")
@@ -580,6 +581,10 @@ Map on() {
 */
 Map off() {
  log.debug(device.displayName + " commanded off")
+ if (onOffTapped){
+    
+ }
+ state.lastAction=now()
  if (doubleTapped(false)){
     def value=on()
     setLevel(1, 1000)
@@ -596,6 +601,6 @@ Map off() {
 def bothButtonsPressed() {
  log.error("Both Buttons Pressed" + state)
  state.lastAction = 100
- def x=createStCommand()
- return x
+ configure()
+ return state
 }
