@@ -149,6 +149,7 @@ def parse(String msgFromST) {
   def value = handleMessage(msgFromST)
   fireCommands(value.command)
  } else if (msgFromST.startsWith("read")) {
+  if (msgFromST.contains("attrId: 0000")) return state
   if (msgFromST.contains("attrId: 0020,")) return batteryHandler(zigbee.parseDescriptionAsMap(msgFromST))
   log.error('unrecognized command:' + msgFromST)
  } else {
@@ -192,8 +193,13 @@ Map handleMessage(String msgFromST) {
    handleButtonHeld(msg)
    break
   case 8021:
-   log.debug("Switch Bound!")
-   state.bound=true
+   log.info("Networking Bind Response received!!!")
+   state.boundnetwork=true
+   return state
+   break
+  case 8034:
+   log.info("Network managment Leave Response!!!")
+   state.boundnetwork=false
    return state
    break
   default:
@@ -203,12 +209,8 @@ Map handleMessage(String msgFromST) {
 }
 /**
 Messages to be handled in order to fully support this switch
-0104 0500 01 01 0140 00 D757 00 00 0000 0B 01 0081
-0104 0500 01 01 0140 00 D757 00 00 0000 04 01 861000
-0104 0006 03 01 0040 00 5B32 00 00 0000 0B 01 0100
-0104 0008 03 01 0040 00 5B32 00 00 0000 0B 01 0400
-0000 8021 00 00 0040 00 D757 00 00 0000 00 79 00
-0104 0008 01 01 0140 00 D757 00 00 0000 07 01 86000000
+0000 8034 00 00 0040 00 7F11 00 00 0000 00 4E C8
+
 */
  
  
@@ -228,14 +230,11 @@ def Map handleButtonPress(Map msg) {
    def returnval = off()
    return returnval
    break
-  case "07": //cause is unknown 
-/* data and message follows[raw:0104 0008 03 01 0040 00 5B32 00 00 0000 0B 01 0400, 
-     profileId:0104, clusterId:0008, clusterInt:8, sourceEndpoint:03, destinationEndpoint:01, 
-     options:0040, messageType:00, dni:5B32, isClusterSpecific:false, isManufacturerSpecific:false, 
-     manufacturerId:0000, command:0B, direction:01, data:[04, 00]]
-*/   log.error("Unknown button press received")
-
-
+  case "07":
+   log.info("Button Press Bind Response!!!")
+   state.boundonoff=true
+   return state
+  break 
   default:
    log.error(getLinkText(device)+" got unknown button press command: " + msg.command)
    return [name:"error",value:"unknown button press command"]
@@ -268,13 +267,22 @@ def Map handleButtonHeld(Map msg) {
    state.dimming = true
    return adjustBrightness(true, state.brightness)
    break
+  case 7:
+   log.info("Button Held Bind Response - 7!!!")
+   state.bounddimmer=true
+   return state
+  break 
+  case 8:
+   log.info("Button Held Bind Response - 8!!!")
+   state.bounddimmer=true
+  return state
+  break 
   default:
-   log.error("Unhandled message: " + msg)
+   log.error("Unhandled button held event: " + msg)
    break
  }
  return msg
 }
-
 
 
 /**
@@ -326,7 +334,6 @@ void executeBrightnessAdjustmentUntilButtonReleased() {
   runIn(1, executeBrightnessAdjustmentUntilButtonReleased)
  }
 }
-//TODO: monitor for min/max brightness and stop 
 
 
 /**
@@ -355,17 +362,23 @@ String formatNumber(int value, int length) {
 *performs configuration and bindings
 */
 def configure() {
-  log.debug "Confuguring Reporting and Bindings." 
-  
-  while (!state.bound) {
-   log.debug("configuration")
-   sendEvent(name:"Configured", value:"true")
-   fireCommands(zigbee.onOffConfig() + zigbee.levelConfig() + zigbee.onOffRefresh() + zigbee.levelRefresh() + zigbee.readAttribute(0x0001, 0x0020))
-   mySleep(2000)
-  }
-  return configCmds 
+ if (state.boundnetwork && state.bounddimmer && state.boundonoff){
+  log.debug("configuration complete")
+  sendEvent(name:"Configured", value:"true")
+  return
+ }
+ log.debug "Confuguring Reporting and Bindings." 
+ fireCommands(zigbee.onOffConfig() + zigbee.levelConfig() + zigbee.onOffRefresh() + zigbee.levelRefresh() + zigbee.readAttribute(0x0001, 0x0020))
+ configureDaemon()
+ return configCmds 
 }
-//TODO: configuration daemon 
+
+/* 
+* handles binding if switch doesn't pay attention the first time.
+*/
+def configureDaemon(){
+  return runIn(8, "configure")
+}
 
 
 
@@ -390,7 +403,10 @@ def refresh() {
 
 def installed() {
  log.info(device.name + " installed!!!")
- state.bound=false
+ sendEvent(name:"Configured", value:"false")
+ state.boundnetwork=false
+ state.bounddimmer=false
+ state.boundonoff=false
  state.on = false
  state.lastAction = 0
  state.brightness = 0
@@ -399,14 +415,12 @@ def installed() {
  state.lastHeld = "none"
  state.battery = 100
  state.dimming = false
- state.bound=false
  return reportOnState(getOnState())
 }
 
 def updated(){
- 
  log.info("updated")
- return  configure()
+ return  refresh()
 }
 
 
