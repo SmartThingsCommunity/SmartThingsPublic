@@ -45,6 +45,7 @@ metadata {
   command "poll"
   command "toggle"
   command "configure"
+  command "installed"
   fingerprint profileId: "0104", deviceId: "0001", inClusters: "0000, 0001, 0003, 0020, 0402, 0B05", outClusters: "0003, 0006, 0008, 0019", manufacturer: "OSRAM", model: "LIGHTIFY Dimming Switch", deviceJoinName: "OSRAM Lightify Dimming Switch"
  }
 
@@ -128,7 +129,7 @@ private Map getStatus() {
  */
 final ArrayList < String[] > getDevices() {
  String[] devs = [settings.device1, device2, device3, device4, device5]
- if (devs == [null, null, null, null, null]) log.error("------No devices configured in $device preferences--------")
+ if (devs == [null, null, null, null, null]) log.info("------No devices configured in $device preferences--------")
  String[] ends = [end1, end2, end3, end4, end5]
  ArrayList < String[] > list = new ArrayList < > ([])
  for (int i = 0; i < 4; i++) {
@@ -138,37 +139,6 @@ final ArrayList < String[] > getDevices() {
  }
  return list
 }
-
-/**
-*actions to be taken once the device is installed
-*/
-def installed() {
- log.info(device.name + " installed!!!")
- 
- state.on = false
- state.lastAction = 0
- state.brightness = 0
- state.buttonNumber = 1
- state.value = "unknown"
- state.lastHeld = "none"
- state.battery = 100
- state.dimming = false
- reportOnState(getOnState())
- def retval=configure()
- refresh()
- return retval
-}
-
-def updated(){
- log.info("updated")
-}
-
-
-
-def initialize(){
- log.info("initialize")
-}
-
 
 /**
 *Parse events into attributes.
@@ -196,12 +166,9 @@ private fireCommands(List commands) {
 
 
   if (commands != null && commands.size() > 0) {
-  log.trace("Executing commands-- state:" + state)
+  log.trace("Executing commands-- state:" + state + " commands:" + commands)
   for (String value : commands){
-     log.trace("Executing commands: " + value )
    sendHubCommand([value].collect {new physicalgraph.device.HubAction(it)
-   
-  
   })
   }
  }
@@ -211,6 +178,7 @@ private fireCommands(List commands) {
 Map handleMessage(String msgFromST) {
  Map msg = zigbee.parseDescriptionAsMap(msgFromST)
  switch (Integer.parseInt(msg.clusterId)) {
+ //TODO: figure out if this is needed here
   case 1: //battery message              WHY IS THIS HERE AND IN THE PARSE FUNCTION?
    def returnval = batteryHandler(msg)
    return returnval
@@ -222,6 +190,11 @@ Map handleMessage(String msgFromST) {
    break
   case 8:
    handleButtonHeld(msg)
+   break
+  case 8021:
+   log.debug("Switch Bound!")
+   state.bound=true
+   return state
    break
   default:
    log.error("Unhandled message: " + msg)
@@ -255,9 +228,17 @@ def Map handleButtonPress(Map msg) {
    def returnval = off()
    return returnval
    break
+  case "07": //cause is unknown 
+/* data and message follows[raw:0104 0008 03 01 0040 00 5B32 00 00 0000 0B 01 0400, 
+     profileId:0104, clusterId:0008, clusterInt:8, sourceEndpoint:03, destinationEndpoint:01, 
+     options:0040, messageType:00, dni:5B32, isClusterSpecific:false, isManufacturerSpecific:false, 
+     manufacturerId:0000, command:0B, direction:01, data:[04, 00]]
+*/   log.error("Unknown button press received")
+
+
   default:
    log.error(getLinkText(device)+" got unknown button press command: " + msg.command)
-   return "error"
+   return [name:"error",value:"unknown button press command"]
    break
  }
 }
@@ -325,20 +306,27 @@ def Map adjustBrightness(final boolean up, double level) {
 /**
  * performs a recursive brightness adjustment based on state.brightening while state.dimming is true
  */
-def executeBrightnessAdjustmentUntilButtonReleased() {
+void executeBrightnessAdjustmentUntilButtonReleased() {
  if (state.dimming) {
   if (state.brightening) {
    state.brightness = state.brightness + 20
   } else {
    state.brightness = state.brightness - 20
   }
-  if (state.brightness > 100) state.brightness = 100
-  if (state.brightness < 1) state.brightness = 1
+  if (state.brightness > 100) {
+   state.brightness = 100
+   state.dimming=false
+  }
+  if (state.brightness < 1){
+   state.brightness = 1
+   state.dimming=false
+  }
   setLevel((double) state.brightness, 1000)
   reportOnState(true) //Manage and report states
   runIn(1, executeBrightnessAdjustmentUntilButtonReleased)
  }
 }
+//TODO: monitor for min/max brightness and stop 
 
 
 /**
@@ -367,36 +355,60 @@ String formatNumber(int value, int length) {
 *performs configuration and bindings
 */
 def configure() {
- log.debug "Configuring Reporting and Bindings."
- installed()
- def configCmds = [
-  // Bind the outgoing on/off cluster from remote to hub, so the hub receives messages when On/Off buttons pushed
-  "zdo bind 0x${device.deviceNetworkId} 0x01 0x01 0x0006 {${device.zigbeeId}} {}",
-  // Bind the outgoing level cluster from remote to hub, so the hub receives messages when Dim Up/Down buttons pushed
-  "zdo bind 0x${device.deviceNetworkId} 0x01 0x01 0x0008 {${device.zigbeeId}} {}",
-
-  // Bind the incoming battery info cluster from remote to hub, so the hub receives battery updates
-  "zdo bind 0x${device.deviceNetworkId} 0x01 0x01 0x0001 {${device.zigbeeId}} {}",
-  refresh()
- ]
- 
-  def retval=zigbee.onOffConfig() + zigbee.levelConfig() + zigbee.readAttribute(0x0001, 0x20) + configCmds
- 
- log.debug (retval)
- 
- return configCmds
+  log.debug "Confuguring Reporting and Bindings." 
+  
+  while (!state.bound) {
+   log.debug("configuration")
+   sendEvent(name:"Configured", value:"true")
+   fireCommands(zigbee.onOffConfig() + zigbee.levelConfig() + zigbee.onOffRefresh() + zigbee.levelRefresh() + zigbee.readAttribute(0x0001, 0x0020))
+   mySleep(2000)
+  }
+  return configCmds 
 }
+//TODO: configuration daemon 
+
+
+
+def mySleep(int ms) {
+	def start = now()
+	while (now() < start + ms) {
+    }
+}
+
 
 /**
 *Refresh support.  Causes battery status update and others
 */ 
 def refresh() {
-// reportOnState(getOnState())
-  //when refresh button is pushed, read updated status
- def retval=zigbee.onOffRefresh() + zigbee.levelRefresh() + zigbee.onOffConfig() + zigbee.levelConfig() + zigbee.readAttribute(0x0001, 0x0020)
- log.debug("refresh returned:" + retval)
- return zigbee.readAttribute(0x0001, 0x0020)
+   fireCommands(zigbee.readAttribute(0x0001, 0x0020) +zigbee.onOffRefresh() + zigbee.levelRefresh() + zigbee.onOffConfig() + zigbee.levelConfig() + zigbee.readAttribute(0x0001, 0x0020) )
 }
+
+
+/**
+*actions to be taken once the device is installed
+*/
+
+def installed() {
+ log.info(device.name + " installed!!!")
+ state.bound=false
+ state.on = false
+ state.lastAction = 0
+ state.brightness = 0
+ state.buttonNumber = 1
+ state.value = "unknown"
+ state.lastHeld = "none"
+ state.battery = 100
+ state.dimming = false
+ state.bound=false
+ return reportOnState(getOnState())
+}
+
+def updated(){
+ 
+ log.info("updated")
+ return  configure()
+}
+
 
 
 /**
@@ -533,15 +545,18 @@ boolean doubleTapped(boolean commanded) {
  return false
 }
 
+
+//TODO create a up-down tapped mechanism. 
+
+
 /**
 *turns light on. 
 *if already on, commands max
 */
 Map on() {
- log.debug(device.displayName + " commanded on")
+ log.debug(device.displayName + " commanded on" )
  if (doubleTapped(true)) setLevel(100, 1000)
  reportOnState(true)
-
  return createStCommand("6 1 {}")
 }
 
@@ -567,6 +582,6 @@ Map off() {
 def bothButtonsPressed() {
  log.error("Both Buttons Pressed" + state)
  state.lastAction = 100
- configure()
- return getStatus()
+ def x=createStCommand()
+ return x
 }
