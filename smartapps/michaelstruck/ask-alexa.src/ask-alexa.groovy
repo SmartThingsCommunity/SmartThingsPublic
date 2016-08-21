@@ -1,13 +1,13 @@
 /**
  *  Ask Alexa 
  *
- *  Version 2.1.1b - 8/17/16 Copyright © 2016 Michael Struck
+ *  Version 2.1.1c - 8/17/16 Copyright © 2016 Michael Struck
  *  Special thanks for Keith DeLong for overall code and assistance and Barry Burke for Weather Underground Integration
  * 
  *  Version information prior to 2.1.0 listed here: https://github.com/MichaelStruck/SmartThingsPublic/blob/master/smartapps/michaelstruck/ask-alexa.src/Ask%20Alexa%20Version%20History.md
  *
  *  Version 2.1.0 (8/7/16) Code fixes/optimization, added moon rise/set, added Courtesy personality; added 'easter egg' command for thermostats:AC
- *  Version 2.1.1b (8/17/16) Added SONOS code to allow for memory slots; added Snarky personality; allow for PINs used in macros
+ *  Version 2.1.1c (8/17/16) Added SONOS code to allow for memory slots; added Snarky personality; allow for PINs used in macros
  *
  *  Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except
  *  in compliance with the License. You may obtain a copy of the License at:
@@ -1334,10 +1334,10 @@ def getReply(devices, type, dev, op, num, param){
                 	if (sonosCMD){
                         if ((sonosSlot1Name && sonosSlot1Music) || (sonosSlot2Name && sonosSlot2Music) || (sonosSlot3Name && sonosSlot3Music) ||(sonosSlot4Name && sonosSlot4Music)){
                             def song = ""
-                            if (sonosSlot1Name && sonosSlot1Name.replaceAll("[^a-zA-Z0-9 ]", "").toLowerCase() == param) song = sonosSlot1Music 
-                            if (sonosSlot2Name && sonosSlot2Name.replaceAll("[^a-zA-Z0-9 ]", "").toLowerCase() == param) song = sonosSlot2Music
-                            if (sonosSlot3Name && sonosSlot3Name.replaceAll("[^a-zA-Z0-9 ]", "").toLowerCase() == param) song = sonosSlot3Music
-                            if (sonosSlot4Name && sonosSlot4Name.replaceAll("[^a-zA-Z0-9 ]", "").toLowerCase() == param) song = sonosSlot4Music
+                            if (sonosSlot1Name && sonosSlot1Name.replaceAll("[^a-zA-Z0-9 ]", "").toLowerCase() == param.toLowerCase()) song = sonosSlot1Music 
+                            if (sonosSlot2Name && sonosSlot2Name.replaceAll("[^a-zA-Z0-9 ]", "").toLowerCase() == param.toLowerCase()) song = sonosSlot2Music
+                            if (sonosSlot3Name && sonosSlot3Name.replaceAll("[^a-zA-Z0-9 ]", "").toLowerCase() == param.toLowerCase()) song = sonosSlot3Music
+                            if (sonosSlot4Name && sonosSlot4Name.replaceAll("[^a-zA-Z0-9 ]", "").toLowerCase() == param.toLowerCase()) song = sonosSlot4Music
                             def playSong = state.songLoc.find{it.station==song}
                             if (playSong){
                                 STdevice.playTrack(playSong)
@@ -2924,7 +2924,7 @@ def fillTypeList(){
 //Version/Copyright/Information/Help-----------------------------------------------------------
 private def textAppName() { return "Ask Alexa" }	
 private def textVersion() {
-    def version = "SmartApp Version: 2.1.1b (08/17/2016)"
+    def version = "SmartApp Version: 2.1.1c (08/17/2016)"
     def lambdaVersion = state.lambdaCode ? "\n" + state.lambdaCode : ""
     return "${version}${lambdaVersion}"
 }
