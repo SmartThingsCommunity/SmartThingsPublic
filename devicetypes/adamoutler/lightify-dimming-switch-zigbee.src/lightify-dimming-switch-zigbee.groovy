@@ -181,7 +181,6 @@ Map handleMessage(String msgFromST) {
  switch (Integer.parseInt(msg.clusterId)) {
   case 6: //button press
    def returnval = handleButtonPress(msg)
-   updateButtonState("pressed")
    return returnval
    break
   case 8:
@@ -189,6 +188,7 @@ Map handleMessage(String msgFromST) {
    break
   case 8021:
    log.info("Networking Bind Response received!!!")
+   updateButtonState("Network binding complete!")
    state.boundnetwork=true
    return state
    break
@@ -211,6 +211,7 @@ def Map handleButtonPress(Map msg) {
  switch (msg.command) {
   case "01":
    def returnval = on()
+   updateButtonState("on")
    return returnval
    break
   case "03":
@@ -218,6 +219,7 @@ def Map handleButtonPress(Map msg) {
    break
   case "00":
    def returnval = off()
+   updateButtonState("off")
    return returnval
    break
   case "07":
@@ -240,7 +242,7 @@ def Map handleButtonHeld(Map msg) {
   case 1:
    log.debug("Button held- Lowering brightness commanded")
    state.dimming = true
-   updateButtonState("down held")
+   updateButtonState("lowering brightness")
    state.lastHeld = "down"
    return adjustBrightness(false, state.brightness)
    break
@@ -253,7 +255,7 @@ def Map handleButtonHeld(Map msg) {
   case 5:
    log.debug("Button held- raising brightness commanded")
    state.lastHeld = "up"
-   updateButtonState("up held")
+   updateButtonState("raising brightness")
    state.dimming = true
    return adjustBrightness(true, state.brightness)
    break
@@ -600,7 +602,9 @@ Map off() {
 */
 def bothButtonsPressed() {
  log.error("Both Buttons Pressed" + state)
+ installed()
  state.lastAction = 100
+ updateButtonState("Initiating configuration routines.  Please stand by.")
  configure()
  return state
 }
