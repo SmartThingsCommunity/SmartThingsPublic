@@ -21,17 +21,17 @@ definition(
     category: "Convenience",
     iconUrl: "http://cdn.device-icons.smartthings.com/Lighting/light24-icn@2x.png",
     iconX2Url: "http://cdn.device-icons.smartthings.com/Lighting/light24-icn@2x.png",
-    iconX3Url: "http://cdn.device-icons.smartthings.com/Lighting/light24-icn@2x.png")
-
+    iconX3Url: "http://cdn.device-icons.smartthings.com/Lighting/light24-icn@2x.png"
+    )
 
 preferences {
-	section("Setup") {
-    	input "fans", "capability.switchLevel", title: "Select Your Ceiling Fans", required: true, multiple: true
-        input "offDelay", "number", title: "How often (seconds) do you want to cycle the fan?", required: true, defaultValue: 180
-        input "onDelay", "number", title: "How long do you run the fan?", required: true, defaultValue: 5
-        input "fanLevel", "number", title: "Enter a Fan Level", required: false
-        input "runMode", "mode", title: "Only run in these Modes", required: true, multiple: true
-	}
+    section("Setup") {
+        input "runMode", "mode", title: "Start Nature Breeze in these Modes", required: true, multiple: true
+        input "fans", "capability.switchLevel", title: "Cycle These Ceiling Fans", required: true, multiple: true
+        input "offDelay", "number", title: "How often (seconds) do you want to cycle the fan(s)?", required: true, defaultValue: 180
+        input "onDelay", "number", title: "How long do you run the fan(s)?", required: true, defaultValue: 5
+        input "fanLevel", "number", title: "What speed should the fans run?", required: false
+    }
 }
 
 def installed() {
