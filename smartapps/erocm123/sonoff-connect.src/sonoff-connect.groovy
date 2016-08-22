@@ -20,7 +20,7 @@ definition(
     name: "Sonoff (Connect)",
     namespace: "erocm123",
     author: "Eric Maycock (erocm123)",
-    description: "Sonoff Connect",
+    description: "Service Manager for Sonoff switches",
     category: "Convenience",
     iconUrl:   "https://raw.githubusercontent.com/erocm123/SmartThingsPublic/master/smartapps/erocm123/sonoff-connect.src/sonoff-connect-icon.png",
     iconX2Url: "https://raw.githubusercontent.com/erocm123/SmartThingsPublic/master/smartapps/erocm123/sonoff-connect.src/sonoff-connect-icon-2x.png",
@@ -43,7 +43,7 @@ def mainPage() {
            href "deviceDiscovery", title:"Discover Sonoff Devices", description:""
         }
         section("Installed Devices"){
-            getChildDevices().sort({ a, b -> a["label"] <=> b["label"] }).each {
+            getChildDevices().sort({ a, b -> a["deviceNetworkId"] <=> b["deviceNetworkId"] }).each {
                 href "configurePDevice", title:"$it.label", description:"", params: [did: it.deviceNetworkId]
             }
         }
@@ -117,7 +117,7 @@ def deviceDiscovery(params=[:])
 	def options = devices ?: []
 	def numFound = options.size() ?: 0
 
-	if (numFound == 0 && state.deviceRefreshCount > 25) {
+	if ((numFound == 0 && state.deviceRefreshCount > 25) || params.reset == "true") {
     	log.trace "Cleaning old device memory"
     	state.devices = [:]
         state.deviceRefreshCount = 0
@@ -139,6 +139,9 @@ def deviceDiscovery(params=[:])
 	return dynamicPage(name:"deviceDiscovery", title:"Discovery Started!", nextPage:"addDevices", refreshInterval:refreshInterval, uninstall: true) {
 		section("Please wait while we discover your Sonoff devices. Discovery can take five minutes or more, so sit back and relax! Select your device below once discovered.") {
 			input "selectedDevices", "enum", required:false, title:"Select Sonoff Switch (${numFound} found)", multiple:true, options:options
+		}
+        section("Options") {
+			href "deviceDiscovery", title:"Reset list of discovered devices", description:"", params: ["reset": "true"]
 		}
 	}
 }
@@ -231,15 +234,22 @@ def ssdpHandler(evt) {
     
     if (devices."${ssdpUSN}") {
         def d = devices."${ssdpUSN}"
-        //log.debug "networkAddress: ${convertHexToIP(d.networkAddress)} - ${convertHexToIP(parsedEvent.networkAddress)}"
-        //log.debug "deviceAddress: ${convertHexToInt(d.deviceAddress)} - ${convertHexToInt(parsedEvent.deviceAddress)}"
+        def child = getChildDevice(parsedEvent.mac)
+        def childIP
+        def childPort
+        if (child) {
+            childIP = child.getDeviceDataByName("ip")
+            childPort = child.getDeviceDataByName("port").toString()
+            log.debug "Device data: ($childIP:$childPort) - reporting data: (${convertHexToIP(parsedEvent.networkAddress)}:${convertHexToInt(parsedEvent.deviceAddress)})."
+            if(childIP != convertHexToIP(parsedEvent.networkAddress) || childPort != convertHexToInt(parsedEvent.deviceAddress).toString()){
+               log.debug "Device data (${child.getDeviceDataByName("ip")}) does not match what it is reporting(${convertHexToIP(parsedEvent.networkAddress)}). Attempting to update."
+               child.sync(convertHexToIP(parsedEvent.networkAddress), convertHexToInt(parsedEvent.deviceAddress).toString())
+            }
+        }
+
         if (d.networkAddress != parsedEvent.networkAddress || d.deviceAddress != parsedEvent.deviceAddress) {
             d.networkAddress = parsedEvent.networkAddress
             d.deviceAddress = parsedEvent.deviceAddress
-            def child = getChildDevice(parsedEvent.mac)
-            if (child) {
-                child.sync(convertHexToIP(parsedEvent.networkAddress), convertHexToInt(parsedEvent.deviceAddress).toString())
-            }
         }
     } else {
         devices << ["${ssdpUSN}": parsedEvent]
@@ -331,4 +341,8 @@ private String convertHexToIP(hex) {
 
 private Integer convertHexToInt(hex) {
 	Integer.parseInt(hex,16)
+}
+
+def log(message){
+    
 }
