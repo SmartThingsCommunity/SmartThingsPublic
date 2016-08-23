@@ -4,12 +4,11 @@ Big Talker is a SmartApp for SmartThings that can make your house talk depending
 Pair it with a SmartThings compatible audio device such as Sonos, Ubi, LANnouncer, VLC Thing, or a DLNA device using the "Generic MediaRenderer" SmartApp/Device! <br />  
 See <b>More Details</b> section below for more features.<br />
 
-Version: 1.1.6 <br />
+Version: 1.1.7 <br />
 
 #Support the project
  This SmartApp is free. Donations to support development efforts are accepted via (non-refundable, no gurantee of service/support):
  * PayPal to: rayzur [at] rayzurbock.com
- * Link: <a href='https://www.paypal.com/cgi-bin/webscr?cmd=_s-xclick&hosted_button_id=WKB9N9MPUGTZS'>PayPal Donation (for supporters with or without a Paypal account)</a>
  * Link: <a href=https://cash.me/$Lowrance>Cash.me/$Lowrance</a> (Debit cards = free, Credit cards charge 3% on top of your donation)
  * Link: <a href='https://squareup.com/market/brian-lowrance#category-a58f6ff3-7380-471b-8432-7e5881654e2c'>Square Marketplace</a> (Donation is reduced by 2.9% + .30)
 
@@ -188,3 +187,7 @@ Keep in mind, if you configure highly active or too many devices, it may get ann
   * BugFix: Talk() function has been further optimized and more bugs have been resolved.
 * 5/5/2016 - 5/25/2016
   * Added phrase token %shmstatus% to speak your current SmartHome Monitor Status (Disarmed, Armed Away, Armed Stay)  ** Note this is not documented at this time by SmartThings and may stop working at any time and/or be removed in a future version.  Thanks STCommunity: @bsanker for the request and STCommunity: @MichaelS for the tip on implementing.
+* 8/22/2016 - 1.1.7
+  * Added missing %devicechange% reference in in-app "Phrase Tokens" help page. (Thanks ST Community: adamoutler)
+  * Removed Paypal donation link that no longer allows donation without login; just send via regular PayPal or the other methods. (Thanks ST Community: Gorilla800lbs)
+  * Called setAppVersion() sooner in SmartApp execution to show version # more accurately.
