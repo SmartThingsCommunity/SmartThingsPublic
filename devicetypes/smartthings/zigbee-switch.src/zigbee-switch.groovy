@@ -20,6 +20,7 @@ metadata {
         capability "Switch"
 
         fingerprint profileId: "0104", inClusters: "0000, 0003, 0004, 0005, 0006"
+        fingerprint profileId: "0104", inClusters: "0000, 0003, 0006", outClusters: "0003, 0006, 0019, 0406", manufacturer: "Leviton", model: "ZSS-10", deviceJoinName: "Leviton Switch"
     }
 
     // simulator metadata

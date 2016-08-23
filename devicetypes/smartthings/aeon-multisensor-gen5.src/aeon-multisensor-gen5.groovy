@@ -20,7 +20,6 @@ metadata {
 		capability "Configuration"
 		capability "Sensor"
 		capability "Battery"
-		capability "Health Check"
 
 		command "configureAfterSecure"
 
@@ -248,8 +247,6 @@ def configureAfterSecure() {
 def configure() {
 	// log.debug "configure()"
     //["delay 30000"] + secure(zwave.securityV1.securityCommandsSupportedGet())
-	// allow device 16 min to check in; double the periodic reporting interval
-	sendEvent(name: "checkInterval", value: 2*8*60, displayed: false)
 }
 
 private setConfigured() {

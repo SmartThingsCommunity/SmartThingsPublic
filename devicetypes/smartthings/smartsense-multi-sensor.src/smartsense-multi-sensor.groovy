@@ -13,6 +13,7 @@
  *  License for the specific language governing permissions and limitations
  *  under the License.
  */
+import physicalgraph.zigbee.clusters.iaszone.ZoneStatus
 
 metadata {
 	definition (name: "SmartSense Multi Sensor", namespace: "smartthings", author: "SmartThings", category: "C2") {
@@ -126,6 +127,13 @@ def parse(String description) {
 		map = parseIasMessage(description)
 	}
 
+	// Temporary fix for the case when Device is OFFLINE and is connected again
+	if (state.lastActivity == null){
+		state.lastActivity = now()
+		sendEvent(name: "deviceWatch-lastActivity", value: state.lastActivity, description: "Last Activity is on ${new Date((long)state.lastActivity)}", displayed: false, isStateChange: true)
+	}
+	state.lastActivity = now()
+
 	def result = map ? createEvent(map) : null
 
 	if (description?.startsWith('enroll request')) {
@@ -224,47 +232,13 @@ private Map parseCustomMessage(String description) {
 }
 
 private Map parseIasMessage(String description) {
-	List parsedMsg = description.split(' ')
-	String msgCode = parsedMsg[2]
-
+	ZoneStatus zs = zigbee.parseZoneStatus(description)
 	Map resultMap = [:]
-	switch(msgCode) {
-		case '0x0020': // Closed/No Motion/Dry
+
 			if (garageSensor != "Yes"){
-				resultMap = getContactResult('closed')
+		resultMap = zs.isAlarm1Set() ? getContactResult('open') : getContactResult('closed')
 			}
-		break
 
-		case '0x0021': // Open/Motion/Wet
-			if (garageSensor != "Yes"){
-				resultMap = getContactResult('open')
-			}
-		break
-
-		case '0x0022': // Tamper Alarm
-		break
-
-		case '0x0023': // Battery Alarm
-		break
-
-		case '0x0024': // Supervision Report
-			if (garageSensor != "Yes"){
-				resultMap = getContactResult('closed')
-			}
-		break
-
-		case '0x0025': // Restore Report
-			if (garageSensor != "Yes"){
-				resultMap = getContactResult('open')
-			}
-		break
-
-		case '0x0026': // Trouble/Failure
-		break
-
-		case '0x0028': // Test Mode
-		break
-	}
 	return resultMap
 }
 
@@ -338,7 +312,8 @@ private Map getBatteryResult(rawValue) {
 				def minVolts = 2.1
 				def maxVolts = 3.0
 				def pct = (volts - minVolts) / (maxVolts - minVolts)
-				result.value = Math.min(100, (int) pct * 100)
+				def roundedPct = Math.round(pct * 100)
+				result.value = Math.min(100, roundedPct)
 				result.descriptionText = "{{ device.displayName }} battery was {{ value }}%"
 			}
 		}
@@ -396,6 +371,21 @@ private getAccelerationResult(numValue) {
 	]
 }
 
+/**
+ * PING is used by Device-Watch in attempt to reach the Device
+ * */
+def ping() {
+
+	if (state.lastActivity < (now() - (1000 * device.currentValue("checkInterval"))) ){
+		log.info "ping, alive=no, lastActivity=${state.lastActivity}"
+		state.lastActivity = null
+		return zigbee.readAttribute(0x001, 0x0020) // Read the Battery Level
+	} else {
+		log.info "ping, alive=yes, lastActivity=${state.lastActivity}"
+		sendEvent(name: "deviceWatch-lastActivity", value: state.lastActivity, description: "Last Activity is on ${new Date((long)state.lastActivity)}", displayed: false, isStateChange: true)
+	}
+}
+
 def refresh() {
 	log.debug "Refreshing Values "
 
@@ -423,7 +413,7 @@ def refresh() {
 }
 
 def configure() {
-	sendEvent(name: "checkInterval", value: 7200, displayed: false)
+	sendEvent(name: "checkInterval", value: 7200, displayed: false, data: [protocol: "zigbee"])
 
 	log.debug "Configuring Reporting"
 

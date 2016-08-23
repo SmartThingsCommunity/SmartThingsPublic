@@ -64,8 +64,10 @@ metadata {
     }
 
     standardTile("switch", "device.switch", width: 1, height: 1, canChangeIcon: true) {
-        state "off", label: '${name}', action: "switch.on", icon: "st.Electronics.electronics16", backgroundColor: "#ffffff"
-        state "on", label: '${name}', action: "switch.off", icon: "st.Electronics.electronics16", backgroundColor: "#79b821"
+        state "on", label: '${name}', action: "switch.off", icon: "st.Electronics.electronics16", backgroundColor: "#79b821", nextState:"turningOff"
+        state "turningOff", label:'TURNING OFF', icon:"st.Electronics.electronics16", backgroundColor:"#ffffff"
+        state "off", label: '${name}', action: "switch.on", icon: "st.Electronics.electronics16", backgroundColor: "#ffffff", nextState:"turningOn"
+        state "turningOn", label:'TURNING ON', icon:"st.Electronics.electronics16", backgroundColor:"#79b821"
     }
     valueTile("1", "device.station1", decoration: "flat", canChangeIcon: false) {
         state "station1", label:'${currentValue}', action:"preset1"
@@ -747,8 +749,16 @@ def cb_boseSetInput(xml, input) {
  */
 def boseSetPowerState(boolean enable) {
     log.info "boseSetPowerState(${enable})"
-    queueCallback('nowPlaying', "cb_boseSetPowerState", enable ? "POWERON" : "POWEROFF")
-    return boseRefreshNowPlaying()
+    // Fix to get faster update of power status back from speaker after sending on/off
+    // Instead of queuing the command to be sent after the refresh send it directly via sendHubCommand
+    // Note: This is a temporary hack that should be replaced by a re-design of the
+    // DTH to use sendHubCommand for all commands
+    sendHubCommand(bosePOST("/key", "<key state=\"press\" sender=\"Gabbo\">POWER</key>")) 
+    sendHubCommand(bosePOST("/key", "<key state=\"release\" sender=\"Gabbo\">POWER</key>"))
+    sendHubCommand(boseGET("/now_playing"))
+    if (enable) {
+        queueCallback('nowPlaying', "cb_boseConfirmPowerOn", 5)
+    }
 }
 
 /**
@@ -787,10 +797,11 @@ def cb_boseSetPowerState(xml, state) {
  */
 def cb_boseConfirmPowerOn(xml, tries) {
     def result = []
-    log.warn "boseConfirmPowerOn() attempt #" + tries
-    if (xml.attributes()['source'] == "STANDBY" && tries > 0) {
+    def attempt = tries as Integer
+    log.warn "boseConfirmPowerOn() attempt #$attempt"
+    if (xml.attributes()['source'] == "STANDBY" && attempt > 0) {
         result << boseRefreshNowPlaying()
-        queueCallback('nowPlaying', "cb_boseConfirmPowerOn", tries-1)
+        queueCallback('nowPlaying', "cb_boseConfirmPowerOn", attempt-1)
     }
     return result
 }
