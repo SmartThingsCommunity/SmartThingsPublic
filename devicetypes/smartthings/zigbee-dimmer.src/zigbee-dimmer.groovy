@@ -54,13 +54,16 @@ def parse(String description) {
 
     def event = zigbee.getEvent(description)
     if (event) {
-        sendEvent(event)
         // Temporary fix for the case when Device is OFFLINE and is connected again
         if (state.lastActivity == null){
             state.lastActivity = now()
             sendEvent(name: "deviceWatch-lastActivity", value: state.lastActivity, description: "Last Activity is on ${new Date((long)state.lastActivity)}", displayed: false, isStateChange: true)
         }
         state.lastActivity = now()
+        if (event.name=="level" && event.value==0) {}
+        else {
+            sendEvent(event)
+        }
     }
     else {
         log.warn "DID NOT PARSE MESSAGE for description : $description"
