@@ -36,7 +36,7 @@ metadata {
             }
         }
 
-        controlTile("colorTempSliderControl", "device.colorTemperature", "slider", width: 4, height: 2, inactiveLabel: false, range:"(2000..6500)") {
+        controlTile("colorTempSliderControl", "device.colorTemperature", "slider", width: 4, height: 2, inactiveLabel: false, range:"(2200..6500)") {
             state "colorTemperature", action:"color temperature.setColorTemperature"
         }
 
@@ -73,20 +73,16 @@ def parse(description) {
 // handle commands
 void on() {
     log.trace parent.on(this)
-    sendEvent(name: "switch", value: "on")
 }
 
 void off() {
     log.trace parent.off(this)
-    sendEvent(name: "switch", value: "off")
 }
 
 void setLevel(percent) {
     log.debug "Executing 'setLevel'"
     if (percent != null && percent >= 0 && percent <= 100) {
-        parent.setLevel(this, percent)
-        sendEvent(name: "level", value: percent)
-        sendEvent(name: "switch", value: "on")
+        log.trace parent.setLevel(this, percent)
     } else {
         log.warn "$percent is not 0-100"
     }
@@ -95,9 +91,7 @@ void setLevel(percent) {
 void setColorTemperature(value) {
     if (value) {
         log.trace "setColorTemperature: ${value}k"
-        parent.setColorTemperature(this, value)
-        sendEvent(name: "colorTemperature", value: value)
-        sendEvent(name: "switch", value: "on")
+        log.trace parent.setColorTemperature(this, value)
     } else {
         log.warn "Invalid color temperature"
     }

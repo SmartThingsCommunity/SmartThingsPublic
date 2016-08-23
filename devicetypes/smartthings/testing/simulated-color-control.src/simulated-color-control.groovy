@@ -1,6 +1,8 @@
 metadata {
 	definition (name: "Simulated Color Control", namespace: "smartthings/testing", author: "SmartThings") {
     	capability "Color Control"
+		capability "Sensor"
+		capability "Actuator"
 	}
 
 	simulator {
