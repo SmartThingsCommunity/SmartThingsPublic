@@ -74,6 +74,9 @@ def parse(String description) {
     if (event) {
         if (event.name=="level" && event.value==0) {}
         else {
+            if (event.name=="colorTemperature") {
+                setGenericName(event.value)
+            }
             sendEvent(event)
         }
     }
