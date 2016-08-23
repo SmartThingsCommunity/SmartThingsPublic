@@ -13,7 +13,6 @@
  *  License for the specific language governing permissions and limitations
  *  under the License.
  */
-import physicalgraph.zigbee.clusters.iaszone.ZoneStatus
 
 metadata {
 	definition (name: "SmartSense Multi Sensor", namespace: "smartthings", author: "SmartThings", category: "C2") {
@@ -225,13 +224,47 @@ private Map parseCustomMessage(String description) {
 }
 
 private Map parseIasMessage(String description) {
-	ZoneStatus zs = zigbee.parseZoneStatus(description)
+	List parsedMsg = description.split(' ')
+	String msgCode = parsedMsg[2]
+
 	Map resultMap = [:]
+	switch(msgCode) {
+		case '0x0020': // Closed/No Motion/Dry
+			if (garageSensor != "Yes"){
+				resultMap = getContactResult('closed')
+			}
+		break
 
-	if(garageSensor !=  "Yes") {
-		resultMap = zs.isAlarm1Set() ? getContactResult('open') : getContactResult('closed')
+		case '0x0021': // Open/Motion/Wet
+			if (garageSensor != "Yes"){
+				resultMap = getContactResult('open')
+			}
+		break
+
+		case '0x0022': // Tamper Alarm
+		break
+
+		case '0x0023': // Battery Alarm
+		break
+
+		case '0x0024': // Supervision Report
+			if (garageSensor != "Yes"){
+				resultMap = getContactResult('closed')
+			}
+		break
+
+		case '0x0025': // Restore Report
+			if (garageSensor != "Yes"){
+				resultMap = getContactResult('open')
+			}
+		break
+
+		case '0x0026': // Trouble/Failure
+		break
+
+		case '0x0028': // Test Mode
+		break
 	}
-
 	return resultMap
 }
 
