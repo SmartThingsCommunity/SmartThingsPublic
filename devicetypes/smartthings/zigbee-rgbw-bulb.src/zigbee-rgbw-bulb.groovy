@@ -81,12 +81,15 @@ private getATTRIBUTE_COLOR_TEMPERATURE() { 0x0007 }
 def parse(String description) {
     log.debug "description is $description"
 
-    def finalResult = zigbee.getEvent(description)
-    if (finalResult) {
-        log.debug finalResult
-        if (finalResult.name=="level" && finalResult.value==0) {}
+    def event = zigbee.getEvent(description)
+    if (event) {
+        log.debug event
+        if (event.name=="level" && event.value==0) {}
         else {
-            sendEvent(finalResult)
+            if (event.name=="colorTemperature") {
+                setGenericName(event.value)
+            }
+            sendEvent(event)
         }
     }
     else {
