@@ -1,11 +1,11 @@
 /**  
- *  BIG TALKER -- Version 1.1.6 -- A SmartApp for SmartThings Home Automation System
+ *  BIG TALKER -- Version 1.1.7 -- A SmartApp for SmartThings Home Automation System
  *  Copyright 2014-2016 - rayzur@rayzurbock.com - Brian S. Lowrance
  *  For the latest version, development and test releases visit http://www.github.com/rayzurbock
  *
  *  This SmartApp is free. Donations to support development efforts are accepted via: 
  *      -- Paypal at: rayzur@rayzurbock.com
- *      -- Paypal Donation (for supporters without a Paypal account): https://www.paypal.com/cgi-bin/webscr?cmd=_s-xclick&hosted_button_id=WKB9N9MPUGTZS
+ *      -- Square Cash:  https://Cash.me/$Lowrance (Debit cards = free, Credit cards charge 3% on top of your donation o $15 is charged as $15.45)
  *      -- Square Marketplace at: https://squareup.com/market/brian-lowrance#category-a58f6ff3-7380-471b-8432-7e5881654e2c
  *
  *-------------------------------------------------------------------------------------------------------------------
@@ -28,9 +28,9 @@ definition(
     author: "rayzur@rayzurbock.com",
     description: "Let's talk about mode changes, switches, motions, and so on.",
     category: "Fun & Social",
-    iconUrl: "http://rayzurbock.com/ST/icons/BigTalker-115.png",
-    iconX2Url: "http://rayzurbock.com/ST/icons/BigTalker@2x-115.png",
-    iconX3Url: "http://rayzurbock.com/ST/icons/BigTalker@2x-115.png")
+    iconUrl: "http://rayzurbock.com/ST/icons/BigTalker-117.png",
+    iconX2Url: "http://rayzurbock.com/ST/icons/BigTalker@2x-117.png",
+    iconX3Url: "http://rayzurbock.com/ST/icons/BigTalker@2x-117.png")
 
 
 preferences {
@@ -57,6 +57,7 @@ preferences {
 }
 
 def pageStart(){
+	setAppVersion()
     if (checkConfig()) { 
         // Do nothing here, but run checkConfig() 
     } 
@@ -1590,6 +1591,7 @@ def pageHelpPhraseTokens(){
        	   def AvailTokens = ""
            AvailTokens += "%devicename% = Triggering devices display name\n\n"
            AvailTokens += "%devicetype% = Triggering device type; motion, switch, etc\n\n"
+           AvailTokens += "%devicechange% = State change that occurred; on/off, active/inactive, etc...\n\n"
            AvailTokens += "%locationname% = Hub location name; home, work, etc\n\n"
            AvailTokens += "%lastmode% = Last hub mode; home, away, etc\n\n"
            AvailTokens += "%mode% = Current hub mode; home, away, etc\n\n"
@@ -2239,7 +2241,6 @@ def checkConfig() {
 }
 
 def initialize() {
-    setAppVersion()
     if (!(checkConfig())) { 
         def msg = ""
         msg = "ERROR: App not properly configured!  Can't start.\n"
@@ -3918,5 +3919,5 @@ def LOGERROR(txt){
 }
 
 def setAppVersion(){
-    state.appversion = "1.1.6"
+    state.appversion = "1.1.7"
 }
