@@ -13,7 +13,6 @@
  *  for the specific language governing permissions and limitations under the License.
  *
  */
-import physicalgraph.zigbee.clusters.iaszone.ZoneStatus
 
 metadata {
 	definition (name: "NYCE Motion Sensor", namespace: "smartthings", author: "SmartThings") {
@@ -144,14 +143,51 @@ private Map parseReportAttributeMessage(String description) {
  
 
 private Map parseIasMessage(String description) {
-	ZoneStatus zs = zigbee.parseZoneStatus(description)
-	Map resultMap = [:]
+    List parsedMsg = description.split(' ')
+    String msgCode = parsedMsg[2]
+    
+    Map resultMap = [:]
+    switch(msgCode) {
+        case '0x0030': // Closed/No Motion/Dry
+            log.debug 'no motion'
+            resultMap.name = 'motion'
+            resultMap.value = 'inactive'
+            break
 
-	result.name = 'motion'
-	result.value = zs.isAlarm2Set() ? 'active' : 'inactive'
-	log.debug(zs.isAlarm2Set() ? 'motion' : 'no motion')
+        case '0x0032': // Open/Motion/Wet
+            log.debug 'motion'
+            resultMap.name = 'motion'
+            resultMap.value = 'active'
+            break
 
-	return resultMap
+        case '0x0032': // Tamper Alarm
+        	log.debug 'motion with tamper alarm'
+            resultMap.name = 'motion'
+            resultMap.value = 'active'
+            break
+
+        case '0x0033': // Battery Alarm
+            break
+
+        case '0x0034': // Supervision Report
+        	log.debug 'no motion with tamper alarm'
+            resultMap.name = 'motion'
+            resultMap.value = 'inactive'
+            break
+
+        case '0x0035': // Restore Report
+            break
+
+        case '0x0036': // Trouble/Failure
+        	log.debug 'motion with failure alarm'
+            resultMap.name = 'motion'
+            resultMap.value = 'active'
+            break
+
+        case '0x0038': // Test Mode
+            break
+    }
+    return resultMap
 }
 
 def refresh()
