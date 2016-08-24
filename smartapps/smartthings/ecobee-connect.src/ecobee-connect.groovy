@@ -294,10 +294,10 @@ Map sensorsDiscovered() {
 }
 
 def getThermostatDisplayName(stat) {
-	if(stat?.name) {
+    if(stat?.name) {
         return stat.name.toString()
     }
-	return (getThermostatTypeName(stat) + " (${stat.identifier})").toString()
+    return (getThermostatTypeName(stat) + " (${stat.identifier})").toString()
 }
 
 def getThermostatTypeName(stat) {
@@ -384,8 +384,8 @@ def pollHandler() {
 }
 
 def pollChildren(child = null) {
-	def thermostatIdsString = getChildDeviceIdsString()
-	log.debug "polling children: $thermostatIdsString"
+    def thermostatIdsString = getChildDeviceIdsString()
+    log.debug "polling children: $thermostatIdsString"
 
     def requestBody = [
         selection: [
@@ -401,24 +401,24 @@ def pollChildren(child = null) {
 	def result = false
 
 	def pollParams = [
-		uri: apiEndpoint,
-		path: "/1/thermostat",
-		headers: ["Content-Type": "text/json", "Authorization": "Bearer ${atomicState.authToken}"],
+        uri: apiEndpoint,
+        path: "/1/thermostat",
+        headers: ["Content-Type": "text/json", "Authorization": "Bearer ${atomicState.authToken}"],
         // TODO - the query string below is not consistent with the Ecobee docs:
         // https://www.ecobee.com/home/developer/api/documentation/v1/operations/get-thermostats.shtml
-		query: [format: 'json', body: toJson(requestBody)]
-	]
+        query: [format: 'json', body: toJson(requestBody)]
+    ]
 
 	try{
 		httpGet(pollParams) { resp ->
 			if(resp.status == 200) {
-				log.debug "poll results returned resp.data ${resp.data}"
-				atomicState.remoteSensors = resp.data.thermostatList.remoteSensors
-				updateSensorData()
+                log.debug "poll results returned resp.data ${resp.data}"
+                atomicState.remoteSensors = resp.data.thermostatList.remoteSensors
+                updateSensorData()
                 storeThermostatData(resp.data.thermostatList)
-				result = true
-				log.debug "updated ${atomicState.thermostats?.size()} stats: ${atomicState.thermostats}"
-			}
+                result = true
+                log.debug "updated ${atomicState.thermostats?.size()} stats: ${atomicState.thermostats}"
+            }
 		}
 	} catch (groovyx.net.http.HttpResponseException e) {
 		log.trace "Exception polling children: " + e.response.data.status
@@ -474,20 +474,20 @@ def availableModes(child) {
 
 	def modes = ["off"]
 
-	if (tData.data.heatMode) {
+    if (tData.data.heatMode) {
         modes.add("heat")
     }
-	if (tData.data.coolMode) {
+    if (tData.data.coolMode) {
         modes.add("cool")
     }
-	if (tData.data.autoMode) {
+    if (tData.data.autoMode) {
         modes.add("auto")
     }
-	if (tData.data.auxHeatMode) {
+    if (tData.data.auxHeatMode) {
         modes.add("auxHeatOnly")
     }
 
-	return modes
+    return modes
 }
 
 def currentMode(child) {
@@ -615,7 +615,7 @@ private void saveTokenAndResumeAction(json) {
         atomicState.refreshToken = json?.refresh_token
         atomicState.authToken = json?.access_token
         if (atomicState.action) {
-            log.debug "ASYNC refreshTokenHandler: got refresh token, executing next action: ${atomicState.action}"
+            log.debug "got refresh token, executing next action: ${atomicState.action}"
             "${atomicState.action}"()
         }
     } else {
@@ -678,7 +678,7 @@ boolean setHold(heating, cooling, deviceId, sendHoldType) {
         ]
     ]
 
-	return sendCommandToEcobee(payload)
+    return sendCommandToEcobee(payload)
 }
 
 /**
@@ -759,19 +759,19 @@ private boolean sendCommandToEcobee(Map bodyParams) {
 	]
 
 	try{
-		httpPost(cmdParams) { resp ->
-			if(resp.status == 200) {
-				log.debug "updated ${resp.data}"
+        httpPost(cmdParams) { resp ->
+            if(resp.status == 200) {
+                log.debug "updated ${resp.data}"
                 def returnStatus = resp.data.status.code
-				if (returnStatus == 0) {
+                if (returnStatus == 0) {
                     log.debug "Successful call to ecobee API."
                     isSuccess = true
                 } else {
-					log.debug "Error return code = ${returnStatus}"
-					debugEvent("Error return code = ${returnStatus}")
-				}
-			}
-		}
+                    log.debug "Error return code = ${returnStatus}"
+                    debugEvent("Error return code = ${returnStatus}")
+                }
+            }
+        }
 	} catch (groovyx.net.http.HttpResponseException e) {
         log.trace "Exception Sending Json: " + e.response.data.status
         debugEvent ("sent Json & got http status ${e.statusCode} - ${e.response.data.status.code}")
