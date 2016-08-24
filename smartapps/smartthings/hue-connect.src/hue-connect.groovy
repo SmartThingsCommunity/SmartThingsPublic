@@ -1017,12 +1017,12 @@ def setColor(childDevice, huesettings) {
     log.debug "Executing 'setColor($huesettings)'"
 
     updateInProgress()
-    
+
     def value = [:]
     def hue = null
     def sat = null
     def xy = null
-    
+
 	// For now ignore model to get a consistent color if same color is set across multiple devices
 	// def model = state.bulbs[getId(childDevice)]?.modelid
     if (huesettings.hex != null) {
@@ -1038,11 +1038,12 @@ def setColor(childDevice, huesettings) {
 	else
 		value.hue = Math.min(Math.round(childDevice.device?.currentValue("hue") * 65535 / 100), 65535)
 
-        if (huesettings.saturation != null)   
+        if (huesettings.saturation != null)
 		value.sat = Math.min(Math.round(huesettings.saturation * 254 / 100), 254)
 	else
 		value.sat = Math.min(Math.round(childDevice.device?.currentValue("saturation") * 254 / 100), 254)
 
+/* Disabled for now due to bad behavior via Lightning Wizard
 	if (!value.xy) {
 		// Below will translate values to hex->XY to take into account the color support of the different hue types
 		def hex = colorUtil.hslToHex((int) huesettings.hue, (int) huesettings.saturation)
@@ -1050,6 +1051,7 @@ def setColor(childDevice, huesettings) {
 		// Once groups, or scenes are introduced it might be a good idea to use unique models again
 		value.xy = calculateXY(hex)
     }
+*/
 
     // Default behavior is to turn light on
     value.on = true
@@ -1059,7 +1061,7 @@ def setColor(childDevice, huesettings) {
             value.on = false
         else if (huesettings.level == 1)
             value.bri = 1
-        else 
+        else
 			value.bri = Math.min(Math.round(huesettings.level * 254 / 100), 254)
     }
     value.alert = huesettings.alert ? huesettings.alert : "none"
