@@ -1,32 +1,29 @@
-# Smartsense Motion Sensor
+# Connected Cree LED Bulb
 
 
 
 Works with: 
 
-* [Samsung SmartThings Motion Sensor](https://shop.smartthings.com/#!/products/samsung-smartthings-motion-sensor)
+* [Samsung Connected Cree LED Bulb](https://support.smartthings.com/hc/en-us/articles/204258280-Cree-Connected-LED-Bulb)
 
 ## Table of contents
 
 * [Capabilities](#capabilities)
 * [Health](#device-health)
-* [Battery](#battery-specification)
 
 ## Capabilities
 
+* **Actuator** - represents that a Device has commands
 * **Configuration** - _configure()_ command called when device is installed or device preferences updated
-* **Motion Sensor** - can detect motion
-* **Battery** - defines device uses a battery
+* **Polling** - represents that poll() can be implemented for the device
 * **Refresh** - _refresh()_ command for status updates
+* **Switch** - can detect state (possible values: on/off)
+* **Switch Level** - represents current light level, usually 0-100 in percent
 * **Health Check** - indicates ability to get device health notifications
 
 ## Device Health
 
-A Category C2 motion sensor with maxReportTime of 1 hr.
+A Category C6 Connected Cree LED Bulb with maxReportTime of 10 min.
 Check-in interval is double the value of maxReportTime for Zigbee device. 
 This gives the device twice the amount of time to respond before it is marked as offline.
-Check-in interval = 2*60 = 120 min
-
-## Battery Specification
-
-One CR123A 3V battery is required.
+Check-in interval = 2*10 = 20 min
