@@ -147,8 +147,8 @@ private Map parseIasMessage(String description) {
 	ZoneStatus zs = zigbee.parseZoneStatus(description)
 	Map resultMap = [:]
 
-	result.name = 'motion'
-	result.value = zs.isAlarm2Set() ? 'active' : 'inactive'
+	resultMap.name = 'motion'
+	resultMap.value = zs.isAlarm2Set() ? 'active' : 'inactive'
 	log.debug(zs.isAlarm2Set() ? 'motion' : 'no motion')
 
 	return resultMap
