@@ -10,7 +10,7 @@ Version: 1.1.7 <br />
  This SmartApp is free. Donations to support development efforts are accepted via (non-refundable, no gurantee of service/support):
  * PayPal to: rayzur [at] rayzurbock.com
  * Link: <a href=https://cash.me/$Lowrance>Cash.me/$Lowrance</a> (Debit cards = free, Credit cards charge 3% on top of your donation)
- * Link: <a href='https://squareup.com/market/brian-lowrance/item/donation-bigtalker'>Square Marketplace</a> (Donation is reduced by 2.9% + .30)
+ * Link: <a href='https://squareup.com/market/brian-lowrance/item/donation-bigtalker'>Square Marketplace</a> (Square receives 2.9% + .30)
 
 #License
 **BIG TALKER -- A SmartApp for SmartThings Home Automation System** <br />
