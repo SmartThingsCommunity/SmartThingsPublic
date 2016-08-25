@@ -406,7 +406,7 @@ def generateOperatingStateEvent(operatingState) {
 def off() {
 	log.debug "off"
 	def deviceId = device.deviceNetworkId.split(/\./).last()
-	if (parent.setMode (this,"off", deviceId))
+	if (parent.setMode ("off", deviceId))
 		generateModeEvent("off")
 	else {
 		log.debug "Error setting new mode."
@@ -420,7 +420,7 @@ def off() {
 def heat() {
 	log.debug "heat"
 	def deviceId = device.deviceNetworkId.split(/\./).last()
-	if (parent.setMode (this,"heat", deviceId))
+	if (parent.setMode ("heat", deviceId))
 		generateModeEvent("heat")
 	else {
 		log.debug "Error setting new mode."
@@ -438,7 +438,7 @@ def emergencyHeat() {
 def auxHeatOnly() {
 	log.debug "auxHeatOnly"
 	def deviceId = device.deviceNetworkId.split(/\./).last()
-	if (parent.setMode (this,"auxHeatOnly", deviceId))
+	if (parent.setMode ("auxHeatOnly", deviceId))
 		generateModeEvent("auxHeatOnly")
 	else {
 		log.debug "Error setting new mode."
@@ -452,7 +452,7 @@ def auxHeatOnly() {
 def cool() {
 	log.debug "cool"
 	def deviceId = device.deviceNetworkId.split(/\./).last()
-	if (parent.setMode (this,"cool", deviceId))
+	if (parent.setMode ("cool", deviceId))
 		generateModeEvent("cool")
 	else {
 		log.debug "Error setting new mode."
@@ -466,7 +466,7 @@ def cool() {
 def auto() {
 	log.debug "auto"
 	def deviceId = device.deviceNetworkId.split(/\./).last()
-	if (parent.setMode (this,"auto", deviceId))
+	if (parent.setMode ("auto", deviceId))
 		generateModeEvent("auto")
 	else {
 		log.debug "Error setting new mode."
@@ -489,7 +489,7 @@ def fanOn() {
 	def coolingValue = location.temperatureScale == "C"? convertCtoF(coolingSetpoint) : coolingSetpoint
 	def heatingValue = location.temperatureScale == "C"? convertCtoF(heatingSetpoint) : heatingSetpoint
 
-	if (parent.setFanMode(this, heatingValue, coolingValue, deviceId, sendHoldType, fanMode)) {
+	if (parent.setFanMode(heatingValue, coolingValue, deviceId, sendHoldType, fanMode)) {
 		generateFanModeEvent(fanMode)
 	} else {
 		log.debug "Error setting new mode."
