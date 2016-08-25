@@ -76,7 +76,7 @@ metadata {
 		standardTile("reset", "device.energy", inactiveLabel: false, decoration: "flat", width: 2, height: 2) {
 			state "default", label:'reset kWh', action:"reset"
 		}
-        valueTile("configure", "device.needUpdate", decoration: "flat", width: 2, height: 2) {
+        valueTile("configure", "device.needUpdate", inactiveLabel: false, decoration: "flat", width: 2, height: 2) {
             state("NO" , label:'Synced', action:"configuration.configure", backgroundColor:"#8acb47")
             state("YES", label:'Pending', action:"configuration.configure", backgroundColor:"#f39c12")
         }
@@ -132,71 +132,8 @@ def zwaveEvent(physicalgraph.zwave.commands.sceneactivationv1.SceneActivationSet
     logging("sceneId: $cmd.sceneId")
     logging("dimmingDuration: $cmd.dimmingDuration")
     
-    if (settings."20" == null || settings."20" == "0") {
-        switch (cmd.sceneId) {
-            // Momentary S1
-            case 16: // 1x click
-                buttonEvent(1, "pushed")
-            break
-            case 14: // 2x click
-                buttonEvent(2, "pushed")
-            break
-            case 12: // held
-                buttonEvent(1, "held")
-            break
-            case 13: // release
-                buttonEvent(2, "held")
-            break
-            // Momentary S2
-            case 26: // 1x click
-                buttonEvent(3, "pushed")
-            break
-            case 24: // 2x click
-                buttonEvent(4, "pushed")
-            break
-            case 25: // 3x click
-                buttonEvent(5, "pushed")
-            break
-            case 22: // held
-                buttonEvent(3, "held")
-            break
-            case 23: // release
-                buttonEvent(4, "held")
-            break
-            default:
-                logging("Unhandled SceneActivationSet: ${cmd}")
-            break
-        }
-    } else if (settings."20" == "1") {
-        switch (cmd.sceneId) {
-            // Toggle S1
-            case 10: // Off to On
-                buttonEvent(1, "pushed")
-            break
-            case 11: // On to Off
-                buttonEvent(1, "held")
-            break
-            case 14: // 2x click
-                buttonEvent(2, "pushed")
-            break
-            // Toggle S2
-            case 20: // Off to On
-                buttonEvent(3, "pushed")
-            break
-            case 21: // On to Off
-                buttonEvent(3, "held")
-            break
-            case 24: // 2x click
-                buttonEvent(4, "pushed")
-            break
-            case 25: // 3x click
-                buttonEvent(5, "pushed")
-            break
-            default:
-                logging("Unhandled SceneActivationSet: ${cmd}")
-            break
-        }
-    } else if (settings."20" == "2") {
+    if (settings."20" == "2") {
+        logging("Switch configured as Roller blinds")
         switch (cmd.sceneId) {
             // Roller blinds S1
             case 10: // Turn On (1x click)
@@ -231,10 +168,78 @@ def zwaveEvent(physicalgraph.zwave.commands.sceneactivationv1.SceneActivationSet
                 logging("Unhandled SceneActivationSet: ${cmd}")
             break
         }
-    }
+    } else if (settings."20" == "1") {
+        logging("Switch configured as Toggle")
+        switch (cmd.sceneId) {
+            // Toggle S1
+            case 10: // Off to On
+                buttonEvent(1, "pushed")
+            break
+            case 11: // On to Off
+                buttonEvent(1, "held")
+            break
+            case 14: // 2x click
+                buttonEvent(2, "pushed")
+            break
+            // Toggle S2
+            case 20: // Off to On
+                buttonEvent(3, "pushed")
+            break
+            case 21: // On to Off
+                buttonEvent(3, "held")
+            break
+            case 24: // 2x click
+                buttonEvent(4, "pushed")
+            break
+            case 25: // 3x click
+                buttonEvent(5, "pushed")
+            break
+            default:
+                logging("Unhandled SceneActivationSet: ${cmd}")
+            break
+        
+        }
+    } else {
+        if (settings."20" == "0") logging("Switch configured as Momentary") else logging("Switch type not configured") 
+        switch (cmd.sceneId) {
+            // Momentary S1
+            case 16: // 1x click
+                buttonEvent(1, "pushed")
+            break
+            case 14: // 2x click
+                buttonEvent(2, "pushed")
+            break
+            case 12: // held
+                buttonEvent(1, "held")
+            break
+            case 13: // release
+                buttonEvent(2, "held")
+            break
+            // Momentary S2
+            case 26: // 1x click
+                buttonEvent(3, "pushed")
+            break
+            case 24: // 2x click
+                buttonEvent(4, "pushed")
+            break
+            case 25: // 3x click
+                buttonEvent(5, "pushed")
+            break
+            case 22: // held
+                buttonEvent(3, "held")
+            break
+            case 23: // release
+                buttonEvent(4, "held")
+            break
+            default:
+                logging("Unhandled SceneActivationSet: ${cmd}")
+            break
+        }
+    }  
 }
 
 def buttonEvent(button, value) {
+    logging("buttonEvent() Button:$button, Value:$value")
 	createEvent(name: "button", value: value, data: [buttonNumber: button], descriptionText: "$device.displayName button $button was $value", isStateChange: true)
 }
 
