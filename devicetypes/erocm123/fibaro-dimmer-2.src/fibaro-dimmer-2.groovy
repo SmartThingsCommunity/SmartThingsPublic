@@ -131,6 +131,7 @@ def zwaveEvent(physicalgraph.zwave.commands.sceneactivationv1.SceneActivationSet
     logging("SceneActivationSet: $cmd")
     logging("sceneId: $cmd.sceneId")
     logging("dimmingDuration: $cmd.dimmingDuration")
+    logging("Configuration for preference \"Switch Type\" is set to ${settings."20"}")
     
     if (settings."20" == "2") {
         logging("Switch configured as Roller blinds")
