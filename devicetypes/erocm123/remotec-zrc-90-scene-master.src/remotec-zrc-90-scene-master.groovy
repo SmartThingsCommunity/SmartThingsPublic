@@ -21,6 +21,7 @@ metadata {
         capability "Battery"
         
         attribute "sequenceNumber", "number"
+        attribute "numberOfButtons", "number"
 
 		fingerprint deviceId: "0x0106", inClusters: "0x5E,0x85,0x72,0x21,0x84,0x86,0x80,0x73,0x59,0x5A,0x5B,0xEF,0x5B,0x84"
 	}
@@ -74,8 +75,11 @@ metadata {
 			"sequenceNumber", "device.sequenceNumber", decoration: "flat", width: 2, height: 2) {
 			state "battery", label:'${currentValue}', unit:""
 		}
+        standardTile("configure", "device.configure", inactiveLabel: false, width: 2, height: 2, decoration: "flat") {
+			state "configure", label:'', action:"configuration.configure", icon:"st.secondary.configure"
+		}
 		main "button"
-		details(["button", "battery", "sequenceNumber"])
+		details(["button", "battery", "sequenceNumber", "configure"])
 	}
     
     preferences {
@@ -96,6 +100,9 @@ def parse(String description) {
 		if(cmd) results += zwaveEvent(cmd)
 		if(!results) results = [ descriptionText: cmd, displayed: false ]
 	}
+    
+    if(state.isConfigured != "true") configure()
+    
 	return results
 }
 
@@ -150,6 +157,18 @@ def zwaveEvent(physicalgraph.zwave.Command cmd) {
 	log.debug "Unhandled zwaveEvent: ${cmd}"
 }
 
+def installed() {
+    log.debug "installed()"
+    configure()
+}
+
+def updated() {
+    log.debug "updated()"
+    configure()
+}
+
 def configure() {
 	log.debug "configure()"
+    sendEvent(name: "numberOfButtons", value: 16, displayed: true)
+    state.isConfigured = "true"
 }
