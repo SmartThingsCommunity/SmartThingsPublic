@@ -22,6 +22,7 @@ metadata {
         capability "Actuator"
         capability "Color Temperature"
         capability "Configuration"
+        capability "Health Check"
         capability "Refresh"
         capability "Switch"
         capability "Switch Level"
@@ -72,6 +73,12 @@ def parse(String description) {
     log.debug "description is $description"
     def event = zigbee.getEvent(description)
     if (event) {
+        // Temporary fix for the case when Device is OFFLINE and is connected again
+        if (state.lastActivity == null){
+            state.lastActivity = now()
+            sendEvent(name: "deviceWatch-lastActivity", value: state.lastActivity, description: "Last Activity is on ${new Date((long)state.lastActivity)}", displayed: false, isStateChange: true)
+        }
+        state.lastActivity = now()
         if (event.name=="level" && event.value==0) {}
         else {
             if (event.name=="colorTemperature") {
@@ -98,12 +105,29 @@ def setLevel(value) {
     zigbee.setLevel(value)
 }
 
+/**
+ * PING is used by Device-Watch in attempt to reach the Device
+ * */
+def ping() {
+
+    if (state.lastActivity < (now() - (1000 * device.currentValue("checkInterval"))) ){
+        log.info "ping, alive=no, lastActivity=${state.lastActivity}"
+        state.lastActivity = null
+        return zigbee.onOffRefresh()
+    } else {
+        log.info "ping, alive=yes, lastActivity=${state.lastActivity}"
+        sendEvent(name: "deviceWatch-lastActivity", value: state.lastActivity, description: "Last Activity is on ${new Date((long)state.lastActivity)}", displayed: false, isStateChange: true)
+    }
+}
+
 def refresh() {
     zigbee.onOffRefresh() + zigbee.levelRefresh() + zigbee.colorTemperatureRefresh() + zigbee.onOffConfig() + zigbee.levelConfig() + zigbee.colorTemperatureConfig()
 }
 
 def configure() {
     log.debug "Configuring Reporting and Bindings."
+    // Enrolls device to Device-Watch with 3 x Reporting interval 30min
+    sendEvent(name: "checkInterval", value: 1800, displayed: false, data: [protocol: "zigbee"])
     zigbee.onOffConfig() + zigbee.levelConfig() + zigbee.colorTemperatureConfig() + zigbee.onOffRefresh() + zigbee.levelRefresh() + zigbee.colorTemperatureRefresh()
 }
 
