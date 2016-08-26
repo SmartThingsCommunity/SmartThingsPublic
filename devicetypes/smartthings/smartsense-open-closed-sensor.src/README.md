@@ -32,3 +32,10 @@ Check-in interval = 2*60 = 120 min
 ## Battery Specification
 
 One CR2 3V battery required.
+
+## Troubleshooting
+
+If the sensor doesn't pair when trying from the SmartThings mobile app, it is possible that the sensor is out of range.
+Pairing needs to be tried again by placing the sensor closer to the hub.
+Instructions related to pairing, resetting and removing the sensor from SmartThings can be found in the following link:
+* [SmartSense Open/Closed Sensor Troubleshooting Tips](https://support.smartthings.com/hc/en-us/articles/202836844-SmartSense-Open-Closed-Sensor)

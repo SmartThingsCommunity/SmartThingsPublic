@@ -32,3 +32,10 @@ Check-in interval = 2*60 = 120 min
 ## Battery Specification
 
 One CR2 battery is required.
+
+## Troubleshooting
+
+If the sensor doesn't pair when trying from the SmartThings mobile app, it is possible that the sensor is out of range.
+Pairing needs to be tried by placing the sensor closer to the hub.
+Instructions related to pairing, resetting and removing the sensor from SmartThings can be found in the following link:
+* [Troubleshooting Tips](https://support.smartthings.com/hc/en-us/articles/203040294)
