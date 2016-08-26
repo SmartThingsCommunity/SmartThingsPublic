@@ -128,9 +128,6 @@ def callback() {
 		httpPost(uri: tokenUrl) { resp ->
 			atomicState.refreshToken = resp.data.refresh_token
 			atomicState.authToken = resp.data.access_token
-			log.debug "swapped token: $resp.data"
-			log.debug "atomicState.refreshToken: ${atomicState.refreshToken}"
-			log.debug "atomicState.authToken: ${atomicState.authToken}"
 		}
 
 		if (atomicState.authToken) {
@@ -568,8 +565,6 @@ private refreshAuthToken() {
 			path  : "/token",
 			query : [grant_type: 'refresh_token', code: "${atomicState.refreshToken}", client_id: smartThingsClientId],
 		]
-
-		log.debug "making refresh request with paramaters: $refreshParams"
 
 		def notificationMessage = "is disconnected from SmartThings, because the access credential changed or was lost. Please go to the Ecobee (Connect) SmartApp and re-enter your account login credentials."
 		//changed to httpPost
