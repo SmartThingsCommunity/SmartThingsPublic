@@ -152,11 +152,11 @@ def generateEvent(Map results) {
 				sendValue =  location.temperatureScale == "C"? roundC(sendValue) : sendValue
 				isChange = isTemperatureStateChange(device, name, value.toString())
 				isDisplayed = isChange
-				event << [value: sendValue, isStateChange: isChange, displayed: isDisplayed]
+				event << [value: sendValue, unit: temperatureScale, isStateChange: isChange, displayed: isDisplayed]
 			}  else if (name=="maxCoolingSetpoint" || name=="minCoolingSetpoint" || name=="maxHeatingSetpoint" || name=="minHeatingSetpoint") {
 				def sendValue = convertTemperatureIfNeeded(value.toDouble(), "F", 1) //API return temperature value in F
 				sendValue =  location.temperatureScale == "C"? roundC(sendValue) : sendValue
-				event << [value: sendValue, displayed: false]
+				event << [value: sendValue, unit: temperatureScale, displayed: false]
 			}  else if (name=="heatMode" || name=="coolMode" || name=="autoMode" || name=="auxHeatMode"){
 				isChange = isStateChange(device, name, value.toString())
 				event << [value: value.toString(), isStateChange: isChange, displayed: false]
@@ -235,8 +235,8 @@ void setHeatingSetpoint(setpoint) {
 
 	def sendHoldType = holdType ? (holdType=="Temporary")? "nextTransition" : (holdType=="Permanent")? "indefinite" : "indefinite" : "indefinite"
 	if (parent.setHold(heatingValue, coolingValue, deviceId, sendHoldType)) {
-		sendEvent("name":"heatingSetpoint", "value":heatingSetpoint)
-		sendEvent("name":"coolingSetpoint", "value":coolingSetpoint)
+		sendEvent("name":"heatingSetpoint", "value":heatingSetpoint, "unit":location.temperatureScale)
+		sendEvent("name":"coolingSetpoint", "value":coolingSetpoint, "unit":location.temperatureScale)
 		log.debug "Done setHeatingSetpoint> coolingSetpoint: ${coolingSetpoint}, heatingSetpoint: ${heatingSetpoint}"
 		generateSetpointEvent()
 		generateStatusEvent()
@@ -272,8 +272,8 @@ void setCoolingSetpoint(setpoint) {
 
 	def sendHoldType = holdType ? (holdType=="Temporary")? "nextTransition" : (holdType=="Permanent")? "indefinite" : "indefinite" : "indefinite"
 	if (parent.setHold(heatingValue, coolingValue, deviceId, sendHoldType)) {
-		sendEvent("name":"heatingSetpoint", "value":heatingSetpoint)
-		sendEvent("name":"coolingSetpoint", "value":coolingSetpoint)
+		sendEvent("name":"heatingSetpoint", "value":heatingSetpoint, "unit":location.temperatureScale)
+		sendEvent("name":"coolingSetpoint", "value":coolingSetpoint, "unit":location.temperatureScale)
 		log.debug "Done setCoolingSetpoint>> coolingSetpoint = ${coolingSetpoint}, heatingSetpoint = ${heatingSetpoint}"
 		generateSetpointEvent()
 		generateStatusEvent()
@@ -556,12 +556,12 @@ def generateSetpointEvent() {
 
 	if (mode == "heat") {
 
-		sendEvent("name":"thermostatSetpoint", "value":heatingSetpoint )
+		sendEvent("name":"thermostatSetpoint", "value":heatingSetpoint, "unit":location.temperatureScale)
 
 	}
 	else if (mode == "cool") {
 
-		sendEvent("name":"thermostatSetpoint", "value":coolingSetpoint)
+		sendEvent("name":"thermostatSetpoint", "value":coolingSetpoint, "unit":location.temperatureScale)
 
 	} else if (mode == "auto") {
 
@@ -573,7 +573,7 @@ def generateSetpointEvent() {
 
 	} else if (mode == "auxHeatOnly") {
 
-		sendEvent("name":"thermostatSetpoint", "value":heatingSetpoint)
+		sendEvent("name":"thermostatSetpoint", "value":heatingSetpoint, "unit":location.temperatureScale)
 
 	}
 
@@ -608,7 +608,7 @@ void raiseSetpoint() {
 			targetvalue = maxCoolingSetpoint
 		}
 
-		sendEvent("name":"thermostatSetpoint", "value":targetvalue, displayed: false)
+		sendEvent("name":"thermostatSetpoint", "value":targetvalue, "unit":location.temperatureScale, displayed: false)
 		log.info "In mode $mode raiseSetpoint() to $targetvalue"
 
 		runIn(3, "alterSetpoint", [data: [value:targetvalue], overwrite: true]) //when user click button this runIn will be overwrite
@@ -644,7 +644,7 @@ void lowerSetpoint() {
 			targetvalue = minCoolingSetpoint
 		}
 
-		sendEvent("name":"thermostatSetpoint", "value":targetvalue, displayed: false)
+		sendEvent("name":"thermostatSetpoint", "value":targetvalue, "unit":location.temperatureScale, displayed: false)
 		log.info "In mode $mode lowerSetpoint() to $targetvalue"
 
 		runIn(3, "alterSetpoint", [data: [value:targetvalue], overwrite: true]) //when user click button this runIn will be overwrite
@@ -692,8 +692,8 @@ void alterSetpoint(temp) {
 
 	if (parent.setHold(heatingValue, coolingValue, deviceId, sendHoldType)) {
 		sendEvent("name": "thermostatSetpoint", "value": temp.value, displayed: false)
-		sendEvent("name": "heatingSetpoint", "value": targetHeatingSetpoint)
-		sendEvent("name": "coolingSetpoint", "value": targetCoolingSetpoint)
+		sendEvent("name": "heatingSetpoint", "value": targetHeatingSetpoint, "unit": location.temperatureScale)
+		sendEvent("name": "coolingSetpoint", "value": targetCoolingSetpoint, "unit": location.temperatureScale)
 		log.debug "alterSetpoint in mode $mode succeed change setpoint to= ${temp.value}"
 	} else {
 		log.error "Error alterSetpoint()"
