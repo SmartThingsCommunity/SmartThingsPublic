@@ -56,7 +56,7 @@ def createVirtual(){
    dynamicPage(name: "createVirtual", title: "Associate your device's channels with virtual dimmers", nextPage: "createPage") {
 		section {
             
-			paragraph "This process will create six virtual dimmers and associate them with the channels on your SmartLife Controller. There will be 5 dimmers (R,G,B,W1,W2)."
+			paragraph "This process will create virtual dimmers and associate them with the channels on your SmartLife Controller. There will be 5 dimmers (R,G,B,W1,W2)."
 
             def switchNames = ""
             for (int i = 1; i <= 5; i++){
