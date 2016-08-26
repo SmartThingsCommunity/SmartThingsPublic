@@ -13,7 +13,7 @@
  *  SmartLife RGBW Controller
  *
  *  Author: Eric Maycock (erocm123)
- *  Date: 2016-08-18 6:34 PM
+ *  Date: 2016-08-26
  */
 
 import groovy.json.JsonSlurper
@@ -38,30 +38,29 @@ metadata {
         command "setProgram"
         command "setWhiteLevel"
         
-        command "rOn"
-        command "rOff"
-        command "gOn"
-        command "gOff"
-        command "bOn"
-        command "bOff"
-        command "w1On"
-        command "w1Off"
-        command "w2On"
-        command "w2Off"
+        command "redOn"
+        command "redOff"
+        command "greenOn"
+        command "greenOff"
+        command "blueOn"
+        command "blueOff"
+        command "white1On"
+        command "white1Off"
+        command "white2On"
+        command "white2Off"
         
- 		command "setRLevel"
-        command "setGLevel"
-        command "setBLevel"
-        command "setW1Level"
-        command "setW2Level"
-
+ 		command "setRedLevel"
+        command "setGreenLevel"
+        command "setBlueLevel"
+        command "setWhite1Level"
+        command "setWhite2Level"
 	}
 
 	simulator {
 	}
     
     preferences {
-        //input("powerOnState", "enum", title:"Boot Up State", description: "State of the relay when it boots up", required: false, displayDuringSetup: false, options: [[0:"Off"],[1:"On"],[2:"Previous State"]])
+        
         input("password", "password", title:"Password", required:false, displayDuringSetup:true)
         input("transition", "enum", title:"Default Transition", required:false, displayDuringSetup:true, options:
         [["true":"fade"],["false":"flash"]])
@@ -105,54 +104,54 @@ metadata {
 		}
         
         standardTile("red", "device.red", height: 1, width: 1, inactiveLabel: false, canChangeIcon: false) {
-            state "off", label:"R", action:"rOn", icon:"st.illuminance.illuminance.dark", backgroundColor:"#D8D8D8"
-            state "on", label:"R", action:"rOff", icon:"st.illuminance.illuminance.bright", backgroundColor:"#FF0000"
+            state "off", label:"R", action:"redOn", icon:"st.illuminance.illuminance.dark", backgroundColor:"#D8D8D8"
+            state "on", label:"R", action:"redOff", icon:"st.illuminance.illuminance.bright", backgroundColor:"#FF0000"
         }
         controlTile("redSliderControl", "device.redLevel", "slider", height: 1, width: 4, inactiveLabel: false) {
-			state "redLevel", action:"setRLevel"
+			state "redLevel", action:"setRedLevel"
 		}
         valueTile("redValueTile", "device.redLevel", decoration: "flat", height: 1, width: 1) {
         	state "redLevel", label:'${currentValue}%'
         }     
         
         standardTile("green", "device.green", height: 1, width: 1, inactiveLabel: false, canChangeIcon: false) {
-            state "off", label:"G", action:"gOn", icon:"st.illuminance.illuminance.dark", backgroundColor:"#D8D8D8"
-            state "on", label:"G", action:"gOff", icon:"st.illuminance.illuminance.bright", backgroundColor:"#00FF00"
+            state "off", label:"G", action:"greenOn", icon:"st.illuminance.illuminance.dark", backgroundColor:"#D8D8D8"
+            state "on", label:"G", action:"greenOff", icon:"st.illuminance.illuminance.bright", backgroundColor:"#00FF00"
         }
         controlTile("greenSliderControl", "device.greenLevel", "slider", height: 1, width: 4, inactiveLabel: false) {
-			state "greenLevel", action:"setGLevel"
+			state "greenLevel", action:"setGreenLevel"
 		}
         valueTile("greenValueTile", "device.greenLevel", decoration: "flat", height: 1, width: 1) {
         	state "greenLevel", label:'${currentValue}%'
         }    
         
         standardTile("blue", "device.blue", height: 1, width:1, inactiveLabel: false, canChangeIcon: false) {
-            state "off", label:"B", action:"bOn", icon:"st.illuminance.illuminance.dark", backgroundColor:"#D8D8D8"
-            state "on", label:"B", action:"bOff", icon:"st.illuminance.illuminance.bright", backgroundColor:"#0000FF"
+            state "off", label:"B", action:"blueOn", icon:"st.illuminance.illuminance.dark", backgroundColor:"#D8D8D8"
+            state "on", label:"B", action:"blueOff", icon:"st.illuminance.illuminance.bright", backgroundColor:"#0000FF"
         }
         controlTile("blueSliderControl", "device.blueLevel", "slider", height: 1, width: 4, inactiveLabel: false) {
-			state "blueLevel", action:"setBLevel"
+			state "blueLevel", action:"setBlueLevel"
 		}
         valueTile("blueValueTile", "device.blueLevel", decoration: "flat", height: 1, width: 1) {
         	state "blueLevel", label:'${currentValue}%'
         }  
         
         standardTile("white1", "device.white1", height: 1, width: 1, inactiveLabel: false, canChangeIcon: false) {
-            state "off", label:"W1", action:"w1On", icon:"st.illuminance.illuminance.dark", backgroundColor:"#D8D8D8"
-            state "on", label:"W1", action:"w1Off", icon:"st.illuminance.illuminance.bright", backgroundColor:"#FFFFFF"
+            state "off", label:"W1", action:"white1On", icon:"st.illuminance.illuminance.dark", backgroundColor:"#D8D8D8"
+            state "on", label:"W1", action:"white1Off", icon:"st.illuminance.illuminance.bright", backgroundColor:"#FFFFFF"
         }
         controlTile("white1SliderControl", "device.white1Level", "slider", height: 1, width: 4, inactiveLabel: false) {
-			state "white1Level", action:"setW1Level"
+			state "white1Level", action:"setWhite1Level"
 		}
         valueTile("white1ValueTile", "device.white1Level", decoration: "flat", height: 1, width: 1) {
         	state "white1Level", label:'${currentValue}%'
         } 
         standardTile("white2", "device.white2", height: 1, width: 1, inactiveLabel: false, canChangeIcon: false) {
-            state "off", label:"W2", action:"w2On", icon:"st.illuminance.illuminance.dark", backgroundColor:"#D8D8D8"
-            state "on", label:"W2", action:"w2Off", icon:"st.illuminance.illuminance.bright", backgroundColor:"#FFFFFF"
+            state "off", label:"W2", action:"white2On", icon:"st.illuminance.illuminance.dark", backgroundColor:"#D8D8D8"
+            state "on", label:"W2", action:"white2Off", icon:"st.illuminance.illuminance.bright", backgroundColor:"#FFFFFF"
         }
         controlTile("white2SliderControl", "device.white2Level", "slider", height: 1, width: 4, inactiveLabel: false) {
-			state "white2Level", action:"setW2Level"
+			state "white2Level", action:"setWhite2Level"
 		}
         valueTile("white2ValueTile", "device.white2Level", decoration: "flat", height: 1, width: 1) {
         	state "white2Level", label:'${currentValue}%'
@@ -257,44 +256,43 @@ def parse(description) {
        events << createEvent(name:"color", value:"#$result.rgb")
     }
     if (result.containsKey("r")) {
-       events << createEvent(name:"redLevel", value: Integer.parseInt(result.r,16)/255 * 100 as Integer)
+       events << createEvent(name:"redLevel", value: Integer.parseInt(result.r,16)/255 * 100 as Integer, displayed: false)
        if ((Integer.parseInt(result.r,16)/255 * 100 as Integer) > 0 ) {
-          events << createEvent(name:"red", value: "on")
+          events << createEvent(name:"red", value: "on", displayed: false)
        } else {
-    	  events << createEvent(name:"red", value: "off")
+    	  events << createEvent(name:"red", value: "off", displayed: false)
        }
     }
     if (result.containsKey("g")) {
-       events << createEvent(name:"greenLevel", value: Integer.parseInt(result.g,16)/255 * 100 as Integer)
+       events << createEvent(name:"greenLevel", value: Integer.parseInt(result.g,16)/255 * 100 as Integer, displayed: false)
        if ((Integer.parseInt(result.g,16)/255 * 100 as Integer) > 0 ) {
-          events << createEvent(name:"green", value: "on")
+          events << createEvent(name:"green", value: "on", displayed: false)
        } else {
-    	  events << createEvent(name:"green", value: "off")
+    	  events << createEvent(name:"green", value: "off", displayed: false)
        }
     }
     if (result.containsKey("b")) {
-       events << createEvent(name:"blueLevel", value: Integer.parseInt(result.b,16)/255 * 100 as Integer)
+       events << createEvent(name:"blueLevel", value: Integer.parseInt(result.b,16)/255 * 100 as Integer, displayed: false)
        if ((Integer.parseInt(result.b,16)/255 * 100 as Integer) > 0 ) {
-          events << createEvent(name:"blue", value: "on")
+          events << createEvent(name:"blue", value: "on", displayed: false)
        } else {
-    	  events << createEvent(name:"blue", value: "off")
+    	  events << createEvent(name:"blue", value: "off", displayed: false)
        }
     }
     if (result.containsKey("w1")) {
-       events << createEvent(name: "whiteLevel", value: Integer.parseInt(result.w1,16)/255 * 100 as Integer)
-       events << createEvent(name:"white1Level", value: Integer.parseInt(result.w1,16)/255 * 100 as Integer)
+       events << createEvent(name:"white1Level", value: Integer.parseInt(result.w1,16)/255 * 100 as Integer, displayed: false)
        if ((Integer.parseInt(result.w1,16)/255 * 100 as Integer) > 0 ) {
-          events << createEvent(name:"white1", value: "on")
+          events << createEvent(name:"white1", value: "on", displayed: false)
        } else {
-    	  events << createEvent(name:"white1", value: "off")
+    	  events << createEvent(name:"white1", value: "off", displayed: false)
        }
     }
     if (result.containsKey("w2")) {
-       events << createEvent(name:"white2Level", value: Integer.parseInt(result.w2,16)/255 * 100 as Integer)
+       events << createEvent(name:"white2Level", value: Integer.parseInt(result.w2,16)/255 * 100 as Integer, displayed: false)
        if ((Integer.parseInt(result.w2,16)/255 * 100 as Integer) > 0 ) {
-          events << createEvent(name:"white2", value: "on")
+          events << createEvent(name:"white2", value: "on", displayed: false)
        } else {
-    	  events << createEvent(name:"white2", value: "off")
+    	  events << createEvent(name:"white2", value: "off", displayed: false)
        }
     }
 
@@ -703,16 +701,16 @@ def hex2int(value){
    return Integer.parseInt(value, 10)
 }
 
-def rOn() {
+def redOn() {
 	log.debug "redOn()"
     postAction("/r?value=ff&channels=$channels&transition=$transition")
 }
-def rOff() {
+def redOff() {
 	log.debug "redOff()"
     postAction("/r?value=00&channels=$channels&transition=$transition")
 }
 
-def setRLevel(value) {
+def setRedLevel(value) {
 	log.debug "setRedLevel: ${value}"
     def level = Math.min(value as Integer, 99)    
     level = 255 * level/99 as Integer
@@ -720,16 +718,16 @@ def setRLevel(value) {
 	level = hex(level)
     postAction("/r?value=$level&channels=$channels&transition=$transition")
 }
-def gOn() {
+def greenOn() {
 	log.debug "greenOn()"
     postAction("/g?value=ff&channels=$channels&transition=$transition")
 }
-def gOff() {
+def greenOff() {
 	log.debug "greenOff()"
     postAction("/g?value=00&channels=$channels&transition=$transition")
 }
 
-def setGLevel(value) {
+def setGreenLevel(value) {
 	log.debug "setGreenLevel: ${value}"
     def level = Math.min(value as Integer, 99)    
     level = 255 * level/99 as Integer
@@ -737,16 +735,16 @@ def setGLevel(value) {
 	level = hex(level)
     postAction("/g?value=$level&channels=$channels&transition=$transition")
 }
-def bOn() {
+def blueOn() {
 	log.debug "blueOn()"
     postAction("/b?value=ff&channels=$channels&transition=$transition")
 }
-def bOff() {
+def blueOff() {
 	log.debug "blueOff()"
     postAction("/b?value=00&channels=$channels&transition=$transition")
 }
 
-def setBLevel(value) {
+def setBlueLevel(value) {
 	log.debug "setBlueLevel: ${value}"
     def level = Math.min(value as Integer, 99)    
     level = 255 * level/99 as Integer
@@ -754,16 +752,16 @@ def setBLevel(value) {
 	level = hex(level)
     postAction("/b?value=$level&channels=$channels&transition=$transition")
 }
-def w1On() {
+def white1On() {
 	log.debug "white1On()"
     postAction("/w1?value=ff&channels=$channels&transition=$transition")
 }
-def w1Off() {
+def white1Off() {
 	log.debug "white1Off()"
     postAction("/w1?value=00&channels=$channels&transition=$transition")
 }
 
-def setW1Level(value) {
+def setWhite1Level(value) {
 	log.debug "setwhite1Level: ${value}"
     def level = Math.min(value as Integer, 99)    
     level = 255 * level/99 as Integer
@@ -771,16 +769,16 @@ def setW1Level(value) {
 	def whiteLevel = hex(level)
     postAction("/w1?value=$whiteLevel&channels=$channels&transition=$transition")
 }
-def w2On() {
+def white2On() {
 	log.debug "white2On()"
     postAction("/w2?value=ff&channels=$channels&transition=$transition")
 }
-def w2Off() {
+def white2Off() {
 	log.debug "white2Off()"
     postAction("/w2?value=00&channels=$channels&transition=$transition")
 }
 
-def setW2Level(value) {
+def setWhite2Level(value) {
 	log.debug "setwhite2Level: ${value}"
     def level = Math.min(value as Integer, 99)    
     level = 255 * level/99 as Integer
