@@ -61,7 +61,7 @@ def createVirtual(){
             def switchNames = ""
             for (int i = 1; i <= 5; i++){
                if(settings["${state.currentDeviceId}_programs_${i}_name"] == null || settings["${state.currentDeviceId}_programs_${i}_name"] == ""){
-                  switchNames = switchNames + (settings["${state.currentDeviceId}_prefix"] != null ? settings["${state.currentDeviceId}_prefix"] : '') + "$physical.displayName ${getColor(i, "upper")} Channel\r\n"
+                  switchNames = switchNames + (settings["${state.currentDeviceId}_prefix"] != null ? settings["${state.currentDeviceId}_prefix"] : '') + "$physical.displayName - ${getColor(i, "upper")} Channel\r\n"
                }else{
                   switchNames = switchNames + (settings["${state.currentDeviceId}_prefix"] != null ? settings["${state.currentDeviceId}_prefix"] : '') + " " + settings["${state.currentDeviceId}_programs_${i}_name"] + "\r\n"
                }  
@@ -98,7 +98,7 @@ def createVirtualDevice() {
     def switchName
     for (int i = 1; i <= 5; i++){
        if(settings["${state.currentDeviceId}_programs_${i}_name"] == null || settings["${state.currentDeviceId}_programs_${i}_name"] == ""){
-            switchName = (settings["${state.currentDeviceId}_prefix"] == null ? "" : settings["${state.currentDeviceId}_prefix"]) + "$physical.displayName ${getColor(i, "upper")} Channel\r\n"
+            switchName = (settings["${state.currentDeviceId}_prefix"] == null ? "" : settings["${state.currentDeviceId}_prefix"]) + "$physical.displayName - ${getColor(i, "upper")} Channel\r\n"
        }else{
             switchName = (settings["${state.currentDeviceId}_prefix"] == null ? "" : settings["${state.currentDeviceId}_prefix"]) + " " + settings["${state.currentDeviceId}_programs_${i}_name"]
        }  
@@ -188,10 +188,10 @@ def virtualHandler(evt) {
              def switchNumber = it.deviceNetworkId.split("/")[1]
              switch (evt.value){
                 case "setLevel":
-                   physical."set${getColor(switchNumber.toInteger(),"upper")}Level"(it.currentValue("level"))
+                   physical."set${getColor(switchNumber.toInteger()).capitalize()}Level"(it.currentValue("level"))
                 break
                 default:
-                   physical."${getColor(switchNumber.toInteger(),"lower")}${evt.value.capitalize()}"()
+                   physical."${getColor(switchNumber.toInteger())}${evt.value.capitalize()}"()
                 break
              }
        }
@@ -249,6 +249,9 @@ private getSwitchNumber(value){
       break
       case ~/.*white2.*/:
          return 5
+      break
+      case ~/.*white.*/:
+         return 4
       break
    }
 }
