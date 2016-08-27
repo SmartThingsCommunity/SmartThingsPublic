@@ -15,3 +15,5 @@
  *  Version 2.0.6 (7/14/16) Syntax fixes, additional filters on voice reports, expanded secondary responses, CoRE Macro fix
  *  Version 2.0.7b (7/23/16) Small code/syntax/interface fixes, code optimization. Allows you to place an entry into the Notification Event Log when a macro is run. Fixed CoRE Macro activation logic
  *  Version 2.0.8c (8/2/16) Restructured code to allow future personality features; fixed thermostat heating/cooling logic; added minium value command to theromstat, added tide information; added window shade control
+ *  Version 2.1.0 (8/7/16) Code fixes/optimization, added moon rise/set, added Courtesy personality; added 'easter egg' command for thermostats:AC
+ *  Version 2.1.1c (8/17/16) Added SONOS code to allow for memory slots; added Snarky personality; allow for PINs used in macros
