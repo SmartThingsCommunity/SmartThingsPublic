@@ -37,17 +37,28 @@ preferences {
 def installed()
 {
 	subscribe(contact1, "contact.open", contactOpenHandler)
+    subscribe(contact1, "contact.closed", contactCloseHandler)
 }
 
 def updated()
 {
 	unsubscribe()
 	subscribe(contact1, "contact.open", contactOpenHandler)
+    subscribe(contact1, "contact.closed", contactCloseHandler)
 }
 
 def contactOpenHandler(evt) {
 	log.debug "$evt.value: $evt, $settings"
 	log.trace "Turning on switches: $switches"
-	switches.on()
+    
+    log.debug "Executing OPEN"
+    switches.on()
 }
 
+def contactCloseHandler(evt) {
+	log.debug "$evt.value: $evt, $settings"
+	log.trace "Turning on switches: $switches"
+    
+    log.debug "Executing CLOSE"
+    switches.off()
+}
