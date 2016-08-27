@@ -413,7 +413,7 @@ def refresh() {
 }
 
 def configure() {
-	sendEvent(name: "checkInterval", value: 7200, displayed: false, data: [protocol: "zigbee"])
+	sendEvent(name: "checkInterval", value: 14400, displayed: false, data: [protocol: "zigbee"])
 
 	log.debug "Configuring Reporting"
 
