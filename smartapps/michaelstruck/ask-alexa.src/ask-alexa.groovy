@@ -1,14 +1,14 @@
 /**
  *  Ask Alexa 
  *
- *  Version 2.1.2 - 8/26/16 Copyright © 2016 Michael Struck
+ *  Version 2.1.2a - 8/26/16 Copyright © 2016 Michael Struck
  *  Special thanks for Keith DeLong for overall code and assistance; Barry Burke for Weather Underground Integration; jhamstead for Ecobee climate modes
  * 
  *  Version information prior to 2.1.0 listed here: https://github.com/MichaelStruck/SmartThingsPublic/blob/master/smartapps/michaelstruck/ask-alexa.src/Ask%20Alexa%20Version%20History.md
  *
  *  Version 2.1.0 (8/7/16) Code fixes/optimization, added moon rise/set, added Courtesy personality; added 'easter egg' command for thermostats:AC
  *  Version 2.1.1c (8/17/16) Added SONOS code to allow for memory slots; added Snarky personality; allow for PINs used in macros
- *  Version 2.1.2 (8/26/16) Fixed weather report issue; Added Ecobee (Connect) code for thermostat climate modes; added brief device action reply; REST URL visibility option for Control Macros; brighten/dim commands for dimmers
+ *  Version 2.1.2a (8/26/16) Fixed weather report issue; Added Ecobee (Connect) code for thermostat climate modes; added brief device action reply; REST URL visibility option for Control Macros; brighten/dim commands for dimmers
  *
  *  Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except
  *  in compliance with the License. You may obtain a copy of the License at:
@@ -2942,9 +2942,11 @@ def setupData(){
     if (tstats && stelproCMD) PARAMS<< "eco"<<"comfort"
     if (tstats && (nestCMD || ecobee3CMD)) PARAMS<<"home"<<"away"
     if (tstats && ecobee3CMD) PARAMS<<"sleep"<<"resume program"
-    def memCount = sonosMemoryCount as int
-    for (int i=1; i<memCount+1; i++){
-    	if (settings."sonosSlot${i}Name" && settings."sonosSlot${i}Music") PARAMS<<settings."sonosSlot${i}Name".replaceAll("[^a-zA-Z0-9 ]", "").toLowerCase()
+    if (sonosCMD && speakers && sonosMemoryCount){
+    	def memCount = sonosMemoryCount as int
+    	for (int i=1; i<memCount+1; i++){
+    		if (settings."sonosSlot${i}Name" && settings."sonosSlot${i}Music") PARAMS<<settings."sonosSlot${i}Name".replaceAll("[^a-zA-Z0-9 ]", "").toLowerCase()
+    	}
     }
     if (cLights || childApps.size()) { fillColorSettings(); state.colorData.each {PARAMS<<it.name.toLowerCase()}}
     duplicates = PARAMS.findAll{PARAMS.count(it)>1}.unique()
@@ -2994,7 +2996,7 @@ def getURLs(){
 //Version/Copyright/Information/Help-----------------------------------------------------------
 private def textAppName() { return "Ask Alexa" }	
 private def textVersion() {
-    def version = "SmartApp Version: 2.1.2 (08/26/2016)"
+    def version = "SmartApp Version: 2.1.2a (08/26/2016)"
     def lambdaVersion = state.lambdaCode ? "\n" + state.lambdaCode : ""
     return "${version}${lambdaVersion}"
 }
