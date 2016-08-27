@@ -1,14 +1,14 @@
 /**
  *  Ask Alexa 
  *
- *  Version 2.1.2a - 8/26/16 Copyright © 2016 Michael Struck
+ *  Version 2.1.2b - 8/26/16 Copyright © 2016 Michael Struck
  *  Special thanks for Keith DeLong for overall code and assistance; Barry Burke for Weather Underground Integration; jhamstead for Ecobee climate modes
  * 
  *  Version information prior to 2.1.0 listed here: https://github.com/MichaelStruck/SmartThingsPublic/blob/master/smartapps/michaelstruck/ask-alexa.src/Ask%20Alexa%20Version%20History.md
  *
  *  Version 2.1.0 (8/7/16) Code fixes/optimization, added moon rise/set, added Courtesy personality; added 'easter egg' command for thermostats:AC
  *  Version 2.1.1c (8/17/16) Added SONOS code to allow for memory slots; added Snarky personality; allow for PINs used in macros
- *  Version 2.1.2a (8/26/16) Fixed weather report issue; Added Ecobee (Connect) code for thermostat climate modes; added brief device action reply; REST URL visibility option for Control Macros; brighten/dim commands for dimmers
+ *  Version 2.1.2b (8/26/16) Fixed weather report issue; Added Ecobee (Connect) code for thermostat climate modes; added brief device action reply; REST URL visibility option for Control Macros; brighten/dim commands for dimmers
  *
  *  Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except
  *  in compliance with the License. You may obtain a copy of the License at:
@@ -1031,7 +1031,7 @@ def processMacro() {
     log.debug "Param: " + param
     log.debug "mPW: " + mPW
     if (mNum == "0" && cmd=="undefined" && param == "undefined") cmd="off"
-    def num = mNum == "undefined" || mNum =="?" || !nNum  ? 0 : mNum as int
+    def num = mNum == "undefined" || mNum =="?" || !mNum  ? 0 : mNum as int
     String outputTxt = ""
     def macroType="", colorData, err=false, playContMsg
     if (cmd == "low" || cmd=="medium" || cmd=="high"){
@@ -1241,8 +1241,8 @@ def getReply(devices, type, dev, op, num, param){
                 }
                 if (op =="maximum" && tstatHighLimit) num = tstatHighLimit
                 if (op =="minimum" && tstatLowLimit) num = tstatLowLimit
-                if ((param=="heat" || param=="heating" || param =="cool" || param=="cooling" || param =="auto" || param=="automatic" || param=="eco" || 
-                	param=="comfort" || param=="home" || param=="away" || param=="sleep" || param=="resume program") && num == 0 && op=="undefined" || param=="AC") op="on"
+                if ((param=="heat" || param=="heating" || param =="cool" || param=="cooling" || param =="auto" || param=="automatic" || param=="eco" || param=="AC" || 
+                	param=="comfort" || param=="home" || param=="away" || param=="sleep" || param=="resume program") && num == 0 && op=="undefined") op="on"
                 if (op == "on" || op=="off") {
                 	if (param == "undefined" && op == "on") result="You must designate 'heating mode' or 'cooling mode' when turning the ${STdevice} on. "
                     if (param =="heat" || param=="heating") {result="I am setting the ${STdevice} to 'heating' mode. "; STdevice.heat()}
@@ -1351,7 +1351,7 @@ def getReply(devices, type, dev, op, num, param){
                     result = "I am playing the ${STdevice}. " 
                 }
                 else if ((op == "play" || op=="on") && param!="undefined") { 
-                	if (sonosCMD){
+                	if (sonosCMD && sonosMemoryCount){
                         def memCount = sonosMemoryCount as int, song = ""
         				for (int i=1; i<memCount+1; i++){ 
                         	 if (settings."sonosSlot${i}Name" && settings."sonosSlot${i}Music" && settings."sonosSlot${i}Name".replaceAll("[^a-zA-Z0-9 ]", "").toLowerCase() == param.toLowerCase()) {
@@ -1368,9 +1368,7 @@ def getReply(devices, type, dev, op, num, param){
                     }
                     else result = "You do not have the Sonos memory slots enabled in your SmartApp. %1%"
                 }
-                else if (op=="mute") { STdevice.mute(); result = "I am muting the ${STdevice}. " }
-                else if (op=="unmute") { STdevice.unmute(); result = "I am unmuting the ${STdevice}. " }
-                else if (op=="pause") { STdevice.pause(); result = "I am pausing the ${STdevice} speaker. " }
+                else if (op=="mute" || op=="unmute" ||op=="pause") {STdevice."$op"(); result = "I am ${op[0..-2]}ing the ${STdevice}. " }
                 else if (op=="next track") {  STdevice.nextTrack(); result = "I am playing the next track on the ${STdevice}. " }
             	else if (op=="previous track") { STdevice.previousTrack(); result = "I am playing the next track on the ${STdevice}. " }
                 else result = "I didn't understand what you wanted me to do with the ${STdevice} speaker. %1%"
@@ -1446,7 +1444,7 @@ def displayData(display){
 }
 //Child code pieces here---Macro Handler-------------------------------------
 def macroResults(num, cmd, colorData, param,mNum){ 
-	String result="", feedData=""
+    String result="", feedData=""
     def data
     if (macroType == "Voice") result = reportResults()      
     if (macroType == "Control") result = controlResults(num)
@@ -1479,7 +1477,6 @@ def groupResults(num, op, colorData, param, mNum){
         if (groupType=="switchLevel") noun=settings."groupDevice${groupType}".size()==1 ? "dimmer" : "dimmers"
         if (groupType=="colorControl") noun=settings."groupDevice${groupType}".size()==1 ? "colored light" : "colored lights"
         verb=settings."groupDevice${groupType}".size()==1 ? "is" : "are"
-        log.debug mNum
         if (num==0 && op=="undefined" && param=="undefined" && mNum!="undefined") op="off"
         if (op=="on" || op=="off"){ settings."groupDevice${groupType}"?."$op"();result = voicePost ? replaceVoiceVar(voicePost,"") : noAck ? " " :  "I am turning ${op} the ${noun} in the group named '${app.label}'. "}
         else if (op == "toggle") { toggleState(settings."groupDevice${groupType}");result = voicePost ? replaceVoiceVar(voicePost,"") : noAck ? " " : "I am toggling the ${noun} in the group named '${app.label}'. " }
@@ -1554,15 +1551,16 @@ def groupResults(num, op, colorData, param, mNum){
         }
         if (op =="maximum" && parent.getTstatLimits().hi) num = parent.getTstatLimits().hi
         if (op =="minimum" && parent.getTstatLimits().lo) num = parent.getTstatLimits().lo
+        if ((param=="heat" || param=="heating" || param =="cool" || param=="cooling" || param =="auto" || param=="automatic" || param=="eco" || param=="AC" || 
+			param=="comfort" || param=="home" || param=="away" || param=="sleep" || param=="resume program") && num == 0 && op=="undefined") op="on"
         if (op == "on" || op=="off") {
         	if (param == "undefined" && op == "on") result="You must designate 'heating mode' or 'cooling mode' when turning on a thermostat group. %1%"
             if (param =="heat" || param=="heating") {result="I am setting the ${noun} to 'heating' mode. "; settings."groupDevice${groupType}"?.heat()}
 			if (param =="cool" || param=="cooling" || param=="AC") {result="I am setting the ${noun} to 'cooling' mode. "; settings."groupDevice${groupType}"?.cool()}
 			if (param =="auto" || param=="automatic") {result="I am setting the ${noun} to 'auto' mode. Please note, "+
 				"to properly set the temperature in 'auto' mode, you must specify the heating or cooling setpoints separately. " ; settings."groupDevice${groupType}"?.auto()}
-            if (op == "off") result = "I am turning off the ${noun}. "
-            if (parent.stelproCMD && param=="eco"){ result="I am setting the ${noun} to 'eco' mode. "; settings."groupDevice${groupType}"?.setThermostatMode("eco") }
-			if (parent.stelproCMD && param=="comfort"){ result="I am setting the ${noun} to 'comfort' mode. "; settings."groupDevice${groupType}"?.setThermostatMode("comfort") }
+            if (op == "off") { result = "I am turning off the ${noun}. "; settings."groupDevice${groupType}"?.off() }
+            if (parent.stelproCMD && (param=="eco" || param=="comfort")){ result="I am setting the ${noun} to '${param}' mode. "; settings."groupDevice${groupType}"?.setThermostatMode("${param}") }
         	if (param=="home" && parent.nestCMD) { result="I am setting the ${noun} to 'home' mode. "; settings."groupDevice${groupType}"?.present() }
             if (param=="away" && parent.nestCMD) { 
             	result="I am setting the ${noun} to 'away' mode. Please note that Nest thermostats will not accept temperature changes while in 'away' status. "
@@ -1577,9 +1575,7 @@ def groupResults(num, op, colorData, param, mNum){
 				settings."groupDevice${groupType}"?.resumeProgram()
             }
         }
-        else if (op == "increase" || op=="raise" || op=="up" || op == "decrease" || op=="down" || op=="lower") {
-			result = "Increase and decrease commands are not yet compatible with thermostat group macros. %1%"
-        }
+        else if (op == "increase" || op=="raise" || op=="up" || op == "decrease" || op=="down" || op=="lower") result = "Increase and decrease commands are not yet compatible with thermostat group macros. %1%"
         else {
             param = tstatDefaultCool && param == "undefined" ? "cool" : tstatDefaultHeat && param == "undefined" ? "heat" : param
 			if (param == "undefined") result = "You must designate a 'heating' or 'cooling' parameter when setting the temperature of a thermostat group. %1%"
@@ -2996,13 +2992,13 @@ def getURLs(){
 //Version/Copyright/Information/Help-----------------------------------------------------------
 private def textAppName() { return "Ask Alexa" }	
 private def textVersion() {
-    def version = "SmartApp Version: 2.1.2a (08/26/2016)"
+    def version = "SmartApp Version: 2.1.2b (08/26/2016)"
     def lambdaVersion = state.lambdaCode ? "\n" + state.lambdaCode : ""
     return "${version}${lambdaVersion}"
 }
 private def versionInt(){ return 212 }
 private def LambdaReq() { return 121 }
-private def versionLong(){ return "2.1.2" }
+private def versionLong(){ return "2.1.2b" }
 private def textCopyright() {return "Copyright © 2016 Michael Struck" }
 private def textLicense() {
 	def text = "Licensed under the Apache License, Version 2.0 (the 'License'); you may not use this file except in compliance with the License. "+
