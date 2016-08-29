@@ -333,10 +333,11 @@ private Map getTemperatureResult(value) {
 			'{{ device.displayName }} was {{ value }}°F'
 
 	return [
-	name: 'temperature',
-	value: value,
-	descriptionText: descriptionText,
-    translatable: true
+		name: 'temperature',
+		value: value,
+		descriptionText: descriptionText,
+		translatable: true,
+		unit: temperatureScale
 	]
 }
 
