@@ -47,6 +47,9 @@ metadata {
 
         command "everywhereJoin"
         command "everywhereLeave"
+
+        command "forceOff"
+        command "forceOn"
     }
 
     /**
@@ -64,9 +67,9 @@ metadata {
     }
 
     standardTile("switch", "device.switch", width: 1, height: 1, canChangeIcon: true) {
-        state "on", label: '${name}', action: "switch.off", icon: "st.Electronics.electronics16", backgroundColor: "#79b821", nextState:"turningOff"
+        state "on", label: '${name}', action: "forceOff", icon: "st.Electronics.electronics16", backgroundColor: "#79b821", nextState:"turningOff"
         state "turningOff", label:'TURNING OFF', icon:"st.Electronics.electronics16", backgroundColor:"#ffffff"
-        state "off", label: '${name}', action: "switch.on", icon: "st.Electronics.electronics16", backgroundColor: "#ffffff", nextState:"turningOn"
+        state "off", label: '${name}', action: "forceOn", icon: "st.Electronics.electronics16", backgroundColor: "#ffffff", nextState:"turningOn"
         state "turningOn", label:'TURNING ON', icon:"st.Electronics.electronics16", backgroundColor:"#79b821"
     }
     valueTile("1", "device.station1", decoration: "flat", canChangeIcon: false) {
@@ -140,8 +143,22 @@ metadata {
  * one place.
  *
  */
-def off() { onAction("off") }
-def on() { onAction("on") }
+def off() {
+    if (device.currentState("switch")?.value == "on") {
+        onAction("off")
+    }
+}
+def forceOff() {
+    onAction("off")
+}
+def on() {
+    if (device.currentState("switch")?.value == "off") {
+        onAction("on")
+    }
+}
+def forceOn() {
+    onAction("on")
+}
 def volup() { onAction("volup") }
 def voldown() { onAction("voldown") }
 def preset1() { onAction("1") }
@@ -240,11 +257,11 @@ def onAction(String user, data=null) {
     def actions = null
     switch (user) {
         case "on":
-            actions = boseSetPowerState(true)
+            boseSetPowerState(true)
             break
         case "off":
             boseSetNowPlaying(null, "STANDBY")
-            actions = boseSetPowerState(false)
+            boseSetPowerState(false)
             break
         case "volume":
             actions = boseSetVolume(data)
