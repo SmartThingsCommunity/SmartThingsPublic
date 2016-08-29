@@ -290,8 +290,11 @@ def manualRefresh() {
 }
 
 def uninstalled(){
+	// Remove bridgedevice connection to allow uninstall of smartapp even though bridge is listed
+	// as user of smartapp
+	app.updateSetting("bridgeDevice", null)
 	state.bridges = [:]
-    state.username = null
+	state.username = null
 }
 
 // Handles events to add new bulbs
@@ -415,23 +418,32 @@ def addBridge() {
 				// Hue uses last 6 digits of MAC address as ID number, this number is shown on the bottom of the bridge
 				def idNumber = getBridgeIdNumber(selectedHue)
 				d = addChildDevice("smartthings", "Hue Bridge", selectedHue, vbridge.value.hub, ["label": "Hue Bridge ($idNumber)"])
-				d?.completedSetup = true
- 				log.debug "created ${d.displayName} with id ${d.deviceNetworkId}"
-                def childDevice = getChildDevice(d.deviceNetworkId)
-				updateBridgeStatus(childDevice)
-				childDevice.sendEvent(name: "idNumber", value: idNumber)
- 				if (vbridge.value.ip && vbridge.value.port) {
-                	if (vbridge.value.ip.contains(".")) {
-                    	childDevice.sendEvent(name: "networkAddress", value: vbridge.value.ip + ":" +  vbridge.value.port)
-                        childDevice.updateDataValue("networkAddress", vbridge.value.ip + ":" +  vbridge.value.port)
-                    } else {
-                    	childDevice.sendEvent(name: "networkAddress", value: convertHexToIP(vbridge.value.ip) + ":" +  convertHexToInt(vbridge.value.port))
-                        childDevice.updateDataValue("networkAddress", convertHexToIP(vbridge.value.ip) + ":" +  convertHexToInt(vbridge.value.port))
-                    }
+				if (d) {
+					// Associate smartapp to bridge so user will be warned if trying to delete bridge
+					app.updateSetting("bridgeDevice", [type: "device.hueBridge", value: d.id])
+
+					d.completedSetup = true
+					log.debug "created ${d.displayName} with id ${d.deviceNetworkId}"
+					def childDevice = getChildDevice(d.deviceNetworkId)
+					updateBridgeStatus(childDevice)
+					childDevice.sendEvent(name: "idNumber", value: idNumber)
+
+
+					if (vbridge.value.ip && vbridge.value.port) {
+						if (vbridge.value.ip.contains(".")) {
+							childDevice.sendEvent(name: "networkAddress", value: vbridge.value.ip + ":" +  vbridge.value.port)
+							childDevice.updateDataValue("networkAddress", vbridge.value.ip + ":" +  vbridge.value.port)
+						} else {
+							childDevice.sendEvent(name: "networkAddress", value: convertHexToIP(vbridge.value.ip) + ":" +  convertHexToInt(vbridge.value.port))
+							childDevice.updateDataValue("networkAddress", convertHexToIP(vbridge.value.ip) + ":" +  convertHexToInt(vbridge.value.port))
+						}
+					} else {
+						childDevice.sendEvent(name: "networkAddress", value: convertHexToIP(vbridge.value.networkAddress) + ":" +  convertHexToInt(vbridge.value.deviceAddress))
+						childDevice.updateDataValue("networkAddress", convertHexToIP(vbridge.value.networkAddress) + ":" +  convertHexToInt(vbridge.value.deviceAddress))
+					}
 				} else {
-					childDevice.sendEvent(name: "networkAddress", value: convertHexToIP(vbridge.value.networkAddress) + ":" +  convertHexToInt(vbridge.value.deviceAddress))
-                    childDevice.updateDataValue("networkAddress", convertHexToIP(vbridge.value.networkAddress) + ":" +  convertHexToInt(vbridge.value.deviceAddress))
-                }
+					log.error "Failed to create Hue Bridge device"
+				}
 			}
 		} else {
 			log.debug "found ${d.displayName} with id $selectedHue already exists"
