@@ -17,6 +17,7 @@ metadata {
 		capability "Switch"
 		capability "Refresh"
 		capability "Sensor"
+        capability "Health Check"
 
 		command "setAdjustedColor"
         command "reset"
@@ -170,6 +171,8 @@ void setColorTemperature(value) {
 void refresh() {
     log.debug "Executing 'refresh'"
     parent.manualRefresh()
+    log.error "LARS sending refreshinterval"
+    sendEvent(name: "checkInterval", value: 60 * 6, displayed: false)
 }
 
 def verifyPercent(percent) {
@@ -181,4 +184,8 @@ def verifyPercent(percent) {
         log.warn "$percent is not 0-100"
         return false
     }
+}
+
+def ping() {
+	log.error "LARS PING"
 }
