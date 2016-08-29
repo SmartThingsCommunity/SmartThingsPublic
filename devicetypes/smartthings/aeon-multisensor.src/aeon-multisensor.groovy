@@ -20,7 +20,6 @@ metadata {
 		capability "Illuminance Measurement"
 		capability "Sensor"
 		capability "Battery"
-		capability "Health Check"
 
 		fingerprint deviceId: "0x2001", inClusters: "0x30,0x31,0x80,0x84,0x70,0x85,0x72,0x86"
 	}
@@ -181,9 +180,6 @@ def zwaveEvent(physicalgraph.zwave.Command cmd) {
 }
 
 def configure() {
-	// allow device 10 min to check in; double the periodic reporting interval
-	sendEvent(name: "checkInterval", value: 2*5*60, displayed: false)
-
 	delayBetween([
 		// send binary sensor report instead of basic set for motion
 		zwave.configurationV1.configurationSet(parameterNumber: 5, size: 1, scaledConfigurationValue: 2).format(),
