@@ -133,14 +133,23 @@ def bulbDiscovery() {
 	state.inBulbDiscovery = true
 	def bridge = null
 	if (selectedHue) {
-        bridge = getChildDevice(selectedHue)
-        subscribe(bridge, "bulbList", bulbListData)
+		bridge = getChildDevice(selectedHue)
+		subscribe(bridge, "bulbList", bulbListData)
 	}
-    state.bridgeRefreshCount = 0
-	def bulboptions = bulbsDiscovered() ?: [:]
-	def numFound = bulboptions.size() ?: 0
-    if (numFound == 0)
-    	app.updateSetting("selectedBulbs", "")
+	state.bridgeRefreshCount = 0
+	def allLightsFound = bulbsDiscovered() ?: [:]
+
+	// List lights currently not added to the user (editable)
+	def newLights = allLightsFound.findAll {getChildDevice(it.key) == null} ?: [:]
+	newLights = newLights.sort {it.value.toLowerCase()}
+
+	// List lights already added to the user (not editable)
+	def existingLights = allLightsFound.findAll {getChildDevice(it.key) != null} ?: [:]
+	existingLights = existingLights.sort {it.value.toLowerCase()}
+
+	def numFound = newLights.size() ?: 0
+	if (numFound == 0)
+		app.updateSetting("selectedBulbs", "")
 
 	if((bulbRefreshCount % 5) == 0) {
 		discoverHueBulbs()
@@ -148,14 +157,25 @@ def bulbDiscovery() {
 	def selectedBridge = state.bridges.find { key, value -> value?.serialNumber?.equalsIgnoreCase(selectedHue) }
 	def title = selectedBridge?.value?.name ?: "Find bridges"
 
+	// List of all lights previously added shown to user
+	def existingLightsDescription = ""
+	if (existingLights) {
+		existingLights.each {
+			if (existingLightsDescription.isEmpty()) {
+				existingLightsDescription += it.value
+			} else {
+				 existingLightsDescription += ", ${it.value}"
+			}
+		}
+	}
 
 	return dynamicPage(name:"bulbDiscovery", title:"Light Discovery Started!", nextPage:"", refreshInterval:refreshInterval, install:true, uninstall: true) {
 		section("Please wait while we discover your Hue Lights. Discovery can take five minutes or more, so sit back and relax! Select your device below once discovered.") {
-			input "selectedBulbs", "enum", required:false, title:"Select Hue Lights (${numFound} found)", multiple:true, options:bulboptions
+			input "selectedBulbs", "enum", required:false, title:"Select Hue Lights to add (${numFound} found)", multiple:true, options:newLights
+			paragraph title: "Previously added Hue Lights (${existingLights.size()} added)", existingLightsDescription
 		}
 		section {
 			href "bridgeDiscovery", title: title, description: "", state: selectedHue ? "complete" : "incomplete", params: [override: true]
-
 		}
 	}
 }
