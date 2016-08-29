@@ -234,7 +234,7 @@ void setHeatingSetpoint(setpoint) {
 	def heatingValue = location.temperatureScale == "C"? convertCtoF(heatingSetpoint) : heatingSetpoint
 
 	def sendHoldType = holdType ? (holdType=="Temporary")? "nextTransition" : (holdType=="Permanent")? "indefinite" : "indefinite" : "indefinite"
-	if (parent.setHold(this, heatingValue, coolingValue, deviceId, sendHoldType)) {
+	if (parent.setHold(heatingValue, coolingValue, deviceId, sendHoldType)) {
 		sendEvent("name":"heatingSetpoint", "value":heatingSetpoint)
 		sendEvent("name":"coolingSetpoint", "value":coolingSetpoint)
 		log.debug "Done setHeatingSetpoint> coolingSetpoint: ${coolingSetpoint}, heatingSetpoint: ${heatingSetpoint}"
@@ -271,7 +271,7 @@ void setCoolingSetpoint(setpoint) {
 	def heatingValue = location.temperatureScale == "C"? convertCtoF(heatingSetpoint) : heatingSetpoint
 
 	def sendHoldType = holdType ? (holdType=="Temporary")? "nextTransition" : (holdType=="Permanent")? "indefinite" : "indefinite" : "indefinite"
-	if (parent.setHold(this, heatingValue, coolingValue, deviceId, sendHoldType)) {
+	if (parent.setHold(heatingValue, coolingValue, deviceId, sendHoldType)) {
 		sendEvent("name":"heatingSetpoint", "value":heatingSetpoint)
 		sendEvent("name":"coolingSetpoint", "value":coolingSetpoint)
 		log.debug "Done setCoolingSetpoint>> coolingSetpoint = ${coolingSetpoint}, heatingSetpoint = ${heatingSetpoint}"
@@ -287,14 +287,14 @@ void resumeProgram() {
 	log.debug "resumeProgram() is called"
 	sendEvent("name":"thermostatStatus", "value":"resuming schedule", "description":statusText, displayed: false)
 	def deviceId = device.deviceNetworkId.split(/\./).last()
-	if (parent.resumeProgram(this, deviceId)) {
+	if (parent.resumeProgram(deviceId)) {
 		sendEvent("name":"thermostatStatus", "value":"setpoint is updating", "description":statusText, displayed: false)
 		runIn(5, "poll")
 		log.debug "resumeProgram() is done"
 		sendEvent("name":"resumeProgram", "value":"resume", descriptionText: "resumeProgram is done", displayed: false, isStateChange: true)
 	} else {
 		sendEvent("name":"thermostatStatus", "value":"failed resume click refresh", "description":statusText, displayed: false)
-		log.error "Error resumeProgram() check parent.resumeProgram(this, deviceId)"
+		log.error "Error resumeProgram() check parent.resumeProgram(deviceId)"
 	}
 
 }
@@ -406,7 +406,7 @@ def generateOperatingStateEvent(operatingState) {
 def off() {
 	log.debug "off"
 	def deviceId = device.deviceNetworkId.split(/\./).last()
-	if (parent.setMode (this,"off", deviceId))
+	if (parent.setMode ("off", deviceId))
 		generateModeEvent("off")
 	else {
 		log.debug "Error setting new mode."
@@ -420,7 +420,7 @@ def off() {
 def heat() {
 	log.debug "heat"
 	def deviceId = device.deviceNetworkId.split(/\./).last()
-	if (parent.setMode (this,"heat", deviceId))
+	if (parent.setMode ("heat", deviceId))
 		generateModeEvent("heat")
 	else {
 		log.debug "Error setting new mode."
@@ -438,7 +438,7 @@ def emergencyHeat() {
 def auxHeatOnly() {
 	log.debug "auxHeatOnly"
 	def deviceId = device.deviceNetworkId.split(/\./).last()
-	if (parent.setMode (this,"auxHeatOnly", deviceId))
+	if (parent.setMode ("auxHeatOnly", deviceId))
 		generateModeEvent("auxHeatOnly")
 	else {
 		log.debug "Error setting new mode."
@@ -452,7 +452,7 @@ def auxHeatOnly() {
 def cool() {
 	log.debug "cool"
 	def deviceId = device.deviceNetworkId.split(/\./).last()
-	if (parent.setMode (this,"cool", deviceId))
+	if (parent.setMode ("cool", deviceId))
 		generateModeEvent("cool")
 	else {
 		log.debug "Error setting new mode."
@@ -466,7 +466,7 @@ def cool() {
 def auto() {
 	log.debug "auto"
 	def deviceId = device.deviceNetworkId.split(/\./).last()
-	if (parent.setMode (this,"auto", deviceId))
+	if (parent.setMode ("auto", deviceId))
 		generateModeEvent("auto")
 	else {
 		log.debug "Error setting new mode."
@@ -489,7 +489,7 @@ def fanOn() {
 	def coolingValue = location.temperatureScale == "C"? convertCtoF(coolingSetpoint) : coolingSetpoint
 	def heatingValue = location.temperatureScale == "C"? convertCtoF(heatingSetpoint) : heatingSetpoint
 
-	if (parent.setFanMode(this, heatingValue, coolingValue, deviceId, sendHoldType, fanMode)) {
+	if (parent.setFanMode(heatingValue, coolingValue, deviceId, sendHoldType, fanMode)) {
 		generateFanModeEvent(fanMode)
 	} else {
 		log.debug "Error setting new mode."
@@ -510,7 +510,7 @@ def fanAuto() {
 	def coolingValue = location.temperatureScale == "C"? convertCtoF(coolingSetpoint) : coolingSetpoint
 	def heatingValue = location.temperatureScale == "C"? convertCtoF(heatingSetpoint) : heatingSetpoint
 
-	if (parent.setFanMode(this, heatingValue, coolingValue, deviceId, sendHoldType, fanMode)) {
+	if (parent.setFanMode(heatingValue, coolingValue, deviceId, sendHoldType, fanMode)) {
 		generateFanModeEvent(fanMode)
 	} else {
 		log.debug "Error setting new mode."
@@ -690,7 +690,7 @@ void alterSetpoint(temp) {
 	def coolingValue = location.temperatureScale == "C"? convertCtoF(targetCoolingSetpoint) : targetCoolingSetpoint
 	def heatingValue = location.temperatureScale == "C"? convertCtoF(targetHeatingSetpoint) : targetHeatingSetpoint
 
-	if (parent.setHold(this, heatingValue, coolingValue, deviceId, sendHoldType)) {
+	if (parent.setHold(heatingValue, coolingValue, deviceId, sendHoldType)) {
 		sendEvent("name": "thermostatSetpoint", "value": temp.value, displayed: false)
 		sendEvent("name": "heatingSetpoint", "value": targetHeatingSetpoint)
 		sendEvent("name": "coolingSetpoint", "value": targetCoolingSetpoint)
