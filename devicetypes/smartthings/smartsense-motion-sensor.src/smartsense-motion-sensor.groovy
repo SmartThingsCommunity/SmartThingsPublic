@@ -24,7 +24,7 @@ metadata {
 		capability "Temperature Measurement"
 		capability "Refresh"
 		capability "Health Check"
-		capability "Sensor"		
+		capability "Sensor"
 
 		command "enrollResponse"
 
@@ -274,7 +274,8 @@ private Map getTemperatureResult(value) {
 		name: 'temperature',
 		value: value,
 		descriptionText: descriptionText,
-        translatable: true
+		translatable: true,
+		unit: temperatureScale
 	]
 }
 
@@ -315,7 +316,7 @@ def refresh() {
 }
 
 def configure() {
-	sendEvent(name: "checkInterval", value: 7200, displayed: false, data: [protocol: "zigbee"])
+	sendEvent(name: "checkInterval", value: 14400, displayed: false, data: [protocol: "zigbee"])
 
 	String zigbeeEui = swapEndianHex(device.hub.zigbeeEui)
 	log.debug "Configuring Reporting, IAS CIE, and Bindings."

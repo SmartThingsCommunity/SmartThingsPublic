@@ -333,10 +333,11 @@ private Map getTemperatureResult(value) {
 			'{{ device.displayName }} was {{ value }}°F'
 
 	return [
-	name: 'temperature',
-	value: value,
-	descriptionText: descriptionText,
-    translatable: true
+		name: 'temperature',
+		value: value,
+		descriptionText: descriptionText,
+		translatable: true,
+		unit: temperatureScale
 	]
 }
 
@@ -413,7 +414,7 @@ def refresh() {
 }
 
 def configure() {
-	sendEvent(name: "checkInterval", value: 7200, displayed: false, data: [protocol: "zigbee"])
+	sendEvent(name: "checkInterval", value: 14400, displayed: false, data: [protocol: "zigbee"])
 
 	log.debug "Configuring Reporting"
 
