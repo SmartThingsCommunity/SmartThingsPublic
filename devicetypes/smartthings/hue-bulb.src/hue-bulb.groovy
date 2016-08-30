@@ -17,6 +17,7 @@ metadata {
 		capability "Switch"
 		capability "Refresh"
 		capability "Sensor"
+		capability "Health Check"
 
 		command "setAdjustedColor"
         command "reset"
@@ -167,6 +168,10 @@ void setColorTemperature(value) {
     }
 }
 
+void installed() {
+	// setup device watch
+	sendEvent(name: "checkInterval", value: 60 * 30, data: [protocol: "lan"], displayed: false)
+}
 void refresh() {
     log.debug "Executing 'refresh'"
     parent.manualRefresh()
@@ -181,4 +186,8 @@ def verifyPercent(percent) {
         log.warn "$percent is not 0-100"
         return false
     }
+}
+
+def ping() {
+    log.trace "${parent.ping(this)}"
 }
