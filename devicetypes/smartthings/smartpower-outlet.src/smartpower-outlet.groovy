@@ -101,6 +101,12 @@ def parse(String description) {
 		else {
 			def descriptionText = finalResult.value == "on" ? '{{ device.displayName }} is On' : '{{ device.displayName }} is Off'
 			sendEvent(name: finalResult.type, value: finalResult.value, descriptionText: descriptionText, translatable: true)
+			// Temporary fix for the case when Device is OFFLINE and is connected again
+			if (state.lastActivity == null){
+				state.lastActivity = now()
+				sendEvent(name: "deviceWatch-lastActivity", value: state.lastActivity, description: "Last Activity is on ${new Date((long)state.lastActivity)}", displayed: false, isStateChange: true)
+			}
+			state.lastActivity = now()
 		}
 	}
 	else {
@@ -116,13 +122,27 @@ def off() {
 def on() {
 	zigbee.on()
 }
+/**
+ * PING is used by Device-Watch in attempt to reach the Device
+ * */
+def ping() {
+
+	if (state.lastActivity < (now() - (1000 * device.currentValue("checkInterval"))) ){
+		log.info "ping, alive=no, lastActivity=${state.lastActivity}"
+		state.lastActivity = null
+		return zigbee.onOffRefresh()
+	} else {
+		log.info "ping, alive=yes, lastActivity=${state.lastActivity}"
+		sendEvent(name: "deviceWatch-lastActivity", value: state.lastActivity, description: "Last Activity is on ${new Date((long)state.lastActivity)}", displayed: false, isStateChange: true)
+	}
+}
 
 def refresh() {
-	zigbee.onOffRefresh() + zigbee.refreshData("0x0B04", "0x050B")
+	zigbee.onOffRefresh() + zigbee.electricMeasurementPowerRefresh()
 }
 
 def configure() {
-	sendEvent(name: "checkInterval", value: 1200, displayed: false)
+	sendEvent(name: "checkInterval", value: 1200, displayed: false, data: [protocol: "zigbee"])
 	zigbee.onOffConfig() + powerConfig() + refresh()
 }
 

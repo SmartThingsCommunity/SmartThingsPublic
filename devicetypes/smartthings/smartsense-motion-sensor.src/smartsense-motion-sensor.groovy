@@ -13,6 +13,8 @@
  *  License for the specific language governing permissions and limitations
  *  under the License.
  */
+import physicalgraph.zigbee.clusters.iaszone.ZoneStatus
+
 
 metadata {
 	definition (name: "SmartSense Motion Sensor", namespace: "smartthings", author: "SmartThings", category: "C2") {
@@ -22,7 +24,7 @@ metadata {
 		capability "Temperature Measurement"
 		capability "Refresh"
 		capability "Health Check"
-		capability "Sensor"		
+		capability "Sensor"
 
 		command "enrollResponse"
 
@@ -102,6 +104,13 @@ def parse(String description) {
 	else if (description?.startsWith('zone status')) {
 		map = parseIasMessage(description)
 	}
+
+	// Temporary fix for the case when Device is OFFLINE and is connected again
+	if (state.lastActivity == null){
+		state.lastActivity = now()
+		sendEvent(name: "deviceWatch-lastActivity", value: state.lastActivity, description: "Last Activity is on ${new Date((long)state.lastActivity)}", displayed: false, isStateChange: true)
+	}
+	state.lastActivity = now()
 
 	log.debug "Parse returned $map"
 	def result = map ? createEvent(map) : null
@@ -183,44 +192,10 @@ private Map parseCustomMessage(String description) {
 }
 
 private Map parseIasMessage(String description) {
-	List parsedMsg = description.split(' ')
-	String msgCode = parsedMsg[2]
+	ZoneStatus zs = zigbee.parseZoneStatus(description)
 
-	Map resultMap = [:]
-	switch(msgCode) {
-		case '0x0020': // Closed/No Motion/Dry
-			resultMap = getMotionResult('inactive')
-			break
-
-		case '0x0021': // Open/Motion/Wet
-			resultMap = getMotionResult('active')
-			break
-
-		case '0x0022': // Tamper Alarm
-			log.debug 'motion with tamper alarm'
-			resultMap = getMotionResult('active')
-			break
-
-		case '0x0023': // Battery Alarm
-			break
-
-		case '0x0024': // Supervision Report
-			log.debug 'no motion with tamper alarm'
-			resultMap = getMotionResult('inactive')
-			break
-
-		case '0x0025': // Restore Report
-			break
-
-		case '0x0026': // Trouble/Failure
-			log.debug 'motion with failure alarm'
-			resultMap = getMotionResult('active')
-			break
-
-		case '0x0028': // Test Mode
-			break
-	}
-	return resultMap
+	// Some sensor models that use this DTH use alarm1 and some use alarm2 to signify motion
+	return (zs.isAlarm1Set() || zs.isAlarm2Set()) ? getMotionResult('active') : getMotionResult('inactive')
 }
 
 def getTemperature(value) {
@@ -314,6 +289,21 @@ private Map getMotionResult(value) {
 	]
 }
 
+/**
+ * PING is used by Device-Watch in attempt to reach the Device
+ * */
+def ping() {
+
+	if (state.lastActivity < (now() - (1000 * device.currentValue("checkInterval"))) ){
+		log.info "ping, alive=no, lastActivity=${state.lastActivity}"
+		state.lastActivity = null
+		return zigbee.readAttribute(0x001, 0x0020) // Read the Battery Level
+	} else { 
+		log.info "ping, alive=yes, lastActivity=${state.lastActivity}"
+		sendEvent(name: "deviceWatch-lastActivity", value: state.lastActivity, description: "Last Activity is on ${new Date((long)state.lastActivity)}", displayed: false, isStateChange: true)
+	}
+}
+
 def refresh() {
 	log.debug "refresh called"
 	def refreshCmds = [
@@ -325,7 +315,7 @@ def refresh() {
 }
 
 def configure() {
-	sendEvent(name: "checkInterval", value: 7200, displayed: false)
+	sendEvent(name: "checkInterval", value: 14400, displayed: false, data: [protocol: "zigbee"])
 
 	String zigbeeEui = swapEndianHex(device.hub.zigbeeEui)
 	log.debug "Configuring Reporting, IAS CIE, and Bindings."

@@ -22,7 +22,6 @@ metadata {
 		capability "Configuration"
 		capability "Sensor"
 		capability "Battery"
-		capability "Health Check"
 
 		attribute "tamper", "enum", ["detected", "clear"]
 		attribute "batteryStatus", "string"
@@ -328,9 +327,6 @@ def zwaveEvent(physicalgraph.zwave.Command cmd) {
 }
 
 def configure() {
-	// allow device user configured or default 16 min to check in; double the periodic reporting interval
-	sendEvent(name: "checkInterval", value: 2* (timeOptionValueMap[reportInterval] ?: (2*8*60)), displayed: false)
-
 	// This sensor joins as a secure device if you double-click the button to include it
 	log.debug "${device.displayName} is configuring its settings"
 	def request = []

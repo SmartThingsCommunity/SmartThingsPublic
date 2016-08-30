@@ -28,8 +28,8 @@ metadata {
 			}
 			}
 		valueTile("doNotRemove", "v", decoration: "flat", height: 2, width: 6, inactiveLabel: false) {
-			state "default", label:'Do not remove'
-        }
+			state "default", label:'If removed, Hue lights will not work properly'
+		}
 		valueTile("idNumber", "device.idNumber", decoration: "flat", height: 2, width: 6, inactiveLabel: false) {
 			state "default", label:'ID: ${currentValue}'
 		}
@@ -38,7 +38,7 @@ metadata {
 		}
 
 		main (["rich-control"])
-		details(["rich-control", "idNumber", "networkAddress", "doNotRemove"])
+		details(["rich-control", "doNotRemove", "idNumber", "networkAddress"])
 	}
 }
 
