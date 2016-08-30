@@ -22,7 +22,7 @@ import org.apache.commons.codec.binary.Base64
 import java.text.DecimalFormat
 import groovy.transform.Field
 
-@Field final USE_DEBUG = false
+@Field final USE_DEBUG = true
 @Field final selectedCapabilities = [ "actuator", "sensor" ]
 
 private getVendorName()       { "Octoblu" }
@@ -53,11 +53,14 @@ preferences {
 }
 
 mappings {
-  path("/receiveCode") {
-    action: [ GET: "receiveCode" ]
+  path("/oauthCode") {
+    action: [ GET: "getOauthCode" ]
   }
   path("/message") {
-    action: [ POST: "receiveMessage" ]
+    action: [ POST: "postMessage" ]
+  }
+  path("/app") {
+    action: [ POST: "postApp" ]
   }
 }
 
@@ -83,8 +86,10 @@ def welcomePage() {
     }
     if (state.installed) {
       section {
-        input name: "showUninstall", type: "bool", title: "Uninstall", description: "false", submitOnChange: true
+        input name: "showUninstall", type: "bool", title: "Uninstall", submitOnChange: true
         if (showUninstall) {
+          state.removeDevices = removeDevices
+          input name: "removeDevices", type: "bool", title: "Remove Octoblu devices", submitOnChange: true
           paragraph title: "Sorry to see you go!", "please email <support@octoblu.com> with any feedback or issues"
         }
       }
@@ -109,7 +114,7 @@ def authPage() {
   def oauthParams = [
     response_type: "code",
     client_id: state.vendorOAuthUuid,
-    redirect_uri: getApiServerUrl() + "/api/token/${state.accessToken}/smartapps/installations/${app.id}/receiveCode"
+    redirect_uri: getApiServerUrl() + "/api/token/${state.accessToken}/smartapps/installations/${app.id}/oauthCode"
   ]
 
   def redirectUrl =  getVendorAuthPath() + '?' + toQueryString(oauthParams)
@@ -140,9 +145,9 @@ def createOAuthDevice() {
       "callbackUrl": getApiServerUrl() + "/api"
     ],
     "configureWhitelist": [ "68c39f40-cc13-4560-a68c-e8acd021cff9" ],
-    "discoverWhitelist": [ "*", "68c39f40-cc13-4560-a68c-e8acd021cff9" ],
-    "receiveWhitelist": [ "*" ],
-    "sendWhitelist": [ "*" ]
+    "discoverWhitelist": [ "*" ],
+    "receiveWhitelist": [],
+    "sendWhitelist": []
   ]
 
   def postParams = [ uri: apiUrl()+"devices",
@@ -163,13 +168,20 @@ def createOAuthDevice() {
 // --------------------------------------
 
 def subscribePage() {
-  return dynamicPage(name: "subscribePage", title: "Subscribe to SmartThings", nextPage: "devicesPage") {
+  return dynamicPage(name: "subscribePage", title: "Subscribe to SmartThing devices", nextPage: "devicesPage") {
     section {
       // input name: "selectedCapabilities", type: "enum", title: "capability filter",
       // submitOnChange: true, multiple: true, required: false, options: [ "actuator", "sensor" ]
       for (capability in selectedCapabilities) {
          input name: "${capability}Capability".toString(), type: "capability.$capability", title: "${capability.capitalize()} Things", multiple: true, required: false
       }
+    }
+    section(" ") {
+      input name: "pleaseCreateAppDevice", type: "bool", title: "Create a SmartApp device", defaultValue: true
+      paragraph "A SmartApp device allows access to location and hub information for this installation"
+    }
+    section(" ") {
+      paragraph title: "", "Existing Octoblu devices may be modified!"
     }
   }
 }
@@ -178,11 +190,13 @@ def subscribePage() {
 
 def devicesPage() {
   def postParams = [
-  uri: apiUrl() + "devices?owner=${state.vendorUuid}&category=smart-things",
-  headers: ["Authorization": "Bearer ${state.vendorBearerToken}"]]
+    uri: apiUrl() + "devices?owner=${state.vendorUuid}&category=smart-things",
+    headers: ["Authorization": "Bearer ${state.vendorBearerToken}"]
+  ]
   state.vendorDevices = [:]
 
   def hasDevice = [:]
+  hasDevice[app.id] = true
   selectedCapabilities.each { capability ->
     def smartDevices = settings["${capability}Capability"]
     smartDevices.each { smartDevice ->
@@ -197,7 +211,7 @@ def devicesPage() {
       response.data.devices.each { device ->
         if (device.smartDeviceId && hasDevice[device.smartDeviceId]) {
           debug "found device ${device.uuid} with smartDeviceId ${device.smartDeviceId}"
-          state.vendorDevices[device.smartDeviceId] = getVendorDeviceStateInfo(device)
+          state.vendorDevices[device.smartDeviceId] = getDeviceInfo(device)
         }
         debug "has device: ${device.uuid} ${device.name} ${device.type}"
       }
@@ -210,6 +224,8 @@ def devicesPage() {
     debug "checking devices for capability ${capability}"
     createDevices(settings["${capability}Capability"])
   }
+  if (pleaseCreateAppDevice)
+    createAppDevice()
 
   return dynamicPage(name: "devicesPage", title: "Octoblu Things", install: true) {
     section {
@@ -223,7 +239,12 @@ def devicesPage() {
 def createDevices(smartDevices) {
 
   smartDevices.each { smartDevice ->
-    def commands = [[ "name": "* get value" ],[ "name": "* get state" ],[ "name": "* get device" ],[ "name": "* get events" ]]
+    def commands = [
+      [ "name": "app-get-value" ],
+      [ "name": "app-get-state" ],
+      [ "name": "app-get-device" ],
+      [ "name": "app-get-events" ]
+    ]
 
     smartDevice.supportedCommands.each { command ->
       if (command.arguments.size()>0) {
@@ -307,32 +328,34 @@ def createDevices(smartDevices) {
       "owner": "${state.vendorUuid}",
       "configureWhitelist": [],
       "discoverWhitelist": ["${state.vendorUuid}"],
-      "receiveWhitelist": ["*"],
-      "sendWhitelist": ["*"],
+      "receiveWhitelist": [],
+      "sendWhitelist": [],
       "type": "device:${smartDevice.name.replaceAll('\\s','-').toLowerCase()}",
       "category": "smart-things",
       "meshblu": [
-        "messageHooks": [
-          [
+        "forwarders": [
+          "received": [[
             "url": getApiServerUrl() + "/api/token/${state.accessToken}/smartapps/installations/${app.id}/message",
             "method": "POST",
-            "generateAndForwardMeshbluCredentials": false
-          ]
+            "type": "webhook"
+          ]]
         ]
       ]
     ]
 
+    updatePermissions(deviceProperties, smartDevice.id)
     def params = [
-    uri: apiUrl() + "devices",
-    headers: ["Authorization": "Bearer ${state.vendorBearerToken}"],
-    body: groovy.json.JsonOutput.toJson(deviceProperties) ]
+      uri: apiUrl() + "devices",
+      headers: ["Authorization": "Bearer ${state.vendorBearerToken}"],
+      body: groovy.json.JsonOutput.toJson(deviceProperties)
+    ]
 
     try {
 
       if (!state.vendorDevices[smartDevice.id]) {
         debug "creating new device for ${smartDevice.id}"
         httpPostJson(params) { response ->
-          state.vendorDevices[smartDevice.id] = getVendorDeviceStateInfo(response.data)
+          state.vendorDevices[smartDevice.id] = getDeviceInfo(response.data)
         }
         return
       }
@@ -349,8 +372,120 @@ def createDevices(smartDevices) {
   }
 }
 
-def getVendorDeviceStateInfo(device) {
-  return [ "uuid": device.uuid, "token": device.token ]
+def createAppDevice() {
+  def commands = [
+    [ "name": "app-get-location" ],
+    [ "name": "app-get-devices" ],
+    [ "name": "app-set-mode" ],
+  ]
+
+  def schemas = [
+    "version": "2.0.0",
+    "message": [:]
+  ]
+
+  commands.each { command ->
+    schemas."message"."$command.name" = [
+      "type": "object",
+      "properties": [
+        "command": [
+          "type": "string",
+          "readOnly": true,
+          "default": "$command.name",
+          "enum": ["$command.name"],
+          "x-schema-form": [
+            "condition": "false"
+          ]
+        ]
+      ]
+    ]
+  }
+
+  schemas."message"."app-set-mode"."properties"."args" = [
+    "type": "object",
+    "title": "Arguments",
+    "properties": [
+      "mode": [
+        "type": "string"
+      ]
+    ]
+  ]
+
+  def deviceProperties = [
+    "schemas": schemas,
+    "needsSetup": false,
+    "online": true,
+    "name": "${location.name} SmartApp",
+    "smartDeviceId": "${app.id}",
+    "logo": "https://i.imgur.com/TsXefbK.png",
+    "owner": "${state.vendorUuid}",
+    "configureWhitelist": [],
+    "discoverWhitelist": ["${state.vendorUuid}"],
+    "receiveWhitelist": [],
+    "sendWhitelist": [],
+    "type": "device:smart-things-app",
+    "category": "smart-things",
+    "meshblu": [
+      "forwarders": [
+        "received": [[
+          "url": getApiServerUrl() + "/api/token/${state.accessToken}/smartapps/installations/${app.id}/app",
+          "method": "POST",
+          "type": "webhook"
+        ]]
+      ]
+    ]
+  ]
+
+  updatePermissions(deviceProperties, app.id)
+  def params = [
+    uri: apiUrl() + "devices",
+    headers: ["Authorization": "Bearer ${state.vendorBearerToken}"],
+    body: groovy.json.JsonOutput.toJson(deviceProperties)
+  ]
+
+  debug "creating app device!"
+  debug params.body
+  try {
+
+    // debug params
+    if (!state.vendorDevices[app.id]) {
+      debug "creating new app device for ${app.id}"
+      httpPostJson(params) { response ->
+        state.vendorDevices[app.id] = getDeviceInfo(response.data)
+      }
+      return
+    }
+
+    params.uri = params.uri + "/${state.vendorDevices[app.id].uuid}"
+    debug "the app device ${app.id} has already been created, updating ${params.uri}"
+    httpPutJson(params) { response ->
+      resetVendorDeviceToken(app.id);
+    }
+
+  } catch (e) {
+    log.error "unable to create new device ${e}"
+  }
+
+}
+
+def updatePermissions(newDevice, id) {
+  def device = state.vendorDevices[id]
+  if (!device) return
+  newDevice.configureWhitelist = device.configureWhitelist
+  newDevice.discoverWhitelist = device.discoverWhitelist
+  newDevice.receiveWhitelist = device.receiveWhitelist
+  newDevice.sendWhitelist = device.sendWhitelist
+}
+
+def getDeviceInfo(device) {
+  return [
+    "uuid": device.uuid,
+    "token": device.token,
+    "configureWhitelist": device.configureWhitelist,
+    "discoverWhitelist": device.discoverWhitelist,
+    "receiveWhitelist": device.receiveWhitelist,
+    "sendWhitelist": device.sendWhitelist,
+  ]
 }
 
 def resetVendorDeviceToken(smartDeviceId) {
@@ -365,7 +500,7 @@ def resetVendorDeviceToken(smartDeviceId) {
   headers: ["Authorization": "Bearer ${state.vendorBearerToken}"]]
   try {
     httpPost(postParams) { response ->
-      state.vendorDevices[smartDeviceId] = getVendorDeviceStateInfo(response.data)
+      state.vendorDevices[smartDeviceId] = getDeviceInfo(response.data)
       debug "got new token for ${smartDeviceId}/${deviceUUID}"
     }
   } catch (e) {
@@ -424,10 +559,12 @@ def cleanUpTokens() {
   state.vendorToken = null
 
   if (state.vendorOAuthToken) {
-    params.uri = apiUrl() + "devices/${state.vendorOAuthUuid}"
-    params.headers = [
-      "meshblu_auth_uuid": state.vendorOAuthUuid,
-      "meshblu_auth_token": state.vendorOAuthToken
+    def params = [
+      uri: apiUrl() + "devices/${state.vendorOAuthUuid}",
+      headers: [
+        "meshblu_auth_uuid": state.vendorOAuthUuid,
+        "meshblu_auth_token": state.vendorOAuthToken
+      ]
     ]
 
     debug "deleting url ${params.uri}"
@@ -447,7 +584,7 @@ def cleanUpTokens() {
 
 // --------------------------------------
 
-def receiveCode() {
+def getOauthCode() {
   // revokeAccessToken()
   // state.accessToken = createAccessToken()
   debug "generated app access token ${state.accessToken}"
@@ -488,31 +625,31 @@ def receiveCode() {
 
 def getEventData(evt) {
   return [
-  "date" : evt.date,
-  "id" : evt.id,
-  "data" : evt.data,
-  "description" : evt.description,
-  "descriptionText" : evt.descriptionText,
-  "displayName" : evt.displayName,
-  "deviceId" : evt.deviceId,
-  "hubId" : evt.hubId,
-  "installedSmartAppId" : evt.installedSmartAppId,
-  "isoDate" : evt.isoDate,
-  "isDigital" : evt.isDigital(),
-  "isPhysical" : evt.isPhysical(),
-  "isStateChange" : evt.isStateChange(),
-  "locationId" : evt.locationId,
-  "name" : evt.name,
-  "source" : evt.source,
-  "unit" : evt.unit,
-  "value" : evt.value,
-  "category" : "event",
-  "type" : "device:smart-thing"
+    "date" : evt.date,
+    "id" : evt.id,
+    "data" : evt.data,
+    "description" : evt.description,
+    "descriptionText" : evt.descriptionText,
+    "displayName" : evt.displayName,
+    "deviceId" : evt.deviceId,
+    "hubId" : evt.hubId,
+    "installedSmartAppId" : evt.installedSmartAppId,
+    "isoDate" : evt.isoDate,
+    "isDigital" : evt.isDigital(),
+    "isPhysical" : evt.isPhysical(),
+    "isStateChange" : evt.isStateChange(),
+    "locationId" : evt.locationId,
+    "name" : evt.name,
+    "source" : evt.source,
+    "unit" : evt.unit,
+    "value" : evt.value,
+    "category" : "event",
+    "type" : "device:smart-thing"
   ]
 }
 
 def eventForward(evt) {
-  def eventData = [ "devices" : "*", "payload" : getEventData(evt) ]
+  def eventData = [ "devices" : [ "*" ], "payload" : getEventData(evt) ]
 
   debug "sending event: ${groovy.json.JsonOutput.toJson(eventData)}"
 
@@ -544,14 +681,20 @@ def eventForward(evt) {
 
 // --------------------------------------
 
-def receiveMessage() {
-  debug("received data ${request.JSON}")
+def postMessage() {
+  debug("received message data ${request.JSON}")
   def foundDevice = false
   selectedCapabilities.each{ capability ->
     settings."${capability}Capability".each { thing ->
       if (!foundDevice && thing.id == request.JSON.smartDeviceId) {
+        def vendorDevice = state.vendorDevices[thing.id]
         foundDevice = true
-        if (!request.JSON.command.startsWith("* get ")) {
+        if (vendorDevice.uuid == request.JSON.fromUuid) {
+          log.error "aborting message from self"
+          return
+        }
+
+        if (!request.JSON.command.startsWith("app-")) {
           def args = []
           if (request.JSON.args) {
             request.JSON.args.each { k, v ->
@@ -565,19 +708,19 @@ def receiveMessage() {
           debug "calling internal command ${request.JSON.command}"
           def commandData = [:]
           switch (request.JSON.command) {
-            case "* get value":
+            case "app-get-value":
               debug "got command value"
               thing.supportedAttributes.each { attribute ->
                 commandData[attribute.name] = thing.latestValue(attribute.name)
               }
               break
-            case "* get state":
+            case "app-get-state":
               debug "got command state"
               thing.supportedAttributes.each { attribute ->
                 commandData[attribute.name] = thing.latestState(attribute.name)?.value
               }
               break
-            case "* get device":
+            case "app-get-device":
               debug "got command device"
               commandData = [
                 "id" : thing.id,
@@ -589,7 +732,7 @@ def receiveMessage() {
                 "supportedCommands" : thing.supportedCommands.collect{ command -> return ["name" : command.name, "arguments" : command.arguments ] }
               ]
               break
-            case "* get events":
+            case "app-get-events":
               debug "got command events"
               commandData.events = []
               thing.events().each { event ->
@@ -601,14 +744,12 @@ def receiveMessage() {
               debug "unknown command ${request.JSON.command}"
           }
           commandData.command = request.JSON.command
-
-          def vendorDevice = state.vendorDevices[thing.id]
           debug "with vendorDevice ${vendorDevice} for ${groovy.json.JsonOutput.toJson(commandData)}"
 
           def postParams = [
             uri: apiUrl() + "messages",
             headers: ["meshblu_auth_uuid": vendorDevice.uuid, "meshblu_auth_token": vendorDevice.token],
-            body: groovy.json.JsonOutput.toJson([ "devices" : "*", "payload" : commandData ])
+            body: groovy.json.JsonOutput.toJson([ "devices" : [ "*" ], "payload" : commandData ])
           ]
 
           debug "posting params ${postParams}"
@@ -630,6 +771,105 @@ def receiveMessage() {
 
 // --------------------------------------
 
+def postApp() {
+  debug("received app data ${request.JSON}")
+  if (state.vendorDevices[app.id].uuid == request.JSON.fromUuid) {
+    log.error "aborting message from self"
+    return
+  }
+  def args = []
+  if (request.JSON.args) {
+    request.JSON.args.each { k, v ->
+      args.push(v)
+    }
+  }
+
+  def commandData = [:]
+
+  switch (request.JSON.command) {
+    case "app-get-location":
+      debug "got command location"
+
+      def modes = []
+      location.modes.each { mode ->
+        modes.push([
+          "id" : mode.id,
+          "name" : mode.name
+        ])
+      }
+
+      def hubs = []
+      location.hubs.each { hub ->
+        debug "hub : ${hub}"
+        hubs.push([
+          "firmwareVersionString" : hub.firmwareVersionString,
+          "id" : hub.id,
+          "localIP" : hub.localIP,
+          "localSrvPortTCP" : hub.localSrvPortTCP,
+          "name" : hub.name,
+          "type" : hub.type,
+          "zigbeeEui" : hub.zigbeeEui,
+          "zigbeeId" : hub.zigbeeId
+        ])
+      }
+
+      commandData = [
+        "contactBookEnabled" : location.contactBookEnabled,
+        "id" : location.id,
+        "latitude" : location.latitude,
+        "longitude" : location.longitude,
+        "temperatureScale" : location.temperatureScale,
+        "timeZone" : location.timeZone.getID(),
+        "zipCode" : location.zipCode,
+        "mode" : location.mode,
+        "modes" : modes,
+        "hubs" : hubs
+      ]
+
+      debug "copied location!"
+      debug commandData
+      break
+
+    case "app-get-devices":
+      debug "got command devices"
+      commandData.devices = state.vendorDevices.collect { k, v -> [ "smartDeviceId" : k, "uuid" : v.uuid ] }
+      break
+
+    case "app-set-mode":
+      location.setMode(*args)
+      commandData.mode = args[0]
+      break
+
+    default:
+      commandData.error = "unknown command"
+      debug "unknown command ${request.JSON.command}"
+  }
+  commandData.command = request.JSON.command
+  debug "sending ${commandData}"
+
+  def vendorDevice = state.vendorDevices[app.id]
+  debug "with vendorDevice ${vendorDevice} for ${groovy.json.JsonOutput.toJson(commandData)}"
+
+  def postParams = [
+    uri: apiUrl() + "messages",
+    headers: [ "meshblu_auth_uuid" : vendorDevice.uuid, "meshblu_auth_token" : vendorDevice.token ],
+    body: groovy.json.JsonOutput.toJson([ "devices" : [ "*" ], "payload" : commandData ])
+  ]
+
+  debug "posting params ${postParams}"
+
+  try {
+    debug "calling httpPostJson!"
+    httpPostJson(postParams) { response ->
+      debug "sent off command result"
+    }
+  } catch (e) {
+    log.error "unable to send command result ${e}"
+  }
+}
+
+// --------------------------------------
+
 private debug(logStr) {
   if (USE_DEBUG)
     log.debug logStr
@@ -646,7 +886,24 @@ def initialize()
 
 def uninstalled()
 {
-  debug "In uninstalled"
+  debug "In uninstalled ${state.removeDevices}"
+  if (state.removeDevices) {
+    state.vendorDevices.each  { k, device ->
+      def params = [
+        uri: apiUrl() + "devices/${device.uuid}",
+        headers: [ "meshblu_auth_uuid" : device.uuid, "meshblu_auth_token" : device.token ],
+      ]
+
+      debug "deleting url ${params.uri}"
+      try {
+        httpDelete(params) { response ->
+          debug "delete device ${device.uuid}"
+        }
+      } catch (e) {
+        log.error "token delete error ${e}"
+      }
+    }
+  }
 }
 
 def installed() {
