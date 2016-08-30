@@ -133,14 +133,23 @@ def bulbDiscovery() {
 	state.inBulbDiscovery = true
 	def bridge = null
 	if (selectedHue) {
-        bridge = getChildDevice(selectedHue)
-        subscribe(bridge, "bulbList", bulbListData)
+		bridge = getChildDevice(selectedHue)
+		subscribe(bridge, "bulbList", bulbListData)
 	}
-    state.bridgeRefreshCount = 0
-	def bulboptions = bulbsDiscovered() ?: [:]
-	def numFound = bulboptions.size() ?: 0
-    if (numFound == 0)
-    	app.updateSetting("selectedBulbs", "")
+	state.bridgeRefreshCount = 0
+	def allLightsFound = bulbsDiscovered() ?: [:]
+
+	// List lights currently not added to the user (editable)
+	def newLights = allLightsFound.findAll {getChildDevice(it.key) == null} ?: [:]
+	newLights = newLights.sort {it.value.toLowerCase()}
+
+	// List lights already added to the user (not editable)
+	def existingLights = allLightsFound.findAll {getChildDevice(it.key) != null} ?: [:]
+	existingLights = existingLights.sort {it.value.toLowerCase()}
+
+	def numFound = newLights.size() ?: 0
+	if (numFound == 0)
+		app.updateSetting("selectedBulbs", "")
 
 	if((bulbRefreshCount % 5) == 0) {
 		discoverHueBulbs()
@@ -148,14 +157,25 @@ def bulbDiscovery() {
 	def selectedBridge = state.bridges.find { key, value -> value?.serialNumber?.equalsIgnoreCase(selectedHue) }
 	def title = selectedBridge?.value?.name ?: "Find bridges"
 
+	// List of all lights previously added shown to user
+	def existingLightsDescription = ""
+	if (existingLights) {
+		existingLights.each {
+			if (existingLightsDescription.isEmpty()) {
+				existingLightsDescription += it.value
+			} else {
+				 existingLightsDescription += ", ${it.value}"
+			}
+		}
+	}
 
 	return dynamicPage(name:"bulbDiscovery", title:"Light Discovery Started!", nextPage:"", refreshInterval:refreshInterval, install:true, uninstall: true) {
 		section("Please wait while we discover your Hue Lights. Discovery can take five minutes or more, so sit back and relax! Select your device below once discovered.") {
-			input "selectedBulbs", "enum", required:false, title:"Select Hue Lights (${numFound} found)", multiple:true, options:bulboptions
+			input "selectedBulbs", "enum", required:false, title:"Select Hue Lights to add (${numFound} found)", multiple:true, options:newLights
+			paragraph title: "Previously added Hue Lights (${existingLights.size()} added)", existingLightsDescription
 		}
 		section {
 			href "bridgeDiscovery", title: title, description: "", state: selectedHue ? "complete" : "incomplete", params: [override: true]
-
 		}
 	}
 }
@@ -290,8 +310,11 @@ def manualRefresh() {
 }
 
 def uninstalled(){
+	// Remove bridgedevice connection to allow uninstall of smartapp even though bridge is listed
+	// as user of smartapp
+	app.updateSetting("bridgeDevice", null)
 	state.bridges = [:]
-    state.username = null
+	state.username = null
 }
 
 // Handles events to add new bulbs
@@ -415,23 +438,32 @@ def addBridge() {
 				// Hue uses last 6 digits of MAC address as ID number, this number is shown on the bottom of the bridge
 				def idNumber = getBridgeIdNumber(selectedHue)
 				d = addChildDevice("smartthings", "Hue Bridge", selectedHue, vbridge.value.hub, ["label": "Hue Bridge ($idNumber)"])
-				d?.completedSetup = true
- 				log.debug "created ${d.displayName} with id ${d.deviceNetworkId}"
-                def childDevice = getChildDevice(d.deviceNetworkId)
-				updateBridgeStatus(childDevice)
-				childDevice.sendEvent(name: "idNumber", value: idNumber)
- 				if (vbridge.value.ip && vbridge.value.port) {
-                	if (vbridge.value.ip.contains(".")) {
-                    	childDevice.sendEvent(name: "networkAddress", value: vbridge.value.ip + ":" +  vbridge.value.port)
-                        childDevice.updateDataValue("networkAddress", vbridge.value.ip + ":" +  vbridge.value.port)
-                    } else {
-                    	childDevice.sendEvent(name: "networkAddress", value: convertHexToIP(vbridge.value.ip) + ":" +  convertHexToInt(vbridge.value.port))
-                        childDevice.updateDataValue("networkAddress", convertHexToIP(vbridge.value.ip) + ":" +  convertHexToInt(vbridge.value.port))
-                    }
+				if (d) {
+					// Associate smartapp to bridge so user will be warned if trying to delete bridge
+					app.updateSetting("bridgeDevice", [type: "device.hueBridge", value: d.id])
+
+					d.completedSetup = true
+					log.debug "created ${d.displayName} with id ${d.deviceNetworkId}"
+					def childDevice = getChildDevice(d.deviceNetworkId)
+					updateBridgeStatus(childDevice)
+					childDevice.sendEvent(name: "idNumber", value: idNumber)
+
+
+					if (vbridge.value.ip && vbridge.value.port) {
+						if (vbridge.value.ip.contains(".")) {
+							childDevice.sendEvent(name: "networkAddress", value: vbridge.value.ip + ":" +  vbridge.value.port)
+							childDevice.updateDataValue("networkAddress", vbridge.value.ip + ":" +  vbridge.value.port)
+						} else {
+							childDevice.sendEvent(name: "networkAddress", value: convertHexToIP(vbridge.value.ip) + ":" +  convertHexToInt(vbridge.value.port))
+							childDevice.updateDataValue("networkAddress", convertHexToIP(vbridge.value.ip) + ":" +  convertHexToInt(vbridge.value.port))
+						}
+					} else {
+						childDevice.sendEvent(name: "networkAddress", value: convertHexToIP(vbridge.value.networkAddress) + ":" +  convertHexToInt(vbridge.value.deviceAddress))
+						childDevice.updateDataValue("networkAddress", convertHexToIP(vbridge.value.networkAddress) + ":" +  convertHexToInt(vbridge.value.deviceAddress))
+					}
 				} else {
-					childDevice.sendEvent(name: "networkAddress", value: convertHexToIP(vbridge.value.networkAddress) + ":" +  convertHexToInt(vbridge.value.deviceAddress))
-                    childDevice.updateDataValue("networkAddress", convertHexToIP(vbridge.value.networkAddress) + ":" +  convertHexToInt(vbridge.value.deviceAddress))
-                }
+					log.error "Failed to create Hue Bridge device"
+				}
 			}
 		} else {
 			log.debug "found ${d.displayName} with id $selectedHue already exists"
@@ -1017,12 +1049,12 @@ def setColor(childDevice, huesettings) {
     log.debug "Executing 'setColor($huesettings)'"
 
     updateInProgress()
-    
+
     def value = [:]
     def hue = null
     def sat = null
     def xy = null
-    
+
 	// For now ignore model to get a consistent color if same color is set across multiple devices
 	// def model = state.bulbs[getId(childDevice)]?.modelid
     if (huesettings.hex != null) {
@@ -1038,11 +1070,12 @@ def setColor(childDevice, huesettings) {
 	else
 		value.hue = Math.min(Math.round(childDevice.device?.currentValue("hue") * 65535 / 100), 65535)
 
-        if (huesettings.saturation != null)   
+        if (huesettings.saturation != null)
 		value.sat = Math.min(Math.round(huesettings.saturation * 254 / 100), 254)
 	else
 		value.sat = Math.min(Math.round(childDevice.device?.currentValue("saturation") * 254 / 100), 254)
 
+/* Disabled for now due to bad behavior via Lightning Wizard
 	if (!value.xy) {
 		// Below will translate values to hex->XY to take into account the color support of the different hue types
 		def hex = colorUtil.hslToHex((int) huesettings.hue, (int) huesettings.saturation)
@@ -1050,6 +1083,7 @@ def setColor(childDevice, huesettings) {
 		// Once groups, or scenes are introduced it might be a good idea to use unique models again
 		value.xy = calculateXY(hex)
     }
+*/
 
     // Default behavior is to turn light on
     value.on = true
@@ -1059,7 +1093,7 @@ def setColor(childDevice, huesettings) {
             value.on = false
         else if (huesettings.level == 1)
             value.bri = 1
-        else 
+        else
 			value.bri = Math.min(Math.round(huesettings.level * 254 / 100), 254)
     }
     value.alert = huesettings.alert ? huesettings.alert : "none"
