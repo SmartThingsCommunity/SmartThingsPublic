@@ -682,7 +682,7 @@ def setHeatingSetpoint(degrees) {
 	def temperatureScale = getTemperatureScale()
 
 	def degreesInteger = degrees as Integer
-	sendEvent("name":"heatingSetpoint", "value":degreesInteger)
+	sendEvent("name":"heatingSetpoint", "value":degreesInteger, "unit":temperatureScale)
 
 	def celsius = (getTemperatureScale() == "C") ? degreesInteger : (fahrenheitToCelsius(degreesInteger) as Double).round(2)
 	"st wattr 0x${device.deviceNetworkId} 1 0x201 0x12 0x29 {" + hex(celsius*100) + "}"
@@ -691,7 +691,7 @@ def setHeatingSetpoint(degrees) {
 
 def setCoolingSetpoint(degrees) {
 	def degreesInteger = degrees as Integer
-	sendEvent("name":"coolingSetpoint", "value":degreesInteger)
+	sendEvent("name":"coolingSetpoint", "value":degreesInteger, "unit":temperatureScale)
 	def celsius = (getTemperatureScale() == "C") ? degreesInteger : (fahrenheitToCelsius(degreesInteger) as Double).round(2)
 	"st wattr 0x${device.deviceNetworkId} 1 0x201 0x11 0x29 {" + hex(celsius*100) + "}"
 
