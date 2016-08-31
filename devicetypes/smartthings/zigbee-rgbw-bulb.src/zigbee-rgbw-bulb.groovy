@@ -106,11 +106,11 @@ def parse(String description) {
         if (zigbeeMap?.clusterInt == COLOR_CONTROL_CLUSTER) {
             if(zigbeeMap.attrInt == ATTRIBUTE_HUE){  //Hue Attribute
                 def hueValue = Math.round(zigbee.convertHexToInt(zigbeeMap.value) / 255 * 360)
-                sendEvent(name: "hue", value: hueValue, displayed:false)
+                sendEvent(name: "hue", value: hueValue, descriptionText: "Color has changed")
             }
             else if(zigbeeMap.attrInt == ATTRIBUTE_SATURATION){ //Saturation Attribute
                 def saturationValue = Math.round(zigbee.convertHexToInt(zigbeeMap.value) / 255 * 100)
-                sendEvent(name: "saturation", value: saturationValue, displayed:false)
+                sendEvent(name: "saturation", value: saturationValue, descriptionText: "Color has changed", displayed: false)
             }
         }
         else {
