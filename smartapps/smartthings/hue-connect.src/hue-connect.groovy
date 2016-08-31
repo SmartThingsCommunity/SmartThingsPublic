@@ -746,6 +746,7 @@ private void checkBridgeStatus() {
 	        if (it.value.lastActivity < time) { // it.value.lastActivity != null &&
 	            log.warn "Bridge $it.key is Offline"
 	            d.sendEvent(name: "status", value: "Offline")
+                state.bulbs?.each {it[status] = "offline"}
 	        } else {
 				d.sendEvent(name: "status", value: "Online")//setOnline(false)
 	        }
@@ -848,7 +849,7 @@ private sendBasicEvents(device, param, value) {
 
 	switch (param) {
 		case "on":
-			device.sendEvent(name: "switch", value: (value == true) ? "on" : "off")
+			device.sendEvent(name: "switch", value: (value == true) ? "on" : "off", isStateChange: true)
 			break
 		case "bri":
 			// 1-254
@@ -928,6 +929,7 @@ private handleCommandResponse(body) {
  * @return empty array
  */
 private handlePoll(body) {
+def logstring = "LARS handlePoll"
 	if (state.updating) {
 		// If user just executed commands, then ignore poll to not confuse the turning on/off state
 		return []
@@ -938,15 +940,19 @@ private handlePoll(body) {
 		def device = bulbs.find{it.deviceNetworkId == "${app.id}/${bulb.key}"}
 		if (device) {
 			if (bulb.value.state?.reachable) {
+            state.bulbs[bulb.key]?.status = "online"
+            logstring += " $device.label REACHABLE"
 				sendBasicEvents(device, "on", bulb.value?.state?.on)
 				sendBasicEvents(device, "bri", bulb.value?.state?.bri)
 				sendColorEvents(device, bulb.value?.state?.xy, bulb.value?.state?.hue, bulb.value?.state?.sat, bulb.value?.state?.ct, bulb.value?.state?.colormode)
 			} else {
+            	state.bulbs[bulb.key]?.status = "offline"
 				log.warn "$device is not reachable by Hue bridge"
+                logstring += " $device.label UNREACHABLE"
                     }
                 }
             }
-		return []
+		return logstring
 	}
 
 private updateInProgress() {
@@ -976,22 +982,34 @@ def hubVerification(bodytext) {
 
 def on(childDevice) {
 	log.debug "Executing 'on'"
+    def id = getId(childDevice)
+	if (!isOnline(id)) {
+    	return "Bulb is unreachable"
+    }
 	updateInProgress()
 	createSwitchEvent(childDevice, "on")
-	put("lights/${getId(childDevice)}/state", [on: true])
+	put("lights/$id/state", [on: true])
     return "Bulb is turning On"
 }
 
 def off(childDevice) {
 	log.debug "Executing 'off'"
+    def id = getId(childDevice)
+	if (!isOnline(id)) {
+    	return "Bulb is unreachable"
+    }
 	updateInProgress()
 	createSwitchEvent(childDevice, "off")
-	put("lights/${getId(childDevice)}/state", [on: false])
+	put("lights/$id/state", [on: false])
     return "Bulb is turning Off"
 }
 
 def setLevel(childDevice, percent) {
 	log.debug "Executing 'setLevel'"
+    def id = getId(childDevice)
+	if (!isOnline(id)) {
+    	return "Bulb is unreachable"
+    }
     updateInProgress()
 	// 1 - 254
     def level
@@ -1006,48 +1024,64 @@ def setLevel(childDevice, percent) {
 	// that means that the light will still be on when on is called next time
 	// Lets emulate that here
 	if (percent > 0) {
-		put("lights/${getId(childDevice)}/state", [bri: level, on: true])
+		put("lights/$id/state", [bri: level, on: true])
 	} else {
-		put("lights/${getId(childDevice)}/state", [on: false])
+		put("lights/$id/state", [on: false])
 	}
 	return "Setting level to $percent"
 }
 
 def setSaturation(childDevice, percent) {
 	log.debug "Executing 'setSaturation($percent)'"
+    def id = getId(childDevice)
+	if (!isOnline(id)) {
+    	return "Bulb is unreachable"
+    }
+    
     updateInProgress()
 	// 0 - 254
 	def level = Math.min(Math.round(percent * 254 / 100), 254)
 	// TODO should this be done by app only or should we default to on?
 	createSwitchEvent(childDevice, "on")
-	put("lights/${getId(childDevice)}/state", [sat: level, on: true])
+	put("lights/$id/state", [sat: level, on: true])
 	return "Setting saturation to $percent"
 }
 
 def setHue(childDevice, percent) {
 	log.debug "Executing 'setHue($percent)'"
+    def id = getId(childDevice)
+	if (!isOnline(id)) {
+    	return "Bulb is unreachable"
+    }
     updateInProgress()
 	// 0 - 65535
 	def level =	Math.min(Math.round(percent * 65535 / 100), 65535)
 	// TODO should this be done by app only or should we default to on?
 	createSwitchEvent(childDevice, "on")
-	put("lights/${getId(childDevice)}/state", [hue: level, on: true])
+	put("lights/$id/state", [hue: level, on: true])
 	return "Setting hue to $percent"
 }
 
 def setColorTemperature(childDevice, huesettings) {
 	log.debug "Executing 'setColorTemperature($huesettings)'"
+	def id = getId(childDevice)
+	if (!isOnline(id)) {
+    	return "Bulb is unreachable"
+    }
     updateInProgress()
 	// 153 (6500K) to 500 (2000K)
 	def ct = hueSettings == 6500 ? 153 : Math.round(1000000/huesettings)
 	createSwitchEvent(childDevice, "on")
-	put("lights/${getId(childDevice)}/state", [ct: ct, on: true])
+	put("lights/$id/state", [ct: ct, on: true])
 	return "Setting color temperature to $percent"
 }
 
 def setColor(childDevice, huesettings) {
     log.debug "Executing 'setColor($huesettings)'"
-
+	def id = getId(childDevice)
+	if (!isOnline(id)) {
+    	return "Bulb is unreachable"
+    }
     updateInProgress()
 
     def value = [:]
@@ -1104,7 +1138,7 @@ def setColor(childDevice, huesettings) {
         value.on = false
 
 	createSwitchEvent(childDevice, value.on ? "on" : "off")
-    put("lights/${getId(childDevice)}/state", value)
+    put("lights/$id/state", value)
 	return "Setting color to $value"
 }
 
@@ -1118,6 +1152,7 @@ private getId(childDevice) {
 }
 
 private poll() {
+log.error "LARS POLL issued"
 	def host = getBridgeIP()
 	def uri = "/api/${state.username}/lights/"
 	log.debug "GET: $host$uri"
@@ -1125,6 +1160,10 @@ private poll() {
 HOST: ${host}
 
 """, physicalgraph.device.Protocol.LAN, selectedHue))
+}
+
+private isOnline(id) {
+	return state.bulbs[id].status != null && state.bulbs[id].status == "online"
 }
 
 private put(path, body) {
