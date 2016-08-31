@@ -14,6 +14,7 @@ metadata {
 		capability "Switch"
 		capability "Refresh"
 		capability "Sensor"
+        capability "Health Check"
 
         command "refresh"
 	}
@@ -46,6 +47,10 @@ metadata {
         main(["rich-control"])
         details(["rich-control", "refresh"])
     }
+}
+
+void installed() {
+	sendEvent(name: "checkInterval", value: 60 * 30, data: [protocol: "lan"], displayed: false)
 }
 
 // parse events into attributes
@@ -86,4 +91,8 @@ void setLevel(percent) {
 void refresh() {
 	log.debug "Executing 'refresh'"
 	parent.manualRefresh()
+}
+
+def ping() {
+    log.debug "${parent.ping(this)}"
 }
