@@ -806,19 +806,26 @@ private sendColorEvents(device, xy, hue, sat, ct, colormode = null) {
 		device.sendEvent([name: "colorTemperature", value: temp, descriptionText: "Color temperature has changed"])
 		// Return because color temperature change is not counted as a color change in SmartThings so no hex update necessary
 		return
-                    }
+	}
 
+	// Make sure that two color change events wont be showed to users
+	boolean colorEventSent = false
 	if (hue != null) {
 		// 0-65535
 		def value = Math.min(Math.round(hue * 100 / 65535), 65535) as int
 		device.sendEvent([name: "hue", value: value, descriptionText: "Color has changed"])
-                }
+		colorEventSent = true
+	}
 
 	if (sat != null) {
 		// 0-254
 		def value = Math.round(sat * 100 / 254) as int
-		device.sendEvent([name: "saturation", value: value, descriptionText: "Color has changed"])
-            }
+		if (colorEventSent) {
+			device.sendEvent([name: "saturation", value: value, descriptionText: "Color has changed", displayed: false])
+		} else {
+			device.sendEvent([name: "saturation", value: value, descriptionText: "Color has changed"])
+		}
+	}
 
 	// Following is used to decide what to base hex calculations on since it is preferred to return a colorchange in hex
 	if (xy != null && colormode != "hs") {
