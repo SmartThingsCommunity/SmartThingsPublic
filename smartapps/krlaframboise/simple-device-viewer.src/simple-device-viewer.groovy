@@ -1,5 +1,5 @@
 /**
- *  Simple Device Viewer v 1.9.2
+ *  Simple Device Viewer v 2.0
  *
  *  Author: 
  *    Kevin LaFramboise (krlaframboise)
@@ -8,6 +8,10 @@
  *    https://community.smartthings.com/t/release-simple-device-viewer/42481?u=krlaframboise
  *
  *  Changelog:
+ *
+ *    2.0 (08/09/2016)
+ *      - Added Dashboard
+ *      - Added exclude device option for all capabilities.
  *
  *    1.9.2 (05/31/2016)
  *      - Increased default polling interval to 4 hours.
@@ -103,9 +107,9 @@ definition(
     author: "Kevin LaFramboise",
     description: "Provides information about the state of the specified devices.",
     category: "My Apps",
-		iconUrl: "https://raw.githubusercontent.com/krlaframboise/SmartThingsPublic/master/smartapps/krlaframboise/simple-device-viewer.src/simple-device-viewer-icon.png",
-    iconX2Url: "https://raw.githubusercontent.com/krlaframboise/SmartThingsPublic/master/smartapps/krlaframboise/simple-device-viewer.src/simple-device-viewer-icon-2x.png",
-    iconX3Url: "https://raw.githubusercontent.com/krlaframboise/SmartThingsPublic/master/smartapps/krlaframboise/simple-device-viewer.src/simple-device-viewer-icon-3x.png")
+		iconUrl: "https://raw.githubusercontent.com/krlaframboise/Resources/master/simple-device-viewer/simple-device-viewer-icon.png",
+    iconX2Url: "https://raw.githubusercontent.com/krlaframboise/Resources/master/simple-device-viewer/simple-device-viewer-icon-2x.png",
+    iconX3Url: "https://raw.githubusercontent.com/krlaframboise/Resources/master/simple-device-viewer/simple-device-viewer-icon-3x.png")
 
  preferences {
 	page(name:"mainPage")
@@ -114,70 +118,70 @@ definition(
 	page(name:"refreshLastEventPage")
 	page(name:"toggleSwitchPage")
 	page(name:"devicesPage")
+	page(name:"displaySettingsPage")
 	page(name:"thresholdsPage")
 	page(name:"notificationsPage")
 	page(name:"pollingPage")
 	page(name:"otherSettingsPage")
+	page(name:"dashboardSettingsPage")
+	page(name:"enableDashboardPage")
+	page(name:"disableDashboardPage")
 }
 
 // Main Menu Page
 def mainPage() {	
 	dynamicPage(name:"mainPage", uninstall:true, install:true) {			
-		section() {	
-			if (getAllDevices().size() != 0) {
+	
+		if (getAllDevices().size() != 0) {				
+			section() {
+				getDashboardHref()
+			}
+		}
+				
+		section() {				
+			if (getAllDevices().size() != 0) {				
 				state.lastCapabilitySetting = null
-				href(
-					name: "lastEventLink", 
-					title: "All Devices - Last Event",
-					description: "",
-					page: "lastEventPage",
-					required: false
-				)
+				getPageLink("lastEventLink",
+					"All Devices - Last Event",
+					"lastEventPage")
 				getCapabilityPageLink(null)			
 			}		
 			getSelectedCapabilitySettings().each {
-				if (devicesHaveCapability(getCapabilityName(it))) {
-					getCapabilityPageLink(it)
-				}
+				getCapabilityPageLink(it)
 			}
 		}
 		section("Settings") {			
-			href(
-				name: "devicesLink", 
-				title: "Choose Devices & Capabilities",
-				description: "",
-				page: "devicesPage", 
-				required: false
-			)			
-			href(
-				name: "thresholdsLink", 
-				title: "Threshold Settings",
-				description: "",
-				page: "thresholdsPage", 
-				required: false
-			)
-			href(
-				name: "notificationsLink", 
-				title: "Notification Settings",
-				description: "",
-				page: "notificationsPage", 
-				required: false
-			)
-			href(
-				name: "polliningLink", 
-				title: "Polling Settings",
-				description: "",
-				page: "pollingPage", 
-				required: false
-			)
-			href(
-				name: "otherSettingsLink", 
-				title: "Other Settings",
-				description: "",
-				page: "otherSettingsPage",
-				required: false
-			)
+			getPageLink("devicesLink",
+				"Choose Devices",
+				"devicesPage")
+			getPageLink("displaySettingsLink",
+				"Display Settings",
+				"displaySettingsPage")
+			getPageLink("thresholdsLink",
+				"Threshold Settings",
+				"thresholdsPage")
+			getPageLink("notificationsLink",
+				"Notification Settings",
+				"notificationsPage")
+			getPageLink("pollingLink",
+				"Polling Settings",
+				"pollingPage")
+			getPageLink("otherSettingsLink",
+				"Other Settings",
+				"otherSettingsPage")
+			getPageLink("dashboardSettingsPageLink",
+					"Dashboard Settings",
+					"dashboardSettingsPage")
 		}
+	}
+}
+
+private getDashboardHref() {
+	if (!state.endpoint) {
+		href "enableDashboardPage", title: "Enable Dashboard", description: ""
+	} 
+	else {
+		href "", title: "View Dashboard", style: "external", url: api_dashboardUrl()
 	}
 }
 
@@ -201,16 +205,48 @@ def devicesPage() {
 					multiple: true,
 					required: false
 			}			
-		}
+		}		
+	}
+}
+
+def displaySettingsPage() {
+	dynamicPage(name:"displaySettingsPage") {
 		section ("Display Options") {
 			paragraph "All the capabilities supported by the selected devices are shown on the main screen by default, but this field allows you to limit the list to specific capabilities." 
-			input "selectedCapabilities", "enum",
+			input "enabledCapabilities", "enum",
 				title: "Display Which Capabilities?",
 				multiple: true,
-				options: getCapabilitySettingNames(),
+				options: getCapabilitySettingNames(false),
 				required: false
+		}		
+		section ("Device Capability Exclusions") {
+			paragraph "The capability pages display all the devices that support the capability by default, but these fields allow you to exclude devices from each page."
+			input "lastEventExcludedDevices",
+				"enum",
+				title: "Exclude these devices from the Last Events page:",
+				multiple: true,
+				required: false,
+				options:getExcludedDeviceOptions(null)
+			capabilitySettings().each {
+				input "${getPrefName(it)}ExcludedDevices",
+					"enum",
+					title: "Exclude these devices from the ${getPluralName(it)} page:",
+					multiple: true,
+					required: false,
+					options: getDisplayExcludedDeviceOptions(it)
+			}	
 		}
 	}
+}
+
+private getDisplayExcludedDeviceOptions(cap) {
+	def devices = []	
+	getDevicesByCapability(getCapabilityName(cap)).each { 
+		if (deviceMatchesSharedCapability(it, cap)) {
+			devices << it.displayName
+		}
+	}	
+	return devices?.sort()
 }
 
 // Page for defining thresholds used for icons and notifications
@@ -335,15 +371,6 @@ def pollingPage() {
 				required: false
 		}
 		section("Polling Restrictions") {
-			/*input "pollingExcludeRecent", "bool",
-				title: "Exclude devices with recent activity?",
-				defaultValue: false,
-				required: false			
-			input "pollingRecentLimit", "number",
-				title: "Recent activity is what percentage of Last Event threshold?\n(If Last Event Threshold is 8 Hours, the limit will be 2 Hours if you user 25)",
-				defaultValue: 25,
-				range: "1..100",
-				required: false*/
 			input "pollingExcluded", "enum",
 				title: "Exclude these devices from Polling",
 				multiple: true,
@@ -376,22 +403,7 @@ def otherSettingsPage() {
 			input "condensedViewEnabled", "bool",
 				title: "Condensed View Enabled?",
 				defaultValue: false,
-				required: false			
-			input "debugLogEnabled", "bool",
-				title: "Debug Logging Enabled?",
-				defaultValue: false,
-				required: false
-		}
-		section ("Last Event Accuracy") {
-			input "lastEventAccuracy", "number",
-				title: "Accuracy Level (1-25)\n(Setting this to a higher number will improve the accuracy for devices that generate a lot of events, but if you're seeing timeout errors in Live Logging, you should set this to a lower number.)",
-				defaultValue: 15,
-				range: "1..25",
-				required: false		
-			input "lastEventByStateEnabled", "bool",
-				title: "Advanced Last Event Check Enabled?\n(When enabled, the devices events and state changes are used to determine the most recent activity.)",
-				defaultValue: true,
-				required: false
+				required: false				
 		}
 		section ("Sorting") {
 			input "batterySortByValue", "bool",
@@ -406,16 +418,125 @@ def otherSettingsPage() {
 				title: "Sort by Last Event Value?",
 				defaultValue: false,
 				required: false			
-		}		
+		}	
+		section ("Last Event Accuracy") {
+			input "lastEventAccuracy", "number",
+				title: "Accuracy Level (1-25)\n(Setting this to a higher number will improve the accuracy for devices that generate a lot of events, but if you're seeing timeout errors in Live Logging, you should set this to a lower number.)",
+				defaultValue: 15,
+				range: "1..25",
+				required: false		
+			input "lastEventByStateEnabled", "bool",
+				title: "Advanced Last Event Check Enabled?\n(When enabled, the devices events and state changes are used to determine the most recent activity.)",
+				defaultValue: true,
+				required: false
+		}
+		section ("Logging") {
+			input "logging", "enum",
+				title: "Types of messages to log:",
+				multiple: true,
+				required: false,
+				defaultValue: ["debug", "info"],
+				options: ["debug", "info", "trace"]
+		}
+		section ("Resources") {			
+			paragraph "If you want to be able to use different icons, fork krlaframboise's GitHub Resources repository and change this url to the forked path.  If you do change this setting, make sure that the new location contains all the Required Files."
+			href "", title: "View Required Resource List", 
+				style: "external", 
+				url: 			"http://htmlpreview.github.com/?https://github.com/krlaframboise/Resources/blob/master/simple-device-viewer/required-resources.html"
+			input "resourcesUrl", "text",
+				title: "Resources Url:",
+				required: false,
+				defaultValue: getResourcesUrl()
+		}
 		section ("Scheduling") {
 			paragraph "Leave this field empty unless you're using an external timer to turn on a switch at regular intervals.  If you select a switch, the application will check to see if notifications need to be sent when its turned on instead of using SmartThings scheduler to check every 5 minutes."
 
 			input "timerSwitch", "capability.switch",
 				title: "Select timer switch:",
 				required: false
+		}		
+	}
+}
+
+def dashboardSettingsPage() {
+	dynamicPage(name:"dashboardSettingsPage") {
+		section ("Dashboard Settings") {
+			if (state.endpoint) {
+				log.info "Dashboard Url: ${api_dashboardUrl()}"
+				input "dashboardRefreshInterval", "number", 
+					title: "Dashboard Refresh Interval: (seconds)",
+					defaultValue: 300,
+					required: false
+				input "dashboardDefaultView", "enum",
+					title: "Default View:",
+					required: false,
+					options: getCapabilitySettingNames(true)
+				input "dashboardMenuPosition", "enum", 
+					title: "Menu Position:", 
+					defaultValue: "Top of Page",
+					required: false,
+					options: ["Top of Page", "Bottom of Page"]
+				input "customCSS", "text",
+					title:"Enter CSS rules that should be appended to the dashboard's CSS file.",
+					required: false
+				getPageLink("disableDashboardPageLink",
+					"Disable Dashboard",
+					"disableDashboardPage")
+			}
+			else {
+				getPageLink("enableDashboardPageLink",
+					"Enable Dashboard",
+					"enableDashboardPage")
+			}
 		}
 	}
 }
+
+private getPageLink(linkName, linkText, pageName, args=null) {
+	def map = [
+		name: "$linkName", 
+		title: "$linkText",
+		description: "",
+		page: "$pageName",
+		required: false
+	]
+	if (args) {
+		map.params = args
+	}
+	href(map)
+}
+
+private disableDashboardPage() {	
+	dynamicPage(name: "disableDashboardPage", title: "") {
+		section() {
+			if (state.endpoint) {
+				try {
+					revokeAccessToken()
+				}
+				catch (e) {
+					logDebug "Unable to revoke access token: $e"
+				}
+				state.endpoint = null
+			}	
+			paragraph "The Dashboard has been disabled! Tap Done to continue"	
+		}
+	}
+}
+
+private enableDashboardPage() {
+	dynamicPage(name: "enableDashboardPage", title: "") {
+		section() {
+			if (initializeAppEndpoint()) {
+				paragraph "The Dashboard is now enabled. Tap Done to continue"
+			} 
+			else {
+				paragraph "Please go to your SmartThings IDE, select the My SmartApps section, click the 'Edit Properties' button of the Simple Device Viewer app, open the OAuth section and click the 'Enable OAuth in Smart App' button. Click the Update button to finish.\n\nOnce finished, tap Done and try again.", title: "Please enable OAuth for Simple Device Viewer", required: true, state: null
+			}
+		}
+	}
+}
+
+
 
 // Lists all devices and their last event times.
 def lastEventPage() {
@@ -456,11 +577,12 @@ def toggleSwitchPage(params) {
 			paragraph "Wait a few seconds before pressing Done to ensure that the previous page refreshes correctly."
 			if (params.deviceId) {
 				def device = params.deviceId ? getAllDevices().find { it.id == params.deviceId } : null
-				toggleSwitch(device, device?.currentSwitch == "off" ? "on" : "off")
+				def newState = device?.currentSwitch == "off" ? "on" : "off"
+				paragraph toggleSwitch(device, newState)
 			}
 			else {
 				getDevicesByCapability("Switch").each {
-					toggleSwitch(it, "off")
+					paragraph toggleSwitch(it, "off")
 				}
 			}			
 		}		
@@ -475,7 +597,7 @@ private toggleSwitch(device, newState) {
 		else {
 			device.off()
 		}		
-		paragraph "Turned ${device.displayName} ${newState.toUpperCase()}"
+		return "Turned ${device.displayName} ${newState.toUpperCase()}"
 	}
 }
 
@@ -573,9 +695,9 @@ private getDeviceAllCapabilitiesListItem(device) {
 		sortValue: device.displayName
 	]	
 	getSelectedCapabilitySettings().each {
-		if (device.hasCapability(getCapabilityName(it))) {
+		//if (device.hasCapability(getCapabilityName(it))) {
 			listItem.status = (listItem.status ? "${listItem.status}, " : "").concat(getDeviceCapabilityStatusItem(device, it).status)
-		}
+		//}
 	}
 	listItem.title = getDeviceStatusTitle(device, listItem.status)
 	return listItem
@@ -583,7 +705,7 @@ private getDeviceAllCapabilitiesListItem(device) {
 
 private getDeviceCapabilityListItems(cap) {
 	def items = []
-	getDevicesByCapability(getCapabilityName(cap))?.each { 
+	getDevicesByCapability(getCapabilityName(cap), settings["${getPrefName(cap)}ExcludedDevices"])?.each { 
 		if (deviceMatchesSharedCapability(it, cap)) {
 			items << getDeviceCapabilityListItem(it, cap)
 		}
@@ -613,12 +735,20 @@ private getDeviceCapabilityListItem(device, cap) {
 	listItem
 }
 
+private getCapabilitySettingByPrefName(prefName) {
+	capabilitySettings().find { getPrefName(it) == prefName }
+}
+
+private getCapabilitySettingByPluralName(pluralName) {
+	capabilitySettings().find { getPluralName(it)?.toLowerCase() == pluralName?.toLowerCase()}
+}
+
 private getCapabilitySettingByName(name) {
 	capabilitySettings().find { it.name == name }
 }
 
 private getAllDeviceLastEventListItems() {
-	getAllDevices().collect {
+	removeExcludedDevices(getAllDevices(), lastEventExcludedDevices)?.collect {
 		getDeviceLastEventListItem(it)		
 	}
 }
@@ -630,7 +760,8 @@ private getDeviceLastEventListItem(device) {
 	
 	def listItem = [
 		value: lastEventTime ? now - lastEventTime : Long.MAX_VALUE,
-		status: lastEventTime ? "${getTimeSinceLastActivity(now - lastEventTime)}" : "N/A"
+		status: lastEventTime ? "${getTimeSinceLastActivity(now - lastEventTime)}" : "N/A",
+		deviceId: device.deviceNetworkId
 	]
 	
 	listItem.title = getDeviceStatusTitle(device, listItem.status)
@@ -737,71 +868,17 @@ private String getDeviceStatusTitle(device, status) {
 	if (!status || status == "null") {
 		status = "N/A"
 	}
-	return "${status?.toUpperCase()} -- ${device.displayName}"
+	if (state.refreshingDashboard) {
+		return device.displayName
+	}
+	else {
+		return "${status?.toUpperCase()} -- ${device.displayName}"
+	}	
 }
 
 private getDeviceCapabilityStatusItem(device, cap) {
 	try {
-		def item = [
-			image: "",
-			sortValue: device.displayName,
-			value: device.currentValue(getAttributeName(cap)).toString()
-		]
-		item.status = item.value
-		if ("${item.status}" != "null") {
-		
-			if (item.status == getActiveState(cap)) {
-				item.status = "*${item.status}"
-			}
-			
-			switch (cap.name) {
-				case "Battery":			
-					item.status = "${item.status}%"
-					item.image = getBatteryImage(item.value)
-					if (batterySortByValue) {
-						item.sortValue = safeToInteger(item.value)
-					}				
-					break
-				case "Temperature Measurement":
-					item.status = "${item.status}°${location.temperatureScale}"
-					item.image = getTemperatureImage(item.value)
-					if (tempSortByValue) {
-						item.sortValue = safeToInteger(item.value)
-					}
-					break
-				case "Alarm":
-					item.image = getAlarmImage(item.value)
-					break
-				case "Contact Sensor":
-					item.image = getContactImage(item.value)
-					break
-				case "Lock":
-					item.image = getLockImage(item.value)
-					break
-				case "Motion Sensor":
-					item.image = getMotionImage(item.value)
-					break
-				case "Presence Sensor":
-					item.image = getPresenceImage(item.value)
-					break
-				case ["Smoke Detector", "Carbon Monoxide Detector"]:
-					item.image = getSmokeCO2Image(item.value)
-					break
-				case "Switch":
-					item.image = getSwitchImage(item.value)
-					break
-				case "Light":
-					item.image = getLightImage(item.value)
-					break
-				case "Water Sensor":
-					item.image = getWaterImage(item.value)
-					break
-			}
-		}
-		else {
-			item.status = "N/A"
-		}
-		return item
+		return getCapabilityStatusItem(cap, device.displayName, device.currentValue(getAttributeName(cap)).toString())		
 	}
 	catch (e) {
 		log.error "Device: ${device?.displayName} - Capability: $cap - Error: $e"
@@ -814,12 +891,75 @@ private getDeviceCapabilityStatusItem(device, cap) {
 	}
 }
 
-private getSelectedCapabilitySettings() {
-	if (!settings.selectedCapabilities) {
-		return capabilitySettings()
+private getCapabilityStatusItem(cap, sortValue, value) {
+	def item = [
+		image: "",
+		sortValue: sortValue,
+		value: value
+	]
+	item.status = item.value
+	if ("${item.status}" != "null") {
+	
+		if (item.status == getActiveState(cap) && !state.refreshingDashboard) {
+			item.status = "*${item.status}"
+		}
+		
+		switch (cap.name) {
+			case "Battery":			
+				item.status = "${item.status}%"
+				item.image = getBatteryImage(item.value)
+				if (batterySortByValue) {
+					item.sortValue = safeToInteger(item.value)
+				}				
+				break
+			case "Temperature Measurement":
+				item.status = "${item.status}°${location.temperatureScale}"
+				item.image = getTemperatureImage(item.value)
+				if (tempSortByValue) {
+					item.sortValue = safeToInteger(item.value)
+				}
+				break
+			case "Alarm":
+				item.image = getAlarmImage(item.value)
+				break
+			case "Contact Sensor":
+				item.image = getContactImage(item.value)
+				break
+			case "Lock":
+				item.image = getLockImage(item.value)
+				break
+			case "Motion Sensor":
+				item.image = getMotionImage(item.value)
+				break
+			case "Presence Sensor":
+				item.image = getPresenceImage(item.value)
+				break
+			case ["Smoke Detector", "Carbon Monoxide Detector"]:
+				item.image = getSmokeCO2Image(item.value)
+				break
+			case "Switch":
+				item.image = getSwitchImage(item.value)
+				break
+			case "Light":
+				item.image = getLightImage(item.value)
+				break
+			case "Water Sensor":
+				item.image = getWaterImage(item.value)
+				break
+		}
 	}
 	else {
-		return capabilitySettings().findAll { it.name in settings.selectedCapabilities }
+		item.status = "N/A"
+	}
+	return item
+}
+
+private getSelectedCapabilitySettings() {	
+	if (!settings.enabledCapabilities) {
+		return capabilitySettings().findAll { devicesHaveCapability(getCapabilityName(it)) }
+	}
+	else {
+		return capabilitySettings().findAll {	(getPluralName(it) in settings.enabledCapabilities) && devicesHaveCapability(getCapabilityName(it)) }
 	}
 }
 
@@ -836,7 +976,6 @@ private getAllDevices() {
 			}
 		}
 	}
-	//return settings.collectMany {k, device -> isDevice(device) ? device : []}?.flatten()?.unique { it.deviceNetworkId }
 	return devices
 }
 
@@ -941,12 +1080,40 @@ private String getTemperatureImage(tempVal) {
 
 private String getImagePath(imageName) {
 	if (iconsAreEnabled()) {
-		return "https://raw.githubusercontent.com/krlaframboise/SmartThingsPublic/master/smartapps/krlaframboise/simple-device-viewer.src/$imageName"
+		if (state.refreshingDashboard) {
+			return imageName
+		}
+		else {
+			return "${getResourcesUrl()}/$imageName"
+		}
 	}
 }
 
 private boolean iconsAreEnabled() {
-	return (iconsEnabled || iconsEnabled == null)
+	return (iconsEnabled || iconsEnabled == null || state.refreshingDashboard)
+}
+
+private getResourcesUrl() {
+	def url = "https://raw.githubusercontent.com/krlaframboise/Resources/master/simple-device-viewer"
+
+	if (settings?.resourcesUrl) {
+		url = settings.resourcesUrl
+	}
+	
+	return url
+}
+
+// Revokes the dashboard access token, if applicable.
+def uninstalled() {
+	if (state.endpoint) {
+		try {
+			logDebug "Revoking dashboard access token"
+			revokeAccessToken()
+		}
+		catch (e) {
+			log.warn "Unable to revoke dashboard access token: $e"
+		}
+	}
 }
 
 // Subscribes to events, starts schedules and initializes all settings.
@@ -958,6 +1125,7 @@ def installed() {
 def updated() {
 	unsubscribe()
 	unschedule()
+	state.refreshingDashboard = false
 	
 	if (state.capabilitySettings) {
 		cleanState()
@@ -965,7 +1133,7 @@ def updated() {
 	
 	initialize()
 	
-	//logDebug "State Used: ${(state.toString().length() / 100000)*100}%"
+	logDebug "State Used: ${(state.toString().length() / 100000)*100}%"
 }
 
 private initialize() {
@@ -1063,7 +1231,6 @@ void refreshDeviceActivityTypeCache(activityType) {
 		}		
 	}
 	state."${activityType}CachedTime" = cachedTime
-	//logDebug "${activityType.toUpperCase()} cache refreshed in ${getTimeSinceLastActivity(new Date().time - cachedTime)}"	
 }
 
 void saveLastActivityToDeviceCache(dni, lastActivity) {
@@ -1328,9 +1495,13 @@ private boolean timeElapsed(timeValue, nullResult=false) {
 	}
 }
 
-
-private getCapabilitySettingNames() {
-	capabilitySettings().collect { it.name }?.unique()
+private getCapabilitySettingNames(includeEvents) {
+	def items = []
+	if (includeEvents) {
+		items << "Events"
+	}
+	items += capabilitySettings().collect { getPluralName(it) }?.unique()
+	return items.sort()
 }
 
 private getCapabilityName(capabilitySetting) {
@@ -1440,12 +1611,332 @@ private capabilitySettings() {
 	]
 }
 
+
+
+/********************************************
+*    Dashboard
+********************************************/
+private initializeAppEndpoint() {	
+	if (!state.endpoint) {
+		try {
+			def accessToken = createAccessToken()
+			if (accessToken) {
+				state.endpoint = apiServerUrl("/api/token/${accessToken}/smartapps/installations/${app.id}/")				
+			}
+		} 
+		catch(e) {
+			state.endpoint = null
+		}
+	}
+	logDebug "Dashboard Url: ${api_dashboardUrl()}"	
+	return state.endpoint
+}
+
+mappings {
+	path("/dashboard") {action: [GET: "api_dashboard"]}
+	path("/dashboard/:capability") {action: [GET: "api_dashboard"]}	
+	path("/dashboard/:capability/:cmd") {action: [GET: "api_dashboard"]}
+	path("/dashboard/:capability/:cmd/:deviceId") {action: [GET: "api_dashboard"]}	
+}
+
+private api_dashboardUrl(capName=null) {	
+	def pageName
+	capName = capName ?: api_getDefaultCapabilityName()
+	if (capName?.toLowerCase() == "events") {
+		pageName = "events"
+	}
+	else {		
+		def cap = getCapabilitySettingByPluralName(capName)
+		pageName = (cap ? getPluralName(cap)?.toLowerCase()?.replace(" ", "-") : "") ?: "lights"		
+	}
+	return "${state.endpoint}dashboard/${pageName}"
+}
+
+private api_getDefaultCapabilityName() {
+	if (settings?.dashboardDefaultView) {
+		return settings.dashboardDefaultView
+	}
+	else {
+		return "events"
+	}	
+}
+
+def api_dashboard() {
+	def cap
+	def currentUrl
+	def menu = ""
+	def header = ""
+	def footer = ""
+	def refreshInterval = 300
+	def html = ""
+
+	try {
+		state.refreshingDashboard = true
+		header = api_getPageHeader()		
+			
+		if (params.capability == "events") {
+			currentUrl = api_dashboardUrl("events")
+			header = api_getPageHeader("Events")
+		}
+		else if (params.capability) {			
+			cap = params.capability ? getCapabilitySettingByPluralName(params.capability?.replace("-", " ")) : null
+		
+			currentUrl = api_dashboardUrl(getPluralName(cap))
+			header = api_getPageHeader("${getPluralName(cap)}")
+		}	
+		
+		if (!params.capability && state.normalRefreshInterval) {
+			currentUrl = api_dashboardUrl(null)
+			state.normalRefreshInterval = false	// Prevents fast refresh loop
+			refreshInterval = 0			
+		}
+		else {
+			refreshInterval = api_getRefreshInterval(params.cmd)
+		}
+		
+		menu = api_getMenuHtml(currentUrl)
+		footer = api_getPageFooter(null, currentUrl)
+		
+		if (params.capability == "events") {
+			html = api_getItemsHtml(getAllDeviceLastEventListItems()?.unique())
+		}
+		else if (cap) {
+			html = api_getCapabilityHtml(cap, currentUrl, params.deviceId, params.cmd)
+		}
+		
+		html = "<section>$html</section>"
+	}
+	catch(e) {
+		log.error "Unable to load dashboard:\n$e"
+		html = api_getPageErrorHtml(e)
+	}
+	state.refreshingDashboard = false
+	return api_renderHtmlPage(api_getPageBody(header, html, menu, footer), currentUrl, refreshInterval)
+}
+
+private api_getRefreshInterval(cmd) {
+	if (api_isToggleSwitchCmd(cmd) && state.normalRefreshInterval) {
+		state.normalRefreshInterval = false // Prevents fast refresh loop
+		return 3
+	}
+	else {
+		state.normalRefreshInterval = true
+		return settings.dashboardRefreshInterval ?: 300
+	}
+}
+
+private api_getCapabilityHtml(cap, currentUrl, deviceId, cmd) {	
+	def html = ""
+	if (api_isToggleSwitchCmd(cmd)) {		
+		if (deviceId) {
+			html = "<h1>${api_toggleSwitch(cap, deviceId, cmd)}</h1>"
+		}
+		else {
+			html = api_toggleSwitches(cap, cmd)
+		}
+	
+		html = "<div class=\"command-results\">$html</div>"		
+	}			
+	
+	if (cap.name in ["Switch","Light", "Alarm"]) {
+		html += api_getToggleItemsHtml(currentUrl, getDeviceCapabilityListItems(cap))
+	}
+	else {
+		html += api_getItemsHtml(getDeviceCapabilityListItems(cap))
+	}
+	return html
+}
+
+private api_isToggleSwitchCmd(cmd) {
+	return (cmd in ["on", "off", "toggle"])
+}
+
+private api_getMenuHtml(currentUrl) {
+	def className = api_menuAtTop() ? "top" : "bottom"
+	def html = "<nav class=\"$className\">"
+	
+	html += api_getMenuItemHtml("Refresh", "refresh", currentUrl)
+	
+	html += api_getMenuItemHtml("Events", "warning", api_dashboardUrl("events"))
+	
+	getSelectedCapabilitySettings().each {
+		html += api_getMenuItemHtml(getPluralName(it), getPrefName(it), api_dashboardUrl(getPluralName(it)))
+	}
+	
+	html += "</nav>"
+	return html
+}
+
+private api_getMenuItemHtml(linkText, className, url) {
+	return "<div class=\"menu-item\"><a href=\"$url\" ${api_getWaitOnClickAttr()} class=\"item-image $className\"><span>${linkText}</span></a></div>"
+}
+
+private api_toggleSwitches(cap, cmd) {
+	def html = ""	
+	
+	getDeviceCapabilityListItems(cap).each {
+		html += "<li>${api_toggleSwitch(cap, it.deviceId, cmd)}</li>"
+	}
+	
+	if (html) {
+		return "<h1>The following changes were made:</h1><ul>$html</ul>"
+	}
+	else {
+		return "<h1>No Changes Were Made</h1>"
+	}	
+}
+
+private api_toggleSwitch(cap, deviceId, cmd) {
+	def device = deviceId ? getAllDevices().find { it.id == deviceId } : null
+		
+	if (device) {
+		def newState = api_getNewSwitchState(device, cmd)
+		if (newState) {
+			return toggleSwitch(device, newState)
+		}		
+		else {
+			return "Unable to determine new switch state for ${device.displayName}"
+		}
+	}
+	else {
+		return "Unable to find a device with id ${deviceId}"
+	}		
+}
+
+private api_getNewSwitchState(device, cmd) {
+	if (cmd in ["on", "off"]) {
+		return cmd
+	}
+	else if (cmd == "toggle") {
+		return device?.currentSwitch == "off" ? "on" : "off"
+	}
+	else {
+		return ""
+	}
+}
+
+private api_getToggleItemsHtml(currentUrl, listItems) {
+	def html = ""
+			
+	listItems.unique().each {		
+		html += api_getItemHtml(it.title, it.image, "${currentUrl}/toggle/${it.deviceId}", it.deviceId, it.status)
+	}
+	
+	def pluralName
+	def imageName	
+	if (listItems) {
+		pluralName = listItems[0] ? getPluralName(listItems[0]) : ""
+		imageName = listItems[0]?.image?.replace(".png","")
+		imageName = imageName?.replace("-on", "")?.replace("-off", "")
+	}	
+	
+	if (imageName in ["light", "switch"]) {
+		html += api_getItemHtml("Turn All Off", "${imageName}-off all-command", "${currentUrl}/off", "", "")	
+		
+		html += api_getItemHtml("Turn All On", "${imageName}-on all-command", "${currentUrl}/on", "", "")
+	}
+	return html
+}
+
+private api_getItemsHtml(listItems) {
+	def html = ""		
+	
+	listItems.sort { it.sortValue }
+	listItems.unique().each {				
+		html += api_getItemHtml(it.title, it.image, null, it.deviceId, it.status)
+	}
+	return html
+}
+
+private api_getItemHtml(text, imageName, url, deviceId, status) {
+	def imageClass = imageName ? imageName?.replace(".png", "") : ""
+	def deviceClass = deviceId ? deviceId?.replace(" ", "-") : "none"
+	def html 
+	
+	if (url) {
+		html = "<a class=\"item-text\" href=\"$url\" ${api_getWaitOnClickAttr()}><span class=\"label\">$text</span></a>"
+	}
+	else {
+		html = "<div class=\"item-text\"><span class=\"label\">$text</span></div>"		
+	}
+	
+	html = "<div class=\"item-image-text\"><div class=\"item-image $imageClass\"><span class=\"item-status\">$status</span></div>$html</div>"
+	
+	return "<div class=\"device-item device-id-$deviceClass\">$html</div>"
+}
+
+private api_getWaitOnClickAttr() {
+	return "onclick=\"displayWaitMsg(this)\""
+}
+
+private api_getPageBody(header, content, menu, footer) {
+	if (api_menuAtTop()) {
+		return "$header$menu$content$footer"
+	}
+	else {
+		return "$header$content$menu$footer"		
+	}
+}
+
+private api_menuAtTop() {
+	return (settings.dashboardMenuPosition != "Bottom of Page")
+}
+
+private api_getPageHeader(html=null) {
+	def header = "Simple Device Viewer"
+	header += html ? " - $html" : ""
+	return "<header>$header</header>"
+}
+
+private api_getPageFooter(html, currentUrl) {
+	html = html ?: ""
+	return "<footer>$html<textarea class=\"dashboard-url\" rows=\"2\">${currentUrl}</textarea></footer>"
+}
+
+private api_getPageErrorHtml(e) {
+	return "<div class=\"error-message\"><h1>Unable to Load Dashboard</h1><h2>Error Message:</h2><p>$e</p><p><a href=\"${api_dashboardUrl()}\">Back to Default Dashboard</a></p></div>"		
+}
+
+private api_renderHtmlPage(html, url, refreshInterval) {
+	render contentType: "text/html", 
+		data: "<!DOCTYPE html><html lang=\"en\"><head><title>Simple Device Viewer - Dashboard</title><meta charset=\"utf-8\"/><meta name=\"viewport\" content=\"width=device-width, initial-scale=1.0\"><meta http-equiv=\"refresh\" content=\"${refreshInterval}; URL=${url}\">${api_getCSS()}</head><body>${html}${api_getJS()}</body></html>"
+}
+
+private api_getJS() {	
+	return "<script>function displayWaitMsg(link) { link.className += \" wait\"; }</script>"
+}
+
+private api_getCSS() {
+	// return "<link rel=\"stylesheet\" href=\"${getResourcesUrl()}/dashboard.css\">"
+	
+	def css = "body {	font-size: 100%;	text-align:center;	font-family:Helvetica,arial,sans-serif;	margin:0 0 10px 0;	background-color: #000000;}header, nav, section, footer {	display: block;	text-align:center;}header {	margin: 0 0 0 0;	padding: 4px 0 4px 0;	width: 100%;		font-weight: bold;	font-size: 100%;	background-color:#808080;	color:#ffffff;}nav.top{	padding-top: 0;}nav.bottom{	padding: 4px 4px 4px 4px;}section {	padding: 10px 20px 40px 20px;}.command-results {	background-color: #d6e9c6;	margin: 0 20px 20px 20px;	padding: 10px 20px 10px 20px;	border-radius: 100px;}.command-results h1 {	margin: 0 0 0 0;}.command-results ul {	list-style: none;}.command-results li {	line-height: 1.5;	font-size: 120%;}.dashboard-url {	display:block;	width:100%;	font-size: 80%;}.device-id-none{	background-color: #d6e9c6 !important;}.refresh {	background-image: url('refresh.png');}.alarm, .alarm-both {	background-image: url('alarm-both.png');}.alarm-siren {	background-image: url('alarm-siren.png');}.alarm-strobe {	background-image: url('alarm-strobe.png');}.alarm-off {	background-image: url('alarm-off.png');}.battery, .normal-battery {	background-image: url('normal-battery.png');}.low-battery {	background-image: url('low-battery.png');}.open {	background-image: url('open.png');}.contactSensor, .closed {	background-image: url('closed.png');}.light, .light-on {	background-image: url('light-on.png');}.light-off {	background-image: url('light-off.png');}.lock, .locked{	background-image: url('locked.png');}.unlocked {	background-image: url('unlocked.png');}.motionSensor, .motion {	background-image: url('motion.png');}.no-motion {	background-image: url('no-motion.png');}.presenceSensor, .present {	background-image: url('present.png');}.not-present {	background-image: url('not-present.png');}.smokeDetector, .smoke-detected {	background-image: url('smoke-detected.png');}.smoke-clear {	background-image: url('smoke-clear.png');}.switch, .switch-on {	background-image: url('switch-on.png');}.switch-off {	background-image: url('switch-off.png');}.temperatureMeasurement, .normal-temp {	background-image: url('normal-temp.png');}.low-temp {	background-image: url('low-temp.png');}.high-temp {	background-image: url('high-temp.png');}.waterSensor, .dry {	background-image: url('dry.png');}.wet {	background-image: url('wet.png');}.ok {	background-image: url('ok.png');}.warning {	background-image: url('warning.png');}.device-item {	width: 200px;	display: inline-block;	background-color: #ffffff;	margin: 2px 2px 2px 2px;	padding: 4px 4px 4px 4px;	border-radius: 5px;}.item-image-text {	position: relative;	height: 75px;	width:100%;	display: table;}.item-image {	display: table-cell;	position: relative;	width: 35%;	border: 1px solid #cccccc;	border-radius: 5px;	background-repeat:no-repeat;	background-size:auto 70%;	background-position: center bottom;}.item-status {	width: 100%;	font-size:75%;	display:inline-block;}.item-text {	display: table-cell;	width: 65%;	position: relative;	vertical-align: middle;}a.item-text {	color:#000000;}.item-text.wait, .menu-item a.wait{	color:#ffffff;	background-image:url('wait.gif');	background-repeat:no-repeat;	background-position: center bottom;}.item-text.wait{	background-size:auto 100%;}.label {	display:inline-block;	vertical-align: middle;	line-height:1.4;	font-weight: bold;	padding-left:4px;}.menu-item {	display: inline-block;	background-color:#808080;	padding:4px 4px 4px 4px;	border:1px solid #000000;	border-radius: 5px;	font-weight:bold;}.menu-item .item-image{	display:table-cell;	background-size:auto 45%;	height:50px;	width:75px;	border:0;	border-radius:0;}.menu-item .item-image.switch,.menu-item .item-image.light,.menu-item .item-image.battery,.menu-item .item-image.alarm,.menu-item .item-image.refresh {	background-size:auto 60%;}.menu-item a, .menu-item a:link, .menu-item a:hover, .menu-item a:active,.menu-item a:visited {	color: #ffffff;		text-decoration:none;}.menu-item:hover, .menu-item:hover a, .menu-item a:hover { 	background-color:#ffffff;	color:#000000 !important;}.menu-item span {	width: 100%;	font-size:75%;	display:inline-block;}@media (max-width: 639px){	.device-item {		width:125px;	}	.item-image-text {		height: 65px;	}	.item-image {		background-size: auto 60%;	}	.item-text .label {		font-size: 80%;		line-height: 1.2;	}}"
+	
+	css = css.replace("url('", "url('${getResourcesUrl()}/")
+	
+	if (settings?.customCSS) {
+		css += settings.customCSS
+	}
+	return "<style>$css</style>"
+}
+
 private logDebug(msg) {
-	if (debugLogEnabled) {
+	if (loggingTypeEnabled("debug")) {
 		log.debug msg
 	}
 }
 
+private logTrace(msg) {
+	if (loggingTypeEnabled("trace")) {
+		log.trace msg
+	}
+}
+
 private logInfo(msg) {
-	log.info msg
+	if (loggingTypeEnabled("info")) {
+		log.info msg
+	}
+}
+
+private loggingTypeEnabled(loggingType) {
+	return (!settings?.logging || settings?.logging?.contains(loggingType))
 }
