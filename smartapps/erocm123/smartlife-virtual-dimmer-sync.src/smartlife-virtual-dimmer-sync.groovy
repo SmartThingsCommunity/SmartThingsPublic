@@ -167,11 +167,13 @@ def initialize() {
   subscribe(physical, "red", physicalHandler)
   subscribe(physical, "blue", physicalHandler)
   subscribe(physical, "green", physicalHandler)
+  subscribe(physical, "white", physicalHandler) // Added for Fibaro RGBW Controller
   subscribe(physical, "white1", physicalHandler)
   subscribe(physical, "white2", physicalHandler)
   subscribe(physical, "redLevel", physicalHandler)
   subscribe(physical, "blueLevel", physicalHandler)
   subscribe(physical, "greenLevel", physicalHandler)
+  subscribe(physical, "whiteLevel", physicalHandler) // Added for Fibaro RGBW Controller
   subscribe(physical, "white1Level", physicalHandler)
   subscribe(physical, "white2Level", physicalHandler)
   getChildDevices().each {
@@ -225,7 +227,12 @@ private getColor(number, format = null){
          if(format == "upper") return "B" else if(format == "lower") return "b"  else return "blue"
       break
       case 4:
-         if(format == "upper") return "W1" else if(format == "lower") return "w1"  else return "white1"
+         // Might want to change this to physical.supportedCommands and look for whiteOn, whiteOff, or setWhileLevel
+         if(physical.typeName.toUpperCase().indexOf("FIBARO") >= 0){
+            if(format == "upper") return "W" else if(format == "lower") return "w"  else return "white"
+         } else {
+            if(format == "upper") return "W1" else if(format == "lower") return "w1"  else return "white1"
+         }
       break
       case 5:
          if(format == "upper") return "W2" else if(format == "lower") return "w2"  else return "white2"
