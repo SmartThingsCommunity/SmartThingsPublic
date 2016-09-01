@@ -1,7 +1,7 @@
 /**
  *  Hive (Connect)
  *
- *  Copyright 2015 Alex Lee Yuk Cheung
+ *  Copyright 2015,2016 Alex Lee Yuk Cheung
  *
  *  Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except
  *  in compliance with the License. You may obtain a copy of the License at:
@@ -13,6 +13,7 @@
  *  for the specific language governing permissions and limitations under the License.
  *
  *  VERSION HISTORY
+ *
  *  24.02.2016
  *  v2.0 BETA - New Hive Connect App
  *  v2.0.1 BETA - Fix bug for accounts that do not have capabilities attribute against thermostat nodes.
@@ -24,6 +25,8 @@
  *  v2.1.3 - Fix null pointer on state variable corruption
  *	v2.1.3b - Fix device failure on API timeout
  *
+ *	01.09.2016
+ *	v2.2 - Integrate auto mode functionality from Auto Mode for Thermostat smart app
  */
 definition(
 		name: "Hive (Connect)",
@@ -36,18 +39,38 @@ definition(
 ) 
 
 preferences {
-	page(name:"firstPage", title:"Hive Device Setup", content:"firstPage", install: true)
+	//startPage
+	page(name: "startPage")
+    
+    //Connect Pages
+	page(name:"mainPage", title:"Hive Device Setup", content:"mainPage", install: true)
     page(name: "loginPAGE")
     page(name: "selectDevicePAGE")
 	page(name: "preferencesPAGE")
+    page(name: "tmaPAGE")
+    
+    //Thermostat Mode Automation Pages
+    page(name: "tmaConfigurePAGE")
 }
 
 def apiURL(path = '/') 			 { return "https://api.prod.bgchprod.info:443/omnia${path}" }
 
-def firstPage() {
-	log.debug "firstPage"
+def startPage() {
+	if (parent) {
+		atomicState?.isParent = false
+		tmaConfigurePAGE()
+	} else {
+		atomicState?.isParent = true
+		mainPage()
+	}
+}
+
+//Hive Connect App Pages
+
+def mainPage() {
+	log.debug "mainPage"
 	if (username == null || username == '' || password == null || password == '') {
-		return dynamicPage(name: "firstPage", title: "", install: true, uninstall: true) {
+		return dynamicPage(name: "mainPage", title: "", install: true, uninstall: true) {
 			section {
     			headerSECTION()
                 href("loginPAGE", title: null, description: authenticated() ? "Authenticated as " +username : "Tap to enter Hive crednentials", state: authenticated())
@@ -57,18 +80,22 @@ def firstPage() {
     else
     {
     	log.debug "next phase"
-        return dynamicPage(name: "firstPage", title: "", install: true, uninstall: true) {
+        return dynamicPage(name: "mainPage", title: "", install: true, uninstall: true) {
 			section {
             	headerSECTION()
-                href("loginPAGE", title: null, description: authenticated() ? "Authenticated as " +username : "Tap to enter Hive credentials", state: authenticated())
+                href("loginPAGE", title: "Authenticated as", description: authenticated() ? username : "Tap to enter Hive credentials", state: authenticated())
             }
             if (stateTokenPresent()) {           	
                 section ("Choose your devices:") {
-					href("selectDevicePAGE", title: null, description: devicesSelected() ? "Devices: " + getDevicesSelectedString() : "Tap to select devices", state: devicesSelected())
+					href("selectDevicePAGE", title: "Devices", description: devicesSelected() ? getDevicesSelectedString() : "Tap to select devices", state: devicesSelected())
         		}
+                section("Hive Mode Automations:") {
+					href "tmaPAGE", title: "Hive Mode Automations...", description: (tmaDescription() ? tmaDescription() : "Tap to Configure..."), state: (tmaDescription() ? "complete" : null)
+				}
                 section ("Notifications:") {
 					href("preferencesPAGE", title: null, description: preferencesSelected() ? getPreferencesString() : "Tap to configure notifications", state: preferencesSelected())
         		}
+                
             } else {
             	section {
             		paragraph "There was a problem connecting to Hive. Check your user credentials and error logs in SmartThings web console.\n\n${state.loginerrors}"
@@ -80,7 +107,7 @@ def firstPage() {
 
 def headerSECTION() {
 	return paragraph (image: "https://raw.githubusercontent.com/alyc100/SmartThingsPublic/master/smartapps/alyc100/10457773_334250273417145_3395772416845089626_n.png",
-                  "Hive (Connect)\nVersion: 2.1.3\nDate: 17082016(1000)")
+                  "Hive (Connect)\nVersion: 2.2\nDate: 01092016(1200)")
 }
 
 def stateTokenPresent() {
@@ -97,6 +124,22 @@ def devicesSelected() {
 
 def preferencesSelected() {
 	return (sendPush || sendSMS != null) && (maxtemp != null || mintemp != null || sendBoost || sendOff || sendManual || sendSchedule) ? "complete" : null
+}
+
+def tmaDescription() {
+	def tmaApp = findChildAppByName( appName() )
+	if(tmaApp) {
+		def str = ""
+		str += "Thermostat Automations:"
+    
+		childApps?.each { a ->
+			def name = a?.getLabel()
+			str += "\n• $name"
+		}
+	
+		return str
+	}
+	return null
 }
 
 def getDevicesSelectedString() {
@@ -217,11 +260,124 @@ def preferencesPAGE() {
     }
 }
 
+def tmaPAGE() {
+	dynamicPage(name: "tmaPAGE", title: "", nextPage: !parent ? "startPage" : "tmaPAGE", install: false) {
+		def tmaApp = findChildAppByName( appName() )
+		if(tmaApp) {
+			section("Configured Hive Mode Automations...") { }
+		} else {
+			section("") {
+				paragraph "Create New Hive Mode Automation to get Started..."
+			}
+		}
+		section("Add a new Automation:") {
+			app(name: "tmaApp", appName: appName(), namespace: "alyc100", multiple: true, title: "Create New Mode Automation...")
+			def rText = "NOTICE:\nIntegrated Hive Mode Automations is in BETA\n"
+			paragraph "${rText}"//, required: true, state: null
+		}
+	}
+}
+
+//Auto Thermostat Mode Pages
+def tmaConfigurePAGE() {
+	dynamicPage(name: "tmaConfigurePAGE", title: "Hive Mode Automation", install: true, uninstall: true) {
+		section {
+    		input ("thermostats", "capability.thermostat", title: "For these thermostats",  multiple: true, required: true)
+  		}
+        
+        section {
+            input(name: "modeTrigger", title: "Set the trigger to",
+                  description: null, multiple: false, required: true, submitOnChange: true, type: "enum", 
+                  options: ["true": "Mode Change", "false": "Switches"])
+        }
+
+        
+        if (modeTrigger == "true") {
+            // Do something here like update a message on the screen,
+            // or introduce more inputs. submitOnChange will refresh
+            // the page and allow the user to see the changes immediately.
+            // For example, you could prompt for the level of the dimmers
+            // if dimmers have been selected:
+
+            section {
+       			input ("modes", "mode", title:"When SmartThings enters these modes", multiple: true, required: true)
+  			}
+        }
+        else if (modeTrigger == "false"){
+        	section {
+        		input ("theSwitch", "capability.switch", title:"When this switch is activated", multiple: false, required: true) 		
+          	}      
+        }
+ 
+  		section {
+    		input ("alteredThermostatMode", "enum", multiple: false, title: "Set thermostats to this mode",
+            options: ["Set To Schedule", "Boost", "Turn Off", "Set to Manual"], required: true, defaultValue: 'Turn Off')
+  		}
+        
+        section {
+        	input ("resetThermostats", "enum", title: "Reset thermostats after trigger turns off?",
+            options: ["true": "Yes","false": "No"], required: true, submitOnChange: true)
+  		}
+        
+        if (resetThermostats == "true") {
+            section {
+    			input ("resumedThermostatMode", "enum", multiple: false, title: "Reset thermostats back to this mode", submitOnChange: true,
+            	options: ["Set To Schedule", "Boost", "Turn Off", "Set to Manual"], required: true, defaultValue: 'Set To Schedule')
+  			}
+            
+            if (resumedThermostatMode == "Boost") {
+            	section {
+    				input ("thermostatModeAfterBoost", "enum", multiple: false, title: "What to do when Boost has finished",
+            		options: ["Set To Schedule", "Turn Off", "Set to Manual"], required: true, defaultValue: 'Set To Schedule')
+  				}
+            }
+        }
+  
+  		section( "Additional configuration" ) {
+            input "days", "enum", title: "Only on certain days of the week", multiple: true, required: false,
+				options: ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"]
+            href "timeIntervalInput", title: "Only during a certain time", description: getTimeLabel(starting, ending), state: greyedOutTime(starting, ending), refreshAfterSelection:true
+  			input ("temp", "decimal", title: "If setting to Manual, set the temperature to this", required: false, defaultValue: 21)
+        }
+  
+  		section( "Notifications" ) {
+        	input ("sendPushMessage", "enum", title: "Send a push notification?",
+            options: ["Yes", "No"], required: true)
+        	input ("phone", "phone", title: "Send a Text Message?", required: false)
+  		}
+        
+        section {
+        	label title: "Assign a name", required: true
+        }
+  	}
+}
+
+page(name: "timeIntervalInput", title: "Only during a certain time", refreshAfterSelection:true) {
+	section {
+			input "starting", "time", title: "Starting", required: false 
+			input "ending", "time", title: "Ending", required: false 
+	}
+}
 
 
 // App lifecycle hooks
 
 def installed() {
+     if(parent) { installedChild() } // This will handle all of the install functions when the child app is installed
+     else { installedParent() } // This will handle all of the install functions when the parent app is installed
+}
+
+def updated() {
+     if(parent) { updatedChild() } // This will handle all of the install functions when the child app is updated
+     else { updatedParent() } // This will handle all of the install functions when the parent app is updated
+}
+
+def uninstalled() {
+     if(parent) { } // This will handle all of the install functions when the child app is uninstalled
+     else { uninstalledParent() } // This will handle all of the install functions when the parent app is uninstalled
+}
+
+def installedParent() {
 	log.debug "installed"
 	initialize()
 	// Check for new devices every 3 hours
@@ -231,7 +387,7 @@ def installed() {
 }
 
 // called after settings are changed
-def updated() {
+def updatedParent() {
 	log.debug "updated"
     unsubscribe()
 	initialize()
@@ -239,7 +395,7 @@ def updated() {
     runEvery10Minutes('refreshDevices')
 }
 
-def uninstalled() {
+def uninstalledParent() {
 	log.info("Uninstalling, removing child devices...")
 	unschedule()
 	removeChildDevices(getChildDevices())
@@ -251,33 +407,91 @@ private removeChildDevices(devices) {
 	}
 }
 
+def installedChild() {
+    log.debug "Installed with settings: ${settings}"
+    //set up initial thermostat state and force thermostat into correct mode
+    state.thermostatAltered = false
+    state.boostingReset = false
+    
+    //Flags to stop possible infinite loop scenarios when handlers create events
+    state.internalThermostatEvent = false
+    state.internalSwitchEvent = false
+    
+    subscribe(thermostats, "thermostatMode", thermostateventHandlerForTMA, [filterEvents: false])
+    //Check if mode or switch is the trigger and run initialisation
+    if (modeTrigger == "true") {
+    	def currentMode = location.mode
+    	log.debug "currentMode = $currentMode"
+    	if (currentMode in modes) {
+        	takeActionForMode(currentMode)
+    	}
+    	subscribe(location, "mode", modeeventHandlerForTMA, [filterEvents: false])
+    }
+    else {
+    	if (theSwitch.currentSwitch == "on") {
+        	takeActionForSwitch(theSwitch.currentSwitch)
+        }
+    	subscribe(theSwitch, "switch", switcheventHandlerForTMA, [filterEvents: false])
+    }
+}
+
+def updatedChild() {
+    log.debug "Updated with settings: ${settings}"
+    unsubscribe()
+    //set up initial thermostat state and force thermostat into correct mode
+    state.thermostatAltered = false
+    state.boostingReset = false
+    state.internalThermostatEvent = false
+    state.internalSwitchEvent = false
+    subscribe(thermostats, "thermostatMode", thermostateventHandlerForTMA, [filterEvents: false])
+    //Check if mode or switch is the trigger and run initialisation
+    if (modeTrigger == "true") {
+    	def currentMode = location.mode
+    	log.debug "currentMode = $currentMode"
+    	if (currentMode in modes) {
+        	takeActionForMode(currentMode)
+    	}
+    	subscribe(location, "mode", modeeventHandlerForTMA, [filterEvents: false])
+    }
+    else {
+    	if (theSwitch.currentSwitch == "on") {
+        	takeActionForSwitch(theSwitch.currentSwitch)
+        }
+    	subscribe(theSwitch, "switch", switcheventHandlerForTMA, [filterEvents: false])        
+    }   
+}
+
 // called after Done is hit after selecting a Location
 def initialize() {
-	log.debug "initialize"
-    if (selectedHeating)
-		addHeating()
+	if (parent) { }
+    else {
+		log.debug "initialize"
+    	if (selectedHeating)
+			addHeating()
 
-	if (selectedHotWater)
-		addHotWater()
+		if (selectedHotWater)
+			addHotWater()
 
-    runIn(10, 'refreshDevices') // Asynchronously refresh devices so we don't block
+   	 	runIn(10, 'refreshDevices') // Asynchronously refresh devices so we don't block
     
-    //subscribe to events for notifications if activated
-    if (preferencesSelected() == "complete") {
-    	getChildDevices().each { childDevice -> 
-    		if (childDevice.typeName == "Hive Heating V2.0" || childDevice.typeName == "Hive Hot Water V2.0") {
-    			subscribe(childDevice, "thermostatMode", modeHandler)
-        	}
-        	if (childDevice.typeName == "Hive Heating V2.0") {
-        		subscribe(childDevice, "temperature", tempHandler)
-        	}
+    	//subscribe to events for notifications if activated
+    	if (preferencesSelected() == "complete") {
+    		getChildDevices().each { childDevice -> 
+    			if (childDevice.typeName == "Hive Heating V2.0" || childDevice.typeName == "Hive Hot Water V2.0") {
+    				subscribe(childDevice, "thermostatMode", modeHandler, [filterEvents: false])
+        		}
+        		if (childDevice.typeName == "Hive Heating V2.0") {
+        			subscribe(childDevice, "temperature", tempHandler, [filterEvents: false])
+        		}
+    		}
     	}
-    }
-    state.maxNotificationSent = false
-    state.minNotificationSent = false
+    	state.maxNotificationSent = false
+    	state.minNotificationSent = false
+    } 
     
 }
 
+//Event Handler for Connect App
 def tempHandler(evt) {
 	def msg
     log.trace "temperature: $evt.value, $evt"
@@ -316,22 +530,301 @@ def tempHandler(evt) {
 
 def modeHandler(evt) {
 	def msg
-    if (evt.value == "heat") { 
-    	msg = "${evt.displayName} is set to Manual"
-        if (settings.sendSchedule) generateNotification(msg)
+    	if (evt.value == "heat") { 
+    		msg = "${evt.displayName} is set to Manual"
+        	if (settings.sendSchedule) generateNotification(msg)
+    	}
+		else if (evt.value == "off") {
+    		msg = "${evt.displayName} is turned Off"
+        	if (settings.sendOff) generateNotification(msg)
+    	}
+    	else if (evt.value == "auto") {
+    		msg = "${evt.displayName} is set to Schedule"
+        	if (settings.sendManual) generateNotification(msg)
+    	}
+    	else if (evt.value == "emergency heat") {
+    		msg = "${evt.displayName} is in Boost mode" 
+       	 	if (settings.sendBoost) generateNotification(msg)
+    	}	   
+    
+}
+
+//Event Handlers for Thermostat Mode Automation
+
+def modeeventHandlerForTMA(evt) {
+    if(allOk) {
+    	log.debug "evt.value: $evt.value"
+    	takeActionForMode(evt.value)   
     }
-	else if (evt.value == "off") {
-    	msg = "${evt.displayName} is turned Off"
-        if (settings.sendOff) generateNotification(msg)
+}
+
+//Handler and action for switch detection
+def switcheventHandlerForTMA(evt) {
+	if(allOk) {
+		log.debug "evt.value: $evt.value"
+    	log.debug "state.internalSwitchEvent: $state.internalSwitchEvent"
+    	if (state.internalSwitchEvent == false) {
+    		takeActionForSwitch(evt.value)   
+    	}
+    	state.internalSwitchEvent = false
     }
-    else if (evt.value == "auto") {
-    	msg = "${evt.displayName} is set to Schedule"
-        if (settings.sendManual) generateNotification(msg)
+}
+
+def thermostateventHandlerForTMA(evt) {
+	log.debug "evt.name: $evt.value"
+    log.debug "state.thermostatAltered: $state.thermostatAltered"
+    log.debug "alteredThermostatMode: $alteredThermostatMode"
+    log.debug "state.boostingReset: $state.boostingReset"
+    //If boost mode is selected as the trigger, turn switch off if boost mode finishes...
+ 	if (state.internalThermostatEvent == false) {
+    	if (modeTrigger == "false") {    
+    		//if the switch is currently on, check the new mode of the thermostat and set switch to off if necessary
+        	if (alteredThermostatMode == "Boost") {
+            	state.internalSwitchEvent = true
+        		if (evt.value != "emergency heat") {
+                	//Switching the switch to off should trigger an event that resets app state
+        			theSwitch.off()
+        		} 
+            	else {
+            		//Switching the switch to on so it can't be boost again
+            		theSwitch.on()
+                }
+            }
+       	 } 
+    
+    	//If boost mode is selected as resumed state, need to set thermostat mode as per preference
+    	if (state.boostingReset) {
+    		if (evt.value != "emergency heat") {
+            	state.internalThermostatEvent = true
+        		changeAllThermostatsModes(thermostats, thermostatModeAfterBoost, "Boost has now finished")
+            	//Reset boosting reset flag
+            	state.boostingReset = false           
+        	}
+    	}
     }
-    else if (evt.value == "emergency heat") {
-    	msg = "${evt.displayName} is in Boost mode" 
-        if (settings.sendBoost) generateNotification(msg)
-    }   
+    state.internalThermostatEvent = false
+}
+
+// Thermostat Auto Mode Methods
+def takeActionForSwitch(switchState) {
+	// Is incoming switch is on
+    if (switchState == "on")
+    {
+    	//Check thermostat is not already altered
+    	if (!state.thermostatAltered)
+        {
+        	//Turn selected thermostats into selected mode
+        	           
+            //Add detail to push message if set to Manual is specified
+        	log.debug "$theSwitch.label is on, turning thermostats to $alteredThermostatMode"
+            state.internalThermostatEvent = true
+            changeAllThermostatsModes(thermostats, alteredThermostatMode, "$theSwitch.label has turned on")
+            //Only if reset action is specified, set the thermostatAltered state.
+            if (resetThermostats == "true")
+            {
+        		state.thermostatAltered = true
+            }
+        }
+    }
+    else {
+        log.debug "$theSwitch.label is off"
+        //Check if thermostats have previously been altered
+        if (state.thermostatAltered)
+        {
+        	//Check if user wants to reset thermostats
+        	if (resetThermostats == "true")
+ 			{                          
+            	log.debug "Thermostats have been altered, turning back to $resumedThermostatMode"     		
+                //Turn selected thermostats into selected mode
+                state.internalThermostatEvent = true
+            	changeAllThermostatsModes(thermostats, resumedThermostatMode, "$theSwitch.label has turned off")
+            	
+                //Set flag if boost mode is selected as reset state so it can be set back to desired mode in 'thermostatModeAfterBoost'
+                if (resumedThermostatMode == "Boost") {
+                	state.boostingReset = true
+                }
+                
+            }
+            //Reset app state
+            state.thermostatAltered = false
+        }
+        else
+     	{
+        	log.debug "Thermostats were not altered. No action taken."
+        }
+    }
+}
+
+def takeActionForMode(mode) {
+	// Is incoming mode in the event input enumeration
+    if (mode in modes)
+    {
+    	//Check thermostat is not already altered
+    	if (!state.thermostatAltered)
+        {
+        	//Turn selected thermostats into selected mode
+        	           
+            //Add detail to push message if set to Manual is specified
+        	log.debug "$mode in selected modes, turning thermostats to $alteredThermostatMode"
+            state.internalThermostatEvent = true
+            changeAllThermostatsModes(thermostats, alteredThermostatMode, "mode has changed to $mode")
+            
+        	//Only if reset action is specified, set the thermostatAltered state.
+            if (resetThermostats == "true")
+            {
+        		state.thermostatAltered = true
+            }
+        }
+    }
+    else {
+        log.debug "$mode is not in select modes"
+        //Check if thermostats have previously been altered
+        if (state.thermostatAltered)
+        {
+        	//Check if user wants to reset thermostats
+        	if (resetThermostats == "true")
+ 			{
+            	log.debug "Thermostats have been altered, turning back to $resumedThermostatMode"
+     		       
+            	//Turn each thermostat to selected mode
+                state.internalThermostatEvent = true
+            	changeAllThermostatsModes(thermostats, resumedThermostatMode, "mode has changed to $mode")   
+
+ 				//Set flag if boost mode is selected as reset state so it can be set back to desired mode in 'thermostatModeAfterBoost'
+                if (resumedThermostatMode == "Boost") {
+                	state.boostingReset = true
+                }  
+                              
+            }
+            //Reset app state
+            state.thermostatAltered = false
+        }
+        else
+     	{
+        	log.debug "Thermostats were not altered. No action taken."
+        }
+    }
+}
+
+//Helper method for thermostat mode change
+private changeAllThermostatsModes(thermostats, newThermostatMode, reason) {
+	//Add detail to push message if set to Manual is specified
+    def thermostatModeDetail = newThermostatMode
+    if (newThermostatMode == "Set to Manual") {
+    	thermostatModeDetail = thermostatModeDetail + " at $temp°C"
+    }
+	for (thermostat in thermostats) {
+    	def message = ''
+        message = "SmartThings has reset $thermostat.label to $thermostatModeDetail because $reason."
+        log.info message
+        send(message)
+        log.debug "Setting $thermostat.label to $thermostatModeDetail" 
+		if (newThermostatMode == "Set to Manual") {
+    		thermostat.heat()
+        	thermostat.setHeatingSetpoint(temp)
+    	}
+    	else if (newThermostatMode == "Turn Off") {
+    		thermostat.off()
+    	}
+    	else if (newThermostatMode == "Boost") {
+    		thermostat.emergencyHeat()
+    	}
+    	else {
+    		thermostat.auto()
+		}
+    }
+}
+
+private send(msg) {
+    if ( sendPushMessage != "No" ) {
+        log.debug( "sending push message" )
+        sendPush( msg )
+    }
+
+    if ( phone ) {
+        log.debug( "sending text message" )
+        sendSms( phone, msg )
+    }
+
+    log.debug msg
+}
+
+private getAllOk() {
+	daysOk && timeOk
+}
+
+private getDaysOk() {
+	def result = true
+	if (days) {
+		def df = new java.text.SimpleDateFormat("EEEE")
+		if (location.timeZone) {
+			df.setTimeZone(location.timeZone)
+		}
+		else {
+			df.setTimeZone(TimeZone.getTimeZone("Europe/London"))
+		}
+		def day = df.format(new Date())
+		result = days.contains(day)
+	}
+	log.trace "daysOk = $result"
+	result
+}
+
+private getTimeOk() {
+	def result = true
+	if (starting && ending) {
+		def currTime = now()
+		def start = timeToday(starting).time
+		def stop = timeToday(ending).time
+		result = start < stop ? currTime >= start && currTime <= stop : currTime <= stop || currTime >= start
+	}
+	log.trace "timeOk = $result"
+	result
+}
+
+private hhmm(time, fmt = "h:mm a")
+{
+	def t = timeToday(time, location.timeZone)
+	def f = new java.text.SimpleDateFormat(fmt)
+	f.setTimeZone(location.timeZone ?: timeZone(time))
+	f.format(t)
+}
+
+def getTimeLabel(starting, ending){
+
+	def timeLabel = "Tap to set"
+	
+    if(starting && ending){
+    	timeLabel = "Between" + " " + hhmm(starting) + " "  + "and" + " " +  hhmm(ending)
+    }
+    else if (starting) {
+		timeLabel = "Start at" + " " + hhmm(starting)
+    }
+    else if(ending){
+    timeLabel = "End at" + hhmm(ending)
+    }
+	timeLabel
+}
+
+private hideOptionsSection() {
+	(starting || ending || days || modes) ? false : true
+}
+
+
+def greyedOutSettings(){
+	def result = ""
+    if (starting || ending || days || falseAlarmThreshold) {
+    	result = "complete"	
+    }
+    result
+}
+
+def greyedOutTime(starting, ending){
+	def result = ""
+    if (starting || ending) {
+    	result = "complete"	
+    }
+    result
 }
 
 def generateNotification(msg) {
@@ -593,6 +1086,16 @@ def isLoggedIn() {
     return state.hiveAccessToken_expires_at > now
 }
 
+
+def isTmaAppInst() {
+	def chldCnt = 0
+	childApps?.each { cApp ->
+//        if(cApp?.name != getWatchdogAppChildName()) { chldCnt = chldCnt + 1 }
+		chldCnt = chldCnt + 1
+	}
+	return (chldCnt > 0) ? true : false
+}
+
 def logResponse(response) {
 	log.info("Status: ${response.status}")
 	log.info("Body: ${response.data}")
@@ -613,3 +1116,5 @@ def logErrors(options = [errorReturn: null, logObject: log], Closure c) {
 		return options.errorReturn
 	}
 }
+
+def appName() 		{ return "${parent ? "Hive Mode Automation" : "Hive (Connect)"}" }
