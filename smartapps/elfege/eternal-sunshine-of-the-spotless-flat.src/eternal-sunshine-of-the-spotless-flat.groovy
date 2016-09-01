@@ -58,7 +58,7 @@ def settings() {
                             input "SetPartvalue2", "decimal", title: "What maximum value in this mode?", range: "1..100", required: true
                         }
                     }
-                     paragraph "MAKE SURE TO SELECT below the modes that you just selected in the options above"
+                    paragraph "MAKE SURE TO SELECT below the modes that you just selected in the options above"
                 }
             }
             mode(title: "Run this app only under these modes")
@@ -71,25 +71,64 @@ def installed() {
     initialize()
 }
 def updated() {
+
     log.debug "Updated with settings: ${settings}"
     unsubscribe()
     initialize()
 }
 def initialize() {
+
+    state.messageSent = false
+    state.DimSetByUser = false
+    state.LevelSetByApp = true
+
     subscribe(lightSensor, "illuminance", illuminanceHandler)
     subscribe(dimmer, "switch", SwitchHandler)
+    subscribe(dimmer, "level", switchSetLevelHandler)
+
 }
+
+def switchSetLevelHandler(evt) {
+
+	def LevelSet = evt.value as int 
+    def dim = state.dim as int
+    
+    log.debug "dimmer was set to $evt.value   ----------------------------"
+    log.debug "dim value is : $dim   --------------------------"
+
+    if(LevelSet == dim){
+        //if(state.LevelSetByApp == true){
+            state.DimSetByUser = false 
+        //}
+    }
+    else { 
+        state.DimSetByUser = true 
+    }
+    log.debug "Has the dimmer been manually modified? $state.DimSetByUser"
+}
+
 
 def SwitchHandler(evt){ 
     log.debug "dimmer.currentSwitch is $dimmer.currentSwitch"
-    if(evt.value == "on"){
+    
+    // unachieved attempt to make this app to differentiate between manual and automated level setting 
+    // which is required so users can still set to their liking, 
+    // especially those control freaks wifes like mine who hate automation in general... 
+    
+    /*if(evt.value == "on"){
         state.dimmer = "on"
-        log.debug "Now Eternal Sunshine resumes its automation"
+        state.DimSetByUser = false
+        state.LevelSetByApp = true
+
+        log.debug "Resumig automation"
+        state.messageSent = false
     } 
     else { 
         state.dimmer = "off"
-    }
+
+    }*/
 }
+
 
 def illuminanceHandler(evt){
     log.debug "illuminance is $evt.integerValue"
@@ -109,7 +148,7 @@ def illuminanceHandler(evt){
 }
 
 private DIM(){
-    int dim = 0 
+
     def maxlux = 1000
     def ProportionLux = 0
     def CurrMode = location.currentMode
@@ -126,53 +165,85 @@ private DIM(){
 
     log.debug "ProportionLux value returns $ProportionLux"
 
-    if ( ProportionLux == 1) {
-        // this is the case when lux is max at 1000
-        if(Partvalue){
-            dim = 1 // don't set to 0 to avoid creating an event that will turn off the entire app
+    if(state.DimSetByUser == false){
+        if ( ProportionLux == 1) {
+            // this is the case when lux is max at 1000
+            if(Partvalue){
+                state.dim = 1 // don't set to 0 to avoid creating an event that will turn off the entire app
+            }
+            else {
+                state.dim = 0
+                log.debug "ProportionLux is 1 so dim set to 0"
+            }
         }
         else {
-            dim = 0
-            log.debug "ProportionLux is 1 so dim set to 0"
+            state.dim = (ProportionLux * DimIncrVal) 
+            // example 1000 / 500 = 2 so dim = 2 * 5 light will be dimmed down or up? by 10%
+            // example 1000 / 58 = 17.xxx so dim = 17 * 5 so if lux is 58 then light will be set to 85%.
         }
+        if(state.dim > 100){
+            state.dim = 100
+        } 
+
+        if(Partvalue){
+            log.debug "PartValue eval"
+            if(exceptionMode){
+                log.debug "exceptionMode eval"
+                if(CurrMode == ExceptionMode){
+                    log.debug "currentMode eval"
+                    if(state.dim >= SetPartvalue){
+                        state.dim = SetPartvalue
+                    }
+                } 
+                else if(CurrMode == ExceptionMode2){
+                    if(state.dim >= SetPartvalue2){
+                        state.dim = SetPartvalue2
+                    }
+                }
+            }
+            else {
+                log.debug "Just PartValue eval"
+                if(state.dim >= SetPartvalue){
+                    state.dim = SetPartvalue
+                }
+            }
+
+        }
+        int dim = state.dim
+        dimmer.setLevel(dim) 
+        log.debug "light set to $dim %"
+        state.LevelSetByApp = true
+
+    }
+    else if (state.messageSent == false){
+        def message = "Lights have been changed manually so automation is no longer running. Please toggle $dimmer to start over"
+        log.info (message)
+        send(message)
+        state.messageSent = true
     }
     else {
-        dim = (ProportionLux * DimIncrVal) 
-        // example 1000 / 500 = 2 so dim = 2 * 5 light will be dimmed down or up? by 10%
-        // example 1000 / 58 = 17.xxx so dim = 17 * 5 so if lux is 58 then light will be set to 85%.
+        log.debug "message already sent. App is Idle"
     }
-    if(dim > 100){
-        dim = 100
-    } 
-
-    if(Partvalue){
-        log.debug "PartValue eval"
-        if(exceptionMode){
-            log.debug "exceptionMode eval"
-            if(CurrMode == ExceptionMode){
-                log.debug "currentMode eval"
-                if(dim >= SetPartvalue){
-                    dim = SetPartvalue
-                }
-            } 
-            else if(CurrMode == ExceptionMode2){
-                if(dim >= SetPartvalue2){
-                    dim = SetPartvalue2
-                }
-            }
-        }
-        else {
-            log.debug "Just PartValue eval"
-            if(dim >= SetPartvalue){
-                dim = SetPartvalue
-            }
-        }
-
-    }
-
-
-
-
-    dimmer.setLevel(dim) 
-    log.debug "light set to $dim %"
 }
+
+
+private send(msg) {
+    if (location.contactBookEnabled) {
+        sendNotificationToContacts(msg, recipients)
+    }
+    else {
+        if (sendPushMessage != "No") {
+            log.debug("sending push message")
+            sendPush(msg)
+        }
+
+        if (phone) {
+            log.debug("sending text message")
+            sendSms(phone, msg)
+        }
+    }
+
+    log.debug msg
+}
+
+
