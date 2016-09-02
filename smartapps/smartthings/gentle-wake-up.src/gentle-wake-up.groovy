@@ -761,7 +761,7 @@ String displayableTime(timeRemaining) {
 		return "${minutes}:00"
 	}
 	def fraction = "0.${parts[1]}" as double
-	def seconds = "${60 * fraction as int}".padRight(2, "0")
+	def seconds = "${60 * fraction as int}".padLeft(2, "0")
 	return "${minutes}:${seconds}"
 }
 
