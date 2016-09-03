@@ -113,13 +113,11 @@ private sendMessage(evt) {
 	} else {
 		if (pushAndPhone != 'No') {
 			log.debug 'sending push'
-			options.method = 'push'
-			sendNotification(msg, options)
+			sendPush(msg)
 		}
 		if (phone) {
-			options.phone = phone
 			log.debug 'sending SMS'
-			sendNotification(msg, options)
+			sendSms(phone, msg)
 		}
 	}
 	if (frequency) {
