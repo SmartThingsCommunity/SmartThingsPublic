@@ -163,6 +163,7 @@ def pageSettings() {
                 input "sendPushMessage", "enum", title: "Send a push notification?", metadata: [values: ["Yes", "No"]], required: false, value: "No"
                 input "phoneNumber", "phone", title: "Enter phone number to send text notification.", required: false
             }
+            input "resendTime", "time", title: "Resend alerts at this time each day", required: false
             input "deviceOnline", "boolean", title: "Send a notification if a device comes back online?", required: false, submitOnChange: false, value: false
         }
         section([title: "Other Options", mobileOnly: true]) {
@@ -215,6 +216,8 @@ def pageExclusions() {
                 options: eventExclude
             input "batteryExclusions", "enum", title: "Exclude these devices from battery checks", multiple: true, required: false,
                 options: batteryExclude
+            input "resendExclusions", "enum", title: "Exclude these devices when resending alerts", multiple: true, required: false,
+                options: eventExclude
         }
     
     }
@@ -387,20 +390,20 @@ def doCheck() {
                 if (it.hasCapability("Battery") && settings.checkBattery != null && checkBattery.toBoolean() == true) {
                    if(it.currentValue("battery") != null) {
                       batterygoodlistMap += [
-                         [battery: it.currentValue("battery"), name: "$it.displayName"]
+                         [battery: it.currentValue("battery"), name: "$it.displayName", id: "$it.id"]
                       ]
                    }
                    else {
                       batteryerrorlistMap += [
-                         [name: "$it.displayName"]
+                         [name: "$it.displayName", id: "$it.id"]
                       ]
                    }
                    if(it.currentValue("battery") != null && it.currentValue("battery").toInteger() < settings.batteryThreshold.toInteger()){
                       batterybadlistMap += [
-                         [battery: it.currentValue("battery"), name: "$it.displayName"]
+                         [battery: it.currentValue("battery"), name: "$it.displayName", id: "$it.id"]
                       ]
                       batterylistMap += [
-                         [name: "$it.displayName"]
+                         [name: "$it.displayName", id: "$it.id"]
                       ]
                    }
                }
@@ -425,18 +428,18 @@ def doCheck() {
                         if (xhours > timer) {
                             //def thours = (hours.toFloat()/1).round(0)
                             delaylistMap += [
-                                [time: "$xhours", name: "$it.displayName"]
+                                [time: "$xhours", name: "$it.displayName", id: "$it.id"]
                             ]
                             delaylistCheckMap += [
-                                [name: "$it.displayName"]
+                                [name: "$it.displayName", id: "$it.id"]
                             ]
                         }
                         goodlistMap += [
-                            [time: "$xhours", name: "$it.displayName"]
+                            [time: "$xhours", name: "$it.displayName", id: "$it.id"]
                         ]
                     } else {
                         badlistMap += [
-                            [name: "$it.displayName"]
+                            [name: "$it.displayName", id: "$it.id"]
                         ]
                     }
 
@@ -444,7 +447,7 @@ def doCheck() {
                     log.trace "Caught error checking a device."
                     log.trace e
                     errorlistMap += [
-                        [name: "$it.displayName"]
+                        [name: "$it.displayName", id: "$it.id"]
                     ]
                 }
                 }else{
@@ -509,7 +512,7 @@ def doCheck() {
             def tempMap = []
             atomicState.delaylistCheckMap.each {
                 tempMap += [
-                    [name: "$it.name"]
+                    [name: "$it.name", id: "$it.id"]
                 ]
             }
             def delaylistCheckMapDiff = delaylistCheckUniqueSorted - tempMap
@@ -517,7 +520,7 @@ def doCheck() {
             tempMap = []
             atomicState.errorlistMap.each {
                 tempMap += [
-                    [name: "$it.name"]
+                    [name: "$it.name", id: "$it.id"]
                 ]
             }
             def errorlistMapDiff = errorlistUniqueSorted - tempMap
@@ -525,7 +528,7 @@ def doCheck() {
             tempMap = []
             atomicState.badlistMap.each {
                 tempMap += [
-                    [name: "$it.name"]
+                    [name: "$it.name", id: "$it.id"]
                 ]
             }
             def badlistMapDiff = badlistUniqueSorted - tempMap
@@ -533,14 +536,14 @@ def doCheck() {
             tempMap = []
             atomicState.batteryerrorlistMap.each {
                 tempMap += [
-                    [name: "$it.name"]
+                    [name: "$it.name", id: "$it.id"]
                 ]
             }
             def batteryerrorlistMapDiff = batteryerrorlistUniqueSorted - tempMap
             tempMap = []
             atomicState.batterylistMap.each {
                 tempMap += [
-                    [name: "$it.name"]
+                    [name: "$it.name", id: "$it.id"]
                 ]
             }
             log.debug tempMap 
@@ -632,8 +635,10 @@ def doCheck() {
                 }
             }
 
+            atomicState.notifications = notifications
             atomicState.batterygoodlist = batterygoodlist
             atomicState.batterybadlist = batterybadlist
+            atomicState.batterybadlistMap = batterybadlistMap
             atomicState.batterylist = batterylist
             atomicState.batteryerrorlist = batteryerrorlist
             atomicState.batteryerrorlistMap = batteryerrorlistMap
@@ -749,7 +754,137 @@ def scheduleCheck() {
                 break
         }
     }
+    if(settings.resendTime){
+        log.debug "Scheduling resend for $resendTime"
+        schedule(resendTime, resend)
+    }
 
+}
+
+def resend() {
+    log.debug "Resending alerts"
+    def delaylistMapDiff = []
+    atomicState.delaylistMap.each {
+        def exclude = false
+        resendExclusions.each { n ->
+            if("$it.id" == "$n"){
+                exclude = true
+            }
+        }
+        if (exclude == false){
+            delaylistMapDiff += [
+                [time: "$it.time", name: "$it.name", id: "$it.id"]
+            ]
+        }
+    }
+    def errorlistMapDiff = []
+    atomicState.errorlistMap.each {
+        def exclude = false
+        resendExclusions.each { n ->
+            if("$it.id" == "$n"){
+                exclude = true
+            }
+        }
+        if (exclude == false){
+            errorlistMapDiff += [
+                [name: "$it.name", id: "$it.id"]
+            ]
+        }
+    }
+    def badlistMapDiff = []
+    atomicState.badlistMap.each {
+        def exclude = false
+        resendExclusions.each { n ->
+            if("$it.id" == "$n"){
+                exclude = true
+            }
+        }
+        if (exclude == false){
+            badlistMapDiff += [
+                [name: "$it.name", id: "$it.id"]
+            ]
+        }
+    }
+    def batteryerrorlistMapDiff = []
+    atomicState.batteryerrorlistMap.each {
+        def exclude = false
+        resendExclusions.each { n ->
+            if("$it.id" == "$n"){
+                exclude = true
+            }
+        }
+        if (exclude == false){
+            batteryerrorlistMapDiff += [
+                [name: "$it.name", id: "$it.id"]
+            ]
+        }
+    }
+    def batterybadlistMapDiff = []
+    atomicState.batterybadlistMap.each {
+        def exclude = false
+        resendExclusions.each { n ->
+            if("$it.id" == "$n"){
+                exclude = true
+            }
+        }
+        if (exclude == false){
+            batterybadlistMapDiff += [
+                [battery: "$it.battery", name: "$it.name", id: "$it.id"]
+            ] 
+        }
+    }
+    
+    if ((batteryerrorlistMapDiff || batterybadlistMapDiff || badlistMapDiff || errorlistMapDiff || delaylistMapDiff) && ((location.contactBookEnabled && recipients) || (sendPushMessage != "No") || (phoneNumber != "0"))) {
+
+        log.trace "Preparing Notification"
+
+        def text = ""
+        def check = ""
+        def notifications = []
+
+        if (delaylistMapDiff) {
+            def notificationDelaylist = ""
+            delaylistMapDiff.each {
+                notificationDelaylist += "${it.time} - ${it.name}\n"
+            }
+            notifications += ["Reminder - Devices delayed:\n${notificationDelaylist.trim()}"]
+        }
+        if (badlistMapDiff) {
+            def notificationBadlist = ""
+            badlistMapDiff.each {
+                notificationBadlist += "${it.name}\n"
+            }
+            notifications += ["Reminder - Devices Not Reporting Events:\n${notificationBadlist.trim()}"]
+        }
+        if (batterybadlistMapDiff) {
+            def notificationBatterylist = ""
+            batterybadlistMapDiff.each {
+                notificationBatterylist += "${it.battery}% - ${it.name}\n"
+            }
+
+            notifications += ["Reminder - Devices With Low Battery:\n${notificationBatterylist.trim()}"]
+        }
+        if (batteryerrorlistMapDiff) {
+            def notificationBatteryErrorlist = ""
+            batteryerrorlistMapDiff.each {
+                notificationBatteryErrorlist += "${it.name}\n"
+            }
+            notifications += ["Reminder - Devices not reporting battery:\n${notificationBatteryErrorlist.trim()}"]
+        }
+        if (errorlistMapDiff) {
+            def notificationErrorlist = ""
+            errorlistMapDiff.each {
+                notificationErrorlist += "${it.name}\n"
+            }
+            notifications += ["Reminder - Devices with Errors:\n${notificationErrorlist.trim()}"]
+        }
+
+        if ((location.contactBookEnabled && recipients) || (sendPushMessage != "No") || (phoneNumber != "0")) {
+            notifications.each() {
+                send(it)
+            }
+        }
+    }
 }
 
 def subscribeDevices() {
