@@ -2,6 +2,7 @@
  *  Hive (Connect)
  *
  *  Copyright 2015,2016 Alex Lee Yuk Cheung
+ *	Hive Contact Sensor code portions contributed by Simon Green
  *
  *  Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except
  *  in compliance with the License. You may obtain a copy of the License at:
@@ -27,6 +28,9 @@
  *
  *	01.09.2016
  *	v2.2 - Integrate auto mode functionality from Auto Mode for Thermostat smart app
+ *
+ *  04.09.2016
+ *	v2.3 - Added support for Hive Contact Sensor - Author: Simon Green
  */
 definition(
 		name: "Hive (Connect)",
@@ -104,7 +108,7 @@ def mainPage() {
 
 def headerSECTION() {
 	return paragraph (image: "https://raw.githubusercontent.com/alyc100/SmartThingsPublic/master/smartapps/alyc100/10457773_334250273417145_3395772416845089626_n.png",
-                  "Hive (Connect)\nVersion: 2.2\nDate: 01092016(1200)")
+                  "Hive (Connect)\nVersion: 2.3\nDate: 04092016(2300)")
 }
 
 def stateTokenPresent() {
@@ -234,7 +238,7 @@ def selectDevicePAGE() {
     section("Select your devices:") {
 			input "selectedHeating", "enum", image: "https://raw.githubusercontent.com/alyc100/SmartThingsPublic/master/smartapps/alyc100/thermostat-frame-6c75d5394d102f52cb8cf73704855446.png", required:false, title:"Select Hive Heating Devices \n(${state.hiveHeatingDevices.size() ?: 0} found)", multiple:true, options:state.hiveHeatingDevices
 			input "selectedHotWater", "enum", image: "https://raw.githubusercontent.com/alyc100/SmartThingsPublic/master/smartapps/alyc100/thermostat-frame-6c75d5394d102f52cb8cf73704855446.png", required:false, title:"Select Hive Hot Water Devices \n(${state.hiveHotWaterDevices.size() ?: 0} found)", multiple:true, options:state.hiveHotWaterDevices
-			input "selectedContactSensor", "enum", image: "https://www.hivehome.com/assets/hive-window-door-sensor-815702baa8f484d342f2ebf3eb38ab971acecba02586d0ec485c588f2646c935.jpg", required:false, title:"Select Hive Contact Sensors \n(${state.hiveContactSensorDevices.size() ?: 0} found)", multiple:true, options:state.hiveContactSensorDevices
+			input "selectedContactSensor", "enum", image: "https://raw.githubusercontent.com/alyc100/SmartThingsPublic/master/smartapps/alyc100/hive-window-door-sensor-815702baa8f484d342f2ebf3eb38ab971acecba02586d0ec485c588f2646c935.jpg", required:false, title:"Select Hive Contact Sensors \n(${state.hiveContactSensorDevices.size() ?: 0} found)", multiple:true, options:state.hiveContactSensorDevices
 		}
   }
 }
