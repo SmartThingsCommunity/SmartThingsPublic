@@ -73,7 +73,7 @@ def mainPage() {
 		return dynamicPage(name: "mainPage", title: "", install: true, uninstall: true) {
 			section {
 				headerSECTION()
-				href("loginPAGE", title: null, description: authenticated() ? "Authenticated as " +username : "Tap to enter Hive crednentials", state: authenticated())
+				href("loginPAGE", title: null, description: authenticated() ? "Authenticated as " +username : "Tap to enter Hive credentials", state: authenticated())
 			}
 		}
 	} else {
@@ -141,60 +141,58 @@ def tmaDescription() {
 
 def getDevicesSelectedString() {
 	if (state.hiveHeatingDevices == null || state.hiveHotWaterDevices == null) {
-    	updateDevices()
-    }
+    updateDevices()
+  }
 	def listString = ""
 	selectedHeating.each { childDevice ->
-    	if (listString == "") {
-        	if (null != state.hiveHeatingDevices) {
-        		listString += state.hiveHeatingDevices[childDevice]
-            }
-        }
-        else {
-        	if (null != state.hiveHeatingDevices) {
-        		listString += "\n" + state.hiveHeatingDevices[childDevice]
-            }
-        }
-    }
-    selectedHotWater.each { childDevice ->
-    	if (listString == "") {
-        	if (null != state.hiveHotWaterDevices) {
-        		listString += state.hiveHotWaterDevices[childDevice]
-            }
-        }
-        else {
-        	if (null != state.hiveHotWaterDevices) {
-        		listString += "\n" + state.hiveHotWaterDevices[childDevice]
-            }
-        }
-	selectedContactSensor.each { childDevice ->
     if (listString == "") {
-    	if (null != state.hiveContactSensorDevices) {
-        listString += state.hiveContactSensorDevices[childDevice]
+    	if (null != state.hiveHeatingDevices) {
+    		listString += state.hiveHeatingDevices[childDevice]
       }
     } else {
-      if (null != state.hiveContactSensorDevices) {
-        listString += "\n" + state.hiveContactSensorDevices[childDevice]
+    	if (null != state.hiveHeatingDevices) {
+    		listString += "\n" + state.hiveHeatingDevices[childDevice]
       }
     }
-    }
-    return listString
+  }
+  selectedHotWater.each { childDevice ->
+  	if (listString == "") {
+    	if (null != state.hiveHotWaterDevices) {
+    		listString += state.hiveHotWaterDevices[childDevice]
+      }
+    } else {
+			if (null != state.hiveHotWaterDevices) {
+				listString += "\n" + state.hiveHotWaterDevices[childDevice]
+			}
+		}
+	}
+	selectedContactSensor.each { childDevice ->
+		if (listString == "") {
+			if (null != state.hiveContactSensorDevices) {
+				listString += state.hiveContactSensorDevices[childDevice]
+			}
+		} else {
+			if (null != state.hiveContactSensorDevices) {
+				listString += "\n" + state.hiveContactSensorDevices[childDevice]
+			}
+		}
+  }
+  return listString
 }
+
 
 def getPreferencesString() {
 	def listString = ""
-    if (sendPush) listString += "Send Push, "
-    if (sendSMS != null) listString += "Send SMS, "
-    if (maxtemp != null) listString += "Max Temp: ${maxtemp}, "
-    if (mintemp != null) listString += "Min Temp: ${mintemp}, "
-    if (sendBoost) listString += "Boost, "
-    if (sendOff) listString += "Off, "
-    if (sendManual) listString += "Manual, "
-    if (sendSchedule) listString += "Schedule, "
-    if (listString != "") listString = listString.substring(0, listString.length() - 2)
-    return listString
-
-
+  if (sendPush) listString += "Send Push, "
+  if (sendSMS != null) listString += "Send SMS, "
+  if (maxtemp != null) listString += "Max Temp: ${maxtemp}, "
+  if (mintemp != null) listString += "Min Temp: ${mintemp}, "
+  if (sendBoost) listString += "Boost, "
+  if (sendOff) listString += "Off, "
+  if (sendManual) listString += "Manual, "
+  if (sendSchedule) listString += "Schedule, "
+  if (listString != "") listString = listString.substring(0, listString.length() - 2)
+  return listString
 }
 
 def loginPAGE() {
@@ -236,7 +234,7 @@ def selectDevicePAGE() {
     section("Select your devices:") {
 			input "selectedHeating", "enum", image: "https://raw.githubusercontent.com/alyc100/SmartThingsPublic/master/smartapps/alyc100/thermostat-frame-6c75d5394d102f52cb8cf73704855446.png", required:false, title:"Select Hive Heating Devices \n(${state.hiveHeatingDevices.size() ?: 0} found)", multiple:true, options:state.hiveHeatingDevices
 			input "selectedHotWater", "enum", image: "https://raw.githubusercontent.com/alyc100/SmartThingsPublic/master/smartapps/alyc100/thermostat-frame-6c75d5394d102f52cb8cf73704855446.png", required:false, title:"Select Hive Hot Water Devices \n(${state.hiveHotWaterDevices.size() ?: 0} found)", multiple:true, options:state.hiveHotWaterDevices
-			input "selectedContactSensor", "enum", required:false, title:"Select Hive Contact Sensors \n(${state.hiveContactSensorDevices.size() ?: 0} found)", multiple:true, options:state.hiveContactSensorDevices
+			input "selectedContactSensor", "enum", image: "https://www.hivehome.com/assets/hive-window-door-sensor-815702baa8f484d342f2ebf3eb38ab971acecba02586d0ec485c588f2646c935.jpg", required:false, title:"Select Hive Contact Sensors \n(${state.hiveContactSensorDevices.size() ?: 0} found)", multiple:true, options:state.hiveContactSensorDevices
 		}
   }
 }
@@ -455,11 +453,17 @@ def initialize() {
 	if (parent) { }
     else {
 		log.debug "initialize"
-  	if (selectedHeating)
-		addHeating()
+
+  	if (selectedHeating) {
+			addHeating()
+		}
 
 		if (selectedHotWater) {
 			addHotWater()
+		}
+
+		if (selectedContactSensor) {
+			addContactSensor()
 		}
 
  	 	runIn(10, 'refreshDevices') // Asynchronously refresh devices so we don't block
@@ -771,8 +775,7 @@ private getTimeOk() {
 	result
 }
 
-private hhmm(time, fmt = "h:mm a")
-{
+private hhmm(time, fmt = "h:mm a") {
 	def t = timeToday(time, location.timeZone)
 	def f = new java.text.SimpleDateFormat(fmt)
 	f.setTimeZone(location.timeZone ?: timeZone(time))
@@ -798,7 +801,6 @@ def getTimeLabel(starting, ending){
 private hideOptionsSection() {
 	(starting || ending || days || modes) ? false : true
 }
-
 
 def greyedOutSettings(){
 	def result = ""
@@ -830,74 +832,75 @@ def updateDevices() {
 		state.devices = [:]
 	}
 	def devices = devicesList()
-    state.hiveHeatingDevices = [:]
-    state.hiveHotWaterDevices = [:]
-    state.hiveContactSensorDevices = [:]
-    def selectors = []
+  state.hiveHeatingDevices = [:]
+  state.hiveHotWaterDevices = [:]
+  state.hiveContactSensorDevices = [:]
+  def selectors = []
 	devices.each { device ->
-    	selectors.add("${device.id}")
-    	if (device.attributes.activeHeatCoolMode != null) {
-        	def parentNode = devices.find { d -> d.id == device.parentNodeId }
-            if ((device.attributes.supportsHotWater != null) && (device.attributes.supportsHotWater.reportedValue == false) && (device.attributes.temperature != null)) {
-            	def value = "${parentNode.name} Hive Heating"
+  	selectors.add("${device.id}")
+  	if (device.attributes.activeHeatCoolMode != null) {
+    	def parentNode = devices.find { d -> d.id == device.parentNodeId }
+			log.debug "Found Device: ${parentNode.name}"
+			// Heating Control
+      if ((device.attributes.supportsHotWater != null) && (device.attributes.supportsHotWater.reportedValue == false) && (device.attributes.temperature != null)) {
+				log.debug "Identified: ${parentNode.name} Hive Heating"
+      	def value = "${parentNode.name} Hive Heating"
 				def key = device.id
 				state.hiveHeatingDevices["${key}"] = value
 
-                //Update names of devices with Hive
-         		def childDevice = getChildDevice("${device.id}")
-         		if (childDevice) {
-         			//Update name of device if different.
-         			if(childDevice.name != parentNode.name + " Hive Heating") {
- 						childDevice.name = parentNode.name + " Hive Heating"
- 						log.debug "Device's name has changed."
- 					}
-         		}
-
-            }
-            else if ((device.attributes.supportsHotWater != null) && (device.attributes.supportsHotWater.reportedValue == true)) {
-            	def value = "${parentNode.name} Hive Hot Water"
+        //Update names of devices with Hive
+     		def childDevice = getChildDevice("${device.id}")
+     		if (childDevice) {
+     			//Update name of device if different.
+     			if(childDevice.name != parentNode.name + " Hive Heating") {
+						childDevice.name = parentNode.name + " Hive Heating"
+						log.debug "Device's name has changed."
+					}
+     		}
+			// Water Control
+    	} else if ((device.attributes.supportsHotWater != null) && (device.attributes.supportsHotWater.reportedValue == true)) {
+				log.debug "Identified: ${parentNode.name} Hive Hot Water"
+      	def value = "${parentNode.name} Hive Hot Water"
 				def key = device.id
 				state.hiveHotWaterDevices["${key}"] = value
 
-                //Update names of devices
-         		def childDevice = getChildDevice("${device.id}")
-         		if (childDevice) {
-         			//Update name of device if different.
-         			if(childDevice.name != parentNode.name + " Hive Hot Water") {
- 						childDevice.name = parentNode.name + " Hive Hot Water"
- 						log.debug "Device's name has changed."
- 					}
-         		}
-
-            } else if (device.attributes.state != null) {
-				log.debug "Found: ${parentNode.name} Hive Contact Sensor"
-        def value = "${parentNode.name} Hive Contact Sensor"
-				def key = device.id
-				state.hiveContactSensorDevices["${key}"] = value
-				//Update names of devices
-       	def childDevice = getChildDevice("${device.id}")
-       	if (childDevice) {
-       		//Update name of device if different.
-       		if(childDevice.name != parentNode.name + " Hive Contact Sensor") {
-							childDevice.name = parentNode.name + " Hive Contact Sensor"
-							log.debug "Device's name has changed."
-						}
-       	}
-      }
-      // Support for more Hive Device Types can be added here in the future.
-    }
-  }
-
-    //Remove devices if does not exist on the Hive platform
-    getChildDevices().findAll { !selectors.contains("${it.deviceNetworkId}") }.each {
-		log.info("Deleting ${it.deviceNetworkId}")
-        try {
+        //Update names of devices
+     		def childDevice = getChildDevice("${device.id}")
+     		if (childDevice) {
+     			//Update name of device if different.
+     			if(childDevice.name != parentNode.name + " Hive Hot Water") {
+						childDevice.name = parentNode.name + " Hive Hot Water"
+						log.debug "Device's name has changed."
+					}
+     		}
+			}
+		// Contact Sensor
+		} else if (device.attributes.state != null) {
+			log.debug "Identified: ${device.name} Hive Contact Sensor"
+      def value = "${device.name} Hive Contact Sensor"
+			def key = device.id
+			state.hiveContactSensorDevices["${key}"] = value
+			//Update names of devices
+     	def childDevice = getChildDevice("${device.id}")
+     	if (childDevice) {
+     		//Update name of device if different.
+     		if(childDevice.name != device.name + " Hive Contact Sensor") {
+						childDevice.name = device.name + " Hive Contact Sensor"
+						log.debug "Device's name has changed."
+				}
+   		}
+  	}
+	}
+  //Remove devices if does not exist on the Hive platform
+  getChildDevices().findAll { !selectors.contains("${it.deviceNetworkId}") }.each {
+	log.info("Deleting ${it.deviceNetworkId}")
+    try {
 			deleteChildDevice(it.deviceNetworkId)
-        } catch (physicalgraph.exception.NotFoundException e) {
-        	log.info("Could not find ${it.deviceNetworkId}. Assuming manually deleted.")
-        } catch (physicalgraph.exception.ConflictException ce) {
-        	log.info("Device ${it.deviceNetworkId} in use. Please manually delete.")
-        }
+    } catch (physicalgraph.exception.NotFoundException e) {
+    	log.info("Could not find ${it.deviceNetworkId}. Assuming manually deleted.")
+    } catch (physicalgraph.exception.ConflictException ce) {
+    	log.info("Device ${it.deviceNetworkId} in use. Please manually delete.")
+    }
 	}
 }
 
@@ -945,6 +948,30 @@ def addHotWater() {
 			log.debug "Created ${state.hiveHotWaterDevices[device]} with id: ${device}"
 		} else {
 			log.debug "found ${state.hiveHotWaterDevices[device]} with id ${device} already exists"
+		}
+
+	}
+}
+
+def addContactSensor() {
+	updateDevices()
+
+	selectedContactSensor.each { device ->
+
+        def childDevice = getChildDevice("${device}")
+
+        if (!childDevice) {
+    		log.info("Adding Hive Contact Sensor device ${device}: ${state.hiveContactSensorDevices[device]}")
+
+        	def data = [
+                name: state.hiveContactSensorDevices[device],
+				label: state.hiveContactSensorDevices[device],
+			]
+            childDevice = addChildDevice("simonjgreen", "Hive Window or Door Sensor V1.0", "$device", null, data)
+            childDevice.refresh()
+			log.debug "Created ${state.hiveContactSensorDevices[device]} with id: ${device}"
+		} else {
+			log.debug "found ${state.hiveContactSensorDevices[device]} with id ${device} already exists"
 		}
 
 	}
