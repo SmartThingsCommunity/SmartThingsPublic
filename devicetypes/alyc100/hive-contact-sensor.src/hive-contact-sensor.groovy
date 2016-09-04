@@ -22,7 +22,6 @@ metadata {
 		capability "Actuator"
 		capability "Polling"
 		capability "Refresh"
-//		capability "Temperature Measurement"
 		capability "Contact Sensor"
 	}
 
@@ -45,13 +44,10 @@ metadata {
 // parse events into attributes
 def parse(String description) {
 	log.debug "Parsing '${description}'"
-	// TODO: handle 'switch' attribute
-	// TODO: handle 'thermostatMode' attribute
 }
 
 def installed() {
 	log.debug "Executing 'installed'"
-    state.boostLength = 60
 }
 
 def poll() {
