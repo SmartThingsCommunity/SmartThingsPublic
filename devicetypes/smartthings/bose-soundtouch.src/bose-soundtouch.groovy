@@ -28,6 +28,8 @@ metadata {
         capability "Refresh"
         capability "Music Player"
         capability "Polling"
+		capability "Actuator"
+		capability "Sensor"
 
         /**
          * Define all commands, ie, if you have a custom action not
