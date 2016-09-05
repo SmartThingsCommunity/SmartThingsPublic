@@ -22,9 +22,11 @@
  *
  *  See Changelog for change history 
  *
+ * 	0.9.12 - Fix for setting custom Thermostat Programs (Comfort Settings)
+ *
  */
 
-def getVersionNum() { return "0.9.11" }
+def getVersionNum() { return "0.9.12" }
 private def getVersionLabel() { return "Ecobee Thermostat Version ${getVersionNum()}" }
 
  
@@ -820,19 +822,19 @@ def setThermostatProgram(program, holdType=null) {
 def home() {
 	// Change the Comfort Setting to Home
     LOG("home()", 5)
-    setThermostatProgram("home")
+    setThermostatProgram("Home")
 }
 
 def away() {
 	// Change the Comfort Setting to Away
     LOG("away()", 5)
-    setThermostatProgram("away")
+    setThermostatProgram("Away")
 }
 
 def sleep() {
 	// Change the Comfort Setting to Sleep    
     LOG("sleep()", 5)
-    setThermostatProgram("sleep")
+    setThermostatProgram("Sleep")
 }
 
 def generateProgramEvent(program, failedProgram=null) {
