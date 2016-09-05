@@ -14,9 +14,14 @@
  *  for the specific language governing permissions and limitations under the License.
  *
  */
-def getVersionNum() { return "0.1.3a" }
+def getVersionNum() { return "0.1.4" }
 private def getVersionLabel() { return "ecobee Routines Version ${getVersionNum()}" }
 
+/*
+ *
+ * 0.1.4 - Fix Custom Mode Handling
+ *
+ */
 
 
 definition(
@@ -56,7 +61,7 @@ def mainPage() {
 	        if (myThermostats?.size() > 0) {
             	if(settings.modeOrRoutine == "Mode") {
 	    	    	// Start defining which Modes(s) to allow the SmartApp to execute in
-                    // TODO: Need ro run in all modes now and then filter on which modes were selected!!!
+                    // TODO: Need to run in all modes now and then filter on which modes were selected!!!
     	            //mode(title: "When Hello Mode(s) changes to: ", required: true)
                     section(title: "Modes") {
                     	input(name: "modes", type: "mode", title: "When Hello Mode(s) change to: ", required: true, multiple: true)
@@ -111,7 +116,7 @@ def updated() {
 def initialize() {
 	LOG("initialize() entered")
     if(tempDisable == true) {
-    	LOG("Teporarily Disapabled as per request.", 2, null, "warn")
+    	LOG("Temporarily Disabled as per request.", 2, null, "warn")
     	return true
     }
 	
@@ -160,7 +165,7 @@ private def normalizeSettings() {
     	if (whichProgram == "Resume Program") {
         	state.doResumeProgram = true
         } else {        	
-    		state.programParam = whichProgram.toLowerCase()
+    		state.programParam = whichProgram
     	}
 	}
     

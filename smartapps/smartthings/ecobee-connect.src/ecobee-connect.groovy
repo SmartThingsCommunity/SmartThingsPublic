@@ -24,8 +24,9 @@
  *
  *  See Changelog for change history
  *
+ * 	0.9.18 - Fix customer Program handling
  */  
-def getVersionNum() { return "0.9.17b" }
+def getVersionNum() { return "0.9.18" }
 private def getVersionLabel() { return "Ecobee (Connect) Version ${getVersionNum()}" }
 private def getHelperSmartApps() {
 	return [ 
@@ -1842,14 +1843,27 @@ def setFanMode(child, fanMode, deviceId, sendHoldType=null) {
 }
 
 def setProgram(child, program, deviceId, sendHoldType=null) {
-	LOG("setProgram() to ${program} with DeviceID: ${deviceId}", 5, child)
-    program = program.toLowerCase()
-
+	// NOTE: Will use only the first program if there are two with the same exact name
+	LOG("setProgram() to ${program} with DeviceID: ${deviceId}", 5, child, "debug")    
+    // def climateRef = program.toLowerCase()
+    
+    
+	def therm = atomicState.thermostatData?.thermostatList?.find { it.identifier.toString() == deviceId.toString() }
+    def climates = therm?.program?.climates
+    def climate = climates?.find { it.name.toString() == program.toString() }
+    LOG("climates - {$climates}", 5, child)
+    LOG("climate - {$climate}", 5, child)
+    def climateRef = climate?.climateRef.toString()
+    
+	LOG("setProgram() - climateRef = {$climateRef}", 5, child)
+	
+    if (climate == null) { return false }
+    
 	def jsonRequestBody
     if (sendHoldType) {
-    	jsonRequestBody = '{"functions":[{"type":"setHold","params":{"holdClimateRef":"'+program+'","holdType":"'+sendHoldType+'"}}],"selection":{"selectionType":"thermostats","selectionMatch":"'+deviceId+'"}}'
+    	jsonRequestBody = '{"functions":[{"type":"setHold","params":{"holdClimateRef":"'+climateRef+'","holdType":"'+sendHoldType+'"}}],"selection":{"selectionType":"thermostats","selectionMatch":"'+deviceId+'"}}'
     } else {
-    	jsonRequestBody = '{"functions":[{"type":"setHold","params":{"holdClimateRef":"'+program+'"}}],"selection":{"selectionType":"thermostats","selectionMatch":"'+deviceId+'"}}'
+    	jsonRequestBody = '{"functions":[{"type":"setHold","params":{"holdClimateRef":"'+climateRef+'"}}],"selection":{"selectionType":"thermostats","selectionMatch":"'+deviceId+'"}}'
     }
     // {"functions":[{"type":"setHold","params":{"holdClimateRef": "home","holdType":"nextTransition"}}],"selection":{"selectionType":"thermostats","selectionMatch":"312989153500"}}
 	// {"functions":[{"type":"setHold","params":{"holdClimateRef":"sleep","holdType":"nextTransition"}}],"selection":{"selectionType":"thermostats","selectionMatch":"312989153500"}}	
