@@ -51,7 +51,7 @@ definition(
 }
 
 preferences(oauthPage: "deviceAuthorization") {
-    page(name: "Credentials", title: "Connect to your Logitech Harmony device", content: "authPage", install: false, nextPage: "deviceAuthorization")
+  page(name: "Credentials", title: "Connect to your Logitech Harmony device", content: "authPage", install: false, nextPage: "deviceAuthorization")
 	page(name: "deviceAuthorization", title: "Logitech Harmony device authorization", install: true) {
 		section("Allow Logitech Harmony to control these things...") {
 			input "switches", "capability.switch", title: "Which Switches?", multiple: true, required: false
@@ -119,6 +119,7 @@ def authPage() {
 			discoverDevices()
 		}
 		return dynamicPage(name:"Credentials", title:"Discovery Started!", nextPage:"", refreshInterval:refreshInterval, install:true, uninstall: true) {
+      section { paragraph title: "Note:", "This device has not been officially tested and certified to “Work with SmartThings”. You can connect it to your SmartThings home but performance may vary and we will not be able to provide support or assistance." }
 			section("Please wait while we discover your Harmony Hubs and Activities. Discovery can take five minutes or more, so sit back and relax! Select your device below once discovered.") {
 				input "selectedhubs", "enum", required:false, title:"Select Harmony Hubs (${numFoundHub} found)", multiple:true, options:huboptions
 			}
