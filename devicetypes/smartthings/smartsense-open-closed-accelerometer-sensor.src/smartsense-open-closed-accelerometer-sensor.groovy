@@ -223,9 +223,10 @@ def getTemperature(value) {
 		}
 		def descriptionText = "${linkText} was ${value}°${temperatureScale}"
 		return [
-		name: 'temperature',
-		value: value,
-		descriptionText: descriptionText
+			name: 'temperature',
+			value: value,
+			descriptionText: descriptionText,
+			unit: temperatureScale
 		]
 	}
 
