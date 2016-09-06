@@ -116,11 +116,11 @@ private sendMessage(evt) {
 			if (pushAndPhone != 'No') {
 				log.debug 'Sending push and SMS'
 				options.method = 'both'
-			else {
+			} else {
 				log.debug 'Sending SMS'
 				options.method = 'phone'
 			}
-		else if (pushAndPhone != 'No') {
+		} else if (pushAndPhone != 'No') {
 			log.debug 'Sending push'
 			options.method = 'push'
 		} else {
