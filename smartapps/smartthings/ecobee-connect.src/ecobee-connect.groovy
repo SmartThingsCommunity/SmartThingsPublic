@@ -25,8 +25,10 @@
  *  See Changelog for change history
  *
  * 	0.9.18 - Fix customer Program handling
+ *	0.9.19 - Add attributes to indicate custom program names to child thermostats (smart1, smart2, etc)
+ *
  */  
-def getVersionNum() { return "0.9.18" }
+def getVersionNum() { return "0.9.19" }
 private def getVersionLabel() { return "Ecobee (Connect) Version ${getVersionNum()}" }
 private def getHelperSmartApps() {
 	return [ 
@@ -1411,8 +1413,8 @@ def updateThermostatData() {
         def thermSensor = stat.remoteSensors.find { it.type == "thermostat" }
         def occupancy = "not supported"
         if(!thermSensor) {
-		LOG("This particular thermostat does not have a built in remote sensor", 4)
-		atomicState.hasInternalSensors = false
+			LOG("This particular thermostat does not have a built in remote sensor", 4)
+			atomicState.hasInternalSensors = false
         } else {
         	atomicState.hasInternalSensors = true
 		LOG("updateThermostatData() - thermSensor == ${thermSensor}" )
@@ -1481,9 +1483,9 @@ def updateThermostatData() {
         }
      
         
-	if (atomicState.hasInternalSensors) { occupancy = (occupancy == "true") ? "active" : "inactive" }
+		if (atomicState.hasInternalSensors) { occupancy = (occupancy == "true") ? "active" : "inactive" }
 
-	def data = [ 
+		def data = [ 
 		temperatureScale: getTemperatureScale(),
         lastPoll: atomicState.lastPollDate,
 		apiConnected: apiConnected(),
@@ -1510,6 +1512,18 @@ def updateThermostatData() {
 		data["heatingSetpoint"] = data["heatingSetpoint"] ? ( wantMetric() ? data["heatingSetpoint"].toDouble() : data["heatingSetpoint"].toDouble().toInteger() ) : data["heatingSetpoint"]
 		data["coolingSetpoint"] = data["coolingSetpoint"] ? ( wantMetric() ? data["coolingSetpoint"].toDouble() : data["coolingSetpoint"].toDouble().toInteger() ) : data["coolingSetpoint"]
 		data["weatherTemperature"] = data["weatherTemperature"] ? ( wantMetric() ? data["weatherTemperature"].toDouble() : data["weatherTemperature"].toDouble().toInteger() ) : data["weatherTemperature"]
+        
+        climateData.each { climate ->
+        	LOG("Climate found: ${climate}", 5)
+            
+        	if( climate.climateRef.contains('smart') ) {
+            	LOG("Climate contained smart: Ref:${climate.climateRef} - Name:${climate.name}", 5)
+                data["${climate.climateRef}"] = climate.name
+            } else {
+            	LOG("Climate was standard type: ${climate}", 5)
+            }
+            
+        }
         
 		
 		LOG("Event Data = ${data}", 4)

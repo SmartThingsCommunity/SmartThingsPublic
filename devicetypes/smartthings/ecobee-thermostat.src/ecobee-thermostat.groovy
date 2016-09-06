@@ -23,10 +23,11 @@
  *  See Changelog for change history 
  *
  * 	0.9.12 - Fix for setting custom Thermostat Programs (Comfort Settings)
+ *	0.9.13 - Add attributes to indicate custom program names to child thermostats (smart1, smart2, etc)
  *
  */
 
-def getVersionNum() { return "0.9.12" }
+def getVersionNum() { return "0.9.13" }
 private def getVersionLabel() { return "Ecobee Thermostat Version ${getVersionNum()}" }
 
  
@@ -83,6 +84,17 @@ metadata {
         attribute "logo", "string"
         attribute "timeOfDate", "enum", ["day", "night"]
         attribute "lastPoll", "string"
+        
+        attribute "smart1", "string"
+        attribute "smart2", "string"
+        attribute "smart3", "string"
+        attribute "smart4", "string"
+        attribute "smart5", "string"
+        attribute "smart6", "string"
+        attribute "smart7", "string"
+        attribute "smart8", "string"
+        attribute "smart9", "string"
+        attribute "smart10", "string"
 	}
 
 	simulator { }
