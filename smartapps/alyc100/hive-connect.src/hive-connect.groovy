@@ -31,6 +31,9 @@
  *
  *  04.09.2016
  *	v2.3 - Added support for Hive Contact Sensor - Author: Simon Green
+ *
+ *	06.09.2016
+ *	v2.3.1 - Improve device detection
  */
 definition(
 		name: "Hive (Connect)",
@@ -108,7 +111,7 @@ def mainPage() {
 
 def headerSECTION() {
 	return paragraph (image: "https://raw.githubusercontent.com/alyc100/SmartThingsPublic/master/smartapps/alyc100/10457773_334250273417145_3395772416845089626_n.png",
-                  "Hive (Connect)\nVersion: 2.3\nDate: 04092016(2300)")
+                  "Hive (Connect)\nVersion: 2.3.1\nDate: 06092016(1250)")
 }
 
 def stateTokenPresent() {
@@ -842,7 +845,7 @@ def updateDevices() {
   def selectors = []
 	devices.each { device ->
   	selectors.add("${device.id}")
-  	if (device.attributes.activeHeatCoolMode != null) {
+  	if (device.nodeType == "http://alertme.com/schema/json/node.class.thermostat.json#" && device.attributes.activeHeatCoolMode != null) {
     	def parentNode = devices.find { d -> d.id == device.parentNodeId }
 			log.debug "Found Device: ${parentNode.name}"
 			// Heating Control
@@ -862,7 +865,7 @@ def updateDevices() {
 					}
      		}
 			// Water Control
-    	} else if ((device.attributes.supportsHotWater != null) && (device.attributes.supportsHotWater.reportedValue == true)) {
+    	} else if (device.nodeType == "http://alertme.com/schema/json/node.class.thermostat.json#" && device.attributes.supportsHotWater != null && device.attributes.supportsHotWater.reportedValue == true) {
 				log.debug "Identified: ${parentNode.name} Hive Hot Water"
       	def value = "${parentNode.name} Hive Hot Water"
 				def key = device.id
@@ -879,7 +882,7 @@ def updateDevices() {
      		}
 			}
 		// Contact Sensor
-		} else if (device.attributes.state != null) {
+		} else if (device.nodeType == "http://alertme.com/schema/json/node.class.contact.sensor.json#" && device.attributes.state != null) {
 			log.debug "Identified: ${device.name} Hive Contact Sensor"
       def value = "${device.name} Hive Contact Sensor"
 			def key = device.id
