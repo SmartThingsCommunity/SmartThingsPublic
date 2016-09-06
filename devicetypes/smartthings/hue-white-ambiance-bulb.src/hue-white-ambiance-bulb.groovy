@@ -15,7 +15,6 @@ metadata {
         capability "Color Temperature"
         capability "Switch"
         capability "Refresh"
-        capability "Health Check"
 
         command "refresh"
     }
@@ -52,10 +51,6 @@ metadata {
         main(["rich-control"])
         details(["rich-control", "colorTempSliderControl", "colorTemp", "refresh"])
     }
-}
-
-void installed() {
-	sendEvent(name: "checkInterval", value: 60 * 30, data: [protocol: "lan"], displayed: false)
 }
 
 // parse events into attributes
@@ -105,8 +100,4 @@ void setColorTemperature(value) {
 void refresh() {
     log.debug "Executing 'refresh'"
     parent.manualRefresh()
-}
-
-def ping() {
-    log.debug "${parent.ping(this)}"
 }
