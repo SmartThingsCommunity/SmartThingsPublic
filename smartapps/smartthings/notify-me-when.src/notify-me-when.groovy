@@ -48,9 +48,9 @@ preferences {
 	}
 	section("Via a push notification and/or an SMS message"){
 		input("recipients", "contact", title: "Send notifications to") {
-			input "phone", "phone", title: "Phone Number (for SMS, optional)", required: false
+			input "phone", "phone", title: "Enter a phone number to get SMS", required: false
 			paragraph "If outside the US please make sure to enter the proper country code"
-			input "pushAndPhone", "enum", title: "Both Push and SMS?", required: false, options: ["Yes", "No"]
+			input "pushAndPhone", "enum", title: "Notify me via Push Notification", required: false, options: ["Yes", "No"]
 		}
 	}
 	section("Minimum time between messages (optional, defaults to every message)") {
@@ -111,19 +111,24 @@ private sendMessage(evt) {
 	if (location.contactBookEnabled) {
 		sendNotificationToContacts(msg, recipients, options)
 	} else {
-		if (!phone || pushAndPhone != 'No') {
-			log.debug 'sending push'
-			options.method = 'push'
-			//sendPush(msg)
-		}
 		if (phone) {
 			options.phone = phone
-			log.debug 'sending SMS'
-			//sendSms(phone, msg)
+			if (pushAndPhone != 'No') {
+				log.debug 'Sending push and SMS'
+				options.method = 'both'
+			} else {
+				log.debug 'Sending SMS'
+				options.method = 'phone'
+			}
+		} else if (pushAndPhone != 'No') {
+			log.debug 'Sending push'
+			options.method = 'push'
+		} else {
+			log.debug 'Sending nothing'
+			options.method = 'none'
 		}
 		sendNotification(msg, options)
 	}
-
 	if (frequency) {
 		state[evt.deviceId] = now()
 	}

@@ -27,6 +27,10 @@ metadata {
         capability "Refresh"
         capability "Switch"
         capability "Switch Level"
+        capability "Health Check"
+
+        attribute "colorName", "string"
+        command "setGenericName"
 
         fingerprint profileId: "0104", inClusters: "0000,0003,0004,0005,0006,0008,0300,0B04,FC0F", outClusters: "0019", manufacturer: "OSRAM", model: "LIGHTIFY Flex RGBW", deviceJoinName: "OSRAM LIGHTIFY LED FLEXIBLE STRIP RGBW"
         fingerprint profileId: "0104", inClusters: "0000,0003,0004,0005,0006,0008,0300,0B04,FC0F", outClusters: "0019", manufacturer: "OSRAM", model: "Flex RGBW", deviceJoinName: "OSRAM LIGHTIFY LED FLEXIBLE STRIP RGBW"
@@ -54,15 +58,15 @@ metadata {
         controlTile("colorTempSliderControl", "device.colorTemperature", "slider", width: 4, height: 2, inactiveLabel: false, range:"(2700..6500)") {
             state "colorTemperature", action:"color temperature.setColorTemperature"
         }
-        valueTile("colorTemp", "device.colorTemperature", inactiveLabel: false, decoration: "flat", width: 2, height: 2) {
-            state "colorTemperature", label: '${currentValue} K'
+        valueTile("colorName", "device.colorName", inactiveLabel: false, decoration: "flat", width: 2, height: 2) {
+            state "colorName", label: '${currentValue}'
         }
         standardTile("refresh", "device.refresh", inactiveLabel: false, decoration: "flat", width: 2, height: 2) {
             state "default", label:"", action:"refresh.refresh", icon:"st.secondary.refresh"
         }
 
         main(["switch"])
-        details(["switch", "colorTempSliderControl", "colorTemp", "refresh"])
+        details(["switch", "colorTempSliderControl", "colorName", "refresh"])
     }
 }
 
@@ -78,10 +82,22 @@ private getATTRIBUTE_COLOR_TEMPERATURE() { 0x0007 }
 def parse(String description) {
     log.debug "description is $description"
 
-    def finalResult = zigbee.getEvent(description)
-    if (finalResult) {
-        log.debug finalResult
-        sendEvent(finalResult)
+    def event = zigbee.getEvent(description)
+    if (event) {
+        log.debug event
+        // Temporary fix for the case when Device is OFFLINE and is connected again
+        if (state.lastActivity == null){
+            state.lastActivity = now()
+            sendEvent(name: "deviceWatch-lastActivity", value: state.lastActivity, description: "Last Activity is on ${new Date((long)state.lastActivity)}", displayed: false, isStateChange: true)
+        }
+        state.lastActivity = now()
+        if (event.name=="level" && event.value==0) {}
+        else {
+            if (event.name=="colorTemperature") {
+                setGenericName(event.value)
+            }
+            sendEvent(event)
+        }
     }
     else {
         def zigbeeMap = zigbee.parseDescriptionAsMap(description)
@@ -90,11 +106,11 @@ def parse(String description) {
         if (zigbeeMap?.clusterInt == COLOR_CONTROL_CLUSTER) {
             if(zigbeeMap.attrInt == ATTRIBUTE_HUE){  //Hue Attribute
                 def hueValue = Math.round(zigbee.convertHexToInt(zigbeeMap.value) / 255 * 360)
-                sendEvent(name: "hue", value: hueValue, displayed:false)
+                sendEvent(name: "hue", value: hueValue, descriptionText: "Color has changed")
             }
             else if(zigbeeMap.attrInt == ATTRIBUTE_SATURATION){ //Saturation Attribute
                 def saturationValue = Math.round(zigbee.convertHexToInt(zigbeeMap.value) / 255 * 100)
-                sendEvent(name: "saturation", value: saturationValue, displayed:false)
+                sendEvent(name: "saturation", value: saturationValue, descriptionText: "Color has changed", displayed: false)
             }
         }
         else {
@@ -110,18 +126,52 @@ def on() {
 def off() {
     zigbee.off()
 }
+/**
+ * PING is used by Device-Watch in attempt to reach the Device
+ * */
+def ping() {
+
+    if (state.lastActivity < (now() - (1000 * device.currentValue("checkInterval"))) ){
+        log.info "ping, alive=no, lastActivity=${state.lastActivity}"
+        state.lastActivity = null
+        return zigbee.onOffRefresh()
+    } else {
+        log.info "ping, alive=yes, lastActivity=${state.lastActivity}"
+        sendEvent(name: "deviceWatch-lastActivity", value: state.lastActivity, description: "Last Activity is on ${new Date((long)state.lastActivity)}", displayed: false, isStateChange: true)
+    }
+}
 
 def refresh() {
-    zigbee.readAttribute(0x0006, 0x00) + zigbee.readAttribute(0x0008, 0x00) + zigbee.readAttribute(0x0300, 0x00) + zigbee.readAttribute(0x0300, ATTRIBUTE_COLOR_TEMPERATURE) + zigbee.readAttribute(0x0300, ATTRIBUTE_HUE) + zigbee.readAttribute(0x0300, ATTRIBUTE_SATURATION) + zigbee.onOffConfig() + zigbee.levelConfig() + zigbee.colorTemperatureConfig() + zigbee.configureReporting(COLOR_CONTROL_CLUSTER, ATTRIBUTE_HUE, 0x20, 1, 3600, 0x01) + zigbee.configureReporting(COLOR_CONTROL_CLUSTER, ATTRIBUTE_SATURATION, 0x20, 1, 3600, 0x01)
+    zigbee.onOffRefresh() + zigbee.readAttribute(0x0008, 0x00) + zigbee.readAttribute(0x0300, 0x00) + zigbee.readAttribute(0x0300, ATTRIBUTE_COLOR_TEMPERATURE) + zigbee.readAttribute(0x0300, ATTRIBUTE_HUE) + zigbee.readAttribute(0x0300, ATTRIBUTE_SATURATION) + zigbee.onOffConfig() + zigbee.levelConfig() + zigbee.colorTemperatureConfig() + zigbee.configureReporting(COLOR_CONTROL_CLUSTER, ATTRIBUTE_HUE, 0x20, 1, 3600, 0x01) + zigbee.configureReporting(COLOR_CONTROL_CLUSTER, ATTRIBUTE_SATURATION, 0x20, 1, 3600, 0x01)
 }
 
 def configure() {
     log.debug "Configuring Reporting and Bindings."
+    // Enrolls device to Device-Watch with 3 x Reporting interval 30min
+    sendEvent(name: "checkInterval", value: 1800, displayed: false, data: [protocol: "zigbee"])
     zigbee.onOffConfig() + zigbee.levelConfig() + zigbee.colorTemperatureConfig() + zigbee.configureReporting(COLOR_CONTROL_CLUSTER, ATTRIBUTE_HUE, 0x20, 1, 3600, 0x01) + zigbee.configureReporting(COLOR_CONTROL_CLUSTER, ATTRIBUTE_SATURATION, 0x20, 1, 3600, 0x01) + zigbee.readAttribute(0x0006, 0x00) + zigbee.readAttribute(0x0008, 0x00) + zigbee.readAttribute(COLOR_CONTROL_CLUSTER, 0x00) + zigbee.readAttribute(COLOR_CONTROL_CLUSTER, ATTRIBUTE_COLOR_TEMPERATURE) + zigbee.readAttribute(COLOR_CONTROL_CLUSTER, ATTRIBUTE_HUE) + zigbee.readAttribute(COLOR_CONTROL_CLUSTER, ATTRIBUTE_SATURATION)
 }
 
 def setColorTemperature(value) {
+    setGenericName(value)
     zigbee.setColorTemperature(value)
+}
+
+//Naming based on the wiki article here: http://en.wikipedia.org/wiki/Color_temperature
+def setGenericName(value){
+    if (value != null) {
+        def genericName = "White"
+        if (value < 3300) {
+            genericName = "Soft White"
+        } else if (value < 4150) {
+            genericName = "Moonlight"
+        } else if (value <= 5000) {
+            genericName = "Cool White"
+        } else if (value >= 5000) {
+            genericName = "Daylight"
+        }
+        sendEvent(name: "colorName", value: genericName)
+    }
 }
 
 def setLevel(value) {

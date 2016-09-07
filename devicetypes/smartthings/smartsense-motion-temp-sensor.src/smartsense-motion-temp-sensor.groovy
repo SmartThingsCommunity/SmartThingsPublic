@@ -170,7 +170,7 @@ private Map parseCustomMessage(String description) {
 
 private Map parseIasMessage(String description) {
 	ZoneStatus zs = zigbee.parseZoneStatus(description)
-	return zs.isAlarm1Set() ? getMotionResult('active') : getMotionResult('inactive')
+	return (zs.isAlarm1Set() || zs.isAlarm2Set()) ? getMotionResult('active') : getMotionResult('inactive')
 }
 
 def getTemperature(value) {
@@ -226,7 +226,8 @@ private Map getTemperatureResult(value) {
 	return [
 		name: 'temperature',
 		value: value,
-		descriptionText: descriptionText
+		descriptionText: descriptionText,
+		unit: temperatureScale
 	]
 }
 
