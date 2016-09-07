@@ -69,7 +69,7 @@ def temperatureHandler(evt) {
 		def alreadySentSms = recentEvents.count { it.doubleValue >= tooHot } > 1
 
 		if (alreadySentSms) {
-			log.debug "SMS already sent to within the last $delta Minutes minutes"
+			log.debug "SMS already sent within the last $deltaMinutes minutes"
 			// TODO: Send "Temperature back to normal" SMS, turn switch off
 		} else {
 			log.debug "Temperature rose above $tooHot:  sending SMS and activating $mySwitch"
