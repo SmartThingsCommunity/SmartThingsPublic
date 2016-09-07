@@ -313,8 +313,8 @@ private Map getBatteryResult(rawValue) {
 				def maxVolts = 3.0
 				def pct = (volts - minVolts) / (maxVolts - minVolts)
 				def roundedPct = Math.round(pct * 100)
-				if (roundedPct < 0)
-					roundedPct = 0
+				if (roundedPct <= 0)
+					roundedPct = 1
 				result.value = Math.min(100, roundedPct)
 				result.descriptionText = "{{ device.displayName }} battery was {{ value }}%"
 			}
