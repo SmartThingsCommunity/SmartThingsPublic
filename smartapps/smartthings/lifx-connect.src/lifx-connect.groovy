@@ -50,8 +50,8 @@ def authPage() {
 		}
 		def description = "Tap to enter LIFX credentials"
 		def redirectUrl = "${serverUrl}/oauth/initialize?appId=${app.id}&access_token=${state.accessToken}&apiServerUrl=${apiServerUrl}" // this triggers oauthInit() below
-//        def redirectUrl = "${apiServerUrl}"
-        log.debug "app id: ${app.id}"
+		// def redirectUrl = "${apiServerUrl}"
+		// log.debug "app id: ${app.id}"
 		// log.debug "redirect url: ${redirectUrl}"s
 		return dynamicPage(name: "Credentials", title: "Connect to LIFX", nextPage: null, uninstall: true, install:true) {
 			section {
