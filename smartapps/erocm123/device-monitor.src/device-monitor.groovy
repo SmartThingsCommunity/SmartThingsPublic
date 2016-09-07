@@ -163,9 +163,10 @@ def pageSettings() {
                 input "sendPushMessage", "enum", title: "Send a push notification?", metadata: [values: ["Yes", "No"]], required: false, value: "No"
                 input "phoneNumber", "phone", title: "Enter phone number to send text notification.", required: false
             }
-            input "resendTime", "time", title: "Resend alerts at this time each day", required: false
             input "deviceOnline", "boolean", title: "Send a notification if a device comes back online?", required: false, submitOnChange: false, value: false
             input "askAlexa", "boolean", title: "Send notifications to Ask Alexa?", required: false, submitOnChange: false, value: false
+            input "resendTime", "time", title: "Send reminder alerts at this time each day", required: false
+            input "askAlexaRemind", "boolean", title: "Allow reminder alerts to be sent to Ask Alexa?", required: false, submitOnChange: false, value: false
         }
         section([title: "Other Options", mobileOnly: true]) {
             label title: "Assign a name for the app (optional)", required: false
@@ -629,6 +630,7 @@ def doCheck() {
 
                 if ((location.contactBookEnabled && recipients) || (sendPushMessage != "No") || (phoneNumber != "0")) {
                     notifications.each() {
+                        if (askAlexa != null && askAlexa.toBoolean() == true) sendLocationEvent(name: "AskAlexaMsgQueue", value: "Device Monitor", isStateChange: true, descriptionText: it)
                         send(it)
                     }
                 }
@@ -880,6 +882,7 @@ def resend() {
 
         if ((location.contactBookEnabled && recipients) || (sendPushMessage != "No") || (phoneNumber != "0")) {
             notifications.each() {
+                if (askAlexaRemind != null && askAlexaRemind.toBoolean() == true) sendLocationEvent(name: "AskAlexaMsgQueue", value: "Device Monitor", isStateChange: true, descriptionText: it)
                 send(it)
             }
         }
@@ -908,8 +911,7 @@ def subscribeDevices() {
 
 private send(message) {
     log.debug("Send Notification Function")
-        // check that contact book is enabled and recipients selected
-    if (askAlexa != null && askAlexa.toBoolean() == true) sendLocationEvent(name: "AskAlexaMsgQueue", value: "Device Monitor", isStateChange: true, descriptionText: message)
+    // check that contact book is enabled and recipients selected
     if (location.contactBookEnabled && recipients) {
         log.debug("Sending notifications to selected contacts...")
         sendNotificationToContacts(message, recipients)
