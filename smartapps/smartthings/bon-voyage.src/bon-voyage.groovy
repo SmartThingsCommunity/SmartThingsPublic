@@ -49,13 +49,15 @@ preferences {
 
 def installed() {
 	log.debug "Installed with settings: ${settings}"
-	log.debug "Current mode = ${location.mode}, people = ${people.collect{it.label + ': ' + it.currentPresence}}"
+        // commented out log statement because presence sensor label could contain user's name
+	//log.debug "Current mode = ${location.mode}, people = ${people.collect{it.label + ': ' + it.currentPresence}}"
 	subscribe(people, "presence", presence)
 }
 
 def updated() {
 	log.debug "Updated with settings: ${settings}"
-	log.debug "Current mode = ${location.mode}, people = ${people.collect{it.label + ': ' + it.currentPresence}}"
+        // commented out log statement because presence sensor label could contain user's name
+	//log.debug "Current mode = ${location.mode}, people = ${people.collect{it.label + ': ' + it.currentPresence}}"
 	unsubscribe()
 	subscribe(people, "presence", presence)
 }
