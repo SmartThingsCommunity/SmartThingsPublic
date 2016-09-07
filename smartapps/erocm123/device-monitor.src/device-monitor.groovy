@@ -165,6 +165,7 @@ def pageSettings() {
             }
             input "resendTime", "time", title: "Resend alerts at this time each day", required: false
             input "deviceOnline", "boolean", title: "Send a notification if a device comes back online?", required: false, submitOnChange: false, value: false
+            input "askAlexa", "boolean", title: "Send notifications to Ask Alexa?", required: false, submitOnChange: false, value: false
         }
         section([title: "Other Options", mobileOnly: true]) {
             label title: "Assign a name for the app (optional)", required: false
@@ -546,8 +547,6 @@ def doCheck() {
                     [name: "$it.name", id: "$it.id"]
                 ]
             }
-            log.debug tempMap 
-            log.debug batterylistUniqueSorted
             def batterylistMapDiff = batterylistUniqueSorted - tempMap
 
             if ((batteryerrorlistMapDiff || batterylistMapDiff || badlistMapDiff || errorlistMapDiff || delaylistCheckMapDiff || onlinedelaylistMapDiff || onlineerrorlistMapDiff || onlinebadlistMapDiff) && ((location.contactBookEnabled && recipients) || (sendPushMessage != "No") || (phoneNumber != "0"))) {
@@ -910,6 +909,7 @@ def subscribeDevices() {
 private send(message) {
     log.debug("Send Notification Function")
         // check that contact book is enabled and recipients selected
+    if (askAlexa != null && askAlexa.toBoolean() == true) sendLocationEvent(name: "AskAlexaMsgQueue", value: "Device Monitor", isStateChange: true, descriptionText: message)
     if (location.contactBookEnabled && recipients) {
         log.debug("Sending notifications to selected contacts...")
         sendNotificationToContacts(message, recipients)
