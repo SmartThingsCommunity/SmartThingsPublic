@@ -156,6 +156,7 @@ def residentMotion(evt)
 	//    	startReArmSequence()
 	//    }
 	//}
+  unsubscribe(‘residentMotion’)
 }
 
 def contact(evt)
@@ -214,7 +215,7 @@ def checkForReArm()
 	}
 	else {
 		log.warn "checkForReArm: lastIntruderMotion was null, unable to check for re-arming intrusion detection"
-	}	
+	}
 }
 
 private startAlarmSequence()
