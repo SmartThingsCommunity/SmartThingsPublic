@@ -27,6 +27,7 @@
  *  0.12 (06/03/2016) - Added press type indicator to display last tap/hold press status
  *  0.13 (06/13/2016) - Added dim level ramp-up option for remote dim commands
  *  0.14 (08/01/2016) - Corrected 60% dim rate limit test that was inadvertently pulled into repository
+ *  0.15 (09/06/2016) - Added Firmware version info. Removed unused lit indicator button.
  *
  */
  
@@ -92,16 +93,14 @@ metadata {
             }
 		}
 
-		standardTile("indicator", "device.indicatorStatus", width: 2, height: 2, inactiveLabel: false, decoration: "flat") {
-			state "when off", action:"indicator.indicatorWhenOn", icon:"st.indicators.lit-when-off"
-			state "when on", action:"indicator.indicatorNever", icon:"st.indicators.lit-when-on"
-			state "never", action:"indicator.indicatorWhenOff", icon:"st.indicators.never-lit"
-		}
-
 		standardTile("refresh", "device.switch", width: 2, height: 2, inactiveLabel: false, decoration: "flat") {
 			state "default", label:'', action:"refresh.refresh", icon:"st.secondary.refresh"
 		}
-
+        
+        valueTile("firmwareVersion", "device.firmwareVersion", width:2, height: 2, decoration: "flat", inactiveLabel: false) {
+			state "default", label: '${currentValue}'
+		}
+        
 		valueTile("level", "device.level", inactiveLabel: false, decoration: "flat", width: 2, height: 2) {
 			state "level", label:'${currentValue} %', unit:"%", backgroundColor:"#ffffff"
 		}
@@ -131,7 +130,8 @@ metadata {
 		} 
 
 		main(["switch"])
-		details(["switch", "level", "indicator", "refresh","tapUp2","tapUp3","holdUp","tapDown2","tapDown3","holdDown"])
+        
+		details(["switch","tapUp2","tapUp3","holdUp","tapDown2","tapDown3","holdDown","level","firmwareVersion", "refresh",])
 	}
 }
 
@@ -193,11 +193,34 @@ def zwaveEvent(physicalgraph.zwave.commands.hailv1.Hail cmd) {
 def zwaveEvent(physicalgraph.zwave.commands.manufacturerspecificv2.ManufacturerSpecificReport cmd) {
 	log.debug "manufacturerId:   ${cmd.manufacturerId}"
 	log.debug "manufacturerName: ${cmd.manufacturerName}"
+    state.manufacturer=cmd.manufacturerName
 	log.debug "productId:        ${cmd.productId}"
 	log.debug "productTypeId:    ${cmd.productTypeId}"
 	def msr = String.format("%04X-%04X-%04X", cmd.manufacturerId, cmd.productTypeId, cmd.productId)
-	updateDataValue("MSR", msr)
-	createEvent([descriptionText: "$device.displayName MSR: $msr", isStateChange: false])
+	updateDataValue("MSR", msr)	
+    setFirmwareVersion()
+    createEvent([descriptionText: "$device.displayName MSR: $msr", isStateChange: false])
+}
+
+def zwaveEvent(physicalgraph.zwave.commands.versionv1.VersionReport cmd) {	
+    //updateDataValue("applicationVersion", "${cmd.applicationVersion}")
+    log.debug ("received Version Report")
+    log.debug "applicationVersion:      ${cmd.applicationVersion}"
+    log.debug "applicationSubVersion:   ${cmd.applicationSubVersion}"
+    state.firmwareVersion=cmd.applicationVersion+'.'+cmd.applicationSubVersion
+    log.debug "zWaveLibraryType:        ${cmd.zWaveLibraryType}"
+    log.debug "zWaveProtocolVersion:    ${cmd.zWaveProtocolVersion}"
+    log.debug "zWaveProtocolSubVersion: ${cmd.zWaveProtocolSubVersion}"
+    setFirmwareVersion()
+    createEvent([descriptionText: "Firmware V"+state.firmwareVersion, isStateChange: false])
+}
+
+def zwaveEvent(physicalgraph.zwave.commands.firmwareupdatemdv2.FirmwareMdReport cmd) { 
+    log.debug ("received Firmware Report")
+    log.debug "checksum:       ${cmd.checksum}"
+    log.debug "firmwareId:     ${cmd.firmwareId}"
+    log.debug "manufacturerId: ${cmd.manufacturerId}"
+    [:]
 }
 
 def zwaveEvent(physicalgraph.zwave.commands.switchmultilevelv1.SwitchMultilevelStopLevelChange cmd) {
@@ -259,38 +282,8 @@ def poll() {
 }
 
 def refresh() {
-	log.debug "refresh() is called"
+	log.debug "refresh() called"
     configure()
-	def commands = []
-	commands << zwave.switchMultilevelV1.switchMultilevelGet().format()
-	if (getDataValue("MSR") == null) {
-		commands << zwave.manufacturerSpecificV1.manufacturerSpecificGet().format()
-	}
-	delayBetween(commands,100)
-}
-
-def indicatorWhenOn() {
-	sendEvent(name: "indicatorStatus", value: "when on")
-	zwave.configurationV1.configurationSet(configurationValue: [1], parameterNumber: 3, size: 1).format()
-}
-
-def indicatorWhenOff() {
-	sendEvent(name: "indicatorStatus", value: "when off")
-	zwave.configurationV1.configurationSet(configurationValue: [0], parameterNumber: 3, size: 1).format()
-}
-
-def indicatorNever() {
-	sendEvent(name: "indicatorStatus", value: "never")
-	zwave.configurationV1.configurationSet(configurationValue: [2], parameterNumber: 3, size: 1).format()
-}
-
-def invertSwitch(invert=true) {
-	if (invert) {
-		zwave.configurationV1.configurationSet(configurationValue: [1], parameterNumber: 4, size: 1).format()
-	}
-	else {
-		zwave.configurationV1.configurationSet(configurationValue: [0], parameterNumber: 4, size: 1).format()
-	}
 }
 
 def zwaveEvent(physicalgraph.zwave.commands.centralscenev1.CentralSceneNotification cmd) {
@@ -424,10 +417,33 @@ def holdDown() {
 	sendEvent(holdDownResponse("digital"))
 } 
 
+def setFirmwareVersion() {
+   def versionInfo = ''
+   if (state.manufacturer)
+   {
+      versionInfo=state.manufacturer+' '
+   }
+   if (state.firmwareVersion)
+   {
+      versionInfo=versionInfo+"Firmware V"+state.firmwareVersion
+   }
+   else 
+   {
+     versionInfo=versionInfo+"Firmware unknown"
+   }   
+   sendEvent(name: "firmwareVersion",  value: versionInfo, isStateChange: true)
+}
+
 def configure() {
-    setDimRatePrefs()
-    sendEvent(name: "numberOfButtons", value: 6, displayed: false)
-    zwave.switchMultilevelV1.switchMultilevelGet().format()
+   log.debug ("configure() called")
+   setDimRatePrefs()
+   sendEvent(name: "numberOfButtons", value: 6, displayed: false)
+   def commands = []
+   commands << zwave.switchMultilevelV1.switchMultilevelGet().format()
+   commands << zwave.manufacturerSpecificV1.manufacturerSpecificGet().format()
+   commands << zwave.versionV1.versionGet().format()
+   //commands << zwave.firmwareUpdateMdV2.firmwareMdGet().format()
+   delayBetween(commands,300)
 }
 
 def setDimRatePrefs() 
@@ -470,5 +486,6 @@ def setDimRatePrefs()
 
 def updated()
 {
+   log.debug ("updated called")
    setDimRatePrefs()
 }
