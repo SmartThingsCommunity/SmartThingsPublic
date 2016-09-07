@@ -372,7 +372,7 @@ def updateDevices() {
 		def childDevice = getChildDevice(device.id)
 		selectors.add("${device.id}")
 		if (!childDevice) {
-			log.info("Adding device ${device.id}: ${device.product}")
+			// log.info("Adding device ${device.id}: ${device.product}")
 			def data = [
 					label: device.label,
 					level: Math.round((device.brightness ?: 1) * 100),
