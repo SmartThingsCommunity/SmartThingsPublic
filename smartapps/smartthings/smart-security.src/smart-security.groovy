@@ -71,7 +71,7 @@ def updated() {
 private subscribeToEvents()
 {
 	subscribe intrusionMotions, "motion", intruderMotion
-	subscribe residentMotions, "motion", residentMotion
+	// subscribe residentMotions, "motion", residentMotion
 	subscribe intrusionContacts, "contact", contact
 	subscribe alarms, "alarm", alarm
 	subscribe(app, appTouch)
