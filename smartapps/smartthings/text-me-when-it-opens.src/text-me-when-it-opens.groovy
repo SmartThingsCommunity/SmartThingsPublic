@@ -49,7 +49,6 @@ def updated()
 def contactOpenHandler(evt) {
 	log.trace "$evt.value: $evt, $settings"
   log.debug "$contact1 was opened, sending text"
-	// log.debug "$contact1 was opened, texting $phone1"
     if (location.contactBookEnabled) {
         sendNotificationToContacts("Your ${contact1.label ?: contact1.name} was opened", recipients)
     }
