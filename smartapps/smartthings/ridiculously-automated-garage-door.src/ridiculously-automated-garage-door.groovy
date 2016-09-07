@@ -67,7 +67,7 @@ def updated() {
 }
 
 def subscribe() {
-	log.debug "present: ${cars.collect{it.displayName + ': ' + it.currentPresence}}"
+	// log.debug "present: ${cars.collect{it.displayName + ': ' + it.currentPresence}}"
 	subscribe(doorSensor, "contact", garageDoorContact)
 
 	subscribe(cars, "presence", carPresence)
