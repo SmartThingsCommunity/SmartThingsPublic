@@ -757,6 +757,10 @@ def isValidSource(macAddress) {
 	return (vbridges?.find {"${it.value.mac}" == macAddress}) != null
 }
 
+def isInBulbDiscovery() {
+	return state.inBulbDiscovery
+}
+
 /////////////////////////////////////
 //CHILD DEVICE METHODS
 /////////////////////////////////////
