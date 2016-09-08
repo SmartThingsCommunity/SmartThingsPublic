@@ -64,7 +64,7 @@ def meterHandler(evt) {
     def lastValue = atomicState.lastValue as double
     atomicState.lastValue = meterValue
 
-    def dUnit ? evt.unit : "Watts"
+    def dUnit = evt.unit ?: "Watts"
 
     def aboveThresholdValue = aboveThreshold as int
     if (meterValue > aboveThresholdValue) {
