@@ -58,6 +58,7 @@ def authPage() {
 	if (canInstallLabs()) {
 
 		def redirectUrl = getBuildRedirectUrl()
+		// log.debug "Redirect url = ${redirectUrl}"
 
 		if (state.authToken) {
 			description = "Tap 'Next' to proceed"
@@ -112,10 +113,14 @@ def oauthInitUrl() {
 		scope: "read_station"
 	]
 
+	// log.debug "REDIRECT URL: ${getVendorAuthPath() + toQueryString(oauthParams)}"
+
 	redirect (location: getVendorAuthPath() + toQueryString(oauthParams))
 }
 
 def callback() {
+	// log.debug "callback()>> params: $params, params.code ${params.code}"
+
 	def code = params.code
 	def oauthState = params.state
 
@@ -130,12 +135,16 @@ def callback() {
 			scope: "read_station"
 		]
 
+		// log.debug "TOKEN URL: ${getVendorTokenPath() + toQueryString(tokenParams)}"
+
 		def tokenUrl = getVendorTokenPath()
 		def params = [
 			uri: tokenUrl,
 			contentType: 'application/x-www-form-urlencoded',
 			body: tokenParams
 		]
+
+		// log.debug "PARAMS: ${params}"
 
 		httpPost(params) { resp ->
 
@@ -147,6 +156,7 @@ def callback() {
 				state.refreshToken = data.refresh_token
 				state.authToken = data.access_token
 				state.tokenExpires = now() + (data.expires_in * 1000)
+				// log.debug "swapped token: $resp.data"
 			}
 		}
 
@@ -282,6 +292,7 @@ def refreshToken() {
 
 			response.data.each {key, value ->
 				def data = slurper.parseText(key);
+				// log.debug "Data: $data"
 
 				state.refreshToken = data.refresh_token
 				state.accessToken = data.access_token
