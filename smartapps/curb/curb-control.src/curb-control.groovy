@@ -68,10 +68,10 @@ private void updateAll(devices) {
 		switch(command) {
 			case "on":
 				devices.on()
-				break;
+				break
 			case "off":
 				devices.off()
-				break;
+				break
 			default:
 				httpError(403, "Access denied. This command is not supported by current capability.")
 		}
@@ -89,10 +89,10 @@ private void update(devices) {
 			switch(command) {
 				case "on":
 					device.on()
-					break;
+					break
 				case "off":
 					device.off()
-					break;
+					break
 				default:
 					httpError(403, "Access denied. This command is not supported by current capability.")
 			}
