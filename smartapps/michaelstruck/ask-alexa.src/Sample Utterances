@@ -4,6 +4,15 @@ ListOperation about {Type}
 ListOperation for a list of {Type}
 ListOperation list
 
+DeviceOperation to {Operator} {Param} in the {Device}
+DeviceOperation to {Operator} {Param} in the {Device} level {Num}
+DeviceOperation to {Operator} {Param} level {Num} in the {Device}
+DeviceOperation to {Operator} {Param} to level {Num} in the {Device}
+DeviceOperation to {Operator} {Param} in the {Device}
+DeviceOperation {Device} {Operator} {Param}
+DeviceOperation {Device} {Operator} {Param} level {Num}
+DeviceOperation {Device} {Operator} level {Num} {Param} 
+
 DeviceOperation to turn {Operator} the {Device}
 DeviceOperation to turn {Operator} {Device}
 DeviceOperation to turn {Device} {Operator}
