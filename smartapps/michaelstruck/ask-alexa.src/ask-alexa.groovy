@@ -1,13 +1,13 @@
 /**
  *  Ask Alexa 
  *
- *  Version 2.1.3 - 9/7/16 Copyright © 2016 Michael Struck
+ *  Version 2.1.3 - 9/8/16 Copyright © 2016 Michael Struck
  *  Special thanks for Keith DeLong for overall code and assistance; Barry Burke for Weather Underground Integration; jhamstead for Ecobee climate modes, Yves Racine for My Ecobee thermostat tips
  * 
  *  Version information prior to 2.1.2 listed here: https://github.com/MichaelStruck/SmartThingsPublic/blob/master/smartapps/michaelstruck/ask-alexa.src/Ask%20Alexa%20Version%20History.md
  *
  *  Version 2.1.2b (8/26/16) Fixed weather report issue; Added Ecobee (Connect) code for thermostat climate modes; added brief device action reply; REST URL visibility option for Control Macros; brighten/dim commands for dimmers
- *  Version 2.1.3 (9/7/16) Added My Ecobee tips; code optimization/bug fixes; implementation of Message Queue; added acceleration sensors
+ *  Version 2.1.3 (9/8/16) Added My Ecobee tips; code optimization/bug fixes; implementation of Message Queue; added acceleration sensors
  *
  *  Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except
  *  in compliance with the License. You may obtain a copy of the License at:
@@ -2803,7 +2803,7 @@ def msgHandler(evt) {
 	state.msgQueue<<["date":evt.date.getTime(),"appName":evt.value,"msg":evt.descriptionText,"id":evt.unit]
 }
 def msgDeleteHandler(evt){
-	if (state.msgQueue.size()>0){
+	if (state.msgQueue.size()>0 && evt.unit && evt.value){
     	log.debug evt.value + " is deleting messages from the message queue."
     	state.msgQueue.removeAll{it.appName==evt.value && it.id==evt.unit}
     } 
@@ -3018,7 +3018,7 @@ def getURLs(){
 //Version/Copyright/Information/Help-----------------------------------------------------------
 private def textAppName() { return "Ask Alexa" }	
 private def textVersion() {
-    def version = "SmartApp Version: 2.1.3 (09/07/2016)", lambdaVersion = state.lambdaCode ? "\n" + state.lambdaCode : ""
+    def version = "SmartApp Version: 2.1.3 (09/08/2016)", lambdaVersion = state.lambdaCode ? "\n" + state.lambdaCode : ""
     return "${version}${lambdaVersion}"
 }
 private def versionInt(){ return 213 }
