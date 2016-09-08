@@ -2803,9 +2803,12 @@ def msgHandler(evt) {
 	state.msgQueue<<["date":evt.date.getTime(),"appName":evt.value,"msg":evt.descriptionText,"id":evt.unit]
 }
 def msgDeleteHandler(evt){
-	if (state.msgQueue.size()>0 && evt.unit && evt.value){
-    	log.debug evt.value + " is deleting messages from the message queue."
-    	state.msgQueue.removeAll{it.appName==evt.value && it.id==evt.unit}
+	if (state.msgQueue.size()>0){
+    	if (evt.unit && evt.value){
+        	log.debug evt.value + " is deleting messages from the message queue."
+    		state.msgQueue.removeAll{it.appName==evt.value && it.id==evt.unit}
+        }
+        else log.debug "Incorrect delete parameters sent to message queue. Nothing was deleted"
     } 
     else log.debug "Message queue is empty. No messages were deleted."
 }
