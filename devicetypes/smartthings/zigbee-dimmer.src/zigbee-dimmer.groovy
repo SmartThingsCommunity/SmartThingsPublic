@@ -104,6 +104,6 @@ def refresh() {
 def configure() {
     log.debug "Configuring Reporting and Bindings."
     // Enrolls device to Device-Watch with 3 x Reporting interval 30min
-    sendEvent(name: "checkInterval", value: 1800, displayed: false, data: [protocol: "zigbee"])
-    zigbee.onOffConfig() + zigbee.levelConfig() + zigbee.onOffRefresh() + zigbee.levelRefresh()
+    sendEvent(name: "checkInterval", value: 240, displayed: false, data: [protocol: "zigbee"])
+    zigbee.onOffConfig(0, 120) + zigbee.levelConfig() + zigbee.onOffRefresh() + zigbee.levelRefresh()
 }
