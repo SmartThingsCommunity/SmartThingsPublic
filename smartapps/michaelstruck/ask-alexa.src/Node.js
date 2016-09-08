@@ -1,7 +1,7 @@
 /**
  *  Ask Alexa - Lambda Code
  *
- *  Version 1.2.2 - 8/27/16 Copyright © 2016 Michael Struck
+ *  Version 1.2.2 - 9/6/16 Copyright © 2016 Michael Struck
  *  Special thanks for Keith DeLong for code and assistance 
  *  
  *  Version 1.0.0 - Initial release
@@ -16,7 +16,7 @@
  *  Version 1.1.7 - Code reorganization to allow for future functions
  *  Version 1.2.0a - Addition of courtesy personality responses
  *  Version 1.2.1 - Addition of the Snarky personality responses and change in macro password structure
- *  Version 1.2.2 - Addition of small translation item
+ *  Version 1.2.2 - Addition of small translation items
  * 
  *  Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except
  *  in compliance with the License. You may obtain a copy of the License at:
@@ -31,7 +31,7 @@
 'use strict';
 exports.handler = function( event, context ) {
     var versionTxt = '1.2.2';
-    var versionDate= '08/27/2016';
+    var versionDate= '09/06/2016';
     var versionNum = '122';
     var https = require( 'https' );
     // Paste app code here between the breaks------------------------------------------------
@@ -217,6 +217,7 @@ function output( text, context, card, complete, pName) {
         text = text.replace(/(\.\d)0 /g,'$1 ');
         text = text.replace(/\s+/g, " ");
         text = text.replace(/ 0(\d,) /g, " $1 ");
+        text = text.replace(/ A /g, " a ")
     }
     var response = {
         outputSpeech: {
@@ -360,6 +361,7 @@ function cvtList(){
     var wordCvt=[{txt:" N ",cvt: " north " },{txt:" S ",cvt: " south "},{txt:" E ",cvt: " east " },{ txt:" W ",cvt: " west " },{ txt:" ESE ",cvt: " east-south east " },
     {txt:" NW ",cvt: " northwest " },{txt:" SW ",cvt: " southwest "},{ txt:" NE ",cvt: " northeast " },{ txt:" SE ",cvt: " southeast "},{txt:" NNW ",cvt: " north-north west " },
     {txt:" SSW ",cvt: " south-south west " },{ txt:" NNE ",cvt: " north-north east " },{ txt:" SSE ",cvt: " south-south east " },{txt:" WNW ",cvt: " west-north west " },
-    { txt:" WSW ",cvt: " west-south west " },{txt:" ENE ",cvt: " east-north east "},{ txt: " mph", cvt: ' mi/h'},{ txt: " MPH", cvt: ' mi/h'},{txt: " kph", cvt: ' km/h'}];
+    { txt:" WSW ",cvt: " west-south west " },{txt:" ENE ",cvt: " east-north east "},{ txt: " mph", cvt: ' mi/h'},{ txt: " MPH", cvt: ' mi/h'},{txt: " kph", cvt: ' km/h'},
+    {txt: " .", cvt: '.'}, {txt:"eco",cvt:"Eeco"}]
     return wordCvt;
 }
