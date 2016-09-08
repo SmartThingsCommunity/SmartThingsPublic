@@ -60,7 +60,7 @@ preferences {
   page(name: "tmaConfigurePAGE")
 }
 
-def apiURL(path = '/') 			 { return "https://api.prod.bgchprod.info:443/omnia${path}" }
+def apiURL(path = '/') 			 { return "https://api-prod.bgchprod.info:443/omnia${path}" }
 
 def startPage() {
 	if (parent) {
