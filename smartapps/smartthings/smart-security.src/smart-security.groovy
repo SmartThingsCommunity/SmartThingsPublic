@@ -156,7 +156,7 @@ def residentMotion(evt)
 	//    	startReArmSequence()
 	//    }
 	//}
-  unsubscribe(‘residentMotion’)
+  unsubscribe(residentMotions)
 }
 
 def contact(evt)
