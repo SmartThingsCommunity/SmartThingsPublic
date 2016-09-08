@@ -233,6 +233,8 @@ private Map getBatteryResult(rawValue) {
 				def maxVolts = 3.0
 				def pct = (volts - minVolts) / (maxVolts - minVolts)
 				def roundedPct = Math.round(pct * 100)
+				if (roundedPct <= 0)
+					roundedPct = 1
 				result.value = Math.min(100, roundedPct)
 				result.descriptionText = "{{ device.displayName }} battery was {{ value }}%"
 			}
@@ -305,7 +307,7 @@ def refresh() {
 }
 
 def configure() {
-	sendEvent(name: "checkInterval", value: 14400, displayed: false, data: [protocol: "zigbee"])
+	sendEvent(name: "checkInterval", value: 240, displayed: false, data: [protocol: "zigbee"])
 
 	String zigbeeEui = swapEndianHex(device.hub.zigbeeEui)
 	log.debug "Configuring Reporting, IAS CIE, and Bindings."
@@ -314,7 +316,7 @@ def configure() {
 		"send 0x${device.deviceNetworkId} 1 1", "delay 500",
 
 		"zdo bind 0x${device.deviceNetworkId} ${endpointId} 1 1 {${device.zigbeeId}} {}", "delay 500",
-		"zcl global send-me-a-report 1 0x20 0x20 30 21600 {01}",		//checkin time 6 hrs
+		"zcl global send-me-a-report 1 0x20 0x20 30 60 {01}",		//checkin time 6 hrs
 		"send 0x${device.deviceNetworkId} 1 1", "delay 500",
 
 		"zdo bind 0x${device.deviceNetworkId} ${endpointId} 1 0x402 {${device.zigbeeId}} {}", "delay 500",

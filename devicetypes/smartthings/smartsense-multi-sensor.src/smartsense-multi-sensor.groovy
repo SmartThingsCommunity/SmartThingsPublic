@@ -313,6 +313,8 @@ private Map getBatteryResult(rawValue) {
 				def maxVolts = 3.0
 				def pct = (volts - minVolts) / (maxVolts - minVolts)
 				def roundedPct = Math.round(pct * 100)
+				if (roundedPct <= 0)
+					roundedPct = 1
 				result.value = Math.min(100, roundedPct)
 				result.descriptionText = "{{ device.displayName }} battery was {{ value }}%"
 			}
@@ -414,12 +416,12 @@ def refresh() {
 }
 
 def configure() {
-	sendEvent(name: "checkInterval", value: 14400, displayed: false, data: [protocol: "zigbee"])
+	sendEvent(name: "checkInterval", value: 240, displayed: false, data: [protocol: "zigbee"])
 
 	log.debug "Configuring Reporting"
 
 	def configCmds = enrollResponse() +
-			zigbee.batteryConfig() +
+			zigbee.configureReporting(0x0001, 0x0020, 0x20, 10, 60, 01) +
 			zigbee.temperatureConfig() +
 			zigbee.configureReporting(0xFC02, 0x0010, 0x18, 10, 3600, 0x01, [mfgCode: manufacturerCode]) +
 			zigbee.configureReporting(0xFC02, 0x0012, 0x29, 1, 3600, 0x0001, [mfgCode: manufacturerCode]) +
