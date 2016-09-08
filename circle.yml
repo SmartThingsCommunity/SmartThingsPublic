@@ -3,9 +3,9 @@ machine:
     version:
       oraclejdk8
 
-dependencies:
-  override:
-    - echo "Nothing to do."
+checkout:
+  post:
+    - ./gradlew compileSmartappsGroovy compileDevicetypesGroovy
 
 test:
   override:
