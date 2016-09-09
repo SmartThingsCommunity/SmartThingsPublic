@@ -1,13 +1,13 @@
 /**
  *  Ask Alexa 
  *
- *  Version 2.1.3 - 9/8/16 Copyright © 2016 Michael Struck
+ *  Version 2.1.3a - 9/8/16 Copyright © 2016 Michael Struck
  *  Special thanks for Keith DeLong for overall code and assistance; Barry Burke for Weather Underground Integration; jhamstead for Ecobee climate modes, Yves Racine for My Ecobee thermostat tips
  * 
  *  Version information prior to 2.1.2 listed here: https://github.com/MichaelStruck/SmartThingsPublic/blob/master/smartapps/michaelstruck/ask-alexa.src/Ask%20Alexa%20Version%20History.md
  *
  *  Version 2.1.2b (8/26/16) Fixed weather report issue; Added Ecobee (Connect) code for thermostat climate modes; added brief device action reply; REST URL visibility option for Control Macros; brighten/dim commands for dimmers
- *  Version 2.1.3 (9/8/16) Added My Ecobee tips; code optimization/bug fixes; implementation of Message Queue; added acceleration sensors
+ *  Version 2.1.3a (9/8/16) Added My Ecobee tips; code optimization/bug fixes; implementation of Message Queue; added acceleration sensors
  *
  *  Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except
  *  in compliance with the License. You may obtain a copy of the License at:
@@ -832,7 +832,7 @@ def processBegin(){
     return ["OOD":OOD, "continue":contOption,"personality":persType, "SmartAppVer": versionLong(),"IName":invocationName,"pName":pName]
 }
 def sendJSON(outputTxt){
-    if (outputTxt && msgQueueNotify && state.msgQueue.size() && outputTxt[-3..-1] != "%5%") {
+    if (outputTxt && msgQueueNotify && state.msgQueue && state.msgQueue.size() && outputTxt[-3..-1] != "%5%") {
         def msgCount = state.msgQueue.size(), msgS= msgCount==0 || msgCount>1 ? msgCount+ " messages" : msgCount+" message"
         def ending= outputTxt[-3..-1]
         outputTxt = outputTxt.replaceAll("${ending}", "Please note: you have ${msgS} in your message queue. ${ending}")
@@ -3021,12 +3021,12 @@ def getURLs(){
 //Version/Copyright/Information/Help-----------------------------------------------------------
 private def textAppName() { return "Ask Alexa" }	
 private def textVersion() {
-    def version = "SmartApp Version: 2.1.3 (09/08/2016)", lambdaVersion = state.lambdaCode ? "\n" + state.lambdaCode : ""
+    def version = "SmartApp Version: 2.1.3a (09/08/2016)", lambdaVersion = state.lambdaCode ? "\n" + state.lambdaCode : ""
     return "${version}${lambdaVersion}"
 }
 private def versionInt(){ return 213 }
 private def LambdaReq() { return 122 }
-private def versionLong(){ return "2.1.3" }
+private def versionLong(){ return "2.1.3a" }
 private def textCopyright() {return "Copyright © 2016 Michael Struck" }
 private def textLicense() {
 	def text = "Licensed under the Apache License, Version 2.0 (the 'License'); you may not use this file except in compliance with the License. "+
