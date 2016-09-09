@@ -89,10 +89,11 @@ def parse(String description) {
 
 def zwaveEvent(physicalgraph.zwave.commands.basicv1.BasicReport cmd)
 {
-    // Not used
+    log.debug "BasicReport $cmd"
 }
 
 def zwaveEvent(physicalgraph.zwave.commands.basicv1.BasicSet cmd) {
+    log.debug "BasicSet $cmd"
 	sendEvent(name: "switch", value: cmd.value ? "on" : "off", type: "digital")
     def result = []
     result << zwave.multiChannelV3.multiChannelCmdEncap(sourceEndPoint:1, destinationEndPoint:1, commandClass:37, command:2)
@@ -102,6 +103,7 @@ def zwaveEvent(physicalgraph.zwave.commands.basicv1.BasicSet cmd) {
 
 def zwaveEvent(physicalgraph.zwave.commands.switchbinaryv1.SwitchBinaryReport cmd)
 {
+    log.debug "SwitchBinaryReport $cmd"
     sendEvent(name: "switch", value: cmd.value ? "on" : "off", type: "digital")
     def result = []
     result << zwave.multiChannelV3.multiChannelCmdEncap(sourceEndPoint:1, destinationEndPoint:1, commandClass:37, command:2)
@@ -110,6 +112,7 @@ def zwaveEvent(physicalgraph.zwave.commands.switchbinaryv1.SwitchBinaryReport cm
 }
 
 def zwaveEvent(physicalgraph.zwave.commands.meterv3.MeterReport cmd) {
+    log.debug "MeterReport $cmd"
     def result
     if (cmd.scale == 0) {
         result = createEvent(name: "energy", value: cmd.scaledMeterValue, unit: "kWh")
@@ -141,6 +144,7 @@ def zwaveEvent(physicalgraph.zwave.commands.multichannelv3.MultiChannelCapabilit
 }
 
 def zwaveEvent(physicalgraph.zwave.commands.multichannelv3.MultiChannelCmdEncap cmd) {
+   log.debug "MultiChannelCmdEncap $cmd"
    def map = [ name: "switch$cmd.sourceEndPoint" ]
     
    switch(cmd.commandClass) {
@@ -180,6 +184,7 @@ def zwaveEvent(physicalgraph.zwave.commands.multichannelv3.MultiChannelCmdEncap 
 }
 
 def zwaveEvent(physicalgraph.zwave.Command cmd) {
+    log.debug "Unhandled event $cmd"
     // This will capture any commands not handled by other instances of zwaveEvent
     // and is recommended for development so you can see every command the device sends
     return createEvent(descriptionText: "${device.displayName}: ${cmd}")
