@@ -21,13 +21,12 @@ definition(
    author: "Eric Maycock",
    description: "Creates virtual devices and keeps them in sync with the selected physical device. Inteded to be used with devices with multiple relays, SmartLife RGBW, and Fibaro RGBW.",
    category: "Convenience",
-   iconUrl: "https://raw.githubusercontent.com/erocm123/SmartThingsPublic/master/smartapps/erocm123/smartlife-rgbw-light-connect.src/smartlife-rgbw-icon.png",
-   iconX2Url: "https://raw.githubusercontent.com/erocm123/SmartThingsPublic/master/smartapps/erocm123/smartlife-rgbw-light-connect.src/smartlife-rgbw-icon-2x.png",
-   iconX3Url: "https://raw.githubusercontent.com/erocm123/SmartThingsPublic/master/smartapps/erocm123/smartlife-rgbw-light-connect.src/smartlife-rgbw-icon-3x.png"
+   iconUrl: "https://github.com/erocm123/SmartThingsPublic/raw/master/smartapps/erocm123/virtual-device-sync.src/virtual-device-sync.png",
+   iconX2Url: "https://github.com/erocm123/SmartThingsPublic/raw/master/smartapps/erocm123/virtual-device-sync.src/virtual-device-sync-2x.png",
+   iconX3Url: "https://github.com/erocm123/SmartThingsPublic/raw/master/smartapps/erocm123/virtual-device-sync.src/virtual-device-sync-3x.png"
 )
 
 preferences {
-    
     page(name: "setupPage")
     page(name: "createVirtual")
     page(name: "removeVirtual")
