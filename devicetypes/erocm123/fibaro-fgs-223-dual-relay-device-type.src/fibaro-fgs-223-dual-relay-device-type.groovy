@@ -184,7 +184,7 @@ def zwaveEvent(physicalgraph.zwave.commands.multichannelv3.MultiChannelCmdEncap 
 }
 
 def zwaveEvent(physicalgraph.zwave.commands.associationv2.AssociationReport cmd) {
-	logging("AssociationReport $cmd")
+	log.debug "AssociationReport $cmd"
     state."association${cmd.groupingIdentifier}" = cmd.nodeId[0]
 }
 
@@ -224,12 +224,12 @@ def configure() {
 	log.debug "configure() called"
     def cmds = []
     if(!state.association4 || state.association4 == "" || state.association4 != "1"){
-       logging("Setting association group 4")
+       log.debug "Setting association group 4"
        cmds << zwave.associationV2.associationSet(groupingIdentifier:4, nodeId:zwaveHubNodeId)
        cmds << zwave.associationV2.associationGet(groupingIdentifier:4)
     }
     if(!state.association5 || state.association5 == "" || state.association5 != "1"){
-       logging("Setting association group 5")
+       log.debug "Setting association group 5"
        cmds << zwave.associationV2.associationSet(groupingIdentifier:5, nodeId:zwaveHubNodeId)
        cmds << zwave.associationV2.associationGet(groupingIdentifier:5)
     }
