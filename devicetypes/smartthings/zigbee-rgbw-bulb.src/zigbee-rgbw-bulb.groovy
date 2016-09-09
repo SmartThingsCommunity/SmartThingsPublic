@@ -85,12 +85,6 @@ def parse(String description) {
     def event = zigbee.getEvent(description)
     if (event) {
         log.debug event
-        // Temporary fix for the case when Device is OFFLINE and is connected again
-        if (state.lastActivity == null){
-            state.lastActivity = now()
-            sendEvent(name: "deviceWatch-lastActivity", value: state.lastActivity, description: "Last Activity is on ${new Date((long)state.lastActivity)}", displayed: false, isStateChange: true)
-        }
-        state.lastActivity = now()
         if (event.name=="level" && event.value==0) {}
         else {
             if (event.name=="colorTemperature") {
@@ -130,15 +124,7 @@ def off() {
  * PING is used by Device-Watch in attempt to reach the Device
  * */
 def ping() {
-
-    if (state.lastActivity < (now() - (1000 * device.currentValue("checkInterval"))) ){
-        log.info "ping, alive=no, lastActivity=${state.lastActivity}"
-        state.lastActivity = null
-        return zigbee.onOffRefresh()
-    } else {
-        log.info "ping, alive=yes, lastActivity=${state.lastActivity}"
-        sendEvent(name: "deviceWatch-lastActivity", value: state.lastActivity, description: "Last Activity is on ${new Date((long)state.lastActivity)}", displayed: false, isStateChange: true)
-    }
+    return zigbee.onOffRefresh()
 }
 
 def refresh() {
