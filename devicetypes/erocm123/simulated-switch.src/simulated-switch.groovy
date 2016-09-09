@@ -33,7 +33,7 @@ metadata {
 			state "default", label: 'Off', action: "offPhysical", backgroundColor: "#ffffff"
 		}
         main "switch"
-		details(["switch","on","off"])
+		details(["switch"])
 	}
 }
 
