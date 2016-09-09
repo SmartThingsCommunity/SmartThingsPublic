@@ -183,6 +183,11 @@ def zwaveEvent(physicalgraph.zwave.commands.multichannelv3.MultiChannelCmdEncap 
     events
 }
 
+def zwaveEvent(physicalgraph.zwave.commands.associationv2.AssociationReport cmd) {
+	logging("AssociationReport $cmd")
+    state."association${cmd.groupingIdentifier}" = cmd.nodeId[0]
+}
+
 def zwaveEvent(physicalgraph.zwave.Command cmd) {
     log.debug "Unhandled event $cmd"
     // This will capture any commands not handled by other instances of zwaveEvent
@@ -218,8 +223,16 @@ def poll() {
 def configure() {
 	log.debug "configure() called"
     def cmds = []
-    cmds << zwave.configurationV1.configurationSet(parameterNumber: 3, configurationValue: [1])
-    cmds << zwave.configurationV1.configurationGet(parameterNumber: 3)
+    if(!state.association4 || state.association4 == "" || state.association4 != "1"){
+       logging("Setting association group 4")
+       cmds << zwave.associationV2.associationSet(groupingIdentifier:4, nodeId:zwaveHubNodeId)
+       cmds << zwave.associationV2.associationGet(groupingIdentifier:4)
+    }
+    if(!state.association5 || state.association5 == "" || state.association5 != "1"){
+       logging("Setting association group 5")
+       cmds << zwave.associationV2.associationSet(groupingIdentifier:5, nodeId:zwaveHubNodeId)
+       cmds << zwave.associationV2.associationGet(groupingIdentifier:5)
+    }
     if (switchType != null && switchType.value != null) {
     switch (switchType.value as String) {
        case "1":
