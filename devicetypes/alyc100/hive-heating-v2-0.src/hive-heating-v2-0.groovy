@@ -29,11 +29,15 @@
  *	v2.1.5e - Another attempt to fix blank temperature reading on Android.
  *	v2.1.5f - Allow decimal value for boost temperature. Changes to VALUE_CONTROL method to match latest ST docs.
  *	v2.1.5g - Changes to tile display for iOS app v2.1.2
+ *
+ *	10.09.2016
+ *	v2.1.6 - Allow a maximum temperature threshold to be set.
  */
 preferences 
 {
 	input( "boostInterval", "number", title: "Boost Interval (minutes)", description: "Boost interval amount in minutes", required: false, defaultValue: 10 )
     input( "boostTemp", "decimal", title: "Boost Temperature (°C)", description: "Boost interval amount in Centigrade", required: false, defaultValue: 22, range: "5..32" )
+    input( "maxTempThreshold", "decimal", title: "Max Temperature Threshold (°C)", description: "Set the maximum temperature threshold in Centigrade", required: false, defaultValue: 32, range: "5..32" )
 	input( "disableDevice", "bool", title: "Disable Hive Heating?", required: false, defaultValue: false )
 }
 
@@ -261,10 +265,17 @@ def getBoostIntervalValue() {
 }
 
 def getBoostTempValue() {
-	if (settings.boostInterval == null) {
+	if (settings.boostTemp == null) {
     	return "22"
     } 
     return settings.boostTemp
+}
+
+def getMaxTempThreshold() {
+	if (settings.maxTempThreshold == null) {
+    	return "32"
+    } 
+    return settings.maxTempThreshold
 }
 
 def boostTimeUp() {
@@ -417,6 +428,21 @@ def poll() {
         def heatingSetpoint = data.nodes.attributes.targetHeatTemperature.reportedValue[0]
         temperature = String.format("%2.1f",temperature)
        	heatingSetpoint = String.format("%2.1f",heatingSetpoint)
+        
+        //Check heating set point against maximum threshold value.
+        log.debug "Maximum temperature threshold set to: " + getMaxTempThreshold()
+        if ((getMaxTempThreshold() as BigDecimal) < (heatingSetpoint as BigDecimal))
+        {
+        	log.debug "Maximum temperature threshold exceeded. " + heatingSetpoint + " is higher than " + getMaxTempThreshold()
+        	//Force temperature threshold to Hive API.
+        	// {"nodes":[{"attributes":{"targetHeatTemperature":{"targetValue":11}}}]}    
+    		def args = [
+        		nodes: [	[attributes: [targetHeatTemperature: [targetValue: getMaxTempThreshold()]]]]
+            ]               
+    
+    		parent.apiPUT("/nodes/${device.deviceNetworkId}", args)   
+            heatingSetpoint = String.format("%2.1f", getMaxTempThreshold())
+        }
         
         // convert temperature reading of 1 degree to 7 as Hive app does
         if (heatingSetpoint == "1.0") {
