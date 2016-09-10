@@ -34,6 +34,9 @@
  *
  *	06.09.2016
  *	v2.3.1 - Improve device detection
+ *
+ *	10.09.2016
+ *	v2.3.2 - Added notification option for maximum temperature threshold breach for Hive heating devices.
  */
 definition(
 		name: "Hive (Connect)",
@@ -127,7 +130,7 @@ def devicesSelected() {
 }
 
 def preferencesSelected() {
-	return (sendPush || sendSMS != null) && (maxtemp != null || mintemp != null || sendBoost || sendOff || sendManual || sendSchedule) ? "complete" : null
+	return (sendPush || sendSMS != null) && (maxtemp != null || mintemp != null || sendBoost || sendOff || sendManual || sendSchedule || sendMaxThresholdBreach) ? "complete" : null
 }
 
 def tmaDescription() {
@@ -198,6 +201,7 @@ def getPreferencesString() {
   if (sendOff) listString += "Off, "
   if (sendManual) listString += "Manual, "
   if (sendSchedule) listString += "Schedule, "
+  if (sendMaxThresholdBreach) listString += "Max Temp Threshold Breach, "
   if (listString != "") listString = listString.substring(0, listString.length() - 2)
   return listString
 }
@@ -263,6 +267,9 @@ def preferencesPAGE() {
     }
     section("Thermostat Min Temperature") {
     	input ("mintemp", "number", title: "Alert when temperature is below this value", required: false, defaultValue: 10)
+    }
+    section("Thermostat Max Threshold Breach") {
+    	input "sendMaxThresholdBreach", "bool", title: "Notify when max temp threshold has been breached?", required: false, defaultValue: false
     }
   }
 }
@@ -483,6 +490,7 @@ def initialize() {
     		}
     		if (childDevice.typeName == "Hive Heating V2.0") {
     			subscribe(childDevice, "temperature", tempHandler, [filterEvents: false])
+                subscribe(childDevice, "maxtempthresholdbreach", evtHandler, [filterEvents: false])
     		}
   		}
   	}
@@ -492,6 +500,14 @@ def initialize() {
 }
 
 //Event Handler for Connect App
+def evtHandler(evt) {
+	def msg
+    if (evt.name == "maxtempthresholdbreach") {
+    	msg = "Auto adjusting set temperature of ${evt.displayName} as current set temperature of ${evt.value}°C is above maximum threshold."
+    	if (settings.sendMaxThresholdBreach) generateNotification(msg)    
+    }
+}
+
 def tempHandler(evt) {
 	def msg
     log.trace "temperature: $evt.value, $evt"
