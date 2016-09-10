@@ -32,6 +32,7 @@
  *
  *	10.09.2016
  *	v2.1.6 - Allow a maximum temperature threshold to be set.
+ *	v2.1.6b - Added event for maximum temperature threshold breach.
  */
 preferences 
 {
@@ -434,6 +435,7 @@ def poll() {
         if ((getMaxTempThreshold() as BigDecimal) < (heatingSetpoint as BigDecimal))
         {
         	log.debug "Maximum temperature threshold exceeded. " + heatingSetpoint + " is higher than " + getMaxTempThreshold()
+            sendEvent(name: 'maxtempthresholdbreach', value: heatingSetpoint, unit: "C", displayed: false)
         	//Force temperature threshold to Hive API.
         	// {"nodes":[{"attributes":{"targetHeatTemperature":{"targetValue":11}}}]}    
     		def args = [
@@ -441,7 +443,7 @@ def poll() {
             ]               
     
     		parent.apiPUT("/nodes/${device.deviceNetworkId}", args)   
-            heatingSetpoint = String.format("%2.1f", getMaxTempThreshold())
+            heatingSetpoint = String.format("%2.1f", getMaxTempThreshold())           
         }
         
         // convert temperature reading of 1 degree to 7 as Hive app does
