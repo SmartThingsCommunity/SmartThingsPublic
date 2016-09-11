@@ -17,6 +17,7 @@ metadata {
 		capability "Switch"
 		capability "Refresh"
 		capability "Sensor"
+		capability "Health Check"
 
 		command "setAdjustedColor"
         command "reset"
@@ -62,6 +63,10 @@ metadata {
 		main(["rich-control"])
 		details(["rich-control", "colorTempSliderControl", "colorTemp", "reset", "refresh"])
 	}
+}
+
+void installed() {
+	sendEvent(name: "checkInterval", value: 60 * 30, data: [protocol: "lan"], displayed: false)
 }
 
 // parse events into attributes
@@ -181,4 +186,8 @@ def verifyPercent(percent) {
         log.warn "$percent is not 0-100"
         return false
     }
+}
+
+def ping() {
+    log.trace "${parent.ping(this)}"
 }
