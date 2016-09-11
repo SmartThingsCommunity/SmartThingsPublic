@@ -22,8 +22,10 @@
  *
  *	Changelog:
  *
- *	1.0 (03/26/2016) -	Initial 1.0 Release
- *  1.1 (05/11/2016) -  Added Button capability option
+ *  1.2 (09/11/2016) -  Added preference option for push-to-break button (vs. default push-to-make) doorbell circuit. Note: enabling
+ *                      this setting will also result in a doorbell notification if power is lost to the doorbell transformer.
+ *  1.1 (05/11/2016) -  Added Button capability option.
+ *	1.0 (03/26/2016) -	Initial 1.0 Release.
  *
  */
  
@@ -43,6 +45,10 @@ metadata {
 	simulator {
 	}
 
+    preferences {
+        input "pushToBreak", "bool", title: "Doorbell circuit is push-to-break instead of push-to-make",  defaultValue: false,  displayDuringSetup: true, required: false	
+    }
+    
 	tiles(scale: 2) {
     	multiAttributeTile(name:"status", type: "generic", width: 6, height: 4){
 				tileAttribute ("device.status", key: "PRIMARY_CONTROL") {
@@ -67,6 +73,7 @@ metadata {
 def refresh() {
 	   sendEvent(name: "status", value: "off", displayed: false, isStateChange: true)
 	   sendEvent(name: "switch", value: "off", displayed: false, isStateChange: true)
+       updated()
  }
 
 def zwaveEvent(physicalgraph.zwave.commands.wakeupv2.WakeUpNotification cmd) {
@@ -116,14 +123,17 @@ def zwaveEvent(physicalgraph.zwave.commands.notificationv3.NotificationReport cm
        // button press if messages arrive out of order or are missed
     
        if (!state.bellIsRinging) { 
-           // bell is not ringing - signal a button press
-           state.bellIsRinging = true 
-           log.debug("${device.displayName} notification event = $cmd.event triggered switch on")
-           runIn(10, switchOffVerification) //set to turn off switch in 10 seconds in case the button release event is missed   
-	       result += createEvent(name: "status", value: "doorbell", descriptionText: "Button pressed", isStateChange: true)
-	       result += createEvent(name: "switch", value: "on", displayed: false, isStateChange: true)
-           result += createEvent(name: "momentary", value: "pushed", displayed: false, isStateChange: true)
-           result += createEvent(name: "button", value: "pushed", data: [buttonNumber: "1"], displayed: false, isStateChange: true)
+           if (!pushToBreak | cmd.event == 0) //Event 1 will never be a doorbell trigger for a push to break circuit
+           {
+             // bell is not ringing - signal a button press
+             state.bellIsRinging = true 
+             log.debug("${device.displayName} notification event = $cmd.event triggered switch on")
+             runIn(10, switchOffVerification) //set to turn off switch in 10 seconds in case the button release event is missed   
+	         result += createEvent(name: "status", value: "doorbell", descriptionText: "Button pressed", isStateChange: true)
+	         result += createEvent(name: "switch", value: "on", displayed: false, isStateChange: true)
+             result += createEvent(name: "momentary", value: "pushed", displayed: false, isStateChange: true)
+             result += createEvent(name: "button", value: "pushed", data: [buttonNumber: "1"], displayed: false, isStateChange: true)
+           }
        } else {
            // bell is ringing - signal a button release
            state.bellIsRinging = false
@@ -149,3 +159,16 @@ def parse(description) {
 	  }
 	  return result
 }
+
+def updated() 
+{
+   log.debug ("updating")
+   if (pushToBreak)
+   {
+      state.pushToBreak = true
+   }
+   else
+   {
+      state.pushToBreak = false
+   } 
+}   
