@@ -17,3 +17,5 @@
  *  Version 2.0.8c (8/2/16) Restructured code to allow future personality features; fixed thermostat heating/cooling logic; added minium value command to theromstat, added tide information; added window shade control
  *  Version 2.1.0 (8/7/16) Code fixes/optimization, added moon rise/set, added Courtesy personality; added 'easter egg' command for thermostats:AC
  *  Version 2.1.1c (8/17/16) Added SONOS code to allow for memory slots; added Snarky personality; allow for PINs used in macros
+ *  Version 2.1.2b (8/26/16) Fixed weather report issue; Added Ecobee (Connect) code for thermostat climate modes; added brief device action reply; REST URL visibility option for Control Macros; brighten/dim commands for dimmers
+ *  Version 2.1.3a (9/8/16) Added My Ecobee tips; code optimization/bug fixes; implementation of Message Queue; added acceleration sensors
