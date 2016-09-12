@@ -113,9 +113,10 @@ def refresh() {
 
 def configure() {
     log.debug "Configuring Reporting and Bindings."
-    // Enrolls device to Device-Watch with 3 x Reporting interval 30min
-    sendEvent(name: "checkInterval", value: 1800, displayed: false, data: [protocol: "zigbee"])
-    zigbee.onOffConfig() + zigbee.levelConfig() + zigbee.colorTemperatureConfig() + zigbee.onOffRefresh() + zigbee.levelRefresh() + zigbee.colorTemperatureRefresh()
+    // Device-Watch allows 3 check-in misses from device. 300 seconds x 3 = 15min
+    sendEvent(name: "checkInterval", value: 900, displayed: false, data: [protocol: "zigbee"])
+    // OnOff minReportTime 0 seconds, maxReportTime 5 min. Reporting interval if no activity
+    zigbee.onOffConfig(0, 300) + zigbee.levelConfig() + zigbee.colorTemperatureConfig() + zigbee.onOffRefresh() + zigbee.levelRefresh() + zigbee.colorTemperatureRefresh()
 }
 
 def setColorTemperature(value) {
