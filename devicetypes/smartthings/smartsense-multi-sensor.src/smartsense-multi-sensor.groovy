@@ -127,13 +127,6 @@ def parse(String description) {
 		map = parseIasMessage(description)
 	}
 
-	// Temporary fix for the case when Device is OFFLINE and is connected again
-	if (state.lastActivity == null){
-		state.lastActivity = now()
-		sendEvent(name: "deviceWatch-lastActivity", value: state.lastActivity, description: "Last Activity is on ${new Date((long)state.lastActivity)}", displayed: false, isStateChange: true)
-	}
-	state.lastActivity = now()
-
 	def result = map ? createEvent(map) : null
 
 	if (description?.startsWith('enroll request')) {
@@ -378,15 +371,7 @@ private getAccelerationResult(numValue) {
  * PING is used by Device-Watch in attempt to reach the Device
  * */
 def ping() {
-
-	if (state.lastActivity < (now() - (1000 * device.currentValue("checkInterval"))) ){
-		log.info "ping, alive=no, lastActivity=${state.lastActivity}"
-		state.lastActivity = null
-		return zigbee.readAttribute(0x001, 0x0020) // Read the Battery Level
-	} else {
-		log.info "ping, alive=yes, lastActivity=${state.lastActivity}"
-		sendEvent(name: "deviceWatch-lastActivity", value: state.lastActivity, description: "Last Activity is on ${new Date((long)state.lastActivity)}", displayed: false, isStateChange: true)
-	}
+	return zigbee.readAttribute(0x001, 0x0020) // Read the Battery Level
 }
 
 def refresh() {
