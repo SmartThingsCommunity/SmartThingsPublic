@@ -740,16 +740,21 @@ private void checkBridgeStatus() {
 				d.sendEvent(name: "idNumber", value: it.value.idNumber)
 		    }
 
-	        if (it.value.lastActivity < time) { // it.value.lastActivity != null &&
-	            log.warn "Bridge $it.key is Offline"
-	            d.sendEvent(name: "status", value: "Offline")
-                // set all lights to offline since bridge is not reachable
-                state.bulbs?.each {it.value.online = false}
-	        } else {
+			if (it.value.lastActivity < time) { // it.value.lastActivity != null &&
+				log.warn "Bridge $it.key is Offline"
+				d.sendEvent(name: "status", value: "Offline")
+
+				state.bulbs?.each {
+					it.value.online = false
+				}
+				getChildDevices().each {
+					it.sendEvent(name: "DeviceWatch-DeviceOffline", value: "offline")
+				}
+			} else {
 				d.sendEvent(name: "status", value: "Online")//setOnline(false)
-	        }
-	    }
-    }
+			}
+		}
+	}
 }
 
 def isValidSource(macAddress) {
@@ -955,6 +960,7 @@ private handlePoll(body) {
 			} else {
 				state.bulbs[bulb.key]?.online = false
 				log.warn "$device is not reachable by Hue bridge"
+				device.sendEvent(name: "DeviceWatch-DeviceOffline", value: "offline")
 			}
 		}
 	}
