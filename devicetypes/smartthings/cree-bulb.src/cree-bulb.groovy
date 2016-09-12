@@ -103,6 +103,8 @@ def poll() {
 
 def configure() {
     log.debug "Configuring Reporting and Bindings."
-    sendEvent(name: "checkInterval", value: 1200, displayed: false, data: [protocol: "zigbee"])
-    zigbee.onOffConfig() + zigbee.levelConfig() + zigbee.onOffRefresh() + zigbee.levelRefresh()
+    // Device-Watch allows 3 check-in misses from device. 300 seconds x 3 = 15min
+    sendEvent(name: "checkInterval", value: 900, displayed: false, data: [protocol: "zigbee"])
+    // minReportTime 0 seconds, maxReportTime 5 min. Reporting interval if no activity
+    zigbee.onOffConfig(0, 300) + zigbee.levelConfig() + zigbee.onOffRefresh() + zigbee.levelRefresh()
 }
