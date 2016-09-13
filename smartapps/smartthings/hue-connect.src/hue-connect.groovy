@@ -724,13 +724,13 @@ private void updateBridgeStatus(childDevice) {
 }
 
 /**
- * Check if all Hue bridges have been heard from in the last 16 minutes, if not an Offline event will be sent
- * for the bridge. Also, set ID number on bridge if not done previously.
+ * Check if all Hue bridges have been heard from in the last 11 minutes, if not an Offline event will be sent
+ * for the bridge and all connected lights. Also, set ID number on bridge if not done previously.
  */
 private void checkBridgeStatus() {
     def bridges = getHueBridges()
-    // Check if each bridge has been heard from within the last 16 minutes (3 poll intervals times 5 minutes plus buffer)
-    def time = now() - (1000 * 60 * 30)
+    // Check if each bridge has been heard from within the last 11 minutes (2 poll intervals times 5 minutes plus buffer)
+    def time = now() - (1000 * 60 * 11)
     bridges.each {
         def d = getChildDevice(it.value.mac)
 	    if(d) {
@@ -740,16 +740,21 @@ private void checkBridgeStatus() {
 				d.sendEvent(name: "idNumber", value: it.value.idNumber)
 		    }
 
-	        if (it.value.lastActivity < time) { // it.value.lastActivity != null &&
-	            log.warn "Bridge $it.key is Offline"
-	            d.sendEvent(name: "status", value: "Offline")
-                // set all lights to offline since bridge is not reachable
-                state.bulbs?.each {it.value.online = false}
-	        } else {
+			if (it.value.lastActivity < time) { // it.value.lastActivity != null &&
+				log.warn "Bridge $it.key is Offline"
+				d.sendEvent(name: "status", value: "Offline")
+
+				state.bulbs?.each {
+					it.value.online = false
+				}
+				getChildDevices().each {
+					it.sendEvent(name: "DeviceWatch-DeviceOffline", value: "offline", isStateChange: true, displayed: false)
+				}
+			} else {
 				d.sendEvent(name: "status", value: "Online")//setOnline(false)
-	        }
-	    }
-    }
+			}
+		}
+	}
 }
 
 def isValidSource(macAddress) {
@@ -955,6 +960,7 @@ private handlePoll(body) {
 			} else {
 				state.bulbs[bulb.key]?.online = false
 				log.warn "$device is not reachable by Hue bridge"
+				device.sendEvent(name: "DeviceWatch-DeviceOffline", value: "offline", displayed: false, isStateChange: true)
 			}
 		}
 	}
