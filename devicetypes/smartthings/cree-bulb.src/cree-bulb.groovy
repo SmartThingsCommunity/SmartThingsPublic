@@ -67,12 +67,6 @@ def parse(String description) {
     def resultMap = zigbee.getEvent(description)
     if (resultMap) {
         sendEvent(resultMap)
-        // Temporary fix for the case when Device is OFFLINE and is connected again
-        if (state.lastActivity == null){
-            state.lastActivity = now()
-            sendEvent(name: "deviceWatch-lastActivity", value: state.lastActivity, description: "Last Activity is on ${new Date((long)state.lastActivity)}", displayed: false, isStateChange: true)
-        }
-        state.lastActivity = now()
     }
     else {
         log.debug "DID NOT PARSE MESSAGE for description : $description"
@@ -96,15 +90,7 @@ def setLevel(value) {
  * PING is used by Device-Watch in attempt to reach the Device
  * */
 def ping() {
-
-    if (state.lastActivity < (now() - (1000 * device.currentValue("checkInterval"))) ){
-        log.info "ping, alive=no, lastActivity=${state.lastActivity}"
-        state.lastActivity = null
-        return zigbee.levelRefresh()
-    } else {
-        log.info "ping, alive=yes, lastActivity=${state.lastActivity}"
-        sendEvent(name: "deviceWatch-lastActivity", value: state.lastActivity, description: "Last Activity is on ${new Date((long)state.lastActivity)}", displayed: false, isStateChange: true)
-    }
+    return zigbee.levelRefresh()
 }
 
 def refresh() {
@@ -117,6 +103,8 @@ def poll() {
 
 def configure() {
     log.debug "Configuring Reporting and Bindings."
-    sendEvent(name: "checkInterval", value: 1200, displayed: false, data: [protocol: "zigbee"])
-    zigbee.onOffConfig() + zigbee.levelConfig() + zigbee.onOffRefresh() + zigbee.levelRefresh()
+    // Device-Watch allows 3 check-in misses from device. 300 seconds x 3 = 15min
+    sendEvent(name: "checkInterval", value: 900, displayed: false, data: [protocol: "zigbee"])
+    // minReportTime 0 seconds, maxReportTime 5 min. Reporting interval if no activity
+    zigbee.onOffConfig(0, 300) + zigbee.levelConfig() + zigbee.onOffRefresh() + zigbee.levelRefresh()
 }

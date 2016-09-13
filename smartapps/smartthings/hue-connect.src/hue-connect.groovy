@@ -95,8 +95,7 @@ def bridgeDiscoveryFailed() {
 	}
 }
 
-def bridgeLinking()
-{
+def bridgeLinking() {
 	int linkRefreshcount = !state.linkRefreshcount ? 0 : state.linkRefreshcount as int
 	state.linkRefreshcount = linkRefreshcount + 1
 	def refreshInterval = 3
@@ -171,7 +170,7 @@ def bulbDiscovery() {
 
 	return dynamicPage(name:"bulbDiscovery", title:"Light Discovery Started!", nextPage:"", refreshInterval:refreshInterval, install:true, uninstall: true) {
 		section("Please wait while we discover your Hue Lights. Discovery can take five minutes or more, so sit back and relax! Select your device below once discovered.") {
-			input "selectedBulbs", "enum", required:false, title:"Select Hue Lights to add (${numFound} found)", multiple:true, options:newLights
+			input "selectedBulbs", "enum", required:false, title:"Select Hue Lights to add (${numFound} found)", multiple:true, submitOnChange: true, options:newLights
 			paragraph title: "Previously added Hue Lights (${existingLights.size()} added)", existingLightsDescription
 		}
 		section {
@@ -328,7 +327,7 @@ def bulbListHandler(hub, data = "") {
         def object = new groovy.json.JsonSlurper().parseText(data)
         object.each { k,v ->
             if (v instanceof Map)
-                bulbs[k] = [id: k, name: v.name, type: v.type, modelid: v.modelid, hub:hub]
+                bulbs[k] = [id: k, name: v.name, type: v.type, modelid: v.modelid, hub:hub, online: v.state?.reachable]
         }
     }
     def bridge = null
@@ -447,7 +446,6 @@ def addBridge() {
 					def childDevice = getChildDevice(d.deviceNetworkId)
 					updateBridgeStatus(childDevice)
 					childDevice.sendEvent(name: "idNumber", value: idNumber)
-
 
 					if (vbridge.value.ip && vbridge.value.port) {
 						if (vbridge.value.ip.contains(".")) {
@@ -649,8 +647,7 @@ def locationHandler(evt) {
             	}
             }
 		}
-	}
-	else if (parsedEvent.headers && parsedEvent.body) {
+	} else if (parsedEvent.headers && parsedEvent.body) {
 		log.trace "HUE BRIDGE RESPONSES"
 		def headerString = parsedEvent.headers.toString()
 		if (headerString?.contains("xml")) {
@@ -727,13 +724,13 @@ private void updateBridgeStatus(childDevice) {
 }
 
 /**
- * Check if all Hue bridges have been heard from in the last 16 minutes, if not an Offline event will be sent
- * for the bridge. Also, set ID number on bridge if not done previously.
+ * Check if all Hue bridges have been heard from in the last 11 minutes, if not an Offline event will be sent
+ * for the bridge and all connected lights. Also, set ID number on bridge if not done previously.
  */
 private void checkBridgeStatus() {
     def bridges = getHueBridges()
-    // Check if each bridge has been heard from within the last 16 minutes (3 poll intervals times 5 minutes plus buffer)
-    def time = now() - (1000 * 60 * 16)
+    // Check if each bridge has been heard from within the last 11 minutes (2 poll intervals times 5 minutes plus buffer)
+    def time = now() - (1000 * 60 * 11)
     bridges.each {
         def d = getChildDevice(it.value.mac)
 	    if(d) {
@@ -743,14 +740,21 @@ private void checkBridgeStatus() {
 				d.sendEvent(name: "idNumber", value: it.value.idNumber)
 		    }
 
-	        if (it.value.lastActivity < time) { // it.value.lastActivity != null &&
-	            log.warn "Bridge $it.key is Offline"
-	            d.sendEvent(name: "status", value: "Offline")
-	        } else {
+			if (it.value.lastActivity < time) { // it.value.lastActivity != null &&
+				log.warn "Bridge $it.key is Offline"
+				d.sendEvent(name: "status", value: "Offline")
+
+				state.bulbs?.each {
+					it.value.online = false
+				}
+				getChildDevices().each {
+					it.sendEvent(name: "DeviceWatch-DeviceOffline", value: "offline", isStateChange: true, displayed: false)
+				}
+			} else {
 				d.sendEvent(name: "status", value: "Online")//setOnline(false)
-	        }
-	    }
-    }
+			}
+		}
+	}
 }
 
 def isValidSource(macAddress) {
@@ -785,8 +789,7 @@ def parse(childDevice, description) {
             if (body instanceof java.util.Map) {
                 // get (poll) reponse
                 return handlePoll(body)
-            }
-            else {
+			} else {
 				//put response
 				return handleCommandResponse(body)
             }
@@ -883,36 +886,40 @@ private handleCommandResponse(body) {
 	// scan entire response before sending events to make sure they are always in the same order
 	def updates = [:]
 
-                body.each { payload ->
-                    log.debug $payload
+	body.each { payload ->
+		log.debug $payload
 
 		if (payload?.success) {
-                        def childDeviceNetworkId = app.id + "/"
-                        def eventType
+			def childDeviceNetworkId = app.id + "/"
+			def eventType
 			payload.success.each { k, v ->
 				def data = k.split("/")
 				if (data.length == 5) {
 					childDeviceNetworkId = app.id + "/" + k.split("/")[2]
 					if (!updates[childDeviceNetworkId])
 						updates[childDeviceNetworkId] = [:]
-                            eventType = k.split("/")[4]
+					eventType = k.split("/")[4]
 					updates[childDeviceNetworkId]."$eventType" = v
 				}
 			}
 		} else if (payload.error) {
 			log.warn "Error returned from Hue bridge error = ${body?.error}"
-                            }
-                        }
+		}
+	}
 
 	// send events for each update found above (order of events should be same as handlePoll())
 	updates.each { childDeviceNetworkId, params ->
 		def device = getChildDevice(childDeviceNetworkId)
-		sendBasicEvents(device, "on", params.on)
-		sendBasicEvents(device, "bri", params.bri)
-		sendColorEvents(device, params.xy, params.hue, params.sat, params.ct)
-                    }
+		def id = getId(device)
+		// If device is offline, then don't send events which will update device watch
+		if (isOnline(id)) {
+			sendBasicEvents(device, "on", params.on)
+			sendBasicEvents(device, "bri", params.bri)
+			sendColorEvents(device, params.xy, params.hue, params.sat, params.ct)
+		}
+	}
 	return []
-                    }
+}
 
 /**
  * Handles a response to a poll (GET) sent to the Hue Bridge.
@@ -932,26 +939,33 @@ private handleCommandResponse(body) {
  * @return empty array
  */
 private handlePoll(body) {
-	if (state.updating) {
-		// If user just executed commands, then ignore poll to not confuse the turning on/off state
-		return []
-                }
-
 	def bulbs = getChildDevices()
 	for (bulb in body) {
 		def device = bulbs.find{it.deviceNetworkId == "${app.id}/${bulb.key}"}
 		if (device) {
 			if (bulb.value.state?.reachable) {
-				sendBasicEvents(device, "on", bulb.value?.state?.on)
-				sendBasicEvents(device, "bri", bulb.value?.state?.bri)
-				sendColorEvents(device, bulb.value?.state?.xy, bulb.value?.state?.hue, bulb.value?.state?.sat, bulb.value?.state?.ct, bulb.value?.state?.colormode)
+				if (state.bulbs[bulb.key]?.online == false) {
+					// light just came back online, notify device watch
+					def lastActivity = now()
+					device.sendEvent(name: "deviceWatch-status", value: "ONLINE", description: "Last Activity is on ${new Date((long) lastActivity)}", displayed: false, isStateChange: true)
+				}
+				state.bulbs[bulb.key]?.online = true
+
+				// If user just executed commands, then do not send events to avoid confusing the turning on/off state
+				if (!state.updating) {
+					sendBasicEvents(device, "on", bulb.value?.state?.on)
+					sendBasicEvents(device, "bri", bulb.value?.state?.bri)
+					sendColorEvents(device, bulb.value?.state?.xy, bulb.value?.state?.hue, bulb.value?.state?.sat, bulb.value?.state?.ct, bulb.value?.state?.colormode)
+				}
 			} else {
+				state.bulbs[bulb.key]?.online = false
 				log.warn "$device is not reachable by Hue bridge"
-                    }
-                }
-            }
-		return []
+				device.sendEvent(name: "DeviceWatch-DeviceOffline", value: "offline", displayed: false, isStateChange: true)
+			}
+		}
 	}
+	return []
+}
 
 private updateInProgress() {
 	state.updating = true
@@ -980,22 +994,34 @@ def hubVerification(bodytext) {
 
 def on(childDevice) {
 	log.debug "Executing 'on'"
+	def id = getId(childDevice)
+	if (!isOnline(id)) {
+		return "Bulb is unreachable"
+	}
 	updateInProgress()
 	createSwitchEvent(childDevice, "on")
-	put("lights/${getId(childDevice)}/state", [on: true])
+	put("lights/$id/state", [on: true])
     return "Bulb is turning On"
 }
 
 def off(childDevice) {
 	log.debug "Executing 'off'"
+	def id = getId(childDevice)
+	if (!isOnline(id)) {
+		return "Bulb is unreachable"
+	}
 	updateInProgress()
 	createSwitchEvent(childDevice, "off")
-	put("lights/${getId(childDevice)}/state", [on: false])
+	put("lights/$id/state", [on: false])
     return "Bulb is turning Off"
 }
 
 def setLevel(childDevice, percent) {
 	log.debug "Executing 'setLevel'"
+	def id = getId(childDevice)
+	if (!isOnline(id)) {
+		return "Bulb is unreachable"
+	}
     updateInProgress()
 	// 1 - 254
     def level
@@ -1010,48 +1036,64 @@ def setLevel(childDevice, percent) {
 	// that means that the light will still be on when on is called next time
 	// Lets emulate that here
 	if (percent > 0) {
-		put("lights/${getId(childDevice)}/state", [bri: level, on: true])
+		put("lights/$id/state", [bri: level, on: true])
 	} else {
-		put("lights/${getId(childDevice)}/state", [on: false])
+		put("lights/$id/state", [on: false])
 	}
 	return "Setting level to $percent"
 }
 
 def setSaturation(childDevice, percent) {
 	log.debug "Executing 'setSaturation($percent)'"
-    updateInProgress()
+	def id = getId(childDevice)
+	if (!isOnline(id)) {
+		return "Bulb is unreachable"
+	}
+
+	updateInProgress()
 	// 0 - 254
 	def level = Math.min(Math.round(percent * 254 / 100), 254)
 	// TODO should this be done by app only or should we default to on?
 	createSwitchEvent(childDevice, "on")
-	put("lights/${getId(childDevice)}/state", [sat: level, on: true])
+	put("lights/$id/state", [sat: level, on: true])
 	return "Setting saturation to $percent"
 }
 
 def setHue(childDevice, percent) {
 	log.debug "Executing 'setHue($percent)'"
+	def id = getId(childDevice)
+	if (!isOnline(id)) {
+		return "Bulb is unreachable"
+	}
     updateInProgress()
 	// 0 - 65535
 	def level =	Math.min(Math.round(percent * 65535 / 100), 65535)
 	// TODO should this be done by app only or should we default to on?
 	createSwitchEvent(childDevice, "on")
-	put("lights/${getId(childDevice)}/state", [hue: level, on: true])
+	put("lights/$id/state", [hue: level, on: true])
 	return "Setting hue to $percent"
 }
 
 def setColorTemperature(childDevice, huesettings) {
 	log.debug "Executing 'setColorTemperature($huesettings)'"
+	def id = getId(childDevice)
+	if (!isOnline(id)) {
+		return "Bulb is unreachable"
+	}
     updateInProgress()
 	// 153 (6500K) to 500 (2000K)
 	def ct = hueSettings == 6500 ? 153 : Math.round(1000000/huesettings)
 	createSwitchEvent(childDevice, "on")
-	put("lights/${getId(childDevice)}/state", [ct: ct, on: true])
+	put("lights/$id/state", [ct: ct, on: true])
 	return "Setting color temperature to $percent"
 }
 
 def setColor(childDevice, huesettings) {
     log.debug "Executing 'setColor($huesettings)'"
-
+	def id = getId(childDevice)
+	if (!isOnline(id)) {
+		return "Bulb is unreachable"
+	}
     updateInProgress()
 
     def value = [:]
@@ -1108,15 +1150,23 @@ def setColor(childDevice, huesettings) {
         value.on = false
 
 	createSwitchEvent(childDevice, value.on ? "on" : "off")
-    put("lights/${getId(childDevice)}/state", value)
+    put("lights/$id/state", value)
 	return "Setting color to $value"
+}
+
+def ping(childDevice) {
+	if (isOnline(getId(childDevice))) {
+		childDevice.sendEvent(name: "deviceWatch-ping", value: "ONLINE", description: "Hue Light is reachable", displayed: false, isStateChange: true)
+		return "Device is Online"
+	} else {
+		return "Device is Offline"
+	}
 }
 
 private getId(childDevice) {
 	if (childDevice.device?.deviceNetworkId?.startsWith("HUE")) {
 		return childDevice.device?.deviceNetworkId[3..-1]
-	}
-	else {
+	} else {
 		return childDevice.device?.deviceNetworkId.split("/")[-1]
 	}
 }
@@ -1127,8 +1177,11 @@ private poll() {
 	log.debug "GET: $host$uri"
 	sendHubCommand(new physicalgraph.device.HubAction("""GET ${uri} HTTP/1.1
 HOST: ${host}
-
 """, physicalgraph.device.Protocol.LAN, selectedHue))
+}
+
+private isOnline(id) {
+	return (state.bulbs[id].online != null && state.bulbs[id].online) || state.bulbs[id].online == null
 }
 
 private put(path, body) {
@@ -1198,7 +1251,7 @@ def convertBulbListToMap() {
 		if (state.bulbs instanceof java.util.List) {
 			def map = [:]
 			state.bulbs.unique {it.id}.each { bulb ->
-				map << ["${bulb.id}":["id":bulb.id, "name":bulb.name, "type": bulb.type, "modelid": bulb.modelid, "hub":bulb.hub]]
+				map << ["${bulb.id}":["id":bulb.id, "name":bulb.name, "type": bulb.type, "modelid": bulb.modelid, "hub":bulb.hub, "online": bulb.online]]
 			}
 			state.bulbs = map
 		}
