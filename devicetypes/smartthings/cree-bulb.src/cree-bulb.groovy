@@ -19,7 +19,6 @@ metadata {
 
         capability "Actuator"
         capability "Configuration"
-        capability "Polling"
         capability "Refresh"
         capability "Switch"
         capability "Switch Level"
@@ -97,11 +96,14 @@ def refresh() {
     zigbee.onOffRefresh() + zigbee.levelRefresh() + zigbee.onOffConfig() + zigbee.levelConfig()
 }
 
-def poll() {
-    zigbee.onOffRefresh() + zigbee.levelRefresh()
+def healthPoll() {
+    def cmds = zigbee.onOffRefresh() + zigbee.levelRefresh()
+    cmds.each{ sendHubCommand(new physicalgraph.device.HubAction(it))}
 }
 
 def configure() {
+    unschedule()
+    schedule("0 0/5 * * * ? *", "healthPoll")
     log.debug "Configuring Reporting and Bindings."
     // Device-Watch allows 3 check-in misses from device. 300 seconds x 3 = 15min
     sendEvent(name: "checkInterval", value: 900, displayed: false, data: [protocol: "zigbee"])
