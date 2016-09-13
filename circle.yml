@@ -5,7 +5,7 @@ machine:
 
 checkout:
   post:
-    - ./gradlew compileSmartappsGroovy compileDevicetypesGroovy
+    - ./gradlew compileSmartappsGroovy compileDevicetypesGroovy -PsmartThingsArtifactoryUserName="$ARTIFACTORY_USERNAME" -PsmartThingsArtifactoryPassword="$ARTIFACTORY_PASSWORD"
 
 test:
   override:
