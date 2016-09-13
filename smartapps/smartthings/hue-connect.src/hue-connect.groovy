@@ -801,10 +801,12 @@ def parse(childDevice, description) {
 }
 
 // Philips Hue priority for color is  xy > ct > hs
+// For SmartThings, try to always send hue, sat and hex
 private sendColorEvents(device, xy, hue, sat, ct, colormode = null) {
 	if (device == null || (xy == null && hue == null && sat == null && ct == null))
 		return
 
+	def events = [:]
 	// For now, only care about changing color temperature if requested by user
 	if (ct != null && (colormode == "ct" || (xy == null && hue == null && sat == null))) {
 		// for some reason setting Hue to their specified minimum off 153 yields 154, dealt with below
@@ -818,13 +820,13 @@ private sendColorEvents(device, xy, hue, sat, ct, colormode = null) {
 	if (hue != null) {
 		// 0-65535
 		def value = Math.min(Math.round(hue * 100 / 65535), 65535) as int
-		device.sendEvent([name: "hue", value: value, descriptionText: "Color has changed"])
+		events["hue"] = [name: "hue", value: value, descriptionText: "Color has changed", displayed: false]
                 }
 
 	if (sat != null) {
 		// 0-254
 		def value = Math.round(sat * 100 / 254) as int
-		device.sendEvent([name: "saturation", value: value, descriptionText: "Color has changed"])
+        events["saturation"] = [name: "saturation", value: value, descriptionText: "Color has changed", displayed: false]
             }
 
 	// Following is used to decide what to base hex calculations on since it is preferred to return a colorchange in hex
@@ -836,17 +838,28 @@ private sendColorEvents(device, xy, hue, sat, ct, colormode = null) {
 		def model = state.bulbs[id]?.modelid
 		def hex = colorFromXY(xy, model)
 
-		// TODO Disabled until a solution for the jumping color picker can be figured out
-		//device.sendEvent([name: "color", value: hex.toUpperCase(), descriptionText: "Color has changed", displayed: false])
+		// Create Hue and Saturation events if not previously existing
+		def hsv = hexToHsv(hex)
+		if (events["hue"] == null)
+			events["hue"] = [name: "hue", value: hsv[0], descriptionText: "Color has changed", displayed: false]
+		if (events["saturation"] == null)
+			events["saturation"] = [name: "saturation", value: hsv[1], descriptionText: "Color has changed", displayed: false]
+
+		events["color"] = [name: "color", value: hex.toUpperCase(), descriptionText: "Color has changed", displayed: true]
 	} else if (colormode == "hs" || colormode == null) {
 		// colormode is "hs" or "xy" is missing, default to follow hue/sat which is already handled above
+		def hueValue = (hue != null) ? events["hue"].value : Integer.parseInt("$device.currentHue")
+		def satValue = (sat != null) ? events["saturation"].value : Integer.parseInt("$device.currentSaturation")
 
-		// TODO Disabled until the standard behavior of lights is defined (hue and sat events are sent above)
-		//def hex = colorUtil.hslToHex((int) device.currentHue, (int) device.currentSaturation)
-		// device.sendEvent([name: "color", value: hex.toUpperCase(), descriptionText: "Color has changed"])
+
+		def hex = hsvToHex(hueValue, satValue)
+		events["color"] = [name: "color", value: hex.toUpperCase(), descriptionText: "Color has changed", displayed: true]
 	}
 
-	return debug
+	boolean sendColorChanged = false
+	events.each {
+		device.sendEvent(it.value)
+	}
 }
 
 private sendBasicEvents(device, param, value) {
@@ -887,8 +900,6 @@ private handleCommandResponse(body) {
 	def updates = [:]
 
 	body.each { payload ->
-		log.debug $payload
-
 		if (payload?.success) {
 			def childDeviceNetworkId = app.id + "/"
 			def eventType
@@ -1101,25 +1112,21 @@ def setColor(childDevice, huesettings) {
     def sat = null
     def xy = null
 
-	// For now ignore model to get a consistent color if same color is set across multiple devices
-	// def model = state.bulbs[getId(childDevice)]?.modelid
-    if (huesettings.hex != null) {
+	// Prefer hue/sat over hex to make sure it works with the majority of the smartapps
+	if (huesettings.hue != null || huesettings.sat != null) {
+		// If both hex and hue/sat are set, send all values to bridge to get hue/sat in response from bridge to
+		// generate hue/sat events even though bridge will prioritize XY when setting color
+		if (huesettings.hue != null)
+			value.hue = Math.min(Math.round(huesettings.hue * 65535 / 100), 65535)
+		if (huesettings.saturation != null)
+			value.sat = Math.min(Math.round(huesettings.saturation * 254 / 100), 254)
+	} else if (huesettings.hex != null && false) {
+		// For now ignore model to get a consistent color if same color is set across multiple devices
+		// def model = state.bulbs[getId(childDevice)]?.modelid
 		// value.xy = calculateXY(huesettings.hex, model)
 		// Once groups, or scenes are introduced it might be a good idea to use unique models again
 		value.xy = calculateXY(huesettings.hex)
 	}
-
-	// If both hex and hue/sat are set, send all values to bridge to get hue/sat in response from bridge to
-	// generate hue/sat events even though bridge will prioritize XY when setting color
-        if (huesettings.hue != null)
-            value.hue = Math.min(Math.round(huesettings.hue * 65535 / 100), 65535)
-	else
-		value.hue = Math.min(Math.round(childDevice.device?.currentValue("hue") * 65535 / 100), 65535)
-
-        if (huesettings.saturation != null)
-		value.sat = Math.min(Math.round(huesettings.saturation * 254 / 100), 254)
-	else
-		value.sat = Math.min(Math.round(childDevice.device?.currentValue("saturation") * 254 / 100), 254)
 
 /* Disabled for now due to bad behavior via Lightning Wizard
 	if (!value.xy) {
@@ -1656,4 +1663,102 @@ private boolean checkPointInLampsReach(p, colorPoints) {
 	{
 		return false;
 	}
+}
+
+/**
+ * Converts an RGB color in hex to HSV.
+ * Algorithm based on http://en.wikipedia.org/wiki/HSV_color_space.
+ *
+ * @param colorStr color value in hex (#ff03d3)
+ *
+ * @return HSV representation in an array (0-100) [hue, sat, value]
+ */
+def hexToHsv(colorStr){
+	def r = Integer.valueOf( colorStr.substring( 1, 3 ), 16 ) / 255
+	def g = Integer.valueOf( colorStr.substring( 3, 5 ), 16 ) / 255
+	def b = Integer.valueOf( colorStr.substring( 5, 7 ), 16 ) / 255;
+
+	def max = Math.max(Math.max(r, g), b)
+	def min = Math.min(Math.min(r, g), b)
+
+	def h, s, v = max;
+
+	def d = max - min;
+	s = max == 0 ? 0 : d / max;
+
+	if(max == min){
+		h = 0;
+	}else{
+		switch(max){
+			case r: h = (g - b) / d + (g < b ? 6 : 0); break;
+			case g: h = (b - r) / d + 2; break;
+			case b: h = (r - g) / d + 4; break;
+		}
+		h /= 6;
+	}
+
+	return [(h * 100).round(), (s * 100).round(), (v * 100).round()];
+}
+
+/**
+ * Converts HSV color to RGB in hex.
+ * Algorithm based on http://en.wikipedia.org/wiki/HSV_color_space.
+ *
+ * @param  hue hue 0-100
+ * @param  sat saturation 0-100
+ * @param  value value 0-100 (defaults to 100)
+
+ * @return the color in hex (#ff03d3)
+ */
+def hsvToHex(hue, sat, value = 100){
+	def r, g, b;
+	def h = hue / 100
+	def s = sat / 100
+	def v = value / 100
+
+	def i = Math.floor(h * 6);
+	def f = h * 6 - i;
+	def p = v * (1 - s);
+	def q = v * (1 - f * s);
+	def t = v * (1 - (1 - f) * s);
+
+	switch (i % 6) {
+		case 0:
+			r = v
+			g = t
+			b = p
+			break
+		case 1:
+			r = q
+			g = v
+			b = p
+			break
+		case 2:
+			r = p
+			g = v
+			b = t
+			break
+		case 3:
+			r = p
+			g = q
+			b = v
+			break
+		case 4:
+			r = t
+			g = p
+			b = v
+			break
+		case 5:
+			r = v
+			g = p
+			b = q
+			break
+	}
+
+	// Converting float components to int components.
+	def r1 = String.format("%02X", (int) (r * 255.0f));
+	def g1 = String.format("%02X", (int) (g * 255.0f));
+	def b1 = String.format("%02X", (int) (b * 255.0f));
+
+	return "#$r1$g1$b1"
 }
