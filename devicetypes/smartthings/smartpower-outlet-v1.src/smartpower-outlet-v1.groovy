@@ -47,9 +47,21 @@ def parse(String description) {
 
 // Commands to device
 def on() {
-	'zcl on-off on'
+	[
+			'zcl on-off on',
+			'delay 200',
+			"send 0x${zigbee.deviceNetworkId} 0x01 0x${zigbee.endpointId}",
+			'delay 500'
+
+	]
+
 }
 
 def off() {
-	'zcl on-off off'
+	[
+			'zcl on-off off',
+			'delay 200',
+			"send 0x${zigbee.deviceNetworkId} 0x01 0x${zigbee.endpointId}",
+			'delay 500'
+	]
 }
