@@ -55,7 +55,7 @@ metadata {
 }
 
 void installed() {
-	sendEvent(name: "checkInterval", value: 60 * 15, data: [protocol: "lan"], displayed: false)
+	sendEvent(name: "checkInterval", value: 60 * 12, data: [protocol: "lan"], displayed: false)
 }
 
 // parse events into attributes
