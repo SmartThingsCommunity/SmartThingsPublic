@@ -13,7 +13,7 @@
  */
 
 metadata {
-    definition (name: "ZigBee Dimmer", namespace: "smartthings", author: "SmartThings") {
+    definition (name: "ZigBee Dimmer", namespace: "smartthings", author: "SmartThings", category: "C1") {
         capability "Actuator"
         capability "Configuration"
         capability "Refresh"
