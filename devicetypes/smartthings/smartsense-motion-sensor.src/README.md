@@ -1,4 +1,4 @@
-# Samsung SmartThings Motion Sensor, Smartsense Motion Sensor
+# Samsung SmartThings Motion Sensor
 
 
 
