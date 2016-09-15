@@ -5,6 +5,8 @@
 Works with: 
 
 * [Samsung SmartThings Motion Sensor](https://shop.smartthings.com/#!/products/samsung-smartthings-motion-sensor)
+* SmartSense Motion Sensor (2014 model)
+* SmartSense Motion Sensor (original model)
 
 ## Table of contents
 
