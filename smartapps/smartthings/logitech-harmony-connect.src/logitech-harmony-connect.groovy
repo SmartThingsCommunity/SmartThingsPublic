@@ -102,7 +102,8 @@ def authPage() {
         description = "Click to enter Harmony Credentials"
         def redirectUrl = buildRedirectUrl
         return dynamicPage(name: "Credentials", title: "Harmony", nextPage: null, uninstall: true, install:false) {
-               section { href url:redirectUrl, style:"embedded", required:true, title:"Harmony", description:description }
+            section { paragraph title: "Note:", "This device has not been officially tested and certified to “Work with SmartThings”. You can connect it to your SmartThings home but performance may vary and we will not be able to provide support or assistance." }
+            section { href url:redirectUrl, style:"embedded", required:true, title:"Harmony", description:description }
         }
     } else {
 		//device discovery request every 5 //25 seconds
@@ -119,7 +120,6 @@ def authPage() {
 			discoverDevices()
 		}
 		return dynamicPage(name:"Credentials", title:"Discovery Started!", nextPage:"", refreshInterval:refreshInterval, install:true, uninstall: true) {
-      section { paragraph title: "Note:", "This device has not been officially tested and certified to “Work with SmartThings”. You can connect it to your SmartThings home but performance may vary and we will not be able to provide support or assistance." }
 			section("Please wait while we discover your Harmony Hubs and Activities. Discovery can take five minutes or more, so sit back and relax! Select your device below once discovered.") {
 				input "selectedhubs", "enum", required:false, title:"Select Harmony Hubs (${numFoundHub} found)", multiple:true, options:huboptions
 			}
@@ -315,8 +315,6 @@ def installed() {
 }
 
 def updated() {
-	unsubscribe()
-  unschedule()
 	if (!state.accessToken) {
 		log.debug "About to create access token"
 		createAccessToken()
