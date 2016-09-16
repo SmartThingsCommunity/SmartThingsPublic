@@ -39,8 +39,8 @@ def credPage() {
 
     return dynamicPage(name:"credPage", title:"ISY Setup 1/3", nextPage:"isyPage", install:false, uninstall: true) {
         section("ISY Authentication") {
-            input "username", "text", title: "Username"
-            input "password", "password", title: "Password"
+            input "admin", "text", title: "Username"
+            input "admin", "password", title: "Password"
         }
     }
 }
