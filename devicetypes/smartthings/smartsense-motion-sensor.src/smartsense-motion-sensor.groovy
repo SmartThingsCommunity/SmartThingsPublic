@@ -105,13 +105,6 @@ def parse(String description) {
 		map = parseIasMessage(description)
 	}
 
-	// Temporary fix for the case when Device is OFFLINE and is connected again
-	if (state.lastActivity == null){
-		state.lastActivity = now()
-		sendEvent(name: "deviceWatch-lastActivity", value: state.lastActivity, description: "Last Activity is on ${new Date((long)state.lastActivity)}", displayed: false, isStateChange: true)
-	}
-	state.lastActivity = now()
-
 	log.debug "Parse returned $map"
 	def result = map ? createEvent(map) : null
 
@@ -296,15 +289,7 @@ private Map getMotionResult(value) {
  * PING is used by Device-Watch in attempt to reach the Device
  * */
 def ping() {
-
-	if (state.lastActivity < (now() - (1000 * device.currentValue("checkInterval"))) ){
-		log.info "ping, alive=no, lastActivity=${state.lastActivity}"
-		state.lastActivity = null
-		return zigbee.readAttribute(0x001, 0x0020) // Read the Battery Level
-	} else { 
-		log.info "ping, alive=yes, lastActivity=${state.lastActivity}"
-		sendEvent(name: "deviceWatch-lastActivity", value: state.lastActivity, description: "Last Activity is on ${new Date((long)state.lastActivity)}", displayed: false, isStateChange: true)
-	}
+	return zigbee.readAttribute(0x001, 0x0020) // Read the Battery Level
 }
 
 def refresh() {
@@ -318,24 +303,19 @@ def refresh() {
 }
 
 def configure() {
-	sendEvent(name: "checkInterval", value: 14400, displayed: false, data: [protocol: "zigbee"])
+	// Device-Watch allows 3 check-in misses from device. 300 seconds x 3 = 15min
+	sendEvent(name: "checkInterval", value: 900, displayed: false, data: [protocol: "zigbee"])
 
 	String zigbeeEui = swapEndianHex(device.hub.zigbeeEui)
 	log.debug "Configuring Reporting, IAS CIE, and Bindings."
 
-	def configCmds = [
+	def enrollCmds = [
 		"zcl global write 0x500 0x10 0xf0 {${zigbeeEui}}", "delay 200",
 		"send 0x${device.deviceNetworkId} 1 ${endpointId}", "delay 500",
-
-		"zdo bind 0x${device.deviceNetworkId} ${endpointId} 1 1 {${device.zigbeeId}} {}", "delay 200",
-		"zcl global send-me-a-report 1 0x20 0x20 30 21600 {01}",		//checkin time 6 hrs
-		"send 0x${device.deviceNetworkId} 1 ${endpointId}", "delay 500",
-
-		"zdo bind 0x${device.deviceNetworkId} ${endpointId} 1 0x402 {${device.zigbeeId}} {}", "delay 200",
-		"zcl global send-me-a-report 0x402 0 0x29 300 3600 {6400}",
-		"send 0x${device.deviceNetworkId} 1 ${endpointId}", "delay 500"
 	]
-	return configCmds + refresh() // send refresh cmds as part of config
+	// temperature minReportTime 30 seconds, maxReportTime 5 min. Reporting interval if no activity
+	// battery minReport 30 seconds, maxReportTime 6 hrs by default
+	return enrollCmds + zigbee.batteryConfig() + zigbee.temperatureConfig(30, 300) + refresh() // send refresh cmds as part of config
 }
 
 def enrollResponse() {
