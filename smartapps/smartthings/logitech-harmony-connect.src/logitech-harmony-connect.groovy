@@ -51,7 +51,7 @@ definition(
 }
 
 preferences(oauthPage: "deviceAuthorization") {
-    page(name: "Credentials", title: "Connect to your Logitech Harmony device", content: "authPage", install: false, nextPage: "deviceAuthorization")
+  page(name: "Credentials", title: "Connect to your Logitech Harmony device", content: "authPage", install: false, nextPage: "deviceAuthorization")
 	page(name: "deviceAuthorization", title: "Logitech Harmony device authorization", install: true) {
 		section("Allow Logitech Harmony to control these things...") {
 			input "switches", "capability.switch", title: "Which Switches?", multiple: true, required: false
@@ -102,7 +102,8 @@ def authPage() {
         description = "Click to enter Harmony Credentials"
         def redirectUrl = buildRedirectUrl
         return dynamicPage(name: "Credentials", title: "Harmony", nextPage: null, uninstall: true, install:false) {
-               section { href url:redirectUrl, style:"embedded", required:true, title:"Harmony", description:description }
+            section { paragraph title: "Note:", "This device has not been officially tested and certified to “Work with SmartThings”. You can connect it to your SmartThings home but performance may vary and we will not be able to provide support or assistance." }
+            section { href url:redirectUrl, style:"embedded", required:true, title:"Harmony", description:description }
         }
     } else {
 		//device discovery request every 5 //25 seconds
@@ -314,8 +315,6 @@ def installed() {
 }
 
 def updated() {
-	unsubscribe()
-  unschedule()
 	if (!state.accessToken) {
 		log.debug "About to create access token"
 		createAccessToken()
