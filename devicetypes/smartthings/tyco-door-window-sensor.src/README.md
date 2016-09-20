@@ -23,10 +23,10 @@ Works with:
 
 ## Device Health
 
-A Category C2 contact sensor with maxReportTime of 1 hr.
+A Category C2 contact sensor with maxReportTime of 5 mins.
 Check-in interval is double the value of maxReportTime for Zigbee device. 
 This gives the device twice the amount of time to respond before it is marked as offline.
-Check-in interval = 2*60 = 120 min
+Check-in interval = 12 min
 
 ## Battery Specification
 

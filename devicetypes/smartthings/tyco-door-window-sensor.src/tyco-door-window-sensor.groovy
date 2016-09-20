@@ -239,57 +239,42 @@ private Map getContactResult(value) {
 	]
 }
 
+/**
+ * PING is used by Device-Watch in attempt to reach the Device
+ * */
 def ping() {
-
-	if (state.lastActivity < (now() - (1000 * device.currentValue("checkInterval"))) ){
-		log.info "ping, alive=no, lastActivity=${state.lastActivity}"
-		state.lastActivity = null
-		return "st rattr 0x${device.deviceNetworkId} 1 1 0x20" //read Battery Attribute
-	} else {
-		log.info "ping, alive=yes, lastActivity=${state.lastActivity}"
-		sendEvent(name: "deviceWatch-lastActivity", value: state.lastActivity, description: "Last Activity is on ${new Date((long)state.lastActivity)}", displayed: false, isStateChange: true)
-	}
+	return zigbee.readAttribute(0x001, 0x0020) // Read the Battery Level
 }
 
 def refresh()
 {
-	log.debug "Refreshing Temperature and Battery"
-	[
+	log.debug "refresh called"
+	def refreshCmds = [
 
         "st rattr 0x${device.deviceNetworkId} 1 0x402 0", "delay 200",
 		"st rattr 0x${device.deviceNetworkId} 1 1 0x20"
 
 	]
+
+	return refreshCmds + enrollResponse()
 }
 
 def configure() {
+	// Device-Watch allows 2 check-in misses from device
+	sendEvent(name: "checkInterval", value: 60 * 12, displayed: false, data: [protocol: "zigbee"])
 
-	sendEvent(name: "checkInterval", value: 7200, displayed: false, data: [protocol: "zigbee"])
 	String zigbeeEui = swapEndianHex(device.hub.zigbeeEui)
 		log.debug "Configuring Reporting, IAS CIE, and Bindings."
-	def configCmds = [
+	def enrollCmds = [
     	"delay 1000",
 
 		"zcl global write 0x500 0x10 0xf0 {${zigbeeEui}}", "delay 200",
 		"send 0x${device.deviceNetworkId} 1 1", "delay 1500",
 
-        "zcl global send-me-a-report 1 0x20 0x20 600 3600 {01}", "delay 200",
-        "send 0x${device.deviceNetworkId} 1 1", "delay 1500",
-
-        "zcl global send-me-a-report 0x402 0 0x29 300 3600 {6400}", "delay 200",
-        "send 0x${device.deviceNetworkId} 1 1", "delay 1500",
-
-
         //"raw 0x500 {01 23 00 00 00}", "delay 200",
         //"send 0x${device.deviceNetworkId} 1 1", "delay 1500",
-
-
-		"zdo bind 0x${device.deviceNetworkId} 1 1 0x402 {${device.zigbeeId}} {}", "delay 500",
-		"zdo bind 0x${device.deviceNetworkId} 1 1 1 {${device.zigbeeId}} {}",
-
-        "delay 500"
 	]
-    return configCmds + enrollResponse() + refresh() // send refresh cmds as part of config
+    return configCmds + zigbee.batteryConfig() + zigbee.temperatureConfig(30, 300) + refresh() // send refresh cmds as part of config
 }
 
 def enrollResponse() {
