@@ -133,8 +133,8 @@ def refresh() {
 
 def configure() {
     log.debug "Configuring Reporting and Bindings."
-    // Device-Watch allows 3 check-in misses from device. 300 seconds x 3 = 15min
-    sendEvent(name: "checkInterval", value: 900, displayed: false, data: [protocol: "zigbee"])
+    // Device-Watch allows 2 check-in misses from device
+    sendEvent(name: "checkInterval", value: 60 * 12, displayed: false, data: [protocol: "zigbee"])
     // OnOff minReportTime 0 seconds, maxReportTime 5 min. Reporting interval if no activity
     zigbee.onOffConfig(0, 300) + zigbee.levelConfig() + zigbee.colorTemperatureConfig() + zigbee.configureReporting(COLOR_CONTROL_CLUSTER, ATTRIBUTE_HUE, 0x20, 1, 3600, 0x01) + zigbee.configureReporting(COLOR_CONTROL_CLUSTER, ATTRIBUTE_SATURATION, 0x20, 1, 3600, 0x01) + zigbee.readAttribute(0x0006, 0x00) + zigbee.readAttribute(0x0008, 0x00) + zigbee.readAttribute(COLOR_CONTROL_CLUSTER, 0x00) + zigbee.readAttribute(COLOR_CONTROL_CLUSTER, ATTRIBUTE_COLOR_TEMPERATURE) + zigbee.readAttribute(COLOR_CONTROL_CLUSTER, ATTRIBUTE_HUE) + zigbee.readAttribute(COLOR_CONTROL_CLUSTER, ATTRIBUTE_SATURATION)
 }
