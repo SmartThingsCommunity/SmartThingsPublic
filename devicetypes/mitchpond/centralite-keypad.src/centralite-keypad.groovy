@@ -395,7 +395,6 @@ def setArmedNight(def delay=0) { setModeHelper("armedNight",delay) }
 def setEntryDelay(delay=30) {
 	setModeHelper("entryDelay", delay)
 	sendRawStatus(5, delay) // Entry delay beeps
-	sendRawStatus(8, 0)     // Flashing red status?
 }
 
 def setExitDelay(delay=30) {
