@@ -575,6 +575,14 @@ def pageAlarmOptions() {
         defaultValue:   "Both"
     ]
 
+    def inputSirenEntryStrobe = [
+    	name:           "sirenEntryStrobe",
+        type:           "bool",
+        title:          "Strobe siren during entry delay",
+        defaultValue:   true,
+        required:       true
+    ]
+
     def inputSwitches = [
         name:           "switches",
         type:           "capability.switch",
@@ -614,6 +622,7 @@ def pageAlarmOptions() {
         section("Sirens") {
             input inputAlarms
             input inputSirenMode
+            input inputSirenEntryStrobe
         }
         section("Switches") {
             input inputSwitches
@@ -1280,6 +1289,10 @@ private def onZoneEvent(evt, sensorType) {
         if (zone.zoneType == "alert" || !zone.delay || (state.stay && settings.stayDelayOff)) {
             activateAlarm()
         } else {
+        	if(settings.sirenEntryStrobe)
+            {
+        		settings.alarms*.strobe()
+            }
         	keypads?.each() { it.setEntryDelay(state.delay) }
             myRunIn(state.delay, activateAlarm)
         }
@@ -1570,6 +1583,11 @@ def activateAlarm() {
         return
     }
 
+    if(settings.sirenEntryStrobe)
+    {
+    	settings.alarms*.off()
+    }
+    
     switch (settings.sirenMode) {
     case "Siren":
         settings.alarms*.siren()
