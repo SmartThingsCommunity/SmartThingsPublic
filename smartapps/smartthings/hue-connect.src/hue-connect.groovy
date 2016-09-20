@@ -1182,9 +1182,8 @@ private poll() {
 	def host = getBridgeIP()
 	def uri = "/api/${state.username}/lights/"
 	log.debug "GET: $host$uri"
-	sendHubCommand(new physicalgraph.device.HubAction("""GET ${uri} HTTP/1.1
-HOST: ${host}
-""", physicalgraph.device.Protocol.LAN, selectedHue))
+	sendHubCommand(new physicalgraph.device.HubAction("GET ${uri} HTTP/1.1\r\n" +
+		"HOST: ${host}\r\n\r\n", physicalgraph.device.Protocol.LAN, selectedHue))
 }
 
 private isOnline(id) {
@@ -1200,13 +1199,11 @@ private put(path, body) {
 	log.debug "PUT:  $host$uri"
 	log.debug "BODY: ${bodyJSON}"
 
-	sendHubCommand(new physicalgraph.device.HubAction("""PUT $uri HTTP/1.1
-HOST: ${host}
-Content-Length: ${length}
-
-${bodyJSON}
-""", physicalgraph.device.Protocol.LAN, "${selectedHue}"))
-
+	sendHubCommand(new physicalgraph.device.HubAction("PUT $uri HTTP/1.1\r\n" +
+		"HOST: ${host}\r\n" +
+		"Content-Length: ${length}\r\n" +
+		"\r\n" +
+		"${bodyJSON}", physicalgraph.device.Protocol.LAN, "${selectedHue}"))
 }
 
 /*

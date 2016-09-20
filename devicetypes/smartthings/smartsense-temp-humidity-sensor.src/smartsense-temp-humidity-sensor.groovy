@@ -264,8 +264,8 @@ def refresh()
 }
 
 def configure() {
-	// Device-Watch allows 3 check-in misses from device. 300 seconds x 3 = 15min
-	sendEvent(name: "checkInterval", value: 900, displayed: false, data: [protocol: "zigbee"])
+	// Device-Watch allows 2 check-in misses from device
+	sendEvent(name: "checkInterval", value: 60 * 12, displayed: false, data: [protocol: "zigbee"])
 
 	log.debug "Configuring Reporting and Bindings."
 	def humidityConfigCmds = [
