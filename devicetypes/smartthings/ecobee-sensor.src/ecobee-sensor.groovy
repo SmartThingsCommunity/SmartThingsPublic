@@ -67,6 +67,6 @@ def refresh() {
 
 void poll() {
 	log.debug "Executing 'poll' using parent SmartApp"
-	parent.poll()
+	parent.pollChild()
 
 }

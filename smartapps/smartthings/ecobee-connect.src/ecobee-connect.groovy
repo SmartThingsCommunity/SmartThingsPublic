@@ -20,8 +20,6 @@
  *      JLH - 02-15-2014 - Fuller use of ecobee API
  *      10-28-2015 DVCSMP-604 - accessory sensor, DVCSMP-1174, DVCSMP-1111 - not respond to routines
  */
-include 'asynchttp_v1'
-
 definition(
 		name: "Ecobee (Connect)",
 		namespace: "smartthings",
@@ -246,7 +244,9 @@ def getEcobeeThermostats() {
 		uri: apiEndpoint,
 		path: "/1/thermostat",
 		headers: ["Content-Type": "text/json", "Authorization": "Bearer ${atomicState.authToken}"],
-		query: [json: toJson(bodyParams)]
+        // TODO - the query string below is not consistent with the Ecobee docs:
+        // https://www.ecobee.com/home/developer/api/documentation/v1/operations/get-thermostats.shtml
+		query: [format: 'json', body: toJson(bodyParams)]
 	]
 
 	def stats = [:]
@@ -265,8 +265,9 @@ def getEcobeeThermostats() {
 	} catch (groovyx.net.http.HttpResponseException e) {
         log.trace "Exception polling children: " + e.response.data.status
         if (e.response.data.status.code == 14) {
+            atomicState.action = "getEcobeeThermostats"
             log.debug "Refreshing your auth_token!"
-            refreshAuthToken([async: false, nextAction: "getEcobeeThermostats"])
+            refreshAuthToken()
         }
     }
 	atomicState.thermostats = stats
@@ -357,22 +358,16 @@ def initialize() {
 	atomicState.timeSendPush = null
 	atomicState.reAttempt = 0
 
-	initialPoll() //first time polling data data from thermostat
+	pollHandler() //first time polling data data from thermostat
 
 	//automatically update devices status every 5 mins
 	runEvery5Minutes("poll")
 
 }
 
-/**
- * Polls the child devices (synchronously).
- * This is used during app install/update, and is synchronous
- * to maintain current behavior that will cause install/update to fail
- * if polling fails.
- */
-def initialPoll() {
-	log.debug "initialPoll()"
-	pollChildrenSync() // Hit the ecobee API for update on all thermostats
+def pollHandler() {
+	log.debug "pollHandler()"
+	pollChildren(null) // Hit the ecobee API for update on all thermostats
 
 	atomicState.thermostats.each {stat ->
 		def dni = stat.key
@@ -385,101 +380,10 @@ def initialPoll() {
 	}
 }
 
-/**
- * Polls Ecobee (asynchronously) for updated device state data.
- * Called from within this Connect SmartApp as well as the child
- * devices.
- */
-def poll() {
-    log.debug "polling asynchronously"
-    asynchttp_v1.get('asyncPollResponseHandler', getPollParams())
-}
-
-/**
- * Makes a (synchronous) request to the Ecobee API to get the data for the thermostats.
- * This request is made synchronously here because it is called as part of the
- * install/updated lifecycle, and changing it to asynchronous during the install/update
- * lifecycle may change the behavior if there is an error in polling.
- *
- * If further analysis shows that polling can be done asynchronously during
- * install/update without any adverse consequences, this should then be made
- * asynchronous just as the scheduled polling is.
- */
-def pollChildrenSync() {
+def pollChildren(child = null) {
+    def thermostatIdsString = getChildDeviceIdsString()
     log.debug "polling children: $thermostatIdsString"
 
-    def params = getPollParams()
-    params.query << ["Content-Type": "application/json"]
-
-	def result = false
-    log.debug "making synchronous poll request"
-
-	try{
-		httpGet(params) { resp ->
-			if(resp.status == 200) {
-                atomicState.remoteSensors = resp.data.thermostatList.remoteSensors
-                updateSensorData()
-                storeThermostatData(resp.data.thermostatList)
-                result = true
-                log.debug "updated ${atomicState.thermostats?.size()} stats: ${atomicState.thermostats}"
-            }
-		}
-	} catch (groovyx.net.http.HttpResponseException e) {
-		log.trace "Exception polling children: " + e.response.data.status
-        if (e.response.data.status.code == 14) {
-            log.debug "Refreshing your auth_token!"
-            refreshAuthToken([async: false, nextAction: "pollChildrenSync"])
-        }
-	}
-	return result
-}
-
-/**
- * Response handler for asynchronous request to get thermostat data.
- * Given a successful response, updates the sensor data, stores the thermostat
- * data, and generates child device events.
- *
- * If the access token has expired, will issue a request to refresh the token
- * (and pending successful token refresh, the poll request will be made again).
- */
-def asyncPollResponseHandler(response, data) {
-    log.trace "async poll response handler"
-    if (!response.hasError()) {
-        if (response.status == 200) {
-            def json
-            try {
-                json = response.getJson()
-            } catch (e) {
-                log.error ("error parsing JSON", e)
-            }
-            if (json) {
-                atomicState.remoteSensors = json.thermostatList.remoteSensors
-                updateSensorData()
-                storeThermostatData(json.thermostatList)
-                generateChildThermostatEvent()
-            }
-        } else {
-            log.warn "Response returned non-200 response. Status: ${response.status}, data: ${response.getData()}"
-        }
-    } else {
-        log.trace "Exception polling children: ${response.getErrorMessage()}"
-        def errorJson
-        try {
-            errorJson = response.getErrorJson()
-        } catch (e) {
-            log.error("Unable to parse error json response", e)
-        }
-        if (errorJson?.status?.code == 14) {
-            log.debug "Refreshing your auth_token!"
-            refreshAuthToken([async: true, nextAction: "poll"])
-        } else {
-            log.warn "Error polling children that is not due to an expired token. Response: ${response.getErrorData()}"
-        }
-    }
-}
-
-private getPollParams() {
-    def thermostatIdsString = getChildDeviceIdsString()
     def requestBody = [
         selection: [
             selectionType: "thermostats",
@@ -490,32 +394,66 @@ private getPollParams() {
             includeSensors: true
         ]
     ]
-    return [
+
+	def result = false
+
+	def pollParams = [
         uri: apiEndpoint,
         path: "/1/thermostat",
-        headers: ["Authorization": "Bearer ${atomicState.authToken}"],
-        query: [json: toJson(requestBody)]
+        headers: ["Content-Type": "text/json", "Authorization": "Bearer ${atomicState.authToken}"],
+        // TODO - the query string below is not consistent with the Ecobee docs:
+        // https://www.ecobee.com/home/developer/api/documentation/v1/operations/get-thermostats.shtml
+        query: [format: 'json', body: toJson(requestBody)]
     ]
+
+	try{
+		httpGet(pollParams) { resp ->
+			if(resp.status == 200) {
+                log.debug "poll results returned resp.data ${resp.data}"
+                atomicState.remoteSensors = resp.data.thermostatList.remoteSensors
+                updateSensorData()
+                storeThermostatData(resp.data.thermostatList)
+                result = true
+                log.debug "updated ${atomicState.thermostats?.size()} stats: ${atomicState.thermostats}"
+            }
+		}
+	} catch (groovyx.net.http.HttpResponseException e) {
+		log.trace "Exception polling children: " + e.response.data.status
+        if (e.response.data.status.code == 14) {
+            atomicState.action = "pollChildren"
+            log.debug "Refreshing your auth_token!"
+            refreshAuthToken()
+        }
+	}
+	return result
 }
 
-/**
- * Calls each child thermostat device to generate an event with the thermostat
- * data.
- */
-def generateChildThermostatEvent() {
-    log.trace("generateChildThermostatEvent")
-    getChildDevices().each { child ->
-        if (!child.device.deviceNetworkId.startsWith("ecobee_sensor")){
-            if(atomicState.thermostats[child.device.deviceNetworkId] != null) {
-                def tData = atomicState.thermostats[child.device.deviceNetworkId]
-                log.debug "calling child.generateEvent($tData.data)"
-                child.generateEvent(tData.data) //parse received message from parent
-            } else if(atomicState.thermostats[child.device.deviceNetworkId] == null) {
-                log.error "ERROR: Device connection removed? no data for ${child.device.deviceNetworkId}"
-                return null
-            }
-        }
-    }
+// Poll Child is invoked from the Child Device itself as part of the Poll Capability
+def pollChild() {
+	def devices = getChildDevices()
+
+	if (pollChildren()) {
+		devices.each { child ->
+			if (!child.device.deviceNetworkId.startsWith("ecobee_sensor")) {
+				if(atomicState.thermostats[child.device.deviceNetworkId] != null) {
+					def tData = atomicState.thermostats[child.device.deviceNetworkId]
+					log.info "pollChild(child)>> data for ${child.device.deviceNetworkId} : ${tData.data}"
+					child.generateEvent(tData.data) //parse received message from parent
+				} else if(atomicState.thermostats[child.device.deviceNetworkId] == null) {
+					log.error "ERROR: Device connection removed? no data for ${child.device.deviceNetworkId}"
+					return null
+				}
+			}
+		}
+	} else {
+		log.info "ERROR: pollChildren()"
+		return null
+	}
+
+}
+
+void poll() {
+	pollChild()
 }
 
 def availableModes(child) {
@@ -615,104 +553,47 @@ def toQueryString(Map m) {
 	return m.collect { k, v -> "${k}=${URLEncoder.encode(v.toString())}" }.sort().join("&")
 }
 
-/**
- * Uses the refresh token to get a new access token, then executes the nextAction.
- * @param options - a map of options. valid options are async: true/false, which
- *                  specifies if the refresh token request will be done asynchronously or not (default is false)
- *                  nextAction: "nameOfMethod" specifies what method to execute after
- *                  the token is refreshed (not required).
- * (note: using a map as the parameter because we need to call it from a schedueled
- * execution and we can only pass a data map to scheduled executions)
- */
-private void refreshAuthToken(options) {
-    if(!atomicState.refreshToken) {
-		log.warn "Cannot not refresh OAuth token since there is no refreshToken stored"
-    } else {
-        def refreshParams = [
-            uri   : apiEndpoint,
-            path  : "/token",
-            query : [grant_type: 'refresh_token', code: "${atomicState.refreshToken}", client_id: smartThingsClientId],
-        ]
-        if (options.async) {
-            refreshAuthTokenAsync(refreshParams, options.nextAction)
-        } else {
-            refreshAuthTokenSync(refreshParams, options.nextAction)
-        }
-    }
-}
+private refreshAuthToken() {
+	log.debug "refreshing auth token"
 
-private void refreshAuthTokenSync(params, nextAction = null) {
-    try {
-        httpPost(refreshParams) { resp ->
-            if(resp.status == 200) {
-                log.debug "Token refreshed...calling saved RestAction now!"
-                debugEvent("Token refreshed ... calling saved RestAction now!")
-                saveTokenAndResumeAction(resp.data, nextAction)
+	if(!atomicState.refreshToken) {
+		log.warn "Can not refresh OAuth token since there is no refreshToken stored"
+	} else {
+		def refreshParams = [
+			method: 'POST',
+			uri   : apiEndpoint,
+			path  : "/token",
+			query : [grant_type: 'refresh_token', code: "${atomicState.refreshToken}", client_id: smartThingsClientId],
+		]
+
+		def notificationMessage = "is disconnected from SmartThings, because the access credential changed or was lost. Please go to the Ecobee (Connect) SmartApp and re-enter your account login credentials."
+		//changed to httpPost
+		try {
+			def jsonMap
+			httpPost(refreshParams) { resp ->
+				if(resp.status == 200) {
+					log.debug "Token refreshed...calling saved RestAction now!"
+					debugEvent("Token refreshed ... calling saved RestAction now!")
+					saveTokenAndResumeAction(resp.data)
+			    }
             }
-        }
-    } catch (groovyx.net.http.HttpResponseException e) {
-        log.error "refreshAuthToken() >> Error: e.statusCode ${e.statusCode}"
-        reauthTokenErrorHandler(e.statusCode)
-    }
-}
-
-private void refreshAuthTokenAsync(refreshParams, nextAction = null) {
-    log.debug "making asynchronous refresh request"
-    asynchttp_v1.post('refreshTokenResponseHandler', refreshParams, [nextAction: nextAction])
-}
-
-/**
- * The response handler for the request to refresh the authorization handler.
- * Stores the new authorization token and refresh token, and executes any action
- * (method) that failed due to the authorization token expiring.
- */
-private void refreshTokenResponseHandler(response, data) {
-    if (!response.hasError()) {
-        if (response.status == 200) {
-            def json
-            try {
-            	json = response.getJson()
-            } catch (e) {
-            	log.error "error parsing json from response data: $response.data"
-            }
-            if (json) {
-                log.debug "asnyc refreshTokenHandler: Token refreshed...calling saved RestAction now!"
-                debugEvent("async Token refreshed ... calling saved RestAction now!")
-             	saveTokenAndResumeAction(json, data.nextAction)
-            } else {
-            	log.warn "successfully parsed json but result is empty or null"
-            }
-        } else {
-            log.debug "Non 200 response returned. Response code: ${response.code}, data: ${response.getData()}"
-        }
-    } else {
-        log.debug "async refreshTokenHandler: RESPONSE ERROR: ${response.getErrorJson()}"
-        reauthTokenErrorHandler(response.getErrorJson().code)
-    }
-}
-
-/**
- * Retries refreshing the authorization token. Will attempt to get the refresh
- * token later, in case there were errors retrieving it.
- * Will retry a fixed number of times before sending a push notification to the
- * user instructing them to reauthenticate
- */
-private void reauthTokenErrorHandler(responseCode) {
-    def retryInterval = 300 // in seconds
-    def notificationMessage = "is disconnected from SmartThings, because the access credential changed or was lost. Please go to the Ecobee (Connect) SmartApp and re-enter your account login credentials."
-    // might get non-401 error from exceeding 20 second app limit, connectivity issues, etc.
-    if (responseCode != 401) {
-        runIn(retryInterval, "refreshAuthToken", [async: true])
-    } else if (responseCode == 401) { // unauthorized
-        atomicState.reAttempt = atomicState.reAttempt + 1
-        log.warn "reAttempt refreshAuthToken to try = ${atomicState.reAttempt}"
-        if (atomicState.reAttempt <= 3) {
-            runIn(retryInterval, "refreshAuthToken", [async: true])
-        } else {
-            sendPushAndFeeds(notificationMessage)
-            atomicState.reAttempt = 0
-        }
-    }
+		} catch (groovyx.net.http.HttpResponseException e) {
+			log.error "refreshAuthToken() >> Error: e.statusCode ${e.statusCode}"
+			def reAttemptPeriod = 300 // in sec
+			if (e.statusCode != 401) { // this issue might comes from exceed 20sec app execution, connectivity issue etc.
+				runIn(reAttemptPeriod, "refreshAuthToken")
+			} else if (e.statusCode == 401) { // unauthorized
+				atomicState.reAttempt = atomicState.reAttempt + 1
+				log.warn "reAttempt refreshAuthToken to try = ${atomicState.reAttempt}"
+				if (atomicState.reAttempt <= 3) {
+					runIn(reAttemptPeriod, "refreshAuthToken")
+				} else {
+					sendPushAndFeeds(notificationMessage)
+					atomicState.reAttempt = 0
+				}
+			}
+		}
+	}
 }
 
 /**
@@ -722,20 +603,20 @@ private void reauthTokenErrorHandler(responseCode) {
  *
  * @param json - an object representing the parsed JSON response from Ecobee
  */
-private void saveTokenAndResumeAction(json, String nextAction) {
-    def debugMessage = "token response, scope: ${json?.scope}, expires_in: ${json?.expires_in}, token_type: ${json?.token_type}"
-    log.debug "debugMessage"
+private void saveTokenAndResumeAction(json) {
+    log.debug "token response json: $json"
     if (json) {
-        debugEvent(debugMessage)
+        debugEvent("Response = $json")
         atomicState.refreshToken = json?.refresh_token
         atomicState.authToken = json?.access_token
-        if (nextAction) {
-            log.debug "got refresh token, will execute next action (passed in!): $nextAction"
-            "$nextAction"()
+        if (atomicState.action) {
+            log.debug "got refresh token, executing next action: ${atomicState.action}"
+            "${atomicState.action}"()
         }
     } else {
         log.warn "did not get response body from refresh token response"
     }
+    atomicState.action = ""
 }
 
 /**
@@ -875,6 +756,7 @@ private boolean sendCommandToEcobee(Map bodyParams) {
 	try{
         httpPost(cmdParams) { resp ->
             if(resp.status == 200) {
+                log.debug "updated ${resp.data}"
                 def returnStatus = resp.data.status.code
                 if (returnStatus == 0) {
                     log.debug "Successful call to ecobee API."
@@ -889,10 +771,11 @@ private boolean sendCommandToEcobee(Map bodyParams) {
         log.trace "Exception Sending Json: " + e.response.data.status
         debugEvent ("sent Json & got http status ${e.statusCode} - ${e.response.data.status.code}")
         if (e.response.data.status.code == 14) {
-            // TODO - figure out why we're setting the next action to be poll
+            // TODO - figure out why we're setting the next action to be pollChildren
             // after refreshing auth token. Is it to keep UI in sync, or just copy/paste error?
+            atomicState.action = "pollChildren"
             log.debug "Refreshing your auth_token!"
-            refreshAuthToken([async: true, nextAction: "poll"])
+            refreshAuthToken()
         } else {
             debugEvent("Authentication error, invalid authentication method, lack of credentials, etc.")
             log.error "Authentication error, invalid authentication method, lack of credentials, etc."
