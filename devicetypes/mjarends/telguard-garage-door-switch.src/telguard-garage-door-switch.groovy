@@ -50,6 +50,12 @@ metadata {
            		attributeState "statusText", label:'${currentValue}'
             }
 		}
+   		standardTile("open", "device.door", inactiveLabel: false, decoration: "flat", width: 2, height: 2) {
+			state "default", label:'open', action:"door control.open", icon:"st.doors.garage.garage-opening"
+		}
+		standardTile("close", "device.door", inactiveLabel: false, decoration: "flat", width: 2, height: 2) {
+			state "default", label:'close', action:"door control.close", icon:"st.doors.garage.garage-closing"
+		}
         standardTile("contact", "device.contact", width: 2, height: 2) {
 			state "open", label: '${name}', icon: "st.contact.contact.open", backgroundColor: "#79b821"
 			state "closed", label: '${name}', icon: "st.contact.contact.closed", backgroundColor: "#ffffff"
@@ -59,7 +65,7 @@ metadata {
 		}
 
 		main "switch"
-		details(["switch","contact","door","refresh"])
+		details(["switch","open","close","contact","refresh"])
 	}
 }
 
@@ -101,19 +107,29 @@ def zwaveEvent(physicalgraph.zwave.Command cmd) {
 
 // Implement commands
 def on() {
-	log.debug "opening the door"
-	delayBetween([
-		zwave.basicV1.basicSet(value: 0xFF).format(),
-		zwave.switchBinaryV1.switchBinaryGet().format()
-	])
+	// If the device is off then turn on
+	if (device.currentValue("switch") == "off") {
+        log.debug "opening the door"
+        delayBetween([
+            zwave.basicV1.basicSet(value: 0xFF).format(),
+            zwave.switchBinaryV1.switchBinaryGet().format()
+        ])
+   	} else {
+    	log.debug "Not opening door since it is already open"
+    }
 }
 
 def off() {
-	log.debug "closing the door"
-	delayBetween([
-		zwave.basicV1.basicSet(value: 0x00).format(),
-		zwave.switchBinaryV1.switchBinaryGet().format()
-	])
+	// If the device is off then turn on
+	if (device.currentValue("switch") == "on") {
+        log.debug "closing the door"
+        delayBetween([
+            zwave.basicV1.basicSet(value: 0x00).format(),
+            zwave.switchBinaryV1.switchBinaryGet().format()
+        ])
+   	} else {
+    	log.debug "Not closing door since it is already closed"
+    }
 }
 
 def open() {
