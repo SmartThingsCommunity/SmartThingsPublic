@@ -1444,7 +1444,7 @@ private def armPanel(stay) {
     state.zones.each() {
         def zoneType = it.zoneType
         if (zoneType == "exterior") {
-            if (it.delay) {
+            if (it.delay && !(stay && settings.stayDelayOff)) {
                 it.armed = false
                 armDelay = true
             } else {
