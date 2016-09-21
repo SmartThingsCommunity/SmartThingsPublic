@@ -333,9 +333,9 @@ def bulbListHandler(hub, data = "") {
     def bridge = null
 	if (selectedHue) {
 		bridge = getChildDevice(selectedHue)
+		bridge?.sendEvent(name: "bulbList", value: hub, data: bulbs, isStateChange: true, displayed: false)
 	}
-    bridge.sendEvent(name: "bulbList", value: hub, data: bulbs, isStateChange: true, displayed: false)
-    msg = "${bulbs.size()} bulbs found. ${bulbs}"
+	msg = "${bulbs.size()} bulbs found. ${bulbs}"
 	return msg
 }
 
@@ -490,24 +490,25 @@ def ssdpBridgeHandler(evt) {
 		def host = ip + ":" + port
 		log.debug "Device ($parsedEvent.mac) was already found in state with ip = $host."
 		def dstate = bridges."${parsedEvent.ssdpUSN.toString()}"
-		def dni = "${parsedEvent.mac}"
-		def d = getChildDevice(dni)
+		def dniReceived = "${parsedEvent.mac}"
+		def currentDni = dstate.mac
+		def d = getChildDevice(dniReceived)
 		def networkAddress = null
 		if (!d) {
-			childDevices.each {
-				if (it.getDeviceDataByName("mac")) {
-					def newDNI = "${it.getDeviceDataByName("mac")}"
-					d = it
-					if (newDNI != it.deviceNetworkId) {
-						def oldDNI = it.deviceNetworkId
-						log.debug "updating dni for device ${it} with $newDNI - previous DNI = ${it.deviceNetworkId}"
-						it.setDeviceNetworkId("${newDNI}")
-						if (oldDNI == selectedHue) {
-							app.updateSetting("selectedHue", newDNI)
-						}
-						doDeviceSync()
-					}
+			// There might be a mismatch between bridge DNI and the actual bridge mac address, correct that
+			log.debug "Bridge with $dniReceived not found"
+			def bridge = childDevices.find { it.deviceNetworkId == currentDni }
+			if (bridge != null) {
+				log.warn "Bridge is set to ${bridge.deviceNetworkId}, updating to $dniReceived"
+				bridge.setDeviceNetworkId("${dniReceived}")
+				dstate.mac = dniReceived
+				// Check to see if selectedHue is a valid bridge, otherwise update it
+				def isSelectedValid = bridges?.find {it.value?.mac == selectedHue}
+				if (isSelectedValid == null) {
+					log.warn "Correcting selectedHue in state"
+					app.updateSetting("selectedHue", dniReceived)
 				}
+				doDeviceSync()
 			}
 		} else {
 			updateBridgeStatus(d)
@@ -524,6 +525,18 @@ def ssdpBridgeHandler(evt) {
 				dstate.name = "Philips hue ($ip)"
 				d.sendEvent(name:"networkAddress", value: host)
 				d.updateDataValue("networkAddress", host)
+			}
+			if (dstate.mac != dniReceived) {
+				log.warn "Correcting bridge mac address in state"
+				dstate.mac = dniReceived
+			}
+			if (selectedHue != dniReceived) {
+				// Check to see if selectedHue is a valid bridge, otherwise update it
+				def isSelectedValid = bridges?.find {it.value?.mac == selectedHue}
+				if (isSelectedValid == null) {
+					log.warn "Correcting selectedHue in state"
+					app.updateSetting("selectedHue", dniReceived)
+				}
 			}
 		}
 	}
