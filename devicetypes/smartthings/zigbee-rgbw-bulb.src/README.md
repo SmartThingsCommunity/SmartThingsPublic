@@ -27,7 +27,7 @@ Works with:
 
 ## Device Health
 
-A Category C6 OSRAM LIGHTIFY LED RGBW Bulb with maxReportTime of 5 mins.
+OSRAM LIGHTIFY LED RGBW Bulb with maxReportTime of 5 mins.
 Check-in interval is double the value of maxReportTime. 
 This gives the device twice the amount of time to respond before it is marked as offline.
 Check-in interval = 12 mins
