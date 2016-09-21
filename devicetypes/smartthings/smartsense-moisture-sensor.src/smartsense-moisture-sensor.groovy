@@ -100,6 +100,9 @@ def parse(String description) {
 	else if (description?.startsWith('zone status')) {
 		map = parseIasMessage(description)
 	}
+	else if (description?.startsWith('zone report')) {
+		map = parseZoneReport(description)
+	}
 
 	log.debug "Parse returned $map"
 	def result = map ? createEvent(map) : null
@@ -121,16 +124,22 @@ private Map parseCatchAllMessage(String description) {
 				resultMap = getBatteryResult(cluster.data.last())
 				break
 
-            case 0x0402:
-                // temp is last 2 data values. reverse to swap endian
-                String temp = cluster.data[-2..-1].reverse().collect { cluster.hex1(it) }.join()
-                def value = getTemperature(temp)
-                resultMap = getTemperatureResult(value)
-                break
-        }
-    }
+			case 0x0402:
+				// temp is last 2 data values. reverse to swap endian
+				String temp = cluster.data[-2..-1].reverse().collect { cluster.hex1(it) }.join()
+				def value = getTemperature(temp)
+				resultMap = getTemperatureResult(value)
+				break
 
-    return resultMap
+			case 0x0500:
+				String value = cluster.data[-2..-1].reverse().collect { cluster.hex1(it) }.join()
+				ZoneStatus zs = new ZoneStatus(Integer.parseInt(value, 16))
+				resultMap = getZoneStatusResult(zs)
+				break
+		}
+	}
+
+	return resultMap
 }
 
 private boolean shouldProcessMessage(cluster) {
@@ -158,6 +167,11 @@ private Map parseReportAttributeMessage(String description) {
 	else if (descMap.cluster == "0001" && descMap.attrId == "0020") {
 		resultMap = getBatteryResult(Integer.parseInt(descMap.value, 16))
 	}
+	else if (descMap.cluster == "0500" && descMap.attrId == "0002") {
+		ZoneStatus zs = new ZoneStatus(Integer.parseInt(descMap.value, 16))
+		resultMap = getZoneStatusResult(zs)
+	}
+
 
 	return resultMap
 }
@@ -171,10 +185,18 @@ private Map parseCustomMessage(String description) {
 	return resultMap
 }
 
+private Map getZoneStatusResult(ZoneStatus zs) {
+	return zs.isAlarm1Set() ? getMoistureResult('wet') : getMoistureResult('dry')
+}
+
 private Map parseIasMessage(String description) {
 	ZoneStatus zs = zigbee.parseZoneStatus(description)
+	return getZoneStatusResult(zs)
+}
 
-	return zs.isAlarm1Set() ? getMoistureResult('wet') : getMoistureResult('dry')
+private Map parseZoneReport(String description) {
+	ZoneStatus zs = new ZoneStatus(Integer.parseInt(description - "zone report :: type: 19 value: ", 16))
+	return getZoneStatusResult(zs)
 }
 
 def getTemperature(value) {
@@ -244,11 +266,11 @@ private Map getTemperatureResult(value) {
 		def v = value as int
 		value = v + offset
 	}
-    def descriptionText
-    if ( temperatureScale == 'C' )
-    	descriptionText = '{{ device.displayName }} was {{ value }}°C'
-    else
-    	descriptionText = '{{ device.displayName }} was {{ value }}°F'
+	def descriptionText
+	if ( temperatureScale == 'C' )
+		descriptionText = '{{ device.displayName }} was {{ value }}°C'
+	else
+		descriptionText = '{{ device.displayName }} was {{ value }}°F'
 
 	return [
 		name: 'temperature',
@@ -261,16 +283,16 @@ private Map getTemperatureResult(value) {
 
 private Map getMoistureResult(value) {
 	log.debug "water"
-    def descriptionText
-    if ( value == "wet" )
-    	descriptionText = '{{ device.displayName }} is wet'
-    else
-    	descriptionText = '{{ device.displayName }} is dry'
+	def descriptionText
+	if ( value == "wet" )
+		descriptionText = '{{ device.displayName }} is wet'
+	else
+		descriptionText = '{{ device.displayName }} is dry'
 	return [
 		name: 'water',
 		value: value,
 		descriptionText: descriptionText,
-        translatable: true
+		translatable: true
 	]
 }
 
@@ -282,29 +304,31 @@ def ping() {
 }
 
 def refresh() {
-	log.debug "Refreshing Temperature and Battery"
-	def refreshCmds = [
-		"st rattr 0x${device.deviceNetworkId} 1 0x402 0", "delay 200",
-		"st rattr 0x${device.deviceNetworkId} 1 1 0x20", "delay 200"
-	]
+	log.debug "Refreshing Temperature, Battery and Zone Status"
+	def refreshCmds = zigbee.readAttribute(0x0402, 0x0000) + // Temperature
+		zigbee.readAttribute(0x0001, 0x0020) + // Battery Voltage
+		zigbee.readAttribute(0x0500, 0x0002) // Zone Status
 
 	return refreshCmds + enrollResponse()
 }
 
 def configure() {
+	log.debug "Configuring Reporting, IAS CIE, and Bindings."
+
 	// Device-Watch allows 2 check-in misses from device
 	sendEvent(name: "checkInterval", value: 60 * 12, displayed: false, data: [protocol: "zigbee"])
 
 	String zigbeeEui = swapEndianHex(device.hub.zigbeeEui)
-	log.debug "Configuring Reporting, IAS CIE, and Bindings."
 	def enrollCmds = [
 		"zcl global write 0x500 0x10 0xf0 {${zigbeeEui}}", "delay 200",
 		"send 0x${device.deviceNetworkId} 1 1", "delay 500",
 	]
 
-	// temperature minReportTime 30 seconds, maxReportTime 5 min. Reporting interval if no activity
-	// battery minReport 30 seconds, maxReportTime 6 hrs by default
-	return enrollCmds + zigbee.batteryConfig() + zigbee.temperatureConfig(30, 300) + refresh() // send refresh cmds as part of config
+	return enrollCmds +
+		zigbee.batteryConfig() +
+		zigbee.temperatureConfig() +
+		zigbee.configureReporting(0x0500, 0x0002, 0x19, 30, 300, null) + // Report ZoneStatus between 30s and 5 minutes
+		refresh() // send refresh cmds as part of config
 }
 
 def enrollResponse() {
