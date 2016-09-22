@@ -4,6 +4,9 @@
  *  Author: Juan Risso
  *  Date: 2013-12-19
  */
+
+include 'asynchttp_v1'
+
 definition(
 	name: "Jawbone UP (Connect)",
 	namespace: "juano2310",
@@ -303,7 +306,8 @@ def setup() {
 			  	def childDevice = addChildDevice('juano2310', "Jawbone User", "${app.id}.${member.xid}",null,[name:"Jawbone UP - " + member.first, completedSetup: true])
 			    if (childDevice) {
 			       	log.debug "Child Device Successfully Created"
-			        generateInitialEvent (member, childDevice)
+			        childDevice?.generateSleepingEvent(false)
+                    pollChild(childDevice)
 			    }
 			}
 		}
@@ -349,67 +353,67 @@ def uninstalled() {
 }
 
 def pollChild(childDevice) {
-    def member = state.member
-    generatePollingEvents (member, childDevice)
+		def childMap = [ value: "$childDevice.device.deviceNetworkId}"]
+
+		def params = [
+				uri: 'https://jawbone.com',
+				path: '/nudge/api/users/@me/goals',
+				headers: ["Authorization": "Bearer ${state.JawboneAccessToken}" ],
+				contentType: 'application/json'
+		]
+
+		asynchttp_v1.get('responseGoals', params, childMap)
+
+		def params2 = [
+				uri: 'https://jawbone.com',
+				path: '/nudge/api/users/@me/moves',
+				headers: ["Authorization": "Bearer ${state.JawboneAccessToken}" ],
+				contentType: 'application/json'
+		]
+
+		asynchttp_v1.get('responseMoves', params2, childMap)
 }
 
-def generatePollingEvents (member, childDevice) {
-    // lets figure out if the member is currently "home" (At the place)
-    def urlgoals = "https://jawbone.com/nudge/api/users/@me/goals"
-    def urlmoves = "https://jawbone.com/nudge/api/users/@me/moves"
-    def urlsleeps = "https://jawbone.com/nudge/api/users/@me/sleeps"
-    def goals = null
-    def moves = null
- 	def sleeps = null
-    httpGet(uri: urlgoals, headers: ["Authorization": "Bearer ${state.JawboneAccessToken}" ]) {response ->
-        goals = response.data.data
-    }
-    httpGet(uri: urlmoves, headers: ["Authorization": "Bearer ${state.JawboneAccessToken}" ]) {response ->
-        moves = response.data.data.items[0]
-    }
-
-    try { // we are going to just ignore any errors
-        log.debug "Member = ${member.first}"
-        log.debug "Moves Goal = ${goals.move_steps} Steps"
-        log.debug "Moves = ${moves.details.steps} Steps"
-
-        childDevice?.sendEvent(name:"steps", value: moves.details.steps)
-        childDevice?.sendEvent(name:"goal", value: goals.move_steps)
-    	//setColor(moves.details.steps,goals.move_steps,childDevice)
-    }
-    catch (e) {
-            // eat it
-    }
+def responseGoals(response, dni) {
+	if (response.hasError()) {
+			log.error "response has error: $response.errorMessage"
+	} else {
+			def goals
+			try {
+					// json response already parsed into JSONElement object
+					goals = response.json.data
+			} catch (e) {
+					log.error "error parsing json from response: $e"
+			}
+			if (goals) {
+				def childDevice = getChildDevice(dni.value)
+				log.debug "Goal = ${goals.move_steps} Steps"
+				childDevice?.sendEvent(name:"goal", value: goals.move_steps)
+			} else {
+					log.debug "did not get json results from response body: $response.data"
+			}
+	}
 }
 
-def generateInitialEvent (member, childDevice) {
-    // lets figure out if the member is currently "home" (At the place)
-    def urlgoals = "https://jawbone.com/nudge/api/users/@me/goals"
-    def urlmoves = "https://jawbone.com/nudge/api/users/@me/moves"
-    def urlsleeps = "https://jawbone.com/nudge/api/users/@me/sleeps"
-    def goals = null
-    def moves = null
- 	def sleeps = null
-    httpGet(uri: urlgoals, headers: ["Authorization": "Bearer ${state.JawboneAccessToken}" ]) {response ->
-        goals = response.data.data
-    }
-    httpGet(uri: urlmoves, headers: ["Authorization": "Bearer ${state.JawboneAccessToken}" ]) {response ->
-        moves = response.data.data.items[0]
-    }
-
-    try { // we are going to just ignore any errors
-        log.debug "Member = ${member.first}"
-        log.debug "Moves Goal = ${goals.move_steps} Steps"
-        log.debug "Moves = ${moves.details.steps} Steps"
-        log.debug "Sleeping state = false"
-        childDevice?.generateSleepingEvent(false)
-        childDevice?.sendEvent(name:"steps", value: moves.details.steps)
-        childDevice?.sendEvent(name:"goal", value: goals.move_steps)
-    	//setColor(moves.details.steps,goals.move_steps,childDevice)
-    }
-    catch (e) {
-            // eat it
-    }
+def responseMoves(response, dni) {
+	if (response.hasError()) {
+			log.error "response has error: $response.errorMessage"
+	} else {
+			def moves
+			try {
+					// json response already parsed into JSONElement object
+					moves = response.json.data.items[0]
+			} catch (e) {
+					log.error "error parsing json from response: $e"
+			}
+			if (moves) {
+				def childDevice = getChildDevice(dni.value)
+				log.debug "Moves = ${moves.details.steps} Steps"
+				childDevice?.sendEvent(name:"steps", value: moves.details.steps)
+			} else {
+					log.debug "did not get json results from response body: $response.data"
+			}
+	}
 }
 
 def setColor (steps,goal,childDevice) {
@@ -433,7 +437,7 @@ def hookEventHandler() {
     // get some stuff we need
     def userId = json.events.user_xid[0]
     def	json_type = json.events.type[0]
-	def json_action = json.events.action[0]
+	  def json_action = json.events.action[0]
 
     //log.debug json
     log.debug "Userid = ${userId}"
