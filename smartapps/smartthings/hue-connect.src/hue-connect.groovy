@@ -1120,7 +1120,7 @@ def setColor(childDevice, huesettings) {
 			value.hue = Math.min(Math.round(huesettings.hue * 65535 / 100), 65535)
 		if (huesettings.saturation != null)
 			value.sat = Math.min(Math.round(huesettings.saturation * 254 / 100), 254)
-	} else if (huesettings.hex != null && false) {
+	} else if (huesettings.hex != null) {
 		// For now ignore model to get a consistent color if same color is set across multiple devices
 		// def model = state.bulbs[getId(childDevice)]?.modelid
 		// value.xy = calculateXY(huesettings.hex, model)
@@ -1663,7 +1663,7 @@ private boolean checkPointInLampsReach(p, colorPoints) {
 }
 
 /**
- * Converts an RGB color in hex to HSV.
+ * Converts an RGB color in hex to HSV/HSB.
  * Algorithm based on http://en.wikipedia.org/wiki/HSV_color_space.
  *
  * @param colorStr color value in hex (#ff03d3)
@@ -1673,32 +1673,32 @@ private boolean checkPointInLampsReach(p, colorPoints) {
 def hexToHsv(colorStr){
 	def r = Integer.valueOf( colorStr.substring( 1, 3 ), 16 ) / 255
 	def g = Integer.valueOf( colorStr.substring( 3, 5 ), 16 ) / 255
-	def b = Integer.valueOf( colorStr.substring( 5, 7 ), 16 ) / 255;
+	def b = Integer.valueOf( colorStr.substring( 5, 7 ), 16 ) / 255
 
 	def max = Math.max(Math.max(r, g), b)
 	def min = Math.min(Math.min(r, g), b)
 
-	def h, s, v = max;
+	def h, s, v = max
 
-	def d = max - min;
-	s = max == 0 ? 0 : d / max;
+	def d = max - min
+	s = max == 0 ? 0 : d / max
 
 	if(max == min){
-		h = 0;
+		h = 0
 	}else{
 		switch(max){
-			case r: h = (g - b) / d + (g < b ? 6 : 0); break;
-			case g: h = (b - r) / d + 2; break;
-			case b: h = (r - g) / d + 4; break;
+			case r: h = (g - b) / d + (g < b ? 6 : 0); break
+			case g: h = (b - r) / d + 2; break
+			case b: h = (r - g) / d + 4; break
 		}
 		h /= 6;
 	}
 
-	return [(h * 100).round(), (s * 100).round(), (v * 100).round()];
+	return [Math.round(h * 100), Math.round(s * 100), Math.round(v * 100)]
 }
 
 /**
- * Converts HSV color to RGB in hex.
+ * Converts HSV/HSB color to RGB in hex.
  * Algorithm based on http://en.wikipedia.org/wiki/HSV_color_space.
  *
  * @param  hue hue 0-100
@@ -1713,11 +1713,11 @@ def hsvToHex(hue, sat, value = 100){
 	def s = sat / 100
 	def v = value / 100
 
-	def i = Math.floor(h * 6);
-	def f = h * 6 - i;
-	def p = v * (1 - s);
-	def q = v * (1 - f * s);
-	def t = v * (1 - (1 - f) * s);
+	def i = Math.floor(h * 6)
+	def f = h * 6 - i
+	def p = v * (1 - s)
+	def q = v * (1 - f * s)
+	def t = v * (1 - (1 - f) * s)
 
 	switch (i % 6) {
 		case 0:
@@ -1753,9 +1753,9 @@ def hsvToHex(hue, sat, value = 100){
 	}
 
 	// Converting float components to int components.
-	def r1 = String.format("%02X", (int) (r * 255.0f));
-	def g1 = String.format("%02X", (int) (g * 255.0f));
-	def b1 = String.format("%02X", (int) (b * 255.0f));
+	def r1 = String.format("%02X", (int) (r * 255.0f))
+	def g1 = String.format("%02X", (int) (g * 255.0f))
+	def b1 = String.format("%02X", (int) (b * 255.0f))
 
 	return "#$r1$g1$b1"
 }
