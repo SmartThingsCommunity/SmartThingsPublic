@@ -950,6 +950,14 @@ private handleCommandResponse(body) {
  * @return empty array
  */
 private handlePoll(body) {
+	// Used to track "unreachable" time
+	// Device is considered "offline" if it has been in the "unreachable" state for
+	// 11 minutes (e.g. two poll intervals)
+	// Note, Hue Bridge marks devices as "unreachable" often even when they accept commands
+	Calendar time11 = Calendar.getInstance()
+	time11.add(Calendar.MINUTE, -11)
+	Calendar currentTime = Calendar.getInstance()
+
 	def bulbs = getChildDevices()
 	for (bulb in body) {
 		def device = bulbs.find{it.deviceNetworkId == "${app.id}/${bulb.key}"}
@@ -959,7 +967,10 @@ private handlePoll(body) {
 					// light just came back online, notify device watch
 					def lastActivity = now()
 					device.sendEvent(name: "deviceWatch-status", value: "ONLINE", description: "Last Activity is on ${new Date((long) lastActivity)}", displayed: false, isStateChange: true)
+					log.debug "$device is Online"
 				}
+				// Mark light as "online"
+				state.bulbs[bulb.key]?.unreachableSince = null
 				state.bulbs[bulb.key]?.online = true
 
 				// If user just executed commands, then do not send events to avoid confusing the turning on/off state
@@ -969,9 +980,18 @@ private handlePoll(body) {
 					sendColorEvents(device, bulb.value?.state?.xy, bulb.value?.state?.hue, bulb.value?.state?.sat, bulb.value?.state?.ct, bulb.value?.state?.colormode)
 				}
 			} else {
-				state.bulbs[bulb.key]?.online = false
-				log.warn "$device is not reachable by Hue bridge"
-				device.sendEvent(name: "DeviceWatch-DeviceOffline", value: "offline", displayed: false, isStateChange: true)
+				if (state.bulbs[bulb.key]?.unreachableSince == null) {
+					// Store the first time where device was reported as "unreachable"
+					state.bulbs[bulb.key]?.unreachableSince = currentTime.getTimeInMillis()
+				} else if (state.bulbs[bulb.key]?.online) {
+					// Check if device was "unreachable" for more than 11 minutes and mark "offline" if necessary
+					if (state.bulbs[bulb.key]?.unreachableSince < time11.getTimeInMillis()) {
+						log.warn "$device went Offline"
+						state.bulbs[bulb.key]?.online = false
+						device.sendEvent(name: "DeviceWatch-DeviceOffline", value: "offline", displayed: false, isStateChange: true)
+					}
+				}
+				log.warn "$device may not reachable by Hue bridge"
 			}
 		}
 	}
@@ -1006,9 +1026,6 @@ def hubVerification(bodytext) {
 def on(childDevice) {
 	log.debug "Executing 'on'"
 	def id = getId(childDevice)
-	if (!isOnline(id)) {
-		return "Bulb is unreachable"
-	}
 	updateInProgress()
 	createSwitchEvent(childDevice, "on")
 	put("lights/$id/state", [on: true])
@@ -1018,9 +1035,6 @@ def on(childDevice) {
 def off(childDevice) {
 	log.debug "Executing 'off'"
 	def id = getId(childDevice)
-	if (!isOnline(id)) {
-		return "Bulb is unreachable"
-	}
 	updateInProgress()
 	createSwitchEvent(childDevice, "off")
 	put("lights/$id/state", [on: false])
@@ -1030,9 +1044,6 @@ def off(childDevice) {
 def setLevel(childDevice, percent) {
 	log.debug "Executing 'setLevel'"
 	def id = getId(childDevice)
-	if (!isOnline(id)) {
-		return "Bulb is unreachable"
-	}
     updateInProgress()
 	// 1 - 254
     def level
@@ -1057,10 +1068,6 @@ def setLevel(childDevice, percent) {
 def setSaturation(childDevice, percent) {
 	log.debug "Executing 'setSaturation($percent)'"
 	def id = getId(childDevice)
-	if (!isOnline(id)) {
-		return "Bulb is unreachable"
-	}
-
 	updateInProgress()
 	// 0 - 254
 	def level = Math.min(Math.round(percent * 254 / 100), 254)
@@ -1073,9 +1080,6 @@ def setSaturation(childDevice, percent) {
 def setHue(childDevice, percent) {
 	log.debug "Executing 'setHue($percent)'"
 	def id = getId(childDevice)
-	if (!isOnline(id)) {
-		return "Bulb is unreachable"
-	}
     updateInProgress()
 	// 0 - 65535
 	def level =	Math.min(Math.round(percent * 65535 / 100), 65535)
@@ -1088,9 +1092,6 @@ def setHue(childDevice, percent) {
 def setColorTemperature(childDevice, huesettings) {
 	log.debug "Executing 'setColorTemperature($huesettings)'"
 	def id = getId(childDevice)
-	if (!isOnline(id)) {
-		return "Bulb is unreachable"
-	}
     updateInProgress()
 	// 153 (6500K) to 500 (2000K)
 	def ct = hueSettings == 6500 ? 153 : Math.round(1000000/huesettings)
@@ -1102,9 +1103,6 @@ def setColorTemperature(childDevice, huesettings) {
 def setColor(childDevice, huesettings) {
     log.debug "Executing 'setColor($huesettings)'"
 	def id = getId(childDevice)
-	if (!isOnline(id)) {
-		return "Bulb is unreachable"
-	}
     updateInProgress()
 
     def value = [:]
@@ -1224,7 +1222,7 @@ private getBridgeIP() {
     	if (d) {
         	if (d.getDeviceDataByName("networkAddress"))
             	host =  d.getDeviceDataByName("networkAddress")
-            else
+        else
         		host = d.latestState('networkAddress').stringValue
         }
         if (host == null || host == "") {
