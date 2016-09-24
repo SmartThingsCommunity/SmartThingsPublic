@@ -1,12 +1,12 @@
 /**
  *  Ask Alexa 
  *
- *  Version 2.1.4 - 9/23/16 Copyright © 2016 Michael Struck
+ *  Version 2.1.4a - 9/23/16 Copyright © 2016 Michael Struck
  *  Special thanks for Keith DeLong for overall code and assistance; Barry Burke for Weather Underground Integration; jhamstead for Ecobee climate modes, Yves Racine for My Ecobee thermostat tips
  * 
  *  Version information prior to 2.1.4 listed here: https://github.com/MichaelStruck/SmartThingsPublic/blob/master/smartapps/michaelstruck/ask-alexa.src/Ask%20Alexa%20Version%20History.md
  *
- *  Version 2.1.4 (9/23/16) Code optimization; addition of device alias function
+ *  Version 2.1.4a (9/23/16) Code optimization; addition of device alias function
  *
  *  Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except
  *  in compliance with the License. You may obtain a copy of the License at:
@@ -2971,7 +2971,7 @@ def msgHandler(evt) {
 	state.msgQueue<<["date":evt.date.getTime(),"appName":evt.value,"msg":evt.descriptionText,"id":evt.unit]
 }
 def msgDeleteHandler(evt){
-	if (state.msgQueue.size()>0){
+	if (state.msgQueue && state.msgQueue.size()>0){
     	if (evt.unit && evt.value){
         	log.debug evt.value + " is deleting messages from the message queue."
     		state.msgQueue.removeAll{it.appName==evt.value && it.id==evt.unit}
@@ -3219,12 +3219,12 @@ def getURLs(){
 //Version/Copyright/Information/Help-----------------------------------------------------------
 private textAppName() { return "Ask Alexa" }	
 private textVersion() {
-    def version = "SmartApp Version: 2.1.4 (09/23/2016)", lambdaVersion = state.lambdaCode ? "\n" + state.lambdaCode : ""
+    def version = "SmartApp Version: 2.1.4a (09/23/2016)", lambdaVersion = state.lambdaCode ? "\n" + state.lambdaCode : ""
     return "${version}${lambdaVersion}"
 }
 private versionInt(){ return 214 }
 private LambdaReq() { return 122 }
-private versionLong(){ return "2.1.4" }
+private versionLong(){ return "2.1.4a" }
 private textCopyright() {return "Copyright © 2016 Michael Struck" }
 private textLicense() {
 	def text = "Licensed under the Apache License, Version 2.0 (the 'License'); you may not use this file except in compliance with the License. "+
