@@ -28,6 +28,7 @@
  *  0.13 (06/13/2016) - Added dim level ramp-up option for remote dim commands
  *  0.14 (08/01/2016) - Corrected 60% dim rate limit test that was inadvertently pulled into repository
  *  0.15 (09/06/2016) - Added Firmware version info. Removed unused lit indicator button.
+ *  0.16 (09/24/2016) - Added double-tap to full brightness option and support for firmware dim rate configuration parameters.
  *
  */
  
@@ -49,7 +50,7 @@ metadata {
         command "tapDown3"
         command "holdUp"
         command "holdDown"
-
+        
         fingerprint deviceId: "0x1101", inClusters: "0x5E, 0x86, 0x72, 0x5A, 0x85, 0x59, 0x73, 0x26, 0x27, 0x70, 0x2C, 0x2B, 0x5B, 0x7A", outClusters: "0x5B"
 }
 
@@ -71,10 +72,13 @@ metadata {
 		reply "200163,delay 5000,2602": "command: 2603, payload: 63"
 	}
 
-    preferences {
-        input "remoteDimFadeUpEnabled", "bool", title: "Enable remote dim fade-up",  defaultValue: false,  displayDuringSetup: true, required: false	
-        input "remoteDimDurationPerLevel", "number", title: "Remote dim rate ms duration per level (default is 20) [1-1000]",  defaultValue: 20,  displayDuringSetup: true, required: false	
-		input "remoteSizeOfDimLevels", "number", title: "Remote dim rate % size of each level (default is 5) [1-50]",  defaultValue: 5,  displayDuringSetup: true, required: false	
+    preferences {      
+       input "doubleTapToFullBright", "bool", title: "Double-Tap Up sets to full brightness",  defaultValue: false,  displayDuringSetup: true, required: false	       
+        
+       input ( "remoteStepDuration", "number", title: "Local Dim Rate: Duration of each level (1-22)(1=10ms)", defaultValue: 3,range: "1..255", required: false)
+       input ( "remoteStepSize", "number", title: "Local Dim Rate: Dim level to change each duration (1-99)", defaultValue: 1, range: "1..99", required: false)
+       input ( "localStepDuration", "number", title: "Remote Dim Rate: Duration of each level (1-22)(1=10ms)", defaultValue: 3,range: "1..255", required: false)
+       input ( "localStepSize", "number", title: "Remote Dim Rate: Dim level to change each duration (1-99)", defaultValue: 1, range: "1..99", required: false)
     }
     
 	tiles(scale: 2) {
@@ -127,16 +131,17 @@ metadata {
 
         standardTile("holdDown", "device.button", width: 2, height: 2, decoration: "flat") {
 			state "default", label: "Hold ▼", backgroundColor: "#ffffff", action: "holdDown", icon: "st.Home.home30"
-		} 
-
+        }
+        
 		main(["switch"])
         
-		details(["switch","tapUp2","tapUp3","holdUp","tapDown2","tapDown3","holdDown","level","firmwareVersion", "refresh",])
+		details(["switch","tapUp2","tapUp3","holdUp","tapDown2","tapDown3","holdDown","level","firmwareVersion", "refresh"])
 	}
 }
 
 def parse(String description) {
 	def result = null
+    log.debug (description)
     if (description != "updated") {
 	    def cmd = zwave.parse(description, [0x20: 1, 0x26: 1, 0x70: 1])	
         if (cmd) {
@@ -246,35 +251,21 @@ def off() {
 	],5000)
 }
 
-def setLevel(value) {
+def setLevel (value) {
 	log.debug "setLevel >> value: $value"
 	def valueaux = value as Integer
-    def level = Math.max(Math.min(valueaux, 99), 0)
-    def result = []
-    def statusDelay = 5000
-	if (remoteDimFadeUpEnabled && state.lastLevel != null && level > state.lastLevel) 
-    {
-         //Workaround for HS-D100+ current lack of support for remote dim level rate configuration
-         for (def i = state.lastLevel + state.remoteSizeOfDimLevels; i < level; i=i+state.remoteSizeOfDimLevels) {  
-            result << zwave.basicV1.basicSet(value: i).format()
-            result << "delay $state.remoteDimDurationPerLevel"
-         }
-         statusDelay = state.remoteDimDurationPerLevel * state.remoteSizeOfDimLevels + 3000
-    }
-
-    result << zwave.basicV1.basicSet(value: level).format()
-   
-    if (level > 0) {
+	def level = Math.max(Math.min(valueaux, 99), 0)
+	if (level > 0) {
 		sendEvent(name: "switch", value: "on")
-    } else {
+	} else {
 		sendEvent(name: "switch", value: "off")
 	}
-    state.lastLevel = level
-    sendEvent (name: "level", value: level, unit: "%")
-    result << "delay $statusDelay"
-	result << zwave.switchMultilevelV1.switchMultilevelGet().format()
-    result << "delay 3000"
-	result << zwave.switchMultilevelV1.switchMultilevelGet().format()
+	sendEvent(name: "level", value: level, unit: "%")
+    def result = []
+ 
+    result += response(zwave.basicV1.basicSet(value: level))
+    result += response("delay 5000")
+    result += response(zwave.switchMultilevelV1.switchMultilevelGet())
 }
 
 def poll() {
@@ -304,13 +295,17 @@ def zwaveEvent(physicalgraph.zwave.commands.centralscenev1.CentralSceneNotificat
               case 2:
                   // Hold
                   result += createEvent(holdUpResponse("physical"))  
-                  result += response("delay 100")
                   result += createEvent([name: "switch", value: "on", type: "physical"])    
 
                   break
               case 3: 
                   // 2 Times
-                  result=createEvent(tapUp2Response("physical"))
+                  log.debug (doubleTapToFullBright)
+                  result +=createEvent(tapUp2Response("physical"))
+                  if (doubleTapToFullBright)
+                  {
+                     result += setLevel(99)
+                  }                    
                   break
               case 4:
                   // 3 Three times
@@ -334,7 +329,6 @@ def zwaveEvent(physicalgraph.zwave.commands.centralscenev1.CentralSceneNotificat
               case 2:
                   // Hold
                   result += createEvent(holdDownResponse("physical"))
-                  result += response("delay 100")
                   result += createEvent([name: "switch", value: "off", type: "physical"]) 
                   break
               case 3: 
@@ -436,56 +430,52 @@ def setFirmwareVersion() {
 
 def configure() {
    log.debug ("configure() called")
-   setDimRatePrefs()
+ 
    sendEvent(name: "numberOfButtons", value: 6, displayed: false)
    def commands = []
+   commands << setDimRatePrefs()
    commands << zwave.switchMultilevelV1.switchMultilevelGet().format()
    commands << zwave.manufacturerSpecificV1.manufacturerSpecificGet().format()
    commands << zwave.versionV1.versionGet().format()
-   //commands << zwave.firmwareUpdateMdV2.firmwareMdGet().format()
    delayBetween(commands,300)
 }
 
 def setDimRatePrefs() 
 {
    log.debug ("set prefs")
-   if (remoteSizeOfDimLevels == null)
+   def cmds = []
+
+   if (remoteStepSize)
    {
-      state.remoteSizeOfDimLevels = 5
-   }
-   else if (remoteSizeOfDimLevels < 1)
-   {
-      state.remoteSizeOfDimLevels = 1
-   }
-   else if (remoteSizeOfDimLevels > 50)
-   {
-      state.remoteSizeOfDimLevels = 50
-   }
-   else
-   {
-      state.remoteSizeOfDimLevels = remoteSizeOfDimLevels
+      def remoteStepSize = Math.max(Math.min(remoteStepSize, 99), 1)
+      cmds << zwave.configurationV2.configurationSet(configurationValue: [remoteStepSize], parameterNumber: 7, size: 1).format()
    }
    
-   if (remoteDimDurationPerLevel == null)
+   if (remoteStepDuration)
    {
-      state.remoteDimDurationPerLevel = 20
+       def remoteStepDuration = Math.max(Math.min(remoteStepDuration, 22), 1)
+       cmds << zwave.configurationV2.configurationSet(configurationValue: [remoteStepDuration], parameterNumber: 8, size: 2).format()
    }
-   else if (remoteDimDurationPerLevel < 1)
+   
+   
+   if (localStepSize)
    {
-      state.remoteDimDurationPerLevel = 1
+      def localStepSize = Math.max(Math.min(localStepSize, 99), 1)
+      cmds << zwave.configurationV2.configurationSet(configurationValue: [localStepSize], parameterNumber: 9, size: 1).format()
    }
-   else if (remoteDimDurationPerLevel > 1000)
+   
+   if (localStepDuration)
    {
-      state.remoteDimDurationPerLevel = 1000
+       def localStepDuration = Math.max(Math.min(localStepDuration, 22), 1)
+       cmds << zwave.configurationV2.configurationSet(configurationValue: [localStepDuration], parameterNumber: 10, size: 2).format()
    }
-   else
-   {
-     state.remoteDimDurationPerLevel = remoteDimDurationPerLevel
-   }  
+   
+   return cmds
 }
-
+ 
 def updated()
 {
-   log.debug ("updated called")
-   setDimRatePrefs()
+ def cmds= []
+ cmds << setDimRatePrefs
+ delayBetween(cmds, 500)
 }
