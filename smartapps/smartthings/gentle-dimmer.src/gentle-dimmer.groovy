@@ -950,7 +950,7 @@ int dynamicEndLevel() {
 private getColorTemperature(dimmer, colorTemperatureDimmerCount, percentComplete) {
 	def startTemp, endTemp
 
-	if (individualColorTemperatures > colorTemperatureDimmerCount) {
+	if (individualColorTemperatures && colorTemperatureDimmerCount > 1) {
 		if (settings.get("deviceColorTemperatureUseCurrent" + dimmer.id)) {
 			startTemp = atomicState.dimmerProps[dimmer.id]["startColorTemperature"]["temperature"]
 		} else {
