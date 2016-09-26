@@ -22,6 +22,7 @@
  *
  *	Changelog:
  *
+ *  1.3 (09/25/2016) -  Added display of firmware version and updated to get battery level on initial installation
  *  1.2 (09/11/2016) -  Added preference option for push-to-break button (vs. default push-to-make) doorbell circuit. Note: enabling
  *                      this setting will also result in a doorbell notification if power is lost to the doorbell transformer.
  *  1.1 (05/11/2016) -  Added Button capability option.
@@ -37,7 +38,9 @@ metadata {
         capability "Button"
 		capability "Battery"
 		capability "Refresh"
-		attribute "status", "enum", ["off", "doorbell"]
+        capability "Configuration"
+		
+        attribute "status", "enum", ["off", "doorbell"]
         
 		fingerprint deviceId: "0x0701", inClusters: "0x5E, 0x86, 0x72, 0x5A, 0x73, 0x80, 0x70, 0x71, 0x85, 0x59, 0x84, 0x7A"
 	}
@@ -64,9 +67,14 @@ metadata {
 		standardTile("refresh", "device.refresh", inactiveLabel: false, decoration: "flat", width: 2, height: 2) {
 			state "default", action:"refresh.refresh", icon:"st.secondary.refresh"
 		}
+        
+        valueTile("firmwareVersion", "device.firmwareVersion", width:2, height: 2, decoration: "flat", inactiveLabel: false) {
+			state "default", label: '${currentValue}'
+		}
+  
 
 		main "status"
-		details(["status", "battery", "refresh"])
+		details(["status", "battery", "refresh", "firmwareVersion"])
 	}
 }
 
@@ -74,7 +82,16 @@ def refresh() {
 	   sendEvent(name: "status", value: "off", displayed: false, isStateChange: true)
 	   sendEvent(name: "switch", value: "off", displayed: false, isStateChange: true)
        updated()
+       configure()
  }
+
+def configure() {
+   log.debug ("configure() called")
+   def commands = []
+   commands << zwave.versionV1.versionGet().format()
+   commands << zwave.batteryV1.batteryGet().format()
+   delayBetween(commands,500)
+}
 
 def zwaveEvent(physicalgraph.zwave.commands.wakeupv2.WakeUpNotification cmd) {
     def event = createEvent(descriptionText: "${device.displayName} woke up", displayed: false)
@@ -88,6 +105,20 @@ def zwaveEvent(physicalgraph.zwave.commands.wakeupv2.WakeUpNotification cmd) {
     result += response(zwave.wakeUpV1.wakeUpNoMoreInformation().format()) 
     return result
 }
+
+def zwaveEvent(physicalgraph.zwave.commands.versionv1.VersionReport cmd) {	
+    //updateDataValue("applicationVersion", "${cmd.applicationVersion}")
+    log.debug ("received Version Report")
+    log.debug "applicationVersion:      ${cmd.applicationVersion}"
+    log.debug "applicationSubVersion:   ${cmd.applicationSubVersion}"
+    state.firmwareVersion=cmd.applicationVersion+'.'+cmd.applicationSubVersion
+    log.debug "zWaveLibraryType:        ${cmd.zWaveLibraryType}"
+    log.debug "zWaveProtocolVersion:    ${cmd.zWaveProtocolVersion}"
+    log.debug "zWaveProtocolSubVersion: ${cmd.zWaveProtocolSubVersion}"
+    setFirmwareVersion()
+    createEvent([descriptionText: "Firmware V"+state.firmwareVersion, isStateChange: false])
+}
+
 
 // Unexpected command received
 def zwaveEvent (physicalgraph.zwave.Command cmd) {
@@ -142,6 +173,19 @@ def zwaveEvent(physicalgraph.zwave.commands.notificationv3.NotificationReport cm
 	       result += createEvent(name: "switch", value: "off", displayed: false, isStateChange: true)
        } 
        return result
+}
+
+def setFirmwareVersion() {
+   def versionInfo = ''
+   if (state.firmwareVersion)
+   {
+      versionInfo=versionInfo+"Firmware V"+state.firmwareVersion
+   }
+   else 
+   {
+     versionInfo=versionInfo+"Firmware unknown"
+   }   
+   sendEvent(name: "firmwareVersion",  value: versionInfo, isStateChange: true)
 }
 
 def parse(description) {
