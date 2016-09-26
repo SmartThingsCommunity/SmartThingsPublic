@@ -454,11 +454,14 @@ def sendStopEvent(source) {
 		eventData.value += "cancelled"
 	}
 
-	sendControllerEvent(eventData)
-	// send 100% completion
+	// send 100% completion event
 	sendTimeRemainingEvent(100)
+
 	// send a non-displayed 0% completion to reset tiles
 	sendTimeRemainingEvent(0, false)
+
+	// send sessionStatus event last so the event feed is ordered properly
+	sendControllerEvent(eventData)
 }
 
 def sendTimeRemainingEvent(percentComplete, displayed = true) {
