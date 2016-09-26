@@ -608,8 +608,6 @@ private completion() {
 	handleCompletionMessaging()
 
 	handleCompletionModesAndPhrases()
-
-	sendTimeRemainingEvent(100)
 }
 
 private handleCompletionSwitches() {
