@@ -455,16 +455,19 @@ def sendStopEvent(source) {
 	}
 
 	sendControllerEvent(eventData)
-	sendTimeRemainingEvent(0)
+	// send 100% completion
+	sendTimeRemainingEvent(100)
+	// send a non-displayed 0% completion to reset tiles
+	sendTimeRemainingEvent(0, false)
 }
 
-def sendTimeRemainingEvent(percentComplete) {
+def sendTimeRemainingEvent(percentComplete, displayed = true) {
 	log.trace "sendTimeRemainingEvent(${percentComplete})"
 
 	def percentCompleteEventData = [
 			name: "percentComplete",
 			value: percentComplete as int,
-			displayed: true,
+			displayed: displayed,
 			isStateChange: true
 	]
 	sendControllerEvent(percentCompleteEventData)
@@ -474,7 +477,7 @@ def sendTimeRemainingEvent(percentComplete) {
 	def timeRemainingEventData = [
 			name: "timeRemaining",
 			value: displayableTime(timeRemaining),
-			displayed: true,
+			displayed: displayed,
 			isStateChange: true
 	]
 	sendControllerEvent(timeRemainingEventData)
