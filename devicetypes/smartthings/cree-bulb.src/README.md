@@ -23,7 +23,7 @@ Works with:
 
 ## Device Health
 
-A Category C6 Connected Cree LED Bulb with maxReportTime of 5 mins.
+Connected Cree LED Bulb with maxReportTime of 5 mins.
 Check-in interval = 12 mins
 
 ## Troubleshooting

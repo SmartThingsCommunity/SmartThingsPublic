@@ -17,7 +17,7 @@
  */
 
 metadata {
-    definition (name: "ZigBee RGBW Bulb", namespace: "smartthings", author: "SmartThings", category: "C6") {
+    definition (name: "ZigBee RGBW Bulb", namespace: "smartthings", author: "SmartThings") {
 
         capability "Actuator"
         capability "Color Control"
