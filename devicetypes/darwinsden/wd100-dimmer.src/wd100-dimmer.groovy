@@ -74,11 +74,12 @@ metadata {
 
     preferences {      
        input "doubleTapToFullBright", "bool", title: "Double-Tap Up sets to full brightness",  defaultValue: false,  displayDuringSetup: true, required: false	       
+       input "reverseSwitch", "bool", title: "Reverse Switch",  defaultValue: false,  displayDuringSetup: true, required: false	       
         
-       input ( "remoteStepDuration", "number", title: "Local Dim Rate: Duration of each level (1-22)(1=10ms)", defaultValue: 3,range: "1..255", required: false)
-       input ( "remoteStepSize", "number", title: "Local Dim Rate: Dim level to change each duration (1-99)", defaultValue: 1, range: "1..99", required: false)
-       input ( "localStepDuration", "number", title: "Remote Dim Rate: Duration of each level (1-22)(1=10ms)", defaultValue: 3,range: "1..255", required: false)
-       input ( "localStepSize", "number", title: "Remote Dim Rate: Dim level to change each duration (1-99)", defaultValue: 1, range: "1..99", required: false)
+       input ( "localStepDuration", "number", title: "Press Configuration button after entering ramp rate preferences\n\nLocal Ramp Rate: Duration of each level (1-22)(1=10ms) [default: 3]", defaultValue: 3,range: "1..22", required: false)
+       input ( "localStepSize", "number", title: "Local Ramp Rate: Dim level to change each duration (1-99) [default: 1]", defaultValue: 1, range: "1..99", required: false)
+       input ( "remoteStepDuration", "number", title: "Remote Ramp Rate: Duration of each level (1-22)(1=10ms) [default: 3]", defaultValue: 3,range: "1..22", required: false)
+       input ( "remoteStepSize", "number", title: "Remote Ramp Rate: Dim level to change each duration (1-99) [default: 1]", defaultValue: 1, range: "1..99", required: false)
     }
     
 	tiles(scale: 2) {
@@ -98,7 +99,7 @@ metadata {
 		}
 
 		standardTile("refresh", "device.switch", width: 2, height: 2, inactiveLabel: false, decoration: "flat") {
-			state "default", label:'', action:"refresh.refresh", icon:"st.secondary.refresh"
+			state "default", label:'', action:"refresh.refresh", icon:"st.secondary.configure"
 		}
         
         valueTile("firmwareVersion", "device.firmwareVersion", width:2, height: 2, decoration: "flat", inactiveLabel: false) {
@@ -266,6 +267,8 @@ def setLevel (value) {
     result += response(zwave.basicV1.basicSet(value: level))
     result += response("delay 5000")
     result += response(zwave.switchMultilevelV1.switchMultilevelGet())
+    result += response("delay 5000")
+    result += response(zwave.switchMultilevelV1.switchMultilevelGet())
 }
 
 def poll() {
@@ -305,6 +308,8 @@ def zwaveEvent(physicalgraph.zwave.commands.centralscenev1.CentralSceneNotificat
                   if (doubleTapToFullBright)
                   {
                      result += setLevel(99)
+                     result += response("delay 5000")
+                     result += response(zwave.switchMultilevelV1.switchMultilevelGet())
                   }                    
                   break
               case 4:
@@ -437,7 +442,7 @@ def configure() {
    commands << zwave.switchMultilevelV1.switchMultilevelGet().format()
    commands << zwave.manufacturerSpecificV1.manufacturerSpecificGet().format()
    commands << zwave.versionV1.versionGet().format()
-   delayBetween(commands,300)
+   delayBetween(commands,500)
 }
 
 def setDimRatePrefs() 
@@ -453,8 +458,8 @@ def setDimRatePrefs()
    
    if (remoteStepDuration)
    {
-       def remoteStepDuration = Math.max(Math.min(remoteStepDuration, 22), 1)
-       cmds << zwave.configurationV2.configurationSet(configurationValue: [remoteStepDuration], parameterNumber: 8, size: 2).format()
+       def remoteStepDuration = Math.max(Math.min(remoteStepDuration, 22), 2)
+       cmds << zwave.configurationV2.configurationSet(configurationValue: [0, remoteStepDuration], parameterNumber: 8, size: 2).format()
    }
    
    
@@ -466,9 +471,24 @@ def setDimRatePrefs()
    
    if (localStepDuration)
    {
-       def localStepDuration = Math.max(Math.min(localStepDuration, 22), 1)
-       cmds << zwave.configurationV2.configurationSet(configurationValue: [localStepDuration], parameterNumber: 10, size: 2).format()
+      def localStepDuration = Math.max(Math.min(localStepDuration, 22), 2)
+      cmds << zwave.configurationV2.configurationSet(configurationValue: [0,localStepDuration], parameterNumber: 10, size: 2).format()
    }
+   
+   if (reverseSwitch)
+   {
+       cmds << zwave.configurationV2.configurationSet(configurationValue: [1], parameterNumber: 4, size: 1).format()
+   }
+   else
+   {
+      cmds << zwave.configurationV2.configurationSet(configurationValue: [0], parameterNumber: 4, size: 1).format()
+   }
+   
+   //Enable the following configuration gets to verify configuration in the logs
+   //cmds << zwave.configurationV1.configurationGet(parameterNumber: 7).format()
+   //cmds << zwave.configurationV1.configurationGet(parameterNumber: 8).format()
+   //cmds << zwave.configurationV1.configurationGet(parameterNumber: 9).format()
+   //cmds << zwave.configurationV1.configurationGet(parameterNumber: 10).format()
    
    return cmds
 }
