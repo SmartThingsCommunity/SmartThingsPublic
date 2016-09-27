@@ -405,6 +405,7 @@ def pageConfigureZones() {
                 section("${it.displayName} (contact)") {
                     input "type_${devId}", "enum", title:"Zone Type", metadata:[values:zoneTypes], defaultValue:"exterior"
                     input "delay_${devId}", "bool", title:"Entry/Exit Delays", defaultValue:true
+                    input "chime_${devId}", "bool", title:"Chime on keypads", defaultValue:true
                 }
             }
         }
@@ -416,6 +417,7 @@ def pageConfigureZones() {
                 section("${it.displayName} (motion)") {
                     input "type_${devId}", "enum", title:"Zone Type", metadata:[values:zoneTypes], defaultValue:"interior"
                     input "delay_${devId}", "bool", title:"Entry/Exit Delays", defaultValue:false
+                    input "chime_${devId}", "bool", title:"Chime on keypads", defaultValue:false
                 }
             }
         }
@@ -427,6 +429,7 @@ def pageConfigureZones() {
                 section("${it.displayName} (movement)") {
                     input "type_${devId}", "enum", title:"Zone Type", metadata:[values:zoneTypes], defaultValue:"interior"
                     input "delay_${devId}", "bool", title:"Entry/Exit Delays", defaultValue:false
+                    input "chime_${devId}", "bool", title:"Chime on keypads", defaultValue:false
                 }
             }
         }
@@ -438,6 +441,7 @@ def pageConfigureZones() {
                 section("${it.displayName} (smoke)") {
                     input "type_${devId}", "enum", title:"Zone Type", metadata:[values:zoneTypes], defaultValue:"alert"
                     input "delay_${devId}", "bool", title:"Entry/Exit Delays", defaultValue:false
+                    input "chime_${devId}", "bool", title:"Chime on keypads", defaultValue:false
                 }
             }
         }
@@ -449,6 +453,7 @@ def pageConfigureZones() {
                 section("${it.displayName} (moisture)") {
                     input "type_${devId}", "enum", title:"Zone Type", metadata:[values:zoneTypes], defaultValue:"alert"
                     input "delay_${devId}", "bool", title:"Entry/Exit Delays", defaultValue:false
+                    input "chime_${devId}", "bool", title:"Chime on keypads", defaultValue:false
                 }
             }
         }
@@ -1144,7 +1149,8 @@ private def initZones() {
                 deviceId:   it.id,
                 sensorType: "contact",
                 zoneType:   settings["type_${it.id}"] ?: "exterior",
-                delay:      settings["delay_${it.id}"]
+                delay:      settings["delay_${it.id}"],
+                chime:		settings["chime_${it.id}"]
             ]
         }
         subscribe(settings.z_contact, "contact.open", onContact)
@@ -1156,7 +1162,8 @@ private def initZones() {
                 deviceId:   it.id,
                 sensorType: "motion",
                 zoneType:   settings["type_${it.id}"] ?: "interior",
-                delay:      settings["delay_${it.id}"]
+                delay:      settings["delay_${it.id}"],
+                chime:		settings["chime_${it.id}"]
             ]
         }
         subscribe(settings.z_motion, "motion.active", onMotion)
@@ -1168,7 +1175,8 @@ private def initZones() {
                 deviceId:   it.id,
                 sensorType: "acceleration",
                 zoneType:   settings["type_${it.id}"] ?: "interior",
-                delay:      settings["delay_${it.id}"]
+                delay:      settings["delay_${it.id}"],
+                chime:		settings["chime_${it.id}"]
             ]
         }
         subscribe(settings.z_movement, "acceleration.active", onMovement)
@@ -1180,7 +1188,8 @@ private def initZones() {
                 deviceId:   it.id,
                 sensorType: "smoke",
                 zoneType:   settings["type_${it.id}"] ?: "alert",
-                delay:      settings["delay_${it.id}"]
+                delay:      settings["delay_${it.id}"],
+                chime:		settings["chime_${it.id}"]
             ]
         }
         subscribe(settings.z_smoke, "smoke.detected", onSmoke)
@@ -1195,7 +1204,8 @@ private def initZones() {
                 deviceId:   it.id,
                 sensorType: "water",
                 zoneType:   settings["type_${it.id}"] ?: "alert",
-                delay:      settings["delay_${it.id}"]
+                delay:      settings["delay_${it.id}"],
+                chime:		settings["chime_${it.id}"]
             ]
         }
         subscribe(settings.z_water, "water.wet", onWater)
@@ -1297,6 +1307,14 @@ private def onZoneEvent(evt, sensorType) {
             myRunIn(state.delay, activateAlarm)
         }
     }
+    else if (zone.chime)
+    {
+    	keypads?.each() { 
+               	it.beep(1)
+            }
+    }
+    
+    
 }
 
 def onLocation(evt) {
