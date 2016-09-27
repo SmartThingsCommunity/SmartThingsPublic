@@ -248,7 +248,7 @@ private Map parseIasMessage(String description) {
         case '0x0028': // Test Mode
             break
         case '0x0000':
-			resultMap = createEvent(name: "tamper", value: "cleared", isStateChange: true, displayed: false)
+			resultMap = createEvent(name: "tamper", value: "clear", isStateChange: true, displayed: false)
             break
         case '0x0004':
 			resultMap = createEvent(name: "tamper", value: "detected", isStateChange: true, displayed: false)
