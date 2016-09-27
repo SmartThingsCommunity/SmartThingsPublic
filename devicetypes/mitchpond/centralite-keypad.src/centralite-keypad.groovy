@@ -183,9 +183,9 @@ def configure() {
 
 
 def refresh() {
-	 return zigbee.readAttribute(0x0001,0x20) + 
-			zigbee.readAttribute(0x0402,0x00) +
-            sendStatusToDevice()
+	 return sendStatusToDevice() +
+		zigbee.readAttribute(0x0001,0x20) + 
+		zigbee.readAttribute(0x0402,0x00)
 }
 
 private parseReportAttributeMessage(String description) {
