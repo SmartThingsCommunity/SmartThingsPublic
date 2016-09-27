@@ -18,8 +18,13 @@ definition(
 )
 
 preferences {
-  section("Zip code?") {
-    input "zipcode", "text", title: "Zipcode?"
+
+  if (!(location.zipCode || ( location.latitude && location.longitude )) && location.channelName == 'samsungtv') {
+		section { paragraph title: "Note:", "Location is required for this SmartApp. Go to 'Location Name' settings to setup your correct location." }
+	}
+
+  if (location.channelName != 'samsungtv') {
+		section( "Set your location" ) { input "zipCode", "text", title: "Zip code" }
   }
 
   section("Things to check?") {
@@ -60,7 +65,11 @@ def scheduleCheck(evt) {
   // Only need to poll if we haven't checked in a while - and if something is left open.
   if((now() - (30 * 60 * 1000) > state.lastCheck["time"]) && open) {
     log.info("Something's open - let's check the weather.")
-    def response = getWeatherFeature("forecast", zipcode)
+    def response
+    if (location.channelName != 'samsungtv')
+      response = getWeatherFeature("forecast", zipCode)
+    else
+      response = getWeatherFeature("forecast")
     def weather  = isStormy(response)
 
     if(weather) {

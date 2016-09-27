@@ -26,17 +26,22 @@ definition(
 )
 
 preferences {
-	section ("In addition to push notifications, send text alerts to...") {
-        input("recipients", "contact", title: "Send notifications to") {
-            input "phone1", "phone", title: "Phone Number 1", required: false
-            input "phone2", "phone", title: "Phone Number 2", required: false
-            input "phone3", "phone", title: "Phone Number 3", required: false
-        }
+
+  if (!(location.zipCode || ( location.latitude && location.longitude )) && location.channelName == 'samsungtv') {
+		section { paragraph title: "Note:", "Location is required for this SmartApp. Go to 'Location Name' settings to setup your correct location." }
 	}
 
-	section ("Zip code (optional, defaults to location coordinates)...") {
-		input "zipcode", "text", title: "Zip Code", required: false
-	}
+  if (location.channelName != 'samsungtv') {
+		section( "Set your location" ) { input "zipCode", "text", title: "Zip code" }
+  }
+
+	section ("In addition to push notifications, send text alerts to...") {
+      input("recipients", "contact", title: "Send notifications to") {
+          input "phone1", "phone", title: "Phone Number 1", required: false
+          input "phone2", "phone", title: "Phone Number 2", required: false
+          input "phone3", "phone", title: "Phone Number 3", required: false
+      }
+	 }
 }
 
 def installed() {
@@ -61,7 +66,7 @@ def checkForSevereWeather() {
 	def alerts
 	if(locationIsDefined()) {
 		if(zipcodeIsValid()) {
-			alerts = getWeatherFeature("alerts", zipcode)?.alerts
+			alerts = getWeatherFeature("alerts", zipCode)?.alerts
 		} else {
 			log.warn "Severe Weather Alert: Invalid zipcode entered, defaulting to location's zipcode"
 			alerts = getWeatherFeature("alerts")?.alerts
