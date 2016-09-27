@@ -83,7 +83,7 @@ def bridgeDiscovery(params=[:])
 
 	return dynamicPage(name:"bridgeDiscovery", title:"Discovery Started!", nextPage:"bridgeBtnPush", refreshInterval:refreshInterval, uninstall: true) {
 		section("Please wait while we discover your Hue Bridge. Discovery can take five minutes or more, so sit back and relax! Select your device below once discovered.") {
-			input "selectedHue", "enum", required:false, title:"Select Hue Bridge (${numFound} found)", multiple:false, options:options
+			input "selectedHue", "enum", required:false, title:"Select Hue Bridge (${numFound} found)", multiple:false, options:options, submitOnChange: true
 		}
 	}
 }
@@ -963,6 +963,14 @@ private handleCommandResponse(body) {
  * @return empty array
  */
 private handlePoll(body) {
+	// Used to track "unreachable" time
+	// Device is considered "offline" if it has been in the "unreachable" state for
+	// 11 minutes (e.g. two poll intervals)
+	// Note, Hue Bridge marks devices as "unreachable" often even when they accept commands
+	Calendar time11 = Calendar.getInstance()
+	time11.add(Calendar.MINUTE, -11)
+	Calendar currentTime = Calendar.getInstance()
+
 	def bulbs = getChildDevices()
 	for (bulb in body) {
 		def device = bulbs.find{it.deviceNetworkId == "${app.id}/${bulb.key}"}
@@ -972,7 +980,10 @@ private handlePoll(body) {
 					// light just came back online, notify device watch
 					def lastActivity = now()
 					device.sendEvent(name: "deviceWatch-status", value: "ONLINE", description: "Last Activity is on ${new Date((long) lastActivity)}", displayed: false, isStateChange: true)
+					log.debug "$device is Online"
 				}
+				// Mark light as "online"
+				state.bulbs[bulb.key]?.unreachableSince = null
 				state.bulbs[bulb.key]?.online = true
 
 				// If user just executed commands, then do not send events to avoid confusing the turning on/off state
@@ -982,9 +993,18 @@ private handlePoll(body) {
 					sendColorEvents(device, bulb.value?.state?.xy, bulb.value?.state?.hue, bulb.value?.state?.sat, bulb.value?.state?.ct, bulb.value?.state?.colormode)
 				}
 			} else {
-				state.bulbs[bulb.key]?.online = false
-				log.warn "$device is not reachable by Hue bridge"
-				device.sendEvent(name: "DeviceWatch-DeviceOffline", value: "offline", displayed: false, isStateChange: true)
+				if (state.bulbs[bulb.key]?.unreachableSince == null) {
+					// Store the first time where device was reported as "unreachable"
+					state.bulbs[bulb.key]?.unreachableSince = currentTime.getTimeInMillis()
+				} else if (state.bulbs[bulb.key]?.online) {
+					// Check if device was "unreachable" for more than 11 minutes and mark "offline" if necessary
+					if (state.bulbs[bulb.key]?.unreachableSince < time11.getTimeInMillis()) {
+						log.warn "$device went Offline"
+						state.bulbs[bulb.key]?.online = false
+						device.sendEvent(name: "DeviceWatch-DeviceOffline", value: "offline", displayed: false, isStateChange: true)
+					}
+				}
+				log.warn "$device may not reachable by Hue bridge"
 			}
 		}
 	}
@@ -1019,9 +1039,6 @@ def hubVerification(bodytext) {
 def on(childDevice) {
 	log.debug "Executing 'on'"
 	def id = getId(childDevice)
-	if (!isOnline(id)) {
-		return "Bulb is unreachable"
-	}
 	updateInProgress()
 	createSwitchEvent(childDevice, "on")
 	put("lights/$id/state", [on: true])
@@ -1031,9 +1048,6 @@ def on(childDevice) {
 def off(childDevice) {
 	log.debug "Executing 'off'"
 	def id = getId(childDevice)
-	if (!isOnline(id)) {
-		return "Bulb is unreachable"
-	}
 	updateInProgress()
 	createSwitchEvent(childDevice, "off")
 	put("lights/$id/state", [on: false])
@@ -1043,9 +1057,6 @@ def off(childDevice) {
 def setLevel(childDevice, percent) {
 	log.debug "Executing 'setLevel'"
 	def id = getId(childDevice)
-	if (!isOnline(id)) {
-		return "Bulb is unreachable"
-	}
     updateInProgress()
 	// 1 - 254
     def level
@@ -1070,10 +1081,6 @@ def setLevel(childDevice, percent) {
 def setSaturation(childDevice, percent) {
 	log.debug "Executing 'setSaturation($percent)'"
 	def id = getId(childDevice)
-	if (!isOnline(id)) {
-		return "Bulb is unreachable"
-	}
-
 	updateInProgress()
 	// 0 - 254
 	def level = Math.min(Math.round(percent * 254 / 100), 254)
@@ -1086,9 +1093,6 @@ def setSaturation(childDevice, percent) {
 def setHue(childDevice, percent) {
 	log.debug "Executing 'setHue($percent)'"
 	def id = getId(childDevice)
-	if (!isOnline(id)) {
-		return "Bulb is unreachable"
-	}
     updateInProgress()
 	// 0 - 65535
 	def level =	Math.min(Math.round(percent * 65535 / 100), 65535)
@@ -1101,9 +1105,6 @@ def setHue(childDevice, percent) {
 def setColorTemperature(childDevice, huesettings) {
 	log.debug "Executing 'setColorTemperature($huesettings)'"
 	def id = getId(childDevice)
-	if (!isOnline(id)) {
-		return "Bulb is unreachable"
-	}
     updateInProgress()
 	// 153 (6500K) to 500 (2000K)
 	def ct = hueSettings == 6500 ? 153 : Math.round(1000000/huesettings)
@@ -1115,9 +1116,6 @@ def setColorTemperature(childDevice, huesettings) {
 def setColor(childDevice, huesettings) {
     log.debug "Executing 'setColor($huesettings)'"
 	def id = getId(childDevice)
-	if (!isOnline(id)) {
-		return "Bulb is unreachable"
-	}
     updateInProgress()
 
     def value = [:]
@@ -1133,7 +1131,7 @@ def setColor(childDevice, huesettings) {
 			value.hue = Math.min(Math.round(huesettings.hue * 65535 / 100), 65535)
 		if (huesettings.saturation != null)
 			value.sat = Math.min(Math.round(huesettings.saturation * 254 / 100), 254)
-	} else if (huesettings.hex != null && false) {
+	} else if (huesettings.hex != null) {
 		// For now ignore model to get a consistent color if same color is set across multiple devices
 		// def model = state.bulbs[getId(childDevice)]?.modelid
 		// value.xy = calculateXY(huesettings.hex, model)
@@ -1237,7 +1235,7 @@ private getBridgeIP() {
     	if (d) {
         	if (d.getDeviceDataByName("networkAddress"))
             	host =  d.getDeviceDataByName("networkAddress")
-            else
+        else
         		host = d.latestState('networkAddress').stringValue
         }
         if (host == null || host == "") {
@@ -1676,7 +1674,7 @@ private boolean checkPointInLampsReach(p, colorPoints) {
 }
 
 /**
- * Converts an RGB color in hex to HSV.
+ * Converts an RGB color in hex to HSV/HSB.
  * Algorithm based on http://en.wikipedia.org/wiki/HSV_color_space.
  *
  * @param colorStr color value in hex (#ff03d3)
@@ -1686,32 +1684,32 @@ private boolean checkPointInLampsReach(p, colorPoints) {
 def hexToHsv(colorStr){
 	def r = Integer.valueOf( colorStr.substring( 1, 3 ), 16 ) / 255
 	def g = Integer.valueOf( colorStr.substring( 3, 5 ), 16 ) / 255
-	def b = Integer.valueOf( colorStr.substring( 5, 7 ), 16 ) / 255;
+	def b = Integer.valueOf( colorStr.substring( 5, 7 ), 16 ) / 255
 
 	def max = Math.max(Math.max(r, g), b)
 	def min = Math.min(Math.min(r, g), b)
 
-	def h, s, v = max;
+	def h, s, v = max
 
-	def d = max - min;
-	s = max == 0 ? 0 : d / max;
+	def d = max - min
+	s = max == 0 ? 0 : d / max
 
 	if(max == min){
-		h = 0;
+		h = 0
 	}else{
 		switch(max){
-			case r: h = (g - b) / d + (g < b ? 6 : 0); break;
-			case g: h = (b - r) / d + 2; break;
-			case b: h = (r - g) / d + 4; break;
+			case r: h = (g - b) / d + (g < b ? 6 : 0); break
+			case g: h = (b - r) / d + 2; break
+			case b: h = (r - g) / d + 4; break
 		}
 		h /= 6;
 	}
 
-	return [(h * 100).round(), (s * 100).round(), (v * 100).round()];
+	return [Math.round(h * 100), Math.round(s * 100), Math.round(v * 100)]
 }
 
 /**
- * Converts HSV color to RGB in hex.
+ * Converts HSV/HSB color to RGB in hex.
  * Algorithm based on http://en.wikipedia.org/wiki/HSV_color_space.
  *
  * @param  hue hue 0-100
@@ -1726,11 +1724,11 @@ def hsvToHex(hue, sat, value = 100){
 	def s = sat / 100
 	def v = value / 100
 
-	def i = Math.floor(h * 6);
-	def f = h * 6 - i;
-	def p = v * (1 - s);
-	def q = v * (1 - f * s);
-	def t = v * (1 - (1 - f) * s);
+	def i = Math.floor(h * 6)
+	def f = h * 6 - i
+	def p = v * (1 - s)
+	def q = v * (1 - f * s)
+	def t = v * (1 - (1 - f) * s)
 
 	switch (i % 6) {
 		case 0:
@@ -1766,9 +1764,9 @@ def hsvToHex(hue, sat, value = 100){
 	}
 
 	// Converting float components to int components.
-	def r1 = String.format("%02X", (int) (r * 255.0f));
-	def g1 = String.format("%02X", (int) (g * 255.0f));
-	def b1 = String.format("%02X", (int) (b * 255.0f));
+	def r1 = String.format("%02X", (int) (r * 255.0f))
+	def g1 = String.format("%02X", (int) (g * 255.0f))
+	def b1 = String.format("%02X", (int) (b * 255.0f))
 
 	return "#$r1$g1$b1"
 }

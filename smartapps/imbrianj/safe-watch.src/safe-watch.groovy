@@ -26,9 +26,9 @@ preferences {
   }
 
   section("Temperature monitor?") {
-    input "temp",    "capability.temperatureMeasurement", title: "Temp Sensor", required: false
-    input "maxTemp", "number",                            title: "Max Temp?",   required: false
-    input "minTemp", "number",                            title: "Min Temp?",   required: false
+    input "temp",    "capability.temperatureMeasurement", title: "Temperature Sensor", required: false
+    input "maxTemp", "number",                            title: "Max Temperature (°${location.temperatureScale})",   required: false
+    input "minTemp", "number",                            title: "Min Temperature (°${location.temperatureScale})",   required: false
   }
 
   section("When which people are away?") {
