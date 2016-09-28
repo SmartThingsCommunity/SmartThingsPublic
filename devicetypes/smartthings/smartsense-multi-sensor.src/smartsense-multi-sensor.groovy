@@ -1,5 +1,4 @@
 /*
-===============================================================================
  *  Copyright 2016 SmartThings
  *
  *  Licensed under the Apache License, Version 2.0 (the "License"); you may not
@@ -13,19 +12,11 @@
  *  WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
  *  License for the specific language governing permissions and limitations
  *  under the License.
-===============================================================================
- *  Purpose: SmartSense Multi Sensor DTH File
- *
- *  Filename: SmartSense-Multi-Sensor.src/SmartSense-Multi-Sensor.groovy
- *
- *  Change History:
- *  1. 20160117 TW - Update/Edit to support i18n translations
- *  2. 20160125 TW = Incorporated new battery mapping from TM
-===============================================================================
  */
+import physicalgraph.zigbee.clusters.iaszone.ZoneStatus
 
 metadata {
-	definition (name: "SmartSense Multi Sensor", namespace: "smartthings", author: "SmartThings") {
+	definition (name: "SmartSense Multi Sensor", namespace: "smartthings", author: "SmartThings", category: "C2") {
 
 		capability "Three Axis"
 		capability "Battery"
@@ -35,6 +26,7 @@ metadata {
  		capability "Acceleration Sensor"
  		capability "Refresh"
  		capability "Temperature Measurement"
+		capability "Health Check"
 
  		command "enrollResponse"
  		fingerprint inClusters: "0000,0001,0003,0402,0500,0020,0B05,FC02", outClusters: "0019", manufacturer: "CentraLite", model: "3320"
@@ -233,47 +225,13 @@ private Map parseCustomMessage(String description) {
 }
 
 private Map parseIasMessage(String description) {
-	List parsedMsg = description.split(' ')
-	String msgCode = parsedMsg[2]
-
+	ZoneStatus zs = zigbee.parseZoneStatus(description)
 	Map resultMap = [:]
-	switch(msgCode) {
-		case '0x0020': // Closed/No Motion/Dry
+
 			if (garageSensor != "Yes"){
-				resultMap = getContactResult('closed')
+		resultMap = zs.isAlarm1Set() ? getContactResult('open') : getContactResult('closed')
 			}
-		break
 
-		case '0x0021': // Open/Motion/Wet
-			if (garageSensor != "Yes"){
-				resultMap = getContactResult('open')
-			}
-		break
-
-		case '0x0022': // Tamper Alarm
-		break
-
-		case '0x0023': // Battery Alarm
-		break
-
-		case '0x0024': // Supervision Report
-			if (garageSensor != "Yes"){
-				resultMap = getContactResult('closed')
-			}
-		break
-
-		case '0x0025': // Restore Report
-			if (garageSensor != "Yes"){
-				resultMap = getContactResult('open')
-			}
-		break
-
-		case '0x0026': // Trouble/Failure
-		break
-
-		case '0x0028': // Test Mode
-		break
-	}
 	return resultMap
 }
 
@@ -303,9 +261,9 @@ def updated() {
 def getTemperature(value) {
 	def celsius = Integer.parseInt(value, 16).shortValue() / 100
 	if(getTemperatureScale() == "C"){
-		return celsius
+		return Math.round(celsius)
 		} else {
-			return celsiusToFahrenheit(celsius) as Integer
+			return Math.round(celsiusToFahrenheit(celsius))
 		}
 	}
 
@@ -347,7 +305,10 @@ private Map getBatteryResult(rawValue) {
 				def minVolts = 2.1
 				def maxVolts = 3.0
 				def pct = (volts - minVolts) / (maxVolts - minVolts)
-				result.value = Math.min(100, (int) pct * 100)
+				def roundedPct = Math.round(pct * 100)
+				if (roundedPct <= 0)
+					roundedPct = 1
+				result.value = Math.min(100, roundedPct)
 				result.descriptionText = "{{ device.displayName }} battery was {{ value }}%"
 			}
 		}
@@ -367,10 +328,11 @@ private Map getTemperatureResult(value) {
 			'{{ device.displayName }} was {{ value }}°F'
 
 	return [
-	name: 'temperature',
-	value: value,
-	descriptionText: descriptionText,
-    translatable: true
+		name: 'temperature',
+		value: value,
+		descriptionText: descriptionText,
+		translatable: true,
+		unit: temperatureScale
 	]
 }
 
@@ -405,6 +367,13 @@ private getAccelerationResult(numValue) {
 	]
 }
 
+/**
+ * PING is used by Device-Watch in attempt to reach the Device
+ * */
+def ping() {
+	return zigbee.readAttribute(0x001, 0x0020) // Read the Battery Level
+}
+
 def refresh() {
 	log.debug "Refreshing Values "
 
@@ -412,76 +381,40 @@ def refresh() {
 
 	if (device.getDataValue("manufacturer") == "SmartThings") {
 		log.debug "Refreshing Values for manufacturer: SmartThings "
-		refreshCmds = refreshCmds + [
-			/* These values of Motion Threshold Multiplier(01) and Motion Threshold (7602)
-				seem to be giving pretty accurate results for the XYZ co-ordinates for this manufacturer.
-				Separating these out in a separate if-else because I do not want to touch Centralite part
-				as of now.
-			*/
-
-			"zcl mfg-code ${manufacturerCode}", "delay 200",
-			"zcl global write 0xFC02 0 0x20 {01}", "delay 200",
-			"send 0x${device.deviceNetworkId} 1 1", "delay 400",
-
-			"zcl mfg-code ${manufacturerCode}", "delay 200",
-			"zcl global write 0xFC02 2 0x21 {7602}", "delay 200",
-			"send 0x${device.deviceNetworkId} 1 1", "delay 400",
-		]
+		/* These values of Motion Threshold Multiplier(0x01) and Motion Threshold (0x0276)
+            seem to be giving pretty accurate results for the XYZ co-ordinates for this manufacturer.
+            Separating these out in a separate if-else because I do not want to touch Centralite part
+            as of now.
+        */
+		refreshCmds += zigbee.writeAttribute(0xFC02, 0x0000, 0x20, 0x01, [mfgCode: manufacturerCode])
+		refreshCmds += zigbee.writeAttribute(0xFC02, 0x0002, 0x21, 0x0276, [mfgCode: manufacturerCode])
 	} else {
-		refreshCmds = refreshCmds + [
-			/* sensitivity - default value (8) */
-			"zcl mfg-code ${manufacturerCode}", "delay 200",
-			"zcl global write 0xFC02 0 0x20 {02}", "delay 200",
-			"send 0x${device.deviceNetworkId} 1 1", "delay 400",
-		]
+		refreshCmds += zigbee.writeAttribute(0xFC02, 0x0000, 0x20, 0x02, [mfgCode: manufacturerCode])
 	}
 
 	//Common refresh commands
-	refreshCmds = refreshCmds + [
-		"st rattr 0x${device.deviceNetworkId} 1 0x402 0", "delay 200",
-		"st rattr 0x${device.deviceNetworkId} 1 1 0x20", "delay 200",
-
-		"zcl mfg-code ${manufacturerCode}", "delay 200",
-		"zcl global read 0xFC02 0x0010",
-		"send 0x${device.deviceNetworkId} 1 1","delay 400"
-	]
+	refreshCmds += zigbee.readAttribute(0x0402, 0x0000) +
+			zigbee.readAttribute(0x0001, 0x0020) +
+			zigbee.readAttribute(0xFC02, 0x0010, [mfgCode: manufacturerCode])
 
 	return refreshCmds + enrollResponse()
 }
 
 def configure() {
-	String zigbeeEui = swapEndianHex(device.hub.zigbeeEui)
+	// Device-Watch allows 2 check-in misses from device
+	sendEvent(name: "checkInterval", value: 60 * 12, displayed: false, data: [protocol: "zigbee"])
+
 	log.debug "Configuring Reporting"
 
-	def configCmds = [
-		"zcl global write 0x500 0x10 0xf0 {${zigbeeEui}}", "delay 200",
-		"send 0x${device.deviceNetworkId} 1 ${endpointId}", "delay 500",
-
-		"zdo bind 0x${device.deviceNetworkId} ${endpointId} 1 1 {${device.zigbeeId}} {}", "delay 200",
-		"zcl global send-me-a-report 1 0x20 0x20 30 21600 {01}", "delay 200",		//checkin time 6 hrs
-		"send 0x${device.deviceNetworkId} 1 ${endpointId}", "delay 500",
-
-		"zdo bind 0x${device.deviceNetworkId} ${endpointId} 1 0x402 {${device.zigbeeId}} {}", "delay 200",
-		"zcl global send-me-a-report 0x402 0 0x29 30 3600 {6400}", "delay 200",
-		"send 0x${device.deviceNetworkId} 1 ${endpointId}", "delay 500",
-
-		"zdo bind 0x${device.deviceNetworkId} ${endpointId} 1 0xFC02 {${device.zigbeeId}} {}", "delay 200",
-		"zcl mfg-code ${manufacturerCode}", "delay 200",
-		"zcl global send-me-a-report 0xFC02 0x0010 0x18 10 3600 {01}", "delay 200",
-		"send 0x${device.deviceNetworkId} 1 ${endpointId}", "delay 500",
-
-		"zcl mfg-code ${manufacturerCode}", "delay 200",
-		"zcl global send-me-a-report 0xFC02 0x0012 0x29 1 3600 {0100}", "delay 200",
-		"send 0x${device.deviceNetworkId} 1 ${endpointId}", "delay 500",
-
-		"zcl mfg-code ${manufacturerCode}", "delay 200",
-		"zcl global send-me-a-report 0xFC02 0x0013 0x29 1 3600 {0100}", "delay 200",
-		"send 0x${device.deviceNetworkId} 1 ${endpointId}", "delay 500",
-
-		"zcl mfg-code ${manufacturerCode}", "delay 200",
-		"zcl global send-me-a-report 0xFC02 0x0014 0x29 1 3600 {0100}", "delay 200",
-		"send 0x${device.deviceNetworkId} 1 ${endpointId}", "delay 500"
-		]
+	// temperature minReportTime 30 seconds, maxReportTime 5 min. Reporting interval if no activity
+	// battery minReport 30 seconds, maxReportTime 6 hrs by default
+	def configCmds = enrollResponse() +
+			zigbee.batteryConfig() +
+			zigbee.temperatureConfig(30, 300) +
+			zigbee.configureReporting(0xFC02, 0x0010, 0x18, 10, 3600, 0x01, [mfgCode: manufacturerCode]) +
+			zigbee.configureReporting(0xFC02, 0x0012, 0x29, 1, 3600, 0x0001, [mfgCode: manufacturerCode]) +
+			zigbee.configureReporting(0xFC02, 0x0013, 0x29, 1, 3600, 0x0001, [mfgCode: manufacturerCode]) +
+			zigbee.configureReporting(0xFC02, 0x0014, 0x29, 1, 3600, 0x0001, [mfgCode: manufacturerCode])
 
 	return configCmds + refresh()
 }

@@ -273,7 +273,7 @@ def scheduleCheck(evt) {
     else {
     	if(people){
         	//don't turn off lights if anyone is home
-        	if(someoneIsHome()){
+        	if(someoneIsHome){
         	    log.debug("Stopping Check for Light")
         	    unschedule()
         	}

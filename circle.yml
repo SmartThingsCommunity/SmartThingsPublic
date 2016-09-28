@@ -5,7 +5,9 @@ machine:
 
 dependencies:
   override:
-    - echo "Nothing to do."
+    - ./gradlew dependencies -PsmartThingsArtifactoryUserName="$ARTIFACTORY_USERNAME" -PsmartThingsArtifactoryPassword="$ARTIFACTORY_PASSWORD"
+  post:
+    - ./gradlew compileSmartappsGroovy compileDevicetypesGroovy -PsmartThingsArtifactoryUserName="$ARTIFACTORY_USERNAME" -PsmartThingsArtifactoryPassword="$ARTIFACTORY_PASSWORD"
 
 test:
   override:

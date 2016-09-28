@@ -14,12 +14,14 @@
  *
  */
 metadata {
-	definition (name: "SmartSense Temp/Humidity Sensor",namespace: "smartthings", author: "SmartThings") {
+	definition (name: "SmartSense Temp/Humidity Sensor",namespace: "smartthings", author: "SmartThings", category: "C2") {
 		capability "Configuration"
 		capability "Battery"
 		capability "Refresh"
 		capability "Temperature Measurement"
 		capability "Relative Humidity Measurement"
+		capability "Health Check"
+		capability "Sensor"
 
 		fingerprint endpointId: "01", inClusters: "0001,0003,0020,0402,0B05,FC45", outClusters: "0019,0003"
 	}
@@ -204,7 +206,10 @@ private Map getBatteryResult(rawValue) {
 		def minVolts = 2.1
     	def maxVolts = 3.0
 		def pct = (volts - minVolts) / (maxVolts - minVolts)
-		result.value = Math.min(100, (int) pct * 100)
+		def roundedPct = Math.round(pct * 100)
+	    if (roundedPct <= 0)
+		    roundedPct = 1
+		result.value = Math.min(100, roundedPct)
 		result.descriptionText = "${linkText} battery was ${result.value}%"
 	}
 
@@ -223,7 +228,8 @@ private Map getTemperatureResult(value) {
 	return [
 		name: 'temperature',
 		value: value,
-		descriptionText: descriptionText
+		descriptionText: descriptionText,
+		unit: temperatureScale
 	]
 }
 
@@ -234,6 +240,13 @@ private Map getHumidityResult(value) {
 		value: value,
 		unit: '%'
 	]
+}
+
+/**
+ * PING is used by Device-Watch in attempt to reach the Device
+ * */
+def ping() {
+	return zigbee.readAttribute(0x001, 0x0020) // Read the Battery Level
 }
 
 def refresh()
@@ -251,22 +264,19 @@ def refresh()
 }
 
 def configure() {
+	// Device-Watch allows 2 check-in misses from device
+	sendEvent(name: "checkInterval", value: 60 * 12, displayed: false, data: [protocol: "zigbee"])
 
 	log.debug "Configuring Reporting and Bindings."
-	def configCmds = [
-		"zdo bind 0x${device.deviceNetworkId} 1 1 1 {${device.zigbeeId}} {}", "delay 500",
-		"zcl global send-me-a-report 1 0x20 0x20 30 21600 {01}",		//checkin time 6 hrs
-		"send 0x${device.deviceNetworkId} 1 1", "delay 500",
-
-		"zdo bind 0x${device.deviceNetworkId} 1 1 0x402 {${device.zigbeeId}} {}", "delay 500",
-		"zcl global send-me-a-report 0x402 0 0x29 30 3600 {6400}",
-		"send 0x${device.deviceNetworkId} 1 1", "delay 500",
-
+	def humidityConfigCmds = [
 		"zdo bind 0x${device.deviceNetworkId} 1 1 0xFC45 {${device.zigbeeId}} {}", "delay 500",
 		"zcl global send-me-a-report 0xFC45 0 0x29 30 3600 {6400}",
 		"send 0x${device.deviceNetworkId} 1 1", "delay 500"
 	]
-	return configCmds + refresh() // send refresh cmds as part of config
+
+	// temperature minReportTime 30 seconds, maxReportTime 5 min. Reporting interval if no activity
+	// battery minReport 30 seconds, maxReportTime 6 hrs by default
+	return humidityConfigCmds + zigbee.batteryConfig() + zigbee.temperatureConfig(30, 300) +  refresh() // send refresh cmds as part of config
 }
 
 private hex(value) {

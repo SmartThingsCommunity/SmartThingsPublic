@@ -41,17 +41,17 @@ metadata {
 
 		// standard flat tile with only a label
 		standardTile("flatLabel", "device.switch", width: 2, height: 2, decoration: "flat") {
-			state "default", label: 'On Action', action: "switch.on", backgroundColor: "#ffffff"
+			state "label", label: 'On Action', action: "switch.on", backgroundColor: "#ffffff", defaultState: true
 		}
 
 		// standard flat tile with icon and label
 		standardTile("flatIconLabel", "device.switch", width: 2, height: 2, decoration: "flat") {
-			state "default", label: 'Off Action', action: "switch.off", icon:"st.switches.switch.off", backgroundColor: "#ffffff"
+			state "iconLabel", label: 'Off Action', action: "switch.off", icon:"st.switches.switch.off", backgroundColor: "#ffffff", defaultState: true
 		}
 
 		// standard flat tile with only icon (Refreh text is IN the icon file)
 		standardTile("flatIcon", "device.switch", width: 2, height: 2, decoration: "flat") {
-			state "default", action:"refresh.refresh", icon:"st.secondary.refresh"
+			state "icon", action:"refresh.refresh", icon:"st.secondary.refresh", defaultState: true
 		}
 
 		// standard with defaultState = true
@@ -74,25 +74,37 @@ metadata {
 
 		// utility tiles to fill the spaces
 		standardTile("empty2x2", "null", width: 2, height: 2, decoration: "flat") {
-			state "default", label:''
+			state "emptySmall", label:'', defaultState: true
 		}
 		standardTile("empty4x2", "null", width: 4, height: 2, decoration: "flat") {
-			state "default", label:''
+			state "emptyBigger", label:'', defaultState: true
 		}
 
-		main("standard1")
+		// multi-line text (explicit newlines)
+		standardTile("multiLine", "device.multiLine", width: 2, height: 2) {
+			state "multiLine", label: '${currentValue}', defaultState: true
+		}
+
+		standardTile("multiLineWithIcon", "device.multiLine", width: 2, height: 2) {
+			state "multiLineIcon", label: '${currentValue}', icon: "st.switches.switch.off", defaultState: true
+		}
+
+		main("actionRings")
 		details([
 			"actionRings", "actionFlat", "noActionFlat",
 
 			"flatLabel", "flatIconLabel", "flatIcon",
 
 			"flatDefaultState", "flatImplicitDefaultState1", "flatImplicitDefaultState2",
+
+			"multiLine", "multiLineWithIcon"
 		])
 	}
 }
 
 def installed() {
 	sendEvent(name: "switch", value: "off")
+	sendEvent(name: "multiLine", value: "Line 1\nLine 2\nLine 3")
 }
 
 def parse(String description) {

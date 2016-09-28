@@ -1,5 +1,4 @@
 /*
-===============================================================================
  *  Copyright 2016 SmartThings
  *
  *  Licensed under the Apache License, Version 2.0 (the "License"); you may not
@@ -13,27 +12,18 @@
  *  WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
  *  License for the specific language governing permissions and limitations
  *  under the License.
-===============================================================================
- *  Purpose: SmartPower Outlet DTH File
- *
- *  Filename: SmartPower-Outlet.src/SmartPower-Outlet.groovy
- *
- *  Change History:
- *  1. 20160117 TW - Update/Edit to support i18n translations
-===============================================================================
  */
+
 metadata {
 	// Automatically generated. Make future change here.
-	definition (name: "SmartPower Outlet", namespace: "smartthings", author: "SmartThings") {
+	definition (name: "SmartPower Outlet", namespace: "smartthings", author: "SmartThings", category: "C1") {
 		capability "Actuator"
 		capability "Switch"
 		capability "Power Meter"
 		capability "Configuration"
 		capability "Refresh"
 		capability "Sensor"
-
-		// indicates that device keeps track of heartbeat (in state.heartbeat)
-		attribute "heartbeat", "string"
+		capability "Health Check"
 
 		fingerprint profileId: "0104", inClusters: "0000,0003,0004,0005,0006,0B04,0B05", outClusters: "0019", manufacturer: "CentraLite",  model: "3200", deviceJoinName: "Outlet"
 		fingerprint profileId: "0104", inClusters: "0000,0003,0004,0005,0006,0B04,0B05", outClusters: "0019", manufacturer: "CentraLite",  model: "3200-Sgb", deviceJoinName: "Outlet"
@@ -88,9 +78,6 @@ metadata {
 def parse(String description) {
 	log.debug "description is $description"
 
-	// save heartbeat (i.e. last time we got a message from device)
-	state.heartbeat = Calendar.getInstance().getTimeInMillis()
-
 	def finalResult = zigbee.getKnownDescription(description)
 
 	//TODO: Remove this after getKnownDescription can parse it automatically
@@ -129,14 +116,22 @@ def off() {
 def on() {
 	zigbee.on()
 }
+/**
+ * PING is used by Device-Watch in attempt to reach the Device
+ * */
+def ping() {
+	return zigbee.onOffRefresh()
+}
 
 def refresh() {
-	sendEvent(name: "heartbeat", value: "alive", displayed:false)
-	zigbee.onOffRefresh() + zigbee.refreshData("0x0B04", "0x050B")
+	zigbee.onOffRefresh() + zigbee.electricMeasurementPowerRefresh()
 }
 
 def configure() {
-	zigbee.onOffConfig() + powerConfig() + refresh()
+	// Device-Watch allows 2 check-in misses from device
+	sendEvent(name: "checkInterval", value: 60 * 12, displayed: false, data: [protocol: "zigbee"])
+	// OnOff minReportTime 0 seconds, maxReportTime 5 min. Reporting interval if no activity
+	zigbee.onOffConfig(0, 300) + powerConfig() + refresh()
 }
 
 //power config for devices with min reporting interval as 1 seconds and reporting interval if no activity as 10min (600s)

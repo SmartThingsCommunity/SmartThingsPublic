@@ -13,12 +13,13 @@
  */
 
 metadata {
-    definition (name: "ZigBee Dimmer", namespace: "smartthings", author: "SmartThings") {
+    definition (name: "ZigBee Dimmer", namespace: "smartthings", author: "SmartThings", category: "C1") {
         capability "Actuator"
         capability "Configuration"
         capability "Refresh"
         capability "Switch"
         capability "Switch Level"
+        capability "Health Check"
 
 
         fingerprint profileId: "0104", inClusters: "0000, 0003, 0004, 0005, 0006, 0008"
@@ -53,7 +54,10 @@ def parse(String description) {
 
     def event = zigbee.getEvent(description)
     if (event) {
-        sendEvent(event)
+        if (event.name=="level" && event.value==0) {}
+        else {
+            sendEvent(event)
+        }
     }
     else {
         log.warn "DID NOT PARSE MESSAGE for description : $description"
@@ -72,6 +76,12 @@ def on() {
 def setLevel(value) {
     zigbee.setLevel(value)
 }
+/**
+ * PING is used by Device-Watch in attempt to reach the Device
+ * */
+def ping() {
+    return zigbee.onOffRefresh()
+}
 
 def refresh() {
     zigbee.onOffRefresh() + zigbee.levelRefresh() + zigbee.onOffConfig() + zigbee.levelConfig()
@@ -79,5 +89,8 @@ def refresh() {
 
 def configure() {
     log.debug "Configuring Reporting and Bindings."
-    zigbee.onOffConfig() + zigbee.levelConfig() + zigbee.onOffRefresh() + zigbee.levelRefresh()
+    // Device-Watch allows 2 check-in misses from device
+    sendEvent(name: "checkInterval", value: 60 * 12, displayed: false, data: [protocol: "zigbee"])
+    // OnOff minReportTime 0 seconds, maxReportTime 5 min. Reporting interval if no activity
+    zigbee.onOffConfig(0, 300) + zigbee.levelConfig() + zigbee.onOffRefresh() + zigbee.levelRefresh()
 }

@@ -14,7 +14,7 @@
  *	for the specific language governing permissions and limitations under the License.
  *
  */
- 
+
 definition(
 	name: "Smart Home Ventilation",
     namespace: "MichaelStruck",
@@ -164,7 +164,7 @@ def installed() {
 def updated() {
     unschedule()
     turnOffSwitch() //Turn off all switches if the schedules are changed while in mid-schedule
-    unsubscribe
+    unsubscribe()
     log.debug "Updated with settings: ${settings}"
     init()
 }
@@ -174,12 +174,12 @@ def init() {
     schedule (midnightTime, midNight)
 	subscribe(location, "mode", locationHandler)
     startProcess()
-}    
+}
 
 // Common methods
 
 def startProcess () {
-    createDayArray() 
+    createDayArray()
 	state.dayCount=state.data.size()
     if (state.dayCount){
 		state.counter = 0
@@ -190,7 +190,7 @@ def startProcess () {
 def startDay() {
 	def start = convertEpoch(state.data[state.counter].start)
 	def stop = convertEpoch(state.data[state.counter].stop)
-      
+
     runOnce(start, turnOnSwitch, [overwrite: true])
     runOnce(stop, incDay, [overwrite: true])
 }
@@ -218,7 +218,7 @@ def locationHandler(evt) {
     }
 	if (!result) {
     	startProcess()
-    }	
+    }
 }
 
 def midNight(){
@@ -238,7 +238,7 @@ def turnOffSwitch() {
     }
     log.debug "Home ventilation switches are off."
 }
-    
+
 def schedDesc(on1, off1, on2, off2, on3, off3, on4, off4, modeList, dayList) {
 	def title = ""
 	def dayListClean = "On "
@@ -252,7 +252,7 @@ def schedDesc(on1, off1, on2, off2, on3, off3, on4, off4, modeList, dayList) {
             	dayListClean = "${dayListClean}, "
             }
         }
-	} 
+	}
     else {
     	dayListClean = "Every day"
     }
@@ -272,7 +272,7 @@ def schedDesc(on1, off1, on2, off2, on3, off3, on4, off4, modeList, dayList) {
             	modeListClean = "${modeListClean} ${modePrefix}"
         	}
         }
-	} 
+	}
     else {
     	modeListClean = "${modeListClean}all modes"
     }
@@ -283,16 +283,16 @@ def schedDesc(on1, off1, on2, off2, on3, off3, on4, off4, modeList, dayList) {
     	title += "\nSchedule 2: ${humanReadableTime(on2)} to ${humanReadableTime(off2)}"
     }
     if (on3 && off3) {
-    	title += "\nSchedule 3: ${humanReadableTime(on3)} to ${humanReadableTime(off3)}" 
+    	title += "\nSchedule 3: ${humanReadableTime(on3)} to ${humanReadableTime(off3)}"
     }
     if (on4 && off4) {
-    	title += "\nSchedule 4: ${humanReadableTime(on4)} to ${humanReadableTime(off4)}" 
+    	title += "\nSchedule 4: ${humanReadableTime(on4)} to ${humanReadableTime(off4)}"
     }
     if (on1 || on2 || on3 || on4) {
     	title += "\n$modeListClean"
-    	title += "\n$dayListClean" 
+    	title += "\n$dayListClean"
     }
-    
+
     if (!on1 && !on2 && !on3 && !on4) {
     	title="Click to configure scenario"
     }
@@ -374,7 +374,7 @@ def createDayArray() {
            timeOk(timeOnD1, timeOffD1)
            timeOk(timeOnD2, timeOffD2)
            timeOk(timeOnD3, timeOffD3)
-           timeOk(timeOnD4, timeOffD4)        
+           timeOk(timeOnD4, timeOffD4)
         }
     }
     state.data.sort{it.start}
@@ -384,7 +384,7 @@ def createDayArray() {
 
 private def textAppName() {
 	def text = "Smart Home Ventilation"
-}	
+}
 
 private def textVersion() {
     def text = "Version 2.1.2 (05/31/2015)"

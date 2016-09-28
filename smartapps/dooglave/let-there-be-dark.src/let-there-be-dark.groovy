@@ -25,15 +25,11 @@ preferences {
 
 def installed() {
 	subscribe(contact1, "contact", contactHandler)
-	subscribe(switch1, "switch.on", switchOnHandler)
-    subscribe(switch1, "switch.off", switchOffHandler)
 }
 
 def updated() {
 	unsubscribe()
 	subscribe(contact1, "contact", contactHandler)
-	subscribe(switch1, "switch.on", switchOnHandler)
-    subscribe(switch1, "switch.off", switchOffHandler)
 }
 
 def contactHandler(evt) {

@@ -13,7 +13,7 @@
  *  for the specific language governing permissions and limitations under the License.
  *
  */
- 
+
 metadata {
     definition (name: "Cree Bulb", namespace: "smartthings", author: "SmartThings") {
 
@@ -22,6 +22,7 @@ metadata {
         capability "Refresh"
         capability "Switch"
         capability "Switch Level"
+        capability "Health Check"
 
         fingerprint profileId: "C05E", inClusters: "0000,0003,0004,0005,0006,0008,1000", outClusters: "0000,0019"
     }
@@ -84,11 +85,28 @@ def setLevel(value) {
     zigbee.setLevel(value) + ["delay 500"] + zigbee.levelRefresh()         //adding refresh because of ZLL bulb not conforming to send-me-a-report
 }
 
+/**
+ * PING is used by Device-Watch in attempt to reach the Device
+ * */
+def ping() {
+    return zigbee.levelRefresh()
+}
+
 def refresh() {
     zigbee.onOffRefresh() + zigbee.levelRefresh() + zigbee.onOffConfig() + zigbee.levelConfig()
 }
 
+def healthPoll() {
+    def cmds = zigbee.onOffRefresh() + zigbee.levelRefresh()
+    cmds.each{ sendHubCommand(new physicalgraph.device.HubAction(it))}
+}
+
 def configure() {
+    unschedule()
+    schedule("0 0/5 * * * ? *", "healthPoll")
     log.debug "Configuring Reporting and Bindings."
-    zigbee.onOffConfig() + zigbee.levelConfig() + zigbee.onOffRefresh() + zigbee.levelRefresh()
+    // Device-Watch allows 2 check-in misses from device
+    sendEvent(name: "checkInterval", value: 60 * 12, displayed: false, data: [protocol: "zigbee"])
+    // minReportTime 0 seconds, maxReportTime 5 min. Reporting interval if no activity
+    zigbee.onOffConfig(0, 300) + zigbee.levelConfig() + zigbee.onOffRefresh() + zigbee.levelRefresh()
 }

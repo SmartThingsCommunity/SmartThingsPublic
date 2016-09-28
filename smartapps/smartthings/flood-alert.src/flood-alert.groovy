@@ -54,10 +54,10 @@ def waterWetHandler(evt) {
 	def alreadySentSms = recentEvents.count { it.value && it.value == "wet" } > 1
 
 	if (alreadySentSms) {
-		log.debug "SMS already sent to $phone within the last $deltaSeconds seconds"
+		log.debug "SMS already sent within the last $deltaSeconds seconds"
 	} else {
 		def msg = "${alarm.displayName} is wet!"
-		log.debug "$alarm is wet, texting $phone"
+		log.debug "$alarm is wet, texting phone number"
 
 		if (location.contactBookEnabled) {
 			sendNotificationToContacts(msg, recipients)

@@ -68,7 +68,7 @@ def scheduleCheck()
             sendNotificationToContacts("No one has fed the dog", recipients)
         }
         else {
-            log.debug "Feeder was not opened since $midnight, texting $phone1"
+            log.debug "Feeder was not opened since $midnight, texting one phone number"
             sendSms(phone1, "No one has fed the dog")
         }
 	}

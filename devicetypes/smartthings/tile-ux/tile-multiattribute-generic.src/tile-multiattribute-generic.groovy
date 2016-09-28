@@ -39,15 +39,15 @@ metadata {
 				attributeState "turningOff", label:'${name}', backgroundColor:"#ffffff", nextState:"turningOn"
 			}
 			tileAttribute("device.level", key: "SECONDARY_CONTROL") {
-				attributeState "default", icon: 'st.Weather.weather1', action:"randomizeLevel"
+				attributeState "level", icon: 'st.Weather.weather1', action:"randomizeLevel", defaultState: true
 			}
 			tileAttribute("device.level", key: "SLIDER_CONTROL") {
-				attributeState "default", action:"switch level.setLevel"
+				attributeState "level", action:"switch level.setLevel", defaultState: true
 			}
 		}
 		multiAttributeTile(name:"valueTile", type:"generic", width:6, height:4) {
 			tileAttribute("device.level", key: "PRIMARY_CONTROL") {
-				attributeState "default", label:'${currentValue}', backgroundColors:[
+				attributeState "level", label:'${currentValue}', defaultState: true, backgroundColors:[
 					[value: 0, color: "#ff0000"],
 					[value: 20, color: "#ffff00"],
 					[value: 40, color: "#00ff00"],
@@ -67,17 +67,50 @@ metadata {
 				attributeState "VALUE_DOWN", action: "levelDown"
 			}
 		}
+		multiAttributeTile(name:"lengthyTile", type:"generic", width:6, height:4) {
+			tileAttribute("device.lengthyText", key: "PRIMARY_CONTROL") {
+				attributeState "lengthyText", label:'The value of this tile is long and should wrap to two lines', backgroundColor:"#79b821", defaultState: true
+			}
+			tileAttribute("device.lengthyText", key: "SECONDARY_CONTROL") {
+				attributeState "lengthyText", label:'The value of this tile is long and should wrap to two lines', backgroundColor:"#79b821", defaultState: true
+			}
+		}
+		multiAttributeTile(name:"multilineTile", type:"generic", width:6, height:4) {
+			tileAttribute("device.multilineText", key: "PRIMARY_CONTROL") {
+				attributeState "multiLineText", label:'Line 1 YES\nLine 2 YES\nLine 3 NO', backgroundColor:"#79b821", defaultState: true
+			}
+			tileAttribute("device.multilineText", key: "SECONDARY_CONTROL") {
+				attributeState "multiLineText", label:'Line 1 YES\nLine 2 YES\nLine 3 NO', backgroundColor:"#79b821", defaultState: true
+			}
+		}
+		multiAttributeTile(name:"lengthyTileWithIcon", type:"generic", width:6, height:4) {
+			tileAttribute("device.lengthyText", key: "PRIMARY_CONTROL") {
+				attributeState "lengthyText", label:'The value of this tile is long and should wrap to two lines', backgroundColor:"#79b821", icon: "st.switches.switch.on", defaultState: true
+			}
+			tileAttribute("device.lengthyText", key: "SECONDARY_CONTROL") {
+				attributeState "lengthyText", label:'The value of this tile is long and should wrap to two lines', backgroundColor:"#79b821", icon: "st.switches.switch.on", defaultState: true
+			}
+		}
+		multiAttributeTile(name:"multilineTileWithIcon", type:"generic", width:6, height:4) {
+			tileAttribute("device.multilineText", key: "PRIMARY_CONTROL") {
+				attributeState "multilineText", label:'Line 1 YES\nLine 2 YES\nLine 3 NO', backgroundColor:"#79b821", icon: "st.switches.switch.on", defaultState: true
+			}
+			tileAttribute("device.multilineText", key: "SECONDARY_CONTROL") {
+				attributeState "multilineText", label:'Line 1 YES\nLine 2 YES\nLine 3 NO', backgroundColor:"#79b821", icon: "st.switches.switch.on", defaultState: true
+			}
+		}
 
 		main(["basicTile"])
-		details(["basicTile", "sliderTile", "valueTile"])
+		details(["basicTile", "sliderTile", "valueTile", "lengthyTile", "multilineTile", "lengthyTileWithIcon", "multilineTileWithIcon"])
 	}
 }
 
 def installed() {
-
+	sendEvent(name: "lengthyText", value: "The value of this tile is long and should wrap to two lines")
+	sendEvent(name: "multilineText", value: "Line 1 YES\nLine 2 YES\nLine 3 NO")
 }
 
-def parse() {
+def parse(String description) {
 	// This is a simulated device. No incoming data to parse.
 }
 

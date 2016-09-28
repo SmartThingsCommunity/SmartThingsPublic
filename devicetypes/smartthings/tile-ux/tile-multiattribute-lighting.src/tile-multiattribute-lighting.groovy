@@ -96,10 +96,10 @@ metadata {
 		}
 
 		standardTile("reset", "device.reset", inactiveLabel: false, decoration: "flat", width: 2, height: 2) {
-			state "default", label:"Reset Color", action:"reset", icon:"st.lights.philips.hue-single"
+			state "reset", label:"Reset Color", action:"reset", icon:"st.lights.philips.hue-single", defaultState: true
 		}
 		standardTile("refresh", "device.switch", inactiveLabel: false, decoration: "flat", width: 2, height: 2) {
-			state "default", label:"", action:"refresh.refresh", icon:"st.secondary.refresh"
+			state "refresh", label:"", action:"refresh.refresh", icon:"st.secondary.refresh", defaultState: true
 		}
 
 		main(["switch"])
@@ -173,7 +173,6 @@ def setColor(value) {
 def reset() {
 	log.debug "Executing 'reset'"
 	setAdjustedColor([level:100, hex:"#90C638", saturation:56, hue:23])
-	//parent.poll()
 }
 
 def setAdjustedColor(value) {
@@ -189,7 +188,6 @@ def setAdjustedColor(value) {
 
 def refresh() {
 	log.debug "Executing 'refresh'"
-	//parent.manualRefresh()
 }
 
 def adjustOutgoingHue(percent) {
@@ -208,4 +206,3 @@ def adjustOutgoingHue(percent) {
 	log.info "percent: $percent, adjusted: $adjusted"
 	adjusted
 }
-

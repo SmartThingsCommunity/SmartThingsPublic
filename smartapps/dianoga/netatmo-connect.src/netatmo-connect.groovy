@@ -4,29 +4,33 @@
 import java.text.DecimalFormat
 import groovy.json.JsonSlurper
 
-private apiUrl() 			{ "https://api.netatmo.com" }
-private getVendorName() 	{ "netatmo" }
-private getVendorAuthPath()	{ "https://api.netatmo.com/oauth2/authorize?" }
-private getVendorTokenPath(){ "https://api.netatmo.com/oauth2/token" }
+private getApiUrl()			{ "https://api.netatmo.com" }
+private getVendorName()		{ "netatmo" }
+private getVendorAuthPath()	{ "${apiUrl}/oauth2/authorize?" }
+private getVendorTokenPath(){ "${apiUrl}/oauth2/token" }
 private getVendorIcon()		{ "https://s3.amazonaws.com/smartapp-icons/Partner/netamo-icon-1%402x.png" }
-private getClientId() 		{ appSettings.clientId }
-private getClientSecret() 	{ appSettings.clientSecret }
-private getServerUrl() 		{ "https://graph.api.smartthings.com" }
+private getClientId()		{ appSettings.clientId }
+private getClientSecret()	{ appSettings.clientSecret }
+private getServerUrl() 		{ appSettings.serverUrl }
+private getShardUrl()		{ return getApiServerUrl() }
+private getCallbackUrl()	{ "${serverUrl}/oauth/callback" }
+private getBuildRedirectUrl() { "${serverUrl}/oauth/initialize?appId=${app.id}&access_token=${state.accessToken}&apiServerUrl=${shardUrl}" }
 
 // Automatically generated. Make future change here.
 definition(
-    name: "Netatmo (Connect)",
-    namespace: "dianoga",
-    author: "Brian Steere",
-    description: "Netatmo Integration",
-    category: "SmartThings Labs",
-    iconUrl: "https://s3.amazonaws.com/smartapp-icons/Partner/netamo-icon-1.png",
-    iconX2Url: "https://s3.amazonaws.com/smartapp-icons/Partner/netamo-icon-1%402x.png",
-    oauth: true,
-    singleInstance: true
+	name: "Netatmo (Connect)",
+	namespace: "dianoga",
+	author: "Brian Steere",
+	description: "Netatmo Integration",
+	category: "SmartThings Labs",
+	iconUrl: "https://s3.amazonaws.com/smartapp-icons/Partner/netamo-icon-1.png",
+	iconX2Url: "https://s3.amazonaws.com/smartapp-icons/Partner/netamo-icon-1%402x.png",
+	oauth: true,
+	singleInstance: true
 ){
 	appSetting "clientId"
 	appSetting "clientSecret"
+	appSetting "serverUrl"
 }
 
 preferences {
@@ -35,35 +39,52 @@ preferences {
 }
 
 mappings {
-	path("/receivedToken"){action: [POST: "receivedToken", GET: "receivedToken"]}
-	path("/receiveToken"){action: [POST: "receiveToken", GET: "receiveToken"]}
-    path("/auth"){action: [GET: "auth"]}
+	path("/oauth/initialize") {action: [GET: "oauthInitUrl"]}
+	path("/oauth/callback") {action: [GET: "callback"]}
 }
 
 def authPage() {
 	log.debug "In authPage"
-	if(canInstallLabs()) {
-		def description = null
 
-		if (state.vendorAccessToken == null) {
-			log.debug "About to create access token."
+	def description
+	def uninstallAllowed = false
+	def oauthTokenProvided = false
 
-			createAccessToken()
-			description = "Tap to enter Credentials."
+	if (!state.accessToken) {
+		log.debug "About to create access token."
+		state.accessToken = createAccessToken()
+	}
 
-			return dynamicPage(name: "Credentials", title: "Authorize Connection", nextPage:"listDevices", uninstall: true, install:false) {
-				section { href url:buildRedirectUrl("auth"), style:"embedded", required:false, title:"Connect to ${getVendorName()}:", description:description }
+	if (canInstallLabs()) {
+
+		def redirectUrl = getBuildRedirectUrl()
+		// log.debug "Redirect url = ${redirectUrl}"
+
+		if (state.authToken) {
+			description = "Tap 'Next' to proceed"
+			uninstallAllowed = true
+			oauthTokenProvided = true
+		} else {
+			description = "Click to enter Credentials."
+		}
+
+		if (!oauthTokenProvided) {
+			log.debug "Show the login page"
+			return dynamicPage(name: "Credentials", title: "Authorize Connection", nextPage:"listDevices", uninstall: uninstallAllowed, install:false) {
+				section() {
+					paragraph "Tap below to log in to the netatmo and authorize SmartThings access."
+					href url:redirectUrl, style:"embedded", required:false, title:"Connect to ${getVendorName()}:", description:description
+				}
 			}
 		} else {
-			description = "Tap 'Next' to proceed"
-
-			return dynamicPage(name: "Credentials", title: "Credentials Accepted!", nextPage:"listDevices", uninstall: true, install:false) {
-				section { href url: buildRedirectUrl("receivedToken"), style:"embedded", required:false, title:"${getVendorName()} is now connected to SmartThings!", description:description }
+			log.debug "Show the devices page"
+			return dynamicPage(name: "Credentials", title: "Credentials Accepted!", nextPage:"listDevices", uninstall: uninstallAllowed, install:false) {
+				section() {
+					input(name:"Devices", style:"embedded", required:false, title:"${getVendorName()} is now connected to SmartThings!", description:description) 
+				}
 			}
 		}
-	}
-	else
-	{
+	} else {
 		def upgradeNeeded = """To use SmartThings Labs, your Hub should be completely up to date.
 
 To update your Hub, access Location Settings in the Main Menu (tap the gear next to your location name), select your Hub, and choose "Update Hub"."""
@@ -78,228 +99,174 @@ To update your Hub, access Location Settings in the Main Menu (tap the gear next
 	}
 }
 
-def auth() {
-	redirect location: oauthInitUrl()
-}
-
 def oauthInitUrl() {
 	log.debug "In oauthInitUrl"
 
-	/* OAuth Step 1: Request access code with our client ID */
-
 	state.oauthInitState = UUID.randomUUID().toString()
 
-	def oauthParams = [ response_type: "code",
-		client_id: getClientId(),
-		state: state.oauthInitState,
-		redirect_uri: buildRedirectUrl("receiveToken") ,
-		scope: "read_station"
-		]
-
-	return getVendorAuthPath() + toQueryString(oauthParams)
-}
-
-def buildRedirectUrl(endPoint) {
-	log.debug "In buildRedirectUrl"
-
-	return getServerUrl() + "/api/token/${state.accessToken}/smartapps/installations/${app.id}/${endPoint}"
-}
-
-def receiveToken() {
-	log.debug "In receiveToken"
-
 	def oauthParams = [
-		client_secret: getClientSecret(),
+		response_type: "code",
 		client_id: getClientId(),
-		grant_type: "authorization_code",
-		redirect_uri: buildRedirectUrl('receiveToken'),
-		code: params.code,
+		client_secret: getClientSecret(),
+		state: state.oauthInitState,
+		redirect_uri: getCallbackUrl(),
 		scope: "read_station"
-		]
-
-	def tokenUrl = getVendorTokenPath()
-	def params = [
-		uri: tokenUrl,
-		contentType: 'application/x-www-form-urlencoded',
-		body: oauthParams,
 	]
 
-    log.debug params
+	// log.debug "REDIRECT URL: ${getVendorAuthPath() + toQueryString(oauthParams)}"
 
-	/* OAuth Step 2: Request access token with our client Secret and OAuth "Code" */
-	try {
-		httpPost(params) { response ->
-        	log.debug response.data
-			def slurper = new JsonSlurper();
+	redirect (location: getVendorAuthPath() + toQueryString(oauthParams))
+}
 
-			response.data.each {key, value ->
-				def data = slurper.parseText(key);
-				log.debug "Data: $data"
+def callback() {
+	// log.debug "callback()>> params: $params, params.code ${params.code}"
 
-				state.vendorRefreshToken = data.refresh_token
-				state.vendorAccessToken = data.access_token
-				state.vendorTokenExpires = now() + (data.expires_in * 1000)
-				return
+	def code = params.code
+	def oauthState = params.state
+
+	if (oauthState == state.oauthInitState) {
+
+		def tokenParams = [
+			client_secret: getClientSecret(),
+			client_id : getClientId(),
+			grant_type: "authorization_code",
+			redirect_uri: getCallbackUrl(),
+			code: code,
+			scope: "read_station"
+		]
+
+		// log.debug "TOKEN URL: ${getVendorTokenPath() + toQueryString(tokenParams)}"
+
+		def tokenUrl = getVendorTokenPath()
+		def params = [
+			uri: tokenUrl,
+			contentType: 'application/x-www-form-urlencoded',
+			body: tokenParams
+		]
+
+		// log.debug "PARAMS: ${params}"
+
+		httpPost(params) { resp ->
+
+			def slurper = new JsonSlurper()
+
+			resp.data.each { key, value ->
+				def data = slurper.parseText(key)
+
+				state.refreshToken = data.refresh_token
+				state.authToken = data.access_token
+				state.tokenExpires = now() + (data.expires_in * 1000)
+				// log.debug "swapped token: $resp.data"
 			}
-
 		}
-	} catch (Exception e) {
-		log.debug "Error: $e"
+
+		// Handle success and failure here, and render stuff accordingly
+		if (state.authToken) {
+			success()
+		} else {
+			fail()
+		}
+
+	} else {
+		log.error "callback() failed oauthState != state.oauthInitState"
 	}
+}
 
-	log.debug "State: $state"
+def success() {
+	log.debug "in success"
+	def message = """
+	<p>We have located your """ + getVendorName() + """ account.</p>
+	<p>Tap 'Done' to continue to Devices.</p>
+	"""
+	connectionStatus(message)
+}
 
-	if ( !state.vendorAccessToken ) {  //We didn't get an access token, bail on install
-		return
+def fail() {
+	log.debug "in fail"
+	def message = """
+	<p>The connection could not be established!</p>
+	<p>Click 'Done' to return to the menu.</p>
+	"""
+	connectionStatus(message)
+}
+
+def connectionStatus(message, redirectUrl = null) {
+	def redirectHtml = ""
+	if (redirectUrl) {
+		redirectHtml = """
+			<meta http-equiv="refresh" content="3; url=${redirectUrl}" />
+		"""
 	}
-
-	/* OAuth Step 3: Use the access token to call into the vendor API throughout your code using state.vendorAccessToken. */
 
 	def html = """
-        <!DOCTYPE html>
-        <html>
-        <head>
-        <meta name="viewport" content="width=device-width, initial-scale=1">
-        <title>${getVendorName()} Connection</title>
-        <style type="text/css">
-            * { box-sizing: border-box; }
-            @font-face {
-                font-family: 'Swiss 721 W01 Thin';
-                src: url('https://s3.amazonaws.com/smartapp-icons/Partner/fonts/swiss-721-thin-webfont.eot');
-                src: url('https://s3.amazonaws.com/smartapp-icons/Partner/fonts/swiss-721-thin-webfont.eot?#iefix') format('embedded-opentype'),
-                     url('https://s3.amazonaws.com/smartapp-icons/Partner/fonts/swiss-721-thin-webfont.woff') format('woff'),
-                     url('https://s3.amazonaws.com/smartapp-icons/Partner/fonts/swiss-721-thin-webfont.ttf') format('truetype'),
-                     url('https://s3.amazonaws.com/smartapp-icons/Partner/fonts/swiss-721-thin-webfont.svg#swis721_th_btthin') format('svg');
-                font-weight: normal;
-                font-style: normal;
-            }
-            @font-face {
-                font-family: 'Swiss 721 W01 Light';
-                src: url('https://s3.amazonaws.com/smartapp-icons/Partner/fonts/swiss-721-light-webfont.eot');
-                src: url('https://s3.amazonaws.com/smartapp-icons/Partner/fonts/swiss-721-light-webfont.eot?#iefix') format('embedded-opentype'),
-                     url('https://s3.amazonaws.com/smartapp-icons/Partner/fonts/swiss-721-light-webfont.woff') format('woff'),
-                     url('https://s3.amazonaws.com/smartapp-icons/Partner/fonts/swiss-721-light-webfont.ttf') format('truetype'),
-                     url('https://s3.amazonaws.com/smartapp-icons/Partner/fonts/swiss-721-light-webfont.svg#swis721_lt_btlight') format('svg');
-                font-weight: normal;
-                font-style: normal;
-            }
-            .container {
-                width: 100%;
-                padding: 40px;
-                /*background: #eee;*/
-                text-align: center;
-            }
-            img {
-                vertical-align: middle;
-            }
-            img:nth-child(2) {
-                margin: 0 30px;
-            }
-            p {
-                font-size: 2.2em;
-                font-family: 'Swiss 721 W01 Thin';
-                text-align: center;
-                color: #666666;
-                margin-bottom: 0;
-            }
-        /*
-            p:last-child {
-                margin-top: 0px;
-            }
-        */
-            span {
-                font-family: 'Swiss 721 W01 Light';
-            }
-        </style>
-        </head>
-        <body>
-            <div class="container">
-                <img src=""" + getVendorIcon() + """ alt="Vendor icon" />
-                <img src="https://s3.amazonaws.com/smartapp-icons/Partner/support/connected-device-icn%402x.png" alt="connected device icon" />
-                <img src="https://s3.amazonaws.com/smartapp-icons/Partner/support/st-logo%402x.png" alt="SmartThings logo" />
-                <p>We have located your """ + getVendorName() + """ account.</p>
-                <p>Tap 'Done' to process your credentials.</p>
+		<!DOCTYPE html>
+		<html>
+		<head>
+		<meta name="viewport" content="width=device-width, initial-scale=1">
+		<title>${getVendorName()} Connection</title>
+		<style type="text/css">
+			* { box-sizing: border-box; }
+			@font-face {
+				font-family: 'Swiss 721 W01 Thin';
+				src: url('https://s3.amazonaws.com/smartapp-icons/Partner/fonts/swiss-721-thin-webfont.eot');
+				src: url('https://s3.amazonaws.com/smartapp-icons/Partner/fonts/swiss-721-thin-webfont.eot?#iefix') format('embedded-opentype'),
+				url('https://s3.amazonaws.com/smartapp-icons/Partner/fonts/swiss-721-thin-webfont.woff') format('woff'),
+				url('https://s3.amazonaws.com/smartapp-icons/Partner/fonts/swiss-721-thin-webfont.ttf') format('truetype'),
+				url('https://s3.amazonaws.com/smartapp-icons/Partner/fonts/swiss-721-thin-webfont.svg#swis721_th_btthin') format('svg');
+				font-weight: normal;
+				font-style: normal;
+			}
+			@font-face {
+				font-family: 'Swiss 721 W01 Light';
+				src: url('https://s3.amazonaws.com/smartapp-icons/Partner/fonts/swiss-721-light-webfont.eot');
+				src: url('https://s3.amazonaws.com/smartapp-icons/Partner/fonts/swiss-721-light-webfont.eot?#iefix') format('embedded-opentype'),
+				url('https://s3.amazonaws.com/smartapp-icons/Partner/fonts/swiss-721-light-webfont.woff') format('woff'),
+				url('https://s3.amazonaws.com/smartapp-icons/Partner/fonts/swiss-721-light-webfont.ttf') format('truetype'),
+				url('https://s3.amazonaws.com/smartapp-icons/Partner/fonts/swiss-721-light-webfont.svg#swis721_lt_btlight') format('svg');
+				font-weight: normal;
+				font-style: normal;
+			}
+			.container {
+				width: 100%;
+				padding: 40px;
+				/*background: #eee;*/
+				text-align: center;
+			}
+			img {
+				vertical-align: middle;
+			}
+			img:nth-child(2) {
+				margin: 0 30px;
+			}
+			p {
+				font-size: 2.2em;
+				font-family: 'Swiss 721 W01 Thin';
+				text-align: center;
+				color: #666666;
+				margin-bottom: 0;
+			}
+			/*
+			p:last-child {
+				margin-top: 0px;
+			}
+			*/
+			span {
+				font-family: 'Swiss 721 W01 Light';
+				}
+		</style>
+		</head>
+		<body>
+			<div class="container">
+				<img src=""" + getVendorIcon() + """ alt="Vendor icon" />
+				<img src="https://s3.amazonaws.com/smartapp-icons/Partner/support/connected-device-icn%402x.png" alt="connected device icon" />
+				<img src="https://s3.amazonaws.com/smartapp-icons/Partner/support/st-logo%402x.png" alt="SmartThings logo" />
+				${message}
 			</div>
         </body>
         </html>
-        """
+	"""
 	render contentType: 'text/html', data: html
 }
-
-def receivedToken() {
-	log.debug "In receivedToken"
-
-	def html = """
-        <!DOCTYPE html>
-        <html>
-        <head>
-        <meta name="viewport" content="width=device-width, initial-scale=1">
-        <title>Withings Connection</title>
-        <style type="text/css">
-            * { box-sizing: border-box; }
-            @font-face {
-                font-family: 'Swiss 721 W01 Thin';
-                src: url('https://s3.amazonaws.com/smartapp-icons/Partner/fonts/swiss-721-thin-webfont.eot');
-                src: url('https://s3.amazonaws.com/smartapp-icons/Partner/fonts/swiss-721-thin-webfont.eot?#iefix') format('embedded-opentype'),
-                     url('https://s3.amazonaws.com/smartapp-icons/Partner/fonts/swiss-721-thin-webfont.woff') format('woff'),
-                     url('https://s3.amazonaws.com/smartapp-icons/Partner/fonts/swiss-721-thin-webfont.ttf') format('truetype'),
-                     url('https://s3.amazonaws.com/smartapp-icons/Partner/fonts/swiss-721-thin-webfont.svg#swis721_th_btthin') format('svg');
-                font-weight: normal;
-                font-style: normal;
-            }
-            @font-face {
-                font-family: 'Swiss 721 W01 Light';
-                src: url('https://s3.amazonaws.com/smartapp-icons/Partner/fonts/swiss-721-light-webfont.eot');
-                src: url('https://s3.amazonaws.com/smartapp-icons/Partner/fonts/swiss-721-light-webfont.eot?#iefix') format('embedded-opentype'),
-                     url('https://s3.amazonaws.com/smartapp-icons/Partner/fonts/swiss-721-light-webfont.woff') format('woff'),
-                     url('https://s3.amazonaws.com/smartapp-icons/Partner/fonts/swiss-721-light-webfont.ttf') format('truetype'),
-                     url('https://s3.amazonaws.com/smartapp-icons/Partner/fonts/swiss-721-light-webfont.svg#swis721_lt_btlight') format('svg');
-                font-weight: normal;
-                font-style: normal;
-            }
-            .container {
-                width: 560px;
-                padding: 40px;
-                /*background: #eee;*/
-                text-align: center;
-            }
-            img {
-                vertical-align: middle;
-            }
-            img:nth-child(2) {
-                margin: 0 30px;
-            }
-            p {
-                font-size: 2.2em;
-                font-family: 'Swiss 721 W01 Thin';
-                text-align: center;
-                color: #666666;
-                margin-bottom: 0;
-            }
-        /*
-            p:last-child {
-                margin-top: 0px;
-            }
-        */
-            span {
-                font-family: 'Swiss 721 W01 Light';
-            }
-        </style>
-        </head>
-        <body>
-            <div class="container">
-                <img src=""" + getVendorIcon() + """ alt="Vendor icon" />
-                <img src="https://s3.amazonaws.com/smartapp-icons/Partner/support/connected-device-icn%402x.png" alt="connected device icon" />
-                <img src="https://s3.amazonaws.com/smartapp-icons/Partner/support/st-logo%402x.png" alt="SmartThings logo" />
-                <p>Tap 'Done' to continue to Devices.</p>
-			</div>
-        </body>
-        </html>
-        """
-	render contentType: 'text/html', data: html
-}
-
-// "
 
 def refreshToken() {
 	log.debug "In refreshToken"
@@ -308,8 +275,8 @@ def refreshToken() {
 		client_secret: getClientSecret(),
 		client_id: getClientId(),
 		grant_type: "refresh_token",
-		refresh_token: state.vendorRefreshToken
-		]
+		refresh_token: state.refreshToken
+	]
 
 	def tokenUrl = getVendorTokenPath()
 	def params = [
@@ -318,18 +285,18 @@ def refreshToken() {
 		body: oauthParams,
 	]
 
-	/* OAuth Step 2: Request access token with our client Secret and OAuth "Code" */
+	// OAuth Step 2: Request access token with our client Secret and OAuth "Code"
 	try {
 		httpPost(params) { response ->
 			def slurper = new JsonSlurper();
 
 			response.data.each {key, value ->
 				def data = slurper.parseText(key);
-				log.debug "Data: $data"
+				// log.debug "Data: $data"
 
-				state.vendorRefreshToken = data.refresh_token
-				state.vendorAccessToken = data.access_token
-				state.vendorTokenExpires = now() + (data.expires_in * 1000)
+				state.refreshToken = data.refresh_token
+				state.accessToken = data.access_token
+				state.tokenExpires = now() + (data.expires_in * 1000)
 				return true
 			}
 
@@ -338,9 +305,8 @@ def refreshToken() {
 		log.debug "Error: $e"
 	}
 
-	log.debug "State: $state"
-
-	if ( !state.vendorAccessToken ) {  //We didn't get an access token
+	// We didn't get an access token
+	if ( !state.accessToken ) {
 		return false
 	}
 }
@@ -371,10 +337,10 @@ def initialize() {
 
 	settings.devices.each {
 		def deviceId = it
-		def detail = state.deviceDetail[deviceId]
+		def detail = state?.deviceDetail[deviceId]
 
 		try {
-			switch(detail.type) {
+			switch(detail?.type) {
 				case 'NAMain':
 					log.debug "Base station"
 					createChildDevice("Netatmo Basestation", deviceId, "${detail.type}.${deviceId}", detail.module_name)
@@ -482,13 +448,13 @@ def listDevices() {
 }
 
 def apiGet(String path, Map query, Closure callback) {
-	if(now() >= state.vendorTokenExpires) {
+	if(now() >= state.tokenExpires) {
 		refreshToken();
 	}
 
-	query['access_token'] = state.vendorAccessToken
+	query['access_token'] = state.accessToken
 	def params = [
-		uri: apiUrl(),
+		uri: getApiUrl(),
 		path: path,
 		'query': query
 	]
@@ -521,12 +487,12 @@ def poll() {
     log.debug "State: ${state.deviceState}"
 
 	settings.devices.each { deviceId ->
-		def detail = state.deviceDetail[deviceId]
-		def data = state.deviceState[deviceId]
-		def child = children.find { it.deviceNetworkId == deviceId }
+		def detail = state?.deviceDetail[deviceId]
+		def data = state?.deviceState[deviceId]
+		def child = children?.find { it.deviceNetworkId == deviceId }
 
 		log.debug "Update: $child";
-		switch(detail.type) {
+		switch(detail?.type) {
 			case 'NAMain':
 				log.debug "Updating NAMain $data"
 				child?.sendEvent(name: 'temperature', value: cToPref(data['Temperature']) as float, unit: getTemperatureScale())

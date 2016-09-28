@@ -17,11 +17,12 @@
  */
 
 metadata {
-    definition (name: "ZigBee White Color Temperature Bulb", namespace: "smartthings", author: "SmartThings") {
+    definition (name: "ZigBee White Color Temperature Bulb", namespace: "smartthings", author: "SmartThings", category: "C1") {
 
         capability "Actuator"
         capability "Color Temperature"
         capability "Configuration"
+        capability "Health Check"
         capability "Refresh"
         capability "Switch"
         capability "Switch Level"
@@ -35,6 +36,7 @@ metadata {
         fingerprint profileId: "0104", inClusters: "0000, 0003, 0004, 0005, 0006, 0008, 0300, 0B04, FC0F", outClusters: "0019", manufacturer: "OSRAM", model: "LIGHTIFY RT Tunable White", deviceJoinName: "OSRAM LIGHTIFY LED Recessed Kit RT 5/6 Tunable White"
         fingerprint profileId: "0104", inClusters: "0000, 0003, 0004, 0005, 0006, 0008, 0300, 0B04, FC0F", outClusters: "0019", manufacturer: "OSRAM", model: "Classic A60 TW", deviceJoinName: "OSRAM LIGHTIFY LED Tunable White 60W"
         fingerprint profileId: "0104", inClusters: "0000, 0003, 0004, 0005, 0006, 0008, 0300, 0B04, FC0F", outClusters: "0019", manufacturer: "OSRAM", model: "LIGHTIFY A19 Tunable White", deviceJoinName: "OSRAM LIGHTIFY LED Tunable White 60W"
+        fingerprint profileId: "0104", inClusters: "0000, 0003, 0004, 0005, 0006, 0008, 0300, 0B04, FC0F", outClusters: "0019", manufacturer: "OSRAM", model: "Classic B40 TW - LIGHTIFY", deviceJoinName: "OSRAM LIGHTIFY Classic B40 Tunable White"
     }
 
     // UI tile definitions
@@ -49,9 +51,6 @@ metadata {
             tileAttribute ("device.level", key: "SLIDER_CONTROL") {
                 attributeState "level", action:"switch level.setLevel"
             }
-            tileAttribute ("colorName", key: "SECONDARY_CONTROL") {
-                attributeState "colorName", label:'${currentValue}'
-            }
         }
 
         standardTile("refresh", "device.refresh", inactiveLabel: false, decoration: "flat", width: 2, height: 2) {
@@ -61,12 +60,12 @@ metadata {
         controlTile("colorTempSliderControl", "device.colorTemperature", "slider", width: 4, height: 2, inactiveLabel: false, range:"(2700..6500)") {
             state "colorTemperature", action:"color temperature.setColorTemperature"
         }
-        valueTile("colorTemp", "device.colorTemperature", inactiveLabel: false, decoration: "flat", width: 2, height: 2) {
-            state "colorTemperature", label: '${currentValue} K'
+        valueTile("colorName", "device.colorName", inactiveLabel: false, decoration: "flat", width: 2, height: 2) {
+            state "colorName", label: '${currentValue}'
         }
 
         main(["switch"])
-        details(["switch", "colorTempSliderControl", "colorTemp", "refresh"])
+        details(["switch", "colorTempSliderControl", "colorName", "refresh"])
     }
 }
 
@@ -75,7 +74,13 @@ def parse(String description) {
     log.debug "description is $description"
     def event = zigbee.getEvent(description)
     if (event) {
-        sendEvent(event)
+        if (event.name=="level" && event.value==0) {}
+        else {
+            if (event.name=="colorTemperature") {
+                setGenericName(event.value)
+            }
+            sendEvent(event)
+        }
     }
     else {
         log.warn "DID NOT PARSE MESSAGE for description : $description"
@@ -95,13 +100,23 @@ def setLevel(value) {
     zigbee.setLevel(value)
 }
 
+/**
+ * PING is used by Device-Watch in attempt to reach the Device
+ * */
+def ping() {
+    return zigbee.onOffRefresh()
+}
+
 def refresh() {
     zigbee.onOffRefresh() + zigbee.levelRefresh() + zigbee.colorTemperatureRefresh() + zigbee.onOffConfig() + zigbee.levelConfig() + zigbee.colorTemperatureConfig()
 }
 
 def configure() {
     log.debug "Configuring Reporting and Bindings."
-    zigbee.onOffConfig() + zigbee.levelConfig() + zigbee.colorTemperatureConfig() + zigbee.onOffRefresh() + zigbee.levelRefresh() + zigbee.colorTemperatureRefresh()
+    // Device-Watch allows 2 check-in misses from device
+    sendEvent(name: "checkInterval", value: 60 * 12, displayed: false, data: [protocol: "zigbee"])
+    // OnOff minReportTime 0 seconds, maxReportTime 5 min. Reporting interval if no activity
+    zigbee.onOffConfig(0, 300) + zigbee.levelConfig() + zigbee.colorTemperatureConfig() + zigbee.onOffRefresh() + zigbee.levelRefresh() + zigbee.colorTemperatureRefresh()
 }
 
 def setColorTemperature(value) {

@@ -28,6 +28,7 @@ metadata {
 		attribute "powerSupply", "enum", ["USB Cable", "Battery"]
 
 		fingerprint deviceId: "0x2101", inClusters: "0x5E,0x86,0x72,0x59,0x85,0x73,0x71,0x84,0x80,0x30,0x31,0x70,0x7A", outClusters: "0x5A"
+		fingerprint deviceId: "0x2101", inClusters: "0x5E,0x86,0x72,0x59,0x85,0x73,0x71,0x84,0x80,0x30,0x31,0x70,0x7A,0x5A"
 	}
 
 	simulator {
@@ -352,7 +353,7 @@ def configure() {
 									motionSensitivity == "minimum" ? 0 : 64)
 
 	//5. report every x minutes (threshold reports don't work on battery power, default 8 mins)
-	request << zwave.configurationV1.configurationSet(parameterNumber: 111, size: 4, scaledConfigurationValue: timeOptionValueMap[reportInterval] ?: 8*60) //association group 1
+	request << zwave.configurationV1.configurationSet(parameterNumber: 111, size: 4, scaledConfigurationValue: timeOptionValueMap[reportInterval] ?: (8*60)) //association group 1
 
 	request << zwave.configurationV1.configurationSet(parameterNumber: 112, size: 4, scaledConfigurationValue: 6*60*60)  //association group 2
 
