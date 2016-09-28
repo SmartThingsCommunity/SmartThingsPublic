@@ -1374,13 +1374,13 @@ def alarmStatusHandler(event) {
   if(keypadstatus)
   {
   	if (event.value == "off"){
-    	keypad?.setDisarmed()
+      keypad?.each() { it.setDisarmed() }
   	}
   	else if (event.value == "away"){
-    	keypad?.setArmedAway()
+      keypad?.each() { it.setArmedAway() }
   	}
   	else if (event.value == "stay") {
-    	keypad?.setArmedStay()
+      keypad?.each() { it.setArmedStay() }
   	}
   }
 }
@@ -1459,7 +1459,7 @@ def codeEntryHandler(evt) {
         else if (data == "1") {
           //log.debug "sendStayCommand"
           if(armDelay && keypadstatus) {
-          	keypad.setExitDelay(armDelay)
+            keypad?.each() { it.setExitDelay(armDelay) }
           }
           runIn(armDelay, "sendStayCommand")
           message = "${evt.displayName} was armed to 'Stay' by ${unlockUserName}"
@@ -1467,7 +1467,7 @@ def codeEntryHandler(evt) {
         else if (data == "2") {
           //log.debug "sendNightCommand"
           if(armDelay && keypadstatus) {
-          	keypad.setExitDelay(armDelay)
+            keypad?.each() { it.setExitDelay(armDelay) }
           }
           runIn(armDelay, "sendNightCommand")
           message = "${evt.displayName} was armed to 'Night' by ${unlockUserName}"
@@ -1475,7 +1475,7 @@ def codeEntryHandler(evt) {
         else if (data == "3") {
           //log.debug "sendArmCommand"
           if(armDelay && keypadstatus) {
-          	keypad.setExitDelay(armDelay)
+            keypad?.each() { it.setExitDelay(armDelay) }
           }
           runIn(armDelay, "sendArmCommand")
           message = "${evt.displayName} was armed to 'Away' by ${unlockUserName}"
@@ -1514,7 +1514,7 @@ def codeEntryHandler(evt) {
 def sendArmCommand() {
   log.debug "Sending Arm Command."
   if (keypadstatus) {
-  	keypad.acknowledgeArmRequest(3)
+    keypad?.each() { it.acknowledgeArmRequest(3) }
   }
   sendSHMEvent("away")
   execRoutine("away")
@@ -1522,7 +1522,7 @@ def sendArmCommand() {
 def sendDisarmCommand() {
   log.debug "Sending Disarm Command."
   if (keypadstatus) {
-  	keypad.acknowledgeArmRequest(0)
+    keypad?.each() { it.acknowledgeArmRequest(0) }
   }
   sendSHMEvent("off")
   execRoutine("off")
@@ -1530,7 +1530,7 @@ def sendDisarmCommand() {
 def sendStayCommand() {
   log.debug "Sending Stay Command."
   if (keypadstatus) {
-  	keypad.acknowledgeArmRequest(1)
+    keypad?.each() { it.acknowledgeArmRequest(1) }
   }
   sendSHMEvent("stay")
   execRoutine("stay")
@@ -1538,7 +1538,7 @@ def sendStayCommand() {
 def sendNightCommand() {
   log.debug "Sending Night Command."
   if (keypadstatus) {
-  	keypad.acknowledgeArmRequest(2)
+    keypad?.each() { it.acknowledgeArmRequest(2) }
   }
   sendSHMEvent("stay")
   execRoutine("stay")
