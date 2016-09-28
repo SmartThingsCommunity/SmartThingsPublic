@@ -49,7 +49,7 @@ metadata {
 		input ("tempOffset", "number", title: "Enter an offset to adjust the reported temperature",
 				defaultValue: 0, displayDuringSetup: false)
 		input ("beepLength", "number", title: "Enter length of beep in seconds",
-				defaultValue: 3, displayDuringSetup: false)
+				defaultValue: 1, displayDuringSetup: false)
                 
         input ("motionTime", "number", title: "Time in seconds for Motion to become Inactive (Default:10, 0=disabled)",	defaultValue: 10, displayDuringSetup: false)
 	}
