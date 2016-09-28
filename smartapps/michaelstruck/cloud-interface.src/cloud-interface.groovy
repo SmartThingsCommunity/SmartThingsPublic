@@ -17,6 +17,7 @@
  *  Version 1.3.3a - Added a proper revoke for access token
  *  Version 1.3.4 - Minor GUI changes to accomodate new mobile app structure
  *  Version 1.3.5a - Added a toggle function in addition to the on/off options
+ *  Version 1.3.6 - Remove whitespaces from generated URLs (%20)
  *
  *  Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except
  *  in compliance with the License. You may obtain a copy of the License at:
@@ -157,16 +158,17 @@ def OAuthToken(){
 		log.error "Access Token not defined. OAuth may not be enabled. Go to the SmartApp IDE settings to enable OAuth."
 	}
 }
+private formatURL(url){ return url.replaceAll(/\s/,"%20") }
 def displayURLS(){
 	def display = "<div style='padding:10px'>Copy the URLs of the switches you want to control.<br>Paste them to your control applications.</div><div style='padding:10px'>Click '<' above to return to the Cloud Interface SmartApp.</div>"
 	switches.each {
     	display += "<div style='padding:10px;'><b>${it.label} ON:</b></div>"
-		display += "<textarea rows='5' style='width: 99%'>${getApiServerUrl()}/api/smartapps/installations/${app.id}/w?l=${it.label}&c=on&access_token=${state.accessToken}</textarea>"
+		display += "<textarea rows='5' style='width: 99%'>" + formatURL("${getApiServerUrl()}/api/smartapps/installations/${app.id}/w?l=${it.label}&c=on&access_token=${state.accessToken}") + "</textarea>"
 		if (urlOnOff){
         	display += "<div style='padding:10px'><b>${it.label} OFF:</b></div>"
-        	display += "<textarea rows='5' style='width: 99%'>${getApiServerUrl()}/api/smartapps/installations/${app.id}/w?l=${it.label}&c=off&access_token=${state.accessToken}</textarea>"
+        	display += "<textarea rows='5' style='width: 99%'>" + formatURL("${getApiServerUrl()}/api/smartapps/installations/${app.id}/w?l=${it.label}&c=off&access_token=${state.accessToken}") + "</textarea>"
 			display += "<div style='padding:10px'><b>${it.label} Toggle:</b></div>"
-        	display += "<textarea rows='5' style='width: 99%'>${getApiServerUrl()}/api/smartapps/installations/${app.id}/w?l=${it.label}&c=toggle&access_token=${state.accessToken}</textarea>"
+        	display += "<textarea rows='5' style='width: 99%'>" + formatURL("${getApiServerUrl()}/api/smartapps/installations/${app.id}/w?l=${it.label}&c=toggle&access_token=${state.accessToken}") + "</textarea>"
         }
 		display += "<hr>"
     }
@@ -177,7 +179,7 @@ private def textAppName() {
 	def text = "Cloud Interface"
 }	
 private def textVersion() {
-    def text = "Version 1.3.5a (06/12/2016)"
+    def text = "Version 1.3.5a (09/28/2016)"
 }
 private def textCopyright() {
     def text = "Copyright © 2016 Michael Struck"
