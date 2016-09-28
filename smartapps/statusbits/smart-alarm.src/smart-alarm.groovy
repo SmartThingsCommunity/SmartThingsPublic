@@ -405,7 +405,7 @@ def pageConfigureZones() {
                 section("${it.displayName} (contact)") {
                     input "type_${devId}", "enum", title:"Zone Type", metadata:[values:zoneTypes], defaultValue:"exterior"
                     input "delay_${devId}", "bool", title:"Entry/Exit Delays", defaultValue:true
-                    input "chime_${devId}", "bool", title:"Chime on keypads", defaultValue:true
+                    input "chime_${devId}", "bool", title:"Chime on open", defaultValue:true
                 }
             }
         }
@@ -417,7 +417,7 @@ def pageConfigureZones() {
                 section("${it.displayName} (motion)") {
                     input "type_${devId}", "enum", title:"Zone Type", metadata:[values:zoneTypes], defaultValue:"interior"
                     input "delay_${devId}", "bool", title:"Entry/Exit Delays", defaultValue:false
-                    input "chime_${devId}", "bool", title:"Chime on keypads", defaultValue:false
+                    input "chime_${devId}", "bool", title:"Chime on motion", defaultValue:false
                 }
             }
         }
@@ -429,7 +429,7 @@ def pageConfigureZones() {
                 section("${it.displayName} (movement)") {
                     input "type_${devId}", "enum", title:"Zone Type", metadata:[values:zoneTypes], defaultValue:"interior"
                     input "delay_${devId}", "bool", title:"Entry/Exit Delays", defaultValue:false
-                    input "chime_${devId}", "bool", title:"Chime on keypads", defaultValue:false
+                    input "chime_${devId}", "bool", title:"Chime on movement", defaultValue:false
                 }
             }
         }
@@ -441,7 +441,7 @@ def pageConfigureZones() {
                 section("${it.displayName} (smoke)") {
                     input "type_${devId}", "enum", title:"Zone Type", metadata:[values:zoneTypes], defaultValue:"alert"
                     input "delay_${devId}", "bool", title:"Entry/Exit Delays", defaultValue:false
-                    input "chime_${devId}", "bool", title:"Chime on keypads", defaultValue:false
+                    input "chime_${devId}", "bool", title:"Chime on smoke", defaultValue:false
                 }
             }
         }
@@ -453,7 +453,7 @@ def pageConfigureZones() {
                 section("${it.displayName} (moisture)") {
                     input "type_${devId}", "enum", title:"Zone Type", metadata:[values:zoneTypes], defaultValue:"alert"
                     input "delay_${devId}", "bool", title:"Entry/Exit Delays", defaultValue:false
-                    input "chime_${devId}", "bool", title:"Chime on keypads", defaultValue:false
+                    input "chime_${devId}", "bool", title:"Chime on water", defaultValue:false
                 }
             }
         }
@@ -652,6 +652,15 @@ def pageNotifications() {
         "messaging service. Smart Alarm can also notify you with sounds or " +
         "voice alerts using compatible audio devices, such as Sonos."
 
+	def inputChimeDevices = [
+    	name:			"chimeDevices",
+        type:           "capability.tone",
+        title:          "Which Chime Devices?",
+        multiple:       true,
+        required:       false
+    ]
+        
+
     def inputPushAlarm = [
         name:           "pushMessage",
         type:           "bool",
@@ -832,6 +841,9 @@ def pageNotifications() {
     return dynamicPage(pageProperties) {
         section("Notification Options") {
             paragraph helpAbout
+        }
+        section("Chime Devices") {
+			input inputChimeDevices
         }
         section("Push Notifications") {
             input inputPushAlarm
@@ -1309,8 +1321,8 @@ private def onZoneEvent(evt, sensorType) {
     }
     else if (zone.chime)
     {
-    	keypads?.each() { 
-               	it.beep(1)
+    	chimeDevices?.each() { 
+               	it.beep()
             }
     }
     
