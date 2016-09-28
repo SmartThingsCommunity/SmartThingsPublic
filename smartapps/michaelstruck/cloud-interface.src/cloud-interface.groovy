@@ -1,7 +1,7 @@
 /**
  *  Cloud Interface
  *
- *  Version 1.3.5a - 6/12/16 Copyright © 2016 Michael Struck
+ *  Version 1.3.6 - 9/28/16 Copyright © 2016 Michael Struck
  *  
  *  Version 1.0.0 - Initial release
  *  Version 1.0.1 - Fixed code syntax
@@ -179,7 +179,7 @@ private def textAppName() {
 	def text = "Cloud Interface"
 }	
 private def textVersion() {
-    def text = "Version 1.3.5a (09/28/2016)"
+    def text = "Version 1.3.6 (09/28/2016)"
 }
 private def textCopyright() {
     def text = "Copyright © 2016 Michael Struck"
