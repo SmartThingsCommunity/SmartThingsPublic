@@ -137,7 +137,7 @@ def configured() {
 
 def lightEvent(evt){
 if (allOk) {
-   if (debugBool) log.debug "name: $evt.displayName id: $evt.deviceId source: $evt.source"
+   if (debugBool) log.debug "lightEvent - name: $evt.displayName id: $evt.deviceId source: $evt.source"
    def roomNumber
    for (int i = 1; i <= (numberOfRooms as Integer); i++){
        if (settings["lights_${i}"].find{it.id == evt.deviceId}) { 
@@ -145,20 +145,24 @@ if (allOk) {
        }
     }
     if (roomNumber) {
-       def myEvents = settings["lights_${roomNumber}"].find{it.id == evt.deviceId}.eventsSince(new Date(now() - 3000), [all:true, max: 5]).findAll{(it.source as String) == "APP_COMMAND"}
+       def myEvents = settings["lights_${roomNumber}"].find{it.id == evt.deviceId}.eventsSince(new Date(now() - 6000), [all:true, max: 5]).findAll{(it.source as String) == "APP_COMMAND"}
        if (myEvents) {
           if (debugBool) log.debug "A SmartApp triggered these events: ${myEvents?.source}"
           def myTime = now()
           if (debugBool) log.debug "Setting room$roomNumber to $myTime"
           state."room${roomNumber}" = myTime   
+       } else {
+          if (debugBool) log.debug "Light was turned off, but no \"APP_COMMAND\" events found in the last six seconds"
        }
+    } else {
+       if (debugBool) log.debug "Room was not found"
     }
 }
 }
 
 def motionEvent(evt){
 if (allOk) {
-   if (debugBool) log.debug "name: $evt.displayName id: $evt.deviceId source: $evt.source"
+   if (debugBool) log.debug "motionEvent - name: $evt.displayName id: $evt.deviceId source: $evt.source"
    def roomNumber
    for (int i = 1; i <= (numberOfRooms as Integer); i++){
        if (settings["motion_${i}"].find{it.id == evt.deviceId}) roomNumber = i
@@ -171,6 +175,8 @@ if (allOk) {
       } else {
           if (debugBool) log.debug "No need to turn the lights on"
       }
+   } else {
+       if (debugBool) log.debug "Room was not found"
    }
 }
 }
