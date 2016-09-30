@@ -194,6 +194,8 @@ MacroOperation to set the {Macro} to {MCmd}
 MacroOperation {MCmd} to {Macro}
 MacroOperation {MCmd} to {Macro} password {MPW}
 MacroOperation to {MCmd} the {Macro}
+MacroOperation {MCmd} {Macro} devices
+MacroOperation {MCmd} {Macro} 
 MacroOperation to {MCmd} the {Macro} password {MPW}
 
 MacroOperation to turn {MCmd} the {Macro} and {MNum}
