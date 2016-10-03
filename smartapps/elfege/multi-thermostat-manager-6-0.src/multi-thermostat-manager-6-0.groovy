@@ -364,21 +364,21 @@ def TemperaturesSettings() {
         section("Set the desired heating themperatures for $NightMode"){
             input heatingSetpointBIS
             if(thermostat2){
-                input(name: "heatingSetpointBIS2", type: "decimal", title: "$NightMode temperature on $thermostat2", required: true)
+                input(name: "heatingSetpointBIS2", type: "decimal", title: "$NightMode heat temperature on $thermostat2", required: true)
 
             }
             if(thermostat3){
-                input(name: "heatingSetpointBIS3", type: "decimal", title: "$NightMode temperature on $thermostat3", required: true)
+                input(name: "heatingSetpointBIS3", type: "decimal", title: "$NightMode heat temperature on $thermostat3", required: true)
             }
         }
         section("Set the desired cooling themperatures for $NightMode"){
             input coolingSetpointBIS
             if(thermostat2){
-                input(name: "coolingSetpointBIS2", type: "decimal", title: "$NightMode temperature on $thermostat2", required: true)
+                input(name: "coolingSetpointBIS2", type: "decimal", title: "$NightMode cooling temperature on $thermostat2", required: true)
 
             }
             if(thermostat3){
-                input(name: "coolingSetpointBIS3", type: "decimal", title: "$NightMode temperature on $thermostat3", required: true)
+                input(name: "coolingSetpointBIS3", type: "decimal", title: "$NightMode cooling temperature on $thermostat3", required: true)
             }
         }
         section("Set the desired heating themperatures for $SPECIALMODE"){
@@ -473,22 +473,32 @@ def VirtualThermostat() {
 
 def Options() {
 
+    def turnOffwindows = [
+        name: "turnOffwindows", type:"bool", title: "turn off everything if windows are open?", default: true
+    ] 
     def contact = [
-        name: "contact", type:"capability.contactSensor", title: "turn off everything if these windows are open", multiple: true, required: false
+        name: "contact", type:"capability.contactSensor", title: "select windows / contacts", multiple: true, required: false
     ] 
     def LowTempLimit = [ 
         name: "LowTempLimit" ,type:"decimal", title: "But Never go Below This Temperature:", required: false
     ]
     def HighTempLimit = [
         name: "HighTempLimit" ,type:"decimal", title: "And run HVAC fans if average temp is higher than:", required: false
+        // this also applies to fanonly mode (all doors / windows closed) as a threshold to allow fancirculate to alternate with actual cooling
     ]
     def ExceptionThermostat = [ 
         name: "ExceptionThermostat", type : "capability.thermostat", title: "Make an exception for this unit", required: false
     ]
+
     def HighTempLimitException = [ 
         name: "HighTempLimitException" ,type:"decimal", title: "have its fan on if its temp is higher than: ", required: false
 
     ]
+
+    def ExceptNight= [ 
+        name: "ExceptNight", type : "bool", title: "However, don't run Fans if it's home is in $NightMode or $DEEPNIGHT mode", default: false
+    ]
+
     def pageName = "Options"
 
     def pageProperties = [
@@ -502,7 +512,11 @@ def Options() {
         section(""){
             paragraph "here you will choose different optional features such as average temperature management, turning off units when windows are open "
         }
-        section("Turn off all units if these windows or doors are open"){
+        section("Turn off all units some windows or doors are open"){
+            input turnOffwindows
+        }
+
+        section("Pick windows / contacts"){
             input contact
         }
         section("But Never let the house go below this temperature (emergency heating)"){
@@ -517,6 +531,9 @@ def Options() {
         section("have its fan on if its temp is higher than: "){
             input HighTempLimitException
         }
+        section("However, don't run Fans if home is in $NightMode or $DEEPNIGHT mode (and windows are open)"){
+            input ExceptNight
+        }
     }
 }
 
@@ -525,8 +542,11 @@ def EnergySaving() {
     def OutsideSensor = [
         name: "OutsideSensor", type: "capability.temperatureMeasurement", title: "Choose an outside temperature sensor that will allow your AC to run on Fan Only when it's cool enough outside", required: false
     ]  
-    def limitTempOutside = [
-        name: "limitTempOutside" , type: "decimal", title: "Choose a threshold (default is 2)", required: false
+    def limitOutsideTemp = [
+        name: "limitOutsideTemp" , type: "decimal", title: "Choose a threshold (default is 2)", required: false
+    ]
+    def ByPassFanCirculate = [
+        name: "ByPassFanCirculate" , type: "bool", title: "Don't run this feature?", defaut: false
     ]
 
     def pageName = "EnergySaving"
@@ -546,7 +566,10 @@ def EnergySaving() {
             input OutsideSensor
         }   
         section("How big must the difference of temperature be for your units to run on Fan Only?"){
-            input limitTempOutside
+            input limitOutsideTemp
+        }
+        section("HDo you wish to ignore this feature (AC at all times)?"){
+            input ByPassFanCirculate
         }
     }
 }
@@ -565,9 +588,10 @@ def updated() {
     log.debug "enter updated, state: $state"   
     log.debug "Current mode = ${location.mode}" 
 
-
+    state.evaluateMustNotRun =  false
     state.CriticalTemp = false
     state.AllunitsMessage = 0
+    state.TurnOffDoors = 0
 
     unschedule()
     unsubscribe()
@@ -630,15 +654,17 @@ def routineChanged(evt) {
     // descriptionText will be the name of the routine, followed by the action
     // e.g., "I'm Back! was executed" or "Goodbye! was executed"
     log.debug "evt descriptionText: ${evt.descriptionText}"
-    
-    state.evaluateMustNotRun = false
+
+
 }
 
 def temperatureHandler(evt) { 
- 	
-    state.evaluateMustNotRun = true // to be reset to false by other evts handlers
- 
+    logtrace()
+
+    state.evaluateMustNotRun = true 
+
     CriticalTemp()  //  get the averageTemp value needed for FanCirculate Evaluation
+    TooHotOutside() // set limit to fancirculate criteria
 
     log.debug "temperatureHandler(evt) running"
 
@@ -648,20 +674,21 @@ def temperatureHandler(evt) {
             log.debug "TemperatureHandler running FanCirculate"
         }
     }
-    
+
     AverageTemp()
     limitOutsideTempValue()
-    
+
     // evaluate() // running evaluate with this handler renders useless any manual setting by users. 
     // must not run variables() either from here, same reason but we need evaluation of temp for FanCirculate()
     // so setting a variable to indicate that this command comes from mode handler so variables() can run but not evaluate()
-    
-   
+
+
     variables()
 }
 
 def ChangedModeHandler(evt) {
-	state.evaluateMustNotRun = false
+    state.RunEvaluateAgain = false 
+    state.evaluateMustNotRun = false
     variables()
 
     state.modeStartTime = now() 
@@ -685,7 +712,7 @@ def ChangedModeHandler(evt) {
 }
 
 def contactHandler(evt) {
-state.evaluateMustNotRun = false
+    state.evaluateMustNotRun = false
     log.trace "state.ct = $state.ct, stat.CoolSet = $state.CoolSet, state.ct2 = $state.ct2, stat.CoolSet2 = $state.CoolSet2, state.ct3 = $state.ct3, stat.CoolSet3 = $state.CoolSet3"
 
     state.countmessageHeat = 0
@@ -776,19 +803,25 @@ def variables() {
 
     log.debug "variables ________________________________________________ successfully updated!"
 
-	if(state.evaluateMustNotRun != true){
-    evaluate()
+    if(state.evaluateMustNotRun != true ){
+        state.evaluateMustNotRun = true // so it runs only once until new qualifying event
+
+        evaluate()
     }
     else {
-    log.debug "evaluate is not running because it variables() was run by temperatureHandler"
+        log.debug "evaluate is not running because variables() was run by temperatureHandler -- however checking if FANONLY is needed"
+        FanCirculate()
     }
 
-    
+
 }
 
 def evaluate() {
 
+
     log.debug "EVALUATING _________________________________________________________ EVALUATING"
+
+
     def CurrMode = location.currentMode
     def message = "Settings for ${CurrMode} mode"
     log.info message
@@ -822,6 +855,34 @@ def evaluate() {
     log.debug "Checking if Virtual Thermostat was selected"
     RunVirtualThermostat()
     log.debug "Evaluation successful"
+}
+
+def doublechecktemps(){
+
+    // check that all thermostats have received commands for required settings
+
+    if(thermostat.currentCoolingSetpoint != state.CoolSet){
+
+        thermostat.setCoolingSetpoint(state.CoolSet)
+        thermostat.setHeatingSetpoint(state.HeatSet)
+        log.debug "$thermostat was not set properly. Fixing this now."
+
+    }
+    if(thermostat2){
+        if(thermostat2.currentCoolingSetpoint != state.CoolSet2){
+            thermostat2.setCoolingSetpoint(state.CoolSet2)
+            thermostat2.setHeatingSetpoint(state.HeatSet3)
+            log.debug "$thermostat2 was not set properly. Fixing this now."
+        }
+    }
+    if(thermostat3){
+        if(thermostat3.currentCoolingSetpoint != state.CoolSet3){
+            thermostat3.setCoolingSetpoint(state.CoolSet3)
+            thermostat3.setHeatingSetpoint(state.HeatSet3)
+            log.debug "$thermostat3 was not set properly. Fixing this now."
+        }
+    }
+    log.debug "DOUBLE CHECK OK"
 }
 
 ////////////////////PRIVATE LOOPS/////////////////////////////////////
@@ -862,6 +923,7 @@ private doorsOk() {
     }
     log.debug "all doors are closed : $result"
     return result
+
 
 }
 
@@ -988,14 +1050,20 @@ private needToCool() {
 
     def result = null
 
-    if(state.ct >= state.CoolSet || state.ct2 >= state.CoolSet2 || state.ct3 >= state.CoolSet3) 
-    {
-        result = true
-        log.debug "NEED TO COOL"
+    if(needToHeat() != true){
+        if(state.ct >= state.CoolSet || state.ct2 >= state.CoolSet2 || state.ct3 >= state.CoolSet3) 
+        {
+            result = true
+            log.debug "NEED TO COOL"
+        }
+        else { 
+            result = false
+            log.debug "NO NEED TO COOL"
+        }
     }
-    else { 
-        result = false
-        log.debug "NO NEED TO COOL"
+    else {
+        result = false 
+        log.debug "NeedToCool is set to FALSE because NEEDTOHEAT is TRUE"
     }
     return result
 
@@ -1008,7 +1076,13 @@ private needToHeat() {
     if(state.ct <= state.HeatSet || state.ct2 <= state.HeatSet2 || state.ct3 <= state.HeatSet3 ) 
     {
         result = true
-    }    
+    }
+    if(OutsideSensor){ 
+        if(state.outsideTemp < state.HeatSet && state.AverageTemp < state.HeatSet)
+        result = true
+    } else if(state.AverageTemp < state.HeatSet) {
+    result = true
+    }
     log.debug "NEEDTOHEAT result is : $result"
     return result
 }
@@ -1018,12 +1092,20 @@ private NeedFanOnly() {
     if(OutsideSensor) {
         if(TooHotOutside()){
             result = false // do not need fancirculate (warning this bool has reversed values compared to limitOUtsideTempPassed loops)        
+
         } 
+        else if(state.AverageTemp  >  78 ){
+            // to avoid accumulating too much heat threshold is set to 84 by default so at that temp fancicrulate won't work
+            result = false
+
+        }
         else {
-            result = true        
+            result = true
+
         }
         log.debug "NEEDFANONLY result: $result"
         return result 
+
     }
     else { 
         log.debug "FanCirculate option not running because it was not picked by user"
@@ -1034,24 +1116,42 @@ private TooHotOutside() {
 
     def result = null
 
-    if(state.outsideTemp >= state.AverageTemp + state.limitOutsideTemp  ) {
-        result = true 
-        log.debug "Outside Temperature is TOO HIGH to run fancirculate"  
-    } 
-    else { 
-        result = false 
-        log.debug "Outside Temperature is LOW ENOUGH for $thermostat to Fancirculate"
+    limitOutsideTempValue()
+
+    if(ByPassFanCirculate == true) {
+        result = true
+        log.debug "User chose to bypass FanCirculate and have AC running at all times"
+    }
+    else if(state.AverageTemp  < 78 /* set a heat threshold */ && needToHeat() == false /* avoid setting to cool when set for heat*/ ){
+        // this loop is to avoid fancirculate to run despite uncomfortably high temps.
+
+        log.debug "state.limitOutsideTemp is $state.limitOutsideTemp"
+        log.debug "state.outsideTemp is $state.outsideTemp"
+
+        state.ThresholdTempSum = state.AverageTemp + state.limitOutsideTemp as int
+
+            log.debug "state.ThresholdTempSum is : $state.ThresholdTempSum"
+
+        if(state.outsideTemp >= state.ThresholdTempSum  ) {
+            result = true 
+            log.debug "Outside Temperature is TOO HIGH to run fancirculate"  
+        } 
+        else { 
+            result = false 
+            log.debug "Outside Temperature is LOW ENOUGH for Fancirculate"
+
+        }
+        log.debug "Is the temperature Outside Too High to run Fancirculate? : $result"
+        return result 
 
     }
-    log.debug "Is the temperature Outside Too High to run Fancirculate? : $result"
-    return result 
-
+    return result
 }
 
 private limitOutsideTempValue() {
     if(limitOutsideTemp) {
-        state.limitOutsideTemp = limitOutsideTemp
-    } 
+        state.limitOutsideTemp = limitOutsideTemp as int
+            } 
     else { 
         state.limitOutsideTemp = 2
     }    
@@ -1059,7 +1159,7 @@ private limitOutsideTempValue() {
 }
 
 private JustHeat() {
-
+log.debug "JUSTHEAT is running"
     // set to heat if too cold
     if(doorsOk()) {
         if(needToHeat()) {
@@ -1082,7 +1182,7 @@ private JustHeat() {
 
 private JustCool() { 
 
-    log.debug "JustCool() is running"
+    log.debug "JUSTCOOL is running"
 
     if (doorsOk()) {
         if (needToCool()) {            
@@ -1101,14 +1201,14 @@ private FanCirculate() {
 
     def result = false
     state.countmessageHeat = 0
-
+    def CurrMode = location.currentMode
     def message = "..."
 
     log.debug "outsideTemp is $state.outsideTemp (FanCirculate())"
     log.debug "HighTempLimit for inside's average temp is $HighTempLimit"
 
     if(doorsOk()){
-        if(NeedFanOnly() == false) {  
+        if(TooHotOutside()) {  
             if(needToCool()) {
                 log.debug "running cool() from fancirculate"
                 Cool()   
@@ -1117,7 +1217,7 @@ private FanCirculate() {
                 FansOff()
             }
         }
-        else {
+        else  {
             result = true
             // setting all units to fan only
             message = "All units set to FAN ONLY"
@@ -1135,7 +1235,19 @@ private FanCirculate() {
 
         if(ExceptionThermostat.currentTemperature > HighTempLimitException){
 
-            ExceptionThermostat.setThermostatFanMode("on")
+            if(ExceptNight){
+                log.debug "ExceptNight was picked by user. If night then $thermostat 's fan won't run"
+                if(CurrMode != NightMode && CurrMode != DEEPNIGHT){
+                    ExceptionThermostat.setThermostatFanMode("on")
+                }
+                else {
+                    log.debug "Exception Fan Mode NOT running because it's night."
+                }
+            } 
+            else {
+                ExceptionThermostat.setThermostatFanMode("on")
+            }
+
 
             state.Fancirculate = true
             log.debug "Fan running on Exception Thermostat"
@@ -1147,14 +1259,20 @@ private FanCirculate() {
         }
     }
 
+
     if(state.AverageTemp >= HighTempLimit) {
 
-        FansOn()
-
-        message = "Running Fans despite the fact that windows are open because average temp is superior to ${HighTempLimit}°"
-        if(state.messageFansOn == 0){
-            send(message)
-            state.messageFansOn = state.messageFansOn + 1        
+        if(CurrMode != NighMode && CurrMode != DEEPNIGHT){
+            FansOn()
+            message = "Running Fans despite the fact that windows are open because average temp is superior to ${HighTempLimit}°"
+            if(state.messageFansOn == 0){
+                send(message)
+                state.messageFansOn = state.messageFansOn + 1        
+            }
+        }
+        else {
+            FansOff() 
+            state.messageFansOn = 0
         }
     }
     else {
@@ -1168,7 +1286,7 @@ private FansOff(){
 
     if(ExceptionThermostat){
         if(state.Fancirculate == false){
-            log.debug "All thermostats are turned off NO EXCEPTION because even ${ExceptionThermostat}'s temperature is OK"
+            log.debug "All fans are set back to AUTO, NO EXCEPTION because even ${ExceptionThermostat}'s temperature is OK"
             thermostat.setThermostatFanMode("auto")
             if(thermostat2){
                 thermostat2.setThermostatFanMode("auto")
@@ -1222,27 +1340,67 @@ private FansOff(){
             thermostat3.setThermostatFanMode("auto")
         }
     }
-
 }
 
 private FansOn(){ 
 
+    def CurrMode = location.currentMode
+
+    if(doorsOk() == false){
+        if(ExceptNight == true){
+            if(CurrMode == NightMode || CurrMode == DEEPNIGHT){
+                // if this option was selected by user
+                // if mode is night
+                // if windows are open
+                log.debug "Home is in $CurrMode, windows are open and user doesn't want fans to run at night so fans are not being managed"
+            }
+        }
+    }
+
+    else {
+
+        log.debug "turning fans on"
+        thermostat.setThermostatMode("off")
+        if(thermostat2){
+            thermostat2.setThermostatMode("off")
+        }
+        if(thermostat3){
+            thermostat3.setThermostatMode("off")
+        }
+
+        thermostat.setThermostatFanMode("on")
+        if(thermostat2){
+            thermostat2.setThermostatFanMode("on")
+        }
+        if(thermostat3){
+            thermostat3.setThermostatFanMode("on")
+        }
 
 
-    thermostat.setThermostatMode("off")
-    if(thermostat2){
-        thermostat2.setThermostatMode("off")
-    }
-    if(thermostat3){
-        thermostat3.setThermostatMode("off")
-    }
+        if(doorsOk()){
+            //runIn(60*5, evaluate)// needed to avoid being stuck on fan only mode
+            state.evaluateMustNotRun = false // allowing variables() to run evaluate()
+        }
+        else{
+            log.debug "doors are open (FansOn()) evaluating need for Fans"
+            variables()
+            state.evaluateMustNotRun = true // forbiding variables() to run evaluate() because windows are open
+            evaluateFansWindowsOpen() // specific to windows open mode so we don't use main evaluate loop (too many risks for errors such as compressor running while windows open)
+        }
+    } 
 
-    thermostat.setThermostatFanMode("on")
-    if(thermostat2){
-        thermostat2.setThermostatFanMode("on")
+}
+
+private evaluateFansWindowsOpen() {
+
+    if(state.AverageTemp < HighTempLimit) {
+        def message = "average temp is no longer superior to ${HighTempLimit}°"             
+        send(message)
+        FansOff() 
+        //unschedule(evaluateFansWindowsOpen)
     }
-    if(thermostat3){
-        thermostat3.setThermostatFanMode("on")
+    else {
+        log.debug "Average Temperature is still high so Fans are still running"
     }
 }
 
@@ -1301,17 +1459,26 @@ private CriticalTemp() {
 }
 
 private Cool() {
-    log.debug "running Cool"
-    thermostat.setThermostatMode("cool")
-    thermostat.setThermostatFanMode("fanAuto")
 
-    if(thermostat2){
-        thermostat2.setThermostatMode("cool")
-        thermostat2.setThermostatFanMode("fanAuto")
+    if(doorsOk() || !turnOffwindows){
+        log.debug "running Cool"
+        thermostat.setThermostatMode("cool")
+        thermostat.setThermostatFanMode("fanAuto")
+
+        if(thermostat2){
+            thermostat2.setThermostatMode("cool")
+            thermostat2.setThermostatFanMode("fanAuto")
+        }
+        if(thermostat3){
+            thermostat3.setThermostatMode("cool")
+            thermostat3.setThermostatFanMode("fanAuto")
+        }
     }
-    if(thermostat3){
-        thermostat3.setThermostatMode("cool")
-        thermostat3.setThermostatFanMode("fanAuto")
+    else { 
+        log.debug "doors are open so ignoring Cool() command and making sure units are off"
+        thermostat3.setThermostatMode("off")
+        thermostat2.setThermostatMode("off")
+        thermostat.setThermostatMode("off")
     }
 }
 
@@ -1354,34 +1521,6 @@ private SettingsCool() {
     }
 }
 
-def doublechecktemps(){
-
-    // check that all thermostats have received commands for required settings
-
-    if(thermostat.currentCoolingSetpoint != state.CoolSet){
-
-        thermostat.setCoolingSetpoint(state.CoolSet)
-        thermostat.setHeatingSetpoint(state.HeatSet)
-        log.debug "$thermostat was not set properly. Fixing this now."
-
-    }
-    if(thermostat2){
-        if(thermostat2.currentCoolingSetpoint != state.CoolSet2){
-            thermostat2.setCoolingSetpoint(state.CoolSet2)
-            thermostat2.setHeatingSetpoint(state.HeatSet3)
-            log.debug "$thermostat2 was not set properly. Fixing this now."
-        }
-    }
-    if(thermostat3){
-        if(thermostat3.currentCoolingSetpoint != state.CoolSet3){
-            thermostat3.setCoolingSetpoint(state.CoolSet3)
-            thermostat3.setHeatingSetpoint(state.HeatSet3)
-            log.debug "$thermostat3 was not set properly. Fixing this now."
-        }
-    }
-    log.debug "DOUBLE CHECK OK"
-}
-
 ////////////////////////////////// LOCATION MODES //////////////////////////////
 private MainMode() {
     log.debug "MainModeS loop running. Current mode is Home, adjusting VARIABLES accordingly (MainModeS loop)"
@@ -1405,7 +1544,13 @@ private MainMode() {
         log.debug "now running temp SettingsCool loops"
         SettingsCool()            
 
-    }
+    } 
+    else if (doorsOk() == false && turnOffwindows == true){ 
+        state.messageDoors = 0
+        state.TurnOffDoors = 0
+        TurnOffDoors()
+    }   
+
 }
 private NightMode() {
     log.debug "NightModes loop running"
@@ -1413,12 +1558,12 @@ private NightMode() {
     state.CoolSet = coolingSetpointBIS
     state.HeatSet = heatingSetpointBIS
     if(thermostat2){
-        state.CoolSet2 = coolingSetpoint2BIS 
-        state.HeatSet2 = heatingSetpoint2BIS
+        state.CoolSet2 = coolingSetpointBIS2 
+        state.HeatSet2 = heatingSetpointBIS2
     }
     if(thermostat3){
-        state.CoolSet3 = coolingSetpoint3BIS
-        state.HeatSet3 = heatingSetpoint3BIS
+        state.CoolSet3 = coolingSetpointBIS3
+        state.HeatSet3 = heatingSetpointBIS3
     }
 
     if (doorsOk() && state.CriticalTemp == false) {
@@ -1427,9 +1572,20 @@ private NightMode() {
         log.debug "now running temp SettingsHeat loop"
         SettingsHeat()
 
-        log.debug "now running temp SettingsCool loops"
+        log.debug "now running temp SettingsCool loop"
         SettingsCool()            
     }
+    else if (doorsOk() == false && turnOffwindows == true){ 
+        state.messageDoors = 0
+        state.TurnOffDoors = 0
+        TurnOffDoors()
+    }
+    else if (doorsOk() == false && turnOffwindows == true){ 
+        state.messageDoors = 0
+        state.TurnOffDoors = 0
+        TurnOffDoors()
+    }   
+    logtrace()
 }
 private AWAYMODE() {
     log.debug "Home is in Away Mode, setting one temp for all thermostats (AWAYMODE Loop)"
@@ -1453,6 +1609,11 @@ private AWAYMODE() {
         log.debug "now running temp SettingsCool loops"
         SettingsCool()            
     }
+    else if (doorsOk() == false && turnOffwindows == true){ 
+        state.messageDoors = 0
+        state.TurnOffDoors = 0
+        TurnOffDoors()
+    }   
 }
 private SPECIALMODE() {
     log.debug "Current mode is SPECIALMODE, adjusting VARIABLES accordingly -----------------------------------------------------------------"
@@ -1473,6 +1634,11 @@ private SPECIALMODE() {
         log.debug "now running temp SettingsCool loops"
         SettingsCool()            
     }
+    else if (doorsOk() == false && turnOffwindows == true){ 
+        state.messageDoors = 0
+        state.TurnOffDoors = 0
+        TurnOffDoors()
+    }   
 }
 private DEEPNIGHT() {
     log.debug "Current mode is DEEPNIGHT, adjusting VARIABLES accordingly (DEEPNIGHT loop)"
@@ -1497,5 +1663,10 @@ private DEEPNIGHT() {
         log.debug "now running temp SettingsCool loops"
         SettingsCool()            
     }
+    else if (doorsOk() == false && turnOffwindows == true){ 
+        state.messageDoors = 0
+        state.TurnOffDoors = 0
+        TurnOffDoors()
+    }   
 }
 
