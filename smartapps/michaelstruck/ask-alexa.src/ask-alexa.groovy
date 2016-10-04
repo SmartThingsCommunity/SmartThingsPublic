@@ -2097,9 +2097,9 @@ def doorWindowReport(){
         for (doorLock in voiceDoorLocks) if (doorLock.latestValue("lock")=="unlocked") countUnlocked ++
         listUnlocked = listDevices(voiceDoorLocks, "lock", "unlocked", countUnlocked)
     }
-    def totalCount = countOpenedDoor + countOpened + countUnlocked
+    def totalCount = countOpenedDoor + countOpened
     if (voiceDoorAll){
-        if (!totalCount) {
+        if (!totalCount && !countUnlocked) {
         	result += "All of the doors and windows are closed"
         	result += voiceDoorLocks ? " and locked. " : ". "
         }
