@@ -17,7 +17,7 @@
  */
 
 metadata {
-    definition (name: "ZigBee White Color Temperature Bulb", namespace: "smartthings", author: "SmartThings", category: "C1") {
+    definition (name: "ZigBee White Color Temperature Bulb", namespace: "smartthings", author: "SmartThings") {
 
         capability "Actuator"
         capability "Color Temperature"

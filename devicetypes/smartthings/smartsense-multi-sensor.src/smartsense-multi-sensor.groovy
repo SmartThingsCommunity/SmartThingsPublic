@@ -16,7 +16,7 @@
 import physicalgraph.zigbee.clusters.iaszone.ZoneStatus
 
 metadata {
-	definition (name: "SmartSense Multi Sensor", namespace: "smartthings", author: "SmartThings", category: "C2") {
+	definition (name: "SmartSense Multi Sensor", namespace: "smartthings", author: "SmartThings") {
 
 		capability "Three Axis"
 		capability "Battery"
