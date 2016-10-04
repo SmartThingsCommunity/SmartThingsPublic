@@ -1,13 +1,13 @@
 /**
  *  Ask Alexa 
  *
- *  Version 2.1.6 - 10/2/16 Copyright © 2016 Michael Struck
+ *  Version 2.1.6a - 10/4/16 Copyright © 2016 Michael Struck
  *  Special thanks for Keith DeLong for overall code and assistance; Barry Burke for Weather Underground Integration; jhamstead for Ecobee climate modes, Yves Racine for My Ecobee thermostat tips
  * 
  *  Version information prior to 2.1.5 listed here: https://github.com/MichaelStruck/SmartThingsPublic/blob/master/smartapps/michaelstruck/ask-alexa.src/Ask%20Alexa%20Version%20History.md
  *
  *  Version 2.1.5 (09/29/16) Code optimization/bug fixes, list command for certain macros (Device and Macro Groups), REST API display for Macro Groups
- *  Version 2.1.6 (10/2/16) Additional Ecobee climate modes, bug fixes, added heating/cooling default feature on individual device thermostats
+ *  Version 2.1.6a (10/4/16) Additional Ecobee climate modes, bug fixes, added heating/cooling default feature on individual device thermostats
  *
  *  Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except
  *  in compliance with the License. You may obtain a copy of the License at:
@@ -2097,11 +2097,11 @@ def doorWindowReport(){
         for (doorLock in voiceDoorLocks) if (doorLock.latestValue("lock")=="unlocked") countUnlocked ++
         listUnlocked = listDevices(voiceDoorLocks, "lock", "unlocked", countUnlocked)
     }
-    def totalCount = countOpenedDoor + countOpened
+    def totalCount = countOpenedDoor + countOpened + countUnlocked
     if (voiceDoorAll){
-    	if (!totalCount) {
+        if (!totalCount) {
         	result += "All of the doors and windows are closed"
-        	result += voiceDoorLocks && !countUnlocked ? " and locked. " : ". "
+        	result += voiceDoorLocks ? " and locked. " : ". "
         }
         if (!countOpened && !countOpenedDoor && countUnlocked){
    			result += "All of the doors and windows are closed, but the "
@@ -3200,12 +3200,12 @@ def getURLs(){
 //Version/Copyright/Information/Help-----------------------------------------------------------
 private textAppName() { return "Ask Alexa" }	
 private textVersion() {
-    def version = "SmartApp Version: 2.1.6 (10/02/2016)", lambdaVersion = state.lambdaCode ? "\n" + state.lambdaCode : ""
+    def version = "SmartApp Version: 2.1.6a (10/04/2016)", lambdaVersion = state.lambdaCode ? "\n" + state.lambdaCode : ""
     return "${version}${lambdaVersion}"
 }
 private versionInt(){ return 216 }
 private LambdaReq() { return 122 }
-private versionLong(){ return "2.1.6" }
+private versionLong(){ return "2.1.6a" }
 private textCopyright() {return "Copyright © 2016 Michael Struck" }
 private textLicense() {
 	def text = "Licensed under the Apache License, Version 2.0 (the 'License'); you may not use this file except in compliance with the License. You may obtain a copy of the License at\n\n"+
