@@ -104,8 +104,16 @@ def parse(String description) {
 		}
 	}
 	else {
-		log.warn "DID NOT PARSE MESSAGE for description : $description"
-		log.debug zigbee.parseDescriptionAsMap(description)
+		def cluster = zigbee.parse(description)
+
+		if (cluster.clusterId == 0x0006 && cluster.command == 0x07 && cluster.data[0] == 0x00) {
+			log.debug "ON/OFF REPORTING CONFIG RESPONSE: " + cluster
+			sendEvent(name: "checkInterval", value: 60 * 12, displayed: false, data: [protocol: "zigbee"])
+		}
+		else {
+			log.warn "DID NOT PARSE MESSAGE for description : $description"
+			log.debug "${cluster}"
+		}
 	}
 }
 
@@ -128,8 +136,9 @@ def refresh() {
 }
 
 def configure() {
-	// Device-Watch allows 2 check-in misses from device
-	sendEvent(name: "checkInterval", value: 60 * 12, displayed: false, data: [protocol: "zigbee"])
+	// Device-Watch allows 3 check-in misses from device (plus 3 min lag time)
+	sendEvent(name: "checkInterval", value: 3 * 60 * 60 + 1 * 60, displayed: false, data: [protocol: "zigbee"])
+
 	// OnOff minReportTime 0 seconds, maxReportTime 5 min. Reporting interval if no activity
 	zigbee.onOffConfig(0, 300) + powerConfig() + refresh()
 }

@@ -97,11 +97,18 @@ private Map parseCatchAllMessage(String description) {
                 break
 
             case 0x0402:
-                // temp is last 2 data values. reverse to swap endian
-                String temp = cluster.data[-2..-1].reverse().collect { cluster.hex1(it) }.join()
-                def value = getTemperature(temp)
-                resultMap = getTemperatureResult(value)
-                break
+				if (cluster.command == 0x07 && cluster.data[0] == 0x00) // Response from temperature periodic reporting configuration
+				{
+					log.debug "TEMP REPORTING CONFIG RESPONSE" + cluster
+					sendEvent(name: "checkInterval", value: 60 * 12, displayed: false, data: [protocol: "zigbee"])
+				}
+				else {
+					// temp is last 2 data values. reverse to swap endian
+					String temp = cluster.data[-2..-1].reverse().collect { cluster.hex1(it) }.join()
+					def value = getTemperature(temp)
+					resultMap = getTemperatureResult(value)
+				}
+				break
 
 			case 0xFC45:
                 String pctStr = cluster.data[-1, -2].collect { Integer.toHexString(it) }.join('')
@@ -119,7 +126,6 @@ private boolean shouldProcessMessage(cluster) {
     // 0x07 is bind message
     boolean ignoredMessage = cluster.profileId != 0x0104 ||
         cluster.command == 0x0B ||
-        cluster.command == 0x07 ||
         (cluster.data.size() > 0 && cluster.data.first() == 0x3e)
     return !ignoredMessage
 }
@@ -264,8 +270,8 @@ def refresh()
 }
 
 def configure() {
-	// Device-Watch allows 2 check-in misses from device
-	sendEvent(name: "checkInterval", value: 60 * 12, displayed: false, data: [protocol: "zigbee"])
+	// Device-Watch allows 3 check-in misses from device (plus 3 min lag time)
+	sendEvent(name: "checkInterval", value: 3 * 60 * 60 + 1 * 60, displayed: false, data: [protocol: "zigbee"])
 
 	log.debug "Configuring Reporting and Bindings."
 	def humidityConfigCmds = [
