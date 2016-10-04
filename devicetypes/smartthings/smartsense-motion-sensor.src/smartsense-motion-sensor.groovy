@@ -17,7 +17,7 @@ import physicalgraph.zigbee.clusters.iaszone.ZoneStatus
 
 
 metadata {
-	definition (name: "SmartSense Motion Sensor", namespace: "smartthings", author: "SmartThings", category: "C2") {
+	definition (name: "SmartSense Motion Sensor", namespace: "smartthings", author: "SmartThings") {
 		capability "Motion Sensor"
 		capability "Configuration"
 		capability "Battery"
