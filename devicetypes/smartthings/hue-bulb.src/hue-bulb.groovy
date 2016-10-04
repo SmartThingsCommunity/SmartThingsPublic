@@ -66,7 +66,7 @@ metadata {
 }
 
 void installed() {
-	sendEvent(name: "checkInterval", value: 60 * 12, data: [protocol: "lan"], displayed: false)
+	sendEvent(name: "checkInterval", value: 60 * 12, data: [protocol: "lan", hubHardwareId: device.hub.hardwareID], displayed: false)
 }
 
 // parse events into attributes
