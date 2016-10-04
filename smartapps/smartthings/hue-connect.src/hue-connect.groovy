@@ -131,10 +131,7 @@ def bulbDiscovery() {
 	def refreshInterval = 3
 	state.inBulbDiscovery = true
 	def bridge = null
-	if (selectedHue) {
-		bridge = getChildDevice(selectedHue)
-		subscribe(bridge, "bulbList", bulbListData)
-	}
+
 	state.bridgeRefreshCount = 0
 	def allLightsFound = bulbsDiscovered() ?: [:]
 
@@ -259,10 +256,6 @@ Map bulbsDiscovered() {
 	return bulbmap
 }
 
-def bulbListData(evt) {
-	state.bulbs = evt.jsonData
-}
-
 Map getHueBulbs() {
 	state.bulbs = state.bulbs ?: [:]
 }
@@ -314,29 +307,6 @@ def uninstalled(){
 	app.updateSetting("bridgeDevice", null)
 	state.bridges = [:]
 	state.username = null
-}
-
-// Handles events to add new bulbs
-def bulbListHandler(hub, data = "") {
-	def msg = "Bulbs list not processed. Only while in settings menu."
-    def bulbs = [:]
-	if (state.inBulbDiscovery) {
-        def logg = ""
-        log.trace "Adding bulbs to state..."
-        state.bridgeProcessedLightList = true
-        def object = new groovy.json.JsonSlurper().parseText(data)
-        object.each { k,v ->
-            if (v instanceof Map)
-                bulbs[k] = [id: k, name: v.name, type: v.type, modelid: v.modelid, hub:hub, online: v.state?.reachable]
-        }
-    }
-    def bridge = null
-	if (selectedHue) {
-		bridge = getChildDevice(selectedHue)
-		bridge?.sendEvent(name: "bulbList", value: hub, data: bulbs, isStateChange: true, displayed: false)
-	}
-	msg = "${bulbs.size()} bulbs found. ${bulbs}"
-	return msg
 }
 
 private upgradeDeviceType(device, newHueType) {
@@ -570,11 +540,8 @@ void lightsHandler(physicalgraph.device.HubResponse hubResponse) {
 	if (isValidSource(hubResponse.mac)) {
 		def body = hubResponse.json
 		if (!body?.state?.on) { //check if first time poll made it here by mistake
-			def bulbs = getHueBulbs()
 			log.debug "Adding bulbs to state!"
-			body.each { k, v ->
-				bulbs[k] = [id: k, name: v.name, type: v.type, modelid: v.modelid, hub: hubResponse.hubId]
-			}
+			updateBulbState(body, hubResponse.hubId)
 		}
 	}
 }
@@ -690,11 +657,8 @@ def locationHandler(evt) {
 			} else {
 				//GET /api/${state.username}/lights response (application/json)
 				if (!body?.state?.on) { //check if first time poll made it here by mistake
-					def bulbs = getHueBulbs()
 					log.debug "Adding bulbs to state!"
-					body.each { k,v ->
-						bulbs[k] = [id: k, name: v.name, type: v.type, modelid: v.modelid, hub:parsedEvent.hub]
-					}
+					updateBulbState(body, parsedEvent.hub)
 				}
 			}
 		}
@@ -754,7 +718,7 @@ private void checkBridgeStatus() {
 		    }
 
 			if (it.value.lastActivity < time) { // it.value.lastActivity != null &&
-				log.warn "Bridge $it.key is Offline"
+				log.warn "Bridge $it.value.idNumber is Offline"
 				d.sendEvent(name: "status", value: "Offline")
 
 				state.bulbs?.each {
@@ -777,6 +741,31 @@ def isValidSource(macAddress) {
 
 def isInBulbDiscovery() {
 	return state.inBulbDiscovery
+}
+
+private updateBulbState(messageBody, hub) {
+	def bulbs = getHueBulbs()
+
+	// Copy of bulbs used to locate old lights in state that are no longer on bridge
+	def toRemove = [:]
+	toRemove << bulbs
+
+	messageBody.each { k,v ->
+
+		if (v instanceof Map) {
+			if (bulbs[k] == null) {
+				bulbs[k] = [:]
+			}
+			bulbs[k] << [id: k, name: v.name, type: v.type, modelid: v.modelid, hub:hub, remove: false]
+			toRemove.remove(k)
+		}
+	}
+
+	// Remove bulbs from state that are no longer discovered
+	toRemove.each { k,v ->
+		log.warn "${bulbs[k].name} no longer exists on bridge, removing"
+		bulbs.remove(k)
+	}
 }
 
 /////////////////////////////////////
@@ -1173,7 +1162,14 @@ def setColor(childDevice, huesettings) {
 }
 
 def ping(childDevice) {
-	if (isOnline(getId(childDevice))) {
+	if (childDevice.device?.deviceNetworkId?.equalsIgnoreCase(selectedHue)) {
+		if (childDevice.device?.currentValue("status")?.equalsIgnoreCase("Online")) {
+			childDevice.sendEvent(name: "deviceWatch-ping", value: "ONLINE", description: "Hue Bridge is reachable", displayed: false, isStateChange: true)
+			return "Bridge is Online"
+		} else {
+			return "Bridge is Offline"
+		}
+	} else if (isOnline(getId(childDevice))) {
 		childDevice.sendEvent(name: "deviceWatch-ping", value: "ONLINE", description: "Hue Light is reachable", displayed: false, isStateChange: true)
 		return "Device is Online"
 	} else {
