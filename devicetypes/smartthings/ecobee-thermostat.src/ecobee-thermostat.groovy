@@ -31,13 +31,13 @@ metadata {
 		command "switchMode"
 		command "switchFanMode"
 
-		attribute "thermostatSetpoint","number"
-		attribute "thermostatStatus","string"
+		attribute "thermostatSetpoint", "number"
+		attribute "thermostatStatus", "string"
 		attribute "maxHeatingSetpoint", "number"
 		attribute "minHeatingSetpoint", "number"
 		attribute "maxCoolingSetpoint", "number"
 		attribute "minCoolingSetpoint", "number"
-		attribute "deviceTemperatureUnit", "number"
+		attribute "deviceTemperatureUnit", "string"
 	}
 
 	tiles {
