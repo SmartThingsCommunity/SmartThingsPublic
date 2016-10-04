@@ -174,7 +174,7 @@ void setColorTemperature(value) {
 
 void refresh() {
     log.debug "Executing 'refresh'"
-    parent.manualRefresh()
+    parent?.manualRefresh()
 }
 
 def verifyPercent(percent) {
