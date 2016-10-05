@@ -1,5 +1,6 @@
 /**
- *  LeakSmart Water Valve v 1.1.3
+ *  LeakSMART Water Valve v 1.2
+ *     (Mode: 8830000L)
  *  
  *  Capabilities:
  *      Configuration, Refresh, Switch, Valve, Polling
@@ -11,6 +12,9 @@
  *      
  *
  *  Changelog:
+ *
+ *    1.2 (08/20/2016)
+ *      - Changed lower battery limit to 5.0
  *
  *    1.1.3 (05/23/2016)
  *      - Changed lower battery limit to 5.5
@@ -146,7 +150,7 @@ def parse(String description) {
 
 private getBatteryLevel(rawValue) {
 	def maxVolts = 6.0
-	def minVolts = 5.5
+	def minVolts = 5.0
 	def volts = (rawValue / 10)
 	def batteryPercentages = (volts - minVolts) / (maxVolts - minVolts)	
 	def batteryLevel = (int) batteryPercentages * 100
