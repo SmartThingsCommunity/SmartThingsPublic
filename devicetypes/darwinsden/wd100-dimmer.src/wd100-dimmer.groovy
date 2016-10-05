@@ -28,7 +28,8 @@
  *  0.13 (06/13/2016) - Added dim level ramp-up option for remote dim commands
  *  0.14 (08/01/2016) - Corrected 60% dim rate limit test that was inadvertently pulled into repository
  *  0.15 (09/06/2016) - Added Firmware version info. Removed unused lit indicator button.
- *  0.16 (09/24/2016) - Added double-tap to full brightness option and support for firmware dim rate configuration parameters.
+ *  0.16 (09/24/2016) - Added double-tap-up to full brightness option and support for firmware dim rate configuration parameters.
+ *  0.17 (10/05/2016) - Added single-tap-up to full brightness option.
  *
  */
  
@@ -74,12 +75,13 @@ metadata {
 
     preferences {      
        input "doubleTapToFullBright", "bool", title: "Double-Tap Up sets to full brightness",  defaultValue: false,  displayDuringSetup: true, required: false	       
+       input "singleTapToFullBright", "bool", title: "Single-Tap Up sets to full brightness",  defaultValue: false,  displayDuringSetup: true, required: false	       
        input "reverseSwitch", "bool", title: "Reverse Switch",  defaultValue: false,  displayDuringSetup: true, required: false	       
         
        input ( "localStepDuration", "number", title: "Press Configuration button after entering ramp rate preferences\n\nLocal Ramp Rate: Duration of each level (1-22)(1=10ms) [default: 3]", defaultValue: 3,range: "1..22", required: false)
-       input ( "localStepSize", "number", title: "Local Ramp Rate: Dim level to change each duration (1-99) [default: 1]", defaultValue: 1, range: "1..99", required: false)
+       input ( "localStepSize", "number", title: "Local Ramp Rate: Dim level % to change each duration (1-99) [default: 1]", defaultValue: 1, range: "1..99", required: false)
        input ( "remoteStepDuration", "number", title: "Remote Ramp Rate: Duration of each level (1-22)(1=10ms) [default: 3]", defaultValue: 3,range: "1..22", required: false)
-       input ( "remoteStepSize", "number", title: "Remote Ramp Rate: Dim level to change each duration (1-99) [default: 1]", defaultValue: 1, range: "1..99", required: false)
+       input ( "remoteStepSize", "number", title: "Remote Ramp Rate: Dim level % to change each duration (1-99) [default: 1]", defaultValue: 1, range: "1..99", required: false)
     }
     
 	tiles(scale: 2) {
@@ -289,7 +291,13 @@ def zwaveEvent(physicalgraph.zwave.commands.centralscenev1.CentralSceneNotificat
           // Up
           switch (cmd.keyAttributes) {
               case 0:
-                  result=createEvent([name: "switch", value: "on", type: "physical"])
+                  result += createEvent([name: "switch", value: "on", type: "physical"])
+                  if (singleTapToFullBright)
+                  {
+                     result += setLevel(99)
+                     result += response("delay 5000")
+                     result += response(zwave.switchMultilevelV1.switchMultilevelGet())
+                  } 
                   break
  
               case 1:
@@ -303,7 +311,6 @@ def zwaveEvent(physicalgraph.zwave.commands.centralscenev1.CentralSceneNotificat
                   break
               case 3: 
                   // 2 Times
-                  log.debug (doubleTapToFullBright)
                   result +=createEvent(tapUp2Response("physical"))
                   if (doubleTapToFullBright)
                   {
