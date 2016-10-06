@@ -7,10 +7,6 @@
  *	Date: 2016-10-05
  *	Copyright Eric Maycock
  *
- *  Code has elements from other community source @CyrilPeponnet (Z-Wave Parameter Sync). Includes all 
- *  configuration parameters and ease of advanced configuration. Added software based temp, humidity,
- *  and light offsets.
- *
  *  Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except
  *  in compliance with the License. You may obtain a copy of the License at:
  *
