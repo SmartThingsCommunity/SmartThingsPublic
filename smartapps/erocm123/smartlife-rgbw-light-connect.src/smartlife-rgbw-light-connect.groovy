@@ -42,6 +42,8 @@ preferences {
     page(name: "discoveryPage", title: "Device Discovery", content: "discoveryPage", refreshTimeout:5)
     page(name: "addDevices", title: "Add RGBW Devices", content: "addDevices")
     page(name: "deviceDiscovery")
+    page(name: "manuallyAdd")
+    page(name: "manuallyAddConfirm")
 	page(name: "timeIntervalInput", title: "Only during a certain time") {
 		section {
 			input "starting", "time", title: "Starting", required: false
@@ -53,7 +55,8 @@ preferences {
 def mainPage() {
 	dynamicPage(name: "mainPage", title: "Manage your RGBW devices", nextPage: null, uninstall: true, install: true) {
         section("Configure"){
-           href "deviceDiscovery", title:"Discover RGBW Devices", description:""//, params: [pbutton: i]
+           href "deviceDiscovery", title:"Discover Devices", description:""//, params: [pbutton: i]
+           href "manuallyAdd", title:"Manually Add Device", description:""//, params: [pbutton: i]
         }
         section("Installed Devices"){
         getChildDevices().sort({ a, b -> a["deviceNetworkId"] <=> b["deviceNetworkId"] }).each {
@@ -66,6 +69,42 @@ def mainPage() {
     }
 }
 
+def manuallyAdd(){
+   dynamicPage(name: "manuallyAdd", title: "Manually add a SmartLife RGBW Controller", nextPage: "manuallyAddConfirm") {
+		section {
+			paragraph "This process will manually create a SmartLife RGBW Controller based on the entered IP address. The SmartApp needs to then communicate with the controller to obtain additional information from it. Make sure the device is on and connected to your wifi network."
+            input "ipAddress", "text", title:"IP Address", description: "", required: false 
+		}
+    }
+}
+
+def manuallyAddConfirm(){
+   if ( ipAddress =~ /^(?:[0-9]{1,3}\.){3}[0-9]{1,3}$/) {
+       log.debug "Creating RGBW Controller device with dni: ${convertIPtoHex(ipAddress)}:${convertPortToHex("80")}"
+       addChildDevice("erocm123", "SmartLife RGBW Controller", "${convertIPtoHex(ipAddress)}:${convertPortToHex("80")}", location.hubs[0].id, [
+           "label": "SmartLife RGBW Controller ${ipAddress}",
+           "data": [
+           "ip": ipAddress,
+           "port": "80" 
+           ]
+       ])
+   
+       app.updateSetting("ipAddress", "")
+            
+       dynamicPage(name: "manuallyAddConfirm", title: "Manually add a SmartLife RGBW Controller", nextPage: "mainPage") {
+		   section {
+			   paragraph "The controller has been added. Press next to return to the main page."
+	    	}
+       }
+    } else {
+        dynamicPage(name: "manuallyAddConfirm", title: "Manually add a SmartLife RGBW Controller", nextPage: "mainPage") {
+		    section {
+			    paragraph "The entered ip address is not valid. Please try again."
+		    }
+        }
+    }
+}
+
 def configurePDevice(params){
    def currentDevice
    
@@ -75,8 +114,8 @@ def configurePDevice(params){
                   state.currentDisplayName = it.displayName
                }      
    }
-
    dynamicPage(name: "configurePDevice", title: "Configure RGBW Controllers created with this app", nextPage: null) {
+        if ( state.currentDeviceId =~ /^([0-9A-F]{2}){6}$/) {
 		section {
             app.updateSetting("${state.currentDeviceId}_label", getChildDevice(state.currentDeviceId).label)
             input "${state.currentDeviceId}_label", "text", title:"Device Name", description: "", required: false
@@ -96,8 +135,18 @@ def configurePDevice(params){
         section {
               href "deletePDevice", title:"Delete $state.currentDisplayName", description: "", params: [did: state.currentDeviceId]
         }
+        } else {
+            getChildDevice(state.currentDeviceId).configure()
+            section {
+                paragraph "Device has not been fully configured. Please make sure the device is powered on and has the correct ip address. When confirmed, please come back to this page."
+            }
+            section {
+              href "deletePDevice", title:"Delete $state.currentDisplayName", description: "", params: [did: state.currentDeviceId]
+        }
+        }
            
-}}
+}
+}
 
 def deletePDevice(params){
 
@@ -509,8 +558,6 @@ log.debug "verifyDevices()"
     }
 }
 
-
-
 def getDevices() {
     state.devices = state.devices ?: [:]
     //state.devices = [:] ?: [:]
@@ -608,6 +655,7 @@ def uninstalled() {
 
 def configurePrograms(){
    getChildDevices().each {
+   log.debug it.typeName
                if(it.typeName != "SmartLife RGBW Virtual Switch"){
                   
    for (int i = 1; i <= 6; i++){
@@ -747,12 +795,6 @@ def color = ""
     color = "000000"
     break;
     case "Random":
-    /*Random rand = new Random()
-    int max = 255
-    r = Integer.toHexString(rand.nextInt(max+1))
-    g = Integer.toHexString(rand.nextInt(max+1))
-    b = Integer.toHexString(rand.nextInt(max+1))
-    color = r+g+b*/
     color = "xxxxxx"
     break; 
 }
@@ -916,3 +958,12 @@ private Integer convertHexToInt(hex) {
 	Integer.parseInt(hex,16)
 }
 
+private String convertIPtoHex(ipAddress) { 
+    String hex = ipAddress.tokenize( '.' ).collect {  String.format( '%02x', it.toInteger() ) }.join()
+    return hex
+}
+
+private String convertPortToHex(port) {
+	String hexport = port.toString().format( '%04x', port.toInteger() )
+    return hexport
+}
