@@ -114,6 +114,8 @@ def configurePDevice(params){
                   state.currentDisplayName = it.displayName
                }      
    }
+   
+   
    dynamicPage(name: "configurePDevice", title: "Configure RGBW Controllers created with this app", nextPage: null) {
         if ( state.currentDeviceId =~ /^([0-9A-F]{2}){6}$/) {
 		section {
@@ -136,7 +138,7 @@ def configurePDevice(params){
               href "deletePDevice", title:"Delete $state.currentDisplayName", description: "", params: [did: state.currentDeviceId]
         }
         } else {
-            getChildDevice(state.currentDeviceId).configure()
+            if (getChildDevice(state.currentDeviceId) != null) getChildDevice(state.currentDeviceId).configure()
             section {
                 paragraph "Device has not been fully configured. Please make sure the device is powered on and has the correct ip address. When confirmed, please come back to this page."
             }
