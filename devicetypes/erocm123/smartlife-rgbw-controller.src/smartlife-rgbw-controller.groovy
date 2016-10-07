@@ -211,8 +211,10 @@ def configureDefault(){
         } else {
             return postAction("/config?dcolor=w~${getDimmedColor(getHexColor(settings.color), settings.level)}")
         }
-    }else{
-        if (settings.level == "0") {
+    } else {
+        if (settings.level == null || settings.color == null){
+           return postAction("/config?dcolor=Previous")
+        } else if (settings.level == null || settings.level == "0") {
             return postAction("/config?dcolor=f~${getDimmedColor(getHexColor(settings.color), "100")}")
         } else {
             return postAction("/config?dcolor=f~${getDimmedColor(getHexColor(settings.color), settings.level)}")
@@ -225,10 +227,11 @@ def configureInstant(ip, port){
 }
 
 def parse(description) {
-	//log.debug "Parsing: ${description}"
     def map = [:]
     def events = []
     def cmds = []
+    
+    if(description == "updated") return
     def descMap = parseDescriptionAsMap(description)
     //log.debug "descMap: ${descMap}"
     
@@ -610,8 +613,8 @@ private setDeviceNetworkId(ip, port = null){
 }
 
 private updateDNI() { 
-    if (device.deviceNetworkId != state.dni) {
-        device.deviceNetworkId = state.dni
+    if (state.dni != null && state.dni != "" && device.deviceNetworkId != state.dni) {
+       device.deviceNetworkId = state.dni
     }
 }
 
