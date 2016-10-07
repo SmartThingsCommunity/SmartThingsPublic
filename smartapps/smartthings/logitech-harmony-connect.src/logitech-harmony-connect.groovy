@@ -97,7 +97,7 @@ def authPage() {
     def description = null
     if (!state.HarmonyAccessToken) {
 		if (!state.accessToken) {
-			log.debug "About to create access token"
+			log.debug "Harmony - About to create access token"
 			createAccessToken()
 		}
         description = "Click to enter Harmony Credentials"
@@ -141,13 +141,13 @@ def callback() {
 	def redirectUrl = null
 	if (params.authQueryString) {
 		redirectUrl = URLDecoder.decode(params.authQueryString.replaceAll(".+&redirect_url=", ""))
-		log.debug "redirectUrl: ${redirectUrl}"
+		log.debug "Harmony - redirectUrl: ${redirectUrl}"
 	} else {
-		log.warn "No authQueryString"
+		log.warn "Harmony - No authQueryString"
 	}
 
 	if (state.HarmonyAccessToken) {
-		log.debug "Access token already exists"
+		log.debug "Harmony - Access token already exists"
 		discovery()
 		success()
 	} else {
@@ -155,27 +155,27 @@ def callback() {
 		if (code) {
 			if (code.size() > 6) {
 				// Harmony code
-				log.debug "Exchanging code for access token"
+				log.debug "Harmony - Exchanging code for access token"
 				receiveToken(redirectUrl)
 			} else {
 				// Initiate the Harmony OAuth flow.
 				init()
 			}
 		} else {
-			log.debug "This code should be unreachable"
+			log.debug "Harmony - This code should be unreachable"
 			success()
 		}
 	}
 }
 
 def init() {
-	log.debug "Requesting Code"
+	log.debug "Harmony - Requesting Code"
 	def oauthParams = [client_id: "${appSettings.clientId}", scope: "remote", response_type: "code", redirect_uri: "${servercallbackUrl}" ]
 	redirect(location: "https://home.myharmony.com/oauth2/authorize?${toQueryString(oauthParams)}")
 }
 
 def receiveToken(redirectUrl = null) {
-	log.debug "receiveToken"
+	log.debug "Harmony - receiveToken"
     def oauthParams = [ client_id: "${appSettings.clientId}", client_secret: "${appSettings.clientSecret}", grant_type: "authorization_code", code: params.code ]
     def params = [
       uri: "https://home.myharmony.com/oauth2/token?${toQueryString(oauthParams)}",
@@ -186,7 +186,7 @@ def receiveToken(redirectUrl = null) {
         }
 	} catch (java.util.concurrent.TimeoutException e) {
     	fail(e)
-		log.warn "Connection timed out, please try again later."
+		log.warn "Harmony - Connection timed out, please try again later."
 	}
     discovery()
 	if (state.HarmonyAccessToken) {
@@ -310,7 +310,7 @@ def buildRedirectUrl(page) {
 
 def installed() {
 	if (!state.accessToken) {
-		log.debug "About to create access token"
+		log.debug "Harmony - About to create access token"
 		createAccessToken()
 	} else {
 		initialize()
@@ -319,7 +319,7 @@ def installed() {
 
 def updated() {
 	if (!state.accessToken) {
-		log.debug "About to create access token"
+		log.debug "Harmony - About to create access token"
 		createAccessToken()
 	} else {
 		initialize()
@@ -330,9 +330,9 @@ def uninstalled() {
 	if (state.HarmonyAccessToken) {
 		try {
         	state.HarmonyAccessToken = ""
-        	log.debug "Success disconnecting Harmony from SmartThings"
+        	log.debug "Harmony - Success disconnecting Harmony from SmartThings"
 		} catch (groovyx.net.http.HttpResponseException e) {
-			log.error "Error disconnecting Harmony from SmartThings: ${e.statusCode}"
+			log.error "Harmony - Error disconnecting Harmony from SmartThings: ${e.statusCode}"
 		}
 	}
 }
@@ -341,7 +341,8 @@ def initialize() {
 	state.aux = 0
 	if (selectedhubs || selectedactivities) {
 		addDevice()
-        runEvery5Minutes("poll")
+    runEvery5Minutes("poll")
+    getActivityList()
 	}
 }
 
@@ -350,7 +351,7 @@ def getHarmonydevices() {
 }
 
 Map discoverDevices() {
-    log.trace "Discovering devices..."
+    log.trace "Harmony - Discovering devices..."
     discovery()
     if (getHarmonydevices() != []) {
         def devices = state.Harmonydevices.hubs
@@ -362,7 +363,7 @@ Map discoverDevices() {
             def hubname = getHubName(it.key)
             def hubvalue = "${hubname}"
             hubs["harmony-${hubkey}"] = hubvalue
-        	it.value.response.data.activities.each {
+        	  it.value.response.data.activities.each {
                 def value = "${it.value.name}"
                 def key = "harmony-${hubkey}-${it.key}"
                 activities["${key}"] = value
@@ -380,52 +381,52 @@ def discovery() {
 	try {
 		httpGet(uri: url, headers: ["Accept": "application/json"]) {response ->
 	    	if (response.status == 200) {
-            	log.debug "valid Token"
+            	log.debug "Harmony - valid Token"
                 state.Harmonydevices = response.data
                 state.resethub = false
 	        } else {
-            	log.debug "Error: $response.status"
+            	log.debug "Harmony - Error: $response.status"
             }
 	    }
 	} catch (groovyx.net.http.HttpResponseException e) {
         if (e.statusCode == 401) { // token is expired
             state.remove("HarmonyAccessToken")
-            log.warn "Harmony Access token has expired"
+            log.warn "Harmony - Harmony Access token has expired"
         }
 	} catch (java.net.SocketTimeoutException e) {
-		log.warn "Connection to the hub timed out. Please restart the hub and try again."
+		log.warn "Harmony - Connection to the hub timed out. Please restart the hub and try again."
     state.resethub = true
  	} catch (e) {
-    log.info "Logitech Harmony - Error: $e"
+    log.info "Harmony - Error: $e"
 	}
     return null
 }
 
 def addDevice() {
-    log.trace "Adding Hubs"
+    log.trace "Harmony - Adding Hubs"
     selectedhubs.each { dni ->
         def d = getChildDevice(dni)
         if(!d) {
             def newAction = state.HarmonyHubs.find { it.key == dni }
             d = addChildDevice("smartthings", "Logitech Harmony Hub C2C", dni, null, [label:"${newAction.value}"])
-            log.trace "created ${d.displayName} with id $dni"
+            log.trace "Harmony - Created ${d.displayName} with id $dni"
             poll()
         } else {
-            log.trace "found ${d.displayName} with id $dni already exists"
+            log.trace "Harmony - Found ${d.displayName} with id $dni already exists"
         }
     }
-    log.trace "Adding Activities"
+    log.trace "Harmony - Adding Activities"
     selectedactivities.each { dni ->
         def d = getChildDevice(dni)
         if(!d) {
             def newAction = state.HarmonyActivities.find { it.key == dni }
             if (newAction) {
 	            d = addChildDevice("smartthings", "Harmony Activity", dni, null, [label:"${newAction.value} [Harmony Activity]"])
-	            log.trace "created ${d.displayName} with id $dni"
+	            log.trace "Harmony - Created ${d.displayName} with id $dni"
 	            poll()
             }
         } else {
-            log.trace "found ${d.displayName} with id $dni already exists"
+            log.trace "Harmony - Found ${d.displayName} with id $dni already exists"
         }
     }
 }
@@ -455,28 +456,17 @@ def activity(dni,mode) {
 
 def activityResponse(response, data) {
   if (response.hasError()) {
-    log.error "Logitech Harmony - response has error: $response.errorMessage"
+    log.error "Harmony - response has error: $response.errorMessage"
     if (response.status == 401) { // token is expired
       state.remove("HarmonyAccessToken")
-      log.warn "Logitech Harmony - Access token has expired"
+      log.warn "Harmony - Access token has expired"
     }
   } else {
-    def ResponseValues
-    try {
-      // json response already parsed into JSONElement object
-      ResponseValues = response.json
-    } catch (e) {
-      log.error "Logitech Harmony - error parsing json from response: $e"
-    }
-    if (ResponseValues) {
-      if (ResponseValues.code == 200) {
-        log.trace "Command sent succesfully"
-        poll()
-      } else {
-        log.trace "Command failed. Error: $response.data.code"
-      }
+    if (response.status == 200) {
+      log.trace "Harmony - Command sent succesfully"
+      poll()
     } else {
-      log.debug "Logitech Harmony - did not get json results from response body: $response.data"
+      log.trace "Harmony - Command failed. Error: $response.status"
     }
   }
 }
@@ -484,7 +474,6 @@ def activityResponse(response, data) {
 def poll() {
 	// GET THE LIST OF ACTIVITIES
     if (state.HarmonyAccessToken) {
-    	  getActivityList()
         def tokenParam = [auth: state.HarmonyAccessToken]
         def params = [
             uri: "https://home.myharmony.com/cloudapi/state?${toQueryString(tokenParam)}",
@@ -493,16 +482,16 @@ def poll() {
         ]
         asynchttp_v1.get('pollResponse', params)
       } else {
-          log.warn "Logitech Harmony - Access token has expired"
+        log.warn "Harmony - Access token has expired"
       }
 }
 
 def pollResponse(response, data) {
 	if (response.hasError()) {
-    log.error "Logitech Harmony - response has error: $response.errorMessage"
+    log.error "Harmony - response has error: $response.errorMessage"
     if (response.status == 401) { // token is expired
       state.remove("HarmonyAccessToken")
-      log.warn "Logitech Harmony - Access token has expired"
+      log.warn "Harmony - Access token has expired"
     }
 	} else {
 			def ResponseValues
@@ -510,7 +499,7 @@ def pollResponse(response, data) {
 					// json response already parsed into JSONElement object
 					ResponseValues = response.json
 			} catch (e) {
-					log.error "Logitech Harmony - error parsing json from response: $e"
+					log.error "Harmony - error parsing json from response: $e"
 			}
 			if (ResponseValues) {
         def map = [:]
@@ -522,12 +511,17 @@ def pollResponse(response, data) {
                   if (it.value.response.data.currentAvActivity == "-1") {
                       hub.sendEvent(name: "currentActivity", value: "--", descriptionText: "There isn't any activity running", display: false)
                   } else {
-                      def currentActivity = getChildDevice("harmony-${it.key}-${it.value.response.data.currentAvActivity}").device.displayName
+                      def currentActivity
+                      def activityDTH = getChildDevice("harmony-${it.key}-${it.value.response.data.currentAvActivity}")
+                      if (activityDTH)
+                        currentActivity = activityDTH.device.displayName
+                      else
+                        currentActivity = getActivityName(it.value.response.data.currentAvActivity,it.key)
                       hub.sendEvent(name: "currentActivity", value: currentActivity, descriptionText: "Current activity is ${currentActivity}", display: false)
                   }
               }
           } else {
-            log.trace "Logitech Harmony - error response: $it.value.message"
+            log.trace "Harmony - error response: $it.value.message"
           }
         }
         def activities = getChildDevices()
@@ -552,61 +546,41 @@ def pollResponse(response, data) {
             }
         }
 			} else {
-					log.debug "Logitech Harmony - did not get json results from response body: $response.data"
+					log.debug "Harmony - did not get json results from response body: $response.data"
 			}
 	}
 }
 
 def getActivityList() {
     if (state.HarmonyAccessToken) {
-      def tokenParam = [auth: state.HarmonyAccessToken]
-      def params = [
-  				uri: "https://home.myharmony.com/cloudapi/activity/all?${toQueryString(tokenParam)}",
-  				headers: ["Accept": "application/json"],
-  				contentType: 'application/json'
-  		]
-  		asynchttp_v1.get('activityListResponse', params)
-    } else {
-        log.warn "Logitech Harmony - Access token has expired"
+        def Params = [auth: state.HarmonyAccessToken]
+        def url = "https://home.myharmony.com/cloudapi/activity/all?${toQueryString(Params)}"
+        try {
+            httpGet(uri: url, headers: ["Accept": "application/json"]) {response ->
+                response.data.hubs.each {
+                    def hub = getChildDevice("harmony-${it.key}")
+                    if (hub) {
+                    	def hubname = getHubName("${it.key}")
+                        def activities = []
+                        def aux = it.value.response.data.activities.size()
+                        if (aux >= 1) {
+                            activities = it.value.response.data.activities.collect {
+                                [id: it.key, name: it.value['name'], type: it.value['type']]
+                            }
+                            activities += [id: "off", name: "Activity OFF", type: "0"]
+                        }
+                        hub.sendEvent(name: "activities", value: new groovy.json.JsonBuilder(activities).toString(), descriptionText: "Activities are ${activities.collect { it.name }?.join(', ')}", display: false)
+					          }
+                }
+            }
+        } catch (groovyx.net.http.HttpResponseException e) {
+        	log.trace e
+        } catch (java.net.SocketTimeoutException e) {
+        	log.trace e
+		    } catch(Exception e) {
+        	log.trace e
+		    }
     }
-}
-
-def activityListResponse(response, data) {
-	if (response.hasError()) {
-			log.error "Logitech Harmony - response has error: $response.errorMessage"
-      if (response.status == 401) { // token is expired
-          state.remove("HarmonyAccessToken")
-          log.warn "Logitech Harmony - Access token has expired"
-      }
-	} else {
-			def ResponseValues
-			try {
-					// json response already parsed into JSONElement object
-					ResponseValues = response.json
-			} catch (e) {
-					log.error "Logitech Harmony - error parsing json from response: $e"
-			}
-			if (ResponseValues) {
-          	  ResponseValues.hubs.each {
-              def hub = getChildDevice("harmony-${it.key}")
-              if (hub) {
-                def hubname = getHubName("${it.key}")
-                  def activities = []
-                  def aux = it.value.response?.data.activities.size()
-                  if (aux >= 1) {
-                      activities = it.value.response.data.activities.collect {
-                          [id: it.key, name: it.value['name'], type: it.value['type']]
-                      }
-                      activities += [id: "off", name: "Activity OFF", type: "0"]
-                      log.trace activities
-                  }
-                  hub.sendEvent(name: "activities", value: new groovy.json.JsonBuilder(activities).toString(), descriptionText: "Activities are ${activities.collect { it.name }?.join(', ')}", display: false)
-              }
-          }
-			} else {
-					log.debug "Logitech Harmony - did not get json results from response body: $response.data"
-			}
-	}
 }
 
 def getActivityName(activity,hubId) {
@@ -669,7 +643,7 @@ def sendNotification(msg) {
 
 def hookEventHandler() {
     // log.debug "In hookEventHandler method."
-    log.debug "request = ${request}"
+    log.debug "Harmony - request = ${request}"
 
     def json = request.JSON
 
@@ -678,14 +652,14 @@ def hookEventHandler() {
 }
 
 def listDevices() {
-	log.debug "getDevices, params: ${params}"
+	log.debug "Harmony - getDevices(), params: ${params}"
 	allDevices.collect {
 		deviceItem(it)
 	}
 }
 
 def getDevice() {
-	log.debug "getDevice, params: ${params}"
+	log.debug "Harmony - getDevice(), params: ${params}"
 	def device = allDevices.find { it.id == params.id }
 	if (!device) {
 		render status: 404, data: '{"msg": "Device not found"}'
@@ -698,7 +672,7 @@ def updateDevice() {
 	def data = request.JSON
 	def command = data.command
 	def arguments = data.arguments
-	log.debug "updateDevice, params: ${params}, request: ${data}"
+	log.debug "Harmony - updateDevice(), params: ${params}, request: ${data}"
 	if (!command) {
 		render status: 400, data: '{"msg": "command is required"}'
 	} else {
@@ -766,7 +740,7 @@ def getDeviceCapabilityCommands(deviceCapabilities) {
 }
 
 def listSubscriptions() {
-	log.debug "listSubscriptions()"
+	log.debug "Harmony - listSubscriptions()"
 	app.subscriptions?.findAll { it.device?.device && it.device.id }?.collect {
 		def deviceInfo = state[it.device.id]
 		def response = [
@@ -787,17 +761,17 @@ def addSubscription() {
 	def attribute = data.attributeName
 	def callbackUrl = data.callbackUrl
 
-	log.debug "Logitech Harmony - addSubscription, params: ${params}, request: ${data}"
+	log.debug "Harmony - addSubscription, params: ${params}, request: ${data}"
 	if (!attribute) {
 		render status: 400, data: '{"msg": "attributeName is required"}'
 	} else {
 		def device = allDevices.find { it.id == data.deviceId }
 		if (device) {
 			if (!state.harmonyHubs) {
-				log.debug "Adding callbackUrl: $callbackUrl"
+				log.debug "Harmony - Adding callbackUrl: $callbackUrl"
 				state[device.id] = [callbackUrl: callbackUrl]
 			}
-			log.debug "Adding subscription"
+			log.debug "Harmony - Adding subscription"
 			def subscription = subscribe(device, attribute, deviceHandler)
 			if (!subscription || !subscription.eventSubscription) {
 				subscription = app.subscriptions?.find { it.device?.device && it.device.id == data.deviceId && it.data == attribute && it.handler == 'deviceHandler' }
@@ -825,7 +799,7 @@ def removeSubscription() {
 
 	log.debug "removeSubscription, params: ${params}, subscription: ${subscription}, device: ${device}"
 	if (device) {
-		log.debug "Removing subscription for device: ${device.id}"
+		log.debug "Harmony - Removing subscription for device: ${device.id}"
 		state.remove(device.id)
 		unsubscribe(device)
 	}
@@ -849,17 +823,17 @@ def deviceHandler(evt) {
 	def deviceInfo = state[evt.deviceId]
 	if (state.harmonyHubs) {
 		state.harmonyHubs.each { harmonyHub ->
-      log.trace "Logitech Harmony - Sending data to $harmonyHub.name"
+      log.trace "Harmony - Sending data to $harmonyHub.name"
 			sendToHarmony(evt, harmonyHub.callbackUrl)
 		}
 	} else if (deviceInfo) {
 		if (deviceInfo.callbackUrl) {
 			sendToHarmony(evt, deviceInfo.callbackUrl)
 		} else {
-			log.warn "No callbackUrl set for device: ${evt.deviceId}"
+			log.warn "Harmony - No callbackUrl set for device: ${evt.deviceId}"
 		}
 	} else {
-		log.warn "No subscribed device found for device: ${evt.deviceId}"
+		log.warn "Harmony - No subscribed device found for device: ${evt.deviceId}"
 	}
 }
 
@@ -883,12 +857,12 @@ def sendToHarmony(evt, String callbackUrl) {
       body: [evt: [deviceId: evt.deviceId, name: evt.name, value: evt.value]]
     ]
     try {
-        log.debug "Sending data to Harmony Cloud: $params"
+        log.debug "Harmony - Sending data to Harmony Cloud: $params"
         httpPostJson(params) { resp ->
-            log.debug "Harmony Cloud - Response: ${resp.status}"
+            log.debug "Harmony - Cloud Response: ${resp.status}"
         }
     } catch (e) {
-        log.error "Harmony Cloud - Something went wrong: $e"
+        log.error "Harmony - Cloud Something went wrong: $e"
     }
   }
 }
@@ -913,10 +887,10 @@ def activityCallback() {
 		if (data.errorCode == "200") {
 			device.setCurrentActivity(data.currentActivityId)
 		} else {
-			log.warn "Activity callback error: ${data}"
+			log.warn "Harmony - Activity callback error: ${data}"
 		}
 	} else {
-		log.warn "Activity callback sent to non-existant dni: ${params.dni}"
+		log.warn "Harmony - Activity callback sent to non-existant dni: ${params.dni}"
 	}
 	render status: 200, data: '{"msg": "Successfully received callbackUrl"}'
 }
@@ -950,13 +924,13 @@ def harmony() {
 }
 
 def deleteHarmony() {
-	log.debug "Trying to delete Harmony hub with mac: ${params.mac}"
+	log.debug "Harmony - Trying to delete Harmony hub with mac: ${params.mac}"
 	def harmonyHub = state.harmonyHubs?.find { it.mac == params.mac }
 	if (harmonyHub) {
-		log.debug "Deleting Harmony hub with mac: ${params.mac}"
+		log.debug "Harmony - Deleting Harmony hub with mac: ${params.mac}"
 		state.harmonyHubs.remove(harmonyHub)
 	} else {
-		log.debug "Couldn't find Harmony hub with mac: ${params.mac}"
+		log.debug "Harmony - Couldn't find Harmony hub with mac: ${params.mac}"
 	}
 	render status: 204, data: "{}"
 }
