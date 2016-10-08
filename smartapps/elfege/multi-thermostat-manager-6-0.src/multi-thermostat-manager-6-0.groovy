@@ -687,6 +687,7 @@ def temperatureHandler(evt) {
 }
 
 def ChangedModeHandler(evt) {
+    state.CountNeedToCoolMessage = 0
     state.RunEvaluateAgain = false 
     state.evaluateMustNotRun = false
     variables()
@@ -713,8 +714,9 @@ def ChangedModeHandler(evt) {
 
 def contactHandler(evt) {
     state.evaluateMustNotRun = false
-    log.trace "state.ct = $state.ct, stat.CoolSet = $state.CoolSet, state.ct2 = $state.ct2, stat.CoolSet2 = $state.CoolSet2, state.ct3 = $state.ct3, stat.CoolSet3 = $state.CoolSet3"
 
+    log.trace "state.ct = $state.ct, stat.CoolSet = $state.CoolSet, state.ct2 = $state.ct2, stat.CoolSet2 = $state.CoolSet2, state.ct3 = $state.ct3, stat.CoolSet3 = $state.CoolSet3"
+    state.CountNeedToCoolMessage = 0
     state.countmessageHeat = 0
     state.messageDoors = 0 
     state.messageFansOn = 0
@@ -1047,26 +1049,66 @@ private logtrace() {
 
 /////////////////////////////////// TEMPERATURE AND ENERGY MANAGEMENT//////////////////
 private needToCool() { 
+    log.debug "Outside temp is $state.outsideTemp"
 
     def result = null
-
     if(needToHeat() != true){
-        if(state.ct >= state.CoolSet || state.ct2 >= state.CoolSet2 || state.ct3 >= state.CoolSet3) 
+        if(state.outsideTemp + 2 < state.CoolSet ) {
+            // this is another function to avoid having A.C. running while it's not warm outside
+            // works only if user has an outside temp sensor though... 
+            if(OutsideSensor) {
+                result = false
+                log.debug "all thermostats will be set to heat"
+                setToHeat()
+                if(state.CountNeedToCoolMessage == 0){
+                    def message = "Outside temp is $state.outsideTemp, all thermostats will be set to heat"
+                    log.info message
+                    send(message)
+                    state.CountNeedToCoolMessage = state.CountNeedToCoolMessage + 1
+                }
+            }
+        }
+        else if(state.ct >= state.CoolSet || state.ct2 >= state.CoolSet2 || state.ct3 >= state.CoolSet3) 
         {
             result = true
             log.debug "NEED TO COOL"
+            state.CountNeedToCoolMessage = 0
         }
+
         else { 
             result = false
             log.debug "NO NEED TO COOL"
         }
+
     }
     else {
         result = false 
         log.debug "NeedToCool is set to FALSE because NEEDTOHEAT is TRUE"
+        state.CountNeedToCoolMessage = 0
     }
     return result
 
+}
+
+
+private setToHeat() {
+    // triggered by needToCool when too cold outside despite inside's temp inertia. 
+    // this is another function to avoid having A.C. running while it's not warm outside
+    // works only if user has an outside temp sensor though... 
+
+    thermostat.setThermostatMode("heat")
+    thermostat.setThermostatFanMode("auto")
+    log.debug "$thermostat set to heat"
+    if(thermostat2){
+        thermostat2.setThermostatMode("heat")
+        thermostat2.setThermostatFanMode("auto")
+        log.debug "$thermostat2 set to heat"
+    }
+    if(thermostat3){
+        thermostat3.setThermostatMode("heat")
+        thermostat3.setThermostatFanMode("auto")
+        log.debug "$thermostat3 set to heat"
+    }
 }
 
 private needToHeat() { 
@@ -1081,7 +1123,7 @@ private needToHeat() {
         if(state.outsideTemp < state.HeatSet && state.AverageTemp < state.HeatSet)
         result = true
     } else if(state.AverageTemp < state.HeatSet) {
-    result = true
+        result = true
     }
     log.debug "NEEDTOHEAT result is : $result"
     return result
@@ -1159,7 +1201,7 @@ private limitOutsideTempValue() {
 }
 
 private JustHeat() {
-log.debug "JUSTHEAT is running"
+    log.debug "JUSTHEAT is running"
     // set to heat if too cold
     if(doorsOk()) {
         if(needToHeat()) {
@@ -1441,15 +1483,15 @@ private CriticalTemp() {
         state.CriticalTemp = true
         result = true
 
-        thermostat.setThermostatMode(heat)
-        thermostat.setThermostatFanMode(auto)
+        thermostat.setThermostatMode("heat")
+        thermostat.setThermostatFanMode("auto")
         if(thermostat2){
-            thermostat2.setThermostatMode(heat)
-            thermostat2.setThermostatFanMode(auto)
+            thermostat2.setThermostatMode("heat")
+            thermostat2.setThermostatFanMode("auto")
         }
         if(thermostat3){
-            thermostat3.setThermostatMode(heat)
-            thermostat3.setThermostatFanMode(auto)
+            thermostat3.setThermostatMode("heat")
+            thermostat3.setThermostatFanMode("auto")
         }
 
     }
