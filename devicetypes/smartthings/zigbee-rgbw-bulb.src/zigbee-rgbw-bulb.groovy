@@ -107,7 +107,7 @@ def parse(String description) {
                 sendEvent(name: "saturation", value: saturationValue, descriptionText: "Color has changed", displayed: false)
             }
         }
-        else if (cluster.clusterId == 0x0006 && cluster.command == 0x07) {
+        else if (cluster && cluster.clusterId == 0x0006 && cluster.command == 0x07) {
             if (cluster.data[0] == 0x00){
                 log.debug "ON/OFF REPORTING CONFIG RESPONSE: " + cluster
                 sendEvent(name: "checkInterval", value: 60 * 12, displayed: false, data: [protocol: "zigbee", hubHardwareId: device.hub.hardwareID])
