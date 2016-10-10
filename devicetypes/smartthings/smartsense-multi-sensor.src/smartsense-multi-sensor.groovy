@@ -16,7 +16,7 @@
 import physicalgraph.zigbee.clusters.iaszone.ZoneStatus
 
 metadata {
-	definition (name: "SmartSense Multi Sensor", namespace: "smartthings", author: "SmartThings", category: "C2") {
+	definition (name: "SmartSense Multi Sensor", namespace: "smartthings", author: "SmartThings") {
 
 		capability "Three Axis"
 		capability "Battery"
@@ -261,9 +261,9 @@ def updated() {
 def getTemperature(value) {
 	def celsius = Integer.parseInt(value, 16).shortValue() / 100
 	if(getTemperatureScale() == "C"){
-		return celsius
+		return Math.round(celsius)
 		} else {
-			return celsiusToFahrenheit(celsius) as Integer
+			return Math.round(celsiusToFahrenheit(celsius))
 		}
 	}
 
@@ -401,8 +401,8 @@ def refresh() {
 }
 
 def configure() {
-	// Device-Watch allows 3 check-in misses from device. 300 seconds x 3 = 15min
-	sendEvent(name: "checkInterval", value: 900, displayed: false, data: [protocol: "zigbee"])
+	// Device-Watch allows 2 check-in misses from device
+	sendEvent(name: "checkInterval", value: 60 * 12, displayed: false, data: [protocol: "zigbee", hubHardwareId: device.hub.hardwareID])
 
 	log.debug "Configuring Reporting"
 
