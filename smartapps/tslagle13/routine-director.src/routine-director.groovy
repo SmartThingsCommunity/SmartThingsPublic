@@ -40,10 +40,6 @@ preferences {
             input "falseAlarmThreshold", "decimal", title: "Number of minutes", required: false
         }
 
-        section("Zip code (for sunrise/sunset)") {
-            input "zip", "text", required: true
-        }
-
         section("Notifications") {
             input "sendPushMessage", "bool", title: "Send notifications when house is empty?"
             input "sendPushMessageHome", "bool", title: "Send notifications when home is occupied?"
@@ -110,7 +106,7 @@ def initialize() {
 //check current sun state when installed.
 def checkSun() {
     def zip = settings.zip as String
-    def sunInfo = getSunriseAndSunset(zipCode: zip)
+    def sunInfo = getSunriseAndSunset()
     def current = now()
 
     if (sunInfo.sunrise.time < current && sunInfo.sunset.time > current) {
