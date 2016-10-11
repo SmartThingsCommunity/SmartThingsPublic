@@ -147,20 +147,33 @@ private Map parseCatchAllMessage(String description) {
 	if (shouldProcessMessage(cluster)) {
 		switch(cluster.clusterId) {
 			case 0x0001:
-			resultMap = getBatteryResult(cluster.data.last())
+				// 0x07 - configure reporting
+				if (cluster.command != 0x07) {
+					resultMap = getBatteryResult(cluster.data.last())
+				}
 			break
 
 			case 0xFC02:
-			log.debug 'ACCELERATION'
+				log.debug 'ACCELERATION'
 			break
 
 			case 0x0402:
-			log.debug 'TEMP'
-				// temp is last 2 data values. reverse to swap endian
-				String temp = cluster.data[-2..-1].reverse().collect { cluster.hex1(it) }.join()
-				def value = getTemperature(temp)
-				resultMap = getTemperatureResult(value)
-				break
+				if (cluster.command == 0x07) {
+					if(cluster.data[0] == 0x00) {
+						log.debug "TEMP REPORTING CONFIG RESPONSE" + cluster
+						sendEvent(name: "checkInterval", value: 60 * 12, displayed: false, data: [protocol: "zigbee", hubHardwareId: device.hub.hardwareID])
+					}
+					else {
+						log.warn "TEMP REPORTING CONFIG FAILED- error code:${cluster.data[0]}"
+					}
+				}
+				else {
+					// temp is last 2 data values. reverse to swap endian
+					String temp = cluster.data[-2..-1].reverse().collect { cluster.hex1(it) }.join()
+					def value = getTemperature(temp)
+					resultMap = getTemperatureResult(value)
+				}
+			break
 		}
 	}
 
@@ -169,10 +182,8 @@ private Map parseCatchAllMessage(String description) {
 
 private boolean shouldProcessMessage(cluster) {
 	// 0x0B is default response indicating message got through
-	// 0x07 is bind message
 	boolean ignoredMessage = cluster.profileId != 0x0104 ||
 	cluster.command == 0x0B ||
-	cluster.command == 0x07 ||
 	(cluster.data.size() > 0 && cluster.data.first() == 0x3e)
 	return !ignoredMessage
 }
@@ -401,8 +412,9 @@ def refresh() {
 }
 
 def configure() {
-	// Device-Watch allows 2 check-in misses from device
-	sendEvent(name: "checkInterval", value: 60 * 12, displayed: false, data: [protocol: "zigbee", hubHardwareId: device.hub.hardwareID])
+	// Device-Watch allows 3 check-in misses from device (plus 1 min lag time)
+	// enrolls with default periodic reporting until newer 5 min interval is confirmed
+	sendEvent(name: "checkInterval", value: 3 * 60 * 60 + 1 * 60, displayed: false, data: [protocol: "zigbee", hubHardwareId: device.hub.hardwareID])
 
 	log.debug "Configuring Reporting"
 
