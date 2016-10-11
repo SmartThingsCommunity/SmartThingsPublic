@@ -13,9 +13,10 @@
  *  License for the specific language governing permissions and limitations
  *  under the License.
  */
+import physicalgraph.zigbee.clusters.iaszone.ZoneStatus
 
 metadata {
-	definition (name: "SmartSense Multi Sensor", namespace: "smartthings", author: "SmartThings", category: "C2") {
+	definition (name: "SmartSense Multi Sensor", namespace: "smartthings", author: "SmartThings") {
 
 		capability "Three Axis"
 		capability "Battery"
@@ -146,20 +147,33 @@ private Map parseCatchAllMessage(String description) {
 	if (shouldProcessMessage(cluster)) {
 		switch(cluster.clusterId) {
 			case 0x0001:
-			resultMap = getBatteryResult(cluster.data.last())
+				// 0x07 - configure reporting
+				if (cluster.command != 0x07) {
+					resultMap = getBatteryResult(cluster.data.last())
+				}
 			break
 
 			case 0xFC02:
-			log.debug 'ACCELERATION'
+				log.debug 'ACCELERATION'
 			break
 
 			case 0x0402:
-			log.debug 'TEMP'
-				// temp is last 2 data values. reverse to swap endian
-				String temp = cluster.data[-2..-1].reverse().collect { cluster.hex1(it) }.join()
-				def value = getTemperature(temp)
-				resultMap = getTemperatureResult(value)
-				break
+				if (cluster.command == 0x07) {
+					if(cluster.data[0] == 0x00) {
+						log.debug "TEMP REPORTING CONFIG RESPONSE" + cluster
+						sendEvent(name: "checkInterval", value: 60 * 12, displayed: false, data: [protocol: "zigbee", hubHardwareId: device.hub.hardwareID])
+					}
+					else {
+						log.warn "TEMP REPORTING CONFIG FAILED- error code:${cluster.data[0]}"
+					}
+				}
+				else {
+					// temp is last 2 data values. reverse to swap endian
+					String temp = cluster.data[-2..-1].reverse().collect { cluster.hex1(it) }.join()
+					def value = getTemperature(temp)
+					resultMap = getTemperatureResult(value)
+				}
+			break
 		}
 	}
 
@@ -168,10 +182,8 @@ private Map parseCatchAllMessage(String description) {
 
 private boolean shouldProcessMessage(cluster) {
 	// 0x0B is default response indicating message got through
-	// 0x07 is bind message
 	boolean ignoredMessage = cluster.profileId != 0x0104 ||
 	cluster.command == 0x0B ||
-	cluster.command == 0x07 ||
 	(cluster.data.size() > 0 && cluster.data.first() == 0x3e)
 	return !ignoredMessage
 }
@@ -224,47 +236,13 @@ private Map parseCustomMessage(String description) {
 }
 
 private Map parseIasMessage(String description) {
-	List parsedMsg = description.split(' ')
-	String msgCode = parsedMsg[2]
-
+	ZoneStatus zs = zigbee.parseZoneStatus(description)
 	Map resultMap = [:]
-	switch(msgCode) {
-		case '0x0020': // Closed/No Motion/Dry
+
 			if (garageSensor != "Yes"){
-				resultMap = getContactResult('closed')
+		resultMap = zs.isAlarm1Set() ? getContactResult('open') : getContactResult('closed')
 			}
-		break
 
-		case '0x0021': // Open/Motion/Wet
-			if (garageSensor != "Yes"){
-				resultMap = getContactResult('open')
-			}
-		break
-
-		case '0x0022': // Tamper Alarm
-		break
-
-		case '0x0023': // Battery Alarm
-		break
-
-		case '0x0024': // Supervision Report
-			if (garageSensor != "Yes"){
-				resultMap = getContactResult('closed')
-			}
-		break
-
-		case '0x0025': // Restore Report
-			if (garageSensor != "Yes"){
-				resultMap = getContactResult('open')
-			}
-		break
-
-		case '0x0026': // Trouble/Failure
-		break
-
-		case '0x0028': // Test Mode
-		break
-	}
 	return resultMap
 }
 
@@ -294,9 +272,9 @@ def updated() {
 def getTemperature(value) {
 	def celsius = Integer.parseInt(value, 16).shortValue() / 100
 	if(getTemperatureScale() == "C"){
-		return celsius
+		return Math.round(celsius)
 		} else {
-			return celsiusToFahrenheit(celsius) as Integer
+			return Math.round(celsiusToFahrenheit(celsius))
 		}
 	}
 
@@ -338,7 +316,10 @@ private Map getBatteryResult(rawValue) {
 				def minVolts = 2.1
 				def maxVolts = 3.0
 				def pct = (volts - minVolts) / (maxVolts - minVolts)
-				result.value = Math.min(100, (int) pct * 100)
+				def roundedPct = Math.round(pct * 100)
+				if (roundedPct <= 0)
+					roundedPct = 1
+				result.value = Math.min(100, roundedPct)
 				result.descriptionText = "{{ device.displayName }} battery was {{ value }}%"
 			}
 		}
@@ -358,10 +339,11 @@ private Map getTemperatureResult(value) {
 			'{{ device.displayName }} was {{ value }}°F'
 
 	return [
-	name: 'temperature',
-	value: value,
-	descriptionText: descriptionText,
-    translatable: true
+		name: 'temperature',
+		value: value,
+		descriptionText: descriptionText,
+		translatable: true,
+		unit: temperatureScale
 	]
 }
 
@@ -396,6 +378,13 @@ private getAccelerationResult(numValue) {
 	]
 }
 
+/**
+ * PING is used by Device-Watch in attempt to reach the Device
+ * */
+def ping() {
+	return zigbee.readAttribute(0x001, 0x0020) // Read the Battery Level
+}
+
 def refresh() {
 	log.debug "Refreshing Values "
 
@@ -423,13 +412,17 @@ def refresh() {
 }
 
 def configure() {
-	sendEvent(name: "checkInterval", value: 7200, displayed: false)
+	// Device-Watch allows 3 check-in misses from device (plus 1 min lag time)
+	// enrolls with default periodic reporting until newer 5 min interval is confirmed
+	sendEvent(name: "checkInterval", value: 3 * 60 * 60 + 1 * 60, displayed: false, data: [protocol: "zigbee", hubHardwareId: device.hub.hardwareID])
 
 	log.debug "Configuring Reporting"
 
+	// temperature minReportTime 30 seconds, maxReportTime 5 min. Reporting interval if no activity
+	// battery minReport 30 seconds, maxReportTime 6 hrs by default
 	def configCmds = enrollResponse() +
 			zigbee.batteryConfig() +
-			zigbee.temperatureConfig() +
+			zigbee.temperatureConfig(30, 300) +
 			zigbee.configureReporting(0xFC02, 0x0010, 0x18, 10, 3600, 0x01, [mfgCode: manufacturerCode]) +
 			zigbee.configureReporting(0xFC02, 0x0012, 0x29, 1, 3600, 0x0001, [mfgCode: manufacturerCode]) +
 			zigbee.configureReporting(0xFC02, 0x0013, 0x29, 1, 3600, 0x0001, [mfgCode: manufacturerCode]) +

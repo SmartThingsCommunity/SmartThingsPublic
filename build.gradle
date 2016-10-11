@@ -19,7 +19,7 @@ buildscript {
                 username smartThingsArtifactoryUserName
                 password smartThingsArtifactoryPassword
             }
-            url "http://artifactory.smartthings.com/libs-release-local"
+            url "https://artifactory.smartthings.com/libs-release-local"
         }
     }
 }
@@ -27,9 +27,37 @@ buildscript {
 repositories {
     mavenLocal()
     jcenter()
+    maven {
+        credentials {
+            username smartThingsArtifactoryUserName
+            password smartThingsArtifactoryPassword
+        }
+        url "https://artifactory.smartthings.com/libs-release-local"
+    }
+}
+
+sourceSets {
+    devicetypes {
+        groovy {
+            srcDirs = ['devicetypes']
+        }
+    }
+    smartapps {
+        groovy {
+            srcDirs = ['smartapps']
+        }
+    }
 }
 
 dependencies {
+    devicetypesCompile 'org.codehaus.groovy:groovy-all:2.4.7'
+    devicetypesCompile 'smartthings:appengine-z-wave:0.1.2'
+    devicetypesCompile 'smartthings:appengine-zigbee:0.1.11'
+    smartappsCompile 'org.codehaus.groovy:groovy-all:2.4.7'
+    smartappsCompile 'smartthings:appengine-common:0.1.8'
+    smartappsCompile 'org.codehaus.groovy.modules.http-builder:http-builder:0.7.1'
+    smartappsCompile 'org.grails:grails-web:2.3.11'
+    smartappsCompile 'org.json:json:20140107'
 }
 
 slackSendMessage {

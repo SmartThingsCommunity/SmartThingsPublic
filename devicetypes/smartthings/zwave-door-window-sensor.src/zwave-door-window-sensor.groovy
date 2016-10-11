@@ -28,7 +28,6 @@ metadata {
 		fingerprint deviceId: "0x0701", inClusters: "0x5E,0x98"
 		fingerprint deviceId: "0x0701", inClusters: "0x5E,0x86,0x72,0x98", outClusters: "0x5A,0x82"
 		fingerprint deviceId: "0x0701", inClusters: "0x5E,0x80,0x71,0x85,0x70,0x72,0x86,0x30,0x31,0x84,0x59,0x73,0x5A,0x8F,0x98,0x7A", outClusters:"0x20" // Philio multi+
-		fingerprint deviceId: "0x0701", inClusters: "0x5E,0x72,0x5A,0x80,0x73,0x84,0x85,0x59,0x71,0x70,0x7A,0x98" // Vision door/window
 	}
 
 	// simulator metadata
@@ -36,6 +35,7 @@ metadata {
 		// status messages
 		status "open":  "command: 2001, payload: FF"
 		status "closed": "command: 2001, payload: 00"
+		status "wake up": "command: 8407, payload: "
 	}
 
 	// UI tile definitions
@@ -83,12 +83,12 @@ def updated() {
 		cmds = [
 			command(zwave.manufacturerSpecificV2.manufacturerSpecificGet()),
 			"delay 1200",
-			zwave.wakeUpV1.wakeUpNoMoreInformation()
+			zwave.wakeUpV1.wakeUpNoMoreInformation().format()
 		]
 	} else if (!state.lastbat) {
 		cmds = []
 	} else {
-		cmds = [zwave.wakeUpV1.wakeUpNoMoreInformation()]
+		cmds = [zwave.wakeUpV1.wakeUpNoMoreInformation().format()]
 	}
 	response(cmds)
 }
@@ -175,7 +175,7 @@ def zwaveEvent(physicalgraph.zwave.commands.wakeupv1.WakeUpNotification cmd)
 	if (!state.lastbat || now() - state.lastbat > 53*60*60*1000) {
 		cmds << command(zwave.batteryV1.batteryGet())
 	} else {
-		cmds << zwave.wakeUpV1.wakeUpNoMoreInformation()
+		cmds << zwave.wakeUpV1.wakeUpNoMoreInformation().format()
 	}
 	[event, response(cmds)]
 }
