@@ -143,7 +143,7 @@ def refresh() {
 def configure() {
 	// Device-Watch allows 3 check-in misses from device (plus 1 min lag time)
 	// enrolls with default periodic reporting until newer 5 min interval is confirmed
-	sendEvent(name: "checkInterval", value: 3 * 60 * 60 + 1 * 60, displayed: false, data: [protocol: "zigbee", hubHardwareId: device.hub.hardwareID])
+	sendEvent(name: "checkInterval", value: 3 * 10 * 60 + 1 * 60, displayed: false, data: [protocol: "zigbee", hubHardwareId: device.hub.hardwareID])
 
 	// OnOff minReportTime 0 seconds, maxReportTime 5 min. Reporting interval if no activity
 	zigbee.onOffConfig(0, 300) + powerConfig() + refresh()
