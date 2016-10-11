@@ -39,7 +39,7 @@ def settings() {
         section("select a ligt sensor") {
             input "lightSensor", "capability.illuminanceMeasurement", title: "pick a sensor", required:true, multiple: false
         }
-        section("set a scale of dimming increment values ") {
+        section("set an increment value ") {
             input "DimIncrVal", "decimal", title: "pick an increment value", range: "5..20", required:true, multiple: false
         }
         section("Select Optional Rules") {    
@@ -61,7 +61,11 @@ def settings() {
                     paragraph "MAKE SURE TO SELECT below the modes that you just selected in the options above"
                 }
             }
-            mode(title: "Run this app only under these modes")
+        }
+        section([mobileOnly:true]) {
+            label title: "Assign a name", required: false
+            mode title: "Set for specific mode(s)", required: false
+
         }
     }
 }
@@ -83,56 +87,36 @@ def initialize() {
     state.LevelSetByApp = true
 
     subscribe(lightSensor, "illuminance", illuminanceHandler)
-    subscribe(dimmer, "switch", SwitchHandler)
+    subscribe(dimmer, "switch.on", SwitchHandler)
+    subscribe(dimmer, "switch.off", SwitchHandler)
     subscribe(dimmer, "level", switchSetLevelHandler)
 
 }
 
 def switchSetLevelHandler(evt) {
 
-	def LevelSet = evt.value as int 
-    def dim = state.dim as int
-    
-    log.debug "dimmer was set to $evt.value   ----------------------------"
-    log.debug "dim value is : $dim   --------------------------"
+    def LevelSet = evt.value as int 
+        def dim = state.dim as int
 
-    if(LevelSet == dim){
-        //if(state.LevelSetByApp == true){
-            state.DimSetByUser = false 
-        //}
-    }
-    else { 
-        state.DimSetByUser = true 
-    }
-    log.debug "Has the dimmer been manually modified? $state.DimSetByUser"
+            log.debug "dimmer was set to $evt.value   ----------------------------"
+        log.debug "dim value is : $dim   --------------------------"
+
 }
 
 
 def SwitchHandler(evt){ 
     log.debug "dimmer.currentSwitch is $dimmer.currentSwitch"
-    
-    // unachieved attempt to make this app to differentiate between manual and automated level setting 
-    // which is required so users can still set to their liking, 
-    // especially those control freaks wifes like mine who hate automation in general... 
-    
-    /*if(evt.value == "on"){
+    if(evt.value == "on"){
         state.dimmer = "on"
         state.DimSetByUser = false
         state.LevelSetByApp = true
-
-        log.debug "Resumig automation"
-        state.messageSent = false
-    } 
-    else { 
-        state.dimmer = "off"
-
-    }*/
+    }
 }
-
 
 def illuminanceHandler(evt){
     log.debug "illuminance is $evt.integerValue"
     state.luxvalue = evt.integerValue
+
     if(OnlyIfNotOff){
         if(state.dimmer == "off"){
 
@@ -146,6 +130,7 @@ def illuminanceHandler(evt){
         DIM()
     }
 }
+
 
 private DIM(){
 
@@ -165,64 +150,52 @@ private DIM(){
 
     log.debug "ProportionLux value returns $ProportionLux"
 
-    if(state.DimSetByUser == false){
-        if ( ProportionLux == 1) {
-            // this is the case when lux is max at 1000
-            if(Partvalue){
-                state.dim = 1 // don't set to 0 to avoid creating an event that will turn off the entire app
-            }
-            else {
-                state.dim = 0
-                log.debug "ProportionLux is 1 so dim set to 0"
-            }
+    if ( ProportionLux == 1) {
+        // this is the case when lux is max at 1000
+        if(Partvalue){
+            state.dim = 1 // don't set to 0 to avoid creating an event that will turn off the entire app
         }
         else {
-            state.dim = (ProportionLux * DimIncrVal) 
-            // example 1000 / 500 = 2 so dim = 2 * 5 light will be dimmed down or up? by 10%
-            // example 1000 / 58 = 17.xxx so dim = 17 * 5 so if lux is 58 then light will be set to 85%.
+            state.dim = 0
+            log.debug "ProportionLux is 1 so dim set to 0"
         }
-        if(state.dim > 100){
-            state.dim = 100
-        } 
+    }
+    else {
+        state.dim = (ProportionLux * DimIncrVal) 
+        // example 1000 / 500 = 2 so dim = 2 * 5 light will be dimmed down or up? by 10%
+        // example 1000 / 58 = 17.xxx so dim = 17 * 5 so if lux is 58 then light will be set to 85%.
+    }
 
-        if(Partvalue){
-            log.debug "PartValue eval"
-            if(exceptionMode){
-                log.debug "exceptionMode eval"
-                if(CurrMode == ExceptionMode){
-                    log.debug "currentMode eval"
-                    if(state.dim >= SetPartvalue){
-                        state.dim = SetPartvalue
-                    }
-                } 
-                else if(CurrMode == ExceptionMode2){
-                    if(state.dim >= SetPartvalue2){
-                        state.dim = SetPartvalue2
-                    }
-                }
-            }
-            else {
-                log.debug "Just PartValue eval"
+    if(state.dim > 100){
+        state.dim = 100
+    } 
+
+    if(Partvalue){
+        log.debug "PartValue eval"
+        if(exceptionMode){
+            log.debug "exceptionMode eval"
+            if(CurrMode == ExceptionMode){
+                log.debug "currentMode eval"
                 if(state.dim >= SetPartvalue){
                     state.dim = SetPartvalue
                 }
+            } 
+            else if(CurrMode == ExceptionMode2){
+                if(state.dim >= SetPartvalue2){
+                    state.dim = SetPartvalue2
+                }
             }
-
+        }
+        else {
+            log.debug "Just PartValue eval"
+            if(state.dim >= SetPartvalue){
+                state.dim = SetPartvalue
+            }
         }
         int dim = state.dim
         dimmer.setLevel(dim) 
         log.debug "light set to $dim %"
         state.LevelSetByApp = true
-
-    }
-    else if (state.messageSent == false){
-        def message = "Lights have been changed manually so automation is no longer running. Please toggle $dimmer to start over"
-        log.info (message)
-        send(message)
-        state.messageSent = true
-    }
-    else {
-        log.debug "message already sent. App is Idle"
     }
 }
 
