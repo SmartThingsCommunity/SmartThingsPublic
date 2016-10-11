@@ -97,6 +97,7 @@ def refresh() {
 }
 
 def healthPoll() {
+    log.debug "healthPoll()"
     def cmds = zigbee.onOffRefresh() + zigbee.levelRefresh()
     cmds.each{ sendHubCommand(new physicalgraph.device.HubAction(it))}
 }
