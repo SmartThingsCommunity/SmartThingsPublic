@@ -1194,7 +1194,7 @@ private poll() {
 }
 
 private isOnline(id) {
-	return (state.bulbs[id].online != null && state.bulbs[id].online) || state.bulbs[id].online == null
+	return (state.bulbs[id]?.online != null && state.bulbs[id]?.online) || state.bulbs[id]?.online == null
 }
 
 private put(path, body) {
@@ -1261,7 +1261,7 @@ def convertBulbListToMap() {
 	try {
 		if (state.bulbs instanceof java.util.List) {
 			def map = [:]
-			state.bulbs.unique {it.id}.each { bulb ->
+			state.bulbs?.unique {it.id}.each { bulb ->
 				map << ["${bulb.id}":["id":bulb.id, "name":bulb.name, "type": bulb.type, "modelid": bulb.modelid, "hub":bulb.hub, "online": bulb.online]]
 			}
 			state.bulbs = map
