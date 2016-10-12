@@ -1,10 +1,11 @@
 /**  
- *  BIG TALKER -- Version 1.1.7 -- A SmartApp for SmartThings Home Automation System
+ *  BIG TALKER -- Version 1.1.8 -- A SmartApp for SmartThings Home Automation System
  *  Copyright 2014-2016 - rayzur@rayzurbock.com - Brian S. Lowrance
  *  For the latest version, development and test releases visit http://www.github.com/rayzurbock
  *
  *  This SmartApp is free. Donations to support development efforts are accepted via: 
  *      -- Paypal at: rayzur@rayzurbock.com
+ *      -- Paypal at: https://www.paypal.me/brianlowrance
  *      -- Square Cash:  https://Cash.me/$Lowrance (Debit cards = free, Credit cards charge 3% on top of your donation o $15 is charged as $15.45)
  *      -- Square Marketplace at: https://squareup.com/market/brian-lowrance#category-a58f6ff3-7380-471b-8432-7e5881654e2c
  *
@@ -28,9 +29,9 @@ definition(
     author: "rayzur@rayzurbock.com",
     description: "Let's talk about mode changes, switches, motions, and so on.",
     category: "Fun & Social",
-    iconUrl: "http://rayzurbock.com/ST/icons/BigTalker-117.png",
-    iconX2Url: "http://rayzurbock.com/ST/icons/BigTalker@2x-117.png",
-    iconX3Url: "http://rayzurbock.com/ST/icons/BigTalker@2x-117.png")
+    iconUrl: "http://rayzurbock.com/ST/icons/BigTalker-118.png",
+    iconX2Url: "http://rayzurbock.com/ST/icons/BigTalker@2x-118.png",
+    iconX3Url: "http://rayzurbock.com/ST/icons/BigTalker@2x-118.png")
 
 
 preferences {
@@ -47,7 +48,7 @@ preferences {
     page(name: "pageConfigContact")
     page(name: "pageConfigMode")
     page(name: "pageConfigThermostat")
-	page(name: "pageConfigAcceleration")
+    page(name: "pageConfigAcceleration")
     page(name: "pageConfigWater")
     page(name: "pageConfigSmoke")
     page(name: "pageConfigButton")
@@ -1592,6 +1593,7 @@ def pageHelpPhraseTokens(){
            AvailTokens += "%devicename% = Triggering devices display name\n\n"
            AvailTokens += "%devicetype% = Triggering device type; motion, switch, etc\n\n"
            AvailTokens += "%devicechange% = State change that occurred; on/off, active/inactive, etc...\n\n"
+           AvailTokens += "%description% = The description of the event that is to be displayed to the user in the mobile application. \n\n"
            AvailTokens += "%locationname% = Hub location name; home, work, etc\n\n"
            AvailTokens += "%lastmode% = Last hub mode; home, away, etc\n\n"
            AvailTokens += "%mode% = Current hub mode; home, away, etc\n\n"
@@ -2859,9 +2861,30 @@ def processButtonEvent(index, evt){
 def processPhraseVariables(phrase, evt){
     def zipCode = location.zipCode
     if (phrase.toLowerCase().contains(" percent ")) { phrase = phrase.replace(" percent ","%") }
-    if (phrase.toLowerCase().contains("%devicename%")) {phrase = phrase.toLowerCase().replace('%devicename%', evt.displayName)}  //User given name of the device
+    if (phrase.toLowerCase().contains("%devicename%")) {
+    	try {
+        	phrase = phrase.toLowerCase().replace('%devicename%', evt.displayName)  //User given name of the device triggering the event
+        }
+        catch (ex) { 
+        	LOGDEBUG("evt.displayName failed; trying evt.device.displayName")
+        	try {
+                phrase = phrase.toLowerCase().replace('%devicename%', evt.device.displayName) //User given name of the device triggering the event
+            }
+            catch (ex2) {
+            	LOGDEBUG("evt.device.displayName filed; trying evt.device.name")
+                try {
+                	phrase = phrase.toLowerCase().replace('%devicename%', evt.device.name) //SmartThings name for the device triggering the event
+                }
+                catch (ex3) {
+                	LOGDEBUG("evt.device.name filed; Giving up")
+                    phrase = phrase.toLowerCase().replace('%devicename%', "Device Name Unknown")
+                }
+            }
+       }
+    }
     if (phrase.toLowerCase().contains("%devicetype%")) {phrase = phrase.toLowerCase().replace('%devicetype%', evt.name)}  //Device type: motion, switch, etc...
     if (phrase.toLowerCase().contains("%devicechange%")) {phrase = phrase.toLowerCase().replace('%devicechange%', evt.value)}  //State change that occurred: on/off, active/inactive, etc...
+    if (phrase.toLowerCase().contains("%description%")) {phrase = phrase.toLowerCase().replace('%description%', evt.descriptionText)}  //Description of the event which occurred via device-specific text`
     if (phrase.toLowerCase().contains("%locationname%")) {phrase = phrase.toLowerCase().replace('%locationname%', location.name)}
     if (phrase.toLowerCase().contains("%lastmode%")) {phrase = phrase.toLowerCase().replace('%lastmode%', state.lastMode)}
     if (phrase.toLowerCase().contains("%mode%")) {phrase = phrase.toLowerCase().replace('%mode%', location.mode)}
@@ -3026,8 +3049,8 @@ def Talk(phrase, customSpeechDevice, evt){
                 	                if (settings.speechVolume == currentVolume){it.playTrackAndResume(state.sound.uri, state.sound.duration)}
                                     if (!(settings.speechVolume == currentVolume)){it.playTrackAndResume(state.sound.uri, state.sound.duration, settings.speechVolume)}
                     	        } else { 
-                            	    if (currentVolume > 50) { it.playTrackAndResume(state.sound.uri, state.sound.duration) }
-                            	    if (currentVolume == 0) { it.playTrackAndResume(state.sound.uri, state.sound.duration, 75) }
+                            	    if (currentVolume >= 50) { it.playTrackAndResume(state.sound.uri, state.sound.duration) }
+                            	    if (currentVolume < 50) { it.playTrackAndResume(state.sound.uri, state.sound.duration, 50) }
                         	    }
                     	    } else
                     	    {
@@ -3036,8 +3059,8 @@ def Talk(phrase, customSpeechDevice, evt){
 	                                if (settings.speechVolume == currentVolume){it.playTrackAndRestore(state.sound.uri, state.sound.duration)}
                                     if (!(settings.speechVolume == currentVolume)){it.playTrackAndRestore(state.sound.uri, state.sound.duration, settings.speechVolume)}
 	                            } else { 
-            	                    if (currentVolume > 50) { it.playTrackAndRestore(state.sound.uri, state.sound.duration) }
-                	                if (currentVolume == 0) { it.playTrackAndRestore(state.sound.uri, state.sound.duration, 75) }
+            	                    if (currentVolume >= 50) { it.playTrackAndRestore(state.sound.uri, state.sound.duration) }
+                	                if (currentVolume < 50) { it.playTrackAndRestore(state.sound.uri, state.sound.duration, 50) }
                     	        }
                     	    }
                 	    } else {
@@ -3051,9 +3074,8 @@ def Talk(phrase, customSpeechDevice, evt){
                     	                if (settings.speechVolume == currentVolume){it.playTrackAndResume(state.sound.uri, state.sound.duration)}
                                         if (!(settings.speechVolume == currentVolume)){it.playTrackAndResume(state.sound.uri, state.sound.duration, settings.speechVolume)}
                         	        } else { 
-                                        if (currentVolume > 50) { it.playTrackAndResume(state.sound.uri, state.sound.duration) }
-                	                    if (currentVolume == 0) { it.playTrackAndResume(state.sound.uri, state.sound.duration, 75) }
-                            	        it.playTrackAndResume(state.sound.uri, state.sound.duration, settings.speechVolume)
+                                        if (currentVolume >= 50) { it.playTrackAndResume(state.sound.uri, state.sound.duration) }
+                	                    if (currentVolume < 50) { it.playTrackAndResume(state.sound.uri, state.sound.duration, 50) }
                         	        }
                     	        } else {
     	                            if (currentStatus == "playing") {
@@ -3062,8 +3084,8 @@ def Talk(phrase, customSpeechDevice, evt){
                         	                if (settings.speechVolume == currentVolume){it.playTrackAndResume(state.sound.uri, state.sound.duration)}
                                             if (!(settings.speechVolume == currentVolume)){it.playTrackAndResume(state.sound.uri, state.sound.duration, settings.speechVolume)}
                             	        } else { 
-        	                                if (currentVolume > 50) { it.playTrackAndResume(state.sound.uri, state.sound.duration) }
-            	                            if (currentVolume == 0) { it.playTrackAndResume(state.sound.uri, state.sound.duration, 75) }
+        	                                if (currentVolume >= 50) { it.playTrackAndResume(state.sound.uri, state.sound.duration) }
+            	                            if (currentVolume < 50) { it.playTrackAndResume(state.sound.uri, state.sound.duration, 50) }
                 	                    }
                     	            } else {
                             	        LOGTRACE("mP | ${it.displayName} | cT=null | cS<>playing | Sending playTrackAndRestore().")
@@ -3071,8 +3093,8 @@ def Talk(phrase, customSpeechDevice, evt){
                                 	        if (settings.speechVolume == currentVolume){it.playTrackAndRestore(state.sound.uri, state.sound.duration)}
                                             if (!(settings.speechVolume == currentVolume)){it.playTrackAndRestore(state.sound.uri, state.sound.duration, settings.speechVolume)}
                             	        } else { 
-	                                        if (currentVolume > 50) { it.playTrackAndRestore(state.sound.uri, state.sound.duration) }
-    	                                    if (currentVolume == 0) { it.playTrackAndRestore(state.sound.uri, state.sound.duration, 75) }
+	                                        if (currentVolume >= 50) { it.playTrackAndRestore(state.sound.uri, state.sound.duration) }
+    	                                    if (currentVolume < 50) { it.playTrackAndRestore(state.sound.uri, state.sound.duration, 50) }
         	                            }
             	                    }
                 	            }
@@ -3083,8 +3105,8 @@ def Talk(phrase, customSpeechDevice, evt){
                                     if (settings.speechVolume == currentVolume){it.playTrackAndRestore(state.sound.uri, state.sound.duration)}
                                     if (!(settings.speechVolume == currentVolume)){it.playTrackAndRestore(state.sound.uri, state.sound.duration, settings.speechVolume)}
                                 } else { 
-	                                if (currentVolume > 50) { it.playTrackAndRestore(state.sound.uri, state.sound.duration) }
-    	                            if (currentVolume == 0) { it.playTrackAndRestore(state.sound.uri, state.sound.duration, 75) }
+	                                if (currentVolume >= 50) { it.playTrackAndRestore(state.sound.uri, state.sound.duration) }
+    	                            if (currentVolume < 50) { it.playTrackAndRestore(state.sound.uri, state.sound.duration, 50) }
         	                    }
                             }
                 	    }
@@ -3105,7 +3127,19 @@ def Talk(phrase, customSpeechDevice, evt){
                 //Iterate Speech Devices and talk
 		        def attrs = currentSpeechDevices.supportedAttributes
                 currentSpeechDevices.each(){
-	                LOGTRACE("sS | ${it.displayName} | Sending speak().")
+	                try {
+                    	LOGTRACE("sS | ${it.displayName} | Sending speak().")
+                    }
+                    catch (ex) {
+                    	LOGDEBUG("LOGTRACE it.displayName failed, trying it.device.displayName")
+                    	try {
+                    		LOGTRACE("sS | ${it.device.displayName} | Sending speak().")
+                        }
+                        catch (ex2) {
+                        	LOGDEBUG("LOGTRACE it.device.displayName failed, trying it.device.name")
+                        	LOGTRACE("sS | ${it.device.name} | Sending speak().")
+                        }
+                    }
 	                it.speak(phrase)
                 }
     	    } //!phrase == null
@@ -3919,5 +3953,5 @@ def LOGERROR(txt){
 }
 
 def setAppVersion(){
-    state.appversion = "1.1.7"
+    state.appversion = "1.1.8"
 }
