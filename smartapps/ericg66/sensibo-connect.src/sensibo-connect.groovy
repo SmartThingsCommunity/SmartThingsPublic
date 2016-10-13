@@ -33,6 +33,7 @@ preferences {
 	page(name: "SelectAPIKey", title: "API Key", content: "setAPIKey", nextPage: "deviceList", install: false, uninstall: true)
 	page(name: "deviceList", title: "Sensibo", content:"SensiboPodList", install:true, uninstall: true)
     page(name: "timePage")
+    page(name: "timePageEvent")
 }
 
 def getServerUrl() { "https://home.sensibo.com" }
@@ -67,26 +68,41 @@ def SensiboPodList()
 			paragraph "Tap below to see the list of Sensibo Pods available in your Sensibo account and select the ones you want to connect to SmartThings."
 			input(name: "SelectedSensiboPods", title:"Pods", type: "enum", required:true, multiple:true, description: "Tap to choose",  metadata:[values:stats])
 		}
-        section("Notification") {
-            input "sendPushNotif", "bool",submitOnChange: true, required: false, title: "Send Push Notification on Sensibo Pod sensors?"
+        section("Receive Pod sensors infos") {
+        	input "boolnotifevery", "bool",submitOnChange: true, required: false, title: "Receive temperature, humidity and battery level notification every hour?"
+            href(name: "toTimePageEvent",
+                     page: "timePageEvent", title:"Only during a certain time", require: false)
         }
-        if (sendPushNotif) {
-            section("Select the temperature threshold",hideable: true) {
-            	input "minTemperature", "decimal", title: "Min Temperature",required:false
-            	input "maxTemperature", "decimal", title: "Max Temperature",required:false }
-            section("Select the humidity threshold",hideable: true) {
-            	input "minHumidity", "decimal", title: "Min Humidity level",required:false
-            	input "maxHumidity", "decimal", title: "Max Humidity level",required:false }              
-         
-        	section("How frequently?") {
-            	//input(name:"sfrequency", title:"Once within this number of minutes", type:"number", required:false)
-        		input(name:"days", title: "Only on certain days of the week", type: "enum", required:false, multiple: true, options: ["Monday", "Tuesday", "Wednesday","Thursday","Friday","Saturday","Sunday"])
-        	}
-        	section("") {
-        		href(name: "toTimePage",
+        section("Automation Directory",hideable: true){
+        		input "boolEnableDirc", "bool",submitOnChange: true, required: false, title: "Enable Directory?"
+		        input(name: "SelectedPodsDir", title:"Pods", type: "enum", required:true, multiple:true, description: "Tap to choose",  metadata:[values:stats])
+        		input "minTempDir", "decimal", title: "Min Temperature",required:false
+            	input "maxTempDir", "decimal", title: "Max Temperature",required:false
+                input "targetTempDir","decimal",title:"Target Temperature", required:false
+                href(name: "toTimePage",
                 	 page: "timePage", title:"Only during a certain time", require: false)
-        	}
         }
+        //section("Alert on sensors (threshold)") {
+        //	input "sendPushNotif", "bool",submitOnChange: true, required: false, title: "Receive alert on Sensibo Pod sensors based on threshold?"                       
+       // }
+
+		//if (sendPushNotif) {
+       //    section("Select the temperature threshold",hideable: true) {
+        //    	input "minTemperature", "decimal", title: "Min Temperature",required:false
+        //    	input "maxTemperature", "decimal", title: "Max Temperature",required:false }
+        //    section("Select the humidity threshold",hideable: true) {
+        //    	input "minHumidity", "decimal", title: "Min Humidity level",required:false
+        //    	input "maxHumidity", "decimal", title: "Max Humidity level",required:false }              
+         
+        //	section("How frequently?") {
+        //		input(name:"days", title: "Only on certain days of the week", type: "enum", required:false, multiple: true, options: ["Monday", "Tuesday", "Wednesday","Thursday","Friday","Saturday","Sunday"])
+        //	}
+        //	section("") {
+        //		href(name: "toTimePage",
+        //        	 page: "timePage", title:"Only during a certain time", require: false)
+        //	}
+       // }
+        
 	}
 	return p
 }
@@ -97,6 +113,16 @@ def timePage() {
       section("") {
         input(name: "startTime", title: "Starting at : ", required:false, multiple: false, type:"time",)
         input(name: "endTime", title: "Ending at : ", required:false, multiple: false, type:"time")
+      }
+   }
+}
+
+// page def must include a parameter for the params map!
+def timePageEvent() {
+    dynamicPage(name: "timePageEvent", uninstall: false, install: false, title: "Only during a certain time") {
+      section("") {
+        input(name: "startTimeEvent", title: "Starting at : ", required:false, multiple: false, type:"time",)
+        input(name: "endTimeEvent", title: "Ending at : ", required:false, multiple: false, type:"time")
       }
    }
 }
@@ -147,7 +173,12 @@ def installed() {
     
     def d = getAllChildDevices()
 
-    if (sendPushNotif) {
+	if (boolnotifevery) {
+    	//runEvery1Hour("hournotification")
+        schedule("0 0 * * * ?", "hournotification")
+	}
+    
+    if (sendPushNotif) { 
     	subscribe(d, "temperature", eTemperatureHandler)
         subscribe(d, "humidity", eHumidityHandler)
     }
@@ -165,9 +196,60 @@ def updated() {
     initialize()
     
     def d = getAllChildDevices()
+    
+    if (boolnotifevery) {
+    	//runEvery1Hour("hournotification")
+        schedule("0 0 * * * ?", "hournotification")
+	}
+    
     if (sendPushNotif) {
     	subscribe(d, "temperature", eTemperatureHandler)
         subscribe(d, "humidity", eHumidityHandler)
+    }
+}
+
+def hournotification() {
+	def hour = new Date()
+	def curHour = hour.format("HH:mm",location.timeZone)
+	def curDay = hour.format("EEEE",location.timeZone)
+	// Check the time Threshold
+    def stext = ""
+	if (startTimeEvent && endTimeEvent) {
+ 		def minHour = new Date().parse(smartThingsDateFormat(), startTimeEvent)
+    	def endHour = new Date().parse(smartThingsDateFormat(), endTimeEvent)
+
+    	def minHourstr = minHour.format("HH:mm",location.timeZone)
+    	def maxHourstr = endHour.format("HH:mm",location.timeZone)
+
+    	if (curHour >= minHourstr && curHour <= maxHourstr) 
+    	{
+    		def devices = getAllChildDevices()
+            devices.each { d ->
+                log.debug "Notification every hour for device: ${d.id}"
+                def currentPod = d.displayName
+                def currentTemperature = d.currentState("temperature").value
+                def currentHumidity = d.currentState("humidity").value
+                def currentBattery = d.currentState("battvoltage").value
+                def sunit = TemperatureUnit()
+                stext = "${currentPod} - Temperature: ${currentTemperature} ${sunit} Humidity: ${currentHumidity}% Battery: ${currentBattery}"    
+                
+                sendPush(stext)
+            }
+    	}
+    }
+    else {
+    	 	def devices = getAllChildDevices()
+            devices.each { d ->
+                log.debug "Notification every hour for device: ${d.id}"
+                def currentPod = d.displayName
+                def currentTemperature = d.currentState("temperature").value
+                def currentHumidity = d.currentState("humidity").value
+                def currentBattery = d.currentState("battvoltage").value
+                def sunit = TemperatureUnit()
+                stext = "${currentPod} - Temperature: ${currentTemperature} ${sunit} Humidity: ${currentHumidity}% Battery: ${currentBattery}"    
+                
+                sendPush(stext)
+            }
     }
 }
 
@@ -577,9 +659,9 @@ def getACState(PodUid)
 						
 						def stemp = stat.acState.targetTemperature.toInteger()
 
-						if (TemperatureUnit() == "F") {
-                    		stemp = Math.round(cToF(stemp))
-                    	}
+						//if (TemperatureUnit() == "F") {
+                    	//	stemp = Math.round(cToF(stemp))
+                    	//}
                         def tMode                        
                         if (OnOff=="off") {
         					tMode = "off"
@@ -725,10 +807,9 @@ def pollChildren(PodUid)
 					log.debug "updating dni $dni"
                     
                     def stemp = stat.temperature.toDouble()
-                    if (TemperatureUnit() == "F") {
-                    	//stemp = Math.round(cToF(stemp))
-                        stemp = cToF(stemp).round(1)
-                    }
+                    //if (TemperatureUnit() == "F") {
+                        //stemp = cToF(stemp).round(1)
+                    //}
 
 					def tMode                        
                     if (setTemp.on=="off") {
