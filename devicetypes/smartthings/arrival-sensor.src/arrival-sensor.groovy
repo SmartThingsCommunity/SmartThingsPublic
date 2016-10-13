@@ -46,7 +46,7 @@ metadata {
 			state "not present", labelIcon:"st.presence.tile.not-present", backgroundColor:"#ebeef2"
 		}
 		standardTile("beep", "device.beep", decoration: "flat") {
-			state "beep", label:'', action:"tone.beep", icon:"st.secondary.beep", backgroundColor:"#ffffff"
+			state "beep", label:'Beep', action:"tone.beep", icon:"st.alarm.beep.beep", backgroundColor:"#ffffff"
 		}
 		valueTile("battery", "device.battery", decoration: "flat", inactiveLabel: false) {
 			state "battery", label:'${currentValue}% battery', unit:""/*, backgroundColors:[
@@ -61,7 +61,7 @@ metadata {
 			state "lqi", label:'${currentValue}% signal', unit:""
 		}
 		*/
-		
+
 		main "presence"
 		details(["presence", "beep", "battery"/*, "lqi"*/])
 	}
