@@ -75,7 +75,7 @@ def SensiboPodList()
         }
         section("Automation Directory",hideable: true){
         		input "boolEnableDirc", "bool",submitOnChange: true, required: false, title: "Enable Directory?"
-		        input(name: "SelectedPodsDir", title:"Pods", type: "enum", required:true, multiple:true, description: "Tap to choose",  metadata:[values:stats])
+		        input(name: "SelectedPodsDir", title:"Pods", type: "enum", required:false, multiple:true, description: "Tap to choose",  metadata:[values:stats])
         		input "minTempDir", "decimal", title: "Min Temperature",required:false
             	input "maxTempDir", "decimal", title: "Max Temperature",required:false
                 input "targetTempDir","decimal",title:"Target Temperature", required:false
