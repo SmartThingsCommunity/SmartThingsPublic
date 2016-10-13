@@ -253,9 +253,9 @@ void raiseTemperature() {
     
     def Setpoint = device.currentValue("targetTemperature").toInteger()
     def theTemp = device.currentValue("temperatureUnit")
-    if (device.currentValue("temperatureUnit") == "F") {
-    	Setpoint = Math.round(fToC(Setpoint))
-    }
+    //if (device.currentValue("temperatureUnit") == "F") {
+    //	Setpoint = Math.round(fToC(Setpoint))
+    //}
     
     log.debug "Current target temperature = ${Setpoint}"
 
@@ -285,9 +285,9 @@ void lowerTemperature() {
     
     def Setpoint = device.currentValue("targetTemperature").toInteger()
     def theTemp = device.currentValue("temperatureUnit")
-    if (device.currentValue("temperatureUnit") == "F") {
-    	Setpoint = Math.round(fToC(Setpoint))
-    }
+    //if (device.currentValue("temperatureUnit") == "F") {
+    //	Setpoint = Math.round(fToC(Setpoint))
+    //}
     
     log.debug "Current target temperature = ${Setpoint}"
 
@@ -317,9 +317,9 @@ void lowerCoolSetpoint() {
     
     def Setpoint = device.currentValue("targetTemperature").toInteger()
    	def theTemp = device.currentValue("temperatureUnit")
-    if (device.currentValue("temperatureUnit") == "F") {
-    	Setpoint = Math.round(fToC(Setpoint))
-    }
+    //if (device.currentValue("temperatureUnit") == "F") {
+    //	Setpoint = Math.round(fToC(Setpoint))
+    //}
     log.debug "Current target temperature = ${Setpoint}"
 
     Setpoint--  
@@ -335,9 +335,9 @@ void lowerCoolSetpoint() {
     	sendEvent(name: 'coolingSetpoint', value: Setpoint, unit: theTemp, displayed: false)
     	//sendEvent(name: 'heatingSetpoint', value: Setpoint, unit: theTemp, displayed: false)
        
-        if (device.currentValue("temperatureUnit") == "F") {
-    		Setpoint = Math.round(cToF(Setpoint))
-    	}
+        //if (device.currentValue("temperatureUnit") == "F") {
+    	//	Setpoint = Math.round(cToF(Setpoint))
+    	//}
         generateSetTempEvent(Setpoint)
         
     	log.debug "New target Temperature = ${Setpoint}"       
@@ -356,9 +356,9 @@ void raiseCoolSetpoint() {
     
     def Setpoint = device.currentValue("targetTemperature").toInteger()
     def theTemp = device.currentValue("temperatureUnit")
-    if (device.currentValue("temperatureUnit") == "F") {
-    	Setpoint = Math.round(fToC(Setpoint))
-    }
+    //if (device.currentValue("temperatureUnit") == "F") {
+    //	Setpoint = Math.round(fToC(Setpoint))
+    //}
     
     log.debug "Current target temperature = ${Setpoint}"
 
@@ -374,9 +374,9 @@ void raiseCoolSetpoint() {
     	sendEvent(name: 'coolingSetpoint', value: Setpoint, unit: theTemp, displayed: false)
     	//sendEvent(name: 'heatingSetpoint', value: Setpoint, unit: theTemp, displayed: false)
     	
-        if (device.currentValue("temperatureUnit") == "F") {
-    		Setpoint = Math.round(cToF(Setpoint))
-    	}
+        //if (device.currentValue("temperatureUnit") == "F") {
+    	//	Setpoint = Math.round(cToF(Setpoint))
+    	//}
         generateSetTempEvent(Setpoint)
         
     	log.debug "New target Temperature = ${Setpoint}"       
@@ -449,9 +449,9 @@ def on() {
     
     def Setpoint = device.currentValue("targetTemperature").toInteger()
    
-    if (device.currentValue("temperatureUnit") == "F") {
-    	Setpoint = Math.round(fToC(Setpoint))
-    }
+    //if (device.currentValue("temperatureUnit") == "F") {
+    //	Setpoint = Math.round(fToC(Setpoint))
+    //}
     
     def result = parent.setACStates(this, device.deviceNetworkId, "on", device.currentState("mode").value, Setpoint, device.currentState("fanLevel").value)
     if (result) {   
@@ -473,9 +473,9 @@ def off() {
     
      def Setpoint = device.currentValue("targetTemperature").toInteger()
    
-    if (device.currentValue("temperatureUnit") == "F") {
-    	Setpoint = Math.round(fToC(Setpoint))
-    }
+    //if (device.currentValue("temperatureUnit") == "F") {
+    //	Setpoint = Math.round(fToC(Setpoint))
+    //}
     
     def result = parent.setACStates(this, device.deviceNetworkId, "off", device.currentState("mode").value, Setpoint, device.currentState("fanLevel").value)
 
@@ -506,9 +506,9 @@ def dfanLow() {
 
     def Setpoint = device.currentValue("targetTemperature").toInteger()
    
-    if (device.currentValue("temperatureUnit") == "F") {
-    	Setpoint = Math.round(fToC(Setpoint))
-    }
+    //if (device.currentValue("temperatureUnit") == "F") {
+    //	Setpoint = Math.round(fToC(Setpoint))
+    //}
     
     def result = parent.setACStates(this, device.deviceNetworkId ,"on", device.currentState("mode").value, Setpoint, "low")
     if (result) {
@@ -529,9 +529,9 @@ def dfanMedium() {
     
     def Setpoint = device.currentValue("targetTemperature").toInteger()
    
-    if (device.currentValue("temperatureUnit") == "F") {
-    	Setpoint = Math.round(fToC(Setpoint))
-    }
+    //if (device.currentValue("temperatureUnit") == "F") {
+    //	Setpoint = Math.round(fToC(Setpoint))
+    //}
     def result = parent.setACStates(this, device.deviceNetworkId,"on", device.currentState("mode").value, Setpoint, "medium")
     if (result) {
    		if (device.currentState("on").value == "off") { generateSwitchEvent("on") }
@@ -551,9 +551,9 @@ def dfanHigh() {
     
     def Setpoint = device.currentValue("targetTemperature").toInteger()
    
-    if (device.currentValue("temperatureUnit") == "F") {
-    	Setpoint = Math.round(fToC(Setpoint))
-    }
+    //if (device.currentValue("temperatureUnit") == "F") {
+    //	Setpoint = Math.round(fToC(Setpoint))
+    //}
     def result = parent.setACStates(this, device.deviceNetworkId,"on", device.currentState("mode").value, Setpoint, "high")
     if (result) {
      	if (device.currentState("on").value == "off") { generateSwitchEvent("on") }   
@@ -573,9 +573,9 @@ def dfanAuto() {
     
     def Setpoint = device.currentValue("targetTemperature").toInteger()
    
-    if (device.currentValue("temperatureUnit") == "F") {
-    	Setpoint = Math.round(fToC(Setpoint))
-    }
+    //if (device.currentValue("temperatureUnit") == "F") {
+    //	Setpoint = Math.round(fToC(Setpoint))
+    //}
 
 	def fanLevel = "auto"
 	// adapted to my AC model which no auto fanspeed in fan mode
@@ -653,9 +653,9 @@ def modeHeat() {
     
     def Setpoint = device.currentValue("targetTemperature").toInteger()
    
-    if (device.currentValue("temperatureUnit") == "F") {
-    	Setpoint = Math.round(fToC(Setpoint))
-    }    
+    //if (device.currentValue("temperatureUnit") == "F") {
+    //	Setpoint = Math.round(fToC(Setpoint))
+    //}    
     def result = parent.setACStates(this, device.deviceNetworkId, "on", "heat", Setpoint, device.currentState("fanLevel").value)
     if (result) {
     	sendEvent(name: 'thermostatMode', value: "heat", displayed: false,isStateChange: true)
@@ -676,9 +676,9 @@ def modeCool() {
 
     def Setpoint = device.currentValue("targetTemperature").toInteger()
    
-    if (device.currentValue("temperatureUnit") == "F") {
-    	Setpoint = Math.round(fToC(Setpoint))
-    }
+    //if (device.currentValue("temperatureUnit") == "F") {
+    //	Setpoint = Math.round(fToC(Setpoint))
+    //}
     if (device.currentState("on").value == "off") { generateSwitchEvent("on") }
     def result = parent.setACStates(this, device.deviceNetworkId, "on", "cool", Setpoint, device.currentState("fanLevel").value)
     if (result) {
@@ -700,9 +700,9 @@ def modeFan() {
 
     def Setpoint = device.currentValue("targetTemperature").toInteger()
    
-    if (device.currentValue("temperatureUnit") == "F") {
-    	Setpoint = Math.round(fToC(Setpoint))
-    }
+    //if (device.currentValue("temperatureUnit") == "F") {
+    //	Setpoint = Math.round(fToC(Setpoint))
+    //}
     // adapted to my AC model which no auto fanspeed in fan mode
     def LevelBefore = device.currentState("fanLevel").value.toString()
     def Level = (device.currentState("fanLevel").value == "auto") ? "medium" : device.currentState("fanLevel").value
