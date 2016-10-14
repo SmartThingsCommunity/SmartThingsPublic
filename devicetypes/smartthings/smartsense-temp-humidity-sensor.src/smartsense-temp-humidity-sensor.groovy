@@ -250,11 +250,7 @@ private Map getTemperatureResult(value) {
 
 private Map getHumidityResult(value) {
 	log.debug 'Humidity'
-	return [
-		name: 'humidity',
-		value: value,
-		unit: '%'
-	]
+	return value ? [name: 'humidity', value: value, unit: '%'] : [:]
 }
 
 /**
@@ -267,15 +263,10 @@ def ping() {
 def refresh()
 {
 	log.debug "refresh temperature, humidity, and battery"
-	[
-
-		"zcl mfg-code 0xC2DF", "delay 1000",
-		"zcl global read 0xFC45 0", "delay 1000",
-		"send 0x${device.deviceNetworkId} 1 1", "delay 1000",
-        "st rattr 0x${device.deviceNetworkId} 1 0x402 0", "delay 200",
-        "st rattr 0x${device.deviceNetworkId} 1 1 0x20"
-
-	]
+	return zigbee.readAttribute(0xFC45, 0x0000, ["mfgCode": 0xC2DF]) +   // Original firmware
+			zigbee.readAttribute(0xFC45, 0x0000, ["mfgCode": 0x104E]) +  // New firmware
+			zigbee.readAttribute(0x0402, 0x0000) +
+			zigbee.readAttribute(0x0001, 0x0020)
 }
 
 def configure() {
