@@ -121,7 +121,9 @@ def selectDevicePAGE() {
 def notificationsPAGE() {
 	return dynamicPage(name: "notificationsPAGE", title: "Notifications", install: false, uninstall: false) {   
 		section(""){
-			input "sendPush", "bool", title: "Send as Push?", required: false, defaultValue: true
+        	input("recipients", "contact", title: "Send notifications to", required: false) {
+				input "sendPush", "bool", title: "Send as Push?", required: false
+            }
 			input "sendSMS", "phone", title: "Send as SMS?", required: false, defaultValue: null
 			input "sendBotvacOn", "bool", title: "Notify when on?", required: false, defaultValue: false
 			input "sendBotvacOff", "bool", title: "Notify when off?", required: false, defaultValue: false
@@ -492,11 +494,12 @@ def getPreferencesString() {
 }
 
 def notificationsSelected() {
-    return (sendPush || sendSMS != null) && (sendBotvacOn || sendBotvacOff || sendBotvacError || sendBotvacBin) ? "complete" : null
+    return ((location.contactBookEnabled && recipients) || sendPush || sendSMS != null) && (sendBotvacOn || sendBotvacOff || sendBotvacError || sendBotvacBin) ? "complete" : null
 }
 
 def getNotificationsString() {
 	def listString = ""
+    if (location.contactBookEnabled && recipients) listString += "• Send via Contact Book\n"
     if (sendPush) listString += "• Send Push\n"
   	if (sendSMS != null) listString += "• Send SMS to ${sendSMS}\n"
   	if (sendBotvacOn) listString += "• Botvac On Notification\n"
@@ -566,12 +569,7 @@ def eventHandler(evt) {
 		log.trace "${evt.displayName} has an error"
 		msg = "${evt.displayName} has an error"
 		if (sendBotvacError == true) {
-        	if (settings.sendSMS != null) {
-				sendSms(sendSMS, msg) 
-			}
-			if (settings.sendPush == true) {
-				sendPush(msg)
-			}
+        	messageHandler(msg, false)
 		}
      }
 	 else if (evt.value == "cleaning") {
@@ -587,12 +585,7 @@ def eventHandler(evt) {
 		log.trace "${evt.displayName} is on"
 		msg = "${evt.displayName} is on"
 		if (sendBotvacOn == true) {
-			if (settings.sendSMS != null) {
-				sendSms(sendSMS, msg) 
-			}
-			if (settings.sendPush == true) {
-				sendPush(msg)
-			}
+			messageHandler(msg, false)
 		}
         if (settings.autoSHM.contains('true') ) {
         	if (location.currentState("alarmSystemStatus")?.value == "away") {
@@ -600,7 +593,7 @@ def eventHandler(evt) {
 				log.trace "Smart Home Monitor is set to stay"
 				sendLocationEvent(name: "alarmSystemStatus", value: "stay")
 				state.autoSHMchange = "y"
-                sendPush("Smart Home Monitor is set to stay as ${evt.displayName} is on")
+                messageHandler("Smart Home Monitor is set to stay as ${evt.displayName} is on", true)
             }
         }
      }
@@ -611,12 +604,7 @@ def eventHandler(evt) {
 		log.trace "${evt.displayName} bin is full"
 		msg = "${evt.displayName} bin is full"
 		if (sendBotvacBin == true) {
-			if (settings.sendSMS != null) {
-				sendSms(sendSMS, msg) 
-			}
-			if (settings.sendPush == true) {
-				sendPush(msg)
-			}
+			messageHandler(msg, false)
 		}
 	 }
      else if (evt.value == "ready") {
@@ -626,12 +614,7 @@ def eventHandler(evt) {
 		log.trace "${evt.displayName} is off"
 		msg = "${evt.displayName} is off"
 		if (sendBotvacOff == true) {
-			if (settings.sendSMS != null) {
-				sendSms(sendSMS, msg) 
-			}
-			if (settings.sendPush == true) {
-				sendPush(msg)
-			}
+			messageHandler(msg, false)
 		}
 	}
 }
@@ -658,7 +641,7 @@ def pollOn() {
             log.debug "$childDevice.displayName last cleaned at " + state.lastClean[childDevice.displayName] + ". $t milliseconds has elapsed since."
 			if (t > (forceCleanDelay * 86400000)) {
             	log.debug "Force clean activated as $t milliseconds has elapsed"
-				sendPush(childDevice.displayName + " has not cleaned for " + forceCleanDelay + " days. Forcing a clean.")
+				messageHandler(childDevice.displayName + " has not cleaned for " + forceCleanDelay + " days. Forcing a clean.", true)
                 childDevice.on()
         	}
         }
@@ -675,7 +658,7 @@ def pollOn() {
 				log.trace "Smart Home Monitor is set back to away"
 				sendLocationEvent(name: "alarmSystemStatus", value: "away")
 				state.autoSHMchange = "n"
-                sendPush("Smart Home Monitor is set to away as all cleaners are off")
+                messageHandler("Smart Home Monitor is set to away as all cleaners are off", true)
 			}
 		}
 	}
@@ -684,6 +667,18 @@ def pollOn() {
     if (location.currentState("alarmSystemStatus")?.value == "off") {
     	state.autoSHMchange = "n"
     }
+}
+
+def messageHandler(msg, forceFlag) {
+	if (settings.sendSMS != null && !forceFlag) {
+		sendSms(sendSMS, msg) 
+	}
+    if (location.contactBookEnabled && recipients) {
+    	sendNotificationToContacts(msg, recipients)
+    } else if (settings.sendPush == true || forceFlag) {
+		sendPush(msg)
+	}
+    
 }
 
 
