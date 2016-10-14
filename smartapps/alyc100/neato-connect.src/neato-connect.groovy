@@ -14,6 +14,7 @@
  *
  *  VERSION HISTORY
  *	14-10-2016: 1.0 - Initial Version
+ *	14-10-2016: 1.0b - Minor fix to preference list
  */
 definition(
     name: "Neato (Connect)",
@@ -152,7 +153,7 @@ def preferencesPAGE() {
 		}
 		section("Auto Smart Home Monitor..."){
        	 	paragraph "If Smart Home Monitor is set to Arm(Away), auto Set Smart Home Monitor to Arm(Stay) when cleaning and reset when done. If Smart Home Monitor is Disarmed during cleaning, then this will not reactivate SHM."
-			input "autoSHM", "bool", title: "Auto Set Smart Home Monitor?", required: true, multiple: true, defaultValue: false, submitOnChange: true
+			input "autoSHM", "bool", title: "Auto Set Smart Home Monitor?", required: false, defaultValue: false, submitOnChange: true
 			
 		}
     }
