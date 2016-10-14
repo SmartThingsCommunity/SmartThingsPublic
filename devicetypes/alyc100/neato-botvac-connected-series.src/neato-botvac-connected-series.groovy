@@ -197,7 +197,6 @@ def poll() {
             		sendEvent(name: "status", value: "ready")
                 	sendEvent(name: "switch", value: "off")
                 	statusMsg += 'READY TO CLEAN'
-                    log.debug device.latestState('switch').stringValue
 				break;
 				case "2":
 					sendEvent(name: "status", value: "cleaning")
