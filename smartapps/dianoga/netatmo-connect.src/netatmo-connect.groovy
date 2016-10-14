@@ -387,7 +387,7 @@ def getDeviceList() {
 	state.deviceDetail = [:]
 	state.deviceState = [:]
 
-	apiGet("/api/devicelist") { response ->
+	apiGet("/api/getstationsdata") { response ->
 		response.data.body.devices.each { value ->
 			def key = value._id
 			deviceList[key] = "${value.station_name}: ${value.module_name}"
