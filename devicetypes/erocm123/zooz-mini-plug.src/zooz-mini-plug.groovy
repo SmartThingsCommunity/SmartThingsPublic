@@ -25,6 +25,7 @@
 metadata {
 	definition (name: "zooZ Mini Plug", namespace: "erocm123", author: "Eric Maycock") {
 		capability "Energy Meter"
+        capability "Voltage Measurement"
 		capability "Actuator"
 		capability "Switch"
 		capability "Power Meter"
@@ -36,6 +37,7 @@ metadata {
 		command "reset"
         
         attribute   "needUpdate", "string"
+        attribute   "amperage", "number"
 
         fingerprint deviceId: "0x1001", inClusters: "0x5E,0x72,0x86,0x85,0x59,0x5A,0x73,0x70,0x25,0x27,0x71,0x32,0x20"
                                                            
@@ -70,8 +72,11 @@ metadata {
         valueTile("power", "device.power", decoration: "flat", width: 2, height: 2) {
 			state "default", label:'${currentValue} W'
 		}
-		valueTile("energy", "device.energy", decoration: "flat", width: 2, height: 2) {
-			state "default", label:'${currentValue} kWh'
+        valueTile("voltage", "device.voltage", decoration: "flat", width: 2, height: 2) {
+			state "default", label:'${currentValue} V'
+		}
+		valueTile("amperage", "device.amperage", decoration: "flat", width: 2, height: 2) {
+			state "default", label:'${currentValue} A'
 		}
 		standardTile("reset", "device.energy", inactiveLabel: false, decoration: "flat", width: 2, height: 2) {
 			state "default", label:'reset kWh', action:"reset"
@@ -82,7 +87,7 @@ metadata {
         }
 
 		main "switch"
-		details (["switch", "power", "energy", "refresh", "configure", "reset"])
+		details (["switch", "power", "amperage", "voltage", "refresh", "configure"])
 	}
 }
 
@@ -106,19 +111,22 @@ def parse(String description) {
 		result = zwaveEvent(cmd)
 	}
     
-    updateStatus()
-    
 	return result
 }
 
 def zwaveEvent(physicalgraph.zwave.commands.meterv1.MeterReport cmd) {
+    logging("MeterReport $cmd")
+    def event
 	if (cmd.scale == 0) {
-		createEvent(name: "energy", value: cmd.scaledMeterValue, unit: "kWh")
+        if (cmd.scaledMeterValue != 0)
+		event = createEvent(name: "voltage", value: cmd.scaledMeterValue, unit: "V")
 	} else if (cmd.scale == 1) {
-		createEvent(name: "energy", value: cmd.scaledMeterValue, unit: "kVAh")
+		event = createEvent(name: "amperage", value: cmd.scaledMeterValue, unit: "A")
 	} else if (cmd.scale == 2) {
-		createEvent(name: "power", value: Math.round(cmd.scaledMeterValue), unit: "W")
+		event = createEvent(name: "power", value: Math.round(cmd.scaledMeterValue), unit: "W")
 	}
+    runIn(1, "updateStatus")
+    return event
 }
 
 def zwaveEvent(physicalgraph.zwave.commands.basicv1.BasicReport cmd)
@@ -157,10 +165,15 @@ private updateStatus(){
     def result = []
 
     String statusText = ""
+
     if(device.currentValue('power') != null)
         statusText = "${device.currentValue('power')} W - "
-    if(device.currentValue('energy') != null)
-        statusText = statusText + "${device.currentValue('energy')} KWH - "
+    
+    if(device.currentValue('amperage') != null)
+        statusText = statusText + "${device.currentValue('amperage')} A - "
+    
+    if(device.currentValue('voltage') != null)
+        statusText = statusText + "${device.currentValue('voltage')} V - "
         
     if (statusText != ""){
         statusText = statusText.substring(0, statusText.length() - 2)
@@ -420,14 +433,14 @@ Default: 300
   </Value>
   <Value type="byte" byteSize="1" index="3" label="Overload Protection" min="1" max="16" value="13" setting_type="zwave" fw="">
     <Help>
-This parameter defines the percentage value of dimming step during the automatic control.
+Maximum number of Amperes to be accepted by the Mini Plug.
 Range: 1~16
 Default: 13
     </Help>
   </Value>
     <Value type="short" byteSize="1" index="4" label="Overload Notification" min="1" max="13" value="12" setting_type="zwave" fw="">
     <Help>
-This parameter defines the time of single dimming step set in parameter 5 during the automatic control.
+Maximum number of Amperes that will trigger overload LED notification on the Mini Plug.
 Range: 1~13
 Default: 12
     </Help>
@@ -449,7 +462,6 @@ Default: 5
   </Value>
     <Value type="list" byteSize="1" index="7" label="On/Off Status Recovery After Power Failure" min="0" max="1" value="1" setting_type="zwave" fw="">
     <Help>
-Mini Plug automatically turns OFF once power is restored (it does not remember the status prior to power outage)
 Default: Previous State
     </Help>
         <Item label="Off" value="0" />
@@ -463,11 +475,11 @@ Default: Disabled
         <Item label="Disable" value="0" />
         <Item label="Enable" value="1" />
   </Value>
-  <Value type="byte" byteSize="2" index="9" label="Auto Turn-Off Timer Settings" min="0" max="65535" value="150" setting_type="zwave" fw="">
+  <Value type="byte" byteSize="2" index="9" label="Auto Turn-Off Timer Settings" min="1" max="65535" value="150" setting_type="zwave" fw="">
     <Help>
-Number of minutes the Mini Plug will turn off after once the auto turn-off timer is enabled
-Range: 0~65535
-Default: 0
+After turning on the Mini Plug, the device will automatically turn off after this number of minutes (only if "Auto Turn-Off Timer" is enabled).
+Range: 1~65535
+Default: 1
     </Help>
   </Value>
     <Value type="list" byteSize="1" index="10" label="Manual Control" min="0" max="1" value="1" setting_type="zwave" fw="">
