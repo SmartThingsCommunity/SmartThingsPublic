@@ -175,7 +175,7 @@ def poll() {
     	if (result.containsKey("message")) {
         	switch (result.message) {
             	case "Could not find robot_serial for specified vendor_name":
-                	statusMsg += 'Robot serial and/or secret is not correct'
+                	statusMsg += 'Robot serial and/or secret is not correct.\n'
                 break;
             }
         }
