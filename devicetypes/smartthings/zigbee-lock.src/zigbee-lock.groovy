@@ -90,7 +90,7 @@ def configure() {
         zigbee.configureReporting(CLUSTER_POWER, POWER_ATTR_BATTERY_PERCENTAGE_REMAINING,
                                   TYPE_U8, 600, 21600, 0x01)
     log.info "configure() --- cmds: $cmds"
-    return cmds + refresh() // send refresh cmds as part of config
+    return refresh() + cmds // send refresh cmds as part of config
 }
 
 def refresh() {

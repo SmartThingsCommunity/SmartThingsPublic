@@ -78,5 +78,5 @@ def refresh() {
 
 def configure() {
     log.debug "Configuring Reporting and Bindings."
-    zigbee.onOffConfig() + zigbee.onOffRefresh()
+    zigbee.onOffRefresh() + zigbee.onOffConfig()
 }
