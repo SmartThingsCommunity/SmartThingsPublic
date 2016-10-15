@@ -253,8 +253,8 @@ private setDeviceNetworkId(ip, port = null){
 }
 
 private updateDNI() { 
-    if (device.deviceNetworkId != state.dni) {
-        device.deviceNetworkId = state.dni
+    if (state.dni != null && state.dni != "" && device.deviceNetworkId != state.dni) {
+       device.deviceNetworkId = state.dni
     }
 }
 
