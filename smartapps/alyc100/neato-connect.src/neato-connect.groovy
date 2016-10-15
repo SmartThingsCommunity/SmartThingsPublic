@@ -13,8 +13,9 @@
  *  for the specific language governing permissions and limitations under the License.
  *
  *  VERSION HISTORY
- *	14-10-2016: 1.0 - Initial Version
+ *	15-10-2016: 1.0c - Fix to auto SHM mode not triggering
  *	14-10-2016: 1.0b - Minor fix to preference list
+ *	14-10-2016: 1.0 - Initial Version
  */
 definition(
     name: "Neato (Connect)",
@@ -588,7 +589,7 @@ def eventHandler(evt) {
 		if (sendBotvacOn == true) {
 			messageHandler(msg, false)
 		}
-        if (settings.autoSHM.contains('true') ) {
+        if (autoSHM) {
         	if (location.currentState("alarmSystemStatus")?.value == "away") {
 				sendEvent(linkText:app.label, name:"Smart Home Monitor", value:"stay",descriptionText:"Smart Home Monitor was set to stay", eventType:"SOLUTION_EVENT", displayed: true)
 				log.trace "Smart Home Monitor is set to stay"
@@ -653,7 +654,7 @@ def pollOn() {
 	}
     
 	if (!activeCleaners) {
-		if (settings.autoSHM.contains('true') ) {
+		if (autoSHM) {
 			if (location.currentState("alarmSystemStatus")?.value == "stay" && state.autoSHMchange == "y"){
 				sendEvent(linkText:app.label, name:"Smart Home Monitor", value:"away",descriptionText:"Smart Home Monitor was set back to away", eventType:"SOLUTION_EVENT", displayed: true)
 				log.trace "Smart Home Monitor is set back to away"
@@ -692,7 +693,7 @@ def getApiEndpoint()         { return "https://apps.neatorobotics.com" }
 def getSmartThingsClientId() { return appSettings.clientId }
 def beehiveURL(path = '/') 			 { return "https://beehive.neatocloud.com${path}" }
 private def textVersion() {
-    def text = "Neato (Connect)\nVersion: 1.0b\nDate: 14102016(2145)"
+    def text = "Neato (Connect)\nVersion: 1.0c\nDate: 15102016(1330)"
 }
 
 private def textCopyright() {
