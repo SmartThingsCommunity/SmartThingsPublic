@@ -370,9 +370,7 @@ def parse_api_response(resp, message) {
     }
 }
 
-def getServerUrl() { 
-	return "https://graph.api.smartthings.com" 
-}
+def getServerUrl() { return getApiServerUrl() }
 
 def debugEvent(message, displayEvent) {
     def results = [

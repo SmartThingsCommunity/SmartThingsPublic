@@ -21,9 +21,6 @@ metadata {
         attribute "colorName", "string"
 
         command "setAdjustedColor"
-
-        fingerprint profileId: "0104", inClusters: "0000,0003,0004,0005,0006,0008,0300,0B04,FC0F", outClusters: "0019", manufacturer: "OSRAM", model: "Gardenspot RGB"
-		fingerprint profileId: "0104", inClusters: "0000,0003,0004,0005,0006,0008,0300,0B04,FC0F", outClusters: "0019", manufacturer: "OSRAM", model: "LIGHTIFY Gardenspot RGB"
     }
 
     // simulator metadata
@@ -91,7 +88,7 @@ def parse(String description) {
 
         if (descMap.cluster == "0300") {
             if(descMap.attrId == "0000"){  //Hue Attribute
-                def hueValue = Math.round(convertHexToInt(descMap.value) / 255 * 360)
+                def hueValue = Math.round(convertHexToInt(descMap.value) / 255 * 100)
                 log.debug "Hue value returned is $hueValue"
                 sendEvent(name: "hue", value: hueValue, displayed:false)
             }
@@ -203,7 +200,7 @@ def setLevel(value) {
 
 //input Hue Integer values; returns color name for saturation 100%
 private getColorName(hueValue){
-    if(hueValue>360 || hueValue<0)
+    if(hueValue>100 || hueValue<0)
         return
 
     hueValue = Math.round(hueValue / 100 * 360)

@@ -19,11 +19,6 @@ metadata {
         capability "Sensor"
 
         attribute "colorName", "string"
-
-        // indicates that device keeps track of heartbeat (in state.heartbeat)
-        attribute "heartbeat", "string"
-        
-
     }
 
     // simulator metadata
@@ -74,9 +69,6 @@ metadata {
 // Parse incoming device messages to generate events
 def parse(String description) {
     //log.trace description
-
-    // save heartbeat (i.e. last time we got a message from device)
-    state.heartbeat = Calendar.getInstance().getTimeInMillis()
 
     if (description?.startsWith("catchall:")) {
         if(description?.endsWith("0100") ||description?.endsWith("1001") || description?.matches("on/off\\s*:\\s*1"))
@@ -132,7 +124,6 @@ def off() {
 }
 
 def refresh() {
-    sendEvent(name: "heartbeat", value: "alive", displayed:false)
     [
             "st rattr 0x${device.deviceNetworkId} ${endpointId} 6 0", "delay 500",
             "st rattr 0x${device.deviceNetworkId} ${endpointId} 8 0", "delay 500",

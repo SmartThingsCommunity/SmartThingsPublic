@@ -39,6 +39,7 @@ preferences {
 	page(name: "completionPage")
 	page(name: "numbersPage")
 	page(name: "controllerExplanationPage")
+	page(name: "unsupportedDevicesPage")
 }
 
 def rootPage() {
@@ -47,6 +48,9 @@ def rootPage() {
 		section("What to dim") {
 			input(name: "dimmers", type: "capability.switchLevel", title: "Dimmers", description: null, multiple: true, required: true, submitOnChange: true)
 			if (dimmers) {
+				if (dimmersContainUnsupportedDevices()) {
+					href(name: "toUnsupportedDevicesPage", page: "unsupportedDevicesPage", title: "Some of your selected dimmers don't seem to be supported", description: "Tap here to fix it", required: true)
+				}
 				href(name: "toNumbersPage", page: "numbersPage", title: "Duration & Direction", description: numbersPageHrefDescription(), state: "complete")
 			}
 		}
@@ -66,6 +70,31 @@ def rootPage() {
 			section {
 				// TODO: fancy label
 				label(title: "Label This SmartApp", required: false, defaultValue: "", description: "Highly recommended", submitOnChange: true)
+			}
+		}
+	}
+}
+
+def unsupportedDevicesPage() {
+
+	def unsupportedDimmers = dimmers.findAll { !hasSetLevelCommand(it) }
+
+	dynamicPage(name: "unsupportedDevicesPage") {
+		if (unsupportedDimmers) {
+			section("These devices do not support the setLevel command") {
+				unsupportedDimmers.each {
+					paragraph deviceLabel(it)
+				}
+			}
+			section {
+				input(name: "dimmers", type: "capability.sensor", title: "Please remove the above devices from this list.", submitOnChange: true, multiple: true)
+			}
+			section {
+				paragraph "If you think there is a mistake here, please contact support."
+			}
+		} else {
+			section {
+				paragraph "You're all set. You can hit the back button, now. Thanks for cleaning up your settings :)"
 			}
 		}
 	}
@@ -208,7 +237,7 @@ def completionPage() {
 		}
 
 		section("Notifications") {
-			input("recipients", "contact", title: "Send notifications to") {
+			input("recipients", "contact", title: "Send notifications to", required: false) {
 				input(name: "completionPhoneNumber", type: "phone", title: "Text This Number", description: "Phone number", required: false)
 				input(name: "completionPush", type: "bool", title: "Send A Push Notification", description: "Phone number", required: false)
 			}
@@ -425,17 +454,23 @@ def sendStopEvent(source) {
 		eventData.value += "cancelled"
 	}
 
+	// send 100% completion event
+	sendTimeRemainingEvent(100)
+
+	// send a non-displayed 0% completion to reset tiles
+	sendTimeRemainingEvent(0, false)
+
+	// send sessionStatus event last so the event feed is ordered properly
 	sendControllerEvent(eventData)
-	sendTimeRemainingEvent(0)
 }
 
-def sendTimeRemainingEvent(percentComplete) {
+def sendTimeRemainingEvent(percentComplete, displayed = true) {
 	log.trace "sendTimeRemainingEvent(${percentComplete})"
 
 	def percentCompleteEventData = [
 			name: "percentComplete",
 			value: percentComplete as int,
-			displayed: true,
+			displayed: displayed,
 			isStateChange: true
 	]
 	sendControllerEvent(percentCompleteEventData)
@@ -445,7 +480,7 @@ def sendTimeRemainingEvent(percentComplete) {
 	def timeRemainingEventData = [
 			name: "timeRemaining",
 			value: displayableTime(timeRemaining),
-			displayed: true,
+			displayed: displayed,
 			isStateChange: true
 	]
 	sendControllerEvent(timeRemainingEventData)
@@ -528,14 +563,16 @@ def updateDimmers(percentComplete) {
 		} else {
 
 			def shouldChangeColors = (colorize && colorize != "false")
-			def canChangeColors = hasSetColorCommand(dimmer)
 
-			log.debug "Setting ${deviceLabel(dimmer)} to ${nextLevel}"
-
-			if (shouldChangeColors && canChangeColors) {
-				dimmer.setColor([hue: getHue(dimmer, nextLevel), saturation: 100, level: nextLevel])
-			} else {
+			if (shouldChangeColors && hasSetColorCommand(dimmer)) {
+				def hue = getHue(dimmer, nextLevel)
+				log.debug "Setting ${deviceLabel(dimmer)} level to ${nextLevel} and hue to ${hue}"
+				dimmer.setColor([hue: hue, saturation: 100, level: nextLevel])
+			} else if (hasSetLevelCommand(dimmer)) {
+				log.debug "Setting ${deviceLabel(dimmer)} level to ${nextLevel}"
 				dimmer.setLevel(nextLevel)
+			} else {
+				log.warn "${deviceLabel(dimmer)} does not have setColor or setLevel commands."
 			}
 
 		}
@@ -577,8 +614,6 @@ private completion() {
 	handleCompletionMessaging()
 
 	handleCompletionModesAndPhrases()
-
-	sendTimeRemainingEvent(100)
 }
 
 private handleCompletionSwitches() {
@@ -689,7 +724,7 @@ def completionPercentage() {
 
 	def now = new Date().getTime()
 	def timeElapsed = now - atomicState.start
-	def totalRunTime = totalRunTimeMillis()
+	def totalRunTime = totalRunTimeMillis() ?: 1
 	def percentComplete = timeElapsed / totalRunTime * 100
 	log.debug "percentComplete: ${percentComplete}"
 
@@ -730,7 +765,7 @@ String displayableTime(timeRemaining) {
 		return "${minutes}:00"
 	}
 	def fraction = "0.${parts[1]}" as double
-	def seconds = "${60 * fraction as int}".padRight(2, "0")
+	def seconds = "${60 * fraction as int}".padLeft(2, "0")
 	return "${minutes}:${seconds}"
 }
 
@@ -817,24 +852,21 @@ private getRedHue(level) {
 	if (level >= 96) return 17
 }
 
+private dimmersContainUnsupportedDevices() {
+	def found = dimmers.find { hasSetLevelCommand(it) == false }
+	return found != null
+}
+
 private hasSetLevelCommand(device) {
-	def isDimmer = false
-	device.supportedCommands.each {
-		if (it.name.contains("setLevel")) {
-			isDimmer = true
-		}
-	}
-	return isDimmer
+	return hasCommand(device, "setLevel")
 }
 
 private hasSetColorCommand(device) {
-	def hasColor = false
-	device.supportedCommands.each {
-		if (it.name.contains("setColor")) {
-			hasColor = true
-		}
-	}
-	return hasColor
+	return hasCommand(device, "setColor")
+}
+
+private hasCommand(device, String command) {
+	return (device.supportedCommands.find { it.name == command } != null)
 }
 
 private dimmersWithSetColorCommand() {

@@ -15,6 +15,7 @@
  */
 
 //DEPRECATED - Using the smartsense-motion-sensor.groovy DTH for this device. Users need to be moved before deleting this DTH
+import physicalgraph.zigbee.clusters.iaszone.ZoneStatus
 
 metadata {
 	definition (name: "SmartSense Motion/Temp Sensor", namespace: "smartthings", author: "SmartThings") {
@@ -24,7 +25,7 @@ metadata {
         capability "Temperature Measurement"
 		capability "Refresh"
 		capability "Sensor"
-        
+
         command "enrollResponse"
 
 	}
@@ -73,7 +74,7 @@ metadata {
 
 def parse(String description) {
 	log.debug "description: $description"
-    
+
 	Map map = [:]
 	if (description?.startsWith('catchall:')) {
 		map = parseCatchAllMessage(description)
@@ -87,10 +88,10 @@ def parse(String description) {
     else if (description?.startsWith('zone status')) {
 	    map = parseIasMessage(description)
     }
- 
+
 	log.debug "Parse returned $map"
 	def result = map ? createEvent(map) : null
-    
+
     if (description?.startsWith('enroll request')) {
     	List cmds = enrollResponse()
         log.debug "enroll response: ${cmds}"
@@ -128,7 +129,7 @@ private Map parseCatchAllMessage(String description) {
 private boolean shouldProcessMessage(cluster) {
     // 0x0B is default response indicating message got through
     // 0x07 is bind message
-    boolean ignoredMessage = cluster.profileId != 0x0104 || 
+    boolean ignoredMessage = cluster.profileId != 0x0104 ||
         cluster.command == 0x0B ||
         cluster.command == 0x07 ||
         (cluster.data.size() > 0 && cluster.data.first() == 0x3e)
@@ -141,7 +142,7 @@ private Map parseReportAttributeMessage(String description) {
 		map += [(nameAndValue[0].trim()):nameAndValue[1].trim()]
 	}
 	log.debug "Desc Map: $descMap"
- 
+
 	Map resultMap = [:]
 	if (descMap.cluster == "0402" && descMap.attrId == "0000") {
 		def value = getTemperature(descMap.value)
@@ -153,11 +154,11 @@ private Map parseReportAttributeMessage(String description) {
     else if (descMap.cluster == "0406" && descMap.attrId == "0000") {
     	def value = descMap.value.endsWith("01") ? "active" : "inactive"
     	resultMap = getMotionResult(value)
-    } 
- 
+    }
+
 	return resultMap
 }
- 
+
 private Map parseCustomMessage(String description) {
 	Map resultMap = [:]
 	if (description?.startsWith('temperature: ')) {
@@ -168,44 +169,8 @@ private Map parseCustomMessage(String description) {
 }
 
 private Map parseIasMessage(String description) {
-    List parsedMsg = description.split(' ')
-    String msgCode = parsedMsg[2]
-    
-    Map resultMap = [:]
-    switch(msgCode) {
-        case '0x0020': // Closed/No Motion/Dry
-        	resultMap = getMotionResult('inactive')
-            break
-
-        case '0x0021': // Open/Motion/Wet
-        	resultMap = getMotionResult('active')
-            break
-
-        case '0x0022': // Tamper Alarm
-        	log.debug 'motion with tamper alarm'
-        	resultMap = getMotionResult('active')
-            break
-
-        case '0x0023': // Battery Alarm
-            break
-
-        case '0x0024': // Supervision Report
-        	log.debug 'no motion with tamper alarm'
-        	resultMap = getMotionResult('inactive')
-            break
-
-        case '0x0025': // Restore Report
-            break
-
-        case '0x0026': // Trouble/Failure
-        	log.debug 'motion with failure alarm'
-        	resultMap = getMotionResult('active')
-            break
-
-        case '0x0028': // Test Mode
-            break
-    }
-    return resultMap
+	ZoneStatus zs = zigbee.parseZoneStatus(description)
+	return (zs.isAlarm1Set() || zs.isAlarm2Set()) ? getMotionResult('active') : getMotionResult('inactive')
 }
 
 def getTemperature(value) {
@@ -240,7 +205,10 @@ private Map getBatteryResult(rawValue) {
 			def minVolts = 2.1
 			def maxVolts = 3.0
 			def pct = (volts - minVolts) / (maxVolts - minVolts)
-			result.value = Math.min(100, (int) pct * 100)
+			def roundedPct = Math.round(pct * 100)
+			if (roundedPct <= 0)
+				roundedPct = 1
+			result.value = Math.min(100, roundedPct)
 			result.descriptionText = "${linkText} battery was ${result.value}%"
 		}
 	}
@@ -260,7 +228,8 @@ private Map getTemperatureResult(value) {
 	return [
 		name: 'temperature',
 		value: value,
-		descriptionText: descriptionText
+		descriptionText: descriptionText,
+		unit: temperatureScale
 	]
 }
 
@@ -286,13 +255,9 @@ def refresh() {
 }
 
 def configure() {
-	String zigbeeEui = swapEndianHex(device.hub.zigbeeEui)
 	log.debug "Configuring Reporting, IAS CIE, and Bindings."
 
 	def configCmds = [
-		"zcl global write 0x500 0x10 0xf0 {${zigbeeEui}}", "delay 200",
-		"send 0x${device.deviceNetworkId} 1 ${endpointId}", "delay 500",
-
 		"zdo bind 0x${device.deviceNetworkId} ${endpointId} 1 1 {${device.zigbeeId}} {}", "delay 200",
 		"zcl global send-me-a-report 1 0x20 0x20 30 21600 {01}",		//checkin time 6 hrs
 		"send 0x${device.deviceNetworkId} 1 ${endpointId}", "delay 500",
@@ -301,7 +266,7 @@ def configure() {
 		"zcl global send-me-a-report 0x402 0 0x29 30 3600 {6400}",
 		"send 0x${device.deviceNetworkId} 1 ${endpointId}", "delay 500"
 	]
-    return configCmds + refresh() // send refresh cmds as part of config
+    return refresh() + configCmds  // send refresh cmds as part of config
 }
 
 def enrollResponse() {

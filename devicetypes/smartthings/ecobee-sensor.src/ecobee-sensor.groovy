@@ -20,7 +20,6 @@ metadata {
 		capability "Temperature Measurement"
 		capability "Motion Sensor"
 		capability "Refresh"
-		capability "Polling"
 	}
 
 	tiles {
@@ -68,6 +67,6 @@ def refresh() {
 
 void poll() {
 	log.debug "Executing 'poll' using parent SmartApp"
-	parent.pollChild(this)
+	parent.pollChild()
 
 }

@@ -50,9 +50,9 @@ def authPage() {
 		}
 		def description = "Tap to enter LIFX credentials"
 		def redirectUrl = "${serverUrl}/oauth/initialize?appId=${app.id}&access_token=${state.accessToken}&apiServerUrl=${apiServerUrl}" // this triggers oauthInit() below
-//        def redirectUrl = "${apiServerUrl}"
-        log.debug "app id: ${app.id}"
-		log.debug "redirect url: ${redirectUrl}"
+		// def redirectUrl = "${apiServerUrl}"
+		// log.debug "app id: ${app.id}"
+		// log.debug "redirect url: ${redirectUrl}"s
 		return dynamicPage(name: "Credentials", title: "Connect to LIFX", nextPage: null, uninstall: true, install:true) {
 			section {
 				href(url:redirectUrl, required:true, title:"Connect to LIFX", description:"Tap here to connect your LIFX account")
@@ -372,7 +372,7 @@ def updateDevices() {
 		def childDevice = getChildDevice(device.id)
 		selectors.add("${device.id}")
 		if (!childDevice) {
-			log.info("Adding device ${device.id}: ${device.product}")
+			// log.info("Adding device ${device.id}: ${device.product}")
 			def data = [
 					label: device.label,
 					level: Math.round((device.brightness ?: 1) * 100),
