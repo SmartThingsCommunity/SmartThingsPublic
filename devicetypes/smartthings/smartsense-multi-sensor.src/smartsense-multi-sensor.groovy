@@ -420,15 +420,14 @@ def configure() {
 
 	// temperature minReportTime 30 seconds, maxReportTime 5 min. Reporting interval if no activity
 	// battery minReport 30 seconds, maxReportTime 6 hrs by default
-	def configCmds = enrollResponse() +
-			zigbee.batteryConfig() +
+	def configCmds = zigbee.batteryConfig() +
 			zigbee.temperatureConfig(30, 300) +
 			zigbee.configureReporting(0xFC02, 0x0010, 0x18, 10, 3600, 0x01, [mfgCode: manufacturerCode]) +
 			zigbee.configureReporting(0xFC02, 0x0012, 0x29, 1, 3600, 0x0001, [mfgCode: manufacturerCode]) +
 			zigbee.configureReporting(0xFC02, 0x0013, 0x29, 1, 3600, 0x0001, [mfgCode: manufacturerCode]) +
 			zigbee.configureReporting(0xFC02, 0x0014, 0x29, 1, 3600, 0x0001, [mfgCode: manufacturerCode])
 
-	return configCmds + refresh()
+	return refresh() + configCmds
 }
 
 private getEndpointId() {

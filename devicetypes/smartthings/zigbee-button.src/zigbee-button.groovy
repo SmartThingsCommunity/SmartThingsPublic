@@ -89,14 +89,8 @@ def parse(String description) {
 }
 
 private Map parseIasButtonMessage(String description) {
-    int zoneInt = Integer.parseInt((description - "zone status 0x"), 16)
-    if (zoneInt & 0x02) {
-        resultMap = getButtonResult('press')
-    } else {
-        resultMap = getButtonResult('release')
-    }
-
-    return resultMap
+    def zs = zigbee.parseZoneStatus(description)
+    return zs.isAlarm2Set() ? getButtonResult("press") : getButtonResult("release")
 }
 
 private Map getBatteryResult(rawValue) {
