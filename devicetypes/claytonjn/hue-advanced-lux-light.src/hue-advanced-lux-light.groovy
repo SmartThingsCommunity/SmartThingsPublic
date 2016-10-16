@@ -1,5 +1,5 @@
 /**
- *  Hue Advanced Lux Bulb
+ *  Hue Advanced Lux Light
  *
  *  Philips Hue Type "Dimmable Light"
  *
@@ -8,12 +8,13 @@
 // for the UI
 metadata {
 	// Automatically generated. Make future change here.
-	definition (name: "Hue Advanced Lux Bulb", namespace: "claytonjn", author: "claytonjn") {
+	definition (name: "Hue Advanced Lux Light", namespace: "claytonjn", author: "claytonjn") {
 		capability "Switch Level"
 		capability "Actuator"
 		capability "Switch"
 		capability "Refresh"
 		capability "Sensor"
+		capability "Health Check"
 
         command "reset"
 		command "refresh"
@@ -71,6 +72,10 @@ metadata {
     }
 }
 
+void installed() {
+	sendEvent(name: "checkInterval", value: 60 * 12, data: [protocol: "lan", hubHardwareId: device.hub.hardwareID], displayed: false)
+}
+
 // parse events into attributes
 def parse(description) {
 	log.debug "parse() - $description"
@@ -78,7 +83,7 @@ def parse(description) {
 
 	def map = description
 	if (description instanceof String)  {
-		log.debug "Hue Advanced Lux Bulb stringToMap - ${map}"
+		log.debug "Hue Advanced Lux Light stringToMap - ${map}"
 		map = stringToMap(description)
 	}
 
@@ -98,14 +103,12 @@ void on(transitionTime = device.currentValue("transitionTime")) {
 	if(transitionTime == null) { transitionTime = device.currentValue("transitionTime") ?: parent.getSelectedTransition() ?: 1 }
 
 	log.trace parent.on(this, transitionTime, deviceType)
-	sendEvent(name: "switch", value: "on")
 }
 
 void off(transitionTime = device.currentValue("transitionTime")) {
 	if(transitionTime == null) { transitionTime = device.currentValue("transitionTime") ?: parent.getSelectedTransition() ?: 1 }
 
 	log.trace parent.off(this, transitionTime, deviceType)
-	sendEvent(name: "switch", value: "off")
 }
 
 void setLevel(percent, transitionTime = device.currentValue("transitionTime")) {
@@ -117,8 +120,6 @@ void setLevel(percent, transitionTime = device.currentValue("transitionTime")) {
 			off()
 		} else {
 			parent.setLevel(this, percent, transitionTime, deviceType)
-			sendEvent(name: "level", value: percent)
-			sendEvent(name: "switch", value: "on")
 		}
 	} else {
     	log.warn "$percent is not 0-100"
@@ -136,6 +137,10 @@ void reset(transitionTime = device.currentValue("transitionTime")) {
 void refresh() {
 	log.debug "Executing 'refresh'"
 	parent.manualRefresh()
+}
+
+def ping() {
+    log.debug "${parent.ping(this)}"
 }
 
 void alert(alert) {
@@ -156,8 +161,8 @@ def getDeviceType() { return "lights" }
 
 void setHADeviceHandler(circadianDaylightIntegration) {
 	if (circadianDaylightIntegration == true) {
-		setDeviceType("Hue Advanced -CD- Lux Bulb")
+		setDeviceType("Hue Advanced -CD- Lux Light")
 	} else {
-		setDeviceType("Hue Advanced Lux Bulb")
+		setDeviceType("Hue Advanced Lux Light")
 	}
 }

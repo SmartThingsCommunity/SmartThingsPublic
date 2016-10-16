@@ -1,5 +1,5 @@
 /**
- *  Hue Advanced White Ambiance Bulb
+ *  Hue Advanced -CD- White Ambiance Light
  *
  *  Philips Hue Type "Color Temperature Light"
  *
@@ -9,12 +9,13 @@
 // for the UI
 metadata {
     // Automatically generated. Make future change here.
-    definition (name: "Hue Advanced White Ambiance Bulb", namespace: "claytonjn", author: "claytonjn") {
+    definition (name: "Hue Advanced -CD- White Ambiance Light", namespace: "claytonjn", author: "claytonjn") {
         capability "Switch Level"
         capability "Actuator"
         capability "Color Temperature"
         capability "Switch"
         capability "Refresh"
+        capability "Health Check"
 
         command "reset"
         command "refresh"
@@ -24,10 +25,19 @@ metadata {
         command "colorloopOff"
         command "bri_inc"
         command "ct_inc"
+        command "enableCDBrightness"
+        command "disableCDBrightness"
+		command "enableCDColor"
+		command "disableCDColor"
+		command "tileSetLevel"
+		command "tileReset"
+		command "tileSetColorTemperature"
 
         attribute "transitionTime", "NUMBER"
         attribute "effect", "enum", ["none", "colorloop"]
         attribute "reachable", "enum", ["true", "false"]
+        attribute "cdBrightness", "enum", ["true", "false"]
+		attribute "cdColor", "enum", ["true", "false"]
     }
 
     simulator {
@@ -43,19 +53,19 @@ metadata {
                 attributeState "turningOff", label:'${name}', action:"switch.on", icon:"st.lights.philips.hue-single", backgroundColor:"#ffffff", nextState:"turningOn"
             }
             tileAttribute ("device.level", key: "SLIDER_CONTROL") {
-                attributeState "level", action:"switch level.setLevel", range:"(0..100)"
+                attributeState "level", action:"switch level.tileSetLevel", range:"(0..100)"
             }
         }
 
         controlTile("colorTempSliderControl", "device.colorTemperature", "slider", width: 4, height: 1, inactiveLabel: false, range:"(2000..6500)") {
-            state "colorTemperature", action:"color temperature.setColorTemperature"
+            state "colorTemperature", action:"tileSetColorTemperature"
         }
         valueTile("colorTemp", "device.colorTemperature", inactiveLabel: false, decoration: "flat", width: 2, height: 1) {
             state "colorTemperature", label: 'Temperature: ${currentValue} K'
         }
 
         standardTile("reset", "device.reset", height: 2, width: 2, inactiveLabel: false, decoration: "flat") {
-			state "default", label:"Reset", action:"reset", icon:"st.lights.philips.hue-single"
+			state "default", label:"Reset", action:"tileReset", icon:"st.lights.philips.hue-single"
 		}
 
         standardTile("refresh", "device.refresh", height: 2, width: 2, inactiveLabel: false, decoration: "flat") {
@@ -80,9 +90,25 @@ metadata {
 			state "false", label: 'Not Reachable!'
 		}
 
+        valueTile("cdBrightnessControl", "device.cdBrightness", inactiveLabel: false, decoration: "flat", width: 3, height: 1) {
+			state "true", label: "Circadian Brightness On", action: "disableCDBrightness", nextState: "updating"
+			state "false", label: "Circadian Brightness Off", action: "enableCDBrightness", nextState: "updating"
+			state "updating", label: "Working"
+		}
+
+		valueTile("cdColorControl", "device.cdColor", inactiveLabel: false, decoration: "flat", width: 3, height: 1) {
+			state "true", label: "Circadian Color On", action: "disableCDColor", nextState: "updating"
+			state "false", label: "Circadian Color Off", action: "enableCDColor", nextState: "updating"
+			state "updating", label: "Working"
+		}
+
         main(["rich-control"])
-        details(["rich-control", "colorTempSliderControl", "colorTemp", "transitionTimeSliderControl", "transTime", "effectControl", "reachable", "reset", "refresh"])
+        details(["rich-control", "colorTempSliderControl", "colorTemp", "transitionTimeSliderControl", "transTime", "cdBrightnessControl", "cdColorControl", "effectControl", "reachable", "reset", "refresh"])
     }
+}
+
+void installed() {
+	sendEvent(name: "checkInterval", value: 60 * 12, data: [protocol: "lan", hubHardwareId: device.hub.hardwareID], displayed: false)
 }
 
 // parse events into attributes
@@ -92,7 +118,7 @@ def parse(description) {
 
     def map = description
     if (description instanceof String)  {
-        log.debug "Hue Advanced White Ambience Bulb stringToMap - ${map}"
+        log.debug "Hue Advanced -CD- White Ambience Light stringToMap - ${map}"
         map = stringToMap(description)
     }
 
@@ -113,7 +139,6 @@ void on(transitionTime = device.currentValue("transitionTime")) {
 
     colorloopOff()
     log.trace parent.on(this, transitionTime, deviceType)
-    sendEvent(name: "switch", value: "on")
 }
 
 void off(transitionTime = device.currentValue("transitionTime")) {
@@ -121,10 +146,13 @@ void off(transitionTime = device.currentValue("transitionTime")) {
 
     colorloopOff()
     log.trace parent.off(this, transitionTime, deviceType)
-    sendEvent(name: "switch", value: "off")
 }
 
-void setLevel(percent, transitionTime = device.currentValue("transitionTime")) {
+void tileSetLevel(percent) {
+	setLevel(percent, null, true)
+}
+
+void setLevel(percent, transitionTime = device.currentValue("transitionTime"), disableCDB = false) {
     if(transitionTime == null) { transitionTime = device.currentValue("transitionTime") ?: parent.getSelectedTransition() ?: 1 }
 
     log.debug "Executing 'setLevel'"
@@ -132,40 +160,50 @@ void setLevel(percent, transitionTime = device.currentValue("transitionTime")) {
         if (percent == 0) {
 			off()
 		} else {
-	        parent.setLevel(this, percent, transitionTime, deviceType)
-	        sendEvent(name: "level", value: percent, descriptionText: "Level has changed to ${percent}%")
-			sendEvent(name: "switch", value: "on")
+	        log.trace parent.setLevel(this, percent, transitionTime, deviceType)
+            if(disableCDB == true) { disableCDBrightness() }
 		}
     }
 }
 
-void setColorTemperature(value, transitionTime = device.currentValue("transitionTime")) {
-    if(transitionTime == null) { transitionTime = device.currentValue("transitionTime") ?: parent.getSelectedTransition() ?: 1 }
+private tileSetColorTemperature(value) {
+	setColorTemperature(value, null, true)
+}
+
+void setColorTemperature(value, transitionTime = device.currentValue("transitionTime"), disableCDC = false) {
+	if(transitionTime == null) { transitionTime = device.currentValue("transitionTime") ?: parent.getSelectedTransition() ?: 1 }
 
     colorloopOff()
     if (value >= 0) {
         log.trace "setColorTemperature: ${value}k"
-        parent.setColorTemperature(this, value, transitionTime, deviceType)
-        sendEvent(name: "colorTemperature", value: Math.round(value) as Integer)
-        sendEvent(name: "switch", value: "on")
+        log.trace parent.setColorTemperature(this, value, transitionTime, deviceType)
+        if(disableCDC == true) { disableCDColor() }
     } else {
         log.warn "Invalid color temperature"
     }
 }
 
-void reset(transitionTime = device.currentValue("transitionTime")) {
-    if(transitionTime == null) { transitionTime = device.currentValue("transitionTime") ?: parent.getSelectedTransition() ?: 1 }
+private tileReset() {
+	reset(null, true, true)
+}
 
-	log.debug "Executing 'reset'"
-    colorloopOff()
-    setLevel(100, transitionTime)
-    setColorTemperature(2710, transitionTime)
+void reset(transitionTime = device.currentValue("transitionTime"), disableCDB = false, disableCDC = false) {
+	if(transitionTime == null) { transitionTime = device.currentValue("transitionTime") ?: parent.getSelectedTransition() ?: 1 }
+
+    log.debug "Executing 'reset'"
+	colorloopOff()
+	setLevel(100, transitionTime, disableCDB)
+    setColorTemperature(2710, transitionTime, disableCDC)
     parent.poll()
 }
 
 void refresh() {
     log.debug "Executing 'refresh'"
     parent.manualRefresh()
+}
+
+def ping() {
+    log.debug "${parent.ping(this)}"
 }
 
 void alert(alert) {
@@ -177,13 +215,11 @@ void colorloopOn() {
 	log.debug "Executing 'colorloopOn'"
 	if(device.latestValue("switch") != "on") { on() }
 	parent.setEffect(this, "colorloop", deviceType)
-	sendEvent(name: "effect", value: "colorloop", descriptionText: "Colorloop has been turned on")
 }
 
 void colorloopOff() {
 	log.debug "Executing 'colorloopOff'"
 	parent.setEffect(this, "none", deviceType)
-	sendEvent(name: "effect", value: "none", descriptionText: "Colorloop has been turned off")
 }
 
 void bri_inc(value) {
@@ -209,14 +245,36 @@ def verifyPercent(percent) {
 
 void initialize(deviceType) {
     setTransitionTime(parent.getSelectedTransition())
+    sendEvent(name: "cdBrightness", value: "true", displayed: false)
+	sendEvent(name: "cdColor", value: "true", displayed: false)
 }
 
 def getDeviceType() { return "lights" }
 
 void setHADeviceHandler(circadianDaylightIntegration) {
 	if (circadianDaylightIntegration == true) {
-		setDeviceType("Hue Advanced -CD- White Ambiance Bulb")
+		setDeviceType("Hue Advanced -CD- White Ambiance Light")
 	} else {
-		setDeviceType("Hue Advanced White Ambiance Bulb")
+		setDeviceType("Hue Advanced White Ambiance Light")
 	}
+}
+
+void enableCDBrightness() {
+	log.debug "Executing 'enableCDBrightness'"
+	sendEvent(name: "cdBrightness", value: "true", descriptionText: "Circadian Brightness has been enabled")
+}
+
+void disableCDBrightness() {
+	log.debug "Executing 'disableCDBrightness'"
+	sendEvent(name: "cdBrightness", value: "false", descriptionText: "Circadian Brightness has been disabled")
+}
+
+void enableCDColor() {
+	log.debug "Executing 'enableCDColor'"
+	sendEvent(name: "cdColor", value: "true", descriptionText: "Circadian Color has been enabled")
+}
+
+void disableCDColor() {
+	log.debug "Executing 'disableCDColor'"
+	sendEvent(name: "cdColor", value: "false", descriptionText: "Circadian Color has been disabled")
 }
