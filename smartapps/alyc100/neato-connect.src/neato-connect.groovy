@@ -13,6 +13,7 @@
  *  for the specific language governing permissions and limitations under the License.
  *
  *  VERSION HISTORY
+ *	17-10-2016: 1.1b - Set last clean value to new devices for smart schedule.
  *	17-10-2016: 1.1 - SmartSchedule functionality and minor fixes 
  *	15-10-2016: 1.0c - Fix to auto SHM mode not triggering
  *	14-10-2016: 1.0b - Minor fix to preference list
@@ -421,7 +422,9 @@ def initialize() {
     
     //subscribe to events for notifications if activated
     if (smartScheduleEnabled || preferencesSelected() == "complete" || notificationsSelected() == "complete") {
-    	subscribe(childDevice, "status.cleaning", eventHandler, [filterEvents: false])
+    	getChildDevices().each { childDevice -> 			
+    		subscribe(childDevice, "status.cleaning", eventHandler, [filterEvents: false])          
+        }
     }
     
   	if (preferencesSelected() == "complete" || notificationsSelected() == "complete") {
@@ -434,6 +437,12 @@ def initialize() {
   	}
     //subscribe to events for smartSchedule
     if (smartScheduleEnabled) {
+    	getChildDevices().each { childDevice -> 
+        	//Initialize flags for Smart Schedule
+            if (state.smartSchedule[childDevice.deviceNetworkId] == null) state.smartSchedule[childDevice.deviceNetworkId] = false
+        	if (state.lastClean[childDevice.deviceNetworkId] == null) state.lastClean[childDevice.deviceNetworkId] = now()
+        }
+        
         subscribe(location, "mode", smartScheduleHandler, [filterEvents: false])
         if (starting && ending) {
         	schedule(starting, smartScheduleHandler)
@@ -443,6 +452,7 @@ def initialize() {
         }
         subscribe(ssOverrideSwitch, "switch.on", smartScheduleHandler, [filterEvents: false])
     }
+    
 }
 
 def uninstalled() {
@@ -505,9 +515,6 @@ def addBotvacs() {
 		} else {
 			log.debug "found ${state.botvacDevices[device]} with id ${device} already exists"
 		}
-        
-        //Set SmartSchedule flag to false by default
-    	if (state.smartSchedule[childDevice.deviceNetworkId] == null) state.smartSchedule[childDevice.deviceNetworkId] = false		
 	}
 }
 
@@ -898,7 +905,7 @@ def getApiEndpoint()         { return "https://apps.neatorobotics.com" }
 def getSmartThingsClientId() { return appSettings.clientId }
 def beehiveURL(path = '/') 			 { return "https://beehive.neatocloud.com${path}" }
 private def textVersion() {
-    def text = "Neato (Connect)\nVersion: 1.1\nDate: 17102016(1900)"
+    def text = "Neato (Connect)\nVersion: 1.1b\nDate: 17102016(2046)"
 }
 
 private def textCopyright() {
