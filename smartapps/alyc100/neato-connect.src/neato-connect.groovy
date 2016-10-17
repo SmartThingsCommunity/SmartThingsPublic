@@ -13,6 +13,7 @@
  *  for the specific language governing permissions and limitations under the License.
  *
  *  VERSION HISTORY
+ *	17-10-2016: 1.1 - SmartSchedule functionality and minor fixes 
  *	15-10-2016: 1.0c - Fix to auto SHM mode not triggering
  *	14-10-2016: 1.0b - Minor fix to preference list
  *	14-10-2016: 1.0 - Initial Version
@@ -39,6 +40,7 @@ preferences {
     page(name: "selectDevicePAGE")
     page(name: "preferencesPAGE")
     page(name: "notificationsPAGE")
+    page(name: "smartSchedulePAGE")
 }
 
 mappings {
@@ -81,14 +83,17 @@ def authPage() {
         dynamicPage(name: "auth", uninstall: false, install: false) {
         	section { headerSECTION() }
 			section ("Choose your Neato Botvacs:") {
-					href("selectDevicePAGE", title: null, description: devicesSelected() ? "Devices:\n " + getDevicesSelectedString() : "Tap to select your Neato Botvacs", state: devicesSelected())
-        		}
-                section ("Preferences:") {
-					href("preferencesPAGE", title: null, description: preferencesSelected() ? getPreferencesString() : "Tap to configure preferences", state: preferencesSelected())
-        		}
-                section ("Notifications:") {
-					href("notificationsPAGE", title: null, description: notificationsSelected() ? getNotificationsString() : "Tap to configure notifications", state: notificationsSelected())
-        		}
+				href("selectDevicePAGE", title: null, description: devicesSelected() ? "Devices:\n " + getDevicesSelectedString() : "Tap to select your Neato Botvacs", state: devicesSelected())
+        	}
+            section ("SmartSchedule Configuration:") {
+				href("smartSchedulePAGE", title: null, description: smartScheduleSelected() ? getSmartScheduleString() : "Tap to configure SmartSchedule", state: smartScheduleSelected())
+        	}
+            section ("Preferences:") {
+				href("preferencesPAGE", title: null, description: preferencesSelected() ? getPreferencesString() : "Tap to configure preferences", state: preferencesSelected())
+        	}
+            section ("Notifications:") {
+				href("notificationsPAGE", title: null, description: notificationsSelected() ? getNotificationsString() : "Tap to configure notifications", state: notificationsSelected())
+        	}
         	def botvacList = ""
     		selectedBotvacs.each() {
             	def childDevice = getChildDevice("${it}")
@@ -120,17 +125,61 @@ def selectDevicePAGE() {
     }
 }
 
+def smartSchedulePAGE() {
+	return dynamicPage(name: "smartSchedulePAGE", title: "SmartSchedule Configuration", install: false, uninstall: false) { 
+    	section() {
+        	paragraph "Configure a dymanic schedule for your Botvacs so that they can clean whilst you're out of the house."
+        	input "smartScheduleEnabled", "bool", title: "Enable SmartSchedule?", required: false, defaultValue: false, submitOnChange: true
+        }
+            if (smartScheduleEnabled) {
+            	section("Configure your Away Modes and cleaning interval:") {
+        			//SmartSchedule configuration options.
+                	//Configure regular cleaning interval in days
+                	input ("ssCleaningInterval", "number", title: "Set your ideal cleaning interval in days", required: true, defaultValue: 3)
+                	//Define your away modes
+                	input ("ssAwayModes", "mode", title:"Specify your Away Modes:", multiple: true, required: true)
+                }
+                section("SmartSchedule restrictions:") {
+					//Define time of day
+                	paragraph "Set SmartSchedule restrictions so that your Botvacs don't start in the middle of the night."
+                	href "timeIntervalInput", title: "Operate Botvacs only during a certain time", description: getTimeLabel(starting, ending), state: greyedOutTime(starting, ending), refreshAfterSelection:true
+                	//Define allowed days of operation
+                	input ("days", "enum", title: "Operate Botvacs only on certain days of the week", multiple: true, required: false,
+		         		options: ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"])
+                }
+                section("SmartSchedule overrides:") {
+                //Define override switches to restart SmartSchedule countdown
+                paragraph "Routine override switches/buttons will cancel the next scheduled clean and reset the interval countdown when switched on."
+                input ("ssOverrideSwitch", "capability.switch", title:"Set SmartSchedule override switches", multiple: true, required: false)
+                }
+                section("Notifications:") {
+                paragraph "Turn on SmartSchedule notifications. You can configure specific recipients via Notification settings section."
+                input "ssNotification", "bool", title: "Enable SmartSchedule notifications?", required: false, defaultValue: true
+              	}  
+            }
+        }
+    
+}
+
+page(name: "timeIntervalInput", title: "Only during a certain time", refreshAfterSelection:true) {
+	section {
+		input "starting", "time", title: "Starting", required: true
+		input "ending", "time", title: "Ending", required: true
+	}
+}
+
 def notificationsPAGE() {
 	return dynamicPage(name: "notificationsPAGE", title: "Notifications", install: false, uninstall: false) {   
-		section(""){
+		section(){
         	input("recipients", "contact", title: "Send notifications to", required: false) {
-				input "sendPush", "bool", title: "Send as Push?", required: false
+				input "sendPush", "bool", title: "Send notifications via Push?", required: false
             }
-			input "sendSMS", "phone", title: "Send as SMS?", required: false, defaultValue: null
-			input "sendBotvacOn", "bool", title: "Notify when on?", required: false, defaultValue: false
-			input "sendBotvacOff", "bool", title: "Notify when off?", required: false, defaultValue: false
-			input "sendBotvacError", "bool", title: "Notify on error?", required: false, defaultValue: true
-			input "sendBotvacBin", "bool", title: "Notify on full bin?", required: false, defaultValue: true
+			input "sendSMS", "phone", title: "Send notifications via SMS?", required: false, defaultValue: null
+			input "sendBotvacOn", "bool", title: "Notify when Botvacs are on?", required: false, defaultValue: false
+			input "sendBotvacOff", "bool", title: "Notify when Botvacs are off?", required: false, defaultValue: false
+			input "sendBotvacError", "bool", title: "Notify on Botvacs have an error?", required: false, defaultValue: true
+			input "sendBotvacBin", "bool", title: "Notify when Botvacs have a full bin?", required: false, defaultValue: true
+            input "ssNotification", "bool", title: "Enable SmartSchedule notifications?", required: false, defaultValue: true
 		}
     }
 }
@@ -154,7 +203,7 @@ def preferencesPAGE() {
 		}
 		section("Auto Smart Home Monitor..."){
        	 	paragraph "If Smart Home Monitor is set to Arm(Away), auto Set Smart Home Monitor to Arm(Stay) when cleaning and reset when done. If Smart Home Monitor is Disarmed during cleaning, then this will not reactivate SHM."
-			input "autoSHM", "bool", title: "Auto Set Smart Home Monitor?", required: false, defaultValue: false, submitOnChange: true
+			input "autoSHM", "bool", title: "Auto set Smart Home Monitor?", required: false, defaultValue: false, submitOnChange: true
 			
 		}
     }
@@ -358,21 +407,42 @@ def updated() {
 
 def initialize() {
 	// TODO: subscribe to attributes, devices, locations, etc.
-    if (selectedBotvacs)
-		addBotvacs()
+    //Initialise variables
+    if (state.lastClean == null) {
+    	state.lastClean = [:]
+    }
+    if (state.smartSchedule == null) {
+    	state.smartSchedule = [:]
+    }
+    if (selectedBotvacs) addBotvacs()
+        
     unschedule()
     runEvery5Minutes('pollOn') // Asynchronously refresh devices so we don't block
     
     //subscribe to events for notifications if activated
+    if (smartScheduleEnabled || preferencesSelected() == "complete" || notificationsSelected() == "complete") {
+    	subscribe(childDevice, "status.cleaning", eventHandler, [filterEvents: false])
+    }
+    
   	if (preferencesSelected() == "complete" || notificationsSelected() == "complete") {
-  		getChildDevices().each { childDevice ->
-  			subscribe(childDevice, "status.cleaning", eventHandler, [filterEvents: false])
+  		getChildDevices().each { childDevice -> 			
             subscribe(childDevice, "status.ready", eventHandler, [filterEvents: false])
             subscribe(childDevice, "status.error", eventHandler, [filterEvents: false])
             subscribe(childDevice, "status.paused", eventHandler, [filterEvents: false])
             subscribe(childDevice, "bin.full", eventHandler, [filterEvents: false])
   		}
   	}
+    //subscribe to events for smartSchedule
+    if (smartScheduleEnabled) {
+        subscribe(location, "mode", smartScheduleHandler, [filterEvents: false])
+        if (starting && ending) {
+        	schedule(starting, smartScheduleHandler)
+        }
+        else {
+        	schedule("29 0 0 1/1 * ? *", smartScheduleHandler)
+        }
+        subscribe(ssOverrideSwitch, "switch.on", smartScheduleHandler, [filterEvents: false])
+    }
 }
 
 def uninstalled() {
@@ -435,7 +505,9 @@ def addBotvacs() {
 		} else {
 			log.debug "found ${state.botvacDevices[device]} with id ${device} already exists"
 		}
-		
+        
+        //Set SmartSchedule flag to false by default
+    	if (state.smartSchedule[childDevice.deviceNetworkId] == null) state.smartSchedule[childDevice.deviceNetworkId] = false		
 	}
 }
 
@@ -481,6 +553,21 @@ def getDevicesSelectedString() {
     return listString
 }
 
+def smartScheduleSelected() {
+	return smartScheduleEnabled ? "complete" : null
+}
+
+def getSmartScheduleString() {
+	def listString = ""
+    if (smartScheduleEnabled) {
+    	listString += "SmartSchedule set for every ${ssCleaningInterval} days\n• When mode is ${ssAwayModes}\n"
+        if (starting) listString += "• ${getTimeLabel(starting, ending)}\n" 
+        if (days) listString += "• Only on $days.\n"
+        if (ssOverrideSwitch) listString += "• Override schedule if any of ${ssOverrideSwitch} turns on."
+    }
+    return listString
+}
+
 def preferencesSelected() {
 	return (forceClean || autoDock || autoSHM) ? "complete" : null
 }
@@ -501,13 +588,14 @@ def notificationsSelected() {
 
 def getNotificationsString() {
 	def listString = ""
-    if (location.contactBookEnabled && recipients) listString += "• Send via Contact Book\n"
+    if (location.contactBookEnabled && recipients) listString += "• Send notifications to " + recipients + "\n"
     if (sendPush) listString += "• Send Push\n"
   	if (sendSMS != null) listString += "• Send SMS to ${sendSMS}\n"
   	if (sendBotvacOn) listString += "• Botvac On Notification\n"
   	if (sendBotvacOff) listString += "• Botvac Off Notification\n"
   	if (sendBotvacError) listString += "• Botvac Error Notification\n"
   	if (sendBotvacBin) listString += "• Bin Full Notification\n"
+    if (ssNotification) listString += "• SmartSchedule Notifications\n"
     if (listString != "") listString = listString.substring(0, listString.length() - 1)
     return listString
 }
@@ -565,7 +653,7 @@ def eventHandler(evt) {
         }
     }
 	else if (evt.value == "error") {
-    	unschedule()
+    	unschedule(pollOn)
         runEvery5Minutes('pollOn')
 		sendEvent(linkText:app.label, name:"${evt.displayName}", value:"error",descriptionText:"${evt.displayName} has an error", eventType:"SOLUTION_EVENT", displayed: true)
 		log.trace "${evt.displayName} has an error"
@@ -575,14 +663,13 @@ def eventHandler(evt) {
 		}
      }
 	 else if (evt.value == "cleaning") {
-     	unschedule()
+     	unschedule(pollOn)
         //Increase poll interval during cleaning
         schedule("0 0/1 * * * ?", pollOn)
-        if (state.lastClean == null) {
-        	state.lastClean = [:]
-        }
         //Record last cleaning time for device
-        state.lastClean[evt.displayName] = now()
+        state.lastClean[evt.deviceNetworkId] = now()
+        //Remove SmartSchedule flag
+        state.smartSchedule[evt.deviceNetworkId] = false
 		sendEvent(linkText:app.label, name:"${evt.displayName}", value:"on",descriptionText:"${evt.displayName} is on", eventType:"SOLUTION_EVENT", displayed: true)
 		log.trace "${evt.displayName} is on"
 		msg = "${evt.displayName} is on"
@@ -600,7 +687,7 @@ def eventHandler(evt) {
         }
      }
 	 else if (evt.value == "full") {
-     	unschedule()
+     	unschedule(pollOn)
         runEvery5Minutes('pollOn')
 		sendEvent(linkText:app.label, name:"${evt.displayName}", value:"bin full",descriptionText:"${evt.displayName} bin is full", eventType:"SOLUTION_EVENT", displayed: true)
 		log.trace "${evt.displayName} bin is full"
@@ -610,7 +697,7 @@ def eventHandler(evt) {
 		}
 	 }
      else if (evt.value == "ready") {
-     	unschedule()
+     	unschedule(pollOn)
         runEvery5Minutes('pollOn')
 		sendEvent(linkText:app.label, name:"${evt.displayName}", value:"off",descriptionText:"${evt.displayName} is off", eventType:"SOLUTION_EVENT", displayed: true)
 		log.trace "${evt.displayName} is off"
@@ -619,6 +706,51 @@ def eventHandler(evt) {
 			messageHandler(msg, false)
 		}
 	}
+}
+
+def smartScheduleHandler(evt) {
+	if (evt != null) {
+		log.debug "Executing 'smartScheduleHandler' for ${evt.displayName}"
+    } else {
+    	log.debug "Executing 'smartScheduleHandler' for schedule event"
+    }
+    //If switch on for override event
+    if (evt != null && evt.name == "switch") {
+    	//For each vacuum
+    	getChildDevices().each { childDevice ->
+        	//Reset last clean date to current time
+            state.lastClean[childDevice.deviceNetworkId] = now()
+            
+            //DEBUG PURPOSES ONLY. FAKE TIME ON OVERRIDE SWITCH AND INCREASE POLL
+            //state.lastClean[childDevice.deviceNetworkId] = Date.parseToStringDate("Thu Oct 13 01:23:45 UTC 2016").getTime()
+            //unschedule(pollOn)
+        	//schedule("0 0/1 * * * ?", pollOn)
+            //log.debug "Fake data loaded.... " + (now() - state.lastClean[childDevice.deviceNetworkId])/86400000
+            
+            //Remove existing SmartSchedule flag
+            state.smartSchedule[childDevice.deviceNetworkId] = false
+        }	
+        if (ssNotification) {
+        	messageHandler("Neato SmartSchedule has reset all Botvac schedules as override switch ${evt.displayName} is on.", false)
+        }
+    }
+    //If mode change event OR schedule trigger
+    else {
+    	//Check current mode is in Away list
+    	//Check time & day - allOK()
+        if ((location.mode in ssAwayModes) && allOk) {
+        	//For each vacuum
+        	getChildDevices().each { childDevice ->
+            	//If smartSchedule flag has been set, start clean.
+            	if (state.smartSchedule[childDevice.deviceNetworkId]) {
+                	if (ssNotification) {
+                    	messageHandler("Neato SmartSchedule has started ${childDevice.displayName} cleaning.", false)
+                    }
+                	childDevice.on()
+            	}
+        	}      	
+        }
+    }   	
 }
 
 def scheduleAutoDock() {
@@ -633,14 +765,22 @@ def pollOn() {
 	log.debug "Executing 'pollOn'"
     
     def activeCleaners = false
-    
+    log.debug "Last clean states: ${state.lastClean}"
+    log.debug "Smart schedule states: ${state.smartSchedule}"
 	getChildDevices().each { childDevice ->
     	state.pollState = now()
 		childDevice.poll()
         //Force on if last clean was a long time ago
-        if (childDevice.currentSwitch == "off" && forceClean && state.lastClean != null && state.lastClean[childDevice.displayName] != null) {
-        	def t = now() - state.lastClean[childDevice.displayName]
-            log.debug "$childDevice.displayName last cleaned at " + state.lastClean[childDevice.displayName] + ". $t milliseconds has elapsed since."
+        if (childDevice.currentSwitch == "off" && forceClean && state.lastClean != null && state.lastClean[childDevice.deviceNetworkId] != null) {
+        	def t = now() - state.lastClean[childDevice.deviceNetworkId]
+            //Set SmartSchedule flag if SmartSchedule has not been set already, interval has elapsed and user is at home
+            if ((!(location.mode in ssAwayModes)) && (t > (ssCleaningInterval * 86400000)) && (!state.smartSchedule[childDevice.deviceNetworkId])) {
+            	state.smartSchedule[childDevice.deviceNetworkId] = true
+            	if (ssNotification) {
+                	messageHandler("Neato SmartSchedule has scheduled ${childDevice.displayName} for a clean when you're next away (date and time restrictions permitting). Please clear obstacles and leave internal doors open when you next leave the house.", false)
+                }
+            }
+            log.debug "$childDevice.displayName last cleaned at " + state.lastClean[childDevice.deviceNetworkId] + ". ${t/86400000} days has elapsed since."
 			if (t > (forceCleanDelay * 86400000)) {
             	log.debug "Force clean activated as $t milliseconds has elapsed"
 				messageHandler(childDevice.displayName + " has not cleaned for " + forceCleanDelay + " days. Forcing a clean.", true)
@@ -660,7 +800,7 @@ def pollOn() {
 				log.trace "Smart Home Monitor is set back to away"
 				sendLocationEvent(name: "alarmSystemStatus", value: "away")
 				state.autoSHMchange = "n"
-                messageHandler("Smart Home Monitor is set to away as all cleaners are off", true)
+                messageHandler("Smart Home Monitor is set to away as all Neato Botvacs are off", true)
 			}
 		}
 	}
@@ -671,6 +811,8 @@ def pollOn() {
     }
 }
 
+//Helper methods
+
 def messageHandler(msg, forceFlag) {
 	if (settings.sendSMS != null && !forceFlag) {
 		sendSms(sendSMS, msg) 
@@ -680,7 +822,70 @@ def messageHandler(msg, forceFlag) {
     } else if (settings.sendPush == true || forceFlag) {
 		sendPush(msg)
 	}
-    
+}
+
+private getAllOk() {
+	daysOk && timeOk
+}
+
+private getDaysOk() {
+	def result = true
+	if (days) {
+		def df = new java.text.SimpleDateFormat("EEEE")
+		if (location.timeZone) {
+			df.setTimeZone(location.timeZone)
+		}
+		else {
+			df.setTimeZone(TimeZone.getTimeZone("Europe/London"))
+		}
+		def day = df.format(new Date())
+		result = days.contains(day)
+	}
+	log.trace "daysOk = $result"
+	result
+}
+
+private getTimeOk() {
+	def result = true
+	if (starting && ending) {
+		def currTime = now()
+		def start = timeToday(starting).time
+		def stop = timeToday(ending).time
+		result = start < stop ? currTime >= start && currTime <= stop : currTime <= stop || currTime >= start
+	}
+	log.trace "timeOk = $result"
+	result
+}
+
+private hhmm(time, fmt = "h:mm a") {
+	def t = timeToday(time, location.timeZone)
+	def f = new java.text.SimpleDateFormat(fmt)
+	f.setTimeZone(location.timeZone ?: timeZone(time))
+	f.format(t)
+}
+
+def getTimeLabel(starting, ending){
+
+	def timeLabel = "Tap to set"
+
+    if(starting && ending){
+    	timeLabel = "Between" + " " + hhmm(starting) + " "  + "and" + " " +  hhmm(ending)
+    }
+    else if (starting) {
+		timeLabel = "Start at" + " " + hhmm(starting)
+    }
+    else if(ending){
+    timeLabel = "End at" + hhmm(ending)
+    }
+	timeLabel
+}
+
+def greyedOutTime(starting, ending){
+	def result = ""
+    if (starting || ending) {
+    	result = "complete"
+    }
+    result
 }
 
 
@@ -693,7 +898,7 @@ def getApiEndpoint()         { return "https://apps.neatorobotics.com" }
 def getSmartThingsClientId() { return appSettings.clientId }
 def beehiveURL(path = '/') 			 { return "https://beehive.neatocloud.com${path}" }
 private def textVersion() {
-    def text = "Neato (Connect)\nVersion: 1.0c\nDate: 15102016(1330)"
+    def text = "Neato (Connect)\nVersion: 1.1\nDate: 17102016(1900)"
 }
 
 private def textCopyright() {
