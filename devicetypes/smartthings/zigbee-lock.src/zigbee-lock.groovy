@@ -13,6 +13,8 @@
  *  for the specific language governing permissions and limitations under the License.
  *
  */
+import physicalgraph.zigbee.zcl.DataType
+
  metadata {
     definition (name: "ZigBee Lock", namespace: "smartthings", author: "SmartThings")
     {
@@ -71,9 +73,6 @@ private getDOORLOCK_CMD_UNLOCK_DOOR() { 0x01 }
 private getDOORLOCK_ATTR_LOCKSTATE() { 0x0000 }
 private getPOWER_ATTR_BATTERY_PERCENTAGE_REMAINING() { 0x0021 }
 
-private getTYPE_U8() { 0x20 }
-private getTYPE_ENUM8() { 0x30 }
-
 // Public methods
 def installed() {
     log.trace "installed()"
@@ -86,9 +85,9 @@ def uninstalled() {
 def configure() {
     def cmds =
         zigbee.configureReporting(CLUSTER_DOORLOCK, DOORLOCK_ATTR_LOCKSTATE,
-                                  TYPE_ENUM8, 0, 3600, null) +
+                                  DataType.ENUM8, 0, 3600, null) +
         zigbee.configureReporting(CLUSTER_POWER, POWER_ATTR_BATTERY_PERCENTAGE_REMAINING,
-                                  TYPE_U8, 600, 21600, 0x01)
+                                  DataType.UINT8, 600, 21600, 0x01)
     log.info "configure() --- cmds: $cmds"
     return refresh() + cmds // send refresh cmds as part of config
 }

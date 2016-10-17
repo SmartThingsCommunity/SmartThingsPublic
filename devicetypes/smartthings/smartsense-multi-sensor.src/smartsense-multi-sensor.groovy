@@ -14,6 +14,7 @@
  *  under the License.
  */
 import physicalgraph.zigbee.clusters.iaszone.ZoneStatus
+import physicalgraph.zigbee.zcl.DataType
 
 metadata {
 	definition (name: "SmartSense Multi Sensor", namespace: "smartthings", author: "SmartThings") {
@@ -130,7 +131,7 @@ def parse(String description) {
 	def result = map ? createEvent(map) : [:]
 
 	if (description?.startsWith('enroll request')) {
-		List cmds = enrollResponse()
+		List cmds = zigbee.enrollResponse()
 		log.debug "enroll response: ${cmds}"
 		result = cmds?.collect { new physicalgraph.device.HubAction(it) }
 	}
@@ -392,11 +393,11 @@ def refresh() {
 	}
 
 	//Common refresh commands
-	refreshCmds += zigbee.readAttribute(0x0402, 0x0000) +
-			zigbee.readAttribute(0x0001, 0x0020) +
+	refreshCmds += zigbee.readAttribute(zigbee.TEMPERATURE_MEASUREMENT_CLUSTER, 0x0000) +
+			zigbee.readAttribute(zigbee.POWER_CONFIGURATION_CLUSTER, 0x0020) +
 			zigbee.readAttribute(0xFC02, 0x0010, [mfgCode: manufacturerCode])
 
-	return refreshCmds + enrollResponse()
+	return refreshCmds + zigbee.enrollResponse()
 }
 
 def configure() {
@@ -410,29 +411,16 @@ def configure() {
 	// battery minReport 30 seconds, maxReportTime 6 hrs by default
 	def configCmds = zigbee.batteryConfig() +
 			zigbee.temperatureConfig(30, 300) +
-			zigbee.configureReporting(0xFC02, 0x0010, 0x18, 10, 3600, 0x01, [mfgCode: manufacturerCode]) +
-			zigbee.configureReporting(0xFC02, 0x0012, 0x29, 1, 3600, 0x0001, [mfgCode: manufacturerCode]) +
-			zigbee.configureReporting(0xFC02, 0x0013, 0x29, 1, 3600, 0x0001, [mfgCode: manufacturerCode]) +
-			zigbee.configureReporting(0xFC02, 0x0014, 0x29, 1, 3600, 0x0001, [mfgCode: manufacturerCode])
+			zigbee.configureReporting(0xFC02, 0x0010, DataType.BITMAP8, 10, 3600, 0x01, [mfgCode: manufacturerCode]) +
+			zigbee.configureReporting(0xFC02, 0x0012, DataType.INT16, 1, 3600, 0x0001, [mfgCode: manufacturerCode]) +
+			zigbee.configureReporting(0xFC02, 0x0013, DataType.INT16, 1, 3600, 0x0001, [mfgCode: manufacturerCode]) +
+			zigbee.configureReporting(0xFC02, 0x0014, DataType.INT16, 1, 3600, 0x0001, [mfgCode: manufacturerCode])
 
 	return refresh() + configCmds
 }
 
 private getEndpointId() {
 	new BigInteger(device.endpointId, 16).toString()
-}
-
-def enrollResponse() {
-	log.debug "Sending enroll response"
-	String zigbeeEui = swapEndianHex(device.hub.zigbeeEui)
-	[
-		//Resending the CIE in case the enroll request is sent before CIE is written
-		"zcl global write 0x500 0x10 0xf0 {${zigbeeEui}}", "delay 200",
-		"send 0x${device.deviceNetworkId} 1 ${endpointId}", "delay 2000",
-		//Enroll Response
-		"raw 0x500 {01 23 00 00 00}", "delay 200",
-		"send 0x${device.deviceNetworkId} 1 1", "delay 2000"
-	]
 }
 
 private Map parseAxis(String description) {

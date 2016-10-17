@@ -13,7 +13,6 @@
  *  License for the specific language governing permissions and limitations
  *  under the License.
  */
-
 metadata {
 	// Automatically generated. Make future change here.
 	definition (name: "SmartPower Outlet", namespace: "smartthings", author: "SmartThings") {
@@ -150,18 +149,7 @@ def configure() {
 	sendEvent(name: "checkInterval", value: 2 * 10 * 60 + 1 * 60, displayed: false, data: [protocol: "zigbee", hubHardwareId: device.hub.hardwareID])
 
 	// OnOff minReportTime 0 seconds, maxReportTime 5 min. Reporting interval if no activity
-	refresh() + zigbee.onOffConfig(0, 300) + powerConfig()
-}
-
-//power config for devices with min reporting interval as 1 seconds and reporting interval if no activity as 10min (600s)
-//min change in value is 01
-def powerConfig() {
-	[
-		"zdo bind 0x${device.deviceNetworkId} 1 ${endpointId} 0x0B04 {${device.zigbeeId}} {}", "delay 2000",
-		"zcl global send-me-a-report 0x0B04 0x050B 0x29 1 600 {05 00}",				//The send-me-a-report is custom to the attribute type for CentraLite
-		"delay 200",
-		"send 0x${device.deviceNetworkId} 1 ${endpointId}", "delay 2000"
-	]
+	refresh() + zigbee.onOffConfig(0, 300) + zigbee.electricMeasurementPowerConfig()
 }
 
 private getEndpointId() {

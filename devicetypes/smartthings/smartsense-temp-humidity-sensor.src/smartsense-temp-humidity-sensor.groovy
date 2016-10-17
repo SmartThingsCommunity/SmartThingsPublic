@@ -13,6 +13,8 @@
  *  for the specific language governing permissions and limitations under the License.
  *
  */
+import physicalgraph.zigbee.zcl.DataType
+
 metadata {
 	definition (name: "SmartSense Temp/Humidity Sensor",namespace: "smartthings", author: "SmartThings") {
 		capability "Configuration"
@@ -252,15 +254,15 @@ private Map getHumidityResult(value) {
  * PING is used by Device-Watch in attempt to reach the Device
  * */
 def ping() {
-	return zigbee.readAttribute(0x001, 0x0020) // Read the Battery Level
+	return zigbee.readAttribute(zigbee.POWER_CONFIGURATION_CLUSTER, 0x0020) // Read the Battery Level
 }
 
 def refresh()
 {
 	log.debug "refresh temperature, humidity, and battery"
 	return zigbee.readAttribute(0xFC45, 0x0000, ["mfgCode": 0xC2DF]) +   // Original firmware
-			zigbee.readAttribute(0x0402, 0x0000) +
-			zigbee.readAttribute(0x0001, 0x0020)
+			zigbee.readAttribute(zigbee.TEMPERATURE_MEASUREMENT_CLUSTER, 0x0000) +
+			zigbee.readAttribute(zigbee.POWER_CONFIGURATION_CLUSTER, 0x0020)
 }
 
 def configure() {
@@ -269,35 +271,10 @@ def configure() {
 	sendEvent(name: "checkInterval", value: 2 * 60 * 60 + 1 * 60, displayed: false, data: [protocol: "zigbee", hubHardwareId: device.hub.hardwareID])
 
 	log.debug "Configuring Reporting and Bindings."
-	def humidityConfigCmds = [
-		"zdo bind 0x${device.deviceNetworkId} 1 1 0xFC45 {${device.zigbeeId}} {}", "delay 2000",
-		"zcl global send-me-a-report 0xFC45 0 0x29 30 3600 {6400}", "delay 200",
-		"send 0x${device.deviceNetworkId} 1 1", "delay 2000"
-	]
+	def humidityConfigCmds = zigbee.configureReporting(0xFC45, 0x0000, DataType.INT16, 30, 3600, 0x0064)
 
 	// temperature minReportTime 30 seconds, maxReportTime 5 min. Reporting interval if no activity
 	// battery minReport 30 seconds, maxReportTime 6 hrs by default
 	return refresh() + humidityConfigCmds + zigbee.batteryConfig() + zigbee.temperatureConfig(30, 300)  // send refresh cmds as part of config
 }
 
-private hex(value) {
-	new BigInteger(Math.round(value).toString()).toString(16)
-}
-
-private String swapEndianHex(String hex) {
-    reverseArray(hex.decodeHex()).encodeHex()
-}
-
-private byte[] reverseArray(byte[] array) {
-    int i = 0;
-    int j = array.length - 1;
-    byte tmp;
-    while (j > i) {
-        tmp = array[j];
-        array[j] = array[i];
-        array[i] = tmp;
-        j--;
-        i++;
-    }
-    return array
-}
