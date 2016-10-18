@@ -13,6 +13,8 @@
  *  for the specific language governing permissions and limitations under the License.
  *
  *  VERSION HISTORY
+ *	18-10-2016: 1.1.1 - Allow smart schedule to also be triggered on presence and switch events. Add option to specify how override switches work (all or any).
+ *
  *	18-10-2016: 1.1d - Bug fix. Custom state validation errors and error saving page message when upgrading from 1.0 to 1.1.
  *	18-10-2016: 1.1c - Bug fix. Smart schedule was not updating last clean time properly when Botvac was activated.
  *	17-10-2016: 1.1b - Set last clean value to new devices for smart schedule.
@@ -88,6 +90,10 @@ def authPage() {
    	 	if (location.contactBookEnabled) {
     		settings.sendPush = false
     	}
+        //Migrate settings from v1.1 and earlier to v1.2
+        if (settings.smartScheduleEnabled && settings.ssScheduleTrigger == null) {
+        	settings.ssScheduleTrigger = "mode"
+        }
         dynamicPage(name: "auth", uninstall: false, install: false) {
         	section { headerSECTION() }
 			section ("Choose your Neato Botvacs:") {
@@ -143,12 +149,24 @@ def smartSchedulePAGE() {
         	input "smartScheduleEnabled", "bool", title: "Enable SmartSchedule?", required: false, defaultValue: false, submitOnChange: true
         }
             if (settings.smartScheduleEnabled) {
-            	section("Configure your Away Modes and cleaning interval:") {
+            	section("Configure your cleaning interval and schedule triggers:") {
         			//SmartSchedule configuration options.
                 	//Configure regular cleaning interval in days
                 	input ("ssCleaningInterval", "number", title: "Set your ideal cleaning interval in days", required: true, defaultValue: 3)
-                	//Define your away modes
-                	input ("ssAwayModes", "mode", title:"Specify your Away Modes:", multiple: true, required: true)
+                    
+                    //Define smart schedule trigger
+                    input(name: "ssScheduleTrigger", title: "How do you want to trigger the schedule?", description: null, multiple: false, required: true, submitOnChange: true, type: "enum", options: ["mode": "Away Modes", "switch": "Switches", "presence": "Presence"], defaultValue: "mode")
+        
+                    //Define your away modes
+                    if (ssScheduleTrigger == "mode") { input ("ssAwayModes", "mode", title:"Specify your away modes:", multiple: true, required: true) }
+                    if (ssScheduleTrigger == "switch") { 
+                    	input ("ssSwitchTrigger", "capability.switch", title:"Which switches?", multiple: true, required: true) 
+                        input ("ssSwitchTriggerCondition", "enum", title:"Trigger schedule when:", multiple: false, required: true, options: ["any": "Any switch turns on", "all": "All switches are on"], defaultValue: "any") 
+                    }
+                    if (ssScheduleTrigger == "presence") { 
+                    	input ("ssPeopleAway", "capability.presenceSensor", title:"Which presence sensors?", multiple: true, required: true) 
+                        input ("ssPeopleAwayCondition", "enum", title:"Trigger schedule when:", multiple: false, required: true, options: ["any": "Someone leaves", "all": "Everyone is away"], defaultValue: "all") 
+                    }
                 }
                 section("SmartSchedule restrictions:") {
 					//Define time of day
@@ -161,7 +179,8 @@ def smartSchedulePAGE() {
                 section("SmartSchedule overrides:") {
                 //Define override switches to restart SmartSchedule countdown
                 paragraph "Routine override switches/buttons will cancel the next scheduled clean and reset the interval countdown when switched on."
-                input ("ssOverrideSwitch", "capability.switch", title:"Set SmartSchedule override switches", multiple: true, required: false)
+                	input ("ssOverrideSwitch", "capability.switch", title:"Set SmartSchedule override switches", multiple: true, required: false)
+                    input ("ssOverrideSwitchCondition", "enum", title:"Override schedule when:", multiple: false, required: true, options: ["any": "Any switch turns on", "all": "All switches are on"], defaultValue: "any") 
                 }
                 section("Notifications:") {
                 paragraph "Turn on SmartSchedule notifications. You can configure specific recipients via Notification settings section."
@@ -457,14 +476,17 @@ def initialize() {
         	if (state.lastClean[childDevice.deviceNetworkId] == null) state.lastClean[childDevice.deviceNetworkId] = now()
         }
         
-        subscribe(location, "mode", smartScheduleHandler, [filterEvents: false])
+        if (settings.ssScheduleTrigger == "mode") { subscribe(location, "mode", smartScheduleHandler, [filterEvents: false]) }
+        else if (settings.ssScheduleTrigger == "switch") { subscribe(settings.ssSwitchTrigger, "switch.on", smartScheduleHandler, [filterEvents: false]) }
+        else if (settings.ssScheduleTrigger == "presence") { subscribe(settings.ssPeopleAway, "presence", smartScheduleHandler, [filterEvents: false]) }
+            
         if (settings.starting) {
         	schedule(settings.starting, smartScheduleHandler)
         }
         else {
         	schedule("29 0 0 1/1 * ? *", smartScheduleHandler)
         }
-        subscribe(ssOverrideSwitch, "switch.on", smartScheduleHandler, [filterEvents: false])
+        subscribe(settings.ssOverrideSwitch, "switch.on", smartScheduleHandler, [filterEvents: false])
     }
 }
 
@@ -580,10 +602,34 @@ def smartScheduleSelected() {
 def getSmartScheduleString() {
 	def listString = ""
     if (smartScheduleEnabled) {
-    	listString += "SmartSchedule set for every ${settings.ssCleaningInterval} days\n• When mode is ${settings.ssAwayModes}\n"
+    	listString += "SmartSchedule set for every ${settings.ssCleaningInterval} days "
+        if (settings.ssScheduleTrigger == "mode") {listString += "when mode is ${settings.ssAwayModes}."}
+        else if (settings.ssScheduleTrigger == "switch") {
+        	if (settings.ssSwitchTriggerCondition == "any") {
+            	listString += "when any of ${settings.ssSwitchTrigger} turns on."
+            } else {
+            	listString += "when ${settings.ssSwitchTrigger} are all on."
+            }
+       	}
+        
+        else if (settings.ssScheduleTrigger == "presence") {
+        	if (settings.ssPeopleAwayCondition == "any") {
+            	listString += "when one of ${settings.ssPeopleAway} leaves."
+            } else {
+            	listString += "when ${settings.ssPeopleAway} are all away."
+            }
+        }  
+     
+        listString += "\n\nThe following restrictions apply:\n"
         if (settings.starting) listString += "• ${getTimeLabel(settings.starting, settings.ending)}\n" 
         if (settings.days) listString += "• Only on $settings.days.\n"
-        if (settings.ssOverrideSwitch) listString += "• Override schedule if any of ${settings.ssOverrideSwitch} turns on."
+        if (settings.ssOverrideSwitch) {
+        	if (settings.ssOverrideSwitchCondition == "any") {
+            	listString += "• Override schedule if any of ${settings.ssOverrideSwitch} turns on."
+            } else {
+        		listString += "• Override schedule if ${settings.ssOverrideSwitch} are all on."
+            }
+        }
     }
     return listString
 }
@@ -607,16 +653,28 @@ def notificationsSelected() {
 }
 
 def getNotificationsString() {
-	def listString = " "
-    if (location.contactBookEnabled && settings.recipients) listString += "• Send notifications to " + settings.recipients + "\n"
-    if (settings.sendPush) listString += "• Send Push\n"
-    if (settings.sendSMS != null) listString += "• Send SMS to ${settings.sendSMS}\n"
+	def listString = ""
+    if (location.contactBookEnabled && settings.recipients) { 
+    	listString += "Send the following notifications to " + settings.recipients
+    }
+    else if (settings.sendPush) {
+    	listString += "Send the following notifications"
+    }
+    
+    if (!settings.recipients && !settings.sendPush && settings.sendSMS != null) {
+    	listString += "Send the following SMS to ${settings.sendSMS}"
+    }
+    else if (settings.sendSMS != null) {
+    	listString += " and SMS to ${settings.sendSMS}"
+    }
+    
     if ((location.contactBookEnabled && settings.recipients) || settings.sendPush || settings.sendSMS != null) {
-  		if (settings.sendBotvacOn) listString += "• Botvac On Notification\n"
-  		if (settings.sendBotvacOff) listString += "• Botvac Off Notification\n"
-  		if (settings.sendBotvacError) listString += "• Botvac Error Notification\n"
-  		if (settings.sendBotvacBin) listString += "• Bin Full Notification\n"
-    	if (settings.ssNotification) listString += "• SmartSchedule Notifications\n"
+    	listString += ":\n"
+  		if (settings.sendBotvacOn) listString += "• Botvac On\n"
+  		if (settings.sendBotvacOff) listString += "• Botvac Off\n"
+  		if (settings.sendBotvacError) listString += "• Botvac Error\n"
+  		if (settings.sendBotvacBin) listString += "• Bin Full\n"
+    	if (settings.ssNotification) listString += "• SmartSchedule\n"
     }
     if (listString != "") listString = listString.substring(0, listString.length() - 1)
     return listString
@@ -735,33 +793,45 @@ def smartScheduleHandler(evt) {
 	if (evt != null) {
 		log.debug "Executing 'smartScheduleHandler' for ${evt.displayName}"
     } else {
-    	log.debug "Executing 'smartScheduleHandler' for schedule event"
+    	log.debug "Executing 'smartScheduleHandler' for scheduled event"
     }
     //If switch on for override event
-    if (evt != null && evt.name == "switch") {
+    if (evt != null && evt.name == "switch" && evt.device in settings.ssOverrideSwitch) {
+    	def executeOverride = true
+        //If override switch condition is ALL...
+    	if (ssOverrideSwitchCondition == "all") {
+        	//Check all switches in override switch settings are on
+            for (switchVal in settings.ssOverrideSwitch.currentSwitch) {
+        		if (switchVal == "off") {
+            		executeOverride = false
+            		break
+        		}
+    		}
+        }
     	//For each vacuum
-    	getChildDevices().each { childDevice ->
-        	//Reset last clean date to current time
-            state.lastClean[childDevice.deviceNetworkId] = now()
+        if (executeOverride) {
+    		getChildDevices().each { childDevice ->
+        		//Reset last clean date to current time
+            	state.lastClean[childDevice.deviceNetworkId] = now()
             
-            //DEBUG PURPOSES ONLY. FAKE TIME ON OVERRIDE SWITCH AND INCREASE POLL
-            //state.lastClean[childDevice.deviceNetworkId] = Date.parseToStringDate("Thu Oct 13 01:23:45 UTC 2016").getTime()
-            //unschedule(pollOn)
-        	//schedule("0 0/1 * * * ?", pollOn)
-            //log.debug "Fake data loaded.... " + (now() - state.lastClean[childDevice.deviceNetworkId])/86400000
-            
-            //Remove existing SmartSchedule flag
-            state.smartSchedule[childDevice.deviceNetworkId] = false
-        }	
-        if (settings.ssNotification) {
-        	messageHandler("Neato SmartSchedule has reset all Botvac schedules as override switch ${evt.displayName} is on.", false)
+            	//Remove existing SmartSchedule flag
+            	state.smartSchedule[childDevice.deviceNetworkId] = false
+                
+                //DEBUG PURPOSES ONLY. FAKE TIME ON OVERRIDE SWITCH AND INCREASE POLL
+            	//state.lastClean[childDevice.deviceNetworkId] = Date.parseToStringDate("Thu Oct 13 01:23:45 UTC 2016").getTime()
+            	//unschedule(pollOn)
+        		//schedule("0 0/1 * * * ?", pollOn)
+            	//log.debug "Fake data loaded.... " + (now() - state.lastClean[childDevice.deviceNetworkId])/86400000
+        	}	
+        	if (settings.ssNotification) {
+        		messageHandler("Neato SmartSchedule has reset all Botvac schedules as override switch ${evt.displayName} is on.", false)
+        	}
         }
     }
-    //If mode change event OR schedule trigger
+    //If mode change event, schedule trigger or presence trigger
     else {
-    	//Check current mode is in Away list
-    	//Check time & day - allOK()
-        if ((location.mode in settings.ssAwayModes) && allOk) {
+    	//Check conditions, time andd day have been met
+        if (allOk) {
         	//For each vacuum
         	getChildDevices().each { childDevice ->
             	//If smartSchedule flag has been set, start clean.
@@ -796,11 +866,15 @@ def pollOn() {
         //Force on if last clean was a long time ago
         if (childDevice.currentSwitch == "off" && settings.forceClean && state.lastClean != null && state.lastClean[childDevice.deviceNetworkId] != null) {
         	def t = now() - state.lastClean[childDevice.deviceNetworkId]
+            
             //Set SmartSchedule flag if SmartSchedule has not been set already, interval has elapsed and user is at home
-            if ((!(location.mode in settings.ssAwayModes)) && (t > (settings.ssCleaningInterval * 86400000)) && (!state.smartSchedule[childDevice.deviceNetworkId])) {
+            if ((!triggerConditionsOk) && (t > (settings.ssCleaningInterval * 86400000)) && (!state.smartSchedule[childDevice.deviceNetworkId])) {
             	state.smartSchedule[childDevice.deviceNetworkId] = true
             	if (settings.ssNotification) {
-                	messageHandler("Neato SmartSchedule has scheduled ${childDevice.displayName} for a clean when you're next away (date and time restrictions permitting). Please clear obstacles and leave internal doors open when you next leave the house.", false)
+                	def reason = "you're next away"
+                    if (settings.ssScheduleTrigger == "switch") { reason = "your selected switches turn on" }
+                    else if (settings.ssScheduleTrigger == "presence") { reason = "your selected presence sensors leave"}
+                	messageHandler("Neato SmartSchedule has scheduled ${childDevice.displayName} for a clean when " + reason + " (date and time restrictions permitting). Please clear obstacles and leave internal doors open when you next leave the house.", false)
                 }
             }
             log.debug "$childDevice.displayName last cleaned at " + state.lastClean[childDevice.deviceNetworkId] + ". ${t/86400000} days has elapsed since."
@@ -847,8 +921,44 @@ def messageHandler(msg, forceFlag) {
 	}
 }
 
+
 private getAllOk() {
-	daysOk && timeOk
+	triggerConditionsOk && daysOk && timeOk
+}
+
+private getTriggerConditionsOk() {
+	//Calculate, depending on smart schedule trigger mode, whether conditions currently match
+    def result = false
+    
+    if (settings.ssScheduleTrigger == "mode") {
+    	result = location.mode in settings.ssAwayModes 
+    } else if (settings.ssScheduleTrigger == "switch") {
+    	if (settings.ssSwitchTriggerCondition == "any") {
+        	result = "on" in settings.ssSwitchTrigger.currentSwitch
+        } else {
+        	result = true
+        	for (switchVal in settings.ssSwitchTrigger.currentSwitch) {
+        		if (switchVal == "off") {
+            		result = false
+            		break
+        		}
+    		}
+        }
+    } else if (settings.ssScheduleTrigger == "presence") {
+    	if (settings.ssPeopleAwayCondition == "any") {
+        	result = "not present" in settings.ssPeopleAway.currentPresence
+        } else {
+        	result = true
+        	for (person in settings.ssPeopleAway) {
+        		if (person.currentPresence == "present") {
+            		result = false
+            		break
+        		}
+    		}
+        }
+    }  
+    log.trace "triggerConditionsOk = $result"
+    result
 }
 
 private getDaysOk() {
@@ -921,7 +1031,7 @@ def getApiEndpoint()         { return "https://apps.neatorobotics.com" }
 def getSmartThingsClientId() { return appSettings.clientId }
 def beehiveURL(path = '/') 			 { return "https://beehive.neatocloud.com${path}" }
 private def textVersion() {
-    def text = "Neato (Connect)\nVersion: 1.1d\nDate: 18102016(1155)"
+    def text = "Neato (Connect)\nVersion: 1.1.1\nDate: 18102016(2200)"
 }
 
 private def textCopyright() {
