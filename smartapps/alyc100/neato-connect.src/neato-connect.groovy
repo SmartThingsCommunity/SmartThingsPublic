@@ -13,6 +13,7 @@
  *  for the specific language governing permissions and limitations under the License.
  *
  *  VERSION HISTORY
+ *	18-10-2016: 1.1c - Bug fix attempt.
  *	17-10-2016: 1.1b - Set last clean value to new devices for smart schedule.
  *	17-10-2016: 1.1 - SmartSchedule functionality and minor fixes 
  *	15-10-2016: 1.0c - Fix to auto SHM mode not triggering
@@ -132,7 +133,7 @@ def smartSchedulePAGE() {
         	paragraph "Configure a dymanic schedule for your Botvacs so that they can clean whilst you're out of the house."
         	input "smartScheduleEnabled", "bool", title: "Enable SmartSchedule?", required: false, defaultValue: false, submitOnChange: true
         }
-            if (smartScheduleEnabled) {
+            if (settings.smartScheduleEnabled) {
             	section("Configure your Away Modes and cleaning interval:") {
         			//SmartSchedule configuration options.
                 	//Configure regular cleaning interval in days
@@ -172,15 +173,17 @@ page(name: "timeIntervalInput", title: "Only during a certain time", refreshAfte
 def notificationsPAGE() {
 	return dynamicPage(name: "notificationsPAGE", title: "Notifications", install: false, uninstall: false) {   
 		section(){
-        	input("recipients", "contact", title: "Send notifications to", required: false) {
-				input "sendPush", "bool", title: "Send notifications via Push?", required: false
+        	input("recipients", "contact", title: "Send notifications to", required: false, submitOnChange: true) {
+				input "sendPush", "bool", title: "Send notifications via Push?", required: false, defaultValue: false, submitOnChange: true
             }
-			input "sendSMS", "phone", title: "Send notifications via SMS?", required: false, defaultValue: null
-			input "sendBotvacOn", "bool", title: "Notify when Botvacs are on?", required: false, defaultValue: false
-			input "sendBotvacOff", "bool", title: "Notify when Botvacs are off?", required: false, defaultValue: false
-			input "sendBotvacError", "bool", title: "Notify on Botvacs have an error?", required: false, defaultValue: true
-			input "sendBotvacBin", "bool", title: "Notify when Botvacs have a full bin?", required: false, defaultValue: true
-            input "ssNotification", "bool", title: "Enable SmartSchedule notifications?", required: false, defaultValue: true
+            input "sendSMS", "phone", title: "Send notifications via SMS?", required: false, defaultValue: null, submitOnChange: true
+            if ((location.contactBookEnabled && settings.recipients) || settings.sendPush || settings.sendSMS != null) {
+				input "sendBotvacOn", "bool", title: "Notify when Botvacs are on?", required: false, defaultValue: false
+				input "sendBotvacOff", "bool", title: "Notify when Botvacs are off?", required: false, defaultValue: false
+				input "sendBotvacError", "bool", title: "Notify on Botvacs have an error?", required: false, defaultValue: true
+				input "sendBotvacBin", "bool", title: "Notify when Botvacs have a full bin?", required: false, defaultValue: true
+            	input "ssNotification", "bool", title: "Enable SmartSchedule notifications?", required: false, defaultValue: true
+            }
 		}
     }
 }
@@ -444,13 +447,18 @@ def initialize() {
         }
         
         subscribe(location, "mode", smartScheduleHandler, [filterEvents: false])
-        if (starting && ending) {
-        	schedule(starting, smartScheduleHandler)
+        if (settings.starting && settings.ending) {
+        	schedule(settings.starting, smartScheduleHandler)
         }
         else {
         	schedule("29 0 0 1/1 * ? *", smartScheduleHandler)
         }
         subscribe(ssOverrideSwitch, "switch.on", smartScheduleHandler, [filterEvents: false])
+    }
+    
+    //Disable push option if contact book is enabled
+    if (location.contactBookEnabled) {
+    	settings.sendPush = false
     }
     
 }
@@ -567,42 +575,44 @@ def smartScheduleSelected() {
 def getSmartScheduleString() {
 	def listString = ""
     if (smartScheduleEnabled) {
-    	listString += "SmartSchedule set for every ${ssCleaningInterval} days\n• When mode is ${ssAwayModes}\n"
-        if (starting) listString += "• ${getTimeLabel(starting, ending)}\n" 
-        if (days) listString += "• Only on $days.\n"
-        if (ssOverrideSwitch) listString += "• Override schedule if any of ${ssOverrideSwitch} turns on."
+    	listString += "SmartSchedule set for every ${settings.ssCleaningInterval} days\n• When mode is ${settings.ssAwayModes}\n"
+        if (settings.starting) listString += "• ${getTimeLabel(settings.starting, settings.ending)}\n" 
+        if (settings.days) listString += "• Only on $settings.days.\n"
+        if (settings.ssOverrideSwitch) listString += "• Override schedule if any of ${settings.ssOverrideSwitch} turns on."
     }
     return listString
 }
 
 def preferencesSelected() {
-	return (forceClean || autoDock || autoSHM) ? "complete" : null
+	return (settings.forceClean || settings.autoDock || settings.autoSHM) ? "complete" : null
 }
 
 def getPreferencesString() {
 	def listString = ""
-	if (forceClean) listString += "• Force clean after ${forceCleanDelay} days\n"
-  	if (autoDock) listString += "• Auto Dock after ${autoDockDelay} seconds\n"
-    if (autoSHM) listString += "• Automatically set Smart Home Monitor\n"
+	if (settings.forceClean) listString += "• Force clean after ${settings.forceCleanDelay} days\n"
+  	if (settings.autoDock) listString += "• Auto Dock after ${settings.autoDockDelay} seconds\n"
+    if (settings.autoSHM) listString += "• Automatically set Smart Home Monitor\n"
   	
   	if (listString != "") listString = listString.substring(0, listString.length() - 1)
     return listString
 }
 
 def notificationsSelected() {
-    return ((location.contactBookEnabled && recipients) || sendPush || sendSMS != null) && (sendBotvacOn || sendBotvacOff || sendBotvacError || sendBotvacBin) ? "complete" : null
+    return ((location.contactBookEnabled && settings.recipients) || settings.sendPush || settings.sendSMS != null) && (settings.sendBotvacOn || settings.sendBotvacOff || settings.sendBotvacError || settings.sendBotvacBin) ? "complete" : null
 }
 
 def getNotificationsString() {
-	def listString = ""
-    if (location.contactBookEnabled && recipients) listString += "• Send notifications to " + recipients + "\n"
-    if (sendPush) listString += "• Send Push\n"
-  	if (sendSMS != null) listString += "• Send SMS to ${sendSMS}\n"
-  	if (sendBotvacOn) listString += "• Botvac On Notification\n"
-  	if (sendBotvacOff) listString += "• Botvac Off Notification\n"
-  	if (sendBotvacError) listString += "• Botvac Error Notification\n"
-  	if (sendBotvacBin) listString += "• Bin Full Notification\n"
-    if (ssNotification) listString += "• SmartSchedule Notifications\n"
+	def listString = " "
+    if (location.contactBookEnabled && settings.recipients) listString += "• Send notifications to " + settings.recipients + "\n"
+    if (settings.sendPush) listString += "• Send Push\n"
+    if (settings.sendSMS != null) listString += "• Send SMS to ${settings.sendSMS}\n"
+    if ((location.contactBookEnabled && settings.recipients) || settings.sendPush || settings.sendSMS != null) {
+  		if (settings.sendBotvacOn) listString += "• Botvac On Notification\n"
+  		if (settings.sendBotvacOff) listString += "• Botvac Off Notification\n"
+  		if (settings.sendBotvacError) listString += "• Botvac Error Notification\n"
+  		if (settings.sendBotvacBin) listString += "• Bin Full Notification\n"
+    	if (settings.ssNotification) listString += "• SmartSchedule Notifications\n"
+    }
     if (listString != "") listString = listString.substring(0, listString.length() - 1)
     return listString
 }
@@ -655,8 +665,8 @@ def eventHandler(evt) {
     if (evt.value == "paused") {
     log.trace "Setting auto dock for ${evt.displayName}"
     	//If configured, set to dock automatically after one minute.
-        if (autoDock == true) {
-        	runIn(autoDockDelay, scheduleAutoDock)
+        if (settings.autoDock) {
+        	runIn(settings.autoDockDelay, scheduleAutoDock)
         }
     }
 	else if (evt.value == "error") {
@@ -665,7 +675,7 @@ def eventHandler(evt) {
 		sendEvent(linkText:app.label, name:"${evt.displayName}", value:"error",descriptionText:"${evt.displayName} has an error", eventType:"SOLUTION_EVENT", displayed: true)
 		log.trace "${evt.displayName} has an error"
 		msg = "${evt.displayName} has an error"
-		if (sendBotvacError == true) {
+		if (settings.sendBotvacError) {
         	messageHandler(msg, false)
 		}
      }
@@ -674,16 +684,17 @@ def eventHandler(evt) {
         //Increase poll interval during cleaning
         schedule("0 0/1 * * * ?", pollOn)
         //Record last cleaning time for device
-        state.lastClean[evt.deviceNetworkId] = now()
+        log.debug "$evt.device.deviceNetworkId has started cleaning"
+        state.lastClean[evt.device.deviceNetworkId] = now()
         //Remove SmartSchedule flag
-        state.smartSchedule[evt.deviceNetworkId] = false
+        state.smartSchedule[evt.device.deviceNetworkId] = false
 		sendEvent(linkText:app.label, name:"${evt.displayName}", value:"on",descriptionText:"${evt.displayName} is on", eventType:"SOLUTION_EVENT", displayed: true)
 		log.trace "${evt.displayName} is on"
 		msg = "${evt.displayName} is on"
-		if (sendBotvacOn == true) {
+		if (settings.sendBotvacOn) {
 			messageHandler(msg, false)
 		}
-        if (autoSHM) {
+        if (settings.autoSHM) {
         	if (location.currentState("alarmSystemStatus")?.value == "away") {
 				sendEvent(linkText:app.label, name:"Smart Home Monitor", value:"stay",descriptionText:"Smart Home Monitor was set to stay", eventType:"SOLUTION_EVENT", displayed: true)
 				log.trace "Smart Home Monitor is set to stay"
@@ -699,7 +710,7 @@ def eventHandler(evt) {
 		sendEvent(linkText:app.label, name:"${evt.displayName}", value:"bin full",descriptionText:"${evt.displayName} bin is full", eventType:"SOLUTION_EVENT", displayed: true)
 		log.trace "${evt.displayName} bin is full"
 		msg = "${evt.displayName} bin is full"
-		if (sendBotvacBin == true) {
+		if (settings.sendBotvacBin) {
 			messageHandler(msg, false)
 		}
 	 }
@@ -709,7 +720,7 @@ def eventHandler(evt) {
 		sendEvent(linkText:app.label, name:"${evt.displayName}", value:"off",descriptionText:"${evt.displayName} is off", eventType:"SOLUTION_EVENT", displayed: true)
 		log.trace "${evt.displayName} is off"
 		msg = "${evt.displayName} is off"
-		if (sendBotvacOff == true) {
+		if (settings.sendBotvacOff) {
 			messageHandler(msg, false)
 		}
 	}
@@ -737,7 +748,7 @@ def smartScheduleHandler(evt) {
             //Remove existing SmartSchedule flag
             state.smartSchedule[childDevice.deviceNetworkId] = false
         }	
-        if (ssNotification) {
+        if (settings.ssNotification) {
         	messageHandler("Neato SmartSchedule has reset all Botvac schedules as override switch ${evt.displayName} is on.", false)
         }
     }
@@ -745,12 +756,12 @@ def smartScheduleHandler(evt) {
     else {
     	//Check current mode is in Away list
     	//Check time & day - allOK()
-        if ((location.mode in ssAwayModes) && allOk) {
+        if ((location.mode in settings.ssAwayModes) && allOk) {
         	//For each vacuum
         	getChildDevices().each { childDevice ->
             	//If smartSchedule flag has been set, start clean.
             	if (state.smartSchedule[childDevice.deviceNetworkId]) {
-                	if (ssNotification) {
+                	if (settings.ssNotification) {
                     	messageHandler("Neato SmartSchedule has started ${childDevice.displayName} cleaning.", false)
                     }
                 	childDevice.on()
@@ -778,19 +789,19 @@ def pollOn() {
     	state.pollState = now()
 		childDevice.poll()
         //Force on if last clean was a long time ago
-        if (childDevice.currentSwitch == "off" && forceClean && state.lastClean != null && state.lastClean[childDevice.deviceNetworkId] != null) {
+        if (childDevice.currentSwitch == "off" && settings.forceClean && state.lastClean != null && state.lastClean[childDevice.deviceNetworkId] != null) {
         	def t = now() - state.lastClean[childDevice.deviceNetworkId]
             //Set SmartSchedule flag if SmartSchedule has not been set already, interval has elapsed and user is at home
-            if ((!(location.mode in ssAwayModes)) && (t > (ssCleaningInterval * 86400000)) && (!state.smartSchedule[childDevice.deviceNetworkId])) {
+            if ((!(location.mode in settings.ssAwayModes)) && (t > (settings.ssCleaningInterval * 86400000)) && (!state.smartSchedule[childDevice.deviceNetworkId])) {
             	state.smartSchedule[childDevice.deviceNetworkId] = true
-            	if (ssNotification) {
+            	if (settings.ssNotification) {
                 	messageHandler("Neato SmartSchedule has scheduled ${childDevice.displayName} for a clean when you're next away (date and time restrictions permitting). Please clear obstacles and leave internal doors open when you next leave the house.", false)
                 }
             }
             log.debug "$childDevice.displayName last cleaned at " + state.lastClean[childDevice.deviceNetworkId] + ". ${t/86400000} days has elapsed since."
-			if (t > (forceCleanDelay * 86400000)) {
+			if (t > (settings.forceCleanDelay * 86400000)) {
             	log.debug "Force clean activated as $t milliseconds has elapsed"
-				messageHandler(childDevice.displayName + " has not cleaned for " + forceCleanDelay + " days. Forcing a clean.", true)
+				messageHandler(childDevice.displayName + " has not cleaned for " + settings.forceCleanDelay + " days. Forcing a clean.", true)
                 childDevice.on()
         	}
         }
@@ -801,7 +812,7 @@ def pollOn() {
 	}
     
 	if (!activeCleaners) {
-		if (autoSHM) {
+		if (settings.autoSHM) {
 			if (location.currentState("alarmSystemStatus")?.value == "stay" && state.autoSHMchange == "y"){
 				sendEvent(linkText:app.label, name:"Smart Home Monitor", value:"away",descriptionText:"Smart Home Monitor was set back to away", eventType:"SOLUTION_EVENT", displayed: true)
 				log.trace "Smart Home Monitor is set back to away"
@@ -822,11 +833,11 @@ def pollOn() {
 
 def messageHandler(msg, forceFlag) {
 	if (settings.sendSMS != null && !forceFlag) {
-		sendSms(sendSMS, msg) 
+		sendSms(settings.sendSMS, msg) 
 	}
-    if (location.contactBookEnabled && recipients) {
-    	sendNotificationToContacts(msg, recipients)
-    } else if (settings.sendPush == true || forceFlag) {
+    if (location.contactBookEnabled && settings.recipients) {
+    	sendNotificationToContacts(msg, settings.recipients)
+    } else if (settings.sendPush || forceFlag) {
 		sendPush(msg)
 	}
 }
@@ -905,7 +916,7 @@ def getApiEndpoint()         { return "https://apps.neatorobotics.com" }
 def getSmartThingsClientId() { return appSettings.clientId }
 def beehiveURL(path = '/') 			 { return "https://beehive.neatocloud.com${path}" }
 private def textVersion() {
-    def text = "Neato (Connect)\nVersion: 1.1b\nDate: 17102016(2046)"
+    def text = "Neato (Connect)\nVersion: 1.1c\nDate: 18102016(1122)"
 }
 
 private def textCopyright() {
