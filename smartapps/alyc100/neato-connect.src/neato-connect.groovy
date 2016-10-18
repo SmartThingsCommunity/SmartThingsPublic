@@ -182,7 +182,9 @@ def notificationsPAGE() {
 				input "sendBotvacOff", "bool", title: "Notify when Botvacs are off?", required: false, defaultValue: false
 				input "sendBotvacError", "bool", title: "Notify on Botvacs have an error?", required: false, defaultValue: true
 				input "sendBotvacBin", "bool", title: "Notify when Botvacs have a full bin?", required: false, defaultValue: true
-            	input "ssNotification", "bool", title: "Enable SmartSchedule notifications?", required: false, defaultValue: true
+                if (settings.smartScheduleEnabled) {
+            		input "ssNotification", "bool", title: "Enable SmartSchedule notifications?", required: false, defaultValue: true
+                }
             }
 		}
     }
