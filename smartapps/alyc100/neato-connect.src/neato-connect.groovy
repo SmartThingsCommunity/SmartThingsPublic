@@ -148,7 +148,7 @@ def smartSchedulePAGE() {
                 section("SmartSchedule restrictions:") {
 					//Define time of day
                 	paragraph "Set SmartSchedule restrictions so that your Botvacs don't start in the middle of the night."
-                	href "timeIntervalInput", title: "Operate Botvacs only during a certain time", description: getTimeLabel(starting, ending), state: greyedOutTime(starting, ending), refreshAfterSelection:true
+                	href "timeIntervalInput", title: "Operate Botvacs only during a certain time", description: getTimeLabel(settings.starting, settings.ending), state: greyedOutTime(settings.starting, settings.ending), refreshAfterSelection:true
                 	//Define allowed days of operation
                 	input ("days", "enum", title: "Operate Botvacs only on certain days of the week", multiple: true, required: false,
 		         		options: ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"])
@@ -453,7 +453,7 @@ def initialize() {
         }
         
         subscribe(location, "mode", smartScheduleHandler, [filterEvents: false])
-        if (settings.starting && settings.ending) {
+        if (settings.starting) {
         	schedule(settings.starting, smartScheduleHandler)
         }
         else {
@@ -871,10 +871,10 @@ private getDaysOk() {
 
 private getTimeOk() {
 	def result = true
-	if (starting && ending) {
+	if (settings.starting && settings.ending) {
 		def currTime = now()
-		def start = timeToday(starting).time
-		def stop = timeToday(ending).time
+		def start = timeToday(settings.starting).time
+		def stop = timeToday(settings.ending).time
 		result = start < stop ? currTime >= start && currTime <= stop : currTime <= stop || currTime >= start
 	}
 	log.trace "timeOk = $result"
