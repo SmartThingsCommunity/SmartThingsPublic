@@ -40,7 +40,10 @@ preferences {
 
 def mainPage() {
 	def bridges = bridgesDiscovered()
-	if (state.username && bridges) {
+
+	if (state.refreshUsernameNeeded) {
+		return bridgeLinking()
+	} else if (state.username && bridges) {
 		return lightDiscovery()
 	} else {
 		return bridgeDiscovery()
@@ -105,13 +108,22 @@ def bridgeLinking() {
 
 	def nextPage = ""
 	def title = "Linking with your Hue"
-    def paragraphText
+	def paragraphText
 	if (selectedHue) {
+		if (state.refreshUsernameNeeded) {
+			paragraphText = "The current Hue username is invalid.\n\nPlease press the button on your Hue Bridge to re-link. "
+		} else {
 		paragraphText = "Press the button on your Hue Bridge to setup a link. "
-    } else {
-    	paragraphText = "You haven't selected a Hue Bridge, please Press \"Done\" and select one before clicking next."
-    }
+		}
+	} else {
+		paragraphText = "You haven't selected a Hue Bridge, please Press \"Done\" and select one before clicking next."
+	}
 	if (state.username) { //if discovery worked
+		if (state.refreshUsernameNeeded) {
+			state.refreshUsernameNeeded = false
+			// Issue one poll with new username to cancel local polling with old username
+			poll()
+		}
 		nextPage = "lightDiscovery"
 		title = "Success!"
 		paragraphText = "Linking to your hub was a success! Please click 'Next'!"
@@ -1171,10 +1183,17 @@ private handleCommandResponse(body) {
 					updates[childDeviceNetworkId]."deviceType" = k.split("/")[1]
 				}
 			}
-		} else if (payload.error) {
-			log.warn "Error returned from Hue bridge error = ${body?.error}"
-        }
-    }
+		} else if (payload?.error) {
+			log.warn "Error returned from Hue bridge, error = ${payload?.error}"
+			// Check for unauthorized user
+			if (payload?.error?.type?.value == 1) {
+				log.error "Hue username is not valid"
+				state.refreshUsernameNeeded = true
+				state.username = null
+			}
+			return []
+		}
+	}
 
 	// send events for each update found above (order of events should be same as handlePoll())
 	updates.each { childDeviceNetworkId, params ->
