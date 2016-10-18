@@ -13,7 +13,8 @@
  *  for the specific language governing permissions and limitations under the License.
  *
  *  VERSION HISTORY
- *	18-10-2016: 1.1c - Bug fix attempt.
+ *	18-10-2016: 1.1d - Bug fix. Custom state validation errors and error saving page message when upgrading from 1.0 to 1.1.
+ *	18-10-2016: 1.1c - Bug fix. Smart schedule was not updating last clean time properly when Botvac was activated.
  *	17-10-2016: 1.1b - Set last clean value to new devices for smart schedule.
  *	17-10-2016: 1.1 - SmartSchedule functionality and minor fixes 
  *	15-10-2016: 1.0c - Fix to auto SHM mode not triggering
@@ -87,31 +88,34 @@ def authPage() {
 			section ("Choose your Neato Botvacs:") {
 				href("selectDevicePAGE", title: null, description: devicesSelected() ? "Devices:\n " + getDevicesSelectedString() : "Tap to select your Neato Botvacs", state: devicesSelected())
         	}
-            section ("SmartSchedule Configuration:") {
-				href("smartSchedulePAGE", title: null, description: smartScheduleSelected() ? getSmartScheduleString() : "Tap to configure SmartSchedule", state: smartScheduleSelected())
-        	}
-            section ("Preferences:") {
-				href("preferencesPAGE", title: null, description: preferencesSelected() ? getPreferencesString() : "Tap to configure preferences", state: preferencesSelected())
-        	}
-            section ("Notifications:") {
-				href("notificationsPAGE", title: null, description: notificationsSelected() ? getNotificationsString() : "Tap to configure notifications", state: notificationsSelected())
-        	}
-        	def botvacList = ""
-    		selectedBotvacs.each() {
-            	def childDevice = getChildDevice("${it}")
-				try {
-					botvacList += "${childDevice.displayName} is ${childDevice.currentStatus}. Battery is ${childDevice.currentBattery}%\n"
-				}
-        		catch (e) {
-           			log.trace "Error checking status."
-            		log.trace e
+            if (devicesSelected() == "complete") {
+           		section ("SmartSchedule Configuration:") {
+					href("smartSchedulePAGE", title: null, description: smartScheduleSelected() ? getSmartScheduleString() : "Tap to configure SmartSchedule", state: smartScheduleSelected())
         		}
-				if (botvacList) {
-					section("Botvac Status:") {
-						paragraph image: "https://raw.githubusercontent.com/alyc100/SmartThingsPublic/master/devicetypes/alyc100/neato_botvac_image.png", botvacList.trim()
+            	section ("Preferences:") {
+					href("preferencesPAGE", title: null, description: preferencesSelected() ? getPreferencesString() : "Tap to configure preferences", state: preferencesSelected())
+        		}
+           	 	section ("Notifications:") {
+					href("notificationsPAGE", title: null, description: notificationsSelected() ? getNotificationsString() : "Tap to configure notifications", state: notificationsSelected())
+        		}
+               
+        		def botvacList = ""
+    			selectedBotvacs.each() {
+            		def childDevice = getChildDevice("${it}")
+					try {
+						botvacList += "${childDevice.displayName} is ${childDevice.currentStatus}. Battery is ${childDevice.currentBattery}%\n"
 					}
-				}  
-        	}
+        			catch (e) {
+           				log.trace "Error checking status."
+            			log.trace e
+        			}
+					if (botvacList) {
+						section("Botvac Status:") {
+							paragraph image: "https://raw.githubusercontent.com/alyc100/SmartThingsPublic/master/devicetypes/alyc100/neato_botvac_image.png", botvacList.trim()
+						}
+					}  
+        		}
+           	}
         }
 	}
 }
@@ -165,8 +169,8 @@ def smartSchedulePAGE() {
 
 page(name: "timeIntervalInput", title: "Only during a certain time", refreshAfterSelection:true) {
 	section {
-		input "starting", "time", title: "Starting", required: true
-		input "ending", "time", title: "Ending", required: true
+		input "starting", "time", title: "Starting", required: false
+		input "ending", "time", title: "Ending", required: false
 	}
 }
 
@@ -918,7 +922,7 @@ def getApiEndpoint()         { return "https://apps.neatorobotics.com" }
 def getSmartThingsClientId() { return appSettings.clientId }
 def beehiveURL(path = '/') 			 { return "https://beehive.neatocloud.com${path}" }
 private def textVersion() {
-    def text = "Neato (Connect)\nVersion: 1.1c\nDate: 18102016(1122)"
+    def text = "Neato (Connect)\nVersion: 1.1d\nDate: 18102016(1155)"
 }
 
 private def textCopyright() {
