@@ -854,7 +854,7 @@ private getAllOk() {
 
 private getDaysOk() {
 	def result = true
-	if (days) {
+	if (settings.days) {
 		def df = new java.text.SimpleDateFormat("EEEE")
 		if (location.timeZone) {
 			df.setTimeZone(location.timeZone)
@@ -863,7 +863,7 @@ private getDaysOk() {
 			df.setTimeZone(TimeZone.getTimeZone("Europe/London"))
 		}
 		def day = df.format(new Date())
-		result = days.contains(day)
+		result = settings.days.contains(day)
 	}
 	log.trace "daysOk = $result"
 	result
