@@ -64,12 +64,14 @@ def mainPage() {
 			// If a trigger and an actions is set display more options
 			if (anythingSet && actionType) {
 				section("More options", hideable: true, hidden: true) {
+					input "resumePlaying", "bool", title: "Resume currently playing music after notification", required: false, defaultValue: true, submitOnChange: true
 					// TODO: As speakers may have different ways/options to save/play songs, add manufacturer check when all speakers have added manufacturer and model
-//					def appManufacturer = sonos.currentState("manufacturer")
+					def appManufacturer = sonos.currentState("manufacturer")
 //					if (appManufacturer?.value?.contains("Bose") || appManufacturer?.value?.contains("Sonos")) {
-						input "resumePlaying", "bool", title: "Resume currently playing music after notification", required: false, defaultValue: true, submitOnChange: true
+					// For now, make sure this isn't displayed for Samsung speaker
+					if (!appManufacturer?.value?.contains("Samsung")) {
 						chooseTrack()
-//					}
+					}
 					// Make sure volume input is in range
 					if (volume && ((1 > volume) || (100 < volume))) {
 						sendEvent(value:"Volume $volume, which is outside of allowed range (0-100)", eventType: "ALERT")
@@ -105,8 +107,8 @@ def speakers() {
 		state.songOptions = null
 		state.selectedSong = null
 		state.speakerId = sonos?.id
-		app.updateSetting("song", null)
-		settings["song"] = null
+		app.updateSetting("song", "")
+		settings["song"] = ""
 	}
 	if (sonos) {
 		// Update list of songs to play
@@ -140,7 +142,7 @@ def action() {
 def chooseTrack() {
 	input "song","enum",title:"Or play this music or radio station", required:false, description: song ? state.selectedSong?.station : "Tap to set", state: song ? "complete" : "incomplete", multiple: false, options: state.songOptions, submitOnChange: true
 
-	if (song) {
+	if (song?.trim()) {
 		saveSelectedSong()
 	}
 
@@ -166,6 +168,7 @@ private songOptions() {
 		for (int idx = 1; idx < 7; idx++) {
 			preset = sonos.currentState("station${idx}")?.value
 			notSet = "preset ${idx} not set"
+			// Don't display presets not currently set
 			if (preset && (preset.toLowerCase() != notSet)) {
 				options << preset
 			}
@@ -344,7 +347,7 @@ private takeAction(evt) {
 
 	log.trace "takeAction()"
 
-	if (song) {
+	if (song?.trim()) {
 		sonos.playSoundAndTrack(state.sound.uri, state.sound.duration, state.selectedSong, volume)
 	}
 	else if (resumePlaying){
