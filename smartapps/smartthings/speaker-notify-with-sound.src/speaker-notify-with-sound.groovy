@@ -166,6 +166,7 @@ private songOptions() {
 		for (int idx = 1; idx < 7; idx++) {
 			preset = sonos.currentState("station${idx}")?.value
 			notSet = "preset ${idx} not set"
+			// Don't display presets not currently set
 			if (preset && (preset.toLowerCase() != notSet)) {
 				options << preset
 			}
