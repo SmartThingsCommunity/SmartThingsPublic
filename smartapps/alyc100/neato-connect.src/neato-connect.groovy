@@ -17,6 +17,7 @@
  *	18-10-2016: 1.1c - Bug fix. Smart schedule was not updating last clean time properly when Botvac was activated.
  *	17-10-2016: 1.1b - Set last clean value to new devices for smart schedule.
  *	17-10-2016: 1.1 - SmartSchedule functionality and minor fixes 
+ *
  *	15-10-2016: 1.0c - Fix to auto SHM mode not triggering
  *	14-10-2016: 1.0b - Minor fix to preference list
  *	14-10-2016: 1.0 - Initial Version
@@ -83,6 +84,10 @@ def authPage() {
 		}
     } else {
 		updateDevices()
+        //Disable push option if contact book is enabled
+   	 	if (location.contactBookEnabled) {
+    		settings.sendPush = false
+    	}
         dynamicPage(name: "auth", uninstall: false, install: false) {
         	section { headerSECTION() }
 			section ("Choose your Neato Botvacs:") {
@@ -461,12 +466,6 @@ def initialize() {
         }
         subscribe(ssOverrideSwitch, "switch.on", smartScheduleHandler, [filterEvents: false])
     }
-    
-    //Disable push option if contact book is enabled
-    if (location.contactBookEnabled) {
-    	settings.sendPush = false
-    }
-    
 }
 
 def uninstalled() {
