@@ -13,6 +13,7 @@
  *  for the specific language governing permissions and limitations under the License.
  *
  *  VERSION HISTORY
+ *	19-10-2016:	1.1.1b - Unschedule auto dock if cleaning is resumed.
  *	18-10-2016: 1.1.1 - Allow smart schedule to also be triggered on presence and switch events. Add option to specify how override switches work (all or any).
  *
  *	18-10-2016: 1.1d - Bug fix. Custom state validation errors and error saving page message when upgrading from 1.0 to 1.1.
@@ -734,6 +735,7 @@ def eventHandler(evt) {
     }
 	else if (evt.value == "error") {
     	unschedule(pollOn)
+        unschedule(scheduleAutoDock)
         runEvery5Minutes('pollOn')
 		sendEvent(linkText:app.label, name:"${evt.displayName}", value:"error",descriptionText:"${evt.displayName} has an error", eventType:"SOLUTION_EVENT", displayed: true)
 		log.trace "${evt.displayName} has an error"
@@ -744,6 +746,7 @@ def eventHandler(evt) {
      }
 	 else if (evt.value == "cleaning") {
      	unschedule(pollOn)
+        unschedule(scheduleAutoDock)
         //Increase poll interval during cleaning
         schedule("0 0/1 * * * ?", pollOn)
         //Record last cleaning time for device
@@ -779,6 +782,7 @@ def eventHandler(evt) {
 	 }
      else if (evt.value == "ready") {
      	unschedule(pollOn)
+        unschedule(scheduleAutoDock)
         runEvery5Minutes('pollOn')
 		sendEvent(linkText:app.label, name:"${evt.displayName}", value:"off",descriptionText:"${evt.displayName} is off", eventType:"SOLUTION_EVENT", displayed: true)
 		log.trace "${evt.displayName} is off"
@@ -1031,7 +1035,7 @@ def getApiEndpoint()         { return "https://apps.neatorobotics.com" }
 def getSmartThingsClientId() { return appSettings.clientId }
 def beehiveURL(path = '/') 			 { return "https://beehive.neatocloud.com${path}" }
 private def textVersion() {
-    def text = "Neato (Connect)\nVersion: 1.1.1\nDate: 18102016(2100)"
+    def text = "Neato (Connect)\nVersion: 1.1.1b\nDate: 19102016(1000)"
 }
 
 private def textCopyright() {
