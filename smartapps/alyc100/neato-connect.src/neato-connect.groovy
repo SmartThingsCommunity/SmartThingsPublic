@@ -13,6 +13,9 @@
  *  for the specific language governing permissions and limitations under the License.
  *
  *  VERSION HISTORY
+ *	19-10-2016:	1.1.2 - Option to specify "no trigger" in SmartSchedule. Notification when Force clean is due in 24 hours.
+ 						Seperate Smart schedule time markers from force clean time markers.
+ *
  *	19-10-2016:	1.1.1b - Unschedule auto dock if cleaning is resumed.
  *	18-10-2016: 1.1.1 - Allow smart schedule to also be triggered on presence and switch events. Add option to specify how override switches work (all or any).
  *
@@ -156,7 +159,7 @@ def smartSchedulePAGE() {
                 	input ("ssCleaningInterval", "number", title: "Set your ideal cleaning interval in days", required: true, defaultValue: 3)
                     
                     //Define smart schedule trigger
-                    input(name: "ssScheduleTrigger", title: "How do you want to trigger the schedule?", description: null, multiple: false, required: true, submitOnChange: true, type: "enum", options: ["mode": "Away Modes", "switch": "Switches", "presence": "Presence"], defaultValue: "mode")
+                    input(name: "ssScheduleTrigger", title: "How do you want to trigger the schedule?", description: null, multiple: false, required: true, submitOnChange: true, type: "enum", options: ["mode": "Away Modes", "switch": "Switches", "presence": "Presence", "none": "No Triggers"], defaultValue: "mode")
         
                     //Define your away modes
                     if (ssScheduleTrigger == "mode") { input ("ssAwayModes", "mode", title:"Specify your away modes:", multiple: true, required: true) }
@@ -441,7 +444,6 @@ def updated() {
 }
 
 def initialize() {
-	// TODO: subscribe to attributes, devices, locations, etc.
     //Initialise variables
     if (state.lastClean == null) {
     	state.lastClean = [:]
@@ -449,7 +451,17 @@ def initialize() {
     if (state.smartSchedule == null) {
     	state.smartSchedule = [:]
     }
+    if (state.forceCleanNotificationSent == null) {
+    	state.forceCleanNotificationSent = [:]
+    }
+    if (state.botvacOnTimeMarker == null) {
+    	state.botvacOnTimeMarker = [:]
+    }
     if (selectedBotvacs) addBotvacs()
+    
+    getChildDevices().each { childDevice -> 			
+   		if (state.botvacOnTimeMarker[childDevice.deviceNetworkId] == null) state.botvacOnTimeMarker[childDevice.deviceNetworkId] = now()
+    }
         
     unschedule()
     runEvery5Minutes('pollOn') // Asynchronously refresh devices so we don't block
@@ -467,14 +479,24 @@ def initialize() {
             subscribe(childDevice, "status.error", eventHandler, [filterEvents: false])
             subscribe(childDevice, "status.paused", eventHandler, [filterEvents: false])
             subscribe(childDevice, "bin.full", eventHandler, [filterEvents: false])
+            if (state.forceCleanNotificationSent[childDevice.deviceNetworkId] == null) state.forceCleanNotificationSent[childDevice.deviceNetworkId] = false
   		}
   	}
     //subscribe to events for smartSchedule
     if (smartScheduleEnabled) {
+    	//store last mode selected
+    	if (!state.lastTriggerMode) state.lastTriggerMode = ""
+        
     	getChildDevices().each { childDevice -> 
         	//Initialize flags for Smart Schedule
             if (state.smartSchedule[childDevice.deviceNetworkId] == null) state.smartSchedule[childDevice.deviceNetworkId] = false
         	if (state.lastClean[childDevice.deviceNetworkId] == null) state.lastClean[childDevice.deviceNetworkId] = now()
+            //Trigger has changed so reset all smart schedule flags
+            if (state.lastTriggerMode != settings.ssScheduleTrigger) {
+            	log.debug "Smart schedule trigger mode has changed. Resetting smart schedule flag."
+            	state.smartSchedule[childDevice.deviceNetworkId] = false
+            	state.lastTriggerMode = settings.ssScheduleTrigger
+            }
         }
         
         if (settings.ssScheduleTrigger == "mode") { subscribe(location, "mode", smartScheduleHandler, [filterEvents: false]) }
@@ -752,6 +774,8 @@ def eventHandler(evt) {
         //Record last cleaning time for device
         log.debug "$evt.device.deviceNetworkId has started cleaning"
         state.lastClean[evt.device.deviceNetworkId] = now()
+        state.botvacOnTimeMarker[evt.device.deviceNetworkId] = now()
+        state.forceCleanNotificationSent[evt.device.deviceNetworkId] = false
         //Remove SmartSchedule flag
         state.smartSchedule[evt.device.deviceNetworkId] = false
 		sendEvent(linkText:app.label, name:"${evt.displayName}", value:"on",descriptionText:"${evt.displayName} is on", eventType:"SOLUTION_EVENT", displayed: true)
@@ -817,7 +841,7 @@ def smartScheduleHandler(evt) {
     		getChildDevices().each { childDevice ->
         		//Reset last clean date to current time
             	state.lastClean[childDevice.deviceNetworkId] = now()
-            
+            	state.forceCleanNotificationSent[evt.device.deviceNetworkId] = false
             	//Remove existing SmartSchedule flag
             	state.smartSchedule[childDevice.deviceNetworkId] = false
                 
@@ -834,18 +858,9 @@ def smartScheduleHandler(evt) {
     }
     //If mode change event, schedule trigger or presence trigger
     else {
-    	//Check conditions, time andd day have been met
-        if (allOk) {
-        	//For each vacuum
-        	getChildDevices().each { childDevice ->
-            	//If smartSchedule flag has been set, start clean.
-            	if (state.smartSchedule[childDevice.deviceNetworkId]) {
-                	if (settings.ssNotification) {
-                    	messageHandler("Neato SmartSchedule has started ${childDevice.displayName} cleaning.", false)
-                    }
-                	childDevice.on()
-            	}
-        	}      	
+    	//Check conditions, time andd day have been met and execute clean. If no trigger is specified rely on pollOn method to start clean.
+        if (settings.ssScheduleTrigger != "none") {
+        	startConditionalClean()
         }
     }   	
 }
@@ -864,30 +879,62 @@ def pollOn() {
     def activeCleaners = false
     log.debug "Last clean states: ${state.lastClean}"
     log.debug "Smart schedule states: ${state.smartSchedule}"
+    log.debug "Botvac ON time markers: ${state.botvacOnTimeMarker}"
 	getChildDevices().each { childDevice ->
     	state.pollState = now()
 		childDevice.poll()
         //Force on if last clean was a long time ago
         if (childDevice.currentSwitch == "off" && settings.forceClean && state.lastClean != null && state.lastClean[childDevice.deviceNetworkId] != null) {
         	def t = now() - state.lastClean[childDevice.deviceNetworkId]
+            def timeSinceOn = now() - state.botvacOnTimeMarker[childDevice.deviceNetworkId]
+            log.debug "$childDevice.displayName ON time marker at " + state.botvacOnTimeMarker[childDevice.deviceNetworkId] + ". ${timeSinceOn/86400000} days has elapsed since. ${settings.forceCleanDelay - (timeSinceOn/86400000)} days to force clean."
+            log.debug "$childDevice.displayName schedule marker at " + state.lastClean[childDevice.deviceNetworkId] + ". ${t/86400000} days has elapsed since. ${settings.ssCleaningInterval - (t/86400000)} days to scheduled clean."
             
             //Set SmartSchedule flag if SmartSchedule has not been set already, interval has elapsed and user is at home
-            if ((!triggerConditionsOk) && (t > (settings.ssCleaningInterval * 86400000)) && (!state.smartSchedule[childDevice.deviceNetworkId])) {
+            if ((settings.ssScheduleTrigger == "none") && ((settings.ssCleaningInterval - (t/86400000)) < 1) && (!state.smartSchedule[childDevice.deviceNetworkId])) {
+            	//hour calculation for notification of next clean
+                def hours = "24"
+                if (settings.starting) {
+                	def currTime = now()
+					def start = timeToday(settings.starting).time
+                    if (start < currTime) start += 86400000
+                    hours = Math.round(new BigDecimal((start - currTime)/3600000)).toString()
+                }
+                state.smartSchedule[childDevice.deviceNetworkId] = true
+                if (settings.ssNotification) {
+                	messageHandler("Neato SmartSchedule has scheduled ${childDevice.displayName} for a clean in ${hours} hours (date and time restrictions permitting). Please clear obstacles and leave internal doors open ready for the clean.", false)
+                }
+            } else if ((!triggerConditionsOk) && (t > (settings.ssCleaningInterval * 86400000)) && (!state.smartSchedule[childDevice.deviceNetworkId])) {
             	state.smartSchedule[childDevice.deviceNetworkId] = true
             	if (settings.ssNotification) {
                 	def reason = "you're next away"
                     if (settings.ssScheduleTrigger == "switch") { reason = "your selected switches turn on" }
                     else if (settings.ssScheduleTrigger == "presence") { reason = "your selected presence sensors leave"}
-                	messageHandler("Neato SmartSchedule has scheduled ${childDevice.displayName} for a clean when " + reason + " (date and time restrictions permitting). Please clear obstacles and leave internal doors open when you next leave the house.", false)
+                	messageHandler("Neato SmartSchedule has scheduled ${childDevice.displayName} for a clean when " + reason + " (date and time restrictions permitting). Please clear obstacles and leave internal doors open ready for the clean.", false)
                 }
             }
-            log.debug "$childDevice.displayName last cleaned at " + state.lastClean[childDevice.deviceNetworkId] + ". ${t/86400000} days has elapsed since."
-			if (t > (settings.forceCleanDelay * 86400000)) {
-            	log.debug "Force clean activated as $t milliseconds has elapsed"
+            
+            //Create 24 hour warning for force clean.
+            if ((state.forceCleanNotificationSent != null) && (!state.forceCleanNotificationSent[childDevice.deviceNetworkId]) && ((settings.forceCleanDelay - (timeSinceOn/86400000)) < 1)) {
+            	//Send notification when force clean is due
+            	log.debug "Force clean due within 24 hours"
+				messageHandler(childDevice.displayName + " has not cleaned for " + (settings.forceCleanDelay - 1) + " days. Forcing a clean in 24 hours. Please clear obstacles and leave internal doors open ready for the clean.", true)
+                state.forceCleanNotificationSent[childDevice.deviceNetworkId] = true
+            }
+            
+            //Execute force clean (no conditions need checking)
+			if (timeSinceOn > (settings.forceCleanDelay * 86400000)) {
+            	log.debug "Force clean activated as ${timeSinceOn/86400000} days has elapsed"
 				messageHandler(childDevice.displayName + " has not cleaned for " + settings.forceCleanDelay + " days. Forcing a clean.", true)
                 childDevice.on()
         	}
         }
+        
+        //If no trigger has been set for smart schedule, execute clean when interval time has elapsed
+        if ((settings.ssScheduleTrigger == "none") && state.smartSchedule[childDevice.deviceNetworkId] && (t > (settings.ssCleaningInterval * 86400000))) {
+        	startConditionalClean()
+        }
+        
         //Search for active cleaners
         if (childDevice.latestState('status').stringValue == 'cleaning') {
         	activeCleaners = true
@@ -913,6 +960,20 @@ def pollOn() {
 }
 
 //Helper methods
+def startConditionalClean() {
+	if (allOk) {
+    	//For each vacuum
+        getChildDevices().each { childDevice ->
+        	//If smartSchedule flag has been set, start clean.
+            if (state.smartSchedule[childDevice.deviceNetworkId]) {
+            	if (settings.ssNotification) {
+                	messageHandler("Neato SmartSchedule has started ${childDevice.displayName} cleaning.", false)
+                }
+                childDevice.on()
+            }
+       	}      	
+     }
+}
 
 def messageHandler(msg, forceFlag) {
 	if (settings.sendSMS != null && !forceFlag) {
@@ -932,7 +993,7 @@ private getAllOk() {
 
 private getTriggerConditionsOk() {
 	//Calculate, depending on smart schedule trigger mode, whether conditions currently match
-    def result = false
+    def result = true
     
     if (settings.ssScheduleTrigger == "mode") {
     	result = location.mode in settings.ssAwayModes 
@@ -940,7 +1001,6 @@ private getTriggerConditionsOk() {
     	if (settings.ssSwitchTriggerCondition == "any") {
         	result = "on" in settings.ssSwitchTrigger.currentSwitch
         } else {
-        	result = true
         	for (switchVal in settings.ssSwitchTrigger.currentSwitch) {
         		if (switchVal == "off") {
             		result = false
@@ -952,7 +1012,6 @@ private getTriggerConditionsOk() {
     	if (settings.ssPeopleAwayCondition == "any") {
         	result = "not present" in settings.ssPeopleAway.currentPresence
         } else {
-        	result = true
         	for (person in settings.ssPeopleAway) {
         		if (person.currentPresence == "present") {
             		result = false
@@ -960,7 +1019,8 @@ private getTriggerConditionsOk() {
         		}
     		}
         }
-    }  
+    } 
+    
     log.trace "triggerConditionsOk = $result"
     result
 }
@@ -1033,9 +1093,9 @@ def getCallbackUrl()         { return "https://graph.api.smartthings.com/oauth/c
 def getBuildRedirectUrl()    { return "${serverUrl}/oauth/initialize?appId=${app.id}&access_token=${atomicState.accessToken}&apiServerUrl=${shardUrl}" }
 def getApiEndpoint()         { return "https://apps.neatorobotics.com" }
 def getSmartThingsClientId() { return appSettings.clientId }
-def beehiveURL(path = '/') 			 { return "https://beehive.neatocloud.com${path}" }
+def beehiveURL(path = '/') 	 { return "https://beehive.neatocloud.com${path}" }
 private def textVersion() {
-    def text = "Neato (Connect)\nVersion: 1.1.1b\nDate: 19102016(1000)"
+    def text = "Neato (Connect)\nVersion: 1.1.2\nDate: 19102016(1620)"
 }
 
 private def textCopyright() {
