@@ -144,5 +144,5 @@ def configure() {
 
 	// temperature minReportTime 30 seconds, maxReportTime 5 min. Reporting interval if no activity
 	// battery minReport 30 seconds, maxReportTime 6 hrs by default
-	return refresh()
+	return zigbee.resetToFactoryDefaults() + refresh()
 }
