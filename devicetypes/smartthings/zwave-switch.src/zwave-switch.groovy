@@ -19,6 +19,7 @@ metadata {
 		capability "Polling"
 		capability "Refresh"
 		capability "Sensor"
+		capability "Health Check"
 
 		fingerprint mfr:"0063", prod:"4952", deviceJoinName: "Z-Wave Wall Switch"
 		fingerprint mfr:"0063", prod:"5257", deviceJoinName: "Z-Wave Wall Switch"
@@ -64,6 +65,8 @@ metadata {
 }
 
 def updated(){
+		// Device-Watch simply pings if no device events received for 32min(checkInterval)
+		sendEvent(name: "checkInterval", value: 2 * 15 * 60 + 2 * 60, displayed: false, data: [protocol: "zwave", hubHardwareId: device.hub.hardwareID])
   switch (ledIndicator) {
         case "on":
             indicatorWhenOn()
@@ -154,6 +157,13 @@ def poll() {
 		zwave.switchBinaryV1.switchBinaryGet().format(),
 		zwave.manufacturerSpecificV1.manufacturerSpecificGet().format()
 	])
+}
+
+/**
+  * PING is used by Device-Watch in attempt to reach the Device
+**/
+def ping() {
+		refresh()
 }
 
 def refresh() {
