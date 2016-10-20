@@ -13,6 +13,9 @@
  *  for the specific language governing permissions and limitations under the License.
  *
  *  VERSION HISTORY
+ *	20-10-2016: 1.1 - Added smart schedule and force clean status messages. Added smart schedule reset button.
+ *					  Disable Neato Robot Schedule if SmartSchedule is enabled
+ *	
  *	14-10-2016: 1.0 - Initial Version
  *
  */
@@ -31,6 +34,7 @@ metadata {
         command "dock"
         command "enableSchedule"
         command "disableSchedule"
+        command "resetSmartSchedule"
 
 		attribute "network","string"
 		attribute "bin","string"
@@ -51,7 +55,13 @@ metadata {
 				attributeState "statusMsg", label:'${currentValue}'
 			}
 		}
-    
+        valueTile("smartScheduleStatusMessage", "device.smartScheduleStatusMessage", decoration: "flat", width: 3, height: 1) {
+			state "default", label: '${currentValue}'
+		}
+        
+        valueTile("forceCleanStatusMessage", "device.forceCleanStatusMessage", decoration: "flat", width: 3, height: 1) {
+			state "default", label: '${currentValue}'
+		}
 		valueTile("battery", "device.battery", decoration: "flat", inactiveLabel: false, width: 2, height: 2) {
 			state "battery", label:'${currentValue}% battery', unit:""
 		}
@@ -70,8 +80,8 @@ metadata {
 		}*/
 		standardTile("network", "device.network", width: 2, height: 2, inactiveLabel: false, canChangeIcon: false) {
 			state ("default", label:'unknown', icon: "st.unknown.unknown.unknown")
-			state ("Connected", label:'Link Good', icon: "st.Health & Wellness.health9", backgroundColor: "#79b821")
-			state ("Not Connected", label:'Link Bad', icon: "st.Health & Wellness.health9", backgroundColor: "#bc2323")
+			state ("Connected", label:'Online', icon: "st.Health & Wellness.health9", backgroundColor: "#79b821")
+			state ("Not Connected", label:'Offline', icon: "st.Health & Wellness.health9", backgroundColor: "#bc2323")
 		}
 		standardTile("refresh", "device.switch", width: 2, height: 2, inactiveLabel: false, canChangeIcon: false, decoration: "flat") {
 			state("default", label:'refresh', action:"refresh.refresh", icon:"st.secondary.refresh-icon")
@@ -84,15 +94,15 @@ metadata {
 			state ("paused", label:'${currentValue}', icon: "https://raw.githubusercontent.com/alyc100/SmartThingsPublic/master/devicetypes/alyc100/laser-guided-navigation.png")
 		}
         
-        standardTile("dockStatus", "device.dockStatus", width: 2, height: 2, inactiveLabel: false, canChangeIcon: false) {
+        standardTile("dockStatus", "device.dockStatus", width: 2, height: 2, inactiveLabel: false, canChangeIcon: false, decoration: "flat") {
          	state ("docked", label:'DOCKED', icon: "https://raw.githubusercontent.com/alyc100/SmartThingsPublic/master/devicetypes/alyc100/auto-charge-resume.png")
 			state ("dockable", label:'DOCK', action: "dock", icon: "https://raw.githubusercontent.com/alyc100/SmartThingsPublic/master/devicetypes/alyc100/neato_staub.png")
             state ("undocked", label:'UNDOCKED', icon: "https://raw.githubusercontent.com/alyc100/SmartThingsPublic/master/devicetypes/alyc100/laser-guided-navigation.png")
 		}
         
-        standardTile("scheduled", "device.scheduled", width: 2, height: 2, inactiveLabel: false, canChangeIcon: false) {
-         	state ("true", label:'Sched', action: "disableSchedule", icon:"st.Office.office7")
-			state ("false", label:'Manual', action: "enableSchedule", icon: "st.Appliances.appliances13")
+        standardTile("scheduled", "device.scheduled", width: 2, height: 2, inactiveLabel: false, canChangeIcon: false, decoration: "flat") {
+         	state ("true", label:'enable manual', action: "disableSchedule", icon:"st.Office.office7")
+			state ("false", label:'enable auto', action: "enableSchedule", icon: "st.Appliances.appliances13")
 		}
         
         standardTile("dockHasBeenSeen", "device.dockHasBeenSeen", width: 2, height: 2, inactiveLabel: false, canChangeIcon: false) {
@@ -100,8 +110,12 @@ metadata {
 			state ("false", label:'SEARCHING', backgroundColor: "#E5E500", icon:"st.Transportation.transportation13")
 		}
         
+        standardTile("resetSmartSchedule", "device.resetSmartSchedule", inactiveLabel: false, width: 2, height: 2, decoration: "flat") {
+			state("default", label:'reset schedule', action:"resetSmartSchedule", icon:"st.Office.office6")
+		}
+        
 		main("clean")
-		details(["clean","status","battery","bin","network", "dockStatus", "charging", "dockHasBeenSeen", "scheduled", "refresh"])
+		details(["clean","smartScheduleStatusMessage", "forceCleanStatusMessage", "status","battery","bin","network", "dockStatus", "charging", "dockHasBeenSeen", "scheduled", "resetSmartSchedule", "refresh"])
 		}
 }
 
@@ -165,6 +179,12 @@ def setOffline() {
 	sendEvent(name: 'network', value: "Not Connected" as String)
 }
 
+def resetSmartSchedule() {
+	log.debug "Executing 'resetSmartSchedule'"
+	parent.resetSmartScheduleForDevice(device.deviceNetworkId) 
+    runIn(2, refresh)
+}
+
 def poll() {
 	log.debug "Executing 'poll'"
     def resp = nucleoPOST("/messages", '{"reqId":"1", "cmd":"getRobotState"}')
@@ -196,7 +216,7 @@ def poll() {
         		case "1":
             		sendEvent(name: "status", value: "ready")
                 	sendEvent(name: "switch", value: "off")
-                	statusMsg += 'READY TO CLEAN'
+                    statusMsg += "READY TO CLEAN"
 				break;
 				case "2":
 					sendEvent(name: "status", value: "cleaning")
@@ -207,6 +227,8 @@ def poll() {
 					sendEvent(name: "status", value: "paused")
                 	sendEvent(name: "switch", value: "off")
                 	statusMsg += 'PAUSED'
+                    def t = parent.autoDockDelayValue()
+                    if (t != -1) { statusMsg += " - Auto dock set to $t seconds." }
 				break;
             	case "4":
 					sendEvent(name: "status", value: "error")
@@ -318,15 +340,48 @@ def poll() {
         		sendEvent(name: 'dockStatus', value: "dockable")
             }
         }
-        
         if (binFullFlag) {
         	sendEvent(name: 'bin', value: "full" as String)
         } else {
         	sendEvent(name: 'bin', value: "empty" as String)
         }
+        def smartScheduleStatus = ""
+        def t = parent.timeToSmartScheduleClean(device.deviceNetworkId)
+        if (t != -1) {
+        	if (t >= 86400000) {
+            	smartScheduleStatus += "SmartSchedule activating in ${Math.round(new BigDecimal(t/86400000)).toString()} days."
+            } else if ((t >= 0) && (t <= 86400000)) {
+            	smartScheduleStatus += "SmartSchedule activating in ${Math.round(new BigDecimal(t/3600000)).toString()} hours."
+            } else {
+            	smartScheduleStatus += "SmartSchedule waiting for configured trigger."
+            }
+         } else {
+         	smartScheduleStatus += "SmartSchedule is disabled. Configure in Neato (Connect) smart app."
+         }
+         def forceCleanStatus = ""
+         t = parent.timeToForceClean(device.deviceNetworkId)
+         if (t != -1) {
+                if (t >= 86400000) {
+                	forceCleanStatus += "Force clean due in ${Math.round(new BigDecimal(t/86400000)).toString()} days."
+                } else if ((t >= 0) && (t <= 86400000)) {
+                	forceCleanStatus += "Force clean due in ${Math.round(new BigDecimal(t/3600000)).toString()} hours."
+                } else {
+                	forceCleanStatus += "Force clean imminent."
+             }
+         } else {
+         	forceCleanStatus += "Force clean is disabled. Configure in Neato (Connect) smart app."
+         }
+         sendEvent(name: 'smartScheduleStatusMessage', value: smartScheduleStatus, displayed: false)
+         sendEvent(name: 'forceCleanStatusMessage', value: forceCleanStatus, displayed: false)
     }
     sendEvent(name: 'statusMsg', value: statusMsg, displayed: false)
     
+    //If smart schedule is enabled, disable Neato schedule to avoid conflict
+    if (parent.isSmartScheduleEnabled && result.details.isScheduleEnabled) {
+    	log.debug "Disable Neato scheduling system as SmartSchedule is enabled"
+    	nucleoPOST("/messages", '{"reqId":"1", "cmd":"disableSchedule"}')
+        sendEvent(name: 'scheduled', value: "false")
+    }
 }
 
 def refresh() {
