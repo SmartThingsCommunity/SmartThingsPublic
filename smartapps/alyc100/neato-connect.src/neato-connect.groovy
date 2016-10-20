@@ -150,7 +150,7 @@ def selectDevicePAGE() {
 def smartSchedulePAGE() {
 	return dynamicPage(name: "smartSchedulePAGE", title: "SmartSchedule Configuration", install: false, uninstall: false) { 
     	section() {
-        	paragraph "Configure a dymanic schedule for your Botvacs so that they can clean on a regular interval but based on mode, presence sensor and switch triggers."
+        	paragraph "Configure a dymanic schedule for your Botvacs so that they can clean on a regular interval but based on mode, presence sensor or switch triggers."
         	input "smartScheduleEnabled", "bool", title: "Enable SmartSchedule?", required: false, defaultValue: false, submitOnChange: true
         }
             if (settings.smartScheduleEnabled) {
@@ -1101,7 +1101,7 @@ def getApiEndpoint()         { return "https://apps.neatorobotics.com" }
 def getSmartThingsClientId() { return appSettings.clientId }
 def beehiveURL(path = '/') 	 { return "https://beehive.neatocloud.com${path}" }
 private def textVersion() {
-    def text = "Neato (Connect)\nVersion: 1.1.2b\nDate: 20102016(1320)"
+    def text = "Neato (Connect)\nVersion: 1.1.2b\nDate: 20102016(0950)"
 }
 
 private def textCopyright() {
