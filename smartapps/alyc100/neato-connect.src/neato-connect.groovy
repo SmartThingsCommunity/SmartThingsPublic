@@ -13,6 +13,7 @@
  *  for the specific language governing permissions and limitations under the License.
  *
  *  VERSION HISTORY
+ *	21-10-2016: 1.1.3b - Force poll on settings update.
  *	20-10-2016: 1.1.3 - Allow device handler to display smart scheduling information.
  *
  *	20-10-2016: 1.1.2b - Bug fix. SmartSchedule does not operate if force clean option is disabled.
@@ -508,6 +509,7 @@ def initialize() {
             	state.lastTriggerMode = settings.ssScheduleTrigger
             }
         }
+        childDevice.poll()
     }
     unschedule()
     runEvery5Minutes('pollOn') // Asynchronously refresh devices so we don't block
@@ -1147,7 +1149,7 @@ def getApiEndpoint()         { return "https://apps.neatorobotics.com" }
 def getSmartThingsClientId() { return appSettings.clientId }
 def beehiveURL(path = '/') 	 { return "https://beehive.neatocloud.com${path}" }
 private def textVersion() {
-    def text = "Neato (Connect)\nVersion: 1.1.3\nDate: 20102016(2210)"
+    def text = "Neato (Connect)\nVersion: 1.1.3b\nDate: 21102016(1720)"
 }
 
 private def textCopyright() {
