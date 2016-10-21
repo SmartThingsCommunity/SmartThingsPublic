@@ -1,13 +1,13 @@
 /**
  *  Ask Alexa 
  *
- *  Version 2.1.8a - 10/21/16 Copyright © 2016 Michael Struck
+ *  Version 2.1.8b - 10/21/16 Copyright © 2016 Michael Struck
  *  Special thanks for Keith DeLong for overall code and assistance; Barry Burke for Weather Underground Integration; jhamstead for Ecobee climate modes, Yves Racine for My Ecobee thermostat tips
  * 
  *  Version information prior to 2.1.7 listed here: https://github.com/MichaelStruck/SmartThingsPublic/blob/master/smartapps/michaelstruck/ask-alexa.src/Ask%20Alexa%20Version%20History.md
  *
  *  Version 2.1.7 (10/9/16) Allow for flash briefing reports, added audio output devices to control macros
- *  Version 2.1.8a (10/21/16) Added option for reports from Nest Manager application; tweaking of color list to make it more user friendly, added the beginnings of a cheat sheet option
+ *  Version 2.1.8b (10/21/16) Added option for reports from Nest Manager application; tweaking of color list to make it more user friendly, added the beginnings of a cheat sheet option
  *
  *  Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except
  *  in compliance with the License. You may obtain a copy of the License at:
@@ -3246,12 +3246,12 @@ def getURLs(){
 //Version/Copyright/Information/Help-----------------------------------------------------------
 private textAppName() { return "Ask Alexa" }	
 private textVersion() {
-    def version = "SmartApp Version: 2.1.8a (10/21/2016)", lambdaVersion = state.lambdaCode ? "\n" + state.lambdaCode : ""
+    def version = "SmartApp Version: 2.1.8b (10/21/2016)", lambdaVersion = state.lambdaCode ? "\n" + state.lambdaCode : ""
     return "${version}${lambdaVersion}"
 }
 private versionInt(){ return 218 }
 private LambdaReq() { return 122 }
-private versionLong(){ return "2.1.8a" }
+private versionLong(){ return "2.1.8b" }
 private textCopyright() {return "Copyright © 2016 Michael Struck" }
 private textLicense() {
 	def text = "Licensed under the Apache License, Version 2.0 (the 'License'); you may not use this file except in compliance with the License. You may obtain a copy of the License at\n\n"+
@@ -3262,7 +3262,7 @@ private textHelp() {
 	def text = "This SmartApp provides an interface to control and query the SmartThings environment via the Amazon Echo ('Alexa'). For more information, go to http://thingsthataresmart.wiki/index.php?title=Ask_Alexa."
 }
 def getCheatDisplayList(type){
-    def count = state.aliasList.size(), result=""
+    def count = state.aliasList ? state.aliasList.size() : 0, result=""
    	for (int i=0; i < count; i++) {
     	def deviceName = state.aliasList.aliasType[i]
 		if (deviceName==type) result += state.aliasList.aliasName[i] + " (Alias Name) = "+ state.aliasList.aliasDevice[i] + " (Real Device)<br>"
@@ -3304,7 +3304,7 @@ private cheat(){
     if (getCheatDisplayList("humidity")) { result += "<u>Aliases</u><br>"; result += getCheatDisplayList("humidity") +"<br>" }
     if (speakersSel()) { result += "<h2><u>Speakers (Valid Commands: <b>Play, Mute, Next Track, Previous Track, volume {level}, increase, decrease, up, down, raise, lower</b>)</u></h2>"; if (speakers) { speakers.each{ result += it.label +"<br>" } } }
     if (getCheatDisplayList("music")) { result += "<u>Aliases</u><br>"; result += getCheatDisplayList("music") +"<br>" }
-    if (sonosCMD && sonosMemoryCount){
+    if (speakersSel() && sonosCMD && sonosMemoryCount){
     	result += "<u>Memory Slots</u><br>"
         def memCount = sonosMemoryCount as int
         for (int i=1; i<memCount+1; i++){
