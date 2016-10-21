@@ -1,12 +1,13 @@
 /**
  *  Ask Alexa 
  *
- *  Version 2.1.7 - 10/9/16 Copyright © 2016 Michael Struck
+ *  Version 2.1.8 - 10/20/16 Copyright © 2016 Michael Struck
  *  Special thanks for Keith DeLong for overall code and assistance; Barry Burke for Weather Underground Integration; jhamstead for Ecobee climate modes, Yves Racine for My Ecobee thermostat tips
  * 
  *  Version information prior to 2.1.7 listed here: https://github.com/MichaelStruck/SmartThingsPublic/blob/master/smartapps/michaelstruck/ask-alexa.src/Ask%20Alexa%20Version%20History.md
  *
  *  Version 2.1.7 (10/9/16) Allow for flash briefing reports, added audio output devices to control macros
+ *  Version 2.1.8 (10/20/16) Added option for reports from Nest Manager application; tweaking of color list to make it more user friendly, added the beginnings of a cheat sheet option
  *
  *  Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except
  *  in compliance with the License. You may obtain a copy of the License at:
@@ -341,6 +342,11 @@ def pageAbout(){
     	}
         section ("Apache license"){ paragraph textLicense() }
     	section("Instructions") { paragraph textHelp() }
+        section("Help") {
+        	if (!state.accessToken) paragraph "**You must enable OAuth via the IDE to produce the command cheat sheet**"
+            else href url:"${getApiServerUrl()}/api/smartapps/installations/${app.id}/cheat?access_token=${state.accessToken}", style:"embedded", required:false, title:"Display Device/Command Cheat Sheet", 
+            	description: "Tap to display the cheat sheet.\nUse Live Logging in the SmartThings IDE to obtain the address for use on your computer broswer.", image: imgURL() + "list.png"
+        }
         section("Tap below to remove the application and all macros"){}
 	}
 }
@@ -436,9 +442,10 @@ def pageCustomDevices(){
 		section("Device specific commands"){
             input "ecobeeCMD", "bool", title: "Ecobee Specific Thermostat Modes\n(Home/Away/Sleep/Resume Program)", defaultValue: false, submitOnChange: true
             if (ecobeeCMD) input "MyEcobeeCMD", "bool", title: "MyEcobee Specific Tips\n(Get Tips/Play Tips/Erase Tips)", defaultValue: false             
-            input "nestCMD", "bool", title: "Nest-Specific Thermostat Presence Commands (Home/Away)", defaultValue: false
+            input "nestCMD", "bool", title: "Nest-Specific Thermostat Presence Commands (Home/Away)", defaultValue: false, submitOnChange: true
+            if (nestCMD) input "nestMGRCMD", "bool", title: "Nest Manager Specific Reports (Report)", defaultValue: false
             input "stelproCMD", "bool", title: "Stelpro Baseboard\nThermostat Modes (Eco/Comfort)", defaultValue:false
-            input "sonosCMD", "bool", title: "SONOS Memory Slots", defaultValue: false, submitOnChange: true
+            input "sonosCMD", "bool", title: "SONOS Options (Memory Slots)", defaultValue: false, submitOnChange: true
             if (sonosCMD) {
 				input "sonosMemoryCount", "enum", title: "Maximum number of SONOS memory slots", options: optionCount(2,10), defaultValue: 2, required: false 
                 paragraph "To reset the database of SONOS songs listed in the memory slots, tap the area below. It is recommended you do this ONLY if you are having issues playing the songs in the list. " +
@@ -653,7 +660,7 @@ def pageSTDevices(){
             input "cLights", "capability.colorControl", title: "Control These Colored Lights...", multiple: true, required: false, submitOnChange:true
             if (cLights) input "cLightsCMD", "enum", title: "Command To Send To Colored Lights", options:["on":"Turn on","off":"Turn off","set":"Set color and level", "toggle":"Toggle the lights' on/off state"], multiple: false, required: false, submitOnChange:true
             if (cLightsCMD == "set" && cLights){
-                input "cLightsCLR", "enum", title: "Choose A Color...", required: false, multiple:false, options: parent.fillColorSettings(true).name, submitOnChange:true
+                input "cLightsCLR", "enum", title: "Choose A Color...", required: false, multiple:false, options: parent.fillColorSettings().name, submitOnChange:true
                 if (cLightsCLR == "Custom-User Defined"){
                     input "hueUserDefined", "number", title: "Colored Lights Hue", description: "Set colored light hue (0 to 100)", required: false, defaultValue: 0
                     input "satUserDefined", "number", title: "Colored Lights Saturation", description: "Set colored lights saturation (0 to 100)", required: false, defaultValue: 0
@@ -915,6 +922,7 @@ mappings {
 	path("/u") { action: [GET: "getURLs"] }
 	path("/setup") { action: [GET: "setupData"] }
     path("/flash") { action: [GET: "flash"] }
+    path("/cheat") { action: [GET: "cheat"] }
 }
 //--------------------------------------------------------------
 def processBegin(){
@@ -1073,7 +1081,7 @@ def processList(){
         "You may also include the number of events you would like to hear. An example would be, 'tell ${invocationName} to give me the last 4 events for the Bedroom'. "
     }
     if (listType =~/alias/) outputTxt = "You can not list aliases directly. To hear the aliases that are available, choose a specific device catagory to list. For example, if you list the available switch devices, any switch aliases you created will be listed as well. "
-    if (listType ==~/colors|color/) outputTxt = cLights ? "The available colors to use with colored lights are: " + getList(fillColorSettings(false).name) + ". " : "%colored lights%"
+    if (listType ==~/colors|color/) outputTxt = cLights ? "The available colors to use with colored lights are: " + getList(fillColorSettings().name) + ". " : "%colored lights%"
     if (listType ==~/group|groups|macro|macros/) outputTxt ="Please be a bit more specific about which groups or macros you want me to list. You can ask me about 'core triggers', 'macro groups', 'device groups', 'control macros' and 'voice reports'. %1%"
     if (listType ==~/sensor|sensors/) outputTxt ="Please be a bit more specific about what kind of sensors you want me to list. You can ask me to list items like 'water', 'open close', 'presence', 'acceleration, or 'motion sensors'. %1%"
     if (listType ==~/light|lights/) outputTxt ="Please be a bit more specific about what kind of lighting devices you want me to list. You can ask me to list devices like 'switches', 'dimmers' or 'colored lights'. %1%"
@@ -1166,7 +1174,7 @@ def processMacro() {
 		if (cmd=="high" && dimmerHigh) num = dimmerHigh else if (cmd=="high" &&!dimmerhigh) err=true
         if (err) outputTxt = "You don't have a default value set up for the ${outputTxt} level. I am not making any adjustments. "
     }
-    def getColorData = fillColorSettings(false).find {it.name.toLowerCase()==param}
+    def getColorData = fillColorSettings().find {it.name.toLowerCase()==param}
     if (getColorData){
         def hueColor = getColorData.hue, satLevel = getColorData.sat
         colorData = [hue: hueColor as int, saturation: satLevel as int] 
@@ -1401,7 +1409,7 @@ def getReply(devices, type, STdeviceName, op, num, param){
 					}
                     else result = "You do not have the Ecobee tips functionality enabled in your SmartApp. %1%"
                 }
-                else {
+                else {                   
                     if (param == "undefined") param = tstatCool ? "cool" : tstatHeat ? "heat" : param
                     if ((op ==~/increase|raise|up|decrease|down|lower/)){
                          def newValues = upDown(STdevice, type, op, num, STdeviceName)  
@@ -1432,6 +1440,12 @@ def getReply(devices, type, STdeviceName, op, num, param){
                         if (param =="resume program" && MyEcobeeCMD) {result = "I am resuming the climate program of the ${STdeviceName}. "; STdevice.resumeThisTstat()}  
                         if (op =="off") { result = "I am turning the ${STdeviceName} ${op}. "; STdevice.off() }
                         if (stelproCMD && param==~/eco|comfort/) { result="I am setting the ${STdeviceName} to '${param}' mode. "; STdevice.setThermostatMode("${param}") } 
+                    }
+                    else if (op=~"report") {
+                    	if (nestCMD && nestMGRCMD) { STdevice.updateNestReportData();  result = STdevice.currentValue("nestReportData").toString() }
+                        if (!nestCMD || (nestCMD && !nestMGRCMD) ) result ="The 'report' command is reserved for Nest Thermostats using the Nest Manager SmartApp. " +
+                        	"You do not have the options enabled to use this command. Please check your settings within your smartapp. %1%"
+                        if (result=="null") result = "The Nest Manager returned no results for the ${STdeviceName}. Please check your settings within your smartapp. %1%"
                     }
                     else {
                         if (param == "undefined"){ 
@@ -1492,7 +1506,7 @@ def getReply(devices, type, STdeviceName, op, num, param){
                     result = overRideMsg ? overRideMsg : num==100 ? "I am setting the ${STdeviceName} to its maximum value. " : "I am setting the ${STdeviceName} to ${num}%. "                    
 				}
                 if (type == "color" && param !="undefined" && supportedCaps.name.contains("Color Control")){
-                    def getColorData = fillColorSettings(false).find {it.name.toLowerCase()==param}
+                    def getColorData = fillColorSettings().find {it.name.toLowerCase()==param}
                     if (getColorData){
                         def hueColor = getColorData.hue, satLevel = getColorData.sat
                         def newLevel = num > 0 ? num : STdevice.currentValue("level")
@@ -1630,7 +1644,7 @@ def macroResults(num, cmd, colorData, param,mNum){
 }
 //Group Handler
 def groupResults(num, op, colorData, param, mNum){   
-    def grpType = [switch:"switch", switchLevel:"dimmer", colorControl:"colored lights", windowShade:"window shade", doorControl: "door"][groupType]?:groupType
+    def grpType = [switch:"switch", switchLevel:"dimmer", colorControl:"colored light", windowShade:"window shade", doorControl: "door"][groupType]?:groupType
     String result = ""
     try {
         def noun= settings."groupDevice${groupType}".size()==1 ? grpType : grpType+"s"
@@ -1659,7 +1673,7 @@ def groupResults(num, op, colorData, param, mNum){
                 settings."groupDevice${groupType}"?.setColor(colorData)
                 if (!voicePost && !noAck){
                     result ="I am setting the ${noun} in the '${app.label}' group to ${param}"
-                    result += num ==100 ? " and ${proNoun} maximum brightness" : ", at a brightness level of ${num}%"
+                    result += num ==100 ? " and ${proNoun} maximum brightness" : num>0 ? ", at a brightness level of ${num}%" : ""
                     result += ". "
                 }
                 else if (voicePost && !noAck)  result = replaceVoiceVar(voicePost,"") 
@@ -2163,9 +2177,7 @@ def waterReport(){
     String result = ""
     def wetList = voiceWater.findAll{it.latestValue("water") != "dry"}
 	if (!voiceWetOnly) for (deviceName in voiceWater) { result += "The ${deviceName} is ${deviceName.latestValue("water")}. " }
-	else if (wetList){
-		for (deviceName in wetList){ result += "The ${deviceName} is sensing water is present. " }
-	}
+	else if (wetList) for (deviceName in wetList){ result += "The ${deviceName} is sensing water is present. " }
     return result
 }
 //Parent Code Access (from Child)-----------------------------------------------------------
@@ -2435,9 +2447,7 @@ def getHTTPDesc(){
 private getLastEvt(devGroup, evtTxt, searchVal, devTxt){
     def devEvt, evtLog=[],  lastEvt="I could not find any ${evtTxt} events in the log. "
 	devGroup.each{ deviceName-> devEvt= deviceName.events()
-		devEvt.each {
-			if (it.value && it.value==searchVal) evtLog << [device: deviceName, time: it.date.getTime(), desc: it.descriptionText]
-		}
+		devEvt.each { if (it.value && it.value==searchVal) evtLog << [device: deviceName, time: it.date.getTime(), desc: it.descriptionText] }
 	} 
     if (evtLog.size()>0){
         evtLog.sort({it.time})
@@ -2795,8 +2805,7 @@ private tideInfo() {
 	Integer cur_minute = wdata.moon_phase.current_time.minute.toInteger()			// may not be the same as the SmartThings hub location
 	Integer cur_mins = (cur_hour * 60) + cur_minute
 	String timeZoneTxt = wdata.tide.tideSummary[0].date.pretty.replaceAll(/\d+:\d+ .{2} (.{3}) .*/, /$1/)
-	Integer count = 0
-    Integer index = 0
+	Integer count = 0, index = 0
 	while (count < 4) {	
 		def tide = wdata.tide.tideSummary[index]
         index ++
@@ -2863,7 +2872,7 @@ def sendMSG(num, msg, push, recipients){
 }
 def toggleState(swDevices){ swDevices.each{ it.currentValue("switch")=="off" ? it.on() : it.off() } }
 private setColoredLights(switches, color, level, type){
-	def getColorData = parent.fillColorSettings(true).find {it.name==color}
+	def getColorData = parent.fillColorSettings().find {it.name==color}
     def hueColor = getColorData? getColorData.hue : 0, satLevel = getColorData ? getColorData.sat:0
 	if (color == "Custom-User Defined"){
 		hueColor = hueUserDefined ?  hueUserDefined  : 0
@@ -3020,45 +3029,14 @@ def getDeviceAliasList(aliasType){
     if (result) result.devices.each{ resultList <<"${it}" }
     return resultList
 }
-def fillColorSettings(full){
+def fillColorSettings(){
 	def colorData = []
-    colorData << [name: "White", hue: 0, sat: 0] << [name: "Orange", hue: 8, sat: 100] << [name: "Red", hue: 100, sat: 100] << [name: "Purple", hue: 78, sat: 100]
-    colorData << [name: "Green", hue: 37, sat: 100] << [name: "Blue", hue: 64, sat: 100] << [name: "Yellow", hue: 16, sat: 100] << [name: "Pink", hue: 87, sat: 100]
-    if (full){
-        colorData  << [name: "Navy", hue: 66, sat: 100]  << [name: "Dark Blue", hue: 66, sat: 100]  << [name: "Medium Blue", hue: 66, sat: 100] << [name: "Ivory", hue: 16, sat: 100] 
-        colorData  << [name: "Dark Green", hue: 33, sat: 100]  << [name: "Teal", hue: 50, sat: 100]  << [name: "Dark Cyan", hue: 50, sat: 100] << [name: "Orange Red", hue: 4, sat: 100] 
-        colorData  << [name: "Deep Sky Blue", hue: 54, sat: 100]  << [name: "Dark Turquoise", hue: 50, sat: 100]  << [name: "Medium Spring Green", hue: 43, sat: 100]  << [name: "Lime", hue: 33, sat: 100] 
-        colorData  << [name: "Spring Green", hue: 41, sat: 100]  << [name: "Aqua", hue: 50, sat: 100]  << [name: "Cyan", hue: 50, sat: 100]  << [name: "Midnight Blue", hue: 66, sat: 64] << [name: "Alice Blue", hue: 58, sat: 100]
-        colorData  << [name: "Dodger Blue", hue: 58, sat: 100]  << [name: "Light Sea Green", hue: 49, sat: 70]  << [name: "Forest Green", hue: 33, sat: 61]  << [name: "Sea Green", hue: 40, sat: 50] 
-        colorData  << [name: "Dark Slate Gray", hue: 50, sat: 25]  << [name: "Lime Green", hue: 33, sat: 61]  << [name: "Medium Sea Green", hue: 41, sat: 50]  << [name: "Turquoise", hue: 48, sat: 72] 
-        colorData  << [name: "Royal Blue", hue: 62, sat: 73]  << [name: "Steel Blue", hue: 57, sat: 44]  << [name: "Dark Slate Blue", hue: 69, sat: 39]  << [name: "Medium Turquoise", hue: 49, sat: 60] 
-        colorData  << [name: "Indigo", hue: 76, sat: 100]  << [name: "Dark Olive Green", hue: 22, sat: 39]  << [name: "Cadet Blue", hue: 50, sat: 25]  << [name: "Corn Flower Blue", hue: 60, sat: 79] 
-        colorData  << [name: "Medium Aquamarine", hue: 44, sat: 51]  << [name: "Dim Gray", hue: 0, sat: 0]  << [name: "Slate Blue", hue: 69, sat: 53]  << [name: "Olive Drab", hue: 22, sat: 60] 
-        colorData  << [name: "Slate Gray", hue: 59, sat: 13]  << [name: "Light Slate Gray", hue: 58, sat: 14]  << [name: "Medium Slate Blue", hue: 69, sat: 80]  << [name: "Lawn Green", hue: 25, sat: 100] 
-        colorData  << [name: "Chartreuse", hue: 25, sat: 100]  << [name: "Aquamarine", hue: 44, sat: 100]  << [name: "Maroon", hue: 0, sat: 100] << [name: "Light Yellow", hue: 16, sat: 100] 
-        colorData  << [name: "Olive", hue: 16, sat: 100]  << [name: "Gray", hue: 0, sat: 0]  << [name: "Sky Blue", hue: 54, sat: 71]  << [name: "Light Sky Blue", hue: 56, sat: 92] 
-        colorData  << [name: "Blue Violet", hue: 75, sat: 76]  << [name: "Dark Red", hue: 0, sat: 100]  << [name: "Dark Magenta", hue: 83, sat: 100]  << [name: "Saddle Brown", hue: 7, sat: 76] 
-        colorData  << [name: "Dark Sea Green", hue: 33, sat: 25]  << [name: "Light Green", hue: 33, sat: 73]  << [name: "Medium Purple", hue: 72, sat: 60]  << [name: "Dark Violet", hue: 78, sat: 100] 
-        colorData  << [name: "Pale Green", hue: 33, sat: 93]  << [name: "Dark Orchid", hue: 77, sat: 61]  << [name: "Yellow Green", hue: 22, sat: 61]  << [name: "Sienna", hue: 5, sat: 56] 
-        colorData  << [name: "Brown", hue: 0, sat: 59]  << [name: "Dark Gray", hue: 0, sat: 0]  << [name: "Light Blue", hue: 54, sat: 53]  << [name: "Green Yellow", hue: 23, sat: 100] 
-        colorData  << [name: "Pale Turquoise", hue: 50, sat: 65]  << [name: "Light Steel Blue", hue: 59, sat: 41]  << [name: "Powder Blue", hue: 52, sat: 52]  << [name: "Fire Brick", hue: 0, sat: 68] 
-        colorData  << [name: "Soft White", hue: 23, sat: 44]  << [name: "Dark Golden Rod", hue: 12, sat: 89]  << [name: "Medium Orchid", hue: 80, sat: 59]  << [name: "Rosy Brown", hue: 0, sat: 25] 
-        colorData  << [name: "Dark Khaki", hue: 15, sat: 38]  << [name: "Silver", hue: 0, sat: 0]  << [name: "Medium Violet Red", hue: 90, sat: 81]  << [name: "Indian Red", hue: 0, sat: 53] 
-        colorData  << [name: "Peru", hue: 8, sat: 59]  << [name: "Daylight White", hue: 53, sat: 9]  << [name: "Chocolate", hue: 7, sat: 75]  << [name: "Tan", hue: 9, sat: 44] << [name: "Lavender Blush", hue: 94, sat: 100]
-        colorData  << [name: "Light Gray", hue: 0, sat: 0]  << [name: "Thistle", hue: 83, sat: 24]  << [name: "Orchid", hue: 84, sat: 59]  << [name: "Golden Rod", hue: 12, sat: 74] 
-        colorData  << [name: "Warm White", hue: 20, sat: 20]  << [name: "Pale Violet Red", hue: 94, sat: 60]  << [name: "Crimson", hue: 96, sat: 83]  << [name: "Gainsboro", hue: 0, sat: 0] 
-        colorData  << [name: "Plum", hue: 83, sat: 47]  << [name: "Burly Wood", hue: 10, sat: 57]  << [name: "Light Cyan", hue: 50, sat: 100]  << [name: "Lavender", hue: 66, sat: 67] 
-        colorData  << [name: "Dark Salmon", hue: 4, sat: 72]  << [name: "Violet", hue: 83, sat: 76]  << [name: "Pale Golden Rod", hue: 15, sat: 67]  << [name: "Light Coral", hue: 0, sat: 79] 
-        colorData  << [name: "Khaki", hue: 15, sat: 77]  << [name: "Honeydew", hue: 33, sat: 100]  << [name: "Azure", hue: 50, sat: 100] << [name: "Sea Shell", hue: 7, sat: 100] 
-        colorData  << [name: "Cool White", hue: 52, sat: 19]  << [name: "Sandy Brown", hue: 8, sat: 87]  << [name: "Wheat", hue: 11, sat: 77]  << [name: "Beige", hue: 16, sat: 56] 
-        colorData  << [name: "White Smoke", hue: 0, sat: 0]  << [name: "Mint Cream", hue: 42, sat: 100]  << [name: "Ghost White", hue: 66, sat: 100]  << [name: "Salmon", hue: 2, sat: 93] 
-        colorData  << [name: "Antique White", hue: 9, sat: 78]  << [name: "Linen", hue: 8, sat: 67]  << [name: "Light Golden Rod Yellow ", hue: 17, sat: 80]  << [name: "Old Lace", hue: 11, sat: 85] 
-        colorData  << [name: "Fuchsia", hue: 83, sat: 100]  << [name: "Deep Pink", hue: 91, sat: 100]  << [name: "Lemon Chiffon", hue: 15, sat: 100]  << [name: "Corn Silk", hue: 13, sat: 100]  
-        colorData  << [name: "Tomato", hue: 2, sat: 100]  << [name: "Hot Pink", hue: 92, sat: 100]  << [name: "Coral", hue: 4, sat: 100]  << [name: "Dark Orange", hue: 9, sat: 100] 
-        colorData  << [name: "Light Salmon", hue: 5, sat: 100]  << [name: "Light Pink", hue: 98, sat: 100] << [name: "Floral White", hue: 11, sat: 100]  << [name: "Snow", hue: 0, sat: 100] 
-        colorData  << [name: "Gold", hue: 14, sat: 100]  << [name: "Peach Puff", hue: 8, sat: 100]  << [name: "Navajo White", hue: 10, sat: 100]  << [name: "Moccasin", hue: 11, sat: 100] 
-        colorData  << [name: "Bisque", hue: 9, sat: 100]  << [name: "Misty Rose", hue: 2, sat: 100]  << [name: "Blanched Almond", hue: 10, sat: 100]  << [name: "Papaya Whip", hue: 10, sat: 100]    
-    }
+    colorData << [name: "White", hue: 0, sat: 0] << [name: "Orange", hue: 11, sat: 100] << [name: "Red", hue: 100, sat: 100] << [name: "Purple", hue: 77, sat: 100]
+    colorData << [name: "Green", hue: 30, sat: 100] << [name: "Blue", hue: 66, sat: 100] << [name: "Yellow", hue: 16, sat: 100] << [name: "Pink", hue: 95, sat: 100]
+    colorData << [name: "Cyan", hue: 50, sat: 100] << [name: "Chartreuse", hue: 25, sat: 100] << [name: "Teal", hue: 44, sat: 100] << [name: "Magenta", hue: 92, sat: 100]
+	colorData << [name: "Violet", hue: 83, sat: 100] << [name: "Indigo", hue: 70, sat: 100]<< [name: "Marigold", hue: 16, sat: 75]<< [name: "Raspberry", hue: 99, sat: 75]
+    colorData << [name: "Fuchsia", hue: 92, sat: 75] << [name: "Lavender", hue: 83, sat: 75]<< [name: "Aqua", hue: 44, sat: 75]<< [name: "Amber", hue: 11, sat: 75]
+    colorData << [name: "Carnation", hue: 99, sat: 50] << [name: "Periwinkle", hue: 70, sat: 50]<< [name: "Pistachio", hue: 30, sat: 50]<< [name: "Vanilla", hue: 16, sat: 50]
     if (customName && (customHue > -1 && customerHue < 101) && (customSat > -1 && customerSat < 101)) colorData << [name: customName, hue: customHue as int, sat: customSat as int]
     return colorData
 }
@@ -3102,7 +3080,7 @@ def mapDevices(isAlias){
 	if (settings."water${ext}") result << [devices: settings."water${ext}", type : "water",fullListName:"Water Sensor"]
 	if (settings."motion${ext}") result << [devices: settings."motion${ext}", type : "motion",fullListName:"Motion Sensor"]
 	if (settings."presence${ext}") result << [devices: settings."presence${ext}", type : "presence",fullListName:"Presence Sensor"]
-	if (settings."acceleration${ext}") result << [devices: settings."acceleration${ext}", type : "acceleration",fullListName:"Acceleration Sensor"]
+	if (settings."acceleration${ext}") result << [devices: settings."acceleration${ext}", type : "acceleration",fullListName:"Acceleration Sensor"]	
 	return result
 }
 def upDown(device, type, op, num, deviceName){
@@ -3164,11 +3142,10 @@ def flash(){
 		"titleText": "${flashMacro} macro report",
 		"mainText": outputTxt,
 		"redirectionUrl": "https://graph.api.smartthings.com/",
-		"description": "Ask Alexa Flash Briefing Report"
-	]
+		"description": "Ask Alexa Flash Briefing Report"]
 }
 def setupData(){
-	log.info "Set up web page located at : ${getApiServerUrl()}/api/smartapps/installations/${app.id}/setup?access_token=${state.accessToken}"
+	log.info "Cheat sheet web page located at : ${getApiServerUrl()}/api/smartapps/installations/${app.id}/setup?access_token=${state.accessToken}"
     def result ="<div style='padding:10px'><i><b><a href='http://aws.amazon.com' target='_blank'>Lambda</a> code variables:</b></i><br><br>var STappID = '${app.id}';<br>var STtoken = '${state.accessToken}';<br>"
     result += "var url='${getApiServerUrl()}/api/smartapps/installations/' + STappID + '/' ;<br><br><hr>"
     result += flash ? "<i><b><a href='http://developer.amazon.com' target='_blank'>Amazon ASK</a> Flash Briefing Skill URL:</b></i><br><br>${getApiServerUrl()}/api/smartapps/installations/${app.id}/flash?access_token=${state.accessToken}<br><br><hr>":""
@@ -3193,6 +3170,7 @@ def setupData(){
     result += msgQueue || speakersSel() || (tstatsSel() && ecobeeCMD && MyEcobeeCMD) ?"play<br>" : ""
     result += msgQueue || (tstatsSel() && ecobeeCMD && MyEcobeeCMD) ? "erase<br>delete<br>clear<br>reset<br>" : ""
     result += tstatsSel() && ecobeeCMD && MyEcobeeCMD ? "get<br>restart<br>repeat<br>replay<br>give<br>load<br>reload<br>" : ""
+    result += tstatsSel() && nestCMD && nestMGRCMD ? "report<br>" : ""
     result += "<br><b>LIST_OF_PARAMS</b><br><br>"
     def PARAMS=["heat","cool","heating","cooling","auto","automatic","AC"]
     if (tstatsSel() && stelproCMD) PARAMS<< "eco"<<"comfort"
@@ -3206,7 +3184,7 @@ def setupData(){
     		if (settings."sonosSlot${i}Name" && settings."sonosSlot${i}Music") PARAMS<<settings."sonosSlot${i}Name".replaceAll("[^a-zA-Z0-9 ]", "").toLowerCase()
     	}
     }
-    if (cLightsSel() || childApps.size()) { fillColorSettings(false).each {PARAMS<<it.name.toLowerCase()}}
+    if (cLightsSel() || childApps.size()) { fillColorSettings().each {PARAMS<<it.name.toLowerCase()}}
     duplicates = PARAMS.findAll{PARAMS.count(it)>1}.unique()
     if (duplicates.size()){ 
             result += "<b>**NOTICE:</b>The following duplicate(s) are only listed once below in LIST_OF_PARAMS:<br><br>"
@@ -3268,12 +3246,12 @@ def getURLs(){
 //Version/Copyright/Information/Help-----------------------------------------------------------
 private textAppName() { return "Ask Alexa" }	
 private textVersion() {
-    def version = "SmartApp Version: 2.1.7 (10/09/2016)", lambdaVersion = state.lambdaCode ? "\n" + state.lambdaCode : ""
+    def version = "SmartApp Version: 2.1.8 (10/20/2016)", lambdaVersion = state.lambdaCode ? "\n" + state.lambdaCode : ""
     return "${version}${lambdaVersion}"
 }
-private versionInt(){ return 217 }
+private versionInt(){ return 218 }
 private LambdaReq() { return 122 }
-private versionLong(){ return "2.1.7" }
+private versionLong(){ return "2.1.8" }
 private textCopyright() {return "Copyright © 2016 Michael Struck" }
 private textLicense() {
 	def text = "Licensed under the Apache License, Version 2.0 (the 'License'); you may not use this file except in compliance with the License. You may obtain a copy of the License at\n\n"+
@@ -3282,4 +3260,68 @@ private textLicense() {
 }
 private textHelp() { 
 	def text = "This SmartApp provides an interface to control and query the SmartThings environment via the Amazon Echo ('Alexa'). For more information, go to http://thingsthataresmart.wiki/index.php?title=Ask_Alexa."
+}
+def getCheatDisplayList(type){
+    def count = state.aliasList.size(), result=""
+   	for (int i=0; i < count; i++) {
+    	def deviceName = state.aliasList.aliasType[i]
+		if (deviceName==type) result += state.aliasList.aliasName[i] + " (Alias Name) = "+ state.aliasList.aliasDevice[i] + " (Real Device)<br>"
+    }
+    return result
+}
+private cheat(){
+	log.info "Set up web page located at : ${getApiServerUrl()}/api/smartapps/installations/${app.id}/cheat?access_token=${state.accessToken}"
+    def result ="<div style='padding:10px'><h2><i><b>Ask Alexa Device/Command 'Cheat Sheet'</b></i></h2>To expand on this sheet, please see the <a href='http://thingsthataresmart.wiki/index.php?title=Ask_Alexa#Ask_Alexa_Usage' target='_blank'>Things That Are Smart Wiki</a><br>"
+	result += "Most commands will begin with 'Alexa, ask ${invocationName}' or 'Alexa, tell ${invocationName}'and then the command and device. For example:<br>"
+    result +="<i>Alexa, tell ${invocationName} to Open {DoorName}</i>'<br><i>'Alexa, ask ${invocationName} the {SwitchName} status'</i><br><br><hr>"
+    if (switchesSel()) { result += "<h2>Switches (Valid Commands: <b>On, Off, Toggle, Status</b>)</h2>"; switches.each{ result += it.label +"<br>" } }
+    if (getCheatDisplayList("switch")) { result += "<u>Aliases</u><br>"; result += getCheatDisplayList("switch") +"<br>" }
+    if (dimmersSel()) { result += "<h2><u>Dimmers (Valid Commands: <b>On, Off, Toggle, Status Level {number}, low, medium, high, up, down, increase, decrease</b>)</u></h2>"; dimmers.each{ result += it.label +"<br>" } }
+    if (getCheatDisplayList("level")) { result += "<u>Aliases</u><br>"; result += getCheatDisplayList("level") +"<br>" }
+    if (cLightsSel()) { result += "<h2><u>Colored Lights (Valid Commands: <b>On, Off, Toggle, Level {number}, color {color name} low, medium, high, up, down, increase, decrease</b>)</u></h2>"; clights.each{ result += it.label +"<br>" } }
+    if (getCheatDisplayList("color")) { result += "<u>Aliases</u><br>"; result += getCheatDisplayList("color") +"<br>" }
+    if (doorsSel()) { result += "<h2><u>Doors (Valid Commands: <b>Open, Close, Status</b>)</u></h2>"; doors.each{ result += it.label +"<br>" } }
+    if (getCheatDisplayList("door")) { result += "<u>Aliases</u><br>"; result += getCheatDisplayList("door") +"<br>" }
+    if (locksSel()) { result += "<h2><u>Locks (Valid Commands: <b>Lock, Unlock, Status</b>)</u></h2>"; locks.each{ result += it.label +"<br>" } }
+    if (getCheatDisplayList("lock")) { result += "<u>Aliases</u><br>"; result += getCheatDisplayList("lock") +"<br>" }
+    if (ocSensorsSel()) { result += "<h2><u>Open/Close Sensors (Valid Command: <b>Status</b>)</u></h2>"; ocSensors.each{ result += it.label +"<br>" } }
+    if (getCheatDisplayList("contact")) { result += "<u>Aliases</u><br>"; result += getCheatDisplayList("contact") +"<br>" }
+    if (shadesSel()) { result += "<h2><u>Doors (Valid Commands: <b>Open, Close, Status</b>)</u></h2>"; shades.each{ result += it.label +"<br>" } }
+    if (getCheatDisplayList("shade")) { result += "<u>Aliases</u><br>"; result += getCheatDisplayList("shade") +"<br>" }
+    if (tstatsSel()) { result += "<h2><u>Thermostats (Valid Commands: <b>Open, Close, Status"
+    	if (stelproCMD) result += ", Eco, Comfort"
+        if (nestCMD || ecobeeCMD) result += ", Home, Away"
+        if (nestCMD && nestMGRCMD) result += ", Report"
+        if (ecobeeCMD) result += ", Sleep, Resume Program"
+        if (ecobeeCMD && MyEcobeeCMD) result += ", Get Tips {level}, Play Tips, Erase Tips"
+     	result +="</b>)</u></h2>"
+        tstats.each{ result += it.label +"<br>" } 
+    }
+    if (getCheatDisplayList("thermostat")) { result += "<u>Aliases</u><br>"; result += getCheatDisplayList("thermostat") +"<br>" }
+    if (tempsSel()) { result += "<h2><u>Temperature Sensors (Valid Commands: <b>Status</b>)</u></h2>"; temps.each{ result += it.label +"<br>" } }
+    if (getCheatDisplayList("temperature")) { result += "<u>Aliases</u><br>"; result += getCheatDisplayList("temperature") +"<br>" }
+    if (humidSel()) { result += "<h2><u>Humidity Sensors (Valid Commands: <b>Status</b>)</u></h2>"; humid.each{ result += it.label +"<br>" } }
+    if (getCheatDisplayList("humidity")) { result += "<u>Aliases</u><br>"; result += getCheatDisplayList("humidity") +"<br>" }
+    if (speakersSel()) { result += "<h2><u>Speakers (Valid Commands: <b>Play, Mute, Next Track, Previous Track, volume {level}, increase, decrease, up, down, raise, lower</b>)</u></h2>"; if (speakers) { speakers.each{ result += it.label +"<br>" } } }
+    if (getCheatDisplayList("music")) { result += "<u>Aliases</u><br>"; result += getCheatDisplayList("music") +"<br>" }
+    if (sonosCMD && sonosMemoryCount){
+    	result += "<u>Memory Slots</u><br>"
+        def memCount = sonosMemoryCount as int
+        for (int i=1; i<memCount+1; i++){
+            result += settings."sonosSlot${i}Name" ? settings."sonosSlot${i}Name"+"<br>" : ""
+        }
+    }
+    if (waterSel()) { result += "<h2><u>Water Sensors (Valid Command: <b>Status</b>)</u></h2>"; water.each{ result += it.label +"<br>" } }
+    if (getCheatDisplayList("water")) { result += "<u>Aliases</u><br>"; result += getCheatDisplayList("water") +"<br>" }
+    if (presenceSel()) { result += "<h2><u>Presence Sensors (Valid Command: <b>Status</b>)</u></h2>"; presence.each{ result += it.label +"<br>" } }
+    if (getCheatDisplayList("presence")) { result += "<u>Aliases</u><br>"; result += getCheatDisplayList("presence") +"<br>" }
+    if (accelerationSel()) { result += "<h2><u>Acceleration Sensors (Valid Command: <b>Status</b>)</u></h2>"; acceleration.each{ result += it.label +"<br>" } }
+    if (getCheatDisplayList("acceleration")) { result += "<u>Aliases</u><br>"; result += getCheatDisplayList("acceleration") +"<br>" }
+    if (motionSel()) { result += "<h2><u>Motion Sensors (Valid Command: <b>Status</b>)</u></h2>"; motion.each{ result += it.label +"<br>" } }
+    if (getCheatDisplayList("motion")) { result += "<u>Aliases</u><br>"; result += getCheatDisplayList("motion") +"<br>" }
+    if (listModes) { result += "<h2><u>Modes (Valid Command: <b>Change/Status</b>)</u></h2>"; listModes.each{ result += it +"<br>" } }
+	if (listSHM) { result += "<h2><u>Smart Home Monitor (Valid Command: <b>Change/Status</b>)</u></h2>"; listSHM.each{ result += it +"<br>" } }
+    if (listRoutines) { result += "<h2><u>SmartThings Routines (Valid Command: <b>Run {Routine}</b>)</u></h2>"; listRoutines.each{ result += it +"<br>" } }
+    if (childApps.size()) { result += "<h2><u>Ask Alexa Macros (Valid Command: <b>Run {Macro}</b>)</u></h2>"; childApps.each { result += it.label + "<br>"} }      
+    displayData(result)
 }
