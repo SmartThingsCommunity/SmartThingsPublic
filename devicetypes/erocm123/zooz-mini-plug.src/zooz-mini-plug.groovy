@@ -32,14 +32,14 @@ metadata {
 		capability "Polling"
 		capability "Refresh"
 		capability "Configuration"
-		capability "Sensor"
+		capability "Sensor"  
 
 		command "reset"
         
         attribute   "needUpdate", "string"
         attribute   "amperage", "number"
 
-        fingerprint deviceId: "0x1001", inClusters: "0x5E,0x72,0x86,0x85,0x59,0x5A,0x73,0x70,0x25,0x27,0x71,0x32,0x20"
+        fingerprint deviceId: "0x1001", inClusters: "0x5E,0x72,0x86,0x85,0x59,0x5A,0x73,0x70,0x25,0x27,0x71,0x32,0x20"  
                                                            
 	}
     
