@@ -204,14 +204,17 @@ def motionEvent(value) {
 }
 
 def zwaveEvent(physicalgraph.zwave.commands.sensorbinaryv2.SensorBinaryReport cmd) {
+    logging("SensorBinaryReport: $cmd")
 	motionEvent(cmd.sensorValue)
 }
 
 def zwaveEvent(physicalgraph.zwave.commands.basicv1.BasicSet cmd) {
+    logging("BasicSet: $cmd")
 	motionEvent(cmd.value)
 }
 
 def zwaveEvent(physicalgraph.zwave.commands.notificationv3.NotificationReport cmd) {
+    logging("NotificationReport: $cmd")
 	def result = []
 	if (cmd.notificationType == 7) {
 		switch (cmd.event) {
@@ -536,6 +539,13 @@ Default: 12
 Number of seconds the associated device to stay ON for after being triggered by the sensor before it automatically turns OFF
 Range: 5~600
 Default: 30
+    </Help>
+  </Value>
+    <Value type="byte" index="3" label="Trigger Action" min="1" max="255" value="255" byteSize="1" setting_type="zwave">
+    <Help>
+Associated device will turn ON when triggered by the sensor (255) or Brightness level (percentage) the associated device will turn ON to when triggered by the sensor (1-99).
+Range: 1~99,255
+Default: 255
     </Help>
   </Value>
   <Value type="list" byteSize="1" index="4" label="Motion detection" min="0" max="255" value="255" setting_type="zwave">
