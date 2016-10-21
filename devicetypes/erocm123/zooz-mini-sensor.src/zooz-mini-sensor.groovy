@@ -585,7 +585,7 @@ Default: Disabled
         <Item label="Disable" value="0" />
         <Item label="Enable" value="255" />
   </Value>
-    <Value type="byte" byteSize="2" index="9" label="Light Report" min="0" max="255" value="100" setting_type="zwave">
+    <Value type="byte" byteSize="1" index="9" label="Light Report" min="0" max="255" value="100" setting_type="zwave">
     <Help>
 Light level change (in LUX) to be reported by the sensor to the controller
 Range: 0~255
