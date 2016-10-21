@@ -13,8 +13,9 @@
  *  for the specific language governing permissions and limitations under the License.
  *
  *  VERSION HISTORY
+ *	20-10-2016: 1.1b - Minor display tweak for offline condition.
  *	20-10-2016: 1.1 - Added smart schedule and force clean status messages. Added smart schedule reset button.
- *					  Disable Neato Robot Schedule if SmartSchedule is enabled
+ *					  Disable Neato Robot Schedule if SmartSchedule is enabled.
  *	
  *	14-10-2016: 1.0 - Initial Version
  *
@@ -50,7 +51,8 @@ metadata {
 			tileAttribute("device.switch", key:"PRIMARY_CONTROL", canChangeBackground: true){
 				attributeState("off", label: 'STOPPED', action: "switch.on", icon: "https://raw.githubusercontent.com/alyc100/SmartThingsPublic/master/devicetypes/alyc100/laser-guided-navigation.png", backgroundColor: "#ffffff", nextState:"on")
 				attributeState("on", label: 'CLEANING', action: "switch.off", icon: "https://raw.githubusercontent.com/alyc100/SmartThingsPublic/master/devicetypes/alyc100/best-pet-hair-cleaning.png", backgroundColor: "#79b821", nextState:"off")
-			}
+				attributeState("offline", label:'${name}', icon:"https://raw.githubusercontent.com/alyc100/SmartThingsPublic/master/devicetypes/alyc100/laser-guided-navigation.png", backgroundColor:"#bc2323")
+            }
             tileAttribute ("statusMsg", key: "SECONDARY_CONTROL") {
 				attributeState "statusMsg", label:'${currentValue}'
 			}
@@ -114,7 +116,13 @@ metadata {
 			state("default", label:'reset schedule', action:"resetSmartSchedule", icon:"st.Office.office6")
 		}
         
-		main("clean")
+        standardTile("switch", "device.switch", width: 2, height: 2, canChangeIcon: true) {
+        	state("off", label: 'STOPPED', action: "switch.on", icon: "https://raw.githubusercontent.com/alyc100/SmartThingsPublic/master/devicetypes/alyc100/laser-guided-navigation.png", backgroundColor: "#ffffff", nextState:"on")
+			state("on", label: 'CLEANING', action: "switch.off", icon: "https://raw.githubusercontent.com/alyc100/SmartThingsPublic/master/devicetypes/alyc100/best-pet-hair-cleaning.png", backgroundColor: "#79b821", nextState:"off")
+			state("offline", label:'${name}', icon:"https://raw.githubusercontent.com/alyc100/SmartThingsPublic/master/devicetypes/alyc100/laser-guided-navigation.png", backgroundColor:"#bc2323")
+        }
+        
+		main("switch")
 		details(["clean","smartScheduleStatusMessage", "forceCleanStatusMessage", "status","battery","bin","network", "dockStatus", "charging", "dockHasBeenSeen", "scheduled", "resetSmartSchedule", "refresh"])
 		}
 }
@@ -177,6 +185,7 @@ def disableSchedule() {
 
 def setOffline() {
 	sendEvent(name: 'network', value: "Not Connected" as String)
+    sendEvent(name: "switch", value: "offline")
 }
 
 def resetSmartSchedule() {
