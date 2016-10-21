@@ -36,13 +36,13 @@ metadata {
     
     preferences {
         input("powerOnState", "enum", title:"Boot Up State", description: "State of the relay when it boots up", required: false, displayDuringSetup: false, options: [[0:"Off"],[1:"On"],[2:"Previous State"]])
-        input("scale", "enum", title:"Temperature Scale", description: "Choose the temperature scale", required: false, displayDuringSetup: false, options: [[true:"Fahrenheit"],[false:"Celsius"]])
+        //input("scale", "enum", title:"Temperature Scale", description: "Choose the temperature scale", required: false, displayDuringSetup: false, options: [[true:"Fahrenheit"],[false:"Celsius"]])
         input("tempOffset", "number", title:"Temperature Offset", description: "Range: -99..99", range: "-99..99", required: false, displayDuringSetup: false)
         input("humidityOffset", "number", title:"Humidity Offset", description: "Range: -50..50", range: "-50..50", required: false, displayDuringSetup: false)
         input("password", "password", title:"Password", required:false, displayDuringSetup:true)
-        input("override", "boolean", title:"Override detected IP Address", required: false, displayDuringSetup: false)
-        input("ip", "string", title:"IP Address", description: "192.168.1.150", required: false, displayDuringSetup: false)
-        input("port", "string", title:"Port", description: "80", required: false, displayDuringSetup: false)
+        //input("override", "boolean", title:"Override detected IP Address", required: false, displayDuringSetup: false)
+        //input("ip", "string", title:"IP Address", description: "192.168.1.150", required: false, displayDuringSetup: false)
+        //input("port", "string", title:"Port", description: "80", required: false, displayDuringSetup: false)
 	}
 
 	tiles (scale: 2){      
@@ -165,7 +165,7 @@ def parse(description) {
     if (result.containsKey("temperature")) {
         if (result.temperature != "nan") {
             state.realTemperature = convertTemperatureIfNeeded(result.temperature.toFloat(), result.scale)
-            events << createEvent(name:"temperature", value:"${getAdjustedTemp(state.realTemperature)}", unit:"${unit}")
+            events << createEvent(name:"temperature", value:"${getAdjustedTemp(state.realTemperature)}", unit:"${location.temperatureScale}")
         } else {
             log.debug "The temperature sensor is reporting \"nan\""
         }
