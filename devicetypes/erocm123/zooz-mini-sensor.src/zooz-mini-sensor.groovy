@@ -577,13 +577,13 @@ Range: 60~360000
 Default: 180
     </Help>
   </Value>
-    <Value type="list" byteSize="1" index="8" label="Light Trigger" min="0" max="255" value="0" setting_type="zwave">
+    <Value type="list" byteSize="1" index="8" label="Light Trigger" min="0" max="1" value="0" setting_type="zwave">
     <Help>
 Enable or disable the light trigger
 Default: Disabled
 </Help>
         <Item label="Disable" value="0" />
-        <Item label="Enable" value="255" />
+        <Item label="Enable" value="1" />
   </Value>
     <Value type="byte" byteSize="1" index="9" label="Light Report" min="0" max="255" value="100" setting_type="zwave">
     <Help>
