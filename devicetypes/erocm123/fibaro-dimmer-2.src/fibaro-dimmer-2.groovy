@@ -711,7 +711,7 @@ Default: 0
   </Value>
     <Value type="list" byteSize="1" index="20" label="Switch type" min="0" max="2" value="0" setting_type="zwave" fw="3.08">
     <Help>
-If the parameter is active, switching on the Dimmer 2 (S1 single click) will always set this brightness level.
+Choose between momentary, toggle and roller blind switch.
 Range: 0~2
 Default: 0
     </Help>
