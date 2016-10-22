@@ -155,24 +155,27 @@ def zwaveEvent(physicalgraph.zwave.commands.alarmv2.AlarmReport cmd) {
 		switch(cmd.zwaveAlarmEvent) {
 			case 1:
 				map.descriptionText = "$device.displayName was manually locked"
+				map.data = [ type: "manual" ]
 				break
 			case 2:
 				map.descriptionText = "$device.displayName was manually unlocked"
+				map.data = [ type: "manual" ]
 				break
 			case 5:
 				if (cmd.eventParameter) {
 					map.descriptionText = "$device.displayName was locked with code ${cmd.eventParameter.first()}"
-					map.data = [ usedCode: cmd.eventParameter[0] ]
+					map.data = [ usedCode: cmd.eventParameter[0], type: "keypad" ]
 				}
 				break
 			case 6:
 				if (cmd.eventParameter) {
 					map.descriptionText = "$device.displayName was unlocked with code ${cmd.eventParameter.first()}"
-					map.data = [ usedCode: cmd.eventParameter[0] ]
+					map.data = [ usedCode: cmd.eventParameter[0], type: "keypad" ]
 				}
 				break
 			case 9:
 				map.descriptionText = "$device.displayName was autolocked"
+				map.data = [ type: "auto" ]
 				break
 			case 7:
 			case 8:
@@ -245,22 +248,42 @@ def zwaveEvent(physicalgraph.zwave.commands.alarmv2.AlarmReport cmd) {
 		}
 	} else switch(cmd.alarmType) {
 		case 21:  // Manually locked
+			map = [ name: "lock", value: "locked" ]
+	                map.descriptionText = "$device.displayName was locked"
+        	        map.data = [ type: "manual" ]
+			break
 		case 18:  // Locked with keypad
+			map = [ name: "lock", value: "locked" ]
+	                map.descriptionText = "$device.displayName was locked"
+        	        map.data = [ type: "keypad" ]
+			break
 		case 24:  // Locked by command (Kwikset 914)
+			map = [ name: "lock", value: "locked" ]
+	                map.descriptionText = "$device.displayName was locked"
+        	        map.data = [ type: "remote" ]
+			break
 		case 27:  // Autolocked
 			map = [ name: "lock", value: "locked" ]
+	                map.descriptionText = "$device.displayName was locked"
+        	        map.data = [ type: "auto" ]
 			break
 		case 16:  // Note: for levers this means it's unlocked, for non-motorized deadbolt, it's just unsecured and might not get unlocked
 		case 19:
 			map = [ name: "lock", value: "unlocked" ]
 			if (cmd.alarmLevel) {
 				map.descriptionText = "$device.displayName was unlocked with code $cmd.alarmLevel"
-				map.data = [ usedCode: cmd.alarmLevel ]
+				map.data = [ usedCode: cmd.alarmLevel, type: "keypad" ]
 			}
 			break
-		case 22:
+		case 22: // Yale unlock via knob manually
+			map = [ name: "lock", value: "unlocked" ]
+		    	map.descriptionText = "$device.displayName was manually unlocked"
+	        	map.data = [ type: "manual" ]
+			break
 		case 25:  // Kwikset 914 unlocked by command
 			map = [ name: "lock", value: "unlocked" ]
+		    	map.descriptionText = "$device.displayName was unlocked"
+			map.data = [ type: "remote" ]
 			break
 		case 9:
 		case 17:
