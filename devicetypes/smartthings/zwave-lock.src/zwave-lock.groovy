@@ -249,7 +249,7 @@ def zwaveEvent(physicalgraph.zwave.commands.alarmv2.AlarmReport cmd) {
 	} else switch(cmd.alarmType) {
 		case 21:  // Manually locked
 			map = [ name: "lock", value: "locked" ]
-	                map.descriptionText = "$device.displayName was locked"
+	                map.descriptionText = "$device.displayName was manually locked"
         	        map.data = [ type: "manual" ]
 			break
 		case 18:  // Locked with keypad
