@@ -13,6 +13,8 @@
  *  for the specific language governing permissions and limitations under the License.
  *
  *  VERSION HISTORY
+ *	23-10-2016: 1.1.4 - Improve error notification from device status.
+ *
  *	21-10-2016: 1.1.3b - Force poll on settings update.
  *	20-10-2016: 1.1.3 - Allow device handler to display smart scheduling information.
  *
@@ -762,7 +764,7 @@ def eventHandler(evt) {
         runEvery5Minutes('pollOn')
 		sendEvent(linkText:app.label, name:"${evt.displayName}", value:"error",descriptionText:"${evt.displayName} has an error", eventType:"SOLUTION_EVENT", displayed: true)
 		log.trace "${evt.displayName} has an error"
-		msg = "${evt.displayName} has an error"
+		msg = "${evt.displayName} has an error" + evt.device.latestState('statusMsg').stringValue.minus('HAS A PROBLEM')
 		if (settings.sendBotvacError) {
         	messageHandler(msg, false)
 		}
@@ -877,7 +879,6 @@ def pollOn() {
 	getChildDevices().each { childDevice ->
     	state.pollState = now()
 		childDevice.poll()
-        
         if (childDevice.currentSwitch == "off") {
         	//Update smart schedule state. Create notification when clean is due.
         	if (settings.smartScheduleEnabled && state.lastClean != null && state.lastClean[childDevice.deviceNetworkId] != null) { 
@@ -1149,7 +1150,7 @@ def getApiEndpoint()         { return "https://apps.neatorobotics.com" }
 def getSmartThingsClientId() { return appSettings.clientId }
 def beehiveURL(path = '/') 	 { return "https://beehive.neatocloud.com${path}" }
 private def textVersion() {
-    def text = "Neato (Connect)\nVersion: 1.1.3b\nDate: 21102016(1720)"
+    def text = "Neato (Connect)\nVersion: 1.1.4\nDate: 23102016(1800)"
 }
 
 private def textCopyright() {
