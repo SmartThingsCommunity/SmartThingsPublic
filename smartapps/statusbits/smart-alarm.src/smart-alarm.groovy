@@ -520,10 +520,19 @@ def pageArmingOptions() {
     def inputDelayStay = [
         name:       "stayDelayOff",
         type:       "bool",
-        title:      "Disable delays in Stay mode",
+        title:      "Disable alarm (entry) delay in Stay mode",
         defaultValue: false,
         required:   true
     ]
+    
+    def inputExitDelayStay = [
+    	name:			"stayExitDelayOff",
+        type:			"bool",
+        title:			"Disable arming (exit) delay in Stay mode",
+        defaultValue: 	true,
+        required:		true
+    ]
+        
 
     def pageProperties = [
         name:       "pageArmingOptions",
@@ -546,11 +555,12 @@ def pageArmingOptions() {
             input inputStayModes
             input inputDisarmModes
         }
-
+        
         section("Exit and Entry Delay") {
             paragraph helpDelay
             input inputDelay
             input inputDelayStay
+			input inputExitDelayStay
         }
     }
 }
@@ -1474,7 +1484,7 @@ private def armPanel(stay) {
     state.zones.each() {
         def zoneType = it.zoneType
         if (zoneType == "exterior") {
-            if (it.delay && !(stay && settings.stayDelayOff)) {
+            if (it.delay && !(stay && settings.stayExitDelayOff)) {
                 it.armed = false
                 armDelay = true
             } else {
@@ -1492,7 +1502,7 @@ private def armPanel(stay) {
         }
     }
 
-    def delay = armDelay && !(stay && settings.stayDelayOff) ? atomicState.delay : 0
+    def delay = armDelay && !(stay && settings.stayExitDelayOff) ? atomicState.delay : 0
     if (delay) {
     	keypads?.each() { it.setExitDelay(delay) }
         myRunIn(delay, exitDelayExpired)
