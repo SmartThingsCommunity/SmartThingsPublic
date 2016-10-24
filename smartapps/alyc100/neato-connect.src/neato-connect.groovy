@@ -13,6 +13,7 @@
  *  for the specific language governing permissions and limitations under the License.
  *
  *  VERSION HISTORY
+ *	24-10-2016: 1.1.4b - Bug fix. Override switch handler fix to prevent false negatives. 
  *	23-10-2016: 1.1.4 - Improve error notification from device status.
  *
  *	21-10-2016: 1.1.3b - Force poll on settings update.
@@ -821,33 +822,44 @@ def eventHandler(evt) {
 }
 
 def smartScheduleHandler(evt) {
-	log.debug "Executing 'smartScheduleHandler' for ${evt.displayName}"
 	if (evt != null) {
 		log.debug "Executing 'smartScheduleHandler' for ${evt.displayName}"
     } else {
     	log.debug "Executing 'smartScheduleHandler' for scheduled event"
     }
     //If switch on for override event
-    if (evt != null && evt.name == "switch" && evt.device in settings.ssOverrideSwitch) {
-    	def executeOverride = true
-        //If override switch condition is ALL...
-    	if (ssOverrideSwitchCondition == "all") {
-        	//Check all switches in override switch settings are on
-            for (switchVal in settings.ssOverrideSwitch.currentSwitch) {
-        		if (switchVal == "off") {
-            		executeOverride = false
-            		break
-        		}
-    		}
+    if (evt != null && evt.name == "switch") {
+    	def switchInList = false
+    	for (switchName in settings.ssOverrideSwitch.name) {
+        	if (switchName == evt.device.name) {
+            	switchInList = true
+            	break
+            }
         }
-    	//For each vacuum
-        if (executeOverride) {
-    		getChildDevices().each { childDevice ->
-        		//Reset last clean date to current time
-                resetSmartScheduleForDevice(childDevice.deviceNetworkId)
-        	}	
-        	if (settings.ssNotification) {
-        		messageHandler("Neato SmartSchedule has reset all Botvac schedules as override switch ${evt.displayName} is on.", false)
+        log.debug "Swtich found in override switch list: $switchInList"
+    	if (switchInList) {
+    		def executeOverride = true
+        	//If override switch condition is ALL...
+    		if (ssOverrideSwitchCondition == "all") {
+        		//Check all switches in override switch settings are on
+            	for (switchVal in settings.ssOverrideSwitch.currentSwitch) {
+        			if (switchVal == "off") {
+            			executeOverride = false
+            			break
+        			}
+    			}
+        	}
+        
+    		//For each vacuum
+        	if (executeOverride) {
+    			getChildDevices().each { childDevice ->
+        			//Reset last clean date to current time
+                	resetSmartScheduleForDevice(childDevice.deviceNetworkId)
+                    childDevice.poll()
+        		}	
+        		if (settings.ssNotification) {
+        			messageHandler("Neato SmartSchedule has reset all Botvac schedules as override switch ${evt.displayName} is on.", false)
+        		}
         	}
         }
     }
@@ -1150,7 +1162,7 @@ def getApiEndpoint()         { return "https://apps.neatorobotics.com" }
 def getSmartThingsClientId() { return appSettings.clientId }
 def beehiveURL(path = '/') 	 { return "https://beehive.neatocloud.com${path}" }
 private def textVersion() {
-    def text = "Neato (Connect)\nVersion: 1.1.4\nDate: 23102016(1800)"
+    def text = "Neato (Connect)\nVersion: 1.1.4b\nDate: 24102016(1345)"
 }
 
 private def textCopyright() {
