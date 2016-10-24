@@ -765,7 +765,7 @@ def eventHandler(evt) {
         runEvery5Minutes('pollOn')
 		sendEvent(linkText:app.label, name:"${evt.displayName}", value:"error",descriptionText:"${evt.displayName} has an error", eventType:"SOLUTION_EVENT", displayed: true)
 		log.trace "${evt.displayName} has an error"
-		msg = "${evt.displayName} has an error" + evt.device.latestState('statusMsg').stringValue.minus('HAS A PROBLEM')
+		msg = "${evt.displayName} has an error: " + evt.device.latestState('statusMsg').stringValue.minus('HAS A PROBLEM - ')
 		if (settings.sendBotvacError) {
         	messageHandler(msg, false)
 		}
@@ -1162,7 +1162,7 @@ def getApiEndpoint()         { return "https://apps.neatorobotics.com" }
 def getSmartThingsClientId() { return appSettings.clientId }
 def beehiveURL(path = '/') 	 { return "https://beehive.neatocloud.com${path}" }
 private def textVersion() {
-    def text = "Neato (Connect)\nVersion: 1.1.4b\nDate: 24102016(1345)"
+    def text = "Neato (Connect)\nVersion: 1.1.4b\nDate: 24102016(2150)"
 }
 
 private def textCopyright() {
