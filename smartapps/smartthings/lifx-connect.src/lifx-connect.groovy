@@ -271,9 +271,17 @@ def initialize() {
 	updateDevices()
 	// Check for new devices and remove old ones every 3 hours
 	runEvery5Minutes('updateDevices')
+	setupDeviceWatch()
 }
 
 // Misc
+private setupDeviceWatch() {
+	def hub = location.hubs[0]
+	// Make sure that all child devices are enrolled in device watch
+	getChildDevices().each {
+		it.sendEvent(name: "DeviceWatch-Enroll", value: "{\"protocol\": \"LAN\", \"scheme\":\"untracked\", \"hubHardwareId\": \"${hub?.hub?.hardwareID}\"}")
+	}
+}
 
 Map apiRequestHeaders() {
 	return ["Authorization": "Bearer ${state.lifxAccessToken}",
