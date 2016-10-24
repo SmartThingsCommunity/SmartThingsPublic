@@ -13,6 +13,8 @@
  *  for the specific language governing permissions and limitations under the License.
  *
  *  VERSION HISTORY
+ *	23-10-2016: 1.2 - Add option to select Turbo or Eco clean modes
+ *
  *	20-10-2016: 1.1b - Minor display tweak for offline condition.
  *	20-10-2016: 1.1 - Added smart schedule and force clean status messages. Added smart schedule reset button.
  *					  Disable Neato Robot Schedule if SmartSchedule is enabled.
@@ -23,6 +25,10 @@
 import javax.crypto.Mac;
 import javax.crypto.spec.SecretKeySpec;
 import java.security.InvalidKeyException;
+
+preferences {
+	input ("startCleaningMode", "enum", title:"Botvac Cleaning Mode", multiple: false, required: true, options: ["turbo": "Turbo", "eco": "Eco"], defaultValue: "turbo") 
+}
 
 metadata {
 	definition (name: "Neato Botvac Connected Series", namespace: "alyc100", author: "Alex Lee Yuk Cheung") {
@@ -145,11 +151,14 @@ def initialize() {
 
 def on() {
 	log.debug "Executing 'on'"
-    if (device.latestState('status').stringValue == 'paused') {
+    def currentState = device.latestState('status').stringValue
+    if (currentState == 'paused') {
     	nucleoPOST("/messages", '{"reqId":"1", "cmd":"resumeCleaning"}')
     }
-    else {
-		nucleoPOST("/messages", '{"reqId":"1", "cmd":"startCleaning", "params":{"category": 2, "mode": 2, "modifier": 2}}') 
+    else if (currentState != 'error') {
+    	def modeParam = 1
+        if (isTurboCleanMode()) modeParam = 2
+		nucleoPOST("/messages", '{"reqId":"1", "cmd":"startCleaning", "params":{"category": 2, "mode": ' + modeParam + ', "modifier": 2}}') 
     }
     runIn(2, refresh)
 }
@@ -396,6 +405,15 @@ def poll() {
 def refresh() {
 	log.debug "Executing 'refresh'"
 	poll()
+}
+
+def isTurboCleanMode() {
+	def result
+    if (settings.startCleaningMode == "eco") {
+    	result = false
+    }
+    log.debug "$device.displayName cleaning mode: $settings.startCleaningMode"
+    result
 }
 
 def nucleoPOST(path, body) {
