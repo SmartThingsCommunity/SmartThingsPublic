@@ -115,6 +115,34 @@ metadata {
 	}
  }
 
+def installed() {
+	log.debug "${device} installed"
+}
+
+def updated() {
+	log.debug "updated called"
+	log.info "garage value : $garageSensor"
+	if (garageSensor == "Yes") {
+		def descriptionText = "Updating device to garage sensor"
+		if (device.latestValue("status") == "open") {
+			sendEvent(name: 'status', value: 'garage-open', descriptionText: descriptionText, translatable: true)
+		}
+		else if (device.latestValue("status") == "closed") {
+			sendEvent(name: 'status', value: 'garage-closed', descriptionText: descriptionText, translatable: true)
+		}
+	}
+	else {
+		def descriptionText = "Updating device to open/close sensor"
+		if (device.latestValue("status") == "garage-open") {
+			sendEvent(name: 'status', value: 'open', descriptionText: descriptionText, translatable: true)
+		}
+		else if (device.latestValue("status") == "garage-closed") {
+			sendEvent(name: 'status', value: 'closed', descriptionText: descriptionText, translatable: true)
+		}
+	}
+	configureHealthCheck()
+}
+
 def parse(String description) {
 	Map map = [:]
 	if (description?.startsWith('catchall:')) {
@@ -244,29 +272,6 @@ private Map parseIasMessage(String description) {
 			}
 
 	return resultMap
-}
-
-def updated() {
-	log.debug "updated called"
-	log.info "garage value : $garageSensor"
-	if (garageSensor == "Yes") {
-		def descriptionText = "Updating device to garage sensor"
-		if (device.latestValue("status") == "open") {
-			sendEvent(name: 'status', value: 'garage-open', descriptionText: descriptionText, translatable: true)
-		}
-		else if (device.latestValue("status") == "closed") {
-			sendEvent(name: 'status', value: 'garage-closed', descriptionText: descriptionText, translatable: true)
-		}
-	}
-	else {
-		def descriptionText = "Updating device to open/close sensor"
-		if (device.latestValue("status") == "garage-open") {
-			sendEvent(name: 'status', value: 'open', descriptionText: descriptionText, translatable: true)
-		}
-		else if (device.latestValue("status") == "garage-closed") {
-			sendEvent(name: 'status', value: 'closed', descriptionText: descriptionText, translatable: true)
-		}
-	}
 }
 
 def getTemperature(value) {
@@ -411,11 +416,13 @@ def refresh() {
 	return refreshCmds + enrollResponse()
 }
 
-def configure() {
+def configureHealthCheck(){
 	// Device-Watch allows 3 check-in misses from device (plus 1 min lag time)
 	// enrolls with default periodic reporting until newer 5 min interval is confirmed
 	sendEvent(name: "checkInterval", value: 3 * 60 * 60 + 1 * 60, displayed: false, data: [protocol: "zigbee", hubHardwareId: device.hub.hardwareID])
+}
 
+def configure() {
 	log.debug "Configuring Reporting"
 
 	// temperature minReportTime 30 seconds, maxReportTime 5 min. Reporting interval if no activity
