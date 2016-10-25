@@ -105,8 +105,8 @@ metadata {
 		}
         
         standardTile("scheduled", "device.scheduled", width: 2, height: 2, decoration: "flat") {
-         	state ("true", label:'Robot Sched On', action: "disableSchedule", icon:"https://raw.githubusercontent.com/alyc100/SmartThingsPublic/master/devicetypes/alyc100/neato_schedule_icon.png")
-			state ("false", label:'Robot Sched Off', action: "enableSchedule", icon: "https://raw.githubusercontent.com/alyc100/SmartThingsPublic/master/devicetypes/alyc100/neato_no_schedule_icon.png")
+         	state ("true", label:'Neato Sched On', action: "disableSchedule", icon:"https://raw.githubusercontent.com/alyc100/SmartThingsPublic/master/devicetypes/alyc100/neato_schedule_icon.png")
+			state ("false", label:'Neato Sched Off', action: "enableSchedule", icon: "https://raw.githubusercontent.com/alyc100/SmartThingsPublic/master/devicetypes/alyc100/neato_no_schedule_icon.png")
 		}
         
         standardTile("dockHasBeenSeen", "device.dockHasBeenSeen", width: 2, height: 2, inactiveLabel: false, canChangeIcon: false) {
