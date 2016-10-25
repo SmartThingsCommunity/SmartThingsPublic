@@ -250,12 +250,12 @@ def poll() {
         		case "1":
             		sendEvent(name: "status", value: "ready")
                 	sendEvent(name: "switch", value: "off")
-                    statusMsg += "READY TO ${state.startCleaningMode.toUpperCase()} CLEAN"
+                    statusMsg += "READY TO ${isTurboCleanMode() ? "TURBO" : "ECO"} CLEAN"
 				break;
 				case "2":
 					sendEvent(name: "status", value: "cleaning")
                 	sendEvent(name: "switch", value: "on")
-                	statusMsg += "CURRENTLY ${state.startCleaningMode.toUpperCase()} CLEANING"
+                	statusMsg += "CURRENTLY ${isTurboCleanMode() ? "TURBO" : "ECO"} CLEANING"
 				break;
             	case "3":
 					sendEvent(name: "status", value: "paused")
