@@ -13,6 +13,7 @@
  *  for the specific language governing permissions and limitations under the License.
  *
  *  VERSION HISTORY
+ *  25-10-2016: 1.2b - Very silly bug fix. Stop mode always reporting as Eco. Also display mode in Device Handler.
  *	23-10-2016: 1.2 - Add option to select Turbo or Eco clean modes
  *
  *	20-10-2016: 1.1b - Minor display tweak for offline condition.
@@ -234,7 +235,7 @@ def poll() {
         		case "1":
             		sendEvent(name: "status", value: "ready")
                 	sendEvent(name: "switch", value: "off")
-                    statusMsg += "READY TO CLEAN"
+                    statusMsg += "READY TO CLEAN - ${settings.startCleaningMode.toUpperCase()} MODE"
 				break;
 				case "2":
 					sendEvent(name: "status", value: "cleaning")
@@ -408,7 +409,7 @@ def refresh() {
 }
 
 def isTurboCleanMode() {
-	def result
+	def result = true
     if (settings.startCleaningMode == "eco") {
     	result = false
     }
