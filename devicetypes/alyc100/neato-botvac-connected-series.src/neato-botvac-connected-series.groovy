@@ -428,7 +428,7 @@ def isTurboCleanMode() {
     if (state.startCleaningMode != null && state.startCleaningMode == "eco") {
     	result = false
     }
-    log.debug "$device.displayName cleaning mode: $start.startCleaningMode"
+    log.debug "$device.displayName cleaning mode: $state.startCleaningMode"
     result
 }
 
