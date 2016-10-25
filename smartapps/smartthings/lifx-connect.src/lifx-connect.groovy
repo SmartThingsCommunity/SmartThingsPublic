@@ -387,7 +387,7 @@ def updateDevices() {
 			} else {
 				childDevice = addChildDevice(app.namespace, "LIFX White Bulb", device.id, null, data)
 			}
-		}
+			}
 	}
 	getChildDevices().findAll { !selectors.contains("${it.deviceNetworkId}") }.each {
 		log.info("Deleting ${it.deviceNetworkId}")

@@ -141,7 +141,6 @@ def setLevel(percentage) {
 		percentage = 1 // clamp to 1%
 	}
 	if (percentage == 0) {
-		sendEvent(name: "level", value: 0) // Otherwise the level value tile does not update
 		return off() // if the brightness is set to 0, just turn it off
 	}
 	parent.logErrors(logObject:log) {

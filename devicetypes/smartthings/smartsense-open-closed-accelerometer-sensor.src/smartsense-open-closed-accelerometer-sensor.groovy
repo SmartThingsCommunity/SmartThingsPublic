@@ -277,12 +277,8 @@ def getTemperature(value) {
 def configure() {
 	sendEvent(name: "checkInterval", value: 7200, displayed: false)
 
-	String zigbeeEui = swapEndianHex(device.hub.zigbeeEui)
 	log.debug "Configuring Reporting, IAS CIE, and Bindings."
 	def configCmds = [
-		"zcl global write 0x500 0x10 0xf0 {${zigbeeEui}}", "delay 200",
-		"send 0x${device.deviceNetworkId} 1 ${endpointId}", "delay 500",
-
 		"zdo bind 0x${device.deviceNetworkId} ${endpointId} 1 1 {${device.zigbeeId}} {}", "delay 200",
 		"zcl global send-me-a-report 1 0x20 0x20 30 21600 {01}",		//checkin time 6 hrs
 		"send 0x${device.deviceNetworkId} 1 ${endpointId}", "delay 500",
@@ -295,7 +291,7 @@ def configure() {
 		"zcl global send-me-a-report 0xFC02 2 0x18 30 3600 {01}",
 		"send 0x${device.deviceNetworkId} 1 ${endpointId}", "delay 500"
 	]
-	return configCmds + refresh() // send refresh cmds as part of config
+	return refresh() + configCmds // send refresh cmds as part of config
 }
 
 def enrollResponse() {
