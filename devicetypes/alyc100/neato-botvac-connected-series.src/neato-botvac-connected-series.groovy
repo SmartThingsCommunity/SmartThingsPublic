@@ -13,7 +13,9 @@
  *  for the specific language governing permissions and limitations under the License.
  *
  *  VERSION HISTORY
- *  25-10-2016: 1.2b - Very silly bug fix. Stop mode always reporting as Eco. Also display mode in Device Handler.
+ *	25-10-2016: 1.2.1 - New device tile to change cleaning mode. Icon refactor.
+ *
+ *  25-10-2016: 1.2b - Very silly bug fix. Clean mode always reporting as Eco. Added display cleaning mode in Device Handler.
  *	23-10-2016: 1.2 - Add option to select Turbo or Eco clean modes
  *
  *	20-10-2016: 1.1b - Minor display tweak for offline condition.
@@ -27,10 +29,6 @@ import javax.crypto.Mac;
 import javax.crypto.spec.SecretKeySpec;
 import java.security.InvalidKeyException;
 
-preferences {
-	input ("startCleaningMode", "enum", title:"Botvac Cleaning Mode", multiple: false, required: true, options: ["turbo": "Turbo", "eco": "Eco"], defaultValue: "turbo") 
-}
-
 metadata {
 	definition (name: "Neato Botvac Connected Series", namespace: "alyc100", author: "Alex Lee Yuk Cheung") {
     	capability "Battery"
@@ -43,6 +41,7 @@ metadata {
         command "enableSchedule"
         command "disableSchedule"
         command "resetSmartSchedule"
+        command "toggleCleaningMode"
 
 		attribute "network","string"
 		attribute "bin","string"
@@ -83,10 +82,6 @@ metadata {
 			state ("empty", label:'Bin Empty', icon: "st.Office.office10",backgroundColor: "#79b821")
 			state ("full", label:'Bin Full', icon: "st.Office.office10", backgroundColor: "#bc2323")
 		}
-		/*standardTile("clean", "device.switch", width: 2, height: 2, inactiveLabel: false, canChangeIcon: false, decoration: "flat") {
-			state("on", label: 'dock', action: "switch.off", icon: "st.Appliances.appliances13", backgroundColor: "#79b821", nextState:"off")
-			state("off", label: 'clean', action: "switch.on", icon: "st.Appliances.appliances13", backgroundColor: "#79b821", nextState:"on")
-		}*/
 		standardTile("network", "device.network", width: 2, height: 2, inactiveLabel: false, canChangeIcon: false) {
 			state ("default", label:'unknown', icon: "st.unknown.unknown.unknown")
 			state ("Connected", label:'Online', icon: "st.Health & Wellness.health9", backgroundColor: "#79b821")
@@ -109,9 +104,9 @@ metadata {
             state ("undocked", label:'UNDOCKED', icon: "https://raw.githubusercontent.com/alyc100/SmartThingsPublic/master/devicetypes/alyc100/laser-guided-navigation.png")
 		}
         
-        standardTile("scheduled", "device.scheduled", width: 2, height: 2, inactiveLabel: false, canChangeIcon: false, decoration: "flat") {
-         	state ("true", label:'enable manual', action: "disableSchedule", icon:"st.Office.office7")
-			state ("false", label:'enable auto', action: "enableSchedule", icon: "st.Appliances.appliances13")
+        standardTile("scheduled", "device.scheduled", width: 2, height: 2, decoration: "flat") {
+         	state ("true", label:'Robot Sched On', action: "disableSchedule", icon:"https://raw.githubusercontent.com/alyc100/SmartThingsPublic/master/devicetypes/alyc100/neato_schedule_icon.png")
+			state ("false", label:'Robot Sched Off', action: "enableSchedule", icon: "https://raw.githubusercontent.com/alyc100/SmartThingsPublic/master/devicetypes/alyc100/neato_no_schedule_icon.png")
 		}
         
         standardTile("dockHasBeenSeen", "device.dockHasBeenSeen", width: 2, height: 2, inactiveLabel: false, canChangeIcon: false) {
@@ -120,17 +115,22 @@ metadata {
 		}
         
         standardTile("resetSmartSchedule", "device.resetSmartSchedule", inactiveLabel: false, width: 2, height: 2, decoration: "flat") {
-			state("default", label:'reset schedule', action:"resetSmartSchedule", icon:"st.Office.office6")
+			state("default", label:'reset schedule', action:"resetSmartSchedule", icon:"https://raw.githubusercontent.com/alyc100/SmartThingsPublic/master/devicetypes/alyc100/reset_schedule_icon.png")
 		}
         
-        standardTile("switch", "device.switch", width: 2, height: 2, canChangeIcon: true) {
+        standardTile("cleaningMode", "device.cleaningMode", inactiveLabel: false, width: 2, height: 2, decoration: "flat") {
+			state("turbo", label:'Turbo Mode', action:"toggleCleaningMode", icon:"https://raw.githubusercontent.com/alyc100/SmartThingsPublic/master/devicetypes/alyc100/neato_turbo_icon.png")
+            state("eco", label:'Eco Mode', action:"toggleCleaningMode", icon:"https://raw.githubusercontent.com/alyc100/SmartThingsPublic/master/devicetypes/alyc100/neato_eco_icon.png")
+		}
+        
+        standardTile("switch", "device.switch", width: 2, height: 2, decoration: "flat") {
         	state("off", label: 'STOPPED', action: "switch.on", icon: "https://raw.githubusercontent.com/alyc100/SmartThingsPublic/master/devicetypes/alyc100/laser-guided-navigation.png", backgroundColor: "#ffffff", nextState:"on")
 			state("on", label: 'CLEANING', action: "switch.off", icon: "https://raw.githubusercontent.com/alyc100/SmartThingsPublic/master/devicetypes/alyc100/best-pet-hair-cleaning.png", backgroundColor: "#79b821", nextState:"off")
 			state("offline", label:'${name}', icon:"https://raw.githubusercontent.com/alyc100/SmartThingsPublic/master/devicetypes/alyc100/laser-guided-navigation.png", backgroundColor:"#bc2323")
         }
         
 		main("switch")
-		details(["clean","smartScheduleStatusMessage", "forceCleanStatusMessage", "status","battery","bin","network", "dockStatus", "charging", "dockHasBeenSeen", "scheduled", "resetSmartSchedule", "refresh"])
+		details(["clean","smartScheduleStatusMessage", "forceCleanStatusMessage", "status", "battery", "charging", "bin", "dockStatus", "dockHasBeenSeen", "cleaningMode", "scheduled", "resetSmartSchedule", "network", "refresh"])
 		}
 }
 
@@ -147,6 +147,10 @@ def updated() {
 }
 
 def initialize() {
+	if (state.startCleaningMode == null) {
+    	state.startCleaningMode = "turbo"
+        sendEvent(name: 'cleaningMode', value: state.startCleaningMode, displayed: true)
+    }
 	poll()
 }
 
@@ -204,6 +208,17 @@ def resetSmartSchedule() {
     runIn(2, refresh)
 }
 
+def toggleCleaningMode() {
+	log.debug "Executing 'toggleCleaningMode'"
+	if (state.startCleaningMode != null && state.startCleaningMode == "turbo") { 
+    	state.startCleaningMode = "eco"
+    } else {
+    	state.startCleaningMode = "turbo"
+    }
+    sendEvent(name: 'cleaningMode', value: state.startCleaningMode, displayed: true)
+    runIn(2, refresh)
+}
+
 def poll() {
 	log.debug "Executing 'poll'"
     def resp = nucleoPOST("/messages", '{"reqId":"1", "cmd":"getRobotState"}')
@@ -235,12 +250,12 @@ def poll() {
         		case "1":
             		sendEvent(name: "status", value: "ready")
                 	sendEvent(name: "switch", value: "off")
-                    statusMsg += "READY TO CLEAN - ${settings.startCleaningMode.toUpperCase()} MODE"
+                    statusMsg += "READY TO ${state.startCleaningMode.toUpperCase()} CLEAN"
 				break;
 				case "2":
 					sendEvent(name: "status", value: "cleaning")
                 	sendEvent(name: "switch", value: "on")
-                	statusMsg += 'CURRENTLY CLEANING'
+                	statusMsg += "CURRENTLY ${state.startCleaningMode.toUpperCase()} CLEANING"
 				break;
             	case "3":
 					sendEvent(name: "status", value: "paused")
@@ -410,10 +425,10 @@ def refresh() {
 
 def isTurboCleanMode() {
 	def result = true
-    if (settings.startCleaningMode == "eco") {
+    if (state.startCleaningMode != null && state.startCleaningMode == "eco") {
     	result = false
     }
-    log.debug "$device.displayName cleaning mode: $settings.startCleaningMode"
+    log.debug "$device.displayName cleaning mode: $start.startCleaningMode"
     result
 }
 
