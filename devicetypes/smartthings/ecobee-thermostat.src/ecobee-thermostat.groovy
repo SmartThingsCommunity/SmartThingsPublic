@@ -148,14 +148,12 @@ def generateEvent(Map results) {
 						 handlerName: name]
 
 			if (name=="temperature" || name=="heatingSetpoint" || name=="coolingSetpoint" ) {
-				def sendValue = convertTemperatureIfNeeded(value.toDouble(), "F", 1) //API return temperature value in F
-				sendValue =  location.temperatureScale == "C"? roundC(sendValue) : sendValue
+				def sendValue =  location.temperatureScale == "C"? roundC(convertFtoC(value.toDouble())) : value.toInteger()
 				isChange = isTemperatureStateChange(device, name, value.toString())
 				isDisplayed = isChange
 				event << [value: sendValue, unit: temperatureScale, isStateChange: isChange, displayed: isDisplayed]
 			}  else if (name=="maxCoolingSetpoint" || name=="minCoolingSetpoint" || name=="maxHeatingSetpoint" || name=="minHeatingSetpoint") {
-				def sendValue = convertTemperatureIfNeeded(value.toDouble(), "F", 1) //API return temperature value in F
-				sendValue =  location.temperatureScale == "C"? roundC(sendValue) : sendValue
+				def sendValue =  location.temperatureScale == "C"? roundC(convertFtoC(value.toDouble())) : value.toInteger()
 				event << [value: sendValue, unit: temperatureScale, displayed: false]
 			}  else if (name=="heatMode" || name=="coolMode" || name=="autoMode" || name=="auxHeatMode"){
 				isChange = isStateChange(device, name, value.toString())
@@ -253,7 +251,6 @@ void setCoolingSetpoint(setpoint) {
 	def maxCoolingSetpoint = device.currentValue("maxCoolingSetpoint")
 	def minCoolingSetpoint = device.currentValue("minCoolingSetpoint")
 
-
 	if (coolingSetpoint > maxCoolingSetpoint) {
 		coolingSetpoint = maxCoolingSetpoint
 	} else if (coolingSetpoint < minCoolingSetpoint) {
@@ -283,7 +280,6 @@ void setCoolingSetpoint(setpoint) {
 }
 
 void resumeProgram() {
-
 	log.debug "resumeProgram() is called"
 	sendEvent("name":"thermostatStatus", "value":"resuming schedule", "description":statusText, displayed: false)
 	def deviceId = device.deviceNetworkId.split(/\./).last()
@@ -354,7 +350,6 @@ def switchFanMode() {
 }
 
 def switchToFanMode(nextMode) {
-
 	log.debug "switching to fan mode: $nextMode"
 	def returnCommand
 
@@ -520,63 +515,56 @@ def fanAuto() {
 }
 
 def generateSetpointEvent() {
-
 	log.debug "Generate SetPoint Event"
 
 	def mode = device.currentValue("thermostatMode")
-	log.debug "Current Mode = ${mode}"
 
 	def heatingSetpoint = device.currentValue("heatingSetpoint")
-	log.debug "Heating Setpoint = ${heatingSetpoint}"
-
 	def coolingSetpoint = device.currentValue("coolingSetpoint")
-	log.debug "Cooling Setpoint = ${coolingSetpoint}"
-
 	def maxHeatingSetpoint = device.currentValue("maxHeatingSetpoint")
 	def maxCoolingSetpoint = device.currentValue("maxCoolingSetpoint")
 	def minHeatingSetpoint = device.currentValue("minHeatingSetpoint")
 	def minCoolingSetpoint = device.currentValue("minCoolingSetpoint")
 
-	if(location.temperatureScale == "C")
-	{
-		maxHeatingSetpoint = roundC(maxHeatingSetpoint)
-		maxCoolingSetpoint = roundC(maxCoolingSetpoint)
-		minHeatingSetpoint = roundC(minHeatingSetpoint)
-		minCoolingSetpoint = roundC(minCoolingSetpoint)
-		heatingSetpoint = roundC(heatingSetpoint)
-		coolingSetpoint = roundC(coolingSetpoint)
+	if(location.temperatureScale == "C") {
+		maxHeatingSetpoint = maxHeatingSetpoint > 40 ? roundC(convertFtoC(maxHeatingSetpoint)) : roundC(maxHeatingSetpoint)
+		maxCoolingSetpoint = maxCoolingSetpoint > 40 ? roundC(convertFtoC(maxCoolingSetpoint)) : roundC(maxCoolingSetpoint)
+		minHeatingSetpoint = minHeatingSetpoint > 40 ? roundC(convertFtoC(minHeatingSetpoint)) : roundC(minHeatingSetpoint)
+		minCoolingSetpoint = minCoolingSetpoint > 40 ? roundC(convertFtoC(minCoolingSetpoint)) : roundC(minCoolingSetpoint)
+		heatingSetpoint = heatingSetpoint > 40 ? roundC(convertFtoC(heatingSetpoint)) : roundC(heatingSetpoint)
+		coolingSetpoint = coolingSetpoint > 40 ? roundC(convertFtoC(coolingSetpoint)) : roundC(coolingSetpoint)
+	} else {
+		maxHeatingSetpoint = maxHeatingSetpoint < 40 ? roundC(convertCtoF(maxHeatingSetpoint)) : maxHeatingSetpoint
+		maxCoolingSetpoint = maxCoolingSetpoint < 40 ? roundC(convertCtoF(maxCoolingSetpoint)) : maxCoolingSetpoint
+		minHeatingSetpoint = minHeatingSetpoint < 40 ? roundC(convertCtoF(minHeatingSetpoint)) : minHeatingSetpoint
+		minCoolingSetpoint = minCoolingSetpoint < 40 ? roundC(convertCtoF(minCoolingSetpoint)) : minCoolingSetpoint
+		heatingSetpoint = heatingSetpoint < 40 ? roundC(convertCtoF(heatingSetpoint)) : heatingSetpoint
+		coolingSetpoint = coolingSetpoint < 40 ? roundC(convertCtoF(coolingSetpoint)) : coolingSetpoint
 	}
 
+	log.debug "Current Mode = ${mode}"
+	log.debug "Heating Setpoint = ${heatingSetpoint}"
+	log.debug "Cooling Setpoint = ${coolingSetpoint}"
 
 	sendEvent("name":"maxHeatingSetpoint", "value":maxHeatingSetpoint, "unit":location.temperatureScale)
 	sendEvent("name":"maxCoolingSetpoint", "value":maxCoolingSetpoint, "unit":location.temperatureScale)
 	sendEvent("name":"minHeatingSetpoint", "value":minHeatingSetpoint, "unit":location.temperatureScale)
 	sendEvent("name":"minCoolingSetpoint", "value":minCoolingSetpoint, "unit":location.temperatureScale)
-
+	sendEvent("name":"heatingSetpoint", "value":heatingSetpoint, "unit":location.temperatureScale)
+	sendEvent("name":"coolingSetpoint", "value":coolingSetpoint, "unit":location.temperatureScale)
 
 	if (mode == "heat") {
-
 		sendEvent("name":"thermostatSetpoint", "value":heatingSetpoint, "unit":location.temperatureScale)
-
 	}
 	else if (mode == "cool") {
-
 		sendEvent("name":"thermostatSetpoint", "value":coolingSetpoint, "unit":location.temperatureScale)
-
 	} else if (mode == "auto") {
-
 		sendEvent("name":"thermostatSetpoint", "value":"Auto")
-
 	} else if (mode == "off") {
-
 		sendEvent("name":"thermostatSetpoint", "value":"Off")
-
 	} else if (mode == "auxHeatOnly") {
-
 		sendEvent("name":"thermostatSetpoint", "value":heatingSetpoint, "unit":location.temperatureScale)
-
 	}
-
 }
 
 void raiseSetpoint() {
@@ -585,21 +573,31 @@ void raiseSetpoint() {
 	def maxHeatingSetpoint = device.currentValue("maxHeatingSetpoint")
 	def maxCoolingSetpoint = device.currentValue("maxCoolingSetpoint")
 
-
 	if (mode == "off" || mode == "auto") {
 		log.warn "this mode: $mode does not allow raiseSetpoint"
 	} else {
+
 		def heatingSetpoint = device.currentValue("heatingSetpoint")
 		def coolingSetpoint = device.currentValue("coolingSetpoint")
 		def thermostatSetpoint = device.currentValue("thermostatSetpoint")
+
+		if (location.temperatureScale == "C") {
+			maxHeatingSetpoint = maxHeatingSetpoint > 40 ? convertFtoC(maxHeatingSetpoint) : maxHeatingSetpoint
+			maxCoolingSetpoint = maxCoolingSetpoint > 40 ? convertFtoC(maxCoolingSetpoint) : maxCoolingSetpoint
+			heatingSetpoint = heatingSetpoint > 40 ? convertFtoC(heatingSetpoint) : heatingSetpoint
+			coolingSetpoint = coolingSetpoint > 40 ? convertFtoC(coolingSetpoint) : coolingSetpoint
+			thermostatSetpoint = thermostatSetpoint > 40 ? convertFtoC(thermostatSetpoint) : thermostatSetpoint
+		} else {
+			maxHeatingSetpoint = maxHeatingSetpoint < 40 ? convertCtoF(maxHeatingSetpoint) : maxHeatingSetpoint
+			maxCoolingSetpoint = maxCoolingSetpoint < 40 ? convertCtoF(maxCoolingSetpoint) : maxCoolingSetpoint
+			heatingSetpoint = heatingSetpoint < 40 ? convertCtoF(heatingSetpoint) : heatingSetpoint
+			coolingSetpoint = coolingSetpoint < 40 ? convertCtoF(coolingSetpoint) : coolingSetpoint
+			thermostatSetpoint = thermostatSetpoint < 40 ? convertCtoF(thermostatSetpoint) : thermostatSetpoint
+		}
+
 		log.debug "raiseSetpoint() mode = ${mode}, heatingSetpoint: ${heatingSetpoint}, coolingSetpoint:${coolingSetpoint}, thermostatSetpoint:${thermostatSetpoint}"
 
-		if (device.latestState('thermostatSetpoint')) {
-			targetvalue = device.latestState('thermostatSetpoint').value
-			targetvalue = location.temperatureScale == "F"? targetvalue.toInteger() : targetvalue.toDouble()
-		} else {
-			targetvalue = 0
-		}
+		targetvalue = thermostatSetpoint ? thermostatSetpoint : 0
 		targetvalue = location.temperatureScale == "F"? targetvalue + 1 : targetvalue + 0.5
 
 		if ((mode == "heat" || mode == "auxHeatOnly") && targetvalue > maxHeatingSetpoint) {
@@ -622,20 +620,29 @@ void lowerSetpoint() {
 	def minHeatingSetpoint = device.currentValue("minHeatingSetpoint")
 	def minCoolingSetpoint = device.currentValue("minCoolingSetpoint")
 
-
 	if (mode == "off" || mode == "auto") {
 		log.warn "this mode: $mode does not allow lowerSetpoint"
 	} else {
 		def heatingSetpoint = device.currentValue("heatingSetpoint")
 		def coolingSetpoint = device.currentValue("coolingSetpoint")
 		def thermostatSetpoint = device.currentValue("thermostatSetpoint")
-		log.debug "lowerSetpoint() mode = ${mode}, heatingSetpoint: ${heatingSetpoint}, coolingSetpoint:${coolingSetpoint}, thermostatSetpoint:${thermostatSetpoint}"
-		if (device.latestState('thermostatSetpoint')) {
-			targetvalue = device.latestState('thermostatSetpoint').value
-			targetvalue = location.temperatureScale == "F"? targetvalue.toInteger() : targetvalue.toDouble()
+
+		if (location.temperatureScale == "C") {
+			minHeatingSetpoint = minHeatingSetpoint > 40 ? convertFtoC(minHeatingSetpoint) : minHeatingSetpoint
+			minCoolingSetpoint = minCoolingSetpoint > 40 ? convertFtoC(minCoolingSetpoint) : minCoolingSetpoint
+			heatingSetpoint = heatingSetpoint > 40 ? convertFtoC(heatingSetpoint) : heatingSetpoint
+			coolingSetpoint = coolingSetpoint > 40 ? convertFtoC(coolingSetpoint) : coolingSetpoint
+			thermostatSetpoint = thermostatSetpoint > 40 ? convertFtoC(thermostatSetpoint) : thermostatSetpoint
 		} else {
-			targetvalue = 0
+			minHeatingSetpoint = minHeatingSetpoint < 40 ? convertCtoF(minHeatingSetpoint) : minHeatingSetpoint
+			minCoolingSetpoint = minCoolingSetpoint < 40 ? convertCtoF(minCoolingSetpoint) : minCoolingSetpoint
+			heatingSetpoint = heatingSetpoint < 40 ? convertCtoF(heatingSetpoint) : heatingSetpoint
+			coolingSetpoint = coolingSetpoint < 40 ? convertCtoF(coolingSetpoint) : coolingSetpoint
+			thermostatSetpoint = thermostatSetpoint < 40 ? convertCtoF(thermostatSetpoint) : thermostatSetpoint
 		}
+		log.debug "lowerSetpoint() mode = ${mode}, heatingSetpoint: ${heatingSetpoint}, coolingSetpoint:${coolingSetpoint}, thermostatSetpoint:${thermostatSetpoint}"
+
+		targetvalue = thermostatSetpoint ? thermostatSetpoint : 0
 		targetvalue = location.temperatureScale == "F"? targetvalue - 1 : targetvalue - 0.5
 
 		if ((mode == "heat" || mode == "auxHeatOnly") && targetvalue < minHeatingSetpoint) {
@@ -653,7 +660,6 @@ void lowerSetpoint() {
 
 //called by raiseSetpoint() and lowerSetpoint()
 void alterSetpoint(temp) {
-
 	def mode = device.currentValue("thermostatMode")
 
 	if (mode == "off" || mode == "auto") {
@@ -665,6 +671,18 @@ void alterSetpoint(temp) {
 
 		def targetHeatingSetpoint
 		def targetCoolingSetpoint
+
+		def temperatureScaleHasChanged = false
+
+		if (location.temperatureScale == "C") {
+			if ( heatingSetpoint > 40.0 || coolingSetpoint > 40.0 ) {
+				temperatureScaleHasChanged = true
+			}
+		} else {
+			if ( heatingSetpoint < 40.0 || coolingSetpoint < 40.0 ) {
+				temperatureScaleHasChanged = true
+			}
+		}
 
 		//step1: check thermostatMode, enforce limits before sending request to cloud
 		if (mode == "heat" || mode == "auxHeatOnly"){
@@ -707,17 +725,18 @@ void alterSetpoint(temp) {
 				sendEvent("name": "thermostatSetpoint", "value": coolingSetpoint.toString(), displayed: false)
 			}
 		}
+
+		if ( temperatureScaleHasChanged )
+			generateSetpointEvent()
 		generateStatusEvent()
 	}
 }
 
 def generateStatusEvent() {
-
 	def mode = device.currentValue("thermostatMode")
 	def heatingSetpoint = device.currentValue("heatingSetpoint")
 	def coolingSetpoint = device.currentValue("coolingSetpoint")
 	def temperature = device.currentValue("temperature")
-
 	def statusText
 
 	log.debug "Generate Status Event for Mode = ${mode}"
@@ -727,36 +746,25 @@ def generateStatusEvent() {
 	log.debug "HVAC Mode = ${mode}"
 
 	if (mode == "heat") {
-
 		if (temperature >= heatingSetpoint)
 			statusText = "Right Now: Idle"
 		else
 			statusText = "Heating to ${heatingSetpoint} ${location.temperatureScale}"
-
 	} else if (mode == "cool") {
-
 		if (temperature <= coolingSetpoint)
 			statusText = "Right Now: Idle"
 		else
 			statusText = "Cooling to ${coolingSetpoint} ${location.temperatureScale}"
-
 	} else if (mode == "auto") {
-
 		statusText = "Right Now: Auto"
-
 	} else if (mode == "off") {
-
 		statusText = "Right Now: Off"
-
 	} else if (mode == "auxHeatOnly") {
-
 		statusText = "Emergency Heat"
-
 	} else {
-
 		statusText = "?"
-
 	}
+
 	log.debug "Generate Status Event = ${statusText}"
 	sendEvent("name":"thermostatStatus", "value":statusText, "description":statusText, displayed: true)
 }
@@ -770,7 +778,7 @@ def roundC (tempC) {
 }
 
 def convertFtoC (tempF) {
-	return String.format("%.1f", (Math.round(((tempF - 32)*(5/9)) * 2))/2)
+	return ((Math.round(((tempF - 32)*(5/9)) * 2))/2).toDouble()
 }
 
 def convertCtoF (tempC) {
