@@ -264,7 +264,6 @@ def refresh()
 {
 	log.debug "refresh temperature, humidity, and battery"
 	return zigbee.readAttribute(0xFC45, 0x0000, ["mfgCode": 0xC2DF]) +   // Original firmware
-			zigbee.readAttribute(0xFC45, 0x0000, ["mfgCode": 0x104E]) +  // New firmware
 			zigbee.readAttribute(0x0402, 0x0000) +
 			zigbee.readAttribute(0x0001, 0x0020)
 }
