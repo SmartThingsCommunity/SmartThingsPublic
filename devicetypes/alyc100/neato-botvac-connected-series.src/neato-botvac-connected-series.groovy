@@ -13,6 +13,7 @@
  *  for the specific language governing permissions and limitations under the License.
  *
  *  VERSION HISTORY
+ *	25-10-2016: 1.2.2 - Turn off 'searching' status when Botvac is idle.
  *	25-10-2016: 1.2.1 - New device tile to change cleaning mode. Icon refactor.
  *
  *  25-10-2016: 1.2b - Very silly bug fix. Clean mode always reporting as Eco. Added display cleaning mode in Device Handler.
@@ -112,6 +113,7 @@ metadata {
         standardTile("dockHasBeenSeen", "device.dockHasBeenSeen", width: 2, height: 2, inactiveLabel: false, canChangeIcon: false) {
          	state ("true", label:'SEEN', backgroundColor: "#79b821", icon:"st.Transportation.transportation13")
 			state ("false", label:'SEARCHING', backgroundColor: "#E5E500", icon:"st.Transportation.transportation13")
+            state ("idle", label:'', icon:"st.Transportation.transportation13")
 		}
         
         standardTile("resetSmartSchedule", "device.resetSmartSchedule", inactiveLabel: false, width: 2, height: 2, decoration: "flat") {
@@ -366,7 +368,12 @@ def poll() {
             }
         	sendEvent(name: 'charging', value: result.details.isCharging as String)
         	sendEvent(name: 'scheduled', value: result.details.isScheduleEnabled as String)
-        	sendEvent(name: 'dockHasBeenSeen', value: result.details.dockHasBeenSeen as String)
+        	//If Botvac is idle, set dock has been seen status to idle and ignore API result
+            if (result.state as String == "1") {
+            	sendEvent(name: 'dockHasBeenSeen', value: "idle", displayed: false)
+            } else {
+            	sendEvent(name: 'dockHasBeenSeen', value: result.details.dockHasBeenSeen as String)
+            }
         	sendEvent(name: 'battery', value: result.details.charge as Integer)
         }
         if (result.containsKey("availableCommands")) {
