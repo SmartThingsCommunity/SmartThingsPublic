@@ -13,7 +13,7 @@
  *  for the specific language governing permissions and limitations under the License.
  *
  *  VERSION HISTORY
- *	25-10-2016: 1.2.2 - Turn off 'searching' status when Botvac is idle.
+ *	25-10-2016: 1.2.2 - Turn off 'searching' status when Botvac is idle. More information for activity feed.
  *	25-10-2016: 1.2.1 - New device tile to change cleaning mode. Icon refactor.
  *
  *  25-10-2016: 1.2b - Very silly bug fix. Clean mode always reporting as Eco. Added display cleaning mode in Device Handler.
@@ -416,6 +416,13 @@ def poll() {
          sendEvent(name: 'forceCleanStatusMessage', value: forceCleanStatus, displayed: false)
     }
     sendEvent(name: 'statusMsg', value: statusMsg, displayed: false)
+    
+    //Create verbose updates on activity feed.
+    def statusMsgTokenized = statusMsg.tokenize('-')
+    if (statusMsgTokenized.size() > 1) {
+    	 def infoMsg = statusMsg.tokenize('-')[statusMsgTokenized.size() - 1].substring(1)
+         sendEvent(name: "botvacInfo", value: "${infoMsg}", displayed: true, linkText: "${device.displayName}", descriptionText: "${infoMsg}")
+    }
     
     //If smart schedule is enabled, disable Neato schedule to avoid conflict
     if (parent.isSmartScheduleEnabled && result.details.isScheduleEnabled) {
