@@ -14,6 +14,7 @@
  *
  *  VERSION HISTORY
  *	26-10-2016: 1.2.2 - Turn off 'searching' status when Botvac is idle. More information for activity feed.
+ *
  *	25-10-2016: 1.2.1 - New device tile to change cleaning mode. Icon refactor.
  *
  *  25-10-2016: 1.2b - Very silly bug fix. Clean mode always reporting as Eco. Added display cleaning mode in Device Handler.
