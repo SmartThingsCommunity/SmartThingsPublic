@@ -108,7 +108,7 @@ metadata {
 }
 
 void installed() {
-	sendEvent(name: "checkInterval", value: 60 * 12, data: [protocol: "lan", hubHardwareId: device.hub.hardwareID], displayed: false)
+	sendEvent(name: "DeviceWatch-Enroll", value: "{\"protocol\": \"LAN\", \"scheme\":\"untracked\", \"hubHardwareId\": \"${device.hub.hardwareID}\"}")
 }
 
 // parse events into attributes
@@ -200,10 +200,6 @@ void reset(transitionTime = device.currentValue("transitionTime"), disableCDB = 
 void refresh() {
     log.debug "Executing 'refresh'"
     parent.manualRefresh()
-}
-
-def ping() {
-    log.debug "${parent.ping(this)}"
 }
 
 void alert(alert) {

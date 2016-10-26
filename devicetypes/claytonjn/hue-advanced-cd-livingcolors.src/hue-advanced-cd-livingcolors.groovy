@@ -115,7 +115,7 @@ metadata {
 }
 
 void installed() {
-	sendEvent(name: "checkInterval", value: 60 * 12, data: [protocol: "lan", hubHardwareId: device.hub.hardwareID], displayed: false)
+	sendEvent(name: "DeviceWatch-Enroll", value: "{\"protocol\": \"LAN\", \"scheme\":\"untracked\", \"hubHardwareId\": \"${device.hub.hardwareID}\"}")
 }
 
 // parse events into attributes
@@ -330,10 +330,6 @@ def verifyPercent(percent) {
         log.warn "$percent is not 0-100"
         return false
     }
-}
-
-def ping() {
-    log.debug "${parent.ping(this)}"
 }
 
 void initialize(deviceType) {
