@@ -450,6 +450,10 @@ private sendStatusToDevice() {
 	{
 		return sendRawStatus(status)
 	}
+    else
+    {
+    	return []
+    }
 }
 
 
