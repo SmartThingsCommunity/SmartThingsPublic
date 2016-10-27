@@ -28,7 +28,6 @@ metadata {
  
 		command "reset"
 		command "refresh"
-        command "rainbow"
         
         (1..6).each { n ->
 			attribute "switch$n", "enum", ["on", "off"]
@@ -41,16 +40,21 @@ metadata {
 	}
     
     preferences {
+        input description: "Create a custom program by modifying the settings below. This program can then be executed by using the \"custom\" button on the device page.", displayDuringSetup: false, type: "paragraph", element: "paragraph"
+
         input "transition", "enum", title: "Transition", defaultValue: 0, displayDuringSetup: false, required: false, options: [
                 0:"Smooth",
-                1073741824:"Flash"]
-        //input "brightness", "number", title: "Brightness", defaultValue: 1, displayDuringSetup: false, required: false, range: "1..99"
+                1073741824:"Flash",
+                //3221225472:"Fade Out Fade In"
+                ]
         input "count", "number", title: "Cycle Count (0 [unlimited])", defaultValue: 0, displayDuringSetup: false, required: false, range: "0..254"
         input "speed", "enum", title: "Color Change Speed", defaultValue: 0, displayDuringSetup: false, required: false, options: [
                 0:"Fast",
-                32:"Medium",
-                64:"Slow"]
-        input "speedLevel", "number", title: "Color Residence Time (0 [constant], 1 [fastest], 30 [slowest])", defaultValue: "0", displayDuringSetup: true, required: false, range: "0..30"
+                64:"Medium Fast",
+                128:"Medium",
+                192:"Medium Slow",
+                254:"Slow"]
+        input "speedLevel", "number", title: "Color Residence Time (1 [fastest], 254 [slowest])", defaultValue: "0", displayDuringSetup: true, required: false, range: "0..254"
         (1..8).each { i ->
         input "color$i", "enum", title: "Color $i", displayDuringSetup: false, required: false, options: [
                 1:"Red",
@@ -127,12 +131,9 @@ metadata {
              "switch1", "switch2", "switch3",
              "switch4", /*"switch5",*/ "switch6",
              "refresh", "configure" ])
-
 }
  
 def updated() {
-    log.debug calculateParameter(37)
-    log.debug calculateParameter(38)
 	response(refresh())
 }
  
@@ -142,7 +143,7 @@ def parse(description) {
 		def cmd = zwave.parse(description, [0x20: 1, 0x26: 3, 0x70: 1, 0x33:3])
 		if (cmd) {
 			result = zwaveEvent(cmd)
-			log.debug("'$description' parsed to $result")
+			log.debug("'$cmd' parsed to $result")
 		} else {
 			log.debug("Couldn't zwave.parse '$description'")
 		}
@@ -159,7 +160,7 @@ def zwaveEvent(physicalgraph.zwave.commands.basicv1.BasicSet cmd) {
 }
  
 def zwaveEvent(physicalgraph.zwave.commands.switchmultilevelv3.SwitchMultilevelReport cmd) {
-	dimmerEvents(cmd)
+	//dimmerEvents(cmd) 
 }
  
 private dimmerEvents(physicalgraph.zwave.Command cmd) {
@@ -168,6 +169,7 @@ private dimmerEvents(physicalgraph.zwave.Command cmd) {
 	if (cmd.value) {
 		result << createEvent(name: "level", value: cmd.value, unit: "%")
 	}
+    if (cmd.value == 0) toggleTiles("all")
 	return result
 }
  
@@ -208,25 +210,29 @@ def zwaveEvent(physicalgraph.zwave.Command cmd) {
 private toggleTiles(value) {
    def tiles = ["switch1", "switch2", "switch3", "switch4", "switch5", "switch6"]
    tiles.each {tile ->
-      if (tile != value) sendEvent(name: tile, value: "off")
+      if (tile != value) { sendEvent(name: tile, value: "off") }
+      else { sendEvent(name:tile, value:"on"); sendEvent(name:"switch", value:"on") }
    }
 }
  
 def on() {
+    toggleTiles("all")
 	commands([
 		zwave.basicV1.basicSet(value: 0xFF),
 		zwave.switchMultilevelV3.switchMultilevelGet(),
-	], 3500)
+	], 2000)
 }
  
 def off() {
+    toggleTiles("all")
 	commands([
 		zwave.basicV1.basicSet(value: 0x00),
 		zwave.switchMultilevelV3.switchMultilevelGet(),
-	], 3500)
+	], 2000)
 }
  
 def setLevel(level) {
+    toggleTiles("all")
 	setLevel(level, 1)
 }
  
@@ -260,7 +266,6 @@ def setColor(value) {
     def warmWhite = 0
     def coldWhite = 0
 	log.debug "setColor: ${value}"
-    //log.debug "${value.hue}"
 	if (value.hue && value.saturation) {
         log.debug "setting color with hue & saturation"
         def hue = value.hue ?: device.currentValue("hue")
@@ -304,12 +309,14 @@ def setColor(value) {
 	if(value.switch) sendEvent(name: "switch", value: value.switch)
 	if(value.saturation) sendEvent(name: "saturation", value: value.saturation)
  
+    toggleTiles("all")
 	commands(result)
 }
  
 def setColorTemperature(percent) {
 	if(percent > 99) percent = 99
 	int warmValue = percent * 255 / 99
+    toggleTiles("all")
     sendEvent(name: "colorTemperature", value: percent)
 	command(zwave.switchColorV3.switchColorSet(red:0, green:0, blue:0, warmWhite:warmValue, coldWhite:(255 - warmValue)))
 }
@@ -372,49 +379,49 @@ def huesatToRGB(float hue, float sat) {
 
 def on1() {
     log.debug "on1()"
-    sendEvent(name:"switch1", value:"on")
     toggleTiles("switch1")
 	commands([
         zwave.configurationV1.configurationSet(scaledConfigurationValue: 16777258, parameterNumber: 37, size: 4),
-	], 3500)
+        zwave.switchMultilevelV3.switchMultilevelGet(),
+	], 1500)
 }
 
 def on2() {
-    log.debug "on2()"
-    sendEvent(name:"switch2", value:"on")
+    log.debug "on2()"    
     toggleTiles("switch2")
 	commands([
         zwave.configurationV1.configurationSet(scaledConfigurationValue: 1090519050, parameterNumber: 37, size: 4),
-	], 3500)
+        zwave.switchMultilevelV3.switchMultilevelGet(),
+	], 1500)
 }
 
 def on3() {
     log.debug "on3()"
-    sendEvent(name:"switch3", value:"on")
     toggleTiles("switch3")
 	commands([
         zwave.configurationV1.configurationSet(scaledConfigurationValue: 50331658, parameterNumber: 37, size: 4),
-	], 3500)
+        zwave.switchMultilevelV3.switchMultilevelGet(),
+	], 1500)
 }
 
 def on4() {
     log.debug "on4()"
-    sendEvent(name:"switch4", value:"on")
     toggleTiles("switch4")
 	commands([
         zwave.configurationV1.configurationSet(scaledConfigurationValue: 1633771873, parameterNumber: 38, size: 4),
         zwave.configurationV1.configurationSet(scaledConfigurationValue: 1113784321, parameterNumber: 37, size: 4),
-	], 3500)
+        zwave.switchMultilevelV3.switchMultilevelGet(),
+	], 1500)
 } 
  
 def on6() {
     log.debug "on6()"
-    sendEvent(name:"switch6", value:"on")
     toggleTiles("switch6")
 	commands([
         zwave.configurationV1.configurationSet(scaledConfigurationValue: calculateParameter(38), parameterNumber: 38, size: 4),
         zwave.configurationV1.configurationSet(scaledConfigurationValue: calculateParameter(37), parameterNumber: 37, size: 4),
-	], 3500)
+        zwave.switchMultilevelV3.switchMultilevelGet(),
+	], 1500)
 } 
 
 def offCmd() {
@@ -422,7 +429,7 @@ def offCmd() {
 	commands([
         zwave.configurationV1.configurationSet(scaledConfigurationValue: 0, parameterNumber: 37, size: 4),
         zwave.configurationV1.configurationGet(parameterNumber: 37),
-	], 3500)
+	], 1500)
 }
 
 def off1() { offCmd() }
@@ -431,8 +438,6 @@ def off3() { offCmd() }
 def off4() { offCmd() }
 def off5() { offCmd() }
 def off6() { offCmd() }
-
-
 
 private calculateParameter(number) {
    long value = 0
@@ -443,7 +448,6 @@ private calculateParameter(number) {
          value += settings.count ? (settings.count.toLong() * 65536) : 0
          value += settings.speed ? (settings.speed.toLong() * 256) : 0
          value += settings.speedLevel ? settings.speedLevel.toLong() : 0
-         //value += settings.speedLevel ? settings.speedLevel.toLong() : 0
       break
       case 38:
          value += settings.color1 ? (settings.color1.toLong() * 1) : 0
