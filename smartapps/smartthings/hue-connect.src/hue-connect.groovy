@@ -8,7 +8,7 @@
  *  Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except
  *  in compliance with the License. You may obtain a copy of the License at:
  *
- *      http://www.apache.org/licenses/LICENSE-2.0
+ *  http://www.apache.org/licenses/LICENSE-2.0
  *
  *  Unless required by applicable law or agreed to in writing, software distributed under the License is distributed
  *  on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the License
@@ -24,7 +24,7 @@ definition(
 	category: "SmartThings Labs",
 	iconUrl: "https://s3.amazonaws.com/smartapp-icons/Partner/hue.png",
 	iconX2Url: "https://s3.amazonaws.com/smartapp-icons/Partner/hue@2x.png",
-    singleInstance: true
+	singleInstance: true
 )
 
 preferences {
@@ -37,7 +37,10 @@ preferences {
 
 def mainPage() {
 	def bridges = bridgesDiscovered()
-	if (state.username && bridges) {
+
+	if (state.refreshUsernameNeeded) {
+		return bridgeLinking()
+	} else if (state.username && bridges) {
 		return bulbDiscovery()
 	} else {
 		return bridgeDiscovery()
@@ -83,7 +86,7 @@ def bridgeDiscovery(params=[:])
 
 	return dynamicPage(name:"bridgeDiscovery", title:"Discovery Started!", nextPage:"bridgeBtnPush", refreshInterval:refreshInterval, uninstall: true) {
 		section("Please wait while we discover your Hue Bridge. Discovery can take five minutes or more, so sit back and relax! Select your device below once discovered.") {
-			input "selectedHue", "enum", required:false, title:"Select Hue Bridge (${numFound} found)", multiple:false, options:options
+			input "selectedHue", "enum", required:false, title:"Select Hue Bridge (${numFound} found)", multiple:false, options:options, submitOnChange: true
 		}
 	}
 }
@@ -102,13 +105,22 @@ def bridgeLinking() {
 
 	def nextPage = ""
 	def title = "Linking with your Hue"
-    def paragraphText
+	def paragraphText
 	if (selectedHue) {
-		paragraphText = "Press the button on your Hue Bridge to setup a link. "
-    } else {
-    	paragraphText = "You haven't selected a Hue Bridge, please Press \"Done\" and select one before clicking next."
-    }
+		if (state.refreshUsernameNeeded) {
+			paragraphText = "The current Hue username is invalid.\n\nPlease press the button on your Hue Bridge to re-link. "
+		} else {
+			paragraphText = "Press the button on your Hue Bridge to setup a link. "
+		}
+	} else {
+		paragraphText = "You haven't selected a Hue Bridge, please Press \"Done\" and select one before clicking next."
+	}
 	if (state.username) { //if discovery worked
+		if (state.refreshUsernameNeeded) {
+			state.refreshUsernameNeeded = false
+			// Issue one poll with new username to cancel local polling with old username
+			poll()
+		}
 		nextPage = "bulbDiscovery"
 		title = "Success!"
 		paragraphText = "Linking to your hub was a success! Please click 'Next'!"
@@ -131,10 +143,7 @@ def bulbDiscovery() {
 	def refreshInterval = 3
 	state.inBulbDiscovery = true
 	def bridge = null
-	if (selectedHue) {
-		bridge = getChildDevice(selectedHue)
-		subscribe(bridge, "bulbList", bulbListData)
-	}
+
 	state.bridgeRefreshCount = 0
 	def allLightsFound = bulbsDiscovered() ?: [:]
 
@@ -189,7 +198,7 @@ void ssdpSubscribe() {
 
 private sendDeveloperReq() {
 	def token = app.id
-    def host = getBridgeIP()
+	def host = getBridgeIP()
 	sendHubCommand(new physicalgraph.device.HubAction([
 		method: "POST",
 		path: "/api",
@@ -200,7 +209,7 @@ private sendDeveloperReq() {
 }
 
 private discoverHueBulbs() {
-    def host = getBridgeIP()
+	def host = getBridgeIP()
 	sendHubCommand(new physicalgraph.device.HubAction([
 		method: "GET",
 		path: "/api/${state.username}/lights",
@@ -222,8 +231,8 @@ private verifyHueBridge(String deviceNetworkId, String host) {
 private verifyHueBridges() {
 	def devices = getHueBridges().findAll { it?.value?.verified != true }
 	devices.each {
-        def ip = convertHexToIP(it.value.networkAddress)
-        def port = convertHexToInt(it.value.deviceAddress)
+		def ip = convertHexToIP(it.value.networkAddress)
+		def port = convertHexToInt(it.value.deviceAddress)
 		verifyHueBridge("${it.value.mac}", (ip + ":" + port))
 	}
 }
@@ -252,15 +261,11 @@ Map bulbsDiscovered() {
 		bulbs.each {
 			def value = "${it.name}"
 			def key = app.id +"/"+ it.id
-            logg += "$value - $key, "
+			logg += "$value - $key, "
 			bulbmap["${key}"] = value
 		}
 	}
 	return bulbmap
-}
-
-def bulbListData(evt) {
-	state.bulbs = evt.jsonData
 }
 
 Map getHueBulbs() {
@@ -283,22 +288,23 @@ def installed() {
 def updated() {
 	log.trace "Updated with settings: ${settings}"
 	unsubscribe()
-    unschedule()
+	unschedule()
 	initialize()
 }
 
 def initialize() {
 	log.debug "Initializing"
-    unsubscribe(bridge)
-    state.inBulbDiscovery = false
-    state.bridgeRefreshCount = 0
-    state.bulbRefreshCount = 0
+	unsubscribe(bridge)
+	state.inBulbDiscovery = false
+	state.bridgeRefreshCount = 0
+	state.bulbRefreshCount = 0
 	state.updating = false
+	setupDeviceWatch()
 	if (selectedHue) {
-   		addBridge()
-        addBulbs()
-        doDeviceSync()
-        runEvery5Minutes("doDeviceSync")
+		addBridge()
+		addBulbs()
+		doDeviceSync()
+		runEvery5Minutes("doDeviceSync")
 	}
 }
 
@@ -316,27 +322,12 @@ def uninstalled(){
 	state.username = null
 }
 
-// Handles events to add new bulbs
-def bulbListHandler(hub, data = "") {
-	def msg = "Bulbs list not processed. Only while in settings menu."
-    def bulbs = [:]
-	if (state.inBulbDiscovery) {
-        def logg = ""
-        log.trace "Adding bulbs to state..."
-        state.bridgeProcessedLightList = true
-        def object = new groovy.json.JsonSlurper().parseText(data)
-        object.each { k,v ->
-            if (v instanceof Map)
-                bulbs[k] = [id: k, name: v.name, type: v.type, modelid: v.modelid, hub:hub, online: v.state?.reachable]
-        }
-    }
-    def bridge = null
-	if (selectedHue) {
-		bridge = getChildDevice(selectedHue)
+private setupDeviceWatch() {
+	def hub = location.hubs[0]
+	// Make sure that all child devices are enrolled in device watch
+	getChildDevices().each {
+		it.sendEvent(name: "DeviceWatch-Enroll", value: "{\"protocol\": \"LAN\", \"scheme\":\"untracked\", \"hubHardwareId\": \"${hub?.hub?.hardwareID}\"}")
 	}
-    bridge.sendEvent(name: "bulbList", value: hub, data: bulbs, isStateChange: true, displayed: false)
-    msg = "${bulbs.size()} bulbs found. ${bulbs}"
-	return msg
 }
 
 private upgradeDeviceType(device, newHueType) {
@@ -387,7 +378,6 @@ def addBulbs() {
 					if (d) {
 						log.debug "created ${d.displayName} with id $dni"
 						d.completedSetup = true
-						d.refresh()
 					}
 				} else {
 					log.debug "$dni in not longer paired to the Hue Bridge or ID changed"
@@ -417,23 +407,23 @@ def addBridge() {
 	if(vbridge) {
 		def d = getChildDevice(selectedHue)
 		if(!d) {
-     		// compatibility with old devices
-            def newbridge = true
-            childDevices.each {
-            	if (it.getDeviceDataByName("mac")) {
-                    def newDNI = "${it.getDeviceDataByName("mac")}"
-                    if (newDNI != it.deviceNetworkId) {
-                    	def oldDNI = it.deviceNetworkId
-                        log.debug "updating dni for device ${it} with $newDNI - previous DNI = ${it.deviceNetworkId}"
-                        it.setDeviceNetworkId("${newDNI}")
+	 		// compatibility with old devices
+			def newbridge = true
+			childDevices.each {
+				if (it.getDeviceDataByName("mac")) {
+					def newDNI = "${it.getDeviceDataByName("mac")}"
+					if (newDNI != it.deviceNetworkId) {
+						def oldDNI = it.deviceNetworkId
+						log.debug "updating dni for device ${it} with $newDNI - previous DNI = ${it.deviceNetworkId}"
+						it.setDeviceNetworkId("${newDNI}")
 						if (oldDNI == selectedHue) {
 							app.updateSetting("selectedHue", newDNI)
 						}
-                        newbridge = false
-                    }
-                }
-            }
-        	if (newbridge) {
+						newbridge = false
+					}
+				}
+			}
+			if (newbridge) {
 				// Hue uses last 6 digits of MAC address as ID number, this number is shown on the bottom of the bridge
 				def idNumber = getBridgeIdNumber(selectedHue)
 				d = addChildDevice("smartthings", "Hue Bridge", selectedHue, vbridge.value.hub, ["label": "Hue Bridge ($idNumber)"])
@@ -444,9 +434,11 @@ def addBridge() {
 					d.completedSetup = true
 					log.debug "created ${d.displayName} with id ${d.deviceNetworkId}"
 					def childDevice = getChildDevice(d.deviceNetworkId)
+					childDevice?.sendEvent(name: "status", value: "Online")
+					childDevice?.sendEvent(name: "DeviceWatch-DeviceStatus", value: "online", displayed: false, isStateChange: true)
 					updateBridgeStatus(childDevice)
-					childDevice.sendEvent(name: "idNumber", value: idNumber)
 
+					childDevice?.sendEvent(name: "idNumber", value: idNumber)
 					if (vbridge.value.ip && vbridge.value.port) {
 						if (vbridge.value.ip.contains(".")) {
 							childDevice.sendEvent(name: "networkAddress", value: vbridge.value.ip + ":" +  vbridge.value.port)
@@ -490,24 +482,25 @@ def ssdpBridgeHandler(evt) {
 		def host = ip + ":" + port
 		log.debug "Device ($parsedEvent.mac) was already found in state with ip = $host."
 		def dstate = bridges."${parsedEvent.ssdpUSN.toString()}"
-		def dni = "${parsedEvent.mac}"
-		def d = getChildDevice(dni)
+		def dniReceived = "${parsedEvent.mac}"
+		def currentDni = dstate.mac
+		def d = getChildDevice(dniReceived)
 		def networkAddress = null
 		if (!d) {
-			childDevices.each {
-				if (it.getDeviceDataByName("mac")) {
-					def newDNI = "${it.getDeviceDataByName("mac")}"
-					d = it
-					if (newDNI != it.deviceNetworkId) {
-						def oldDNI = it.deviceNetworkId
-						log.debug "updating dni for device ${it} with $newDNI - previous DNI = ${it.deviceNetworkId}"
-						it.setDeviceNetworkId("${newDNI}")
-						if (oldDNI == selectedHue) {
-							app.updateSetting("selectedHue", newDNI)
-						}
-						doDeviceSync()
-					}
+			// There might be a mismatch between bridge DNI and the actual bridge mac address, correct that
+			log.debug "Bridge with $dniReceived not found"
+			def bridge = childDevices.find { it.deviceNetworkId == currentDni }
+			if (bridge != null) {
+				log.warn "Bridge is set to ${bridge.deviceNetworkId}, updating to $dniReceived"
+				bridge.setDeviceNetworkId("${dniReceived}")
+				dstate.mac = dniReceived
+				// Check to see if selectedHue is a valid bridge, otherwise update it
+				def isSelectedValid = bridges?.find {it.value?.mac == selectedHue}
+				if (isSelectedValid == null) {
+					log.warn "Correcting selectedHue in state"
+					app.updateSetting("selectedHue", dniReceived)
 				}
+				doDeviceSync()
 			}
 		} else {
 			updateBridgeStatus(d)
@@ -524,6 +517,18 @@ def ssdpBridgeHandler(evt) {
 				dstate.name = "Philips hue ($ip)"
 				d.sendEvent(name:"networkAddress", value: host)
 				d.updateDataValue("networkAddress", host)
+			}
+			if (dstate.mac != dniReceived) {
+				log.warn "Correcting bridge mac address in state"
+				dstate.mac = dniReceived
+			}
+			if (selectedHue != dniReceived) {
+				// Check to see if selectedHue is a valid bridge, otherwise update it
+				def isSelectedValid = bridges?.find {it.value?.mac == selectedHue}
+				if (isSelectedValid == null) {
+					log.warn "Correcting selectedHue in state"
+					app.updateSetting("selectedHue", dniReceived)
+				}
 			}
 		}
 	}
@@ -557,11 +562,8 @@ void lightsHandler(physicalgraph.device.HubResponse hubResponse) {
 	if (isValidSource(hubResponse.mac)) {
 		def body = hubResponse.json
 		if (!body?.state?.on) { //check if first time poll made it here by mistake
-			def bulbs = getHueBulbs()
 			log.debug "Adding bulbs to state!"
-			body.each { k, v ->
-				bulbs[k] = [id: k, name: v.name, type: v.type, modelid: v.modelid, hub: hubResponse.hubId]
-			}
+			updateBulbState(body, hubResponse.hubId)
 		}
 	}
 }
@@ -588,47 +590,47 @@ void usernameHandler(physicalgraph.device.HubResponse hubResponse) {
 @Deprecated
 def locationHandler(evt) {
 	def description = evt.description
-    log.trace "Location: $description"
+	log.trace "Location: $description"
 
 	def hub = evt?.hubId
  	def parsedEvent = parseLanMessage(description)
 	parsedEvent << ["hub":hub]
 
 	if (parsedEvent?.ssdpTerm?.contains("urn:schemas-upnp-org:device:basic:1")) {
-    	//SSDP DISCOVERY EVENTS
+		//SSDP DISCOVERY EVENTS
 		log.trace "SSDP DISCOVERY EVENTS"
 		def bridges = getHueBridges()
 		log.trace bridges.toString()
 		if (!(bridges."${parsedEvent.ssdpUSN.toString()}")) {
-        	//bridge does not exist
+			//bridge does not exist
 			log.trace "Adding bridge ${parsedEvent.ssdpUSN}"
 			bridges << ["${parsedEvent.ssdpUSN.toString()}":parsedEvent]
 		} else {
 			// update the values
-            def ip = convertHexToIP(parsedEvent.networkAddress)
-            def port = convertHexToInt(parsedEvent.deviceAddress)
-            def host = ip + ":" + port
+			def ip = convertHexToIP(parsedEvent.networkAddress)
+			def port = convertHexToInt(parsedEvent.deviceAddress)
+			def host = ip + ":" + port
 			log.debug "Device ($parsedEvent.mac) was already found in state with ip = $host."
-            def dstate = bridges."${parsedEvent.ssdpUSN.toString()}"
+			def dstate = bridges."${parsedEvent.ssdpUSN.toString()}"
 			def dni = "${parsedEvent.mac}"
-            def d = getChildDevice(dni)
-            def networkAddress = null
-            if (!d) {
-            	childDevices.each {
-                    if (it.getDeviceDataByName("mac")) {
-                        def newDNI = "${it.getDeviceDataByName("mac")}"
+			def d = getChildDevice(dni)
+			def networkAddress = null
+			if (!d) {
+				childDevices.each {
+					if (it.getDeviceDataByName("mac")) {
+						def newDNI = "${it.getDeviceDataByName("mac")}"
 						d = it
-                        if (newDNI != it.deviceNetworkId) {
-                            def oldDNI = it.deviceNetworkId
-                            log.debug "updating dni for device ${it} with $newDNI - previous DNI = ${it.deviceNetworkId}"
-                            it.setDeviceNetworkId("${newDNI}")
+						if (newDNI != it.deviceNetworkId) {
+							def oldDNI = it.deviceNetworkId
+							log.debug "updating dni for device ${it} with $newDNI - previous DNI = ${it.deviceNetworkId}"
+							it.setDeviceNetworkId("${newDNI}")
 							if (oldDNI == selectedHue) {
 								app.updateSetting("selectedHue", newDNI)
 							}
-                            doDeviceSync()
-                        }
-                    }
-                }
+							doDeviceSync()
+						}
+					}
+				}
 			} else {
 				updateBridgeStatus(d)
 				if (d.getDeviceDataByName("networkAddress")) {
@@ -636,22 +638,22 @@ def locationHandler(evt) {
 				} else {
 					networkAddress = d.latestState('networkAddress').stringValue
 				}
-                log.trace "Host: $host - $networkAddress"
-                if(host != networkAddress) {
-                    log.debug "Device's port or ip changed for device $d..."
-                    dstate.ip = ip
-                    dstate.port = port
-                    dstate.name = "Philips hue ($ip)"
-                    d.sendEvent(name:"networkAddress", value: host)
-                    d.updateDataValue("networkAddress", host)
-            	}
-            }
+				log.trace "Host: $host - $networkAddress"
+				if(host != networkAddress) {
+					log.debug "Device's port or ip changed for device $d..."
+					dstate.ip = ip
+					dstate.port = port
+					dstate.name = "Philips hue ($ip)"
+					d.sendEvent(name:"networkAddress", value: host)
+					d.updateDataValue("networkAddress", host)
+				}
+			}
 		}
 	} else if (parsedEvent.headers && parsedEvent.body) {
 		log.trace "HUE BRIDGE RESPONSES"
 		def headerString = parsedEvent.headers.toString()
 		if (headerString?.contains("xml")) {
-            log.trace "description.xml response (application/xml)"
+			log.trace "description.xml response (application/xml)"
 			def body = new XmlSlurper().parseText(parsedEvent.body)
 			if (body?.device?.modelName?.text().startsWith("Philips hue bridge")) {
 				def bridges = getHueBridges()
@@ -663,7 +665,7 @@ def locationHandler(evt) {
 				}
 			}
 		} else if(headerString?.contains("json") && isValidSource(parsedEvent.mac)) {
-            log.trace "description.xml response (application/json)"
+			log.trace "description.xml response (application/json)"
 			def body = new groovy.json.JsonSlurper().parseText(parsedEvent.body)
 			if (body.success != null) {
 				if (body.success[0] != null) {
@@ -677,11 +679,8 @@ def locationHandler(evt) {
 			} else {
 				//GET /api/${state.username}/lights response (application/json)
 				if (!body?.state?.on) { //check if first time poll made it here by mistake
-					def bulbs = getHueBulbs()
 					log.debug "Adding bulbs to state!"
-					body.each { k,v ->
-						bulbs[k] = [id: k, name: v.name, type: v.type, modelid: v.modelid, hub:parsedEvent.hub]
-					}
+					updateBulbState(body, parsedEvent.hub)
 				}
 			}
 		}
@@ -703,7 +702,7 @@ def doDeviceSync(){
 	poll()
 	ssdpSubscribe()
 	discoverBridges()
-    checkBridgeStatus()
+	checkBridgeStatus()
 }
 
 /**
@@ -716,10 +715,14 @@ def doDeviceSync(){
 private void updateBridgeStatus(childDevice) {
 	// Update activity timestamp if child device is a valid bridge
 	def vbridges = getVerifiedHueBridges()
-	def vbridge = vbridges.find {"${it.value.mac}".toUpperCase() == childDevice?.device?.deviceNetworkId?.toUpperCase()}
+	def vbridge = vbridges.find {
+		"${it.value.mac}".toUpperCase() == childDevice?.device?.deviceNetworkId?.toUpperCase()
+	}
 	vbridge?.value?.lastActivity = now()
-	if(vbridge) {
+	if (vbridge && childDevice?.device?.currentValue("status") == "Offline") {
+		log.debug "$childDevice is back Online"
 		childDevice?.sendEvent(name: "status", value: "Online")
+		childDevice?.sendEvent(name: "DeviceWatch-DeviceStatus", value: "online", displayed: false, isStateChange: true)
 	}
 }
 
@@ -728,29 +731,37 @@ private void updateBridgeStatus(childDevice) {
  * for the bridge and all connected lights. Also, set ID number on bridge if not done previously.
  */
 private void checkBridgeStatus() {
-    def bridges = getHueBridges()
-    // Check if each bridge has been heard from within the last 11 minutes (2 poll intervals times 5 minutes plus buffer)
-    def time = now() - (1000 * 60 * 11)
-    bridges.each {
-        def d = getChildDevice(it.value.mac)
-	    if(d) {
-		    // Set id number on bridge if not done
-		    if (it.value.idNumber == null) {
-			    it.value.idNumber = getBridgeIdNumber(it.value.serialNumber)
+	def bridges = getHueBridges()
+	// Check if each bridge has been heard from within the last 11 minutes (2 poll intervals times 5 minutes plus buffer)
+	def time = now() - (1000 * 60 * 11)
+	bridges.each {
+		def d = getChildDevice(it.value.mac)
+		if (d) {
+			// Set id number on bridge if not done
+			if (it.value.idNumber == null) {
+				it.value.idNumber = getBridgeIdNumber(it.value.serialNumber)
 				d.sendEvent(name: "idNumber", value: it.value.idNumber)
-		    }
+			}
 
 			if (it.value.lastActivity < time) { // it.value.lastActivity != null &&
-				log.warn "Bridge $it.key is Offline"
-				d.sendEvent(name: "status", value: "Offline")
+				if (d.currentStatus == "Online") {
+					log.warn "$d is Offline"
+					d.sendEvent(name: "status", value: "Offline")
+					d.sendEvent(name: "DeviceWatch-DeviceStatus", value: "offline", displayed: false, isStateChange: true)
 
-				state.bulbs?.each {
-					it.value.online = false
+					Calendar currentTime = Calendar.getInstance()
+					getChildDevices().each {
+						def id = getId(it)
+						if (state.bulbs[id]?.online == true) {
+							state.bulbs[id]?.online = false
+							state.bulbs[id]?.unreachableSince = currentTime.getTimeInMillis()
+							it.sendEvent(name: "DeviceWatch-DeviceStatus", value: "offline", displayed: false, isStateChange: true)
+						}
+					}
 				}
-				getChildDevices().each {
-					it.sendEvent(name: "DeviceWatch-DeviceOffline", value: "offline", isStateChange: true, displayed: false)
-				}
-			} else {
+			} else if (d.currentStatus == "Offline") {
+				log.debug "$d is back Online"
+				d.sendEvent(name: "DeviceWatch-DeviceStatus", value: "online", displayed: false, isStateChange: true)
 				d.sendEvent(name: "status", value: "Online")//setOnline(false)
 			}
 		}
@@ -766,6 +777,31 @@ def isInBulbDiscovery() {
 	return state.inBulbDiscovery
 }
 
+private updateBulbState(messageBody, hub) {
+	def bulbs = getHueBulbs()
+
+	// Copy of bulbs used to locate old lights in state that are no longer on bridge
+	def toRemove = [:]
+	toRemove << bulbs
+
+	messageBody.each { k,v ->
+
+		if (v instanceof Map) {
+			if (bulbs[k] == null) {
+				bulbs[k] = [:]
+			}
+			bulbs[k] << [id: k, name: v.name, type: v.type, modelid: v.modelid, hub:hub, remove: false]
+			toRemove.remove(k)
+		}
+	}
+
+	// Remove bulbs from state that are no longer discovered
+	toRemove.each { k,v ->
+		log.warn "${bulbs[k].name} no longer exists on bridge, removing"
+		bulbs.remove(k)
+	}
+}
+
 /////////////////////////////////////
 //CHILD DEVICE METHODS
 /////////////////////////////////////
@@ -777,24 +813,24 @@ def parse(childDevice, description) {
 	def parsedEvent = parseLanMessage(description)
 	if (parsedEvent.headers && parsedEvent.body) {
 		def headerString = parsedEvent.headers.toString()
-        def bodyString = parsedEvent.body.toString()
+		def bodyString = parsedEvent.body.toString()
 		if (headerString?.contains("json")) {
-        	def body
-        	try {
-            	body = new groovy.json.JsonSlurper().parseText(bodyString)
-            } catch (all) {
-            	log.warn "Parsing Body failed - trying again..."
-                poll()
-            }
-            if (body instanceof java.util.Map) {
-                // get (poll) reponse
-                return handlePoll(body)
+			def body
+			try {
+				body = new groovy.json.JsonSlurper().parseText(bodyString)
+			} catch (all) {
+				log.warn "Parsing Body failed - trying again..."
+				poll()
+			}
+			if (body instanceof java.util.Map) {
+				// get (poll) reponse
+				return handlePoll(body)
 			} else {
 				//put response
 				return handleCommandResponse(body)
-            }
-        }
-   } else {
+			}
+		}
+	} else {
 		log.debug "parse - got something other than headers,body..."
 		return []
 	}
@@ -815,19 +851,19 @@ private sendColorEvents(device, xy, hue, sat, ct, colormode = null) {
 		device.sendEvent([name: "colorTemperature", value: temp, descriptionText: "Color temperature has changed"])
 		// Return because color temperature change is not counted as a color change in SmartThings so no hex update necessary
 		return
-                    }
+	}
 
 	if (hue != null) {
 		// 0-65535
 		def value = Math.min(Math.round(hue * 100 / 65535), 65535) as int
 		events["hue"] = [name: "hue", value: value, descriptionText: "Color has changed", displayed: false]
-                }
+	}
 
 	if (sat != null) {
 		// 0-254
 		def value = Math.round(sat * 100 / 254) as int
-        events["saturation"] = [name: "saturation", value: value, descriptionText: "Color has changed", displayed: false]
-            }
+		events["saturation"] = [name: "saturation", value: value, descriptionText: "Color has changed", displayed: false]
+	}
 
 	// Following is used to decide what to base hex calculations on since it is preferred to return a colorchange in hex
 	if (xy != null && colormode != "hs") {
@@ -913,8 +949,15 @@ private handleCommandResponse(body) {
 					updates[childDeviceNetworkId]."$eventType" = v
 				}
 			}
-		} else if (payload.error) {
-			log.warn "Error returned from Hue bridge error = ${body?.error}"
+		} else if (payload?.error) {
+			log.warn "Error returned from Hue bridge, error = ${payload?.error}"
+			// Check for unauthorized user
+			if (payload?.error?.type?.value == 1) {
+				log.error "Hue username is not valid"
+				state.refreshUsernameNeeded = true
+				state.username = null
+			}
+			return []
 		}
 	}
 
@@ -922,12 +965,9 @@ private handleCommandResponse(body) {
 	updates.each { childDeviceNetworkId, params ->
 		def device = getChildDevice(childDeviceNetworkId)
 		def id = getId(device)
-		// If device is offline, then don't send events which will update device watch
-		if (isOnline(id)) {
-			sendBasicEvents(device, "on", params.on)
-			sendBasicEvents(device, "bri", params.bri)
-			sendColorEvents(device, params.xy, params.hue, params.sat, params.ct)
-		}
+		sendBasicEvents(device, "on", params.on)
+		sendBasicEvents(device, "bri", params.bri)
+		sendColorEvents(device, params.xy, params.hue, params.sat, params.ct)
 	}
 	return []
 }
@@ -950,28 +990,47 @@ private handleCommandResponse(body) {
  * @return empty array
  */
 private handlePoll(body) {
+	// Used to track "unreachable" time
+	// Device is considered "offline" if it has been in the "unreachable" state for
+	// 11 minutes (e.g. two poll intervals)
+	// Note, Hue Bridge marks devices as "unreachable" often even when they accept commands
+	Calendar time11 = Calendar.getInstance()
+	time11.add(Calendar.MINUTE, -11)
+	Calendar currentTime = Calendar.getInstance()
+
 	def bulbs = getChildDevices()
 	for (bulb in body) {
-		def device = bulbs.find{it.deviceNetworkId == "${app.id}/${bulb.key}"}
+		def device = bulbs.find { it.deviceNetworkId == "${app.id}/${bulb.key}" }
 		if (device) {
 			if (bulb.value.state?.reachable) {
-				if (state.bulbs[bulb.key]?.online == false) {
+				if (state.bulbs[bulb.key]?.online == false || state.bulbs[bulb.key]?.online == null) {
 					// light just came back online, notify device watch
-					def lastActivity = now()
-					device.sendEvent(name: "deviceWatch-status", value: "ONLINE", description: "Last Activity is on ${new Date((long) lastActivity)}", displayed: false, isStateChange: true)
+					device.sendEvent(name: "DeviceWatch-DeviceStatus", value: "online", displayed: false, isStateChange: true)
+					log.debug "$device is Online"
 				}
+				// Mark light as "online"
+				state.bulbs[bulb.key]?.unreachableSince = null
 				state.bulbs[bulb.key]?.online = true
-
-				// If user just executed commands, then do not send events to avoid confusing the turning on/off state
-				if (!state.updating) {
-					sendBasicEvents(device, "on", bulb.value?.state?.on)
-					sendBasicEvents(device, "bri", bulb.value?.state?.bri)
-					sendColorEvents(device, bulb.value?.state?.xy, bulb.value?.state?.hue, bulb.value?.state?.sat, bulb.value?.state?.ct, bulb.value?.state?.colormode)
-				}
 			} else {
-				state.bulbs[bulb.key]?.online = false
-				log.warn "$device is not reachable by Hue bridge"
-				device.sendEvent(name: "DeviceWatch-DeviceOffline", value: "offline", displayed: false, isStateChange: true)
+				if (state.bulbs[bulb.key]?.unreachableSince == null) {
+					// Store the first time where device was reported as "unreachable"
+					state.bulbs[bulb.key]?.unreachableSince = currentTime.getTimeInMillis()
+				}
+				if (state.bulbs[bulb.key]?.online || state.bulbs[bulb.key]?.online == null) {
+					// Check if device was "unreachable" for more than 11 minutes and mark "offline" if necessary
+					if (state.bulbs[bulb.key]?.unreachableSince < time11.getTimeInMillis() || state.bulbs[bulb.key]?.online == null) {
+						log.warn "$device went Offline"
+						state.bulbs[bulb.key]?.online = false
+						device.sendEvent(name: "DeviceWatch-DeviceStatus", value: "offline", displayed: false, isStateChange: true)
+					}
+				}
+				log.warn "$device may not reachable by Hue bridge"
+			}
+			// If user just executed commands, then do not send events to avoid confusing the turning on/off state
+			if (!state.updating) {
+				sendBasicEvents(device, "on", bulb.value?.state?.on)
+				sendBasicEvents(device, "bri", bulb.value?.state?.bri)
+				sendColorEvents(device, bulb.value?.state?.xy, bulb.value?.state?.hue, bulb.value?.state?.sat, bulb.value?.state?.ct, bulb.value?.state?.colormode)
 			}
 		}
 	}
@@ -991,51 +1050,42 @@ def updateHandler() {
 
 def hubVerification(bodytext) {
 	log.trace "Bridge sent back description.xml for verification"
-    def body = new XmlSlurper().parseText(bodytext)
-    if (body?.device?.modelName?.text().startsWith("Philips hue bridge")) {
-        def bridges = getHueBridges()
-        def bridge = bridges.find {it?.key?.contains(body?.device?.UDN?.text())}
-        if (bridge) {
-            bridge.value << [name:body?.device?.friendlyName?.text(), serialNumber:body?.device?.serialNumber?.text(), verified: true]
-        } else {
-            log.error "/description.xml returned a bridge that didn't exist"
-        }
-    }
+	def body = new XmlSlurper().parseText(bodytext)
+	if (body?.device?.modelName?.text().startsWith("Philips hue bridge")) {
+		def bridges = getHueBridges()
+		def bridge = bridges.find {it?.key?.contains(body?.device?.UDN?.text())}
+		if (bridge) {
+			bridge.value << [name:body?.device?.friendlyName?.text(), serialNumber:body?.device?.serialNumber?.text(), verified: true]
+		} else {
+			log.error "/description.xml returned a bridge that didn't exist"
+		}
+	}
 }
 
 def on(childDevice) {
 	log.debug "Executing 'on'"
 	def id = getId(childDevice)
-	if (!isOnline(id)) {
-		return "Bulb is unreachable"
-	}
 	updateInProgress()
 	createSwitchEvent(childDevice, "on")
 	put("lights/$id/state", [on: true])
-    return "Bulb is turning On"
+	return "Bulb is turning On"
 }
 
 def off(childDevice) {
 	log.debug "Executing 'off'"
 	def id = getId(childDevice)
-	if (!isOnline(id)) {
-		return "Bulb is unreachable"
-	}
 	updateInProgress()
 	createSwitchEvent(childDevice, "off")
 	put("lights/$id/state", [on: false])
-    return "Bulb is turning Off"
+	return "Bulb is turning Off"
 }
 
 def setLevel(childDevice, percent) {
 	log.debug "Executing 'setLevel'"
 	def id = getId(childDevice)
-	if (!isOnline(id)) {
-		return "Bulb is unreachable"
-	}
-    updateInProgress()
+	updateInProgress()
 	// 1 - 254
-    def level
+	def level
 	if (percent == 1)
 		level = 1
 	else
@@ -1057,10 +1107,6 @@ def setLevel(childDevice, percent) {
 def setSaturation(childDevice, percent) {
 	log.debug "Executing 'setSaturation($percent)'"
 	def id = getId(childDevice)
-	if (!isOnline(id)) {
-		return "Bulb is unreachable"
-	}
-
 	updateInProgress()
 	// 0 - 254
 	def level = Math.min(Math.round(percent * 254 / 100), 254)
@@ -1073,10 +1119,7 @@ def setSaturation(childDevice, percent) {
 def setHue(childDevice, percent) {
 	log.debug "Executing 'setHue($percent)'"
 	def id = getId(childDevice)
-	if (!isOnline(id)) {
-		return "Bulb is unreachable"
-	}
-    updateInProgress()
+	updateInProgress()
 	// 0 - 65535
 	def level =	Math.min(Math.round(percent * 65535 / 100), 65535)
 	// TODO should this be done by app only or should we default to on?
@@ -1088,10 +1131,7 @@ def setHue(childDevice, percent) {
 def setColorTemperature(childDevice, huesettings) {
 	log.debug "Executing 'setColorTemperature($huesettings)'"
 	def id = getId(childDevice)
-	if (!isOnline(id)) {
-		return "Bulb is unreachable"
-	}
-    updateInProgress()
+	updateInProgress()
 	// 153 (6500K) to 500 (2000K)
 	def ct = hueSettings == 6500 ? 153 : Math.round(1000000/huesettings)
 	createSwitchEvent(childDevice, "on")
@@ -1100,17 +1140,14 @@ def setColorTemperature(childDevice, huesettings) {
 }
 
 def setColor(childDevice, huesettings) {
-    log.debug "Executing 'setColor($huesettings)'"
+	log.debug "Executing 'setColor($huesettings)'"
 	def id = getId(childDevice)
-	if (!isOnline(id)) {
-		return "Bulb is unreachable"
-	}
-    updateInProgress()
+	updateInProgress()
 
-    def value = [:]
-    def hue = null
-    def sat = null
-    def xy = null
+	def value = [:]
+	def hue = null
+	def sat = null
+	def xy = null
 
 	// Prefer hue/sat over hex to make sure it works with the majority of the smartapps
 	if (huesettings.hue != null || huesettings.sat != null) {
@@ -1120,7 +1157,7 @@ def setColor(childDevice, huesettings) {
 			value.hue = Math.min(Math.round(huesettings.hue * 65535 / 100), 65535)
 		if (huesettings.saturation != null)
 			value.sat = Math.min(Math.round(huesettings.saturation * 254 / 100), 254)
-	} else if (huesettings.hex != null && false) {
+	} else if (huesettings.hex != null) {
 		// For now ignore model to get a consistent color if same color is set across multiple devices
 		// def model = state.bulbs[getId(childDevice)]?.modelid
 		// value.xy = calculateXY(huesettings.hex, model)
@@ -1135,39 +1172,30 @@ def setColor(childDevice, huesettings) {
 		// value.xy = calculateXY(hex, model)
 		// Once groups, or scenes are introduced it might be a good idea to use unique models again
 		value.xy = calculateXY(hex)
-    }
+	}
 */
 
-    // Default behavior is to turn light on
-    value.on = true
+	// Default behavior is to turn light on
+	value.on = true
 
-    if (huesettings.level != null) {
-        if (huesettings.level <= 0)
-            value.on = false
-        else if (huesettings.level == 1)
-            value.bri = 1
-        else
+	if (huesettings.level != null) {
+		if (huesettings.level <= 0)
+			value.on = false
+		else if (huesettings.level == 1)
+			value.bri = 1
+		else
 			value.bri = Math.min(Math.round(huesettings.level * 254 / 100), 254)
-    }
-    value.alert = huesettings.alert ? huesettings.alert : "none"
-    value.transitiontime = huesettings.transitiontime ? huesettings.transitiontime : 4
+	}
+	value.alert = huesettings.alert ? huesettings.alert : "none"
+	value.transitiontime = huesettings.transitiontime ? huesettings.transitiontime : 4
 
-    // Make sure to turn off light if requested
-    if (huesettings.switch == "off")
-        value.on = false
+	// Make sure to turn off light if requested
+	if (huesettings.switch == "off")
+		value.on = false
 
 	createSwitchEvent(childDevice, value.on ? "on" : "off")
-    put("lights/$id/state", value)
+	put("lights/$id/state", value)
 	return "Setting color to $value"
-}
-
-def ping(childDevice) {
-	if (isOnline(getId(childDevice))) {
-		childDevice.sendEvent(name: "deviceWatch-ping", value: "ONLINE", description: "Hue Light is reachable", displayed: false, isStateChange: true)
-		return "Device is Online"
-	} else {
-		return "Device is Offline"
-	}
 }
 
 private getId(childDevice) {
@@ -1187,7 +1215,7 @@ private poll() {
 }
 
 private isOnline(id) {
-	return (state.bulbs[id].online != null && state.bulbs[id].online) || state.bulbs[id].online == null
+	return (state.bulbs[id]?.online != null && state.bulbs[id]?.online) || state.bulbs[id]?.online == null
 }
 
 private put(path, body) {
@@ -1220,30 +1248,30 @@ private getBridgeIdNumber(serialNumber) {
 private getBridgeIP() {
 	def host = null
 	if (selectedHue) {
-        def d = getChildDevice(selectedHue)
-    	if (d) {
-        	if (d.getDeviceDataByName("networkAddress"))
-            	host =  d.getDeviceDataByName("networkAddress")
-            else
-        		host = d.latestState('networkAddress').stringValue
-        }
-        if (host == null || host == "") {
-            def serialNumber = selectedHue
-            def bridge = getHueBridges().find { it?.value?.serialNumber?.equalsIgnoreCase(serialNumber) }?.value
-            if (!bridge) {
-            	bridge = getHueBridges().find { it?.value?.mac?.equalsIgnoreCase(serialNumber) }?.value
-            }
-            if (bridge?.ip && bridge?.port) {
-            	if (bridge?.ip.contains("."))
-            		host = "${bridge?.ip}:${bridge?.port}"
-                else
-                	host = "${convertHexToIP(bridge?.ip)}:${convertHexToInt(bridge?.port)}"
-            } else if (bridge?.networkAddress && bridge?.deviceAddress)
-            	host = "${convertHexToIP(bridge?.networkAddress)}:${convertHexToInt(bridge?.deviceAddress)}"
-        }
-        log.trace "Bridge: $selectedHue - Host: $host"
-    }
-    return host
+		def d = getChildDevice(selectedHue)
+		if (d) {
+			if (d.getDeviceDataByName("networkAddress"))
+				host =  d.getDeviceDataByName("networkAddress")
+		else
+				host = d.latestState('networkAddress').stringValue
+		}
+		if (host == null || host == "") {
+			def serialNumber = selectedHue
+			def bridge = getHueBridges().find { it?.value?.serialNumber?.equalsIgnoreCase(serialNumber) }?.value
+			if (!bridge) {
+				bridge = getHueBridges().find { it?.value?.mac?.equalsIgnoreCase(serialNumber) }?.value
+			}
+			if (bridge?.ip && bridge?.port) {
+				if (bridge?.ip.contains("."))
+					host = "${bridge?.ip}:${bridge?.port}"
+				else
+					host = "${convertHexToIP(bridge?.ip)}:${convertHexToInt(bridge?.port)}"
+			} else if (bridge?.networkAddress && bridge?.deviceAddress)
+				host = "${convertHexToIP(bridge?.networkAddress)}:${convertHexToInt(bridge?.deviceAddress)}"
+		}
+		log.trace "Bridge: $selectedHue - Host: $host"
+	}
+	return host
 }
 
 private Integer convertHexToInt(hex) {
@@ -1254,7 +1282,7 @@ def convertBulbListToMap() {
 	try {
 		if (state.bulbs instanceof java.util.List) {
 			def map = [:]
-			state.bulbs.unique {it.id}.each { bulb ->
+			state.bulbs?.unique {it.id}.each { bulb ->
 				map << ["${bulb.id}":["id":bulb.id, "name":bulb.name, "type": bulb.type, "modelid": bulb.modelid, "hub":bulb.hub, "online": bulb.online]]
 			}
 			state.bulbs = map
@@ -1283,7 +1311,7 @@ private List getRealHubFirmwareVersions() {
  * @param childDevice device to send event for
  * @param setSwitch The new switch state, "on" or "off"
  * @param setLevel Optional, switchLevel between 0-100, used if you set level to 0 for example since
- *                  that should generate "off" instead of level change
+ *				  that should generate "off" instead of level change
  */
 private void createSwitchEvent(childDevice, setSwitch, setLevel = null) {
 
@@ -1426,8 +1454,8 @@ private float[] calculateXY(colorStr, model = null) {
 		xy[0] = closestPoint.x;
 		xy[1] = closestPoint.y;
 	}
-	//        xy[0] = PHHueHelper.precision(4, xy[0]);
-	//        xy[1] = PHHueHelper.precision(4, xy[1]);
+	//		xy[0] = PHHueHelper.precision(4, xy[0]);
+	//		xy[1] = PHHueHelper.precision(4, xy[1]);
 
 
 	// TODO needed, assume it just sets number of decimals?
@@ -1445,7 +1473,7 @@ private float[] calculateXY(colorStr, model = null) {
  *
  * @param points the float array contain x and the y value. [x,y]
  * @param model the model of the lamp, example: "LCT001" for hue bulb. Used to calculate the color gamut.
- *          If this value is empty the default gamut values are used.
+ *		If this value is empty the default gamut values are used.
  * @return the color value in hex (#ff03d3). If xy is null OR xy is not an array of size 2, Color. BLACK will be returned
  */
 private String colorFromXY(points, model ) {
@@ -1663,7 +1691,7 @@ private boolean checkPointInLampsReach(p, colorPoints) {
 }
 
 /**
- * Converts an RGB color in hex to HSV.
+ * Converts an RGB color in hex to HSV/HSB.
  * Algorithm based on http://en.wikipedia.org/wiki/HSV_color_space.
  *
  * @param colorStr color value in hex (#ff03d3)
@@ -1673,32 +1701,32 @@ private boolean checkPointInLampsReach(p, colorPoints) {
 def hexToHsv(colorStr){
 	def r = Integer.valueOf( colorStr.substring( 1, 3 ), 16 ) / 255
 	def g = Integer.valueOf( colorStr.substring( 3, 5 ), 16 ) / 255
-	def b = Integer.valueOf( colorStr.substring( 5, 7 ), 16 ) / 255;
+	def b = Integer.valueOf( colorStr.substring( 5, 7 ), 16 ) / 255
 
 	def max = Math.max(Math.max(r, g), b)
 	def min = Math.min(Math.min(r, g), b)
 
-	def h, s, v = max;
+	def h, s, v = max
 
-	def d = max - min;
-	s = max == 0 ? 0 : d / max;
+	def d = max - min
+	s = max == 0 ? 0 : d / max
 
 	if(max == min){
-		h = 0;
+		h = 0
 	}else{
 		switch(max){
-			case r: h = (g - b) / d + (g < b ? 6 : 0); break;
-			case g: h = (b - r) / d + 2; break;
-			case b: h = (r - g) / d + 4; break;
+			case r: h = (g - b) / d + (g < b ? 6 : 0); break
+			case g: h = (b - r) / d + 2; break
+			case b: h = (r - g) / d + 4; break
 		}
 		h /= 6;
 	}
 
-	return [(h * 100).round(), (s * 100).round(), (v * 100).round()];
+	return [Math.round(h * 100), Math.round(s * 100), Math.round(v * 100)]
 }
 
 /**
- * Converts HSV color to RGB in hex.
+ * Converts HSV/HSB color to RGB in hex.
  * Algorithm based on http://en.wikipedia.org/wiki/HSV_color_space.
  *
  * @param  hue hue 0-100
@@ -1713,11 +1741,11 @@ def hsvToHex(hue, sat, value = 100){
 	def s = sat / 100
 	def v = value / 100
 
-	def i = Math.floor(h * 6);
-	def f = h * 6 - i;
-	def p = v * (1 - s);
-	def q = v * (1 - f * s);
-	def t = v * (1 - (1 - f) * s);
+	def i = Math.floor(h * 6)
+	def f = h * 6 - i
+	def p = v * (1 - s)
+	def q = v * (1 - f * s)
+	def t = v * (1 - (1 - f) * s)
 
 	switch (i % 6) {
 		case 0:
@@ -1753,9 +1781,10 @@ def hsvToHex(hue, sat, value = 100){
 	}
 
 	// Converting float components to int components.
-	def r1 = String.format("%02X", (int) (r * 255.0f));
-	def g1 = String.format("%02X", (int) (g * 255.0f));
-	def b1 = String.format("%02X", (int) (b * 255.0f));
+	def r1 = String.format("%02X", (int) (r * 255.0f))
+	def g1 = String.format("%02X", (int) (g * 255.0f))
+	def b1 = String.format("%02X", (int) (b * 255.0f))
 
 	return "#$r1$g1$b1"
 }
+

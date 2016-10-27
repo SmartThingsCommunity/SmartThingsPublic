@@ -13,7 +13,7 @@
  */
 
 metadata {
-    definition (name: "ZigBee Dimmer", namespace: "smartthings", author: "SmartThings", category: "C1") {
+    definition (name: "ZigBee Dimmer", namespace: "smartthings", author: "SmartThings") {
         capability "Actuator"
         capability "Configuration"
         capability "Refresh"
@@ -48,6 +48,15 @@ metadata {
     }
 }
 
+def installed() {
+    log.debug "${device} installed"
+}
+
+def updated() {
+    log.debug "${device} updated"
+    configureHealthCheck()
+}
+
 // Parse incoming device messages to generate events
 def parse(String description) {
     log.debug "description is $description"
@@ -60,8 +69,21 @@ def parse(String description) {
         }
     }
     else {
-        log.warn "DID NOT PARSE MESSAGE for description : $description"
-        log.debug zigbee.parseDescriptionAsMap(description)
+        def cluster = zigbee.parse(description)
+
+        if (cluster && cluster.clusterId == 0x0006 && cluster.command == 0x07) {
+            if (cluster.data[0] == 0x00) {
+                log.debug "ON/OFF REPORTING CONFIG RESPONSE: " + cluster
+                sendEvent(name: "checkInterval", value: 60 * 12, displayed: false, data: [protocol: "zigbee", hubHardwareId: device.hub.hardwareID])
+            }
+            else {
+                log.warn "ON/OFF REPORTING CONFIG FAILED- error code:${cluster.data[0]}"
+            }
+        }
+        else {
+            log.warn "DID NOT PARSE MESSAGE for description : $description"
+            log.debug "${cluster}"
+        }
     }
 }
 
@@ -84,13 +106,16 @@ def ping() {
 }
 
 def refresh() {
-    zigbee.onOffRefresh() + zigbee.levelRefresh() + zigbee.onOffConfig() + zigbee.levelConfig()
+    zigbee.onOffRefresh() + zigbee.levelRefresh() + zigbee.onOffConfig(0, 300) + zigbee.levelConfig()
+}
+
+def configureHealthCheck() {
+    // Device-Watch allows 3 check-in misses from device (plus 1 min lag time)
+    // enrolls with default periodic reporting until newer 5 min interval is confirmed
+    sendEvent(name: "checkInterval", value: 3 * 10 * 60 + 1 * 60, displayed: false, data: [protocol: "zigbee", hubHardwareId: device.hub.hardwareID])
 }
 
 def configure() {
-    log.debug "Configuring Reporting and Bindings."
-    // Device-Watch allows 2 check-in misses from device
-    sendEvent(name: "checkInterval", value: 60 * 12, displayed: false, data: [protocol: "zigbee"])
     // OnOff minReportTime 0 seconds, maxReportTime 5 min. Reporting interval if no activity
-    zigbee.onOffConfig(0, 300) + zigbee.levelConfig() + zigbee.onOffRefresh() + zigbee.levelRefresh()
+    zigbee.onOffRefresh() + zigbee.levelRefresh() + zigbee.onOffConfig(0, 300) + zigbee.levelConfig()
 }

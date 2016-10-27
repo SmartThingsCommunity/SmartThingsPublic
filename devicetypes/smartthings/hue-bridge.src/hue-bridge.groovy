@@ -7,9 +7,11 @@
 metadata {
 	// Automatically generated. Make future change here.
 	definition (name: "Hue Bridge", namespace: "smartthings", author: "SmartThings") {
+		capability "Health Check"
+
 		attribute "networkAddress", "string"
-        // Used to indicate if bridge is reachable or not, i.e. is the bridge connected to the network
-        // Possible values "Online" or "Offline"
+		// Used to indicate if bridge is reachable or not, i.e. is the bridge connected to the network
+		// Possible values "Online" or "Offline"
 		attribute "status", "string"
 		// Id is the number on the back of the hub, Hue uses last six digits of Mac address
 		// This is also used in the Hue application as ID
@@ -42,6 +44,10 @@ metadata {
 	}
 }
 
+void installed() {
+	sendEvent(name: "DeviceWatch-Enroll", value: "{\"protocol\": \"LAN\", \"scheme\":\"untracked\", \"hubHardwareId\": \"${device.hub.hardwareID}\"}")
+}
+
 // parse events into attributes
 def parse(description) {
 	log.debug "Parsing '${description}'"
@@ -70,13 +76,8 @@ def parse(description) {
 					def bulbs = new groovy.json.JsonSlurper().parseText(msg.body)
 					if (bulbs.state) {
 						log.info "Bridge response: $msg.body"
-					} else {
-						// Sending Bulbs List to parent"
-						if (parent.isInBulbDiscovery())
-							log.info parent.bulbListHandler(device.hub.id, msg.body)
 					}
-				}
-				else if (contentType?.contains("xml")) {
+				} else if (contentType?.contains("xml")) {
 					log.debug "HUE BRIDGE ALREADY PRESENT"
 					parent.hubVerification(device.hub.id, msg.body)
 				}
@@ -85,3 +86,4 @@ def parse(description) {
 	}
 	results
 }
+

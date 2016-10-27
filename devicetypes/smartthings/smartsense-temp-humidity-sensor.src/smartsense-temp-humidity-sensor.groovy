@@ -14,7 +14,7 @@
  *
  */
 metadata {
-	definition (name: "SmartSense Temp/Humidity Sensor",namespace: "smartthings", author: "SmartThings", category: "C2") {
+	definition (name: "SmartSense Temp/Humidity Sensor",namespace: "smartthings", author: "SmartThings") {
 		capability "Configuration"
 		capability "Battery"
 		capability "Refresh"
@@ -69,6 +69,15 @@ metadata {
 	}
 }
 
+def installed() {
+	log.debug "${device} installed"
+}
+
+def updated() {
+	log.debug "${device} updated"
+	configureHealthCheck()
+}
+
 def parse(String description) {
 	log.debug "description: $description"
 
@@ -93,20 +102,37 @@ private Map parseCatchAllMessage(String description) {
     if (shouldProcessMessage(cluster)) {
         switch(cluster.clusterId) {
             case 0x0001:
-            	resultMap = getBatteryResult(cluster.data.last())
+				// 0x07 - configure reporting
+				if (cluster.command != 0x07) {
+					resultMap = getBatteryResult(cluster.data.last())
+				}
                 break
 
             case 0x0402:
-                // temp is last 2 data values. reverse to swap endian
-                String temp = cluster.data[-2..-1].reverse().collect { cluster.hex1(it) }.join()
-                def value = getTemperature(temp)
-                resultMap = getTemperatureResult(value)
-                break
+				if (cluster.command == 0x07) {
+					if (cluster.data[0] == 0x00){
+						log.debug "TEMP REPORTING CONFIG RESPONSE" + cluster
+						sendEvent(name: "checkInterval", value: 60 * 12, displayed: false, data: [protocol: "zigbee", hubHardwareId: device.hub.hardwareID])
+					}
+					else {
+						log.warn "TEMP REPORTING CONFIG FAILED- error code:${cluster.data[0]}"
+					}
+				}
+				else {
+					// temp is last 2 data values. reverse to swap endian
+					String temp = cluster.data[-2..-1].reverse().collect { cluster.hex1(it) }.join()
+					def value = getTemperature(temp)
+					resultMap = getTemperatureResult(value)
+				}
+				break
 
 			case 0xFC45:
-                String pctStr = cluster.data[-1, -2].collect { Integer.toHexString(it) }.join('')
-                String display = Math.round(Integer.valueOf(pctStr, 16) / 100)
-                resultMap = getHumidityResult(display)
+				// 0x07 - configure reporting
+				if (cluster.command != 0x07) {
+					String pctStr = cluster.data[-1, -2].collect { Integer.toHexString(it) }.join('')
+					String display = Math.round(Integer.valueOf(pctStr, 16) / 100)
+					resultMap = getHumidityResult(display)
+				}
                 break
         }
     }
@@ -116,10 +142,8 @@ private Map parseCatchAllMessage(String description) {
 
 private boolean shouldProcessMessage(cluster) {
     // 0x0B is default response indicating message got through
-    // 0x07 is bind message
     boolean ignoredMessage = cluster.profileId != 0x0104 ||
         cluster.command == 0x0B ||
-        cluster.command == 0x07 ||
         (cluster.data.size() > 0 && cluster.data.first() == 0x3e)
     return !ignoredMessage
 }
@@ -235,11 +259,7 @@ private Map getTemperatureResult(value) {
 
 private Map getHumidityResult(value) {
 	log.debug 'Humidity'
-	return [
-		name: 'humidity',
-		value: value,
-		unit: '%'
-	]
+	return value ? [name: 'humidity', value: value, unit: '%'] : [:]
 }
 
 /**
@@ -252,21 +272,18 @@ def ping() {
 def refresh()
 {
 	log.debug "refresh temperature, humidity, and battery"
-	[
+	return zigbee.readAttribute(0xFC45, 0x0000, ["mfgCode": 0xC2DF]) +   // Original firmware
+			zigbee.readAttribute(0x0402, 0x0000) +
+			zigbee.readAttribute(0x0001, 0x0020)
+}
 
-		"zcl mfg-code 0xC2DF", "delay 1000",
-		"zcl global read 0xFC45 0", "delay 1000",
-		"send 0x${device.deviceNetworkId} 1 1", "delay 1000",
-        "st rattr 0x${device.deviceNetworkId} 1 0x402 0", "delay 200",
-        "st rattr 0x${device.deviceNetworkId} 1 1 0x20"
-
-	]
+def configureHealthCheck() {
+	// Device-Watch allows 3 check-in misses from device (plus 1 min lag time)
+	// enrolls with default periodic reporting until newer 5 min interval is confirmed
+	sendEvent(name: "checkInterval", value: 3 * 60 * 60 + 1 * 60, displayed: false, data: [protocol: "zigbee", hubHardwareId: device.hub.hardwareID])
 }
 
 def configure() {
-	// Device-Watch allows 2 check-in misses from device
-	sendEvent(name: "checkInterval", value: 60 * 12, displayed: false, data: [protocol: "zigbee"])
-
 	log.debug "Configuring Reporting and Bindings."
 	def humidityConfigCmds = [
 		"zdo bind 0x${device.deviceNetworkId} 1 1 0xFC45 {${device.zigbeeId}} {}", "delay 500",
@@ -276,7 +293,7 @@ def configure() {
 
 	// temperature minReportTime 30 seconds, maxReportTime 5 min. Reporting interval if no activity
 	// battery minReport 30 seconds, maxReportTime 6 hrs by default
-	return humidityConfigCmds + zigbee.batteryConfig() + zigbee.temperatureConfig(30, 300) +  refresh() // send refresh cmds as part of config
+	return refresh() + humidityConfigCmds + zigbee.batteryConfig() + zigbee.temperatureConfig(30, 300)  // send refresh cmds as part of config
 }
 
 private hex(value) {

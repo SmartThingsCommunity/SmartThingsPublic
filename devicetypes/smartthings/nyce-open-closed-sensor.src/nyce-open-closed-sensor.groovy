@@ -19,25 +19,26 @@ import physicalgraph.zigbee.clusters.iaszone.ZoneStatus
 
 metadata {
 	definition (name: "NYCE Open/Closed Sensor", namespace: "smartthings", author: "NYCE") {
-    	capability "Battery"
+		capability "Battery"
 		capability "Configuration"
-        capability "Contact Sensor"
+		capability "Contact Sensor"
 		capability "Refresh"
-        
-        command "enrollResponse"
- 
- 
- 		fingerprint inClusters: "0000,0001,0003,0500,0020", manufacturer: "NYCE", model: "3010", deviceJoinName: "NYCE Door Hinge Sensor"
+		capability "Health Check"
+
+		command "enrollResponse"
+
+
+		fingerprint inClusters: "0000,0001,0003,0500,0020", manufacturer: "NYCE", model: "3010", deviceJoinName: "NYCE Door Hinge Sensor"
 		fingerprint inClusters: "0000,0001,0003,0406,0500,0020", manufacturer: "NYCE", model: "3011", deviceJoinName: "NYCE Door/Window Sensor"
-        fingerprint inClusters: "0000,0001,0003,0500,0020", manufacturer: "NYCE", model: "3011", deviceJoinName: "NYCE Door/Window Sensor"
-        fingerprint inClusters: "0000,0001,0003,0406,0500,0020", manufacturer: "NYCE", model: "3014", deviceJoinName: "NYCE Tilt Sensor"
-        fingerprint inClusters: "0000,0001,0003,0500,0020", manufacturer: "NYCE", model: "3014", deviceJoinName: "NYCE Tilt Sensor"
+		fingerprint inClusters: "0000,0001,0003,0500,0020", manufacturer: "NYCE", model: "3011", deviceJoinName: "NYCE Door/Window Sensor"
+		fingerprint inClusters: "0000,0001,0003,0406,0500,0020", manufacturer: "NYCE", model: "3014", deviceJoinName: "NYCE Tilt Sensor"
+		fingerprint inClusters: "0000,0001,0003,0500,0020", manufacturer: "NYCE", model: "3014", deviceJoinName: "NYCE Tilt Sensor"
 	}
- 
+
 	simulator {
- 
+
 	}
- 
+
 	tiles {
 		standardTile("contact", "device.contact", width: 2, height: 2) {
 			state("open", label:'${name}', icon:"st.contact.contact.open", backgroundColor:"#ffa81e")
@@ -273,23 +274,28 @@ private List parseIasMessage(String description) {
 	return resultListMap
 }
 
+/**
+ * PING is used by Device-Watch in attempt to reach the Device
+ * */
+def ping() {
+	return zigbee.readAttribute(0x001, 0x0020) // Read the Battery Level
+}
+
 def configure() {
+	// Device-Watch allows 2 check-in misses from device
+	sendEvent(name: "checkInterval", value: 60 * 12, displayed: false, data: [protocol: "zigbee", hubHardwareId: device.hub.hardwareID])
+
 	String zigbeeEui = swapEndianHex(device.hub.zigbeeEui)
 
-	def configCmds = [
-			//battery reporting and heartbeat
-			"zdo bind 0x${device.deviceNetworkId} 1 ${endpointId} 1 {${device.zigbeeId}} {}", "delay 200",
-			"zcl global send-me-a-report 1 0x20 0x20 600 3600 {01}", "delay 200",
-			"send 0x${device.deviceNetworkId} 1 ${endpointId}", "delay 1500",
-
-
+	def enrollCmds = [
 			// Writes CIE attribute on end device to direct reports to the hub's EUID
 			"zcl global write 0x500 0x10 0xf0 {${zigbeeEui}}", "delay 200",
 			"send 0x${device.deviceNetworkId} 1 1", "delay 500",
 	]
 
 	log.debug "configure: Write IAS CIE"
-	return configCmds
+	// battery minReportTime 30 seconds, maxReportTime 5 min. Reporting interval if no activity
+	return enrollCmds + zigbee.batteryConfig(30, 300) + refresh() // send refresh cmds as part of config
 }
 
 def enrollResponse() {
@@ -334,7 +340,8 @@ Integer convertHexToInt(hex) {
 
 def refresh() {
 	log.debug "Refreshing Battery"
-	[
+	def refreshCmds = [
 			"st rattr 0x${device.deviceNetworkId} ${endpointId} 1 0x20", "delay 200"
 	]
+	return refreshCmds + enrollResponse()
 }

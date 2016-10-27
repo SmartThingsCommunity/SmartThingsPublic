@@ -17,7 +17,7 @@
  */
 
 metadata {
-    definition (name: "ZigBee RGBW Bulb", namespace: "smartthings", author: "SmartThings", category: "C6") {
+    definition (name: "ZigBee RGBW Bulb", namespace: "smartthings", author: "SmartThings") {
 
         capability "Actuator"
         capability "Color Control"
@@ -70,6 +70,16 @@ metadata {
     }
 }
 
+
+def installed() {
+    log.debug "${device} installed"
+}
+
+def updated() {
+    log.debug "${device} updated"
+    configureHealthCheck()
+}
+
 //Globals
 private getATTRIBUTE_HUE() { 0x0000 }
 private getATTRIBUTE_SATURATION() { 0x0001 }
@@ -95,7 +105,7 @@ def parse(String description) {
     }
     else {
         def zigbeeMap = zigbee.parseDescriptionAsMap(description)
-        log.trace "zigbeeMap : $zigbeeMap"
+        def cluster = zigbee.parse(description)
 
         if (zigbeeMap?.clusterInt == COLOR_CONTROL_CLUSTER) {
             if(zigbeeMap.attrInt == ATTRIBUTE_HUE){  //Hue Attribute
@@ -107,8 +117,18 @@ def parse(String description) {
                 sendEvent(name: "saturation", value: saturationValue, descriptionText: "Color has changed", displayed: false)
             }
         }
+        else if (cluster && cluster.clusterId == 0x0006 && cluster.command == 0x07) {
+            if (cluster.data[0] == 0x00){
+                log.debug "ON/OFF REPORTING CONFIG RESPONSE: " + cluster
+                sendEvent(name: "checkInterval", value: 60 * 12, displayed: false, data: [protocol: "zigbee", hubHardwareId: device.hub.hardwareID])
+            }
+            else {
+                log.warn "ON/OFF REPORTING CONFIG FAILED- error code:${cluster.data[0]}"
+            }
+        }
         else {
             log.info "DID NOT PARSE MESSAGE for description : $description"
+            log.debug zigbeeMap
         }
     }
 }
@@ -128,15 +148,18 @@ def ping() {
 }
 
 def refresh() {
-    zigbee.onOffRefresh() + zigbee.readAttribute(0x0008, 0x00) + zigbee.readAttribute(0x0300, 0x00) + zigbee.readAttribute(0x0300, ATTRIBUTE_COLOR_TEMPERATURE) + zigbee.readAttribute(0x0300, ATTRIBUTE_HUE) + zigbee.readAttribute(0x0300, ATTRIBUTE_SATURATION) + zigbee.onOffConfig() + zigbee.levelConfig() + zigbee.colorTemperatureConfig() + zigbee.configureReporting(COLOR_CONTROL_CLUSTER, ATTRIBUTE_HUE, 0x20, 1, 3600, 0x01) + zigbee.configureReporting(COLOR_CONTROL_CLUSTER, ATTRIBUTE_SATURATION, 0x20, 1, 3600, 0x01)
+    // OnOff minReportTime 0 seconds, maxReportTime 5 min. Reporting interval if no activity
+    zigbee.onOffRefresh() + zigbee.levelRefresh() + zigbee.readAttribute(COLOR_CONTROL_CLUSTER, ATTRIBUTE_COLOR_TEMPERATURE) + zigbee.readAttribute(COLOR_CONTROL_CLUSTER, ATTRIBUTE_HUE) + zigbee.readAttribute(COLOR_CONTROL_CLUSTER, ATTRIBUTE_SATURATION) + zigbee.onOffConfig(0, 300) + zigbee.levelConfig() + zigbee.colorTemperatureConfig() + zigbee.configureReporting(COLOR_CONTROL_CLUSTER, ATTRIBUTE_HUE, 0x20, 1, 3600, 0x01) + zigbee.configureReporting(COLOR_CONTROL_CLUSTER, ATTRIBUTE_SATURATION, 0x20, 1, 3600, 0x01)
+}
+
+def configureHealthCheck() {
+    // Device-Watch allows 3 check-in misses from device (plus 1 min lag time)
+    // enrolls with default periodic reporting until newer 5 min interval is confirmed
+    sendEvent(name: "checkInterval", value: 3 * 10 * 60 + 1 * 60, displayed: false, data: [protocol: "zigbee", hubHardwareId: device.hub.hardwareID])
 }
 
 def configure() {
-    log.debug "Configuring Reporting and Bindings."
-    // Device-Watch allows 2 check-in misses from device
-    sendEvent(name: "checkInterval", value: 60 * 12, displayed: false, data: [protocol: "zigbee"])
-    // OnOff minReportTime 0 seconds, maxReportTime 5 min. Reporting interval if no activity
-    zigbee.onOffConfig(0, 300) + zigbee.levelConfig() + zigbee.colorTemperatureConfig() + zigbee.configureReporting(COLOR_CONTROL_CLUSTER, ATTRIBUTE_HUE, 0x20, 1, 3600, 0x01) + zigbee.configureReporting(COLOR_CONTROL_CLUSTER, ATTRIBUTE_SATURATION, 0x20, 1, 3600, 0x01) + zigbee.readAttribute(0x0006, 0x00) + zigbee.readAttribute(0x0008, 0x00) + zigbee.readAttribute(COLOR_CONTROL_CLUSTER, 0x00) + zigbee.readAttribute(COLOR_CONTROL_CLUSTER, ATTRIBUTE_COLOR_TEMPERATURE) + zigbee.readAttribute(COLOR_CONTROL_CLUSTER, ATTRIBUTE_HUE) + zigbee.readAttribute(COLOR_CONTROL_CLUSTER, ATTRIBUTE_SATURATION)
+    refresh()
 }
 
 def setColorTemperature(value) {
@@ -177,5 +200,5 @@ def setHue(value) {
 
 def setSaturation(value) {
     def scaledSatValue = zigbee.convertToHexString(Math.round(value * 0xfe / 100.0), 2)
-    zigbee.command(COLOR_CONTROL_CLUSTER, SATURATION_COMMAND, scaledSatValue, "0500")      //payload-> sat value, transition time
+    zigbee.command(COLOR_CONTROL_CLUSTER, SATURATION_COMMAND, scaledSatValue, "0500") + "delay 1000" + zigbee.readAttribute(COLOR_CONTROL_CLUSTER, ATTRIBUTE_SATURATION)
 }
