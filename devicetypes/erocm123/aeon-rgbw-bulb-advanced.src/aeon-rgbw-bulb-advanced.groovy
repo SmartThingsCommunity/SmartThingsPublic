@@ -43,27 +43,14 @@ metadata {
     preferences {
         input "transition", "enum", title: "Transition", defaultValue: 0, displayDuringSetup: false, required: false, options: [
                 0:"Smooth",
-                1073741824:"Fade"]
-        input "brightness", "enum", title: "Brightness", defaultValue: 1, displayDuringSetup: false, required: false, options: [
-                1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24,25,26,27,28,29,30,31,32,33,34,35,36,37,38,39,40,
-                41,42,43,44,45,46,47,48,49,50,51,52,53,54,55,56,57,58,59,60,61,62,63,64,65,66,67,68,69,70,71,72,73,74,75,76,77,
-                78,79,80,81,82,83,84,85,86,87,88,89,90,91,92,93,94,95,96,97,98,99]
-        input "count", "enum", title: "Cycle Count (0 [unlimited])", defaultValue: 0, displayDuringSetup: false, required: false, options: [
-                0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24,25,26,27,28,29,30,31,32,33,34,35,36,37,38,39,40,
-                41,42,43,44,45,46,47,48,49,50,51,52,53,54,55,56,57,58,59,60,61,62,63,64,65,66,67,68,69,70,71,72,73,74,75,76,77,
-                78,79,80,81,82,83,84,85,86,87,88,89,90,91,92,93,94,95,96,97,98,99,100,101,102,103,104,105,106,107,108,109,110,
-                111,112,113,114,115,116,117,118,119,120,121,122,123,124,125,126,127,128,129,130,131,132,133,134,135,136,137,138,
-                139,140,141,142,143,144,145,146,147,148,149,150,151,152,153,154,155,156,157,158,159,160,161,162,163,164,165,166,
-                167,168,169,170,171,172,173,174,175,176,177,178,179,180,181,182,183,184,185,186,187,188,189,190,191,192,193,194,
-                195,196,197,198,199,200,201,202,203,204,205,206,207,208,209,210,211,212,213,214,215,216,217,218,219,220,221,222,
-                223,224,225,226,227,228,229,230,231,232,233,234,235,236,237,238,239,240,241,242,243,244,245,246,247,248,249,250,
-                251,252,253,254]
+                1073741824:"Flash"]
+        //input "brightness", "number", title: "Brightness", defaultValue: 1, displayDuringSetup: false, required: false, range: "1..99"
+        input "count", "number", title: "Cycle Count (0 [unlimited])", defaultValue: 0, displayDuringSetup: false, required: false, range: "0..254"
         input "speed", "enum", title: "Color Change Speed", defaultValue: 0, displayDuringSetup: false, required: false, options: [
-                0:"Slow",
+                0:"Fast",
                 32:"Medium",
-                64:"Fast"]
-        input "speedLevel", "enum", title: "Color Change Speed Level (0 [constant], 1 [slowest], 30 [fastest])", defaultValue: "0", displayDuringSetup: true, required: false, options: [
-                0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24,25,26,27,28,29,30]
+                64:"Slow"]
+        input "speedLevel", "number", title: "Color Residence Time (0 [constant], 1 [fastest], 30 [slowest])", defaultValue: "0", displayDuringSetup: true, required: false, range: "0..30"
         (1..8).each { i ->
         input "color$i", "enum", title: "Color $i", displayDuringSetup: false, required: false, options: [
                 1:"Red",
@@ -323,6 +310,7 @@ def setColor(value) {
 def setColorTemperature(percent) {
 	if(percent > 99) percent = 99
 	int warmValue = percent * 255 / 99
+    sendEvent(name: "colorTemperature", value: percent)
 	command(zwave.switchColorV3.switchColorSet(red:0, green:0, blue:0, warmWhite:warmValue, coldWhite:(255 - warmValue)))
 }
  
@@ -452,10 +440,10 @@ private calculateParameter(number) {
       case 37:
          value += settings.transition ? settings.transition.toLong() : 0
          value += 33554432 // Custom Mode
-         value += settings.brightness ? (settings.brightness.toLong() * 65536) : 0
-         value += settings.count ? (settings.count.toLong() * 256) : 0
-         value += settings.speed ? settings.speed.toLong() : 0
+         value += settings.count ? (settings.count.toLong() * 65536) : 0
+         value += settings.speed ? (settings.speed.toLong() * 256) : 0
          value += settings.speedLevel ? settings.speedLevel.toLong() : 0
+         //value += settings.speedLevel ? settings.speedLevel.toLong() : 0
       break
       case 38:
          value += settings.color1 ? (settings.color1.toLong() * 1) : 0
