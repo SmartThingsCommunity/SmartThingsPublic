@@ -1,13 +1,13 @@
 /**
  *  Ask Alexa 
  *
- *  Version 2.1.8d - 10/22/16 Copyright © 2016 Michael Struck
+ *  Version 2.1.8e - 10/22/16 Copyright © 2016 Michael Struck
  *  Special thanks for Keith DeLong for overall code and assistance; Barry Burke for Weather Underground Integration; jhamstead for Ecobee climate modes, Yves Racine for My Ecobee thermostat tips
  * 
  *  Version information prior to 2.1.7 listed here: https://github.com/MichaelStruck/SmartThingsPublic/blob/master/smartapps/michaelstruck/ask-alexa.src/Ask%20Alexa%20Version%20History.md
  *
  *  Version 2.1.7 (10/9/16) Allow for flash briefing reports, added audio output devices to control macros
- *  Version 2.1.8d (10/22/16) Added option for reports from Nest Manager application; tweaking of color list to make it more user friendly, added the beginnings of a cheat sheet option
+ *  Version 2.1.8e (10/22/16) Added option for reports from Nest Manager application; tweaking of color list to make it more user friendly, added the beginnings of a cheat sheet option
  *
  *  Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except
  *  in compliance with the License. You may obtain a copy of the License at:
@@ -1013,7 +1013,7 @@ def msgQueueReply(op){
     log.debug "Message Queue Command: " + cmd
     String outputTxt = ""
     if (msgQueue){
-        def msgCount = state.msgQueue.size(), msgS= msgCount==0 || msgCount>1 ? " messages" : " message"
+        def msgCount = state.msgQueue ? state.msgQueue.size() : 0, msgS= msgCount==0 || msgCount>1 ? " messages" : " message"
         if (cmd == "playback"){
       		if (msgCount==0) outputTxt = "You don't have any messages in your message queue. %5%"
             else {
@@ -3246,12 +3246,12 @@ def getURLs(){
 //Version/Copyright/Information/Help-----------------------------------------------------------
 private textAppName() { return "Ask Alexa" }	
 private textVersion() {
-    def version = "SmartApp Version: 2.1.8d (10/22/2016)", lambdaVersion = state.lambdaCode ? "\n" + state.lambdaCode : ""
+    def version = "SmartApp Version: 2.1.8e (10/22/2016)", lambdaVersion = state.lambdaCode ? "\n" + state.lambdaCode : ""
     return "${version}${lambdaVersion}"
 }
 private versionInt(){ return 218 }
 private LambdaReq() { return 122 }
-private versionLong(){ return "2.1.8d" }
+private versionLong(){ return "2.1.8e" }
 private textCopyright() {return "Copyright © 2016 Michael Struck" }
 private textLicense() {
 	def text = "Licensed under the Apache License, Version 2.0 (the 'License'); you may not use this file except in compliance with the License. You may obtain a copy of the License at\n\n"+
