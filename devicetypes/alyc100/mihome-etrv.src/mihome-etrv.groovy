@@ -21,6 +21,9 @@
  *	10.01.2016
  *	v1.1.1 - Fixed stopBoost always returning to 'on' mode.
  *	v1.1.2 - Bug fix to Boost mode not executing.
+ *
+ *	28.10.2016
+ *	v1.1.2b - eTRV icons added.
  */
  
 metadata {
@@ -30,6 +33,7 @@ metadata {
 		capability "Refresh"
 		capability "Temperature Measurement"
         capability "Thermostat"
+        capability "Thermostat Mode"
 		capability "Thermostat Heating Setpoint"
 		capability "Switch"
         
@@ -45,7 +49,7 @@ metadata {
 
 	tiles(scale: 2) {
 
-		multiAttributeTile(name: "thermostat", width: 6, height: 4, type:"lightin") {
+		multiAttributeTile(name: "thermostat", width: 6, height: 4, type:"lighting") {
 			tileAttribute("device.temperature", key:"PRIMARY_CONTROL", canChangeBackground: true){
 				attributeState "default", label: '${currentValue}°', unit:"C", 
                 backgroundColors:[
@@ -64,7 +68,7 @@ metadata {
 		}
         
         valueTile("thermostat_small", "device.temperature", width: 4, height: 4) {
-			state "default", label:'${currentValue}°', unit:"C",
+			state "default", label:'${currentValue}°', unit:"C", icon: "https://raw.githubusercontent.com/alyc100/SmartThingsPublic/master/devicetypes/alyc100/mihome_etrv_icon.png",
             backgroundColors:[
                 [value: 0, color: "#153591"],
 					[value: 10, color: "#1e9cbb"],
