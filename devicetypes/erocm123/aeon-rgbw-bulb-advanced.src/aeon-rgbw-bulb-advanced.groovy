@@ -50,10 +50,10 @@ metadata {
         input "count", "number", title: "Cycle Count (0 [unlimited])", defaultValue: 0, displayDuringSetup: false, required: false, range: "0..254"
         input "speed", "enum", title: "Color Change Speed", defaultValue: 0, displayDuringSetup: false, required: false, options: [
                 0:"Fast",
-                64:"Medium Fast",
-                128:"Medium",
-                192:"Medium Slow",
-                254:"Slow"]
+                16:"Medium Fast",
+                32:"Medium",
+                64:"Medium Slow",
+                128:"Slow"]
         input "speedLevel", "number", title: "Color Residence Time (1 [fastest], 254 [slowest])", defaultValue: "0", displayDuringSetup: true, required: false, range: "0..254"
         (1..8).each { i ->
         input "color$i", "enum", title: "Color $i", displayDuringSetup: false, required: false, options: [
@@ -381,7 +381,7 @@ def on1() {
     log.debug "on1()"
     toggleTiles("switch1")
 	commands([
-        zwave.configurationV1.configurationSet(scaledConfigurationValue: 16777258, parameterNumber: 37, size: 4),
+        zwave.configurationV1.configurationSet(scaledConfigurationValue: 16781342, parameterNumber: 37, size: 4),
         zwave.switchMultilevelV3.switchMultilevelGet(),
 	], 1500)
 }
@@ -390,7 +390,7 @@ def on2() {
     log.debug "on2()"    
     toggleTiles("switch2")
 	commands([
-        zwave.configurationV1.configurationSet(scaledConfigurationValue: 1090519050, parameterNumber: 37, size: 4),
+        zwave.configurationV1.configurationSet(scaledConfigurationValue: 1090551813, parameterNumber: 37, size: 4),
         zwave.switchMultilevelV3.switchMultilevelGet(),
 	], 1500)
 }
@@ -399,7 +399,7 @@ def on3() {
     log.debug "on3()"
     toggleTiles("switch3")
 	commands([
-        zwave.configurationV1.configurationSet(scaledConfigurationValue: 50331658, parameterNumber: 37, size: 4),
+        zwave.configurationV1.configurationSet(scaledConfigurationValue: 50335754, parameterNumber: 37, size: 4),
         zwave.switchMultilevelV3.switchMultilevelGet(),
 	], 1500)
 }
@@ -418,7 +418,7 @@ def on6() {
     log.debug "on6()"
     toggleTiles("switch6")
 	commands([
-        zwave.configurationV1.configurationSet(scaledConfigurationValue: calculateParameter(38), parameterNumber: 38, size: 4),
+        zwave.configurationV1.configurationSet(configurationValue: integer2Cmd(calculateParameter(38), 4), parameterNumber: 38, size: 4),
         zwave.configurationV1.configurationSet(scaledConfigurationValue: calculateParameter(37), parameterNumber: 37, size: 4),
         zwave.switchMultilevelV3.switchMultilevelGet(),
 	], 1500)
@@ -439,12 +439,39 @@ def off4() { offCmd() }
 def off5() { offCmd() }
 def off6() { offCmd() }
 
+def integer2Cmd(value, size) {
+	switch(size) {
+	case 1:
+		[value]
+    break
+	case 2:
+    	def short value1   = value & 0xFF
+        def short value2 = (value >> 8) & 0xFF
+        [value2, value1]
+    break
+    case 3:
+    	def short value1   = value & 0xFF
+        def short value2 = (value >> 8) & 0xFF
+        def short value3 = (value >> 16) & 0xFF
+        [value3, value2, value1]
+    break
+	case 4:
+    	def short value1 = value & 0xFF
+        def short value2 = (value >> 8) & 0xFF
+        def short value3 = (value >> 16) & 0xFF
+        def short value4 = (value >> 24) & 0xFF
+		[value4, value3, value2, value1]
+	break
+	}
+}
+
+
 private calculateParameter(number) {
    long value = 0
    switch (number){
       case 37:
          value += settings.transition ? settings.transition.toLong() : 0
-         value += 33554432 // Custom Mode
+         value += 33554432 // Custom Mode 
          value += settings.count ? (settings.count.toLong() * 65536) : 0
          value += settings.speed ? (settings.speed.toLong() * 256) : 0
          value += settings.speedLevel ? settings.speedLevel.toLong() : 0
