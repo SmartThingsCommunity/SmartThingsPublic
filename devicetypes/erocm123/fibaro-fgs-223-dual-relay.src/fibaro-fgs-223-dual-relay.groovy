@@ -65,19 +65,21 @@ tiles(scale: 2){
 		state "default", label:"", action:"refresh.refresh", icon:"st.secondary.refresh"
     }
 
-    standardTile("configure", "device.switch", inactiveLabel: false, decoration: "flat", width: 2, height: 2) {
-		state "default", label:"", action:"configure", icon:"st.secondary.configure"
+    valueTile("configure", "device.needUpdate", inactiveLabel: false, decoration: "flat", width: 2, height: 2) {
+            state("NO" , label:'Synced', action:"configuration.configure", backgroundColor:"#8acb47")
+            state("YES", label:'Pending', action:"configuration.configure", backgroundColor:"#f39c12")
     }
 
     main(["switch","switch1", "switch2"])
     details(["switch","switch1","switch2","refresh","configure"])
 }
-    /* Waiting to hear back from manufacturer regarding what preferences can be set for this device. 
-	preferences {
-        input "switchType", "enum", title: "Switch Type", defaultValue: "1", displayDuringSetup: true, required: false, options: [
-                "1":"Toggle",
-                "2":"Momentary"]
-  }*/
+    preferences {
+        
+        input description: "Once you change values on this page, the \"Synced\" Status will become \"Pending\" status. When the parameters have been succesfully changed, the status will change back to \"Synced\"", displayDuringSetup: false, type: "paragraph", element: "paragraph"
+        
+		generate_preferences(configuration_model())
+        
+    }
 }
 
 def parse(String description) {
@@ -227,47 +229,150 @@ def poll() {
 }
 
 def configure() {
-	log.debug "configure() called"
+	state.enableDebugging = settings.enableDebugging
+    logging("Configuring Device For SmartThings Use")
     def cmds = []
-    if(!state.association4 || state.association4 == "" || state.association4 != "1"){
-       log.debug "Setting association group 4"
-       cmds << zwave.associationV2.associationSet(groupingIdentifier:4, nodeId:zwaveHubNodeId)
-       cmds << zwave.associationV2.associationGet(groupingIdentifier:4)
-    }
-    if(!state.association5 || state.association5 == "" || state.association5 != "1"){
-       log.debug "Setting association group 5"
-       cmds << zwave.associationV2.associationSet(groupingIdentifier:5, nodeId:zwaveHubNodeId)
-       cmds << zwave.associationV2.associationGet(groupingIdentifier:5)
-    }
-    if (switchType != null && switchType.value != null) {
-    switch (switchType.value as String) {
-       case "1":
-       log.debug "Configuring device as a Toggle switch"
-       //cmds << zwave.configurationV1.configurationSet(parameterNumber: 3, configurationValue: [3]).format()	
-       //cmds << zwave.configurationV1.configurationGet(parameterNumber: 3).format()
-       break
-       case "2":
-       log.debug "Configuring device as a Momentary switch"
-       //cmds << zwave.configurationV1.configurationSet(parameterNumber: 3, configurationValue: [1]).format()	
-       //cmds << zwave.configurationV1.configurationGet(parameterNumber: 3).format()
-       break
-       default:
-       log.debug "No valid device type chosen"
-       break
-    }
-    }
+
+    cmds = update_needed_settings()
     
-    if ( cmds != [] && cmds != null ) return secureSequence(cmds, 2000) else return
+    cmds << zwave.manufacturerSpecificV2.manufacturerSpecificGet().format()
+    
+    if (cmds != []) commands(cmds)
 }
+
+def zwaveEvent(physicalgraph.zwave.commands.sceneactivationv1.SceneActivationSet cmd) {
+    logging("SceneActivationSet: $cmd")
+    logging("sceneId: $cmd.sceneId")
+    logging("dimmingDuration: $cmd.dimmingDuration")
+    logging("Configuration for preference \"Switch Type\" is set to ${settings."20"}")
+    
+    if (settings."20" == "2") {
+        logging("Switch configured as Roller blinds")
+        switch (cmd.sceneId) {
+            // Roller blinds S1
+            case 10: // Turn On (1x click)
+                buttonEvent(1, "pushed")
+            break
+            case 13: // Release
+                buttonEvent(1, "held")
+            break
+            case 14: // 2x click
+                buttonEvent(2, "pushed")
+            break
+            case 17: // Brightening
+                buttonEvent(2, "held")
+            break
+            // Roller blinds S2
+            case 11: // Turn Off
+                buttonEvent(3, "pushed")
+            break
+            case 13: // Release
+                buttonEvent(3, "held")
+            break
+            case 14: // 2x click
+                buttonEvent(4, "pushed")
+            break
+            case 15: // 3x click
+                buttonEvent(5, "pushed")
+            break
+            case 18: // Dimming
+                buttonEvent(4, "held")
+            break
+            default:
+                logging("Unhandled SceneActivationSet: ${cmd}")
+            break
+        }
+    } else if (settings."20" == "1") {
+        logging("Switch configured as Toggle")
+        switch (cmd.sceneId) {
+            // Toggle S1
+            case 10: // Off to On
+                buttonEvent(1, "pushed")
+            break
+            case 11: // On to Off
+                buttonEvent(1, "held")
+            break
+            case 14: // 2x click
+                buttonEvent(2, "pushed")
+            break
+            // Toggle S2
+            case 20: // Off to On
+                buttonEvent(3, "pushed")
+            break
+            case 21: // On to Off
+                buttonEvent(3, "held")
+            break
+            case 24: // 2x click
+                buttonEvent(4, "pushed")
+            break
+            case 25: // 3x click
+                buttonEvent(5, "pushed")
+            break
+            default:
+                logging("Unhandled SceneActivationSet: ${cmd}")
+            break
+        
+        }
+    } else {
+        if (settings."20" == "0") logging("Switch configured as Momentary") else logging("Switch type not configured") 
+        switch (cmd.sceneId) {
+            // Momentary S1
+            case 16: // 1x click
+                buttonEvent(1, "pushed")
+            break
+            case 14: // 2x click
+                buttonEvent(2, "pushed")
+            break
+            case 12: // held
+                buttonEvent(1, "held")
+            break
+            case 13: // release
+                buttonEvent(2, "held")
+            break
+            // Momentary S2
+            case 26: // 1x click
+                buttonEvent(3, "pushed")
+            break
+            case 24: // 2x click
+                buttonEvent(4, "pushed")
+            break
+            case 25: // 3x click
+                buttonEvent(5, "pushed")
+            break
+            case 22: // held
+                buttonEvent(3, "held")
+            break
+            case 23: // release
+                buttonEvent(4, "held")
+            break
+            default:
+                logging("Unhandled SceneActivationSet: ${cmd}")
+            break
+        }
+    }  
+}
+
+def buttonEvent(button, value) {
+    logging("buttonEvent() Button:$button, Value:$value")
+	createEvent(name: "button", value: value, data: [buttonNumber: button], descriptionText: "$device.displayName button $button was $value", isStateChange: true)
+}
+
 /**
 * Triggered when Done button is pushed on Preference Pane
 */
 def updated()
 {
-	log.debug "Preferences have been changed. Attempting configure()"
-    def cmds = configure()
-    response(cmds)
+    log.debug convertParam(28, settings."${28}")
+	state.enableDebugging = settings.enableDebugging
+    logging("updated() is being called")
+    
+    def cmds = update_needed_settings()
+    
+    sendEvent(name:"needUpdate", value: device.currentValue("needUpdate"), displayed:false, isStateChange: true)
+    
+    if (cmds != []) response(commands(cmds))
 }
+
 def on() { 
    secureSequence([
         zwave.switchAllV1.switchAllOn(),
@@ -327,4 +432,313 @@ def zwaveEvent(physicalgraph.zwave.commands.securityv1.SecurityMessageEncapsulat
 		log.warn "Unable to extract encapsulated cmd from $cmd"
 		createEvent(descriptionText: cmd.toString())
 	}
+}
+
+private command(physicalgraph.zwave.Command cmd) {
+	if (state.sec) {
+		zwave.securityV1.securityMessageEncapsulation().encapsulate(cmd).format()
+	} else {
+		cmd.format()
+	}
+}
+
+private commands(commands, delay=1500) {
+	delayBetween(commands.collect{ command(it) }, delay)
+}
+
+def generate_preferences(configuration_model)
+{
+    def configuration = parseXml(configuration_model)
+   
+    configuration.Value.each
+    {
+        switch(it.@type)
+        {   
+            case ["byte","short","four"]:
+                input "${it.@index}", "number",
+                    title:"${it.@label}\n" + "${it.Help}",
+                    range: "${it.@min}..${it.@max}",
+                    defaultValue: "${it.@value}",
+                    displayDuringSetup: "${it.@displayDuringSetup}"
+            break
+            case "list":
+                def items = []
+                it.Item.each { items << ["${it.@value}":"${it.@label}"] }
+                input "${it.@index}", "enum",
+                    title:"${it.@label}\n" + "${it.Help}",
+                    defaultValue: "${it.@value}",
+                    displayDuringSetup: "${it.@displayDuringSetup}",
+                    options: items
+            break
+            case "decimal":
+               input "${it.@index}", "decimal",
+                    title:"${it.@label}\n" + "${it.Help}",
+                    range: "${it.@min}..${it.@max}",
+                    defaultValue: "${it.@value}",
+                    displayDuringSetup: "${it.@displayDuringSetup}"
+            break
+            case "boolean":
+               input "${it.@index}", "boolean",
+                    title: it.@label != "" ? "${it.@label}\n" + "${it.Help}" : "" + "${it.Help}",
+                    defaultValue: "${it.@value}",
+                    displayDuringSetup: "${it.@displayDuringSetup}"
+            break
+        }  
+    }
+}
+
+def update_current_properties(cmd)
+{
+    def currentProperties = state.currentProperties ?: [:]
+    
+    currentProperties."${cmd.parameterNumber}" = cmd.configurationValue
+
+    if (settings."${cmd.parameterNumber}" != null)
+    {
+        if (settings."${cmd.parameterNumber}".toInteger() == convertParam("${cmd.parameterNumber}".toInteger(), cmd2Integer(cmd.configurationValue)))
+        {
+            sendEvent(name:"needUpdate", value:"NO", displayed:false, isStateChange: true)
+        }
+        else
+        {
+            sendEvent(name:"needUpdate", value:"YES", displayed:false, isStateChange: true)
+        }
+    }
+
+    state.currentProperties = currentProperties
+}
+
+def update_needed_settings()
+{
+    def cmds = []
+    def currentProperties = state.currentProperties ?: [:]
+     
+    def configuration = parseXml(configuration_model())
+    def isUpdateNeeded = "NO"
+    
+    configuration.Value.each
+    {     
+        if ("${it.@setting_type}" == "zwave"){
+            if (currentProperties."${it.@index}" == null)
+            {
+                isUpdateNeeded = "YES"
+                logging("Current value of parameter ${it.@index} is unknown")
+                cmds << zwave.configurationV1.configurationGet(parameterNumber: it.@index.toInteger())
+            }
+            else if (settings."${it.@index}" != null && cmd2Integer(currentProperties."${it.@index}") != convertParam(it.@index.toInteger(), settings."${it.@index}"))
+            { 
+                isUpdateNeeded = "YES"
+
+                logging("Parameter ${it.@index} will be updated to " + convertParam(it.@index.toInteger(), settings."${it.@index}"))
+                def convertedConfigurationValue = convertParam(it.@index.toInteger(), settings."${it.@index}")
+                cmds << zwave.configurationV1.configurationSet(configurationValue: integer2Cmd(convertedConfigurationValue, it.@byteSize.toInteger()), parameterNumber: it.@index.toInteger(), size: it.@byteSize.toInteger())
+                cmds << zwave.configurationV1.configurationGet(parameterNumber: it.@index.toInteger())
+            } 
+        }
+    }
+    
+    sendEvent(name:"needUpdate", value: isUpdateNeeded, displayed:false, isStateChange: true)
+    return cmds
+}
+
+def convertParam(number, value) {
+    def parValue
+	switch (number){
+    	case 28:
+            parValue = (value == "true" ? 1 : 0)
+            parValue += (settings."fc_2" == "true" ? 2 : 0)
+            parValue += (settings."fc_3" == "true" ? 4 : 0)
+            parValue += (settings."fc_4" == "true" ? 8 : 0)
+        break
+        case 29:
+            parValue = (value == "true" ? 1 : 0)
+            parValue += (settings."sc_2" == "true" ? 2 : 0)
+            parValue += (settings."sc_3" == "true" ? 4 : 0)
+            parValue += (settings."sc_4" == "true" ? 8 : 0)
+        break
+        default:
+        	parValue = value
+        break
+    }
+    return parValue.toInteger()
+}
+
+private def logging(message) {
+    if (state.enableDebugging == null || state.enableDebugging == "true") log.debug "$message"
+}
+
+/**
+* Convert 1 and 2 bytes values to integer
+*/
+def cmd2Integer(array) { 
+
+switch(array.size()) {
+	case 1:
+		array[0]
+    break
+	case 2:
+    	((array[0] & 0xFF) << 8) | (array[1] & 0xFF)
+    break
+    case 3:
+    	((array[0] & 0xFF) << 16) | ((array[1] & 0xFF) << 8) | (array[2] & 0xFF)
+    break
+	case 4:
+    	((array[0] & 0xFF) << 24) | ((array[1] & 0xFF) << 16) | ((array[2] & 0xFF) << 8) | (array[3] & 0xFF)
+	break
+    }
+}
+
+def integer2Cmd(value, size) {
+	switch(size) {
+	case 1:
+		[value]
+    break
+	case 2:
+    	def short value1   = value & 0xFF
+        def short value2 = (value >> 8) & 0xFF
+        [value2, value1]
+    break
+    case 3:
+    	def short value1   = value & 0xFF
+        def short value2 = (value >> 8) & 0xFF
+        def short value3 = (value >> 16) & 0xFF
+        [value3, value2, value1]
+    break
+	case 4:
+    	def short value1 = value & 0xFF
+        def short value2 = (value >> 8) & 0xFF
+        def short value3 = (value >> 16) & 0xFF
+        def short value4 = (value >> 24) & 0xFF
+		[value4, value3, value2, value1]
+	break
+	}
+}
+
+
+def configuration_model()
+{
+'''
+<configuration>
+    <Value type="list" byteSize="1" index="9" label="State of the device after a power failure" min="0" max="1" value="1" setting_type="zwave" fw="">
+    <Help>
+The device will return to the last state before power failure.
+0 - the Dimmer 2 does not save the state before a power failure, it returns to the "off" position
+1 - the Dimmer 2 restores its state before power failure
+Range: 0~1
+Default: 1 (Previous State)
+    </Help>
+        <Item label="Off" value="0" />
+        <Item label="Previous State" value="1" />
+  </Value>
+    <Value type="list" byteSize="1" index="20" label="Switch type" min="0" max="2" value="0" setting_type="zwave" fw="">
+    <Help>
+Choose between momentary and toggle switch.
+Range: 0~2
+Default: 0 (Momentary)
+    </Help>
+    <Item label="Momentary" value="0" />
+    <Item label="Toggle" value="1" />
+  </Value>
+    <Value type="byte" byteSize="1" index="50" label="First Channel - Active power reports" min="0" max="100" value="10" setting_type="zwave" fw="">
+    <Help>
+The parameter defines the power level change that will result in a new power report being sent. The value is a percentage of the previous report.
+Range: 0~100 (1-100%)
+Default: 10
+    </Help>
+  </Value>
+    <Value type="byte" byteSize="1" index="51" label="First Channel - Periodic active power and energy reports" min="0" max="120" value="10" setting_type="zwave" fw="">
+    <Help>
+Parameter 51 defines a time period between consecutive reports. Timer is reset and counted from zero after each report. 
+Range: 0~120 (1-120s)
+Default: 10
+    </Help>
+  </Value>
+    <Value type="short" byteSize="2" index="53" label="First Channel - Energy reports" min="0" max="32000" value="100" setting_type="zwave" fw="">
+    <Help>
+Energy level change which will result in sending a new energy report.
+Range: 0~32000 (0.01-320 kWh)
+Default: 100
+    </Help>
+  </Value>
+      <Value type="byte" byteSize="1" index="54" label="Second Channel - Active power reports" min="0" max="100" value="10" setting_type="zwave" fw="">
+    <Help>
+The parameter defines the power level change that will result in a new power report being sent. The value is a percentage of the previous report.
+Range: 0~100 (1-100%)
+Default: 10
+    </Help>
+  </Value>
+    <Value type="byte" byteSize="1" index="55" label="Second Channel - Periodic active power and energy reports" min="0" max="120" value="10" setting_type="zwave" fw="">
+    <Help>
+Parameter 55 defines a time period between consecutive reports. Timer is reset and counted from zero after each report. 
+Range: 0~120 (1-120s)
+Default: 10
+    </Help>
+  </Value>
+    <Value type="short" byteSize="2" index="57" label="Second Channel - Energy reports" min="0" max="32000" value="100" setting_type="zwave" fw="">
+    <Help>
+Energy level change which will result in sending a new energy report.
+Range: 0~32000 (0.01-320 kWh)
+Default: 100
+    </Help>
+  </Value>
+    <Value type="byte" byteSize="2" index="58" label="Periodic power reports" min="0" max="32000" value="3600" setting_type="zwave" fw="">
+    <Help>
+This parameter determines in what time interval the periodic power reports are sent to the main controller.
+Range: 0~32000 (1-32000s)
+Default: 3600
+    </Help>
+  </Value>
+     <Value type="byte" byteSize="2" index="59" label="Periodic energy reports" min="0" max="32000" value="3600" setting_type="zwave" fw="">
+    <Help>
+This parameter determines in what time interval the periodic energy reports are sent to the main controller.
+Range: 0~32000 (1-32000s)
+Default: 3600
+    </Help>
+  </Value>
+  <Value type="boolean" byteSize="1" index="28" label="First Channel" value="false" setting_type="zwave" fw="">
+    <Help>
+Send scene ID on single press 
+    </Help>
+  </Value>
+  <Value type="boolean" byteSize="1" index="fc_2" label="" value="false" setting_type="" fw="">
+    <Help>
+Send scene ID on double press 
+    </Help>
+  </Value>
+    <Value type="boolean" byteSize="1" index="fc_3" label="" value="false" setting_type="" fw="">
+    <Help>
+Send scene ID on tripple press 
+    </Help>
+  </Value>
+    <Value type="boolean" byteSize="1" index="fc_4" label="" value="false" setting_type="" fw="">
+    <Help>
+Send scene ID on hold and release 
+    </Help>
+  </Value>
+  <Value type="boolean" byteSize="1" index="29" label="Second Channel" value="false" setting_type="zwave" fw="">
+    <Help>
+Send scene ID on single press 
+    </Help>
+  </Value>
+  <Value type="boolean" byteSize="1" index="sc_2" label="" value="false" setting_type="" fw="">
+    <Help>
+Send scene ID on double press 
+    </Help>
+  </Value>
+    <Value type="boolean" byteSize="1" index="sc_3" label="" value="false" setting_type="" fw="">
+    <Help>
+Send scene ID on tripple press 
+    </Help>
+  </Value>
+    <Value type="boolean" byteSize="1" index="sc_4" label="" value="false" setting_type="" fw="">
+    <Help>
+Send scene ID on hold and release 
+    </Help>
+  </Value>
+    <Value type="boolean" index="enableDebugging" label="Enable Debug Logging?" value="true" setting_type="preference" fw="">
+    <Help>
+    </Help>
+  </Value>
+</configuration>
+'''
 }
