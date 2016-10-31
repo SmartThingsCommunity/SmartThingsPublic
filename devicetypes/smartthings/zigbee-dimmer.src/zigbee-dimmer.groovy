@@ -48,15 +48,6 @@ metadata {
     }
 }
 
-def installed() {
-    log.debug "${device} installed"
-}
-
-def updated() {
-    log.debug "${device} updated"
-    configureHealthCheck()
-}
-
 // Parse incoming device messages to generate events
 def parse(String description) {
     log.debug "description is $description"
@@ -109,13 +100,12 @@ def refresh() {
     zigbee.onOffRefresh() + zigbee.levelRefresh() + zigbee.onOffConfig(0, 300) + zigbee.levelConfig()
 }
 
-def configureHealthCheck() {
+def configure() {
+    log.debug "Configuring Reporting and Bindings."
     // Device-Watch allows 3 check-in misses from device (plus 1 min lag time)
     // enrolls with default periodic reporting until newer 5 min interval is confirmed
     sendEvent(name: "checkInterval", value: 3 * 10 * 60 + 1 * 60, displayed: false, data: [protocol: "zigbee", hubHardwareId: device.hub.hardwareID])
-}
 
-def configure() {
     // OnOff minReportTime 0 seconds, maxReportTime 5 min. Reporting interval if no activity
     zigbee.onOffRefresh() + zigbee.levelRefresh() + zigbee.onOffConfig(0, 300) + zigbee.levelConfig()
 }

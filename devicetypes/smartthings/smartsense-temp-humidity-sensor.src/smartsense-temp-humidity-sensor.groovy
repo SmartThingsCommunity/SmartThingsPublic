@@ -69,15 +69,6 @@ metadata {
 	}
 }
 
-def installed() {
-	log.debug "${device} installed"
-}
-
-def updated() {
-	log.debug "${device} updated"
-	configureHealthCheck()
-}
-
 def parse(String description) {
 	log.debug "description: $description"
 
@@ -277,13 +268,11 @@ def refresh()
 			zigbee.readAttribute(0x0001, 0x0020)
 }
 
-def configureHealthCheck() {
+def configure() {
 	// Device-Watch allows 3 check-in misses from device (plus 1 min lag time)
 	// enrolls with default periodic reporting until newer 5 min interval is confirmed
 	sendEvent(name: "checkInterval", value: 3 * 60 * 60 + 1 * 60, displayed: false, data: [protocol: "zigbee", hubHardwareId: device.hub.hardwareID])
-}
 
-def configure() {
 	log.debug "Configuring Reporting and Bindings."
 	def humidityConfigCmds = [
 		"zdo bind 0x${device.deviceNetworkId} 1 1 0xFC45 {${device.zigbeeId}} {}", "delay 500",
