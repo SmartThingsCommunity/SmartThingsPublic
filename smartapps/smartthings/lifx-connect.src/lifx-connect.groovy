@@ -381,38 +381,28 @@ def updateDevices() {
 		selectors.add("${device.id}")
 		if (!childDevice) {
 			// log.info("Adding device ${device.id}: ${device.product}")
-			def data = [
-					label: device.label,
-					level: Math.round((device.brightness ?: 1) * 100),
-					switch: device.power,
-					colorTemperature: device.color.kelvin
-			]
 			if (device.product.capabilities.has_color) {
-				data["color"] = colorUtil.hslToHex((device.color.hue / 3.6) as int, (device.color.saturation * 100) as int)
-				data["hue"] = device.color.hue / 3.6
-				data["saturation"] = device.color.saturation * 100
-				childDevice = addChildDevice(app.namespace, "LIFX Color Bulb", device.id, null, data)
+				childDevice = addChildDevice(app.namespace, "LIFX Color Bulb", device.id, null, ["label": device.label, "completedSetup": true])
 			} else {
-				childDevice = addChildDevice(app.namespace, "LIFX White Bulb", device.id, null, data)
+				childDevice = addChildDevice(app.namespace, "LIFX White Bulb", device.id, null, ["label": device.label, "completedSetup": true])
 			}
-			childDevice?.completedSetup = true
-		} else {
-			if (device.product.capabilities.has_color) {
-				sendEvent(name: "color", value: colorUtil.hslToHex((device.color.hue / 3.6) as int, (device.color.saturation * 100) as int))
-				sendEvent(name: "hue", value: device.color.hue / 3.6)
-				sendEvent(name: "saturation", value: device.color.saturation * 100)
-			}
-			childDevice.sendEvent(name: "label", value: device.label)
-			childDevice.sendEvent(name: "level", value: Math.round((device.brightness ?: 1) * 100))
-			childDevice.sendEvent(name: "switch.setLevel", value: Math.round((device.brightness ?: 1) * 100))
-			childDevice.sendEvent(name: "switch", value: device.power)
-			childDevice.sendEvent(name: "colorTemperature", value: device.color.kelvin)
-			childDevice.sendEvent(name: "model", value: device.product.name)
 		}
+
+		if (device.product.capabilities.has_color) {
+			childDevice.sendEvent(name: "color", value: colorUtil.hslToHex((device.color.hue / 3.6) as int, (device.color.saturation * 100) as int))
+			childDevice.sendEvent(name: "hue", value: device.color.hue / 3.6)
+			childDevice.sendEvent(name: "saturation", value: device.color.saturation * 100)
+		}
+		childDevice.sendEvent(name: "label", value: device.label)
+		childDevice.sendEvent(name: "level", value: Math.round((device.brightness ?: 1) * 100))
+		childDevice.sendEvent(name: "switch.setLevel", value: Math.round((device.brightness ?: 1) * 100))
+		childDevice.sendEvent(name: "switch", value: device.power)
+		childDevice.sendEvent(name: "colorTemperature", value: device.color.kelvin)
+		childDevice.sendEvent(name: "model", value: device.product.name)
 
 		if (state.devices[device.id] == null) {
 			// State missing, add it and set it to opposite status as current status to provoke event below
-			state.devices[device.id] = [online : !device.connected]
+			state.devices[device.id] = [online: !device.connected]
 		}
 
 		if (!state.devices[device.id]?.online && device.connected) {
