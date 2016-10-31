@@ -75,15 +75,6 @@ metadata {
 	}
 }
 
-def installed() {
-	log.debug "${device} installed"
-}
-
-def updated() {
-	log.debug "${device} updated"
-	configureHealthCheck()
-}
-
 def parse(String description) {
 	log.debug "description: $description"
 
@@ -274,12 +265,11 @@ def refresh() {
 	return refreshCmds + enrollResponse()
 }
 
-def configureHealthCheck() {
+def configure() {
 	// Device-Watch allows 3 check-in misses from device (plus 1 min lag time)
 	// enrolls with default periodic reporting until newer 5 min interval is confirmed
 	sendEvent(name: "checkInterval", value: 3 * 60 * 60 + 1 * 60, displayed: false, data: [protocol: "zigbee", hubHardwareId: device.hub.hardwareID])
-}
-def configure() {
+
 	log.debug "Configuring Reporting, IAS CIE, and Bindings."
 
 	// temperature minReportTime 30 seconds, maxReportTime 5 min. Reporting interval if no activity

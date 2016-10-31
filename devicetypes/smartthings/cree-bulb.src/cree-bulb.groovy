@@ -59,15 +59,6 @@ metadata {
     }
 }
 
-def installed() {
-    log.debug "${device} installed"
-}
-
-def updated() {
-    log.debug "${device} updated"
-    configureHealthCheck()
-}
-
 // Parse incoming device messages to generate events
 def parse(String description) {
     log.debug "description is $description"
@@ -105,14 +96,6 @@ def refresh() {
     zigbee.onOffRefresh() + zigbee.levelRefresh()
 }
 
-def configureHealthCheck() {
-    log.debug "configureHealthCheck"
-    unschedule("healthPoll")
-    runEvery5Minutes("healthPoll")
-    // Device-Watch allows 2 check-in misses from device
-    sendEvent(name: "checkInterval", value: 60 * 12, displayed: false, data: [protocol: "zigbee", hubHardwareId: device.hub.hardwareID])
-}
-
 def healthPoll() {
     log.debug "healthPoll()"
     def cmds = zigbee.onOffRefresh() + zigbee.levelRefresh()
@@ -120,5 +103,9 @@ def healthPoll() {
 }
 
 def configure() {
-    refresh()
+    unschedule()
+    runEvery5Minutes("healthPoll")
+    // Device-Watch allows 2 check-in misses from device
+    sendEvent(name: "checkInterval", value: 60 * 12, displayed: false, data: [protocol: "zigbee", hubHardwareId: device.hub.hardwareID])
+    zigbee.onOffRefresh() + zigbee.levelRefresh()
 }
