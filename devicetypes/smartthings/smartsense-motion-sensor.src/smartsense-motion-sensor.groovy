@@ -220,48 +220,35 @@ private Map getBatteryResult(rawValue) {
 	log.debug "Battery rawValue = ${rawValue}"
 	def linkText = getLinkText(device)
 
-	def result = [
-		name: 'battery',
-		value: '--',
-		translatable: true
-	]
+	def result = [:]
 
 	def volts = rawValue / 10
 
-	if (rawValue == 0 || rawValue == 255) {}
-	else {
-		if (volts > 3.5) {
-			result.descriptionText = "{{ device.displayName }} battery has too much power: (> 3.5) volts."
-		}
-		else {
-			if (device.getDataValue("manufacturer") == "SmartThings") {
-				volts = rawValue // For the batteryMap to work the key needs to be an int
-				def batteryMap = [28:100, 27:100, 26:100, 25:90, 24:90, 23:70,
-								  22:70, 21:50, 20:50, 19:30, 18:30, 17:15, 16:1, 15:0]
-				def minVolts = 15
-				def maxVolts = 28
+	if (!(rawValue == 0 || rawValue == 255)) {
+		result.name = 'battery'
+		result.translatable = true
+		result.descriptionText = "{{ device.displayName }} battery was {{ value }}%"
+		if (device.getDataValue("manufacturer") == "SmartThings") {
+			volts = rawValue // For the batteryMap to work the key needs to be an int
+			def batteryMap = [28: 100, 27: 100, 26: 100, 25: 90, 24: 90, 23: 70,
+							  22: 70, 21: 50, 20: 50, 19: 30, 18: 30, 17: 15, 16: 1, 15: 0]
+			def minVolts = 15
+			def maxVolts = 28
 
-				if (volts < minVolts)
-					volts = minVolts
-				else if (volts > maxVolts)
-					volts = maxVolts
-				def pct = batteryMap[volts]
-				if (pct != null) {
-					result.value = pct
-                    def value = pct
-					result.descriptionText = "{{ device.displayName }} battery was {{ value }}%"
-				}
-			}
-			else {
-				def minVolts = 2.1
-				def maxVolts = 3.0
-				def pct = (volts - minVolts) / (maxVolts - minVolts)
-				def roundedPct = Math.round(pct * 100)
-				if (roundedPct <= 0)
-					roundedPct = 1
-				result.value = Math.min(100, roundedPct)
-				result.descriptionText = "{{ device.displayName }} battery was {{ value }}%"
-			}
+			if (volts < minVolts)
+				volts = minVolts
+			else if (volts > maxVolts)
+				volts = maxVolts
+			def pct = batteryMap[volts]
+			result.value = pct
+		} else {
+			def minVolts = 2.1
+			def maxVolts = 3.0
+			def pct = (volts - minVolts) / (maxVolts - minVolts)
+			def roundedPct = Math.round(pct * 100)
+			if (roundedPct <= 0)
+				roundedPct = 1
+			result.value = Math.min(100, roundedPct)
 		}
 	}
 
