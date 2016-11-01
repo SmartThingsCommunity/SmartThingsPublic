@@ -47,197 +47,122 @@ metadata {
 		//fingerprint profileId: "C05E", inClusters: "0000,0003,0004,0005,0006,0008,0300,1000", outClusters: "0019"
 	}
 
-	// simulator metadata
-	simulator {
-		// status messages
-		status "on": "on/off: 1"
-		status "off": "on/off: 0"
-
-		// reply messages
-		reply "zcl on-off on": "on/off: 1"
-		reply "zcl on-off off": "on/off: 0"
-	}
-
 	// UI tile definitions
-	tiles {
-		standardTile("switch", "device.switch", width: 1, height: 1, canChangeIcon: true) {
-			state "on", label:'${name}', action:"switch.off", icon:"st.switches.switch.on", backgroundColor:"#79b821", nextState:"turningOff"
-			state "off", label:'${name}', action:"switch.on", icon:"st.switches.switch.off", backgroundColor:"#ffffff", nextState:"turningOn"
-			state "turningOn", label:'${name}', action:"switch.off", icon:"st.switches.switch.on", backgroundColor:"#79b821", nextState:"turningOff"
-			state "turningOff", label:'${name}', action:"switch.on", icon:"st.switches.switch.off", backgroundColor:"#ffffff", nextState:"turningOn"
+	tiles(scale: 2) {
+		multiAttributeTile(name:"switch", type: "lighting", width: 6, height: 4, canChangeIcon: true){
+			tileAttribute ("device.switch", key: "PRIMARY_CONTROL") {
+				attributeState "on", label:'${name}', action:"switch.off", icon:"st.lights.philips.hue-single", backgroundColor:"#79b821", nextState:"turningOff"
+				attributeState "off", label:'${name}', action:"switch.on", icon:"st.lights.philips.hue-single", backgroundColor:"#ffffff", nextState:"turningOn"
+				attributeState "turningOn", label:'${name}', action:"switch.off", icon:"st.lights.philips.hue-single", backgroundColor:"#79b821", nextState:"turningOff"
+				attributeState "turningOff", label:'${name}', action:"switch.on", icon:"st.lights.philips.hue-single", backgroundColor:"#ffffff", nextState:"turningOn"
+			}
+			tileAttribute ("device.level", key: "SLIDER_CONTROL") {
+				attributeState "level", action:"switch level.setLevel"
+			}
+			tileAttribute ("device.color", key: "COLOR_CONTROL") {
+				attributeState "color", action:"color control.setColor"
+			}
 		}
-		standardTile("refresh", "device.refresh", inactiveLabel: false, decoration: "flat") {
+		controlTile("colorTempSliderControl", "device.colorTemperature", "slider", width: 4, height: 2, inactiveLabel: false, range:"(2700..6500)") {
+			state "colorTemperature", action:"color temperature.setColorTemperature"
+		}
+		valueTile("colorTemp", "device.colorTemperature", inactiveLabel: false, decoration: "flat", width: 2, height: 2) {
+			state "colorTemperature", label: '${currentValue} K'
+		}
+		standardTile("refresh", "device.refresh", inactiveLabel: false, decoration: "flat", width: 2, height: 2) {
 			state "default", label:"", action:"refresh.refresh", icon:"st.secondary.refresh"
-		}
-		controlTile("rgbSelector", "device.color", "color", height: 3, width: 3, inactiveLabel: false) {
-			state "color", action:"setAdjustedColor"
-		}
-		controlTile("levelSliderControl", "device.level", "slider", height: 1, width: 2, inactiveLabel: false) {
-			state "level", action:"switch level.setLevel"
-		}
-		valueTile("level", "device.level", inactiveLabel: false, decoration: "flat") {
-			state "level", label: 'Level ${currentValue}%'
-		}
-		controlTile("saturationSliderControl", "device.saturation", "slider", height: 1, width: 2, inactiveLabel: false) {
-			state "saturation", action:"color control.setSaturation"
-		}
-		valueTile("saturation", "device.saturation", inactiveLabel: false, decoration: "flat") {
-			state "saturation", label: 'Sat ${currentValue}    '
-		}
-		controlTile("hueSliderControl", "device.hue", "slider", height: 1, width: 2, inactiveLabel: false) {
-			state "hue", action:"color control.setHue"
 		}
 
 		main(["switch"])
-		details(["switch", "levelSliderControl", "rgbSelector", "refresh"])
+		details(["switch", "colorTempSliderControl", "colorTemp", "refresh"])
 	}
 }
 
+//Globals
+private getATTRIBUTE_HUE() { 0x0000 }
+private getATTRIBUTE_SATURATION() { 0x0001 }
+private getHUE_COMMAND() { 0x00 }
+private getSATURATION_COMMAND() { 0x03 }
+private getCOLOR_CONTROL_CLUSTER() { 0x0300 }
+private getATTRIBUTE_COLOR_TEMPERATURE() { 0x0007 }
+
 // Parse incoming device messages to generate events
 def parse(String description) {
-	//log.trace description
-	if (description?.startsWith("catchall:")) {
-		def msg = zigbee.parse(description)
-		//log.trace msg
-		//log.trace "data: $msg.data"
+	log.debug "description is $description"
+
+	def finalResult = zigbee.getEvent(description)
+	if (finalResult) {
+		log.debug finalResult
+		sendEvent(finalResult)
 	}
 	else {
-		def name = description?.startsWith("on/off: ") ? "switch" : null
-		def value = name == "switch" ? (description?.endsWith(" 1") ? "on" : "off") : null
-		def result = createEvent(name: name, value: value)
-		log.debug "Parse returned ${result?.descriptionText}"
-		return result
+		def zigbeeMap = zigbee.parseDescriptionAsMap(description)
+		log.trace "zigbeeMap : $zigbeeMap"
+
+		if (zigbeeMap?.clusterInt == COLOR_CONTROL_CLUSTER) {
+			if(zigbeeMap.attrInt == ATTRIBUTE_HUE){  //Hue Attribute
+				def hueValue = Math.round(zigbee.convertHexToInt(zigbeeMap.value) / 255 * 360)
+				sendEvent(name: "hue", value: hueValue, displayed:false)
+			}
+			else if(zigbeeMap.attrInt == ATTRIBUTE_SATURATION){ //Saturation Attribute
+				def saturationValue = Math.round(zigbee.convertHexToInt(zigbeeMap.value) / 255 * 100)
+				sendEvent(name: "saturation", value: saturationValue, displayed:false)
+			}
+		}
+		else {
+			log.info "DID NOT PARSE MESSAGE for description : $description"
+		}
 	}
 }
 
 def on() {
-	// just assume it works for now
-	log.debug "on()"
-	sendEvent(name: "switch", value: "on")
-	"st cmd 0x${device.deviceNetworkId} ${endpointId} 6 1 {}"
+	zigbee.on() + ["delay 1500"] + zigbee.onOffRefresh()
 }
 
 def off() {
-	// just assume it works for now
-	log.debug "off()"
-	sendEvent(name: "switch", value: "off")
-	"st cmd 0x${device.deviceNetworkId} ${endpointId} 6 0 {}"
+	zigbee.off() + ["delay 1500"] + zigbee.onOffRefresh()
 }
 
-def setHue(value) {
-	def max = 0xfe
-	log.trace "setHue($value)"
-	sendEvent(name: "hue", value: value)
-	def scaledValue = Math.round(value * max / 100.0)
-	def cmd = "st cmd 0x${device.deviceNetworkId} ${endpointId} 0x300 0x00 {${hex(scaledValue)} 00 0000}"
-	//log.info cmd
-	cmd
+def refresh() {
+	refreshAttributes() + configureAttributes()
 }
 
-def setAdjustedColor(value) {
-	log.debug "setAdjustedColor: ${value}"
-	def adjusted = value + [:]
-	adjusted.hue = adjustOutgoingHue(value.hue)
-	adjusted.level = null // needed because color picker always sends 100
-	setColor(adjusted)
+def poll() {
+	refreshAttributes()
+}
+
+def configure() {
+	log.debug "Configuring Reporting and Bindings."
+	configureAttributes() + refreshAttributes()
+}
+
+def configureAttributes() {
+	zigbee.onOffConfig() + zigbee.levelConfig() + zigbee.colorTemperatureConfig() + zigbee.configureReporting(COLOR_CONTROL_CLUSTER, ATTRIBUTE_HUE, 0x20, 1, 3600, 0x01) + zigbee.configureReporting(COLOR_CONTROL_CLUSTER, ATTRIBUTE_SATURATION, 0x20, 1, 3600, 0x01)
+}
+
+def refreshAttributes() {
+	zigbee.onOffRefresh() + zigbee.levelRefresh() + zigbee.colorTemperatureRefresh() + zigbee.readAttribute(COLOR_CONTROL_CLUSTER, ATTRIBUTE_HUE) + zigbee.readAttribute(COLOR_CONTROL_CLUSTER, ATTRIBUTE_SATURATION)
+}
+
+def setColorTemperature(value) {
+	zigbee.setColorTemperature(value) + ["delay 1500"] + zigbee.colorTemperatureRefresh()
+}
+
+def setLevel(value) {
+	zigbee.setLevel(value) + ["delay 1500"] + zigbee.levelRefresh()         //adding refresh because of ZLL bulb not conforming to send-me-a-report
 }
 
 def setColor(value){
 	log.trace "setColor($value)"
-	def max = 0xfe
+	zigbee.on() + setHue(value.hue) + ["delay 300"] + setSaturation(value.saturation) + ["delay 2000"] + refreshAttributes()
+}
 
-	sendEvent(name: "hue", value: value.hue)
-	sendEvent(name: "saturation", value: value.saturation)
-	def scaledHueValue = Math.round(value.hue * max / 100.0)
-	def scaledSatValue = Math.round(value.saturation * max / 100.0)
-
-	def cmd = []
-	if (value.switch != "off" && device.latestValue("switch") == "off") {
-		cmd << "st cmd 0x${device.deviceNetworkId} ${endpointId} 6 1 {}"
-		cmd << "delay 150"
-	}
-
-	cmd << "st cmd 0x${device.deviceNetworkId} ${endpointId} 0x300 0x00 {${hex(scaledHueValue)} 00 0000}"
-	cmd << "delay 150"
-	cmd << "st cmd 0x${device.deviceNetworkId} ${endpointId} 0x300 0x03 {${hex(scaledSatValue)} 0000}"
-
-	if (value.level != null) {
-		cmd << "delay 150"
-		cmd.addAll(setLevel(value.level))
-	}
-
-	if (value.switch == "off") {
-		cmd << "delay 150"
-		cmd << off()
-	}
-	log.info cmd
-	cmd
+def setHue(value) {
+	def scaledHueValue = zigbee.convertToHexString(Math.round(value * 0xfe / 100.0), 2)
+	zigbee.command(COLOR_CONTROL_CLUSTER, HUE_COMMAND, scaledHueValue, "00", "0500") + ["delay 1500"] + zigbee.readAttribute(COLOR_CONTROL_CLUSTER, ATTRIBUTE_HUE)       //payload-> hue value, direction (00-> shortest distance), transition time (1/10th second) (0500 in U16 reads 5)
 }
 
 def setSaturation(value) {
-	def max = 0xfe
-	log.trace "setSaturation($value)"
-	sendEvent(name: "saturation", value: value)
-	def scaledValue = Math.round(value * max / 100.0)
-	def cmd = "st cmd 0x${device.deviceNetworkId} ${endpointId} 0x300 0x03 {${hex(scaledValue)} 0000}"
-	//log.info cmd
-	cmd
-}
-
-def refresh() {
-	"st rattr 0x${device.deviceNetworkId} 1 6 0"
-}
-
-def poll(){
-	log.debug "Poll is calling refresh"
-	refresh()
-}
-
-def setLevel(value) {
-	log.trace "setLevel($value)"
-	def cmds = []
-
-	if (value == 0) {
-		sendEvent(name: "switch", value: "off")
-		cmds << "st cmd 0x${device.deviceNetworkId} ${endpointId} 6 0 {}"
-	}
-	else if (device.latestValue("switch") == "off") {
-		sendEvent(name: "switch", value: "on")
-	}
-
-	sendEvent(name: "level", value: value)
-    def level = hexString(Math.round(value * 255/100))
-	cmds << "st cmd 0x${device.deviceNetworkId} ${endpointId} 8 4 {${level} 0000}"
-
-	//log.debug cmds
-	cmds
-}
-
-private getEndpointId() {
-	new BigInteger(device.endpointId, 16).toString()
-}
-
-private hex(value, width=2) {
-	def s = new BigInteger(Math.round(value).toString()).toString(16)
-	while (s.size() < width) {
-		s = "0" + s
-	}
-	s
-}
-
-private adjustOutgoingHue(percent) {
-	def adjusted = percent
-	if (percent > 31) {
-		if (percent < 63.0) {
-			adjusted = percent + (7 * (percent -30 ) / 32)
-		}
-		else if (percent < 73.0) {
-			adjusted = 69 + (5 * (percent - 62) / 10)
-		}
-		else {
-			adjusted = percent + (2 * (100 - percent) / 28)
-		}
-	}
-	log.info "percent: $percent, adjusted: $adjusted"
-	adjusted
+	def scaledSatValue = zigbee.convertToHexString(Math.round(value * 0xfe / 100.0), 2)
+	zigbee.command(COLOR_CONTROL_CLUSTER, SATURATION_COMMAND, scaledSatValue, "0500") + ["delay 1500"] + zigbee.readAttribute(COLOR_CONTROL_CLUSTER, ATTRIBUTE_SATURATION)      //payload-> sat value, transition time
 }
