@@ -13,6 +13,8 @@
  *  for the specific language governing permissions and limitations under the License.
  *
  *  VERSION HISTORY
+ *  01-11-2016: 1.1.5 - Improved handling of lost credentials to Neato. Better time zone handling.
+ *
  *	24-10-2016: 1.1.4b - Bug fix. Override switch handler fix to prevent false negatives. 
  *	23-10-2016: 1.1.4 - Improve error notification from device status.
  *
@@ -410,7 +412,7 @@ private refreshAuthToken() {
 			query : [grant_type: 'refresh_token', refresh_token: "${atomicState.refreshToken}"],
 		]
 
-		def notificationMessage = "is disconnected from SmartThings, because the access credential changed or was lost. Please go to the Neato (Connect) SmartApp and re-enter your account login credentials."
+		def notificationMessage = "Neato is disconnected from SmartThings, because the access credential changed or was lost. Please go to the Neato (Connect) SmartApp and re-enter your account login credentials."
 		//changed to httpPost
 		try {
 			def jsonMap
@@ -427,18 +429,37 @@ private refreshAuthToken() {
 			if (e.statusCode != 401) { // this issue might comes from exceed 20sec app execution, connectivity issue etc.
 				runIn(reAttemptPeriod, "refreshAuthToken")
 			} else if (e.statusCode == 401) { // unauthorized
+            	if (!atomicState.reAttempt) atomicState.reAttempt = 0
 				atomicState.reAttempt = atomicState.reAttempt + 1
 				log.warn "reAttempt refreshAuthToken to try = ${atomicState.reAttempt}"
 				if (atomicState.reAttempt <= 3) {
 					runIn(reAttemptPeriod, "refreshAuthToken")
 				} else {
-					sendPushAndFeeds(notificationMessage)
+					messageHandler(notificationMessage, true)
+                    atomicState.authToken = null
 					atomicState.reAttempt = 0
 				}
 			}
 		}
 	}
 }
+
+private void saveTokenAndResumeAction(json) {
+    log.debug "token response json: $json"
+    if (json) {
+        debugEvent("Response = $json")
+        atomicState.refreshToken = json?.refresh_token
+        atomicState.authToken = json?.access_token
+        if (atomicState.action) {
+            log.debug "got refresh token, executing next action: ${atomicState.action}"
+            "${atomicState.action}"()
+        }
+    } else {
+        log.warn "did not get response body from refresh token response"
+    }
+    atomicState.action = ""
+}
+
 def installed() {
 	log.debug "Installed with settings: ${settings}"
 	initialize()
@@ -476,7 +497,7 @@ def initialize() {
         else if (settings.ssScheduleTrigger == "presence") { subscribe(settings.ssPeopleAway, "presence", smartScheduleHandler, [filterEvents: false]) }
             
         if (settings.starting) {
-        	schedule(settings.starting, smartScheduleHandler)
+        	schedule(adjustTimeforTimeZone(settings.starting), smartScheduleHandler)
         }
         else {
         	schedule("29 0 0 1/1 * ? *", smartScheduleHandler)
@@ -589,10 +610,24 @@ private removeChildDevices(devices) {
 def devicesList() {
 	logErrors([]) {
 		def resp = beehiveGET("/users/me/robots")
+        def notificationMessage = "Neato is disconnected from SmartThings, because the access credential changed or was lost. Please go to the Neato (Connect) SmartApp and re-enter your account login credentials."
 		if (resp.status == 200) {
 			return resp.data
-		} else {
-			log.error("Non-200 from device list call. ${resp.status} ${resp.data}")
+		} else if (resp.status == 401) {
+        	if (!atomicState.reAttempt) atomicState.reAttempt = 0
+        	atomicState.reAttempt = atomicState.reAttempt + 1
+			log.warn "reAttempt refreshAuthToken to try = ${atomicState.reAttempt}"
+			if (atomicState.reAttempt <= 3) {
+				runIn(reAttemptPeriod, "refreshAuthToken")
+			} else {
+				messageHandler(notificationMessage, true)
+                atomicState.authToken = null
+				atomicState.reAttempt = 0
+			}
+        }
+        else {
+        	log.error("Non-200 from device list call. ${resp.status} ${resp.data}")
+            runIn(reAttemptPeriod, "refreshAuthToken")
 			return []
 		}
 	}
@@ -903,7 +938,7 @@ def pollOn() {
                 	def hours = "24"
                 	if (settings.starting) {
                 		def currTime = now()
-						def start = timeToday(settings.starting).time
+						def start = timeToday(settings.starting, location.timeZone).time
                     	if (start < currTime) start += 86400000
                     	hours = Math.round(new BigDecimal((start - currTime)/3600000)).toString()
                 	}
@@ -1042,8 +1077,20 @@ def startConditionalClean() {
      }
 }
 
+def adjustTimeforTimeZone(originalTime) {
+	if (getTimeZone()) {
+		def adjustedTime = timeToday(originalTime, location.timeZone)
+    	def timeNow = now() + (2*1000) 
+    	if (adjustedTime.time < timeNow) { 
+			adjustedTime = adjustedTime + 1
+    	}
+    	return adjustedTime
+    }
+    return originalTime
+}
+
 def messageHandler(msg, forceFlag) {
-	log.debug "Executing 'messageHandler'"
+	log.debug "Executing 'messageHandler for $msg. Forcing is $forceFlag'"
 	if (settings.sendSMS != null && !forceFlag) {
 		sendSms(settings.sendSMS, msg) 
 	}
@@ -1096,12 +1143,7 @@ private getDaysOk() {
 	def result = true
 	if (settings.days) {
 		def df = new java.text.SimpleDateFormat("EEEE")
-		if (location.timeZone) {
-			df.setTimeZone(location.timeZone)
-		}
-		else {
-			df.setTimeZone(TimeZone.getTimeZone("Europe/London"))
-		}
+		if (getTimeZone()) { df.setTimeZone(location.timeZone) }
 		def day = df.format(new Date())
 		result = settings.days.contains(day)
 	}
@@ -1113,18 +1155,18 @@ private getTimeOk() {
 	def result = true
 	if (settings.starting && settings.ending) {
 		def currTime = now()
-		def start = timeToday(settings.starting).time
-		def stop = timeToday(settings.ending).time
+		def start = timeToday(settings.starting, location.timeZone).time
+		def stop = timeToday(settings.ending, location.timeZone).time
 		result = start < stop ? currTime >= start && currTime <= stop : currTime <= stop || currTime >= start
 	}
 	log.trace "timeOk = $result"
 	result
 }
 
-private hhmm(time, fmt = "h:mm a") {
+private hhmm(time, fmt = "h:mm a z") {
 	def t = timeToday(time, location.timeZone)
 	def f = new java.text.SimpleDateFormat(fmt)
-	f.setTimeZone(location.timeZone ?: timeZone(time))
+    if (getTimeZone()) { f.setTimeZone(location.timeZone ?: timeZone(time)) }
 	f.format(t)
 }
 
@@ -1152,6 +1194,22 @@ def greyedOutTime(starting, ending){
     result
 }
 
+def getTimeZone() {
+	def tz = null
+	if(location?.timeZone) { tz = location?.timeZone }
+	if(!tz) { log.warn "No time zone has been retrieved from SmartThings. Please try to open your ST location and press Save." }
+	return tz
+}
+
+def debugEvent(message, displayEvent = false) {
+	def results = [
+		name: "appdebug",
+		descriptionText: message,
+		displayed: displayEvent
+	]
+	log.debug "Generating AppDebug Event: ${results}"
+	sendEvent (results)
+}
 
 def getChildName()           { return "Neato BotVac" }
 def getServerUrl()           { return "https://graph.api.smartthings.com" }
@@ -1162,7 +1220,7 @@ def getApiEndpoint()         { return "https://apps.neatorobotics.com" }
 def getSmartThingsClientId() { return appSettings.clientId }
 def beehiveURL(path = '/') 	 { return "https://beehive.neatocloud.com${path}" }
 private def textVersion() {
-    def text = "Neato (Connect)\nVersion: 1.1.4b\nDate: 24102016(2150)"
+    def text = "Neato (Connect)\nVersion: 1.1.5\nDate: 01112016(1230)"
 }
 
 private def textCopyright() {
