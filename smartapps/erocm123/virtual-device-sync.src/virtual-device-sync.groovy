@@ -186,7 +186,7 @@ def installed() {
 def updated() {
   log.debug "Updated with settings: ${settings}"
   if(physical != null && setLabel != null && setLabel.toBoolean() != true){
-     app.updateLabel("Virtual Device Sync - $physical.label")
+     app.updateLabel("Virtual Device Sync - ${physical.label ? physical.label : physical.name}")
   }
   unsubscribe()
   initialize()
