@@ -82,7 +82,7 @@ def manuallyAddConfirm(){
    if ( ipAddress =~ /^(?:[0-9]{1,3}\.){3}[0-9]{1,3}$/) {
        log.debug "Creating RGBW Controller device with dni: ${convertIPtoHex(ipAddress)}:${convertPortToHex("80")}"
        addChildDevice("erocm123", "SmartLife RGBW Controller", "${convertIPtoHex(ipAddress)}:${convertPortToHex("80")}", location.hubs[0].id, [
-           "label": "SmartLife RGBW Controller ${ipAddress}",
+           "label": "SmartLife RGBW Controller (${ipAddress})",
            "data": [
            "ip": ipAddress,
            "port": "80" 
@@ -151,10 +151,18 @@ def configurePDevice(params){
 }
 
 def deletePDevice(params){
-
+    def childFound = false
+    getChildDevices().each {
+        if(it.deviceNetworkId != null){
+            if(it.deviceNetworkId.startsWith("${state.currentDeviceId}/")){
+                childFound = true
+            }
+        }
+    }
+    if ( childFound == false ){
     try {
         unsubscribe()
-        deleteChildDevice(params.did)
+        deleteChildDevice(state.currentDeviceId)
         dynamicPage(name: "deletePDevice", title: "Deletion Summary", nextPage: "mainPage") {
             section {
                 paragraph "The device has been deleted. Press next to continue"
@@ -168,6 +176,13 @@ def deletePDevice(params){
             } 
         }
     
+    }
+    } else {
+        dynamicPage(name: "deletePDevice", title: "Deletion Summary", nextPage: "mainPage") {
+            section {
+                paragraph "Error: there are still virtual switches associated with this device. Please remove them first."
+            } 
+        }
     }
 }
 
@@ -252,10 +267,6 @@ def createVirtual(){
 		section {
             
 			paragraph "This process will create six virtual switches and associate them with the LED strip's programs. You can then use the programs in other automations."
-            //if(settings["${state.currentDeviceId}_prefix"] != ""){
-            //   paragraph "Switches will be created with prefix: ${settings["${state.currentDeviceId}_prefix"]}"
-            //}
-            //(mySwitch.Switch.toInteger() == 0 ? 'off' : 'on')
             def switchNames = ""
             for (int i = 1; i <= 6; i++){
                if(settings["${state.currentDeviceId}_programs_${i}_name"] == null || settings["${state.currentDeviceId}_programs_${i}_name"] == ""){
@@ -383,7 +394,7 @@ def configureProgram(params){
            input "${state.currentDeviceId}_programs_${state.currentProgram}_off", "boolean", title:"Power off when program is finished?", required: false, defaultValue: false
         }
         section("Actions") {
-                input "${state.currentDeviceId}_programs_${state.currentProgram}_numberOfActions", "enum", title: "Number of Actions?", required: true, value: 1, defaultValue: 1, submitOnChange: true, options: [
+                input "${state.currentDeviceId}_programs_${state.currentProgram}_numberOfActions", "enum", title: "Number of Actions?", required: true, defaultValue: 1, submitOnChange: true, options: [
                 1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24]
                 def configDescription = ""
                 for (int i = 1; i <= (settings["${state.currentDeviceId}_programs_${state.currentProgram}_numberOfActions"] as Integer); i++){
@@ -427,42 +438,30 @@ def configureAction(params) {
 def getActionSections(programNumber, actionNumber) {
 	return {
 		section("Color") {
-			input "${state.currentDeviceId}_programs_${programNumber}_${actionNumber}_color", "enum", title: "Light Strip Color?", required: false, multiple:false, options: [
+			input "${state.currentDeviceId}_programs_${programNumber}_${actionNumber}_color", "enum", title: "Light Strip Color?", required: false, multiple:false, submitOnChange: true, options: [
 					["Soft White":"Soft White - Default"],
 					["White":"White - Concentrate"],
 					["Daylight":"Daylight - Energize"],
 					["Warm White":"Warm White - Relax"],
-					"Red","Green","Blue","Yellow","Orange","Purple","Pink","Cyan","Random","Off"]
+					"Red","Green","Blue","Yellow","Orange","Purple","Pink","Cyan","Random","Custom","Off"]
+            if (settings["${state.currentDeviceId}_programs_${programNumber}_${actionNumber}_color"] == "Custom"){
+                input "${state.currentDeviceId}_programs_${programNumber}_${actionNumber}_custom", "text", title: "Custom Color in Hex (ie ffffff)", submitOnChange: false, required: false
+            }
 		}
-        section("Level"){
-           input "${state.currentDeviceId}_programs_${programNumber}_${actionNumber}_lightLevel", "enum", title: "Light Level?", required: false, options: [[10:"10%"],[20:"20%"],[30:"30%"],[40:"40%"],[50:"50%"],[60:"60%"],[70:"70%"],[80:"80%"],[90:"90%"],[100:"100%"]]
+        if (settings["${state.currentDeviceId}_programs_${programNumber}_${actionNumber}_color"] != "Custom"){
+            section("Level"){
+                input "${state.currentDeviceId}_programs_${programNumber}_${actionNumber}_lightLevel", "number", title: "Light Level?", required: false, range: "1..100"
+            }
         }
         section("Transition") {
 			input "${state.currentDeviceId}_programs_${programNumber}_${actionNumber}_transition", "enum", title: "Which Transition?", required: false, options: [[1:"Fade"],[2:"Flash"]]
 		}
         section ("Duration"){
-            /*input "${state.currentDeviceId}_programs_${programNumber}_${actionNumber}_duration", "enum", title: "In milliseconds", submitOnChange: true, required: false, options: [
-            [0:"Random"],[100:"100"],[250:"250"],[500:"500"],[1000:"1000"],[2000:"2000"],[3000:"3000"],[4000:"4000"],[5000:"5000"],
-            [6000:"6000"],[7000:"7000"],[8000:"8000"],[9000:"9000"],[10000:"10000"],[11000:"11000"],[12000:"12000"],[13000:"13000"],[14000:"14000"],[15000:"15000"],
-            [16000:"16000"],[17000:"17000"],[18000:"18000"],[19000:"19000"],[20000:"20000"],[21000:"21000"],[22000:"22000"],[23000:"23000"],[24000:"24000"],[25000:"25000"],
-            [26000:"26000"],[27000:"27000"],[28000:"28000"],[29000:"29000"],[30000:"300000"]]*/
             input "${state.currentDeviceId}_programs_${programNumber}_${actionNumber}_random_duration", "boolean", title: "Random Duration", submitOnChange: true, required: false
             
             if (settings["${state.currentDeviceId}_programs_${programNumber}_${actionNumber}_random_duration"] == "true"){
                 input "${state.currentDeviceId}_programs_${programNumber}_${actionNumber}_min_duration", "number", title: "Minimum Duration (milliseconds)", range: "100..1000000", submitOnChange: false, required: false
                 input "${state.currentDeviceId}_programs_${programNumber}_${actionNumber}_max_duration", "number", title: "Maximum Duration (milliseconds)", range: "100..1000000", submitOnChange: false, required: false
-                /*input "${state.currentDeviceId}_programs_${programNumber}_${actionNumber}_min_duration", "enum", title: "Minumum Duration (In milliseconds)", required: false, options: [
-                [100:"100"],[250:"250"],[500:"500"],[1000:"1000"],[2000:"2000"],[3000:"3000"],[4000:"4000"],[5000:"5000"],
-                [6000:"6000"],[7000:"7000"],[8000:"8000"],[9000:"9000"],[10000:"10000"],[11000:"11000"],[12000:"12000"],[13000:"13000"],[14000:"14000"],[15000:"15000"],
-                [16000:"16000"],[17000:"17000"],[18000:"18000"],[19000:"19000"],[20000:"20000"],[21000:"21000"],[22000:"22000"],[23000:"23000"],[24000:"24000"],[25000:"25000"],
-                [26000:"26000"],[27000:"27000"],[28000:"28000"],[29000:"29000"],[30000:"300000"]]
-
-                input "${state.currentDeviceId}_programs_${programNumber}_${actionNumber}_max_duration", "enum", title: "Maximum Duration (In milliseconds)", required: false, options: [
-                [100:"100"],[250:"250"],[500:"500"],[1000:"1000"],[2000:"2000"],[3000:"3000"],[4000:"4000"],[5000:"5000"],
-                [6000:"6000"],[7000:"7000"],[8000:"8000"],[9000:"9000"],[10000:"10000"],[11000:"11000"],[12000:"12000"],[13000:"13000"],[14000:"14000"],[15000:"15000"],
-                [16000:"16000"],[17000:"17000"],[18000:"18000"],[19000:"19000"],[20000:"20000"],[21000:"21000"],[22000:"22000"],[23000:"23000"],[24000:"24000"],[25000:"25000"],
-                [26000:"26000"],[27000:"27000"],[28000:"28000"],[29000:"29000"],[30000:"300000"]]*/
-
             } else {
                 input "${state.currentDeviceId}_programs_${programNumber}_${actionNumber}_duration", "number", title: "Duration (milliseconds)", range: "100..1000000", submitOnChange: false, required: false
             }
@@ -665,32 +664,36 @@ def configurePrograms(){
    def transition = ""
       for (int j = 1; j <= (settings["${it.deviceNetworkId}_programs_${i}_numberOfActions"] as Integer); j++){
          def color
-         if (settings["${it.deviceNetworkId}_programs_${i}_${j}_color"] != null && settings["${it.deviceNetworkId}_programs_${i}_${j}_lightLevel"] != null && 
+         if (settings["${it.deviceNetworkId}_programs_${i}_${j}_color"] != null && ((settings["${it.deviceNetworkId}_programs_${i}_${j}_color"] != "Custom" && settings["${it.deviceNetworkId}_programs_${i}_${j}_lightLevel"] != null) || (settings["${it.deviceNetworkId}_programs_${i}_${j}_color"] == "Custom" && settings["${it.deviceNetworkId}_programs_${i}_${j}_custom"] != null)) && 
              settings["${it.deviceNetworkId}_programs_${i}_${j}_transition"] != null && ((settings["${it.deviceNetworkId}_programs_${i}_${j}_min_duration"] != null && settings["${it.deviceNetworkId}_programs_${i}_${j}_max_duration"] != null) || settings["${it.deviceNetworkId}_programs_${i}_${j}_duration"] != null)
              ){
-         if (getHexColor(settings["${it.deviceNetworkId}_programs_${i}_${j}_color"]) != "xxxxxx"){
-            color = getDimmedColor(getHexColor(settings["${it.deviceNetworkId}_programs_${i}_${j}_color"]), settings["${it.deviceNetworkId}_programs_${i}_${j}_lightLevel"])
+             if (settings["${it.deviceNetworkId}_programs_${i}_${j}_color"] == "Custom"){
+                color = settings["${it.deviceNetworkId}_programs_${i}_${j}_custom"]
+             } else if (getHexColor(settings["${it.deviceNetworkId}_programs_${i}_${j}_color"]) != "xxxxxx"){
+                color = getDimmedColor(getHexColor(settings["${it.deviceNetworkId}_programs_${i}_${j}_color"]), settings["${it.deviceNetworkId}_programs_${i}_${j}_lightLevel"])
+             } else {
+                color = getHexColor(settings["${it.deviceNetworkId}_programs_${i}_${j}_color"])
+             }
+             if(settings["${it.deviceNetworkId}_programs_${i}_${j}_color"] == "Soft White" || settings["${it.deviceNetworkId}_programs_${i}_${j}_color"] == "Warm White") {
+                transition = getTransition(settings["${it.deviceNetworkId}_programs_${i}_${j}_transition"] as Integer, true)
+             }else{
+                transition = getTransition(settings["${it.deviceNetworkId}_programs_${i}_${j}_transition"] as Integer, false)
+             }
+             if (settings["${it.deviceNetworkId}_programs_${i}_${j}_random_duration"] == "true") {
+                 programString = programString + transition + color + "~" + settings["${it.deviceNetworkId}_programs_${i}_${j}_min_duration"] + "-" + settings["${it.deviceNetworkId}_programs_${i}_${j}_max_duration"] + "_"
+             } else {
+                 programString = programString + transition + color + "~" + settings["${it.deviceNetworkId}_programs_${i}_${j}_duration"] + "_"
+             }
          } else {
-            color = getHexColor(settings["${it.deviceNetworkId}_programs_${i}_${j}_color"])
+            log.debug "Configuration for this action is incomplete"
          }
-         if(settings["${it.deviceNetworkId}_programs_${i}_${j}_color"] == "Soft White" || settings["${it.deviceNetworkId}_programs_${i}_${j}_color"] == "Warm White") {
-            transition = getTransition(settings["${it.deviceNetworkId}_programs_${i}_${j}_transition"] as Integer, true)
-         }else{
-            transition = getTransition(settings["${it.deviceNetworkId}_programs_${i}_${j}_transition"] as Integer, false)
-         }
-         if (settings["${it.deviceNetworkId}_programs_${i}_${j}_random_duration"] == "true") {
-             programString = programString + transition + color + "~" + settings["${it.deviceNetworkId}_programs_${i}_${j}_min_duration"] + "-" + settings["${it.deviceNetworkId}_programs_${i}_${j}_max_duration"] + "_"
-         } else {
-             programString = programString + transition + color + "~" + settings["${it.deviceNetworkId}_programs_${i}_${j}_duration"] + "_"
-         }} else {
-         log.debug "Configuration for this action is incomplete"
-      }
       }
       if(programString != ""){
          log.debug programString.substring(0, programString.length() - 1) + "&repeat=" + settings["${it.deviceNetworkId}_programs_${i}_repeat"] + "&off=" + settings["${it.deviceNetworkId}_programs_${i}_off"]
          getChildDevice(it.deviceNetworkId).setProgram(programString.substring(0, programString.length() - 1) + "&repeat=" + settings["${it.deviceNetworkId}_programs_${i}_repeat"], i) + "&off=" + settings["${it.deviceNetworkId}_programs_${i}_off"]
       } 
-   }}}
+   }}
+   }  
 }
 
 def virtualHandler(evt) {

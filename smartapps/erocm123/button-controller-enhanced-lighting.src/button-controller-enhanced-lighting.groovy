@@ -93,13 +93,14 @@ def configureButton(params) {
 }
 
 def configureLight(params) {
+    if (params.pbutton != null) state.currentButton = params.pbutton.toInteger()
     dynamicPage(name: "configureLight", uninstall: false, install: false) {
         section ("$params.name") {
             def switchType = "Switch"
-            if ("$params.capabilities".indexOf('Switch Level') > 0) {
+            if ("$params.capabilities".indexOf('Switch Level') >= 0) {
             	switchType = "Dimmer"
             }
-            if ("$params.capabilities".indexOf('Color Control') > 0) {
+            if ("$params.capabilities".indexOf('Color Control') >= 0) {
             	switchType = "Color"
             }
             switch(switchType) {
@@ -135,6 +136,7 @@ def getButtonSections(buttonNumber) {
         }
         def lightsConfigured = settings["lights_${buttonNumber}"]
         if (lightsConfigured != null) {
+        def map = [:]
         	lightsConfigured.each {light ->
                 def inDescription = "Click to Configure"
                 
@@ -155,8 +157,19 @@ def getButtonSections(buttonNumber) {
                  	params: [ name: "$light", type: "$light.name", capabilities: "$light.capabilities", buttonNumber: "$buttonNumber", lightId: "$light.id" ],
                  	description: "$inDescription")
            		}
+                
+                def value = "${light.displayName}"
+		        def key = "${light.id}"
+		        map["${key}"] = value
+                
+        }
+        section("Master Switch") {
+           input "lights_${buttonNumber}_master_first", "enum", title: "Turn this switch on first", description: "", multiple: false, required: false, submitOnChange: false, options: map
+           input "lights_${buttonNumber}_master_last", "enum", title: "Turn this switch off last", description: "", multiple: false, required: false, submitOnChange: false, options: map
+           //input "lights_${buttonNumber}_master", "enum", title: "None", multiple: false, required: false, submitOnChange: false, options: [[10:"10%"],[20:"20%"],[30:"30%"],[40:"40%"],[50:"50%"],[60:"60%"],[70:"70%"],[80:"80%"],[90:"90%"],[100:"100%"]]
         }
         }
+        
 		
 	}
 }
@@ -257,16 +270,30 @@ def executeHandlers(buttonNumber) {
            lightsConfigured.each {light ->
               if (light.currentValue("switch") == "on")
                   lightOn = true
-              if (!lightOn) toggle = false
-              else toggle = true
+              
            }
+           if (!lightOn) toggle = false
+              else toggle = true
        }
     }
     if (lightsConfigured != null) {
-        
-        lightsConfigured.each {light ->
-            setLight(light, "$light.name", "$light.capabilities", "$buttonNumber", "${light.id}", toggle)
+        def master_light_first
+        def master_light_last
+        if(settings["lights_${buttonNumber}_master_first"] != null){
+            master_light_first = lightsConfigured.find{it.id == settings["lights_${buttonNumber}_master_first"]}
         }
+        if(settings["lights_${buttonNumber}_master_last"] != null){
+            master_light_last = lightsConfigured.find{it.id == settings["lights_${buttonNumber}_master_last"]}
+        }
+        
+        if(master_light_first) setLight(master_light_first, "$buttonNumber", toggle, "first")
+
+        lightsConfigured.each {light ->
+            if(light.id != settings["lights_${buttonNumber}_master_first"] && light.id != settings["lights_${buttonNumber}_master_last"])
+                setLight(light, "$buttonNumber", toggle)
+        }
+        
+        if(master_light_last) setLight(master_light_last, "$buttonNumber", toggle, "last")
 
         state.previousScene = buttonNumber
         state.previousState = toggle
@@ -275,29 +302,30 @@ def executeHandlers(buttonNumber) {
     }
 }
 
-def setLight(light, lightName, lightCapabilities, buttonNumber, lightId, toggle) {
+def setLight(light, buttonNumber, toggle, sequence = null) {
     def power
     def level
     def color
     
     def switchType = "Switch"
-    if ("$lightCapabilities".indexOf('Switch Level') > 0) {
+    if ("$light.capabilities".indexOf('Switch Level') >= 0) {
         switchType = "Dimmer"
     }
-    if ("$lightCapabilities".indexOf('Color Control') > 0) {
+    if ("$light.capabilities".indexOf('Color Control') >= 0) {
         switchType = "Color"
     }
     
-    if (settings["lights_${buttonNumber}_${lightId}_power"] != null)
-    	power = settings["lights_${buttonNumber}_${lightId}_power"]
-    if (settings["lights_${buttonNumber}_${lightId}_lightLevel"] != null)
-    	level = settings["lights_${buttonNumber}_${lightId}_lightLevel"]
-    if (settings["lights_${buttonNumber}_${lightId}_color"] != null)
-    	color = settings["lights_${buttonNumber}_${lightId}_color"]
+    if (settings["lights_${buttonNumber}_${light.id}_power"] != null)
+    	power = settings["lights_${buttonNumber}_${light.id}_power"]
+    else power = false
+    if (settings["lights_${buttonNumber}_${light.id}_lightLevel"] != null)
+    	level = settings["lights_${buttonNumber}_${light.id}_lightLevel"]
+    if (settings["lights_${buttonNumber}_${light.id}_color"] != null)
+    	color = settings["lights_${buttonNumber}_${light.id}_color"]
     
     if (toggle) power = false
     
-    if (power) {
+    if (power == true && sequence != "last") {
     	switch(switchType) {
         	case ~/.*Switch.*/:
                 light.on()
@@ -384,7 +412,7 @@ def setLight(light, lightName, lightCapabilities, buttonNumber, lightId, toggle)
         		break
 		}
     }
-    else {
+    else if(power == false && sequence != "first") {
     	light.off()
     }
     
