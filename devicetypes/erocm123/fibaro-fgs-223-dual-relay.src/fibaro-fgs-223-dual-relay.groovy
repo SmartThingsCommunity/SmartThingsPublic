@@ -23,6 +23,8 @@ capability "Polling"
 capability "Configuration"
 capability "Refresh"
 capability "Zw Multichannel"
+capability "Energy Meter"
+capability "Power Meter"
 
 attribute "switch1", "string"
 attribute "switch2", "string"
@@ -31,6 +33,7 @@ command "on1"
 command "off1"
 command "on2"
 command "off2"
+command "reset"
 
 fingerprint deviceId: "0x1001", inClusters:"0x86, 0x72, 0x85, 0x60, 0x8E, 0x25, 0x20, 0x70, 0x27"
 
@@ -61,6 +64,18 @@ tiles(scale: 2){
 		state "on", label: "switch2", action: "off2", icon: "st.switches.switch.on", backgroundColor: "#79b821"
 		state "off", label: "switch2", action: "on2", icon: "st.switches.switch.off", backgroundColor: "#ffffff"
     }
+    valueTile("energy1", "device.energy1", decoration: "flat", width: 2, height: 2) {
+			state "default", label:'${currentValue} kWh'
+	}
+    valueTile("power1", "device.power1", decoration: "flat", width: 2, height: 2) {
+			state "default", label:'${currentValue} W'
+	}
+    valueTile("energy2", "device.energy2", decoration: "flat", width: 2, height: 2) {
+			state "default", label:'${currentValue} kWh'
+	}
+    valueTile("power2", "device.power2", decoration: "flat", width: 2, height: 2) {
+			state "default", label:'${currentValue} W'
+	}
     standardTile("refresh", "device.switch", inactiveLabel: false, decoration: "flat", width: 2, height: 2) {
 		state "default", label:"", action:"refresh.refresh", icon:"st.secondary.refresh"
     }
@@ -69,9 +84,12 @@ tiles(scale: 2){
             state("NO" , label:'Synced', action:"configuration.configure", backgroundColor:"#8acb47")
             state("YES", label:'Pending', action:"configuration.configure", backgroundColor:"#f39c12")
     }
+    standardTile("reset", "device.energy", inactiveLabel: false, decoration: "flat", width: 2, height: 2) {
+		state "default", label:'reset kWh', action:"reset"
+	}
 
     main(["switch","switch1", "switch2"])
-    details(["switch","switch1","switch2","refresh","configure"])
+    details(["switch","switch1","switch2","refresh","reset","configure"])
 }
     preferences {
         
@@ -207,6 +225,11 @@ def zwaveEvent(physicalgraph.zwave.commands.switchallv1.SwitchAllReport cmd) {
    log.debug "SwitchAllReport $cmd"
 }
 
+def zwaveEvent(physicalgraph.zwave.commands.configurationv2.ConfigurationReport cmd) {
+     update_current_properties(cmd)
+     logging("${device.displayName} parameter '${cmd.parameterNumber}' with a byte size of '${cmd.size}' is set to '${cmd2Integer(cmd.configurationValue)}'")
+}
+
 def refresh() {
 	def cmds = []
     cmds << zwave.manufacturerSpecificV2.manufacturerSpecificGet()
@@ -237,7 +260,7 @@ def configure() {
     
     cmds << zwave.manufacturerSpecificV2.manufacturerSpecificGet().format()
     
-    if (cmds != []) commands(cmds)
+    if (cmds != []) secureSequence(cmds)
 }
 
 def zwaveEvent(physicalgraph.zwave.commands.sceneactivationv1.SceneActivationSet cmd) {
@@ -370,7 +393,7 @@ def updated()
     
     sendEvent(name:"needUpdate", value: device.currentValue("needUpdate"), displayed:false, isStateChange: true)
     
-    if (cmds != []) response(commands(cmds))
+    if (cmds != []) response(secureSequence(cmds))
 }
 
 def on() { 
@@ -432,18 +455,6 @@ def zwaveEvent(physicalgraph.zwave.commands.securityv1.SecurityMessageEncapsulat
 		log.warn "Unable to extract encapsulated cmd from $cmd"
 		createEvent(descriptionText: cmd.toString())
 	}
-}
-
-private command(physicalgraph.zwave.Command cmd) {
-	if (state.sec) {
-		zwave.securityV1.securityMessageEncapsulation().encapsulate(cmd).format()
-	} else {
-		cmd.format()
-	}
-}
-
-private commands(commands, delay=1500) {
-	delayBetween(commands.collect{ command(it) }, delay)
 }
 
 def generate_preferences(configuration_model)
