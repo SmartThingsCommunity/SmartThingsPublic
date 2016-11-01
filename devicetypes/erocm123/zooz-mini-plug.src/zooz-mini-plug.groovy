@@ -308,22 +308,18 @@ def update_needed_settings()
         if ("${it.@setting_type}" == "zwave"){
             if (currentProperties."${it.@index}" == null)
             {
-                if (device.currentValue("currentFirmware") == null || "${it.@fw}".indexOf(device.currentValue("currentFirmware")) >= 0){
-                    isUpdateNeeded = "YES"
-                    logging("Current value of parameter ${it.@index} is unknown")
-                    cmds << zwave.configurationV1.configurationGet(parameterNumber: it.@index.toInteger())
-                }
+                isUpdateNeeded = "YES"
+                logging("Current value of parameter ${it.@index} is unknown")
+                cmds << zwave.configurationV1.configurationGet(parameterNumber: it.@index.toInteger())
             }
             else if (settings."${it.@index}" != null && convertParam(it.@index.toInteger(), cmd2Integer(currentProperties."${it.@index}")) != settings."${it.@index}".toInteger())
             { 
-                if (device.currentValue("currentFirmware") == null || "${it.@fw}".indexOf(device.currentValue("currentFirmware")) >= 0){
-                    isUpdateNeeded = "YES"
+                isUpdateNeeded = "YES"
 
-                    logging("Parameter ${it.@index} will be updated to " + settings."${it.@index}")
-                    def convertedConfigurationValue = convertParam(it.@index.toInteger(), settings."${it.@index}".toInteger())
-                    cmds << zwave.configurationV1.configurationSet(configurationValue: integer2Cmd(convertedConfigurationValue, it.@byteSize.toInteger()), parameterNumber: it.@index.toInteger(), size: it.@byteSize.toInteger())
-                    cmds << zwave.configurationV1.configurationGet(parameterNumber: it.@index.toInteger())
-                }
+                logging("Parameter ${it.@index} will be updated to " + settings."${it.@index}")
+                def convertedConfigurationValue = convertParam(it.@index.toInteger(), settings."${it.@index}".toInteger())
+                cmds << zwave.configurationV1.configurationSet(configurationValue: integer2Cmd(convertedConfigurationValue, it.@byteSize.toInteger()), parameterNumber: it.@index.toInteger(), size: it.@byteSize.toInteger())
+                cmds << zwave.configurationV1.configurationGet(parameterNumber: it.@index.toInteger())
             } 
         }
     }
