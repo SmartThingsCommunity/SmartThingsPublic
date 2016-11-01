@@ -23,16 +23,17 @@ metadata {
 		command "offPhysical"
 	}
 
-	tiles {
-		standardTile("switch", "device.switch", width: 2, height: 2, canChangeIcon: true) {
-			state "off", label: '${currentValue}', action: "switch.on", icon: "st.switches.switch.off", backgroundColor: "#ffffff"
-			state "on", label: '${currentValue}', action: "switch.off", icon: "st.switches.switch.on", backgroundColor: "#79b821"
-		}
-		standardTile("on", "device.switch", decoration: "flat") {
-			state "default", label: 'On', action: "onPhysical", backgroundColor: "#ffffff"
-		}
-		standardTile("off", "device.switch", decoration: "flat") {
-			state "default", label: 'Off', action: "offPhysical", backgroundColor: "#ffffff"
+	tiles(scale: 2) {
+		multiAttributeTile(name:"switch", type: "generic", width: 6, height: 4, canChangeIcon: true){
+			tileAttribute ("device.switch", key: "PRIMARY_CONTROL") {
+				attributeState "on", label: '${name}', action: "switch.off", icon: "st.switches.switch.on", backgroundColor: "#79b821"
+				attributeState "off", label: '${name}', action: "switch.on", icon: "st.switches.switch.off", backgroundColor: "#ffffff"
+                attributeState "turningOn", label:'${name}', action:"switch.off", icon:"st.switches.light.on", backgroundColor:"#79b821", nextState:"turningOff"
+				attributeState "turningOff", label:'${name}', action:"switch.on", icon:"st.switches.light.off", backgroundColor:"#ffffff", nextState:"turningOn"
+			}
+            tileAttribute ("statusText", key: "SECONDARY_CONTROL") {
+           		attributeState "statusText", label:'${currentValue}'       		
+            }
 		}
         valueTile("power", "power", decoration: "flat") {
 			state "default", label:'${currentValue} W'
@@ -41,22 +42,28 @@ metadata {
 			state "default", label:'${currentValue} kWh'
 		}
         main "switch"
-		details(["switch", "power", "energy"])
+		details(["switch"])
 	}
 }
 
 def parse(String description) {
-	//def pair = description.split(":")
-	//createEvent(name: pair[0].trim(), value: pair[1].trim())
+
 }
 
 def parse(Map description) {
-	//def pair = description.split(":")
-	//createEvent(name: pair[0].trim(), value: pair[1].trim())
-    def eventMap
-    if (description.type == null) eventMap = [name:"$description.name", value:"$description.value"]
-    else eventMap = [name:"$description.name", value:"$description.value", type:"$description.type"]
-    createEvent(eventMap)
+    def eventMap = []
+    if (description.type == null) eventMap << createEvent(name:"$description.name", value:"$description.value")
+    else eventMap << createEvent(name:"$description.name", value:"$description.value", type:"$description.type")
+    def statusTextmsg = ""
+    if (description.name == "power") {
+        if(device.currentState('energy')) statusTextmsg = "${description.value} W ${device.currentState('energy').value} kWh"
+        else statusTextmsg = "${description.value} W"
+    } else if (description.name == "energy") {
+        if(device.currentState('power')) statusTextmsg = "${device.currentState('power').value} W ${description.value} kWh"
+        else statusTextmsg = "${description.value} kWh"
+    }
+    if (statusTextmsg != "") eventMap << createEvent(name:"statusText", value:statusTextmsg, displayed:false)
+    return eventMap
 }
 
 def on() {

@@ -27,24 +27,19 @@ metadata {
 	}
 
 	tiles (scale:2) {
-		standardTile("switch", "device.switch", width: 3, height: 3, canChangeIcon: true) {
-			state "off", label: '${currentValue}', action: "switch.on", icon: "st.switches.switch.off", backgroundColor: "#ffffff"
-			state "on", label: '${currentValue}', action: "switch.off", icon: "st.switches.switch.on", backgroundColor: "#79b821"
-		}
-		standardTile("on", "device.switch", decoration: "flat") {
-			state "default", label: 'On', action: "onPhysical", backgroundColor: "#ffffff"
-		}
-		standardTile("off", "device.switch", decoration: "flat") {
-			state "default", label: 'Off', action: "offPhysical", backgroundColor: "#ffffff"
-		}
-        valueTile("level", "device.level", inactiveLabel: false, decoration: "flat", width: 3, height: 3) {
-			state "level", label:'${currentValue} %', unit:"%", backgroundColor:"#ffffff"
-		}
-        controlTile("levelSliderControl", "device.level", "slider", height: 2, width: 6, inactiveLabel: false) {
-			state "level", action:"switch level.setLevel"
-		}
+    		multiAttributeTile(name:"switch", type: "generic", width: 3, height: 2, canChangeIcon: true){
+			tileAttribute ("device.switch", key: "PRIMARY_CONTROL") {
+				attributeState "on", label:'${name}', action:"switch.off", icon:"st.switches.light.on", backgroundColor:"#79b821", nextState:"turningOff"
+				attributeState "off", label:'${name}', action:"switch.on", icon:"st.switches.light.off", backgroundColor:"#ffffff", nextState:"turningOn"
+				attributeState "turningOn", label:'${name}', action:"switch.off", icon:"st.switches.light.on", backgroundColor:"#79b821", nextState:"turningOff"
+				attributeState "turningOff", label:'${name}', action:"switch.on", icon:"st.switches.light.off", backgroundColor:"#ffffff", nextState:"turningOn"
+			}
+        	tileAttribute ("device.level", key: "SLIDER_CONTROL") {
+				attributeState "level", action:"switch level.setLevel"
+			}
+	    }
         main "switch"
-		details(["switch", "level", "levelSliderControl"])
+		details(["switch"])
 	}
 }
 
