@@ -321,6 +321,11 @@ def pageStatus(params) {
     }
 }
 
+def runNowHandler(evt) {
+	log.debug "SmartApp button was pressed."
+    doCheck()		
+}
+
 def eventCheck(evt = false) {
     if (allOk) {
         if ((settings.checkEvent != null && settings.checkEvent.toBoolean()) || evt == false) {
@@ -892,6 +897,7 @@ def resend() {
 def subscribeDevices() {
 
     log.trace "subscribing to Devices"
+    subscribe(app, runNowHandler)
     subscribe(motiondevices, "motion", eventCheck, [filterEvents: false])
     subscribe(humiditydevices, "relativeHumidity", eventCheck, [filterEvents: false])
     subscribe(leakdevices, "water", eventCheck, [filterEvents: false])
