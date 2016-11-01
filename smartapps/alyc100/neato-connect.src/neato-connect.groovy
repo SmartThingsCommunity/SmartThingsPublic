@@ -419,7 +419,6 @@ private refreshAuthToken() {
 			httpPost(refreshParams) { resp ->
 				if(resp.status == 200) {
 					log.debug "Token refreshed...calling saved RestAction now!"
-					debugEvent("Token refreshed ... calling saved RestAction now!")
 					saveTokenAndResumeAction(resp.data)
 			    }
             }
@@ -445,9 +444,8 @@ private refreshAuthToken() {
 }
 
 private void saveTokenAndResumeAction(json) {
-    log.debug "token response json: $json"
+    log.debug "saveTokenAndResumeAction: token response json: $json"
     if (json) {
-        debugEvent("Response = $json")
         atomicState.refreshToken = json?.refresh_token
         atomicState.authToken = json?.access_token
         if (atomicState.action) {
@@ -614,6 +612,7 @@ def devicesList() {
 		if (resp.status == 200) {
 			return resp.data
 		} else if (resp.status == 401) {
+        	atomicState.action = "updateDevices"
         	if (!atomicState.reAttempt) atomicState.reAttempt = 0
         	atomicState.reAttempt = atomicState.reAttempt + 1
 			log.warn "reAttempt refreshAuthToken to try = ${atomicState.reAttempt}"
@@ -1201,16 +1200,6 @@ def getTimeZone() {
 	return tz
 }
 
-def debugEvent(message, displayEvent = false) {
-	def results = [
-		name: "appdebug",
-		descriptionText: message,
-		displayed: displayEvent
-	]
-	log.debug "Generating AppDebug Event: ${results}"
-	sendEvent (results)
-}
-
 def getChildName()           { return "Neato BotVac" }
 def getServerUrl()           { return "https://graph.api.smartthings.com" }
 def getShardUrl()            { return getApiServerUrl() }
@@ -1220,7 +1209,7 @@ def getApiEndpoint()         { return "https://apps.neatorobotics.com" }
 def getSmartThingsClientId() { return appSettings.clientId }
 def beehiveURL(path = '/') 	 { return "https://beehive.neatocloud.com${path}" }
 private def textVersion() {
-    def text = "Neato (Connect)\nVersion: 1.1.5\nDate: 01112016(1230)"
+    def text = "Neato (Connect)\nVersion: 1.1.5\nDate: 01112016(2015)"
 }
 
 private def textCopyright() {
