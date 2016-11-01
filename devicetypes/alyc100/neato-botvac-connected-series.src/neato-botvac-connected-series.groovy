@@ -13,8 +13,9 @@
  *  for the specific language governing permissions and limitations under the License.
  *
  *  VERSION HISTORY
+ * 	01-11-2016: 1.2.2b - Bug fix. Stop disabling Neato Schedule even when SmartSchedule is off.
  *	26-10-2016: 1.2.2 - Turn off 'searching' status when Botvac is idle. More information for activity feed.
- *
+ *	
  *	25-10-2016: 1.2.1 - New device tile to change cleaning mode. Icon refactor.
  *
  *  25-10-2016: 1.2b - Very silly bug fix. Clean mode always reporting as Eco. Added display cleaning mode in Device Handler.
@@ -426,7 +427,7 @@ def poll() {
     }
     
     //If smart schedule is enabled, disable Neato schedule to avoid conflict
-    if (parent.isSmartScheduleEnabled && result.details.isScheduleEnabled) {
+    if (parent.isSmartScheduleEnabled() && result.details.isScheduleEnabled) {
     	log.debug "Disable Neato scheduling system as SmartSchedule is enabled"
     	nucleoPOST("/messages", '{"reqId":"1", "cmd":"disableSchedule"}')
         sendEvent(name: 'scheduled', value: "false")
