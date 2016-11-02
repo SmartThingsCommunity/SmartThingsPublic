@@ -23,6 +23,7 @@ metadata {
 		capability "Sensor"
 		capability "Refresh"
 		capability "Relative Humidity Measurement"
+		capability "Health Check"
 
 		command "generateEvent"
 		command "raiseSetpoint"
@@ -38,6 +39,7 @@ metadata {
 		attribute "maxCoolingSetpoint", "number"
 		attribute "minCoolingSetpoint", "number"
 		attribute "deviceTemperatureUnit", "string"
+		attribute "deviceAlive", "enum", ["true", "false"]
 	}
 
 	tiles {
@@ -120,6 +122,21 @@ metadata {
 
 }
 
+void installed() {
+    // The device refreshes every 5 minutes by default so if we miss 2 refreshes we can consider it offline
+    // Using 12 minutes because in testing, device health team found that there could be "jitter"
+    sendEvent(name: "checkInterval", value: 60 * 12, data: [protocol: "cloud", hubHardwareId: device.hub.hardwareID], displayed: false)
+}
+
+// Device Watch will ping the device to proactively determine if the device has gone offline
+// If the device was online the last time we refreshed, trigger another refresh as part of the ping.
+def ping() {
+    def isAlive = device.currentValue("deviceAlive") == "true" ? true : false
+    if (isAlive) {
+        refresh()
+    }
+}
+
 // parse events into attributes
 def parse(String description) {
 	log.debug "Parsing '${description}'"
@@ -164,7 +181,11 @@ def generateEvent(Map results) {
 			}  else if (name=="humidity") {
 				isChange = isStateChange(device, name, value.toString())
 				event << [value: value.toString(), isStateChange: isChange, displayed: false, unit: "%"]
-			}  else {
+			} else if (name == "deviceAlive") {
+				isChange = isStateChange(device, name, value.toString())
+				event['isStateChange'] = isChange
+				event['displayed'] = false
+			} else {
 				isChange = isStateChange(device, name, value.toString())
 				isDisplayed = isChange
 				event << [value: value.toString(), isStateChange: isChange, displayed: isDisplayed]
