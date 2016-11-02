@@ -28,17 +28,6 @@ metadata {
 
 	}
 
-	// simulator metadata
-	simulator {
-		// status messages
-		status "on": "on/off: 1"
-		status "off": "on/off: 0"
-
-		// reply messages
-		reply "zcl on-off on": "on/off: 1"
-		reply "zcl on-off off": "on/off: 0"
-	}
-
 	tiles(scale: 2) {
 		multiAttributeTile(name:"switch", type: "lighting", width: 6, height: 4, canChangeIcon: true){
 			tileAttribute ("device.switch", key: "PRIMARY_CONTROL") {
@@ -54,103 +43,54 @@ metadata {
 				attributeState "power", label:'${currentValue} W'
 			}
 		}
-		
-		standardTile("refresh", "device.power", inactiveLabel: false, decoration: "flat", width: 2, height: 2) {
-			state "default", label:'', action:"refresh.refresh", icon:"st.secondary.refresh"
+		standardTile("refresh", "device.refresh", inactiveLabel: false, decoration: "flat", width: 2, height: 2) {
+			state "default", label:"", action:"refresh.refresh", icon:"st.secondary.refresh"
 		}
-		
 		main "switch"
-		details(["switch","refresh"])
+		details(["switch", "refresh"])
 	}
 }
 
 // Parse incoming device messages to generate events
 def parse(String description) {
-	log.debug "Parse description $description"
-	def name = null
-	def value = null
-	if (description?.startsWith("catchall:")) {
-		def msg = zigbee.parse(description)
-		log.trace msg
-		log.trace "data: $msg.data"
-	} else if (description?.startsWith("read attr -")) {
-		def descMap = parseDescriptionAsMap(description)
-		log.debug "Read attr: $description"
-		if (descMap.cluster == "0006" && descMap.attrId == "0000") {
-			name = "switch"
-			value = descMap.value.endsWith("01") ? "on" : "off"
-		} else {
-			def reportValue = description.split(",").find {it.split(":")[0].trim() == "value"}?.split(":")[1].trim()
-			name = "power"
-			// assume 16 bit signed for encoding and power divisor is 10
-			value = Integer.parseInt(reportValue, 16) / 10
+	log.debug "description is $description"
+
+	def event = zigbee.getEvent(description)
+	if (event) {
+		log.info event
+		if (event.name == "power") {
+			if (device.getDataValue("manufacturer") != "OSRAM") {       //OSRAM devices do not reliably update power
+				event.value = (event.value as Integer) / 10             //TODO: The divisor value needs to be set as part of configuration
+				sendEvent(event)
+			}
 		}
-	} else if (description?.startsWith("on/off:")) {
-		log.debug "Switch command"
-		name = "switch"
-		value = description?.endsWith(" 1") ? "on" : "off"
+		else {
+			sendEvent(event)
+		}
 	}
-
-	def result = createEvent(name: name, value: value)
-	log.debug "Parse returned ${result?.descriptionText}"
-	return result
-}
-
-def parseDescriptionAsMap(description) {
-	(description - "read attr - ").split(",").inject([:]) { map, param ->
-		def nameAndValue = param.split(":")
-		map += [(nameAndValue[0].trim()):nameAndValue[1].trim()]
+	else {
+		log.warn "DID NOT PARSE MESSAGE for description : $description"
+		log.debug zigbee.parseDescriptionAsMap(description)
 	}
-}
-
-// Commands to device
-def on() {
-	[
-			'zcl on-off on',
-			'delay 200',
-			"send 0x${zigbee.deviceNetworkId} 0x01 0x${zigbee.endpointId}",
-			'delay 500'
-	]
 }
 
 def off() {
-	[
-			'zcl on-off off',
-			'delay 200',
-			"send 0x${zigbee.deviceNetworkId} 0x01 0x${zigbee.endpointId}",
-			'delay 500'
-	]
+	zigbee.off()
+}
+
+def on() {
+	zigbee.on()
 }
 
 def setLevel(value) {
-	log.trace "setLevel($value)"
-	sendEvent(name: "level", value: value)
-    def level = hexString(Math.round(value * 255/100))
-	def cmd = "st cmd 0x${device.deviceNetworkId} 1 8 4 {${level} 2000}"
-	log.debug cmd
-	cmd
-}
-
-def meter() {
-	"st rattr 0x${device.deviceNetworkId} 1 0xB04 0x50B"
+	zigbee.setLevel(value)
 }
 
 def refresh() {
-	"st rattr 0x${device.deviceNetworkId} 1 0xB04 0x50B"
+	zigbee.onOffRefresh() + zigbee.levelRefresh() + zigbee.simpleMeteringPowerRefresh() + zigbee.electricMeasurementPowerRefresh() + zigbee.onOffConfig() + zigbee.levelConfig() + zigbee.simpleMeteringPowerConfig() + zigbee.electricMeasurementPowerConfig()
 }
 
 def configure() {
-	[
-		"zdo bind 0x${device.deviceNetworkId} 1 1 8 {${device.zigbeeId}} {}", "delay 200",
-		"zdo bind 0x${device.deviceNetworkId} 1 1 6 {${device.zigbeeId}} {}", "delay 200",
-		"zdo bind 0x${device.deviceNetworkId} 1 1 0xB04 {${device.zigbeeId}} {}"
-	]
-}
-
-private hex(value, width=2) {
-    def s = new BigInteger(Math.round(value).toString()).toString(16)
-    while (s.size() < width) {
-        s = "0" + s
-    }
-    s
+	log.debug "Configuring Reporting and Bindings."
+	refresh()
 }
