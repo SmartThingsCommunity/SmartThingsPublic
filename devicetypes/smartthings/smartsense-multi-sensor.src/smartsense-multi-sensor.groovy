@@ -127,7 +127,7 @@ def parse(String description) {
 		map = parseIasMessage(description)
 	}
 
-	def result = map ? createEvent(map) : null
+	def result = map ? createEvent(map) : [:]
 
 	if (description?.startsWith('enroll request')) {
 		List cmds = enrollResponse()
