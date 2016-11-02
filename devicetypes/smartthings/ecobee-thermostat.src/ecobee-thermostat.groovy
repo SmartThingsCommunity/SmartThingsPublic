@@ -182,9 +182,9 @@ def generateEvent(Map results) {
 				isChange = isStateChange(device, name, value.toString())
 				event << [value: value.toString(), isStateChange: isChange, displayed: false, unit: "%"]
 			} else if (name == "deviceAlive") {
-    			isChange = isStateChange(device, name, value.toString())
-    			event['isStateChange'] = isChange
-    			event['displayed'] = false
+				isChange = isStateChange(device, name, value.toString())
+				event['isStateChange'] = isChange
+				event['displayed'] = false
 			} else {
 				isChange = isStateChange(device, name, value.toString())
 				isDisplayed = isChange
