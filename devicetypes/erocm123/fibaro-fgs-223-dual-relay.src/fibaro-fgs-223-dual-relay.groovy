@@ -258,8 +258,6 @@ def configure() {
 
     cmds = update_needed_settings()
     
-    cmds << zwave.manufacturerSpecificV2.manufacturerSpecificGet().format()
-    
     if (cmds != []) secureSequence(cmds)
 }
 
@@ -385,7 +383,6 @@ def buttonEvent(button, value) {
 */
 def updated()
 {
-    log.debug convertParam(28, settings."${28}")
 	state.enableDebugging = settings.enableDebugging
     logging("updated() is being called")
     
@@ -394,6 +391,7 @@ def updated()
     sendEvent(name:"needUpdate", value: device.currentValue("needUpdate"), displayed:false, isStateChange: true)
     
     if (cmds != []) response(secureSequence(cmds))
+    //if (cmds != []) response(commands(cmds))
 }
 
 def on() { 
@@ -448,7 +446,7 @@ private secureSequence(commands, delay=200) {
 }
 
 def zwaveEvent(physicalgraph.zwave.commands.securityv1.SecurityMessageEncapsulation cmd) {
-	def encapsulatedCommand = cmd.encapsulatedCommand([0x20: 1, 0x32: 1, 0x25: 1, 0x98: 1, 0x70: 1, 0x85: 2, 0x9B: 1, 0x90: 1, 0x73: 1, 0x30: 1, 0x28: 1]) // can specify command class versions here like in zwave.parse
+	def encapsulatedCommand = cmd.encapsulatedCommand([0x20: 1, 0x32: 1, 0x25: 1, 0x98: 1, 0x70: 2, 0x85: 2, 0x9B: 1, 0x90: 1, 0x73: 1, 0x30: 1, 0x28: 1, 0x2B: 1]) // can specify command class versions here like in zwave.parse
 	if (encapsulatedCommand) {
 		return zwaveEvent(encapsulatedCommand)
 	} else {
@@ -506,7 +504,7 @@ def update_current_properties(cmd)
 
     if (settings."${cmd.parameterNumber}" != null)
     {
-        if (settings."${cmd.parameterNumber}".toInteger() == convertParam("${cmd.parameterNumber}".toInteger(), cmd2Integer(cmd.configurationValue)))
+        if (convertParam(cmd.parameterNumber, settings."${cmd.parameterNumber}") == cmd2Integer(cmd.configurationValue))
         {
             sendEvent(name:"needUpdate", value:"NO", displayed:false, isStateChange: true)
         }
@@ -625,6 +623,28 @@ def integer2Cmd(value, size) {
 	}
 }
 
+private command(physicalgraph.zwave.Command cmd) {
+    
+	if (state.sec && cmd.toString() != "WakeUpIntervalGet()") {
+		zwave.securityV1.securityMessageEncapsulation().encapsulate(cmd).format()
+	} else {
+		cmd.format()
+	}
+}
+
+private commands(commands, delay=1000) {
+	delayBetween(commands.collect{ command(it) }, delay)
+}
+
+def zwaveEvent(physicalgraph.zwave.commands.crc16encapv1.Crc16Encap cmd) {
+	def versions = [0x31: 5, 0x30: 1, 0x9C: 1, 0x70: 2, 0x85: 2]
+	def version = versions[cmd.commandClass as Integer]
+	def ccObj = version ? zwave.commandClass(cmd.commandClass, version) : zwave.commandClass(cmd.commandClass)
+	def encapsulatedCommand = ccObj?.command(cmd.command)?.parse(cmd.data)
+	if (encapsulatedCommand) {
+		zwaveEvent(encapsulatedCommand)
+	}
+}
 
 def configuration_model()
 {
