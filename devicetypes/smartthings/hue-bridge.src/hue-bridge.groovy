@@ -7,8 +7,15 @@
 metadata {
 	// Automatically generated. Make future change here.
 	definition (name: "Hue Bridge", namespace: "smartthings", author: "SmartThings") {
-		attribute "serialNumber", "string"
+		capability "Health Check"
+
 		attribute "networkAddress", "string"
+		// Used to indicate if bridge is reachable or not, i.e. is the bridge connected to the network
+		// Possible values "Online" or "Offline"
+		attribute "status", "string"
+		// Id is the number on the back of the hub, Hue uses last six digits of Mac address
+		// This is also used in the Hue application as ID
+		attribute "idNumber", "string"
 	}
 
 	simulator {
@@ -17,26 +24,28 @@ metadata {
 
 	tiles(scale: 2) {
      	multiAttributeTile(name:"rich-control"){
-			tileAttribute ("device.switch", key: "PRIMARY_CONTROL") {
-	            attributeState "default", label: "Hue Bridge", action: "", icon: "st.Lighting.light99-hue", backgroundColor: "#F3C200"
-			}    
-	        tileAttribute ("serialNumber", key: "SECONDARY_CONTROL") {
-	            attributeState "default", label:'SN: ${currentValue}'
-			}    
-        }    
-		standardTile("icon", "icon", width: 1, height: 1, canChangeIcon: false, inactiveLabel: true, canChangeBackground: false) {
-			state "default", label: "Hue Bridge", action: "", icon: "st.Lighting.light99-hue", backgroundColor: "#FFFFFF"
+			tileAttribute ("device.status", key: "PRIMARY_CONTROL") {
+				attributeState "Offline", label: '${currentValue}', action: "", icon: "st.Lighting.light99-hue", backgroundColor: "#ffffff"
+	            attributeState "Online", label: '${currentValue}', action: "", icon: "st.Lighting.light99-hue", backgroundColor: "#79b821"
+			}
+			}
+		valueTile("doNotRemove", "v", decoration: "flat", height: 2, width: 6, inactiveLabel: false) {
+			state "default", label:'If removed, Hue lights will not work properly'
 		}
-		valueTile("serialNumber", "device.serialNumber", decoration: "flat", height: 1, width: 2, inactiveLabel: false) {
-			state "default", label:'SN: ${currentValue}'
+		valueTile("idNumber", "device.idNumber", decoration: "flat", height: 2, width: 6, inactiveLabel: false) {
+			state "default", label:'ID: ${currentValue}'
 		}
-		valueTile("networkAddress", "device.networkAddress", decoration: "flat", height: 2, width: 4, inactiveLabel: false) {
-			state "default", label:'${currentValue}', height: 1, width: 2, inactiveLabel: false
+		valueTile("networkAddress", "device.networkAddress", decoration: "flat", height: 2, width: 6, inactiveLabel: false) {
+			state "default", label:'IP: ${currentValue}'
 		}
 
-		main (["icon"])
-		details(["rich-control", "networkAddress"])
+		main (["rich-control"])
+		details(["rich-control", "doNotRemove", "idNumber", "networkAddress"])
 	}
+}
+
+void installed() {
+	sendEvent(name: "DeviceWatch-Enroll", value: "{\"protocol\": \"LAN\", \"scheme\":\"untracked\", \"hubHardwareId\": \"${device.hub.hardwareID}\"}")
 }
 
 // parse events into attributes
@@ -59,7 +68,7 @@ def parse(description) {
 			log.trace "HUE BRIDGE, GENERATING EVENT: $map.name: $map.value"
 			results << createEvent(name: "${map.name}", value: "${map.value}")
 		} else {
-        	log.trace "Parsing description"
+			log.trace "Parsing description"
 			def msg = parseLanMessage(description)
 			if (msg.body) {
 				def contentType = msg.headers["Content-Type"]
@@ -67,17 +76,14 @@ def parse(description) {
 					def bulbs = new groovy.json.JsonSlurper().parseText(msg.body)
 					if (bulbs.state) {
 						log.info "Bridge response: $msg.body"
-					} else {
-						// Sending Bulbs List to parent"
-                        if (parent.state.inBulbDiscovery)
-                        	log.info parent.bulbListHandler(device.hub.id, msg.body)
 					}
-				}
-				else if (contentType?.contains("xml")) {
+				} else if (contentType?.contains("xml")) {
 					log.debug "HUE BRIDGE ALREADY PRESENT"
+					parent.hubVerification(device.hub.id, msg.body)
 				}
 			}
 		}
 	}
 	results
 }
+

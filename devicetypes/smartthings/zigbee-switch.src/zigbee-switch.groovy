@@ -20,6 +20,8 @@ metadata {
         capability "Switch"
 
         fingerprint profileId: "0104", inClusters: "0000, 0003, 0004, 0005, 0006"
+        fingerprint profileId: "0104", inClusters: "0000, 0003, 0006", outClusters: "0003, 0006, 0019, 0406", manufacturer: "Leviton", model: "ZSS-10", deviceJoinName: "Leviton Switch"
+        fingerprint profileId: "0104", inClusters: "0000, 0003, 0006", outClusters: "000A", manufacturer: "HAI", model: "65A21-1", deviceJoinName: "Leviton Wireless Load Control Module-30amp"
     }
 
     // simulator metadata
@@ -42,7 +44,7 @@ metadata {
                 attributeState "turningOff", label:'${name}', action:"switch.on", icon:"st.switches.light.off", backgroundColor:"#ffffff", nextState:"turningOn"
             }
         }
-        standardTile("refresh", "device.switch", inactiveLabel: false, decoration: "flat", width: 2, height: 2) {
+        standardTile("refresh", "device.refresh", inactiveLabel: false, decoration: "flat", width: 2, height: 2) {
             state "default", label:"", action:"refresh.refresh", icon:"st.secondary.refresh"
         }
         main "switch"
@@ -53,16 +55,9 @@ metadata {
 // Parse incoming device messages to generate events
 def parse(String description) {
     log.debug "description is $description"
-
-    def resultMap = zigbee.getKnownDescription(description)
-    if (resultMap) {
-        log.info resultMap
-        if (resultMap.type == "update") {
-            log.info "$device updates: ${resultMap.value}"
-        }
-        else {
-            sendEvent(name: resultMap.type, value: resultMap.value)
-        }
+    def event = zigbee.getEvent(description)
+    if (event) {
+        sendEvent(event)
     }
     else {
         log.warn "DID NOT PARSE MESSAGE for description : $description"
@@ -84,5 +79,5 @@ def refresh() {
 
 def configure() {
     log.debug "Configuring Reporting and Bindings."
-    zigbee.onOffConfig() + zigbee.onOffRefresh()
+    zigbee.onOffRefresh() + zigbee.onOffConfig()
 }

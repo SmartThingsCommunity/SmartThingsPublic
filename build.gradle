@@ -1,0 +1,133 @@
+import java.nio.charset.StandardCharsets
+import java.nio.file.Paths
+import com.smartthings.deployment.slack.FileUpload
+import com.smartthings.deployment.slack.Message
+
+apply plugin: 'groovy'
+apply plugin: 'smartthings-executable-deployment'
+apply plugin: 'smartthings-slack'
+
+buildscript {
+    dependencies {
+        classpath "com.smartthings.deployment:executable-deployment-scripts:1.0.8"
+    }
+    repositories {
+        mavenLocal()
+        jcenter()
+        maven {
+            credentials {
+                username smartThingsArtifactoryUserName
+                password smartThingsArtifactoryPassword
+            }
+            url "https://artifactory.smartthings.com/libs-release-local"
+        }
+    }
+}
+
+repositories {
+    mavenLocal()
+    jcenter()
+    maven {
+        credentials {
+            username smartThingsArtifactoryUserName
+            password smartThingsArtifactoryPassword
+        }
+        url "https://artifactory.smartthings.com/libs-release-local"
+    }
+}
+
+sourceSets {
+    devicetypes {
+        groovy {
+            srcDirs = ['devicetypes']
+        }
+    }
+    smartapps {
+        groovy {
+            srcDirs = ['smartapps']
+        }
+    }
+}
+
+dependencies {
+    devicetypesCompile 'org.codehaus.groovy:groovy-all:2.4.7'
+    devicetypesCompile 'smartthings:appengine-z-wave:0.1.2'
+    devicetypesCompile 'smartthings:appengine-zigbee:0.1.11'
+    smartappsCompile 'org.codehaus.groovy:groovy-all:2.4.7'
+    smartappsCompile 'smartthings:appengine-common:0.1.8'
+    smartappsCompile 'org.codehaus.groovy.modules.http-builder:http-builder:0.7.1'
+    smartappsCompile 'org.grails:grails-web:2.3.11'
+    smartappsCompile 'org.json:json:20140107'
+}
+
+slackSendMessage {
+    String branch = project.hasProperty('branch') ? project.property('branch') : 'unknown'
+    String token = project.hasProperty('slackToken') ? project.property('slackToken') : null
+    String webhookUrl = project.hasProperty('slackWebhookUrl') ? project.property('slackWebhookUrl') : null
+    String channel = project.hasProperty('slackChannel') ? project.property('slackChannel') : null
+    String drinks = 'https://dl.dropboxusercontent.com/s/m1z5mpd3c83lwev/minion_beer.jpeg?dl=0'
+    String wolverine = 'https://dl.dropboxusercontent.com/s/4lbjqzvm2v033u9/minion_wolverine.jpg?dl=0'
+    String beach = 'https://dl.dropboxusercontent.com/s/rqrfgxk53gfng69/minion_beach.png?dl=0'
+    String iconUrl
+    String color
+    String messageText
+    String username
+    switch (branch) {
+        case 'master':
+            username = 'Hickory'
+            iconUrl = wolverine
+            color = '#35D0F2'
+            messageText = 'Began deployment of _SmartThingsPublic[master]_ branch to the _Dev_ environments.'
+            break
+        case 'staging':
+            username = 'Dickory'
+            iconUrl = beach
+            color = '#FFDE20'
+            messageText = 'Began deployment of _SmartThingsPublic[staging]_ branch to the _Staging_ environments.'
+            break
+        case 'production':
+            username = 'Dock'
+            iconUrl = drinks
+            color = '#FF1D23'
+            messageText = 'Began deployment of _SmartThingsPublic[production]_ branch to the _Prod_ environments.'
+            break
+        default:
+            username = 'Hickory'
+            iconUrl = wolverine
+            color = '#35D0F2'
+            messageText = "Began deployment of an _SmartThingsPublic[${branch}]_ branch.  Have no idea what's going on."
+    }
+    List<String> archives = []
+    File rootDir = new File("${project.buildDir}/archives")
+    if (rootDir.exists()) {
+        // Create a list of archives which were deployed.
+        java.nio.file.Path rootPath = Paths.get(rootDir.absolutePath)
+        rootDir.eachFileRecurse { File file ->
+            if (file.name.endsWith('.tar.gz')) {
+                java.nio.file.Path archivePath = Paths.get(file.absolutePath)
+                archives.add(rootPath.relativize(archivePath).toString())
+            }
+        }
+    }
+    Date date = new Date()
+    String fileDate = date.format('yyyy-MM-dd_HH-mm-ss', TimeZone.getTimeZone('GMT'))
+
+    // Required Task Arguments.
+    file = new FileUpload(
+        data: archives.join('\n').getBytes(StandardCharsets.UTF_8),
+        filename: "deployment-notes-${fileDate}.txt",
+        title: 'Deployment Notes',
+        channels: channel,
+        token: token,
+        color: color
+    )
+    message = new Message(
+        webhookUrl: webhookUrl,
+        username: username,
+        asUser: true,
+        iconUrl: iconUrl,
+        channel: channel,
+        fallback: 'Deployment Notification',
+        text: messageText
+    )
+}
