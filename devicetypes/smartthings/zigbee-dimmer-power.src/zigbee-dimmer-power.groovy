@@ -21,6 +21,7 @@ metadata {
         capability "Sensor"
         capability "Switch"
         capability "Switch Level"
+        capability "Health Check"
 
         fingerprint profileId: "0104", inClusters: "0000, 0003, 0004, 0005, 0006, 0008, 0B04"
         fingerprint profileId: "0104", inClusters: "0000, 0003, 0004, 0005, 0006, 0008, 0702"
@@ -44,7 +45,7 @@ metadata {
                 attributeState "power", label:'${currentValue} W'
             }
         }
-        standardTile("refresh", "device.switch", inactiveLabel: false, decoration: "flat", width: 2, height: 2) {
+        standardTile("refresh", "device.refresh", inactiveLabel: false, decoration: "flat", width: 2, height: 2) {
             state "default", label:"", action:"refresh.refresh", icon:"st.secondary.refresh"
         }
         main "switch"
@@ -56,26 +57,34 @@ metadata {
 def parse(String description) {
     log.debug "description is $description"
 
-    def resultMap = zigbee.getKnownDescription(description)
-    if (resultMap) {
-        log.info resultMap
-        if (resultMap.type == "update") {
-            log.info "$device updates: ${resultMap.value}"
-        }
-        else if (resultMap.type == "power") {
-            def powerValue
+    def event = zigbee.getEvent(description)
+    if (event) {
+        log.info event
+        if (event.name == "power") {
             if (device.getDataValue("manufacturer") != "OSRAM") {       //OSRAM devices do not reliably update power
-                powerValue = (resultMap.value as Integer)/10            //TODO: The divisor value needs to be set as part of configuration
-                sendEvent(name: "power", value: powerValue)
+                event.value = (event.value as Integer) / 10             //TODO: The divisor value needs to be set as part of configuration
+                sendEvent(event)
             }
         }
         else {
-            sendEvent(name: resultMap.type, value: resultMap.value)
+            sendEvent(event)
         }
     }
     else {
-        log.warn "DID NOT PARSE MESSAGE for description : $description"
-        log.debug zigbee.parseDescriptionAsMap(description)
+        def cluster = zigbee.parse(description)
+        if (cluster && cluster.clusterId == 0x0006 && cluster.command == 0x07) {
+            if (cluster.data[0] == 0x00){
+                log.debug "ON/OFF REPORTING CONFIG RESPONSE: " + cluster
+                sendEvent(name: "checkInterval", value: 60 * 12, displayed: false, data: [protocol: "zigbee", hubHardwareId: device.hub.hardwareID])
+            }
+            else {
+                log.warn "ON/OFF REPORTING CONFIG FAILED- error code:${cluster.data[0]}"
+            }
+        }
+        else {
+            log.warn "DID NOT PARSE MESSAGE for description : $description"
+            log.debug zigbee.parseDescriptionAsMap(description)
+        }
     }
 }
 
@@ -91,11 +100,22 @@ def setLevel(value) {
     zigbee.setLevel(value)
 }
 
+/**
+ * PING is used by Device-Watch in attempt to reach the Device
+ * */
+def ping() {
+    return zigbee.onOffRefresh()
+}
+
 def refresh() {
-    zigbee.onOffRefresh() + zigbee.levelRefresh() + zigbee.simpleMeteringPowerRefresh() + zigbee.electricMeasurementPowerRefresh() + zigbee.onOffConfig() + zigbee.levelConfig() + zigbee.simpleMeteringPowerConfig() + zigbee.electricMeasurementPowerConfig()
+    zigbee.onOffRefresh() + zigbee.levelRefresh() + zigbee.simpleMeteringPowerRefresh() + zigbee.electricMeasurementPowerRefresh() + zigbee.onOffConfig(0, 300) + zigbee.levelConfig() + zigbee.simpleMeteringPowerConfig() + zigbee.electricMeasurementPowerConfig()
 }
 
 def configure() {
     log.debug "Configuring Reporting and Bindings."
-    zigbee.onOffConfig() + zigbee.levelConfig() + zigbee.simpleMeteringPowerConfig() + zigbee.electricMeasurementPowerConfig() + zigbee.onOffRefresh() + zigbee.levelRefresh() + zigbee.simpleMeteringPowerRefresh() + zigbee.electricMeasurementPowerRefresh()
+
+    // Device-Watch allows 3 check-in misses from device (plus 1 min lag time)
+    // enrolls with default periodic reporting until newer 5 min interval is confirmed
+    sendEvent(name: "checkInterval", value: 3 * 60 * 60 + 1 * 60, displayed: false, data: [protocol: "zigbee", hubHardwareId: device.hub.hardwareID])
+    refresh()
 }

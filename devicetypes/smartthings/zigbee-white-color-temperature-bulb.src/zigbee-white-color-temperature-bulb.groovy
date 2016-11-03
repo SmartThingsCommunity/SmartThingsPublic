@@ -22,6 +22,7 @@ metadata {
         capability "Actuator"
         capability "Color Temperature"
         capability "Configuration"
+        capability "Health Check"
         capability "Refresh"
         capability "Switch"
         capability "Switch Level"
@@ -35,6 +36,7 @@ metadata {
         fingerprint profileId: "0104", inClusters: "0000, 0003, 0004, 0005, 0006, 0008, 0300, 0B04, FC0F", outClusters: "0019", manufacturer: "OSRAM", model: "LIGHTIFY RT Tunable White", deviceJoinName: "OSRAM LIGHTIFY LED Recessed Kit RT 5/6 Tunable White"
         fingerprint profileId: "0104", inClusters: "0000, 0003, 0004, 0005, 0006, 0008, 0300, 0B04, FC0F", outClusters: "0019", manufacturer: "OSRAM", model: "Classic A60 TW", deviceJoinName: "OSRAM LIGHTIFY LED Tunable White 60W"
         fingerprint profileId: "0104", inClusters: "0000, 0003, 0004, 0005, 0006, 0008, 0300, 0B04, FC0F", outClusters: "0019", manufacturer: "OSRAM", model: "LIGHTIFY A19 Tunable White", deviceJoinName: "OSRAM LIGHTIFY LED Tunable White 60W"
+        fingerprint profileId: "0104", inClusters: "0000, 0003, 0004, 0005, 0006, 0008, 0300, 0B04, FC0F", outClusters: "0019", manufacturer: "OSRAM", model: "Classic B40 TW - LIGHTIFY", deviceJoinName: "OSRAM LIGHTIFY Classic B40 Tunable White"
     }
 
     // UI tile definitions
@@ -49,44 +51,53 @@ metadata {
             tileAttribute ("device.level", key: "SLIDER_CONTROL") {
                 attributeState "level", action:"switch level.setLevel"
             }
-            tileAttribute ("colorName", key: "SECONDARY_CONTROL") {
-                attributeState "colorName", label:'${currentValue}'
-            }
         }
 
-        standardTile("refresh", "device.switch", inactiveLabel: false, decoration: "flat", width: 2, height: 2) {
+        standardTile("refresh", "device.refresh", inactiveLabel: false, decoration: "flat", width: 2, height: 2) {
             state "default", label:"", action:"refresh.refresh", icon:"st.secondary.refresh"
         }
 
         controlTile("colorTempSliderControl", "device.colorTemperature", "slider", width: 4, height: 2, inactiveLabel: false, range:"(2700..6500)") {
             state "colorTemperature", action:"color temperature.setColorTemperature"
         }
-        valueTile("colorTemp", "device.colorTemperature", inactiveLabel: false, decoration: "flat", width: 2, height: 2) {
-            state "colorTemperature", label: '${currentValue} K'
+        valueTile("colorName", "device.colorName", inactiveLabel: false, decoration: "flat", width: 2, height: 2) {
+            state "colorName", label: '${currentValue}'
         }
 
         main(["switch"])
-        details(["switch", "colorTempSliderControl", "colorTemp", "refresh"])
+        details(["switch", "colorTempSliderControl", "colorName", "refresh"])
     }
 }
 
 // Parse incoming device messages to generate events
 def parse(String description) {
     log.debug "description is $description"
-
-    def finalResult = zigbee.getKnownDescription(description)
-    if (finalResult) {
-        log.info finalResult
-        if (finalResult.type == "update") {
-            log.info "$device updates: ${finalResult.value}"
-        }
+    def event = zigbee.getEvent(description)
+    if (event) {
+        if (event.name=="level" && event.value==0) {}
         else {
-            sendEvent(name: finalResult.type, value: finalResult.value)
+            if (event.name=="colorTemperature") {
+                setGenericName(event.value)
+            }
+            sendEvent(event)
         }
     }
     else {
-        log.warn "DID NOT PARSE MESSAGE for description : $description"
-        log.debug zigbee.parseDescriptionAsMap(description)
+        def cluster = zigbee.parse(description)
+
+        if (cluster && cluster.clusterId == 0x0006 && cluster.command == 0x07) {
+            if (cluster.data[0] == 0x00) {
+                log.debug "ON/OFF REPORTING CONFIG RESPONSE: " + cluster
+                sendEvent(name: "checkInterval", value: 60 * 12, displayed: false, data: [protocol: "zigbee", hubHardwareId: device.hub.hardwareID])
+            }
+            else {
+                log.warn "ON/OFF REPORTING CONFIG FAILED- error code:${cluster.data[0]}"
+            }
+        }
+        else {
+            log.warn "DID NOT PARSE MESSAGE for description : $description"
+            log.debug "${cluster}"
+        }
     }
 }
 
@@ -102,13 +113,25 @@ def setLevel(value) {
     zigbee.setLevel(value)
 }
 
+/**
+ * PING is used by Device-Watch in attempt to reach the Device
+ * */
+def ping() {
+    return zigbee.onOffRefresh()
+}
+
 def refresh() {
-    zigbee.onOffRefresh() + zigbee.levelRefresh() + zigbee.colorTemperatureRefresh() + zigbee.onOffConfig() + zigbee.levelConfig() + zigbee.colorTemperatureConfig()
+    zigbee.onOffRefresh() + zigbee.levelRefresh() + zigbee.colorTemperatureRefresh() + zigbee.onOffConfig(0, 300) + zigbee.levelConfig() + zigbee.colorTemperatureConfig()
 }
 
 def configure() {
     log.debug "Configuring Reporting and Bindings."
-    zigbee.onOffConfig() + zigbee.levelConfig() + zigbee.colorTemperatureConfig() + zigbee.onOffRefresh() + zigbee.levelRefresh() + zigbee.colorTemperatureRefresh()
+    // Device-Watch allows 3 check-in misses from device (plus 1 min lag time)
+    // enrolls with default periodic reporting until newer 5 min interval is confirmed
+    sendEvent(name: "checkInterval", value: 3 * 10 * 60 + 1 * 60, displayed: false, data: [protocol: "zigbee", hubHardwareId: device.hub.hardwareID])
+
+    // OnOff minReportTime 0 seconds, maxReportTime 5 min. Reporting interval if no activity
+    refresh()
 }
 
 def setColorTemperature(value) {

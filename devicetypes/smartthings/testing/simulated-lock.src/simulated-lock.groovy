@@ -15,6 +15,8 @@ metadata {
 	// Automatically generated. Make future change here.
 	definition (name: "Simulated Lock", namespace: "smartthings/testing", author: "bob") {
 		capability "Lock"
+		capability "Sensor"
+		capability "Actuator"
 	}
 
 	// Simulated lock

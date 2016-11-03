@@ -133,7 +133,7 @@ def refresh() {
 }
 
 def configure() {
-	onOffConfig() + levelConfig() + powerConfig() + refresh()
+	refresh() + onOffConfig() + levelConfig() + powerConfig()
 }
 
 

@@ -20,11 +20,13 @@ metadata {
         capability "Power Meter"
         capability "Sensor"
         capability "Switch"
+        capability "Health Check"
 
         fingerprint profileId: "0104", inClusters: "0000, 0003, 0004, 0005, 0006, 0B04"
         fingerprint profileId: "0104", inClusters: "0000, 0003, 0004, 0005, 0006, 0702"
         fingerprint profileId: "0104", inClusters: "0000, 0003, 0004, 0005, 0006, 0702, 0B05", outClusters: "0003, 000A, 0019", manufacturer: "Jasco Products", model: "45853", deviceJoinName: "GE ZigBee Plug-In Switch"
         fingerprint profileId: "0104", inClusters: "0000, 0003, 0004, 0005, 0006, 0702, 0B05", outClusters: "000A, 0019", manufacturer: "Jasco Products", model: "45856", deviceJoinName: "GE ZigBee In-Wall Switch"
+        fingerprint profileId: "0104", inClusters: "0000, 0003, 0004, 0005, 0006, 000F, 0B04", outClusters: "0019", manufacturer: "SmartThings", model: "outletv4", deviceJoinName: "Outlet"
     }
 
     tiles(scale: 2) {
@@ -39,7 +41,7 @@ metadata {
                 attributeState "power", label:'${currentValue} W'
             }
         }
-        standardTile("refresh", "device.switch", inactiveLabel: false, decoration: "flat", width: 2, height: 2) {
+        standardTile("refresh", "device.refresh", inactiveLabel: false, decoration: "flat", width: 2, height: 2) {
             state "default", label:"", action:"refresh.refresh", icon:"st.secondary.refresh"
         }
         main "switch"
@@ -50,22 +52,15 @@ metadata {
 // Parse incoming device messages to generate events
 def parse(String description) {
     log.debug "description is $description"
-
-    def resultMap = zigbee.getKnownDescription(description)
-    if (resultMap) {
-        log.info resultMap
-        if (resultMap.type == "update") {
-            log.info "$device updates: ${resultMap.value}"
-        }
-        else if (resultMap.type == "power") {
+    def event = zigbee.getEvent(description)
+    if (event) {
+        if (event.name == "power") {
             def powerValue
-            if (device.getDataValue("manufacturer") != "OSRAM") {       //OSRAM devices do not reliably update power
-                powerValue = (resultMap.value as Integer)/10            //TODO: The divisor value needs to be set as part of configuration
-                sendEvent(name: "power", value: powerValue)
-            }
+            powerValue = (event.value as Integer)/10            //TODO: The divisor value needs to be set as part of configuration
+            sendEvent(name: "power", value: powerValue)
         }
         else {
-            sendEvent(name: resultMap.type, value: resultMap.value)
+            sendEvent(event)
         }
     }
     else {
@@ -83,10 +78,26 @@ def on() {
 }
 
 def refresh() {
-    zigbee.onOffRefresh() + zigbee.simpleMeteringPowerRefresh() + zigbee.electricMeasurementPowerRefresh() + zigbee.onOffConfig() + zigbee.simpleMeteringPowerConfig() + zigbee.electricMeasurementPowerConfig()
+    Integer reportIntervalMinutes = 5
+    zigbee.onOffRefresh() + zigbee.simpleMeteringPowerRefresh() + zigbee.electricMeasurementPowerRefresh() + zigbee.onOffConfig(0,reportIntervalMinutes * 60) + zigbee.simpleMeteringPowerConfig() + zigbee.electricMeasurementPowerConfig()
 }
 
 def configure() {
-    log.debug "Configuring Reporting and Bindings."
-    zigbee.onOffConfig() + zigbee.simpleMeteringPowerConfig() + zigbee.electricMeasurementPowerConfig() + zigbee.onOffRefresh() + zigbee.simpleMeteringPowerRefresh() + zigbee.electricMeasurementPowerRefresh()
+    log.debug "in configure()"
+    configureHealthCheck()
+}
+
+def configureHealthCheck() {
+    Integer hcIntervalMinutes = 12
+    refresh()
+    sendEvent(name: "checkInterval", value: hcIntervalMinutes * 60, displayed: false, data: [protocol: "zigbee", hubHardwareId: device.hub.hardwareID])
+}
+
+def updated() {
+    log.debug "in updated()"
+    configureHealthCheck()
+}
+
+def ping() {
+    return zigbee.onOffRefresh()
 }

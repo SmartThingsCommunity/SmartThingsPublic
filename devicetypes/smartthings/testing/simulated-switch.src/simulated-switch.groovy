@@ -16,6 +16,8 @@ metadata {
     definition (name: "Simulated Switch", namespace: "smartthings/testing", author: "bob") {
 		capability "Switch"
         capability "Relay Switch"
+		capability "Sensor"
+		capability "Actuator"
 
 		command "onPhysical"
 		command "offPhysical"
