@@ -84,18 +84,20 @@ def refresh() {
 
 def configure() {
     log.debug "in configure()"
-    configureHealthCheck()
+    return configureHealthCheck()
 }
 
 def configureHealthCheck() {
     Integer hcIntervalMinutes = 12
-    refresh()
     sendEvent(name: "checkInterval", value: hcIntervalMinutes * 60, displayed: false, data: [protocol: "zigbee", hubHardwareId: device.hub.hardwareID])
+    return refresh()
 }
 
 def updated() {
     log.debug "in updated()"
-    configureHealthCheck()
+    // updated() doesn't have it's return value processed as hub commands, so we have to send them explicitly
+    def cmds = configureHealthCheck()
+    cmds.each{ sendHubCommand(new physicalgraph.device.HubAction(it)) }
 }
 
 def ping() {
