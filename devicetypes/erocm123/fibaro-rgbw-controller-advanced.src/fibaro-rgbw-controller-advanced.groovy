@@ -29,7 +29,7 @@ metadata {
 		command "reset"
 		command "refresh"
         
-        (1..6).each { n ->
+        (1..5).each { n ->
 			attribute "switch$n", "enum", ["on", "off"]
 			command "on$n"
 			command "off$n"
@@ -100,28 +100,24 @@ metadata {
 		    state "colorTemperature", action:"setColorTemperature"
 	    }
 		standardTile("switch1", "switch1", canChangeIcon: true, width: 2, height: 2) {
-            state "off", label: "fireplace", action: "on1", icon: "st.switches.switch.off", backgroundColor: "#ffffff"
-			state "on", label: "fireplace", action: "off1", icon: "st.switches.switch.on", backgroundColor: "#79b821"
+            state "off", label: "fireplace", action: "on1", icon: "st.switches.switch.off", backgroundColor: "#ffffff", nextState:"on"
+			state "on", label: "fireplace", action: "off1", icon: "st.switches.switch.on", backgroundColor: "#79b821", nextState:"off"
 		}
         standardTile("switch2", "switch2", canChangeIcon: true, width: 2, height: 2) {
-            state "off", label: "storm", action: "on2", icon: "st.switches.switch.off", backgroundColor: "#ffffff"
-			state "on", label: "storm", action: "off2", icon: "st.switches.switch.on", backgroundColor: "#79b821"
+            state "off", label: "storm", action: "on2", icon: "st.switches.switch.off", backgroundColor: "#ffffff", nextState:"on"
+			state "on", label: "storm", action: "off2", icon: "st.switches.switch.on", backgroundColor: "#79b821", nextState:"off"
 		}
         standardTile("switch3", "switch3", canChangeIcon: true, width: 2, height: 2) {
-            state "off", label: "deepfade", action: "on3", icon: "st.switches.switch.off", backgroundColor: "#ffffff"
-			state "on", label: "deepfade", action: "off3", icon: "st.switches.switch.on", backgroundColor: "#79b821"
+            state "off", label: "deepfade", action: "on3", icon: "st.switches.switch.off", backgroundColor: "#ffffff", nextState:"on"
+			state "on", label: "deepfade", action: "off3", icon: "st.switches.switch.on", backgroundColor: "#79b821", nextState:"off"
 		}
         standardTile("switch4", "switch4", canChangeIcon: true, width: 2, height: 2) {
-            state "off", label: "litefade", action: "on4", icon: "st.switches.switch.off", backgroundColor: "#ffffff"
-			state "on", label: "litefade", action: "off4", icon: "st.switches.switch.on", backgroundColor: "#79b821"
+            state "off", label: "litefade", action: "on4", icon: "st.switches.switch.off", backgroundColor: "#ffffff", nextState:"on"
+			state "on", label: "litefade", action: "off4", icon: "st.switches.switch.on", backgroundColor: "#79b821", nextState:"off"
 		}
         standardTile("switch5", "switch5", canChangeIcon: true, width: 2, height: 2) {
-			state "off", label: "police", action: "on5", icon: "st.switches.switch.off", backgroundColor: "#ffffff"
-            state "on", label: "police", action: "off5", icon: "st.switches.switch.on", backgroundColor: "#79b821"
-		}
-        standardTile("switch6", "switch6", canChangeIcon: true, width: 2, height: 2) {
-            state "off", label: "custom", action: "on6", icon: "st.switches.switch.off", backgroundColor: "#ffffff", nextState:"on"
-			state "on", label: "custom", action: "off6", icon: "st.switches.switch.on", backgroundColor: "#79b821", nextState:"off"
+			state "off", label: "police", action: "on5", icon: "st.switches.switch.off", backgroundColor: "#ffffff", nextState:"on"
+            state "on", label: "police", action: "off5", icon: "st.switches.switch.on", backgroundColor: "#79b821", nextState:"off"
 		}
     }
 
@@ -409,10 +405,9 @@ def on4() {
 	], 1500)
 } 
  
-def on6() {
-    log.debug "on6()"
-    toggleTiles("switch6")
-    10
+def on5() {
+    log.debug "on5()"
+    toggleTiles("switch5")
 	commands([
         zwave.configurationV1.configurationSet(scaledConfigurationValue: 10, parameterNumber: 72, size: 1),
 	], 1500)
