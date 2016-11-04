@@ -65,6 +65,7 @@ metadata {
         input("transition", "enum", title:"Default Transition", required:false, displayDuringSetup:true, options:
         [["true":"fade"],["false":"flash"]])
         input("channels", "boolean", title:"Mutually Exclusive RGB & White.\nOnly allow one or the other", required:false, displayDuringSetup:true)
+        input("powerOnState", "enum", title:"Boot Up State", description: "State when power is applied", required: false, displayDuringSetup: false, options: [[0:"Off"],[1:"On"]/*,[2:"Previous State"]*/])
 
 		input("color", "enum", title: "Default Color", required: false, multiple:false, value: "Previous", options: [
                     ["Previous":"Previous"],
@@ -195,7 +196,7 @@ def configure() {
     if (ip != null) state.dni = setDeviceNetworkId(ip, "80")
     state.hubIP = device.hub.getDataValue("localIP")
     state.hubPort = device.hub.getDataValue("localSrvPortTCP")
-    responses << configureInstant(state.hubIP, state.hubPort)
+    responses << configureInstant(state.hubIP, state.hubPort, powerOnState)
     responses << configureDefault()
     return response(responses)
 }
@@ -222,8 +223,8 @@ def configureDefault(){
     }
 }
 
-def configureInstant(ip, port){
-    return postAction("/config?haip=${ip}&haport=${port}")
+def configureInstant(ip, port, pos){
+    return postAction("/config?haip=${ip}&haport=${port}&pos=${pos}")
 }
 
 def parse(description) {
