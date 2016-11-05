@@ -136,17 +136,31 @@ def zwaveEvent(physicalgraph.zwave.commands.switchbinaryv1.SwitchBinaryReport cm
     response(secureSequence(result, 1000)) // returns the result of reponse()
 }
 
-def zwaveEvent(physicalgraph.zwave.commands.meterv3.MeterReport cmd) {
-    log.debug "MeterReport $cmd"
+def zwaveEvent(physicalgraph.zwave.commands.meterv3.MeterReport cmd, ep=null) {
+    log.debug "MeterReport $cmd Endpoint $ep"
     def result
-    if (cmd.scale == 0) {
-        result = createEvent(name: "energy", value: cmd.scaledMeterValue, unit: "kWh")
-    } else if (cmd.scale == 1) {
-        result = createEvent(name: "energy", value: cmd.scaledMeterValue, unit: "kVAh")
+    def eName
+    def pName
+    def cmds = []
+    if (ep) {
+       eName = "energy${ep}"
+       pName = "power${ep}"
     } else {
-        result = createEvent(name: "power", value: cmd.scaledMeterValue, unit: "W")
+       eName = "energy"
+       pName = "power"
+       (1..2).each { endpoint ->
+			cmds << encap(zwave.meterV2.meterGet(scale: 0), endpoint)
+            cmds << encap(zwave.meterV2.meterGet(scale: 2), endpoint)
+	   }
     }
-    return result
+    if (cmd.scale == 0) {
+        result = createEvent(name: eName, value: cmd.scaledMeterValue, unit: "kWh")
+    } else if (cmd.scale == 1) {
+        result = createEvent(name: eName, value: cmd.scaledMeterValue, unit: "kVAh")
+    } else {
+        result = createEvent(name: pName, value: cmd.scaledMeterValue, unit: "W")
+    }
+    cmds ? [result, response(delayBetween(cmds, 1000))] : result
 }
 
 def zwaveEvent(physicalgraph.zwave.commands.multichannelv3.MultiChannelCapabilityReport cmd) 
@@ -171,6 +185,10 @@ def zwaveEvent(physicalgraph.zwave.commands.multichannelv3.MultiChannelCapabilit
 def zwaveEvent(physicalgraph.zwave.commands.multichannelv3.MultiChannelCmdEncap cmd) {
    log.debug "MultiChannelCmdEncap $cmd"
    def map = [ name: "switch$cmd.sourceEndPoint" ]
+   def encapsulatedCommand = cmd.encapsulatedCommand([0x32: 3])
+   if (encapsulatedCommand && cmd.commandClass == 50) {
+      zwaveEvent(encapsulatedCommand, cmd.sourceEndPoint)
+   } else {
    if(cmd.parameter == [0] || cmd.parameter == [255]){
    switch(cmd.commandClass) {
       case 32:
@@ -206,6 +224,7 @@ def zwaveEvent(physicalgraph.zwave.commands.multichannelv3.MultiChannelCmdEncap 
          }
     }
     events
+    }
     }
 }
 
@@ -261,53 +280,17 @@ def configure() {
     if (cmds != []) secureSequence(cmds)
 }
 
-def zwaveEvent(physicalgraph.zwave.commands.sceneactivationv1.SceneActivationSet cmd) {
-    logging("SceneActivationSet: $cmd")
-    logging("sceneId: $cmd.sceneId")
-    logging("dimmingDuration: $cmd.dimmingDuration")
+def zwaveEvent(physicalgraph.zwave.commands.centralscenev1.CentralSceneNotification cmd) {
+    logging("CentralSceneNotification: $cmd")
+    logging("sceneNumber: $cmd.sceneNumber")
+    logging("sequenceNumber: $cmd.sequenceNumber")
     logging("Configuration for preference \"Switch Type\" is set to ${settings."20"}")
     
-    if (settings."20" == "2") {
-        logging("Switch configured as Roller blinds")
-        switch (cmd.sceneId) {
-            // Roller blinds S1
-            case 10: // Turn On (1x click)
-                buttonEvent(1, "pushed")
-            break
-            case 13: // Release
-                buttonEvent(1, "held")
-            break
-            case 14: // 2x click
-                buttonEvent(2, "pushed")
-            break
-            case 17: // Brightening
-                buttonEvent(2, "held")
-            break
-            // Roller blinds S2
-            case 11: // Turn Off
-                buttonEvent(3, "pushed")
-            break
-            case 13: // Release
-                buttonEvent(3, "held")
-            break
-            case 14: // 2x click
-                buttonEvent(4, "pushed")
-            break
-            case 15: // 3x click
-                buttonEvent(5, "pushed")
-            break
-            case 18: // Dimming
-                buttonEvent(4, "held")
-            break
-            default:
-                logging("Unhandled SceneActivationSet: ${cmd}")
-            break
-        }
-    } else if (settings."20" == "1") {
+    if (settings."20" == "1") {
         logging("Switch configured as Toggle")
-        switch (cmd.sceneId) {
+        switch (cmd.sequenceNumber) {
             // Toggle S1
-            case 10: // Off to On
+            case 10: // Single Press
                 buttonEvent(1, "pushed")
             break
             case 11: // On to Off
@@ -332,39 +315,28 @@ def zwaveEvent(physicalgraph.zwave.commands.sceneactivationv1.SceneActivationSet
             default:
                 logging("Unhandled SceneActivationSet: ${cmd}")
             break
-        
         }
     } else {
         if (settings."20" == "0") logging("Switch configured as Momentary") else logging("Switch type not configured") 
         switch (cmd.sceneId) {
             // Momentary S1
-            case 16: // 1x click
+            case 14: // S1 1x click
                 buttonEvent(1, "pushed")
             break
-            case 14: // 2x click
-                buttonEvent(2, "pushed")
-            break
-            case 12: // held
+            case 15: // S2 1x click
                 buttonEvent(1, "held")
             break
-            case 13: // release
+            case 16: // S1 2x click
+                buttonEvent(2, "pushed")
+            break
+            case 17: // S2 2x click
                 buttonEvent(2, "held")
             break
-            // Momentary S2
-            case 26: // 1x click
+            case 18: // S1 3x click
                 buttonEvent(3, "pushed")
             break
-            case 24: // 2x click
-                buttonEvent(4, "pushed")
-            break
-            case 25: // 3x click
-                buttonEvent(5, "pushed")
-            break
-            case 22: // held
+            case 19: // S2 3x click
                 buttonEvent(3, "held")
-            break
-            case 23: // release
-                buttonEvent(4, "held")
             break
             default:
                 logging("Unhandled SceneActivationSet: ${cmd}")
