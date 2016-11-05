@@ -89,7 +89,10 @@ tiles(scale: 2){
 	}
 
     main(["switch","switch1", "switch2"])
-    details(["switch","switch1","switch2","refresh","reset","configure"])
+    details(["switch",
+             "switch1","energy1","power1",
+             "switch2","energy2","power2",
+             "refresh","reset","configure"])
 }
     preferences {
         
