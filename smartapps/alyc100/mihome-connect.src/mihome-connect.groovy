@@ -13,6 +13,7 @@
  *  for the specific language governing permissions and limitations under the License.
  *
  *	VERSION HISTORY
+ *	06.11.2016: 2.0 BETA Release 2 - Fix issue identifying MiHome adapters.
  *	06.11.2016:	2.0 BETA Release 1 - Enable MiHome Connect to manage other MiHome devices. Update framework to match other alyc100 connect apps.
  *
  *	31.01.2016: 1.0.4 - Move external icon references into Github
@@ -273,7 +274,7 @@ def updateDevices() {
 				}
      		}
         }
-        else if (device.device_type == 'ecalm') {
+        else if (device.device_type == 'control') {
         	log.debug "Identified: device ${device.id}: ${device.device_type}: ${device.label}"
             selectors.add("${device.id}")
             def value = "${device.label} Adapter"
@@ -479,7 +480,7 @@ def logErrors(options = [errorReturn: null, logObject: log], Closure c) {
 }
 
 private def textVersion() {
-    def text = "MiHome (Connect)\nVersion: 2.0 BETA Release 1\nDate: 07112016(1200)"
+    def text = "MiHome (Connect)\nVersion: 2.0 BETA Release 2\nDate: 07112016(2000)"
 }
 
 private def textCopyright() {
