@@ -1,5 +1,5 @@
 /**
- *  MiHome Light Switch
+ *  MiHome Adapter
  *
  *  Copyright 2016 Alex Lee Yuk Cheung
  *
