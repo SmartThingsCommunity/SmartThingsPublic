@@ -386,10 +386,10 @@ def refreshDevices() {
     }
 	getChildDevices().each { device ->
     	if (atomicState.refreshCounter == 5) {
-        	log.info("Refreshing all devices...")
+        	log.info("Refreshing device ${device.name} ...")
 			device.refresh()
         } else if (device.name.contains("Adapter")) {
-        	log.info("Refreshing adapter devices...")
+        	log.info("Refreshing device ${device.name}...")
 			device.refresh()
         }
 	}
