@@ -432,6 +432,13 @@ def uninstalled(){
     state.username = null
 }
 
+private setupDeviceWatch() {
+	def hub = location.hubs[0]
+	// Make sure that all child devices are enrolled in device watch
+	getChildDevices().each {
+		it.sendEvent(name: "DeviceWatch-Enroll", value: "{\"protocol\": \"LAN\", \"scheme\":\"untracked\", \"hubHardwareId\": \"${hub?.hub?.hardwareID}\"}")
+	}
+}
 
 private upgradeDeviceType(device, newHueType) {
 	def deviceType = getDeviceHandler(newHueType)
