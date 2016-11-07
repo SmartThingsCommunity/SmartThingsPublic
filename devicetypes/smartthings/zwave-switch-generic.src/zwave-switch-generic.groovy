@@ -21,8 +21,8 @@ metadata {
 		capability "Sensor"
 
 		fingerprint inClusters: "0x25", deviceJoinName: "Z-Wave Switch"
-		fingerprint mfr:"001D", prod:"1A02", deviceJoinName: "Z-Wave Switch"
-		fingerprint mfr:"0063", prod:"4F50", deviceJoinName: "Z-Wave Switch"
+		fingerprint mfr:"001D", prod:"1A02", model:"0334", deviceJoinName: "Leviton Appliance Module"
+		fingerprint mfr:"0063", prod:"4F50", model:"3031", deviceJoinName: "GE Plug-in Outdoor Switch"
 	}
 
 	// simulator metadata

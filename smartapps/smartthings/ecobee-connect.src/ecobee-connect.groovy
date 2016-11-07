@@ -842,6 +842,7 @@ private void storeThermostatData(thermostats) {
             minCoolingSetpoint: (stat.settings.coolRangeLow / 10),
             maxCoolingSetpoint: (stat.settings.coolRangeHigh / 10),
             autoMode: stat.settings.autoHeatCoolFeatureEnabled,
+            deviceAlive: stat.runtime.connected == true ? "true" : "false",
             auxHeatMode: (stat.settings.hasHeatPump) && (stat.settings.hasForcedAir || stat.settings.hasElectric || stat.settings.hasBoiler),
             temperature: (stat.runtime.actualTemperature / 10),
             heatingSetpoint: stat.runtime.desiredHeat / 10,
