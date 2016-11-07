@@ -1,7 +1,7 @@
 /**
  *  MiHome eTRV
  *
- *  Copyright 2015 Alex Lee Yuk Cheung
+ *  Copyright 2016 Alex Lee Yuk Cheung
  *
  *  Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except
  *  in compliance with the License. You may obtain a copy of the License at:
@@ -14,13 +14,16 @@
  *
  *
  *	VERSION HISTORY
- *  09.01.2016
- *	v1.0 - Initial Release
- *	v1.1 - Added BETA Boost Capability
+ *	07.11.2016: 2.0 BETA Release 1 - Version number update to match Smartapp.
  *
- *	10.01.2016
- *	v1.1.1 - Fixed stopBoost always returning to 'on' mode.
- *	v1.1.2 - Bug fix to Boost mode not executing.
+ *	10.01.2016: 1.1.2 - Bug fix to Boost mode not executing.
+ *
+ *	10.01.2016: 1.1.1 - Fixed stopBoost always returning to 'on' mode.
+ *
+ *	09.01.2016: 1.1 - Added BETA Boost Capability
+ *
+ *  09.01.2016: 1.0 - Initial Release
+ *
  */
  
 metadata {
