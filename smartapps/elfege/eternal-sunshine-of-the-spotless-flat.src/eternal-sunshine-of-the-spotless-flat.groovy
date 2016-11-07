@@ -17,7 +17,7 @@ definition(
     name: "Eternal Sunshine",
     namespace: "elfege",
     author: "Elfege",
-    description: "Adjusts dimmer lever with light sensor (requires modified Lux Sensor Device Handler, contact me for details elfege@elfege.com)",
+    description: "Adjusts dimmer lever with light sensor. This app stops running whenever lights are turned off and resumes when turned on",
     category: "Convenience",
     iconUrl: "http://elfege.com/penrose.jpg",
     iconX2Url: "http://elfege.com/penrose.jpg",
@@ -43,7 +43,7 @@ def pageSetup() {
 
         section("Setup Menu") {
             href "settings", title: "Main Settings", description: ""
-            href "Options", title: "Other Options", description: ""
+            href "Options", title: "More Options", description: ""
 
         }
     }
@@ -54,9 +54,7 @@ def settings() {
     def pageProperties = [
         name:       "settings",
         title:      "Settings",
-       
-        install:    true,
-        uninstall:  true
+        nextPage:   "pageSetup"
     ]
 
     return dynamicPage(pageProperties) {
@@ -77,9 +75,7 @@ def Options() {
     def pageProperties = [
         name:       "Options",
         title:      "Options",
-      
-        install:    true,
-        uninstall:  true
+        nextPage:   "pageSetup"
     ]
 
     return dynamicPage(pageProperties){
@@ -124,8 +120,8 @@ def updated() {
 def initialize() {
 
     state.messageSent = false
-    state.DimSetByUser = false
-    state.LevelSetByApp = true
+    state.LevelSetByApp = 1
+    state.dimmer = 1
 
     subscribe(lightSensor, "illuminance", illuminanceHandler)
     subscribe(dimmer, "switch.on", SwitchHandler)
@@ -137,19 +133,28 @@ def initialize() {
 def switchSetLevelHandler(evt) {
 
     def LevelSet = evt.value as int 
-        def dim = state.dim as int
+        def dim = state.dim as int         
+
 
             log.debug "dimmer was set to $evt.value   ----------------------------"
         log.debug "dim value is : $dim   --------------------------"
+
+    if(evt.value == 0){
+        state.dimmer = 0
+    }
 
 }
 
 def SwitchHandler(evt){ 
     log.debug "dimmer.currentSwitch is $dimmer.currentSwitch"
+
     if(evt.value == "on"){
-        state.dimmer = "on"
-        state.DimSetByUser = false
-        state.LevelSetByApp = true
+        state.dimmer = 1   
+    }
+    else {
+        dimmer.setLevel(0) 
+        state.dimmer = 0
+        state.LevelSetByApp = 0
     }
 }
 
@@ -158,16 +163,19 @@ def illuminanceHandler(evt){
     state.luxvalue = evt.integerValue
 
     if(OnlyIfNotOff){
-        if(state.dimmer == "off"){
+        if(state.dimmer == 0){
 
             log.debug "doing nothing because switch is off"
         }
         else {
             DIM()
+            log.debug "DIM because state.dimmer = 1"
+
         }
     }
     else {
         DIM()
+        log.debug "DIM because no OnlyIfNotOff"
     }
 }
 
@@ -242,7 +250,7 @@ private DIM(){
     int dim = state.dim
     dimmer.setLevel(dim) 
     log.debug "light set to $dim %"
-    state.LevelSetByApp = true
+    state.LevelSetByApp = 1
 
 }
 
