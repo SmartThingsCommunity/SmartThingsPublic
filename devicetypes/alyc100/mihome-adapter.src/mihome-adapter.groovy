@@ -13,6 +13,7 @@
  *  for the specific language governing permissions and limitations under the License.
  *
  *	VERSION HISTORY
+ *	08.11.2016:	2.0 BETA Release 3 - Added ON and OFF buttons for devices that do not report state.
  *	06.11.2016:	2.0 BETA Release 2 - Various tile and formatting updates for Android.
  *	06.11.2016:	2.0 BETA Release 1 - Support for MiHome (Connect) v2.0. Inital version of device.
  */
@@ -24,6 +25,9 @@ metadata {
 		capability "Switch"
         capability "Sensor"
         capability "Power Meter"
+        
+        command "on"
+        command "off"
 	}
 
 
@@ -60,9 +64,17 @@ metadata {
         valueTile("totalPower", "device.totalPower", decoration: "flat", width: 4, height: 1) {
 			state "default", label: 'Today Total Power: ${currentValue} Wh'
 		}
+        
+        standardTile("onButton", "device.onButton", inactiveLabel: false, width: 2, height: 2, decoration: "flat") {
+			state("default", label:'On', action:"on")
+        }
+        
+        standardTile("offButton", "device.offButton", inactiveLabel: false, width: 2, height: 2, decoration: "flat") {
+			state("default", label:'Off', action:"off")
+        }
 
         main(["switch"])
-        details(["rich-control", "totalPower", "refresh"])
+        details(["rich-control", "onButton", "offButton", "refresh", "totalPower"])
 	}
 }
 
