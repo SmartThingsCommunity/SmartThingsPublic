@@ -123,18 +123,18 @@ metadata {
 }
 
 void installed() {
-    // The device refreshes every 5 minutes by default so if we miss 2 refreshes we can consider it offline
-    // Using 12 minutes because in testing, device health team found that there could be "jitter"
-    sendEvent(name: "checkInterval", value: 60 * 12, data: [protocol: "cloud", hubHardwareId: device.hub.hardwareID], displayed: false)
+	// The device refreshes every 5 minutes by default so if we miss 2 refreshes we can consider it offline
+	// Using 12 minutes because in testing, device health team found that there could be "jitter"
+	sendEvent(name: "checkInterval", value: 60 * 12, data: [protocol: "cloud", hubHardwareId: device.hub.hardwareID], displayed: false)
 }
 
 // Device Watch will ping the device to proactively determine if the device has gone offline
 // If the device was online the last time we refreshed, trigger another refresh as part of the ping.
 def ping() {
-    def isAlive = device.currentValue("deviceAlive") == "true" ? true : false
-    if (isAlive) {
-        refresh()
-    }
+	def isAlive = device.currentValue("deviceAlive") == "true" ? true : false
+	if (isAlive) {
+		refresh()
+	}
 }
 
 // parse events into attributes
@@ -165,10 +165,11 @@ def generateEvent(Map results) {
 						 handlerName: name]
 
 			if (name=="temperature" || name=="heatingSetpoint" || name=="coolingSetpoint" ) {
+				def displayName = name == "heatingSetpoint" ? "$device.displayName thermostat's heating setpoint" : name == "coolingSetpoint" ? "$device.displayName thermostat's cooling setpoint" : "Temperature"
 				def sendValue =  location.temperatureScale == "C"? roundC(convertFtoC(value.toDouble())) : value.toInteger()
 				isChange = isTemperatureStateChange(device, name, value.toString())
 				isDisplayed = isChange
-				event << [value: sendValue, unit: temperatureScale, isStateChange: isChange, displayed: isDisplayed]
+				event << [value: sendValue, unit: temperatureScale, isStateChange: isChange, displayed: isDisplayed, descriptionText: "${displayName} is set to ${sendValue}${location.temperatureScale}"]
 			}  else if (name=="maxCoolingSetpoint" || name=="minCoolingSetpoint" || name=="maxHeatingSetpoint" || name=="minHeatingSetpoint") {
 				def sendValue =  location.temperatureScale == "C"? roundC(convertFtoC(value.toDouble())) : value.toInteger()
 				event << [value: sendValue, unit: temperatureScale, displayed: false]
@@ -580,9 +581,9 @@ def generateSetpointEvent() {
 	else if (mode == "cool") {
 		sendEvent("name":"thermostatSetpoint", "value":coolingSetpoint, "unit":location.temperatureScale)
 	} else if (mode == "auto") {
-		sendEvent("name":"thermostatSetpoint", "value":"Auto")
+		sendEvent("name":"thermostatSetpoint", "descriptionText": "$device.displayName thermostat is set to ${mode} mode", "value":"Auto")
 	} else if (mode == "off") {
-		sendEvent("name":"thermostatSetpoint", "value":"Off")
+		sendEvent("name":"thermostatSetpoint", "descriptionText":"$device.displayName thermostat is set to ${mode} mode", "value":"Off")
 	} else if (mode == "auxHeatOnly") {
 		sendEvent("name":"thermostatSetpoint", "value":heatingSetpoint, "unit":location.temperatureScale)
 	}
@@ -759,6 +760,7 @@ def generateStatusEvent() {
 	def coolingSetpoint = device.currentValue("coolingSetpoint")
 	def temperature = device.currentValue("temperature")
 	def statusText
+	def displayText
 
 	log.debug "Generate Status Event for Mode = ${mode}"
 	log.debug "Temperature = ${temperature}"
@@ -767,27 +769,37 @@ def generateStatusEvent() {
 	log.debug "HVAC Mode = ${mode}"
 
 	if (mode == "heat") {
-		if (temperature >= heatingSetpoint)
+		if (temperature >= heatingSetpoint) {
 			statusText = "Right Now: Idle"
-		else
-			statusText = "Heating to ${heatingSetpoint} ${location.temperatureScale}"
+			displayText = "idle"
+			} else {
+				statusText = "Heating to ${heatingSetpoint} ${location.temperatureScale}"
+				displayText = "heating to ${heatingSetpoint} ${location.temperatureScale}"
+			}
 	} else if (mode == "cool") {
-		if (temperature <= coolingSetpoint)
+		if (temperature <= coolingSetpoint) {
 			statusText = "Right Now: Idle"
-		else
+			displayText = "idle"
+		} else {
 			statusText = "Cooling to ${coolingSetpoint} ${location.temperatureScale}"
+			displayText = "cooling to ${coolingSetpoint} ${location.temperatureScale}"
+		}
 	} else if (mode == "auto") {
 		statusText = "Right Now: Auto"
+		displayText = "on auto"
 	} else if (mode == "off") {
 		statusText = "Right Now: Off"
+		displayText = "off"
 	} else if (mode == "auxHeatOnly") {
 		statusText = "Emergency Heat"
+		displayText = "on emergency heat"
 	} else {
 		statusText = "?"
+		displayText = "?"
 	}
 
 	log.debug "Generate Status Event = ${statusText}"
-	sendEvent("name":"thermostatStatus", "value":statusText, "description":statusText, displayed: true)
+	sendEvent("name":"thermostatStatus", "value":statusText, "descriptionText":"$device.displayName is now ${displayText}", displayed: true)
 }
 
 def generateActivityFeedsEvent(notificationMessage) {
