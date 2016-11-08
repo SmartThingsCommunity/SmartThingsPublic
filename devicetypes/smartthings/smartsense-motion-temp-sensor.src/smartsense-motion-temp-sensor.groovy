@@ -94,7 +94,7 @@ def parse(String description) {
 	}
 
 	log.debug "Parse returned $map"
-	def result = map ? createEvent(map) : null
+	def result = map ? createEvent(map) : [:]
 
 	if (description?.startsWith('enroll request')) {
 		List cmds = enrollResponse()
