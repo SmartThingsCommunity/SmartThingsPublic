@@ -13,7 +13,7 @@
  *  for the specific language governing permissions and limitations under the License.
  *
  *	VERSION HISTORY
- *	08.11.2016: 2.0 BETA Release 3 - Add Motion Sensor Device compatibility
+ *	08.11.2016: 2.0 BETA Release 3 - Add Motion Sensor Device compatibility. Detect standard MiHome adapters.
  *
  *	06.11.2016: 2.0 BETA Release 2 - Fix issue identifying MiHome adapters.
  *	06.11.2016:	2.0 BETA Release 1 - Enable MiHome Connect to manage other MiHome devices. Update framework to match other alyc100 connect apps.
@@ -291,7 +291,7 @@ def updateDevices() {
 				}
      		}
         }
-        else if (device.device_type == 'control') {
+        else if (device.device_type == 'control' || device.device_type == 'legacy' ) {
         	log.debug "Identified: device ${device.id}: ${device.device_type}: ${device.label}"
             selectors.add("${device.id}")
             def value = "${device.label} Adapter"
