@@ -14,14 +14,18 @@
  *
  *  VERSION HISTORY
  *  v2.0 - Initial V2.0 Release with OVO Energy (Connect) app
+ *
  *  v2.1 - Improve pricing calculations using contract info from OVO. Notification framework for high costs.
  *		   Enable alert for specified daily cost level breach.
  *	v2.1b - Allow cost alert level to be decimal
+ *
  *	v2.2 - Percentage comparison from previous cost values added into display
  *	v2.2.1 - Add current consumption price based on unit price from OVO account API not OVO live API
  *	v2.2.1b - Remove double negative on percentage values.
  *	v2.2.2 - Change current hour logic to accommodate GMT/BST.
  *	v2.2.2b - Alter Simple Date Format hour string
+ *
+ *	v2.3 - Added historical power chart for the last 5 days.
  */
 preferences 
 {
@@ -33,6 +37,7 @@ metadata {
 		capability "Polling"
 		capability "Power Meter"
 		capability "Refresh"
+        capability "Sensor"
 	}
 
 	tiles(scale: 2) {
@@ -66,9 +71,16 @@ metadata {
 		standardTile("refresh", "device.power", inactiveLabel: false, decoration: "flat", width: 2, height: 2) {
 			state "default", label:'', action:"refresh.refresh", icon:"st.secondary.refresh"
 		}
+        
+        htmlTile(name:"chartHTML", action: "getChartHTML", width: 6, height: 4, whiteList: ["www.gstatic.com"])
+        
 		main (["power"])
-		details(["power", "consumptionPrice", "unitPrice", "totalDemand", "totalConsumptionPrice", "yesterdayTotalPower", "yesterdayTotalPowerCost", "refresh"])
+		details(["power", "consumptionPrice", "unitPrice", "totalDemand", "totalConsumptionPrice", "yesterdayTotalPower", "yesterdayTotalPowerCost", "chartHTML", "refresh"])
 	}
+}
+
+mappings {
+	path("/getChartHTML") {action: [GET: "getChartHTML"]}
 }
 
 // parse events into attributes
@@ -96,7 +108,6 @@ def refreshLiveData() {
 		log.error("Unexpected result in poll(): [${resp.status}] ${resp.data}")
 		return []
 	}
-	
     	data.meterlive = resp.data
         
         //update unit price from OVO Live API
@@ -154,8 +165,9 @@ def refreshLiveData() {
             	//Store the day's power info as yesterdays
             	def totalPower = getTotalDailyPower()
             	data.yesterdayTotalPower = (Math.round((totalPower as BigDecimal) * 1000))/1000
-                
                 def newYesterdayTotalPowerCost = (Math.round((((totalPower as BigDecimal) * unitPriceBigDecimal) + standingCharge) * 100))/100
+                //Add figures to chart data object
+                addYesterdayTotalToChartData(newYesterdayTotalPowerCost)
                 def costYesterdayComparison = calculatePercentChange(newYesterdayTotalPowerCost as BigDecimal, data.yesterdayTotalPowerCost as BigDecimal)
                 def formattedCostYesterdayComparison = costYesterdayComparison
                 if (costYesterdayComparison >= 0) {
@@ -182,9 +194,12 @@ def refreshLiveData() {
         
         def totalDailyPower = getTotalDailyPower()
         def hourCount = 0
-        def costDailyComparison = calculatePercentChange(getTotalDailyPower() as BigDecimal, getYesterdayPower(data.hour) as BigDecimal)
+        
         def formattedAverageTotalPower = (Math.round((totalDailyPower as BigDecimal) * 1000))/1000
         def formattedCurrentTotalPowerCost = (Math.round((((totalDailyPower as BigDecimal) * unitPriceBigDecimal) + standingCharge) * 100))/100
+        //Add figures to chart data object
+        addCurrentTotalToChartData(formattedCurrentTotalPowerCost)
+        def costDailyComparison = calculatePercentChange(((totalDailyPower as BigDecimal) * unitPriceBigDecimal) + standingCharge, ((getYesterdayPower(data.hour) as BigDecimal) * unitPriceBigDecimal) + standingCharge)
         def formattedCostDailyComparison = costDailyComparison
         if (costDailyComparison >= 0) {
         	formattedCostDailyComparison = "+" + formattedCostDailyComparison
@@ -227,7 +242,6 @@ private def getYesterdayPower(currentHour) {
 
 private def calculatePercentChange(current, previous) {
 	def delta = current - previous
-    log.debug "Calculating %age: DELTA $delta CURRENT $current PREVIOUS $previous"
     if (previous != 0) {
     	return  Math.round((delta / previous) * 100)
     } else {
@@ -242,4 +256,91 @@ def getCostAlertLevelValue() {
     	return "10"
     } 
     return settings.costAlertLevel
+}
+
+def addYesterdayTotalToChartData(total) {
+	if (data.chartData == null) {
+    	data.chartData = [0, total, 0, 0, 0, 0, 0]
+    }
+    else {
+    	data.chartData[0] = total
+    	data.chartData.add(0, 0)
+        data.chartData.pop()
+    }
+}
+
+def addCurrentTotalToChartData(total) {
+	if (data.chartData == null) {
+    	data.chartData = [total, 0, 0, 0, 0, 0, 0]
+    }
+    data.chartData[0] = total
+}
+
+def getChartHTML() {
+	try {
+    	def date = new Date()
+		if (data.chartData == null) {
+    		data.chartData = [0, 0, 0, 0, 0, 0, 0]
+    	}
+		def hData = """
+			<script type="text/javascript">
+				  	google.charts.load('current', {packages: ['corechart', 'bar']});
+					google.charts.setOnLoadCallback(drawBasic);
+
+					function drawBasic() {
+						var data = google.visualization.arrayToDataTable([
+         						['Date', 'Cost', { role: 'style' }],
+         						['${(date - 6).format("d MMM")}', ${data.chartData[6]}, '#0a9928'],   
+         						['${(date - 5).format("d MMM")}', ${data.chartData[5]}, '#0a9928'],   
+         						['${(date - 4).format("d MMM")}', ${data.chartData[4]}, '#0a9928'],            
+         						['${(date - 3).format("d MMM")}', ${data.chartData[3]}, '#0a9928'],            
+         						['${(date - 2).format("d MMM")}', ${data.chartData[2]}, '#0a9928'],
+		 						['${(date - 1).format("d MMM")}', ${data.chartData[1]}, '#0a9928' ], 
+         						['Today', ${data.chartData[0]}, '#79ba10' ], 
+      					]);
+
+      					var options = {
+        						title: "Total Cost in the Last 7 Days",
+        						width: 410,
+        						height: 220,
+       					 		bar: {groupWidth: "75%"},
+        						legend: { position: "none" },
+        						vAxis: {
+          							title: 'Cost (£)',
+          							format: '0.00'
+        						}
+      					};
+
+      					var chart = new google.visualization.ColumnChart(document.getElementById('chart_div'));
+      					chart.draw(data, options);
+    				}
+					
+			</script>
+			  
+			"""
+
+		def mainHtml = """
+		<!DOCTYPE html>
+		<html>
+			<head>
+				<meta charset="utf-8"/>
+				<meta http-equiv="cache-control" content="max-age=0"/>
+				<meta http-equiv="cache-control" content="no-cache"/>
+				<meta http-equiv="expires" content="0"/>
+				<meta http-equiv="expires" content="Tue, 01 Jan 1980 1:00:00 GMT"/>
+				<meta http-equiv="pragma" content="no-cache"/>
+				<meta name="viewport" content="width = device-width, user-scalable=no, initial-scale=1.0">
+				<script type="text/javascript" src="https://www.gstatic.com/charts/loader.js"></script>
+			</head>
+			<body>
+  				<div id="chart_div"></div>
+                ${hData}
+				</body>
+			</html>
+		"""
+		render contentType: "text/html", data: mainHtml, status: 200
+	}
+	catch (ex) {
+		log.error "getChartHTML Exception:", ex
+	}
 }
