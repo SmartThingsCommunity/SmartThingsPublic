@@ -13,6 +13,8 @@
  *  for the specific language governing permissions and limitations under the License.
  *
  *	VERSION HISTORY
+ *	08.11.2016: 2.0 BETA Release 3 - Add Motion Sensor Device compatibility
+ *
  *	06.11.2016: 2.0 BETA Release 2 - Fix issue identifying MiHome adapters.
  *	06.11.2016:	2.0 BETA Release 1 - Enable MiHome Connect to manage other MiHome devices. Update framework to match other alyc100 connect apps.
  *
@@ -119,7 +121,8 @@ def selectDevicePAGE() {
 			input "selectedETRVs", "enum", image: "https://raw.githubusercontent.com/alyc100/SmartThingsPublic/master/smartapps/alyc100/mihome4-01bc8a0e478b385df3248b55cc2df7ca.png", required:false, title:"Select MiHome eTRV Devices \n(${state.miETRVDevices.size() ?: 0} found)", multiple:true, options:state.miETRVDevices
 			input "selectedLights", "enum", image: "https://raw.githubusercontent.com/alyc100/SmartThingsPublic/master/smartapps/alyc100/mihome3_switch.png", required:false, title:"Select MiHome Light Devices \n(${state.miLightDevices.size() ?: 0} found)", multiple:true, options:state.miLightDevices
             input "selectedAdapters", "enum", image: "https://raw.githubusercontent.com/alyc100/SmartThingsPublic/master/smartapps/alyc100/mihome5-adapter.png", required:false, title:"Select MiHome Adapter Devices \n(${state.miAdapterDevices.size() ?: 0} found)", multiple:true, options:state.miAdapterDevices
-	}
+			input "selectedMotions", "enum", image: "https://raw.githubusercontent.com/alyc100/SmartThingsPublic/master/smartapps/alyc100/mihome-motion-sensor-ir.png", required:false, title:"Select MiHome Motion Sensors \n(${state.miMotionSensors.size() ?: 0} found)", multiple:true, options:state.miMotionSensors
+    }
   }
 }
 
@@ -137,11 +140,11 @@ def authenticated() {
 }
 
 def devicesSelected() {
-	return (selectedETRVs || selectedLights || selectedAdapters) ? "complete" : null
+	return (selectedETRVs || selectedLights || selectedAdapters || selectedMotions) ? "complete" : null
 }
 
 def getDevicesSelectedString() {
-	if (state.miETRVDevices == null || state.miLightDevices == null || state.miAdapterDevices == null) {
+	if (state.miETRVDevices == null || state.miLightDevices == null || state.miAdapterDevices == null || state.miMotionSensors) {
     	updateDevices()
   	}
 	def listString = ""
@@ -178,6 +181,17 @@ def getDevicesSelectedString() {
 			}
 		}
   	}
+    selectedMotions.each { childDevice ->
+    	if (listString == "") {
+			if (null != state.miMotionSensors) {
+				listString += state.miMotionSensors[childDevice]
+			}
+		} else {
+			if (null != state.miMotionSensors) {
+				listString += "\n" + state.miMotionSensors[childDevice]
+			}
+		}
+    }
   	return listString
 }
 
@@ -224,6 +238,9 @@ def initialize() {
     if (selectedAdapters) {
     	addAdapter()
     }
+    if (selectedMotions) {
+    	addMotion()
+    }
 }
 
 
@@ -235,11 +252,11 @@ def updateDevices() {
   	state.miETRVDevices = [:]
   	state.miLightDevices = [:]
     state.miAdapterDevices = [:]
+    state.miMotionSensors = [:]
 
     def selectors = []
 	devices.each { device ->
     	log.debug "***DEVICE JSON for ${device.label} - ${device.device_type}: ${device}"
-    	selectors.add("${device.id}")
         if (device.device_type == 'etrv') {
 			log.debug "Identified: device ${device.id}: ${device.device_type}: ${device.label}: ${device.target_temperature}: ${device.last_temperature}: ${device.voltage}"
             selectors.add("${device.id}")
@@ -287,6 +304,23 @@ def updateDevices() {
      			//Update name of device if different.
      			if(childDevice.name != device.label + " Adapter") {
 					childDevice.name = device.label + " Adapter"
+					log.debug "Device's name has changed."
+				}
+     		}
+        }
+        else if (device.device_type == 'motion') {
+        	log.debug "Identified: device ${device.id}: ${device.device_type}: ${device.label}"
+            selectors.add("${device.id}")
+            def value = "${device.label} Motion Sensor"
+			def key = device.id
+			state.miMotionSensors["${key}"] = value
+            
+            //Update names of devices with MiHome
+     		def childDevice = getChildDevice("${device.id}")
+     		if (childDevice) {
+     			//Update name of device if different.
+     			if(childDevice.name != device.label + " Motion Sensor") {
+					childDevice.name = device.label + " Motion Sensor"
 					log.debug "Device's name has changed."
 				}
      		}
@@ -379,6 +413,31 @@ def addAdapter() {
 	}
 }
 
+def addMotion() {
+	updateDevices()
+
+	selectedMotions.each { device ->
+
+        def childDevice = getChildDevice("${device}")
+
+        if (!childDevice) {
+    		log.info("Adding device ${device}: ${state.miMotionSensors[device]}")
+
+        	def data = [
+                	name: state.miMotionSensors[device],
+					label: state.miMotionSensors[device]
+				]
+            childDevice = addChildDevice(app.namespace, "MiHome Motion Sensor", "$device", null, data)
+            childDevice.refresh()
+
+			log.debug "Created ${state.miMotionSensors[device]} with id: ${device}"
+		} else {
+			log.debug "found ${state.miMotionSensors[device]} with id ${device} already exists"
+		}
+
+	}
+}
+
 def refreshDevices() {
     if (atomicState.refreshCounter == null || atomicState.refreshCounter >= 5) {
     	atomicState.refreshCounter = 0
@@ -389,7 +448,7 @@ def refreshDevices() {
     	if (atomicState.refreshCounter == 5) {
         	log.info("Refreshing device ${device.name} ...")
 			device.refresh()
-        } else if (device.name.contains("Adapter")) {
+        } else if (device.name.contains("Adapter") || device.name.contains("Motion Sensor")) {
         	log.info("Refreshing device ${device.name}...")
 			device.refresh()
         }
@@ -480,7 +539,7 @@ def logErrors(options = [errorReturn: null, logObject: log], Closure c) {
 }
 
 private def textVersion() {
-    def text = "MiHome (Connect)\nVersion: 2.0 BETA Release 2\nDate: 07112016(2000)"
+    def text = "MiHome (Connect)\nVersion: 2.0 BETA Release 3\nDate: 08112016(0015)"
 }
 
 private def textCopyright() {
