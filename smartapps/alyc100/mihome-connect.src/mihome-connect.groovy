@@ -144,7 +144,7 @@ def devicesSelected() {
 }
 
 def getDevicesSelectedString() {
-	if (state.miETRVDevices == null || state.miLightDevices == null || state.miAdapterDevices == null || state.miMotionSensors) {
+	if (state.miETRVDevices == null || state.miLightDevices == null || state.miAdapterDevices == null || state.miMotionSensors == null) {
     	updateDevices()
   	}
 	def listString = ""
