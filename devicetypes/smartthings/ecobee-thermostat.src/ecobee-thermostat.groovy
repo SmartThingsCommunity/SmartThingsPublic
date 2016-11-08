@@ -759,6 +759,7 @@ def generateStatusEvent() {
 	def coolingSetpoint = device.currentValue("coolingSetpoint")
 	def temperature = device.currentValue("temperature")
 	def statusText
+	def displayText
 
 	log.debug "Generate Status Event for Mode = ${mode}"
 	log.debug "Temperature = ${temperature}"
@@ -767,27 +768,37 @@ def generateStatusEvent() {
 	log.debug "HVAC Mode = ${mode}"
 
 	if (mode == "heat") {
-		if (temperature >= heatingSetpoint)
+		if (temperature >= heatingSetpoint) {
 			statusText = "Right Now: Idle"
-		else
-			statusText = "Heating to ${heatingSetpoint} ${location.temperatureScale}"
+			displayText = "idle"
+			} else {
+				statusText = "Heating to ${heatingSetpoint} ${location.temperatureScale}"
+				displayText = "heating to ${heatingSetpoint} ${location.temperatureScale}"
+			}
 	} else if (mode == "cool") {
-		if (temperature <= coolingSetpoint)
+		if (temperature <= coolingSetpoint) {
 			statusText = "Right Now: Idle"
-		else
+			displayText = "idle"
+		} else {
 			statusText = "Cooling to ${coolingSetpoint} ${location.temperatureScale}"
+			displayText = "cooling to ${coolingSetpoint} ${location.temperatureScale}"
+		}
 	} else if (mode == "auto") {
 		statusText = "Right Now: Auto"
+		displayText = "on auto"
 	} else if (mode == "off") {
 		statusText = "Right Now: Off"
+		displayText = "off"
 	} else if (mode == "auxHeatOnly") {
 		statusText = "Emergency Heat"
+		displayText = "on emergency heat"
 	} else {
 		statusText = "?"
+		displayText = ""
 	}
 
 	log.debug "Generate Status Event = ${statusText}"
-	sendEvent("name":"thermostatStatus", "value":statusText, "description":statusText, displayed: true)
+	sendEvent("name":"thermostatStatus", "value":statusText, "descriptionText":"$device.displayName is now ${displayText}", displayed: true)
 }
 
 def generateActivityFeedsEvent(notificationMessage) {
