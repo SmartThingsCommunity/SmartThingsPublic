@@ -257,6 +257,10 @@ def refresh() {
     cmds << zwave.manufacturerSpecificV2.manufacturerSpecificGet()
 	cmds << zwave.multiChannelV3.multiChannelCmdEncap(sourceEndPoint:1, destinationEndPoint:1, commandClass:37, command:2)
     cmds << zwave.multiChannelV3.multiChannelCmdEncap(sourceEndPoint:1, destinationEndPoint:2, commandClass:37, command:2)
+    (1..2).each { endpoint ->
+			cmds << encap(zwave.meterV2.meterGet(scale: 0), endpoint)
+            cmds << encap(zwave.meterV2.meterGet(scale: 2), endpoint)
+	}
 	secureSequence(cmds, 1000)
 }
 
@@ -291,7 +295,7 @@ def zwaveEvent(physicalgraph.zwave.commands.centralscenev1.CentralSceneNotificat
     
     if (settings."20" == "1") {
         logging("Switch configured as Toggle")
-        switch (cmd.sequenceNumber) {
+        switch (cmd.sceneNumber) {
             // Toggle S1
             case 10: // Single Press
                 buttonEvent(1, "pushed")
@@ -321,24 +325,24 @@ def zwaveEvent(physicalgraph.zwave.commands.centralscenev1.CentralSceneNotificat
         }
     } else {
         if (settings."20" == "0") logging("Switch configured as Momentary") else logging("Switch type not configured") 
-        switch (cmd.sceneId) {
+        switch (cmd.sceneNumber) {
             // Momentary S1
-            case 14: // S1 1x click
+            case 1: // S1 1x click
                 buttonEvent(1, "pushed")
             break
-            case 15: // S2 1x click
+            case 2: // S2 1x click
                 buttonEvent(1, "held")
             break
-            case 16: // S1 2x click
+            case 3: // S1 2x click
                 buttonEvent(2, "pushed")
             break
-            case 17: // S2 2x click
+            case 4: // S2 2x click
                 buttonEvent(2, "held")
             break
-            case 18: // S1 3x click
+            case 5: // S1 3x click
                 buttonEvent(3, "pushed")
             break
-            case 19: // S2 3x click
+            case 6: // S2 3x click
                 buttonEvent(3, "held")
             break
             default:
@@ -418,6 +422,14 @@ private secure(physicalgraph.zwave.Command cmd) {
 
 private secureSequence(commands, delay=200) {
 	delayBetween(commands.collect{ secure(it) }, delay)
+}
+
+private encap(cmd, endpoint) {
+	if (endpoint) {
+		zwave.multiChannelV3.multiChannelCmdEncap(destinationEndPoint:endpoint).encapsulate(cmd)
+	} else {
+		cmd
+	}
 }
 
 def zwaveEvent(physicalgraph.zwave.commands.securityv1.SecurityMessageEncapsulation cmd) {
