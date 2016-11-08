@@ -25,6 +25,7 @@ metadata {
 		capability "Refresh"
 		capability "Actuator"
 		capability "Sensor"
+        capability "Configuration"
  
 		command "reset"
 		command "refresh"
@@ -40,20 +41,25 @@ metadata {
 	}
     
     preferences {
+    
+        input description: "Once you change values on this page, the \"Synced\" Status will become \"Pending\" status. When the parameters have been succesfully changed, the status will change back to \"Synced\"", displayDuringSetup: false, type: "paragraph", element: "paragraph"
+        
+		generate_preferences(configuration_model())
+        
         input description: "Create a custom program by modifying the settings below. This program can then be executed by using the \"custom\" button on the device page.", displayDuringSetup: false, type: "paragraph", element: "paragraph"
 
         input "transition", "enum", title: "Transition", defaultValue: 0, displayDuringSetup: false, required: false, options: [
                 0:"Smooth",
-                1073741824:"Flash",
-                //3221225472:"Fade Out Fade In"
+                1:"Flash",
                 ]
+        input "brightness", "number", title: "Brightness (Firmware 1.05)", defaultValue: 1, displayDuringSetup: false, required: false, range: "1..99"
         input "count", "number", title: "Cycle Count (0 [unlimited])", defaultValue: 0, displayDuringSetup: false, required: false, range: "0..254"
         input "speed", "enum", title: "Color Change Speed", defaultValue: 0, displayDuringSetup: false, required: false, options: [
                 0:"Fast",
-                16:"Medium Fast",
-                32:"Medium",
-                64:"Medium Slow",
-                128:"Slow"]
+                1:"Medium Fast",
+                2:"Medium",
+                3:"Medium Slow",
+                4:"Slow"]
         input "speedLevel", "number", title: "Color Residence Time (1 [fastest], 254 [slowest])", defaultValue: "0", displayDuringSetup: true, required: false, range: "0..254"
         (1..8).each { i ->
         input "color$i", "enum", title: "Color $i", displayDuringSetup: false, required: false, options: [
@@ -90,9 +96,10 @@ metadata {
 		standardTile("refresh", "device.switch", inactiveLabel: false, decoration: "flat", width: 2, height: 2) {
 			state "default", label:"", action:"refresh.refresh", icon:"st.secondary.refresh"
 		}
-        standardTile("configure", "device.configure", inactiveLabel: false, width: 2, height: 2, decoration: "flat") {
-			state "configure", label:'', action:"configuration.configure", icon:"st.secondary.configure"
-		}
+        valueTile("configure", "device.needUpdate", inactiveLabel: false, decoration: "flat", width: 2, height: 2) {
+            state("NO" , label:'Synced', action:"configuration.configure", backgroundColor:"#8acb47")
+            state("YES", label:'Pending', action:"configuration.configure", backgroundColor:"#f39c12")
+        }
         valueTile("colorTempTile", "device.colorTemperature", decoration: "flat", height: 2, width: 2) {
         	state "colorTemperature", label:'${currentValue}%', backgroundColor:"#FFFFFF"
         }
@@ -116,12 +123,16 @@ metadata {
 			state "on", label: "police", action: "off4", icon: "st.switches.switch.on", backgroundColor: "#79b821"
 		}
         standardTile("switch5", "switch5", canChangeIcon: true, width: 2, height: 2) {
-			state "off", label: "$n", action: "on5", icon: "st.switches.switch.off", backgroundColor: "#ffffff"
-            state "on", label: "$n", action: "off5", icon: "st.switches.switch.on", backgroundColor: "#79b821"
+			state "off", label: "xmas", action: "on5", icon: "st.switches.switch.off", backgroundColor: "#ffffff"
+            state "on", label: "xmas", action: "off5", icon: "st.switches.switch.on", backgroundColor: "#79b821"
 		}
         standardTile("switch6", "switch6", canChangeIcon: true, width: 2, height: 2) {
             state "off", label: "custom", action: "on6", icon: "st.switches.switch.off", backgroundColor: "#ffffff", nextState:"on"
 			state "on", label: "custom", action: "off6", icon: "st.switches.switch.on", backgroundColor: "#79b821", nextState:"off"
+		}
+        valueTile(
+			"currentFirmware", "device.currentFirmware", inactiveLabel: false, decoration: "flat", width: 2, height: 2) {
+			state "currentFirmware", label:'Firmware: v${currentValue}', unit:""
 		}
     }
 
@@ -129,13 +140,37 @@ metadata {
 	details(["switch", "levelSliderControl",
              "colorTempControl", "colorTempTile",
              "switch1", "switch2", "switch3",
-             "switch4", /*"switch5",*/ "switch6",
-             "refresh", "configure" ])
+             "switch4", "switch5", "switch6",
+             "refresh", "configure", "currentFirmware" ])
 }
  
-def updated() {
-	response(refresh())
+/**
+* Triggered when Done button is pushed on Preference Pane
+*/
+def updated()
+{
+	state.enableDebugging = settings.enableDebugging
+    logging("updated() is being called")
+    
+    state.needfwUpdate = ""
+    
+    def cmds = update_needed_settings()
+    
+    sendEvent(name:"needUpdate", value: device.currentValue("needUpdate"), displayed:false, isStateChange: true)
+    
+    if (cmds != []) response(commands(cmds))
 }
+
+def configure() {
+	state.enableDebugging = settings.enableDebugging
+    logging("Configuring Device For SmartThings Use")
+    def cmds = []
+
+    cmds = update_needed_settings()
+    
+    if (cmds != []) commands(cmds)
+}
+
  
 def parse(description) {
 	def result = null
@@ -143,9 +178,9 @@ def parse(description) {
 		def cmd = zwave.parse(description, [0x20: 1, 0x26: 3, 0x70: 1, 0x33:3])
 		if (cmd) {
 			result = zwaveEvent(cmd)
-			log.debug("'$cmd' parsed to $result")
+			logging("'$cmd' parsed to $result")
 		} else {
-			log.debug("Couldn't zwave.parse '$description'")
+			logging("Couldn't zwave.parse '$description'")
 		}
 	}
 	result
@@ -160,7 +195,7 @@ def zwaveEvent(physicalgraph.zwave.commands.basicv1.BasicSet cmd) {
 }
  
 def zwaveEvent(physicalgraph.zwave.commands.switchmultilevelv3.SwitchMultilevelReport cmd) {
-	//dimmerEvents(cmd) 
+	//dimmerEvents(cmd)
 }
  
 private dimmerEvents(physicalgraph.zwave.Command cmd) {
@@ -197,10 +232,28 @@ def zwaveEvent(physicalgraph.zwave.commands.configurationv1.ConfigurationReport 
     if (cmd.parameterNumber == 37) { 
        if (cmd.configurationValue[0] == 0) toggleTiles("all")
     } else {
-       log.debug "${device.displayName} parameter '${cmd.parameterNumber}' with a byte size of '${cmd.size}' is set to '${cmd.configurationValue}'"
+       update_current_properties(cmd)
+       logging("${device.displayName} parameter '${cmd.parameterNumber}' with a byte size of '${cmd.size}' is set to '${cmd.configurationValue}'")
     }
+} 
+
+def zwaveEvent(physicalgraph.zwave.commands.firmwareupdatemdv2.FirmwareMdReport cmd){
+    logging("Firmware Report ${cmd.toString()}")
+    def firmwareVersion
+    switch(cmd.checksum){
+       case "61418":
+          firmwareVersion = "1.04"
+       break;
+       case "43444":
+          firmwareVersion = "1.05"
+       break;
+       default:
+          firmwareVersion = cmd.checksum
+    }
+    state.needfwUpdate = "false"
+    updateDataValue("firmware", firmwareVersion.toString())
+    createEvent(name: "currentFirmware", value: firmwareVersion)
 }
- 
  
 def zwaveEvent(physicalgraph.zwave.Command cmd) {
 	def linkText = device.label ?: device.name
@@ -219,7 +272,7 @@ def on() {
     toggleTiles("all")
 	commands([
 		zwave.basicV1.basicSet(value: 0xFF),
-		zwave.switchMultilevelV3.switchMultilevelGet(),
+		zwave.basicV1.basicGet(),
 	], 2000)
 }
  
@@ -227,7 +280,7 @@ def off() {
     toggleTiles("all")
 	commands([
 		zwave.basicV1.basicSet(value: 0x00),
-		zwave.switchMultilevelV3.switchMultilevelGet(),
+		zwave.basicV1.basicGet(),
 	], 2000)
 }
  
@@ -246,34 +299,74 @@ def setLevel(level, duration) {
  
 def refresh() {
 	commands([
-		zwave.switchMultilevelV3.switchMultilevelGet(),
+		zwave.basicV1.basicGet(),
         zwave.configurationV1.configurationGet(parameterNumber: 37),
 	], 1000)
 }
  
 def setSaturation(percent) {
-	log.debug "setSaturation($percent)"
+	logging("setSaturation($percent)")
 	setColor(saturation: percent)
 }
  
 def setHue(value) {
-	log.debug "setHue($value)"
+	logging("setHue($value)")
 	setColor(hue: value)
+}
+
+private getEnableRandomHue(){
+    switch (settings.enableRandom) {
+        case "0":
+        return 23
+        break
+        case "1":
+        return 52
+        break
+        case "2":
+        return 53
+        break
+        case "3":
+        return 20
+        break
+        default:
+    
+        break
+    }
+}
+
+private getEnableRandomSat(){
+    switch (settings.enableRandom) {
+        case "0":
+        return 56
+        break
+        case "1":
+        return 19
+        break
+        case "2":
+        return 91
+        break
+        case "3":
+        return 80
+        break
+        default:
+    
+        break
+    }
 }
  
 def setColor(value) {
 	def result = []
     def warmWhite = 0
     def coldWhite = 0
-	log.debug "setColor: ${value}"
+	logging("setColor: ${value}")
 	if (value.hue && value.saturation) {
-        log.debug "setting color with hue & saturation"
+        logging("setting color with hue & saturation")
         def hue = value.hue ?: device.currentValue("hue")
 		def saturation = value.saturation ?: device.currentValue("saturation")
 		if(hue == null) hue = 13
 		if(saturation == null) saturation = 13
 		def rgb = huesatToRGB(hue as Integer, saturation as Integer)
-    	if ( value.hue == 53 && value.saturation == 91 ) {
+    	if ( settings.enableRandom && value.hue == getEnableRandomHue() && value.saturation == getEnableRandomSat() ) {
             Random rand = new Random()
             int max = 100
             hue = rand.nextInt(max+1)
@@ -289,7 +382,7 @@ def setColor(value) {
             rgb[2] = 0
     	}
         else {
-    		if ( value.hue > 5 && value.hue < 100 ) hue = value.hue - 5 else hue = 1
+    		if ( value.hue > 5 && value.hue < 100 &&  (device.currentValue("currentFirmware") == null || device.currentValue("currentFirmware") != "1.04")) hue = value.hue - 5 else hue = 1
             rgb = huesatToRGB(hue as Integer, saturation as Integer)
     	}
 		result << zwave.switchColorV3.switchColorSet(red: rgb[0], green: rgb[1], blue: rgb[2], warmWhite:warmWhite, coldWhite:coldWhite)
@@ -304,6 +397,7 @@ def setColor(value) {
 		result << zwave.switchColorV3.switchColorSet(red:c[0], green:c[1], blue:c[2], warmWhite:0, coldWhite:0)
 	} 
  	result << zwave.basicV1.basicSet(value: 0xFF)
+    result << zwave.basicV1.basicGet()
 	if(value.hue) sendEvent(name: "hue", value: value.hue)
 	if(value.hex) sendEvent(name: "color", value: value.hex)
 	if(value.switch) sendEvent(name: "switch", value: value.switch)
@@ -318,13 +412,14 @@ def setColorTemperature(percent) {
 	int warmValue = percent * 255 / 99
     toggleTiles("all")
     sendEvent(name: "colorTemperature", value: percent)
-	command(zwave.switchColorV3.switchColorSet(red:0, green:0, blue:0, warmWhite:warmValue, coldWhite:(255 - warmValue)))
+	command(zwave.switchColorV3.switchColorSet(red:0, green:0, blue:0, warmWhite: (warmValue > 127 ? 255 : 0), coldWhite: (warmValue < 128? 255 : 0)))
+    
 }
  
 def reset() {
-	log.debug "reset()"
+	logging("reset()")
 	sendEvent(name: "color", value: "#ffffff")
-	setColorTemperature(99)
+	setColorTemperature(1)
 }
  
 private command(physicalgraph.zwave.Command cmd) {
@@ -335,7 +430,7 @@ private command(physicalgraph.zwave.Command cmd) {
 	}
 }
  
-private commands(commands, delay=500) {
+private commands(commands, delay=1000) {
 	delayBetween(commands.collect{ command(it) }, delay)
 }
  
@@ -378,58 +473,106 @@ def huesatToRGB(float hue, float sat) {
 }
 
 def on1() {
-    log.debug "on1()"
+    logging("on1()")
     toggleTiles("switch1")
-	commands([
-        zwave.configurationV1.configurationSet(scaledConfigurationValue: 16781342, parameterNumber: 37, size: 4),
-        zwave.switchMultilevelV3.switchMultilevelGet(),
-	], 1500)
+    def cmds = []
+    if (device.currentValue("currentFirmware") == null || device.currentValue("currentFirmware") == "1.04") {
+        cmds << zwave.configurationV1.configurationSet(scaledConfigurationValue: 16781342, parameterNumber: 37, size: 4)
+    } else {
+        cmds << zwave.configurationV1.configurationSet(scaledConfigurationValue: 50332416, parameterNumber: 38, size: 4)
+        cmds << zwave.configurationV1.configurationSet(configurationValue: integer2Cmd(157483073 , 4), parameterNumber: 37, size: 4)
+    }
+    cmds << zwave.basicV1.basicGet()
+	commands(cmds)
 }
 
 def on2() {
-    log.debug "on2()"    
+    logging("on2()")  
     toggleTiles("switch2")
-	commands([
-        zwave.configurationV1.configurationSet(scaledConfigurationValue: 1090551813, parameterNumber: 37, size: 4),
-        zwave.switchMultilevelV3.switchMultilevelGet(),
-	], 1500)
+    def cmds = []
+    if (device.currentValue("currentFirmware") == null || device.currentValue("currentFirmware") == "1.04") {
+        cmds << zwave.configurationV1.configurationSet(scaledConfigurationValue: 1090551813, parameterNumber: 37, size: 4)
+    } else {
+        cmds << zwave.configurationV1.configurationSet(scaledConfigurationValue: 2560, parameterNumber: 38, size: 4)
+        cmds << zwave.configurationV1.configurationSet(configurationValue: integer2Cmd(1097007169, 4), parameterNumber: 37, size: 4)
+    }
+    cmds << zwave.basicV1.basicGet()
+	commands(cmds)
 }
 
 def on3() {
-    log.debug "on3()"
+    logging("on3()")
     toggleTiles("switch3")
-	commands([
-        zwave.configurationV1.configurationSet(scaledConfigurationValue: 50335754, parameterNumber: 37, size: 4),
-        zwave.switchMultilevelV3.switchMultilevelGet(),
-	], 1500)
+    def cmds = []
+    if (device.currentValue("currentFirmware") == null || device.currentValue("currentFirmware") == "1.04") {
+        cmds << zwave.configurationV1.configurationSet(scaledConfigurationValue: 50335754, parameterNumber: 37, size: 4)
+    } else {
+        cmds << zwave.configurationV1.configurationSet(scaledConfigurationValue: 50332416, parameterNumber: 38, size: 4)
+        cmds << zwave.configurationV1.configurationSet(configurationValue: integer2Cmd(191037440 , 4), parameterNumber: 37, size: 4)
+    }
+    cmds << zwave.basicV1.basicGet()
+	commands(cmds)
 }
 
 def on4() {
-    log.debug "on4()"
+    logging("on4()")
     toggleTiles("switch4")
-	commands([
-        zwave.configurationV1.configurationSet(scaledConfigurationValue: 1633771873, parameterNumber: 38, size: 4),
-        zwave.configurationV1.configurationSet(scaledConfigurationValue: 1113784321, parameterNumber: 37, size: 4),
-        zwave.switchMultilevelV3.switchMultilevelGet(),
-	], 1500)
+    def cmds = []
+    if (device.currentValue("currentFirmware") == null || device.currentValue("currentFirmware") == "1.04") {
+        cmds << zwave.configurationV1.configurationSet(scaledConfigurationValue: 1633771873, parameterNumber: 38, size: 4)
+        cmds << zwave.configurationV1.configurationSet(scaledConfigurationValue: 1113784321, parameterNumber: 37, size: 4)
+    } else {
+        cmds << zwave.configurationV1.configurationSet(configurationValue: integer2Cmd(256, 4), parameterNumber: 38, size: 4)
+        cmds << zwave.configurationV1.configurationSet(configurationValue: integer2Cmd(369098752, 4), parameterNumber: 39, size: 4)
+        cmds << zwave.configurationV1.configurationSet(configurationValue: integer2Cmd(1244790848, 4), parameterNumber: 37, size: 4)
+    }
+    cmds << zwave.basicV1.basicGet()
+	commands(cmds)
+} 
+
+def on5() {
+    logging("on5()")
+    toggleTiles("switch5")
+    def cmds = []
+    if (device.currentValue("currentFirmware") == null || device.currentValue("currentFirmware") == "1.04") {
+        cmds << zwave.configurationV1.configurationSet(scaledConfigurationValue: 65, parameterNumber: 38, size: 4)
+        cmds << zwave.configurationV1.configurationSet(scaledConfigurationValue: 1107300372, parameterNumber: 37, size: 4)
+    } else {
+        cmds << zwave.configurationV1.configurationSet(configurationValue: integer2Cmd(768, 4), parameterNumber: 38, size: 4)
+        cmds << zwave.configurationV1.configurationSet(configurationValue: integer2Cmd(335544320, 4), parameterNumber: 39, size: 4)
+        cmds << zwave.configurationV1.configurationSet(configurationValue: integer2Cmd(1244790784, 4), parameterNumber: 37, size: 4)
+    }
+    cmds << zwave.basicV1.basicGet()
+	commands(cmds)
 } 
  
 def on6() {
-    log.debug "on6()"
+    logging("on6()")
     toggleTiles("switch6")
-	commands([
-        zwave.configurationV1.configurationSet(configurationValue: integer2Cmd(calculateParameter(38), 4), parameterNumber: 38, size: 4),
-        zwave.configurationV1.configurationSet(scaledConfigurationValue: calculateParameter(37), parameterNumber: 37, size: 4),
-        zwave.switchMultilevelV3.switchMultilevelGet(),
-	], 1500)
+    def cmds = []
+    if (device.currentValue("currentFirmware") == null || device.currentValue("currentFirmware") == "1.04") {
+        cmds << zwave.configurationV1.configurationSet(configurationValue: integer2Cmd(calculateParameter(38), 4), parameterNumber: 38, size: 4)
+        cmds << zwave.configurationV1.configurationSet(scaledConfigurationValue: calculateParameter(37), parameterNumber: 37, size: 4)
+    } else {
+        cmds << zwave.configurationV1.configurationSet(configurationValue: integer2Cmd(calculateParameter(39), 4), parameterNumber: 39, size: 4)
+        cmds << zwave.configurationV1.configurationSet(configurationValue: integer2Cmd(calculateParameter(38), 4), parameterNumber: 38, size: 4)
+        cmds << zwave.configurationV1.configurationSet(configurationValue: integer2Cmd(calculateParameter(37), 4), parameterNumber: 37, size: 4)
+    }
+    cmds << zwave.basicV1.basicGet()
+	commands(cmds)
 } 
 
 def offCmd() {
-    log.debug "offCmd()"
-	commands([
-        zwave.configurationV1.configurationSet(scaledConfigurationValue: 0, parameterNumber: 37, size: 4),
-        zwave.configurationV1.configurationGet(parameterNumber: 37),
-	], 1500)
+    logging("offCmd()")
+    def cmds = []
+    if (device.currentValue("currentFirmware") == null || device.currentValue("currentFirmware") == "1.04") {
+        cmds << zwave.configurationV1.configurationSet(scaledConfigurationValue: 0, parameterNumber: 37, size: 4)
+        cmds << zwave.configurationV1.configurationGet(parameterNumber: 37)
+    } else {
+        cmds << zwave.configurationV1.configurationSet(scaledConfigurationValue: 2, parameterNumber: 36, size: 1)
+        cmds << zwave.basicV1.basicGet()
+	}
+    commands(cmds)
 }
 
 def off1() { offCmd() }
@@ -438,6 +581,204 @@ def off3() { offCmd() }
 def off4() { offCmd() }
 def off5() { offCmd() }
 def off6() { offCmd() }
+
+private calculateParameter(number) {
+   long value = 0
+   switch (number){
+      case 37:
+      if (device.currentValue("currentFirmware") == null || device.currentValue("currentFirmware") == "1.04"){
+         value += settings.transition ? settings.transition.toLong() * 1073741824 : 0
+         value += 33554432 // Custom Mode 
+         value += settings.count ? (settings.count.toLong() * 65536) : 0
+         value += settings.speed ? (settings.speed.toLong() * 16 * 256) : 0
+         value += settings.speedLevel ? settings.speedLevel.toLong() : 0
+      } else {
+         value += settings.transition ? settings.transition.toLong() * 1073741824 : 0
+         value += 134217728 // Allow smooth adjustable speed
+         value += 33554432 // Custom Mode
+         value += settings.brightness ? (settings.brightness.toLong() * 65536) : 0
+         value += settings.count ? (settings.count.toLong() * 256) : 0
+         value += settings.speed ? (2 * 32) : 0
+      }
+      break
+      case 38:
+      if (device.currentValue("currentFirmware") == null || device.currentValue("currentFirmware") == "1.04"){
+         value += settings.color1 ? (settings.color1.toLong() * 1) : 0
+         value += settings.color2 ? (settings.color2.toLong() * 16) : 0
+         value += settings.color3 ? (settings.color3.toLong() * 256) : 0
+         value += settings.color4 ? (settings.color4.toLong() * 4096) : 0
+         value += settings.color5 ? (settings.color5.toLong() * 65536) : 0
+         value += settings.color6 ? (settings.color6.toLong() * 1048576) : 0
+         value += settings.color7 ? (settings.color7.toLong() * 16777216) : 0
+         value += settings.color8 ? (settings.color8.toLong() * 268435456) : 0
+      } else {
+         value += settings.transition == "1" ? 0 : (settings.speed.toLong() * 2 * 16777216) // Speed from off to on
+         value += settings.transition == "1" ? 0 : (settings.speed.toLong() * 2 * 65536) // Speed from on to off
+         value += settings.speedLevel ? (settings.speedLevel.toLong() * 256) : 5 // Pause time at on
+         value += 0 // Pause time at off
+      }
+      break
+      case 39:
+         value += settings.color8 ? (settings.color8.toLong() * 1) : 0
+         value += settings.color7 ? (settings.color7.toLong() * 16) : 0
+         value += settings.color6 ? (settings.color6.toLong() * 256) : 0
+         value += settings.color5 ? (settings.color5.toLong() * 4096) : 0
+         value += settings.color4 ? (settings.color4.toLong() * 65536) : 0
+         value += settings.color3 ? (settings.color3.toLong() * 1048576) : 0
+         value += settings.color2 ? (settings.color2.toLong() * 16777216) : 0
+         value += settings.color1 ? (settings.color1.toLong() * 268435456) : 0
+      break
+    }
+    return value
+}
+
+def generate_preferences(configuration_model)
+{
+    def configuration = parseXml(configuration_model)
+   
+    configuration.Value.each
+    {
+        switch(it.@type)
+        {   
+            case ["byte","short","four"]:
+                input "${it.@index}", "number",
+                    title:"${it.@label}\n" + "${it.Help}",
+                    range: "${it.@min}..${it.@max}",
+                    defaultValue: "${it.@value}",
+                    displayDuringSetup: "${it.@displayDuringSetup}"
+            break
+            case "list":
+                def items = []
+                it.Item.each { items << ["${it.@value}":"${it.@label}"] }
+                input "${it.@index}", "enum",
+                    title:"${it.@label}\n" + "${it.Help}",
+                    defaultValue: "${it.@value}",
+                    displayDuringSetup: "${it.@displayDuringSetup}",
+                    options: items
+            break
+            case "decimal":
+               input "${it.@index}", "decimal",
+                    title:"${it.@label}\n" + "${it.Help}",
+                    range: "${it.@min}..${it.@max}",
+                    defaultValue: "${it.@value}",
+                    displayDuringSetup: "${it.@displayDuringSetup}"
+            break
+            case "boolean":
+               input "${it.@index}", "boolean",
+                    title: it.@label != "" ? "${it.@label}\n" + "${it.Help}" : "" + "${it.Help}",
+                    defaultValue: "${it.@value}",
+                    displayDuringSetup: "${it.@displayDuringSetup}"
+            break
+        }  
+    }
+}
+
+def update_current_properties(cmd)
+{
+    def currentProperties = state.currentProperties ?: [:]
+    
+    currentProperties."${cmd.parameterNumber}" = cmd.configurationValue
+
+    if (settings."${cmd.parameterNumber}" != null)
+    {
+        if (convertParam(cmd.parameterNumber, settings."${cmd.parameterNumber}") == cmd2Integer(cmd.configurationValue))
+        {
+            sendEvent(name:"needUpdate", value:"NO", displayed:false, isStateChange: true)
+        }
+        else
+        {
+            sendEvent(name:"needUpdate", value:"YES", displayed:false, isStateChange: true)
+        }
+    }
+
+    state.currentProperties = currentProperties
+}
+
+def update_needed_settings()
+{
+    def cmds = []
+    def currentProperties = state.currentProperties ?: [:]
+     
+    def configuration = parseXml(configuration_model())
+    def isUpdateNeeded = "NO"
+    
+    if(!state.needfwUpdate || state.needfwUpdate == ""){
+       logging("Requesting device firmware version")
+       cmds << zwave.firmwareUpdateMdV2.firmwareMdGet()
+    }    
+    
+    configuration.Value.each
+    {     
+        if ("${it.@setting_type}" == "zwave"){
+            if (currentProperties."${it.@index}" == null)
+            {
+                if (device.currentValue("currentFirmware") == null || "${it.@fw}".indexOf(device.currentValue("currentFirmware")) >= 0){
+                    isUpdateNeeded = "YES"
+                    logging("Current value of parameter ${it.@index} is unknown")
+                    cmds << zwave.configurationV1.configurationGet(parameterNumber: it.@index.toInteger())
+                }
+            }
+            else if ((settings."${it.@index}" != null || "${it.@type}" == "hidden") && cmd2Integer(currentProperties."${it.@index}") != convertParam(it.@index.toInteger(), settings."${it.@index}"? settings."${it.@index}" : "${it.@value}"))
+            { 
+                isUpdateNeeded = "YES"
+                logging("Parameter ${it.@index} will be updated to " + convertParam(it.@index.toInteger(), settings."${it.@index}"? settings."${it.@index}" : "${it.@value}"))
+                def convertedConfigurationValue = convertParam(it.@index.toInteger(), settings."${it.@index}"? settings."${it.@index}" : "${it.@value}")
+                cmds << zwave.configurationV1.configurationSet(configurationValue: integer2Cmd(convertedConfigurationValue, it.@byteSize.toInteger()), parameterNumber: it.@index.toInteger(), size: it.@byteSize.toInteger())
+                cmds << zwave.configurationV1.configurationGet(parameterNumber: it.@index.toInteger())
+            } 
+        }
+    }
+    
+    sendEvent(name:"needUpdate", value: isUpdateNeeded, displayed:false, isStateChange: true)
+    return cmds
+}
+
+def convertParam(number, value) {
+    def parValue
+	switch (number){
+    	case 28:
+            parValue = (value == "true" ? 1 : 0)
+            parValue += (settings."fc_2" == "true" ? 2 : 0)
+            parValue += (settings."fc_3" == "true" ? 4 : 0)
+            parValue += (settings."fc_4" == "true" ? 8 : 0)
+        break
+        case 29:
+            parValue = (value == "true" ? 1 : 0)
+            parValue += (settings."sc_2" == "true" ? 2 : 0)
+            parValue += (settings."sc_3" == "true" ? 4 : 0)
+            parValue += (settings."sc_4" == "true" ? 8 : 0)
+        break
+        default:
+        	parValue = value
+        break
+    }
+    return parValue.toInteger()
+}
+
+private def logging(message) {
+    if (state.enableDebugging == null || state.enableDebugging == "true") log.debug "$message"
+}
+
+/**
+* Convert 1 and 2 bytes values to integer
+*/
+def cmd2Integer(array) { 
+
+switch(array.size()) {
+	case 1:
+		array[0]
+    break
+	case 2:
+    	((array[0] & 0xFF) << 8) | (array[1] & 0xFF)
+    break
+    case 3:
+    	((array[0] & 0xFF) << 16) | ((array[1] & 0xFF) << 8) | (array[2] & 0xFF)
+    break
+	case 4:
+    	((array[0] & 0xFF) << 24) | ((array[1] & 0xFF) << 16) | ((array[2] & 0xFF) << 8) | (array[3] & 0xFF)
+	break
+    }
+}
 
 def integer2Cmd(value, size) {
 	switch(size) {
@@ -465,27 +806,63 @@ def integer2Cmd(value, size) {
 	}
 }
 
+def configuration_model()
+{
+'''
+<configuration>
+  <Value type="list" byteSize="1" index="20" label="Default State (Firmware v1.05)" min="0" max="2" value="0" setting_type="zwave" fw="1.05">
+    <Help>
+Default state of the bulb when power is applied.
+Range: 0~2
+Default: 0 (Previous)
+    </Help>
+    <Item label="Previous" value="0" />
+    <Item label="Always On" value="1" />
+    <Item label="Always Off" value="2" />
+  </Value>
+  <Value type="disabled" byteSize="1" index="32" label="Color Report" min="0" max="1" value="0" setting_type="zwave" fw="1.05">
+    <Help>
+Enable or disable the sending of a report when the bulb color is changed.
+Range: 0~1
+Default: 0 (Disabled)
+    </Help>
+    <Item label="Disable" value="0" />
+    <Item label="Enable" value="1" />
+  </Value>
+  <Value type="disabled" byteSize="1" index="80" label="Status Report" min="0" max="2" value="2" setting_type="zwave" fw="1.04,1.05">
+    <Help>
+Enable or disable the sending of a report when the state of the bulb is changed.
+Range: 0~2
+Default: 2 (Basic CC Report)
+    </Help>
+    <Item label="Disable" value="0" />
+    <Item label="Hail CC" value="1" />
+    <Item label="Basic CC Report" value="2" />
+  </Value>
+    <Value type="list" byteSize="1" index="112" label="Dimmer Mode (Firmware v1.05)" min="0" max="3" value="0" setting_type="zwave" fw="1.04,1.05">
+    <Help>
+Range: 0~3
+Default: 0 (Parabolic)
+    </Help>
+    <Item label="Parabolic Curve" value="0" />
+    <Item label="Index Curve" value="1" />
+    <Item label="(Parabolic + Index)/2" value="2" />
+    <Item label="Linear" value="3" />
+  </Value>
+  <Value type="list" index="enableRandom" label="Enable Random Function" value="false" setting_type="preference" fw="1.04,1.05">
+    <Help>
+If this option is enabled, using the selected color preset in SmartApps such as Smart Lighting will result in a random color.
+    </Help>
+    <Item label="Soft White - Default" value="0" />
+    <Item label="White - Concentrate" value="1" />
+    <Item label="Daylight - Energize" value="2" />
+    <Item label="Warm White - Relax" value="3" />
+  </Value>
+    <Value type="boolean" index="enableDebugging" label="Enable Debug Logging?" value="true" setting_type="preference" fw="1.04,1.05">
+    <Help>
 
-private calculateParameter(number) {
-   long value = 0
-   switch (number){
-      case 37:
-         value += settings.transition ? settings.transition.toLong() : 0
-         value += 33554432 // Custom Mode 
-         value += settings.count ? (settings.count.toLong() * 65536) : 0
-         value += settings.speed ? (settings.speed.toLong() * 256) : 0
-         value += settings.speedLevel ? settings.speedLevel.toLong() : 0
-      break
-      case 38:
-         value += settings.color1 ? (settings.color1.toLong() * 1) : 0
-         value += settings.color2 ? (settings.color2.toLong() * 16) : 0
-         value += settings.color3 ? (settings.color3.toLong() * 256) : 0
-         value += settings.color4 ? (settings.color4.toLong() * 4096) : 0
-         value += settings.color5 ? (settings.color5.toLong() * 65536) : 0
-         value += settings.color6 ? (settings.color6.toLong() * 1048576) : 0
-         value += settings.color7 ? (settings.color7.toLong() * 16777216) : 0
-         value += settings.color8 ? (settings.color8.toLong() * 268435456) : 0
-      break
-    }
-    return value
+    </Help>
+  </Value>
+</configuration>
+'''
 }
