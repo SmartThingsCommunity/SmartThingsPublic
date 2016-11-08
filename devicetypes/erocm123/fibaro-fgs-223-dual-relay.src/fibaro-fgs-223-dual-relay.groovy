@@ -163,7 +163,7 @@ def zwaveEvent(physicalgraph.zwave.commands.meterv3.MeterReport cmd, ep=null) {
     } else {
         result = createEvent(name: pName, value: cmd.scaledMeterValue, unit: "W")
     }
-    cmds ? [result, response(delayBetween(cmds, 1000))] : result
+    cmds ? [result, response(secureSequence(cmds, 1000))] : result
 }
 
 def zwaveEvent(physicalgraph.zwave.commands.multichannelv3.MultiChannelCapabilityReport cmd) 
