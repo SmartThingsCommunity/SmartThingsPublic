@@ -84,7 +84,7 @@ def parse(String description) {
 	}
 
 	log.debug "Parse returned $map"
-	return map ? createEvent(map) : null
+	return map ? createEvent(map) : [:]
 }
 
 private Map parseCatchAllMessage(String description) {
