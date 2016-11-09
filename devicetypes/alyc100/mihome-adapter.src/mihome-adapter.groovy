@@ -12,10 +12,8 @@
  *  on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the License
  *  for the specific language governing permissions and limitations under the License.
  *
- *	VERSION HISTORY
- *	08.11.2016:	2.0 BETA Release 3 - Added ON and OFF buttons for devices that do not report state.
- *	06.11.2016:	2.0 BETA Release 2 - Various tile and formatting updates for Android.
- *	06.11.2016:	2.0 BETA Release 1 - Support for MiHome (Connect) v2.0. Inital version of device.
+ *	VERSION HISTORY - FORMER VERSION NOW RENAMED AS ADAPTER PLUS
+ *	08.11.2016:	2.0 BETA Release 1 - Support for MiHome (Connect) v2.0. Inital version of device.
  */
 metadata {
 	definition (name: "MiHome Adapter", namespace: "alyc100", author: "Alex Lee Yuk Cheung") {
@@ -23,13 +21,10 @@ metadata {
 		capability "Polling"
 		capability "Refresh"
 		capability "Switch"
-        capability "Sensor"
-        capability "Power Meter"
         
         command "on"
         command "off"
 	}
-
 
 	simulator {
 		// TODO: define status and reply messages here
@@ -61,20 +56,16 @@ metadata {
             state "default", label:"", action:"refresh.refresh", icon:"st.secondary.refresh"
         }
         
-        valueTile("totalPower", "device.totalPower", decoration: "flat", width: 4, height: 1) {
-			state "default", label: 'Today Total Power: ${currentValue} Wh'
-		}
-        
-        standardTile("onButton", "device.onButton", inactiveLabel: false, width: 2, height: 2, decoration: "flat") {
+        standardTile("onButton", "device.onButton", inactiveLabel: false, width: 2, height: 2) {
 			state("default", label:'On', action:"on")
         }
         
-        standardTile("offButton", "device.offButton", inactiveLabel: false, width: 2, height: 2, decoration: "flat") {
+        standardTile("offButton", "device.offButton", inactiveLabel: false, width: 2, height: 2) {
 			state("default", label:'Off', action:"off")
         }
-
+        
         main(["switch"])
-        details(["rich-control", "onButton", "offButton", "refresh", "totalPower"])
+        details(["rich-control", "onButton", "offButton", "refresh"])
 	}
 }
 
@@ -99,14 +90,6 @@ def poll() {
     def power_state = resp.data.data.power_state
     if (power_state != null) {
     	sendEvent(name: "switch", value: power_state == 0 ? "off" : "on")
-    }
-    def real_power = resp.data.data.real_power
-    if (real_power != null) {
-   		sendEvent(name: "power", value: real_power as BigDecimal, unit: "Wh")
-    }
-    def today_wh = resp.data.data.today_wh
-    if (today_wh != null) {
-    	sendEvent(name: "totalPower", value: today_wh as BigDecimal, unit: "Wh")
     }
 }
 
@@ -136,3 +119,4 @@ def off() {
     	refresh()
     }
 }
+

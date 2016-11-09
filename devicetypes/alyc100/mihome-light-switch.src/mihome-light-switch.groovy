@@ -13,6 +13,7 @@
  *  for the specific language governing permissions and limitations under the License.
  *
  *	VERSION HISTORY
+ *	08.11.2016:	2.0 BETA Release 3 - Make ON and OFF tiles look more like buttons.
  *	08.11.2016:	2.0 BETA Release 2 - Added ON and OFF buttons for devices that don't always report state.
  *	06.11.2016:	2.0 BETA Release 1 - Support for MiHome (Connect) v2.0. Inital version of device.
  */
@@ -26,28 +27,27 @@ metadata {
         command "on"
         command "off"
 	}
-
-
+    
 	simulator {
 		// TODO: define status and reply messages here
 	}
 
 	tiles(scale: 2) {
-		multiAttributeTile(name:"rich-control", type:"lighting", width:6, height:4, canChangeIcon: true){
+		multiAttributeTile(name:"rich-control", type:"lighting", width:6, height:4, canChangeIcon: false){
             tileAttribute ("device.switch", key: "PRIMARY_CONTROL") {
-                 attributeState "on", label:'${name}', action:"switch.off", icon:"st.Home.home30", backgroundColor:"#79b821", nextState:"on"
-                 attributeState "off", label:'${name}', action:"switch.on", icon:"st.Home.home30", backgroundColor:"#ffffff", nextState:"off"
-                 attributeState "turningOn", label:'${name}', action:"switch.off", icon:"st.Home.home30", backgroundColor:"#79b821", nextState:"turningOff"
-                 attributeState "turningOff", label:'${name}', action:"switch.on", icon:"st.Home.home30", backgroundColor:"#ffffff", nextState:"turningOn"
+                 attributeState "on", label:'${name}', action:"switch.off", icon:"st.Lighting.light11", backgroundColor:"#79b821", nextState:"on"
+                 attributeState "off", label:'${name}', action:"switch.on", icon:"st.Lighting.light13", backgroundColor:"#ffffff", nextState:"off"
+                 attributeState "turningOn", label:'${name}', action:"switch.off", icon:"st.Lighting.light13", backgroundColor:"#79b821", nextState:"turningOff"
+                 attributeState "turningOff", label:'${name}', action:"switch.on", icon:"st.Lighting.light11", backgroundColor:"#ffffff", nextState:"turningOn"
                  attributeState "offline", label:'${name}', icon:"st.switches.switch.off", backgroundColor:"#ff0000"
  			}
         }
         
         standardTile("switch", "device.switch", width: 2, height: 2, canChangeIcon: true) {
-            state "on", label:'${name}', action:"switch.off", icon:"st.Home.home30", backgroundColor:"#79b821", nextState:"off"
-            state "off", label:'${name}', action:"switch.on", icon:"st.Home.home30", backgroundColor:"#ffffff", nextState:"on"
-            state "turningOn", label:'${name}', action:"switch.off", icon:"st.Home.home30", backgroundColor:"#79b821", nextState:"turningOff"
-            state "turningOff", label:'${name}', action:"switch.on", icon:"st.Home.home30", backgroundColor:"#ffffff", nextState:"turningOn"
+            state "on", label:'${name}', action:"switch.off", icon:"st.Lighting.light11", backgroundColor:"#79b821", nextState:"off"
+            state "off", label:'${name}', action:"switch.on", icon:"st.Lighting.light13", backgroundColor:"#ffffff", nextState:"on"
+            state "turningOn", label:'${name}', action:"switch.off", icon:"st.Lighting.light13", backgroundColor:"#79b821", nextState:"turningOff"
+            state "turningOff", label:'${name}', action:"switch.on", icon:"st.Lighting.light11", backgroundColor:"#ffffff", nextState:"turningOn"
             state "offline", label:'${name}', icon:"st.switches.switch.off", backgroundColor:"#ff0000"
         }
 
@@ -55,11 +55,11 @@ metadata {
             state "default", label:"", action:"refresh.refresh", icon:"st.secondary.refresh"
         }
         
-        standardTile("onButton", "device.onButton", inactiveLabel: false, width: 2, height: 2, decoration: "flat") {
+        standardTile("onButton", "device.onButton", inactiveLabel: false, width: 2, height: 2) {
 			state("default", label:'On', action:"on")
         }
         
-        standardTile("offButton", "device.offButton", inactiveLabel: false, width: 2, height: 2, decoration: "flat") {
+        standardTile("offButton", "device.offButton", inactiveLabel: false, width: 2, height: 2) {
 			state("default", label:'Off', action:"off")
         }
 

@@ -296,7 +296,7 @@ def getChartHTML() {
          						['${(date - 3).format("d MMM")}', ${data.chartData[3]}, '#0a9928'],            
          						['${(date - 2).format("d MMM")}', ${data.chartData[2]}, '#0a9928'],
 		 						['${(date - 1).format("d MMM")}', ${data.chartData[1]}, '#0a9928' ], 
-         						['Today', ${data.chartData[0]}, '#79ba10' ], 
+         						['Today', ${data.chartData[0]}, '#eda610' ], 
       					]);
 
       					var options = {

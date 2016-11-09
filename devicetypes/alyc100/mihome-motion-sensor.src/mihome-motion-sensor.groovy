@@ -13,7 +13,7 @@
  *  for the specific language governing permissions and limitations under the License.
  *
  *	VERSION HISTORY
- *	08.11.2016:	2.0 BETA Release 1 - Support for MiHome (Connect) v2.0. Inital version of device.
+ *	08.11.2016:	2.0 BETA Release 1 - Support for MiHome (Connect) v2.0. Initial version of device.
  *
  */
 metadata {
