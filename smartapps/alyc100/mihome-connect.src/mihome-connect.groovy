@@ -13,6 +13,8 @@
  *  for the specific language governing permissions and limitations under the License.
  *
  *	VERSION HISTORY
+ *	09.11.2016: 2.0 BETA Release 5 - Add 4 Gang Extension compatibility.
+ *
  *	08.11.2016: 2.0 BETA Release 4 - Add Energy Monitor Device compatibility. Separate Adapter and Adapter Plus devices.
  *	08.11.2016: 2.0 BETA Release 3 - Add Motion Sensor Device compatibility. Detect standard MiHome adapters.
  *
@@ -123,6 +125,7 @@ def selectDevicePAGE() {
 			input "selectedLights", "enum", image: "https://raw.githubusercontent.com/alyc100/SmartThingsPublic/master/smartapps/alyc100/mihome3_switch.png", required:false, title:"Select MiHome Light Devices \n(${state.miLightDevices.size() ?: 0} found)", multiple:true, options:state.miLightDevices
             input "selectedAdapters", "enum", image: "https://raw.githubusercontent.com/alyc100/SmartThingsPublic/master/smartapps/alyc100/mihome-adapter.png", required:false, title:"Select MiHome Adapter Devices \n(${state.miAdapterDevices.size() ?: 0} found)", multiple:true, options:state.miAdapterDevices
             input "selectedAdapterPluses", "enum", image: "https://raw.githubusercontent.com/alyc100/SmartThingsPublic/master/smartapps/alyc100/mihome-monitor.png", required:false, title:"Select MiHome Adapter Plus Devices \n(${state.miAdapterPlusDevices.size() ?: 0} found)", multiple:true, options:state.miAdapterPlusDevices
+            input "selected4GangExtensions", "enum", image: "https://raw.githubusercontent.com/alyc100/SmartThingsPublic/master/smartapps/alyc100/mihome-extension.png", required:false, title:"Select MiHome 4 Gang Extension Devices \n(${state.mi4GangExtensionDevices.size() ?: 0} found)", multiple:true, options:state.mi4GangExtensionDevices
             input "selectedMonitors", "enum", image: "https://raw.githubusercontent.com/alyc100/SmartThingsPublic/master/smartapps/alyc100/mihome5-adapter.png", required:false, title:"Select MiHome Monitor Devices \n(${state.miMonitorDevices.size() ?: 0} found)", multiple:true, options:state.miMonitorDevices
 			input "selectedMotions", "enum", image: "https://raw.githubusercontent.com/alyc100/SmartThingsPublic/master/smartapps/alyc100/mihome-motion-sensor-ir.png", required:false, title:"Select MiHome Motion Sensors \n(${state.miMotionSensors.size() ?: 0} found)", multiple:true, options:state.miMotionSensors
     }
@@ -143,11 +146,11 @@ def authenticated() {
 }
 
 def devicesSelected() {
-	return (selectedETRVs || selectedLights || selectedAdapters || selectedAdapterPluses || selectedMonitors || selectedMotions) ? "complete" : null
+	return (selectedETRVs || selectedLights || selectedAdapters || selectedAdapterPluses || selected4GangExtensions || selectedMonitors || selectedMotions) ? "complete" : null
 }
 
 def getDevicesSelectedString() {
-	if (state.miETRVDevices == null || state.miLightDevices == null || state.miAdapterDevices == null || state.miAdapterPlusDevices == null || state.miMonitorDevices == null || state.miMotionSensors == null) {
+	if (state.miETRVDevices == null || state.miLightDevices == null || state.miAdapterDevices == null || state.miAdapterPlusDevices == null || state.mi4GangExtensionDevices == null || state.miMonitorDevices == null || state.miMotionSensors == null) {
     	updateDevices()
   	}
 	def listString = ""
@@ -195,6 +198,17 @@ def getDevicesSelectedString() {
 			}
 		}
   	}
+    selected4GangExtensions.each { childDevice ->
+    	if (listString == "") {
+			if (null != state.mi4GangExtensionDevices) {
+				listString += state.mi4GangExtensionDevices[childDevice]
+			}
+		} else {
+			if (null != state.mi4GangExtensionDevices) {
+				listString += "\n" + state.mi4GangExtensionDevices[childDevice]
+			}
+		}
+    }
     selectedMonitors.each { childDevice ->
     	if (listString == "") {
 			if (null != state.miMonitorDevices) {
@@ -266,6 +280,9 @@ def initialize() {
     if (selectedAdapterPluses) {
     	addAdapterPlus()
     }
+    if (selected4GangExtensions) {
+    	add4GangExtension()
+    }
     if (selectedMonitors) {
     	addMonitor()
     }
@@ -284,6 +301,7 @@ def updateDevices() {
   	state.miLightDevices = [:]
     state.miAdapterDevices = [:]
     state.miAdapterPlusDevices = [:]
+    state.mi4GangExtensionDevices = [:]
     state.miMotionSensors = [:]
     state.miMonitorDevices = [:]
 
@@ -358,6 +376,26 @@ def updateDevices() {
 				}
      		}
         }
+        else if (device.device_type == '4 Gang Extension') {
+        	log.debug "Identified: device ${device.id}: ${device.device_type}: ${device.label}"
+            def value = "${device.label} 4 Gang Extension"
+			def key = device.id
+			state.mi4GangExtensionDevices["${key}"] = value
+            
+            //Update names of devices with MiHome
+            0.upto(3, {
+            	selectors.add("${device.id}/${it}")
+   				def childDevice = getChildDevice("${device.id}/${it}")
+                
+                if (childDevice) {
+     				//Update name of device if different.
+     				if(childDevice.name != device.label + " 4 Gang Extension [Socket ${it + 1}]") {
+						childDevice.name = device.label + " 4 Gang Extension [Socket ${it + 1}]"
+						log.debug "Device's name has changed."
+					}
+     			}
+            })
+        }
         else if (device.device_type == 'monitor') {
         	log.debug "Identified: device ${device.id}: ${device.device_type}: ${device.label}"
             selectors.add("${device.id}")
@@ -394,7 +432,7 @@ def updateDevices() {
         }
     }
    	log.debug selectors
-   	//Remove devices if does not exist on the OVO platform
+   	//Remove devices if does not exist on the MiHome platform
    	getChildDevices().findAll { !selectors.contains("${it.deviceNetworkId}") }.each {
 		log.info("Deleting ${it.deviceNetworkId}")
         try {
@@ -502,6 +540,31 @@ def addAdapterPlus() {
 			log.debug "found ${state.miAdapterPlusDevices[device]} with id ${device} already exists"
 		}
 
+	}
+}
+
+def add4GangExtension() {
+	updateDevices()
+
+	selected4GangExtensions.each { device ->
+    	0.upto(3, {
+            def childDevice = getChildDevice("${device}/${it}")
+            
+            if (!childDevice) {
+    			log.info("Adding device ${device}/${it}: ${state.mi4GangExtensionDevices[device]} [Socket ${it + 1}]")
+
+        		def data = [
+                	name: "${state.mi4GangExtensionDevices[device]} [Socket ${it + 1}]",
+					label: "${state.mi4GangExtensionDevices[device]} [Socket ${it + 1}]"
+				]
+            	childDevice = addChildDevice(app.namespace, "MiHome Adapter", "${device}/${it}", null, data)
+            	childDevice.refresh()
+
+				log.debug "Created ${state.mi4GangExtensionDevices[device]} [Socket ${it + 1}] with id: ${device}/${it}"
+			} else {
+				log.debug "found ${state.mi4GangExtensionDevices[device]} [Socket ${it + 1}] with id ${device}/${it} already exists"
+			}
+		})
 	}
 }
 
@@ -657,7 +720,7 @@ def logErrors(options = [errorReturn: null, logObject: log], Closure c) {
 }
 
 private def textVersion() {
-    def text = "MiHome (Connect)\nVersion: 2.0 BETA Release 4\nDate: 09112016(1040)"
+    def text = "MiHome (Connect)\nVersion: 2.0 BETA Release 4\nDate: 08112016(2300)"
 }
 
 private def textCopyright() {
