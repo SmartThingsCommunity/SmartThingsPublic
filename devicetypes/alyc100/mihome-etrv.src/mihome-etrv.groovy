@@ -14,6 +14,7 @@
  *
  *
  *	VERSION HISTORY
+*	07.11.2016: 2.0 BETA Release 1.1 - Allow icon to be changed.
  *	07.11.2016: 2.0 BETA Release 1 - Version number update to match Smartapp.
  *
  *	10.01.2016: 1.1.2 - Bug fix to Boost mode not executing.
@@ -67,7 +68,7 @@ metadata {
 			}
 		}
         
-        valueTile("thermostat_small", "device.temperature", width: 2, height: 2) {
+        valueTile("thermostat_small", "device.temperature", width: 2, height: 2, canChangeIcon: true) {
 			state "default", label:'${currentValue}°', unit:"C",
             backgroundColors:[
                 [value: 0, color: "#153591"],
