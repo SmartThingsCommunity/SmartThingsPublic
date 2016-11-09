@@ -13,6 +13,7 @@
  *  for the specific language governing permissions and limitations under the License.
  *
  *	VERSION HISTORY
+ *	08.11.2016: 2.0 BETA Release 4 - Add Energy Monitor Device compatibility. Seperate Adapter and Adapter Plus devices.
  *	08.11.2016: 2.0 BETA Release 3 - Add Motion Sensor Device compatibility. Detect standard MiHome adapters.
  *
  *	06.11.2016: 2.0 BETA Release 2 - Fix issue identifying MiHome adapters.
@@ -120,7 +121,9 @@ def selectDevicePAGE() {
     section("Select your devices:") {
 			input "selectedETRVs", "enum", image: "https://raw.githubusercontent.com/alyc100/SmartThingsPublic/master/smartapps/alyc100/mihome4-01bc8a0e478b385df3248b55cc2df7ca.png", required:false, title:"Select MiHome eTRV Devices \n(${state.miETRVDevices.size() ?: 0} found)", multiple:true, options:state.miETRVDevices
 			input "selectedLights", "enum", image: "https://raw.githubusercontent.com/alyc100/SmartThingsPublic/master/smartapps/alyc100/mihome3_switch.png", required:false, title:"Select MiHome Light Devices \n(${state.miLightDevices.size() ?: 0} found)", multiple:true, options:state.miLightDevices
-            input "selectedAdapters", "enum", image: "https://raw.githubusercontent.com/alyc100/SmartThingsPublic/master/smartapps/alyc100/mihome5-adapter.png", required:false, title:"Select MiHome Adapter Devices \n(${state.miAdapterDevices.size() ?: 0} found)", multiple:true, options:state.miAdapterDevices
+            input "selectedAdapters", "enum", image: "https://raw.githubusercontent.com/alyc100/SmartThingsPublic/master/smartapps/alyc100/mihome-adapter.png", required:false, title:"Select MiHome Adapter Devices \n(${state.miAdapterDevices.size() ?: 0} found)", multiple:true, options:state.miAdapterDevices
+            input "selectedAdapterPluses", "enum", image: "https://raw.githubusercontent.com/alyc100/SmartThingsPublic/master/smartapps/alyc100/mihome-monitor.png", required:false, title:"Select MiHome Adapter Plus Devices \n(${state.miAdapterPlusDevices.size() ?: 0} found)", multiple:true, options:state.miAdapterPlusDevices
+            input "selectedMonitors", "enum", image: "https://raw.githubusercontent.com/alyc100/SmartThingsPublic/master/smartapps/alyc100/mihome5-adapter.png", required:false, title:"Select MiHome Monitor Devices \n(${state.miMonitorDevices.size() ?: 0} found)", multiple:true, options:state.miMonitorDevices
 			input "selectedMotions", "enum", image: "https://raw.githubusercontent.com/alyc100/SmartThingsPublic/master/smartapps/alyc100/mihome-motion-sensor-ir.png", required:false, title:"Select MiHome Motion Sensors \n(${state.miMotionSensors.size() ?: 0} found)", multiple:true, options:state.miMotionSensors
     }
   }
@@ -140,11 +143,11 @@ def authenticated() {
 }
 
 def devicesSelected() {
-	return (selectedETRVs || selectedLights || selectedAdapters || selectedMotions) ? "complete" : null
+	return (selectedETRVs || selectedLights || selectedAdapters || selectedAdapterPluses || selectedMonitors || selectedMotions) ? "complete" : null
 }
 
 def getDevicesSelectedString() {
-	if (state.miETRVDevices == null || state.miLightDevices == null || state.miAdapterDevices == null || state.miMotionSensors == null) {
+	if (state.miETRVDevices == null || state.miLightDevices == null || state.miAdapterDevices == null || state.miAdapterPlusDevices == null || state.miMonitorDevices == null || state.miMotionSensors == null) {
     	updateDevices()
   	}
 	def listString = ""
@@ -181,6 +184,28 @@ def getDevicesSelectedString() {
 			}
 		}
   	}
+    selectedAdapterPluses.each { childDevice ->
+		if (listString == "") {
+			if (null != state.miAdapterPlusDevices) {
+				listString += state.miAdapterPlusDevices[childDevice]
+			}
+		} else {
+			if (null != state.miAdapterPlusDevices) {
+				listString += "\n" + state.miAdapterPlusDevices[childDevice]
+			}
+		}
+  	}
+    selectedMonitors.each { childDevice ->
+    	if (listString == "") {
+			if (null != state.miMonitorDevices) {
+				listString += state.miMonitorDevices[childDevice]
+			}
+		} else {
+			if (null != state.miMonitorDevices) {
+				listString += "\n" + state.miMonitorDevices[childDevice]
+			}
+		}
+    }
     selectedMotions.each { childDevice ->
     	if (listString == "") {
 			if (null != state.miMotionSensors) {
@@ -238,6 +263,12 @@ def initialize() {
     if (selectedAdapters) {
     	addAdapter()
     }
+    if (selectedAdapterPluses) {
+    	addAdapterPlus()
+    }
+    if (selectedMonitors) {
+    	addMonitor()
+    }
     if (selectedMotions) {
     	addMotion()
     }
@@ -252,7 +283,9 @@ def updateDevices() {
   	state.miETRVDevices = [:]
   	state.miLightDevices = [:]
     state.miAdapterDevices = [:]
+    state.miAdapterPlusDevices = [:]
     state.miMotionSensors = [:]
+    state.miMonitorDevices = [:]
 
     def selectors = []
 	devices.each { device ->
@@ -291,7 +324,7 @@ def updateDevices() {
 				}
      		}
         }
-        else if (device.device_type == 'control' || device.device_type == 'legacy' ) {
+        else if (device.device_type == 'legacy') {
         	log.debug "Identified: device ${device.id}: ${device.device_type}: ${device.label}"
             selectors.add("${device.id}")
             def value = "${device.label} Adapter"
@@ -304,6 +337,40 @@ def updateDevices() {
      			//Update name of device if different.
      			if(childDevice.name != device.label + " Adapter") {
 					childDevice.name = device.label + " Adapter"
+					log.debug "Device's name has changed."
+				}
+     		}
+        }
+       	else if (device.device_type == 'control') {
+        	log.debug "Identified: device ${device.id}: ${device.device_type}: ${device.label}"
+            selectors.add("${device.id}")
+            def value = "${device.label} Adapter Plus"
+			def key = device.id
+			state.miAdapterDevices["${key}"] = value
+            
+            //Update names of devices with MiHome
+     		def childDevice = getChildDevice("${device.id}")
+     		if (childDevice) {
+     			//Update name of device if different.
+     			if(childDevice.name != device.label + " Adapter Plus") {
+					childDevice.name = device.label + " Adapter Plus"
+					log.debug "Device's name has changed."
+				}
+     		}
+        }
+        else if (device.device_type == 'monitor') {
+        	log.debug "Identified: device ${device.id}: ${device.device_type}: ${device.label}"
+            selectors.add("${device.id}")
+            def value = "${device.label} Monitor"
+			def key = device.id
+			state.miMonitorDevices["${key}"] = value
+            
+            //Update names of devices with MiHome
+     		def childDevice = getChildDevice("${device.id}")
+     		if (childDevice) {
+     			//Update name of device if different.
+     			if(childDevice.name != device.label + " Monitor") {
+					childDevice.name = device.label + " Monitor"
 					log.debug "Device's name has changed."
 				}
      		}
@@ -408,6 +475,56 @@ def addAdapter() {
 			log.debug "Created ${state.miAdapterDevices[device]} with id: ${device}"
 		} else {
 			log.debug "found ${state.miAdapterDevices[device]} with id ${device} already exists"
+		}
+
+	}
+}
+
+def addAdapterPlus() {
+	updateDevices()
+
+	selectedAdapterPluses.each { device ->
+
+        def childDevice = getChildDevice("${device}")
+
+        if (!childDevice) {
+    		log.info("Adding device ${device}: ${state.miAdapterPlusDevices[device]}")
+
+        	def data = [
+                	name: state.miAdapterPlusDevices[device],
+					label: state.miAdapterPlusDevices[device]
+				]
+            childDevice = addChildDevice(app.namespace, "MiHome Adapter Plus", "$device", null, data)
+            childDevice.refresh()
+
+			log.debug "Created ${state.miAdapterPlusDevices[device]} with id: ${device}"
+		} else {
+			log.debug "found ${state.miAdapterPlusDevices[device]} with id ${device} already exists"
+		}
+
+	}
+}
+
+def addMonitor() {
+	updateDevices()
+
+	selectedMonitors.each { device ->
+
+        def childDevice = getChildDevice("${device}")
+
+        if (!childDevice) {
+    		log.info("Adding device ${device}: ${state.miMonitorDevices[device]}")
+
+        	def data = [
+                	name: state.miMonitorDevices[device],
+					label: state.miMonitorDevices[device]
+				]
+            childDevice = addChildDevice(app.namespace, "MiHome Monitor", "$device", null, data)
+            childDevice.refresh()
+
+			log.debug "Created ${state.miMonitorDevices[device]} with id: ${device}"
+		} else {
+			log.debug "found ${state.miMonitorDevices[device]} with id ${device} already exists"
 		}
 
 	}
@@ -539,7 +656,7 @@ def logErrors(options = [errorReturn: null, logObject: log], Closure c) {
 }
 
 private def textVersion() {
-    def text = "MiHome (Connect)\nVersion: 2.0 BETA Release 3\nDate: 08112016(0015)"
+    def text = "MiHome (Connect)\nVersion: 2.0 BETA Release 4\nDate: 08112016(2300)"
 }
 
 private def textCopyright() {
