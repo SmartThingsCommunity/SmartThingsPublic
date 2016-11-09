@@ -28,6 +28,10 @@ capability "Power Meter"
 
 attribute "switch1", "string"
 attribute "switch2", "string"
+attribute "power1", "number"
+attribute "energy1", "number"
+attribute "power2", "number"
+attribute "energy2", "number"
 
 command "on1"
 command "off1"
@@ -40,12 +44,6 @@ fingerprint deviceId: "0x1001", inClusters:"0x86, 0x72, 0x85, 0x60, 0x8E, 0x25, 
 }
 
 simulator {
-status "on": "command: 2003, payload: FF"
-status "off": "command: 2003, payload: 00"
-
-// reply messages
-reply "2001FF,delay 100,2502": "command: 2503, payload: FF"
-reply "200100,delay 100,2502": "command: 2503, payload: 00"
 }
 
 tiles(scale: 2){
@@ -55,6 +53,9 @@ tiles(scale: 2){
 				attributeState "on", label: '${name}', action: "switch.off", icon: "st.switches.switch.on", backgroundColor: "#79b821"
 				attributeState "off", label: '${name}', action: "switch.on", icon: "st.switches.switch.off", backgroundColor: "#ffffff"
 			}
+            tileAttribute ("statusText", key: "SECONDARY_CONTROL") {
+           		attributeState "statusText", label:'${currentValue}'       		
+            }
 	}
 	standardTile("switch1", "device.switch1",canChangeIcon: true, width: 2, height: 2) {
 		state "on", label: "switch1", action: "off1", icon: "st.switches.switch.on", backgroundColor: "#79b821"
@@ -64,6 +65,12 @@ tiles(scale: 2){
 		state "on", label: "switch2", action: "off2", icon: "st.switches.switch.on", backgroundColor: "#79b821"
 		state "off", label: "switch2", action: "on2", icon: "st.switches.switch.off", backgroundColor: "#ffffff"
     }
+    valueTile("energy", "device.energy", decoration: "flat", width: 2, height: 2) {
+			state "default", label:'${currentValue} kWh'
+	}
+    valueTile("power", "device.power", decoration: "flat", width: 2, height: 2) {
+			state "default", label:'${currentValue} W'
+	}
     valueTile("energy1", "device.energy1", decoration: "flat", width: 2, height: 2) {
 			state "default", label:'${currentValue} kWh'
 	}
@@ -163,7 +170,26 @@ def zwaveEvent(physicalgraph.zwave.commands.meterv3.MeterReport cmd, ep=null) {
     } else {
         result = createEvent(name: pName, value: cmd.scaledMeterValue, unit: "W")
     }
+    
+    runIn(1, "updateStatus")
+    
     cmds ? [result, response(secureSequence(cmds, 1000))] : result
+}
+
+private updateStatus(){
+
+    String statusText = ""
+
+    if(device.currentValue('power') != null)
+        statusText = "${device.currentValue('power')} W - "
+    
+    if(device.currentValue('energy') != null)
+        statusText = statusText + "${device.currentValue('energy')} kWh - "
+        
+    if (statusText != ""){
+        statusText = statusText.substring(0, statusText.length() - 2)
+        sendEvent(name:"statusText", value: statusText, displayed:false)
+    }
 }
 
 def zwaveEvent(physicalgraph.zwave.commands.multichannelv3.MultiChannelCapabilityReport cmd) 
@@ -375,16 +401,18 @@ def updated()
 
 def on() { 
    secureSequence([
-        zwave.switchAllV1.switchAllOn(),
+        zwave.multiChannelV3.multiChannelCmdEncap(sourceEndPoint:1, destinationEndPoint:1, commandClass:37, command:1, parameter:[255]),
+        zwave.multiChannelV3.multiChannelCmdEncap(sourceEndPoint:2, destinationEndPoint:2, commandClass:37, command:1, parameter:[255]),
         zwave.multiChannelV3.multiChannelCmdEncap(sourceEndPoint:1, destinationEndPoint:1, commandClass:37, command:2),
-        zwave.multiChannelV3.multiChannelCmdEncap(sourceEndPoint:1, destinationEndPoint:2, commandClass:37, command:2)
+        zwave.multiChannelV3.multiChannelCmdEncap(sourceEndPoint:2, destinationEndPoint:2, commandClass:37, command:2)
     ], 1000)
 }
 def off() {
    secureSequence([
-        zwave.switchAllV1.switchAllOff(),
+        zwave.multiChannelV3.multiChannelCmdEncap(sourceEndPoint:1, destinationEndPoint:1, commandClass:37, command:1, parameter:[0]),
+        zwave.multiChannelV3.multiChannelCmdEncap(sourceEndPoint:2, destinationEndPoint:2, commandClass:37, command:1, parameter:[0]),
         zwave.multiChannelV3.multiChannelCmdEncap(sourceEndPoint:1, destinationEndPoint:1, commandClass:37, command:2),
-        zwave.multiChannelV3.multiChannelCmdEncap(sourceEndPoint:1, destinationEndPoint:2, commandClass:37, command:2)
+        zwave.multiChannelV3.multiChannelCmdEncap(sourceEndPoint:2, destinationEndPoint:2, commandClass:37, command:2)
     ], 1000)
 }
 
