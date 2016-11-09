@@ -73,7 +73,9 @@ metadata {
 					["White":"White - Concentrate"],
 					["Daylight":"Daylight - Energize"],
 					["Warm White":"Warm White - Relax"],
-					"Red","Green","Blue","Yellow","Orange","Purple","Pink","Cyan","Random"])
+					"Red","Green","Blue","Yellow","Orange","Purple","Pink","Cyan","Random","Custom"])
+                    
+        input "custom", "text", title: "Custom Color in Hex (ie ffffff)\r\nIf \"Custom\" is chosen above", submitOnChange: false, required: false
 		
         input("level", "enum", title: "Default Level", required: false, value: 100, options: [[0:"Previous"],[10:"10%"],[20:"20%"],[30:"30%"],[40:"40%"],[50:"50%"],[60:"60%"],[70:"70%"],[80:"80%"],[90:"90%"],[100:"100%"]])
 
@@ -206,6 +208,8 @@ def configureDefault(){
         return postAction("/config?dcolor=Previous")
     } else if(settings.color == "Random") {
         return postAction("/config?dcolor=f~${getHexColor(settings.color)}")
+    } else if(settings.color == "Custom") {
+        return postAction("/config?dcolor=f~${settings.custom}")
     } else if(settings.color == "Soft White" || settings.color == "Warm White") {
         if (settings.level == "0") {
             return postAction("/config?dcolor=w~${getDimmedColor(getHexColor(settings.color), "100")}")
