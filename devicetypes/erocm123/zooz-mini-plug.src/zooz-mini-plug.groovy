@@ -161,7 +161,6 @@ def zwaveEvent(physicalgraph.zwave.Command cmd) {
 }
 
 private updateStatus(){
-    def result = []
 
     String statusText = ""
 
