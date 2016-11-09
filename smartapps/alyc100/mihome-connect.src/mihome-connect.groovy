@@ -346,7 +346,7 @@ def updateDevices() {
             selectors.add("${device.id}")
             def value = "${device.label} Adapter Plus"
 			def key = device.id
-			state.miAdapterDevices["${key}"] = value
+			state.miAdapterPlusDevices["${key}"] = value
             
             //Update names of devices with MiHome
      		def childDevice = getChildDevice("${device.id}")
@@ -657,7 +657,7 @@ def logErrors(options = [errorReturn: null, logObject: log], Closure c) {
 }
 
 private def textVersion() {
-    def text = "MiHome (Connect)\nVersion: 2.0 BETA Release 4\nDate: 08112016(2300)"
+    def text = "MiHome (Connect)\nVersion: 2.0 BETA Release 4\nDate: 09112016(1040)"
 }
 
 private def textCopyright() {
