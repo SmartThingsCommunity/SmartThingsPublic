@@ -13,7 +13,7 @@
  *  for the specific language governing permissions and limitations under the License.
  *
  *	VERSION HISTORY
- *	08.11.2016: 2.0 BETA Release 4 - Add Energy Monitor Device compatibility. Seperate Adapter and Adapter Plus devices.
+ *	08.11.2016: 2.0 BETA Release 4 - Add Energy Monitor Device compatibility. Separate Adapter and Adapter Plus devices.
  *	08.11.2016: 2.0 BETA Release 3 - Add Motion Sensor Device compatibility. Detect standard MiHome adapters.
  *
  *	06.11.2016: 2.0 BETA Release 2 - Fix issue identifying MiHome adapters.
@@ -227,7 +227,7 @@ def installed() {
 	initialize()
 	// Check for new devices and remove old ones every 3 hours
 	runEvery3Hours('updateDevices')
-    // execute handlerMethod every 10 minutes.
+    // execute refresh method every minute
     schedule("0 0/1 * * * ?", refreshDevices)
 }
 
@@ -556,6 +556,7 @@ def addMotion() {
 }
 
 def refreshDevices() {
+	log.info("Executing refreshDevices...")
     if (atomicState.refreshCounter == null || atomicState.refreshCounter >= 5) {
     	atomicState.refreshCounter = 0
     } else {
@@ -565,7 +566,7 @@ def refreshDevices() {
     	if (atomicState.refreshCounter == 5) {
         	log.info("Refreshing device ${device.name} ...")
 			device.refresh()
-        } else if (device.name.contains("Adapter") || device.name.contains("Motion Sensor")) {
+        } else if (device.name.contains("Monitor") || device.name.contains("Motion Sensor") || device.name.contains("Adapter Plus")) {
         	log.info("Refreshing device ${device.name}...")
 			device.refresh()
         }
