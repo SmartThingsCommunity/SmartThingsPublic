@@ -26,6 +26,7 @@
  *	v2.2.2b - Alter Simple Date Format hour string
  *
  *	v2.3 - Added historical power chart for the last 5 days.
+ *	v2.3.1 - Fix chart Android compatibility.
  */
 preferences 
 {
@@ -330,7 +331,7 @@ def getChartHTML() {
 				<meta http-equiv="expires" content="Tue, 01 Jan 1980 1:00:00 GMT"/>
 				<meta http-equiv="pragma" content="no-cache"/>
 				<meta name="viewport" content="width = device-width, user-scalable=no, initial-scale=1.0">
-				<script type="text/javascript" src="https://www.gstatic.com/charts/loader.js"></script>
+				<script type="text/javascript" src="${getChartJsData()}"></script>
 			</head>
 			<body>
   				<div id="chart_div"></div>
@@ -344,3 +345,62 @@ def getChartHTML() {
 		log.error "getChartHTML Exception:", ex
 	}
 }
+
+def getChartJsData() {
+	def chartJsData = null
+	//def htmlInfo = state?.htmlInfo
+	def htmlInfo
+	state.chartJsData = null
+	if(htmlInfo?.chartJsUrl && htmlInfo?.chartJsVer) {
+		if(state?.chartJsData) {
+			if (state?.chartJsVer?.toInteger() == htmlInfo?.chartJsVer?.toInteger()) {
+				//LogAction("getChartJsData: Chart Javascript Data is Current | Loading Data from State...")
+				chartJsData = state?.chartJsData
+			} else if (state?.chartJsVer?.toInteger() < htmlInfo?.chartJsVer?.toInteger()) {
+				//LogAction("getChartJsData: Chart Javascript Data is Outdated | Loading Data from Source...")
+				chartJsData = getFileBase64(htmlInfo.chartJsUrl, "text", "css")
+				state.chartJsData = chartJsData
+				state?.chartJsVer = htmlInfo?.chartJsVer
+			}
+		} else {
+			//LogAction("getChartJsData: Chart Javascript Data is Missing | Loading Data from Source...")
+			chartJsData = getFileBase64(htmlInfo.chartJsUrl, "text", "css")
+			state?.chartJsData = chartJsData
+			state?.chartJsVer = htmlInfo?.chartJsVer
+		}
+	} else {
+		//LogAction("getChartJsData: No Stored Chart Javascript Data Found for Device... Loading for Static URL...")
+		chartJsData = getFileBase64(chartJsUrl(), "text", "javascript")
+	}
+	return chartJsData
+}
+
+def getFileBase64(url, preType, fileType) {
+	try {
+		def params = [
+			uri: url,
+			contentType: '$preType/$fileType'
+		]
+		httpGet(params) { resp ->
+			if(resp.data) {
+				def respData = resp?.data
+				ByteArrayOutputStream bos = new ByteArrayOutputStream()
+				int len
+				int size = 4096
+				byte[] buf = new byte[size]
+				while ((len = respData.read(buf, 0, size)) != -1)
+					bos.write(buf, 0, len)
+				buf = bos.toByteArray()
+				//LogAction("buf: $buf")
+				String s = buf?.encodeBase64()
+				//LogAction("resp: ${s}")
+				return s ? "data:${preType}/${fileType};base64,${s.toString()}" : null
+			}
+		}
+	}
+	catch (ex) {
+		log.error "getFileBase64 Exception:", ex
+	}
+}
+
+def chartJsUrl() { return "https://www.gstatic.com/charts/loader.js" }
