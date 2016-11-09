@@ -19,9 +19,9 @@
     author: "SmartThings",
     description: "Control your Bose SoundTouch speakers",
     category: "SmartThings Labs",
-    iconUrl: "https://s3.amazonaws.com/smartapp-icons/Convenience/Cat-Convenience.png",
-    iconX2Url: "https://s3.amazonaws.com/smartapp-icons/Convenience/Cat-Convenience@2x.png",
-    iconX3Url: "https://s3.amazonaws.com/smartapp-icons/Convenience/Cat-Convenience@2x.png",
+    iconUrl: "https://d3azp77rte0gip.cloudfront.net/smartapps/fcf1d93a-ba0b-4324-b96f-e5b5487dfaf5/images/BoseST_icon.png",
+    iconX2Url: "https://d3azp77rte0gip.cloudfront.net/smartapps/fcf1d93a-ba0b-4324-b96f-e5b5487dfaf5/images/BoseST_icon@2x.png",
+    iconX3Url: "https://d3azp77rte0gip.cloudfront.net/smartapps/fcf1d93a-ba0b-4324-b96f-e5b5487dfaf5/images/BoseST_icon@2x-1.png",
     singleInstance: true
 )
 
@@ -104,7 +104,7 @@ def deviceDiscovery()
 
         return dynamicPage(name:"deviceDiscovery", title:"Discovery Started!", nextPage:"", refreshInterval:refreshInterval, install:true, uninstall: true) {
             section("Please wait while we discover your ${getDeviceName()}. Discovery can take five minutes or more, so sit back and relax! Select your device below once discovered.") {
-                input "selecteddevice", "enum", required:false, title:"Select ${getDeviceName()} (${numFound} found)", multiple:true, options:devices
+                input "selecteddevice", "enum", required:false, title:"Select ${getDeviceName()} (${numFound} found)", multiple:true, options:devices, submitOnChange: true
             }
         }
     }
@@ -195,7 +195,10 @@ def addDevice(){
                 deviceName = getDeviceName() + "[${newDevice?.value.name}]"
             d = addChildDevice(getNameSpace(), getDeviceName(), dni, newDevice?.value.hub, [label:"${deviceName}"])
             d.boseSetDeviceID(newDevice.value.deviceID)
+            d.updateDataValue("manufacturer", getDeviceName())
             log.trace "Created ${d.displayName} with id $dni"
+            // sync DTH with device, done here as it currently don't work from the DTH's installed() method
+            d.refresh()
         } else {
             log.trace "${d.displayName} with id $dni already exists"
         }
@@ -214,6 +217,27 @@ def resolveDNI2Address(dni) {
         return convertHexToIP(device.value.networkAddress)
     }
     return null
+}
+
+def updateDeviceName(dni, name, child = null) {
+    def device = getVerifiedDevices().find { (it.value.mac) == dni }
+    if (device) {
+        if (name && (device?.value?.name != name)) {
+            device.value.name = name
+            if (child) {
+                // When name is change is done in DTH settings child is provied
+                child.bosePOST("/name", "<name>${name}</name>")
+            } else {
+                // When name change originates from device child is null
+                // Make sure device.value.name is updated before updating child, to prevent double update.
+                runIn(2, "updateChildDisplayName", [data: [dni:dni, name:name], overwrite: true])
+            }
+        }
+    }
+}
+
+def updateChildDisplayName(param) {
+    getChildDevice(param.dni).setDisplayName(param.name)
 }
 
 /**
@@ -264,6 +288,10 @@ def boseZoneReset() {
 
 def boseZoneHasMaster() {
     return getChildDevices().find{ it.boseGetZone() == "server" } != null
+}
+
+def boseZoneGetMaster() {
+    return getChildDevices().find{ it.boseGetZone() == "server" }
 }
 
 /**
@@ -376,7 +404,7 @@ private def parseDESC(xmlData) {
     log.info "parseDESC()"
 
     def devicetype = getDeviceType().toLowerCase()
-    def devicetxml = body.device.deviceType.text().toLowerCase()
+    def devicetxml = body?.device?.deviceType?.text()?.toLowerCase()
 
     // Make sure it's the type we want
     if (devicetxml == devicetype) {
@@ -398,7 +426,7 @@ private def parseDESC(xmlData) {
  *
  * @param xmlData
  */
-private def parseINFO(xmlData) {
+def parseINFO(xmlData) {
     log.info "parseINFO()"
     def devicetype = getDeviceType().toLowerCase()
 
@@ -493,8 +521,15 @@ private discoverDevices() {
  * request for each of them (basically calling verifyDevice() per unverified)
  */
 private verifyDevices() {
-    def devices = getDevices().findAll { it?.value?.verified != true }
-
+    def devices
+    def timeNow = new Date().time
+    def TIME_TO_NOTIFY = 86400 * 1000 // Verify all devices one time a day to get latest SW version
+    if (!state.timeVerifyAll || (TIME_TO_NOTIFY < (timeNow - state.timeVerifyAll))) {
+        state.timeVerifyAll = timeNow
+        devices = getDevices()
+    } else {
+        devices = getDevices().findAll { it?.value?.verified != true }
+    }
     devices.each {
         verifyDevice(
             it?.value?.mac,
