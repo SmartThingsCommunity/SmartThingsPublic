@@ -13,6 +13,9 @@
  *  for the specific language governing permissions and limitations under the License.
  *
  *	VERSION HISTORY - FORMER VERSION NOW RENAMED AS ADAPTER PLUS
+ *
+ *	09.11.2016:	2.0 BETA Release 2 - Added support for MiHome multiple gangway devices.
+ *
  *	08.11.2016:	2.0 BETA Release 1 - Support for MiHome (Connect) v2.0. Inital version of device.
  */
 metadata {
@@ -79,8 +82,13 @@ def parse(String description) {
 // handle commands
 def poll() {
 	log.debug "Executing 'poll' for ${device} ${this} ${device.deviceNetworkId}"
-    
-    def resp = parent.apiGET("/subdevices/show?params=" + URLEncoder.encode(new groovy.json.JsonBuilder([id: device.deviceNetworkId.toInteger()]).toString()))
+    def body = []
+    if (device.deviceNetworkId.contains("/")) {
+    	body = [id: device.deviceNetworkId.toInteger(), socket: (device.deviceNetworkId.tokenize("/")[1].toInteger())]
+    } else {
+    	body = [id: device.deviceNetworkId.toInteger()]
+    }
+    def resp = parent.apiGET("/subdevices/show?params=" + URLEncoder.encode(new groovy.json.JsonBuilder(body).toString()))
 	if (resp.status != 200) {
 		log.error("Unexpected result in poll(): [${resp.status}] ${resp.data}")
         sendEvent(name: "switch", value: "offline", descriptionText: "The device is offline")
@@ -100,7 +108,13 @@ def refresh() {
 
 def on() {
 	log.debug "Executing 'on'"
-	def resp = parent.apiGET("/subdevices/power_on?params=" + URLEncoder.encode(new groovy.json.JsonBuilder([id: device.deviceNetworkId.toInteger()]).toString()))
+    def body = []
+    if (device.deviceNetworkId.contains("/")) {
+    	body = [id: device.deviceNetworkId.toInteger(), socket: (device.deviceNetworkId.tokenize("/")[1].toInteger())]
+    } else {
+    	body = [id: device.deviceNetworkId.toInteger()]
+    }
+    def resp = parent.apiGET("/subdevices/power_on?params=" + URLEncoder.encode(new groovy.json.JsonBuilder(body).toString()))
     if (resp.status != 200) {
 		log.error("Unexpected result in poll(): [${resp.status}] ${resp.data}")
 	}
@@ -111,7 +125,13 @@ def on() {
 
 def off() {
 	log.debug "Executing 'off'"
-	def resp = parent.apiGET("/subdevices/power_off?params=" + URLEncoder.encode(new groovy.json.JsonBuilder([id: device.deviceNetworkId.toInteger()]).toString()))
+    def body = []
+    if (device.deviceNetworkId.contains("/")) {
+    	body = [id: device.deviceNetworkId.toInteger(), socket: (device.deviceNetworkId.tokenize("/")[1].toInteger())]
+    } else {
+    	body = [id: device.deviceNetworkId.toInteger()]
+    }
+    def resp = parent.apiGET("/subdevices/power_off?params=" + URLEncoder.encode(new groovy.json.JsonBuilder(body).toString()))
     if (resp.status != 200) {
 		log.error("Unexpected result in poll(): [${resp.status}] ${resp.data}")
 	}
