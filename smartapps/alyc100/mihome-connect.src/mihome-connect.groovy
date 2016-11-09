@@ -13,6 +13,7 @@
  *  for the specific language governing permissions and limitations under the License.
  *
  *	VERSION HISTORY
+ *	09.11.2016: 2.0 BETA Release 5.2 - 4 gang device detection fix.
  *	09.11.2016: 2.0 BETA Release 5.1 - Try and reduce chances of executeAction() errors.
  *	09.11.2016: 2.0 BETA Release 5 - Add 4 Gang Extension compatibility.
  *
@@ -388,7 +389,7 @@ def updateDevices() {
 				}
      		}
         }
-        else if (device.device_type == '4 Gang Extension') {
+        else if (device.device_type == 'fourgang') {
         	log.debug "Identified: device ${device.id}: ${device.device_type}: ${device.label}"
             def value = "${device.label} 4 Gang Extension"
 			def key = device.id
@@ -725,7 +726,7 @@ def logErrors(options = [errorReturn: null, logObject: log], Closure c) {
 }
 
 private def textVersion() {
-    def text = "MiHome (Connect)\nVersion: 2.0 BETA Release 5.1\nDate: 09112016(2310)"
+    def text = "MiHome (Connect)\nVersion: 2.0 BETA Release 5.2\nDate: 09112016(2330)"
 }
 
 private def textCopyright() {
