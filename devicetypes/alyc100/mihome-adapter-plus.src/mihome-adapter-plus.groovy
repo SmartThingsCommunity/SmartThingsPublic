@@ -13,6 +13,7 @@
  *  for the specific language governing permissions and limitations under the License.
  *
  *	VERSION HISTORY
+ *	09.11.2016:	2.0 BETA Release 5 - Try to fix chart Android compatibility.
  *	08.11.2016:	2.0 BETA Release 4 - Added historical power chart data. RENAME TO ADAPTER PLUS.
  *	08.11.2016:	2.0 BETA Release 3 - Added ON and OFF buttons for devices that do not report state.
  *	06.11.2016:	2.0 BETA Release 2 - Various tile and formatting updates for Android.
@@ -106,6 +107,7 @@ def poll() {
         sendEvent(name: "switch", value: "offline", descriptionText: "The device is offline")
 		return []
 	}
+    
     log.debug "***ADAPTER PLUS JSON for ${device.name}: " + resp.data.data
     
     def power_state = resp.data.data.power_state
@@ -258,7 +260,7 @@ def getChartHTML() {
 				<meta http-equiv="expires" content="Tue, 01 Jan 1980 1:00:00 GMT"/>
 				<meta http-equiv="pragma" content="no-cache"/>
 				<meta name="viewport" content="width = device-width, user-scalable=no, initial-scale=1.0">
-				<script type="text/javascript" src="https://www.gstatic.com/charts/loader.js"></script>
+				<script type="text/javascript" src="${getChartJsData()}"></script>
 			</head>
 			<body>
   				<div id="chart_div"></div>
@@ -272,3 +274,62 @@ def getChartHTML() {
 		log.error "getChartHTML Exception:", ex
 	}
 }
+
+def getChartJsData() {
+	def chartJsData = null
+	//def htmlInfo = state?.htmlInfo
+	def htmlInfo
+	state.chartJsData = null
+	if(htmlInfo?.chartJsUrl && htmlInfo?.chartJsVer) {
+		if(state?.chartJsData) {
+			if (state?.chartJsVer?.toInteger() == htmlInfo?.chartJsVer?.toInteger()) {
+				//LogAction("getChartJsData: Chart Javascript Data is Current | Loading Data from State...")
+				chartJsData = state?.chartJsData
+			} else if (state?.chartJsVer?.toInteger() < htmlInfo?.chartJsVer?.toInteger()) {
+				//LogAction("getChartJsData: Chart Javascript Data is Outdated | Loading Data from Source...")
+				chartJsData = getFileBase64(htmlInfo.chartJsUrl, "text", "css")
+				state.chartJsData = chartJsData
+				state?.chartJsVer = htmlInfo?.chartJsVer
+			}
+		} else {
+			//LogAction("getChartJsData: Chart Javascript Data is Missing | Loading Data from Source...")
+			chartJsData = getFileBase64(htmlInfo.chartJsUrl, "text", "css")
+			state?.chartJsData = chartJsData
+			state?.chartJsVer = htmlInfo?.chartJsVer
+		}
+	} else {
+		//LogAction("getChartJsData: No Stored Chart Javascript Data Found for Device... Loading for Static URL...")
+		chartJsData = getFileBase64(chartJsUrl(), "text", "javascript")
+	}
+	return chartJsData
+}
+
+def getFileBase64(url, preType, fileType) {
+	try {
+		def params = [
+			uri: url,
+			contentType: '$preType/$fileType'
+		]
+		httpGet(params) { resp ->
+			if(resp.data) {
+				def respData = resp?.data
+				ByteArrayOutputStream bos = new ByteArrayOutputStream()
+				int len
+				int size = 4096
+				byte[] buf = new byte[size]
+				while ((len = respData.read(buf, 0, size)) != -1)
+					bos.write(buf, 0, len)
+				buf = bos.toByteArray()
+				//LogAction("buf: $buf")
+				String s = buf?.encodeBase64()
+				//LogAction("resp: ${s}")
+				return s ? "data:${preType}/${fileType};base64,${s.toString()}" : null
+			}
+		}
+	}
+	catch (ex) {
+		log.error "getFileBase64 Exception:", ex
+	}
+}
+
+def chartJsUrl() { return "https://www.gstatic.com/charts/loader.js" }
