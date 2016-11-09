@@ -13,6 +13,7 @@
  *  for the specific language governing permissions and limitations under the License.
  *
  *	VERSION HISTORY
+ *	09.11.2016: 2.0 BETA Release 5.1 - Try and reduce chances of executeAction() errors.
  *	09.11.2016: 2.0 BETA Release 5 - Add 4 Gang Extension compatibility.
  *
  *	08.11.2016: 2.0 BETA Release 4 - Add Energy Monitor Device compatibility. Separate Adapter and Adapter Plus devices.
@@ -289,6 +290,17 @@ def initialize() {
     if (selectedMotions) {
     	addMotion()
     }
+    
+    def devices = getChildDevices()
+	devices.each {
+    	log.debug "Refreshing device $it.name"
+        try {
+    		it.refresh()
+        } catch (groovy.lang.MissingMethodException e) {
+        	//WORKAROUND - Catch unexplained exception when refreshing devices.
+        	logResponse(e.response)
+        }
+	}
 }
 
 
@@ -459,7 +471,6 @@ def addETRV() {
 					label: state.miETRVDevices[device]
 				]
             childDevice = addChildDevice(app.namespace, "MiHome eTRV", "$device", null, data)
-            childDevice.refresh()
 
 			log.debug "Created ${state.miETRVDevices[device]} with id: ${device}"
 		} else {
@@ -483,7 +494,6 @@ def addLight() {
 					label: state.miLightDevices[device]
 				]
             childDevice = addChildDevice(app.namespace, "MiHome Light Switch", "$device", null, data)
-            childDevice.refresh()  
 
 			log.debug "Created ${state.miLightDevices[device]} with id: ${device}"
 		} else {
@@ -508,7 +518,6 @@ def addAdapter() {
 					label: state.miAdapterDevices[device]
 				]
             childDevice = addChildDevice(app.namespace, "MiHome Adapter", "$device", null, data)
-            childDevice.refresh()
 
 			log.debug "Created ${state.miAdapterDevices[device]} with id: ${device}"
 		} else {
@@ -533,7 +542,6 @@ def addAdapterPlus() {
 					label: state.miAdapterPlusDevices[device]
 				]
             childDevice = addChildDevice(app.namespace, "MiHome Adapter Plus", "$device", null, data)
-            childDevice.refresh()
 
 			log.debug "Created ${state.miAdapterPlusDevices[device]} with id: ${device}"
 		} else {
@@ -558,7 +566,6 @@ def add4GangExtension() {
 					label: "${state.mi4GangExtensionDevices[device]} [Socket ${it + 1}]"
 				]
             	childDevice = addChildDevice(app.namespace, "MiHome Adapter", "${device}/${it}", null, data)
-            	childDevice.refresh()
 
 				log.debug "Created ${state.mi4GangExtensionDevices[device]} [Socket ${it + 1}] with id: ${device}/${it}"
 			} else {
@@ -582,8 +589,7 @@ def addMonitor() {
                 	name: state.miMonitorDevices[device],
 					label: state.miMonitorDevices[device]
 				]
-            childDevice = addChildDevice(app.namespace, "MiHome Monitor", "$device", null, data)
-            childDevice.refresh()
+            childDevice = addChildDevice(app.namespace, "MiHome Monitor", "$device", null, data)\
 
 			log.debug "Created ${state.miMonitorDevices[device]} with id: ${device}"
 		} else {
@@ -608,7 +614,6 @@ def addMotion() {
 					label: state.miMotionSensors[device]
 				]
             childDevice = addChildDevice(app.namespace, "MiHome Motion Sensor", "$device", null, data)
-            childDevice.refresh()
 
 			log.debug "Created ${state.miMotionSensors[device]} with id: ${device}"
 		} else {
@@ -720,7 +725,7 @@ def logErrors(options = [errorReturn: null, logObject: log], Closure c) {
 }
 
 private def textVersion() {
-    def text = "MiHome (Connect)\nVersion: 2.0 BETA Release 4\nDate: 08112016(2300)"
+    def text = "MiHome (Connect)\nVersion: 2.0 BETA Release 5.1\nDate: 09112016(2310)"
 }
 
 private def textCopyright() {
