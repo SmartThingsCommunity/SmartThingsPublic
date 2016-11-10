@@ -298,7 +298,7 @@ def initialize() {
     	log.debug "Refreshing device $it.name"
         try {
     		it.refresh()
-        } catch (groovy.lang.MissingMethodException e) {
+        } catch (e) {
         	//WORKAROUND - Catch unexplained exception when refreshing devices.
         	logResponse(e.response)
         }
@@ -637,7 +637,7 @@ def refreshDevices() {
         	log.info("Refreshing device ${device.name} ...")
             try {
     			device.refresh()
-        	} catch (groovy.lang.MissingMethodException e) {
+        	} catch (e) {
         		//WORKAROUND - Catch unexplained exception when refreshing devices.
         		logResponse(e.response)
         	}
@@ -645,7 +645,7 @@ def refreshDevices() {
         	log.info("Refreshing device ${device.name}...")
 			try {
     			device.refresh()
-        	} catch (groovy.lang.MissingMethodException e) {
+        	} catch (e) {
         		//WORKAROUND - Catch unexplained exception when refreshing devices.
         		logResponse(e.response)
         	}
@@ -737,7 +737,7 @@ def logErrors(options = [errorReturn: null, logObject: log], Closure c) {
 }
 
 private def textVersion() {
-    def text = "MiHome (Connect)\nVersion: 2.0 BETA Release 5.2\nDate: 09112016(2330)"
+    def text = "MiHome (Connect)\nVersion: 2.0 BETA Release 5.3\nDate: 10112016(1400)"
 }
 
 private def textCopyright() {
