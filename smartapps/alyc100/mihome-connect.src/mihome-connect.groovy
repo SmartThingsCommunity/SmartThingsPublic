@@ -13,6 +13,7 @@
  *  for the specific language governing permissions and limitations under the License.
  *
  *	VERSION HISTORY
+ *	09.11.2016: 2.0 BETA Release 5.3 - Supress random executeAction() errors.
  *	09.11.2016: 2.0 BETA Release 5.2 - 4 gang device detection fix.
  *	09.11.2016: 2.0 BETA Release 5.1 - Try and reduce chances of executeAction() errors.
  *	09.11.2016: 2.0 BETA Release 5 - Add 4 Gang Extension compatibility.
@@ -634,10 +635,20 @@ def refreshDevices() {
 	getChildDevices().each { device ->
     	if (atomicState.refreshCounter == 5) {
         	log.info("Refreshing device ${device.name} ...")
-			device.refresh()
+            try {
+    			device.refresh()
+        	} catch (groovy.lang.MissingMethodException e) {
+        		//WORKAROUND - Catch unexplained exception when refreshing devices.
+        		logResponse(e.response)
+        	}
         } else if (device.name.contains("Monitor") || device.name.contains("Motion Sensor") || device.name.contains("Adapter Plus")) {
         	log.info("Refreshing device ${device.name}...")
-			device.refresh()
+			try {
+    			device.refresh()
+        	} catch (groovy.lang.MissingMethodException e) {
+        		//WORKAROUND - Catch unexplained exception when refreshing devices.
+        		logResponse(e.response)
+        	}
         }
 	}
 }
