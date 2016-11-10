@@ -13,7 +13,9 @@
  *  for the specific language governing permissions and limitations under the License.
  *
  *	VERSION HISTORY
- *	09.11.2016: 2.0 BETA Release 5.3 - Suppress random executeAction() errors.
+ *	10.11.2016: 2.0 BETA Release 5.4 - Remove unecessary catch blocks for fixed executeAction() errors.
+ *	10.11.2016: 2.0 BETA Release 5.3 - Suppress random executeAction() errors.
+ *
  *	09.11.2016: 2.0 BETA Release 5.2 - 4 gang device detection fix.
  *	09.11.2016: 2.0 BETA Release 5.1 - Try and reduce chances of executeAction() errors.
  *	09.11.2016: 2.0 BETA Release 5 - Add 4 Gang Extension compatibility.
@@ -296,12 +298,7 @@ def initialize() {
     def devices = getChildDevices()
 	devices.each {
     	log.debug "Refreshing device $it.name"
-        try {
-    		it.refresh()
-        } catch (e) {
-        	//WORKAROUND - Catch unexplained exception when refreshing devices.
-        	logResponse(e.response)
-        }
+        it.refresh()
 	}
 }
 
@@ -643,12 +640,7 @@ def refreshDevices() {
         	}
         } else if (device.name.contains("Monitor") || device.name.contains("Motion Sensor") || device.name.contains("Adapter Plus")) {
         	log.info("Refreshing device ${device.name}...")
-			try {
-    			device.refresh()
-        	} catch (e) {
-        		//WORKAROUND - Catch unexplained exception when refreshing devices.
-        		logResponse(e.response)
-        	}
+			device.refresh()
         }
 	}
 }
@@ -737,7 +729,7 @@ def logErrors(options = [errorReturn: null, logObject: log], Closure c) {
 }
 
 private def textVersion() {
-    def text = "MiHome (Connect)\nVersion: 2.0 BETA Release 5.3\nDate: 10112016(1400)"
+    def text = "MiHome (Connect)\nVersion: 2.0 BETA Release 5.4\nDate: 10112016(1740)"
 }
 
 private def textCopyright() {
