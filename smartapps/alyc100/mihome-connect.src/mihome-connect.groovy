@@ -13,6 +13,8 @@
  *  for the specific language governing permissions and limitations under the License.
  *
  *	VERSION HISTORY
+ *
+ *	10.11.2016:	2.0 BETA Release 6 - Merge Light Switch and Adapter functionality into one device type.
  *	10.11.2016: 2.0 BETA Release 5.4 - Remove unecessary catch blocks for fixed executeAction() errors.
  *	10.11.2016: 2.0 BETA Release 5.3 - Suppress random executeAction() errors.
  *
@@ -492,7 +494,7 @@ def addLight() {
                 	name: state.miLightDevices[device],
 					label: state.miLightDevices[device]
 				]
-            childDevice = addChildDevice(app.namespace, "MiHome Light Switch", "$device", null, data)
+            childDevice = addChildDevice(app.namespace, "MiHome Adapter", "$device", null, data)
 
 			log.debug "Created ${state.miLightDevices[device]} with id: ${device}"
 		} else {
@@ -729,7 +731,7 @@ def logErrors(options = [errorReturn: null, logObject: log], Closure c) {
 }
 
 private def textVersion() {
-    def text = "MiHome (Connect)\nVersion: 2.0 BETA Release 5.4\nDate: 10112016(1740)"
+    def text = "MiHome (Connect)\nVersion: 2.0 BETA Release 6\nDate: 10112016(2340)"
 }
 
 private def textCopyright() {
