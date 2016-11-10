@@ -13,6 +13,7 @@
  *  for the specific language governing permissions and limitations under the License.
  *
  *	VERSION HISTORY
+ *  10.11.2016: 2.0 BETA Release 2.2 - Stop potential executeAction() errors.
  *  10.11.2016: 2.0 BETA Release 2.1 - Shift from data to state to hold variables.
  *	09.11.2016:	2.0 BETA Release 2 - Try to fix chart Android compatibility.
  *	09.11.2016:	2.0 BETA Release 1 - Support for MiHome (Connect) v2.0. Inital version of device.
@@ -121,7 +122,7 @@ def addYesterdayTotalToChartData(total) {
     	state.chartData = [0, total, 0, 0, 0, 0, 0]
     }
     else {
-    	state.chartData[0] = total
+    	state.chartData.putAt(0, total)
     	state.chartData.add(0, 0)
         state.chartData.pop()
     }
@@ -131,7 +132,7 @@ def addCurrentTotalToChartData(total) {
 	if (state.chartData == null) {
     	state.chartData = [total, 0, 0, 0, 0, 0, 0]
     }
-    state.chartData[0] = total
+    state.chartData.putAt(0, total)
 }
 
 def getChartHTML() {
@@ -150,13 +151,13 @@ def getChartHTML() {
 					function drawBasic() {
 						var data = google.visualization.arrayToDataTable([
          						['Date', 'Power', { role: 'style' }],
-         						['${(date - 6).format("d MMM")}', ${state.chartData[6]}, '#0a9928'],   
-         						['${(date - 5).format("d MMM")}', ${state.chartData[5]}, '#0a9928'],   
-         						['${(date - 4).format("d MMM")}', ${state.chartData[4]}, '#0a9928'],            
-         						['${(date - 3).format("d MMM")}', ${state.chartData[3]}, '#0a9928'],            
-         						['${(date - 2).format("d MMM")}', ${state.chartData[2]}, '#0a9928'],
-		 						['${(date - 1).format("d MMM")}', ${state.chartData[1]}, '#0a9928' ], 
-         						['Today', ${state.chartData[0]}, '#eda610' ], 
+         						['${(date - 6).format("d MMM")}', ${state.chartData.getAt(6)}, '#0a9928'],   
+         						['${(date - 5).format("d MMM")}', ${state.chartData.getAt(5)}, '#0a9928'],   
+         						['${(date - 4).format("d MMM")}', ${state.chartData.getAt(4)}, '#0a9928'],            
+         						['${(date - 3).format("d MMM")}', ${state.chartData.getAt(3)}, '#0a9928'],            
+         						['${(date - 2).format("d MMM")}', ${state.chartData.getAt(2)}, '#0a9928'],
+		 						['${(date - 1).format("d MMM")}', ${state.chartData.getAt(1)}, '#0a9928' ], 
+         						['Today', ${state.chartData.getAt(0)}, '#eda610' ], 
       					]);
 
       					var options = {
