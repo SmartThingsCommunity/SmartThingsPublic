@@ -293,7 +293,7 @@ def setLevel(level, duration) {
 	if(level > 99) level = 99
 	commands([
 		zwave.switchMultilevelV3.switchMultilevelSet(value: level, dimmingDuration: duration),
-		zwave.switchMultilevelV3.switchMultilevelGet(),
+		zwave.basicV1.basicGet(),
 	], (duration && duration < 12) ? (duration * 1000) : 3500)
 }
  
@@ -386,7 +386,7 @@ def setColor(value) {
             rgb = huesatToRGB(hue as Integer, saturation as Integer)
     	}
 		result << zwave.switchColorV3.switchColorSet(red: rgb[0], green: rgb[1], blue: rgb[2], warmWhite:warmWhite, coldWhite:coldWhite)
-        if(value.level != null && value.level > 1){
+        if(value.level != null && value.level != 1.0){
         	if(value.level > 99) value.level = 99
 			result << zwave.switchMultilevelV3.switchMultilevelSet(value: value.level, dimmingDuration: 3500)
             result << zwave.switchMultilevelV3.switchMultilevelGet()
