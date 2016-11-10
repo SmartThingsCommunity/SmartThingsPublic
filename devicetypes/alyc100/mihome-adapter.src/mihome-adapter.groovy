@@ -14,6 +14,7 @@
  *
  *	VERSION HISTORY - FORMER VERSION NOW RENAMED AS ADAPTER PLUS
  *
+ *	10.11.2016:	2.0 BETA Release 2.1 - Bug fix. Stop NumberFormatException when creating body object.
  *	09.11.2016:	2.0 BETA Release 2 - Added support for MiHome multiple gangway devices.
  *
  *	08.11.2016:	2.0 BETA Release 1 - Support for MiHome (Connect) v2.0. Inital version of device.
@@ -34,7 +35,7 @@ metadata {
 	}
 
 	tiles(scale: 2) {
-		multiAttributeTile(name:"rich-control", type:"lighting", width:6, height:4, canChangeIcon: true){
+		multiAttributeTile(name:"rich-control", type:"lighting", width:6, height:4){
             tileAttribute ("device.switch", key: "PRIMARY_CONTROL") {
                  attributeState "on", label:'${name}', action:"switch.off", icon:"st.Appliances.appliances17", backgroundColor:"#79b821", nextState:"on"
                  attributeState "off", label:'${name}', action:"switch.on", icon:"st.Appliances.appliances17", backgroundColor:"#ffffff", nextState:"off"
@@ -84,7 +85,7 @@ def poll() {
 	log.debug "Executing 'poll' for ${device} ${this} ${device.deviceNetworkId}"
     def body = []
     if (device.deviceNetworkId.contains("/")) {
-    	body = [id: device.deviceNetworkId.toInteger(), socket: (device.deviceNetworkId.tokenize("/")[1].toInteger())]
+    	body = [id: (device.deviceNetworkId.tokenize("/")[0].toInteger()), socket: (device.deviceNetworkId.tokenize("/")[1].toInteger())]
     } else {
     	body = [id: device.deviceNetworkId.toInteger()]
     }
@@ -110,7 +111,7 @@ def on() {
 	log.debug "Executing 'on'"
     def body = []
     if (device.deviceNetworkId.contains("/")) {
-    	body = [id: device.deviceNetworkId.toInteger(), socket: (device.deviceNetworkId.tokenize("/")[1].toInteger())]
+    	body = [id: (device.deviceNetworkId.tokenize("/")[0].toInteger()), socket: (device.deviceNetworkId.tokenize("/")[1].toInteger())]
     } else {
     	body = [id: device.deviceNetworkId.toInteger()]
     }
@@ -127,7 +128,7 @@ def off() {
 	log.debug "Executing 'off'"
     def body = []
     if (device.deviceNetworkId.contains("/")) {
-    	body = [id: device.deviceNetworkId.toInteger(), socket: (device.deviceNetworkId.tokenize("/")[1].toInteger())]
+    	body = [id: (device.deviceNetworkId.tokenize("/")[0].toInteger()), socket: (device.deviceNetworkId.tokenize("/")[1].toInteger())]
     } else {
     	body = [id: device.deviceNetworkId.toInteger()]
     }
