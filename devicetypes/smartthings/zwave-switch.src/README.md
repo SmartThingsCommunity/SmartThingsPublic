@@ -1,5 +1,6 @@
 # Z-Wave Switch
 
+Local Execution on V2 Hubs
 
 Works with: 
 
@@ -34,6 +35,7 @@ Not to mention after going OFFLINE when the device is plugged back in, it might 
 the device to appear as ONLINE again. This is because if this listening device does not respond to two poll requests in a row,
 it is not polled for 5 minutes by the hub. This can delay up the process of being marked ONLINE by quite some time.
 
+* __32min__ checkInterval
 
 ## Troubleshooting
 

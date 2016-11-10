@@ -1,6 +1,6 @@
 # SmartPower Outlet
 
-
+Local Execution on V2 Hubs
 
 Works with: 
 
@@ -23,10 +23,11 @@ Works with:
 
 ## Device Health
 
-A Category C1 smart power outlet with maxReportTime of 5 mins.
-Check-in interval is double the value of maxReportTime. 
-This gives the device twice the amount of time to respond before it is marked as offline.
-Check-in interval = 12 mins
+SmartPower outlet with reporting interval of 5 mins
+SmartThings platform will ping the device after `checkInterval` seconds of inactivity in last attempt to reach the device before marking it `OFFLINE` 
+
+* V1, TV, HubV2 AppEngine < 1.5.1 - __21min__ checkInterval
+* HubV2 AppEngine 1.5.1 - __12min__ checkInterval
 
 ## Troubleshooting
 
