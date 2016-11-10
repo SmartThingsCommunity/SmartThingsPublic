@@ -13,6 +13,7 @@
  *  for the specific language governing permissions and limitations under the License.
  *
  *	VERSION HISTORY
+ *  10.11.2016: 2.0 BETA Release 2.1 - Shift from data to state to hold variables.
  *	09.11.2016:	2.0 BETA Release 2 - Try to fix chart Android compatibility.
  *	09.11.2016:	2.0 BETA Release 1 - Support for MiHome (Connect) v2.0. Inital version of device.
  */
@@ -92,19 +93,19 @@ def poll() {
 		}
         def currentDay = df.format(new Date()).toInteger()
         def changeOfDay = false
-        if ((data.day != null) && (currentDay != data.day)) {
+        if ((state.day != null) && (currentDay != state.day)) {
         	changeOfDay = true
         }
-        data.day = currentDay
+        state.day = currentDay
     	
-        if (data.last_wh_reading != null) {
+        if (state.last_wh_reading != null) {
         	//Determine when the days total wh reading has been reset and store as chart data.
-        	if (((today_wh as BigDecimal) < data.last_wh_reading) || (today_wh == 0 && changeOfDay)) { 
-            	addYesterdayTotalToChartData(data.last_wh_reading)
-                sendEvent(name: "yesterdayTotalPower", value: data.last_wh_reading, unit: "Wh")
+        	if (((today_wh as BigDecimal) < state.last_wh_reading) || (today_wh == 0 && changeOfDay)) { 
+            	addYesterdayTotalToChartData(state.last_wh_reading)
+                sendEvent(name: "yesterdayTotalPower", value: state.last_wh_reading, unit: "Wh")
             }
         }
-    	data.last_wh_reading = today_wh as BigDecimal
+    	state.last_wh_reading = today_wh as BigDecimal
     	sendEvent(name: "totalPower", value: today_wh as BigDecimal, unit: "Wh")
         addCurrentTotalToChartData(today_wh as BigDecimal)
     }
@@ -116,31 +117,31 @@ def refresh() {
 }
 
 def addYesterdayTotalToChartData(total) {
-	if (data.chartData == null) {
-    	data.chartData = [0, total, 0, 0, 0, 0, 0]
+	if (state.chartData == null) {
+    	state.chartData = [0, total, 0, 0, 0, 0, 0]
     }
     else {
-    	data.chartData[0] = total
-    	data.chartData.add(0, 0)
-        data.chartData.pop()
+    	state.chartData[0] = total
+    	state.chartData.add(0, 0)
+        state.chartData.pop()
     }
 }
 
 def addCurrentTotalToChartData(total) {
-	if (data.chartData == null) {
-    	data.chartData = [total, 0, 0, 0, 0, 0, 0]
+	if (state.chartData == null) {
+    	state.chartData = [total, 0, 0, 0, 0, 0, 0]
     }
-    data.chartData[0] = total
+    state.chartData[0] = total
 }
 
 def getChartHTML() {
 	try {
     	def date = new Date()
-		if (data.chartData == null) {
-    		data.chartData = [0, 0, 0, 0, 0, 0, 0]
+		if (state.chartData == null) {
+    		state.chartData = [0, 0, 0, 0, 0, 0, 0]
     	}
         def hData = ""
-        if (data.last_wh_reading != null && data.last_wh_reading > 0) {
+        if (state.last_wh_reading != null && state.last_wh_reading > 0) {
 			hData = """
 			<script type="text/javascript">
 				  	google.charts.load('current', {packages: ['corechart', 'bar']});
@@ -149,13 +150,13 @@ def getChartHTML() {
 					function drawBasic() {
 						var data = google.visualization.arrayToDataTable([
          						['Date', 'Power', { role: 'style' }],
-         						['${(date - 6).format("d MMM")}', ${data.chartData[6]}, '#0a9928'],   
-         						['${(date - 5).format("d MMM")}', ${data.chartData[5]}, '#0a9928'],   
-         						['${(date - 4).format("d MMM")}', ${data.chartData[4]}, '#0a9928'],            
-         						['${(date - 3).format("d MMM")}', ${data.chartData[3]}, '#0a9928'],            
-         						['${(date - 2).format("d MMM")}', ${data.chartData[2]}, '#0a9928'],
-		 						['${(date - 1).format("d MMM")}', ${data.chartData[1]}, '#0a9928' ], 
-         						['Today', ${data.chartData[0]}, '#eda610' ], 
+         						['${(date - 6).format("d MMM")}', ${state.chartData[6]}, '#0a9928'],   
+         						['${(date - 5).format("d MMM")}', ${state.chartData[5]}, '#0a9928'],   
+         						['${(date - 4).format("d MMM")}', ${state.chartData[4]}, '#0a9928'],            
+         						['${(date - 3).format("d MMM")}', ${state.chartData[3]}, '#0a9928'],            
+         						['${(date - 2).format("d MMM")}', ${state.chartData[2]}, '#0a9928'],
+		 						['${(date - 1).format("d MMM")}', ${state.chartData[1]}, '#0a9928' ], 
+         						['Today', ${state.chartData[0]}, '#eda610' ], 
       					]);
 
       					var options = {
