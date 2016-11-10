@@ -80,13 +80,16 @@ metadata {
 		standardTile("reset", "device.energy", inactiveLabel: false, decoration: "flat", width: 2, height: 2) {
 			state "default", label:'reset kWh', action:"reset"
 		}
+		standardTile("energy", "device.energy", decoration: "flat", width: 2, height: 2) {
+			state "default", label:'${currentValue} kWh'
+		}
         valueTile("configure", "device.needUpdate", inactiveLabel: false, decoration: "flat", width: 2, height: 2) {
             state("NO" , label:'Synced', action:"configuration.configure", backgroundColor:"#8acb47")
             state("YES", label:'Pending', action:"configuration.configure", backgroundColor:"#f39c12")
         }
 
 		main "switch"
-		details (["switch", "power", "amperage", "voltage", "refresh", "configure"])
+		details (["switch", "power", "amperage", "voltage", "energy", "refresh", "configure"])
 	}
 }
 
@@ -117,8 +120,11 @@ def zwaveEvent(physicalgraph.zwave.commands.meterv1.MeterReport cmd) {
     logging("MeterReport $cmd")
     def event
 	if (cmd.scale == 0) {
-        if (cmd.scaledMeterValue != 0)
+    	if (cmd.meterType == 161 && cmd.scaledMeterValue != 0) {
 		event = createEvent(name: "voltage", value: cmd.scaledMeterValue, unit: "V")
+        } else if (cmd.meterType == 33 && cmd.scaledMeterValue != 0) {
+        	event = createEvent(name: "energy", value: cmd.scaledMeterValue, unit: "kWh")
+        }
 	} else if (cmd.scale == 1) {
 		event = createEvent(name: "amperage", value: cmd.scaledMeterValue, unit: "A")
 	} else if (cmd.scale == 2) {
@@ -172,6 +178,8 @@ private updateStatus(){
     
     if(device.currentValue('voltage') != null)
         statusText = statusText + "${device.currentValue('voltage')} V - "
+    if(device.currentValue('energy') != null)
+        statusText = statusText + "${device.currentValue('energy')} kWh - "
         
     if (statusText != ""){
         statusText = statusText.substring(0, statusText.length() - 2)
