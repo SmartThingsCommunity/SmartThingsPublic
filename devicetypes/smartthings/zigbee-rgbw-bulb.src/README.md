@@ -1,6 +1,6 @@
 # OSRAM LIGHTIFY LED RGBW Bulb
 
-
+Cloud Execution
 
 Works with: 
 
@@ -27,11 +27,10 @@ Works with:
 
 ## Device Health
 
-A Category C6 OSRAM LIGHTIFY LED RGBW Bulb with maxReportTime of 5 mins.
-Check-in interval is double the value of maxReportTime. 
-This gives the device twice the amount of time to respond before it is marked as offline.
-Check-in interval = 12 mins
+OSRAM LIGHTIFY LED RGBW Bulb with reporting interval of 5 mins.
+SmartThings platform will ping the device after `checkInterval` seconds of inactivity in last attempt to reach the device before marking it `OFFLINE` 
 
+* __12min__ checkInterval
 
 ## Troubleshooting
 
