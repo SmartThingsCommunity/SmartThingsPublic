@@ -19,6 +19,7 @@ metadata {
         capability "Actuator"
         capability "Battery"
         capability "Button"
+        capability "Holdable Button"        
         capability "Configuration"
         capability "Refresh"
         capability "Sensor"
