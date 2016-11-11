@@ -30,6 +30,8 @@
  *	11.11.2016: v2.3.2 - Move chart data into state variable
  *	11.11.2016: v2.3.3 - Prevent potential executeAction() error when adding device.
  *	11.11.2016: v2.3.4 - Migrate variable from data to state.
+ *	11.11.2016: v2.3.5 - Bug Fix. Silly state variable not initialised on first run.
+ *	11.11.2016: v2.3.6 - Reduce number of calls to account API.
  */
 preferences 
 {
@@ -120,7 +122,6 @@ def refreshLiveData() {
         unitPrice = String.format("%1.2f",unitPrice)
         
         //update unit price and standing charge from more up to date OVO Account API if available
-        parent.updateLatestPrices()
         def latestUnitPrice = ((device.name.contains('Gas')) ? parent.getUnitPrice('GAS') : parent.getUnitPrice('ELECTRICITY')) as BigDecimal
         if (latestUnitPrice > 0) {
         	unitPriceBigDecimal = latestUnitPrice
@@ -164,7 +165,10 @@ def refreshLiveData() {
 		def currentHour = df.format(new Date()).toInteger()
         if ((state.hour == null) || (state.hour != currentHour)) {
         	//Reset at midnight or initial call
-        	if ((state.hour == null) || (currentHour == 0)) {  
+        	if ((state.hour == null) || (currentHour == 0)) { 
+            	//Update latest standard charges and unit prices
+                parent.updateLatestPrices()
+                
             	//Store the day's power info as yesterdays
             	def totalPower = getTotalDailyPower()
             	state.yesterdayTotalPower = (Math.round((totalPower as BigDecimal) * 1000))/1000
