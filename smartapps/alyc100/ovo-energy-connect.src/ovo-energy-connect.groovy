@@ -21,8 +21,10 @@
  *	v2.2.1 - Move external icon references to Github
  *
  *	17.08.2016
- *	v2.2.2 - Fix device failure on API timeout
+ *	v2.2.2 - Fix device failure on API timeout.
  *
+ * 	11.11.2016
+ *	v2.2.3 - Reduce number of calls to accounts API.
  */
 definition(
 		name: "OVO Energy (Connect)",
@@ -82,7 +84,7 @@ def firstPage() {
 def headerSECTION() {
 	return paragraph (image: "https://raw.githubusercontent.com/alyc100/SmartThingsPublic/master/smartapps/alyc100/icon175x175.jpeg",
                   "OVO Energy (Connect)\nVersion: 2.2.2\nDate: 16082016(1100)")
-}
+}               
 
 def stateTokenPresent() {
 	return state.ovoAccessToken != null && state.ovoAccessToken != ''
@@ -379,18 +381,18 @@ def updateLatestPrices() {
 	}
 }
 
-def getUnitPrice(utilityType) {
-	if (state.contracts[utilityType] != null) {
-    	return state.contracts[utilityType][1]
+def getStandingCharge(utilityType) {
+	if (state.contracts[utilityType] == null) {
+    	updateLatestPrices()
     }
-	return 0
+	return state.contracts[utilityType] == null ? 0 : state.contracts[utilityType][0]
 }
 
-def getStandingCharge(utilityType) {
-	if (state.contracts[utilityType] != null) {
-    	return state.contracts[utilityType][0]
+def getUnitPrice(utilityType) {
+	if (state.contracts[utilityType] == null) {
+    	updateLatestPrices()
     }
-	return 0
+	return state.contracts[utilityType] == null ? 0 : state.contracts[utilityType][1]
 }
 
 def updateAccountDetails() {
