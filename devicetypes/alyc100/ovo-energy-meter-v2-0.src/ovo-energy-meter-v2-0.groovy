@@ -169,6 +169,7 @@ def refreshLiveData() {
             	def totalPower = getTotalDailyPower()
             	state.yesterdayTotalPower = (Math.round((totalPower as BigDecimal) * 1000))/1000
                 def newYesterdayTotalPowerCost = (Math.round((((totalPower as BigDecimal) * unitPriceBigDecimal) + standingCharge) * 100))/100
+                state.yesterdayTotalPowerCost = String.format("%1.2f",newYesterdayTotalPowerCost)
                 //Add figures to chart data object
                 addYesterdayTotalToChartData(newYesterdayTotalPowerCost)
                 def costYesterdayComparison = calculatePercentChange(newYesterdayTotalPowerCost as BigDecimal, state.yesterdayTotalPowerCost as BigDecimal)
@@ -176,7 +177,7 @@ def refreshLiveData() {
                 if (costYesterdayComparison >= 0) {
         			formattedCostYesterdayComparison = "+" + formattedCostYesterdayComparison
         		}
-                state.yesterdayTotalPowerCost = String.format("%1.2f",newYesterdayTotalPowerCost)
+                
             	sendEvent(name: 'yesterdayTotalPower', value: "$state.yesterdayTotalPower", unit: "KWh", displayed: false)
         		sendEvent(name: 'yesterdayTotalPowerCost', value: "£$state.yesterdayTotalPowerCost (" + formattedCostYesterdayComparison + "%)", displayed: false)
                 
