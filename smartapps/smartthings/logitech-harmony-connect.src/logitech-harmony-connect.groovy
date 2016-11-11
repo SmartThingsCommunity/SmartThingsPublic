@@ -516,7 +516,7 @@ def pollResponse(response, data) {
               def hub = getChildDevice("harmony-${it.key}")
               if (hub) {
                   if (it.value.response.data.currentAvActivity == "-1") {
-                      hub.sendEvent(name: "currentActivity", value: "--", descriptionText: "There isn't any activity running", display: false)
+                      hub.sendEvent(name: "currentActivity", value: "--", descriptionText: "There isn't any activity running", displayed: false)
                   } else {
                       def currentActivity
                       def activityDTH = getChildDevice("harmony-${it.key}-${it.value.response.data.currentAvActivity}")
@@ -524,7 +524,7 @@ def pollResponse(response, data) {
                         currentActivity = activityDTH.device.displayName
                       else
                         currentActivity = getActivityName(it.value.response.data.currentAvActivity,it.key)
-                      hub.sendEvent(name: "currentActivity", value: currentActivity, descriptionText: "Current activity is ${currentActivity}", display: false)
+                      hub.sendEvent(name: "currentActivity", value: currentActivity, descriptionText: "Current activity is ${currentActivity}", displayed: false)
                   }
               }
           } else {
@@ -576,7 +576,7 @@ def getActivityList() {
                             }
                             activities += [id: "off", name: "Activity OFF", type: "0"]
                         }
-                        hub.sendEvent(name: "activities", value: new groovy.json.JsonBuilder(activities).toString(), descriptionText: "Activities are ${activities.collect { it.name }?.join(', ')}", display: false)
+                        hub.sendEvent(name: "activities", value: new groovy.json.JsonBuilder(activities).toString(), descriptionText: "Activities are ${activities.collect { it.name }?.join(', ')}", displayed: false)
 					          }
                 }
             }
