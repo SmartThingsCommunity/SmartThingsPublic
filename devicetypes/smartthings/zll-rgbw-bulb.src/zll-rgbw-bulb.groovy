@@ -27,6 +27,7 @@ metadata {
         fingerprint profileId: "C05E", inClusters: "0000, 0003, 0004, 0005, 0006, 0008, 0300", outClusters: "0019"
         fingerprint profileId: "C05E", inClusters: "0000, 0003, 0004, 0005, 0006, 0008, 0300, 1000", outClusters: "0019"
         fingerprint profileId: "C05E", inClusters: "0000, 0003, 0004, 0005, 0006, 0008, 0300, 1000", outClusters: "0019", "manufacturer":"OSRAM", "model":"Classic A60 RGBW", deviceJoinName: "OSRAM LIGHTIFY LED Classic A60 RGBW"
+        fingerprint profileId: "C05E", inClusters: "0000, 0003, 0004, 0005, 0006, 0008, 0300, 0B04, FC0F", outClusters: "0019", manufacturer: "OSRAM", model: "PAR 16 50 RGBW - LIGHTIFY", deviceJoinName: "OSRAM LIGHTIFY PAR 16 50 RGBW"
     }
 
     // UI tile definitions
