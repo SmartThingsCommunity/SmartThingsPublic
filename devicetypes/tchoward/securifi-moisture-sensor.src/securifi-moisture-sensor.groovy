@@ -131,6 +131,9 @@ private Map parseIasMessage(String description) {
         case '0x0036': // Trouble/Failure
         	log.debug 'msgCode 36 not handled yet'
             break
+        default:
+        	log.debug "msgCode ${msgCode}: ${description}"
+        	break
     }
     return resultMap
 }
