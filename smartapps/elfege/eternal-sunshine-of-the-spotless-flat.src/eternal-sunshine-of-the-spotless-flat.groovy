@@ -123,13 +123,15 @@ def updated() {
 def initialize() {
 
     state.messageSent = false
-  
+
     state.StopTheApp = 0
 
     subscribe(lightSensor, "illuminance", illuminanceHandler)
     subscribe(dimmer, "switch.on", SwitchHandler)
     subscribe(dimmer, "switch.off", SwitchHandler)
     subscribe(dimmer, "level", switchSetLevelHandler)
+    
+    schedule("0 0/1 * * * ?", Evaluate)
 
 }
 
@@ -139,27 +141,32 @@ def switchSetLevelHandler(evt) {
     log.debug "dimmer set to $evt.integerValue   ----------------------------"
     log.debug "state.StopTheApp value is currently $state.StopTheApp" 
 
-    i
+
 }
 
 def SwitchHandler(evt){ 
     log.debug "$dimmer currentSwitch evt value is $evt.value "
     log.debug "$dimmer status value is $dimmer.currentSwitch "
 
-    log.debug "so far state.dimmerSW value was $state.dimmerSW" 
+    log.debug "so far state.StopTheApp value was $state.StopTheApp" 
 
     if(evt.value == "on"){
         state.StopTheApp = 0
-        log.debug "Now state.dimmerSW value set to $state.dimmerSW" 
+        log.debug "Now state.StopTheApp value set to $state.StopTheApp" 
+        Evaluate()
+
     }
     else if(evt.value == "off"){
 
-       if(state.dim != 0) { 
+        if(state.dim != 0) { 
             state.StopTheApp = 1
+            log.debug "Now state.StopTheApp value set to $state.StopTheApp" 
             log.debug "SWITCH TURNED OFF BY USER"
+            
         }
         else if(state.dim == 0){ 
             log.debug "SWITCH TURNED OFF WITHOUT USER INTERVENTITON"
+            
         }
     }
 }
@@ -167,11 +174,15 @@ def SwitchHandler(evt){
 
 def illuminanceHandler(evt){
     log.debug "illuminance is $evt.integerValue"
-    
+
     log.debug "state.dimmerSW value is $state.dimmerSW" 
 
     state.luxvalue = evt.integerValue
+Evaluate()
 
+}
+
+def Evaluate() { 
     if(OnlyIfNotOff){
         if(state.StopTheApp == 0) {
             DIM()
@@ -188,8 +199,6 @@ def illuminanceHandler(evt){
         log.debug "DIM because no OnlyIfNotOff"
     }
 }
-
-
 private DIM(){
 
     def maxlux = 1000
@@ -264,7 +273,7 @@ private DIM(){
         int dim = state.dim
         dimmer.setLevel(dim) 
         log.debug "light set to $dim %"
-        
+
         state.StopTheApp = 0
 
     }
@@ -274,7 +283,7 @@ private DIM(){
         int dim = state.dim 
         dimmer.setLevel(dim) 
         log.debug "light set to $dim % because illuminance is high"
-       
+
         state.StopTheApp = 0
     }
 }
