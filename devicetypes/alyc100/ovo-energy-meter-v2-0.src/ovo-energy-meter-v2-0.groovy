@@ -32,6 +32,7 @@
  *	11.11.2016: v2.3.4 - Migrate variable from data to state.
  *	11.11.2016: v2.3.5 - Bug Fix. Silly state variable not initialised on first run.
  *	11.11.2016: v2.3.6 - Reduce number of calls to account API.
+ *	12.11.2016: v2.3.7 - Stop yesterday cost comparison being 0%.
  */
 preferences 
 {
@@ -172,18 +173,23 @@ def refreshLiveData() {
             	//Store the day's power info as yesterdays
             	def totalPower = getTotalDailyPower()
             	state.yesterdayTotalPower = (Math.round((totalPower as BigDecimal) * 1000))/1000
+                sendEvent(name: 'yesterdayTotalPower', value: "$state.yesterdayTotalPower", unit: "KWh", displayed: false)
                 def newYesterdayTotalPowerCost = (Math.round((((totalPower as BigDecimal) * unitPriceBigDecimal) + standingCharge) * 100))/100
-                state.yesterdayTotalPowerCost = String.format("%1.2f",newYesterdayTotalPowerCost)
+                
                 //Add figures to chart data object
                 addYesterdayTotalToChartData(newYesterdayTotalPowerCost)
-                def costYesterdayComparison = calculatePercentChange(newYesterdayTotalPowerCost as BigDecimal, state.yesterdayTotalPowerCost as BigDecimal)
-                def formattedCostYesterdayComparison = costYesterdayComparison
-                if (costYesterdayComparison >= 0) {
-        			formattedCostYesterdayComparison = "+" + formattedCostYesterdayComparison
-        		}
-                
-            	sendEvent(name: 'yesterdayTotalPower', value: "$state.yesterdayTotalPower", unit: "KWh", displayed: false)
-        		sendEvent(name: 'yesterdayTotalPowerCost', value: "£$state.yesterdayTotalPowerCost (" + formattedCostYesterdayComparison + "%)", displayed: false)
+                def formattedCostYesterdayComparison = 0
+                //Calculate cost difference between days
+                if( state.yesterdayTotalPowerCost != null ) {
+                	def costYesterdayComparison = calculatePercentChange(newYesterdayTotalPowerCost as BigDecimal, state.yesterdayTotalPowerCost as BigDecimal)
+                	formattedCostYesterdayComparison = costYesterdayComparison
+                	if (costYesterdayComparison >= 0) {
+        				formattedCostYesterdayComparison = "+" + formattedCostYesterdayComparison
+        			}
+                    
+                }
+                state.yesterdayTotalPowerCost = String.format("%1.2f",newYesterdayTotalPowerCost)
+                sendEvent(name: 'yesterdayTotalPowerCost', value: "£$state.yesterdayTotalPowerCost (" + formattedCostYesterdayComparison + "%)", displayed: false)
                 
                 //Reset power history
                 state.yesterdayPowerHistory =  state.dailyPowerHistory
