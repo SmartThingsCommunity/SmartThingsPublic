@@ -30,13 +30,13 @@ metadata {
 		command "reset"
 		command "refresh"
         
-        (1..5).each { n ->
+        (1..6).each { n ->
 			attribute "switch$n", "enum", ["on", "off"]
 			command "on$n"
 			command "off$n"
 		}
 
-        fingerprint deviceId: "0x1101", inClusters: "0x5E, 0x26, 0x33, 0x27, 0x2C, 0x2B, 0x70, 0x59, 0x85, 0x72, 0x86, 0x7A, 0x73, 0xEF, 0x5A, 0x82"
+        fingerprint deviceId: "0x1101", inClusters: "0x5E,0x26,0x85,0x72,0x33,0x70,0x86,0x73,0x59,0x5A,0x7A"
 
 	}
     
@@ -100,6 +100,10 @@ metadata {
 			state "off", label: "custom", action: "on5", icon: "st.switches.switch.off", backgroundColor: "#ffffff"
             state "on", label: "custom", action: "off5", icon: "st.switches.switch.on", backgroundColor: "#79b821"
 		}
+        standardTile("switch6", "switch6", canChangeIcon: true, width: 2, height: 2) {
+			state "off", label: "off", action: "on6", icon: "st.switches.switch.off", backgroundColor: "#ffffff"
+            state "on", label: "off", action: "off6", icon: "st.switches.switch.on", backgroundColor: "#79b821"
+		}
         valueTile(
 			"currentFirmware", "device.currentFirmware", inactiveLabel: false, decoration: "flat", width: 2, height: 2) {
 			state "currentFirmware", label:'Firmware: v${currentValue}', unit:""
@@ -110,8 +114,8 @@ metadata {
 	details(["switch", "levelSliderControl",
              "colorTempControl", "colorTempTile",
              "switch1", "switch2", "switch3",
-             "switch4", "switch5", "refresh", 
-             "configure" ])
+             "switch4", "switch5", "switch6",
+             "refresh", "configure" ])
 }
  
 /**
@@ -230,7 +234,7 @@ private toggleTiles(value) {
    def tiles = ["switch1", "switch2", "switch3", "switch4", "switch5"]
    tiles.each {tile ->
       if (tile != value) { sendEvent(name: tile, value: "off") }
-      else { sendEvent(name:tile, value:"on"); sendEvent(name:"switch", value:"on") }
+      else { sendEvent(name:tile, value:"on") }
    }
 }
  
@@ -239,7 +243,7 @@ def on() {
 	commands([
 		zwave.basicV1.basicSet(value: 0xFF),
 		zwave.basicV1.basicGet(),
-	], 1000)
+	])
 }
  
 def off() {
@@ -247,7 +251,7 @@ def off() {
 	commands([
 		zwave.basicV1.basicSet(value: 0x00),
 		zwave.basicV1.basicGet(),
-	], 1000)
+	])
 }
  
 def setLevel(level) {
@@ -267,7 +271,7 @@ def refresh() {
 	commands([
 		zwave.basicV1.basicGet(),
         zwave.configurationV1.configurationGet(parameterNumber: 4),
-	], 1000)
+	])
 }
  
 def setSaturation(percent) {
@@ -395,7 +399,7 @@ private command(physicalgraph.zwave.Command cmd) {
 	}
 }
  
-private commands(commands, delay=1000) {
+private commands(commands, delay=500) {
 	delayBetween(commands.collect{ command(it) }, delay)
 }
  
@@ -441,6 +445,7 @@ def on1() {
     logging("on1()")
     toggleTiles("switch1")
     def cmds = []
+    if (device.currentValue('switch') != "on") cmds << zwave.basicV1.basicSet(value: 0xFF)
     cmds << zwave.configurationV1.configurationSet(configurationValue: integer2Cmd(1, 1), parameterNumber: 3, size: 1)
     cmds << zwave.configurationV1.configurationSet(configurationValue: integer2Cmd(0, 1), parameterNumber: 5, size: 1)
     cmds << zwave.configurationV1.configurationSet(configurationValue: integer2Cmd(255, 1), parameterNumber: 4, size: 1)
@@ -453,6 +458,7 @@ def on2() {
     logging("on2()")  
     toggleTiles("switch2")
     def cmds = []
+    if (device.currentValue('switch') != "on") cmds << zwave.basicV1.basicSet(value: 0xFF)
     cmds << zwave.configurationV1.configurationSet(configurationValue: integer2Cmd(25, 1), parameterNumber: 3, size: 1)
     cmds << zwave.configurationV1.configurationSet(configurationValue: integer2Cmd(0, 1), parameterNumber: 5, size: 1)
     cmds << zwave.configurationV1.configurationSet(configurationValue: integer2Cmd(255, 1), parameterNumber: 4, size: 1)
@@ -465,6 +471,7 @@ def on3() {
     logging("on3()")
     toggleTiles("switch3")
     def cmds = []
+    if (device.currentValue('switch') != "on") cmds << zwave.basicV1.basicSet(value: 0xFF)
     cmds << zwave.configurationV1.configurationSet(configurationValue: integer2Cmd(1, 1), parameterNumber: 3, size: 1)
     cmds << zwave.configurationV1.configurationSet(configurationValue: integer2Cmd(1, 1), parameterNumber: 5, size: 1)
     cmds << zwave.configurationV1.configurationSet(configurationValue: integer2Cmd(255, 1), parameterNumber: 4, size: 1)
@@ -477,6 +484,7 @@ def on4() {
     logging("on4()")
     toggleTiles("switch4")
     def cmds = []
+    if (device.currentValue('switch') != "on") cmds << zwave.basicV1.basicSet(value: 0xFF)
     cmds << zwave.configurationV1.configurationSet(configurationValue: integer2Cmd(25, 1), parameterNumber: 3, size: 1)
     cmds << zwave.configurationV1.configurationSet(configurationValue: integer2Cmd(1, 1), parameterNumber: 5, size: 1)
     cmds << zwave.configurationV1.configurationSet(configurationValue: integer2Cmd(255, 1), parameterNumber: 4, size: 1)
@@ -489,16 +497,23 @@ def on5() {
     logging("on5()")
     toggleTiles("switch5")
     def cmds = []
-    cmds << zwave.configurationV1.configurationSet(configurationValue: integer2Cmd(settings."3", 1), parameterNumber: 3, size: 1)
-    cmds << zwave.configurationV1.configurationSet(configurationValue: integer2Cmd(settings."5", 1), parameterNumber: 5, size: 1)
-    cmds << zwave.configurationV1.configurationSet(configurationValue: integer2Cmd(settings."4", 1), parameterNumber: 4, size: 1)
+    if (device.currentValue('switch') != "on") cmds << zwave.basicV1.basicSet(value: 0xFF)
+    cmds << zwave.configurationV1.configurationSet(configurationValue: integer2Cmd(settings."3".toInteger(), 1), parameterNumber: 3, size: 1)
+    cmds << zwave.configurationV1.configurationSet(configurationValue: integer2Cmd(settings."5".toInteger(), 1), parameterNumber: 5, size: 1)
+    cmds << zwave.configurationV1.configurationSet(configurationValue: integer2Cmd(settings."4".toInteger(), 1), parameterNumber: 4, size: 1)
     cmds << zwave.configurationV1.configurationGet(parameterNumber: 4)
-    cmds << zwave.basicV1.basicGet()
+    cmds << zwave.switchMultilevelV3.switchMultilevelGet()
 	commands(cmds)
+} 
+
+def on6() {
+    logging("on6()")
+    offCmd()
 } 
 
 def offCmd() {
     logging("offCmd()")
+    toggleTiles("all")
     def cmds = []
     cmds << zwave.configurationV1.configurationSet(scaledConfigurationValue: 0, parameterNumber: 4, size: 1)
     cmds << zwave.configurationV1.configurationGet(parameterNumber: 4)
@@ -511,6 +526,7 @@ def off2() { offCmd() }
 def off3() { offCmd() }
 def off4() { offCmd() }
 def off5() { offCmd() }
+def off6() { offCmd() }
 
 def generate_preferences(configuration_model)
 {
