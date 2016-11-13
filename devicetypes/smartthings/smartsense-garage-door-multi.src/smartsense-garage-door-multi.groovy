@@ -86,7 +86,7 @@ metadata {
 
 def parse(String description) {
 	log.debug "parse($description)"
-	def results = null
+	def results = [:]
 
 	if (!isSupportedDescription(description) || zigbee.isZoneType19(description)) {
 		// Ignore this in favor of orientation-based state

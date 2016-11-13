@@ -105,7 +105,7 @@ def healthPoll() {
 def configure() {
     unschedule()
     runEvery5Minutes("healthPoll")
-    // Device-Watch allows 2 check-in misses from device
+    // Device-Watch allows 2 check-in misses from device + ping
     sendEvent(name: "checkInterval", value: 60 * 12, displayed: false, data: [protocol: "zigbee", hubHardwareId: device.hub.hardwareID])
     zigbee.onOffRefresh() + zigbee.levelRefresh()
 }

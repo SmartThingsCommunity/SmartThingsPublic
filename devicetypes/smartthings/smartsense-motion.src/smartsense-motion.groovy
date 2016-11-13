@@ -44,7 +44,7 @@ metadata {
 }
 
 def parse(String description) {
-	def results
+	def results = [:]
 	if (isZoneType19(description) || !isSupportedDescription(description)) {
 		results = parseBasicMessage(description)
 	}
@@ -57,21 +57,25 @@ def parse(String description) {
 
 private Map parseBasicMessage(description) {
 	def name = parseName(description)
-	def value = parseValue(description)
-	def linkText = getLinkText(device)
-	def descriptionText = parseDescriptionText(linkText, value, description)
-	def handlerName = value
-	def isStateChange = isStateChange(device, name, value)
+	if (name != null) {
+		def value = parseValue(description)
+		def linkText = getLinkText(device)
+		def descriptionText = parseDescriptionText(linkText, value, description)
+		def handlerName = value
+		def isStateChange = isStateChange(device, name, value)
 
-	def results = [
-		name: name,
-		value: value,
-		linkText: linkText,
-		descriptionText: descriptionText,
-		handlerName: handlerName,
-		isStateChange: isStateChange,
-		displayed: displayed(description, isStateChange)
-	]
+		def results = [
+				name           : name,
+				value          : value,
+				linkText       : linkText,
+				descriptionText: descriptionText,
+				handlerName    : handlerName,
+				isStateChange  : isStateChange,
+				displayed      : displayed(description, isStateChange)
+		]
+	} else {
+		results = [:]
+	}
 	log.debug "Parse returned $results.descriptionText"
 	return results
 }

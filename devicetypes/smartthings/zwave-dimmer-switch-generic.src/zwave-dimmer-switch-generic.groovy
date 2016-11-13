@@ -23,6 +23,7 @@ metadata {
 
 		fingerprint inClusters: "0x26", deviceJoinName: "Z-Wave Dimmer"
 		fingerprint mfr:"001D", prod:"1902", deviceJoinName: "Z-Wave Dimmer"
+		fingerprint mfr:"001D", prod:"1B03", model:"0334", deviceJoinName: "Leviton Universal Dimmer"
 	}
 
 	simulator {
