@@ -28,7 +28,6 @@ metadata {
 		fingerprint deviceId: "0x0701", inClusters: "0x5E,0x98"
 		fingerprint deviceId: "0x0701", inClusters: "0x5E,0x86,0x72,0x98", outClusters: "0x5A,0x82"
 		fingerprint deviceId: "0x0701", inClusters: "0x5E,0x80,0x71,0x85,0x70,0x72,0x86,0x30,0x31,0x84,0x59,0x73,0x5A,0x8F,0x98,0x7A", outClusters:"0x20" // Philio multi+
-		fingerprint deviceId: "0x0701", inClusters: "0x5E,0x72,0x5A,0x80,0x73,0x86,0x84,0x85,0x59,0x71,0x70,0x7A,0x98" // Vision door/window
 	}
 
 	// simulator metadata
@@ -36,6 +35,7 @@ metadata {
 		// status messages
 		status "open":  "command: 2001, payload: FF"
 		status "closed": "command: 2001, payload: 00"
+		status "wake up": "command: 8407, payload: "
 	}
 
 	// UI tile definitions
@@ -81,7 +81,7 @@ def updated() {
 	def cmds = []
 	if (!state.MSR) {
 		cmds = [
-			zwave.manufacturerSpecificV2.manufacturerSpecificGet().format(),
+			command(zwave.manufacturerSpecificV2.manufacturerSpecificGet()),
 			"delay 1200",
 			zwave.wakeUpV1.wakeUpNoMoreInformation().format()
 		]
@@ -94,9 +94,9 @@ def updated() {
 }
 
 def configure() {
-	delayBetween([
-		zwave.manufacturerSpecificV2.manufacturerSpecificGet().format(),
-		batteryGetCommand()
+	commands([
+		zwave.manufacturerSpecificV2.manufacturerSpecificGet(),
+		zwave.batteryV1.batteryGet()
 	], 6000)
 }
 
@@ -147,12 +147,11 @@ def zwaveEvent(physicalgraph.zwave.commands.notificationv3.NotificationReport cm
 			result << sensorValueEvent(1)
 		} else if (cmd.event == 0x03) {
 			result << createEvent(descriptionText: "$device.displayName covering was removed", isStateChange: true)
-			result << response(zwave.wakeUpV1.wakeUpIntervalSet(seconds:4*3600, nodeid:zwaveHubNodeId))
-			if(!state.MSR) result << response(zwave.manufacturerSpecificV2.manufacturerSpecificGet())
+			if(!state.MSR) result << response(command(zwave.manufacturerSpecificV2.manufacturerSpecificGet()))
 		} else if (cmd.event == 0x05 || cmd.event == 0x06) {
 			result << createEvent(descriptionText: "$device.displayName detected glass breakage", isStateChange: true)
 		} else if (cmd.event == 0x07) {
-			if(!state.MSR) result << response(zwave.manufacturerSpecificV2.manufacturerSpecificGet())
+			if(!state.MSR) result << response(command(zwave.manufacturerSpecificV2.manufacturerSpecificGet()))
 			result << createEvent(name: "motion", value: "active", descriptionText:"$device.displayName detected motion")
 		}
 	} else if (cmd.notificationType) {
@@ -170,12 +169,11 @@ def zwaveEvent(physicalgraph.zwave.commands.wakeupv1.WakeUpNotification cmd)
 	def event = createEvent(descriptionText: "${device.displayName} woke up", isStateChange: false)
 	def cmds = []
 	if (!state.MSR) {
-		cmds << zwave.wakeUpV1.wakeUpIntervalSet(seconds:4*3600, nodeid:zwaveHubNodeId).format()
-		cmds << zwave.manufacturerSpecificV2.manufacturerSpecificGet().format()
+		cmds << command(zwave.manufacturerSpecificV2.manufacturerSpecificGet())
 		cmds << "delay 1200"
 	}
 	if (!state.lastbat || now() - state.lastbat > 53*60*60*1000) {
-		cmds << batteryGetCommand()
+		cmds << command(zwave.batteryV1.batteryGet())
 	} else {
 		cmds << zwave.wakeUpV1.wakeUpNoMoreInformation().format()
 	}
@@ -212,7 +210,7 @@ def zwaveEvent(physicalgraph.zwave.commands.manufacturerspecificv2.ManufacturerS
 		if (msr == "0086-0102-0059") {
 			result << response(zwave.securityV1.securityMessageEncapsulation().encapsulate(zwave.batteryV1.batteryGet()).format())
 		} else {
-			result << response(batteryGetCommand())
+			result << response(command(zwave.batteryV1.batteryGet()))
 		}
 	}
 
@@ -220,7 +218,7 @@ def zwaveEvent(physicalgraph.zwave.commands.manufacturerspecificv2.ManufacturerS
 }
 
 def zwaveEvent(physicalgraph.zwave.commands.securityv1.SecurityMessageEncapsulation cmd) {
-	def encapsulatedCommand = cmd.encapsulatedCommand([0x20: 1, 0x85: 2, 0x70: 1])
+	def encapsulatedCommand = cmd.encapsulatedCommand([0x20: 1, 0x25: 1, 0x30: 1, 0x31: 5, 0x80: 1, 0x84: 1, 0x71: 3, 0x9C: 1])
 	// log.debug "encapsulated: $encapsulatedCommand"
 	if (encapsulatedCommand) {
 		state.sec = 1
@@ -232,12 +230,16 @@ def zwaveEvent(physicalgraph.zwave.Command cmd) {
 	createEvent(descriptionText: "$device.displayName: $cmd", displayed: false)
 }
 
-def batteryGetCommand() {
-	def cmd = zwave.batteryV1.batteryGet()
-	if (state.sec) {
-		cmd = zwave.securityV1.securityMessageEncapsulation().encapsulate(cmd)
+private command(physicalgraph.zwave.Command cmd) {
+	if (state.sec == 1) {
+		zwave.securityV1.securityMessageEncapsulation().encapsulate(cmd).format()
+	} else {
+		cmd.format()
 	}
-	cmd.format()
+}
+
+private commands(commands, delay=200) {
+	delayBetween(commands.collect{ command(it) }, delay)
 }
 
 def retypeBasedOnMSR() {
@@ -260,8 +262,12 @@ def retypeBasedOnMSR() {
 			setDeviceType("3-in-1 Multisensor Plus (SG)")
 			break
 		case "0109-2001-0106":  // Vision door/window
-			log.debug "Changing device type to Door / Window Sensor Plus (SG)"
-			setDeviceType("Door / Window Sensor Plus (SG)")
+			log.debug "Changing device type to Z-Wave Plus Door/Window Sensor"
+			setDeviceType("Z-Wave Plus Door/Window Sensor")
+			break
+		case "0109-2002-0205": // Vision Motion
+			log.debug "Changing device type to Z-Wave Plus Motion/Temp Sensor"
+			setDeviceType("Z-Wave Plus Motion/Temp Sensor")
 			break
 	}
 }

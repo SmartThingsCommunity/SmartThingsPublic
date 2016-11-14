@@ -274,6 +274,7 @@ private Map makeTemperatureResult(value) {
         name: 'temperature',
         value: "" + value,
         descriptionText: "${linkText} is ${value}°${temperatureScale}",
+        unit: temperatureScale
     ]
 }
 

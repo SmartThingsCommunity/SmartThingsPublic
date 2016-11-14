@@ -10,9 +10,9 @@ metadata {
 		capability "Color Temperature"
 		capability "Switch"
 		capability "Switch Level" // brightness
-		capability "Polling"
 		capability "Refresh"
 		capability "Sensor"
+		capability "Health Check"
 	}
 
 	simulator {
@@ -22,13 +22,12 @@ metadata {
 	tiles(scale: 2) {
 		multiAttributeTile(name:"switch", type: "lighting", width: 6, height: 4, canChangeIcon: true){
 			tileAttribute ("device.switch", key: "PRIMARY_CONTROL") {
-				attributeState "unreachable", label: "?", action:"refresh.refresh", icon:"http://hosted.lifx.co/smartthings/v1/196xUnreachable.png", backgroundColor:"#666666"
 				attributeState "on", label:'${name}', action:"switch.off", icon:"http://hosted.lifx.co/smartthings/v1/196xOn.png", backgroundColor:"#79b821", nextState:"turningOff"
 				attributeState "off", label:'${name}', action:"switch.on", icon:"http://hosted.lifx.co/smartthings/v1/196xOff.png", backgroundColor:"#ffffff", nextState:"turningOn"
 				attributeState "turningOn", label:'Turning on', action:"switch.off", icon:"http://hosted.lifx.co/smartthings/v1/196xOn.png", backgroundColor:"#79b821", nextState:"turningOff"
 				attributeState "turningOff", label:'Turning off', action:"switch.on", icon:"http://hosted.lifx.co/smartthings/v1/196xOff.png", backgroundColor:"#ffffff", nextState:"turningOn"
-
 			}
+
 			tileAttribute ("device.level", key: "SLIDER_CONTROL") {
 				attributeState "level", action:"switch level.setLevel"
 			}
@@ -53,15 +52,10 @@ metadata {
 		main "switch"
 		details(["switch", "colorTempSliderControl", "colorTemp", "refresh"])
 	}
-
 }
 
-// parse events into attributes
-def parse(String description) {
-	if (description == 'updated') {
-		return // don't poll when config settings is being updated as it may time out
-	}
-	poll()
+void installed() {
+	sendEvent(name: "DeviceWatch-Enroll", value: "{\"protocol\": \"cloud\", \"scheme\":\"untracked\", \"hubHardwareId\": \"${device?.hub?.hardwareID}\"}")
 }
 
 // handle commands
@@ -71,7 +65,6 @@ def setLevel(percentage) {
 		percentage = 1 // clamp to 1%
 	}
 	if (percentage == 0) {
-		sendEvent(name: "level", value: 0) // Otherwise the level value tile does not update
 		return off() // if the brightness is set to 0, just turn it off
 	}
 	parent.logErrors(logObject:log) {
@@ -123,14 +116,17 @@ def off() {
 	return []
 }
 
-def poll() {
-	log.debug "Executing 'poll' for ${device} ${this} ${device.deviceNetworkId}"
+def refresh() {
+	log.debug "Executing 'refresh'"
+	
 	def resp = parent.apiGET("/lights/${selector()}")
 	if (resp.status == 404) {
-		sendEvent(name: "switch", value: "unreachable")
+		state.online = false
+		sendEvent(name: "DeviceWatch-DeviceStatusUpdate", value: "offline", displayed: false)
+		log.warn "$device is Offline"
 		return []
 	} else if (resp.status != 200) {
-		log.error("Unexpected result in poll(): [${resp.status}] ${resp.data}")
+		log.error("Unexpected result in refresh(): [${resp.status}] ${resp.data}")
 		return []
 	}
 	def data = resp.data[0]
@@ -138,16 +134,17 @@ def poll() {
 	sendEvent(name: "label", value: data.label)
 	sendEvent(name: "level", value: Math.round((data.brightness ?: 1) * 100))
 	sendEvent(name: "switch.setLevel", value: Math.round((data.brightness ?: 1) * 100))
-	sendEvent(name: "switch", value: data.connected ? data.power : "unreachable")
+	sendEvent(name: "switch", value: data.power)
 	sendEvent(name: "colorTemperature", value: data.color.kelvin)
 	sendEvent(name: "model", value: data.product.name)
 
-	return []
-}
-
-def refresh() {
-	log.debug "Executing 'refresh'"
-	poll()
+	if (data.connected) {
+		sendEvent(name: "DeviceWatch-DeviceStatus", value: "online", displayed: false)
+		log.debug "$device is Online"
+	} else {
+		sendEvent(name: "DeviceWatch-DeviceStatus", value: "offline", displayed: false)
+		log.warn "$device is Offline"
+	}
 }
 
 def selector() {

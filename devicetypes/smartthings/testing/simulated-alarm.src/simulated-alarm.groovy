@@ -16,6 +16,8 @@
 metadata {
 	definition (name: "Simulated Alarm", namespace: "smartthings/testing", author: "SmartThings") {
 		capability "Alarm"
+		capability "Sensor"
+		capability "Actuator"
 	}
 
 	simulator {

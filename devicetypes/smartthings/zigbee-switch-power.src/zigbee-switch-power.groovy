@@ -20,6 +20,7 @@ metadata {
         capability "Power Meter"
         capability "Sensor"
         capability "Switch"
+        capability "Health Check"
 
         fingerprint profileId: "0104", inClusters: "0000, 0003, 0004, 0005, 0006, 0B04"
         fingerprint profileId: "0104", inClusters: "0000, 0003, 0004, 0005, 0006, 0702"
@@ -77,10 +78,28 @@ def on() {
 }
 
 def refresh() {
-    zigbee.onOffRefresh() + zigbee.simpleMeteringPowerRefresh() + zigbee.electricMeasurementPowerRefresh() + zigbee.onOffConfig() + zigbee.simpleMeteringPowerConfig() + zigbee.electricMeasurementPowerConfig()
+    Integer reportIntervalMinutes = 5
+    zigbee.onOffRefresh() + zigbee.simpleMeteringPowerRefresh() + zigbee.electricMeasurementPowerRefresh() + zigbee.onOffConfig(0,reportIntervalMinutes * 60) + zigbee.simpleMeteringPowerConfig() + zigbee.electricMeasurementPowerConfig()
 }
 
 def configure() {
-    log.debug "Configuring Reporting and Bindings."
-    zigbee.onOffConfig() + zigbee.simpleMeteringPowerConfig() + zigbee.electricMeasurementPowerConfig() + zigbee.onOffRefresh() + zigbee.simpleMeteringPowerRefresh() + zigbee.electricMeasurementPowerRefresh()
+    log.debug "in configure()"
+    return configureHealthCheck()
+}
+
+def configureHealthCheck() {
+    Integer hcIntervalMinutes = 12
+    sendEvent(name: "checkInterval", value: hcIntervalMinutes * 60, displayed: false, data: [protocol: "zigbee", hubHardwareId: device.hub.hardwareID])
+    return refresh()
+}
+
+def updated() {
+    log.debug "in updated()"
+    // updated() doesn't have it's return value processed as hub commands, so we have to send them explicitly
+    def cmds = configureHealthCheck()
+    cmds.each{ sendHubCommand(new physicalgraph.device.HubAction(it)) }
+}
+
+def ping() {
+    return zigbee.onOffRefresh()
 }
