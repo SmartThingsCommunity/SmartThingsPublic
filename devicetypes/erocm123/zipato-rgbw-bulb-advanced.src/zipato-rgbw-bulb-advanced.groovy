@@ -89,12 +89,12 @@ metadata {
 			state "on", label: "slow", action: "off2", icon: "st.switches.switch.on", backgroundColor: "#79b821"
 		}
         standardTile("switch3", "switch3", canChangeIcon: true, width: 2, height: 2) {
-            state "off", label: "random fast", action: "on3", icon: "st.switches.switch.off", backgroundColor: "#ffffff"
-			state "on", label: "random fast", action: "off3", icon: "st.switches.switch.on", backgroundColor: "#79b821"
+            state "off", label: "r.fast", action: "on3", icon: "st.switches.switch.off", backgroundColor: "#ffffff"
+			state "on", label: "r.fast", action: "off3", icon: "st.switches.switch.on", backgroundColor: "#79b821"
 		}
         standardTile("switch4", "switch4", canChangeIcon: true, width: 2, height: 2) {
-            state "off", label: "random slow", action: "on4", icon: "st.switches.switch.off", backgroundColor: "#ffffff"
-			state "on", label: "random slow", action: "off4", icon: "st.switches.switch.on", backgroundColor: "#79b821"
+            state "off", label: "r.slow", action: "on4", icon: "st.switches.switch.off", backgroundColor: "#ffffff"
+			state "on", label: "r.slow", action: "off4", icon: "st.switches.switch.on", backgroundColor: "#79b821"
 		}
         standardTile("switch5", "switch5", canChangeIcon: true, width: 2, height: 2) {
 			state "off", label: "custom", action: "on5", icon: "st.switches.switch.off", backgroundColor: "#ffffff"
