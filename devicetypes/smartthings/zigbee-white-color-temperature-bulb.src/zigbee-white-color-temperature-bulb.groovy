@@ -88,7 +88,7 @@ def parse(String description) {
             List<String> cmds = []
             bindingTable.table_entries.inject(cmds) { acc, entry ->
                 // The binding entry is not for our hub and should be deleted
-                if (entry["dstAddr"] != zigbeeEui) {
+                if (entry["dstAddr"] != zigbee.zigbeeEui) {
                     acc.addAll(removeBinding(entry.clusterId, entry.srcAddr, entry.srcEndpoint, entry.dstAddr, entry.dstEndpoint))
                 }
                 acc
