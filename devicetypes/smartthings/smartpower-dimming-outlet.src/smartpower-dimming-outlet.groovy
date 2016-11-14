@@ -71,7 +71,7 @@ def parse(String description) {
 
 	def event = [:]
 	def finalResult = isKnownDescription(description)
-	if (finalResult != "false") {
+	if (finalResult) {
 		log.info finalResult
 		if (finalResult.type == "update") {
 			log.info "$device updates: ${finalResult.value}"
@@ -212,13 +212,16 @@ def isKnownDescription(description) {
 		else if (descMap.cluster == "0B04" || descMap.clusterId == "0B04"){
 			isDescriptionPower(descMap)
 		}
+		else {
+			return [:]
+		}
 	}
 	else if(description?.startsWith("on/off:")) {
 		def switchValue = description?.endsWith("1") ? "on" : "off"
 		return	[type: "switch", value : switchValue]
 	}
 	else {
-		return "false"
+		return [:]
 	}
 }
 
@@ -252,7 +255,7 @@ def isDescriptionOnOff(descMap) {
 		return	[type: "switch", value : switchValue]
 	}
 	else {
-		return "false"
+		return [:]
 	}
 
 }
@@ -279,10 +282,9 @@ def isDescriptionLevel(descMap) {
 
 	if (dimmerValue != -1){
 		return	[type: "level", value : dimmerValue]
-
 	}
 	else {
-		return "false"
+		return [:]
 	}
 }
 
@@ -304,7 +306,7 @@ def isDescriptionPower(descMap) {
 		return	[type: "power", value : powerValue]
 	}
 	else {
-		return "false"
+		return [:]
 	}
 }
 
