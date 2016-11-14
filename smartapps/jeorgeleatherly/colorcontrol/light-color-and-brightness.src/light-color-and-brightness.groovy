@@ -30,17 +30,11 @@ preferences {
 
         section("Light effects:") {
             input "selectedColor", "enum", title: "Color?", required: false, multiple: false, options: buildColorOptions()    
-            input "selectedLightLevel", "enum", title: "Light Level?", required: false, 
-                options: [[10:"10%"],
-                          [20:"20%"],
-                          [30:"30%"],
-                          [40:"40%"],
-                          [50:"50%"],
-                          [60:"60%"],
-                          [70:"70%"],
-                          [80:"80%"],
-                          [90:"90%"],
-                          [100:"100%"]]
+            input "selectedLightLevel", "number", title: "Brightness?", range: "0..100", required: false
+        }
+        
+        section("Automation name") {
+            label title: "Enter custom name: ", defaultValue: app.label, required: true
         }
 
         section("Advanced settings (optional)", hideable: true, hidden: true) {    	
@@ -83,11 +77,7 @@ Map buildColorOptions() {
 def triggerUpdateByMode(evt) {
 	log.debug "triggerUpdateByMode called: $evt"
     if (location.mode == selectedMode) {
-     //   if (location.modes?.find{it.name == selectedMode}) {
-            changeBulbSettings();
-      //  } else {
-       //     log.warn "Undefined mode $selectedMode"
-       // }
+        changeBulbSettings();
     }
 }
 
@@ -97,8 +87,6 @@ def triggerUpdateBySwitch(evt) {
 }
 
 private changeBulbSettings() {
-	
-    
     if(useCustomSettings) {
     	log.debug "using custom settings: [hue: $customHue, saturation: $customSaturation, level: $customLevel]"
     	pushBulbSettings(customHue, customSaturation, customLevel)
@@ -129,8 +117,15 @@ private pushBulbSettings(hue, saturation, level) {
 }
 
 private pushBulbSettings(temperature, saturation) {
-	bulbs?.setColorTemperature(temperature)
-    pushBulbSettings(100, saturation, level)
+	bulbs?.each {
+    	if(it.hasCommand('setColorTemperature')) {
+        	bulbs?.setColorTemperature(temperature)
+        } else {
+        	saturation = 0
+        }
+        
+        pushBulbSettings(100, saturation, selectedLightLevel)
+    }
 }
 
 Map getColors() {
