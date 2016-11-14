@@ -273,7 +273,7 @@ def on() {
 	commands([
 		zwave.basicV1.basicSet(value: 0xFF),
 		zwave.basicV1.basicGet(),
-	], 2000)
+	])
 }
  
 def off() {
@@ -281,7 +281,7 @@ def off() {
 	commands([
 		zwave.basicV1.basicSet(value: 0x00),
 		zwave.basicV1.basicGet(),
-	], 2000)
+	])
 }
  
 def setLevel(level) {
@@ -301,7 +301,7 @@ def refresh() {
 	commands([
 		zwave.basicV1.basicGet(),
         zwave.configurationV1.configurationGet(parameterNumber: 37),
-	], 1000)
+	])
 }
  
 def setSaturation(percent) {
@@ -430,7 +430,7 @@ private command(physicalgraph.zwave.Command cmd) {
 	}
 }
  
-private commands(commands, delay=1000) {
+private commands(commands, delay=500) {
 	delayBetween(commands.collect{ command(it) }, delay)
 }
  
