@@ -4,8 +4,9 @@ metadata {
 		capability "Sensor"
         capability "Configuration"
         capability "Speech Recognition"
+        capability "Tamper Alert"
         
-        attribute "tamperSwitch","ENUM",["open","closed"]
+        //attribute "tamperSwitch","ENUM",["open","closed"]
                 
         command "enrollResponse"
         
@@ -25,7 +26,7 @@ metadata {
 			state("inactive", label:'no motion', icon:"st.motion.motion.inactive", backgroundColor:"#ffffff")
 		}
         
-        standardTile("tamperSwitch", "device.tamperSwitch", width: 1, height: 1) {
+        standardTile("tamperSwitch", "device.tamper", width: 1, height: 1) {
 			state("open", label:'${name}', icon:"st.contact.contact.open", backgroundColor:"#ffa81e")
 			state("closed", label:'${name}', icon:"st.contact.contact.closed", backgroundColor:"#79b821")
 		}
@@ -108,32 +109,32 @@ private Map parseIasMessage(String description) {
     switch(msgCode) {
         case '0x0030': // Closed/No Motion/Dry
             //logDebug 'no motion'
-            resultMap["motion"] = [name: "motion", value: "inactive"]
-            resultMap["tamperSwitch"] = getContactResult("closed")            
+            resultMap["motion"] = getMotionResult("inactive")
+            resultMap["tamper"] = getTamperResult('clear')
             break
 
         case '0x0031': // Open/Motion/Wet
             //logDebug 'motion'
-            resultMap["motion"] = [name: "motion", value: "active"]
-            resultMap["tamperSwitch"] = getContactResult("closed")            
+            resultMap["motion"] = getMotionResult("active")
+            resultMap["tamper"] = getTamperResult('clear')
             break
 
         case '0x0032': // Tamper Alarm
         	//logDebug 'motion with tamper alarm'
-            resultMap["motion"] = [name: "motion", value: "active"]
-            resultMap["tamperSwitch"] = getContactResult("open")            
+            resultMap["motion"] = getMotionResult("active")
+            resultMap["tamper"] = getTamperResult('detected')
             break
 
         case '0x0034': // Supervision Report
         	//logDebug 'no motion with tamper alarm'
-            resultMap["motion"] = [name: "motion", value: "inactive"]
-            resultMap["tamperSwitch"] = getContactResult("open")            
+            resultMap["motion"] = getMotionResult("inactive")
+            resultMap["tamper"] = getTamperResult('detected')
             break
 
         case '0x0035': // Restore Report
         	//logDebug 'motion with tamper alarm'
-            resultMap["motion"] = [name: "motion", value: "active"]
-            resultMap["tamperSwitch"] = getContactResult("open") 
+            resultMap["motion"] = getMotionResult("active")
+            resultMap["tamper"] = getTamperResult('detected')
             break
 
 //        case '0x0036': // Trouble/Failure
@@ -147,12 +148,19 @@ private Map parseIasMessage(String description) {
     return resultMap
 }
 
-private Map getContactResult(value) {
+private Map getMotionResult(value) {
+	return [
+		name: 'motion',
+		value: value
+	]
+}
+
+private Map getTamperResult(value) {
 	//logDebug "Tamper Switch Status ${value}"
 	def linkText = getLinkText(device)
-	def descriptionText = "${linkText} was ${value == 'open' ? 'opened' : 'closed'}"
+	def descriptionText = "${linkText} was tampered: ${value == 'detected' ? 'yes' : 'no'}"
 	return [
-		name: 'tamperSwitch',
+		name: 'tamper',
 		value: value,
 		descriptionText: descriptionText
 	]

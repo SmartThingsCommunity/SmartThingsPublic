@@ -5,8 +5,9 @@ metadata {
 		capability "Sensor"
         capability "Configuration"
         capability "Speech Recognition"
+        capability "Tamper Alert"
 
-        attribute "tamperSwitch","ENUM",["open","closed"]
+        //attribute "tamperSwitch","ENUM",["open","closed"]
 
         command "enrollResponse"
 
@@ -30,15 +31,15 @@ metadata {
 			}
         }
 
-        standardTile("tamperSwitch", "device.tamperSwitch", width: 2, height: 1) {
-			state("open", label:'${name}', icon:"st.contact.contact.open", backgroundColor:"#ffa81e")
-			state("closed", label:'${name}', icon:"st.contact.contact.closed", backgroundColor:"#79b821")
+        standardTile("tamperSwitch", "device.tamper", width: 2, height: 1) {
+			state("detected", label:'${name}', icon:"st.contact.contact.open", backgroundColor:"#ffa81e")
+			state("clear", label:'${name}', icon:"st.contact.contact.closed", backgroundColor:"#79b821")
 		}        
         valueTile("logEvent", "device.phraseSpoken", width:2, height:2) {
         	state 'val', label:'${currentValue}', defaultState: ''
         }
 		main (["moisture"])
-		details(["moisture","tamperSwitch"])
+		details(["moisture","tamperSwitch", 'logEvent'])
 	}
 }
 def configure() {
@@ -109,32 +110,32 @@ private Map parseIasMessage(String description) {
     switch(msgCode) {
         case '0x0038': // Dry
             //logDebug 'Detected Dry'
-            resultMap["moisture"] = [name: "moisture", value: "dry"]
-            resultMap["tamperSwitch"] = getContactResult("closed")            
+            resultMap["moisture"] = getMoistureResult("dry")
+            resultMap["tamper"] = getTamperResult("clear")            
             break
 
         case '0x0039': // Wet
             //logDebug 'Detected Moisture'
-            resultMap["moisture"] = [name: "moisture", value: "flood"]
-            resultMap["tamperSwitch"] = getContactResult("closed")            
+            resultMap["moisture"] = getMoistureResult("flood")
+            resultMap["tamper"] = getTamperResult("clear")            
             break
 
         case '0x0032': // Tamper Alarm
         	//logDebug 'Detected Tamper'
-            resultMap["moisture"] = [name: "moisture", value: "active"]
-            resultMap["tamperSwitch"] = getContactResult("open")            
+            resultMap["moisture"] = getMoistureResult("flood")
+            resultMap["tamper"] = getTamperResult("detected")            
             break
 
         case '0x0034': // Supervision Report
         	//logDebug 'No flood with tamper alarm'
-            resultMap["moisture"] = [name: "moisture", value: "inactive"]
-            resultMap["tamperSwitch"] = getContactResult("open")            
+            resultMap["moisture"] = getMoistureResult("dry")
+            resultMap["tamper"] = getTamperResult("detected")            
             break
 
         case '0x0035': // Restore Report
         	//logDebug 'Moisture with tamper alarm'
-            resultMap["moisture"] = [name: "moisture", value: "active"]
-            resultMap["tamperSwitch"] = getContactResult("open") 
+            resultMap["moisture"] = getMoistureResult("flood")
+            resultMap["tamper"] = getTamperResult("detected") 
             break
 
 //        case '0x0036': // Trouble/Failure
@@ -147,12 +148,18 @@ private Map parseIasMessage(String description) {
     return resultMap
 }
 
-private Map getContactResult(value) {
+private Map getMoistureResult(value) {
+	return [
+		name: 'moisture',
+		value: value
+	]
+}
+private Map getTamperResult(value) {
 	//logDebug "Tamper Switch Status ${value}"
 	def linkText = getLinkText(device)
-	def descriptionText = "${linkText} was ${value == 'open' ? 'opened' : 'closed'}"
+	def descriptionText = "${linkText} was tampered: ${value == 'detected' ? 'yes' : 'no'}"
 	return [
-		name: 'tamperSwitch',
+		name: 'tamper',
 		value: value,
 		descriptionText: descriptionText
 	]
