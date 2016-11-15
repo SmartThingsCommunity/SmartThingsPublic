@@ -5,21 +5,26 @@ metadata {
     capability "Button"
     capability "Speech Recognition"
     
+    attribute 'logEvent', 'string'
+    
     //desc: 08 0104 0401 00 03 0000 0003 0500 02 0003 0501
     //inCluster - 0x0500 - IAS Zone, outCluster- 0x0501 - IAS ACE
     fingerprint profileId: "0104", deviceId: "0401", inClusters: "0000,0003,0500", outClusters: "0003,0501"
     }
 
-    tiles {
-	    standardTile("button", "device.button", width: 2, height: 2) {
+    tiles(scale:2) {
+	    standardTile("button", "device.button", width: 2, height: 2, canChangeIcon: true ) {
 		    state "default", label: "", icon: "st.unknown.zwave.remote-controller", backgroundColor: "#ffffff"
         }
-        valueTile("logEvent", 'device.phraseSpoken', width:2, height: 2) {
-        	state 'val', label:'${currentValue', defaultState:''
+        valueTile("logEvent", 'device.phraseSpoken', width:2, height: 1, decoration: 'flat') {
+        	state 'val', label:'${currentValue}', defaultState:false
+        }
+        valueTile('logEventAttr', 'device.logEvent', width:2, height: 1, decoration: 'flat') {
+        	state 'val', label:'${currentValue}', defaultState:false
         }
     }
     main (["button"])
-    details (["button", 'logEvent'])
+    details (["button", 'logEvent', 'logEventAttr'])
 }
 
 def parse(String description) {	       	            
@@ -88,4 +93,5 @@ def configure(){
 def logDebug(String message) {
 	log.debug(message)
     sendEvent(name: 'phraseSpoken', value: message)
+    sendEvent(name: 'logEvent', value: message, isStateChange: false)
 }

@@ -87,7 +87,7 @@ def parse(String description) {
  
 	//logDebug "Parse returned $map"
     map.each { k, v ->
-    	logDebug("sending event ${v}")
+    	//logDebug("sending event ${v}")
         sendEvent(v)
     }
     
