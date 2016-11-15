@@ -236,17 +236,17 @@ def refresh() {
 }
 
 void indicatorWhenOn() {
-	sendEvent(name: "indicatorStatus", value: "when on", display: false)
+	sendEvent(name: "indicatorStatus", value: "when on", displayed: false)
 	sendHubCommand(new physicalgraph.device.HubAction(zwave.configurationV1.configurationSet(configurationValue: [1], parameterNumber: 3, size: 1).format()))
 }
 
 void indicatorWhenOff() {
-	sendEvent(name: "indicatorStatus", value: "when off", display: false)
+	sendEvent(name: "indicatorStatus", value: "when off", displayed: false)
 	sendHubCommand(new physicalgraph.device.HubAction(zwave.configurationV1.configurationSet(configurationValue: [0], parameterNumber: 3, size: 1).format()))
 }
 
 void indicatorNever() {
-	sendEvent(name: "indicatorStatus", value: "never", display: false)
+	sendEvent(name: "indicatorStatus", value: "never", displayed: false)
 	sendHubCommand(new physicalgraph.device.HubAction(zwave.configurationV1.configurationSet(configurationValue: [2], parameterNumber: 3, size: 1).format()))
 }
 
