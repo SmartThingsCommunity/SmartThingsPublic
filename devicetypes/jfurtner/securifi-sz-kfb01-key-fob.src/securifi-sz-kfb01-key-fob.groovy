@@ -19,7 +19,7 @@ metadata {
         }
     }
     main (["button"])
-    details (["button"])
+    details (["button", 'logEvent'])
 }
 
 def parse(String description) {	       	            

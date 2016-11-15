@@ -20,18 +20,18 @@ metadata {
 	}
 
 	// UI tile definitions
-	tiles {
-		standardTile("motion", "device.motion", width: 2, height: 2) {
+	tiles(scale:2) {
+		standardTile("motion", "device.motion", width: 6, height: 3) {
 			state("active", label:'motion', icon:"st.motion.motion.active", backgroundColor:"#53a7c0")
 			state("inactive", label:'no motion', icon:"st.motion.motion.inactive", backgroundColor:"#ffffff")
 		}
         
-        standardTile("tamperSwitch", "device.tamper", width: 1, height: 1) {
-			state("open", label:'${name}', icon:"st.contact.contact.open", backgroundColor:"#ffa81e")
-			state("closed", label:'${name}', icon:"st.contact.contact.closed", backgroundColor:"#79b821")
+        standardTile("tamperSwitch", "device.tamper", width: 2, height: 2) {
+			state("detected", label:'${name}', icon:"st.contact.tamper.open", backgroundColor:"#ffa81e")
+			state("clear", label:'${name}', icon:"st.contact.contact.closed", backgroundColor:"#79b821")
 		}
         
-        valueTile("logEvent", "device.phraseSpoken", width: 2, height: 2) {
+        valueTile("logEvent", "device.phraseSpoken", width: 6, height: 3) {
         	state "val", label:'${currentValue}', defaultState: ''
         }
 		
