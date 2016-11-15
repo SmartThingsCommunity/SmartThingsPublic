@@ -77,7 +77,7 @@ def logDebug(String message) {
 
 // Parse incoming device messages to generate events
 def parse(String description) {
-	logDebug("** PIR02 parse received ** ${description}")
+	logDebug("** WTD01 parse received ** ${description}")
     def result = []        
 	Map map = [:]
 
@@ -85,7 +85,7 @@ def parse(String description) {
 	    map = parseIasMessage(description)
     }
 
-	logDebug "Parse returned $map"
+	//logDebug "Parse returned $map"
     map.each { k, v ->
     	logDebug("sending event ${v}")
         sendEvent(v)
@@ -108,31 +108,31 @@ private Map parseIasMessage(String description) {
     Map resultMap = [:]
     switch(msgCode) {
         case '0x0038': // Dry
-            logDebug 'Detected Dry'
+            //logDebug 'Detected Dry'
             resultMap["moisture"] = [name: "moisture", value: "dry"]
             resultMap["tamperSwitch"] = getContactResult("closed")            
             break
 
         case '0x0039': // Wet
-            logDebug 'Detected Moisture'
+            //logDebug 'Detected Moisture'
             resultMap["moisture"] = [name: "moisture", value: "flood"]
             resultMap["tamperSwitch"] = getContactResult("closed")            
             break
 
         case '0x0032': // Tamper Alarm
-        	logDebug 'Detected Tamper'
+        	//logDebug 'Detected Tamper'
             resultMap["moisture"] = [name: "moisture", value: "active"]
             resultMap["tamperSwitch"] = getContactResult("open")            
             break
 
         case '0x0034': // Supervision Report
-        	logDebug 'No flood with tamper alarm'
+        	//logDebug 'No flood with tamper alarm'
             resultMap["moisture"] = [name: "moisture", value: "inactive"]
             resultMap["tamperSwitch"] = getContactResult("open")            
             break
 
         case '0x0035': // Restore Report
-        	logDebug 'Moisture with tamper alarm'
+        	//logDebug 'Moisture with tamper alarm'
             resultMap["moisture"] = [name: "moisture", value: "active"]
             resultMap["tamperSwitch"] = getContactResult("open") 
             break
@@ -148,7 +148,7 @@ private Map parseIasMessage(String description) {
 }
 
 private Map getContactResult(value) {
-	log.debug "Tamper Switch Status ${value}"
+	//logDebug "Tamper Switch Status ${value}"
 	def linkText = getLinkText(device)
 	def descriptionText = "${linkText} was ${value == 'open' ? 'opened' : 'closed'}"
 	return [

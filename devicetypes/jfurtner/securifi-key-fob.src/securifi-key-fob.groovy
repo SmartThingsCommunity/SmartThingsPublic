@@ -23,6 +23,7 @@ metadata {
 }
 
 def parse(String description) {	       	            
+	logDebug "** KFB01 parse received ** $description"
     if (description?.startsWith('enroll request')) {        
         List cmds = enrollResponse()
         logDebug "enroll response: ${cmds}"
@@ -30,11 +31,9 @@ def parse(String description) {
         return result    
     } else if (description?.startsWith('catchall:')) {
         def msg = zigbee.parse(description)
-        logDebug msg
+        //logDebug msg
         buttonPush(msg.data[0])
-    } else {
-        logDebug "parse description: $description"
-    }    
+    }   
 }
 
 def buttonPush(button){
@@ -47,21 +46,21 @@ def buttonPush(button){
         //Unlock - ST Button 3
         name = "3"
         def currentST = device.currentState("button3")?.value
-        logDebug "Unlock button Pushed"           
+        //logDebug "Unlock button Pushed"           
     } else if (button == 2) {
     	//Home - ST Button 2
         name = "2"
         def currentST = device.currentState("button2")?.value
-        logDebug "Home button pushed"        
+        //logDebug "Home button pushed"        
     } else if (button == 3) {
         //Lock ST Button 1
         name = "1"
      	def currentST = device.currentState("button")?.value
-        logDebug "Lock Button pushed"         
+        //logDebug "Lock Button pushed"         
     } 
 
     def result = createEvent(name: "button", value: "pushed", data: [buttonNumber: name], descriptionText: "$device.displayName button $name was pushed", isStateChange: true)
-    logDebug "Parse returned ${result?.descriptionText}"
+    //logDebug "Parse returned ${result?.descriptionText}"
     return result
 }
 

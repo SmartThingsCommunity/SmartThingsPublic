@@ -84,7 +84,7 @@ def parse(String description) {
 	    map = parseIasMessage(description)
     }
  
-	logDebug "Parse returned $map"
+	//logDebug "Parse returned $map"
     map.each { k, v ->
     	logDebug("sending event ${v}")
         sendEvent(v)
@@ -107,48 +107,48 @@ private Map parseIasMessage(String description) {
     Map resultMap = [:]
     switch(msgCode) {
         case '0x0030': // Closed/No Motion/Dry
-            logDebug 'no motion'
+            //logDebug 'no motion'
             resultMap["motion"] = [name: "motion", value: "inactive"]
             resultMap["tamperSwitch"] = getContactResult("closed")            
             break
 
         case '0x0031': // Open/Motion/Wet
-            logDebug 'motion'
+            //logDebug 'motion'
             resultMap["motion"] = [name: "motion", value: "active"]
             resultMap["tamperSwitch"] = getContactResult("closed")            
             break
 
         case '0x0032': // Tamper Alarm
-        	logDebug 'motion with tamper alarm'
+        	//logDebug 'motion with tamper alarm'
             resultMap["motion"] = [name: "motion", value: "active"]
             resultMap["tamperSwitch"] = getContactResult("open")            
             break
 
         case '0x0034': // Supervision Report
-        	logDebug 'no motion with tamper alarm'
+        	//logDebug 'no motion with tamper alarm'
             resultMap["motion"] = [name: "motion", value: "inactive"]
             resultMap["tamperSwitch"] = getContactResult("open")            
             break
 
         case '0x0035': // Restore Report
-        	logDebug 'motion with tamper alarm'
+        	//logDebug 'motion with tamper alarm'
             resultMap["motion"] = [name: "motion", value: "active"]
             resultMap["tamperSwitch"] = getContactResult("open") 
             break
 
-        case '0x0036': // Trouble/Failure
-        	logDebug 'msgCode 36 not handled yet'
-            break
+//        case '0x0036': // Trouble/Failure
+//        	logDebug 'msgCode 36 not handled yet'
+//            break
 
         default:
-        	log.debug "msgCode ${msgCode}: ${description}"
+        	logDebug "msgCode ${msgCode}: ${description}"
         	break
     }
     return resultMap
 }
 
 private Map getContactResult(value) {
-	logDebug "Tamper Switch Status ${value}"
+	//logDebug "Tamper Switch Status ${value}"
 	def linkText = getLinkText(device)
 	def descriptionText = "${linkText} was ${value == 'open' ? 'opened' : 'closed'}"
 	return [
