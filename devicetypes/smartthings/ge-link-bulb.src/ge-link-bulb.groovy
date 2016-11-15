@@ -87,7 +87,7 @@ metadata {
 def parse(String description) {
     def resultMap = zigbee.getEvent(description)
     if (resultMap) {
-        if ((resultMap.name == "level" && state.trigger == "setLevel") || resultMap.name != "level") {  //doing this to account for weird level reporting bug with GE Link Bulbs
+        if (resultMap.name != "level" || resultMap.value != 0) {  // Ignore level reports of 0 sent when bulb turns off
             sendEvent(resultMap)
         }
     }
@@ -188,12 +188,10 @@ def updated() {
 }
 
 def on() {
-    state.trigger = "on/off"
     zigbee.on()
 }
 
 def off() {
-    state.trigger = "on/off"
     zigbee.off()
 }
 
@@ -206,7 +204,6 @@ def refresh() {
 }
 
 def setLevel(value) {
-    state.trigger = "setLevel"
     def cmd
     def delayForRefresh = 500
     if (dimRate && (state?.rate != null)) {

@@ -1,10 +1,11 @@
-# OSRAM Lightify LED On/Off/Dim
+# Zigbee Dimmer
 
-
+Cloud Execution
 
 Works with: 
 
 * [OSRAM Lightify LED On/Off/Dim](https://shop.smartthings.com/#!/products/osram-led-smart-bulb-on-off-dim)
+* [WeMo LED Bulb](https://support.smartthings.com/hc/en-us/articles/204259040-Belkin-WeMo-LED-Bulb-F7C033-)
 
 ## Table of contents
 
@@ -23,14 +24,16 @@ Works with:
 
 ## Device Health
 
-A Category C1 Zigbee dimmer with maxReportTime of 5 mins.
-Check-in interval is double the value of maxReportTime. 
-This gives the device twice the amount of time to respond before it is marked as offline.
-Check-in interval = 12 mins
+ZigBee Dimmer with reporting interval of 5 mins.
+SmartThings platform will ping the device after `checkInterval` seconds of inactivity in last attempt to reach the device before marking it `OFFLINE` 
+
+* __12min__ checkInterval
+
 
 ## Troubleshooting
 
 If the device doesn't pair when trying from the SmartThings mobile app, it is possible that the device is out of range.
 Pairing needs to be tried again by placing the device closer to the hub.
 Other troubleshooting tips are listed as follows:
-* [Troubleshooting:](https://support.smartthings.com/hc/en-us/articles/207191763-OSRAM-LIGHTIFY-LED-Smart-Connected-Light-A19-On-Off-Dim)
+* [OSRAM Lightify LED On/Off/Dim Troubleshooting:](https://support.smartthings.com/hc/en-us/articles/207191763-OSRAM-LIGHTIFY-LED-Smart-Connected-Light-A19-On-Off-Dim)
+* [WeMo LED Bulb Troubleshooting:](https://support.smartthings.com/hc/en-us/articles/204259040-Belkin-WeMo-LED-Bulb-F7C033-)

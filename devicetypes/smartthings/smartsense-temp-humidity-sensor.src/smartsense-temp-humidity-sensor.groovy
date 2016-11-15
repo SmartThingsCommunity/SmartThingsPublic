@@ -84,7 +84,7 @@ def parse(String description) {
 	}
 
 	log.debug "Parse returned $map"
-	return map ? createEvent(map) : null
+	return map ? createEvent(map) : [:]
 }
 
 private Map parseCatchAllMessage(String description) {
@@ -264,9 +264,9 @@ def refresh()
 }
 
 def configure() {
-	// Device-Watch allows 3 check-in misses from device (plus 1 min lag time)
+	// Device-Watch allows 2 check-in misses from device + ping (plus 1 min lag time)
 	// enrolls with default periodic reporting until newer 5 min interval is confirmed
-	sendEvent(name: "checkInterval", value: 3 * 60 * 60 + 1 * 60, displayed: false, data: [protocol: "zigbee", hubHardwareId: device.hub.hardwareID])
+	sendEvent(name: "checkInterval", value: 2 * 60 * 60 + 1 * 60, displayed: false, data: [protocol: "zigbee", hubHardwareId: device.hub.hardwareID])
 
 	log.debug "Configuring Reporting and Bindings."
 	def humidityConfigCmds = [
