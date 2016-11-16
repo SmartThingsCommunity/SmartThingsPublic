@@ -21,30 +21,23 @@ metadata {
 	}
 
 	// UI tile definitions
-	tiles {
-    /*
-    	tiles(scale: 2) {
-			multiAttributeTile(name:"moisture", type: "generic", width: 6, height: 4){
-				tileAttribute ("device.moisture", key: "PRIMARY_CONTROL") {
-					attributeState "dry", label: "Dry", icon:"st.alarm.water.dry", backgroundColor:"#ffffff"
-					attributeState "flood", label: "Wet", icon:"st.alarm.water.wet", backgroundColor:"#53a7c0"
-				}
-			}
-        }
-*/
-		standardTile('moisture', 'device.moisture', width: 6, height: 4){
+	tiles(scale:2) {
+		standardTile('moisture', 'device.moisture', width: 4, height: 2){
         	state 'dry', label: 'Dry', icon:'st.alarm.water.dry', backgroundColor:'#ffffff'
             state 'flood', label: 'Wet', icon:'st.alarm.water.wet', backgroundColor:'#53a7c0'
         }        
-        standardTile("tamperSwitch", "device.tamper", width: 2, height: 1) {
+        standardTile("tamperSwitch", "device.tamper", width: 2, height: 2) {
 			state("detected", label:'${name}', icon:"st.contact.contact.open", backgroundColor:"#ffa81e")
 			state("clear", label:'${name}', icon:"st.contact.contact.closed", backgroundColor:"#79b821")
 		}        
-        valueTile("logEvent", "device.phraseSpoken", width:6, height:3) {
-        	state 'val', label:'${currentValue}', defaultState: ''
+        valueTile("logEvent", "device.phraseSpoken", width:6, height:2) {
+        	state('val', label:'${currentValue}')
         }
-		main (["moisture"])
-		details(["moisture","tamperSwitch", 'logEvent'])
+		main ("moisture")
+		details([
+        	"moisture"
+            ,"tamperSwitch"
+            ,'logEvent'])
 	}
 }
 def configure() {

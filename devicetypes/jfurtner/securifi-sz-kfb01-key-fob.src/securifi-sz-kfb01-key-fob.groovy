@@ -6,6 +6,7 @@ metadata {
     capability "Speech Recognition"
     
     attribute 'logEvent', 'string'
+    attribute 'lastButtonPushed', 'number'
     
     //desc: 08 0104 0401 00 03 0000 0003 0500 02 0003 0501
     //inCluster - 0x0500 - IAS Zone, outCluster- 0x0501 - IAS ACE
@@ -14,17 +15,25 @@ metadata {
 
     tiles(scale:2) {
 	    standardTile("button", "device.button", width: 2, height: 2, canChangeIcon: true ) {
-		    state "default", label: "", icon: "st.unknown.zwave.remote-controller", backgroundColor: "#ffffff"
+		    state "default", label: '', icon: "st.unknown.zwave.remote-controller", backgroundColor: "#ffffff"
         }
-        valueTile("logEvent", 'device.phraseSpoken', width:2, height: 1, decoration: 'flat') {
+        valueTile('lastButtonPressed', 'device.lastButtonPushed', width:4, height:1, decoration: 'flat') {
+        	state 'val', label:'last pressed: ${currentValue}', defaultState:true
+        }
+        valueTile("logEvent", 'device.phraseSpoken', width:6, height: 2, decoration: 'flat') {
         	state 'val', label:'${currentValue}', defaultState:false
         }
-        valueTile('logEventAttr', 'device.logEvent', width:2, height: 1, decoration: 'flat') {
-        	state 'val', label:'${currentValue}', defaultState:false
+        valueTile('logEventAttr', 'device.logEvent', width:6, height: 2, decoration: 'flat') {
+        	state 'val', label:'${currentValue}'
         }
     }
-    main (["button"])
-    details (["button", 'logEvent', 'logEventAttr'])
+    main ("button")
+    details (
+    	"button"
+        ,'lastButtonPressed'
+        ,'logEvent'
+        ,'logEventAttr'
+        )
 }
 
 def parse(String description) {	       	            
@@ -37,7 +46,7 @@ def parse(String description) {
     } else if (description?.startsWith('catchall:')) {
         def msg = zigbee.parse(description)
         //logDebug msg
-        buttonPush(msg.data[0])
+        return buttonPush(msg.data[0])
     }   
 }
 
@@ -64,7 +73,11 @@ def buttonPush(button){
         //logDebug "Lock Button pushed"         
     } 
 
-    def result = createEvent(name: "button", value: "pushed", data: [buttonNumber: name], descriptionText: "$device.displayName button $name was pushed", isStateChange: true)
+    def result =
+    	[createEvent(name: "button", value: "pushed", data: [buttonNumber: name], descriptionText: "$device.displayName button $name was pushed", isStateChange: true)
+        ,createEvent(name: 'lastButtonPushed', value: name, descriptionText: "$device.displayName button $name pushed")
+        ]
+    
     //logDebug "Parse returned ${result?.descriptionText}"
     return result
 }
@@ -93,5 +106,5 @@ def configure(){
 def logDebug(String message) {
 	log.debug(message)
     sendEvent(name: 'phraseSpoken', value: message)
-    sendEvent(name: 'logEvent', value: message, isStateChange: false)
+    sendEvent(name: 'logEvent', value: message)
 }
