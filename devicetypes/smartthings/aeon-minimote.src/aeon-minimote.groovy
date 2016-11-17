@@ -109,6 +109,14 @@ def configure() {
 	return cmds
 }
 
+def installed() {
+	initialize()
+}
+
 def updated() {
+	initialize()
+}
+
+def initialize() {
 	sendEvent(name: "numberOfButtons", value: 4)
 }
