@@ -183,6 +183,14 @@ def updateState(String name, String value) {
 	device.updateDataValue(name, value)
 }
 
+def installed() {
+	initialize()
+}
+
 def updated() {
+	initialize()
+}
+
+def initialize() {
 	sendEvent(name: "numberOfButtons", value: 3)
 }
