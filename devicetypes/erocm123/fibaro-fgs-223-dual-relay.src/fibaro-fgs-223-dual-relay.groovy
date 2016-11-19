@@ -39,7 +39,7 @@ command "on2"
 command "off2"
 command "reset"
 
-fingerprint deviceId: "0x1001", inClusters:"0x86, 0x72, 0x85, 0x60, 0x8E, 0x25, 0x20, 0x70, 0x27"
+fingerprint deviceId: "0x1001", inClusters:"0x5E,0x86,0x72,0x59,0x73,0x22,0x56,0x32,0x71,0x98,0x7A,0x25,0x5A,0x85,0x70,0x8E,0x60,0x75,0x5B"
 
 }
 
@@ -280,7 +280,6 @@ def zwaveEvent(physicalgraph.zwave.commands.configurationv2.ConfigurationReport 
 
 def refresh() {
 	def cmds = []
-    cmds << zwave.manufacturerSpecificV2.manufacturerSpecificGet()
 	cmds << zwave.multiChannelV3.multiChannelCmdEncap(sourceEndPoint:1, destinationEndPoint:1, commandClass:37, command:2)
     cmds << zwave.multiChannelV3.multiChannelCmdEncap(sourceEndPoint:1, destinationEndPoint:2, commandClass:37, command:2)
     (1..2).each { endpoint ->
@@ -323,7 +322,7 @@ def zwaveEvent(physicalgraph.zwave.commands.centralscenev1.CentralSceneNotificat
         logging("Switch configured as Toggle")
         switch (cmd.sceneNumber) {
             // Toggle S1
-            case 10: // Single Press
+            case 1: // Single Press
                 buttonEvent(1, "pushed")
             break
             case 11: // On to Off
