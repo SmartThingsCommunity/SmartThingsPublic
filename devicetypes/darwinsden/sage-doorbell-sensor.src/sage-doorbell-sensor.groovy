@@ -31,14 +31,15 @@
  *
  *	Changelog:
  *
- *  0.20 (08/02/2016) -	Added preference option for allowd time between presses to eliminate duplicate notifications on some systems
+ *  0.30 (11/20/2016) -	Removed non-operational battery capability; was preventing device display on 2.2.2 mobile app
+ *  0.20 (08/02/2016) -	Added preference option for allowed time between presses to eliminate duplicate notifications on some systems
  *	0.10 (06/13/2016) -	Initial 0.1 pre-beta Test Code
  *
  */
  
 metadata {
 	definition (name: "SAGE Doorbell Sensor", namespace: "darwinsden", author: "darwin@darwinsden.com") {
-    	capability "Battery"
+    	//capability "Battery"
 		capability "Configuration"
         capability "Button"
 		capability "Refresh"
