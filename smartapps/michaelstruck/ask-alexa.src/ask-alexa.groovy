@@ -1,13 +1,14 @@
 /**
  *  Ask Alexa 
  *
- *  Version 2.1.8e - 10/22/16 Copyright © 2016 Michael Struck
+ *  Version 2.1.9 - 11/20/16 Copyright © 2016 Michael Struck
  *  Special thanks for Keith DeLong for overall code and assistance; Barry Burke for Weather Underground Integration; jhamstead for Ecobee climate modes, Yves Racine for My Ecobee thermostat tips
  * 
  *  Version information prior to 2.1.7 listed here: https://github.com/MichaelStruck/SmartThingsPublic/blob/master/smartapps/michaelstruck/ask-alexa.src/Ask%20Alexa%20Version%20History.md
  *
  *  Version 2.1.7 (10/9/16) Allow for flash briefing reports, added audio output devices to control macros
  *  Version 2.1.8e (10/22/16) Added option for reports from Nest Manager application; tweaking of color list to make it more user friendly, added the beginnings of a cheat sheet option
+ *  Version 2.1.9 (11/20/16) Used more of the hidable elements in the new SmartThings mobile app (2.2.2+), fixed color light alias bug
  *
  *  Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except
  *  in compliance with the License. You may obtain a copy of the License at:
@@ -335,7 +336,7 @@ def pageAbout(){
 	dynamicPage(name: "pageAbout", uninstall: true) {
         section { paragraph "${textAppName()}\n${textCopyright()}", image: "https://raw.githubusercontent.com/MichaelStruck/SmartThingsPublic/master/smartapps/michaelstruck/ask-alexa.src/AskAlexa@2x.png" }
         section ("Version numbers") { paragraph "${textVersion()}" } 
-        section ("Access token / Application ID"){
+        section (title: "Access token / Application ID", hideable: true, hidden: true){
             if (!state.accessToken) OAuthToken()
             def msg = state.accessToken != null ? state.accessToken : "Could not create Access Token. OAuth may not be enabled. Go to the SmartApp IDE settings to enable OAuth."
             paragraph "Access token:\n${msg}\n\nApplication ID:\n${app.id}"
@@ -524,7 +525,7 @@ def mainPageChild(){
             }
         }
         if (macroType && macroType !="GroupM" && macroType !="Group"){
-            section("Restrictions") {            
+            section("Restrictions", hideable: true, hidden: !(runDay || timeIntervalInput || runMode)) {            
 				input "runDay", "enum", options: ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"], title: "Only Certain Days Of The Week...",  multiple: true, required: false, image: imgURL() + "calendar.png"
 				href "timeIntervalInput", title: "Only During Certain Times...", description: getTimeLabel(timeStart, timeEnd), state: (timeStart || timeEnd ? "complete":null), image: imgURL() + "clock.png"
 				input "runMode", "mode", title: "Only In The Following Modes...", multiple: true, required: false, image: imgURL() + "modes.png"
@@ -3068,7 +3069,7 @@ def mapDevices(isAlias){
 	def result =[],  ext= isAlias ? "Alias": ""
 	if (settings."switches${ext}") result << [devices: settings."switches${ext}", type : "switch",fullListName:"Switch"]
 	if (settings."dimmers${ext}") result << [devices: settings."dimmers${ext}", type : "level",fullListName:"Dimmer"]
-	if (settings."cLights${ext}") result << [devices: settings."cLights${ext}", type : "color",fullListName:"Colored Lights"]
+	if (settings."cLights${ext}") result << [devices: settings."cLights${ext}", type : "color",fullListName:"Colored Light"]
 	if (settings."doors${ext}") result << [devices: settings."doors${ext}", type : "door",fullListName:"Door Control"]
 	if (settings."shades${ext}") result << [devices: settings."shades${ext}", type : "shade",fullListName:"Window Shade"]
 	if (settings."locks${ext}") result << [devices: settings."locks${ext}", type : "lock",fullListName:"Lock"]
@@ -3246,12 +3247,12 @@ def getURLs(){
 //Version/Copyright/Information/Help-----------------------------------------------------------
 private textAppName() { return "Ask Alexa" }	
 private textVersion() {
-    def version = "SmartApp Version: 2.1.8e (10/22/2016)", lambdaVersion = state.lambdaCode ? "\n" + state.lambdaCode : ""
+    def version = "SmartApp Version: 2.1.9 (11/20/2016)", lambdaVersion = state.lambdaCode ? "\n" + state.lambdaCode : ""
     return "${version}${lambdaVersion}"
 }
-private versionInt(){ return 218 }
+private versionInt(){ return 219 }
 private LambdaReq() { return 122 }
-private versionLong(){ return "2.1.8e" }
+private versionLong(){ return "2.1.9" }
 private textCopyright() {return "Copyright © 2016 Michael Struck" }
 private textLicense() {
 	def text = "Licensed under the Apache License, Version 2.0 (the 'License'); you may not use this file except in compliance with the License. You may obtain a copy of the License at\n\n"+
