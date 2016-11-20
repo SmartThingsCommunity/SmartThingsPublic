@@ -2,9 +2,9 @@
  *  Alexa Helper-Child
  *
  *  Copyright © 2016 Michael Struck
- *  Version 2.9.9g 5/9/16
+ *  Version 2.9.9e 11/20/16
  * 
- *  Version 2.9.9g - Minor GUI changes to accomodate new mobile app structure
+ *  Version 2.9.9e - Minor GUI changes to accomodate new mobile app structure
  *  See https://github.com/MichaelStruck/SmartThings/blob/master/Other-SmartApps/AlexaHelper/version%20history.md for additional version history
  *
  *  Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except
@@ -445,7 +445,7 @@ def switchHandler(evt) {
 def turnOn() {turnOnOff("on")}
 def turnOff() {turnOnOff("off")}
 def turnOnOff(type){
-	parent.getNotifyFeed() && type == "on" ? sendNotificationEvent("Alexa Helper Scenario: '${app.label}' ON activated.") : sendNotificationEvent("Alexa Helper Scenario: '${app.label}' OFF activated.")
+	if (parent.getNotifyFeed()) sendNotificationEvent("Alexa Helper Scenario: '${app.label}' ${type.toUpperCase()} activated.") 
     def cmd = [switch: settings."${type}SwitchesCMD", dimmer: settings."${type}DimmersCMD", cLight: settings."${type}ColoredLightsCMD", tstat: settings."${type}TstatsCMD", lock: settings."${type}LocksCMD", garage: settings."${type}GaragesCMD"]
     if (settings."${type}Phrase") location.helloHome.execute(settings."${type}Phrase")
 	if (settings."${type}Mode") changeMode(settings."${type}Mode")
@@ -1024,5 +1024,5 @@ private parseDate(time, type){
     new Date().parse("yyyy-MM-dd'T'HH:mm:ss.SSSZ", formattedDate).format("${type}", timeZone(formattedDate))
 }
 //Version
-private def textVersion() {return "Child App Version: 2.9.9g (05/08/2016)"}
+private def textVersion() {return "Child App Version: 2.9.9e (11/20/2016)"}
 private def versionInt() {return 299}
