@@ -15,9 +15,10 @@ metadata {
 	definition (name: "Simulated Minimote", namespace: "smartthings/testing", author: "SmartThings") {
 		capability "Actuator"
 		capability "Button"
+		capability "Holdable Button"
 		capability "Configuration"
 		capability "Sensor"
-        
+
         command "push1"
         command "push2"
         command "push3"
@@ -45,42 +46,42 @@ metadata {
 		}
  		standardTile("push1", "device.button", width: 1, height: 1, decoration: "flat") {
 			state "default", label: "Push 1", backgroundColor: "#ffffff", action: "push1"
-		} 
+		}
  		standardTile("push2", "device.button", width: 1, height: 1, decoration: "flat") {
 			state "default", label: "Push 2", backgroundColor: "#ffffff", action: "push2"
-		} 
+		}
  		standardTile("push3", "device.button", width: 1, height: 1, decoration: "flat") {
 			state "default", label: "Push 3", backgroundColor: "#ffffff", action: "push3"
-		} 
+		}
  		standardTile("push4", "device.button", width: 1, height: 1, decoration: "flat") {
 			state "default", label: "Push 4", backgroundColor: "#ffffff", action: "push4"
-		} 
+		}
  		standardTile("dummy1", "device.button", width: 1, height: 1, decoration: "flat") {
 			state "default", label: " ", backgroundColor: "#ffffff", action: "push4"
-		}         
+		}
  		standardTile("hold1", "device.button", width: 1, height: 1, decoration: "flat") {
 			state "default", label: "Hold 1", backgroundColor: "#ffffff", action: "hold1"
-		}          
+		}
  		standardTile("hold2", "device.button", width: 1, height: 1, decoration: "flat") {
 			state "default", label: "Hold 2", backgroundColor: "#ffffff", action: "hold2"
-		}          
+		}
  		standardTile("dummy2", "device.button", width: 1, height: 1, decoration: "flat") {
 			state "default", label: " ", backgroundColor: "#ffffff", action: "push4"
-		}         
+		}
  		standardTile("hold3", "device.button", width: 1, height: 1, decoration: "flat") {
 			state "default", label: "Hold 3", backgroundColor: "#ffffff", action: "hold3"
-		}          
+		}
  		standardTile("hold4", "device.button", width: 1, height: 1, decoration: "flat") {
 			state "default", label: "Hold 4", backgroundColor: "#ffffff", action: "hold4"
-		}          
-        
+		}
+
 		main "button"
 		details(["push1","push2","button","push3","push4","dummy1","hold1","hold2","dummy2","hold3","hold4"])
 	}
 }
 
 def parse(String description) {
-	
+
 }
 
 def push1() {
@@ -125,3 +126,15 @@ private hold(button) {
 	sendEvent(name: "button", value: "held", data: [buttonNumber: button], descriptionText: "$device.displayName button $button was held", isStateChange: true)
 }
 
+
+def installed() {
+	initialize()
+}
+
+def updated() {
+	initialize()
+}
+
+def initialize() {
+	sendEvent(name: "numberOfButtons", value: 4)
+}

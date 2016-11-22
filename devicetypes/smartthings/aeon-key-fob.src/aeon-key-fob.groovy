@@ -15,6 +15,7 @@ metadata {
 	definition (name: "Aeon Key Fob", namespace: "smartthings", author: "SmartThings") {
 		capability "Actuator"
 		capability "Button"
+		capability "Holdable Button"
 		capability "Configuration"
 		capability "Sensor"
 		capability "Battery"
@@ -117,4 +118,17 @@ def configure() {
 	def cmd = configurationCmds()
 	log.debug("Sending configuration: $cmd")
 	return cmd
+}
+
+
+def installed() {
+	initialize()
+}
+
+def updated() {
+	initialize()
+}
+
+def initialize() {
+	sendEvent(name: "numberOfButtons", value: 4)
 }

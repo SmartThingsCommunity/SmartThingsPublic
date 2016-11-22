@@ -27,7 +27,7 @@ metadata {
         capability "Switch"
         capability "Refresh"
         capability "Music Player"
-        capability "Polling"
+        capability "Health Check"
 
         /**
          * Define all commands, ie, if you have a custom action not
@@ -236,7 +236,33 @@ def parse(String event) {
  * @return action(s) to take or null
  */
 def installed() {
-    onAction("refresh")
+    // Notify health check about this device with timeout interval 12 minutes
+    sendEvent(name: "checkInterval", value: 12 * 60, data: [protocol: "lan", hubHardwareId: device.hub.hardwareID], displayed: false)
+    startPoll()
+}
+
+/**
+ * Called by health check if no events been generated in the last 12 minutes
+ * If device doesn't respond it will be marked offline (not available)
+ */
+def ping() {
+    TRACE("ping")
+    boseSendGetNowPlaying()
+}
+
+/**
+ * Schedule a 2 minute poll of the device to refresh the
+ * tiles so the user gets the correct information.
+ */
+def startPoll() {
+    TRACE("startPoll")
+    unschedule()
+    // Schedule 2 minute polling of speaker status (song average length is 3-4 minutes)
+    def sec = Math.round(Math.floor(Math.random() * 60))
+    //def cron = "$sec 0/5 * * * ?" // every 5 min
+    def cron = "$sec 0/2 * * * ?" // every 2 min
+    log.debug "schedule('$cron', boseSendGetNowPlaying)"
+    schedule(cron, boseSendGetNowPlaying)
 }
 
 /**
@@ -314,14 +340,6 @@ def onAction(String user, data=null) {
     if (actions instanceof List)
         return actions.flatten()
     return actions
-}
-
-/**
- * Called every so often (every 5 minutes actually) to refresh the
- * tiles so the user gets the correct information.
- */
-def poll() {
-    return boseRefreshNowPlaying()
 }
 
 /**
@@ -837,6 +855,10 @@ def boseRefreshNowPlaying(delay=0) {
     return boseGET("/now_playing")
 }
 
+def boseSendGetNowPlaying() {
+    sendHubCommand(boseGET("/now_playing"))
+}
+
 /**
  * Requests the list of presets
  *
@@ -1014,4 +1036,8 @@ def boseGetDeviceID() {
  */
 def getDeviceIP() {
     return parent.resolveDNI2Address(device.deviceNetworkId)
+}
+
+def TRACE(text) {
+    log.trace "${text}"
 }
