@@ -125,7 +125,7 @@ metadata {
 void installed() {
     // The device refreshes every 5 minutes by default so if we miss 2 refreshes we can consider it offline
     // Using 12 minutes because in testing, device health team found that there could be "jitter"
-    sendEvent(name: "checkInterval", value: 60 * 12, data: [protocol: "cloud", hubHardwareId: device.hub.hardwareID], displayed: false)
+    sendEvent(name: "checkInterval", value: 60 * 12, data: [protocol: "cloud"], displayed: false)
 }
 
 // Device Watch will ping the device to proactively determine if the device has gone offline
