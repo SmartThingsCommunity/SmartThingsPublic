@@ -126,6 +126,15 @@ private hold(button) {
 	sendEvent(name: "button", value: "held", data: [buttonNumber: button], descriptionText: "$device.displayName button $button was held", isStateChange: true)
 }
 
+
+def installed() {
+	initialize()
+}
+
 def updated() {
+	initialize()
+}
+
+def initialize() {
 	sendEvent(name: "numberOfButtons", value: 4)
 }
