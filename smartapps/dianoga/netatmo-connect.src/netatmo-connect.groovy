@@ -393,12 +393,12 @@ def getDeviceList() {
 			deviceList[key] = "${value.station_name}: ${value.module_name}"
 			state.deviceDetail[key] = value
             state.deviceState[key] = value.dashboard_data
-		}
-		response.data.body.modules.each { value ->
-			def key = value._id
-			deviceList[key] = "${state.deviceDetail[value.main_device].station_name}: ${value.module_name}"
-			state.deviceDetail[key] = value
-            state.deviceState[key] = value.dashboard_data
+			value.modules.each { value2 ->            
+                def key2 = value2._id
+                deviceList[key2] = "${value.station_name}: ${value2.module_name}"
+                state.deviceDetail[key2] = value2
+                state.deviceState[key2] = value2.dashboard_data            
+            }
 		}
 	}
 
