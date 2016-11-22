@@ -64,7 +64,7 @@ metadata {
 			state "setTransitionTime", action: "setTransitionTime"
 		}
 		valueTile("transTime", "device.transitionTime", inactiveLabel: false, decoration: "flat", width: 2, height: 1) {
-			state "transitionTime", label: 'Transition:              ${currentValue} s'
+			state "transitionTime", label: 'Transition: ${currentValue}s'
 		}
 
 		valueTile("reachable", "device.reachable", inactiveLabel: false, decoration: "flat", width: 3, height: 1) {
@@ -72,9 +72,9 @@ metadata {
 			state "false", label: 'Not Reachable!'
 		}
 
-        valueTile("cdBrightnessControl", "device.cdBrightness", inactiveLabel: false, decoration: "flat", width: 3, height: 1) {
-			state "true", label: "Circadian Brightness On", action: "disableCDBrightness", nextState: "updating"
-			state "false", label: "Circadian Brightness Off", action: "enableCDBrightness", nextState: "updating"
+        standardTile("cdBrightnessControl", "device.cdBrightness", height: 1, width: 3, inactiveLabel: false, decoration: "flat") {
+			state "true", label:"Circadian Brightness On", action:"disableCDBrightness", nextState: "updating"
+			state "false", label:"Circadian Brightness Off", action:"enableCDBrightness", nextState: "updating"
 			state "updating", label: "Working"
 		}
 

@@ -80,7 +80,7 @@ metadata {
             state "colorTemperature", action:"tileSetColorTemperature"
         }
         valueTile("colorTemp", "device.colorTemperature", inactiveLabel: false, decoration: "flat", width: 2, height: 1) {
-            state "colorTemperature", label: 'Temperature: ${currentValue} K'
+            state "colorTemperature", label: 'Temperature: ${currentValue}K'
         }
 
 		standardTile("reset", "device.reset", height: 2, width: 2, inactiveLabel: false, decoration: "flat") {
@@ -95,7 +95,7 @@ metadata {
 			state "setTransitionTime", action: "setTransitionTime"
 		}
 		valueTile("transTime", "device.transitionTime", inactiveLabel: false, decoration: "flat", width: 2, height: 1) {
-			state "transitionTime", label: 'Transition:              ${currentValue} s'
+			state "transitionTime", label: 'Transition: ${currentValue}s'
 		}
 
 		standardTile("effectControl", "device.effect", height: 2, width: 2, inactiveLabel: false, decoration: "flat") {
@@ -113,16 +113,16 @@ metadata {
 			state "false", label: 'Not Reachable!'
 		}
 
-		valueTile("cdBrightnessControl", "device.cdBrightness", inactiveLabel: false, decoration: "flat", width: 3, height: 1) {
-			state "true", label: "Circadian Brightness On", action: "disableCDBrightness", nextState: "updating"
-			state "false", label: "Circadian Brightness Off", action: "enableCDBrightness", nextState: "updating"
-			state "updating", label: "Working"
+		standardTile("cdBrightnessControl", "device.cdBrightness", height: 1, width: 3, inactiveLabel: false, decoration: "flat") {
+			state "true", label:"Circadian Brightness On", action:"disableCDBrightness", nextState: "updating"
+			state "false", label:"Circadian Brightness Off", action:"enableCDBrightness", nextState: "updating"
+			state "updating", label:"Working"
 		}
 
-		valueTile("cdColorControl", "device.cdColor", inactiveLabel: false, decoration: "flat", width: 3, height: 1) {
-			state "true", label: "Circadian Color On", action: "disableCDColor", nextState: "updating"
-			state "false", label: "Circadian Color Off", action: "enableCDColor", nextState: "updating"
-			state "updating", label: "Working"
+		standardTile("cdColorControl", "device.cdColor", height: 1, width: 3, inactiveLabel: false, decoration: "flat") {
+			state "true", label:"Circadian Color On", action:"disableCDColor", nextState: "updating"
+			state "false", label:"Circadian Color Off", action:"enableCDColor", nextState: "updating"
+			state "updating", label:"Working"
 		}
 
 		main(["rich-control"])
