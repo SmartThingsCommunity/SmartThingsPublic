@@ -46,7 +46,7 @@ def mainPage() {
 	state.debugMode = false
     
     dynamicPage(name: "mainPage", install: true, uninstall: true) {        
-    	section("Inside Sensors") {
+    	section("Miscellaneous Inside Sensors") {
     	    input "myTempSensor", "capability.temperatureMeasurement", required: true, title: "Temperature Sensor"
     	    input "myHumiditySensor", "capability.relativeHumidityMeasurement", required: false, title: "Humidity Sensor"
     	    input "mySmokeDetectors", "capability.smokeDetector", required: false, multiple: true, title: "Smoke Detectors"
@@ -87,17 +87,20 @@ def mainPage() {
     	section("Ventilation Fans") {
     	    input "myWholeHouseFans", "capability.switch", required: false, multiple: true, title: "Whole House Fans", submitOnChange: true
     	    input "myAtticFans", "capability.switch", required: false, multiple: true, title: "Attic Fans"
-    	    input "myGarageFans", "capability.switch", required: false, multiple: true, title: "Garage Fans"
+    	    input "myGarageFans", "capability.switch", required: false, multiple: true, title: "Garage Fans", submitOnChange: true
+            if (myGarageFans) {
+    	    	input "myGarageTempSensor", "capability.temperatureMeasurement", required: false, title: "Garage Temperature Sensor (optional)"
+            }
     	    input "myBasementFans", "capability.switch", required: false, multiple: true, title: "Basement/Crawlspace Fans"
     	}
     	section("Windows/Skylights") { 
     	    input "myWindowsSwitch", "capability.switch", required: false, multiple: true, title: "Motorized Windows/Skylights", submitOnChange: true
-    	    input "myContactSensors", "capability.contactSensor", required: false, multiple: true, title: "Window Contact Sensors"
+    	    input "myContactSensors", "capability.contactSensor", required: false, multiple: true, title: "Window Contact Sensors", submitOnChange: true
     	    input "myCoverings", "capability.windowShade", required: false, multiple: true, title: "Window Coverings"
     	}
         if (myWholeHouseFans || myWindowsSwitch) {
     		section("Whole House Fan and Window/Skylight Operation") {
-        		if (myWholeHouseFans && myWindowsSwitch) {
+        		if (myWholeHouseFans && (myWindowsSwitch || myContactSensors)) {
     	    		input "myWindowsNeeded", "number", title: "Number of Open Windows Needed for Whole House Fan (default is 1)", required: false
             	}
 				input "myModes", "mode", title: "Whole House Fan/Window Operating Modes (default is All)", multiple: true, required: false
@@ -114,7 +117,7 @@ def mainPage() {
         	    image: "https://raw.githubusercontent.com/lawsonautomation/icons/master/info.png",
                 page: "UsersGuide")
     	}
-		section("Version 1.2.1 - Copyright © 2016 Thomas Lawson. " +
+		section("Version 1.2.2 - Copyright © 2016 Thomas Lawson. " +
     			"If you like this app and would like to contribute to its development (and the development of similar apps), " +
         		"tap the link below to make a donation.") {
     	    href(name: "LawsonAutomation",
@@ -903,9 +906,10 @@ def makeComparisons() {
 		turnOffWHFsAndWindows()
 		turnOffFans()
     } else if (smokeDetected()) { 
-    	// turn off all fans if there's smoke
+    	// turn off all fans and thermostats if there's smoke
 	    sendNotificationEvent("Ventilation Guru Warning:  Smoke Detected!")
 		turnOffFans()
+    	turnOff(myThermostats, "thermostats", "Thermostats")
 	} else {
     	checkWholeHouseFansAndWindows()
 		checkAtticFans()
@@ -967,7 +971,16 @@ def checkAtticFans() {
 }
 
 def checkGarageFans() {
-    	if (myGarageFans) {
+    if (myGarageFans) {
+        if (myGarageTempSensor) {
+        	// turn on garage fan if cooling mode and outside is cooler than inside
+            def garageTemp = myGarageTempSensor.temperature
+            if (state.skew < -1 && garageTemp < state.outsideTemp) {
+    			turnOn(myGarageFans, "garageFans", "Garage Fans")
+            } else {
+    			turnOff(myGarageFans, "garageFans", "Garage Fans")
+            }
+        } else {
             // turn on the garage fan if cooling is needed and night time, it's cool outside, or outside temp is dropping fast
 			if (state.skew < 0 && state.insideTemp > state.meanRange + state.skew) { 
             	if (!state.daytime || state.outsideTemp < state.meanRange) {   
@@ -985,16 +998,17 @@ def checkGarageFans() {
     			turnOff(myGarageFans, "garageFans", "Garage Fans")
     		}
     	}
+    }
 }
 
 def checkBasementFans() {
-    	if (myBasementFans) {
-    		if (state.skew > 0 && state.outsideTemp >= state.insideTemp && state.insideTemp < state.meanRange + state.skew) {
-     			turnOn(myBasementFans, "basementFans", "Basement Fans")
-			} else {
-     			turnOff(myBasementFans, "basementFans", "Basement Fans")
-        	}
-    	} 
+    if (myBasementFans) {
+    	if (state.skew > 0 && state.outsideTemp >= state.insideTemp && state.insideTemp < state.meanRange + state.skew) {
+     		turnOn(myBasementFans, "basementFans", "Basement Fans")
+		} else {
+     		turnOff(myBasementFans, "basementFans", "Basement Fans")
+        }
+    } 
 }
 
 
