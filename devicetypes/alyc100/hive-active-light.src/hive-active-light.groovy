@@ -1,5 +1,5 @@
 /**
- *  Hive Active Light V1.0
+ *  Hive Active Light V1.0.1
  *
  *  Copyright 2016 Tom Beech
  *
@@ -12,6 +12,7 @@
  *  on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the License
  *  for the specific language governing permissions and limitations under the License.
  *
+ * 23.11.16 - Made change to ensure that setting the brightness higher than 1 also sends the 'ON' command. Some smartapps turn bulbs on by setting the brightness to >0
  */
 
 metadata {
@@ -63,7 +64,7 @@ def setLevel(double value) {
     
     log.debug "Setting level to $val"
     
-    def args = [nodes: [[attributes: [brightness: [targetValue: val], brightnessTransitionTime: [targetValue: "1"]]]]]                
+    def args = [nodes: [[attributes: [state: [targetValue: onOff]], brightness: [targetValue: val], brightnessTransitionTime: [targetValue: "1"]]]]           
     def resp = parent.apiPUT("/nodes/${device.deviceNetworkId}", args)
     
     sendEvent(name: 'level', value: val)
