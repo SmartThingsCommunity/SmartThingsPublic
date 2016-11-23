@@ -244,6 +244,9 @@ def zwaveEvent(physicalgraph.zwave.commands.firmwareupdatemdv2.FirmwareMdReport 
        case "61418":
           firmwareVersion = "1.04"
        break;
+       case "35926":
+          firmwareVersion = "1.04"
+       break;
        case "43444":
           firmwareVersion = "1.05"
        break;
@@ -382,7 +385,7 @@ def setColor(value) {
             rgb[2] = 0
     	}
         else {
-    		if ( value.hue > 5 && value.hue < 100 &&  (device.currentValue("currentFirmware") == null || device.currentValue("currentFirmware") != "1.04")) hue = value.hue - 5 else hue = 1
+    		if ( value.hue > 5 && value.hue < 100 ) hue = value.hue - 5 else hue = 1
             rgb = huesatToRGB(hue as Integer, saturation as Integer)
     	}
 		result << zwave.switchColorV3.switchColorSet(red: rgb[0], green: rgb[1], blue: rgb[2], warmWhite:warmWhite, coldWhite:coldWhite)
@@ -476,7 +479,7 @@ def on1() {
     logging("on1()")
     toggleTiles("switch1")
     def cmds = []
-    if (device.currentValue("currentFirmware") == null || device.currentValue("currentFirmware") == "1.04") {
+    if (device.currentValue("currentFirmware") == null || device.currentValue("currentFirmware") != "1.05") {
         cmds << zwave.configurationV1.configurationSet(scaledConfigurationValue: 16781342, parameterNumber: 37, size: 4)
     } else {
         cmds << zwave.configurationV1.configurationSet(scaledConfigurationValue: 50332416, parameterNumber: 38, size: 4)
@@ -490,7 +493,7 @@ def on2() {
     logging("on2()")  
     toggleTiles("switch2")
     def cmds = []
-    if (device.currentValue("currentFirmware") == null || device.currentValue("currentFirmware") == "1.04") {
+    if (device.currentValue("currentFirmware") == null || device.currentValue("currentFirmware") != "1.05") {
         cmds << zwave.configurationV1.configurationSet(scaledConfigurationValue: 1090551813, parameterNumber: 37, size: 4)
     } else {
         cmds << zwave.configurationV1.configurationSet(scaledConfigurationValue: 2560, parameterNumber: 38, size: 4)
@@ -504,7 +507,7 @@ def on3() {
     logging("on3()")
     toggleTiles("switch3")
     def cmds = []
-    if (device.currentValue("currentFirmware") == null || device.currentValue("currentFirmware") == "1.04") {
+    if (device.currentValue("currentFirmware") == null || device.currentValue("currentFirmware") != "1.05") {
         cmds << zwave.configurationV1.configurationSet(scaledConfigurationValue: 50335754, parameterNumber: 37, size: 4)
     } else {
         cmds << zwave.configurationV1.configurationSet(scaledConfigurationValue: 50332416, parameterNumber: 38, size: 4)
@@ -518,7 +521,7 @@ def on4() {
     logging("on4()")
     toggleTiles("switch4")
     def cmds = []
-    if (device.currentValue("currentFirmware") == null || device.currentValue("currentFirmware") == "1.04") {
+    if (device.currentValue("currentFirmware") == null || device.currentValue("currentFirmware") != "1.05") {
         cmds << zwave.configurationV1.configurationSet(scaledConfigurationValue: 1633771873, parameterNumber: 38, size: 4)
         cmds << zwave.configurationV1.configurationSet(scaledConfigurationValue: 1113784321, parameterNumber: 37, size: 4)
     } else {
@@ -534,7 +537,7 @@ def on5() {
     logging("on5()")
     toggleTiles("switch5")
     def cmds = []
-    if (device.currentValue("currentFirmware") == null || device.currentValue("currentFirmware") == "1.04") {
+    if (device.currentValue("currentFirmware") == null || device.currentValue("currentFirmware") != "1.05") {
         cmds << zwave.configurationV1.configurationSet(scaledConfigurationValue: 65, parameterNumber: 38, size: 4)
         cmds << zwave.configurationV1.configurationSet(scaledConfigurationValue: 1107300372, parameterNumber: 37, size: 4)
     } else {
@@ -550,7 +553,7 @@ def on6() {
     logging("on6()")
     toggleTiles("switch6")
     def cmds = []
-    if (device.currentValue("currentFirmware") == null || device.currentValue("currentFirmware") == "1.04") {
+    if (device.currentValue("currentFirmware") == null || device.currentValue("currentFirmware") != "1.04") {
         cmds << zwave.configurationV1.configurationSet(configurationValue: integer2Cmd(calculateParameter(38), 4), parameterNumber: 38, size: 4)
         cmds << zwave.configurationV1.configurationSet(scaledConfigurationValue: calculateParameter(37), parameterNumber: 37, size: 4)
     } else {
@@ -565,7 +568,7 @@ def on6() {
 def offCmd() {
     logging("offCmd()")
     def cmds = []
-    if (device.currentValue("currentFirmware") == null || device.currentValue("currentFirmware") == "1.04") {
+    if (device.currentValue("currentFirmware") == null || device.currentValue("currentFirmware") != "1.05") {
         cmds << zwave.configurationV1.configurationSet(scaledConfigurationValue: 0, parameterNumber: 37, size: 4)
         cmds << zwave.configurationV1.configurationGet(parameterNumber: 37)
     } else {
