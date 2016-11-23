@@ -13,6 +13,8 @@
  *  for the specific language governing permissions and limitations under the License.
  *
  *	VERSION HISTORY
+ *  23.11.2016:	2.0 - Remove extra logging.
+ *
  *  10.11.2016: 2.0 BETA Release 2.2 - Stop potential executeAction() errors.
  *  10.11.2016: 2.0 BETA Release 2.1 - Shift from data to state to hold variables.
  *	09.11.2016:	2.0 BETA Release 2 - Try to fix chart Android compatibility.
@@ -72,7 +74,6 @@ def poll() {
 		log.error("Unexpected result in poll(): [${resp.status}] ${resp.data}")
 		return []
 	}
-    log.debug "***MONITOR JSON for ${device.name}: " + resp.data.data
     
     def real_power = resp.data.data.real_power
     //def real_power = Math.abs(new Random().nextInt() % 600 + 1)

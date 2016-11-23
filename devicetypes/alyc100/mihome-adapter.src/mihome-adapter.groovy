@@ -13,6 +13,7 @@
  *  for the specific language governing permissions and limitations under the License.
  *
  *	VERSION HISTORY - FORMER VERSION NOW RENAMED AS ADAPTER PLUS
+ *	23.11.2016:	2.0 - Remove extra logging.
  *
  *	10.11.2016:	2.0 BETA Release 3 - Merge Light Switch and Adapter functionality into one device type.
  *	10.11.2016:	2.0 BETA Release 2.1 - Bug fix. Stop NumberFormatException when creating body object.
@@ -89,7 +90,6 @@ def poll() {
         sendEvent(name: "switch", value: "offline", descriptionText: "The device is offline")
 		return []
 	}
-    log.debug "***ADAPTER JSON for ${device.name}: " + resp.data.data
     def power_state = resp.data.data.power_state
     if (power_state != null) {
     	sendEvent(name: "switch", value: power_state == 0 ? "off" : "on")

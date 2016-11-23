@@ -13,7 +13,9 @@
  *  for the specific language governing permissions and limitations under the License.
  *
  *	VERSION HISTORY
-*	09.11.2016:	2.0 BETA Release 5.2 - Stop executeAction() bug when adding device.
+ *  23.11.2016:	2.0 - Remove extra logging.
+ *
+ *	09.11.2016:	2.0 BETA Release 5.2 - Stop executeAction() bug when adding device.
  *	09.11.2016:	2.0 BETA Release 5.1 - Shift from data to state to hold variables.
  *	09.11.2016:	2.0 BETA Release 5 - Try to fix chart Android compatibility.
  *	08.11.2016:	2.0 BETA Release 4 - Added historical power chart data. RENAME TO ADAPTER PLUS.
@@ -109,9 +111,6 @@ def poll() {
         sendEvent(name: "switch", value: "offline", descriptionText: "The device is offline")
 		return []
 	}
-    
-    log.debug "***ADAPTER PLUS JSON for ${device.name}: " + resp.data.data
-
     def power_state = resp.data.data.power_state
     //def power_state = 1
     if (power_state != null) {

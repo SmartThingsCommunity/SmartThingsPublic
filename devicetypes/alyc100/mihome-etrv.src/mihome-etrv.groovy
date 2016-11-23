@@ -14,7 +14,9 @@
  *
  *
  *	VERSION HISTORY
-*	07.11.2016: 2.0 BETA Release 1.1 - Allow icon to be changed.
+ *  23.11.2016:	2.0 - Remove BETA status.
+ * 
+ *	07.11.2016: 2.0 BETA Release 1.1 - Allow icon to be changed.
  *	07.11.2016: 2.0 BETA Release 1 - Version number update to match Smartapp.
  *
  *	10.01.2016: 1.1.2 - Bug fix to Boost mode not executing.
