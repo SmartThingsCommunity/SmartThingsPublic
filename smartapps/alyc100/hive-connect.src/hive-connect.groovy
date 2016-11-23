@@ -155,9 +155,9 @@ def tmaDescription() {
 }
 
 def getDevicesSelectedString() {
-	if (state.hiveHeatingDevices == null || state.hiveHotWaterDevices == null) {
-    updateDevices()
-  }
+	if (state.hiveHeatingDevices == null || state.hiveHotWaterDevices == null || state.hiveContactSensorDevices == null || state.hiveBulbDevices ==  null || state.hiveTunableBulbDevices == null) {
+    	updateDevices()
+  	}
 	def listString = ""
 	selectedHeating.each { childDevice ->
     if (listString == "") {
@@ -189,6 +189,28 @@ def getDevicesSelectedString() {
 		} else {
 			if (null != state.hiveContactSensorDevices) {
 				listString += "\n" + state.hiveContactSensorDevices[childDevice]
+			}
+		}
+  }
+  selectedBulb.each { childDevice ->
+		if (listString == "") {
+			if (null != state.hiveBulbDevices) {
+				listString += state.hiveBulbDevices[childDevice]
+			}
+		} else {
+			if (null != state.hiveBulbDevices) {
+				listString += "\n" + state.hiveBulbDevices[childDevice]
+			}
+		}
+  }
+  selectedTunableBulb.each { childDevice ->
+		if (listString == "") {
+			if (null != state.hiveTunableBulbDevices) {
+				listString += state.hiveTunableBulbDevices[childDevice]
+			}
+		} else {
+			if (null != state.hiveTunableBulbDevices) {
+				listString += "\n" + state.hiveTunableBulbDevices[childDevice]
 			}
 		}
   }
@@ -250,8 +272,8 @@ def selectDevicePAGE() {
     section("Select your devices:") {
 			input "selectedHeating", "enum", image: "https://raw.githubusercontent.com/alyc100/SmartThingsPublic/master/smartapps/alyc100/thermostat-frame-6c75d5394d102f52cb8cf73704855446.png", required:false, title:"Select Hive Heating Devices \n(${state.hiveHeatingDevices.size() ?: 0} found)", multiple:true, options:state.hiveHeatingDevices
 			input "selectedHotWater", "enum", image: "https://raw.githubusercontent.com/alyc100/SmartThingsPublic/master/smartapps/alyc100/thermostat-frame-6c75d5394d102f52cb8cf73704855446.png", required:false, title:"Select Hive Hot Water Devices \n(${state.hiveHotWaterDevices.size() ?: 0} found)", multiple:true, options:state.hiveHotWaterDevices
-            input "selectedBulb", "enum", image: "https://images-na.ssl-images-amazon.com/images/I/61tTUXZc6xL._SL1500_.jpg", required:false, title:"Select Lights \n(${state.hiveBulbDevices.size() ?: 0} found)", multiple:true, options:state.hiveBulbDevices
-			input "selectedTunableBulb", "enum", image: "https://images-eu.ssl-images-amazon.com/images/I/617G5Bd%2BQrL._SL1500_.jpg", required:false, title:"Select Tunable Lights \n(${state.hiveTunableBulbDevices.size() ?: 0} found)", multiple:true, options:state.hiveTunableBulbDevices
+            input "selectedBulb", "enum", image: "https://raw.githubusercontent.com/alyc100/SmartThingsPublic/master/smartapps/alyc100/hive-bulb.jpg", required:false, title:"Select Lights \n(${state.hiveBulbDevices.size() ?: 0} found)", multiple:true, options:state.hiveBulbDevices
+			input "selectedTunableBulb", "enum", image: "https://raw.githubusercontent.com/alyc100/SmartThingsPublic/master/smartapps/alyc100/hive-tunablebulb.jpg", required:false, title:"Select Tunable Lights \n(${state.hiveTunableBulbDevices.size() ?: 0} found)", multiple:true, options:state.hiveTunableBulbDevices
             input "selectedContactSensor", "enum", image: "https://raw.githubusercontent.com/alyc100/SmartThingsPublic/master/smartapps/alyc100/hive-window-door-sensor-815702baa8f484d342f2ebf3eb38ab971acecba02586d0ec485c588f2646c935.jpg", required:false, title:"Select Hive Contact Sensors \n(${state.hiveContactSensorDevices.size() ?: 0} found)", multiple:true, options:state.hiveContactSensorDevices
             
 		}
@@ -1056,7 +1078,7 @@ def addBulb() {
         def childDevice = getChildDevice("${device}")
 
         if (!childDevice) {
-    		log.debug "Adding Bulb ${device}: ${state.hiveContactSensorDevices[device]}"
+    		log.debug "Adding Bulb ${device}: ${state.hiveBulbDevices[device]}"
 
         	def data = [
                 name: state.hiveBulbDevices[device],
@@ -1068,9 +1090,9 @@ def addBulb() {
             childDevice = addChildDevice("ibeech", "Hive Active Light V1.0", "$device", null, data)
             childDevice.refresh()
             
-			log.debug "Created ${state.hiveContactSensorDevices[device]} with id: ${device}"
+			log.debug "Created ${state.hiveBulbDevices[device]} with id: ${device}"
 		} else {
-			log.debug "found ${state.hiveContactSensorDevices[device]} with id ${device} already exists"
+			log.debug "found ${state.hiveBulbDevices[device]} with id ${device} already exists"
 		}
 
 	}
@@ -1084,7 +1106,7 @@ def addTunableBulb() {
         def childDevice = getChildDevice("${device}")
 
         if (!childDevice) {
-    		log.debug "Adding Tunable Bulb ${device}: ${state.hiveContactSensorDevices[device]}"
+    		log.debug "Adding Tunable Bulb ${device}: ${state.hiveTunableBulbDevices[device]}"
 
         	def data = [
                 name: state.hiveTunableBulbDevices[device],
@@ -1096,9 +1118,9 @@ def addTunableBulb() {
             childDevice = addChildDevice("ibeech", "Hive Active Light Tunable V1.0", "$device", null, data)
             childDevice.refresh()
             
-			log.debug "Created ${state.hiveContactSensorDevices[device]} with id: ${device}"
+			log.debug "Created ${state.hiveTunableBulbDevices[device]} with id: ${device}"
 		} else {
-			log.debug "found ${state.hiveContactSensorDevices[device]} with id ${device} already exists"
+			log.debug "found ${state.hiveTunableBulbDevices[device]} with id ${device} already exists"
 		}
 
 	}
