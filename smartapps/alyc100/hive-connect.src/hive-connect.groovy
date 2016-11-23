@@ -3,6 +3,7 @@
  *
  *  Copyright 2015,2016 Alex Lee Yuk Cheung
  *	Hive Contact Sensor code portions contributed by Simon Green
+ *  Hive Active Bulb code portions contributed by Tom Beech
  *
  *  Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except
  *  in compliance with the License. You may obtain a copy of the License at:
@@ -37,6 +38,10 @@
  *
  *	10.09.2016
  *	v2.3.2 - Added notification option for maximum temperature threshold breach for Hive heating devices.
+ *
+ *  23.1.2016
+ *  v2.4 - Added support for Hive Active Warm White and Hive Active Tunable Lights - Author: Tom Beech
+ *
  */
 definition(
 		name: "Hive (Connect)",
@@ -52,15 +57,15 @@ preferences {
 	//startPage
 	page(name: "startPage")
 
-  //Connect Pages
+	//Connect Pages
 	page(name:"mainPage", title:"Hive Device Setup", content:"mainPage", install: true)
-  page(name: "loginPAGE")
-  page(name: "selectDevicePAGE")
+	page(name: "loginPAGE")
+	page(name: "selectDevicePAGE")
 	page(name: "preferencesPAGE")
-  page(name: "tmaPAGE")
+	page(name: "tmaPAGE")
 
-  //Thermostat Mode Automation Pages
-  page(name: "tmaConfigurePAGE")
+	//Thermostat Mode Automation Pages
+	page(name: "tmaConfigurePAGE")
 }
 
 def apiURL(path = '/') 			 { return "https://api-prod.bgchprod.info:443/omnia${path}" }
@@ -114,7 +119,7 @@ def mainPage() {
 
 def headerSECTION() {
 	return paragraph (image: "https://raw.githubusercontent.com/alyc100/SmartThingsPublic/master/smartapps/alyc100/10457773_334250273417145_3395772416845089626_n.png",
-                  "Hive (Connect)\nVersion: 2.3.2\nDate: 10092016(1630)")
+                  "Hive (Connect)\nVersion: 2.4\nDate: 23112016(1422)")
 }
 
 def stateTokenPresent() {
@@ -245,7 +250,10 @@ def selectDevicePAGE() {
     section("Select your devices:") {
 			input "selectedHeating", "enum", image: "https://raw.githubusercontent.com/alyc100/SmartThingsPublic/master/smartapps/alyc100/thermostat-frame-6c75d5394d102f52cb8cf73704855446.png", required:false, title:"Select Hive Heating Devices \n(${state.hiveHeatingDevices.size() ?: 0} found)", multiple:true, options:state.hiveHeatingDevices
 			input "selectedHotWater", "enum", image: "https://raw.githubusercontent.com/alyc100/SmartThingsPublic/master/smartapps/alyc100/thermostat-frame-6c75d5394d102f52cb8cf73704855446.png", required:false, title:"Select Hive Hot Water Devices \n(${state.hiveHotWaterDevices.size() ?: 0} found)", multiple:true, options:state.hiveHotWaterDevices
-			input "selectedContactSensor", "enum", image: "https://raw.githubusercontent.com/alyc100/SmartThingsPublic/master/smartapps/alyc100/hive-window-door-sensor-815702baa8f484d342f2ebf3eb38ab971acecba02586d0ec485c588f2646c935.jpg", required:false, title:"Select Hive Contact Sensors \n(${state.hiveContactSensorDevices.size() ?: 0} found)", multiple:true, options:state.hiveContactSensorDevices
+            input "selectedBulb", "enum", image: "https://images-na.ssl-images-amazon.com/images/I/61tTUXZc6xL._SL1500_.jpg", required:false, title:"Select Lights \n(${state.hiveBulbDevices.size() ?: 0} found)", multiple:true, options:state.hiveBulbDevices
+			input "selectedTunableBulb", "enum", image: "https://images-eu.ssl-images-amazon.com/images/I/617G5Bd%2BQrL._SL1500_.jpg", required:false, title:"Select Tunable Lights \n(${state.hiveTunableBulbDevices.size() ?: 0} found)", multiple:true, options:state.hiveTunableBulbDevices
+            input "selectedContactSensor", "enum", image: "https://raw.githubusercontent.com/alyc100/SmartThingsPublic/master/smartapps/alyc100/hive-window-door-sensor-815702baa8f484d342f2ebf3eb38ab971acecba02586d0ec485c588f2646c935.jpg", required:false, title:"Select Hive Contact Sensors \n(${state.hiveContactSensorDevices.size() ?: 0} found)", multiple:true, options:state.hiveContactSensorDevices
+            
 		}
   }
 }
@@ -479,6 +487,14 @@ def initialize() {
 		if (selectedContactSensor) {
 			addContactSensor()
 		}
+        
+        if(selectedBulb) {
+        	addBulb()
+        }
+        
+        if(selectedTunableBulb) {
+        	addTunableBulb()
+        }
 
  	 	runIn(10, 'refreshDevices') // Asynchronously refresh devices so we don't block
 
@@ -858,61 +874,93 @@ def updateDevices() {
   state.hiveHeatingDevices = [:]
   state.hiveHotWaterDevices = [:]
   state.hiveContactSensorDevices = [:]
+  state.hiveBulbDevices = [:]
+  state.hiveTunableBulbDevices = [:]
+  
   def selectors = []
 	devices.each { device ->
-  	selectors.add("${device.id}")
-  	if (device.nodeType == "http://alertme.com/schema/json/node.class.thermostat.json#" && device.attributes.activeHeatCoolMode != null) {
-    	def parentNode = devices.find { d -> d.id == device.parentNodeId }
-			log.debug "Found Device: ${parentNode.name}"
-			// Heating Control
-      if ((device.attributes.supportsHotWater != null) && (device.attributes.supportsHotWater.reportedValue == false) && (device.attributes.temperature != null)) {
-				log.debug "Identified: ${parentNode.name} Hive Heating"
-      	def value = "${parentNode.name} Hive Heating"
-				def key = device.id
-				state.hiveHeatingDevices["${key}"] = value
+        selectors.add("${device.id}")
+        if (device.nodeType == "http://alertme.com/schema/json/node.class.thermostat.json#" && device.attributes.activeHeatCoolMode != null) {
+            def parentNode = devices.find { d -> d.id == device.parentNodeId }
+                log.debug "Found Device: ${parentNode.name}"
+                // Heating Control
+          if ((device.attributes.supportsHotWater != null) && (device.attributes.supportsHotWater.reportedValue == false) && (device.attributes.temperature != null)) {
+                    log.debug "Identified: ${parentNode.name} Hive Heating"
+            def value = "${parentNode.name} Hive Heating"
+                    def key = device.id
+                    state.hiveHeatingDevices["${key}"] = value
 
-        //Update names of devices with Hive
-     		def childDevice = getChildDevice("${device.id}")
-     		if (childDevice) {
-     			//Update name of device if different.
-     			if(childDevice.name != parentNode.name + " Hive Heating") {
-						childDevice.name = parentNode.name + " Hive Heating"
-						log.debug "Device's name has changed."
-					}
-     		}
-			// Water Control
-    	} else if (device.nodeType == "http://alertme.com/schema/json/node.class.thermostat.json#" && device.attributes.supportsHotWater != null && device.attributes.supportsHotWater.reportedValue == true) {
-				log.debug "Identified: ${parentNode.name} Hive Hot Water"
-      	def value = "${parentNode.name} Hive Hot Water"
-				def key = device.id
-				state.hiveHotWaterDevices["${key}"] = value
+            //Update names of devices with Hive
+                def childDevice = getChildDevice("${device.id}")
+                if (childDevice) {
+                    //Update name of device if different.
+                    if(childDevice.name != parentNode.name + " Hive Heating") {
+                            childDevice.name = parentNode.name + " Hive Heating"
+                            log.debug "Device's name has changed."
+                        }
+                }
+                // Water Control
+            } else if (device.nodeType == "http://alertme.com/schema/json/node.class.thermostat.json#" && device.attributes.supportsHotWater != null && device.attributes.supportsHotWater.reportedValue == true) {
+                    log.debug "Identified: ${parentNode.name} Hive Hot Water"
+            def value = "${parentNode.name} Hive Hot Water"
+                    def key = device.id
+                    state.hiveHotWaterDevices["${key}"] = value
 
-        //Update names of devices
-     		def childDevice = getChildDevice("${device.id}")
-     		if (childDevice) {
-     			//Update name of device if different.
-     			if(childDevice.name != parentNode.name + " Hive Hot Water") {
-						childDevice.name = parentNode.name + " Hive Hot Water"
-						log.debug "Device's name has changed."
-					}
-     		}
-			}
-		// Contact Sensor
-		} else if (device.nodeType == "http://alertme.com/schema/json/node.class.contact.sensor.json#" && device.attributes.state != null) {
-			log.debug "Identified: ${device.name} Hive Contact Sensor"
-      def value = "${device.name} Hive Contact Sensor"
-			def key = device.id
-			state.hiveContactSensorDevices["${key}"] = value
-			//Update names of devices
-     	def childDevice = getChildDevice("${device.id}")
-     	if (childDevice) {
-     		//Update name of device if different.
-     		if(childDevice.name != device.name + " Hive Contact Sensor") {
-						childDevice.name = device.name + " Hive Contact Sensor"
-						log.debug "Device's name has changed."
-				}
-   		}
-  	}
+            //Update names of devices
+                def childDevice = getChildDevice("${device.id}")
+                if (childDevice) {
+                    //Update name of device if different.
+                    if(childDevice.name != parentNode.name + " Hive Hot Water") {
+                            childDevice.name = parentNode.name + " Hive Hot Water"
+                            log.debug "Device's name has changed."
+                        }
+                }
+                }
+            // Contact Sensor
+            } else if (device.nodeType == "http://alertme.com/schema/json/node.class.contact.sensor.json#" && device.attributes.state != null) {
+                log.debug "Identified: ${device.name} Hive Contact Sensor"
+          		def value = "${device.name} Hive Contact Sensor"
+                def key = device.id
+                state.hiveContactSensorDevices["${key}"] = value
+                //Update names of devices
+            	def childDevice = getChildDevice("${device.id}")
+            	if (childDevice) {
+                	//Update name of device if different.
+                	if(childDevice.name != device.name + " Hive Contact Sensor") {
+                            childDevice.name = device.name + " Hive Contact Sensor"
+                            log.debug "Device's name has changed."
+                    }
+            	}
+        // Tunable Active Light
+        } else if (device.nodeType == "http://alertme.com/schema/json/node.class.tunable.light.json#") {
+			log.debug "Identified: ${device.name}"
+            def value = "${device.name}"
+                def key = device.id
+                state.hiveTunableBulbDevices["${key}"] = value
+                //Update names of devices
+            	def childDevice = getChildDevice("${device.id}")
+            	if (childDevice) {
+                	//Update name of device if different.
+                	if(childDevice.name != device.name) {
+                            childDevice.name = device.name
+                            log.debug "Device's name has changed."
+                    }
+            	}
+        } else if (device.nodeType == "http://alertme.com/schema/json/node.class.light.json#") {
+			log.debug "Identified: ${device.name}"
+            def value = "${device.name}"
+                def key = device.id
+                state.hiveBulbDevices["${key}"] = value
+                //Update names of devices
+            	def childDevice = getChildDevice("${device.id}")
+            	if (childDevice) {
+                	//Update name of device if different.
+                	if(childDevice.name != device.name) {
+                            childDevice.name = device.name
+                            log.debug "Device's name has changed."
+                    }
+            	}
+        }
 	}
   //Remove devices if does not exist on the Hive platform
   getChildDevices().findAll { !selectors.contains("${it.deviceNetworkId}") }.each {
@@ -1000,6 +1048,61 @@ def addContactSensor() {
 	}
 }
 
+def addBulb() {
+	updateDevices()
+
+	selectedBulb.each { device ->
+
+        def childDevice = getChildDevice("${device}")
+
+        if (!childDevice) {
+    		log.debug "Adding Bulb ${device}: ${state.hiveContactSensorDevices[device]}"
+
+        	def data = [
+                name: state.hiveBulbDevices[device],
+				label: state.hiveBulbDevices[device],
+			]
+            
+            log.debug data
+            
+            childDevice = addChildDevice("ibeech", "Hive Active Light V1.0", "$device", null, data)
+            childDevice.refresh()
+            
+			log.debug "Created ${state.hiveContactSensorDevices[device]} with id: ${device}"
+		} else {
+			log.debug "found ${state.hiveContactSensorDevices[device]} with id ${device} already exists"
+		}
+
+	}
+}
+
+def addTunableBulb() {
+	updateDevices()
+
+	selectedTunableBulb.each { device ->
+
+        def childDevice = getChildDevice("${device}")
+
+        if (!childDevice) {
+    		log.debug "Adding Tunable Bulb ${device}: ${state.hiveContactSensorDevices[device]}"
+
+        	def data = [
+                name: state.hiveTunableBulbDevices[device],
+				label: state.hiveTunableBulbDevices[device],
+			]
+            
+            log.debug data
+            
+            childDevice = addChildDevice("ibeech", "Hive Active Light Tunable V1.0", "$device", null, data)
+            childDevice.refresh()
+            
+			log.debug "Created ${state.hiveContactSensorDevices[device]} with id: ${device}"
+		} else {
+			log.debug "found ${state.hiveContactSensorDevices[device]} with id ${device} already exists"
+		}
+
+	}
+}
 def refreshDevices() {
 	log.info("Refreshing all devices...")
 	getChildDevices().each { device ->
