@@ -1,5 +1,5 @@
 /**
- *  Hive Active Light V1.0.1
+ *  Hive Active Light V1.0.2
  *
  *  Copyright 2016 Tom Beech
  *
@@ -13,6 +13,7 @@
  *  for the specific language governing permissions and limitations under the License.
  *
  * 23.11.16 - Made change to ensure that setting the brightness higher than 1 also sends the 'ON' command. Some smartapps turn bulbs on by setting the brightness to >0
+ * 23.11.16 - Fixed setLevel so that it updates the devices switch state if it turned the light on or off
  */
 
 metadata {
@@ -68,6 +69,7 @@ def setLevel(double value) {
     def resp = parent.apiPUT("/nodes/${device.deviceNetworkId}", args)
     
     sendEvent(name: 'level', value: val)
+    sendEvent(name: 'switch', value: onOff.toLowerCase())
 }
 
 def on() {    
