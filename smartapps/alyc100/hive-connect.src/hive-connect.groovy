@@ -41,6 +41,7 @@
  *
  *  23.1.2016
  *  v2.4 - Added support for Hive Active Warm White and Hive Active Tunable Lights - Author: Tom Beech
+ *	v2.4b - Minor UI fixes for bulb devices.
  *
  */
 definition(
@@ -131,7 +132,7 @@ def authenticated() {
 }
 
 def devicesSelected() {
-	return (selectedHeating || selectedHotWater) ? "complete" : null
+	return (selectedHeating || selectedHotWater || selectedContactSensor || selectedBulb || selectedTunableBulb) ? "complete" : null
 }
 
 def preferencesSelected() {
