@@ -14,6 +14,8 @@
  *
  *	VERSION HISTORY
  *
+ *  23.11.2016:	2.0 - Remove extra logging.
+ *
  *	10.11.2016:	2.0 BETA Release 6 - Merge Light Switch and Adapter functionality into one device type.
  *	10.11.2016: 2.0 BETA Release 5.4 - Remove unecessary catch blocks for fixed executeAction() errors.
  *	10.11.2016: 2.0 BETA Release 5.3 - Suppress random executeAction() errors.
@@ -58,7 +60,6 @@ preferences {
 def apiURL(path = '/') 			 { return "https://mihome4u.co.uk/api/v1${path}" }
 
 def firstPage() {
-	log.debug "firstPage"
 	if (username == null || username == '' || password == null || password == '') {
 		return dynamicPage(name: "firstPage", title: "", install: true, uninstall: true) {
 			section {
@@ -69,7 +70,6 @@ def firstPage() {
     }
     else
     {
-    	log.debug "next phase"
         return dynamicPage(name: "firstPage", title: "", install: true, uninstall: true) {
 			section {
             	headerSECTION()
@@ -320,7 +320,6 @@ def updateDevices() {
 
     def selectors = []
 	devices.each { device ->
-    	log.debug "***DEVICE JSON for ${device.label} - ${device.device_type}: ${device}"
         if (device.device_type == 'etrv') {
 			log.debug "Identified: device ${device.id}: ${device.device_type}: ${device.label}: ${device.target_temperature}: ${device.last_temperature}: ${device.voltage}"
             selectors.add("${device.id}")
@@ -702,7 +701,6 @@ Map apiRequestHeaders() {
     	userpassascii = "${username}:${state.miHomeAccessToken}"
     }
   	def userpass = "Basic " + userpassascii.encodeAsBase64().toString()
-    log.debug userpassascii
         
 	return ["User-Agent": "SmartThings Integration",
             "Authorization": "$userpass"
@@ -731,7 +729,7 @@ def logErrors(options = [errorReturn: null, logObject: log], Closure c) {
 }
 
 private def textVersion() {
-    def text = "MiHome (Connect)\nVersion: 2.0 BETA Release 6\nDate: 10112016(2340)"
+    def text = "MiHome (Connect)\nVersion: 2.0\nDate: 23112016(0940)"
 }
 
 private def textCopyright() {
