@@ -1,5 +1,5 @@
 /**
- *  Hive Active Light Tunable V1.0.3
+ *  Hive Active Light Tunable V1.0.4
  *
  *  Copyright 2016 Tom Beech
  *
@@ -15,6 +15,7 @@
  * 23.11.16 - Made change to ensure that setting the brightness higher than 1 also sends the 'ON' command. Some smartapps turn bulbs on by setting the brightness to >0
  * 23.11.16 - Fixed setLevel so that it updates the devices switch state if it turned the light on or off
  * 24.11.16 - Added support for when a bulb is physically powered off
+ * 24.11.16 - Fixed issue where setLevel was not working after change on 23.11.16
  */
 
 metadata {
@@ -117,7 +118,7 @@ def setLevel(double value) {
     	onOff = "OFF"
     }
     
-    def args = [nodes: [[attributes: [state: [targetValue: onOff]], brightness: [targetValue: val], brightnessTransitionTime: [targetValue: "1"]]]]                
+    def args = [nodes:[[attributes:[state:[targetValue:onOff],brightness:[targetValue:val],brightnessTransitionTime:[targetValue:"1"]]]]]
     def resp = parent.apiPUT("/nodes/${device.deviceNetworkId}", args)
 
 	if(resp.status == 404) {
