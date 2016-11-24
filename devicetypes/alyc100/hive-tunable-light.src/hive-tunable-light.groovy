@@ -1,5 +1,5 @@
 /**
- *  Hive Active Light Tunable V1.0.1
+ *  Hive Active Light Tunable V1.0.3
  *
  *  Copyright 2016 Tom Beech
  *
@@ -13,6 +13,8 @@
  *  for the specific language governing permissions and limitations under the License.
  *
  * 23.11.16 - Made change to ensure that setting the brightness higher than 1 also sends the 'ON' command. Some smartapps turn bulbs on by setting the brightness to >0
+ * 23.11.16 - Fixed setLevel so that it updates the devices switch state if it turned the light on or off
+ * 24.11.16 - Added support for when a bulb is physically powered off
  */
 
 metadata {
@@ -56,7 +58,7 @@ metadata {
         valueTile("colorTemp", "device.colorTemperature", inactiveLabel: false, decoration: "flat", height: 2, width: 2) {
 			state "colorTemp", label: '${currentValue}K'
 		}
-       	standardTile("refresh", "device.switch", width: 2, height: 2, inactiveLabel: false, decoration: "flat") {
+       	standardTile("refresh", "device.switch", width: 1, height: 1, inactiveLabel: false, decoration: "flat") {
             state "default", label:"", action:"refresh.refresh", icon:"st.secondary.refresh"
         }
         
@@ -94,9 +96,14 @@ def setColorTemperature(value) {
     
     def args = [nodes: [[attributes: [colourTemperature: [targetValue: value], colourTemperatureTransitionTime: [targetValue: "1"]]]]]                
     def resp = parent.apiPUT("/nodes/${device.deviceNetworkId}", args)
-    
-    sendEvent(name: "colorTemperature", value: value)    
-    sendEvent(name: "colorName", value: genericName)		
+
+	if(resp.status == 404) {
+		// Bulb has reported it is offline, poll for more details
+        poll()
+    } else { 
+    	sendEvent(name: "colorTemperature", value: value)    
+    	sendEvent(name: "colorName", value: genericName)		
+    }
 }
 
 def setLevel(double value) {
@@ -112,15 +119,26 @@ def setLevel(double value) {
     
     def args = [nodes: [[attributes: [state: [targetValue: onOff]], brightness: [targetValue: val], brightnessTransitionTime: [targetValue: "1"]]]]                
     def resp = parent.apiPUT("/nodes/${device.deviceNetworkId}", args)
-    
-    sendEvent(name: 'level', value: val)
+
+	if(resp.status == 404) {
+		// Bulb has reported it is offline, poll for more details
+        poll()
+    } else {    
+    	sendEvent(name: 'level', value: val)
+    	sendEvent(name: 'switch', value: onOff.toLowerCase())
+    }
 }
 
 def on() {    
     def args = [nodes: [	[attributes: [state: [targetValue: "ON"]]]]]                
     def resp = parent.apiPUT("/nodes/${device.deviceNetworkId}", args)
     
-    sendEvent(name: 'switch', value: "on")
+    if(resp.status == 404) {
+		// Bulb has reported it is offline, poll for more details
+        poll()
+    } else { 
+    	sendEvent(name: 'switch', value: "on")
+    }
 }
 
 def off() {
@@ -128,7 +146,12 @@ def off() {
     def args = [nodes: [	[attributes: [state: [targetValue: "OFF"]]]]]                
     def resp = parent.apiPUT("/nodes/${device.deviceNetworkId}", args)
     
-    sendEvent(name: 'switch', value: "off")
+    if(resp.status == 404) {
+		// Bulb has reported it is offline, poll for more details
+        poll()
+    } else { 
+    	sendEvent(name: 'switch', value: "off")
+    }
 }
 
 def installed() {
@@ -150,6 +173,7 @@ def poll() {
 	def state = data.nodes.attributes.state.reportedValue[0] 
 	def temperature = data.nodes.attributes.colourTemperature.reportedValue[0]
 	def brightness =  data.nodes.attributes.brightness.reportedValue[0]
+    def presence = data.nodes.attributes.presence.reportedValue[0]
 
 	brightness = String.format("%.0f", brightness)
     temperature = String.format("%.0f", temperature)
@@ -157,15 +181,18 @@ def poll() {
 	log.debug "State: $state"
     log.debug "Temperature: $temperature"
     log.debug "Brightness: $brightness"
+    log.debug "Presence: $presence"
     
-	//sendEvent(name: 'level', value: brightness)
+	if(presence == "ABSENT") {
+    	// Bulb is not present (i.e. turned off at the switch or removed)
+    	sendEvent(name: 'switch', value: "off")	        
+    } else {    	
+        sendEvent(name: 'switch', value: state.toLowerCase())
+    }
     
-    sendEvent(name: 'switch', value: state.toLowerCase())
     sendEvent(name: 'level', value: brightness)
-    
+
     def genericName = getGenericName(value)
     sendEvent(name: "colorName", value: genericName)
-    sendEvent(name: "colorTemperature", value: temperature)
-    
-  
+    sendEvent(name: "colorTemperature", value: temperature) 
 }
