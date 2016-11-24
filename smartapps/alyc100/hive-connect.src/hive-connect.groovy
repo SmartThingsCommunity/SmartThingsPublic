@@ -1187,7 +1187,7 @@ def apiPUT(path, body = [:]) {
 			log.debug "Need to login"
 			getHiveAccessToken()
 		}
-		log.debug("Beginning API POST: ${path}, ${body}")
+		log.debug("Beginning API PUT: ${path}, ${body}")
 
 		httpPutJson(uri: apiURL(path), body: body, headers: apiRequestHeaders() ) {response ->
 			logResponse(response)
