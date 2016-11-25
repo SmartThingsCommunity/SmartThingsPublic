@@ -1,5 +1,4 @@
-/**
- *  Home Remote
+/** *  Home Remote
  *
  *  Copyright 2015 The Home Remote
  *
