@@ -1,5 +1,5 @@
 /**
- *  Aeotec Doorbell v 1.10
+ *  Aeotec Doorbell v 1.10.1
  *      (Aeon Labs Doorbell - Model:ZW056-A)
  *
  *  (https://community.smartthings.com/t/release-aeon-labs-aeotec-doorbell/39166/16?u=krlaframboise)
@@ -12,6 +12,10 @@
  *    Kevin LaFramboise (krlaframboise)
  *
  *  Changelog:
+ *
+ *  1.10.1 (10/08/2016)
+ *    - Added speech synthesis capability so that the
+ *      speak command can play a track number.
  *
  *  1.10 (10/04/2016)
  *    - Added volume slider to main tile.
@@ -107,6 +111,7 @@ metadata {
 		capability "Battery"
 		capability "Refresh"
 		capability "Polling"
+		capability "Speech Synthesis"
 
 		attribute "lastPoll", "number"
 		
@@ -447,6 +452,11 @@ def playTextAndResume(message, volume=null) {
 }	
 def playTextAndRestore(message, volume=null) {
 	playText(message, volume)
+}
+
+def speak(message) {
+	// Using playTrack in case url is passed in.
+	playTrack("$message", null)
 }
 
 // Extracts the track number from the URI and passes it and
