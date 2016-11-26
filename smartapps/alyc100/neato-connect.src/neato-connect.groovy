@@ -13,6 +13,8 @@
  *  for the specific language governing permissions and limitations under the License.
  *
  *  VERSION HISTORY
+ *  26-11-2016: 1.1.6 - Enforce SHM mode if SHM is changed during a clean.
+ *
  *  01-11-2016: 1.1.5 - Improved handling of lost credentials to Neato. Better time zone handling.
  *
  *	24-10-2016: 1.1.4b - Bug fix. Override switch handler fix to prevent false negatives. 
@@ -822,15 +824,7 @@ def eventHandler(evt) {
 		if (settings.sendBotvacOn) {
 			messageHandler(msg, false)
 		}
-        if (settings.autoSHM) {
-        	if (location.currentState("alarmSystemStatus")?.value == "away") {
-				sendEvent(linkText:app.label, name:"Smart Home Monitor", value:"stay",descriptionText:"Smart Home Monitor was set to stay", eventType:"SOLUTION_EVENT", displayed: true)
-				log.trace "Smart Home Monitor is set to stay"
-				sendLocationEvent(name: "alarmSystemStatus", value: "stay")
-				state.autoSHMchange = "y"
-                messageHandler("Smart Home Monitor is set to stay as ${evt.displayName} is on", true)
-            }
-        }
+        setSHMToStay()
      }
 	 else if (evt.value == "full") {
      	unschedule(pollOn)
@@ -987,16 +981,11 @@ def pollOn() {
         }
 	}
     
-	if (!activeCleaners) {
-		if (settings.autoSHM) {
-			if (location.currentState("alarmSystemStatus")?.value == "stay" && state.autoSHMchange == "y"){
-				sendEvent(linkText:app.label, name:"Smart Home Monitor", value:"away",descriptionText:"Smart Home Monitor was set back to away", eventType:"SOLUTION_EVENT", displayed: true)
-				log.trace "Smart Home Monitor is set back to away"
-				sendLocationEvent(name: "alarmSystemStatus", value: "away")
-				state.autoSHMchange = "n"
-                messageHandler("Smart Home Monitor is set to away as all Neato Botvacs are off", true)
-			}
-		}
+    //Set SHM mode depending on whether there are active cleaners.
+    if (activeCleaners) {
+    	setSHMToStay()
+    } else {
+    	setSHMToAway()
 	}
     
     //If SHM is disarmed because of external event, then disable auto SHM mode
@@ -1060,6 +1049,30 @@ def resetSmartScheduleForDevice(deviceNetworkId) {
 }
 
 //Helper methods
+def setSHMToStay() {
+	if (settings.autoSHM) {
+		if (location.currentState("alarmSystemStatus")?.value == "away") {
+			sendEvent(linkText:app.label, name:"Smart Home Monitor", value:"stay",descriptionText:"Smart Home Monitor was set to stay", eventType:"SOLUTION_EVENT", displayed: true)
+			log.trace "Smart Home Monitor is set to stay"
+			sendLocationEvent(name: "alarmSystemStatus", value: "stay")
+			state.autoSHMchange = "y"
+        	messageHandler("Smart Home Monitor is set to stay as ${evt.displayName} is on", true)
+    	}
+    }
+}
+
+def setSHMToAway() {
+	if (settings.autoSHM) {
+		if (location.currentState("alarmSystemStatus")?.value == "stay" && state.autoSHMchange == "y") {
+			sendEvent(linkText:app.label, name:"Smart Home Monitor", value:"away",descriptionText:"Smart Home Monitor was set back to away", eventType:"SOLUTION_EVENT", displayed: true)
+			log.trace "Smart Home Monitor is set back to away"
+			sendLocationEvent(name: "alarmSystemStatus", value: "away")
+			state.autoSHMchange = "n"
+            messageHandler("Smart Home Monitor is set to away as all Neato Botvacs are off", true)
+		}
+	}
+}
+
 def startConditionalClean() {
 	log.debug "Executing 'startConditionalClean'"
 	if (allOk) {
@@ -1209,7 +1222,7 @@ def getApiEndpoint()         { return "https://apps.neatorobotics.com" }
 def getSmartThingsClientId() { return appSettings.clientId }
 def beehiveURL(path = '/') 	 { return "https://beehive.neatocloud.com${path}" }
 private def textVersion() {
-    def text = "Neato (Connect)\nVersion: 1.1.5\nDate: 01112016(2015)"
+    def text = "Neato (Connect)\nVersion: 1.1.6\nDate: 26112016(1515)"
 }
 
 private def textCopyright() {
