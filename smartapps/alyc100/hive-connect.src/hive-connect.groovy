@@ -135,7 +135,7 @@ def authenticated() {
 }
 
 def devicesSelected() {
-	return (selectedHeating || selectedHotWater) ? "complete" : null
+	return (selectedHeating || selectedHotWater || selectedContactSensor || selectedBulb || selectedTunableBulb || selectedMultiColourBulb || selectedActivePlug) ? "complete" : null
 }
 
 def preferencesSelected() {
