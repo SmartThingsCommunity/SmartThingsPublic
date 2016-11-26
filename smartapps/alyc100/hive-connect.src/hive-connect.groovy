@@ -41,12 +41,8 @@
  *
  *  23.1.2016
  *  v2.4 - Added support for Hive Active Warm White and Hive Active Tunable Lights - Author: Tom Beech
- *  v2.4b - Minor UI fixes for bulb devices.
+ *	v2.4b - Minor UI fixes for bulb devices.
  *
- *  26.11.2016 
- *  v2.5 - Added support for Hive Active Plugs - Author: Tom Beech
- *  v2.5 - Clean up display device list code - Author: Tom Beech
- *  v2.5 - Added framework for multi colour bulb support. Selection currently disabled - Author: Tom Beech
  */
 definition(
 		name: "Hive (Connect)",
@@ -124,7 +120,7 @@ def mainPage() {
 
 def headerSECTION() {
 	return paragraph (image: "https://raw.githubusercontent.com/alyc100/SmartThingsPublic/master/smartapps/alyc100/10457773_334250273417145_3395772416845089626_n.png",
-                  "Hive (Connect)\nVersion: 2.5\nDate: 26112016(1200)")
+                  "Hive (Connect)\nVersion: 2.4b\nDate: 23112016(1700)")
 }
 
 def stateTokenPresent() {
@@ -136,7 +132,7 @@ def authenticated() {
 }
 
 def devicesSelected() {
-	return (selectedHeating || selectedHotWater || selectedContactSensor || selectedBulb || selectedTunableBulb || selectedMultiColourBulb || selectedActivePlug) ? "complete" : null
+	return (selectedHeating || selectedHotWater || selectedContactSensor || selectedBulb || selectedTunableBulb) ? "complete" : null
 }
 
 def preferencesSelected() {
@@ -160,52 +156,66 @@ def tmaDescription() {
 }
 
 def getDevicesSelectedString() {
-	if (state.hiveHeatingDevices == null ||
-    	state.hiveHotWaterDevices == null || 
-        state.selectedContactSensor == null || 
-        state.hiveTunableBulbDevices == null || 
-        state.hiveBulbDevices == null) {
-    updateDevices()
-  }
+	if (state.hiveHeatingDevices == null || state.hiveHotWaterDevices == null || state.hiveContactSensorDevices == null || state.hiveBulbDevices ==  null || state.hiveTunableBulbDevices == null) {
+    	updateDevices()
+  	}
 	def listString = ""
-    
-	selectedHeating.each { childDevice ->    
-    	if (null != state.hiveHeatingDevices)
-    		listString += "Heating - ${state.hiveHeatingDevices[childDevice]}\n"
+	selectedHeating.each { childDevice ->
+    if (listString == "") {
+    	if (null != state.hiveHeatingDevices) {
+    		listString += state.hiveHeatingDevices[childDevice]
+      }
+    } else {
+    	if (null != state.hiveHeatingDevices) {
+    		listString += "\n" + state.hiveHeatingDevices[childDevice]
+      }
     }
-  
-	selectedHotWater.each { childDevice ->
-      if (null != state.hiveHotWaterDevices) 
-           	listString += "Hot Water - ${state.hiveHotWaterDevices[childDevice]}\n"
+  }
+  selectedHotWater.each { childDevice ->
+  	if (listString == "") {
+    	if (null != state.hiveHotWaterDevices) {
+    		listString += state.hiveHotWaterDevices[childDevice]
+      }
+    } else {
+			if (null != state.hiveHotWaterDevices) {
+				listString += "\n" + state.hiveHotWaterDevices[childDevice]
+			}
+		}
 	}
-    
-	selectedContactSensor.each { childDevice ->		
-        if (null != state.hiveContactSensorDevices)         
-        	listString += "Contact Sensor - ${state.hiveContactSensorDevices[childDevice]}\n"		
-	}
-  
-	selectedBulb.each { childDevice ->
-        if (null != state.hiveBulbDevices)
-            listString += "Bulb - ${state.hiveBulbDevices[childDevice]}\n"
-	}
-    
-	selectedTunableBulb.each { childDevice ->		
-		if (null != state.hiveTunableBulbDevices)
-            listString += "Tunable Bulb - ${state.hiveTunableBulbDevices[childDevice]}\n"
-	}
-  
-	selectedMultiColourBulb.each { childDevice ->		
-		if (null != state.hiveMultiColourBulbDevices)
-            listString += "Multi Colour Bulb - ${state.hiveMultiColourBulbDevices[childDevice]}\n"
-	}
-    
-    selectedActivePlug.each { childDevice ->		
-		if (null != state.hiveActivePlugDevices)
-            listString += "Active Plug - ${state.hiveActivePlugDevices[childDevice]}\n"
-	}
-  
-  	// Returns the completed list, and trims the last carrige return
-	return listString.trim()
+	selectedContactSensor.each { childDevice ->
+		if (listString == "") {
+			if (null != state.hiveContactSensorDevices) {
+				listString += state.hiveContactSensorDevices[childDevice]
+			}
+		} else {
+			if (null != state.hiveContactSensorDevices) {
+				listString += "\n" + state.hiveContactSensorDevices[childDevice]
+			}
+		}
+  }
+  selectedBulb.each { childDevice ->
+		if (listString == "") {
+			if (null != state.hiveBulbDevices) {
+				listString += state.hiveBulbDevices[childDevice]
+			}
+		} else {
+			if (null != state.hiveBulbDevices) {
+				listString += "\n" + state.hiveBulbDevices[childDevice]
+			}
+		}
+  }
+  selectedTunableBulb.each { childDevice ->
+		if (listString == "") {
+			if (null != state.hiveTunableBulbDevices) {
+				listString += state.hiveTunableBulbDevices[childDevice]
+			}
+		} else {
+			if (null != state.hiveTunableBulbDevices) {
+				listString += "\n" + state.hiveTunableBulbDevices[childDevice]
+			}
+		}
+  }
+  return listString
 }
 
 
@@ -262,11 +272,9 @@ def selectDevicePAGE() {
   	section { headerSECTION() }
     section("Select your devices:") {
 			input "selectedHeating", "enum", image: "https://raw.githubusercontent.com/alyc100/SmartThingsPublic/master/smartapps/alyc100/thermostat-frame-6c75d5394d102f52cb8cf73704855446.png", required:false, title:"Select Hive Heating Devices \n(${state.hiveHeatingDevices.size() ?: 0} found)", multiple:true, options:state.hiveHeatingDevices
-			input "selectedHotWater", "enum", image: "https://raw.githubusercontent.com/alyc100/SmartThingsPublic/master/smartapps/alyc100/thermostat-frame-6c75d5394d102f52cb8cf73704855446.png", required:false, title:"Select Hive Hot Water Devices \n(${state.hiveHotWaterDevices.size() ?: 0} found)", multiple:true, options:state.hiveHotWaterDevices            
-            input "selectedActivePlug", "enum", image: "https://raw.githubusercontent.com/alyc100/SmartThingsPublic/master/smartapps/alyc100/hive-activeplug.jpg", required:false, title:"Select Plugs \n(${state.hiveActivePlugDevices.size() ?: 0} found)", multiple:true, options:state.hiveActivePlugDevices
-            input "selectedBulb", "enum", image: "https://raw.githubusercontent.com/alyc100/SmartThingsPublic/master/smartapps/alyc100/hive-bulb.jpg", required:false, title:"Select Lights \n(${state.hiveBulbDevices.size() ?: 0} found)", multiple:true, options:state.hiveBulbDevices			
-            input "selectedTunableBulb", "enum", image: "https://raw.githubusercontent.com/alyc100/SmartThingsPublic/master/smartapps/alyc100/hive-tunablebulb.jpg", required:false, title:"Select Tunable Lights \n(${state.hiveTunableBulbDevices.size() ?: 0} found)", multiple:true, options:state.hiveTunableBulbDevices
-            //input "selectedMultiColourBulb", "enum", image: "https://images-na.ssl-images-amazon.com/images/I/61-pnz5KCEL._SL1500_.jpg", required:false, title:"Select Multi Colour Lights \n(${state.hiveMultiColourBulbDevices.size() ?: 0} found)", multiple:true, options:state.hiveMultiColourBulbDevices
+			input "selectedHotWater", "enum", image: "https://raw.githubusercontent.com/alyc100/SmartThingsPublic/master/smartapps/alyc100/thermostat-frame-6c75d5394d102f52cb8cf73704855446.png", required:false, title:"Select Hive Hot Water Devices \n(${state.hiveHotWaterDevices.size() ?: 0} found)", multiple:true, options:state.hiveHotWaterDevices
+            input "selectedBulb", "enum", image: "https://raw.githubusercontent.com/alyc100/SmartThingsPublic/master/smartapps/alyc100/hive-bulb.jpg", required:false, title:"Select Lights \n(${state.hiveBulbDevices.size() ?: 0} found)", multiple:true, options:state.hiveBulbDevices
+			input "selectedTunableBulb", "enum", image: "https://raw.githubusercontent.com/alyc100/SmartThingsPublic/master/smartapps/alyc100/hive-tunablebulb.jpg", required:false, title:"Select Tunable Lights \n(${state.hiveTunableBulbDevices.size() ?: 0} found)", multiple:true, options:state.hiveTunableBulbDevices
             input "selectedContactSensor", "enum", image: "https://raw.githubusercontent.com/alyc100/SmartThingsPublic/master/smartapps/alyc100/hive-window-door-sensor-815702baa8f484d342f2ebf3eb38ab971acecba02586d0ec485c588f2646c935.jpg", required:false, title:"Select Hive Contact Sensors \n(${state.hiveContactSensorDevices.size() ?: 0} found)", multiple:true, options:state.hiveContactSensorDevices
             
 		}
@@ -509,14 +517,6 @@ def initialize() {
         
         if(selectedTunableBulb) {
         	addTunableBulb()
-        }
-        
-        if(selectedMultiColourBulb) {
-        	addMultiColourBulb()
-        }
-        
-        if(selectedActivePlug) {
-        	addActivePlug()
         }
 
  	 	runIn(10, 'refreshDevices') // Asynchronously refresh devices so we don't block
@@ -893,33 +893,28 @@ def updateDevices() {
 	if (!state.devices) {
 		state.devices = [:]
 	}
-    
-    def devices = devicesList()
-    state.hiveHeatingDevices = [:]
-    state.hiveHotWaterDevices = [:]
-    state.hiveContactSensorDevices = [:]
-    state.hiveBulbDevices = [:]
-    state.hiveTunableBulbDevices = [:]
-    state.hiveMultiColourBulbDevices = [:]
-    state.hiveActivePlugDevices = [:]
+	def devices = devicesList()
+  state.hiveHeatingDevices = [:]
+  state.hiveHotWaterDevices = [:]
+  state.hiveContactSensorDevices = [:]
+  state.hiveBulbDevices = [:]
+  state.hiveTunableBulbDevices = [:]
   
-	def selectors = []
+  def selectors = []
 	devices.each { device ->
-    
         selectors.add("${device.id}")
-        
         if (device.nodeType == "http://alertme.com/schema/json/node.class.thermostat.json#" && device.attributes.activeHeatCoolMode != null) {
             def parentNode = devices.find { d -> d.id == device.parentNodeId }
-            log.debug "Found Device: ${parentNode.name}"
-            // Heating Control
-          	if ((device.attributes.supportsHotWater != null) && (device.attributes.supportsHotWater.reportedValue == false) && (device.attributes.temperature != null)) {
-                log.debug "Identified: ${parentNode.name} Hive Heating"
-                def value = "${parentNode.name} Hive Heating"
-                def key = device.id
-                state.hiveHeatingDevices["${key}"] = value
+                log.debug "Found Device: ${parentNode.name}"
+                // Heating Control
+          if ((device.attributes.supportsHotWater != null) && (device.attributes.supportsHotWater.reportedValue == false) && (device.attributes.temperature != null)) {
+                    log.debug "Identified: ${parentNode.name} Hive Heating"
+            def value = "${parentNode.name} Hive Heating"
+                    def key = device.id
+                    state.hiveHeatingDevices["${key}"] = value
 
-            	//Update names of devices with Hive
-            	def childDevice = getChildDevice("${device.id}")
+            //Update names of devices with Hive
+                def childDevice = getChildDevice("${device.id}")
                 if (childDevice) {
                     //Update name of device if different.
                     if(childDevice.name != parentNode.name + " Hive Heating") {
@@ -927,59 +922,42 @@ def updateDevices() {
                             log.debug "Device's name has changed."
                         }
                 }
-            // Water Control
+                // Water Control
             } else if (device.nodeType == "http://alertme.com/schema/json/node.class.thermostat.json#" && device.attributes.supportsHotWater != null && device.attributes.supportsHotWater.reportedValue == true) {
-                log.debug "Identified: ${parentNode.name} Hive Hot Water"
-            	value = "${parentNode.name} Hive Hot Water"
-                def key = device.id
-                state.hiveHotWaterDevices["${key}"] = value
+                    log.debug "Identified: ${parentNode.name} Hive Hot Water"
+            def value = "${parentNode.name} Hive Hot Water"
+                    def key = device.id
+                    state.hiveHotWaterDevices["${key}"] = value
 
-            	//Update names of devices
+            //Update names of devices
                 def childDevice = getChildDevice("${device.id}")
                 if (childDevice) {
                     //Update name of device if different.
                     if(childDevice.name != parentNode.name + " Hive Hot Water") {
-                        childDevice.name = parentNode.name + " Hive Hot Water"
-                        log.debug "Device's name has changed."
-                    }
+                            childDevice.name = parentNode.name + " Hive Hot Water"
+                            log.debug "Device's name has changed."
+                        }
                 }
-            }            
+                }
             // Contact Sensor
             } else if (device.nodeType == "http://alertme.com/schema/json/node.class.contact.sensor.json#" && device.attributes.state != null) {
                 log.debug "Identified: ${device.name} Hive Contact Sensor"
           		def value = "${device.name} Hive Contact Sensor"
                 def key = device.id
                 state.hiveContactSensorDevices["${key}"] = value
-                
                 //Update names of devices
             	def childDevice = getChildDevice("${device.id}")
             	if (childDevice) {
                 	//Update name of device if different.
                 	if(childDevice.name != device.name + " Hive Contact Sensor") {
-                        childDevice.name = device.name + " Hive Contact Sensor"
-                        log.debug "Device's name has changed."
+                            childDevice.name = device.name + " Hive Contact Sensor"
+                            log.debug "Device's name has changed."
                     }
             	}
-                
-        	// Tunable Multi Colour Light
-        	} else if (device.nodeType == "http://alertme.com/schema/json/node.class.multicolour.light.json#") {
-				log.debug "Identified: ${device.name}"
-            	def value = "${device.name}"
-                def key = device.id
-                state.hiveMultiColourBulbDevices["${key}"] = value
-                //Update names of devices
-            	def childDevice = getChildDevice("${device.id}")
-            	if (childDevice) {
-                	//Update name of device if different.
-                	if(childDevice.name != device.name) {
-                        childDevice.name = device.name
-                        log.debug "Device's name has changed."
-                    }
-            	}
-            // Active Tunable Light    
-        	} else if (device.nodeType == "http://alertme.com/schema/json/node.class.tunable.light.json#") {
-				log.debug "Identified: ${device.name}"
-            	def value = "${device.name}"
+        // Tunable Active Light
+        } else if (device.nodeType == "http://alertme.com/schema/json/node.class.tunable.light.json#") {
+			log.debug "Identified: ${device.name}"
+            def value = "${device.name}"
                 def key = device.id
                 state.hiveTunableBulbDevices["${key}"] = value
                 //Update names of devices
@@ -987,14 +965,13 @@ def updateDevices() {
             	if (childDevice) {
                 	//Update name of device if different.
                 	if(childDevice.name != device.name) {
-                        childDevice.name = device.name
-                        log.debug "Device's name has changed."
+                            childDevice.name = device.name
+                            log.debug "Device's name has changed."
                     }
             	}
-            // Active Light    
-        	} else if (device.nodeType == "http://alertme.com/schema/json/node.class.light.json#") {
-				log.debug "Identified: ${device.name}"
-            	def value = "${device.name}"
+        } else if (device.nodeType == "http://alertme.com/schema/json/node.class.light.json#") {
+			log.debug "Identified: ${device.name}"
+            def value = "${device.name}"
                 def key = device.id
                 state.hiveBulbDevices["${key}"] = value
                 //Update names of devices
@@ -1002,28 +979,12 @@ def updateDevices() {
             	if (childDevice) {
                 	//Update name of device if different.
                 	if(childDevice.name != device.name) {
-                        childDevice.name = device.name
-                        log.debug "Device's name has changed."
+                            childDevice.name = device.name
+                            log.debug "Device's name has changed."
                     }
             	}
-            // Active Plug            
-        	} else if (device.nodeType == "http://alertme.com/schema/json/node.class.smartplug.json#") {
-				log.debug "Identified: ${device.name}"
-            	def value = "${device.name}"
-                def key = device.id
-                state.hiveActivePlugDevices["${key}"] = value
-                //Update names of devices
-            	def childDevice = getChildDevice("${device.id}")
-            	if (childDevice) {
-                	//Update name of device if different.
-                	if(childDevice.name != device.name) {
-                        childDevice.name = device.name
-                        log.debug "Device's name has changed."
-                    }
-            	}
-        	}
-		}
-        
+        }
+	}
   //Remove devices if does not exist on the Hive platform
   getChildDevices().findAll { !selectors.contains("${it.deviceNetworkId}") }.each {
 	log.info("Deleting ${it.deviceNetworkId}")
@@ -1137,6 +1098,7 @@ def addBulb() {
 
 	}
 }
+
 def addTunableBulb() {
 	updateDevices()
 
@@ -1164,61 +1126,6 @@ def addTunableBulb() {
 
 	}
 }
-def addMultiColourBulb() {
-	updateDevices()
-
-	selectedMultiColourBulb.each { device ->
-
-        def childDevice = getChildDevice("${device}")
-
-        if (!childDevice) {
-    		log.debug "Adding Active Multi Colour Light ${device}: ${state.hiveMultiColourBulbDevices[device]}"
-
-        	def data = [
-                name: state.hiveMultiColourBulbDevices[device],
-				label: state.hiveMultiColourBulbDevices[device],
-			]
-            
-            log.debug data
-            
-            childDevice = addChildDevice("ibeech", "Hive Active Multi Colour Light V1.0", "$device", null, data)
-            childDevice.refresh()
-            
-			log.debug "Created ${state.hiveMultiColourBulbDevices[device]} with id: ${device}"
-		} else {
-			log.debug "found ${state.hiveMultiColourBulbDevices[device]} with id ${device} already exists"
-		}
-
-	}
-}
-def addActivePlug() {
-	updateDevices()
-
-	selectedActivePlug.each { device ->
-
-        def childDevice = getChildDevice("${device}")
-
-        if (!childDevice) {
-    		log.debug "Adding Active Plug ${device}: ${state.hiveActivePlugDevices[device]}"
-
-        	def data = [
-                name: state.hiveActivePlugDevices[device],
-				label: state.hiveActivePlugDevices[device],
-			]
-            
-            log.debug data
-            
-            childDevice = addChildDevice("ibeech", "Hive Active Plug V1.0", "$device", null, data)
-            childDevice.refresh()
-            
-			log.debug "Created ${state.hiveActivePlugDevices[device]} with id: ${device}"
-		} else {
-			log.debug "found ${state.hiveActivePlugDevices[device]} with id ${device} already exists"
-		}
-
-	}
-}
-
 def refreshDevices() {
 	log.info("Refreshing all devices...")
 	getChildDevices().each { device ->
