@@ -39,12 +39,13 @@
  *	10.09.2016
  *	v2.3.2 - Added notification option for maximum temperature threshold breach for Hive heating devices.
  *
- *  23.11.2016
+ *  23.1.2016
  *  v2.4 - Added support for Hive Active Warm White and Hive Active Tunable Lights - Author: Tom Beech
+ *  v2.4b - Minor UI fixes for bulb devices.
  *
  *  26.11.2016 
  *  v2.5 - Added support for Hive Active Plugs - Author: Tom Beech
- *  v2.5 - Fixed issue where list of devices currently selected was not being updated with bulbs - Author: Tom Beech
+ *  v2.5 - Clean up display device list code - Author: Tom Beech
  *  v2.5 - Added framework for multi colour bulb support. Selection currently disabled - Author: Tom Beech
  */
 definition(
