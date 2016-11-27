@@ -118,7 +118,9 @@ def updated() {
 
     log.debug "Updated with settings: ${settings}"
     unsubscribe()
+    unschedule()
     initialize()
+
 }
 def initialize() {
 
@@ -130,9 +132,11 @@ def initialize() {
     subscribe(dimmer, "switch.on", SwitchHandler)
     subscribe(dimmer, "switch.off", SwitchHandler)
     subscribe(dimmer, "level", switchSetLevelHandler)
-    
-    schedule("0 0/1 * * * ?", Evaluate)
 
+    /* def runTime = 1
+schedule("0 0/$runTime * * * ?", Evaluate)
+log.debug "Evaluation Scheduled to run every $runTime minutes"
+*/
 }
 
 def switchSetLevelHandler(evt) {
@@ -162,14 +166,26 @@ def SwitchHandler(evt){
             state.StopTheApp = 1
             log.debug "Now state.StopTheApp value set to $state.StopTheApp" 
             log.debug "SWITCH TURNED OFF BY USER"
-            
+            log.debug "Double check in 30 seconds"
+            runIn(30, doubleCheck) // sometimes state.dim value didn't refresh on time so double check that this was not a manual shut off
+
         }
         else if(state.dim == 0){ 
             log.debug "SWITCH TURNED OFF WITHOUT USER INTERVENTITON"
-            
+
         }
     }
 }
+
+def doubleCheck() { 
+
+    if(state.dim == 0) {
+        state.StopTheApp = 0
+        log.debug "state.StopTheApp RESET because state.dim = $state.dim (verif: should be 0)" 
+        SwitchHandler()
+    }
+}
+
 
 
 def illuminanceHandler(evt){
@@ -178,7 +194,7 @@ def illuminanceHandler(evt){
     log.debug "state.dimmerSW value is $state.dimmerSW" 
 
     state.luxvalue = evt.integerValue
-Evaluate()
+    Evaluate()
 
 }
 
