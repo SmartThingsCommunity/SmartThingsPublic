@@ -48,6 +48,8 @@
  *		 - Refactor of device selecting string - Author: Tom Beech
  *		 - Review device naming and text consistency.
  *
+ *	v2.5b - Shortern some device names.
+ *
  */
 definition(
 		name: "Hive (Connect)",
@@ -125,7 +127,7 @@ def mainPage() {
 
 def headerSECTION() {
 	return paragraph (image: "https://raw.githubusercontent.com/alyc100/SmartThingsPublic/master/smartapps/alyc100/10457773_334250273417145_3395772416845089626_n.png",
-                  "Hive (Connect)\nVersion: 2.5\nDate: 28112016(1200)")
+                  "Hive (Connect)\nVersion: 2.5b\nDate: 29112016(2040)")
 }
 
 def stateTokenPresent() {
@@ -261,7 +263,7 @@ def selectDevicePAGE() {
 			input "selectedHeating", "enum", image: "https://raw.githubusercontent.com/alyc100/SmartThingsPublic/master/smartapps/alyc100/thermostat-frame-6c75d5394d102f52cb8cf73704855446.png", required:false, title:"Select Hive Heating Devices \n(${state.hiveHeatingDevices.size() ?: 0} found)", multiple:true, options:state.hiveHeatingDevices
 			input "selectedHotWater", "enum", image: "https://raw.githubusercontent.com/alyc100/SmartThingsPublic/master/smartapps/alyc100/thermostat-frame-6c75d5394d102f52cb8cf73704855446.png", required:false, title:"Select Hive Hot Water Devices \n(${state.hiveHotWaterDevices.size() ?: 0} found)", multiple:true, options:state.hiveHotWaterDevices
             input "selectedBulb", "enum", image: "https://raw.githubusercontent.com/alyc100/SmartThingsPublic/master/smartapps/alyc100/hive-bulb.jpg", required:false, title:"Select Hive Light Dimmable Devices \n(${state.hiveBulbDevices.size() ?: 0} found)", multiple:true, options:state.hiveBulbDevices
-			input "selectedTunableBulb", "enum", image: "https://raw.githubusercontent.com/alyc100/SmartThingsPublic/master/smartapps/alyc100/hive-tunablebulb.jpg", required:false, title:"Select Hive Light Cool To Warm Devices \n(${state.hiveTunableBulbDevices.size() ?: 0} found)", multiple:true, options:state.hiveTunableBulbDevices
+			input "selectedTunableBulb", "enum", image: "https://raw.githubusercontent.com/alyc100/SmartThingsPublic/master/smartapps/alyc100/hive-tunablebulb.jpg", required:false, title:"Select Hive Light Tuneable Devices \n(${state.hiveTunableBulbDevices.size() ?: 0} found)", multiple:true, options:state.hiveTunableBulbDevices
             input "selectedContactSensor", "enum", image: "https://raw.githubusercontent.com/alyc100/SmartThingsPublic/master/smartapps/alyc100/hive-window-door-sensor-815702baa8f484d342f2ebf3eb38ab971acecba02586d0ec485c588f2646c935.jpg", required:false, title:"Select Hive Contact Sensor Devices \n(${state.hiveContactSensorDevices.size() ?: 0} found)", multiple:true, options:state.hiveContactSensorDevices
             input "selectedActivePlug", "enum", image: "https://raw.githubusercontent.com/alyc100/SmartThingsPublic/master/smartapps/alyc100/hive-activeplug.jpg", required:false, title:"Select Hive Plug Devices \n(${state.hiveActivePlugDevices.size() ?: 0} found)", multiple:true, options:state.hiveActivePlugDevices
 		}
@@ -943,8 +945,8 @@ def updateDevices() {
             	}
         // Tunable Active Light
         } else if (device.nodeType == "http://alertme.com/schema/json/node.class.tunable.light.json#") {
-			log.debug "Identified: ${device.name} Hive Light Cool To Warm"
-            def value = "${device.name} Hive Light Cool To Warm"
+			log.debug "Identified: ${device.name} Hive Light Tuneable"
+            def value = "${device.name} Hive Light Tuneable"
                 def key = device.id
                 state.hiveTunableBulbDevices["${key}"] = value
                 //Update names of devices
@@ -1110,7 +1112,7 @@ def addTunableBulb() {
         def childDevice = getChildDevice("${device}")
 
         if (!childDevice) {
-    		log.debug "Adding Hive Light Cool To Warm device ${device}: ${state.hiveTunableBulbDevices[device]}"
+    		log.debug "Adding Hive Light Tuneable device ${device}: ${state.hiveTunableBulbDevices[device]}"
 
         	def data = [
                 name: state.hiveTunableBulbDevices[device],
