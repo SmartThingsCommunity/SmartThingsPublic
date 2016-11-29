@@ -119,7 +119,7 @@ private Map parseCatchAllMessage(String description) {
 				if (cluster.command == 0x07){
 					if (cluster.data[0] == 0x00) {
 						log.debug "TEMP REPORTING CONFIG RESPONSE" + cluster
-						sendEvent(name: "checkInterval", value: 60 * 12, displayed: false, data: [protocol: "zigbee", hubHardwareId: device.hub.hardwareID])
+						resultMap = [name: "checkInterval", value: 60 * 12, displayed: false, data: [protocol: "zigbee", hubHardwareId: device.hub.hardwareID]]
 					}
 					else {
 						log.warn "TEMP REPORTING CONFIG FAILED- error code:${cluster.data[0]}"
