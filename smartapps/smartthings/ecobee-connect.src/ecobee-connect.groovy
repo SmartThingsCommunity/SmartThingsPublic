@@ -26,9 +26,10 @@
  *
  * 	0.9.18 - Fix customer Program handling
  *	0.9.19 - Add attributes to indicate custom program names to child thermostats (smart1, smart2, etc)
+ *  0.9.20 - Allow installations where no "location" is set. Useful for virtual hubs and testing
  *
  */  
-def getVersionNum() { return "0.9.19" }
+def getVersionNum() { return "0.9.20" }
 private def getVersionLabel() { return "Ecobee (Connect) Version ${getVersionNum()}" }
 private def getHelperSmartApps() {
 	return [ 
@@ -758,12 +759,16 @@ def initialize() {
     atomicState.timeOfDay = getTimeOfDay()
     
     def sunriseAndSunset = getSunriseAndSunset()
+    LOG("sunriseAndSunset == ${sunriseAndSunset}")
     if(location.timeZone) {
         atomicState.sunriseTime = sunriseAndSunset.sunrise.format("HHmm", location.timeZone).toDouble()
         atomicState.sunsetTime = sunriseAndSunset.sunset.format("HHmm", location.timeZone).toDouble()
-    } else {
+    } else if( (sunriseAndSunset !=  [:]) && (location != null) ) {
         atomicState.sunriseTime = sunriseAndSunset.sunrise.format("HHmm").toDouble()
         atomicState.sunsetTime = sunriseAndSunset.sunset.format("HHmm").toDouble()
+    } else {
+    	atomicState.sunriseTime = "0500".toDouble()
+        atomicState.sunsetTime = "1800".toDouble()
     }
 	    
     // Setup initial polling and determine polling intervals
