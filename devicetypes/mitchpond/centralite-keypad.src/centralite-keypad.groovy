@@ -128,7 +128,7 @@ metadata {
         }
 
         main (["keypad"])
-        details (["keypad","motion","tamper","Panic","Mode","beep","refresh","battery"])
+	details (["keypad","motion","tamper","temperature", "Panic","Mode","beep","refresh","battery"])
     }
 }
 
