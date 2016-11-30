@@ -759,7 +759,7 @@ def initialize() {
     atomicState.timeOfDay = getTimeOfDay()
     
     def sunriseAndSunset = getSunriseAndSunset()
-    LOG("sunriseAndSunset == ${sunriseAndSunset}")
+    // LOG("sunriseAndSunset == ${sunriseAndSunset}")
     if(location.timeZone) {
         atomicState.sunriseTime = sunriseAndSunset.sunrise.format("HHmm", location.timeZone).toDouble()
         atomicState.sunsetTime = sunriseAndSunset.sunset.format("HHmm", location.timeZone).toDouble()
