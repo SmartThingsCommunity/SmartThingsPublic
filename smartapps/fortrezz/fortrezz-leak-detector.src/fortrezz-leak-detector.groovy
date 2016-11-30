@@ -7,7 +7,7 @@
 definition(
     name: "FortrezZ Leak Detector",
     namespace: "fortrezz",
-    author: "Daniel Kurin",
+    author: "FortrezZ, LLC",
     description: "Use the FortrezZ Water Meter to identify leaks in your home's water system.",
     category: "Green Living",
     iconUrl: "http://swiftlet.technology/wp-content/uploads/2016/05/logo-square-200-1.png",
@@ -178,7 +178,11 @@ def cumulativeHandler(evt) {
                     }
                     else
                     {
-                    	def td = now() - Date.parse("yyyy-MM-dd'T'HH:mm:ss'Z'", state["contHistory${childAppID}"]).getTime()
+                    	//def td = now() - Date.parse("yyyy-MM-dd'T'HH:mm:ss'Z'", state["contHistory${childAppID}"]).getTime()
+                        //log.debug(state["contHistory${childAppID}"])
+                        //def historyDate = new Date(state["contHistory${childAppID}"])
+                    	def historyDate = new Date().parse("yyyy-MM-dd'T'HH:mm:ssZ", state["contHistory${childAppID}"])
+                    	def td = now() - historyDate.getTime()
                         //log.debug("Now minus then: ${td}")
                         contMinutes = td/60000
                         log.debug("Minutes of constant flow: ${contMinutes}, since ${state["contHistory${childAppID}"]}")
@@ -276,7 +280,7 @@ def sendNotification(device, gpm)
     def lastNotification = 0
     if(state["notificationHistory${device}"])
     {
-    	lastNotification = Date.parse("yyyy-MM-dd'T'HH:mm:ss'Z'", state["notificationHistory${device}"]).getTime()
+    	lastNotification = Date.parse("yyyy-MM-dd'T'HH:mm:ssZ", state["notificationHistory${device}"]).getTime()
     }
     def td = now() - lastNotification
     log.debug("Last Notification at ${state["notificationHistory${device}"]}... ${td/(60*1000)} minutes")

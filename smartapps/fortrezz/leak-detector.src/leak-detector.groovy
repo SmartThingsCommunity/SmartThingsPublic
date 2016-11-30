@@ -7,7 +7,7 @@
 definition(
     name: "Leak Detector",
     namespace: "fortrezz",
-    author: "Daniel Kurin",
+    author: "FortrezZ, LLC",
     description: "Child SmartApp for leak detector rules",
     category: "Green Living",
     parent: "fortrezz:FortrezZ Leak Detector",
