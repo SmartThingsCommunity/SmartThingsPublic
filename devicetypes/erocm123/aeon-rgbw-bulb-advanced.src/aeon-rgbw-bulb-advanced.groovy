@@ -211,21 +211,20 @@ private dimmerEvents(physicalgraph.zwave.Command cmd) {
 def zwaveEvent(physicalgraph.zwave.commands.hailv1.Hail cmd) {
 	response(command(zwave.switchMultilevelV1.switchMultilevelGet()))
 }
- 
+
 def zwaveEvent(physicalgraph.zwave.commands.securityv1.SecurityMessageEncapsulation cmd) {
-	def encapsulatedCommand = cmd.encapsulatedCommand([0x20: 1, 0x84: 1])
+	def encapsulatedCommand = cmd.encapsulatedCommand([0x20: 1, 0x31: 5, 0x30: 2, 0x84: 1, 0x70: 1])
+	state.sec = 1
 	if (encapsulatedCommand) {
-		state.sec = 1
-		def result = zwaveEvent(encapsulatedCommand)
-		result = result.collect {
-			if (it instanceof physicalgraph.device.HubAction && !it.toString().startsWith("9881")) {
-				response(cmd.CMD + "00" + it.toString())
-			} else {
-				it
-			}
-		}
-		result
+		zwaveEvent(encapsulatedCommand)
+	} else {
+		log.warn "Unable to extract encapsulated cmd from $cmd"
+		createEvent(descriptionText: cmd.toString())
 	}
+}
+
+def zwaveEvent(physicalgraph.zwave.commands.securityv1.SecurityCommandsSupportedReport cmd) {
+	response(configure())
 }
 
 def zwaveEvent(physicalgraph.zwave.commands.configurationv1.ConfigurationReport cmd) {
@@ -248,6 +247,9 @@ def zwaveEvent(physicalgraph.zwave.commands.firmwareupdatemdv2.FirmwareMdReport 
           firmwareVersion = "1.04"
        break;
        case "43444":
+          firmwareVersion = "1.05"
+       break;
+       case "53007":
           firmwareVersion = "1.05"
        break;
        default:
