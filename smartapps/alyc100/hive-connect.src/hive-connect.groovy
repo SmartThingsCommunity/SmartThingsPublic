@@ -50,6 +50,8 @@
  *
  *	v2.5b - Shortern some device names.
  *
+ * 	02.12.2016
+ * 	v2.6 - Added support for Hive Active Colour Bulb - Author: Tom Beech
  */
 definition(
 		name: "Hive (Connect)",
@@ -127,7 +129,7 @@ def mainPage() {
 
 def headerSECTION() {
 	return paragraph (image: "https://raw.githubusercontent.com/alyc100/SmartThingsPublic/master/smartapps/alyc100/10457773_334250273417145_3395772416845089626_n.png",
-                  "Hive (Connect)\nVersion: 2.5b\nDate: 29112016(2040)")
+                  "Hive (Connect)\nVersion: 2.6\nDate: 02122016(1015)")
 }
 
 def stateTokenPresent() {
@@ -139,7 +141,7 @@ def authenticated() {
 }
 
 def devicesSelected() {
-	return (selectedHeating || selectedHotWater || selectedContactSensor || selectedBulb || selectedTunableBulb || selectedActivePlug) ? "complete" : null
+	return (selectedHeating || selectedHotWater || selectedContactSensor || selectedBulb || selectedTunableBulb || selectedActivePlug || selectedColourBulb) ? "complete" : null
 }
 
 def preferencesSelected() {
@@ -169,7 +171,8 @@ def getDevicesSelectedString() {
         state.hiveContactSensorDevices == null || 
         state.hiveTunableBulbDevices == null || 
         state.hiveBulbDevices == null ||
-        state.hiveActivePlugDevices == null) {
+        state.hiveActivePlugDevices == null ||
+        state.hiveColourBulb == null) {
     	updateDevices()
   }
 	def listString = ""
@@ -201,6 +204,10 @@ def getDevicesSelectedString() {
     selectedActivePlug.each { childDevice ->		
 		if (null != state.hiveActivePlugDevices)
             listString += "${state.hiveActivePlugDevices[childDevice]}\n"
+	}
+    selectedColourBulb.each {  childDevice ->		
+		if (null != state.selectedColourBulb)
+            listString += "${state.selectedColourBulb[childDevice]}\n"
 	}
   
   	// Returns the completed list, and trims the last carrige return
@@ -264,6 +271,7 @@ def selectDevicePAGE() {
 			input "selectedHotWater", "enum", image: "https://raw.githubusercontent.com/alyc100/SmartThingsPublic/master/smartapps/alyc100/thermostat-frame-6c75d5394d102f52cb8cf73704855446.png", required:false, title:"Select Hive Hot Water Devices \n(${state.hiveHotWaterDevices.size() ?: 0} found)", multiple:true, options:state.hiveHotWaterDevices
             input "selectedBulb", "enum", image: "https://raw.githubusercontent.com/alyc100/SmartThingsPublic/master/smartapps/alyc100/hive-bulb.jpg", required:false, title:"Select Hive Light Dimmable Devices \n(${state.hiveBulbDevices.size() ?: 0} found)", multiple:true, options:state.hiveBulbDevices
 			input "selectedTunableBulb", "enum", image: "https://raw.githubusercontent.com/alyc100/SmartThingsPublic/master/smartapps/alyc100/hive-tunablebulb.jpg", required:false, title:"Select Hive Light Tuneable Devices \n(${state.hiveTunableBulbDevices.size() ?: 0} found)", multiple:true, options:state.hiveTunableBulbDevices
+            input "selectedColourBulb", "enum", image: "https://raw.githubusercontent.com/alyc100/SmartThingsPublic/master/smartapps/alyc100/hive-colouredbulb.jpg", required:false, title:"Select Hive Light Colour Devices \n(${state.hiveColourBulb.size() ?: 0} found)", multiple:true, options:state.hiveColourBulb
             input "selectedContactSensor", "enum", image: "https://raw.githubusercontent.com/alyc100/SmartThingsPublic/master/smartapps/alyc100/hive-window-door-sensor-815702baa8f484d342f2ebf3eb38ab971acecba02586d0ec485c588f2646c935.jpg", required:false, title:"Select Hive Contact Sensor Devices \n(${state.hiveContactSensorDevices.size() ?: 0} found)", multiple:true, options:state.hiveContactSensorDevices
             input "selectedActivePlug", "enum", image: "https://raw.githubusercontent.com/alyc100/SmartThingsPublic/master/smartapps/alyc100/hive-activeplug.jpg", required:false, title:"Select Hive Plug Devices \n(${state.hiveActivePlugDevices.size() ?: 0} found)", multiple:true, options:state.hiveActivePlugDevices
 		}
@@ -506,7 +514,9 @@ def initialize() {
         if(selectedActivePlug) {
         	addActivePlug()
         }
-
+		if(selectedColourBulb) {
+			addColourBulb()
+		}
  	 	runIn(10, 'refreshDevices') // Asynchronously refresh devices so we don't block
 
   	//subscribe to events for notifications if activated
@@ -888,6 +898,7 @@ def updateDevices() {
   state.hiveBulbDevices = [:]
   state.hiveTunableBulbDevices = [:]
   state.hiveActivePlugDevices = [:]
+  state.hiveColourBulb = [:]
   
   def selectors = []
 	devices.each { device ->
@@ -943,10 +954,10 @@ def updateDevices() {
                             log.debug "Device's name has changed."
                     }
             	}
-        // Tunable Active Light
-        } else if (device.nodeType == "http://alertme.com/schema/json/node.class.tunable.light.json#") {
-			log.debug "Identified: ${device.name} Hive Light Tuneable"
-            def value = "${device.name} Hive Light Tuneable"
+        	// Tuneable Active Light
+        	} else if (device.nodeType == "http://alertme.com/schema/json/node.class.tunable.light.json#") {
+				log.debug "Identified: ${device.name} Hive Light Tuneable"
+            	def value = "${device.name} Hive Light Tuneable"
                 def key = device.id
                 state.hiveTunableBulbDevices["${key}"] = value
                 //Update names of devices
@@ -958,12 +969,27 @@ def updateDevices() {
                             log.debug "Device's name has changed."
                     }
             	}
-        //White Active Light Bulb
-        } else if (device.nodeType == "http://alertme.com/schema/json/node.class.light.json#") {
-			log.debug "Identified: ${device.name} Hive Light Dimmable"
-            def value = "${device.name} Hive Light Dimmable"
+        	//White Active Light Bulb
+        	} else if (device.nodeType == "http://alertme.com/schema/json/node.class.light.json#") {
+				log.debug "Identified: ${device.name} Hive Light Dimmable"
+            	def value = "${device.name} Hive Light Dimmable"
                 def key = device.id
                 state.hiveBulbDevices["${key}"] = value
+                //Update names of devices
+            	def childDevice = getChildDevice("${device.id}")
+            	if (childDevice) {
+                	//Update name of device if different.
+                	if(childDevice.name != device.name) {
+                            childDevice.name = device.name
+                            log.debug "Device's name has changed."
+                    }
+            	}
+        	//Colour Bulb
+        	} else if (device.nodeType == "http://alertme.com/schema/json/node.class.colour.tunable.light.json#") {
+				log.debug "Identified: ${device.name} Hive Light Colour"
+            	def value = "${device.name} Hive Light Colour"
+                def key = device.id
+                state.hiveColourBulb["${key}"] = value
                 //Update names of devices
             	def childDevice = getChildDevice("${device.id}")
             	if (childDevice) {
@@ -1127,6 +1153,34 @@ def addTunableBulb() {
 			log.debug "Created ${state.hiveTunableBulbDevices[device]} with id: ${device}"
 		} else {
 			log.debug "found ${state.hiveTunableBulbDevices[device]} with id ${device} already exists"
+		}
+
+	}
+}
+
+def addColourBulb() {
+	updateDevices()
+
+	selectedColourBulb.each { device ->
+
+        def childDevice = getChildDevice("${device}")
+
+        if (!childDevice) {
+    		log.debug "Adding Hive Light Colour device ${device}: ${state.hiveBulbDevices[device]}"
+
+        	def data = [
+                name: state.hiveColourBulb[device],
+				label: state.hiveColourBulb[device],
+			]
+            
+            log.debug data
+            
+            childDevice = addChildDevice("ibeech", "Hive Active Colour Light V2.0", "$device", null, data)
+            childDevice.refresh()
+            
+			log.debug "Created ${state.hiveColourBulb[device]} with id: ${device}"
+		} else {
+			log.debug "found ${state.hiveColourBulb[device]} with id ${device} already exists"
 		}
 
 	}
