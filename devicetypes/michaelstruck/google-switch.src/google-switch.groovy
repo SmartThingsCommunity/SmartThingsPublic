@@ -2,7 +2,7 @@
  *  Google Switch
  *
  *  Copyright 2016 Michael Struck
- *  Version 1.0.0 10/2/16
+ *  Version 1.0.0 12/4/16
  *
  *  Version 1.0.0 - Initial release
  * 
@@ -23,6 +23,8 @@ metadata {
         definition (name: "Google Switch", namespace: "MichaelStruck", author: "SmartThings") {
         capability "Switch"
         capability "Switch Level"
+        capability "Actuator"	//included to give compatibility with ActionTiles
+        capability "Sensor"		//included to give compatibility with ActionTiles
         
 		attribute "about", "string"
     }
@@ -111,7 +113,7 @@ def showVersion(){
 	sendEvent (name: "about", value:versionTxt) 
 }
 def versionNum(){
-	def txt = "1.0.0 (10/02/16)"
+	def txt = "1.0.0 (12/04/16)"
 }
 def appName(){
 	def txt="Google Switch"

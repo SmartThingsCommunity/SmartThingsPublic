@@ -2,7 +2,7 @@
  *  Alexa Switch
  *
  *  Copyright 2016 Michael Struck
- *  Version 2.0.6 3/18/16
+ *  Version 2.0.7 12/04/16
  *
  *  Version 1.0.0 - Initial release
  *  Version 1.1.0 - Updated the interface to better match SmartThings dimmers (thanks to @BoruGee)
@@ -13,6 +13,7 @@
  *  Version 2.0.4 - Added dynamic feedback to user on code version of switch
  *  Version 2.0.5 - Remove state of dimmer level, allowing the switch to act as a pass through
  *  Version 2.0.6 - Added PNG style icons to better differenciate the Alexa Helper created devices
+ *  Version 2.0.7 - Added capabilities Actuator and Sensor for compability with ActionTiles.
  * 
  *  Uses code from SmartThings
  *
@@ -31,6 +32,8 @@ metadata {
         definition (name: "Alexa Switch", namespace: "MichaelStruck", author: "SmartThings") {
         capability "Switch"
         capability "Switch Level"
+		capability "Actuator"	//included to give compatibility with ActionTiles
+        capability "Sensor"		//included to give compatibility with ActionTiles
         
 		attribute "about", "string"
     }
@@ -119,7 +122,7 @@ def showVersion(){
 	sendEvent (name: "about", value:versionTxt) 
 }
 def versionNum(){
-	def txt = "2.0.6 (03/18/16)"
+	def txt = "2.0.7 (12/04/16)"
 }
 def appName(){
 	def txt="Alexa Switch"
