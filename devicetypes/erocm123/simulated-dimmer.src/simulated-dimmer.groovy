@@ -21,6 +21,7 @@ metadata {
 		capability "Switch"
         capability "Relay Switch"
         capability "Switch Level"
+        capability "Actuator"
 
 		command "onPhysical"
 		command "offPhysical"

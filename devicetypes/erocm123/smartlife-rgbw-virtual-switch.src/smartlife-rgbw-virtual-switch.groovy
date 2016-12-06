@@ -16,6 +16,7 @@ metadata {
     definition (name: "SmartLife RGBW Virtual Switch", namespace: "erocm123", author: "Eric Maycock") {
 		capability "Switch"
         capability "Relay Switch"
+        capability "Actuator"
 
 		command "onPhysical"
 		command "offPhysical"

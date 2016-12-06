@@ -18,6 +18,8 @@ metadata {
         capability "Relay Switch"
         capability "Energy Meter"
 		capability "Power Meter"
+        capability "Sensor"
+        capability "Actuator"
 
 		command "onPhysical"
 		command "offPhysical"
