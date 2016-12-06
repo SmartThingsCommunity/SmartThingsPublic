@@ -497,7 +497,7 @@ private boolean zoneActive(String zoneStr){
 private boolean zoneActive(z){	
     if (!zoneNumberEnum && zoneNumber && zoneNumber >= z.toInteger()) return true        
     else if (!zoneNumberEnum && zoneNumber && zoneNumber != z.toInteger()) return false
-    else if (zoneNumberEnum.contains(z)) return true
+    else if (zoneNumberEnum && zoneNumberEnum.contains(z)) return true
     return false
 }
 
@@ -514,7 +514,7 @@ def zoneSettingsPage() {
 	dynamicPage(name: 'zoneSettingsPage', title: 'Zone Configuration') {
        	section(''){
         	//input (name: "zoneNumber", type: "number", title: "Enter number of zones to configure?",description: "How many valves do you have? 1-16", required: true)//, defaultValue: 16)
-            input 'zoneNumber', 'enum', title: 'Select zones to configure', multiple: true,	metadata: [values: ['1','2','3','4','5','6','7','8','9','10','11','12','13','14','15','16']]
+            input 'zoneNumberEnum', 'enum', title: 'Select zones to configure', multiple: true,	metadata: [values: ['1','2','3','4','5','6','7','8','9','10','11','12','13','14','15','16']]
             input 'gain', 'number', title: 'Increase or decrease all water times by this %, enter a negative or positive value, Default: 0', required: false, range: '-99..99'
 			paragraph image: 'http://www.plaidsystems.com/smartthings/st_sensor_200_r.png',
                       	title: 'Moisture sensor adapt mode',                      
