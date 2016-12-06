@@ -35,6 +35,7 @@
  *	12.11.2016: v2.3.7 - Stop yesterday cost comparison being 0%.
  *
  *	06.12.2016: v2.4 - Better API failure handling and recovery. Historical and yesterday power feed from OVO API.
+ *  06.12.2016: v2.4.1 - Relax setting offline mode to 60 minute down time.
  */
 preferences 
 {
@@ -132,33 +133,29 @@ def refreshLiveData() {
 
 	def resp = parent.apiGET("https://live.ovoenergy.com/api/live/meters/${device.deviceNetworkId}/consumptions/instant")
 	if (resp.status != 200) {
-    	//Refresh historical power chart at midnight in offline mode
-        if ((state.hour == null) || (state.hour != currentHour)) {
-        	//Reset at midnight or initial call
-        	if ((state.hour == null) || (currentHour == 0)) { 
-            	//Recalcualte historical data at midnight in offline mode
-            	addHistoricalPowerToChartData()
-                setYesterdayPowerValues()
-            }
-            state.hour = currentHour
-        }
-        
-        //Refresh historical power chart when first entering offline mode
-    	if (!state.offlineMode) {
-        	addHistoricalPowerToChartData()
-            setYesterdayPowerValues()
-        }
-        
-    	state.offlineMode = true
-		log.error("Unexpected result in poll(): [${resp.status}] ${resp.data}")
+    	log.error("Unexpected result in poll(): [${resp.status}] ${resp.data}")
         sendEvent(name: 'power', value: "N/A", unit: "W")
-        sendEvent(name: 'averageDailyTotalPower', value: "N/A", unit: "KWh", displayed: false)
-        sendEvent(name: 'currentDailyTotalPowerCost', value: "OFFLINE", displayed: false)
-        sendEvent(name: 'costAlertLevelPassed', value: "offline", displayed: false)
-        sendEvent(name: 'network', value: "Not Connected" as String)
+        if (state.offlineMode) {
+        	//Refresh historical power chart at midnight in offline mode
+        	if ((state.hour == null) || (state.hour != currentHour)) {
+        	//Reset at midnight or initial call
+        		if ((state.hour == null) || (currentHour == 0)) { 
+            		//Recalcualte historical data at midnight in offline mode
+            		addHistoricalPowerToChartData()
+                	setYesterdayPowerValues()
+            	}
+            	state.hour = currentHour
+        	}
+        } else {
+        	if (!state.offlineScheduled) {
+        		runIn(60*60, setOffline)
+                state.offlineScheduled = true
+            }
+        }
 		return []
 	}
-    	
+    unschedule("setOffline")
+    state.offlineScheduled = false
     if (state.offlineMode) {
         //Offline mode is set when API is unavailable
         state.offlineMode = false
@@ -271,6 +268,20 @@ def refreshLiveData() {
         	log.debug "currentHour: $currentHour, state.hour: $state.hour, state.currentHourPowerTotal: $state.currentHourPowerTotal, state.currentHourPowerEntryNumber: $state.currentHourPowerEntryNumber, state.dailyPowerHistory: $state.dailyPowerHistory"
         	log.debug "formattedAverageTotalPower: $formattedAverageTotalPower, formattedCurrentTotalPowerCost: $formattedCurrentTotalPowerCost"
        	}
+}
+
+def setOffline() {
+	state.offlineScheduled = false
+	//Refresh historical power chart when first entering offline mode
+    if (!state.offlineMode) {
+    	addHistoricalPowerToChartData()
+        setYesterdayPowerValues()
+    }
+	state.offlineMode = true
+    sendEvent(name: 'averageDailyTotalPower', value: "N/A", unit: "KWh", displayed: false)
+    sendEvent(name: 'currentDailyTotalPowerCost', value: "OFFLINE", displayed: false)
+    sendEvent(name: 'costAlertLevelPassed', value: "offline", displayed: false)
+    sendEvent(name: 'network', value: "Not Connected" as String)
 }
 
 private def getTotalDailyPower() {
