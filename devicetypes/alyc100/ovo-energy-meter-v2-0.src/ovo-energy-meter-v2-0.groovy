@@ -347,7 +347,10 @@ def setYesterdayPowerValues() {
                     
         	yesterdayTotalPowerCost = String.format("%1.2f",yesterdayTotalPowerCost)
         	sendEvent(name: 'yesterdayTotalPowerCost', value: "£$yesterdayTotalPowerCost (" + formattedCostYesterdayComparison + "%)", displayed: false)
-    	}
+    	} else {
+        	sendEvent(name: 'yesterdayTotalPower', value: "TBD", unit: "KWh", displayed: false)
+            sendEvent(name: 'yesterdayTotalPowerCost', value: "Being Calculated...", displayed: false)
+        }
     }
 }
 
@@ -361,7 +364,9 @@ def addHistoricalPowerToChartData() {
     	def consumptions = resp.data.consumptions
         if (consumptions[5].dataError != "NotFound") {
     		state.chartData = [0, consumptions[5].price, consumptions[4].price, consumptions[3].price, consumptions[2].price, consumptions[1].price, consumptions[0].price]
-    	}
+    	} else {
+        	state.chartData = [0, 0, consumptions[4].price, consumptions[3].price, consumptions[2].price, consumptions[1].price, consumptions[0].price]
+        }
     }
 }
 
