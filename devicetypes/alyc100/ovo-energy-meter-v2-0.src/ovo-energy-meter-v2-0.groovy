@@ -36,6 +36,7 @@
  *
  *	06.12.2016: v2.4 - Better API failure handling and recovery. Historical and yesterday power feed from OVO API.
  *  06.12.2016: v2.4.1 - Relax setting offline mode to 60 minute down time.
+ *  07.12.2016: v2.4.1b - Handle when OVO API hasn't generated yesterday's total figures at midnight.
  */
 preferences 
 {
@@ -254,7 +255,7 @@ def refreshLiveData() {
         	if (formattedCurrentTotalPowerCost > (getCostAlertLevelValue() as BigDecimal)) {
         		sendEvent(name: 'costAlertLevelPassed', value: "£${getCostAlertLevelValue()}")
         	} else {
-        		sendEvent(name: 'costAlertLevelPassed', value: "false")
+        		sendEvent(name: 'costAlertLevelPassed', value: "false", displayed: false)
         	}
         
         	formattedAverageTotalPower = String.format("%1.2f",formattedAverageTotalPower)
