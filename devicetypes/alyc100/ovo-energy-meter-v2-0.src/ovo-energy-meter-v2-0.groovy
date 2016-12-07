@@ -37,6 +37,7 @@
  *	06.12.2016: v2.4 - Better API failure handling and recovery. Historical and yesterday power feed from OVO API.
  *  06.12.2016: v2.4.1 - Relax setting offline mode to 60 minute down time.
  *  07.12.2016: v2.4.1b - Handle when OVO API hasn't generated yesterday's total figures at midnight.
+ *  07.12.2016: v2.4.1c - Add 'Pending' connection status for short API issues
  */
 preferences 
 {
@@ -84,6 +85,7 @@ metadata {
         standardTile("network", "device.network", width: 2, height: 2, inactiveLabel: false, canChangeIcon: false) {
 			state ("default", label:'unknown', icon: "st.unknown.unknown.unknown")
 			state ("Connected", label:'Online', icon: "st.Health & Wellness.health9", backgroundColor: "#79b821")
+			state ("Pending", label:'Pending', icon: "st.Health & Wellness.health9", backgroundColor: "#ffa500")
 			state ("Not Connected", label:'Offline', icon: "st.Health & Wellness.health9", backgroundColor: "#bc2323")
 		}
         
@@ -148,6 +150,7 @@ def refreshLiveData() {
             	state.hour = currentHour
         	}
         } else {
+        	sendEvent(name: 'network', value: "Pending" as String)
         	if (!state.offlineScheduled) {
         		runIn(60*60, setOffline)
                 state.offlineScheduled = true
