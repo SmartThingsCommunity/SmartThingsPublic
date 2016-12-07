@@ -209,15 +209,14 @@ def refreshLiveData() {
         }
         
         if ((state.hour == null) || (state.hour != currentHour)) {
+        	//Update latest standard charges and unit prices
+            parent.updateLatestPrices()
+            //Add historical figures to chart data object
+            addHistoricalPowerToChartData()
+            setYesterdayPowerValues()
+            
         	//Reset at midnight or initial call
         	if ((state.hour == null) || (currentHour == 0)) { 
-            	
-            	//Update latest standard charges and unit prices
-                parent.updateLatestPrices()
-                //Add historical figures to chart data object
-                addHistoricalPowerToChartData()
-                setYesterdayPowerValues()
-                
                 if (!state.recoveryMode) {
                 	//Reset power history
                 	state.yesterdayPowerHistory =  state.dailyPowerHistory
@@ -327,25 +326,27 @@ def setYesterdayPowerValues() {
     def date = new Date()
     def resp = getAggregatePower((date - 2), date)
     if (resp.status != 200) {
-    	log.error("Unexpected result in addHistoricalPowerToChartData(): [${resp2.status}] ${resp2.data}")
+    	log.error("Unexpected result in setYesterdayPowerValues(): [${resp.status}] ${resp.data}")
 	} else {
     	def consumptions = resp.data.consumptions
-    	//consumptions[1].price, consumptions[0].price
-        def yesterdayTotalPower = (Math.round((consumptions[1].consumption as BigDecimal) * 1000))/1000
-        sendEvent(name: 'yesterdayTotalPower', value: "$yesterdayTotalPower", unit: "KWh", displayed: false)
+        if (consumptions[1].dataError != "NotFound") {
+    		//consumptions[1].price, consumptions[0].price
+        	def yesterdayTotalPower = (Math.round((consumptions[1].consumption as BigDecimal) * 1000))/1000
+        	sendEvent(name: 'yesterdayTotalPower', value: "$yesterdayTotalPower", unit: "KWh", displayed: false)
         
-        def yesterdayTotalPowerCost = (Math.round((consumptions[1].price as BigDecimal) * 100))/100
+        	def yesterdayTotalPowerCost = (Math.round((consumptions[1].price as BigDecimal) * 100))/100
         
-        def formattedCostYesterdayComparison = 0
-        //Calculate cost difference between days
-        def costYesterdayComparison = calculatePercentChange(consumptions[1].price as BigDecimal, consumptions[0].price as BigDecimal)
-        formattedCostYesterdayComparison = costYesterdayComparison
-        if (costYesterdayComparison >= 0) {
-        	formattedCostYesterdayComparison = "+" + formattedCostYesterdayComparison
-        }
+        	def formattedCostYesterdayComparison = 0
+        	//Calculate cost difference between days
+        	def costYesterdayComparison = calculatePercentChange(consumptions[1].price as BigDecimal, consumptions[0].price as BigDecimal)
+        	formattedCostYesterdayComparison = costYesterdayComparison
+        	if (costYesterdayComparison >= 0) {
+        		formattedCostYesterdayComparison = "+" + formattedCostYesterdayComparison
+        	}
                     
-        yesterdayTotalPowerCost = String.format("%1.2f",yesterdayTotalPowerCost)
-        sendEvent(name: 'yesterdayTotalPowerCost', value: "£$yesterdayTotalPowerCost (" + formattedCostYesterdayComparison + "%)", displayed: false)
+        	yesterdayTotalPowerCost = String.format("%1.2f",yesterdayTotalPowerCost)
+        	sendEvent(name: 'yesterdayTotalPowerCost', value: "£$yesterdayTotalPowerCost (" + formattedCostYesterdayComparison + "%)", displayed: false)
+    	}
     }
 }
 
@@ -357,7 +358,9 @@ def addHistoricalPowerToChartData() {
 	}
     else {
     	def consumptions = resp.data.consumptions
-    	state.chartData = [0, consumptions[5].price, consumptions[4].price, consumptions[3].price, consumptions[2].price, consumptions[1].price, consumptions[0].price]
+        if (consumptions[5].dataError != "NotFound") {
+    		state.chartData = [0, consumptions[5].price, consumptions[4].price, consumptions[3].price, consumptions[2].price, consumptions[1].price, consumptions[0].price]
+    	}
     }
 }
 
