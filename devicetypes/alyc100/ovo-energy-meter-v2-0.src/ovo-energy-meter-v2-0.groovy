@@ -349,7 +349,7 @@ def setYesterdayPowerValues() {
         	sendEvent(name: 'yesterdayTotalPowerCost', value: "£$yesterdayTotalPowerCost (" + formattedCostYesterdayComparison + "%)", displayed: false)
     	} else {
         	sendEvent(name: 'yesterdayTotalPower', value: "TBD", unit: "KWh", displayed: false)
-            sendEvent(name: 'yesterdayTotalPowerCost', value: "Being Calculated...", displayed: false)
+            sendEvent(name: 'yesterdayTotalPowerCost', value: "being calculated...", displayed: false)
         }
     }
 }
