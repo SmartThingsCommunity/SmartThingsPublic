@@ -86,7 +86,7 @@ def firstPage() {
 
 def headerSECTION() {
 	return paragraph (image: "https://raw.githubusercontent.com/alyc100/SmartThingsPublic/master/smartapps/alyc100/icon175x175.jpeg",
-                  "OVO Energy (Connect)\nVersion: 2.2.6\nDate: 06122016(1640)")
+                  "OVO Energy (Connect)\nVersion: 2.2.4\nDate: 06122016(1640)")
 }               
 
 def stateTokenPresent() {
