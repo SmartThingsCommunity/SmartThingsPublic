@@ -117,14 +117,16 @@ metadata {
 }
 
 def parse(String description) {
-	Map map = zigbee.getEvent(description)
-	if (!map) {
+	def maps = []
+	maps << zigbee.getEvent(description)
+	if (!maps[0]) {
+		maps = []
 		if (description?.startsWith('zone status')) {
-			map = parseIasMessage(description)
+			maps += parseIasMessage(description)
 		} else {
 			Map descMap = zigbee.parseDescriptionAsMap(description)
 			if (descMap?.clusterInt == 0x0001 && descMap.commandInt != 0x07 && descMap?.value) {
-				map = getBatteryResult(Integer.parseInt(descMap.value, 16))
+				maps << getBatteryResult(Integer.parseInt(descMap.value, 16))
 			} else if (descMap?.clusterInt == zigbee.TEMPERATURE_MEASUREMENT_CLUSTER && descMap.commandInt == 0x07) {
 				if (descMap.data[0] == "00") {
 					log.debug "TEMP REPORTING CONFIG RESPONSE: $descMap"
@@ -133,10 +135,12 @@ def parse(String description) {
 					log.warn "TEMP REPORTING CONFIG FAILED- error code: ${descMap.data[0]}"
 				}
 			} else {
-				map = handleAcceleration(descMap)
+
+				maps += handleAcceleration(descMap)
 			}
 		}
-	} else if (map.name == "temperature") {
+	} else if (maps[0].name == "temperature") {
+		def map = maps[0]
 		if (tempOffset) {
 			map.value = (int) map.value + (int) tempOffset
 		}
@@ -144,8 +148,11 @@ def parse(String description) {
 		map.translatable = true
 	}
 
-	def result = map ? createEvent(map) : [:]
-
+	def result = maps.inject([]) {acc, it ->
+		if (it) {
+			acc << createEvent(it)
+		}
+	}
 	if (description?.startsWith('enroll request')) {
 		List cmds = zigbee.enrollResponse()
 		log.debug "enroll response: ${cmds}"
@@ -154,59 +161,81 @@ def parse(String description) {
 	return result
 }
 
-private Map handleAcceleration(descMap) {
-	Map result = [:]
+private List<Map> handleAcceleration(descMap) {
+	def result = []
 	if (descMap.clusterInt == 0xFC02 && descMap.attrInt == 0x0010) {
-		if (descMap.value.size() == 32) {
-			// value will look like 00ae29001403e2290013001629001201
-			// breaking this apart and swapping byte order where appropriate, this breaks down to:
-			//   X (0x0012) = 0x0016
-			//   Y (0x0013) = 0x03E2
-			//   Z (0x0014) = 0x00AE
-			// note that there is a known bug in that the x,y,z attributes are interpreted in the wrong order
-			// this will be fixed in a future update
-			def threeAxisAttributes = descMap.value[0..-9]
-			result << parseAxis(threeAxisAttributes)
-			descMap.value = descMap.value[-2..-1]
+		def value = descMap.value == "01" ? "active" : "inactive"
+		log.debug "Acceleration $value"
+		result << [
+				name           : "acceleration",
+				value          : value,
+				descriptionText: "{{ device.displayName }} was $value",
+				isStateChange  : isStateChange(device, "acceleration", value),
+				translatable   : true
+		]
+
+		if (descMap.additionalAttrs) {
+			result += parseAxis(descMap.additionalAttrs)
 		}
-		result = getAccelerationResult(descMap.value)
-	} else if (descMap.clusterInt == 0xFC02 && descMap.attrInt == 0x0012 && descMap.value.size() == 24) {
-		// The size is checked to ensure the attribute report contains X, Y and Z values
-		// If all three axis are not included then the attribute report is ignored
-		result = parseAxis(descMap.value)
+	} else if (descMap.clusterInt == 0xFC02 && descMap.attrInt == 0x0012) {
+		def addAttrs = descMap.additionalAttrs
+		addAttrs << ["attrInt": descMap.attrInt, "value": descMap.value]
+		result += parseAxis(addAttrs)
 	}
 	return result
 }
 
-private Map parseIasMessage(String description) {
-	ZoneStatus zs = zigbee.parseZoneStatus(description)
-	Map resultMap = [:]
+private List<Map> parseAxis(List<Map> attrData) {
+	def results = []
+	def x = hexToSignedInt(attrData.find { it.attrInt == 0x0012 }?.value)
+	def y = hexToSignedInt(attrData.find { it.attrInt == 0x0013 }?.value)
+	def z = hexToSignedInt(attrData.find { it.attrInt == 0x0014 }?.value)
 
-	if (garageSensor != "Yes") {
-		resultMap = zs.isAlarm1Set() ? getContactResult('open') : getContactResult('closed')
+	def xyzResults = [:]
+	if (device.getDataValue("manufacturer") == "SmartThings") {
+		// This mapping matches the current behavior of the Device Handler for the Centralite sensors
+		xyzResults.x = z
+		xyzResults.y = y
+		xyzResults.z = -x
+	} else {
+		// The axises reported by the Device Handler differ from the axises reported by the sensor
+		// This may change in the future
+		xyzResults.x = z
+		xyzResults.y = x
+		xyzResults.z = y
 	}
 
-	return resultMap
+	log.debug "parseAxis -- ${xyzResults}"
+
+	if (garageSensor == "Yes")
+		results += garageEvent(xyzResults.z)
+
+	def value = "${xyzResults.x},${xyzResults.y},${xyzResults.z}"
+	results << [
+			name           : "threeAxis",
+			value          : value,
+			linkText       : getLinkText(device),
+			descriptionText: "${getLinkText(device)} was ${value}",
+			handlerName    : name,
+			isStateChange  : isStateChange(device, "threeAxis", value),
+			displayed      : false
+	]
+	results
 }
 
-def updated() {
-	log.debug "updated called"
-	log.info "garage value : $garageSensor"
-	if (garageSensor == "Yes") {
-		def descriptionText = "Updating device to garage sensor"
-		if (device.latestValue("status") == "open") {
-			sendEvent(name: 'status', value: 'garage-open', descriptionText: descriptionText, translatable: true)
-		} else if (device.latestValue("status") == "closed") {
-			sendEvent(name: 'status', value: 'garage-closed', descriptionText: descriptionText, translatable: true)
-		}
-	} else {
-		def descriptionText = "Updating device to open/close sensor"
-		if (device.latestValue("status") == "garage-open") {
-			sendEvent(name: 'status', value: 'open', descriptionText: descriptionText, translatable: true)
-		} else if (device.latestValue("status") == "garage-closed") {
-			sendEvent(name: 'status', value: 'closed', descriptionText: descriptionText, translatable: true)
-		}
+private List<Map> parseIasMessage(String description) {
+	ZoneStatus zs = zigbee.parseZoneStatus(description)
+	List<Map> results = []
+
+	if (garageSensor != "Yes") {
+		def value = zs.isAlarm1Set() ? 'open' : 'closed'
+		log.debug "Contact: ${device.displayName} value = ${value}"
+		def descriptionText = value == 'open' ? '{{ device.displayName }} was opened' : '{{ device.displayName }} was closed'
+		results << [name: 'contact', value: value, descriptionText: descriptionText, displayed: false, translatable: true]
+		results << [name: 'status', value: value, descriptionText: descriptionText, translatable: true]
 	}
+
+	return results
 }
 
 private Map getBatteryResult(rawValue) {
@@ -247,35 +276,24 @@ private Map getBatteryResult(rawValue) {
 	return result
 }
 
-private Map getContactResult(value) {
-	log.debug "Contact: ${device.displayName} value = ${value}"
-	def descriptionText = value == 'open' ? '{{ device.displayName }} was opened' : '{{ device.displayName }} was closed'
-	sendEvent(name: 'contact', value: value, descriptionText: descriptionText, displayed: false, translatable: true)
-	return [name: 'status', value: value, descriptionText: descriptionText, translatable: true]
-}
-
-private getAccelerationResult(numValue) {
-	log.debug "Acceleration"
-	def name = "acceleration"
-	def value
-	def descriptionText
-
-	if (numValue.endsWith("1")) {
-		value = "active"
-		descriptionText = '{{ device.displayName }} was active'
-	} else {
-		value = "inactive"
-		descriptionText = '{{ device.displayName }} was inactive'
+List<Map> garageEvent(zValue) {
+	List<Map> results = []
+	def absValue = zValue.abs()
+	def contactValue = null
+	def garageValue = null
+	if (absValue > 900) {
+		contactValue = 'closed'
+		garageValue = 'garage-closed'
+	} else if (absValue < 100) {
+		contactValue = 'open'
+		garageValue = 'garage-open'
 	}
-
-	def isStateChange = isStateChange(device, name, value)
-	return [
-			name           : name,
-			value          : value,
-			descriptionText: descriptionText,
-			isStateChange  : isStateChange,
-			translatable   : true
-	]
+	if (contactValue != null) {
+		def descriptionText = contactValue == 'open' ? '{{ device.displayName }} was opened' : '{{ device.displayName }} was closed'
+		results << [name: 'contact', value: contactValue, descriptionText: descriptionText, displayed: false, translatable: true]
+		results << [name: 'status', value: garageValue, descriptionText: descriptionText, translatable: true]
+	}
+	results
 }
 
 /**
@@ -332,77 +350,29 @@ def configure() {
 	return refresh() + configCmds
 }
 
-private getEndpointId() {
-	new BigInteger(device.endpointId, 16).toString()
-}
-
-private Map parseAxis(String description) {
-	def z = hexToSignedInt(description[0..3])
-	def y = hexToSignedInt(description[10..13])
-	def x = hexToSignedInt(description[20..23])
-	def xyzResults = [x: x, y: y, z: z]
-
-	if (device.getDataValue("manufacturer") == "SmartThings") {
-		// This mapping matches the current behavior of the Device Handler for the Centralite sensors
-		xyzResults.x = z
-		xyzResults.y = y
-		xyzResults.z = -x
+def updated() {
+	log.debug "updated called"
+	log.info "garage value : $garageSensor"
+	if (garageSensor == "Yes") {
+		def descriptionText = "Updating device to garage sensor"
+		if (device.latestValue("status") == "open") {
+			sendEvent(name: 'status', value: 'garage-open', descriptionText: descriptionText, translatable: true)
+		} else if (device.latestValue("status") == "closed") {
+			sendEvent(name: 'status', value: 'garage-closed', descriptionText: descriptionText, translatable: true)
+		}
 	} else {
-		// The axises reported by the Device Handler differ from the axises reported by the sensor
-		// This may change in the future
-		xyzResults.x = z
-		xyzResults.y = x
-		xyzResults.z = y
+		def descriptionText = "Updating device to open/close sensor"
+		if (device.latestValue("status") == "garage-open") {
+			sendEvent(name: 'status', value: 'open', descriptionText: descriptionText, translatable: true)
+		} else if (device.latestValue("status") == "garage-closed") {
+			sendEvent(name: 'status', value: 'closed', descriptionText: descriptionText, translatable: true)
+		}
 	}
-
-	log.debug "parseAxis -- ${xyzResults}"
-
-	if (garageSensor == "Yes")
-		garageEvent(xyzResults.z)
-
-	getXyzResult(xyzResults, description)
 }
 
 private hexToSignedInt(hexVal) {
 	def unsignedVal = hexToInt(hexVal)
 	unsignedVal > 32767 ? unsignedVal - 65536 : unsignedVal
-}
-
-def garageEvent(zValue) {
-	def absValue = zValue.abs()
-	def contactValue = null
-	def garageValue = null
-	if (absValue > 900) {
-		contactValue = 'closed'
-		garageValue = 'garage-closed'
-	} else if (absValue < 100) {
-		contactValue = 'open'
-		garageValue = 'garage-open'
-	}
-	if (contactValue != null) {
-		def descriptionText = contactValue == 'open' ? '{{ device.displayName }} was opened' : '{{ device.displayName }} was closed'
-		sendEvent(name: 'contact', value: contactValue, descriptionText: descriptionText, displayed: false, translatable: true)
-		sendEvent(name: 'status', value: garageValue, descriptionText: descriptionText, translatable: true)
-	}
-}
-
-private Map getXyzResult(results, description) {
-	def name = "threeAxis"
-	def value = "${results.x},${results.y},${results.z}"
-	def linkText = getLinkText(device)
-	def descriptionText = "$linkText was $value"
-	def isStateChange = isStateChange(device, name, value)
-
-	[
-			name           : name,
-			value          : value,
-			unit           : null,
-			linkText       : linkText,
-			descriptionText: descriptionText,
-			handlerName    : name,
-			isStateChange  : isStateChange,
-			displayed      : false
-	]
 }
 
 private getManufacturerCode() {
