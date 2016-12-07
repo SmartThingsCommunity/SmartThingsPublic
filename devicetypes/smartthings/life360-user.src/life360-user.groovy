@@ -39,7 +39,7 @@ metadata {
 }
 
 def generatePresenceEvent(boolean present) {
-	log.debug "Here in generatePresenceEvent!"
+	log.info "Life360 generatePresenceEvent($present)"
 	def value = formatValue(present)
 	def linkText = getLinkText(device)
 	def descriptionText = formatDescriptionText(linkText, present)
