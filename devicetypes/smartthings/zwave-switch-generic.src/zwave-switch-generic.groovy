@@ -21,10 +21,14 @@ metadata {
 		capability "Sensor"
 
 		fingerprint inClusters: "0x25", deviceJoinName: "Z-Wave Switch"
+		fingerprint deviceId: "0x1001", inClusters: "0x5E,0x20,0x25,0x27,0x72,0x86,0x70,0x85", deviceJoinName: "Z-Wave Switch"  // to prevent typing as relay
+		fingerprint deviceId: "0x1003", inClusters: "0x5E,0x25,0x2B,0x2C,0x27,0x75,0x73,0x70,0x86,0x72", deviceJoinName: "Z-Wave Switch"
 		fingerprint mfr:"001D", prod:"1A02", model:"0334", deviceJoinName: "Leviton Appliance Module"
-		fingerprint mfr:"0063", prod:"4F50", model:"3031", deviceJoinName: "GE Plug-in Outdoor Switch"
+		fingerprint mfr:"001D", prod:"3601", model:"0001", deviceJoinName: "Leviton Appliance Module"
 		fingerprint mfr:"001D", prod:"1D04", model:"0334", deviceJoinName: "Leviton Outlet"
 		fingerprint mfr:"001D", prod:"1C02", model:"0334", deviceJoinName: "Leviton Switch"
+		fingerprint mfr:"001D", prod:"3401", model:"0001", deviceJoinName: "Leviton Switch"
+		fingerprint mfr:"0063", prod:"4F50", model:"3031", deviceJoinName: "GE Plug-in Outdoor Switch"
 	}
 
 	// simulator metadata
