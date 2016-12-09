@@ -133,19 +133,16 @@ def initialize() {
     subscribe(dimmer, "switch.off", SwitchHandler)
     subscribe(dimmer, "level", switchSetLevelHandler)
 
-    /* def runTime = 1
-schedule("0 0/$runTime * * * ?", Evaluate)
-log.debug "Evaluation Scheduled to run every $runTime minutes"
-*/
+    def runTime = 1
+    schedule("0 0/$runTime * * * ?", doubleCheck)
+    log.debug "doubleCheck Scheduled to run every $runTime minutes"
+
+    state.luxvalue = 0 
 }
 
 def switchSetLevelHandler(evt) {
-
-
     log.debug "dimmer set to $evt.integerValue   ----------------------------"
     log.debug "state.StopTheApp value is currently $state.StopTheApp" 
-
-
 }
 
 def SwitchHandler(evt){ 
@@ -156,6 +153,7 @@ def SwitchHandler(evt){
 
     if(evt.value == "on"){
         state.StopTheApp = 0
+        state.dimmerSW = 1
         log.debug "Now state.StopTheApp value set to $state.StopTheApp" 
         Evaluate()
 
@@ -164,10 +162,11 @@ def SwitchHandler(evt){
 
         if(state.dim != 0) { 
             state.StopTheApp = 1
+            state.dimmerSW = 0
             log.debug "Now state.StopTheApp value set to $state.StopTheApp" 
             log.debug "SWITCH TURNED OFF BY USER"
-            log.debug "Double check in 30 seconds"
-            runIn(30, doubleCheck) // sometimes state.dim value didn't refresh on time so double check that this was not a manual shut off
+            log.debug "Double check in 5 seconds"
+            runIn(5, doubleCheck) // sometimes state.dim value didn't refresh on time so double check that this was not a manual shut off
 
         }
         else if(state.dim == 0){ 
@@ -176,17 +175,6 @@ def SwitchHandler(evt){
         }
     }
 }
-
-def doubleCheck() { 
-
-    if(state.dim == 0) {
-        state.StopTheApp = 0
-        log.debug "state.StopTheApp RESET because state.dim = $state.dim (verif: should be 0)" 
-        SwitchHandler()
-    }
-}
-
-
 
 def illuminanceHandler(evt){
     log.debug "illuminance is $evt.integerValue"
@@ -198,7 +186,25 @@ def illuminanceHandler(evt){
 
 }
 
+def doubleCheck() { 
+
+    if(state.dim == 0) {
+        state.StopTheApp = 0
+        log.debug "state.StopTheApp RESET because state.dim = $state.dim (verif: should be 0)" 
+
+        Evaluate()
+    } 
+    else if( state.dimmerSW != 1) { 
+        log.debug "Manual Intervention CONFIRMED"
+    }
+    log.debug "DOUBLE CHECK OK"
+    log.debug "state.luxvalue is $state.luxvalue"
+   
+}
+
 def Evaluate() { 
+    log.debug "state.luxvalue is $state.luxvalue"
+
     if(OnlyIfNotOff){
         if(state.StopTheApp == 0) {
             DIM()
@@ -215,19 +221,21 @@ def Evaluate() {
         log.debug "DIM because no OnlyIfNotOff"
     }
 }
+
 private DIM(){
+    log.debug "state.luxvalue is $state.luxvalue"
+    def maxlux = 1000 as int
+        def ProportionLux = 0 as int
+            def CurrMode = location.currentMode
 
-    def maxlux = 1000
-    def ProportionLux = 0
-    def CurrMode = location.currentMode
+            log.debug "CurrMode is $CurrMode"
+        log.debug "ExceptionMode is $ExceptionMode"
 
-    log.debug "CurrMode is $CurrMode"
-    log.debug "ExceptionMode is $ExceptionMode"
 
     if(state.luxvalue < maxluxOFF){
 
         if(state.luxvalue != 0){
-            ProportionLux = (maxlux / state.luxvalue) 
+            ProportionLux = maxlux / state.luxvalue
             log.debug "calculating proportionLux multiplier"
         }
         else{
