@@ -240,7 +240,7 @@ def parse(description) {
     if(description == "updated") return
     def descMap = parseDescriptionAsMap(description)
     
-    if (!state.configSuccess || state.configSuccess == "false") cmds << configureInstant(device.hub.getDataValue("localIP"), device.hub.getDataValue("localSrvPortTCP"))
+    if (!state.configSuccess || state.configSuccess == "false") cmds << configureInstant(device.hub.getDataValue("localIP"), device.hub.getDataValue("localSrvPortTCP"), powerOnState)
     
     if (!state.mac || state.mac != descMap["mac"]) {
 		log.debug "Mac address of device found ${descMap["mac"]}"
