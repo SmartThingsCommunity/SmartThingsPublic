@@ -386,10 +386,8 @@ def setColor(value) {
     def uri
 
     if ( !(value.hex) && ((value.saturation) || (value.hue))) {
-        def hue = (value.hue != null) ? value.hue : device.currentValue("hue")
-		def saturation = (value.saturation != null) ? value.saturation : device.currentValue("saturation")
-		if(hue == null) hue = 13
-		if(saturation == null) saturation = 13
+        def hue = (value.hue != null) ? value.hue : 13
+		def saturation = (value.saturation != null) ? value.saturation : 13
 		def rgb = huesatToRGB(hue as Integer, saturation as Integer)
         value.hex = rgbToHex([r:rgb[0], g:rgb[1], b:rgb[2]])
     }

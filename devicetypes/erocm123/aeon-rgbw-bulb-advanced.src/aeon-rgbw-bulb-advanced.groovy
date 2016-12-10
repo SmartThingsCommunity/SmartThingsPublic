@@ -366,10 +366,8 @@ def setColor(value) {
 	logging("setColor: ${value}")
 	if (value.hue && value.saturation) {
         logging("setting color with hue & saturation")
-        def hue = value.hue ?: device.currentValue("hue")
-		def saturation = value.saturation ?: device.currentValue("saturation")
-		if(hue == null) hue = 13
-		if(saturation == null) saturation = 13
+        def hue = (value.hue != null) ? value.hue : 13
+		def saturation = (value.saturation != null) ? value.saturation : 13
 		def rgb = huesatToRGB(hue as Integer, saturation as Integer)
     	if ( settings.enableRandom && value.hue == getEnableRandomHue() && value.saturation == getEnableRandomSat() ) {
             Random rand = new Random()
