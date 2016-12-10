@@ -13,7 +13,7 @@
  *  SmartLife RGBW Controller
  *
  *  Author: Eric Maycock (erocm123)
- *  Date: 2016-08-26
+ *  Date: 2016-12-10
  */
 
 import groovy.json.JsonSlurper
@@ -66,7 +66,7 @@ metadata {
         [["true":"fade"],["false":"flash"]])
         input("channels", "boolean", title:"Mutually Exclusive RGB & White.\nOnly allow one or the other", required:false, displayDuringSetup:true)
         input("powerOnState", "enum", title:"Boot Up State", description: "State when power is applied", required: false, displayDuringSetup: false, options: [[0:"Off"],[1:"On"]/*,[2:"Previous State"]*/])
-
+        
 		input("color", "enum", title: "Default Color", required: false, multiple:false, value: "Previous", options: [
                     ["Previous":"Previous"],
 					["Soft White":"Soft White - Default"],
@@ -76,6 +76,7 @@ metadata {
 					"Red","Green","Blue","Yellow","Orange","Purple","Pink","Cyan","Random","Custom"])
                     
         input "custom", "text", title: "Custom Color in Hex (ie ffffff)\r\nIf \"Custom\" is chosen above", submitOnChange: false, required: false
+		
 		
         input("level", "enum", title: "Default Level", required: false, value: 100, options: [[0:"Previous"],[10:"10%"],[20:"20%"],[30:"30%"],[40:"40%"],[50:"50%"],[60:"60%"],[70:"70%"],[80:"80%"],[90:"90%"],[100:"100%"]])
 
@@ -163,8 +164,8 @@ metadata {
         
         (1..6).each { n ->
 			standardTile("switch$n", "switch$n", canChangeIcon: true, width: 2, height: 2) {
-				state "on", label: "$n", action: "off$n", icon: "st.switches.switch.on", backgroundColor: "#79b821"
 				state "off", label: "$n", action: "on$n", icon: "st.switches.switch.off", backgroundColor: "#ffffff"
+                state "on", label: "$n", action: "off$n", icon: "st.switches.switch.on", backgroundColor: "#79b821"
 			}
 		}
     }
@@ -211,7 +212,7 @@ def configureDefault(){
     } else if(settings.color == "Custom") {
         return postAction("/config?dcolor=f~${settings.custom}")
     } else if(settings.color == "Soft White" || settings.color == "Warm White") {
-        if (settings.level == "0") {
+        if (settings.level == null || settings.level == "0") {
             return postAction("/config?dcolor=w~${getDimmedColor(getHexColor(settings.color), "100")}")
         } else {
             return postAction("/config?dcolor=w~${getDimmedColor(getHexColor(settings.color), settings.level)}")
@@ -238,9 +239,8 @@ def parse(description) {
     
     if(description == "updated") return
     def descMap = parseDescriptionAsMap(description)
-    //log.debug "descMap: ${descMap}"
     
-    if (!state.configSuccess || state.configSuccess == "false") cmds << configureInstant(device.hub.getDataValue("localIP"), device.hub.getDataValue("localSrvPortTCP"), powerOnState)
+    if (!state.configSuccess || state.configSuccess == "false") cmds << configureInstant(device.hub.getDataValue("localIP"), device.hub.getDataValue("localSrvPortTCP"))
     
     if (!state.mac || state.mac != descMap["mac"]) {
 		log.debug "Mac address of device found ${descMap["mac"]}"
@@ -253,8 +253,6 @@ def parse(description) {
     
     def slurper = new JsonSlurper()
     def result = slurper.parseText(body)
-    
-    //log.debug "result: ${result}"
     
     if (result.containsKey("power")) {
         events << createEvent(name: "switch", value: result.power)
@@ -387,10 +385,15 @@ def setColor(value) {
     log.debug "setColor being called with ${value}"
     def uri
 
-    if ( !(value.hex) && (value.saturation) && (value.hue)) {
-		def rgb = huesatToRGB(value.hue as Integer, value.saturation as Integer)
+    if ( !(value.hex) && ((value.saturation) || (value.hue))) {
+        def hue = (value.hue != null) ? value.hue : device.currentValue("hue")
+		def saturation = (value.saturation != null) ? value.saturation : device.currentValue("saturation")
+		if(hue == null) hue = 13
+		if(saturation == null) saturation = 13
+		def rgb = huesatToRGB(hue as Integer, saturation as Integer)
         value.hex = rgbToHex([r:rgb[0], g:rgb[1], b:rgb[2]])
-    } 
+    }
+    
     if (value.hue == 23 && value.saturation == 56) {
        log.debug "setting color Soft White"
        def whiteLevel = getWhite(value.level)
@@ -424,32 +427,21 @@ def setColor(value) {
 	else if (value.hex) {
        log.debug "setting color with hex"
        def rgb = value.hex.findAll(/[0-9a-fA-F]{2}/).collect { Integer.parseInt(it, 16) }
-       //def myred = rgb[0] >=128 ? 255 : 0
-       //def mygreen = rgb[1] >=128 ? 255 : 0
-       //def myblue = rgb[2] >=128 ? 255 : 0
        def myred = rgb[0] < 40 ? 0 : rgb[0]
        def mygreen = rgb[1] < 40 ? 0 : rgb[1]
        def myblue = rgb[2] < 40 ? 0 : rgb[2]
-       //def rgb = hexToRgb(getScaledColor(value.hex.substring(1)))
-       //def myred = rgb.r
-       //def mygreen = rgb.g
-       //def myblue = rgb.b
        def dimmedColor = getDimmedColor(rgbToHex([r:myred, g:mygreen, b:myblue]))
        uri = "/rgb?value=${dimmedColor.substring(1)}"
-       state.previousColor = "${dimmedColor.substring(1)}"
     }
     else if (value.white) {
        uri = "/w1?value=${value.white}"
-       state.previousColor = "${value.white}"
     }
     else if (value.aLevel) {
-       uri = "/rgb?value=${getDimmedColor(state.previousColor).substring(1)}"
-       state.previousColor = "${getDimmedColor(state.previousColor).substring(1)}"
+       uri = "/rgb?value=${getDimmedColor(device.currentValue("color")).substring(1)}"
     }
     else {
        // A valid color was not chosen. Setting to white
        uri = "/w1?value=ff"
-       state.previousColor = "ff"
     }
     
     if (uri != null) postAction("$uri&channels=$channels&transition=$transition")
