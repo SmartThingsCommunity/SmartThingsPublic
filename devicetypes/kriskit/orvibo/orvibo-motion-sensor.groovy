@@ -17,6 +17,7 @@ metadata {
 	definition (name: "Orvibo Motion Sensor", namespace: "kriskit.orvibo", author: "Chris Kitch") {
 		capability "Motion Sensor"
 		capability "Sensor"
+		capability "Battery"
 
 		fingerprint inClusters: "0000,0001,0003,0009,0500,0020", manufacturer: "\u6B27\u745E", model: "585fdfb8c2304119a2432e9845cf2623"
 	}
