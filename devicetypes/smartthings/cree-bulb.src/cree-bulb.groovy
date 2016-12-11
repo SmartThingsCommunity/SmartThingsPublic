@@ -19,10 +19,10 @@ metadata {
 
         capability "Actuator"
         capability "Configuration"
-        capability "Polling"
         capability "Refresh"
         capability "Switch"
         capability "Switch Level"
+        capability "Health Check"
 
         fingerprint profileId: "C05E", inClusters: "0000,0003,0004,0005,0006,0008,1000", outClusters: "0000,0019"
     }
@@ -85,15 +85,27 @@ def setLevel(value) {
     zigbee.setLevel(value) + ["delay 500"] + zigbee.levelRefresh()         //adding refresh because of ZLL bulb not conforming to send-me-a-report
 }
 
-def refresh() {
-    zigbee.onOffRefresh() + zigbee.levelRefresh() + zigbee.onOffConfig() + zigbee.levelConfig()
+/**
+ * PING is used by Device-Watch in attempt to reach the Device
+ * */
+def ping() {
+    return zigbee.levelRefresh()
 }
 
-def poll() {
+def refresh() {
     zigbee.onOffRefresh() + zigbee.levelRefresh()
 }
 
+def healthPoll() {
+    log.debug "healthPoll()"
+    def cmds = zigbee.onOffRefresh() + zigbee.levelRefresh()
+    cmds.each{ sendHubCommand(new physicalgraph.device.HubAction(it))}
+}
+
 def configure() {
-    log.debug "Configuring Reporting and Bindings."
-    zigbee.onOffConfig() + zigbee.levelConfig() + zigbee.onOffRefresh() + zigbee.levelRefresh()
+    unschedule()
+    runEvery5Minutes("healthPoll")
+    // Device-Watch allows 2 check-in misses from device + ping
+    sendEvent(name: "checkInterval", value: 60 * 12, displayed: false, data: [protocol: "zigbee", hubHardwareId: device.hub.hardwareID])
+    zigbee.onOffRefresh() + zigbee.levelRefresh()
 }

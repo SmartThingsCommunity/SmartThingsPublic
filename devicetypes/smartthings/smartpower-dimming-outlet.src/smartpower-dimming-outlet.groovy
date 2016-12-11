@@ -69,15 +69,17 @@ metadata {
 def parse(String description) {
 	log.debug "description is $description"
 
+	def event = [:]
 	def finalResult = isKnownDescription(description)
-	if (finalResult != "false") {
+	if (finalResult) {
 		log.info finalResult
 		if (finalResult.type == "update") {
 			log.info "$device updates: ${finalResult.value}"
+			event = null
 		}
 		else if (finalResult.type == "power") {
 			def powerValue = (finalResult.value as Integer)/10
-			sendEvent(name: "power", value: powerValue)
+			event = createEvent(name: "power", value: powerValue)
 
 			/*
 				Dividing by 10 as the Divisor is 10000 and unit is kW for the device. AttrId: 0302 and 0300. Simplifying to 10
@@ -87,13 +89,14 @@ def parse(String description) {
 			*/
 		}
 		else {
-			sendEvent(name: finalResult.type, value: finalResult.value)
+			event = createEvent(name: finalResult.type, value: finalResult.value)
 		}
 	}
 	else {
 		log.warn "DID NOT PARSE MESSAGE for description : $description"
 		log.debug parseDescriptionAsMap(description)
 	}
+	return event
 }
 
 // Commands to device
@@ -133,7 +136,7 @@ def refresh() {
 }
 
 def configure() {
-	onOffConfig() + levelConfig() + powerConfig() + refresh()
+	refresh() + onOffConfig() + levelConfig() + powerConfig()
 }
 
 
@@ -209,13 +212,16 @@ def isKnownDescription(description) {
 		else if (descMap.cluster == "0B04" || descMap.clusterId == "0B04"){
 			isDescriptionPower(descMap)
 		}
+		else {
+			return [:]
+		}
 	}
 	else if(description?.startsWith("on/off:")) {
 		def switchValue = description?.endsWith("1") ? "on" : "off"
 		return	[type: "switch", value : switchValue]
 	}
 	else {
-		return "false"
+		return [:]
 	}
 }
 
@@ -249,7 +255,7 @@ def isDescriptionOnOff(descMap) {
 		return	[type: "switch", value : switchValue]
 	}
 	else {
-		return "false"
+		return [:]
 	}
 
 }
@@ -276,10 +282,9 @@ def isDescriptionLevel(descMap) {
 
 	if (dimmerValue != -1){
 		return	[type: "level", value : dimmerValue]
-
 	}
 	else {
-		return "false"
+		return [:]
 	}
 }
 
@@ -301,7 +306,7 @@ def isDescriptionPower(descMap) {
 		return	[type: "power", value : powerValue]
 	}
 	else {
-		return "false"
+		return [:]
 	}
 }
 

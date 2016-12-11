@@ -27,12 +27,17 @@ metadata {
         capability "Refresh"
         capability "Switch"
         capability "Switch Level"
+        capability "Health Check"
 
-        fingerprint profileId: "0104", inClusters: "0000,0003,0004,0005,0006,0008,0300,0B04,FC0F", outClusters: "0019", manufacturer: "OSRAM", model: "LIGHTIFY Flex RGBW", deviceJoinName: "OSRAM LIGHTIFY LED FLEXIBLE STRIP RGBW"
-        fingerprint profileId: "0104", inClusters: "0000,0003,0004,0005,0006,0008,0300,0B04,FC0F", outClusters: "0019", manufacturer: "OSRAM", model: "Flex RGBW", deviceJoinName: "OSRAM LIGHTIFY LED FLEXIBLE STRIP RGBW"
-        fingerprint profileId: "0104", inClusters: "0000,0003,0004,0005,0006,0008,0300,0B04,FC0F", outClusters: "0019", manufacturer: "OSRAM", model: "LIGHTIFY A19 RGBW", deviceJoinName: "OSRAM LIGHTIFY LED A19 RGBW"
-        fingerprint profileId: "0104", inClusters: "0000,0003,0004,0005,0006,0008,0300,0B04,FC0F", outClusters: "0019", manufacturer: "OSRAM", model: "LIGHTIFY BR RGBW", deviceJoinName: "OSRAM LIGHTIFY LED BR30 RGBW"
-        fingerprint profileId: "0104", inClusters: "0000,0003,0004,0005,0006,0008,0300,0B04,FC0F", outClusters: "0019", manufacturer: "OSRAM", model: "LIGHTIFY RT RGBW", deviceJoinName: "OSRAM LIGHTIFY LED RT 5/6 RGBW"
+        attribute "colorName", "string"
+        command "setGenericName"
+
+        fingerprint profileId: "0104", inClusters: "0000,0003,0004,0005,0006,0008,0300,0B04,FC0F", outClusters: "0019", manufacturer: "OSRAM", model: "LIGHTIFY Flex RGBW", deviceJoinName: "SYLVANIA Smart Flex RGBW"
+        fingerprint profileId: "0104", inClusters: "0000,0003,0004,0005,0006,0008,0300,0B04,FC0F", outClusters: "0019", manufacturer: "OSRAM", model: "Flex RGBW", deviceJoinName: "OSRAM LIGHTIFY Flex RGBW"
+        fingerprint profileId: "0104", inClusters: "0000,0003,0004,0005,0006,0008,0300,0B04,FC0F", outClusters: "0019", manufacturer: "OSRAM", model: "LIGHTIFY A19 RGBW", deviceJoinName: "SYLVANIA Smart A19 RGBW"
+        fingerprint profileId: "0104", inClusters: "0000,0003,0004,0005,0006,0008,0300,0B04,FC0F", outClusters: "0019", manufacturer: "OSRAM", model: "LIGHTIFY BR RGBW", deviceJoinName: "SYLVANIA Smart BR30 RGBW"
+        fingerprint profileId: "0104", inClusters: "0000,0003,0004,0005,0006,0008,0300,0B04,FC0F", outClusters: "0019", manufacturer: "OSRAM", model: "LIGHTIFY RT RGBW", deviceJoinName: "SYLVANIA Smart RT5/6 RGBW"
+        fingerprint profileId: "0104", inClusters: "0000,0003,0004,0005,0006,0008,0300,0B04,FC0F", outClusters: "0019", manufacturer: "OSRAM", model: "LIGHTIFY FLEX OUTDOOR RGBW", deviceJoinName: "SYLVANIA Smart Outdoor RGBW Flex"
     }
 
     // UI tile definitions
@@ -54,15 +59,15 @@ metadata {
         controlTile("colorTempSliderControl", "device.colorTemperature", "slider", width: 4, height: 2, inactiveLabel: false, range:"(2700..6500)") {
             state "colorTemperature", action:"color temperature.setColorTemperature"
         }
-        valueTile("colorTemp", "device.colorTemperature", inactiveLabel: false, decoration: "flat", width: 2, height: 2) {
-            state "colorTemperature", label: '${currentValue} K'
+        valueTile("colorName", "device.colorName", inactiveLabel: false, decoration: "flat", width: 2, height: 2) {
+            state "colorName", label: '${currentValue}'
         }
         standardTile("refresh", "device.refresh", inactiveLabel: false, decoration: "flat", width: 2, height: 2) {
             state "default", label:"", action:"refresh.refresh", icon:"st.secondary.refresh"
         }
 
         main(["switch"])
-        details(["switch", "colorTempSliderControl", "colorTemp", "refresh"])
+        details(["switch", "colorTempSliderControl", "colorName", "refresh"])
     }
 }
 
@@ -78,27 +83,43 @@ private getATTRIBUTE_COLOR_TEMPERATURE() { 0x0007 }
 def parse(String description) {
     log.debug "description is $description"
 
-    def finalResult = zigbee.getEvent(description)
-    if (finalResult) {
-        log.debug finalResult
-        sendEvent(finalResult)
+    def event = zigbee.getEvent(description)
+    if (event) {
+        log.debug event
+        if (event.name=="level" && event.value==0) {}
+        else {
+            if (event.name=="colorTemperature") {
+                setGenericName(event.value)
+            }
+            sendEvent(event)
+        }
     }
     else {
         def zigbeeMap = zigbee.parseDescriptionAsMap(description)
-        log.trace "zigbeeMap : $zigbeeMap"
+        def cluster = zigbee.parse(description)
 
         if (zigbeeMap?.clusterInt == COLOR_CONTROL_CLUSTER) {
             if(zigbeeMap.attrInt == ATTRIBUTE_HUE){  //Hue Attribute
-                def hueValue = Math.round(zigbee.convertHexToInt(zigbeeMap.value) / 255 * 360)
-                sendEvent(name: "hue", value: hueValue, displayed:false)
+                def hueValue = Math.round(zigbee.convertHexToInt(zigbeeMap.value) / 255 * 100)
+                sendEvent(name: "hue", value: hueValue, descriptionText: "Color has changed")
             }
             else if(zigbeeMap.attrInt == ATTRIBUTE_SATURATION){ //Saturation Attribute
                 def saturationValue = Math.round(zigbee.convertHexToInt(zigbeeMap.value) / 255 * 100)
-                sendEvent(name: "saturation", value: saturationValue, displayed:false)
+                sendEvent(name: "saturation", value: saturationValue, descriptionText: "Color has changed", displayed: false)
+            }
+        }
+        else if (cluster && cluster.clusterId == 0x0006 && cluster.command == 0x07) {
+            if (cluster.data[0] == 0x00){
+                log.debug "ON/OFF REPORTING CONFIG RESPONSE: " + cluster
+                sendEvent(name: "checkInterval", value: 60 * 12, displayed: false, data: [protocol: "zigbee", hubHardwareId: device.hub.hardwareID])
+            }
+            else {
+                log.warn "ON/OFF REPORTING CONFIG FAILED- error code:${cluster.data[0]}"
             }
         }
         else {
             log.info "DID NOT PARSE MESSAGE for description : $description"
+            log.debug zigbeeMap
         }
     }
 }
@@ -110,18 +131,47 @@ def on() {
 def off() {
     zigbee.off()
 }
+/**
+ * PING is used by Device-Watch in attempt to reach the Device
+ * */
+def ping() {
+    return zigbee.onOffRefresh()
+}
 
 def refresh() {
-    zigbee.readAttribute(0x0006, 0x00) + zigbee.readAttribute(0x0008, 0x00) + zigbee.readAttribute(0x0300, 0x00) + zigbee.readAttribute(0x0300, ATTRIBUTE_COLOR_TEMPERATURE) + zigbee.readAttribute(0x0300, ATTRIBUTE_HUE) + zigbee.readAttribute(0x0300, ATTRIBUTE_SATURATION) + zigbee.onOffConfig() + zigbee.levelConfig() + zigbee.colorTemperatureConfig() + zigbee.configureReporting(COLOR_CONTROL_CLUSTER, ATTRIBUTE_HUE, 0x20, 1, 3600, 0x01) + zigbee.configureReporting(COLOR_CONTROL_CLUSTER, ATTRIBUTE_SATURATION, 0x20, 1, 3600, 0x01)
+    zigbee.onOffRefresh() + zigbee.levelRefresh() + zigbee.readAttribute(COLOR_CONTROL_CLUSTER, ATTRIBUTE_COLOR_TEMPERATURE) + zigbee.readAttribute(COLOR_CONTROL_CLUSTER, ATTRIBUTE_HUE) + zigbee.readAttribute(COLOR_CONTROL_CLUSTER, ATTRIBUTE_SATURATION) + zigbee.onOffConfig(0, 300) + zigbee.levelConfig() + zigbee.colorTemperatureConfig() + zigbee.configureReporting(COLOR_CONTROL_CLUSTER, ATTRIBUTE_HUE, 0x20, 1, 3600, 0x01) + zigbee.configureReporting(COLOR_CONTROL_CLUSTER, ATTRIBUTE_SATURATION, 0x20, 1, 3600, 0x01)
 }
 
 def configure() {
     log.debug "Configuring Reporting and Bindings."
-    zigbee.onOffConfig() + zigbee.levelConfig() + zigbee.colorTemperatureConfig() + zigbee.configureReporting(COLOR_CONTROL_CLUSTER, ATTRIBUTE_HUE, 0x20, 1, 3600, 0x01) + zigbee.configureReporting(COLOR_CONTROL_CLUSTER, ATTRIBUTE_SATURATION, 0x20, 1, 3600, 0x01) + zigbee.readAttribute(0x0006, 0x00) + zigbee.readAttribute(0x0008, 0x00) + zigbee.readAttribute(COLOR_CONTROL_CLUSTER, 0x00) + zigbee.readAttribute(COLOR_CONTROL_CLUSTER, ATTRIBUTE_COLOR_TEMPERATURE) + zigbee.readAttribute(COLOR_CONTROL_CLUSTER, ATTRIBUTE_HUE) + zigbee.readAttribute(COLOR_CONTROL_CLUSTER, ATTRIBUTE_SATURATION)
+    // Device-Watch allows 2 check-in misses from device + ping (plus 1 min lag time)
+    // enrolls with default periodic reporting until newer 5 min interval is confirmed
+    sendEvent(name: "checkInterval", value: 2 * 10 * 60 + 1 * 60, displayed: false, data: [protocol: "zigbee", hubHardwareId: device.hub.hardwareID])
+
+    // OnOff minReportTime 0 seconds, maxReportTime 5 min. Reporting interval if no activity
+    refresh()
 }
 
 def setColorTemperature(value) {
+    setGenericName(value)
     zigbee.setColorTemperature(value)
+}
+
+//Naming based on the wiki article here: http://en.wikipedia.org/wiki/Color_temperature
+def setGenericName(value){
+    if (value != null) {
+        def genericName = "White"
+        if (value < 3300) {
+            genericName = "Soft White"
+        } else if (value < 4150) {
+            genericName = "Moonlight"
+        } else if (value <= 5000) {
+            genericName = "Cool White"
+        } else if (value >= 5000) {
+            genericName = "Daylight"
+        }
+        sendEvent(name: "colorName", value: genericName)
+    }
 }
 
 def setLevel(value) {
@@ -140,5 +190,5 @@ def setHue(value) {
 
 def setSaturation(value) {
     def scaledSatValue = zigbee.convertToHexString(Math.round(value * 0xfe / 100.0), 2)
-    zigbee.command(COLOR_CONTROL_CLUSTER, SATURATION_COMMAND, scaledSatValue, "0500")      //payload-> sat value, transition time
+    zigbee.command(COLOR_CONTROL_CLUSTER, SATURATION_COMMAND, scaledSatValue, "0500") + "delay 1000" + zigbee.readAttribute(COLOR_CONTROL_CLUSTER, ATTRIBUTE_SATURATION)
 }

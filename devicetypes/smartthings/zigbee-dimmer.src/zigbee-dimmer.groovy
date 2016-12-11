@@ -19,12 +19,15 @@ metadata {
         capability "Refresh"
         capability "Switch"
         capability "Switch Level"
+        capability "Health Check"
 
 
         fingerprint profileId: "0104", inClusters: "0000, 0003, 0004, 0005, 0006, 0008"
-        fingerprint profileId: "0104", inClusters: "0000, 0003, 0004, 0005, 0006, 0008, 0B04, FC0F", outClusters: "0019", manufacturer: "OSRAM", model: "LIGHTIFY A19 ON/OFF/DIM", deviceJoinName: "OSRAM LIGHTIFY LED Smart Connected Light"
+        fingerprint profileId: "0104", inClusters: "0000, 0003, 0004, 0005, 0006, 0008, 0B04, FC0F", outClusters: "0019", manufacturer: "OSRAM", model: "LIGHTIFY A19 ON/OFF/DIM", deviceJoinName: "SYLVANIA Smart A19 Soft White"
         fingerprint profileId: "0104", inClusters: "0000, 0003, 0004, 0005, 0006, 0008, FF00", outClusters: "0019", manufacturer: "MRVL", model: "MZ100", deviceJoinName: "Wemo Bulb"
         fingerprint profileId: "0104", inClusters: "0000, 0003, 0004, 0005, 0006, 0008, 0B05", outClusters: "0019", manufacturer: "OSRAM SYLVANIA", model: "iQBR30", deviceJoinName: "Sylvania Ultra iQ"
+        fingerprint profileId: "0104", inClusters: "0000, 0003, 0004, 0005, 0006, 0008, FC0F", outClusters: "0019", manufacturer: "OSRAM", model: "LIGHTIFY PAR38 ON/OFF/DIM", deviceJoinName: "SYLVANIA Smart PAR38 Soft White"
+        fingerprint profileId: "0104", inClusters: "0000, 0003, 0004, 0005, 0006, 0008, 0B04, FC0F", outClusters: "0019", manufacturer: "OSRAM", model: "LIGHTIFY BR ON/OFF/DIM", deviceJoinName: "SYLVANIA Smart BR30 Soft White"
     }
 
     tiles(scale: 2) {
@@ -53,11 +56,27 @@ def parse(String description) {
 
     def event = zigbee.getEvent(description)
     if (event) {
-        sendEvent(event)
+        if (event.name=="level" && event.value==0) {}
+        else {
+            sendEvent(event)
+        }
     }
     else {
-        log.warn "DID NOT PARSE MESSAGE for description : $description"
-        log.debug zigbee.parseDescriptionAsMap(description)
+        def cluster = zigbee.parse(description)
+
+        if (cluster && cluster.clusterId == 0x0006 && cluster.command == 0x07) {
+            if (cluster.data[0] == 0x00) {
+                log.debug "ON/OFF REPORTING CONFIG RESPONSE: " + cluster
+                sendEvent(name: "checkInterval", value: 60 * 12, displayed: false, data: [protocol: "zigbee", hubHardwareId: device.hub.hardwareID])
+            }
+            else {
+                log.warn "ON/OFF REPORTING CONFIG FAILED- error code:${cluster.data[0]}"
+            }
+        }
+        else {
+            log.warn "DID NOT PARSE MESSAGE for description : $description"
+            log.debug "${cluster}"
+        }
     }
 }
 
@@ -72,12 +91,23 @@ def on() {
 def setLevel(value) {
     zigbee.setLevel(value)
 }
+/**
+ * PING is used by Device-Watch in attempt to reach the Device
+ * */
+def ping() {
+    return zigbee.onOffRefresh()
+}
 
 def refresh() {
-    zigbee.onOffRefresh() + zigbee.levelRefresh() + zigbee.onOffConfig() + zigbee.levelConfig()
+    zigbee.onOffRefresh() + zigbee.levelRefresh() + zigbee.onOffConfig(0, 300) + zigbee.levelConfig()
 }
 
 def configure() {
     log.debug "Configuring Reporting and Bindings."
-    zigbee.onOffConfig() + zigbee.levelConfig() + zigbee.onOffRefresh() + zigbee.levelRefresh()
+    // Device-Watch allows 2 check-in misses from device + ping (plus 1 min lag time)
+    // enrolls with default periodic reporting until newer 5 min interval is confirmed
+    sendEvent(name: "checkInterval", value: 2 * 10 * 60 + 1 * 60, displayed: false, data: [protocol: "zigbee", hubHardwareId: device.hub.hardwareID])
+
+    // OnOff minReportTime 0 seconds, maxReportTime 5 min. Reporting interval if no activity
+    zigbee.onOffRefresh() + zigbee.levelRefresh() + zigbee.onOffConfig(0, 300) + zigbee.levelConfig()
 }

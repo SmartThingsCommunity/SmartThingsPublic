@@ -11,6 +11,9 @@
  *  for the specific language governing permissions and limitations under the License.
  *
  */
+import groovy.transform.Field
+
+@Field Boolean hasConfiguredHealthCheck = false
 
 metadata {
     definition (name: "ZLL Dimmer Bulb", namespace: "smartthings", author: "SmartThings") {
@@ -21,6 +24,7 @@ metadata {
         capability "Refresh"
         capability "Switch"
         capability "Switch Level"
+        capability "Health Check"
 
         //fingerprint profileId: "C05E", inClusters: "0000, 0003, 0004, 0005, 0006, 0008, 1000", outClusters: "0000,0019"
         fingerprint profileId: "C05E", inClusters: "0000, 0003, 0004, 0005, 0006, 0008, 1000", outClusters: "0019"
@@ -96,7 +100,38 @@ def poll() {
     refresh()
 }
 
+/**
+ * PING is used by Device-Watch in attempt to reach the Device
+ * */
+def ping() {
+    return zigbee.levelRefresh()
+}
+
+def healthPoll() {
+    log.debug "healthPoll()"
+    def cmds = refresh()
+    cmds.each{ sendHubCommand(new physicalgraph.device.HubAction(it))}
+}
+
+def configureHealthCheck() {
+    Integer hcIntervalMinutes = 12
+    if (!hasConfiguredHealthCheck) {
+        log.debug "Configuring Health Check, Reporting"
+        unschedule("healthPoll")
+        runEvery5Minutes("healthPoll")
+        // Device-Watch allows 2 check-in misses from device
+        sendEvent(name: "checkInterval", value: hcIntervalMinutes * 60, displayed: false, data: [protocol: "zigbee", hubHardwareId: device.hub.hardwareID])
+        hasConfiguredHealthCheck = true
+    }
+}
+
 def configure() {
-    log.debug "Configuring Reporting and Bindings."
+    log.debug "configure()"
+    configureHealthCheck()
     zigbee.onOffConfig() + zigbee.levelConfig() + zigbee.onOffRefresh() + zigbee.levelRefresh()
+}
+
+def updated() {
+    log.debug "updated()"
+    configureHealthCheck()
 }

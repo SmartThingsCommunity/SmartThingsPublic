@@ -81,7 +81,7 @@ def zwaveEvent(physicalgraph.zwave.commands.configurationv1.ConfigurationReport 
 	def value = "when off"
 	if (cmd.configurationValue[0] == 1) {value = "when on"}
 	if (cmd.configurationValue[0] == 2) {value = "never"}
-	[name: "indicatorStatus", value: value, display: false]
+	[name: "indicatorStatus", value: value, displayed: false]
 }
 
 def zwaveEvent(physicalgraph.zwave.commands.hailv1.Hail cmd) {
