@@ -19,6 +19,7 @@ metadata {
 		capability "Polling"
 		capability "Refresh"
 		capability "Sensor"
+		capability "Health Check"
 
 		fingerprint mfr:"0063", prod:"4952", deviceJoinName: "Z-Wave Wall Switch"
 		fingerprint mfr:"0063", prod:"5257", deviceJoinName: "Z-Wave Wall Switch"
@@ -64,6 +65,8 @@ metadata {
 }
 
 def updated(){
+		// Device-Watch simply pings if no device events received for 32min(checkInterval)
+		sendEvent(name: "checkInterval", value: 2 * 15 * 60 + 2 * 60, displayed: false, data: [protocol: "zwave", hubHardwareId: device.hub.hardwareID])
   switch (ledIndicator) {
         case "on":
             indicatorWhenOn()
@@ -111,7 +114,7 @@ def zwaveEvent(physicalgraph.zwave.commands.configurationv1.ConfigurationReport 
 	def value = "when off"
 	if (cmd.configurationValue[0] == 1) {value = "when on"}
 	if (cmd.configurationValue[0] == 2) {value = "never"}
-	[name: "indicatorStatus", value: value, display: false]
+	[name: "indicatorStatus", value: value, displayed: false]
 }
 
 def zwaveEvent(physicalgraph.zwave.commands.hailv1.Hail cmd) {
@@ -156,6 +159,13 @@ def poll() {
 	])
 }
 
+/**
+  * PING is used by Device-Watch in attempt to reach the Device
+**/
+def ping() {
+		refresh()
+}
+
 def refresh() {
 	delayBetween([
 		zwave.switchBinaryV1.switchBinaryGet().format(),
@@ -164,17 +174,17 @@ def refresh() {
 }
 
 void indicatorWhenOn() {
-	sendEvent(name: "indicatorStatus", value: "when on", display: false)
+	sendEvent(name: "indicatorStatus", value: "when on", displayed: false)
 	sendHubCommand(new physicalgraph.device.HubAction(zwave.configurationV1.configurationSet(configurationValue: [1], parameterNumber: 3, size: 1).format()))
 }
 
 void indicatorWhenOff() {
-	sendEvent(name: "indicatorStatus", value: "when off", display: false)
+	sendEvent(name: "indicatorStatus", value: "when off", displayed: false)
 	sendHubCommand(new physicalgraph.device.HubAction(zwave.configurationV1.configurationSet(configurationValue: [0], parameterNumber: 3, size: 1).format()))
 }
 
 void indicatorNever() {
-	sendEvent(name: "indicatorStatus", value: "never", display: false)
+	sendEvent(name: "indicatorStatus", value: "never", displayed: false)
 	sendHubCommand(new physicalgraph.device.HubAction(zwave.configurationV1.configurationSet(configurationValue: [2], parameterNumber: 3, size: 1).format()))
 }
 

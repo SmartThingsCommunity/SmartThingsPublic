@@ -1,10 +1,11 @@
-# OSRAM Lightify Tunable 60 White
+# ZigBee White Color Temperature Bulb
 
-
+Cloud Execution
 
 Works with: 
 
 * [OSRAM Lightify Tunable 60 White](http://www.osram.com/osram_com/tools-and-services/tools/lightify---smart-connected-light/lightify-for-home---what-is-light-to-you/lightify-products/lightify-classic-a60-tunable-white/index.jsp)
+* [OSRAM LIGHTIFY RT5/6 Tunable White](https://www.smartthings.com/works-with-smartthings/light-bulbs/osram-lightify-rt56-tunable-white)
 
 ## Table of contents
 
@@ -24,14 +25,15 @@ Works with:
 
 ## Device Health
 
-A Category C1 OSRAM Lightify Tunable 60 White with maxReportTime of 5 mins.
-Check-in interval is double the value of maxReportTime. 
-This gives the device twice the amount of time to respond before it is marked as offline.
-Check-in interval = 12 mins
+Zigbee Bulb with reporting interval of 5 mins.
+SmartThings platform will ping the device after `checkInterval` seconds of inactivity in last attempt to reach the device before marking it `OFFLINE` 
+
+*__12min__ checkInterval
 
 ## Troubleshooting
 
 If the device doesn't pair when trying from the SmartThings mobile app, it is possible that the device is out of range.
 Pairing needs to be tried again by placing the device closer to the hub.
 Other troubleshooting tips are listed as follows:
-* [Troubleshooting:](https://support.smartthings.com/hc/en-us/articles/204576454-OSRAM-LIGHTIFY-Tunable-White-60-Bulb)
+* [OSRAM Lightify Tunable 60 White Troubleshooting](https://support.smartthings.com/hc/en-us/articles/204576454-OSRAM-LIGHTIFY-Tunable-White-60-Bulb)
+* [OSRAM LIGHTIFY RT5/6 Tunable White Troubleshooting](https://support.smartthings.com/hc/en-us/articles/214191863-How-to-connect-OSRAM-LIGHTIFY-Bulbs)

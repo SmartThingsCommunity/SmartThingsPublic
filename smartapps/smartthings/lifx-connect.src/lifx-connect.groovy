@@ -242,8 +242,6 @@ def installed() {
 	} else {
 		initialize()
 	}
-	// Check for new devices and remove old ones every 3 hours
-	runEvery3Hours('updateDevices')
 }
 
 // called after settings are changed
@@ -271,9 +269,19 @@ private removeChildDevices(devices) {
 def initialize() {
 	log.debug "initialize"
 	updateDevices()
+	// Check for new devices and remove old ones every 3 hours
+	runEvery5Minutes('updateDevices')
+	setupDeviceWatch()
 }
 
 // Misc
+private setupDeviceWatch() {
+	def hub = location.hubs[0]
+	// Make sure that all child devices are enrolled in device watch
+	getChildDevices().each {
+		it.sendEvent(name: "DeviceWatch-Enroll", value: "{\"protocol\": \"LAN\", \"scheme\":\"untracked\", \"hubHardwareId\": \"${hub?.hub?.hardwareID}\"}")
+	}
+}
 
 Map apiRequestHeaders() {
 	return ["Authorization": "Bearer ${state.lifxAccessToken}",
@@ -373,32 +381,46 @@ def updateDevices() {
 		selectors.add("${device.id}")
 		if (!childDevice) {
 			// log.info("Adding device ${device.id}: ${device.product}")
-			def data = [
-					label: device.label,
-					level: Math.round((device.brightness ?: 1) * 100),
-					switch: device.connected ? device.power : "unreachable",
-					colorTemperature: device.color.kelvin
-			]
 			if (device.product.capabilities.has_color) {
-				data["color"] = colorUtil.hslToHex((device.color.hue / 3.6) as int, (device.color.saturation * 100) as int)
-				data["hue"] = device.color.hue / 3.6
-				data["saturation"] = device.color.saturation * 100
-				childDevice = addChildDevice(app.namespace, "LIFX Color Bulb", device.id, null, data)
+				childDevice = addChildDevice(app.namespace, "LIFX Color Bulb", device.id, null, ["label": device.label, "completedSetup": true])
 			} else {
-				childDevice = addChildDevice(app.namespace, "LIFX White Bulb", device.id, null, data)
+				childDevice = addChildDevice(app.namespace, "LIFX White Bulb", device.id, null, ["label": device.label, "completedSetup": true])
 			}
 		}
+
+		if (device.product.capabilities.has_color) {
+			childDevice.sendEvent(name: "color", value: colorUtil.hslToHex((device.color.hue / 3.6) as int, (device.color.saturation * 100) as int))
+			childDevice.sendEvent(name: "hue", value: device.color.hue / 3.6)
+			childDevice.sendEvent(name: "saturation", value: device.color.saturation * 100)
+		}
+		childDevice.sendEvent(name: "label", value: device.label)
+		childDevice.sendEvent(name: "level", value: Math.round((device.brightness ?: 1) * 100))
+		childDevice.sendEvent(name: "switch.setLevel", value: Math.round((device.brightness ?: 1) * 100))
+		childDevice.sendEvent(name: "switch", value: device.power)
+		childDevice.sendEvent(name: "colorTemperature", value: device.color.kelvin)
+		childDevice.sendEvent(name: "model", value: device.product.name)
+
+		if (state.devices[device.id] == null) {
+			// State missing, add it and set it to opposite status as current status to provoke event below
+			state.devices[device.id] = [online: !device.connected]
+		}
+
+		if (!state.devices[device.id]?.online && device.connected) {
+			// Device came online after being offline
+			childDevice?.sendEvent(name: "DeviceWatch-DeviceStatus", value: "online", displayed: false)
+			log.debug "$device is back Online"
+		} else if (state.devices[device.id]?.online && !device.connected) {
+			// Device went offline after being online
+			childDevice?.sendEvent(name: "DeviceWatch-DeviceStatus", value: "offline", displayed: false)
+			log.debug "$device went Offline"
+		}
+		state.devices[device.id] = [online: device.connected]
 	}
 	getChildDevices().findAll { !selectors.contains("${it.deviceNetworkId}") }.each {
 		log.info("Deleting ${it.deviceNetworkId}")
+		state.devices[it.deviceNetworkId] = null
 		deleteChildDevice(it.deviceNetworkId)
 	}
-	runIn(1, 'refreshDevices') // Asynchronously refresh devices so we don't block
 }
 
-def refreshDevices() {
-	log.info("Refreshing all devices...")
-	getChildDevices().each { device ->
-		device.refresh()
-	}
-}
+

@@ -15,12 +15,15 @@ metadata {
 	definition (name: "Z-Wave Dimmer Switch Generic", namespace: "smartthings", author: "SmartThings") {
 		capability "Switch Level"
 		capability "Actuator"
+		capability "Health Check"
 		capability "Switch"
 		capability "Polling"
 		capability "Refresh"
 		capability "Sensor"
 
 		fingerprint inClusters: "0x26", deviceJoinName: "Z-Wave Dimmer"
+		fingerprint mfr:"001D", prod:"1902", deviceJoinName: "Z-Wave Dimmer"
+		fingerprint mfr:"001D", prod:"1B03", model:"0334", deviceJoinName: "Leviton Universal Dimmer"
 	}
 
 	simulator {
@@ -66,6 +69,11 @@ metadata {
 		details(["switch", "level", "refresh"])
 
 	}
+}
+
+def updated(){
+// Device-Watch simply pings if no device events received for 32min(checkInterval)
+	sendEvent(name: "checkInterval", value: 2 * 15 * 60 + 2 * 60, displayed: false, data: [protocol: "zwave", hubHardwareId: device.hub.hardwareID])
 }
 
 def parse(String description) {
@@ -183,6 +191,13 @@ def setLevel(value, duration) {
 
 def poll() {
 	zwave.switchMultilevelV1.switchMultilevelGet().format()
+}
+
+/**
+ * PING is used by Device-Watch in attempt to reach the Device
+ * */
+def ping() {
+	refresh()
 }
 
 def refresh() {

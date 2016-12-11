@@ -127,7 +127,7 @@ def parse(String description) {
 		map = parseIasMessage(description)
 	}
 
-	def result = map ? createEvent(map) : null
+	def result = map ? createEvent(map) : [:]
 
 	if (description?.startsWith('enroll request')) {
 		List cmds = enrollResponse()
@@ -147,20 +147,33 @@ private Map parseCatchAllMessage(String description) {
 	if (shouldProcessMessage(cluster)) {
 		switch(cluster.clusterId) {
 			case 0x0001:
-			resultMap = getBatteryResult(cluster.data.last())
+				// 0x07 - configure reporting
+				if (cluster.command != 0x07) {
+					resultMap = getBatteryResult(cluster.data.last())
+				}
 			break
 
 			case 0xFC02:
-			log.debug 'ACCELERATION'
+				log.debug 'ACCELERATION'
 			break
 
 			case 0x0402:
-			log.debug 'TEMP'
-				// temp is last 2 data values. reverse to swap endian
-				String temp = cluster.data[-2..-1].reverse().collect { cluster.hex1(it) }.join()
-				def value = getTemperature(temp)
-				resultMap = getTemperatureResult(value)
-				break
+				if (cluster.command == 0x07) {
+					if(cluster.data[0] == 0x00) {
+						log.debug "TEMP REPORTING CONFIG RESPONSE" + cluster
+						resultMap = [name: "checkInterval", value: 60 * 12, displayed: false, data: [protocol: "zigbee", hubHardwareId: device.hub.hardwareID]]
+					}
+					else {
+						log.warn "TEMP REPORTING CONFIG FAILED- error code:${cluster.data[0]}"
+					}
+				}
+				else {
+					// temp is last 2 data values. reverse to swap endian
+					String temp = cluster.data[-2..-1].reverse().collect { cluster.hex1(it) }.join()
+					def value = getTemperature(temp)
+					resultMap = getTemperatureResult(value)
+				}
+			break
 		}
 	}
 
@@ -169,10 +182,8 @@ private Map parseCatchAllMessage(String description) {
 
 private boolean shouldProcessMessage(cluster) {
 	// 0x0B is default response indicating message got through
-	// 0x07 is bind message
 	boolean ignoredMessage = cluster.profileId != 0x0104 ||
 	cluster.command == 0x0B ||
-	cluster.command == 0x07 ||
 	(cluster.data.size() > 0 && cluster.data.first() == 0x3e)
 	return !ignoredMessage
 }
@@ -270,47 +281,35 @@ def getTemperature(value) {
 private Map getBatteryResult(rawValue) {
 	log.debug "Battery rawValue = ${rawValue}"
 
-	def result = [
-		name: 'battery',
-		value: '--',
-		translatable: true
-	]
+	def result = [:]
 
 	def volts = rawValue / 10
 
-	if (rawValue == 0 || rawValue == 255) {}
-	else {
-		if (volts > 3.5) {
-			result.descriptionText = "{{ device.displayName }} battery has too much power: (> 3.5) volts."
-		}
-		else {
-			if (device.getDataValue("manufacturer") == "SmartThings") {
-				volts = rawValue // For the batteryMap to work the key needs to be an int
-				def batteryMap = [28:100, 27:100, 26:100, 25:90, 24:90, 23:70,
-								  22:70, 21:50, 20:50, 19:30, 18:30, 17:15, 16:1, 15:0]
-				def minVolts = 15
-				def maxVolts = 28
+	if (!(rawValue == 0 || rawValue == 255)) {
+		result.name = 'battery'
+		result.translatable = true
+		result.descriptionText = "{{ device.displayName }} battery was {{ value }}%"
+		if (device.getDataValue("manufacturer") == "SmartThings") {
+			volts = rawValue // For the batteryMap to work the key needs to be an int
+			def batteryMap = [28: 100, 27: 100, 26: 100, 25: 90, 24: 90, 23: 70,
+							  22: 70, 21: 50, 20: 50, 19: 30, 18: 30, 17: 15, 16: 1, 15: 0]
+			def minVolts = 15
+			def maxVolts = 28
 
-				if (volts < minVolts)
-					volts = minVolts
-				else if (volts > maxVolts)
-					volts = maxVolts
-				def pct = batteryMap[volts]
-				if (pct != null) {
-					result.value = pct
-					result.descriptionText = "{{ device.displayName }} battery was {{ value }}%"
-				}
-			}
-			else {
-				def minVolts = 2.1
-				def maxVolts = 3.0
-				def pct = (volts - minVolts) / (maxVolts - minVolts)
-				def roundedPct = Math.round(pct * 100)
-				if (roundedPct <= 0)
-					roundedPct = 1
-				result.value = Math.min(100, roundedPct)
-				result.descriptionText = "{{ device.displayName }} battery was {{ value }}%"
-			}
+			if (volts < minVolts)
+				volts = minVolts
+			else if (volts > maxVolts)
+				volts = maxVolts
+			def pct = batteryMap[volts]
+			result.value = pct
+		} else {
+			def minVolts = 2.1
+			def maxVolts = 3.0
+			def pct = (volts - minVolts) / (maxVolts - minVolts)
+			def roundedPct = Math.round(pct * 100)
+			if (roundedPct <= 0)
+				roundedPct = 1
+			result.value = Math.min(100, roundedPct)
 		}
 	}
 
@@ -340,7 +339,7 @@ private Map getContactResult(value) {
 	log.debug "Contact: ${device.displayName} value = ${value}"
 	def descriptionText = value == 'open' ? '{{ device.displayName }} was opened' : '{{ device.displayName }} was closed'
 	sendEvent(name: 'contact', value: value, descriptionText: descriptionText, displayed: false, translatable: true)
-	sendEvent(name: 'status', value: value, descriptionText: descriptionText, translatable: true)
+	return [name: 'status', value: value, descriptionText: descriptionText, translatable: true]
 }
 
 private getAccelerationResult(numValue) {
@@ -401,22 +400,22 @@ def refresh() {
 }
 
 def configure() {
-	// Device-Watch allows 2 check-in misses from device
-	sendEvent(name: "checkInterval", value: 60 * 12, displayed: false, data: [protocol: "zigbee", hubHardwareId: device.hub.hardwareID])
+	// Device-Watch allows 2 check-in misses from device + ping (plus 1 min lag time)
+	// enrolls with default periodic reporting until newer 5 min interval is confirmed
+	sendEvent(name: "checkInterval", value: 2 * 60 * 60 + 1 * 60, displayed: false, data: [protocol: "zigbee", hubHardwareId: device.hub.hardwareID])
 
 	log.debug "Configuring Reporting"
 
 	// temperature minReportTime 30 seconds, maxReportTime 5 min. Reporting interval if no activity
 	// battery minReport 30 seconds, maxReportTime 6 hrs by default
-	def configCmds = enrollResponse() +
-			zigbee.batteryConfig() +
+	def configCmds = zigbee.batteryConfig() +
 			zigbee.temperatureConfig(30, 300) +
 			zigbee.configureReporting(0xFC02, 0x0010, 0x18, 10, 3600, 0x01, [mfgCode: manufacturerCode]) +
 			zigbee.configureReporting(0xFC02, 0x0012, 0x29, 1, 3600, 0x0001, [mfgCode: manufacturerCode]) +
 			zigbee.configureReporting(0xFC02, 0x0013, 0x29, 1, 3600, 0x0001, [mfgCode: manufacturerCode]) +
 			zigbee.configureReporting(0xFC02, 0x0014, 0x29, 1, 3600, 0x0001, [mfgCode: manufacturerCode])
 
-	return configCmds + refresh()
+	return refresh() + configCmds
 }
 
 private getEndpointId() {

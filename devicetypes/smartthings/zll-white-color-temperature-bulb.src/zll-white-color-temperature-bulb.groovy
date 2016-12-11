@@ -11,6 +11,9 @@
  *  for the specific language governing permissions and limitations under the License.
  *
  */
+import groovy.transform.Field
+
+@Field Boolean hasConfiguredHealthCheck = false
 
 metadata {
     definition (name: "ZLL White Color Temperature Bulb", namespace: "smartthings", author: "SmartThings") {
@@ -22,12 +25,14 @@ metadata {
         capability "Refresh"
         capability "Switch"
         capability "Switch Level"
+        capability "Health Check"
 
         attribute "colorName", "string"
         command "setGenericName"
 
         fingerprint profileId: "C05E", inClusters: "0000, 0003, 0004, 0005, 0006, 0008, 0300, 1000, 0B04, FC0F", outClusters: "0019", "manufacturer":"OSRAM", "model":"Classic A60 TW", deviceJoinName: "OSRAM LIGHTIFY LED Classic A60 Tunable White"
         fingerprint profileId: "C05E", inClusters: "0000, 0003, 0004, 0005, 0006, 0008, 0300, 1000, FC0F", outClusters: "0019", "manufacturer":"OSRAM", "model":"PAR16 50 TW", deviceJoinName: "OSRAM LIGHTIFY LED PAR16 50 Tunable White"
+        fingerprint profileId: "C05E", inClusters: "0000, 0003, 0004, 0005, 0006, 0008, 0300, 1000, 0B04, FC0F", outClusters: "0019", manufacturer: "OSRAM", model: "Classic B40 TW - LIGHTIFY", deviceJoinName: "OSRAM LIGHTIFY Classic B40 Tunable White"
     }
 
     // UI tile definitions
@@ -96,9 +101,41 @@ def poll() {
     zigbee.onOffRefresh() + zigbee.levelRefresh() + zigbee.colorTemperatureRefresh()
 }
 
+/**
+ * PING is used by Device-Watch in attempt to reach the Device
+ * */
+def ping() {
+    return zigbee.levelRefresh()
+}
+
+def healthPoll() {
+    log.debug "healthPoll()"
+    def cmds = zigbee.onOffRefresh() + zigbee.levelRefresh()
+    cmds.each{ sendHubCommand(new physicalgraph.device.HubAction(it))}
+}
+
+def configureHealthCheck() {
+    Integer hcIntervalMinutes = 12
+    if (!hasConfiguredHealthCheck) {
+        log.debug "Configuring Health Check, Reporting"
+        unschedule("healthPoll")
+        runEvery5Minutes("healthPoll")
+        // Device-Watch allows 2 check-in misses from device
+        sendEvent(name: "checkInterval", value: hcIntervalMinutes * 60, displayed: false, data: [protocol: "zigbee", hubHardwareId: device.hub.hardwareID])
+        hasConfiguredHealthCheck = true
+    }
+}
+
 def configure() {
-    log.debug "Configuring Reporting and Bindings."
+    log.debug "configure()"
+    configureHealthCheck()
     zigbee.onOffConfig() + zigbee.levelConfig() + zigbee.colorTemperatureConfig() + zigbee.onOffRefresh() + zigbee.levelRefresh() + zigbee.colorTemperatureRefresh()
+
+}
+
+def updated() {
+    log.debug "updated()"
+    configureHealthCheck()
 }
 
 def setColorTemperature(value) {

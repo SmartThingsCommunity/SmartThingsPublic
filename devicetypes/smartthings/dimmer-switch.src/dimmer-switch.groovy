@@ -20,6 +20,7 @@ metadata {
 		capability "Polling"
 		capability "Refresh"
 		capability "Sensor"
+		capability "Health Check"
 
 		fingerprint mfr:"0063", prod:"4457", deviceJoinName: "Z-Wave Wall Dimmer"
 		fingerprint mfr:"0063", prod:"4944", deviceJoinName: "Z-Wave Wall Dimmer"
@@ -82,6 +83,8 @@ metadata {
 }
 
 def updated(){
+	// Device-Watch simply pings if no device events received for 32min(checkInterval)
+	sendEvent(name: "checkInterval", value: 2 * 15 * 60 + 2 * 60, displayed: false, data: [protocol: "zwave", hubHardwareId: device.hub.hardwareID])
   switch (ledIndicator) {
         case "on":
             indicatorWhenOn()
@@ -215,6 +218,13 @@ def poll() {
 	zwave.switchMultilevelV1.switchMultilevelGet().format()
 }
 
+/**
+ * PING is used by Device-Watch in attempt to reach the Device
+ * */
+def ping() {
+	refresh()
+}
+
 def refresh() {
 	log.debug "refresh() is called"
 	def commands = []
@@ -226,17 +236,17 @@ def refresh() {
 }
 
 void indicatorWhenOn() {
-	sendEvent(name: "indicatorStatus", value: "when on", display: false)
+	sendEvent(name: "indicatorStatus", value: "when on", displayed: false)
 	sendHubCommand(new physicalgraph.device.HubAction(zwave.configurationV1.configurationSet(configurationValue: [1], parameterNumber: 3, size: 1).format()))
 }
 
 void indicatorWhenOff() {
-	sendEvent(name: "indicatorStatus", value: "when off", display: false)
+	sendEvent(name: "indicatorStatus", value: "when off", displayed: false)
 	sendHubCommand(new physicalgraph.device.HubAction(zwave.configurationV1.configurationSet(configurationValue: [0], parameterNumber: 3, size: 1).format()))
 }
 
 void indicatorNever() {
-	sendEvent(name: "indicatorStatus", value: "never", display: false)
+	sendEvent(name: "indicatorStatus", value: "never", displayed: false)
 	sendHubCommand(new physicalgraph.device.HubAction(zwave.configurationV1.configurationSet(configurationValue: [2], parameterNumber: 3, size: 1).format()))
 }
 
