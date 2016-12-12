@@ -13,6 +13,8 @@
  *  for the specific language governing permissions and limitations under the License.
  *
  *  VERSION HISTORY
+ * 	12-12-2016: 1.2.2c - Bug fix. Prevent NULL error on result.error string.
+ *
  * 	01-11-2016: 1.2.2b - Bug fix. Stop disabling Neato Schedule even when SmartSchedule is off.
  *	26-10-2016: 1.2.2 - Turn off 'searching' status when Botvac is idle. More information for activity feed.
  *	
@@ -354,7 +356,7 @@ def poll() {
                 	statusMsg += ' - Left drop stuck!'
                 break
                 default:
-                	if ("ui_alert_invalid" != result.error) {
+                	if (result.error != null && "ui_alert_invalid" != result.error) {
                 		statusMsg += ' - ' + result.error.replaceAll('ui_error_', '').replaceAll('ui_alert_', '').replaceAll('_',' ').capitalize()
                     }
 				break;
