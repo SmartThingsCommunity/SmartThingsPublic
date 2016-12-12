@@ -14,6 +14,7 @@
  *
  *	VERSION HISTORY
  *
+ *  12.12.2016:	2.0b - Null issues when a device has been forced removed.
  *  23.11.2016:	2.0 - Remove extra logging.
  *
  *	10.11.2016:	2.0 BETA Release 6 - Merge Light Switch and Adapter functionality into one device type.
@@ -160,83 +161,28 @@ def getDevicesSelectedString() {
 	if (state.miETRVDevices == null || state.miLightDevices == null || state.miAdapterDevices == null || state.miAdapterPlusDevices == null || state.mi4GangExtensionDevices == null || state.miMonitorDevices == null || state.miMotionSensors == null) {
     	updateDevices()
   	}
+    
 	def listString = ""
 	selectedETRVs.each { childDevice ->
-    	if (listString == "") {
-    		if (null != state.miETRVDevices) {
-    			listString += state.miETRVDevices[childDevice]
-      		}
-    	} else {
-    		if (null != state.miETRVDevices) {
-    			listString += "\n" + state.miETRVDevices[childDevice]
-      		}
-    	}
+    	if (state.miETRVDevices[childDevice] != null) listString += state.miETRVDevices[childDevice] + "\n"
   	}
   	selectedLights.each { childDevice ->
-  		if (listString == "") {
-    		if (null != state.miLightDevices) {
-    			listString += state.miLightDevices[childDevice]
-      		}
-    	} else {
-			if (null != state.miLightDevices) {
-				listString += "\n" + state.miLightDevices[childDevice]
-			}
-		}
+  		if (state.miLightDevices[childDevice] != null) listString += state.miLightDevices[childDevice] + "\n"
 	}
 	selectedAdapters.each { childDevice ->
-		if (listString == "") {
-			if (null != state.miAdapterDevices) {
-				listString += state.miAdapterDevices[childDevice]
-			}
-		} else {
-			if (null != state.miAdapterDevices) {
-				listString += "\n" + state.miAdapterDevices[childDevice]
-			}
-		}
+		if (state.miAdapterDevices[childDevice] != null) listString += state.miAdapterDevices[childDevice] + "\n"
   	}
     selectedAdapterPluses.each { childDevice ->
-		if (listString == "") {
-			if (null != state.miAdapterPlusDevices) {
-				listString += state.miAdapterPlusDevices[childDevice]
-			}
-		} else {
-			if (null != state.miAdapterPlusDevices) {
-				listString += "\n" + state.miAdapterPlusDevices[childDevice]
-			}
-		}
+		if (state.miAdapterPlusDevices[childDevice] != null) listString += state.miAdapterPlusDevices[childDevice] + "\n"
   	}
     selected4GangExtensions.each { childDevice ->
-    	if (listString == "") {
-			if (null != state.mi4GangExtensionDevices) {
-				listString += state.mi4GangExtensionDevices[childDevice]
-			}
-		} else {
-			if (null != state.mi4GangExtensionDevices) {
-				listString += "\n" + state.mi4GangExtensionDevices[childDevice]
-			}
-		}
+    	if (state.mi4GangExtensionDevices[childDevice] != null) listString += state.mi4GangExtensionDevices[childDevice] + "\n"
     }
     selectedMonitors.each { childDevice ->
-    	if (listString == "") {
-			if (null != state.miMonitorDevices) {
-				listString += state.miMonitorDevices[childDevice]
-			}
-		} else {
-			if (null != state.miMonitorDevices) {
-				listString += "\n" + state.miMonitorDevices[childDevice]
-			}
-		}
+    	if (state.miMonitorDevices[childDevice] != null) listString += state.miMonitorDevices[childDevice] + "\n"
     }
     selectedMotions.each { childDevice ->
-    	if (listString == "") {
-			if (null != state.miMotionSensors) {
-				listString += state.miMotionSensors[childDevice]
-			}
-		} else {
-			if (null != state.miMotionSensors) {
-				listString += "\n" + state.miMotionSensors[childDevice]
-			}
-		}
+    	if (state.miMotionSensors[childDevice] != null) listString += state.miMotionSensors[childDevice] + "\n"
     }
   	return listString
 }
@@ -455,6 +401,29 @@ def updateDevices() {
         	log.info("Device ${it.deviceNetworkId} in use. Please manually delete.")
         }
 	}  
+    
+    def removeList = []
+   	selectedETRVs.each { childDevice ->
+    	if (state.miETRVDevices[childDevice] == null) { removeList.add(childDevice) } 
+  	}
+  	selectedLights.each { childDevice ->
+  		if (state.miLightDevices[childDevice] == null) { removeList.add(childDevice) } 
+	}
+	selectedAdapters.each { childDevice ->
+		if (state.miAdapterDevices[childDevice] == null) { removeList.add(childDevice) } 
+  	}
+    selectedAdapterPluses.each { childDevice ->
+		if (state.miAdapterPlusDevices[childDevice] == null) { removeList.add(childDevice) } 
+  	}
+    selected4GangExtensions.each { childDevice ->
+    	if (state.mi4GangExtensionDevices[childDevice] == null) { removeList.add(childDevice) } 
+    }
+    selectedMonitors.each { childDevice ->
+    	if (state.miMonitorDevices[childDevice] == null) { removeList.add(childDevice) } 
+    }
+    selectedMotions.each { childDevice ->
+    	if (state.miMotionSensors[childDevice] == null) { removeList.add(childDevice) } 
+    }
 }
 
 def addETRV() {
@@ -463,7 +432,7 @@ def addETRV() {
 	selectedETRVs.each { device ->
 
         def childDevice = getChildDevice("${device}")
-        if (!childDevice) {
+        if (!childDevice && state.miETRVDevices[device] != null) {
     		log.info("Adding device ${device}: ${state.miETRVDevices[device]}")
 
         	def data = [
@@ -487,7 +456,7 @@ def addLight() {
 
         def childDevice = getChildDevice("${device}")
 
-        if (!childDevice) {
+        if (!childDevice && state.miLightDevices[device] != null) {
     		log.info("Adding device ${device}: ${state.miLightDevices[device]}")
             def data = [
                 	name: state.miLightDevices[device],
@@ -510,7 +479,7 @@ def addAdapter() {
 
         def childDevice = getChildDevice("${device}")
 
-        if (!childDevice) {
+        if (!childDevice && state.miAdapterDevices[device] != null) {
     		log.info("Adding device ${device}: ${state.miAdapterDevices[device]}")
 
         	def data = [
@@ -534,7 +503,7 @@ def addAdapterPlus() {
 
         def childDevice = getChildDevice("${device}")
 
-        if (!childDevice) {
+        if (!childDevice && state.miAdapterPlusDevices[device] != null) {
     		log.info("Adding device ${device}: ${state.miAdapterPlusDevices[device]}")
 
         	def data = [
@@ -558,7 +527,7 @@ def add4GangExtension() {
     	0.upto(3, {
             def childDevice = getChildDevice("${device}/${it}")
             
-            if (!childDevice) {
+            if (!childDevice && state.mi4GangExtensionDevices[device] != null) {
     			log.info("Adding device ${device}/${it}: ${state.mi4GangExtensionDevices[device]} [Socket ${it + 1}]")
 
         		def data = [
@@ -582,7 +551,7 @@ def addMonitor() {
 
         def childDevice = getChildDevice("${device}")
 
-        if (!childDevice) {
+        if (!childDevice && state.miMonitorDevices[device] != null) {
     		log.info("Adding device ${device}: ${state.miMonitorDevices[device]}")
 
         	def data = [
@@ -606,7 +575,7 @@ def addMotion() {
 
         def childDevice = getChildDevice("${device}")
 
-        if (!childDevice) {
+        if (!childDevice && state.miMotionSensors[device] != null) {
     		log.info("Adding device ${device}: ${state.miMotionSensors[device]}")
 
         	def data = [
@@ -729,7 +698,7 @@ def logErrors(options = [errorReturn: null, logObject: log], Closure c) {
 }
 
 private def textVersion() {
-    def text = "MiHome (Connect)\nVersion: 2.0\nDate: 23112016(0940)"
+    def text = "MiHome (Connect)\nVersion: 2.0b\nDate: 12122016(2340)"
 }
 
 private def textCopyright() {
