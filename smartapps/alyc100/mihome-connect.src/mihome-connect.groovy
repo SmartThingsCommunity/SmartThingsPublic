@@ -401,29 +401,6 @@ def updateDevices() {
         	log.info("Device ${it.deviceNetworkId} in use. Please manually delete.")
         }
 	}  
-    
-    def removeList = []
-   	selectedETRVs.each { childDevice ->
-    	if (state.miETRVDevices[childDevice] == null) { removeList.add(childDevice) } 
-  	}
-  	selectedLights.each { childDevice ->
-  		if (state.miLightDevices[childDevice] == null) { removeList.add(childDevice) } 
-	}
-	selectedAdapters.each { childDevice ->
-		if (state.miAdapterDevices[childDevice] == null) { removeList.add(childDevice) } 
-  	}
-    selectedAdapterPluses.each { childDevice ->
-		if (state.miAdapterPlusDevices[childDevice] == null) { removeList.add(childDevice) } 
-  	}
-    selected4GangExtensions.each { childDevice ->
-    	if (state.mi4GangExtensionDevices[childDevice] == null) { removeList.add(childDevice) } 
-    }
-    selectedMonitors.each { childDevice ->
-    	if (state.miMonitorDevices[childDevice] == null) { removeList.add(childDevice) } 
-    }
-    selectedMotions.each { childDevice ->
-    	if (state.miMotionSensors[childDevice] == null) { removeList.add(childDevice) } 
-    }
 }
 
 def addETRV() {
