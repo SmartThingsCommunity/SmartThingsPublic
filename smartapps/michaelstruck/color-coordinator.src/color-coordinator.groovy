@@ -34,7 +34,7 @@ preferences {
 
 def mainPage() {
 	dynamicPage(name: "mainPage", title: "", install: true, uninstall: false) {
-		def masterInList = slaves.id.find{it==master.id}
+		def masterInList = slaves?.id?.find{it==master?.id}
         if (masterInList) {
         	section ("**WARNING**"){
             	paragraph "You have included the Master Light in the Slave Group. This will cause a loop in execution. Please remove this device from the Slave Group.", image: "https://raw.githubusercontent.com/MichaelStruck/SmartThingsPublic/master/img/caution.png"
@@ -83,7 +83,7 @@ def init() {
 //-----------------------------------
 def onOffHandler(evt){
 	if (slaves && master) {
-		if (!slaves?.id.find{it==master.id}){
+		if (!slaves?.id.find{it==master?.id}){
 		if (master?.currentValue("switch") == "on"){
 		    if (randomYes) getRandomColorMaster()
 				else slaves?.on()
@@ -97,7 +97,7 @@ def onOffHandler(evt){
 
 def colorHandler(evt) {
 	if (slaves && master) {
-		if (!slaves?.id?.find{it==master.id} && master?.currentValue("switch") == "on"){
+		if (!slaves?.id?.find{it==master?.id} && master?.currentValue("switch") == "on"){
 			log.debug "Changing Slave units H,S,L"
 		def dimLevel = master?.currentValue("level")
 		def hueLevel = master?.currentValue("hue")
