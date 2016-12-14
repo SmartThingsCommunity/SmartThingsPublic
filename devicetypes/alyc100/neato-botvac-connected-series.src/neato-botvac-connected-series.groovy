@@ -13,6 +13,8 @@
  *  for the specific language governing permissions and limitations under the License.
  *
  *  VERSION HISTORY
+ * 	13-12-2016: 1.3 - Added compatability with newer Botvac models with firmware 3.x.
+ *
  * 	12-12-2016: 1.2.2c - Bug fix. Prevent NULL error on result.error string.
  *
  * 	01-11-2016: 1.2.2b - Bug fix. Stop disabling Neato Schedule even when SmartSchedule is off.
@@ -169,7 +171,17 @@ def on() {
     else if (currentState != 'error') {
     	def modeParam = 1
         if (isTurboCleanMode()) modeParam = 2
-		nucleoPOST("/messages", '{"reqId":"1", "cmd":"startCleaning", "params":{"category": 2, "mode": ' + modeParam + ', "modifier": 2}}') 
+        switch (state.houseCleaning) {
+            case "basic-1":
+               	nucleoPOST("/messages", '{"reqId":"1", "cmd":"startCleaning", "params":{"category": 2, "mode": ' + modeParam + ', "modifier": 2}}')
+			break;
+        	case "basic-2":
+            	nucleoPOST("/messages", '{"reqId":"1", "cmd":"startCleaning", "params":{"category": 2, "mode": ' + modeParam + ', "modifier": 2, "navigationMode": 2}}')
+            break;
+			case "minimal-2":
+				nucleoPOST("/messages", '{"reqId":"1", "cmd":"startCleaning", "params":{"category": 2, "navigationMode": 2}}')
+			break;
+        }
     }
     runIn(2, refresh)
 }
@@ -246,6 +258,16 @@ def poll() {
 		log.debug headerString
 	}
     else {
+    	if (result.containsKey("meta")) {
+        	if (result.meta.firmware.startsWith("2")) {
+            	state.firmware = 2
+            } else {
+            	state.firmware = 3
+            }
+        }
+        if (result.containsKey("availableServices")) {
+        	state.houseCleaning = result.availableServices.houseCleaning
+        }
         if (result.containsKey("state")) {
         	sendEvent(name: 'network', value: "Connected" as String)
         	//state 1 - Ready to clean
@@ -280,7 +302,7 @@ def poll() {
 				break;
         	}
         }
-        if (result.containsKey("error")) {
+        if (state.firmware == 2 && result.containsKey("error")) {
         	switch (result.error) {
             	case "ui_alert_dust_bin_full":
 					binFullFlag = true
@@ -356,13 +378,30 @@ def poll() {
                 	statusMsg += ' - Left drop stuck!'
                 break
                 default:
-                	if (result.error != null && "ui_alert_invalid" != result.error) {
+                	if ("ui_alert_invalid" != result.error) {
                 		statusMsg += ' - ' + result.error.replaceAll('ui_error_', '').replaceAll('ui_alert_', '').replaceAll('_',' ').capitalize()
                     }
 				break;
                 //More error detail messages here as discovered
-				
 			}
+        }
+        if (state.firmware == 3 && result.containsKey("error")) {
+        	if (null != result.error || "null" != result.error) {
+            	if (result.error == "dustbin_full") { 
+                	binFullFlag = true
+                    statusMsg += ' - Dust bin full!'
+                }
+            	else { 
+                	statusMsg += ' - ' + result.error.replaceAll('_',' ').capitalize() 
+               	}
+            }
+        }
+        if (state.firmware == 3 && result.containsKey("alert")) {
+        	if (null != result.alert || "null" != result.alert) {
+            	if (result.alert == "dustbin_full") { 
+                	binFullFlag = true 
+                }
+            }
         }
         if (result.containsKey("details")) {
         	if (result.details.isDocked) {
