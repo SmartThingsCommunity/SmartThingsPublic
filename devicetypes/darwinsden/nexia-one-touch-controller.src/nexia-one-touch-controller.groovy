@@ -33,6 +33,12 @@
  *
  *	0.10 (05/22/2016) -	Initial 0.1 Beta
  *  0.11 (05/28/2016) - Set numberOfButtons attribute for ease of use with CoRE and other SmartApps
+ *  0.12 (12/15/2016) - Incorporated C&E T's changes as-is to set labels on device. See below: 
+ *    C&E T: 
+ *     - implemented methods to set the labels on the device 
+ *         -> Labels are set when you press configure while the device is awake.
+ *            Aftern pressing the configure button BE PATIENT! DON'T touch the device buttons for about 20-30 seconds
+ *     - added ", data: [buttonNumber: button]" to button released event
  *
  */
  metadata {
@@ -195,7 +201,8 @@ def buttonEvent(button, pressType) {
       case 1:
           // Released (inconsistently received)
           log.debug ("button: $button released")
-          result = [name: "button", value: "default", descriptionText: "$device.displayName button was released", isStateChange: true] 
+          // C&E T: added ", data: [buttonNumber: button]"
+          result = [name: "button", value: "default", data: [buttonNumber: button], descriptionText: "$device.displayName button was released", isStateChange: true] 
           break
           
       case 2: 
@@ -265,7 +272,7 @@ def zwaveEvent(physicalgraph.zwave.commands.wakeupv2.WakeUpNotification cmd) {
     result << createEvent(descriptionText: "${device.displayName} woke up", displayed: false)
 	if (!isDuplicateCall(state.lastWokeUp, 1)) {
 		state.lastwokeUp = new Date().time		
-		result << response(configure())
+		result << response(configureOld()) // C&E T -> see comment on method configureOld
 	}
     result << response(zwave.wakeUpV1.wakeUpNoMoreInformation().format()) 
     return result
@@ -411,6 +418,23 @@ def configurationCmds() {
 // Configure the device
 def configure() {
     def cmd=configurationCmds()
+    //cmd << "delay 100"
+    
+    // C&E T: set button texts on device
+    for (def buttonNum = 1; buttonNum <= 15; buttonNum++) {  
+        cmd << createCommandToSetButtonLabel(buttonNum-1, device.currentValue("label"+buttonNum))
+        cmd << "delay 1200" // using such a long delay seems to be the safest way to go
+    }
+    
+    log.debug("Sending configuration: ${cmd}")
+    return cmd
+}
+
+// C&E T
+// Old configure() method to use in wakeUp call 
+//   It seems to be a bad idea to send all label texts to the device on every wake up notification -> crashed our hub
+def configureOld() {
+    def cmd=configurationCmds()
     log.debug("Sending configuration: ${cmd}")
     return cmd
 }
@@ -506,4 +530,84 @@ def button14() {
 
 def button15() {
 	sendVirtualButtonEvent(15)
+}
+
+// C&E T
+// Creates a Screen Meta Data Report command for one button label
+//   lineNumber = the number of the line 0..14
+//   text = the text to put on the button
+// Some default settings are applied (normal font, clear line, ASCII+OEM chars, charPos=0)
+def createCommandToSetButtonLabel(lineNumber, text) {
+	def command = ""
+
+    if (null == text) {
+    	log.error "createCommandToSetButtonLabel: text == null"
+    }
+    else if (lineNumber < 0) {
+    	log.error "createCommandToSetButtonLabel: lineNumber < 0"
+    }
+    else if (lineNumber > 14) {
+    	log.error "createCommandToSetButtonLabel: lineNumber > 14"
+    }
+    else {
+        // Command structure - see http://z-wave.sigmadesigns.com/wp-content/uploads/2016/08/SDS12652-13-Z-Wave-Command-Class-Specification-N-Z.pdf
+        //   "92" // COMMAND_CLASS_SCREEN_MD
+        //   "02" // SCREEN_MD_REPORT
+        //   "3B" // MoreData=0, Reserved=0, ScreenSettings=7 (3 bit, 7=keep current content), CharacterEncoding=1 (3 bit, ASCII+OEM)
+        //   "1"  // LineSettings=0 (3 bit, 0=selected font), Clear=1 (1 bit, 1=clear line) 
+        //   "X"  // LineNumber (hex, 4 bit)
+        //   "00" // CharacterPosition (hex 8 bit)
+        //   "XX" // NumberOfCharacters (hex 8 bit)
+        //   "XX" // Character (hex ASCII)
+        //   "XX" // Character (hex ASCII)
+        // NOTE: Theoretically you can send more than one line in one screenMdReport command.
+        //   Hoever, the zwave documentation says that the size of the payload SHOULD NOT be bigger than 48 bytes.
+        //   That basically limits us to about 2 words at once. 
+        //   So, it's easier to send one button label at a time.
+
+        def screenReportHeader = "92"+"02"+"3B"
+        def lineSettings = "1"
+        def lineNumberString = Integer.toHexString(lineNumber)
+        //log.debug "createCommandToSetButtonLabel: lineNumberString: ${lineNumberString}"
+        def characterPositionString = "00"
+        def label = convertTextToHexCodeSequence(text)
+        def numOfChars = label.length()/2 // after conversion to hex each character is represented by two characters
+        def numOfCharString = Integer.toHexString(numOfChars.intValue())
+        // numOfCharString could have one char only but we need 2
+        if (numOfCharString.length() == 1) {
+            numOfCharString = "0" + numOfCharString
+        }
+        //log.debug "createCommandToSetButtonLabel: numOfCharString: ${numOfCharString}"
+
+        command = screenReportHeader + lineSettings + lineNumberString + characterPositionString + numOfCharString + label
+        //log.debug "createCommandToSetButtonLabel: command: ${command}"
+    }
+    
+    return command
+}
+
+// C&E T
+// Converts a text to a string with hex codes for the button label command
+// includes a CR ofter the 8th character and cuts after the 16th
+// e.g. "ABCDEFGHIJKLMNOPQRST" -> "ABCDEFGH\rIJKLMNOP" -> "41424344454647480D494A4B4C4D4E4F50"
+def convertTextToHexCodeSequence(String text) {
+    //log.debug "convertTextToHexCodeSequence: Input: ${text}"
+    def textLength = text.length()
+    
+    if (textLength > 8) {
+    	// cut to max 16 characters
+    	if (textLength > 16) {
+    		text = text.substring(0, 16)
+            textLength = text.length()
+        }
+        // add CR sign
+        text = text.substring(0, 8) + "\r" + text.substring(8, textLength);
+    }
+    
+    // convert to hexCode string
+    text = text.encodeAsHex().toString()
+    
+    //log.debug "convertTextToHexCodeSequence: Output: ${text}"
+    
+    return text
 }
