@@ -13,6 +13,7 @@
  *  for the specific language governing permissions and limitations under the License.
  *
  *  VERSION HISTORY
+ * 	13-12-2016: 1.3b - Attempt to stop Null Pointer on 1.3b.
  * 	13-12-2016: 1.3 - Added compatability with newer Botvac models with firmware 3.x.
  *
  * 	12-12-2016: 1.2.2c - Bug fix. Prevent NULL error on result.error string.
@@ -386,7 +387,7 @@ def poll() {
 			}
         }
         if (state.firmware == 3 && result.containsKey("error")) {
-        	if (null != result.error || "null" != result.error) {
+        	if (result.error) {
             	if (result.error == "dustbin_full") { 
                 	binFullFlag = true
                     statusMsg += ' - Dust bin full!'
@@ -397,7 +398,7 @@ def poll() {
             }
         }
         if (state.firmware == 3 && result.containsKey("alert")) {
-        	if (null != result.alert || "null" != result.alert) {
+        	if (result.alert) {
             	if (result.alert == "dustbin_full") { 
                 	binFullFlag = true 
                 }
