@@ -25,10 +25,12 @@ metadata {
 		capability "Switch Level"
 		capability "Sensor"
 		capability "Actuator"
+		capability "Health Check"
 
 		command "reset"
 
 		fingerprint inClusters: "0x26,0x32"
+		fingerprint mfr:"0086", prod:"0003", model:"001B", deviceJoinName: "Aeon Labs Micro Smart Dimmer 2E"
 	}
 
 	simulator {
@@ -98,6 +100,9 @@ def parse(String description) {
 }
 
 def updated() {
+	// Device-Watch simply pings if no device events received for 32min(checkInterval)
+	sendEvent(name: "checkInterval", value: 2 * 15 * 60 + 2 * 60, displayed: false, data: [protocol: "zwave", hubHardwareId: device.hub.hardwareID])
+
 	response(refresh())
 }
 
@@ -160,6 +165,14 @@ def poll() {
 		zwave.meterV2.meterGet(scale: 0).format(),
 		zwave.meterV2.meterGet(scale: 2).format(),
 	], 1000)
+}
+
+/**
+ * PING is used by Device-Watch in attempt to reach the Device
+ * */
+def ping() {
+	log.debug "ping() called"
+	refresh()
 }
 
 def refresh() {
