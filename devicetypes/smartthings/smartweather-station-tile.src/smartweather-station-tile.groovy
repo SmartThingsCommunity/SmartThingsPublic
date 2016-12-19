@@ -16,12 +16,15 @@
  *
  *  Date: 2013-04-30
  */
+// for the UI
 metadata {
+	// Automatically generated. Make future change here.
 	definition (name: "SmartWeather Station Tile", namespace: "smartthings", author: "SmartThings") {
 		capability "Illuminance Measurement"
 		capability "Temperature Measurement"
 		capability "Relative Humidity Measurement"
 		capability "Sensor"
+		capability "Polling"
 
 		attribute "localSunrise", "string"
 		attribute "localSunset", "string"
@@ -214,7 +217,7 @@ def poll() {
         send(name: "localSunrise", value: localSunrise, descriptionText: "Sunrise today is at $localSunrise")
         send(name: "localSunset", value: localSunset, descriptionText: "Sunset today at is $localSunset")
 
-		send(name: "illuminance", value: estimateLux(sunriseDate, sunsetDate, weatherIcon))
+		send(name: "illuminance", value: estimateLux(obs.solarradiation, sunriseDate, sunsetDate, weatherIcon) as Integer)
 
 		// Forecast
 		def f = get("forecast")
@@ -305,48 +308,53 @@ private send(map) {
 	sendEvent(map)
 }
 
-private estimateLux(sunriseDate, sunsetDate, weatherIcon) {
+private estimateLux(solarradiation, sunriseDate, sunsetDate, weatherIcon) {
 	def lux = 0
-	def now = new Date().time
-	if (now > sunriseDate.time && now < sunsetDate.time) {
-		//day
-		switch(weatherIcon) {
-			case 'tstorms':
-				lux = 200
-				break
-			case ['cloudy', 'fog', 'rain', 'sleet', 'snow', 'flurries',
-				'chanceflurries', 'chancerain', 'chancesleet',
-				'chancesnow', 'chancetstorms']:
-				lux = 1000
-				break
-			case 'mostlycloudy':
-				lux = 2500
-				break
-			case ['partlysunny', 'partlycloudy', 'hazy']:
-				lux = 7500
-				break
-			default:
-				//sunny, clear
-				lux = 10000
-		}
 
-		//adjust for dusk/dawn
-		def afterSunrise = now - sunriseDate.time
-		def beforeSunset = sunsetDate.time - now
-		def oneHour = 1000 * 60 * 60
+	if (solarradiation != '--') {
+		lux = solarradiation.toDouble() / 0.0079
+	} else {
+		def now = new Date().time
+		if (now > sunriseDate.time && now < sunsetDate.time) {
+			//day
+			switch(weatherIcon) {
+				case 'tstorms':
+					lux = 200
+					break
+				case ['cloudy', 'fog', 'rain', 'sleet', 'snow', 'flurries',
+					'chanceflurries', 'chancerain', 'chancesleet',
+					'chancesnow', 'chancetstorms']:
+					lux = 1000
+					break
+				case 'mostlycloudy':
+					lux = 2500
+					break
+				case ['partlysunny', 'partlycloudy', 'hazy']:
+					lux = 7500
+					break
+				default:
+					//sunny, clear
+					lux = 10000
+			}
 
-		if(afterSunrise < oneHour) {
-			//dawn
-			lux = (long)(lux * (afterSunrise/oneHour))
-		} else if (beforeSunset < oneHour) {
-			//dusk
-			lux = (long)(lux * (beforeSunset/oneHour))
+			//adjust for dusk/dawn
+			def afterSunrise = now - sunriseDate.time
+			def beforeSunset = sunsetDate.time - now
+			def oneHour = 1000 * 60 * 60
+
+			if(afterSunrise < oneHour) {
+				//dawn
+				lux = (long)(lux * (afterSunrise/oneHour))
+			} else if (beforeSunset < oneHour) {
+				//dusk
+				lux = (long)(lux * (beforeSunset/oneHour))
+			}
 		}
-	}
-	else {
-		//night - always set to 10 for now
-		//could do calculations for dusk/dawn too
-		lux = 10
+		else {
+			//night - always set to 10 for now
+			//could do calculations for dusk/dawn too
+			lux = 10
+		}
 	}
 
 	lux
