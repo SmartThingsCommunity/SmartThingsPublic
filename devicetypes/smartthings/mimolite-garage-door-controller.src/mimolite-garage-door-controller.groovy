@@ -32,6 +32,7 @@ metadata {
 	// Automatically generated. Make future change here.
 	definition (name: "MimoLite Garage Door Controller", namespace: "smartthings", author: "Todd Wackford") {
 		capability "Configuration"
+		capability "Health Check"
 		capability "Polling"
 		capability "Switch"
 		capability "Refresh"
@@ -43,6 +44,7 @@ metadata {
 		command "off"
         
         fingerprint deviceId: "0x1000", inClusters: "0x72,0x86,0x71,0x30,0x31,0x35,0x70,0x85,0x25,0x03"
+		fingerprint mfr:"0084", prod:"0453", model:"0111", deviceJoinName: "MIMOLite"
 	}
 
 	simulator {
@@ -77,6 +79,16 @@ metadata {
 		main (["switch", "contact"])
 		details(["switch", "powered", "refresh", "configure"])
 	}
+}
+
+def installed(){
+// Device-Watch simply pings if no device events received for checkInterval duration of 32min = 2 * 15min + 2min lag time
+	sendEvent(name: "checkInterval", value: 2 * 15 * 60 + 2 * 60, displayed: false, data: [protocol: "zwave", hubHardwareId: device.hub.hardwareID])
+}
+
+def updated(){
+// Device-Watch simply pings if no device events received for checkInterval duration of 32min = 2 * 15min + 2min lag time
+	sendEvent(name: "checkInterval", value: 2 * 15 * 60 + 2 * 60, displayed: false, data: [protocol: "zwave", hubHardwareId: device.hub.hardwareID])
 }
 
 def parse(String description) {
@@ -168,6 +180,13 @@ def off() {
 
 def poll() {
 	zwave.switchBinaryV1.switchBinaryGet().format()
+}
+
+/**
+ * PING is used by Device-Watch in attempt to reach the Device
+ * */
+def ping() {
+	refresh()
 }
 
 def refresh() {
