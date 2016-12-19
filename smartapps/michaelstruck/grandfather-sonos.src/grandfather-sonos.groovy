@@ -1,8 +1,8 @@
 /**
  *  Grandfather Sonos
  *
- *  Copyright 2015 Michael Struck
- *  Version 1.0.0 12/6/16
+ *  Copyright 2016 Michael Struck
+ *  Version 1.0.0 12/19/16
  *
  *  Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except
  *  in compliance with the License. You may obtain a copy of the License at:
@@ -13,8 +13,6 @@
  *  on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the License
  *  for the specific language governing permissions and limitations under the License.
  *
-*
- *
  */
 definition(
     name: "Grandfather Sonos",
@@ -22,10 +20,9 @@ definition(
     author: "Michael Struck",
     description: "Chimes a Sonos speaker at the top of the hour.",
     category: "Convenience",
-    iconUrl: "https://raw.githubusercontent.com/MichaelStruck/SmartThings/master/IFTTT-SmartApps/App1.png",
-    iconX2Url: "https://raw.githubusercontent.com/MichaelStruck/SmartThings/master/IFTTT-SmartApps/App1@2x.png",
-    iconX3Url: "https://raw.githubusercontent.com/MichaelStruck/SmartThings/master/IFTTT-SmartApps/App1@2x.png")
-
+    iconUrl: "https://raw.githubusercontent.com/MichaelStruck/SmartThingsPublic/master/smartapps/michaelstruck/grandfather-sonos.src/grandfather.png",
+    iconX2Url: "https://raw.githubusercontent.com/MichaelStruck/SmartThingsPublic/master/smartapps/michaelstruck/grandfather-sonos.src/grandfather.png",
+    iconX3Url: "https://raw.githubusercontent.com/MichaelStruck/SmartThingsPublic/master/smartapps/michaelstruck/grandfather-sonos.src/grandfather.png")
 preferences {
     page name:"mainPage"
     page name:"pageAbout"
@@ -34,8 +31,8 @@ preferences {
 def mainPage() {
 	dynamicPage(name: "mainPage", title: "Settings", install: true, uninstall: false) {
     	section {
-            input "speakers", "capability.musicPlayer", title: "Choose Sonos Speakers to use...", multiple: true , required: true, image: imgURL() + "speaker.png"
-            input "volume", "num", title: "Enter the volume of the speaker(s)", image: imgURL() + "volume.png", required: false
+            input "speakers", "capability.musicPlayer", title: "Choose Sonos speaker(s) to use...", multiple: true , required: true, image: imgURL() + "speaker.png"
+            input "volume", "num", title: "Enter the volume of the speaker(s)", image: imgURL() + "volume.png",description: "0-100%", required: false
         }
         section("Restrictions") {            
 			input "runDay", "enum", options: ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"], title: "Only Certain Days Of The Week...",  multiple: true, required: false, image: imgURL() + "calendar.png"
@@ -50,18 +47,15 @@ def mainPage() {
 def pageAbout(){
 	dynamicPage(name: "pageAbout", uninstall: true) {
 		section {
-        	paragraph "${textAppName()}\n${textCopyright()}", image: "https://raw.githubusercontent.com/MichaelStruck/SmartThingsPublic/master/smartapps/michaelstruck/alexa-helper.src/Alexa@2x.png"
-        }
-        section ("SmartApp/Switch Versions") {
-    		paragraph "${textVersion()}"
-        }    
+        	paragraph "${textAppName()}\n${textVersion()}\n${textCopyright()}", image: "https://raw.githubusercontent.com/MichaelStruck/SmartThingsPublic/master/smartapps/michaelstruck/grandfather-sonos.src/grandfather.png"
+        }   
         section ("Apache License") {
         	paragraph "${textLicense()}"
     	}
     	section("Instructions") {
         	paragraph textHelp()
     	}
-        section("Tap below to remove all scenarios, switches and application"){
+        section("Tap below to the application"){
         }
 	}
 }
@@ -74,17 +68,26 @@ page(name: "timeIntervalInput", title: "Only during a certain time") {
 //-----------------------------------------------------------------------
 def installed() {
 	log.debug "Installed with settings: ${settings}"
-	//subscribe(controlSwitch, "switch", "switchHandler")
+    initialize()
 }
-
 def updated() {
 	log.debug "Updated with settings: ${settings}"
-	unsubscribe()
-	//subscribe(controlSwitch, "switch", "switchHandler")
+	initialize()
+}
+def initialize(){
+    unschedule()
+    schedule("12 0 * * * ?", playChime)
 }
 //-----------------------------------------------------------------------
 def playChime() {
-
+	if (speakers && getOkToRun()) {
+    	def hour = parseHour() as int
+        if (volume) {speakers?.setLevel(volume)}
+        def fileName = "https://raw.githubusercontent.com/MichaelStruck/SmartThingsPublic/master/smartapps/michaelstruck/grandfather-sonos.src/${hour}oclock.mp3"
+       	def duration = (hour * 2) + 23
+        speakers?.playSoundAndTrack (filename,duration,"") 
+        
+	}
 }
 //-----------------------------------------------------------------------
 def getTimeLabel(start, end){
@@ -95,11 +98,35 @@ def getTimeLabel(start, end){
 	timeLabel	
 }
 def greyOutState(param1, param2, param3){def result = param1 || param2 || param3 ? "complete" : ""}
+def getOkToRun(){ def result = (!runMode || runMode.contains(location.mode)) && getDayOk(runDay) && getTimeOk(timeStart,timeEnd) }
+//-----------------------------------------------------------------------
+private getDayOk(dayList) {
+	def result = true
+    if (dayList) {
+		def df = new java.text.SimpleDateFormat("EEEE")
+		location.timeZone ? df.setTimeZone(location.timeZone) : df.setTimeZone(TimeZone.getTimeZone("America/New_York"))
+		def day = df.format(new Date())
+		result = dayList.contains(day)
+	}
+    return result
+}
+private getTimeOk(startTime, endTime) {
+	def result = true, currTime = now(), start = startTime ? timeToday(startTime).time : null, stop = endTime ? timeToday(endTime).time : null
+	if (startTime && endTime) result = start < stop ? currTime >= start && currTime <= stop : currTime <= stop || currTime >= start
+	else if (startTime) result = currTime >= start
+    else if (endTime) result = currTime <= stop
+    return result
+}
+private parseHour(){
+	long longDate = Long.valueOf(now()).longValue()
+	def parseDate = new Date(longDate).format("yyyy-MM-dd'T'HH:mm:ss.SSSZ", location.timeZone)
+    new Date().parse("yyyy-MM-dd'T'HH:mm:ss.SSSZ", parseDate).format("h", timeZone(parseDate))
+}
 //-----------------------------------------------------------------------
 def imgURL() { return "https://raw.githubusercontent.com/MichaelStruck/SmartThingsPublic/master/img/" }
 //Version/Copyright/Information/Help
 private def textAppName() { def text = "Grandfather Sonos"}	
-private def textVersion() { def version = "Version 1.0.0 (12/06/2016)" }
+private def textVersion() { def version = "Version 1.0.0 (12/19/2016)" }
 private def textCopyright() {  def text = "Copyright © 2016 Michael Struck" }
 private def textLicense() {
     def text =
