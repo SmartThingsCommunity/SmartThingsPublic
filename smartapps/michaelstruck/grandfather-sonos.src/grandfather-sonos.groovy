@@ -55,7 +55,7 @@ def pageAbout(){
     	section("Instructions") {
         	paragraph textHelp()
     	}
-        section("Tap below to the application"){
+        section("Tap below to remove the application"){
         }
 	}
 }
@@ -92,9 +92,9 @@ def playChime() {
 //-----------------------------------------------------------------------
 def getTimeLabel(start, end){
 	def timeLabel = "Tap to set"
-    if(start && end) timeLabel = "Between " + parseDate("${start}", "h:mm a") + " and " +  parseDate("${end}", "h:mm a")
-    else if (start) timeLabel = "Start at " + parseDate("${start}", "h:mm a")
-    else if (end) timeLabel = "End at " + parseDate("${end}", "h:mm a")
+    if(start && end) timeLabel = "Between " + timeParse("${start}", "h:mm a") + " and " +  timeParse("${end}", "h:mm a")
+    else if (start) timeLabel = "Start at " + timeParse("${start}", "h:mm a")
+    else if (end) timeLabel = "End at " + timeParse("${end}", "h:mm a")
 	timeLabel	
 }
 def greyOutState(param1, param2, param3){def result = param1 || param2 || param3 ? "complete" : ""}
@@ -122,6 +122,7 @@ private parseHour(){
 	def parseDate = new Date(longDate).format("yyyy-MM-dd'T'HH:mm:ss.SSSZ", location.timeZone)
     new Date().parse("yyyy-MM-dd'T'HH:mm:ss.SSSZ", parseDate).format("h", timeZone(parseDate))
 }
+private timeParse(time, type) { return new Date().parse("yyyy-MM-dd'T'HH:mm:ss.SSSZ", time).format("${type}", location.timeZone)}
 //-----------------------------------------------------------------------
 def imgURL() { return "https://raw.githubusercontent.com/MichaelStruck/SmartThingsPublic/master/img/" }
 //Version/Copyright/Information/Help
