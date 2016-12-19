@@ -83,10 +83,9 @@ def playChime() {
 	if (speakers && getOkToRun()) {
     	def hour = parseHour() as int
         if (volume) {speakers?.setLevel(volume)}
-        def fileName = "https://raw.githubusercontent.com/MichaelStruck/SmartThingsPublic/master/smartapps/michaelstruck/grandfather-sonos.src/${hour}oclock.mp3"
+        def filename = "https://raw.githubusercontent.com/MichaelStruck/SmartThingsPublic/master/smartapps/michaelstruck/grandfather-sonos.src/${hour}oclock.mp3"
        	def duration = (hour * 2) + 23
-        speakers?.playSoundAndTrack (filename,duration,"") 
-        
+		speakers?.playSoundAndTrack (filename,duration,"")    
 	}
 }
 //-----------------------------------------------------------------------
