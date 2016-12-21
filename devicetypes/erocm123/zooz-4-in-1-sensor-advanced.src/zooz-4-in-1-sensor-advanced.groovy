@@ -684,6 +684,7 @@ Default: Quick Blink on Temp/PIR
         <Item label="LED Off" value="1" />
         <Item label="Breathing" value="2" />
         <Item label="Quick Blink on Temp/PIR" value="3" />
+        <Item label="Off for Temp, On with Motion" value="4" />
   </Value>
   <Value type="short" byteSize="1" index="5" label="PIR reset time" min="1" max="255" value="3" setting_type="zwave">
     <Help>
@@ -729,8 +730,8 @@ Range: None
 Default: 0
 Note: 
 1. The calibration value = standard value - measure value.
-E.g. If measure value =85.3F and the standard value = 83.2F, so the calibration value = 83.2F - 85.3F = -2.1F.
-If the measure value =60.1F and the standard value = 63.2F, so the calibration value = 63.2F - 60.1℃ = 3.1F. 
+E.g. If measure value = 85.3F and the standard value = 83.2F, so the calibration value = 83.2F - 85.3F = -2.1F.
+If the measure value = 60.1F and the standard value = 63.2F, so the calibration value = 63.2F - 60.1℃ = 3.1F. 
     </Help>
   </Value>
   <Value type="byte" byteSize="1" index="303" label="Humidity offset" min="*" max="*" value="">
