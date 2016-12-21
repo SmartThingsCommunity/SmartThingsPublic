@@ -127,8 +127,8 @@ def configureHealthCheck() {
 
 def configure() {
     log.debug "configure()"
-    zigbee.onOffConfig() + zigbee.levelConfig() + zigbee.onOffRefresh() + zigbee.levelRefresh()
     configureHealthCheck()
+    zigbee.onOffConfig() + zigbee.levelConfig() + zigbee.onOffRefresh() + zigbee.levelRefresh()
 }
 
 def updated() {

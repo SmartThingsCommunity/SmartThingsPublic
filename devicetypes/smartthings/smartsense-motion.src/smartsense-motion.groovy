@@ -57,6 +57,7 @@ def parse(String description) {
 
 private Map parseBasicMessage(description) {
 	def name = parseName(description)
+	def results = [:]
 	if (name != null) {
 		def value = parseValue(description)
 		def linkText = getLinkText(device)
@@ -64,7 +65,7 @@ private Map parseBasicMessage(description) {
 		def handlerName = value
 		def isStateChange = isStateChange(device, name, value)
 
-		def results = [
+		results = [
 				name           : name,
 				value          : value,
 				linkText       : linkText,
@@ -73,8 +74,6 @@ private Map parseBasicMessage(description) {
 				isStateChange  : isStateChange,
 				displayed      : displayed(description, isStateChange)
 		]
-	} else {
-		results = [:]
 	}
 	log.debug "Parse returned $results.descriptionText"
 	return results
