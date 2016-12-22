@@ -100,12 +100,14 @@ def locationPreferences() {
         section("Zip Code Override") {
             input "lZip", "number", title: "Change if you want to simulate behavior of a zip code other than the one set for your SmartThings hub, or if you don't have a location set for your SmartThings hub.", required: false, defaultValue: location.zipCode
         }
-        section("Sunrise Offset") {
-            input "lSunriseOffset", "number", title: "Number of minutes you want to offset from sunrise to adjust Circadian Daylight behavior.", required: false, defaultValue: "0"
-        }
-        section("Sunset Offset") {
-            input "lSunsetOffset", "number", title: "Number of minutes you want to offset from sunset to adjust Circadian Daylight behavior.", required: false, defaultValue: "0"
-        }
+        section ("Sunrise offset (optional)...") {
+    		input "lSunriseOffsetValue", "text", title: "HH:MM", required: false
+    		input "lSunriseOffsetDir", "enum", title: "Before or After", required: false, options: ["Before","After"]
+    	}
+    	section ("Sunset offset (optional)...") {
+    		input "lSunsetOffsetValue", "text", title: "HH:MM", required: false
+    		input "lSunsetOffsetDir", "enum", title: "Before or After", required: false, options: ["Before","After"]
+    	}
         section {
             paragraph "The following settings cause Circadian Daylight to behave consistantly throughout the year, rather than matching the natural change in daylight."
         }
@@ -174,8 +176,8 @@ private def initialize() {
 void setHandler(evt) {
     def locationParameters = [:]
     if (settings.lZip != NULL && settings.lZip != "" && settings.lZip != "000000") { locationParameters.put("zipCode", settings.lZip) }
-    if (settings.lSunriseOffset != NULL && settings.lSunriseOffset != "" && settings.lSunriseOffset != "0") { locationParameters.put("sunriseOffset", settings.lSunriseOffset) }
-    if (settings.lSunsetOffset != NULL && settings.lSunsetOffset != "" && settings.lSunsetOffset != "0") { locationParameters.put("sunsetOffset", settings.lSunsetOffset) }
+    if (settings.lSunriseOffsetValue != NULL && settings.lSunriseOffsetValue != "" && settings.lSunriseOffsetValue != "0") { locationParameters.put("sunriseOffset", sunriseOffset) }
+    if (settings.lSunsetOffsetValue != NULL && settings.lSunsetOffsetValue != "" && settings.lSunsetOffsetValue != "0") { locationParameters.put("sunsetOffset", sunsetOffset) }
     def sunriseAndSunset = getSunriseAndSunset(locationParameters)
     if ((settings.lSunriseTime != NULL && settings.lSunriseTime != "") || (settings.lSunsetTime != NULL && settings.lSunsetTime != "")) {
     	def nowDate = new Date()
@@ -248,6 +250,14 @@ def bulbsHandler(sunriseAndSunset) {
 }
 
 def getColorTemperature() { return state.colorTemperature }
+
+private getSunriseOffset() {
+	lSunriseOffsetValue ? (lSunriseOffsetDir == "Before" ? "-$lSunriseOffsetValue" : lSunriseOffsetValue) : null
+}
+
+private getSunsetOffset() {
+	lSunsetOffsetValue ? (lSunsetOffsetDir == "Before" ? "-$lSunsetOffsetValue" : lSunsetOffsetValue) : null
+}
 
 def checkForUpdates() {
 	def messages = []
