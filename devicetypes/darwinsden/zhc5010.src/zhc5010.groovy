@@ -19,6 +19,8 @@
  *
  *	0.01 (06/08/2016) -	Initial 0.01 Test Code/Beta
  *	0.02 (08/04/2016) -	Added double and triple tap (increments button by +4, and +8 respectively)
+ *	0.03 (12/23/2016) -	Added test/workaround preference option to cancel single press after double press. Added
+ *                      preference option to disable switch relay
  *
  */
  
@@ -39,6 +41,11 @@ metadata {
 	// simulator metadata
 	simulator {
 	}
+    
+    preferences {      
+       input "doublePressCancelsSingle", "bool", title: "Cancel Single-Press when followed by Double-Press",  defaultValue: false,  displayDuringSetup: true, required: false	       
+       input "disableSwitchRelay", "bool", title: "Disable the switch physical relay",  defaultValue: false,  displayDuringSetup: true, required: false	       
+    }
 
 	tiles(scale: 2) {
     
@@ -101,6 +108,55 @@ def zwaveEvent(physicalgraph.zwave.Command cmd) {
     createEvent([:])
 }
 
+def pressedButton (def btnRes) {
+  
+  def canceling = false
+  
+  if (state.doublePressed1 && btnRes ==1) {
+     canceling = true
+     state.doublePressed1 = false
+  }
+  else if (state.doublePressed2 && btnRes == 2) {
+     canceling = true
+     state.doublePressed2 = false
+  }
+  else if (state.doublePressed3 && btnRes == 3) {
+     canceling = true
+     state.doublePressed3 = false
+  }
+  else if (state.doublePressed4 && btnRes == 4) {
+     canceling = true
+     state.doublePressed4 = false
+  }
+  
+  if (canceling) {
+         log.debug ("Canceling single press for button $btnRes")
+         state.doublePressed=false
+  }
+  else
+     {
+         log.debug ("button $btnRes pushed")
+         sendEvent(name: "buttonNum" , value: "Btn: $btnRes pushed")
+         createEvent([name: "button", value: "pushed", data: [buttonNumber: "$btnRes"], descriptionText: "$device.displayName $btnRes pressed", isStateChange: true, type: "physical"])
+       }
+}
+
+def pressedButton1() {
+   pressedButton (1)
+}
+
+def pressedButton2() {
+   pressedButton (2)
+}
+
+def pressedButton3() {
+   pressedButton (3)
+}
+
+def pressedButton4() {
+   pressedButton (4)
+}
+
 def zwaveEvent(physicalgraph.zwave.commands.centralscenev1.CentralSceneNotification cmd) {
     log.debug("sceneNumber: ${cmd.sceneNumber} keyAttributes: ${cmd.keyAttributes}")
     def result = []
@@ -109,9 +165,35 @@ def zwaveEvent(physicalgraph.zwave.commands.centralscenev1.CentralSceneNotificat
        case 0:
            //pressed
            def buttonResult = cmd.sceneNumber
-           sendEvent(name: "buttonNum" , value: "Btn: $buttonResult pushed")
-           result=createEvent([name: "button", value: "pushed", data: [buttonNumber: "$buttonResult"], 
-               descriptionText: "$device.displayName $buttonResult pressed", isStateChange: true, type: "physical"])
+           if (doublePressCancelsSingle)
+           {
+             switch (buttonResult) {
+               case 1:
+                  state.doublePressed1=false
+                  runIn (1, pressedButton1) 
+                  break
+               case 2:
+                  state.doublePressed2=false
+                  runIn (1, pressedButton2)  
+                  break
+               case 3:
+                  state.doublePressed3=false
+                  runIn (1, pressedButton3) 
+                  break
+               case 4:
+                  state.doublePressed4=false
+                  runIn (1, pressedButton4)  
+                  break
+               default:
+                 log.debug ("unexpected button $buttonNum")
+             }
+           }
+           else
+           {
+             sendEvent(name: "buttonNum" , value: "Btn: $buttonResult pushed")
+             result=createEvent([name: "button", value: "pushed", data: [buttonNumber: "$buttonResult"], 
+                descriptionText: "$device.displayName $buttonResult pressed", isStateChange: true, type: "physical"])
+           }
            break
  
        case 1:
@@ -132,13 +214,27 @@ def zwaveEvent(physicalgraph.zwave.commands.centralscenev1.CentralSceneNotificat
        case 3:
            //double press
            def buttonResult = cmd.sceneNumber + 4
+           
+           switch (buttonResult) {
+           case 1:
+              state.doublePressed1=true
+           case 2:
+              state.doublePressed2=true
+           case 3:
+              state.doublePressed3=true
+           case 4:
+              state.doublePressed4=true
+           default:
+              log.debug ("unexpected double press button")
+           }
+              
            sendEvent(name: "buttonNum" , value: "Btn: $buttonResult double press")
            result=createEvent([name: "button", value: "pushed", data: [buttonNumber: "$buttonResult"], 
                          descriptionText: "$device.displayName $buttonResult double-pressed", isStateChange: true, type: "physical"])
            break                  
 
        case 4:
-           //triple press?
+           //triple press -- not currently supported
            def buttonResult = cmd.sceneNumber + 8
            sendEvent(name: "buttonNum" , value: "Btn: $buttonResult double press")
            result=createEvent([name: "button", value: "pushed", data: [buttonNumber: "$buttonResult"], 
@@ -157,6 +253,9 @@ def zwaveEvent(physicalgraph.zwave.commands.centralscenev1.CentralSceneNotificat
 
 def configure() {
      sendEvent(name: "numberOfButtons", value: 12, displayed: false)
+     if (disableSwitchRelay) {
+        zwave.configurationV2.configurationSet(configurationValue: [0], parameterNumber: 15, size: 1).format()
+     }
 }
 def refresh() {
   configure()
