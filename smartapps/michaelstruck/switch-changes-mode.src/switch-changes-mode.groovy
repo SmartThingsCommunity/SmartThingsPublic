@@ -73,4 +73,3 @@ def changeMode(newMode) {
 		}
 	}
 }
-
