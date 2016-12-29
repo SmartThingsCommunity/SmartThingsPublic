@@ -143,7 +143,7 @@
         }
         
 		main "toggle"
-		details(["toggle", "lock", "unlock", "battery", "tamper", "keypadTile", "volumeTile", "labelManual", "autoLockTimeTile", "oneTouchTile", "privacyModeTile", "LEDTile", "refresh", "reconfigure"])
+		details(["toggle", "lock", "unlock", "battery", "tamper", "keypadTile", "volumeTile", "labelManual", "autoLockTimeTile", "oneTouchTile", "privacyButtonTile", "LEDTile", "refresh", "reconfigure"])
 	}
     
 	preferences {
