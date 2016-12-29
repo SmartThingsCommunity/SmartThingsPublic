@@ -428,10 +428,10 @@ def enrollResponse() {
 	[
 		//Resending the CIE in case the enroll request is sent before CIE is written
 		"zcl global write 0x500 0x10 0xf0 {${zigbeeEui}}", "delay 200",
-		"send 0x${device.deviceNetworkId} 1 ${endpointId}", "delay 500",
+		"send 0x${device.deviceNetworkId} 1 ${endpointId}", "delay 2000",
 		//Enroll Response
 		"raw 0x500 {01 23 00 00 00}", "delay 200",
-		"send 0x${device.deviceNetworkId} 1 1", "delay 200"
+		"send 0x${device.deviceNetworkId} 1 1", "delay 2000"
 	]
 }
 
