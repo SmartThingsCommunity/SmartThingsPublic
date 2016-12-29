@@ -137,7 +137,7 @@ def pressedButton (def btnRes) {
      {
          log.debug ("button $btnRes pushed")
          sendEvent(name: "buttonNum" , value: "Btn: $btnRes pushed")
-         createEvent([name: "button", value: "pushed", data: [buttonNumber: "$btnRes"], descriptionText: "$device.displayName $btnRes pressed", isStateChange: true, type: "physical"])
+         sendEvent([name: "button", value: "pushed", data: [buttonNumber: "$btnRes"], descriptionText: "$device.displayName $btnRes pressed", isStateChange: true, type: "physical"])
        }
 }
 
