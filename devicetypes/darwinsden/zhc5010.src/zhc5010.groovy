@@ -216,16 +216,20 @@ def zwaveEvent(physicalgraph.zwave.commands.centralscenev1.CentralSceneNotificat
            def buttonResult = cmd.sceneNumber + 4
            
            switch (buttonResult) {
-           case 1:
+           case 5:
               state.doublePressed1=true
-           case 2:
+              break
+           case 6:
               state.doublePressed2=true
-           case 3:
+              break
+           case 7:
               state.doublePressed3=true
-           case 4:
+              break
+           case 8:
               state.doublePressed4=true
+              break
            default:
-              log.debug ("unexpected double press button")
+              log.debug ("unexpected double press button: $buttonResult")
            }
               
            sendEvent(name: "buttonNum" , value: "Btn: $buttonResult double press")
