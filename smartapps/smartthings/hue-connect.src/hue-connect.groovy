@@ -20,7 +20,7 @@ definition(
 	name: "Hue (Connect)",
 	namespace: "smartthings",
 	author: "SmartThings",
-	description: "Allows you to connect your Philips Hue lights with SmartThings and control them from your Things area or Dashboard in the SmartThings Mobile app. Adjust colors by going to the Thing detail screen for your Hue lights (tap the gear on Hue tiles).\n\nPlease update your Hue Bridge first, outside of the SmartThings app, using the Philips Hue app.",
+	description: "app.description",
 	category: "SmartThings Labs",
 	iconUrl: "https://s3.amazonaws.com/smartapp-icons/Partner/hue.png",
 	iconX2Url: "https://s3.amazonaws.com/smartapp-icons/Partner/hue@2x.png",
@@ -28,11 +28,11 @@ definition(
 )
 
 preferences {
-	page(name:"mainPage", title:"Hue Device Setup", content:"mainPage", refreshTimeout:5)
-	page(name:"bridgeDiscovery", title:"Hue Bridge Discovery", content:"bridgeDiscovery", refreshTimeout:5)
-	page(name:"bridgeDiscoveryFailed", title:"Bridge Discovery Failed", content:"bridgeDiscoveryFailed", refreshTimeout:0)
-	page(name:"bridgeBtnPush", title:"Linking with your Hue", content:"bridgeLinking", refreshTimeout:5)
-	page(name:"bulbDiscovery", title:"Hue Device Setup", content:"bulbDiscovery", refreshTimeout:5)
+	page(name:"mainPage", title:"mainPage.title", content:"mainPage", refreshTimeout:5)
+	page(name:"bridgeDiscovery", title:"bridgeDiscovery.title", content:"bridgeDiscovery", refreshTimeout:5)
+	page(name:"bridgeDiscoveryFailed", title:"bridgeDiscoveryFailed.title", content:"bridgeDiscoveryFailed", refreshTimeout:0)
+	page(name:"bridgeBtnPush", title:"bridgeBtnPush.title", content:"bridgeLinking", refreshTimeout:5)
+	page(name:"bulbDiscovery", title:"bulbDiscovery.title", content:"bulbDiscovery", refreshTimeout:5)
 }
 
 def mainPage() {
@@ -84,16 +84,16 @@ def bridgeDiscovery(params=[:])
 		verifyHueBridges()
 	}
 
-	return dynamicPage(name:"bridgeDiscovery", title:"Discovery Started!", nextPage:"bridgeBtnPush", refreshInterval:refreshInterval, uninstall: true) {
-		section("Please wait while we discover your Hue Bridge. Discovery can take five minutes or more, so sit back and relax! Select your device below once discovered.") {
-			input "selectedHue", "enum", required:false, title:"Select Hue Bridge (${numFound} found)", multiple:false, options:options, submitOnChange: true
+	return dynamicPage(name:"bridgeDiscovery", title:"bridgeDiscovery.title:0", nextPage:"bridgeBtnPush", refreshInterval:refreshInterval, uninstall: true) {
+		section("bridgeDiscovery.section:0") {
+			input "selectedHue", "enum", required:false, title:"bridgeDiscovery.title:1", multiple:false, options:options, submitOnChange: true
 		}
 	}
 }
 
 def bridgeDiscoveryFailed() {
-	return dynamicPage(name:"bridgeDiscoveryFailed", title: "Bridge Discovery Failed", nextPage: "bridgeDiscovery") {
-		section("Failed to discover any Hue Bridges. Please confirm that the Hue Bridge is connected to the same network as your SmartThings Hub, and that it has power.") {
+	return dynamicPage(name:"bridgeDiscoveryFailed", title: "bridgeDiscoveryFailed.title:0", nextPage: "bridgeDiscovery") {
+		section("bridgeDiscoveryFailed.section:0") {
 		}
 	}
 }
@@ -104,16 +104,16 @@ def bridgeLinking() {
 	def refreshInterval = 3
 
 	def nextPage = ""
-	def title = "Linking with your Hue"
+	def title = "bridgeLinking.title:0"
 	def paragraphText
 	if (selectedHue) {
 		if (state.refreshUsernameNeeded) {
-			paragraphText = "The current Hue username is invalid.\n\nPlease press the button on your Hue Bridge to re-link. "
+			paragraphText = "bridgeLinking.paragraph:0"
 		} else {
-			paragraphText = "Press the button on your Hue Bridge to setup a link. "
+			paragraphText = "bridgeLinking.paragraph:1"
 		}
 	} else {
-		paragraphText = "You haven't selected a Hue Bridge, please Press \"Done\" and select one before clicking next."
+		paragraphText = "bridgeLinking.paragraph:2"
 	}
 	if (state.username) { //if discovery worked
 		if (state.refreshUsernameNeeded) {
@@ -122,8 +122,8 @@ def bridgeLinking() {
 			poll()
 		}
 		nextPage = "bulbDiscovery"
-		title = "Success!"
-		paragraphText = "Linking to your hub was a success! Please click 'Next'!"
+		title = "bridgeLinking.title:1"
+		paragraphText = "bridgeLinking.paragraph:3"
 	}
 
 	if((linkRefreshcount % 2) == 0 && !state.username) {
@@ -177,10 +177,10 @@ def bulbDiscovery() {
 		}
 	}
 
-	return dynamicPage(name:"bulbDiscovery", title:"Light Discovery Started!", nextPage:"", refreshInterval:refreshInterval, install:true, uninstall: true) {
-		section("Please wait while we discover your Hue Lights. Discovery can take five minutes or more, so sit back and relax! Select your device below once discovered.") {
-			input "selectedBulbs", "enum", required:false, title:"Select Hue Lights to add (${numFound} found)", multiple:true, submitOnChange: true, options:newLights
-			paragraph title: "Previously added Hue Lights (${existingLights.size()} added)", existingLightsDescription
+	return dynamicPage(name:"bulbDiscovery", title:"bulbDiscovery.title:0", nextPage:"", refreshInterval:refreshInterval, install:true, uninstall: true) {
+		section("bulbDiscovery.section:0") {
+			input "selectedBulbs", "enum", required:false, title:"bulbDiscovery.title:1", multiple:true, submitOnChange: true, options:newLights
+			paragraph title: "bulbDiscovery.title:2", existingLightsDescription
 		}
 		section {
 			href "bridgeDiscovery", title: title, description: "", state: selectedHue ? "complete" : "incomplete", params: [override: true]
