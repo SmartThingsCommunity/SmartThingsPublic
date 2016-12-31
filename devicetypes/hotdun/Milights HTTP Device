@@ -1,0 +1,201 @@
+/**
+ *  Greg Santos
+ *  Date: 2016-12-30
+ *
+ *  Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except
+ *  in compliance with the License. You may obtain a copy of the License at:
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ *  Unless required by applicable law or agreed to in writing, software distributed under the License is distributed
+ *  on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the License
+ *  for the specific language governing permissions and limitations under the License.
+ *
+ *  
+ 
+ */
+ 
+metadata {
+	definition (name: "Milight Bulb Controller CW/WW", namespace: "hotdun", author: "Greg Santos") {
+		capability "Switch Level"
+      	capability "Color Control"
+		capability "Color Temperature"
+        capability "Switch"
+       	capability "Refresh"
+		capability "Actuator"
+		capability "Sensor"
+        capability "Configuration"
+
+  		attribute "whitelevel", "number"
+               
+        command "setAdjustedColor"
+        command "setWhiteLevel"
+        command "setCoolWhite"
+        command "setDayWhite"
+        command "setWarmWhite"
+             
+       }
+   
+    }
+ 
+	tiles (scale: 2){      
+		multiAttributeTile(name:"switch", type: "lighting", width: 6, height: 4, canChangeIcon: true){
+			tileAttribute ("device.switch", key: "PRIMARY_CONTROL") {
+				attributeState "on", label:'${name}', action:"switch.off", icon:"st.lights.philips.hue-single", backgroundColor:"#79b821", nextState:"turningOff"
+				attributeState "off", label:'${name}', action:"switch.on", icon:"st.lights.philips.hue-single", backgroundColor:"#ffffff", nextState:"turningOn"
+				attributeState "turningOn", label:'${name}', action:"switch.off", icon:"st.lights.philips.hue-single", backgroundColor:"#79b821"
+				attributeState "turningOff", label:'${name}', action:"switch.on", icon:"st.lights.philips.hue-single", backgroundColor:"#ffffff"
+			}
+			tileAttribute ("device.level", key: "SLIDER_CONTROL") {
+				attributeState "level", action:"switch level.setLevel"
+			}
+		}
+
+		valueTile("whiteTempTile", "device.whiteLevel", decoration: "flat", height: 2, width: 2) {
+        	state "whiteLevel", label:'White: ${currentValue}%', backgroundColor:"#FFFFFF"
+        }
+        controlTile("whiteTempControl", "device.whiteLevel", "slider", decoration: "flat", height: 2, width: 4, inactiveLabel: false) {
+		    state "whiteLevel", action:"setWhiteLevel"
+	    }
+		standardTile("switch1", "switch1", canChangeIcon: true, width: 2, height: 2, decoration: "flat") {
+            state "off", label: "cool white", action: "setCoolWhite", icon: "st.switches.switch.off", backgroundColor: "#ffffff"
+			state "on", label: "cool white", action: "setCoolWhite", icon: "st.switches.switch.on", backgroundColor: "#79b821"
+		}
+        standardTile("switch2", "switch2", canChangeIcon: true, width: 2, height: 2, decoration: "flat") {
+            state "off", label: "day white", action: "setDayWhite", icon: "st.switches.switch.off", backgroundColor: "#ffffff"
+			state "on", label: "day white", action: "setDayWhite", icon: "st.switches.switch.on", backgroundColor: "#79b821"
+		}
+        standardTile("switch3", "switch3", canChangeIcon: true, width: 2, height: 2, decoration: "flat") {
+            state "off", label: "warm white", action: "setWarmWhite", icon: "st.switches.switch.off", backgroundColor: "#ffffff"
+			state "on", label: "warm white", action: "setWarmWhite", icon: "st.switches.switch.on", backgroundColor: "#79b821"
+		}
+       }      
+
+	main(["switch"])
+	details(["switch", "levelSliderControl", "whiteTempTile", "whiteTempControl", "switch1", "switch2", "switch3"])
+
+
+
+private toggleTiles(value) {
+   def tiles = ["switch1", "switch2", "switch3"]
+   tiles.each {tile ->
+      if (tile != value) { sendEvent(name: tile, value: "off") }
+      else { sendEvent(name:tile, value:"on"); sendEvent(name:"switch", value:"on") }
+   }
+}
+
+def on() {
+		def name = "on"
+        def value = "0"
+        def displayName = device.displayName
+		def egHost = "192.168.31.3:81"
+		def egRawCommand = "ST.${displayName}.${name}"
+        def egRestCommand = java.net.URLEncoder.encode(egRawCommand)
+        def egRestCommandValue = "$egRestCommand&${value}"
+		log.debug "processed data event ${name} from device ${displayName} with value ${value}"
+		log.debug "egRawCommand:  $egRawCommand"
+		log.debug "egRestCommandValue:  $egRestCommandValue"
+		sendHubCommand(new physicalgraph.device.HubAction("""GET /?$egRestCommandValue HTTP/1.1\r\nHOST: $egHost\r\n\r\n""", physicalgraph.device.Protocol.LAN))
+        sendEvent(name: "switch", value: "on")
+}
+ 
+def off() {
+    	def name = "off"
+        def value = "0"
+        def displayName = device.displayName
+		def egHost = "192.168.31.3:81"
+		def egRawCommand = "ST.${displayName}.${name}"
+        def egRestCommand = java.net.URLEncoder.encode(egRawCommand)
+        def egRestCommandValue = "$egRestCommand&${value}"
+		log.debug "processed data event ${name} from device ${displayName} with value ${value}"
+		log.debug "egRawCommand:  $egRawCommand"
+		log.debug "egRestCommandValue:  $egRestCommandValue"
+		sendHubCommand(new physicalgraph.device.HubAction("""GET /?$egRestCommandValue HTTP/1.1\r\nHOST: $egHost\r\n\r\n""", physicalgraph.device.Protocol.LAN))
+        sendEvent(name: "switch", value: "off")
+        sendEvent(name: "redalert", value: "off")
+        sendEvent(name: "rainbowswirl", value: "off", isStateChange: true)
+        sendEvent(name: "rainbowjump", value: "off")
+}
+ 
+def setLevel(level) {
+		if (device.latestValue("switch") == "off") { on() }
+	    def name = "level"
+   	    def displayName = device.displayName
+		def egHost = "192.168.31.3:81"
+		def egRawCommand = "ST.${displayName}.${name}"
+        def egRestCommand = java.net.URLEncoder.encode(egRawCommand)
+        def egRestCommandValue = "$egRestCommand&${level}"
+		log.debug "processed data event ${name} from device ${displayName} with value ${level}"
+		log.debug "egRawCommand:  $egRawCommand"
+		log.debug "egRestCommandValue:  $egRestCommandValue"
+		sendHubCommand(new physicalgraph.device.HubAction("""GET /?$egRestCommandValue HTTP/1.1\r\nHOST: $egHost\r\n\r\n""", physicalgraph.device.Protocol.LAN))
+		log.trace "setLevel($level)"
+        sendEvent(name: "level", value: level)
+}
+ 
+def setWhiteLevel(whitelevel) {
+	log.trace "setWhiteLevel($whitelevel)"
+    def name = "whitelevel"
+    def displayName = device.displayName
+	def egHost = "192.168.31.3:81"
+	def egRawCommand = "ST.${displayName}.${name}"
+    def egRestCommand = java.net.URLEncoder.encode(egRawCommand)
+    def egRestCommandValue = "$egRestCommand&${whitelevel}"
+	log.debug "processed data event ${name} from device ${displayName} with value ${whitelevel}"
+	log.debug "egRawCommand:  $egRawCommand"
+	log.debug "egRestCommandValue:  $egRestCommandValue"
+	sendHubCommand(new physicalgraph.device.HubAction("""GET /?$egRestCommandValue HTTP/1.1\r\nHOST: $egHost\r\n\r\n""", physicalgraph.device.Protocol.LAN))
+	sendEvent(name: "whitelevel", value: whitelevel)
+}	 
+
+def setCoolWhite() {
+ 	toggleTiles("switch1")
+    log.trace "setWhiteLevel(0)"
+    def name = "whitelevel"
+    def whitelevel = "0"
+    def displayName = device.displayName
+	def egHost = "192.168.31.3:81"
+	def egRawCommand = "ST.${displayName}.${name}"
+    def egRestCommand = java.net.URLEncoder.encode(egRawCommand)
+    def egRestCommandValue = "$egRestCommand&${whitelevel}"
+	log.debug "processed data event ${name} from device ${displayName} with value ${whitelevel}"
+	log.debug "egRawCommand:  $egRawCommand"
+	log.debug "egRestCommandValue:  $egRestCommandValue"
+	sendHubCommand(new physicalgraph.device.HubAction("""GET /?$egRestCommandValue HTTP/1.1\r\nHOST: $egHost\r\n\r\n""", physicalgraph.device.Protocol.LAN))
+	sendEvent(name: "whitelevel", value: whitelevel)
+}
+
+def setDayWhite() {
+ 	toggleTiles("switch2")
+    log.trace "setWhiteLevel(50)"
+    def name = "whitelevel"
+    def whitelevel = "50"
+    def displayName = device.displayName
+	def egHost = "192.168.31.3:81"
+	def egRawCommand = "ST.${displayName}.${name}"
+    def egRestCommand = java.net.URLEncoder.encode(egRawCommand)
+    def egRestCommandValue = "$egRestCommand&${whitelevel}"
+	log.debug "processed data event ${name} from device ${displayName} with value ${whitelevel}"
+	log.debug "egRawCommand:  $egRawCommand"
+	log.debug "egRestCommandValue:  $egRestCommandValue"
+	sendHubCommand(new physicalgraph.device.HubAction("""GET /?$egRestCommandValue HTTP/1.1\r\nHOST: $egHost\r\n\r\n""", physicalgraph.device.Protocol.LAN))
+	sendEvent(name: "whitelevel", value: whitelevel)
+}
+
+def setWarmWhite() {
+    toggleTiles("switch3")
+    log.trace "setWhiteLevel(100)"
+    def name = "whitelevel"
+    def whitelevel = "100"
+    def displayName = device.displayName
+	def egHost = "192.168.31.3:81"
+	def egRawCommand = "ST.${displayName}.${name}"
+    def egRestCommand = java.net.URLEncoder.encode(egRawCommand)
+    def egRestCommandValue = "$egRestCommand&${whitelevel}"
+	log.debug "processed data event ${name} from device ${displayName} with value ${whitelevel}"
+	log.debug "egRawCommand:  $egRawCommand"
+	log.debug "egRestCommandValue:  $egRestCommandValue"
+	sendHubCommand(new physicalgraph.device.HubAction("""GET /?$egRestCommandValue HTTP/1.1\r\nHOST: $egHost\r\n\r\n""", physicalgraph.device.Protocol.LAN))
+	sendEvent(name: "whitelevel", value: whitelevel)
+ }	
+
