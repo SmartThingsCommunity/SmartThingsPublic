@@ -166,11 +166,11 @@ private refreshAuthToken() {
     debugEvent("Login Params: ${loginParams}")
     
     try {
-        httpGet(loginParams) { loginResp ->
+ 		httpGet(loginParams) { loginResp ->
             updateCookies(loginResp)
-            
             // html / body   / div id=content / div id=external-wrapper / div id=external-content / div id=login-form / form / div / input name=authenticity_token
-            def authenticityToken = loginResp.data[0].children[1].children[1].children[0].children[0].children[1].children[2].children[0].children[1].attributes()["value"]
+            // OLD def authenticityToken = loginResp.data[0].children[1].children[1].children[0].children[0].children[1].children[2].children[0].children[1].attributes()["value"]
+			def authenticityToken = loginResp.data[0].children[1].children[1].children[0].children[0].children[0].children[0].children[2].children[0].children[1].attributes()["value"]
             debugEvent("Authenticity Token: ${authenticityToken}")
             
             def sessionParams = [
