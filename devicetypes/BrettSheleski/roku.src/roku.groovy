@@ -148,7 +148,7 @@ private def remoteKeyPress(String key){
         method: "POST",
         path: "/keypress/" + key,
         headers: [
-            HOST: "${rokuIpAddress}:${rokuPort}"
+            HOST: "http://${rokuIpAddress}:${rokuPort}"
         ]
     )
 
