@@ -18,18 +18,68 @@ metadata {
         command "keyPress_InfoBackspace"
         command "keyPress_Search"
         command "keyPress_Enter"
+        command "keyPress_Menu"
         
     }
 
 	// UI tile definitions
 	 tiles(scale: 2) {
-        standardTile("home", "device.switch", width: 2, height: 2) {
-            state "home", label: 'Home', action: "keyPress_home", icon: "st.Home.home2"
+
+         standardTile("home", "device.homeButton", width: 4, height: 1) {
+             state "play", label: 'Home', action: "keyPress_home", icon: "st.Home.home2"
+         }
+
+        standardTile("up", "device.playButton", width: 2, height: 2) {
+            state "play", label: 'Up', action: "keyPress_Up", icon: "st.Home.home2"
         }
 
-        main("home")
+        standardTile("down", "device.downButton", width: 2, height: 2) {
+            state "play", label: 'Down', action: "keyPress_Down", icon: "st.Home.home2"
+        }
 
-        details(["home"])
+        standardTile("left", "device.leftButton", width: 2, height: 2) {
+            state "play", label: 'Left', action: "keyPress_Left", icon: "st.Home.home2"
+        }
+
+        standardTile("right", "device.rightButton", width: 2, height: 2) {
+            state "play", label: 'Right', action: "keyPress_Right", icon: "st.Home.home2"
+        }
+
+        standardTile("enter", "device.enterButton", width: 2, height: 2) {
+            state "play", label: 'Enter', action: "keyPress_Enter", icon: "st.Home.home2"
+        }
+
+        standardTile("replay", "device.replayButton", width: 1, height: 1) {
+            state "play", label: 'Replay', action: "keyPress_InstantReplay", icon: "st.Home.home2"
+        }
+
+        standardTile("asterisk", "device.asteriskButton", width: 1, height: 1) {
+            state "play", label: '*', action: "keyPress_Menu", icon: "st.Home.home2"
+        }
+
+        valueTile("blank1x1", "device.doNothing1x1", width: 1, height: 1)
+        valueTile("blank1x2", "device.doNothing1x2", width: 1, height: 2)
+        valueTile("blank2x2", "device.doNothing2x2", width: 2, height: 2)
+
+        standardTile("rewind", "device.asteriskButton", width: 2, height: 1) {
+            state "play", label: '*', action: "keyPress_Rev", icon: "st.Home.home2"
+        }
+
+        standardTile("play", "device.asteriskButton", width: 2, height: 1) {
+            state "play", label: 'Play', action: "keyPress_Play", icon: "st.Home.home2"
+        }
+
+        standardTile("fastForward", "device.asteriskButton", width: 2, height: 1) {
+            state "play", label: '> >', action: "keyPress_Fwd", icon: "st.Home.home2"
+        }
+
+        main("play")
+
+        details(["blank1x1", "home", "blank1x1",
+                 "replay", "blank1x2", "up", "blank1x2", "asterisk",
+                  "left", "enter", "right",
+                  "blank2x2", "down", "blank2x2",
+                  "rewind", "play", "fastForward"])
     }
 
      preferences {
@@ -84,6 +134,9 @@ def keyPress_Search() {
 }
 def keyPress_Enter() {
     remoteKeyPress("Enter")
+}
+def keyPress_Menu() {
+    remoteKeyPress("Lit_*")
 }
 
 
