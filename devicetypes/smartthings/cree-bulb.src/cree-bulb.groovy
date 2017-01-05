@@ -74,15 +74,15 @@ def parse(String description) {
 }
 
 def off() {
-    zigbee.off()
+    zigbee.off() + ["delay 500"] + zigbee.onOffRefresh()
 }
 
 def on() {
-    zigbee.on()
+    zigbee.on() + ["delay 500"] + zigbee.onOffRefresh()
 }
 
 def setLevel(value) {
-    zigbee.setLevel(value) + ["delay 500"] + zigbee.levelRefresh()         //adding refresh because of ZLL bulb not conforming to send-me-a-report
+    zigbee.setLevel(value) + ["delay 500"] + zigbee.levelRefresh() + zigbee.onOffRefresh()        //adding refresh because of ZLL bulb not conforming to send-me-a-report
 }
 
 /**
