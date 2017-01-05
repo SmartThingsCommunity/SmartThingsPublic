@@ -1,6 +1,6 @@
 metadata {
     definition(name: "Roku", namespace: "BrettSheleski", author: "Brett Sheleski") {
-		capability "Momentary"
+		capability "Switch"
 
         attribute "ipAddress", "string"
 
@@ -25,8 +25,8 @@ metadata {
 	// UI tile definitions
 	 tiles(scale: 2) {
 
-         standardTile("home", "device.homeButton", width: 4, height: 1) {
-             state "play", label: 'Home', action: "keyPress_home", icon: "st.Home.home2"
+         valueTile("home", "device.button", width: 4, height: 1) {
+             state "play", label: 'Home', action: "keyPress_home", defaultState: true
          }
 
         standardTile("up", "device.playButton", width: 2, height: 2) {
@@ -45,8 +45,8 @@ metadata {
             state "play", label: 'Right', action: "keyPress_Right", icon: "st.Home.home2"
         }
 
-        standardTile("enter", "device.enterButton", width: 2, height: 2) {
-            state "play", label: 'Enter', action: "keyPress_Enter", icon: "st.Home.home2"
+        standardTile("select", "device.enterButton", width: 2, height: 2) {
+            state "play", label: 'Select', action: "keyPress_Select", icon: "st.Home.home2"
         }
 
         standardTile("replay", "device.replayButton", width: 1, height: 1) {
@@ -77,7 +77,7 @@ metadata {
 
         details(["blank1x1", "home", "blank1x1",
                  "replay", "blank1x2", "up", "blank1x2", "asterisk",
-                  "left", "enter", "right",
+                  "left", "select", "right",
                   "blank2x2", "down", "blank2x2",
                   "rewind", "play", "fastForward"])
     }
@@ -144,13 +144,41 @@ private def remoteKeyPress(String key){
 
     log.debug "remoteKeyPress(${key})"
 
+    def hosthex = convertIPtoHex(rokuIpAddress)
+    def porthex = convertPortToHex(rokuPort)
+
+    device.deviceNetworkId = "$hosthex:$porthex" 
+
     def result = new physicalgraph.device.HubAction(
         method: "POST",
         path: "/keypress/" + key,
         headers: [
-            HOST: "http://${rokuIpAddress}:${rokuPort}"
+            HOST: "${rokuIpAddress}:${rokuPort}"
         ]
     )
 
     log.debug result
+
+    return result
+}
+
+private String convertIPtoHex(ipAddress) { 
+    String hex = ipAddress.tokenize( '.' ).collect {  String.format( '%02x', it.toInteger() ) }.join()
+    log.debug "IP address entered is $ipAddress and the converted hex code is $hex"
+    return hex
+
+}
+
+private String convertPortToHex(port) {
+	String hexport = port.toString().format( '%04x', port.toInteger() )
+    log.debug hexport
+    return hexport
+}
+
+def on(){
+    keyPress_Play()
+}
+
+def off(){
+    keyPress_Play()
 }
