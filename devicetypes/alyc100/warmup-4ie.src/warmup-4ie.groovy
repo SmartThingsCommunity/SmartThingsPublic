@@ -14,8 +14,8 @@
  *
  *
  *	VERSION HISTORY
+ *	05.01.2017	v1.0 BETA Release 2 - Minor fix that prevented 'Manual' mode being selected and activated.
  *  14.12.2016	v1.0 BETA - Initial Release
- *	05.01.2016	v1.0 BETA Release 2 - Minor fix that prevented 'Manual' mode being selected and activated.
  */
 preferences 
 {
