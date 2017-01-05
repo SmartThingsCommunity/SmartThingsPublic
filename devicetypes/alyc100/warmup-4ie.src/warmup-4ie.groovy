@@ -15,6 +15,7 @@
  *
  *	VERSION HISTORY
  *  14.12.2016	v1.0 BETA - Initial Release
+ *	05.01.2016	v1.0 BETA Release 2 - Minor fix that prevented 'Manual' mode being selected and activated.
  */
 preferences 
 {
@@ -284,10 +285,11 @@ def setThermostatMode(mode) {
 	if (settings.disableDevice == null || settings.disableDevice == false) {
 		mode = mode == 'cool' ? 'heat' : mode
 		log.debug "Executing 'setThermostatMode with mode $mode'"
-    	
+    	def args
     	if (mode == 'off') {
         	//Sets whole location to off instead of individual thermostat. Awaiting Warmup API update.
-        	/*args = [
+        	/*
+            args = [
         		method: "setRunModeByRoomIdArray", roomIdArray: [device.deviceNetworkId as Integer], values: [runMode: "frost"]
         	]
         	parent.apiPOSTByChild(args)
@@ -299,7 +301,7 @@ def setThermostatMode(mode) {
         	]	
             parent.apiPOSTByChild(args)
     	} else {
-        	def args = [
+        	args = [
         		method: "setProgramme", roomId: device.deviceNetworkId, roomMode: "prog"
         	]
             parent.apiPOSTByChild(args)
