@@ -101,7 +101,7 @@ def parse(String description)
         break
 		case "updated":
         	logging("Update is hit when the device is paired.")
-            result << response(zwave.wakeUpV1.wakeUpIntervalSet(seconds: 3600, nodeid:zwaveHubNodeId).format())
+            result << response(zwave.wakeUpV1.wakeUpIntervalSet(seconds: 86400, nodeid:zwaveHubNodeId).format())
             result << response(zwave.batteryV1.batteryGet().format())
             result << response(zwave.versionV1.versionGet().format())
             result << response(zwave.manufacturerSpecificV2.manufacturerSpecificGet().format())
@@ -267,7 +267,7 @@ def configure() {
     logging("Configuring Device For SmartThings Use")
     def cmds = []
 
-    cmds += sync_properties()
+    cmds += update_needed_settings()
     commands(cmds)
 }
 
@@ -290,6 +290,12 @@ def sync_properties()
     def configuration = parseXml(configuration_model())
 
     def cmds = []
+    
+    if(state.wakeInterval == null || state.wakeInterval != 86400){
+        logging("Setting Wake Interval to 86400")
+        cmds << zwave.wakeUpV1.wakeUpIntervalSet(seconds: 86400, nodeid:zwaveHubNodeId)
+        cmds << zwave.wakeUpV1.wakeUpIntervalGet()
+    }
     
     configuration.Value.each
     {
