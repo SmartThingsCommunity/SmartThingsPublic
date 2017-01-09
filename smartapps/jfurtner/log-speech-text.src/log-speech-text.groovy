@@ -48,12 +48,12 @@ def speech(evt) {
             message: evt.value
         ]
     ]
-    log.debug params
+    //log.debug params
     asynchttp_v1.post('responseHandlerMethod', params)
 }
 
 def responseHandlerMethod(response, data) {
-	if ($response.errorData) {
-		log.debug "response: $response.errorData"
+	if (response.hasError()) {
+		log.debug "response error: ${response.errorData}"
     }
 }
