@@ -14,6 +14,7 @@
  *
  *	VERSION HISTORY
  *
+ *	09.01.2017: 2.0c - Added support for MiHome House Monitor
  *  12.12.2016:	2.0b - Null issues when a device has been forced removed.
  *  23.11.2016:	2.0 - Remove extra logging.
  *
@@ -354,7 +355,7 @@ def updateDevices() {
      			}
             })
         }
-        else if (device.device_type == 'monitor') {
+        else if (device.device_type == 'monitor' || device.device_type == 'house') {
         	log.debug "Identified: device ${device.id}: ${device.device_type}: ${device.label}"
             selectors.add("${device.id}")
             def value = "${device.label} Monitor"
@@ -675,9 +676,9 @@ def logErrors(options = [errorReturn: null, logObject: log], Closure c) {
 }
 
 private def textVersion() {
-    def text = "MiHome (Connect)\nVersion: 2.0b\nDate: 12122016(2340)"
+    def text = "MiHome (Connect)\nVersion: 2.0c\nDate: 09012017(2240)"
 }
 
 private def textCopyright() {
-    def text = "Copyright © 2016 Alex Lee Yuk Cheung"
+    def text = "Copyright © 2017 Alex Lee Yuk Cheung"
 }
