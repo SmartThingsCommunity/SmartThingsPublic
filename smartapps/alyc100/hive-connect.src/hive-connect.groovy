@@ -1350,7 +1350,7 @@ def isLoggedIn() {
 		return false
 	}
 
-	def now = new Date().getTime();
+	def now = new Date().getTime()
     return state.hiveAccessToken_expires_at > now
 }
 
