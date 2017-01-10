@@ -84,7 +84,7 @@ def parse(String description) {
     def bodyString = msg.body
     if (bodyString) {
     	unschedule("setOffline")
-        def body = new XmlSlurper().parseText(bodyString)
+        def body = new XmlSlurper().parseText(bodyString.replaceAll("[^\\x20-\\x7e]", ""))
  		if (body?.property?.TimeSyncRequest?.text()) {
         	log.trace "Got TimeSyncRequest"
         	result << timeSyncResponse()
@@ -208,7 +208,7 @@ def subscribe(ip, port) {
     def existingIp = getDataValue("ip")
     def existingPort = getDataValue("port")
     if (ip && ip != existingIp) {
-         log.debug "Updating ip from $existingIp to $ip"    
+         log.debug "Updating ip from $existingIp to $ip"
     	 updateDataValue("ip", ip)
     	 def ipvalue = convertHexToIP(getDataValue("ip"))
          sendEvent(name: "currentIP", value: ipvalue, descriptionText: "IP changed to ${ipvalue}")
