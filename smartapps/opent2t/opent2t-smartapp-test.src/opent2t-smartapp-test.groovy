@@ -406,7 +406,6 @@ private mapDeviceCommands(command, value) {
 		case "hue":
 			resultCommand = "setHue"
 			resultValue = value
-			Log
 			break
 		case "saturation":
 			resultCommand = "setSaturation"
