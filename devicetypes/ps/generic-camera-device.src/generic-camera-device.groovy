@@ -90,8 +90,8 @@ def take() {
 	def userpassascii = "${CameraUser}:${CameraPassword}"
 	def userpass = "Basic " + userpassascii.encodeAsBase64().toString()
     def host = CameraIP 
-    def hosthex = convertIPtoHex(host)
-    def porthex = convertPortToHex(CameraPort)
+    def hosthex = convertIPtoHex(host).toUpperCase() //thanks to @foxxyben for catching this
+    def porthex = convertPortToHex(CameraPort).toUpperCase()
     device.deviceNetworkId = "$hosthex:$porthex" 
     
     log.debug "The device id configured is: $device.deviceNetworkId"
