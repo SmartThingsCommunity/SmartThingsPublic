@@ -396,14 +396,14 @@ def updateLatestPrices() {
 }
 
 def getStandingCharge(utilityType) {
-	if (state.contracts[utilityType] == null) {
+	if (state.contracts != null && state.contracts[utilityType] == null) {
     	updateLatestPrices()
     }
 	return state.contracts[utilityType] == null ? 0 : state.contracts[utilityType][0]
 }
 
 def getUnitPrice(utilityType) {
-	if (state.contracts[utilityType] == null) {
+	if (state.contracts != null && state.contracts[utilityType] == null) {
     	updateLatestPrices()
     }
 	return state.contracts[utilityType] == null ? 0 : state.contracts[utilityType][1]
