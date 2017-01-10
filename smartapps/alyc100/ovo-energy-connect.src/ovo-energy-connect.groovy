@@ -89,7 +89,7 @@ def firstPage() {
 
 def headerSECTION() {
 	return paragraph (image: "https://raw.githubusercontent.com/alyc100/SmartThingsPublic/master/smartapps/alyc100/icon175x175.jpeg",
-                  "OVO Energy (Connect)\nVersion: 2.2.4b\nDate: 10012017(1915)")
+                  "OVO Energy (Connect)\nVersion: 2.2.4b\nDate: 10012017(2035)")
 }               
 
 def stateTokenPresent() {
@@ -396,17 +396,21 @@ def updateLatestPrices() {
 }
 
 def getStandingCharge(utilityType) {
-	if (state.contracts != null && state.contracts[utilityType] == null) {
-    	updateLatestPrices()
+	if ((state.contracts == null) || (state.contracts[utilityType] == null) || (state.contracts[utilityType].size() != 2)) { updateLatestPrices() }
+	if ((state.contracts[utilityType] == null) || (state.contracts[utilityType].size() < 1)) {
+    	return 0
+    } else {
+        return state.contracts[utilityType][0]
     }
-	return state.contracts[utilityType] == null ? 0 : state.contracts[utilityType][0]
 }
 
 def getUnitPrice(utilityType) {
-	if (state.contracts != null && state.contracts[utilityType] == null) {
-    	updateLatestPrices()
+	if ((state.contracts == null) || (state.contracts[utilityType] == null) || (state.contracts[utilityType].size() != 2)) { updateLatestPrices() }
+	if ((state.contracts[utilityType] == null) || (state.contracts[utilityType].size() < 2)) {
+    	return 0
+    } else {
+        return state.contracts[utilityType][1]
     }
-	return state.contracts[utilityType] == null ? 0 : state.contracts[utilityType][1]
 }
 
 def updateAccountDetails() {
