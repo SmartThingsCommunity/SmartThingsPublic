@@ -1,5 +1,5 @@
 /**
- *  Simple Device Viewer v 2.2.3
+ *  Simple Device Viewer v 2.3.2
  *
  *  Author: 
  *    Kevin LaFramboise (krlaframboise)
@@ -8,6 +8,16 @@
  *    https://community.smartthings.com/t/release-simple-device-viewer/42481?u=krlaframboise
  *
  *  Changelog:
+ *
+ *    2.3.2 (01/09/2017)
+ *      - Fixed attribute for valve capability.
+ *
+ *    2.3.1 (01/07/2017)
+ *      - Fixed problem with All Devices - States screen.
+ *
+ *    2.3.0 (01/06/2017)
+ *      - Added support for Energy Meter, Illuminance Measurement, Power Meter, Relative Humidity Measurement, Valve
+ *      - Added abort to "All Device - States" to prevent timeout errors.
  *
  *    2.2.3 (09/21/2016)
  *      - Still having occassional timeouts so made it abort sooner,
@@ -137,16 +147,19 @@ def devicesPage() {
 			input "actuators", "capability.actuator",
 				title: "Which Actuators?",
 				multiple: true,
+				hideWhenEmpty: true,
 				required: false
 			input "sensors", "capability.sensor",
 				title: "Which Sensors?",
 				multiple: true,
+				hideWhenEmpty: true,
 				required: false			
 			capabilitySettings().each {				
 				input "${getPrefName(it)}Devices",
 					"capability.${getPrefType(it)}",
 					title: "Which ${getPluralName(it)}?",
 					multiple: true,
+					hideWhenEmpty: true,
 					required: false
 			}			
 		}		
@@ -359,7 +372,7 @@ def otherSettingsPage() {
 				defaultValue: true,
 				required: false
 			input "tempSortByValue", "bool",
-				title: "Sort by Temperature Value?",
+				title: "Sort by Measurement Value?",
 				defaultValue: true,
 				required: false
 			input "lastEventSortByValue", "bool",
@@ -578,9 +591,27 @@ def capabilityPage(params) {
 		}
 		else {
 			section("All Selected Capabilities") {
-				getParagraphs(getAllDevices().collect { 
-					getDeviceAllCapabilitiesListItem(it) 
-				})
+				def startTime = new Date().time
+				def aborted = false
+				def capListItems = []
+				
+				def selectedCapSettings = getSelectedCapabilitySettings()
+				
+				getAllDevices().each {
+					if (new Date().time - startTime > 15000) {
+						aborted = true
+					}
+					else {
+						capListItems << getDeviceAllCapabilitiesListItem(selectedCapSettings, it)
+					}
+				}
+				
+				if (aborted) {
+					paragraph "Unable to load the states of all devices within the allowed time.  If you've selected a lot of devices and capabilities, you might not be able to use the 'All Devices - States' view."
+				}
+				if (capListItems) {
+					getParagraphs(capListItems)
+				}
 			}
 		}			
 	}
@@ -642,14 +673,14 @@ private getDevicesByCapability(name, excludeList=null) {
 		.sort() { it.displayName.toLowerCase() }, excludeList)	
 }
 
-private getDeviceAllCapabilitiesListItem(device) {
+private getDeviceAllCapabilitiesListItem(selectedCapSettings, device) {
 	def listItem = [
 		sortValue: device.displayName
-	]	
-	getSelectedCapabilitySettings().each {
-		//if (device.hasCapability(getCapabilityName(it))) {
+	]		
+	selectedCapSettings.each {
+		if (device.hasCapability(getCapabilityName(it))) {
 			listItem.status = (listItem.status ? "${listItem.status}, " : "").concat(getDeviceCapabilityStatusItem(device, it).status)
-		//}
+		}
 	}
 	listItem.title = getDeviceStatusTitle(device, listItem.status)
 	return listItem
@@ -826,7 +857,7 @@ private String getDeviceStatusTitle(device, status) {
 		return device.displayName
 	}
 	else {
-		return "${status?.toUpperCase()} -- ${device.displayName}"
+		return "${status} -- ${device.displayName}"
 	}	
 }
 
@@ -857,7 +888,7 @@ private getCapabilityStatusItem(cap, sortValue, value) {
 		if (item.status == getActiveState(cap) && !state.refreshingDashboard) {
 			item.status = "*${item.status}"
 		}
-		
+			
 		switch (cap.name) {
 			case "Battery":			
 				item.status = "${item.status}%"
@@ -867,11 +898,7 @@ private getCapabilityStatusItem(cap, sortValue, value) {
 				}				
 				break
 			case "Temperature Measurement":
-				item.status = "${item.status}°${location.temperatureScale}"
 				item.image = getTemperatureImage(item.value)
-				if (tempSortByValue != false) {
-					item.sortValue = safeToInteger(item.value)
-				}
 				break
 			case "Alarm":
 				item.image = getAlarmImage(item.value)
@@ -900,6 +927,16 @@ private getCapabilityStatusItem(cap, sortValue, value) {
 			case "Water Sensor":
 				item.image = getWaterImage(item.value)
 				break
+		}
+		
+		if (cap?.units != null) {
+			item.status = "${item.status}${cap.units}"
+			if (tempSortByValue != false) {
+				item.sortValue = safeToFloat(item.value)
+			}
+		}
+		else {
+			item.status = "${item.status}".toUpperCase()
 		}
 	}
 	else {
@@ -1164,6 +1201,7 @@ def performScheduledTasks() {
 }
 
 void pollDevices() {
+	log.warn "Polling Devices"
 	logDebug "Polling Devices"
 	state.lastDevicePoll = new Date().time	
 	getDevicesByCapability("Polling", pollingExcluded)*.poll()
@@ -1371,6 +1409,27 @@ private int safeToInteger(val, defaultVal=0) {
 	}
 }
 
+private int safeToFloat(val, defaultVal=0) {
+	try {
+		if (val && "$val".isNumber()) {
+			if ("$val".isInteger() || "$val".isFloat() || "$val".isDouble()) {
+				return "$val".toFloat()
+			}			
+			else {
+				logDebug "Unable to parse $val to Integer so returning 0"
+				return 0
+			}
+		}
+		else {
+			return safeToFloat(defaultVal, 0)
+		}		
+	}
+	catch (e) {
+		logDebug "safeToFloat($val, $defaultVal) failed with error $e"
+		return 0
+	}
+}
+
 def checkLastEvents() {
 	logDebug "Checking Last Events"
 	removeExcludedDevices(getAllDevices(), lastEventNotificationsExcluded)?.each {
@@ -1566,7 +1625,20 @@ private capabilitySettings() {
 			attributeName: "contact",
 			activeState: "open",
 			imageOnly: true
-		],		
+		],
+		[
+			name: "Energy Meter",
+			prefType: "energyMeter",
+			attributeName: "energy",
+			units: " kWh"
+		],
+		[
+			name: "Illuminance Measurement",
+			pluralName: "Illuminance Sensors",
+			prefType: "illuminanceMeasurement",
+			attributeName: "illuminance",
+			units: " lx"
+		],
 		[
 			name: "Light",
 			prefName: "light",
@@ -1589,11 +1661,24 @@ private capabilitySettings() {
 			imageOnly: true
 		],
 		[
+			name: "Power Meter",
+			prefType: "powerMeter",
+			attributeName: "power",
+			units: " W"
+		],
+		[
 			name: "Presence Sensor",
 			prefType: "presenceSensor",
 			attributeName: "presence",
 			activeState: "present",
 			imageOnly: true
+		],
+		[
+			name: "Relative Humidity Measurement",
+			pluralName: "Relative Humidity Sensors",
+			prefType: "relativeHumidityMeasurement",
+			attributeName: "humidity",
+			units: "%"
 		],
 		[
 			name: "Smoke Detector",
@@ -1612,8 +1697,14 @@ private capabilitySettings() {
 			name: "Temperature Measurement",
 			pluralName: "Temperature Sensors",
 			prefType: "temperatureMeasurement",
-			attributeName: "temperature"
+			attributeName: "temperature",
+			units: "°${location.temperatureScale}"
 		],		
+		[
+			name: "Valve",
+			activeState: "open",
+			attributeName: "contact"
+		],
 		[
 			name: "Water Sensor",
 			prefType: "waterSensor",
