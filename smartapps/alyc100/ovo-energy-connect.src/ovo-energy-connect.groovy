@@ -28,6 +28,9 @@
  *
  *	06.12.2016
  *	v2.2.4 - Add offline/online API notification.
+ *
+ *	10.01.2017
+ *	v2.2.4b - Stop null pointer on update latest price failiure.
  */
 definition(
 		name: "OVO Energy (Connect)",
@@ -86,7 +89,7 @@ def firstPage() {
 
 def headerSECTION() {
 	return paragraph (image: "https://raw.githubusercontent.com/alyc100/SmartThingsPublic/master/smartapps/alyc100/icon175x175.jpeg",
-                  "OVO Energy (Connect)\nVersion: 2.2.4\nDate: 06122016(1640)")
+                  "OVO Energy (Connect)\nVersion: 2.2.4b\nDate: 10012017(1915)")
 }               
 
 def stateTokenPresent() {
@@ -374,9 +377,9 @@ def devicesList() {
 def updateLatestPrices() {
 	log.info("Update latest prices from OVO...")
 	logErrors([]) {
+    	state.contracts = [:]
 		def resp = apiGET("https://paym.ovoenergy.com/api/paym/accounts")
 		if (resp.status == 200) {
-        	state.contracts = [:]
 			def contracts = resp.data.contracts[0]
             contracts.each { contract -> 
             	if (contract.utility != null) {
