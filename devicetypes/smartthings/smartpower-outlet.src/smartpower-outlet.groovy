@@ -157,9 +157,10 @@ def configure() {
 //min change in value is 01
 def powerConfig() {
 	[
-		"zdo bind 0x${device.deviceNetworkId} 1 ${endpointId} 0x0B04 {${device.zigbeeId}} {}", "delay 200",
+		"zdo bind 0x${device.deviceNetworkId} 1 ${endpointId} 0x0B04 {${device.zigbeeId}} {}", "delay 2000",
 		"zcl global send-me-a-report 0x0B04 0x050B 0x29 1 600 {05 00}",				//The send-me-a-report is custom to the attribute type for CentraLite
-		"send 0x${device.deviceNetworkId} 1 ${endpointId}", "delay 500"
+		"delay 200",
+		"send 0x${device.deviceNetworkId} 1 ${endpointId}", "delay 2000"
 	]
 }
 

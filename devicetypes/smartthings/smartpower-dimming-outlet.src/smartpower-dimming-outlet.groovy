@@ -128,9 +128,9 @@ def setLevel(value) {
 
 def refresh() {
 	[
-			"st rattr 0x${device.deviceNetworkId} ${endpointId} 6 0", "delay 500",
-			"st rattr 0x${device.deviceNetworkId} ${endpointId} 8 0", "delay 500",
-			"st rattr 0x${device.deviceNetworkId} ${endpointId} 0x0B04 0x050B", "delay 500"
+			"st rattr 0x${device.deviceNetworkId} ${endpointId} 6 0", "delay 2000",
+			"st rattr 0x${device.deviceNetworkId} ${endpointId} 8 0", "delay 2000",
+			"st rattr 0x${device.deviceNetworkId} ${endpointId} 0x0B04 0x050B", "delay 2000"
 	]
 
 }
@@ -313,9 +313,9 @@ def isDescriptionPower(descMap) {
 
 def onOffConfig() {
 	[
-			"zdo bind 0x${device.deviceNetworkId} 1 ${endpointId} 6 {${device.zigbeeId}} {}", "delay 200",
-			"zcl global send-me-a-report 6 0 0x10 0 600 {01}",
-			"send 0x${device.deviceNetworkId} 1 ${endpointId}", "delay 1500"
+			"zdo bind 0x${device.deviceNetworkId} 1 ${endpointId} 6 {${device.zigbeeId}} {}", "delay 2000",
+			"zcl global send-me-a-report 6 0 0x10 0 600 {01}", "delay 200",
+			"send 0x${device.deviceNetworkId} 1 ${endpointId}", "delay 2000"
 	]
 }
 
@@ -323,9 +323,9 @@ def onOffConfig() {
 //min level change is 01
 def levelConfig() {
 	[
-			"zdo bind 0x${device.deviceNetworkId} 1 ${endpointId} 8 {${device.zigbeeId}} {}", "delay 200",
-			"zcl global send-me-a-report 8 0 0x20 5 3600 {01}",
-			"send 0x${device.deviceNetworkId} 1 ${endpointId}", "delay 1500"
+			"zdo bind 0x${device.deviceNetworkId} 1 ${endpointId} 8 {${device.zigbeeId}} {}", "delay 2000",
+			"zcl global send-me-a-report 8 0 0x20 5 3600 {01}", "delay 200",
+			"send 0x${device.deviceNetworkId} 1 ${endpointId}", "delay 2000"
 	]
 }
 
@@ -333,9 +333,10 @@ def levelConfig() {
 //min change in value is 05
 def powerConfig() {
 	[
-		"zdo bind 0x${device.deviceNetworkId} 1 ${endpointId} 0x0B04 {${device.zigbeeId}} {}", "delay 200",
+		"zdo bind 0x${device.deviceNetworkId} 1 ${endpointId} 0x0B04 {${device.zigbeeId}} {}", "delay 2000",
 		"zcl global send-me-a-report 0x0B04 0x050B 0x29 1 600 {05 00}",				//The send-me-a-report is custom to the attribute type for CentraLite
-		"send 0x${device.deviceNetworkId} 1 ${endpointId}", "delay 500"
+		"delay 200",
+		"send 0x${device.deviceNetworkId} 1 ${endpointId}", "delay 2000"
 	]
 }
 
@@ -344,7 +345,10 @@ def setLevelWithRate(level, rate) {
 		rate = "0000"
 	}
 	level = convertToHexString(level * 255 / 100) 				//Converting the 0-100 range to 0-FF range in hex
-	"st cmd 0x${device.deviceNetworkId} ${endpointId} 8 4 {$level $rate}"
+	[
+			"st cmd 0x${device.deviceNetworkId} ${endpointId} 8 4 {$level $rate}",
+			"delay 2000"
+	]
 }
 
 String convertToHexString(value, width=2) {

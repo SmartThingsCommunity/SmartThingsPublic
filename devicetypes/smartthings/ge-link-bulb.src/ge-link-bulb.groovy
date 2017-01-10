@@ -99,7 +99,7 @@ def parse(String description) {
 
 def poll() {
     def refreshCmds = [
-        "st wattr 0x${device.deviceNetworkId} 1 8 0x10 0x21 {${state?.dOnOff ?: '0000'}}", "delay 500"
+        "st wattr 0x${device.deviceNetworkId} 1 8 0x10 0x21 {${state?.dOnOff ?: '0000'}}", "delay 2000"
     ]
 
     return refreshCmds + zigbee.onOffRefresh() + zigbee.levelRefresh()
@@ -197,7 +197,7 @@ def off() {
 
 def refresh() {
     def refreshCmds = [
-        "st wattr 0x${device.deviceNetworkId} 1 8 0x10 0x21 {${state?.dOnOff ?: '0000'}}", "delay 500"
+        "st wattr 0x${device.deviceNetworkId} 1 8 0x10 0x21 {${state?.dOnOff ?: '0000'}}", "delay 2000"
     ]
 
     return refreshCmds + zigbee.onOffRefresh() + zigbee.levelRefresh() + zigbee.onOffConfig()
