@@ -14,6 +14,7 @@
  *
  *	VERSION HISTORY
  *
+ *	11.01.2017: 1.0 BETA Release 3b - Further Chart formatting update
  *	11.01.2017: 1.0 BETA Release 3 - Chart formatting update
  								   - Attempt to improve bed detection
  *	11.01.2017: 1.0 BETA Release 2 - Change set level behaviour
@@ -467,8 +468,6 @@ def getChartHTML() {
       					]);
 
       					var options = {
-        						width: 410,
-        						height: 220,
        					 		bar: {groupWidth: "75%"},
         						legend: { position: "none" },
         						vAxis: {
@@ -477,7 +476,15 @@ def getChartHTML() {
         								min: 0
         					 		 },
         						},
-                                colors: ['#5c628f', '#00e2b1']
+                                colors: ['#5c628f', '#00e2b1'],
+                                chartArea: {
+									left: '12%',
+									right: '12%',
+									top: '3%',
+									bottom: '35%',
+									height: '80%',
+									width: '100%'
+								}
       					};
 
       					var chart = new google.visualization.ColumnChart(document.getElementById('main_graph'));
