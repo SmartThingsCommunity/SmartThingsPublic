@@ -13,7 +13,7 @@
  *  for the specific language governing permissions and limitations under the License.
  *
  *	VERSION HISTORY
- *
+ *	11.01.2017: 1.0 BETA Release 3c - Use Google Chart image API for Android support
  *	11.01.2017: 1.0 BETA Release 3b - Further Chart formatting update
  *	11.01.2017: 1.0 BETA Release 3 - Chart formatting update
  								   - Attempt to improve bed detection
@@ -125,7 +125,7 @@ metadata {
 			state "heatingDurationDown", label:'  ', action:"heatingDurationDown", icon:"st.thermostat.thermostat-down", backgroundColor:"#ffffff"
 		}
         
-        htmlTile(name:"chartHTML", action: "getChartHTML", width: 6, height: 4, whiteList: ["www.gstatic.com", "raw.githubusercontent.com"])
+        htmlTile(name:"chartHTML", action: "getImageChartHTML", width: 6, height: 4, whiteList: ["www.gstatic.com", "raw.githubusercontent.com"])
         
         main(["switch"])
     	details(["switch", "levelUp", "level", "heatingDuration", "heatingDurationUp", "levelDown", "heatingDurationDown", "presence", "currentHeatLevel", "refresh", "chartHTML", "network", "status"])
@@ -134,7 +134,7 @@ metadata {
 }
 
 mappings {
-	path("/getChartHTML") {action: [GET: "getChartHTML"]}
+    path("/getImageChartHTML") {action: [GET: "getImageChartHTML"]}
 }
 
 // parse events into attributes
@@ -438,7 +438,7 @@ def addHistoricalSleepToChartData() {
     }
 }
 
-def getChartHTML() {
+def getImageChartHTML() {
 	try {
     	def date = new Date()
 		if (state.chartData == null) {
@@ -450,52 +450,12 @@ def getChartHTML() {
         	if (state.chartData2 == null) {
             	state.chartData2 = [0, 0, 0, 0, 0, 0, 0]
             }
+            def a = state.chartData.max()
+            def b = state.chartData2.max()
+            def topValue = a > b ? a : b
 			hData = """
-            <script type="text/javascript">
-		google.charts.load('current', {packages: ['corechart']});
-		google.charts.setOnLoadCallback(drawBasic);
-
-		function drawBasic() {
-						var data = google.visualization.arrayToDataTable([
-         						['Date', 'Sleep Duration', 'Presence Duration'],
-         						['${(date - 6).format("d MMM")}', ${state.chartData.getAt(6)}, ${state.chartData2.getAt(6)}],   
-         						['${(date - 5).format("d MMM")}', ${state.chartData.getAt(5)}, ${state.chartData2.getAt(5)}],   
-         						['${(date - 4).format("d MMM")}', ${state.chartData.getAt(4)}, ${state.chartData2.getAt(4)}],            
-         						['${(date - 3).format("d MMM")}', ${state.chartData.getAt(3)}, ${state.chartData2.getAt(3)}],            
-         						['${(date - 2).format("d MMM")}', ${state.chartData.getAt(2)}, ${state.chartData2.getAt(2)}],
-		 						['${(date - 1).format("d MMM")}', ${state.chartData.getAt(1)}, ${state.chartData2.getAt(1)}], 
-         						['${date.format("d MMM")}', ${state.chartData.getAt(0)}, ${state.chartData2.getAt(0)} ], 
-      					]);
-
-      					var options = {
-       					 		bar: {groupWidth: "75%"},
-        						legend: { position: "none" },
-        						vAxis: {
-          							title: 'Hours',
-                                     viewWindow: {
-        								min: 0
-        					 		 },
-        						},
-                                colors: ['#5c628f', '#00e2b1'],
-                                chartArea: {
-									left: '12%',
-									right: '12%',
-									top: '3%',
-									bottom: '35%',
-									height: '80%',
-									width: '100%'
-								}
-      					};
-
-      					var chart = new google.visualization.ColumnChart(document.getElementById('main_graph'));
-      					chart.draw(data, options);
-    				}
-
-		
-	  </script>
-	  <h4 style="font-size: 22px; font-weight: bold; text-align: center; background: #00a1db; color: #f5f5f5;">Sleep/Presence History</h4>
-	  <div id="main_graph" style="width: 100%; height: 260px;"></div>
-			  
+	  <h4 style="font-size: 22px; font-weight: bold; text-align: center; background: #00a1db; color: #f5f5f5;">Sleep/Presence History</h4><br>
+	  <div id="main_graph" style="width: 100%; height: 260px;"><img src="http://chart.googleapis.com/chart?cht=bvg&chs=350x200&chxt=x,y,y&chco=5c628f,00e2b1&chd=t:${state.chartData.getAt(6)},${state.chartData.getAt(5)},${state.chartData.getAt(4)},${state.chartData.getAt(3)},${state.chartData.getAt(2)},${state.chartData.getAt(1)},${state.chartData.getAt(0)}|${state.chartData2.getAt(6)},${state.chartData2.getAt(5)},${state.chartData2.getAt(4)},${state.chartData2.getAt(3)},${state.chartData2.getAt(2)},${state.chartData2.getAt(1)},${state.chartData2.getAt(0)}&chds=0,${topValue+2}&chxl=0:|${(date - 6).format("d MMM")}|${(date - 5).format("d MMM")}|${(date - 4).format("d MMM")}|${(date - 3).format("d MMM")}|${(date - 2).format("d MMM")}|${(date - 1).format("d MMM")}|${date.format("d MMM")}|2:|Hours&chxp=2,50&chxr=1,0,${topValue+2}&chbh=a,0,5"></div>
 			"""
 	    }
 		def mainHtml = """
@@ -510,11 +470,10 @@ def getChartHTML() {
 				<meta name="viewport" content="width = device-width, user-scalable=no, initial-scale=1.0">
 
 				<link rel="stylesheet prefetch" href="${getCssData()}"/>
-				<script type="text/javascript" src="${getChartJsData()}"></script>
 			</head>
 			<body>
-                ${hData}
-			</body>
+            	${hData}
+            </body>
 			</html>
 		"""
 		render contentType: "text/html", data: mainHtml, status: 200
@@ -552,35 +511,6 @@ def getCssData() {
 		cssData = getFileBase64(cssUrl(), "text", "css")
 	}
 	return cssData
-}
-
-def getChartJsData() {
-	def chartJsData = null
-	//def htmlInfo = state?.htmlInfo
-	def htmlInfo
-	state.chartJsData = null
-	if(htmlInfo?.chartJsUrl && htmlInfo?.chartJsVer) {
-		if(state?.chartJsData) {
-			if (state?.chartJsVer?.toInteger() == htmlInfo?.chartJsVer?.toInteger()) {
-				//LogAction("getChartJsData: Chart Javascript Data is Current | Loading Data from State...")
-				chartJsData = state?.chartJsData
-			} else if (state?.chartJsVer?.toInteger() < htmlInfo?.chartJsVer?.toInteger()) {
-				//LogAction("getChartJsData: Chart Javascript Data is Outdated | Loading Data from Source...")
-				chartJsData = getFileBase64(htmlInfo.chartJsUrl, "text", "css")
-				state.chartJsData = chartJsData
-				state?.chartJsVer = htmlInfo?.chartJsVer
-			}
-		} else {
-			//LogAction("getChartJsData: Chart Javascript Data is Missing | Loading Data from Source...")
-			chartJsData = getFileBase64(htmlInfo.chartJsUrl, "text", "css")
-			state?.chartJsData = chartJsData
-			state?.chartJsVer = htmlInfo?.chartJsVer
-		}
-	} else {
-		//LogAction("getChartJsData: No Stored Chart Javascript Data Found for Device... Loading for Static URL...")
-		chartJsData = getFileBase64(chartJsUrl(), "text", "javascript")
-	}
-	return chartJsData
 }
 
 def getFileBase64(url, preType, fileType) {
