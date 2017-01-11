@@ -270,9 +270,9 @@ def configure() {
 
 	log.debug "Configuring Reporting and Bindings."
 	def humidityConfigCmds = [
-		"zdo bind 0x${device.deviceNetworkId} 1 1 0xFC45 {${device.zigbeeId}} {}", "delay 500",
-		"zcl global send-me-a-report 0xFC45 0 0x29 30 3600 {6400}",
-		"send 0x${device.deviceNetworkId} 1 1", "delay 500"
+		"zdo bind 0x${device.deviceNetworkId} 1 1 0xFC45 {${device.zigbeeId}} {}", "delay 2000",
+		"zcl global send-me-a-report 0xFC45 0 0x29 30 3600 {6400}", "delay 200",
+		"send 0x${device.deviceNetworkId} 1 1", "delay 2000"
 	]
 
 	// temperature minReportTime 30 seconds, maxReportTime 5 min. Reporting interval if no activity
