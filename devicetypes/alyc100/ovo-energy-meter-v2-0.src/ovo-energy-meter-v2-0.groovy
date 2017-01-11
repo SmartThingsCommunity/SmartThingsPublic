@@ -38,6 +38,7 @@
  *  06.12.2016: v2.4.1 - Relax setting offline mode to 60 minute down time.
  *  07.12.2016: v2.4.1b - Handle when OVO API hasn't generated yesterday's total figures at midnight.
  *  07.12.2016: v2.4.1c - Add 'Pending' connection status for short API issues
+ *  11.01.2017: v2.4.2 - Resolve Android issues for Chart data.
  */
 preferences 
 {
@@ -93,7 +94,7 @@ metadata {
 			state "default", label:'', action:"refresh.refresh", icon:"st.secondary.refresh"
 		}
         
-        htmlTile(name:"chartHTML", action: "getChartHTML", width: 6, height: 4, whiteList: ["www.gstatic.com"])
+        htmlTile(name:"chartHTML", action: "getImageChartHTML", width: 6, height: 4, whiteList: ["www.gstatic.com", "raw.githubusercontent.com"])
         
 		main (["power"])
 		details(["power", "consumptionPrice", "unitPrice", "totalDemand", "totalConsumptionPrice", "yesterdayTotalPower", "yesterdayTotalPowerCost", "chartHTML", "network", "refresh"])
@@ -101,7 +102,7 @@ metadata {
 }
 
 mappings {
-	path("/getChartHTML") {action: [GET: "getChartHTML"]}
+    path("/getImageChartHTML") {action: [GET: "getImageChartHTML"]}
 }
 
 // parse events into attributes
@@ -380,102 +381,70 @@ def addCurrentTotalToChartData(total) {
     state.chartData.putAt(0, total)
 }
 
-def getChartHTML() {
+def getImageChartHTML() {
 	try {
     	def date = new Date()
 		if (state.chartData == null) {
     		state.chartData = [0, 0, 0, 0, 0, 0, 0]
     	}
+        def topValue = state.chartData.max()
 		def hData = """
-			<script type="text/javascript">
-				  	google.charts.load('current', {packages: ['corechart', 'bar']});
-					google.charts.setOnLoadCallback(drawBasic);
-
-					function drawBasic() {
-						var data = google.visualization.arrayToDataTable([
-         						['Date', 'Cost', { role: 'style' }],
-         						['${(date - 6).format("d MMM")}', ${state.chartData.getAt(6)}, '#0a9928'],   
-         						['${(date - 5).format("d MMM")}', ${state.chartData.getAt(5)}, '#0a9928'],   
-         						['${(date - 4).format("d MMM")}', ${state.chartData.getAt(4)}, '#0a9928'],            
-         						['${(date - 3).format("d MMM")}', ${state.chartData.getAt(3)}, '#0a9928'],            
-         						['${(date - 2).format("d MMM")}', ${state.chartData.getAt(2)}, '#0a9928'],
-		 						['${(date - 1).format("d MMM")}', ${state.chartData.getAt(1)}, '#0a9928' ], 
-         						['Today', ${state.chartData.getAt(0)}, '#eda610' ], 
-      					]);
-
-      					var options = {
-        						title: "Total Cost in the Last 7 Days",
-        						width: 410,
-        						height: 220,
-       					 		bar: {groupWidth: "75%"},
-        						legend: { position: "none" },
-        						vAxis: {
-          							title: 'Cost (£)',
-          							format: '0.00'
-        						}
-      					};
-
-      					var chart = new google.visualization.ColumnChart(document.getElementById('chart_div'));
-      					chart.draw(data, options);
-    				}
-					
-			</script>
-			  
+        	<h4 style="font-size: 22px; font-weight: bold; text-align: center; background: #00a1db; color: #f5f5f5;">Historical Costs</h4><br>
+	  		<div id="main_graph" style="width: 100%; height: 260px;"><img src="http://chart.googleapis.com/chart?cht=bvg&chs=350x200&chxt=x,y,y&chco=0a9928|0a9928|0a9928|0a9928|0a9928|0a9928|eda610&chd=t:${state.chartData.getAt(6)},${state.chartData.getAt(5)},${state.chartData.getAt(4)},${state.chartData.getAt(3)},${state.chartData.getAt(2)},${state.chartData.getAt(1)},${state.chartData.getAt(0)}&chds=0,${topValue+1}&chxl=0:|${(date - 6).format("d MMM")}|${(date - 5).format("d MMM")}|${(date - 4).format("d MMM")}|${(date - 3).format("d MMM")}|${(date - 2).format("d MMM")}|${(date - 1).format("d MMM")}|${date.format("d MMM")}|2:|Cost&chxp=2,50&chxr=1,0,${topValue+1}&chbh=a,10,10&chxs=1N*cGBPsz2*"></div>		  
 			"""
 
 		def mainHtml = """
 		<!DOCTYPE html>
 		<html>
 			<head>
-				<meta charset="utf-8"/>
 				<meta http-equiv="cache-control" content="max-age=0"/>
 				<meta http-equiv="cache-control" content="no-cache"/>
 				<meta http-equiv="expires" content="0"/>
 				<meta http-equiv="expires" content="Tue, 01 Jan 1980 1:00:00 GMT"/>
 				<meta http-equiv="pragma" content="no-cache"/>
 				<meta name="viewport" content="width = device-width, user-scalable=no, initial-scale=1.0">
-				<script type="text/javascript" src="${getChartJsData()}"></script>
+
+				<link rel="stylesheet prefetch" href="${getCssData()}"/>
 			</head>
 			<body>
-  				<div id="chart_div"></div>
                 ${hData}
-				</body>
+			</body>
 			</html>
 		"""
 		render contentType: "text/html", data: mainHtml, status: 200
 	}
 	catch (ex) {
-		log.error "getChartHTML Exception:", ex
+		log.error "getImageChartHTML Exception:", ex
 	}
 }
 
-def getChartJsData() {
-	def chartJsData = null
-	//def htmlInfo = state?.htmlInfo
+def getCssData() {
+	def cssData = null
 	def htmlInfo
-	state.chartJsData = null
-	if(htmlInfo?.chartJsUrl && htmlInfo?.chartJsVer) {
-		if(state?.chartJsData) {
-			if (state?.chartJsVer?.toInteger() == htmlInfo?.chartJsVer?.toInteger()) {
-				//LogAction("getChartJsData: Chart Javascript Data is Current | Loading Data from State...")
-				chartJsData = state?.chartJsData
-			} else if (state?.chartJsVer?.toInteger() < htmlInfo?.chartJsVer?.toInteger()) {
-				//LogAction("getChartJsData: Chart Javascript Data is Outdated | Loading Data from Source...")
-				chartJsData = getFileBase64(htmlInfo.chartJsUrl, "text", "css")
-				state.chartJsData = chartJsData
-				state?.chartJsVer = htmlInfo?.chartJsVer
+	state.cssData = null
+
+	if(htmlInfo?.cssUrl && htmlInfo?.cssVer) {
+		if(state?.cssData) {
+			if (state?.cssVer?.toInteger() == htmlInfo?.cssVer?.toInteger()) {
+				//LogAction("getCssData: CSS Data is Current | Loading Data from State...")
+				cssData = state?.cssData
+			} else if (state?.cssVer?.toInteger() < htmlInfo?.cssVer?.toInteger()) {
+				//LogAction("getCssData: CSS Data is Outdated | Loading Data from Source...")
+				cssData = getFileBase64(htmlInfo.cssUrl, "text", "css")
+				state.cssData = cssData
+				state?.cssVer = htmlInfo?.cssVer
 			}
 		} else {
-			//LogAction("getChartJsData: Chart Javascript Data is Missing | Loading Data from Source...")
-			chartJsData = getFileBase64(htmlInfo.chartJsUrl, "text", "css")
-			state?.chartJsData = chartJsData
-			state?.chartJsVer = htmlInfo?.chartJsVer
+			//LogAction("getCssData: CSS Data is Missing | Loading Data from Source...")
+			cssData = getFileBase64(htmlInfo.cssUrl, "text", "css")
+			state?.cssData = cssData
+			state?.cssVer = htmlInfo?.cssVer
 		}
 	} else {
-		//LogAction("getChartJsData: No Stored Chart Javascript Data Found for Device... Loading for Static URL...")
-		chartJsData = getFileBase64(chartJsUrl(), "text", "javascript")
+		//LogAction("getCssData: No Stored CSS Info Data Found for Device... Loading for Static URL...")
+		cssData = getFileBase64(cssUrl(), "text", "css")
 	}
-	return chartJsData
+	return cssData
 }
 
 def getFileBase64(url, preType, fileType) {
@@ -506,4 +475,4 @@ def getFileBase64(url, preType, fileType) {
 	}
 }
 
-def chartJsUrl() { return "https://www.gstatic.com/charts/loader.js" }
+def cssUrl()	 { return "https://raw.githubusercontent.com/desertblade/ST-HTMLTile-Framework/master/css/smartthings.css" }
