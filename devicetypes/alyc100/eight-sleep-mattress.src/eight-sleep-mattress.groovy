@@ -14,7 +14,8 @@
  *
  *	VERSION HISTORY
  *
- *	11.01.2017: 1.0 BETA Release 2b - Chart formatting update
+ *	11.01.2017: 1.0 BETA Release 3 - Chart formatting update
+ 								   - Attempt to improve bed detection
  *	11.01.2017: 1.0 BETA Release 2 - Change set level behaviour
  *								   - Support partner sleep trend data
  *                                 - Timer display changes
