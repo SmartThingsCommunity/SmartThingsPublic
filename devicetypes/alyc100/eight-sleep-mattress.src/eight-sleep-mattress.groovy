@@ -1,0 +1,484 @@
+/**
+ *  Eight Sleep Mattress
+ *
+ *  Copyright 2017 Alex Lee Yuk Cheung
+ *
+ *  Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except
+ *  in compliance with the License. You may obtain a copy of the License at:
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ *  Unless required by applicable law or agreed to in writing, software distributed under the License is distributed
+ *  on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the License
+ *  for the specific language governing permissions and limitations under the License.
+ *
+ *	VERSION HISTORY
+ *
+ *	11.01.2017: 1.0 BETA Release 1 - Initial Release
+ */
+metadata {
+	definition (name: "Eight Sleep Mattress", namespace: "alyc100", author: "Alex Lee Yuk Cheung") {
+		capability "Actuator"
+		capability "Contact Sensor"
+		capability "Polling"
+		capability "Refresh"
+		capability "Sensor"
+		capability "Switch"
+		capability "Switch Level"
+        
+        command "setHeatDuration"
+        command "heatingDurationDown"
+        command "heatingDurationUp"
+        command "levelUp"
+        command "levelDown"
+	}
+
+
+	simulator {
+		// TODO: define status and reply messages here
+	}
+
+	tiles (scale: 2){
+		multiAttributeTile(name:"switch", type: "generic", width: 6, height: 6, canChangeIcon: true){
+            tileAttribute ("device.switch", key: "PRIMARY_CONTROL") {
+                attributeState "on", label:'${name}', action:"switch.off", icon:"st.Bedroom.bedroom12", backgroundColor:"#79b821", nextState:"turningOff"
+                attributeState "off", label:'${name}', action:"switch.on", icon:"st.Bedroom.bedroom12", backgroundColor:"#ffffff", nextState:"turningOn"
+                attributeState "turningOn", label:'${name}', action:"switch.off", icon:"st.Bedroom.bedroom12", backgroundColor:"#79b821", nextState:"turningOff"
+                attributeState "turningOff", label:'${name}', action:"switch.on", icon:"st.Bedroom.bedroom12", backgroundColor:"#ffffff", nextState:"turningOn"
+            	attributeState "offline", label:'${name}', icon:"st.Bedroom.bedroom12", backgroundColor:"#ff0000"
+            }
+            tileAttribute ("timer", key: "SECONDARY_CONTROL") {
+				attributeState "timer", label:'${currentValue} LEFT'
+			}
+        }
+        
+        standardTile("presence", "device.contact", width: 2, height: 2) {
+			state("closed", label:'In Bed', icon:"st.Bedroom.bedroom2", backgroundColor:"#79b821")
+			state("open", label:'Out Of Bed', icon:"st.Bedroom.bedroom6", backgroundColor:"#ffa81e")
+		}
+        
+        valueTile("currentWarmingLevel", "device.currentWarmingLevel", width: 2, height: 2){
+			state "default", label: '${currentValue}', unit:"%", 
+            backgroundColors:[
+				[value: 0, color: "#153591"],
+				[value: 10, color: "#44b621"],
+				[value: 30, color: "#f1d801"],
+				[value: 60, color: "#d04e00"],
+				[value: 100, color: "#bc2323"]
+			]
+		}
+        
+        standardTile("network", "device.network", width: 2, height: 2, inactiveLabel: false, canChangeIcon: false) {
+			state ("default", label:'unknown', icon: "st.unknown.unknown.unknown")
+			state ("Connected", label:'Online', icon: "st.Health & Wellness.health9", backgroundColor: "#79b821")
+			state ("Not Connected", label:'Offline', icon: "st.Health & Wellness.health9", backgroundColor: "#bc2323")
+		}
+        
+		standardTile("refresh", "device.switch", width: 2, height: 2, inactiveLabel: false, canChangeIcon: false, decoration: "flat") {
+			state("default", label:'refresh', action:"refresh.refresh", icon:"st.secondary.refresh-icon")
+		}
+        
+        valueTile("heatingDuration", "device.heatingDuration", inactiveLabel: false, decoration: "flat", width: 2, height: 2) {
+			state("default", label:'TIMER\n${currentValue}')
+		}
+        
+        valueTile("level", "device.desiredLevel", inactiveLabel: false, decoration: "flat", width: 2, height: 2) {
+            state "default", label: '${currentValue}', unit:"%", 
+            backgroundColors:[
+				[value: 0, color: "#153591"],
+				[value: 10, color: "#44b621"],
+				[value: 30, color: "#f1d801"],
+				[value: 60, color: "#d04e00"],
+				[value: 100, color: "#bc2323"]
+			]
+        }
+        
+        standardTile("levelUp", "device.levelUp", width: 1, height: 1, canChangeIcon: false, inactiveLabel: false, decoration: "flat") {
+			state "levelUp", label:'  ', action:"levelUp", icon:"st.thermostat.thermostat-up", backgroundColor:"#ffffff"
+		}
+
+		standardTile("levelDown", "device.levelDown", width: 1, height: 1, canChangeIcon: false, inactiveLabel: false, decoration: "flat") {
+			state "levelDown", label:'  ', action:"levelDown", icon:"st.thermostat.thermostat-down", backgroundColor:"#ffffff"
+		}
+        
+        valueTile("status", "device.status", inactiveLabel: false, decoration: "flat", width: 4, height: 1) {
+			state("default", label:'${currentValue}')
+		}
+        
+        standardTile("heatingDurationUp", "device.heatingDurationUp", width: 1, height: 1, canChangeIcon: false, inactiveLabel: false, decoration: "flat") {
+			state "heatingDurationUp", label:'  ', action:"heatingDurationUp", icon:"st.thermostat.thermostat-up", backgroundColor:"#ffffff"
+		}
+
+		standardTile("heatingDurationDown", "device.heatingDurationDown", width: 1, height: 1, canChangeIcon: false, inactiveLabel: false, decoration: "flat") {
+			state "heatingDurationDown", label:'  ', action:"heatingDurationDown", icon:"st.thermostat.thermostat-down", backgroundColor:"#ffffff"
+		}
+        
+        htmlTile(name:"chartHTML", action: "getChartHTML", width: 6, height: 4, whiteList: ["www.gstatic.com"])
+        
+        main(["switch"])
+    	details(["switch", "levelUp", "level", "heatingDuration", "heatingDurationUp", "levelDown", "heatingDurationDown", "presence", "currentWarmingLevel", "refresh", "chartHTML", "network", "status"])
+       
+	}
+}
+
+mappings {
+	path("/getChartHTML") {action: [GET: "getChartHTML"]}
+}
+
+// parse events into attributes
+def parse(String description) {
+	log.debug "Parsing '${description}'"
+
+}
+
+// handle commands
+def poll() {
+	log.debug "Executing 'poll'"
+    def resp = parent.apiGET("/devices/${device.deviceNetworkId.tokenize("/")[0]}?offlineView=true")
+    if (resp.status != 200) {
+		log.error("Unexpected result in poll(): [${resp.status}] ${resp.data}")
+        sendEvent(name: "switch", value: "offline", descriptionText: "The device is offline")
+		return []
+	}
+    sendEvent(name: "network", value: resp.data.result.online ? "Connected" : "Not Connected")
+    def currentWarmingLevel = 0
+    def nowHeating = false
+    def targetHeatingLevel = 0
+    def inBed = false
+    def timer = 0
+    if (device.deviceNetworkId.tokenize("/")[1] == resp.data.result.leftUserId) {
+    	state.bedSide = "left"
+    	nowHeating = resp.data.result.leftNowHeating ? true : false
+        if (nowHeating) {
+        	currentWarmingLevel = resp.data.result.leftHeatingLevel as Integer
+            timer = resp.data.result.leftHeatingDuration
+        }
+        targetHeatingLevel = resp.data.result.leftTargetHeatingLevel as Integer
+        inBed = ((resp.data.result.leftPresenceStart as Integer) > (resp.data.result.leftPresenceEnd as Integer)) ? true : false
+    } else {
+    	state.bedSide = "right"
+    	nowHeating = resp.data.result.rightNowHeating ? true : false
+        if (nowHeating) {
+        	currentWarmingLevel = resp.data.result.rightHeatingLevel as Integer
+            timer = resp.data.result.rightHeatingDuration
+        }
+        targetHeatingLevel = resp.data.result.rightTargetHeatingLevel as Integer
+        inBed = ((resp.data.result.rightPresenceStart as Integer) > (resp.data.result.rightPresenceEnd as Integer)) ? true : false
+    }
+    sendEvent(name: "switch", value: nowHeating ? "on" : "off")
+    sendEvent(name: "level", value: targetHeatingLevel)
+    state.desiredLevel = targetHeatingLevel as Integer
+    sendEvent(name: "desiredLevel", "value": state.desiredLevel, unit: "%", displayed: false)
+    sendEvent(name: "contact", value: inBed ? "closed" : "open")
+    sendEvent(name: "currentWarmingLevel", value: currentWarmingLevel)
+    sendEvent(name: "timer", value: convertSecondsToString(timer), displayed: false)
+    if (!state.heatingDuration) {
+    	state.heatingDuration = 180
+    	sendEvent("name":"heatingDuration", "value": state.heatingDuration + " mins", displayed: true)
+    }
+    sendEvent(name: "status", value: "Last update:\n" + Date.parse("yyyy-MM-dd'T'HH:mm:ss.SSS'Z'", resp.data.result.lastHeard).format("EEE, d MMM yyyy HH:mm:ss"), displayed: false )
+	addHistoricalSleepToChartData()
+}
+
+def refresh() {
+	log.debug "Executing 'refresh'"
+	poll()
+}
+
+def on() {
+	log.debug "Executing 'on'"
+	// TODO: handle 'on' command
+    def body
+	if (state.bedSide && state.bedSide == "left") {
+    	body = [ 
+        	"leftHeatingDuration": "${state.heatingDuration * 60}"
+        ]
+	} else {
+    	body = [ 
+        	"rightHeatingDuration": "${state.heatingDuration * 60}"
+        ]
+    }
+    parent.apiPUT("/devices/${device.deviceNetworkId.tokenize("/")[0]}", body)
+    runIn(3, refresh)
+}
+
+def off() {
+	log.debug "Executing 'off'"
+	// TODO: handle 'off' command
+    def body
+	if (state.bedSide && state.bedSide == "left") {
+    	body = [ 
+        	"leftHeatingDuration": 0
+        ]
+	} else {
+    	body = [ 
+        	"rightHeatingDuration": 0
+        ]
+    }
+    parent.apiPUT("/devices/${device.deviceNetworkId.tokenize("/")[0]}", body)
+    runIn(3, refresh)
+}
+
+def setLevel(percent) {
+	log.debug "Executing 'setLevel' with percent $percent"
+	// TODO: handle 'setLevel' command
+    if (percent < 10) {
+		percent = 10
+	}
+	if (percent > 100) {
+		percent = 100
+	}
+    def body
+	if (state.bedSide && state.bedSide == "left") {
+    	body = [ 
+        	"leftTargetHeatingLevel": percent
+        ]
+	} else {
+    	body = [ 
+        	"rightTargetHeatingLevel": percent
+        ]
+    }
+    parent.apiPUT("/devices/${device.deviceNetworkId.tokenize("/")[0]}", body)
+    sendEvent(name: "level", value: percent)
+    runIn(4, refresh)
+}
+
+def levelUp() {
+	log.debug "Executing 'levelUp'"
+    def currentLevel = getLevel() as Integer
+    def newLevel = (currentLevel + 10) - (currentLevel % 10)
+	setNewLevelValue(newLevel)
+}
+
+def levelDown() {
+	log.debug "Executing 'levelDown'"
+    def currentLevel = getLevel() as Integer
+    def newLevel = (currentLevel - 10) - (currentLevel % 10)
+	setNewLevelValue(newLevel)
+}
+
+def getLevel() { 
+	return state.desiredLevel == null ? device.currentValue("level") : state.desiredLevel
+}
+
+def setLevelToDesired() {
+	setLevel(state.newLevel)
+}
+
+def setNewLevelValue(newLevelValue) {
+	log.debug "Executing 'setNewLevelValue' with value $newLevelValue"
+	unschedule('setLevelToDesired')
+    state.newLevel = newLevelValue
+    state.desiredLevel = state.newLevel
+	sendEvent("name":"desiredLevel", "value": state.desiredLevel, displayed: false)
+	log.debug "Setting level up to: ${state.newLevel}"
+    runIn(3, setLevelToDesired)
+}
+
+//Commands
+def setHeatDuration(minutes) {
+	log.debug "Executing 'setHeatDuration with length $minutes minutes'"
+    if (minutes < 10) {
+		minutes = 10
+	}
+	if (minutes > 600) {
+		minutes = 600
+	}
+    state.heatingDuration = minutes
+    sendEvent("name":"heatingDuration", "value": convertSecondsToString(state.heatingDuration * 60), displayed: true)
+}
+
+def heatingDurationDown() {
+	log.debug "Executing 'heatingDurationDown'"
+    //Round down result
+    def newHeatDurationLength = (state.heatingDuration - 15) - (state.heatingDuration % 15)
+	setHeatDuration(newHeatDurationLength)
+}
+
+def heatingDurationUp() {
+	log.debug "Executing 'heatingDurationUp'"
+    //Round down result
+    def newHeatDurationLength = (state.heatingDuration + 15) - (state.heatingDuration % 15)
+	setHeatDuration(newHeatDurationLength)
+}
+
+//Helper methods
+def convertSecondsToString(seconds) {
+	def hour = (seconds / 3600) as Integer
+    def minute = (seconds - (hour * 3600)) / 60 as Integer
+    
+    def hourString = (hour < 10) ? "0$hour" : "$hour"
+    def minuteString = (minute < 10) ? "0$minute" : "$minute"
+    
+	return "$hourString:$minuteString"
+}
+
+def getTimeZone() {
+	def tz = null
+	if(location?.timeZone) { tz = location?.timeZone }
+	if(!tz) { log.warn "No time zone has been retrieved from SmartThings. Please try to open your ST location and press Save." }
+	return tz
+}
+
+//Chart data rendering
+def getHistoricalSleepData(fromDate, toDate) {
+	return parent.apiGET("/users/${device.deviceNetworkId.tokenize("/")[1]}/trends?tz=${URLEncoder.encode(getTimeZone().getID())}&from=${fromDate.format("yyyy-MM-dd")}&to=${toDate.format("yyyy-MM-dd")}")
+}
+
+def addHistoricalSleepToChartData() {
+    def date = new Date()
+	def resp = getHistoricalSleepData((date - 6), date)
+    if (resp.status == 403) {
+    	log.error("Cannot access sleep data for partner.")
+        state.chartData = "UNAUTHORISED"
+    } else if (resp.status != 200) {
+    	log.error("Unexpected result in addHistoricalSleepToChartData(): [${resp.status}] ${resp.data}")
+	}
+    else {
+    	def days = resp.data.days
+        state.chartData = [0, 0, 0, 0, 0, 0, 0]
+        state.chartData2 = [0, 0, 0, 0, 0, 0, 0]
+        
+        0.upto(days.size() - 1, {
+        	state.chartData[6 - it] = days[it].sleepDuration / 60  
+            state.chartData2[6 - it] = days[it].presenceDuration / 60
+        })
+    }
+}
+
+def getChartHTML() {
+	try {
+    	def date = new Date()
+		if (state.chartData == null) {
+    		state.chartData = [0, 0, 0, 0, 0, 0, 0]
+    	}
+        def hData
+        if (state.chartData == "UNAUTHORISED") { hData = "<p><h1><span style=\"color: #5c628f;font-family:verdana;font-size:40%;\">Sleep data unavailable for partner user.</span></h1></p>" }
+        else {
+        	if (state.chartData2 == null) {
+            	state.chartData2 = [0, 0, 0, 0, 0, 0, 0]
+            }
+			hData = """
+			<script type="text/javascript">
+				  	google.charts.load('current', {packages: ['corechart', 'bar']});
+					google.charts.setOnLoadCallback(drawBasic);
+
+					function drawBasic() {
+						var data = google.visualization.arrayToDataTable([
+         						['Date', 'Sleep Duration', 'Presence Duration'],
+         						['${(date - 6).format("d MMM")}', ${state.chartData.getAt(6)}, ${state.chartData2.getAt(6)}],   
+         						['${(date - 5).format("d MMM")}', ${state.chartData.getAt(5)}, ${state.chartData2.getAt(5)}],   
+         						['${(date - 4).format("d MMM")}', ${state.chartData.getAt(4)}, ${state.chartData2.getAt(4)}],            
+         						['${(date - 3).format("d MMM")}', ${state.chartData.getAt(3)}, ${state.chartData2.getAt(3)}],            
+         						['${(date - 2).format("d MMM")}', ${state.chartData.getAt(2)}, ${state.chartData2.getAt(2)}],
+		 						['${(date - 1).format("d MMM")}', ${state.chartData.getAt(1)}, ${state.chartData2.getAt(1)}], 
+         						['${date.format("d MMM")}', ${state.chartData.getAt(0)}, ${state.chartData2.getAt(0)} ], 
+      					]);
+
+      					var options = {
+        						title: "Sleep/Presence duration in the Last 7 Days",
+        						width: 410,
+        						height: 220,
+       					 		bar: {groupWidth: "75%"},
+        						legend: { position: "none" },
+        						vAxis: {
+          							title: 'Minutes',
+                                     viewWindow: {
+        								min: 0
+        					 		 },
+        						},
+                                colors: ['#5c628f', '#00e2b1']
+      					};
+
+      					var chart = new google.visualization.ColumnChart(document.getElementById('chart_div'));
+      					chart.draw(data, options);
+    				}
+					
+			</script>
+			  
+			"""
+	    }
+		def mainHtml = """
+		<!DOCTYPE html>
+		<html>
+			<head>
+				<meta charset="utf-8"/>
+				<meta http-equiv="cache-control" content="max-age=0"/>
+				<meta http-equiv="cache-control" content="no-cache"/>
+				<meta http-equiv="expires" content="0"/>
+				<meta http-equiv="expires" content="Tue, 01 Jan 1980 1:00:00 GMT"/>
+				<meta http-equiv="pragma" content="no-cache"/>
+				<meta name="viewport" content="width = device-width, user-scalable=no, initial-scale=1.0">
+				<script type="text/javascript" src="${getChartJsData()}"></script>
+			</head>
+			<body>
+  				<div id="chart_div"></div>
+                ${hData}
+				</body>
+			</html>
+		"""
+		render contentType: "text/html", data: mainHtml, status: 200
+	}
+	catch (ex) {
+		log.error "getChartHTML Exception:", ex
+	}
+}
+
+def getChartJsData() {
+	def chartJsData = null
+	//def htmlInfo = state?.htmlInfo
+	def htmlInfo
+	state.chartJsData = null
+	if(htmlInfo?.chartJsUrl && htmlInfo?.chartJsVer) {
+		if(state?.chartJsData) {
+			if (state?.chartJsVer?.toInteger() == htmlInfo?.chartJsVer?.toInteger()) {
+				//LogAction("getChartJsData: Chart Javascript Data is Current | Loading Data from State...")
+				chartJsData = state?.chartJsData
+			} else if (state?.chartJsVer?.toInteger() < htmlInfo?.chartJsVer?.toInteger()) {
+				//LogAction("getChartJsData: Chart Javascript Data is Outdated | Loading Data from Source...")
+				chartJsData = getFileBase64(htmlInfo.chartJsUrl, "text", "css")
+				state.chartJsData = chartJsData
+				state?.chartJsVer = htmlInfo?.chartJsVer
+			}
+		} else {
+			//LogAction("getChartJsData: Chart Javascript Data is Missing | Loading Data from Source...")
+			chartJsData = getFileBase64(htmlInfo.chartJsUrl, "text", "css")
+			state?.chartJsData = chartJsData
+			state?.chartJsVer = htmlInfo?.chartJsVer
+		}
+	} else {
+		//LogAction("getChartJsData: No Stored Chart Javascript Data Found for Device... Loading for Static URL...")
+		chartJsData = getFileBase64(chartJsUrl(), "text", "javascript")
+	}
+	return chartJsData
+}
+
+def getFileBase64(url, preType, fileType) {
+	try {
+		def params = [
+			uri: url,
+			contentType: '$preType/$fileType'
+		]
+		httpGet(params) { resp ->
+			if(resp.data) {
+				def respData = resp?.data
+				ByteArrayOutputStream bos = new ByteArrayOutputStream()
+				int len
+				int size = 4096
+				byte[] buf = new byte[size]
+				while ((len = respData.read(buf, 0, size)) != -1)
+					bos.write(buf, 0, len)
+				buf = bos.toByteArray()
+				//LogAction("buf: $buf")
+				String s = buf?.encodeBase64()
+				//LogAction("resp: ${s}")
+				return s ? "data:${preType}/${fileType};base64,${s.toString()}" : null
+			}
+		}
+	}
+	catch (ex) {
+		log.error "getFileBase64 Exception:", ex
+	}
+}
+
+def chartJsUrl() { return "https://www.gstatic.com/charts/loader.js" }
