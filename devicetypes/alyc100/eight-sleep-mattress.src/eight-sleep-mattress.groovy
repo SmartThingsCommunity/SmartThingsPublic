@@ -14,6 +14,7 @@
  *
  *	VERSION HISTORY
  *
+ *	11.01.2017: 1.0 BETA Release 2b - Chart formatting update
  *	11.01.2017: 1.0 BETA Release 2 - Change set level behaviour
  *								   - Support partner sleep trend data
  *                                 - Timer display changes
@@ -122,7 +123,7 @@ metadata {
 			state "heatingDurationDown", label:'  ', action:"heatingDurationDown", icon:"st.thermostat.thermostat-down", backgroundColor:"#ffffff"
 		}
         
-        htmlTile(name:"chartHTML", action: "getChartHTML", width: 6, height: 4, whiteList: ["www.gstatic.com"])
+        htmlTile(name:"chartHTML", action: "getChartHTML", width: 6, height: 4, whiteList: ["www.gstatic.com", "raw.githubusercontent.com"])
         
         main(["switch"])
     	details(["switch", "levelUp", "level", "heatingDuration", "heatingDurationUp", "levelDown", "heatingDurationDown", "presence", "currentHeatLevel", "refresh", "chartHTML", "network", "status"])
@@ -153,35 +154,38 @@ def poll() {
     def currentHeatLevel = 0
     def nowHeating = false
     def targetHeatingLevel = 0
-    def inBed = false
     def timer = 0
+    def presenceStart = 0
+    def presenceEnd = 0
     state.isOwner = (device.deviceNetworkId.tokenize("/")[1] == resp.data.result.ownerId)
     if (device.deviceNetworkId.tokenize("/")[1] == resp.data.result.leftUserId) {
     	state.bedSide = "left"
     	nowHeating = resp.data.result.leftNowHeating ? true : false
         currentHeatLevel = resp.data.result.leftHeatingLevel as Integer
         if (nowHeating) {
-        	
-            timer = resp.data.result.leftHeatingDuration
+        	timer = resp.data.result.leftHeatingDuration
         }
         targetHeatingLevel = resp.data.result.leftTargetHeatingLevel as Integer
-        inBed = ((resp.data.result.leftPresenceStart as Integer) > (resp.data.result.leftPresenceEnd as Integer)) ? true : false
+        presenceStart = resp.data.result.leftPresenceStart as Integer
+        presenceEnd = resp.data.result.leftPresenceEnd as Integer
+        
     } else {
     	state.bedSide = "right"
     	nowHeating = resp.data.result.rightNowHeating ? true : false
         currentHeatLevel = resp.data.result.rightHeatingLevel as Integer
         if (nowHeating) {
-        	
-            timer = resp.data.result.rightHeatingDuration
+        	timer = resp.data.result.rightHeatingDuration
         }
         targetHeatingLevel = resp.data.result.rightTargetHeatingLevel as Integer
-        inBed = ((resp.data.result.rightPresenceStart as Integer) > (resp.data.result.rightPresenceEnd as Integer)) ? true : false
+        presenceStart = resp.data.result.rightPresenceStart as Integer
+        presenceEnd = resp.data.result.rightPresenceEnd as Integer
     }
     sendEvent(name: "switch", value: nowHeating ? "on" : "off")
     sendEvent(name: "level", value: targetHeatingLevel)
+    
     state.desiredLevel = targetHeatingLevel as Integer
     sendEvent(name: "desiredLevel", "value": state.desiredLevel, unit: "%", displayed: false)
-    sendEvent(name: "contact", value: inBed ? "closed" : "open")
+    
     sendEvent(name: "currentHeatLevel", value: currentHeatLevel)
     sendEvent(name: "timer", value: convertSecondsToString(timer), displayed: false)
     if (!state.heatingDuration) {
@@ -189,12 +193,59 @@ def poll() {
     	sendEvent("name":"heatingDuration", "value": convertSecondsToString(state.heatingDuration * 60), displayed: true)
     }
     sendEvent(name: "status", value: "Last update:\n" + Date.parse("yyyy-MM-dd'T'HH:mm:ss.SSS'Z'", resp.data.result.lastHeard).format("EEE, d MMM yyyy HH:mm:ss"), displayed: false )
-	addHistoricalSleepToChartData()
+    
+    //BED PRESENCE LOGIC
+    if (state.lastPresenceStartValue) {
+    	//If presence start value has changed then assume something is going on
+        if (presenceStart != state.lastPresenceStartValue) {
+        	state.sleepPeriod = true
+        }
+    }
+    state.lastPresenceStartValue = resp.data.result.leftPresenceStart as Integer
+    if (state.sleepPeriod) {
+    	if (lastDesiredLevel != state.desiredLevel) {
+        	//Not used at the moment.
+    		state.desiredLevelChange = true
+        }
+    	if (state.lastCurrentHeatLevel) {
+        	def currSwitchState = device.currentState("switch").getValue()
+        	def heatDelta
+            	if (currSwitchState == "on") {
+                	heatDelta = currentHeatLevel - state.desiredLevel
+                } else {
+                	heatDelta = currentHeatLevel - 10
+                }
+            def heatDiff = state.lastCurrentHeatLevel - currentHeatLevel
+            def contactState = device.currentState("contact").getValue()
+        	//Bed is warmer than set temperature, assume this is body warming in action.
+        	if (contactState == "open" && (heatDelta > 10)) {
+            	setInBed()
+            //Bed is cooling fast, assume this warm body has left bed.
+            } else if (contactState == "closed" && (heatDiff > 5)) {
+            	setOutOfBed()
+            }
+        }
+    }
+    state.lastCurrentHeatLevel = currentHeatLevel
+    state.lastDesiredLevel = state.desiredLevel
+    
+    addHistoricalSleepToChartData()
+    
 }
 
 def refresh() {
 	log.debug "Executing 'refresh'"
 	poll()
+}
+
+def setInBed() {
+	sendEvent(name: "contact", value: "closed")
+}
+
+def setOutOfBed() {
+	sendEvent(name: "contact", value: "open")
+    state.sleepPeriod = false
+    state.desiredLevelChange = false
 }
 
 def on() {
@@ -398,11 +449,11 @@ def getChartHTML() {
             	state.chartData2 = [0, 0, 0, 0, 0, 0, 0]
             }
 			hData = """
-			<script type="text/javascript">
-				  	google.charts.load('current', {packages: ['corechart', 'bar']});
-					google.charts.setOnLoadCallback(drawBasic);
+            <script type="text/javascript">
+		google.charts.load('current', {packages: ['corechart']});
+		google.charts.setOnLoadCallback(drawBasic);
 
-					function drawBasic() {
+		function drawBasic() {
 						var data = google.visualization.arrayToDataTable([
          						['Date', 'Sleep Duration', 'Presence Duration'],
          						['${(date - 6).format("d MMM")}', ${state.chartData.getAt(6)}, ${state.chartData2.getAt(6)}],   
@@ -415,7 +466,6 @@ def getChartHTML() {
       					]);
 
       					var options = {
-        						title: "Sleep/Presence duration in the last 7 days",
         						width: 410,
         						height: 220,
        					 		bar: {groupWidth: "75%"},
@@ -429,31 +479,34 @@ def getChartHTML() {
                                 colors: ['#5c628f', '#00e2b1']
       					};
 
-      					var chart = new google.visualization.ColumnChart(document.getElementById('chart_div'));
+      					var chart = new google.visualization.ColumnChart(document.getElementById('main_graph'));
       					chart.draw(data, options);
     				}
-					
-			</script>
+
+		
+	  </script>
+	  <h4 style="font-size: 22px; font-weight: bold; text-align: center; background: #00a1db; color: #f5f5f5;">Sleep/Presence History</h4>
+	  <div id="main_graph" style="width: 100%; height: 260px;"></div>
 			  
 			"""
 	    }
 		def mainHtml = """
 		<!DOCTYPE html>
 		<html>
-			<head>
-				<meta charset="utf-8"/>
+        	<head>
 				<meta http-equiv="cache-control" content="max-age=0"/>
 				<meta http-equiv="cache-control" content="no-cache"/>
 				<meta http-equiv="expires" content="0"/>
 				<meta http-equiv="expires" content="Tue, 01 Jan 1980 1:00:00 GMT"/>
 				<meta http-equiv="pragma" content="no-cache"/>
 				<meta name="viewport" content="width = device-width, user-scalable=no, initial-scale=1.0">
+
+				<link rel="stylesheet prefetch" href="${getCssData()}"/>
 				<script type="text/javascript" src="${getChartJsData()}"></script>
 			</head>
 			<body>
-  				<div id="chart_div"></div>
                 ${hData}
-				</body>
+			</body>
 			</html>
 		"""
 		render contentType: "text/html", data: mainHtml, status: 200
@@ -461,6 +514,36 @@ def getChartHTML() {
 	catch (ex) {
 		log.error "getChartHTML Exception:", ex
 	}
+}
+
+
+def getCssData() {
+	def cssData = null
+	def htmlInfo
+	state.cssData = null
+
+	if(htmlInfo?.cssUrl && htmlInfo?.cssVer) {
+		if(state?.cssData) {
+			if (state?.cssVer?.toInteger() == htmlInfo?.cssVer?.toInteger()) {
+				//LogAction("getCssData: CSS Data is Current | Loading Data from State...")
+				cssData = state?.cssData
+			} else if (state?.cssVer?.toInteger() < htmlInfo?.cssVer?.toInteger()) {
+				//LogAction("getCssData: CSS Data is Outdated | Loading Data from Source...")
+				cssData = getFileBase64(htmlInfo.cssUrl, "text", "css")
+				state.cssData = cssData
+				state?.cssVer = htmlInfo?.cssVer
+			}
+		} else {
+			//LogAction("getCssData: CSS Data is Missing | Loading Data from Source...")
+			cssData = getFileBase64(htmlInfo.cssUrl, "text", "css")
+			state?.cssData = cssData
+			state?.cssVer = htmlInfo?.cssVer
+		}
+	} else {
+		//LogAction("getCssData: No Stored CSS Info Data Found for Device... Loading for Static URL...")
+		cssData = getFileBase64(cssUrl(), "text", "css")
+	}
+	return cssData
 }
 
 def getChartJsData() {
@@ -520,4 +603,5 @@ def getFileBase64(url, preType, fileType) {
 	}
 }
 
+def cssUrl()	 { return "https://raw.githubusercontent.com/desertblade/ST-HTMLTile-Framework/master/css/smartthings.css" }
 def chartJsUrl() { return "https://www.gstatic.com/charts/loader.js" }
