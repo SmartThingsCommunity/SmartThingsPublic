@@ -14,6 +14,11 @@
  *
  *	VERSION HISTORY
  *
+ *	11.01.2017: 1.0 BETA Release 2 - Change set level behaviour
+ *								   - Support partner sleep trend data
+ *                                 - Timer display changes
+ *                                 - Add slider control on main tile
+ *                                 - Many bug fixes
  *	11.01.2017: 1.0 BETA Release 1 - Initial Release
  */
 metadata {
@@ -31,6 +36,7 @@ metadata {
         command "heatingDurationUp"
         command "levelUp"
         command "levelDown"
+        command "setNewLevelValue"
 	}
 
 
@@ -47,8 +53,11 @@ metadata {
                 attributeState "turningOff", label:'${name}', action:"switch.on", icon:"st.Bedroom.bedroom12", backgroundColor:"#ffffff", nextState:"turningOn"
             	attributeState "offline", label:'${name}', icon:"st.Bedroom.bedroom12", backgroundColor:"#ff0000"
             }
+            tileAttribute ("device.desiredLevel", key: "SLIDER_CONTROL") {
+              attributeState "desiredLevel", action:"setNewLevelValue", range:"(10..100)"
+            }
             tileAttribute ("timer", key: "SECONDARY_CONTROL") {
-				attributeState "timer", label:'${currentValue} LEFT'
+				attributeState "timer", label:'${currentValue} left'
 			}
         }
         
@@ -57,7 +66,7 @@ metadata {
 			state("open", label:'Out Of Bed', icon:"st.Bedroom.bedroom6", backgroundColor:"#ffa81e")
 		}
         
-        valueTile("currentWarmingLevel", "device.currentWarmingLevel", width: 2, height: 2){
+        valueTile("currentHeatLevel", "device.currentHeatLevel", width: 2, height: 2){
 			state "default", label: '${currentValue}', unit:"%", 
             backgroundColors:[
 				[value: 0, color: "#153591"],
@@ -79,11 +88,11 @@ metadata {
 		}
         
         valueTile("heatingDuration", "device.heatingDuration", inactiveLabel: false, decoration: "flat", width: 2, height: 2) {
-			state("default", label:'TIMER\n${currentValue}')
+			state("default", label:'${currentValue}')
 		}
         
         valueTile("level", "device.desiredLevel", inactiveLabel: false, decoration: "flat", width: 2, height: 2) {
-            state "default", label: '${currentValue}', unit:"%", 
+            state "default", label: '${currentValue}%', unit:"%", 
             backgroundColors:[
 				[value: 0, color: "#153591"],
 				[value: 10, color: "#44b621"],
@@ -116,7 +125,7 @@ metadata {
         htmlTile(name:"chartHTML", action: "getChartHTML", width: 6, height: 4, whiteList: ["www.gstatic.com"])
         
         main(["switch"])
-    	details(["switch", "levelUp", "level", "heatingDuration", "heatingDurationUp", "levelDown", "heatingDurationDown", "presence", "currentWarmingLevel", "refresh", "chartHTML", "network", "status"])
+    	details(["switch", "levelUp", "level", "heatingDuration", "heatingDurationUp", "levelDown", "heatingDurationDown", "presence", "currentHeatLevel", "refresh", "chartHTML", "network", "status"])
        
 	}
 }
@@ -141,16 +150,18 @@ def poll() {
 		return []
 	}
     sendEvent(name: "network", value: resp.data.result.online ? "Connected" : "Not Connected")
-    def currentWarmingLevel = 0
+    def currentHeatLevel = 0
     def nowHeating = false
     def targetHeatingLevel = 0
     def inBed = false
     def timer = 0
+    state.isOwner = (device.deviceNetworkId.tokenize("/")[1] == resp.data.result.ownerId)
     if (device.deviceNetworkId.tokenize("/")[1] == resp.data.result.leftUserId) {
     	state.bedSide = "left"
     	nowHeating = resp.data.result.leftNowHeating ? true : false
+        currentHeatLevel = resp.data.result.leftHeatingLevel as Integer
         if (nowHeating) {
-        	currentWarmingLevel = resp.data.result.leftHeatingLevel as Integer
+        	
             timer = resp.data.result.leftHeatingDuration
         }
         targetHeatingLevel = resp.data.result.leftTargetHeatingLevel as Integer
@@ -158,8 +169,9 @@ def poll() {
     } else {
     	state.bedSide = "right"
     	nowHeating = resp.data.result.rightNowHeating ? true : false
+        currentHeatLevel = resp.data.result.rightHeatingLevel as Integer
         if (nowHeating) {
-        	currentWarmingLevel = resp.data.result.rightHeatingLevel as Integer
+        	
             timer = resp.data.result.rightHeatingDuration
         }
         targetHeatingLevel = resp.data.result.rightTargetHeatingLevel as Integer
@@ -170,11 +182,11 @@ def poll() {
     state.desiredLevel = targetHeatingLevel as Integer
     sendEvent(name: "desiredLevel", "value": state.desiredLevel, unit: "%", displayed: false)
     sendEvent(name: "contact", value: inBed ? "closed" : "open")
-    sendEvent(name: "currentWarmingLevel", value: currentWarmingLevel)
+    sendEvent(name: "currentHeatLevel", value: currentHeatLevel)
     sendEvent(name: "timer", value: convertSecondsToString(timer), displayed: false)
     if (!state.heatingDuration) {
     	state.heatingDuration = 180
-    	sendEvent("name":"heatingDuration", "value": state.heatingDuration + " mins", displayed: true)
+    	sendEvent("name":"heatingDuration", "value": convertSecondsToString(state.heatingDuration * 60), displayed: true)
     }
     sendEvent(name: "status", value: "Last update:\n" + Date.parse("yyyy-MM-dd'T'HH:mm:ss.SSS'Z'", resp.data.result.lastHeard).format("EEE, d MMM yyyy HH:mm:ss"), displayed: false )
 	addHistoricalSleepToChartData()
@@ -228,15 +240,30 @@ def setLevel(percent) {
 	if (percent > 100) {
 		percent = 100
 	}
+    def currSwitchState = device.currentState("switch").getValue()
     def body
 	if (state.bedSide && state.bedSide == "left") {
-    	body = [ 
-        	"leftTargetHeatingLevel": percent
-        ]
+    	if (currSwitchState == "on") {
+    		body = [ 
+        		"leftTargetHeatingLevel": percent
+       	 	]
+        } else {
+        	body = [ 
+        		"leftTargetHeatingLevel": percent,
+                "leftHeatingDuration": "${state.heatingDuration * 60}"
+       	 	]
+        }
 	} else {
-    	body = [ 
-        	"rightTargetHeatingLevel": percent
-        ]
+    	if (currSwitchState == "on") {
+    		body = [ 
+        		"rightTargetHeatingLevel": percent
+       	 	]
+        } else {
+        	body = [ 
+        		"rightTargetHeatingLevel": percent,
+                "rightHeatingDuration": "${state.heatingDuration * 60}"
+       	 	]
+        }
     }
     parent.apiPUT("/devices/${device.deviceNetworkId.tokenize("/")[0]}", body)
     sendEvent(name: "level", value: percent)
@@ -247,6 +274,9 @@ def levelUp() {
 	log.debug "Executing 'levelUp'"
     def currentLevel = getLevel() as Integer
     def newLevel = (currentLevel + 10) - (currentLevel % 10)
+    if (newLevel > 100) {
+    	newLevel = 100
+    }
 	setNewLevelValue(newLevel)
 }
 
@@ -254,6 +284,9 @@ def levelDown() {
 	log.debug "Executing 'levelDown'"
     def currentLevel = getLevel() as Integer
     def newLevel = (currentLevel - 10) - (currentLevel % 10)
+    if (newLevel < 10) {
+    	newLevel = 10
+    }
 	setNewLevelValue(newLevel)
 }
 
@@ -310,7 +343,7 @@ def convertSecondsToString(seconds) {
     def hourString = (hour < 10) ? "0$hour" : "$hour"
     def minuteString = (minute < 10) ? "0$minute" : "$minute"
     
-	return "$hourString:$minuteString"
+	return "${hourString}hr:${minuteString}mins"
 }
 
 def getTimeZone() {
@@ -322,15 +355,21 @@ def getTimeZone() {
 
 //Chart data rendering
 def getHistoricalSleepData(fromDate, toDate) {
-	return parent.apiGET("/users/${device.deviceNetworkId.tokenize("/")[1]}/trends?tz=${URLEncoder.encode(getTimeZone().getID())}&from=${fromDate.format("yyyy-MM-dd")}&to=${toDate.format("yyyy-MM-dd")}")
+	def result
+	if (state.isOwner) {
+		result = parent.apiGET("/users/${device.deviceNetworkId.tokenize("/")[1]}/trends?tz=${URLEncoder.encode(getTimeZone().getID())}&from=${fromDate.format("yyyy-MM-dd")}&to=${toDate.format("yyyy-MM-dd")}")
+    } else {
+    	result = parent.apiGETWithPartner("/users/${device.deviceNetworkId.tokenize("/")[1]}/trends?tz=${URLEncoder.encode(getTimeZone().getID())}&from=${fromDate.format("yyyy-MM-dd")}&to=${toDate.format("yyyy-MM-dd")}")
+    }
+    result
 }
 
 def addHistoricalSleepToChartData() {
     def date = new Date()
 	def resp = getHistoricalSleepData((date - 6), date)
-    if (resp.status == 403) {
+    if (resp == "" || resp.status == 403) {
     	log.error("Cannot access sleep data for partner.")
-        state.chartData = "UNAUTHORISED"
+        state.chartData = "UNAVAILABLE"
     } else if (resp.status != 200) {
     	log.error("Unexpected result in addHistoricalSleepToChartData(): [${resp.status}] ${resp.data}")
 	}
@@ -340,8 +379,8 @@ def addHistoricalSleepToChartData() {
         state.chartData2 = [0, 0, 0, 0, 0, 0, 0]
         
         0.upto(days.size() - 1, {
-        	state.chartData[6 - it] = days[it].sleepDuration / 60  
-            state.chartData2[6 - it] = days[it].presenceDuration / 60
+        	state.chartData[6 - it] = days[it].sleepDuration / 3600  
+            state.chartData2[6 - it] = days[it].presenceDuration / 3600
         })
     }
 }
@@ -353,7 +392,7 @@ def getChartHTML() {
     		state.chartData = [0, 0, 0, 0, 0, 0, 0]
     	}
         def hData
-        if (state.chartData == "UNAUTHORISED") { hData = "<p><h1><span style=\"color: #5c628f;font-family:verdana;font-size:40%;\">Sleep data unavailable for partner user.</span></h1></p>" }
+        if (state.chartData == "UNAVAILABLE") { hData = "<p><h1><span style=\"color: #5c628f;font-family:verdana;font-size:40%;\">Sleep data unavailable for partner user.</span></h1></p>" }
         else {
         	if (state.chartData2 == null) {
             	state.chartData2 = [0, 0, 0, 0, 0, 0, 0]
@@ -376,13 +415,13 @@ def getChartHTML() {
       					]);
 
       					var options = {
-        						title: "Sleep/Presence duration in the Last 7 Days",
+        						title: "Sleep/Presence duration in the last 7 days",
         						width: 410,
         						height: 220,
        					 		bar: {groupWidth: "75%"},
         						legend: { position: "none" },
         						vAxis: {
-          							title: 'Minutes',
+          							title: 'Hours',
                                      viewWindow: {
         								min: 0
         					 		 },
