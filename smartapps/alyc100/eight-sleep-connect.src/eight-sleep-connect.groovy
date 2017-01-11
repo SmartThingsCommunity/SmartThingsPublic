@@ -14,6 +14,7 @@
  *
  *	VERSION HISTORY
  *
+ *	11.01.2017: 1.0 BETA Release 2 - Support partner account authentication and session management.
  *	11.01.2017: 1.0 BETA Release 1 - Initial Release
  */
 definition(
@@ -30,6 +31,7 @@ definition(
 preferences {
 	page(name:"firstPage", title:"Eight Sleep Device Setup", content:"firstPage", install: true)
     page(name: "loginPAGE")
+    page(name: "partnerLoginPAGE")
     page(name: "selectDevicePAGE")
 }
 
@@ -51,7 +53,11 @@ def firstPage() {
             	headerSECTION()
                 href("loginPAGE", title: null, description: authenticated() ? "Authenticated as " +username : "Tap to enter Eight Sleep account crednentials", state: authenticated())
             }
-            if (stateTokenPresent()) {           	
+            if (stateTokenPresent()) {       
+            	section ("Add your partner's credentials (optional):") {
+					href("partnerLoginPAGE", title: null, description: partnerAuthenticated() ? "Authenticated as " + partnerUsername : "Tap to enter Eight Sleep partner account crednentials", state: partnerAuthenticated())
+        		}
+            
                 section ("Choose your Eight Sleep devices:") {
 					href("selectDevicePAGE", title: null, description: devicesSelected() ? getDevicesSelectedString() : "Tap to select Eight Sleep devices", state: devicesSelected())
         		}
@@ -99,6 +105,41 @@ def loginPAGE() {
     }
 }
 
+def partnerLoginPAGE() {
+	if (partnerUsername == null || partnerUsername == '' || partnerPassword == null || partnerPassword == '') {
+		return dynamicPage(name: "partnerLoginPAGE", title: "Partner Login", uninstall: false, install: false) {
+    		section { headerSECTION() }
+        	section { paragraph "Enter your Eight Sleep partner account credentials below." }
+    		section {
+    			input("partnerUsername", "text", title: "Username", description: "Your Eight Sleep partner username (usually an email address)", required: true)
+				input("partnerPassword", "password", title: "Password", description: "Your Eight Sleep partner password", required: true, submitOnChange: true)
+  			}   	
+    	}
+    }
+    else {
+    	getEightSleepPartnerAccessToken()
+        dynamicPage(name: "partnerLoginPAGE", title: "Login", uninstall: false, install: false) {
+    		section { headerSECTION() }
+        	section { paragraph "Enter your Eight Sleep partner account credentials below." }
+    		section("Eight Sleep Partner Credentials:") {
+				input("partnerUsername", "text", title: "Username", description: "Your Eight Sleep partner username (usually an email address)", required: true)
+				input("partnerPassword", "password", title: "Password", description: "Your Eight Sleep partner password", required: true, submitOnChange: true)	
+			}    	
+    	
+    		if (statePartnerTokenPresent()) {
+        		section {
+                	paragraph "You have successfully added your partner's credentials.."
+  				}
+        	}
+        	else {
+        		section {
+            		paragraph "There was a problem adding your partner's Eight Sleep credentials. Check your partner user credentials and error logs in SmartThings web console.\n\n${state.loginerrors}"
+           		}
+        	}
+        }
+    }
+}
+
 def selectDevicePAGE() {
 	updateDevices()
 	dynamicPage(name: "selectDevicePAGE", title: "Devices", uninstall: false, install: false) {
@@ -118,8 +159,16 @@ def stateTokenPresent() {
 	return state.eightSleepAccessToken != null && state.eightSleepAccessToken != ''
 }
 
+def statePartnerTokenPresent() {
+	return state.eightSleepPartnerAccessToken != null && state.eightSleepPartnerAccessToken != ''
+}
+
 def authenticated() {
 	return (state.eightSleepAccessToken != null && state.eightSleepAccessToken != '') ? "complete" : null
+}
+
+def partnerAuthenticated() {
+	return (state.eightSleepPartnerAccessToken != null && state.eightSleepPartnerAccessToken != '') ? "complete" : null
 }
 
 def devicesSelected() {
@@ -304,6 +353,25 @@ def getEightSleepAccessToken() {
     }
 }
 
+def getEightSleepPartnerAccessToken() {  
+	def body = [ 
+        	"email": "${partnerUsername}",
+        	"password" : "${partnerPassword}"
+        ]
+	def resp = apiPOST("/login", body)
+    if (resp.status == 200) {
+		state.eightSleepPartnerAccessToken = resp.data.session.token
+        state.partnerUserId = resp.data.session.userId
+        state.partnerExpirationDate = resp.data.session.expirationDate
+        log.debug "eightSleepPartnerAccessToken: $resp.data.session.token"  
+        log.debug "partnerUserId: $resp.data.session.userId"  
+        log.debug "partnerExpirationDate: $resp.data.session.expirationDate" 
+	} else {
+		log.error("Non-200 from device list call. ${resp.status} ${resp.data}")
+		return []
+    }
+}
+
 def apiGET(path) {
 	try {   			
         httpGet(uri: apiURL(path), headers: apiRequestHeaders()) {response ->
@@ -314,6 +382,24 @@ def apiGET(path) {
 		logResponse(e.response)
 		return e.response
 	}
+}
+
+def apiGETWithPartner(path) {
+	def result
+	if (partnerUsername != null && partnerUsername != '' && partnerPassword != null && partnerPassword != '') {
+		try {   			
+        	httpGet(uri: apiURL(path), headers: apiPartnerRequestHeaders()) {response ->
+				logResponse(response)
+				result = response
+			}
+		} catch (groovyx.net.http.HttpResponseException e) {
+			logResponse(e.response)
+			result = e.response
+		}
+    } else {
+    	result = ""
+    }
+    result
 }
 
 def apiPOST(path, body = [:]) {
@@ -368,6 +454,32 @@ Map apiRequestHeaders() {
 	]
 }
 
+Map apiPartnerRequestHeaders() {
+   //Check token expiry
+   if (state.eightSleepPartnerAccessToken) {
+   		def now = new Date().getTime()
+   		def sessionExpiryTime = Date.parse("yyyy-MM-dd'T'HH:mm:ss.SSS'Z'", state.partnerExpirationDate).getTime()
+   		if (now > sessionExpiryTime) {
+   			log.debug "Renewing Partner Access Token"
+        	getEightSleepPartnerAccessToken()
+   		}
+   }
+   
+   return [ "Host": "client-api.8slp.net",
+   			"Content-Type": "application/json",
+            "API-Key": "api-key",
+            "Application-Id": "morphy-app-id",
+    		"Connection": "keep-alive",
+            "User-Agent" : "Eight%20AppStore/11 CFNetwork/808.2.16 Darwin/16.3.0",
+            "Accept-Language": "en-gb",
+			"Accept-Encoding": "gzip, deflate",
+			"Accept": "*/*",
+			"app-Version": "1.10.0",
+            "Session-Token": "${state.eightSleepPartnerAccessToken}"
+
+	]
+}
+
 def logResponse(response) {
 	log.info("Status: ${response.status}")
 	log.info("Body: ${response.data}")
@@ -390,7 +502,7 @@ def logErrors(options = [errorReturn: null, logObject: log], Closure c) {
 }
 
 private def textVersion() {
-    def text = "Eight Sleep (Connect)\nVersion: 1.0 BETA Release 1\nDate: 11012017(0040)"
+    def text = "Eight Sleep (Connect)\nVersion: 1.0 BETA Release 2\nDate: 11012017(1200)"
 }
 
 private def textCopyright() {
