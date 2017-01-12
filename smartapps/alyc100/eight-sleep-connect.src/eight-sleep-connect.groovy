@@ -13,6 +13,7 @@
  *  for the specific language governing permissions and limitations under the License.
  *
  *	VERSION HISTORY 
+ *	12.01.2017: 1.0 BETA Release 4 - Enable changing of SmartApp name.
  *	12.01.2017: 1.0 BETA Release 3b - Remove single instance lock for users with multiple mattresses.
  *	12.01.2017: 1.0 BETA Release 3 - Better messaging within smart app on login errors.
  *	11.01.2017: 1.0 BETA Release 2 - Support partner account authentication and session management.
@@ -61,6 +62,9 @@ def firstPage() {
                 section ("Choose your Eight Sleep devices:") {
 					href("selectDevicePAGE", title: null, description: devicesSelected() ? getDevicesSelectedString() : "Tap to select Eight Sleep devices", state: devicesSelected())
         		}
+                section () {
+                	label name: "name", title: "Assign a Name", required: true, state: (name ? "complete" : null), defaultValue: app.name
+                }
             } else {
             	section {
             		paragraph "There was a problem connecting to Eight Sleep. Check your user credentials and error logs in SmartThings web console.\n\n${state.loginerrors}"
