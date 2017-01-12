@@ -13,6 +13,7 @@
  *  for the specific language governing permissions and limitations under the License.
  *
  *	VERSION HISTORY
+ *	12.01.2017: 1.0 BETA Release 4 - Further refinements to bed presence contact behaviour.
  *	11.01.2017: 1.0 BETA Release 3c - Use Google Chart image API for Android support
  *	11.01.2017: 1.0 BETA Release 3b - Further Chart formatting update
  *	11.01.2017: 1.0 BETA Release 3 - Chart formatting update
@@ -189,6 +190,7 @@ def poll() {
     sendEvent(name: "desiredLevel", "value": state.desiredLevel, unit: "%", displayed: false)
     
     sendEvent(name: "currentHeatLevel", value: currentHeatLevel)
+    addCurrentHeatLevelToHistoricalArray(currentHeatLevel)
     sendEvent(name: "timer", value: convertSecondsToString(timer), displayed: false)
     if (!state.heatingDuration) {
     	state.heatingDuration = 180
@@ -203,7 +205,8 @@ def poll() {
         	state.sleepPeriod = true
         }
     }
-    state.lastPresenceStartValue = resp.data.result.leftPresenceStart as Integer
+    state.lastPresenceStartValue = presenceStart
+    log.debug "Last 5 heat readings: $state.heatLevelHistory"
     if (state.sleepPeriod) {
     	if (lastDesiredLevel != state.desiredLevel) {
         	//Not used at the moment.
@@ -212,18 +215,24 @@ def poll() {
     	if (state.lastCurrentHeatLevel) {
         	def currSwitchState = device.currentState("switch").getValue()
         	def heatDelta
-            	if (currSwitchState == "on") {
-                	heatDelta = currentHeatLevel - state.desiredLevel
-                } else {
-                	heatDelta = currentHeatLevel - 10
+            if (currSwitchState == "on") {
+                heatDelta = currentHeatLevel - state.desiredLevel
+            } else {
+            	heatDelta = currentHeatLevel - 10
+            }
+            def bodyLeft = false
+            if ((state.heatLevelHistory[0] < state.heatLevelHistory[1]) && (state.heatLevelHistory[1] < state.heatLevelHistory[2])) {
+            	if ((state.heatLevelHistory[2] - state.heatLevelHistory[0]) >= 8) {
+                	bodyLeft = true
                 }
-            def heatDiff = state.lastCurrentHeatLevel - currentHeatLevel
+            }
+            
             def contactState = device.currentState("contact").getValue()
         	//Bed is warmer than set temperature, assume this is body warming in action.
         	if (contactState == "open" && (heatDelta > 10)) {
             	setInBed()
             //Bed is cooling fast, assume this warm body has left bed.
-            } else if (contactState == "closed" && (heatDiff > 5)) {
+            } else if ((contactState == "closed") && (bodyLeft || heatDelta < 5)) {
             	setOutOfBed()
             }
         }
@@ -233,6 +242,10 @@ def poll() {
     
     addHistoricalSleepToChartData()
     
+}
+
+def installed() {
+	sendEvent(name: "contact", value: "open")
 }
 
 def refresh() {
@@ -406,6 +419,12 @@ def getTimeZone() {
 	return tz
 }
 
+def addCurrentHeatLevelToHistoricalArray(heatLevel) {
+	if (!state.heatLevelHistory) state.heatLevelHistory = [heatLevel, heatLevel, heatLevel, heatLevel, heatLevel]
+    state.heatLevelHistory.add(0, heatLevel)
+    state.heatLevelHistory.pop()
+}
+
 //Chart data rendering
 def getHistoricalSleepData(fromDate, toDate) {
 	def result
@@ -483,7 +502,6 @@ def getImageChartHTML() {
 	}
 }
 
-
 def getCssData() {
 	def cssData = null
 	def htmlInfo
@@ -542,4 +560,3 @@ def getFileBase64(url, preType, fileType) {
 }
 
 def cssUrl()	 { return "https://raw.githubusercontent.com/desertblade/ST-HTMLTile-Framework/master/css/smartthings.css" }
-def chartJsUrl() { return "https://www.gstatic.com/charts/loader.js" }
