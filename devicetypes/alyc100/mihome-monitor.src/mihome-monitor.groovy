@@ -163,19 +163,20 @@ def getChartHTML() {
 		<!DOCTYPE html>
 		<html>
 			<head>
-				<meta charset="utf-8"/>
+				<head>
 				<meta http-equiv="cache-control" content="max-age=0"/>
 				<meta http-equiv="cache-control" content="no-cache"/>
 				<meta http-equiv="expires" content="0"/>
 				<meta http-equiv="expires" content="Tue, 01 Jan 1980 1:00:00 GMT"/>
 				<meta http-equiv="pragma" content="no-cache"/>
 				<meta name="viewport" content="width = device-width, user-scalable=no, initial-scale=1.0">
-				<script type="text/javascript" src="${getChartJsData()}"></script>
+
+				<link rel="stylesheet prefetch" href="${getCssData()}"/>
+			</head>
 			</head>
 			<body>
-  				<div id="chart_div"></div>
                 ${hData}
-				</body>
+			</body>
 			</html>
 		"""
 		render contentType: "text/html", data: mainHtml, status: 200
