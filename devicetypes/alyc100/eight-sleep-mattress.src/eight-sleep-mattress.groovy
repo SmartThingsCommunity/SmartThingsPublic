@@ -13,6 +13,7 @@
  *  for the specific language governing permissions and limitations under the License.
  *
  *	VERSION HISTORY
+ *	12.01.2017: 1.0 BETA Release 4b - Minor event messaging improvements.
  *	12.01.2017: 1.0 BETA Release 4 - Further refinements to bed presence contact behaviour.
  *	11.01.2017: 1.0 BETA Release 3c - Use Google Chart image API for Android support
  *	11.01.2017: 1.0 BETA Release 3b - Further Chart formatting update
