@@ -13,6 +13,7 @@
  *  for the specific language governing permissions and limitations under the License.
  *
  *	VERSION HISTORY
+ *	12.01.2017: 1.0 BETA Release 4c - Better 'Offline' detection and handling.
  *	12.01.2017: 1.0 BETA Release 4b - Minor event messaging improvements.
  *	12.01.2017: 1.0 BETA Release 4 - Further refinements to bed presence contact behaviour.
  *	11.01.2017: 1.0 BETA Release 3c - Use Google Chart image API for Android support
@@ -156,10 +157,13 @@ def poll() {
     def resp = parent.apiGET("/devices/${device.deviceNetworkId.tokenize("/")[0]}?offlineView=true")
     if (resp.status != 200) {
 		log.error("Unexpected result in poll(): [${resp.status}] ${resp.data}")
-        sendEvent(name: "switch", value: "offline", descriptionText: "The device is offline")
+        setOffline()
 		return []
 	}
-    sendEvent(name: "network", value: resp.data.result.online ? "Connected" : "Not Connected")
+    if ((!resp.data.result.online) || (!resp.data.result.sensorInfo.connected)) { 
+    	setOffline()
+        return []
+    }
     def currentHeatLevel = 0
     def nowHeating = false
     def targetHeatingLevel = 0
@@ -406,6 +410,11 @@ def heatingDurationUp() {
     //Round down result
     def newHeatDurationLength = (state.heatingDuration + 15) - (state.heatingDuration % 15)
 	setHeatDuration(newHeatDurationLength)
+}
+
+def setOffline() {
+	sendEvent(name: 'network', value: "Not Connected" as String)
+    sendEvent(name: "switch", value: "offline")
 }
 
 //Helper methods
