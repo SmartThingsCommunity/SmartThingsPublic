@@ -13,6 +13,8 @@
  *  for the specific language governing permissions and limitations under the License.
  *
  *  VERSION HISTORY
+ *  12-01-2017: 1.1.7 - Add authentication scope for Maps. Added reauthentication option.
+ *
  *  26-11-2016: 1.1.6 - Enforce SHM mode if SHM is changed during a clean.
  *
  *  01-11-2016: 1.1.5 - Improved handling of lost credentials to Neato. Better time zone handling.
@@ -142,6 +144,10 @@ def authPage() {
 					}  
         		}
            	}
+            section() {
+				paragraph "Tap below to reauthenticate to the Neato service and reauthorize SmartThings access."
+				href url:redirectUrl, style:"embedded", required:false, title:"Neato", description:description
+			}
         }
 	}
 }
@@ -270,7 +276,7 @@ def oauthInitUrl() {
 
 	def oauthParams = [
 			response_type: "code",
-			scope: "public_profile control_robots",
+			scope: "public_profile control_robots maps",
 			client_id: clientId(),
 			state: atomicState.oauthInitState,
 			redirect_uri: callbackUrl
