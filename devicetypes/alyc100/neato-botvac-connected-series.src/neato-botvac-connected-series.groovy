@@ -13,6 +13,7 @@
  *  for the specific language governing permissions and limitations under the License.
  *
  *  VERSION HISTORY
+ * 	12-01-2016: 1.4b - Time zones!.
  * 	12-01-2016: 1.4 - Cleaning map view functionality.
  *
  * 	13-12-2016: 1.3b - Attempt to stop Null Pointer on 1.3b.
@@ -550,11 +551,13 @@ def getMapHTML() {
         	if (resp.data.maps.size() > 0) {
             	def mapUrl = resp.data.maps[0].url
                 def generated_at = Date.parse("yyyy-MM-dd'T'HH:mm:ss'Z'", resp.data.maps[0].generated_at)
+                def df = new java.text.SimpleDateFormat("MMM d, yyyy h:mm a")
+				if (parent.getTimeZone()) { df.setTimeZone(location.timeZone) }
                 def cleaned_area = resp.data.maps[0].cleaned_area
                 def start_at = Date.parse("yyyy-MM-dd'T'HH:mm:ss'Z'", resp.data.maps[0].start_at)
                 def end_at = Date.parse("yyyy-MM-dd'T'HH:mm:ss'Z'", resp.data.maps[0].end_at)
 				hData = """
-            	<h4 style="font-size: 18px; font-weight: bold; text-align: center; background: #00a1db; color: #f5f5f5;">Cleaning Map ${generated_at.format("MMM d, yyyy h:mm a")}</h4>
+            	<h4 style="font-size: 18px; font-weight: bold; text-align: center; background: #00a1db; color: #f5f5f5;">Cleaning Map ${df.format(generated_at)}</h4>
 	  			<div id="cleaning_map" style="width: 100%; height: 260px;"><img src="${mapUrl}" width="100%">	
                 <table>
 					<col width="50%">
