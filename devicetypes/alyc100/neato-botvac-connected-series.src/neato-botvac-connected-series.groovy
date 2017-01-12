@@ -13,6 +13,8 @@
  *  for the specific language governing permissions and limitations under the License.
  *
  *  VERSION HISTORY
+ * 	12-01-2016: 1.4 - Cleaning map view functionality.
+ *
  * 	13-12-2016: 1.3b - Attempt to stop Null Pointer on 1.3b.
  * 	13-12-2016: 1.3 - Added compatability with newer Botvac models with firmware 3.x.
  *
@@ -138,9 +140,15 @@ metadata {
 			state("offline", label:'${name}', icon:"https://raw.githubusercontent.com/alyc100/SmartThingsPublic/master/devicetypes/alyc100/laser-guided-navigation.png", backgroundColor:"#bc2323")
         }
         
+        htmlTile(name:"mapHTML", action: "getMapHTML", width: 6, height: 7, whiteList: ["neatorobotics.s3.amazonaws.com", "raw.githubusercontent.com"])
+        
 		main("switch")
-		details(["clean","smartScheduleStatusMessage", "forceCleanStatusMessage", "status", "battery", "charging", "bin", "dockStatus", "dockHasBeenSeen", "cleaningMode", "scheduled", "resetSmartSchedule", "network", "refresh"])
+		details(["clean","smartScheduleStatusMessage", "forceCleanStatusMessage", "status", "battery", "charging", "bin", "dockStatus", "dockHasBeenSeen", "cleaningMode", "scheduled", "resetSmartSchedule", "network", "refresh", "mapHTML"])
 		}
+}
+
+mappings {
+    path("/getMapHTML") {action: [GET: "getMapHTML"]}
 }
 
 // handle commands
@@ -260,11 +268,7 @@ def poll() {
 	}
     else {
     	if (result.containsKey("meta")) {
-        	if (result.meta.firmware.startsWith("2")) {
-            	state.firmware = 2
-            } else {
-            	state.firmware = 3
-            }
+        	state.firmware = result.meta.firmware
         }
         if (result.containsKey("availableServices")) {
         	state.houseCleaning = result.availableServices.houseCleaning
@@ -303,7 +307,7 @@ def poll() {
 				break;
         	}
         }
-        if (state.firmware == 2 && result.containsKey("error")) {
+        if (state.firmware.startsWith("2") && result.containsKey("error")) {
         	switch (result.error) {
             	case "ui_alert_dust_bin_full":
 					binFullFlag = true
@@ -386,7 +390,7 @@ def poll() {
                 //More error detail messages here as discovered
 			}
         }
-        if (state.firmware == 3 && result.containsKey("error")) {
+        if (state.firmware.startsWith("3") && result.containsKey("error")) {
         	if (result.error) {
             	if (result.error == "dustbin_full") { 
                 	binFullFlag = true
@@ -397,7 +401,7 @@ def poll() {
                	}
             }
         }
-        if (state.firmware == 3 && result.containsKey("alert")) {
+        if (state.firmware.startsWith("3") && result.containsKey("alert")) {
         	if (result.alert) {
             	if (result.alert == "dustbin_full") { 
                 	binFullFlag = true 
@@ -538,4 +542,145 @@ Map nucleoRequestHeaders(date, HMACsignature) {
     ]
 }
 
+def getMapHTML() {
+	try {
+    	def resp = parent.beehiveGET("/users/me/robots/${device.deviceNetworkId.tokenize("|")[0]}/maps")
+        def hData = ""
+        if (state.firmware.startsWith("2.2")) {
+        	if (resp.data.maps.size() > 0) {
+            	def mapUrl = resp.data.maps[0].url
+                def generated_at = Date.parse("yyyy-MM-dd'T'HH:mm:ss'Z'", resp.data.maps[0].generated_at)
+                def cleaned_area = resp.data.maps[0].cleaned_area
+                def start_at = Date.parse("yyyy-MM-dd'T'HH:mm:ss'Z'", resp.data.maps[0].start_at)
+                def end_at = Date.parse("yyyy-MM-dd'T'HH:mm:ss'Z'", resp.data.maps[0].end_at)
+				hData = """
+            	<h4 style="font-size: 18px; font-weight: bold; text-align: center; background: #00a1db; color: #f5f5f5;">Cleaning Map ${generated_at.format("MMM d, yyyy h:mm a")}</h4>
+	  			<div id="cleaning_map" style="width: 100%; height: 260px;"><img src="${mapUrl}" width="100%">	
+                <table>
+					<col width="50%">
+					<col width="50%">
+					<thead>
+						<th>Area Cleaned (m&#178;)</th>
+						<th>Cleaning Time (hours)</th>
+					</thead>
+					<tbody>
+						<tr>
+							<td>${cleaned_area}</td>
+							<td>${getCleaningTime(start_at, end_at)}</td>
+						</tr>
+					</tbody>
+				</table></div>
+				"""
+            } else {
+            	hData = """
+                <div class="centerText" style="font-family: helvetica, arial, sans-serif;">
+				  <p>No map available yet.</p>
+				  <p>Complete at least one house cleaning to view maps</p>
+				</div>
+            """
+            }
+        } else {
+        	hData = """
+            	<div class="centerText" style="font-family: helvetica, arial, sans-serif;">
+				  <p>Cleaning map not supported on Botvac D3 or Botvac D5.</p>
+				  <p>If you have Neato Botvac Connected, ensure you update firmware to v2.2.0.</p>
+				</div>
+            """
+        }
+
+		def mainHtml = """
+		<!DOCTYPE html>
+		<html>
+			<head>
+				<meta http-equiv="cache-control" content="max-age=0"/>
+				<meta http-equiv="cache-control" content="no-cache"/>
+				<meta http-equiv="expires" content="0"/>
+				<meta http-equiv="expires" content="Tue, 01 Jan 1980 1:00:00 GMT"/>
+				<meta http-equiv="pragma" content="no-cache"/>
+				<meta name="viewport" content="width = device-width, user-scalable=no, initial-scale=1.0">
+
+				<link rel="stylesheet prefetch" href="${getCssData()}"/>
+			</head>
+			<body>
+                ${hData}
+			</body>
+			</html>
+		"""
+		render contentType: "text/html", data: mainHtml, status: 200
+	}
+	catch (ex) {
+		log.error "getMapHTML Exception:", ex
+	}
+}
+
+def getCssData() {
+	def cssData = null
+	def htmlInfo
+	state.cssData = null
+
+	if(htmlInfo?.cssUrl && htmlInfo?.cssVer) {
+		if(state?.cssData) {
+			if (state?.cssVer?.toInteger() == htmlInfo?.cssVer?.toInteger()) {
+				//LogAction("getCssData: CSS Data is Current | Loading Data from State...")
+				cssData = state?.cssData
+			} else if (state?.cssVer?.toInteger() < htmlInfo?.cssVer?.toInteger()) {
+				//LogAction("getCssData: CSS Data is Outdated | Loading Data from Source...")
+				cssData = getFileBase64(htmlInfo.cssUrl, "text", "css")
+				state.cssData = cssData
+				state?.cssVer = htmlInfo?.cssVer
+			}
+		} else {
+			//LogAction("getCssData: CSS Data is Missing | Loading Data from Source...")
+			cssData = getFileBase64(htmlInfo.cssUrl, "text", "css")
+			state?.cssData = cssData
+			state?.cssVer = htmlInfo?.cssVer
+		}
+	} else {
+		//LogAction("getCssData: No Stored CSS Info Data Found for Device... Loading for Static URL...")
+		cssData = getFileBase64(cssUrl(), "text", "css")
+	}
+	return cssData
+}
+
+def getFileBase64(url, preType, fileType) {
+	try {
+		def params = [
+			uri: url,
+			contentType: '$preType/$fileType'
+		]
+		httpGet(params) { resp ->
+			if(resp.data) {
+				def respData = resp?.data
+				ByteArrayOutputStream bos = new ByteArrayOutputStream()
+				int len
+				int size = 4096
+				byte[] buf = new byte[size]
+				while ((len = respData.read(buf, 0, size)) != -1)
+					bos.write(buf, 0, len)
+				buf = bos.toByteArray()
+				//LogAction("buf: $buf")
+				String s = buf?.encodeBase64()
+				//LogAction("resp: ${s}")
+				return s ? "data:${preType}/${fileType};base64,${s.toString()}" : null
+			}
+		}
+	}
+	catch (ex) {
+		log.error "getFileBase64 Exception:", ex
+	}
+}
+
+//Helper methods
+def getCleaningTime(start_at, end_at) {
+	def diff = end_at.getTime() - start_at.getTime()
+	def hour = (diff / 3600000) as Integer
+    def minute = (diff - (hour * 3600000)) / 60000 as Integer
+    
+    def hourString = (hour < 10) ? "0$hour" : "$hour"
+    def minuteString = (minute < 10) ? "0$minute" : "$minute"
+    
+	return "${hourString}:${minuteString}"
+}
+
+def cssUrl()	 { return "https://raw.githubusercontent.com/desertblade/ST-HTMLTile-Framework/master/css/smartthings.css" }
 def nucleoURL(path = '/') 			 { return "https://nucleo.neatocloud.com:4443/vendors/neato/robots/${device.deviceNetworkId.tokenize("|")[0]}${path}" }
