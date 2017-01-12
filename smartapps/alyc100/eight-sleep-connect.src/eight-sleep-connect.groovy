@@ -12,7 +12,8 @@
  *  on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the License
  *  for the specific language governing permissions and limitations under the License.
  *
- *	VERSION HISTORY
+ *	VERSION HISTORY 
+ *	12.01.2017: 1.0 BETA Release 3b - Remove single instance lock for users with multiple mattresses.
  *	12.01.2017: 1.0 BETA Release 3 - Better messaging within smart app on login errors.
  *	11.01.2017: 1.0 BETA Release 2 - Support partner account authentication and session management.
  *	11.01.2017: 1.0 BETA Release 1 - Initial Release
@@ -24,8 +25,7 @@ definition(
     description: "Connect your Eight Sleep device to SmartThings",
     iconUrl: "https://raw.githubusercontent.com/alyc100/SmartThingsPublic/master/smartapps/alyc100/8slp-icon.png",
     iconX2Url: "https://raw.githubusercontent.com/alyc100/SmartThingsPublic/master/smartapps/alyc100/8slp-icon.png",
-    iconX3Url: "https://raw.githubusercontent.com/alyc100/SmartThingsPublic/master/smartapps/alyc100/8slp-icon.png",
-    singleInstance: true
+    iconX3Url: "https://raw.githubusercontent.com/alyc100/SmartThingsPublic/master/smartapps/alyc100/8slp-icon.png"
 )
 
 preferences {
@@ -508,7 +508,7 @@ def logErrors(options = [errorReturn: null, logObject: log], Closure c) {
 }
 
 private def textVersion() {
-    def text = "Eight Sleep (Connect)\nVersion: 1.0 BETA Release 3\nDate: 12012017(1330)"
+    def text = "Eight Sleep (Connect)\nVersion: 1.0 BETA Release 3b\nDate: 12012017(2030)"
 }
 
 private def textCopyright() {
