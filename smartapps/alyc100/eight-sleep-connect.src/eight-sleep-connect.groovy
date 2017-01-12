@@ -13,7 +13,7 @@
  *  for the specific language governing permissions and limitations under the License.
  *
  *	VERSION HISTORY
- *
+ *	12.01.2017: 1.0 BETA Release 3 - Better messaging within smart app on login errors.
  *	11.01.2017: 1.0 BETA Release 2 - Support partner account authentication and session management.
  *	11.01.2017: 1.0 BETA Release 1 - Initial Release
  */
@@ -340,6 +340,7 @@ def getEightSleepAccessToken() {
         	"password" : "${password}"
         ]
 	def resp = apiPOST("/login", body)
+    state.eightSleepAccessToken = null
     if (resp.status == 200) {
 		state.eightSleepAccessToken = resp.data.session.token
         state.userId = resp.data.session.userId
@@ -347,8 +348,10 @@ def getEightSleepAccessToken() {
         log.debug "eightSleepAccessToken: $resp.data.session.token"  
         log.debug "eightSleepUserId: $resp.data.session.userId"  
         log.debug "eightSleepTokenExpirationDate: $resp.data.session.expirationDate" 
+        state.loginerrors = null
 	} else {
 		log.error("Non-200 from device list call. ${resp.status} ${resp.data}")
+        state.loginerrors = "Error: ${resp.status}: ${resp.data}"
 		return []
     }
 }
@@ -359,6 +362,7 @@ def getEightSleepPartnerAccessToken() {
         	"password" : "${partnerPassword}"
         ]
 	def resp = apiPOST("/login", body)
+    state.eightSleepPartnerAccessToken = null
     if (resp.status == 200) {
 		state.eightSleepPartnerAccessToken = resp.data.session.token
         state.partnerUserId = resp.data.session.userId
@@ -366,8 +370,10 @@ def getEightSleepPartnerAccessToken() {
         log.debug "eightSleepPartnerAccessToken: $resp.data.session.token"  
         log.debug "partnerUserId: $resp.data.session.userId"  
         log.debug "partnerExpirationDate: $resp.data.session.expirationDate" 
+        state.loginerrors = null
 	} else {
 		log.error("Non-200 from device list call. ${resp.status} ${resp.data}")
+        state.loginerrors = "Error: ${resp.status}: ${resp.data}"
 		return []
     }
 }
@@ -502,7 +508,7 @@ def logErrors(options = [errorReturn: null, logObject: log], Closure c) {
 }
 
 private def textVersion() {
-    def text = "Eight Sleep (Connect)\nVersion: 1.0 BETA Release 2\nDate: 11012017(1200)"
+    def text = "Eight Sleep (Connect)\nVersion: 1.0 BETA Release 3\nDate: 12012017(1330)"
 }
 
 private def textCopyright() {
