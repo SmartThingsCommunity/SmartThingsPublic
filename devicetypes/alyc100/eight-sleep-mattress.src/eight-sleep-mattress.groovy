@@ -254,11 +254,11 @@ def refresh() {
 }
 
 def setInBed() {
-	sendEvent(name: "contact", value: "closed", descriptionText: "Is in bed", displayed: true)
+	sendEvent(name: "contact", value: "closed", descriptionText: "Is In Bed", displayed: true)
 }
 
 def setOutOfBed() {
-	sendEvent(name: "contact", value: "open", descriptionText: "Is out of bed", displayed: true)
+	sendEvent(name: "contact", value: "open", descriptionText: "Is Out Of Bed", displayed: true)
     state.sleepPeriod = false
     state.desiredLevelChange = false
 }
