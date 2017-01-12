@@ -191,10 +191,11 @@ def poll() {
     
     sendEvent(name: "currentHeatLevel", value: currentHeatLevel)
     addCurrentHeatLevelToHistoricalArray(currentHeatLevel)
-    sendEvent(name: "timer", value: convertSecondsToString(timer), displayed: false)
+    def formattedTime = convertSecondsToString(timer)
+    sendEvent(name: "timer", value: formattedTime, descriptionText: "Heating Timer ${formattedTime}", displayed: true)
     if (!state.heatingDuration) {
     	state.heatingDuration = 180
-    	sendEvent("name":"heatingDuration", "value": convertSecondsToString(state.heatingDuration * 60), displayed: true)
+    	sendEvent("name":"heatingDuration", "value": convertSecondsToString(state.heatingDuration * 60), displayed: false)
     }
     sendEvent(name: "status", value: "Last update:\n" + Date.parse("yyyy-MM-dd'T'HH:mm:ss.SSS'Z'", resp.data.result.lastHeard).format("EEE, d MMM yyyy HH:mm:ss"), displayed: false )
     
@@ -369,7 +370,7 @@ def setNewLevelValue(newLevelValue) {
 	unschedule('setLevelToDesired')
     state.newLevel = newLevelValue
     state.desiredLevel = state.newLevel
-	sendEvent("name":"desiredLevel", "value": state.desiredLevel, displayed: false)
+	sendEvent("name":"desiredLevel", "value": state.desiredLevel, displayed: true)
 	log.debug "Setting level up to: ${state.newLevel}"
     runIn(3, setLevelToDesired)
 }
@@ -384,7 +385,7 @@ def setHeatDuration(minutes) {
 		minutes = 600
 	}
     state.heatingDuration = minutes
-    sendEvent("name":"heatingDuration", "value": convertSecondsToString(state.heatingDuration * 60), displayed: true)
+    sendEvent("name":"heatingDuration", "value": convertSecondsToString(state.heatingDuration * 60), displayed: false)
 }
 
 def heatingDurationDown() {
