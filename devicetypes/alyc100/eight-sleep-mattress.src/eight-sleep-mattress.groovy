@@ -71,6 +71,11 @@ metadata {
 			state("open", label:'Out Of Bed', icon:"st.Bedroom.bedroom6", backgroundColor:"#ffa81e")
 		}
         
+        standardTile("switch_mini", "device.switch", width: 2, height: 2) {
+        	state( "on", label:'${name}', action:"switch.off", icon:"st.Bedroom.bedroom12", backgroundColor:"#79b821")
+            state( "off", label:'${name}', action:"switch.on", icon:"st.Bedroom.bedroom12", backgroundColor:"#ffffff")
+        }
+        
         valueTile("currentHeatLevel", "device.currentHeatLevel", width: 2, height: 2){
 			state "default", label: '${currentValue}', unit:"%", 
             backgroundColors:[
