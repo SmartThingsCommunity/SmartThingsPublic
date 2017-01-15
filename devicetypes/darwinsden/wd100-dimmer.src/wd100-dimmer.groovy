@@ -32,6 +32,18 @@
  *  0.17 (10/05/2016) - Added single-tap-up to full brightness option.
  *  1.00 (01/14/2017) - Added button 7 (single tap up) and button 8 (single tap down). Added double down to 25% dim level option. 
  *
+ *
+ *
+ *   ACTION          BUTTON#    BUTTON ACTION
+ *   Double-Tap Up     1        pressed
+ *   Double-Tap Down   2        pressed
+ *   Triple-Tap Up     3        pressed
+ *   Triple-Tap Down   4        pressed
+ *   Hold Up           5 	    pressed
+ *   Hold Down         6 	    pressed
+ *   Single-Tap Up     7        pressed
+ *   Single-Tap Down   8        pressed
+ *
  */
  
 metadata {
