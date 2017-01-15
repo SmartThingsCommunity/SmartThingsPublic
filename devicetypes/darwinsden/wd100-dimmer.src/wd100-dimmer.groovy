@@ -3,7 +3,7 @@
  *
  *  Copyright 2016 DarwinsDen.com
  *
- *  For device parameter information and images, questions or to provide feedback on this device handler, 
+ *  For button mappings, device parameter information and images, questions or to provide feedback on this device handler, 
  *  please visit: 
  *
  *      darwinsden.com/homeseer100plus/
@@ -30,6 +30,7 @@
  *  0.15 (09/06/2016) - Added Firmware version info. Removed unused lit indicator button.
  *  0.16 (09/24/2016) - Added double-tap-up to full brightness option and support for firmware dim rate configuration parameters.
  *  0.17 (10/05/2016) - Added single-tap-up to full brightness option.
+ *  1.00 (01/14/2017) - Added button 7 (single tap up) and button 8 (single tap down). Added double down to 25% dim level option. 
  *
  */
  
@@ -75,7 +76,8 @@ metadata {
 
     preferences {      
        input "doubleTapToFullBright", "bool", title: "Double-Tap Up sets to full brightness",  defaultValue: false,  displayDuringSetup: true, required: false	       
-       input "singleTapToFullBright", "bool", title: "Single-Tap Up sets to full brightness",  defaultValue: false,  displayDuringSetup: true, required: false	       
+       input "singleTapToFullBright", "bool", title: "Single-Tap Up sets to full brightness",  defaultValue: false,  displayDuringSetup: true, required: false	
+       input "doubleTapDownToDim",    "bool", title: "Double-Tap Down sets to 25% level",      defaultValue: false,  displayDuringSetup: true, required: false	       
        input "reverseSwitch", "bool", title: "Reverse Switch",  defaultValue: false,  displayDuringSetup: true, required: false	       
         
        input ( "localStepDuration", "number", title: "Press Configuration button after entering ramp rate preferences\n\nLocal Ramp Rate: Duration of each level (1-22)(1=10ms) [default: 3]", defaultValue: 3,range: "1..22", required: false)
@@ -292,6 +294,10 @@ def zwaveEvent(physicalgraph.zwave.commands.centralscenev1.CentralSceneNotificat
           switch (cmd.keyAttributes) {
               case 0:
                   result += createEvent([name: "switch", value: "on", type: "physical"])
+                  sendEvent(name: "status" , value: "Tap ▲")
+	              sendEvent(name: "button" , value: "pushed", data: [buttonNumber: "7"], descriptionText: "$device.displayName Tap-Up-1 (button 7) pressed", 
+                       isStateChange: true, type: "$buttonType")
+       
                   if (singleTapToFullBright)
                   {
                      result += setLevel(99)
@@ -333,8 +339,10 @@ def zwaveEvent(physicalgraph.zwave.commands.centralscenev1.CentralSceneNotificat
           switch (cmd.keyAttributes) {
               case 0:
                   result=createEvent([name: "switch", value: "off", type: "physical"])
+                  sendEvent(name: "status" , value: "Tap ▼")
+	              sendEvent(name: "button" , value: "pushed", data: [buttonNumber: "8"], descriptionText: "$device.displayName Tap-Down-1 (button 8) pressed", 
+                       isStateChange: true, type: "$buttonType")
                   break
-
               case 1:
                   result=createEvent([name: "switch", value: "off", type: "physical"])
                   break
@@ -345,7 +353,13 @@ def zwaveEvent(physicalgraph.zwave.commands.centralscenev1.CentralSceneNotificat
                   break
               case 3: 
                   // 2 Times
-                  result=createEvent(tapDown2Response("physical"))
+                  result+=createEvent(tapDown2Response("physical"))
+                  if (doubleTapDownToDim)
+                  {
+                     result += setLevel(25)
+                     result += response("delay 5000")
+                     result += response(zwave.switchMultilevelV1.switchMultilevelGet())
+                  }  
                   break
               case 4:
                   // 3 Times
