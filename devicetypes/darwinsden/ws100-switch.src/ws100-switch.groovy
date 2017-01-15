@@ -1,9 +1,9 @@
 /**
  *  HomeSeer HS-WS100+
  *
- *  Copyright 2016 DarwinsDen.com
+ *  Copyright 2016, 2017 DarwinsDen.com
  *
- *  For device parameter information and images, questions or to provide feedback on this device handler, 
+ *  For button mappings, device parameter information and images, questions or to provide feedback on this device handler, 
  *  please visit: 
  *
  *      darwinsden.com/homeseer100plus/
@@ -22,9 +22,23 @@
  *
  *	Changelog:
  *
- *	0.10 (04/08/2016) -	Initial 0.1 Beta
- *  0.11 (05/28/2016) - Set numberOfButtons attribute for ease of use with CoRE and other SmartApps. Corrected physical/digital states.
+ *  1.00 (01/14/2017) - Added button 7 (single tap up) and button 8 (single tap down). Added firmware version display.
  *  0.12 (06/03/2016) - Added press type indicator to display last tap/hold press status
+ *  0.11 (05/28/2016) - Set numberOfButtons attribute for ease of use with CoRE and other SmartApps. Corrected physical/digital states.
+ *	0.10 (04/08/2016) -	Initial 0.1 Beta
+ *
+ *
+ *  Button Mappings:
+ *
+ *   ACTION          BUTTON#    BUTTON ACTION
+ *   Double-Tap Up     1        pressed
+ *   Double-Tap Down   2        pressed
+ *   Triple-Tap Up     3        pressed
+ *   Triple-Tap Down   4        pressed
+ *   Hold Up           5 	    pressed
+ *   Hold Down         6 	    pressed
+ *   Single-Tap Up     7        pressed
+ *   Single-Tap Down   8        pressed
  *
  */
  
@@ -46,7 +60,7 @@ metadata {
         command "holdUp"
         command "holdDown"
 
-fingerprint deviceId: "0x1001", inClusters: "0x5E, 0x86, 0x72, 0x5A, 0x85, 0x59, 0x73, 0x25, 0x27, 0x70, 0x2C, 0x2B, 0x5B, 0x7A", outClusters: "0x5B"
+        fingerprint deviceId: "0x1001", inClusters: "0x5E, 0x86, 0x72, 0x5A, 0x85, 0x59, 0x73, 0x25, 0x27, 0x70, 0x2C, 0x2B, 0x5B, 0x7A", outClusters: "0x5B"
 }
 
 	// simulator metadata
@@ -103,9 +117,13 @@ fingerprint deviceId: "0x1001", inClusters: "0x5E, 0x86, 0x72, 0x5A, 0x85, 0x59,
 		standardTile("refresh", "device.switch", width: 2, height: 2, inactiveLabel: false, decoration: "flat") {
 			state "default", label:'', action:"refresh.refresh", icon:"st.secondary.refresh"
 		}
-     
+
+        valueTile("firmwareVersion", "device.firmwareVersion", width:2, height: 2, decoration: "flat", inactiveLabel: false) {
+			state "default", label: '${currentValue}'
+		}
+        
 		main "switch"
-		details(["switch","tapUp2","tapUp3","holdUp","tapDown2","tapDown3","holdDown","indicator","refresh"])
+		details(["switch","tapUp2","tapUp3","holdUp","tapDown2","tapDown3","holdDown","indicator","firmwareVersion","refresh"])
 	}
 }
 
@@ -149,9 +167,27 @@ def zwaveEvent(physicalgraph.zwave.commands.hailv1.Hail cmd) {
 }
 
 def zwaveEvent(physicalgraph.zwave.commands.manufacturerspecificv2.ManufacturerSpecificReport cmd) {
-	if (state.manufacturer != cmd.manufacturerName) {
-		createEvent(updateDataValue("manufacturer", cmd.manufacturerName))
-	}
+	log.debug "manufacturerId:   ${cmd.manufacturerId}"
+	log.debug "manufacturerName: ${cmd.manufacturerName}"
+    state.manufacturer=cmd.manufacturerName
+	log.debug "productId:        ${cmd.productId}"
+	log.debug "productTypeId:    ${cmd.productTypeId}"
+	def msr = String.format("%04X-%04X-%04X", cmd.manufacturerId, cmd.productTypeId, cmd.productId)
+	updateDataValue("MSR", msr)	
+    setFirmwareVersion()
+    createEvent([descriptionText: "$device.displayName MSR: $msr", isStateChange: false])
+}
+
+def zwaveEvent(physicalgraph.zwave.commands.versionv1.VersionReport cmd) {	
+    log.debug ("received Version Report")
+    log.debug "applicationVersion:      ${cmd.applicationVersion}"
+    log.debug "applicationSubVersion:   ${cmd.applicationSubVersion}"
+    state.firmwareVersion=cmd.applicationVersion+'.'+cmd.applicationSubVersion
+    log.debug "zWaveLibraryType:        ${cmd.zWaveLibraryType}"
+    log.debug "zWaveProtocolVersion:    ${cmd.zWaveProtocolVersion}"
+    log.debug "zWaveProtocolSubVersion: ${cmd.zWaveProtocolSubVersion}"
+    setFirmwareVersion()
+    createEvent([descriptionText: "Firmware V"+state.firmwareVersion, isStateChange: false])
 }
 
 def zwaveEvent(physicalgraph.zwave.Command cmd) {
@@ -181,12 +217,25 @@ def poll() {
 	])
 }
 
+def setFirmwareVersion() {
+   def versionInfo = ''
+   if (state.manufacturer)
+   {
+      versionInfo=state.manufacturer+' '
+   }
+   if (state.firmwareVersion)
+   {
+      versionInfo=versionInfo+"Firmware V"+state.firmwareVersion
+   }
+   else 
+   {
+     versionInfo=versionInfo+"Firmware unknown"
+   }   
+   sendEvent(name: "firmwareVersion",  value: versionInfo, isStateChange: true)
+}
+
 def refresh() {
     configure()
-	delayBetween([
-		zwave.switchBinaryV1.switchBinaryGet().format(),
-		zwave.manufacturerSpecificV1.manufacturerSpecificGet().format()
-	]) 
 }
 
 def indicatorWhenOn() {
@@ -222,11 +271,14 @@ def zwaveEvent(physicalgraph.zwave.commands.centralscenev1.CentralSceneNotificat
           // Up
           switch (cmd.keyAttributes) {
               case 0:
+                  // Press Once
                   result=createEvent([name: "switch", value: "on", type: "physical"])
+                  sendEvent(name: "status" , value: "Tap ▲")
+	              sendEvent(name: "button" , value: "pushed", data: [buttonNumber: "7"], descriptionText: "$device.displayName Tap-Up-1 (button 7) pressed", 
+                       isStateChange: true, type: "$buttonType")
                   break
  
               case 1:
-                  // Press Once
                   result=createEvent([name: "switch", value: "on", type: "physical"])
                   break
               case 2:
@@ -253,11 +305,13 @@ def zwaveEvent(physicalgraph.zwave.commands.centralscenev1.CentralSceneNotificat
           // Down
           switch (cmd.keyAttributes) {
               case 0:
-                  result=createEvent([name: "switch", value: "off", type: "physical"])
-                  break
-
-              case 1:
                   // Press Once
+                  result=createEvent([name: "switch", value: "off", type: "physical"])
+                  sendEvent(name: "status" , value: "Tap ▼")
+	              sendEvent(name: "button" , value: "pushed", data: [buttonNumber: "8"], descriptionText: "$device.displayName Tap-Down-1 (button 8) pressed", 
+                       isStateChange: true, type: "$buttonType")
+                  break
+              case 1:
                   result=createEvent([name: "switch", value: "off", type: "physical"])
                   break
               case 2:
@@ -347,5 +401,10 @@ def holdDown() {
 } 
 
 def configure() {
-     sendEvent(name: "numberOfButtons", value: 6, displayed: false)
+    sendEvent(name: "numberOfButtons", value: 6, displayed: false)
+    def commands = []
+    commands << zwave.manufacturerSpecificV1.manufacturerSpecificGet().format()
+    commands << zwave.versionV1.versionGet().format()
+    commands << zwave.switchBinaryV1.switchBinaryGet().format()
+    delayBetween(commands,500)
 }
