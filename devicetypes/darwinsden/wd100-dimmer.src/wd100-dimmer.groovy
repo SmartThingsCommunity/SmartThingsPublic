@@ -1,7 +1,7 @@
 /**
  *  HomeSeer HS-WD100+
  *
- *  Copyright 2016 DarwinsDen.com
+ *  Copyright 2016, 2017 DarwinsDen.com
  *
  *  For button mappings, device parameter information and images, questions or to provide feedback on this device handler, 
  *  please visit: 
@@ -22,17 +22,18 @@
  *
  *	Changelog:
  *
- *	0.10 (04/10/2016) -	Initial 0.1 Beta.
- *  0.11 (05/28/2016) - Set numberOfButtons attribute for ease of use with CoRE and other SmartApps. Corrected physical/digital states.
- *  0.12 (06/03/2016) - Added press type indicator to display last tap/hold press status
- *  0.13 (06/13/2016) - Added dim level ramp-up option for remote dim commands
- *  0.14 (08/01/2016) - Corrected 60% dim rate limit test that was inadvertently pulled into repository
- *  0.15 (09/06/2016) - Added Firmware version info. Removed unused lit indicator button.
- *  0.16 (09/24/2016) - Added double-tap-up to full brightness option and support for firmware dim rate configuration parameters.
- *  0.17 (10/05/2016) - Added single-tap-up to full brightness option.
  *  1.00 (01/14/2017) - Added button 7 (single tap up) and button 8 (single tap down). Added double down to 25% dim level option. 
+ *  0.17 (10/05/2016) - Added single-tap-up to full brightness option.
+ *  0.16 (09/24/2016) - Added double-tap-up to full brightness option and support for firmware dim rate configuration parameters.
+ *  0.15 (09/06/2016) - Added Firmware version info. Removed unused lit indicator button.
+ *  0.14 (08/01/2016) - Corrected 60% dim rate limit test that was inadvertently pulled into repository
+ *  0.13 (06/13/2016) - Added dim level ramp-up option for remote dim commands
+ *  0.12 (06/03/2016) - Added press type indicator to display last tap/hold press status
+ *  0.11 (05/28/2016) - Set numberOfButtons attribute for ease of use with CoRE and other SmartApps. Corrected physical/digital states.
+ *	0.10 (04/10/2016) -	Initial 0.1 Beta.
  *
  *
+ *   Button Mappings:
  *
  *   ACTION          BUTTON#    BUTTON ACTION
  *   Double-Tap Up     1        pressed
