@@ -27,7 +27,11 @@ metadata {
 	simulator {
 		// TODO: define status and reply messages here
 	}
-
+	
+	preferences {	
+        	input name: "defaultState", type: "enum", title: "Default to White", options: ["true", "false"], description: "Reset to White on toggle? ", required: true
+	}
+	
 	tiles (scale: 2){
 		multiAttributeTile(name:"rich-control", type: "lighting", width: 6, height: 4, canChangeIcon: true){
 			tileAttribute ("device.switch", key: "PRIMARY_CONTROL") {
@@ -88,7 +92,15 @@ def parse(description) {
 
 // handle commands
 void on() {
+	log.debug "defaultState is $defaultState"
+	
+	if (defaultState == "true") {
+	reset()
 	log.trace parent.on(this)
+	}
+	else {
+    	log.trace parent.on(this)
+    	}
 }
 
 void off() {
