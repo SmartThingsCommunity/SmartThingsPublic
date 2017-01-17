@@ -22,6 +22,7 @@
  *
  *	Changelog:
  *
+ *  1.01 (01/16/2017) - Corrected advertised number of buttons (8)
  *  1.00 (01/14/2017) - Added button 7 (single tap up) and button 8 (single tap down). Added double down to 25% dim level option. 
  *  0.17 (10/05/2016) - Added single-tap-up to full brightness option.
  *  0.16 (09/24/2016) - Added double-tap-up to full brightness option and support for firmware dim rate configuration parameters.
@@ -470,7 +471,7 @@ def setFirmwareVersion() {
 def configure() {
    log.debug ("configure() called")
  
-   sendEvent(name: "numberOfButtons", value: 6, displayed: false)
+   sendEvent(name: "numberOfButtons", value: 8, displayed: false)
    def commands = []
    commands << setDimRatePrefs()
    commands << zwave.switchMultilevelV1.switchMultilevelGet().format()

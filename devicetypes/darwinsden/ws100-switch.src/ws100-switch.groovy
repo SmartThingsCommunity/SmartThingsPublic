@@ -22,6 +22,7 @@
  *
  *	Changelog:
  *
+ *  1.01 (01/16/2017) - Corrected advertised number of buttons (8)
  *  1.00 (01/14/2017) - Added button 7 (single tap up) and button 8 (single tap down). Added firmware version display.
  *  0.12 (06/03/2016) - Added press type indicator to display last tap/hold press status
  *  0.11 (05/28/2016) - Set numberOfButtons attribute for ease of use with CoRE and other SmartApps. Corrected physical/digital states.
@@ -401,7 +402,7 @@ def holdDown() {
 } 
 
 def configure() {
-    sendEvent(name: "numberOfButtons", value: 6, displayed: false)
+    sendEvent(name: "numberOfButtons", value: 8, displayed: false)
     def commands = []
     commands << zwave.manufacturerSpecificV1.manufacturerSpecificGet().format()
     commands << zwave.versionV1.versionGet().format()
