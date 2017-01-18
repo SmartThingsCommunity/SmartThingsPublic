@@ -87,13 +87,10 @@ def authPage(){
 }
 
 def installed() {
-    log.debug "Installed with settings: ${settings}"
     initialize()
 }
 
 def updated() {
-    log.debug "Updated with settings: ${settings}"
-    unsubscribe()
     initialize()
 }
 
@@ -106,72 +103,24 @@ def uninstalled() {
 }
 
 def initialize() {
-    atomicState.attached_sensors = [:]
+    unsubscribe()
     if (plantlinksensors){
-        subscribe(plantlinksensors, "moisture_status", moistureHandler)
-        subscribe(plantlinksensors, "battery_status", batteryHandler)
         plantlinksensors.each{ sensor_device ->
-            sensor_device.setStatusIcon("Waiting on First Measurement")
+        	subscribe(sensor_device, "moisture_status", moistureHandler)
+        	subscribe(sensor_device, "battery_status", batteryHandler)
             sensor_device.setInstallSmartApp("connectedToSmartApp")
         }
     }
 }
 
-def dock_sensor(device_serial, expected_plant_name) {
-    def docking_body_json_builder = new JsonBuilder([version: '1c', smartthings_device_id: device_serial])
-    def docking_params = [
-            uri        : appSettings.https_plantLinkServer,
-            path       : "/api/v1/smartthings/links",
-            headers    : ["Content-Type": "application/json", "Authorization": "Bearer ${atomicState.authToken}"],
-            contentType: "application/json",
-            body: docking_body_json_builder.toString()
-    ]
-    def plant_post_body_map = [
-            plant_type_key: 999999,
-            soil_type_key : 1000004
-    ]
-    def plant_post_params = [
-            uri        : appSettings.https_plantLinkServer,
-            path       : "/api/v1/plants",
-            headers    : ["Content-Type": "application/json", "Authorization": "Bearer ${atomicState.authToken}"],
-            contentType: "application/json",
-    ]
-    log.debug "Creating new plant on myplantlink.com - ${expected_plant_name}"
-    httpPost(docking_params) { docking_response ->
-        if (parse_api_response(docking_response, "Docking a link")) {
-            if (docking_response.data.plants.size() == 0) {
-                log.debug "creating plant for - ${expected_plant_name}"
-                plant_post_body_map["name"] = expected_plant_name
-                plant_post_body_map['links_key'] = [docking_response.data.key]
-                def plant_post_body_json_builder = new JsonBuilder(plant_post_body_map)
-                plant_post_params["body"] = plant_post_body_json_builder.toString()
-                httpPost(plant_post_params) { plant_post_response ->
-                    if(parse_api_response(plant_post_response, 'creating plant')){
-                        def attached_map = atomicState.attached_sensors
-                        attached_map[device_serial] = plant_post_response.data
-                        atomicState.attached_sensors = attached_map
-                    }
-                }
-            } else {
-                def plant = docking_response.data.plants[0]
-                def attached_map = atomicState.attached_sensors
-                attached_map[device_serial] = plant
-                atomicState.attached_sensors = attached_map
-                checkAndUpdatePlantIfNeeded(plant, expected_plant_name)
-            }
-        }
-    }
-    return true
-}
-
-def checkAndUpdatePlantIfNeeded(plant, expected_plant_name){
+def updatePlantNameIfNeeded(plant, expected_plant_name){
     def plant_put_params = [
 		uri : appSettings.https_plantLinkServer,
         headers : ["Content-Type": "application/json", "Authorization": "Bearer ${atomicState.authToken}"],
         contentType : "application/json"
     ]
     if (plant.name != expected_plant_name) {
-        log.debug "updating plant for - ${expected_plant_name}"
+        log.debug "renaming plant ${plant.key} - ${expected_plant_name}"
         plant_put_params["path"] = "/api/v1/plants/${plant.key}"
         def plant_put_body_map = [
 			name: expected_plant_name
@@ -185,32 +134,39 @@ def checkAndUpdatePlantIfNeeded(plant, expected_plant_name){
 }
 
 def moistureHandler(event){
-    def expected_plant_name = "SmartThings - ${event.displayName}"
-    def device_serial = getDeviceSerialFromEvent(event)
+	log.debug "moistureHandler - ${event.value}"
     
-    if (!atomicState.attached_sensors.containsKey(device_serial)){
-        dock_sensor(device_serial, expected_plant_name)
+    def expected_plant_name = "${event.displayName} (ST)"
+    def device_serial = getDeviceSerialFromEvent(event)
+    def device_battery = atomicState["battery${device_serial}"]
+    if ( device_battery == null){
+    	log.error "Missing Battery Voltage - next cycle should have it"
     }else{
+    	// {"type":"link","signal":"0x00","zigbeedeviceid":"0022A3000003D75A","created":1458843686,"moisture":"0x1987"}
+    	def appendedEventWithBatteryInfo = event.value.replace('}',",\"battery\":\"${device_battery}\"}")
+        log.debug "payload - ${appendedEventWithBatteryInfo}"
         def measurement_post_params = [
-                uri: appSettings.https_plantLinkServer,
-                path: "/api/v1/smartthings/links/${device_serial}/measurements",
-                headers: ["Content-Type": "application/json", "Authorization": "Bearer ${atomicState.authToken}"],
-                contentType: "application/json",
-                body: event.value
+            uri: appSettings.https_plantLinkServer,
+            path: "/api/v1/smartthings/links/${device_serial}/measurements",
+            headers: ["Content-Type": "application/json", "Authorization": "Bearer ${atomicState.authToken}"],
+            contentType: "application/json",
+            body: appendedEventWithBatteryInfo
         ]
+
         httpPost(measurement_post_params) { measurement_post_response ->
-            if (parse_api_response(measurement_post_response, 'creating moisture measurement') &&
-                    measurement_post_response.data.size() >0){
+            if (parse_api_response(measurement_post_response, 'creating moisture measurement') && measurement_post_response.data.size() >0){
                 def measurement = measurement_post_response.data[0]
                 def plant =  measurement.plant
-                log.debug plant
-                checkAndUpdatePlantIfNeeded(plant, expected_plant_name)
+
+                updatePlantNameIfNeeded(plant, expected_plant_name)
+
                 plantlinksensors.each{ sensor_device ->
                     if (sensor_device.id == event.deviceId){
                         sensor_device.setStatusIcon(plant.status)
                         if (plant.last_measurements && plant.last_measurements[0].moisture){
                             sensor_device.setPlantFuelLevel(plant.last_measurements[0].moisture * 100 as int)
                         }
+
                         if (plant.last_measurements && plant.last_measurements[0].battery){
                             sensor_device.setBatteryLevel(plant.last_measurements[0].battery * 100 as int)
                         }
@@ -224,25 +180,17 @@ def moistureHandler(event){
 def batteryHandler(event){
     def expected_plant_name = "SmartThings - ${event.displayName}"
     def device_serial = getDeviceSerialFromEvent(event)
-    
-    if (!atomicState.attached_sensors.containsKey(device_serial)){
-        dock_sensor(device_serial, expected_plant_name)
-    }else{
-        def measurement_post_params = [
-                uri: appSettings.https_plantLinkServer,
-                path: "/api/v1/smartthings/links/${device_serial}/measurements",
-                headers: ["Content-Type": "application/json", "Authorization": "Bearer ${atomicState.authToken}"],
-                contentType: "application/json",
-                body: event.value
-        ]
-        httpPost(measurement_post_params) { measurement_post_response ->
-            parse_api_response(measurement_post_response, 'creating battery measurement')
-        }
-    }
+    atomicState["battery${device_serial}"] = getDeviceBatteryFromEvent(event)
 }
 
 def getDeviceSerialFromEvent(event){
     def pattern = /.*"zigbeedeviceid"\s*:\s*"(\w+)".*/
+    def match_result = (event.value =~ pattern)
+    return match_result[0][1]
+}
+
+def getDeviceBatteryFromEvent(event){
+    def pattern = /.*"battery"\s*:\s*"(\w+)".*/
     def match_result = (event.value =~ pattern)
     return match_result[0][1]
 }
@@ -263,12 +211,13 @@ def buildRedirectUrl(){
 }
 
 def swapToken(){
+	log.debug "PlantLink Connector - OAuth Token"
     def code = params.code
     def oauthState = params.state
     def stcid = appSettings.client_id
     def postParams = [
             method: 'POST',
-            uri: "https://oso-tech.appspot.com",
+            uri: appSettings.https_plantLinkServer,
             path: "/api/v1/oauth-token",
             query: [grant_type:'authorization_code', code:params.code, client_id:stcid,
                     client_secret:appSettings.client_secret, redirect_uri: buildRedirectUrl()],
@@ -321,10 +270,11 @@ def swapToken(){
 }
 
 private refreshAuthToken() {
+	log.debug "PlantLink Connector - Refresh OAuth"
     def stcid = appSettings.client_id
     def refreshParams = [
             method: 'POST',
-            uri: "https://hardware-dot-oso-tech.appspot.com",
+            uri: appSettings.https_plantLinkServer,
             path: "/api/v1/oauth-token",
             query: [grant_type:'refresh_token', code:"${atomicState.refreshToken}", client_id:stcid,
                     client_secret:appSettings.client_secret],
@@ -333,7 +283,6 @@ private refreshAuthToken() {
         def jsonMap
         httpPost(refreshParams) { resp ->
             if(resp.status == 200){
-                log.debug "OAuth Token refreshed"
                 jsonMap = resp.data
                 if (resp.data) {
                     atomicState.refreshToken = resp?.data?.refresh_token
@@ -346,12 +295,12 @@ private refreshAuthToken() {
                 }
                 data.action = ""
             }else{
-                log.debug "refresh failed ${resp.status} : ${resp.status.code}"
+                log.debug "PlantLink Server - ${resp.status} : ${resp.status.code}"
             }
         }
     }
     catch(Exception e){
-        log.debug "caught exception refreshing auth token: " + e
+        log.debug "PlantLink Connector - OAuth Refresh Failed: " + e
     }
 }
 
@@ -364,7 +313,7 @@ def parse_api_response(resp, message) {
             refreshAuthToken()
             return false
         } else {
-            debugEvent("Authentication error, invalid authentication method, lack of credentials, etc.", true)
+            debugEvent("Plantlink Error: ${resp.status} - ${resp.status.code}", true)
             return false
         }
     }
