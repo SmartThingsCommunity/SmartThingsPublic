@@ -81,10 +81,15 @@ metadata {
 // parse events into attributes
 def parse(String description) {
 	log.debug "Parse description $description"
-	def map = [:]
-	if (description?.startsWith("read attr -")) {
-		def descMap = parseDescriptionAsMap(description)
-		log.debug "Desc Map: $descMap"
+	def result = null
+	def descMap = zigbee.parseDescriptionAsMap(description)
+	log.debug "Desc Map: $descMap"
+	List attrData = [[cluster: descMap.cluster ,attrId: descMap.attrId, value: descMap.value]]
+	descMap.additionalAttrs.each {
+	    attrData << [cluster: descMap.cluster, attrId: it.attrId, value: it.value]
+	}
+	attrData.each {
+		def map = [:]
 		if (descMap.cluster == "0201" && descMap.attrId == "0000") {
 			log.debug "TEMP"
 			map.name = "temperature"
@@ -109,13 +114,11 @@ def parse(String description) {
 			map.name = "thermostatFanMode"
 			map.value = getFanModeMap()[descMap.value]
 		}
+		if (map)
+			result = createEvent(map)
+			
+		log.debug "Parse returned $map"
 	}
-
-	def result = null
-	if (map) {
-		result = createEvent(map)
-	}
-	log.debug "Parse returned $map"
 	return result
 }
 
