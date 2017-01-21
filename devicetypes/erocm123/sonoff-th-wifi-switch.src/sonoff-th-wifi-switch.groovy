@@ -187,18 +187,18 @@ def parse(description) {
     
     def hubInfoText = ""
     if (getDeviceDataByName("ip") != null && getDeviceDataByName("ip") != "") {
-        hubInfoText = "IP Address: ${getDeviceDataByName("ip")} - "
+        hubInfoText = "IP Address: ${getDeviceDataByName("ip")}"
     }
     if (override == "true" && ip != null && ip != "") {
-        hubInfoText = "IP Address: $ip - "
+        hubInfoText = "IP Address: $ip"
     }
     if (state.uptime) {
-        hubInfoText = hubInfoText + "Uptime: " + state.uptime
+        hubInfoText = hubInfoText + "\r\nUptime: " + state.uptime
     }
     if (state.configured == true) {
-        hubInfoText = hubInfoText + "\r\n - Configured: Yes"
+        hubInfoText = hubInfoText + "\r\nConfigured: Yes"
     } else {
-        hubInfoText = hubInfoText + "\r\n - Configured: NO"
+        hubInfoText = hubInfoText + "\r\nConfigured: NO"
     }
     
     events << createEvent(name:"hubInfo", value:hubInfoText, displayed:false)
