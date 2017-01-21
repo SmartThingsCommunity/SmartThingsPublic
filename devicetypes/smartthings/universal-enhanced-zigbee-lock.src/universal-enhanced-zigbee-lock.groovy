@@ -1,6 +1,7 @@
 /*
  *  Universal Enhanced ZigBee Lock
  *
+ *  2017-01-20 : Added Health Check Capability and eventType: "ALERT" for tamper alerts
  *  2017-01-08 : Add zigbee DataType to align with SmartThings DTH changes
  *  2016-12-28 : Attribute Updates (true/false). Code Optimization.  Version 1.1
  *  2016-12-27 : Minor Changes.  Version 1.0 for submittal to SmartThings
@@ -49,6 +50,7 @@
         capability "Configuration"
         capability "Polling"
         capability "Tamper Alert"
+        capability "Health Check"
         
         command "deleteAllCodes"
         command "enableAutolock"
@@ -211,7 +213,11 @@ def configure() {
                                   DataType.ENUM8, 0, 21600, null) +
         zigbee.configureReporting(CLUSTER_DOORLOCK, DOORLOCK_ATTR_SOUND_VOLUME,
                                   DataType.UINT8, 0, 21600, null)
-        
+
+    // Device-Watch allows 2 check-in misses from device + ping (plus 1 min lag time)
+    // enrolls with default periodic reporting until newer 5 min interval is confirmed
+    sendEvent(name: "checkInterval", value: 2 * 60 * 60 + 1 * 60, displayed: false, data: [protocol: "zigbee", hubHardwareId: device.hub.hardwareID])
+
     log.info "configure() --- cmds: $cmds"
     return refresh() + cmds // send refresh cmds as part of config
 }
@@ -232,6 +238,13 @@ def refresh() {
         reportAllCodes()
     log.info "refresh() --- cmds: $cmds"
     return cmds
+}
+
+    /**
+     * PING is used by Device-Watch in attempt to reach the Device
+     * */
+def ping() {
+    return zigbee.readAttribute(CLUSTER_DOORLOCK, DOORLOCK_ATTR_LOCKSTATE)
 }
 
 def updated() {
@@ -867,10 +880,10 @@ private Map parseResponseMessage(String description) {
         def value = Integer.parseInt(descMap.data[0], 16)
         def alarm_cluster = "${descMap.data[1]}${descMap.data[2]}"
         log.debug "Alarm Triggered By Cluster (${alarm_cluster}): ${value}"
-        resultMap = [ name: "tamper", displayed: true, value: "detected" ]
+        resultMap = [ name: "tamper", displayed: true, value: "detected", eventType: "ALERT" ]
         if (value == 0) {
-            resultMap.descriptionText = "ALERT: ${linkText} deadbolt jammed"
-            sendEvent([ name: "lock", isStateChange: true, displayed: false, descriptionText: "${linkText} is jammed", value: "jammed"])
+           resultMap.descriptionText = "ALERT: ${linkText} deadbolt jammed"  
+           sendEvent([ name: "lock", isStateChange: true, displayed: false, descriptionText: "${linkText} is jammed", value: "jammed" ])
         } else if (value == 1) {
             resultMap.descriptionText = "ALERT: ${linkText} reset to factory defaults"
         } else if (value == 4) {
