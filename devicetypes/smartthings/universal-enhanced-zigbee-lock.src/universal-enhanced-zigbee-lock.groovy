@@ -1,8 +1,9 @@
 /*
  *  Universal Enhanced ZigBee Lock
  *
- *  2017-01-20 : Added Health Check Capability and eventType: "ALERT" for tamper alerts
- *  2017-01-08 : Add zigbee DataType to align with SmartThings DTH changes
+ *  2017-01-21 : Modified ping() command to more align with other SmartThings ZigBee DTHs. Version 1.2a
+ *  2017-01-20 : Added Health Check Capability and eventType: "ALERT" for tamper alerts. Version 1.2
+ *  2017-01-08 : Add ZigBee DataType to align with SmartThings DTH changes. Version 1.1a
  *  2016-12-28 : Attribute Updates (true/false). Code Optimization.  Version 1.1
  *  2016-12-27 : Minor Changes.  Version 1.0 for submittal to SmartThings
  *
@@ -214,8 +215,7 @@ def configure() {
         zigbee.configureReporting(CLUSTER_DOORLOCK, DOORLOCK_ATTR_SOUND_VOLUME,
                                   DataType.UINT8, 0, 21600, null)
 
-    // Device-Watch allows 2 check-in misses from device + ping (plus 1 min lag time)
-    // enrolls with default periodic reporting until newer 5 min interval is confirmed
+    // Device-Watch allows 2 check-in misses from device (lock state) + ping (plus 1 min lag time)
     sendEvent(name: "checkInterval", value: 2 * 60 * 60 + 1 * 60, displayed: false, data: [protocol: "zigbee", hubHardwareId: device.hub.hardwareID])
 
     log.info "configure() --- cmds: $cmds"
@@ -244,7 +244,8 @@ def refresh() {
      * PING is used by Device-Watch in attempt to reach the Device
      * */
 def ping() {
-    return zigbee.readAttribute(CLUSTER_DOORLOCK, DOORLOCK_ATTR_LOCKSTATE)
+    log.debug "ping() called"
+    return configure()
 }
 
 def updated() {
@@ -615,6 +616,7 @@ private getNumPINUsers() {
     return num_users
 }
 
+// This method creates a boiler plate standardTile configuration for On/Off Attributes
 private tileToggle(varName, labelEnabled, labelDisabled, iconEnabled, iconDisabled, enableMethod, disableMethod, specialAlign="") {
         standardTile("${varName}Tile", "device.${varName}Tile", inactiveLabel:false, decoration:"flat", width:2, height:2) {
             state "unsupported", label:"${specialAlign}Unsupported", icon:"${iconDisabled}"
