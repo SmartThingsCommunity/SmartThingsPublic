@@ -210,14 +210,17 @@ def poll() {
 	delayBetween([
 		zwave.switchBinaryV1.switchBinaryGet().format(),
 		zwave.meterV2.meterGet(scale: 0).format(),
+        zwave.meterV2.meterGet(scale: 1).format(),
 		zwave.meterV2.meterGet(scale: 2).format()
 	])
 }
 
 def refresh() {
+    logging("refresh()")
 	delayBetween([
 		zwave.switchBinaryV1.switchBinaryGet().format(),
 		zwave.meterV2.meterGet(scale: 0).format(),
+		zwave.meterV2.meterGet(scale: 1).format(),
 		zwave.meterV2.meterGet(scale: 2).format()
 	])
 }
@@ -498,6 +501,10 @@ Default: Always
         <Item label="Always" value="0" />
         <Item label="For 5 Seconds" value="1" />
 </Value>
+  <Value type="boolean" index="enableDebugging" label="Enable Debug Logging?" value="true" setting_type="preference" fw="">
+    <Help>
+    </Help>
+  </Value>
 </configuration>
 '''
 }

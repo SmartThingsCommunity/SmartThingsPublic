@@ -216,6 +216,7 @@ def poll() {
 }
 
 def refresh() {
+    logging("refresh()")
 	delayBetween([
 		zwave.switchBinaryV1.switchBinaryGet().format(),
 		zwave.meterV2.meterGet(scale: 0).format(),
