@@ -266,22 +266,19 @@ def zwaveEvent(physicalgraph.zwave.Command cmd) {
 def configure() {
     logging("Configuring Device For SmartThings Use")
     def cmds = []
-
-    cmds += update_needed_settings()
-    commands(cmds)
+    cmds = update_needed_settings()
+    if (cmds != []) commands(cmds)
 }
 
 def updated()
 {
     logging("updated() is being called")
-
     if (state.realLuminance != null) sendEvent(name:"illuminance", value: getAdjustedLuminance(state.realLuminance))
-    
     updateStatus()
-    
-    update_needed_settings()
-    
+    def cmds = []
+    cmds = update_needed_settings()
     sendEvent(name:"needUpdate", value: device.currentValue("needUpdate"), displayed:false, isStateChange: true)
+    if (cmds != []) response(commands(cmds))
 }
 
 def sync_properties()
