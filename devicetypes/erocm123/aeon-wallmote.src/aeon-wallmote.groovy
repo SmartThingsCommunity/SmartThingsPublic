@@ -123,6 +123,12 @@ def zwaveEvent(physicalgraph.zwave.commands.securityv1.SecurityCommandsSupported
 	response(configure())
 }
 
+def zwaveEvent(physicalgraph.zwave.commands.wakeupv1.WakeUpIntervalReport cmd)
+{
+	logging("WakeUpIntervalReport ${cmd.toString()}")
+    state.wakeInterval = cmd.seconds
+}
+
 def zwaveEvent(physicalgraph.zwave.commands.wakeupv1.WakeUpNotification cmd)
 {
     logging("Device ${device.displayName} woke up")
@@ -175,6 +181,12 @@ def zwaveEvent(physicalgraph.zwave.Command cmd) {
 	logging("Unhandled zwaveEvent: ${cmd}")
 }
 
+def zwaveEvent(physicalgraph.zwave.commands.manufacturerspecificv2.ManufacturerSpecificReport cmd) {
+	def msr = String.format("%04X-%04X-%04X", cmd.manufacturerId, cmd.productTypeId, cmd.productId)
+	log.debug "msr: $msr"
+    updateDataValue("MSR", msr)
+}
+
 def installed() {
     logging("installed()")
     configure()
@@ -186,9 +198,9 @@ def installed() {
 def updated()
 {
     logging("updated() is being called")
-    def cmds = configure()
+    def cmds = update_needed_settings()
     sendEvent(name:"needUpdate", value: device.currentValue("needUpdate"), displayed:false, isStateChange: true)
-    if (cmds != []) response(cmds)
+    if (cmds != []) response(commands(cmds))
 }
 
 def configure() {
@@ -270,6 +282,17 @@ def update_needed_settings()
     def configuration = parseXml(configuration_model())
     def isUpdateNeeded = "NO"
     
+    if(state.wakeInterval == null || state.wakeInterval != 86400){
+        logging("Setting Wake Interval to 86400")
+        cmds << zwave.wakeUpV1.wakeUpIntervalSet(seconds: 86400, nodeid:zwaveHubNodeId)
+        cmds << zwave.wakeUpV1.wakeUpIntervalGet()
+    }
+    
+    if(state.MSR == null){
+        logging("Getting Manufacturer Specific Info")
+        cmds << zwave.manufacturerSpecificV2.manufacturerSpecificGet()
+    }
+
     configuration.Value.each
     {     
         if ("${it.@setting_type}" == "zwave"){
