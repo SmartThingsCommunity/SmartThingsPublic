@@ -567,7 +567,7 @@ def getDevices() {
 void deviceDescriptionHandler(physicalgraph.device.HubResponse hubResponse) {
 	log.trace "description.xml response (application/xml)"
 	def body = hubResponse.xml
-	if (body?.device?.modelName?.text().startsWith("SmartLife RGBW Controller")) {
+	if (body?.device?.modelName?.text().startsWith("SmartLife RGBW")) {
 		def devices = getDevices()
 		def device = devices.find {it?.key?.contains(body?.device?.UDN?.text())}
 		if (device) {
