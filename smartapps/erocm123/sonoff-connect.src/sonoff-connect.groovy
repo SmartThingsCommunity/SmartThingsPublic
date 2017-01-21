@@ -314,7 +314,7 @@ void deviceDescriptionHandler(physicalgraph.device.HubResponse hubResponse) {
 	log.trace "description.xml response (application/xml)"
 	def body = hubResponse.xml
     log.debug body?.device?.friendlyName?.text()
-	if (body?.device?.modelName?.text().startsWith("Sonoff Wifi Switch") || body?.device?.modelName?.text().startsWith("Sonoff TH Wifi Switch")) {
+	if (body?.device?.modelName?.text().startsWith("Sonoff")) {
 		def devices = getDevices()
 		def device = devices.find {it?.key?.contains(body?.device?.UDN?.text())}
 		if (device) {
@@ -350,7 +350,7 @@ def addDevices() {
                     "port": "" + Integer.parseInt(selectedDevice.value.deviceAddress,16)
                 ]
             ])
-            sectionText = sectionText + "Succesfully added Sonoff Wifi Switch with ip address ${convertHexToIP(selectedDevice.value.networkAddress)} \r\n"
+            sectionText = sectionText + "Succesfully added Sonoff device with ip address ${convertHexToIP(selectedDevice.value.networkAddress)} \r\n"
         }
         
 	} 
