@@ -74,11 +74,12 @@ metadata {
 					["Daylight":"Daylight - Energize"],
 					["Warm White":"Warm White - Relax"],
 					"Red","Green","Blue","Yellow","Orange","Purple","Pink","Cyan","Random","Custom"])
-                    
+
+        //if (color == "Custom"){            
         input "custom", "text", title: "Custom Color in Hex (ie ffffff)\r\nIf \"Custom\" is chosen above", submitOnChange: false, required: false
-		
-		
+        //} else {
         input("level", "enum", title: "Default Level", required: false, value: 100, options: [[0:"Previous"],[10:"10%"],[20:"20%"],[30:"30%"],[40:"40%"],[50:"50%"],[60:"60%"],[70:"70%"],[80:"80%"],[90:"90%"],[100:"100%"]])
+        //}
 
         //input("override", "boolean", title:"Override detected IP Address", required: false, displayDuringSetup: false)
         //input("ip", "string", title:"IP Address", description: "192.168.1.150", required: false, displayDuringSetup: false)
@@ -87,8 +88,8 @@ metadata {
 	tiles (scale: 2){      
 		multiAttributeTile(name:"switch", type: "lighting", width: 6, height: 4, canChangeIcon: true){
 			tileAttribute ("device.switch", key: "PRIMARY_CONTROL") {
-				attributeState "on", label:'${name}', action:"switch.off", icon:"st.lights.philips.hue-single", backgroundColor:"#79b821", nextState:"turningOff"
 				attributeState "off", label:'${name}', action:"switch.on", icon:"st.lights.philips.hue-single", backgroundColor:"#ffffff", nextState:"turningOn"
+                attributeState "on", label:'${name}', action:"switch.off", icon:"st.lights.philips.hue-single", backgroundColor:"#79b821", nextState:"turningOff"
 				attributeState "turningOn", label:'${name}', action:"switch.off", icon:"st.lights.philips.hue-single", backgroundColor:"#79b821", nextState:"turningOff"
 				attributeState "turningOff", label:'${name}', action:"switch.on", icon:"st.lights.philips.hue-single", backgroundColor:"#ffffff", nextState:"turningOn"
 			}
@@ -160,6 +161,12 @@ metadata {
         valueTile("white2ValueTile", "device.white2Level", decoration: "flat", height: 1, width: 1) {
         	state "white2Level", label:'${currentValue}%'
         } 
+        valueTile("ip", "ip", decoration: "flat", width: 2, height: 1) {
+    		state "ip", label:'IP Address\r\n${currentValue}'
+		}
+        valueTile("firmware", "firmware", decoration: "flat", width: 2, height: 1) {
+    		state "firmware", label:'Firmware ${currentValue}'
+		}
         
         
         (1..6).each { n ->
@@ -179,7 +186,7 @@ metadata {
              "white2", "white2SliderControl", "white2ValueTile",
              "switch1", "switch2", "switch3",
              "switch4", "switch5", "switch6",
-             "refresh", "configure" ])
+             "refresh", "configure", "ip", "firmware" ])
 }
 
 def installed() {
@@ -300,6 +307,9 @@ def parse(description) {
        } else {
     	  events << createEvent(name:"white2", value: "off", displayed: false)
        }
+    }
+    if (result.containsKey("version")) {
+       events << createEvent(name:"firmware", value: result.version + "\r\n" + result.date, displayed: false)
     }
 
     if (result.containsKey("success")) {
@@ -496,6 +506,7 @@ def reset() {
 }
 def refresh() {
 	log.debug "refresh()"
+    sendEvent(name: 'ip', value: state.ip)
     postAction("/status")
 }
 
@@ -562,6 +573,7 @@ def sync(ip, port) {
     def existingPort = getDataValue("port")
     if (ip && ip != existingIp) {
         updateDataValue("ip", ip)
+        sendEvent(name: 'ip', value: ip)
     }
     if (port && port != existingPort) {
         updateDataValue("port", port)
