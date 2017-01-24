@@ -1,0 +1,362 @@
+/**
+ *  SmartSense Temp/Humidity Sensor
+ *
+ *  Copyright 2014 SmartThings
+ *
+ *  Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except
+ *  in compliance with the License. You may obtain a copy of the License at:
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ *  Unless required by applicable law or agreed to in writing, software distributed under the License is distributed
+ *  on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the License
+ *  for the specific language governing permissions and limitations under the License.
+ *
+ */
+metadata {
+	definition (name: "Heiman Temp/Humidity Sensor",namespace: "jfurtner", author: "jfurtner") {
+		capability "Configuration"
+		capability "Battery"
+		capability "Refresh"
+		capability "Temperature Measurement"
+		capability "Relative Humidity Measurement"
+		capability "Health Check"
+		capability "Sensor"
+        capability "Speech Recognition"
+        
+        command "reconfig"
+        
+		//01 0104 0302 00 05 0000 0003 0402 0001 0009 01 0019
+		//fingerprint endpointId: "01", inClusters: "0001,0003,0020,0402,0B05,FC45", outClusters: "0019,0003"
+        //fingerprint /*endpointId: "01", inClusters: "0000,0003,0402,0001,0009", outClusters: "0019",*/ manufacturer: "Heiman", model: "TH-T_V14"
+        //fingerprint profileId: "0104", endpointId: "0302", inClusters: "0000,0003,0402,0001,0009", outClusters: "0019", manufacturer: "Heiman", model: "TH-T_V14"
+        fingerprint endpointId: "01", profileId: "0104", inClusters: "0000,0001,0003,0009,0402", outClusters: "0019", manufacturer:"Heiman",model:"TH-T_V14" // temperature
+        fingerprint endpointId: "02", profileId:"0104", inClusters: "0000,0003,0405", outClusters: "0019", manufacturer:"Heiman",model:"TH-T_V14" // humidity
+	}
+
+	simulator {
+		status 'H 40': 'catchall: 0104 FC45 01 01 0140 00 D9B9 00 04 C2DF 0A 01 000021780F'
+		status 'H 45': 'catchall: 0104 FC45 01 01 0140 00 D9B9 00 04 C2DF 0A 01 0000218911'
+		status 'H 57': 'catchall: 0104 FC45 01 01 0140 00 4E55 00 04 C2DF 0A 01 0000211316'
+		status 'H 53': 'catchall: 0104 FC45 01 01 0140 00 20CD 00 04 C2DF 0A 01 0000219814'
+		status 'H 43': 'read attr - raw: BF7601FC450C00000021A410, dni: BF76, endpoint: 01, cluster: FC45, size: 0C, attrId: 0000, result: success, encoding: 21, value: 10a4'
+	}
+
+	preferences {
+		input title: "Temperature Offset", description: "This feature allows you to correct any temperature variations by selecting an offset. Ex: If your sensor consistently reports a temp that's 5 degrees too warm, you'd enter \"-5\". If 3 degrees too cold, enter \"+3\".", displayDuringSetup: false, type: "paragraph", element: "paragraph"
+		input "tempOffset", "number", title: "Degrees", description: "Adjust temperature by this many degrees", range: "*..*", displayDuringSetup: false
+	}
+
+	tiles(scale: 2) {
+		multiAttributeTile(name:"temperature", type: "generic", width: 6, height: 4){
+			tileAttribute ("device.temperature", key: "PRIMARY_CONTROL") {
+				attributeState "temperature", label:'${currentValue}°',
+					backgroundColors:[
+						[value: 31, color: "#153591"],
+						[value: 44, color: "#1e9cbb"],
+						[value: 59, color: "#90d2a7"],
+						[value: 74, color: "#44b621"],
+						[value: 84, color: "#f1d801"],
+						[value: 95, color: "#d04e00"],
+						[value: 96, color: "#bc2323"]
+					]
+			}
+		}
+		valueTile("humidity", "device.humidity", inactiveLabel: false, width: 2, height: 2) {
+			state "humidity", label:'${currentValue}% humidity', unit:""
+		}
+		valueTile("battery", "device.battery", decoration: "flat", inactiveLabel: false, width: 2, height: 2) {
+			state "battery", label:'${currentValue}% battery'
+		}
+		standardTile("refresh", "device.refresh", inactiveLabel: false, decoration: "flat", width: 2, height: 2) {
+			state "default", action:"refresh.refresh", icon:"st.secondary.refresh"
+		}
+        standardTile("reconfig", "device.reconfig", inactiveLabel: false, decoration: "flat", width:2, height: 2) {
+        	state "default", action:'reconfig'
+        }
+
+		main "temperature", "humidity"
+		details(["temperature", "humidity", "battery", "refresh", "reconfig"])
+	}
+}
+
+def configure() {
+	// Device-Watch allows 2 check-in misses from device + ping (plus 1 min lag time)
+	// enrolls with default periodic reporting until newer 5 min interval is confirmed
+	//sendEvent(name: "checkInterval", value: 2 * 60 * 60 + 1 * 60, displayed: false, data: [protocol: "zigbee", hubHardwareId: device.hub.hardwareID])
+
+	logDebug "S!configure"
+//	def humidityConfigCmds = [
+//		"zdo bind 0x${device.deviceNetworkId} 1 1 0x0405 {${device.zigbeeId}} {}", "delay 500",
+//		"zcl global send-me-a-report 0x0405 0 0x29 30 900 {6400}",
+//		"send 0x${device.deviceNetworkId} 1 1", "delay 500"
+//	]
+
+	def ret = zigbee.temperatureConfig(30, 900, 2)
+    logDebug(ret.toString())
+/*
+zigbee.configureReporting(Integer Cluster,
+Integer attributeId, Integer dataType,
+Integer minReportTime, Integer MaxReportTime,
+[Integer reportableChange],
+Map additionalParams=[:])
+*/
+	def humidity = zigbee.configureReporting(0x0405, 0, 0x29, 30, 900, 2)
+    logDebug(humidity.toString())
+    ret += humidity
+    //ret+= zigbee.humidityConfig(30, 300)
+    logDebug("E!configure: ${ret.toString()}")
+    return ret
+	// temperature minReportTime 30 seconds, maxReportTime 5 min. Reporting interval if no activity
+	// battery minReport 30 seconds, maxReportTime 6 hrs by default
+    //return refresh()// + zigbee.temperatureConfig(30, 300)
+	//return refresh() + humidityConfigCmds + zigbee.batteryConfig() + zigbee.temperatureConfig(30, 300)  // send refresh cmds as part of config
+}
+
+def reconfig() {
+	logWarn("S!reconfig clicked")
+	return configure()
+}
+
+def parse(String description) {
+    logDebug("S!parse description: $description")
+
+	Map map = [:]
+	if (description?.startsWith('catchall:')) {
+		map = parseCatchAllMessage(description)
+	}
+	else if (description?.startsWith('read attr -')) {
+		map = parseReportAttributeMessage(description)
+	}
+	else if (description?.startsWith('temperature: ') || description?.startsWith('humidity: ')) {
+		map = parseCustomMessage(description)
+	}
+
+	logDebug "E!parse Parse returned $map"
+	return map ? createEvent(map) : [:]
+}
+
+private Map parseCatchAllMessage(String description) {
+	logDebug("S!parseCatchAllMessage: $description")
+    Map resultMap = [:]
+    def cluster = zigbee.parse(description)
+    
+    def sp = shouldProcessMessage(cluster)
+    logDebug("willprocess: $sp, ${cluster.clusterId} ${cluster.command} ${cluster.data}")
+    if (sp) {
+        switch(cluster.clusterId) {
+            case 0x0001:
+				// 0x07 - configure reporting
+				if (cluster.command != 0x07) {
+					resultMap = getBatteryResult(cluster.data.last())
+				}
+                break
+
+            case 0x0402:
+				if (cluster.command == 0x07) {
+					if (cluster.data[0] == 0x00){
+						logDebug ("TEMP REPORTING CONFIG RESPONSE:" + cluster)
+						resultMap = [name: "checkInterval", value: 60 * 12, displayed: false, data: [protocol: "zigbee", hubHardwareId: device.hub.hardwareID]]
+					}
+					else {
+						logWarn "TEMP REPORTING CONFIG FAILED- error code:${cluster.data[0]}"
+					}
+				}
+				else {
+					// temp is last 2 data values. reverse to swap endian
+					//String temp = cluster.data[-2..-1].reverse().collect { Integer.toHexString(it) }.join()
+					//def temperatureValue = getTemperature(temp)
+                    def temp = LittleEndianToValue(cluster.data[-2, -1])
+                    def temperatureValue = getTemperature(temp)
+					resultMap = getTemperatureResult(temperatureValue)
+				}
+				break
+
+			case 0x0405:
+				// 0x07 - configure reporting
+				if (cluster.command != 0x07) {
+					//String pctStr = cluster.data[-1, -2].collect { Integer.toHexString(it) }.join('')
+                    //logDebug("pctStr: $pctStr")
+                    int rawValue = LittleEndianToValue(cluster.data[-2, -1])
+					//String display = Math.round(Integer.valueOf(pctStr, 16) / 100)
+                    String display = rawValue / 100.0
+                    //logDebug("display value: $display")
+					resultMap = getHumidityResult(display)
+				}
+                break
+            default:
+            	logDebug ("parseCatchAllMessage: unknown command: ${cluster}")
+            	break
+        }
+    }
+
+	logDebug("E!parseCatchAllMessage ${resultMap.toString()}")
+    return resultMap
+}
+
+private int LittleEndianToValue(ArrayList data) {
+	def value = 0
+    for(int i = 0; i < data.size() ; i++)
+    {
+    	int mul = Math.pow(256, i)
+        int curValueRaw = data[i]
+        int curValue = curValueRaw * mul
+    	//logDebug("mul=$mul curValueraw=$curValueRaw curValue=$curValue")
+        value = value + curValue    	
+    }
+    
+    return value
+}
+
+private boolean shouldProcessMessage(cluster) {
+	//logDebug("S!shouldProcessMessage")
+    //logDebug("profile: ${cluster.profileId} command: ${cluster.command} size: ${cluster.data.size()} first: ${cluster.data.first()}")
+    // 0x0B is default response indicating message got through
+    boolean ignoredMessage = cluster.profileId != 0x0104 ||
+        //cluster.command == 0x0B || // ignoring humidity message?
+        (cluster.data.size() > 0 && cluster.data.first() == 0x3e)
+    //logDebug("ignoredMessage: ${ignoredMessage}")
+    return !ignoredMessage
+}
+
+private Map parseReportAttributeMessage(String description) {
+	//logDebug("S!parseReportAttributeMessage")
+	Map descMap = (description - "read attr - ").split(",").inject([:]) { map, param ->
+		def nameAndValue = param.split(":")
+		map += [(nameAndValue[0].trim()):nameAndValue[1].trim()]
+	}
+	logDebug "parseReportAttributeMessage:descMap:$descMap"
+
+	Map resultMap = [:]
+	if (descMap.cluster == "0402" && descMap.attrId == "0000") {
+		def value = getTemperature(descMap.value)
+		resultMap = getTemperatureResult(value)
+	}
+	else if (descMap.cluster == "0001" && descMap.attrId == "0020") {
+		resultMap = getBatteryResult(Integer.parseInt(descMap.value, 16))
+	}
+	else if (descMap.cluster == "0405" && descMap.attrId == "0000") {
+		def value = getReportAttributeHumidity(descMap.value)
+		resultMap = getHumidityResult(value)
+	}
+
+	logDebug("E!parseReportAttributeMessage ${resultMap.toString()}")
+	return resultMap
+}
+
+def getReportAttributeHumidity(String value) {
+	//logDebug('S!getReportAttributeHumidity')
+    def humidity = null
+    if (value?.trim()) {
+        try {
+        	// value is hex with no decimal
+            def pct = Integer.parseInt(value.trim(), 16) / 100
+            humidity = String.format('%.0f', pct)
+        } catch(NumberFormatException nfe) {
+            logDebug ("Error converting $value to humidity")
+        }
+    }
+    return humidity
+}
+
+private Map parseCustomMessage(String description) {
+	//logDebug('S!parseCustomMessage')
+	Map resultMap = [:]
+	if (description?.startsWith('temperature: ')) {
+		def value = zigbee.parseHATemperatureValue(description, "temperature: ", getTemperatureScale())
+		resultMap = getTemperatureResult(value)
+	}
+	else if (description?.startsWith('humidity: ')) {
+		def pct = (description - "humidity: " - "%").trim()
+		if (pct.isNumber()) {
+			def value = Math.round(new BigDecimal(pct)).toString()
+			resultMap = getHumidityResult(value)
+		} else {
+			logError("invalid humidity: $pct")
+		}
+	}
+	return resultMap
+}
+
+def getTemperature(value) {
+	logDebug("S!getTemperature raw:${value}")
+	def tempCelsius = value / 100.0 as float
+	if(getTemperatureScale() == "C"){
+		return tempCelsius
+	} else {
+		return celsiusToFahrenheit(tempCelsius) as Integer
+	}
+}
+
+private Map getBatteryResult(rawValue) {
+	logDebug 'S!getBatteryResult'
+	def linkText = getLinkText(device)
+
+    def result = [:]
+
+	def volts = rawValue / 10
+	if (!(rawValue == 0 || rawValue == 255)) {
+		def minVolts = 2.1
+		def maxVolts = 3.0
+		def pct = (volts - minVolts) / (maxVolts - minVolts)
+		def roundedPct = Math.round(pct * 100)
+		if (roundedPct <= 0)
+			roundedPct = 1
+		result.value = Math.min(100, roundedPct)
+		result.descriptionText = "${linkText} battery was ${result.value}%"
+		result.name = 'battery'
+
+	}
+
+	return result
+}
+
+private Map getTemperatureResult(value) {
+	logDebug 'S!getTemperatureResult'
+	def linkText = getLinkText(device)    
+	if (tempOffset) {
+		def offset = tempOffset as float
+		def v = value as float
+		value = v + offset
+	}
+	def descriptionText = "${linkText} was ${value}°${temperatureScale}"
+	return [
+		name: 'temperature',
+		value: value,
+		descriptionText: descriptionText,
+		unit: temperatureScale
+	]
+}
+
+private Map getHumidityResult(value) {
+	logDebug 'S!getHumidityResult'
+	return value ? [name: 'humidity', value: value, unit: '%'] : [:]
+}
+
+/**
+ * PING is used by Device-Watch in attempt to reach the Device
+ * */
+def ping() {
+	return zigbee.readAttribute(0x001, 0x0020) // Read the Battery Level
+}
+
+def refresh()
+{
+	logDebug "S!refresh"
+    return zigbee.readAttribute(0x0405, 0x0000) +
+			zigbee.readAttribute(0x0402, 0x0000) +
+			zigbee.readAttribute(0x0001, 0x0020)
+}
+
+def logError(String message) {
+	log.error(message)
+    sendEvent(name: 'phraseSpoken', value: "e::"+message)
+}
+def logWarn(String message) {
+	log.warn(message)
+    sendEvent(name: 'phraseSpoken', value: "w::"+message)
+}
+def logDebug(String message) {
+	log.debug(message)
+    sendEvent(name: 'phraseSpoken', value: "d::"+message)
+}
