@@ -445,7 +445,17 @@ def setColor(value) {
        uri = "/w1?value=${value.white}"
     }
     else if (value.aLevel) {
-       uri = "/rgb?value=${getDimmedColor(device.currentValue("color")).substring(1)}"
+    	def actions = []
+        
+    	// handle white channels on dim, but only if they were on in the first place
+        if (device.currentValue("white1") == "on")
+        	actions.push(setWhite1Level(value.aLevel))
+        if (device.currentValue("white2") == "on")
+        	actions.push(setWhite2Level(value.aLevel))
+            
+        uri = "/rgb?value=${getDimmedColor(device.currentValue("color")).substring(1)}"
+        actions.push(postAction("$uri&channels=$channels&transition=$transition"))
+        return actions
     }
     else {
        // A valid color was not chosen. Setting to white
