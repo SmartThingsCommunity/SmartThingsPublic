@@ -539,6 +539,12 @@ def update_needed_settings()
     def configuration = parseXml(configuration_model())
     def isUpdateNeeded = "NO"
     
+    if(!state.association5 || state.association5 == "" || state.association5 == "1"){
+       logging("Setting association group 5")
+       cmds << zwave.associationV2.associationSet(groupingIdentifier:5, nodeId:zwaveHubNodeId)
+       cmds << zwave.associationV2.associationGet(groupingIdentifier:5)
+    }
+    
     configuration.Value.each
     {     
         if ("${it.@setting_type}" == "zwave"){
@@ -675,14 +681,15 @@ Default: 1 (Previous State)
         <Item label="Off" value="0" />
         <Item label="Previous State" value="1" />
   </Value>
-    <Value type="list" byteSize="1" index="20" label="Switch type" min="0" max="2" value="0" setting_type="zwave" fw="">
+    <Value type="list" byteSize="1" index="20" label="Switch type" min="0" max="2" value="2" setting_type="zwave" fw="">
     <Help>
 Choose between momentary and toggle switch.
 Range: 0~2
-Default: 0 (Momentary)
+Default: 2 (Toggle)
     </Help>
     <Item label="Momentary" value="0" />
-    <Item label="Toggle" value="1" />
+    <Item label="Toggle (Open=On, Closed=Off)" value="1" />
+    <Item label="Toggle (On Switch Change)" value="2" />
   </Value>
     <Value type="byte" byteSize="1" index="50" label="First Channel - Active power reports" min="0" max="100" value="10" setting_type="zwave" fw="">
     <Help>
