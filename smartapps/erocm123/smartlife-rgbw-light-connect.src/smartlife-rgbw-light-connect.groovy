@@ -407,8 +407,10 @@ def configureProgram(params){
          }
          app.updateSetting("${state.currentDeviceId}_programs_${state.currentProgram}_${numberOfActions}_transition", it.split("\\.")[2])
          if (it.split("\\.")[3].indexOf("-") < 0) {
+            app.updateSetting("${state.currentDeviceId}_programs_${state.currentProgram}_${numberOfActions}_random_duration", "false")
             app.updateSetting("${state.currentDeviceId}_programs_${state.currentProgram}_${numberOfActions}_duration", it.split("\\.")[3])
          } else {
+            app.updateSetting("${state.currentDeviceId}_programs_${state.currentProgram}_${numberOfActions}_random_duration", "true")
             app.updateSetting("${state.currentDeviceId}_programs_${state.currentProgram}_${numberOfActions}_min_duration", it.split("\\.")[3].split("-")[0])
             app.updateSetting("${state.currentDeviceId}_programs_${state.currentProgram}_${numberOfActions}_max_duration", it.split("\\.")[3].split("-")[1])
          }
@@ -481,7 +483,7 @@ def exportProgram(){
                programString += settings["${state.currentDeviceId}_programs_${state.currentProgram}_${i}_transition"] + "."
                if (settings["${state.currentDeviceId}_programs_${state.currentProgram}_${i}_random_duration"] == "true") {
                   programString += settings["${state.currentDeviceId}_programs_${state.currentProgram}_${i}_min_duration"] + "-"
-                  programString += settings["${state.currentDeviceId}_programs_${state.currentProgram}_${i}_max_duration"] + "."
+                  programString += settings["${state.currentDeviceId}_programs_${state.currentProgram}_${i}_max_duration"] + ";"
                } else {
                   programString += settings["${state.currentDeviceId}_programs_${state.currentProgram}_${i}_duration"] + ";"
                }
