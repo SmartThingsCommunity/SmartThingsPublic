@@ -447,11 +447,11 @@ def setColor(value) {
     else if (value.aLevel) {
     	def actions = []
         
-    	// handle white channels on dim, but only if they were on in the first place
-        if (device.currentValue("white1") == "on")
-        	actions.push(setWhite1Level(value.aLevel))
-        if (device.currentValue("white2") == "on")
-        	actions.push(setWhite2Level(value.aLevel))
+    	// Handle white channel dimmer. Unfortunately, if we first check for white1/2 == "on",
+        // we can't use the dimmer to turn the lights on at a specific level. However, this is already
+        // true for RGB - you can't set a dim level since the "current" rgb values are zeros when off.
+        actions.push(setWhite1Level(value.aLevel))
+        actions.push(setWhite2Level(value.aLevel))
             
         uri = "/rgb?value=${getDimmedColor(device.currentValue("color")).substring(1)}"
         actions.push(postAction("$uri&channels=$channels&transition=$transition"))
