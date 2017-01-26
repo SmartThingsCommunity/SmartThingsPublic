@@ -20,6 +20,7 @@ metadata {
 	definition (name: "Aeon WallMote", namespace: "erocm123", author: "Eric Maycock") {
 		capability "Actuator"
 		capability "Button"
+        capability "Holdable Button"
 		capability "Configuration"
 		capability "Sensor"
         capability "Battery"
