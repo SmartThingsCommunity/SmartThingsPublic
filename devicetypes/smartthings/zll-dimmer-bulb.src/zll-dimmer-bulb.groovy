@@ -89,7 +89,7 @@ def on() {
 }
 
 def setLevel(value) {
-    zigbee.setLevel(value) + ["delay 1500"] + zigbee.levelRefresh()         //adding refresh because of ZLL bulb not conforming to send-me-a-report
+    zigbee.setLevel(value) + zigbee.onOffRefresh() + zigbee.levelRefresh()         //adding refresh because of ZLL bulb not conforming to send-me-a-report
 }
 
 def refresh() {
