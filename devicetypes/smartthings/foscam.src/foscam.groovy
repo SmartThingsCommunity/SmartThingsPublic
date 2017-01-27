@@ -63,9 +63,13 @@ def parse(String description) {
 
 	def result = []
 
-	if (map.bucket && map.key)
+	if (map.tempImageKey)
 	{ //got a s3 pointer
-		putImageInS3(map)
+		try {
+			storeTemporaryImage(map.tempImageKey, getPictureName())
+		} catch(Exception e) {
+			log.error e
+		}
 	}
 	else if (map.headers && map.body)
 	{ //got device info response
@@ -93,29 +97,6 @@ def parse(String description) {
 	}
 
 	result
-}
-
-def putImageInS3(map) {
-
-	def s3ObjectContent
-
-	try {
-		def imageBytes = getS3Object(map.bucket, map.key + ".jpg")
-
-		if(imageBytes)
-		{
-			s3ObjectContent = imageBytes.getObjectContent()
-			def bytes = new ByteArrayInputStream(s3ObjectContent.bytes)
-			storeImage(getPictureName(), bytes)
-		}
-	}
-	catch(Exception e) {
-		log.error e
-	}
-	finally {
-		//explicitly close the stream
-		if (s3ObjectContent) { s3ObjectContent.close() }
-	}
 }
 
 // handle commands
