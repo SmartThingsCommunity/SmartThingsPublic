@@ -87,6 +87,22 @@ def parse(String description) {
 	return results
 }
 
+def zwaveEvent(physicalgraph.zwave.commands.switchmultilevelv3.SwitchMultilevelStartLevelChange cmd) {
+        logging("upDown: $cmd.upDown")
+        
+        switch (cmd.upDown) {
+           case 0: // Up
+              buttonEvent(device.currentValue("numberOfButtons"), "pushed")
+           break
+           case 1: // Down
+              buttonEvent(device.currentValue("numberOfButtons"), "held")
+           break
+           default:
+              logging("Unhandled SwitchMultilevelStartLevelChange: ${cmd}")
+           break
+        }
+}
+
 def zwaveEvent(physicalgraph.zwave.commands.centralscenev1.CentralSceneNotification cmd) {
         logging("keyAttributes: $cmd.keyAttributes")
         logging("sceneNumber: $cmd.sceneNumber")
@@ -168,6 +184,11 @@ def zwaveEvent(physicalgraph.zwave.commands.batteryv1.BatteryReport cmd) {
 	createEvent(map)
 }
 
+def zwaveEvent(physicalgraph.zwave.commands.associationv2.AssociationReport cmd) {
+	logging("AssociationReport $cmd")
+    state."association${cmd.groupingIdentifier}" = cmd.nodeId[0]
+}
+
 def zwaveEvent(physicalgraph.zwave.commands.configurationv2.ConfigurationReport cmd) {
      update_current_properties(cmd)
      logging("${device.displayName} parameter '${cmd.parameterNumber}' with a byte size of '${cmd.size}' is set to '${cmd2Integer(cmd.configurationValue)}'")
@@ -200,6 +221,7 @@ def updated()
 {
     logging("updated() is being called")
     def cmds = update_needed_settings()
+    sendEvent(name: "numberOfButtons", value: settings.buttons ? (settings."3" == "1" ? settings.buttons.toInteger() + 1 : settings.buttons) : (settings."3" ? 4 + 1 : 4), displayed: true)
     sendEvent(name:"needUpdate", value: device.currentValue("needUpdate"), displayed:false, isStateChange: true)
     if (cmds != []) response(commands(cmds))
 }
@@ -209,7 +231,7 @@ def configure() {
     logging("Configuring Device For SmartThings Use")
     def cmds = []
     cmds = update_needed_settings()
-    sendEvent(name: "numberOfButtons", value: settings.buttons? settings.buttons : 4, displayed: true)
+    sendEvent(name: "numberOfButtons", value: settings.buttons ? (settings."3" == "1" ? settings.buttons.toInteger() + 1 : settings.buttons) : (settings."3" ? 4 + 1 : 4), displayed: true)
     if (cmds != []) commands(cmds)
 }
 
@@ -287,6 +309,27 @@ def update_needed_settings()
         logging("Setting Wake Interval to 86400")
         cmds << zwave.wakeUpV1.wakeUpIntervalSet(seconds: 86400, nodeid:zwaveHubNodeId)
         cmds << zwave.wakeUpV1.wakeUpIntervalGet()
+    }
+    
+    if(!state.association3 || state.association3 == "" || state.association3 == "1"){
+       logging("Setting association group 3")
+       cmds << zwave.associationV2.associationSet(groupingIdentifier:3, nodeId:zwaveHubNodeId)
+       cmds << zwave.associationV2.associationGet(groupingIdentifier:3)
+    }
+    if(!state.association5 || state.association5 == "" || state.association5 == "1"){
+       logging("Setting association group 5")
+       cmds << zwave.associationV2.associationSet(groupingIdentifier:5, nodeId:zwaveHubNodeId)
+       cmds << zwave.associationV2.associationGet(groupingIdentifier:5)
+    }
+    if(!state.association7 || state.association7 == "" || state.association7 == "1"){
+       logging("Setting association group 7")
+       cmds << zwave.associationV2.associationSet(groupingIdentifier:7, nodeId:zwaveHubNodeId)
+       cmds << zwave.associationV2.associationGet(groupingIdentifier:7)
+    }
+    if(!state.association9 || state.association9 == "" || state.association9 == "1"){
+       logging("Setting association group 9")
+       cmds << zwave.associationV2.associationSet(groupingIdentifier:9, nodeId:zwaveHubNodeId)
+       cmds << zwave.associationV2.associationGet(groupingIdentifier:9)
     }
     
     if(state.MSR == null){
