@@ -180,17 +180,11 @@ def refresh() {
 		zwave.meterV3.meterGet(scale: 2).format(),
 		encap(zwave.basicV1.basicGet(), 1)  // further gets are sent from the basic report handler
 	]
-            cmds << encap(zwave.switchBinaryV1.switchBinaryGet(), null)
-    (1..4).each { endpoint ->
-            cmds << encap(zwave.switchBinaryV1.switchBinaryGet(), endpoint)
-    }
-    (1..6).each { endpoint ->
-			cmds << encap(zwave.meterV2.meterGet(scale: 0), endpoint)
-            cmds << encap(zwave.meterV2.meterGet(scale: 2), endpoint)
-	}
-    [90, 101, 102, 111, 112].each { p ->
-           cmds << zwave.configurationV1.configurationGet(parameterNumber: p).format()
-    }
+    cmds << encap(zwave.switchBinaryV1.switchBinaryGet(), null)
+    //(1..8).each { endpoint ->
+    //        cmds << encap(zwave.switchBinaryV1.switchBinaryGet(), endpoint)
+    //}
+
     delayBetween(cmds, 1000)
 }
 
