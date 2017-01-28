@@ -539,10 +539,10 @@ def update_needed_settings()
     def configuration = parseXml(configuration_model())
     def isUpdateNeeded = "NO"
     
-    if(!state.association5 || state.association5 == "" || state.association5 == "1"){
-       logging("Setting association group 5")
-       cmds << zwave.associationV2.associationSet(groupingIdentifier:5, nodeId:zwaveHubNodeId)
-       cmds << zwave.associationV2.associationGet(groupingIdentifier:5)
+    if(!state.association4 || state.association4 == "" || state.association4 == "1"){
+       logging("Setting association group 4")
+       cmds << zwave.associationV2.associationSet(groupingIdentifier:4, nodeId:zwaveHubNodeId)
+       cmds << zwave.associationV2.associationGet(groupingIdentifier:4)
     }
     
     configuration.Value.each
