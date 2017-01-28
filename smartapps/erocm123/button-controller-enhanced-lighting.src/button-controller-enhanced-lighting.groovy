@@ -131,8 +131,9 @@ def getButtonSections(buttonNumber) {
 		section("Lights") {
 			input "lights_${buttonNumber}", "capability.switch", multiple: true, required: false, submitOnChange: true
 		}
-        section ("Enable Toggle?"){
-            input "lights_${buttonNumber}_toggle", "bool", title: "Enable Toggle?", submitOnChange: true, defaultValue: true
+        section ("Toggle"){
+            input "lights_${buttonNumber}_toggle", "bool", title: "Enable Toggle?", submitOnChange: true, defaultValue: false
+            input "lights_${buttonNumber}_toggle_reverse", "bool", title: "Reverse Toggle Logic?", submitOnChange: true, defaultValue: false
         }
         def lightsConfigured = settings["lights_${buttonNumber}"]
         if (lightsConfigured != null) {
@@ -266,14 +267,22 @@ def executeHandlers(buttonNumber) {
     if ((settings["lights_${buttonNumber}_toggle"])) {
        if (lightsConfigured != null) {
           //If another source turned the lights on or off, we need to do the opposite
-           def lightOn = false
+           def numberOfOnLights = 0
            lightsConfigured.each {light ->
-              if (light.currentValue("switch") == "on")
-                  lightOn = true
+              if (light.currentValue("switch") == "on") {
+                  numberOfOnLights++
+              }
               
            }
-           if (!lightOn) toggle = false
+
+           if (settings["lights_${buttonNumber}_toggle_reverse"] == true) {
+              if (numberOfOnLights != lightsConfigured.size()) toggle = false
               else toggle = true
+           } else {
+              if (numberOfOnLights == 0) toggle = false
+              else toggle = true
+           }
+           
        }
     }
     if (lightsConfigured != null) {
