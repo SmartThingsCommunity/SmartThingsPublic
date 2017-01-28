@@ -53,7 +53,7 @@ metadata {
                 attributeState "turningOff", label:'${name}', action:"switch.on", icon:"st.lights.philips.hue-single", backgroundColor:"#ffffff", nextState:"turningOn"
             }
             tileAttribute ("device.level", key: "SLIDER_CONTROL") {
-                attributeState "level", action:"switch level.tileSetLevel", range:"(0..100)"
+                attributeState "level", action:"tileSetLevel", range:"(0..100)"
             }
         }
 
