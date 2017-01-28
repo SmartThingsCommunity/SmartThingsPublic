@@ -78,7 +78,7 @@ def parse(String description) {
 	def bodyString = msg.body
 	if (bodyString) {
     	unschedule("setOffline")
-		def body = new XmlSlurper().parseText(bodyString)
+        def body = new XmlSlurper().parseText(bodyString.replaceAll("[^\\x20-\\x7e]", ""))
 		if (body?.property?.TimeSyncRequest?.text()) {
 			log.trace "Got TimeSyncRequest"
 			result << timeSyncResponse()

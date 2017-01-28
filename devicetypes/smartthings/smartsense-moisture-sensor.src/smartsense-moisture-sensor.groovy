@@ -29,9 +29,10 @@ metadata {
 		command "enrollResponse"
 
 
-		fingerprint inClusters: "0000,0001,0003,0402,0500,0020,0B05", outClusters: "0019", manufacturer: "CentraLite",  model: "3315-S", deviceJoinName: "Water Leak Sensor"
-		fingerprint inClusters: "0000,0001,0003,0402,0500,0020,0B05", outClusters: "0019", manufacturer: "CentraLite",  model: "3315"
-		fingerprint inClusters: "0000,0001,0003,0402,0500,0020,0B05", outClusters: "0019", manufacturer: "CentraLite",  model: "3315-Seu", deviceJoinName: "Water Leak Sensor"
+		fingerprint inClusters: "0000,0001,0003,0402,0500,0020,0B05", outClusters: "0019", manufacturer: "CentraLite", model: "3315-S", deviceJoinName: "Water Leak Sensor"
+		fingerprint inClusters: "0000,0001,0003,0402,0500,0020,0B05", outClusters: "0019", manufacturer: "CentraLite", model: "3315"
+		fingerprint inClusters: "0000,0001,0003,0402,0500,0020,0B05", outClusters: "0019", manufacturer: "CentraLite", model: "3315-Seu", deviceJoinName: "Water Leak Sensor"
+		fingerprint inClusters: "0000,0001,0003,0020,0402,0500,0B05", outClusters: "0019", manufacturer: "CentraLite", model: "3315-L", deviceJoinName: "Iris Smart Water Sensor"
 		fingerprint inClusters: "0000,0001,0003,000F,0020,0402,0500", outClusters: "0019", manufacturer: "SmartThings", model: "moisturev4", deviceJoinName: "Water Leak Sensor"
 	}
 
@@ -285,8 +286,8 @@ def ping() {
 def refresh() {
 	log.debug "Refreshing Temperature and Battery"
 	def refreshCmds = [
-		"st rattr 0x${device.deviceNetworkId} 1 0x402 0", "delay 200",
-		"st rattr 0x${device.deviceNetworkId} 1 1 0x20", "delay 200"
+		"st rattr 0x${device.deviceNetworkId} 1 0x402 0", "delay 2000",
+		"st rattr 0x${device.deviceNetworkId} 1 1 0x20", "delay 2000"
 	]
 
 	return refreshCmds + enrollResponse()
@@ -308,10 +309,10 @@ def enrollResponse() {
 	[
 		//Resending the CIE in case the enroll request is sent before CIE is written
 		"zcl global write 0x500 0x10 0xf0 {${zigbeeEui}}", "delay 200",
-		"send 0x${device.deviceNetworkId} 1 ${endpointId}", "delay 500",
+		"send 0x${device.deviceNetworkId} 1 ${endpointId}", "delay 2000",
 		//Enroll Response
-		"raw 0x500 {01 23 00 00 00}",
-		"send 0x${device.deviceNetworkId} 1 1", "delay 200"
+		"raw 0x500 {01 23 00 00 00}", "delay 200",
+		"send 0x${device.deviceNetworkId} 1 1", "delay 2000"
 	]
 }
 

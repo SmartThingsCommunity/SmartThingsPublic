@@ -14,7 +14,8 @@ metadata {
 		capability "Switch"
 		capability "Refresh"
 		capability "Sensor"
-        capability "Health Check"
+		capability "Health Check"
+		capability "Light"
 
         command "refresh"
 	}
