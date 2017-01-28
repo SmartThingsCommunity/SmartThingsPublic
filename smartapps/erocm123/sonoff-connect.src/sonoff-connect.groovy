@@ -132,8 +132,8 @@ def deletePDevice(params){
 }
 
 def changeName(params){
-    def thisDevice = getChildDevice(params.did)
-    thisDevice.label = settings["${params.did}_label"]
+    def thisDevice = getChildDevice(state.currentDeviceId)
+    thisDevice.label = settings["${state.currentDeviceId}_label"]
 
     dynamicPage(name: "changeName", title: "Change Name Summary", nextPage: "mainPage") {
 	    section {
