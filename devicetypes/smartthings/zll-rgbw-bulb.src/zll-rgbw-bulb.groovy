@@ -135,7 +135,7 @@ def setColorTemperature(value) {
 }
 
 def setLevel(value) {
-    zigbee.setLevel(value) + ["delay 1500"] + zigbee.levelRefresh()         //adding refresh because of ZLL bulb not conforming to send-me-a-report
+    zigbee.setLevel(value) + ["delay 1500"] + zigbee.levelRefresh() + zigbee.onOffRefresh()         //adding refresh because of ZLL bulb not conforming to send-me-a-report
 }
 
 def setColor(value){
