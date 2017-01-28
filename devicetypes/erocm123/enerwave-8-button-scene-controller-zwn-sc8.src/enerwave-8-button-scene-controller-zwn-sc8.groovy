@@ -53,9 +53,10 @@ metadata {
 		}
         
 		main "button"
-		details(["button", "configure", "refresh",
-                 "switch1", "switch2", "switch3", "switch4",
-                 "switch5", "switch6", "switch7", "switch8"])
+		details(["switch1", "switch2", "button", 
+                 "switch3", "switch4", "configure",
+                 "switch5", "switch6", "refresh",
+                 "switch7", "switch8"])
 	}
     
     preferences {
@@ -79,35 +80,44 @@ def parse(String description) {
 	return results
 }
 
+def zwaveEvent(physicalgraph.zwave.commands.centralscenev1.CentralSceneNotification cmd) {
+        if (settings.debug == true) log.debug "keyAttributes: $cmd.keyAttributes"
+        if (settings.debug == true) log.debug "sceneNumber: $cmd.sceneNumber"
+        if (settings.debug == true) log.debug "sequenceNumber: $cmd.sequenceNumber"
+
+        sendEvent(name: "sequenceNumber", value: cmd.sequenceNumber, displayed:false)
+        buttonEvent(cmd.sceneNumber, "pushed")
+}
+
 def zwaveEvent(physicalgraph.zwave.commands.indicatorv1.IndicatorReport cmd) {
         
         switch (cmd.value) {
            case 1:
-              buttonEvent(1, "pushed")
+              toggleTiles("switch1")
            break
            case 2:
-              buttonEvent(2, "pushed")
+              toggleTiles("switch2")
            break
            case 4:
-              buttonEvent(3, "pushed")
+              toggleTiles("switch3")
            break
            case 8:
-              buttonEvent(4, "pushed")
+              toggleTiles("switch4")
            break
            case 16:
-              buttonEvent(5, "pushed")
+              toggleTiles("switch5")
            break
            case 32:
-              buttonEvent(6, "pushed")
+              toggleTiles("switch6")
            break
            case 64:
-              buttonEvent(7, "pushed")
+              toggleTiles("switch7")
            break
            case 128:
-              buttonEvent(8, "pushed")
+              toggleTiles("switch8")
            break
            default:
-              log.debug "Unhandled CentralSceneNotification: ${cmd}"
+              log.debug "Unhandled IndicatorReport: ${cmd}"
            break
         }
 }
@@ -118,6 +128,14 @@ def buttonEvent(button, value) {
 
 def zwaveEvent(physicalgraph.zwave.Command cmd) {
 	log.debug "Unhandled zwaveEvent: ${cmd}"
+}
+
+private toggleTiles(value) {
+   def tiles = ["switch1", "switch2", "switch3", "switch4", "switch5", "switch6", "switch7", "switch8"]
+   tiles.each {tile ->
+      if (tile != value) { sendEvent(name: tile, value: "off") }
+      else { sendEvent(name:tile, value:"on"); sendEvent(name:"switch", value:"on") }
+   }
 }
 
 def installed() {
@@ -139,8 +157,9 @@ def configure() {
 
 def onCmd(endpoint = null) {
     logging("onCmd($endpoint)")
+    toggleTiles("switch$endpoint")
     if (endpoint != null) {
-	   zwave.indicatorV1.indicatorSet(value:(2 ^ (endpoint - 1))).format()
+	   zwave.indicatorV1.indicatorSet(value:(2.power(endpoint - 1))).format()
     } else {
        zwave.indicatorV1.indicatorSet(value:255).format()
     }
