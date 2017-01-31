@@ -9,7 +9,7 @@
  *  Version 2.1.7 (10/9/16) Allow for flash briefing reports, added audio output devices to control macros
  *  Version 2.1.8e (10/22/16) Added option for reports from Nest Manager application; tweaking of color list to make it more user friendly, added the beginnings of a cheat sheet option
  *  Version 2.1.9a (11/20/16) Used more of the hidable elements in the new SmartThings mobile app (2.2.2+), fixed color light alias bug
- *  Version 2.2.0 (1/30/17) Added people restrictions to macros, changed copyright to 2017, updated Nest polling (thanks Tony Santilli), added themostat current state reporting (thanks @barry!)
+ *  Version 2.2.0 (1/30/17) Added people restrictions to macros, changed copyright to 2017, updated Nest polling (thanks Tony Santilli), added themostat current state reporting (thanks @storageanarchy!)
  *
  *  Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except
  *  in compliance with the License. You may obtain a copy of the License at:
