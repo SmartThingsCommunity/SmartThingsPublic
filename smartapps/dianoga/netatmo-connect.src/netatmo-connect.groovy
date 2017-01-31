@@ -73,7 +73,7 @@ def authPage() {
 			return dynamicPage(name: "Credentials", title: "Authorize Connection", nextPage:"listDevices", uninstall: uninstallAllowed, install:false) {
 				section() {
 					paragraph "Tap below to log in to the netatmo and authorize SmartThings access."
-					href url:redirectUrl, style:"embedded", required:false, title:"Connect to ${getVendorName()}:", description:description
+					href url:redirectUrl, style:"embedded", required:false, title:"Connect to ${getVendorName()}", description:description
 				}
 			}
 		} else {
@@ -146,19 +146,24 @@ def callback() {
 
 		// log.debug "PARAMS: ${params}"
 
-		httpPost(params) { resp ->
+		try {
+            httpPost(params) { resp ->
 
-			def slurper = new JsonSlurper()
+                def slurper = new JsonSlurper()
 
-			resp.data.each { key, value ->
-				def data = slurper.parseText(key)
-
-				state.refreshToken = data.refresh_token
-				state.authToken = data.access_token
-				state.tokenExpires = now() + (data.expires_in * 1000)
-				// log.debug "swapped token: $resp.data"
-			}
-		}
+                resp.data.each { key, value ->
+                    def data = slurper.parseText(key)
+					log.debug "Data: $data"
+                    state.refreshToken = data.refresh_token
+                    state.authToken = data.access_token
+                    //state.accessToken = data.access_token
+                    state.tokenExpires = now() + (data.expires_in * 1000)
+                    // log.debug "swapped token: $resp.data"
+                }
+            }
+        } catch (Exception e) {
+			log.debug "callback: Call failed $e"
+        }
 
 		// Handle success and failure here, and render stuff accordingly
 		if (state.authToken) {
@@ -387,18 +392,18 @@ def getDeviceList() {
 	state.deviceDetail = [:]
 	state.deviceState = [:]
 
-	apiGet("/api/devicelist") { response ->
+	apiGet("/api/getstationsdata") { response ->
 		response.data.body.devices.each { value ->
 			def key = value._id
 			deviceList[key] = "${value.station_name}: ${value.module_name}"
 			state.deviceDetail[key] = value
             state.deviceState[key] = value.dashboard_data
-		}
-		response.data.body.modules.each { value ->
-			def key = value._id
-			deviceList[key] = "${state.deviceDetail[value.main_device].station_name}: ${value.module_name}"
-			state.deviceDetail[key] = value
-            state.deviceState[key] = value.dashboard_data
+            value.modules.each { value2 ->            
+                def key2 = value2._id
+                deviceList[key2] = "${value.station_name}: ${value2.module_name}"
+                state.deviceDetail[key2] = value2
+                state.deviceState[key2] = value2.dashboard_data            
+            }
 		}
 	}
 
@@ -448,6 +453,7 @@ def listDevices() {
 }
 
 def apiGet(String path, Map query, Closure callback) {
+
 	if(now() >= state.tokenExpires) {
 		refreshToken();
 	}
@@ -467,12 +473,16 @@ def apiGet(String path, Map query, Closure callback) {
 	} catch (Exception e) {
 		// This is most likely due to an invalid token. Try to refresh it and try again.
 		log.debug "apiGet: Call failed $e"
-		if(refreshToken()) {
-			log.debug "apiGet: Trying again after refreshing token"
-			httpGet(params)	{ response ->
-				callback.call(response)
-			}
-		}
+        if(refreshToken()) {
+            log.debug "apiGet: Trying again after refreshing token"
+            try {
+                httpGet(params)	{ response ->
+                    callback.call(response)
+                }
+            } catch (Exception f) {
+                log.debug "apiGet: Call failed $f"
+            }
+        }
 	}
 }
 
