@@ -20,6 +20,9 @@
  *      JLH - 02-15-2014 - Fuller use of ecobee API
  *      10-28-2015 DVCSMP-604 - accessory sensor, DVCSMP-1174, DVCSMP-1111 - not respond to routines
  */
+
+include 'localization'
+
 definition(
 		name: "Ecobee (Connect)",
 		namespace: "smartthings",
@@ -86,7 +89,7 @@ def authPage() {
 			if (numFound > 0)  {
 				section("") {
 					paragraph "Tap below to see the list of ecobee sensors available in your ecobee account and select the ones you want to connect to SmartThings."
-					input(name: "ecobeesensors", title:"Select Ecobee Sensors (${numFound} found)", type: "enum", required:false, description: "Tap to choose", multiple:true, options:options)
+					input(name: "ecobeesensors", title: "Select Ecobee Sensors ({{numFound}} found)", messageArgs: [numFound: numFound], type: "enum", required:false, description: "Tap to choose", multiple:true, options:options)
 				}
 			}
 		}
