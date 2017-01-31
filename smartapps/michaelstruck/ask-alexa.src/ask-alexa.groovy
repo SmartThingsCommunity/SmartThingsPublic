@@ -1,7 +1,7 @@
 /**
  *  Ask Alexa 
  *
- *  Version 2.1.9a - 11/20/16 Copyright © 2016 Michael Struck
+ *  Version 2.2.0 - 1/30/17 Copyright © 2017 Michael Struck
  *  Special thanks for Keith DeLong for overall code and assistance; Barry Burke for Weather Underground Integration; jhamstead for Ecobee climate modes, Yves Racine for My Ecobee thermostat tips
  * 
  *  Version information prior to 2.1.7 listed here: https://github.com/MichaelStruck/SmartThingsPublic/blob/master/smartapps/michaelstruck/ask-alexa.src/Ask%20Alexa%20Version%20History.md
@@ -9,6 +9,7 @@
  *  Version 2.1.7 (10/9/16) Allow for flash briefing reports, added audio output devices to control macros
  *  Version 2.1.8e (10/22/16) Added option for reports from Nest Manager application; tweaking of color list to make it more user friendly, added the beginnings of a cheat sheet option
  *  Version 2.1.9a (11/20/16) Used more of the hidable elements in the new SmartThings mobile app (2.2.2+), fixed color light alias bug
+ *  Version 2.2.0 (1/30/17) Added people restrictions to macros, changed copyright to 2017, updated Nest polling (thanks Tony Santilli), added themostat current state reporting (thanks @barry!)
  *
  *  Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except
  *  in compliance with the License. You may obtain a copy of the License at:
@@ -525,11 +526,13 @@ def mainPageChild(){
             }
         }
         if (macroType && macroType !="GroupM" && macroType !="Group"){
-            section("Restrictions", hideable: true, hidden: !(runDay || timeIntervalInput || runMode)) {            
+            section("Restrictions", hideable: true, hidden: !(runDay || timeIntervalInput || runMode || runPeople)) {            
 				input "runDay", "enum", options: ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"], title: "Only Certain Days Of The Week...",  multiple: true, required: false, image: imgURL() + "calendar.png"
 				href "timeIntervalInput", title: "Only During Certain Times...", description: getTimeLabel(timeStart, timeEnd), state: (timeStart || timeEnd ? "complete":null), image: imgURL() + "clock.png"
 				input "runMode", "mode", title: "Only In The Following Modes...", multiple: true, required: false, image: imgURL() + "modes.png"
-				input "muteRestrictions", "bool", title: "Mute Restriction Messages In Macro Group", defaultValue: false
+                input "runPeople", "capability.presenceSensor", title: "Only When Present...", multiple: true, required: false, submitOnChange: true, image: imgURL() + "people.png"
+					if (runPeople && runPeople.size()>1) input "runPresAll", "bool", title: "Off=Any Present; On=All Present", defaultValue: false
+                input "muteRestrictions", "bool", title: "Mute Restriction Messages In Macro Group", defaultValue: false
             }
         }
         section("Tap below to remove this macro"){}
@@ -1332,31 +1335,37 @@ def getReply(devices, type, STdeviceName, op, num, param){
                 else result += ". "
             }
             else if (type == "thermostat"){
-                def temp = roundValue(STdevice.currentValue("temperature"))
-                result = "The ${STdeviceName} temperature reading is currently ${temp} degrees"
-                if (otherStatus){
-                    def humidity = STdevice.currentValue("humidity"), opState = STdevice.currentValue("thermostatMode")
-                    def heat = opState=="heat" || opState =="auto" || stelproCMD ? STdevice.currentValue("heatingSetpoint") : ""
-                    if (heat) heat = roundValue(heat)
-                    def cool = opState=="cool" || opState =="auto" ?  STdevice.currentValue("coolingSetpoint") : "" 
-                    if (cool) cool = roundValue(cool)
-                    result += opState ? ", and the thermostat's mode is: '${opState}'. " : ". "
-                    result += humidity ? " The relative humidity reading is ${humidity}%. " : ""
-                    if (nestCMD && supportedCaps.name.contains("Presence Sensor")){
-                    	result += " This thermostat's presence sensor is reading "
-                        result += STdevice.currentValue("presence")=="present" ? "'Home'. " : "'Away'. "
-                    }
-                    if ((ecobeeCMD && !MyEcobeeCMD) && STdevice.currentValue('currentProgramId') =~ /home|away|sleep/ ) result += " This thermostat's comfort setting is set to ${STdevice.currentValue('currentProgramId')}. "
-                    if (MyEcobeeCMD && STdevice.currentValue('setClimate')) {
-                    	def climatename = STdevice.currentValue('setClimate'), climateList = STdevice.currentValue('climateList')
-                        if (climateList.contains(climatename)) result += " This thermostat's comfort setting is set to ${climatename}. "
-                    }
-                    result += heat ? " The heating setpoint is set to ${heat} degrees. " : ""
-                    result += heat && cool ? "And finally, " : ""
-                    result += cool ? " The cooling setpoint is set to ${cool} degrees. " : ""
-            	}
-                else result += ". "
-            }
+            def temp = roundValue(STdevice.currentValue("temperature"))
+            result = "The ${STdeviceName} temperature reading is currently ${temp} degrees"
+            if (otherStatus){
+                def humidity = STdevice.currentValue("humidity"), opMode = STdevice.currentValue("thermostatMode")
+                def heat = opMode=="heat" || opMode =="auto" || stelproCMD ? STdevice.currentValue("heatingSetpoint") : ""
+                if (heat) heat = roundValue(heat)
+                def cool = opMode=="cool" || opMode =="auto" ?  STdevice.currentValue("coolingSetpoint") : "" 
+                if (cool) cool = roundValue(cool)
+                result += opMode ? ", and the thermostat's mode is: '${opMode}'. " : ". "
+                result += humidity ? " The relative humidity reading is ${humidity}%. " : ""
+                if (nestCMD && supportedCaps.name.contains("Presence Sensor")){
+                	result += " This thermostat's presence sensor is reading "
+                    result += STdevice.currentValue("presence")=="present" ? "'Home'. " : "'Away'. "
+                }
+                if ((ecobeeCMD && !MyEcobeeCMD) && STdevice.currentValue('currentProgramId') =~ /home|away|sleep/ ) result += " This thermostat's comfort setting is set to ${STdevice.currentValue('currentProgramId')}. "
+                if (MyEcobeeCMD && STdevice.currentValue('setClimate')) {
+                	def climatename = STdevice.currentValue('setClimate'), climateList = STdevice.currentValue('climateList')
+                    if (climateList.contains(climatename)) result += " This thermostat's comfort setting is set to ${climatename}. "
+                }
+                def opState = STdevice.currentValue("thermostatOperatingState")
+                if (opState) {
+                	if ((opState=='fan only') || (opState=='vent economizer')) opState = 'running the ${opState}'	// idle, heating, cooling, fan only, pending heat, pending cool or vent economizer
+                    result += " The thermostat is currently ${opState}. "
+                }
+                result += heat ? " The heating setpoint is set to ${heat} degrees. " : ""
+                result += heat && cool ? "And finally, " : ""
+                result += cool ? " The cooling setpoint is set to ${cool} degrees. " : ""
+                
+        	}
+            else result += ". "
+        }
             else if (type == "contact") result = "The ${STdeviceName} is currently ${STdevice.currentValue(type)}. "
             else if (type == "music"){
                 def onOffStatus = STdevice.currentValue("status"), track = STdevice.currentValue("trackDescription"), level = STdevice.currentValue("level"), mute = STdevice.currentValue("mute")
@@ -1972,7 +1981,7 @@ def thermostatSummary(){
 	String result = ""
     def monitorCount = voiceTempSettings.size(), matchCount = 0, err = false
     for (device in voiceTempSettings) {
-        if (parent.nestCMD) try { device.poll() } catch(e) { }
+        if (parent.nestCMD) nestCmdPrep(device)
         try{ if (device.latestValue(voiceTempSettingsType) as int == voiceTempTarget as int)  matchCount ++ }
         catch (e) { err=true }
     }
@@ -1984,7 +1993,7 @@ def thermostatSummary(){
             if (difCount==monitorCount) result += "None of the thermostats are set to ${voiceTempTarget} degrees. "
             else if (matchCount==1) {
                 for (device in voiceTempSettings){
-                    if (parent.nestCMD) try { device.poll() } catch(e) { }
+                    if (parent.nestCMD) nestCmdPrep(device)
                     if (device.latestValue(voiceTempSettingsType) as int == voiceTempTarget as int){
                         result += "Of the ${monitorCount} monitored thermostats, only ${device} is set to ${voiceTempTarget} degrees. "
                     }
@@ -1993,7 +2002,7 @@ def thermostatSummary(){
             else if (difCount && matchCount>1) {
                 result += "Some of the thermostats are set to ${voiceTempTarget} degrees except"
                 for (device in voiceTempSettings){
-                    if (parent.nestCMD) try { device.poll() } catch(e) { }
+                    if (parent.nestCMD) nestCmdPrep(device)
                     if (device.latestValue(voiceTempSettingsType) as int != voiceTempTarget as int){
                         result += " ${device}"
                         difCount --
@@ -2020,12 +2029,12 @@ def reportStatus(deviceList, type){
         }
     }
 	else if (type != "autoAll") deviceList.each { deviceName->
-        if (parent.nestCMD) try { deviceName.poll() } catch(e) { }
+        if (parent.nestCMD) nestCmdPrep(deviceName)
         try { result += "The ${deviceName} is set to ${Math.round(deviceName.latestValue(type))}${appd}. " }
     	catch (e) { result = "The ${deviceName} is not able to provide its setpoint. Please choose another setpoint type to report on. " }
     }
     else if (type == "autoAll") deviceList.each { deviceName->
-        if (parent.nestCMD) try { deviceName.poll() } catch(e) { }
+        if (parent.nestCMD) nestCmdPrep(deviceName)
         try { 
         	result += "The ${deviceName} has a cooling setpoint of ${Math.round(deviceName.latestValue("coolingSetpoint"))}${appd}, " +
         		"and a heating setpoint of ${Math.round(deviceName.latestValue("heatingSetpoint"))}${appd}. " 
@@ -2182,7 +2191,7 @@ def waterReport(){
     return result
 }
 //Parent Code Access (from Child)-----------------------------------------------------------
-def getOkToRun(){ def result = (!runMode || runMode.contains(location.mode)) && getDayOk(runDay) && getTimeOk(timeStart,timeEnd) }
+def getOkToRun(){ def result = (!runMode || runMode.contains(location.mode)) && getDayOk(runDay) && getTimeOk(timeStart,timeEnd) && getPeopleOk(runPeople,runPresAll) }
 //Common Code (Child and Parent)		
  def imgURL() { return "https://raw.githubusercontent.com/MichaelStruck/SmartThingsPublic/master/img/" }
  def getList(items){
@@ -2191,6 +2200,10 @@ def getOkToRun(){ def result = (!runMode || runMode.contains(location.mode)) && 
 		result += itemCount>1 ? ", " : itemCount==1 ? " and " : ""
     }
 	return result
+}
+void nestCmdPrep(dev) {
+    try { if(dev.currentValue("devTypeVer") != null) { return } else { dev.poll() } }
+	catch(e) { log.error "nestCmdPrep Exception: $e" }
 }
 private roundValue(num){
     def result
@@ -2241,6 +2254,13 @@ private getTimeOk(startTime, endTime) {
 	else if (startTime) result = currTime >= start
     else if (endTime) result = currTime <= stop
     return result
+}
+private getPeopleOk(peopleList,presType){
+	def result = true
+    if (presType && peopleList) result = peopleList.find {it.currentPresence == "not present"} ? false : true
+    else if (!presType && peopleList) result = peopleList.find {it.currentPresence == "present"} ? true : false
+    log.debug "Presence: ${result}"
+    result
 }
 def getTimeLabel(start, end){
 	def timeLabel = "Tap to set"
@@ -3247,13 +3267,13 @@ def getURLs(){
 //Version/Copyright/Information/Help-----------------------------------------------------------
 private textAppName() { return "Ask Alexa" }	
 private textVersion() {
-    def version = "SmartApp Version: 2.1.9a (11/20/2016)", lambdaVersion = state.lambdaCode ? "\n" + state.lambdaCode : ""
+    def version = "SmartApp Version: 2.2.0 (01/30/2017)", lambdaVersion = state.lambdaCode ? "\n" + state.lambdaCode : ""
     return "${version}${lambdaVersion}"
 }
-private versionInt(){ return 219 }
+private versionInt(){ return 220 }
 private LambdaReq() { return 122 }
-private versionLong(){ return "2.1.9a" }
-private textCopyright() {return "Copyright © 2016 Michael Struck" }
+private versionLong(){ return "2.2.0" }
+private textCopyright() {return "Copyright © 2017 Michael Struck" }
 private textLicense() {
 	def text = "Licensed under the Apache License, Version 2.0 (the 'License'); you may not use this file except in compliance with the License. You may obtain a copy of the License at\n\n"+
 		"    http://www.apache.org/licenses/LICENSE-2.0\n\nUnless required by applicable law or agreed to in writing, software distributed under the License is distributed on an 'AS IS' BASIS, "+
