@@ -22,3 +22,8 @@
  *  Version 2.1.4a (9/23/16) Code optimization; addition of device alias function
  *  Version 2.1.5 (09/29/16) Code optimization/bug fixes, list command for certain macros (Device and Macro Groups), REST API display for Macro Groups
  *  Version 2.1.6a (10/4/16) Additional Ecobee climate modes, bug fixes, added heating/cooling default feature on individual device thermostats
+ *  Version 2.1.7 (10/9/16) Allow for flash briefing reports, added audio output devices to control macros
+ *  Version 2.1.8e (10/22/16) Added option for reports from Nest Manager application; tweaking of color list to make it more user friendly, added the beginnings of a cheat sheet option
+ *  Version 2.1.9a (11/20/16) Used more of the hidable elements in the new SmartThings mobile app (2.2.2+), fixed color light alias bug
+ *  Version 2.2.0 (1/30/17) Added people restrictions to macros, changed copyright to 2017, updated Nest polling (thanks Tony Santilli), added themostat current state reporting (thanks @storageanarchy!)
+ 
