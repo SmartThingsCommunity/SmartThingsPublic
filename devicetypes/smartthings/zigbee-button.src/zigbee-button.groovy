@@ -13,6 +13,7 @@
  *  for the specific language governing permissions and limitations under the License.
  *
  */
+import physicalgraph.zigbee.zcl.DataType
 
 metadata {
     definition (name: "ZigBee Button", namespace: "smartthings", author: "Mitch Pond") {
@@ -82,7 +83,7 @@ def parse(String description) {
         def result = event ? createEvent(event) : []
 
         if (description?.startsWith('enroll request')) {
-            List cmds = enrollResponse()
+            List cmds = zigbee.enrollResponse()
             result = cmds?.collect { new physicalgraph.device.HubAction(it) }
         }
         return result
@@ -160,7 +161,7 @@ private Map parseNonIasButtonMessage(Map descMap){
 def refresh() {
     log.debug "Refreshing Battery"
 
-    return zigbee.readAttribute(0x0001, 0x20) +
+    return zigbee.readAttribute(zigbee.POWER_CONFIGURATION_CLUSTER, 0x20) +
             zigbee.enrollResponse()
 }
 
@@ -177,9 +178,9 @@ def configure() {
     }
     return zigbee.onOffConfig() +
             zigbee.levelConfig() +
-            zigbee.configureReporting(0x0001, 0x20, 0x20, 30, 21600, 0x01) +
+            zigbee.configureReporting(zigbee.POWER_CONFIGURATION_CLUSTER, 0x20, DataType.UINT8, 30, 21600, 0x01) +
             zigbee.enrollResponse() +
-            zigbee.readAttribute(0x0001, 0x20) +
+            zigbee.readAttribute(zigbee.POWER_CONFIGURATION_CLUSTER, 0x20) +
             cmds
 
 }
