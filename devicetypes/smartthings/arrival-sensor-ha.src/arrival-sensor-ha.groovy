@@ -11,7 +11,6 @@
  *  for the specific language governing permissions and limitations under the License.
  *
  */
- 
 metadata {
     definition (name: "Arrival Sensor HA", namespace: "smartthings", author: "SmartThings") {
         capability "Tone"
@@ -60,7 +59,7 @@ def updated() {
 }
 
 def configure() {
-    def cmds = zigbee.configureReporting(0x0001, 0x0020, 0x20, 20, 20, 0x01)
+    def cmds = zigbee.batteryConfig(20, 20, 0x01)
     log.debug "configure -- cmds: ${cmds}"
     return cmds
 }
