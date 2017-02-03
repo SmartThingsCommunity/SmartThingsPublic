@@ -29,6 +29,7 @@ metadata {
         capability "Switch"
         capability "Switch Level"
         capability "Health Check"
+        capability "Light"
 
         attribute "colorName", "string"
         command "setGenericName"
