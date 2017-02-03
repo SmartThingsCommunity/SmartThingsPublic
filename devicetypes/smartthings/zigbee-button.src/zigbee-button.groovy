@@ -118,13 +118,41 @@ private Map getBatteryResult(rawValue) {
 private Map parseNonIasButtonMessage(Map descMap){
     def buttonState = ""
     def buttonNumber = 0
-    if (((device.getDataValue("model") == "3460-L") || (device.getDataValue("model") == "3450-L"))
-            &&(descMap.clusterInt == 0x0006)) {
+    if ((device.getDataValue("model") == "3460-L") &&(descMap.clusterInt == 0x0006)) {
         if (descMap.command == "01") {
             getButtonResult("press")
         }
         else if (descMap.command == "00") {
             getButtonResult("release")
+        }
+    }
+    else if ((device.getDataValue("model") == "3450-L") && (descMap.clusterInt == 0x0006)) {
+    	log.info "For 3450-L"
+        log.trace "descMap : $descMap"
+        if (descMap.command == "01") {
+            getButtonResult("press")
+        }
+        else if (descMap.command == "00") {
+        	def button = 1
+            switch(descMap.sourceEndpoint) {
+            	case "01":
+                	button = 4
+                    break
+                case "02":
+                	button = 3
+                    break
+                case "03":
+                	button = 1
+                    break
+                case "04":
+                	button = 2
+                    break
+                default:
+                	button = 1
+                    break
+            }
+        
+            getButtonResult("release", button)
         }
     }
     else if (descMap.clusterInt == 0x0006) {
