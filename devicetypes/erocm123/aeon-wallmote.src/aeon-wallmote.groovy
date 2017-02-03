@@ -35,7 +35,7 @@ metadata {
 	}
     preferences {
         
-        input description: "Once you change values on this page, the \"configure\" Status will become \"syncing\" status. When the parameters have been succesfully changed, the status will change back to \"configure\"", displayDuringSetup: false, type: "paragraph", element: "paragraph"
+        input description: "Once you change values on this page, the \"configure\" Status will become \"syncing\" status. When the parameters have been succesfully changed, the status will change back to \"configure\". To immediately sync the changes, press the button on the back of the button for a few seconds (until the lights on the front flash orange)", displayDuringSetup: false, type: "paragraph", element: "paragraph"
         
 		generate_preferences(configuration_model())
         
