@@ -12,6 +12,7 @@
  *  for the specific language governing permissions and limitations under the License.
  *
  */
+ 
 metadata {
 	definition (name: "Enerwave 8-Button Scene Controller ZWN-SC8", namespace: "erocm123", author: "Eric Maycock") {
 		capability "Actuator"
@@ -34,6 +35,7 @@ metadata {
 
 	simulator {
 	}
+    
 	tiles (scale: 2) {
 		standardTile("button", "device.button", width: 2, height: 2) {
 			state "default", label: "", icon: "st.unknown.zwave.remote-controller", backgroundColor: "#ffffff"
@@ -66,7 +68,7 @@ metadata {
 
 def parse(String description) {
 	def results = []
-    if (settings.debug == true) log.debug "${description}"
+    //logging("${description}")
 	if (description.startsWith("Err")) {
 	    results = createEvent(descriptionText:description, displayed:true)
 	} else {
@@ -81,16 +83,16 @@ def parse(String description) {
 }
 
 def zwaveEvent(physicalgraph.zwave.commands.centralscenev1.CentralSceneNotification cmd) {
-        if (settings.debug == true) log.debug "keyAttributes: $cmd.keyAttributes"
-        if (settings.debug == true) log.debug "sceneNumber: $cmd.sceneNumber"
-        if (settings.debug == true) log.debug "sequenceNumber: $cmd.sequenceNumber"
+        logging("keyAttributes: $cmd.keyAttributes")
+        logging("sceneNumber: $cmd.sceneNumber")
+        logging("sequenceNumber: $cmd.sequenceNumber")
 
         sendEvent(name: "sequenceNumber", value: cmd.sequenceNumber, displayed:false)
         buttonEvent(cmd.sceneNumber, "pushed")
 }
 
 def zwaveEvent(physicalgraph.zwave.commands.indicatorv1.IndicatorReport cmd) {
-        
+        logging("IndicatorReport: $cmd")
         switch (cmd.value) {
            case 1:
               toggleTiles("switch1")
@@ -117,7 +119,7 @@ def zwaveEvent(physicalgraph.zwave.commands.indicatorv1.IndicatorReport cmd) {
               toggleTiles("switch8")
            break
            default:
-              log.debug "Unhandled IndicatorReport: ${cmd}"
+              logging("Unhandled IndicatorReport: ${cmd}")
            break
         }
 }
@@ -127,7 +129,7 @@ def buttonEvent(button, value) {
 }
 
 def zwaveEvent(physicalgraph.zwave.Command cmd) {
-	log.debug "Unhandled zwaveEvent: ${cmd}"
+	logging("Unhandled zwaveEvent: ${cmd}")
 }
 
 private toggleTiles(value) {
@@ -139,18 +141,18 @@ private toggleTiles(value) {
 }
 
 def installed() {
-    log.debug "installed()"
+    logging("installed()")
     configure()
 }
 
 def updated() {
     state.enableDebugging = settings.enableDebugging
-    log.debug "updated()"
+    logging("updated()")
     configure()
 }
 
 def configure() {
-	log.debug "configure()"
+	logging("configure()")
     sendEvent(name: "numberOfButtons", value: 8, displayed: true)
     state.isConfigured = "true"
 }
@@ -192,19 +194,8 @@ def off7() { offCmd() }
 def off8() { offCmd() }
 
 def refresh() {
-    logging("refresh")
-	def cmds = [
-		zwave.basicV1.basicGet().format(),
-		zwave.meterV3.meterGet(scale: 0).format(),
-		zwave.meterV3.meterGet(scale: 2).format(),
-		encap(zwave.basicV1.basicGet(), 1)  // further gets are sent from the basic report handler
-	]
-    cmds << encap(zwave.switchBinaryV1.switchBinaryGet(), null)
-    //(1..8).each { endpoint ->
-    //        cmds << encap(zwave.switchBinaryV1.switchBinaryGet(), endpoint)
-    //}
-
-    delayBetween(cmds, 1000)
+    logging("refresh()")
+	zwave.indicatorV1.indicatorGet().format()
 }
 
 private def logging(message) {
