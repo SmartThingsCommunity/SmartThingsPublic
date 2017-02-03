@@ -249,6 +249,8 @@ def parse(description) {
     
     if (!state.configSuccess || state.configSuccess == "false") cmds << configureInstant(device.hub.getDataValue("localIP"), device.hub.getDataValue("localSrvPortTCP"), powerOnState)
     
+    if (!device.currentValue("ip") || (device.currentValue("ip") != getDataValue("ip"))) sendEvent(name: 'ip', value: getDataValue("ip"))
+
     if (!state.mac || state.mac != descMap["mac"]) {
 		log.debug "Mac address of device found ${descMap["mac"]}"
         updateDataValue("mac", descMap["mac"])
@@ -506,7 +508,6 @@ def reset() {
 }
 def refresh() {
 	log.debug "refresh()"
-    sendEvent(name: 'ip', value: state.ip)
     postAction("/status")
 }
 
