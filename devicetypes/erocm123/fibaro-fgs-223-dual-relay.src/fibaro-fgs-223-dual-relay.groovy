@@ -681,6 +681,80 @@ Default: 1 (Previous State)
         <Item label="Off" value="0" />
         <Item label="Previous State" value="1" />
   </Value>
+      <Value type="list" byteSize="1" index="10" label="First Channel - Operating Mode" min="0" max="5" value="0" setting_type="zwave" fw="">
+    <Help>
+This parameter allows you to choose the operating mode for the 1st channel controlled by the S1 switch.
+Range: 0~5
+Default: 0 (Standard)
+    </Help>
+        <Item label="Standard" value="0" />
+        <Item label="Delay On" value="1" />
+        <Item label="Delay Off" value="2" />
+        <Item label="Auto On" value="3" />
+        <Item label="Auto Off" value="4" />
+        <Item label="Flashing" value="5" />
+  </Value>
+        <Value type="list" byteSize="1" index="11" label="First Channel - Reaction For Delay/Auto" min="0" max="2" value="0" setting_type="zwave" fw="">
+    <Help>
+This parameter determines how the device in timed mode reacts to pushing the switch connected to the S1 terminal.
+Range: 0~2
+Default: 0 (Cancel)
+    </Help>
+        <Item label="Cancel" value="0" />
+        <Item label="No Reaction" value="1" />
+        <Item label="Reset" value="2" />
+  </Value>
+      <Value type="byte" byteSize="2" index="12" label="First Channel - Time Parameter for Delay/Auto" min="0" max="32000" value="50" setting_type="zwave" fw="">
+    <Help>
+This parameter allows to set time parameter used in timed modes. 
+Range: 0~32000 (0.1s, 1-32000s)
+Default: 50
+    </Help>
+  </Value>
+      <Value type="byte" byteSize="2" index="13" label="First Channel - Pulse Time For Flashing" min="1" max="32000" value="5" setting_type="zwave" fw="">
+    <Help>
+This parameter allows to set time of switching to opposite state in flashing mode.
+Range: 1~32000 (0.1s-3200.0s)
+Default: 5 (0.5s)
+    </Help>
+  </Value>
+        <Value type="list" byteSize="1" index="15" label="Second Channel - Operating Mode" min="0" max="5" value="0" setting_type="zwave" fw="">
+    <Help>
+This parameter allows you to choose the operating mode for the 2nd channel controlled by the S2 switch.
+Range: 0~5
+Default: 0 (Standard)
+    </Help>
+        <Item label="Standard" value="0" />
+        <Item label="Delay On" value="1" />
+        <Item label="Delay Off" value="2" />
+        <Item label="Auto On" value="3" />
+        <Item label="Auto Off" value="4" />
+        <Item label="Flashing" value="5" />
+  </Value>
+        <Value type="list" byteSize="1" index="16" label="Second Channel - Reaction For Delay/Auto" min="0" max="2" value="0" setting_type="zwave" fw="">
+    <Help>
+This parameter determines how the device in timed mode reacts to pushing the switch connected to the S2 terminal.
+Range: 0~2
+Default: 0 (Cancel)
+    </Help>
+        <Item label="Cancel" value="0" />
+        <Item label="No Reaction" value="1" />
+        <Item label="Reset" value="2" />
+  </Value>
+      <Value type="byte" byteSize="2" index="17" label="Second Channel - Time Parameter for Delay/Auto" min="0" max="32000" value="50" setting_type="zwave" fw="">
+    <Help>
+This parameter allows to set time parameter used in timed modes. 
+Range: 0~32000 (0.1s, 1-32000s)
+Default: 50
+    </Help>
+  </Value>
+      <Value type="byte" byteSize="2" index="18" label="Second Channel - Pulse Time For Flashing" min="1" max="32000" value="5" setting_type="zwave" fw="">
+    <Help>
+This parameter allows to set time of switching to opposite state in flashing mode.
+Range: 1~32000 (0.1s-3200.0s)
+Default: 5 (0.5s)
+    </Help>
+  </Value>
     <Value type="list" byteSize="1" index="20" label="Switch type" min="0" max="2" value="2" setting_type="zwave" fw="">
     <Help>
 Choose between momentary and toggle switch.
