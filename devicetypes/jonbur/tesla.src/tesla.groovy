@@ -1,3 +1,17 @@
+/**
+ *  Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except
+ *  in compliance with the License. You may obtain a copy of the License at:
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ *  Unless required by applicable law or agreed to in writing, software distributed under the License is distributed
+ *  on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the License
+ *  for the specific language governing permissions and limitations under the License.
+ *
+ *  Tesla 
+ *
+ */
+
 import groovy.json.JsonSlurper
 
 metadata {
@@ -14,7 +28,7 @@ metadata {
     
 	preferences {
 		input("ip", "text", title: "IP Address", description: "Local server IP address", required: true, displayDuringSetup: true)
-		input("port", "number", title: "Port Number", description: "Port Number (Default:5000)", defaultValue: "5000", required: true, displayDuringSetup: true)
+		input("port", "number", title: "Port Number", description: "Port number (Default:5000)", defaultValue: "5000", required: true, displayDuringSetup: true)
 	}
 
 	tiles {
@@ -73,9 +87,7 @@ def parse(String description) {
 			case "True":
             	log.debug 'Vehicle is home'
 				present()
-				
 			}
-            
     
 		}
 	else {
@@ -145,36 +157,36 @@ def refresh() {
     api('ishome')
 }
 
-def api(String rooCommand, success = {}) {
-	def rooPath
+def api(String APICommand, success = {}) {
+	def APIPath
 	def hubAction
 	
-	switch (rooCommand) {
+	switch (APICommand) {
 		case "on":
-			rooPath = "/api/starthvac"
+			APIPath = "/api/starthvac"
 			log.debug "The start command was sent"
 		break;
 		case "off":
-			rooPath = "/api/stophvac"
+			APIPath = "/api/stophvac"
 			log.debug "The stop command was sent"
 		break;
 		case "refresh":
-			rooPath = "/api/isclimateon"
+			APIPath = "/api/isclimateon"
 			log.debug "The Status Command was sent"
 		break;		
         case "ishome":
-			rooPath = "/api/isvehiclehome"
+			APIPath = "/api/isvehiclehome"
 			log.debug "Request if vehicle is home sent"
 		break;
         
 	}
     
-	switch (rooCommand) {
+	switch (APICommand) {
 		case "refresh":
 			try {
 				hubAction = new physicalgraph.device.HubAction(
 				method: "GET",
-				path: rooPath,
+				path: APIPath,
 				headers: [HOST: "${settings.ip}:${settings.port}", Accept: "application/json"])
 			}
 			catch (Exception e) {
@@ -185,7 +197,7 @@ def api(String rooCommand, success = {}) {
 			try {
 				hubAction = [new physicalgraph.device.HubAction(
 				method: "GET",
-				path: rooPath,
+				path: APIPath,
 				headers: [HOST: "${settings.ip}:${settings.port}", Accept: "application/json"]
 				), delayAction(5000), api('refresh')]
 			}
@@ -228,5 +240,5 @@ private def textVersion() {
 }
 
 private def textCopyright() {
-	def text = "Copyright © 2016 JB"
+	def text = "Copyright © 2017 JB"
 }
