@@ -218,38 +218,31 @@ def getTemperature(value) {
 
 private Map getBatteryResult(rawValue) {
 	log.debug "Battery rawValue = ${rawValue}"
-	def linkText = getLinkText(device)
 
 	def result = [:]
-
-	def volts = rawValue / 10
-
 	if (!(rawValue == 0 || rawValue == 255)) {
+		Map batteryMap = [:]
+		if (device.getDataValue("manufacturer") == "SmartThings") {
+			batteryMap = [26: 100, 25: 90, 24: 90, 23: 70, 22: 70, 21: 50, 20: 50, 19: 30, 18: 30, 17: 15, 16: 1]
+		} else if (device.getDataValue("model") == "3325-S"){
+			batteryMap = [30: 100, 29: 90, 28: 70, 27: 50, 26: 25, 25: 10, 24: 1]
+		} else {
+			batteryMap = [30: 100, 29: 89, 28: 78, 27: 67, 26: 56, 25: 45, 24: 34, 23: 23, 22: 12, 21: 1]
+		}
+
+		def minVolts = batteryMap.min { it.key }.key
+		def maxVolts = batteryMap.max { it.key }.key
+		if (rawValue < minVolts) {
+			log.warn "Battery voltage is very low (${rawValue/10}V) and the battery should be replaced"
+			rawValue = minVolts
+		} else if (volts > maxVolts) {
+			rawValue = maxVolts
+		}
+
 		result.name = 'battery'
 		result.translatable = true
 		result.descriptionText = "{{ device.displayName }} battery was {{ value }}%"
-		if (device.getDataValue("manufacturer") == "SmartThings") {
-			volts = rawValue // For the batteryMap to work the key needs to be an int
-			def batteryMap = [28: 100, 27: 100, 26: 100, 25: 90, 24: 90, 23: 70,
-							  22: 70, 21: 50, 20: 50, 19: 30, 18: 30, 17: 15, 16: 1, 15: 0]
-			def minVolts = 15
-			def maxVolts = 28
-
-			if (volts < minVolts)
-				volts = minVolts
-			else if (volts > maxVolts)
-				volts = maxVolts
-			def pct = batteryMap[volts]
-			result.value = pct
-		} else {
-			def minVolts = 2.1
-			def maxVolts = 3.0
-			def pct = (volts - minVolts) / (maxVolts - minVolts)
-			def roundedPct = Math.round(pct * 100)
-			if (roundedPct <= 0)
-				roundedPct = 1
-			result.value = Math.min(100, roundedPct)
-		}
+		result.value = batteryMap[rawValue]
 	}
 
 	return result
