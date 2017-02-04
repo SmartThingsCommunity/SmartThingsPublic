@@ -267,6 +267,10 @@ def parse(description) {
     }
     if (result.containsKey("rgb")) {
        events << createEvent(name:"color", value:"#$result.rgb")
+
+       // only store the previous value if the response did not come from a power-off command
+       if (result.power != "off")
+         state.previousRGB = result.rgb
     }
     if (result.containsKey("r")) {
        events << createEvent(name:"redLevel", value: Integer.parseInt(result.r,16)/255 * 100 as Integer, displayed: false)
@@ -299,6 +303,10 @@ def parse(description) {
        } else {
     	  events << createEvent(name:"white1", value: "off", displayed: false)
        }
+
+       // only store the previous value if the response did not come from a power-off command
+       if (result.power != "off")
+          state.previousW1 = result.w1
     }
     if (result.containsKey("w2")) {
        events << createEvent(name:"white2Level", value: Integer.parseInt(result.w2,16)/255 * 100 as Integer, displayed: false)
@@ -307,6 +315,10 @@ def parse(description) {
        } else {
     	  events << createEvent(name:"white2", value: "off", displayed: false)
        }
+
+       // only store the previous value if the response did not come from a power-off command
+       if (result.power != "off")
+          state.previousW2 = result.w2
     }
     if (result.containsKey("version")) {
        events << createEvent(name:"firmware", value: result.version + "\r\n" + result.date, displayed: false)
@@ -447,13 +459,15 @@ def setColor(value) {
     else if (value.aLevel) {
     	def actions = []
         
-    	// Handle white channel dimmer. Unfortunately, if we first check for white1/2 == "on",
-        // we can't use the dimmer to turn the lights on at a specific level. However, this is already
-        // true for RGB - you can't set a dim level since the "current" rgb values are zeros when off.
-        actions.push(setWhite1Level(value.aLevel))
-        actions.push(setWhite2Level(value.aLevel))
-            
-        uri = "/rgb?value=${getDimmedColor(device.currentValue("color")).substring(1)}"
+        // Handle white channel dimmers if they're on or were not previously off (excluding power-off command)
+        if (device.currentValue("white1") == "on" || state.previousW1 != "00")
+          actions.push(setWhite1Level(value.aLevel))
+        if (device.currentValue("white2") == "on" || state.previousW2 != "00")
+          actions.push(setWhite2Level(value.aLevel))
+        
+        // if the device is currently on, scale the current RGB values; otherwise scale the previous setting
+        uri = "/rgb?value=${getDimmedColor(device.latestValue("switch") == "on" ? device.currentValue("color") : state.previousRGB).substring(1)}"
+
         actions.push(postAction("$uri&channels=$channels&transition=$transition"))
         return actions
     }
