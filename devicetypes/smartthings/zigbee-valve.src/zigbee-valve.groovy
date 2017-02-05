@@ -11,6 +11,7 @@
  *  for the specific language governing permissions and limitations under the License.
  *
  */
+import physicalgraph.zigbee.zcl.DataType
 
 metadata {
     definition (name: "ZigBee Valve", namespace: "smartthings", author: "SmartThings") {
@@ -66,8 +67,6 @@ private getCLUSTER_BASIC() { 0x0000 }
 private getBASIC_ATTR_POWER_SOURCE() { 0x0007 }
 private getCLUSTER_POWER() { 0x0001 }
 private getPOWER_ATTR_BATTERY_PERCENTAGE_REMAINING() { 0x0021 }
-private getTYPE_U8() { 0x20 }
-private getTYPE_ENUM8() { 0x30 }
 
 // Parse incoming device messages to generate events
 def parse(String description) {
@@ -128,8 +127,8 @@ def refresh() {
     zigbee.readAttribute(CLUSTER_BASIC, BASIC_ATTR_POWER_SOURCE) +
     zigbee.readAttribute(CLUSTER_POWER, POWER_ATTR_BATTERY_PERCENTAGE_REMAINING) +
     zigbee.onOffConfig() +
-    zigbee.configureReporting(CLUSTER_POWER, POWER_ATTR_BATTERY_PERCENTAGE_REMAINING, TYPE_U8, 600, 21600, 1) +
-    zigbee.configureReporting(CLUSTER_BASIC, BASIC_ATTR_POWER_SOURCE, TYPE_ENUM8, 5, 21600, 1)
+    zigbee.configureReporting(CLUSTER_POWER, POWER_ATTR_BATTERY_PERCENTAGE_REMAINING, DataType.UINT8, 600, 21600, 1) +
+    zigbee.configureReporting(CLUSTER_BASIC, BASIC_ATTR_POWER_SOURCE, DataType.ENUM8, 5, 21600, 1)
 }
 
 def configure() {

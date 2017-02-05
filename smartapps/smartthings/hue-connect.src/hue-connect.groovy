@@ -172,18 +172,34 @@ def bulbDiscovery() {
 			if (existingLightsDescription.isEmpty()) {
 				existingLightsDescription += it.value
 			} else {
-				 existingLightsDescription += ", ${it.value}"
+				existingLightsDescription += ", ${it.value}"
 			}
 		}
 	}
 
-	return dynamicPage(name:"bulbDiscovery", title:"Light Discovery Started!", nextPage:"", refreshInterval:refreshInterval, install:true, uninstall: true) {
-		section("Please wait while we discover your Hue Lights. Discovery can take five minutes or more, so sit back and relax! Select your device below once discovered.") {
-			input "selectedBulbs", "enum", required:false, title:"Select Hue Lights to add (${numFound} found)", multiple:true, submitOnChange: true, options:newLights
-			paragraph title: "Previously added Hue Lights (${existingLights.size()} added)", existingLightsDescription
+	if (bulbRefreshCount > 200 && numFound == 0) {
+		// Time out to avoid endless discovery
+		state.inBulbDiscovery = false
+		bulbRefreshCount = 0
+		return dynamicPage(name:"bulbDiscovery", title:"Light Discovery Failed!", nextPage:"", refreshInterval:0, install:true, uninstall: true) {
+			section("Failed to discover any lights, please try again later. Click Done to exit.") {
+				//input "selectedBulbs", "enum", required:false, title:"Select Hue Lights to add (${numFound} found)", multiple:true, submitOnChange: true, options:newLights
+				paragraph title: "Previously added Hue Lights (${existingLights.size()} added)", existingLightsDescription
+			}
+			section {
+				href "bridgeDiscovery", title: title, description: "", state: selectedHue ? "complete" : "incomplete", params: [override: true]
+			}
 		}
-		section {
-			href "bridgeDiscovery", title: title, description: "", state: selectedHue ? "complete" : "incomplete", params: [override: true]
+
+	} else {
+		return dynamicPage(name:"bulbDiscovery", title:"Light Discovery Started!", nextPage:"", refreshInterval:refreshInterval, install:true, uninstall: true) {
+			section("Please wait while we discover your Hue Lights. Discovery can take five minutes or more, so sit back and relax! Select your device below once discovered.") {
+				input "selectedBulbs", "enum", required:false, title:"Select Hue Lights to add (${numFound} found)", multiple:true, submitOnChange: true, options:newLights
+				paragraph title: "Previously added Hue Lights (${existingLights.size()} added)", existingLightsDescription
+			}
+			section {
+				href "bridgeDiscovery", title: title, description: "", state: selectedHue ? "complete" : "incomplete", params: [override: true]
+			}
 		}
 	}
 }
@@ -407,7 +423,7 @@ def addBridge() {
 	if(vbridge) {
 		def d = getChildDevice(selectedHue)
 		if(!d) {
-	 		// compatibility with old devices
+			// compatibility with old devices
 			def newbridge = true
 			childDevices.each {
 				if (it.getDeviceDataByName("mac")) {
@@ -593,7 +609,7 @@ def locationHandler(evt) {
 	log.trace "Location: $description"
 
 	def hub = evt?.hubId
- 	def parsedEvent = parseLanMessage(description)
+	def parsedEvent = parseLanMessage(description)
 	parsedEvent << ["hub":hub]
 
 	if (parsedEvent?.ssdpTerm?.contains("urn:schemas-upnp-org:device:basic:1")) {
@@ -819,8 +835,7 @@ def parse(childDevice, description) {
 			try {
 				body = new groovy.json.JsonSlurper().parseText(bodyString)
 			} catch (all) {
-				log.warn "Parsing Body failed - trying again..."
-				poll()
+				log.warn "Parsing Body failed"
 			}
 			if (body instanceof java.util.Map) {
 				// get (poll) reponse
@@ -844,7 +859,7 @@ private sendColorEvents(device, xy, hue, sat, ct, colormode = null) {
 
 	def events = [:]
 	// For now, only care about changing color temperature if requested by user
-	if (ct != null && (colormode == "ct" || (xy == null && hue == null && sat == null))) {
+	if (ct != null && ct != 0 && (colormode == "ct" || (xy == null && hue == null && sat == null))) {
 		// for some reason setting Hue to their specified minimum off 153 yields 154, dealt with below
 		// 153 (6500K) to 500 (2000K)
 		def temp = (ct == 154) ? 6500 : Math.round(1000000 / ct)
@@ -1252,7 +1267,7 @@ private getBridgeIP() {
 		if (d) {
 			if (d.getDeviceDataByName("networkAddress"))
 				host =  d.getDeviceDataByName("networkAddress")
-		else
+			else
 				host = d.latestState('networkAddress').stringValue
 		}
 		if (host == null || host == "") {
