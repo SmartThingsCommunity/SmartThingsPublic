@@ -13,7 +13,7 @@
  */
 
 definition(
-    name: "Tesla Smart Heater",
+    name: "Tesla-Smart-Heater",
     namespace: "jonbur",
     author: "JB",
     description: "Tesla Smart Heater",
