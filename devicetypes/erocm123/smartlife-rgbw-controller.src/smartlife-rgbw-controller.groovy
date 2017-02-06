@@ -491,12 +491,12 @@ private getDimmedColor(color, level) {
       def mygreen = rgb[1]
       def myblue = rgb[2]
     
-      color = rgbToHex([r:myred, g:mygreen, b:myblue])
-      def c = hexToRgb(color)
+      //color = rgbToHex([r:myred, g:mygreen, b:myblue])
+      //def c = hexToRgb(color)
     
-      def r = hex(c.r * (level.toInteger()/100))
-      def g = hex(c.g * (level.toInteger()/100))
-      def b = hex(c.b * (level.toInteger()/100))
+      def r = hex(rgb[0] * (newLevel/100))
+      def g = hex(rgb[1] * (newLevel/100))
+      def b = hex(rgb[2] * (newLevel/100))
 
       return "${r + g + b}"
    }else{
