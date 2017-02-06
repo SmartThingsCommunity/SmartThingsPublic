@@ -51,7 +51,7 @@ definition(
 
 //Device Inputs
 preferences {
-	section("Allow <PLACEHOLDER: Your App Name> to control these things...") {
+	section("Allow OpenT2T to control these things...") {
 		input "contactSensors", "capability.contactSensor", title: "Which Contact Sensors", multiple: true, required: false
 		input "garageDoors", "capability.garageDoorControl", title: "Which Garage Doors?", multiple: true, required: false
  		input "locks", "capability.lock", title: "Which Locks?", multiple: true, required: false
@@ -330,34 +330,38 @@ private getDeviceType(device) {
 		{
 			case "switch":
 				deviceType = "switch"
-				break
-			case "switch level":
-				deviceType = "light"
+				if (caps.any{it.name.toLowerCase() == "power meter"}){
+                			return deviceType
+				}
+				if (caps.any{it.name.toLowerCase() == "switch level"}){
+                			deviceType = "light"
+					return deviceType
+                		}
 				break
 			case "contact sensor":
 				deviceType = "contactSensor"
-				break
+                		return deviceType
 			case "garageDoorControl":
 				deviceType = "garageDoor"
-				break
+                		return deviceType
 			case "lock":
 				deviceType = "lock"
-				break
+                		return deviceType
 			case "video camera":
 				deviceType = "camera"
-				break
+                		return deviceType
 			case "motion sensor":
 				deviceType = "motionSensor"
-				break
+                		return deviceType
 			case "presence sensor":
 				deviceType = "presenceSensor"
-				break
+                		return deviceType
 			case "thermostat":
 				deviceType = "thermostat"
-				break
+                		return deviceType
 			case "water sensor":
 				deviceType = "waterSensor"
-				break   
+                		return deviceType
 			default:
 				break
 		}
