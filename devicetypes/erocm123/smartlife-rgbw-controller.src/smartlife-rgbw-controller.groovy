@@ -27,6 +27,7 @@ metadata {
 		capability "Refresh"
 		capability "Sensor"
         capability "Configuration"
+        capability "Health Check"
         
         (1..6).each { n ->
 			attribute "switch$n", "enum", ["on", "off"]
@@ -202,6 +203,7 @@ def updated() {
 def configure() {
 	log.debug "configure()"
 	log.debug "Configuring Device For SmartThings Use"
+    sendEvent(name: "checkInterval", value: 12 * 60, data: [protocol: "lan", hubHardwareId: device.hub.hardwareID], displayed: false)
     def responses = []
     if (ip != null) state.dni = setDeviceNetworkId(ip, "80")
     state.hubIP = device.hub.getDataValue("localIP")
@@ -371,9 +373,9 @@ def setLevel(level) {
 
 def setLevel(level, duration) {
 	log.debug "setLevel() level = ${level}"
-     if(level > 100) level = 100
-     if (level == 0) { off() }
-	 else if (device.latestValue("switch") == "off") { on() }
+    if(level > 100) level = 100
+    if (level == 0) { off() }
+    else if (device.latestValue("switch") == "off") { on() }
 	sendEvent(name: "level", value: level)
     sendEvent(name: "setLevel", value: level, displayed: false)
 	setColor(aLevel: level)
@@ -489,12 +491,12 @@ private getDimmedColor(color) {
       def mygreen = rgb[1]
       def myblue = rgb[2]
     
-      colorHex = rgbToHex([r:myred, g:mygreen, b:myblue])
-      def c = hexToRgb(colorHex)
+      //colorHex = rgbToHex([r:myred, g:mygreen, b:myblue])
+      //def c = hexToRgb(colorHex)
     
-      def r = hex(c.r * (newLevel/100))
-      def g = hex(c.g * (newLevel/100))
-      def b = hex(c.b * (newLevel/100))
+      def r = hex(rgb[0] * (newLevel/100))
+      def g = hex(rgb[1] * (newLevel/100))
+      def b = hex(rgb[2] * (newLevel/100))
 
       return "#${r + g + b}"
    } else {
@@ -506,9 +508,15 @@ def reset() {
 	log.debug "reset()"
 	setColor(white: "ff")
 }
+
 def refresh() {
 	log.debug "refresh()"
     postAction("/status")
+}
+
+def ping() {
+    log.debug "ping()"
+    refresh()
 }
 
 def setWhiteLevel(value) {
