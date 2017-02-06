@@ -313,23 +313,23 @@ def update_needed_settings()
     
     if(!state.association3 || state.association3 == "" || state.association3 == "1"){
        logging("Setting association group 3")
-       cmds << zwave.associationV2.associationSet(groupingIdentifier:3, nodeId:zwaveHubNodeId)
-       cmds << zwave.associationV2.associationGet(groupingIdentifier:3)
+       //cmds << zwave.associationV2.associationSet(groupingIdentifier:3, nodeId:zwaveHubNodeId)
+       //cmds << zwave.associationV2.associationGet(groupingIdentifier:3)
     }
     if(!state.association5 || state.association5 == "" || state.association5 == "1"){
        logging("Setting association group 5")
-       cmds << zwave.associationV2.associationSet(groupingIdentifier:5, nodeId:zwaveHubNodeId)
-       cmds << zwave.associationV2.associationGet(groupingIdentifier:5)
+       //cmds << zwave.associationV2.associationSet(groupingIdentifier:5, nodeId:zwaveHubNodeId)
+       //cmds << zwave.associationV2.associationGet(groupingIdentifier:5)
     }
     if(!state.association7 || state.association7 == "" || state.association7 == "1"){
        logging("Setting association group 7")
-       cmds << zwave.associationV2.associationSet(groupingIdentifier:7, nodeId:zwaveHubNodeId)
-       cmds << zwave.associationV2.associationGet(groupingIdentifier:7)
+       //cmds << zwave.associationV2.associationSet(groupingIdentifier:7, nodeId:zwaveHubNodeId)
+       //cmds << zwave.associationV2.associationGet(groupingIdentifier:7)
     }
     if(!state.association9 || state.association9 == "" || state.association9 == "1"){
        logging("Setting association group 9")
-       cmds << zwave.associationV2.associationSet(groupingIdentifier:9, nodeId:zwaveHubNodeId)
-       cmds << zwave.associationV2.associationGet(groupingIdentifier:9)
+       //cmds << zwave.associationV2.associationSet(groupingIdentifier:9, nodeId:zwaveHubNodeId)
+       //cmds << zwave.associationV2.associationGet(groupingIdentifier:9)
     }
     
     if(state.MSR == null){

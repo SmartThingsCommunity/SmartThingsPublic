@@ -182,7 +182,7 @@ def zwaveEvent(physicalgraph.zwave.commands.batteryv1.BatteryReport cmd) {
 		map.descriptionText = "${device.displayName} has a low battery"
 		map.isStateChange = true
 	} else {
-		map.value = cmd.batteryLevel
+		map.value = cmd.batteryLevel <= 100? cmd.batteryLevel : 100
 	}
 	state.lastbat = now()
 	[createEvent(map), response(zwave.wakeUpV1.wakeUpNoMoreInformation())]
