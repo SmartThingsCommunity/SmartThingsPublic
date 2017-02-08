@@ -180,13 +180,15 @@ void setHandler(evt) {
     if (settings.lSunsetOffsetValue != NULL && settings.lSunsetOffsetValue != "" && settings.lSunsetOffsetValue != "0") { locationParameters.put("sunsetOffset", sunsetOffset) }
     def sunriseAndSunset = getSunriseAndSunset(locationParameters)
     if ((settings.lSunriseTime != NULL && settings.lSunriseTime != "") || (settings.lSunsetTime != NULL && settings.lSunsetTime != "")) {
-    	def nowDate = new Date()
+        def df = new java.text.SimpleDateFormat("yyyy-MM-dd")
+        df.setTimeZone(location.timeZone)
+        def nowDate = df.format(new Date())
         if (settings.lSunriseTime != NULL && settings.lSunriseTime != "") {
-            def todayLSunriseTime = nowDate.format("yyyy-MM-dd") + lSunriseTime.substring(10)
+            def todayLSunriseTime = nowDate + lSunriseTime.substring(10)
             sunriseAndSunset.sunrise = new Date().parse("yyyy-MM-dd'T'HH:mm:ss.SSSZ", todayLSunriseTime)
         }
     	if (settings.lSunsetTime != NULL && settings.lSunsetTime != "") {
-        	def todayLSunsetTime = nowDate.format("yyyy-MM-dd") + lSunsetTime.substring(10)
+        	def todayLSunsetTime = nowDate + lSunsetTime.substring(10)
         	sunriseAndSunset.sunset = new Date().parse("yyyy-MM-dd'T'HH:mm:ss.SSSZ", todayLSunsetTime)
 		}
     }
