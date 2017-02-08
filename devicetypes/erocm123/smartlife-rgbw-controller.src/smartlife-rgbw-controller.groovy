@@ -462,17 +462,33 @@ def setColor(value) {
     }
     else if (value.aLevel) {
     	def actions = []
+        if (channels == "true") {
+           def skipColor = false
+           // Handle white channel dimmers if they're on or were not previously off (excluding power-off command)
+           if (device.currentValue("white1") == "on" || state.previousW1 != "00") {
+              actions.push(setWhite1Level(value.aLevel))
+              skipColor = true
+           }
+           if (device.currentValue("white2") == "on" || state.previousW2 != "00") {
+              actions.push(setWhite2Level(value.aLevel))
+              skipColor = false
+           }
+        if (skipColor == false) {
+           // if the device is currently on, scale the current RGB values; otherwise scale the previous setting
+           uri = "/rgb?value=${getDimmedColor(device.latestValue("switch") == "on" ? device.currentValue("color") : state.previousRGB).substring(1)}"
+           actions.push(postAction("$uri&channels=$channels&transition=$transition"))
+        }
+        } else {
+           // Handle white channel dimmers if they're on or were not previously off (excluding power-off command)
+           if (device.currentValue("white1") == "on" || state.previousW1 != "00")
+              actions.push(setWhite1Level(value.aLevel))
+           if (device.currentValue("white2") == "on" || state.previousW2 != "00")
+              actions.push(setWhite2Level(value.aLevel))
         
-        // Handle white channel dimmers if they're on or were not previously off (excluding power-off command)
-        if (device.currentValue("white1") == "on" || state.previousW1 != "00")
-          actions.push(setWhite1Level(value.aLevel))
-        if (device.currentValue("white2") == "on" || state.previousW2 != "00")
-          actions.push(setWhite2Level(value.aLevel))
-        
-        // if the device is currently on, scale the current RGB values; otherwise scale the previous setting
-        uri = "/rgb?value=${getDimmedColor(device.latestValue("switch") == "on" ? device.currentValue("color") : state.previousRGB).substring(1)}"
-
-        actions.push(postAction("$uri&channels=$channels&transition=$transition"))
+           // if the device is currently on, scale the current RGB values; otherwise scale the previous setting
+           uri = "/rgb?value=${getDimmedColor(device.latestValue("switch") == "on" ? device.currentValue("color") : state.previousRGB).substring(1)}"
+           actions.push(postAction("$uri&channels=$channels&transition=$transition"))
+        }
         return actions
     }
     else {
