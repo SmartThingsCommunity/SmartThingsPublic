@@ -1,5 +1,5 @@
 /**
- *  Hue Advanced White Ambiance Bulb
+ *  Hue Advanced White Ambiance Light
  *
  *  Philips Hue Type "Color Temperature Light"
  *
@@ -9,12 +9,14 @@
 // for the UI
 metadata {
     // Automatically generated. Make future change here.
-    definition (name: "Hue Advanced White Ambiance Bulb", namespace: "claytonjn", author: "claytonjn") {
+    definition (name: "Hue Advanced White Ambiance Light", namespace: "claytonjn", author: "claytonjn") {
         capability "Switch Level"
         capability "Actuator"
         capability "Color Temperature"
         capability "Switch"
         capability "Refresh"
+        capability "Health Check"
+        capability "Light"
 
         command "reset"
         command "refresh"
@@ -85,6 +87,10 @@ metadata {
     }
 }
 
+void installed() {
+	sendEvent(name: "DeviceWatch-Enroll", value: "{\"protocol\": \"LAN\", \"scheme\":\"untracked\", \"hubHardwareId\": \"${device.hub.hardwareID}\"}")
+}
+
 // parse events into attributes
 def parse(description) {
     log.debug "parse() - $description"
@@ -92,7 +98,7 @@ def parse(description) {
 
     def map = description
     if (description instanceof String)  {
-        log.debug "Hue Advanced White Ambience Bulb stringToMap - ${map}"
+        log.debug "Hue Advanced White Ambience Light stringToMap - ${map}"
         map = stringToMap(description)
     }
 
@@ -113,7 +119,6 @@ void on(transitionTime = device.currentValue("transitionTime")) {
 
     colorloopOff()
     log.trace parent.on(this, transitionTime, deviceType)
-    sendEvent(name: "switch", value: "on")
 }
 
 void off(transitionTime = device.currentValue("transitionTime")) {
@@ -121,7 +126,6 @@ void off(transitionTime = device.currentValue("transitionTime")) {
 
     colorloopOff()
     log.trace parent.off(this, transitionTime, deviceType)
-    sendEvent(name: "switch", value: "off")
 }
 
 void setLevel(percent, transitionTime = device.currentValue("transitionTime")) {
@@ -132,9 +136,7 @@ void setLevel(percent, transitionTime = device.currentValue("transitionTime")) {
         if (percent == 0) {
 			off()
 		} else {
-	        parent.setLevel(this, percent, transitionTime, deviceType)
-	        sendEvent(name: "level", value: percent, descriptionText: "Level has changed to ${percent}%")
-			sendEvent(name: "switch", value: "on")
+	        log.trace parent.setLevel(this, percent, transitionTime, deviceType)
 		}
     }
 }
@@ -145,9 +147,7 @@ void setColorTemperature(value, transitionTime = device.currentValue("transition
     colorloopOff()
     if (value >= 0) {
         log.trace "setColorTemperature: ${value}k"
-        parent.setColorTemperature(this, value, transitionTime, deviceType)
-        sendEvent(name: "colorTemperature", value: Math.round(value) as Integer)
-        sendEvent(name: "switch", value: "on")
+        log.trace parent.setColorTemperature(this, value, transitionTime, deviceType)
     } else {
         log.warn "Invalid color temperature"
     }
@@ -177,13 +177,11 @@ void colorloopOn() {
 	log.debug "Executing 'colorloopOn'"
 	if(device.latestValue("switch") != "on") { on() }
 	parent.setEffect(this, "colorloop", deviceType)
-	sendEvent(name: "effect", value: "colorloop", descriptionText: "Colorloop has been turned on")
 }
 
 void colorloopOff() {
 	log.debug "Executing 'colorloopOff'"
 	parent.setEffect(this, "none", deviceType)
-	sendEvent(name: "effect", value: "none", descriptionText: "Colorloop has been turned off")
 }
 
 void bri_inc(value) {
@@ -215,8 +213,8 @@ def getDeviceType() { return "lights" }
 
 void setHADeviceHandler(circadianDaylightIntegration) {
 	if (circadianDaylightIntegration == true) {
-		setDeviceType("Hue Advanced -CD- White Ambiance Bulb")
+		setDeviceType("Hue Advanced -CD- White Ambiance Light")
 	} else {
-		setDeviceType("Hue Advanced White Ambiance Bulb")
+		setDeviceType("Hue Advanced White Ambiance Light")
 	}
 }

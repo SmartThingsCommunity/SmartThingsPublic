@@ -1,5 +1,5 @@
 /**
- *  Hue Advanced -CD- Lux Bulb
+ *  Hue Advanced Lux Light
  *
  *  Philips Hue Type "Dimmable Light"
  *
@@ -8,26 +8,23 @@
 // for the UI
 metadata {
 	// Automatically generated. Make future change here.
-	definition (name: "Hue Advanced -CD- Lux Bulb", namespace: "claytonjn", author: "claytonjn") {
+	definition (name: "Hue Advanced Lux Light", namespace: "claytonjn", author: "claytonjn") {
 		capability "Switch Level"
 		capability "Actuator"
 		capability "Switch"
 		capability "Refresh"
 		capability "Sensor"
+		capability "Health Check"
+		capability "Light"
 
         command "reset"
 		command "refresh"
 		command "setTransitionTime"
 		command "alert"
 		command "bri_inc"
-        command "enableCDBrightness"
-        command "disableCDBrightness"
-        command "tileSetLevel"
-		command "tileReset"
 
 		attribute "transitionTime", "NUMBER"
 		attribute "reachable", "enum", ["true", "false"]
-        attribute "cdBrightness", "enum", ["true", "false"]
 	}
 
 	simulator {
@@ -43,16 +40,16 @@ metadata {
               attributeState "turningOff", label:'${name}', action:"switch.on", icon:"st.lights.philips.hue-single", backgroundColor:"#ffffff", nextState:"turningOn"
             }
             tileAttribute ("device.level", key: "SLIDER_CONTROL") {
-              attributeState "level", action:"tileSetLevel", range:"(0..100)"
+              attributeState "level", action:"switch level.setLevel", range:"(0..100)"
             }
         }
 
         controlTile("levelSliderControl", "device.level", "slider", height: 1, width: 2, inactiveLabel: false, range:"(0..100)") {
-            state "level", action:"tileSetLevel"
+            state "level", action:"switch level.setLevel"
         }
 
 		standardTile("reset", "device.reset", height: 2, width: 2, inactiveLabel: false, decoration: "flat") {
-			state "default", label:"Reset", action:"tileReset", icon:"st.lights.philips.hue-single"
+			state "default", label:"Reset", action:"reset", icon:"st.lights.philips.hue-single"
 		}
 
         standardTile("refresh", "device.switch", inactiveLabel: false, decoration: "flat", width: 2, height: 2) {
@@ -66,20 +63,18 @@ metadata {
 			state "transitionTime", label: 'Transition:              ${currentValue} s'
 		}
 
-		valueTile("reachable", "device.reachable", inactiveLabel: false, decoration: "flat", width: 3, height: 1) {
+		valueTile("reachable", "device.reachable", inactiveLabel: false, decoration: "flat", width: 2, height: 1) {
 			state "true", label: 'Reachable'
 			state "false", label: 'Not Reachable!'
 		}
 
-        valueTile("cdBrightnessControl", "device.cdBrightness", inactiveLabel: false, decoration: "flat", width: 3, height: 1) {
-			state "true", label: "Circadian Brightness On", action: "disableCDBrightness", nextState: "updating"
-			state "false", label: "Circadian Brightness Off", action: "enableCDBrightness", nextState: "updating"
-			state "updating", label: "Working"
-		}
-
         main(["rich-control"])
-        details(["rich-control", "transitionTimeSliderControl", "transTime", "cdBrightnessControl", "reachable", "reset", "refresh"])
+        details(["rich-control", "transitionTimeSliderControl", "transTime", "reachable", "reset", "refresh"])
     }
+}
+
+void installed() {
+	sendEvent(name: "DeviceWatch-Enroll", value: "{\"protocol\": \"LAN\", \"scheme\":\"untracked\", \"hubHardwareId\": \"${device.hub.hardwareID}\"}")
 }
 
 // parse events into attributes
@@ -89,7 +84,7 @@ def parse(description) {
 
 	def map = description
 	if (description instanceof String)  {
-		log.debug "Hue Advanced -CD- Lux Bulb stringToMap - ${map}"
+		log.debug "Hue Advanced Lux Light stringToMap - ${map}"
 		map = stringToMap(description)
 	}
 
@@ -109,21 +104,15 @@ void on(transitionTime = device.currentValue("transitionTime")) {
 	if(transitionTime == null) { transitionTime = device.currentValue("transitionTime") ?: parent.getSelectedTransition() ?: 1 }
 
 	log.trace parent.on(this, transitionTime, deviceType)
-	sendEvent(name: "switch", value: "on")
 }
 
 void off(transitionTime = device.currentValue("transitionTime")) {
 	if(transitionTime == null) { transitionTime = device.currentValue("transitionTime") ?: parent.getSelectedTransition() ?: 1 }
 
 	log.trace parent.off(this, transitionTime, deviceType)
-	sendEvent(name: "switch", value: "off")
 }
 
-void tileSetLevel(percent) {
-	setLevel(percent, null, true)
-}
-
-void setLevel(percent, transitionTime = device.currentValue("transitionTime"), disableCDB = false) {
+void setLevel(percent, transitionTime = device.currentValue("transitionTime")) {
 	if(transitionTime == null) { transitionTime = device.currentValue("transitionTime") ?: parent.getSelectedTransition() ?: 1 }
 
 	log.debug "Executing 'setLevel'"
@@ -132,24 +121,17 @@ void setLevel(percent, transitionTime = device.currentValue("transitionTime"), d
 			off()
 		} else {
 			parent.setLevel(this, percent, transitionTime, deviceType)
-			if(disableCDB == true) { disableCDBrightness() }
-			sendEvent(name: "level", value: percent)
-			sendEvent(name: "switch", value: "on")
 		}
 	} else {
     	log.warn "$percent is not 0-100"
     }
 }
 
-private tileReset() {
-	reset(null, true)
-}
-
-void reset(transitionTime = device.currentValue("transitionTime"), disableCDB = false) {
+void reset(transitionTime = device.currentValue("transitionTime")) {
 	if(transitionTime == null) { transitionTime = device.currentValue("transitionTime") ?: parent.getSelectedTransition() ?: 1 }
 
     log.debug "Executing 'reset'"
-	setLevel(100, transitionTime, disableCDB)
+	setLevel(100, transitionTime)
     parent.poll()
 }
 
@@ -170,25 +152,14 @@ void bri_inc(value) {
 
 void initialize(deviceType) {
 	setTransitionTime(parent.getSelectedTransition())
-	sendEvent(name: "cdBrightness", value: "true", displayed: false)
 }
 
 def getDeviceType() { return "lights" }
 
 void setHADeviceHandler(circadianDaylightIntegration) {
 	if (circadianDaylightIntegration == true) {
-		setDeviceType("Hue Advanced -CD- Lux Bulb")
+		setDeviceType("Hue Advanced -CD- Lux Light")
 	} else {
-		setDeviceType("Hue Advanced Lux Bulb")
+		setDeviceType("Hue Advanced Lux Light")
 	}
-}
-
-void enableCDBrightness() {
-	log.debug "Executing 'enableCDBrightness'"
-	sendEvent(name: "cdBrightness", value: "true", descriptionText: "Circadian Brightness has been enabled")
-}
-
-void disableCDBrightness() {
-	log.debug "Executing 'disableCDBrightness'"
-	sendEvent(name: "cdBrightness", value: "false", descriptionText: "Circadian Brightness has been disabled")
 }
