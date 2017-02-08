@@ -97,7 +97,7 @@ def on() {
 }
 
 def setLevel(value) {
-    zigbee.setLevel(value)
+    zigbee.setLevel(value) + (value?.toInteger() > 0 ? zigbee.on() : [])
 }
 
 /**
