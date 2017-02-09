@@ -20,6 +20,7 @@ metadata {
         capability "Switch"
         capability "Switch Level"
         capability "Health Check"
+        capability "Light"
 
 
         fingerprint profileId: "0104", inClusters: "0000, 0003, 0004, 0005, 0006, 0008"
