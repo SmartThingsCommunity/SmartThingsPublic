@@ -65,11 +65,9 @@ def settings() {
         section("select a ligt sensor") {
             input "lightSensor", "capability.illuminanceMeasurement", title: "pick a sensor", required:true, multiple: false
         }
-        section("set an increment value ") {
-            input "DimIncrVal", "decimal", title: "pick an increment value", range: "5..20", required:true, multiple: false
-        }
+
         section("set a max illuminance value") {
-            input "maxluxOFF", "decimal", title: "Turn off the light when illuminance is above this value", default: false, uninstall: true, install: true
+            input "maxluxOFF", "number", title: "Turn off the light when illuminance is above this value", range: "1..100", required: false, default: "100", description: "value in %"
         }
     }
 }
@@ -133,18 +131,16 @@ def initialize() {
     subscribe(dimmer, "switch.off", SwitchHandler)
     subscribe(dimmer, "level", switchSetLevelHandler)
 
-    def runTime = 1
-    schedule("0 0/$runTime * * * ?", doubleCheck)
-    log.debug "doubleCheck Scheduled to run every $runTime minutes"
-
+    /*def runTime = 5
+schedule("0 0/$runTime * * * ?", doubleCheck)
+log.debug "doubleCheck Scheduled to run every $runTime minutes"
+*/
     state.luxvalue = 0 
 }
-
 def switchSetLevelHandler(evt) {
     log.debug "dimmer set to $evt.integerValue   ----------------------------"
     log.debug "state.StopTheApp value is currently $state.StopTheApp" 
 }
-
 def SwitchHandler(evt){ 
     log.debug "$dimmer currentSwitch evt value is $evt.value "
     log.debug "$dimmer status value is $dimmer.currentSwitch "
@@ -152,21 +148,18 @@ def SwitchHandler(evt){
     log.debug "so far state.StopTheApp value was $state.StopTheApp" 
 
     if(evt.value == "on"){
-        state.StopTheApp = 0
+        state.StopTheApp = 0 
         state.dimmerSW = 1
         log.debug "Now state.StopTheApp value set to $state.StopTheApp" 
-        Evaluate()
-
     }
     else if(evt.value == "off"){
-
         if(state.dim != 0) { 
             state.StopTheApp = 1
             state.dimmerSW = 0
             log.debug "Now state.StopTheApp value set to $state.StopTheApp" 
             log.debug "SWITCH TURNED OFF BY USER"
             log.debug "Double check in 5 seconds"
-            runIn(5, doubleCheck) // sometimes state.dim value didn't refresh on time so double check that this was not a manual shut off
+            runIn(5, doubleCheck) // sometimes state.dim value didn't refresh on time so double check whether and make sure it was not a manual shut off
 
         }
         else if(state.dim == 0){ 
@@ -175,17 +168,30 @@ def SwitchHandler(evt){
         }
     }
 }
-
 def illuminanceHandler(evt){
     log.debug "illuminance is $evt.integerValue"
 
     log.debug "state.dimmerSW value is $state.dimmerSW" 
 
     state.luxvalue = evt.integerValue
-    Evaluate()
+    
+     if(OnlyIfNotOff){
+        if(state.StopTheApp == 0) {
+            DIM()
+            log.debug "DIM because state.StopTheApp = $state.StopTheApp"
+
+        }
+        else { 
+
+            log.debug "doing nothing because $dimmer was manually turned off "
+        }
+    }
+    else {
+        DIM()
+        log.debug "DIM because no OnlyIfNotOff"
+    }
 
 }
-
 def doubleCheck() { 
 
     if(state.dim == 0) {
@@ -199,44 +205,34 @@ def doubleCheck() {
     }
     log.debug "DOUBLE CHECK OK"
     log.debug "state.luxvalue is $state.luxvalue"
-   
-}
 
-def Evaluate() { 
+}
+def DIM(){
     log.debug "state.luxvalue is $state.luxvalue"
 
-    if(OnlyIfNotOff){
-        if(state.StopTheApp == 0) {
-            DIM()
-            log.debug "DIM because state.StopTheApp = $state.StopTheApp"
+    def latest = lightSensor.currentState("illuminance")
 
-        }
-        else { 
+    log.debug "unit: ${latest.unit}"
 
-            log.debug "doing nothing because was manually turned off "
-        }
-    }
-    else {
-        DIM()
-        log.debug "DIM because no OnlyIfNotOff"
-    }
-}
+    def maxlux = 100
 
-private DIM(){
-    log.debug "state.luxvalue is $state.luxvalue"
-    def maxlux = 1000 as int
-        def ProportionLux = 0 as int
-            def CurrMode = location.currentMode
+    def ProportionLux = 0 as int
+        def CurrMode = location.currentMode
 
-            log.debug "CurrMode is $CurrMode"
-        log.debug "ExceptionMode is $ExceptionMode"
+        log.debug "CurrMode is $CurrMode"
+    log.debug "ExceptionMode is $ExceptionMode"
 
 
-    if(state.luxvalue < maxluxOFF){
+    if(latest.unit == "lux"){
+        def DimIncrVal = 5
+        def maxluxOFF = maxluxOFF*10
+        maxlux = 1000
+        log.debug "lux is the measurment unit"
+        log.debug "maxlux set as ${maxlux}$latest.unit"
 
         if(state.luxvalue != 0){
             ProportionLux = maxlux / state.luxvalue
-            log.debug "calculating proportionLux multiplier"
+            log.debug "calculating proportionLux multiplier as: $ProportionLux"
         }
         else{
             ProportionLux = 100
@@ -246,73 +242,73 @@ private DIM(){
         log.debug "ProportionLux value returns $ProportionLux"
 
         if ( ProportionLux == 1) {
-            // this is the case when lux is maxed at 1000
+            // this is the case when lux is maxed 
 
             state.dim = 0
             log.debug "ProportionLux is 1 so dim set to 0"
-            state.StopTheApp = 0
         }
-
         else {
             state.dim = (ProportionLux * DimIncrVal)
             log.debug "calculating state.dim"
             // example 1000 / 500 = 2 so dim = 2 * 5 light will be dimmed down or up? by 10%
             // example 1000 / 58 = 17.xxx so dim = 17 * 5 so if lux is 58 then light will be set to 85%.
         }
-
         if(state.dim > 100){
             state.dim = 100
         } 
+    }
+    else { 
+        // unit is % so just match absolute values
+        maxlux = 100
+        log.debug "percentage is the measurment unit"    
+        log.debug "maxlux set as ${maxlux}$latest.unit"
+        state.dim = 100 - state.luxvalue       
+    }
 
-        if(Partvalue){
-            log.debug "PartValue eval"
-            if(exceptionMode){
-                log.debug "exceptionMode eval"
-                if(CurrMode == ExceptionMode){
-                    log.debug "currentMode eval"
-                    if(state.dim >= SetPartvalue){
-                        state.dim = SetPartvalue
-                        log.debug "state.dim value is: $state.dim (SetPartvalue)"
-                    }
-                } 
-                else if(CurrMode == ExceptionMode2){
-                    if(state.dim >= SetPartvalue2){
-                        state.dim = SetPartvalue2
-                        log.debug "state.dim value is: $state.dim (SetPartvalue2)"
-                    }
+    // max values
+    if(Partvalue){
+        log.debug "PartValue eval"
+        // max values by mode
+        if(exceptionMode){
+            log.debug "exceptionMode eval"
+            if(CurrMode == ExceptionMode){
+                log.debug "currentMode eval"
+                if(state.dim >= SetPartvalue){
+                    state.dim = SetPartvalue
+                    log.debug "state.dim value is: $state.dim (SetPartvalue)"
                 }
-            }
-            else {
-                log.debug "Just PartValue eval"
-                if(Partvalue){
-                    if(state.dim >= SetPartvalue){
-                        state.dim = SetPartvalue
-                        log.debug "state.dim value is: $state.dim (SetPartvalue alone)"
-                    }
+            } 
+            else if(CurrMode == ExceptionMode2){
+                if(state.dim >= SetPartvalue2){
+                    state.dim = SetPartvalue2
+                    log.debug "state.dim value is: $state.dim (SetPartvalue2)"
                 }
             }
         }
-
-        log.debug "state.dim value is: $state.dim"
-        int dim = state.dim
-        dimmer.setLevel(dim) 
-        log.debug "light set to $dim %"
-
+        else {
+            log.debug "Just PartValue eval (not depending on location mode)"
+            if(Partvalue){
+                if(state.dim >= SetPartvalue){
+                    state.dim = SetPartvalue
+                    log.debug "state.dim value is: $state.dim (SetPartvalue alone)"
+                }
+            }
+        }
+    }
+    if(state.luxvalue < maxluxOFF){     
         state.StopTheApp = 0
-
+        SetDimmers()
     }
     else {
-        log.debug "state.dim value is: $state.dim"
-        state.dim = 0
-        int dim = state.dim 
-        dimmer.setLevel(dim) 
-        log.debug "light set to $dim % because illuminance is high"
-
+        state.dim = 0          
+        log.debug "light set to 0 % because illuminance is high"
         state.StopTheApp = 0
+        SetDimmers()
     }
 }
-
-
+def SetDimmers(){
+    dimmer.setLevel(state.dim) 
+}
 private send(msg) {
     if (location.contactBookEnabled) {
         sendNotificationToContacts(msg, recipients)
