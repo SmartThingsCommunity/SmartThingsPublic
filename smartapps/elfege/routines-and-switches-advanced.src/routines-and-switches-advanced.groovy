@@ -57,7 +57,7 @@ def settings() {
 
 
             if(dimmer){
-                input "controlSwitch1Level", "capability.switchLevel", title: "LevelSwitch", multiple: false
+                input "controlSwitch1Level", "capability.switchLevel", title: "LevelSwitch", multiple: true
                 input "levelTVon", "decimal", title:"when $controlSwitch1 is on, set to this level"
                 input "levelTVoff", "decimal", title: "when $controlSwitch1 is off, set to this level"
             }
