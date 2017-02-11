@@ -217,22 +217,22 @@ def configureDefault(){
     if(settings.color == "Previous") {
         return postAction("/config?dcolor=Previous")
     } else if(settings.color == "Random") {
-        return postAction("/config?dcolor=f~${getHexColor(settings.color)}")
+        return postAction("/config?dcolor=${transition == "false"? "d~" : "f~"}${getHexColor(settings.color)}")
     } else if(settings.color == "Custom") {
-        return postAction("/config?dcolor=f~${settings.custom}")
+        return postAction("/config?dcolor=${transition == "false"? "d~" : "f~"}${settings.custom}")
     } else if(settings.color == "Soft White" || settings.color == "Warm White") {
         if (settings.level == null || settings.level == "0") {
-            return postAction("/config?dcolor=w~${getDimmedColor(getHexColor(settings.color), "100")}")
+            return postAction("/config?dcolor=${transition == "false"? "x~" : "w~"}${getDimmedColor(getHexColor(settings.color), "100")}")
         } else {
-            return postAction("/config?dcolor=w~${getDimmedColor(getHexColor(settings.color), settings.level)}")
+            return postAction("/config?dcolor=${transition == "false"? "x~" : "w~"}${getDimmedColor(getHexColor(settings.color), settings.level)}")
         }
     } else {
         if (settings.level == null || settings.color == null){
            return postAction("/config?dcolor=Previous")
         } else if (settings.level == null || settings.level == "0") {
-            return postAction("/config?dcolor=f~${getDimmedColor(getHexColor(settings.color), "100")}")
+            return postAction("/config?dcolor=${transition == "false"? "d~" : "f~"}${getDimmedColor(getHexColor(settings.color), "100")}")
         } else {
-            return postAction("/config?dcolor=f~${getDimmedColor(getHexColor(settings.color), settings.level)}")
+            return postAction("/config?dcolor=${transition == "false"? "d~" : "f~"}${getDimmedColor(getHexColor(settings.color), settings.level)}")
         }
     }
 }
@@ -471,11 +471,12 @@ def setColor(value) {
            }
            if (device.currentValue("white2") == "on" || state.previousW2 != "00") {
               actions.push(setWhite2Level(value.aLevel))
-              skipColor = false
+              skipColor = true
            }
         if (skipColor == false) {
+        log.debug state.previousRGB
            // if the device is currently on, scale the current RGB values; otherwise scale the previous setting
-           uri = "/rgb?value=${getDimmedColor(device.latestValue("switch") == "on" ? device.currentValue("color") : state.previousRGB).substring(1)}"
+           uri = "/rgb?value=${getDimmedColor(device.latestValue("switch") == "on" ? device.currentValue("color").substring(1) : state.previousRGB)}"
            actions.push(postAction("$uri&channels=$channels&transition=$transition"))
         }
         } else {
@@ -486,7 +487,7 @@ def setColor(value) {
               actions.push(setWhite2Level(value.aLevel))
         
            // if the device is currently on, scale the current RGB values; otherwise scale the previous setting
-           uri = "/rgb?value=${getDimmedColor(device.latestValue("switch") == "on" ? device.currentValue("color") : state.previousRGB).substring(1)}"
+           uri = "/rgb?value=${getDimmedColor(device.latestValue("switch") == "on" ? device.currentValue("color").substring(1) : state.previousRGB)}"
            actions.push(postAction("$uri&channels=$channels&transition=$transition"))
         }
         return actions
@@ -502,43 +503,23 @@ def setColor(value) {
 
 private getDimmedColor(color, level) {
    if(color.size() > 2){
-      def rgb = color.findAll(/[0-9a-fA-F]{2}/).collect { Integer.parseInt(it, 16) }
-      def myred = rgb[0]
-      def mygreen = rgb[1]
-      def myblue = rgb[2]
+      def scaledColor = getScaledColor(color)
+      def rgb = scaledColor.findAll(/[0-9a-fA-F]{2}/).collect { Integer.parseInt(it, 16) }
     
-      //color = rgbToHex([r:myred, g:mygreen, b:myblue])
-      //def c = hexToRgb(color)
-    
-      def r = hex(rgb[0] * (newLevel/100))
-      def g = hex(rgb[1] * (newLevel/100))
-      def b = hex(rgb[2] * (newLevel/100))
+      def r = hex(rgb[0] * (level.toInteger()/100))
+      def g = hex(rgb[1] * (level.toInteger()/100))
+      def b = hex(rgb[2] * (level.toInteger()/100))
 
       return "${r + g + b}"
    }else{
       color = Integer.parseInt(color, 16)
       return hex(color * (level.toInteger()/100))
    }
-
 }
 
 private getDimmedColor(color) {
    if (device.latestValue("level")) {
-      def newLevel = device.latestValue("level")
-      def colorHex = getScaledColor(color)
-      def rgb = colorHex.findAll(/[0-9a-fA-F]{2}/).collect { Integer.parseInt(it, 16) }
-      def myred = rgb[0]
-      def mygreen = rgb[1]
-      def myblue = rgb[2]
-    
-      //colorHex = rgbToHex([r:myred, g:mygreen, b:myblue])
-      //def c = hexToRgb(colorHex)
-    
-      def r = hex(rgb[0] * (newLevel/100))
-      def g = hex(rgb[1] * (newLevel/100))
-      def b = hex(rgb[2] * (newLevel/100))
-
-      return "#${r + g + b}"
+      getDimmedColor(color, device.latestValue("level"))
    } else {
       return color
    }
@@ -685,7 +666,6 @@ private getHostAddress() {
 private String convertIPtoHex(ipAddress) { 
     String hex = ipAddress.tokenize( '.' ).collect {  String.format( '%02x', it.toInteger() ) }.join()
     return hex
-
 }
 
 private String convertPortToHex(port) {
