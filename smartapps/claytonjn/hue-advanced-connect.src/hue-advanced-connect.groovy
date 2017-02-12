@@ -483,7 +483,7 @@ private getDeviceHandler(hueType) {
 	// Determine ST device type based on Hue classification of light
 	if (hueType?.equalsIgnoreCase("Dimmable light"))
 		return "Hue Advanced${handlerType} Lux Light"
-	else if (hueType?.equalsIgnoreCase("Extended Color Light") || hueType?.equalsIgnoreCase("LightGroup") || hueType?.equalsIgnoreCase("Room"))
+	else if (hueType?.equalsIgnoreCase("Extended Color Light") || hueType?.equalsIgnoreCase("LightGroup") || hueType?.equalsIgnoreCase("Room") || hueType?.equalsIgnoreCase("Luminaire") || hueType?.equalsIgnoreCase("LightSource"))
 		return "Hue Advanced${handlerType} Light/Group"
 	else if (hueType?.equalsIgnoreCase("Color Light"))
 		return "Hue Advanced${handlerType} LivingColors"
@@ -497,7 +497,7 @@ private getDeviceType(hueType) {
 	// Determine ST device type based on Hue classification of light
 	if (hueType?.equalsIgnoreCase("Dimmable light") || hueType?.equalsIgnoreCase("Extended Color Light") || hueType?.equalsIgnoreCase("Color Light"))
 		return "lights"
-	else if (hueType?.equalsIgnoreCase("LightGroup") || hueType?.equalsIgnoreCase("Room"))
+	else if (hueType?.equalsIgnoreCase("LightGroup") || hueType?.equalsIgnoreCase("Room") || hueType?.equalsIgnoreCase("Luminaire") || hueType?.equalsIgnoreCase("LightSource"))
 		return "groups"
 	else
 		return null
