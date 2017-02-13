@@ -101,7 +101,7 @@ def mainPage() {
 	dynamicPage(name: "mainPage") {
 
 		section {
-			input "sonos", "capability.musicPlayer", title: "Sonos player", required: true
+			input "sonos", "capability.trackingMusicPlayer", title: "Sonos player", required: true
 		}
 		section("More options", hideable: true, hidden: true) {
 			input "volume", "number", title: "Set the volume", description: "0-100%", required: false

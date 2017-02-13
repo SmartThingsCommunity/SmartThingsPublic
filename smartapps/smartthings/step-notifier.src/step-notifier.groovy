@@ -71,7 +71,7 @@ def setupNotifications() {
         }
         
         section("Play a song on the Sonos") {
-			input "sonos", "capability.musicPlayer", title: "On this Sonos player", required: false, submitOnChange:true
+			input "sonos", "capability.audioNotification", title: "On this Sonos player", required: false, submitOnChange:true
             if (settings.sonos) {
 				input "song","enum",title:"Play this track or radio station", required:true, multiple: false, options: songOptions()  
 				input "resumePlaying", "bool", title: "Resume currently playing music after notification", required: false, defaultValue: true                

@@ -19,15 +19,9 @@ import groovy.json.JsonSlurper
 metadata {
 	definition (name: "ObyThing Music", namespace: "com.obycode", author: "obycode") {
 		capability "Music Player"
-        capability "Refresh"
+		capability "Audio Notification"
+		capability "Refresh"
         capability "Switch"
-        
-		command "playTrackAtVolume", ["string","number"]
-        command "playTrackAndResume", ["string","number","number"]
-        command "playTextAndResume", ["string","number"]
-        command "playTrackAndRestore", ["string","number","number"]
-        command "playTextAndRestore", ["string","number"]
-        command "playSoundAndTrack", ["string","number","json_object","number"]
 	}
 
 	simulator {
@@ -37,21 +31,21 @@ metadata {
 	tiles {
 		// Main
 		standardTile("main", "device.status", width: 1, height: 1, canChangeIcon: true) {
-			state "paused", label:'Paused', action:"music Player.play", icon:"st.Electronics.electronics19", nextState:"playing", backgroundColor:"#ffffff"
-			state "playing", label:'Playing', action:"music Player.pause", icon:"st.Electronics.electronics19", nextState:"paused", backgroundColor:"#79b821"
+			state "paused", label:'Paused', action:"play", icon:"st.Electronics.electronics19", nextState:"playing", backgroundColor:"#ffffff"
+			state "playing", label:'Playing', action:"pause", icon:"st.Electronics.electronics19", nextState:"paused", backgroundColor:"#79b821"
 		}
 
 		// Row 1
 		standardTile("nextTrack", "device.status", width: 1, height: 1, decoration: "flat") {
-			state "next", label:'', action:"music Player.nextTrack", icon:"st.sonos.next-btn", backgroundColor:"#ffffff"
+			state "next", label:'', action:"nextTrack", icon:"st.sonos.next-btn", backgroundColor:"#ffffff"
 		}
 		standardTile("playpause", "device.status", width: 1, height: 1, decoration: "flat") {
-			state "default", label:'', action:"music Player.play", icon:"st.sonos.play-btn", nextState:"playing", backgroundColor:"#ffffff"
-			state "playing", label:'', action:"music Player.pause", icon:"st.sonos.pause-btn", nextState:"paused", backgroundColor:"#ffffff"
-            state "paused", label:'', action:"music Player.play", icon:"st.sonos.play-btn", nextState:"playing", backgroundColor:"#ffffff"
+			state "default", label:'', action:"play", icon:"st.sonos.play-btn", nextState:"playing", backgroundColor:"#ffffff"
+			state "playing", label:'', action:"pause", icon:"st.sonos.pause-btn", nextState:"paused", backgroundColor:"#ffffff"
+            state "paused", label:'', action:"play", icon:"st.sonos.play-btn", nextState:"playing", backgroundColor:"#ffffff"
 		}
 		standardTile("previousTrack", "device.status", width: 1, height: 1, decoration: "flat") {
-			state "previous", label:'', action:"music Player.previousTrack", icon:"st.sonos.previous-btn", backgroundColor:"#ffffff"
+			state "previous", label:'', action:"previousTrack", icon:"st.sonos.previous-btn", backgroundColor:"#ffffff"
 		}
 
 		// Row 2
@@ -60,18 +54,18 @@ metadata {
 			state "off", label:'AirPlay Off', action:"switch.on", icon:"st.Electronics.electronics16", nextState:"on", backgroundColor:"#ffffff"
 		}
 		standardTile("status", "device.status", width: 1, height: 1, decoration: "flat", canChangeIcon: true) {
-			state "playing", label:'Playing', action:"music Player.pause", icon:"st.Electronics.electronics19", nextState:"paused", backgroundColor:"#ffffff"
-			state "stopped", label:'Stopped', action:"music Player.play", icon:"st.Electronics.electronics19", nextState:"playing", backgroundColor:"#ffffff"
-			state "paused", label:'Paused', action:"music Player.play", icon:"st.Electronics.electronics19", nextState:"playing", backgroundColor:"#ffffff"
+			state "playing", label:'Playing', action:"pause", icon:"st.Electronics.electronics19", nextState:"paused", backgroundColor:"#ffffff"
+			state "stopped", label:'Stopped', action:"play", icon:"st.Electronics.electronics19", nextState:"playing", backgroundColor:"#ffffff"
+			state "paused", label:'Paused', action:"play", icon:"st.Electronics.electronics19", nextState:"playing", backgroundColor:"#ffffff"
 		}
 		standardTile("mute", "device.mute", inactiveLabel: false, decoration: "flat") {
-			state "unmuted", label:"Mute", action:"music Player.mute", icon:"st.custom.sonos.unmuted", backgroundColor:"#ffffff", nextState:"muted"
-			state "muted", label:"Unmute", action:"music Player.unmute", icon:"st.custom.sonos.muted", backgroundColor:"#ffffff", nextState:"unmuted"
+			state "unmuted", label:"Mute", action:"mute", icon:"st.custom.sonos.unmuted", backgroundColor:"#ffffff", nextState:"muted"
+			state "muted", label:"Unmute", action:"unmute", icon:"st.custom.sonos.muted", backgroundColor:"#ffffff", nextState:"unmuted"
 		}
 
 		// Row 3
 		controlTile("levelSliderControl", "device.level", "slider", height: 1, width: 3, inactiveLabel: false) {
-			state "level", action:"music Player.setLevel", backgroundColor:"#ffffff"
+			state "level", action:"setLevel", backgroundColor:"#ffffff"
 		}
 
 		// Row 4 - Disable this for now until we get communication back to hub working

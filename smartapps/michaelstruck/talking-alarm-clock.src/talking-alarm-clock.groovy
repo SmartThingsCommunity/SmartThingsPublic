@@ -90,7 +90,7 @@ def pageMain() {
 
 page(name: "pageAlarmSummary", title: "Alarm Summary Settings") {
 	section {
-       	input "summarySonos", "capability.musicPlayer", title: "Choose a Sonos speaker", required: false
+       	input "summarySonos", "capability.audioNotification", title: "Choose a Sonos speaker", required: false
         input "summaryVolume", "number", title: "Set the summary volume", description: "0-100%", required: false
         input "summaryDisabled", "bool", title: "Include disabled or unconfigured alarms in summary", defaultValue: "false"
         input "summaryMode", "mode", title: "Speak summary only during the following modes...", multiple: true, required: false
@@ -101,7 +101,7 @@ def pageSetupScenarioA() {
     dynamicPage(name: "pageSetupScenarioA") {
 		section("Alarm settings") {
         	input "ScenarioNameA", "text", title: "Scenario Name", multiple: false, required: true
-			input "A_sonos", "capability.musicPlayer", title: "Choose a Sonos speaker", required: true, submitOnChange:true
+			input "A_sonos", "capability.audioNotification", title: "Choose a Sonos speaker", required: true, submitOnChange:true
             input "A_volume", "number", title: "Alarm volume", description: "0-100%", required: false
         	input "A_timeStart", "time", title: "Time to trigger alarm", required: true
         	input "A_day", "enum", options: ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"], title: "Alarm on certain days of the week...", multiple: true, required: false
@@ -194,7 +194,7 @@ def pageSetupScenarioB() {
     dynamicPage(name: "pageSetupScenarioB") {
 		section("Alarm settings") {
         	input "ScenarioNameB", "text", title: "Scenario Name", multiple: false, required: true
-			input "B_sonos", "capability.musicPlayer", title: "Choose a Sonos speaker", required: true, submitOnChange:true
+			input "B_sonos", "capability.audioNotification", title: "Choose a Sonos speaker", required: true, submitOnChange:true
             input "B_volume", "number", title: "Alarm volume", description: "0-100%", required: false
         	input "B_timeStart", "time", title: "Time to trigger alarm", required: true
         	input "B_day", "enum", options: ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"], title: "Alarm on certain days of the week...", multiple: true, required: false
@@ -287,7 +287,7 @@ def pageSetupScenarioC() {
     dynamicPage(name: "pageSetupScenarioC") {
 		section("Alarm settings") {
         	input "ScenarioNameC", "text", title: "Scenario Name", multiple: false, required: true
-			input "C_sonos", "capability.musicPlayer", title: "Choose a Sonos speaker", required: true, submitOnChange:true
+			input "C_sonos", "capability.audioNotification", title: "Choose a Sonos speaker", required: true, submitOnChange:true
             input "C_volume", "number", title: "Alarm volume", description: "0-100%", required: false
         	input "C_timeStart", "time", title: "Time to trigger alarm", required: true
         	input "C_day", "enum", options: ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"], title: "Alarm on certain days of the week...", multiple: true, required: false
@@ -381,7 +381,7 @@ def pageSetupScenarioD() {
     dynamicPage(name: "pageSetupScenarioD") {
 		section("Alarm settings") {
         	input "ScenarioNameD", "text", title: "Scenario Name", multiple: false, required: true
-			input "D_sonos", "capability.musicPlayer", title: "Choose a Sonos speaker", required: true, submitOnChange:true
+			input "D_sonos", "capability.audioNotification", title: "Choose a Sonos speaker", required: true, submitOnChange:true
             input "D_volume", "number", title: "Alarm volume", description: "0-100%", required: false
         	input "D_timeStart", "time", title: "Time to trigger alarm", required: true
         	input "D_day", "enum", options: ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"], title: "Alarm on certain days of the week...", multiple: true, required: false

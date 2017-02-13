@@ -748,7 +748,7 @@ def pageNotifications() {
 
     def inputAudioPlayers = [
         name:           "audioPlayer",
-        type:           "capability.musicPlayer",
+        type:           "capability.audioNotification",
         title:          "Which audio players?",
         multiple:       true,
         required:       false
