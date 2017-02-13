@@ -190,12 +190,12 @@ def Modes(){
                         input(name: "CSPCust2_T2", type: "decimal", title: "Set Cooling temperature for $Thermostat_2 in $CustomMode2 mode", required: true)
                     }
                     if(HowMany >= 3) {     
-                        input(name: "HSPCust3_T3", type: "decimal", title: "Set Heating temperature for $Thermostat_3 in $CustomMode2 mode", required: true)
-                        input(name: "CSPCust3_T3", type: "decimal", title: "Set Cooling temperature for $Thermostat_3 in $CustomMode2 mode", required: true)
+                        input(name: "HSPCust2_T3", type: "decimal", title: "Set Heating temperature for $Thermostat_3 in $CustomMode2 mode", required: true)
+                        input(name: "CSPCust2_T3", type: "decimal", title: "Set Cooling temperature for $Thermostat_3 in $CustomMode2 mode", required: true)
                     }
                     if(HowMany == 4) {   
-                        input(name: "HSPCust4_T4", type: "decimal", title: "Set Heating temperature for $Thermostat_4 in $CustomMode2 mode", required: true)
-                        input(name: "CSPCust4_T4", type: "decimal", title: "Set Cooling temperature for $Thermostat_4 in $CustomMode2 mode", required: true)
+                        input(name: "HSPCust2_T4", type: "decimal", title: "Set Heating temperature for $Thermostat_4 in $CustomMode2 mode", required: true)
+                        input(name: "CSPCust2_T4", type: "decimal", title: "Set Cooling temperature for $Thermostat_4 in $CustomMode2 mode", required: true)
                     }
                 }
             }
@@ -211,8 +211,6 @@ def installed() {
 def updated() {
     unsubscribe()
     unschedule()
-    log.debug "Current mode = ${location.mode}"    
-    log.debug "updated with settings = $settings $Modes"
 
     init()
 }
@@ -233,14 +231,55 @@ def init() {
     subscribe(location, "mode", ChangedModeHandler)	
 
     subscribe(Thermostat_1, "temperature", temperatureHandler)
+    subscribe(Thermostat_1, "thermostatMode", ThermostatSwitchHandler)
+
+    def swichtCapableCap = Thermostat_1.hasCapability("Switch")
+    def swichtCapableLow = Thermostat_1.hasCapability("switch")
+    if(swichtCapableLow){
+        subscribe(Thermostat_1, "switch", ThermostatSwitchHandler)
+        log.debug "$Thermostat_1 has switch capability, subscribing to ThermostatSwitchHandler events"
+    } else if(swichtCapableCap){
+        subscribe(Thermostat_1, "Switch", ThermostatSwitchHandler)
+        log.debug "$Thermostat_1 has switch capability, subscribing to ThermostatSwitchHandler events"
+    } else { log.debug "no switch capability for $Thermostat_1" }
     if(Thermostat_2){
         subscribe(Thermostat_2, "temperature", temperatureHandler)
+        subscribe(Thermostat_2, "thermostatMode", ThermostatSwitchHandler)
+        swichtCapableCap = Thermostat_2.hasCapability("Switch")
+        swichtCapableLow = Thermostat_2.hasCapability("switch")
+        if(swichtCapableLow){
+            subscribe(Thermostat_2, "switch", ThermostatSwitchHandler)
+            log.trace "$Thermostat_2 has switch capability, subscribing to ThermostatSwitchHandler events"
+        } else if(swichtCapableCap){
+            subscribe(Thermostat_2, "Switch", ThermostatSwitchHandler)
+            log.trace "$Thermostat_2 has switch capability, subscribing to ThermostatSwitchHandler events"
+        } else { log.trace "no switch capability for $Thermostat_2" }
     }
     if(Thermostat_3){
         subscribe(Thermostat_3, "temperature", temperatureHandler)
+        subscribe(Thermostat_3, "thermostatMode", ThermostatSwitchHandler)
+        swichtCapableCap = Thermostat_3.hasCapability("Switch")
+        swichtCapableLow = Thermostat_3.hasCapability("switch")
+        if(swichtCapableLow){
+            subscribe(Thermostat_3, "switch", ThermostatSwitchHandler)
+            log.trace "$Thermostat_3 has switch capability, subscribing to ThermostatSwitchHandler events"
+        } else if(swichtCapableCap){
+            subscribe(Thermostat_3, "Switch", ThermostatSwitchHandler)
+            log.trace "$Thermostat_3 has switch capability, subscribing to ThermostatSwitchHandler events"
+        } else { log.trace "no switch capability for $Thermostat_3" }
     }
     if(Thermostat_4){
         subscribe(Thermostat_4, "temperature", temperatureHandler)
+        subscribe(Thermostat_4, "thermostatMode", ThermostatSwitchHandler)
+        swichtCapableCap = Thermostat_4.hasCapability("Switch")
+        swichtCapableLow = Thermostat_4.hasCapability("switch")
+        if(swichtCapableLow){
+            subscribe(Thermostat_4, "switch", ThermostatSwitchHandler)
+            log.trace "$Thermostat_4 has switch capability, subscribing to ThermostatSwitchHandler events"
+        } else  if(swichtCapableCap){
+            subscribe(Thermostat_4, "Switch", ThermostatSwitchHandler)
+            log.trace "$Thermostat_4 has switch capability, subscribing to ThermostatSwitchHandler events"
+        } else { log.trace "no switch capability for $Thermostat_4" }
     }
 
     if(AltSensor_1 || AltSensor_2 || AltSensor_3){
@@ -263,6 +302,8 @@ def init() {
         AlternativeSensor3()
     }
 
+
+    // these schedules are for test purpose only
     def scheduledTime = 1
     if(AltSensor_1){
         schedule("0 0/$scheduledTime * * * ?", AlternativeSensor1)
@@ -282,26 +323,110 @@ def init() {
 
     schedule("0 0/$scheduledTime * * * ?", TemperaturesModes)
     log.debug "TemperaturesModes scheduled to run every $scheduledTime minutes"
+
+	state.Override = 0
+    state.T1_AppMgt = 1
+    state.T2_AppMgt = 1
+    state.T3_AppMgt = 1
+    state.T4_AppMgt = 1
+
     TemperaturesModes()
 }
+
+def ThermostatSwitchHandler(evt){
+    log.debug "evt.value at ThermostatSwitchHandler is $evt.value"
+    log.debug "evt.device is $evt.device"
+    def device = evt.device as String
+
+    def OnValues = ["on", "auto", "cool", "heat"]
+    def OnValue = null
+    if(evt.value in OnValues){
+        OnValue = true
+    }
+    else {
+        OnValue = false
+    }
+    log.debug "Turned ON?($OnValue)"
+
+
+    if(device == "${Thermostat_1}"){
+        if(!OnValue && state.T1_AppMgt == 0){
+            // command did not come from app so manual override is on
+            log.debug "MANUAL OVERRIDE for $Thermostat_1"
+            state.T1_AppMgt = 0
+            state.Override = 1
+        }
+        else if(OnValue && state.Override == 1){
+        // manual override deactivated
+            log.debug "END of MANUAL OVERRIDE for $Thermostat_1"
+            state.T1_AppMgt = 1
+            state.Override = 0
+        }     
+    }
+    else if(device == "${Thermostat_2}"){
+        if(!OnValue && state.T2_AppMgt == 0){
+            // command did not come from app
+            log.debug "MANUAL OVERRIDE for $Thermostat_2"
+            state.T2_AppMgt = 0
+        }
+        else if (OnValue && state.Override == 1){
+            // manual override deactivated
+            log.debug "END of MANUAL OVERRIDE for $Thermostat_2"
+            state.T2_AppMgt = 1
+            state.Override = 0
+        }
+    } 
+    else if(device == "${Thermostat_3}"){
+        if(!OnValue && state.T3_AppMgt == 0){
+            // command did not come from app
+            log.debug "MANUAL OVERRIDE for $Thermostat_3"
+            state.T3_AppMgt = 0
+        }
+        else if (OnValue && state.Override == 0){
+            // manual override deactivated
+            log.debug "END of MANUAL OVERRIDE for $Thermostat_3"
+            state.T3_AppMgt = 1
+            state.Override = 0
+        }
+    } 
+    else if(device == "${Thermostat_4}"){
+        if(!OnValue && state.T4_AppMgt == 1){
+            // command did not come from app
+            log.debug "MANUAL OVERRIDE for $Thermostat_4"
+            state.T4_AppMgt = 0
+        }
+        else if (OnValue && state.Override == 0){
+            // manual override deactivated
+            log.debug "END of MANUAL OVERRIDE for $Thermostat_4"
+            state.T4_AppMgt = 1
+            state.Override = 0
+        }
+    }
+    log.trace "state.T1_AppMgt = $state.T1_AppMgt || state.T2_AppMgt = $state.T2_AppMgt || state.T3_AppMgt = $state.T3_AppMgt || state.T4_AppMgt = $state.T4_AppMgt"
+}
 def temperatureHandler(evt) { 
+
+    log.debug "The source of this event is: ${evt.source}"
 
     log.debug "current temperature value for $evt.device is $evt.value" 
     def currentTemp = XtraTempSensor.currentValue("temperature")
 
-    if(AltSensor_1){
+    if(AltSensor_1 && state.T1_AppMgt == 1){
         AlternativeSensor1()
     }
-    if(AltSensor_2){
+    if(AltSensor_2 && state.T1_AppMgt == 1){
         AlternativeSensor2()
     }
-    if(AltSensor_3){
+    if(AltSensor_3 && state.T1_AppMgt == 1){
         AlternativeSensor3()
     }
 
     if(currentTemp < CriticalTemp) {
         log.debug "EMERGENCY HEATING - TEMPERATURE IS TOO LOW!" 
-        TurnOnThermostats()
+        Thermostat_1.setThermostatMode("heat")
+        if(Themorstat_2){Thermostat_2.setThermostatMode("heat")}
+        if(Themorstat_3){Thermostat_3.setThermostatMode("heat")}
+        if(Themorstat_4){Thermostat_4.setThermostatMode("heat")}
     } 
     else 
     { 
@@ -573,7 +698,7 @@ def TemperaturesModes(){
     if(CurrMode in Home){
 
         log.debug "location is in $CurrMode mode, applying settings accordingly" 
-        if(Thermostat_1){
+        if(Thermostat_1 && state.T1_AppMgt == 1){
             if(!AltSensor_1){
                 log.debug "loading $Home settings for $Thermostat_1"        
                 Thermostat_1.setHeatingSetpoint(HSPH1)
@@ -581,17 +706,21 @@ def TemperaturesModes(){
 
                 // if AltSensor then these controls are set by AltSensor loop so we avoid a conflict
                 if(state.CurrTemp1 > HSPH1 && state.ThermState1 != "off"){
+                    state.T1_AppMgt = 1
+                    log.debug "Turning OFF $Thermostat_1"
                     Thermostat_1.setThermostatMode("off")
                 } 
                 else if(outsideTemp >= CSPH1 && state.ThermState1 != "cool"){
+                    state.T1_AppMgt = 0 // so if turned off it'll be by user
                     Thermostat_1.setThermostatMode("cool")
                 }
                 else if(state.CurrTemp1 < HSPH1 && state.ThermState1 != "heat"){
+                    state.T1_AppMgt = 0 // so if turned off it'll be by user
                     Thermostat_1.setThermostatMode("heat")
                 }
             }
         }
-        if(Thermostat_2){
+        if(Thermostat_2 && state.T2_AppMgt == 1){
             if(!AltSensor_2){
                 log.debug "loading $Home settings for $Thermostat_2"          
                 Thermostat_2.setHeatingSetpoint(HSPH2)
@@ -600,17 +729,21 @@ def TemperaturesModes(){
 
                 // if AltSensor then these controls are set by AltSensor loop so we avoid a conflict
                 if(state.CurrTemp2 > HSPH2 && state.ThermState2 != "off"){
+                    state.T2_AppMgt = 1
+                    log.debug "Turning OFF $Thermostat_2"
                     Thermostat_2.setThermostatMode("off")
                 } 
                 else if(outsideTemp >= CSPH2 && state.ThermState2 != "cool"){
+                    state.T2_AppMgt = 0 // so if turned off it'll be by user
                     Thermostat_2.setThermostatMode("cool")
                 }
                 else if(state.CurrTemp2 < HSPH2 && state.ThermState2 != "heat"){
+                    state.T2_AppMgt = 0 // so if turned off it'll be by user
                     Thermostat_2.setThermostatMode("heat")
                 }
             }
         }
-        if(Thermostat_3){
+        if(Thermostat_3 && state.T3_AppMgt == 1){
             if(!AltSensor_3){
                 log.debug "loading $Home settings for $Thermostat_3"
                 Thermostat_3.setHeatingSetpoint(HSPH3)
@@ -618,29 +751,37 @@ def TemperaturesModes(){
 
                 // if AltSensor then these controls are set by AltSensor loop so we avoid a conflict
                 if(state.CurrTemp3 > HSPH3 && state.ThermState3 != "off"){
+                    state.T3_AppMgt = 1
+                    log.debug "Turning OFF $Thermostat_3"
                     Thermostat_3.setThermostatMode("off")
                 } 
                 else if(outsideTemp >= CSPH3 && state.ThermState3 != "cool"){
+                    state.T3_AppMgt = 0 // so if turned off it'll be by user
                     Thermostat_3.setThermostatMode("cool")
                 }
                 else if(state.CurrTemp3 < HSPH3 && state.ThermState3 != "heat"){
+                    state.T3_AppMgt = 0 // so if turned off it'll be by user
                     Thermostat_3.setThermostatMode("heat")
                 }
             }
         }
-        if(Thermostat_4){
+        if(Thermostat_4 && state.T4_AppMgt == 1){
             log.debug "loading $Home settings for $Thermostat_4"
             Thermostat_4.setHeatingSetpoint(HSPH4)
             Thermostat_4.setCoolingSetpoint(CSPH4)   
 
             // no AltSensor 4 
             if(state.CurrTemp4 > HSPH4 && state.ThermState4 != "off"){
+                state.T4_AppMgt = 1
+                log.debug "Turning OFF $Thermostat_4"
                 Thermostat_4.setThermostatMode("off")
             } 
             else if(outsideTemp >= CSPH4 && state.ThermState4 != "cool"){
+                state.T4_AppMgt = 0 // so if turned off it'll be by user
                 Thermostat_4.setThermostatMode("cool")
             }
             else if(state.CurrTemp4 < HSPH4 && state.ThermState4 != "heat"){
+                state.T4_AppMgt = 0 // so if turned off it'll be by user
                 Thermostat_4.setThermostatMode("heat")
 
             }
@@ -648,7 +789,7 @@ def TemperaturesModes(){
     }
     else if(CurrMode in Night){
         log.debug "location is in $CurrMode mode, applying settings accordingly" 
-        if(Thermostat_1){
+        if(Thermostat_1 && state.T1_AppMgt == 1){
             if(!AltSensor_1){
                 log.debug "loading $Night settings for $Thermostat_1"
                 Thermostat_1.setHeatingSetpoint(HSPN1)
@@ -657,17 +798,21 @@ def TemperaturesModes(){
 
                 // if AltSensor then these controls are set by AltSensor loop so we avoid a conflict
                 if(state.CurrTemp1 > HSPN1 && state.ThermState1 != "off"){
+                    state.T1_AppMgt = 1
+                    log.debug "Turning OFF $Thermostat_1"
                     Thermostat_1.setThermostatMode("off")
                 } 
                 else if(outsideTemp >= CSPN1 && state.ThermState1 != "cool"){
+                    state.T1_AppMgt = 0 // so if turned off it'll be by user
                     Thermostat_1.setThermostatMode("cool")
                 }
                 else if(state.CurrTemp1 < HSPN1 && state.ThermState1 != "heat"){
+                    state.T1_AppMgt = 0 // so if turned off it'll be by user
                     Thermostat_1.setThermostatMode("heat")
                 }
             }
         }
-        if(Thermostat_2){
+        if(Thermostat_2 && state.T2_AppMgt == 1){
             if(!AltSensor_2){
                 log.debug "loading $Night settings for $Thermostat_2"
                 Thermostat_2.setHeatingSetpoint(HSPN2)
@@ -676,17 +821,21 @@ def TemperaturesModes(){
 
                 // if AltSensor then these controls are set by AltSensor loop so we avoid a conflict
                 if(state.CurrTemp2 > HSPN2 && state.ThermState2 != "off"){
+                    state.T2_AppMgt = 1
+                    log.debug "Turning OFF $Thermostat_2"
                     Thermostat_2.setThermostatMode("off")
                 } 
                 else if(outsideTemp >= CSPN2 && state.ThermState2 != "cool"){
+                    state.T2_AppMgt = 0 // so if turned off it'll be by user
                     Thermostat_2.setThermostatMode("cool")
                 }
                 else if(state.CurrTemp2 < HSPN2 && state.ThermState2 != "heat"){
+                    state.T2_AppMgt = 0 // so if turned off it'll be by user
                     Thermostat_2.setThermostatMode("heat")
                 }
             }
         }
-        if(Thermostat_3){
+        if(Thermostat_3 && state.T3_AppMgt == 1){
             if(!AltSensor_3){
                 log.debug "loading $Night settings for $Thermostat_3"
                 Thermostat_3.setHeatingSetpoint(HSPN3)
@@ -695,36 +844,44 @@ def TemperaturesModes(){
 
                 // if AltSensor then these controls are set by AltSensor loop so we avoid a conflict
                 if(state.CurrTemp3 > HSPN3 && state.ThermState3 != "off"){
+                    state.T3_AppMgt = 1
+                    log.debug "Turning OFF $Thermostat_3"
                     Thermostat_3.setThermostatMode("off")
                 } 
                 else if(outsideTemp >= CSPN3 && state.ThermState3 != "cool"){
+                    state.T3_AppMgt = 0 // so if turned off it'll be by user
                     Thermostat_3.setThermostatMode("cool")
                 }
                 else if(state.CurrTemp3 < HSPN3 && state.ThermState3 != "heat"){
+                    state.T3_AppMgt = 0 // so if turned off it'll be by user
                     Thermostat_3.setThermostatMode("heat")
                 }
             }
         }
-        if(Thermostat_4){
+        if(Thermostat_4 && state.T4_AppMgt == 1){
             log.debug "loading $Night0 settings for $Thermostat_4"
             Thermostat_4.setHeatingSetpoint(HSPN4)
             Thermostat_4.setCoolingSetpoint(CSPN4)    
 
             // no AltSensor 4 
             if(state.CurrTemp4 > HSPN4 && state.ThermState4 != "off"){
+                state.T4_AppMgt = 1
+                log.debug "Turning OFF $Thermostat_4"
                 Thermostat_4.setThermostatMode("off")
             } 
             else if(outsideTemp >= CSPN4 && state.ThermState4 != "cool"){
+                state.T4_AppMgt = 0 // so if turned off it'll be by user
                 Thermostat_4.setThermostatMode("cool")
             }
             else if(state.CurrTemp4 < HSPN4 && state.ThermState4 != "heat"){
+                state.T4_AppMgt = 0 // so if turned off it'll be by user
                 Thermostat_4.setThermostatMode("heat")
             }           
         }
     }
     else if(CurrMode in Away){
         log.debug "location is in $CurrMode mode, applying settings accordingly" 
-        if(Thermostat_1){
+        if(Thermostat_1 && state.T1_AppMgt == 1){
             if(!AltSensor_1){
                 log.debug "loading $Away settings for $Thermostat_1"
                 Thermostat_1.setHeatingSetpoint(HSPA1)
@@ -733,17 +890,21 @@ def TemperaturesModes(){
 
                 // if AltSensor then these controls are set by AltSensor loop so we avoid a conflict
                 if(state.CurrTemp1 > HSPA1 && state.ThermState1 != "off"){
+                    state.T1_AppMgt = 1
+                    log.debug "Turning OFF $Thermostat_1"
                     Thermostat_1.setThermostatMode("off")
                 } 
                 else if(outsideTemp >= CSPA1 && state.ThermState1 != "cool"){
+                    state.T1_AppMgt = 0 // so if turned off it'll be by user
                     Thermostat_1.setThermostatMode("cool")
                 }
                 else if(state.CurrTemp1 < HSPA1 && state.ThermState1 != "heat"){
+                    state.T1_AppMgt = 0 // so if turned off it'll be by user
                     Thermostat_1.setThermostatMode("heat")
                 }
             }
         }
-        if(Thermostat_2){
+        if(Thermostat_2 && state.T2_AppMgt == 1){
             if(!AltSensor_2){
                 log.debug "loading $Away settings for $Thermostat_2"
                 Thermostat_2.setHeatingSetpoint(HSPA2)
@@ -751,17 +912,21 @@ def TemperaturesModes(){
 
                 // if AltSensor then these controls are set by AltSensor loop so we avoid a conflict
                 if(state.CurrTemp2 > HSPA2 && state.ThermState2 != "off"){
+                    state.T2_AppMgt = 1
+                    log.debug "Turning OFF $Thermostat_2"
                     Thermostat_2.setThermostatMode("off")
                 } 
                 else if(outsideTemp >= CSPA2 && state.ThermState2 != "cool"){
+                    state.T2_AppMgt = 0 // so if turned off it'll be by user
                     Thermostat_2.setThermostatMode("cool")
                 }
                 else if(state.CurrTemp2 < HSPA2 && state.ThermState2 != "heat"){
+                    state.T2_AppMgt = 0 // so if turned off it'll be by user
                     Thermostat_2.setThermostatMode("heat")
                 }
             }
         }
-        if(Thermostat_3){
+        if(Thermostat_3 && state.T3_AppMgt == 1){
             if(!AltSensor_3){
                 log.debug "loading $Away settings for $Thermostat_3"
                 Thermostat_3.setHeatingSetpoint(HSPA3)
@@ -770,36 +935,45 @@ def TemperaturesModes(){
 
                 // if AltSensor then these controls are set by AltSensor loop so we avoid a conflict
                 if(state.CurrTemp3 > HSPA3 && state.ThermState3 != "off"){
+                    state.T3_AppMgt = 1
+                    log.debug "Turning OFF $Thermostat_3"
                     Thermostat_3.setThermostatMode("off")
                 } 
                 else if(outsideTemp >= CSPA3 && state.ThermState3 != "cool"){
+                    state.T3_AppMgt = 0 // so if turned off it'll be by user
                     Thermostat_3.setThermostatMode("cool")
                 }
                 else if(state.CurrTemp3 < HSPA3 && state.ThermState3 != "heat"){
+                    state.T3_AppMgt = 0 // so if turned off it'll be by user
                     Thermostat_3.setThermostatMode("heat")
                 }
             }
         }
-        if(Thermostat_4){
+        if(Thermostat_4 && state.T4_AppMgt == 1){
             log.debug "loading $Away settings for $Thermostat_4"
             Thermostat_4.setHeatingSetpoint(HSPA4)
             Thermostat_4.setCoolingSetpoint(CSPA4)   
 
             // no AltSensor 4 
             if(state.CurrTemp4 > HSPA4 && state.ThermState4 != "off"){
+                state.T4_AppMgt = 1
+                log.debug "Turning OFF $Thermostat_4"
                 Thermostat_4.setThermostatMode("off")
             } 
             else if(outsideTemp >= CSPA4 && state.ThermState4 != "cool"){
+                state.T4_AppMgt = 0 // so if turned off it'll be by user
                 Thermostat_4.setThermostatMode("cool")
             }
             else if(state.CurrTemp4 < HSPA4 && state.ThermState4 != "heat"){
+                state.T4_AppMgt = 0 // so if turned off it'll be by user
                 Thermostat_4.setThermostatMode("heat")
             }           
         }
     }
     else if(CurrMode in CustomMode1){
+        log.debug "CustomMode1"
         log.debug "location is in $CurrMode mode, applying settings accordingly" 
-        if(Thermostat_1){
+        if(Thermostat_1 && state.T1_AppMgt == 1){
             if(!AltSensor_1){
                 log.debug "loading $CustomMode1 settings for $Thermostat_1"
                 Thermostat_1.setHeatingSetpoint(HSPCust1_T1)
@@ -808,17 +982,21 @@ def TemperaturesModes(){
 
                 // if AltSensor then these controls are set by AltSensor loop so we avoid a conflict
                 if(state.CurrTemp1 > HSPCust1_T1 && state.ThermState1 != "off"){
+                    state.T1_AppMgt = 1
+                    log.debug "Turning OFF $Thermostat_1"
                     Thermostat_1.setThermostatMode("off")
                 } 
                 else if(outsideTemp >= CSPCust1_T1 && state.ThermState1 != "cool"){
+                    state.T1_AppMgt = 0 // so if turned off it'll be by user
                     Thermostat_1.setThermostatMode("cool")
                 }
                 else if(state.CurrTemp1 < HSPCust1_T1 && state.ThermState1 != "heat"){
+                    state.T1_AppMgt = 0 // so if turned off it'll be by user
                     Thermostat_1.setThermostatMode("heat")
                 }
             }
         }
-        if(Thermostat_2){
+        if(Thermostat_2 && state.T2_AppMgt == 1){
             if(!AltSensor_2){
                 log.debug "loading $CustomMode1 settings for $Thermostat_2"
                 Thermostat_2.setHeatingSetpoint(HSPCust1_T2)
@@ -827,17 +1005,21 @@ def TemperaturesModes(){
 
                 // if AltSensor then these controls are set by AltSensor loop so we avoid a conflict
                 if(state.CurrTemp2 > HSPCust1_T2 && state.ThermState2 != "off"){
+                    state.T2_AppMgt = 1
+                    log.debug "Turning OFF $Thermostat_2"
                     Thermostat_2.setThermostatMode("off")
                 } 
                 else if(outsideTemp >= CSPCust1_T2 && state.ThermState2 != "cool"){
+                    state.T2_AppMgt = 0 // so if turned off it'll be by user
                     Thermostat_2.setThermostatMode("cool")
                 }
                 else if(state.CurrTemp2 < HSPCust1_T2 && state.ThermState2 != "heat"){
+                    state.T2_AppMgt = 0 // so if turned off it'll be by user
                     Thermostat_2.setThermostatMode("heat")
                 }
             }      
         }
-        if(Thermostat_3){
+        if(Thermostat_3 && state.T3_AppMgt == 1){
             if(!AltSensor_3){
                 log.debug "loading $CustomMode1 settings for $Thermostat_3"
                 Thermostat_3.setHeatingSetpoint(HSPCust1_T3)
@@ -846,35 +1028,44 @@ def TemperaturesModes(){
 
                 // if AltSensor then these controls are set by AltSensor loop so we avoid a conflict
                 if(state.CurrTemp3 > HSPCust1_T3 && state.ThermState3 != "off"){
+                    state.T3_AppMgt = 1
+                    log.debug "Turning OFF $Thermostat_3"
                     Thermostat_3.setThermostatMode("off")
                 } 
                 else if(outsideTemp >= CSPCust1_T3 && state.ThermState3 != "cool"){
+                    state.T3_AppMgt = 0 // so if turned off it'll be by user
                     Thermostat_3.setThermostatMode("cool")
                 }
                 else if(state.CurrTemp3 < HSPCust1_T3 && state.ThermState3 != "heat"){
+                    state.T3_AppMgt = 0 // so if turned off it'll be by user
                     Thermostat_3.setThermostatMode("heat")
                 }
             }
         }
-        if(Thermostat_4){
+        if(Thermostat_4 && state.T4_AppMgt == 1){
             log.debug "loading $CustomMode1 settings for $Thermostat_4"
             Thermostat_4.setHeatingSetpoint(HSPCust1_T4)
             Thermostat_4.setCoolingSetpoint(CSPCust1_T4)     
 
             // no AltSensor 4 
             if(state.CurrTemp4 > HSPCust1_T4 && state.ThermState4 != "off"){
+                state.T4_AppMgt = 1
+                log.debug "Turning OFF $Thermostat_4"
                 Thermostat_4.setThermostatMode("off")
             } 
             else if(outsideTemp >= CSPCust1_T4 && state.ThermState4 != "cool"){
+                state.T4_AppMgt = 0 // so if turned off it'll be by user
                 Thermostat_4.setThermostatMode("cool")
             }
             else if(state.CurrTemp4 < HSPCust1_T4 && state.ThermState4 != "heat"){
+                state.T4_AppMgt = 0 // so if turned off it'll be by user
                 Thermostat_4.setThermostatMode("heat")
             }   
         }
     }
     else if(CustomMode2 && CurrMode in CustomMode2){
-        if(Thermostat_1){
+        log.debug "CustomMode2"
+        if(Thermostat_1 && state.T1_AppMgt == 1){
             if(!AltSensor_1){
                 log.debug "loading $CustomMode2 settings for $Thermostat_1"
                 Thermostat_1.setHeatingSetpoint(HSPCust2_T1)
@@ -883,17 +1074,21 @@ def TemperaturesModes(){
 
                 // if AltSensor then these controls are set by AltSensor loop so we avoid a conflict
                 if(state.CurrTemp1 > HSPCust2_T1 && state.ThermState1 != "off"){
+                    state.T1_AppMgt = 1
+                    log.debug "Turning OFF $Thermostat_1"
                     Thermostat_1.setThermostatMode("off")
                 } 
                 else if(outsideTemp >= CSPCust2_T1 && state.ThermState1 != "cool"){
+                    state.T1_AppMgt = 0 // so if turned off it'll be by user
                     Thermostat_1.setThermostatMode("cool")
                 }
                 else if(state.CurrTemp1 < HSPCust2_T1 && state.ThermState1 != "heat"){
+                    state.T1_AppMgt = 0 // so if turned off it'll be by user
                     Thermostat_1.setThermostatMode("heat")
                 }
             }
         }
-        if(Thermostat_2){
+        if(Thermostat_2 && state.T2_AppMgt == 1){
             if(!AltSensor_2){
                 log.debug "loading $CustomMode2 settings for $Thermostat_2"
                 Thermostat_2.setHeatingSetpoint(HSPCust2_T1)
@@ -902,17 +1097,21 @@ def TemperaturesModes(){
 
                 // if AltSensor then these controls are set by AltSensor loop so we avoid a conflict
                 if(state.CurrTemp2 > HSPCust2_T1 && state.ThermState2 != "off"){
+                    state.T2_AppMgt = 1
+                    log.debug "Turning OFF $Thermostat_2"
                     Thermostat_2.setThermostatMode("off")
                 } 
                 else if(outsideTemp >= CSPCust2_T2 && state.ThermState2 != "cool"){
+                    state.T2_AppMgt = 0 // so if turned off it'll be by user
                     Thermostat_2.setThermostatMode("cool")
                 }
                 else if(state.CurrTemp2 < HSPCust2_T1 && state.ThermState2 != "heat"){
+                    state.T2_AppMgt = 0 // so if turned off it'll be by user
                     Thermostat_2.setThermostatMode("heat")
                 }
             }      
         }
-        if(Thermostat_3){
+        if(Thermostat_3 && state.T3_AppMgt == 1){
             if(!AltSensor_3){
                 log.debug "loading $CustomMode2 settings for $Thermostat_3"
                 Thermostat_3.setHeatingSetpoint(HSPCust2_T3)
@@ -921,34 +1120,42 @@ def TemperaturesModes(){
 
                 // if AltSensor then these controls are set by AltSensor loop so we avoid a conflict
                 if(state.CurrTemp3 > HSPCust2_T3 && state.ThermState3 != "off"){
+                    state.T3_AppMgt = 1
+                    log.debug "Turning OFF $Thermostat_3"
                     Thermostat_3.setThermostatMode("off")
                 } 
                 else if(outsideTemp >= CSPCust2_T3 && state.ThermState3 != "cool"){
+                    state.T3_AppMgt = 0 // so if turned off it'll be by user
+                    log.debug "CSPCust2_T3 = $CSPCust2_T3"
                     Thermostat_3.setThermostatMode("cool")
                 }
                 else if(state.CurrTemp3 < HSPCust2_T3 && state.ThermState3 != "heat"){
+                    state.T3_AppMgt = 0 // so if turned off it'll be by user
                     Thermostat_3.setThermostatMode("heat")
                 }
             }
         }
-        if(Thermostat_4){
+        if(Thermostat_4 && state.T4_AppMgt == 1){
             log.debug "loading $CustomMode2 settings for $Thermostat_4"
             Thermostat_4.setHeatingSetpoint(HSPCust2_T4)
             Thermostat_4.setCoolingSetpoint(CSPCust2_T4)  
 
             // no AltSensor 4 
             if(state.CurrTemp4 > HSPCust2_T4 && state.ThermState4 != "off"){
+                state.T4_AppMgt = 1
+                log.debug "Turning OFF $Thermostat_4"
                 Thermostat_4.setThermostatMode("off")
             } 
             else if(outsideTemp >= CSPCust2_T4 && state.ThermState4 != "cool"){
+                state.T4_AppMgt = 0 // so if turned off it'll be by user
                 Thermostat_4.setThermostatMode("cool")
             }
             else if(state.CurrTemp4 < HSPCust2_T4 && state.ThermState4 != "heat"){
+                state.T4_AppMgt = 0 // so if turned off it'll be by user
                 Thermostat_4.setThermostatMode("heat")
             }   
         }
     }
-   
 }
 def recordCurrentStates(){
 
