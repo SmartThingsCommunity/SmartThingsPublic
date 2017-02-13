@@ -6,6 +6,12 @@ Works with:
 
 * [Leviton Plug-in Lamp Dimmer Module (DZPD3-1LW)](https://www.smartthings.com/works-with-smartthings/outlets/leviton-plug-in-lamp-dimmer-module)
 * [Leviton Universal Dimmer (DZMX1-LZ)](https://www.smartthings.com/works-with-smartthings/switches-and-dimmers/leviton-universal-dimmer)
+* [Leviton 1000W Incandescent Dimmer](https://www.smartthings.com/works-with-smartthings/leviton/leviton-1000w-incandescent-dimmer)
+* [Leviton 600W Incandescent Dimmer](https://www.smartthings.com/works-with-smartthings/leviton/leviton-600w-incandescent-dimmer)
+* [Enerwave In-Wall Dimmer](https://www.smartthings.com/works-with-smartthings/enerwave/enerwave-in-wall-dimmer-zw500d)
+* [Leviton 3-Speed Fan Controller](https://www.smartthings.com/works-with-smartthings/leviton/leviton-3-speed-fan-controller)
+* [Leviton Magnetic Low Voltage Dimmer](https://www.smartthings.com/works-with-smartthings/leviton/leviton-magnetic-low-voltage-dimmer)
+* [Remotec Technology Plug-In Dimmer](https://www.smartthings.com/works-with-smartthings/remotec-technology/remotec-technology-plug-in-dimmer)
 
 ## Table of contents
 
@@ -41,3 +47,8 @@ Pairing needs to be tried again by placing the device closer to the hub.
 Instructions related to pairing, resetting and removing the device from SmartThings can be found in the following link:
 * [Leviton Plug-in Lamp Dimmer Module (DZPD3-1LW) Troubleshooting Tips](https://support.smartthings.com/hc/en-us/articles/206171053-How-to-connect-Leviton-Z-Wave-devices)
 * [Leviton Universal Dimmer (DZMX1-LZ) Troubleshooting Tips](https://support.smartthings.com/hc/en-us/articles/206171053-How-to-connect-Leviton-Z-Wave-devices)
+* [Leviton 1000W Incandescent Dimmer Troubleshooting Tips](https://support.smartthings.com/hc/en-us/articles/206171053-How-to-connect-Leviton-Z-Wave-devices)
+* [Leviton 600W Incandescent Dimmer Troubleshooting Tips](https://support.smartthings.com/hc/en-us/articles/206171053-How-to-connect-Leviton-Z-Wave-devices)
+* [Leviton 3-Speed Fan Controller Troubleshooting Tips](https://support.smartthings.com/hc/en-us/articles/206171053-How-to-connect-Leviton-Z-Wave-devices)
+* [Enerwave In-Wall Dimmer Troubleshooting Tips](https://support.smartthings.com/hc/en-us/articles/204854176-How-to-connect-Enerwave-switches-and-dimmers)
+* [Remotec Technology Plug-In Dimmer Troubleshooting Tips](https://support.smartthings.com/hc/en-us/articles/202295150-Remotec-Technology-Plug-In-Dimmer-ZDS-100-)
