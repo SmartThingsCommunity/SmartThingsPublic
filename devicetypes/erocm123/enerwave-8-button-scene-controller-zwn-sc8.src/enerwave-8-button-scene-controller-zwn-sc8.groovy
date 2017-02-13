@@ -62,6 +62,7 @@ metadata {
 	}
     
     preferences {
+       input name: "sendScene", type: "boolean", title:"Send button event when activating switch (1-8)", required:false, displayDuringSetup:true
        input name: "enableDebugging", type: "boolean", title: "Enable Debug?", defaultValue: false, displayDuringSetup: false, required: false
     }
 }
@@ -162,6 +163,7 @@ def onCmd(endpoint = null) {
     toggleTiles("switch$endpoint")
     if (endpoint != null) {
 	   zwave.indicatorV1.indicatorSet(value:(2.power(endpoint - 1))).format()
+       if (sendScene == "true") sendEvent(name: "button", value: "pushed", data: [buttonNumber: endpoint], descriptionText: "$device.displayName button $endpoint was pushed", isStateChange: true)
     } else {
        zwave.indicatorV1.indicatorSet(value:255).format()
     }
