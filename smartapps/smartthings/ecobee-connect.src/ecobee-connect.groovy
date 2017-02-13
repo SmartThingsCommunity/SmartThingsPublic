@@ -20,6 +20,8 @@
  *      JLH - 02-15-2014 - Fuller use of ecobee API
  *      10-28-2015 DVCSMP-604 - accessory sensor, DVCSMP-1174, DVCSMP-1111 - not respond to routines
  */
+include 'asynchttp_v1'
+
 definition(
 		name: "Ecobee (Connect)",
 		namespace: "smartthings",
@@ -360,23 +362,16 @@ def initialize() {
 
 	pollHandler() //first time polling data data from thermostat
 
-	//automatically update devices status every 5 mins
-	runEvery5Minutes("poll")
-
+	// automatically update devices status every 5 mins
+	runEvery5Minutes("aynchronousPoll")
 }
 
 def pollHandler() {
 	log.debug "pollHandler()"
-	pollChildren(null) // Hit the ecobee API for update on all thermostats
-
-	atomicState.thermostats.each {stat ->
-		def dni = stat.key
-		log.debug ("DNI = ${dni}")
-		def d = getChildDevice(dni)
-		if(d) {
-			log.debug ("Found Child Device.")
-			d.generateEvent(atomicState.thermostats[dni].data)
-		}
+	if (pollChildren(null)) {
+		generateChildThermostatEvent()
+	} else {
+		log.error "pollHander: pollChildren returned false.  Cannot update devices"
 	}
 }
 
@@ -430,31 +425,96 @@ def pollChildren(child = null) {
 
 // Poll Child is invoked from the Child Device itself as part of the Poll Capability
 def pollChild() {
-	def devices = getChildDevices()
-
 	if (pollChildren()) {
-		devices.each { child ->
-			if (!child.device.deviceNetworkId.startsWith("ecobee_sensor")) {
-				if(atomicState.thermostats[child.device.deviceNetworkId] != null) {
-					def tData = atomicState.thermostats[child.device.deviceNetworkId]
-					log.info "pollChild(child)>> data for ${child.device.deviceNetworkId} : ${tData.data}"
-					child.generateEvent(tData.data) //parse received message from parent
-				} else if(atomicState.thermostats[child.device.deviceNetworkId] == null) {
-					log.error "ERROR: Device connection removed? no data for ${child.device.deviceNetworkId}"
-					return null
-				}
-			}
-		}
+		generateChildThermostatEvent()
 	} else {
-		log.info "ERROR: pollChildren()"
+		log.error "ERROR: pollChildren()"
 		return null
 	}
-
 }
 
 void poll() {
 	pollChild()
 }
+
+/* Method for updating the state of known devices using the asynchronous HTTP API
+ * Polling runs one a schedule, regardless of whether or not the DTH is currently visible,
+ * and the vast majority of the time it isn't.  Poling the partner API asynchronously aleviates 
+ * some load on the platform, while leaving network calls that impact the UI as synchronous
+ * doesn't impact the experience of the user.
+ */
+private void aynchronousPoll() {
+	log.trace "Starting Async Poll"
+	def thermostatIdsString = getChildDeviceIdsString()
+    def requestBody = [
+        selection: [
+            selectionType: "thermostats",
+            selectionMatch: thermostatIdsString,
+            includeExtendedRuntime: true,
+            includeSettings: true,
+            includeRuntime: true,
+            includeSensors: true
+        ]
+    ]
+    
+    def getObject = [
+        uri: apiEndpoint,
+        path: "/1/thermostat",
+        headers: ["Authorization": "Bearer ${atomicState.authToken}"],
+        query: [json: toJson(requestBody)]
+    ]
+
+	asynchttp_v1.get('asyncPollResponseHandler', getObject)
+}
+
+private void asyncPollResponseHandler(response, data) {
+	if (!response.hasError()) {
+        if (response.status == 200) {
+            def json = null
+            try {
+            	json = response.getJson()
+            } catch (e) {
+            	log.error "asyncPollResponseHandler: error parsing json from response data: $response.data"
+            }
+
+            if (json) {
+                atomicState.remoteSensors = json.thermostatList.remoteSensors
+                updateSensorData()
+                storeThermostatData(json.thermostatList)
+                generateChildThermostatEvent()
+            } else {
+            	log.error "asyncPollResponseHandler: Unrecoverable error stemming from no json returned"
+            }
+
+        } else {
+        	log.error "asyncPollResponseHandler: async polling returned unsuccessfully with code: ${response.status}"
+        }
+
+    } else {
+    	log.error "asyncPollResponseHandler: Response object returned error!"
+    }
+}
+
+/**
+ * Calls each child thermostat device to generate an event with the thermostat
+ * data.
+ */
+def generateChildThermostatEvent() {
+    log.trace("generateChildThermostatEvent")
+    getChildDevices().each { child ->
+        if (!child.device.deviceNetworkId.startsWith("ecobee_sensor")){
+            if(atomicState.thermostats[child.device.deviceNetworkId] != null) {
+                def tData = atomicState.thermostats[child.device.deviceNetworkId]
+                log.debug "generateChildThermostatEvent: calling child.generateEvent($tData.data)"
+                child.generateEvent(tData.data) //parse received message from parent
+            } else if(atomicState.thermostats[child.device.deviceNetworkId] == null) {
+                log.error "generateChildThermostatEvent: Device connection removed? no data for ${child.device.deviceNetworkId}"
+                return null
+            }
+        }
+    }
+}
+
 
 def availableModes(child) {
 	debugEvent ("atomicState.thermostats = ${atomicState.thermostats}")
@@ -872,7 +932,6 @@ private void storeThermostatData(thermostats) {
         collector[dni] = [data:data]
         return collector
     }
-    log.debug "updated ${atomicState.thermostats?.size()} thermostats: ${atomicState.thermostats}"
 }
 
 def sendActivityFeeds(notificationMessage) {
