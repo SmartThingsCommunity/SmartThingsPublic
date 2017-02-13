@@ -783,6 +783,13 @@ Default: 1
     <Item label="3" value="3" />
     <Item label="4" value="4" />
   </Value>
+<Value type="short" byteSize="2" index="39" label="Max Power load" min="0" max="350" value="250" setting_type="zwave" fw="3.08">
+    <Help>
+This parameter defines the maximum load for a dimmer.
+Range: 0~350
+Default: 250
+    </Help>
+  </Value>
     <Value type="byte" byteSize="1" index="50" label="Active power reports" min="0" max="100" value="10" setting_type="zwave" fw="3.08">
     <Help>
 The parameter defines the power level change that will result in a new power report being sent. The value is a percentage of the previous report.
