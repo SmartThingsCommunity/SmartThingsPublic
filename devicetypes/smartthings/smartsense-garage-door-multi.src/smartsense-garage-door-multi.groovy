@@ -88,7 +88,7 @@ def parse(String description) {
 	log.debug "parse($description)"
 	def results = [:]
 
-	if (!isSupportedDescription(description) || zigbee.isZoneType19(description)) {
+	if (!isSupportedDescription(description) || description.startsWith("zone")) {
 		// Ignore this in favor of orientation-based state
 		// results = parseSingleMessage(description)
 	}

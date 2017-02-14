@@ -20,6 +20,7 @@ metadata {
         capability "Switch"
         capability "Switch Level"
         capability "Health Check"
+        capability "Light"
 
 
         fingerprint profileId: "0104", inClusters: "0000, 0003, 0004, 0005, 0006, 0008"
@@ -93,7 +94,13 @@ def on() {
 }
 
 def setLevel(value) {
-    zigbee.setLevel(value)
+    def additionalCmds = []
+    if (device.getDataValue("model") == "iQBR30" && value.toInteger() > 0) { // Handle iQ bulb not following spec
+        additionalCmds = zigbee.on()
+    } else if (device.getDataValue("manufacturer") == "MRVL") { // Handle marvel stack not reporting
+        additionalCmds = refresh()
+    }
+    zigbee.setLevel(value) + additionalCmds
 }
 /**
  * PING is used by Device-Watch in attempt to reach the Device
@@ -103,7 +110,7 @@ def ping() {
 }
 
 def refresh() {
-    zigbee.onOffRefresh() + zigbee.levelRefresh() + zigbee.onOffConfig(0, 300) + zigbee.levelConfig()
+    zigbee.onOffRefresh() + zigbee.levelRefresh()
 }
 
 def configure() {
@@ -113,5 +120,5 @@ def configure() {
     sendEvent(name: "checkInterval", value: 2 * 10 * 60 + 1 * 60, displayed: false, data: [protocol: "zigbee", hubHardwareId: device.hub.hardwareID])
 
     // OnOff minReportTime 0 seconds, maxReportTime 5 min. Reporting interval if no activity
-    zigbee.onOffRefresh() + zigbee.levelRefresh() + zigbee.onOffConfig(0, 300) + zigbee.levelConfig()
+    refresh() + zigbee.onOffConfig(0, 300) + zigbee.levelConfig()
 }
