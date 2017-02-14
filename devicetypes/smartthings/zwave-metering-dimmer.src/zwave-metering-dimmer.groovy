@@ -25,6 +25,7 @@ metadata {
 		capability "Switch Level"
 		capability "Sensor"
 		capability "Actuator"
+		capability "Light"
 
 		command "reset"
 
