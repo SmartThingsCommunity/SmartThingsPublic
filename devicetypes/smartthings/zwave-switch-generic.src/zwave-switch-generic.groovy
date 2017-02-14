@@ -19,6 +19,7 @@ metadata {
 		capability "Polling"
 		capability "Refresh"
 		capability "Sensor"
+		capability "Light"
 
 		fingerprint inClusters: "0x25", deviceJoinName: "Z-Wave Switch"
 		fingerprint mfr:"001D", prod:"1A02", model:"0334", deviceJoinName: "Leviton Appliance Module"

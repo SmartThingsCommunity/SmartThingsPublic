@@ -21,6 +21,7 @@ metadata {
 		capability "Refresh"
 		capability "Configuration"
 		capability "Sensor"
+		capability "Light"
 
 		command "reset"
 
