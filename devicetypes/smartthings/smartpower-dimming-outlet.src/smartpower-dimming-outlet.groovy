@@ -79,7 +79,8 @@ def parse(String description) {
 		*/
 		event.value = event.value / 10
 	}
-	return event
+
+	return event ? createEvent(event) : event
 }
 
 def setLevel(value) {
