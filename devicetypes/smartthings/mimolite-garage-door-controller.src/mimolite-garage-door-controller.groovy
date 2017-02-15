@@ -36,6 +36,7 @@ metadata {
 		capability "Switch"
 		capability "Refresh"
 		capability "Contact Sensor"
+		capability "Light"
 
 		attribute "powered", "string"
 

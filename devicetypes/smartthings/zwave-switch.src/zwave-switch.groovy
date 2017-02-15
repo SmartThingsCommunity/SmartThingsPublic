@@ -20,6 +20,7 @@ metadata {
 		capability "Refresh"
 		capability "Sensor"
 		capability "Health Check"
+		capability "Light"
 
 		fingerprint mfr:"0063", prod:"4952", deviceJoinName: "Z-Wave Wall Switch"
 		fingerprint mfr:"0063", prod:"5257", deviceJoinName: "Z-Wave Wall Switch"
