@@ -232,6 +232,11 @@ def switchHandler(evt){
     def ModeOk = CurrMode in Modes
     if(override){
 
+        if(evt.value == "off" && state.override == 0){
+            state.OffbyApp = 1
+            log.debug "state.OffbyApp value back to 1"
+        }
+
         if(evt.value == "on" && !ModeOk){
             // this is an on override. Keep on but turn on in an hour"
             state.override = 1
@@ -314,13 +319,13 @@ private Switches(){
     if(CurrMode in Modes){
         if(state.motion == 1){
             if (mode == "cool") {
-            // air conditioner
+                // air conditioner
                 log.debug "evaluating cool. Desired temperature is $state.desiredTemp"    
                 if (state.currentTemp > state.desiredTemp) {
                     if(state.override == 0){
-                    // if out of override the app needs to know that not all outlets were turned back on, so it turns back on all the others
+                        // if out of override the app needs to know that not all outlets were turned back on, so it turns back on all the others
                         if(state.switchVal != state.totalOutlets){
-                            state.OffbyApp = 0
+
                             log.debug "state.OffbyApp = $state.OffbyApp"
                             outlets?.on()
                             log.debug "$outlets turned ON"
@@ -350,9 +355,9 @@ private Switches(){
                 log.debug "evaluating heat. Desired temperature is $state.desiredTemp"
                 if (state.currentTemp < state.desiredTemp) {
                     if(state.override == 0){
-                    // if out of override the app needs to know that not all outlets were turned back on, so it turns back on all the others
+                        // if out of override the app needs to know that not all outlets were turned back on, so it turns back on all the others
                         if(state.switchVal != state.totalOutlets){
-                            state.OffbyApp = 0
+
                             log.debug "state.OffbyApp = $state.OffbyApp"
                             outlets?.on()
                             log.debug "$outlets turned ON"
