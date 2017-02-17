@@ -1703,55 +1703,5 @@ def TurnOffThermostats() {
         }
     }
 }
-def pollThermostats(){
-    if(Thermostat_1){
-        if(Thermostat_1.hasCommand("poll")){
-            Thermostat_1.poll()
-            log.debug "polling Thermostat_1"
-        }
-        else if(Thermostat_1.hasCommand("refresh")){
-            Thermostat_1.refresh()
-            log.debug "refreshing Thermostat_1"
-        }
-        else { log.debug "Thermostat_1 does not support either poll() nor refresh() commands"
-             }
-    }
-    if(Thermostat_2){
-        if(Thermostat_2.hasCommand("poll")){
-            Thermostat_2.poll()
-            log.debug "polling Thermostat_2"
-        }
-        else if(Thermostat_2.hasCommand("refresh")){
-            Thermostat_2.refresh()
-            log.debug "refreshing Thermostat_2"
-        }
-        else { log.debug "Thermostat_2 does not support either poll() nor refresh() commands"
-             }
-    }
-    if(Thermostat_3){
-        if(Thermostat_3.hasCommand("poll")){
-            Thermostat_3.poll()
-            log.debug "polling Thermostat_3"
-        }
-        else if(Thermostat_3.hasCommand("refresh")){
-            Thermostat_3.refresh()
-            log.debug "refreshing Thermostat_3"
-        }
-        else { log.debug "Thermostat_2 does not support either poll() nor refresh() commands"
-             }
-    }
-    if(Thermostat_4){
-        if(Thermostat_4.hasCommand("poll")){
-            Thermostat_4.poll()
-            log.debug "polling Thermostat_2"
-        }
-        else if(Thermostat_3.hasCommand("refresh")){
-            Thermostat_4.refresh()
-            log.debug "refreshing Thermostat_2"
-        }
-        else { log.debug "Thermostat_4 does not support either poll() nor refresh() commands"
-             }
-    }
-}
 
 
