@@ -208,6 +208,8 @@ def installed() {
     init()
 }
 def updated() {
+
+    log.debug "updated with settings = $settings $Modes"
     unsubscribe()
     unschedule()
 
@@ -292,36 +294,25 @@ def init() {
         subscribe(OutsideSensor, "temperature", temperatureHandler)
     }
 
+    def scheduledTime = 1
+
     if(AltSensor_1){
         subscribe(Sensor_1, "temperature", temperatureHandler)
         //log.debug "Subscription for alternative Sensor for $Sensor_1"
-        AlternativeSensor1()
-    }
-    if(AltSensor_2){
-        subscribe(Sensor_2, "temperature", temperatureHandler)
-        //log.debug "Subscription for alternative Sensor for $Sensor_2"
-        AlternativeSensor2()
-    }
-    if(AltSensor_3){
-        subscribe(Sensor_3, "temperature", temperatureHandler)
-        //log.debug "Subscription for alternative Sensor for $Sensor_3"
-        AlternativeSensor3()
-    }
-
-
-    // these schedules are for test purpose only
-    def scheduledTime = 1
-    if(AltSensor_1){
         schedule("0 0/$scheduledTime * * * ?", AlternativeSensor1)
         //log.debug "AlternativeSensor1 scheduled to run every $scheduledTime minutes"
         AlternativeSensor1()
     }
     if(AltSensor_2){
+        subscribe(Sensor_2, "temperature", temperatureHandler)
+        //log.debug "Subscription for alternative Sensor for $Sensor_2"
         schedule("0 0/$scheduledTime * * * ?", AlternativeSensor2)
         //log.debug "AlternativeSensor2 scheduled to run every $scheduledTime minutes"
         AlternativeSensor2()
     }
     if(AltSensor_3){
+        subscribe(Sensor_3, "temperature", temperatureHandler)
+        //log.debug "Subscription for alternative Sensor for $Sensor_3"
         schedule("0 0/$scheduledTime * * * ?", AlternativeSensor3)
         //log.debug "AlternativeSensor3 scheduled to run every $scheduledTime minutes"
         AlternativeSensor3()
@@ -336,14 +327,16 @@ def init() {
 
 
     // these values are to be set here and in mode changes only
-    state.AppMgnt_T_1 = "true"
-    state.AppMgnt_T_2 = "true"
-    state.AppMgnt_T_3 = "true"
-    state.AppMgnt_T_4 = "true"
+    atomicState.AppMgnt_T_1 = true
+    atomicState.AppMgnt_T_2 = true
+    atomicState.AppMgnt_T_3 = true
+    atomicState.AppMgnt_T_4 = true
+    /*  */
 
     schedule("0 0/$scheduledTime * * * ?", TemperaturesModes)
     log.debug "TemperaturesModes scheduled to run every $scheduledTime minutes"
-    log.debug "updated with settings = $settings $Modes"
+
+
 }
 
 def appHandler(evt){
@@ -356,6 +349,10 @@ def setpointHandler(evt){
     state.SPname = evt.name
     state.SPdevice = evt.device
 
+    SetPointOverride()
+}
+
+private SetPointOverride() {
     def CurrMode = location.currentMode
     def HomeMode = null
 
@@ -369,8 +366,6 @@ def setpointHandler(evt){
     def RefCool = null
     def device = state.SPdevice as String
 
-    log.debug "device is $device"
-
     if(device == "${Thermostat_1}"){
         log.debug "evt.device 1 is $evt.device"
         number = 1
@@ -381,7 +376,7 @@ def setpointHandler(evt){
         }
     }
     else if(device == "${Thermostat_2}"){
-        log.debug "evt.device 2 is $evt.device"
+        log.debug "evt.device 3 is $device"
         number = 2
         if(AltSensor_2){
             AltSENSOR = true
@@ -390,7 +385,7 @@ def setpointHandler(evt){
         }
     } 
     else if(device == "${Thermostat_3}"){
-        log.debug "evt.device 3 is $evt.device"
+        log.debug "evt.device 3 is $device"
         number = 3
         if(AltSensor_3){
             AltSENSOR = true
@@ -399,7 +394,7 @@ def setpointHandler(evt){
         }
     } 
     else if(device == "${Thermostat_4}"){
-        log.debug "evt.device 4 is $evt.device"
+        log.debug "evt.device 4 is $device"
         AltSENSOR = false // always false because this option doesn't exist for this thermostat number
         number = 4
     }
@@ -424,7 +419,7 @@ def setpointHandler(evt){
     def CSPA_ = ["0","$CSPA", "$CSPA", "$CSPA", "$CSPA"]
     def CSPCust1 = ["0","$CSPCust1_T1", "$CSPCust1_T2", "$CSPCust1_T3", "$CSPCust1_T4"]
     def CSPCust2 = ["0","$CSPCust2_T1", "$CSPCust2_T2", "$CSPCust2_T3", "$CSPCust2_T4"]
-    def TX_AppMgt = ["0", "state.T1_AppMgt", "state.T2_AppMgt", "state.T3_AppMgt", "state.T4_AppMgt"]
+    //def TX_AppMgt = ["0", "atomicState.AppMgnt_T_1", "atomicState.AppMgnt_T_2", "atomicState.AppMgnt_T_3", "atomicState.AppMgnt_T_4"]
 
 
     def HSP = 0
@@ -536,24 +531,23 @@ def setpointHandler(evt){
         state.override = 1
         if(device == "${Thermostat_1}")
         {
-            state.AppMgnt_T_1 = "false" // for some weird reason an actual boolean gets reset while it's not flipped anywhere else in this app beside mode change and initialization... 
-            // spent hours trying to understand why so I settled for a String value, which works the same. 
-            log.debug "state.AppMgnt_T_1 set to $state.AppMgnt_T_1"
+            atomicState.AppMgnt_T_1 = false
+            log.info "atomicState.AppMgnt_T_1 set to $atomicState.AppMgnt_T_1"
         }
         else if(device == "${Thermostat_2}")
         {
-            state.AppMgnt_T_2 = "false"
-            log.debug "state.AppMgnt_T_2 set to $state.AppMgnt_T_2"
+            atomicState.AppMgnt_T_2 = false
+            log.info "atomicState.AppMgnt_T_2 set to $atomicState.AppMgnt_T_2"
         }
         else if(device == "${Thermostat_3}")
         {
-            state.AppMgnt_T_3 = "false"
-            log.debug "state.AppMgnt_T_3 set to $state.AppMgnt_T_3"
+            atomicState.AppMgnt_T_3 = false
+            log.info "atomicState.AppMgnt_T_3 set to $atomicState.AppMgnt_T_3"
         }
         else if(device == "${Thermostat_4}")
         {
-            state.AppMgnt_T_4 = false
-            log.debug "state.AppMgnt_T_4 set to $state.AppMgnt_T_4"
+            atomicState.AppMgnt_T_4 = false
+            log.info "atomicState.AppMgnt_T_4 set to $atomicState.AppMgnt_T_4"
         }
         log.debug "new Set Point for $device is MANUAL ---------- OVERRIDE MODE ACTIVATED"
         /// test             
@@ -695,11 +689,13 @@ def ChangedModeHandler(evt) {
     state.modeStartTime = now() 
     // these values are to be set here and in mode changes only
 
-    state.AppMgnt_T_1 = "true"
-    state.AppMgnt_T_2 = "true"
-    state.AppMgnt_T_3 = "true"
-    state.AppMgnt_T_4 = "true"
 
+    // these values are to be set here and in mode changes only
+    atomicState.AppMgnt_T_1 = true
+    atomicState.AppMgnt_T_2 = true
+    atomicState.AppMgnt_T_3 = true
+    atomicState.AppMgnt_T_4 = true
+    /*  */
 
     log.debug "mode changed to ${evt.value}"
     state.T1_AppMgt = 1
@@ -760,7 +756,7 @@ def TemperaturesModes(){
         if(CurrMode in Home){
             log.debug "location is in $CurrMode mode, applying settings accordingly" 
             if(Thermostat_1 && state.T1_AppMgt == 1){
-                if(state.AppMgnt_T_1 != "true"){
+                if(atomicState.AppMgnt_T_1 == false){
                     log.debug "${Thermostat_1}'s SetPoint changed by user's OVERRIDE, doing nothing"
                 }
                 else {
@@ -790,7 +786,7 @@ def TemperaturesModes(){
                 }
             }
             if(Thermostat_2 && state.T2_AppMgt == 1){
-                if(state.AppMgnt_T_2 != "true"){
+                if(atomicState.AppMgnt_T_2 == false){
                     log.debug "${Thermostat_2}'s SetPoint changed by user's OVERRIDE, doing nothing"
                 }
                 else {
@@ -821,8 +817,8 @@ def TemperaturesModes(){
                 }
             }
             if(Thermostat_3 && state.T3_AppMgt == 1){
-                log.debug "state.AppMgnt_T_3 = $state.AppMgnt_T_3"
-                if(state.AppMgnt_T_3 != "true"){
+                log.debug "atomicState.AppMgnt_T_3 = $atomicState.AppMgnt_T_3"
+                if(atomicState.AppMgnt_T_2 == false){
                     log.debug "${Thermostat_3}'s SetPoint changed by user's OVERRIDE, doing nothing"
                 }
                 else {
@@ -852,7 +848,7 @@ def TemperaturesModes(){
                 }
             }
             if(Thermostat_4 && state.T4_AppMgt == 1){
-                if(state.AppMgnt_T_4 != "true"){
+                if(atomicState.AppMgnt_T_4 == false){
                     log.debug "${Thermostat_4}'s SetPoint changed by user's OVERRIDE, doing nothing"
                 }
                 else {
@@ -882,7 +878,7 @@ def TemperaturesModes(){
         else if(CurrMode in Night){
             log.debug "location is in $CurrMode mode, applying settings accordingly" 
             if(Thermostat_1 && state.T1_AppMgt == 1){
-                if(state.AppMgnt_T_1 != "true"){
+                if(atomicState.AppMgnt_T_1 == false){
                     log.debug "${Thermostat_1}'s SetPoint changed by user's OVERRIDE, doing nothing"
                 }
                 else {
@@ -913,7 +909,7 @@ def TemperaturesModes(){
                 }
             }
             if(Thermostat_2 && state.T2_AppMgt == 1){
-                if(state.AppMgnt_T_2 != "true"){
+                if(atomicState.AppMgnt_T_2 == false){
                     log.debug "${Thermostat_2}'s SetPoint changed by user's OVERRIDE, doing nothing"
                 }
                 else {
@@ -943,7 +939,7 @@ def TemperaturesModes(){
                 }
             }
             if(Thermostat_3 && state.T3_AppMgt == 1){
-            log.info "state.ThisIsManual is $state.ThisIsManual"
+                log.info "state.ThisIsManual is $state.ThisIsManual"
                 if(state.ThisIsManual == true && state.number == 3){
                     log.debug "${Thermostat_3}'s SetPoint changed by user's OVERRIDE, doing nothing"
                 }
@@ -975,7 +971,7 @@ def TemperaturesModes(){
                 }
             }
             if(Thermostat_4 && state.T4_AppMgt == 1){
-                if(state.AppMgnt_T_4 != "true"){
+                if(atomicState.AppMgnt_T_4 == false){
                     log.debug "${Thermostat_4}'s SetPoint changed by user's OVERRIDE, doing nothing"
                 }
                 else {
@@ -1006,7 +1002,7 @@ def TemperaturesModes(){
         else if(CurrMode in Away){
             log.debug "location is in $CurrMode mode, applying settings accordingly" 
             if(Thermostat_1 && state.T1_AppMgt == 1){
-                if(state.AppMgnt_T_1 != "true"){
+                if(atomicState.AppMgnt_T_1 == false){
                     log.debug "${Thermostat_1}'s SetPoint changed by user's OVERRIDE, doing nothing"
                 }
                 else {
@@ -1037,7 +1033,7 @@ def TemperaturesModes(){
             }
             if(Thermostat_2 && state.T2_AppMgt == 1){
                 if(!AltSensor_2){
-                    if(state.AppMgnt_T_2 != "true"){
+                    if(atomicState.AppMgnt_T_2 == false){
                         log.debug "${Thermostat_2}'s SetPoint changed by user's OVERRIDE, doing nothing"
                     }
                     else {
@@ -1096,7 +1092,7 @@ def TemperaturesModes(){
                 }
             }
             if(Thermostat_4 && state.T4_AppMgt == 1){
-                if(state.AppMgnt_T_4 != "true"){
+                if(atomicState.AppMgnt_T_4 == false){
                     log.debug "${Thermostat_4}'s SetPoint changed by user's OVERRIDE, doing nothing"
                 }
                 else {
@@ -1128,7 +1124,7 @@ def TemperaturesModes(){
             log.debug "CustomMode1"
             log.debug "location is in $CurrMode mode, applying settings accordingly" 
             if(Thermostat_1 && state.T1_AppMgt == 1){
-                if(state.AppMgnt_T_1 != "true"){
+                if(atomicState.AppMgnt_T_1 == true){
                     log.debug "${Thermostat_1}'s SetPoint changed by user's OVERRIDE, doing nothing"
                 }
                 else {
@@ -1159,7 +1155,7 @@ def TemperaturesModes(){
                 }
             }
             if(Thermostat_2 && state.T2_AppMgt == 1){
-                if(state.AppMgnt_T_2 != "true"){
+                if(atomicState.AppMgnt_T_2 == false){
                     log.debug "${Thermostat_2}'s SetPoint changed by user's OVERRIDE, doing nothing"
                 }
                 else {
@@ -1189,8 +1185,8 @@ def TemperaturesModes(){
                 }
             }
             if(Thermostat_3 && state.T3_AppMgt == 1){
-                log.debug "state.AppMgnt_T_3 = $state.AppMgnt_T_3"
-                if(state.AppMgnt_T_3 == "false"){
+                log.info "atomicState.AppMgnt_T_3 = $atomicState.AppMgnt_T_3"                
+                if(atomicState.AppMgnt_T_3 == false){
                     log.debug "${Thermostat_3}'s SetPoint changed by user's OVERRIDE, doing nothing"
                 }
                 else {
@@ -1221,7 +1217,7 @@ def TemperaturesModes(){
                 }
             }
             if(Thermostat_4 && state.T4_AppMgt == 1){
-                if(state.AppMgnt_T_4 != "true"){
+                if(atomicState.AppMgnt_T_4 == false){
                     log.debug "${Thermostat_4}'s SetPoint changed by user's OVERRIDE, doing nothing"
                 }
                 else {
@@ -1252,7 +1248,7 @@ def TemperaturesModes(){
         else if(CustomMode2 && CurrMode in CustomMode2){
             log.debug "CustomMode2"
             if(Thermostat_1 && state.T1_AppMgt == 1){
-                if(state.AppMgnt_T_1 != "true"){
+                if(atomicState.AppMgnt_T_1 == false){
                     log.debug "${Thermostat_1}'s SetPoint changed by user's OVERRIDE, doing nothing"
                 }
                 else {
@@ -1285,7 +1281,7 @@ def TemperaturesModes(){
                 }
             }
             if(Thermostat_2 && state.T2_AppMgt == 1){
-                if(state.AppMgnt_T_2 != "true"){
+                if(atomicState.AppMgnt_T_2 == false){
                     log.debug "${Thermostat_2}'s SetPoint changed by user's OVERRIDE, doing nothing"
                 }
                 else {
@@ -1318,8 +1314,8 @@ def TemperaturesModes(){
                 }
             }
             if(Thermostat_3 && state.T3_AppMgt == 1){
-                log.debug "state.AppMgnt_T_3 = $state.AppMgnt_T_3"
-                if(state.AppMgnt_T_3 == "false"){
+                log.info "atomicState.AppMgnt_T_3 = $atomicState.AppMgnt_T_3" 
+                if(atomicState.AppMgnt_T_3 == false){
                     log.debug "${Thermostat_3}'s SetPoint changed by user's OVERRIDE, doing nothing"
                 }
                 else {
@@ -1328,7 +1324,6 @@ def TemperaturesModes(){
                         log.debug "loading $CustomMode2 settings for $Thermostat_3"
                         Thermostat_3.setHeatingSetpoint(HSPCust2_T3)
                         Thermostat_3.setCoolingSetpoint(CSPCust2_T3) 
-
 
                         // if AltSensor then these controls are set by AltSensor loop so we avoid a conflict
                         if(state.CurrTemp3 > HSPCust2_T3 && state.ThermState3 != "off"){
@@ -1350,7 +1345,7 @@ def TemperaturesModes(){
                 }
             }
             if(Thermostat_4 && state.T4_AppMgt == 1){
-                if(state.AppMgnt_T_4 != "true"){
+                if(atomicState.AppMgnt_T_4 == false){
                     log.debug "${Thermostat_4}'s SetPoint changed by user's OVERRIDE, doing nothing"
                 }
                 else {
