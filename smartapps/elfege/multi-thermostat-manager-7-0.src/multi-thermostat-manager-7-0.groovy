@@ -1318,7 +1318,7 @@ def TemperaturesModes(){
                 }
             }
             if(Thermostat_3 && state.T3_AppMgt == 1){
-                log.debug "state.AppMgnt_T_3 = $state.AppMgnt_T_3 TTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTT"
+                log.debug "state.AppMgnt_T_3 = $state.AppMgnt_T_3"
                 if(state.AppMgnt_T_3 == "false"){
                     log.debug "${Thermostat_3}'s SetPoint changed by user's OVERRIDE, doing nothing"
                 }
