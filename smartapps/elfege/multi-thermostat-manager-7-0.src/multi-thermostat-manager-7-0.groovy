@@ -319,7 +319,7 @@ def init() {
     }
 
     state.doorsAreOpen = 0
-     atomicState.T1_AppMgt = 1
+    atomicState.T1_AppMgt = 1
     atomicState.T2_AppMgt = 1
     atomicState.T3_AppMgt = 1
     atomicState.T4_AppMgt = 1
@@ -349,157 +349,97 @@ def setpointHandler(evt){
     state.SPValue = evt.value
     state.SPname = evt.name
     state.SPdevice = evt.device
-
     SetPointOverride()
+
 }
 
 def SetPointOverride() {
     def CurrMode = location.currentMode
     def HomeMode = null
-
     def ThisIsManual = false 
     def reference = null
     def termRef = null
     def EventDevice = null 
     def AltSENSOR = false
-    def number = 0
-    def RefHeat = null
-    def RefCool = null
-    def device = state.SPdevice as String
 
-    if(device == "${Thermostat_1}"){
-        log.debug "evt.device 1 is $device"
-        number = 1
-        if(AltSensor_1){
-            AltSENSOR = true
-            log.debug "AltSENSOR is $AltSENSOR"
-            AlternativeSensor1()
-        }
-    }
-    else if(device == "${Thermostat_2}"){
-        log.debug "evt.device 3 is $device"
-        number = 2
-        if(AltSensor_2){
-            AltSENSOR = true
-            log.debug "AltSENSOR is $AltSENSOR"
-            AlternativeSensor2()
-        }
-    } 
-    else if(device == "${Thermostat_3}"){
-        log.debug "evt.device 3 is $device"
-        number = 3
-        if(AltSensor_3){
-            AltSENSOR = true
-            log.debug "AltSENSOR is $AltSENSOR"
-            AlternativeSensor1()
-        }
-    } 
-    else if(device == "${Thermostat_4}"){
-        log.debug "evt.device 4 is $device"
-        AltSENSOR = false // always false because this option doesn't exist for this thermostat number
-        number = 4
-    }
-    log.debug "number is $number"
+    def device = state.SPdevice
 
-    def NewHeatSet = ["0", "$state.NewHeatSet1", "$state.NewHeatSet2", "$state.NewHeatSet3"]
-    //def NewHeatSet = ["0", "10", "20", "30", "40"]
-    def NewCoolSet = ["0", "$state.NewCoolSet1", "$state.NewCoolSet2", "$state.NewCoolSet3"]
 
-    //must be deleted later for test only
-    log.debug "NewHeatSet values are $NewHeatSet"
 
+    // array thermostats 
+    log.debug "evt.device 3 is $device"
+    // which thermostat? 
+    def CurrentThermostat = device ?: [null, Thermostat_1, Thermostat_2, Thermostat_3, Thermostat_4] 
+    log.info "-----------------------------------------------------------------------------------------CurrentThermostat = $CurrentThermostat"
+    // what is its index value
+    //def ThermostatIndexValues = [0: "0", "$Thermostat_1": "1", "$Thermostat_2": "2", "$Thermostat_3": "3", "$Thermostat_4": "4" ]
+    //def ThermostatIndexValues = [["0": "0"], ["$Thermostat_1": "1"], ["$Thermostat_2": "2"], ["$Thermostat_3": "3"], ["$Thermostat_4": "4"] ]
+    
+    /*
+    //def ThermostatIndexValues = [0: 0, Thermostat_1: 1, Thermostat_2: 2, Thermostat_3: 3, Thermostat_4: 4 ]
+    def MapThermostatIndexValues = [0: "0", tata: "1", tate: "2", teer: "3", etd: "4" ]
+    
+    //device = device.toString()
+    def ThermNumber = ThermostatIndexValues*.tata
+    log.info "-----------------------------------------------------------------------------------------ThermNumber = $ThermNumber"
+    //ThermNumber = ThermNumber.toInteger()
+    log.info "-----------------------------------------------------------------------------------------ThermNumber = $ThermNumber"
+*/
     //array heat
     def HSPH = ["0","$HSPH1", "$HSPH2", "$HSPH3", "$HSPH4"]
     def HSPN = ["0","$HSPN1", "$HSPN2", "$HSPN3", "$HSPN4"]
     def HSPA_ = ["0","$HSPA", "$HSPA", "$HSPA", "$HSPA"]
     def HSPCust1 = ["0","$HSPCust1_T1", "$HSPCust1_T2", "$HSPCust1_T3", "$HSPCust1_T4"]
     def HSPCust2 = ["0","$HSPCust2_T1", "$HSPCust2_T2", "$HSPCust2_T3", "$HSPCust2_T4"]
+
+    // Which Location Mode are we in? 
+    //def CurrentMode = CurrMode ?: [null, Home, Night, Away, CustomMode1, CustomMode2]
+    // Set the index value for current mode
+    def MapofIndexValues = [0: "0", Home: "1", Night: "2", Away: "3", CustomMode1: "4", CustomMode2: "5" ]   
+    def IndexValue = MapofIndexValues."$CurrMode"
+    IndexValue = IndexValue.toInteger()
+    log.info "-----------------------------------------------------------------------------------------IndexValue = $IndexValue"
+
     //array cool
     def CSPH = ["0","$CSPH1", "$CSPH2", "$CSPH3", "$CSPH4"]
     def CSPN = ["0","$CSPN1", "$CSPN2", "$CSPN3", "$CSPN4"]
     def CSPA_ = ["0","$CSPA", "$CSPA", "$CSPA", "$CSPA"]
     def CSPCust1 = ["0","$CSPCust1_T1", "$CSPCust1_T2", "$CSPCust1_T3", "$CSPCust1_T4"]
     def CSPCust2 = ["0","$CSPCust2_T1", "$CSPCust2_T2", "$CSPCust2_T3", "$CSPCust2_T4"]
-    //def TX_AppMgt = ["0", "atomicState.AppMgnt_T_1", "atomicState.AppMgnt_T_2", "atomicState.AppMgnt_T_3", "atomicState.AppMgnt_T_4"]
 
+    // now transpose corresponding values among tables
+    // heat values
+    def ListHSPs = ["0", HSPH, HSPN, HSPA, HSPCust1, HSPCust2]
+    def HSPModecheck = ListHSPs[IndexValue]
+    def RefHeat = HSPModecheck[ThermNumber]
+    //cooling values
+    def ListCSPs = ["0", CSPH, CSPN, CSPA, CSPCust1, CSPCust2]
+    def CSPModecheck = ListCSPs[IndexValue]
+    def RefCool = CSPModecheck[ThermNumber]
 
-    def HSP = 0
-    def CSP = 0
+    // check which thermostat works on Alternative Sensor //// NOT FINISHED
+    if(AltSensor_1){
+        AltSENSOR = true
+        log.debug "AltSENSOR is $AltSENSOR"
+        
+        AlternativeSensor1()
+    }
+    else  if(AltSensor_2){
+        AltSENSOR = true
+        log.debug "AltSENSOR is $AltSENSOR"
+        AlternativeSensor2()
+    }
+    else if(AltSensor_3){
+        AltSENSOR = true
+        log.debug "AltSENSOR is $AltSENSOR"
+        AlternativeSensor1()
+    }
 
-    if(CurrMode in Home){
-        HSP = HSPH[number] 
-        CSP = CSPH[number] 
-        log.debug "HSP is $HSP"
-        log.debug "CSP is $CSP"
-        if(AltSENSOR){
-            RefHeat = NewHeatSet[number] 
-            RefCool = NewCoolSet[number] 
-        }
-        else {
-            RefHeat = HSP 
-            RefCool = CSP 
-        }
-    }
-    else if(CurrMode in Night){
-        HSP = HSPN[number] 
-        CSP = CSPN[number] 
-        log.debug "HSP is $HSP"
-        log.debug "CSP is $CSP"
-        if(AltSENSOR){
-            RefHeat = NewHeatSet[number] 
-            RefCool = NewCoolSet[number] 
-        }
-        else {
-            RefHeat = HSP 
-            RefCool = CSP 
-        }
-    } 
-    else if(CurrMode in Away){
-        HSP = HSPA_[number] 
-        CSP = CSPA[number] 
-        log.debug "HSP is $HSP"
-        log.debug "CSP is $CSP"
-        if(AltSENSOR){
-            RefHeat = NewHeatSet[number] 
-            RefCool = NewCoolSet[number] 
-        }
-        else {
-            RefHeat = HSP 
-            RefCool = CSP 
-        }
-    }
-    else if(CurrMode in CustomMode1){
-        HSP = HSPCust1[number] 
-        CSP = CSPCust1[number] 
-        log.debug "HSP is $HSP"
-        log.debug "CSP is $CSP"
-        if(AltSENSOR){
-            RefHeat = NewHeatSet[number] 
-            RefCool = NewCoolSet[number] 
-        }
-        else {
-            RefHeat = HSP 
-            RefCool = CSP 
-        }
-    }
-    else if(CurrMode in CustomMode2){
-        HSP = HSPCust2[number] 
-        CSP = CSPCust2[number] 
-        log.debug "HSP is $HSP"
-        log.debug "CSP is $CSP"
-        if(AltSENSOR){
-            RefHeat = NewHeatSet[number] 
-            RefCool = NewCoolSet[number]
-            log.debug "NewHeatSet is $RefHeat"
-            log.debug "NewCoolSet is $RefCool"
-        }
-        else {
-            RefHeat = HSP 
-            RefCool = CSP 
-            log.debug "NewHeatSet is $RefHeat"
-            log.debug "NewCoolSet is $RefCool"
-        }
-    }
+    // table for AltSensors
+    def NewHeatSet = ["0", "$state.NewHeatSet1", "$state.NewHeatSet2", "$state.NewHeatSet3"]
+    def NewCoolSet = ["0", "$state.NewCoolSet1", "$state.NewCoolSet2", "$state.NewCoolSet3"]
+    //must be deleted later for test only
+    log.debug "NewHeatSet values are $NewHeatSet"
 
     if(state.SPname == "heatingSetpoint"){              
         reference = Math.round(Double.parseDouble(RefHeat))
@@ -558,7 +498,7 @@ def SetPointOverride() {
     log.debug "RefCool is: $RefCool"
     log.debug "reference is: $reference"
     log.debug "SetPoint Change was Manual? ($state.ThisIsManual) if false then should have $reference = $Value"
-    state.number = number
+    //atomicState.ThermNumber = ThermNumber
 
 }
 def ThermostatSwitchHandler(evt){
@@ -705,23 +645,6 @@ def ChangedModeHandler(evt) {
     atomicState.T4_AppMgt = 1
     atomicState.override = 0
     state.ThisIsManual = false
-
-    //array heat
-    def HSPH = ["0","$HSPH1", "$HSPH2", "$HSPH3", "$HSPH4"]
-    def HSPN = ["0","$HSPN1", "$HSPN2", "$HSPN3", "$HSPN4"]
-    def HSPA_ = ["0","$HSPA", "$HSPA", "$HSPA", "$HSPA"]
-    def HSPCust1 = ["0","$HSPCust1_T1", "$HSPCust1_T2", "$HSPCust1_T3", "$HSPCust1_T4"]
-    def HSPCust2 = ["0","$HSPCust2_T1", "$HSPCust2_T2", "$HSPCust2_T3", "$HSPCust2_T4"]
-    //array cool
-    def CSPH = ["0","$CSPH1", "$CSPH2", "$CSPH3", "$CSPH4"]
-    def CSPN = ["0","$CSPN1", "$CSPN2", "$CSPN3", "$CSPN4"]
-    def CSPA_ = ["0","$CSPA", "$CSPA", "$CSPA", "$CSPA"]
-    def CSPCust1 = ["0","$CSPCust1_T1", "$CSPCust1_T2", "$CSPCust1_T3", "$CSPCust1_T4"]
-    def CSPCust2 = ["0","$CSPCust2_T1", "$CSPCust2_T2", "$CSPCust2_T3", "$CSPCust2_T4"]
-
-    log.trace "HSPH: $HSPH, HSPN: $HSPN, HSPA: $HSPA, HSPCust1: $HSPCust1, HSPCust2: $HSPCust2"
-
-    log.trace "CSPH: $CSPH, CSPN: $CSPN, CSPA_: $CSPA_, CSPCust1: $CSPCust1, CSPCust2: $CSPCust2"
 
     TemperaturesModes()
 }
