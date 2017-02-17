@@ -536,7 +536,8 @@ def setpointHandler(evt){
         state.override = 1
         if(device == "${Thermostat_1}")
         {
-            state.AppMgnt_T_1 = "false"
+            state.AppMgnt_T_1 = "false" // for some weird reason an actual boolean gets reset while it's not flipped anywhere else in this app beside mode change and initialization... 
+            // spent hours trying to understand why so I settled for a String value, which works the same. 
             log.debug "state.AppMgnt_T_1 set to $state.AppMgnt_T_1"
         }
         else if(device == "${Thermostat_2}")
@@ -942,6 +943,7 @@ def TemperaturesModes(){
                 }
             }
             if(Thermostat_3 && state.T3_AppMgt == 1){
+            log.info "state.ThisIsManual is $state.ThisIsManual"
                 if(state.ThisIsManual == true && state.number == 3){
                     log.debug "${Thermostat_3}'s SetPoint changed by user's OVERRIDE, doing nothing"
                 }
@@ -1187,7 +1189,7 @@ def TemperaturesModes(){
                 }
             }
             if(Thermostat_3 && state.T3_AppMgt == 1){
-                log.debug "state.AppMgnt_T_3 = $state.AppMgnt_T_3 TTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTT"
+                log.debug "state.AppMgnt_T_3 = $state.AppMgnt_T_3"
                 if(state.AppMgnt_T_3 == "false"){
                     log.debug "${Thermostat_3}'s SetPoint changed by user's OVERRIDE, doing nothing"
                 }
