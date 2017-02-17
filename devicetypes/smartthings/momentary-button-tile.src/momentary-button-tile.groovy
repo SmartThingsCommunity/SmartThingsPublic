@@ -32,7 +32,7 @@ metadata {
 	tiles {
 		standardTile("switch", "device.switch", width: 2, height: 2, canChangeIcon: true) {
 			state "off", label: 'Push', action: "momentary.push", backgroundColor: "#ffffff", nextState: "on"
-			state "on", label: 'Push', action: "momentary.push", backgroundColor: "#53a7c0"
+			state "on", label: 'Push', action: "momentary.push", backgroundColor: "#00A0DC"
 		}
 		main "switch"
 		details "switch"
