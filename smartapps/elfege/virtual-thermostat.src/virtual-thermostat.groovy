@@ -204,7 +204,7 @@ def desiredTemp(){
 
     def CurrMode = location.currentMode
 
-    def desiredTemp = 65
+    def desiredTemp = 65 
 
     if(CurrMode in Modes[0]){
         desiredTemp = desireTempMode0
@@ -284,7 +284,7 @@ def switchHandler(evt){
         switchVal == "on" ? true : false
     }
     log.debug "${onSwitches.size()} out of ${outlets.size()} switches are on"
-    state.totalOutlets = outlets.size()
+    atomicState.totalOutlets = outlets.size()
     atomicState.switchVal = onSwitches.size()
 
     log.debug "atomicState.switchVal = $atomicState.switchVal"
@@ -322,15 +322,19 @@ def motionHandler(evt){
     }
 }
 private Switches(){
-
+	
+    def CurrMode = location.currentMode
+    
     def desiredTemp = desiredTemp()
+    
+    def switchVal = atomicState.switchVal
+    def totalOutlets = atomicState.totalOutlets
 
     if(!motion){
         state.motion = 1
     }
     log.debug "Switches() loop"
 
-    def CurrMode = location.currentMode
     if(CurrMode in Modes){
         if(state.motion == 1){
             if (mode == "cool") {
@@ -339,7 +343,7 @@ private Switches(){
                 if (state.currentTemp > desiredTemp) {
                     if(state.override == 0){
                         // if out of override the app needs to know that not all outlets were turned back on, so it turns back on all the others
-                        if(atomicState.switchVal != state.totalOutlets || atomicState.switchVal == 0){
+                        if(switchVal != totalOutlets){
 
                             log.debug "atomicState.OffbyApp = $atomicState.OffbyApp"
                             outlets?.on()
@@ -372,7 +376,7 @@ private Switches(){
                     if(state.override == 0){
                         log.debug "switchVal = $switchVal"
                         // if out of override the app needs to know that not all outlets were turned back on, so it turns back on all the others
-                        if(atomicState.switchVal != state.totalOutlets || atomicState.switchVal == 0){
+                       if(switchVal != totalOutlets){
 
                             log.debug "atomicState.OffbyApp = $atomicState.OffbyApp"
                             outlets?.on()
@@ -387,7 +391,7 @@ private Switches(){
                 }
                 else {
                     if(state.override == 0){
-                        if(atomicState.switchVal != 0){
+                        if(switchVal != 0){
                             atomicState.OffbyApp = 1
                             log.debug "atomicState.OffbyApp = $atomicState.OffbyApp"
 
