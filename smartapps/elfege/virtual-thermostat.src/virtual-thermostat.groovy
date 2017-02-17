@@ -99,23 +99,6 @@ def TemperaturesByMode(){
 
         log.debug "Selected Modes are $Modes"
 
-        def SelectedModes = Modes.findAll { AllModes ->
-            AllModes in Modes ? true : false
-        }
-        log.debug "${SelectedModes.size()} out of ${Modes.size()} Modes are selected"
-
-        def ModesSize = SelectedModes.size()
-
-        log.debug "Mode Size is $ModesSize"
-
-        def Mode0 = Modes[0]
-        def Mode1 = Modes[1]
-        def Mode2 = Modes[2]
-        def Mode3 = Modes[3]
-        def Mode4 = Modes[4]
-        def Mode5 = Modes[5]
-
-        log.trace "Mode0: $Mode0, Mode1: $Mode1, Mode2: $Mode2, Mode3: $Mode3, Mode4: $Mode4, Mode5: $Mode5, "
 
         section("Set the desired temperatures..."){
             input "desireTempMode0", "decimal", title: "Desired Temp in $Mode0 mode", required: true
@@ -137,6 +120,7 @@ def TemperaturesByMode(){
         }
     }
 }
+
 def installed(){
     log.debug "installed with settings: $settings"
     init()
@@ -159,15 +143,36 @@ def init(){
     }
     state.HandlerIsScheduled = 0
     state.override = 0
-    state.OffbyApp = 1
+    atomicState.OffbyApp = 1
 
     def scheduledTime = 1
     state.HandlerIsScheduled = 1
     schedule("0 0/$scheduledTime * * * ?", temperatureHandler)
     log.debug "temperatureHandler scheduled to run every $scheduledTime minutes"
+
+
+    def SelectedModes = Modes.findAll { AllModes ->
+        AllModes in Modes ? true : false
+    }
+    log.debug "${SelectedModes.size()} out of ${Modes.size()} Modes are selected"
+
+    def ModesSize = SelectedModes.size()
+
+    log.debug "Mode Size is $ModesSize"
+
+    def Mode0 = Modes[0]
+    def Mode1 = Modes[1]
+    def Mode2 = Modes[2]
+    def Mode3 = Modes[3]
+    def Mode4 = Modes[4]
+    def Mode5 = Modes[5]
+
+    log.trace "Mode0: $Mode0, Mode1: $Mode1, Mode2: $Mode2, Mode3: $Mode3, Mode4: $Mode4, Mode5: $Mode5, "
+
     temperatureHandler()
 
 }
+
 def ChangedModeHandler(evt){
     log.debug "Current Mode is $evt.value" 
     def CurrMode = location.currentMode
@@ -179,7 +184,9 @@ def ChangedModeHandler(evt){
         log.debug "temperatureHandler scheduled to run every $scheduledTime minutes"
         temperatureHandler()
     }
-
+    else {
+        unschedule(temperatureHandler)
+    }
 
     log.debug "Selected Modes are $Modes"
 
@@ -194,47 +201,53 @@ def ChangedModeHandler(evt){
     desiredTemp()
 }
 def desiredTemp(){
-    if(CurrMode in Mode0){
-        state.desiredTemp = desireTempMode0
-        log.debug "Desired temp is now : $state.desiredTemp"
+
+    def CurrMode = location.currentMode
+
+    def desiredTemp = 65
+
+    if(CurrMode in Modes[0]){
+        desiredTemp = desireTempMode0
+        log.debug "Desired temp is now : $desiredTemp ----a-----"
     } 
-    else if(CurrMode in Mode1){
-        state.desiredTemp = desireTempMode1
-        log.debug "Desired temp is now : $state.desiredTemp"
+    else if(CurrMode in Modes[1]){
+        desiredTemp = desireTempMode1
+        log.debug "Desired temp is now : $desiredTemp ----b-----"
     } 
-    else if(CurrMode in Mode2){
-        state.desiredTemp = desireTempMode2
-        log.debug "Desired temp is now : $state.desiredTemp"
+    else if(CurrMode in  Modes[2]){
+        desiredTemp = desireTempMode2
+        log.debug "Desired temp is now : $desiredTemp -----c----"
     } 
-    else if(CurrMode in Mode3){
-        state.desiredTemp = desireTempMode3
-        log.debug "Desired temp is now : $state.desiredTemp"
+    else if(CurrMode in  Modes[3]){
+        desiredTemp = desireTempMode3
+        log.debug "Desired temp is now : $desiredTemp ----d-----"
     } 
-    else if(CurrMode in Mode4){
-        state.desiredTemp = desireTempMode4
-        log.debug "Desired temp is now : $state.desiredTemp"
+    else if(CurrMode in  Modes[4]){
+        desiredTemp = desireTempMode4
+        log.debug "Desired temp is now : $desiredTemp ---e------"
     } 
-    else if(CurrMode in Mode5){
-        state.desiredTemp = desireTempMode5
-        log.debug "Desired temp is now : $state.desiredTemp"
+    else if(CurrMode in  Modes[5]){
+        desiredTemp = desireTempMode5
+        log.debug "Desired temp is now : $desiredTemp ---f------"
     }
     else { 
         log.debug "Home is not in any selected modes"
     }
+    return desiredTemp
 }
 def switchHandler(evt){
 
     log.debug "$evt.device is $evt.value"
     log.debug "state.override = $state.override"
-    log.debug "state.OffbyApp = $state.OffbyApp"
+    log.debug "atomicState.OffbyApp = $atomicState.OffbyApp"
 
     def CurrMode = location.currentMode
     def ModeOk = CurrMode in Modes
     if(override){
 
         if(evt.value == "off" && state.override == 0){
-            state.OffbyApp = 1
-            log.debug "state.OffbyApp value back to 1"
+            atomicState.OffbyApp = 1
+            log.debug "atomicState.OffbyApp value back to 1"
         }
 
         if(evt.value == "on" && !ModeOk){
@@ -251,18 +264,18 @@ def switchHandler(evt){
             log.debug "OVERRIDE MODE CANCELED, resuming normal operation"
             state.override = 0
         }
-        else if (evt.value == "off" && state.override == 0 && state.OffbyApp == 0){
+        else if (evt.value == "off" && state.override == 0 && atomicState.OffbyApp == 0){
             log.debug "OVERRIDE MODE"
             state.override = 1
         }
-        else if(evt.value == "on" && state.OffbyApp == 1 && state.override == 0){
-            state.OffbyApp = 0
+        else if(evt.value == "on" && atomicState.OffbyApp == 1 && state.override == 0){
+            atomicState.OffbyApp = 0
         }
     } 
     else { 
         log.debug "NO OVERRIDE OPTION"
         state.override = 0
-        state.OffbyApp = 1
+        atomicState.OffbyApp = 1
     }
 
     def currSwitches = outlets.currentSwitch
@@ -272,9 +285,9 @@ def switchHandler(evt){
     }
     log.debug "${onSwitches.size()} out of ${outlets.size()} switches are on"
     state.totalOutlets = outlets.size()
-    state.switchVal = onSwitches.size()
+    atomicState.switchVal = onSwitches.size()
 
-    log.debug "state.switchVal = $state.switchVal"
+    log.debug "atomicState.switchVal = $atomicState.switchVal"
 }
 def temperatureHandler(evt){
     def CurrMode = location.currentMode
@@ -309,7 +322,9 @@ def motionHandler(evt){
     }
 }
 private Switches(){
-    desiredTemp()
+
+    def desiredTemp = desiredTemp()
+
     if(!motion){
         state.motion = 1
     }
@@ -320,13 +335,13 @@ private Switches(){
         if(state.motion == 1){
             if (mode == "cool") {
                 // air conditioner
-                log.debug "evaluating cool. Desired temperature is $state.desiredTemp"    
-                if (state.currentTemp > state.desiredTemp) {
+                log.debug "evaluating cool. Desired temperature is $desiredTemp"    
+                if (state.currentTemp > desiredTemp) {
                     if(state.override == 0){
                         // if out of override the app needs to know that not all outlets were turned back on, so it turns back on all the others
-                        if(state.switchVal != state.totalOutlets){
+                        if(atomicState.switchVal != state.totalOutlets || atomicState.switchVal == 0){
 
-                            log.debug "state.OffbyApp = $state.OffbyApp"
+                            log.debug "atomicState.OffbyApp = $atomicState.OffbyApp"
                             outlets?.on()
                             log.debug "$outlets turned ON"
                             state.outlet = "on"
@@ -339,8 +354,8 @@ private Switches(){
                 }
                 else {
                     if(state.override == 0){
-                        state.OffbyApp = 1
-                        log.debug "state.OffbyApp = $state.OffbyApp"
+                        atomicState.OffbyApp = 1
+                        log.debug "atomicState.OffbyApp = $atomicState.OffbyApp"
                         outlets?.off()                   
                         log.debug "$outlets turned OFF"
                         state.outlet = "off"
@@ -352,13 +367,14 @@ private Switches(){
             }
             else {
                 // heater
-                log.debug "evaluating heat. Desired temperature is $state.desiredTemp"
-                if (state.currentTemp < state.desiredTemp) {
+                log.debug "evaluating heat. Desired temperature is $desiredTemp"
+                if (state.currentTemp < desiredTemp) {
                     if(state.override == 0){
+                        log.debug "switchVal = $switchVal"
                         // if out of override the app needs to know that not all outlets were turned back on, so it turns back on all the others
-                        if(state.switchVal != state.totalOutlets){
+                        if(atomicState.switchVal != state.totalOutlets || atomicState.switchVal == 0){
 
-                            log.debug "state.OffbyApp = $state.OffbyApp"
+                            log.debug "atomicState.OffbyApp = $atomicState.OffbyApp"
                             outlets?.on()
                             log.debug "$outlets turned ON"
                             state.outlet = "on"
@@ -371,9 +387,9 @@ private Switches(){
                 }
                 else {
                     if(state.override == 0){
-                        if(state.switchVal != 0){
-                            state.OffbyApp = 1
-                            log.debug "state.OffbyApp = $state.OffbyApp"
+                        if(atomicState.switchVal != 0){
+                            atomicState.OffbyApp = 1
+                            log.debug "atomicState.OffbyApp = $atomicState.OffbyApp"
 
                             outlets?.off()
                             log.debug "$outlets turned OFF"
@@ -394,8 +410,8 @@ private Switches(){
                 log.debug "no motion within time frame, turning off $outlets"
                 if(state.override == 0){       
                     if(state.override == 0){
-                        if(state.switchVal != 0){
-                            state.OffbyApp = 1
+                        if(atomicState.switchVal != 0){
+                            atomicState.OffbyApp = 1
                             outlets?.off()
                         }
                         else {
@@ -415,8 +431,8 @@ private Switches(){
     else { 
         log.debug "Not in $Modes mode, making sure all outlets are off"
         if(state.override == 0){
-            if(state.switchVal != 0){             
-                state.OffbyApp = 1
+            if(atomicState.switchVal != 0){             
+                atomicState.OffbyApp = 1
                 outlets?.off()
             }
             else { 
