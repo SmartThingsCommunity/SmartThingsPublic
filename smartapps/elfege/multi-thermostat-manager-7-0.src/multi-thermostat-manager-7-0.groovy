@@ -652,6 +652,9 @@ def TemperaturesModes(){
 
     def doorsOk = alldoorsareclosed()
     if(doorsOk){
+
+        log.trace """atomicState.AppMgnt_T_1 : $atomicState.AppMgnt_T_1, atomicState.AppMgnt_T_2 : $atomicState.AppMgnt_T_2, 
+atomicState.AppMgnt_T_3 : $atomicState.AppMgnt_T_3, atomicState.AppMgnt_T_4 : $atomicState.AppMgnt_T_4"""
         def CurrMode = location.currentMode
         def outsideTemp = OutsideSensor.currentTemperature
 
@@ -1049,7 +1052,7 @@ def TemperaturesModes(){
             log.debug "CustomMode1"
             log.debug "location is in $CurrMode mode, applying settings accordingly" 
             if(Thermostat_1 && atomicState.T1_AppMgt == 1){
-                if(atomicState.AppMgnt_T_1 == true){
+                if(atomicState.AppMgnt_T_1 == false){
                     log.debug "${Thermostat_1}'s SetPoint changed by user's OVERRIDE, doing nothing"
                 }
                 else {
@@ -1355,7 +1358,9 @@ def AlternativeSensor1(){
 
         NewHeatSet = DefaultSetHeat + 5
         NewCoolSet = DefaultSetCool - 5
-        if((!IsOn && atomicState.override == 0) || (IsOn && atomicState.T1_AppMgt == 0)){
+        
+        if(atomicState.AppMgnt_T_2 == true && atomicState.override == 0 && atomicState.T2_AppMgt == 1){
+            // no setpoint override, no on/off override
             if(SenTemp < DefaultSetHeat || OutsideTemp > SenTemp){
                 // incresease current thermostat heat setting to force run 
 
@@ -1392,7 +1397,7 @@ def AlternativeSensor1(){
             state.NewHeatSet1 = NewHeatSet
             state.NewCoolSet1 = NewCoolSet // references used by heatingSetpointHandler()
         }
-        else { log.debug "$Thermostat_1 already properly set (atomicState.T1_AppMgt = $atomicState.T1_AppMgt) or in OVERRIDE MODE (atomicState.override = $atomicState.override), doing nothing" }
+        else { log.debug "$Thermostat_2 in OVERRIDE MODE, doing nothing : atomicState.T2_AppMgt = $atomicState.T2_AppMgt, atomicState.override = $atomicState.override" }
     }
     else { 
         log.debug "some doors are open, AlternativeSensor1 loop not running"
@@ -1450,8 +1455,8 @@ def AlternativeSensor2(){
         NewHeatSet = DefaultSetHeat + 5
         NewCoolSet = DefaultSetCool - 5
 
-
-        if((!IsOn && atomicState.override == 0) || (IsOn && atomicState.T2_AppMgt == 0)){
+        if(atomicState.AppMgnt_T_2 == true && atomicState.override == 0 && atomicState.T2_AppMgt == 1){
+            // no setpoint override, no on/off override
             log.debug "evaluating for AlternativeSensor2"
             if(SenTemp < DefaultSetHeat || OutsideTemp > SenTemp){
                 // set current thermostat settings to force operation 
@@ -1494,10 +1499,10 @@ def AlternativeSensor2(){
             state.NewCoolSet2 = NewCoolSet
             log.debug "state.NewCoolSet2 = DefaultSetCool-5, that is: $DefaultSetCool - 5 = $state.NewCoolSet2"
         }
-        else { log.debug "$Thermostat_2 already properly set (atomicState.T2_AppMgt = $atomicState.T2_AppMgt) or in OVERRIDE MODE (atomicState.override = $atomicState.override), doing nothing" }
+        else { log.debug "$Thermostat_2 in OVERRIDE MODE, doing nothing : atomicState.T2_AppMgt = $atomicState.T2_AppMgt, atomicState.override = $atomicState.override" }
     }
     else { 
-        log.debug "some doors are open, AlternativeSensor1 loop not running"
+        log.debug "some doors are open, AlternativeSensor2 loop not running"
     }
 }
 def AlternativeSensor3(){
@@ -1549,7 +1554,7 @@ def AlternativeSensor3(){
         NewHeatSet = DefaultSetHeat + 5
         NewCoolSet = DefaultSetCool - 5
 
-        if((!IsOn && atomicState.override == 0) || (IsOn && atomicState.T3_AppMgt == 0)){
+        if(atomicState.AppMgnt_T_2 == true && atomicState.override == 0 && atomicState.T2_AppMgt == 1){
 
             //(IsOn && atomicState.T3_AppMgt == 0) if on but only due to previous app's command, then run
             //(!IsOn && atomicState.override == 0) if off but not due to override, then run
@@ -1590,7 +1595,7 @@ def AlternativeSensor3(){
             state.NewHeatSet3 = NewHeatSet
             state.NewCoolSet3 = NewCoolSet
         }
-        else { log.debug "$Thermostat_3 already properly set (atomicState.T1_AppMgt = $atomicState.T1_AppMgt) or in OVERRIDE MODE (atomicState.override = $atomicState.override), doing nothing" }
+        else { log.debug "$Thermostat_2 in OVERRIDE MODE, doing nothing : atomicState.T2_AppMgt = $atomicState.T2_AppMgt, atomicState.override = $atomicState.override" }
     }
     else { 
         log.debug "some doors are open, AlternativeSensor1 loop not running"
