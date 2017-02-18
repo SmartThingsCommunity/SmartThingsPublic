@@ -345,15 +345,13 @@ def appHandler(evt){
 }
 def setpointHandler(evt){
     log.debug "New $evt.name for $evt.device : $evt.value"
+    log.debug "evt.displayName is $evt.displayName -------------------------------"
 
     state.SPValue = evt.value
     state.SPname = evt.name
+    state.devicedisplayName = evt.displayName
     state.SPdevice = evt.device
-    SetPointOverride()
 
-}
-
-def SetPointOverride() {
     def CurrMode = location.currentMode
     def HomeMode = null
     def ThisIsManual = false 
@@ -361,30 +359,45 @@ def SetPointOverride() {
     def termRef = null
     def EventDevice = null 
     def AltSENSOR = false
+    def ThermNumber = 0
 
-    def device = state.SPdevice
+    String deviceDisplayName = state.devicedisplayName
+    def device = state.SPdevice 
 
-
-
-    // array thermostats 
-    log.debug "evt.device 3 is $device"
-    // which thermostat? 
-    def CurrentThermostat = device ?: [null, Thermostat_1, Thermostat_2, Thermostat_3, Thermostat_4] 
-    log.info "-----------------------------------------------------------------------------------------CurrentThermostat = $CurrentThermostat"
-    // what is its index value
-    //def ThermostatIndexValues = [0: "0", "$Thermostat_1": "1", "$Thermostat_2": "2", "$Thermostat_3": "3", "$Thermostat_4": "4" ]
-    //def ThermostatIndexValues = [["0": "0"], ["$Thermostat_1": "1"], ["$Thermostat_2": "2"], ["$Thermostat_3": "3"], ["$Thermostat_4": "4"] ]
-    
-    /*
-    //def ThermostatIndexValues = [0: 0, Thermostat_1: 1, Thermostat_2: 2, Thermostat_3: 3, Thermostat_4: 4 ]
-    def MapThermostatIndexValues = [0: "0", tata: "1", tate: "2", teer: "3", etd: "4" ]
-    
-    //device = device.toString()
-    def ThermNumber = ThermostatIndexValues*.tata
+    if(evt.displayName == "${Thermostat_1}"){
+        log.debug "evt.device 1 is $evt.device"
+        ThermNumber = 1
+        if(AltSensor_1){
+            AltSENSOR = true
+            log.debug "AltSENSOR is $AltSENSOR"
+            AlternativeSensor1()
+        }
+    }
+    else if(evt.displayName == "${Thermostat_2}"){
+        log.debug "evt.device 2 is $evt.device"
+        ThermNumber = 2
+        if(AltSensor_2){
+            AltSENSOR = true
+            log.debug "AltSENSOR is $AltSENSOR"
+            AlternativeSensor2()
+        }
+    } 
+    else if(evt.displayName == "${Thermostat_3}"){
+        log.debug "evt.device 3 is $evt.device"
+        ThermNumber = 3
+        if(AltSensor_3){
+            AltSENSOR = true
+            log.debug "AltSENSOR is $AltSENSOR"
+            AlternativeSensor1()
+        }
+    } 
+    else if(evt.displayName == "${Thermostat_4}"){
+        log.debug "evt.device 4 is $evt.device"
+        AltSENSOR = false // always false because this option doesn't exist for this thermostat number
+        ThermNumber = 4
+    }
     log.info "-----------------------------------------------------------------------------------------ThermNumber = $ThermNumber"
-    //ThermNumber = ThermNumber.toInteger()
-    log.info "-----------------------------------------------------------------------------------------ThermNumber = $ThermNumber"
-*/
+
     //array heat
     def HSPH = ["0","$HSPH1", "$HSPH2", "$HSPH3", "$HSPH4"]
     def HSPN = ["0","$HSPN1", "$HSPN2", "$HSPN3", "$HSPN4"]
@@ -418,22 +431,7 @@ def SetPointOverride() {
     def RefCool = CSPModecheck[ThermNumber]
 
     // check which thermostat works on Alternative Sensor //// NOT FINISHED
-    if(AltSensor_1){
-        AltSENSOR = true
-        log.debug "AltSENSOR is $AltSENSOR"
-        
-        AlternativeSensor1()
-    }
-    else  if(AltSensor_2){
-        AltSENSOR = true
-        log.debug "AltSENSOR is $AltSENSOR"
-        AlternativeSensor2()
-    }
-    else if(AltSensor_3){
-        AltSENSOR = true
-        log.debug "AltSENSOR is $AltSENSOR"
-        AlternativeSensor1()
-    }
+
 
     // table for AltSensors
     def NewHeatSet = ["0", "$state.NewHeatSet1", "$state.NewHeatSet2", "$state.NewHeatSet3"]
