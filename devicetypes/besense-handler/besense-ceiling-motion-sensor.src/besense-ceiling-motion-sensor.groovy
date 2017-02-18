@@ -1,13 +1,13 @@
 /**
  *  
  *
- *  BeSense Z-Wave Ceiling Motion Sensor
+ *  BeSense Z-Wave Motion Sensor
  *
  *  
  */
 
 metadata {
-	definition (name: "BeSense Ceiling Motion Sensor", namespace: "BeSense Handler", author: "BeSense") {
+	definition (name: "BeSense Motion Sensor", namespace: "BeSense Handler", author: "BeSense") {
 		capability "Motion Sensor"
 		capability "Sensor"
 		capability "Battery"
@@ -15,7 +15,7 @@ metadata {
     
 
 		
-		fingerprint mfr: "0214", prod: "0002", model: "0002", deviceJoinName: "Besense Ceiling Motion Sensor"  // Besense motion +
+		fingerprint mfr: "0214", prod: "0002", model: "0002", deviceJoinName: "Besense Motion Sensor"  // Besense motion +
 		
 	}
 
