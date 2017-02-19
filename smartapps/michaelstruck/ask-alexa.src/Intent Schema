@@ -81,6 +81,19 @@
         ]
     },
     {
+      "intent": "FollowUpOperation",
+      "slots": [
+        {
+          "name" : "FType",
+          "type" : "LIST_OF_FOLLOWUPS"
+        },
+        {
+          "name" : "Data",
+          "type" : "AMAZON.NUMBER"
+        }
+        ]
+    },
+    {
 		"intent": "AMAZON.HelpIntent"
     },
     {
