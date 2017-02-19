@@ -1,7 +1,7 @@
 /**
  *  Ask Alexa - Lambda Code
  *
- *  Version 1.2.2b - 9/24/16 Copyright © 2016 Michael Struck
+ *  Version 1.2.3 - 2/9/17 Copyright © 2017 Michael Struck
  *  Special thanks for Keith DeLong for code and assistance 
  *  
  *  Version 1.0.0 - Initial release
@@ -17,6 +17,7 @@
  *  Version 1.2.0a - Addition of courtesy personality responses
  *  Version 1.2.1 - Addition of the Snarky personality responses and change in macro password structure
  *  Version 1.2.2b - Addition of small translation items
+ *  Version 1.2.3 - Added follow up to a missing PIN when required, updated copyright to 2017
  * 
  *  Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except
  *  in compliance with the License. You may obtain a copy of the License at:
@@ -30,14 +31,14 @@
  */
 'use strict';
 exports.handler = function( event, context ) {
-    var versionTxt = '1.2.2b';
-    var versionDate= '09/24/2016';
-    var versionNum = '122';
+    var versionTxt = '1.2.3';
+    var versionDate= '02/09/2017';
+    var versionNum = '123';
     var https = require( 'https' );
     // Paste app code here between the breaks------------------------------------------------
-
-    
-    
+    var STappID = '';
+    var STtoken = '';
+    var url='https://graph.api.smartthings.com:443/api/smartapps/installations/' + STappID + '/' ;
     //---------------------------------------------------------------------------------------
     var cardName ="";
     var endSession = true;
@@ -72,7 +73,14 @@ exports.handler = function( event, context ) {
                     url += 'd?Device=' + Device + '&Operator=' + Operator + '&Num=' + Num + '&Param=' + Param; 
                     process = true;
                     cardName = "SmartThings Devices";
-                } 
+                }
+                else if (intentName == "FollowUpOperation") {
+                    var FType = event.request.intent.slots.FType.value;
+                    var Data = event.request.intent.slots.Data.value;
+                    url += 'f?Type=' + FType + '&Data=' + Data ;
+                    process = true;
+                    cardName = "SmartThings Follow up";
+                }
                 else if (intentName == "ListOperation") {
                     var Type = event.request.intent.slots.Type.value;
                     url += 'l?Type=' + Type;
@@ -154,7 +162,11 @@ function processOutput(speechText, personality, contOptions){
             endSession = false;
         }
     }
-    speechText=speechText.replace(/%[1-4]%/,"");
+    if (speechText.endsWith("%P%")){
+        speechText += getResponse("PIN", personality);
+        endSession = false;
+    }
+    speechText=speechText.replace(/%[1-4]%|%[P]%/,"");
     if (addText) {
         var beginText = addText[Math.floor(Math.random() * addText.length)];
         speechText = beginText + speechText;
@@ -236,6 +248,9 @@ function output( text, context, card, complete, pName) {
 
 function responseNormal(respType){
     var responses;
+    if (respType == "PIN") {
+        responses=["Say, 'password', and then your PIN number to proceed with this command. "];
+    }
     if (respType == "OOD"){
         responses = ["I am unable to complete your request. The version of the Lambda code you are using is out-of-date. Please install the latest code and try again. "
                     , "The version of the Lambda code you are using is out-of-date. Please install the latest code and try again. "];    
@@ -277,6 +292,9 @@ function responseNormal(respType){
 
 function responseCourtesy(respType){
     var responses;
+    if (respType == "PIN") {
+        responses=["Please say, 'password', and then your PIN number to proceed with this command. "];
+    }
     if (respType == "OOD"){
         responses = ["I am sorry%N%, but I am unable to complete your request. The version of the Lambda code you are using is out-of-date. Please install the latest code and try again. "
                     , "Sorry%N%, the version of the Lambda code you are using is out-of-date. Please install the latest code and try again. "];    
@@ -318,6 +336,9 @@ function responseCourtesy(respType){
 
 function responseSnarky(respType){
     var responses;
+    if (respType == "PIN") {
+        responses=["Say, 'password', and then your PIN number, if you can remember it, to proceed. "];
+    }
     if (respType == "OOD"){
         responses = ["Did you read the directions %N%? The version of the Lambda code you are using is out-of-date. Install the latest code and try again. "
                     , "Really? The version of the Lambda code you are using is out-of-date. Read the instructions and install the latest code and try again. "];    
