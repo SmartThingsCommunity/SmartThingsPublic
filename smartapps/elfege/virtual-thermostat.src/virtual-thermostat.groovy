@@ -51,6 +51,12 @@ def pageSetup() {
 
         section([title:"Options", mobileOnly:true]) {
             label title:"Assign a name", required:false
+            mode(title: "Set for specific mode(s)")
+
+            paragraph 
+            """BEWARE!!!! You'll be given the opprotunity to select different modes in the settings' page; you should select modes here IF AND ONLY IF 
+you do not wish that emergency settings run outside of these operating modes. Beware that this means that if your heaters run in override mode and 
+they don't have a built-in thermostat, this could cause sever overheating while sleeping or in your absence."""
         }
     }
 }
@@ -83,7 +89,27 @@ def settings(){
             input "Modes", "mode", title: "Run this app only in these modes", required: true, multiple: true, submitOnChange: true
         }
         section("Allow Manual Override"){
-            input "override", "bool", title: "Override when turned off by user", default: false, required: false
+            input "override", "bool", title: "Override by user", default: false, required: false, submitOnChange: true
+            if(override){
+                input "timer", "number", title: "If I override and turned on the outlets, then turn them back off within this time", 
+                    required: true, range: "1..60", description: "time in minutes" 
+                input "safety", "decimal", title: "unless temperature rises above this threshold:", required: true, range: "1..90", description: "mandatory precaution"
+                paragraph "Be advised that this threshold also applies to normal operation, so in any case your room's temp will never rise above it"
+            }
+        }
+        section("Contacts Sensor"){
+            input(name: "contacts", type: "capability.contactSensor", tilte: "Optional: turn off all switches when these contact sensors are opened", required: false, multiple: true)
+        }
+        section("EMERGENCY HEAT"){
+            input(name: "emergency", type: "number", tilte: "In any case, do not allow the room's temperature to go below this threshold", required: false, default: 50)
+            paragraph 
+            """this fonction applies litterally in all cases and therefore triggers the override features, even if did not select them 
+and even when location is not in the operating modes. You can, however, make the entire app to not run at all 
+when outside of specified modes by using the built-in smartthings mode selector below, but beware of the risks described there"""
+
+            input(name: "EmergTimer", type: "number" , title:"for how long?", description: "set a time in minutes", required: false)
+            paragraph: "Recommended, especially if you selected modes in the first main setup page"
+
         }
     }
 }
@@ -137,6 +163,12 @@ def init(){
     subscribe(sensor, "temperature", temperatureHandler)
     subscribe(outlets, "switch", switchHandler)
     subscribe(location, "mode", ChangedModeHandler)	
+
+    if(contacts){
+        subscribe(contacts, "contact.open", contactHandler)
+        subscribe(contacts, "contact.closed", contactHandler)
+        log.debug "subscribed to contact events"
+    }
     if (motion) {
         subscribe(motion, "motion", motionHandler)
         log.debug "subscribed to motion events"
@@ -200,41 +232,7 @@ def ChangedModeHandler(evt){
     log.trace "Mode0: $Mode0, Mode1: $Mode1, Mode2: $Mode2, Mode3: $Mode3, Mode4: $Mode4, Mode5: $Mode5, "
     desiredTemp()
 }
-def desiredTemp(){
 
-    def CurrMode = location.currentMode
-
-    def desiredTemp = 65 
-
-    if(CurrMode in Modes[0]){
-        desiredTemp = desireTempMode0
-        log.debug "Desired temp is now : $desiredTemp ----a-----"
-    } 
-    else if(CurrMode in Modes[1]){
-        desiredTemp = desireTempMode1
-        log.debug "Desired temp is now : $desiredTemp ----b-----"
-    } 
-    else if(CurrMode in  Modes[2]){
-        desiredTemp = desireTempMode2
-        log.debug "Desired temp is now : $desiredTemp -----c----"
-    } 
-    else if(CurrMode in  Modes[3]){
-        desiredTemp = desireTempMode3
-        log.debug "Desired temp is now : $desiredTemp ----d-----"
-    } 
-    else if(CurrMode in  Modes[4]){
-        desiredTemp = desireTempMode4
-        log.debug "Desired temp is now : $desiredTemp ---e------"
-    } 
-    else if(CurrMode in  Modes[5]){
-        desiredTemp = desireTempMode5
-        log.debug "Desired temp is now : $desiredTemp ---f------"
-    }
-    else { 
-        log.debug "Home is not in any selected modes"
-    }
-    return desiredTemp
-}
 def switchHandler(evt){
 
     log.debug "$evt.device is $evt.value"
@@ -243,24 +241,28 @@ def switchHandler(evt){
 
     def CurrMode = location.currentMode
     def ModeOk = CurrMode in Modes
+
+    // is this an override action? (manual push of a button)
     if(override){
 
         if(evt.value == "off" && state.override == 0){
             atomicState.OffbyApp = 1
             log.debug "atomicState.OffbyApp value back to 1"
         }
-
         if(evt.value == "on" && !ModeOk){
             // this is an on override. Keep on but turn on in an hour"
-            state.override = 1
-            outlets?.off([delay:360000])
-            log.debug "OVERRIDE outside of $Modes modes... turning off $outlets in 1 hour"
+            state.overrideWhileOutOfMode = 1
+            log.debug "state.overrideWhileOutOfMode = $state.overrideWhileOutOfMode"
+            log.info "OVERRIDE OUTSIDE OF MODE... $outlets will turn off in $timer minutes"
+            def timer = timer * 60
+            runIn(timer, OffOutSideOfMode)
+
         }
         else if(evt.value == "off" && !ModeOk){
-            state.override = 0
+            state.overrideWhileOutOfMode = 0
             log.debug "OVERRIDE outside of $Modes modes CANCELED"
         }
-        else if(evt.value == "on" && state.override == 1){
+        else if(evt.value == "on" && state.override == 1 && state.overrideWhileOutOfMode == 0){
             log.debug "OVERRIDE MODE CANCELED, resuming normal operation"
             state.override = 0
         }
@@ -297,6 +299,22 @@ def temperatureHandler(evt){
         log.debug "Current Temperature is ${state.currentTemp}°F"
 
     Switches()
+
+    if(state.currenTemp > safety){
+        log.debug "EMERGENCY SHUT DOWN"
+        OffOutSideOfMode()  
+    }
+    if(emergency){
+        if(state.currentTemp < emergency){
+            outlets?.on()
+            state.override = 1
+            if(EmergTimer){
+                def timer = EmergTimer * 60
+                runIn(timer, justshutoff)
+            }
+        }
+    }
+
 }
 def motionHandler(evt){
 
@@ -321,12 +339,33 @@ def motionHandler(evt){
         }
     }
 }
+def contactHandler(evt){
+
+    log.info "$evt.device is $evt.value"
+
+    if(evt.value == "closed"){
+        if(contacts.latestValue("contacts").contains("open")){
+            atomicState.Closed = false
+            log.debug "Windows are open, turning off all switches"
+        }
+        else {
+            atomicState.Closed = true
+            log.debug "all contacts are closed, resuming operations"  
+        }
+    }
+    else if(evt.value == "open"){
+        log.debug "Some contacts are open, shutting down"
+        atomicState.Closed = false
+    }
+    Switches()
+}
+
 private Switches(){
-	
+
     def CurrMode = location.currentMode
-    
+
     def desiredTemp = desiredTemp()
-    
+
     def switchVal = atomicState.switchVal
     def totalOutlets = atomicState.totalOutlets
 
@@ -342,16 +381,29 @@ private Switches(){
                 log.debug "evaluating cool. Desired temperature is $desiredTemp"    
                 if (state.currentTemp > desiredTemp) {
                     if(state.override == 0){
-                        // if out of override the app needs to know that not all outlets were turned back on, so it turns back on all the others
-                        if(switchVal != totalOutlets){
+                        if(atomicState.Closed == true){
 
-                            log.debug "atomicState.OffbyApp = $atomicState.OffbyApp"
-                            outlets?.on()
-                            log.debug "$outlets turned ON"
-                            state.outlet = "on"
+                            if(switchVal != totalOutlets){
+                                // if out of override the app needs to know that not all outlets were turned back on, so it turns back on all the others
+
+                                log.debug "atomicState.OffbyApp = $atomicState.OffbyApp"
+                                outlets?.on()
+                                log.debug "$outlets turned ON"
+                                state.outlet = "on"
+                            }
+                            else {
+                                log.debug "outlets already on, so doing nothing" 
+                            }
                         }
-                        else {
-                            log.debug "outlets already on, so doing nothing" 
+                        else { 
+                            // contacts are open
+                            if(switchVal != 0){
+                                atomicState.OffbyApp = 1
+                                log.debug "atomicState.OffbyApp = $atomicState.OffbyApp"
+                                outlets?.off()
+                                log.debug "$outlets turned OFF"
+                                state.outlet = "off"
+                            }
                         }
                     }
                     else {log.debug "App in override mode, doing nothing"}
@@ -374,17 +426,31 @@ private Switches(){
                 log.debug "evaluating heat. Desired temperature is $desiredTemp"
                 if (state.currentTemp < desiredTemp) {
                     if(state.override == 0){
-                        log.debug "switchVal = $switchVal"
-                        // if out of override the app needs to know that not all outlets were turned back on, so it turns back on all the others
-                       if(switchVal != totalOutlets){
 
-                            log.debug "atomicState.OffbyApp = $atomicState.OffbyApp"
-                            outlets?.on()
-                            log.debug "$outlets turned ON"
-                            state.outlet = "on"
+                        if(atomicState.Closed == true){
+
+                            log.debug "switchVal = $switchVal"
+                            if(switchVal != totalOutlets){
+                                // if out of override the app needs to know that not all outlets were turned back on, so it turns back on all the others
+
+                                log.debug "atomicState.OffbyApp = $atomicState.OffbyApp"
+                                outlets?.on()
+                                log.debug "$outlets turned ON"
+                                state.outlet = "on"
+                            }
+                            else {
+                                log.debug "outlets already on, so doing nothing"
+                            }
                         }
-                        else {
-                            log.debug "outlets already on, so doing nothing"
+                        else { 
+                            // contacts are open
+                            if(switchVal != 0){
+                                atomicState.OffbyApp = 1
+                                log.debug "atomicState.OffbyApp = $atomicState.OffbyApp"
+                                outlets?.off()
+                                log.debug "$outlets turned OFF"
+                                state.outlet = "off"
+                            }
                         }
                     }
                     else {log.debug "App in override mode, doing nothing"}
@@ -432,7 +498,10 @@ private Switches(){
             }
         }   
     }
-    else { 
+    else if(state.overrideWhileOutOfMode == 1){
+        log.debug "Out of Modes OVERRIDE. Not turning off plugs"
+    }
+    else {
         log.debug "Not in $Modes mode, making sure all outlets are off"
         if(state.override == 0){
             if(atomicState.switchVal != 0){             
@@ -471,5 +540,50 @@ private hasBeenRecentMotion(){
     }
     isActive
 }
+private OffOutSideOfMode(){
+    state.overrideWhileOutOfMode = 0
+    log.debug "state.overrideWhileOutOfMode = $state.overrideWhileOutOfMode"
+    outlets?.off()
 
+}
 
+def desiredTemp(){
+
+    def CurrMode = location.currentMode
+
+    def desiredTemp = 65 
+
+    if(CurrMode in Modes[0]){
+        desiredTemp = desireTempMode0
+        log.debug "Desired temp is now : $desiredTemp ----a-----"
+    } 
+    else if(CurrMode in Modes[1]){
+        desiredTemp = desireTempMode1
+        log.debug "Desired temp is now : $desiredTemp ----b-----"
+    } 
+    else if(CurrMode in  Modes[2]){
+        desiredTemp = desireTempMode2
+        log.debug "Desired temp is now : $desiredTemp -----c----"
+    } 
+    else if(CurrMode in  Modes[3]){
+        desiredTemp = desireTempMode3
+        log.debug "Desired temp is now : $desiredTemp ----d-----"
+    } 
+    else if(CurrMode in  Modes[4]){
+        desiredTemp = desireTempMode4
+        log.debug "Desired temp is now : $desiredTemp ---e------"
+    } 
+    else if(CurrMode in  Modes[5]){
+        desiredTemp = desireTempMode5
+        log.debug "Desired temp is now : $desiredTemp ---f------"
+    }
+    else { 
+        log.debug "Home is not in any selected modes"
+    }
+    return desiredTemp
+}
+
+def justshutoff(){
+    outlets?.off()
+    state.override = 0
+}
