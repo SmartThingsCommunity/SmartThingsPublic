@@ -55,6 +55,9 @@ DeviceOperation set the color of {Device} to {Param}
 DeviceOperation set the color of the {Device} to {Param}
 DeviceOperation set the color of {Device} to {Param} and set level to {Num}
 DeviceOperation set the {Device} to {Param} and {Num}
+DeviceOperation set {Device} to {Param} and {Num}
+DeviceOperation set {Device} to {Param} and {Num} percent
+DeviceOperation set {Device} to {Param} and a brightess of {Num} 
 
 DeviceOperation {Operator} {Device} by {Num}
 DeviceOperation {Operator} the {Device} by {Num}
@@ -300,3 +303,5 @@ MacroOperation set {Macro} {MParam} to {MCmd}
 MacroOperation turn {MCmd} {Macro} {MParam} mode
 MacroOperation turn {MCmd} {Macro} to {MParam}
 MacroOperation set the {Macro} to {MParam} mode
+
+FollowUpOperation {FType} {Data}
