@@ -162,8 +162,8 @@ def onCmd(endpoint = null) {
     logging("onCmd($endpoint)")
     toggleTiles("switch$endpoint")
     if (endpoint != null) {
-	   zwave.indicatorV1.indicatorSet(value:(2.power(endpoint - 1))).format()
        if (sendScene == "true") sendEvent(name: "button", value: "pushed", data: [buttonNumber: endpoint], descriptionText: "$device.displayName button $endpoint was pushed", isStateChange: true)
+       zwave.indicatorV1.indicatorSet(value:(2.power(endpoint - 1))).format()
     } else {
        zwave.indicatorV1.indicatorSet(value:255).format()
     }
