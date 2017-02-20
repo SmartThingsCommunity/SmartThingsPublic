@@ -365,7 +365,7 @@ def sync_properties()
     def cmds = []
     
     if(state.wakeInterval == null || state.wakeInterval != 43200){
-        logging("Setting Wake Interval to 43200")
+        log.debug "Setting Wake Interval to 43200"
         cmds << zwave.wakeUpV1.wakeUpIntervalSet(seconds: 43200, nodeid:zwaveHubNodeId)
         cmds << zwave.wakeUpV1.wakeUpIntervalGet()
     }
@@ -730,7 +730,7 @@ Note:
 The amount by which the luminance must change in order for the sensor to send a report. Value is in %.
     </Help>
   </Value>
-  <Value type="byte" byteSize="1" index="302" label="Temperature offset" min="*" max="*" value="">
+  <Value type="decimal" index="302" label="Temperature offset" min="*" max="*" value="">
     <Help>
 Range: None
 Default: 0
