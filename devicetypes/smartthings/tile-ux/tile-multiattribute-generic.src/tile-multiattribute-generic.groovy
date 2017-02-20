@@ -25,7 +25,7 @@ metadata {
 	tiles(scale: 2) {
 		multiAttributeTile(name:"basicTile", type:"generic", width:6, height:4) {
 			tileAttribute("device.switch", key: "PRIMARY_CONTROL") {
-				attributeState "on", label:'${name}', action:"switch.off", icon:"st.switches.switch.on", backgroundColor:"#79b821", nextState:"turningOff"
+				attributeState "on", label:'${name}', action:"switch.off", icon:"st.switches.switch.on", backgroundColor:"#00A0DC", nextState:"turningOff"
 				attributeState "off", label:'${name}', action:"switch.on", icon:"st.switches.switch.off", backgroundColor:"#ffffff", nextState:"turningOn"
 				attributeState "turningOn", label:'${name}', action:"switch.off", icon:"st.switches.switch.on", backgroundColor:"#79b821", nextState:"turningOff"
 				attributeState "turningOff", label:'${name}', action:"switch.on", icon:"st.switches.switch.off", backgroundColor:"#ffffff", nextState:"turningOn"
@@ -33,7 +33,7 @@ metadata {
 		}
 		multiAttributeTile(name:"sliderTile", type:"generic", width:6, height:4) {
 			tileAttribute("device.switch", key: "PRIMARY_CONTROL") {
-				attributeState "on", label:'${name}', backgroundColor:"#79b821", nextState:"turningOff"
+				attributeState "on", label:'${name}', backgroundColor:"#00A0DC", nextState:"turningOff"
 				attributeState "off", label:'${name}', backgroundColor:"#ffffff", nextState:"turningOn"
 				attributeState "turningOn", label:'${name}', backgroundColor:"#79b821", nextState:"turningOff"
 				attributeState "turningOff", label:'${name}', backgroundColor:"#ffffff", nextState:"turningOn"
@@ -57,7 +57,7 @@ metadata {
 				]
 			}
 			tileAttribute("device.switch", key: "SECONDARY_CONTROL") {
-				attributeState "on", label:'${name}', action:"switch.off", icon:"st.switches.switch.on", backgroundColor:"#79b821", nextState:"turningOff"
+				attributeState "on", label:'${name}', action:"switch.off", icon:"st.switches.switch.on", backgroundColor:"#00A0DC", nextState:"turningOff"
 				attributeState "off", label:'${name}', action:"switch.on", backgroundColor:"#ffffff", nextState:"turningOn"
 				attributeState "turningOn", label:'…', action:"switch.off", icon:"st.switches.switch.on", backgroundColor:"#79b821", nextState:"turningOff"
 				attributeState "turningOff", label:'…', action:"switch.on", backgroundColor:"#ffffff", nextState:"turningOn"
