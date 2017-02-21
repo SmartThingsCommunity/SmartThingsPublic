@@ -346,7 +346,7 @@ def devicesList(selector = '') {
 		if (resp.status == 200) {
 			return resp.data
 		} else {
-			log.error("Non-200 from device list call. ${resp.status} ${resp.data}")
+			log.debug("No response from device list call. ${resp.status} ${resp.data}")
 			return []
 		}
 	}
@@ -418,9 +418,15 @@ def updateDevices() {
 	}
 	getChildDevices().findAll { !selectors.contains("${it.deviceNetworkId}") }.each {
 		log.info("Deleting ${it.deviceNetworkId}")
-		state.devices[it.deviceNetworkId] = null
-		deleteChildDevice(it.deviceNetworkId)
+		if (state.devices[it.deviceNetworkId])
+			state.devices[it.deviceNetworkId] = null
+		// The reason the implementation is trying to delete this bulb is because it is not longer connected to the LIFX location.
+		// Adding "try" will prevent this exception from happening.
+		// Ideally device health would show to the user that the device is not longer accessible so that the user can either force delete it or remove it from the SmartApp.
+		try {
+			deleteChildDevice(it.deviceNetworkId)
+		} catch (Exception e) {
+			log.debug("Can't remove this device because it's being used by an SmartApp")
+		}
 	}
 }
-
-
