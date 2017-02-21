@@ -4,6 +4,7 @@ metadata {
 		capability "Actuator"
 		capability "Switch"
 		capability "Sensor"
+		capability "Outlet"
 
 		fingerprint profileId: "0104", inClusters: "0006, 0004, 0003, 0000, 0005", outClusters: "0019", manufacturer: "Compacta International, Ltd", model: "ZBMPlug15", deviceJoinName: "SmartPower Outlet V1"
 	}
