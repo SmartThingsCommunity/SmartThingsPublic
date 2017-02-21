@@ -7,6 +7,7 @@
 metadata {
 	// Automatically generated. Make future change here.
 	definition (name: "Hue Bridge", namespace: "smartthings", author: "SmartThings") {
+		capability "Bridge"
 		capability "Health Check"
 
 		attribute "networkAddress", "string"
