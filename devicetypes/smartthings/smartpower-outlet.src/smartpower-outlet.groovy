@@ -83,9 +83,8 @@ def parse(String description) {
 
 	if (event) {
 		if (event.name == "power") {
-			event.value = event.value / 10
-			event.descriptionText = '{{ device.displayName }} power is {{ value }} Watts'
-			event.translatable = true
+			def value = (event.value as Integer) / 10
+			event = createEvent(name: event.name, value: value, descriptionText: '{{ device.displayName }} power is {{ value }} Watts', translatable: true)
 		} else if (event.name == "switch") {
 			def descriptionText = event.value == "on" ? '{{ device.displayName }} is On' : '{{ device.displayName }} is Off'
 			event = createEvent(name: event.name, value: event.value, descriptionText: descriptionText, translatable: true)
@@ -106,7 +105,7 @@ def parse(String description) {
 			log.debug "${cluster}"
 		}
 	}
-	return event
+	return event ? createEvent(event) : event
 }
 
 def off() {

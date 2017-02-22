@@ -19,6 +19,7 @@ metadata {
 		capability "Polling"
 		capability "Refresh"
 		capability "Sensor"
+		capability "Light"
 
 		fingerprint inClusters: "0x25", deviceJoinName: "Z-Wave Switch"
 		fingerprint mfr:"001D", prod:"1A02", model:"0334", deviceJoinName: "Leviton Appliance Module"
@@ -26,6 +27,8 @@ metadata {
 		fingerprint mfr:"001D", prod:"1D04", model:"0334", deviceJoinName: "Leviton Outlet"
 		fingerprint mfr:"001D", prod:"1C02", model:"0334", deviceJoinName: "Leviton Switch"
 		fingerprint mfr:"001D", prod:"0301", model:"0334", deviceJoinName: "Leviton 15A Switch"
+		fingerprint mfr:"001D", prod:"0F01", model:"0334", deviceJoinName: "Leviton 5A Incandescent Switch"
+		fingerprint mfr:"001D", prod:"1603", model:"0334", deviceJoinName: "Leviton 15A Split Duplex Receptacle"
 		fingerprint mfr:"011A", prod:"0101", model:"0102", deviceJoinName: "Enerwave On/Off Switch"
 		fingerprint mfr:"011A", prod:"0101", model:"0603", deviceJoinName: "Enerwave Duplex Receptacle"
 	}
