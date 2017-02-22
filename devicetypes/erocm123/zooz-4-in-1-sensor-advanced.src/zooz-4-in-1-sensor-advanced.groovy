@@ -365,7 +365,7 @@ def sync_properties()
     def cmds = []
     
     if(state.wakeInterval == null || state.wakeInterval != 43200){
-        logging("Setting Wake Interval to 43200")
+        log.debug "Setting Wake Interval to 43200"
         cmds << zwave.wakeUpV1.wakeUpIntervalSet(seconds: 43200, nodeid:zwaveHubNodeId)
         cmds << zwave.wakeUpV1.wakeUpIntervalGet()
     }
