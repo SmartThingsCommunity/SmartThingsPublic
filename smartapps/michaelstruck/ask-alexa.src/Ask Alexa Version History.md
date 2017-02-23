@@ -26,4 +26,5 @@
  *  Version 2.1.8e (10/22/16) Added option for reports from Nest Manager application; tweaking of color list to make it more user friendly, added the beginnings of a cheat sheet option
  *  Version 2.1.9a (11/20/16) Used more of the hidable elements in the new SmartThings mobile app (2.2.2+), fixed color light alias bug
  *  Version 2.2.0 (1/30/17) Added people restrictions to macros, changed copyright to 2017, updated Nest polling (thanks Tony Santilli), added themostat current state reporting (thanks @storageanarchy!)
- 
+  *	Version 2.2.1 (2/18/17) Bug fixes, added additional security for doors/locks (thanks @Cherokee180c for the suggestion), implement ST color names, started building structure for better follow ups,
+ *	created a new option for 'consolidation' of certain conditions within the voice reports (as suggested by @jseaton). Added framework for more IFTTT conversational commands (coming soon).
