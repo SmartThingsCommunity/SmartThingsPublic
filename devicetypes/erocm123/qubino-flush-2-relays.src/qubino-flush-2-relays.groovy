@@ -53,7 +53,6 @@ metadata {
    preferences {
         
         input description: "Once you change values on this page, the status area will display \"Configuration Pending\" until all configuration parameters are updated.", displayDuringSetup: false, type: "paragraph", element: "paragraph"
-        
 		generate_preferences(configuration_model())
         
    }
@@ -85,8 +84,9 @@ metadata {
     standardTile("refresh", "device.switch", inactiveLabel: false, decoration: "flat", width: 2, height: 2) {
 		state "default", label:"", action:"refresh.refresh", icon:"st.secondary.refresh"
     }
-    standardTile("configure", "device.switch", inactiveLabel: false, decoration: "flat", width: 2, height: 2) {
-		state "default", label:"", action:"configure", icon:"st.secondary.configure"
+    standardTile("configure", "device.needUpdate", inactiveLabel: false, decoration: "flat", width: 2, height: 2) {
+            state "NO" , label:'', action:"configuration.configure", icon:"st.secondary.configure"
+            state "YES", label:'', action:"configuration.configure", icon:"https://github.com/erocm123/SmartThingsPublic/raw/master/devicetypes/erocm123/qubino-flush-1d-relay.src/configure@2x.png"
     }
     standardTile("reset", "device.energy", inactiveLabel: false, decoration: "flat", width: 2, height: 2) {
 		state "default", label:'reset kWh', action:"reset"
@@ -112,9 +112,9 @@ metadata {
 
     main(["switch","switch1", "switch2"])
     details(["switch",
-             "switch1","energy1","power1",
-             "switch2","energy2","power2",
-             "refresh","reset","configure"])
+             "switch1","power1","refresh",
+             "switch2","power2","configure"
+            ])
    }
 }
 
@@ -142,21 +142,21 @@ def zwaveEvent(physicalgraph.zwave.commands.basicv1.BasicReport cmd)
 
 def zwaveEvent(physicalgraph.zwave.commands.basicv1.BasicSet cmd) {
     logging("BasicSet ${cmd}", 2)
-	sendEvent(name: "switch", value: cmd.value ? "on" : "off", type: "digital")
+	def result = createEvent(name: "switch", value: cmd.value ? "on" : "off", type: "digital")
     def cmds = []
     cmds << encap(zwave.switchBinaryV1.switchBinaryGet(), 1)
     cmds << encap(zwave.switchBinaryV1.switchBinaryGet(), 2)
-    response(commands(cmds)) // returns the result of reponse()
+    return [result, response(commands(cmds))] // returns the result of reponse()
 }
 
 def zwaveEvent(physicalgraph.zwave.commands.switchbinaryv1.SwitchBinaryReport cmd)
 {
     logging("SwitchBinaryReport ${cmd}", 2)
-    sendEvent(name: "switch", value: cmd.value ? "on" : "off", type: "digital")
+    def result = createEvent(name: "switch", value: cmd.value ? "on" : "off", type: "digital")
     def cmds = []
     cmds << encap(zwave.switchBinaryV1.switchBinaryGet(), 1)
     cmds << encap(zwave.switchBinaryV1.switchBinaryGet(), 2)
-    response(commands(cmds)) // returns the result of reponse()
+    return [result, response(commands(cmds))] // returns the result of reponse()
 }
 
 def zwaveEvent(physicalgraph.zwave.commands.meterv3.MeterReport cmd, ep=null) {
@@ -189,20 +189,22 @@ def zwaveEvent(physicalgraph.zwave.commands.meterv3.MeterReport cmd, ep=null) {
 def zwaveEvent(physicalgraph.zwave.commands.multichannelv3.MultiChannelCapabilityReport cmd) 
 {
     logging("MultiChannelCapabilityReport ${cmd}", 2)
+    def result
     if (cmd.endPoint == 2 ) {
         def currstate = device.currentState("switch2").getValue()
         if (currstate == "on")
-        	sendEvent(name: "switch2", value: "off", isStateChange: true, display: false)
+        	result = createEvent(name: "switch2", value: "off", isStateChange: true, display: false)
         else if (currstate == "off")
-        	sendEvent(name: "switch2", value: "on", isStateChange: true, display: false)
+        	result = createEvent(name: "switch2", value: "on", isStateChange: true, display: false)
     }
     else if (cmd.endPoint == 1 ) {
         def currstate = device.currentState("switch1").getValue()
         if (currstate == "on")
-        sendEvent(name: "switch1", value: "off", isStateChange: true, display: false)
+        result = createEvent(name: "switch1", value: "off", isStateChange: true, display: false)
         else if (currstate == "off")
-        sendEvent(name: "switch1", value: "on", isStateChange: true, display: false)
+        result = createEvent(name: "switch1", value: "on", isStateChange: true, display: false)
     }
+    return result
 }
 
 def zwaveEvent(physicalgraph.zwave.commands.multichannelv3.MultiChannelCmdEncap cmd) {
@@ -236,17 +238,17 @@ def zwaveEvent(physicalgraph.zwave.commands.multichannelv3.MultiChannelCmdEncap 
     }
 }
 
-def zwaveEvent(physicalgraph.zwave.Command cmd) {
-   // This will capture any commands not handled by other instances of zwaveEvent
-   // and is recommended for development so you can see every command the device sends
-   logging("Unhandled Event: ${cmd}", 2)
-}
-
 def zwaveEvent(physicalgraph.zwave.commands.manufacturerspecificv2.ManufacturerSpecificReport cmd) {
    logging("ManufacturerSpecificReport ${cmd}", 2)
    def msr = String.format("%04X-%04X-%04X", cmd.manufacturerId, cmd.productTypeId, cmd.productId)
    logging("msr: $msr", 2)
    updateDataValue("MSR", msr)
+}
+
+def zwaveEvent(physicalgraph.zwave.Command cmd) {
+   // This will capture any commands not handled by other instances of zwaveEvent
+   // and is recommended for development so you can see every command the device sends
+   logging("Unhandled Event: ${cmd}", 2)
 }
 
 def on() { 
@@ -296,14 +298,6 @@ def off2() {
       encap(zwave.basicV1.basicSet(value: 0x00), 2),
 	  encap(zwave.switchBinaryV1.switchBinaryGet(), 2)
    ])
-}
-
-private encap(cmd, endpoint) {
-	if (endpoint) {
-		zwave.multiChannelV3.multiChannelCmdEncap(destinationEndPoint:endpoint).encapsulate(cmd)
-	} else {
-		cmd
-	}
 }
 
 def poll() {
@@ -435,9 +429,15 @@ def update_needed_settings()
         if ("${it.@setting_type}" == "zwave" && it.@disabled != "true"){
             if (currentProperties."${it.@index}" == null)
             {
-                isUpdateNeeded = "YES"
-                logging("Current value of parameter ${it.@index} is unknown", 2)
-                cmds << zwave.configurationV1.configurationGet(parameterNumber: it.@index.toInteger())
+               if (it.@setonly == "true"){
+                  logging("Parameter ${it.@index} will be updated to " + convertParam(it.@index.toInteger(), settings."${it.@index}"? settings."${it.@index}" : "${it.@value}"), 2)
+                  def convertedConfigurationValue = convertParam(it.@index.toInteger(), settings."${it.@index}"? settings."${it.@index}" : "${it.@value}")
+                  cmds << zwave.configurationV1.configurationSet(configurationValue: integer2Cmd(convertedConfigurationValue, it.@byteSize.toInteger()), parameterNumber: it.@index.toInteger(), size: it.@byteSize.toInteger())
+               } else {
+                  isUpdateNeeded = "YES"
+                  logging("Current value of parameter ${it.@index} is unknown", 2)
+                  cmds << zwave.configurationV1.configurationGet(parameterNumber: it.@index.toInteger())
+               }
             }
             else if ((settings."${it.@index}" != null || "${it.@type}" == "hidden") && cmd2Integer(currentProperties."${it.@index}") != convertParam(it.@index.toInteger(), settings."${it.@index}"? settings."${it.@index}" : "${it.@value}"))
             { 
@@ -534,6 +534,14 @@ def integer2Cmd(value, size) {
 def zwaveEvent(physicalgraph.zwave.commands.configurationv2.ConfigurationReport cmd) {
      update_current_properties(cmd)
      logging("${device.displayName} parameter '${cmd.parameterNumber}' with a byte size of '${cmd.size}' is set to '${cmd2Integer(cmd.configurationValue)}'", 2)
+}
+
+private encap(cmd, endpoint) {
+	if (endpoint) {
+		zwave.multiChannelV3.multiChannelCmdEncap(destinationEndPoint:endpoint).encapsulate(cmd)
+	} else {
+		cmd
+	}
 }
 
 private command(physicalgraph.zwave.Command cmd) {
@@ -658,19 +666,6 @@ Default: 0 (NC - Normally Closed)
 </Help>
         <Item label="NC (normally closed)" value="0" />
         <Item label="NO (normally open)" value="1" />
-</Value>
-<Value type="list" byteSize="1" index="100" label="Enable / Disable Endpoint I2 or select Notification Type and Event" min="0" max="6" value="1" setting_type="zwave" fw="">
- <Help>
-Range: 0 to 6
-Default: Home Security; Motion Detection, unknown location
-</Help>
-        <Item label="Home Security; Motion Detection" value="1" />
-        <Item label="Carbon Monoxide; Carbon Monoxide detected" value="2" />
-        <Item label="Carbon Dioxide; Carbon Dioxide detected" value="3" />
-        <Item label="Water Alarm; Water Leak detected" value="4" />
-        <Item label="Heat Alarm; Overheat detected" value="5" />
-        <Item label="Smoke Alarm; Smoke detected" value="6" />
-        <Item label="Endpoint, I2 disabled" value="0" />
 </Value>
 <Value type="number" byteSize="2" index="110" label="Temperature sensor offset settings" min="1" max="32536" value="32536" setting_type="zwave" fw="">
  <Help>

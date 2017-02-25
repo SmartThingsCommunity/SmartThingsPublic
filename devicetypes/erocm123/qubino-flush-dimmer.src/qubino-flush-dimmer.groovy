@@ -53,12 +53,12 @@ metadata {
     }
 
 	tiles(scale: 2){
-        multiAttributeTile(name:"switch", type: "generic", width: 6, height: 4, canChangeIcon: true){
+        multiAttributeTile(name:"switch", type: "lighting", width: 6, height: 4, canChangeIcon: true){
 			tileAttribute ("device.switch", key: "PRIMARY_CONTROL") {
-				attributeState "on", label:'${name}', action:"switch.off", icon:"st.switches.switch.on", backgroundColor:"#79b821", nextState:"turningOff"
-				attributeState "off", label:'${name}', action:"switch.on", icon:"st.switches.switch.off", backgroundColor:"#ffffff", nextState:"turningOn"
-				attributeState "turningOn", label:'${name}', action:"switch.off", icon:"st.switches.switch.on", backgroundColor:"#79b821", nextState:"turningOff"
-				attributeState "turningOff", label:'${name}', action:"switch.on", icon:"st.switches.switch.off", backgroundColor:"#ffffff", nextState:"turningOn"
+			   attributeState "off", label:'${name}', action:"switch.on", icon:"st.switches.switch.off", backgroundColor:"#ffffff", nextState:"turningOn"
+			   attributeState "on", label:'${name}', action:"switch.off", icon:"st.switches.switch.on", backgroundColor:"#79b821", nextState:"turningOff"
+			   attributeState "turningOff", label:'${name}', action:"switch.on", icon:"st.switches.switch.off", backgroundColor:"#ffffff", nextState:"turningOn"
+			   attributeState "turningOn", label:'${name}', action:"switch.off", icon:"st.switches.switch.on", backgroundColor:"#79b821", nextState:"turningOff"
 			}
             tileAttribute ("device.level", key: "SLIDER_CONTROL") {
 				attributeState "level", action:"switch level.setLevel"
@@ -313,9 +313,15 @@ def update_needed_settings()
         if ("${it.@setting_type}" == "zwave" && it.@disabled != "true"){
             if (currentProperties."${it.@index}" == null)
             {
-                isUpdateNeeded = "YES"
-                logging("Current value of parameter ${it.@index} is unknown", 2)
-                cmds << zwave.configurationV1.configurationGet(parameterNumber: it.@index.toInteger())
+               if (it.@setonly == "true"){
+                  logging("Parameter ${it.@index} will be updated to " + convertParam(it.@index.toInteger(), settings."${it.@index}"? settings."${it.@index}" : "${it.@value}"), 2)
+                  def convertedConfigurationValue = convertParam(it.@index.toInteger(), settings."${it.@index}"? settings."${it.@index}" : "${it.@value}")
+                  cmds << zwave.configurationV1.configurationSet(configurationValue: integer2Cmd(convertedConfigurationValue, it.@byteSize.toInteger()), parameterNumber: it.@index.toInteger(), size: it.@byteSize.toInteger())
+               } else {
+                  isUpdateNeeded = "YES"
+                  logging("Current value of parameter ${it.@index} is unknown", 2)
+                  cmds << zwave.configurationV1.configurationGet(parameterNumber: it.@index.toInteger())
+               }
             }
             else if ((settings."${it.@index}" != null || "${it.@type}" == "hidden") && cmd2Integer(currentProperties."${it.@index}") != convertParam(it.@index.toInteger(), settings."${it.@index}"? settings."${it.@index}" : "${it.@value}"))
             { 
@@ -349,7 +355,7 @@ def convertParam(number, value) {
 }
 
 private def logging(message, level) {
-    if (logLevel != null && logLevel != "0"){
+    if (logLevel != "0"){
     switch (logLevel) {
        case "1":
           if (level > 1)

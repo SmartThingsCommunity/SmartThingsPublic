@@ -1,6 +1,6 @@
 /**
  *
- *  Qubino Flush 1D relay
+ *  Qubino Flush 1D Relay
  *   
  *	github: Eric Maycock (erocm123)
  *	Date: 2017-02-20
@@ -21,7 +21,7 @@
  
 metadata {
 
-	definition (name: "Qubino Flush 1D relay", namespace: "erocm123", author: "Eric Maycock") {
+	definition (name: "Qubino Flush 1D Relay", namespace: "erocm123", author: "Eric Maycock") {
 		capability "Actuator"
 		capability "Switch"
 		capability "Polling"
@@ -48,10 +48,10 @@ metadata {
 	tiles(scale: 2){
         multiAttributeTile(name:"switch", type: "generic", width: 6, height: 4, canChangeIcon: true){
 			tileAttribute ("device.switch", key: "PRIMARY_CONTROL") {
-				attributeState "on", label:'${name}', action:"switch.off", icon:"st.switches.switch.on", backgroundColor:"#79b821", nextState:"turningOff"
-				attributeState "off", label:'${name}', action:"switch.on", icon:"st.switches.switch.off", backgroundColor:"#ffffff", nextState:"turningOn"
-				attributeState "turningOn", label:'${name}', action:"switch.off", icon:"st.switches.switch.on", backgroundColor:"#79b821", nextState:"turningOff"
-				attributeState "turningOff", label:'${name}', action:"switch.on", icon:"st.switches.switch.off", backgroundColor:"#ffffff", nextState:"turningOn"
+			   attributeState "off", label:'${name}', action:"switch.on", icon:"st.switches.switch.off", backgroundColor:"#ffffff", nextState:"turningOn"
+			   attributeState "on", label:'${name}', action:"switch.off", icon:"st.switches.switch.on", backgroundColor:"#79b821", nextState:"turningOff"
+			   attributeState "turningOff", label:'${name}', action:"switch.on", icon:"st.switches.switch.off", backgroundColor:"#ffffff", nextState:"turningOn"
+			   attributeState "turningOn", label:'${name}', action:"switch.off", icon:"st.switches.switch.on", backgroundColor:"#79b821", nextState:"turningOff"
 			}
             tileAttribute ("statusText", key: "SECONDARY_CONTROL") {
            		attributeState "statusText", label:'${currentValue}'       		
@@ -143,26 +143,19 @@ def refresh() {
 }
 
 def configure() {
-    state.enableDebugging = settings.enableDebugging
     logging("configure()", 1)
     def cmds = []
-
     cmds = update_needed_settings()
-    
     if (cmds != []) commands(cmds)
 }
 
 def updated()
 {
-    state.enableDebugging = settings.enableDebugging
     logging("updated()", 1)
-    def cmds = []
-    
+    def cmds = [] 
     cmds = update_needed_settings()
-    
+    sendEvent(name: "checkInterval", value: 2 * 15 * 60 + 2 * 60, displayed: false, data: [protocol: "zwave", hubHardwareId: device.hub.hardwareID])
     sendEvent(name:"needUpdate", value: device.currentValue("needUpdate"), displayed:false, isStateChange: true)
-    sendEvent(name:"statusText", value: "Configuration Pending", displayed:false, isStateChange: true)
-    
     if (cmds != []) response(commands(cmds))
 }
 
@@ -172,9 +165,10 @@ def generate_preferences(configuration_model)
    
     configuration.Value.each
     {
+        if(it.@hidden != "true" && it.@disabled != "true"){
         switch(it.@type)
         {   
-            case ["byte","short","four"]:
+            case ["number"]:
                 input "${it.@index}", "number",
                     title:"${it.@label}\n" + "${it.Help}",
                     range: "${it.@min}..${it.@max}",
@@ -203,7 +197,8 @@ def generate_preferences(configuration_model)
                     defaultValue: "${it.@value}",
                     displayDuringSetup: "${it.@displayDuringSetup}"
             break
-        }  
+        }
+        }
     }
 }
 
@@ -245,9 +240,15 @@ def update_needed_settings()
         if ("${it.@setting_type}" == "zwave"){
             if (currentProperties."${it.@index}" == null)
             {
-                isUpdateNeeded = "YES"
-                logging("Current value of parameter ${it.@index} is unknown", 2)
-                cmds << zwave.configurationV1.configurationGet(parameterNumber: it.@index.toInteger())
+               if (it.@setonly == "true"){
+                  logging("Parameter ${it.@index} will be updated to " + convertParam(it.@index.toInteger(), settings."${it.@index}"? settings."${it.@index}" : "${it.@value}"), 2)
+                  def convertedConfigurationValue = convertParam(it.@index.toInteger(), settings."${it.@index}"? settings."${it.@index}" : "${it.@value}")
+                  cmds << zwave.configurationV1.configurationSet(configurationValue: integer2Cmd(convertedConfigurationValue, it.@byteSize.toInteger()), parameterNumber: it.@index.toInteger(), size: it.@byteSize.toInteger())
+               } else {
+                  isUpdateNeeded = "YES"
+                  logging("Current value of parameter ${it.@index} is unknown", 2)
+                  cmds << zwave.configurationV1.configurationGet(parameterNumber: it.@index.toInteger())
+               }
             }
             else if (settings."${it.@index}" != null && convertParam(it.@index.toInteger(), cmd2Integer(currentProperties."${it.@index}")) != settings."${it.@index}".toInteger())
             { 
@@ -278,17 +279,14 @@ def convertParam(number, value) {
 }
 
 private def logging(message, level) {
-    if (state.enableDebugging != null && state.enableDebugging != "0"){
-    switch (state.enableDebugging) {
+    if (logLevel != "0"){
+    switch (logLevel) {
        case "1":
           if (level > 1)
              log.debug "$message"
        break
        case "99":
           log.debug "$message"
-       break
-       default:
-       
        break
     }
     }
@@ -354,7 +352,7 @@ private command(physicalgraph.zwave.Command cmd) {
 	}
 }
 
-private commands(commands, delay=1500) {
+private commands(commands, delay=500) {
 	delayBetween(commands.collect{ command(it) }, delay)
 }
 
@@ -397,13 +395,13 @@ Default: 0 (Seconds)
         <Item label="Seconds" value="0" />
         <Item label="Milliseconds" value="1" />
 </Value>
-<Value type="byte" byteSize="2" index="11" label="Automatic turning off output after set time " min="0" max="32535" value="0" setting_type="zwave" fw="">
+<Value type="number" byteSize="2" index="11" label="Automatic turning off output after set time " min="0" max="32535" value="0" setting_type="zwave" fw="">
  <Help>
 Range: 0 to 32535
 Default: 0 (Disabled)
 </Help>
 </Value>
-<Value type="byte" byteSize="2" index="12" label="Automatic turning on output after set time " min="0" max="32535" value="0" setting_type="zwave" fw="">
+<Value type="number" byteSize="2" index="12" label="Automatic turning on output after set time " min="0" max="32535" value="0" setting_type="zwave" fw="">
  <Help>
 Range: 0 to 32535
 Default: 0 (Disabled)
@@ -438,7 +436,7 @@ Default: Home Security; Motion Detection, unknown location
         <Item label="Smoke Alarm; Smoke detected" value="6" />
         <Item label="Endpoint, I2 disabled" value="0" />
 </Value>
-<Value type="byte" byteSize="2" index="110" label="Temperature sensor offset settings" min="1" max="32536" value="32536" setting_type="zwave" fw="">
+<Value type="number" byteSize="2" index="110" label="Temperature sensor offset settings" min="1" max="32536" value="32536" setting_type="zwave" fw="">
  <Help>
 1 to 100 value from 0.1C to 10.0C is added to actual measured temperature.
 1001 to 1100 value from -0.1C to -10.0C is subtracted to actual measured temperature.
@@ -446,16 +444,16 @@ Range: 1 to 32536
 Default: 32536 (0.0)
 </Help>
 </Value>
-<Value type="byte" byteSize="1" index="120" label="Digital temperature sensor reporting" min="0" max="127" value="0" setting_type="zwave" fw="">
+<Value type="number" byteSize="1" index="120" label="Digital temperature sensor reporting" min="0" max="127" value="0" setting_type="zwave" fw="">
  <Help>
 Range: 0 to 127
 Default: 0 (Disabled)
 </Help>
 </Value>
-  <Value type="list" index="enableDebugging" label="Enable Debug Logging?" value="0" setting_type="preference" fw="">
+  <Value type="list" index="logLevel" label="Debug Logging Level?" value="0" setting_type="preference" fw="">
     <Help>
     </Help>
-        <Item label="Off" value="0" />
+        <Item label="None" value="0" />
         <Item label="Reports" value="1" />
         <Item label="All" value="99" />
   </Value>
