@@ -42,7 +42,6 @@ metadata {
       command "off1"
       command "on2"
       command "off2"
-      command "reset"
 
       fingerprint deviceId: "0x1001", inClusters:"0x5E,0x86,0x72,0x5A,0x73,0x20,0x27,0x25,0x32,0x60,0x85,0x8E,0x59,0x70", outClusters:"0x20"
    }
@@ -88,9 +87,6 @@ metadata {
             state "NO" , label:'', action:"configuration.configure", icon:"st.secondary.configure"
             state "YES", label:'', action:"configuration.configure", icon:"https://github.com/erocm123/SmartThingsPublic/raw/master/devicetypes/erocm123/qubino-flush-1d-relay.src/configure@2x.png"
     }
-    standardTile("reset", "device.energy", inactiveLabel: false, decoration: "flat", width: 2, height: 2) {
-		state "default", label:'reset kWh', action:"reset"
-	}
     valueTile("energy", "device.energy", decoration: "flat", width: 2, height: 2) {
 			state "default", label:'${currentValue} kWh'
 	}
@@ -330,14 +326,6 @@ def configure() {
     def cmds = []
     cmds = update_needed_settings()
     if (cmds != []) commands(cmds)
-}
-
-def reset() {
-    logging("reset()", 1)
-	commands([
-       zwave.meterV2.meterReset(),
-       zwave.meterV2.meterGet(scale: 0)
-    ])
 }
 
 def updated()

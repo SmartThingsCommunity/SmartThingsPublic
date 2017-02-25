@@ -268,14 +268,19 @@ def update_needed_settings()
 }
 
 def convertParam(number, value) {
-	switch (number){
-    	case 201:
-            value
-        break
-        default:
-        	value
-        break
-    }
+   def parValue
+   switch (number){
+   case 110:
+      if (value < 0)
+         parValue = value * -1 + 1000
+      else 
+         parValue = value
+   break
+   default:
+      parValue = value
+   break
+   }
+   return parValue.toInteger()
 }
 
 private def logging(message, level) {
@@ -436,12 +441,11 @@ Default: Home Security; Motion Detection, unknown location
         <Item label="Smoke Alarm; Smoke detected" value="6" />
         <Item label="Endpoint, I2 disabled" value="0" />
 </Value>
-<Value type="number" byteSize="2" index="110" label="Temperature sensor offset settings" min="1" max="32536" value="32536" setting_type="zwave" fw="">
+<Value type="number" byteSize="2" index="110" label="Temperature sensor offset settings" min="-100" max="100" value="0" setting_type="zwave" fw="">
  <Help>
-1 to 100 value from 0.1C to 10.0C is added to actual measured temperature.
-1001 to 1100 value from -0.1C to -10.0C is subtracted to actual measured temperature.
-Range: 1 to 32536
-Default: 32536 (0.0)
+In tenths. i.e. 1 = 0.1C, -15 = -1.5C
+Range: -100 to 100
+Default: 0
 </Help>
 </Value>
 <Value type="number" byteSize="1" index="120" label="Digital temperature sensor reporting" min="0" max="127" value="0" setting_type="zwave" fw="">

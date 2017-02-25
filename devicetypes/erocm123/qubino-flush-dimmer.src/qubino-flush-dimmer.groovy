@@ -33,8 +33,6 @@ metadata {
         capability "Energy Meter"
         capability "Power Meter"
         capability "Health Check"
-        
-        command "reset"
 
 		fingerprint deviceId: "0x1101", inClusters: "0x5E,0x86,0x72,0x5A,0x73,0x20,0x27,0x25,0x26,0x32,0x85,0x8E,0x59,0x70", outClusters: "0x20,0x26"
         fingerprint deviceId: "0x1101", inClusters: "0x5E,0x86,0x72,0x5A,0x73,0x20,0x27,0x25,0x26,0x30,0x32,0x60,0x85,0x8E,0x59,0x70", outClusters: "0x20,0x26"
@@ -70,9 +68,6 @@ metadata {
         valueTile("power", "device.power", decoration: "flat", width: 2, height: 2) {
 			state "default", label:'${currentValue} W'
 		}
-		standardTile("reset", "device.energy", inactiveLabel: false, decoration: "flat", width: 2, height: 2) {
-			state "default", label:'reset\r\nkWh', action:"reset"
-		}
 		standardTile("energy", "device.energy", decoration: "flat", width: 2, height: 2) {
 			state "default", label:'${currentValue} kWh'
 		}
@@ -85,7 +80,7 @@ metadata {
         }
 
 		main "switch"
-		details(["switch","power","energy","refresh","configure","reset"])
+		details(["switch","power","refresh","configure"])
 	}
 }
 
@@ -214,14 +209,6 @@ def configure() {
     def cmds = []
     cmds = update_needed_settings()
     if (cmds != []) commands(cmds)
-}
-
-def reset() {
-    logging("reset()", 1)
-	commands([
-       zwave.meterV2.meterReset(),
-       zwave.meterV2.meterGet(scale: 0)
-    ])
 }
 
 def updated()
