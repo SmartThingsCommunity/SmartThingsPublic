@@ -344,9 +344,15 @@ def update_needed_settings()
         if ("${it.@setting_type}" == "zwave"){
             if (currentProperties."${it.@index}" == null)
             {
-                isUpdateNeeded = "YES"
-                logging("Current value of parameter ${it.@index} is unknown")
-                cmds << zwave.configurationV1.configurationGet(parameterNumber: it.@index.toInteger())
+               if (it.@setonly == "true"){
+                  logging("Parameter ${it.@index} will be updated to " + convertParam(it.@index.toInteger(), settings."${it.@index}"? settings."${it.@index}" : "${it.@value}"), 2)
+                  def convertedConfigurationValue = convertParam(it.@index.toInteger(), settings."${it.@index}"? settings."${it.@index}" : "${it.@value}")
+                  cmds << zwave.configurationV1.configurationSet(configurationValue: integer2Cmd(convertedConfigurationValue, it.@byteSize.toInteger()), parameterNumber: it.@index.toInteger(), size: it.@byteSize.toInteger())
+               } else {
+                  isUpdateNeeded = "YES"
+                  logging("Current value of parameter ${it.@index} is unknown", 2)
+                  cmds << zwave.configurationV1.configurationGet(parameterNumber: it.@index.toInteger())
+               }
             }
             else if (settings."${it.@index}" != null && cmd2Integer(currentProperties."${it.@index}") != convertParam(it.@index.toInteger(), settings."${it.@index}"))
             { 
@@ -493,7 +499,7 @@ Default: Enable
         <Item label="Disable" value="0" />
         <Item label="Enable" value="1" />
   </Value>
-      <Value type="list" byteSize="4" index="5" label="Color" min="1" max="3" value="3" setting_type="zwave" fw="">
+      <Value type="list" byteSize="4" index="5" label="Color" min="1" max="3" value="3" setting_type="zwave" fw="" setonly="true">
     <Help>
 To configure which color will be displayed when the button is pressed.
 Default: Blue
