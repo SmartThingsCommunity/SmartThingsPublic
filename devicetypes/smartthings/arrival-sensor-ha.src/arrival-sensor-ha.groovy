@@ -151,7 +151,7 @@ private handlePresenceEvent(present) {
 
 private startTimer() {
     log.debug "Scheduling periodic timer"
-    schedule("0 * * * * ?", checkPresenceCallback)
+    runEvery1Minute("checkPresenceCallback")
 }
 
 private stopTimer() {
