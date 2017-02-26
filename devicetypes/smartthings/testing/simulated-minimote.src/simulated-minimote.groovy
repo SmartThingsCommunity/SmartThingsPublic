@@ -124,4 +124,3 @@ private hold(button) {
 	log.debug "$device.displayName button $button was held"
 	sendEvent(name: "button", value: "held", data: [buttonNumber: button], descriptionText: "$device.displayName button $button was held", isStateChange: true)
 }
-

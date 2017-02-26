@@ -672,4 +672,3 @@ def generateStatusEvent() {
     log.debug "Generate Status Event = ${statusText}"
     sendEvent("name":"thermostatStatus", "value":statusText, "description":statusText, displayed: true, isStateChange: true)
 }
-

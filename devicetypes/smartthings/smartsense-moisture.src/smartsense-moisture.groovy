@@ -142,4 +142,3 @@ def zwaveEvent(physicalgraph.zwave.Command cmd)
 {
 	log.debug "COMMAND CLASS: $cmd"
 }
-
