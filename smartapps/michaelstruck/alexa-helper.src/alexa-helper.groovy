@@ -2,7 +2,7 @@
  *  Alexa Helper-Parent
  *
  *  Copyright © 2016 Michael Struck
- *  Version 4.5.2 4/21/16
+ *  Version 4.5.3 2/21/17
  * 
  *  Version 1.0.0 - Initial release
  *  Version 2.0.0 - Added 6 slots to allow for one app to control multiple on/off actions
@@ -34,6 +34,7 @@
  *  Version 4.5.0 - Added icon to app about page
  *  Version 4.5.1b - Minor syntax changes, added main menu icons, new location for icons
  *  Version 4.5.2 - Minor GUI changes to accomodate new mobile app structure
+ *  Version 4.5.3 - Added loop/pusle options for OSRAM DTH from gkl-sf
  *
  *  Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except
  *  in compliance with the License. You may obtain a copy of the License at:
@@ -114,6 +115,7 @@ def pageSettings(){
                     input "memoryCount", "enum", title: "Maximum number of Sonos memory slots", options: [2:"2",3:"3",4:"4",5:"5",6:"6",7:"7",8:"8"], defaultValue: 2, required: false
                 }
             input "tstatNest", "bool", title: "Show Nest options", defaultValue: false
+            input "cLightOSRAM", "bool", title: "Show OSRAM 'loop'/'pusle' options", defaultValue: false
             input "showRestrictions", "bool", title: "Show scenario restrictions", defaultValue: true
             input "showAddSwitches", "bool", title: "Allow in-app virtual switch creation", defaultValue: false
         	input "showNotifyFeed", "bool", title: "Post activity to notification feed" , defaultValue: false
@@ -218,7 +220,7 @@ private def textAppName() {
 	def text = "Alexa Helper"
 }	
 private def textVersion() {
-    def version = "Parent App Version: 4.5.2 (04/21/2016)"
+    def version = "Parent App Version: 4.5.3 (02/21/2017)"
     def childCount = childApps.size()
     def deviceCount= getChildDevices().size()
     def childVersion = childCount ? childApps[0].textVersion() : "No scenarios installed"
@@ -227,10 +229,10 @@ private def textVersion() {
     return "${version}\n${childVersion}"
 }
 private def versionInt(){
-	def text = 452
+	def text = 453
 }
 private def textCopyright() {
-    def text = "Copyright © 2016 Michael Struck"
+    def text = "Copyright © 2017 Michael Struck"
 }
 private def textLicense() {
     def text =

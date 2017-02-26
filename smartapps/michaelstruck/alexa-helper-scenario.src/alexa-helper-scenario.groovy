@@ -1,10 +1,11 @@
 /**
  *  Alexa Helper-Child
  *
- *  Copyright © 2016 Michael Struck
- *  Version 2.9.9e 11/20/16
+ *  Copyright © 2017 Michael Struck
+ *  Version 3.0.0 2/20/17
  * 
  *  Version 2.9.9e - Minor GUI changes to accomodate new mobile app structure
+ *  Version 3.0.0 - Added OSRAM loop/pulse function (thanks @bbmcgee)
  *  See https://github.com/MichaelStruck/SmartThings/blob/master/Other-SmartApps/AlexaHelper/version%20history.md for additional version history
  *
  *  Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except
@@ -43,7 +44,7 @@ preferences {
 def pageStart() {
 	dynamicPage(name: "pageStart", title: "Scenario Settings", uninstall: true, install: true) {
 		section {
-			if (parent.versionInt() < 452) paragraph "You are using a version of the parent app that is older than the recommended version. Please upgrade "+
+			if (parent.versionInt() < 453) paragraph "You are using a version of the parent app that is older than the recommended version. Please upgrade "+
 					"to the latest version to ensure you have the latest features and bug fixes."
             label title:"Scenario Name", required:true
     	   	input "scenarioType", "enum", title: "Scenario Type...", options: [["Baseboard":"Baseboard Heater Control"],["Thermostat":"Heating/Cooling Thermostat Control"],["Control":"Modes/Routines/Devices/HTTP/SHM Control"],["Panic":"Panic Commands"],["Speaker":"Speaker Control"],["Voice":"Voice Reporting"]], required: false, multiple: false, submitOnChange:true
@@ -143,7 +144,7 @@ def pageSTDevicesOnOff(type){
 	}
 	section ("Colored Lights"){
 		input "${type}ColoredLights", "capability.colorControl", title: "Control These Colored Lights...", multiple: true, required: false, submitOnChange:true
-		if (settings."${type}ColoredLights") input "${type}ColoredLightsCMD", "enum", title: "Command To Send To Colored Lights", options:["on":"Turn on","off":"Turn off","set":"Set color and level", "toggle":"Toggle the lights' on/off state"], multiple: false, required: false, submitOnChange:true
+		if (settings."${type}ColoredLights") input "${type}ColoredLightsCMD", "enum", title: "Command To Send To Colored Lights", options: cLightCTLOptions(), multiple: false, required: false, submitOnChange:true
 		if (settings."${type}ColoredLightsCMD" == "set" && settings."${type}ColoredLights"){
 			input "${type}ColoredLightsCLR", "enum", title: "Choose A Color...", required: false, multiple:false, options: fillColorSettings().name, submitOnChange:true
 			if (settings."${type}ColoredLightsCLR" == "Custom-User Defined"){
@@ -665,6 +666,11 @@ def voiceReport(){
     }
 }
 //Common Methods-------------
+def cLightCTLOptions(){
+	def options=["on":"Turn on","off":"Turn off","set":"Set color and level", "toggle":"Toggle the lights' on/off state"]
+    if (parent.cLightOSRAM) options +=["loopOn":"Turn on color loop","loopOff":"Turn off color loop","pulseOn":"Turn on pulse","pulseOff":"Turn off pulse" ]
+    return options
+}
 private String convertToHex(ipAddress, port){
 	String hexIP = ipAddress.tokenize( '.' ).collect {  String.format( '%02x', it.toInteger() ) }.join()
     String hexPort = port.toString().format( '%04x', port.toInteger() )
@@ -766,10 +772,14 @@ def getDeviceDesc(type){
         result += dimmers && cmd.dimmer != "set" ? "${dimmers} set to ${cmd.dimmer}" : ""
         result += dimmers && cmd.dimmer == "set" ? "${dimmers} set to ${lvl}%" : ""	
         result += result && cLights ? "\n" : ""
-    	result += cLights && cmd.cLight != "set" ? "${cLights} set to ${cmd.cLight}":""
+    	result += cLights && cmd.cLight != "set" && cmd.cLight != "loopOn" && cmd.cLight != "loopOff" && cmd.cLight!="pulseOn" && cmd.cLight!="pulseOff" ? "${cLights} set to ${cmd.cLight}":""
         result += cLights && cmd.cLight == "set" ? "${cLights} set to " : ""
         result += cLights && cmd.cLight == "set" && clr ? "${clr} and " : ""
         result += cLights && cmd.cLight == "set" ? "${cLvl}%" : ""
+        result += cLights && cmd.cLight == "loopOn" ? "${cLights} turn on color loop" : ""
+        result += cLights && cmd.cLight == "loopOff" ? "${cLights} turn off color loop" : ""
+        result += cLights && cmd.cLight == "pulseOn" ? "${cLights} turn on pulse" : ""
+        result += cLights && cmd.cLight == "pulseOff" ? "${cLights} turn off pulse" : ""
         result += result && tstats ? "\n" : ""
         result += tstats && cmd.tstat && tLvl ? "${tstats} set to ${cmd.tstat} : ${tLvl}" : ""
         result += result && locks ? "\n":""
@@ -832,7 +842,8 @@ private setColoredLights(switches, color, level, type){
 		satLevel = satLevel > 100 ? 100 : satLevel < 0 ? 0 : satLevel
 	}
     def newValue = [hue: hueColor as int, saturation: satLevel as int, level: level as int]
-	switches?.setColor(newValue)
+	if (parent.cLightOSRAM) switches?.loopOff()
+    switches?.setColor(newValue)
 }
 def songOptions(slot) {
     if (speaker) {
@@ -1024,5 +1035,5 @@ private parseDate(time, type){
     new Date().parse("yyyy-MM-dd'T'HH:mm:ss.SSSZ", formattedDate).format("${type}", timeZone(formattedDate))
 }
 //Version
-private def textVersion() {return "Child App Version: 2.9.9e (11/20/2016)"}
-private def versionInt() {return 299}
+private def textVersion() {return "Child App Version: 3.0.0 (02/20/2017)"}
+private def versionInt() {return 300}

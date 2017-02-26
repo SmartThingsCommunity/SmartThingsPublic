@@ -1,10 +1,11 @@
 /**
  *  Google Home Helper
  *
- *  Copyright © 2016 Michael Struck
- *  Version 1.0.0 12/1/16
+ *  Copyright © 2017 Michael Struck
+ *  Version 1.0.1 2/21/17
  * 
  *  Version 1.0.0 (12/1/16) - Initial release
+ *  Version 1.0.1 (2/21/17) - Added loop/pusle options for OSRAM DTH from gkl-sf
  *
  *  Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except
  *  in compliance with the License. You may obtain a copy of the License at:
@@ -85,6 +86,7 @@ def pageSettings(){
             input "speakerSonos", "bool", title: "Show Sonos options", defaultValue: false, submitOnChange:true
 			if (speakerSonos) input "memoryCount", "enum", title: "Maximum number of Sonos memory slots", options: [2:"2",3:"3",4:"4",5:"5",6:"6",7:"7",8:"8"], defaultValue: 2, required: false
             input "tstatNest", "bool", title: "Show Nest options", defaultValue: false
+            input "cLightOSRAM", "bool", title: "Show OSRAM 'loop'/'pusle' options", defaultValue: false
             input "showRestrictions", "bool", title: "Show scenario restrictions", defaultValue: true
             input "showAddSwitches", "bool", title: "Allow in-app virtual switch creation", defaultValue: false
         	input "showNotifyFeed", "bool", title: "Post activity to notification feed" , defaultValue: false
@@ -227,7 +229,7 @@ def pageSTDevicesOnOff(type){
 	}
 	section ("Colored Lights", hideWhenEmpty: true){
 		input "${type}ColoredLights", "capability.colorControl", title: "Control These Colored Lights...", multiple: true, required: false, submitOnChange:true
-		if (settings."${type}ColoredLights") input "${type}ColoredLightsCMD", "enum", title: "Command To Send To Colored Lights", options:["on":"Turn on","off":"Turn off","set":"Set color and level", "toggle":"Toggle the lights' on/off state"], multiple: false, required: false, submitOnChange:true
+		if (settings."${type}ColoredLights") input "${type}ColoredLightsCMD", "enum", title: "Command To Send To Colored Lights", options:cLightCTLOptions(), multiple: false, required: false, submitOnChange:true
 		if (settings."${type}ColoredLightsCMD" == "set" && settings."${type}ColoredLights"){
 			input "${type}ColoredLightsCLR", "enum", title: "Choose A Color...", required: false, multiple:false, options: fillColorSettings().name, submitOnChange:true
 			if (settings."${type}ColoredLightsCLR" == "Custom-User Defined"){
@@ -780,6 +782,11 @@ def voiceReport(){
     }
 }
 //Common Methods-------------
+def cLightCTLOptions(){
+	def options=["on":"Turn on","off":"Turn off","set":"Set color and level", "toggle":"Toggle the lights' on/off state"]
+    if (parent.cLightOSRAM) options +=["loopOn":"Turn on color loop","loopOff":"Turn off color loop","pulseOn":"Turn on pulse","pulseOff":"Turn off pulse" ]
+    return options
+}
 private String convertToHex(ipAddress, port){
 	String hexIP = ipAddress.tokenize( '.' ).collect {  String.format( '%02x', it.toInteger() ) }.join()
     String hexPort = port.toString().format( '%04x', port.toInteger() )
@@ -881,10 +888,14 @@ def getDeviceDesc(type){
         result += dimmers && cmd.dimmer != "set" ? "${dimmers} set to ${cmd.dimmer}" : ""
         result += dimmers && cmd.dimmer == "set" ? "${dimmers} set to ${lvl}%" : ""	
         result += result && cLights ? "\n" : ""
-    	result += cLights && cmd.cLight != "set" ? "${cLights} set to ${cmd.cLight}":""
+    	result += cLights && cmd.cLight != "set" && cmd.cLight != "loopOn" && cmd.cLight != "loopOff" && cmd.cLight!="pulseOn" && cmd.cLight!="pulseOff" ? "${cLights} set to ${cmd.cLight}":""
         result += cLights && cmd.cLight == "set" ? "${cLights} set to " : ""
         result += cLights && cmd.cLight == "set" && clr ? "${clr} and " : ""
         result += cLights && cmd.cLight == "set" ? "${cLvl}%" : ""
+        result += cLights && cmd.cLight == "loopOn" ? "${cLights} turn on color loop" : ""
+        result += cLights && cmd.cLight == "loopOff" ? "${cLights} turn off color loop" : ""
+        result += cLights && cmd.cLight == "pulseOn" ? "${cLights} turn on pulse" : ""
+        result += cLights && cmd.cLight == "pulseOff" ? "${cLights} turn off pulse" : ""
         result += result && tstats ? "\n" : ""
         result += tstats && cmd.tstat && tLvl ? "${tstats} set to ${cmd.tstat} : ${tLvl}" : ""
         result += result && locks ? "\n":""
@@ -950,7 +961,8 @@ private setColoredLights(switches, color, level, type){
 		satLevel = satLevel > 100 ? 100 : satLevel < 0 ? 0 : satLevel
 	}
     def newValue = [hue: hueColor as int, saturation: satLevel as int, level: level as int]
-	switches?.setColor(newValue)
+	if (parent.cLightOSRAM) switches?.loopOff()
+    switches?.setColor(newValue)
 }
 def songOptions(slot) {
     if (speaker) {
@@ -1151,14 +1163,14 @@ def getSwitchAbout(){ return "Created by Google Home Helper SmartApp" }
 //Version/Copyright/Information/Help
 private def textAppName() { return "Google Home Helper" }	
 private def textVersion() {
-    def version = "SmartApp Version: 1.0.0 (12/01/2016)"
+    def version = "SmartApp Version: 1.0.1 (02/21/2017)"
     def deviceCount= getChildDevices().size()
     def deviceVersion = state.sw1Ver && deviceCount ? "\n${state.sw1Ver}": ""
     deviceVersion += state.sw2Ver && deviceCount ? "\n${state.sw2Ver}": ""
     return "${version}${deviceVersion}"
 }
 private def versionInt(){return 100}
-private def textCopyright() {return "Copyright © 2016 Michael Struck"}
+private def textCopyright() {return "Copyright © 2017 Michael Struck"}
 private def textLicense() {
     def text =
 		"Licensed under the Apache License, Version 2.0 (the 'License'); "+
