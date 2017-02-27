@@ -39,8 +39,7 @@ metadata {
     
     preferences {
         
-        input description: "Once you change values on this page, the status area will display \"Configuration Pending\" until all configuration parameters are updated.", displayDuringSetup: false, type: "paragraph", element: "paragraph"
-        
+        input description: "Once you change values on this page, the \"configuration\" icon will change orange until all configuration parameters are updated.", displayDuringSetup: false, type: "paragraph", element: "paragraph"
 		generate_preferences(configuration_model())
         
     }
@@ -60,9 +59,10 @@ metadata {
 		standardTile("refresh", "device.switch", inactiveLabel: false, decoration: "flat", width: 2, height: 2) {
 			state "default", label:'', action:"refresh.refresh", icon:"st.secondary.refresh"
 		}
-        standardTile("configure", "device.configure", inactiveLabel: false, decoration: "flat", width: 2, height: 2) {
-			state "configure", label:'', action:"configuration.configure", icon:"st.secondary.configure"
-		}
+        standardTile("configure", "device.needUpdate", inactiveLabel: false, decoration: "flat", width: 2, height: 2) {
+            state "NO" , label:'', action:"configuration.configure", icon:"st.secondary.configure"
+            state "YES", label:'', action:"configuration.configure", icon:"https://github.com/erocm123/SmartThingsPublic/raw/master/devicetypes/erocm123/qubino-flush-1d-relay.src/configure@2x.png"
+        }
 
 		main "switch"
 		details(["switch","refresh","configure"])
@@ -75,10 +75,10 @@ def installed() {
 }
 
 def parse(String description) {
-	def result = null
+	def result = []
 	def cmd = zwave.parse(description, [0x20: 1, 0x70: 1])
 	if (cmd) {
-		result = createEvent(zwaveEvent(cmd))
+		result += zwaveEvent(cmd)
 	}
 	if (result?.name == 'hail' && hubFirmwareLessThan("000.011.00602")) {
 		result = [result, response(zwave.basicV1.basicGet())]
@@ -91,12 +91,12 @@ def parse(String description) {
 
 def zwaveEvent(physicalgraph.zwave.commands.basicv1.BasicReport cmd) {
     logging("BasicReport: $cmd", 2)
-	[name: "switch", value: cmd.value ? "on" : "off", type: "physical"]
+	createEvent(name: "switch", value: cmd.value ? "on" : "off", type: "physical")
 }
 
 def zwaveEvent(physicalgraph.zwave.commands.switchbinaryv1.SwitchBinaryReport cmd) {
     logging("SwitchBinaryReport: $cmd", 2)
-	[name: "switch", value: cmd.value ? "on" : "off", type: "digital"]
+	createEvent(name: "switch", value: cmd.value ? "on" : "off", type: "digital")
 }
 
 def zwaveEvent(physicalgraph.zwave.commands.manufacturerspecificv2.ManufacturerSpecificReport cmd) {
@@ -105,7 +105,7 @@ def zwaveEvent(physicalgraph.zwave.commands.manufacturerspecificv2.ManufacturerS
 		updateDataValue("manufacturer", cmd.manufacturerName)
 	}
 
-	[name: "manufacturer", value: cmd.manufacturerName]
+	createEvent(name: "manufacturer", value: cmd.manufacturerName)
 }
 
 def zwaveEvent(physicalgraph.zwave.Command cmd) {
@@ -215,12 +215,10 @@ def update_current_properties(cmd)
         if (settings."${cmd.parameterNumber}".toInteger() == convertParam("${cmd.parameterNumber}".toInteger(), cmd2Integer(cmd.configurationValue)))
         {
             sendEvent(name:"needUpdate", value:"NO", displayed:false, isStateChange: true)
-            sendEvent(name:"statusText", value: "", displayed:false, isStateChange: true)
         }
         else
         {
             sendEvent(name:"needUpdate", value:"YES", displayed:false, isStateChange: true)
-            sendEvent(name:"statusText", value: "Configuration Pending", displayed:false, isStateChange: true)
         }
     }
 
@@ -263,7 +261,6 @@ def update_needed_settings()
     }
     
     sendEvent(name:"needUpdate", value: isUpdateNeeded, displayed:false, isStateChange: true)
-    sendEvent(name:"statusText", value: isUpdateNeeded == "YES"? "Configuration Pending" : "", displayed:false, isStateChange: true)
     return cmds
 }
 

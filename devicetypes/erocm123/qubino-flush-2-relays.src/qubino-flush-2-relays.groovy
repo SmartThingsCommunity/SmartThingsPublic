@@ -51,7 +51,7 @@ metadata {
    
    preferences {
         
-        input description: "Once you change values on this page, the status area will display \"Configuration Pending\" until all configuration parameters are updated.", displayDuringSetup: false, type: "paragraph", element: "paragraph"
+        input description: "Once you change values on this page, the \"configuration\" icon will change orange until all configuration parameters are updated.", displayDuringSetup: false, type: "paragraph", element: "paragraph"
 		generate_preferences(configuration_model())
         
    }
