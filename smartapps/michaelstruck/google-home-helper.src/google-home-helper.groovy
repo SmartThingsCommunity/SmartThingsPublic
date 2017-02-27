@@ -2,10 +2,10 @@
  *  Google Home Helper
  *
  *  Copyright © 2017 Michael Struck
- *  Version 1.0.1 2/21/17
+ *  Version 1.0.1a 2/27/17
  * 
  *  Version 1.0.0 (12/1/16) - Initial release
- *  Version 1.0.1 (2/21/17) - Added loop/pusle options for OSRAM DTH from gkl-sf
+ *  Version 1.0.1 (2/27/17) - Added loop/pusle options for OSRAM DTH from gkl-sf
  *
  *  Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except
  *  in compliance with the License. You may obtain a copy of the License at:
@@ -86,7 +86,7 @@ def pageSettings(){
             input "speakerSonos", "bool", title: "Show Sonos options", defaultValue: false, submitOnChange:true
 			if (speakerSonos) input "memoryCount", "enum", title: "Maximum number of Sonos memory slots", options: [2:"2",3:"3",4:"4",5:"5",6:"6",7:"7",8:"8"], defaultValue: 2, required: false
             input "tstatNest", "bool", title: "Show Nest options", defaultValue: false
-            input "cLightOSRAM", "bool", title: "Show OSRAM 'loop'/'pusle' options", defaultValue: false
+            input "cLightOSRAM", "bool", title: "Show OSRAM 'loop'/'pulse' options", defaultValue: false
             input "showRestrictions", "bool", title: "Show scenario restrictions", defaultValue: true
             input "showAddSwitches", "bool", title: "Allow in-app virtual switch creation", defaultValue: false
         	input "showNotifyFeed", "bool", title: "Post activity to notification feed" , defaultValue: false
@@ -1163,7 +1163,7 @@ def getSwitchAbout(){ return "Created by Google Home Helper SmartApp" }
 //Version/Copyright/Information/Help
 private def textAppName() { return "Google Home Helper" }	
 private def textVersion() {
-    def version = "SmartApp Version: 1.0.1 (02/21/2017)"
+    def version = "SmartApp Version: 1.0.1a (02/27/2017)"
     def deviceCount= getChildDevices().size()
     def deviceVersion = state.sw1Ver && deviceCount ? "\n${state.sw1Ver}": ""
     deviceVersion += state.sw2Ver && deviceCount ? "\n${state.sw2Ver}": ""
