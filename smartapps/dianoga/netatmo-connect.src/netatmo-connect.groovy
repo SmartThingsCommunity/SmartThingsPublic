@@ -138,7 +138,7 @@ def callback() {
 			requestContentType: 'application/x-www-form-urlencoded',
 			body: tokenParams
 		]
-
+    
 		// log.debug "PARAMS: ${requestTokenParams}"
 
 		try {
@@ -150,7 +150,7 @@ def callback() {
                 atomicState.tokenExpires = now() + (resp.data.expires_in * 1000)
             }
         } catch (e) {
-			log.debug "callback() failed: $e"
+			      log.debug "callback() failed: $e"
         }
 
 		// If we successfully got an authToken run sucess(), else fail()
@@ -392,7 +392,7 @@ def getDeviceList() {
         
 	} else {
     	return null
-    }
+  }
 }
 
 private removeChildDevices(delete) {

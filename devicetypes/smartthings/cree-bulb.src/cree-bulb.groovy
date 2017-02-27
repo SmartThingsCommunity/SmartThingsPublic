@@ -23,6 +23,7 @@ metadata {
         capability "Switch"
         capability "Switch Level"
         capability "Health Check"
+        capability "Light"
 
         fingerprint profileId: "C05E", inClusters: "0000,0003,0004,0005,0006,0008,1000", outClusters: "0000,0019"
     }
@@ -82,7 +83,7 @@ def on() {
 }
 
 def setLevel(value) {
-    zigbee.setLevel(value) + ["delay 500"] + zigbee.levelRefresh()         //adding refresh because of ZLL bulb not conforming to send-me-a-report
+    zigbee.setLevel(value) + zigbee.onOffRefresh() + zigbee.levelRefresh()       //adding refresh because of ZLL bulb not conforming to send-me-a-report
 }
 
 /**

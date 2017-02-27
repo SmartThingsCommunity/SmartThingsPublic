@@ -22,6 +22,7 @@ metadata {
         capability "Switch"
         capability "Switch Level"
         capability "Health Check"
+        capability "Light"
 
         fingerprint profileId: "0104", inClusters: "0000, 0003, 0004, 0005, 0006, 0008, 0B04"
         fingerprint profileId: "0104", inClusters: "0000, 0003, 0004, 0005, 0006, 0008, 0702"
@@ -97,7 +98,7 @@ def on() {
 }
 
 def setLevel(value) {
-    zigbee.setLevel(value)
+    zigbee.setLevel(value) + (value?.toInteger() > 0 ? zigbee.on() : [])
 }
 
 /**

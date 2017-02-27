@@ -14,7 +14,8 @@ metadata {
 		capability "Switch"
 		capability "Refresh"
 		capability "Sensor"
-        capability "Health Check"
+		capability "Health Check"
+		capability "Light"
 
         command "refresh"
 	}
@@ -50,7 +51,7 @@ metadata {
 }
 
 void installed() {
-	sendEvent(name: "DeviceWatch-Enroll", value: "{\"protocol\": \"LAN\", \"scheme\":\"untracked\", \"hubHardwareId\": \"${device.hub.hardwareID}\"}")
+	sendEvent(name: "DeviceWatch-Enroll", value: "{\"protocol\": \"LAN\", \"scheme\":\"untracked\", \"hubHardwareId\": \"${device.hub.hardwareID}\"}", displayed: false)
 }
 
 // parse events into attributes

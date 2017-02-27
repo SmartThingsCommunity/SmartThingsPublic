@@ -86,7 +86,7 @@ metadata {
 def parse(String description) {
 	def results
 
-	if (!isSupportedDescription(description) || zigbee.isZoneType19(description)) {
+	if (!isSupportedDescription(description) || description.startsWith("zone")) {
 		results = parseSingleMessage(description)
 	}
 	else if (description == 'updated') {
@@ -488,12 +488,7 @@ private String parseValue(String description) {
 	if (!isSupportedDescription(description)) {
 		return description
 	}
-	else if (zigbee.translateStatusZoneType19(description)) {
-		return "open"
-	}
-	else {
-		return "closed"
-	}
+	return zigbee.parseZoneStatus(description)?.isAlarm1Set() ? "open" : "closed"
 }
 
 private parseDescriptionText(String linkText, String value, String description) {
