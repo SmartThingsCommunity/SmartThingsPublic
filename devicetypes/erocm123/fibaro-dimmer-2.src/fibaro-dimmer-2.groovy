@@ -35,12 +35,13 @@ metadata {
         attribute   "needUpdate", "string"
 
 		fingerprint deviceId: "0x1101", inClusters: "0x72,0x86,0x70,0x85,0x8E,0x26,0x7A,0x27,0x73,0xEF,0x26,0x2B"
+        fingerprint deviceId: "0x1101", inClusters: "0x5E,0x20,0x86,0x72,0x26,0x5A,0x59,0x85,0x73,0x98,0x7A,0x56,0x70,0x31,0x32,0x8E,0x60,0x75,0x71,0x27"
+        
 	}
     
     preferences {
         
         input description: "Once you change values on this page, the \"Synced\" Status will become \"Pending\" status. When the parameters have been succesfully changed, the status will change back to \"Synced\"", displayDuringSetup: false, type: "paragraph", element: "paragraph"
-        
 		generate_preferences(configuration_model())
         
     }
@@ -102,7 +103,6 @@ def parse(String description) {
     if (device.currentState('power') && device.currentState('energy')) statusTextmsg = "${device.currentState('power').value} W ${device.currentState('energy').value} kWh"
     sendEvent(name:"statusText", value:statusTextmsg, displayed:false)
     
-	//log.debug("'$description' parsed to $result")
 	return result
 }
 
