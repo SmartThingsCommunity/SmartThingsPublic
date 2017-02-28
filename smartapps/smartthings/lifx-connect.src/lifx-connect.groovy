@@ -4,6 +4,8 @@
  *  Copyright 2015 LIFX
  *
  */
+include 'localization'
+
 definition(
 		name: "LIFX (Connect)",
 		namespace: "smartthings",
@@ -66,7 +68,7 @@ def authPage() {
 
 		return dynamicPage(name:"Credentials", title:"", nextPage:"", install:true, uninstall: true) {
 			section("Select your location") {
-				input "selectedLocationId", "enum", required:true, title:"Select location (${count} found)", multiple:false, options:options, submitOnChange: true
+				input "selectedLocationId", "enum", required:true, title:"Select location ({{count}} found)", messageArgs: [count: count], multiple:false, options:options, submitOnChange: true
 			}
 		}
 	}

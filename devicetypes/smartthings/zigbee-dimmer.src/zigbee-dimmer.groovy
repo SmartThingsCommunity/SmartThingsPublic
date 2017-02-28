@@ -113,6 +113,14 @@ def refresh() {
     zigbee.onOffRefresh() + zigbee.levelRefresh()
 }
 
+def installed() {
+    if (((device.getDataValue("manufacturer") == "MRVL") && (device.getDataValue("model") == "MZ100")) || (device.getDataValue("manufacturer") == "OSRAM SYLVANIA") || (device.getDataValue("manufacturer") == "OSRAM")) {
+        if ((device.currentState("level")?.value == null) || (device.currentState("level")?.value == 0)) {
+            sendEvent(name: "level", value: 100)
+        }
+    }
+}
+
 def configure() {
     log.debug "Configuring Reporting and Bindings."
     // Device-Watch allows 2 check-in misses from device + ping (plus 1 min lag time)
