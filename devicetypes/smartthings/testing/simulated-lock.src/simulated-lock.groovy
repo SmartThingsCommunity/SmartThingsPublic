@@ -23,7 +23,7 @@ metadata {
 	tiles {
 		standardTile("toggle", "device.lock", width: 2, height: 2) {
 			state "unlocked", label:'unlocked', action:"lock.lock", icon:"st.locks.lock.unlocked", backgroundColor:"#ffffff"
-			state "locked", label:'locked', action:"lock.unlock", icon:"st.locks.lock.locked", backgroundColor:"#79b821"
+			state "locked", label:'locked', action:"lock.unlock", icon:"st.locks.lock.locked", backgroundColor:"#00A0DC"
 		}
 		standardTile("lock", "device.lock", inactiveLabel: false, decoration: "flat") {
 			state "default", label:'lock', action:"lock.lock", icon:"st.locks.lock.locked"

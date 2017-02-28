@@ -38,8 +38,8 @@ metadata {
             }
             
             tileAttribute("device.tamper", key:"SECONDARY_CONTROL") {
-				attributeState("active", label:'tamper active', backgroundColor:"#53a7c0")
-				attributeState("inactive", label:'tamper inactive', backgroundColor:"#ffffff")
+				attributeState("active", label:'tamper active', backgroundColor:"#00a0dc")
+				attributeState("inactive", label:'tamper inactive', backgroundColor:"#cccccc")
 			}  
         }
         

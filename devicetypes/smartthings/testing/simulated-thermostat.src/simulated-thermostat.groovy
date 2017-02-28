@@ -101,9 +101,9 @@ metadata {
 
 		standardTile("mode", "device.thermostatMode", width: 2, height: 2, inactiveLabel: false, decoration: "flat") {
 			state "off", label:'${name}', action:"thermostat.heat", backgroundColor:"#ffffff"
-			state "heat", label:'${name}', action:"thermostat.cool", backgroundColor:"#ffa81e"
-			state "cool", label:'${name}', action:"thermostat.auto", backgroundColor:"#269bd2"
-			state "auto", label:'${name}', action:"thermostat.off", backgroundColor:"#79b821"
+			state "heat", label:'${name}', action:"thermostat.cool", backgroundColor:"#e86d13"
+			state "cool", label:'${name}', action:"thermostat.auto", backgroundColor:"#00A0DC"
+			state "auto", label:'${name}', action:"thermostat.off", backgroundColor:"#00A0DC"
 		}
 		standardTile("fanMode", "device.thermostatFanMode", width: 2, height: 2, inactiveLabel: false, decoration: "flat") {
 			state "fanAuto", label:'${name}', action:"thermostat.fanOn", backgroundColor:"#ffffff"
@@ -112,8 +112,8 @@ metadata {
 		}
 		standardTile("operatingState", "device.thermostatOperatingState", width: 2, height: 2) {
 			state "idle", label:'${name}', backgroundColor:"#ffffff"
-			state "heating", label:'${name}', backgroundColor:"#ffa81e"
-			state "cooling", label:'${name}', backgroundColor:"#269bd2"
+			state "heating", label:'${name}', backgroundColor:"#e86d13"
+			state "cooling", label:'${name}', backgroundColor:"#00A0DC"
 		}
 
 		main("thermostatMulti")
