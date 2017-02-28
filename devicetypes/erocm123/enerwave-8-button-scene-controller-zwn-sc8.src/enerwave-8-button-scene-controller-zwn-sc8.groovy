@@ -169,9 +169,17 @@ def onCmd(endpoint = null) {
     }
 }
 
-def offCmd() {
+def offCmd(endpoint = null) {
     logging("offCmd($value, $endpoint)")
-	zwave.indicatorV1.indicatorSet(value:0).format()
+    if (endpoint != null) {
+       if (sendScene == "true") { 
+          sendEvent(name: "button", value: "pushed", data: [buttonNumber: endpoint], descriptionText: "$device.displayName button $endpoint was pushed", isStateChange: true)
+          sendEvent(name: "switch$endpoint", value: "on", isStateChange: true)
+       }
+       zwave.indicatorV1.indicatorSet(value:(2.power(endpoint - 1))).format()
+    } else {
+       zwave.indicatorV1.indicatorSet(value:0).format()
+    }
 }
 
 def on() { onCmd() }
@@ -186,14 +194,14 @@ def on6() { onCmd(6) }
 def on7() { onCmd(7) }
 def on8() { onCmd(8) }
 
-def off1() { offCmd() }
-def off2() { offCmd() }
-def off3() { offCmd() }
-def off4() { offCmd() }
-def off5() { offCmd() }
-def off6() { offCmd() }
-def off7() { offCmd() }
-def off8() { offCmd() }
+def off1() { offCmd(1) }
+def off2() { offCmd(2) }
+def off3() { offCmd(3) }
+def off4() { offCmd(4) }
+def off5() { offCmd(5) }
+def off6() { offCmd(6) }
+def off7() { offCmd(7) }
+def off8() { offCmd(8) }
 
 def refresh() {
     logging("refresh()")
