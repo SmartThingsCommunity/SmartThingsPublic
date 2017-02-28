@@ -157,3 +157,11 @@ def setGenericName(value){
         sendEvent(name: "colorName", value: genericName)
     }
 }
+
+def installed() {
+    if (((device.getDataValue("manufacturer") == "MRVL") && (device.getDataValue("model") == "MZ100")) || (device.getDataValue("manufacturer") == "OSRAM SYLVANIA") || (device.getDataValue("manufacturer") == "OSRAM")) {
+        if ((device.currentState("level")?.value == null) || (device.currentState("level")?.value == 0)) {
+            sendEvent(name: "level", value: 100)
+        }
+    }
+}
