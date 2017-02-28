@@ -54,11 +54,11 @@ metadata {
 	// UI tile definitions 
 	tiles {
         standardTile("switch", "device.switch", width: 2, height: 2, canChangeIcon: true) {
-			state "doorClosed", label: "Closed", action: "on", icon: "st.doors.garage.garage-closed", backgroundColor: "#79b821"
-            state "doorOpen", label: "Open", action: "on", icon: "st.doors.garage.garage-open", backgroundColor: "#ffa81e"
-            state "doorOpening", label: "Opening", action: "on", icon: "st.doors.garage.garage-opening", backgroundColor: "#ffa81e"
-            state "doorClosing", label: "Closing", action: "on", icon: "st.doors.garage.garage-closing", backgroundColor: "#ffa81e"
-            state "on", label: "Actuate", action: "off", icon: "st.doors.garage.garage-closed", backgroundColor: "#53a7c0"
+			state "doorClosed", label: "Closed", action: "on", icon: "st.doors.garage.garage-closed", backgroundColor: "#00A0DC"
+            state "doorOpen", label: "Open", action: "on", icon: "st.doors.garage.garage-open", backgroundColor: "#e86d13"
+            state "doorOpening", label: "Opening", action: "on", icon: "st.doors.garage.garage-opening", backgroundColor: "#e86d13"
+            state "doorClosing", label: "Closing", action: "on", icon: "st.doors.garage.garage-closing", backgroundColor: "#00A0DC"
+            state "on", label: "Actuate", action: "off", icon: "st.doors.garage.garage-closed", backgroundColor: "#00A0DC"
 			state "off", label: '${name}', action: "on", icon: "st.switches.switch.off", backgroundColor: "#ffffff"
         }
         standardTile("contact", "device.contact", inactiveLabel: false) {
