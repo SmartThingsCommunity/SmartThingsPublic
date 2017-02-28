@@ -2,10 +2,10 @@
  *  Alexa Helper-Child
  *
  *  Copyright © 2017 Michael Struck
- *  Version 3.0.0 2/20/17
+ *  Version 3.0.0a 2/28/17
  * 
  *  Version 2.9.9e - Minor GUI changes to accomodate new mobile app structure
- *  Version 3.0.0 - Added OSRAM loop/pulse function (thanks @bbmcgee)
+ *  Version 3.0.0a - Added OSRAM loop/pulse function (thanks @bbmcgee)
  *  See https://github.com/MichaelStruck/SmartThings/blob/master/Other-SmartApps/AlexaHelper/version%20history.md for additional version history
  *
  *  Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except
@@ -842,7 +842,10 @@ private setColoredLights(switches, color, level, type){
 		satLevel = satLevel > 100 ? 100 : satLevel < 0 ? 0 : satLevel
 	}
     def newValue = [hue: hueColor as int, saturation: satLevel as int, level: level as int]
-	if (parent.cLightOSRAM) switches?.loopOff()
+	if (parent.cLightOSRAM){
+		try { switches?.loopOff() }
+		catch (e) { log.warn "You have attempted a command that is not compatible with the the device handler you are using. Try to turn off the Osram functions in Settings"  }  
+	}
     switches?.setColor(newValue)
 }
 def songOptions(slot) {
@@ -1035,5 +1038,5 @@ private parseDate(time, type){
     new Date().parse("yyyy-MM-dd'T'HH:mm:ss.SSSZ", formattedDate).format("${type}", timeZone(formattedDate))
 }
 //Version
-private def textVersion() {return "Child App Version: 3.0.0 (02/20/2017)"}
+private def textVersion() {return "Child App Version: 3.0.0a (02/28/2017)"}
 private def versionInt() {return 300}
