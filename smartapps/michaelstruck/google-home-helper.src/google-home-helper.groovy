@@ -2,10 +2,10 @@
  *  Google Home Helper
  *
  *  Copyright © 2017 Michael Struck
- *  Version 1.0.1a 2/27/17
+ *  Version 1.0.1b 2/28/17
  * 
  *  Version 1.0.0 (12/1/16) - Initial release
- *  Version 1.0.1 (2/27/17) - Added loop/pusle options for OSRAM DTH from gkl-sf
+ *  Version 1.0.1b (2/28/17) - Added loop/pusle options for OSRAM DTH from gkl-sf
  *
  *  Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except
  *  in compliance with the License. You may obtain a copy of the License at:
@@ -961,7 +961,10 @@ private setColoredLights(switches, color, level, type){
 		satLevel = satLevel > 100 ? 100 : satLevel < 0 ? 0 : satLevel
 	}
     def newValue = [hue: hueColor as int, saturation: satLevel as int, level: level as int]
-	if (parent.cLightOSRAM) switches?.loopOff()
+	if (parent.cLightOSRAM){
+		try { switches?.loopOff() }
+		catch (e) { log.warn "You have attempted a command that is not compatible with the the device handler you are using. Try to turn off the Osram functions in Settings"  }  
+	}
     switches?.setColor(newValue)
 }
 def songOptions(slot) {
@@ -1163,13 +1166,13 @@ def getSwitchAbout(){ return "Created by Google Home Helper SmartApp" }
 //Version/Copyright/Information/Help
 private def textAppName() { return "Google Home Helper" }	
 private def textVersion() {
-    def version = "SmartApp Version: 1.0.1a (02/27/2017)"
+    def version = "SmartApp Version: 1.0.1b (02/28/2017)"
     def deviceCount= getChildDevices().size()
     def deviceVersion = state.sw1Ver && deviceCount ? "\n${state.sw1Ver}": ""
     deviceVersion += state.sw2Ver && deviceCount ? "\n${state.sw2Ver}": ""
     return "${version}${deviceVersion}"
 }
-private def versionInt(){return 100}
+private def versionInt(){return 101}
 private def textCopyright() {return "Copyright © 2017 Michael Struck"}
 private def textLicense() {
     def text =
