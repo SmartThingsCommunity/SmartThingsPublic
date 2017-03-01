@@ -237,7 +237,7 @@ def virtualHandler(evt) {
                    physical."${getColor(switchNumber.toInteger())}${evt.value.capitalize()}"()
                 break
              }
-          } else if (physical.typeName.toUpperCase().indexOf("FIBARO") >= 0 && physical.typeName.toUpperCase().indexOf("RGBW")) {
+          } else if (physical.typeName.toUpperCase().indexOf("FIBARO") >= 0 && physical.typeName.toUpperCase().indexOf("RGBW") >= 0) {
              switch (evt.value){
                 case "setLevel":
                    log.debug "setLevel${getColor(switchNumber.toInteger()).capitalize()}"
