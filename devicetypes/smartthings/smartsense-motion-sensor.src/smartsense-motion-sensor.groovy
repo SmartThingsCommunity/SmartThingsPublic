@@ -108,8 +108,8 @@ def parse(String description) {
 				}
 			} else if (descMap.clusterInt == 0x0406 && descMap.attrInt == 0x0000) {
 				def value = descMap.value.endsWith("01") ? "active" : "inactive"
-				log.warn "Doing a read attr motion event"
-				resultMap = getMotionResult(value)
+				log.debug "Doing a read attr motion event"
+				map = getMotionResult(value)
 			}
 		}
 	}
