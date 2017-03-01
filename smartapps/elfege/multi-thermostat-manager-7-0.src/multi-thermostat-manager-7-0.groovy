@@ -344,6 +344,7 @@ def init() {
     atomicState.T2_AppMgt = true
     atomicState.T3_AppMgt = true
     atomicState.T4_AppMgt = true
+
     atomicState.override = false
     state.ThisIsManual = false
 
@@ -356,6 +357,9 @@ def init() {
 
     atomicState.closed = true // windows management
     atomicState.hasRun = 0 // windows management
+    
+    atomicState.locationModeChange = true 
+    runIn(30, resetLocationChangeVariable)
 
     schedule("0 0/$scheduledTime * * * ?", TemperaturesModes)
     log.debug "TemperaturesModes scheduled to run every $scheduledTime minutes"
@@ -380,7 +384,7 @@ def setpointHandler(evt){
     //findSetPointReferences()
 
     def CurrMode = location.currentMode
-     
+
     //CurrMode = CurrMode[0]
     def HomeMode = null
     def ThisIsManual = false 
@@ -390,9 +394,9 @@ def setpointHandler(evt){
     def AltSENSOR = false    
     def device = state.SPdevice 
 
-	log.info "Home modes are : $Home, Night modes are : $Night, Away mode is : $Away, CustomMode1 are : $CustomMode1, CustomMode2 are : $CustomMode2"
-    
-    
+    log.info "Home modes are : $Home, Night modes are : $Night, Away mode is : $Away, CustomMode1 are : $CustomMode1, CustomMode2 are : $CustomMode2"
+
+
     log.debug "CurrMode is $CurrMode mode"
     // declare an integer value for the thermostat which has had its values modified
     def MapModesThermostats = ["${Thermostat_1}": "1" , "${Thermostat_2}": 2, "${Thermostat_3}": "3", 
@@ -416,7 +420,7 @@ def setpointHandler(evt){
     def ModeIndexValue = MapofIndexValues.find{ it.key == "$CurrMode"}
     log.info "-----------------------------------------------------------------------------------------ModeIndexValue = $ModeIndexValue"
     ModeIndexValue = ModeIndexValue.value
-     
+
     ModeIndexValue = ModeIndexValue.toInteger()
     log.info "-----------------------------------------------------------------------------------------ModeIndexValue = $ModeIndexValue"
 
@@ -574,10 +578,7 @@ def contactHandlerOpen(evt) {
 }
 def ChangedModeHandler(evt) {
     state.modeStartTime = now() 
-    // these values are to be set here and in mode changes only
 
-
-    // these values are to be set here and in mode changes only
     atomicState.AppMgnt_T_1 = true
     atomicState.AppMgnt_T_2 = true
     atomicState.AppMgnt_T_3 = true
@@ -592,7 +593,15 @@ def ChangedModeHandler(evt) {
     atomicState.override = false
     state.ThisIsManual = false
 
+    atomicState.locationModeChange = true
+    runIn(30, resetLocationChangeVariable)
+    
     TemperaturesModes()
+
+
+}
+def resetLocationChangeVariable(){
+    atomicState.locationModeChange = false
 }
 // main loop
 def TemperaturesModes(){
@@ -1417,6 +1426,7 @@ def AlternativeSensor1(){
     }
 }
 def AlternativeSensor2(){
+
     def doorsOk = alldoorsareclosed()
     if(doorsOk){
         log.debug "Running Alternative Sensor Loop for $Thermostat_2"
@@ -1628,6 +1638,7 @@ def alldoorsareclosed(){
         true
     }
 }
+
 def TurnOffThermostats() {
     log.debug "Turning off thermostats" 
     Thermostat_1.setThermostatMode("off") 
@@ -1662,16 +1673,18 @@ def CheckCmdOrigin(){
 
     def latestMode = atomicState.LatestThermostatMode    
     def currentMode = device.currentValue("thermostatMode")
+    def CurrMode = location.currentMode
 
     latestMode.toString()
     currentMode.toString()
-    def ThereWasChange = latestMode != currentMode
-
-    log.info "Latest mode for $device was $latestMode and it just switched to $currentMode --------------------"
-
-    log.debug " Change($ThereWasChange) "
     log.info "latest override event regards $device"
+    def NoLocatioModeChange = atomicState.locationModeChange
+    def ThereWasChange = latestMode != currentMode && NoLocatioModeChange
+    log.debug " Change($ThereWasChange) "
+    if(TherWasChange){
+        log.info "Latest mode for $device was $latestMode and it just switched to $currentMode --------------------"
 
+    }
 
     def thisIsOverride = null
     log.info "Override?($thisIsOverride) and currently atomicState.override = $atomicState.override"
@@ -1682,7 +1695,7 @@ def CheckCmdOrigin(){
         if(ThereWasChange && atomicState.override == true){
             thisIsOverride = false // unit was set back to previous app's management setting
         }
-        else if(ThereWasChange && atomicState.T2_AppMgt == false){
+        else if(ThereWasChange && atomicState.T1_AppMgt == false){
             thisIsOverride = true
         }
 
