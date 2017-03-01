@@ -24,7 +24,7 @@ metadata {
 	tiles {
 		standardTile("water", "device.water", width: 2, height: 2) {
 			state "dry", icon:"st.alarm.water.dry", backgroundColor:"#ffffff"
-			state "wet", icon:"st.alarm.water.wet", backgroundColor:"#53a7c0"
+			state "wet", icon:"st.alarm.water.wet", backgroundColor:"#00A0DC"
 		}
 
 		main "water"

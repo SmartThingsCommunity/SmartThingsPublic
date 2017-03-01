@@ -60,7 +60,7 @@ metadata {
 	// tile definitions
 	tiles {
 		standardTile("switch", "device.switch", width: 2, height: 2, canChangeIcon: true) {
-			state "on", label: '${name}', action: "switch.off", icon: "st.switches.switch.on", backgroundColor: "#79b821"
+			state "on", label: '${name}', action: "switch.off", icon: "st.switches.switch.on", backgroundColor: "#00a0dc"
 			state "off", label: '${name}', action: "switch.on", icon: "st.switches.switch.off", backgroundColor: "#ffffff"
 		}
 		valueTile("power", "device.power", decoration: "flat") {
@@ -78,7 +78,7 @@ metadata {
 
 		(1..4).each { n ->
 			standardTile("switch$n", "switch$n", canChangeIcon: true) {
-				state "on", label: '${name}', action: "off$n", icon: "st.switches.switch.on", backgroundColor: "#79b821"
+				state "on", label: '${name}', action: "off$n", icon: "st.switches.switch.on", backgroundColor: "#00a0dc"
 				state "off", label: '${name}', action: "on$n", icon: "st.switches.switch.off", backgroundColor: "#ffffff"
 			}
 			valueTile("power$n", "power$n", decoration: "flat") {
