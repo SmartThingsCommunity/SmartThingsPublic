@@ -5,7 +5,7 @@
  *
  */
 definition(
-    name: "Curb Control",
+    name: "Curb Control v2",
     namespace: "curb-v2",
     author: "Savanni D&#39;Gerinel",
     description: "Control point for Curb/SmartThings integration",
@@ -13,7 +13,8 @@ definition(
     iconUrl: "https://s3.amazonaws.com/smartapp-icons/Convenience/Cat-Convenience.png",
     iconX2Url: "https://s3.amazonaws.com/smartapp-icons/Convenience/Cat-Convenience@2x.png",
     iconX3Url: "https://s3.amazonaws.com/smartapp-icons/Convenience/Cat-Convenience@2x.png",
-    oauth: true)
+    oauth: true
+)
 
 
 preferences {
@@ -63,12 +64,11 @@ def deviceHandler(evt) {}
 
 private void update(devices) {
 	log.debug "update, request: params: ${params}, devices: $devices.id"
-    
-    
+
 	//def command = request.JSON?.command
     def command = params.command
     //let's create a toggle option here
-	if (command) 
+	if (command)
     {
 		def device = devices.find { it.id == params.id }
 		if (!device) {
