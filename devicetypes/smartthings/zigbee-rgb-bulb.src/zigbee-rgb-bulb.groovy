@@ -154,3 +154,11 @@ def setSaturation(value) {
 	def scaledSatValue = zigbee.convertToHexString(Math.round(value * 0xfe / 100.0), 2)
 	zigbee.command(COLOR_CONTROL_CLUSTER, SATURATION_COMMAND, scaledSatValue, "0500") + "delay 1000" + zigbee.readAttribute(COLOR_CONTROL_CLUSTER, ATTRIBUTE_SATURATION)
 }
+
+def installed() {
+	if (((device.getDataValue("manufacturer") == "MRVL") && (device.getDataValue("model") == "MZ100")) || (device.getDataValue("manufacturer") == "OSRAM SYLVANIA") || (device.getDataValue("manufacturer") == "OSRAM")) {
+		if ((device.currentState("level")?.value == null) || (device.currentState("level")?.value == 0)) {
+			sendEvent(name: "level", value: 100)
+		}
+	}
+}
