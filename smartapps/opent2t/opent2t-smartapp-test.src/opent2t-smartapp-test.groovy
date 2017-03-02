@@ -322,19 +322,27 @@ private getLocationModeInfo() {
 //Map each device to a type given it's capabilities
 private getDeviceType(device) {
 	def deviceType
-	def caps = device.capabilities
-	log.debug "capabilities: [${device}, ${caps}]"
+	def capabilities = device.capabilities
+	log.debug "capabilities: [${device}, ${capabilities}]"
 	log.debug "supported commands: [${device}, ${device.supportedCommands}]"
-	caps.each {
-		switch (it.name.toLowerCase()) {
+
+	//Loop through the device capability list to determine the device type.
+	capabilities.each { capability ->
+		switch (capability.name.toLowerCase()) {
 			case "switch":
 				deviceType = "switch"
-				if (caps.any { it.name.toLowerCase() == "power meter" }) {
-					return deviceType
-				}
-				if (caps.any { it.name.toLowerCase() == "switch level" }) {
-					deviceType = "light"
-					return deviceType
+
+				//If the device also contains "Switch Level" capability, identify it as a "light" device.
+				if (capabilities.any { it.name.toLowerCase() == "switch level" }) {
+
+					//If the device also contains "Power Meter" capability, identify it as a "dimmerSwitch" device.
+					if (capabilities.any { it.name.toLowerCase() == "power meter" }) {
+						deviceType = "dimmerSwitch"
+						return deviceType
+					} else {
+						deviceType = "light"
+						return deviceType
+					}
 				}
 				break
 			case "contact sensor":
@@ -384,7 +392,7 @@ private deviceAttributeList(device) {
 	}
 }
 
-//Map device command and value.
+//Map device command and value. 
 //input command and value are from UWP,
 //returns resultCommand and resultValue that corresponds with function and value in SmartApps
 private mapDeviceCommands(command, value) {
@@ -414,7 +422,7 @@ private mapDeviceCommands(command, value) {
 			resultCommand = "setSaturation"
 			resultValue = value
 			break
-		case "ct":
+		case "colorTemperature":
 			resultCommand = "setColorTemperature"
 			resultValue = value
 			break
