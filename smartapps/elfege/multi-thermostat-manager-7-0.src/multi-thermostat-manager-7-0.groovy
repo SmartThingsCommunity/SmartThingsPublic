@@ -1881,7 +1881,7 @@ def CheckWindows(){
     def OffSet = OffSet.toInteger() 
     log.debug "OffSet?($OffSet)"
     log.debug "atomicState.hasRun($atomicState.hasRun)"
-    log.debug "atomicState.ClosedByApp($atomicState.ClosedByApp)"
+    log.debug "atomicState.WindowsAppManaged($atomicState.WindowsAppManaged)"
 
     // atomicState.hasRun = 0
 
