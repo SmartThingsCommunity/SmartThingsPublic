@@ -42,7 +42,7 @@ def settings() {
 
     def pageProperties = [
         name:       "settings",
-        title:      "Select your thermostats",
+        title:      "Main Settings",
         nextPage:   "pageSetup"
     ]
 
@@ -76,8 +76,10 @@ def settings() {
             if(HowMany == 4) {
                 input(name: "Thermostat_4", type: "capability.thermostat", title: "Thermostat 4 is $Thermostat_4", required: false, multiple: false, description: null, submitOnChange: true)
             }
-
+        }
+        section(""){
             if(AltSensor1 || AltSensor_2 || AltSensor_3){
+                input(name: "AltThermOffSet", type: "number", title: "OffSet value for your alternative sensors?", default: 0, required: false, description: "leave blank if none")
                 input(name: "OutsideSensor", type: "capability.temperatureMeasurement", title: "Pick a sensor for Outside's temperature", required: true, multiple: false, description: null)
                 paragraph "This sensor is rendered mandatory by selecting alternate sensor management (above) or windows actuators management (below). If you do not have an outside temp measurment device, you can allways create a SmartWeater virtual device"
             }
@@ -89,6 +91,7 @@ def settings() {
             input(name: "XtraTempSensor", type:"capability.temperatureMeasurement", title: "select a temperature sensor that will serve as reference", required: true)
 
         }
+
         section("Open some windows when it's nor too hot nor too cool outside (beta: will run only once to prevent annoyances)"){
             input(name: "Actuators", type: "capability.switch", required: false, multiple: true, title: "select the switches that you want to control", submitOnChange: true)
             if(Actuators){
@@ -357,7 +360,7 @@ def init() {
 
     atomicState.closed = true // windows management
     atomicState.hasRun = 0 // windows management
-    
+
     atomicState.locationModeChange = true 
     runIn(30, resetLocationChangeVariable)
 
@@ -595,7 +598,7 @@ def ChangedModeHandler(evt) {
 
     atomicState.locationModeChange = true
     runIn(30, resetLocationChangeVariable)
-    
+
     TemperaturesModes()
 
 
@@ -919,8 +922,8 @@ atomicState.AppMgnt_T_3 : $atomicState.AppMgnt_T_3, atomicState.AppMgnt_T_4 : $a
                     state.AppChangedToT1 = true
                     if(!AltSensor_1){
                         log.debug "loading $Away settings for $Thermostat_1"
-                        Thermostat_1.setHeatingSetpoint(HSPA1)
-                        Thermostat_1.setCoolingSetpoint(CSPA1)
+                        Thermostat_1.setHeatingSetpoint(HSPA)
+                        Thermostat_1.setCoolingSetpoint(CSPA)
 
                         // if AltSensor then these controls are set by AltSensor loop so we avoid a conflict
                         if(state.CurrTemp1 > HSPA1 && state.ThermState1 != "off"){
@@ -952,8 +955,8 @@ atomicState.AppMgnt_T_3 : $atomicState.AppMgnt_T_3, atomicState.AppMgnt_T_4 : $a
                     else {
                         state.AppChangedToT2 = true
                         log.debug "loading $Away settings for $Thermostat_2"
-                        Thermostat_2.setHeatingSetpoint(HSPA2)
-                        Thermostat_2.setCoolingSetpoint(CSPA2)  
+                        Thermostat_2.setHeatingSetpoint(HSPA)
+                        Thermostat_2.setCoolingSetpoint(CSPA)  
 
                         // if AltSensor then these controls are set by AltSensor loop so we avoid a conflict
                         if(state.CurrTemp2 > HSPA2 && state.ThermState2 != "off"){
@@ -985,8 +988,8 @@ atomicState.AppMgnt_T_3 : $atomicState.AppMgnt_T_3, atomicState.AppMgnt_T_4 : $a
                     else {
                         state.AppChangedToT3 = true
                         log.debug "loading $Away settings for $Thermostat_3"
-                        Thermostat_3.setHeatingSetpoint(HSPA3)
-                        Thermostat_3.setCoolingSetpoint(CSPA3)   
+                        Thermostat_3.setHeatingSetpoint(HSPA)
+                        Thermostat_3.setCoolingSetpoint(CSPA)   
 
                         // if AltSensor then these controls are set by AltSensor loop so we avoid a conflict
                         if(state.CurrTemp3 > HSPA3 && state.ThermState3 != "off"){
@@ -1017,8 +1020,8 @@ atomicState.AppMgnt_T_3 : $atomicState.AppMgnt_T_3, atomicState.AppMgnt_T_4 : $a
                 else {
                     state.AppChangedToT4 = true
                     log.debug "loading $Away settings for $Thermostat_4"
-                    Thermostat_4.setHeatingSetpoint(HSPA4)
-                    Thermostat_4.setCoolingSetpoint(CSPA4)   
+                    Thermostat_4.setHeatingSetpoint(HSPA)
+                    Thermostat_4.setCoolingSetpoint(CSPA)   
 
                     // no AltSensor 4 
                     if(state.CurrTemp4 > HSPA4 && state.ThermState4 != "off"){
@@ -1371,8 +1374,8 @@ def AlternativeSensor1(){
             DefaultSetCool = CSPCust2_T1
         }
 
-        NewHeatSet = DefaultSetHeat + 5
-        NewCoolSet = DefaultSetCool - 5
+        NewHeatSet = DefaultSetHeat + AltThermOffSet
+        NewCoolSet = DefaultSetCool - AltThermOffSet
 
         if(atomicState.override == false){
             // no setpoint override, no on/off override
@@ -1470,8 +1473,8 @@ def AlternativeSensor2(){
 
         log.debug "DefaultSetHeat is : $DefaultSetHeat"
         log.debug "DefaultSetCool is : $DefaultSetCool"
-        NewHeatSet = DefaultSetHeat + 5
-        NewCoolSet = DefaultSetCool - 5
+        NewHeatSet = DefaultSetHeat + AltThermOffSet
+        NewCoolSet = DefaultSetCool - AltThermOffSet
 
         if(atomicState.override == false){
             // no setpoint override, no on/off override
@@ -1519,9 +1522,9 @@ def AlternativeSensor2(){
                 }
             }
             state.NewHeatSet2 = NewHeatSet
-            log.debug "state.NewHeatSet2 = DefaultSetHeat+5, that is: $DefaultSetHeat + 5 = $state.NewHeatSet2"
+            log.debug "state.NewHeatSet2 = DefaultSetHeat+$AltThermOffSet, that is: $DefaultSetHeat + $AltThermOffSet = $state.NewHeatSet2"
             state.NewCoolSet2 = NewCoolSet
-            log.debug "state.NewCoolSet2 = DefaultSetCool-5, that is: $DefaultSetCool - 5 = $state.NewCoolSet2"
+            log.debug "state.NewCoolSet2 = DefaultSetCool-$AltThermOffSet, that is: $DefaultSetCool - $AltThermOffSet = $state.NewCoolSet2"
         }
         else { log.debug "$Thermostat_2 in OVERRIDE MODE, doing nothing : atomicState.T2_AppMgt = $atomicState.T2_AppMgt, atomicState.override = $atomicState.override, atomicState.AppMgnt_T_2 = $atomicState.AppMgnt_T_2" }
     }
@@ -1571,8 +1574,8 @@ def AlternativeSensor3(){
             DefaultSetCool = CSPCust2_T3
         }
 
-        NewHeatSet = DefaultSetHeat + 5
-        NewCoolSet = DefaultSetCool - 5
+        NewHeatSet = DefaultSetHeat + AltThermOffSet
+        NewCoolSet = DefaultSetCool - AltThermOffSet
 
         if(atomicState.override == false){
 
@@ -1877,22 +1880,23 @@ def CheckWindows(){
     log.debug "OkToOpen?($OkToOpen)"
     def OffSet = OffSet.toInteger() 
     log.debug "OffSet?($OffSet)"
+    log.debug "atomicState.hasRun($atomicState.hasRun)"
+    log.debug "atomicState.ClosedByApp($atomicState.ClosedByApp)"
 
     // atomicState.hasRun = 0
 
-    log.debug "Inside temperature is above Heat Setting"
+    log.debug "Inside temperature is above Heat Setting. "
     if(OkToOpen){
         if(state.hasRun < 1)  {
-            if(atomicState.ClosedByApp == 1){ // do not reopen if value is 0
 
-                Actuators?.on()
-                log.debug "opening windows"
-                if(OperatingTime){
-                    log.debug "stop in $OperatingTime seconds"
-                    runIn(OperatingTime, StopActuators)
-                }
-                atomicState.hasRun = state.hasRun + 1
-                atomicState.WindowsAppManaged = true // reset periodically unless hasrun > 1
+            Actuators?.on()
+            log.debug "opening windows"
+            if(OperatingTime){
+                log.debug "stop in $OperatingTime seconds"
+                runIn(OperatingTime, StopActuators)
+
+                atomicState.hasRun = atomicState.hasRun + 1
+                atomicState.WindowsAppManaged = true // reset periodically unless hasrun >= 1
             }
         }
         else { log.debug "Windows open already run, doing nothing" }
