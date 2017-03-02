@@ -322,46 +322,54 @@ private getLocationModeInfo() {
 //Map each device to a type given it's capabilities
 private getDeviceType(device) {
 	def deviceType
-	def caps = device.capabilities
-	log.debug "capabilities: [${device}, ${caps}]"
+	def capabilities = device.capabilities
+	log.debug "capabilities: [${device}, ${capabilities}]"
 	log.debug "supported commands: [${device}, ${device.supportedCommands}]"
-	caps.each {
-		switch(it.name.toLowerCase())
+    
+    //Loop through the device capability list to determine the device type.
+	capabilities.each {capability ->
+		switch(capability.name.toLowerCase())
 		{
 			case "switch":
-				deviceType = "switch"
-				if (caps.any{it.name.toLowerCase() == "power meter"}){
-                			return deviceType
-				}
-				if (caps.any{it.name.toLowerCase() == "switch level"}){
-                			deviceType = "light"
-					return deviceType
-                		}
+            	deviceType = "switch"
+
+                //If the device also contains "Switch Level" capability, identify it as a "light" device.
+                if (capabilities.any{it.name.toLowerCase() == "switch level"}){
+                	
+					//If the device also contains "Power Meter" capability, identify it as a "dimmerSwitch" device.
+					if (capabilities.any{it.name.toLowerCase() == "power meter"}){
+                		deviceType = "dimmerSwitch"
+						return deviceType
+                	} else {
+						deviceType = "light"
+						return deviceType
+					}
+                }
 				break
 			case "contact sensor":
 				deviceType = "contactSensor"
-                		return deviceType
+                return deviceType
 			case "garageDoorControl":
 				deviceType = "garageDoor"
-                		return deviceType
+                return deviceType
 			case "lock":
 				deviceType = "lock"
-                		return deviceType
+                return deviceType
 			case "video camera":
 				deviceType = "camera"
-                		return deviceType
+                return deviceType
 			case "motion sensor":
 				deviceType = "motionSensor"
-                		return deviceType
+                return deviceType
 			case "presence sensor":
 				deviceType = "presenceSensor"
-                		return deviceType
+                return deviceType
 			case "thermostat":
 				deviceType = "thermostat"
-                		return deviceType
+                return deviceType
 			case "water sensor":
 				deviceType = "waterSensor"
-                		return deviceType
+                return deviceType
 			default:
 				break
 		}
@@ -415,7 +423,7 @@ private mapDeviceCommands(command, value) {
 			resultCommand = "setSaturation"
 			resultValue = value
 			break
-		case "ct":
+		case "colorTemperature":
 			resultCommand = "setColorTemperature"
 			resultValue = value
 			break
