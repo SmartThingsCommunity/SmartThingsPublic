@@ -124,14 +124,27 @@ DeviceOperation to set {Param} setpoint of {Device} to {Num} degrees
 DeviceOperation to set {Param} setpoint of {Device} to {Num} 
 DeviceOperation to set the {Param} setpoint of {Device} to {Num} degrees
 DeviceOperation to set the {Param} setpoint of {Device} to {Num} 
+
+DeviceOperation set {Device} {Param} to {Num} degrees
+DeviceOperation set {Device} {Param} to {Num} 
 DeviceOperation to set {Device} {Param} to {Num} degrees
 DeviceOperation to set {Device} {Param} to {Num} 
 DeviceOperation set the {Device} {Param} to {Num} degrees
 DeviceOperation set the {Device} {Param} to {Num}
 DeviceOperation set the {Device} to {Num} 
 DeviceOperation set the {Device} to {Num} degrees
+DeviceOperation to set the {Device} {Param} to {Num} degrees
+DeviceOperation to set the {Device} {Param} to {Num} 
+
 DeviceOperation to set the temperature of the {Device} to {Num} degrees
+DeviceOperation to set the temperature of the {Device} to {Num}
+DeviceOperation to set the temperature of {Device} to {Num} degrees
+DeviceOperation to set the temperature of {Device} to {Num}
+DeviceOperation to set the temperature to {Num} degrees in {Device}
 DeviceOperation to set the temperature to {Num} in {Device}
+DeviceOperation to set the temperature to {Num} degrees in the {Device}
+DeviceOperation to set the temperature to {Num} in the {Device}
+
 DeviceOperation turn {Device} {Param} mode to {Operator}
 DeviceOperation set {Device} {Param} to {Operator}
 DeviceOperation turn {Operator} {Device} {Param} mode
@@ -380,14 +393,27 @@ MacroOperation to set {MParam} setpoint of {Macro} to {MNum} degrees
 MacroOperation to set {MParam} setpoint of {Macro} to {MNum} 
 MacroOperation to set the {MParam} setpoint of {Macro} to {MNum} degrees
 MacroOperation to set the {MParam} setpoint of {Macro} to {MNum} 
+
+MacroOperation set {Macro} {MParam} to {MNum} degrees
+MacroOperation set {Macro} {MParam} to {MNum} 
 MacroOperation to set {Macro} {MParam} to {MNum} degrees
 MacroOperation to set {Macro} {MParam} to {MNum} 
 MacroOperation set the {Macro} {MParam} to {MNum} degrees
 MacroOperation set the {Macro} {MParam} to {MNum}
 MacroOperation set the {Macro} to {MNum} 
 MacroOperation set the {Macro} to {MNum} degrees
+MacroOperation to set the {Macro} {MParam} to {MNum} degrees
+MacroOperation to set the {Macro} {MParam} to {MNum}
+
+MacroOperation to set the temperature of {Macro} to {MNum} degrees
+MacroOperation to set the temperature of {Macro} to {MNum}
 MacroOperation to set the temperature of the {Macro} to {MNum} degrees
+MacroOperation to set the temperature of the {Macro} to {MNum}
+MacroOperation to set the temperature to {MNum} degrees in {Macro}
 MacroOperation to set the temperature to {MNum} in {Macro}
+MacroOperation to set the temperature to {MNum} degrees in the {Macro}
+MacroOperation to set the temperature to {MNum} in the {Macro}
+
 MacroOperation turn {Macro} {MParam} mode to {MCmd}
 MacroOperation set {Macro} {MParam} to {MCmd}
 MacroOperation turn {MCmd} {Macro} {MParam} mode
