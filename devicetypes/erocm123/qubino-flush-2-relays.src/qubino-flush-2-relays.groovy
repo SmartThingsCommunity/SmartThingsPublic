@@ -29,6 +29,7 @@ metadata {
       capability "Refresh"
       capability "Energy Meter"
       capability "Power Meter"
+      capability "Temperature Measurement"
       capability "Health Check"
 
       attribute "switch1", "string"
@@ -42,6 +43,7 @@ metadata {
       command "off1"
       command "on2"
       command "off2"
+      command "reset"
 
       fingerprint deviceId: "0x1001", inClusters:"0x5E,0x86,0x72,0x5A,0x73,0x20,0x27,0x25,0x32,0x60,0x85,0x8E,0x59,0x70", outClusters:"0x20"
    }
@@ -85,7 +87,7 @@ metadata {
     }
     standardTile("configure", "device.needUpdate", inactiveLabel: false, decoration: "flat", width: 2, height: 2) {
             state "NO" , label:'', action:"configuration.configure", icon:"st.secondary.configure"
-            state "YES", label:'', action:"configuration.configure", icon:"https://github.com/erocm123/SmartThingsPublic/raw/master/devicetypes/erocm123/qubino-flush-1d-relay.src/configure@2x.png"
+            state "YES", label:'', action:"configuration.configure", icon:"http://github.com/erocm123/SmartThingsPublic/raw/master/devicetypes/erocm123/qubino-flush-1d-relay.src/configure@2x.png"
     }
     valueTile("energy", "device.energy", decoration: "flat", width: 2, height: 2) {
 			state "default", label:'${currentValue} kWh'
@@ -105,11 +107,29 @@ metadata {
     valueTile("power2", "device.power2", decoration: "flat", width: 2, height: 2) {
 			state "default", label:'${currentValue} W'
 	}
+    standardTile("reset", "device.energy", inactiveLabel: false, decoration: "flat", width: 2, height: 2) {
+		state "default", label:'reset kWh', action:"reset"
+	}
+    valueTile("temperature", "device.temperature", inactiveLabel: false, width: 2, height: 2, decoration: "flat") {
+            state "temperature", label:'${currentValue}°',
+            backgroundColors:
+            [
+                [value: 31, color: "#153591"],
+                [value: 44, color: "#1e9cbb"],
+                [value: 59, color: "#90d2a7"],
+                [value: 74, color: "#44b621"],
+                [value: 84, color: "#f1d801"],
+                [value: 95, color: "#d04e00"],
+                [value: 96, color: "#bc2323"]
+            ]
+    }
 
     main(["switch","switch1", "switch2"])
     details(["switch",
-             "switch1","power1","refresh",
-             "switch2","power2","configure"
+             "switch1","power1","energy1",
+             "switch2","power2","energy2",
+             "temperature","refresh","configure",
+             "reset"
             ])
    }
 }
@@ -123,11 +143,21 @@ def parse(String description) {
     } else {
         logging("Non-parsed event: ${description}", 2)
     }
-    
+    log.debug "RESULT: $result"
     def statusTextmsg = ""
-    if (device.currentState('power')) statusTextmsg = "${device.currentState('power').value} W"
-    sendEvent(name:"statusText", value:statusTextmsg, displayed:false)
     
+    result.each {
+    if ((it instanceof Map) == true) log.debug it.find{ it.key == "name" }?.value
+
+    if ((it instanceof Map) == true && it.find{ it.key == "name" }?.value == "power") {
+        statusTextmsg = "${it.value} W ${device.currentValue('energy')} kWh"
+    }
+    if ((it instanceof Map) == true && it.find{ it.key == "name" }?.value == "energy") {
+        statusTextmsg = "${device.currentValue('power')} W ${it.value} kWh"
+    }
+    }
+    if (statusTextmsg != "") sendEvent(name:"statusText", value:statusTextmsg, displayed:false)
+
     return result
 }
 
@@ -234,6 +264,25 @@ def zwaveEvent(physicalgraph.zwave.commands.multichannelv3.MultiChannelCmdEncap 
     }
 }
 
+def zwaveEvent(physicalgraph.zwave.commands.sensormultilevelv5.SensorMultilevelReport cmd)
+{
+    logging("SensorMultilevelReport: $cmd", 2)
+	def map = [:]
+	switch (cmd.sensorType) {
+		case 1:
+			map.name = "temperature"
+			def cmdScale = cmd.scale == 1 ? "F" : "C"
+			map.value = convertTemperatureIfNeeded(cmd.scaledSensorValue, cmdScale, cmd.precision)
+			map.unit = getTemperatureScale()
+            logging("Temperature Report: $map.value", 2)
+			break;
+		default:
+			map.descriptionText = cmd.toString()
+	}
+    
+    return createEvent(map)
+}
+
 def zwaveEvent(physicalgraph.zwave.commands.manufacturerspecificv2.ManufacturerSpecificReport cmd) {
    logging("ManufacturerSpecificReport ${cmd}", 2)
    def msr = String.format("%04X-%04X-%04X", cmd.manufacturerId, cmd.productTypeId, cmd.productId)
@@ -314,6 +363,14 @@ def refresh() {
         encap(zwave.meterV2.meterGet(scale: 0), 2),
 		encap(zwave.meterV2.meterGet(scale: 2), 2)
 	])
+}
+
+def reset() {
+    logging("reset()", 1)
+    commands([
+        zwave.meterV2.meterReset(),
+        zwave.meterV2.meterGet()
+    ])
 }
 
 def ping() {
