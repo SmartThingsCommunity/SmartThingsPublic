@@ -143,18 +143,16 @@ def parse(String description) {
     } else {
         logging("Non-parsed event: ${description}", 2)
     }
-    log.debug "RESULT: $result"
+
     def statusTextmsg = ""
     
     result.each {
-    if ((it instanceof Map) == true) log.debug it.find{ it.key == "name" }?.value
-
-    if ((it instanceof Map) == true && it.find{ it.key == "name" }?.value == "power") {
-        statusTextmsg = "${it.value} W ${device.currentValue('energy')} kWh"
-    }
-    if ((it instanceof Map) == true && it.find{ it.key == "name" }?.value == "energy") {
-        statusTextmsg = "${device.currentValue('power')} W ${it.value} kWh"
-    }
+        if ((it instanceof Map) == true && it.find{ it.key == "name" }?.value == "power") {
+            statusTextmsg = "${it.value} W ${device.currentValue('energy')} kWh"
+        }
+        if ((it instanceof Map) == true && it.find{ it.key == "name" }?.value == "energy") {
+            statusTextmsg = "${device.currentValue('power')} W ${it.value} kWh"
+        }
     }
     if (statusTextmsg != "") sendEvent(name:"statusText", value:statusTextmsg, displayed:false)
 
