@@ -226,11 +226,11 @@ def getDevices() {
 		def deviceType = getDeviceType(it)
 		if(deviceType == "thermostat")
 		{
-			deviceData << [name: it.displayName, id: it.id, deviceType:deviceType, manufacturer:it.getManufacturerName(), model:it.getModelName(), attributes: deviceAttributeList(it), locationMode: getLocationModeInfo()] 
+			deviceData << [name: it.displayName, id: it.id, deviceType:deviceType, status: it.getStatus(), manufacturer:it.getManufacturerName(), model:it.getModelName(), attributes: deviceAttributeList(it), locationMode: getLocationModeInfo()] 
 		}
 		else
 		{
-			deviceData << [name: it.displayName, id: it.id, deviceType:deviceType, manufacturer:it.getManufacturerName(), model:it.getModelName(), attributes: deviceAttributeList(it)]
+			deviceData << [name: it.displayName, id: it.id, deviceType:deviceType, status: it.getStatus(), manufacturer:it.getManufacturerName(), model:it.getModelName(), attributes: deviceAttributeList(it)]
 		} 
     }
  
@@ -245,11 +245,11 @@ def getDevice() {
 	def device
 	if(deviceType == "thermostat")
 	{
-		device = [name: it.displayName, id: it.id, deviceType:deviceType, manufacturer:it.getManufacturerName(), model:it.getModelName(), attributes: deviceAttributeList(it), locationMode: getLocationModeInfo()] 
+		device = [name: it.displayName, id: it.id, deviceType:deviceType, status: it.getStatus(), manufacturer:it.getManufacturerName(), model:it.getModelName(), attributes: deviceAttributeList(it), locationMode: getLocationModeInfo()] 
 	}
 	else
 	{
-		device = [name: it.displayName, id: it.id, deviceType:deviceType, manufacturer:it.getManufacturerName(), model:it.getModelName(), attributes: deviceAttributeList(it)]
+		device = [name: it.displayName, id: it.id, deviceType:deviceType, status: it.getStatus(), manufacturer:it.getManufacturerName(), model:it.getModelName(), attributes: deviceAttributeList(it)]
 	}   
 	log.debug "getDevice, return: ${device}"
 	return device
