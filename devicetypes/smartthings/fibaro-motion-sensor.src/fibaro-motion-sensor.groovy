@@ -46,6 +46,7 @@
 		capability 	"Illuminance Measurement"
 		capability 	"Sensor"
 		capability 	"Battery"
+		capability  "Health Check"
         
         command		"resetParams2StDefaults"
         command		"listCurrentParams"
@@ -125,6 +126,9 @@
  */
 def configure() {
 	log.debug "Configuring Device For SmartThings Use"
+	// Device-Watch simply pings if no device events received for 8 hrs & 2 minutes
+	sendEvent(name: "checkInterval", value: 8 * 60 * 60 + 2 * 60, displayed: false, data: [protocol: "zwave", hubHardwareId: device.hub.hardwareID])
+
     def cmds = []
     
     // send associate to group 3 to get sensor data reported only to hub
