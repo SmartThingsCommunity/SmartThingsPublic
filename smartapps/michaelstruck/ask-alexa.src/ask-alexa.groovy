@@ -1,13 +1,13 @@
 /**
  *  Ask Alexa 
  *
- *  Version 2.2.1 - 2/18/17 Copyright © 2017 Michael Struck
+ *  Version 2.2.2 - 3/2/17 Copyright © 2017 Michael Struck
  *  Special thanks for Keith DeLong for overall code and assistance; Barry Burke for Weather Underground Integration; jhamstead for Ecobee climate modes, Yves Racine for My Ecobee thermostat tips
  * 
- *  Version information prior to 2.2.1 listed here: https://github.com/MichaelStruck/SmartThingsPublic/blob/master/smartapps/michaelstruck/ask-alexa.src/Ask%20Alexa%20Version%20History.md
+ *  Version information prior to 2.2.2 listed here: https://github.com/MichaelStruck/SmartThingsPublic/blob/master/smartapps/michaelstruck/ask-alexa.src/Ask%20Alexa%20Version%20History.md
  *
- *	Version 2.2.1 (2/18/17) Bug fixes, added additional security for doors/locks (thanks @Cherokee180c for the suggestion), implement ST color names, started building structure for better follow ups,
- *  created a new option for 'consolidation' of certain conditions within the voice reports (as suggested by @jseaton). Added framework for more IFTTT conversational commands (coming soon).
+ *	Version 2.2.2 (3/2/17) Syntax issues (thanks larry-fuqua); added loop/pulse options for colored lights using the latest community DTH for OSRAM lights(thanks @bbmcgee). Added options for lights that can only be controlled by Kelvin temperature
+ *  Added increase/decrease commands to Control macro thermostat control; fixed Nest Present command, added speaker output for message queue incoming messages, along with GUI notification.
  *
  *  Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except
  *  in compliance with the License. You may obtain a copy of the License at:
@@ -23,7 +23,7 @@ definition(
     name: "Ask Alexa${parent ? " - Macro " : ""}",
     namespace: "MichaelStruck",
     //Change line below to 'false' to allow for multi app install (Advanced...see instructions)
-    singleInstance: true,
+    	singleInstance: true,
     //-----------------------------------------------------------
     author: "Michael Struck",
     parent: parent ? "MichaelStruck.Ask Alexa" : null,
@@ -37,7 +37,8 @@ preferences {
     page name:"pageMain"
     //Parent Pages
     page name:"mainPageParent"
-    	page name:"pageSwitches"
+    	page name:"pageMQGUI"
+        page name:"pageSwitches"
         page name:"pageDoors"
         page name:"pageTemps"
         page name:"pageSpeakers"
@@ -57,9 +58,10 @@ preferences {
                 page name:"pageContCommands"
                 page name:"pageMsgQueue"
             page name:"pageDefaultValue"
+            page name:"pageCustomColor"
             page name:"pageCustomDevices"
             page name:"pageLimitValue"
-            page name:"pageGlobalVariables"   
+            page name:"pageGlobalVariables" 
         page name:"pageAbout"
 	//Child Pages
     page name:"mainPageChild"
@@ -96,8 +98,12 @@ def mainPageParent() {
                 if (findNullDevices()) paragraph findNullDevices(), image: imgURL() + "caution.png"  
             }
         }
+        if (msgQueueMain && state.msgQueue && state.msgQueue.size()){
+        	def msgCount = state.msgQueue.size(),msgDesc = msgCount==1 ? "One message in the queue - Tap to read" : msgCount+ " messages in the queue - Tap to read"
+            	section ("Message Queue"){ href "pageMQGUI", title: "Message Queue", description: msgDesc, state: "complete", image:imgURL() + "mailbox.png" }            
+        }
         section("Items to interface to Alexa") {
-            href "pageSwitches", title: "Switches/Dimmers/Colored Lights", description:getDesc(switchesSel() || dimmersSel() || cLightsSel()), state: switchesSel() || dimmersSel() || cLightsSel() ? "complete" : null, image:imgURL() + "power.png"
+            href "pageSwitches", title: "Switches/Dimmers/Colored Lights", description:getDesc(switchesSel() || dimmersSel() || cLightsSel() || cLightsKSel()), state: switchesSel() || dimmersSel() || cLightsSel() || cLightsKSel() ? "complete" : null, image:imgURL() + "power.png"
             href "pageDoors", title: "Doors/Windows/Locks", description: getDesc(doorsSel() || locksSel() || ocSensorsSel() || shadesSel()), state: doorsSel() || locksSel() || ocSensorsSel() || shadesSel() ? "complete" : null, image: imgURL() + "lock.png"
             href "pageTemps", title: "Thermostats/Temperature/Humidity", description:getDesc(tstatsSel() || tempsSel() || humidSel()), state: tstatsSel() || tempsSel() || humidSel() ? "complete" : null, image: imgURL() + "temp.png"
             href "pageSpeakers", title: "Connected Speakers", description: getDesc(speakersSel()), state: speakersSel() ? "complete" : null, image:imgURL() + "speaker.png"     
@@ -112,27 +118,43 @@ def mainPageParent() {
         }
 	}
 }
+def pageMQGUI(){
+    dynamicPage(name: "pageMQGUI", install: false, uninstall: false) {
+    def msgRpt = ""
+		state.msgQueue.sort({it.date})
+		state.msgQueue.reverse(msgQueueOrder as int? true : false)
+		state.msgQueue.each{
+			def today = new Date(now()).format("EEEE, MMMM d, yyyy", location.timeZone)
+			def msgDay = new Date(it.date).format("EEEE, MMMM d, yyyy", location.timeZone)
+			def voiceDay = today == msgDay ? "Today" : msgDay 
+			def msgTime = new Date(it.date).format("h:mm aa", location.timeZone)
+			msgRpt += "● ${voiceDay} at ${msgTime} From: '${it.appName}' : '${it.msg}'\n "
+		}
+        section { paragraph "Message Queue", image: imgURL() + "mailbox.png"}
+		section ("Messages") { paragraph msgRpt }
+        section ("Options"){ href "pageMsgQueue", title: "Go to Message Queue Options", description: none, state: (msgQueue ? "complete" : null) }
+	}
+}
 def pageSwitches(){
     dynamicPage(name: "pageSwitches", install: false, uninstall: false) {
         section { paragraph "Switches/Dimmers/Colored lights", image: imgURL() + "power.png"} 
         section("Choose the devices to interface", hideWhenEmpty: true) {
             input "switches", "capability.switch", title: "Choose Switches (On/Off/Toggle/Status)", multiple: true, required: false
             input "dimmers", "capability.switchLevel", title: "Choose Dimmers (On/Off/Toggle/Level/Status)", multiple: true, required: false
-            input "cLights", "capability.colorControl", title: "Choose Colored Lights (On/Off/Toggle/Level/Color/Status)", multiple: true, required: false, submitOnChange: true
-        	
+            input "cLights", "capability.colorControl", title: "Choose Colored Lights (On/Off/Toggle/Level/Color/Status)", multiple: true, required: false
+            input "cLightsK", "capability.colorTemperature", title: "Choose Temperature (Kelvin) Lights (On/Off/Toggle/Level/Temperature/Status)", multiple: true, required: false, submitOnChange: true
         }
         if (deviceAlias){
             section("Devices that can have aliases", hideWhenEmpty: true) {
                 input "switchesAlias", "capability.switch", title: "Choose Switches", multiple: true, required: false
                 input "dimmersAlias", "capability.switchLevel", title: "Choose Dimmers", multiple: true, required: false
-                input "cLightsAlias", "capability.colorControl", title: "Choose Colored Lights", multiple: true, required: false, submitOnChange: true
+                input "cLightsAlias", "capability.colorControl", title: "Choose Colored Lights", multiple: true, required: false
+                input "cLightsKAlias", "capability.colorTemperature", title: "Choose Temperature (Kelvin) Lights", multiple: true, required: false, submitOnChange: true
             }
         }
-        if (cLightsSel()) {
-            section("Custom color"){
-                input "customName", "text", title: "Custom Color Name", required: false
-                input "customHue", "number", title: "Custom Color Hue", required: false
-                input "customSat", "number", title: "Custom Color Saturation", required: false
+        if (cLightsKSel()){
+        	section ("Notes on Temperature (Kelvin) Lights"){
+            	paragraph "The following color temperatures are valid:\nSoft White, Warm White, Cool White, Daylight White"
             }
         }
 	}
@@ -293,7 +315,7 @@ def pageAliasAddFinal(){
         if (state.aliasList.find {it.aliasName.toLowerCase()==aliasName.toLowerCase()} || getDeviceList().find{it.name==aliasName.toLowerCase()})result ="The alias name, '${aliasName}', is already in use. Please choose another name unqiue to the Ask Alexa application."
 		else if (!aliasName || !aliasType || !aliasDevice) result="You did not enter all of the proper alias parameters. Go back and ensure all fields are filled in."
 		else {
-			def devType = [Switch:"switch", Dimmer:"level", "Colored Light":"color", "Door Control":"door", "Window Shade":"shade", "Open/Close Sensor":"contact", "Temperature Sensor":"temperature", Lock:"lock",
+			def devType = [Switch:"switch", Dimmer:"level", "Colored Light":"color", "Temperature (Kelvin) Light": "kTemp", "Door Control":"door", "Window Shade":"shade", "Open/Close Sensor":"contact", "Temperature Sensor":"temperature", Lock:"lock",
             	Thermostat:"thermostat", "Humidity Sensor":"humidity", Speaker:"music", "Acceleration Sensor":"acceleration", "Water Sensor":"water", "Motion Sensor":"motion", "Presence Sensor":"presence"][aliasType]?:aliasType
 			result = "Alias Name: ${aliasName}\nAlias Device Type: ${devType}\nDevice: ${aliasDevice}"
             state.aliasList<<["aliasName":aliasName,"aliasType":devType,"aliasDevice":"${aliasDevice}", "aliasTypeFull": aliasType, "aliasNameLC":aliasName.toLowerCase()]
@@ -382,6 +404,7 @@ def pageSettings(){
             if (!state.accessToken) paragraph "**You must enable OAuth via the IDE to setup this app**"
             else href url:"${getApiServerUrl()}/api/smartapps/installations/${app.id}/setup?access_token=${state.accessToken}", style:"embedded", required:false, title:"Setup Variables", description: "For Amazon developer sites", image: imgURL() + "amazon.png"
         	href "pageGlobalVariables", title: "Text Field Variables", description: none, state: (voiceTempVar || voiceHumidVar || voicePresenceVar ? "complete" : null)
+            if (cLightsSel()) href "pageCustomColor", title: "Custom Color Setup", description: none, state: (customName && customHue && customSat ? "complete" : null)
         }
         section("Security"){
             href "pageConfirmation", title: "Revoke/Reset Access Token", description: "Tap to confirm this action", image: imgURL() + "warning.png"
@@ -402,10 +425,21 @@ def pageMsgQueue(){
     	section{ paragraph "Message Queue Options", image: imgURL() + "mailbox.png" }
         section (" "){
             input "msgQueue", "bool", title: "Enable Message Queue", defaultValue: false, submitOnChange: true
-            if (msgQueue) input "msgQueueOrder", "enum", title: "Message Play Back Order", options:[0:"Oldest to newest", 1:"Newest to oldest"], defaultValue: 0
-            if (msgQueue) input "msgQueueNotify", "bool", title: "Notify When Messages Are Present", defaultValue: false
-            if (msgQueue) input "msgQueueDelete", "bool", title: "Allow SmartApps To Delete Messages", defaultValue: false   
-    	}
+            if (msgQueue) 
+            	input "msgQueueOrder", "enum", title: "Message Play Back Order", options:[0:"Oldest to newest", 1:"Newest to oldest"], defaultValue: 0
+            	input "msgQueueNotify", "bool", title: "Notify When Messages Are Present (Alexa)", defaultValue: false
+            	input "msgQueueNotifyExt", "bool", title: "Notify When Messages Arrive (External)", defaultValue: false, submitOnChange: true
+                input "msgQueueDelete", "bool", title: "Allow SmartApps To Delete Messages", defaultValue: false
+                input "msgQueueMain", "bool", title: "Show Messages On Main Menu" , defaultValue: false
+		}       		
+        if (msgQueue && msgQueueNotifyExt) {
+			section ("External Message Notification Devices"){
+            	input "mqSpeaker", "capability.musicPlayer", title: "Choose Speakers", multiple: true, required: false, submitOnChange: true
+            	if (mqSpeaker) input "mqVolume", "number", title: "Speaker Volume", description: "0-100%", required: false
+            	input "mqSynth", "capability.speechSynthesis", title: "Choose Voice Synthesis Devices", multiple: true, required: false, hideWhenEmpty: true
+                input "mqAlertOnly", "bool", title:"Play Only Message Notification (Off=Play Notification And Message)", defaultValue: false
+			}
+		}
     }
 }
 def pageDefaultValue(){
@@ -454,6 +488,7 @@ def pageCustomDevices(){
             if (ecobeeCMD) input "MyEcobeeCMD", "bool", title: "MyEcobee Specific Tips\n(Get Tips/Play Tips/Erase Tips)", defaultValue: false             
             input "nestCMD", "bool", title: "Nest-Specific Thermostat Presence Commands (Home/Away)", defaultValue: false, submitOnChange: true
             if (nestCMD) input "nestMGRCMD", "bool", title: "Nest Manager Specific Reports (Report)", defaultValue: false
+            input "osramCMD", "bool", title: "OSRAM Specific Commands (Loop/Pulse)", defaultValue: false
             input "stelproCMD", "bool", title: "Stelpro Baseboard\nThermostat Modes (Eco/Comfort)", defaultValue:false
             input "sonosCMD", "bool", title: "SONOS Options (Memory Slots)", defaultValue: false, submitOnChange: true
             if (sonosCMD) {
@@ -493,6 +528,18 @@ def pageGlobalVariables(){
         section ("People"){ input "voicePresenceVar", "capability.presenceSensor", title: "Presence Sensor Variable (%people%)", multiple: true, required: false }
     }
 }
+def pageCustomColor(){
+	dynamicPage(name: "pageCustomColor", title: "Custom Color Setup", uninstall: false){
+        section {
+            input "customName", "text", title: "Custom Color Name", required: false
+            input "customHue", "number", title: "Custom Color Hue", required: false
+            input "customSat", "number", title: "Custom Color Saturation", required: false
+        }
+        section("Notes about custom colors") {
+        	paragraph "Remember to update your Amazon Developer Slots to ensure this custom name is available to use."
+        }
+	}
+}
 def pageConfirmation(){
 	dynamicPage(name: "pageConfirmation", title: "Revoke/Reset Access Token Confirmation", uninstall: false){
         section {
@@ -520,6 +567,7 @@ def mainPageChild(){
     dynamicPage(name: "mainPageChild", title: "Voice Macro Settings", install: true, uninstall: true) {
     	section {
             label title:"Voice Macro Name", required: true, image: imgURL() + "speak.png"
+            href "pageMacroAliases", title: "Macro Aliases", description: macroAliasDesc(), state: macroAliasState()
             input "macroType", "enum", title: "Macro Type...", options: [["Control":"Control (Run/Execute)"],["CoRE":"CoRE Trigger (Run/Execute)"],["Group":"Device Group (On/Off/Toggle, Lock/Unlock, etc.)"],["GroupM":"Macro Group (Run/Execute)"],["Voice":"Voice Reporting (Run/Execute) "]], required: false, multiple: false, submitOnChange:true
             def fullMacroName=[GroupM: "Macro Group",CoRE:"CoRE Trigger", Control:"Control", Group:"Device Group", Voice:"Voice Reporting"][macroType] ?: macroType
             if (macroType) {
@@ -552,13 +600,20 @@ page(name: "timeIntervalInput", title: "Only during a certain time") {
 		input "timeEnd", "time", title: "Ending", required: false
 	}
 }
+page(name: "pageMacroAliases", title: "Enter alias names for this macro"){
+	section {
+    	for (int i = 1; i<macAliasCount()+1; i++){
+        	input "macAlias${i}", "text", title: "Macro Alias Name ${i}", required: false
+		}
+    }
+}
 //Device Macro----------------------------------------------------
 def pageGroup() {
 	dynamicPage(name: "pageGroup", install: false, uninstall: false) {
 		section { paragraph "Device Group Settings", image: imgURL() + "folder.png" }
         section (" ") {
             input "groupType", "enum", title: "Group Type...", options: [["colorControl": "Colored Light (On/Off/Toggle/Level/Color)"],["switchLevel":"Dimmer (On/Off/Toggle/Level)"],["doorControl": "Door (Open/Close)"],["lock":"Lock (Lock/Unlock)"],
-            	["switch":"Switch (On/Off/Toggle)"],["thermostat":"Thermostat (Mode/Off/Setpoint)"],["windowShade": "Window Shades (Open/Close)"]],required: false, multiple: false, submitOnChange:true
+            	["switch":"Switch (On/Off/Toggle)"],["colorTemperature":"Temperature (Kelvin) Light (On/Off/Toggle/Level/Temperature)"],["thermostat":"Thermostat (Mode/Off/Setpoint)"],["windowShade": "Window Shades (Open/Close)"]],required: false, multiple: false, submitOnChange:true
     		if (groupType) input "groupDevice${groupType}", "capability.${groupType}", title: "Choose devices...", required: false, multiple: true, submitOnChange:true
         	if (((groupType == "doorControl" && parent.pwNeeded) || (groupType=="lock" && parent.pwNeeded)) && settings."groupDevice${groupType}" ){
         		input "usePW", "bool", title: "Require PIN For Actions", defaultValue: false
@@ -652,7 +707,7 @@ def pageOutputAudio(){
         	input "ttsMsg", "text", title: "Speak Message", required: false, capitalization: "sentences"
             input "ttsSpeaker", "capability.musicPlayer", title: "Choose Speakers", multiple: true, required: false, submitOnChange: true
             if (ttsSpeaker) input "ttsVolume", "number", title: "Speaker Volume", description: "0-100%", required: false
-            input "ttsSynth", "capability.speechSynthesis", title: "Choose Voice Synthesis Devices", multiple: true, required: false
+            input "ttsSynth", "capability.speechSynthesis", title: "Choose Voice Synthesis Devices", multiple: true, required: false, hideWhenEmpty: true
 		}
 	}
 }
@@ -667,31 +722,36 @@ def pageSTDevices(){
             input "dimmers", "capability.switchLevel", title: "Control These Dimmers...", multiple: true, required: false , submitOnChange:true
             if (dimmers) input "dimmersCMD", "enum", title: "Command To Send To Dimmers", options:["on":"Turn on","off":"Turn off","set":"Set level", "toggle":"Toggle the dimmers' on/off state","decrease": "Decrease current brightness","increase": "Increase current brightness" ], multiple: false, required: false, submitOnChange:true
             if (dimmersCMD == "set" && dimmers) input "dimmersLVL", "number", title: "Dimmers Level", description: "Set dimmer level", required: false, defaultValue: 0
-            if (dimmersCMD ==~ /decrease|increase/ && dimmers) input "dimmersUpDown", number, title: "Amount of change", description: "Set the amount your want to ${dimmersCMD}", required: false, defaultValue: 0
+            if (dimmersCMD ==~ /decrease|increase/ && dimmers) input "dimmersUpDown", number, title: "Amount of change", description: "Set the amount your want to ${dimmersCMD}", required: false, defaultValue: 20
         }
-        section ("Colored lights", hideWhenEmpty: true){
+        section ("Colored lights (Hue/Saturation)", hideWhenEmpty: true){
             input "cLights", "capability.colorControl", title: "Control These Colored Lights...", multiple: true, required: false, submitOnChange:true
-            if (cLights) input "cLightsCMD", "enum", title: "Command To Send To Colored Lights", options:["on":"Turn on","off":"Turn off","set":"Set color and level", "toggle":"Toggle the lights' on/off state","decrease": "Decrease current brightness","increase": "Increase current brightness"], multiple: false, required: false, submitOnChange:true
+            if (cLights) input "cLightsCMD", "enum", title: "Command To Send To Colored Lights", options: parent.cLightsCTLOptions(), multiple: false, required: false, submitOnChange:true
             if (cLightsCMD == "set" && cLights){
                 input "cLightsCLR", "enum", title: "Choose A Color...", required: false, multiple:false, options: parent.STColors().name, submitOnChange:true
                 if (cLightsCLR == "Custom-User Defined"){
                     input "hueUserDefined", "number", title: "Colored Lights Hue", description: "Set colored light hue (0 to 100)", required: false, defaultValue: 0
                     input "satUserDefined", "number", title: "Colored Lights Saturation", description: "Set colored lights saturation (0 to 100)", required: false, defaultValue: 0
                 }
-                input "cLightsLVL", "number", title: "Colored Light Level", description: "Set level, otherwise default color lightness will be used", required: false,defaultValue: 0
+                input "cLightsLVL", "number", title: "Colored Light Brightness Level", description: "Set level, otherwise default color lightness will be used", required: false,defaultValue: 0
             }
-             if (cLightsCMD ==~ /decrease|increase/ && cLights) input "cLightsUpDown", number, title: "Amount of change", description: "Set the amount your want to ${cLightsCMD}", required: false, defaultValue: 0
+             if (cLightsCMD ==~ /decrease|increase/ && cLights) input "cLightsUpDown", number, title: "Amount of change", description: "Set the amount your want to ${cLightsCMD}", required: false, defaultValue: 20
+        }
+        section ("Temperature (Kelvin) lights", hideWhenEmpty: true){
+            input "cLightsK", "capability.colorTemperature", title: "Control These Lights...", multiple: true, required: false, submitOnChange:true
+            if (cLightsK) input "cLightsKCMD", "enum", title: "Command To Send To Lights", options: parent.cLightsKCTLOptions(), multiple: false, required: false, submitOnChange:true
+            if (cLightsKCMD == "set" && cLightsK) {
+            	input "cLightsKEL", "enum", title: "Choose a Kelvin Temperature", options: kelvinOptions(), required: false, multiple: false
+            	input "cLightsKLVL", "number", title: "Brightness Level", description: "Set level, otherwise current level will be used", required: false,defaultValue:100
+            }
+            if (cLightsKCMD ==~ /decrease|increase/ && cLightsK) input "cLightsKUpDown", "number", title: "Amount of change", description: "Set the amount your want to ${cLightsKCMD}", required: false, defaultValue: 20
         }
         section ("Thermostats", hideWhenEmpty: true){
             input "tstats", "capability.thermostat", title: "Control These Thermostats...", multiple: true, required: false, submitOnChange:true
-            if (tstats) {
-            	def tstatOptions=["heat":"Set heating temperature","cool":"Set cooling temperature"]
-                if (parent.nestCMD) tstatOptions += ["away":"Nest 'Away' Presence","home":"Nest 'Home' Presence"]
-                if (parent.ecobeeCMD) tstatOptions += ["away":"Ecobee 'Away' Climate","home":"Ecobee 'Home' Climate","sleep":"Ecobee 'Sleep' Climate","resume program":"Ecobee 'Resume Program'"]
-                if (parent.MyEcobeeCMD) getEcobeeCustomList(tstats).each { tstatOptions += ["${it}":"Ecobee '${it}' Climate"] }
-                input "tstatsCMD", "enum", title: "Command To Send To Thermostats", options :tstatOptions , multiple: false, required: false, submitOnChange:true
-            }
-            if (tstatsCMD =="heat" || tstatsCMD =="cool") input "tstatLVL", "number", title: "Temperature Level", description: "Set temperature level", required: false
+            if (tstats) input "tstatsCMD", "enum", title: "Command To Send To Thermostats", options: parent.tStatCTLOptions() , multiple: false, required: false, submitOnChange:true
+            if (tstatsCMD ==~/heat|cool/) input "tstatLVL", "number", title: "Temperature Level", description: "Set temperature level", required: false
+            if (tstatsCMD =~/increase|decrease/) input "tstatUpDown", "number", title: "Amount of change", description: "Set the amount of change in the setpoint (positive numbers only)", required: false, defaultValue: 5
+        	
         }
         section ("Locks", hideWhenEmpty: true){
             input "locks","capability.lock", title: "Control These Locks...", multiple: true, required: false, submitOnChange:true
@@ -1002,10 +1062,10 @@ def clearFollowup(evt){
 	state.cmdFollowup=""
 }
 def processDevice() {    
-	def dev = params.Device.toLowerCase() 	//Label of device
-	def op = params.Operator				//Operation to perform
-    def numVal = params.Num     			//Number for dimmer/PIN type settings
-    def param = params.Param				//Other parameter (color)
+	def dev = params.Device.toLowerCase().replaceAll("[^a-zA-Z0-9 ]", "") 	//Label of device
+	def op = params.Operator												//Operation to perform
+    def numVal = params.Num     											//Number for dimmer/PIN type settings
+    def param = params.Param.toLowerCase()									//Other parameter (color)
     if (dev =~ /message|queue/) msgQueueReply(op) else processDeviceAction(dev, op, numVal, param, false)
 }
 def processDeviceAction(dev, op, numVal, param, followup){        
@@ -1017,10 +1077,10 @@ def processDeviceAction(dev, op, numVal, param, followup){
 	def num = numVal == "undefined" || numVal =="?" ? 0 : numVal as int
 	String outputTxt = ""
 	def deviceList, count = 0, aliasDeviceType, aliasDeviceObj, aliasDeviceList, aliasDeviceName
-	getDeviceList().each{if (it.name==dev.replaceAll("[^a-zA-Z0-9 ]", "")) {deviceList=it; count++}}
+	getDeviceList().each{if (it.name==dev) {deviceList=it; count++}}
 	if (mapDevices(true) && deviceAlias && !count && !deviceList){
 		aliasDeviceList = state.aliasList.each { 
-			if (it.aliasNameLC==dev.replaceAll("[^a-zA-Z0-9 ]", "")) {
+			if (it.aliasNameLC==dev) {
 				aliasDeviceType = it.aliasType
 				aliasDeviceName = it.aliasDevice
 				count++ 
@@ -1100,7 +1160,7 @@ def msgQueueReply(op){
 //List Request
 def processList(){
 	log.debug "-List command received-"
-	def listType = params.Type	//Help type
+	def listType = params.Type.toLowerCase()	//Help type
     log.debug "List Type: " + listType
     String outputTxt = ""
     def devices, aliasType=""
@@ -1125,6 +1185,7 @@ def processList(){
     if (listType=~/shade/) { outputTxt = shades && shades.size()>1 ? "#window shades#" : shades && shades.size()==1 ? "@window shade@" :"%window shades%"; devices = shades; aliasType="shade" }
     if (listType=~/lock/) { outputTxt = locks && locks.size()>1 ? "#locks#" : locks && locks.size()==1 ? "@lock@" :"%locks%"; devices=locks; aliasType="lock" }	
     if (listType=~/colored light/) { outputTxt = cLights && cLights.size()>1 ? "#colored lights#": cLights && cLights.size()==1 ? "@colored light@" : "%colored lights%"; devices=cLights; aliasType="color" }
+    if (listType=~/temperature light|kelvin/) { outputTxt = cLightsK && cLightsK.size()>1 ? "#temperature lights#": cLightsK && cLightsK.size()==1 ? "@temperature light@" : "%temperature lights%"; devices=cLightsK; aliasType="kTemp" }
     if (listType=~/switch/) { outputTxt = switches? "You can turn on, off or toggle the following switches: " +  getList(switches) + ". " : "%switches%" ; aliasType="switch" }
     if (listType=~/routine/) { outputTxt= listRoutines && listRoutines.size()>1 ? "#routines#":listRoutines && listRoutines.size()==1 ? "@routine@" : "%routines%"; devices=listRoutines }
     if (listType=~/water/) { outputTxt= water && water.size()>1 ? "#water sensors#" : water && water.size()==1 ?  "@water sensor@" : "%water sensors%" ; devices=water; aliasType="water" }
@@ -1212,12 +1273,27 @@ def processMacroGroup(macroList, msg, append, noMsg, macLabel,macFeed,macFeedDat
 //Macro Processing
 def processMacro() {
     log.debug "-Macro command received-"
-	def mac = params.Macro 		//Macro name
-    def mNum = params.Num		//Number variable-Typically delay to run
-    def cmd = params.Cmd		//Group Command
-    def param = params.Param	//Parameter
-    def mPW = params.MPW		//Macro Password
-    processMacroAction(mac, mNum, cmd, param, mPW, false)
+	def mac = params.Macro.toLowerCase().replaceAll("[^a-zA-Z0-9 ]", "") 	//Macro name
+    def mNum = params.Num													//Number variable-Typically delay to run
+    def cmd = params.Cmd													//Group Command
+    def param = params.Param												//Parameter
+    def mPW = params.MPW													//Macro Password
+    //------------------------------------------------------
+    String outputTxt = ""
+    def counter = 1, macAlias, count = 0
+    count += getChildApps().count {it.label.toLowerCase().replaceAll("[^a-zA-Z0-9 ]", "") == mac}
+	while (!count && counter < macAliasCount()+1) {
+        if (count==1) macAlias = getChildApps().find {it."macAlias${counter}".toLowerCase().replaceAll("[^a-zA-Z0-9 ]", "") == mac}.label.toLowerCase()
+        counter ++
+    }
+    if (count == 1){
+    	if (macAlias) mac = macAlias
+        else mac = getChildApps().find {it.label.toLowerCase().replaceAll("[^a-zA-Z0-9 ]", "") == mac}.label.toLowerCase()
+    }
+    if (count > 1) outputTxt ="You have duplicate macros or aliases named '${mac}'. Please check your SmartApp to fix this conflict. %1%"
+    if (!count) outputTxt = "I could not find a macro or alias named '${mac}'. %1%"
+    if (outputTxt) sendJSON(outputTxt)
+    else processMacroAction(mac, mNum, cmd, param, mPW, false)
 }
 def processMacroAction(mac, mNum, cmd, param, mPW, followup){
     log.debug "Macro Name: " + mac
@@ -1233,43 +1309,38 @@ def processMacroAction(mac, mNum, cmd, param, mPW, followup){
         if (cmd=="low" && dimmerLow) num = dimmerLow else if (cmd=="low" && !dimmerLow) err=true 
 		if (cmd=="medium" && dimmerMed) num = dimmerMed else if (cmd=="medium" && !dimmerMed) err=true 
 		if (cmd=="high" && dimmerHigh) num = dimmerHigh else if (cmd=="high" &&!dimmerhigh) err=true
-        if (err) outputTxt = "You don't have a default value set up for the ${outputTxt} level. I am not making any adjustments. "
+        if (err) outputTxt = "You don't have a default value set up for the ${outputTxt} level. I am not making any adjustments. %1%"
     }
     def getColorData = STColors().find {it.name.toLowerCase()==param}
     if (getColorData){
         def hueColor = Math.round(getColorData.h / 3.6), satLevel = getColorData.s
         colorData = [hue: hueColor as int, saturation: satLevel as int] 
     }
-	def count = getChildApps().count {it.label.toLowerCase().replaceAll("[^a-zA-Z0-9 ]", "") == mac.toLowerCase()}
     if (!err){
-        if (count == 1){
-            def macProceed= true, child = getChildApps().find {it.label.toLowerCase().replaceAll("[^a-zA-Z0-9 ]", "") == mac.toLowerCase()}
-            if (child.usePW && pwNeeded && password && mPW != password && ((child.macroType == "Group" && child.groupType == "lock") || child.macroType == "GroupM" ||
-            	(child.macroType == "Group" && child.groupType == "doorControl") || child.macroType == "Control" || child.macroType == "CoRE")){
-                macProceed = false
-                def pwExtra = mPW=="undefined" ? "a" : "the proper"
-                if (child.macroType == "Group" && child.groupType == "lock") outputTxt = "To lock or unlock a group, you must use ${pwExtra} password. %P%"
-				if (child.macroType == "Group" && child.groupType == "doorControl") outputTxt = "To open or close a group, you must use ${pwExtra} password. %P%"
-                if (child.macroType == "CoRE") outputTxt = "To activate a Core Trigger, you must use ${pwExtra} password. %P%"
-                if (child.macroType == "Control") outputTxt = "To activate a Control Macro, you must use ${pwExtra} password. %P%"             
-				if (child.macroType == "GroupM") outputTxt = "To activate a Group Macro, you must use ${pwExtra} password. %P%" 
-                state.cmdFollowup=[return: "macroAction", mac:mac, mNum:mNum, cmd:cmd, param:param, mPW:0 ]
-            }
-            if (child.macroType != "Group" && child.macroType != "GroupM" && cmd=="list" && macProceed) { outputTxt = "You can not use the list command with this type of macro. %1%"; macProceed = false }
-            else if (child.macroType == "GroupM" && cmd=="list" && macProceed) {
-                def gMacros= child.groupMacros.size()==1 ? "macro" : "macros"
-                outputTxt="You have the following ${gMacros} within the '${child.label}' macro group: " + getList(child.groupMacros) +". "
-                macProceed = false
-            }
-            if (macProceed){
-            	playContMsg = child.overRideMsg ? false : true
-            	def fullMacroName = [GroupM: "Macro Group",CoRE: "CoRE Trigger", Control:"Control Macro", Group:"Device Group", Voice:"Voice Report"][child.macroType] ?: child.macroType
-            	if (child.macroType != "GroupM") outputTxt = child.getOkToRun() ? child.macroResults(num, cmd, colorData, param, mNum) : "You have restrictions within the ${fullMacroName} named, '${child.label}', that prevent it from running. Check your settings and try again. %1%"
-            	else outputTxt = processMacroGroup(child.groupMacros, child.voicePost, child.addPost, child.noAck, child.label, child.noteFeed, child.noteFeedData)   
-        	}
+		def macProceed= true, child = getChildApps().find {it.label.toLowerCase().replaceAll("[^a-zA-Z0-9 ]", "") == mac}
+		if (child.usePW && pwNeeded && password && mPW != password && ((child.macroType == "Group" && child.groupType == "lock") || child.macroType == "GroupM" ||
+			(child.macroType == "Group" && child.groupType == "doorControl") || child.macroType == "Control" || child.macroType == "CoRE")){
+			macProceed = false
+			def pwExtra = mPW=="undefined" ? "a" : "the proper"
+			if (child.macroType == "Group" && child.groupType == "lock") outputTxt = "To lock or unlock this group, you must use ${pwExtra} password. %P%"
+			if (child.macroType == "Group" && child.groupType == "doorControl") outputTxt = "To open or close this group, you must use ${pwExtra} password. %P%"
+			if (child.macroType == "CoRE") outputTxt = "To activate this Core Trigger, you must use ${pwExtra} password. %P%"
+			if (child.macroType == "Control") outputTxt = "To activate this Control Macro, you must use ${pwExtra} password. %P%"             
+			if (child.macroType == "GroupM") outputTxt = "To activate this Group Macro, you must use ${pwExtra} password. %P%" 
+			state.cmdFollowup=[return: "macroAction", mac:mac, mNum:mNum, cmd:cmd, param:param, mPW:0 ]
 		}
-        if (count > 1) outputTxt ="You have duplicate macros named '${mac}'. Please check your SmartApp to fix this conflict. %1%"
-        if (!count) outputTxt = "I could not find a macro named '${mac}'. %1%" 
+		if (child.macroType != "Group" && child.macroType != "GroupM" && cmd=="list" && macProceed) { outputTxt = "You can not use the list command with this type of macro. %1%"; macProceed = false }
+		else if (child.macroType == "GroupM" && cmd=="list" && macProceed) {
+			def gMacros= child.groupMacros.size()==1 ? "macro" : "macros"
+			outputTxt="You have the following ${gMacros} within the '${child.label}' macro group: " + getList(child.groupMacros) +". "
+			macProceed = false
+		}
+		if (macProceed){
+			playContMsg = child.overRideMsg ? false : true
+			def fullMacroName = [GroupM: "Macro Group",CoRE: "CoRE Trigger", Control:"Control Macro", Group:"Device Group", Voice:"Voice Report"][child.macroType] ?: child.macroType
+			if (child.macroType != "GroupM") outputTxt = child.getOkToRun() ? child.macroResults(num, cmd, colorData, param, mNum) : "You have restrictions within the ${fullMacroName} named, '${child.label}', that prevent it from running. Check your settings and try again. %1%"
+			else outputTxt = processMacroGroup(child.groupMacros, child.voicePost, child.addPost, child.noAck, child.label, child.noteFeed, child.noteFeedData)   
+        }
     }
     if (outputTxt && !outputTxt.endsWith("%") && !outputTxt.endsWith(" ")) outputTxt += " "
     if (outputTxt && !outputTxt.endsWith("%") && playContMsg) outputTxt += "%4%"
@@ -1397,17 +1468,18 @@ def getReply(devices, type, STdeviceName, op, num, param){
                 result = "The relative humidity at the ${STdeviceName} is ${STdevice.currentValue(type)}%"
                 if (otherStatus) {
                     def temp =roundValue(STdevice.currentValue("temperature"))
-                    result += temp ? ", and the temperature is ${temp} degrees." : ". "
+                    result += temp ? ", and the temperature is ${temp} degrees. " : ". "
 				}
                 else result += ". "
             }
-            else if (type ==~ /level|color|switch/) {
+            else if (type ==~ /level|color|switch|kTemp/) {
                 def onOffStatus = STdevice.currentValue("switch")
                 result = "The ${STdeviceName} is ${onOffStatus}"
                 if (otherStatus) { 
                 	def level = STdevice.currentValue("level"), power = STdevice.currentValue("power")
                     result += onOffStatus == "on" && level ? ", and it's set to ${level}%" : ""
                     result += onOffStatus=="on" && power > 0 ? ", and is currently drawing ${power} watts of power. " : ". "
+                    result += onOffStatus=="on" && type == "kTemp" ? "This light is set to " + STdevice.currentValue("colorTemperature") + " degrees Kelvin. " : ""
             	}
                 else result += ". "
             }
@@ -1511,11 +1583,11 @@ def getReply(devices, type, STdeviceName, op, num, param){
                     def ecobeeCustomRegEx = MyEcobeeCMD && ecobeeCMD ? getEcobeeCustomRegEx(STdevice) : null
                     if ((param==~/heat|heating|cool|cooling|auto|automatic|eco|AC|comfort|home|away|sleep|resume program/ || (ecobeeCustomRegEx && param =~ /${ecobeeCustomRegEx}/)) && num == 0 && op=="undefined") op="on" 
                     if (op ==~/on|off/) {
-                        if (param == "undefined" && op == "on") result="You must designate 'heating mode' or 'cooling mode' when turning the ${STdeviceName} on. "
+                        if (param == "undefined" && op == "on") result="You must designate 'heating mode' or 'cooling mode' when turning the ${STdeviceName} on. %1%"
                         if (param =~/heat/) {result="I am setting the ${STdeviceName} to 'heating' mode. "; STdevice.heat()}
                         if (param =~/cool|AC/) {result="I am setting the ${STdeviceName} to 'cooling' mode. "; STdevice.cool()}
                         if (param =~/auto/) {result="I am setting the ${STdeviceName} to 'auto' mode. Please note, to properly set the temperature in 'auto' mode, you must specify the heating or cooling setpoints separately. " ; STdevice.auto()}
-                        if (param =="home" && nestCMD) {result = "I am setting the ${STdeviceName} to 'home'. "; STdevice.present()} 
+                        if (param ==~/home|present/ && nestCMD) {result = "I am setting the ${STdeviceName} to 'home'. "; STdevice.present()} 
                         if (param =="away" && nestCMD) {result = "I am setting the ${STdeviceName} to 'away'. Please note that Nest thermostats will not respond to temperature changes while in 'away' status. "; STdevice.away()} 
                         if ((param ==~/home|away|sleep/ || (ecobeeCustomRegEx && param =~ /${ecobeeCustomRegEx}/)) && ecobeeCMD) {
                             result = "I am setting the ${STdeviceName} to '" + param + "'. "
@@ -1524,7 +1596,7 @@ def getReply(devices, type, STdeviceName, op, num, param){
                             else result ="There was an error setting your climate. %1%"
                         }
                         if (param =="resume program" && ecobeeCMD && !MyEcobeeCMD) {result = "I am resuming the climate program of the ${STdeviceName}. "; STdevice.resumeProgram()}  
-                        if (param =="resume program" && MyEcobeeCMD) {result = "I am resuming the climate program of the ${STdeviceName}. "; STdevice.resumeThisTstat()}  
+                        if (param =="resume program" && ecobeeCMD && MyEcobeeCMD) {result = "I am resuming the climate program of the ${STdeviceName}. "; STdevice.resumeThisTstat()}  
                         if (op =="off") { result = "I am turning the ${STdeviceName} ${op}. "; STdevice.off() }
                         if (stelproCMD && param==~/eco|comfort/) { result="I am setting the ${STdeviceName} to '${param}' mode. "; STdevice.setThermostatMode("${param}") } 
                     }
@@ -1548,36 +1620,37 @@ def getReply(devices, type, STdeviceName, op, num, param){
                         if ((param =~/heat/) && num > 0) {
                             result="I am setting the heating setpoint of the ${STdeviceName} to ${num} degrees. "
                             STdevice.setHeatingSetpoint(num) 
-                            if (stelproCMD) STdevice.applyNow()
+                            try { if (stelproCMD) STdevice.applyNow() }
+                            catch (e){ log.warn "An error was encountered when attempting to send the 'applyNow()' command to the '${STdeviceName}'. If you don't have any stelPro devices please disable this feature in the Settings>>Device Specific Commands."}     
                         }
                         if ((param =~/cool|AC/) && num > 0) {
                             result="I am setting the cooling setpoint of the ${STdeviceName} to ${num} degrees. "
                             STdevice.setCoolingSetpoint(num)
                         }
-                        if (param != "undefined" && tstatHighLimit && num >= tstatHighLimit) result += "This is the maximum temperature I can set for this device. "
-                        if (param != "undefined" && tstatLowLimit && num <= tstatLowLimit) result += "This is the minimum temperature I can set for this device. "
+                        if (param != "undefined" && tstatHighLimit && num >= tstatHighLimit) result += "This is the maximum temperature I can set for this device. %1%"
+                        if (param != "undefined" && tstatLowLimit && num <= tstatLowLimit) result += "This is the minimum temperature I can set for this device. %1%"
                     }
             	}
             }
-            if (type ==~ /color|level|switch/){
+            if (type ==~ /color|level|switch|kTemp/){
                 num = num < 0 ? 0 : num >99 ? 100 : num
                 def overRideMsg = "" 
                 if (op == "maximum") num = 100
-                if ((op ==~/increase|raise|up|decrease|down|lower|brighten|dim/) && (type == "color" || type == "level")){ 
+                if ((op ==~/increase|raise|up|decrease|down|lower|brighten|dim/) && (type ==~ /color|level|kTemp/)){ 
                      def newValues = upDown(STdevice, type, op, num, STdeviceName)
                      num = newValues.newLevel
                      op= num > 0 ? "on" : "off"
                      overRideMsg = newValues.msg
                 }
-                if (op ==~/low|medium|high/ && type ==~ /color|level/){
+                if (op ==~/low|medium|high/ && type ==~ /color|level|kTemp/){
                 	if (op=="low" && dimmerLow) num = dimmerLow else if (op=="low" && dimmerLow=="") num =0 
                     if (op=="medium" && dimmerMed) num = dimmerMed else if (op=="medium" && !dimmerMed) num = 0 
                     if (op=="high" && dimmerHigh) num = dimmerHigh else if (op=="high" && !dimmerhigh) num = 0 
                     if (num>0) overRideMsg = "I am turning the ${STdeviceName} to ${op}, or a value of ${num}%. "
                     if (num==0) overRideMsg = "You don't have a default value set up for the '${op}' level. I am not making any changes to the ${STdeviceName}. %1%"
                 }
-                if ((type == "switch") || (type ==~ /color|level/ && num==0 )){
-                    if (type ==~ /color|level/ && num==0 && op=="undefined" && param=="undefined") op="off"
+                if ((type == "switch") || (type ==~ /color|level|kTemp/ && num==0 )){
+                    if (type ==~ /color|level|kTemp/ && num==0 && op=="undefined" && param=="undefined") op="off"
                 	if (op==~/on|off/){
                 		STdevice."$op"() 
                         result = overRideMsg ? overRideMsg: "I am turning the ${STdeviceName} ${op}. "
@@ -1588,7 +1661,7 @@ def getReply(devices, type, STdeviceName, op, num, param){
                         result = "I am toggling the ${STdeviceName} from '${oldstate}' to '${newstate}'. "
                     }
             	}
-                if (type ==~ /color|level/ && num > 0) {
+                if (type ==~ /color|level|kTemp/ && num > 0) {
                 	STdevice.setLevel(num)
                     result = overRideMsg ? overRideMsg : num==100 ? "I am setting the ${STdeviceName} to its maximum value. " : "I am setting the ${STdeviceName} to ${num}%. "                    
 				}
@@ -1602,6 +1675,15 @@ def getReply(devices, type, STdeviceName, op, num, param){
                         result = "I am setting the color of the ${STdeviceName} to ${param}"
                         result += num>0 ? ", at a brightness level of ${num}%. " : ". "
                 	}
+                }
+                if (type == "kTemp" && param !="undefined" && supportedCaps.name.contains("Color Temperature")){
+                	def kelvin = param=="soft white" ? 2700 : param=="warm white" ? 3500 : param=="cool white" ? 4500 : param=="daylight white" ? 6500 : 9999
+                    if (kelvin <9999){
+                    	STdevice?.setColorTemperature(kelvin)
+                    	result = "I am setting the temperature of the ${STdeviceName} to ${param}, or ${kelvin} degrees Kelvin"
+                    	result += num>0 ? ", at a brightness level of ${num}%. " : ". "
+                    }
+                    else result = "I didn't understand the temperature you wanted to set the ${STdeviceName}. Valid temperatures are soft white, warm white, cool white and daylight white. %1%"
                 }
             	if (!result){
                 	if (type=="switch") result = "For the ${STdeviceName} switch, be sure to give an 'on', 'off' or 'toggle' command. %1%"
@@ -1626,7 +1708,7 @@ def getReply(devices, type, STdeviceName, op, num, param){
                 	if (sonosCMD && sonosMemoryCount){
                         def memCount = sonosMemoryCount as int, song = ""
         				for (int i=1; i<memCount+1; i++){ 
-                        	 if (settings."sonosSlot${i}Name" && settings."sonosSlot${i}Music" && settings."sonosSlot${i}Name".replaceAll("[^a-zA-Z0-9 ]", "").toLowerCase() == param.toLowerCase()) {
+                        	 if (settings."sonosSlot${i}Name" && settings."sonosSlot${i}Music" && settings."sonosSlot${i}Name".replaceAll("[^a-zA-Z0-9 ]", "").toLowerCase() == param) {
                              	song = settings."sonosSlot${i}Music"
                                 break
                              }
@@ -1642,10 +1724,10 @@ def getReply(devices, type, STdeviceName, op, num, param){
                 }
                 else if (op==~/mute|unmute|pause/) {STdevice."$op"(); result = "I am ${op[0..-2]}ing the ${STdeviceName}. " }
                 else if (op=="next track") {  STdevice.nextTrack(); result = "I am playing the next track on the ${STdeviceName}. " }
-            	else if (op=="previous track") { STdevice.previousTrack(); result = "I am playing the next track on the ${STdeviceName}. " }
+            	else if (op=="previous track") { STdevice.previousTrack(); result = "I am playing the previous track on the ${STdeviceName}. " }
                 else result = "I didn't understand what you wanted me to do with the ${STdeviceName}. %1%"
                 if (num > 0) { STdevice.setLevel(num); result = "I am setting the volume of the ${STdeviceName} to ${num}%. " }
-                if (speakerHighLimit && num == speakerHighLimit) result += "This is the maximum volume level you have set up. "
+                if (speakerHighLimit && num == speakerHighLimit) result += "This is the maximum volume level you have set up. %1%"
                 if (op=="maximum" && !speakerHighLimit) result = "You have not set a maximum volume level in the SmartApp. %1%"
             }
 			if (type == "door"){              
@@ -1720,7 +1802,7 @@ def macroResults(num, cmd, colorData, param,mNum){
 }
 //Group Handler
 def groupResults(num, op, colorData, param, mNum){   
-    def grpType = [switch:"switch", switchLevel:"dimmer", colorControl:"colored light", windowShade:"window shade", doorControl: "door"][groupType]?:groupType
+    def grpType = [switch:"switch", switchLevel:"dimmer", colorTemperature: "temperature light", colorControl:"colored light", windowShade:"window shade", doorControl: "door"][groupType]?:groupType
     String result = ""
     try {
         def noun= settings."groupDevice${groupType}".size()==1 ? grpType : grpType+"s"
@@ -1733,17 +1815,17 @@ def groupResults(num, op, colorData, param, mNum){
             else if (op == "toggle") { toggleState(settings."groupDevice${groupType}");result = voicePost && !noAck? replaceVoiceVar(voicePost,"") : noAck ? " " : "I am toggling the ${noun} in the group named '${app.label}'. " } 
             else result = "For a switch group, be sure to give an 'on', 'off' or 'toggle' command. %1%"
         }
-        else if (groupType==~/switchLevel|colorControl/){
+        else if (groupType==~/switchLevel|colorControl|colorTemperature/){
             num = num < 0 ? 0 : num >99 ? 100 : num
             if (op == "maximum") { num = 100; op ="undefined"; valueWord= "${proNoun} maximum brightness" }
             else if (op==~/low|medium|high/ && groupType=="switchLevel") { valueWord="${op}, or a value of ${num}%"; op ="undefined" }
-            else if (op==~/low|medium|high/ && groupType=="colorControl" && !colorData ) { valueWord="${op}, or a value of ${num}%"; op ="undefined" }
+            else if (op==~/low|medium|high/ && groupType==~/colorControl|colorTemperature/ && !colorData ) { valueWord="${op}, or a value of ${num}%"; op ="undefined" }
             else valueWord = "${num}%"
             if (num==0 && op=="undefined" && param=="undefined" && mNum!="undefined") op="off"
             if (op ==~/on|off/){ settings."groupDevice${groupType}"?."$op"();result = voicePost ? replaceVoiceVar(voicePost,"") : noAck ? " " :  "I am turning ${op} the ${noun} in the group named '${app.label}'. "}
             else if (op == "toggle") { toggleState(settings."groupDevice${groupType}");result = voicePost ? replaceVoiceVar(voicePost,"") : noAck ? " " : "I am toggling the ${noun} in the group named '${app.label}'. " }
             else if (groupType=="switchLevel" && num > 0 && op =="undefined") { settings."groupDevice${groupType}"?.setLevel(num); result = voicePost ? replaceVoiceVar(voicePost,"") : noAck ? " " : "I am setting the ${noun} in the group named '${app.label}' to ${valueWord}. " }
-            else if (groupType=="colorControl" && num > 0 && !colorData && op =="undefined") { settings."groupDevice${groupType}"?.setLevel(num); result = voicePost && !noAck  ? replaceVoiceVar(voicePost,"") :  noAck ? " " :"I am setting the ${noun} in the '${app.label}' group to ${valueWord}. " }
+            else if (groupType==~/colorControl|colorTemperature/ && num > 0 && !colorData && op =="undefined") { settings."groupDevice${groupType}"?.setLevel(num); result = voicePost && !noAck  ? replaceVoiceVar(voicePost,"") :  noAck ? " " :"I am setting the ${noun} in the '${app.label}' group to ${valueWord}. " }
             else if (groupType=="colorControl" && colorData && param) {
                 colorData = [hue:colorData.hue, saturation: colorData.saturation]
                 settings."groupDevice${groupType}"?.setColor(colorData)
@@ -1753,6 +1835,20 @@ def groupResults(num, op, colorData, param, mNum){
                     result += num ==100 ? " and ${proNoun} maximum brightness" : num>0 ? ", at a brightness level of ${num}%" : ""
                     result += ". "
                 }
+                else if (voicePost && !noAck)  result = replaceVoiceVar(voicePost,"") 
+                else result = " "
+            }
+            else if (groupType=="colorTemperature" && param !="undefined") {
+                def kelvin = param=="soft white" ? 2700 : param=="warm white" ? 3500 : param=="cool white" ? 4500 : param=="daylight white" ? 6500 : 9999
+                if (kelvin <9999){
+					settings."groupDevice${groupType}"?.setColorTemperature(kelvin)
+					if (!voicePost && !noAck){
+                    	result = "I am setting the temperature of the ${noun} in the '${app.label}' group to ${param}, or ${kelvin} degrees Kelvin"
+						result += num ==100 ? " and ${proNoun} maximum brightness" : num>0 ? ", at a brightness level of ${num}%" : ""
+                        result += ". "
+					}
+                }
+                else if (kelvin ==9999) result = "I didn't understand the temperature you wanted to set the '${app.label}' device group. Valid temperatures are soft white, warm white, cool white and daylight white. %1%"
                 else if (voicePost && !noAck)  result = replaceVoiceVar(voicePost,"") 
                 else result = " "
             }
@@ -1778,7 +1874,8 @@ def groupResults(num, op, colorData, param, mNum){
                 else result = "The default increase or decrease value is set to zero within the SmartApp. I am taking no action. %1%"
             }
             else if (groupType=="switchLevel") result = "For a dimmer group, be sure to use an 'on', 'off', 'toggle' or brightness level setting. %1%" 
-            else if (groupType=="colorControl") result = "For a colored light group, be sure to give me an 'on', 'off', 'toggle', brightness level or color command. %1%" 
+            else if (groupType=="colorControl") result = "For a colored light group, be sure to give me an 'on', 'off', 'toggle', brightness level or color command. %1%"
+            else if (groupType=="colorTemperature") result = "For a temperature control light group, be sure to give me an 'on', 'off', 'toggle', brightness level or temperature command. %1%"
         }
         else if (groupType=="lock"){
             noun=settings."groupDevice${groupType}".size()==1 ? "device" : "devices"
@@ -1813,7 +1910,7 @@ def groupResults(num, op, colorData, param, mNum){
                 if (param =~/auto/) {result="I am setting the ${noun} to 'auto' mode. Please note, to properly set the temperature in 'auto' mode, you must specify the heating or cooling setpoints separately. " ; settings."groupDevice${groupType}"?.auto()}
                 if (op == "off") { result = "I am turning off the ${noun}. "; settings."groupDevice${groupType}"?.off() }
                 if (parent.stelproCMD && (param=="eco" || param=="comfort")){ result="I am setting the ${noun} to '${param}' mode. "; settings."groupDevice${groupType}"?.setThermostatMode("${param}") }
-                if (param=="home" && parent.nestCMD) { result="I am setting the ${noun} to 'home' mode. "; settings."groupDevice${groupType}"?.present() }
+                if (param==~/home|present/ && parent.nestCMD) { result="I am setting the ${noun} to 'home' mode. "; settings."groupDevice${groupType}"?.present() }
                 if (param=="away" && parent.nestCMD) { 
                     result="I am setting the ${noun} to 'away' mode. Please note that Nest thermostats will not accept temperature changes while in 'away' status. "
                     settings."groupDevice${groupType}"?.away()
@@ -1832,15 +1929,11 @@ def groupResults(num, op, colorData, param, mNum){
                     }
                 }
                 if ((param=="resume program") && parent.ecobeeCMD && !parent.MyEcobeeCMD) {   
-                    result="I am resuming the climate program of the ${noun}."
-                    settings."groupDevice${groupType}"?.resumeProgram()
-                }
-                if ((param=="resume program") && parent.MyEcobeeCMD) {  
-					result="I am resuming the climate program of the ${noun}." 
-					settings."groupDevice${groupType}"?.resumeThisTstat() 
-				} 
+                    result="I am resuming the climate program of the ${noun}. "
+                    parent.MyEcobeeCMD ? settings."groupDevice${groupType}"?.resumeThisTstat() : settings."groupDevice${groupType}"?.resumeProgram()
+                } 
             }
-            else if (op ==~/increase|raise|up|decrease|down|lower/) result = "Increase and decrease commands are not yet compatible with thermostat group macros. %1%" //need to add this soon
+            else if (op ==~/increase|raise|up|decrease|down|lower/) result = "Increase and decrease commands are not yet compatible with thermostat group macros. %1%"
             else {
                 param = tstatDefaultCool && param == "undefined" ? "cool" : tstatDefaultHeat && param == "undefined" ? "heat" : param
                 if (param == "undefined") result = "You must designate a 'heating' or 'cooling' parameter when setting the temperature of a thermostat group. %1%"
@@ -1921,7 +2014,7 @@ def controlResults(sDelay){
 }
 def controlHandler(){
    	state.scheduled = false
-   	def cmd = [switch: switchesCMD, dimmer: dimmersCMD, cLight: cLightsCMD, tstat: tstatsCMD, lock: locksCMD, garage: garagesCMD, shade: shadesCMD]
+   	def cmd = [switch: switchesCMD, dimmer: dimmersCMD, cLight: cLightsCMD, cLightK: cLightsKCMD, tstat: tstatsCMD, lock: locksCMD, garage: garagesCMD, shade: shadesCMD]
     if (phrase) location.helloHome.execute(phrase)
 	if (setMode && location.mode != setMode) {
 		if (location.modes?.find{it.name == setMode}) setLocationMode(setMode)
@@ -1947,14 +2040,27 @@ def controlHandler(){
         else if (cmd.cLight == "toggle") toggleState(cLights)	
         else cLights?."${cmd.cLight}"()
     }
+    if (cLightsK && cmd.cLightK){
+    	if (cmd.cLightK == "set"){
+            if (cLightsKEL || cLightsKLVL) {
+                def level = !cLightsKLVL || cLightsKLVL < 0 ? 0 : cLightsKLVL >100 ? 100 : cLightsKLVL as int
+                if (cLightsKEL) cLightsK?.setColorTemperature(cLightsKEL as int) 
+                if (level>0) cLightsK?.setLevel(level)
+            }
+        }
+        else if (cmd.cLightK ==~/increase|decrease/) cLightsK.each {upDownChild(it, cmd.cLightK, cLightsKUpDown as int, "level")}
+        else if (cmd.cLightK == "toggle") toggleState(cLightsK)	
+        else cLightsK?."${cmd.cLightK}"()
+    }
     if (locks && cmd.lock) locks?."${cmd.lock}"()
     if (tstats && cmd.tstat){
         if ((cmd.tstat == "heat" || cmd.tstat == "cool") && tstatLVL) {
         	def tLevel = tstatLVL < 0 ?  0 : tstatLVL > 100 ? 100 : tstatLVL as int
     		cmd.tstat == "heat" ? tstats?.setHeatingSetpoint(tLevel) : tstats?.setCoolingSetpoint(tLevel)
         }
+        else if (cmd.tstat=~/increase|decrease/) tstats.each {upDownChild(it, cmd.tstat, tstatUpDown as int, "temperature")}
         def ecobeeCustomRegEx = parent.MyEcobeeCMD && parent.ecobeeCMD ? getEcobeeCustomRegEx(tstats) : null 
-		if (cmd.tstat =~ /home|away|sleep|resume program/ || (ecobeeCustomRegEx && cmd.tstat =~ /${ecobeeCustomRegEx}/)) tstats?."${cmd.tstat}"() 
+		if (cmd.tstat =~ /present|away|sleep|resumeProgram/ || (ecobeeCustomRegEx && cmd.tstat =~ /${ecobeeCustomRegEx}/)) tstats?."${cmd.tstat}"() 
 	}
     if (garages && cmd.garage) garages?."${cmd.garage}"()
     if (shades && cmd.shade) shades?."${cmd.shade}"()
@@ -1978,8 +2084,11 @@ def controlHandler(){
 }
 private getEcobeeCustomRegEx(myEcobeeGroup){ 
     def myCustomClimate = "" 
-    getEcobeeCustomList(myEcobeeGroup).each { myCustomClimate += "|${it}" } 
-    myCustomClimate = myCustomClimate[1..myCustomClimate.length() - 1] 
+    try {
+    	getEcobeeCustomList(myEcobeeGroup).each { myCustomClimate += "|${it}" } 
+    	myCustomClimate = myCustomClimate[1..myCustomClimate.length() - 1] 
+	}
+    catch (e){ log.warn "An error was encountered when attempting to send commands to the '${myEcobeeGroup}'. If you don't have any Ecobee devices please disable these features in the Settings>>Device Specific Commands."}                        
     return myCustomClimate 
 }
 //Report Handler-------------------------------------------------------------
@@ -2274,9 +2383,26 @@ def waterReport(){
 }
 //Parent Code Access (from Child)-----------------------------------------------------------
 def getOkToRun(){ def result = (!runMode || runMode.contains(location.mode)) && getDayOk(runDay) && getTimeOk(timeStart,timeEnd) && getPeopleOk(runPeople,runPresAll) }
+def cLightsKCTLOptions(){
+	return ["on":"Turn on","off":"Turn off","set":"Set temperature and level", "toggle":"Toggle the lights' on/off state","decrease": "Decrease current brightness","increase": "Increase current brightness"]
+}
+def cLightsCTLOptions(){
+	def options=["on":"Turn on","off":"Turn off","set":"Set color and level", "toggle":"Toggle the lights' on/off state","decrease": "Decrease current brightness","increase": "Increase current brightness"]
+    if (osramCMD) options +=["loopOn":"Turn on color loop","loopOff":"Turn off color loop","pulseOn":"Turn on pulse","pulseOff":"Turn off pulse" ]
+    return options
+}
+def tStatCTLOptions(){
+	def tstatOptions=["heat":"Set heating temperature","cool":"Set cooling temperature","increaseHeat":"Increase current heating setpoint","decreaseHeat":"Decrease current heating setpoint","increaseCool":"Increase current cooling setpoint", "decreaseCool":"Decrease current cooling setpoint"]
+	if (nestCMD) tstatOptions += ["away":"Nest 'Away' Presence","present":"Nest 'Home' Presence"]
+	if (ecobeeCMD) tstatOptions += ["away":"Ecobee 'Away' Climate","home":"Ecobee 'Home' Climate","sleep":"Ecobee 'Sleep' Climate","resumeProgram":"Ecobee 'Resume Program'"]
+	if (MyEcobeeCMD) getEcobeeCustomList(tstats).each { tstatOptions += ["${it}":"Ecobee '${it}' Climate"] }
+	return tstatOptions
+}
 //Common Code (Child and Parent)		
 def battOptions() { return  [5:"<5%",10:"<10%",20:"<20%",30:"<30%",40:"<40%",50:"<50%",60:"<60%",70:"<70%",80:"<80%",90:"<90%",101:"Always play battery level"] }
+def kelvinOptions(){ return [2700: "Soft White (2700K)", 3500: "Warm White (3500K)", 4500: "Cool White (4500K)", 6500: "Daylight White (6500K)"] } 
 def imgURL() { return "https://raw.githubusercontent.com/MichaelStruck/SmartThingsPublic/master/img/" }
+def macAliasCount() { return 3 }
 def getList(items){
 	def result = "", itemCount=items.size() as int
 	items.each{ result += it; itemCount --
@@ -2313,18 +2439,31 @@ private getEcobeeCustomList(myEcobeeGroup){
 private currWeatherSel() { return voiceWeatherTemp || voiceWeatherHumid || voiceWeatherDew || voiceWeatherSolar || voiceWeatherVisiblity || voiceWeatherPrecip }
 private foreWeatherSel() { return voiceWeatherToday || voiceWeatherTonight || voiceWeatherTomorrow}
 def upDownChild(device, op, num, type){
-    log.debug "Device:" + device
-    log.debug "Op:" + op
-    log.debug "Num:" + num
-    log.debug "Type:" + type
+    log.debug "Device: " + device
+    log.debug "Op: " + op
+    log.debug "Num: " + num
+    log.debug "Type: " + type
     def numChange, newLevel, currLevel, defMove
     if (type=="level") defMove = parent.lightAmt as int ?: 0 ; currLevel = device.currentValue("switch")=="on" ? device.currentValue("level") as int : 0
-    if (op ==~/increase|raise|up|brighten/)  numChange = num == 0 ? defMove : num > 0 ? num : 0
-    if (op ==~/decrease|down|lower|dim/) numChange = num == 0 ? -defMove : num > 0 ? -num  : 0
+    if (type=="temperature"){
+    	defMove = parent.tstatAmt as int ?: 0
+        try{
+        	if (parent.nestCMD) nestCmdPrep(device)
+        	if (op=~/Cool/ && (device.currentValue("thermostatMode")=="auto" || device.currentValue("thermostatMode")=="cool")) currLevel = device.currentValue("coolingSetpoint")
+        	if (op=~/Heat/ &&(device.currentValue("thermostatMode")=="auto" || device.currentValue("thermostatMode")=="heat")) currLevel = device.currentValue("heatingSetpoint")
+		}
+        catch (e) { log.debug "There was an error reading the thermostat. Ensure you have the proper mode set on the thermostat for the setpoint you are attempting to set." }
+    }
+    if (op =~/increase|raise|up|brighten/)  numChange = num == 0 ? defMove : num > 0 ? num : 0
+    if (op =~/decrease|down|lower|dim/) numChange = num == 0 ? -defMove : num > 0 ? -num  : 0
     newLevel = currLevel + numChange; newLevel = newLevel > 100 ? 100 : newLevel < 0 ? 0 : newLevel
     if (type=="level"){
     	if (defMove>0) device.setLevel(newLevel)
     	if (newLevel==0) device.off()
+    }
+    if (type=="temperature"){
+        if (op=~/Cool/) device.setCoolingSetpoint(newLevel)
+        if (op=~/Heat/) device.setHeatingSetpoint(newLevel)       
     }
 }
 private getDayOk(dayList) {
@@ -2357,6 +2496,22 @@ def getTimeLabel(start, end){
     else if (end) timeLabel = "End at " + timeParse("${end}", "h:mm a")
 	return timeLabel	
 }
+def macroAliasDesc(){
+	def result =""
+	for (int i= 1; i<macAliasCount()+1; i++){
+		result += settings."macAlias${i}" ? settings."macAlias${i}" : ""
+		result += (result && settings."macAlias${i+1}") ? "\n" : ""
+	}
+    result = result ? "Alias Names currently configured; Tap to edit:\n"+result :"Tap to add alias names to this macro"
+    return result
+}
+def macroAliasState(){
+	def count = 0
+    for (int i= 1; i<macAliasCount()+1; i++){
+    	if (settings."macAlias${i}") count ++
+    }
+    return count ? "complete" : null
+}
 def macroTypeDesc(){
 	def desc = "", PIN = (macroType ==~/CoRE|Control|GroupM/ || (macroType == "Group" && groupType == "lock") || (macroType == "Group" && groupType == "doorControl") || desc) && usePW ? " - PIN Required" : ""
     def customAck = !noAck && !voicePost ? "; uses standard acknowledgment message" : !noAck  && voicePost ? "; includes a custom acknowledgment message" :  "; there will be no acknowledgment messages"
@@ -2366,7 +2521,7 @@ def macroTypeDesc(){
     	voiceTempSettings || voiceTempVar || voiceHumidVar || voiceHumidity || greyOutWeather()=="complete" || voiceWater || voiceMotion || voicePresence || 
         voiceBattery || voicePost || voiceMode || voiceSHM || voicePower || voiceAccel)) desc= "Voice Report CONFIGURED - Tap to edit" 
 	if (macroType =="Group" && groupType && settings."groupDevice${groupType}") {
-    	def groupDesc =[switch:"Switch Group",switchLevel:"Dimmer Group",thermostat:"Thermostat Group",colorControl:"Colored Light Group",lock:"Lock Group",doorControl: "Door Group",windowShade: "Window Shade Group"][groupType] ?: groupType
+    	def groupDesc =[switch:"Switch Group",switchLevel:"Dimmer Group",colorTemperature: "Temperature (Kelvin) Light Group", thermostat:"Thermostat Group",colorControl:"Colored Light Group",lock:"Lock Group",doorControl: "Door Group",windowShade: "Window Shade Group"][groupType] ?: groupType
         def countDesc = settings."groupDevice${groupType}".size() == 1 ? "one device" : settings."groupDevice${groupType}".size() + " devices"
         if (parent.stelproCMD && groupType=="thermostat") customAck = "- Accepts Stelpro baseboard heater commands" + customAck
         if (parent.nestCMD && groupType=="thermostat") customAck = "- Accepts Nest 'Home'/'Away' commands" + customAck
@@ -2517,34 +2672,57 @@ def getAudioDesc(){
     if (ttsMsg && ttsSynth && ttsSpeakers && ttsVolume) result+=", speaker volume: ${ttsVolume}"
     return result
 }
-def getDeviceDesc(){  
-    def result, cmd = [switch: switchesCMD, dimmer: dimmersCMD, cLight: cLightsCMD, tstat: tstatsCMD, lock: locksCMD, garage: garagesCMD, shade: shadesCMD]
+def getDeviceDesc(){
+    def result, cmd = [switch: switchesCMD, dimmer: dimmersCMD, cLight: cLightsCMD, cLightK: cLightsKCMD, tstat: tstatsCMD, lock: locksCMD, garage: garagesCMD, shade: shadesCMD]
 	def lvl = cmd.dimmer == "set" && dimmersLVL ? dimmersLVL as int : 0
 	def cLvl = cmd.cLight == "set" && cLightsLVL ? cLightsLVL as int : 0
+    def kLvl = cmd.cLightK == "set" && cLightsKLVL ? cLightsKLVL as int : 0
 	def clr = cmd.cLight == "set" && cLightsCLR ? cLightsCLR  : ""
+    def kTemp = cmd.cLightK == "set" && cLightsKEL ? cLightsKEL: ""
     def tLvl = tstats ? tstatLVL : 0
     def dimUpDn = cmd.dimmer==~/increase|decrease/ && dimmersUpDown ? dimmersUpDown as int : 0
     def clUpDn = cmd.cLight ==~/increase|decrease/ && cLightsUpDown? cLightsUpDown as int : 0
-    lvl = lvl < 0 ? lvl = 0 : lvl >100 ? lvl=100 : lvl
-    tLvl = tLvl < 0 ? tLvl = 0 : tLvl >100 ? tLvl=100 : tLvl
-    cLvl = cLvl < 0 ? cLvl = 0 : cLvl >100 ? cLvl=100 : cLvl
-    dimUpDn = dimUpDn <0 ? dimUpDn=0 : dimUpDn>100 ? dimUpDn=100: dimUpDn
-    clUpDn == clUpDn <0 ? clUpDn=0 : clUpDn>100 ? clUpDn=100: clUpDn
-    if (switches || dimmers || cLights || tstats || locks || garages || shades) {
+    def klUpDn = cmd.cLightK ==~/increase|decrease/ && cLightsKUpDown? cLightsKUpDown as int : 0
+    def tUpDn = cmd.tstat =~/increase|decrease/ && tstatUpDown ? tstatUpDown as int : 0
+    lvl = lvl < 0 ? lvl = 0 : lvl >100 ? 100 : lvl
+    tLvl = tLvl < 0 ? 0 : tLvl >100 ? 100 : tLvl
+    cLvl = cLvl < 0 ? 0 : cLvl >100 ? 100 : cLvl
+    kLvl = kLvl < 0 ? 0 : kLvl >100 ? 100 : kLvl
+    dimUpDn = dimUpDn <0 ? 0 : dimUpDn>100 ? 100: dimUpDn
+    clUpDn == clUpDn <0 ? 0 : clUpDn>100 ? 100: clUpDn
+    klUpDn == klUpDn <0 ? 0 : klUpDn>100 ? 100: klUpDn
+	tUpDn == tUpDn <0 ? 0 : tUpDn>100 ? 100: tUpDn
+    if (switches || dimmers || cLights || cLightsK || tstats || locks || garages || shades) {
     	result = switches && cmd.switch ? "${switches} set to ${cmd.switch}" : ""
         result += result && dimmers && cmd.dimmer ? "\n" : ""
         result += dimmers && cmd.dimmer && cmd.dimmer != "set" && cmd.dimmer !="increase" && cmd.dimmer !="decrease" ? "${dimmers} set to ${cmd.dimmer}" : ""
         result += dimmers && cmd.dimmer && cmd.dimmer == "set" ? "${dimmers} set to ${lvl}%" : ""
         result += dimmers && cmd.dimmer && cmd.dimmer ==~/increase|decrease/ && dimUpDn>0 ? "${dimmers} ${cmd.dimmer} brightness by ${dimUpDn}%" : ""
         result += result && cLights && cmd.cLight ? "\n" : ""
-    	result += cLights && cmd.cLight && cmd.cLight != "set" && cmd.cLight !="increase" && cmd.cLight !="decrease" ? "${cLights} set to ${cmd.cLight}": ""
+    	result += cLights && cmd.cLight && cmd.cLight != "set" && cmd.cLight !="increase" && cmd.cLight !="decrease" && cmd.cLight && cmd.cLight != "loopOn" && cmd.cLight != "loopOff" && cmd.cLight !="pulseOn" && cmd.cLight !="pulseOff"? "${cLights} set to ${cmd.cLight}": ""
         result += cLights && cmd.cLight && cmd.cLight == "set" && (clr || cLvl) ? "${cLights} set to " : ""
         result += cLights && cmd.cLight && cmd.cLight == "set" && clr ? "${clr} and " : ""
         result += cLights && cmd.cLight && cmd.cLight == "set" && cLvl >0 ? "${cLvl}%" : ""
         result += cLights && cmd.cLight && cmd.cLight == "set" && clr && (cLvl == 0 || !cLvl) ? "Color Default Brightness" : ""
         result += cLights && cmd.cLight && cmd.cLight ==~/increase|decrease/ && clUpDn>0 ? "${cLights} ${cmd.cLight} brightness by ${clUpDn}%" : ""
-        result += result && tstats && tLvl ? "\n" : ""
-        result += tstats && cmd.tstat && tLvl ? "${tstats} set to ${cmd.tstat} : ${tLvl}" : ""
+        result += cLights && cmd.cLight == "loopOn" ? "${cLights} turn on color loop" : ""
+        result += cLights && cmd.cLight == "loopOff" ? "${cLights} turn off color loop" : ""
+        result += cLights && cmd.cLight == "pulseOn" ? "${cLights} turn on pulse" : ""
+        result += cLights && cmd.cLight == "pulseOff" ? "${cLights} turn off pulse" : ""
+        result += result && cLightsK && cmd.cLightK ? "\n" : ""
+        result += cLightsK && cmd.cLightK && cmd.cLightK != "set" && cmd.cLightK !="increase" && cmd.cLightK !="decrease" ? "${cLightsK} set to ${cmd.cLightK}": ""
+        result += cLightsK && cmd.cLightK && cmd.cLightK == "set" ? "${cLightsK} set to " : ""
+        result += cLightsK && cmd.cLightK && cmd.cLightK == "set" ? "${kTemp}K and " : ""
+        result += cLightsK && cmd.cLightK && cmd.cLightK == "set" && kLvl >0 ? "${kLvl}%" : ""
+        result += cLightsK && cmd.cLightK && cmd.cLightK == "set" && kTemp && (kLvl == 0 || !kLvl)? "Current Brightness" : ""
+        result += cLightsK && cmd.cLightK && cmd.cLightK ==~/increase|decrease/ && klUpDn>0 ? "${cLightsK} ${cmd.cLightK} brightness by ${klUpDn}%" : ""	
+        result += result && tstats && (tLvl || tUpDn) ? "\n" : ""
+        result += tstats && cmd.tstat ==~/heat|cool/ && tLvl ? "${tstats} set to ${cmd.tstat}: ${tLvl} degrees" : ""
+        result += tstats && cmd.tstat =="increaseCool" && tUpDn ? "${tstats} increase cooling setpoint: ${tUpDn} degrees" : ""
+        result += tstats && cmd.tstat =="decreaseCool" && tUpDn ? "${tstats} decrease cooling setpoint: ${tUpDn} degrees" : ""
+        result += tstats && cmd.tstat =="increaseHeat" && tUpDn ? "${tstats} increase heating setpoint: ${tUpDn} degrees" : ""
+        result += tstats && cmd.tstat =="decreaseHeat" && tUpDn ? "${tstats} decrease heating setpoint: ${tUpDn} degrees" : ""
+        if (tstats && (parent.nestCMD || parent.ecobeeCMD || (parent.ecobeeCMD && parent.MyEcobeeCMD))) result += cmd.tstat && cmd.tstat =~/heat|cool|increase|decrease/ ? "": "${tstats} set to: ${cmd.tstat}"	
         result += result && locks && cmd.lock ? "\n":""
         result += locks && cmd.lock ? "${locks} set to ${cmd.lock}" : ""
         result += result && garages && cmd.garage ? "\n" : ""
@@ -2997,6 +3175,10 @@ private setColoredLights(switches, color, level, type){
 		satLevel = satLevel > 100 ? 100 : satLevel < 0 ? 0 : satLevel
 	}
     def newValue = [hue: hueColor as int, saturation: satLevel as int] 
+ 	if (parent.osramCMD){
+    	try {  switches?.loopOff() } 
+    	catch (e) { log.warn "You have attempted a command that is not compatible with the the device handler you are using. Try to turn off the Osram functions in Settings>Device Specific Commands"  }  
+    }
     switches?.setColor(newValue)
     switches?.setLevel(newLevel as int)
 }
@@ -3004,6 +3186,7 @@ private setColoredLights(switches, color, level, type){
 private switchesSel() { return switches || (deviceAlias && switchesAlias) }
 private dimmersSel() { return dimmers || (deviceAlias && dimmersAlias) }
 private cLightsSel() { return cLights || (deviceAlias && cLightsAlias) }
+private cLightsKSel() { return cLightsK || (deviceAlias && cLightsKAlias) }
 private doorsSel() { return doors || (deviceAlias && doorsAlias) }
 private locksSel() { return locks || (deviceAlias && locksAlias) }
 private ocSensorsSel() { return ocSensors || (deviceAlias && ocSensorsAlias) }
@@ -3090,7 +3273,17 @@ def coreHandler(evt) {
 def msgHandler(evt) {
     if (!state.msgQueue) state.msgQueue=[]
     log.debug "New message added to message queue from: " + evt.value
-	state.msgQueue<<["date":evt.date.getTime(),"appName":evt.value,"msg":evt.descriptionText,"id":evt.unit]
+	state.msgQueue<<["date":evt.date.getTime(),"appName":evt.value,"msg":evt.descriptionText,"id":evt.unit] 
+    if (msgQueueNotifyExt && (mqSpeaker || mqSynth)) {
+    	if (mqSpeaker && mqVolume) {
+        	def msgTxt = "New message received from : " + evt.value
+            if (!mqAlertOnly) msgTxt += ": "+ evt.descriptionText
+            mqSpeaker?.setLevel(mqVolume as int)
+        	def msg = textToSpeech (msgTxt, true)
+        	mqSpeaker?.playTrack (msg.uri)
+        }
+        if (mqSynth) mqSynth?.speak(msgTxt)
+    }
 }
 def msgDeleteHandler(evt){
 	if (state.msgQueue && state.msgQueue.size()>0){
@@ -3148,7 +3341,6 @@ def getDeviceAliasList(aliasType){
 }
 private List<Map> STColors() {
     if (customName) return [customColor(), *colorUtil.ALL] else return [*colorUtil.ALL]
-    log.debug customColor()
 }
 private Map customColor(){
     if (customName && (customHue > -1 && customerHue < 101) && (customSat > -1 && customerSat < 101)) return [name: customName, rgb: "#000000", h: customHue * 3.6, s: customSat, l:100]
@@ -3182,6 +3374,7 @@ def mapDevices(isAlias){
 	if (settings."switches${ext}") result << [devices: settings."switches${ext}", type : "switch",fullListName:"Switch"]
 	if (settings."dimmers${ext}") result << [devices: settings."dimmers${ext}", type : "level",fullListName:"Dimmer"]
 	if (settings."cLights${ext}") result << [devices: settings."cLights${ext}", type : "color",fullListName:"Colored Light"]
+    if (settings."cLightsK${ext}") result << [devices: settings."cLightsK${ext}", type : "kTemp", fullListName:"Temperature (Kelvin) Light"]
 	if (settings."doors${ext}") result << [devices: settings."doors${ext}", type : "door",fullListName:"Door Control"]
 	if (settings."shades${ext}") result << [devices: settings."shades${ext}", type : "shade",fullListName:"Window Shade"]
 	if (settings."locks${ext}") result << [devices: settings."locks${ext}", type : "lock",fullListName:"Lock"]
@@ -3198,7 +3391,7 @@ def mapDevices(isAlias){
 }
 def upDown(device, type, op, num, deviceName){
     def numChange, newLevel, currLevel, defMove, txtRsp = ""
-    if (type=="color" || type=="level") { defMove = lightAmt as int ?: 0 ; currLevel = device.currentValue("switch")=="on" ? device.currentValue("level") as int : 0 } 
+    if (type==~/color|level|kTemp/) { defMove = lightAmt as int ?: 0 ; currLevel = device.currentValue("switch")=="on" ? device.currentValue("level") as int : 0 } 
     if (type=="music") { defMove = speakerAmt as int ?: 0 ;currLevel = device.currentValue("level") as int }
     if (type=="thermostat") { defMove=tstatAmt as int ?: 0 ; currLevel =device.currentValue("temperature") as int }
     if (op ==~/increase|raise|up|brighten/)  numChange = num == 0 ? defMove : num > 0 ? num : 0
@@ -3250,12 +3443,8 @@ def flash(){
         else outputTxt = "You do not have the flash briefing option enabled in your Ask Alexa Smart App, or you don't have any macros selected for the briefing output. Go to Settings in your SmartApp to fix this. "
     } catch (e) { outputTxt ="There was an error producing the flash briefing report. Check your settings and try again." }
     log.debug "Sending Flash Briefing Output: "+outputTxt
-    return ["uid": "1",
-		"updateDate": new Date().format("yyyy-MM-dd'T'HH:mm:ss'.0Z'"),
-		"titleText": "${flashMacro} macro report",
-		"mainText": outputTxt,
-		"redirectionUrl": "https://graph.api.smartthings.com/",
-		"description": "Ask Alexa Flash Briefing Report"]
+    return ["uid": "1", "updateDate": new Date().format("yyyy-MM-dd'T'HH:mm:ss'.0Z'"), "titleText": "${flashMacro} macro report", "mainText": outputTxt,
+		"redirectionUrl": "https://graph.api.smartthings.com/", "description": "Ask Alexa Flash Briefing Report"]
 }
 def setupData(){
 	log.info "Set up web page located at : ${getApiServerUrl()}/api/smartapps/installations/${app.id}/setup?access_token=${state.accessToken}"
@@ -3287,6 +3476,7 @@ def setupData(){
     result += "<br><b>LIST_OF_PARAMS</b><br><br>"
     def PARAMS=["heat","cool","heating","cooling","auto","automatic","AC"]
     if (tstatsSel() && stelproCMD) PARAMS<< "eco"<<"comfort"
+    if (tstatsSel() && nestCMD) PARAMS<<"present"
     if (tstatsSel() && (nestCMD || ecobeeCMD)) PARAMS<<"home"<<"away"
     if (tstatsSel() && ecobeeCMD) PARAMS<<"sleep"<<"resume program"
 	if (tstats && MyEcobeeCMD){  getEcobeeCustomList(tstats).each { PARAMS<<"${it}" } }     
@@ -3328,12 +3518,15 @@ def setupData(){
     result += "<br><b>LIST_OF_MACROS</b><br><br>"
     if (childApps.size()){
         def MACROS=[]
-        childApps.each { MACROS << it.label.replaceAll("[^a-zA-Z0-9 ]", "").toLowerCase()}       
+        childApps.each { 
+        	MACROS << it.label.replaceAll("[^a-zA-Z0-9 ]", "").toLowerCase()
+			for (int i = 1; i<macAliasCount()+1; i++){ if (it."macAlias${i}") MACROS << it."macAlias${i}".replaceAll("[^a-zA-Z0-9 ]", "").toLowerCase() }
+		}       
         duplicates = MACROS.findAll{MACROS.count(it)>1}.unique()
         if (duplicates.size()){ 
             result += "<b>**NOTICE:</b>The following duplicate(s) are only listed once below in LIST_OF_MACROS:<br><br>"
             duplicates.each{result +="* " + it +" *<br><br>"}
-            result += "Be sure to have unique names for each macro and only use each name once within the parent app.**<br><br>" 	
+            result += "Be sure to have unique names for each macro (and macro alias) and only use each name once within the parent app.**<br><br>" 	
         }
         MACROS.unique().each {result += it + "<br>" }
     }
@@ -3346,7 +3539,8 @@ def fillTypeList(){
     	"temperature sensors","modes","routines","smart home monitor","SHM","security","temperature","door","doors", "humidity", "humidity sensor", "humidity sensors","presence", "presence sensors", "motion", 
         "motion sensor", "motion sensors", "door sensor", "door sensors", "window sensor", "window sensors", "open close sensors","colored light", "events","macro", "macros", "group", "groups", "voice reports", 
         "voice report", "device group", "device groups","control macro", "control macros","control", "controls","macro group","macro groups","device macros","device macro","device group macro","device group macros",
-        "core","core trigger","core macro","core macros","core triggers","sensor", "sensors","shades", "window shades","shade", "window shade","acceleration", "acceleration sensor", "acceleration sensors", "alias","aliases"] 
+        "core","core trigger","core macro","core macros","core triggers","sensor", "sensors","shades", "window shades","shade", "window shade","acceleration", "acceleration sensor", "acceleration sensors", "alias","aliases",
+        "temperature light","temperature lights","kelvin light","kelvin lights"] 
 }
 def getURLs(){
 	def mName = params.mName, url = formatURL("${getApiServerUrl()}/api/smartapps/installations/${app.id}/m?Macro=${mName}&access_token=${state.accessToken}")
@@ -3359,12 +3553,12 @@ def getURLs(){
 //Version/Copyright/Information/Help-----------------------------------------------------------
 private textAppName() { return "Ask Alexa" }	
 private textVersion() {
-    def version = "SmartApp Version: 2.2.1 (02/18/2017)", lambdaVersion = state.lambdaCode ? "\n" + state.lambdaCode : ""
+    def version = "SmartApp Version: 2.2.2 (03/02/2017)", lambdaVersion = state.lambdaCode ? "\n" + state.lambdaCode : ""
     return "${version}${lambdaVersion}"
 }
-private versionInt(){ return 221 }
+private versionInt(){ return 222 }
 private LambdaReq() { return 123 }
-private versionLong(){ return "2.2.1" }
+private versionLong(){ return "2.2.2" }
 private textCopyright() {return "Copyright © 2017 Michael Struck" }
 private textLicense() {
 	def text = "Licensed under the Apache License, Version 2.0 (the 'License'); you may not use this file except in compliance with the License. You may obtain a copy of the License at\n\n"+
@@ -3394,9 +3588,15 @@ private cheat(){
     if (cLightsSel()) { 
     	result += "<h2><u>Colored Lights (Valid Commands: <b>On, Off, Toggle, Level {number}, color {color name} low, medium, high, up, down, increase, decrease</b>)</u></h2>"
         cLights.each{ result += it.label +"<br><br>" } 
-    	result +="<u>Available Colors{color name]</u><br>" + getList(STColors().name) + "<br>"
+    	result +="<u>Available Colors {color name}</u><br>" + getList(STColors().name) + "<br>"
     }
-    if (getCheatDisplayList("color")) { result += "<br><u>Aliases</u><br>"; result += getCheatDisplayList("color") +"<br>" }
+    if (getCheatDisplayList("color") && deviceAlias) { result += "<br><u>Aliases</u><br>"; result += getCheatDisplayList("color") +"<br>" }
+    if (cLightsKSel()) { 
+    	result += "<h2><u>Temperature (Kelvin) Lights (Valid Commands: <b>On, Off, Toggle, Level {number}, Temperature {name} low, medium, high, up, down, increase, decrease</b>)</u></h2>"
+        cLightsK.each{ result += it.label +"<br><br>" } 
+    	result +="<u>Available Temperatures {name}</u><br>Soft White, Warm White, Cool White, Daylight White<br>"
+    }
+    if (getCheatDisplayList("kTemp") && deviceAlias) { result += "<br><u>Aliases</u><br>"; result += getCheatDisplayList("kTemp") +"<br>" }
     if (doorsSel()) { result += "<h2><u>Doors (Valid Commands: <b>Open, Close, Status</b>)</u></h2>"; doors.each{ result += it.label +"<br>" } }
     if (doorsSel() && pwNeeded && doorPW) {result += "<br>* Append '<i>Password ${password}</i>'  to activate your doors<br>" }
     if (getCheatDisplayList("door") && deviceAlias) { result += "<br><u>Aliases</u><br>"; result += getCheatDisplayList("door") +"<br>" }
@@ -3407,8 +3607,9 @@ private cheat(){
     if (getCheatDisplayList("contact") && deviceAlias) { result += "<br><u>Aliases</u><br>"; result += getCheatDisplayList("contact") +"<br>" }
     if (shadesSel()) { result += "<h2><u>Doors (Valid Commands: <b>Open, Close, Status</b>)</u></h2>"; shades.each{ result += it.label +"<br>" } }
     if (getCheatDisplayList("shade") && deviceAlias) { result += "<br><u>Aliases</u><br>"; result += getCheatDisplayList("shade") +"<br>" }
-    if (tstatsSel()) { result += "<h2><u>Thermostats (Valid Commands: <b>Open, Close, Status"
+    if (tstatsSel()) { result += "<h2><u>Thermostats (Valid Commands: <b>{Temperature setpoint}, Status"
     	if (stelproCMD) result += ", Eco, Comfort"
+        if (nestCMD) result += ", Present"
         if (nestCMD || ecobeeCMD) result += ", Home, Away"
         if (nestCMD && nestMGRCMD) result += ", Report"
         if (ecobeeCMD) result += ", Sleep, Resume Program"
@@ -3444,7 +3645,19 @@ private cheat(){
     if (listSHM && pwNeeded && shmPW) {result += "<br>* Append '<i>Password ${password}</i>' to change your Smart Home Monitor status<br>" }
     if (listRoutines) { result += "<h2><u>SmartThings Routines (Valid Command: <b>Run {Routine}</b>)</u></h2>"; listRoutines.each{ result += it +"<br>" } }
     if (listRoutines && pwNeeded && routinesPW) {result += "<br>* Append '<i>Password ${password}</i>' to activate your routines<br>" }
-    if (childApps.size()) { result += "<h2><u>Ask Alexa Macros (Valid Command: <b>Run {Macro}</b>)</u></h2>"; childApps.each { result += it.label + "<br>"} }
+    if (childApps.size()) { 
+    	result += "<h2><u>Ask Alexa Macros (Valid Command: <b>Run {Macro}</b>)</u></h2>"
+        childApps.each { 
+        	result += it.label
+        	def aliases = ""
+            for (int i = 1; i<macAliasCount()+1; i++){
+            	if (it."macAlias${i}") aliases += it."macAlias${i}".replaceAll("[^a-zA-Z0-9 ]", "").toLowerCase()
+                if (it."macAlias${i+1}") aliases += ", "
+        	}
+            if (aliases) result += " (Aliases: " + aliases +")"
+            result += "<br>"
+		} 
+    }
     if (pwNeeded) {result += "<br>* Append '<i>Password ${password}</i>' if a macro is set up to use a password<br>" }
     displayData(result)
 }
