@@ -35,7 +35,7 @@ metadata {
 	}
     preferences {
         
-        input description: "Once you change values on this page, the \"configure\" Status will become \"syncing\" status. When the parameters have been succesfully changed, the status will change back to \"configure\". To immediately sync the changes, press the button on the back of the device for a few seconds (until the lights on the front flash orange)", displayDuringSetup: false, type: "paragraph", element: "paragraph"
+        input description: "Once you change values on this page, the \"configuration\" icon will change orange until all configuration parameters are updated.", displayDuringSetup: false, type: "paragraph", element: "paragraph"
         
 		generate_preferences(configuration_model())
         
@@ -66,8 +66,8 @@ metadata {
 			state "battery", label:'${currentValue}', unit:""
 		}
         standardTile("configure", "device.needUpdate", inactiveLabel: false, decoration: "flat", width: 2, height: 2) {
-            state("NO" , label:'configure', action:"configuration.configure", icon: "st.secondary.tools")
-            state("YES", label:'syncing', action:"configuration.configure", icon: "st.secondary.tools")
+            state "NO" , label:'', action:"configuration.configure", icon:"st.secondary.configure"
+            state "YES", label:'', action:"configuration.configure", icon:"http://github.com/erocm123/SmartThingsPublic/raw/master/devicetypes/erocm123/qubino-flush-1d-relay.src/configure@2x.png"
         }
 		main "button"
 		details(["button", "battery", "sequenceNumber", "configure"])
@@ -350,7 +350,7 @@ def update_needed_settings()
                   cmds << zwave.configurationV1.configurationSet(configurationValue: integer2Cmd(convertedConfigurationValue, it.@byteSize.toInteger()), parameterNumber: it.@index.toInteger(), size: it.@byteSize.toInteger())
                } else {
                   isUpdateNeeded = "YES"
-                  logging("Current value of parameter ${it.@index} is unknown", 2)
+                  logging("Current value of parameter ${it.@index} is unknown")
                   cmds << zwave.configurationV1.configurationGet(parameterNumber: it.@index.toInteger())
                }
             }
