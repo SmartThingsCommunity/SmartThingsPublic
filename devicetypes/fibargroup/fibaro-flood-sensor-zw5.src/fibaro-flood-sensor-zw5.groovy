@@ -21,6 +21,7 @@ metadata {
 		capability "Tamper Alert"
 		capability "Temperature Measurement"
 		capability "Water Sensor"
+		capability "Health Check"
         
         fingerprint deviceId: "0x0701", inClusters: "0x5E, 0x22, 0x85, 0x59, 0x20, 0x80, 0x70, 0x56, 0x5A, 0x7A, 0x72, 0x8E, 0x71, 0x73, 0x98, 0x9C, 0x31, 0x86", outClusters: ""
 	}
@@ -228,7 +229,9 @@ def zwaveEvent(physicalgraph.zwave.commands.deviceresetlocallyv1.DeviceResetLoca
 
 def configure() {
 	log.debug "Executing 'configure'"
-	
+	// Device-Watch simply pings if no device events received for 8 hrs & 2 minutes
+	sendEvent(name: "checkInterval", value: 8 * 60 * 60 + 2 * 60, displayed: false, data: [protocol: "zwave", hubHardwareId: device.hub.hardwareID])
+
     def cmds = []
     
 	cmds += zwave.wakeUpV2.wakeUpIntervalSet(seconds:21600, nodeid: zwaveHubNodeId)//FGFS' default wake up interval
