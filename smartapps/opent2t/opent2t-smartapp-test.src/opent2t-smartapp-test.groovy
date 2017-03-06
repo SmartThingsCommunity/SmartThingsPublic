@@ -180,16 +180,20 @@ def eventHandler(evt) {
 	def evt_name = evt.name
 	def evt_device = evt.device
 	def evt_deviceType = getDeviceType(evt_device);
+	def deviceInfo
+    
+    if(evt_deviceType == "thermostat")
+	{
+		deviceInfo = [name: evt_device.displayName, id: evt_device.id, status:evt_device.getStatus(), deviceType:evt_deviceType, manufacturer:evt_device.getManufacturerName(), model:evt_device.getModelName(), attributes: deviceAttributeList(evt_device), locationMode: getLocationModeInfo()] 
+	}
+	else
+	{
+		deviceInfo = [name: evt_device.displayName, id: evt_device.id, status:evt_device.getStatus(), deviceType:evt_deviceType, manufacturer:evt_device.getManufacturerName(), model:evt_device.getModelName(), attributes: deviceAttributeList(evt_device)]
+	}
+    
 	def params = [
 		uri: "${state.endpointURL}/${state.connectionId}",
-		body: [
-			name: evt_device.displayName,
-			id: evt_device.id,
-			deviceType:evt_deviceType, 
-			manufacturer:evt_device.getManufacturerName(), 
-			model:evt_device.getModelName(),
-			attributes: deviceAttributeList(evt_device) 
-		]
+		body: [ deviceInfo ]
 	]
 	try {
 		log.trace "POST URI: ${params.uri}"
@@ -226,11 +230,11 @@ def getDevices() {
 		def deviceType = getDeviceType(it)
 		if(deviceType == "thermostat")
 		{
-			deviceData << [name: it.displayName, id: it.id, deviceType:deviceType, status: it.getStatus(), manufacturer:it.getManufacturerName(), model:it.getModelName(), attributes: deviceAttributeList(it), locationMode: getLocationModeInfo()] 
+			deviceData << [name: it.displayName, id: it.id, status:it.getStatus(), deviceType:deviceType, manufacturer:it.getManufacturerName(), model:it.getModelName(), attributes: deviceAttributeList(it), locationMode: getLocationModeInfo()] 
 		}
 		else
 		{
-			deviceData << [name: it.displayName, id: it.id, deviceType:deviceType, status: it.getStatus(), manufacturer:it.getManufacturerName(), model:it.getModelName(), attributes: deviceAttributeList(it)]
+			deviceData << [name: it.displayName, id: it.id, status:it.getStatus(), deviceType:deviceType, manufacturer:it.getManufacturerName(), model:it.getModelName(), attributes: deviceAttributeList(it)]
 		} 
     }
  
@@ -245,11 +249,11 @@ def getDevice() {
 	def device
 	if(deviceType == "thermostat")
 	{
-		device = [name: it.displayName, id: it.id, deviceType:deviceType, status: it.getStatus(), manufacturer:it.getManufacturerName(), model:it.getModelName(), attributes: deviceAttributeList(it), locationMode: getLocationModeInfo()] 
+		device = [name: it.displayName, id: it.id, status:it.getStatus(), deviceType:deviceType, manufacturer:it.getManufacturerName(), model:it.getModelName(), attributes: deviceAttributeList(it), locationMode: getLocationModeInfo()] 
 	}
 	else
 	{
-		device = [name: it.displayName, id: it.id, deviceType:deviceType, status: it.getStatus(), manufacturer:it.getManufacturerName(), model:it.getModelName(), attributes: deviceAttributeList(it)]
+		device = [name: it.displayName, id: it.id, status:it.getStatus(), deviceType:deviceType, manufacturer:it.getManufacturerName(), model:it.getModelName(), attributes: deviceAttributeList(it)]
 	}   
 	log.debug "getDevice, return: ${device}"
 	return device
