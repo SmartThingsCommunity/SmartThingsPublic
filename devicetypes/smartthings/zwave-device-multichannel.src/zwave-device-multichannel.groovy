@@ -75,6 +75,10 @@ def parse(String description) {
 	return result
 }
 
+def uninstalled() {
+	sendEvent(name: "epEvent", value: "delete all", isStateChange: true, displayed: false, descriptionText: "Delete endpoint devices")
+}
+
 def zwaveEvent(physicalgraph.zwave.commands.wakeupv1.WakeUpNotification cmd) {
 	[ createEvent(descriptionText: "${device.displayName} woke up", isStateChange:true),
 	  response(["delay 2000", zwave.wakeUpV1.wakeUpNoMoreInformation().format()]) ]
