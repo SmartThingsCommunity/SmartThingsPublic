@@ -43,7 +43,9 @@ def settings() {
     def pageProperties = [
         name:       "settings",
         title:      "Main Settings",
-        nextPage:   "pageSetup"
+        nextPage:   "pageSetup",
+        install: true,
+        uninstall: true
     ]
 
     dynamicPage(pageProperties) {
@@ -114,7 +116,9 @@ def Modes(){
     def pageProperties = [
         name:       "Modes",
         title:      "Select Modes and Temperatures",
-        nextPage:   "pageSetup"
+        nextPage:   "pageSetup",
+        install: true,
+        uninstall: true
     ]
 
     dynamicPage(pageProperties) {
@@ -309,39 +313,6 @@ def init() {
     if(AltSensor_1 || AltSensor_2 || AltSensor_3){
         subscribe(OutsideSensor, "temperature", temperatureHandler)
     }
-
-
-    def scheduledTime = 1
-
-    if(AltSensor_1){
-        subscribe(Sensor_1, "temperature", temperatureHandler)
-        //log.debug "Subscription for alternative Sensor for $Sensor_1"
-        schedule("0 0/$scheduledTime * * * ?", AlternativeSensor1)
-        //log.debug "AlternativeSensor1 scheduled to run every $scheduledTime minutes"
-        AlternativeSensor1()
-    }
-    if(AltSensor_2){
-        subscribe(Sensor_2, "temperature", temperatureHandler)
-        //log.debug "Subscription for alternative Sensor for $Sensor_2"
-        schedule("0 0/$scheduledTime * * * ?", AlternativeSensor2)
-        //log.debug "AlternativeSensor2 scheduled to run every $scheduledTime minutes"
-        AlternativeSensor2()
-    }
-    if(AltSensor_3){
-        subscribe(Sensor_3, "temperature", temperatureHandler)
-        //log.debug "Subscription for alternative Sensor for $Sensor_3"
-        schedule("0 0/$scheduledTime * * * ?", AlternativeSensor3)
-        //log.debug "AlternativeSensor3 scheduled to run every $scheduledTime minutes"
-        AlternativeSensor3()
-    }
-
-    if(Actuators){
-        schedule("0 0/$scheduledTime * * * ?", CheckWindows)
-        //log.debug "CheckWindows scheduled to run every $scheduledTime minutes"
-        CheckWindows()
-    }
-
-
     atomicState.doorsAreOpen = false
     atomicState.T1_AppMgt = true
     atomicState.T2_AppMgt = true
@@ -364,12 +335,9 @@ def init() {
     atomicState.locationModeChange = true 
     runIn(30, resetLocationChangeVariable)
 
-    schedule("0 0/$scheduledTime * * * ?", TemperaturesModes)
-    log.debug "TemperaturesModes scheduled to run every $scheduledTime minutes"
-
+    schedules()
 
 }
-
 def appHandler(evt){
     log.debug "app event ${evt.name}:${evt.value} received"
 }
@@ -529,16 +497,7 @@ def temperatureHandler(evt) {
     def currentTemp = XtraTempSensor.currentValue("temperature")
     log.debug "Xtra Sensor (for critical temp) is $XtraTempSensor and its current value is $currentTemp"
 
-    if(AltSensor_1 && atomicState.T1_AppMgt == true){
-        AlternativeSensor1()
-    }
-    if(AltSensor_2 && atomicState.T1_AppMgt == true){
-        AlternativeSensor2()
-    }
-    if(AltSensor_3 && atomicState.T1_AppMgt == true){
-        AlternativeSensor3()
-    }
-
+	    
     if(currentTemp < CriticalTemp) {
         log.debug "EMERGENCY HEATING - TEMPERATURE IS TOO LOW!" 
         Thermostat_1.setThermostatMode("heat") 
@@ -554,7 +513,7 @@ def temperatureHandler(evt) {
     { 
         log.debug "CriticalTemp OK"
     } 
-    TemperaturesModes()
+   
 }
 def contactHandlerClosed(evt) {
 
@@ -571,13 +530,20 @@ def contactHandlerClosed(evt) {
         updated()
     } 
 
+    updated()
     alldoorsareclosed()
+
 }
 def contactHandlerOpen(evt) {
     atomicState.doorsAreOpen = true
     log.debug "$evt.device is now $evt.value" 
     log.debug "Turning off all thermostats in $TimeBeforeClosing seconds"
     runIn(TimeBeforeClosing, TurnOffThermostats)   
+
+    if(Actuators){
+
+        CheckWindows()
+    }
 }
 def ChangedModeHandler(evt) {
     state.modeStartTime = now() 
@@ -606,12 +572,17 @@ def ChangedModeHandler(evt) {
 def resetLocationChangeVariable(){
     atomicState.locationModeChange = false
 }
+
 // main loop
 def TemperaturesModes(){
+//updated()
+//pause(10000)
     pollThermostats()
+
     log.trace "atomicState.T1_AppMgt = $atomicState.T1_AppMgt, atomicState.T2_AppMgt = $atomicState.T2_AppMgt, atomicState.T3_AppMgt = $atomicState.T3_AppMgt, atomicState.T4_AppMgt = $atomicState.T4_AppMgt"
 
     def doorsOk = alldoorsareclosed()
+
     if(doorsOk){
 
         log.trace """atomicState.AppMgnt_T_1 : $atomicState.AppMgnt_T_1, atomicState.AppMgnt_T_2 : $atomicState.AppMgnt_T_2, 
@@ -1327,7 +1298,7 @@ atomicState.AppMgnt_T_3 : $atomicState.AppMgnt_T_3, atomicState.AppMgnt_T_4 : $a
         log.debug "Some windows or doors are open, doing nothing"
     }
     log.info "reseting override's triggers for future reference"
-    runIn(10, resetOverride)
+    runIn(10, resetAppMgt)
 }
 
 def AlternativeSensor1(){
@@ -1394,14 +1365,14 @@ def AlternativeSensor1(){
                     Thermostat_1.setThermostatMode("heat") 
                     atomicState.LatestThermostatMode = "heat"
                     log.debug "$Thermostat_1 set to Heat"
-                    atomicState.T2_AppMgt = false
+                    atomicState.T2_AppMgt = true
                 }
                 else if(SenTemp > DefaultSetCool /* making sure it doesn't cool after heating --> */ && OutsideTemp > DefaultSetCool){
 
                     Thermostat_1.setThermostatMode("cool") 
                     atomicState.LatestThermostatMode = "cool"
                     log.debug "$Thermostat_1 set to Cool"
-                    atomicState.T2_AppMgt = false
+                    atomicState.T2_AppMgt = true
                 }
             } 
             else {
@@ -1427,10 +1398,12 @@ def AlternativeSensor1(){
         log.debug "some doors are open, AlternativeSensor1 loop not running"
         TurnOffThermostats()
     }
+    runIn(10, resetAppMgt)
 }
 def AlternativeSensor2(){
 
     def doorsOk = alldoorsareclosed()
+    
     if(doorsOk){
         log.debug "Running Alternative Sensor Loop for $Thermostat_2"
         def SenTemp = Sensor_2.currentTemperature
@@ -1495,7 +1468,7 @@ def AlternativeSensor2(){
                     Thermostat_2.setThermostatMode("heat") 
                     atomicState.LatestThermostatMode = "heat"              
                     log.debug "$Thermostat_2 set to Heat"
-                    atomicState.T2_AppMgt = false
+                    atomicState.T2_AppMgt = true
                 }
 
                 else if(SenTemp > DefaultSetCool /* making sure it doesn't cool after heating --> */ && OutsideTemp > DefaultSetCool){
@@ -1503,7 +1476,7 @@ def AlternativeSensor2(){
                     Thermostat_2.setThermostatMode("cool") 
                     atomicState.LatestThermostatMode = "cool"           
                     log.debug "$Thermostat_2 set to Cool"
-                    atomicState.T2_AppMgt = false
+                    atomicState.T2_AppMgt = true
                 }
             }
             //turning off this unit
@@ -1532,6 +1505,7 @@ def AlternativeSensor2(){
         log.debug "some doors are open, AlternativeSensor2 loop not running"
         TurnOffThermostats()
     }
+    runIn(10, resetAppMgt)
 }
 def AlternativeSensor3(){
 
@@ -1596,14 +1570,14 @@ def AlternativeSensor3(){
                     Thermostat_3.setThermostatMode("heat") 
                     atomicState.LatestThermostatMode = "heat"
                     log.debug "$Thermostat_3 set to Heat"
-                    tomicState.T2_AppMgt = false
+                    atomicState.T2_AppMgt = true
                 }
                 else if(SenTemp > DefaultSetCool /* making sure it doesn't cool after heating --> */ && OutsideTemp > DefaultSetCool){
 
                     Thermostat_3.setThermostatMode("cool") 
                     atomicState.LatestThermostatMode = "cool"
                     log.debug "$Thermostat_3 set to Cool"
-                    atomicState.T2_AppMgt = false
+                    atomicState.T2_AppMgt = true
                 }
             } 
             else {
@@ -1630,6 +1604,7 @@ def AlternativeSensor3(){
         log.debug "some doors are open, AlternativeSensor1 loop not running"
         TurnOffThermostats()
     }
+    runIn(10, resetAppMgt)
 }
 def alldoorsareclosed(){
 
@@ -1681,105 +1656,81 @@ def CheckCmdOrigin(){
     latestMode.toString()
     currentMode.toString()
     log.info "latest override event regards $device"
-    def NoLocatioModeChange = atomicState.locationModeChange
-    def ThereWasChange = latestMode != currentMode && NoLocatioModeChange
+    def LocatioModeChange = atomicState.locationModeChange
+    log.debug "Location Mode Changed?($LocatioModeChange)"
+    def ThereWasChange = latestMode != currentMode && !LocatioModeChange // we want to make sure this change was not triggered by a home location change
     log.debug " Change($ThereWasChange) "
-    if(TherWasChange){
+    
+    if(ThereWasChange){
         log.info "Latest mode for $device was $latestMode and it just switched to $currentMode --------------------"
 
     }
 
-    def thisIsOverride = null
-    log.info "Override?($thisIsOverride) and currently atomicState.override = $atomicState.override"
+   
     device = device as String
 
     if(device == "${Thermostat_1}"){
-
         if(ThereWasChange && atomicState.override == true){
-            thisIsOverride = false // unit was set back to previous app's management setting
-        }
-        else if(ThereWasChange && atomicState.T1_AppMgt == false){
-            thisIsOverride = true
-        }
-
-        if(thisIsOverride){
-            // command did not come from app so manual override is on
-            log.debug "MANUAL OVERRIDE for $Thermostat_1"
-            atomicState.override = true
-        }     
-        else if(ThereWasChange && atomicState.override == true && state.ThisIsManual == false){
             // manual override deactivated
             log.debug "END of MANUAL OVERRIDE for $Thermostat_1"
             atomicState.override = false
             state.ThisIsManual == false // this will reset all values to settings'
-        }     
+        }
+        else if(ThereWasChange && atomicState.T1_AppMgt == false){
+            // command did not come from app so manual override is on
+            log.debug "MANUAL OVERRIDE for $Thermostat_1"
+            atomicState.override = true
+        }       
     }
     else if(device == "${Thermostat_2}"){
-
         if(ThereWasChange && atomicState.override == true){
-            thisIsOverride = false
-        }
-        else if(ThereWasChange && atomicState.T2_AppMgt == false && atomicState.override == false){
-            thisIsOverride = true
-        }
-
-        if(thisIsOverride){
-            // command did not come from app
-            log.debug "MANUAL OVERRIDE for $Thermostat_2"
-            atomicState.override = true
-        }
-        else if(ThereWasChange && atomicState.override == true && state.ThisIsManual == false){
             // manual override deactivated
             log.debug "END of MANUAL OVERRIDE for $Thermostat_2"
             atomicState.override = false
-        }
-    } 
-    else if(device == "${Thermostat_3}"){
-
-        if(ThereWasChange && atomicState.override == true){
-            thisIsOverride = false
+            state.ThisIsManual == false // this will reset all values to settings'
         }
         else if(ThereWasChange && atomicState.T2_AppMgt == false){
-            thisIsOverride = true
-        }
-        if(thisIsOverride){
-            // command did not come from app
-            log.debug "MANUAL OVERRIDE for $Thermostat_3"
+            // command did not come from app so manual override is on
+            log.debug "MANUAL OVERRIDE for $Thermostat_2"
             atomicState.override = true
-        }
-        else if(ThereWasChange && atomicState.override == true && state.ThisIsManual == false){
+        }     
+    } 
+    else if(device == "${Thermostat_3}"){
+        if(ThereWasChange && atomicState.override == true){
             // manual override deactivated
             log.debug "END of MANUAL OVERRIDE for $Thermostat_3"
             atomicState.override = false
+            state.ThisIsManual == false // this will reset all values to settings'
         }
+        else if(ThereWasChange && atomicState.T3_AppMgt == false){
+            // command did not come from app so manual override is on
+            log.debug "MANUAL OVERRIDE for $Thermostat_3"
+            atomicState.override = true
+        }     
     } 
     else if(device == "${Thermostat_4}"){
-        thisIsOverride = false
         if(ThereWasChange && atomicState.override == true){
-            thisIsOverride = false
-        }
-        else if(ThereWasChange && atomicState.T2_AppMgt == false){
-            thisIsOverride = true
-        }
-
-        if(thisIsOverride){
-            // command did not come from app
-            log.debug "MANUAL OVERRIDE for $Thermostat_4"
-            atomicState.override = true
-        }
-        else if(ThereWasChange && atomicState.override == true && state.ThisIsManual == false){
             // manual override deactivated
             log.debug "END of MANUAL OVERRIDE for $Thermostat_4"
             atomicState.override = false
+            state.ThisIsManual == false // this will reset all values to settings'
         }
+        else if(ThereWasChange && atomicState.T4_AppMgt == false){
+            // command did not come from app so manual override is on
+            log.debug "MANUAL OVERRIDE for $Thermostat_4"
+            atomicState.override = true
+        }     
     }
 
-    log.info "Override?($thisIsOverride)"
-
+    log.info "Override?($atomicState.override) "
     atomicState.LatestThermostatMode = event // if was manual now this is the new latest value so change after override can be detected
     log.debug "atomicState.LatestThermostatMode is now $atomicState.LatestThermostatMode (event = $event)"
 }
 def resetOverride(){
+    atomicState.override = false
+    log.debug "OVERRIDE RESET to FALSE"
+}
+def resetAppMgt(){
     // presets before deciding if override = true or not
     atomicState.T1_AppMgt = false
     atomicState.T2_AppMgt = false
@@ -1799,7 +1750,7 @@ def resetOverride(){
 
     // the idea is that if any of these values is true or 1 then the change has been made by the app. Otherwise, it was a manual override
 
-    log.info """VALUES RESET : atomicState.T1_AppMgt = $atomicState.T1_AppMgt || atomicState.T2_AppMgt = $atomicState.T2_AppMgt || 
+    log.trace """VALUES RESET : atomicState.T1_AppMgt = $atomicState.T1_AppMgt || atomicState.T2_AppMgt = $atomicState.T2_AppMgt || 
 atomicState.T3_AppMgt = $atomicState.T3_AppMgt || atomicState.T4_AppMgt = $atomicState.T4_AppMgt, atomicState.WindowsAppManaged = $atomicState.WindowsAppManaged"""
 
 
@@ -1896,7 +1847,7 @@ def CheckWindows(){
                 runIn(OperatingTime, StopActuators)
 
                 atomicState.hasRun = atomicState.hasRun + 1
-                atomicState.WindowsAppManaged = true // reset periodically unless hasrun >= 1
+                atomicState.WindowsAppManaged = true // resets periodically unless hasrun >= 1
             }
         }
         else { log.debug "Windows open already run, doing nothing" }
@@ -1933,6 +1884,44 @@ def OkToOpen(){
 def StopActuators(){
     Actuators?.stop()
 }
+/// only for tests purpose
+private schedules() { 
+
+    def scheduledTime = 2
+
+    if(AltSensor_1){
+        subscribe(Sensor_1, "temperature", temperatureHandler)
+        //log.debug "Subscription for alternative Sensor for $Sensor_1"
+        schedule("0 0/$scheduledTime * * * ?", AlternativeSensor1)
+        //log.debug "AlternativeSensor1 scheduled to run every $scheduledTime minutes"
+        AlternativeSensor1()
+    }
+    if(AltSensor_2){
+        subscribe(Sensor_2, "temperature", temperatureHandler)
+        //log.debug "Subscription for alternative Sensor for $Sensor_2"
+        schedule("0 0/$scheduledTime * * * ?", AlternativeSensor2)
+        //log.debug "AlternativeSensor2 scheduled to run every $scheduledTime minutes"
+        AlternativeSensor2()
+    }
+    if(AltSensor_3){
+        subscribe(Sensor_3, "temperature", temperatureHandler)
+        //log.debug "Subscription for alternative Sensor for $Sensor_3"
+        schedule("0 0/$scheduledTime * * * ?", AlternativeSensor3)
+        //log.debug "AlternativeSensor3 scheduled to run every $scheduledTime minutes"
+        AlternativeSensor3()
+    }
+
+    if(Actuators){
+        schedule("0 0/$scheduledTime * * * ?", CheckWindows)
+        //log.debug "CheckWindows scheduled to run every $scheduledTime minutes"
+        CheckWindows()
+    }
+
+    schedule("0 0/$scheduledTime * * * ?", TemperaturesModes)
+    log.debug "TemperaturesModes scheduled to run every $scheduledTime minutes"
+}
+
+
 
 
 
