@@ -21,6 +21,7 @@ metadata {
 		attribute "alarmState", "string"
 
 		fingerprint deviceId: "0xA100", inClusters: "0x20,0x80,0x70,0x85,0x71,0x72,0x86"
+		fingerprint mfr:"026B", prod:"0004", model:"0002", deviceJoinName: "Ei Smoke Alarm"
 	}
 
 	simulator {
@@ -31,7 +32,14 @@ metadata {
 		status "carbonMonoxide clear": "command: 7105, payload: 02 00"
 		status "battery 100%": "command: 8003, payload: 64"
 		status "battery 5%": "command: 8003, payload: 05"
-	}
+        status "smoke (Ei)": "command: 9881, payload: 00 71 05 00 00 00 FF 01 02 00 00 00"
+        status "clear (Ei)": "command: 9881, payload: 00 71 05 00 00 00 FF 01 00 01 02 00"
+		status "tamper (Ei)": "command: 9881, payload: 00 71 05 00 00 00 FF 07 03 00 00 00"
+        status "tamper clear": "command: 9881, payload: 00 71 05 00 00 00 FF 07 00 01 03 00"
+        status "smoke 2 (Ei)": "command: 9881, payload: 00 30 03 FF 02"
+        status "clear 2 (Ei)": "command: 9881, payload: 00 30 03 00 02"
+
+  }
 
 	tiles (scale: 2){
 		multiAttributeTile(name:"smoke", type: "lighting", width: 6, height: 4){
@@ -168,7 +176,11 @@ def zwaveEvent(physicalgraph.zwave.commands.sensoralarmv1.SensorAlarmReport cmd,
 def zwaveEvent(physicalgraph.zwave.commands.wakeupv1.WakeUpNotification cmd, results) {
 	results << createEvent(descriptionText: "$device.displayName woke up", isStateChange: false)
 	if (!state.lastbatt || (now() - state.lastbatt) >= 56*60*60*1000) {
-		results << response(zwave.batteryV1.batteryGet(), "delay 2000", zwave.wakeUpV1.wakeUpNoMoreInformation())
+		results << response([
+				zwave.batteryV1.batteryGet().format(),
+				"delay 2000",
+				zwave.wakeUpV1.wakeUpNoMoreInformation().format()
+			])
 	} else {
 		results << response(zwave.wakeUpV1.wakeUpNoMoreInformation())
 	}
@@ -186,9 +198,22 @@ def zwaveEvent(physicalgraph.zwave.commands.batteryv1.BatteryReport cmd, results
 	results << createEvent(map)
 }
 
+def zwaveEvent(physicalgraph.zwave.commands.securityv1.SecurityMessageEncapsulation cmd, results) {
+	def encapsulatedCommand = cmd.encapsulatedCommand([ 0x80: 1, 0x84: 1, 0x71: 2, 0x72: 1 ])
+	state.sec = 1
+	log.debug "encapsulated: ${encapsulatedCommand}"
+	if (encapsulatedCommand) {
+		zwaveEvent(encapsulatedCommand, results)
+	} else {
+		log.warn "Unable to extract encapsulated cmd from $cmd"
+		results << createEvent(descriptionText: cmd.toString())
+	}
+}
+
 def zwaveEvent(physicalgraph.zwave.Command cmd, results) {
 	def event = [ displayed: false ]
 	event.linkText = device.label ?: device.name
 	event.descriptionText = "$event.linkText: $cmd"
 	results << createEvent(event)
 }
+
