@@ -28,3 +28,5 @@
  *  Version 2.2.0 (1/30/17) Added people restrictions to macros, changed copyright to 2017, updated Nest polling (thanks Tony Santilli), added themostat current state reporting (thanks @storageanarchy!)
   *	Version 2.2.1 (2/18/17) Bug fixes, added additional security for doors/locks (thanks @Cherokee180c for the suggestion), implement ST color names, started building structure for better follow ups,
  *	created a new option for 'consolidation' of certain conditions within the voice reports (as suggested by @jseaton). Added framework for more IFTTT conversational commands (coming soon).
+ *	Version 2.2.2 (3/2/17) Syntax issues (thanks larry-fuqua); added loop/pulse options for colored lights using the latest community DTH for OSRAM lights(thanks @bbmcgee). Added options for lights that can only be controlled by Kelvin temperature
+ *  Added increase/decrease commands to Control macro thermostat control; fixed Nest Present command, added speaker output for message queue incoming messages, along with GUI notification.
