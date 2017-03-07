@@ -122,13 +122,13 @@ metadata {
             state "raintoday", label: 'Rain Today', icon: "st.custom.wuk.nt_chancerain"
             state "rainy", label: 'Previous Rain', icon: "st.custom.wuk.nt_chancerain"
             state "raintom", label: 'Rain Tomorrow', icon: "st.custom.wuk.nt_chancerain"           
-            state "donewweek", label: 'Spruce Finished', icon: "st.Outdoor.outdoor5", backgroundColor: "#52c435"
+            state "donewweek", label: 'Spruce Finished', icon: "st.Outdoor.outdoor5", backgroundColor: "#00A0DC"
             state "skipping", label: 'Skip Today', icon: "st.Outdoor.outdoor20", backgroundColor: "#36cfe3"
             state "moisture", label: '', icon: "st.Weather.weather2", backgroundColor: "#36cfe3"
-            state "pause", label: 'PAUSE', icon: "st.contact.contact.open", backgroundColor: "#f2a51f"           
+            state "pause", label: 'PAUSE', icon: "st.contact.contact.open", backgroundColor: "#e86d13"
             state "active", label: 'Active', icon: "st.Outdoor.outdoor12", backgroundColor: "#3DC72E"
             state "season", label: 'Seasonal Adjustment', icon: "st.Outdoor.outdoor17", backgroundColor: "#ffb900"
-            state "disable", label: 'Disabled', icon: "st.secondary.off", backgroundColor: "#888888"
+            state "disable", label: 'Disabled', icon: "st.secondary.off", backgroundColor: "#cccccc"
             state "warning", label: '', icon: "st.categories.damageAndDanger", backgroundColor: "#ffff7f"
             state "alarm", label: 'Alarm', icon: "st.categories.damageAndDanger", backgroundColor: "#f9240c"
         }
@@ -144,67 +144,67 @@ metadata {
 		}    	
         standardTile("switch1", "device.switch1") {			
 			state "z1off", label: '1', action: "z1on", icon: "st.valves.water.closed", backgroundColor: "#ffffff"
-            state "z1on", label: '1', action: "z1off", icon: "st.valves.water.open", backgroundColor: "#46c2e8"
+            state "z1on", label: '1', action: "z1off", icon: "st.valves.water.open", backgroundColor: "#00A0DC"
 		}
         standardTile("switch2", "device.switch2") {            
             state "z2off", label: '2', action: "z2on", icon: "st.valves.water.closed", backgroundColor: "#ffffff"
-            state "z2on", label: '2', action: "z2off", icon: "st.valves.water.open", backgroundColor: "#46c2e8"
+            state "z2on", label: '2', action: "z2off", icon: "st.valves.water.open", backgroundColor: "#00A0DC"
 		}        
         standardTile("switch3", "device.switch3", inactiveLabel: false) {			
 			state "z3off", label: '3', action: "z3on", icon: "st.valves.water.closed", backgroundColor: "#ffffff"
-            state "z3on", label: '3', action: "z3off", icon: "st.valves.water.open", backgroundColor: "#46c2e8"
+            state "z3on", label: '3', action: "z3off", icon: "st.valves.water.open", backgroundColor: "#00A0DC"
 		}
         standardTile("switch4", "device.switch4", inactiveLabel: false) {            
             state "z4off", label: '4', action: "z4on", icon: "st.valves.water.closed", backgroundColor: "#ffffff"
-            state "z4on", label: '4', action: "z4off", icon: "st.valves.water.open", backgroundColor: "#46c2e8"
+            state "z4on", label: '4', action: "z4off", icon: "st.valves.water.open", backgroundColor: "#00A0DC"
 		}
         standardTile("switch5", "device.switch5", inactiveLabel: false) {            
             state "z5off", label: '5', action: "z5on", icon: "st.valves.water.closed", backgroundColor: "#ffffff"
-            state "z5on", label: '5', action: "z5off", icon: "st.valves.water.open", backgroundColor: "#46c2e8"
+            state "z5on", label: '5', action: "z5off", icon: "st.valves.water.open", backgroundColor: "#00A0DC"
 		}
 		standardTile("switch6", "device.switch6", inactiveLabel: false) {            
             state "z6off", label: '6', action: "z6on", icon: "st.valves.water.closed", backgroundColor: "#ffffff"
-            state "z6on", label: '6', action: "z6off", icon: "st.valves.water.open", backgroundColor: "#46c2e8"
+            state "z6on", label: '6', action: "z6off", icon: "st.valves.water.open", backgroundColor: "#00A0DC"
 		}
         standardTile("switch7", "device.switch7", inactiveLabel: false) {            
             state "z7off", label: '7', action: "z7on", icon: "st.valves.water.closed", backgroundColor: "#ffffff"
-            state "z7on", label: '7', action: "z7off", icon: "st.valves.water.open", backgroundColor: "#46c2e8"
+            state "z7on", label: '7', action: "z7off", icon: "st.valves.water.open", backgroundColor: "#00A0DC"
 		}
 		standardTile("switch8", "device.switch8", inactiveLabel: false) {            
             state "z8off", label: '8', action: "z8on", icon: "st.valves.water.closed", backgroundColor: "#ffffff"
-            state "z8on", label: '8', action: "z8off", icon: "st.valves.water.open", backgroundColor: "#46c2e8"
+            state "z8on", label: '8', action: "z8off", icon: "st.valves.water.open", backgroundColor: "#00A0DC"
 		}
         standardTile("switch9", "device.switch9", inactiveLabel: false) {			
 			state "z9off", label: '9', action: "z9on", icon: "st.valves.water.closed", backgroundColor: "#ffffff"
-            state "z9on", label: '9', action: "z9off", icon: "st.valves.water.open", backgroundColor: "#46c2e8"
+            state "z9on", label: '9', action: "z9off", icon: "st.valves.water.open", backgroundColor: "#00A0DC"
 		}
         standardTile("switch10", "device.switch10", inactiveLabel: false) {            
             state "z10off", label: '10', action: "z10on", icon: "st.valves.water.closed", backgroundColor: "#ffffff"
-            state "z10on", label: '10', action: "z10off", icon: "st.valves.water.open", backgroundColor: "#46c2e8"
+            state "z10on", label: '10', action: "z10off", icon: "st.valves.water.open", backgroundColor: "#00A0DC"
 		}        
         standardTile("switch11", "device.switch11", inactiveLabel: false) {			
 			state "z11off", label: '11', action: "z11on", icon: "st.valves.water.closed", backgroundColor: "#ffffff"
-            state "z11on", label: '11', action: "z11off", icon: "st.valves.water.open", backgroundColor: "#46c2e8"
+            state "z11on", label: '11', action: "z11off", icon: "st.valves.water.open", backgroundColor: "#00A0DC"
 		}
         standardTile("switch12", "device.switch12", inactiveLabel: false) {            
             state "z12off", label: '12', action: "z12on", icon: "st.valves.water.closed", backgroundColor: "#ffffff"
-            state "z12on", label: '12', action: "z12off", icon: "st.valves.water.open", backgroundColor: "#46c2e8"
+            state "z12on", label: '12', action: "z12off", icon: "st.valves.water.open", backgroundColor: "#00A0DC"
 		}
         standardTile("switch13", "device.switch13", inactiveLabel: false) {            
             state "z13off", label: '13', action: "z13on", icon: "st.valves.water.closed", backgroundColor: "#ffffff"
-            state "z13on", label: '13', action: "z13off", icon: "st.valves.water.open", backgroundColor: "#46c2e8"
+            state "z13on", label: '13', action: "z13off", icon: "st.valves.water.open", backgroundColor: "#00A0DC"
 		}
 		standardTile("switch14", "device.switch14", inactiveLabel: false) {            
             state "z14off", label: '14', action: "z14on", icon: "st.valves.water.closed", backgroundColor: "#ffffff"
-            state "z14on", label: '14', action: "z14off", icon: "st.valves.water.open", backgroundColor: "#46c2e8"
+            state "z14on", label: '14', action: "z14off", icon: "st.valves.water.open", backgroundColor: "#00A0DC"
 		}
         standardTile("switch15", "device.switch15", inactiveLabel: false) {            
             state "z15off", label: '15', action: "z15on", icon: "st.valves.water.closed", backgroundColor: "#ffffff"
-            state "z15on", label: '15', action: "z15off", icon: "st.valves.water.open", backgroundColor: "#46c2e8"
+            state "z15on", label: '15', action: "z15off", icon: "st.valves.water.open", backgroundColor: "#00A0DC"
 		}		
         standardTile("switch16", "device.switch16", inactiveLabel: false) {            
             state "z16off", label: '16', action: "z16on", icon: "st.valves.water.closed", backgroundColor: "#ffffff"
-            state "z16on", label: '16', action: "z16off", icon: "st.valves.water.open", backgroundColor: "#46c2e8"
+            state "z16on", label: '16', action: "z16off", icon: "st.valves.water.open", backgroundColor: "#00A0DC"
 		}        
         standardTile("refresh", "device.switch", inactiveLabel: false, decoration: "flat") {
 			state "default", action: "refresh", icon:"st.secondary.refresh"            

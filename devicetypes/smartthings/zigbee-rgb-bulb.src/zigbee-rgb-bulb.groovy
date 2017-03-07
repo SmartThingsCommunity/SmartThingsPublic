@@ -38,9 +38,9 @@ metadata {
 	tiles(scale: 2) {
 		multiAttributeTile(name:"switch", type: "lighting", width: 6, height: 4, canChangeIcon: true){
 			tileAttribute ("device.switch", key: "PRIMARY_CONTROL") {
-				attributeState "on", label:'${name}', action:"switch.off", icon:"st.lights.philips.hue-single", backgroundColor:"#79b821", nextState:"turningOff"
+				attributeState "on", label:'${name}', action:"switch.off", icon:"st.lights.philips.hue-single", backgroundColor:"#00A0DC", nextState:"turningOff"
 				attributeState "off", label:'${name}', action:"switch.on", icon:"st.lights.philips.hue-single", backgroundColor:"#ffffff", nextState:"turningOn"
-				attributeState "turningOn", label:'${name}', action:"switch.off", icon:"st.lights.philips.hue-single", backgroundColor:"#79b821", nextState:"turningOff"
+				attributeState "turningOn", label:'${name}', action:"switch.off", icon:"st.lights.philips.hue-single", backgroundColor:"#00A0DC", nextState:"turningOff"
 				attributeState "turningOff", label:'${name}', action:"switch.on", icon:"st.lights.philips.hue-single", backgroundColor:"#ffffff", nextState:"turningOn"
 			}
 			tileAttribute ("device.level", key: "SLIDER_CONTROL") {
@@ -153,4 +153,12 @@ def setHue(value) {
 def setSaturation(value) {
 	def scaledSatValue = zigbee.convertToHexString(Math.round(value * 0xfe / 100.0), 2)
 	zigbee.command(COLOR_CONTROL_CLUSTER, SATURATION_COMMAND, scaledSatValue, "0500") + "delay 1000" + zigbee.readAttribute(COLOR_CONTROL_CLUSTER, ATTRIBUTE_SATURATION)
+}
+
+def installed() {
+	if (((device.getDataValue("manufacturer") == "MRVL") && (device.getDataValue("model") == "MZ100")) || (device.getDataValue("manufacturer") == "OSRAM SYLVANIA") || (device.getDataValue("manufacturer") == "OSRAM")) {
+		if ((device.currentState("level")?.value == null) || (device.currentState("level")?.value == 0)) {
+			sendEvent(name: "level", value: 100)
+		}
+	}
 }
