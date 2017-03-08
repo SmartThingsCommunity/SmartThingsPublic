@@ -1,5 +1,5 @@
 /**
- *  Dome Door Sensor v1.1
+ *  Dome Door Sensor v1.1.1
  *  (Model: DMWD1)
  *
  *  Author: 
@@ -10,7 +10,7 @@
  *
  *  Changelog:
  *
- *    1.1 (03/07/2017)
+ *    1.1.1 (03/07/2017)
  *      - Added comments and health check capability.
  *
  *    1.0 (02/01/2017)
@@ -290,9 +290,11 @@ private getEventMap(name, value, unit=null) {
 	return eventMap
 }
 
-private wakeUpIntervalSetCmd(val) {
-	logTrace "wakeUpIntervalSetCmd(${val})"
-	return zwave.wakeUpV2.wakeUpIntervalSet(seconds:val, nodeid:zwaveHubNodeId).format()
+private wakeUpIntervalSetCmd(minutesVal) {
+	state.checkinIntervalMinutes = minutesVal
+	logTrace "wakeUpIntervalSetCmd(${minutesVal})"
+	
+	return zwave.wakeUpV2.wakeUpIntervalSet(seconds:(minutesVal * 60), nodeid:zwaveHubNodeId).format()
 }
 
 private wakeUpNoMoreInfoCmd() {
