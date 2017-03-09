@@ -1,12 +1,12 @@
 /**
  *  Ask Alexa 
  *
- *  Version 2.2.2b - 3/2/17 Copyright © 2017 Michael Struck
+ *  Version 2.2.2c - 3/2/17 Copyright © 2017 Michael Struck
  *  Special thanks for Keith DeLong for overall code and assistance; Barry Burke for Weather Underground Integration; jhamstead for Ecobee climate modes, Yves Racine for My Ecobee thermostat tips
  * 
  *  Version information prior to 2.2.2 listed here: https://github.com/MichaelStruck/SmartThingsPublic/blob/master/smartapps/michaelstruck/ask-alexa.src/Ask%20Alexa%20Version%20History.md
  *
- *	Version 2.2.2b (3/2/17) Syntax issues (thanks larry-fuqua); added loop/pulse options for colored lights using the latest community DTH for OSRAM lights(thanks @bbmcgee). Added options for lights that can only be controlled by Kelvin temperature
+ *	Version 2.2.2c (3/2/17) Syntax issues (thanks larry-fuqua); added loop/pulse options for colored lights using the latest community DTH for OSRAM lights(thanks @bbmcgee). Added options for lights that can only be controlled by Kelvin temperature
  *  Added increase/decrease commands to Control macro thermostat control; fixed Nest Present command, added speaker output for message queue incoming messages, along with GUI notification.
  *
  *  Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except
@@ -1292,10 +1292,7 @@ def processMacro() {
         	}	   
     	}
     }
-    if (count == 1){
-    	if (macAlias) mac = macAlias
-        else mac = getChildApps().find {it.label.toLowerCase().replaceAll("[^a-zA-Z0-9 ]", "") == mac}.toLowerCase()
-    }
+    if (count == 1 && macAlias) mac = macAlias
     if (count > 1) outputTxt ="You have duplicate macros or aliases named '${mac}'. Please check your SmartApp to fix this conflict. %1%"
     if (!count) outputTxt = "I could not find a macro or alias named '${mac}'. %1%"
     if (outputTxt) sendJSON(outputTxt)
@@ -3559,12 +3556,12 @@ def getURLs(){
 //Version/Copyright/Information/Help-----------------------------------------------------------
 private textAppName() { return "Ask Alexa" }	
 private textVersion() {
-    def version = "SmartApp Version: 2.2.2b (03/02/2017)", lambdaVersion = state.lambdaCode ? "\n" + state.lambdaCode : ""
+    def version = "SmartApp Version: 2.2.2c (03/02/2017)", lambdaVersion = state.lambdaCode ? "\n" + state.lambdaCode : ""
     return "${version}${lambdaVersion}"
 }
 private versionInt(){ return 222 }
 private LambdaReq() { return 123 }
-private versionLong(){ return "2.2.2b" }
+private versionLong(){ return "2.2.2c" }
 private textCopyright() {return "Copyright © 2017 Michael Struck" }
 private textLicense() {
 	def text = "Licensed under the Apache License, Version 2.0 (the 'License'); you may not use this file except in compliance with the License. You may obtain a copy of the License at\n\n"+
