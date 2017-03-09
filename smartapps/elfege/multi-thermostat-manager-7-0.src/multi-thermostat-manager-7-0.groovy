@@ -521,6 +521,7 @@ def contactHandlerClosed(evt) {
 
     if(contact.latestValue("contact").contains("open")){
         log.debug "Not all contacts are closed, doing nothing"
+        atomicState.doorsAreOpen = true
     }
     else {             
 
@@ -530,7 +531,6 @@ def contactHandlerClosed(evt) {
         updated()
     } 
 
-    updated()
     alldoorsareclosed()
 
 }
