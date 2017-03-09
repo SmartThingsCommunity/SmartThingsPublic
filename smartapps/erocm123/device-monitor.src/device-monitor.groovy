@@ -45,6 +45,10 @@
  *  - Only on certain days of the week.
  *  - Only when mode is . . .
  *
+ *  2017-03-08 - Added an option to use Offline / Online status when available. The new Health Check capability
+ *               updates the offline / online status when communication is sent from the device. This eliminates
+ *               the need to look at events (which may not update because of duplicate events anyway).
+ *
  *  2016-08-21 - Lot's of changes. Layout has been reorganized to make navigation easier. Battery alerts available. You can
  *               exclude devices from event checks or battery checks. New logo. Internal bug fixes and optimizations. 
  *
@@ -169,6 +173,7 @@ def pageSettings() {
             input "askAlexaRemind", "boolean", title: "Allow reminder alerts to be sent to Ask Alexa?", required: false, submitOnChange: false, value: false
         }
         section([title: "Other Options", mobileOnly: true]) {
+            input "healthCheck", "boolean", title: "Use Online / Offline status if available?", required: false, submitOnChange: false, value: false
             label title: "Assign a name for the app (optional)", required: false
         }    
     }
@@ -194,7 +199,7 @@ def pageExclusions() {
         def batteryExclude = [:]
         
         [motiondevices, humiditydevices, leakdevices, thermodevices, tempdevices, contactdevices,
-            lockdevices, alarmdevices, switchdevices, presencedevices, smokedevices].each { n ->
+            lockdevices, alarmdevices, switchdevices, presencedevices, smokedevices, buttondevices].each { n ->
                 if (n != null){ 
                    allDevices += n
                 }
@@ -249,6 +254,7 @@ def pageStatus(params) {
         settings.alarmdevices == null &&
         settings.switchdevices == null &&
         settings.smokedevices == null &&
+        settings.buttondevices == null &&
         settings.presencedevices == null) {
         return pageConfigure()
     }
@@ -372,7 +378,7 @@ def doCheck() {
         def batteryDevices = []
 
         [motiondevices, humiditydevices, leakdevices, thermodevices, tempdevices, contactdevices,
-            lockdevices, alarmdevices, switchdevices, presencedevices, smokedevices].each { n ->
+            lockdevices, alarmdevices, switchdevices, presencedevices, smokedevices, buttondevices].each { n ->
                 if (n != null){ 
                    allDevices += n
                 }
@@ -423,13 +429,19 @@ def doCheck() {
                if (n == it.id) dexclude = true
             }
             if (dexclude == false){
-                def lastTime = it.events([all: true, max: 100]).find {
-                    (it.source as String) == "DEVICE"
+                def lastTime
+                if(it.status.toUpperCase() in ["ONLINE", "OFFLINE"] && healthCheck == "true" && it.getLastActivity() != null) {
+                    lastTime = it.getLastActivity()
+                } else {
+                    lastTime = it.events([all: true, max: 100]).find {
+                        (it.source as String) == "DEVICE"
+                    }
+                    lastTime = lastTime?.date
                 }
 
                 try {
                     if (lastTime) {
-                        lastTime = lastTime.date.time
+                        lastTime = lastTime.time
                         def hours = (((rightNow.time - lastTime) / 60000) / 60)
                         def xhours = (hours.toFloat() / 1).round(2)
                         if (xhours > timer) {
@@ -690,6 +702,7 @@ def pageConfigure() {
     def inputSwitchDevices = [name: "switchdevices", type: "capability.switch", title: "Which switches?", multiple: true, required: false]
     def inputPresenceDevices = [name: "presencedevices", type: "capability.presenceSensor", title: "Which presence sensors?", multiple: true, required: false]
     def inputSmokeDevices = [name: "smokedevices", type: "capability.smokeDetector", title: "Which Smoke/CO2 detectors?", multiple: true, required: false]
+    def inputButtonDevices = [name: "buttondevices", type: "capability.button", title: "Which Button Devices?", multiple: true, required: false]
 
     def pageProperties = [name: "pageConfigure",
         title: "Device Monitor - Configure Devices",
@@ -712,6 +725,7 @@ def pageConfigure() {
             input inputSwitchDevices
             input inputPresenceDevices
             input inputSmokeDevices
+            input inputButtonDevices
         }
         
     }
@@ -911,6 +925,7 @@ def subscribeDevices() {
     subscribe(switchdevices, "switch", eventCheck, [filterEvents: false])
     subscribe(presencedevices, "presence", eventCheck, [filterEvents: false])
     subscribe(smokedevices, "smokeDetector", eventCheck, [filterEvents: false])
+    subscribe(buttondevices, "button", eventCheck, [filterEvents: false])
 
 }
 
