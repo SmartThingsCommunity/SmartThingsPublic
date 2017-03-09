@@ -27,6 +27,7 @@ metadata {
         capability "Configuration"
         capability "Temperature Measurement"
 		capability "Relative Humidity Measurement"
+        capability "Health Check"
         
         command "reboot"
 	}
@@ -106,6 +107,7 @@ def updated() {
 def configure() {
 	log.debug "configure()"
 	log.debug "Configuring Device For SmartThings Use"
+    sendEvent(name: "checkInterval", value: 12 * 60, data: [protocol: "lan", hubHardwareId: device.hub.hardwareID], displayed: false)
     sendEvent(name:"hubInfo", value:"Sonoff switch still being configured", displayed:false) 
     if (ip != null && ip != "" && override == "true") state.dni = setDeviceNetworkId(ip, "80")
     state.hubIP = device.hub.getDataValue("localIP")
@@ -264,6 +266,11 @@ def refresh() {
     def cmds = []
     cmds << getAction("/status")
     return cmds
+}
+
+def ping() {
+    log.debug "ping()"
+    refresh()
 }
 
 private getAction(uri){ 
