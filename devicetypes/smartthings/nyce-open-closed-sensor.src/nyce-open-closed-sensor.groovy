@@ -24,6 +24,7 @@ metadata {
 		capability "Contact Sensor"
 		capability "Refresh"
 		capability "Health Check"
+		capability "Sensor"
 
 		command "enrollResponse"
 
