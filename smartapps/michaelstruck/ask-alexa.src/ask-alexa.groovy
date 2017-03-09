@@ -1,12 +1,12 @@
 /**
  *  Ask Alexa 
  *
- *  Version 2.2.2a - 3/2/17 Copyright © 2017 Michael Struck
+ *  Version 2.2.2b - 3/2/17 Copyright © 2017 Michael Struck
  *  Special thanks for Keith DeLong for overall code and assistance; Barry Burke for Weather Underground Integration; jhamstead for Ecobee climate modes, Yves Racine for My Ecobee thermostat tips
  * 
  *  Version information prior to 2.2.2 listed here: https://github.com/MichaelStruck/SmartThingsPublic/blob/master/smartapps/michaelstruck/ask-alexa.src/Ask%20Alexa%20Version%20History.md
  *
- *	Version 2.2.2a (3/2/17) Syntax issues (thanks larry-fuqua); added loop/pulse options for colored lights using the latest community DTH for OSRAM lights(thanks @bbmcgee). Added options for lights that can only be controlled by Kelvin temperature
+ *	Version 2.2.2b (3/2/17) Syntax issues (thanks larry-fuqua); added loop/pulse options for colored lights using the latest community DTH for OSRAM lights(thanks @bbmcgee). Added options for lights that can only be controlled by Kelvin temperature
  *  Added increase/decrease commands to Control macro thermostat control; fixed Nest Present command, added speaker output for message queue incoming messages, along with GUI notification.
  *
  *  Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except
@@ -1285,7 +1285,7 @@ def processMacro() {
     if (!count) {   
         for (int i = 1; i<macAliasCount()+1; i++){ 
         	getChildApps().each{
-            	if (it."macAlias${i}".toLowerCase().replaceAll("[^a-zA-Z0-9 ]", "")==mac) {
+            	if (it."macAlias${i}" && it."macAlias${i}".toLowerCase().replaceAll("[^a-zA-Z0-9 ]", "")==mac) {
                 	macAlias = it.label.toLowerCase().replaceAll("[^a-zA-Z0-9 ]", "")
                 	count ++
         		}
@@ -3564,7 +3564,7 @@ private textVersion() {
 }
 private versionInt(){ return 222 }
 private LambdaReq() { return 123 }
-private versionLong(){ return "2.2.2a" }
+private versionLong(){ return "2.2.2b" }
 private textCopyright() {return "Copyright © 2017 Michael Struck" }
 private textLicense() {
 	def text = "Licensed under the Apache License, Version 2.0 (the 'License'); you may not use this file except in compliance with the License. You may obtain a copy of the License at\n\n"+
