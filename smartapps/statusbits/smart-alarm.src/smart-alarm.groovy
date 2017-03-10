@@ -666,7 +666,7 @@ def pageNotifications() {
     def inputNotificationDevice = [
         name:       "notificationDevice",
         type:       "capability.notification",
-        title:      "Which smart alarm notification device type?",
+        title:      "Which smart alarm notification device?",
         multiple:   false,
         required:   false
     ]
@@ -679,6 +679,30 @@ def pageNotifications() {
         required:       false
     ]
         
+
+   def inputSirenOnWaterAlert = [
+        name:       "sirenOnWaterAlert",
+        type:       "bool",
+        title:      "Use Siren for Water Leak?",
+        defaultValue: true,
+        required:   true
+    ]
+     
+   def inputSirenOnSmokeAlert = [
+        name:       "sirenOnSmokeAlert",
+        type:       "bool",
+        title:      "Use Siren for Smoke Alert?",
+        defaultValue: true,
+        required:   true
+    ]
+    
+   def inputSirenOnIntrusionAlert = [
+        name:       "sirenOnIntrusionAlert",
+        type:       "bool",
+        title:      "Use Siren for Intrusion Alert?",
+        defaultValue: true,
+        required:   true
+    ]
 
     def inputPushAlarm = [
         name:           "pushMessage",
@@ -861,12 +885,18 @@ def pageNotifications() {
         section("Notification Options") {
             paragraph helpAbout
         }
-        section("Notifcation Device")
+        section("Notification Device")
         {
             input inputNotificationDevice
         }
         section("Chime Devices") {
 			input inputChimeDevices
+        }
+        section("Siren Notifcations")
+        {
+            input inputSirenOnWaterAlert
+            input inputSirenOnSmokeAlert
+            input inputSirenOnIntrusionAlert
         }
         section("Push Notifications") {
             input inputPushAlarm
@@ -1650,20 +1680,43 @@ def activateAlarm() {
     	settings.alarms*.off()
     }
     
-    switch (settings.sirenMode) {
-    case "Siren":
-        settings.alarms*.siren()
-        break
+    def atype = state.alertType
 
-    case "Strobe":
-        settings.alarms*.strobe()
-        break
-        
-    case "Both":
-        settings.alarms*.both()
-        break
+    if ((atype == "Water" && settings.sirenOnWaterAlert) ||
+        (atype == "Smoke" && settings.sirenOnSmokeAlert) ||
+       ((atype == "contact" || atype == "acceleration" || atype == "motion") && settings.sirenOnIntrusionAlert))
+    {
+        switch (settings.sirenMode) {
+        case "Siren":
+            settings.alarms*.siren()
+            break
+
+        case "Strobe":
+            settings.alarms*.strobe()
+            break
+            
+        case "Both":
+            settings.alarms*.both()
+            break
+        }
     }
+    else
+    { 
+    log.debug "No siren for $atype Alert"
+    }
+}
+  
+def activateAlarmPostDelay(String lastAlertType)
+{
+// no alarm check here as if door opens only for second with delay and system is not disarmed
+// we still want alarm even if door is closed after delay.. Basically like real alarm the delay is only
+// to disarm the system. Otherwise someone can open door come it, quickly close and there is not alarm LGK.
 
+// issue here is that after delay we could have lost the alert type so pass it in
+ log.debug "activate alarm post delay check - alert type = $lastAlertType"
+ 
+ activateSirenAfterCheck(lastAlertType)
+ 
     // Only turn on those switches that are currently off
     def switchesOn = settings.switches?.findAll { it?.currentSwitch == "off" }
     LOG("switchesOn: ${switchesOn}")
