@@ -405,6 +405,7 @@ def pageConfigureZones() {
                 section("${it.displayName} (contact)") {
                     input "type_${devId}", "enum", title:"Zone Type", metadata:[values:zoneTypes], defaultValue:"exterior"
                     input "delay_${devId}", "bool", title:"Entry/Exit Delays", defaultValue:true
+                    input "chime_${devId}", "bool", title:"Chime on open", defaultValue:true
                 }
             }
         }
@@ -416,6 +417,7 @@ def pageConfigureZones() {
                 section("${it.displayName} (motion)") {
                     input "type_${devId}", "enum", title:"Zone Type", metadata:[values:zoneTypes], defaultValue:"interior"
                     input "delay_${devId}", "bool", title:"Entry/Exit Delays", defaultValue:false
+                    input "chime_${devId}", "bool", title:"Chime on motion", defaultValue:false
                 }
             }
         }
@@ -427,6 +429,7 @@ def pageConfigureZones() {
                 section("${it.displayName} (movement)") {
                     input "type_${devId}", "enum", title:"Zone Type", metadata:[values:zoneTypes], defaultValue:"interior"
                     input "delay_${devId}", "bool", title:"Entry/Exit Delays", defaultValue:false
+                    input "chime_${devId}", "bool", title:"Chime on movement", defaultValue:false
                 }
             }
         }
@@ -438,6 +441,7 @@ def pageConfigureZones() {
                 section("${it.displayName} (smoke)") {
                     input "type_${devId}", "enum", title:"Zone Type", metadata:[values:zoneTypes], defaultValue:"alert"
                     input "delay_${devId}", "bool", title:"Entry/Exit Delays", defaultValue:false
+                    input "chime_${devId}", "bool", title:"Chime on smoke", defaultValue:false
                 }
             }
         }
@@ -449,6 +453,7 @@ def pageConfigureZones() {
                 section("${it.displayName} (moisture)") {
                     input "type_${devId}", "enum", title:"Zone Type", metadata:[values:zoneTypes], defaultValue:"alert"
                     input "delay_${devId}", "bool", title:"Entry/Exit Delays", defaultValue:false
+                    input "chime_${devId}", "bool", title:"Chime on water", defaultValue:false
                 }
             }
         }
@@ -470,6 +475,14 @@ def pageArmingOptions() {
         "your alarm system and enter the premises while the alarm system " +
         "is armed without setting off an alarm. You can optionally disable " +
         "entry and exit delay when the alarm is armed in Stay mode."
+
+	def inputKeypads = [
+    	name:		"keypads",
+        type: 		"capability.lockCodes",
+        title: 		"Keypads for Exit / Entry delay",
+        multiple:	true,
+        required:	false
+    ]
 
     def inputAwayModes = [
         name:       "awayModes",
@@ -507,10 +520,19 @@ def pageArmingOptions() {
     def inputDelayStay = [
         name:       "stayDelayOff",
         type:       "bool",
-        title:      "Disable delays in Stay mode",
+        title:      "Disable alarm (entry) delay in Stay mode",
         defaultValue: false,
         required:   true
     ]
+    
+    def inputExitDelayStay = [
+    	name:			"stayExitDelayOff",
+        type:			"bool",
+        title:			"Disable arming (exit) delay in Stay mode",
+        defaultValue: 	true,
+        required:		true
+    ]
+        
 
     def pageProperties = [
         name:       "pageArmingOptions",
@@ -524,16 +546,21 @@ def pageArmingOptions() {
             paragraph helpArming
         }
 
+		section("Keypads") {
+        	input inputKeypads
+        }
+        
         section("Modes") {
             input inputAwayModes
             input inputStayModes
             input inputDisarmModes
         }
-
+        
         section("Exit and Entry Delay") {
             paragraph helpDelay
             input inputDelay
             input inputDelayStay
+			input inputExitDelayStay
         }
     }
 }
@@ -561,6 +588,14 @@ def pageAlarmOptions() {
         metadata:       [values:["Off","Siren","Strobe","Both"]],
         title:          "Choose siren mode",
         defaultValue:   "Both"
+    ]
+
+    def inputSirenEntryStrobe = [
+    	name:           "sirenEntryStrobe",
+        type:           "bool",
+        title:          "Strobe siren during entry delay",
+        defaultValue:   true,
+        required:       true
     ]
 
     def inputSwitches = [
@@ -602,6 +637,7 @@ def pageAlarmOptions() {
         section("Sirens") {
             input inputAlarms
             input inputSirenMode
+            input inputSirenEntryStrobe
         }
         section("Switches") {
             input inputSwitches
@@ -625,6 +661,15 @@ def pageNotifications() {
         "using either Push messages, SMS (text) messages and Pushbullet " +
         "messaging service. Smart Alarm can also notify you with sounds or " +
         "voice alerts using compatible audio devices, such as Sonos."
+
+	def inputChimeDevices = [
+    	name:			"chimeDevices",
+        type:           "capability.tone",
+        title:          "Which Chime Devices?",
+        multiple:       true,
+        required:       false
+    ]
+        
 
     def inputPushAlarm = [
         name:           "pushMessage",
@@ -806,6 +851,9 @@ def pageNotifications() {
     return dynamicPage(pageProperties) {
         section("Notification Options") {
             paragraph helpAbout
+        }
+        section("Chime Devices") {
+			input inputChimeDevices
         }
         section("Push Notifications") {
             input inputPushAlarm
@@ -1123,7 +1171,8 @@ private def initZones() {
                 deviceId:   it.id,
                 sensorType: "contact",
                 zoneType:   settings["type_${it.id}"] ?: "exterior",
-                delay:      settings["delay_${it.id}"]
+                delay:      settings["delay_${it.id}"],
+                chime:		settings["chime_${it.id}"]
             ]
         }
         subscribe(settings.z_contact, "contact.open", onContact)
@@ -1135,7 +1184,8 @@ private def initZones() {
                 deviceId:   it.id,
                 sensorType: "motion",
                 zoneType:   settings["type_${it.id}"] ?: "interior",
-                delay:      settings["delay_${it.id}"]
+                delay:      settings["delay_${it.id}"],
+                chime:		settings["chime_${it.id}"]
             ]
         }
         subscribe(settings.z_motion, "motion.active", onMotion)
@@ -1147,7 +1197,8 @@ private def initZones() {
                 deviceId:   it.id,
                 sensorType: "acceleration",
                 zoneType:   settings["type_${it.id}"] ?: "interior",
-                delay:      settings["delay_${it.id}"]
+                delay:      settings["delay_${it.id}"],
+                chime:		settings["chime_${it.id}"]
             ]
         }
         subscribe(settings.z_movement, "acceleration.active", onMovement)
@@ -1159,7 +1210,8 @@ private def initZones() {
                 deviceId:   it.id,
                 sensorType: "smoke",
                 zoneType:   settings["type_${it.id}"] ?: "alert",
-                delay:      settings["delay_${it.id}"]
+                delay:      settings["delay_${it.id}"],
+                chime:		settings["chime_${it.id}"]
             ]
         }
         subscribe(settings.z_smoke, "smoke.detected", onSmoke)
@@ -1174,7 +1226,8 @@ private def initZones() {
                 deviceId:   it.id,
                 sensorType: "water",
                 zoneType:   settings["type_${it.id}"] ?: "alert",
-                delay:      settings["delay_${it.id}"]
+                delay:      settings["delay_${it.id}"],
+                chime:		settings["chime_${it.id}"]
             ]
         }
         subscribe(settings.z_water, "water.wet", onWater)
@@ -1268,9 +1321,22 @@ private def onZoneEvent(evt, sensorType) {
         if (zone.zoneType == "alert" || !zone.delay || (state.stay && settings.stayDelayOff)) {
             activateAlarm()
         } else {
+        	if(settings.sirenEntryStrobe)
+            {
+        		settings.alarms*.strobe()
+            }
+        	keypads?.each() { it.setEntryDelay(state.delay) }
             myRunIn(state.delay, activateAlarm)
         }
     }
+    else if (zone.chime)
+    {
+    	chimeDevices?.each() { 
+               	it.beep()
+            }
+    }
+    
+    
 }
 
 def onLocation(evt) {
@@ -1335,6 +1401,8 @@ def disarm() {
                 it.armed = false
             }
         }
+        
+        keypads?.each() { it.setDisarmed() }
 
         reset()
     }
@@ -1383,6 +1451,16 @@ def exitDelayExpired() {
             it.armed = true
         }
     }
+    
+ 	if(stay)
+    {
+   		keypads?.each() { it.setArmedStay() }
+    }
+    else
+    {
+     	keypads?.each() { it.setArmedAway() }
+    }
+    	
 
     def msg = "${location.name}: all "
     if (stay) {
@@ -1406,7 +1484,7 @@ private def armPanel(stay) {
     state.zones.each() {
         def zoneType = it.zoneType
         if (zoneType == "exterior") {
-            if (it.delay) {
+            if (it.delay && !(stay && settings.stayExitDelayOff)) {
                 it.armed = false
                 armDelay = true
             } else {
@@ -1424,9 +1502,21 @@ private def armPanel(stay) {
         }
     }
 
-    def delay = armDelay && !(stay && settings.stayDelayOff) ? atomicState.delay : 0
+    def delay = armDelay && !(stay && settings.stayExitDelayOff) ? atomicState.delay : 0
     if (delay) {
+    	keypads?.each() { it.setExitDelay(delay) }
         myRunIn(delay, exitDelayExpired)
+    }
+    else
+    {
+    	if(stay)
+        {
+    		keypads?.each() { it.setArmedStay() }
+        }
+        else
+        {
+        	keypads?.each() { it.setArmedAway() }
+        }
     }
 
     def mode = stay ? "STAY" : "AWAY"
@@ -1533,6 +1623,11 @@ def activateAlarm() {
         return
     }
 
+    if(settings.sirenEntryStrobe)
+    {
+    	settings.alarms*.off()
+    }
+    
     switch (settings.sirenMode) {
     case "Siren":
         settings.alarms*.siren()
