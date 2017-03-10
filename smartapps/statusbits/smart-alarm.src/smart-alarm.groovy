@@ -660,9 +660,18 @@ def pageNotifications() {
         "disarmed or when an alarm is set off. Notifications can be send " +
         "using either Push messages, SMS (text) messages and Pushbullet " +
         "messaging service. Smart Alarm can also notify you with sounds or " +
-        "voice alerts using compatible audio devices, such as Sonos."
+        "voice alerts using compatible audio devices, such as Sonos." +
+        "Or using a SmartAlarm dashboard virtual device."
+    
+    def inputNotificationDevice = [
+        name:       "notificationDevice",
+        type:       "capability.notification",
+        title:      "Which smart alarm notification device type?",
+        multiple:   false,
+        required:   false
+    ]
 
-	def inputChimeDevices = [
+    def inputChimeDevices = [
     	name:			"chimeDevices",
         type:           "capability.tone",
         title:          "Which Chime Devices?",
@@ -851,6 +860,10 @@ def pageNotifications() {
     return dynamicPage(pageProperties) {
         section("Notification Options") {
             paragraph helpAbout
+        }
+        section("Notifcation Device")
+        {
+            input inputNotificationDevice
         }
         section("Chime Devices") {
 			input inputChimeDevices
@@ -1095,6 +1108,7 @@ private def setupInit() {
         state.zones = []
         state.alarms = []
         state.history = []
+        state.alertType = "None"
     } else {
         def version = state.version as String
         if (version == null || version.startsWith('1')) {
@@ -1132,6 +1146,7 @@ private def initialize() {
     subscribe(location, onLocation)
 
     STATE()
+    reportStatus()
 }
 
 private def clearAlarm() {
@@ -1151,6 +1166,7 @@ private def clearAlarm() {
         }
         state.offSwitches = []
     }
+    reportStatus()
 }
 
 private def initZones() {
@@ -1310,9 +1326,11 @@ def onWater(evt)    { onZoneEvent(evt, "water") }
 private def onZoneEvent(evt, sensorType) {
     LOG("onZoneEvent(${evt.displayName}, ${sensorType})")
 
+    state.alertType = sensorType
     def zone = getZoneForDevice(evt.deviceId, sensorType)
     if (!zone) {
         log.warn "Cannot find zone for device ${evt.deviceId}"
+        state.alertType = "None"
         return
     }
 
@@ -1381,6 +1399,7 @@ def armAway() {
     if (!atomicState.armed || atomicState.stay) {
         armPanel(false)
     }
+    reportStatus()
 }
 
 def armStay() {
@@ -1389,6 +1408,7 @@ def armStay() {
     if (!atomicState.armed || !atomicState.stay) {
         armPanel(true)
     }
+    reportStatus()
 }
 
 def disarm() {
@@ -1406,6 +1426,7 @@ def disarm() {
 
         reset()
     }
+    reportStatus()
 }
 
 def panic() {
@@ -1432,6 +1453,7 @@ def reset() {
 
     notify(msg)
     notifyVoice()
+    reportStatus()
 }
 
 def exitDelayExpired() {
@@ -1665,6 +1687,8 @@ def activateAlarm() {
     notify(msg)
     notifyVoice()
 
+    reportStatus()
+    
     myRunIn(180, reset)
 }
 
@@ -1762,6 +1786,61 @@ private def notifyVoice() {
         settings.audioPlayer*.playText(phrase)
     }
 }
+
+def reportStatus()
+{
+    log.debug "in report status"
+    log.debug "notification device = $notificationDevice"
+    // def switchesOn = settings.switches?.findAll { it?.currentSwitch == "off" }
+
+    //def deviceDisplayName = notifcationDevice.displayName
+    //log.debug "disp name = $deviceDisplayName"
+    //if (settings.notifcationDevice != null)
+    //{
+    log.debug "not null"
+    def phrase = ""
+    if (state.alarms.size())
+    {
+        phrase = "Alert: Alarm at ${location.name}!"
+        notificationDevice.deviceNotification(phrase)
+        log.debug "sending notification alert: = $phrase"
+        def zones = "Zones: "
+        state.alarms.each()
+        {
+            //log.debug "in loop it"
+            //log.debug "it = $it"
+            zones = "Zones: "
+            zones += " $it" +"\n"
+        }
+        notificationDevice.deviceNotification(zones)
+        log.debug "sending nofication zones = $zones" 
+            
+        // send zone type
+        phrase = "AlertType: "
+        def atype = state.alertType
+        if (atype == null)
+            atype = "None"
+        phrase += " $atype"
+        notificationDevice.deviceNotification(phrase)
+        log.debug "sending nofication alert type = $phrase" 
+    }
+    else
+    {
+        phrase = "Status: "
+        if (state.armed)
+          {
+            def mode = state.stay ? "Armed - Stay" : "Armed - Away"
+            phrase += "${mode}"
+        } else {
+            phrase += "Disarmed"
+        }
+        log.debug "sending notification status = $phrase"
+	notificationDevice.deviceNotification(phrase)
+  
+    
+   
+   }
+ }
 
 private def history(String event, String description = "") {
     LOG("history(${event}, ${description})")
