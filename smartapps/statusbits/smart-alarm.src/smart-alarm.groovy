@@ -296,7 +296,10 @@ def pageHistory() {
             if (history.size() == 0) {
                 paragraph "No history available."
             } else {
-                paragraph "Not implemented"
+            	history.each() {
+                	def text = ""  + new Date(it.time + location.timeZone.rawOffset ).format("yyyy-MM-dd HH:mm") + ": " + it.event + " - " + it.description
+                	paragraph text
+                }
             }
         }
     }
@@ -1157,7 +1160,7 @@ private def initialize() {
     clearAlarm()
     state.delay = settings.delay?.toInteger() ?: 30
     state.offSwitches = []
-    state.history = []
+    //state.history = []
 
     if (settings.awayModes?.contains(location.mode)) {
         state.armed = true
@@ -1378,8 +1381,10 @@ private def onZoneEvent(evt, sensorType) {
     if (zone.armed) {
         state.alarms << evt.displayName
         if (zone.zoneType == "alert" || !zone.delay || (state.stay && settings.stayDelayOff)) {
+            history("Alarm", "Alarm triggered by ${sensorType} sensor ${evt.displayName}")
             activateAlarm()
         } else {
+            history("Entry Delay", "Entry delay triggered by ${sensorType} sensor ${evt.displayName}")
         	if(settings.sirenEntryStrobe)
             {
         		settings.alarms*.strobe()
@@ -1436,6 +1441,7 @@ def onButtonEvent(evt) {
 
 def armAway() {
     LOG("armAway()")
+	history("Armed Away", "Alarm armed away")
 
     if (!atomicState.armed || atomicState.stay) {
         armPanel(false)
@@ -1445,6 +1451,7 @@ def armAway() {
 
 def armStay() {
     LOG("armStay()")
+	history("Armed Stay", "Alarm armed stay")
 
     if (!atomicState.armed || !atomicState.stay) {
         armPanel(true)
@@ -1454,7 +1461,7 @@ def armStay() {
 
 def disarm() {
     LOG("disarm()")
-
+	history("Disarmed", "Alarm disarmed")
     if (atomicState.armed) {
         state.armed = false
         state.zones.each() {
@@ -1685,6 +1692,7 @@ def activateAlarm() {
         log.warn "activateAlarm: false alarm"
         return
     }
+    history("Alarm", "Alarm Triggered")
 
     if(settings.sirenEntryStrobe)
     {
@@ -1905,7 +1913,7 @@ private def history(String event, String description = "") {
 
     def history = atomicState.history
     history << [time: now(), event: event, description: description]
-    if (history.size() > 10) {
+    if (history.size() > 20) {
         history = history.sort{it.time}
         history = history[1..-1]
     }
@@ -2081,4 +2089,28 @@ private def LOG(message) {
 
 private def STATE() {
     //log.trace "state: ${state}"
+}
+
+def onAlarmSystemStatus(evt) {
+    LOG("Alarm System Status has been changed to '${evt.value}'")
+    String mode = evt.value.toLowerCase()
+    if (mode == "away") {
+        armAway()
+    } else if (mode == "stay") {
+        armStay()
+    } else if (mode == "off") {
+        disarm()
+    }
+}
+
+def setAlarmMode(name) {
+    LOG("Alarm System Status will be set to '${name}'")
+    def event = [
+        name: "alarmSystemStatus",
+        value: name,
+        isStateChange: true,
+        displayed: true,
+        description: "alarm system status is ${name}",
+    ]
+    sendLocationEvent(event)
 }
