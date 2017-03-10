@@ -296,7 +296,10 @@ def pageHistory() {
             if (history.size() == 0) {
                 paragraph "No history available."
             } else {
-                paragraph "Not implemented"
+            	history.each() {
+                	def text = ""  + new Date(it.time + location.timeZone.rawOffset ).format("yyyy-MM-dd HH:mm") + ": " + it.event + " - " + it.description
+                	paragraph text
+                }
             }
         }
     }
@@ -660,9 +663,18 @@ def pageNotifications() {
         "disarmed or when an alarm is set off. Notifications can be send " +
         "using either Push messages, SMS (text) messages and Pushbullet " +
         "messaging service. Smart Alarm can also notify you with sounds or " +
-        "voice alerts using compatible audio devices, such as Sonos."
+        "voice alerts using compatible audio devices, such as Sonos." +
+        "Or using a SmartAlarm dashboard virtual device."
+    
+    def inputNotificationDevice = [
+        name:       "notificationDevice",
+        type:       "capability.notification",
+        title:      "Which smart alarm notification device?",
+        multiple:   false,
+        required:   false
+    ]
 
-	def inputChimeDevices = [
+    def inputChimeDevices = [
     	name:			"chimeDevices",
         type:           "capability.tone",
         title:          "Which Chime Devices?",
@@ -670,6 +682,30 @@ def pageNotifications() {
         required:       false
     ]
         
+
+   def inputSirenOnWaterAlert = [
+        name:       "sirenOnWaterAlert",
+        type:       "bool",
+        title:      "Use Siren for Water Leak?",
+        defaultValue: true,
+        required:   true
+    ]
+     
+   def inputSirenOnSmokeAlert = [
+        name:       "sirenOnSmokeAlert",
+        type:       "bool",
+        title:      "Use Siren for Smoke Alert?",
+        defaultValue: true,
+        required:   true
+    ]
+    
+   def inputSirenOnIntrusionAlert = [
+        name:       "sirenOnIntrusionAlert",
+        type:       "bool",
+        title:      "Use Siren for Intrusion Alert?",
+        defaultValue: true,
+        required:   true
+    ]
 
     def inputPushAlarm = [
         name:           "pushMessage",
@@ -852,8 +888,18 @@ def pageNotifications() {
         section("Notification Options") {
             paragraph helpAbout
         }
+        section("Notification Device")
+        {
+            input inputNotificationDevice
+        }
         section("Chime Devices") {
 			input inputChimeDevices
+        }
+        section("Siren Notifcations")
+        {
+            input inputSirenOnWaterAlert
+            input inputSirenOnSmokeAlert
+            input inputSirenOnIntrusionAlert
         }
         section("Push Notifications") {
             input inputPushAlarm
@@ -1095,6 +1141,7 @@ private def setupInit() {
         state.zones = []
         state.alarms = []
         state.history = []
+        state.alertType = "None"
     } else {
         def version = state.version as String
         if (version == null || version.startsWith('1')) {
@@ -1113,7 +1160,7 @@ private def initialize() {
     clearAlarm()
     state.delay = settings.delay?.toInteger() ?: 30
     state.offSwitches = []
-    state.history = []
+    //state.history = []
 
     if (settings.awayModes?.contains(location.mode)) {
         state.armed = true
@@ -1130,8 +1177,20 @@ private def initialize() {
     initButtons()
     initRestApi()
     subscribe(location, onLocation)
+    
+    if (settings.notificationDevice)
+    {
+        subscribe(settings.notificationDevice, "switch.off", gotDismissMessage)
+    }
 
     STATE()
+    reportStatus()
+}
+
+def gotDismissMessage(evt)
+{
+    log.debug "Got the dismiss message from the notification device.. clearing alarm!"
+    clearAlarm()
 }
 
 private def clearAlarm() {
@@ -1151,6 +1210,7 @@ private def clearAlarm() {
         }
         state.offSwitches = []
     }
+    reportStatus()
 }
 
 private def initZones() {
@@ -1310,17 +1370,21 @@ def onWater(evt)    { onZoneEvent(evt, "water") }
 private def onZoneEvent(evt, sensorType) {
     LOG("onZoneEvent(${evt.displayName}, ${sensorType})")
 
+    state.alertType = sensorType
     def zone = getZoneForDevice(evt.deviceId, sensorType)
     if (!zone) {
         log.warn "Cannot find zone for device ${evt.deviceId}"
+        state.alertType = "None"
         return
     }
 
     if (zone.armed) {
         state.alarms << evt.displayName
         if (zone.zoneType == "alert" || !zone.delay || (state.stay && settings.stayDelayOff)) {
+            history("Alarm", "Alarm triggered by ${sensorType} sensor ${evt.displayName}")
             activateAlarm()
         } else {
+            history("Entry Delay", "Entry delay triggered by ${sensorType} sensor ${evt.displayName}")
         	if(settings.sirenEntryStrobe)
             {
         		settings.alarms*.strobe()
@@ -1377,23 +1441,27 @@ def onButtonEvent(evt) {
 
 def armAway() {
     LOG("armAway()")
+	history("Armed Away", "Alarm armed away")
 
     if (!atomicState.armed || atomicState.stay) {
         armPanel(false)
     }
+    reportStatus()
 }
 
 def armStay() {
     LOG("armStay()")
+	history("Armed Stay", "Alarm armed stay")
 
     if (!atomicState.armed || !atomicState.stay) {
         armPanel(true)
     }
+    reportStatus()
 }
 
 def disarm() {
     LOG("disarm()")
-
+	history("Disarmed", "Alarm disarmed")
     if (atomicState.armed) {
         state.armed = false
         state.zones.each() {
@@ -1406,6 +1474,7 @@ def disarm() {
 
         reset()
     }
+    reportStatus()
 }
 
 def panic() {
@@ -1432,6 +1501,7 @@ def reset() {
 
     notify(msg)
     notifyVoice()
+    reportStatus()
 }
 
 def exitDelayExpired() {
@@ -1622,26 +1692,50 @@ def activateAlarm() {
         log.warn "activateAlarm: false alarm"
         return
     }
+    history("Alarm", "Alarm Triggered")
 
     if(settings.sirenEntryStrobe)
     {
     	settings.alarms*.off()
     }
     
-    switch (settings.sirenMode) {
-    case "Siren":
-        settings.alarms*.siren()
-        break
+    def atype = state.alertType
 
-    case "Strobe":
-        settings.alarms*.strobe()
-        break
-        
-    case "Both":
-        settings.alarms*.both()
-        break
+    if ((atype == "Water" && settings.sirenOnWaterAlert) ||
+        (atype == "Smoke" && settings.sirenOnSmokeAlert) ||
+       ((atype == "contact" || atype == "acceleration" || atype == "motion") && settings.sirenOnIntrusionAlert))
+    {
+        switch (settings.sirenMode) {
+        case "Siren":
+            settings.alarms*.siren()
+            break
+
+        case "Strobe":
+            settings.alarms*.strobe()
+            break
+            
+        case "Both":
+            settings.alarms*.both()
+            break
+        }
     }
+    else
+    { 
+    log.debug "No siren for $atype Alert"
+    }
+}
+  
+def activateAlarmPostDelay(String lastAlertType)
+{
+// no alarm check here as if door opens only for second with delay and system is not disarmed
+// we still want alarm even if door is closed after delay.. Basically like real alarm the delay is only
+// to disarm the system. Otherwise someone can open door come it, quickly close and there is not alarm LGK.
 
+// issue here is that after delay we could have lost the alert type so pass it in
+ log.debug "activate alarm post delay check - alert type = $lastAlertType"
+ 
+ activateSirenAfterCheck(lastAlertType)
+ 
     // Only turn on those switches that are currently off
     def switchesOn = settings.switches?.findAll { it?.currentSwitch == "off" }
     LOG("switchesOn: ${switchesOn}")
@@ -1665,6 +1759,8 @@ def activateAlarm() {
     notify(msg)
     notifyVoice()
 
+    reportStatus()
+    
     myRunIn(180, reset)
 }
 
@@ -1763,12 +1859,61 @@ private def notifyVoice() {
     }
 }
 
+def reportStatus()
+{
+    log.debug "in report status"
+    log.debug "notification device = ${settings.notificationDevice}"
+
+    if (settings.notificationDevice)
+    {
+        def phrase = ""
+        if (state.alarms.size())
+        {
+            phrase = "Alert: Alarm at ${location.name}!"
+            notificationDevice.deviceNotification(phrase)
+            log.debug "sending notification alert: = $phrase"
+            def zones = "Zones: "
+            state.alarms.each()
+            {
+                //log.debug "in loop it"
+                //log.debug "it = $it"
+                zones = "Zones: "
+                zones += " $it" +"\n"
+            }
+            notificationDevice.deviceNotification(zones)
+            log.debug "sending nofication zones = $zones" 
+                
+            // send zone type
+            phrase = "AlertType: "
+            def atype = state.alertType
+            if (atype == null)
+                atype = "None"
+            phrase += " $atype"
+            notificationDevice.deviceNotification(phrase)
+            log.debug "sending nofication alert type = $phrase" 
+        }
+        else
+        {
+            phrase = "Status: "
+            if (state.armed)
+              {
+                def mode = state.stay ? "Armed - Stay" : "Armed - Away"
+                phrase += "${mode}"
+            } else {
+                phrase += "Disarmed"
+            }
+            log.debug "sending notification status = $phrase"
+        notificationDevice.deviceNotification(phrase)
+       }
+    }
+ }
+
 private def history(String event, String description = "") {
     LOG("history(${event}, ${description})")
 
     def history = atomicState.history
     history << [time: now(), event: event, description: description]
-    if (history.size() > 10) {
+    if (history.size() > 20) {
         history = history.sort{it.time}
         history = history[1..-1]
     }
@@ -1944,4 +2089,28 @@ private def LOG(message) {
 
 private def STATE() {
     //log.trace "state: ${state}"
+}
+
+def onAlarmSystemStatus(evt) {
+    LOG("Alarm System Status has been changed to '${evt.value}'")
+    String mode = evt.value.toLowerCase()
+    if (mode == "away") {
+        armAway()
+    } else if (mode == "stay") {
+        armStay()
+    } else if (mode == "off") {
+        disarm()
+    }
+}
+
+def setAlarmMode(name) {
+    LOG("Alarm System Status will be set to '${name}'")
+    def event = [
+        name: "alarmSystemStatus",
+        value: name,
+        isStateChange: true,
+        displayed: true,
+        description: "alarm system status is ${name}",
+    ]
+    sendLocationEvent(event)
 }
