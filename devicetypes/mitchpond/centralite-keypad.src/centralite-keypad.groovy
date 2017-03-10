@@ -129,7 +129,7 @@ metadata {
         }
 
         main (["keypad"])
-	details (["keypad","motion","tamper","temperature", "Panic","Mode","beep","refresh","battery"])
+        details (["keypad","motion","tamper","Panic","Mode","beep","refresh","battery"])
     }
 }
 
@@ -263,6 +263,14 @@ private parseReportAttributeMessage(String description) {
 		log.debug "Received battery level report"
 		results = createEvent(getBatteryResult(Integer.parseInt(descMap.value, 16)))
 	}
+    else if (descMap.cluster == "0001" && descMap.attrId == "0034")
+    {
+    	log.debug "Received Battery Rated Voltage: ${descMap.value}"
+    }
+    else if (descMap.cluster == "0001" && descMap.attrId == "0036")
+    {
+    	log.debug "Received Battery Alarm Voltage: ${descMap.value}"
+    }
 	else if (descMap.cluster == "0402" && descMap.attrId == "0000") {
 		def value = getTemperature(descMap.value)
 		results = createEvent(getTemperatureResult(value))
@@ -377,7 +385,7 @@ private getBatteryResult(rawValue) {
 		result.descriptionText = "${linkText} battery has too much power (${volts} volts)."
 	}
 	else {
-		def minVolts = 2.1
+		def minVolts = 2.5
 		def maxVolts = 3.0
 		def pct = (volts - minVolts) / (maxVolts - minVolts)
 		result.value = Math.min(100, (int) pct * 100)
@@ -481,6 +489,7 @@ private sendStatusToDevice() {
 private sendRawStatus(status, seconds = 00) {
 	log.debug "Sending Status ${zigbee.convertToHexString(status)}${zigbee.convertToHexString(seconds)} to device..."
     
+    // Seems to require frame control 9, which indicates a "Server to client" cluster specific command (which seems backward? I thought the keypad was the server)
     List cmds = ["raw 0x501 {09 01 04 ${zigbee.convertToHexString(status)}${zigbee.convertToHexString(seconds)}}",
     			 "send 0x${device.deviceNetworkId} 1 1", 'delay 100']
                  
@@ -589,6 +598,10 @@ private testCmd(){
 	//zigbee.command(0x0003, 0x00, "0500") //Identify: blinks connection light
     
 	//log.debug 		//temperature reporting  
+    
+	return zigbee.readAttribute(0x0020,0x01) + 
+		    zigbee.readAttribute(0x0020,0x02) +
+		    zigbee.readAttribute(0x0020,0x03)
 }
 
 private discoverCmds(){
