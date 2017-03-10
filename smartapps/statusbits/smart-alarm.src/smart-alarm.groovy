@@ -1174,9 +1174,20 @@ private def initialize() {
     initButtons()
     initRestApi()
     subscribe(location, onLocation)
+    
+    if (settings.notificationDevice)
+    {
+        subscribe(settings.notificationDevice, "switch.off", gotDismissMessage)
+    }
 
     STATE()
     reportStatus()
+}
+
+def gotDismissMessage(evt)
+{
+    log.debug "Got the dismiss message from the notification device.. clearing alarm!"
+    clearAlarm()
 }
 
 private def clearAlarm() {
@@ -1843,56 +1854,50 @@ private def notifyVoice() {
 def reportStatus()
 {
     log.debug "in report status"
-    log.debug "notification device = $notificationDevice"
-    // def switchesOn = settings.switches?.findAll { it?.currentSwitch == "off" }
+    log.debug "notification device = ${settings.notificationDevice}"
 
-    //def deviceDisplayName = notifcationDevice.displayName
-    //log.debug "disp name = $deviceDisplayName"
-    //if (settings.notifcationDevice != null)
-    //{
-    log.debug "not null"
-    def phrase = ""
-    if (state.alarms.size())
+    if (settings.notificationDevice)
     {
-        phrase = "Alert: Alarm at ${location.name}!"
-        notificationDevice.deviceNotification(phrase)
-        log.debug "sending notification alert: = $phrase"
-        def zones = "Zones: "
-        state.alarms.each()
+        def phrase = ""
+        if (state.alarms.size())
         {
-            //log.debug "in loop it"
-            //log.debug "it = $it"
-            zones = "Zones: "
-            zones += " $it" +"\n"
+            phrase = "Alert: Alarm at ${location.name}!"
+            notificationDevice.deviceNotification(phrase)
+            log.debug "sending notification alert: = $phrase"
+            def zones = "Zones: "
+            state.alarms.each()
+            {
+                //log.debug "in loop it"
+                //log.debug "it = $it"
+                zones = "Zones: "
+                zones += " $it" +"\n"
+            }
+            notificationDevice.deviceNotification(zones)
+            log.debug "sending nofication zones = $zones" 
+                
+            // send zone type
+            phrase = "AlertType: "
+            def atype = state.alertType
+            if (atype == null)
+                atype = "None"
+            phrase += " $atype"
+            notificationDevice.deviceNotification(phrase)
+            log.debug "sending nofication alert type = $phrase" 
         }
-        notificationDevice.deviceNotification(zones)
-        log.debug "sending nofication zones = $zones" 
-            
-        // send zone type
-        phrase = "AlertType: "
-        def atype = state.alertType
-        if (atype == null)
-            atype = "None"
-        phrase += " $atype"
+        else
+        {
+            phrase = "Status: "
+            if (state.armed)
+              {
+                def mode = state.stay ? "Armed - Stay" : "Armed - Away"
+                phrase += "${mode}"
+            } else {
+                phrase += "Disarmed"
+            }
+            log.debug "sending notification status = $phrase"
         notificationDevice.deviceNotification(phrase)
-        log.debug "sending nofication alert type = $phrase" 
+       }
     }
-    else
-    {
-        phrase = "Status: "
-        if (state.armed)
-          {
-            def mode = state.stay ? "Armed - Stay" : "Armed - Away"
-            phrase += "${mode}"
-        } else {
-            phrase += "Disarmed"
-        }
-        log.debug "sending notification status = $phrase"
-	notificationDevice.deviceNotification(phrase)
-  
-    
-   
-   }
  }
 
 private def history(String event, String description = "") {
