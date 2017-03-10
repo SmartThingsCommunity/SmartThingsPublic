@@ -26,36 +26,36 @@ metadata {
     
 		command "configure"
 		command "resetTamper"
-        command "testTamper"
+		command "testTamper"
         
-		fingerprint endpointId: "01", profileId: "0104", deviceId: "0402", inClusters: "0000,0001,0003,0500,0020,0B05", outClusters: "0003,0019"
+		fingerprint endpointId: "01", profileId: "0104", deviceId: "0402", inClusters: "0000,0001,0003,0500,0020,0B05", outClusters: "0003,0019", manufacturer: "Sercomm Corp.", model: "Tripper"
 	}
 
 	// UI tile definitions
 	tiles(scale: 2) {
-    	multiAttributeTile(name:"richcontact", type: "generic", width: 6, height: 4) {
-        	tileAttribute("device.contact", key: "PRIMARY_CONTROL") {
-            	attributeState "open", label: '${name}', icon:"st.contact.contact.open", backgroundColor:"#ffa81e"
-                attributeState "closed", label: '${name}', icon:"st.contact.contact.closed", backgroundColor:"#79b821"
-            }
-            tileAttribute("device.battery", key: "SECONDARY_CONTROL") {
-            	attributeState "battery", label:'${currentValue}% battery', unit:""
-            }
-        }
+	    	multiAttributeTile(name:"richcontact", type: "generic", width: 6, height: 4) {
+	        	tileAttribute("device.contact", key: "PRIMARY_CONTROL") {
+	            	attributeState "open", label: '${name}', icon:"st.contact.contact.open", backgroundColor:"#ffa81e"
+	                attributeState "closed", label: '${name}', icon:"st.contact.contact.closed", backgroundColor:"#79b821"
+	            }
+	            tileAttribute("device.battery", key: "SECONDARY_CONTROL") {
+	            	attributeState "battery", label:'${currentValue}% battery', unit:""
+	            }
+	        }
 		standardTile("contact", "device.contact", width: 2, height: 2, canChangeIcon: true) {
 			state("open", label:'${name}', icon:"st.contact.contact.open", backgroundColor:"#ffa81e")
 			state("closed", label:'${name}', icon:"st.contact.contact.closed", backgroundColor:"#79b821")
 		}
-        
+	
 		valueTile("battery", "device.battery", decoration: "flat") {
 			state "battery", label:'${currentValue}% battery', unit:""
 		}
-        
+	
 		standardTile("tamper", "device.tamper", decoration: "flat", width:2, height: 2) {
 			state "OK", label: "Tamper OK", icon: "st.security.alarm.on", backgroundColor:"#79b821"
 			state "tampered", label: "Tampered", action: "resetTamper", icon: "st.security.alarm.off", backgroundColor:"#ffa81e"
 		}
-        
+	
 		main ("richcontact")
 		details(["richcontact","tamper"]) //removed "contact", "battery"
 	}
@@ -98,7 +98,7 @@ def configure() {
 		"zcl global send-me-a-report 0x500 0x0012 0x19 0 0xFF {}", "delay 200", //get notified on tamper
 		"send 0x${device.deviceNetworkId} 1 1", "delay 1500",
 		
-		"zcl global send-me-a-report 1 0x20 0x20 3600 21600 {01}", "delay 200", //battery report request
+		"zcl global send-me-a-report 1 0x20 0x20 5 21600 {01}", "delay 200", //battery report request
 		"send 0x${device.deviceNetworkId} 1 1", "delay 1500",
 	
 		"zdo bind 0x${device.deviceNetworkId} 1 1 0x500 {${device.zigbeeId}} {}", "delay 500",

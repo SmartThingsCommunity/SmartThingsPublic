@@ -15,6 +15,7 @@
  */
 metadata {
 	definition (name: "Centralite Keypad", namespace: "mitchpond", author: "Mitch Pond") {
+
 		capability "Battery"
 		capability "Configuration"
 		capability "Sensor"
@@ -46,12 +47,14 @@ metadata {
 				defaultValue: 0, displayDuringSetup: false)
 		input ("beepLength", "number", title: "Enter length of beep in seconds",
 				defaultValue: 3, displayDuringSetup: false)
+
 	}
 
 	tiles {
 		valueTile("battery", "device.battery", decoration: "flat") {
 			state "battery", label:'${currentValue}% battery', unit:""
 		}
+
 		valueTile("temperature", "device.temperature") {
 			state "temperature", label: '${currentValue}°',
 				backgroundColors:[
@@ -92,7 +95,9 @@ def parse(String description) {
 	
 	//------Miscellaneous Zigbee message------//
 	if (description?.startsWith('catchall:')) {
+
 		//log.debug zigbee.parse(description);
+
 		def message = zigbee.parse(description);
 		
 		//------Profile-wide command (rattr responses, errors, etc.)------//
@@ -108,6 +113,7 @@ def parse(String description) {
 			else if (message?.command == 0x01) {
 				if (message?.clusterId == 0x0402) {
 					log.debug "Device: read attribute response: "+description;
+
 					results = parseTempAttributeMsg(message)
 				}}
 			else 
