@@ -1,6 +1,6 @@
 metadata {
 	// Automatically generated. Make future change here.
-	definition (name: "CT100 Thermostat", namespace: "smartthings", author: "SmartThings") {
+	definition (name: "CT100 Thermostat", namespace: "mokuso", author: "Rich Walchuck") {
 		capability "Actuator"
 		capability "Temperature Measurement"
 		capability "Relative Humidity Measurement"
@@ -16,6 +16,10 @@ metadata {
 		command "switchFanMode"
 		command "quickSetCool"
 		command "quickSetHeat"
+        command "heatLevelUp"
+        command "heatLevelDown"
+        command "coolLevelUp"
+        command "coolLevelDown"
 
 		fingerprint deviceId: "0x08", inClusters: "0x43,0x40,0x44,0x31,0x80,0x85,0x60"
 	}
@@ -66,43 +70,53 @@ metadata {
 			)
 		}
 		standardTile("mode", "device.thermostatMode", inactiveLabel: false, decoration: "flat") {
-			state "off", label:'${name}', action:"switchMode", nextState:"to_heat"
-			state "heat", label:'${name}', action:"switchMode", nextState:"to_cool"
-			state "cool", label:'${name}', action:"switchMode", nextState:"..."
-			state "auto", label:'${name}', action:"switchMode", nextState:"..."
-			state "emergency heat", label:'${name}', action:"switchMode", nextState:"..."
+			state "off", label:'${name}', action:"switchMode", nextState:"to_heat", icon: "st.Outdoor.outdoor19"
+			state "heat", label:'${name}', action:"switchMode", nextState:"to_cool", icon: "st.Weather.weather14", backgroundColor: '#E14902'
+			state "cool", label:'${name}', action:"switchMode", nextState:"...", icon: "st.Weather.weather7", backgroundColor: '#003CEC'
+			state "auto", label:'${name}', action:"switchMode", nextState:"...", icon: "st.Home.home1"
+			state "emergency heat", label:'${name}', action:"switchMode", nextState:"...", icon: "st.Weather.weather2", backgroundColor: '#E11102'
 			state "to_heat", label: "heat", action:"switchMode", nextState:"to_cool"
 			state "to_cool", label: "cool", action:"switchMode", nextState:"..."
 			state "...", label: "...", action:"off", nextState:"off"
 		}
 		standardTile("fanMode", "device.thermostatFanMode", inactiveLabel: false, decoration: "flat") {
-			state "fanAuto", label:'${name}', action:"switchFanMode"
-			state "fanOn", label:'${name}', action:"switchFanMode"
-			state "fanCirculate", label:'${name}', action:"switchFanMode"
+			state "fanAuto", label:'${name}', action:"switchFanMode", icon: "st.Appliances.appliances11"
+			state "fanOn", label:'${name}', action:"switchFanMode", icon: "st.Appliances.appliances11", backgroundColor: '#02E181'
+			state "fanCirculate", label:'${name}', action:"switchFanMode", icon: "st.Appliances.appliances11", backgroundColor: '#02D2E1'
 		}
-		controlTile("heatSliderControl", "device.heatingSetpoint", "slider", height: 1, width: 2, inactiveLabel: false) {
-			state "setHeatingSetpoint", action:"quickSetHeat", backgroundColor:"#d04e00"
-		}
+		//
+    	standardTile("heatLevelUp", "device.heatLevelUp", inactiveLabel: false, decoration: "flat") {
+        	state "heatLevelUp", label:'  ', action:"heatLevelUp", icon:"st.thermostat.thermostat-up"
+    	}
+    	standardTile("heatLevelDown", "device.heatLevelDown", inactiveLabel: false, decoration: "flat") {
+        	state "heatLevelDown", label:'  ', action:"heatLevelDown", icon:"st.thermostat.thermostat-down"
+    	}
+    	standardTile("coolLevelUp", "device.coolLevelUp", inactiveLabel: false, decoration: "flat") {
+        	state "coolLevelUp", label:'  ', action:"coolLevelUp", icon:"st.thermostat.thermostat-up"
+    	}
+    	standardTile("coolLevelDown", "device.coolLevelDown", inactiveLabel: false, decoration: "flat") {
+        	state "coolLevelDown", label:'  ', action:"coolLevelDown", icon:"st.thermostat.thermostat-down"
+    	}
+        //
 		valueTile("heatingSetpoint", "device.heatingSetpoint", inactiveLabel: false, decoration: "flat") {
-			state "heat", label:'${currentValue}° heat', backgroundColor:"#ffffff"
-		}
-		controlTile("coolSliderControl", "device.coolingSetpoint", "slider", height: 1, width: 2, inactiveLabel: false) {
-			state "setCoolingSetpoint", action:"quickSetCool", backgroundColor: "#1e9cbb"
+			state "heat", label:'${currentValue}° heat', icon: "st.thermostat.cooling", backgroundColor:"#bc2323"
 		}
 		valueTile("coolingSetpoint", "device.coolingSetpoint", inactiveLabel: false, decoration: "flat") {
-			state "cool", label:'${currentValue}° cool', backgroundColor:"#ffffff"
+			state "cool", label:'${currentValue}° cool', icon: "st.thermostat.cooling", backgroundColor:"#1e9cbb"
 		}
 		valueTile("humidity", "device.humidity", inactiveLabel: false, decoration: "flat") {
-			state "humidity", label:'${currentValue}% humidity', unit:""
+			state "humidity", label:'Humidity\n${currentValue}%', unit:""
 		}
 		valueTile("battery", "device.battery", inactiveLabel: false, decoration: "flat") {
-			state "battery", label:'${currentValue}% battery', unit:""
+			state "battery", label:'Battery\n${currentValue}%', unit:""
 		}
 		standardTile("refresh", "device.thermostatMode", inactiveLabel: false, decoration: "flat") {
 			state "default", action:"refresh.refresh", icon:"st.secondary.refresh"
 		}
-		main "temperature"
-		details(["temperature", "mode", "fanMode", "heatSliderControl", "heatingSetpoint", "coolSliderControl", "coolingSetpoint", "refresh", "humidity", "battery"])
+		//main "temperature"
+		//details(["temperature", "mode", "fanMode", "heatSliderControl", "heatingSetpoint", "coolSliderControl", "coolingSetpoint", "refresh", "humidity", "battery"])
+        main "temperature"
+        details(["temperature", "mode", "fanMode", "heatLevelDown", "heatingSetpoint", "heatLevelUp", "coolLevelDown", "coolingSetpoint", "coolLevelUp", "battery", "humidity", "refresh"])
 	}
 }
 
@@ -600,5 +614,98 @@ def fanCirculate() {
 
 private getStandardDelay() {
 	1000
+}
+
+// CUSTOMIZATIONS
+def coolLevelUp() {
+    def locationScale = getTemperatureScale()
+    def maxTemp
+    def minTemp
+    if (locationScale == "C") {
+    	maxTemp = 37 // Max Temp in C
+        minTemp = 1 // Min Temp in C
+    	log.trace "Location is in Celsius, MaxTemp $maxTemp, MinTemp $minTemp"
+    } else {
+    	maxTemp = 90 // Max temp in F
+    	minTemp = 55 // Max temp in F
+    	log.trace "Location is in Farenheit, MaxTemp $maxTemp, MinTemp $minTemp"
+    }
+
+    int nextLevel = device.currentValue("coolingSetpoint") + 1
+    
+    if( nextLevel > maxTemp) {
+    	nextLevel = maxTemp
+    }
+    log.debug "Setting cool set point up to: ${nextLevel}"
+    quickSetCool(nextLevel)
+}
+
+def coolLevelDown() {
+    def locationScale = getTemperatureScale()
+    def maxTemp
+    def minTemp
+    if (locationScale == "C") {
+    	maxTemp = 37 // Max Temp in C
+        minTemp = 1 // Min Temp in C
+    	log.trace "Location is in Celsius, MaxTemp $maxTemp, MinTemp $minTemp"
+    } else {
+    	maxTemp = 90 // Max temp in F
+    	minTemp = 55 // Max temp in F
+    	log.trace "Location is in Farenheit, MaxTemp $maxTemp, MinTemp $minTemp"
+    }
+
+	int nextLevel = device.currentValue("coolingSetpoint") - 1
+    
+    if( nextLevel < minTemp) {
+    	nextLevel = minTemp
+    }
+    log.debug "Setting cool set point down to: ${nextLevel}"
+    quickSetCool(nextLevel)
+}
+
+def heatLevelUp() {
+    def locationScale = getTemperatureScale()
+    def maxTemp
+    def minTemp
+    if (locationScale == "C") {
+    	maxTemp = 37 // Max Temp in C
+        minTemp = 1 // Min Temp in C
+    	log.trace "Location is in Celsius, MaxTemp $maxTemp, MinTemp $minTemp"
+    } else {
+    	maxTemp = 90 // Max temp in F
+    	minTemp = 55 // Max temp in F
+    	log.trace "Location is in Farenheit, MaxTemp $maxTemp, MinTemp $minTemp"
+    }
+
+    int nextLevel = device.currentValue("heatingSetpoint") + 1
+    
+    if( nextLevel > maxTemp) {
+    	nextLevel = maxTemp
+    }
+    log.debug "Setting heat set point up to: ${nextLevel}"
+    quickSetHeat(nextLevel)
+}
+
+def heatLevelDown() {
+    def locationScale = getTemperatureScale()
+    def maxTemp
+    def minTemp
+    if (locationScale == "C") {
+    	maxTemp = 37 // Max Temp in C
+        minTemp = 1 // Min Temp in C
+    	log.trace "Location is in Celsius, MaxTemp $maxTemp, MinTemp $minTemp"
+    } else {
+    	maxTemp = 90 // Max temp in F
+    	minTemp = 55 // Max temp in F
+    	log.trace "Location is in Farenheit, MaxTemp $maxTemp, MinTemp $minTemp"
+    }
+
+    int nextLevel = device.currentValue("heatingSetpoint") - 1
+    
+    if( nextLevel < minTemp) {
+    	nextLevel = minTemp
+    }
+    log.debug "Setting heat set point down to: ${nextLevel}"
+    quickSetHeat(nextLevel)
 }
 
