@@ -323,7 +323,7 @@ def configure() {
     cmds << zwave.configurationV1.configurationGet(parameterNumber: 12).format()
 
 	// reporting frequency of temps and battery set to one hour
-	cmds << zwave.configurationV1.configurationSet(configurationValue: [0,60*60], parameterNumber: 10, size: 2).format()
+	cmds << zwave.configurationV1.configurationSet(configurationValue: [14,16], parameterNumber: 10, size: 2).format()
     cmds << zwave.configurationV1.configurationGet(parameterNumber: 10).format()
     
     cmds << zwave.wakeUpV1.wakeUpNoMoreInformation().format()
@@ -386,7 +386,7 @@ def resetParams2StDefaults() {
     cmds << zwave.configurationV1.configurationSet(configurationValue: [255], 			parameterNumber: 5,  size: 1).format()
     cmds << zwave.configurationV1.configurationSet(configurationValue: [255], 			parameterNumber: 7,  size: 1).format()
     cmds << zwave.configurationV1.configurationSet(configurationValue: [1], 			parameterNumber: 9,  size: 1).format()
-    cmds << zwave.configurationV1.configurationSet(configurationValue: [0,60*60], 		parameterNumber: 10, size: 2).format()
+    cmds << zwave.configurationV1.configurationSet(configurationValue: [14,16], 		parameterNumber: 10, size: 2).format()
     cmds << zwave.configurationV1.configurationSet(configurationValue: [0,50], 			parameterNumber: 12, size: 2).format()
     cmds << zwave.configurationV1.configurationSet(configurationValue: [0],				parameterNumber: 13, size: 1).format()
     cmds << zwave.configurationV1.configurationSet(configurationValue: [5,220], 		parameterNumber: 50, size: 2).format()
