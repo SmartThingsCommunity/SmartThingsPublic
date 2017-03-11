@@ -417,10 +417,7 @@ def setColor(value) {
 		def saturation = (value.saturation != null) ? value.saturation : 13
 		def rgb = huesatToRGB(hue as Integer, saturation as Integer)
         value.hex = rgbToHex([r:rgb[0], g:rgb[1], b:rgb[2]])
-    } else {
-        log.debug "setColor must be given either a valid hex value or a valid hue & saturation value"
-        validValue = false
-    }
+    } 
     
     if (value.hue == 23 && value.saturation == 56) {
        log.debug "setting color Soft White"
@@ -437,7 +434,7 @@ def setColor(value) {
     else if (value.hue == 53 && value.saturation == 91) {
        log.debug "setting color Daylight"
        def whiteLevel = getWhite(value.level)
-       uri = "/w1?value=${whiteLevel}"
+       uri = "/w2?value=${whiteLevel}"
        state.previousColor = "${whiteLevel}"
     } 
     else if (value.hue == 20 && value.saturation == 80) {
