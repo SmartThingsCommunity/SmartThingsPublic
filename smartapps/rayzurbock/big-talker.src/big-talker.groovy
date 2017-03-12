@@ -1,5 +1,5 @@
 /**  
- *  BIG TALKER -- Version 1.1.10 -- A SmartApp for SmartThings Home Automation System
+ *  BIG TALKER -- Version 1.1.11 -- A SmartApp for SmartThings Home Automation System
  *  Copyright 2014-2017 - brian@lowrance.cc - Brian S. Lowrance
  *  For the latest version, development and test releases visit http://www.github.com/rayzurbock
  *
@@ -1830,7 +1830,7 @@ def pageTalkNow(){
             input name: "speechTalkNow", type: text, title: "Speak phrase", required: false, submitOnChange: true
             input name: "talkNowSpeechDevice", type: state.speechDeviceType, title: "Talk with these text-to-speech devices", multiple: true, required: false, submitOnChange: true
             //LOGDEBUG("previoustext=${state.lastTalkNow} New=${settings.speechTalkNow}")
-            if (((!(state.lastTalkNow == settings.speechTalkNow)) && (settings.talkNowSpeechDevice)) || (settings.speechTalkNow.contains("%askalexa%"))){
+            if (((!(state.lastTalkNow == settings.speechTalkNow)) && (settings.talkNowSpeechDevice)) || (settings.speechTalkNow?.contains("%askalexa%"))){
                 //Say stuff!
                 if (state.speechDeviceType == "capability.musicPlayer") {
                 	myTalkNowResume = (myTalkNowResume == "") ? settings.resumeAudio : true //use global setting if TalkNow is not set
@@ -4801,5 +4801,5 @@ def LOGERROR(txt){
 }
 
 def setAppVersion(){
-    state.appversion = "1.1.10"
+    state.appversion = "1.1.11"
 }
