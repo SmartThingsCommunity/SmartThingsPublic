@@ -29,9 +29,9 @@ definition(
     author: "rayzur@rayzurbock.com",
     description: "Let's talk about mode changes, switches, motions, and so on.",
     category: "Fun & Social",
-    iconUrl: "http://lowrance.cc/ST/icons/BigTalker-110.png",
-    iconX2Url: "http://lowrance.cc/ST/icons/BigTalker@2x-110.png",
-    iconX3Url: "http://lowrance.cc/ST/icons/BigTalker@2x-110.png")
+    iconUrl: "http://lowrance.cc/ST/icons/BigTalker-1111.png",
+    iconX2Url: "http://lowrance.cc/ST/icons/BigTalker@2x-1111.png",
+    iconX3Url: "http://lowrance.cc/ST/icons/BigTalker@2x-1111.png")
 
 
 preferences {
