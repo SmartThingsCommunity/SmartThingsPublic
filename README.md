@@ -4,7 +4,7 @@ Big Talker is a SmartApp for SmartThings that can make your house talk depending
 Pair it with a SmartThings compatible audio device such as Sonos, Ubi, LANnouncer, VLC Thing, or a DLNA device using the "Generic MediaRenderer" SmartApp/Device! <br />  
 See <b>More Details</b> section below for more features.<br />
 
-Version: 1.1.7 <br />
+Version: 1.1.10 <br />
 
 #Support the project
  This SmartApp is free. Donations to support development efforts are accepted via (non-refundable, no gurantee of service/support):
@@ -15,13 +15,18 @@ Version: 1.1.7 <br />
 
 #License
 **BIG TALKER -- A SmartApp for SmartThings Home Automation System** <br />
-Copyright 2014-2016 - rayzur [at] rayzurbock.com - Brian S. Lowrance <br />
+Copyright 2014-2017 - rayzur [at] rayzurbock.com - Brian S. Lowrance <br />
 For the latest version, development and test releases visit http://www.github.com/rayzurbock <br />
 <br />
 Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except in compliance with the  License. You may obtain a copy of the License at: <br/>
 <br />
 http://www.apache.org/licenses/LICENSE-2.0 <br />
 Unless required by applicable law or agreed to in writing, software distributed under the License is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the License for the specific language governing permissions and limitations under the License. <br/>
+
+#SmartThings GitHub Integration Settings:
+**Owner:** rayzurbock <br />
+**Name:** SmartThings-BigTalker <br />
+**Branch:** master   (development, for alpha/beta testing) <br />
 
 #Installation (Manual)
 1. Login at <a href=http://graph.api.smartthings.com>http://graph.api.smartthings.com</a>
@@ -58,16 +63,20 @@ Unless required by applicable law or agreed to in writing, software distributed 
 18. "**BigTalker**" app should be available in the list of SmartApps that appears. Tap it.
   * Android users have reported having to logout of the SmartThings app, closing it, and logging back in before new apps will show up.
 19. Tap **Configure** to start setting up your talking events.  Setup as many or as few as you like, but try not to setup events that would fire rapidly back to back or they will conflict with each other.
+20. For future configuration changes, Launch the SmartThings App, go to Automation > SmartApps > BigTalker
 
 #ISSUES?
-Please check the latest posts on the SmartThings community for known issues and file bug reports / feature requests on GitHub for better tracking:
-* <a href=https://community.smartthings.com/t/big-talker-talk-when-events-occur/8076>SmartThings BigTalker Community</a>
-* <a href=https://github.com/rayzurbock/SmartThings-BigTalker/issues>GitHub Issue Tracker</a>
+**Report Issues:** [https://github.com/rayzurbock/SmartThings-BigTalker/issues](https://github.com/rayzurbock/SmartThings-BigTalker/issues)
+When reporting issues, please include the version of BigTalker that you are using. This can be found in the IDE logs with each BigTalker posted event or in the SmartThings App > Automation > BigTalker > Scroll down to the last line on the main menu under About.
+If you do not have a GitHub account and do not wish to create one, you can PM me here in the community (@rayzurbock). I'd rather have one of these two methods for troubleshooting bugs and such (preferably GitHub) rather than have to scan through and try to mentally organize this thread into various issues/subjects.
+
+If you have trouble and need assistance, please do enable debug logging within BigTalker. SmartThings > Automation > SmartApps > BigTalker > Configure Defaults > Enable debug logging. Then when reporting issues, please submit any relevant logs which can be seen in realtime at [https://graph.api.smartthings.com/ide/logs](https://graph.api.smartthings.com/ide/logs)
+
 
 # More Details
 Have you ever wanted a talking house? Now you can! With my Big Talker SmartApp ( http://github.com/rayzurbock/SmartThings-BigTalker )
 
-When SmartThings is paired with a compatible audio device (such as a Sonos, Ubi, LANnouncer(http://www.keybounce.com/LANdroidHowTo/LANdroid.html) or VLC Thing( http://community.smartthings.com/t/vlc-thing-a-poor-mans-sonos/5433 )) and Big Talker SmartApp, your house can say what you want it to say when events occur.
+When SmartThings is paired with a compatible audio device (such as a Sonos, Ubi, LANnouncer(http://www.keybounce.com/LANdroidHowTo/LANdroid.html), VLC Thing( http://community.smartthings.com/t/vlc-thing-a-poor-mans-sonos/5433 ), AskAlexa ( http://thingsthataresmart.wiki/index.php?title=Ask_Alexa )) and Big Talker SmartApp, your house can say what you want it to say when events occur.
 
 Currently supported events:
 
@@ -82,12 +91,15 @@ Currently supported events:
 * **Acceleration**, Active/Inactive
 * **Water**, Wet/Dry
 * **Smoke**, Detect/Clear/Test
-* **Button**,  Press
+* **Button**,  Press/Held
+* **Smart Home Monitor Status**, Armed-Away, Armed-Home, Disarmed
 
 Each supported event supports 3 different groups so that you can alter your spoken phrases based on which group your selection of devices is configured in.
 
 Voice phrases support the following variables (to be filled in at runtime)
 
+* **%askalexa%** = Send phrase to AskAlexa message queue. (Alexa, Tell SmartThings to play messages)
+* **%description%** = The description of the event that is to be displayed to the user in the mobile application.
 * **%devicename%** = Triggering devices display name
 * **%devicetype%** = Triggering device type; motion, switch, etc...
 * **%devicechange%** = State change that occurred; on/off, active/inactive, etc...
@@ -192,3 +204,33 @@ Keep in mind, if you configure highly active or too many devices, it may get ann
   * Added missing %devicechange% reference in in-app "Phrase Tokens" help page. (Thanks ST Community: adamoutler)
   * Removed Paypal donation link that no longer allows donation without login; just send via regular PayPal or the other methods. (Thanks ST Community: Gorilla800lbs)
   * Called setAppVersion() sooner in SmartApp execution to show version # more accurately.
+* 10/11/2016 - 1.1.8
+  * I believe that I have squashed a couple of bugs that may have missed playback or caused playback that wasn't desired for musicPlayer devices (Sonos, etc).
+  * There is a new %description% token that you can use for a description of the event which occurred via device-specific text. Ex: %description% becomes 'Front door is closed' (Thanks for the idea STCommunity: adamoutler).
+  * %devicename% does error control to find the next best device name rather than crashing the app if the expected call fails.  The calls try in the following order: evt.displayName, evt.device.displayName, and finally evt.device.name - One of these will return something; the order is to try to make sure it's the user defined name.
+  *  Changes default volume applied if in musicPlayer mode and musicPlayer device volume is less than 50% and a desired volume is not configured then device will bump up to 50% to speak and should return to the user configured volume on resume (was originally set to 75% if device was at 50 or below).
+* 1.1.9 = In-development and Alpha/Beta testing branch
+* 3/12/2017 - 1.1.10 = Release (Major thanks to all of the alpha/beta testers of the 1.1.9 branch!!)
+  * Additional Talk() debug logging
+  * Test variables for null with safe navigation operator (?) in more places within Talk().
+  * Attempt to resolve musicPlayer playing text and resuming/restoring.
+  * Clear state.polledDevices on initialize
+  * In musicPlayer mode, def Talk() now gives currentTrack.status precedence over currentStatus if it exists as it seems more accurate in testing based on feedback.
+  * If default speech volume was not set, speech may not have occurred due to a null variable issue. Resolved with groovy safe navigation operator
+  * Partnered with @MichaelS; Added AskAlexa support (send phrase to AskAlexa queue) with %askalexa% in the phrase.
+  * Removed requirement to set a speechDevice for users that only wish to use another supported SmartApp to offload/handle the speech - (currently only AskAlexa)
+  * Added Smart Home Monitor (Dashboard) status events (speak on Arm-Away, Arm-Stay, Disarm)
+  * Device/SmartApp output detection logging (did we send to a device? did we only send to a SmartApp (AskAlexa), did we send a phrase but didn't send to a device or another SmartApp?)
+  * Option to disable resume globally and/or per event.
+  * A lot of work on Talk() and others
+  * Pulled the code into Notepad++ where I could work with it better, collapse conditions, etc.
+  * Found several bugs in the Talk() function that I didn't see otherwise. Squashed.
+  * Added a "Poll Now" toggle to the BT main screen, when in Debug and musicPlayer mode.
+  * Added option to disable periodic polling for musicPlayer mode (some users were concerned with BigTalker showing up in the "Activity" feed so often. If music starts playing after speech when it wasn't before, please make sure that polling is enabled)
+  * When resume is enabled and in musicPlayer mode and in Debug mode, main menu now has an option to cause an instant poll "DEBUG: Poll Now (simply toggle)".
+  * Corrected a missed null check in Talk() regarding an empty phrase.
+  * Added a null check in Talk() for resume var.
+  * Added logging and in-app notification if Talk() is called on an empty phrase.
+  * Added Button Held event. (needs testing. I do not have a zwave button)
+  * Renamed SHM Stay to SHM Home to match the language in the SmartApp Dashboard.
+  * Additional null checks in Talk() (specifically addressed if the desired phrase only had %askalexa%; throw an error in the logs and notify via push that there is a configuration error due to a missing phrase)
