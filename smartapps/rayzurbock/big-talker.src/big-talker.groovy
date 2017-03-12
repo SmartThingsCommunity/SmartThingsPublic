@@ -1,5 +1,6 @@
 /**  
- *  BIG TALKER -- Version 1.1.8 -- A SmartApp for SmartThings Home Automation System
+ *  BIG TALKER -- Version 1.1.10 -- A SmartApp for SmartThings Home Automation System
+ *  WARNING!  1.1.9 DEVELOPMENT BRANCH, May have unforseen bugs!
  *  Copyright 2014-2016 - rayzur@rayzurbock.com - Brian S. Lowrance
  *  For the latest version, development and test releases visit http://www.github.com/rayzurbock
  *
@@ -29,9 +30,9 @@ definition(
     author: "rayzur@rayzurbock.com",
     description: "Let's talk about mode changes, switches, motions, and so on.",
     category: "Fun & Social",
-    iconUrl: "http://rayzurbock.com/ST/icons/BigTalker-118.png",
-    iconX2Url: "http://rayzurbock.com/ST/icons/BigTalker@2x-118.png",
-    iconX3Url: "http://rayzurbock.com/ST/icons/BigTalker@2x-118.png")
+    iconUrl: "http://lowrance.cc/ST/icons/BigTalker-110.png",
+    iconX2Url: "http://lowrance.cc/ST/icons/BigTalker@2x-110.png",
+    iconX3Url: "http://lowrance.cc/ST/icons/BigTalker@2x-110.png")
 
 
 preferences {
@@ -53,6 +54,7 @@ preferences {
     page(name: "pageConfigSmoke")
     page(name: "pageConfigButton")
     page(name: "pageConfigTime")
+    page(name: "pageConfigSHM")
     page(name: "pageHelpPhraseTokens")
 //End preferences
 }
@@ -64,6 +66,7 @@ def pageStart(){
     } 
     dynamicPage(name: "pageStart", title: "Big Talker", install: false, uninstall: state.installed){
         section(){
+        	def mydebug_pollnow = ""
             if (!(state.configOK)) { 
                 href "pageConfigureSpeechDeviceType", title:"Configure", description:"Tap to configure"
             } else {
@@ -71,12 +74,16 @@ def pageStart(){
                 href "pageConfigureDefaults", title: "Configure Defaults", description: "Tap to configure defaults"
                 href "pageConfigureEvents", title: "Configure Events", description: "Tap to configure events"
                 href "pageTalkNow", title:"Talk Now", description:"Tap to setup talk now" 
+                if ((settings?.debugmode == true) && (state.speechDeviceType == "capability.musicPlayer") && (settings?.resumePlay == true)) {
+            		input name: "debug_pollnow", type: "bool", title: "DEBUG: Poll Now (simply toggle)", multiple: false, required: false, submitOnChange: true, defaultValue: false
+            	if (!(settings.debug_pollnow == mydebug_pollnow)) { poll() }
+            }
             }
         }
         section("About"){
             def AboutApp = ""
             AboutApp += 'Big Talker is a SmartApp that can make your house talk depending on various triggered events.\n\n'
-            AboutApp += 'Pair with a SmartThings compatible audio device such as Sonos, Ubi, LANnouncer, VLC Thing (running on your computer or Raspberry Pi) or a DLNA device using the "Generic MediaRenderer" SmartApp/Device!\n\n'
+            AboutApp += 'Pair with a SmartThings compatible audio device such as Sonos, Ubi, LANnouncer, VLC Thing (running on your computer or Raspberry Pi), a DLNA device using the "Generic MediaRenderer" SmartApp/Device and/or AskAlexa SmartApp\n\n'
             AboutApp += 'You can contribute to the development of this SmartApp by making a PayPal donation to rayzur@rayzurbock.com or visit http://rayzurbock.com/store\n\n'
             if (!(state.appversion == null)){ 
                 AboutApp += "Big Talker ${state.appversion}\nhttp://www.github.com/rayzurbock\n" 
@@ -105,12 +112,16 @@ def pageStatus(){
         enabledDevices += "\n\n"
         enabledDevices += "Default Speech Devices:\n"
         enabledDevices += "   "
-        settings.speechDeviceDefault.each(){
+        settings.speechDeviceDefault?.each(){
             enabledDevices += "${it.displayName},"
         }
         enabledDevices += "\n\n"
         if (settings.speechVolume && state.speechDeviceType == "capability.musicPlayer") {
             enabledDevices += "Adjust Volume To: ${settings.speechVolume}%"
+            enabledDevices += "\n\n"
+        }
+        if (state.speechDeviceType == "capability.musicPlayer") {
+        	enabledDevices += "Default Resume Audio: ${settings?.resumePlay}"
             enabledDevices += "\n\n"
         }
         enabledDevices += "Default Modes:\n"
@@ -156,6 +167,10 @@ def pageStatus(){
                     enabledDevices += "\n\n"
                 }
             }
+            if (state.speechDeviceType == "capability.musicPlayer") {
+        		enabledDevices += "Resume Audio: ${(!(settings.timeSlotResumePlay1 == null)) ? settings.timeSlotResumePlay1 : settings.resumePlay}"
+            	enabledDevices += "\n\n"
+        	}
             if (settings.timeSlotModes1) {
                 enabledDevices += "Custom mode(s):\n"
                 enabledDevices += "   "
@@ -193,6 +208,10 @@ def pageStatus(){
                     enabledDevices += "\n\n"
                 }
             }
+            if (state.speechDeviceType == "capability.musicPlayer") {
+        		enabledDevices += "Resume Audio: ${(!(settings.timeSlotResumePlay2 == null)) ? settings.timeSlotResumePlay2 : settings.resumePlay}"
+            	enabledDevices += "\n\n"
+        	}
             if (settings.timeSlotModes2) {
                 enabledDevices += "Custom mode(s):\n"
                 enabledDevices += "   "
@@ -230,6 +249,10 @@ def pageStatus(){
                     enabledDevices += "\n\n"
                 }
             }
+            if (state.speechDeviceType == "capability.musicPlayer") {
+        		enabledDevices += "Resume Audio: ${(!(settings.timeSlotResumePlay3 == null)) ? settings.timeSlotResumePlay3 : settings.resumePlay}"
+            	enabledDevices += "\n\n"
+        	}
             if (settings.timeSlotModes3) {
                 enabledDevices += "Custom mode(s):\n"
                 enabledDevices += "   "
@@ -268,6 +291,10 @@ def pageStatus(){
                 }
                 enabledDevices += "\n\n"
             }
+            if (state.speechDeviceType == "capability.musicPlayer") {
+        		enabledDevices += "Resume Audio: ${(!(settings.motionResumePlay1 == null)) ? settings.motionResumePlay1 : settings.resumePlay}"
+            	enabledDevices += "\n\n"
+        	}
             if (settings.motionModes1) {
                 enabledDevices += "Custom mode(s):\n"
                 enabledDevices += "   "
@@ -313,6 +340,10 @@ def pageStatus(){
                 }
                 enabledDevices += "\n\n"
             }
+            if (state.speechDeviceType == "capability.musicPlayer") {
+        		enabledDevices += "Resume Audio: ${(!(settings.motionResumePlay2 == null)) ? settings.motionResumePlay2 : settings.resumePlay}"
+            	enabledDevices += "\n\n"
+        	}
             if (settings.motionModes2) {
                 enabledDevices += "Custom mode(s):\n"
                 enabledDevices += "   "
@@ -358,6 +389,10 @@ def pageStatus(){
                 }
                 enabledDevices += "\n\n"
             }
+            if (state.speechDeviceType == "capability.musicPlayer") {
+        		enabledDevices += "Resume Audio: ${(!(settings.motionResumePlay3 == null)) ? settings.motionResumePlay3 : settings.resumePlay}"
+            	enabledDevices += "\n\n"
+        	}
             if (settings.motionModes3) {
                 enabledDevices += "Custom mode(s):\n"
                 enabledDevices += "   "
@@ -404,6 +439,10 @@ def pageStatus(){
                 }
                 enabledDevices += "\n\n"
             }
+            if (state.speechDeviceType == "capability.musicPlayer") {
+        		enabledDevices += "Resume Audio: ${(!(settings.switchResumePlay1 == null)) ? settings.switchResumePlay1 : settings.resumePlay}"
+            	enabledDevices += "\n\n"
+        	}
             if (settings.switchModes1) {
                 enabledDevices += "Custom mode(s):\n"
                 enabledDevices += "   "
@@ -449,6 +488,10 @@ def pageStatus(){
                 }
                 enabledDevices += "\n\n"
             }
+            if (state.speechDeviceType == "capability.musicPlayer") {
+        		enabledDevices += "Resume Audio: ${(!(settings.switchResumePlay2 == null)) ? settings.switchResumePlay2 : settings.resumePlay}"
+            	enabledDevices += "\n\n"
+        	}
             if (settings.switchModes2) {
                 enabledDevices += "Custom mode(s):\n"
                 enabledDevices += "   "
@@ -494,6 +537,10 @@ def pageStatus(){
                 }
                 enabledDevices += "\n\n"
             }
+            if (state.speechDeviceType == "capability.musicPlayer") {
+        		enabledDevices += "Resume Audio: ${(!(settings.switchResumePlay3 == null)) ? settings.switchResumePlay3 : settings.resumePlay}"
+            	enabledDevices += "\n\n"
+        	}
             if (settings.switchModes3) {
                 enabledDevices += "Custom mode(s):\n"
                 enabledDevices += "   "
@@ -540,6 +587,10 @@ def pageStatus(){
                 }
                 enabledDevices += "\n\n"
             }
+            if (state.speechDeviceType == "capability.musicPlayer") {
+        		enabledDevices += "Resume Audio: ${(!(settings.presResumePlay1 == null)) ? settings.presResumePlay1 : settings.resumePlay}"
+            	enabledDevices += "\n\n"
+        	}
             if (settings.presModes1) {
                 enabledDevices += "Custom mode(s):\n"
                 enabledDevices += "   "
@@ -585,6 +636,10 @@ def pageStatus(){
                 }
                 enabledDevices += "\n\n"
             }
+            if (state.speechDeviceType == "capability.musicPlayer") {
+        		enabledDevices += "Resume Audio: ${(!(settings.presResumePlay2 == null)) ? settings.presResumePlay2 : settings.resumePlay}"
+            	enabledDevices += "\n\n"
+        	}
             if (settings.presModes2) {
                 enabledDevices += "Custom mode(s):\n"
                 enabledDevices += "   "
@@ -630,6 +685,10 @@ def pageStatus(){
                 }
                 enabledDevices += "\n\n"
             }
+            if (state.speechDeviceType == "capability.musicPlayer") {
+        		enabledDevices += "Resume Audio: ${(!(settings.presResumePlay3 == null)) ? settings.presResumePlay3 : settings.resumePlay}"
+            	enabledDevices += "\n\n"
+        	}
             if (settings.presModes3) {
                 enabledDevices += "Custom mode(s):\n"
                 enabledDevices += "   "
@@ -676,6 +735,10 @@ def pageStatus(){
                 }
                 enabledDevices += "\n\n"
             }
+            if (state.speechDeviceType == "capability.musicPlayer") {
+        		enabledDevices += "Resume Audio: ${(!(settings.lockResumePlay1 == null)) ? settings.lockResumePlay1 : settings.resumePlay}"
+            	enabledDevices += "\n\n"
+        	}
             if (settings.lockModes1) {
                 enabledDevices += "Custom mode(s):\n"
                 enabledDevices += "   "
@@ -721,6 +784,10 @@ def pageStatus(){
                 }
                 enabledDevices += "\n\n"
             }
+            if (state.speechDeviceType == "capability.musicPlayer") {
+        		enabledDevices += "Resume Audio: ${(!(settings.lockResumePlay2 == null)) ? settings.lockResumePlay2 : settings.resumePlay}"
+            	enabledDevices += "\n\n"
+        	}
             if (settings.lockModes2) {
                 enabledDevices += "Custom mode(s):\n"
                 enabledDevices += "   "
@@ -766,6 +833,10 @@ def pageStatus(){
                 }
                 enabledDevices += "\n\n"
             }
+            if (state.speechDeviceType == "capability.musicPlayer") {
+        		enabledDevices += "Resume Audio: ${(!(settings.lockResumePlay3 == null)) ? settings.lockResumePlay3 : settings.resumePlay}"
+            	enabledDevices += "\n\n"
+        	}
             if (settings.lockModes3) {
                 enabledDevices += "Custom mode(s):\n"
                 enabledDevices += "   "
@@ -812,6 +883,10 @@ def pageStatus(){
                 }
                 enabledDevices += "\n\n"
             }
+            if (state.speechDeviceType == "capability.musicPlayer") {
+        		enabledDevices += "Resume Audio: ${(!(settings.contactResumePlay1 == null)) ? settings.contactResumePlay1 : settings.resumePlay}"
+            	enabledDevices += "\n\n"
+        	}
             if (settings.contactModes1) {
                 enabledDevices += "Custom mode(s):\n"
                 enabledDevices += "   "
@@ -856,6 +931,10 @@ def pageStatus(){
                 }
                 enabledDevices += "\n\n"
             }
+            if (state.speechDeviceType == "capability.musicPlayer") {
+        		enabledDevices += "Resume Audio: ${(!(settings.contactResumePlay2 == null)) ? settings.contactResumePlay2 : settings.resumePlay}"
+            	enabledDevices += "\n\n"
+        	}
             if (settings.contactModes2) {
                 enabledDevices += "Custom mode(s):\n"
                 enabledDevices += "   "
@@ -901,6 +980,10 @@ def pageStatus(){
                 }
                 enabledDevices += "\n\n"
             }
+            if (state.speechDeviceType == "capability.musicPlayer") {
+        		enabledDevices += "Resume Audio: ${(!(settings.contactResumePlay3 == null)) ? settings.contactResumePlay3 : settings.resumePlay}"
+            	enabledDevices += "\n\n"
+        	}
             if (settings.contactModes3) {
                 enabledDevices += "Custom mode(s):\n"
                 enabledDevices += "   "
@@ -952,6 +1035,10 @@ def pageStatus(){
                 }
                 enabledDevices += "\n\n"
             }
+            if (state.speechDeviceType == "capability.musicPlayer") {
+        		enabledDevices += "Resume Audio: ${(!(settings.modePhraseResumePlay1 == null)) ? settings.modePhraseResumePlay1 : settings.resumePlay}"
+            	enabledDevices += "\n\n"
+        	}
             if (settings.modeStartTime1) {
                 def customStartTime = getTimeFromDateString(settings.modeStartTime1, true)
                 def customEndTime = getTimeFromDateString(settings.modeEndTime1, true)
@@ -996,6 +1083,10 @@ def pageStatus(){
                 }
                 enabledDevices += "\n\n"
             }
+            if (state.speechDeviceType == "capability.musicPlayer") {
+        		enabledDevices += "Resume Audio: ${(!(settings.thermostatResumePlay1 == null)) ? settings.thermostatResumePlay1 : settings.resumePlay}"
+            	enabledDevices += "\n\n"
+        	}
             if (settings.thermostatModes1) {
                 enabledDevices += "Custom mode(s):\n"
                 enabledDevices += "   "
@@ -1042,6 +1133,10 @@ def pageStatus(){
                 }
                 enabledDevices += "\n\n"
             }
+            if (state.speechDeviceType == "capability.musicPlayer") {
+        		enabledDevices += "Resume Audio: ${(!(settings.accelerationResumePlay1 == null)) ? settings.accelerationResumePlay1 : settings.resumePlay}"
+            	enabledDevices += "\n\n"
+        	}
             if (settings.accelerationModes1) {
                 enabledDevices += "Custom mode(s):\n"
                 enabledDevices += "   "
@@ -1087,6 +1182,10 @@ def pageStatus(){
                 }
                 enabledDevices += "\n\n"
             }
+            if (state.speechDeviceType == "capability.musicPlayer") {
+        		enabledDevices += "Resume Audio: ${(!(settings.accelerationResumePlay2 == null)) ? settings.accelerationResumePlay2 : settings.resumePlay}"
+            	enabledDevices += "\n\n"
+        	}
             if (settings.accelerationModes2) {
                 enabledDevices += "Custom mode(s):\n"
                 enabledDevices += "   "
@@ -1132,6 +1231,10 @@ def pageStatus(){
                 }
                 enabledDevices += "\n\n"
             }
+            if (state.speechDeviceType == "capability.musicPlayer") {
+        		enabledDevices += "Resume Audio: ${(!(settings.accelerationResumePlay3 == null)) ? settings.accelerationResumePlay3 : settings.resumePlay}"
+            	enabledDevices += "\n\n"
+        	}
             if (settings.accelerationModes3) {
                 enabledDevices += "Custom mode(s):\n"
                 enabledDevices += "   "
@@ -1178,6 +1281,10 @@ def pageStatus(){
                 }
                 enabledDevices += "\n\n"
             }
+            if (state.speechDeviceType == "capability.musicPlayer") {
+        		enabledDevices += "Resume Audio: ${(!(settings.waterResumePlay1 == null)) ? settings.waterResumePlay1 : settings.resumePlay}"
+            	enabledDevices += "\n\n"
+        	}
             if (settings.waterModes1) {
                 enabledDevices += "Custom mode(s):\n"
                 enabledDevices += "   "
@@ -1223,6 +1330,10 @@ def pageStatus(){
                 }
                 enabledDevices += "\n\n"
             }
+            if (state.speechDeviceType == "capability.musicPlayer") {
+        		enabledDevices += "Resume Audio: ${(!(settings.waterResumePlay2 == null)) ? settings.waterResumePlay2 : settings.resumePlay}"
+            	enabledDevices += "\n\n"
+        	}
             if (settings.waterModes2) {
                 enabledDevices += "Custom mode(s):\n"
                 enabledDevices += "   "
@@ -1268,6 +1379,10 @@ def pageStatus(){
                 }
                 enabledDevices += "\n\n"
             }
+            if (state.speechDeviceType == "capability.musicPlayer") {
+        		enabledDevices += "Resume Audio: ${(!(settings.waterResumePlay3 == null)) ? settings.waterResumePlay3 : settings.resumePlay}"
+            	enabledDevices += "\n\n"
+        	}
             if (settings.waterModes3) {
                 enabledDevices += "Custom mode(s):\n"
                 enabledDevices += "   "
@@ -1317,6 +1432,10 @@ def pageStatus(){
                 }
                 enabledDevices += "\n\n"
             }
+            if (state.speechDeviceType == "capability.musicPlayer") {
+        		enabledDevices += "Resume Audio: ${(!(settings.smokeResumePlay1 == null)) ? settings.smokeResumePlay1 : settings.resumePlay}"
+            	enabledDevices += "\n\n"
+        	}
             if (settings.smokeModes1) {
                 enabledDevices += "Custom mode(s):\n"
                 enabledDevices += "   "
@@ -1365,6 +1484,10 @@ def pageStatus(){
                 }
                 enabledDevices += "\n\n"
             }
+            if (state.speechDeviceType == "capability.musicPlayer") {
+        		enabledDevices += "Resume Audio: ${(!(settings.smokeResumePlay2 == null)) ? settings.smokeResumePlay2 : settings.resumePlay}"
+            	enabledDevices += "\n\n"
+        	}
             if (settings.smokeModes2) {
                 enabledDevices += "Custom mode(s):\n"
                 enabledDevices += "   "
@@ -1413,6 +1536,10 @@ def pageStatus(){
                 }
                 enabledDevices += "\n\n"
             }
+            if (state.speechDeviceType == "capability.musicPlayer") {
+        		enabledDevices += "Resume Audio: ${(!(settings.smokeResumePlay3 == null)) ? settings.smokeResumePlay3 : settings.resumePlay}"
+            	enabledDevices += "\n\n"
+        	}
             if (settings.smokeModes3) {
                 enabledDevices += "Custom mode(s):\n"
                 enabledDevices += "   "
@@ -1456,6 +1583,10 @@ def pageStatus(){
                 }
                 enabledDevices += "\n\n"
             }
+            if (state.speechDeviceType == "capability.musicPlayer") {
+        		enabledDevices += "Resume Audio: ${(!(settings.buttonResumePlay1 == null)) ? settings.buttonResumePlay1 : settings.resumePlay}"
+            	enabledDevices += "\n\n"
+        	}
             if (settings.buttonModes1) {
                 enabledDevices += "Custom mode(s):\n"
                 enabledDevices += "   "
@@ -1498,6 +1629,10 @@ def pageStatus(){
                 }
                 enabledDevices += "\n\n"
             }
+            if (state.speechDeviceType == "capability.musicPlayer") {
+        		enabledDevices += "Resume Audio: ${(!(settings.buttonResumePlay2 == null)) ? settings.buttonResumePlay2 : settings.resumePlay}"
+            	enabledDevices += "\n\n"
+        	}
             if (settings.buttonModes2) {
                 enabledDevices += "Custom mode(s):\n"
                 enabledDevices += "   "
@@ -1540,6 +1675,10 @@ def pageStatus(){
                 }
                 enabledDevices += "\n\n"
             }
+            if (state.speechDeviceType == "capability.musicPlayer") {
+        		enabledDevices += "Resume Audio: ${(!(settings.buttonResumePlay3 == null)) ? settings.buttonResumePlay3 : settings.resumePlay}"
+            	enabledDevices += "\n\n"
+        	}
             if (settings.buttonModes3) {
                 enabledDevices += "Custom mode(s):\n"
                 enabledDevices += "   "
@@ -1563,20 +1702,143 @@ def pageStatus(){
             enabledDevices = ""
         }
         //END STATUS CONFIG BUTTON GROUP 3
+        //BEGIN STATUS CONFIG SMART HOME MONITOR
+        if (settings.SHMDeviceGroup1) {
+            enabledDevices += "Smart Home Monitor Status Change:  "
+            enabledDevices += "\n\n"
+            if (settings.SHMTalkOnAway) {
+                enabledDevices += "Say this when armed in Away mode:\n ${settings.SHMTalkOnAway}\n\n"
+            }
+			if (settings.SHMSpeechDeviceAway) {
+                enabledDevices += "Custom Speech Device(s):\n\n"
+                enabledDevices += "   "
+                settings.SHAMSpeechDeviceAway.each() {
+                    enabledDevices += "${it.displayName},"
+                }
+                enabledDevices += "\n\n"
+            }
+            if (state.speechDeviceType == "capability.musicPlayer") {
+        		enabledDevices += "Resume Audio: ${(!(settings.SHMResumePlayAway == null)) ? settings.SHMResumePlayAway : settings.resumePlay}"
+            	enabledDevices += "\n\n"
+        	}
+            if (settings.SHMModesAway) {
+                enabledDevices += "Custom mode(s):\n"
+                enabledDevices += "   "
+                settings.SHMModesAway.each() {
+                    enabledDevices += "${it},"
+                }
+                enabledDevices += "\n\n"
+            }
+            if (settings.SHMStartTimeAway) {
+                def customStartTime = getTimeFromDateString(settings.SHMStartTimeAway, true)
+                def customEndTime = getTimeFromDateString(settings.SHMEndTimeAway, true)
+                enabledDevices += "Custom Allowed Talk Time:\n ${customStartTime} - ${customEndTime}"
+                customStartTime = ""
+                customEndTime = ""
+            }
+            if (!(enabledDevices == "")) {
+                section ("Armed - Away:"){
+                    paragraph enabledDevices
+                }
+            }
+            enabledDevices = ""
+            if (settings.SHMTalkOnHome) {
+                enabledDevices += "Say this when armed in Home mode:\n ${settings.SHMTalkOnHome}\n\n"
+            }
+			if (settings.SHMSpeechDeviceHome) {
+                enabledDevices += "Custom Speech Device(s):\n\n"
+                enabledDevices += "   "
+                settings.SHAMSpeechDeviceHome.each() {
+                    enabledDevices += "${it.displayName},"
+                }
+                enabledDevices += "\n\n"
+            }
+            if (state.speechDeviceType == "capability.musicPlayer") {
+        		enabledDevices += "Resume Audio: ${(!(settings.SHMResumePlayHome == null)) ? settings.SHMResumePlayHome : settings.resumePlay}"
+            	enabledDevices += "\n\n"
+        	}
+            if (settings.SHMModesHome) {
+                enabledDevices += "Custom mode(s):\n"
+                enabledDevices += "   "
+                settings.SHMModesHome.each() {
+                    enabledDevices += "${it},"
+                }
+                enabledDevices += "\n\n"
+            }
+            if (settings.SHMStartTimeHome) {
+                def customStartTime = getTimeFromDateString(settings.SHMStartTimeHome, true)
+                def customEndTime = getTimeFromDateString(settings.SHMEndTimeHome, true)
+                enabledDevices += "Custom Allowed Talk Time:\n ${customStartTime} - ${customEndTime}"
+                customStartTime = ""
+                customEndTime = ""
+            }
+            if (!(enabledDevices == "")) {
+                section ("Armed - Home:"){
+                    paragraph enabledDevices
+                }
+            }
+            enabledDevices = ""
+            if (settings.SHMTalkOnDisarm) {
+                enabledDevices += "Say this when disarmed:\n ${settings.SHMTalkOnDisarm}\n\n"
+            }
+			if (settings.SHMSpeechDeviceDisarm) {
+                enabledDevices += "Custom Speech Device(s):\n\n"
+                enabledDevices += "   "
+                settings.SHMSpeechDeviceDisarm.each() {
+                    enabledDevices += "${it.displayName},"
+                }
+                enabledDevices += "\n\n"
+            }
+            if (state.speechDeviceType == "capability.musicPlayer") {
+        		enabledDevices += "Resume Audio: ${(!(settings.SHMResumePlayDisarm == null)) ? settings.SHMResumePlayDisarm : settings.resumePlay}"
+            	enabledDevices += "\n\n"
+        	}
+            if (settings.SHMModesDisarm) {
+                enabledDevices += "Custom mode(s):\n"
+                enabledDevices += "   "
+                settings.SHMModesDisarm.each() {
+                    enabledDevices += "${it},"
+                }
+                enabledDevices += "\n\n"
+            }
+            if (settings.SHMStartTimeDisarm) {
+                def customStartTime = getTimeFromDateString(settings.SHMStartTimeDisarm, true)
+                def customEndTime = getTimeFromDateString(settings.SHMEndTimeDisarm, true)
+                enabledDevices += "Custom Allowed Talk Time:\n ${customStartTime} - ${customEndTime}"
+                customStartTime = ""
+                customEndTime = ""
+            }
+            if (!(enabledDevices == "")) {
+                section ("Disarmed:"){
+                    paragraph enabledDevices
+                }
+            }
+            enabledDevices = ""
+        }
+        //END STATUS CONFIG SMART HOME MONITOR
     }
 }
 
 def pageTalkNow(){
     dynamicPage(name: "pageTalkNow", title: "Talk Now", install: false, uninstall: false){
         section(""){
+        	def myTalkNowResume = false
             paragraph ("Speak the following phrase:\nNote: must differ from the last spoken phrase\n")
+            if (state.speechDeviceType == "capability.musicPlayer") {
+            	input name: "talkNowResume", type: "bool", title: "Enable audio resume", multiple: true, required: false, submitOnChange: true, defaultValue: (settings?.resumePlay == false) ? false : true
+                myTalkNowResume = settings.talkNowResume
+            }
             input name: "speechTalkNow", type: text, title: "Speak phrase", required: false, submitOnChange: true
-            input name: "talkNowSpeechDevice", type: state.speechDeviceType, title: "Talk with these text-to-speech devices", multiple: true, required: (!(settings.speechTalkNow == null)), submitOnChange: true
+            input name: "talkNowSpeechDevice", type: state.speechDeviceType, title: "Talk with these text-to-speech devices", multiple: true, required: false, submitOnChange: true
             //LOGDEBUG("previoustext=${state.lastTalkNow} New=${settings.speechTalkNow}")
-            if ((!(state.lastTalkNow == settings.speechTalkNow)) && (settings.talkNowSpeechDevice)){
+            if (((!(state.lastTalkNow == settings.speechTalkNow)) && (settings.talkNowSpeechDevice)) || (settings.speechTalkNow.contains("%askalexa%"))){
                 //Say stuff!
+                if (state.speechDeviceType == "capability.musicPlayer") {
+                	myTalkNowResume = (myTalkNowResume == "") ? settings.resumeAudio : true //use global setting if TalkNow is not set
+                	if (settings?.talkNowResume == null) {mytalkNowResume = true}  //default to true if not set.
+                }
                 def customevent = [displayName: 'BigTalker:TalkNow', name: 'TalkNow', value: 'TalkNow']
-                Talk(settings.speechTalkNow, settings.talkNowSpeechDevice, customevent)
+                Talk(settings.speechTalkNow, settings.talkNowSpeechDevice, myTalkNowResume, customevent)
                 state.lastTalkNow = settings.speechTalkNow
             }
         }
@@ -1590,6 +1852,7 @@ def pageHelpPhraseTokens(){
     dynamicPage(name: "pageHelpPhraseTokens", title: "Available Phrase Tokens", install: false, uninstall:false){
        section("The following tokens can be used in your event phrases and will be replaced as listed:"){
        	   def AvailTokens = ""
+           AvailTokens += "%askalexa% = Send phrase to AskAlexa SmartApp's message queue\n\n"
            AvailTokens += "%devicename% = Triggering devices display name\n\n"
            AvailTokens += "%devicetype% = Triggering device type; motion, switch, etc\n\n"
            AvailTokens += "%devicechange% = State change that occurred; on/off, active/inactive, etc...\n\n"
@@ -1598,7 +1861,7 @@ def pageHelpPhraseTokens(){
            AvailTokens += "%lastmode% = Last hub mode; home, away, etc\n\n"
            AvailTokens += "%mode% = Current hub mode; home, away, etc\n\n"
            AvailTokens += "%time% = Current hub time; HH:mm am/pm\n\n"
-           AvailTokens += "%shmstatus% = SmartHome Monitor Status (Disarmed, Armed Stay, Armed Away)\n\n"
+           AvailTokens += "%shmstatus% = SmartHome Monitor Status (Disarmed, Armed Home, Armed Away)\n\n"
            AvailTokens += "%weathercurrent% = Current weather based on hub location\n\n"
            AvailTokens += "%weathercurrent(00000)% = Current weather* based on custom zipcode (replace 00000)\n\n"
            AvailTokens += "%weathertoday% = Today's weather forecast* based on hub location\n\n"
@@ -1619,10 +1882,10 @@ def pageConfigureSpeechDeviceType(){
         //section ("Speech Device Type Support"){
         section (){
             paragraph "${app.label} can support either 'Music Player' or 'Speech Synthesis' devices."
-            paragraph "'Music Player' typically supports devices such as Sonos, VLCThing, Generic Media Renderer.\n\n'Speech Synthesis' typically supports devices such as Ubi and LANnouncer.\n\nThis setting cannot be changed without reinstalling ${app.label}."
+            paragraph "'Music Player' typically supports devices such as Sonos, VLCThing, Generic Media Renderer.\n\n'Speech Synthesis' typically supports devices such as Ubi and LANnouncer.\n\nIf only using with AskAlexa this setting can be ignored.\n\nThis setting cannot be changed without reinstalling ${app.label}."
             input "speechDeviceType", "bool", title: "ON=Music Player\nOFF=Speech Synthesis", required: true, defaultValue: true, submitOnChange: true
-            paragraph "\nClick Next (top right) to continue configuration...\n"
-            if (speechDeviceType == true || speechDeviceType == null) {state.speechDeviceType = "capability.musicPlayer"}
+            paragraph "Click Next (top right) to continue configuration...\n"
+            if (speechDeviceType == true) {state.speechDeviceType = "capability.musicPlayer"}
             if (speechDeviceType == false) {state.speechDeviceType = "capability.speechSynthesis"}
         }
     }
@@ -1650,11 +1913,15 @@ def pageConfigureDefaults(){
     //dynamicPage(name: "pageConfigureDefaults", title: "Configure Defaults", nextPage: "${myNextPage}", install: false, uninstall: false) {
         section("Talk with:"){
            if (state.speechDeviceType == null || state.speechDeviceType == "") { state.speechDeviceType = "capability.musicPlayer" }
-           input "speechDeviceDefault", state.speechDeviceType, title: "Talk with these text-to-speech devices (default)", multiple: true, required: true, submitOnChange: false
+           input "speechDeviceDefault", state.speechDeviceType, title: "Talk with these text-to-speech devices (default)", multiple: true, required: false, submitOnChange: false
         }
         if (state.speechDeviceType == "capability.musicPlayer") {
             section ("Adjust volume during announcement (optional; Supports: Sonos, VLC-Thing):"){
                 input "speechVolume", "number", title: "Set volume to (1-100%):", required: false
+            }
+            section ("Attempt to resume playing audio (optional; Supports: Sonos, VLC-Thing):"){
+            	input "resumePlay", "bool", title: "Resume Play:", required: true, defaultValue: true
+                input "allowScheduledPoll", "bool", title: "Enable polling device status (recommended)", required: true, defaultValue: true
             }
         }
         section ("Talk only while in these modes:"){
@@ -1733,6 +2000,11 @@ def pageConfigureEvents(){
             } else {
                 href "pageConfigButton", title: "Button", description:"Tap to configure"
             }
+            if (settings.SHMDeviceGroup1) {
+                href "pageConfigSHM", title: "Smart Home Monitor", description:"Tap to configure"
+            } else {
+                href "pageConfigSHM", title: "Smart Home Monitor", description:"Tap to configure"
+            }
         }
     }
 }
@@ -1750,6 +2022,9 @@ def pageConfigMotion(){
             input name: "motionTalkActive1", type: "text", title: "Say this on motion active:", required: false, defaultValue: defaultSpeechActive1
             input name: "motionTalkInactive1", type: "text", title: "Say this on motion inactive:", required: false, defaultValue: defaultSpeechInactive1
             input name: "motionSpeechDevice1", type: state.speechDeviceType, title: "Talk with these text-to-speech devices (overrides default)", multiple: true, required: false
+            if (state.speechDeviceType == "capability.musicPlayer") {
+            	input name: "motionResumePlay1", type: "bool", title: "Attempt to resume playing audio?", required: false, defaultValue: (settings?.resumePlay == false) ? false : true
+            }
             input name: "motionModes1", type: "mode", title: "Talk when in these mode(s) (overrides default)", multiple: true, required: false
             input name: "motionStartTime1", type: "time", title: "Don't talk before (overrides default)", required: false, submitOnChange: true
             input name: "motionEndTime1", type: "time", title: "Don't talk after (overrides default)", required: (!(settings.motionStartTime1 == null))
@@ -1759,6 +2034,9 @@ def pageConfigMotion(){
             input name: "motionTalkActive2", type: "text", title: "Say this on motion active:", required: false
             input name: "motionTalkInactive2", type: "text", title: "Say this on motion inactive:", required: false
             input name: "motionSpeechDevice2", type: state.speechDeviceType, title: "Talk with these text-to-speech devices (overrides default)", multiple: true, required: false
+            if (state.speechDeviceType == "capability.musicPlayer") {
+            	input name: "motionResumePlay2", type: "bool", title: "Attempt to resume playing audio?", required: false, defaultValue: (settings?.resumePlay == false) ? false : true
+            }
             input name: "motionModes2", type: "mode", title: "Talk when in these mode(s) (overrides default)", multiple: true, required: false
             input name: "motionStartTime2", type: "time", title: "Don't talk before (overrides default)", required: false, submitOnChange: true
             input name: "motionEndTime2", type: "time", title: "Don't talk after (overrides default)", required: (!(settings.motionStartTime2 == null))
@@ -1768,6 +2046,9 @@ def pageConfigMotion(){
             input name: "motionTalkActive3", type: "text", title: "Say this on motion active:", required: false
             input name: "motionTalkInactive3", type: "text", title: "Say this on motion inactive:", required: false
             input name: "motionSpeechDevice3", type: state.speechDeviceType, title: "Talk with these text-to-speech devices (overrides default)", multiple: true, required: false
+            if (state.speechDeviceType == "capability.musicPlayer") {
+            	input name: "motionResumePlay3", type: "bool", title: "Attempt to resume playing audio?", required: false, defaultValue: (settings?.resumePlay == false) ? false : true
+            }
             input name: "motionModes3", type: "mode", title: "Talk when in these mode(s) (overrides default)", multiple: true, required: false
             input name: "motionStartTime3", type: "time", title: "Don't talk before (overrides default)", required: false, submitOnChange: true
             input name: "motionEndTime3", type: "time", title: "Don't talk after (overrides default)", required: (!(settings.motionStartTime3 == null))
@@ -1792,6 +2073,9 @@ def pageConfigSwitch(){
             input name: "switchTalkOn1", type: "text", title: "Say this when switch is turned ON:", required: false, defaultValue: defaultSpeechOn1
             input name: "switchTalkOff1", type: "text", title: "Say this when switch is turned OFF:", required: false, defaultValue: defaultSpeechOff1
             input name: "switchSpeechDevice1", type: state.speechDeviceType, title: "Talk with these text-to-speech devices (overrides default)", multiple: true, required: false
+            if (state.speechDeviceType == "capability.musicPlayer") {
+            	input name: "switchResumePlay1", type: "bool", title: "Attempt to resume playing audio?", required: false, defaultValue: (settings?.resumePlay == false) ? false : true
+            }
             input name: "switchModes1", type: "mode", title: "Talk when in these mode(s) (overrides default)", multiple: true, required: false
             input name: "switchStartTime1", type: "time", title: "Don't talk before (overrides default)", required: false, submitOnChange: true
             input name: "switchEndTime1", type: "time", title: "Don't talk after (overrides default)", required: (!(settings.switchStartTime1 == null))
@@ -1801,6 +2085,9 @@ def pageConfigSwitch(){
             input name: "switchTalkOn2", type: "text", title: "Say this when switch is turned ON:", required: false
             input name: "switchTalkOff2", type: "text", title: "Say this when switch is turned OFF:", required: false
             input name: "switchSpeechDevice2", type: state.speechDeviceType, title: "Talk with these text-to-speech devices (overrides default)", multiple: true, required: false
+            if (state.speechDeviceType == "capability.musicPlayer") {
+            	input name: "switchResumePlay2", type: "bool", title: "Attempt to resume playing audio?", required: false, defaultValue: (settings?.resumePlay == false) ? false : true
+            }
             input name: "switchModes2", type: "mode", title: "Talk when in these mode(s) (overrides default)", multiple: true, required: false
             input name: "switchStartTime2", type: "time", title: "Don't talk before (overrides default)", required: false, submitOnChange: true
             input name: "switchEndTime2", type: "time", title: "Don't talk after (overrides default)", required: (!(settings.switchStartTime2 == null))
@@ -1810,6 +2097,9 @@ def pageConfigSwitch(){
             input name: "switchTalkOn3", type: "text", title: "Say this when switch is turned ON:", required: false
             input name: "switchTalkOff3", type: "text", title: "Say this when switch is turned OFF:", required: false
             input name: "switchSpeechDevice3", type: state.speechDeviceType, title: "Talk with these text-to-speech devices (overrides default)", multiple: true, required: false
+            if (state.speechDeviceType == "capability.musicPlayer") {
+            	input name: "switchResumePlay3", type: "bool", title: "Attempt to resume playing audio?", required: false, defaultValue: (settings?.resumePlay == false) ? false : true
+            }
             input name: "switchModes3", type: "mode", title: "Talk when in these mode(s) (overrides default)", multiple: true, required: false
             input name: "switchStartTime3", type: "time", title: "Don't talk before (overrides default)", required: false, submitOnChange: true
             input name: "switchEndTime3", type: "time", title: "Don't talk after (overrides default)", required: (!(settings.switchStartTime3 == null))
@@ -1834,6 +2124,9 @@ def pageConfigPresence(){
             input name: "presTalkOnArrive1", type: "text", title: "Say this when someone arrives:", required: false, defaultValue: defaultSpeechArrive1
             input name: "presTalkOnLeave1", type: "text", title: "Say this when someone leaves:", required: false, defaultValue: defaultSpeechLeave1
             input name: "presSpeechDevice1", type: state.speechDeviceType, title: "Talk with these text-to-speech devices (overrides default)", multiple: true, required: false
+            if (state.speechDeviceType == "capability.musicPlayer") {
+            	input name: "presResumePlay1", type: "bool", title: "Attempt to resume playing audio?", required: false, defaultValue: (settings?.resumePlay == false) ? false : true
+            }
             input name: "presModes1", type: "mode", title: "Talk when in these mode(s) (overrides default)", multiple: true, required: false
             input name: "presStartTime1", type: "time", title: "Don't talk before (overrides default)", required: false, submitOnChange: true
             input name: "presEndTime1", type: "time", title: "Don't talk after (overrides default)", required: (!(settings.presStartTime1 == null))
@@ -1843,6 +2136,9 @@ def pageConfigPresence(){
             input name: "presTalkOnArrive2", type: "text", title: "Say this when someone arrives:", required: false
             input name: "presTalkOnLeave2", type: "text", title: "Say this when someone leaves:", required: false
             input name: "presSpeechDevice2", type: state.speechDeviceType, title: "Talk with these text-to-speech devices (overrides default)", multiple: true, required: false
+            if (state.speechDeviceType == "capability.musicPlayer") {
+            	input name: "presResumePlay2", type: "bool", title: "Attempt to resume playing audio?", required: false, defaultValue: (settings?.resumePlay == false) ? false : true
+            }
             input name: "presModes2", type: "mode", title: "Talk when in these mode(s) (overrides default)", multiple: true, required: false
             input name: "presStartTime2", type: "time", title: "Don't talk before (overrides default)", required: false, submitOnChange: true
             input name: "presEndTime2", type: "time", title: "Don't talk after (overrides default)", required: (!(settings.presStartTime2 == null))
@@ -1852,6 +2148,9 @@ def pageConfigPresence(){
             input name: "presTalkOnArrive3", type: "text", title: "Say this when someone arrives:", required: false
             input name: "presTalkOnLeave3", type: "text", title: "Say this when someone leaves:", required: false
             input name: "presSpeechDevice3", type: state.speechDeviceType, title: "Talk with these text-to-speech devices (overrides default)", multiple: true, required: false
+            if (state.speechDeviceType == "capability.musicPlayer") {
+            	input name: "presResumePlay3", type: "bool", title: "Attempt to resume playing audio?", required: false, defaultValue: (settings?.resumePlay == false) ? false : true
+            }
             input name: "presModes3", type: "mode", title: "Talk when in these mode(s) (overrides default)", multiple: true, required: false
             input name: "presStartTime3", type: "time", title: "Don't talk before (overrides default)", required: false, submitOnChange: true
             input name: "presEndTime3", type: "time", title: "Don't talk after (overrides default)", required: (!(settings.presStartTime3 == null))
@@ -1876,6 +2175,9 @@ def pageConfigLock(){
             input name: "lockTalkOnUnlock1", type: "text", title: "Say this when unlocked:", required: false, defaultValue: defaultSpeechUnlock1
             input name: "lockTalkOnLock1", type: "text", title: "Say this when locked:", required: false, defaultValue: defaultSpeechLock1
             input name: "lockSpeechDevice1", type: state.speechDeviceType, title: "Talk with these text-to-speech devices (overrides default)", multiple: true, required: false
+            if (state.speechDeviceType == "capability.musicPlayer") {
+            	input name: "lockResumePlay1", type: "bool", title: "Attempt to resume playing audio?", required: false, defaultValue: (settings?.resumePlay == false) ? false : true
+            }
             input name: "lockModes1", type: "mode", title: "Talk when in these mode(s) (overrides default)", multiple: true, required: false
             input name: "lockStartTime1", type: "time", title: "Don't talk before (overrides default)", required: false, submitOnChange: true
             input name: "lockEndTime1", type: "time", title: "Don't talk after (overrides default)", required: (!(settings.lockStartTime1 == null))
@@ -1885,6 +2187,9 @@ def pageConfigLock(){
             input name: "lockTalkOnUnlock2", type: "text", title: "Say this when unlocked:", required: false
             input name: "lockTalkOnLock2", type: "text", title: "Say this when locked:", required: false
             input name: "lockSpeechDevice2", type: state.speechDeviceType, title: "Talk with these text-to-speech devices (overrides default)", multiple: true, required: false
+            if (state.speechDeviceType == "capability.musicPlayer") {
+            	input name: "lockResumePlay2", type: "bool", title: "Attempt to resume playing audio?", required: false, defaultValue: (settings?.resumePlay == false) ? false : true
+            }
             input name: "lockModes2", type: "mode", title: "Talk when in these mode(s) (overrides default)", multiple: true, required: false
             input name: "lockStartTime2", type: "time", title: "Don't talk before (overrides default)", required: false, submitOnChange: true
             input name: "lockEndTime2", type: "time", title: "Don't talk after (overrides default)", required: (!(settings.lockStartTime2 == null))
@@ -1894,6 +2199,9 @@ def pageConfigLock(){
             input name: "lockTalkOnUnlock3", type: "text", title: "Say this when unlocked:", required: false
             input name: "lockTalkOnLock3", type: "text", title: "Say this when locked:", required: false
             input name: "lockSpeechDevice3", type: state.speechDeviceType, title: "Talk with these text-to-speech devices (overrides default)", multiple: true, required: false
+            if (state.speechDeviceType == "capability.musicPlayer") {
+            	input name: "lockResumePlay3", type: "bool", title: "Attempt to resume playing audio?", required: false, defaultValue: (settings?.resumePlay == false) ? false : true
+            }
             input name: "lockModes3", type: "mode", title: "Talk when in these mode(s) (overrides default)", multiple: true, required: false
             input name: "lockStartTime3", type: "time", title: "Don't talk before (overrides default)", required: false, submitOnChange: true
             input name: "lockEndTime3", type: "time", title: "Don't talk after (overrides default)", required: (!(settings.lockStartTime3 == null))
@@ -1918,6 +2226,9 @@ def pageConfigContact(){
             input name: "contactTalkOnOpen1", type: "text", title: "Say this when opened:", required: false, defaultValue: defaultSpeechOpen1
             input name: "contactTalkOnClose1", type: "text", title: "Say this when closed:", required: false, defaultValue: defaultSpeechClose1
             input name: "contactSpeechDevice1", type: state.speechDeviceType, title: "Talk with these text-to-speech devices (overrides default)", multiple: true, required: false
+            if (state.speechDeviceType == "capability.musicPlayer") {
+            	input name: "contactResumePlay1", type: "bool", title: "Attempt to resume playing audio?", required: false, defaultValue: (settings?.resumePlay == false) ? false : true
+            }
             input name: "contactModes1", type: "mode", title: "Talk when in these mode(s) (overrides default)", multiple: true, required: false
             input name: "contactStartTime1", type: "time", title: "Don't talk before (overrides default)", required: false, submitOnChange: true
             input name: "contactEndTime1", type: "time", title: "Don't talk after (overrides default)", required: (!(settings.contactStartTime1 == null))
@@ -1927,6 +2238,9 @@ def pageConfigContact(){
             input name: "contactTalkOnOpen2", type: "text", title: "Say this when opened:", required: false
             input name: "contactTalkOnClose2", type: "text", title: "Say this when closed:", required: false
             input name: "contactSpeechDevice2", type: state.speechDeviceType, title: "Talk with these text-to-speech devices (overrides default)", multiple: true, required: false
+            if (state.speechDeviceType == "capability.musicPlayer") {
+            	input name: "contactResumePlay2", type: "bool", title: "Attempt to resume playing audio?", required: false, defaultValue: (settings?.resumePlay == false) ? false : true
+            }
             input name: "contactModes2", type: "mode", title: "Talk when in these mode(s) (overrides default)", multiple: true, required: false
             input name: "contactStartTime2", type: "time", title: "Don't talk before (overrides default)", required: false, submitOnChange: true
             input name: "contactEndTime2", type: "time", title: "Don't talk after (overrides default)", required: (!(settings.contactStartTime2 == null))
@@ -1936,6 +2250,9 @@ def pageConfigContact(){
             input name: "contactTalkOnOpen3", type: "text", title: "Say this when opened:", required: false
             input name: "contactTalkOnClose3", type: "text", title: "Say this when closed:", required: false
             input name: "contactSpeechDevice3", type: state.speechDeviceType, title: "Talk with these text-to-speech devices (overrides default)", multiple: true, required: false
+            if (state.speechDeviceType == "capability.musicPlayer") {
+            	input name: "contactResumePlay3", type: "bool", title: "Attempt to resume playing audio?", required: false, defaultValue: (settings?.resumePlay == false) ? false : true
+            }
             input name: "contactModes3", type: "mode", title: "Talk when in these mode(s) (overrides default)", multiple: true, required: false
             input name: "contactStartTime3", type: "time", title: "Don't talk before (overrides default)", required: false, submitOnChange: true
             input name: "contactEndTime3", type: "time", title: "Don't talk after (overrides default)", required: (!(settings.contactStartTime3 == null))
@@ -1963,6 +2280,9 @@ def pageConfigMode(){
             input name: "modeExcludePhraseGroup1", type: "mode", title: "But not when changed from (optional): ", required: false, multiple: true
             input name: "TalkOnModeChange1", type: "text", title: "Say this when home mode is changed", required: false, defaultValue: defaultSpeechMode1
             input name: "modePhraseSpeechDevice1", type: state.speechDeviceType, title: "Talk with these text-to-speech devices (overrides default)", multiple: true, required: false
+            if (state.speechDeviceType == "capability.musicPlayer") {
+            	input name: "modePhraseResumePlay1", type: "bool", title: "Attempt to resume playing audio?", required: false, defaultValue: (settings?.resumePlay == false) ? false : true
+            }
             input name: "modeStartTime1", type: "time", title: "Don't talk before (overrides default)", required: false, submitOnChange: true
             input name: "modeEndTime1", type: "time", title: "Don't talk after (overrides default)", required: (!(settings.modeStartTime1 == null))
         }
@@ -1992,6 +2312,9 @@ def pageConfigThermostat(){
             input name: "thermostatTalkOnCooling1", type: "text", title: "Say this on change to cooling:", required: false, defaultValue: defaultSpeechCooling1
             input name: "thermostatTalkOnFan1", type: "text", title: "Say this on change to fan only:", required: false, defaultValue: defaultSpeechFan1
             input name: "thermostatSpeechDevice1", type: state.speechDeviceType, title: "Talk with these text-to-speech devices (overrides default)", multiple: true, required: false
+            if (state.speechDeviceType == "capability.musicPlayer") {
+            	input name: "thermostateResumePlay1", type: "bool", title: "Attempt to resume playing audio?", required: false, defaultValue: (settings?.resumePlay == false) ? false : true
+            }
             input name: "thermostatModes1", type: "mode", title: "Talk when in these mode(s) (overrides default)", multiple: true, required: false
             input name: "thermostatStartTime1", type: "time", title: "Don't talk before (overrides default)", required: false, submitOnChange: true
             input name: "thermostatEndTime1", type: "time", title: "Don't talk after (overrides default)", required: (!(settings.thermostatStartTime1 == null))
@@ -2016,6 +2339,9 @@ def pageConfigAcceleration(){
             input name: "accelerationTalkOnActive1", type: "text", title: "Say this when activated:", required: false, defaultValue: defaultSpeechActive1
             input name: "accelerationTalkOnInactive1", type: "text", title: "Say this when inactivated:", required: false, defaultValue: defaultSpeechInactive1
             input name: "accelerationSpeechDevice1", type: state.speechDeviceType, title: "Talk with these text-to-speech devices (overrides default)", multiple: true, required: false
+            if (state.speechDeviceType == "capability.musicPlayer") {
+            	input name: "accelerationResumePlay1", type: "bool", title: "Attempt to resume playing audio?", required: false, defaultValue: (settings?.resumePlay == false) ? false : true
+            }
             input name: "accelerationModes1", type: "mode", title: "Talk when in these mode(s) (overrides default)", multiple: true, required: false
             input name: "accelerationStartTime1", type: "time", title: "Don't talk before (overrides default)", required: false, submitOnChange: true
             input name: "accelerationEndTime1", type: "time", title: "Don't talk after (overrides default)", required: (!(settings.accelerationStartTime1 == null))
@@ -2025,6 +2351,9 @@ def pageConfigAcceleration(){
             input name: "accelerationTalkOnActive2", type: "text", title: "Say this when activated:", required: false
             input name: "accelerationTalkOnInactive2", type: "text", title: "Say this when inactivated:", required: false
             input name: "accelerationSpeechDevice2", type: state.speechDeviceType, title: "Talk with these text-to-speech devices (overrides default)", multiple: true, required: false
+            if (state.speechDeviceType == "capability.musicPlayer") {
+            	input name: "accelerationResumePlay2", type: "bool", title: "Attempt to resume playing audio?", required: false, defaultValue: (settings?.resumePlay == false) ? false : true
+            }
             input name: "accelerationModes2", type: "mode", title: "Talk when in these mode(s) (overrides default)", multiple: true, required: false
             input name: "accelerationStartTime2", type: "time", title: "Don't talk before (overrides default)", required: false, submitOnChange: true
             input name: "accelerationEndTime2", type: "time", title: "Don't talk after (overrides default)", required: (!(settings.accelerationStartTime2 == null))
@@ -2034,6 +2363,9 @@ def pageConfigAcceleration(){
             input name: "accelerationTalkOnActive3", type: "text", title: "Say this when activated:", required: false
             input name: "accelerationTalkOnInactive3", type: "text", title: "Say this when inactivated:", required: false
             input name: "accelerationSpeechDevice3", type: state.speechDeviceType, title: "Talk with these text-to-speech devices (overrides default)", multiple: true, required: false
+            if (state.speechDeviceType == "capability.musicPlayer") {
+            	input name: "accelerationResumePlay3", type: "bool", title: "Attempt to resume playing audio?", required: false, defaultValue: (settings?.resumePlay == false) ? false : true
+            }
             input name: "accelerationModes3", type: "mode", title: "Talk when in these mode(s) (overrides default)", multiple: true, required: false
             input name: "accelerationStartTime3", type: "time", title: "Don't talk before (overrides default)", required: false, submitOnChange: true
             input name: "accelerationEndTime3", type: "time", title: "Don't talk after (overrides default)", required: (!(settings.accelerationStartTime3 == null))
@@ -2058,6 +2390,9 @@ def pageConfigWater(){
             input name: "waterTalkOnWet1", type: "text", title: "Say this when wet:", required: false, defaultValue: defaultSpeechWet1
             input name: "waterTalkOnDry1", type: "text", title: "Say this when dry:", required: false, defaultValue: defaultSpeechDry1
             input name: "waterSpeechDevice1", type: state.speechDeviceType, title: "Talk with these text-to-speech devices (overrides default)", multiple: true, required: false
+            if (state.speechDeviceType == "capability.musicPlayer") {
+            	input name: "waterResumePlay1", type: "bool", title: "Attempt to resume playing audio?", required: false, defaultValue: (settings?.resumePlay == false) ? false : true
+            }
             input name: "waterModes1", type: "mode", title: "Talk when in these mode(s) (overrides default)", multiple: true, required: false
             input name: "waterStartTime1", type: "time", title: "Don't talk before (overrides default)", required: false, submitOnChange: true
             input name: "waterEndTime1", type: "time", title: "Don't talk after (overrides default)", required: (!(settings.waterStartTime1 == null))
@@ -2067,6 +2402,9 @@ def pageConfigWater(){
             input name: "waterTalkOnWet2", type: "text", title: "Say this when wet:", required: false
             input name: "waterTalkOnDry2", type: "text", title: "Say this when dry:", required: false
             input name: "waterSpeechDevice2", type: state.speechDeviceType, title: "Talk with these text-to-speech devices (overrides default)", multiple: true, required: false
+            if (state.speechDeviceType == "capability.musicPlayer") {
+            	input name: "waterResumePlay2", type: "bool", title: "Attempt to resume playing audio?", required: false, defaultValue: (settings?.resumePlay == false) ? false : true
+            }
             input name: "waterModes2", type: "mode", title: "Talk when in these mode(s) (overrides default)", multiple: true, required: false
             input name: "waterStartTime2", type: "time", title: "Don't talk before (overrides default)", required: false, submitOnChange: true
             input name: "waterEndTime2", type: "time", title: "Don't talk after (overrides default)", required: (!(settings.waterStartTime2 == null))
@@ -2076,6 +2414,9 @@ def pageConfigWater(){
             input name: "waterTalkOnWet3", type: "text", title: "Say this when wet:", required: false
             input name: "waterTalkOnDry3", type: "text", title: "Say this when dry:", required: false
             input name: "waterSpeechDevice3", type: state.speechDeviceType, title: "Talk with these text-to-speech devices (overrides default)", multiple: true, required: false
+            if (state.speechDeviceType == "capability.musicPlayer") {
+            	input name: "waterResumePlay3", type: "bool", title: "Attempt to resume playing audio?", required: false, defaultValue: (settings?.resumePlay == false) ? false : true
+            }
             input name: "waterModes3", type: "mode", title: "Talk when in these mode(s) (overrides default)", multiple: true, required: false
             input name: "waterStartTime3", type: "time", title: "Don't talk before (overrides default)", required: false, submitOnChange: true
             input name: "waterEndTime3", type: "time", title: "Don't talk after (overrides default)", required: (!(settings.waterStartTime3 == null))
@@ -2103,6 +2444,9 @@ def pageConfigSmoke(){
             input name: "smokeTalkOnClear1", type: "text", title: "Say this when cleared:", required: false, defaultValue: defaultSpeechClear1
             input name: "smokeTalkOnTest1", type: "text", title: "Say this when tested:", required: false, defaultValue: defaultSpeechTest1
             input name: "smokeSpeechDevice1", type: state.speechDeviceType, title: "Talk with these text-to-speech devices (overrides default)", multiple: true, required: false
+            if (state.speechDeviceType == "capability.musicPlayer") {
+            	input name: "smokeResumePlay1", type: "bool", title: "Attempt to resume playing audio?", required: false, defaultValue: (settings?.resumePlay == false) ? false : true
+            }
             input name: "smokeModes1", type: "mode", title: "Talk when in these mode(s) (overrides default)", multiple: true, required: false
             input name: "smokeStartTime1", type: "time", title: "Don't talk before (overrides default)", required: false, submitOnChange: true
             input name: "smokeEndTime1", type: "time", title: "Don't talk after (overrides default)", required: (!(settings.smokeStartTime1 == null))
@@ -2113,6 +2457,9 @@ def pageConfigSmoke(){
             input name: "smokeTalkOnClear2", type: "text", title: "Say this when cleared:", required: false
             input name: "smokeTalkOnTest2", type: "text", title: "Say this when tested:", required: false
             input name: "smokeSpeechDevice2", type: state.speechDeviceType, title: "Talk with these text-to-speech devices (overrides default)", multiple: true, required: false
+            if (state.speechDeviceType == "capability.musicPlayer") {
+            	input name: "smokeResumePlay2", type: "bool", title: "Attempt to resume playing audio?", required: false, defaultValue: (settings?.resumePlay == false) ? false : true
+            }
             input name: "smokeModes2", type: "mode", title: "Talk when in these mode(s) (overrides default)", multiple: true, required: false
             input name: "smokeStartTime2", type: "time", title: "Don't talk before (overrides default)", required: false, submitOnChange: true
             input name: "smokeEndTime2", type: "time", title: "Don't talk after (overrides default)", required: (!(settings.smokeStartTime2 == null))
@@ -2123,6 +2470,9 @@ def pageConfigSmoke(){
             input name: "smokeTalkOnClear3", type: "text", title: "Say this when cleared:", required: false
             input name: "smokeTalkOnTest3", type: "text", title: "Say this when tested:", required: false
             input name: "smokeSpeechDevice3", type: state.speechDeviceType, title: "Talk with these text-to-speech devices (overrides default)", multiple: true, required: false
+            if (state.speechDeviceType == "capability.musicPlayer") {
+            	input name: "smokeResumePlay3", type: "bool", title: "Attempt to resume playing audio?", required: false, defaultValue: (settings?.resumePlay == false) ? false : true
+            }
             input name: "smokeModes3", type: "mode", title: "Talk when in these mode(s) (overrides default)", multiple: true, required: false
             input name: "smokeStartTime3", type: "time", title: "Don't talk before (overrides default)", required: false, submitOnChange: true
             input name: "smokeEndTime3", type: "time", title: "Don't talk after (overrides default)", required: (!(settings.smokeStartTime3 == null))
@@ -2138,12 +2488,18 @@ def pageConfigButton(){
     dynamicPage(name: "pageConfigButton", title: "Configure talk on button press", install: false, uninstall: false) {
         section("Button Group 1"){
             def defaultSpeechButton1 = ""
+            def defaultSpeechButtonHold1 = ""
             if (!buttonDeviceGroup1) {
                 defaultSpeechButton1 = "%devicename% button pressed"
+                defaultSpeechButtonHold1 = "%devicename% button held"
             }
             input name: "buttonDeviceGroup1", type: "capability.button", title: "Button(s)", required: false, multiple: true
             input name: "buttonTalkOnPress1", type: "text", title: "Say this when pressed:", required: false, defaultValue: defaultSpeechButton1
+            input name: "buttonTalkOnHold1", type: "text", title: "Say this when held:", required: false, defaultValue: defaultSpeechButtonHold1
             input name: "buttonSpeechDevice1", type: state.speechDeviceType, title: "Talk with these text-to-speech devices (overrides default)", multiple: true, required: false
+            if (state.speechDeviceType == "capability.musicPlayer") {
+            	input name: "buttonResumePlay1", type: "bool", title: "Attempt to resume playing audio?", required: false, defaultValue: (settings?.resumePlay == false) ? false : true
+            }
             input name: "buttonModes1", type: "mode", title: "Talk when in these mode(s) (overrides default)", multiple: true, required: false
             input name: "buttonStartTime1", type: "time", title: "Don't talk before (overrides default)", required: false, submitOnChange: true
             input name: "buttonEndTime1", type: "time", title: "Don't talk after (overrides default)", required: (!(settings.buttonStartTime1 == null))
@@ -2151,7 +2507,11 @@ def pageConfigButton(){
         section("Button Group 2"){
             input name: "buttonDeviceGroup2", type: "capability.button", title: "Button(s)", required: false, multiple: true
             input name: "buttonTalkOnPress2", type: "text", title: "Say this when pressed:", required: false
+            input name: "buttonTalkOnHold2", type: "text", title: "Say this when held:", required: false
             input name: "buttonSpeechDevice2", type: state.speechDeviceType, title: "Talk with these text-to-speech devices (overrides default)", multiple: true, required: false
+            if (state.speechDeviceType == "capability.musicPlayer") {
+            	input name: "buttonResumePlay2", type: "bool", title: "Attempt to resume playing audio?", required: false, defaultValue: (settings?.resumePlay == false) ? false : true
+            }
             input name: "buttonModes2", type: "mode", title: "Talk when in these mode(s) (overrides default)", multiple: true, required: false
             input name: "buttonStartTime2", type: "time", title: "Don't talk before (overrides default)", required: false, submitOnChange: true
             input name: "buttonEndTime2", type: "time", title: "Don't talk after (overrides default)", required: (!(settings.buttonStartTime2 == null))
@@ -2159,7 +2519,11 @@ def pageConfigButton(){
         section("Button Group 3"){
             input name: "buttonDeviceGroup3", type: "capability.button", title: "Button(s)", required: false, multiple: true
             input name: "buttonTalkOnPress3", type: "text", title: "Say this when pressed:", required: false
+            input name: "buttonTalkOnHold3", type: "text", title: "Say this when held:", required: false
             input name: "buttonSpeechDevice3", type: state.speechDeviceType, title: "Talk with these text-to-speech devices (overrides default)", multiple: true, required: false
+            if (state.speechDeviceType == "capability.musicPlayer") {
+            	input name: "buttonResumePlay3", type: "bool", title: "Attempt to resume playing audio?", required: false, defaultValue: (settings?.resumePlay == false) ? false : true
+            }
             input name: "buttonModes3", type: "mode", title: "Talk when in these mode(s) (overrides default)", multiple: true, required: false
             input name: "buttonStartTime3", type: "time", title: "Don't talk before (overrides default)", required: false, submitOnChange: true
             input name: "buttonEndTime3", type: "time", title: "Don't talk after (overrides default)", required: (!(settings.buttonStartTime3 == null))
@@ -2168,7 +2532,58 @@ def pageConfigButton(){
             href "pageHelpPhraseTokens", title:"Phrase Tokens", description:"Tap for a list of phrase tokens"
         }
     }
-//End pageConfigSmoke()
+//End pageConfigButton()
+}
+
+def pageConfigSHM(){
+    dynamicPage(name: "pageConfigSHM", title: "Configure talk on Smart Home Monitor status change", install: false, uninstall: false) {
+        section("Smart Home Monitor - Armed, Away"){
+            def defaultSpeechSHMAway = ""
+            if (settings.SHMTalkOnAway == null) {
+                defaultSpeechSHMAway = "Smart Home Monitor is now Armed in Away mode"
+            }
+            input name: "SHMTalkOnAway", type: "text", title: "Say this when Armed, Away:", required: false, defaultValue: defaultSpeechSHMAway
+            input name: "SHMSpeechDeviceAway", type: state.speechDeviceType, title: "Talk with these text-to-speech devices (overrides default)", multiple: true, required: false
+            if (state.speechDeviceType == "capability.musicPlayer") {
+            	input name: "SHMResumePlayAway", type: "bool", title: "Attempt to resume playing audio?", required: false, defaultValue: (settings?.resumePlay == false) ? false : true
+            }
+            input name: "SHMModesAway", type: "mode", title: "Talk when in these mode(s) (overrides default)", multiple: true, required: false
+            input name: "SHMStartTimeAway", type: "time", title: "Don't talk before (overrides default)", required: false, submitOnChange: true
+            input name: "SHMEndTimeAway", type: "time", title: "Don't talk after (overrides default)", required: (!(settings.SHMStartTimeAway == null))
+        }
+        section("Smart Home Monitor - Armed, Home"){
+        	def defaultSpeechSHMHome = ""
+            if (settings.SHMTalkOnHome == null) {
+                defaultSpeechSHMHome = "Smart Home Monitor is now Armed in Home mode"
+            }
+            input name: "SHMTalkOnHome", type: "text", title: "Say this when Armed, Home:", required: false, defaultValue: defaultSpeechSHMHome
+            input name: "SHMSpeechDeviceHome", type: state.speechDeviceType, title: "Talk with these text-to-speech devices (overrides default)", multiple: true, required: false
+            if (state.speechDeviceType == "capability.musicPlayer") {
+            	input name: "SHMResumePlayHome", type: "bool", title: "Attempt to resume playing audio?", required: false, defaultValue: (settings?.resumePlay == false) ? false : true
+            }
+            input name: "SHMModesHome", type: "mode", title: "Talk when in these mode(s) (overrides default)", multiple: true, required: false
+            input name: "SHMStartTimeHome", type: "time", title: "Don't talk before (overrides default)", required: false, submitOnChange: true
+            input name: "SHMEndTimeHome", type: "time", title: "Don't talk after (overrides default)", required: (!(settings.SHMStartTimeHome == null))
+        }
+        section("Smart Home Monitor - Disarmed"){
+        	def defaultSpeechSHMDisarm = ""
+            if (settings.SHMTalkOnDisarm == null) {
+                defaultSpeechSHMDisarm = "Smart Home Monitor is now Disarmed"
+            }
+            input name: "SHMTalkOnDisarm", type: "text", title: "Say this when Disarmed:", required: false, defaultValue: defaultSpeechSHMDisarm
+            input name: "SHMSpeechDeviceDisarm", type: state.speechDeviceType, title: "Talk with these text-to-speech devices (overrides default)", multiple: true, required: false
+            if (state.speechDeviceType == "capability.musicPlayer") {
+            	input name: "SHMResumePlayDisarm", type: "bool", title: "Attempt to resume playing audio?", required: false, defaultValue: (settings?.resumePlay == false) ? false : true
+            }
+            input name: "SHMModesDisarm", type: "mode", title: "Talk when in these mode(s) (overrides default)", multiple: true, required: false
+            input name: "SHMStartTimeDisarm", type: "time", title: "Don't talk before (overrides default)", required: false, submitOnChange: true
+            input name: "SHMEndTimeDisarm", type: "time", title: "Don't talk after (overrides default)", required: (!(settings.SHMStartTimeDisarm == null))
+        }
+        section("Help"){
+            href "pageHelpPhraseTokens", title:"Phrase Tokens", description:"Tap for a list of phrase tokens"
+        }
+    }
+//End pageConfigSHM()
 }
 
 def pageConfigTime(){
@@ -2178,6 +2593,9 @@ def pageConfigTime(){
             input name: "timeSlotTime1", type: "time", title: "Time of day", required: false
             input name: "timeSlotOnTime1", type: "text", title: "Say on schedule:", required: false
             input name: "timeSlotSpeechDevice1", type: state.speechDeviceType, title: "Talk with these text-to-speech devices (overrides default)", multiple: true, required: false
+            if (state.speechDeviceType == "capability.musicPlayer") {
+            	input name: "timeSlotResumePlay1", type: "bool", title: "Attempt to resume playing audio?", required: false, defaultValue: (settings?.resumePlay == false) ? false : true
+            }
             input name: "timeSlotModes1", type: "mode", title: "Talk when in these mode(s) (overrides default)", multiple: true, required: false
         }
         section("Time Slot 2"){
@@ -2185,6 +2603,9 @@ def pageConfigTime(){
             input name: "timeSlotTime2", type: "time", title: "Time of day", required: false
             input name: "timeSlotOnTime2", type: "text", title: "Say on schedule:", required: false
             input name: "timeSlotSpeechDevice2", type: state.speechDeviceType, title: "Talk with these text-to-speech devices (overrides default)", multiple: true, required: false
+            if (state.speechDeviceType == "capability.musicPlayer") {
+            	input name: "timeSlotResumePlay2", type: "bool", title: "Attempt to resume playing audio?", required: false, defaultValue: (settings?.resumePlay == false) ? false : true
+            }
             input name: "timeSlotModes2", type: "mode", title: "Talk when in these mode(s) (overrides default)", multiple: true, required: false
         }
         section("Time Slot 3"){
@@ -2192,6 +2613,9 @@ def pageConfigTime(){
             input name: "timeSlotTime3", type: "time", title: "Time of day", required: false
             input name: "timeSlotOnTime3", type: "text", title: "Say on schedule:", required: false
             input name: "timeSlotSpeechDevice3", type: state.speechDeviceType, title: "Talk with these text-to-speech devices (overrides default)", multiple: true, required: false
+            if (state.speechDeviceType == "capability.musicPlayer") {
+            	input name: "timeSlotResumePlay3", type: "bool", title: "Attempt to resume playing audio?", required: false, defaultValue: (settings?.resumePlay == false) ? false : true
+            }
             input name: "timeSlotModes3", type: "mode", title: "Talk when in these mode(s) (overrides default)", multiple: true, required: false
         }
         section("Help"){
@@ -2205,7 +2629,9 @@ def installed() {
     //LOGTRACE("Installed with settings: ${settings}")
     LOGTRACE("Installed")
 	initialize()
-    myRunIn(60, poll)
+    if (((settings?.allowScheduledPoll == true || state?.allowScheduledPoll == true)) || ((settings?.allowScheduledPoll == null) || (state?.allowScheduledPoll == null))){ 
+    	myRunIn(60, poll) 
+    }
 //End installed()
 }
 
@@ -2216,7 +2642,9 @@ def updated() {
     LOGTRACE("Updated settings")
     unsubscribe()
     initialize()
-    myRunIn(60, poll)
+    if (((settings?.allowScheduledPoll == true || state?.allowScheduledPoll == true)) || ((settings?.allowScheduledPoll == null) || (state?.allowScheduledPoll == null))){ 
+    	myRunIn(60, poll) 
+    }
 //End updated()
 }
 
@@ -2225,9 +2653,12 @@ def checkConfig() {
     if (!(state.speechDeviceType)){
        state.speechDeviceType = "capability.musicPlayer" //Set a default if the app was update and didn't contain settings.speechDeviceType
     }
-    if (!(settings.speechDeviceDefault)){
-        configErrorList += "  ** Default speech device(s) not selected,"
-    }
+    if ((settings?.allowScheduledPoll == true) && (settings?.resumePlay == true)) { state.allowScheduledPoll = true }
+    if ((settings?.allowScheduledPoll == null) || (settings?.resumePlay == null)) { state.allowScheduledPoll = true }
+	if ((settings?.allowScheduledPoll == false) || (settings?.resumePlay == false)) { state.allowScheduledPoll = false}
+//    if (!(settings.speechDeviceDefault)){
+//        configErrorList += "  ** Default speech device(s) not selected,"
+//    }
     if (!(state.installed == true)) {
 	    configErrorList += "  ** state.installed not True,"
 	}
@@ -2249,6 +2680,7 @@ def initialize() {
         msg += "ERRORs:\n${state.configErrorList}"
         LOGTRACE(msg)
         sendNotificationEvent(msg)
+        state.polledDevices = ""
         return //App not properly configured, exit, don't subscribe
     }
     
@@ -2318,6 +2750,8 @@ def initSubscribe(){
     if (buttonDeviceGroup1) { subscribe(buttonDeviceGroup1, "button", onButton1Event) }
     if (buttonDeviceGroup2) { subscribe(buttonDeviceGroup2, "button", onButton2Event) }
     if (buttonDeviceGroup3) { subscribe(buttonDeviceGroup3, "button", onButton3Event) }
+    //Subscribe SHM
+    if (SHMTalkOnAway || SHMTalkOnHome || SHMTalkOnDisarm) { subscribe(location, "alarmSystemStatus", onSHMEvent) }
     //Subscribe Mode
     if (modePhraseGroup1) { subscribe(location, onModeChangeEvent) }
     
@@ -2345,6 +2779,7 @@ def onSchedule3Event(){
 }
 
 def processScheduledEvent(index, eventtime, alloweddays){
+	def resume = ""; resume = settings?.resumePlay; if (resume == "") { resume = true }
     def calendar = Calendar.getInstance()
 	calendar.setTimeZone(location.timeZone)
 	def today = calendar.get(Calendar.DAY_OF_WEEK)
@@ -2370,12 +2805,24 @@ def processScheduledEvent(index, eventtime, alloweddays){
                LOGDEBUG("Remain silent while in mode ${location.mode}")
                return
             }
-            if (index == 1) { state.TalkPhrase = settings.timeSlotOnTime1; state.speechDevice = timeSlotSpeechDevice1 }
-            if (index == 2) { state.TalkPhrase = settings.timeSlotOnTime2; state.speechDevice = timeSlotSpeechDevice2 }
-            if (index == 3) { state.TalkPhrase = settings.timeSlotOnTime3; state.speechDevice = timeSlotSpeechDevice3 }
+			if (state.speechDeviceType == "capability.musicPlayer") {
+				if (index == 1) {
+					if (!settings?.timeSlotResumePlay1 == null) { resume = settings.timeSlotResumePlay1 }
+				}
+				if (index == 2) {
+					if (!settings?.timeSlotResumePlay2 == null) { resume = settings.timeSlotResumePlay2 }
+				}
+				if (index == 3) {
+					if (!settings?.timeSlotResumePlay3 == null) { resume = settings.timeSlotResumePlay3 }
+				}
+                if (resume == null) { resume = true }
+			} else { resume = false }
+            if (index == 1) { state.TalkPhrase = settings.timeSlotOnTime1; state.speechDevice = timeSlotSpeechDevice1}
+            if (index == 2) { state.TalkPhrase = settings.timeSlotOnTime2; state.speechDevice = timeSlotSpeechDevice2}
+            if (index == 3) { state.TalkPhrase = settings.timeSlotOnTime3; state.speechDevice = timeSlotSpeechDevice3}
             def customevent = [displayName: 'BigTalker:OnSchedule', name: 'OnSchedule', value: "${todayStr}@${timeNow}"]
             state.TalkPhrase = processPhraseVariables(state.TalkPhrase, customevent)
-            Talk(state.TalkPhrase, state.speechDevice, customevent)
+            Talk(state.TalkPhrase, state.speechDevice, resume, customevent)
         }
     }
     if (!dayMatch) { LOGDEBUG("Time matches, but day does not match schedule; remaining silent") }
@@ -2395,6 +2842,7 @@ def onMotion3Event(evt){
 }
 
 def processMotionEvent(index, evt){
+	def resume = ""; resume = settings?.resumePlay; if (resume == "") { resume = true }
     LOGDEBUG("(onMotionEvent): ${evt.name}, ${index}, ${evt.value}")
     //Are we in an allowed time period?
     if (!(timeAllowed("motion",index))) {
@@ -2408,17 +2856,29 @@ def processMotionEvent(index, evt){
     }
     state.TalkPhrase = null
     state.speechDevice = null
+	if (state.speechDeviceType == "capability.musicPlayer") {
+		if (index == 1) {
+			if (!settings?.motionResumePlay1 == null) { resume = settings.motionResumePlay1 }
+		}
+		if (index == 2) {
+			if (!settings?.motionResumePlay2 == null) { resume = settings.motionResumePlay2 }
+		}
+		if (index == 3) {
+			if (!settings?.motionResumePlay3 == null) { resume = settings.motionResumePlay3 }
+		}
+        if (resume == null) { resume = true }
+	} else { resume = false }
     if (evt.value == "active") {
         if (index == 1) { state.TalkPhrase = settings.motionTalkActive1; state.speechDevice = motionSpeechDevice1}
         if (index == 2) { state.TalkPhrase = settings.motionTalkActive2; state.speechDevice = motionSpeechDevice2}
         if (index == 3) { state.TalkPhrase = settings.motionTalkActive3; state.speechDevice = motionSpeechDevice3}
-        Talk(state.TalkPhrase, state.speechDevice, evt)
+        Talk(state.TalkPhrase, state.speechDevice, resume, evt)
     }
     if (evt.value == "inactive") {
         if (index == 1) { state.TalkPhrase = settings.motionTalkInactive1; state.speechDevice = motionSpeechDevice1}
         if (index == 2) { state.TalkPhrase = settings.motionTalkInactive2; state.speechDevice = motionSpeechDevice2}
         if (index == 3) { state.TalkPhrase = settings.motionTalkInactive3; state.speechDevice = motionSpeechDevice3}
-        Talk(state.TalkPhrase, state.speechDevice, evt)
+        Talk(state.TalkPhrase, state.speechDevice, resume, evt)
     }
     state.TalkPhrase = null
     state.speechDevice = null
@@ -2440,6 +2900,7 @@ def onSwitch3Event(evt){
 }
 
 def processSwitchEvent(index, evt){
+	def resume = ""; resume = settings?.resumePlay; if (resume == "") { resume = true }
     LOGDEBUG("(onSwitchEvent): ${evt.name}, ${index}, ${evt.value}")
     //Are we in an allowed time period?
     if (!(timeAllowed("switch",index))) {
@@ -2453,17 +2914,29 @@ def processSwitchEvent(index, evt){
     }
     state.TalkPhrase = null
     state.speechDevice = null
+	if (state.speechDeviceType == "capability.musicPlayer") {
+		if (index == 1) {
+			if (!(settings?.switchResumePlay1 == null)) { resume = settings.switchResumePlay1 }
+		}
+		if (index == 2) {
+			if (!(settings?.switchResumePlay2 == null)) { resume = settings.switchResumePlay2 }
+		}
+		if (index == 3) {
+			if (!(settings?.switchResumePlay3 == null)) { resume = settings.switchResumePlay3 }
+		}
+        if (resume == null) { resume = true }
+	} else { resume = false }
     if (evt.value == "on") {
         if (index == 1) { state.TalkPhrase = settings.switchTalkOn1; state.speechDevice = switchSpeechDevice1}
         if (index == 2) { state.TalkPhrase = settings.switchTalkOn2; state.speechDevice = switchSpeechDevice2}
         if (index == 3) { state.TalkPhrase = settings.switchTalkOn3; state.speechDevice = switchSpeechDevice3}
-        Talk(state.TalkPhrase, state.speechDevice, evt)
+        Talk(state.TalkPhrase, state.speechDevice, resume, evt)
     }
     if (evt.value == "off") {
         if (index == 1) { state.TalkPhrase = settings.switchTalkOff1; state.speechDevice = switchSpeechDevice1}
         if (index == 2) { state.TalkPhrase = settings.switchTalkOff2; state.speechDevice = switchSpeechDevice2}
         if (index == 3) { state.TalkPhrase = settings.switchTalkOff3; state.speechDevice = switchSpeechDevice3}
-        Talk(state.TalkPhrase, state.speechDevice, evt)
+        Talk(state.TalkPhrase, state.speechDevice, resume, evt)
     }
     state.TalkPhrase = null
     state.speechDevice = null
@@ -2482,6 +2955,7 @@ def onPresence3Event(evt){
 }
 
 def processPresenceEvent(index, evt){
+	def resume = ""; resume = settings?.resumePlay; if (resume == "") { resume = true }
     LOGDEBUG("(onPresenceEvent): ${evt.name}, ${index}, ${evt.value}")
     //Are we in an allowed time period?
     if (!(timeAllowed("presence",index))) {
@@ -2495,17 +2969,29 @@ def processPresenceEvent(index, evt){
     }
     state.TalkPhrase = null
     state.speechDevice = null
+	if (state.speechDeviceType == "capability.musicPlayer") {
+		if (index == 1) {
+			if (!settings?.presResumePlay1 == null) { resume = settings.presResumePlay1 }
+		}
+		if (index == 2) {
+			if (!settings?.presResumePlay2 == null) { resume = settings.presResumePlay2 }
+		}
+		if (index == 3) {
+			if (!settings?.presResumePlay3 == null) { resume = settings.presResumePlay3 }
+		}
+        if (resume == null) { resume = true }
+	} else { resume = false }
     if (evt.value == "present") {
         if (index == 1) { state.TalkPhrase = settings.presTalkOnArrive1; state.speechDevice = presSpeechDevice1}
         if (index == 2) { state.TalkPhrase = settings.presTalkOnArrive2; state.speechDevice = presSpeechDevice2}
         if (index == 3) { state.TalkPhrase = settings.presTalkOnArrive3; state.speechDevice = presSpeechDevice3}
-        Talk(state.TalkPhrase, state.speechDevice, evt)
+        Talk(state.TalkPhrase, state.speechDevice, resume, evt)
     }
     if (evt.value == "not present") {
         if (index == 1) { state.TalkPhrase = settings.presTalkOnLeave1; state.speechDevice = presSpeechDevice1}
         if (index == 2) { state.TalkPhrase = settings.presTalkOnLeave2; state.speechDevice = presSpeechDevice2}
         if (index == 3) { state.TalkPhrase = settings.presTalkOnLeave3; state.speechDevice = presSpeechDevice3}
-        Talk(state.TalkPhrase, state.speechDevice, evt)
+        Talk(state.TalkPhrase, state.speechDevice, resume, evt)
     }
     state.TalkPhrase = null
     state.speechDevice = null
@@ -2525,6 +3011,7 @@ def onLockEvent(evt){
 }
 
 def processLockEvent(index, evt){
+	def resume = ""; resume = settings?.resumePlay; if (resume == "") { resume = true }
     LOGDEBUG("(onLockEvent): ${evt.name}, ${index}, ${evt.value}")
     //Are we in an allowed time period?
     if (!(timeAllowed("lock",index))) {
@@ -2538,17 +3025,29 @@ def processLockEvent(index, evt){
     }
     state.TalkPhrase = null
     state.speechDevice = null
+	if (state.speechDeviceType == "capability.musicPlayer") {
+		if (index == 1) {
+			if (!settings?.lockResumePlay1 == null) { resume = settings.lockResumePlay1 }
+		}
+		if (index == 2) {
+			if (!settings?.lockResumePlay2 == null) { resume = settings.lockResumePlay2 }
+		}
+		if (index == 3) {
+			if (!settings?.lockResumePlay3 == null) { resume = settings.lockResumePlay3 }
+		}
+        if (resume == null) { resume = true }
+	} else { resume = false }
     if (evt.value == "locked") {
         if (index == 1) { state.TalkPhrase = settings.lockTalkOnLock1; state.speechDevice = lockSpeechDevice1}
         if (index == 2) { state.TalkPhrase = settings.lockTalkOnLock2; state.speechDevice = lockSpeechDevice2}
         if (index == 3) { state.TalkPhrase = settings.lockTalkOnLock3; state.speechDevice = lockSpeechDevice3}
-        Talk(state.TalkPhrase, state.speechDevice, evt)
+        Talk(state.TalkPhrase, state.speechDevice, resume, evt)
     }
     if (evt.value == "unlocked") {
         if (index == 1) { state.TalkPhrase = settings.lockTalkOnUnlock1; state.speechDevice = lockSpeechDevice1}
         if (index == 2) { state.TalkPhrase = settings.lockTalkOnUnlock2; state.speechDevice = lockSpeechDevice2}
         if (index == 3) { state.TalkPhrase = settings.lockTalkOnUnlock3; state.speechDevice = lockSpeechDevice3}
-        Talk(state.TalkPhrase, state.speechDevice, evt)
+        Talk(state.TalkPhrase, state.speechDevice, resume, evt)
     }
     state.TalkPhrase = null
     state.speechDevice = null
@@ -2567,6 +3066,7 @@ def onContactEvent(evt){
 }
 
 def processContactEvent(index, evt){
+	def resume = ""; resume = settings?.resumePlay; if (resume == "") { resume = true }
     LOGDEBUG("(onContactEvent): ${evt.name}, ${index}, ${evt.value}")
     //Are we in an allowed time period?
     if (!(timeAllowed("contact",index))) {
@@ -2580,17 +3080,29 @@ def processContactEvent(index, evt){
     }
     state.TalkPhrase = null
     state.speechDevice = null
+	if (state.speechDeviceType == "capability.musicPlayer") {
+		if (index == 1) {
+			if (!settings?.contactResumePlay1 == null) { resume = settings.contactResumePlay1 }
+		}
+		if (index == 2) {
+			if (!settings?.contactResumePlay2 == null) { resume = settings.contactResumePlay2 }
+		}
+		if (index == 3) {
+			if (!settings?.contactResumePlay3 == null) { resume = settings.contactResumePlay3 }
+		}
+        if (resume == null) { resume = true }
+	} else { resume = false }
     if (evt.value == "open") {
         if (index == 1) { state.TalkPhrase = settings.contactTalkOnOpen1; state.speechDevice = contactSpeechDevice1}
         if (index == 2) { state.TalkPhrase = settings.contactTalkOnOpen2; state.speechDevice = contactSpeechDevice2}
         if (index == 3) { state.TalkPhrase = settings.contactTalkOnOpen3; state.speechDevice = contactSpeechDevice3}
-        Talk(state.TalkPhrase, state.speechDevice, evt)
+        Talk(state.TalkPhrase, state.speechDevice, resume, evt)
     }
     if (evt.value == "closed") {
         if (index == 1) { state.TalkPhrase = settings.contactTalkOnClose1; state.speechDevice = contactSpeechDevice1}
         if (index == 2) { state.TalkPhrase = settings.contactTalkOnClose2; state.speechDevice = contactSpeechDevice2}
         if (index == 3) { state.TalkPhrase = settings.contactTalkOnClose3; state.speechDevice = contactSpeechDevice3}
-        Talk(state.TalkPhrase, state.speechDevice, evt)
+        Talk(state.TalkPhrase, state.speechDevice, resume, evt)
     }
     state.TalkPhrase = null
     state.speechDevice = null
@@ -2602,6 +3114,7 @@ def onModeChangeEvent(evt){
     processModeChangeEvent(1, evt)
 }
 def processModeChangeEvent(index, evt){
+	def resume = ""; resume = settings?.resumePlay; if (resume == "") { resume = true }
     LOGDEBUG("(onModeEvent): Last Mode: ${state.lastMode}, New Mode: ${location.mode}")
     //Are we in an allowed time period?
     if (!(timeAllowed("mode",index))) {
@@ -2609,6 +3122,18 @@ def processModeChangeEvent(index, evt){
         state.lastMode = location.mode
         return
     }
+	if (state.speechDeviceType == "capability.musicPlayer") {
+		if (index == 1) {
+			if (!settings?.modePhraseResumePlay1 == null) { resume = settings.modePhraseResumePlay1 }
+		}
+		if (index == 2) {
+			if (!settings?.modePhraseResumePlay2 == null) { resume = settings.modePhraseResumePlay2 }
+		}
+		if (index == 3) {
+			if (!settings?.modePhraseResumePlay3 == null) { resume = settings.modePhraseResumePlay3 }
+		}
+        if (resume == null) { resume = true }
+	} else { resume = false }
     if (settings.modePhraseGroup1.contains(location.mode)){
         if (!settings.modeExcludePhraseGroup1 == null){
             //settings.modeExcluePhraseGroup1 is not empty
@@ -2617,7 +3142,7 @@ def processModeChangeEvent(index, evt){
                 state.TalkPhrase = null
                 state.speechDevice = null
                 state.TalkPhrase = settings.TalkOnModeChange1; state.speechDevice = modePhraseSpeechDevice1
-                Talk(state.TalkPhrase, state.speechDevice, evt)
+                Talk(state.TalkPhrase, state.speechDevice, resume, evt)
                 state.TalkPhrase = null
                 state.speechDevice = null
             } else {
@@ -2628,7 +3153,7 @@ def processModeChangeEvent(index, evt){
             state.TalkPhrase = null
             state.speechDevice = null
             state.TalkPhrase = settings.TalkOnModeChange1; state.speechDevice = modePhraseSpeechDevice1
-            Talk(state.TalkPhrase, state.speechDevice, evt)
+            Talk(state.TalkPhrase, state.speechDevice, resume, evt)
             state.TalkPhrase = null
             state.speechDevice = null
         }
@@ -2649,6 +3174,7 @@ def onThermostatEvent(evt){
 }
 
 def processThermostatEvent(index, evt){
+	def resume = ""; resume = settings?.resumePlay; if (resume == "") { resume = true }
     LOGDEBUG("(onThermostatEvent): ${evt.name}, ${index}, ${evt.value}")
     //Are we in an allowed time period?
     if (!(timeAllowed("thermostat",index))) {
@@ -2662,29 +3188,41 @@ def processThermostatEvent(index, evt){
     }
     state.TalkPhrase = null
     state.speechDevice = null
+	if (state.speechDeviceType == "capability.musicPlayer") {
+		if (index == 1) {
+			if (!settings?.thermostatResumePlay1 == null) { resume = settings.thermostatResumePlay1 }
+		}
+		if (index == 2) {
+			if (!settings?.thermostatResumePlay2 == null) { resume = settings.thermostatResumePlay2 }
+		}
+		if (index == 3) {
+			if (!settings?.thermostatResumePlay3 == null) { resume = settings.thermostatResumePlay3 }
+		}
+        if (resume == null) { resume = true }
+	} else { resume = false }
     if (evt.value == "idle") {
         if (index == 1) { state.TalkPhrase = settings.thermostatTalkOnIdle1; state.speechDevice = thermostatSpeechDevice1}
         if (index == 2) { state.TalkPhrase = settings.thermostatTalkOnIdle2; state.speechDevice = thermostatSpeechDevice2}
         if (index == 3) { state.TalkPhrase = settings.thermostatTalkOnIdle3; state.speechDevice = thermostatSpeechDevice3}
-        Talk(state.TalkPhrase, state.speechDevice, evt)
+        Talk(state.TalkPhrase, state.speechDevice, resume, evt)
     }
     if (evt.value == "heating") {
         if (index == 1) { state.TalkPhrase = settings.thermostatTalkOnHeating1; state.speechDevice = thermostatSpeechDevice1}
         if (index == 2) { state.TalkPhrase = settings.thermostatTalkOnHeating2; state.speechDevice = thermostatSpeechDevice2}
         if (index == 3) { state.TalkPhrase = settings.thermostatTalkOnHeating3; state.speechDevice = thermostatSpeechDevice3}
-        Talk(state.TalkPhrase, state.speechDevice, evt)
+        Talk(state.TalkPhrase, state.speechDevice, resume, evt)
     }
     if (evt.value == "cooling") {
         if (index == 1) { state.TalkPhrase = settings.thermostatTalkOnCooling1; state.speechDevice = thermostatSpeechDevice1}
         if (index == 2) { state.TalkPhrase = settings.thermostatTalkOnCooling2; state.speechDevice = thermostatSpeechDevice2}
         if (index == 3) { state.TalkPhrase = settings.thermostatTalkOnCooling3; state.speechDevice = thermostatSpeechDevice3}
-        Talk(state.TalkPhrase, state.speechDevice, evt)
+        Talk(state.TalkPhrase, state.speechDevice, resume, evt)
     }
     if (evt.value == "fan only") {
         if (index == 1) { state.TalkPhrase = settings.thermostatTalkOnFan1; state.speechDevice = thermostatSpeechDevice1}
         if (index == 2) { state.TalkPhrase = settings.thermostatTalkOnFan2; state.speechDevice = thermostatSpeechDevice2}
         if (index == 3) { state.TalkPhrase = settings.thermostatTalkOnFan3; state.speechDevice = thermostatSpeechDevice3}
-        Talk(state.TalkPhrase, state.speechDevice, evt)
+        Talk(state.TalkPhrase, state.speechDevice, resume, evt)
     }
 
     state.TalkPhrase = null
@@ -2704,6 +3242,7 @@ def onAcceleration3Event(evt){
 }
 
 def processAccelerationEvent(index, evt){
+	def resume = ""; resume = settings?.resumePlay; if (resume == "") { resume = true }
     LOGDEBUG("(onAccelerationEvent): ${evt.name}, ${index}, ${evt.value}")
     //Are we in an allowed time period?
     if (!(timeAllowed("acceleration",index))) {
@@ -2717,17 +3256,29 @@ def processAccelerationEvent(index, evt){
     }
     state.TalkPhrase = null
     state.speechDevice = null
+	if (state.speechDeviceType == "capability.musicPlayer") {
+		if (index == 1) {
+			if (!settings?.accelerationResumePlay1 == null) { resume = settings.accelerationResumePlay1 }
+		}
+		if (index == 2) {
+			if (!settings?.accelerationResumePlay2 == null) { resume = settings.accelerationResumePlay2 }
+		}
+		if (index == 3) {
+			if (!settings?.accelerationResumePlay3 == null) { resume = settings.accelerationResumePlay3 }
+		}
+        if (resume == null) { resume = true }
+	} else { resume = false }
     if (evt.value == "active") {
         if (index == 1) { state.TalkPhrase = settings.accelerationTalkOnActive1; state.speechDevice = accelerationSpeechDevice1}
         if (index == 2) { state.TalkPhrase = settings.accelerationTalkOnActive2; state.speechDevice = accelerationSpeechDevice2}
         if (index == 3) { state.TalkPhrase = settings.accelerationTalkOnActive3; state.speechDevice = accelerationSpeechDevice3}
-        Talk(state.TalkPhrase, state.speechDevice, evt)
+        Talk(state.TalkPhrase, state.speechDevice, resume, evt)
     }
     if (evt.value == "inactive") {
         if (index == 1) { state.TalkPhrase = settings.accelerationTalkOnInactive1; state.speechDevice = accelerationSpeechDevice1}
         if (index == 2) { state.TalkPhrase = settings.accelerationTalkOnInactive2; state.speechDevice = accelerationSpeechDevice2}
         if (index == 3) { state.TalkPhrase = settings.accelerationTalkOnInactive3; state.speechDevice = accelerationSpeechDevice3}
-        Talk(state.TalkPhrase, state.speechDevice, evt)
+        Talk(state.TalkPhrase, state.speechDevice, resume, evt)
     }
     state.TalkPhrase = null
     state.speechDevice = null
@@ -2746,6 +3297,7 @@ def onWater3Event(evt){
 }
 
 def processWaterEvent(index, evt){
+	def resume = ""; resume = settings?.resumePlay; if (resume == "") { resume = true }
     LOGDEBUG("(onWaterEvent): ${evt.name}, ${index}, ${evt.value}")
     //Are we in an allowed time period?
     if (!(timeAllowed("water",index))) {
@@ -2759,17 +3311,29 @@ def processWaterEvent(index, evt){
     }
     state.TalkPhrase = null
     state.speechDevice = null
+	if (state.speechDeviceType == "capability.musicPlayer") {
+		if (index == 1) {
+			if (!settings?.waterResumePlay1 == null) { resume = settings.waterResumePlay1 }
+		}
+		if (index == 2) {
+			if (!settings?.waterResumePlay2 == null) { resume = settings.waterResumePlay2 }
+		}
+		if (index == 3) {
+			if (!settings?.waterResumePlay3 == null) { resume = settings.waterResumePlay3 }
+		}
+        if (resume == null) { resume = true }
+	} else { resume = false }
     if (evt.value == "wet") {
         if (index == 1) { state.TalkPhrase = settings.waterTalkOnWet1; state.speechDevice = waterSpeechDevice1}
         if (index == 2) { state.TalkPhrase = settings.waterTalkOnWet2; state.speechDevice = waterSpeechDevice2}
         if (index == 3) { state.TalkPhrase = settings.waterTalkOnWet3; state.speechDevice = waterSpeechDevice3}
-        Talk(state.TalkPhrase, state.speechDevice, evt)
+        Talk(state.TalkPhrase, state.speechDevice, resume, evt)
     }
     if (evt.value == "dry") {
         if (index == 1) { state.TalkPhrase = settings.waterTalkOnDry1; state.speechDevice = waterSpeechDevice1}
         if (index == 2) { state.TalkPhrase = settings.waterTalkOnDry2; state.speechDevice = waterSpeechDevice2}
         if (index == 3) { state.TalkPhrase = settings.waterTalkOnDry3; state.speechDevice = waterSpeechDevice3}
-        Talk(state.TalkPhrase, state.speechDevice, evt)
+        Talk(state.TalkPhrase, state.speechDevice, resume, evt)
     }
     state.TalkPhrase = null
     state.speechDevice = null
@@ -2788,6 +3352,7 @@ def onSmoke3Event(evt){
 }
 
 def processSmokeEvent(index, evt){
+	def resume = ""; resume = settings?.resumePlay; if (resume == "") { resume = true }
     LOGDEBUG("(onSmokeEvent): ${evt.name}, ${index}, ${evt.value}")
     //Are we in an allowed time period?
     if (!(timeAllowed("smoke",index))) {
@@ -2801,23 +3366,35 @@ def processSmokeEvent(index, evt){
     }
     state.TalkPhrase = null
     state.speechDevice = null
+	if (state.speechDeviceType == "capability.musicPlayer") {
+		if (index == 1) {
+			if (!settings?.smokeResumePlay1 == null) { resume = settings.smokeResumePlay1 }
+		}
+		if (index == 2) {
+			if (!settings?.smokeResumePlay2 == null) { resume = settings.smokeResumePlay2 }
+		}
+		if (index == 3) {
+			if (!settings?.smokeResumePlay3 == null) { resume = settings.smokeResumePlay3 }
+		}
+        if (resume == null) { resume = true }
+	} else { resume = false }
     if (evt.value == "detected") {
         if (index == 1) { state.TalkPhrase = settings.smokeTalkOnDetect1; state.speechDevice = smokeSpeechDevice1}
         if (index == 2) { state.TalkPhrase = settings.smokeTalkOnDetect2; state.speechDevice = smokeSpeechDevice2}
         if (index == 3) { state.TalkPhrase = settings.smokeTalkOnDetect3; state.speechDevice = smokeSpeechDevice3}
-        Talk(state.TalkPhrase, state.speechDevice, evt)
+        Talk(state.TalkPhrase, state.speechDevice, resume, evt)
     }
     if (evt.value == "clear") {
         if (index == 1) { state.TalkPhrase = settings.smokeTalkOnClear1; state.speechDevice = smokeSpeechDevice1}
         if (index == 2) { state.TalkPhrase = settings.smokeTalkOnClear2; state.speechDevice = smokeSpeechDevice2}
         if (index == 3) { state.TalkPhrase = settings.smokeTalkOnClear3; state.speechDevice = smokeSpeechDevice3}
-        Talk(state.TalkPhrase, state.speechDevice, evt)
+        Talk(state.TalkPhrase, state.speechDevice, resume, evt)
     }
     if (evt.value == "tested") {
         if (index == 1) { state.TalkPhrase = settings.smokeTalkOnTest1; state.speechDevice = smokeSpeechDevice1}
         if (index == 2) { state.TalkPhrase = settings.smokeTalkOnTest2; state.speechDevice = smokeSpeechDevice2}
         if (index == 3) { state.TalkPhrase = settings.smokeTalkOnTest3; state.speechDevice = smokeSpeechDevice3}
-        Talk(state.TalkPhrase, state.speechDevice, evt)
+        Talk(state.TalkPhrase, state.speechDevice, resume, evt)
     }
     state.TalkPhrase = null
     state.speechDevice = null
@@ -2836,6 +3413,7 @@ def onButton3Event(evt){
 }
 
 def processButtonEvent(index, evt){
+	def resume = ""; resume = settings?.resumePlay; if (resume == "") { resume = true }
     LOGDEBUG("(onButtonEvent): ${evt.name}, ${index}, ${evt.value}")
     //Are we in an allowed time period?
     if (!(timeAllowed("button",index))) {
@@ -2849,14 +3427,72 @@ def processButtonEvent(index, evt){
     }
     state.TalkPhrase = null
     state.speechDevice = null
-    if (index == 1) { state.TalkPhrase = settings.buttonTalkOnPress1; state.speechDevice = buttonSpeechDevice1}
-    if (index == 2) { state.TalkPhrase = settings.buttonTalkOnPress2; state.speechDevice = buttonSpeechDevice2}
-    if (index == 3) { state.TalkPhrase = settings.buttonTalkOnPress3; state.speechDevice = buttonSpeechDevice3}
-    Talk(state.TalkPhrase, state.speechDevice, evt)
+	if (state.speechDeviceType == "capability.musicPlayer") {
+		if (index == 1) {
+			if (!settings?.buttonResumePlay1 == null) { resume = settings.buttonResumePlay1 }
+		}
+		if (index == 2) {
+			if (!settings?.buttonResumePlay2 == null) { resume = settings.buttonResumePlay2 }
+		}
+		if (index == 3) {
+			if (!settings?.buttonResumePlay3 == null) { resume = settings.buttonResumePlay3 }
+		}
+        if (resume == null) { resume = true }
+	} else { resume = false }
+    if (index == 1 && evt.value == "pushed") { state.TalkPhrase = settings.buttonTalkOnPress1; state.speechDevice = buttonSpeechDevice1}
+    if (index == 2 && evt.value == "pushed") { state.TalkPhrase = settings.buttonTalkOnPress2; state.speechDevice = buttonSpeechDevice2}
+    if (index == 3 && evt.value == "pushed") { state.TalkPhrase = settings.buttonTalkOnPress3; state.speechDevice = buttonSpeechDevice3}
+    if (index == 1 && evt.value == "held") { state.TalkPhrase = settings.buttonTalkOnHold1; state.speechDevice = buttonSpeechDevice1}
+    if (index == 2 && evt.value == "held") { state.TalkPhrase = settings.buttonTalkOnHold2; state.speechDevice = buttonSpeechDevice2}
+    if (index == 3 && evt.value == "held") { state.TalkPhrase = settings.buttonTalkOnHold3; state.speechDevice = buttonSpeechDevice3}
+    Talk(state.TalkPhrase, state.speechDevice, resume, evt)
     state.TalkPhrase = null
     state.speechDevice = null
 }
 //END HANDLE BUTTON
+
+//BEGIN HANDLE SHM
+def onSHMEvent(evt){
+	if (evt.value == "away") {processSHMEvent(1, evt)}
+    if (evt.value == "stay") {processSHMEvent(2, evt)}
+    if (evt.value == "off") {processSHMEvent(3, evt)}
+}
+
+def processSHMEvent(index, evt){
+	def resume = ""; resume = settings?.resumePlay; if (resume == "") { resume = true }
+    LOGDEBUG("(onSHMEvent): ${evt.name}, ${index}, ${evt.value}")
+    //Are we in an allowed time period?
+    if (!(timeAllowed("SHM",index))) {
+        LOGDEBUG("Remain silent in current time period")
+        return
+    }
+    //Are we in a talking mode?
+    if (!(modeAllowed("SHM",index))) { 
+        LOGDEBUG("Remain silent while in mode ${location.mode}")
+        return
+    }
+    state.TalkPhrase = null
+    state.speechDevice = null
+	if (state.speechDeviceType == "capability.musicPlayer") {
+		if (index == 1) {
+			if (!settings?.SHMResumePlayAway == null) { resume = settings.SHMResumePlayAway }
+		}
+		if (index == 2) {
+			if (!settings?.SHMResumePlayHome == null) { resume = settings.SHMResumePlayHome }
+		}
+		if (index == 3) {
+			if (!settings?.SHMResumePlayDisarm == null) { resume = settings.SHMResumePlayDisarm }
+		}
+        if (resume == null) { resume = true }
+	} else { resume = false }
+    if (index == 1) {state.TalkPhrase = settings.SHMTalkOnAway; state.speechDevice = SHMSpeechDeviceAway}
+    if (index == 2) {state.TalkPhrase = settings.SHMTalkOnHome; state.speechDevice = SHMSpeechDeviceHome}
+    if (index == 3) {state.TalkPhrase = settings.SHMTalkOnDisarm; state.speechDevice = SHMSpeechDeviceDisarm}
+    Talk(state.TalkPhrase, state.speechDevice, resume, evt)
+    state.TalkPhrase = null
+    state.speechDevice = null
+}
+//END HANDLE SHM
 
 def processPhraseVariables(phrase, evt){
     def zipCode = location.zipCode
@@ -2949,7 +3585,7 @@ def processPhraseVariables(phrase, evt){
     if (phrase.toLowerCase().contains("%shmstatus%")) {
     	def shmstatus = location.currentState("alarmSystemStatus")?.value
         LOGDEBUG("SHMSTATUS=${shmstatus}")
-		def shmmessage = [off : "Disarmed", away: "Armed, away", stay: "Armed, stay"][shmstatus] ?: shmstatus
+		def shmmessage = [off : "Disarmed", away: "Armed, away", home: "Armed, home"][shmstatus] ?: shmstatus
         LOGDEBUG("SHMMESSAGE=${shmmessage}")
         phrase = phrase.replace("%shmstatus%", shmmessage)
     }
@@ -2965,6 +3601,15 @@ def processPhraseVariables(phrase, evt){
     if (phrase.contains("80S")) { phrase = phrase.replace("80S","eighties") }
     if (phrase.contains("90S")) { phrase = phrase.replace("90S","nineties") }
     if (phrase.contains("100S")) { phrase = phrase.replace("100S","one hundreds") }
+    if (phrase.contains("%askalexa%")) {
+    	phrase=phrase.replace("%askalexa%","")
+        if (!(phrase == "") && (!(phrase == null))){
+    		LOGTRACE("Sending to AskAlexa: ${phrase}.")
+	        sendLocationEvent(name: "AskAlexaMsgQueue", value: "BigTalker", isStateChange: true, descriptionText: phrase)
+        }else{
+        	LOGERROR("Phrase only contained %askalexa%. Nothing to say/send.")
+        }
+    }
     if (phrase.contains("%")) { phrase = phrase.replace("%"," percent ") }
     return phrase
 }
@@ -2989,161 +3634,261 @@ def adjustWeatherPhrase(phraseIn){
     return phraseOut
 }
 
-def Talk(phrase, customSpeechDevice, evt){
+def Talk(phrase, customSpeechDevice, resume, evt){
     def currentSpeechDevices = []
-    if (state.speechDeviceType == "capability.musicPlayer"){
-        state.sound = ""
-        state.ableToTalk = false
-        if (!(phrase == null)) {
-            phrase = processPhraseVariables(phrase, evt)
-            LOGTRACE("TALK(${evt.name}) |mP| >> ${phrase}")
-            try {
-                state.sound = textToSpeech(phrase instanceof List ? phrase[0] : phrase) 
-                state.ableToTalk = true
-            } catch(e) {
-                LOGERROR("ST Platform issue (textToSpeech)? ${e}")
-                //Try Again
-                try {
-                    LOGTRACE("Trying textToSpeech function again...")
-                    state.sound = textToSpeech(phrase instanceof List ? phrase[0] : phrase)
-                    state.ableToTalk = true
-                } catch(ex) {
-                    LOGERROR("ST Platform issue (textToSpeech)? I tried textToSpeech() twice, SmartThings wouldn't convert/process.  I give up, Sorry..")
-                    sendNotificationEvent("ST Platform issue? textToSpeech() failed.")
-                    sendNotification("BigTalker couldn't announce: ${phrase}")
-                }
+    def smartAppSpeechDevice = false
+    def spoke = false
+    if ((phrase?.toLowerCase())?.contains("%askalexa%")) {smartAppSpeechDevice = true}
+    if (!(phrase == null) && !(phrase == "")) {phrase = processPhraseVariables(phrase, evt)}
+    if (phrase == null || phrase == "") {
+    	LOGERROR(processPhraseVariables("BigTalker - Check configuration. Phrase is empty for %devicename%", evt))
+    	sendNotification(processPhraseVariables("BigTalker - Check configuration. Phrase is empty for %devicename%", evt))
+    }
+    if (resume == null) { resume = true }
+	if ((state.speechDeviceType == "capability.musicPlayer") && (!( phrase==null ) && !(phrase==""))){
+		state.sound = ""
+		state.ableToTalk = false
+		if (!(settings.speechDeviceDefault == null) || !(customSpeechDevice == null)) {
+			LOGTRACE("TALK(${evt.name})|mP| >> ${phrase}")
+            if (resume) { LOGTRACE("TALK(${evt.name})|mP| Resume is desired") } else { LOGTRACE("TALK(${evt.name})|mP| Resume is not desired") }
+			try {
+				state.sound = textToSpeech(phrase instanceof List ? phrase[0] : phrase) 
+				state.ableToTalk = true
+			} catch(e) {
+				LOGERROR("TALK(${evt.name})|mP| ST Platform issue (textToSpeech)? ${e}")
+				//Try Again
+				try {
+					LOGTRACE("TALK(${evt.name})|mP| Trying textToSpeech function again...")
+					state.sound = textToSpeech(phrase instanceof List ? phrase[0] : phrase)
+					state.ableToTalk = true
+				} catch(ex) {
+					LOGERROR("TALK(${evt.name})|mP| ST Platform issue (textToSpeech)? I tried textToSpeech() twice, SmartThings wouldn't convert/process.  I give up, Sorry..")
+					sendNotificationEvent("ST Platform issue? textToSpeech() failed.")
+					sendNotification("BigTalker couldn't announce: ${phrase}")
+				} //try again before final error(ableToTalk)
+			} //try (ableToTalk)
+            if ((state?.allowScheduledPoll == true || state?.allowScheduledPoll == null) && (resume)) {
+				unschedule("poll")
+				LOGDEBUG("TALK(${evt.name})|mP| Delaying polling for 120 seconds")
+				myRunIn(120, poll)
             }
-            unschedule("poll")
-            LOGDEBUG("Delaying polling for 120 seconds")
-            myRunIn(120, poll)
-            if (state.ableToTalk){
-                state.sound.duration = (state.sound.duration.toInteger() + 5).toString()  //Try to prevent cutting out, add seconds to the duration
-                if (!(customSpeechDevice == null)) {
-                    currentSpeechDevices = customSpeechDevice
-                } else {
-                    //Use Default Speech Device
-                    currentSpeechDevices = settings.speechDeviceDefault
-                }
-                LOGTRACE("Last poll: ${state.lastPoll}")
-                //Iterate Speech Devices and talk
-		        def attrs = currentSpeechDevices.supportedAttributes
-                currentSpeechDevices.each(){
-            	    //if (state.speechDeviceType == "capability.musicPlayer"){
-                	    LOGDEBUG("attrs=${attrs}")
-                	    def currentStatus = it.latestValue('status')
-                	    def currentTrack = it.latestState("trackData")?.jsonValue
-                	    def currentVolume = it.latestState("level")?.integerValue ? it.currentState("level")?.integerValue : 0
-                	    LOGDEBUG("currentStatus:${currentStatus}")
-                	    LOGDEBUG("currentTrack:${currentTrack}")
-                	    LOGDEBUG("currentVolume:${currentVolume}")
-                        LOGDEBUG("Sound: ${state.sound.uri} , ${state.sound.duration}")
-                	    if (settings.speechVolume) { LOGTRACE("${it.displayName} | Volume: ${currentVolume}, Desired Volume: ${settings.speechVolume}") }
-                	    if (!(settings.speechVolume)) { LOGTRACE("${it.displayName} | Volume: ${currentVolume}") }
-                	    if (!(currentTrack == null)){
-                    	    //currentTrack has data
-                            if (!(currentTrack?.status == null)) { LOGTRACE("mP | ${it.displayName} | Current Status: ${currentStatus}, CurrentTrack: ${currentTrack}, CurrentTrack.Status: ${currentTrack.status}.") }
-                    	    if (currentTrack?.status == null) { LOGTRACE("mP | ${it.displayName} | Current Status: ${currentStatus}, CurrentTrack: ${currentTrack}.") }
-                    	    if (currentStatus == 'playing' || currentTrack?.status == 'playing') {
-    	                        LOGTRACE("${it.displayName} | cT<>null | cS/cT=playing | Sending playTrackAndResume().")
-        	                    if (settings.speechVolume) { 
-                	                if (settings.speechVolume == currentVolume){it.playTrackAndResume(state.sound.uri, state.sound.duration)}
-                                    if (!(settings.speechVolume == currentVolume)){it.playTrackAndResume(state.sound.uri, state.sound.duration, settings.speechVolume)}
-                    	        } else { 
-                            	    if (currentVolume >= 50) { it.playTrackAndResume(state.sound.uri, state.sound.duration) }
-                            	    if (currentVolume < 50) { it.playTrackAndResume(state.sound.uri, state.sound.duration, 50) }
-                        	    }
-                    	    } else
-                    	    {
-                        	    LOGTRACE("mP | ${it.displayName} | cT<>null | cS/cT<>playing | Sending playTrackAndRestore().")
-                        	    if (settings.speechVolume) { 
-	                                if (settings.speechVolume == currentVolume){it.playTrackAndRestore(state.sound.uri, state.sound.duration)}
-                                    if (!(settings.speechVolume == currentVolume)){it.playTrackAndRestore(state.sound.uri, state.sound.duration, settings.speechVolume)}
-	                            } else { 
-            	                    if (currentVolume >= 50) { it.playTrackAndRestore(state.sound.uri, state.sound.duration) }
-                	                if (currentVolume < 50) { it.playTrackAndRestore(state.sound.uri, state.sound.duration, 50) }
-                    	        }
-                    	    }
-                	    } else {
-                    	    //currentTrack doesn't have data or is not supported on this device
-                            if (!(currentStatus == null)) {
-                    	        LOGTRACE("mP | ${it.displayName} | (2) Current Status: ${currentStatus}.")
-                                if (currentStatus == "disconnected") {
-	                                //VLCThing?
-    	                            LOGTRACE("mP | ${it.displayName} | cT=null | cS=disconnected | Sending playTrackAndResume().")
-	                                if (settings.speechVolume) { 
-                    	                if (settings.speechVolume == currentVolume){it.playTrackAndResume(state.sound.uri, state.sound.duration)}
-                                        if (!(settings.speechVolume == currentVolume)){it.playTrackAndResume(state.sound.uri, state.sound.duration, settings.speechVolume)}
-                        	        } else { 
-                                        if (currentVolume >= 50) { it.playTrackAndResume(state.sound.uri, state.sound.duration) }
-                	                    if (currentVolume < 50) { it.playTrackAndResume(state.sound.uri, state.sound.duration, 50) }
-                        	        }
-                    	        } else {
-    	                            if (currentStatus == "playing") {
-            	                        LOGTRACE("mP | ${it.displayName} | cT=null | cS=playing | Sending playTrackAndResume().")
-                	                    if (settings.speechVolume) { 
-                        	                if (settings.speechVolume == currentVolume){it.playTrackAndResume(state.sound.uri, state.sound.duration)}
-                                            if (!(settings.speechVolume == currentVolume)){it.playTrackAndResume(state.sound.uri, state.sound.duration, settings.speechVolume)}
-                            	        } else { 
-        	                                if (currentVolume >= 50) { it.playTrackAndResume(state.sound.uri, state.sound.duration) }
-            	                            if (currentVolume < 50) { it.playTrackAndResume(state.sound.uri, state.sound.duration, 50) }
-                	                    }
-                    	            } else {
-                            	        LOGTRACE("mP | ${it.displayName} | cT=null | cS<>playing | Sending playTrackAndRestore().")
-                            	        if (settings.speechVolume) { 
-                                	        if (settings.speechVolume == currentVolume){it.playTrackAndRestore(state.sound.uri, state.sound.duration)}
-                                            if (!(settings.speechVolume == currentVolume)){it.playTrackAndRestore(state.sound.uri, state.sound.duration, settings.speechVolume)}
-                            	        } else { 
-	                                        if (currentVolume >= 50) { it.playTrackAndRestore(state.sound.uri, state.sound.duration) }
-    	                                    if (currentVolume < 50) { it.playTrackAndRestore(state.sound.uri, state.sound.duration, 50) }
-        	                            }
-            	                    }
-                	            }
-                            } else {
-                                //currentTrack and currentStatus are both null
-                                LOGTRACE("mP | ${it.displayName} | (3) cT=null | cS=null | Sending playTrackAndRestore().")
-                                if (settings.speechVolume) { 
-                                    if (settings.speechVolume == currentVolume){it.playTrackAndRestore(state.sound.uri, state.sound.duration)}
-                                    if (!(settings.speechVolume == currentVolume)){it.playTrackAndRestore(state.sound.uri, state.sound.duration, settings.speechVolume)}
-                                } else { 
-	                                if (currentVolume >= 50) { it.playTrackAndRestore(state.sound.uri, state.sound.duration) }
-    	                            if (currentVolume < 50) { it.playTrackAndRestore(state.sound.uri, state.sound.duration, 50) }
-        	                    }
-                            }
-                	    }
-                    } //currentSpeechDevices.each()
-            	} //state.ableToTalk
-            } //!phrase == null
-        } else {
-            //capability.speechSynthesis is in use
-            if (!(phrase == null)) {
-                phrase = processPhraseVariables(phrase, evt)
-                LOGTRACE("TALK(${evt.name}) |sS| >> ${phrase}")
-                if (!(customSpeechDevice == null)) {
-                    currentSpeechDevices = customSpeechDevice
-                } else {
-                    //Use Default Speech Device
-                    currentSpeechDevices = settings.speechDeviceDefault
-                }
-                //Iterate Speech Devices and talk
-		        def attrs = currentSpeechDevices.supportedAttributes
-                currentSpeechDevices.each(){
-	                try {
-                    	LOGTRACE("sS | ${it.displayName} | Sending speak().")
-                    }
-                    catch (ex) {
-                    	LOGDEBUG("LOGTRACE it.displayName failed, trying it.device.displayName")
-                    	try {
-                    		LOGTRACE("sS | ${it.device.displayName} | Sending speak().")
-                        }
-                        catch (ex2) {
-                        	LOGDEBUG("LOGTRACE it.device.displayName failed, trying it.device.name")
-                        	LOGTRACE("sS | ${it.device.name} | Sending speak().")
-                        }
-                    }
-	                it.speak(phrase)
-                }
-    	    } //!phrase == null
-        } //state.speechDeviceType
+			if (state.ableToTalk){
+				state.sound.duration = (state.sound.duration.toInteger() + 5).toString()  //Try to prevent cutting out, add seconds to the duration
+				if (!(customSpeechDevice == null)) {
+					currentSpeechDevices = customSpeechDevice
+				} else {
+					//Use Default Speech Device
+					currentSpeechDevices = settings.speechDeviceDefault
+				} //if (!(customSpeechDevice == null))
+				LOGTRACE("TALK(${evt.name})|mP| Last poll: ${state.lastPoll}")
+				//Iterate Speech Devices and talk
+				def attrs = currentSpeechDevices.supportedAttributes
+				currentSpeechDevices.each(){
+					LOGDEBUG("TALK(${evt.name})|mP| attrs=${attrs}")
+					def currentStatus = ""
+                    try {
+                    	currentStatus = it?.latestValue("status")
+                    } catch (ex) { LOGDEBUG("ERROR getting device currentStatus") }
+					def currentTrack = ""
+                    try {
+                    	currentTrack = it?.latestState("trackData")?.jsonValue
+                    } catch (ex) { LOGDEBUG("ERROR getting device currentTrack") }
+					def currentVolume = 0 
+                    try {
+                    	currentVolume = it?.latestState("level")?.integerValue ? it.latestState("level")?.integerValue : 0
+                    } catch (ex) { LOGDEBUG("ERROR getting device currentVolume") }
+                    def desiredVolume = 91
+                    try {
+                    	desiredVolume = settings?.speechVolume
+                    } catch (ex) { LOGDEBUG("ERROR getting desired default volume"); desiredVolume = 89 }
+                    LOGDEBUG("TALK(${evt.name})|mP| currentStatus:${currentStatus}")
+					LOGDEBUG("TALK(${evt.name})|mP| currentTrack:${currentTrack}")
+					LOGDEBUG("TALK(${evt.name})|mP| currentVolume:${currentVolume}")
+					LOGDEBUG("TALK(${evt.name})|mP| Sound: ${state.sound.uri} , ${state.sound.duration}")
+					if (desiredVolume){ LOGTRACE("TALK(${evt.name})|mP| ${it.displayName} | Volume: ${currentVolume}, Desired Volume: ${desiredVolume}") }
+					if (!(currentTrack == null)){
+						//currentTrack has data
+						if (!(currentTrack?.status == null)) { LOGTRACE("TALK(${evt.name})|mP| ${it.displayName} | Current Status: ${currentStatus}, CurrentTrack: ${currentTrack}, CurrentTrack.Status: ${currentTrack.status}.") }
+						if (currentTrack?.status == null) { LOGTRACE("TALK(${evt.name})|mP| ${it.displayName} | Current Status: ${currentStatus}, CurrentTrack: ${currentTrack}.") }
+						if ((currentStatus == 'playing' || currentTrack?.status == 'playing') && (!((currentTrack?.status == 'stopped') || (currentTrack?.status == 'paused')))) {  //Give currentTrack.status presidence if it exists, it seems more accurate
+							if (resume) {
+                            	LOGTRACE ("Sending playTrackandResume() 1")
+								LOGTRACE("TALK(${evt.name})|mP| ${it?.displayName} | cT<>null | cS/cT=playing | Sending playTrackAndResume() | CVol=${currentVolume} | SVol=${desiredVolume}")
+								if (desiredVolume) { 
+									if (desiredVolume == currentVolume){it.playTrackAndResume(state.sound.uri, state.sound.duration)}
+									if (!(desiredVolume == currentVolume)){it.playTrackAndResume(state.sound.uri, state.sound.duration, desiredVolume)}
+									spoke = true
+								} else { 
+									if (currentVolume >= 50) { it.playTrackAndResume(state.sound.uri, state.sound.duration) }
+									if (currentVolume < 50) { it.playTrackAndResume(state.sound.uri, state.sound.duration, 50) }
+									spoke = true
+								} //if (desiredVolume)
+							} else {
+								//resume is not desired
+								LOGTRACE ("Sending playTrackandRestore() 2 - ${it?.displayName} - cVol = ${currentVolume}")
+                                LOGTRACE("TALK(${evt.name})|mP| ${it?.displayName} | cT<>null | cS/cT=playing | NoResume! | Sending playTrackAndRestore() | CVol=${currentVolume} | SVol=${desiredVolume}")
+								if (desiredVolume) { 
+									if (desiredVolume == currentVolume){it.playTrackAndRestore(state.sound.uri, state.sound.duration)}
+									if (!(desiredVolume == currentVolume)){it.playTrackAndRestore(state.sound.uri, state.sound.duration, desiredVolume)}
+									spoke = true
+								} else { 
+									if (currentVolume >= 50) { it.playTrackAndRestore(state.sound.uri, state.sound.duration) }
+									if (currentVolume < 50) { it.playTrackAndRestore(state.sound.uri, state.sound.duration, 50) }
+									spoke = true
+								} // if (desiredVolume)
+							} // if (resume)	
+						} else {
+							if ((!currentTrack?.status == 'playing') && (currentStatus == 'playing')) {
+								LOGDEBUG "TALK(${evt.name})|mP| ${it?.displayName} | Discrepency in CS/CT, going with CT! | CS= ${currentStatus} CT=${currentTrack.status}"
+							}
+							LOGTRACE ("Sending playTrackandRestore() 3 - to ${it?.displayName} - cVol = ${currentVolume}")
+                            LOGTRACE("TALK(${evt.name})|mP| ${it?.displayName} | cT<>null | cS/cT<>playing | Sending playTrackAndRestore() | CVol=${currentVolume} | SVol=${desiredVolume}")
+							if (desiredVolume) { 
+								if (desiredVolume == currentVolume){it.playTrackAndRestore(state.sound.uri, state.sound.duration)}
+								if (!(desiredVolume == currentVolume)){it.playTrackAndRestore(state.sound.uri, state.sound.duration, desiredVolume)}
+								spoke = true
+							} else { 
+								if (currentVolume >= 50) { it.playTrackAndRestore(state.sound.uri, state.sound.duration) }
+								if (currentVolume < 50) { it.playTrackAndRestore(state.sound.uri, state.sound.duration, 50) }
+								spoke = true
+							}// if (desiredVolume)
+						}// if ((currentStatus == 'playing' || currentTrack?.status == 'playing') && (!((currentTrack?.status == 'stopped') || (currentTrack?.status == 'paused'))))
+					} else {
+						//currentTrack==null. currentTrack doesn't have data or is not supported on this device
+						if (!(currentStatus == null)) {
+							LOGTRACE("TALK(${evt.name})|mP|  ${it?.displayName} | (2) Current Status: ${currentStatus}.")
+							if (currentStatus == "disconnected") {
+								//VLCThing?
+								if (resume) {
+									LOGTRACE ("Sending playTrackandResume() 4")
+                                    LOGTRACE("TALK(${evt.name})|mP| ${it?.displayName} | cT=null | cS=disconnected | Sending playTrackAndResume() | CVol=${currentVolume} | SVol=${desiredVolume}")
+									if (desiredVolume) { 
+										if (desiredVolume == currentVolume){it.playTrackAndResume(state.sound.uri, state.sound.duration)}
+										if (!(desiredVolume == currentVolume)){it.playTrackAndResume(state.sound.uri, state.sound.duration, desiredVolume)}
+										spoke = true
+									} else { 
+										if (currentVolume >= 50) { it.playTrackAndResume(state.sound.uri, state.sound.duration) }
+										if (currentVolume < 50) { it.playTrackAndResume(state.sound.uri, state.sound.duration, 50) }
+										spoke = true
+									}
+								} else {
+									//resume is not desired
+                                    LOGTRACE ("Sending playTrackandRestore() 5")
+									LOGTRACE("TALK(${evt.name})|mP| ${it?.displayName} | cT=null | cS=disconnected | No Resume! | Sending playTrackAndRestore() | CVol=${currentVolume} | SVol=${desiredVolume}")
+									if (desiredVolume) { 
+										if (desiredVolume == currentVolume){it.playTrackAndRestore(state.sound.uri, state.sound.duration)}
+										if (!(desiredVolume == currentVolume)){it.playTrackAndRestore(state.sound.uri, state.sound.duration, desiredVolume)}
+										spoke = true
+									} else { 
+										if (currentVolume >= 50) { it.playTrackAndRestore(state.sound.uri, state.sound.duration) }
+										if (currentVolume < 50) { it.playTrackAndRestore(state.sound.uri, state.sound.duration, 50) }
+										spoke = true
+									}// if (desiredVolume)
+								}// if (resume)
+							} else {
+								if (currentStatus == "playing") {
+									if (resume) {
+                                    	LOGTRACE ("Sending playTrackandResume() 6")
+										LOGTRACE("TALK(${evt.name})|mP| ${it?.displayName} | cT=null | cS=playing | Sending playTrackAndResume() | CVol=${currentVolume} | SVol=${desiredVolume}")
+										if (desiredVolume) { 
+											if (desiredVolume == currentVolume){it.playTrackAndResume(state.sound.uri, state.sound.duration)}
+											if (!(desiredVolume == currentVolume)){it.playTrackAndResume(state.sound.uri, state.sound.duration, desiredVolume)}
+											spoke = true
+										} else { 
+											if (currentVolume >= 50) { it.playTrackAndResume(state.sound.uri, state.sound.duration) }
+											if (currentVolume < 50) { it.playTrackAndResume(state.sound.uri, state.sound.duration, 50) }
+											spoke = true
+										}// if (desiredVolume)
+									} else {
+										//resume not desired
+										LOGTRACE ("Sending playTrackandRestore() 7")
+                                        LOGTRACE("TALK(${evt.name})|mP| ${it?.displayName} | cT=null | cS=playing | No Resume! | Sending playTrackAndRestore() | CVol=${currentVolume} | SVol=${desiredVolume}")
+										if (desiredVolume) { 
+											if (desiredVolume == currentVolume){it.playTrackAndRestore(state.sound.uri, state.sound.duration)}
+											if (!(desiredVolume == currentVolume)){it.playTrackAndRestore(state.sound.uri, state.sound.duration, desiredVolume)}
+											spoke = true
+										} else { 
+											if (currentVolume >= 50) { it.playTrackAndRestore(state.sound.uri, state.sound.duration) }
+											if (currentVolume < 50) { it.playTrackAndRestore(state.sound.uri, state.sound.duration, 50) }
+											spoke = true
+										}// if (desiredVolume)
+									}// if (resume)
+								} else {
+									//currentStatus <> "playing"
+                                    LOGTRACE ("Sending playTrackandRestore() 8")
+									LOGTRACE("TALK(${evt.name})|mP| ${it?.displayName} | cT=null | cS<>playing | Sending playTrackAndRestore() | CVol=${currentVolume} | SVol=${desiredVolume}")
+									if (desiredVolume) { 
+										if (desiredVolume == currentVolume){it.playTrackAndRestore(state.sound.uri, state.sound.duration)}
+										if (!(desiredVolume == currentVolume)){it.playTrackAndRestore(state.sound.uri, state.sound.duration, desiredVolume)}
+										spoke = true
+									} else { 
+										if (currentVolume >= 50) { it.playTrackAndRestore(state.sound.uri, state.sound.duration) }
+										if (currentVolume < 50) { it.playTrackAndRestore(state.sound.uri, state.sound.duration, 50) }
+										spoke = true
+									}// if (desiredVolume)
+								}// if (currentStatus == "playing")
+							}// if (currentStatus == "disconnected"))
+						} else {
+							//currentTrack and currentStatus are both null
+							LOGTRACE ("Sending playTrackandRestore() 9")
+                            LOGTRACE("TALK(${evt.name})|mP| ${it.displayName} | (3) cT=null | cS=null | Sending playTrackAndRestore() | CVol=${currentVolume} | SVol=${desiredVolume}")
+							if (desiredVolume) { 
+								if (desiredVolume == currentVolume){it.playTrackAndRestore(state.sound.uri, state.sound.duration)}
+								if (!(desiredVolume == currentVolume)){it.playTrackAndRestore(state.sound.uri, state.sound.duration, desiredVolume)}
+								spoke = true
+							} else { 
+								if (currentVolume >= 50) { it.playTrackAndRestore(state.sound.uri, state.sound.duration) }
+								if (currentVolume < 50) { it.playTrackAndRestore(state.sound.uri, state.sound.duration, 50) }
+								spoke = true
+							} //if (desiredVolume)
+						} //currentStatus == null
+					} //currentTrack == null
+				} //currentSpeechDevices.each()
+			} //state.ableToTalk
+		} //if (!(settings.speechDeviceDefault == null) || !(customSpeechDevice == null))
+	}// if (state.speechDeviceType=="capability.musicPlayer")
+
+	if ((state.speechDeviceType == "capability.speechSynthesis") && (!( phrase==null ) && !(phrase==""))){
+		//capability.speechSynthesis is in use
+		if (!(settings.speechDeviceDefault == null) || !(customSpeechDevice == null)) {
+			LOGTRACE("TALK(${evt.name}) |sS| >> ${phrase}")
+			if (!(customSpeechDevice == null)) {
+				currentSpeechDevices = customSpeechDevice
+			} else {
+				//Use Default Speech Device
+				currentSpeechDevices = settings.speechDeviceDefault
+			}// If (!(customSpeechDevice == null))
+			//Iterate Speech Devices and talk
+			def attrs = currentSpeechDevices.supportedAttributes
+			currentSpeechDevices.each(){
+				// Determine device name either by it.displayName or it.device.displayName (whichever works)
+				try {
+					LOGTRACE("TALK(${evt.name}) |sS| ${it.displayName} | Sending speak().")
+				}
+				catch (ex) {
+					LOGDEBUG("TALK(${evt.name}) |sS| it.displayName failed, trying it.device.displayName")
+					try {
+						LOGTRACE("TALK(${evt.name}) |sS| ${it.device.displayName} | Sending speak().")
+					}
+					catch (ex2) {
+						LOGDEBUG("TALK(${evt.name}) |sS| it.device.displayName failed, trying it.device.name")
+						LOGTRACE("TALK(${evt.name}) |sS| ${it.device.name} | Sending speak().")
+					}
+				}
+				spoke = true
+				it.speak(phrase)
+			}// currentSpeechDevices.each()
+		} //if (!(settings.speechDeviceDefault == null) || !(customSpeechDevice == null))
+	} //if (state.speechDeviceType == "capability.speechSynthesis")
+
+	if ((!(smartAppSpeechDevice) && !(spoke)) && (!(phrase == null) && !(phrase == ""))) {
+	//No musicPlayer, speechSynthesis, or smartAppSpeechDevices selected. No route to export speech!
+	LOGTRACE("TALK(${evt.name}) |ERROR| No selected speech device or smartAppSpeechDevice token in phrase. ${phrase}")
+	} else {
+    	if ((smartAppSpeechDevice && !spoke) && (!(phrase == null) && !(phrase == ""))){
+			LOGTRACE("TALK(${evt.name}) |sA| Sent to another smartApp.")
+        }
+     }
 }//Talk()
 
 def timeAllowed(devicetype,index){
@@ -3254,6 +3999,16 @@ def timeAllowed(devicetype,index){
             }
             if (index == 3 && (!(settings.buttonStartTime3 == null))) {
                 if (timeOfDayIsBetween(settings.buttonStartTime3, settings.buttonEndTime3, now, location.timeZone)) { return true } else { return false }
+            }
+        case "SHM":
+            if (index == 1 && (!(settings.SHMStartTimeAway == null))) {
+                if (timeOfDayIsBetween(settings.SHMStartTimeAway, settings.SHMEndTimeAway, now, location.timeZone)) { return true } else { return false }
+            }
+            if (index == 2 && (!(settings.SHMStartTimeHome == null))) {
+                if (timeOfDayIsBetween(settings.SHMStartTimeHome, settings.SHMEndTimeHome, now, location.timeZone)) { return true } else { return false }
+            }
+            if (index == 3 && (!(settings.SHMStartTimeDisarm == null))) {
+                if (timeOfDayIsBetween(settings.SHMStartTimeDisarm, settings.SHMEndTimeDisarm, now, location.timeZone)) { return true } else { return false }
             }
     }
     
@@ -3709,6 +4464,50 @@ def modeAllowed(devicetype,index) {
                 }
             }
         //End: case "button"
+        case "SHM":
+            if (index == 1) {
+                //SHM Armed Away
+                if (settings.SHMModesAway) {
+                    if (settings.SHMModesAway.contains(location.mode)) {
+                        //Custom mode for this event is in use and we are in one of those modes
+                        return true
+                    } else {
+                        //Custom mode for this event is in use and we are not in one of those modes
+                        return false
+                    }
+                } else {
+                    return (settings.speechModesDefault.contains(location.mode)) //True if we are in an allowed Default mode, False if not
+                }
+            }
+            if (index == 2) {
+                //SHM Armed Home
+                if (settings.SHMModesHome) {
+                    if (settings.SHMModesHome.contains(location.mode)) {
+                        //Custom mode for this event is in use and we are in one of those modes
+                        return true
+                    } else {
+                        //Custom mode for this event is in use and we are not in one of those modes
+                        return false
+                    }
+                } else {
+                    return (settings.speechModesDefault.contains(location.mode)) //True if we are in an allowed Default mode, False if not
+                }
+            }
+            if (index == 3) {
+                //SHM Disarmed
+                if (settings.SHMModesDisarm) {
+                    if (settings.SHMModesDisarm.contains(location.mode)) {
+                        //Custom mode for this event is in use and we are in one of those modes
+                        return true
+                    } else {
+                        //Custom mode for this event is in use and we are not in one of those modes
+                        return false
+                    }
+                } else {
+                    return (settings.speechModesDefault.contains(location.mode)) //True if we are in an allowed Default mode, False if not
+                }
+            }
+        //End: case "SHM"
         case "timeSlot":
             if (index == 1) {
                 //TimeSlot Group 1
@@ -3868,56 +4667,88 @@ def getWeather(mode, zipCode) {
 }
 
 def poll(){
-    if (state.speechDeviceType == "capability.musicPlayer") {
-        LOGDEBUG("Polling speech device(s) for latest status")
-        if (state?.polledDevices == null) { state.polledDevices = "!" }
-        try {
-            if (!(settings?.speechDeviceDefault == null)) {dopoll(settings.speechDeviceDefault)}
-            if (!(settings?.motionSpeechDevice1 == null)) {dopoll(settings.motionSpeechDevice1)}
-            if (!(settings?.motionSpeechDevice2 == null)) {dopoll(settings.motionSpeechDevice2)}
-            if (!(settings?.motionSpeechDevice3 == null)) {dopoll(settings.motionSpeechDevice3)}
-            if (!(settings?.switchSpeechDevice1 == null)) {dopoll(settings.switchSpeechDevice1)}
-            if (!(settings?.switchSpeechDevice2 == null)) {dopoll(settings.switchSpeechDevice2)}
-            if (!(settings?.switchSpeechDevice3 == null)) {dopoll(settings.switchSpeechDevice3)}
-            if (!(settings?.presSpeechDevice1 == null)) {dopoll(settings.presSpeechDevice1)}
-            if (!(settings?.presSpeechDevice2 == null)) {dopoll(settings.presSpeechDevice2)}
-            if (!(settings?.presSpeechDevice3 == null)) {dopoll(settings.presSpeechDevice3)}
-            if (!(settings?.lockSpeechDevice1 == null)) {dopoll(settings.lockSpeechDevice1)}
-            if (!(settings?.lockSpeechDevice2 == null)) {dopoll(settings.lockSpeechDevice2)}
-            if (!(settings?.lockSpeechDevice3 == null)) {dopoll(settings.lockSpeechDevice3)}
-            if (!(settings?.contactSpeechDevice1 == null)) {dopoll(settings.contactSpeechDevice1)}
-            if (!(settings?.contactSpeechDevice2 == null)) {dopoll(settings.contactSpeechDevice2)}
-            if (!(settings?.contactSpeechDevice3 == null)) {dopoll(settings.contactSpeechDevice3)}
-            if (!(settings?.modePhraseSpeechDevice1 == null)) {dopoll(settings.modePhraseSpeechDevice1)}
-            if (!(settings?.thermostatSpeechDevice1 == null)) {dopoll(settings.thermostatSpeechDevice1)}
-            if (!(settings?.accelerationSpeechDevice1 == null)) {dopoll(settings.accelerationSpeechDevice1)}
-            if (!(settings?.accelerationSpeechDevice2 == null)) {dopoll(settings.accelerationSpeechDevice2)}
-            if (!(settings?.accelerationSpeechDevice3 == null)) {dopoll(settings.accelerationSpeechDevice3)}
-            if (!(settings?.waterSpeechDevice1 == null)) {dopoll(settings.waterSpeechDevice1)}
-            if (!(settings?.waterSpeechDevice2 == null)) {dopoll(settings.waterSpeechDevice2)}
-            if (!(settings?.waterSpeechDevice3 == null)) {dopoll(settings.waterSpeechDevice3)}
-            if (!(settings?.smokeSpeechDevice1 == null)) {dopoll(settings.smokeSpeechDevice1)}
-            if (!(settings?.smokeSpeechDevice2 == null)) {dopoll(settings.smokeSpeechDevice2)}
-            if (!(settings?.smokeSpeechDevice3 == null)) {dopoll(settings.smokeSpeechDevice3)}
-            if (!(settings?.buttonSpeechDevice1 == null)) {dopoll(settings.buttonSpeechDevice1)}
-            if (!(settings?.buttonSpeechDevice2 == null)) {dopoll(settings.buttonSpeechDevice2)}
-            if (!(settings?.buttonSpeechDevice3 == null)) {dopoll(settings.buttonSpeechDevice3)}
-            if (!(settings?.timeslotSpeechDevice1 == null)) {dopoll(settings.timeslotSpeechDevice1)}
-            if (!(settings?.timeslotSpeechDevice2 == null)) {dopoll(settings.timeslotSpeechDevice2)}
-            if (!(settings?.timeslotSpeechDevice3 == null)) {dopoll(settings.timeslotSpeechDevice3)}
-        } catch(e) {
-            LOGERROR("One of your speech devices is not responding.  Poll failed.")
-        }
-        state.polledDevices = "!"
-        state.lastPoll = getTimeFromCalendar(true,true)
-        myRunIn(60, poll)
-    }
+    if (settings?.resumePlay == true || settings?.resumePlay == null) {
+		unschedule("poll")
+    	//LOGDEBUG("poll() settings=${settings?.allowScheduledPoll}")
+    	//LOGDEBUG("poll() state=${state?.allowScheduledPoll}")
+    	//LOGDEBUG("poll() resumePlay=${settings?.resumePlay}")
+    	if (((settings?.allowScheduledPoll == true || state?.allowScheduledPoll == true)) || ((settings?.allowScheduledPoll == null) || (state?.allowScheduledPoll == null))) {
+	    	state.allowScheduledPoll = true
+    	} else {
+    		state.allowScheduledPoll = false
+        	LOGDEBUG("Polling is not desired, disabling after this poll.")
+    	}
+    	if (state.speechDeviceType == "capability.musicPlayer") {
+        	LOGDEBUG("Polling speech device(s) for latest status")
+        	state.polledDevices = ""
+        	try {
+            	if (!(settings?.speechDeviceDefault == null)) {dopoll(settings.speechDeviceDefault)}
+            	if (!(settings?.motionSpeechDevice1 == null)) {dopoll(settings.motionSpeechDevice1)}
+            	if (!(settings?.motionSpeechDevice2 == null)) {dopoll(settings.motionSpeechDevice2)}
+            	if (!(settings?.motionSpeechDevice3 == null)) {dopoll(settings.motionSpeechDevice3)}
+            	if (!(settings?.switchSpeechDevice1 == null)) {dopoll(settings.switchSpeechDevice1)}
+            	if (!(settings?.switchSpeechDevice2 == null)) {dopoll(settings.switchSpeechDevice2)}
+            	if (!(settings?.switchSpeechDevice3 == null)) {dopoll(settings.switchSpeechDevice3)}
+            	if (!(settings?.presSpeechDevice1 == null)) {dopoll(settings.presSpeechDevice1)}
+            	if (!(settings?.presSpeechDevice2 == null)) {dopoll(settings.presSpeechDevice2)}
+            	if (!(settings?.presSpeechDevice3 == null)) {dopoll(settings.presSpeechDevice3)}
+            	if (!(settings?.lockSpeechDevice1 == null)) {dopoll(settings.lockSpeechDevice1)}
+            	if (!(settings?.lockSpeechDevice2 == null)) {dopoll(settings.lockSpeechDevice2)}
+            	if (!(settings?.lockSpeechDevice3 == null)) {dopoll(settings.lockSpeechDevice3)}
+            	if (!(settings?.contactSpeechDevice1 == null)) {dopoll(settings.contactSpeechDevice1)}
+            	if (!(settings?.contactSpeechDevice2 == null)) {dopoll(settings.contactSpeechDevice2)}
+            	if (!(settings?.contactSpeechDevice3 == null)) {dopoll(settings.contactSpeechDevice3)}
+            	if (!(settings?.modePhraseSpeechDevice1 == null)) {dopoll(settings.modePhraseSpeechDevice1)}
+            	if (!(settings?.thermostatSpeechDevice1 == null)) {dopoll(settings.thermostatSpeechDevice1)}
+            	if (!(settings?.accelerationSpeechDevice1 == null)) {dopoll(settings.accelerationSpeechDevice1)}
+            	if (!(settings?.accelerationSpeechDevice2 == null)) {dopoll(settings.accelerationSpeechDevice2)}
+            	if (!(settings?.accelerationSpeechDevice3 == null)) {dopoll(settings.accelerationSpeechDevice3)}
+            	if (!(settings?.waterSpeechDevice1 == null)) {dopoll(settings.waterSpeechDevice1)}
+            	if (!(settings?.waterSpeechDevice2 == null)) {dopoll(settings.waterSpeechDevice2)}
+            	if (!(settings?.waterSpeechDevice3 == null)) {dopoll(settings.waterSpeechDevice3)}
+            	if (!(settings?.smokeSpeechDevice1 == null)) {dopoll(settings.smokeSpeechDevice1)}
+            	if (!(settings?.smokeSpeechDevice2 == null)) {dopoll(settings.smokeSpeechDevice2)}
+            	if (!(settings?.smokeSpeechDevice3 == null)) {dopoll(settings.smokeSpeechDevice3)}
+            	if (!(settings?.buttonSpeechDevice1 == null)) {dopoll(settings.buttonSpeechDevice1)}
+            	if (!(settings?.buttonSpeechDevice2 == null)) {dopoll(settings.buttonSpeechDevice2)}
+            	if (!(settings?.buttonSpeechDevice3 == null)) {dopoll(settings.buttonSpeechDevice3)}
+            	if (!(settings?.timeslotSpeechDevice1 == null)) {dopoll(settings.timeslotSpeechDevice1)}
+            	if (!(settings?.timeslotSpeechDevice2 == null)) {dopoll(settings.timeslotSpeechDevice2)}
+            	if (!(settings?.timeslotSpeechDevice3 == null)) {dopoll(settings.timeslotSpeechDevice3)}
+        	} catch(e) {
+	            LOGERROR("One of your speech devices is not responding.  Poll failed.")
+    	    }
+        	state.lastPoll = getTimeFromCalendar(true,true)
+        	//LOGDEBUG("poll: state.polledDevices == ${state?.polledDevices}")
+        	if (!(state?.polledDevices == "")) {
+	        	//Reschedule next poll
+    	    	if (((settings?.allowScheduledPoll == true || state?.allowScheduledPoll == true)) || ((settings?.allowScheduledPoll == null) || (state?.allowScheduledPoll == null))) {
+        	    	LOGDEBUG("Rescheduling Poll")
+            	    myRunIn(60, poll) 
+            	}
+        	} else {
+        		LOGDEBUG("No speech devices polled. Cancelling polling.")
+        	}
+    	}
+	}
 }
 def dopoll(pollSpeechDevice){
     pollSpeechDevice.each(){
-        if (!(state.polledDevices.find(",${it.displayName}"))) {
-            state.polledDevices = "${state.polledDevices},${it.displayName}"
-            //LOGDEBUG("Polling: ${it.displayName}")
+    	def devicename = ""
+        try {
+        	devicename = it.displayName
+        } catch (ex) {}
+        if (devicename == "") {
+        	try {
+            	devicename = it.device.displayName
+            } catch (ex) {}
+        }
+        if (devicename == "") {
+        	LOGERROR("dopoll(${pollSpeechDevice}) - Unable to get devicename")
+        }
+        if (!(state?.polledDevices?.find("|${devicename}|"))) {
+            state.polledDevices = state?.polledDevices + "|${devicename}|"
+            LOGDEBUG("dopoll(${devicename}) Polling ")
             state.refresh = false
             state.poll = false
             try {
@@ -3926,32 +4757,50 @@ def dopoll(pollSpeechDevice){
                 state.refresh = true
             }
             catch (ex) {
-                //LOGDEBUG("ERROR(informational): it.refresh: ${ex}")
+                LOGDEBUG("ERROR(informational): it.refresh: ${ex}")
+                state.refresh = false
             }
             if (!state.refresh) {
                 try {
                     //LOGTRACE("poll()")
                     it.poll()
                     state.poll = true
+                    state.refresh = true
                 }
                 catch (ex) {
-                    //LOGDEBUG ("ERROR(informational): it.poll: ${ex}")
+                    LOGDEBUG ("ERROR(informational): it.poll: ${ex}")
+                    state.refresh = false
                 }
             }
+    	    LOGDEBUG("dopoll(${it.displayName})cS=${it?.latestValue('status')},cT=${it?.latestState("trackData")?.jsonValue?.status},cV=${it?.latestState("level")?.integerValue ? it?.latestState("level")?.integerValue : 0}")
+            if (it?.latestValue('status') == "no_device_present") { LOGTRACE("During polling, the handler for ${devicename} indicated the device was not found.") } //VLCThing
         }
+        LOGDEBUG("dopoll - polled devices: ${state?.polledDevices}")
     }
 }
 
 def LOGDEBUG(txt){
-    if (settings.debugmode) { log.debug("${app.label.replace(" ","").toUpperCase()}(${state.appversion}) || ${txt}") }
+    try {
+    	if (settings.debugmode) { log.debug("${app.label.replace(" ","").toUpperCase()}(${state.appversion}) || ${txt}") }
+    } catch(ex) {
+    	log.error("LOGDEBUG unable to output requested data!")
+    }
 }
 def LOGTRACE(txt){
-    log.trace("${app.label.replace(" ","").toUpperCase()}(${state.appversion}) || ${txt}")
+    try {
+    	log.trace("${app.label.replace(" ","").toUpperCase()}(${state.appversion}) || ${txt}")
+    } catch(ex) {
+    	log.error("LOGTRACE unable to output requested data!")
+    }
 }
 def LOGERROR(txt){
+    try {
     log.error("${app.label.replace(" ","").toUpperCase()}(${state.appversion}) || ERROR: ${txt}")
+    } catch(ex) {
+    	log.error("LOGERROR unable to output requested data!")
+    }
 }
 
 def setAppVersion(){
-    state.appversion = "1.1.8"
+    state.appversion = "1.1.10"
 }
