@@ -82,8 +82,8 @@
 
 	tiles {
 		standardTile("motion", "device.motion", width: 2, height: 2) {
-			state "active", label:'motion', icon:"st.motion.motion.active", backgroundColor:"#53a7c0"
-			state "inactive", label:'no motion', icon:"st.motion.motion.inactive", backgroundColor:"#ffffff"
+			state "active", label:'motion', icon:"st.motion.motion.active", backgroundColor:"#00a0dc"
+			state "inactive", label:'no motion', icon:"st.motion.motion.inactive", backgroundColor:"#cccccc"
 		}
 		valueTile("temperature", "device.temperature", inactiveLabel: false) {
 			state "temperature", label:'${currentValue}°',
