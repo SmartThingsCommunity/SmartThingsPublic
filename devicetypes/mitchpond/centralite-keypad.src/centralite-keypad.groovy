@@ -507,12 +507,12 @@ def setArmedAway(def delay=0) { setModeHelper("armedAway",delay) }
 def setArmedStay(def delay=0) { setModeHelper("armedStay",delay) }
 def setArmedNight(def delay=0) { setModeHelper("armedNight",delay) }
 
-def setEntryDelay(delay=30) {
+def setEntryDelay(delay) {
 	setModeHelper("entryDelay", delay)
 	sendRawStatus(5, delay) // Entry delay beeps
 }
 
-def setExitDelay(delay=30) {
+def setExitDelay(delay) {
 	setModeHelper("exitDelay", delay)
 	sendRawStatus(10, delay)  // Exit delay
 }
