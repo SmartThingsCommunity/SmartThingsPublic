@@ -4,7 +4,7 @@ Big Talker is a SmartApp for SmartThings that can make your house talk depending
 Pair it with a SmartThings compatible audio device such as Sonos, Ubi, LANnouncer, VLC Thing, or a DLNA device using the "Generic MediaRenderer" SmartApp/Device! <br />  
 See <b>More Details</b> section below for more features.<br />
 
-Version: 1.1.11 <br />
+Version: 1.1.12 <br />
 
 #Support the project
  This SmartApp is free. Donations to support development efforts are accepted via (non-refundable, no gurantee of service/support):
@@ -236,3 +236,5 @@ Keep in mind, if you configure highly active or too many devices, it may get ann
   * Additional null checks in Talk() (specifically addressed if the desired phrase only had %askalexa%; throw an error in the logs and notify via push that there is a configuration error due to a missing phrase)
 * 3/12/2017 - 1.1.11
   * Resolved null issue that was present in TalkNow when %askalexa% wasn't present in the phrase or the page tried to load with a blank phrase.
+* 3/13/2017 - 1.1.12
+  * Corrected an issue where an unexpected in-app notification is returned when using only one of the available phrases within an event group. ie: Switch Group 1, Talk when ON has data but Talk when OFF does not.
