@@ -1,5 +1,5 @@
 /**  
- *  BIG TALKER -- Version 1.1.11 -- A SmartApp for SmartThings Home Automation System
+ *  BIG TALKER -- Version 1.1.12 -- A SmartApp for SmartThings Home Automation System
  *  Copyright 2014-2017 - brian@lowrance.cc - Brian S. Lowrance
  *  For the latest version, development and test releases visit http://www.github.com/rayzurbock
  *
@@ -29,9 +29,9 @@ definition(
     author: "rayzur@rayzurbock.com",
     description: "Let's talk about mode changes, switches, motions, and so on.",
     category: "Fun & Social",
-    iconUrl: "http://lowrance.cc/ST/icons/BigTalker-1111.png",
-    iconX2Url: "http://lowrance.cc/ST/icons/BigTalker@2x-1111.png",
-    iconX3Url: "http://lowrance.cc/ST/icons/BigTalker@2x-1111.png")
+    iconUrl: "http://lowrance.cc/ST/icons/BigTalker-1112.png",
+    iconX2Url: "http://lowrance.cc/ST/icons/BigTalker@2x-1112.png",
+    iconX3Url: "http://lowrance.cc/ST/icons/BigTalker@2x-1112.png")
 
 
 preferences {
@@ -2871,13 +2871,13 @@ def processMotionEvent(index, evt){
         if (index == 1) { state.TalkPhrase = settings.motionTalkActive1; state.speechDevice = motionSpeechDevice1}
         if (index == 2) { state.TalkPhrase = settings.motionTalkActive2; state.speechDevice = motionSpeechDevice2}
         if (index == 3) { state.TalkPhrase = settings.motionTalkActive3; state.speechDevice = motionSpeechDevice3}
-        Talk(state.TalkPhrase, state.speechDevice, resume, evt)
+        if (!(state?.TalkPhrase == null)) {Talk(state.TalkPhrase, state.speechDevice, resume, evt)} else {LOGDEBUG("Not configured to speak for this event")}
     }
     if (evt.value == "inactive") {
         if (index == 1) { state.TalkPhrase = settings.motionTalkInactive1; state.speechDevice = motionSpeechDevice1}
         if (index == 2) { state.TalkPhrase = settings.motionTalkInactive2; state.speechDevice = motionSpeechDevice2}
         if (index == 3) { state.TalkPhrase = settings.motionTalkInactive3; state.speechDevice = motionSpeechDevice3}
-        Talk(state.TalkPhrase, state.speechDevice, resume, evt)
+        if (!(state?.TalkPhrase == null)) {Talk(state.TalkPhrase, state.speechDevice, resume, evt)} else {LOGDEBUG("Not configured to speak for this event")}
     }
     state.TalkPhrase = null
     state.speechDevice = null
@@ -2929,13 +2929,13 @@ def processSwitchEvent(index, evt){
         if (index == 1) { state.TalkPhrase = settings.switchTalkOn1; state.speechDevice = switchSpeechDevice1}
         if (index == 2) { state.TalkPhrase = settings.switchTalkOn2; state.speechDevice = switchSpeechDevice2}
         if (index == 3) { state.TalkPhrase = settings.switchTalkOn3; state.speechDevice = switchSpeechDevice3}
-        Talk(state.TalkPhrase, state.speechDevice, resume, evt)
+        if (!(state?.TalkPhrase == null)) {Talk(state.TalkPhrase, state.speechDevice, resume, evt)} else {LOGDEBUG("Not configured to speak for this event")}
     }
     if (evt.value == "off") {
         if (index == 1) { state.TalkPhrase = settings.switchTalkOff1; state.speechDevice = switchSpeechDevice1}
         if (index == 2) { state.TalkPhrase = settings.switchTalkOff2; state.speechDevice = switchSpeechDevice2}
         if (index == 3) { state.TalkPhrase = settings.switchTalkOff3; state.speechDevice = switchSpeechDevice3}
-        Talk(state.TalkPhrase, state.speechDevice, resume, evt)
+        if (!(state?.TalkPhrase == null)) {Talk(state.TalkPhrase, state.speechDevice, resume, evt)} else {LOGDEBUG("Not configured to speak for this event")}
     }
     state.TalkPhrase = null
     state.speechDevice = null
@@ -2984,13 +2984,13 @@ def processPresenceEvent(index, evt){
         if (index == 1) { state.TalkPhrase = settings.presTalkOnArrive1; state.speechDevice = presSpeechDevice1}
         if (index == 2) { state.TalkPhrase = settings.presTalkOnArrive2; state.speechDevice = presSpeechDevice2}
         if (index == 3) { state.TalkPhrase = settings.presTalkOnArrive3; state.speechDevice = presSpeechDevice3}
-        Talk(state.TalkPhrase, state.speechDevice, resume, evt)
+        if (!(state?.TalkPhrase == null)) {Talk(state.TalkPhrase, state.speechDevice, resume, evt)} else {LOGDEBUG("Not configured to speak for this event")}
     }
     if (evt.value == "not present") {
         if (index == 1) { state.TalkPhrase = settings.presTalkOnLeave1; state.speechDevice = presSpeechDevice1}
         if (index == 2) { state.TalkPhrase = settings.presTalkOnLeave2; state.speechDevice = presSpeechDevice2}
         if (index == 3) { state.TalkPhrase = settings.presTalkOnLeave3; state.speechDevice = presSpeechDevice3}
-        Talk(state.TalkPhrase, state.speechDevice, resume, evt)
+        if (!(state?.TalkPhrase == null)) {Talk(state.TalkPhrase, state.speechDevice, resume, evt)} else {LOGDEBUG("Not configured to speak for this event")}
     }
     state.TalkPhrase = null
     state.speechDevice = null
@@ -3040,13 +3040,13 @@ def processLockEvent(index, evt){
         if (index == 1) { state.TalkPhrase = settings.lockTalkOnLock1; state.speechDevice = lockSpeechDevice1}
         if (index == 2) { state.TalkPhrase = settings.lockTalkOnLock2; state.speechDevice = lockSpeechDevice2}
         if (index == 3) { state.TalkPhrase = settings.lockTalkOnLock3; state.speechDevice = lockSpeechDevice3}
-        Talk(state.TalkPhrase, state.speechDevice, resume, evt)
+        if (!(state?.TalkPhrase == null)) {Talk(state.TalkPhrase, state.speechDevice, resume, evt)} else {LOGDEBUG("Not configured to speak for this event")}
     }
     if (evt.value == "unlocked") {
         if (index == 1) { state.TalkPhrase = settings.lockTalkOnUnlock1; state.speechDevice = lockSpeechDevice1}
         if (index == 2) { state.TalkPhrase = settings.lockTalkOnUnlock2; state.speechDevice = lockSpeechDevice2}
         if (index == 3) { state.TalkPhrase = settings.lockTalkOnUnlock3; state.speechDevice = lockSpeechDevice3}
-        Talk(state.TalkPhrase, state.speechDevice, resume, evt)
+        if (!(state?.TalkPhrase == null)) {Talk(state.TalkPhrase, state.speechDevice, resume, evt)} else {LOGDEBUG("Not configured to speak for this event")}
     }
     state.TalkPhrase = null
     state.speechDevice = null
@@ -3095,13 +3095,13 @@ def processContactEvent(index, evt){
         if (index == 1) { state.TalkPhrase = settings.contactTalkOnOpen1; state.speechDevice = contactSpeechDevice1}
         if (index == 2) { state.TalkPhrase = settings.contactTalkOnOpen2; state.speechDevice = contactSpeechDevice2}
         if (index == 3) { state.TalkPhrase = settings.contactTalkOnOpen3; state.speechDevice = contactSpeechDevice3}
-        Talk(state.TalkPhrase, state.speechDevice, resume, evt)
+        if (!(state?.TalkPhrase == null)) {Talk(state.TalkPhrase, state.speechDevice, resume, evt)} else {LOGDEBUG("Not configured to speak for this event")}
     }
     if (evt.value == "closed") {
         if (index == 1) { state.TalkPhrase = settings.contactTalkOnClose1; state.speechDevice = contactSpeechDevice1}
         if (index == 2) { state.TalkPhrase = settings.contactTalkOnClose2; state.speechDevice = contactSpeechDevice2}
         if (index == 3) { state.TalkPhrase = settings.contactTalkOnClose3; state.speechDevice = contactSpeechDevice3}
-        Talk(state.TalkPhrase, state.speechDevice, resume, evt)
+        if (!(state?.TalkPhrase == null)) {Talk(state.TalkPhrase, state.speechDevice, resume, evt)} else {LOGDEBUG("Not configured to speak for this event")}
     }
     state.TalkPhrase = null
     state.speechDevice = null
@@ -3141,7 +3141,7 @@ def processModeChangeEvent(index, evt){
                 state.TalkPhrase = null
                 state.speechDevice = null
                 state.TalkPhrase = settings.TalkOnModeChange1; state.speechDevice = modePhraseSpeechDevice1
-                Talk(state.TalkPhrase, state.speechDevice, resume, evt)
+                if (!(state?.TalkPhrase == null)) {Talk(state.TalkPhrase, state.speechDevice, resume, evt)} else {LOGDEBUG("Not configured to speak for this event")}
                 state.TalkPhrase = null
                 state.speechDevice = null
             } else {
@@ -3152,7 +3152,7 @@ def processModeChangeEvent(index, evt){
             state.TalkPhrase = null
             state.speechDevice = null
             state.TalkPhrase = settings.TalkOnModeChange1; state.speechDevice = modePhraseSpeechDevice1
-            Talk(state.TalkPhrase, state.speechDevice, resume, evt)
+            if (!(state?.TalkPhrase == null)) {Talk(state.TalkPhrase, state.speechDevice, resume, evt)} else {LOGDEBUG("Not configured to speak for this event")}
             state.TalkPhrase = null
             state.speechDevice = null
         }
@@ -3203,25 +3203,25 @@ def processThermostatEvent(index, evt){
         if (index == 1) { state.TalkPhrase = settings.thermostatTalkOnIdle1; state.speechDevice = thermostatSpeechDevice1}
         if (index == 2) { state.TalkPhrase = settings.thermostatTalkOnIdle2; state.speechDevice = thermostatSpeechDevice2}
         if (index == 3) { state.TalkPhrase = settings.thermostatTalkOnIdle3; state.speechDevice = thermostatSpeechDevice3}
-        Talk(state.TalkPhrase, state.speechDevice, resume, evt)
+        if (!(state?.TalkPhrase == null)) {Talk(state.TalkPhrase, state.speechDevice, resume, evt)} else {LOGDEBUG("Not configured to speak for this event")}
     }
     if (evt.value == "heating") {
         if (index == 1) { state.TalkPhrase = settings.thermostatTalkOnHeating1; state.speechDevice = thermostatSpeechDevice1}
         if (index == 2) { state.TalkPhrase = settings.thermostatTalkOnHeating2; state.speechDevice = thermostatSpeechDevice2}
         if (index == 3) { state.TalkPhrase = settings.thermostatTalkOnHeating3; state.speechDevice = thermostatSpeechDevice3}
-        Talk(state.TalkPhrase, state.speechDevice, resume, evt)
+        if (!(state?.TalkPhrase == null)) {Talk(state.TalkPhrase, state.speechDevice, resume, evt)} else {LOGDEBUG("Not configured to speak for this event")}
     }
     if (evt.value == "cooling") {
         if (index == 1) { state.TalkPhrase = settings.thermostatTalkOnCooling1; state.speechDevice = thermostatSpeechDevice1}
         if (index == 2) { state.TalkPhrase = settings.thermostatTalkOnCooling2; state.speechDevice = thermostatSpeechDevice2}
         if (index == 3) { state.TalkPhrase = settings.thermostatTalkOnCooling3; state.speechDevice = thermostatSpeechDevice3}
-        Talk(state.TalkPhrase, state.speechDevice, resume, evt)
+        if (!(state?.TalkPhrase == null)) {Talk(state.TalkPhrase, state.speechDevice, resume, evt)} else {LOGDEBUG("Not configured to speak for this event")}
     }
     if (evt.value == "fan only") {
         if (index == 1) { state.TalkPhrase = settings.thermostatTalkOnFan1; state.speechDevice = thermostatSpeechDevice1}
         if (index == 2) { state.TalkPhrase = settings.thermostatTalkOnFan2; state.speechDevice = thermostatSpeechDevice2}
         if (index == 3) { state.TalkPhrase = settings.thermostatTalkOnFan3; state.speechDevice = thermostatSpeechDevice3}
-        Talk(state.TalkPhrase, state.speechDevice, resume, evt)
+        if (!(state?.TalkPhrase == null)) {Talk(state.TalkPhrase, state.speechDevice, resume, evt)} else {LOGDEBUG("Not configured to speak for this event")}
     }
 
     state.TalkPhrase = null
@@ -3271,13 +3271,13 @@ def processAccelerationEvent(index, evt){
         if (index == 1) { state.TalkPhrase = settings.accelerationTalkOnActive1; state.speechDevice = accelerationSpeechDevice1}
         if (index == 2) { state.TalkPhrase = settings.accelerationTalkOnActive2; state.speechDevice = accelerationSpeechDevice2}
         if (index == 3) { state.TalkPhrase = settings.accelerationTalkOnActive3; state.speechDevice = accelerationSpeechDevice3}
-        Talk(state.TalkPhrase, state.speechDevice, resume, evt)
+        if (!(state?.TalkPhrase == null)) {Talk(state.TalkPhrase, state.speechDevice, resume, evt)} else {LOGDEBUG("Not configured to speak for this event")}
     }
     if (evt.value == "inactive") {
         if (index == 1) { state.TalkPhrase = settings.accelerationTalkOnInactive1; state.speechDevice = accelerationSpeechDevice1}
         if (index == 2) { state.TalkPhrase = settings.accelerationTalkOnInactive2; state.speechDevice = accelerationSpeechDevice2}
         if (index == 3) { state.TalkPhrase = settings.accelerationTalkOnInactive3; state.speechDevice = accelerationSpeechDevice3}
-        Talk(state.TalkPhrase, state.speechDevice, resume, evt)
+        if (!(state?.TalkPhrase == null)) {Talk(state.TalkPhrase, state.speechDevice, resume, evt)} else {LOGDEBUG("Not configured to speak for this event")}
     }
     state.TalkPhrase = null
     state.speechDevice = null
@@ -3326,13 +3326,13 @@ def processWaterEvent(index, evt){
         if (index == 1) { state.TalkPhrase = settings.waterTalkOnWet1; state.speechDevice = waterSpeechDevice1}
         if (index == 2) { state.TalkPhrase = settings.waterTalkOnWet2; state.speechDevice = waterSpeechDevice2}
         if (index == 3) { state.TalkPhrase = settings.waterTalkOnWet3; state.speechDevice = waterSpeechDevice3}
-        Talk(state.TalkPhrase, state.speechDevice, resume, evt)
+        if (!(state?.TalkPhrase == null)) {Talk(state.TalkPhrase, state.speechDevice, resume, evt)} else {LOGDEBUG("Not configured to speak for this event")}
     }
     if (evt.value == "dry") {
         if (index == 1) { state.TalkPhrase = settings.waterTalkOnDry1; state.speechDevice = waterSpeechDevice1}
         if (index == 2) { state.TalkPhrase = settings.waterTalkOnDry2; state.speechDevice = waterSpeechDevice2}
         if (index == 3) { state.TalkPhrase = settings.waterTalkOnDry3; state.speechDevice = waterSpeechDevice3}
-        Talk(state.TalkPhrase, state.speechDevice, resume, evt)
+        if (!(state?.TalkPhrase == null)) {Talk(state.TalkPhrase, state.speechDevice, resume, evt)} else {LOGDEBUG("Not configured to speak for this event")}
     }
     state.TalkPhrase = null
     state.speechDevice = null
@@ -3381,19 +3381,19 @@ def processSmokeEvent(index, evt){
         if (index == 1) { state.TalkPhrase = settings.smokeTalkOnDetect1; state.speechDevice = smokeSpeechDevice1}
         if (index == 2) { state.TalkPhrase = settings.smokeTalkOnDetect2; state.speechDevice = smokeSpeechDevice2}
         if (index == 3) { state.TalkPhrase = settings.smokeTalkOnDetect3; state.speechDevice = smokeSpeechDevice3}
-        Talk(state.TalkPhrase, state.speechDevice, resume, evt)
+        if (!(state?.TalkPhrase == null)) {Talk(state.TalkPhrase, state.speechDevice, resume, evt)} else {LOGDEBUG("Not configured to speak for this event")}
     }
     if (evt.value == "clear") {
         if (index == 1) { state.TalkPhrase = settings.smokeTalkOnClear1; state.speechDevice = smokeSpeechDevice1}
         if (index == 2) { state.TalkPhrase = settings.smokeTalkOnClear2; state.speechDevice = smokeSpeechDevice2}
         if (index == 3) { state.TalkPhrase = settings.smokeTalkOnClear3; state.speechDevice = smokeSpeechDevice3}
-        Talk(state.TalkPhrase, state.speechDevice, resume, evt)
+        if (!(state?.TalkPhrase == null)) {Talk(state.TalkPhrase, state.speechDevice, resume, evt)} else {LOGDEBUG("Not configured to speak for this event")}
     }
     if (evt.value == "tested") {
         if (index == 1) { state.TalkPhrase = settings.smokeTalkOnTest1; state.speechDevice = smokeSpeechDevice1}
         if (index == 2) { state.TalkPhrase = settings.smokeTalkOnTest2; state.speechDevice = smokeSpeechDevice2}
         if (index == 3) { state.TalkPhrase = settings.smokeTalkOnTest3; state.speechDevice = smokeSpeechDevice3}
-        Talk(state.TalkPhrase, state.speechDevice, resume, evt)
+        if (!(state?.TalkPhrase == null)) {Talk(state.TalkPhrase, state.speechDevice, resume, evt)} else {LOGDEBUG("Not configured to speak for this event")}
     }
     state.TalkPhrase = null
     state.speechDevice = null
@@ -3444,7 +3444,7 @@ def processButtonEvent(index, evt){
     if (index == 1 && evt.value == "held") { state.TalkPhrase = settings.buttonTalkOnHold1; state.speechDevice = buttonSpeechDevice1}
     if (index == 2 && evt.value == "held") { state.TalkPhrase = settings.buttonTalkOnHold2; state.speechDevice = buttonSpeechDevice2}
     if (index == 3 && evt.value == "held") { state.TalkPhrase = settings.buttonTalkOnHold3; state.speechDevice = buttonSpeechDevice3}
-    Talk(state.TalkPhrase, state.speechDevice, resume, evt)
+    if (!(state?.TalkPhrase == null)) {Talk(state.TalkPhrase, state.speechDevice, resume, evt)} else {LOGDEBUG("Not configured to speak for this event")}
     state.TalkPhrase = null
     state.speechDevice = null
 }
@@ -3487,7 +3487,7 @@ def processSHMEvent(index, evt){
     if (index == 1) {state.TalkPhrase = settings.SHMTalkOnAway; state.speechDevice = SHMSpeechDeviceAway}
     if (index == 2) {state.TalkPhrase = settings.SHMTalkOnHome; state.speechDevice = SHMSpeechDeviceHome}
     if (index == 3) {state.TalkPhrase = settings.SHMTalkOnDisarm; state.speechDevice = SHMSpeechDeviceDisarm}
-    Talk(state.TalkPhrase, state.speechDevice, resume, evt)
+    if (!(state?.TalkPhrase == null)) {Talk(state.TalkPhrase, state.speechDevice, resume, evt)} else {LOGDEBUG("Not configured to speak for this event")}
     state.TalkPhrase = null
     state.speechDevice = null
 }
@@ -4801,5 +4801,5 @@ def LOGERROR(txt){
 }
 
 def setAppVersion(){
-    state.appversion = "1.1.11"
+    state.appversion = "1.1.12"
 }
