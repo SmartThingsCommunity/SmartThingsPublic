@@ -33,7 +33,8 @@ metadata {
         capability "Thermostat"
         capability "Battery"
         
-        attribute "swing", "string" 
+        attribute "swing", "string"
+        attribute "temperatureUnit","string"
         
         command "switchFanLevel"
         command "switchMode"
@@ -196,10 +197,10 @@ metadata {
 		}
         
         standardTile("fanLevel", "device.fanLevel", width: 2, height: 2) {
-            state "low", action:"switchFanLevel", backgroundColor:"#8C8C8D", icon:"http://i130.photobucket.com/albums/p242/brutalboy_photos/fan_low_2.png", nextState:"medium"
-            state "medium", action:"switchFanLevel", backgroundColor:"#8C8C8D", icon:"http://i130.photobucket.com/albums/p242/brutalboy_photos/fan_medium_2.png", nextState:"high"
-            state "high", action:"switchFanLevel", backgroundColor:"#8C8C8D", icon:"http://i130.photobucket.com/albums/p242/brutalboy_photos/fan_high_2.png", nextState:"auto"
-            state "auto", action:"switchFanLevel", backgroundColor:"#8C8C8D", icon:"http://i130.photobucket.com/albums/p242/brutalboy_photos/fan_auto_2.png" , nextState:"low"
+            state "low", action:"switchFanLevel", backgroundColor:"#8C8C8D", icon:"http://i130.photobucket.com/albums/p242/brutalboy_photos/Sensibo/fan_low_2.png", nextState:"medium"
+            state "medium", action:"switchFanLevel", backgroundColor:"#8C8C8D", icon:"http://i130.photobucket.com/albums/p242/brutalboy_photos/Sensibo/fan_medium_2.png", nextState:"high"
+            state "high", action:"switchFanLevel", backgroundColor:"#8C8C8D", icon:"http://i130.photobucket.com/albums/p242/brutalboy_photos/Sensibo/fan_high_2.png", nextState:"auto"
+            state "auto", action:"switchFanLevel", backgroundColor:"#8C8C8D", icon:"http://i130.photobucket.com/albums/p242/brutalboy_photos/Sensibo/fan_auto_2.png" , nextState:"low"
         }
         
         standardTile("mode", "device.thermostatMode",  width: 2, height: 2) {
@@ -217,16 +218,16 @@ metadata {
 		}
         
        standardTile("swing", "device.swing",  width: 2, height: 2) {
-            state "stopped", action:"switchSwing", backgroundColor:"#8C8C8D", icon:"http://i130.photobucket.com/albums/p242/brutalboy_photos/stopped.png", nextState:"fixedTop"
-            state "fixedTop", action:"switchSwing", backgroundColor:"#8C8C8D", icon:"http://i130.photobucket.com/albums/p242/brutalboy_photos/fixedTop.png", nextState:"fixedMiddleTop"
-            state "fixedMiddleTop", action:"switchSwing", backgroundColor:"#8C8C8D", icon:"http://i130.photobucket.com/albums/p242/brutalboy_photos/fixedMiddleTop.png", nextState:"fixedMiddle"
-            state "fixedMiddle", action:"switchSwing", backgroundColor:"#8C8C8D", icon:"http://i130.photobucket.com/albums/p242/brutalboy_photos/fixedMiddle.png", nextState:"fixedMiddleBottom"
-            state "fixedMiddleBottom", action:"switchSwing", backgroundColor:"#8C8C8D", icon:"http://i130.photobucket.com/albums/p242/brutalboy_photos/fixedMiddleBottom.png", nextState:"fixedBottom"
-            state "fixedBottom", action:"switchSwing", backgroundColor:"#8C8C8D", icon:"http://i130.photobucket.com/albums/p242/brutalboy_photos/fixedBottom.png", nextState:"rangeTop"
-            state "rangeTop", action:"switchSwing", backgroundColor:"#8C8C8D", icon:"http://i130.photobucket.com/albums/p242/brutalboy_photos/rangeTop.png", nextState:"rangeMiddle"
-            state "rangeMiddle", action:"switchSwing", backgroundColor:"#8C8C8D", icon:"http://i130.photobucket.com/albums/p242/brutalboy_photos/rangeMiddle.png", nextState:"rangeBottom"
-            state "rangeBottom", action:"switchSwing", backgroundColor:"#8C8C8D", icon:"http://i130.photobucket.com/albums/p242/brutalboy_photos/rangeBottom.png", nextState:"rangeFull"
-            state "rangeFull", action:"switchSwing", backgroundColor:"#8C8C8D", icon:"http://i130.photobucket.com/albums/p242/brutalboy_photos/rangeFull.png", nextState:"stopped"
+            state "stopped", action:"switchSwing", backgroundColor:"#8C8C8D", icon:"http://i130.photobucket.com/albums/p242/brutalboy_photos/Sensibo/stopped.png", nextState:"fixedTop"
+            state "fixedTop", action:"switchSwing", backgroundColor:"#8C8C8D", icon:"http://i130.photobucket.com/albums/p242/brutalboy_photos/Sensibo/fixedTop.png", nextState:"fixedMiddleTop"
+            state "fixedMiddleTop", action:"switchSwing", backgroundColor:"#8C8C8D", icon:"http://i130.photobucket.com/albums/p242/brutalboy_photos/Sensibo/fixedMiddleTop.png", nextState:"fixedMiddle"
+            state "fixedMiddle", action:"switchSwing", backgroundColor:"#8C8C8D", icon:"http://i130.photobucket.com/albums/p242/brutalboy_photos/Sensibo/fixedMiddle.png", nextState:"fixedMiddleBottom"
+            state "fixedMiddleBottom", action:"switchSwing", backgroundColor:"#8C8C8D", icon:"http://i130.photobucket.com/albums/p242/brutalboy_photos/Sensibo/fixedMiddleBottom.png", nextState:"fixedBottom"
+            state "fixedBottom", action:"switchSwing", backgroundColor:"#8C8C8D", icon:"http://i130.photobucket.com/albums/p242/brutalboy_photos/Sensibo/fixedBottom.png", nextState:"rangeTop"
+            state "rangeTop", action:"switchSwing", backgroundColor:"#8C8C8D", icon:"http://i130.photobucket.com/albums/p242/brutalboy_photos/Sensibo/rangeTop.png", nextState:"rangeMiddle"
+            state "rangeMiddle", action:"switchSwing", backgroundColor:"#8C8C8D", icon:"http://i130.photobucket.com/albums/p242/brutalboy_photos/Sensibo/rangeMiddle.png", nextState:"rangeBottom"
+            state "rangeBottom", action:"switchSwing", backgroundColor:"#8C8C8D", icon:"http://i130.photobucket.com/albums/p242/brutalboy_photos/Sensibo/rangeBottom.png", nextState:"rangeFull"
+            state "rangeFull", action:"switchSwing", backgroundColor:"#8C8C8D", icon:"http://i130.photobucket.com/albums/p242/brutalboy_photos/Sensibo/rangeFull.png", nextState:"stopped"
         }
         
         standardTile("refresh", "device.switch", inactiveLabel: false, decoration: "flat", width: 2, height: 2) {
@@ -370,7 +371,7 @@ void lowerCoolSetpoint() {
     if (Setpoint < 16)
     	Setpoint = 16
 
-    def result = parent.setACStates(this, device.deviceNetworkId , "on", device.currentState("mode").value, Setpoint, device.currentState("fanLevel").value, device.currentState("swing").value)
+    def result = parent.setACStates(this, device.deviceNetworkId , "on", device.currentState("mode").value, Setpoint, device.currentState("fanLevel").value, device.currentState("swing").value, device.currentState("temperatureUnit").value)
 
     if (result) {
         if (device.currentState("on").value == "off") { generateSwitchEvent("on") }
@@ -410,7 +411,7 @@ void raiseCoolSetpoint() {
     if (Setpoint > 30)
     	Setpoint = 30
 
-    def result = parent.setACStates(this, device.deviceNetworkId , "on", device.currentState("mode").value, Setpoint, device.currentState("fanLevel").value, device.currentState("swing").value)
+    def result = parent.setACStates(this, device.deviceNetworkId , "on", device.currentState("mode").value, Setpoint, device.currentState("fanLevel").value, device.currentState("swing").value, device.currentState("temperatureUnit").value)
     if (result) {
         if (device.currentState("on").value == "off") { generateSwitchEvent("on") }
         
@@ -444,7 +445,7 @@ def refresh()
 def setCoolingSetpoint(temp) {
 	log.debug "setTemperature"   
     
-    def result = parent.setACStates(this, device.deviceNetworkId , "on", "cool", temp, device.currentState("fanLevel").value, device.currentState("swing").value)
+    def result = parent.setACStates(this, device.deviceNetworkId , "on", "cool", temp, device.currentState("fanLevel").value, device.currentState("swing").value, device.currentState("temperatureUnit").value)
     
     if (result) {    
     	if (device.currentState("on").value == "off") { generateSwitchEvent("on") }
@@ -466,7 +467,7 @@ def setCoolingSetpoint(temp) {
 def setHeatingSetpoint(temp) {
 	log.debug "setTemperature"
     
-    def result = parent.setACStates(this, device.deviceNetworkId , "on", "heat", temp, device.currentState("fanLevel").value, device.currentState("swing").value)
+    def result = parent.setACStates(this, device.deviceNetworkId , "on", "heat", temp, device.currentState("fanLevel").value, device.currentState("swing").value, device.currentState("temperatureUnit").value)
     if (result) { 
         if (device.currentState("on").value == "off") { generateSwitchEvent("on") }
     	generateModeEvent("heat")
@@ -495,8 +496,8 @@ def on() {
     //if (device.currentValue("temperatureUnit") == "F") {
     //	Setpoint = Math.round(fToC(Setpoint))
     //}
-    log.debug device.currentState("swing").value
-    def result = parent.setACStates(this, device.deviceNetworkId, "on", device.currentState("mode").value, Setpoint, device.currentState("fanLevel").value, device.currentState("swing").value)
+    log.debug "Temp Unit : " + device.currentState("temperatureUnit").value
+    def result = parent.setACStates(this, device.deviceNetworkId, "on", device.currentState("mode").value, Setpoint, device.currentState("fanLevel").value, device.currentState("swing").value, device.currentState("temperatureUnit").value)
     if (result) {   
     	sendEvent(name: 'thermostatMode', value: device.currentState("mode").value, displayed: false,isStateChange: true)
         //sendEvent(name: 'thermostatOperatingState', value: "idle",isStateChange: true)
@@ -519,8 +520,8 @@ def off() {
     //if (device.currentValue("temperatureUnit") == "F") {
     //	Setpoint = Math.round(fToC(Setpoint))
     //}
-    log.debug device.latestValue("swing")
-    def result = parent.setACStates(this, device.deviceNetworkId, "off", device.currentState("mode").value, Setpoint, device.currentState("fanLevel").value, device.currentState("swing").value)
+    log.debug "Temp Unit : " + device.currentState("temperatureUnit").value
+    def result = parent.setACStates(this, device.deviceNetworkId, "off", device.currentState("mode").value, Setpoint, device.currentState("fanLevel").value, device.currentState("swing").value, device.currentState("temperatureUnit").value)
 
     if (result) { 
     	sendEvent(name: 'thermostatMode', value: "off", displayed: false,isStateChange: true)
@@ -553,7 +554,7 @@ def dfanLow() {
     //	Setpoint = Math.round(fToC(Setpoint))
     //}
     
-    def result = parent.setACStates(this, device.deviceNetworkId ,"on", device.currentState("mode").value, Setpoint, "low", device.currentState("swing").value)
+    def result = parent.setACStates(this, device.deviceNetworkId ,"on", device.currentState("mode").value, Setpoint, "low", device.currentState("swing").value, device.currentState("temperatureUnit").value)
     if (result) {
         if (device.currentState("on").value == "off") { generateSwitchEvent("on") }
     	sendEvent(name: 'thermostatFanMode', value: "circulate", displayed: false)
@@ -575,7 +576,7 @@ def dfanMedium() {
     //if (device.currentValue("temperatureUnit") == "F") {
     //	Setpoint = Math.round(fToC(Setpoint))
     //}
-    def result = parent.setACStates(this, device.deviceNetworkId,"on", device.currentState("mode").value, Setpoint, "medium", device.currentState("swing").value)
+    def result = parent.setACStates(this, device.deviceNetworkId,"on", device.currentState("mode").value, Setpoint, "medium", device.currentState("swing").value, device.currentState("temperatureUnit").value)
     if (result) {
    		if (device.currentState("on").value == "off") { generateSwitchEvent("on") }
     	sendEvent(name: 'thermostatFanMode', value: "on", displayed: false)
@@ -597,7 +598,7 @@ def dfanHigh() {
     //if (device.currentValue("temperatureUnit") == "F") {
     //	Setpoint = Math.round(fToC(Setpoint))
     //}
-    def result = parent.setACStates(this, device.deviceNetworkId,"on", device.currentState("mode").value, Setpoint, "high", device.currentState("swing").value)
+    def result = parent.setACStates(this, device.deviceNetworkId,"on", device.currentState("mode").value, Setpoint, "high", device.currentState("swing").value, device.currentState("temperatureUnit").value)
     if (result) {
      	if (device.currentState("on").value == "off") { generateSwitchEvent("on") }   
     	sendEvent(name: 'thermostatFanMode', value: "on", displayed: false)
@@ -626,7 +627,7 @@ def dfanAuto() {
     	fanLevel = "low"
     }
 
-    def result = parent.setACStates(this, device.deviceNetworkId, "on", device.currentState("mode").value, Setpoint, fanLevel, device.currentState("swing").value)
+    def result = parent.setACStates(this, device.deviceNetworkId, "on", device.currentState("mode").value, Setpoint, fanLevel, device.currentState("swing").value, device.currentState("temperatureUnit").value)
     if (result) {
         if (device.currentState("on").value == "off") { generateSwitchEvent("on") }
     	sendEvent(name: 'thermostatFanMode', value: "auto", displayed: false)
@@ -699,7 +700,7 @@ def modeHeat() {
     //if (device.currentValue("temperatureUnit") == "F") {
     //	Setpoint = Math.round(fToC(Setpoint))
     //}    
-    def result = parent.setACStates(this, device.deviceNetworkId, "on", "heat", Setpoint, device.currentState("fanLevel").value, device.currentState("swing").value)
+    def result = parent.setACStates(this, device.deviceNetworkId, "on", "heat", Setpoint, device.currentState("fanLevel").value, device.currentState("swing").value, device.currentState("temperatureUnit").value)
     if (result) {
     	sendEvent(name: 'thermostatMode', value: "heat", displayed: false,isStateChange: true)
         if (device.currentState("on").value == "off") { generateSwitchEvent("on") }
@@ -723,7 +724,7 @@ def modeCool() {
     //	Setpoint = Math.round(fToC(Setpoint))
     //}
     if (device.currentState("on").value == "off") { generateSwitchEvent("on") }
-    def result = parent.setACStates(this, device.deviceNetworkId, "on", "cool", Setpoint, device.currentState("fanLevel").value, device.currentState("swing").value)
+    def result = parent.setACStates(this, device.deviceNetworkId, "on", "cool", Setpoint, device.currentState("fanLevel").value, device.currentState("swing").value, device.currentState("temperatureUnit").value)
     if (result) {
     	sendEvent(name: 'thermostatMode', value: "cool", displayed: false,isStateChange: true)
         if (device.currentState("on").value == "off") { generateSwitchEvent("on") }
@@ -749,7 +750,7 @@ def modeFan() {
     // adapted to my AC model which no auto fanspeed in fan mode
     def LevelBefore = device.currentState("fanLevel").value.toString()
     def Level = (device.currentState("fanLevel").value == "auto") ? "medium" : device.currentState("fanLevel").value
-    def result = parent.setACStates(this, device.deviceNetworkId, "on", "fan", Setpoint, Level, device.currentState("swing").value)
+    def result = parent.setACStates(this, device.deviceNetworkId, "on", "fan", Setpoint, Level, device.currentState("swing").value, device.currentState("temperatureUnit").value)
     if (result) {
     	if (LevelBefore == "auto") {
      		generatefanLevelEvent("medium")
@@ -818,7 +819,7 @@ def modeSwingStopped() {
     
     def Setpoint = device.currentValue("targetTemperature").toInteger()
    
-    def result = parent.setACStates(this, device.deviceNetworkId, "on", device.currentState("mode").value, Setpoint, device.currentState("fanLevel").value, "stopped")
+    def result = parent.setACStates(this, device.deviceNetworkId, "on", device.currentState("mode").value, Setpoint, device.currentState("fanLevel").value, "stopped", device.currentState("temperatureUnit").value)
     if (result) {
     	sendEvent(name: 'swing', value: "stopped", displayed: false,isStateChange: true)
         if (device.currentState("on").value == "off") { generateSwitchEvent("on") }
@@ -838,7 +839,7 @@ def modeSwingTop() {
     
     //state.swingMode = "fixedTop"
     
-    def result = parent.setACStates(this, device.deviceNetworkId, "on", device.currentState("mode").value, Setpoint, device.currentState("fanLevel").value, "fixedTop")
+    def result = parent.setACStates(this, device.deviceNetworkId, "on", device.currentState("mode").value, Setpoint, device.currentState("fanLevel").value, "fixedTop", device.currentState("temperatureUnit").value)
     if (result) {
     	sendEvent(name: 'swing', value: "fixedTop", displayed: false,isStateChange: true)
         if (device.currentState("on").value == "off") { generateSwitchEvent("on") }
@@ -859,7 +860,7 @@ def modeSwingMiddleTop() {
    	
     //state.swingMode = "fixedMiddleTop"
    
-    def result = parent.setACStates(this, device.deviceNetworkId, "on", device.currentState("mode").value, Setpoint, device.currentState("fanLevel").value, "fixedMiddleTop")
+    def result = parent.setACStates(this, device.deviceNetworkId, "on", device.currentState("mode").value, Setpoint, device.currentState("fanLevel").value, "fixedMiddleTop", device.currentState("temperatureUnit").value)
     if (result) {
     	sendEvent(name: 'swing', value: "fixedMiddleTop", displayed: false,isStateChange: true)
         if (device.currentState("on").value == "off") { generateSwitchEvent("on") }
@@ -878,7 +879,7 @@ def modeSwingMiddle() {
     
     def Setpoint = device.currentValue("targetTemperature").toInteger()
    
-    def result = parent.setACStates(this, device.deviceNetworkId, "on", device.currentState("mode").value, Setpoint, device.currentState("fanLevel").value, "fixedMiddle")
+    def result = parent.setACStates(this, device.deviceNetworkId, "on", device.currentState("mode").value, Setpoint, device.currentState("fanLevel").value, "fixedMiddle", device.currentState("temperatureUnit").value)
     if (result) {
     	sendEvent(name: 'swing', value: "fixedMiddle", displayed: false,isStateChange: true)
         if (device.currentState("on").value == "off") { generateSwitchEvent("on") }
@@ -897,7 +898,7 @@ def modeSwingMiddleBottom() {
     
     def Setpoint = device.currentValue("targetTemperature").toInteger()
    
-    def result = parent.setACStates(this, device.deviceNetworkId, "on", device.currentState("mode").value, Setpoint, device.currentState("fanLevel").value, "fixedMiddleBottom")
+    def result = parent.setACStates(this, device.deviceNetworkId, "on", device.currentState("mode").value, Setpoint, device.currentState("fanLevel").value, "fixedMiddleBottom", device.currentState("temperatureUnit").value)
     if (result) {
     	sendEvent(name: 'swing', value: "fixedMiddleBottom", displayed: false,isStateChange: true)
         if (device.currentState("on").value == "off") { generateSwitchEvent("on") }
@@ -916,7 +917,7 @@ def modeSwingBottom() {
     
     def Setpoint = device.currentValue("targetTemperature").toInteger()
    
-    def result = parent.setACStates(this, device.deviceNetworkId, "on", device.currentState("mode").value, Setpoint, device.currentState("fanLevel").value, "fixedBottom")
+    def result = parent.setACStates(this, device.deviceNetworkId, "on", device.currentState("mode").value, Setpoint, device.currentState("fanLevel").value, "fixedBottom", device.currentState("temperatureUnit").value)
     if (result) {
     	sendEvent(name: 'swing', value: "fixedBottom", displayed: false,isStateChange: true)
         if (device.currentState("on").value == "off") { generateSwitchEvent("on") }
@@ -935,7 +936,7 @@ def modeSwingRangeTop() {
     
     def Setpoint = device.currentValue("targetTemperature").toInteger()
    
-    def result = parent.setACStates(this, device.deviceNetworkId, "on", device.currentState("mode").value, Setpoint, device.currentState("fanLevel").value, "rangeTop")
+    def result = parent.setACStates(this, device.deviceNetworkId, "on", device.currentState("mode").value, Setpoint, device.currentState("fanLevel").value, "rangeTop", device.currentState("temperatureUnit").value)
     if (result) {
     	sendEvent(name: 'swing', value: "rangeTop", displayed: false,isStateChange: true)
         if (device.currentState("on").value == "off") { generateSwitchEvent("on") }
@@ -954,7 +955,7 @@ def modeSwingRangeMiddle() {
     
     def Setpoint = device.currentValue("targetTemperature").toInteger()
    
-    def result = parent.setACStates(this, device.deviceNetworkId, "on", device.currentState("mode").value, Setpoint, device.currentState("fanLevel").value, "rangeMiddle")
+    def result = parent.setACStates(this, device.deviceNetworkId, "on", device.currentState("mode").value, Setpoint, device.currentState("fanLevel").value, "rangeMiddle", device.currentState("temperatureUnit").value)
     if (result) {
     	sendEvent(name: 'swing', value: "rangeMiddle", displayed: false,isStateChange: true)
         if (device.currentState("on").value == "off") { generateSwitchEvent("on") }
@@ -973,7 +974,7 @@ def modeSwingRangeBottom() {
     
     def Setpoint = device.currentValue("targetTemperature").toInteger()
    
-    def result = parent.setACStates(this, device.deviceNetworkId, "on", device.currentState("mode").value, Setpoint, device.currentState("fanLevel").value, "rangeBottom")
+    def result = parent.setACStates(this, device.deviceNetworkId, "on", device.currentState("mode").value, Setpoint, device.currentState("fanLevel").value, "rangeBottom", device.currentState("temperatureUnit").value)
     if (result) {
     	sendEvent(name: 'swing', value: "rangeBottom", displayed: false,isStateChange: true)
         if (device.currentState("on").value == "off") { generateSwitchEvent("on") }
@@ -992,7 +993,7 @@ def modeSwingRangeFull() {
     
     def Setpoint = device.currentValue("targetTemperature").toInteger()
    
-    def result = parent.setACStates(this, device.deviceNetworkId, "on", device.currentState("mode").value, Setpoint, device.currentState("fanLevel").value, "rangeFull")
+    def result = parent.setACStates(this, device.deviceNetworkId, "on", device.currentState("mode").value, Setpoint, device.currentState("fanLevel").value, "rangeFull", device.currentState("temperatureUnit").value)
     if (result) {
     	sendEvent(name: 'swing', value: "rangeFull", displayed: false,isStateChange: true)
         if (device.currentState("on").value == "off") { generateSwitchEvent("on") }
