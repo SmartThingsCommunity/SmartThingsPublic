@@ -20,9 +20,9 @@ definition(
     author: "Eric Gosselin",
     description: "Connect your Sensibo Pod to SmartThings.",
     category: "Green Living",
-    iconUrl: "http://i130.photobucket.com/albums/p242/brutalboy_photos/on_color_large_sm.png",
-    iconX2Url: "http://i130.photobucket.com/albums/p242/brutalboy_photos/on_color_large2x.png",
-    iconX3Url: "http://i130.photobucket.com/albums/p242/brutalboy_photos/on_color_large3x.png",
+    iconUrl: "http://i130.photobucket.com/albums/p242/brutalboy_photos/Sensibo/on_color_large_sm.png",
+    iconX2Url: "http://i130.photobucket.com/albums/p242/brutalboy_photos/Sensibo/on_color_large2x.png",
+    iconX3Url: "http://i130.photobucket.com/albums/p242/brutalboy_photos/Sensibo/on_color_large3x.png",
     singleInstance: true) 
 
 {
@@ -38,7 +38,7 @@ preferences {
 
 def getServerUrl() { "https://home.sensibo.com" }
 def getapikey() { apiKey }
-def TemperatureUnit() { return location.temperatureScale }
+//def TemperatureUnit() { return location.temperatureScale }
 
 def setAPIKey()
 {
@@ -230,7 +230,7 @@ def hournotification() {
                 def currentTemperature = d.currentState("temperature").value
                 def currentHumidity = d.currentState("humidity").value
                 def currentBattery = d.currentState("battvoltage").value
-                def sunit = TemperatureUnit()
+                def sunit = d.currentState("temperatureUnit").value
                 stext = "${currentPod} - Temperature: ${currentTemperature} ${sunit} Humidity: ${currentHumidity}% Battery: ${currentBattery}"    
                 
                 sendPush(stext)
@@ -245,7 +245,7 @@ def hournotification() {
                 def currentTemperature = d.currentState("temperature").value
                 def currentHumidity = d.currentState("humidity").value
                 def currentBattery = d.currentState("battvoltage").value
-                def sunit = TemperatureUnit()
+                def sunit = d.currentState("temperatureUnit").value
                 stext = "${currentPod} - Temperature: ${currentTemperature} ${sunit} Humidity: ${currentHumidity}% Battery: ${currentBattery}"    
                 
                 sendPush(stext)
@@ -582,7 +582,7 @@ def pollChild( child )
 	return null
 }
 
-def setACStates(child,String PodUid, on, mode, targetTemperature, fanLevel, swingM)
+def setACStates(child,String PodUid, on, mode, targetTemperature, fanLevel, swingM, sUnit)
 {
 	log.debug "SetACStates ON: $on - MODE: $mode - Temp : $targetTemperature - FAN : $fanLevel - SWING MODE : $swingM"
     
@@ -592,7 +592,7 @@ def setACStates(child,String PodUid, on, mode, targetTemperature, fanLevel, swin
     def OnOff = (on == "on") ? true : false
     if (swingM == null) swingM = "stopped"
     
-   	def jsonRequestBody = '{"acState":{"on": ' + OnOff.toString() + ',"mode": "' + mode + '","fanLevel": "' + fanLevel + '","targetTemperature": '+ targetTemperature + ',"swing": "' + swingM + '"}}'
+   	def jsonRequestBody = '{"acState":{"on": ' + OnOff.toString() + ',"mode": "' + mode + '","fanLevel": "' + fanLevel + '","targetTemperature": '+ targetTemperature + ',"swing": "' + swingM + '","temperatureUnit": "' + sUnit + '"}}'
     
     log.debug "Mode Request Body = ${jsonRequestBody}"
 	debugEvent ("Mode Request Body = ${jsonRequestBody}")
@@ -618,7 +618,7 @@ def setACStates(child,String PodUid, on, mode, targetTemperature, fanLevel, swin
         tData.data.targetTemperature = targetTemperature
         tData.data.coolingSetpoint = targetTemperature
         tData.data.heatingSetpoint = targetTemperature
-        tData.data.temperatureUnit = TemperatureUnit()
+        tData.data.temperatureUnit = sUnit
         tData.data.swing = swingM
         tData.data.Error = "Success"
 	}
@@ -639,6 +639,7 @@ def getACState(PodUid)
     	path: "/api/v2/pods/${PodUid}/acStates",
     	requestContentType: "application/json",
     	query: [apiKey:"${getapikey()}", type:"json", limit:1, fields:"status,acState"]]
+        //, temperatureUnit:"${TemperatureUnit()}"
     
     try {
        httpGet(pollParams) { resp ->
@@ -685,7 +686,7 @@ def getACState(PodUid)
                             thermostatFanMode : stat.acState.fanLevel,
                             coolingSetpoint : stemp,
                             heatingSetpoint : stemp,
-                            temperatureUnit : TemperatureUnit(),
+                            temperatureUnit : stat.acState.temperatureUnit,
                             swing : stat.acState.swing,
                             Error : "Success"
                         ]
@@ -708,7 +709,7 @@ def getACState(PodUid)
                  thermostatFanMode : "--",
                  coolingSetpoint : "0",
                  heatingSetpoint : "0",
-                 temperatureUnit : TemperatureUnit(),
+                 temperatureUnit : "",
                  swing : "--",
                  Error : "Failed"
 			  ]
@@ -733,7 +734,7 @@ def getACState(PodUid)
             thermostatFanMode : "--",
             coolingSetpoint : "0",
             heatingSetpoint : "0",
-            temperatureUnit : TemperatureUnit(),
+            temperatureUnit : "",
             swing : "--",
             Error : "Failed" 
 		]
@@ -813,9 +814,9 @@ def pollChildren(PodUid)
 					log.debug "updating dni $dni"
                     
                     def stemp = stat.temperature.toDouble()
-                    //if (TemperatureUnit() == "F") {
-                        //stemp = cToF(stemp).round(1)
-                    //}
+                    if (setTemp.temperatureUnit == "F") {
+                        stemp = cToF(stemp).round(1)
+                    }
 
 					def tMode                        
                     if (setTemp.on=="off") {
@@ -839,7 +840,7 @@ def pollChildren(PodUid)
                         thermostatFanMode: setTemp.fanLevel,
                         coolingSetpoint: setTemp.targetTemperature,
                         heatingSetpoint: setTemp.targetTemperature,
-                        temperatureUnit : TemperatureUnit(),
+                        temperatureUnit : setTemp.temperatureUnit,
                         battvoltage : stat.batteryVoltage,
                         swing : setTemp.swing,
                         //battery : stat.batteryVoltage,
