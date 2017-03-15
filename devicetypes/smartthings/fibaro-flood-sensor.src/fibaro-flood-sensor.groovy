@@ -40,7 +40,8 @@ metadata {
 		capability "Configuration"
 		capability "Battery"
 		capability "Health Check"
-
+    capability "Sensor"
+    
 		command    "resetParams2StDefaults"
 		command    "listCurrentParams"
 		command    "updateZwaveParam"
