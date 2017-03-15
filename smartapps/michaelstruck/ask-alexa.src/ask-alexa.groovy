@@ -1,12 +1,12 @@
 /**
  *  Ask Alexa 
  *
- *  Version 2.2.3 - 3/9/17 Copyright © 2017 Michael Struck
+ *  Version 2.2.3a - 3/9/17 Copyright © 2017 Michael Struck
  *  Special thanks for Keith DeLong for overall code and assistance; Barry Burke for Weather Underground Integration; jhamstead for Ecobee climate modes, Yves Racine for My Ecobee thermostat tips
  * 
  *  Version information prior to 2.2.3 listed here: https://github.com/MichaelStruck/SmartThingsPublic/blob/master/smartapps/michaelstruck/ask-alexa.src/Ask%20Alexa%20Version%20History.md
  *
- *	Version 2.2.3 (3/9/17) Added GUI message queue,improved cheat sheet, added simulated presence sensor check in/check out functionality, modified security slots (To allow 'security' to be used as a noun and not a reserved word)
+ *	Version 2.2.3a (3/9/17) Added GUI message queue,improved cheat sheet, added simulated presence sensor check in/check out functionality, modified security slots (To allow 'security' to be used as a noun and not a reserved word)
  *	Added the ability to output the Message Queue contents as part of the flash briefing setup.
  *
  *  Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except
@@ -136,7 +136,7 @@ def pageMQGUI(){
 		section ("Messages") { paragraph msgRpt }
         section ("Options"){ 
         	href "pageMsgQueue", title: "Tap To Go To Messaging Options", description: none
-            href "pageMsgDelete", title: "Tap To Delete All Message In The Primary Merssage Queue", description: none
+            href "pageMsgDelete", title: "Tap To Delete All Message In The Primary Message Queue", description: none
         }
 	}
 }
@@ -443,17 +443,10 @@ def pageMsgQueue(){
         section (" "){
             input "msgQueueOrder", "enum", title: "Message Play Back Order", options:[0:"Oldest to newest", 1:"Newest to oldest"], defaultValue: 0
             input "msgQueueNotifyAlexa", "bool", title: "Notify When Messages Are Present (Alexa)", defaultValue: false
-            // input "msgQueueNotifyRT", "bool", title: "Wake Alexa/Speak When Messages Arrive", defaultValue: false
             input "msgQueueNotifyExt", "bool", title: "Notify When Messages Arrive (External)", defaultValue: false, submitOnChange: true
 			input "msgQueueDelete", "bool", title: "Allow SmartApps To Delete Messages", defaultValue: false
 			input "msgQueueMain", "bool", title: "Show Primary Queue Messages On Main Menu" , defaultValue: false
 		}
-        /*if (msgQueueNotifyRT){
-        	section ("Message Notification-Alexa"){
-        		input "mqAlexa", "enum", title: "Choose Alexa Devices", ", description: "Coming soon...", options:getAlexaDevName(),  required: false, submitOnChange: true
-                if (mqAlexa) input "mqAlexaVol", "num", title: "Alexa Volume", description: "Coming Soon...", required: false
-        	}
-        }*/
         if (msgQueueNotifyExt) {
 			section ("Message Notification-External Devices"){
             	input "mqSpeaker", "capability.musicPlayer", title: "Choose Speakers", multiple: true, required: false, submitOnChange: true
@@ -3696,12 +3689,12 @@ private cheat(){
 //Version/Copyright/Information/Help-----------------------------------------------------------
 private textAppName() { return "Ask Alexa" }	
 private textVersion() {
-    def version = "SmartApp Version: 2.2.3 (03/09/2017)", lambdaVersion = state.lambdaCode ? "\n" + state.lambdaCode : ""
+    def version = "SmartApp Version: 2.2.3a (03/09/2017)", lambdaVersion = state.lambdaCode ? "\n" + state.lambdaCode : ""
     return "${version}${lambdaVersion}"
 }
 private versionInt(){ return 223 }
 private LambdaReq() { return 123 }
-private versionLong(){ return "2.2.3" }
+private versionLong(){ return "2.2.3a" }
 private textCopyright() {return "Copyright © 2017 Michael Struck" }
 private textLicense() {
 	def text = "Licensed under the Apache License, Version 2.0 (the 'License'); you may not use this file except in compliance with the License. You may obtain a copy of the License at\n\n"+
