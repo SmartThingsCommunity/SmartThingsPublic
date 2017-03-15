@@ -73,35 +73,35 @@ def SensiboPodList()
             href(name: "toTimePageEvent",
                      page: "timePageEvent", title:"Only during a certain time", require: false)
         }
-        section("Automation Directory",hideable: true){
-        		input "boolEnableDirc", "bool",submitOnChange: true, required: false, title: "Enable Directory?"
-		        input(name: "SelectedPodsDir", title:"Pods", type: "enum", required:false, multiple:true, description: "Tap to choose",  metadata:[values:stats])
-        		input "minTempDir", "decimal", title: "Min Temperature",required:false
-            	input "maxTempDir", "decimal", title: "Max Temperature",required:false
-                input "targetTempDir","decimal",title:"Target Temperature", required:false
-                href(name: "toTimePage",
-                	 page: "timePage", title:"Only during a certain time", require: false)
-        }
-        //section("Alert on sensors (threshold)") {
-        //	input "sendPushNotif", "bool",submitOnChange: true, required: false, title: "Receive alert on Sensibo Pod sensors based on threshold?"                       
-       // }
-
-		//if (sendPushNotif) {
-       //    section("Select the temperature threshold",hideable: true) {
-        //    	input "minTemperature", "decimal", title: "Min Temperature",required:false
-        //    	input "maxTemperature", "decimal", title: "Max Temperature",required:false }
-        //    section("Select the humidity threshold",hideable: true) {
-        //    	input "minHumidity", "decimal", title: "Min Humidity level",required:false
-        //    	input "maxHumidity", "decimal", title: "Max Humidity level",required:false }              
-         
-        //	section("How frequently?") {
-        //		input(name:"days", title: "Only on certain days of the week", type: "enum", required:false, multiple: true, options: ["Monday", "Tuesday", "Wednesday","Thursday","Friday","Saturday","Sunday"])
-        //	}
-        //	section("") {
-        //		href(name: "toTimePage",
+        //section("Automation Director",hideable: true){
+        //		input "boolEnableDirc", "bool",submitOnChange: true, required: false, title: "Enable Director?"
+		//        input(name: "SelectedPodsDir", title:"Pods", type: "enum", required:false, multiple:true, description: "Tap to choose",  metadata:[values:stats])
+        //		input "minTempDir", "decimal", title: "Min Temperature",required:false
+        //    	input "maxTempDir", "decimal", title: "Max Temperature",required:false
+        //        input "targetTempDir","decimal",title:"Target Temperature", required:false
+        //        href(name: "toTimePage",
         //        	 page: "timePage", title:"Only during a certain time", require: false)
-        //	}
-       // }
+        //}
+        section("Alert on sensors (threshold)") {
+        	input "sendPushNotif", "bool",submitOnChange: true, required: false, title: "Receive alert on Sensibo Pod sensors based on threshold?"                       
+        }
+
+		if (sendPushNotif) {
+           section("Select the temperature threshold",hideable: true) {
+            	input "minTemperature", "decimal", title: "Min Temperature",required:false
+            	input "maxTemperature", "decimal", title: "Max Temperature",required:false }
+            section("Select the humidity threshold",hideable: true) {
+            	input "minHumidity", "decimal", title: "Min Humidity level",required:false
+            	input "maxHumidity", "decimal", title: "Max Humidity level",required:false }              
+         
+        	section("How frequently?") {
+        		input(name:"days", title: "Only on certain days of the week", type: "enum", required:false, multiple: true, options: ["Monday", "Tuesday", "Wednesday","Thursday","Friday","Saturday","Sunday"])
+        	}
+        	section("") {
+        		href(name: "toTimePage",
+                	 page: "timePage", title:"Only during a certain time", require: false)
+        	}
+        }
         
 	}
 	return p
@@ -168,7 +168,7 @@ def installed() {
 
 	state.lastTemperaturePush = null
     state.lastHumidityPush = null
-    
+  
 	initialize()
     
     def d = getAllChildDevices()
@@ -582,16 +582,17 @@ def pollChild( child )
 	return null
 }
 
-def setACStates(child,String PodUid, on, mode, targetTemperature, fanLevel)
+def setACStates(child,String PodUid, on, mode, targetTemperature, fanLevel, swingM)
 {
-	log.debug "SetACStates ON: $on - MODE: $mode - Temp : $targetTemperature - FAN : $fanLevel"
+	log.debug "SetACStates ON: $on - MODE: $mode - Temp : $targetTemperature - FAN : $fanLevel - SWING MODE : $swingM"
     
     //Return false if no values was read from Sensibo API
     if (on == "--") { return false }
     
     def OnOff = (on == "on") ? true : false
+    if (swingM == null) swingM = "stopped"
     
-   	def jsonRequestBody = '{"acState":{"on": ' + OnOff.toString() + ',"mode": "' + mode + '","fanLevel": "' + fanLevel + '","targetTemperature": '+ targetTemperature + '}}'
+   	def jsonRequestBody = '{"acState":{"on": ' + OnOff.toString() + ',"mode": "' + mode + '","fanLevel": "' + fanLevel + '","targetTemperature": '+ targetTemperature + ',"swing": "' + swingM + '"}}'
     
     log.debug "Mode Request Body = ${jsonRequestBody}"
 	debugEvent ("Mode Request Body = ${jsonRequestBody}")
@@ -618,6 +619,7 @@ def setACStates(child,String PodUid, on, mode, targetTemperature, fanLevel)
         tData.data.coolingSetpoint = targetTemperature
         tData.data.heatingSetpoint = targetTemperature
         tData.data.temperatureUnit = TemperatureUnit()
+        tData.data.swing = swingM
         tData.data.Error = "Success"
 	}
     else {
@@ -652,7 +654,7 @@ def getACState(PodUid)
                 	if (stat.status == "Success") {
                     	//log.debug "xxxxxxxxxxxx Sensibo Status " + stat.status
                         log.debug "get ACState Success"
-                        //log.debug stat.acState
+                        log.debug stat.acState
                         
                         def OnOff = stat.acState.on ? "on" : "off"
                         stat.acState.on = OnOff
@@ -672,6 +674,7 @@ def getACState(PodUid)
                         if (tMode=="fan") {
                         		tMode = "auto"
         				}
+                        log.debug "swing Mode :" + stat.acState.swing
                         data = [
                             targetTemperature : stemp,
                             fanLevel : stat.acState.fanLevel,
@@ -683,10 +686,11 @@ def getACState(PodUid)
                             coolingSetpoint : stemp,
                             heatingSetpoint : stemp,
                             temperatureUnit : TemperatureUnit(),
+                            swing : stat.acState.swing,
                             Error : "Success"
                         ]
 
-                        log.debug "On: ${data.on} targetTemp: ${data.targetTemperature} fanLevel: ${data.fanLevel} mode: ${data.mode}"
+                        log.debug "On: ${data.on} targetTemp: ${data.targetTemperature} fanLevel: ${data.fanLevel} Thermostat mode: ${data.mode} swing: ${data.swing}"
                         return data
                 	}
                     else { log.debug "get ACState Failed"}
@@ -705,6 +709,7 @@ def getACState(PodUid)
                  coolingSetpoint : "0",
                  heatingSetpoint : "0",
                  temperatureUnit : TemperatureUnit(),
+                 swing : "--",
                  Error : "Failed"
 			  ]
               log.debug "get ACState Failed"
@@ -729,6 +734,7 @@ def getACState(PodUid)
             coolingSetpoint : "0",
             heatingSetpoint : "0",
             temperatureUnit : TemperatureUnit(),
+            swing : "--",
             Error : "Failed" 
 		]
         log.debug "get ACState Failed"
@@ -835,6 +841,7 @@ def pollChildren(PodUid)
                         heatingSetpoint: setTemp.targetTemperature,
                         temperatureUnit : TemperatureUnit(),
                         battvoltage : stat.batteryVoltage,
+                        swing : setTemp.swing,
                         //battery : stat.batteryVoltage,
                         Error: setTemp.Error
 					]
