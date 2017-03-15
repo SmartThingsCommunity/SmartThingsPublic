@@ -4,7 +4,7 @@
  *   
  *	github: Eric Maycock (erocm123)
  *	email: erocmail@gmail.com
- *	Date: 2016-08-18 6:45 PM
+ *	Date: 2017-03-08 6:45 PM
  *	Copyright Eric Maycock
  *
  *  Code has elements from other community sources @CyrilPeponnet, @Robert_Vandervoort. Greatly reworked and 
@@ -35,6 +35,7 @@
 		capability "Battery"
         capability "Refresh"
         capability "Tamper Alert"
+        capability "Health Check"
         
         command "resetBatteryRuntime"
         command "resetTamperAlert"
@@ -415,6 +416,18 @@ def refresh() {
     commands(request)
 }
 
+def ping() {
+   	logging("$device.displayName ping()")
+
+    def request = []
+    request << zwave.sensorMultilevelV5.sensorMultilevelGet(sensorType:1, scale:1)
+    request << zwave.sensorMultilevelV5.sensorMultilevelGet(sensorType:3, scale:1)
+    request << zwave.sensorMultilevelV5.sensorMultilevelGet(sensorType:5, scale:1)
+    request << zwave.sensorMultilevelV5.sensorMultilevelGet(sensorType:27, scale:1)
+    
+    commands(request)
+}
+
 def configure() {
     state.enableDebugging = settings.enableDebugging
     logging("Configuring Device For SmartThings Use")
@@ -428,6 +441,7 @@ def configure() {
 def updated()
 {
     state.enableDebugging = settings.enableDebugging
+    sendEvent(name: "checkInterval", value: 2 * 60 * 60 + 2 * 60, displayed: false, data: [protocol: "zwave", hubHardwareId: device.hub.hardwareID])
     logging("updated() is being called")
     if(settings."101" != null && settings."101" == "240") { 
         sendEvent(name:"batteryTile", value: "USB Powered", displayed:false)
