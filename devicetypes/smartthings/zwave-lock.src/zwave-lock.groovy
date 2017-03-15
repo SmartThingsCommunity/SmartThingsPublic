@@ -20,11 +20,13 @@ metadata {
 		capability "Sensor"
 		capability "Lock Codes"
 		capability "Battery"
+		capability "Health Check"
 
 		command "unlockwtimeout"
 
 		fingerprint deviceId: "0x4003", inClusters: "0x98"
 		fingerprint deviceId: "0x4004", inClusters: "0x98"
+		fingerprint mfr:"0129", prod:"0002", model:"0000", deviceJoinName: "Yale Key Free Touchscreen Deadbolt"
 	}
 
 	simulator {
@@ -67,6 +69,8 @@ import physicalgraph.zwave.commands.doorlockv1.*
 import physicalgraph.zwave.commands.usercodev1.*
 
 def updated() {
+	// Device-Watch simply pings if no device events received for 32min(checkInterval)
+	sendEvent(name: "checkInterval", value: 2 * 15 * 60 + 2 * 60, displayed: false, data: [protocol: "zwave", hubHardwareId: device.hub.hardwareID])
 	try {
 		if (!state.init) {
 			state.init = true
@@ -502,6 +506,13 @@ def unlock() {
 
 def unlockwtimeout() {
 	lockAndCheck(DoorLockOperationSet.DOOR_LOCK_MODE_DOOR_UNSECURED_WITH_TIMEOUT)
+}
+
+/**
+ * PING is used by Device-Watch in attempt to reach the Device
+ * */
+def ping() {
+	refresh()
 }
 
 def refresh() {
