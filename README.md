@@ -54,7 +54,7 @@ Unless required by applicable law or agreed to in writing, software distributed 
 9. Click "**Update from Repo**"
 10. Click "**SmartThings-BigTalker (master)**"
 11. If there is an update you should see it in the Obsolete box. Check BigTalker.src in the Obsolete box.
-12. Check "**Public**"
+12. Check "**Publish**"
 13. Click "**Execute Update**"
 14. (If you are just updating your existing BigTalker with a new version, you are done at this step)
 15. Open SmartThings mobile app and go to the Market Place (star burst icon).
