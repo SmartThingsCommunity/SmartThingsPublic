@@ -67,10 +67,10 @@ metadata {
     }
 
     standardTile("switch", "device.switch", width: 1, height: 1, canChangeIcon: true) {
-        state "on", label: '${name}', action: "forceOff", icon: "st.Electronics.electronics16", backgroundColor: "#79b821", nextState:"turningOff"
+        state "on", label: '${name}', action: "forceOff", icon: "st.Electronics.electronics16", backgroundColor: "#00a0dc", nextState:"turningOff"
         state "turningOff", label:'TURNING OFF', icon:"st.Electronics.electronics16", backgroundColor:"#ffffff"
         state "off", label: '${name}', action: "forceOn", icon: "st.Electronics.electronics16", backgroundColor: "#ffffff", nextState:"turningOn"
-        state "turningOn", label:'TURNING ON', icon:"st.Electronics.electronics16", backgroundColor:"#79b821"
+        state "turningOn", label:'TURNING ON', icon:"st.Electronics.electronics16", backgroundColor:"#00a0dc"
     }
     valueTile("1", "device.station1", decoration: "flat", canChangeIcon: false) {
         state "station1", label:'${currentValue}', action:"preset1"
