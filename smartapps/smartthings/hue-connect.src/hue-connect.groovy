@@ -472,8 +472,6 @@ def addBridge() {
 					log.error "Failed to create Hue Bridge device"
 				}
 			}
-		} else {
-			log.debug "found ${d.displayName} with id $selectedHue already exists"
 		}
 	}
 }
@@ -715,6 +713,9 @@ def doDeviceSync(){
 		log.warn "state.updating failed to clear"
 	}
 
+	if (selectedHue) {
+		addBridge()
+	}
 	convertBulbListToMap()
 	poll()
 	ssdpSubscribe()
