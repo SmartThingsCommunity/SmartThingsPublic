@@ -53,7 +53,7 @@ metadata {
 
 	tiles {
 		standardTile("switch", "device.switch", width: 2, height: 2, canChangeIcon: true) {
-			state "on", action:"switch.off", icon:"st.vents.vent-open-text", backgroundColor:"#53a7c0"
+			state "on", action:"switch.off", icon:"st.vents.vent-open-text", backgroundColor:"#00a0dc"
 			state "off", action:"switch.on", icon:"st.vents.vent-closed", backgroundColor:"#ffffff"
 		}
         valueTile("battery", "device.battery", inactiveLabel: false, decoration: "flat") {
