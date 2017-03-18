@@ -224,7 +224,7 @@ def Modes(){
 }
 def installed() {	 
     log.debug "enter installed, state: $state"	
-
+    atomicState.windowswereopenandclosedalready = false // this value must not be reset by updated() because updated() is run by contact management
     init()
 }
 def updated() {
@@ -314,21 +314,20 @@ def init() {
         subscribe(OutsideSensor, "temperature", temperatureHandler)
     }
     atomicState.doorsAreOpen = false
+
+    // these values will be reset to false later, for now they need to remain true so app doesn't go into override
     atomicState.T1_AppMgt = true
     atomicState.T2_AppMgt = true
     atomicState.T3_AppMgt = true
     atomicState.T4_AppMgt = true
-
-    atomicState.override = false
-    state.ThisIsManual = false
-
-
     atomicState.AppMgnt_T_1 = true
     atomicState.AppMgnt_T_2 = true
     atomicState.AppMgnt_T_3 = true
     atomicState.AppMgnt_T_4 = true
     /*  */
 
+    atomicState.override = false
+    atomicState.ThisIsManual = false
     atomicState.closed = true // windows management
     atomicState.hasRun = 0 // windows management
 
@@ -347,10 +346,10 @@ def setpointHandler(evt){
     log.debug "New $evt.name for $evt.device : $evt.value"
     log.debug "evt.displayName is $evt.displayName -------------------------------"
 
-    state.SPValue = evt.value
-    state.SPname = evt.name
-    state.devicedisplayName = evt.displayName
-    state.SPdevice = evt.device
+    atomicState.SPValue = evt.value
+    atomicState.SPname = evt.name
+    atomicState.devicedisplayName = evt.displayName
+    atomicState.SPdevice = evt.device
 
     //findSetPointReferences()
 
@@ -363,7 +362,7 @@ def setpointHandler(evt){
     def termRef = null
     def EventDevice = null 
     def AltSENSOR = false    
-    def device = state.SPdevice 
+    def device = atomicState.SPdevice 
 
     log.info "Home modes are : $Home, Night modes are : $Night, Away mode is : $Away, CustomMode1 are : $CustomMode1, CustomMode2 are : $CustomMode2"
 
@@ -416,14 +415,14 @@ def setpointHandler(evt){
     // simply stop running after this new setting has been compared to settings() in the arrays above
     // by declaring the atomicState.AppMgnt_T_X variable as false.  
 
-    if(state.SPname == "heatingSetpoint"){              
+    if(atomicState.SPname == "heatingSetpoint"){              
         reference = Math.round(Double.parseDouble(RefHeat))
         reference = reference.toInteger()
         log.debug "RefHeat was: $RefHeat"
         log.debug "RefHeat is now converted to a reference as: $reference"
 
     }
-    else  if(state.SPname == "coolingSetpoint"){ 
+    else  if(atomicState.SPname == "coolingSetpoint"){ 
         reference = Math.round(Double.parseDouble(RefCool))
         reference = reference.toInteger()
         log.debug "RefCool was: $RefCool"
@@ -431,63 +430,91 @@ def setpointHandler(evt){
     }
 
     /// 
-    def Value = Math.round(Double.parseDouble(state.SPValue))
+    def Value = Math.round(Double.parseDouble(atomicState.SPValue))
     Value = Value.toInteger()
     log.debug "Evt value to Integer is : $Value"
-
+	 log.debug "reference Value is to be compared to is: $reference"
 
     if(Value == reference){  
-        log.debug "NO OVERRIDE"
-        state.ThisIsManual = false
-        // we don't change atomicState.override value here, it'll be done in the TemperaturesModes() loop     
+        log.debug "NO SETPOINT OVERRIDE"
+        atomicState.ThisIsManual = false
+        // we don't change atomicState.override value here, it'll be done in the CheckCmdOrigin() loop     
         // we don't change _AppMgtSetPoint either, it'll change only on mode change or update
     }
     else {       
-        state.ThisIsManual = true
-        atomicState.override = true
-        if(device == "${Thermostat_1}")
-        {
+        atomicState.ThisIsManual = true
+        log.debug "new Set Point for $device is MANUAL ---------- OVERRIDE MODE ACTIVATED"
+    }
+
+    //
+    if(device == "${Thermostat_1}")
+    {
+        if(atomicState.ThisIsManual == true){
             atomicState.AppMgnt_T_1 = false
             log.info "atomicState.AppMgnt_T_1 set to $atomicState.AppMgnt_T_1"
         }
-        else if(device == "${Thermostat_2}")
-        {
+        else {
+            atomicState.AppMgnt_T_1 = true
+            log.info "atomicState.AppMgnt_T_1 set to $atomicState.AppMgnt_T_1"
+        }
+
+    }
+    else if(device == "${Thermostat_2}")
+    {
+        if(atomicState.ThisIsManual == true){
             atomicState.AppMgnt_T_2 = false
             log.info "atomicState.AppMgnt_T_2 set to $atomicState.AppMgnt_T_2"
         }
-        else if(device == "${Thermostat_3}")
-        {
+        else {
+            atomicState.AppMgnt_T_2 = true
+            log.info "atomicState.AppMgnt_T_2 set to $atomicState.AppMgnt_T_2"
+        }
+    }
+    else if(device == "${Thermostat_3}")
+    {
+        if(atomicState.ThisIsManual == true){
             atomicState.AppMgnt_T_3 = false
             log.info "atomicState.AppMgnt_T_3 set to $atomicState.AppMgnt_T_3"
         }
-        else if(device == "${Thermostat_4}")
-        {
+        else {
+            atomicState.AppMgnt_T_3 = true
+            log.info "atomicState.AppMgnt_T_3 set to $atomicState.AppMgnt_T_3"
+        }
+    }
+    else if(device == "${Thermostat_4}")
+    {
+        if(atomicState.ThisIsManual == true){
             atomicState.AppMgnt_T_4 = false
             log.info "atomicState.AppMgnt_T_4 set to $atomicState.AppMgnt_T_4"
         }
-        log.debug "new Set Point for $device is MANUAL ---------- OVERRIDE MODE ACTIVATED"
-        /// test             
+        else {
+            atomicState.AppMgnt_T_4 = true
+            log.info "atomicState.AppMgnt_T_4 set to $atomicState.AppMgnt_T_4"
+        }
+
     }   
 
     log.debug "RefHeat is: $RefHeat"
     log.debug "RefCool is: $RefCool"
     log.debug "reference is: $reference"
-    log.debug "SetPoint Change was Manual? ($state.ThisIsManual) if false then should have $reference = $Value"
+    log.debug "SetPoint Change was Manual? ($atomicState.ThisIsManual) if false then should have $reference = $Value"
     atomicState.RefHeat = RefHeat
     atomicState.RefCool = RefCool
 
+
 }
 def ThermostatSwitchHandler(evt){
-    log.debug "evt.value at ThermostatSwitchHandler is $evt.value"
-    log.debug "evt.device is $evt.device"
+    runIn(10, CheckCmdOrigin) 
+    log.debug "$evt.device set to $evt.value "
 
-    state.EvtValue = evt.value
-    state.EvtDevice = evt.device
+    atomicState.EvtValue = evt.value
+    def device = evt.device
+    atomicState.CurrentMode = device.currentValue("thermostatMode")
 
     log.trace "BEFORE CheckCmdOrigin atomicState.T1_AppMgt = $atomicState.T1_AppMgt || atomicState.T2_AppMgt = $atomicState.T2_AppMgt || atomicState.T3_AppMgt = $atomicState.T3_AppMgt || atomicState.T4_AppMgt = $atomicState.T4_AppMgt"
     log.trace "atomicState.override = $atomicState.override"
 
-    CheckCmdOrigin()
+
 }
 def temperatureHandler(evt) { 
 
@@ -497,23 +524,45 @@ def temperatureHandler(evt) {
     def currentTemp = XtraTempSensor.currentValue("temperature")
     log.debug "Xtra Sensor (for critical temp) is $XtraTempSensor and its current value is $currentTemp"
 
-	    
-    if(currentTemp < CriticalTemp) {
+
+    if(currentTemp <= CriticalTemp) {
         log.debug "EMERGENCY HEATING - TEMPERATURE IS TOO LOW!" 
+
         Thermostat_1.setThermostatMode("heat") 
-        atomicState.LatestThermostatMode = "heat"
-        if(Themorstat_2){Thermostat_2.setThermostatMode("heat") 
-                         atomicState.LatestThermostatMode = "heat"}
-        if(Themorstat_3){Thermostat_3.setThermostatMode("heat") 
-                         atomicState.LatestThermostatMode = "heat"}
-        if(Themorstat_4){Thermostat_4.setThermostatMode("heat") 
-                         atomicState.LatestThermostatMode = "heat"}
+
+        if(Thermostat_2){
+            Thermostat_2.setThermostatMode("heat") 
+        }
+        if(Thermostat_3){Thermostat_3.setThermostatMode("heat") 
+                        }
+        if(Thermostat_4){Thermostat_4.setThermostatMode("heat") 
+                        }
+
+
+        atomicState.CRITICAL = true
+
+        if(Actuators && atomicState.doorsAreOpen == true){
+            log.debug "CHECKING IF WINDOWS SHOULD BE CLOSED "
+            if(atomicState.windowswereopenandclosedalready == false){
+                log.debug "CLOSING WINDOWS"
+                Actuators.off()
+                // allow for user to reopen them if they want to. 
+                atomicState.windowswereopenandclosedalready = true // windows won't close again as long as temperature is still critical to allow for user's override
+            }
+        } 
+        atomicState.TheresBeenCriticalEvent = true
     } 
     else 
     { 
         log.debug "CriticalTemp OK"
+        atomicState.CRITICAL = false
+        atomicState.windowswereopenandclosedalready = false
+        if(atomicState.doorsAreOpen == true && atomicState.TheresBeenCriticalEvent == true){
+            TurnOffThermostats
+        }
+        atomicState.TheresBeenCriticalEvent = false
     } 
-   
+    TemperaturesModes()
 }
 def contactHandlerClosed(evt) {
 
@@ -524,6 +573,7 @@ def contactHandlerClosed(evt) {
         atomicState.doorsAreOpen = true
     }
     else {             
+        atomicState.doorsAreOpen == false
 
         runIn(10, TemperaturesModes)
         log.info "all contacts are closed, unscheduling previous TurnOffThermostats command, cancelling any override by updating all values: update()"
@@ -546,8 +596,9 @@ def contactHandlerOpen(evt) {
     }
 }
 def ChangedModeHandler(evt) {
-    state.modeStartTime = now() 
+    atomicState.modeStartTime = now() 
 
+    // these values will be reset to false later, for now they need to remain true so app doesn't go into override
     atomicState.AppMgnt_T_1 = true
     atomicState.AppMgnt_T_2 = true
     atomicState.AppMgnt_T_3 = true
@@ -559,24 +610,23 @@ def ChangedModeHandler(evt) {
     atomicState.T2_AppMgt = true
     atomicState.T3_AppMgt = true
     atomicState.T4_AppMgt = true
+
+
     atomicState.override = false
-    state.ThisIsManual = false
+    atomicState.ThisIsManual = false
 
+	 atomicState.ThermostatOverriden = "none"
     atomicState.locationModeChange = true
-    runIn(30, resetLocationChangeVariable)
+    runIn(60, resetLocationChangeVariable)
 
-    TemperaturesModes()
-
-
+    runIn(30, resetOverride)
 }
-def resetLocationChangeVariable(){
-    atomicState.locationModeChange = false
-}
-
 // main loop
 def TemperaturesModes(){
-//updated()
-//pause(10000)
+
+    log.trace "MAIN LOOP RUNNING"
+    //updated()/ whatch OUT! infinite loop because TemperaturesModes is ran from schedules()!!!!!!!!!!!!!!!!
+    //pause(10000)
     pollThermostats()
 
     log.trace "atomicState.T1_AppMgt = $atomicState.T1_AppMgt, atomicState.T2_AppMgt = $atomicState.T2_AppMgt, atomicState.T3_AppMgt = $atomicState.T3_AppMgt, atomicState.T4_AppMgt = $atomicState.T4_AppMgt"
@@ -590,28 +640,28 @@ atomicState.AppMgnt_T_3 : $atomicState.AppMgnt_T_3, atomicState.AppMgnt_T_4 : $a
         def CurrMode = location.currentMode
         def outsideTemp = OutsideSensor.currentTemperature
 
-        log.debug "state.ThisIsManual value is $state.ThisIsManual"
+        log.debug "atomicState.ThisIsManual value is $atomicState.ThisIsManual"
 
         if(Thermostat_1){
-            state.CurrTemp1 = Thermostat_1.currentTemperature
-            state.ThermState1 = Thermostat_1.currentValue("thermostatMode") as String
+            atomicState.CurrTemp1 = Thermostat_1.currentTemperature
+            atomicState.ThermState1 = Thermostat_1.currentValue("thermostatMode") as String
         }
         if(Thermostat_2){
-            state.CurrTemp2 = Thermostat_2.currentTemperature
-            state.ThermState2 = Thermostat_2.currentValue("thermostatMode") as String
+            atomicState.CurrTemp2 = Thermostat_2.currentTemperature
+            atomicState.ThermState2 = Thermostat_2.currentValue("thermostatMode") as String
         }
         if(Thermostat_3){
-            state.CurrTemp3 = Thermostat_3.currentTemperature
-            state.ThermState3 = Thermostat_3.currentValue("thermostatMode") as String
+            atomicState.CurrTemp3 = Thermostat_3.currentTemperature
+            atomicState.ThermState3 = Thermostat_3.currentValue("thermostatMode") as String
         }
         if(Thermostat_4){
-            state.CurrTemp4 = Thermostat_4.currentTemperature
-            state.ThermState4 = Thermostat_4.currentValue("thermostatMode") as String
+            atomicState.CurrTemp4 = Thermostat_4.currentTemperature
+            atomicState.ThermState4 = Thermostat_4.currentValue("thermostatMode") as String
         }
 
-        log.trace "$Thermostat_1 : $state.ThermState1, $Thermostat_2 : $state.ThermState2, $Thermostat_3 : $state.ThermState3, $Thermostat_4 : $state.ThermState4"
+        log.trace "$Thermostat_1 : $atomicState.ThermState1, $Thermostat_2 : $atomicState.ThermState2, $Thermostat_3 : $atomicState.ThermState3, $Thermostat_4 : $atomicState.ThermState4"
 
-        log.trace "CURRENT TEMPS : state.CurrTemp1 : $state.CurrTemp1, state.CurrTemp2 : $state.CurrTemp2, state.CurrTemp3 : $state.CurrTemp3, state.CurrTemp4 : $state.CurrTemp4, OUTSIDE: $outsideTemp"
+        log.trace "CURRENT TEMPS : atomicState.CurrTemp1 : $atomicState.CurrTemp1, atomicState.CurrTemp2 : $atomicState.CurrTemp2, atomicState.CurrTemp3 : $atomicState.CurrTemp3, atomicState.CurrTemp4 : $atomicState.CurrTemp4, OUTSIDE: $outsideTemp"
 
         if(CurrMode in Home){
             log.debug "location is in $CurrMode mode, applying settings accordingly" 
@@ -620,31 +670,33 @@ atomicState.AppMgnt_T_3 : $atomicState.AppMgnt_T_3, atomicState.AppMgnt_T_4 : $a
                     log.debug "${Thermostat_1}'s SetPoint changed by user's OVERRIDE, doing nothing"
                 }
                 else {
-                    state.AppChangedToT1 = true
+                    atomicState.AppChangedToT1 = true
                     if(!AltSensor_1){
                         log.debug "loading $Home settings for $Thermostat_1"        
                         Thermostat_1.setHeatingSetpoint(HSPH1)
                         Thermostat_1.setCoolingSetpoint(CSPH1)
 
                         // if AltSensor then these controls are set by AltSensor loop so we avoid a conflict
-                        if(state.CurrTemp1 > HSPH1 && state.ThermState1 != "off"){
+                        if(atomicState.CurrTemp1 > HSPH1 && atomicState.ThermState1 != "off"){
                             atomicState.T1_AppMgt = true
                             log.debug "Turning OFF $Thermostat_1"
                             Thermostat_1.setThermostatMode("off") 
-                            atomicState.LatestThermostatMode = "off"
+                            atomicState.LatestThermostatMode_T1 = "off"
                         } 
-                        else if(outsideTemp >= CSPH1 && state.ThermState1 != "cool"){
+                        else if(outsideTemp >= CSPH1 && atomicState.ThermState1 != "cool"){
                             atomicState.T1_AppMgt = true // so if turned off it'll be by user
                             log.debug "$Thermostat_1 set to cool"
                             Thermostat_1.setThermostatMode("cool") 
-                            atomicState.LatestThermostatMode = "cool"
+                            atomicState.LatestThermostatMode_T1 = "cool"
                         }
-                        else if(state.CurrTemp1 < HSPH1 && state.ThermState1 != "heat"){
+                        else if(atomicState.CurrTemp1 < HSPH1 && atomicState.ThermState1 != "heat"){
                             atomicState.T1_AppMgt = true // so if turned off it'll be by user
                             log.debug "$Thermostat_1 set to Heat"
                             Thermostat_1.setThermostatMode("heat") 
-                            atomicState.LatestThermostatMode = "heat"
+                            atomicState.LatestThermostatMode_T1 = "heat"
                         }
+                        //recording set values for further reference in override
+                        // shouldBeT1()
                     }
                 }
             }
@@ -653,7 +705,7 @@ atomicState.AppMgnt_T_3 : $atomicState.AppMgnt_T_3, atomicState.AppMgnt_T_4 : $a
                     log.debug "${Thermostat_2}'s SetPoint changed by user's OVERRIDE, doing nothing"
                 }
                 else {
-                    state.AppChangedToT2 = true
+                    atomicState.AppChangedToT2 = true
                     if(!AltSensor_2){
                         log.debug "loading $Home settings for $Thermostat_2"          
                         Thermostat_2.setHeatingSetpoint(HSPH2)
@@ -661,25 +713,28 @@ atomicState.AppMgnt_T_3 : $atomicState.AppMgnt_T_3, atomicState.AppMgnt_T_4 : $a
 
 
                         // if AltSensor then these controls are set by AltSensor loop so we avoid a conflict
-                        if(state.CurrTemp2 > HSPH2 && state.ThermState2 != "off"){
+                        if(atomicState.CurrTemp2 > HSPH2 && atomicState.ThermState2 != "off"){
                             atomicState.T2_AppMgt = true
                             log.debug "Turning OFF $Thermostat_2"
                             Thermostat_2.setThermostatMode("off") 
-                            atomicState.LatestThermostatMode = "off"
+                            atomicState.LatestThermostatMode_T2 = "off"
                         } 
-                        else if(outsideTemp >= CSPH2 && state.ThermState2 != "cool"){
+                        else if(outsideTemp >= CSPH2 && atomicState.ThermState2 != "cool"){
                             atomicState.T2_AppMgt = false // so if turned off it'll be by user
                             log.debug "$Thermostat_1 set to cool"
                             Thermostat_2.setThermostatMode("cool") 
-                            atomicState.LatestThermostatMode = "cool"
+                            atomicState.LatestThermostatMode_T2 = "cool"
                         }
-                        else if(state.CurrTemp2 < HSPH2 && state.ThermState2 != "heat"){
+                        else if(atomicState.CurrTemp2 < HSPH2 && atomicState.ThermState2 != "heat"){
                             atomicState.T2_AppMgt = false // so if turned off it'll be by user
                             log.debug "$Thermostat_1 set to heat"
                             Thermostat_2.setThermostatMode("heat") 
-                            atomicState.LatestThermostatMode = "heat"
+                            atomicState.LatestThermostatMode_T2 = "heat"
                         }
+                        //recording set values for further reference in override
+                        // shouldBeT2()
                     }
+
                 }
             }
             if(Thermostat_3){
@@ -688,32 +743,35 @@ atomicState.AppMgnt_T_3 : $atomicState.AppMgnt_T_3, atomicState.AppMgnt_T_4 : $a
                     log.debug "${Thermostat_3}'s SetPoint changed by user's OVERRIDE, doing nothing"
                 }
                 else {
-                    state.AppChangedToT3 = true
+                    atomicState.AppChangedToT3 = true
                     if(!AltSensor_3){
                         log.debug "loading $Home settings for $Thermostat_3"
                         Thermostat_3.setHeatingSetpoint(HSPH3)
                         Thermostat_3.setCoolingSetpoint(CSPH3)
 
                         // if AltSensor then these controls are set by AltSensor loop so we avoid a conflict
-                        if(state.CurrTemp3 > HSPH3 && state.ThermState3 != "off"){
+                        if(atomicState.CurrTemp3 > HSPH3 && atomicState.ThermState3 != "off"){
                             atomicState.T3_AppMgt = true
                             log.debug "Turning OFF $Thermostat_3"
                             Thermostat_3.setThermostatMode("off") 
-                            atomicState.LatestThermostatMode = "off"
+                            atomicState.LatestThermostatMode_T3 = "off"
                         } 
-                        else if(outsideTemp >= CSPH3 && state.ThermState3 != "cool"){
+                        else if(outsideTemp >= CSPH3 && atomicState.ThermState3 != "cool"){
                             atomicState.T3_AppMgt = false // so if turned off it'll be by user
                             log.debug "$Thermostat_1 set to cool"
                             Thermostat_3.setThermostatMode("cool") 
-                            atomicState.LatestThermostatMode = "cool"
+                            atomicState.LatestThermostatMode_T3 = "cool"
                         }
-                        else if(state.CurrTemp3 < HSPH3 && state.ThermState3 != "heat"){
+                        else if(atomicState.CurrTemp3 < HSPH3 && atomicState.ThermState3 != "heat"){
                             atomicState.T3_AppMgt = false // so if turned off it'll be by user
                             log.debug "$Thermostat_1 set to heat"
                             Thermostat_3.setThermostatMode("heat") 
-                            atomicState.LatestThermostatMode = "heat"
+                            atomicState.LatestThermostatMode_T3 = "heat"
                         }
+                        //recording set values for further reference in override
+                        // shouldBeT3()
                     }
+
                 }
             }
             if(Thermostat_4){
@@ -721,30 +779,33 @@ atomicState.AppMgnt_T_3 : $atomicState.AppMgnt_T_3, atomicState.AppMgnt_T_4 : $a
                     log.debug "${Thermostat_4}'s SetPoint changed by user's OVERRIDE, doing nothing"
                 }
                 else {
-                    state.AppChangedToT4 = true
+                    atomicState.AppChangedToT4 = true
                     log.debug "loading $Home settings for $Thermostat_4"
                     Thermostat_4.setHeatingSetpoint(HSPH4)
                     Thermostat_4.setCoolingSetpoint(CSPH4)   
 
                     // no AltSensor 4 
-                    if(state.CurrTemp4 > HSPH4 && state.ThermState4 != "off"){
+                    if(atomicState.CurrTemp4 > HSPH4 && atomicState.ThermState4 != "off"){
                         atomicState.T4_AppMgt = true
                         log.debug "Turning OFF $Thermostat_4"
                         Thermostat_4.setThermostatMode("off") 
-                        atomicState.LatestThermostatMode = "off"
+                        atomicState.LatestThermostatMode_T4 = "off"
                     } 
-                    else if(outsideTemp >= CSPH4 && state.ThermState4 != "cool"){
+                    else if(outsideTemp >= CSPH4 && atomicState.ThermState4 != "cool"){
                         atomicState.T4_AppMgt = false // so if turned off it'll be by user
                         Thermostat_4.setThermostatMode("cool") 
-                        atomicState.LatestThermostatMode = "cool"
+                        atomicState.LatestThermostatMode_T4 = "cool"
                     }
-                    else if(state.CurrTemp4 < HSPH4 && state.ThermState4 != "heat"){
+                    else if(atomicState.CurrTemp4 < HSPH4 && atomicState.ThermState4 != "heat"){
                         atomicState.T4_AppMgt = false // so if turned off it'll be by user
                         Thermostat_4.setThermostatMode("heat") 
-                        atomicState.LatestThermostatMode = "heat"
+                        atomicState.LatestThermostatMode_T4 = "heat"
 
                     }
+                    //recording set values for further reference in override
+                     //shouldBeT4()
                 }
+
             }
         }
         else if(CurrMode in Night){
@@ -754,7 +815,7 @@ atomicState.AppMgnt_T_3 : $atomicState.AppMgnt_T_3, atomicState.AppMgnt_T_4 : $a
                     log.debug "${Thermostat_1}'s SetPoint changed by user's OVERRIDE, doing nothing"
                 }
                 else {
-                    state.AppChangedToT1 = true
+                    atomicState.AppChangedToT1 = true
                     if(!AltSensor_1){
                         log.debug "loading $Night settings for $Thermostat_1"
                         Thermostat_1.setHeatingSetpoint(HSPN1)
@@ -762,25 +823,28 @@ atomicState.AppMgnt_T_3 : $atomicState.AppMgnt_T_3, atomicState.AppMgnt_T_4 : $a
 
 
                         // if AltSensor then these controls are set by AltSensor loop so we avoid a conflict
-                        if(state.CurrTemp1 > HSPN1 && state.ThermState1 != "off"){
+                        if(atomicState.CurrTemp1 > HSPN1 && atomicState.ThermState1 != "off"){
                             atomicState.T1_AppMgt = true
                             log.debug "Turning OFF $Thermostat_1"
                             Thermostat_1.setThermostatMode("off") 
-                            atomicState.LatestThermostatMode = "off"
+                            atomicState.LatestThermostatMode_T1 = "off"
                         } 
-                        else if(outsideTemp >= CSPN1 && state.ThermState1 != "cool"){
+                        else if(outsideTemp >= CSPN1 && atomicState.ThermState1 != "cool"){
                             atomicState.T1_AppMgt = true // so if turned off it'll be by user
                             log.debug "$Thermostat_1 set to cool"
                             Thermostat_1.setThermostatMode("cool") 
-                            atomicState.LatestThermostatMode = "cool"
+                            atomicState.LatestThermostatMode_T1 = "cool"
                         }
-                        else if(state.CurrTemp1 < HSPN1 && state.ThermState1 != "heat"){
+                        else if(atomicState.CurrTemp1 < HSPN1 && atomicState.ThermState1 != "heat"){
                             atomicState.T1_AppMgt = true // so if turned off it'll be by user
                             log.debug "$Thermostat_1 set to heat"
                             Thermostat_1.setThermostatMode("heat") 
-                            atomicState.LatestThermostatMode = "heat"
+                            atomicState.LatestThermostatMode_T1 = "heat"
                         }
+                        //recording set values for further reference in override
+                       //  shouldBeT1()
                     }
+
                 }
             }
             if(Thermostat_2){
@@ -788,41 +852,44 @@ atomicState.AppMgnt_T_3 : $atomicState.AppMgnt_T_3, atomicState.AppMgnt_T_4 : $a
                     log.debug "${Thermostat_2}'s SetPoint changed by user's OVERRIDE, doing nothing"
                 }
                 else {
-                    state.AppChangedToT2 = true
+                    atomicState.AppChangedToT2 = true
                     if(!AltSensor_2){
                         log.debug "loading $Night settings for $Thermostat_2"
                         Thermostat_2.setHeatingSetpoint(HSPN2)
                         Thermostat_2.setCoolingSetpoint(CSPN2) 
 
                         // if AltSensor then these controls are set by AltSensor loop so we avoid a conflict
-                        if(state.CurrTemp2 > HSPN2 && state.ThermState2 != "off"){
+                        if(atomicState.CurrTemp2 > HSPN2 && atomicState.ThermState2 != "off"){
                             atomicState.T2_AppMgt = true
                             log.debug "Turning OFF $Thermostat_2"
                             Thermostat_2.setThermostatMode("off") 
-                            atomicState.LatestThermostatMode = "off"
+                            atomicState.LatestThermostatMode_T2 = "off"
                         } 
-                        else if(outsideTemp >= CSPN2 && state.ThermState2 != "cool"){
+                        else if(outsideTemp >= CSPN2 && atomicState.ThermState2 != "cool"){
                             atomicState.T2_AppMgt = false // so if turned off it'll be by user
                             log.debug "$Thermostat_1 set to cool"
                             Thermostat_2.setThermostatMode("cool") 
-                            atomicState.LatestThermostatMode = "cool"
+                            atomicState.LatestThermostatMode_T2 = "cool"
                         }
-                        else if(state.CurrTemp2 < HSPN2 && state.ThermState2 != "heat"){
+                        else if(atomicState.CurrTemp2 < HSPN2 && atomicState.ThermState2 != "heat"){
                             atomicState.T2_AppMgt = false // so if turned off it'll be by user
                             log.debug "$Thermostat_1 set to heat"
                             Thermostat_2.setThermostatMode("heat") 
-                            atomicState.LatestThermostatMode = "heat"
+                            atomicState.LatestThermostatMode_T2 = "heat"
                         }
+
+                        //recording set values for further reference in override
+                        // shouldBeT2()
                     }
                 }
             }
             if(Thermostat_3){
-                log.info "state.ThisIsManual is $state.ThisIsManual"
+                log.info "atomicState.ThisIsManual is $atomicState.ThisIsManual"
                 if(atomicState.AppMgnt_T_3 == false && atomicState.override == true){
                     log.debug "${Thermostat_3}'s SetPoint changed by user's OVERRIDE, doing nothing"
                 }
                 else {
-                    state.AppChangedToT3 = true
+                    atomicState.AppChangedToT3 = true
                     if(!AltSensor_3){
                         log.debug "loading $Night settings for $Thermostat_3"
                         Thermostat_3.setHeatingSetpoint(HSPN3)
@@ -830,25 +897,28 @@ atomicState.AppMgnt_T_3 : $atomicState.AppMgnt_T_3, atomicState.AppMgnt_T_4 : $a
 
 
                         // if AltSensor then these controls are set by AltSensor loop so we avoid a conflict
-                        if(state.CurrTemp3 > HSPN3 && state.ThermState3 != "off"){
+                        if(atomicState.CurrTemp3 > HSPN3 && atomicState.ThermState3 != "off"){
                             atomicState.T3_AppMgt = true
                             log.debug "Turning OFF $Thermostat_3"
                             Thermostat_3.setThermostatMode("off") 
-                            atomicState.LatestThermostatMode = "off"
+                            atomicState.LatestThermostatMode_T3 = "off"
                         } 
-                        else if(outsideTemp >= CSPN3 && state.ThermState3 != "cool"){
+                        else if(outsideTemp >= CSPN3 && atomicState.ThermState3 != "cool"){
                             atomicState.T3_AppMgt = false // so if turned off it'll be by user
                             log.debug "$Thermostat_1 set to cool"
                             Thermostat_3.setThermostatMode("cool") 
-                            atomicState.LatestThermostatMode = "cool"
+                            atomicState.LatestThermostatMode_T3 = "cool"
                         }
-                        else if(state.CurrTemp3 < HSPN3 && state.ThermState3 != "heat"){
+                        else if(atomicState.CurrTemp3 < HSPN3 && atomicState.ThermState3 != "heat"){
                             atomicState.T3_AppMgt = false // so if turned off it'll be by user
                             log.debug "$Thermostat_1 set to heat"
                             Thermostat_3.setThermostatMode("heat") 
-                            atomicState.LatestThermostatMode = "heat"
+                            atomicState.LatestThermostatMode_T3 = "heat"
                         }
+                        //recording set values for further reference in override
+                       //  shouldBeT3()
                     }
+
                 }
             }
             if(Thermostat_4){
@@ -856,30 +926,33 @@ atomicState.AppMgnt_T_3 : $atomicState.AppMgnt_T_3, atomicState.AppMgnt_T_4 : $a
                     log.debug "${Thermostat_4}'s SetPoint changed by user's OVERRIDE, doing nothing"
                 }
                 else {
-                    state.AppChangedToT4 = true
+                    atomicState.AppChangedToT4 = true
                     log.debug "loading $Night0 settings for $Thermostat_4"
                     Thermostat_4.setHeatingSetpoint(HSPN4)
                     Thermostat_4.setCoolingSetpoint(CSPN4)    
 
                     // no AltSensor 4 
-                    if(state.CurrTemp4 > HSPN4 && state.ThermState4 != "off"){
+                    if(atomicState.CurrTemp4 > HSPN4 && atomicState.ThermState4 != "off"){
                         atomicState.T4_AppMgt = true
                         log.debug "Turning OFF $Thermostat_4"
                         Thermostat_4.setThermostatMode("off") 
-                        atomicState.LatestThermostatMode = "off"
+                        atomicState.LatestThermostatMode_T4 = "off"
                     } 
-                    else if(outsideTemp >= CSPN4 && state.ThermState4 != "cool"){
+                    else if(outsideTemp >= CSPN4 && atomicState.ThermState4 != "cool"){
                         atomicState.T4_AppMgt = false // so if turned off it'll be by user
                         log.debug "$Thermostat_1 set to cool"
                         Thermostat_4.setThermostatMode("cool") 
-                        atomicState.LatestThermostatMode = "cool"
+                        atomicState.LatestThermostatMode_T4 = "cool"
                     }
-                    else if(state.CurrTemp4 < HSPN4 && state.ThermState4 != "heat"){
+                    else if(atomicState.CurrTemp4 < HSPN4 && atomicState.ThermState4 != "heat"){
                         atomicState.T4_AppMgt = false // so if turned off it'll be by user
                         log.debug "$Thermostat_1 set to heat"
                         Thermostat_4.setThermostatMode("heat") 
-                        atomicState.LatestThermostatMode = "heat"
-                    }           
+                        atomicState.LatestThermostatMode_T4 = "heat"
+                    }
+
+                    //recording set values for further reference in override
+                     //shouldBeT4()
                 }
             }
         }
@@ -890,97 +963,107 @@ atomicState.AppMgnt_T_3 : $atomicState.AppMgnt_T_3, atomicState.AppMgnt_T_4 : $a
                     log.debug "${Thermostat_1}'s SetPoint changed by user's OVERRIDE, doing nothing"
                 }
                 else {
-                    state.AppChangedToT1 = true
+                    atomicState.AppChangedToT1 = true
                     if(!AltSensor_1){
                         log.debug "loading $Away settings for $Thermostat_1"
                         Thermostat_1.setHeatingSetpoint(HSPA)
                         Thermostat_1.setCoolingSetpoint(CSPA)
 
                         // if AltSensor then these controls are set by AltSensor loop so we avoid a conflict
-                        if(state.CurrTemp1 > HSPA1 && state.ThermState1 != "off"){
+                        if(atomicState.CurrTemp1 > HSPA1 && atomicState.ThermState1 != "off"){
                             atomicState.T1_AppMgt = true
                             log.debug "Turning OFF $Thermostat_1"
                             Thermostat_1.setThermostatMode("off") 
-                            atomicState.LatestThermostatMode = "off"
+                            atomicState.LatestThermostatMode_T1 = "off"
                         } 
-                        else if(outsideTemp >= CSPA1 && state.ThermState1 != "cool"){
+                        else if(outsideTemp >= CSPA1 && atomicState.ThermState1 != "cool"){
                             atomicState.T1_AppMgt = true // so if turned off it'll be by user
                             log.debug "$Thermostat_1 set to cool"
                             Thermostat_1.setThermostatMode("cool") 
-                            atomicState.LatestThermostatMode = "cool"
+                            atomicState.LatestThermostatMode_T1 = "cool"
                         }
-                        else if(state.CurrTemp1 < HSPA1 && state.ThermState1 != "heat"){
+                        else if(atomicState.CurrTemp1 < HSPA1 && atomicState.ThermState1 != "heat"){
                             atomicState.T1_AppMgt = true // so if turned off it'll be by user
                             log.debug "$Thermostat_1 set to heat"
                             Thermostat_1.setThermostatMode("heat") 
-                            atomicState.LatestThermostatMode = "heat"
+                            atomicState.LatestThermostatMode_T1 = "heat"
                         }
+
+                        //recording set values for further reference in override
+                         //shouldBeT1()
                     }
                 }
             }
             if(Thermostat_2){
-                if(!AltSensor_2){
-                    if(atomicState.AppMgnt_T_2 == false && atomicState.override == true){
-                        log.debug "${Thermostat_2}'s SetPoint changed by user's OVERRIDE, doing nothing"
-                    }
-                    else {
-                        state.AppChangedToT2 = true
+
+                if(atomicState.AppMgnt_T_2 == false && atomicState.override == true){
+                    log.debug "${Thermostat_2}'s SetPoint changed by user's OVERRIDE, doing nothing"
+                }
+                else {
+
+                    atomicState.AppChangedToT2 = true
+                    if(!AltSensor_2){
                         log.debug "loading $Away settings for $Thermostat_2"
                         Thermostat_2.setHeatingSetpoint(HSPA)
                         Thermostat_2.setCoolingSetpoint(CSPA)  
 
                         // if AltSensor then these controls are set by AltSensor loop so we avoid a conflict
-                        if(state.CurrTemp2 > HSPA2 && state.ThermState2 != "off"){
+                        if(atomicState.CurrTemp2 > HSPA2 && atomicState.ThermState2 != "off"){
                             atomicState.T2_AppMgt = true
                             log.debug "Turning OFF $Thermostat_2"
                             Thermostat_2.setThermostatMode("off") 
-                            atomicState.LatestThermostatMode = "off"
+                            atomicState.LatestThermostatMode_T2 = "off"
                         } 
-                        else if(outsideTemp >= CSPA2 && state.ThermState2 != "cool"){
+                        else if(outsideTemp >= CSPA2 && atomicState.ThermState2 != "cool"){
                             atomicState.T2_AppMgt = false // so if turned off it'll be by user
                             log.debug "$Thermostat_1 set to cool"
                             Thermostat_2.setThermostatMode("cool") 
-                            atomicState.LatestThermostatMode = "cool"
+                            atomicState.LatestThermostatMode_T2 = "cool"
                         }
-                        else if(state.CurrTemp2 < HSPA2 && state.ThermState2 != "heat"){
+                        else if(atomicState.CurrTemp2 < HSPA2 && atomicState.ThermState2 != "heat"){
                             atomicState.T2_AppMgt = false // so if turned off it'll be by user
                             log.debug "$Thermostat_1 set to heat"
                             Thermostat_2.setThermostatMode("heat") 
-                            atomicState.LatestThermostatMode = "heat"
+                            atomicState.LatestThermostatMode_T2 = "heat"
                         }
+                        //recording set values for further reference in override
+                        // shouldBeT2()
                     }
                 }
             }
             if(Thermostat_3){
-                if(!AltSensor_3){
-                    if(atomicState.AppMgnt_T_3 == false && atomicState.override == true){
-                        log.debug "${Thermostat_3}'s SetPoint changed by user's OVERRIDE, doing nothing"
-                    }
-                    else {
-                        state.AppChangedToT3 = true
+
+                if(atomicState.AppMgnt_T_3 == false && atomicState.override == true){
+                    log.debug "${Thermostat_3}'s SetPoint changed by user's OVERRIDE, doing nothing"
+                }
+                else {
+                    atomicState.AppChangedToT3 = true
+                    if(!AltSensor_3){
                         log.debug "loading $Away settings for $Thermostat_3"
                         Thermostat_3.setHeatingSetpoint(HSPA)
                         Thermostat_3.setCoolingSetpoint(CSPA)   
 
                         // if AltSensor then these controls are set by AltSensor loop so we avoid a conflict
-                        if(state.CurrTemp3 > HSPA3 && state.ThermState3 != "off"){
+                        if(atomicState.CurrTemp3 > HSPA3 && atomicState.ThermState3 != "off"){
                             atomicState.T3_AppMgt = true
                             log.debug "Turning OFF $Thermostat_3"
                             Thermostat_3.setThermostatMode("off") 
-                            atomicState.LatestThermostatMode = "off"
+                            atomicState.LatestThermostatMode_T3 = "off"
                         } 
-                        else if(outsideTemp >= CSPA3 && state.ThermState3 != "cool"){
+                        else if(outsideTemp >= CSPA3 && atomicState.ThermState3 != "cool"){
                             atomicState.T3_AppMgt = false // so if turned off it'll be by user
                             log.debug "$Thermostat_1 set to cool"
                             Thermostat_3.setThermostatMode("cool") 
-                            atomicState.LatestThermostatMode = "cool"
+                            atomicState.LatestThermostatMode_T3 = "cool"
                         }
-                        else if(state.CurrTemp3 < HSPA3 && state.ThermState3 != "heat"){
+                        else if(atomicState.CurrTemp3 < HSPA3 && atomicState.ThermState3 != "heat"){
                             atomicState.T3_AppMgt = false // so if turned off it'll be by user
                             log.debug "$Thermostat_1 set to heat"
                             Thermostat_3.setThermostatMode("heat") 
-                            atomicState.LatestThermostatMode = "heat"
+                            atomicState.LatestThermostatMode_T3 = "heat"
                         }
+                        //recording set values for further reference in override
+                        // shouldBeT3()
                     }
                 }
             }
@@ -989,30 +1072,32 @@ atomicState.AppMgnt_T_3 : $atomicState.AppMgnt_T_3, atomicState.AppMgnt_T_4 : $a
                     log.debug "${Thermostat_4}'s SetPoint changed by user's OVERRIDE, doing nothing"
                 }
                 else {
-                    state.AppChangedToT4 = true
+                    atomicState.AppChangedToT4 = true
                     log.debug "loading $Away settings for $Thermostat_4"
                     Thermostat_4.setHeatingSetpoint(HSPA)
                     Thermostat_4.setCoolingSetpoint(CSPA)   
 
                     // no AltSensor 4 
-                    if(state.CurrTemp4 > HSPA4 && state.ThermState4 != "off"){
+                    if(atomicState.CurrTemp4 > HSPA4 && atomicState.ThermState4 != "off"){
                         atomicState.T4_AppMgt = true
                         log.debug "Turning OFF $Thermostat_4"
                         Thermostat_4.setThermostatMode("off") 
-                        atomicState.LatestThermostatMode = "off"
+                        atomicState.LatestThermostatMode_T4 = "off"
                     } 
-                    else if(outsideTemp >= CSPA4 && state.ThermState4 != "cool"){
+                    else if(outsideTemp >= CSPA4 && atomicState.ThermState4 != "cool"){
                         atomicState.T4_AppMgt = false // so if turned off it'll be by user
                         log.debug "$Thermostat_1 set to cool"
                         Thermostat_4.setThermostatMode("cool") 
-                        atomicState.LatestThermostatMode = "cool"
+                        atomicState.LatestThermostatMode_T4 = "cool"
                     }
-                    else if(state.CurrTemp4 < HSPA4 && state.ThermState4 != "heat"){
+                    else if(atomicState.CurrTemp4 < HSPA4 && atomicState.ThermState4 != "heat"){
                         atomicState.T4_AppMgt = false // so if turned off it'll be by user
                         log.debug "$Thermostat_1 set to heat"
                         Thermostat_4.setThermostatMode("heat") 
-                        atomicState.LatestThermostatMode = "heat"
-                    }           
+                        atomicState.LatestThermostatMode_T4 = "heat"
+                    }
+                    //recording set values for further reference in override
+                     //shouldBeT4()
                 }
             }
         }
@@ -1024,7 +1109,7 @@ atomicState.AppMgnt_T_3 : $atomicState.AppMgnt_T_3, atomicState.AppMgnt_T_4 : $a
                     log.debug "${Thermostat_1}'s SetPoint changed by user's OVERRIDE, doing nothing"
                 }
                 else {
-                    state.AppChangedToT1 = true
+                    atomicState.AppChangedToT1 = true
                     if(!AltSensor_1){
                         log.debug "loading $CustomMode1 settings for $Thermostat_1"
                         Thermostat_1.setHeatingSetpoint(HSPCust1_T1)
@@ -1032,24 +1117,26 @@ atomicState.AppMgnt_T_3 : $atomicState.AppMgnt_T_3, atomicState.AppMgnt_T_4 : $a
 
 
                         // if AltSensor then these controls are set by AltSensor loop so we avoid a conflict
-                        if(state.CurrTemp1 > HSPCust1_T1 && state.ThermState1 != "off"){
+                        if(atomicState.CurrTemp1 > HSPCust1_T1 && atomicState.ThermState1 != "off"){
                             atomicState.T1_AppMgt = true
                             log.debug "Turning OFF $Thermostat_1"
                             Thermostat_1.setThermostatMode("off") 
-                            atomicState.LatestThermostatMode = "off"
+                            atomicState.LatestThermostatMode_T1 = "off"
                         } 
-                        else if(outsideTemp >= CSPCust1_T1 && state.ThermState1 != "cool"){
+                        else if(outsideTemp >= CSPCust1_T1 && atomicState.ThermState1 != "cool"){
                             atomicState.T1_AppMgt = true // so if turned off it'll be by user
                             log.debug "$Thermostat_1 set to cool"
                             Thermostat_1.setThermostatMode("cool") 
-                            atomicState.LatestThermostatMode = "cool"
+                            atomicState.LatestThermostatMode_T1 = "cool"
                         }
-                        else if(state.CurrTemp1 < HSPCust1_T1 && state.ThermState1 != "heat"){
+                        else if(atomicState.CurrTemp1 < HSPCust1_T1 && atomicState.ThermState1 != "heat"){
                             atomicState.T1_AppMgt = true // so if turned off it'll be by user
                             log.debug "$Thermostat_1 set to heat"
                             Thermostat_1.setThermostatMode("heat") 
-                            atomicState.LatestThermostatMode = "heat"
+                            atomicState.LatestThermostatMode_T1 = "heat"
                         }
+                        //recording set values for further reference in override
+                       //  shouldBeT1()
                     }
                 }
             }
@@ -1058,31 +1145,33 @@ atomicState.AppMgnt_T_3 : $atomicState.AppMgnt_T_3, atomicState.AppMgnt_T_4 : $a
                     log.debug "${Thermostat_2}'s SetPoint changed by user's OVERRIDE, doing nothing"
                 }
                 else {
-                    state.AppChangedToT2 = true
+                    atomicState.AppChangedToT2 = true
                     if(!AltSensor_2){
                         log.debug "loading $CustomMode1 settings for $Thermostat_2"
                         Thermostat_2.setHeatingSetpoint(HSPCust1_T2)
                         Thermostat_2.setCoolingSetpoint(CSPCust1_T2)  
 
                         // if AltSensor then these controls are set by AltSensor loop so we avoid a conflict
-                        if(state.CurrTemp2 > HSPCust1_T2 && state.ThermState2 != "off"){
+                        if(atomicState.CurrTemp2 > HSPCust1_T2 && atomicState.ThermState2 != "off"){
                             atomicState.T2_AppMgt = true
                             log.debug "Turning OFF $Thermostat_2"
                             Thermostat_2.setThermostatMode("off") 
-                            atomicState.LatestThermostatMode = "off"
+                            atomicState.LatestThermostatMode_T2 = "off"
                         } 
-                        else if(outsideTemp >= CSPCust1_T2 && state.ThermState2 != "cool"){
+                        else if(outsideTemp >= CSPCust1_T2 && atomicState.ThermState2 != "cool"){
                             atomicState.T2_AppMgt = false // so if turned off it'll be by user
                             log.debug "$Thermostat_1 set to cool"
                             Thermostat_2.setThermostatMode("cool") 
-                            atomicState.LatestThermostatMode = "cool"
+                            atomicState.LatestThermostatMode_T2 = "cool"
                         }
-                        else if(state.CurrTemp2 < HSPCust1_T2 && state.ThermState2 != "heat"){
+                        else if(atomicState.CurrTemp2 < HSPCust1_T2 && atomicState.ThermState2 != "heat"){
                             atomicState.T2_AppMgt = false // so if turned off it'll be by user
                             log.debug "$Thermostat_1 set to heat"
                             Thermostat_2.setThermostatMode("heat") 
-                            atomicState.LatestThermostatMode = "heat"
+                            atomicState.LatestThermostatMode_T2 = "heat"
                         }
+                        //recording set values for further reference in override
+                         //shouldBeT2()
                     }      
                 }
             }
@@ -1092,7 +1181,7 @@ atomicState.AppMgnt_T_3 : $atomicState.AppMgnt_T_3, atomicState.AppMgnt_T_4 : $a
                     log.debug "${Thermostat_3}'s SetPoint changed by user's OVERRIDE, doing nothing"
                 }
                 else {
-                    state.AppChangedToT3 = true
+                    atomicState.AppChangedToT3 = true
                     if(!AltSensor_3){
                         log.debug "loading $CustomMode1 settings for $Thermostat_3"
                         Thermostat_3.setHeatingSetpoint(HSPCust1_T3)
@@ -1100,24 +1189,26 @@ atomicState.AppMgnt_T_3 : $atomicState.AppMgnt_T_3, atomicState.AppMgnt_T_4 : $a
 
 
                         // if AltSensor then these controls are set by AltSensor loop so we avoid a conflict
-                        if(state.CurrTemp3 > HSPCust1_T3 && state.ThermState3 != "off"){
+                        if(atomicState.CurrTemp3 > HSPCust1_T3 && atomicState.ThermState3 != "off"){
                             atomicState.T3_AppMgt = true
                             log.debug "Turning OFF $Thermostat_3"
                             Thermostat_3.setThermostatMode("off") 
-                            atomicState.LatestThermostatMode = "off"
+                            atomicState.LatestThermostatMode_T3 = "off"
                         } 
-                        else if(outsideTemp >= CSPCust1_T3 && state.ThermState3 != "cool"){
+                        else if(outsideTemp >= CSPCust1_T3 && atomicState.ThermState3 != "cool"){
                             atomicState.T3_AppMgt = false // so if turned off it'll be by user
                             log.debug "$Thermostat_1 set to cool"
                             Thermostat_3.setThermostatMode("cool") 
-                            atomicState.LatestThermostatMode = "cool"
+                            atomicState.LatestThermostatMode_T3 = "cool"
                         }
-                        else if(state.CurrTemp3 < HSPCust1_T3 && state.ThermState3 != "heat"){
+                        else if(atomicState.CurrTemp3 < HSPCust1_T3 && atomicState.ThermState3 != "heat"){
                             atomicState.T3_AppMgt = false // so if turned off it'll be by user
                             log.debug "$Thermostat_1 set to heat"
                             Thermostat_3.setThermostatMode("heat") 
-                            atomicState.LatestThermostatMode = "heat"
+                            atomicState.LatestThermostatMode_T3 = "heat"
                         }
+                        //recording set values for further reference in override
+                        // shouldBeT3()
                     }
                 }
             }
@@ -1126,30 +1217,32 @@ atomicState.AppMgnt_T_3 : $atomicState.AppMgnt_T_3, atomicState.AppMgnt_T_4 : $a
                     log.debug "${Thermostat_4}'s SetPoint changed by user's OVERRIDE, doing nothing"
                 }
                 else {
-                    state.AppChangedToT4 = true
+                    atomicState.AppChangedToT4 = true
                     log.debug "loading $CustomMode1 settings for $Thermostat_4"
                     Thermostat_4.setHeatingSetpoint(HSPCust1_T4)
                     Thermostat_4.setCoolingSetpoint(CSPCust1_T4)     
 
                     // no AltSensor 4 
-                    if(state.CurrTemp4 > HSPCust1_T4 && state.ThermState4 != "off"){
+                    if(atomicState.CurrTemp4 > HSPCust1_T4 && atomicState.ThermState4 != "off"){
                         atomicState.T4_AppMgt = true
                         log.debug "Turning OFF $Thermostat_4"
                         Thermostat_4.setThermostatMode("off") 
-                        atomicState.LatestThermostatMode = "off"
+                        atomicState.LatestThermostatMode_T4 = "off"
                     } 
-                    else if(outsideTemp >= CSPCust1_T4 && state.ThermState4 != "cool"){
+                    else if(outsideTemp >= CSPCust1_T4 && atomicState.ThermState4 != "cool"){
                         atomicState.T4_AppMgt = false // so if turned off it'll be by user
                         log.debug "$Thermostat_1 set to cool"
                         Thermostat_4.setThermostatMode("cool") 
-                        atomicState.LatestThermostatMode = "cool"
+                        atomicState.LatestThermostatMode_T4 = "cool"
                     }
-                    else if(state.CurrTemp4 < HSPCust1_T4 && state.ThermState4 != "heat"){
+                    else if(atomicState.CurrTemp4 < HSPCust1_T4 && atomicState.ThermState4 != "heat"){
                         atomicState.T4_AppMgt = false // so if turned off it'll be by user
                         log.debug "$Thermostat_1 set to heat"
                         Thermostat_4.setThermostatMode("heat") 
-                        atomicState.LatestThermostatMode = "heat"
+                        atomicState.LatestThermostatMode_T4 = "heat"
                     }   
+                    //recording set values for further reference in override
+                     //shouldBeT4()
                 }
             }
         }
@@ -1160,7 +1253,7 @@ atomicState.AppMgnt_T_3 : $atomicState.AppMgnt_T_3, atomicState.AppMgnt_T_4 : $a
                     log.debug "${Thermostat_1}'s SetPoint changed by user's OVERRIDE, doing nothing"
                 }
                 else {
-                    state.AppChangedToT1 = true
+                    atomicState.AppChangedToT1 = true
                     if(!AltSensor_1){
                         log.debug "loading $CustomMode2 settings for $Thermostat_1"
                         Thermostat_1.setHeatingSetpoint(HSPCust2_T1)
@@ -1168,26 +1261,28 @@ atomicState.AppMgnt_T_3 : $atomicState.AppMgnt_T_3, atomicState.AppMgnt_T_4 : $a
 
 
                         // if AltSensor then these controls are set by AltSensor loop so we avoid a conflict
-                        if(state.CurrTemp1 > HSPCust2_T1 && state.ThermState1 != "off"){
+                        if(atomicState.CurrTemp1 > HSPCust2_T1 && atomicState.ThermState1 != "off"){
                             atomicState.T1_AppMgt = true
                             log.debug "Turning OFF $Thermostat_1"
                             Thermostat_1.setThermostatMode("off") 
-                            atomicState.LatestThermostatMode = "off"
+                            atomicState.LatestThermostatMode_T1 = "off"
                         } 
-                        else if(outsideTemp >= CSPCust2_T1 && state.ThermState1 != "cool"){
+                        else if(outsideTemp >= CSPCust2_T1 && atomicState.ThermState1 != "cool"){
                             atomicState.T1_AppMgt = true // so if turned off it'll be by user
                             log.debug "Setting $Thermostat_1 to cool"
                             log.debug "$Thermostat_1 set to cool"
                             Thermostat_1.setThermostatMode("cool") 
-                            atomicState.LatestThermostatMode = "cool"
+                            atomicState.LatestThermostatMode_T1 = "cool"
                         }
-                        else if(state.CurrTemp1 < HSPCust2_T1 && state.ThermState1 != "heat"){
+                        else if(atomicState.CurrTemp1 < HSPCust2_T1 && atomicState.ThermState1 != "heat"){
                             log.debug "Setting $Thermostat_1 to heat"
                             atomicState.T1_AppMgt = true // so if turned off it'll be by user
                             log.debug "$Thermostat_1 set to heat"
                             Thermostat_1.setThermostatMode("heat") 
-                            atomicState.LatestThermostatMode = "heat"
+                            atomicState.LatestThermostatMode_T1 = "heat"
                         }
+                        //recording set values for further reference in override
+                        // shouldBeT1()
                     }
                 }
             }
@@ -1196,34 +1291,36 @@ atomicState.AppMgnt_T_3 : $atomicState.AppMgnt_T_3, atomicState.AppMgnt_T_4 : $a
                     log.debug "${Thermostat_2}'s SetPoint changed by user's OVERRIDE, doing nothing"
                 }
                 else {
-                    state.AppChangedToT2 = true
+                    atomicState.AppChangedToT2 = true
                     if(!AltSensor_2){
                         log.debug "loading $CustomMode2 settings for $Thermostat_2"
-                        Thermostat_2.setHeatingSetpoint(HSPCust2_T1)
+                        Thermostat_2.setHeatingSetpoint(HSPCust2_T2)
                         Thermostat_2.setCoolingSetpoint(CSPCust2_T2)
 
 
                         // if AltSensor then these controls are set by AltSensor loop so we avoid a conflict
-                        if(state.CurrTemp2 > HSPCust2_T1 && state.ThermState2 != "off"){
+                        if(atomicState.CurrTemp2 > HSPCust2_T2 && atomicState.ThermState2 != "off"){
                             atomicState.T2_AppMgt = true
                             log.debug "Turning OFF $Thermostat_2"
                             Thermostat_2.setThermostatMode("off") 
-                            atomicState.LatestThermostatMode = "off"
+                            atomicState.LatestThermostatMode_T2 = "off"
                         } 
-                        else if(outsideTemp >= CSPCust2_T2 && state.ThermState2 != "cool"){
+                        else if(outsideTemp >= CSPCust2_T2 && atomicState.ThermState2 != "cool"){
                             log.debug "Setting $Thermostat_2 to cool"
                             atomicState.T2_AppMgt = false // so if turned off it'll be by user
                             log.debug "$Thermostat_1 set to cool"
                             Thermostat_2.setThermostatMode("cool") 
-                            atomicState.LatestThermostatMode = "cool"
+                            atomicState.LatestThermostatMode_T2 = "cool"
                         }
-                        else if(state.CurrTemp2 < HSPCust2_T1 && state.ThermState2 != "heat"){
+                        else if(atomicState.CurrTemp2 < HSPCust2_T2 && atomicState.ThermState2 != "heat"){
                             log.debug "Setting $Thermostat_2 to heat"
                             atomicState.T2_AppMgt = false // so if turned off it'll be by user
                             log.debug "$Thermostat_1 set to heat"
                             Thermostat_2.setThermostatMode("heat") 
-                            atomicState.LatestThermostatMode = "heat"
+                            atomicState.LatestThermostatMode_T2 = "heat"
                         }
+                        //recording set values for further reference in override
+                         //shouldBeT2()
                     }      
                 }
             }
@@ -1233,31 +1330,33 @@ atomicState.AppMgnt_T_3 : $atomicState.AppMgnt_T_3, atomicState.AppMgnt_T_4 : $a
                     log.debug "${Thermostat_3}'s SetPoint changed by user's OVERRIDE, doing nothing"
                 }
                 else {
-                    state.AppChangedToT3 = true
+                    atomicState.AppChangedToT3 = true
                     if(!AltSensor_3){
                         log.debug "loading $CustomMode2 settings for $Thermostat_3"
                         Thermostat_3.setHeatingSetpoint(HSPCust2_T3)
                         Thermostat_3.setCoolingSetpoint(CSPCust2_T3) 
 
                         // if AltSensor then these controls are set by AltSensor loop so we avoid a conflict
-                        if(state.CurrTemp3 > HSPCust2_T3 && state.ThermState3 != "off"){
+                        if(atomicState.CurrTemp3 > HSPCust2_T3 && atomicState.ThermState3 != "off"){
                             atomicState.T3_AppMgt = true
                             log.debug "Turning OFF $Thermostat_3"
                             Thermostat_3.setThermostatMode("off") 
-                            atomicState.LatestThermostatMode = "off"
+                            atomicState.LatestThermostatMode_T3 = "off"
                         } 
-                        else if(outsideTemp >= CSPCust2_T3 && state.ThermState3 != "cool"){
+                        else if(outsideTemp >= CSPCust2_T3 && atomicState.ThermState3 != "cool"){
                             atomicState.T3_AppMgt = false // so if turned off it'll be by user
                             log.debug "Setting $Thermostat_3 to cool"
                             Thermostat_3.setThermostatMode("cool") 
-                            atomicState.LatestThermostatMode = "cool"
+                            atomicState.LatestThermostatMode_T3 = "cool"
                         }
-                        else if(state.CurrTemp3 < HSPCust2_T3 && state.ThermState3 != "heat"){
+                        else if(atomicState.CurrTemp3 < HSPCust2_T3 && atomicState.ThermState3 != "heat"){
                             log.debug "Setting $Thermostat_3 to heat"
                             atomicState.T3_AppMgt = false // so if turned off it'll be by user
                             Thermostat_3.setThermostatMode("heat") 
-                            atomicState.LatestThermostatMode = "heat"
+                            atomicState.LatestThermostatMode_T3 = "heat"
                         }
+                        //recording set values for further reference in override
+                         //shouldBeT3()
                     }
                 }
             }
@@ -1266,41 +1365,43 @@ atomicState.AppMgnt_T_3 : $atomicState.AppMgnt_T_3, atomicState.AppMgnt_T_4 : $a
                     log.debug "${Thermostat_4}'s SetPoint changed by user's OVERRIDE, doing nothing"
                 }
                 else {
-                    state.AppChangedToT4 = true
+                    atomicState.AppChangedToT4 = true
                     log.debug "loading $CustomMode2 settings for $Thermostat_4"
                     Thermostat_4.setHeatingSetpoint(HSPCust2_T4)
                     Thermostat_4.setCoolingSetpoint(CSPCust2_T4)  
 
                     // no AltSensor 4 
-                    if(state.CurrTemp4 > HSPCust2_T4 && state.ThermState4 != "off"){
+                    if(atomicState.CurrTemp4 > HSPCust2_T4 && atomicState.ThermState4 != "off"){
                         atomicState.T4_AppMgt = true
                         log.debug "Turning OFF $Thermostat_4"
                         Thermostat_4.setThermostatMode("off") 
-                        atomicState.LatestThermostatMode = "off"
+                        atomicState.LatestThermostatMode_T4 = "off"
                     } 
-                    else if(outsideTemp >= CSPCust2_T4 && state.ThermState4 != "cool"){
+                    else if(outsideTemp >= CSPCust2_T4 && atomicState.ThermState4 != "cool"){
                         log.debug "Setting $Thermostat_3 to cool"
                         atomicState.T4_AppMgt = false // so if turned off it'll be by user
                         Thermostat_4.setThermostatMode("cool") 
-                        atomicState.LatestThermostatMode = "cool"
+                        atomicState.LatestThermostatMode_T4 = "cool"
                     }
-                    else if(state.CurrTemp4 < HSPCust2_T4 && state.ThermState4 != "heat"){
+                    else if(atomicState.CurrTemp4 < HSPCust2_T4 && atomicState.ThermState4 != "heat"){
                         log.debug "Setting $ThermState4 to heat"
                         atomicState.T4_AppMgt = false // so if turned off it'll be by user
                         Thermostat_4.setThermostatMode("heat") 
-                        atomicState.LatestThermostatMode = "heat"
+                        atomicState.LatestThermostatMode_T4 = "heat"
                     }   
+                    //recording set values for further reference in override
+                     //shouldBeT4()
                 }
             }
         }
     }
     else {
         log.debug "Some windows or doors are open, doing nothing"
+        TurnOffThermostats()
     }
     log.info "reseting override's triggers for future reference"
-    runIn(10, resetAppMgt)
+    runIn(30, resetAppMgt)
 }
-
 def AlternativeSensor1(){
     def doorsOk = alldoorsareclosed()
     if(doorsOk){
@@ -1310,11 +1411,11 @@ def AlternativeSensor1(){
         def OutsideTemp = OutsideSensor.currentTemperature
         def NewHeatSet = false 
         def NewCoolSet = false
-        state.ThermState = Thermostat_1.currentValue("thermostatMode") as String
-        log.trace "state.ThermState for $Thermostat_1 is $state.ThermState"
+        atomicState.ThermState = Thermostat_1.currentValue("thermostatMode") as String
+        log.trace "atomicState.ThermState for $Thermostat_1 is $atomicState.ThermState"
 
 
-        def IsOn = state.ThermState in ["heat", "cool"] 
+        def IsOn = atomicState.ThermState in ["heat", "cool"] 
 
         log.debug "IsOn?($IsOn)"
 
@@ -1348,51 +1449,78 @@ def AlternativeSensor1(){
         NewHeatSet = DefaultSetHeat + AltThermOffSet
         NewCoolSet = DefaultSetCool - AltThermOffSet
 
-        if(atomicState.override == false){
-            // no setpoint override, no on/off override
-            if(SenTemp < DefaultSetHeat || OutsideTemp > SenTemp){
-                // incresease current thermostat heat setting to force run 
+        NewHeatSet = DefaultSetHeat + AltThermOffSet
+        NewCoolSet = DefaultSetCool - AltThermOffSet
 
-                log.trace "$Thermostat_1: DefaultSetHeat = $DefaultSetHeat, DefaultSetCool = $DefaultSetCool, NewHeatSet = $NewHeatSet, NewCoolSet = $NewCoolSet"
+        def CurHSP = Thermostat_1.currentHeatingSetpoint
+        def CurCSP = Thermostat_1.currentCoolingSetpoint
+        log.trace "CurHSP: $CurHSP, CurCSP: $CurCSP, NewHeatSet = $NewHeatSet, NewCoolSet = $NewCoolSet"
+
+        if(atomicState.AppMgnt_T_1 == true){
+            if(CurHSP != NewHeatSet){
                 Thermostat_1.setHeatingSetpoint(NewHeatSet)
                 log.debug "$Thermostat_1 heating now set to $NewHeatSet"
+            }
+            else {
+                log.debug "CurHSP already OK"
+            }
+            if(CurCSP != NewCoolSet){
                 Thermostat_1.setCoolingSetpoint(NewCoolSet)
                 log.debug "$Thermostat_1 cooling now set to $NewCoolSet"
-
-                // set proper mode
-                if(SenTemp < DefaultSetHeat){
-
-                    Thermostat_1.setThermostatMode("heat") 
-                    atomicState.LatestThermostatMode = "heat"
-                    log.debug "$Thermostat_1 set to Heat"
-                    atomicState.T2_AppMgt = true
-                }
-                else if(SenTemp > DefaultSetCool /* making sure it doesn't cool after heating --> */ && OutsideTemp > DefaultSetCool){
-
-                    Thermostat_1.setThermostatMode("cool") 
-                    atomicState.LatestThermostatMode = "cool"
-                    log.debug "$Thermostat_1 set to Cool"
-                    atomicState.T2_AppMgt = true
-                }
-            } 
-            else {
-                //turning off this unit
-                if(state.ThermState == "off"){
-                    log.debug "$Thermostat_1 stays off"
-                    // Thermostat_1.setThermostatMode("off") 
-                    atomicState.LatestThermostatMode = "off" // redundant
-                }
-                else {
-                    log.debug "turning off $Thermostat_1" 
-                    atomicState.T1_AppMgt = true
-                    Thermostat_1.setThermostatMode("off") 
-                    atomicState.LatestThermostatMode = "off"     
-                }
             }
-            state.NewHeatSet1 = NewHeatSet
-            state.NewCoolSet1 = NewCoolSet // references used by heatingSetpointHandler()
+            else {
+                log.debug "CurCSP already OK"
+            }
+        } 
+        else {
+            log.debug "$Thermostat_1 in SETPOINT OVERRIDE MODE"
         }
-        else { log.debug "$Thermostat_2 in OVERRIDE MODE, doing nothing : atomicState.T2_AppMgt = $atomicState.T2_AppMgt, atomicState.override = $atomicState.override, atomicState.AppMgnt_T_1 = $atomicState.AppMgnt_T_1 " }
+
+        def Overriden = atomicState.ThermostatOverriden as String
+        log.debug "OVERRIDEN IS $Overriden"
+
+        if(atomicState.AppMgnt_T_1 == true){
+            if(atomicState.override == false &&  Overriden != "$Thermostat_1"){
+                // no setpoint override, no on/off override
+                if(SenTemp < DefaultSetHeat || OutsideTemp > SenTemp){
+
+                    // set proper mode
+                    if(SenTemp < DefaultSetHeat){
+
+                        Thermostat_1.setThermostatMode("heat") 
+                        atomicState.LatestThermostatMode_T1 = "heat"
+                        log.debug "$Thermostat_1 set to Heat"
+                        atomicState.T2_AppMgt = true
+                    }
+                    else if(SenTemp > DefaultSetCool /* making sure it doesn't cool after heating --> */ && OutsideTemp > DefaultSetCool){
+
+                        Thermostat_1.setThermostatMode("cool") 
+                        atomicState.LatestThermostatMode_T1 = "cool"
+                        log.debug "$Thermostat_1 set to Cool"
+                        atomicState.T2_AppMgt = true
+                    }
+                } 
+                else {
+                    //turning off this unit
+                    if(atomicState.ThermState == "off"){
+                        log.debug "$Thermostat_1 stays off"
+                        // Thermostat_1.setThermostatMode("off") 
+                        atomicState.LatestThermostatMode_T1 = "off" // redundant
+                    }
+                    else {
+                        log.debug "turning off $Thermostat_1" 
+                        atomicState.T1_AppMgt = true
+                        Thermostat_1.setThermostatMode("off") 
+                        atomicState.LatestThermostatMode_T1 = "off"     
+                    }
+                }
+                atomicState.NewHeatSet1 = NewHeatSet
+                atomicState.NewCoolSet1 = NewCoolSet // references used by heatingSetpointHandler()
+                 //ShouldbeT1()
+            }
+            else { log.debug "$Thermostat_1 in OVERRIDE MODE " }
+        }
+        else {log.debug "$Thermostat_1 in SETPOINT OVERRIDE MODE, doing nothing" }
     }
     else { 
         log.debug "some doors are open, AlternativeSensor1 loop not running"
@@ -1403,7 +1531,7 @@ def AlternativeSensor1(){
 def AlternativeSensor2(){
 
     def doorsOk = alldoorsareclosed()
-    
+
     if(doorsOk){
         log.debug "Running Alternative Sensor Loop for $Thermostat_2"
         def SenTemp = Sensor_2.currentTemperature
@@ -1413,9 +1541,9 @@ def AlternativeSensor2(){
         def NewHeatSet = false 
         def NewCoolSet = false
         def CurrMode = location.currentMode
-        state.ThermState = Thermostat_2.currentValue("thermostatMode") // as String
-        log.trace "state.ThermState for $Thermostat_2 is $state.ThermState"
-        def IsOn = state.ThermState in ["heat", "cool"]
+        atomicState.ThermState = Thermostat_2.currentValue("thermostatMode") // as String
+        log.trace "atomicState.ThermState for $Thermostat_2 is $atomicState.ThermState"
+        def IsOn = atomicState.ThermState in ["heat", "cool"]
 
         log.debug "IsOn?($IsOn)"
         log.debug "atomicState.override is $atomicState.override"
@@ -1449,57 +1577,81 @@ def AlternativeSensor2(){
         NewHeatSet = DefaultSetHeat + AltThermOffSet
         NewCoolSet = DefaultSetCool - AltThermOffSet
 
-        if(atomicState.override == false){
-            // no setpoint override, no on/off override
-            log.debug "evaluating for AlternativeSensor2"
-            if(SenTemp < DefaultSetHeat || OutsideTemp > SenTemp){
-                // set current thermostat settings to force operation 
+        def CurHSP = Thermostat_2.currentHeatingSetpoint
+        def CurCSP = Thermostat_2.currentCoolingSetpoint
+        log.trace "CurHSP: $CurHSP, CurCSP: $CurCSP, NewHeatSet = $NewHeatSet, NewCoolSet = $NewCoolSet"
 
-                log.trace " NewHeatSet = $NewHeatSet, NewCoolSet = $NewCoolSet"
+        if(atomicState.AppMgnt_T_2 == true){
+            if(CurHSP != NewHeatSet){
                 Thermostat_2.setHeatingSetpoint(NewHeatSet)
                 log.debug "$Thermostat_2 heating now set to $NewHeatSet"
+            }
+            else {
+                log.debug "CurHSP already OK"
+            }
+            if(CurCSP != NewCoolSet){
                 Thermostat_2.setCoolingSetpoint(NewCoolSet)
                 log.debug "$Thermostat_2 cooling now set to $NewCoolSet"
-
-                // set proper mode
-
-                if(SenTemp < DefaultSetHeat){
-
-                    Thermostat_2.setThermostatMode("heat") 
-                    atomicState.LatestThermostatMode = "heat"              
-                    log.debug "$Thermostat_2 set to Heat"
-                    atomicState.T2_AppMgt = true
-                }
-
-                else if(SenTemp > DefaultSetCool /* making sure it doesn't cool after heating --> */ && OutsideTemp > DefaultSetCool){
-
-                    Thermostat_2.setThermostatMode("cool") 
-                    atomicState.LatestThermostatMode = "cool"           
-                    log.debug "$Thermostat_2 set to Cool"
-                    atomicState.T2_AppMgt = true
-                }
             }
-            //turning off this unit
             else {
-
-                if(state.ThermState == "off"){
-                    log.debug "$Thermostat_2 stays off"
-                    //Thermostat_2.setThermostatMode("off") 
-                    atomicState.LatestThermostatMode = "off" // redundant 
-                }
-                else {    
-                    log.debug "turning off $Thermostat_2"
-                    atomicState.T2_AppMgt = true
-                    Thermostat_2.setThermostatMode("off") 
-                    atomicState.LatestThermostatMode = "off"
-                }
+                log.debug "CurCSP already OK"
             }
-            state.NewHeatSet2 = NewHeatSet
-            log.debug "state.NewHeatSet2 = DefaultSetHeat+$AltThermOffSet, that is: $DefaultSetHeat + $AltThermOffSet = $state.NewHeatSet2"
-            state.NewCoolSet2 = NewCoolSet
-            log.debug "state.NewCoolSet2 = DefaultSetCool-$AltThermOffSet, that is: $DefaultSetCool - $AltThermOffSet = $state.NewCoolSet2"
+        } 
+        else {
+            log.debug "$Thermostat_2 in SETPOINT OVERRIDE MODE"
         }
-        else { log.debug "$Thermostat_2 in OVERRIDE MODE, doing nothing : atomicState.T2_AppMgt = $atomicState.T2_AppMgt, atomicState.override = $atomicState.override, atomicState.AppMgnt_T_2 = $atomicState.AppMgnt_T_2" }
+
+        def Overriden = atomicState.ThermostatOverriden as String
+        log.debug "OVERRIDEN IS $Overriden"
+
+        if(atomicState.AppMgnt_T_2 == true){
+            if(atomicState.override == false &&  Overriden != "$Thermostat_2"){
+                // no setpoint override, no on/off override
+                log.debug "evaluating for AlternativeSensor2"
+                if(SenTemp < DefaultSetHeat || OutsideTemp > SenTemp){
+
+                    // set proper mode
+
+                    if(SenTemp < DefaultSetHeat){
+
+                        Thermostat_2.setThermostatMode("heat") 
+                        atomicState.LatestThermostatMode_T2 = "heat"              
+                        log.debug "$Thermostat_2 set to Heat"
+                        atomicState.T2_AppMgt = true
+                    }
+
+                    else if(SenTemp > DefaultSetCool /* making sure it doesn't cool after heating --> */ && OutsideTemp > DefaultSetCool){
+
+                        Thermostat_2.setThermostatMode("cool") 
+                        atomicState.LatestThermostatMode_T2 = "cool"           
+                        log.debug "$Thermostat_2 set to Cool"
+                        atomicState.T2_AppMgt = true
+                    }
+                }
+                //turning off this unit
+                else {
+
+                    if(atomicState.ThermState == "off"){
+                        log.debug "$Thermostat_2 stays off"
+                        //Thermostat_2.setThermostatMode("off") 
+                        atomicState.LatestThermostatMode_T2 = "off" // redundant 
+                    }
+                    else {    
+                        log.debug "turning off $Thermostat_2"
+                        atomicState.T2_AppMgt = true
+                        Thermostat_2.setThermostatMode("off") 
+                        atomicState.LatestThermostatMode_T2 = "off"
+                    }
+                }
+                atomicState.NewHeatSet2 = NewHeatSet
+                log.debug "atomicState.NewHeatSet2 = DefaultSetHeat+$AltThermOffSet, that is: $DefaultSetHeat + $AltThermOffSet = $atomicState.NewHeatSet2"
+                atomicState.NewCoolSet2 = NewCoolSet
+                log.debug "atomicState.NewCoolSet2 = DefaultSetCool-$AltThermOffSet, that is: $DefaultSetCool - $AltThermOffSet = $atomicState.NewCoolSet2"
+                //shouldBeT2()
+            }
+            else { log.debug "$Thermostat_2 in OVERRIDE MODE, doing nothing" }
+        }
+        else {log.debug "$Thermostat_2 in SETPOINT OVERRIDE MODE, doing nothing" }
     }
     else { 
         log.debug "some doors are open, AlternativeSensor2 loop not running"
@@ -1518,9 +1670,9 @@ def AlternativeSensor3(){
         def NewHeatSet = false 
         def NewCoolSet = false
         def CurrMode = location.currentMode
-        state.ThermState = Thermostat_3.currentValue("thermostatMode") as String
-        log.trace "state.ThermState for $Thermostat_3 is $state.ThermState"
-        def IsOn = state.ThermState in ["heat", "cool"]
+        atomicState.ThermState = Thermostat_3.currentValue("thermostatMode") as String
+        log.trace "atomicState.ThermState for $Thermostat_3 is $atomicState.ThermState"
+        def IsOn = atomicState.ThermState in ["heat", "cool"]
 
         log.debug "IsOn?($IsOn)"
 
@@ -1551,54 +1703,79 @@ def AlternativeSensor3(){
         NewHeatSet = DefaultSetHeat + AltThermOffSet
         NewCoolSet = DefaultSetCool - AltThermOffSet
 
-        if(atomicState.override == false){
+        def CurHSP = Thermostat_3.currentHeatingSetpoint
+        def CurCSP = Thermostat_3.currentCoolingSetpoint
+        log.trace "CurHSP: $CurHSP, CurCSP: $CurCSP, NewHeatSet = $NewHeatSet, NewCoolSet = $NewCoolSet"
 
-            //(IsOn && atomicState.T3_AppMgt == false) if on but only due to previous app's command, then run
-            //(!IsOn && atomicState.override == false) if off but not due to override, then run
-            if(SenTemp < DefaultSetHeat || OutsideTemp > SenTemp){
-                // incresease current thermostat heat setting to force run 
-
-                log.trace "$Thermostat_3: DefaultSetHeat = $DefaultSetHeat, DefaultSetCool = $DefaultSetCool, NewHeatSet = $NewHeatSet, NewCoolSet = $NewCoolSet"
+        if(atomicState.AppMgnt_T_3 == true){
+            if(CurHSP != NewHeatSet){
                 Thermostat_3.setHeatingSetpoint(NewHeatSet)
                 log.debug "$Thermostat_3 heating now set to $NewHeatSet"
+            }
+            else {
+                log.debug "CurHSP already OK"
+            }
+            if(CurCSP != NewCoolSet){
                 Thermostat_3.setCoolingSetpoint(NewCoolSet)
                 log.debug "$Thermostat_3 cooling now set to $NewCoolSet"
-
-                // set proper mode
-                if(SenTemp < DefaultSetHeat){
-
-                    Thermostat_3.setThermostatMode("heat") 
-                    atomicState.LatestThermostatMode = "heat"
-                    log.debug "$Thermostat_3 set to Heat"
-                    atomicState.T2_AppMgt = true
-                }
-                else if(SenTemp > DefaultSetCool /* making sure it doesn't cool after heating --> */ && OutsideTemp > DefaultSetCool){
-
-                    Thermostat_3.setThermostatMode("cool") 
-                    atomicState.LatestThermostatMode = "cool"
-                    log.debug "$Thermostat_3 set to Cool"
-                    atomicState.T2_AppMgt = true
-                }
-            } 
-            else {
-                //turning off this unit
-
-                if(state.ThermState == "off"){
-                    log.debug "$Thermostat_3 stays off"
-                    // Thermostat_3.setThermostatMode("off") 
-                    atomicState.LatestThermostatMode = "off" // redundant
-                }
-                else {
-                    atomicState.T3_AppMgt = true
-                    log.debug "turning off $Thermostat_3"      
-                    Thermostat_3.setThermostatMode("off") 
-                    atomicState.LatestThermostatMode = "off"            
-                }
             }
-            state.NewHeatSet3 = NewHeatSet
-            state.NewCoolSet3 = NewCoolSet
+            else {
+                log.debug "CurCSP already OK"
+            }
+        } 
+        else {
+            log.debug "$Thermostat_3 in SETPOINT OVERRIDE MODE"
         }
-        else { log.debug "$Thermostat_2 in OVERRIDE MODE, doing nothing : atomicState.T2_AppMgt = $atomicState.T2_AppMgt, atomicState.override = $atomicState.override, atomicState.AppMgnt_T_3 = $atomicState.AppMgnt_T_3" }
+
+        def Overriden = atomicState.ThermostatOverriden as String
+        log.debug "OVERRIDEN IS $Overriden"
+
+        if(atomicState.AppMgnt_T_3 == true){
+            if(atomicState.override == false &&  Overriden != "$Thermostat_3"){
+
+                //(IsOn && atomicState.T3_AppMgt == false) if on but only due to previous app's command, then run
+                //(!IsOn && atomicState.override == false) if off but not due to override, then run
+                if(SenTemp < DefaultSetHeat || OutsideTemp > SenTemp){
+
+
+                    // set proper mode
+                    if(SenTemp < DefaultSetHeat){
+
+                        Thermostat_3.setThermostatMode("heat") 
+                        atomicState.LatestThermostatMode_T3 = "heat"
+                        log.debug "$Thermostat_3 set to Heat"
+                        atomicState.T2_AppMgt = true
+                    }
+                    else if(SenTemp > DefaultSetCool /* making sure it doesn't cool after heating --> */ && OutsideTemp > DefaultSetCool){
+
+                        Thermostat_3.setThermostatMode("cool") 
+                        atomicState.LatestThermostatMode_T3 = "cool"
+                        log.debug "$Thermostat_3 set to Cool"
+                        atomicState.T2_AppMgt = true
+                    }
+                } 
+                else {
+                    //turning off this unit
+
+                    if(atomicState.ThermState == "off"){
+                        log.debug "$Thermostat_3 stays off"
+                        // Thermostat_3.setThermostatMode("off") 
+                        atomicState.LatestThermostatMode_T3 = "off" // redundant
+                    }
+                    else {
+                        atomicState.T3_AppMgt = true
+                        log.debug "turning off $Thermostat_3"      
+                        Thermostat_3.setThermostatMode("off") 
+                        atomicState.LatestThermostatMode_T3 = "off"            
+                    }
+                }
+                atomicState.NewHeatSet3 = NewHeatSet
+                atomicState.NewCoolSet3 = NewCoolSet
+                 //shouldBeT3()
+            }
+            else { log.debug "$Thermostat_3 in OVERRIDE MODE, doing nothing" }
+        }
+        else {log.debug "$Thermostat_3 in SETPOINT OVERRIDE MODE, doing nothing" }
     }
     else { 
         log.debug "some doors are open, AlternativeSensor1 loop not running"
@@ -1616,115 +1793,174 @@ def alldoorsareclosed(){
         true
     }
 }
-
 def TurnOffThermostats() {
-    log.debug "Turning off thermostats" 
-    Thermostat_1.setThermostatMode("off") 
-    atomicState.LatestThermostatMode = "off"
-    log.debug "$Thermostat_1  turned off"
-    atomicState.T1_AppMgt = true
-    if(Thermostat_2){      
-        Thermostat_2.setThermostatMode("off") 
+
+    if(atomicState.CRITICAL == false){
+        log.debug "Turning off thermostats" 
+        Thermostat_1.setThermostatMode("off") 
         atomicState.LatestThermostatMode = "off"
-        log.debug "$Thermostat_2 turned off"
-        atomicState.T2_AppMgt = true
-    }
-    if(Thermostat_3){
-        Thermostat_3.setThermostatMode("off") 
-        atomicState.LatestThermostatMode = "off"
-        log.debug "$Thermostat_3 turned off"
-        atomicState.T3_AppMgt = true
-    }
-    if(Thermostat_4){
-        if(Thermostat_4.currentValue != state.therm_4_CurrMode){
-            Thermostat_4.setThermostatMode("off") 
+        log.debug "$Thermostat_1  turned off"
+        atomicState.T1_AppMgt = true
+        if(Thermostat_2){      
+            Thermostat_2.setThermostatMode("off") 
             atomicState.LatestThermostatMode = "off"
-            log.debug "$Thermostat_4 turned off"
-            atomicState.T4_AppMgt = true
+            log.debug "$Thermostat_2 turned off"
+            atomicState.T2_AppMgt = true
+        }
+        if(Thermostat_3){
+            Thermostat_3.setThermostatMode("off") 
+            atomicState.LatestThermostatMode = "off"
+            log.debug "$Thermostat_3 turned off"
+            atomicState.T3_AppMgt = true
+        }
+        if(Thermostat_4){
+            if(Thermostat_4.currentValue != atomicState.therm_4_CurrMode){
+                Thermostat_4.setThermostatMode("off") 
+                atomicState.LatestThermostatMode = "off"
+                log.debug "$Thermostat_4 turned off"
+                atomicState.T4_AppMgt = true
+            }
         }
     }
+    else { log.debug "CRITICAL MODE, NOT TURNING OFF ANYTHING" }
 }
 def CheckCmdOrigin(){
 
-    def device = state.EvtDevice
-    def event = state.EvtValue
+    log.debug "CHECKING COMMAND ORIGIN"
 
-    def latestMode = atomicState.LatestThermostatMode    
-    def currentMode = device.currentValue("thermostatMode")
-    def CurrMode = location.currentMode
+    if(atomicState.CRITICAL == false){
 
-    latestMode.toString()
-    currentMode.toString()
-    log.info "latest override event regards $device"
-    def LocatioModeChange = atomicState.locationModeChange
-    log.debug "Location Mode Changed?($LocatioModeChange)"
-    def ThereWasChange = latestMode != currentMode && !LocatioModeChange // we want to make sure this change was not triggered by a home location change
-    log.debug " Change($ThereWasChange) "
-    
-    if(ThereWasChange){
-        log.info "Latest mode for $device was $latestMode and it just switched to $currentMode --------------------"
+        def device = atomicState.EvtDevice 
+        def event = atomicState.EvtValue
+        device = device as String
 
+        def latestMode = atomicState.LatestThermostatMode    // value set by temperatureModes()
+        def currentMode = atomicState.currentMode // the current event value
+        def CurrMode = location.currentMode
+
+        latestMode.toString()
+        currentMode.toString()
+
+        def LocatioModeChange = atomicState.locationModeChange
+        log.debug "Location Mode Changed?($LocatioModeChange)"
+
+        // these values are reset to default FALSE every 30 seconds, so if any is true it means the command came from the within the app and, therefore, was not manual. 
+        def ChangedByAppMAP = [atomicState.T1_AppMgt, atomicState.T2_AppMgt, atomicState.T3_AppMgt, atomicState.T4_AppMgt]
+        //, atomicState.AppMgnt_T_1, atomicState.AppMgnt_T_2, atomicState.AppMgnt_T_3, atomicState.AppMgnt_T_4]
+        def ChangedByAppFind = ChangedByAppMAP.findAll { val ->
+            val == true ? true : false
+        }
+        log.debug "${ChangedByAppFind.size()} out of ${ChangedByAppMAP.size()} values are true"
+
+        def ChangedByApp = ChangedByAppFind.size() == ChangedByAppMAP.size()
+
+        log.info "Changed By App? ($ChangedByApp)"
+
+
+        //device = device ?: [Thermostat_1, Thermostat_2, Thermostat_3, Thermostat_4]
+
+		log.trace "Latest Thermostat ModeS : $atomicState.LatestThermostatMode_T1 | $atomicState.LatestThermostatMode_T2 | $atomicState.LatestThermostatMode_T3 | $atomicState.LatestThermostatMode_T4"
+        def MapofShouldBe = ["$Thermostat_1": atomicState.LatestThermostatMode_T1, "$Thermostat_2": atomicState.LatestThermostatMode_T2, "$Thermostat_3": atomicState.LatestThermostatMode_T3, "$Thermostat_4": atomicState.LatestThermostatMode_T4]
+        def WhichThermInvolved = MapofShouldBe.find{ it.key == "$device"} 
+        log.debug "ShouldBe Values for device[WhichThermInvolved], that is ${WhichThermInvolved}"
+
+        //retrieve object name
+        def Thermostats = [Thermostat_1, Thermostat_2, Thermostat_3, Thermostat_4]
+        def deviceName = Thermostats.find{"$device"} 
+
+        // now compare 
+
+        def CurTMd =  deviceName.currentValue("thermostatMode")
+        CurTMd = CurTMd.toString()
+        WhichThermInvolved = WhichThermInvolved.value
+        WhichThermInvolved = WhichThermInvolved.toString()
+
+        log.debug "Current Mode Value of $device = $CurTMd"
+        log.debug "  $CurTMd =? $WhichThermInvolved"
+        def IdenticalShouldbe = CurTMd == WhichThermInvolved
+        log.debug "IDENTICAL?($IdenticalShouldbe)"
+
+        //make sure that  : 
+        // 1) the thermostat DID effectively had its operating mode changed
+        // 2) this change was not triggered by a home location change 
+        // 3) or by the TemperaturesModes() loop
+        //
+        def ThereWasChange = latestMode != currentMode && !LocatioModeChange && !ChangedByApp
+
+        log.debug " Change($ThereWasChange) "
+
+        if(ThereWasChange){
+
+            atomicState.ThermostatOverriden = device
+            log.info "Latest mode for atomicState.ThermostatOverriden($atomicState.ThermostatOverriden) was $latestMode and it just switched to $event --------------------"
+        }
+        else {
+            atomicState.ThermostatOverriden = "none"
+            atomicState.override = false
+        }
+
+        if(device == "${Thermostat_1}"){
+            if(IdenticalShouldbe && atomicState.override == true){
+                // manual override deactivated
+                log.debug "END of MANUAL OVERRIDE for $Thermostat_1"
+                atomicState.override = false
+                
+            }
+            else if(ThereWasChange && atomicState.T1_AppMgt == false){
+                // command did not come from app so manual override is on
+                log.debug "MANUAL OVERRIDE for $Thermostat_1"
+                atomicState.override = true
+            }       
+        }
+        else if(device == "${Thermostat_2}"){
+            if(IdenticalShouldbe && atomicState.override == true){
+                // manual override deactivated
+                log.debug "END of MANUAL OVERRIDE for $Thermostat_2"
+                atomicState.override = false
+                
+            }
+            else if(ThereWasChange && atomicState.T2_AppMgt == false){
+                // command did not come from app so manual override is on
+                log.debug "MANUAL OVERRIDE for $Thermostat_2"
+                atomicState.override = true
+            }     
+        } 
+        else if(device == "${Thermostat_3}"){
+            if(IdenticalShouldbe && atomicState.override == true){
+                // manual override deactivated
+                log.debug "END of MANUAL OVERRIDE for $Thermostat_3"
+                atomicState.override = false
+                
+            }
+            else if(ThereWasChange && atomicState.T3_AppMgt == false){
+                // command did not come from app so manual override is on
+                log.debug "MANUAL OVERRIDE for $Thermostat_3"
+                atomicState.override = true
+            }     
+        } 
+        else if(device == "${Thermostat_4}"){
+            if(IdenticalShouldbe && atomicState.override == true){
+                // manual override deactivated
+                log.debug "END of MANUAL OVERRIDE for $Thermostat_4"
+                atomicState.override = false
+               
+            }
+            else if(ThereWasChange && atomicState.T4_AppMgt == false){
+                // command did not come from app so manual override is on
+                log.debug "MANUAL OVERRIDE for $Thermostat_4"
+                atomicState.override = true
+            }     
+        }
+
+        log.info "Override?($atomicState.override) "
+        atomicState.LatestThermostatMode = event // if was manual now this is the new latest value so change after override can be detected
+        log.debug "atomicState.LatestThermostatMode is now $atomicState.LatestThermostatMode (event = $event)"
     }
+    else { log.debug "CRITICAL MODE. NOT EVALUATING OVERRIDES" }
 
-   
-    device = device as String
-
-    if(device == "${Thermostat_1}"){
-        if(ThereWasChange && atomicState.override == true){
-            // manual override deactivated
-            log.debug "END of MANUAL OVERRIDE for $Thermostat_1"
-            atomicState.override = false
-            state.ThisIsManual == false // this will reset all values to settings'
-        }
-        else if(ThereWasChange && atomicState.T1_AppMgt == false){
-            // command did not come from app so manual override is on
-            log.debug "MANUAL OVERRIDE for $Thermostat_1"
-            atomicState.override = true
-        }       
-    }
-    else if(device == "${Thermostat_2}"){
-        if(ThereWasChange && atomicState.override == true){
-            // manual override deactivated
-            log.debug "END of MANUAL OVERRIDE for $Thermostat_2"
-            atomicState.override = false
-            state.ThisIsManual == false // this will reset all values to settings'
-        }
-        else if(ThereWasChange && atomicState.T2_AppMgt == false){
-            // command did not come from app so manual override is on
-            log.debug "MANUAL OVERRIDE for $Thermostat_2"
-            atomicState.override = true
-        }     
-    } 
-    else if(device == "${Thermostat_3}"){
-        if(ThereWasChange && atomicState.override == true){
-            // manual override deactivated
-            log.debug "END of MANUAL OVERRIDE for $Thermostat_3"
-            atomicState.override = false
-            state.ThisIsManual == false // this will reset all values to settings'
-        }
-        else if(ThereWasChange && atomicState.T3_AppMgt == false){
-            // command did not come from app so manual override is on
-            log.debug "MANUAL OVERRIDE for $Thermostat_3"
-            atomicState.override = true
-        }     
-    } 
-    else if(device == "${Thermostat_4}"){
-        if(ThereWasChange && atomicState.override == true){
-            // manual override deactivated
-            log.debug "END of MANUAL OVERRIDE for $Thermostat_4"
-            atomicState.override = false
-            state.ThisIsManual == false // this will reset all values to settings'
-        }
-        else if(ThereWasChange && atomicState.T4_AppMgt == false){
-            // command did not come from app so manual override is on
-            log.debug "MANUAL OVERRIDE for $Thermostat_4"
-            atomicState.override = true
-        }     
-    }
-
-    log.info "Override?($atomicState.override) "
-    atomicState.LatestThermostatMode = event // if was manual now this is the new latest value so change after override can be detected
-    log.debug "atomicState.LatestThermostatMode is now $atomicState.LatestThermostatMode (event = $event)"
+}
+def resetLocationChangeVariable(){
+    atomicState.locationModeChange = false
 }
 def resetOverride(){
     atomicState.override = false
@@ -1737,11 +1973,12 @@ def resetAppMgt(){
     atomicState.T3_AppMgt = false
     atomicState.T4_AppMgt = false
 
-    atomicState.AppMgnt_T_1 = false
-    atomicState.AppMgnt_T_2 = false
-    atomicState.AppMgnt_T_3 = false
-    atomicState.AppMgnt_T_4 = false
+    atomicState.AppMgnt_T_1 = true
+    atomicState.AppMgnt_T_2 = true
+    atomicState.AppMgnt_T_3 = true
+    atomicState.AppMgnt_T_4 = true
 
+ atomicState.ThermostatOverriden = "none"
     if( atomicState.hasRun < 1)
     { 
         atomicState.WindowsAppManaged = false 
@@ -1817,15 +2054,12 @@ def pollThermostats(){
              }
     }
 }
-
 def CheckWindows(){
     log.debug "Checking windows"
     def Inside = XtraTempSensor.currentValue("temperature")
     def Outside = OutsideSensor.currentValue("temperature")
     def closed = atomicState.closed == true
     // find current setpoints references
-
-
 
     def OkToOpen = OkToOpen() 
     log.debug "OkToOpen?($OkToOpen)"
@@ -1835,13 +2069,20 @@ def CheckWindows(){
     log.debug "atomicState.WindowsAppManaged($atomicState.WindowsAppManaged)"
 
     // atomicState.hasRun = 0
+    def message = ""
 
     log.debug "Inside temperature is above Heat Setting. "
     if(OkToOpen){
-        if(state.hasRun < 1)  {
+
+        if(atomicState.hasRun < 1)  {
 
             Actuators?.on()
             log.debug "opening windows"
+
+            message = "Conditions permitting, I'm opening $Actuators. Operation time is $OperatingTime seconds"
+            log.info message 
+            send(message)
+
             if(OperatingTime){
                 log.debug "stop in $OperatingTime seconds"
                 runIn(OperatingTime, StopActuators)
@@ -1855,12 +2096,14 @@ def CheckWindows(){
     else if (!OkToOpen && atomicState.WindowsAppManaged == true) {
         Actuators?.off()
         log.debug "closing windows"
+        message = "It's too cold, I'm closing $Actuators. Operation time is $OperatingTime seconds"
+        log.info message 
+        send(message)
         atomicState.closed = true
         atomicState.hasRun = 0 // this is an integer beware of not replacing with bool
         atomicState.WindowsAppManaged = true
     }
 }
-
 def OkToOpen(){
     def Inside = XtraTempSensor.currentValue("temperature") 
     def Outside = OutsideSensor.currentValue("temperature") 
@@ -1880,45 +2123,64 @@ def OkToOpen(){
     return result
 
 }
-
 def StopActuators(){
     Actuators?.stop()
 }
-/// only for tests purpose
 private schedules() { 
 
-    def scheduledTime = 2
+    def scheduledTimeA = 1
+    def scheduledTimeB = 1
 
     if(AltSensor_1){
         subscribe(Sensor_1, "temperature", temperatureHandler)
         //log.debug "Subscription for alternative Sensor for $Sensor_1"
-        schedule("0 0/$scheduledTime * * * ?", AlternativeSensor1)
-        //log.debug "AlternativeSensor1 scheduled to run every $scheduledTime minutes"
+        schedule("0 0/$scheduledTimeB * * * ?", AlternativeSensor1)
+        //log.debug "AlternativeSensor1 scheduled to run every $scheduledTimeB minutes"
         AlternativeSensor1()
     }
     if(AltSensor_2){
         subscribe(Sensor_2, "temperature", temperatureHandler)
         //log.debug "Subscription for alternative Sensor for $Sensor_2"
-        schedule("0 0/$scheduledTime * * * ?", AlternativeSensor2)
-        //log.debug "AlternativeSensor2 scheduled to run every $scheduledTime minutes"
+        schedule("0 0/$scheduledTimeB * * * ?", AlternativeSensor2)
+        //log.debug "AlternativeSensor2 scheduled to run every $scheduledTimeB minutes"
         AlternativeSensor2()
     }
     if(AltSensor_3){
         subscribe(Sensor_3, "temperature", temperatureHandler)
         //log.debug "Subscription for alternative Sensor for $Sensor_3"
-        schedule("0 0/$scheduledTime * * * ?", AlternativeSensor3)
-        //log.debug "AlternativeSensor3 scheduled to run every $scheduledTime minutes"
+        schedule("0 0/$scheduledTimeB * * * ?", AlternativeSensor3)
+        //log.debug "AlternativeSensor3 scheduled to run every $scheduledTimeB minutes"
         AlternativeSensor3()
     }
 
     if(Actuators){
-        schedule("0 0/$scheduledTime * * * ?", CheckWindows)
-        //log.debug "CheckWindows scheduled to run every $scheduledTime minutes"
+        schedule("0 0/$scheduledTimeA * * * ?", CheckWindows)
+        //log.debug "CheckWindows scheduled to run every $scheduledTimeA minutes"
         CheckWindows()
     }
 
-    schedule("0 0/$scheduledTime * * * ?", TemperaturesModes)
-    log.debug "TemperaturesModes scheduled to run every $scheduledTime minutes"
+    schedule("0 0/$scheduledTimeB * * * ?", TemperaturesModes)
+    log.debug "TemperaturesModes scheduled to run every $scheduledTimeB minutes"
+    TemperaturesModes()
+}
+
+private send(msg) {
+    if (location.contactBookEnabled) {
+        sendNotificationToContacts(msg, recipients)
+    }
+    else {
+        if (sendPushMessage != "No") {
+            log.debug("sending push message")
+            sendPush(msg)
+        }
+
+        if (phone) {
+            log.debug("sending text message")
+            sendSms(phone, msg)
+        }
+    }
+
+    log.debug msg
 }
 
 
