@@ -57,8 +57,6 @@ def updated() {
 }
 
 def initialize() {
-	subscribe(switches, "switch", switchesHandler)
-	
 	checkTemperature()
 
 	switch (pollRate) {
@@ -133,15 +131,9 @@ def getCurrTemp() {
 	}
 }
 
-
 def zipCodeIsValid() {
 	zipCode && zipCode.isNumber() && zipCode.size() == 5
 }
-
-def switchesHandler(evt) {
-	log.debug "Temperature Based Device Control: ${evt.device} turned ${evt.value}"
-}
-
 
 def deviceHandler(action) {
 	log.debug "Temperature Based Device Control: Ensuring $action.value for ${switches}"
@@ -161,5 +153,4 @@ def deviceHandler(action) {
 			}
 		}
 	}
-	//sendNotificationEvent("I've turned $action.value ${switches}")
 }
