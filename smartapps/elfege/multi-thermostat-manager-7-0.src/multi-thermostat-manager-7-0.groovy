@@ -502,23 +502,23 @@ def setpointHandler(evt){
 
     }
     else{
-    log.debug "Not evaluating SETPOINT OVERRIDE because the command came from within the app itself"
+        log.debug "Not evaluating SETPOINT OVERRIDE because the command came from within the app itself"
     }
     atomicState.withinApp = false
 
 }
 def ThermostatSwitchHandler(evt){
-    runIn(10, CheckCmdOrigin) 
+
     log.debug "$evt.device set to $evt.value "
 
-    atomicState.EvtValue = evt.value
-    def device = evt.device
-    atomicState.CurrentMode = device.currentValue("thermostatMode")
+    state.EvtValue = evt.value 
+    state.EvtDevice = evt.device
 
-    log.trace "BEFORE CheckCmdOrigin atomicState.T1_AppMgt = $atomicState.T1_AppMgt || atomicState.T2_AppMgt = $atomicState.T2_AppMgt || atomicState.T3_AppMgt = $atomicState.T3_AppMgt || atomicState.T4_AppMgt = $atomicState.T4_AppMgt"
-    log.trace "atomicState.override = $atomicState.override"
+    //atomicState.CurrentMode = device.currentValue("thermostatMode")
 
+    //log.trace "BEFORE CheckCmdOrigin atomicState.override = $atomicState.override || atomicState.T1_AppMgt = $atomicState.T1_AppMgt || atomicState.T2_AppMgt = $atomicState.T2_AppMgt || atomicState.T3_AppMgt = $atomicState.T3_AppMgt || atomicState.T4_AppMgt = $atomicState.T4_AppMgt"
 
+    CheckCmdOrigin() 
 }
 def temperatureHandler(evt) { 
 
@@ -615,11 +615,10 @@ def ChangedModeHandler(evt) {
     atomicState.T3_AppMgt = true
     atomicState.T4_AppMgt = true
 
-
     atomicState.override = false
     atomicState.ThisIsManual = false
 
-    atomicState.ThermostatOverriden = "none"
+    state.ThermostatOverriden = "none"
     atomicState.locationModeChange = true
     runIn(60, resetLocationChangeVariable)
 
@@ -1482,7 +1481,7 @@ def AlternativeSensor1(){
 
         if(atomicState.AppMgnt_T_1 == true){
             if(CurHSP != NewHeatSet){
-            atomicState.withinApp = true
+                atomicState.withinApp = true
                 Thermostat_1.setHeatingSetpoint(NewHeatSet)
                 log.debug "$Thermostat_1 heating now set to $NewHeatSet"
             }
@@ -1490,7 +1489,7 @@ def AlternativeSensor1(){
                 log.debug "CurHSP already OK"
             }
             if(CurCSP != NewCoolSet){
-            atomicState.withinApp = true
+                atomicState.withinApp = true
                 Thermostat_1.setCoolingSetpoint(NewCoolSet)            
                 log.debug "$Thermostat_1 cooling now set to $NewCoolSet"
             }
@@ -1502,11 +1501,11 @@ def AlternativeSensor1(){
             log.debug "$Thermostat_1 in SETPOINT OVERRIDE MODE"
         }
 
-        def Overriden = atomicState.ThermostatOverriden as String
+        def Overriden = state.ThermostatOverriden as String
         log.debug "OVERRIDEN IS $Overriden"
 
         if(atomicState.AppMgnt_T_1 == true){
-            if(atomicState.override == false &&  Overriden != "$Thermostat_1"){
+            if(aOverriden != "$Thermostat_1"){
                 // no setpoint override, no on/off override
                 if(SenTemp < DefaultSetHeat || OutsideTemp > SenTemp){
 
@@ -1609,7 +1608,7 @@ def AlternativeSensor2(){
 
         if(atomicState.AppMgnt_T_2 == true){
             if(CurHSP != NewHeatSet){
-            atomicState.withinApp = true
+                atomicState.withinApp = true
                 Thermostat_2.setHeatingSetpoint(NewHeatSet)
                 log.debug "$Thermostat_2 heating now set to $NewHeatSet"
             }
@@ -1617,7 +1616,7 @@ def AlternativeSensor2(){
                 log.debug "CurHSP already OK"
             }
             if(CurCSP != NewCoolSet){
-            atomicState.withinApp = true
+                atomicState.withinApp = true
                 Thermostat_2.setCoolingSetpoint(NewCoolSet)
                 log.debug "$Thermostat_2 cooling now set to $NewCoolSet"
             }
@@ -1629,11 +1628,11 @@ def AlternativeSensor2(){
             log.debug "$Thermostat_2 in SETPOINT OVERRIDE MODE"
         }
 
-        def Overriden = atomicState.ThermostatOverriden as String
+        def Overriden = state.ThermostatOverriden as String
         log.debug "OVERRIDEN IS $Overriden"
 
         if(atomicState.AppMgnt_T_2 == true){
-            if(atomicState.override == false &&  Overriden != "$Thermostat_2"){
+            if(Overriden != "$Thermostat_2"){
                 // no setpoint override, no on/off override
                 log.debug "evaluating for AlternativeSensor2"
                 if(SenTemp < DefaultSetHeat || OutsideTemp > SenTemp){
@@ -1737,7 +1736,7 @@ def AlternativeSensor3(){
 
         if(atomicState.AppMgnt_T_3 == true){
             if(CurHSP != NewHeatSet){
-            atomicState.withinApp = true
+                atomicState.withinApp = true
                 Thermostat_3.setHeatingSetpoint(NewHeatSet)
                 log.debug "$Thermostat_3 heating now set to $NewHeatSet"
             }
@@ -1745,7 +1744,7 @@ def AlternativeSensor3(){
                 log.debug "CurHSP already OK"
             }
             if(CurCSP != NewCoolSet){
-            atomicState.withinApp = true
+                atomicState.withinApp = true
                 Thermostat_3.setCoolingSetpoint(NewCoolSet)
                 log.debug "$Thermostat_3 cooling now set to $NewCoolSet"
             }
@@ -1757,11 +1756,11 @@ def AlternativeSensor3(){
             log.debug "$Thermostat_3 in SETPOINT OVERRIDE MODE"
         }
 
-        def Overriden = atomicState.ThermostatOverriden as String
+        def Overriden = state.ThermostatOverriden as String
         log.debug "OVERRIDEN IS $Overriden"
 
         if(atomicState.AppMgnt_T_3 == true){
-            if(atomicState.override == false &&  Overriden != "$Thermostat_3"){
+            if(Overriden != "$Thermostat_3"){
 
                 //(IsOn && atomicState.T3_AppMgt == false) if on but only due to previous app's command, then run
                 //(!IsOn && atomicState.override == false) if off but not due to override, then run
@@ -1856,16 +1855,15 @@ def TurnOffThermostats() {
 }
 def CheckCmdOrigin(){
 
-    log.debug "CHECKING COMMAND ORIGIN"
+    def device = state.EvtDevice 
+    def event = state.EvtValue
+    device = device as String
+
+    log.debug "CHECKING COMMAND ORIGIN for $device "
 
     if(atomicState.CRITICAL == false){
 
-        def device = atomicState.EvtDevice 
-        def event = atomicState.EvtValue
-        device = device as String
-
-        def latestMode = atomicState.LatestThermostatMode    // value set by temperatureModes()
-        def currentMode = atomicState.currentMode // the current event value
+        def currentMode = state.EvtValue // the current event value
         def CurrMode = location.currentMode
 
         latestMode.toString()
@@ -1885,12 +1883,10 @@ def CheckCmdOrigin(){
         def ChangedByApp = ChangedByAppFind.size() == ChangedByAppMAP.size()
         log.info "Changed By App? ($ChangedByApp)"
 
-
-        //device = device ?: [Thermostat_1, Thermostat_2, Thermostat_3, Thermostat_4]
-
         log.trace "Latest Thermostat ModeS : $atomicState.LatestThermostatMode_T1 | $atomicState.LatestThermostatMode_T2 | $atomicState.LatestThermostatMode_T3 | $atomicState.LatestThermostatMode_T4"
         def MapofShouldBe = ["$Thermostat_1": atomicState.LatestThermostatMode_T1, "$Thermostat_2": atomicState.LatestThermostatMode_T2, "$Thermostat_3": atomicState.LatestThermostatMode_T3, "$Thermostat_4": atomicState.LatestThermostatMode_T4]
         def WhichThermInvolved = MapofShouldBe.find{ it.key == "$device"} 
+        def Shouldbe = WhichThermInvolved.value
         log.debug "ShouldBe Values for device[WhichThermInvolved], that is ${WhichThermInvolved}"
 
         //retrieve object name
@@ -1899,14 +1895,12 @@ def CheckCmdOrigin(){
 
         // now compare 
 
-        def CurTMd =  deviceName.currentValue("thermostatMode")
-        CurTMd = CurTMd.toString()
-        WhichThermInvolved = WhichThermInvolved.value
-        WhichThermInvolved = WhichThermInvolved.toString()
+        //def CurTMd =  deviceName.currentValue("thermostatMode").toString()
+        def ShouldBe = WhichThermInvolved.value.toString()
 
         log.debug "Current Mode Value of $device = $CurTMd"
-        log.debug "  $CurTMd =? $WhichThermInvolved"
-        def IdenticalShouldbe = CurTMd == WhichThermInvolved
+        log.debug "  $currentMode =? $ShouldBe"
+        def IdenticalShouldbe = currentMode == ShouldBe
         log.debug "IDENTICAL?($IdenticalShouldbe)"
 
         //make sure that  : 
@@ -1914,32 +1908,36 @@ def CheckCmdOrigin(){
         // 2) this change was not triggered by a home location change 
         // 3) or by the TemperaturesModes() loop
         //
-        def ThereWasChange = latestMode != currentMode && !LocatioModeChange && !ChangedByApp
+        def ThereWasChange = ShouldBe != currentMode && !LocatioModeChange && !ChangedByApp
 
         log.debug " Change($ThereWasChange) "
 
-        if(ThereWasChange){
+	def override = false
 
-            atomicState.ThermostatOverriden = device
-            log.info "Latest mode for atomicState.ThermostatOverriden($atomicState.ThermostatOverriden) was $latestMode and it just switched to $event --------------------"
+        if(ThereWasChange){
+            // this is only for alternativeloop() eval 
+
+            state.ThermostatOverriden = device
+            log.info "Latest mode for state.ThermostatOverriden($state.ThermostatOverriden) was $latestMode and it just switched to $event --------------------"
         }
         else {
-            atomicState.ThermostatOverriden = "none"
-            atomicState.override = false
+            state.ThermostatOverriden = "none"
+            // atomicState.override = false
         }
+
 
         if(device == "${Thermostat_1}"){
             if(IdenticalShouldbe && atomicState.override == true){
                 // manual override deactivated
                 log.debug "END of MANUAL OVERRIDE for $Thermostat_1"
                 atomicState.T1_AppMgt = true
-                atomicState.override = false
+                override = false
 
             }
-            else if(ThereWasChange && atomicState.T1_AppMgt == false){
+            else if(!IdenticalShouldbe){
                 // command did not come from app so manual override is on
                 log.debug "MANUAL OVERRIDE for $Thermostat_1"
-                atomicState.override = true
+                override = true
             }       
         }
         else if(device == "${Thermostat_2}"){
@@ -1947,13 +1945,13 @@ def CheckCmdOrigin(){
                 // manual override deactivated
                 log.debug "END of MANUAL OVERRIDE for $Thermostat_2"
                 atomicState.T2_AppMgt = true
-                atomicState.override = false
+                override = false
 
             }
-            else if(ThereWasChange && atomicState.T2_AppMgt == false){
+            else if(!IdenticalShouldbe){
                 // command did not come from app so manual override is on
                 log.debug "MANUAL OVERRIDE for $Thermostat_2"
-                atomicState.override = true
+                override = true
             }     
         } 
         else if(device == "${Thermostat_3}"){
@@ -1961,13 +1959,13 @@ def CheckCmdOrigin(){
                 // manual override deactivated
                 log.debug "END of MANUAL OVERRIDE for $Thermostat_3"
                 atomicState.T3_AppMgt = true
-                atomicState.override = false
+                override = false
 
             }
-            else if(ThereWasChange && atomicState.T3_AppMgt == false){
+            else if(!IdenticalShouldbe){
                 // command did not come from app so manual override is on
                 log.debug "MANUAL OVERRIDE for $Thermostat_3"
-                atomicState.override = true
+                override = true
             }     
         } 
         else if(device == "${Thermostat_4}"){
@@ -1975,19 +1973,18 @@ def CheckCmdOrigin(){
                 // manual override deactivated
                 log.debug "END of MANUAL OVERRIDE for $Thermostat_4"
                 atomicState.T4_AppMgt = true
-                atomicState.override = false
+                override = false
 
             }
-            else if(ThereWasChange && atomicState.T4_AppMgt == false){
+            else if(!IdenticalShouldbe){
                 // command did not come from app so manual override is on
                 log.debug "MANUAL OVERRIDE for $Thermostat_4"
-                atomicState.override = true
+                override = true
             }     
         }
+        atomicState.override = override
+        log.info "atomicState.override ====== $atomicState.override "
 
-        log.info "Override?($atomicState.override) "
-        atomicState.LatestThermostatMode = event // if was manual now this is the new latest value so change after override can be detected
-        log.debug "atomicState.LatestThermostatMode is now $atomicState.LatestThermostatMode (event = $event)"
     }
     else { log.debug "CRITICAL MODE. NOT EVALUATING OVERRIDES" }
 
@@ -2001,17 +1998,18 @@ def resetOverride(){
 }
 def resetAppMgt(){
     // presets before deciding if override = true or not
-    atomicState.T1_AppMgt = true
-    atomicState.T2_AppMgt = true
-    atomicState.T3_AppMgt = true
-    atomicState.T4_AppMgt = true
+    /*atomicState.T1_AppMgt = false
+atomicState.T2_AppMgt = false
+atomicState.T3_AppMgt = false
+atomicState.T4_AppMgt = false
+*/
 
     atomicState.AppMgnt_T_1 = true
     atomicState.AppMgnt_T_2 = true
     atomicState.AppMgnt_T_3 = true
     atomicState.AppMgnt_T_4 = true
 
-    atomicState.ThermostatOverriden = "none"
+    state.ThermostatOverriden = "none"
     if( atomicState.hasRun < 1)
     { 
         atomicState.WindowsAppManaged = false 
