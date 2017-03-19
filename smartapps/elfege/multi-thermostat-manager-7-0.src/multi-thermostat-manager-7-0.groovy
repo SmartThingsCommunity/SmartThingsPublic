@@ -342,165 +342,169 @@ def appHandler(evt){
 }
 def setpointHandler(evt){
 
-
     log.debug "New $evt.name for $evt.device : $evt.value"
     log.debug "evt.displayName is $evt.displayName -------------------------------"
+    if(atomicState.withinApp == false){
+        atomicState.SPValue = evt.value
+        atomicState.SPname = evt.name
+        atomicState.devicedisplayName = evt.displayName
+        atomicState.SPdevice = evt.device
 
-    atomicState.SPValue = evt.value
-    atomicState.SPname = evt.name
-    atomicState.devicedisplayName = evt.displayName
-    atomicState.SPdevice = evt.device
+        //findSetPointReferences()
 
-    //findSetPointReferences()
+        def CurrMode = location.currentMode
 
-    def CurrMode = location.currentMode
+        //CurrMode = CurrMode[0]
+        def HomeMode = null
+        def ThisIsManual = false 
+        def reference = null
+        def termRef = null
+        def EventDevice = null 
+        def AltSENSOR = false    
+        def device = atomicState.SPdevice 
 
-    //CurrMode = CurrMode[0]
-    def HomeMode = null
-    def ThisIsManual = false 
-    def reference = null
-    def termRef = null
-    def EventDevice = null 
-    def AltSENSOR = false    
-    def device = atomicState.SPdevice 
-
-    log.info "Home modes are : $Home, Night modes are : $Night, Away mode is : $Away, CustomMode1 are : $CustomMode1, CustomMode2 are : $CustomMode2"
+        log.info "Home modes are : $Home, Night modes are : $Night, Away mode is : $Away, CustomMode1 are : $CustomMode1, CustomMode2 are : $CustomMode2"
 
 
-    log.debug "CurrMode is $CurrMode mode"
-    // declare an integer value for the thermostat which has had its values modified
-    def MapModesThermostats = ["${Thermostat_1}": "1" , "${Thermostat_2}": 2, "${Thermostat_3}": "3", 
-                               "${Thermostat_4}": "4"]
-    def KeyValueForThisTherm = MapModesThermostats.find { it.key == "$evt.device"}
-    log.info "device is ------------------- $KeyValueForThisTherm.value"
-    def ThermNumber = KeyValueForThisTherm.value
-    ThermNumber = KeyValueForThisTherm.value.toInteger()
+        log.debug "CurrMode is $CurrMode mode"
+        // declare an integer value for the thermostat which has had its values modified
+        def MapModesThermostats = ["${Thermostat_1}": "1" , "${Thermostat_2}": 2, "${Thermostat_3}": "3", 
+                                   "${Thermostat_4}": "4"]
+        def KeyValueForThisTherm = MapModesThermostats.find { it.key == "$evt.device"}
+        log.info "device is ------------------- $KeyValueForThisTherm.value"
+        def ThermNumber = KeyValueForThisTherm.value
+        ThermNumber = KeyValueForThisTherm.value.toInteger()
 
-    log.info "ThermNumber is ------------------- $ThermNumber"
+        log.info "ThermNumber is ------------------- $ThermNumber"
 
-    //array heat
-    def HSPH = ["0","$HSPH1", "$HSPH2", "$HSPH3", "$HSPH4"]
-    def HSPN = ["0","$HSPN1", "$HSPN2", "$HSPN3", "$HSPN4"]
-    def HSPA_ = ["0","$HSPA", "$HSPA", "$HSPA", "$HSPA"]
-    def HSPCust1 = ["0","$HSPCust1_T1", "$HSPCust1_T2", "$HSPCust1_T3", "$HSPCust1_T4"]
-    def HSPCust2 = ["0","$HSPCust2_T1", "$HSPCust2_T2", "$HSPCust2_T3", "$HSPCust2_T4"]
+        //array heat
+        def HSPH = ["0","$HSPH1", "$HSPH2", "$HSPH3", "$HSPH4"]
+        def HSPN = ["0","$HSPN1", "$HSPN2", "$HSPN3", "$HSPN4"]
+        def HSPA_ = ["0","$HSPA", "$HSPA", "$HSPA", "$HSPA"]
+        def HSPCust1 = ["0","$HSPCust1_T1", "$HSPCust1_T2", "$HSPCust1_T3", "$HSPCust1_T4"]
+        def HSPCust2 = ["0","$HSPCust2_T1", "$HSPCust2_T2", "$HSPCust2_T3", "$HSPCust2_T4"]
 
-    // declare an integer value for current mode
-    def MapofIndexValues = [0: "0", "$Home": "1", "$Night": "2", "$Away": "3", "$CustomMode1": "4", "$CustomMode2": "5" ]   
-    def ModeIndexValue = MapofIndexValues.find{ it.key == "$CurrMode"}
-    log.info "-----------------------------------------------------------------------------------------ModeIndexValue = $ModeIndexValue"
-    ModeIndexValue = ModeIndexValue.value
+        // declare an integer value for current mode
+        def MapofIndexValues = [0: "0", "$Home": "1", "$Night": "2", "$Away": "3", "$CustomMode1": "4", "$CustomMode2": "5" ]   
+        def ModeIndexValue = MapofIndexValues.find{ it.key == "$CurrMode"}
+        log.info "-----------------------------------------------------------------------------------------ModeIndexValue = $ModeIndexValue"
+        ModeIndexValue = ModeIndexValue.value
 
-    ModeIndexValue = ModeIndexValue.toInteger()
-    log.info "-----------------------------------------------------------------------------------------ModeIndexValue = $ModeIndexValue"
+        ModeIndexValue = ModeIndexValue.toInteger()
+        log.info "-----------------------------------------------------------------------------------------ModeIndexValue = $ModeIndexValue"
 
-    //array cool
-    def CSPH = ["0","$CSPH1", "$CSPH2", "$CSPH3", "$CSPH4"]
-    def CSPN = ["0","$CSPN1", "$CSPN2", "$CSPN3", "$CSPN4"]
-    def CSPA_ = ["0","$CSPA", "$CSPA", "$CSPA", "$CSPA"]
-    def CSPCust1 = ["0","$CSPCust1_T1", "$CSPCust1_T2", "$CSPCust1_T3", "$CSPCust1_T4"]
-    def CSPCust2 = ["0","$CSPCust2_T1", "$CSPCust2_T2", "$CSPCust2_T3", "$CSPCust2_T4"]
+        //array cool
+        def CSPH = ["0","$CSPH1", "$CSPH2", "$CSPH3", "$CSPH4"]
+        def CSPN = ["0","$CSPN1", "$CSPN2", "$CSPN3", "$CSPN4"]
+        def CSPA_ = ["0","$CSPA", "$CSPA", "$CSPA", "$CSPA"]
+        def CSPCust1 = ["0","$CSPCust1_T1", "$CSPCust1_T2", "$CSPCust1_T3", "$CSPCust1_T4"]
+        def CSPCust2 = ["0","$CSPCust2_T1", "$CSPCust2_T2", "$CSPCust2_T3", "$CSPCust2_T4"]
 
-    // now transpose corresponding values among tables
-    // for heat values
-    def ListHSPs = ["0", HSPH, HSPN, HSPA, HSPCust1, HSPCust2]
-    def HSPModecheck = ListHSPs[ModeIndexValue]
-    def RefHeat = HSPModecheck[ThermNumber]
-    //do the same with cooling values
-    def ListCSPs = ["0", CSPH, CSPN, CSPA, CSPCust1, CSPCust2]
-    def CSPModecheck = ListCSPs[ModeIndexValue]
-    def RefCool = CSPModecheck[ThermNumber]
+        // now transpose corresponding values among tables
+        // for heat values
+        def ListHSPs = ["0", HSPH, HSPN, HSPA, HSPCust1, HSPCust2]
+        def HSPModecheck = ListHSPs[ModeIndexValue]
+        def RefHeat = HSPModecheck[ThermNumber]
+        //do the same with cooling values
+        def ListCSPs = ["0", CSPH, CSPN, CSPA, CSPCust1, CSPCust2]
+        def CSPModecheck = ListCSPs[ModeIndexValue]
+        def RefCool = CSPModecheck[ThermNumber]
 
-    // for thermostat set to work based on alternate temp sensors, the Alternativesensor() loops will 
-    // simply stop running after this new setting has been compared to settings() in the arrays above
-    // by declaring the atomicState.AppMgnt_T_X variable as false.  
+        // for thermostat set to work based on alternate temp sensors, the Alternativesensor() loops will 
+        // simply stop running after this new setting has been compared to settings() in the arrays above
+        // by declaring the atomicState.AppMgnt_T_X variable as false.  
 
-    if(atomicState.SPname == "heatingSetpoint"){              
-        reference = Math.round(Double.parseDouble(RefHeat))
-        reference = reference.toInteger()
-        log.debug "RefHeat was: $RefHeat"
-        log.debug "RefHeat is now converted to a reference as: $reference"
+        if(atomicState.SPname == "heatingSetpoint"){              
+            reference = Math.round(Double.parseDouble(RefHeat))
+            reference = reference.toInteger()
+            log.debug "RefHeat was: $RefHeat"
+            log.debug "RefHeat is now converted to a reference as: $reference"
+
+        }
+        else  if(atomicState.SPname == "coolingSetpoint"){ 
+            reference = Math.round(Double.parseDouble(RefCool))
+            reference = reference.toInteger()
+            log.debug "RefCool was: $RefCool"
+            log.debug "RefCool is now converted to a reference as: $reference"
+        }
+
+        /// 
+        def Value = Math.round(Double.parseDouble(atomicState.SPValue))
+        Value = Value.toInteger()
+        log.debug "Evt value to Integer is : $Value"
+        log.debug "reference Value is to be compared to is: $reference"
+
+        if(Value == reference){  
+            log.debug "NO SETPOINT OVERRIDE"
+            atomicState.ThisIsManual = false
+            // we don't change atomicState.override value here, it'll be done in the CheckCmdOrigin() loop     
+            // we don't change _AppMgtSetPoint either, it'll change only on mode change or update
+        }
+        else {       
+            atomicState.ThisIsManual = true
+            log.debug "new Set Point for $device is MANUAL ---------- OVERRIDE MODE ACTIVATED"
+        }
+
+        //
+        if(device == "${Thermostat_1}")
+        {
+            if(atomicState.ThisIsManual == true){
+                atomicState.AppMgnt_T_1 = false
+                log.info "atomicState.AppMgnt_T_1 set to $atomicState.AppMgnt_T_1"
+            }
+            else {
+                atomicState.AppMgnt_T_1 = true
+                log.info "atomicState.AppMgnt_T_1 set to $atomicState.AppMgnt_T_1"
+            }
+
+        }
+        else if(device == "${Thermostat_2}")
+        {
+            if(atomicState.ThisIsManual == true){
+                atomicState.AppMgnt_T_2 = false
+                log.info "atomicState.AppMgnt_T_2 set to $atomicState.AppMgnt_T_2"
+            }
+            else {
+                atomicState.AppMgnt_T_2 = true
+                log.info "atomicState.AppMgnt_T_2 set to $atomicState.AppMgnt_T_2"
+            }
+        }
+        else if(device == "${Thermostat_3}")
+        {
+            if(atomicState.ThisIsManual == true){
+                atomicState.AppMgnt_T_3 = false
+                log.info "atomicState.AppMgnt_T_3 set to $atomicState.AppMgnt_T_3"
+            }
+            else {
+                atomicState.AppMgnt_T_3 = true
+                log.info "atomicState.AppMgnt_T_3 set to $atomicState.AppMgnt_T_3"
+            }
+        }
+        else if(device == "${Thermostat_4}")
+        {
+            if(atomicState.ThisIsManual == true){
+                atomicState.AppMgnt_T_4 = false
+                log.info "atomicState.AppMgnt_T_4 set to $atomicState.AppMgnt_T_4"
+            }
+            else {
+                atomicState.AppMgnt_T_4 = true
+                log.info "atomicState.AppMgnt_T_4 set to $atomicState.AppMgnt_T_4"
+            }
+
+        }   
+
+        log.debug "RefHeat is: $RefHeat"
+        log.debug "RefCool is: $RefCool"
+        log.debug "reference is: $reference"
+        log.debug "SetPoint Change was Manual? ($atomicState.ThisIsManual) if false then should have $reference = $Value"
+        atomicState.RefHeat = RefHeat
+        atomicState.RefCool = RefCool
 
     }
-    else  if(atomicState.SPname == "coolingSetpoint"){ 
-        reference = Math.round(Double.parseDouble(RefCool))
-        reference = reference.toInteger()
-        log.debug "RefCool was: $RefCool"
-        log.debug "RefCool is now converted to a reference as: $reference"
+    else{
+    log.debug "Not evaluating SETPOINT OVERRIDE because the command came from within the app itself"
     }
-
-    /// 
-    def Value = Math.round(Double.parseDouble(atomicState.SPValue))
-    Value = Value.toInteger()
-    log.debug "Evt value to Integer is : $Value"
-	 log.debug "reference Value is to be compared to is: $reference"
-
-    if(Value == reference){  
-        log.debug "NO SETPOINT OVERRIDE"
-        atomicState.ThisIsManual = false
-        // we don't change atomicState.override value here, it'll be done in the CheckCmdOrigin() loop     
-        // we don't change _AppMgtSetPoint either, it'll change only on mode change or update
-    }
-    else {       
-        atomicState.ThisIsManual = true
-        log.debug "new Set Point for $device is MANUAL ---------- OVERRIDE MODE ACTIVATED"
-    }
-
-    //
-    if(device == "${Thermostat_1}")
-    {
-        if(atomicState.ThisIsManual == true){
-            atomicState.AppMgnt_T_1 = false
-            log.info "atomicState.AppMgnt_T_1 set to $atomicState.AppMgnt_T_1"
-        }
-        else {
-            atomicState.AppMgnt_T_1 = true
-            log.info "atomicState.AppMgnt_T_1 set to $atomicState.AppMgnt_T_1"
-        }
-
-    }
-    else if(device == "${Thermostat_2}")
-    {
-        if(atomicState.ThisIsManual == true){
-            atomicState.AppMgnt_T_2 = false
-            log.info "atomicState.AppMgnt_T_2 set to $atomicState.AppMgnt_T_2"
-        }
-        else {
-            atomicState.AppMgnt_T_2 = true
-            log.info "atomicState.AppMgnt_T_2 set to $atomicState.AppMgnt_T_2"
-        }
-    }
-    else if(device == "${Thermostat_3}")
-    {
-        if(atomicState.ThisIsManual == true){
-            atomicState.AppMgnt_T_3 = false
-            log.info "atomicState.AppMgnt_T_3 set to $atomicState.AppMgnt_T_3"
-        }
-        else {
-            atomicState.AppMgnt_T_3 = true
-            log.info "atomicState.AppMgnt_T_3 set to $atomicState.AppMgnt_T_3"
-        }
-    }
-    else if(device == "${Thermostat_4}")
-    {
-        if(atomicState.ThisIsManual == true){
-            atomicState.AppMgnt_T_4 = false
-            log.info "atomicState.AppMgnt_T_4 set to $atomicState.AppMgnt_T_4"
-        }
-        else {
-            atomicState.AppMgnt_T_4 = true
-            log.info "atomicState.AppMgnt_T_4 set to $atomicState.AppMgnt_T_4"
-        }
-
-    }   
-
-    log.debug "RefHeat is: $RefHeat"
-    log.debug "RefCool is: $RefCool"
-    log.debug "reference is: $reference"
-    log.debug "SetPoint Change was Manual? ($atomicState.ThisIsManual) if false then should have $reference = $Value"
-    atomicState.RefHeat = RefHeat
-    atomicState.RefCool = RefCool
-
+    atomicState.withinApp = false
 
 }
 def ThermostatSwitchHandler(evt){
@@ -615,7 +619,7 @@ def ChangedModeHandler(evt) {
     atomicState.override = false
     atomicState.ThisIsManual = false
 
-	 atomicState.ThermostatOverriden = "none"
+    atomicState.ThermostatOverriden = "none"
     atomicState.locationModeChange = true
     runIn(60, resetLocationChangeVariable)
 
@@ -672,7 +676,8 @@ atomicState.AppMgnt_T_3 : $atomicState.AppMgnt_T_3, atomicState.AppMgnt_T_4 : $a
                 else {
                     atomicState.AppChangedToT1 = true
                     if(!AltSensor_1){
-                        log.debug "loading $Home settings for $Thermostat_1"        
+                        log.debug "loading $Home settings for $Thermostat_1"     
+                        atomicState.withinApp = true
                         Thermostat_1.setHeatingSetpoint(HSPH1)
                         Thermostat_1.setCoolingSetpoint(CSPH1)
 
@@ -707,7 +712,8 @@ atomicState.AppMgnt_T_3 : $atomicState.AppMgnt_T_3, atomicState.AppMgnt_T_4 : $a
                 else {
                     atomicState.AppChangedToT2 = true
                     if(!AltSensor_2){
-                        log.debug "loading $Home settings for $Thermostat_2"          
+                        log.debug "loading $Home settings for $Thermostat_2"    
+                        atomicState.withinApp = true
                         Thermostat_2.setHeatingSetpoint(HSPH2)
                         Thermostat_2.setCoolingSetpoint(CSPH2)  
 
@@ -746,6 +752,7 @@ atomicState.AppMgnt_T_3 : $atomicState.AppMgnt_T_3, atomicState.AppMgnt_T_4 : $a
                     atomicState.AppChangedToT3 = true
                     if(!AltSensor_3){
                         log.debug "loading $Home settings for $Thermostat_3"
+                        atomicState.withinApp = true
                         Thermostat_3.setHeatingSetpoint(HSPH3)
                         Thermostat_3.setCoolingSetpoint(CSPH3)
 
@@ -781,6 +788,7 @@ atomicState.AppMgnt_T_3 : $atomicState.AppMgnt_T_3, atomicState.AppMgnt_T_4 : $a
                 else {
                     atomicState.AppChangedToT4 = true
                     log.debug "loading $Home settings for $Thermostat_4"
+                    atomicState.withinApp = true
                     Thermostat_4.setHeatingSetpoint(HSPH4)
                     Thermostat_4.setCoolingSetpoint(CSPH4)   
 
@@ -803,7 +811,7 @@ atomicState.AppMgnt_T_3 : $atomicState.AppMgnt_T_3, atomicState.AppMgnt_T_4 : $a
 
                     }
                     //recording set values for further reference in override
-                     //shouldBeT4()
+                    //shouldBeT4()
                 }
 
             }
@@ -818,6 +826,7 @@ atomicState.AppMgnt_T_3 : $atomicState.AppMgnt_T_3, atomicState.AppMgnt_T_4 : $a
                     atomicState.AppChangedToT1 = true
                     if(!AltSensor_1){
                         log.debug "loading $Night settings for $Thermostat_1"
+                        atomicState.withinApp = true
                         Thermostat_1.setHeatingSetpoint(HSPN1)
                         Thermostat_1.setCoolingSetpoint(CSPN1)  
 
@@ -842,7 +851,7 @@ atomicState.AppMgnt_T_3 : $atomicState.AppMgnt_T_3, atomicState.AppMgnt_T_4 : $a
                             atomicState.LatestThermostatMode_T1 = "heat"
                         }
                         //recording set values for further reference in override
-                       //  shouldBeT1()
+                        //  shouldBeT1()
                     }
 
                 }
@@ -855,6 +864,7 @@ atomicState.AppMgnt_T_3 : $atomicState.AppMgnt_T_3, atomicState.AppMgnt_T_4 : $a
                     atomicState.AppChangedToT2 = true
                     if(!AltSensor_2){
                         log.debug "loading $Night settings for $Thermostat_2"
+                        atomicState.withinApp = true
                         Thermostat_2.setHeatingSetpoint(HSPN2)
                         Thermostat_2.setCoolingSetpoint(CSPN2) 
 
@@ -892,6 +902,7 @@ atomicState.AppMgnt_T_3 : $atomicState.AppMgnt_T_3, atomicState.AppMgnt_T_4 : $a
                     atomicState.AppChangedToT3 = true
                     if(!AltSensor_3){
                         log.debug "loading $Night settings for $Thermostat_3"
+                        atomicState.withinApp = true
                         Thermostat_3.setHeatingSetpoint(HSPN3)
                         Thermostat_3.setCoolingSetpoint(CSPN3)  
 
@@ -916,7 +927,7 @@ atomicState.AppMgnt_T_3 : $atomicState.AppMgnt_T_3, atomicState.AppMgnt_T_4 : $a
                             atomicState.LatestThermostatMode_T3 = "heat"
                         }
                         //recording set values for further reference in override
-                       //  shouldBeT3()
+                        //  shouldBeT3()
                     }
 
                 }
@@ -928,6 +939,7 @@ atomicState.AppMgnt_T_3 : $atomicState.AppMgnt_T_3, atomicState.AppMgnt_T_4 : $a
                 else {
                     atomicState.AppChangedToT4 = true
                     log.debug "loading $Night0 settings for $Thermostat_4"
+                    atomicState.withinApp = true
                     Thermostat_4.setHeatingSetpoint(HSPN4)
                     Thermostat_4.setCoolingSetpoint(CSPN4)    
 
@@ -952,7 +964,7 @@ atomicState.AppMgnt_T_3 : $atomicState.AppMgnt_T_3, atomicState.AppMgnt_T_4 : $a
                     }
 
                     //recording set values for further reference in override
-                     //shouldBeT4()
+                    //shouldBeT4()
                 }
             }
         }
@@ -966,6 +978,7 @@ atomicState.AppMgnt_T_3 : $atomicState.AppMgnt_T_3, atomicState.AppMgnt_T_4 : $a
                     atomicState.AppChangedToT1 = true
                     if(!AltSensor_1){
                         log.debug "loading $Away settings for $Thermostat_1"
+                        atomicState.withinApp = true
                         Thermostat_1.setHeatingSetpoint(HSPA)
                         Thermostat_1.setCoolingSetpoint(CSPA)
 
@@ -990,7 +1003,7 @@ atomicState.AppMgnt_T_3 : $atomicState.AppMgnt_T_3, atomicState.AppMgnt_T_4 : $a
                         }
 
                         //recording set values for further reference in override
-                         //shouldBeT1()
+                        //shouldBeT1()
                     }
                 }
             }
@@ -1004,6 +1017,7 @@ atomicState.AppMgnt_T_3 : $atomicState.AppMgnt_T_3, atomicState.AppMgnt_T_4 : $a
                     atomicState.AppChangedToT2 = true
                     if(!AltSensor_2){
                         log.debug "loading $Away settings for $Thermostat_2"
+                        atomicState.withinApp = true
                         Thermostat_2.setHeatingSetpoint(HSPA)
                         Thermostat_2.setCoolingSetpoint(CSPA)  
 
@@ -1040,6 +1054,7 @@ atomicState.AppMgnt_T_3 : $atomicState.AppMgnt_T_3, atomicState.AppMgnt_T_4 : $a
                     atomicState.AppChangedToT3 = true
                     if(!AltSensor_3){
                         log.debug "loading $Away settings for $Thermostat_3"
+                        atomicState.withinApp = true
                         Thermostat_3.setHeatingSetpoint(HSPA)
                         Thermostat_3.setCoolingSetpoint(CSPA)   
 
@@ -1074,6 +1089,7 @@ atomicState.AppMgnt_T_3 : $atomicState.AppMgnt_T_3, atomicState.AppMgnt_T_4 : $a
                 else {
                     atomicState.AppChangedToT4 = true
                     log.debug "loading $Away settings for $Thermostat_4"
+                    atomicState.withinApp = true
                     Thermostat_4.setHeatingSetpoint(HSPA)
                     Thermostat_4.setCoolingSetpoint(CSPA)   
 
@@ -1097,7 +1113,7 @@ atomicState.AppMgnt_T_3 : $atomicState.AppMgnt_T_3, atomicState.AppMgnt_T_4 : $a
                         atomicState.LatestThermostatMode_T4 = "heat"
                     }
                     //recording set values for further reference in override
-                     //shouldBeT4()
+                    //shouldBeT4()
                 }
             }
         }
@@ -1112,6 +1128,7 @@ atomicState.AppMgnt_T_3 : $atomicState.AppMgnt_T_3, atomicState.AppMgnt_T_4 : $a
                     atomicState.AppChangedToT1 = true
                     if(!AltSensor_1){
                         log.debug "loading $CustomMode1 settings for $Thermostat_1"
+                        atomicState.withinApp = true
                         Thermostat_1.setHeatingSetpoint(HSPCust1_T1)
                         Thermostat_1.setCoolingSetpoint(CSPCust1_T1) 
 
@@ -1136,7 +1153,7 @@ atomicState.AppMgnt_T_3 : $atomicState.AppMgnt_T_3, atomicState.AppMgnt_T_4 : $a
                             atomicState.LatestThermostatMode_T1 = "heat"
                         }
                         //recording set values for further reference in override
-                       //  shouldBeT1()
+                        //  shouldBeT1()
                     }
                 }
             }
@@ -1148,6 +1165,7 @@ atomicState.AppMgnt_T_3 : $atomicState.AppMgnt_T_3, atomicState.AppMgnt_T_4 : $a
                     atomicState.AppChangedToT2 = true
                     if(!AltSensor_2){
                         log.debug "loading $CustomMode1 settings for $Thermostat_2"
+                        atomicState.withinApp = true
                         Thermostat_2.setHeatingSetpoint(HSPCust1_T2)
                         Thermostat_2.setCoolingSetpoint(CSPCust1_T2)  
 
@@ -1171,7 +1189,7 @@ atomicState.AppMgnt_T_3 : $atomicState.AppMgnt_T_3, atomicState.AppMgnt_T_4 : $a
                             atomicState.LatestThermostatMode_T2 = "heat"
                         }
                         //recording set values for further reference in override
-                         //shouldBeT2()
+                        //shouldBeT2()
                     }      
                 }
             }
@@ -1184,6 +1202,7 @@ atomicState.AppMgnt_T_3 : $atomicState.AppMgnt_T_3, atomicState.AppMgnt_T_4 : $a
                     atomicState.AppChangedToT3 = true
                     if(!AltSensor_3){
                         log.debug "loading $CustomMode1 settings for $Thermostat_3"
+                        atomicState.withinApp = true
                         Thermostat_3.setHeatingSetpoint(HSPCust1_T3)
                         Thermostat_3.setCoolingSetpoint(CSPCust1_T3)   
 
@@ -1219,6 +1238,7 @@ atomicState.AppMgnt_T_3 : $atomicState.AppMgnt_T_3, atomicState.AppMgnt_T_4 : $a
                 else {
                     atomicState.AppChangedToT4 = true
                     log.debug "loading $CustomMode1 settings for $Thermostat_4"
+                    atomicState.withinApp = true
                     Thermostat_4.setHeatingSetpoint(HSPCust1_T4)
                     Thermostat_4.setCoolingSetpoint(CSPCust1_T4)     
 
@@ -1242,7 +1262,7 @@ atomicState.AppMgnt_T_3 : $atomicState.AppMgnt_T_3, atomicState.AppMgnt_T_4 : $a
                         atomicState.LatestThermostatMode_T4 = "heat"
                     }   
                     //recording set values for further reference in override
-                     //shouldBeT4()
+                    //shouldBeT4()
                 }
             }
         }
@@ -1256,6 +1276,7 @@ atomicState.AppMgnt_T_3 : $atomicState.AppMgnt_T_3, atomicState.AppMgnt_T_4 : $a
                     atomicState.AppChangedToT1 = true
                     if(!AltSensor_1){
                         log.debug "loading $CustomMode2 settings for $Thermostat_1"
+                        atomicState.withinApp = true
                         Thermostat_1.setHeatingSetpoint(HSPCust2_T1)
                         Thermostat_1.setCoolingSetpoint(CSPCust2_T1)    
 
@@ -1294,6 +1315,7 @@ atomicState.AppMgnt_T_3 : $atomicState.AppMgnt_T_3, atomicState.AppMgnt_T_4 : $a
                     atomicState.AppChangedToT2 = true
                     if(!AltSensor_2){
                         log.debug "loading $CustomMode2 settings for $Thermostat_2"
+                        atomicState.withinApp = true
                         Thermostat_2.setHeatingSetpoint(HSPCust2_T2)
                         Thermostat_2.setCoolingSetpoint(CSPCust2_T2)
 
@@ -1320,7 +1342,7 @@ atomicState.AppMgnt_T_3 : $atomicState.AppMgnt_T_3, atomicState.AppMgnt_T_4 : $a
                             atomicState.LatestThermostatMode_T2 = "heat"
                         }
                         //recording set values for further reference in override
-                         //shouldBeT2()
+                        //shouldBeT2()
                     }      
                 }
             }
@@ -1333,6 +1355,7 @@ atomicState.AppMgnt_T_3 : $atomicState.AppMgnt_T_3, atomicState.AppMgnt_T_4 : $a
                     atomicState.AppChangedToT3 = true
                     if(!AltSensor_3){
                         log.debug "loading $CustomMode2 settings for $Thermostat_3"
+                        atomicState.withinApp = true
                         Thermostat_3.setHeatingSetpoint(HSPCust2_T3)
                         Thermostat_3.setCoolingSetpoint(CSPCust2_T3) 
 
@@ -1356,7 +1379,7 @@ atomicState.AppMgnt_T_3 : $atomicState.AppMgnt_T_3, atomicState.AppMgnt_T_4 : $a
                             atomicState.LatestThermostatMode_T3 = "heat"
                         }
                         //recording set values for further reference in override
-                         //shouldBeT3()
+                        //shouldBeT3()
                     }
                 }
             }
@@ -1367,6 +1390,7 @@ atomicState.AppMgnt_T_3 : $atomicState.AppMgnt_T_3, atomicState.AppMgnt_T_4 : $a
                 else {
                     atomicState.AppChangedToT4 = true
                     log.debug "loading $CustomMode2 settings for $Thermostat_4"
+                    atomicState.withinApp = true
                     Thermostat_4.setHeatingSetpoint(HSPCust2_T4)
                     Thermostat_4.setCoolingSetpoint(CSPCust2_T4)  
 
@@ -1390,7 +1414,7 @@ atomicState.AppMgnt_T_3 : $atomicState.AppMgnt_T_3, atomicState.AppMgnt_T_4 : $a
                         atomicState.LatestThermostatMode_T4 = "heat"
                     }   
                     //recording set values for further reference in override
-                     //shouldBeT4()
+                    //shouldBeT4()
                 }
             }
         }
@@ -1400,7 +1424,7 @@ atomicState.AppMgnt_T_3 : $atomicState.AppMgnt_T_3, atomicState.AppMgnt_T_4 : $a
         TurnOffThermostats()
     }
     log.info "reseting override's triggers for future reference"
-    runIn(30, resetAppMgt)
+    //runIn(30, resetAppMgt)
 }
 def AlternativeSensor1(){
     def doorsOk = alldoorsareclosed()
@@ -1458,6 +1482,7 @@ def AlternativeSensor1(){
 
         if(atomicState.AppMgnt_T_1 == true){
             if(CurHSP != NewHeatSet){
+            atomicState.withinApp = true
                 Thermostat_1.setHeatingSetpoint(NewHeatSet)
                 log.debug "$Thermostat_1 heating now set to $NewHeatSet"
             }
@@ -1465,7 +1490,8 @@ def AlternativeSensor1(){
                 log.debug "CurHSP already OK"
             }
             if(CurCSP != NewCoolSet){
-                Thermostat_1.setCoolingSetpoint(NewCoolSet)
+            atomicState.withinApp = true
+                Thermostat_1.setCoolingSetpoint(NewCoolSet)            
                 log.debug "$Thermostat_1 cooling now set to $NewCoolSet"
             }
             else {
@@ -1516,7 +1542,7 @@ def AlternativeSensor1(){
                 }
                 atomicState.NewHeatSet1 = NewHeatSet
                 atomicState.NewCoolSet1 = NewCoolSet // references used by heatingSetpointHandler()
-                 //ShouldbeT1()
+                //ShouldbeT1()
             }
             else { log.debug "$Thermostat_1 in OVERRIDE MODE " }
         }
@@ -1526,7 +1552,7 @@ def AlternativeSensor1(){
         log.debug "some doors are open, AlternativeSensor1 loop not running"
         TurnOffThermostats()
     }
-    runIn(10, resetAppMgt)
+    // runIn(10, resetAppMgt)
 }
 def AlternativeSensor2(){
 
@@ -1583,6 +1609,7 @@ def AlternativeSensor2(){
 
         if(atomicState.AppMgnt_T_2 == true){
             if(CurHSP != NewHeatSet){
+            atomicState.withinApp = true
                 Thermostat_2.setHeatingSetpoint(NewHeatSet)
                 log.debug "$Thermostat_2 heating now set to $NewHeatSet"
             }
@@ -1590,6 +1617,7 @@ def AlternativeSensor2(){
                 log.debug "CurHSP already OK"
             }
             if(CurCSP != NewCoolSet){
+            atomicState.withinApp = true
                 Thermostat_2.setCoolingSetpoint(NewCoolSet)
                 log.debug "$Thermostat_2 cooling now set to $NewCoolSet"
             }
@@ -1657,7 +1685,7 @@ def AlternativeSensor2(){
         log.debug "some doors are open, AlternativeSensor2 loop not running"
         TurnOffThermostats()
     }
-    runIn(10, resetAppMgt)
+    // runIn(10, resetAppMgt)
 }
 def AlternativeSensor3(){
 
@@ -1709,6 +1737,7 @@ def AlternativeSensor3(){
 
         if(atomicState.AppMgnt_T_3 == true){
             if(CurHSP != NewHeatSet){
+            atomicState.withinApp = true
                 Thermostat_3.setHeatingSetpoint(NewHeatSet)
                 log.debug "$Thermostat_3 heating now set to $NewHeatSet"
             }
@@ -1716,6 +1745,7 @@ def AlternativeSensor3(){
                 log.debug "CurHSP already OK"
             }
             if(CurCSP != NewCoolSet){
+            atomicState.withinApp = true
                 Thermostat_3.setCoolingSetpoint(NewCoolSet)
                 log.debug "$Thermostat_3 cooling now set to $NewCoolSet"
             }
@@ -1771,7 +1801,7 @@ def AlternativeSensor3(){
                 }
                 atomicState.NewHeatSet3 = NewHeatSet
                 atomicState.NewCoolSet3 = NewCoolSet
-                 //shouldBeT3()
+                //shouldBeT3()
             }
             else { log.debug "$Thermostat_3 in OVERRIDE MODE, doing nothing" }
         }
@@ -1781,7 +1811,7 @@ def AlternativeSensor3(){
         log.debug "some doors are open, AlternativeSensor1 loop not running"
         TurnOffThermostats()
     }
-    runIn(10, resetAppMgt)
+    //runIn(10, resetAppMgt)
 }
 def alldoorsareclosed(){
 
@@ -1853,13 +1883,12 @@ def CheckCmdOrigin(){
         log.debug "${ChangedByAppFind.size()} out of ${ChangedByAppMAP.size()} values are true"
 
         def ChangedByApp = ChangedByAppFind.size() == ChangedByAppMAP.size()
-
         log.info "Changed By App? ($ChangedByApp)"
 
 
         //device = device ?: [Thermostat_1, Thermostat_2, Thermostat_3, Thermostat_4]
 
-		log.trace "Latest Thermostat ModeS : $atomicState.LatestThermostatMode_T1 | $atomicState.LatestThermostatMode_T2 | $atomicState.LatestThermostatMode_T3 | $atomicState.LatestThermostatMode_T4"
+        log.trace "Latest Thermostat ModeS : $atomicState.LatestThermostatMode_T1 | $atomicState.LatestThermostatMode_T2 | $atomicState.LatestThermostatMode_T3 | $atomicState.LatestThermostatMode_T4"
         def MapofShouldBe = ["$Thermostat_1": atomicState.LatestThermostatMode_T1, "$Thermostat_2": atomicState.LatestThermostatMode_T2, "$Thermostat_3": atomicState.LatestThermostatMode_T3, "$Thermostat_4": atomicState.LatestThermostatMode_T4]
         def WhichThermInvolved = MapofShouldBe.find{ it.key == "$device"} 
         log.debug "ShouldBe Values for device[WhichThermInvolved], that is ${WhichThermInvolved}"
@@ -1903,8 +1932,9 @@ def CheckCmdOrigin(){
             if(IdenticalShouldbe && atomicState.override == true){
                 // manual override deactivated
                 log.debug "END of MANUAL OVERRIDE for $Thermostat_1"
+                atomicState.T1_AppMgt = true
                 atomicState.override = false
-                
+
             }
             else if(ThereWasChange && atomicState.T1_AppMgt == false){
                 // command did not come from app so manual override is on
@@ -1916,8 +1946,9 @@ def CheckCmdOrigin(){
             if(IdenticalShouldbe && atomicState.override == true){
                 // manual override deactivated
                 log.debug "END of MANUAL OVERRIDE for $Thermostat_2"
+                atomicState.T2_AppMgt = true
                 atomicState.override = false
-                
+
             }
             else if(ThereWasChange && atomicState.T2_AppMgt == false){
                 // command did not come from app so manual override is on
@@ -1929,8 +1960,9 @@ def CheckCmdOrigin(){
             if(IdenticalShouldbe && atomicState.override == true){
                 // manual override deactivated
                 log.debug "END of MANUAL OVERRIDE for $Thermostat_3"
+                atomicState.T3_AppMgt = true
                 atomicState.override = false
-                
+
             }
             else if(ThereWasChange && atomicState.T3_AppMgt == false){
                 // command did not come from app so manual override is on
@@ -1942,8 +1974,9 @@ def CheckCmdOrigin(){
             if(IdenticalShouldbe && atomicState.override == true){
                 // manual override deactivated
                 log.debug "END of MANUAL OVERRIDE for $Thermostat_4"
+                atomicState.T4_AppMgt = true
                 atomicState.override = false
-               
+
             }
             else if(ThereWasChange && atomicState.T4_AppMgt == false){
                 // command did not come from app so manual override is on
@@ -1968,17 +2001,17 @@ def resetOverride(){
 }
 def resetAppMgt(){
     // presets before deciding if override = true or not
-    atomicState.T1_AppMgt = false
-    atomicState.T2_AppMgt = false
-    atomicState.T3_AppMgt = false
-    atomicState.T4_AppMgt = false
+    atomicState.T1_AppMgt = true
+    atomicState.T2_AppMgt = true
+    atomicState.T3_AppMgt = true
+    atomicState.T4_AppMgt = true
 
     atomicState.AppMgnt_T_1 = true
     atomicState.AppMgnt_T_2 = true
     atomicState.AppMgnt_T_3 = true
     atomicState.AppMgnt_T_4 = true
 
- atomicState.ThermostatOverriden = "none"
+    atomicState.ThermostatOverriden = "none"
     if( atomicState.hasRun < 1)
     { 
         atomicState.WindowsAppManaged = false 
