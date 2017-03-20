@@ -18,12 +18,14 @@ metadata {
 		capability "Actuator"
 		capability "Door Control"
 		capability "Garage Door Control"
+		capability "Health Check"
 		capability "Contact Sensor"
 		capability "Refresh"
 		capability "Sensor"
 
 		fingerprint deviceId: "0x4007", inClusters: "0x98"
 		fingerprint deviceId: "0x4006", inClusters: "0x98"
+		fingerprint mfr:"014F", prod:"4744", model:"3030", deviceJoinName: "Linear GoControl Garage Door Opener"
 	}
 
 	simulator {
@@ -62,6 +64,11 @@ metadata {
 }
 
 import physicalgraph.zwave.commands.barrieroperatorv1.*
+
+def updated(){
+// Device-Watch simply pings if no device events received for 32min(checkInterval)
+	sendEvent(name: "checkInterval", value: 2 * 15 * 60 + 2 * 60, displayed: false, data: [protocol: "zwave", hubHardwareId: device.hub.hardwareID])
+}
 
 def parse(String description) {
 	def result = null
@@ -285,6 +292,13 @@ def open() {
 
 def close() {
 	secure(zwave.barrierOperatorV1.barrierOperatorSet(requestedBarrierState: BarrierOperatorSet.REQUESTED_BARRIER_STATE_CLOSE))
+}
+
+/**
+ * PING is used by Device-Watch in attempt to reach the Device
+ * */
+def ping() {
+	refresh()
 }
 
 def refresh() {
