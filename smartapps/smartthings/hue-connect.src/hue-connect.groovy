@@ -21,7 +21,7 @@ definition(
 		name: "Hue (Connect)",
 		namespace: "smartthings",
 		author: "SmartThings",
-		description: "Allows you to connect your Philips Hue lights with SmartThings and control them from your Things area or Dashboard in the SmartThings Mobile app. Please setup your Hue Bridge first, outside of the SmartThings app, using the Philips Hue application.",
+		description: "Allows you to connect your Philips Hue lights with SmartThings and control them from your Things area or Dashboard in the SmartThings Mobile app. Please update your Hue Bridge first, outside of the SmartThings app, using the Philips Hue app.",
 		category: "SmartThings Labs",
 		iconUrl: "https://s3.amazonaws.com/smartapp-icons/Partner/hue.png",
 		iconX2Url: "https://s3.amazonaws.com/smartapp-icons/Partner/hue@2x.png",
@@ -185,7 +185,7 @@ def bulbDiscovery() {
 		state.inBulbDiscovery = false
 		bulbRefreshCount = 0
 		return dynamicPage(name: "bulbDiscovery", title: "Light Discovery Failed!", nextPage: "", refreshInterval: 0, install: true, uninstall: true) {
-			section("Failed to discover any lights, please try again later. Click Done to exit.") {
+			section("Failed to discover any lights, please try again later. Click 'Done' to exit.") {
 				paragraph title: "Previously added Hue Lights ({{existingLightsSize}} added)", messageArgs: [existingLightsSize: existingLightsSize], existingLightsDescription
 			}
 			section {
