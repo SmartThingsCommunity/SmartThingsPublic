@@ -52,10 +52,8 @@ metadata {
    }
    
    preferences {
-        
-        input description: "Once you change values on this page, the \"configuration\" icon will change orange until all configuration parameters are updated.", displayDuringSetup: false, type: "paragraph", element: "paragraph"
-		generate_preferences(configuration_model())
-        
+        input description: "Once you change values on this page, the corner of the \"configuration\" icon will change orange until all configuration parameters are updated.", title: "Settings", displayDuringSetup: false, type: "paragraph", element: "paragraph"
+		generate_preferences(configuration_model())  
    }
 
    tiles(scale: 2){
@@ -85,10 +83,10 @@ metadata {
     standardTile("refresh", "device.switch", inactiveLabel: false, decoration: "flat", width: 2, height: 2) {
 		state "default", label:"", action:"refresh.refresh", icon:"st.secondary.refresh"
     }
-    standardTile("configure", "device.needUpdate", inactiveLabel: false, decoration: "flat", width: 2, height: 2) {
+    valueTile("configure", "device.needUpdate", inactiveLabel: false, decoration: "flat", width: 2, height: 2) {
             state "NO" , label:'', action:"configuration.configure", icon:"st.secondary.configure"
-            state "YES", label:'', action:"configuration.configure", icon:"http://github.com/erocm123/SmartThingsPublic/raw/master/devicetypes/erocm123/qubino-flush-1d-relay.src/configure@2x.png"
-    }
+            state "YES", label:'', action:"configuration.configure", icon:"https://github.com/erocm123/SmartThingsPublic/raw/master/devicetypes/erocm123/qubino-flush-1d-relay.src/configure@2x.png"
+        }
     valueTile("energy", "device.energy", decoration: "flat", width: 2, height: 2) {
 			state "default", label:'${currentValue} kWh'
 	}

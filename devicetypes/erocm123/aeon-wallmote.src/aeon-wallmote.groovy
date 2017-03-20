@@ -24,6 +24,7 @@ metadata {
 		capability "Configuration"
 		capability "Sensor"
         capability "Battery"
+        capability "Health Check"
         
         attribute "sequenceNumber", "number"
         attribute "numberOfButtons", "number"
@@ -34,11 +35,8 @@ metadata {
         
 	}
     preferences {
-        
-        input description: "Once you change values on this page, the \"configuration\" icon will change orange until all configuration parameters are updated.", displayDuringSetup: false, type: "paragraph", element: "paragraph"
-        
+        input description: "Once you change values on this page, the corner of the \"configuration\" icon will change orange until all configuration parameters are updated.", title: "Settings", displayDuringSetup: false, type: "paragraph", element: "paragraph"
 		generate_preferences(configuration_model())
-        
     }
 
 	simulator {
@@ -65,9 +63,9 @@ metadata {
 			"sequenceNumber", "device.sequenceNumber", decoration: "flat", width: 2, height: 2) {
 			state "battery", label:'${currentValue}', unit:""
 		}
-        standardTile("configure", "device.needUpdate", inactiveLabel: false, decoration: "flat", width: 2, height: 2) {
+        valueTile("configure", "device.needUpdate", inactiveLabel: false, decoration: "flat", width: 2, height: 2) {
             state "NO" , label:'', action:"configuration.configure", icon:"st.secondary.configure"
-            state "YES", label:'', action:"configuration.configure", icon:"http://github.com/erocm123/SmartThingsPublic/raw/master/devicetypes/erocm123/qubino-flush-1d-relay.src/configure@2x.png"
+            state "YES", label:'', action:"configuration.configure", icon:"https://github.com/erocm123/SmartThingsPublic/raw/master/devicetypes/erocm123/qubino-flush-1d-relay.src/configure@2x.png"
         }
 		main "button"
 		details(["button", "battery", "sequenceNumber", "configure"])
@@ -221,6 +219,7 @@ def updated()
 {
     logging("updated() is being called")
     def cmds = update_needed_settings()
+    sendEvent(name: "checkInterval", value: 2 * 60 * 12 * 60 + 5 * 60, displayed: false, data: [protocol: "zwave", hubHardwareId: device.hub.hardwareID])
     sendEvent(name: "numberOfButtons", value: settings.buttons ? (settings."3" == "1" ? settings.buttons.toInteger() + 1 : settings.buttons) : (settings."3" ? 4 + 1 : 4), displayed: true)
     sendEvent(name:"needUpdate", value: device.currentValue("needUpdate"), displayed:false, isStateChange: true)
     if (cmds != []) response(commands(cmds))
@@ -233,6 +232,11 @@ def configure() {
     cmds = update_needed_settings()
     sendEvent(name: "numberOfButtons", value: settings.buttons ? (settings."3" == "1" ? settings.buttons.toInteger() + 1 : settings.buttons) : (settings."3" ? 4 + 1 : 4), displayed: true)
     if (cmds != []) commands(cmds)
+}
+
+def ping() {
+    logging("ping()")
+	logging("Battery Device - Not sending ping commands")
 }
 
 def generate_preferences(configuration_model)

@@ -49,11 +49,8 @@
 
 	}
     preferences {
-        
-        input description: "Once you change values on this page, the \"Synced\" Status will become \"Pending\" status. You can then force the sync by clicking the device button or just wait for the next WakeUp (60 minutes).", displayDuringSetup: false, type: "paragraph", element: "paragraph"
-        
+        input description: "Once you change values on this page, the corner of the \"configuration\" icon will change orange until all configuration parameters are updated.", title: "Settings", displayDuringSetup: false, type: "paragraph", element: "paragraph"
 		generate_preferences(configuration_model())
-        
     }
 	simulator {
 	}
@@ -132,8 +129,8 @@
 			state "default", label:'Refresh', action:"refresh.refresh", icon:"st.secondary.refresh-icon"
 		}
         valueTile("configure", "device.needUpdate", inactiveLabel: false, decoration: "flat", width: 2, height: 2) {
-            state("NO" , label:'Synced', action:"configuration.configure", backgroundColor:"#8acb47")
-            state("YES", label:'Pending', action:"configuration.configure", backgroundColor:"#f39c12")
+            state "NO" , label:'', action:"configuration.configure", icon:"st.secondary.configure"
+            state "YES", label:'', action:"configuration.configure", icon:"https://github.com/erocm123/SmartThingsPublic/raw/master/devicetypes/erocm123/qubino-flush-1d-relay.src/configure@2x.png"
         }
         valueTile(
 			"batteryRuntime", "device.batteryRuntime", inactiveLabel: false, decoration: "flat", width: 2, height: 2) {
