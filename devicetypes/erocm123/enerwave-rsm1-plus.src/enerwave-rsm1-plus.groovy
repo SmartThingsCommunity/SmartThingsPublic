@@ -60,8 +60,8 @@ metadata {
 }
 
 def updated(){
-// Device-Watch simply pings if no device events received for checkInterval duration of 32min = 2 * 15min + 2min lag time
-	sendEvent(name: "checkInterval", value: 2 * 15 * 60 + 2 * 60, displayed: false, data: [protocol: "zwave", hubHardwareId: device.hub.hardwareID])
+// Device-Watch simply pings if no device events received for checkInterval duration of 122min = 2 * 60min + 2min lag time
+	sendEvent(name: "checkInterval", value: 2 * 60 * 60 + 2 * 60, displayed: false, data: [protocol: "zwave", hubHardwareId: device.hub.hardwareID])
     response(configure())
 }
 
@@ -122,6 +122,8 @@ def zwaveEvent(physicalgraph.zwave.commands.associationv2.AssociationReport cmd)
 
 def configure(){
    def cmds = []
+   cmds << zwave.configurationV1.configurationSet(parameterNumber: 3, configurationValue: [1]).format()
+   cmds << zwave.configurationV1.configurationGet(parameterNumber: 3).format()
    if(!state.association2 || state.association2 == "" || state.association2 == "2"){
        log.debug("Setting association group 2")
        cmds << zwave.associationV2.associationSet(groupingIdentifier:2, nodeId:zwaveHubNodeId).format()
