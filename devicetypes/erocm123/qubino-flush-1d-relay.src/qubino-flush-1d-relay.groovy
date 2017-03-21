@@ -29,6 +29,7 @@ metadata {
 		capability "Sensor"
 		capability "Relay Switch"
         capability "Configuration"
+        capability "Temperature Measurement"
 
 		fingerprint deviceId: "0x1001", inClusters: "0x5E,0x86,0x72,0x5A,0x73,0x20,0x27,0x25,0x85,0x8E,0x59,0x70", outClusters: "0x20"
 
@@ -61,9 +62,23 @@ metadata {
             state "NO" , label:'', action:"configuration.configure", icon:"st.secondary.configure"
             state "YES", label:'', action:"configuration.configure", icon:"https://github.com/erocm123/SmartThingsPublic/raw/master/devicetypes/erocm123/qubino-flush-1d-relay.src/configure@2x.png"
         }
+        valueTile("temperature", "device.temperature", inactiveLabel: false, width: 2, height: 2) {
+            state "temperature", label:'${currentValue}°',
+            backgroundColors:
+            [
+                [value: 31, color: "#153591"],
+                [value: 44, color: "#1e9cbb"],
+                [value: 59, color: "#90d2a7"],
+                [value: 74, color: "#44b621"],
+                [value: 84, color: "#f1d801"],
+                [value: 95, color: "#d04e00"],
+                [value: 96, color: "#bc2323"]
+            ]
+        }
+        
 
 		main "switch"
-		details(["switch","refresh","configure"])
+		details(["switch","temperature","refresh","configure"])
 	}
 }
 
@@ -96,6 +111,26 @@ def zwaveEvent(physicalgraph.zwave.commands.switchbinaryv1.SwitchBinaryReport cm
     logging("SwitchBinaryReport: $cmd", 2)
 	createEvent(name: "switch", value: cmd.value ? "on" : "off", type: "digital")
 }
+
+def zwaveEvent(physicalgraph.zwave.commands.sensormultilevelv5.SensorMultilevelReport cmd)
+{
+    logging("SensorMultilevelReport: $cmd", 2)
+	def map = [:]
+	switch (cmd.sensorType) {
+		case 1:
+			map.name = "temperature"
+			def cmdScale = cmd.scale == 1 ? "F" : "C"
+			map.value = convertTemperatureIfNeeded(cmd.scaledSensorValue, cmdScale, cmd.precision)
+			map.unit = getTemperatureScale()
+            logging("Temperature Report: $map.value", 2)
+			break;
+		default:
+			map.descriptionText = cmd.toString()
+	}
+    
+    return createEvent(map)
+}
+
 
 def zwaveEvent(physicalgraph.zwave.commands.manufacturerspecificv2.ManufacturerSpecificReport cmd) {
     logging("ManufacturerSpecificReport: $cmd", 2)

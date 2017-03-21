@@ -108,7 +108,7 @@ metadata {
     standardTile("reset", "device.energy", inactiveLabel: false, decoration: "flat", width: 2, height: 2) {
 		state "default", label:'reset kWh', action:"reset"
 	}
-    valueTile("temperature", "device.temperature", inactiveLabel: false, width: 2, height: 2, decoration: "flat") {
+    valueTile("temperature", "device.temperature", inactiveLabel: false, width: 2, height: 2) {
             state "temperature", label:'${currentValue}°',
             backgroundColors:
             [
