@@ -14,11 +14,13 @@
 metadata {
 	definition (name: "Fortrezz Water Valve", namespace: "smartthings", author: "SmartThings") {
 		capability "Actuator"
+		capability "Health Check"
 		capability "Valve"
 		capability "Refresh"
 		capability "Sensor"
         
 		fingerprint deviceId: "0x1000", inClusters: "0x25,0x72,0x86,0x71,0x22,0x70"
+		fingerprint mfr:"0084", prod:"0213", model:"0215", deviceJoinName: "FortrezZ Water Valve"
 	}
 
 	// simulator metadata
@@ -48,6 +50,11 @@ metadata {
 	}
 }
 
+def updated(){
+// Device-Watch simply pings if no device events received for 32min(checkInterval)
+	sendEvent(name: "checkInterval", value: 2 * 15 * 60 + 2 * 60, displayed: false, data: [protocol: "zwave", hubHardwareId: device.hub.hardwareID])
+}
+
 def parse(String description) {
 	log.trace description
 	def result = null
@@ -74,6 +81,13 @@ def open() {
 
 def close() {
 	zwave.switchBinaryV1.switchBinarySet(switchValue: 0xFF).format()
+}
+
+/**
+ * PING is used by Device-Watch in attempt to reach the Device
+ * */
+def ping() {
+	refresh()
 }
 
 def refresh() {
