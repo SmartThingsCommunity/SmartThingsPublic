@@ -40,10 +40,10 @@ metadata {
     // UI tile definitions
     tiles {
         standardTile("switch", "device.switch", width: 2, height: 2, canChangeIcon: true) {
-            state "on", action: "switch.off", icon: "st.vents.vent-open-text", backgroundColor: "#53a7c0"
+            state "on", action: "switch.off", icon: "st.vents.vent-open-text", backgroundColor: "#00a0dc"
             state "off", action: "switch.on", icon: "st.vents.vent-closed", backgroundColor: "#ffffff"
-            state "obstructed", action: "clearObstruction", icon: "st.vents.vent-closed", backgroundColor: "#ff0000"
-            state "clearing", action: "", icon: "st.vents.vent-closed", backgroundColor: "#ffff33"
+            state "obstructed", action: "clearObstruction", icon: "st.vents.vent-closed", backgroundColor: "#e86d13"
+            state "clearing", action: "", icon: "st.vents.vent-closed", backgroundColor: "#ffffff"
         }
         controlTile("levelSliderControl", "device.level", "slider", height: 1, width: 2, inactiveLabel: false) {
             state "level", action:"switch level.setLevel"

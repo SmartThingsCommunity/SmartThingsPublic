@@ -40,7 +40,8 @@ metadata {
 		capability "Configuration"
 		capability "Battery"
 		capability "Health Check"
-
+    capability "Sensor"
+    
 		command    "resetParams2StDefaults"
 		command    "listCurrentParams"
 		command    "updateZwaveParam"
@@ -76,7 +77,7 @@ metadata {
 	tiles {
 		standardTile("water", "device.water", width: 2, height: 2) {
 			state "dry", icon:"st.alarm.water.dry", backgroundColor:"#ffffff"
-			state "wet", icon:"st.alarm.water.wet", backgroundColor:"#53a7c0"
+			state "wet", icon:"st.alarm.water.wet", backgroundColor:"#00a0dc"
 		}
 		valueTile("temperature", "device.temperature", inactiveLabel: false) {
 			state "temperature", label:'${currentValue}°',
@@ -92,7 +93,7 @@ metadata {
 		}
 		standardTile("tamper", "device.tamper") {
 			state("secure",         label:"secure",         icon:"st.locks.lock.locked",   backgroundColor:"#ffffff")
-			state("tampered",       label:"tampered",       icon:"st.locks.lock.unlocked", backgroundColor:"#53a7c0")
+			state("tampered",       label:"tampered",       icon:"st.locks.lock.unlocked", backgroundColor:"#00a0dc")
 		}
 		valueTile("battery", "device.battery", inactiveLabel: false, decoration: "flat") {
 			state "battery", label:'${currentValue}% battery', unit:""

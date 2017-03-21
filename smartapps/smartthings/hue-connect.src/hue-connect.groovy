@@ -1359,7 +1359,7 @@ private void createSwitchEvent(childDevice, setSwitch, setLevel = null) {
 private colorPointsForModel(model = null) {
 	def result = null
 	switch (model) {
-		// Gamut A
+	// Gamut A
 		case "LLC001": /* Monet, Renoir, Mondriaan (gen II) */
 		case "LLC005": /* Bloom (gen II) */
 		case "LLC006": /* Iris (gen III) */
@@ -1371,12 +1371,12 @@ private colorPointsForModel(model = null) {
 		case "LLC010": /* Hue Living Colors Iris + */
 			result = [r:[x: 0.704f, y: 0.296f], g:[x: 0.2151f, y: 0.7106f], b:[x: 0.138f, y: 0.08f]];
 			break
-		// Gamut C
+	// Gamut C
 		case "LLC020": /* Hue Go */
 		case "LST002": /* Hue LightStrips Plus */
 			result = [r:[x: 0.692f, y: 0.308f], g:[x: 0.17f, y: 0.7f], b:[x: 0.153f, y: 0.048f]];
 			break
-		// Gamut B
+	// Gamut B
 		case "LCT001": /* Hue A19 */
 		case "LCT002": /* Hue BR30 */
 		case "LCT003": /* Hue GU10 */
@@ -1804,4 +1804,3 @@ def hsvToHex(hue, sat, value = 100){
 
 	return "#$r1$g1$b1"
 }
-
