@@ -61,29 +61,8 @@ metadata {
 	}
     
     preferences {
-        
-        input("password", "password", title:"Password", required:false, displayDuringSetup:true)
-        input("transition", "enum", title:"Default Transition", required:false, displayDuringSetup:true, options:
-        [["true":"fade"],["false":"flash"]])
-        input("channels", "boolean", title:"Mutually Exclusive RGB & White.\nOnly allow one or the other", required:false, displayDuringSetup:true)
-        input("powerOnState", "enum", title:"Boot Up State", description: "State when power is applied", required: false, displayDuringSetup: false, options: [[0:"Off"],[1:"On"]/*,[2:"Previous State"]*/])
-        
-		input("color", "enum", title: "Default Color", required: false, multiple:false, value: "Previous", options: [
-                    ["Previous":"Previous"],
-					["Soft White":"Soft White - Default"],
-					["White":"White - Concentrate"],
-					["Daylight":"Daylight - Energize"],
-					["Warm White":"Warm White - Relax"],
-					"Red","Green","Blue","Yellow","Orange","Purple","Pink","Cyan","Random","Custom"])
-
-        //if (color == "Custom"){            
-        input "custom", "text", title: "Custom Color in Hex (ie ffffff)\r\nIf \"Custom\" is chosen above", submitOnChange: false, required: false
-        //} else {
-        input("level", "enum", title: "Default Level", required: false, value: 100, options: [[0:"Previous"],[10:"10%"],[20:"20%"],[30:"30%"],[40:"40%"],[50:"50%"],[60:"60%"],[70:"70%"],[80:"80%"],[90:"90%"],[100:"100%"]])
-        //}
-
-        //input("override", "boolean", title:"Override detected IP Address", required: false, displayDuringSetup: false)
-        //input("ip", "string", title:"IP Address", description: "192.168.1.150", required: false, displayDuringSetup: false)
+        input description: "Once you change values on this page, the corner of the \"configuration\" icon will change orange until all configuration parameters are updated.", title: "Settings", displayDuringSetup: false, type: "paragraph", element: "paragraph"
+		generate_preferences(configuration_model())
 	}
 
 	tiles (scale: 2){      
@@ -105,9 +84,10 @@ metadata {
 		standardTile("refresh", "device.switch", inactiveLabel: false, decoration: "flat", width: 2, height: 2) {
 			state "default", label:"", action:"refresh.refresh", icon:"st.secondary.refresh"
 		}
-        standardTile("configure", "device.configure", inactiveLabel: false, width: 2, height: 2, decoration: "flat") {
-			state "configure", label:'', action:"configuration.configure", icon:"st.secondary.configure"
-		}
+       standardTile("configure", "device.needUpdate", inactiveLabel: false, decoration: "flat", width: 2, height: 2) {
+            state "NO" , label:'', action:"configuration.configure", icon:"http://cdn.device-icons.smartthings.com/secondary/configure@2x.png"
+            state "YES", label:'', action:"configuration.configure", icon:"https://github.com/erocm123/SmartThingsPublic/raw/master/devicetypes/erocm123/qubino-flush-1d-relay.src/configure@2x.png"
+        }
         
         standardTile("red", "device.red", height: 1, width: 1, inactiveLabel: false, canChangeIcon: false) {
             state "off", label:"R", action:"redOn", icon:"st.illuminance.illuminance.dark", backgroundColor:"#D8D8D8"
@@ -195,50 +175,59 @@ def installed() {
 	configure()
 }
 
-def updated() {
-	log.debug "updated()"
-    configure()
-}
-
 def configure() {
-	log.debug "configure()"
-	log.debug "Configuring Device For SmartThings Use"
-    sendEvent(name: "checkInterval", value: 12 * 60, data: [protocol: "lan", hubHardwareId: device.hub.hardwareID], displayed: false)
-    def responses = []
-    if (ip != null) state.dni = setDeviceNetworkId(ip, "80")
-    state.hubIP = device.hub.getDataValue("localIP")
-    state.hubPort = device.hub.getDataValue("localSrvPortTCP")
-    responses << configureInstant(state.hubIP, state.hubPort, powerOnState)
-    responses << configureDefault()
-    return response(responses)
+    logging("configure()", 1)
+    def cmds = []
+    cmds = update_needed_settings()
+    if (cmds != []) cmds
 }
 
-def configureDefault(){
-    if(settings.color == "Previous") {
-        return postAction("/config?dcolor=Previous")
-    } else if(settings.color == "Random") {
-        return postAction("/config?dcolor=${transition == "false"? "d~" : "f~"}${getHexColor(settings.color)}")
-    } else if(settings.color == "Custom") {
-        return postAction("/config?dcolor=${transition == "false"? "d~" : "f~"}${settings.custom}")
-    } else if(settings.color == "Soft White" || settings.color == "Warm White") {
-        if (settings.level == null || settings.level == "0") {
-            return postAction("/config?dcolor=${transition == "false"? "x~" : "w~"}${getDimmedColor(getHexColor(settings.color), "100")}")
-        } else {
-            return postAction("/config?dcolor=${transition == "false"? "x~" : "w~"}${getDimmedColor(getHexColor(settings.color), settings.level)}")
-        }
-    } else {
-        if (settings.level == null || settings.color == null){
-           return postAction("/config?dcolor=Previous")
-        } else if (settings.level == null || settings.level == "0") {
-            return postAction("/config?dcolor=${transition == "false"? "d~" : "f~"}${getDimmedColor(getHexColor(settings.color), "100")}")
-        } else {
-            return postAction("/config?dcolor=${transition == "false"? "d~" : "f~"}${getDimmedColor(getHexColor(settings.color), settings.level)}")
-        }
+def updated()
+{
+    logging("updated()", 1)
+    def cmds = [] 
+    cmds = update_needed_settings()
+    sendEvent(name: "checkInterval", value: 12 * 60 * 2, data: [protocol: "lan", hubHardwareId: device.hub.hardwareID], displayed: false)
+    sendEvent(name:"needUpdate", value: device.currentValue("needUpdate"), displayed:false, isStateChange: true)
+    if (cmds != []) response(cmds)
+}
+
+private def logging(message, level) {
+    if (logLevel != "0"){
+    switch (logLevel) {
+       case "1":
+          if (level > 1)
+             log.debug "$message"
+       break
+       case "99":
+          log.debug "$message"
+       break
+    }
     }
 }
 
-def configureInstant(ip, port, pos){
-    return postAction("/config?haip=${ip}&haport=${port}&pos=${pos}")
+def getDefault(){
+    if(settings.dcolor == "Previous") {
+        return "Previous"
+    } else if(settings.dcolor == "Random") {
+        return "${transition == "false"? "d~" : "f~"}${getHexColor(settings.dcolor)}"
+    } else if(settings.dcolor == "Custom") {
+        return "${transition == "false"? "d~" : "f~"}${settings.custom}"
+    } else if(settings.dcolor == "Soft White" || settings.dcolor == "Warm White") {
+        if (settings.level == null || settings.level == "0") {
+            return "${transition == "false"? "x~" : "w~"}${getDimmedColor(getHexColor(settings.dcolor), "100")}"
+        } else {
+            return "${transition == "false"? "x~" : "w~"}${getDimmedColor(getHexColor(settings.dcolor), settings.level)}"
+        }
+    } else {
+        if (settings.level == null || settings.dcolor == null){
+           return "Previous"
+        } else if (settings.level == null || settings.level == "0") {
+            return "${transition == "false"? "d~" : "f~"}${getDimmedColor(getHexColor(settings.dcolor), "100")}"
+        } else {
+            return "${transition == "false"? "d~" : "f~"}${getDimmedColor(getHexColor(settings.dcolor), settings.level)}"
+        }
+    }
 }
 
 def parse(description) {
@@ -248,8 +237,6 @@ def parse(description) {
     
     if(description == "updated") return
     def descMap = parseDescriptionAsMap(description)
-    
-    if (!state.configSuccess || state.configSuccess == "false") cmds << configureInstant(device.hub.getDataValue("localIP"), device.hub.getDataValue("localSrvPortTCP"), powerOnState)
     
     if (!device.currentValue("ip") || (device.currentValue("ip") != getDataValue("ip"))) sendEvent(name: 'ip', value: getDataValue("ip"))
 
@@ -265,6 +252,10 @@ def parse(description) {
     def slurper = new JsonSlurper()
     def result = slurper.parseText(body)
     
+    if (result.containsKey("type")) {
+        if (result.type == "configuration")
+            events << update_current_properties(result)
+    }
     if (result.containsKey("power")) {
         events << createEvent(name: "switch", value: result.power)
         toggleTiles("all")
@@ -371,12 +362,12 @@ private getScaledColor(color) {
 
 def on() {
 	log.debug "on()"
-    postAction("/on?transition=$transition")
+    getAction("/on?transition=$transition")
 }
 
 def off() {
 	log.debug "off()"
-    postAction("/off?transition=$transition")
+    getAction("/off?transition=$transition")
 }
 
 def setLevel(level) {
@@ -483,7 +474,7 @@ def setColor(value) {
         log.debug state.previousRGB
            // if the device is currently on, scale the current RGB values; otherwise scale the previous setting
            uri = "/rgb?value=${getDimmedColor(device.latestValue("switch") == "on" ? device.currentValue("color").substring(1) : state.previousRGB)}"
-           actions.push(postAction("$uri&channels=$channels&transition=$transition"))
+           actions.push(getAction("$uri&channels=$channels&transition=$transition"))
         }
         } else {
            // Handle white channel dimmers if they're on or were not previously off (excluding power-off command)
@@ -494,7 +485,7 @@ def setColor(value) {
         
            // if the device is currently on, scale the current RGB values; otherwise scale the previous setting
            uri = "/rgb?value=${getDimmedColor(device.latestValue("switch") == "on" ? device.currentValue("color").substring(1) : state.previousRGB)}"
-           actions.push(postAction("$uri&channels=$channels&transition=$transition"))
+           actions.push(getAction("$uri&channels=$channels&transition=$transition"))
         }
         return actions
     }
@@ -503,7 +494,7 @@ def setColor(value) {
        uri = "/w1?value=ff"
     }
     
-    if (uri != null && validValue != false) postAction("$uri&channels=$channels&transition=$transition")
+    if (uri != null && validValue != false) getAction("$uri&channels=$channels&transition=$transition")
 
 }
 
@@ -538,7 +529,7 @@ def reset() {
 
 def refresh() {
 	log.debug "refresh()"
-    postAction("/status")
+    getAction("/status")
 }
 
 def ping() {
@@ -622,23 +613,40 @@ private encodeCredentials(username, password){
     return userpass
 }
 
-private postAction(uri){ 
-  log.debug "uri ${uri}"
+private getAction(uri){ 
+  updateDNI()
+  def userpass
+  log.debug uri
+  if(password != null && password != "") 
+    userpass = encodeCredentials("admin", password)
+    
+  def headers = getHeader(userpass)
+
+  def hubAction = new physicalgraph.device.HubAction(
+    method: "GET",
+    path: uri,
+    headers: headers
+  )
+  return hubAction    
+}
+
+private postAction(uri, data){ 
   updateDNI()
   
   def userpass
   
   if(password != null && password != "") 
     userpass = encodeCredentials("admin", password)
-    
+  
   def headers = getHeader(userpass)
   
   def hubAction = new physicalgraph.device.HubAction(
-    method: "GET",
+    method: "POST",
     path: uri,
-    headers: headers
+    headers: headers,
+    body: data
   )
-  hubAction    
+  return hubAction    
 }
 
 private setDeviceNetworkId(ip, port = null){
@@ -735,7 +743,7 @@ def onOffCmd(value, program) {
     } else {
        uri = "/off"
     }
-    if (uri != null) return postAction(uri)
+    if (uri != null) return getAction(uri)
 }
 
 def setProgram(value, program){
@@ -748,11 +756,11 @@ def hex2int(value){
 
 def redOn() {
 	log.debug "redOn()"
-    postAction("/r?value=ff&channels=$channels&transition=$transition")
+    getAction("/r?value=ff&channels=$channels&transition=$transition")
 }
 def redOff() {
 	log.debug "redOff()"
-    postAction("/r?value=00&channels=$channels&transition=$transition")
+    getAction("/r?value=00&channels=$channels&transition=$transition")
 }
 
 def setRedLevel(value) {
@@ -761,15 +769,15 @@ def setRedLevel(value) {
     level = 255 * level/99 as Integer
 	log.debug "level: ${level}"
 	level = hex(level)
-    postAction("/r?value=$level&channels=$channels&transition=$transition")
+    getAction("/r?value=$level&channels=$channels&transition=$transition")
 }
 def greenOn() {
 	log.debug "greenOn()"
-    postAction("/g?value=ff&channels=$channels&transition=$transition")
+    getAction("/g?value=ff&channels=$channels&transition=$transition")
 }
 def greenOff() {
 	log.debug "greenOff()"
-    postAction("/g?value=00&channels=$channels&transition=$transition")
+    getAction("/g?value=00&channels=$channels&transition=$transition")
 }
 
 def setGreenLevel(value) {
@@ -778,15 +786,15 @@ def setGreenLevel(value) {
     level = 255 * level/99 as Integer
 	log.debug "level: ${level}"
 	level = hex(level)
-    postAction("/g?value=$level&channels=$channels&transition=$transition")
+    getAction("/g?value=$level&channels=$channels&transition=$transition")
 }
 def blueOn() {
 	log.debug "blueOn()"
-    postAction("/b?value=ff&channels=$channels&transition=$transition")
+    getAction("/b?value=ff&channels=$channels&transition=$transition")
 }
 def blueOff() {
 	log.debug "blueOff()"
-    postAction("/b?value=00&channels=$channels&transition=$transition")
+    getAction("/b?value=00&channels=$channels&transition=$transition")
 }
 
 def setBlueLevel(value) {
@@ -795,15 +803,15 @@ def setBlueLevel(value) {
     level = 255 * level/99 as Integer
 	log.debug "level: ${level}"
 	level = hex(level)
-    postAction("/b?value=$level&channels=$channels&transition=$transition")
+    getAction("/b?value=$level&channels=$channels&transition=$transition")
 }
 def white1On() {
 	log.debug "white1On()"
-    postAction("/w1?value=ff&channels=$channels&transition=$transition")
+    getAction("/w1?value=ff&channels=$channels&transition=$transition")
 }
 def white1Off() {
 	log.debug "white1Off()"
-    postAction("/w1?value=00&channels=$channels&transition=$transition")
+    getAction("/w1?value=00&channels=$channels&transition=$transition")
 }
 
 def setWhite1Level(value) {
@@ -812,15 +820,15 @@ def setWhite1Level(value) {
     level = 255 * level/99 as Integer
 	log.debug "level: ${level}"
 	def whiteLevel = hex(level)
-    postAction("/w1?value=$whiteLevel&channels=$channels&transition=$transition")
+    getAction("/w1?value=$whiteLevel&channels=$channels&transition=$transition")
 }
 def white2On() {
 	log.debug "white2On()"
-    postAction("/w2?value=ff&channels=$channels&transition=$transition")
+    getAction("/w2?value=ff&channels=$channels&transition=$transition")
 }
 def white2Off() {
 	log.debug "white2Off()"
-    postAction("/w2?value=00&channels=$channels&transition=$transition")
+    getAction("/w2?value=00&channels=$channels&transition=$transition")
 }
 
 def setWhite2Level(value) {
@@ -829,7 +837,7 @@ def setWhite2Level(value) {
     level = 255 * level/99 as Integer
 	log.debug "level: ${level}"
 	def whiteLevel = hex(level)
-    postAction("/w2?value=$whiteLevel&channels=$channels&transition=$transition")
+    getAction("/w2?value=$whiteLevel&channels=$channels&transition=$transition")
 }
 
 private getHexColor(value){
@@ -882,4 +890,210 @@ def color = ""
     break;
 }
    return color
+}
+
+def generate_preferences(configuration_model)
+{
+    def configuration = parseXml(configuration_model)
+   
+    configuration.Value.each
+    {
+        if(it.@hidden != "true" && it.@disabled != "true"){
+        switch(it.@type)
+        {   
+            case ["number"]:
+                input "${it.@index}", "number",
+                    title:"${it.@label}\n" + "${it.Help}",
+                    range: "${it.@min}..${it.@max}",
+                    defaultValue: "${it.@value}",
+                    displayDuringSetup: "${it.@displayDuringSetup}"
+            break
+            case "list":
+                def items = []
+                it.Item.each { items << ["${it.@value}":"${it.@label}"] }
+                input "${it.@index}", "enum",
+                    title:"${it.@label}\n" + "${it.Help}",
+                    defaultValue: "${it.@value}",
+                    displayDuringSetup: "${it.@displayDuringSetup}",
+                    options: items
+            break
+            case ["password"]:
+                input "${it.@index}", "password",
+                    title:"${it.@label}\n" + "${it.Help}",
+                    displayDuringSetup: "${it.@displayDuringSetup}"
+            break
+            case "decimal":
+               input "${it.@index}", "decimal",
+                    title:"${it.@label}\n" + "${it.Help}",
+                    range: "${it.@min}..${it.@max}",
+                    defaultValue: "${it.@value}",
+                    displayDuringSetup: "${it.@displayDuringSetup}"
+            break
+            case "boolean":
+               input "${it.@index}", "boolean",
+                    title:"${it.@label}\n" + "${it.Help}",
+                    defaultValue: "${it.@value}",
+                    displayDuringSetup: "${it.@displayDuringSetup}"
+            break
+            case "text":
+               input "${it.@index}", "text",
+                    title:"${it.@label}\n" + "${it.Help}",
+                    defaultValue: "${it.@value}",
+                    displayDuringSetup: "${it.@displayDuringSetup}"
+            break
+        }
+        }
+    }
+}
+
+ /*  Code has elements from other community source @CyrilPeponnet (Z-Wave Parameter Sync). */
+
+def update_current_properties(cmd)
+{
+    def currentProperties = state.currentProperties ?: [:]
+    currentProperties."${cmd.name}" = cmd.value
+
+    if (settings."${cmd.name}" != null)
+    {
+        if (convertParam("${cmd.name}", settings."${cmd.name}").toString() == cmd.value)
+        {
+            sendEvent(name:"needUpdate", value:"NO", displayed:false, isStateChange: true)
+        }
+        else
+        {
+            sendEvent(name:"needUpdate", value:"YES", displayed:false, isStateChange: true)
+        }
+    }
+    state.currentProperties = currentProperties
+}
+
+
+def update_needed_settings()
+{
+    def cmds = []
+    def currentProperties = state.currentProperties ?: [:]
+     
+    def configuration = parseXml(configuration_model())
+    def isUpdateNeeded = "NO"
+    
+    cmds << getAction("/configSet?name=haip&value=${device.hub.getDataValue("localIP")}")
+    cmds << getAction("/configSet?name=haport&value=${device.hub.getDataValue("localSrvPortTCP")}")
+    
+    configuration.Value.each
+    {     
+        if ("${it.@setting_type}" == "lan" && it.@disabled != "true"){
+            if (currentProperties."${it.@index}" == null)
+            {
+               if (it.@setonly == "true"){
+                  logging("Setting ${it.@index} will be updated to ${convertParam("${it.@index}", it.@value)}", 2)
+                  cmds << getAction("/configSet?name=${it.@index}&value=${convertParam("${it.@index}", it.@value)}")
+               } else {
+                  isUpdateNeeded = "YES"
+                  logging("Current value of setting ${it.@index} is unknown", 2)
+                  cmds << getAction("/configGet?name=${it.@index}")
+               }
+            }
+            else if ((settings."${it.@index}" != null || it.@hidden == "true") && currentProperties."${it.@index}" != (settings."${it.@index}"? convertParam("${it.@index}", settings."${it.@index}".toString()) : convertParam("${it.@index}", "${it.@value}")))
+            { 
+                isUpdateNeeded = "YES"
+                logging("Setting ${it.@index} will be updated to ${convertParam("${it.@index}", settings."${it.@index}")}", 2)
+                cmds << getAction("/configSet?name=${it.@index}&value=${convertParam("${it.@index}", settings."${it.@index}")}")
+            } 
+        }
+    }
+    
+    sendEvent(name:"needUpdate", value: isUpdateNeeded, displayed:false, isStateChange: true)
+    return cmds
+}
+
+def convertParam(name, value) {
+	switch (name){
+        case "dcolor":
+            getDefault()
+        break
+        default:
+        	value
+        break
+    }
+}
+
+def configuration_model()
+{
+'''
+<configuration>
+<Value type="password" byteSize="1" index="password" label="Password" min="" max="" value="" setting_type="preference" fw="">
+<Help>
+</Help>
+</Value>
+<Value type="list" byteSize="1" index="pos" label="Boot Up State" min="0" max="2" value="0" setting_type="lan" fw="">
+<Help>
+Default: Off
+</Help>
+    <Item label="Off" value="0" />
+    <Item label="On" value="1" />
+</Value>
+<Value type="list" byteSize="1" index="transition" label="Default Transition" min="0" max="1" value="0" setting_type="preference" fw="">
+<Help>
+Default: Fade
+</Help>
+    <Item label="Fade" value="true" />
+    <Item label="Flash" value="false" />
+</Value>
+<Value type="list" byteSize="1" index="dcolor" label="Default Color" min="" max="" value="" setting_type="lan" fw="">
+<Help>
+Default: Previous
+</Help>
+    <Item label="Previous" value="Previous" />
+    <Item label="Soft White - Default" value="Soft White" />
+    <Item label="White - Concentrate" value="White" />
+    <Item label="Daylight - Energize" value="Daylight" />
+    <Item label="Warm White - Relax" value="Warm White" />
+    <Item label="Red" value="Red" />
+    <Item label="Green" value="Green" />
+    <Item label="Blue" value="Blue" />
+    <Item label="Yellow" value="Yellow" />
+    <Item label="Orange" value="Orange" />
+    <Item label="Purple" value="Purple" />
+    <Item label="Pink" value="Pink" />
+    <Item label="Cyan" value="Random" />
+    <Item label="Custom" value="Custom" />
+</Value>
+<Value type="text" byteSize="1" index="custom" label="Custom Color in Hex" min="" max="" value="" setting_type="preference" fw="">
+<Help>
+(ie ffffff)
+If \"Custom\" is chosen above as the default color. Default level does not apply if custom hex value is chosen.
+</Help>
+</Value>
+<Value type="number" byteSize="1" index="level" label="Default Level" min="1" max="100" value="" setting_type="preference" fw="">
+<Help>
+</Help>
+</Value>
+<Value type="boolean" byteSize="1" index="channels" label="Mutually Exclusive RGB / White.\nOnly allow one or the other" min="" max="" value="false" setting_type="preference" fw="">
+<Help>
+</Help>
+</Value>
+<Value type="list" byteSize="1" index="transitionspeed" label="Transition Speed" min="1" max="3" value="1" setting_type="lan" fw="">
+<Help>
+Default: Slow
+</Help>
+    <Item label="Slow" value="1" />
+    <Item label="Medium" value="2" />
+    <Item label="Fast" value="3" />
+</Value>
+<Value type="number" byteSize="1" index="autooff" label="Auto Off" min="0" max="65536" value="0" setting_type="lan" fw="" disabled="true">
+<Help>
+Automatically turn the switch off after this many seconds.
+Range: 0 to 65536
+Default: 0 (Disabled)
+</Help>
+</Value>
+<Value type="list" index="logLevel" label="Debug Logging Level?" value="0" setting_type="preference" fw="">
+<Help>
+</Help>
+    <Item label="None" value="0" />
+    <Item label="Reports" value="1" />
+    <Item label="All" value="99" />
+</Value>
+</configuration>
+'''
 }
