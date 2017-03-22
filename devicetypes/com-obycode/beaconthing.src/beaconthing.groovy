@@ -37,7 +37,7 @@ metadata {
 
 	tiles {
 		standardTile("presence", "device.presence", width: 2, height: 2, canChangeBackground: true) {
-			state("present", labelIcon:"st.presence.tile.present", backgroundColor:"#53a7c0")
+			state("present", labelIcon:"st.presence.tile.present", backgroundColor:"#00A0DC")
 			state("not present", labelIcon:"st.presence.tile.not-present", backgroundColor:"#ffffff")
 		}
 		valueTile("inRange", "device.inRangeFriendly", inactiveLabel: true, height:1, width:3, decoration: "flat") {

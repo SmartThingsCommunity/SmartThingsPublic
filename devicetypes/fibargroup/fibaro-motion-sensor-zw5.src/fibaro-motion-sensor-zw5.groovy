@@ -22,6 +22,7 @@ metadata {
 		capability "Sensor"
 		capability "Tamper Alert"
 		capability "Temperature Measurement"
+		capability "Health Check"
         
         fingerprint deviceId: "0x0701", inClusters: "0x5E, 0x20, 0x86, 0x72, 0x5A, 0x59, 0x85, 0x73, 0x84, 0x80, 0x71, 0x56, 0x70, 0x31, 0x8E, 0x22, 0x30, 0x9C, 0x98, 0x7A", outClusters: ""
 	}
@@ -38,8 +39,8 @@ metadata {
             }
             
             tileAttribute("device.tamper", key:"SECONDARY_CONTROL") {
-				attributeState("active", label:'tamper active', backgroundColor:"#53a7c0")
-				attributeState("inactive", label:'tamper inactive', backgroundColor:"#ffffff")
+				attributeState("active", label:'tamper active', backgroundColor:"#00a0dc")
+				attributeState("inactive", label:'tamper inactive', backgroundColor:"#cccccc")
 			}  
         }
         
@@ -240,7 +241,9 @@ def zwaveEvent(physicalgraph.zwave.commands.deviceresetlocallyv1.DeviceResetLoca
 
 def configure() {
 	log.debug "Executing 'configure'"
-    
+	// Device-Watch simply pings if no device events received for 8 hrs & 2 minutes
+	sendEvent(name: "checkInterval", value: 8 * 60 * 60 + 2 * 60, displayed: false, data: [protocol: "zwave", hubHardwareId: device.hub.hardwareID])
+
     def cmds = []
     
     cmds += zwave.wakeUpV2.wakeUpIntervalSet(seconds: 7200, nodeid: zwaveHubNodeId)//FGMS' default wake up interval

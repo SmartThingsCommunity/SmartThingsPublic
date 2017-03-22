@@ -11,7 +11,6 @@
  *  for the specific language governing permissions and limitations under the License.
  *
  */
- 
 metadata {
     definition (name: "Arrival Sensor HA", namespace: "smartthings", author: "SmartThings") {
         capability "Tone"
@@ -40,7 +39,7 @@ metadata {
 
     tiles {
         standardTile("presence", "device.presence", width: 2, height: 2, canChangeBackground: true) {
-            state "present", labelIcon:"st.presence.tile.present", backgroundColor:"#53a7c0"
+            state "present", labelIcon:"st.presence.tile.present", backgroundColor:"#00a0dc"
             state "not present", labelIcon:"st.presence.tile.not-present", backgroundColor:"#ffffff"
         }
         standardTile("beep", "device.beep", decoration: "flat") {
@@ -60,7 +59,7 @@ def updated() {
 }
 
 def configure() {
-    def cmds = zigbee.configureReporting(0x0001, 0x0020, 0x20, 20, 20, 0x01)
+    def cmds = zigbee.batteryConfig(20, 20, 0x01)
     log.debug "configure -- cmds: ${cmds}"
     return cmds
 }
@@ -152,7 +151,7 @@ private handlePresenceEvent(present) {
 
 private startTimer() {
     log.debug "Scheduling periodic timer"
-    schedule("0 * * * * ?", checkPresenceCallback)
+    runEvery1Minute("checkPresenceCallback")
 }
 
 private stopTimer() {
