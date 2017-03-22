@@ -21,6 +21,7 @@ metadata {
         capability "Sensor"
         capability "Switch"
         capability "Health Check"
+        capability "Light"
 
         fingerprint profileId: "0104", inClusters: "0000, 0003, 0004, 0005, 0006, 0B04"
         fingerprint profileId: "0104", inClusters: "0000, 0003, 0004, 0005, 0006, 0702"
@@ -32,9 +33,9 @@ metadata {
     tiles(scale: 2) {
         multiAttributeTile(name:"switch", type: "lighting", width: 6, height: 4, canChangeIcon: true){
             tileAttribute ("device.switch", key: "PRIMARY_CONTROL") {
-                attributeState "on", label:'${name}', action:"switch.off", icon:"st.switches.switch.on", backgroundColor:"#79b821", nextState:"turningOff"
+                attributeState "on", label:'${name}', action:"switch.off", icon:"st.switches.switch.on", backgroundColor:"#00A0DC", nextState:"turningOff"
                 attributeState "off", label:'${name}', action:"switch.on", icon:"st.switches.switch.off", backgroundColor:"#ffffff", nextState:"turningOn"
-                attributeState "turningOn", label:'${name}', action:"switch.off", icon:"st.switches.switch.on", backgroundColor:"#79b821", nextState:"turningOff"
+                attributeState "turningOn", label:'${name}', action:"switch.off", icon:"st.switches.switch.on", backgroundColor:"#00A0DC", nextState:"turningOff"
                 attributeState "turningOff", label:'${name}', action:"switch.on", icon:"st.switches.switch.off", backgroundColor:"#ffffff", nextState:"turningOn"
             }
             tileAttribute ("power", key: "SECONDARY_CONTROL") {

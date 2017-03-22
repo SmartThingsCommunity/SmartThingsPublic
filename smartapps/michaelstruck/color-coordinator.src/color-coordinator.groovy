@@ -1,10 +1,11 @@
 /**
  * 	Color Coordinator 
- *  Version 1.1.0 - 11/9/16
+ *  Version 1.1.1 - 11/9/16
  *  By Michael Struck
  *
  *  1.0.0 - Initial release
  *  1.1.0 - Fixed issue where master can be part of slaves. This causes a loop that impacts SmartThings. 
+ *  1.1.1 - Fix NPE being thrown for slave/master inputs being empty.
  *
  *
  *  Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except
@@ -33,17 +34,17 @@ preferences {
 
 def mainPage() {
 	dynamicPage(name: "mainPage", title: "", install: true, uninstall: false) {
-		def masterInList = slaves.id.find{it==master.id}
+		def masterInList = slaves?.id?.find{it==master?.id}
         if (masterInList) {
         	section ("**WARNING**"){
             	paragraph "You have included the Master Light in the Slave Group. This will cause a loop in execution. Please remove this device from the Slave Group.", image: "https://raw.githubusercontent.com/MichaelStruck/SmartThingsPublic/master/img/caution.png"
             }
         }
         section("Master Light") {
-			input "master", "capability.colorControl", title: "Colored Light"
+			input "master", "capability.colorControl", title: "Colored Light", required: true
 		}
 		section("Lights that follow the master settings") {
-			input "slaves", "capability.colorControl", title: "Colored Lights",  multiple: true, required: false, submitOnChange: true
+			input "slaves", "capability.colorControl", title: "Colored Lights",  multiple: true, required: true, submitOnChange: true
 		}
     	section([mobileOnly:true], "Options") {
 			input "randomYes", "bool",title: "When Master Turned On, Randomize Color", defaultValue: false
@@ -81,40 +82,44 @@ def init() {
 }
 //-----------------------------------
 def onOffHandler(evt){
-	if (!slaves.id.find{it==master.id}){
-        if (master.currentValue("switch") == "on"){
-            if (randomYes) getRandomColorMaster()
-			else slaves?.on()
-        }
-        else {
-            slaves?.off()  
-        }
+	if (slaves && master) {
+		if (!slaves?.id.find{it==master?.id}){
+		if (master?.currentValue("switch") == "on"){
+		    if (randomYes) getRandomColorMaster()
+				else slaves?.on()
+		}
+		else {
+		    slaves?.off()  
+		}
+		}
 	}
 }
 
 def colorHandler(evt) {
-   	if (!slaves.id.find{it==master.id} && master.currentValue("switch") == "on"){
-		log.debug "Changing Slave units H,S,L"
-    	def dimLevel = master.currentValue("level")
-    	def hueLevel = master.currentValue("hue")
-    	def saturationLevel = master.currentValue("saturation")
-		def newValue = [hue: hueLevel, saturation: saturationLevel, level: dimLevel as Integer]
-    	slaves?.setColor(newValue)
-    	try {
-    		log.debug "Changing Slave color temp"
-        	def tempLevel = master.currentValue("colorTemperature")
-    		slaves?.setColorTemperature(tempLevel)
-    	}
-   		catch (e){
-    		log.debug "Color temp for master --"
-    	}
+	if (slaves && master) {
+		if (!slaves?.id?.find{it==master?.id} && master?.currentValue("switch") == "on"){
+			log.debug "Changing Slave units H,S,L"
+		def dimLevel = master?.currentValue("level")
+		def hueLevel = master?.currentValue("hue")
+		def saturationLevel = master.currentValue("saturation")
+			def newValue = [hue: hueLevel, saturation: saturationLevel, level: dimLevel as Integer]
+		slaves?.setColor(newValue)
+		try {
+			log.debug "Changing Slave color temp"
+			def tempLevel = master?.currentValue("colorTemperature")
+			slaves?.setColorTemperature(tempLevel)
+		}
+			catch (e){
+			log.debug "Color temp for master --"
+		}
+		}
 	}
 }
 
 def getRandomColorMaster(){
     def hueLevel = Math.floor(Math.random() *1000)
     def saturationLevel = Math.floor(Math.random() * 100)
-    def dimLevel = master.currentValue("level")
+    def dimLevel = master?.currentValue("level")
 	def newValue = [hue: hueLevel, saturation: saturationLevel, level: dimLevel as Integer]
     log.debug hueLevel
     log.debug saturationLevel
@@ -123,12 +128,14 @@ def getRandomColorMaster(){
 }
 
 def tempHandler(evt){
-    if (!slaves.id.find{it==master.id} && master.currentValue("switch") == "on"){
-        if (evt.value != "--") {
-            log.debug "Changing Slave color temp based on Master change"
-            def tempLevel = master.currentValue("colorTemperature")
-            slaves?.setColorTemperature(tempLevel)
-        }
+	if (slaves && master) {
+	    if (!slaves?.id?.find{it==master?.id} && master?.currentValue("switch") == "on"){
+		if (evt.value != "--") {
+		    log.debug "Changing Slave color temp based on Master change"
+		    def tempLevel = master.currentValue("colorTemperature")
+		    slaves?.setColorTemperature(tempLevel)
+		}
+		}
 	}
 }
 
@@ -139,7 +146,7 @@ private def textAppName() {
 }	
 
 private def textVersion() {
-    def text = "Version 1.1.0 (11/09/2016)"
+    def text = "Version 1.1.1 (12/13/2016)"
 }
 
 private def textCopyright() {

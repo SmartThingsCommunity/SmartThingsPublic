@@ -28,6 +28,7 @@ metadata {
 		fingerprint mfr: "0060", prod: "0001", model: "0002", deviceJoinName: "Everspring Motion Sensor"  // Everspring SP814
 		fingerprint mfr: "0060", prod: "0001", model: "0003", deviceJoinName: "Everspring Motion Sensor"  // Everspring HSP02
 		fingerprint mfr: "011A", prod: "0601", model: "0901", deviceJoinName: "Enerwave Motion Sensor"  // Enerwave ZWN-BPC
+		fingerprint mfr: "0063", prod: "4953", model: "3133", deviceJoinName: "GE Smart Motion Sensor"
 	}
 
 	simulator {
@@ -37,8 +38,8 @@ metadata {
 	
 	tiles {
 		standardTile("motion", "device.motion", width: 2, height: 2) {
-			state("active", label:'motion', icon:"st.motion.motion.active", backgroundColor:"#53a7c0")
-			state("inactive", label:'no motion', icon:"st.motion.motion.inactive", backgroundColor:"#ffffff")
+			state("active", label:'motion', icon:"st.motion.motion.active", backgroundColor:"#00A0DC")
+			state("inactive", label:'no motion', icon:"st.motion.motion.inactive", backgroundColor:"#cccccc")
 		}
 		valueTile("battery", "device.battery", inactiveLabel: false, decoration: "flat") {
 			state("battery", label:'${currentValue}% battery', unit:"")

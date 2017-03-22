@@ -11,6 +11,7 @@
  *  for the specific language governing permissions and limitations under the License.
  *
  */
+import physicalgraph.zigbee.zcl.DataType
 
 metadata {
     definition (name: "ZLL RGBW Bulb", namespace: "smartthings", author: "SmartThings") {
@@ -37,9 +38,9 @@ metadata {
     tiles(scale: 2) {
         multiAttributeTile(name:"switch", type: "lighting", width: 6, height: 4, canChangeIcon: true){
             tileAttribute ("device.switch", key: "PRIMARY_CONTROL") {
-                attributeState "on", label:'${name}', action:"switch.off", icon:"st.lights.philips.hue-single", backgroundColor:"#79b821", nextState:"turningOff"
+                attributeState "on", label:'${name}', action:"switch.off", icon:"st.lights.philips.hue-single", backgroundColor:"#00A0DC", nextState:"turningOff"
                 attributeState "off", label:'${name}', action:"switch.on", icon:"st.lights.philips.hue-single", backgroundColor:"#ffffff", nextState:"turningOn"
-                attributeState "turningOn", label:'${name}', action:"switch.off", icon:"st.lights.philips.hue-single", backgroundColor:"#79b821", nextState:"turningOff"
+                attributeState "turningOn", label:'${name}', action:"switch.off", icon:"st.lights.philips.hue-single", backgroundColor:"#00A0DC", nextState:"turningOff"
                 attributeState "turningOff", label:'${name}', action:"switch.on", icon:"st.lights.philips.hue-single", backgroundColor:"#ffffff", nextState:"turningOn"
             }
             tileAttribute ("device.level", key: "SLIDER_CONTROL") {
@@ -123,7 +124,7 @@ def configure() {
 }
 
 def configureAttributes() {
-    zigbee.onOffConfig() + zigbee.levelConfig() + zigbee.colorTemperatureConfig() + zigbee.configureReporting(COLOR_CONTROL_CLUSTER, ATTRIBUTE_HUE, 0x20, 1, 3600, 0x01) + zigbee.configureReporting(COLOR_CONTROL_CLUSTER, ATTRIBUTE_SATURATION, 0x20, 1, 3600, 0x01)
+    zigbee.onOffConfig() + zigbee.levelConfig() + zigbee.colorTemperatureConfig() + zigbee.configureReporting(COLOR_CONTROL_CLUSTER, ATTRIBUTE_HUE, DataType.UINT8, 1, 3600, 0x01) + zigbee.configureReporting(COLOR_CONTROL_CLUSTER, ATTRIBUTE_SATURATION, DataType.UINT8, 1, 3600, 0x01)
 }
 
 def refreshAttributes() {
@@ -135,7 +136,7 @@ def setColorTemperature(value) {
 }
 
 def setLevel(value) {
-    zigbee.setLevel(value) + ["delay 1500"] + zigbee.levelRefresh()         //adding refresh because of ZLL bulb not conforming to send-me-a-report
+    zigbee.setLevel(value) + zigbee.onOffRefresh() + zigbee.levelRefresh()        //adding refresh because of ZLL bulb not conforming to send-me-a-report
 }
 
 def setColor(value){

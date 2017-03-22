@@ -14,11 +14,13 @@
 metadata {
 	definition (name: "Fortrezz Water Valve", namespace: "smartthings", author: "SmartThings") {
 		capability "Actuator"
+		capability "Health Check"
 		capability "Valve"
 		capability "Refresh"
 		capability "Sensor"
         
 		fingerprint deviceId: "0x1000", inClusters: "0x25,0x72,0x86,0x71,0x22,0x70"
+		fingerprint mfr:"0084", prod:"0213", model:"0215", deviceJoinName: "FortrezZ Water Valve"
 	}
 
 	// simulator metadata
@@ -34,10 +36,10 @@ metadata {
 	// tile definitions
 	tiles {
 		standardTile("contact", "device.contact", width: 2, height: 2, canChangeIcon: true) {
-			state "open", label: '${name}', action: "valve.close", icon: "st.valves.water.open", backgroundColor: "#53a7c0", nextState:"closing"
-			state "closed", label: '${name}', action: "valve.open", icon: "st.valves.water.closed", backgroundColor: "#e86d13", nextState:"opening"
-			state "opening", label: '${name}', action: "valve.close", icon: "st.valves.water.open", backgroundColor: "#ffe71e"
-			state "closing", label: '${name}', action: "valve.open", icon: "st.valves.water.closed", backgroundColor: "#ffe71e"
+			state "open", label: '${name}', action: "valve.close", icon: "st.valves.water.open", backgroundColor: "#00A0DC", nextState:"closing"
+			state "closed", label: '${name}', action: "valve.open", icon: "st.valves.water.closed", backgroundColor: "#ffffff", nextState:"opening"
+			state "opening", label: '${name}', action: "valve.close", icon: "st.valves.water.open", backgroundColor: "#00A0DC"
+			state "closing", label: '${name}', action: "valve.open", icon: "st.valves.water.closed", backgroundColor: "#ffffff"
 		}
 		standardTile("refresh", "device.switch", inactiveLabel: false, decoration: "flat") {
 			state "default", label:'', action:"refresh.refresh", icon:"st.secondary.refresh"
@@ -46,6 +48,11 @@ metadata {
 		main "contact"
 		details(["contact","refresh"])
 	}
+}
+
+def updated(){
+// Device-Watch simply pings if no device events received for 32min(checkInterval)
+	sendEvent(name: "checkInterval", value: 2 * 15 * 60 + 2 * 60, displayed: false, data: [protocol: "zwave", hubHardwareId: device.hub.hardwareID])
 }
 
 def parse(String description) {
@@ -74,6 +81,13 @@ def open() {
 
 def close() {
 	zwave.switchBinaryV1.switchBinarySet(switchValue: 0xFF).format()
+}
+
+/**
+ * PING is used by Device-Watch in attempt to reach the Device
+ * */
+def ping() {
+	refresh()
 }
 
 def refresh() {

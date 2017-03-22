@@ -112,10 +112,10 @@ metadata {
 		multiAttributeTile(name:"dtlsDoorCtrl", type:"generic", width:6, height:4) {tileAttribute("device.doorState", key: "PRIMARY_CONTROL") 
         	{
       		attributeState "unknown", label: '${name}', action:"openDoor", icon: "st.secondary.tools", nextState:"Sent"
-      		attributeState "open", label: '${name}', action:"closeDoor", icon: "st.doors.garage.garage-open", backgroundColor: "#0000ff", nextState:"Sent"
-            attributeState "opening", label: '${name}', action:"closeDoor", icon: "st.doors.garage.garage-opening", backgroundColor: "#ffa81e" 
-            attributeState "closed", label: '${name}', action:"openDoor", icon: "st.doors.garage.garage-closed", backgroundColor: "#79b821", nextState:"Sent"
-            attributeState "closing", label: '${name}', action:"openDoor", icon: "st.doors.garage.garage-closing", backgroundColor: "#ffa81e" 
+      		attributeState "open", label: '${name}', action:"closeDoor", icon: "st.doors.garage.garage-open", backgroundColor: "#00A0DC", nextState:"Sent"
+            attributeState "opening", label: '${name}', action:"closeDoor", icon: "st.doors.garage.garage-opening", backgroundColor: "#00A0DC"
+            attributeState "closed", label: '${name}', action:"openDoor", icon: "st.doors.garage.garage-closed", backgroundColor: "#ffffff", nextState:"Sent"
+            attributeState "closing", label: '${name}', action:"openDoor", icon: "st.doors.garage.garage-closing", backgroundColor: "#ffffff"
             attributeState "jammed", label: '${name}', action:"closeDoorHiI", icon: "st.doors.garage.garage-open", backgroundColor: "#ff0000", nextState:"Sent"
             attributeState "forced close", label: "forced", action:"openDoor", icon: "st.doors.garage.garage-closed", backgroundColor: "#ff8000", nextState:"Sent"
             attributeState "fault", label: 'FAULT', action:"openDoor", icon: "st.secondary.tools", backgroundColor: "#ff0000", nextState:"Sent"  

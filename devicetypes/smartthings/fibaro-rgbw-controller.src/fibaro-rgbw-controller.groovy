@@ -89,9 +89,9 @@
             state "whiteLevel", action:"setWhiteLevel", label:'White Level'
         }
 		standardTile("switch", "device.switch", width: 1, height: 1, canChangeIcon: true) {
-        	state "on", label:'${name}', action:"switch.off", icon:"st.illuminance.illuminance.bright", backgroundColor:"#79b821", nextState:"turningOff"
+        	state "on", label:'${name}', action:"switch.off", icon:"st.illuminance.illuminance.bright", backgroundColor:"#00A0DC", nextState:"turningOff"
             state "off", label:'${name}', action:"switch.on", icon:"st.illuminance.illuminance.dark", backgroundColor:"#ffffff", nextState:"turningOn"
-            state "turningOn", label:'${name}', icon:"st.illuminance.illuminance.bright", backgroundColor:"#79b821"
+            state "turningOn", label:'${name}', icon:"st.illuminance.illuminance.bright", backgroundColor:"#00A0DC"
             state "turningOff", label:'${name}', icon:"st.illuminance.illuminance.dark", backgroundColor:"#ffffff"
         }
         valueTile("power", "device.power", decoration: "flat") {

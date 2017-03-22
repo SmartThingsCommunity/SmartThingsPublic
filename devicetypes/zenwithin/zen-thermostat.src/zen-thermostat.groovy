@@ -36,7 +36,7 @@ metadata {
         }
     
         valueTile("temperature", "device.temperature", width: 1, height: 1) {
-            state("temperature", label:'${currentValue}°', backgroundColor:"#0A1E2C")
+            state("temperature", label:'${currentValue}°', backgroundColor:"#00A0DC")
         }
         
         standardTile("fanMode", "device.thermostatFanMode", decoration: "flat") {
@@ -46,9 +46,9 @@ metadata {
         
         
         standardTile("mode", "device.thermostatMode", decoration: "flat") {
-            state "off", action:"setThermostatMode", backgroundColor:"#e8e3d8", icon:"st.thermostat.heating-cooling-off", nextState:"heating"
-            state "heat", action:"setThermostatMode", backgroundColor:"#ff6e7e", icon:"st.thermostat.heat", nextState:"cooling"
-            state "cool", action:"setThermostatMode", backgroundColor:"#90d0e8", icon:"st.thermostat.cool", nextState:"..."
+            state "off", action:"setThermostatMode", backgroundColor:"#ffffff", icon:"st.thermostat.heating-cooling-off", nextState:"heating"
+            state "heat", action:"setThermostatMode", backgroundColor:"#e86d13", icon:"st.thermostat.heat", nextState:"cooling"
+            state "cool", action:"setThermostatMode", backgroundColor:"#00A0DC", icon:"st.thermostat.cool", nextState:"..."
             //state "auto", action:"setThermostatMode", backgroundColor:"#e8e3d8", icon:"st.thermostat.auto"
             state "heating", action:"setThermostatMode", nextState:"to_cool"
             state "cooling", action:"setThermostatMode", nextState:"..."
