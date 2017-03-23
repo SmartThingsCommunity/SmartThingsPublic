@@ -511,6 +511,10 @@ def pollResponse(response, data) {
 			if (ResponseValues) {
         def map = [:]
         ResponseValues.hubs.each {
+        // Device-Watch relies on the Logitech Harmony Cloud to get the Device state.
+        def isAlive = it.value.status
+        def d = getChildDevice("harmony-${it.key}")
+        d?.sendEvent(name: "DeviceWatch-DeviceStatus", value: isAlive!=504? "online":"offline", displayed: false, isStateChange: true)
         if (it.value.message == "OK") {
               map["${it.key}"] = "${it.value.response.data.currentAvActivity},${it.value.response.data.activityStatus}"
               def hub = getChildDevice("harmony-${it.key}")
