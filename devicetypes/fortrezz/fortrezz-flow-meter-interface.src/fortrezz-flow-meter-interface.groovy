@@ -82,10 +82,10 @@ metadata {
 			state "freezing", label:'Freezing', icon:"st.alarm.temperature.freeze", backgroundColor:"#2eb82e"
 			state "overheated", label:'Overheated', icon:"st.alarm.temperature.overheat", backgroundColor:"#F80000"
 		}
-        valueTile("take1", "device.image", width: 2, height: 2, canChangeIcon: false, inactiveLabel: true, canChangeBackground: false, decoration: "flat") {
+        standardTile("take1", "device.image", width: 2, height: 2, canChangeIcon: false, inactiveLabel: true, canChangeBackground: false, decoration: "flat") {
             state "take", label: "", action: "Image Capture.take", nextState:"taking", icon: "st.secondary.refresh"
         }
-		valueTile("chartMode", "device.chartMode", width: 2, height: 2, canChangeIcon: false, canChangeBackground: false, decoration: "flat") {
+		standardTile("chartMode", "device.chartMode", width: 2, height: 2, canChangeIcon: false, canChangeBackground: false, decoration: "flat") {
 			state "day", label:'24 Hours\n(press to change)', nextState: "week", action: 'chartMode'
 			state "week", label:'7 Days\n(press to change)', nextState: "month", action: 'chartMode'
 			state "month", label:'4 Weeks\n(press to change)', nextState: "day", action: 'chartMode'
@@ -119,6 +119,11 @@ def parse(String description) {
 	return results
 }
 
+def updated()
+{
+	log.debug("Updated")
+}
+
 def setHighFlowLevel(level)
 {
 	setThreshhold(level)
@@ -141,6 +146,7 @@ def take() {
 }
 
 def chartMode(string) {
+	log.debug("ChartMode")
 	def state = device.currentValue("chartMode")
     def tempValue = ""
 	switch(state)
@@ -236,7 +242,7 @@ def zwaveEvent(physicalgraph.zwave.commands.sensormultilevelv5.SensorMultilevelR
             sendAlarm("waterOverflow")
         }
 	} */
-	map
+	return map
 }
 
 def zwaveEvent(physicalgraph.zwave.commands.meterv3.MeterReport cmd)
@@ -244,11 +250,16 @@ def zwaveEvent(physicalgraph.zwave.commands.meterv3.MeterReport cmd)
 	def map = [:]
     map.name = "gpm"
     def delta = cmd.scaledMeterValue - cmd.scaledPreviousMeterValue
+    if (delta < 0 || delta > 10000) {
+        log.error(cmd)
+    	delta = 0
+    }
+
     map.value = delta
     map.unit = "gpm"
     sendDataToCloud(delta)
     sendEvent(name: "cumulative", value: cmd.scaledMeterValue, displayed: false, unit: "gal")
-	map
+	return map
 }
 
 def zwaveEvent(physicalgraph.zwave.commands.alarmv2.AlarmReport cmd)
@@ -321,7 +332,7 @@ def zwaveEvent(physicalgraph.zwave.commands.alarmv2.AlarmReport cmd)
     }
     //log.debug "alarmV2: $cmd"
     
-	map
+	return map
 }
 
 def zwaveEvent(physicalgraph.zwave.commands.batteryv1.BatteryReport cmd) {
@@ -337,7 +348,7 @@ def zwaveEvent(physicalgraph.zwave.commands.batteryv1.BatteryReport cmd) {
 		map.unit = "%"
 		map.displayed = false
 	}
-	map
+	return map
 }
 
 def zwaveEvent(physicalgraph.zwave.Command cmd)
@@ -363,7 +374,7 @@ def sendDataToCloud(double data)
             resp.headers.each {
                 //log.debug "${it.name} : ${it.value}"
             }
-            log.debug "query response: ${resp.data}"
+            log.debug "sendDataToCloud query response: ${resp.data}"
         }
     } catch (e) {
         log.debug "something went wrong: $e"
@@ -383,7 +394,7 @@ private getPictureName(category) {
   def pictureUuid = java.util.UUID.randomUUID().toString().replaceAll('-', '')
 
   def name = "image" + "_$pictureUuid" + "_" + category + ".png"
-  name
+  return name
 }
 
 def api(method, args = [], success = {}) {
@@ -396,7 +407,7 @@ def api(method, args = [], success = {}) {
 
   def request = methods.getAt(method)
 
-  doRequest(request.uri, request.type, success)
+  return doRequest(request.uri, request.type, success)
 }
 
 private doRequest(uri, type, success) {
@@ -424,5 +435,5 @@ def setThreshhold(rate)
     def cmds = []
     cmds << zwave.configurationV2.configurationSet(configurationValue: [(int)Math.round(rate*10)], parameterNumber: 5, size: 1).format()
     sendEvent(event)
-    response(cmds) // return a list containing the event and the result of response()
+    return response(cmds) // return a list containing the event and the result of response()
 }
