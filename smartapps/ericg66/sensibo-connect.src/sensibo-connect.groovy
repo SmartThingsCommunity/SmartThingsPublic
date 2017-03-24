@@ -20,9 +20,9 @@ definition(
     author: "Eric Gosselin",
     description: "Connect your Sensibo Pod to SmartThings.",
     category: "Green Living",
-    iconUrl: "http://i130.photobucket.com/albums/p242/brutalboy_photos/Sensibo/on_color_large_sm.png",
-    iconX2Url: "http://i130.photobucket.com/albums/p242/brutalboy_photos/Sensibo/on_color_large2x.png",
-    iconX3Url: "http://i130.photobucket.com/albums/p242/brutalboy_photos/Sensibo/on_color_large3x.png",
+    iconUrl: "http://i130.photobucket.com/albums/p242/brutalboy_photos/on_color_large_sm.png",
+    iconX2Url: "http://i130.photobucket.com/albums/p242/brutalboy_photos/on_color_large2x.png",
+    iconX3Url: "http://i130.photobucket.com/albums/p242/brutalboy_photos/on_color_large3x.png",
     singleInstance: true) 
 
 {
@@ -178,6 +178,8 @@ def installed() {
         schedule("0 0 * * * ?", "hournotification")
 	}
     
+    //subscribe(d,"temperatureUnit",eTempUnitHandler)
+    
     if (sendPushNotif) { 
     	subscribe(d, "temperature", eTemperatureHandler)
         subscribe(d, "humidity", eHumidityHandler)
@@ -201,6 +203,8 @@ def updated() {
     	//runEvery1Hour("hournotification")
         schedule("0 0 * * * ?", "hournotification")
 	}
+    
+    //subscribe(d,"temperatureUnit",eTempUnitHandler)
     
     if (sendPushNotif) {
     	subscribe(d, "temperature", eTemperatureHandler)
@@ -251,6 +255,12 @@ def hournotification() {
                 sendPush(stext)
             }
     }
+}
+
+
+def eTempUnitHandler(evt)
+{
+	//refreshOneDevice(evt.device.displayName)
 }
 
 def eTemperatureHandler(evt){
@@ -433,21 +443,23 @@ def initialize() {
     log.debug "initialize"
 
 	def devices = SelectedSensiboPods.collect { dni ->
-
+		log.debug dni
 		def d = getChildDevice(dni)
 
 		if(!d)
 			{
                 
             	def name = getSensiboPodList().find( {key,value -> key == dni })
-
+				log.debug getChildNamespace()
+                log.debug getChildTypeName()
+                log.debug name
 				d = addChildDevice(getChildNamespace(), getChildTypeName(), dni,"", [
                 	"label" : "Pod ${name.value}",
                     "name" : "Pod ${name.value}"
                     ])
                 d.setIcon("on","on","http://i130.photobucket.com/albums/p242/brutalboy_photos/on_color_large_on.png")
-                d.setIcon("off","on","http://i130.photobucket.com/albums/p242/brutalboy_photos/on_color_large_off2.png")
-                d.save()
+                d.setIcon("off","on","http://i130.photobucket.com/albums/p242/brutalboy_photos/on_color_large.png")
+                d.save()              
                 
 				log.debug "created ${d.displayName} with id $dni"
 			}
@@ -481,6 +493,7 @@ def initialize() {
     pollHandler()
     
     refreshDevices()
+    
     runEvery5Minutes("refreshDevices")
 }
 
@@ -611,9 +624,9 @@ def setACStates(child,String PodUid, on, mode, targetTemperature, fanLevel, swin
         }
         else {
         	 tData.data.thermostatMode = mode
-             if (mode=="fan") {
-                tData.data.thermostatMode = "auto"
-             }
+             //if (mode=="fan") {
+             //   tData.data.thermostatMode = "auto"
+             //}
         }
         tData.data.targetTemperature = targetTemperature
         tData.data.coolingSetpoint = targetTemperature
@@ -630,6 +643,119 @@ def setACStates(child,String PodUid, on, mode, targetTemperature, fanLevel, swin
 	return(result)
 }
 
+// Use the Patch API to modify only one state of the AC
+def setPatchACStates(child,String PodUid, WhatToChange, value)
+{
+	log.debug "SetPatchACStates What to change : $WhatToChange - Value : $value"
+    
+    def jsonRequestBody = '{"newValue":"${value}"}'
+    log.debug "Mode Request Body = ${jsonRequestBody}"
+	debugEvent ("Mode Request Body = ${jsonRequestBody}")
+    
+	def result = sendPatchJson(PodUid,WhatToChange, jsonRequestBody)
+
+	if (result) {
+		//def tData = atomicState.sensibo[child.device.deviceNetworkId]
+		//tData.data.fanLevel = fanLevel
+        //tData.data.thermostatFanMode = fanLevel
+        //tData.data.on = on
+        //tData.data.mode = mode
+        //log.debug "Thermostat mode " + on
+        //if (on=="off") {
+        //	tData.data.thermostatMode = "off"
+        //}
+        //else {
+        //	 tData.data.thermostatMode = mode
+             //if (mode=="fan") {
+             //   tData.data.thermostatMode = "auto"
+             //}
+        //}
+        //tData.data.targetTemperature = targetTemperature
+        //tData.data.coolingSetpoint = targetTemperature
+        //tData.data.heatingSetpoint = targetTemperature
+        //tData.data.temperatureUnit = sUnit
+        //tData.data.swing = swingM
+        //tData.data.Error = "Success"
+	}
+    else {
+    //	def tData = atomicState.sensibo[child.device.deviceNetworkId]
+    //	tData.data.Error = "Failed"
+    }
+
+	return(result)
+}
+
+
+//Get the capabilities of the A/C Unit
+def getCapabilities(PodUid, mode)
+{
+	def data = [:]   
+	def pollParams = [
+    	uri: "${getServerUrl()}",
+    	path: "/api/v2/pods/${PodUid}",
+    	requestContentType: "application/json",
+    	query: [apiKey:"${getapikey()}", type:"json", fields:"remoteCapabilities"]]
+     try {
+
+     	 httpGet(pollParams) { resp ->
+
+         if (resp.data) {
+         		log.debug "Status : " + resp.status
+                if(resp.status == 200) {                
+					switch (mode){
+                    	case "dry":
+                        	data = [
+                            	remoteCapabilities : resp.data.result.remoteCapabilities.modes.dry
+                           	]	
+                        	break
+                        case "cool":
+                       		data = [
+                            	remoteCapabilities : resp.data.result.remoteCapabilities.modes.cool
+                           	]	
+                        	break
+                        case "heat":
+                       		data = [
+                            	remoteCapabilities : resp.data.result.remoteCapabilities.modes.heat
+                           	]	
+                        	break
+                        case "fan":
+                       		data = [
+                            	remoteCapabilities : resp.data.result.remoteCapabilities.modes.fan
+                           	]	
+                        	break
+                        case "auto":
+                       		data = [
+                            	remoteCapabilities : resp.data.result.remoteCapabilities.modes.auto
+                           	]	
+                        	break
+                    }
+                    //data = [
+                    //        remoteCapabilities : resp.data.result.remoteCapabilities
+                    //       ]
+                    return data
+                }
+                else {
+                	log.debug "get remoteCapabilities Failed"
+                    
+                    data = [
+						remoteCapabilities : ""
+                    ]                    
+              		return data
+                }
+			}
+         }
+         return data
+     }
+     catch(Exception e) {     	
+        log.debug "get remoteCapabilities Failed"
+        
+        data = [
+        	remoteCapabilities : ""
+        ]        
+     	return data
+     }
+}
+
 // Get the latest state from the Sensibo Pod
 def getACState(PodUid)
 {
@@ -639,7 +765,6 @@ def getACState(PodUid)
     	path: "/api/v2/pods/${PodUid}/acStates",
     	requestContentType: "application/json",
     	query: [apiKey:"${getapikey()}", type:"json", limit:1, fields:"status,acState"]]
-        //, temperatureUnit:"${TemperatureUnit()}"
     
     try {
        httpGet(pollParams) { resp ->
@@ -672,9 +797,9 @@ def getACState(PodUid)
 				        else {
         	 				tMode = stat.acState.mode
                         }
-                        if (tMode=="fan") {
-                        		tMode = "auto"
-        				}
+                        //if (tMode=="fan") {
+                        		//tMode = "auto"
+        				//}
                         log.debug "swing Mode :" + stat.acState.swing
                         data = [
                             targetTemperature : stemp,
@@ -697,8 +822,7 @@ def getACState(PodUid)
                     else { log.debug "get ACState Failed"}
                }
            }
-           else
-           {
+           else {
            	  data = [
                  targetTemperature : "0",
                  fanLevel : "--",
@@ -778,6 +902,41 @@ def sendJson(String PodUid, String jsonBody)
 		return false
 }
 
+// Send state to the Sensibo Pod
+def sendPatchJson(String PodUid, String whattochange, String jsonBody)
+{
+	def cmdParams = [
+		uri: "${getServerUrl()}",
+		path: "/api/v2/pods/${PodUid}/acStates/${whattochange}",
+		headers: ["Content-Type": "application/json"],
+        query: [apiKey:"${getapikey()}", type:"json"],
+		body: jsonBody]
+
+	def returnStatus = -1
+    try{
+       httpPost(cmdParams) { resp ->
+			if(resp.status == 200) {
+                log.debug "updated ${resp.data}"
+				debugEvent("updated ${resp.data}")
+				returnStatus = resp.status
+				log.debug "Successful call to Sensibo API."
+            }
+           	else { log.debug "Failed call to Sensibo API." }
+       }
+    }
+    catch(Exception e)
+	{
+		log.debug "Exception Sending Json: " + e
+		debugEvent ("Exception Sending JSON: " + e)
+		return false
+	}
+    
+    if (returnStatus == 200)
+		return true
+	else
+		return false
+}
+
 def pollChildren(PodUid)
 {
 	log.debug "polling children"
@@ -814,7 +973,9 @@ def pollChildren(PodUid)
 					log.debug "updating dni $dni"
                     
                     def stemp = stat.temperature.toDouble()
+                    log.debug "AVANT Verification"
                     if (setTemp.temperatureUnit == "F") {
+                        log.debug "DANS Verification"
                         stemp = cToF(stemp).round(1)
                     }
 
@@ -825,9 +986,9 @@ def pollChildren(PodUid)
 				    else {
         	 			tMode = setTemp.mode
                     }
-                    if (tMode=="fan") {
-                    	tMode = "auto"
-        			}
+                    //if (tMode=="fan") {
+                    //	tMode = "auto"
+        			//}
 					def data = [
 						temperature: stemp,
 						humidity: stat.humidity,
