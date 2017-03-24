@@ -31,9 +31,10 @@
  *
  *	Changelog:
  *
- *  0.30 (11/20/2016) -	Removed non-operational battery capability; was preventing device display on 2.2.2 mobile app
- *  0.20 (08/02/2016) -	Added preference option for allowed time between presses to eliminate duplicate notifications on some systems
- *	0.10 (06/13/2016) -	Initial 0.1 pre-beta Test Code
+ *  0.40 (03/23/2017) - set numberOfButtons attribute for those smart apps that rely on this
+ *  0.30 (11/20/2016) - Removed non-operational battery capability; was preventing device display on 2.2.2 mobile app
+ *  0.20 (08/02/2016) - Added preference option for allowed time between presses to eliminate duplicate notifications on some systems
+ *  0.10 (06/13/2016) - Initial 0.1 pre-beta Test Code
  *
  */
  
@@ -241,6 +242,8 @@ def refresh() {
 	]
     button1DisplayReset()
     button2DisplayReset()
+    
+    sendEvent(name: "numberOfButtons", value: 2, displayed: false)
     
     setPrefs()
     
