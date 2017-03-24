@@ -24,7 +24,7 @@ Works with:
 Plant Link sensor is a Z-wave sleepy device and checks in every 15 minutes.
 Device-Watch allows 2 check-in misses from device plus some lag time. So Check-in interval = (2*15 + 2)mins = 32 mins.
 
-* __122min__ checkInterval
+* __32min__ checkInterval
 
 ## Troubleshooting
 
