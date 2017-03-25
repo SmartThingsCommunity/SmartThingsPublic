@@ -28,6 +28,7 @@ metadata {
 		capability "Sensor" 
         capability "Music Player"
         capability "Temperature Measurement"
+        capability "Health Check"
         
         command "playOne"
         command "playTwo"
@@ -54,13 +55,13 @@ metadata {
 		multiAttributeTile(name:"main", type:"generic", width:6, height:4) {
 			tileAttribute("device.temperature", key: "PRIMARY_CONTROL") {
             	attributeState "temperature",label:'${currentValue}°', icon:"st.Entertainment.entertainment2", backgroundColors:[
-                	[value: 32, color: "#153591"],
+                	[value: 31, color: "#153591"],
                     [value: 44, color: "#1e9cbb"],
                     [value: 59, color: "#90d2a7"],
 					[value: 74, color: "#44b621"],
 					[value: 84, color: "#f1d801"],
-					[value: 92, color: "#d04e00"],
-					[value: 98, color: "#bc2323"]
+					[value: 95, color: "#d04e00"],
+					[value: 96, color: "#bc2323"]
 				]
             }
         }
@@ -82,20 +83,6 @@ metadata {
             state "level", action:"Music Player.setLevel"
         }
         
-        valueTile("temperature", "device.temperature", inactiveLabel: false, width: 2, height: 2, decoration: "flat") {
-            state "temperature", label:'${currentValue}°',
-            backgroundColors:
-            [
-                [value: 31, color: "#153591"],
-                [value: 44, color: "#1e9cbb"],
-                [value: 59, color: "#90d2a7"],
-                [value: 74, color: "#44b621"],
-                [value: 84, color: "#f1d801"],
-                [value: 95, color: "#d04e00"],
-                [value: 96, color: "#bc2323"]
-            ]
-        }
-        
 		standardTile("refresh", "device.switch", inactiveLabel: false, decoration: "flat", width: 2, height: 2) {
 			state "default", label:"", action:"refresh.refresh", icon:"st.secondary.refresh"
 		}
@@ -106,48 +93,48 @@ metadata {
 			state "when on", action:"indicator.indicatorNever", icon:"st.indicators.lit-when-on", nextState:"never"
 			state "never", action:"indicator.indicatorWhenOn", icon:"st.indicators.never-lit", nextState:"when on"
 		}
-        valueTile("mode", "device.mode", decoration: "flat", height: 2, width: 2, inactiveLabel: false, canChangeIcon: false) {
+        standardTile("mode", "device.mode", decoration: "flat", height: 2, width: 2, inactiveLabel: false, canChangeIcon: false) {
             state "order", label:"In Order", icon:"", nextState:"loopsong", action:"mode"
             state "loopsong", label:"Loop Song", icon:"", nextState:"looplist", action:"mode"
             state "looplist", label:"Loop List", icon:"", nextState:"order", action:"mode"
         }
         
-        valueTile("timer", "device.timer", decoration: "flat", height: 2, width: 2, inactiveLabel: false, canChangeIcon: false) {
+        standardTile("timer", "device.timer", decoration: "flat", height: 2, width: 2, inactiveLabel: false, canChangeIcon: false) {
             state "off", label:"No Timer", icon:"", nextState:"10", action:"timer"
             state "10", label:"10 Minutes", icon:"", nextState:"20", action:"timer"
             state "20", label:"20 Minutes", icon:"", nextState:"30", action:"timer"
             state "30", label:"30 Minutes", icon:"", nextState:"off", action:"timer"
         }
         
-        valueTile("playOne", "device.playOne", decoration: "flat", height: 2, width: 2, inactiveLabel: false, canChangeIcon: false) {
-            state "off", label:"Song 1", action:"playOne", icon:"", backgroundColor:"#FFFFFF"
-            state "on", label:"Song 1", action:"playOne", icon:"", backgroundColor:"#D8D8D8"
+        standardTile("playOne", "device.playOne", decoration: "flat", height: 2, width: 2, inactiveLabel: false, canChangeIcon: false) {
+            state "off", label:"Song 1", action:"playOne", icon:"", backgroundColor:"#ffffff"
+            state "on", label:"Song 1", action:"playOne", icon:"", backgroundColor:"#00a0dc"
         }
-        valueTile("playTwo", "device.playTwo", decoration: "flat", height: 2, width: 2, inactiveLabel: false, canChangeIcon: false) {
-            state "off", label:"Song 2", action:"playTwo", icon:"", backgroundColor:"#FFFFFF"
-            state "on", label:"Song 2", action:"playTwo", icon:"", backgroundColor:"#D8D8D8"
+        standardTile("playTwo", "device.playTwo", decoration: "flat", height: 2, width: 2, inactiveLabel: false, canChangeIcon: false) {
+            state "off", label:"Song 2", action:"playTwo", icon:"", backgroundColor:"#ffffff"
+            state "on", label:"Song 2", action:"playTwo", icon:"", backgroundColor:"#00a0dc"
         }
-        valueTile("playThree", "device.playThree", decoration: "flat", height: 2, width: 2, inactiveLabel: false, canChangeIcon: false) {
-            state "off", label:"Song 3", action:"playThree", icon:"", backgroundColor:"#FFFFFF"
-            state "on", label:"Song 3", action:"playThree", icon:"", backgroundColor:"#D8D8D8"
+        standardTile("playThree", "device.playThree", decoration: "flat", height: 2, width: 2, inactiveLabel: false, canChangeIcon: false) {
+            state "off", label:"Song 3", action:"playThree", icon:"", backgroundColor:"#ffffff"
+            state "on", label:"Song 3", action:"playThree", icon:"", backgroundColor:"#00a0dc"
         }
-        valueTile("playFour", "device.playFour", decoration: "flat", height: 2, width: 2, inactiveLabel: false, canChangeIcon: false) {
-            state "off", label:"Song 4", action:"playFour", icon:"", backgroundColor:"#FFFFFF"
-            state "on", label:"Song 4", action:"playFour", icon:"", backgroundColor:"#D8D8D8"
+        standardTile("playFour", "device.playFour", decoration: "flat", height: 2, width: 2, inactiveLabel: false, canChangeIcon: false) {
+            state "off", label:"Song 4", action:"playFour", icon:"", backgroundColor:"#ffffff"
+            state "on", label:"Song 4", action:"playFour", icon:"", backgroundColor:"#00a0dc"
         }
-        valueTile("playFive", "device.playFive", decoration: "flat", height: 2, width: 2, inactiveLabel: false, canChangeIcon: false) {
-            state "off", label:"Song 5", action:"playFive", icon:"", backgroundColor:"#FFFFFF"
-            state "on", label:"Song 5", action:"playFive", icon:"", backgroundColor:"#D8D8D8"
+        standardTile("playFive", "device.playFive", decoration: "flat", height: 2, width: 2, inactiveLabel: false, canChangeIcon: false) {
+            state "off", label:"Song 5", action:"playFive", icon:"", backgroundColor:"#ffffff"
+            state "on", label:"Song 5", action:"playFive", icon:"", backgroundColor:"#00a0dc"
         }
-        valueTile("playRandom", "device.playRandom", decoration: "flat", height: 2, width: 2, inactiveLabel: false, canChangeIcon: false) {
-            state "off", label:"Random", action:"playRandom", icon:"", backgroundColor:"#FFFFFF"
-            state "on", label:"Random", action:"playRandom", icon:"", backgroundColor:"#D8D8D8"
+        standardTile("playRandom", "device.playRandom", decoration: "flat", height: 2, width: 2, inactiveLabel: false, canChangeIcon: false) {
+            state "off", label:"Random", action:"playRandom", icon:"", backgroundColor:"#ffffff"
+            state "on", label:"Random", action:"playRandom", icon:"", backgroundColor:"#00a0dc"
         }
         
     }
 
-	main(["main", "temperature"])
-	details(["volume",
+	main "main"
+	details(["main", "volume",
              "previousTrack", "play", "nextTrack",
              "mode", "timer", "temperature",  
              "playOne", "playTwo", "playThree",
@@ -168,6 +155,7 @@ def updated() {
 def configure() {
 	logging("configure()")
 	logging("Configuring Device For SmartThings Use")
+    sendEvent(name: "checkInterval", value: 2 * 15 * 60 + 2 * 60, data: [protocol: "lan", hubHardwareId: device.hub.hardwareID], displayed: false)
     state.enableDebugging = settings.enableDebugging
     if (state.MAC != null) state.dni = setDeviceNetworkId(state.MAC)
     else if (ip != null && port != null) state.dni = setDeviceNetworkId(ip, port)
@@ -331,6 +319,11 @@ def refresh() {
     cmds << postAction("/cgi-bin/CGIProxy.fcgi?cmd=getMusicPlayState")
     cmds << postAction("/cgi-bin/CGIProxy.fcgi?cmd=getTemperatureState")
     return delayBetween(cmds, 1000)
+}
+
+def ping() {
+	logging("ping()")
+    return postAction("/cgi-bin/CGIProxy.fcgi?cmd=getTemperatureState")
 }
 
 def indicatorWhenOn() {

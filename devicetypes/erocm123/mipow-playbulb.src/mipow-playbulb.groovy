@@ -55,9 +55,9 @@ metadata {
 	tiles (scale: 2){      
 		multiAttributeTile(name:"switch", type: "lighting", width: 6, height: 4, canChangeIcon: true){
 			tileAttribute ("device.switch", key: "PRIMARY_CONTROL") {
-				attributeState "on", label:'${name}', action:"switch.off", icon:"st.lights.philips.hue-single", backgroundColor:"#79b821", nextState:"turningOff"
+				attributeState "on", label:'${name}', action:"switch.off", icon:"st.lights.philips.hue-single", backgroundColor:"#00a0dc", nextState:"turningOff"
 				attributeState "off", label:'${name}', action:"switch.on", icon:"st.lights.philips.hue-single", backgroundColor:"#ffffff", nextState:"turningOn"
-				attributeState "turningOn", label:'${name}', action:"switch.off", icon:"st.lights.philips.hue-single", backgroundColor:"#79b821", nextState:"turningOff"
+				attributeState "turningOn", label:'${name}', action:"switch.off", icon:"st.lights.philips.hue-single", backgroundColor:"#00a0dc", nextState:"turningOff"
 				attributeState "turningOff", label:'${name}', action:"switch.on", icon:"st.lights.philips.hue-single", backgroundColor:"#ffffff", nextState:"turningOn"
 			}
 			tileAttribute ("device.level", key: "SLIDER_CONTROL") {
@@ -80,25 +80,25 @@ metadata {
         valueTile("whiteValueTile", "device.whiteLevel", decoration: "flat", height: 2, width: 2) {
         	state "whiteLevel", label:'${currentValue}%', backgroundColor:"#FFFFFF"
         } 
-        standardTile("fade", "device.fade", height: 2, width: 2, inactiveLabel: false, canChangeIcon: false) {
-            state "off", label:"Fade", action:"fadeOn", icon:"st.illuminance.illuminance.dark", backgroundColor:"#D8D8D8"
-            state "on", label:"Fade", action:"fadeOff", icon:"st.illuminance.illuminance.bright", backgroundColor:"#FFFFFF"
+        standardTile("fade", "device.fade", height: 2, width: 2, inactiveLabel: false, canChangeIcon: false, decoration: "flat") {
+            state "off", label:"Fade", action:"fadeOn", icon:"st.illuminance.illuminance.dark", backgroundColor:"#cccccc"
+            state "on", label:"Fade", action:"fadeOff", icon:"st.illuminance.illuminance.bright", backgroundColor:"#00a0dc"
         }
-        standardTile("flash", "device.flash", height: 2, width: 2, inactiveLabel: false, canChangeIcon: false) {
-            state "off", label:"Flash", action:"flashOn", icon:"st.illuminance.illuminance.dark", backgroundColor:"#D8D8D8"
-            state "on", label:"Flash", action:"flashOff", icon:"st.illuminance.illuminance.bright", backgroundColor:"#FFFFFF"
+        standardTile("flash", "device.flash", height: 2, width: 2, inactiveLabel: false, canChangeIcon: false, decoration: "flat") {
+            state "off", label:"Flash", action:"flashOn", icon:"st.illuminance.illuminance.dark", backgroundColor:"#cccccc"
+            state "on", label:"Flash", action:"flashOff", icon:"st.illuminance.illuminance.bright", backgroundColor:"#00a0dc"
         }
-        standardTile("candle", "device.candle", height: 2, width: 2, inactiveLabel: false, canChangeIcon: false) {
-            state "off", label:"Candle", action:"candleOn", icon:"st.illuminance.illuminance.dark", backgroundColor:"#D8D8D8"
-            state "on", label:"Candle", action:"candleOff", icon:"st.illuminance.illuminance.bright", backgroundColor:"#FFFFFF"
+        standardTile("candle", "device.candle", height: 2, width: 2, inactiveLabel: false, canChangeIcon: false, decoration: "flat") {
+            state "off", label:"Candle", action:"candleOn", icon:"st.illuminance.illuminance.dark", backgroundColor:"#cccccc"
+            state "on", label:"Candle", action:"candleOff", icon:"st.illuminance.illuminance.bright", backgroundColor:"#00a0dc"
         }
-        standardTile("rainbowfade", "device.rainbowfade", height: 2, width: 2, inactiveLabel: false, canChangeIcon: false) {
-            state "off", label:"Rainbow Fade", action:"rainbowfadeOn", icon:"st.illuminance.illuminance.dark", backgroundColor:"#D8D8D8"
-            state "on", label:"Rainbow Fade", action:"rainbowfadeOff", icon:"st.illuminance.illuminance.bright", backgroundColor:"#FFFFFF"
+        standardTile("rainbowfade", "device.rainbowfade", height: 2, width: 2, inactiveLabel: false, canChangeIcon: false, decoration: "flat") {
+            state "off", label:"Rainbow\nFade", action:"rainbowfadeOn", icon:"st.illuminance.illuminance.dark", backgroundColor:"#cccccc"
+            state "on", label:"Rainbow\nFade", action:"rainbowfadeOff", icon:"st.illuminance.illuminance.bright", backgroundColor:"#00a0dc"
         }
-        standardTile("rainbowflash", "device.rainbowflash", height: 2, width: 2, inactiveLabel: false, canChangeIcon: false) {
-            state "off", label:"Rainbow Flash", action:"rainbowflashOn", icon:"st.illuminance.illuminance.dark", backgroundColor:"#D8D8D8"
-            state "on", label:"Rainbow Flash", action:"rainbowflashOff", icon:"st.illuminance.illuminance.bright", backgroundColor:"#FFFFFF"
+        standardTile("rainbowflash", "device.rainbowflash", height: 2, width: 2, inactiveLabel: false, canChangeIcon: false, decoration: "flat") {
+            state "off", label:"Rainbow\nFlash", action:"rainbowflashOn", icon:"st.illuminance.illuminance.dark", backgroundColor:"#cccccc"
+            state "on", label:"Rainbow \nFlash", action:"rainbowflashOff", icon:"st.illuminance.illuminance.bright", backgroundColor:"#00a0dc"
         }
     }
 

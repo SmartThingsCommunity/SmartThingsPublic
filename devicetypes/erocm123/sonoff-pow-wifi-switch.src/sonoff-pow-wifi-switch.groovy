@@ -45,26 +45,12 @@ metadata {
 	tiles (scale: 2){      
 		multiAttributeTile(name:"switch", type: "generic", width: 6, height: 4, canChangeIcon: true){
 			tileAttribute ("device.switch", key: "PRIMARY_CONTROL") {
-				attributeState "on", label:'${name}', action:"switch.off", backgroundColor:"#79b821", icon: "st.switches.switch.on", nextState:"turningOff"
+				attributeState "on", label:'${name}', action:"switch.off", backgroundColor:"#00a0dc", icon: "st.switches.switch.on", nextState:"turningOff"
 				attributeState "off", label:'${name}', action:"switch.on", backgroundColor:"#ffffff", icon: "st.switches.switch.off", nextState:"turningOn"
-				attributeState "turningOn", label:'${name}', action:"switch.off", backgroundColor:"#79b821", icon: "st.switches.switch.off", nextState:"turningOff"
+				attributeState "turningOn", label:'${name}', action:"switch.off", backgroundColor:"#00a0dc", icon: "st.switches.switch.off", nextState:"turningOff"
 				attributeState "turningOff", label:'${name}', action:"switch.on", backgroundColor:"#ffffff", icon: "st.switches.switch.on", nextState:"turningOn"
 			}
         }
-        valueTile("temperature","device.temperature", inactiveLabel: false, width: 2, height: 2) {
-            	state "temperature",label:'${currentValue}°', backgroundColors:[
-                	[value: 32, color: "#153591"],
-                    [value: 44, color: "#1e9cbb"],
-                    [value: 59, color: "#90d2a7"],
-					[value: 74, color: "#44b621"],
-					[value: 84, color: "#f1d801"],
-					[value: 92, color: "#d04e00"],
-					[value: 98, color: "#bc2323"]
-				]
-		}
-		valueTile("humidity","device.humidity", inactiveLabel: false, width: 2, height: 2) {
-           	state "humidity",label:'RH ${currentValue} %'
-		}
 		standardTile("refresh", "device.switch", inactiveLabel: false, decoration: "flat", width: 2, height: 2) {
 			state "default", label:"", action:"refresh.refresh", icon:"st.secondary.refresh"
 		}
@@ -72,19 +58,19 @@ metadata {
             state "NO" , label:'', action:"configuration.configure", icon:"st.secondary.configure"
             state "YES", label:'', action:"configuration.configure", icon:"https://github.com/erocm123/SmartThingsPublic/raw/master/devicetypes/erocm123/qubino-flush-1d-relay.src/configure@2x.png"
         }
-        valueTile("power", "device.power", decoration: "flat", width: 2, height: 2) {
+        valueTile("power", "device.power", width: 2, height: 2) {
 			state "default", label:'${currentValue} W'
 		}
-        valueTile("voltage", "device.voltage", decoration: "flat", width: 2, height: 2) {
+        valueTile("voltage", "device.voltage", width: 2, height: 2) {
 			state "default", label:'${currentValue} V'
 		}
-		valueTile("amperage", "device.amperage", decoration: "flat", width: 2, height: 2) {
+		valueTile("amperage", "device.amperage", width: 2, height: 2) {
 			state "default", label:'${currentValue} A'
 		}
-        valueTile("reboot", "device.reboot", decoration: "flat", height: 2, width: 2, inactiveLabel: false, canChangeIcon: false) {
+        standardTile("reboot", "device.reboot", decoration: "flat", height: 2, width: 2, inactiveLabel: false) {
             state "default", label:"Reboot", action:"reboot", icon:"", backgroundColor:"#FFFFFF"
         }
-        valueTile("hubInfo", "device.hubInfo", decoration: "flat", height: 2, width: 2, inactiveLabel: false, canChangeIcon: false) {
+        valueTile("hubInfo", "device.hubInfo", height: 2, width: 2, inactiveLabel: false) {
             state "hubInfo", label:'${currentValue}' //backgroundColor:"#FFFFFF"
         }   
     }

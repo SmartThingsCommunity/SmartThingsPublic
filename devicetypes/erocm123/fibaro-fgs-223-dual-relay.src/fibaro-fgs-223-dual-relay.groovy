@@ -51,20 +51,20 @@ tiles(scale: 2){
 
     multiAttributeTile(name:"switch", type: "lighting", width: 6, height: 4, canChangeIcon: true){
 			tileAttribute ("device.switch", key: "PRIMARY_CONTROL") {
-				attributeState "on", label: '${name}', action: "switch.off", icon: "st.switches.switch.on", backgroundColor: "#79b821"
+				attributeState "on", label: '${name}', action: "switch.off", icon: "st.switches.switch.on", backgroundColor: "#00a0dc"
 				attributeState "off", label: '${name}', action: "switch.on", icon: "st.switches.switch.off", backgroundColor: "#ffffff"
 			}
             tileAttribute ("statusText", key: "SECONDARY_CONTROL") {
            		attributeState "statusText", label:'${currentValue}'       		
             }
 	}
-	standardTile("switch1", "device.switch1",canChangeIcon: true, width: 2, height: 2) {
-		state "on", label: "switch1", action: "off1", icon: "st.switches.switch.on", backgroundColor: "#79b821"
-		state "off", label: "switch1", action: "on1", icon: "st.switches.switch.off", backgroundColor: "#ffffff"
+	standardTile("switch1", "device.switch1",canChangeIcon: true, width: 2, height: 2, decoration: "flat") {
+		state "on", label: "switch1", action: "off1", icon: "st.switches.switch.on", backgroundColor: "#00a0dc"
+		state "off", label: "switch1", action: "on1", icon: "st.switches.switch.off", backgroundColor: "#cccccc"
     }
-	standardTile("switch2", "device.switch2",canChangeIcon: true, width: 2, height: 2) {
-		state "on", label: "switch2", action: "off2", icon: "st.switches.switch.on", backgroundColor: "#79b821"
-		state "off", label: "switch2", action: "on2", icon: "st.switches.switch.off", backgroundColor: "#ffffff"
+	standardTile("switch2", "device.switch2",canChangeIcon: true, width: 2, height: 2, decoration: "flat") {
+		state "on", label: "switch2", action: "off2", icon: "st.switches.switch.on", backgroundColor: "#00a0dc"
+		state "off", label: "switch2", action: "on2", icon: "st.switches.switch.off", backgroundColor: "#cccccc"
     }
     valueTile("energy", "device.energy", decoration: "flat", width: 2, height: 2) {
 			state "default", label:'${currentValue} kWh'

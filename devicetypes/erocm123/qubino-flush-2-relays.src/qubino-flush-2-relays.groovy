@@ -60,25 +60,25 @@ metadata {
     multiAttributeTile(name:"switch", type: "lighting", width: 6, height: 4, canChangeIcon: true){
 			tileAttribute ("device.switch", key: "PRIMARY_CONTROL") {
                attributeState "off", label:'${name}', action:"switch.on", icon:"st.switches.switch.off", backgroundColor:"#ffffff", nextState:"turningOn"
-			   attributeState "on", label:'${name}', action:"switch.off", icon:"st.switches.switch.on", backgroundColor:"#79b821", nextState:"turningOff"
+			   attributeState "on", label:'${name}', action:"switch.off", icon:"st.switches.switch.on", backgroundColor:"#00a0dc", nextState:"turningOff"
 			   attributeState "turningOff", label:'${name}', action:"switch.on", icon:"st.switches.switch.off", backgroundColor:"#ffffff", nextState:"turningOn"
-			   attributeState "turningOn", label:'${name}', action:"switch.off", icon:"st.switches.switch.on", backgroundColor:"#79b821", nextState:"turningOff"  
+			   attributeState "turningOn", label:'${name}', action:"switch.off", icon:"st.switches.switch.on", backgroundColor:"#00a0dc", nextState:"turningOff"  
 			}
             tileAttribute ("statusText", key: "SECONDARY_CONTROL") {
            	   attributeState "statusText", label:'${currentValue}'       		
             }
 	}
-	standardTile("switch1", "device.switch1",canChangeIcon: true, width: 2, height: 2) {
-		state "off", label:'switch1', action:"on1", icon:"st.switches.switch.off", backgroundColor:"#ffffff", nextState:"turningOn"
-		state "on", label:'switch1', action:"off1", icon:"st.switches.switch.on", backgroundColor:"#79b821", nextState:"turningOff"
-		state "turningOff", label:'switch1', action:"on1", icon:"st.switches.switch.off", backgroundColor:"#ffffff", nextState:"turningOn"
-		state "turningOn", label:'switch1', action:"off1", icon:"st.switches.switch.on", backgroundColor:"#79b821", nextState:"turningOff"  
+	standardTile("switch1", "device.switch1",canChangeIcon: true, width: 2, height: 2, decoration: "flat") {
+		state "off", label:'switch1', action:"on1", icon:"st.switches.switch.off", backgroundColor:"#cccccc", nextState:"turningOn"
+		state "on", label:'switch1', action:"off1", icon:"st.switches.switch.on", backgroundColor:"#00a0dc", nextState:"turningOff"
+		state "turningOff", label:'switch1', action:"on1", icon:"st.switches.switch.off", backgroundColor:"#cccccc", nextState:"turningOn"
+		state "turningOn", label:'switch1', action:"off1", icon:"st.switches.switch.on", backgroundColor:"#00a0dc", nextState:"turningOff"  
     }
-	standardTile("switch2", "device.switch2",canChangeIcon: true, width: 2, height: 2) {
-		state "off", label:'switch2', action:"on2", icon:"st.switches.switch.off", backgroundColor:"#ffffff", nextState:"turningOn"
-		state "on", label:'switch2', action:"off2", icon:"st.switches.switch.on", backgroundColor:"#79b821", nextState:"turningOff"
-		state "turningOff", label:'switch2', action:"on2", icon:"st.switches.switch.off", backgroundColor:"#ffffff", nextState:"turningOn"
-		state "turningOn", label:'switch2', action:"off2", icon:"st.switches.switch.on", backgroundColor:"#79b821", nextState:"turningOff"
+	standardTile("switch2", "device.switch2",canChangeIcon: true, width: 2, height: 2, decoration: "flat") {
+		state "off", label:'switch2', action:"on2", icon:"st.switches.switch.off", backgroundColor:"#cccccc", nextState:"turningOn"
+		state "on", label:'switch2', action:"off2", icon:"st.switches.switch.on", backgroundColor:"#00a0dc", nextState:"turningOff"
+		state "turningOff", label:'switch2', action:"on2", icon:"st.switches.switch.off", backgroundColor:"#cccccc", nextState:"turningOn"
+		state "turningOn", label:'switch2', action:"off2", icon:"st.switches.switch.on", backgroundColor:"#00a0dc", nextState:"turningOff"
     }
     standardTile("refresh", "device.switch", inactiveLabel: false, decoration: "flat", width: 2, height: 2) {
 		state "default", label:"", action:"refresh.refresh", icon:"st.secondary.refresh"
@@ -115,11 +115,11 @@ metadata {
                 [value: 31, color: "#153591"],
                 [value: 44, color: "#1e9cbb"],
                 [value: 59, color: "#90d2a7"],
-                [value: 74, color: "#44b621"],
-                [value: 84, color: "#f1d801"],
-                [value: 95, color: "#d04e00"],
-                [value: 96, color: "#bc2323"]
-            ]
+				[value: 74, color: "#44b621"],
+				[value: 84, color: "#f1d801"],
+				[value: 95, color: "#d04e00"],
+				[value: 96, color: "#bc2323"]
+			]
     }
 
     main(["switch","switch1", "switch2"])
@@ -357,7 +357,8 @@ def refresh() {
 		encap(zwave.meterV2.meterGet(scale: 0), 1),
 		encap(zwave.meterV2.meterGet(scale: 2), 1),
         encap(zwave.meterV2.meterGet(scale: 0), 2),
-		encap(zwave.meterV2.meterGet(scale: 2), 2)
+		encap(zwave.meterV2.meterGet(scale: 2), 2),
+        zwave.sensorMultilevelV5.sensorMultilevelGet(sensorType:1, scale:1)
 	])
 }
 

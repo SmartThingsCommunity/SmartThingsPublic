@@ -28,18 +28,16 @@
 		capability "Configuration"
 		capability "Sensor"
 		capability "Battery"
-		
+        capability "Health Check"
+        
         attribute   "needUpdate", "string"
         
         fingerprint deviceId: "0x0701", inClusters: "0x5E,0x86,0x72,0x5A,0x73,0x80,0x31,0x71,0x30,0x70,0x85,0x59,0x84"
         
 	}
     preferences {
-        
-        input description: "Once you change values on this page, the \"Synced\" Status will become \"Pending\" status. You can then force the sync by clicking the device button or just wait for the next WakeUp (60 minutes).", displayDuringSetup: false, type: "paragraph", element: "paragraph"
-        
-		generate_preferences(configuration_model())
-        
+        input description: "Once you change values on this page, the corner of the \"configuration\" icon will change orange until all configuration parameters are updated.", title: "Settings", displayDuringSetup: false, type: "paragraph", element: "paragraph"
+		generate_preferences(configuration_model())  
     }
     
 	simulator {
@@ -48,16 +46,12 @@
 	tiles (scale: 2) {
 		multiAttributeTile(name:"motion", type: "generic", width: 6, height: 4){
 			tileAttribute ("device.motion", key: "PRIMARY_CONTROL") {
-				attributeState "active", label:'motion', icon:"st.motion.motion.active", backgroundColor:"#53a7c0"
+				attributeState "active", label:'motion', icon:"st.motion.motion.active", backgroundColor:"#00a0dc"
 				attributeState "inactive", label:'no motion', icon:"st.motion.motion.inactive", backgroundColor:"#ffffff"
 			}
             tileAttribute ("statusText", key: "SECONDARY_CONTROL") {
 				attributeState "statusText", label:'${currentValue}'
 			}
-		}
-        standardTile("motion","device.motion", width: 2, height: 2) {
-            	state "active",label:'motion',icon:"st.motion.motion.active",backgroundColor:"#53a7c0"
-                state "inactive",label:'no motion',icon:"st.motion.motion.inactive",backgroundColor:"#ffffff"
 		}
 		valueTile(
         	"illuminance","device.illuminance", width: 2, height: 2) {
@@ -72,12 +66,12 @@
                     [value: 100, color: "#FFFFFF"]
 				]
 		}
-		valueTile("battery", "device.battery", decoration: "flat", width: 2, height: 2) {
+		valueTile("battery", "device.battery", width: 2, height: 2) {
 			state "battery", label:'${currentValue}% battery', unit:""
 		}
-        valueTile("configure", "device.needUpdate", decoration: "flat", width: 2, height: 2) {
-            state("NO" , label:'Synced', action:"configuration.configure", backgroundColor:"#8acb47")
-            state("YES", label:'Pending', action:"configuration.configure", backgroundColor:"#f39c12")
+        standardTile("configure", "device.needUpdate", inactiveLabel: false, decoration: "flat", width: 2, height: 2) {
+            state "NO" , label:'', action:"configuration.configure", icon:"st.secondary.configure"
+            state "YES", label:'', action:"configuration.configure", icon:"https://github.com/erocm123/SmartThingsPublic/raw/master/devicetypes/erocm123/qubino-flush-1d-relay.src/configure@2x.png"
         }
         
 		main([
@@ -273,6 +267,7 @@ def configure() {
 def updated()
 {
     logging("updated() is being called")
+    sendEvent(name: "checkInterval", value: 2 * 12 * 60 * 60 + 5 * 60, displayed: false, data: [protocol: "zwave", hubHardwareId: device.hub.hardwareID])
     if (state.realLuminance != null) sendEvent(name:"illuminance", value: getAdjustedLuminance(state.realLuminance))
     updateStatus()
     def cmds = []
@@ -427,6 +422,11 @@ private command(physicalgraph.zwave.Command cmd) {
 
 private commands(commands, delay=1000) {
 	delayBetween(commands.collect{ command(it) }, delay)
+}
+
+def ping() {
+    logging("ping()")
+	logging("Battery Device - Not sending ping commands")
 }
 
 def generate_preferences(configuration_model)

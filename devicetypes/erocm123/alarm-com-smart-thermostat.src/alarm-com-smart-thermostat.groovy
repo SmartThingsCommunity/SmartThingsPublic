@@ -27,6 +27,7 @@ metadata {
 		capability "Configuration"
 		capability "Sensor"
         capability "Battery"
+        capability "Health Check"
 
 		command "setTemperature"
         command "heatLevelUp"
@@ -161,9 +162,9 @@ metadata {
 		standardTile("refresh", "device.thermostatMode", width: 2, height: 2, inactiveLabel: false, decoration: "flat") {
 			state "default", action:"refresh.refresh", icon:"st.secondary.refresh"
 		}
-		valueTile("configure", "device.needUpdate", inactiveLabel: false, decoration: "flat", width: 2, height: 2) {
-            state("NO" , label:'Synced', action:"configuration.configure", backgroundColor:"#8acb47")
-            state("YES", label:'Pending', action:"configuration.configure", backgroundColor:"#f39c12")
+		standardTile("configure", "device.needUpdate", inactiveLabel: false, decoration: "flat", width: 2, height: 2) {
+            state "NO" , label:'', action:"configuration.configure", icon:"st.secondary.configure"
+            state "YES", label:'', action:"configuration.configure", icon:"https://github.com/erocm123/SmartThingsPublic/raw/master/devicetypes/erocm123/qubino-flush-1d-relay.src/configure@2x.png"
         }
         
         valueTile("battery", "device.battery", decoration: "flat", width: 2, height: 2) {
@@ -171,11 +172,8 @@ metadata {
 		}
 
         preferences {
-    
-        input description: "Once you change values on this page, the \"Synced\" Status will become \"Pending\" status. When the parameters have been succesfully changed, the status will change back to \"Synced\"", displayDuringSetup: false, type: "paragraph", element: "paragraph"
-        
-		generate_preferences(configuration_model())
-        
+            input description: "Once you change values on this page, the corner of the \"configuration\" icon will change orange until all configuration parameters are updated.", title: "Settings", displayDuringSetup: false, type: "paragraph", element: "paragraph"
+		    generate_preferences(configuration_model())
         }
 
 		main "temperature"
@@ -191,7 +189,6 @@ metadata {
 
 def parse(String description)
 {   
-    def cmds = []
 	def map = createEvent(zwaveEvent(zwave.parse(description, [0x42:1, 0x43:2, 0x31: 3])))
 	if (!map) {
 		return null
@@ -209,7 +206,8 @@ def parse(String description)
  	   	}
 	}
 
-	def result = [map]
+	def result = []
+    result += map
 	if (map.isStateChange && map.name in ["heatingSetpoint","coolingSetpoint","thermostatMode"]) {
 		def map2 = [
 			name: "thermostatSetpoint",
@@ -236,7 +234,7 @@ def parse(String description)
 		}
 		if (map2.value != null) {
 			logging("THERMOSTAT, adding setpoint event: $map")
-			result << createEvent(map2)
+			result += createEvent(map2)
 		}
 	} else if (map.name == "thermostatFanMode" && map.isStateChange) {
 		state.lastTriedFanMode = map.value
@@ -245,11 +243,11 @@ def parse(String description)
     if (!state.lastBatteryReport || (now() - state.lastBatteryReport) / 60000 >= 60 * 24)
     {
         logging("Over 24hr since last battery report. Requesting report")
-        cmds << zwave.batteryV1.batteryGet()
+        result += response(commands(zwave.batteryV1.batteryGet()))
     }
    
 	logging("Parse returned $result")
-    if (cmds != []) return [ result, response(commands(cmds)) ] else return result
+    return result
 }
 
 def zwaveEvent(physicalgraph.zwave.commands.thermostatsetpointv2.ThermostatSetpointReport cmd)
@@ -667,7 +665,7 @@ def updated()
 {
 	state.enableDebugging = settings.enableDebugging
     logging("updated() is being called")
-    
+    sendEvent(name: "checkInterval", value: 2 * 15 * 60 + 2 * 60, displayed: false, data: [protocol: "zwave", hubHardwareId: device.hub.hardwareID])
     def cmds = update_needed_settings()
     
     sendEvent(name:"needUpdate", value: device.currentValue("needUpdate"), displayed:false, isStateChange: true)
@@ -709,6 +707,11 @@ def refresh() {
 		zwave.thermostatOperatingStateV1.thermostatOperatingStateGet(),
         zwave.batteryV1.batteryGet(),
 	], 2000)      
+}
+
+def ping() {
+    logging("ping()")
+	return commands(zwave.sensorMultilevelV3.sensorMultilevelGet())
 }
 
 private commands(commands, delay=1000) {

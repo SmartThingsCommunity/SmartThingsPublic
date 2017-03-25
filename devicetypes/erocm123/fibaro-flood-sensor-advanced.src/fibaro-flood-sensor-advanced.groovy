@@ -21,6 +21,7 @@ metadata {
 		capability "Tamper Alert"
 		capability "Temperature Measurement"
 		capability "Water Sensor"
+        capability "Health Check"
         
         attribute "needUpdate", "string"
         // Wall Powered
@@ -30,11 +31,8 @@ metadata {
 	}
     
     preferences {
-        
-        input description: "Once you change values on this page, the \"Synced\" Status will become \"Pending\" status. You can then force the sync by clicking the device button or just wait for the next WakeUp (60 minutes).", displayDuringSetup: false, type: "paragraph", element: "paragraph"
-        
+        input description: "Once you change values on this page, the corner of the \"configuration\" icon will change orange until all configuration parameters are updated.", title: "Settings", displayDuringSetup: false, type: "paragraph", element: "paragraph"
 		generate_preferences(configuration_model())
-        
     }
 
 	simulator {
@@ -44,12 +42,12 @@ metadata {
     tiles(scale: 2) {
     	multiAttributeTile(name:"FGFS", type:"lighting", width:6, height:4) {//with generic type secondary control text is not displayed in Android app
         	tileAttribute("device.water", key:"PRIMARY_CONTROL") {
-            	attributeState("dry", icon:"st.alarm.water.dry", backgroundColor:"#79b821")
-            	attributeState("wet", icon:"st.alarm.water.wet", backgroundColor:"#ffa81e")
+            	attributeState("dry", icon:"st.alarm.water.dry", backgroundColor:"#ffffff")
+            	attributeState("wet", icon:"st.alarm.water.wet", backgroundColor:"#00a0dc")
             }
             
             tileAttribute("device.tamper", key:"SECONDARY_CONTROL") {
-				attributeState("active", label:'tamper active', backgroundColor:"#53a7c0")
+				attributeState("active", label:'tamper active', backgroundColor:"#e86d13")
 				attributeState("inactive", label:'tamper inactive', backgroundColor:"#ffffff")
 			}       
         }
@@ -57,19 +55,19 @@ metadata {
         valueTile("temperature", "device.temperature", inactiveLabel: false, width: 2, height: 2) {
 			state "temperature", label:'${currentValue}°',
 			backgroundColors:[
-				[value: 31, color: "#153591"],
-				[value: 44, color: "#1e9cbb"],
-				[value: 59, color: "#90d2a7"],
-				[value: 74, color: "#44b621"],
-				[value: 84, color: "#f1d801"],
-				[value: 95, color: "#d04e00"],
-				[value: 96, color: "#bc2323"]
+                	[value: 31, color: "#153591"],
+                    [value: 44, color: "#1e9cbb"],
+                    [value: 59, color: "#90d2a7"],
+					[value: 74, color: "#44b621"],
+					[value: 84, color: "#f1d801"],
+					[value: 95, color: "#d04e00"],
+					[value: 96, color: "#bc2323"]
 			]
 		}
         
-        valueTile("configure", "device.needUpdate", inactiveLabel: false, decoration: "flat", width: 2, height: 2) {
-            state("NO" , label:'Synced', action:"configuration.configure", backgroundColor:"#8acb47")
-            state("YES", label:'Pending', action:"configuration.configure", backgroundColor:"#f39c12")
+        standardTile("configure", "device.needUpdate", inactiveLabel: false, decoration: "flat", width: 2, height: 2) {
+            state "NO" , label:'', action:"configuration.configure", icon:"st.secondary.configure"
+            state "YES", label:'', action:"configuration.configure", icon:"https://github.com/erocm123/SmartThingsPublic/raw/master/devicetypes/erocm123/qubino-flush-1d-relay.src/configure@2x.png"
         }
        	        
         valueTile("battery", "device.battery", inactiveLabel: false, decoration: "flat", width: 2, height: 2) {
@@ -285,9 +283,15 @@ def zwaveEvent(physicalgraph.zwave.Command cmd) {
 def updated()
 {
     logging("updated() is being called")
+    sendEvent(name: "checkInterval", value: 2 * 12 * 60 * 60 + 5 * 60, displayed: false, data: [protocol: "zwave", hubHardwareId: device.hub.hardwareID]) 
     def cmds = update_needed_settings()
     sendEvent(name:"needUpdate", value: device.currentValue("needUpdate"), displayed:false, isStateChange: true)
     if (cmds != []) response(encapSequence(cmds, 500))
+}
+
+def ping() {
+    logging("ping()")
+	logging("Battery Device - Not sending ping commands")
 }
 
 def configure() {

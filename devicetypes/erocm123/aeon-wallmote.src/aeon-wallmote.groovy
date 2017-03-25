@@ -45,16 +45,13 @@ metadata {
 	tiles (scale: 2) {
         multiAttributeTile(name:"button", type:"generic", width:6, height:4) {
   			tileAttribute("device.button", key: "PRIMARY_CONTROL"){
-    		attributeState "default", label:'', backgroundColor:"#44b621", icon: "st.unknown.zwave.remote-controller"
+    		attributeState "default", label:'', backgroundColor:"#ffffff", icon: "st.unknown.zwave.remote-controller"
   			}
             tileAttribute ("device.battery", key: "SECONDARY_CONTROL") {
 			attributeState "battery", label:'${currentValue} % battery'
             }
             
         }
-		standardTile("button", "device.button", width: 2, height: 2) {
-			state "default", label: "", icon: "st.unknown.zwave.remote-controller", backgroundColor: "#ffffff"
-		}
         valueTile(
 			"battery", "device.battery", decoration: "flat", width: 2, height: 2) {
 			state "battery", label:'${currentValue}%', unit:""

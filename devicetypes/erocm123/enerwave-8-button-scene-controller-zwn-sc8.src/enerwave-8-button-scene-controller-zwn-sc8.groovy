@@ -48,9 +48,9 @@ metadata {
 		}
         
         (1..8).each { n ->
-			standardTile("switch$n", "switch$n", canChangeIcon: true, width: 2, height: 2) {
+			standardTile("switch$n", "switch$n", canChangeIcon: true, width: 2, height: 2, decoration: "flat") {
 				state "off", label: "switch$n", action: "on$n", icon: "st.switches.switch.off", backgroundColor: "#ffffff"
-                state "on", label: "switch$n", action: "off$n", icon: "st.switches.switch.on", backgroundColor: "#79b821"
+                state "on", label: "switch$n", action: "off$n", icon: "st.switches.switch.on", backgroundColor: "#00a0dc"
 			}
 		}
         

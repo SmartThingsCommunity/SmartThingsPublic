@@ -30,7 +30,8 @@ metadata {
 		capability "Polling"
 		capability "Refresh"
 		capability "Configuration"
-		capability "Sensor"  
+		capability "Sensor"
+        capability "Health Check"
 
 		command "reset"
         
@@ -42,11 +43,8 @@ metadata {
 	}
     
     preferences {
-        
-        input description: "Once you change values on this page, the \"Synced\" Status will become \"Pending\" status. When the parameters have been succesfully changed, the status will change back to \"Synced\"", displayDuringSetup: false, type: "paragraph", element: "paragraph"
-        
-		generate_preferences(configuration_model())
-        
+        input description: "Once you change values on this page, the corner of the \"configuration\" icon will change orange until all configuration parameters are updated.", title: "Settings", displayDuringSetup: false, type: "paragraph", element: "paragraph"
+		generate_preferences(configuration_model())  
     }
 
 	simulator {
@@ -55,9 +53,9 @@ metadata {
 	tiles(scale: 2){
         multiAttributeTile(name:"switch", type: "generic", width: 6, height: 4, canChangeIcon: true){
 			tileAttribute ("device.switch", key: "PRIMARY_CONTROL") {
-				attributeState "on", label:'${name}', action:"switch.off", icon:"st.switches.switch.on", backgroundColor:"#79b821", nextState:"turningOff"
+				attributeState "on", label:'${name}', action:"switch.off", icon:"st.switches.switch.on", backgroundColor:"#00a0dc", nextState:"turningOff"
 				attributeState "off", label:'${name}', action:"switch.on", icon:"st.switches.switch.off", backgroundColor:"#ffffff", nextState:"turningOn"
-				attributeState "turningOn", label:'${name}', action:"switch.off", icon:"st.switches.switch.on", backgroundColor:"#79b821", nextState:"turningOff"
+				attributeState "turningOn", label:'${name}', action:"switch.off", icon:"st.switches.switch.on", backgroundColor:"#00a0dc", nextState:"turningOff"
 				attributeState "turningOff", label:'${name}', action:"switch.on", icon:"st.switches.switch.off", backgroundColor:"#ffffff", nextState:"turningOn"
 			}
             tileAttribute ("statusText", key: "SECONDARY_CONTROL") {
@@ -67,24 +65,24 @@ metadata {
 		standardTile("refresh", "device.switch", inactiveLabel: false, decoration: "flat", width: 2, height: 2) {
 			state "default", label:'', action:"refresh.refresh", icon:"st.secondary.refresh"
 		}
-        valueTile("power", "device.power", decoration: "flat", width: 2, height: 2) {
+        valueTile("power", "device.power", width: 2, height: 2) {
 			state "default", label:'${currentValue} W'
 		}
-        valueTile("voltage", "device.voltage", decoration: "flat", width: 2, height: 2) {
+        valueTile("voltage", "device.voltage", width: 2, height: 2) {
 			state "default", label:'${currentValue} V'
 		}
-		valueTile("amperage", "device.amperage", decoration: "flat", width: 2, height: 2) {
+		valueTile("amperage", "device.amperage", width: 2, height: 2) {
 			state "default", label:'${currentValue} A'
 		}
 		standardTile("reset", "device.energy", inactiveLabel: false, decoration: "flat", width: 2, height: 2) {
 			state "default", label:'reset\r\nkWh', action:"reset"
 		}
-		standardTile("energy", "device.energy", decoration: "flat", width: 2, height: 2) {
+		standardTile("energy", "device.energy", width: 2, height: 2) {
 			state "default", label:'${currentValue} kWh'
 		}
-        valueTile("configure", "device.needUpdate", inactiveLabel: false, decoration: "flat", width: 2, height: 2) {
-            state("NO" , label:'Synced', action:"configuration.configure", backgroundColor:"#8acb47")
-            state("YES", label:'Pending', action:"configuration.configure", backgroundColor:"#f39c12")
+        standardTile("configure", "device.needUpdate", inactiveLabel: false, decoration: "flat", width: 2, height: 2) {
+            state "NO" , label:'', action:"configuration.configure", icon:"st.secondary.configure"
+            state "YES", label:'', action:"configuration.configure", icon:"https://github.com/erocm123/SmartThingsPublic/raw/master/devicetypes/erocm123/qubino-flush-1d-relay.src/configure@2x.png"
         }
 
 		main "switch"
@@ -96,6 +94,7 @@ def updated()
 {
     state.enableDebugging = settings.enableDebugging
     logging("updated() is being called")
+    sendEvent(name: "checkInterval", value: 2 * 2 * 60 * 60 + 2 * 60, displayed: false, data: [protocol: "zwave", hubHardwareId: device.hub.hardwareID])
     def cmds = []
     
     cmds = update_needed_settings()
@@ -223,6 +222,11 @@ def refresh() {
 		zwave.meterV2.meterGet(scale: 1).format(),
 		zwave.meterV2.meterGet(scale: 2).format()
 	])
+}
+
+def ping() {
+    logging("ping()")
+	refresh()
 }
 
 def configure() {

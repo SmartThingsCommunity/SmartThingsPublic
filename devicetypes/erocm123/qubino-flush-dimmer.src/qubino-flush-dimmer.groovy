@@ -54,9 +54,9 @@ metadata {
         multiAttributeTile(name:"switch", type: "lighting", width: 6, height: 4, canChangeIcon: true){
 			tileAttribute ("device.switch", key: "PRIMARY_CONTROL") {
 			   attributeState "off", label:'${name}', action:"switch.on", icon:"st.switches.switch.off", backgroundColor:"#ffffff", nextState:"turningOn"
-			   attributeState "on", label:'${name}', action:"switch.off", icon:"st.switches.switch.on", backgroundColor:"#79b821", nextState:"turningOff"
+			   attributeState "on", label:'${name}', action:"switch.off", icon:"st.switches.switch.on", backgroundColor:"#00a0dc", nextState:"turningOff"
 			   attributeState "turningOff", label:'${name}', action:"switch.on", icon:"st.switches.switch.off", backgroundColor:"#ffffff", nextState:"turningOn"
-			   attributeState "turningOn", label:'${name}', action:"switch.off", icon:"st.switches.switch.on", backgroundColor:"#79b821", nextState:"turningOff"
+			   attributeState "turningOn", label:'${name}', action:"switch.off", icon:"st.switches.switch.on", backgroundColor:"#00a0dc", nextState:"turningOff"
 			}
             tileAttribute ("device.level", key: "SLIDER_CONTROL") {
 				attributeState "level", action:"switch level.setLevel"
@@ -85,14 +85,14 @@ metadata {
             state "temperature", label:'${currentValue}°',
             backgroundColors:
              [
-                 [value: 31, color: "#153591"],
-                 [value: 44, color: "#1e9cbb"],
-                 [value: 59, color: "#90d2a7"],
-                 [value: 74, color: "#44b621"],
-                 [value: 84, color: "#f1d801"],
-                 [value: 95, color: "#d04e00"],
-                 [value: 96, color: "#bc2323"]
-             ]
+                [value: 31, color: "#153591"],
+                [value: 44, color: "#1e9cbb"],
+                [value: 59, color: "#90d2a7"],
+				[value: 74, color: "#44b621"],
+				[value: 84, color: "#f1d801"],
+				[value: 95, color: "#d04e00"],
+				[value: 96, color: "#bc2323"]
+			]
         }
 
 		main "switch"
@@ -241,7 +241,8 @@ def refresh() {
     commands([
 		zwave.switchBinaryV1.switchBinaryGet(),
 		zwave.meterV2.meterGet(scale: 0),
-		zwave.meterV2.meterGet(scale: 2)
+		zwave.meterV2.meterGet(scale: 2),
+        zwave.sensorMultilevelV5.sensorMultilevelGet(sensorType:1, scale:1)
 	])
 }
 

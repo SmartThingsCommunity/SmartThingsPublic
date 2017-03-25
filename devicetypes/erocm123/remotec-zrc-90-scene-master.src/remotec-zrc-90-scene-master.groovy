@@ -20,6 +20,7 @@ metadata {
 		capability "Configuration"
 		capability "Sensor"
         capability "Battery"
+        capability "Health Check"
         
         attribute "sequenceNumber", "number"
         attribute "numberOfButtons", "number"
@@ -65,9 +66,15 @@ metadata {
         
 	}
 	tiles (scale: 2) {
-		standardTile("button", "device.button", width: 2, height: 2) {
-			state "default", label: "", icon: "st.unknown.zwave.remote-controller", backgroundColor: "#ffffff"
-		}
+		multiAttributeTile(name:"button", type:"generic", width:6, height:4) {
+  			tileAttribute("device.button", key: "PRIMARY_CONTROL"){
+    		attributeState "default", label:'', backgroundColor:"#ffffff", icon: "st.unknown.zwave.remote-controller"
+  			}
+            tileAttribute ("device.battery", key: "SECONDARY_CONTROL") {
+			attributeState "battery", label:'${currentValue} % battery'
+            }
+            
+        }
         valueTile(
 			"battery", "device.battery", decoration: "flat", width: 2, height: 2) {
 			state "battery", label:'${currentValue}% battery', unit:""
@@ -170,6 +177,12 @@ def updated() {
 
 def configure() {
 	log.debug "configure()"
-    sendEvent(name: "numberOfButtons", value: 16, displayed: true)
+    sendEvent(name: "checkInterval", value: 2 * 60 * 12 * 60 + 5 * 60, displayed: false, data: [protocol: "zwave", hubHardwareId: device.hub.hardwareID])
+    sendEvent(name: "numberOfButtons", value: 8, displayed: true)
     state.isConfigured = "true"
+}
+
+def ping() {
+    log.debug "ping()"
+	log.debug "Battery Device - Not sending ping commands"
 }

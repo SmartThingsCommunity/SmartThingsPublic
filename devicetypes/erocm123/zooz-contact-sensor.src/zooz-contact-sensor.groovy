@@ -24,6 +24,7 @@ metadata {
 		capability "Sensor"
 		capability "Battery"
 		capability "Configuration"
+        capability "Health Check"
 
 		fingerprint deviceId: "0x0701", inClusters: "0x5E,0x86,0x72,0x5A,0x73,0x80,0x71,0x30,0x85,0x59,0x84,0x70"
 
@@ -35,11 +36,11 @@ metadata {
 	tiles(scale: 2) {
 		multiAttributeTile(name:"contact", type: "generic", width: 6, height: 4){
 			tileAttribute ("device.contact", key: "PRIMARY_CONTROL") {
-				attributeState "open", label:'${name}', icon:"st.contact.contact.open", backgroundColor:"#ffa81e"
-				attributeState "closed", label:'${name}', icon:"st.contact.contact.closed", backgroundColor:"#79b821"
+				attributeState "open", label:'${name}', icon:"st.contact.contact.open", backgroundColor:"#e86d13"
+				attributeState "closed", label:'${name}', icon:"st.contact.contact.closed", backgroundColor:"#00a0dc"
 			}
 		}
-		valueTile("battery", "device.battery", inactiveLabel: false, decoration: "flat", width: 2, height: 2) {
+		valueTile("battery", "device.battery", inactiveLabel: false, width: 2, height: 2) {
 			state "battery", label:'${currentValue}% battery', unit:""
 		}
 
@@ -74,6 +75,7 @@ def parse(String description) {
 
 def updated() {
 	def cmds = []
+    sendEvent(name: "checkInterval", value: 2 * 12 * 60 * 60 + 5 * 60, displayed: false, data: [protocol: "zwave", hubHardwareId: device.hub.hardwareID])
 	if (!state.MSR) {
 		cmds = [
 			command(zwave.manufacturerSpecificV2.manufacturerSpecificGet()),
@@ -93,6 +95,11 @@ def configure() {
 		zwave.manufacturerSpecificV2.manufacturerSpecificGet(),
 		zwave.batteryV1.batteryGet()
 	], 6000)
+}
+
+def ping() {
+    log.debug "ping()"
+	log.debug "Battery Device - Not sending ping commands"
 }
 
 def sensorValueEvent(value) {

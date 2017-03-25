@@ -21,6 +21,7 @@ metadata {
 		capability "Actuator"
 		capability "Sensor"
         capability "Temperature Measurement"
+        capability "Health Check"
 
 		command "reset"
 
@@ -71,7 +72,7 @@ metadata {
 	tiles(scale: 2) {
         multiAttributeTile(name:"switch", type: "lighting", width: 6, height: 4, canChangeIcon: true){
 			tileAttribute ("device.switch", key: "PRIMARY_CONTROL") {
-				attributeState "on", label: '${name}', action: "switch.off", icon: "st.switches.switch.on", backgroundColor: "#79b821"
+				attributeState "on", label: '${name}', action: "switch.off", icon: "st.switches.switch.on", backgroundColor: "#00a0dc"
 				attributeState "off", label: '${name}', action: "switch.on", icon: "st.switches.switch.off", backgroundColor: "#ffffff"
 			}
             tileAttribute ("statusText", key: "SECONDARY_CONTROL") {
@@ -79,10 +80,10 @@ metadata {
             }
 		}
         
-		valueTile("power", "device.power", decoration: "flat") {
+		valueTile("power", "device.power") {
 			state "default", label:'${currentValue} W'
 		}
-		valueTile("energy", "device.energy", decoration: "flat") {
+		valueTile("energy", "device.energy") {
 			state "default", label:'${currentValue} kWh'
 		}
 		standardTile("reset", "device.energy", inactiveLabel: false, decoration: "flat", width: 2, height: 2) {
@@ -97,40 +98,40 @@ metadata {
         valueTile("statusText", "statusText", inactiveLabel: false, width: 2, height: 2) {
 			state "statusText", label:'${currentValue}', backgroundColor:"#ffffff"
 		}
-        valueTile("temperature", "device.temperature", inactiveLabel: false, width: 2, height: 2, decoration: "flat") {
+        valueTile("temperature", "device.temperature", inactiveLabel: false, width: 2, height: 2) {
             state "temperature", label:'${currentValue}',
             backgroundColors:
             [
-                [value: 31, color: "#153591"],
-                [value: 44, color: "#1e9cbb"],
-                [value: 59, color: "#90d2a7"],
-                [value: 74, color: "#44b621"],
-                [value: 84, color: "#f1d801"],
-                [value: 95, color: "#d04e00"],
-                [value: 96, color: "#bc2323"]
-            ]
+                	[value: 31, color: "#153591"],
+                    [value: 44, color: "#1e9cbb"],
+                    [value: 59, color: "#90d2a7"],
+					[value: 74, color: "#44b621"],
+					[value: 84, color: "#f1d801"],
+					[value: 95, color: "#d04e00"],
+					[value: 96, color: "#bc2323"]
+			]
         }
 
 		(1..4).each { n ->
-			standardTile("switch$n", "switch$n", canChangeIcon: true, width: 2, height: 2) {
-				state "on", label: "switch$n", action: "off$n", icon: "st.switches.switch.on", backgroundColor: "#79b821"
-				state "off", label: "switch$n", action: "on$n", icon: "st.switches.switch.off", backgroundColor: "#ffffff"
+			standardTile("switch$n", "switch$n", canChangeIcon: true, width: 2, height: 2, decoration: "flat") {
+				state "on", label: "switch$n", action: "off$n", icon: "st.switches.switch.on", backgroundColor: "#00a0dc"
+				state "off", label: "switch$n", action: "on$n", icon: "st.switches.switch.off", backgroundColor: "#cccccc"
 			}
-			valueTile("power$n", "power$n", decoration: "flat", width: 2, height: 2) {
+			valueTile("power$n", "power$n", width: 2, height: 2) {
 				state "default", label:'${currentValue} W'
 			}
-			valueTile("energy$n", "energy$n", decoration: "flat", width: 2, height: 2) {
+			valueTile("energy$n", "energy$n", width: 2, height: 2) {
 				state "default", label:'${currentValue} kWh'
 			}
 		}
         (5..6).each { n ->
-            valueTile("outlet$n", "outlet$n", decoration: "flat", width: 2, height: 2) {
-				state "default", label:"outlet${n-4}"
+            standardTile("outlet$n", "outlet$n", width: 2, height: 2) {
+				state "default", label:"outlet${n-4}", icon: "st.switches.switch.off", backgroundColor: "#ffffff"
 			}
-			valueTile("power$n", "power$n", decoration: "flat", width: 2, height: 2) {
+			valueTile("power$n", "power$n", width: 2, height: 2) {
 				state "default", label:'${currentValue} W'
 			}
-			valueTile("energy$n", "energy$n", decoration: "flat", width: 2, height: 2) {
+			valueTile("energy$n", "energy$n", width: 2, height: 2) {
 				state "default", label:'${currentValue} kWh'
 			}
 		}
@@ -314,6 +315,11 @@ def refresh() {
     delayBetween(cmds, 1000)
 }
 
+def ping() {
+    logging("ping")
+	return zwave.basicV1.basicGet().format()
+}
+
 def resetCmd(endpoint = null) {
     logging("resetCmd($endpoint)")
 	delayBetween([
@@ -337,6 +343,7 @@ def reset6() { resetCmd(6) }
 def configure() {
     state.enableDebugging = settings.enableDebugging
     logging("configure()")
+    sendEvent(name: "checkInterval", value: 2 * 60 * 60 + 2 * 60, displayed: false, data: [protocol: "zwave", hubHardwareId: device.hub.hardwareID])
 	def cmds = [
         // Configuration of what to include in reports and how often to send them (if the below "change" conditions are met
         // Parameter 101 & 111: Send energy reports every 60 seconds (if conditions are met)

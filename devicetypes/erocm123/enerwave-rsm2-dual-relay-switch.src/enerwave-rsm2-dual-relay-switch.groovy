@@ -17,6 +17,7 @@ capability "Polling"
 capability "Configuration"
 capability "Refresh"
 capability "Zw Multichannel"
+capability "Health Check"
 
 attribute "switch1", "string"
 attribute "switch2", "string"
@@ -43,16 +44,16 @@ tiles(scale: 2){
 
     multiAttributeTile(name:"switch", type: "lighting", width: 6, height: 4, canChangeIcon: true){
 			tileAttribute ("device.switch", key: "PRIMARY_CONTROL") {
-				attributeState "on", label: '${name}', action: "switch.off", icon: "st.switches.switch.on", backgroundColor: "#79b821"
+				attributeState "on", label: '${name}', action: "switch.off", icon: "st.switches.switch.on", backgroundColor: "#00a0dc"
 				attributeState "off", label: '${name}', action: "switch.on", icon: "st.switches.switch.off", backgroundColor: "#ffffff"
 			}
 	}
 	standardTile("switch1", "device.switch1",canChangeIcon: true, width: 2, height: 2) {
-		state "on", label: "switch1", action: "off1", icon: "st.switches.switch.on", backgroundColor: "#79b821"
+		state "on", label: "switch1", action: "off1", icon: "st.switches.switch.on", backgroundColor: "#00a0dc"
 		state "off", label: "switch1", action: "on1", icon: "st.switches.switch.off", backgroundColor: "#ffffff"
     }
 	standardTile("switch2", "device.switch2",canChangeIcon: true, width: 2, height: 2) {
-		state "on", label: "switch2", action: "off2", icon: "st.switches.switch.on", backgroundColor: "#79b821"
+		state "on", label: "switch2", action: "off2", icon: "st.switches.switch.on", backgroundColor: "#00a0dc"
 		state "off", label: "switch2", action: "on2", icon: "st.switches.switch.off", backgroundColor: "#ffffff"
     }
     standardTile("refresh", "device.switch", inactiveLabel: false, decoration: "flat", width: 2, height: 2) {
@@ -66,12 +67,6 @@ tiles(scale: 2){
     main(["switch","switch1", "switch2"])
     details(["switch","switch1","switch2","refresh","configure"])
 }
-    /* Waiting to hear back from manufacturer regarding what preferences can be set for this device. 
-	preferences {
-        input "switchType", "enum", title: "Switch Type", defaultValue: "1", displayDuringSetup: true, required: false, options: [
-                "1":"Toggle",
-                "2":"Momentary"]
-  }*/
 }
 
 def parse(String description) {
@@ -196,6 +191,11 @@ def refresh() {
 	delayBetween(cmds, 1000)
 }
 
+def ping() {
+    log.debug "ping()"
+	refresh()
+}
+
 def zwaveEvent(physicalgraph.zwave.commands.manufacturerspecificv2.ManufacturerSpecificReport cmd) {
 	def msr = String.format("%04X-%04X-%04X", cmd.manufacturerId, cmd.productTypeId, cmd.productId)
 	log.debug "msr: $msr"
@@ -211,29 +211,14 @@ def poll() {
 
 def configure() {
 	log.debug "configure() called"
+    sendEvent(name: "checkInterval", value: 2 * 60 * 60 + 2 * 60, displayed: false, data: [protocol: "zwave", hubHardwareId: device.hub.hardwareID])
     def cmds = []
     cmds << zwave.configurationV1.configurationSet(parameterNumber: 3, configurationValue: [1]).format()
     cmds << zwave.configurationV1.configurationGet(parameterNumber: 3).format()
-    if (switchType != null && switchType.value != null) {
-    switch (switchType.value as String) {
-       case "1":
-       log.debug "Configuring device as a Toggle switch"
-       //cmds << zwave.configurationV1.configurationSet(parameterNumber: 3, configurationValue: [3]).format()	
-       //cmds << zwave.configurationV1.configurationGet(parameterNumber: 3).format()
-       break
-       case "2":
-       log.debug "Configuring device as a Momentary switch"
-       //cmds << zwave.configurationV1.configurationSet(parameterNumber: 3, configurationValue: [1]).format()	
-       //cmds << zwave.configurationV1.configurationGet(parameterNumber: 3).format()
-       break
-       default:
-       log.debug "No valid device type chosen"
-       break
-    }
-    }
     
-    if ( cmds != [] && cmds != null ) return delayBetween(cmds, 2000) else return
+    return delayBetween(cmds, 2000)
 }
+
 /**
 * Triggered when Done button is pushed on Preference Pane
 */
@@ -243,6 +228,7 @@ def updated()
     def cmds = configure()
     response(cmds)
 }
+
 def on() { 
    delayBetween([
         zwave.switchAllV1.switchAllOn().format(),

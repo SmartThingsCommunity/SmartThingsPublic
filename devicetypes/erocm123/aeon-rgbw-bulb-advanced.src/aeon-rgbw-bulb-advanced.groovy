@@ -26,6 +26,7 @@ metadata {
 		capability "Actuator"
 		capability "Sensor"
         capability "Configuration"
+        capability "Health Check"
  
 		command "reset"
 		command "refresh"
@@ -42,11 +43,10 @@ metadata {
     
     preferences {
     
-        input description: "Once you change values on this page, the \"Synced\" Status will become \"Pending\" status. When the parameters have been succesfully changed, the status will change back to \"Synced\"", displayDuringSetup: false, type: "paragraph", element: "paragraph"
-        
+        input description: "Once you change values on this page, the corner of the \"configuration\" icon will change orange until all configuration parameters are updated.", title: "Settings", displayDuringSetup: false, type: "paragraph", element: "paragraph"
 		generate_preferences(configuration_model())
         
-        input description: "Create a custom program by modifying the settings below. This program can then be executed by using the \"custom\" button on the device page.", displayDuringSetup: false, type: "paragraph", element: "paragraph"
+        input description: "Create a custom program by modifying the settings below. This program can then be executed by using the \"custom\" button on the device page.", title: "Programs", displayDuringSetup: false, type: "paragraph", element: "paragraph"
 
         input "transition", "enum", title: "Transition", defaultValue: 0, displayDuringSetup: false, required: false, options: [
                 0:"Smooth",
@@ -80,9 +80,9 @@ metadata {
 	tiles (scale: 2){      
 		multiAttributeTile(name:"switch", type: "lighting", width: 6, height: 4, canChangeIcon: true){
 			tileAttribute ("device.switch", key: "PRIMARY_CONTROL") {
-				attributeState "on", label:'${name}', action:"switch.off", icon:"st.lights.philips.hue-single", backgroundColor:"#79b821", nextState:"turningOff"
+				attributeState "on", label:'${name}', action:"switch.off", icon:"st.lights.philips.hue-single", backgroundColor:"#00a0dc", nextState:"turningOff"
 				attributeState "off", label:'${name}', action:"switch.on", icon:"st.lights.philips.hue-single", backgroundColor:"#ffffff", nextState:"turningOn"
-				attributeState "turningOn", label:'${name}', action:"switch.off", icon:"st.lights.philips.hue-single", backgroundColor:"#79b821", nextState:"turningOff"
+				attributeState "turningOn", label:'${name}', action:"switch.off", icon:"st.lights.philips.hue-single", backgroundColor:"#00a0dc", nextState:"turningOff"
 				attributeState "turningOff", label:'${name}', action:"switch.on", icon:"st.lights.philips.hue-single", backgroundColor:"#ffffff", nextState:"turningOn"
 			}
 			tileAttribute ("device.level", key: "SLIDER_CONTROL") {
@@ -96,39 +96,39 @@ metadata {
 		standardTile("refresh", "device.switch", inactiveLabel: false, decoration: "flat", width: 2, height: 2) {
 			state "default", label:"", action:"refresh.refresh", icon:"st.secondary.refresh"
 		}
-        valueTile("configure", "device.needUpdate", inactiveLabel: false, decoration: "flat", width: 2, height: 2) {
-            state("NO" , label:'Synced', action:"configuration.configure", backgroundColor:"#8acb47")
-            state("YES", label:'Pending', action:"configuration.configure", backgroundColor:"#f39c12")
+        standardTile("configure", "device.needUpdate", inactiveLabel: false, decoration: "flat", width: 2, height: 2) {
+            state "NO" , label:'', action:"configuration.configure", icon:"st.secondary.configure"
+            state "YES", label:'', action:"configuration.configure", icon:"https://github.com/erocm123/SmartThingsPublic/raw/master/devicetypes/erocm123/qubino-flush-1d-relay.src/configure@2x.png"
         }
         valueTile("colorTempTile", "device.colorTemperature", decoration: "flat", height: 2, width: 2) {
-        	state "colorTemperature", label:'${currentValue}%', backgroundColor:"#FFFFFF"
+        	state "colorTemperature", label:'${currentValue}%', backgroundColor:"#ffffff"
         }
         controlTile("colorTempControl", "device.colorTemperature", "slider", decoration: "flat", height: 2, width: 4, inactiveLabel: false) {
 		    state "colorTemperature", action:"setColorTemperature"
 	    }
-		standardTile("switch1", "switch1", canChangeIcon: true, width: 2, height: 2) {
-            state "off", label: "fade", action: "on1", icon: "st.switches.switch.off", backgroundColor: "#ffffff"
-			state "on", label: "fade", action: "off1", icon: "st.switches.switch.on", backgroundColor: "#79b821"
+		standardTile("switch1", "switch1", canChangeIcon: true, width: 2, height: 2, decoration: "flat") {
+            state "off", label: "fade", action: "on1", icon: "st.switches.switch.off", backgroundColor: "#cccccc"
+			state "on", label: "fade", action: "off1", icon: "st.switches.switch.on", backgroundColor: "#00a0dc"
 		}
-        standardTile("switch2", "switch2", canChangeIcon: true, width: 2, height: 2) {
-            state "off", label: "flash", action: "on2", icon: "st.switches.switch.off", backgroundColor: "#ffffff"
-			state "on", label: "flash", action: "off2", icon: "st.switches.switch.on", backgroundColor: "#79b821"
+        standardTile("switch2", "switch2", canChangeIcon: true, width: 2, height: 2, decoration: "flat") {
+            state "off", label: "flash", action: "on2", icon: "st.switches.switch.off", backgroundColor: "#cccccc"
+			state "on", label: "flash", action: "off2", icon: "st.switches.switch.on", backgroundColor: "#00a0dc"
 		}
-        standardTile("switch3", "switch3", canChangeIcon: true, width: 2, height: 2) {
-            state "off", label: "random", action: "on3", icon: "st.switches.switch.off", backgroundColor: "#ffffff"
-			state "on", label: "random", action: "off3", icon: "st.switches.switch.on", backgroundColor: "#79b821"
+        standardTile("switch3", "switch3", canChangeIcon: true, width: 2, height: 2, decoration: "flat") {
+            state "off", label: "random", action: "on3", icon: "st.switches.switch.off", backgroundColor: "#cccccc"
+			state "on", label: "random", action: "off3", icon: "st.switches.switch.on", backgroundColor: "#00a0dc"
 		}
-        standardTile("switch4", "switch4", canChangeIcon: true, width: 2, height: 2) {
-            state "off", label: "police", action: "on4", icon: "st.switches.switch.off", backgroundColor: "#ffffff"
-			state "on", label: "police", action: "off4", icon: "st.switches.switch.on", backgroundColor: "#79b821"
+        standardTile("switch4", "switch4", canChangeIcon: true, width: 2, height: 2, decoration: "flat") {
+            state "off", label: "police", action: "on4", icon: "st.switches.switch.off", backgroundColor: "#cccccc"
+			state "on", label: "police", action: "off4", icon: "st.switches.switch.on", backgroundColor: "#00a0dc"
 		}
-        standardTile("switch5", "switch5", canChangeIcon: true, width: 2, height: 2) {
-			state "off", label: "xmas", action: "on5", icon: "st.switches.switch.off", backgroundColor: "#ffffff"
-            state "on", label: "xmas", action: "off5", icon: "st.switches.switch.on", backgroundColor: "#79b821"
+        standardTile("switch5", "switch5", canChangeIcon: true, width: 2, height: 2, decoration: "flat") {
+			state "off", label: "xmas", action: "on5", icon: "st.switches.switch.off", backgroundColor: "#cccccc"
+            state "on", label: "xmas", action: "off5", icon: "st.switches.switch.on", backgroundColor: "#00a0dc"
 		}
-        standardTile("switch6", "switch6", canChangeIcon: true, width: 2, height: 2) {
-            state "off", label: "custom", action: "on6", icon: "st.switches.switch.off", backgroundColor: "#ffffff", nextState:"on"
-			state "on", label: "custom", action: "off6", icon: "st.switches.switch.on", backgroundColor: "#79b821", nextState:"off"
+        standardTile("switch6", "switch6", canChangeIcon: true, width: 2, height: 2, decoration: "flat") {
+            state "off", label: "custom", action: "on6", icon: "st.switches.switch.off", backgroundColor: "#cccccc"
+			state "on", label: "custom", action: "off6", icon: "st.switches.switch.on", backgroundColor: "#00a0dc"
 		}
         valueTile(
 			"currentFirmware", "device.currentFirmware", inactiveLabel: false, decoration: "flat", width: 2, height: 2) {
@@ -151,7 +151,7 @@ def updated()
 {
 	state.enableDebugging = settings.enableDebugging
     logging("updated() is being called")
-    
+    sendEvent(name: "checkInterval", value: 2 * 60 * 60 + 2 * 60, displayed: false, data: [protocol: "zwave", hubHardwareId: device.hub.hardwareID])
     state.needfwUpdate = ""
     
     def cmds = update_needed_settings()
@@ -236,30 +236,13 @@ def zwaveEvent(physicalgraph.zwave.commands.configurationv1.ConfigurationReport 
     }
 } 
 
-def zwaveEvent(physicalgraph.zwave.commands.firmwareupdatemdv2.FirmwareMdReport cmd){
-    logging("Firmware Report ${cmd.toString()}")
-    def firmwareVersion
-    switch(cmd.checksum){
-       case "61418":
-          firmwareVersion = "1.04"
-       break;
-       case "35926":
-          firmwareVersion = "1.04"
-       break;
-       case "43444":
-          firmwareVersion = "1.05"
-       break;
-       case "53007":
-          firmwareVersion = "1.05"
-       break;
-       default:
-          firmwareVersion = cmd.checksum
-    }
+def zwaveEvent(physicalgraph.zwave.commands.versionv1.VersionReport cmd){
+    logging("Version Report ${cmd.toString()} ---- ${cmd.applicationVersion}.${cmd.applicationSubVersion.toString().padLeft(2, '0')}")
     state.needfwUpdate = "false"
-    updateDataValue("firmware", firmwareVersion.toString())
-    createEvent(name: "currentFirmware", value: firmwareVersion)
+    updateDataValue("firmware", "${cmd.applicationVersion}.${cmd.applicationSubVersion.toString().padLeft(2, '0')}")
+    createEvent(name: "currentFirmware", value: "${cmd.applicationVersion}.${cmd.applicationSubVersion.toString().padLeft(2, '0')}")
 }
- 
+
 def zwaveEvent(physicalgraph.zwave.Command cmd) {
 	def linkText = device.label ?: device.name
 	[linkText: linkText, descriptionText: "$linkText: $cmd", displayed: false]
@@ -307,6 +290,11 @@ def refresh() {
 		zwave.basicV1.basicGet(),
         zwave.configurationV1.configurationGet(parameterNumber: 37),
 	])
+}
+
+def ping() {
+    log.debug "ping()"
+	refresh()
 }
  
 def setSaturation(percent) {
@@ -707,7 +695,7 @@ def update_needed_settings()
     
     if(!state.needfwUpdate || state.needfwUpdate == ""){
        logging("Requesting device firmware version")
-       cmds << zwave.firmwareUpdateMdV2.firmwareMdGet()
+       cmds << zwave.versionV1.versionGet()
     }    
     
     configuration.Value.each

@@ -30,6 +30,7 @@ metadata {
 		capability "Relay Switch"
         capability "Configuration"
         capability "Temperature Measurement"
+        capability "Health Check"
 
 		fingerprint deviceId: "0x1001", inClusters: "0x5E,0x86,0x72,0x5A,0x73,0x20,0x27,0x25,0x85,0x8E,0x59,0x70", outClusters: "0x20"
 
@@ -47,9 +48,9 @@ metadata {
         multiAttributeTile(name:"switch", type: "generic", width: 6, height: 4, canChangeIcon: true){
 			tileAttribute ("device.switch", key: "PRIMARY_CONTROL") {
 			   attributeState "off", label:'${name}', action:"switch.on", icon:"st.switches.switch.off", backgroundColor:"#ffffff", nextState:"turningOn"
-			   attributeState "on", label:'${name}', action:"switch.off", icon:"st.switches.switch.on", backgroundColor:"#79b821", nextState:"turningOff"
+			   attributeState "on", label:'${name}', action:"switch.off", icon:"st.switches.switch.on", backgroundColor:"#00a0dc", nextState:"turningOff"
 			   attributeState "turningOff", label:'${name}', action:"switch.on", icon:"st.switches.switch.off", backgroundColor:"#ffffff", nextState:"turningOn"
-			   attributeState "turningOn", label:'${name}', action:"switch.off", icon:"st.switches.switch.on", backgroundColor:"#79b821", nextState:"turningOff"
+			   attributeState "turningOn", label:'${name}', action:"switch.off", icon:"st.switches.switch.on", backgroundColor:"#00a0dc", nextState:"turningOff"
 			}
             tileAttribute ("statusText", key: "SECONDARY_CONTROL") {
            		attributeState "statusText", label:'${currentValue}'       		
@@ -69,11 +70,11 @@ metadata {
                 [value: 31, color: "#153591"],
                 [value: 44, color: "#1e9cbb"],
                 [value: 59, color: "#90d2a7"],
-                [value: 74, color: "#44b621"],
-                [value: 84, color: "#f1d801"],
-                [value: 95, color: "#d04e00"],
-                [value: 96, color: "#bc2323"]
-            ]
+				[value: 74, color: "#44b621"],
+				[value: 84, color: "#f1d801"],
+				[value: 95, color: "#d04e00"],
+				[value: 96, color: "#bc2323"]
+			]
         }
         
 
@@ -171,7 +172,8 @@ def refresh() {
     logging("refresh()", 1)
 	commands([
 		zwave.switchBinaryV1.switchBinaryGet(),
-		zwave.manufacturerSpecificV1.manufacturerSpecificGet()
+		zwave.manufacturerSpecificV1.manufacturerSpecificGet(),
+        zwave.sensorMultilevelV5.sensorMultilevelGet(sensorType:1, scale:1)
 	])
 }
 
