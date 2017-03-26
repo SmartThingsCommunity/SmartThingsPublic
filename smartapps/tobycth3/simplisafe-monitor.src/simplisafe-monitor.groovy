@@ -2,9 +2,9 @@
  *  SimpliSafe Monitor
  *
  *  Author: toby@cth3.com
- *  Date: 2/15/16
+ *  Date: 3/5/16
  *
- *  Monitors and controlls the state of a SimpliSafe alarm system, syncs with Smart Home Monitor, sets SimpliSafe based on location mode and can turn on/off switchs based on SimpliSafe state.
+ *  Monitors and controlls the state of a SimpliSafe alarm system, syncs with Smart Home Monitor and can turn on/off switchs based on SimpliSafe state.
  *  Works in conjunction with SimpliSafe Alarm Integration device type.
  */
 
@@ -14,7 +14,7 @@ definition(
     name: "SimpliSafe Monitor",
     namespace: "tobycth3",
     author: "toby@cth3.com",
-    description: "Monitors and controlls the state of a SimpliSafe alarm system, syncs with Smart Home Monitor, sets SimpliSafe based on location mode and can turn on/off switchs based on SimpliSafe state. Works in conjunction with SimpliSafe Alarm Integration device type.",
+    description: "Monitors and controlls the state of a SimpliSafe alarm system, syncs with Smart Home Monitor and can turn on/off switchs based on SimpliSafe state. Works in conjunction with SimpliSafe Alarm Integration device type.",
     category: "Safety & Security",
     iconUrl: "https://pbs.twimg.com/profile_images/594250179215241217/LOjVA4Yf.jpg",
     iconX2Url: "https://pbs.twimg.com/profile_images/594250179215241217/LOjVA4Yf.jpg")
@@ -23,15 +23,6 @@ preferences {
   section("Monitor and control this SimpliSafe alarm system") {
     input "alarmsystem", "capability.alarm", title: "Select alarm system"
   }
-  
-  section("Set SimpliSafe to Off when mode matches") {
-    input "modealarmoff", "mode", title: "Select off mode", multiple: true, required: false  }
-  
-  section("Set SimpliSafe to Away when mode matches") {
-    input "modealarmaway", "mode", title: "Select away mode", multiple: true, required: false  }
-  
-  section("Set SimpliSafe to Home when mode matches") {
-    input "modealarmhome", "mode", title: "Select home mode", multiple: true, required: false  }
   
   section("Control these switchs") {
 	input "alarmtile", "capability.switch", title: "Select switches", multiple: true, required: false  } 
@@ -60,149 +51,236 @@ def updated() {
   }
   
 def init() {
-  subscribe(location, "mode", modeaction)
   subscribe(alarmsystem, "alarm", alarmstate)
   subscribe(location, "alarmSystemStatus", shmaction)
   }
   
-def modeaction(evt) {
-state.locationmode = evt.value
-
-  if(evt.value in modealarmoff && state.alarmstate !="off") {
-    log.debug("Location mode: $state.locationmode")
-     setalarmoff()
-  }
- else {
-  if(evt.value in modealarmaway && state.alarmstate !="away") {
-    log.debug("Location mode: $state.locationmode")
-     setalarmaway()
-  }
- else {
-  if(evt.value in modealarmhome && state.alarmstate !="home") {
-    log.debug("Location mode: $state.locationmode")
-     setalarmhome()
-  }
-  else {
-    log.debug("No actions set for location mode ${state.locationmode} or SimpliSafe already set to ${state.alarmstate} - aborting")
-    }
-   }  
-  }
+def updatestate() {
+	log.info("Checking SimpliSafe and Smart Home Monitor state")
+	state.alarmstate = alarmsystem.currentState("alarm").value.toLowerCase()
+	state.shmstate = location.currentState("alarmSystemStatus").value.toLowerCase()
+	log.debug("SimpliSafe: '$state.alarmstate', Smart Home Monitor: '$state.shmstate'")
+	
 }
-
 
 def shmaction(evt) {
+log.info "Smart Home Monitor: $evt.displayName - $evt.value"
 state.shmstate = evt.value
 
-  if(evt.value == "off" && state.alarmstate !="off") {
-    log.debug("Smart Home Monitor state: $state.shmstate")
+  if(shmOff && !alarmOff) {
+    log.debug("Smart Home Monitor: '$state.shmstate', SimpliSafe: '$state.alarmstate'")
      setalarmoff()
   }
  else {
-  if(evt.value == "away" && state.alarmstate !="away") {
-    log.debug("Smart Home Monitor state: $state.shmstate")
+  if(shmAway && !alarmAway) {
+    log.debug("Smart Home Monitor: '$state.shmstate', SimpliSafe: '$state.alarmstate'")
      setalarmaway()
   }
  else {
-  if(evt.value == "stay" && state.alarmstate !="home") {
-    log.debug("Smart Home Monitor state: $state.shmstate")
+  if(shmStay && !alarmHome) {
+    log.debug("Smart Home Monitor: '$state.shmstate', SimpliSafe: '$state.alarmstate'")
      setalarmhome()
   }
   else {
-    log.debug("No actions set for Smart Home Monitor state ${state.shmstate} or SimpliSafe already set to ${state.alarmstate} - aborting")
-    }
+    log.debug("No condition match Smart Home Monitor: '$state.shmstate', SimpliSafe: '$state.alarmstate'")
    }  
   }
+ }
 }
 
-def setalarmoff() {
-      def message = "${app.label} set SimpliSafe to Off"
-      log.info(message)
-      send(message)
-      alarmsystem.off()
-  }
-  
-def setalarmaway() {
-      def message = "${app.label} set SimpliSafe to Away"
-      log.info(message)
-      send(message)
-      alarmsystem.away()
-  }
-  
-def setalarmhome() {
-      def message = "${app.label} set SimpliSafe to Home"
-      log.info(message)
-      send(message)
-      alarmsystem.home()
-  }
-
-def setshmoff() {
-      def message = "${app.label} set Smart Home Monitor to Off"
-      log.info(message)
-      send(message)
-      sendLocationEvent(name: "alarmSystemStatus", value: "off")
-  }
-  
-def setshmaway() {
-      def message = "${app.label} set Smart Home Monitor to Away"
-      log.info(message)
-      send(message)
-     sendLocationEvent(name: "alarmSystemStatus", value: "away")
-  }
-  
-def setshmstay() {
-      def message = "${app.label} set Smart Home Monitor to Stay"
-      log.info(message)
-      send(message)
-    sendLocationEvent(name: "alarmSystemStatus", value: "stay")
-  }
-
 def alarmstate(evt) {
+log.info "SimpliSafe Alarm: $evt.displayName - $evt.value"
 state.alarmstate = evt.value
 
-  if(evt.value == "off" && state.shmstate !="off") {
-    log.debug("Smart Home Monitor state: $state.shmstate")
+  if (alarmOff && !shmOff) {
+    log.debug("SimpliSafe: '$state.alarmstate', Smart Home Monitor: '$state.shmstate'")
      setshmoff()
   }
  else {
-  if(evt.value == "away" && state.shmstate !="away") {
-    log.debug("Smart Home Monitor state: $state.shmstate")
+  if (alarmAway && !shmAway) {
+    log.debug("SimpliSafe: '$state.alarmstate', Smart Home Monitor: '$state.shmstate'")
      setshmaway()
   }
  else {
-  if(evt.value == "home" && state.shmstate !="stay") {
-    log.debug("Smart Home Monitor state: $state.shmstate")
+  if (alarmHome && !shmStay) {
+    log.debug("SimpliSafe: '$state.alarmstate', Smart Home Monitor: '$state.shmstate'")
      setshmstay()
   }
   else {
-    log.debug("No actions set for SimpliSafe state ${state.alarmstate} or Smart Home Monitor already set to ${state.shmstate} - aborting")
-    }
-   }  
+    log.debug("No condition match SimpliSafe: '$state.alarmstate', Smart Home Monitor: '$state.shmstate'")
   }
+ }
+}
   
   if (evt.value in alarmon) {
     log.debug("SimpliSafe state: $state.alarmstate")
      alarmstateon()
   }
  else {
- if (evt.value in alarmoff) {
+  if (evt.value in alarmoff) {
     log.debug("SimpliSafe state: $state.alarmstate")
      alarmstateoff()
   }
-  else {
-    log.debug("No actions set for SimpliSafe state ${state.alarmstate} - aborting")
+ else {
+    log.debug("No switch actions set for SimpliSafe state '${state.alarmstate}'")
     }
    }  
   }
 
+def setalarmoff() {
+	updatestate()
+      log.debug("SimpliSafe: '$state.alarmstate'")
+      if (!alarmOff) {
+      def message = "Setting SimpliSafe to Off"
+      log.info(message)
+      send(message)
+      alarmsystem.off()
+  }
+  else {
+	 if (alarmOff) {  
+     log.debug("SimpliSafe already set to '$state.alarmstate'")
+  }
+ }
+}
+  
+def setalarmaway() {
+	updatestate()
+      log.debug("SimpliSafe: '$state.alarmstate'")
+      if (!alarmAway) {
+      def message = "Setting SimpliSafe to Away"
+      log.info(message)
+      send(message)
+      alarmsystem.away()
+  }
+  else {
+	 if (alarmAway) {  
+     log.debug("SimpliSafe already set to '$state.alarmstate'")
+  }
+ }
+}
+  
+def setalarmhome() {
+	updatestate()
+      log.debug("SimpliSafe: '$state.alarmstate'")
+      if (!alarmHome) {
+      def message = "Setting SimpliSafe to Home"
+      log.info(message)
+      send(message)
+      alarmsystem.home()
+  }
+  else {
+	 if (alarmHome) {  
+     log.debug("SimpliSafe already set to '$state.alarmstate'")
+  }
+ }
+}
+
+def setshmoff() {
+	updatestate()
+      log.debug("Smart Home Monitor: '$state.shmstate'")
+      if (!shmOff) {
+      def message = "Setting Smart Home Monitor to Off"
+      log.info(message)
+      send(message)
+      sendLocationEvent(name: "alarmSystemStatus", value: "off")
+  }
+  else {
+	 if (shmOff) {  
+     log.debug("Smart Home Monitor already set to '$state.shmstate'")
+  }
+ }
+}
+  
+def setshmaway() {
+	updatestate()
+      log.debug("Smart Home Monitor: '$state.shmstate'")
+      if (!shmAway) {
+      def message = "Setting Smart Home Monitor to Away"
+      log.info(message)
+      send(message)
+      sendLocationEvent(name: "alarmSystemStatus", value: "away")
+  }
+  else {
+	 if (shmAway) {  
+     log.debug("Smart Home Monitor already set to '$state.shmstate'")
+  }
+ }
+}
+  
+def setshmstay() {
+	updatestate()
+      log.debug("Smart Home Monitor: '$state.shmstate'")
+      if (!shmStay) {
+      def message = "Setting Smart Home Monitor to Stay"
+      log.info(message)
+      send(message)
+      sendLocationEvent(name: "alarmSystemStatus", value: "stay")
+  }
+  else {
+	 if (shmStay) {  
+     log.debug("Smart Home Monitor already set to '$state.shmstate'")
+  }
+ }
+}
+
 def alarmstateon() {
-    log.debug ("${app.label} set switches to on")
+    log.debug ("Setting switches to on")
       settings.alarmtile.on()
   }
   
 def alarmstateoff() {
-    log.debug ("${app.label} set switches to off")
+    log.debug ("Setting switches to off")
       settings.alarmtile.off()
   } 
+  
+// TODO - centralize somehow
+private getalarmOff() {
+	def result = false
+	if (state.alarmstate == "off") {
+	result = true }
+	log.trace "alarmOff = $result"
+	result
+}
+
+private getalarmAway() {
+	def result = false
+	if (state.alarmstate == "away") {
+	result = true }
+	log.trace "alarmAway = $result"
+	result
+}
+
+private getalarmHome() {
+	def result = false
+	if (state.alarmstate == "home") {
+	result = true }
+	log.trace "alarmHome = $result"
+	result
+}
+
+private getshmOff() {
+	def result = false
+	if (state.shmstate == "off") {
+	result = true }
+	log.trace "shmOff = $result"
+	result
+}
+
+private getshmAway() {
+	def result = false
+	if (state.shmstate == "away") {
+	result = true }
+	log.trace "shmAway = $result"
+	result
+}
+
+private getshmStay() {
+	def result = false
+	if (state.shmstate == "stay") {
+	result = true }
+	log.trace "shmStay = $result"
+	result
+}
   
 private send(msg) {
   if(sendPushMessage != "No") {
