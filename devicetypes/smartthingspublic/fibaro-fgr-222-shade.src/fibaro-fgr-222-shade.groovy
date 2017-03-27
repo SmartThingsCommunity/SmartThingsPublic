@@ -174,7 +174,7 @@ def installed() {
 def configure() {
     delayBetween([
 		def result = zwave.wakeUpV1.wakeUpNoMoreInformation().format(),
-        zwave.wakeUpV1.wakeUpIntervalSet(seconds:4 * 3600, nodeid:zwaveHubNodeId).format()
+        zwave.wakeUpV1.wakeUpIntervalSet(seconds:4 * 3600, nodeid:zwaveHubNodeId).format(),
 	])
 }
 
@@ -193,7 +193,10 @@ def updated() {  // triggered when "Done" is pushed in the preference pane
         	break
 	}        
     log("Parameter 14: ${p14}.", "INFO")
-	zwave.configurationV1.configurationSet(parameterNumber: 14, size: 1, configurationValue:[p14.value]).format()
+    delayBetween([
+	    zwave.configurationV1.configurationSet(parameterNumber: 14, size: 1, configurationValue: [p14.value]).format()
+		], 500)
+
 
 	switch (blindType) {
 		case "Roller blind w/out Positioning": p10=0
@@ -206,12 +209,14 @@ def updated() {  // triggered when "Done" is pushed in the preference pane
         	break
         case "Gate w/out positioning": p10=4
         	break
-
 	}        
     log("Parameter 10: ${p10}.", "INFO")
-	zwave.configurationV1.configurationSet(parameterNumber: 10, size: 1, configurationValue:[p10.value]).format()
+    delayBetween([
+		zwave.configurationV1.configurationSet(parameterNumber: 10, size: 1, configurationValue:[p10.value]).format()
+		], 500)
 
-    log("99% level defined: ${customLevel}.", "INFO")
+
+    log("Floor level defined: ${floorLevel}.", "INFO")
     log("Debug level selected: ${logging}.", "INFO")
     
     poll()
@@ -553,10 +558,43 @@ def sceneThree() {
 }
 
 def forceCalibration() {
+
+	int p14
+    int p10
+
+	switch (switchType) {
+		case "Momentary switches":  p14=0
+       		break
+        case "Toggle switches":  p14=1
+        	break
+        case "Single momentary switch": p14=2
+        	break
+	}        
+    log("Parameter 14: ${p14}.", "INFO")
+
+
+	switch (blindType) {
+		case "Roller blind w/out Positioning": p10=0
+       		break
+        case "Roller blind w/ positioning": p10=1
+        	break
+        case "Venetian blind": p10=2
+        	break
+        case "Gate w/ positioning": p10=3
+        	break
+        case "Gate w/out positioning": p10=4
+        	break
+	}        
+    log("Parameter 10: ${p10}.", "INFO")
+
+
+
 	log("Executing 'param 29 = 1'", "INFO")
     delayBetween([
-         zwave.configurationV1.configurationSet(parameterNumber: 29, size: 1, scaledConfigurationValue: [1]).format(),         
-    ])
+		zwave.configurationV1.configurationSet(parameterNumber: 29, size: 1, configurationValue: [1]).format(),   
+        zwave.configurationV1.configurationSet(parameterNumber: 10, size: 1, configurationValue: [p10.value]).format(),
+        zwave.configurationV1.configurationSet(parameterNumber: 14, size: 1, configurationValue: [p14.value]).format()
+		], 500)
 }
 
 
