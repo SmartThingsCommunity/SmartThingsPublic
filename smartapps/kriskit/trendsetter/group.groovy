@@ -21,10 +21,11 @@ definition(
     category: "My Apps",
     iconUrl: "https://cdn.rawgit.com/Kriskit/SmartThingsPublic/master/smartapps/kriskit/trendsetter/icon.png",
     iconX2Url: "https://cdn.rawgit.com/Kriskit/SmartThingsPublic/master/smartapps/kriskit/trendsetter/icon@2x.png",
-    iconX3Url: "https://cdn.rawgit.com/Kriskit/SmartThingsPublic/master/smartapps/kriskit/trendsetter/icon@3x.png")
+    iconX3Url: "https://cdn.rawgit.com/Kriskit/SmartThingsPublic/master/smartapps/kriskit/trendsetter/icon@3x.png",
+    parent: "kriskit.trendsetter:Trend Setter")
     
 def version() {
-	return "1.0"
+	return "1.1"
 }
 
 def typeDefinitions() {
@@ -34,6 +35,7 @@ def typeDefinitions() {
             singular: "Switch", 
             plural: "Switches", 
             deviceType: "Switch Group Device",
+            experimental: true,
             attributes: [
             		[name: "switch"]
             	]
@@ -44,6 +46,7 @@ def typeDefinitions() {
             plural: "Dimmers", 
             deviceType: "Dimmer Group Device",
             inherits: "switch",
+            experimental: true,
             attributes: [
             	[name: "level"]
             ]
@@ -110,7 +113,15 @@ def configure() {
             }
             
             if (definition.advanced) {
-            	section(title: "Advanced", hidden: true, hideable: true) {
+            	section(title: "Advanced", hidden: true, hideable: true) {}
+            }
+            
+            if (definition.experimental) {
+            	section(title: "Experimental", hidden: true, hideable: true) {
+					input "bidirectional", "bool", title: "Bidirectional", defaultValue: false, required: true
+                    paragraph "Devices in the group will automatically synchronise other devices in the group when their states change."
+                    paragraph "WARNING: This is experimental. Behaviour may not work as expected.", 
+                        image: "https://cdn2.iconfinder.com/data/icons/freecns-cumulus/32/519791-101_Warning-512.png"
                 }
             }
         }
@@ -122,6 +133,10 @@ def installed() {
     
 	installControllerDevice()
 	initialize()
+}
+
+def uninstalled() {
+	log.debug "Uninstalled"
 }
 
 def installControllerDevice() {
@@ -164,6 +179,19 @@ def onDeviceAttributeChange(evt) {
     	namesToCheck.push(evt.name)
         
 	atomicState.namesToCheck = namesToCheck
+    
+    if (bidirectional) {    
+        def controller = getControllerDevice()
+        def commandInfo = controller.mapAttributeToCommand(evt.name, evt.value)        
+        def devicesToUse = devices?.findAll {
+        	it.id != evt.device.id
+        }
+        log.debug "Updating $devicesToUse to match ${evt.device}..."
+        devicesToUse?.each {
+        	runCommand(it, commandInfo.command, commandInfo.arguments)
+        }
+    }
+    
     runIn(1, "updateControllerState")
 }
 
@@ -187,7 +215,12 @@ def updateControllerState(namesToCheck) {
 }
 
 def performGroupCommand(command, arguments = null) {
-	runCommand(devices, command, arguments ?: []) 
+	def target = devices
+
+	if (bidirectional)
+    	target = devices?.find { true }
+
+	runCommand(target, command, arguments ?: []) 
 }
 
 def runCommand(target, command, args) {
@@ -263,7 +296,7 @@ def getDeviceTypeOptions() {
 def selectedDevicesContainsController() {
 	def controller = getControllerDevice()
 	return devices?.any { 
-    	it.deviceNetworkId == controller.deviceNetworkId 
+    	it?.deviceNetworkId == controller?.deviceNetworkId 
     }
 }
 
