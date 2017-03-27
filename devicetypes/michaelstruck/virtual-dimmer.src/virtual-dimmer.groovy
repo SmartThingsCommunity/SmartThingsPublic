@@ -2,11 +2,11 @@
  *  Virtual Dimmer
  *
  *  Copyright 2017 Michael Struck
- *  Version 1.1.1 3/26/17
+ *  Version 1.1.1a 3/26/17
  *
  *  Version 1.0.0 - Initial release
  *  Version 1.1.0 - Updated the interface to better match SmartThings dimmers (thanks to @BoruGee)
- *  Version 1.1.1 - Added sensor capability, changed copyright date
+ *  Version 1.1.1a - Added sensor/actuator capability, changed copyright date
  * 
  *  Uses code from SmartThings
  *
@@ -26,7 +26,8 @@ metadata {
         capability "Switch"
         capability "Refresh"
         capability "Switch Level"
-        capability "Sensor"
+        capability "Actuator"	//included to give compatibility with ActionTiles
+        capability "Sensor"		//included to give compatibility with ActionTiles
     }
 
 	// simulator metadata
