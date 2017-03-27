@@ -20,6 +20,7 @@ metadata {
 		capability "Polling"
 		capability "Refresh"
 		capability "Sensor"
+		capability "Light"
 
 		fingerprint inClusters: "0x26", deviceJoinName: "Z-Wave Dimmer"
 		fingerprint mfr:"001D", prod:"1902", deviceJoinName: "Z-Wave Dimmer"
@@ -28,6 +29,8 @@ metadata {
 		fingerprint mfr:"001D", prod:"1001", model:"0334", deviceJoinName: "Leviton 3-Speed Fan Controller"
 		fingerprint mfr:"001D", prod:"0602", model:"0334", deviceJoinName: "Leviton Magnetic Low Voltage Dimmer"
 		fingerprint mfr:"001D", prod:"0401", model:"0334", deviceJoinName: "Leviton 600W Incandescent Dimmer"
+		fingerprint mfr:"0111", prod:"8200", model:"0200", deviceJoinName: "Remotec Technology Plug-In Dimmer"
+		fingerprint mfr:"1104", prod:"001D", model:"0501", deviceJoinName: "Leviton 1000W Incandescant Dimmer"
 	}
 
 	simulator {
@@ -51,9 +54,9 @@ metadata {
 	tiles(scale: 2) {
 		multiAttributeTile(name:"switch", type: "lighting", width: 6, height: 4, canChangeIcon: true){
 			tileAttribute ("device.switch", key: "PRIMARY_CONTROL") {
-				attributeState "on", label:'${name}', action:"switch.off", icon:"st.switches.switch.on", backgroundColor:"#79b821", nextState:"turningOff"
+				attributeState "on", label:'${name}', action:"switch.off", icon:"st.switches.switch.on", backgroundColor:"#00a0dc", nextState:"turningOff"
 				attributeState "off", label:'${name}', action:"switch.on", icon:"st.switches.switch.off", backgroundColor:"#ffffff", nextState:"turningOn"
-				attributeState "turningOn", label:'${name}', action:"switch.off", icon:"st.switches.switch.on", backgroundColor:"#79b821", nextState:"turningOff"
+				attributeState "turningOn", label:'${name}', action:"switch.off", icon:"st.switches.switch.on", backgroundColor:"#00a0dc", nextState:"turningOff"
 				attributeState "turningOff", label:'${name}', action:"switch.on", icon:"st.switches.switch.off", backgroundColor:"#ffffff", nextState:"turningOn"
 			}
 			tileAttribute ("device.level", key: "SLIDER_CONTROL") {

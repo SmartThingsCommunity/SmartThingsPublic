@@ -46,6 +46,7 @@
 		capability 	"Illuminance Measurement"
 		capability 	"Sensor"
 		capability 	"Battery"
+		capability  "Health Check"
         
         command		"resetParams2StDefaults"
         command		"listCurrentParams"
@@ -81,8 +82,8 @@
 
 	tiles {
 		standardTile("motion", "device.motion", width: 2, height: 2) {
-			state "active", label:'motion', icon:"st.motion.motion.active", backgroundColor:"#53a7c0"
-			state "inactive", label:'no motion', icon:"st.motion.motion.inactive", backgroundColor:"#ffffff"
+			state "active", label:'motion', icon:"st.motion.motion.active", backgroundColor:"#00a0dc"
+			state "inactive", label:'no motion', icon:"st.motion.motion.inactive", backgroundColor:"#cccccc"
 		}
 		valueTile("temperature", "device.temperature", inactiveLabel: false) {
 			state "temperature", label:'${currentValue}°',
@@ -125,6 +126,9 @@
  */
 def configure() {
 	log.debug "Configuring Device For SmartThings Use"
+	// Device-Watch simply pings if no device events received for 8 hrs & 2 minutes
+	sendEvent(name: "checkInterval", value: 8 * 60 * 60 + 2 * 60, displayed: false, data: [protocol: "zwave", hubHardwareId: device.hub.hardwareID])
+
     def cmds = []
     
     // send associate to group 3 to get sensor data reported only to hub

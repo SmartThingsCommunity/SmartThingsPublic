@@ -32,8 +32,8 @@ metadata {
 
 	tiles {
 		standardTile("sensor", "device.sensor", width: 2, height: 2) {
-			state("inactive", label:'inactive', icon:"st.unknown.zwave.sensor", backgroundColor:"#ffffff")
-			state("active", label:'active', icon:"st.unknown.zwave.sensor", backgroundColor:"#53a7c0")
+			state("inactive", label:'inactive', icon:"st.unknown.zwave.sensor", backgroundColor:"#cccccc")
+			state("active", label:'active', icon:"st.unknown.zwave.sensor", backgroundColor:"#00A0DC")
 		}
 		valueTile("battery", "device.battery", inactiveLabel: false, decoration: "flat") {
 			state "battery", label:'${currentValue}% battery', unit:""

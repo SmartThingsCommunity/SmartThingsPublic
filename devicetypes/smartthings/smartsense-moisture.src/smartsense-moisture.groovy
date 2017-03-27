@@ -37,13 +37,13 @@ metadata {
 		multiAttributeTile(name:"water", type: "generic", width: 6, height: 4){
 			tileAttribute ("device.water", key: "PRIMARY_CONTROL") {
 				attributeState "dry", label: "Dry", icon:"st.alarm.water.dry", backgroundColor:"#ffffff"
-				attributeState "wet", label: "Wet", icon:"st.alarm.water.wet", backgroundColor:"#53a7c0"
+				attributeState "wet", label: "Wet", icon:"st.alarm.water.wet", backgroundColor:"#00A0DC"
 			}
 		}
 		standardTile("temperatureState", "device.temperature", width: 2, height: 2) {
 			state "normal", icon:"st.alarm.temperature.normal", backgroundColor:"#ffffff"
-			state "freezing", icon:"st.alarm.temperature.freeze", backgroundColor:"#53a7c0"
-			state "overheated", icon:"st.alarm.temperature.overheat", backgroundColor:"#F80000"
+			state "freezing", icon:"st.alarm.temperature.freeze", backgroundColor:"#00A0DC"
+			state "overheated", icon:"st.alarm.temperature.overheat", backgroundColor:"#e86d13"
 		}
 		valueTile("temperature", "device.temperature", width: 2, height: 2) {
             state("temperature", label:'${currentValue}°',

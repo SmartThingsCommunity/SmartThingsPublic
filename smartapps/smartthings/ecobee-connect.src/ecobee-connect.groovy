@@ -81,7 +81,7 @@ def authPage() {
 		return dynamicPage(name: "auth", title: "Select Your Thermostats", uninstall: true) {
 			section("") {
 				paragraph "Tap below to see the list of ecobee thermostats available in your ecobee account and select the ones you want to connect to SmartThings."
-				input(name: "thermostats", title:"", type: "enum", required:true, multiple:true, description: "Tap to choose", metadata:[values:stats])
+				input(name: "thermostats", title:"Select Your Thermostats", type: "enum", required:true, multiple:true, description: "Tap to choose", metadata:[values:stats])
 			}
 
 			def options = sensorsDiscovered() ?: []

@@ -7,6 +7,7 @@
 metadata {
 	// Automatically generated. Make future change here.
 	definition (name: "Hue Bridge", namespace: "smartthings", author: "SmartThings") {
+		capability "Bridge"
 		capability "Health Check"
 
 		attribute "networkAddress", "string"
@@ -26,7 +27,7 @@ metadata {
      	multiAttributeTile(name:"rich-control"){
 			tileAttribute ("device.status", key: "PRIMARY_CONTROL") {
 				attributeState "Offline", label: '${currentValue}', action: "", icon: "st.Lighting.light99-hue", backgroundColor: "#ffffff"
-	            attributeState "Online", label: '${currentValue}', action: "", icon: "st.Lighting.light99-hue", backgroundColor: "#79b821"
+	            attributeState "Online", label: '${currentValue}', action: "", icon: "st.Lighting.light99-hue", backgroundColor: "#00A0DC"
 			}
 			}
 		valueTile("doNotRemove", "v", decoration: "flat", height: 2, width: 6, inactiveLabel: false) {
@@ -45,7 +46,7 @@ metadata {
 }
 
 void installed() {
-	sendEvent(name: "DeviceWatch-Enroll", value: "{\"protocol\": \"LAN\", \"scheme\":\"untracked\", \"hubHardwareId\": \"${device.hub.hardwareID}\"}")
+	sendEvent(name: "DeviceWatch-Enroll", value: "{\"protocol\": \"LAN\", \"scheme\":\"untracked\", \"hubHardwareId\": \"${device.hub.hardwareID}\"}", displayed: false)
 }
 
 // parse events into attributes

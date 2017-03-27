@@ -24,6 +24,7 @@ metadata {
 		capability "Refresh"
 		capability "Actuator"
 		capability "Sensor"
+		capability "Outlet"
 
 		fingerprint profileId: "0104", inClusters: "0000,0003,0004,0005,0006,0008,0B04,0B05", outClusters: "0019", manufacturer: "CentraLite", model: "4257050-ZHAC"
 
@@ -79,7 +80,8 @@ def parse(String description) {
 		*/
 		event.value = event.value / 10
 	}
-	return event
+
+	return event ? createEvent(event) : event
 }
 
 def setLevel(value) {

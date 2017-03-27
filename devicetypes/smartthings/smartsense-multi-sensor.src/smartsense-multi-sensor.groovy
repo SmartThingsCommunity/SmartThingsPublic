@@ -33,6 +33,7 @@ metadata {
 		fingerprint inClusters: "0000,0001,0003,0402,0500,0020,0B05,FC02", outClusters: "0019", manufacturer: "CentraLite", model: "3320"
 		fingerprint inClusters: "0000,0001,0003,0402,0500,0020,0B05,FC02", outClusters: "0019", manufacturer: "CentraLite", model: "3321"
 		fingerprint inClusters: "0000,0001,0003,0402,0500,0020,0B05,FC02", outClusters: "0019", manufacturer: "CentraLite", model: "3321-S", deviceJoinName: "Multipurpose Sensor"
+		fingerprint inClusters: "0000,0001,0003,0020,0402,0500,0B05", outClusters: "0019", manufacturer: "CentraLite", model: "3323-G", deviceJoinName: "Centralite Micro Door Sensor"
 		fingerprint inClusters: "0000,0001,0003,000F,0020,0402,0500,FC02", outClusters: "0019", manufacturer: "SmartThings", model: "multiv4", deviceJoinName: "Multipurpose Sensor"
 
 		attribute "status", "string"
@@ -76,15 +77,15 @@ metadata {
 	tiles(scale: 2) {
 		multiAttributeTile(name: "status", type: "generic", width: 6, height: 4) {
 			tileAttribute("device.status", key: "PRIMARY_CONTROL") {
-				attributeState "open", label: 'Open', icon: "st.contact.contact.open", backgroundColor: "#ffa81e"
-				attributeState "closed", label: 'Closed', icon: "st.contact.contact.closed", backgroundColor: "#79b821"
-				attributeState "garage-open", label: 'Open', icon: "st.doors.garage.garage-open", backgroundColor: "#ffa81e"
-				attributeState "garage-closed", label: 'Closed', icon: "st.doors.garage.garage-closed", backgroundColor: "#79b821"
+				attributeState "open", label: 'Open', icon: "st.contact.contact.open", backgroundColor: "#e86d13"
+				attributeState "closed", label: 'Closed', icon: "st.contact.contact.closed", backgroundColor: "#00a0dc"
+				attributeState "garage-open", label: 'Open', icon: "st.doors.garage.garage-open", backgroundColor: "#e86d13"
+				attributeState "garage-closed", label: 'Closed', icon: "st.doors.garage.garage-closed", backgroundColor: "#00a0dc"
 			}
 		}
 		standardTile("contact", "device.contact", width: 2, height: 2) {
-			state("open", label: 'Open', icon: "st.contact.contact.open", backgroundColor: "#ffa81e")
-			state("closed", label: 'Closed', icon: "st.contact.contact.closed", backgroundColor: "#79b821")
+			state("open", label: 'Open', icon: "st.contact.contact.open", backgroundColor: "#e86d13")
+			state("closed", label: 'Closed', icon: "st.contact.contact.closed", backgroundColor: "#00a0dc")
 		}
 		standardTile("acceleration", "device.acceleration", width: 2, height: 2) {
 			state("active", label: 'Active', icon: "st.motion.acceleration.active", backgroundColor: "#53a7c0")

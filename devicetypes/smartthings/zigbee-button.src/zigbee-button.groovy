@@ -44,7 +44,7 @@ metadata {
     tiles {
         standardTile("button", "device.button", width: 2, height: 2) {
             state "default", label: "", icon: "st.unknown.zwave.remote-controller", backgroundColor: "#ffffff"
-            state "button 1 pushed", label: "pushed #1", icon: "st.unknown.zwave.remote-controller", backgroundColor: "#79b821"
+            state "button 1 pushed", label: "pushed #1", icon: "st.unknown.zwave.remote-controller", backgroundColor: "#00A0DC"
         }
 
         valueTile("battery", "device.battery", decoration: "flat", inactiveLabel: false) {

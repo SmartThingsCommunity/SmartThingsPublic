@@ -51,12 +51,12 @@ metadata {
 
 	tiles {
 		standardTile("contact", "device.contact", width: 2, height: 2) {
-			state("open", label:'${name}', icon:"st.contact.contact.open", backgroundColor:"#ffa81e")
-			state("closed", label:'${name}', icon:"st.contact.contact.closed", backgroundColor:"#79b821")
+			state("open", label:'${name}', icon:"st.contact.contact.open", backgroundColor:"#e86d13")
+			state("closed", label:'${name}', icon:"st.contact.contact.closed", backgroundColor:"#00a0dc")
 		}
 		standardTile("acceleration", "device.acceleration") {
-			state("active", label:'${name}', icon:"st.motion.acceleration.active", backgroundColor:"#53a7c0")
-			state("inactive", label:'${name}', icon:"st.motion.acceleration.inactive", backgroundColor:"#ffffff")
+			state("active", label:'${name}', icon:"st.motion.acceleration.active", backgroundColor:"#00a0dc")
+			state("inactive", label:'${name}', icon:"st.motion.acceleration.inactive", backgroundColor:"#cccccc")
 		}
 		valueTile("temperature", "device.temperature") {
 			state("temperature", label:'${currentValue}°',

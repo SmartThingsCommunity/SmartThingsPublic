@@ -45,8 +45,8 @@ metadata {
 	tiles(scale: 2) {
 		multiAttributeTile(name: "contact", type: "generic", width: 6, height: 4) {
 			tileAttribute("device.contact", key: "PRIMARY_CONTROL") {
-				attributeState "open", label: '${name}', icon: "st.contact.contact.open", backgroundColor: "#ffa81e"
-				attributeState "closed", label: '${name}', icon: "st.contact.contact.closed", backgroundColor: "#79b821"
+				attributeState "open", label: '${name}', icon: "st.contact.contact.open", backgroundColor: "#e86d13"
+				attributeState "closed", label: '${name}', icon: "st.contact.contact.closed", backgroundColor: "#00A0DC"
 			}
 		}
 
@@ -95,6 +95,12 @@ def parse(String description) {
 				}
 			}
 		}
+	} else if (map.name == "temperature") {
+		if (tempOffset) {
+			map.value = (int) map.value + (int) tempOffset
+		}
+		map.descriptionText = temperatureScale == 'C' ? '{{ device.displayName }} was {{ value }}°C' : '{{ device.displayName }} was {{ value }}°F'
+		map.translatable = true
 	}
 
 	log.debug "Parse returned $map"

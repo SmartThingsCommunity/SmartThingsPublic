@@ -37,14 +37,14 @@ metadata {
 	tiles {
 		standardTile("button", "device.button", width: 2, height: 2) {
 			state "default", label: "", icon: "st.unknown.zwave.remote-controller", backgroundColor: "#ffffff"
-			state "button 1 pushed", label: "pushed #1", icon: "st.unknown.zwave.remote-controller", backgroundColor: "#79b821"
-			state "button 2 pushed", label: "pushed #2", icon: "st.unknown.zwave.remote-controller", backgroundColor: "#79b821"
-			state "button 3 pushed", label: "pushed #3", icon: "st.unknown.zwave.remote-controller", backgroundColor: "#79b821"
-			state "button 4 pushed", label: "pushed #4", icon: "st.unknown.zwave.remote-controller", backgroundColor: "#79b821"
-			state "button 1 held", label: "held #1", icon: "st.unknown.zwave.remote-controller", backgroundColor: "#ffa81e"
-			state "button 2 held", label: "held #2", icon: "st.unknown.zwave.remote-controller", backgroundColor: "#ffa81e"
-			state "button 3 held", label: "held #3", icon: "st.unknown.zwave.remote-controller", backgroundColor: "#ffa81e"
-			state "button 4 held", label: "held #4", icon: "st.unknown.zwave.remote-controller", backgroundColor: "#ffa81e"
+			state "button 1 pushed", label: "pushed #1", icon: "st.unknown.zwave.remote-controller", backgroundColor: "#00A0DC"
+			state "button 2 pushed", label: "pushed #2", icon: "st.unknown.zwave.remote-controller", backgroundColor: "#00A0DC"
+			state "button 3 pushed", label: "pushed #3", icon: "st.unknown.zwave.remote-controller", backgroundColor: "#00A0DC"
+			state "button 4 pushed", label: "pushed #4", icon: "st.unknown.zwave.remote-controller", backgroundColor: "#00A0DC"
+			state "button 1 held", label: "held #1", icon: "st.unknown.zwave.remote-controller", backgroundColor: "#e86d13"
+			state "button 2 held", label: "held #2", icon: "st.unknown.zwave.remote-controller", backgroundColor: "#e86d13"
+			state "button 3 held", label: "held #3", icon: "st.unknown.zwave.remote-controller", backgroundColor: "#e86d13"
+			state "button 4 held", label: "held #4", icon: "st.unknown.zwave.remote-controller", backgroundColor: "#e86d13"
 		}
 		valueTile("battery", "device.battery", inactiveLabel: false, decoration: "flat") {
 			state "battery", label:'${currentValue}% battery', unit:""

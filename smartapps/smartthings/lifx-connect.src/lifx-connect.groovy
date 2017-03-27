@@ -4,6 +4,8 @@
  *  Copyright 2015 LIFX
  *
  */
+include 'localization'
+
 definition(
 		name: "LIFX (Connect)",
 		namespace: "smartthings",
@@ -17,8 +19,15 @@ definition(
 		singleInstance: true) {
 	appSetting "clientId"
 	appSetting "clientSecret"
+	appSetting "serverUrl" // See note below
 }
 
+// NOTE regarding OAuth settings. On NA01 (i.e. graph.api), NA01S, and NA01D the serverUrl app setting can be left
+// Blank. For other shards is should be set to the callback URL registered with LIFX, which is:
+//
+// Production  -- https://graph.api.smartthings.com
+// Staging     -- https://graph-na01s-useast1.smartthingsgdev.com
+// Development -- https://graph-na01d-useast1.smartthingsgdev.com
 
 preferences {
 	page(name: "Credentials", title: "LIFX", content: "authPage", install: true)
@@ -33,8 +42,8 @@ mappings {
 	path("/test") { action: [ GET: "oauthSuccess" ] }
 }
 
-def getServerUrl()               { return "https://graph.api.smartthings.com" }
-def getCallbackUrl()             { return "https://graph.api.smartthings.com/oauth/callback"}
+def getServerUrl()               { return  appSettings.serverUrl ?: apiServerUrl }
+def getCallbackUrl()             { return "${getServerUrl()}/oauth/callback" }
 def apiURL(path = '/') 			 { return "https://api.lifx.com/v1${path}" }
 def getSecretKey()               { return appSettings.secretKey }
 def getClientId()                { return appSettings.clientId }
@@ -66,7 +75,7 @@ def authPage() {
 
 		return dynamicPage(name:"Credentials", title:"", nextPage:"", install:true, uninstall: true) {
 			section("Select your location") {
-				input "selectedLocationId", "enum", required:true, title:"Select location (${count} found)", multiple:false, options:options, submitOnChange: true
+				input "selectedLocationId", "enum", required:true, title:"Select location ({{count}} found)", messageArgs: [count: count], multiple:false, options:options, submitOnChange: true
 			}
 		}
 	}
@@ -346,7 +355,7 @@ def devicesList(selector = '') {
 		if (resp.status == 200) {
 			return resp.data
 		} else {
-			log.error("Non-200 from device list call. ${resp.status} ${resp.data}")
+			log.debug("No response from device list call. ${resp.status} ${resp.data}")
 			return []
 		}
 	}
@@ -418,9 +427,15 @@ def updateDevices() {
 	}
 	getChildDevices().findAll { !selectors.contains("${it.deviceNetworkId}") }.each {
 		log.info("Deleting ${it.deviceNetworkId}")
-		state.devices[it.deviceNetworkId] = null
-		deleteChildDevice(it.deviceNetworkId)
+		if (state.devices[it.deviceNetworkId])
+			state.devices[it.deviceNetworkId] = null
+		// The reason the implementation is trying to delete this bulb is because it is not longer connected to the LIFX location.
+		// Adding "try" will prevent this exception from happening.
+		// Ideally device health would show to the user that the device is not longer accessible so that the user can either force delete it or remove it from the SmartApp.
+		try {
+			deleteChildDevice(it.deviceNetworkId)
+		} catch (Exception e) {
+			log.debug("Can't remove this device because it's being used by an SmartApp")
+		}
 	}
 }
-
-
