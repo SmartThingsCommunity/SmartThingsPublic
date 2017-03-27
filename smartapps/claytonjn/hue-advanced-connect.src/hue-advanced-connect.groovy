@@ -88,7 +88,8 @@ def bridgeDiscovery(params=[:])
 	}
 
 	return dynamicPage(name:"bridgeDiscovery", title:"Discovery Started!", nextPage:"bridgeBtnPush", refreshInterval:refreshInterval, uninstall: true) {
-		section("Please wait while we discover your Hue Bridge. Discovery can take five minutes or more, so sit back and relax! Select your device below once discovered.") {
+		section("Please wait while we discover your Hue Bridge. Kindly note that you must first configure your Hue Bridge and Lights using the Philips Hue application. " +
+				"Discovery can take five minutes or more, so sit back and relax! Select your device below once discovered.") {
 			input "selectedHue", "enum", required:false, title:"Select Hue Bridge (${numFound} found)", multiple:false, options:options, submitOnChange: true
 		}
 	}
@@ -182,7 +183,7 @@ def lightDiscovery() {
 	}
 
 	if (lightRefreshCount > 200 && numFound == 0) {
-		// Time out to avoid endless discovery
+		// Time out after 10 minutes
 		state.inLightDiscovery = false
 		lightRefreshCount = 0
 		return dynamicPage(name:"lightDiscovery", title:"Light Discovery Failed!", nextPage:"groupDiscovery", refreshInterval:0, uninstall: true) {
@@ -327,12 +328,12 @@ private sendDeveloperReq() {
 	def token = app.id
 	def host = getBridgeIP()
 	sendHubCommand(new physicalgraph.device.HubAction([
-		method: "POST",
-		path: "/api",
-		headers: [
-			HOST: host
-		],
-		body: [devicetype: "$token-0"]], "${selectedHue}", [callback: "usernameHandler"]))
+			method: "POST",
+			path: "/api",
+			headers: [
+					HOST: host
+			],
+			body: [devicetype: "$token-0"]], "${selectedHue}", [callback: "usernameHandler"]))
 }
 
 private discoverHueDevices(deviceType) {
@@ -348,11 +349,11 @@ private discoverHueDevices(deviceType) {
 private verifyHueBridge(String deviceNetworkId, String host) {
 	log.trace "Verify Hue Bridge $deviceNetworkId"
 	sendHubCommand(new physicalgraph.device.HubAction([
-		method: "GET",
-		path: "/description.xml",
-		headers: [
-			HOST: host
-		]], deviceNetworkId, [callback: "bridgeDescriptionHandler"]))
+			method: "GET",
+			path: "/description.xml",
+			headers: [
+					HOST: host
+			]], deviceNetworkId, [callback: "bridgeDescriptionHandler"]))
 }
 
 private verifyHueBridges() {
@@ -644,8 +645,6 @@ def addBridge() {
 					log.error "Failed to create Hue Bridge device"
 				}
 			}
-		} else {
-			log.debug "found ${d.displayName} with id $selectedHue already exists"
 		}
 	}
 }
@@ -897,6 +896,9 @@ def doDeviceSync(){
 		log.warn "state.updating failed to clear"
 	}
 
+	if (selectedHue) {
+		addBridge()
+	}
 	convertDeviceListToMap()
 	poll()
 	ssdpSubscribe()
@@ -1423,7 +1425,7 @@ def setColorTemperature(childDevice, huesettings, transitionTime, deviceType) {
 	def ct = Math.round(1000000 / huesettings) as Integer
 	def value = [ct: ct, on: true, transitiontime: transitionTime * 10]
 	put("${deviceType}/$id/${getApi(deviceType)}", value)
-	return "Setting color temperature to $percent"
+	return "Setting color temperature to $ct"
 }
 
 def setColor(childDevice, huesettings, deviceType) {
@@ -1563,10 +1565,10 @@ private put(path, body) {
 	log.debug "BODY: ${bodyJSON}"
 
 	sendHubCommand(new physicalgraph.device.HubAction("PUT $uri HTTP/1.1\r\n" +
-		"HOST: ${host}\r\n" +
-		"Content-Length: ${length}\r\n" +
-		"\r\n" +
-		"${bodyJSON}", physicalgraph.device.Protocol.LAN, "${selectedHue}"))
+			"HOST: ${host}\r\n" +
+			"Content-Length: ${length}\r\n" +
+			"\r\n" +
+			"${bodyJSON}", physicalgraph.device.Protocol.LAN, "${selectedHue}"))
 }
 
 /*
@@ -1677,7 +1679,7 @@ private void createSwitchEvent(childDevice, setSwitch, setLevel = null) {
 private colorPointsForModel(model = null) {
 	def result = null
 	switch (model) {
-		// Gamut A
+	// Gamut A
 		case "LLC001": /* Monet, Renoir, Mondriaan (gen II) */
 		case "LLC005": /* Bloom (gen II) */
 		case "LLC006": /* Iris (gen III) */
@@ -1689,12 +1691,12 @@ private colorPointsForModel(model = null) {
 		case "LLC010": /* Hue Living Colors Iris + */
 			result = [r:[x: 0.704f, y: 0.296f], g:[x: 0.2151f, y: 0.7106f], b:[x: 0.138f, y: 0.08f]];
 			break
-		// Gamut C
+	// Gamut C
 		case "LLC020": /* Hue Go */
 		case "LST002": /* Hue LightStrips Plus */
 			result = [r:[x: 0.692f, y: 0.308f], g:[x: 0.17f, y: 0.7f], b:[x: 0.153f, y: 0.048f]];
 			break
-		// Gamut B
+	// Gamut B
 		case "LCT001": /* Hue A19 */
 		case "LCT002": /* Hue BR30 */
 		case "LCT003": /* Hue GU10 */
