@@ -39,7 +39,8 @@
 		capability 	"Contact Sensor"
 		capability 	"Sensor"
 		capability 	"Battery"
-        capability 	"Configuration"
+		capability 	"Configuration"
+		capability  "Health Check"
         
         command		"resetParams2StDefaults"
         command		"listCurrentParams"
@@ -266,6 +267,9 @@ def zwaveEvent(physicalgraph.zwave.commands.manufacturerspecificv2.ManufacturerS
  */
 def configure() {
 	log.debug "Configuring Device..."
+	// Device wakes up every 4 hours, this interval allows us to miss one wakeup notification before marking offline
+	sendEvent(name: "checkInterval", value: 8 * 60 * 60 + 2 * 60, displayed: false, data: [protocol: "zwave", hubHardwareId: device.hub.hardwareID])
+
 	def cmds = []
 	cmds << zwave.configurationV1.configurationSet(configurationValue: [0,0], parameterNumber: 1, size: 2).format()
 	// send associate to group 3 to get sensor data reported only to hub
