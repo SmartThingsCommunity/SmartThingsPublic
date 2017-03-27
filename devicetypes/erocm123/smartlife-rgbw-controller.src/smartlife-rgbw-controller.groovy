@@ -219,6 +219,18 @@ def getDefault(){
         } else {
             return "${transition == "false"? "x~" : "w~"}${getDimmedColor(getHexColor(settings.dcolor), settings.level)}"
         }
+    } else if(settings.dcolor == "W1") {
+        if (settings.level == null || settings.level == "0") {
+            return "${transition == "false"? "x~" : "w~"}${getDimmedColor(getHexColor(settings.dcolor), "100")}"
+        } else {
+            return "${transition == "false"? "x~" : "w~"}${getDimmedColor(getHexColor(settings.dcolor), settings.level)}"
+        }
+    } else if(settings.dcolor == "W2") {
+        if (settings.level == null || settings.level == "0") {
+            return "${transition == "false"? "z~" : "y~"}${getDimmedColor(getHexColor(settings.dcolor), "100")}"
+        } else {
+            return "${transition == "false"? "z~" : "y~"}${getDimmedColor(getHexColor(settings.dcolor), settings.level)}"
+        }
     } else {
         if (settings.level == null || settings.dcolor == null){
            return "Previous"
@@ -237,8 +249,6 @@ def parse(description) {
     
     if(description == "updated") return
     def descMap = parseDescriptionAsMap(description)
-    
-    if (!device.currentValue("ip") || (device.currentValue("ip") != getDataValue("ip"))) sendEvent(name: 'ip', value: getDataValue("ip"))
 
     if (!state.mac || state.mac != descMap["mac"]) {
 		log.debug "Mac address of device found ${descMap["mac"]}"
@@ -331,7 +341,9 @@ def parse(description) {
             events << createEvent(name:"switch$result.program", value: "on")
         }
     }
-    //if (cmds != [] && events != null) return [events, response(cmds)] else if (cmds != []) return response(cmds) else return events
+    
+    if (!device.currentValue("ip") || (device.currentValue("ip") != getDataValue("ip"))) events << createEvent(name: 'ip', value: getDataValue("ip"))
+
     return events
 }
 
@@ -858,6 +870,12 @@ def color = ""
     case "Warm White":
     color = "ff"
     break;
+    case "W1":
+    color = "ff"
+    break;
+    case "W2":
+    color = "ff"
+    break;
     case "Blue":
     color = "0000ff"
     break;
@@ -1056,6 +1074,8 @@ Default: Previous
     <Item label="Purple" value="Purple" />
     <Item label="Pink" value="Pink" />
     <Item label="Cyan" value="Random" />
+    <Item label="W1" value="W1" />
+    <Item label="W2" value="W2" />
     <Item label="Custom" value="Custom" />
 </Value>
 <Value type="text" byteSize="1" index="custom" label="Custom Color in Hex" min="" max="" value="" setting_type="preference" fw="">
