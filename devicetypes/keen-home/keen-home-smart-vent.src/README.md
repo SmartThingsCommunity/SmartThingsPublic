@@ -25,10 +25,10 @@ Works with:
 
 ## Device Health
 
-Keen Home Smart Vent with reporting interval of 5 mins.
+Keen Home Smart Vent with reporting interval of 10 mins.
 SmartThings platform will ping the device after `checkInterval` seconds of inactivity in last attempt to reach the device before marking it `OFFLINE` 
 
-* __12min__ checkInterval
+* __22min__ checkInterval
 
 ## Troubleshooting
 
