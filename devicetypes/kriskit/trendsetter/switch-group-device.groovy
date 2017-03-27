@@ -61,6 +61,20 @@ def groupSync(name, values) {
     }
 }
 
+def mapAttributeToCommand(name, value) {
+	switch (name) {
+    	case "switch":
+        	if (value == "on")
+        		return [command: "on", arguments: null]
+
+        	if (value == "off")
+        		return [command: "off", arguments: null]
+       	break;
+    }
+    
+    log.error "Could not map '$name' attribute with value '$value' to a command."
+}
+
 // SWITCH
 def on() {
 	on(true)
