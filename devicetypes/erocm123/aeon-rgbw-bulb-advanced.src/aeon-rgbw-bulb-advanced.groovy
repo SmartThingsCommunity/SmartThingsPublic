@@ -820,6 +820,15 @@ Default: 0 (Disabled)
     <Item label="Disable" value="0" />
     <Item label="Enable" value="1" />
   </Value>
+    <Value type="list" byteSize="1" index="34" label="External Switch" min="0" max="1" value="0" setting_type="zwave" fw="1.04,1.05">
+    <Help>
+Enable or disable manually toggle the LED bulb ON and OFF using an external switch.
+Range: 0~1
+Default: 0 (Disabled)
+    </Help>
+    <Item label="Disable" value="0" />
+    <Item label="Enable" value="1" />
+  </Value>
   <Value type="disabled" byteSize="1" index="80" label="Status Report" min="0" max="2" value="2" setting_type="zwave" fw="1.04,1.05">
     <Help>
 Enable or disable the sending of a report when the state of the bulb is changed.
