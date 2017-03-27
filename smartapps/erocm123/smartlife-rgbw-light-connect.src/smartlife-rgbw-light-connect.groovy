@@ -407,10 +407,10 @@ def configureProgram(params){
          }
          app.updateSetting("${state.currentDeviceId}_programs_${state.currentProgram}_${numberOfActions}_transition", it.split("\\.")[2])
          if (it.split("\\.")[3].indexOf("-") < 0) {
-            app.updateSetting("${state.currentDeviceId}_programs_${state.currentProgram}_${numberOfActions}_random_duration", "false")
+            app.updateSetting("${state.currentDeviceId}_programs_${state.currentProgram}_${numberOfActions}_random_duration", false)
             app.updateSetting("${state.currentDeviceId}_programs_${state.currentProgram}_${numberOfActions}_duration", it.split("\\.")[3])
          } else {
-            app.updateSetting("${state.currentDeviceId}_programs_${state.currentProgram}_${numberOfActions}_random_duration", "true")
+            app.updateSetting("${state.currentDeviceId}_programs_${state.currentProgram}_${numberOfActions}_random_duration", true)
             app.updateSetting("${state.currentDeviceId}_programs_${state.currentProgram}_${numberOfActions}_min_duration", it.split("\\.")[3].split("-")[0])
             app.updateSetting("${state.currentDeviceId}_programs_${state.currentProgram}_${numberOfActions}_max_duration", it.split("\\.")[3].split("-")[1])
          }
@@ -420,10 +420,10 @@ def configureProgram(params){
    dynamicPage(name: "configureProgram", title: "Configure the actions you would like the program to perform.", nextPage: null, uninstall: configured(), install: false) {
         section{
            input "${state.currentDeviceId}_programs_${state.currentProgram}_name", "text", title:"Program Name", required: false
-           input "${state.currentDeviceId}_programs_${state.currentProgram}_off", "boolean", title:"Power off when program is finished?", required: false, defaultValue: false
+           input "${state.currentDeviceId}_programs_${state.currentProgram}_off", "bool", title:"Power off when program is finished?", required: false, defaultValue: false
         }
         section("Actions") {
-                input "${state.currentDeviceId}_programs_${state.currentProgram}_numberOfActions", "enum", title: "Number of Actions?", required: true, defaultValue: 1, submitOnChange: true, options: [
+                input "${state.currentDeviceId}_programs_${state.currentProgram}_numberOfActions", "enum", title: "Number of Actions?", required: true, submitOnChange: true, options: [
                 1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24]
                 def configDescription = ""
                 for (int i = 1; i <= (settings["${state.currentDeviceId}_programs_${state.currentProgram}_numberOfActions"] as Integer); i++){
@@ -437,7 +437,7 @@ def configureProgram(params){
                    if (settings["${state.currentDeviceId}_programs_${state.currentProgram}_${i}_lightLevel"] != null) { 
                       configDescription = configDescription + " (" + settings["${state.currentDeviceId}_programs_${state.currentProgram}_${i}_lightLevel"] + "%) "
                    }
-                   if (settings["${state.currentDeviceId}_programs_${state.currentProgram}_${i}_random_duration"] == "true") { 
+                   if (settings["${state.currentDeviceId}_programs_${state.currentProgram}_${i}_random_duration"]?.toBoolean()) { 
                        if (settings["${state.currentDeviceId}_programs_${state.currentProgram}_${i}_min_duration"] != null && settings["${state.currentDeviceId}_programs_${state.currentProgram}_${i}_max_duration"] != null){
                            configDescription = configDescription + "for a random time between " + settings["${state.currentDeviceId}_programs_${state.currentProgram}_${i}_min_duration"] + " & " + settings["${state.currentDeviceId}_programs_${state.currentProgram}_${i}_max_duration"] + " milliseconds"
                        }
@@ -469,7 +469,7 @@ def exportProgram(){
             def programString = ""
 			paragraph "Copy the string below to import into another program"
             programString += settings["${state.currentDeviceId}_programs_${state.currentProgram}_name"] + ","
-            programString += settings["${state.currentDeviceId}_programs_${state.currentProgram}_off"] + ","
+            programString += settings["${state.currentDeviceId}_programs_${state.currentProgram}_off"]?.toString() + ","
             programString += settings["${state.currentDeviceId}_programs_${state.currentProgram}_numberOfActions"] + ","
             programString += settings["${state.currentDeviceId}_programs_${state.currentProgram}_repeat"] + "_"
             
@@ -481,7 +481,7 @@ def exportProgram(){
                   programString += settings["${state.currentDeviceId}_programs_${state.currentProgram}_${i}_lightLevel"] + "."
                }
                programString += settings["${state.currentDeviceId}_programs_${state.currentProgram}_${i}_transition"] + "."
-               if (settings["${state.currentDeviceId}_programs_${state.currentProgram}_${i}_random_duration"] == "true") {
+               if (settings["${state.currentDeviceId}_programs_${state.currentProgram}_${i}_random_duration"]?.toBoolean()) {
                   programString += settings["${state.currentDeviceId}_programs_${state.currentProgram}_${i}_min_duration"] + "-"
                   programString += settings["${state.currentDeviceId}_programs_${state.currentProgram}_${i}_max_duration"] + ";"
                } else {
@@ -519,7 +519,7 @@ def getActionSections(programNumber, actionNumber) {
 					["White":"White - Concentrate"],
 					["Daylight":"Daylight - Energize"],
 					["Warm White":"Warm White - Relax"],
-					"Red","Green","Blue","Yellow","Orange","Purple","Pink","Cyan","Random","Custom","Off"]
+					"Red","Green","Blue","Yellow","Orange","Purple","Pink","Cyan","W1","W2","Random","Custom","Off"]
             if (settings["${state.currentDeviceId}_programs_${programNumber}_${actionNumber}_color"] == "Custom"){
                 input "${state.currentDeviceId}_programs_${programNumber}_${actionNumber}_custom", "text", title: "Custom Color in Hex (ie ffffff)", submitOnChange: false, required: false
             }
@@ -533,9 +533,9 @@ def getActionSections(programNumber, actionNumber) {
 			input "${state.currentDeviceId}_programs_${programNumber}_${actionNumber}_transition", "enum", title: "Which Transition?", required: false, options: [[1:"Fade"],[2:"Flash"]]
 		}
         section ("Duration"){
-            input "${state.currentDeviceId}_programs_${programNumber}_${actionNumber}_random_duration", "boolean", title: "Random Duration", submitOnChange: true, required: false
+            input "${state.currentDeviceId}_programs_${programNumber}_${actionNumber}_random_duration", "bool", title: "Random Duration", submitOnChange: true, required: false
             
-            if (settings["${state.currentDeviceId}_programs_${programNumber}_${actionNumber}_random_duration"] == "true"){
+            if (settings["${state.currentDeviceId}_programs_${programNumber}_${actionNumber}_random_duration"]?.toBoolean()){
                 input "${state.currentDeviceId}_programs_${programNumber}_${actionNumber}_min_duration", "number", title: "Minimum Duration (milliseconds)", range: "100..1000000", submitOnChange: false, required: false
                 input "${state.currentDeviceId}_programs_${programNumber}_${actionNumber}_max_duration", "number", title: "Maximum Duration (milliseconds)", range: "100..1000000", submitOnChange: false, required: false
             } else {
@@ -732,7 +732,6 @@ def uninstalled() {
 
 def configurePrograms(){
    getChildDevices().each {
-   log.debug it.typeName
                if(it.typeName != "SmartLife RGBW Virtual Switch"){
                   
    for (int i = 1; i <= 6; i++){
@@ -750,12 +749,14 @@ def configurePrograms(){
              } else {
                 color = getHexColor(settings["${it.deviceNetworkId}_programs_${i}_${j}_color"])
              }
-             if(settings["${it.deviceNetworkId}_programs_${i}_${j}_color"] == "Soft White" || settings["${it.deviceNetworkId}_programs_${i}_${j}_color"] == "Warm White") {
-                transition = getTransition(settings["${it.deviceNetworkId}_programs_${i}_${j}_transition"] as Integer, true)
+             if(settings["${it.deviceNetworkId}_programs_${i}_${j}_color"] == "Soft White" || settings["${it.deviceNetworkId}_programs_${i}_${j}_color"] == "Warm White" || settings["${it.deviceNetworkId}_programs_${i}_${j}_color"] == "W1") {
+                transition = getTransition(settings["${it.deviceNetworkId}_programs_${i}_${j}_transition"] as Integer, "w1")
+             }else if(settings["${it.deviceNetworkId}_programs_${i}_${j}_color"] == "W2") {
+                transition = getTransition(settings["${it.deviceNetworkId}_programs_${i}_${j}_transition"] as Integer, "w2")
              }else{
-                transition = getTransition(settings["${it.deviceNetworkId}_programs_${i}_${j}_transition"] as Integer, false)
+                transition = getTransition(settings["${it.deviceNetworkId}_programs_${i}_${j}_transition"] as Integer, "rgb")
              }
-             if (settings["${it.deviceNetworkId}_programs_${i}_${j}_random_duration"] == "true") {
+             if (settings["${it.deviceNetworkId}_programs_${i}_${j}_random_duration"]?.toBoolean()) {
                  programString = programString + transition + color + "~" + settings["${it.deviceNetworkId}_programs_${i}_${j}_min_duration"] + "-" + settings["${it.deviceNetworkId}_programs_${i}_${j}_max_duration"] + "_"
              } else {
                  programString = programString + transition + color + "~" + settings["${it.deviceNetworkId}_programs_${i}_${j}_duration"] + "_"
@@ -776,7 +777,7 @@ def virtualHandler(evt) {
   log.debug "virtualHandler called with event: deviceId ${evt.deviceId} name:${evt.name} source:${evt.source} value:${evt.value} isStateChange: ${evt.isStateChange()} isPhysical: ${evt.isPhysical()} isDigital: ${evt.isDigital()} data: ${evt.data} device: ${evt.device}"
   getChildDevices().each {
         if (evt.deviceId == it.id){
-        if (evt.value == "off" && settings["${it.deviceNetworkId.split("/")[0]}_programs_${it.deviceNetworkId.split("/")[2]}_off"] == "true"){
+        if (evt.value == "off" && settings["${it.deviceNetworkId.split("/")[0]}_programs_${it.deviceNetworkId.split("/")[2]}_off"]?.toBoolean()){
             getChildDevice(it.deviceNetworkId.split("/")[0])."${evt.value}${it.deviceNetworkId.split("/")[2]}"(-1)
         } else {
             getChildDevice(it.deviceNetworkId.split("/")[0])."${evt.value}${it.deviceNetworkId.split("/")[2]}"()
@@ -849,6 +850,12 @@ def color = ""
     case "Warm White":
     color = "ff"
     break;
+    case "W1":
+    color = "ff"
+    break;
+    case "W2":
+    color = "ff"
+    break;
     case "Blue":
     color = "0000ff"
     break;
@@ -883,9 +890,9 @@ def color = ""
    return color
 }
 
-private getTransition(value, isWhite){
+private getTransition(value, channel){
   def transition = ""
-  if(isWhite){
+  if(channel == "w1"){
       switch(value){
         case 1:
         transition = "w~"
@@ -894,7 +901,16 @@ private getTransition(value, isWhite){
         transition = "x~"
         break;
       }
-	} else {
+	} else if(channel == "w2") {
+      switch(value){
+        case 1:
+        transition = "y~"
+        break;
+        case 2:
+        transition = "z~"
+        break;
+      }
+    } else if(channel == "rgb") {
       switch(value){
         case 1:
         transition = "f~"
