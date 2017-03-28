@@ -26,8 +26,7 @@ metadata {
         capability "Configuration"
         capability "Refresh"
         capability "Actuator"
-        capability "Valve"
-        capability "Health Check"
+        capability "Valve"        
 		
         attribute "switch", "string"
         attribute "switch1", "string"
@@ -97,7 +96,7 @@ metadata {
         command "notify"
         command "updated"
 
-        fingerprint endpointId: "1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18", profileId: "0104", deviceId: "0002", deviceVersion: "00", inClusters: "0000,0003,0004,0005,0006,000F", outClusters: "0003, 0019", manufacturer: "PLAID SYSTEMS", model: "PS-SPRZ16-01", deviceJoinName: "Spruce Irrigation Controller"
+		fingerprint endpointId: "1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18", profileId: "0104", deviceId: "0002", deviceVersion: "00", inClusters: "0000,0003,0004,0005,0006,000F", outClusters: "0003, 0019", manufacturer: "PLAID SYSTEMS", model: "PS-SPRZ16-01"
 		
 	}
 
@@ -249,8 +248,8 @@ def parse(String description) {
 			log.debug "Alarm"            
             map = getAlarm(descMap)
             }
-	}
-
+	}     
+	
 	if (map) {
 		result = createEvent(map)
 	}
@@ -367,14 +366,14 @@ def writeTime(wEP, runTime){
 
 //set reporting and binding
 def configure() {
-    // Device-Watch allows 2 check-in misses from device (plus 2 mins lag time)
-    sendEvent(name: "checkInterval", value: 2 * 10 * 60 + 2 * 60, displayed: false, data: [protocol: "zigbee", hubHardwareId: device.hub.hardwareID])
+
 	String zigbeeId = swapEndianHex(device.hub.zigbeeId)
 	log.debug "Confuguring Reporting and Bindings ${device.deviceNetworkId} ${device.zigbeeId}"
 	sendEvent(name: 'configuration',value: 100, descriptionText: "Configuration initialized")
     
     def configCmds = [	
         //program on/off
+        "zdo bind 0x${device.deviceNetworkId} 1 1 6 {${device.zigbeeId}} {}", "delay 1000",
         "zdo bind 0x${device.deviceNetworkId} 1 1 0x09 {${device.zigbeeId}} {}", "delay 1000",        
         "zdo bind 0x${device.deviceNetworkId} 1 1 0x0F {${device.zigbeeId}} {}", "delay 1000",
         //zones 1-8
@@ -397,7 +396,10 @@ def configure() {
         "zdo bind 0x${device.deviceNetworkId} 17 1 0x0F {${device.zigbeeId}} {}", "delay 1000",
         //rain sensor
         "zdo bind 0x${device.deviceNetworkId} 18 1 0x0F {${device.zigbeeId}} {}",
-
+        
+        "zcl global send-me-a-report 6 0 0x10 1 0 {01}", "delay 500",
+        "send 0x${device.deviceNetworkId} 1 1", "delay 500",
+        
         "zcl global send-me-a-report 0x0F 0x55 0x10 1 0 {01}", "delay 500",
         "send 0x${device.deviceNetworkId} 1 1", "delay 500",
        
@@ -456,7 +458,7 @@ def configure() {
         "zcl global send-me-a-report 0x09 0x00 0x21 1 0 {00}", "delay 500",
         "send 0x${device.deviceNetworkId} 1 1", "delay 500"
 	]
-    return configCmds + zigbee.onOffConfig() + rain() + manual()
+    return configCmds + rain() + manual()
 }
 
 
@@ -481,14 +483,7 @@ private byte[] reverseArray(byte[] array) {
         i++;
     }
     return array
-}
-
-/**
- * PING is used by Device-Watch in attempt to reach the Device
- * */
-def ping() {
-    refresh()
-}
+}    
 
 def refresh() {
 
