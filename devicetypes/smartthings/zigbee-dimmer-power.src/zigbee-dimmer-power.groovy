@@ -13,7 +13,7 @@
  */
 
 metadata {
-    definition (name: "ZigBee Dimmer Power", namespace: "smartthings", author: "SmartThings") {
+    definition (name: "ZigBee Dimmer Power", namespace: "smartthings", author: "SmartThings", ocfDeviceType: "oic.d.switch") {
         capability "Actuator"
         capability "Configuration"
         capability "Refresh"

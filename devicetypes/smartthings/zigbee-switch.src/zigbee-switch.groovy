@@ -13,7 +13,7 @@
  */
 
 metadata {
-    definition (name: "ZigBee Switch", namespace: "smartthings", author: "SmartThings") {
+    definition (name: "ZigBee Switch", namespace: "smartthings", author: "SmartThings", ocfDeviceType: "oic.d.switch") {
         capability "Actuator"
         capability "Configuration"
         capability "Refresh"
