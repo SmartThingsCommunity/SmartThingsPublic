@@ -12,8 +12,9 @@ metadata {
     capability "Configuration"
     capability "Refresh"
     capability "Sensor"
-    
-    fingerprint profileId: "0104", endpointId: "01", inClusters: "0000,0001,0003,0004,0005,0020,0201,0202,0204,0B05", outClusters: "000A, 0019"
+    capability "Health Check"
+
+    fingerprint profileId: "0104", endpointId: "01", inClusters: "0000,0001,0003,0004,0005,0020,0201,0202,0204,0B05", outClusters: "000A, 0019", manufacturer: "Zen Within", model: "Zen-01", deviceJoinName: "Zen Thermostat"
     
     //attribute "temperatureUnit", "number"
       
@@ -467,8 +468,12 @@ def fanAuto() {
     "st wattr 0x${device.deviceNetworkId} 1 0x202 0 0x30 {05}"
 }
 
-
-
+/**
+ * PING is used by Device-Watch in attempt to reach the Device
+ * */
+def ping() {
+    refresh()
+}
 
 // =============== SmartThings Default Fucntions: refresh, configure, poll ===============
 def refresh()
@@ -502,6 +507,7 @@ def poll()
 
 def configure() 
 {
+    sendEvent(name: "checkInterval", value: 60 * 12, displayed: false, data: [protocol: "zigbee", hubHardwareId: device.hub.hardwareID])
     log.debug "configure() - binding & attribute report"
     [
           //Set long poll interval to 2 qs
@@ -511,7 +517,7 @@ def configure()
       	  //Thermostat - Cluster 201
           "zdo bind 0x${device.deviceNetworkId} 1 1 0x201 {${device.zigbeeId}} {}", "delay 500",
           
-          "zcl global send-me-a-report 0x201 0 0x29 5 300 {3200}", 
+          "zcl global send-me-a-report 0x201 0 0x29 5 300 {3200}",
           "send 0x${device.deviceNetworkId} 1 1", "delay 500",
           
           "zcl global send-me-a-report 0x201 0x0011 0x29 5 300 {3200}", 
