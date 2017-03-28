@@ -16,7 +16,7 @@
  *  Date: 2013-03-05
  */
 metadata {
-	definition (name: "SmartAlert Siren", namespace: "smartthings", author: "SmartThings") {
+	definition (name: "SmartAlert Siren", namespace: "smartthings", author: "SmartThings", ocfDeviceType: "x.com.st.smokedetector") {
 		capability "Actuator"
 		capability "Switch"
 		capability "Sensor"

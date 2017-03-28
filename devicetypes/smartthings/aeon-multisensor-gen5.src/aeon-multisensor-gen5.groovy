@@ -20,10 +20,12 @@ metadata {
 		capability "Configuration"
 		capability "Sensor"
 		capability "Battery"
+		capability "Health Check"
 
 		command "configureAfterSecure"
 
 		fingerprint deviceId: "0x0701", inClusters: "0x5E,0x86,0x72,0x59,0x85,0x73,0x71,0x84,0x80,0x30,0x31,0x70,0x98,0x7A", outClusters:"0x5A"
+		fingerprint mfr:"0086", prod:"0102", model:"004A", deviceJoinName: "Aeon Labs MultiSensor (Gen 5)"
 	}
 
 	simulator {
@@ -96,6 +98,11 @@ metadata {
 		main(["motion", "temperature", "humidity", "illuminance"])
 		details(["motion", "temperature", "humidity", "illuminance", "battery", "configureAfterSecure"])
 	}
+}
+
+def updated(){
+// Device-Watch simply pings if no device events received for 32min(checkInterval)
+	sendEvent(name: "checkInterval", value: 2 * 15 * 60 + 2 * 60, displayed: false, data: [protocol: "zwave", hubHardwareId: device.hub.hardwareID])
 }
 
 def parse(String description)
@@ -242,6 +249,13 @@ def configureAfterSecure() {
     setConfigured()
 	
     secureSequence(request) + ["delay 20000", zwave.wakeUpV1.wakeUpNoMoreInformation().format()]
+}
+
+/**
+ * PING is used by Device-Watch in attempt to reach the Device
+ * */
+def ping() {
+	secure(zwave.batteryV1.batteryGet())
 }
 
 def configure() {

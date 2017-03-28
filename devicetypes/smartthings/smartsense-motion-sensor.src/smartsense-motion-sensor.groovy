@@ -113,6 +113,12 @@ def parse(String description) {
 				map = getMotionResult(value)
 			}
 		}
+	} else if (map.name == "temperature") {
+		if (tempOffset) {
+			map.value = (int) map.value + (int) tempOffset
+		}
+		map.descriptionText = temperatureScale == 'C' ? '{{ device.displayName }} was {{ value }}°C' : '{{ device.displayName }} was {{ value }}°F'
+		map.translatable = true
 	}
 
 	log.debug "Parse returned $map"
