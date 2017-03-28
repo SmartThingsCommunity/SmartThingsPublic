@@ -16,7 +16,7 @@
  *	Date: 2013-12-04
  */
 metadata {
-	definition (name: "SmartPower Dimming Outlet", namespace: "smartthings", author: "SmartThings") {
+	definition (name: "SmartPower Dimming Outlet", namespace: "smartthings", author: "SmartThings", ocfDeviceType: "oic.d.smartplug") {
 		capability "Switch"
 		capability "Switch Level"
 		capability "Power Meter"
