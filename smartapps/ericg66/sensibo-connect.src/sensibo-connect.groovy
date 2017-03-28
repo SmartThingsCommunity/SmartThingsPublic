@@ -73,15 +73,7 @@ def SensiboPodList()
             href(name: "toTimePageEvent",
                      page: "timePageEvent", title:"Only during a certain time", require: false)
         }
-        //section("Automation Director",hideable: true){
-        //		input "boolEnableDirc", "bool",submitOnChange: true, required: false, title: "Enable Director?"
-		//        input(name: "SelectedPodsDir", title:"Pods", type: "enum", required:false, multiple:true, description: "Tap to choose",  metadata:[values:stats])
-        //		input "minTempDir", "decimal", title: "Min Temperature",required:false
-        //    	input "maxTempDir", "decimal", title: "Max Temperature",required:false
-        //        input "targetTempDir","decimal",title:"Target Temperature", required:false
-        //        href(name: "toTimePage",
-        //        	 page: "timePage", title:"Only during a certain time", require: false)
-        //}
+
         section("Alert on sensors (threshold)") {
         	input "sendPushNotif", "bool",submitOnChange: true, required: false, title: "Receive alert on Sensibo Pod sensors based on threshold?"                       
         }
@@ -701,8 +693,9 @@ def getCapabilities(PodUid, mode)
 
          if (resp.data) {
          		log.debug "Status : " + resp.status
-                if(resp.status == 200) {                
-					switch (mode){
+                if(resp.status == 200) {
+                	//resp.data = [result: [remoteCapabilities: [modes: [heat: [swing: ["stopped", "fixedTop", "fixedMiddleTop", "fixedMiddle", "fixedMiddleBottom", "fixedBottom", "rangeTop", "rangeMiddle", "rangeBottom", "rangeFull"], temperatures: [C: ["isNative": true, "values": [16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30]], F: ["isNative": false, "values": [61, 63, 64, 66, 68, 70, 72, 73, 75, 77, 79, 81, 82, 84, 86]]], fanLevels: ["low", "medium", "high", "auto"]], fan: [swing: ["stopped", "fixedMiddleTop", "fixedMiddle", "fixedMiddleBottom", "fixedBottom", "rangeTop", "rangeMiddle", "rangeBottom", "rangeFull"], temperatures: [C: ["isNative": true, "values": [16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30]], F: ["isNative": false, "values": [61, 63, 64, 66, 68, 70, 72, 73, 75, 77, 79, 81, 82, 84, 86]]], fanLevels: ["low", "medium", "high", "auto"]], cool: [swing: ["stopped", "fixedTop", "fixedMiddleTop", "fixedMiddle", "fixedMiddleBottom", "fixedBottom", "rangeTop", "rangeMiddle", "rangeBottom", "rangeFull"], temperatures: ["C": ["isNative": true, "values": [16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30]], F: ["isNative": false, "values": [61, 63, 64, 66, 68, 70, 72, 73, 75, 77, 79, 81, 82, 84, 86]]], fanLevels: ["low", "high", "auto"]]]]]]
+                    switch (mode){
                     	case "dry":
                         	data = [
                             	remoteCapabilities : resp.data.result.remoteCapabilities.modes.dry
@@ -728,10 +721,12 @@ def getCapabilities(PodUid, mode)
                             	remoteCapabilities : resp.data.result.remoteCapabilities.modes.auto
                            	]	
                         	break
+                        case "modes":
+                       		data = [
+                            	remoteCapabilities : resp.data.result.remoteCapabilities.modes
+                           	]	
+                        	break                        
                     }
-                    //data = [
-                    //        remoteCapabilities : resp.data.result.remoteCapabilities
-                    //       ]
                     return data
                 }
                 else {
@@ -773,12 +768,12 @@ def getACState(PodUid)
 				debugEvent ("Response from Sensibo GET = ${resp.data}")
 				debugEvent ("Response Status = ${resp.status}")
 			}
-			//log.debug "xxxxxxxxxxxx Get Status " + resp.status
+			
 			if(resp.status == 200) {
             	resp.data.result.any { stat ->
                 	
                 	if (stat.status == "Success") {
-                    	//log.debug "xxxxxxxxxxxx Sensibo Status " + stat.status
+                    	
                         log.debug "get ACState Success"
                         log.debug stat.acState
                         
@@ -787,9 +782,6 @@ def getACState(PodUid)
 						
 						def stemp = stat.acState.targetTemperature.toInteger()
 
-						//if (TemperatureUnit() == "F") {
-                    	//	stemp = Math.round(cToF(stemp))
-                    	//}
                         def tMode                        
                         if (OnOff=="off") {
         					tMode = "off"
@@ -797,9 +789,7 @@ def getACState(PodUid)
 				        else {
         	 				tMode = stat.acState.mode
                         }
-                        //if (tMode=="fan") {
-                        		//tMode = "auto"
-        				//}
+                        
                         log.debug "swing Mode :" + stat.acState.swing
                         data = [
                             targetTemperature : stemp,
@@ -973,9 +963,8 @@ def pollChildren(PodUid)
 					log.debug "updating dni $dni"
                     
                     def stemp = stat.temperature.toDouble()
-                    log.debug "AVANT Verification"
+
                     if (setTemp.temperatureUnit == "F") {
-                        log.debug "DANS Verification"
                         stemp = cToF(stemp).round(1)
                     }
 
@@ -986,9 +975,11 @@ def pollChildren(PodUid)
 				    else {
         	 			tMode = setTemp.mode
                     }
-                    //if (tMode=="fan") {
-                    //	tMode = "auto"
-        			//}
+
+                    def battpourcentage = 100
+                    if (stat.batteryVoltage < 2850) battpourcentage = 10
+                    if (stat.batteryVoltage > 2850 && stat.batteryVoltage < 2950) battpourcentage = 50
+                    
 					def data = [
 						temperature: stemp,
 						humidity: stat.humidity,
@@ -1004,7 +995,7 @@ def pollChildren(PodUid)
                         temperatureUnit : setTemp.temperatureUnit,
                         battvoltage : stat.batteryVoltage,
                         swing : setTemp.swing,
-                        //battery : stat.batteryVoltage,
+                        battery : battpourcentage,
                         Error: setTemp.Error
 					]
                     
