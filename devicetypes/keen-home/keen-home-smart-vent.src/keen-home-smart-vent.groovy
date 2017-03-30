@@ -22,7 +22,6 @@ metadata {
         command "clearObstruction"
 
         fingerprint endpoint: "1", profileId: "0104", inClusters: "0000,0001,0003,0004,0005,0006,0008,0020,0402,0403,0B05,FC01,FC02", outClusters: "0019"
-        fingerprint endpoint: "1", profileId: "0104", inClusters: "0000,0001,0003,0004,0005,0006,0008,0020,0402,0403,0B05,FC01,FC02", outClusters: "0019", manufacturer: "Keen Home Inc", model: "SV01-410-DV-1.0", deviceJoinName: "Keen Home Smart Vent"
     }
 
     // simulator metadata
