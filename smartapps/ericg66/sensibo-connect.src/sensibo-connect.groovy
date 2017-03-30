@@ -38,7 +38,6 @@ preferences {
 
 def getServerUrl() { "https://home.sensibo.com" }
 def getapikey() { apiKey }
-//def TemperatureUnit() { return location.temperatureScale }
 
 def setAPIKey()
 {
@@ -60,7 +59,6 @@ def SensiboPodList()
 	log.debug "SensiboPodList()"
 
 	def stats = getSensiboPodList()
-
 	log.debug "device list: $stats"
     
 	def p = dynamicPage(name: "deviceList", title: "Select Your Sensibo Pod", uninstall: true) {
@@ -68,6 +66,7 @@ def SensiboPodList()
 			paragraph "Tap below to see the list of Sensibo Pods available in your Sensibo account and select the ones you want to connect to SmartThings."
 			input(name: "SelectedSensiboPods", title:"Pods", type: "enum", required:true, multiple:true, description: "Tap to choose",  metadata:[values:stats])
 		}
+
         section("Receive Pod sensors infos") {
         	input "boolnotifevery", "bool",submitOnChange: true, required: false, title: "Receive temperature, humidity and battery level notification every hour?"
             href(name: "toTimePageEvent",
@@ -225,7 +224,7 @@ def hournotification() {
                 def currentPod = d.displayName
                 def currentTemperature = d.currentState("temperature").value
                 def currentHumidity = d.currentState("humidity").value
-                def currentBattery = d.currentState("battvoltage").value
+                def currentBattery = d.currentState("voltage").value
                 def sunit = d.currentState("temperatureUnit").value
                 stext = "${currentPod} - Temperature: ${currentTemperature} ${sunit} Humidity: ${currentHumidity}% Battery: ${currentBattery}"    
                 
@@ -240,7 +239,7 @@ def hournotification() {
                 def currentPod = d.displayName
                 def currentTemperature = d.currentState("temperature").value
                 def currentHumidity = d.currentState("humidity").value
-                def currentBattery = d.currentState("battvoltage").value
+                def currentBattery = d.currentState("voltage").value
                 def sunit = d.currentState("temperatureUnit").value
                 stext = "${currentPod} - Temperature: ${currentTemperature} ${sunit} Humidity: ${currentHumidity}% Battery: ${currentBattery}"    
                 
@@ -442,10 +441,9 @@ def initialize() {
 			{
                 
             	def name = getSensiboPodList().find( {key,value -> key == dni })
-				log.debug getChildNamespace()
-                log.debug getChildTypeName()
-                log.debug name
-				d = addChildDevice(getChildNamespace(), getChildTypeName(), dni,"", [
+				log.debug "Pod : ${name.value} - Hub : ${location.hubs[0].name} - Type : " +  getChildTypeName() + " - Namespace : " + getChildNamespace()
+
+				d = addChildDevice(getChildNamespace(), getChildTypeName(), dni, location.hubs[0].id, [
                 	"label" : "Pod ${name.value}",
                     "name" : "Pod ${name.value}"
                     ])
@@ -616,9 +614,6 @@ def setACStates(child,String PodUid, on, mode, targetTemperature, fanLevel, swin
         }
         else {
         	 tData.data.thermostatMode = mode
-             //if (mode=="fan") {
-             //   tData.data.thermostatMode = "auto"
-             //}
         }
         tData.data.targetTemperature = targetTemperature
         tData.data.coolingSetpoint = targetTemperature
@@ -635,49 +630,6 @@ def setACStates(child,String PodUid, on, mode, targetTemperature, fanLevel, swin
 	return(result)
 }
 
-// Use the Patch API to modify only one state of the AC
-def setPatchACStates(child,String PodUid, WhatToChange, value)
-{
-	log.debug "SetPatchACStates What to change : $WhatToChange - Value : $value"
-    
-    def jsonRequestBody = '{"newValue":"${value}"}'
-    log.debug "Mode Request Body = ${jsonRequestBody}"
-	debugEvent ("Mode Request Body = ${jsonRequestBody}")
-    
-	def result = sendPatchJson(PodUid,WhatToChange, jsonRequestBody)
-
-	if (result) {
-		//def tData = atomicState.sensibo[child.device.deviceNetworkId]
-		//tData.data.fanLevel = fanLevel
-        //tData.data.thermostatFanMode = fanLevel
-        //tData.data.on = on
-        //tData.data.mode = mode
-        //log.debug "Thermostat mode " + on
-        //if (on=="off") {
-        //	tData.data.thermostatMode = "off"
-        //}
-        //else {
-        //	 tData.data.thermostatMode = mode
-             //if (mode=="fan") {
-             //   tData.data.thermostatMode = "auto"
-             //}
-        //}
-        //tData.data.targetTemperature = targetTemperature
-        //tData.data.coolingSetpoint = targetTemperature
-        //tData.data.heatingSetpoint = targetTemperature
-        //tData.data.temperatureUnit = sUnit
-        //tData.data.swing = swingM
-        //tData.data.Error = "Success"
-	}
-    else {
-    //	def tData = atomicState.sensibo[child.device.deviceNetworkId]
-    //	tData.data.Error = "Failed"
-    }
-
-	return(result)
-}
-
-
 //Get the capabilities of the A/C Unit
 def getCapabilities(PodUid, mode)
 {
@@ -686,7 +638,7 @@ def getCapabilities(PodUid, mode)
     	uri: "${getServerUrl()}",
     	path: "/api/v2/pods/${PodUid}",
     	requestContentType: "application/json",
-    	query: [apiKey:"${getapikey()}", type:"json", fields:"remoteCapabilities"]]
+    	query: [apiKey:"${getapikey()}", type:"json", fields:"remoteCapabilities,productModel"]]
      try {
 
      	 httpGet(pollParams) { resp ->
@@ -694,36 +646,42 @@ def getCapabilities(PodUid, mode)
          if (resp.data) {
          		log.debug "Status : " + resp.status
                 if(resp.status == 200) {
-                	//resp.data = [result: [remoteCapabilities: [modes: [heat: [swing: ["stopped", "fixedTop", "fixedMiddleTop", "fixedMiddle", "fixedMiddleBottom", "fixedBottom", "rangeTop", "rangeMiddle", "rangeBottom", "rangeFull"], temperatures: [C: ["isNative": true, "values": [16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30]], F: ["isNative": false, "values": [61, 63, 64, 66, 68, 70, 72, 73, 75, 77, 79, 81, 82, 84, 86]]], fanLevels: ["low", "medium", "high", "auto"]], fan: [swing: ["stopped", "fixedMiddleTop", "fixedMiddle", "fixedMiddleBottom", "fixedBottom", "rangeTop", "rangeMiddle", "rangeBottom", "rangeFull"], temperatures: [C: ["isNative": true, "values": [16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30]], F: ["isNative": false, "values": [61, 63, 64, 66, 68, 70, 72, 73, 75, 77, 79, 81, 82, 84, 86]]], fanLevels: ["low", "medium", "high", "auto"]], cool: [swing: ["stopped", "fixedTop", "fixedMiddleTop", "fixedMiddle", "fixedMiddleBottom", "fixedBottom", "rangeTop", "rangeMiddle", "rangeBottom", "rangeFull"], temperatures: ["C": ["isNative": true, "values": [16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30]], F: ["isNative": false, "values": [61, 63, 64, 66, 68, 70, 72, 73, 75, 77, 79, 81, 82, 84, 86]]], fanLevels: ["low", "high", "auto"]]]]]]
+                	resp.data = [result: [remoteCapabilities: [modes: [heat: [swing: ["stopped", "fixedTop", "fixedMiddleTop", "fixedMiddle", "fixedMiddleBottom", "fixedBottom", "rangeTop", "rangeMiddle", "rangeBottom", "rangeFull"], temperatures: [C: ["isNative": true, "values": [16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30]], F: ["isNative": false, "values": [61, 63, 64, 66, 68, 70, 72, 73, 75, 77, 79, 81, 82, 84, 86]]], fanLevels: ["low", "medium", "high", "auto"]], fan: [swing: ["stopped", "fixedMiddleTop", "fixedMiddle", "fixedMiddleBottom", "fixedBottom", "rangeTop", "rangeMiddle", "rangeBottom", "rangeFull"], temperatures: [C: ["isNative": true, "values": [16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30]], F: ["isNative": false, "values": [61, 63, 64, 66, 68, 70, 72, 73, 75, 77, 79, 81, 82, 84, 86]]], fanLevels: ["low", "medium", "high", "auto"]], cool: [swing: ["stopped", "fixedTop", "fixedMiddleTop", "fixedMiddle", "fixedMiddleBottom", "fixedBottom", "rangeTop", "rangeMiddle", "rangeBottom", "rangeFull"], temperatures: ["C": ["isNative": true, "values": [16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30]], F: ["isNative": false, "values": [61, 63, 64, 66, 68, 70, 72, 73, 75, 77, 79, 81, 82, 84, 86]]], fanLevels: ["low", "high", "auto"]]]]]]
                     switch (mode){
                     	case "dry":
                         	data = [
-                            	remoteCapabilities : resp.data.result.remoteCapabilities.modes.dry
+                            	remoteCapabilities : resp.data.result.remoteCapabilities.modes.dry,
+                                productModel : resp.data.result.productModel
                            	]	
                         	break
                         case "cool":
                        		data = [
-                            	remoteCapabilities : resp.data.result.remoteCapabilities.modes.cool
+                            	remoteCapabilities : resp.data.result.remoteCapabilities.modes.cool,
+                                productModel : resp.data.result.productModel
                            	]	
                         	break
                         case "heat":
                        		data = [
-                            	remoteCapabilities : resp.data.result.remoteCapabilities.modes.heat
+                            	remoteCapabilities : resp.data.result.remoteCapabilities.modes.heat,
+                                productModel : resp.data.result.productModel
                            	]	
                         	break
                         case "fan":
                        		data = [
-                            	remoteCapabilities : resp.data.result.remoteCapabilities.modes.fan
+                            	remoteCapabilities : resp.data.result.remoteCapabilities.modes.fan,
+                                productModel : resp.data.result.productModel
                            	]	
                         	break
                         case "auto":
                        		data = [
-                            	remoteCapabilities : resp.data.result.remoteCapabilities.modes.auto
+                            	remoteCapabilities : resp.data.result.remoteCapabilities.modes.auto,
+                                productModel : resp.data.result.productModel
                            	]	
                         	break
                         case "modes":
                        		data = [
-                            	remoteCapabilities : resp.data.result.remoteCapabilities.modes
+                            	remoteCapabilities : resp.data.result.remoteCapabilities.modes,
+                                productModel : resp.data.result.productModel
                            	]	
                         	break                        
                     }
@@ -733,7 +691,8 @@ def getCapabilities(PodUid, mode)
                 	log.debug "get remoteCapabilities Failed"
                     
                     data = [
-						remoteCapabilities : ""
+						remoteCapabilities : "",
+                        productModel : ""
                     ]                    
               		return data
                 }
@@ -745,7 +704,8 @@ def getCapabilities(PodUid, mode)
         log.debug "get remoteCapabilities Failed"
         
         data = [
-        	remoteCapabilities : ""
+        	remoteCapabilities : "",
+            productModel : ""
         ]        
      	return data
      }
@@ -759,7 +719,7 @@ def getACState(PodUid)
     	uri: "${getServerUrl()}",
     	path: "/api/v2/pods/${PodUid}/acStates",
     	requestContentType: "application/json",
-    	query: [apiKey:"${getapikey()}", type:"json", limit:1, fields:"status,acState"]]
+    	query: [apiKey:"${getapikey()}", type:"json", limit:1, fields:"status,acState,device"]]
     
     try {
        httpGet(pollParams) { resp ->
@@ -790,6 +750,9 @@ def getACState(PodUid)
         	 				tMode = stat.acState.mode
                         }
                         
+                        log.debug "product Model : " + stat.device.productModel
+                        def battery = stat.device.productModel == "skyv1" ? "battery" : "mains"
+                        
                         log.debug "swing Mode :" + stat.acState.swing
                         data = [
                             targetTemperature : stemp,
@@ -803,6 +766,8 @@ def getACState(PodUid)
                             heatingSetpoint : stemp,
                             temperatureUnit : stat.acState.temperatureUnit,
                             swing : stat.acState.swing,
+                            powerSource : battery,
+                            productModel : stat.device.productModel,
                             Error : "Success"
                         ]
 
@@ -825,6 +790,8 @@ def getACState(PodUid)
                  heatingSetpoint : "0",
                  temperatureUnit : "",
                  swing : "--",
+                 powerSource : "",
+                 productModel : "",
                  Error : "Failed"
 			  ]
               log.debug "get ACState Failed"
@@ -850,6 +817,8 @@ def getACState(PodUid)
             heatingSetpoint : "0",
             temperatureUnit : "",
             swing : "--",
+            powerSource : "",
+            productModel : "",
             Error : "Failed" 
 		]
         log.debug "get ACState Failed"
@@ -865,41 +834,6 @@ def sendJson(String PodUid, String jsonBody)
 		path: "/api/v2/pods/${PodUid}/acStates",
 		headers: ["Content-Type": "application/json"],
         query: [apiKey:"${getapikey()}", type:"json", fields:"acState"],
-		body: jsonBody]
-
-	def returnStatus = -1
-    try{
-       httpPost(cmdParams) { resp ->
-			if(resp.status == 200) {
-                log.debug "updated ${resp.data}"
-				debugEvent("updated ${resp.data}")
-				returnStatus = resp.status
-				log.debug "Successful call to Sensibo API."
-            }
-           	else { log.debug "Failed call to Sensibo API." }
-       }
-    }
-    catch(Exception e)
-	{
-		log.debug "Exception Sending Json: " + e
-		debugEvent ("Exception Sending JSON: " + e)
-		return false
-	}
-    
-    if (returnStatus == 200)
-		return true
-	else
-		return false
-}
-
-// Send state to the Sensibo Pod
-def sendPatchJson(String PodUid, String whattochange, String jsonBody)
-{
-	def cmdParams = [
-		uri: "${getServerUrl()}",
-		path: "/api/v2/pods/${PodUid}/acStates/${whattochange}",
-		headers: ["Content-Type": "application/json"],
-        query: [apiKey:"${getapikey()}", type:"json"],
 		body: jsonBody]
 
 	def returnStatus = -1
@@ -993,9 +927,11 @@ def pollChildren(PodUid)
                         coolingSetpoint: setTemp.targetTemperature,
                         heatingSetpoint: setTemp.targetTemperature,
                         temperatureUnit : setTemp.temperatureUnit,
-                        battvoltage : stat.batteryVoltage,
+                        voltage : stat.batteryVoltage,
                         swing : setTemp.swing,
                         battery : battpourcentage,
+                        powerSource : setTemp.powerSource,
+                        productModel : setTemp.productModel,
                         Error: setTemp.Error
 					]
                     
