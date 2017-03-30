@@ -35,28 +35,23 @@ metadata {
         capability "Actuator"
         capability "Sensor"
         capability "Health Check"
-        //capability "Thermostat Operating State"
-        //capability "Thermostat Fan Mode"
-        //capability "Thermostat Cooling Setpoint"
-        //capability "Thermostat Heating Setpoint"
-        //capability "Thermostat Mode"
-        //capability "Thermostat Setpoint"
+        capability "Power Source"
+        capability "Voltage Measurement"
         
-        attribute "swing", "string"
-        attribute "temperatureUnit","string"
+        attribute "swing", "String"
+        attribute "temperatureUnit","String"
+         attribute "productModel","String"
         
         command "switchFanLevel"
         command "switchMode"
         command "raiseCoolSetpoint"
         command "lowerCoolSetpoint"
         command "raiseHeatSetpoint"
-        command "lowerHeatSetpoint"       
-        command "battvoltage"
+        command "lowerHeatSetpoint" 
+        command "voltage"
         command "raiseTemperature"
         command "lowerTemperature"
         command "switchSwing"
-        command "modeDry"
-        command "modeHeat"
 	}
 
 	simulator {
@@ -78,18 +73,40 @@ metadata {
     	multiAttributeTile(name:"thermostatMulti", type:"thermostat",, width:6, height:4) {
    			tileAttribute("device.temperature", key: "PRIMARY_CONTROL") {
             	attributeState ("default", label:'${currentValue}°')//, 
+                //backgroundColors:[
+				//	[value: 15, color: "#153591"],
+				//	[value: 18, color: "#1e9cbb"],
+				//	[value: 21, color: "#90d2a7"],
+				//	[value: 24, color: "#44b621"],
+				//	[value: 27, color: "#f1d801"],
+				//	[value: 30, color: "#d04e00"],
+				//	[value: 33, color: "#bc2323"],
+                //    [value: 59, color: "#153591"],
+				//	[value: 64, color: "#1e9cbb"],
+				//	[value: 70, color: "#90d2a7"],
+				//	[value: 75, color: "#44b621"],
+				//	[value: 81, color: "#f1d801"],
+				//	[value: 86, color: "#d04e00"],
+				//	[value: 91, color: "#bc2323"]
+				//])
     		}
             tileAttribute("device.targetTemperature", key: "VALUE_CONTROL") {
+    			//attributeState("default", action: "setTemperature")
+                //attributeState("VALUE_UP", action: "raiseCoolSetpoint")
+                //attributeState("VALUE_DOWN", action: "lowerCoolSetpoint")
                 attributeState("VALUE_UP", action: "raiseTemperature")
                 attributeState("VALUE_DOWN", action: "lowerTemperature")    			
   			}
+            //tileAttribute ("statusText", key: "SECONDARY_CONTROL") {
+			//	attributeState "statusText", label:'${currentValue}'
+			//}
             tileAttribute("device.humidity", key: "SECONDARY_CONTROL") {
    				attributeState("default", label:'${currentValue}%', unit:"%")
   			}
             tileAttribute("device.thermostatOperatingState", key: "OPERATING_STATE") {
     			attributeState("idle", backgroundColor:"#a9a9a9")
-    			attributeState("heating", backgroundColor:"#ffa81e")
-    			attributeState("cooling", backgroundColor:"#269bd2")
+    			attributeState("heating", backgroundColor:"#e86d13")
+    			attributeState("cooling", backgroundColor:"#00a0dc")
                 attributeState("fan only", backgroundColor:"#44b621")
                 attributeState("Dry", backgroundColor:"#A1E5E5")
   			}
@@ -125,20 +142,6 @@ metadata {
 		valueTile("temperature", "device.temperature", width: 2, height: 2) {
 			state("temperature", label:'Temp: ${currentValue}',
 				backgroundColors:[
-					//[value: 15, color: "#153591"],
-					//[value: 18, color: "#1e9cbb"],
-					//[value: 21, color: "#90d2a7"],
-					//[value: 24, color: "#44b621"],
-					//[value: 27, color: "#f1d801"],
-					//[value: 30, color: "#d04e00"],
-					//[value: 33, color: "#bc2323"],
-                    //[value: 59, color: "#153591"],
-					//[value: 64, color: "#1e9cbb"],
-					//[value: 70, color: "#90d2a7"],
-					//[value: 75, color: "#44b621"],
-					//[value: 81, color: "#f1d801"],
-					//[value: 86, color: "#d04e00"],
-					//[value: 91, color: "#bc2323"]
 				]
 			)
 		}
@@ -146,26 +149,12 @@ metadata {
 		valueTile("humidity", "device.humidity", width: 2, height: 2) {
 			state("humidity", label:'Humidity: ${currentValue} %',
 				backgroundColors:[
-					//[value: 15, color: "#153591"],
-					//[value: 18, color: "#1e9cbb"],
-					//[value: 21, color: "#90d2a7"],
-					//[value: 24, color: "#44b621"],
-					//[value: 27, color: "#f1d801"],
-					//[value: 30, color: "#d04e00"],
-					//[value: 33, color: "#bc2323"],
-                    //[value: 59, color: "#153591"],
-					//[value: 64, color: "#1e9cbb"],
-					//[value: 70, color: "#90d2a7"],
-					//[value: 75, color: "#44b621"],
-					//[value: 81, color: "#f1d801"],
-					//[value: 86, color: "#d04e00"],
-					//[value: 91, color: "#bc2323"]
 				]
 			)
 		}
            
-        valueTile("voltage", "device.battvoltage", width: 2, height: 2) {
-			state("battvoltage", label:'${currentValue}',
+        valueTile("voltage", "device.voltage", width: 2, height: 2) {
+			state("voltage", label:'${currentValue}',
 				backgroundColors:[
 					[value: 2700, color: "#CC0000"],
 					[value: 2800, color: "#FFFF00"],
@@ -178,7 +167,7 @@ metadata {
         }
             
         standardTile("switch", "device.switch", width: 2, height: 2, canChangeIcon: true) {
-			state "on", label:'${name}', action:"switch.off", icon:"st.switches.switch.on", backgroundColor:"#79b821"
+			state "on", label:'${name}', action:"switch.off", icon:"st.switches.switch.on", backgroundColor:"#00a0dc"
 			state "off", label:'${name}', action:"switch.on", icon:"st.switches.switch.off", backgroundColor:"#ffffff"
 		}
         
@@ -190,11 +179,11 @@ metadata {
         }
         
         standardTile("mode", "device.thermostatMode",  width: 2, height: 2) {
-            state "heat", action:"switchMode", backgroundColor:"#FF3300", icon:"http://i130.photobucket.com/albums/p242/brutalboy_photos/sun.png", nextState:"cool"
-            state "cool", action:"switchMode", backgroundColor:"#0099FF", icon:"http://i130.photobucket.com/albums/p242/brutalboy_photos/cold.png", nextState:"fan"
+            state "heat", action:"switchMode", backgroundColor:"#e86d13", icon:"http://i130.photobucket.com/albums/p242/brutalboy_photos/sun.png", nextState:"cool"
+            state "cool", action:"switchMode", backgroundColor:"#00a0dc", icon:"http://i130.photobucket.com/albums/p242/brutalboy_photos/cold.png", nextState:"fan"
             state "fan", action:"switchMode", backgroundColor:"#e8e3d8", icon:"http://i130.photobucket.com/albums/p242/brutalboy_photos/status_message_fan.png", nextState:"dry"
             state "dry", action:"switchMode", backgroundColor:"#e8e3d8", icon:"http://i130.photobucket.com/albums/p242/brutalboy_photos/dry_mode.png", nextState:"heat"
-            //state "auto", action:"switchMode", backgroundColor:"#e8e3d8", icon:"http://i130.photobucket.com/albums/p242/brutalboy_photos/auto_mode.png", nextState:"heat"         
+            //state "auto", action:"switchMode", backgroundColor:"#e8e3d8", icon:"http://i130.photobucket.com/albums/p242/brutalboy_photos/auto_mode.png", nextState:"heat"               
         }
         
         standardTile("upCoolButtonControl", "device.targetTemperature", inactiveLabel: false, decoration: "flat", width: 1, height: 2) {
@@ -223,10 +212,9 @@ metadata {
 		}
 		       
 		main (["switch"])
-		details (["thermostatMulti","switch","fanLevel","mode","swing","voltage","refresh","temperature","humidity"])    
+		details (["thermostatMulti","switch","fanLevel","mode","swing","voltage","refresh"])    
 	}
 }
-
 
 def temperatureDown(temp)
 {
@@ -435,7 +423,6 @@ void lowerHeatSetpoint() {
     refresh()
 }
 
-
 def refresh()
 {
   log.debug "refresh called"
@@ -547,7 +534,7 @@ def dfanLow() {
         
     def capabilities = parent.getCapabilities(device.deviceNetworkId, device.currentState("mode").value)      
     def Level = LevelBefore
-    if (capabilities != null) {
+    if (capabilities.remoteCapabilities != null) {
     	def fanLevels = capabilities.remoteCapabilities.fanLevels
     	log.debug capabilities.remoteCapabilities.fanLevels
         
@@ -578,7 +565,7 @@ def dfanMedium() {
    
     def capabilities = parent.getCapabilities(device.deviceNetworkId, device.currentState("mode").value)      
     def Level = LevelBefore
-    if (capabilities != null) {
+    if (capabilities.remoteCapabilities != null) {
     	def fanLevels = capabilities.remoteCapabilities.fanLevels
     	log.debug capabilities.remoteCapabilities.fanLevels
         
@@ -609,7 +596,7 @@ def dfanHigh() {
     
     def capabilities = parent.getCapabilities(device.deviceNetworkId, device.currentState("mode").value)      
     def Level = LevelBefore
-    if (capabilities != null) {
+    if (capabilities.remoteCapabilities != null) {
     	def fanLevels = capabilities.remoteCapabilities.fanLevels
     	log.debug capabilities.remoteCapabilities.fanLevels
         
@@ -640,7 +627,7 @@ def dfanAuto() {
 
     def capabilities = parent.getCapabilities(device.deviceNetworkId, device.currentState("mode").value)      
     def Level = LevelBefore
-    if (capabilities != null) {
+    if (capabilities.remoteCapabilities != null) {
     	def fanLevels = capabilities.remoteCapabilities.fanLevels
     	log.debug capabilities.remoteCapabilities.fanLevels
         
@@ -764,8 +751,6 @@ def modeCool() {
 	log.debug "modeCool"
 
     def Setpoint = device.currentValue("targetTemperature").toInteger()
-   
-    //if (device.currentState("on").value == "off") { generateSwitchEvent("on") }
     
     def LevelBefore = device.currentState("fanLevel").value   
     def capabilities = parent.getCapabilities(device.deviceNetworkId,"cool")
@@ -920,7 +905,6 @@ def modeAuto() {
 	   NextMode(sMode)
     }
 }
-
 def generateModeEvent(mode) {
    sendEvent(name: "mode", value: mode, descriptionText: "$device.displayName Thermostat mode is now ${mode}", displayed: true, isStateChange: true)   
 }
@@ -1185,7 +1169,7 @@ def modeSwingStopped() {
     def SwingBefore = device.currentState("swing").value
     def capabilities = parent.getCapabilities(device.deviceNetworkId, device.currentState("mode").value)
     def Swing = SwingBefore
-    if (capabilities != null) {
+    if (capabilities.remoteCapabilities != null) {
     	def fanLevels = capabilities.remoteCapabilities.swing
     	log.debug capabilities.remoteCapabilities.swing
         
@@ -1219,7 +1203,7 @@ def modeSwingTop() {
     def SwingBefore = device.currentState("swing").value
     def capabilities = parent.getCapabilities(device.deviceNetworkId, device.currentState("mode").value)
     def Swing = SwingBefore
-    if (capabilities != null) {
+    if (capabilities.remoteCapabilities != null) {
     	def fanLevels = capabilities.remoteCapabilities.swing
     	log.debug capabilities.remoteCapabilities.swing
         
@@ -1253,7 +1237,7 @@ def modeSwingMiddleTop() {
     def SwingBefore = device.currentState("swing").value
     def capabilities = parent.getCapabilities(device.deviceNetworkId, device.currentState("mode").value)
     def Swing = SwingBefore
-    if (capabilities != null) {
+    if (capabilities.remoteCapabilities != null) {
     	def fanLevels = capabilities.remoteCapabilities.swing
     	log.debug capabilities.remoteCapabilities.swing
         
@@ -1287,7 +1271,7 @@ def modeSwingMiddle() {
     def SwingBefore = device.currentState("swing").value
     def capabilities = parent.getCapabilities(device.deviceNetworkId, device.currentState("mode").value)
     def Swing = SwingBefore
-    if (capabilities != null) {
+    if (capabilities.remoteCapabilities != null) {
     	def fanLevels = capabilities.remoteCapabilities.swing
     	log.debug capabilities.remoteCapabilities.swing
         
@@ -1321,7 +1305,7 @@ def modeSwingMiddleBottom() {
     def SwingBefore = device.currentState("swing").value
     def capabilities = parent.getCapabilities(device.deviceNetworkId, device.currentState("mode").value)
     def Swing = SwingBefore
-    if (capabilities != null) {
+    if (capabilities.remoteCapabilities != null) {
     	def fanLevels = capabilities.remoteCapabilities.swing
     	log.debug capabilities.remoteCapabilities.swing
         
@@ -1355,7 +1339,7 @@ def modeSwingBottom() {
 	def SwingBefore = device.currentState("swing").value
     def capabilities = parent.getCapabilities(device.deviceNetworkId, device.currentState("mode").value)
     def Swing = SwingBefore
-    if (capabilities != null) {
+    if (capabilities.remoteCapabilities != null) {
     	def fanLevels = capabilities.remoteCapabilities.swing
     	log.debug capabilities.remoteCapabilities.swing
         
@@ -1389,7 +1373,7 @@ def modeSwingRangeTop() {
 	def SwingBefore = device.currentState("swing").value
     def capabilities = parent.getCapabilities(device.deviceNetworkId, device.currentState("mode").value)
     def Swing = SwingBefore
-    if (capabilities != null) {
+    if (capabilities.remoteCapabilities != null) {
     	def fanLevels = capabilities.remoteCapabilities.swing
     	log.debug capabilities.remoteCapabilities.swing
         
@@ -1423,7 +1407,7 @@ def modeSwingRangeMiddle() {
 	def SwingBefore = device.currentState("swing").value
     def capabilities = parent.getCapabilities(device.deviceNetworkId, device.currentState("mode").value)
     def Swing = SwingBefore
-    if (capabilities != null) {
+    if (capabilities.remoteCapabilities != null) {
     	def fanLevels = capabilities.remoteCapabilities.swing
     	log.debug capabilities.remoteCapabilities.swing
         
@@ -1457,7 +1441,7 @@ def modeSwingRangeBottom() {
     def SwingBefore = device.currentState("swing").value
     def capabilities = parent.getCapabilities(device.deviceNetworkId, device.currentState("mode").value)
     def Swing = SwingBefore
-    if (capabilities != null) {
+    if (capabilities.remoteCapabilities != null) {
     	def fanLevels = capabilities.remoteCapabilities.swing
     	log.debug capabilities.remoteCapabilities.swing
         
@@ -1491,7 +1475,7 @@ def modeSwingRangeFull() {
     def SwingBefore = device.currentState("swing").value
     def capabilities = parent.getCapabilities(device.deviceNetworkId, device.currentState("mode").value)
     def Swing = SwingBefore
-    if (capabilities != null) {
+    if (capabilities.remoteCapabilities != null) {
     	def fanLevels = capabilities.remoteCapabilities.swing
     	log.debug capabilities.remoteCapabilities.swing
         
@@ -1516,7 +1500,6 @@ def modeSwingRangeFull() {
       //TODO
     }
 }
-
 def generateSwingModeEvent(mode) {
    sendEvent(name: "swing", value: mode, descriptionText: "$device.displayName swing mode is now ${mode}", displayed: true, isStateChange: true)
 }
@@ -1533,10 +1516,9 @@ void poll() {
 	def results = parent.pollChild(this)
 	
     def linkText = getLinkText(device)
-
-	//parseTempUnitEventData(results)
+                    
+    parseTempUnitEventData(results)
     parseEventData(results)
-   
 	//generateStatusEvent()
 }
 
@@ -1549,7 +1531,7 @@ def parseTempUnitEventData(Map results)
         	if (name=="temperatureUnit") { 
             	def linkText = getLinkText(device)
                 def isChange = true
-                def isDisplayed = true
+                def isDisplayed = false
                    
 				sendEvent(
 					name: name,
@@ -1577,7 +1559,7 @@ def parseEventData(Map results)
             def isChange = false
             def isDisplayed = true
                              
-            if (name=="battvoltage") {            	                
+            if (name=="voltage") {            	                
                  isChange = true //isTemperatureStateChange(device, name, value.toString())
                 isDisplayed = true
                   
@@ -1591,7 +1573,21 @@ def parseEventData(Map results)
 					isStateChange: isChange,
 					displayed: isDisplayed)
             	}
-            if (name== "battery") {            	                
+            else if (name== "battery") {            	                
+                isChange = true //isTemperatureStateChange(device, name, value.toString())
+                isDisplayed = true
+                 
+				sendEvent(
+					name: name,
+					value: value,
+                    //unit: "V",
+					linkText: linkText,
+					descriptionText: getThermostatDescriptionText(name, value, linkText),
+					handlerName: name,
+					isStateChange: isChange,
+					displayed: isDisplayed)
+            	}
+            else if (name== "powerSource") {            	                
                 isChange = true //isTemperatureStateChange(device, name, value.toString())
                 isDisplayed = true
                   
@@ -1622,8 +1618,10 @@ def parseEventData(Map results)
             else if (name=="thermostatMode") {
                 isChange = true //isTemperatureStateChange(device, name, value.toString())
                 isDisplayed = false
-                             
-                if (value=="cool") {
+                
+                //def mode = (value.toString() != "fan") ?: "auto"
+                
+				if (value=="cool") {
 					sendEvent(name: 'thermostatOperatingState', value: "cooling", 
 					isStateChange: isChange,
 					displayed: isDisplayed)
@@ -1643,7 +1641,7 @@ def parseEventData(Map results)
 					sendEvent(name: 'thermostatOperatingState', value: "idle", 
 					isStateChange: isChange,
 					displayed: isDisplayed)
-				}   
+				}      
 				sendEvent(
 					name: name,
 					value: value,
@@ -1661,6 +1659,8 @@ def parseEventData(Map results)
 					name: name,
 					value: value,
                     //unit : device.currentValue("temperatureUnit"),
+					linkText: linkText,
+					descriptionText: getThermostatDescriptionText(name, value, linkText),
 					handlerName: name,
 					isStateChange: isChange,
 					displayed: isDisplayed)
@@ -1785,6 +1785,10 @@ private getThermostatDescriptionText(name, value, linkText)
     {
         return "thermostat mode was ${value}"
     }
+    else if (name == "powerSource")
+    {
+        return "power source mode was ${value}"
+    }
     else if (name == "thermostatMode")
     {
         return "thermostat mode was ${value}"
@@ -1793,12 +1797,7 @@ private getThermostatDescriptionText(name, value, linkText)
     {
     	return "thermostat unit was ${value}"
     }
-    else if (name == "Error")
-    {
-    	def str = (value == "Failed") ? "failed" : "success"
-        return "Last setACState was ${str}"
-    }
-    else if (name == "battvoltage")
+    else if (name == "voltage")
     {
     	return "Battery voltage was ${value}"
     }
@@ -1806,9 +1805,19 @@ private getThermostatDescriptionText(name, value, linkText)
     {
     	return "Battery was ${value}"
     }
+    
+    else if (name == "voltage" || name== "battery")
+    {
+    	return "Battery voltage was ${value}"
+    }
     else if (name == "swing")
     {
     	return "Swing mode was ${value}"
+    }
+    else if (name == "Error")
+    {
+    	def str = (value == "Failed") ? "failed" : "success"
+        return "Last setACState was ${str}"
     }
     else
     {
@@ -1883,10 +1892,10 @@ def parse(String description) {
         name = "Error"
         value = device.currentValue("Error")
     }
-    else if (description?.startsWith("battvoltage")) {
-    	log.debug "battvoltage"
-        name = "battvoltage"
-		value = device.currentValue("battvoltage")
+    else if (description?.startsWith("voltage")) {
+    	log.debug "voltage"
+        name = "voltage"
+		value = device.currentValue("voltage")
     }
     else if (description?.startsWith("battery")) {
     	log.debug "battery"
@@ -1906,6 +1915,7 @@ def parse(String description) {
 }
 
 def generateStatusEvent() {
+    //log.debug device
     def temperature = device.currentValue("temperature").toDouble()  
     def humidity = device.currentValue("humidity").toDouble() 
     def targetTemperature = device.currentValue("targetTemperature").split(' ')[0].toDouble()
