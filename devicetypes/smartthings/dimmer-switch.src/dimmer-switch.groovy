@@ -12,7 +12,7 @@
  *
  */
 metadata {
-	definition (name: "Dimmer Switch", namespace: "smartthings", author: "SmartThings") {
+	definition (name: "Dimmer Switch", namespace: "smartthings", author: "SmartThings", ocfDeviceType: "oic.d.switch") {
 		capability "Switch Level"
 		capability "Actuator"
 		capability "Indicator"
