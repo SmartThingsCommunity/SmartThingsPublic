@@ -24,6 +24,7 @@ metadata {
 		capability "Refresh"
 		capability "Relative Humidity Measurement"
 		capability "Health Check"
+		capability "Motion Sensor"
 
 		command "generateEvent"
 		command "raiseSetpoint"
@@ -112,8 +113,12 @@ metadata {
 		valueTile("humidity", "device.humidity", decoration: "flat") {
 			state "humidity", label:'${currentValue}%'
 		}
-		main "temperature"
-		details(["temperature", "upButtonControl", "thermostatSetpoint", "currentStatus", "downButtonControl", "mode", "fanMode","humidity", "resumeProgram", "refresh"])
+		standardTile("motion", "device.motion") {
+			state("inactive", label:'no motion', icon:"st.motion.motion.inactive", backgroundColor:"#ffffff")
+			state("active", label:'motion', icon:"st.motion.motion.active", backgroundColor:"#53a7c0")
+		}
+		main (["temperature", "motion"])
+		details(["temperature", "upButtonControl", "thermostatSetpoint", "currentStatus", "downButtonControl", "mode", "fanMode","humidity", "resumeProgram", "refresh", "motion"])
 	}
 
 	preferences {
