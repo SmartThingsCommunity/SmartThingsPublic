@@ -1,0 +1,128 @@
+/**
+ *  Copyright 2016 SmartThings
+ *
+ *  Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except
+ *  in compliance with the License. You may obtain a copy of the License at:
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ *  Unless required by applicable law or agreed to in writing, software distributed under the License is distributed
+ *  on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the License
+ *  for the specific language governing permissions and limitations under the License.
+ *
+ */
+import groovy.transform.Field
+
+@Field Boolean hasConfiguredHealthCheck = false
+
+metadata {
+    definition (name: "ZLL Switch", namespace: "smartthings", author: "SmartThings") {
+
+        capability "Actuator"
+        capability "Configuration"
+        capability "Polling"
+        capability "Refresh"
+        capability "Switch"
+        capability "Health Check"
+
+        fingerprint profileId: "C05E", inClusters: "0000, 0003, 0004, 0005, 0006, 1000, 0B04, FC0F", outClusters: "0019", manufacturer: "OSRAM", model: "Plug 01", deviceJoinName: "SYLVANIA Smart Plug"
+    }
+
+    // simulator metadata
+    simulator {
+        // status messages
+        status "on": "on/off: 1"
+        status "off": "on/off: 0"
+
+        // reply messages
+        reply "zcl on-off on": "on/off: 1"
+        reply "zcl on-off off": "on/off: 0"
+    }
+
+    // UI tile definitions
+    tiles(scale: 2) {
+        multiAttributeTile(name:"switch", type: "switch", width: 6, height: 4, canChangeIcon: true){
+            tileAttribute ("device.switch", key: "PRIMARY_CONTROL") {
+                attributeState "on", label:'${name}', action:"switch.off", icon:"st.switches.switch.on", backgroundColor:"#79b821", nextState:"turningOff"
+                attributeState "off", label:'${name}', action:"switch.on", icon:"st.switches.switch.off", backgroundColor:"#ffffff", nextState:"turningOn"
+                attributeState "turningOn", label:'${name}', action:"switch.off", icon:"st.switches.switch.on", backgroundColor:"#79b821", nextState:"turningOff"
+                attributeState "turningOff", label:'${name}', action:"switch.on", icon:"st.switches.switch.off", backgroundColor:"#ffffff", nextState:"turningOn"
+            }
+            //tileAttribute ("power", key: "SECONDARY_CONTROL") {
+             //   attributeState "power", label:'${currentValue} W'
+              // }
+        }
+        standardTile("refresh", "device.switch", inactiveLabel: false, decoration: "flat", width: 2, height: 2) {
+            state "default", label:"", action:"refresh.refresh", icon:"st.secondary.refresh"
+        }
+        main "switch"
+        details(["switch", "refresh"])
+    }
+}
+
+// Parse incoming device messages to generate events
+def parse(String description) {
+    log.debug "description is $description"
+
+    def resultMap = zigbee.getEvent(description)
+    if (resultMap) {
+            sendEvent(resultMap)
+    }
+    else {
+        log.debug "DID NOT PARSE MESSAGE for description : $description"
+        log.debug zigbee.parseDescriptionAsMap(description)
+    }
+}
+
+def off() {
+    zigbee.off() + ["delay 1500"] + zigbee.onOffRefresh()
+}
+
+def on() {
+    zigbee.on() + ["delay 1500"] + zigbee.onOffRefresh()
+}
+
+
+def refresh() {
+    zigbee.onOffRefresh()
+}
+
+def poll() {
+    refresh()
+}
+
+/**
+ * PING is used by Device-Watch in attempt to reach the Device
+ * */
+def ping() {
+    return zigbee.onOffRefresh()
+}
+
+def healthPoll() {
+    log.debug "healthPoll()"
+    def cmds = refresh()
+    cmds.each{ sendHubCommand(new physicalgraph.device.HubAction(it))}
+}
+
+def configureHealthCheck() {
+    Integer hcIntervalMinutes = 12
+    if (!hasConfiguredHealthCheck) {
+        log.debug "Configuring Health Check, Reporting"
+        unschedule("healthPoll")
+        runEvery5Minutes("healthPoll")
+        // Device-Watch allows 2 check-in misses from device
+        sendEvent(name: "checkInterval", value: hcIntervalMinutes * 60, displayed: false, data: [protocol: "zigbee", hubHardwareId: device.hub.hardwareID])
+        hasConfiguredHealthCheck = true
+    }
+}
+
+def configure() {
+    log.debug "configure()"
+    configureHealthCheck()
+    zigbee.onOffConfig()+ zigbee.onOffRefresh()
+}
+
+def updated() {
+    log.debug "updated()"
+    configureHealthCheck()
+}
