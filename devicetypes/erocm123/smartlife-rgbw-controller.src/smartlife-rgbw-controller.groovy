@@ -414,8 +414,8 @@ def setColor(value) {
     log.debug "setColor being called with ${value}"
     def uri
     def validValue = true
-
-    if ( !(value.hex) && ((value.saturation) && (value.hue))) {
+    
+    if ((value.saturation >= 0) && (value.hue >= 0)) {
         def hue = (value.hue != null) ? value.hue : 13
 		def saturation = (value.saturation != null) ? value.saturation : 13
 		def rgb = huesatToRGB(hue as Integer, saturation as Integer)
@@ -463,7 +463,7 @@ def setColor(value) {
            def mygreen = rgb[1] < 40 ? 0 : rgb[1]
            def myblue = rgb[2] < 40 ? 0 : rgb[2]
            def dimmedColor = getDimmedColor(rgbToHex([r:myred, g:mygreen, b:myblue]))
-           uri = "/rgb?value=${dimmedColor.substring(1)}"
+           uri = "/rgb?value=${dimmedColor}"
        }
     }
     else if (value.white) {
