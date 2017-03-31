@@ -16,7 +16,7 @@
  * Date: 2015-10-11
  */
  metadata {
- 	definition (name: "Wemo Switch", namespace: "smartthings", author: "SmartThings") {
+ 	definition (name: "Wemo Switch", namespace: "smartthings", author: "SmartThings", ocfDeviceType: "oic.d.smartplug") {
         capability "Actuator"
         capability "Switch"
         capability "Polling"
