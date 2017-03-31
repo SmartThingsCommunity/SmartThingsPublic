@@ -102,7 +102,7 @@ def parse(String description) {
 
         if (zigbeeMap?.clusterInt == COLOR_CONTROL_CLUSTER) {
             if(zigbeeMap.attrInt == ATTRIBUTE_HUE){  //Hue Attribute
-                def hueValue = Math.round(zigbee.convertHexToInt(zigbeeMap.value) / 255 * 100)
+                def hueValue = Math.round(zigbee.convertHexToInt(zigbeeMap.value) / 255 * 360)
                 sendEvent(name: "hue", value: hueValue, descriptionText: "Color has changed")
             }
             else if(zigbeeMap.attrInt == ATTRIBUTE_SATURATION){ //Saturation Attribute
@@ -186,7 +186,7 @@ def setColor(value){
 }
 
 def setHue(value) {
-    def scaledHueValue = zigbee.convertToHexString(Math.round(value * 0xfe / 100.0), 2)
+    def scaledHueValue = zigbee.convertToHexString(Math.round(value * 0xfe / 360.0), 2)
     zigbee.command(COLOR_CONTROL_CLUSTER, HUE_COMMAND, scaledHueValue, "00", "0500")       //payload-> hue value, direction (00-> shortest distance), transition time (1/10th second) (0500 in U16 reads 5)
 }
 
