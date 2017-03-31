@@ -26,6 +26,8 @@ capability "Zw Multichannel"
 capability "Energy Meter"
 capability "Power Meter"
 capability "Health Check"
+capability "Button"
+capability "Holdable Button"
 
 attribute "switch1", "string"
 attribute "switch2", "string"
@@ -320,65 +322,10 @@ def zwaveEvent(physicalgraph.zwave.commands.centralscenev1.CentralSceneNotificat
     logging("CentralSceneNotification: $cmd")
     logging("sceneNumber: $cmd.sceneNumber")
     logging("sequenceNumber: $cmd.sequenceNumber")
-    logging("Configuration for preference \"Switch Type\" is set to ${settings."20"}")
+    logging("keyAttributes: $cmd.keyAttributes")
     
-    if (settings."20" == "1") {
-        logging("Switch configured as Toggle")
-        switch (cmd.sceneNumber) {
-            // Toggle S1
-            case 1: // Single Press
-                buttonEvent(1, "pushed")
-            break
-            case 11: // On to Off
-                buttonEvent(1, "held")
-            break
-            case 14: // 2x click
-                buttonEvent(2, "pushed")
-            break
-            // Toggle S2
-            case 20: // Off to On
-                buttonEvent(3, "pushed")
-            break
-            case 21: // On to Off
-                buttonEvent(3, "held")
-            break
-            case 24: // 2x click
-                buttonEvent(4, "pushed")
-            break
-            case 25: // 3x click
-                buttonEvent(5, "pushed")
-            break
-            default:
-                logging("Unhandled SceneActivationSet: ${cmd}")
-            break
-        }
-    } else {
-        if (settings."20" == "0") logging("Switch configured as Momentary") else logging("Switch type not configured") 
-        switch (cmd.sceneNumber) {
-            // Momentary S1
-            case 1: // S1 1x click
-                buttonEvent(1, "pushed")
-            break
-            case 2: // S2 1x click
-                buttonEvent(1, "held")
-            break
-            case 3: // S1 2x click
-                buttonEvent(2, "pushed")
-            break
-            case 4: // S2 2x click
-                buttonEvent(2, "held")
-            break
-            case 5: // S1 3x click
-                buttonEvent(3, "pushed")
-            break
-            case 6: // S2 3x click
-                buttonEvent(3, "held")
-            break
-            default:
-                logging("Unhandled SceneActivationSet: ${cmd}")
-            break
-        }
-    }  
+    buttonEvent(cmd.keyAttributes + 1, (cmd.sceneNumber == 1? "pushed" : "held"))
+
 }
 
 def buttonEvent(button, value) {
@@ -510,6 +457,10 @@ def generate_preferences(configuration_model)
                     defaultValue: "${it.@value}",
                     displayDuringSetup: "${it.@displayDuringSetup}"
             break
+            case "paragraph":
+               input title: "${it.@label}",
+                    description: "${it.Help}"
+            break
         }  
     }
 }
@@ -542,6 +493,8 @@ def update_needed_settings()
      
     def configuration = parseXml(configuration_model())
     def isUpdateNeeded = "NO"
+    
+    sendEvent(name:"numberOfButtons", value:"5")
     
     if(!state.association4 || state.association4 == "" || state.association4 == "1"){
        logging("Setting association group 4")
@@ -863,6 +816,31 @@ Send scene ID on tripple press
     <Value type="boolean" byteSize="1" index="sc_4" label="" value="false" setting_type="" fw="">
     <Help>
 Send scene ID on hold and release 
+    </Help>
+  </Value>
+    <Value type="paragraph" byteSize="1" index="mappings" label="Button Mappings" value="false" setting_type="" fw="">
+    <Help>
+Toggle Mode
+1 pushed - S1 1x toggle
+4 pushed - S1 2x toggle
+5 pushed - S1 3x toggle
+
+1 held - S2 1x toggle
+4 held - S2 2x toggle
+5 held - S2 3x toggle
+
+Momentary Mode
+1 pushed - S1 1x click
+2 pushed - S1 release
+3 pushed - S1 hold
+4 pushed - S1 2x click
+5 pushed - S1 3x click
+
+1 held - S2 1x click
+2 held - S2 release
+3 held - S2 hold
+4 held - S2 2x click
+5 held - S2 3x click
     </Help>
   </Value>
     <Value type="boolean" index="enableDebugging" label="Enable Debug Logging?" value="true" setting_type="preference" fw="">
