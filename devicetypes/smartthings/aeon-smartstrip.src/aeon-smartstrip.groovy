@@ -31,8 +31,6 @@ metadata {
 			command "off$n"
 			command "reset$n"
 		}
-
-		fingerprint deviceId: "0x1001", inClusters: "0x25,0x32,0x27,0x70,0x85,0x72,0x86,0x60", outClusters: "0x82"
 	}
 
 	// simulator metadata
@@ -97,9 +95,17 @@ metadata {
 				 "switch4","power4","energy4",
 				 "refresh","reset"])
 	}
+
+	preferences {
+		input "migrateDeviceType", "bool", title: "Switch to new device handler", description: "", required: false, defaultValue: false
+	}
 }
 
+def updated() {
+	if (migrateDeviceType) {
 
+	}
+}
 def parse(String description) {
 	def result = null
 	if (description.startsWith("Err")) {
