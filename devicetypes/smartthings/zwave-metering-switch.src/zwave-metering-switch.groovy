@@ -12,7 +12,7 @@
  *
  */
 metadata {
-	definition (name: "Z-Wave Metering Switch", namespace: "smartthings", author: "SmartThings") {
+	definition (name: "Z-Wave Metering Switch", namespace: "smartthings", author: "SmartThings", ocfDeviceType: "oic.d.switch") {
 		capability "Energy Meter"
 		capability "Actuator"
 		capability "Switch"
@@ -86,7 +86,7 @@ def updated() {
 
 def parse(String description) {
 	def result = null
-	if(description == "updated") return 
+	if(description == "updated") return
 	def cmd = zwave.parse(description, [0x20: 1, 0x32: 1, 0x72: 2])
 	if (cmd) {
 		result = zwaveEvent(cmd)
