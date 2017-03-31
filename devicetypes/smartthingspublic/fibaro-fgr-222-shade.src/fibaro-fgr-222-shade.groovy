@@ -1,5 +1,5 @@
 /**
- *  Copyright 2016 ericvitale@gmail.com
+ *  Copyright 2017 Andreas Schräder
  *
  *  Version 1.0.0 - Initial Release
  *
