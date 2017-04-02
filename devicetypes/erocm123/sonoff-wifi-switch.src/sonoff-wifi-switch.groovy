@@ -61,16 +61,19 @@ metadata {
         standardTile("reboot", "device.reboot", decoration: "flat", height: 2, width: 2, inactiveLabel: false) {
             state "default", label:"Reboot", action:"reboot", icon:"", backgroundColor:"#ffffff"
         }
-        valueTile("hubInfo", "device.hubInfo", height: 2, width: 6, inactiveLabel: false) {
-            state "hubInfo", label:'${currentValue}' //backgroundColor:"#ffffff"
-        }
+        valueTile("ip", "ip", width: 2, height: 1) {
+    		state "ip", label:'IP Address\r\n${currentValue}'
+		}
+        valueTile("uptime", "uptime", width: 2, height: 1) {
+    		state "uptime", label:'Uptime ${currentValue}'
+		}
         
     }
 
 	main(["switch"])
 	details(["switch",
              "refresh","configure","reboot",
-             "hubInfo"])
+             "ip", "uptime"])
 }
 
 def installed() {
@@ -140,27 +143,14 @@ def parse(description) {
         events << createEvent(name: "switch", value: result.power)
     }
     if (result.containsKey("uptime")) {
-        state.uptime = result.uptime
+        events << createEvent(name: 'uptime', value: result.uptime)
     }
     } else {
         //log.debug "Response is not JSON: $body"
     }
     }
     
-    def hubInfoText = ""
-    if (getDeviceDataByName("ip") != null && getDeviceDataByName("ip") != "") {
-        hubInfoText = "IP Address: ${getDeviceDataByName("ip")}"
-    }
-    if (state.uptime) {
-        hubInfoText = hubInfoText + "\r\nUptime: " + state.uptime
-    }
-    if (device.currentValue("needUpdate") == "NO") {
-        hubInfoText = hubInfoText + "\r\nConfigured: Yes"
-    } else {
-        hubInfoText = hubInfoText + "\r\nConfigured: NO"
-    }
-    
-    events << createEvent(name:"hubInfo", value:hubInfoText, displayed:false)
+    if (!device.currentValue("ip") || (device.currentValue("ip") != getDataValue("ip"))) events << createEvent(name: 'ip', value: getDataValue("ip"))
     
     return events
 }
@@ -302,6 +292,7 @@ def sync(ip, port) {
     def existingPort = getDataValue("port")
     if (ip && ip != existingIp) {
         updateDataValue("ip", ip)
+        sendEvent(name: 'ip', value: ip)
     }
     if (port && port != existingPort) {
         updateDataValue("port", port)
