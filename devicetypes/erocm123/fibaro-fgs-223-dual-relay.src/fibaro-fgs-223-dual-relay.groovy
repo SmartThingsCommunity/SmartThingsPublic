@@ -459,7 +459,9 @@ def generate_preferences(configuration_model)
             break
             case "paragraph":
                input title: "${it.@label}",
-                    description: "${it.Help}"
+                    description: "${it.Help}",
+                    type: "paragraph",
+                    element: "paragraph"
             break
         }  
     }
