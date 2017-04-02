@@ -146,10 +146,10 @@ def parse(String description) {
     
     result.each {
         if ((it instanceof Map) == true && it.find{ it.key == "name" }?.value == "power") {
-            statusTextmsg = "${it.value} W ${device.currentValue('energy')} kWh"
+            statusTextmsg = "${it.value} W ${device.currentValue('energy')? device.currentValue('energy') : "0"} kWh"
         }
         if ((it instanceof Map) == true && it.find{ it.key == "name" }?.value == "energy") {
-            statusTextmsg = "${device.currentValue('power')} W ${it.value} kWh"
+            statusTextmsg = "${device.currentValue('power')? device.currentValue('power') : "0"} W ${it.value} kWh"
         }
     }
     if (statusTextmsg != "") sendEvent(name:"statusText", value:statusTextmsg, displayed:false)
