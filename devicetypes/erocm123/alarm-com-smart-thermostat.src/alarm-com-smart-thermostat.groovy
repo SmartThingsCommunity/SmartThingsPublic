@@ -59,8 +59,9 @@ metadata {
     				attributeState("default", label:'${currentValue}°')
   			}
   			tileAttribute("device.temperature", key: "VALUE_CONTROL") {
-    				attributeState("default", action: "setTemperature")
-  			}
+                    attributeState("VALUE_UP", action: "tempUp")
+                    attributeState("VALUE_DOWN", action: "tempDown")
+            }
   			tileAttribute("device.humidity", key: "SECONDARY_CONTROL") {
     				attributeState("default", label:'${currentValue}%', unit:"%")
   			}
@@ -728,6 +729,54 @@ private command(physicalgraph.zwave.Command cmd) {
 
 private getStandardDelay() {
 	1000
+}
+
+def tempUp() {
+    log.debug "tempUp()"
+	def operMode = device.currentValue("thermostatMode")
+	def curTemp = device.currentValue("temperature").toInteger()
+	switch (operMode) {
+    	case "heat":
+        	setHeatingSetpoint(getHeatTemp().toInteger() + 1)
+            break;
+        case "cool":
+        	setCoolingSetpoint(getCoolTemp().toInteger() + 1)
+            break;
+        case "auto":
+            if (settings.threshold == null || settings.threshold == "") settings.threshold = 70
+            if (curTemp < settings.threshold) {
+                setHeatingSetpoint(getHeatTemp().toInteger() + 1)
+            } else {
+                setCoolingSetpoint(getCoolTemp().toInteger() + 1)
+            }
+        	break;
+        default:
+        	break;
+    }
+}
+
+def tempDown() {
+    log.debug "tempDown"
+	def operMode = device.currentValue("thermostatMode")
+	def curTemp = device.currentValue("temperature").toInteger()
+	switch (operMode) {
+    	case "heat":
+        	setHeatingSetpoint(getHeatTemp().toInteger() - 1)
+            break;
+        case "cool":
+        	setCoolingSetpoint(getCoolTemp().toInteger() - 1)
+            break;
+        case "auto":
+            if (settings.threshold == null || settings.threshold == "") settings.threshold = 70
+            if (curTemp < settings.threshold) {
+                setHeatingSetpoint(getHeatTemp().toInteger() - 1)
+            } else {
+                setCoolingSetpoint(getCoolTemp().toInteger() - 1)
+            }
+        	break;
+        default:
+        	break;
+    }
 }
 
 def setTemperature(value) {
