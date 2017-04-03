@@ -43,8 +43,8 @@ metadata {
 	}
 
 	tiles {
-		valueTile("temperature", "device.temperature", width: 2, height: 2) {
-			state("temperature", label:'${currentValue}°', unit:"F",
+		standardTile("temperature", "device.temperature", width: 2, height: 2, decoration: "flat") {
+			state("temperature", label:'${currentValue}°', unit:"F", icon: "st.thermostat.ac.air-conditioning",
 					backgroundColors:[
 							// Celsius
 							[value: 0, color: "#153591"],
@@ -70,7 +70,7 @@ metadata {
 			state "heat", action:"switchMode",  nextState: "updating", icon: "st.thermostat.heat"
 			state "cool", action:"switchMode",  nextState: "updating", icon: "st.thermostat.cool"
 			state "auto", action:"switchMode",  nextState: "updating", icon: "st.thermostat.auto"
-			state "emergency heat", label:"auxHeatOnly", action:"switchMode", icon: "st.thermostat.emergency-heat" // emergency heat = auxHeatOnly
+			state "emergency heat", action:"switchMode", icon: "st.thermostat.emergency-heat" // emergency heat = auxHeatOnly
 			state "updating", label:"Working", icon: "st.secondary.secondary"
 		}
 		standardTile("fanMode", "device.thermostatFanMode", inactiveLabel: false, decoration: "flat") {
@@ -185,6 +185,11 @@ def generateEvent(Map results) {
 				isChange = isStateChange(device, name, value.toString())
 				event['isStateChange'] = isChange
 				event['displayed'] = false
+			} else if (name == "thermostatMode") {
+				def mode = value.toString()
+				mode = (mode == "auxHeatOnly") ? "emergency heat" : mode
+				isChange = isStateChange(device, name, mode)
+				event << [value: mode, isStateChange: isChange, displayed: isDisplayed]
 			} else {
 				isChange = isStateChange(device, name, value.toString())
 				isDisplayed = isChange

@@ -12,7 +12,7 @@
  *
  */
 metadata {
-	definition (name: "Z-Wave Dimmer Switch Generic", namespace: "smartthings", author: "SmartThings") {
+	definition (name: "Z-Wave Dimmer Switch Generic", namespace: "smartthings", author: "SmartThings", ocfDeviceType: "oic.d.switch") {
 		capability "Switch Level"
 		capability "Actuator"
 		capability "Health Check"

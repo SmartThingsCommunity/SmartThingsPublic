@@ -16,7 +16,7 @@
  *
  */
 metadata {
-	definition (name: "Z-Wave Metering Dimmer", namespace: "smartthings", author: "SmartThings") {
+	definition (name: "Z-Wave Metering Dimmer", namespace: "smartthings", author: "SmartThings", ocfDeviceType: "oic.d.switch") {
 		capability "Switch"
 		capability "Polling"
 		capability "Power Meter"
