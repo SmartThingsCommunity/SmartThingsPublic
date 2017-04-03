@@ -25,6 +25,7 @@ metadata {
 		capability "Refresh"
 		capability "Actuator"
 		capability "Sensor"
+		capability "Configuration"
 
 		fingerprint manufacturer: "015D", prod: "0651", model: "F51C", deviceJoinName: "Zooz ZEN 20 Power Strip"
 	}
@@ -63,6 +64,10 @@ def updated() {
 		}
 		state.oldLabel = device.label
 	}
+}
+
+def configure() {
+	refresh()
 }
 
 
@@ -107,15 +112,17 @@ def zwaveBinaryEvent(cmd, endpoint) {
 	def result = []
 	def children = childDevices
 	def childDevice = children.find{it.deviceNetworkId.endsWith("$endpoint")}
-	childDevice.sendEvent(name: "switch", value: cmd.value ? "on" : "off")
+	if (childDevice) {
+		childDevice.sendEvent(name: "switch", value: cmd.value ? "on" : "off")
 
-	if (cmd.value) {
-		// One on and the strip is on
-		result << createEvent(name: "switch", value: "on")
-	} else {
-		// All off and the strip is off
-		if (! children.any { it.currentValue("switch") == "on" }) {
-			result  << createEvent(name: "switch", value: "off")
+		if (cmd.value) {
+			// One on and the strip is on
+			result << createEvent(name: "switch", value: "on")
+		} else {
+			// All off and the strip is off
+			if (!children.any { it.currentValue("switch") == "on" }) {
+				result << createEvent(name: "switch", value: "off")
+			}
 		}
 	}
 	result
