@@ -845,7 +845,7 @@ private void storeThermostatData(thermostats) {
             minCoolingSetpoint: (stat.settings.coolRangeLow / 10),
             maxCoolingSetpoint: (stat.settings.coolRangeHigh / 10),
             autoMode: stat.settings.autoHeatCoolFeatureEnabled,
-            deviceAlive: stat.runtime.connected == true ? "true" : "false",
+            deviceAlive: stat.runtime.connected,
             auxHeatMode: (stat.settings.hasHeatPump) && (stat.settings.hasForcedAir || stat.settings.hasElectric || stat.settings.hasBoiler),
             temperature: (stat.runtime.actualTemperature / 10),
             heatingSetpoint: stat.runtime.desiredHeat / 10,
@@ -854,6 +854,11 @@ private void storeThermostatData(thermostats) {
             humidity: stat.runtime.actualHumidity,
             thermostatFanMode: stat.runtime.desiredFanMode
         ]
+
+		// Device-Watch relies on the Ecobee Cloud to get the Device state.
+		def d = getChildDevice(dni)
+		d?.sendEvent(name: "DeviceWatch-DeviceStatus", value: data["deviceAlive"]? "online":"offline", displayed: false, isStateChange: true)
+
         if (location.temperatureScale == "F") {
             data["temperature"] = data["temperature"] ? Math.round(data["temperature"].toDouble()) : data["temperature"]
             data["heatingSetpoint"] = data["heatingSetpoint"] ? Math.round(data["heatingSetpoint"].toDouble()) : data["heatingSetpoint"]
