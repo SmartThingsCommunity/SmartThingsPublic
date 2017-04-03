@@ -44,7 +44,7 @@ metadata {
 		generate_preferences(configuration_model())  
     }
 
-	tiles(scale: 2){
+	tiles{
         multiAttributeTile(name:"switch", type: "generic", width: 6, height: 4, canChangeIcon: true){
 			tileAttribute ("device.switch", key: "PRIMARY_CONTROL") {
 			   attributeState "off", label:'${name}', action:"switch.on", icon:"st.switches.switch.off", backgroundColor:"#ffffff", nextState:"turningOn"
@@ -56,13 +56,7 @@ metadata {
            		attributeState "statusText", label:'${currentValue}'       		
             }
 	    }
-		standardTile("refresh", "device.switch", inactiveLabel: false, decoration: "flat", width: 2, height: 2) {
-			state "default", label:'', action:"refresh.refresh", icon:"st.secondary.refresh"
-		}
-        standardTile("configure", "device.needUpdate", inactiveLabel: false, decoration: "flat", width: 2, height: 2) {
-            state "NO" , label:'', action:"configuration.configure", icon:"st.secondary.configure"
-            state "YES", label:'', action:"configuration.configure", icon:"https://github.com/erocm123/SmartThingsPublic/raw/master/devicetypes/erocm123/qubino-flush-1d-relay.src/configure@2x.png"
-        }
+        childDeviceTiles("all")
         valueTile("temperature", "device.temperature", inactiveLabel: false, width: 2, height: 2) {
             state "temperature", label:'${currentValue}°',
             backgroundColors:
@@ -76,16 +70,20 @@ metadata {
 				[value: 96, color: "#bc2323"]
 			]
         }
-        
-
-		main "switch"
-		details(["switch","temperature","refresh","configure"])
+		standardTile("refresh", "device.switch", inactiveLabel: false, decoration: "flat", width: 2, height: 2) {
+			state "default", label:'', action:"refresh.refresh", icon:"st.secondary.refresh"
+		}
+        standardTile("configure", "device.needUpdate", inactiveLabel: false, decoration: "flat", width: 2, height: 2) {
+            state "NO" , label:'', action:"configuration.configure", icon:"st.secondary.configure"
+            state "YES", label:'', action:"configuration.configure", icon:"https://github.com/erocm123/SmartThingsPublic/raw/master/devicetypes/erocm123/qubino-flush-1d-relay.src/configure@2x.png"
+        }
 	}
 }
 
 def installed() {
     logging("installed()", 1)
 	command(zwave.manufacturerSpecificV1.manufacturerSpecificGet())
+    createChildDevices()
 }
 
 def parse(String description) {
@@ -142,6 +140,20 @@ def zwaveEvent(physicalgraph.zwave.commands.manufacturerspecificv2.ManufacturerS
 	createEvent(name: "manufacturer", value: cmd.manufacturerName)
 }
 
+def zwaveEvent(physicalgraph.zwave.commands.sensorbinaryv2.SensorBinaryReport cmd) {
+    logging("SensorBinaryReport: $cmd", 2)
+	def children = childDevices
+	def childDevice = children.find{it.deviceNetworkId.endsWith("ep2")}
+    switch (cmd.sensorValue) {
+        case 0:
+            childDevice.sendEvent(name: "contact", value: "open")
+        break
+        case 255:
+            childDevice.sendEvent(name: "contact", value: "closed")
+        break
+    }
+}
+
 def zwaveEvent(physicalgraph.zwave.Command cmd) {
 	logging("$device.displayName: Unhandled: $cmd", 2)
 	[:]
@@ -187,6 +199,16 @@ def configure() {
 def updated()
 {
     logging("updated()", 1)
+    if (!childDevices) {
+		createChildDevices()
+	}
+	else if (device.label != state.oldLabel) {
+		childDevices.each {
+			def newLabel = "${device.displayName} (CH${channelNumber(it.deviceNetworkId)})"
+			it.setLabel(newLabel)
+		}
+		state.oldLabel = device.label
+	}
     def cmds = [] 
     cmds = update_needed_settings()
     sendEvent(name: "checkInterval", value: 2 * 15 * 60 + 2 * 60, displayed: false, data: [protocol: "zwave", hubHardwareId: device.hub.hardwareID])
@@ -393,6 +415,29 @@ private commands(commands, delay=500) {
 	delayBetween(commands.collect{ command(it) }, delay)
 }
 
+private void createChildDevices() {
+	state.oldLabel = device.label
+    try {
+	   for (i in 2..2) {
+          addChildDevice("Contact Sensor Child Device", "${device.deviceNetworkId}-i${i}", null,
+			 [completedSetup: true, label: "${device.displayName} (i${i})",
+		     isComponent: true, componentName: "i$i", componentLabel: "Input $i"])
+	   }
+    } catch (e) {
+       runIn(2, "sendAlert")
+    }
+}
+
+private sendAlert() {
+   sendEvent(
+      descriptionText: "Child device creation failed. Please make sure that the \"Contact Sensor Child Device\" is installed and published.",
+	  eventType: "ALERT",
+	  name: "childDeviceCreation",
+	  value: "failed",
+	  displayed: true,
+   )
+}
+
 def configuration_model()
 {
 '''
@@ -460,7 +505,7 @@ Default: 0 (NC - Normally Closed)
         <Item label="NC (normally closed)" value="0" />
         <Item label="NO (normally open)" value="1" />
 </Value>
-<Value type="list" byteSize="1" index="100" label="Enable / Disable Endpoint I2 or select Notification Type and Event" min="0" max="6" value="1" setting_type="zwave" fw="">
+<Value type="list" byteSize="1" index="100" label="Enable / Disable Endpoint I2 or select Notification Type and Event" min="0" max="6" value="1" setting_type="zwave" fw="" hidden="true">
  <Help>
 Range: 0 to 6
 Default: Home Security; Motion Detection, unknown location
