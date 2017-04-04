@@ -101,7 +101,11 @@ def parse(String description)
         break
 		case "updated":
         	logging("Update is hit when the device is paired.")
+<<<<<<< HEAD
             result << response(zwave.wakeUpV1.wakeUpIntervalSet(seconds: 3600, nodeid:zwaveHubNodeId).format())
+=======
+            result << response(zwave.wakeUpV1.wakeUpIntervalSet(seconds: 43200, nodeid:zwaveHubNodeId).format())
+>>>>>>> origin/master
             result << response(zwave.batteryV1.batteryGet().format())
             result << response(zwave.versionV1.versionGet().format())
             result << response(zwave.manufacturerSpecificV2.manufacturerSpecificGet().format())
@@ -155,7 +159,11 @@ def zwaveEvent(physicalgraph.zwave.commands.batteryv1.BatteryReport cmd) {
 		map.descriptionText = "${device.displayName} battery is low"
 		map.isStateChange = true
 	} else {
+<<<<<<< HEAD
 		map.value = cmd.batteryLevel
+=======
+		map.value = cmd.batteryLevel <= 100? cmd.batteryLevel : 100
+>>>>>>> origin/master
 	}
 	state.lastBatteryReport = now()
 	createEvent(map)
@@ -266,14 +274,20 @@ def zwaveEvent(physicalgraph.zwave.Command cmd) {
 def configure() {
     logging("Configuring Device For SmartThings Use")
     def cmds = []
+<<<<<<< HEAD
 
     cmds += sync_properties()
     commands(cmds)
+=======
+    cmds = update_needed_settings()
+    if (cmds != []) commands(cmds)
+>>>>>>> origin/master
 }
 
 def updated()
 {
     logging("updated() is being called")
+<<<<<<< HEAD
 
     if (state.realLuminance != null) sendEvent(name:"illuminance", value: getAdjustedLuminance(state.realLuminance))
     
@@ -282,6 +296,14 @@ def updated()
     update_needed_settings()
     
     sendEvent(name:"needUpdate", value: device.currentValue("needUpdate"), displayed:false, isStateChange: true)
+=======
+    if (state.realLuminance != null) sendEvent(name:"illuminance", value: getAdjustedLuminance(state.realLuminance))
+    updateStatus()
+    def cmds = []
+    cmds = update_needed_settings()
+    sendEvent(name:"needUpdate", value: device.currentValue("needUpdate"), displayed:false, isStateChange: true)
+    if (cmds != []) response(commands(cmds))
+>>>>>>> origin/master
 }
 
 def sync_properties()
@@ -291,6 +313,15 @@ def sync_properties()
 
     def cmds = []
     
+<<<<<<< HEAD
+=======
+    if(state.wakeInterval == null || state.wakeInterval != 43200){
+        logging("Setting Wake Interval to 43200")
+        cmds << zwave.wakeUpV1.wakeUpIntervalSet(seconds: 43200, nodeid:zwaveHubNodeId)
+        cmds << zwave.wakeUpV1.wakeUpIntervalGet()
+    }
+    
+>>>>>>> origin/master
     configuration.Value.each
     {
         if ( "${it.@setting_type}" == "zwave" ) {

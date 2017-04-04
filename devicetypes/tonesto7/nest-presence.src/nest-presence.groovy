@@ -1,5 +1,6 @@
 /**
  *  Nest Presence
+<<<<<<< HEAD
  *	Author: Ben W. (@desertBlade)
  *	Author: Anthony S. (@tonesto7)
  *
@@ -23,11 +24,24 @@
 
 // TODO: Need to update Copyright
 
+=======
+ *	Author: Anthony S. (@tonesto7)
+ *	Co-Authors: Ben W. (@desertBlade), Eric S. (@E_Sch)
+ *
+ *	Copyright (C) 2017 Anthony S., Ben W.
+ * 	Licensing Info: Located at https://raw.githubusercontent.com/tonesto7/nest-manager/master/LICENSE.md
+ */
+
+>>>>>>> origin/master
 import java.text.SimpleDateFormat
 
 preferences {  }
 
+<<<<<<< HEAD
 def devVer() { return "4.1.0" }
+=======
+def devVer() { return "4.5.1" }
+>>>>>>> origin/master
 
 // for the UI
 metadata {
@@ -36,11 +50,20 @@ metadata {
 		capability "Presence Sensor"
 		capability "Sensor"
 		capability "Refresh"
+<<<<<<< HEAD
 		capability "Health Check"
+=======
+		//capability "Health Check"
+>>>>>>> origin/master
 
 		command "setPresence"
 		command "refresh"
 		command "log"
+<<<<<<< HEAD
+=======
+		command "setHome"
+		command "setAway"
+>>>>>>> origin/master
 
 		attribute "lastConnection", "string"
 		attribute "apiStatus", "string"
@@ -73,7 +96,11 @@ metadata {
 			state "issue", label: "API Status:\nISSUE ", backgroundColor: "#FFFF33"
 		}
 		standardTile("refresh", "device.refresh", width:2, height:2, decoration: "flat") {
+<<<<<<< HEAD
 			state "default", action:"refresh.refresh", icon:"st.secondary.refresh-icon"
+=======
+			state "default", action:"refresh.refresh", icon:"https://raw.githubusercontent.com/tonesto7/nest-manager/master/Images/Devices/refresh_icon.png"
+>>>>>>> origin/master
 		}
 		valueTile("devTypeVer", "device.devTypeVer",  width: 2, height: 1, decoration: "flat") {
 			state("default", label: 'Device Type:\nv${currentValue}')
@@ -91,25 +118,56 @@ mappings {
 
 void installed() {
 	Logger("installed...")
+<<<<<<< HEAD
     verifyHC()
+=======
+	initialize()
+	state?.isInstalled = true
+}
+
+def initialize() {
+	LogAction("initialize")
+	verifyHC()
+}
+
+void updated() {
+	Logger("updated...")
+	initialize()
+}
+
+def getHcTimeout() {
+	def to = state?.hcTimeout
+	return ((to instanceof Integer) ? to.toInteger() : 60)*60
+>>>>>>> origin/master
 }
 
 void verifyHC() {
 	def val = device.currentValue("checkInterval")
+<<<<<<< HEAD
 	def timeOut = state?.hcTimeout ?: 60
 	if(!val || val.toInteger() != timeOut) {
 		Logger("verifyHC: Updating Device Health Check Interval to $timeOut")
 		sendEvent(name: "checkInterval", value: 60 * timeOut.toInteger(), data: [protocol: "cloud"], displayed: false)
+=======
+	def timeOut = getHcTimeout()
+	if(!val || val.toInteger() != timeOut) {
+		Logger("verifyHC: Updating Device Health Check Interval to $timeOut")
+		sendEvent(name: "checkInterval", value: timeOut, data: [protocol: "cloud"], displayed: false)
+>>>>>>> origin/master
 	}
 }
 
 def ping() {
 	Logger("ping...")
+<<<<<<< HEAD
 	refresh()
 }
 
 def initialize() {
 	LogAction("initialize")
+=======
+	keepAwakeEvent()
+>>>>>>> origin/master
 }
 
 def parse(String description) {
@@ -138,7 +196,11 @@ def generateEvent(Map eventData) {
 
 def processEvent(data) {
 	if(state?.swVersion != devVer()) {
+<<<<<<< HEAD
 		installed()
+=======
+		initialize()
+>>>>>>> origin/master
 		state.swVersion = devVer()
 	}
 	def eventData = data?.evt
@@ -148,6 +210,14 @@ def processEvent(data) {
 		LogAction("------------START OF API RESULTS DATA------------", "warn")
 		if(eventData) {
 			state.showLogNamePrefix = eventData?.logPrefix == true ? true : false
+<<<<<<< HEAD
+=======
+			state.enRemDiagLogging = eventData?.enRemDiagLogging == true ? true : false
+			if(eventData.hcTimeout && (state?.hcTimeout != eventData?.hcTimeout || !state?.hcTimeout)) {
+				state.hcTimeout = eventData?.hcTimeout
+				verifyHC()
+			}
+>>>>>>> origin/master
 			state.nestTimeZone = eventData?.tz ?: null
 			state.clientBl = eventData?.clientBl == true ? true : false
 			state.mobileClientType = eventData?.mobileClientType
@@ -157,7 +227,11 @@ def processEvent(data) {
 			apiStatusEvent((!eventData?.apiIssues ? false : true))
 			deviceVerEvent(eventData?.latestVer.toString())
 			if(eventData?.allowDbException) { state?.allowDbException = eventData?.allowDbException = false ? false : true }
+<<<<<<< HEAD
 			lastUpdatedEvent()
+=======
+			lastUpdatedEvent(true)
+>>>>>>> origin/master
 		}
 		//This will return all of the devices state data to the logs.
 		//log.debug "Device State Data: ${getState()}"
@@ -231,6 +305,7 @@ def debugOnEvent(debug) {
 	} else { LogAction("debugOn: (${stateVal}) | Original State: (${val})") }
 }
 
+<<<<<<< HEAD
 def lastUpdatedEvent() {
 	def now = new Date()
 	def formatVal = state?.useMilitaryTime ? "MMM d, yyyy - HH:mm:ss" : "MMM d, yyyy - h:mm:ss a"
@@ -245,6 +320,33 @@ def lastUpdatedEvent() {
 	}
 }
 
+=======
+def lastUpdatedEvent(sendEvt=false) {
+	def now = new Date()
+	def formatVal = state.useMilitaryTime ? "MMM d, yyyy - HH:mm:ss" : "MMM d, yyyy - h:mm:ss a"
+	def tf = new SimpleDateFormat(formatVal)
+		tf.setTimeZone(getTimeZone())
+	def lastDt = "${tf?.format(now)}"
+	state?.lastUpdatedDt = lastDt?.toString()
+	state?.lastUpdatedDtFmt = formatDt(now)
+	if(sendEvt) {
+		LogAction("Last Parent Refresh time: (${lastDt}) | Previous Time: (${lastUpd})")
+		sendEvent(name: 'lastUpdatedDt', value: formatDt(now)?.toString(), displayed: false, isStateChange: true)
+	}
+}
+
+def keepAwakeEvent() {
+	def lastDt = state?.lastUpdatedDtFmt
+	if(lastDt) {
+		def ldtSec = getTimeDiffSeconds(lastDt)
+		log.debug "ldtSec: $ldtSec"
+		if(ldtSec < 1900) {
+			lastUpdatedEvent(true)
+		} else { refresh() }
+	} else { refresh() }
+}
+
+>>>>>>> origin/master
 def presenceEvent(presence) {
 	def val = device.currentState("presence")?.value
 	def pres = (presence == "home") ? "present" : "not present"
@@ -344,6 +446,12 @@ void Logger(msg, logType = "debug") {
 			log.debug "${smsg}"
 			break
 	}
+<<<<<<< HEAD
+=======
+	if(state?.enRemDiagLogging) {
+		parent.saveLogtoRemDiagStore(smsg, logType, "Presence DTH")
+	}
+>>>>>>> origin/master
 }
 
 // Local Application Logging
@@ -376,6 +484,43 @@ def getMetricCntData() {
 	return [presHtmlLoadCnt:(state?.htmlLoadCnt ?: 0)]
 }
 
+<<<<<<< HEAD
+=======
+def getDtNow() {
+	def now = new Date()
+	return formatDt(now)
+}
+
+def formatDt(dt) {
+	def tf = new SimpleDateFormat("E MMM dd HH:mm:ss z yyyy")
+	if(getTimeZone()) { tf.setTimeZone(getTimeZone()) }
+	else {
+		Logger("SmartThings TimeZone is not found or is not set... Please Try to open your ST location and Press Save...", "warn")
+	}
+	return tf.format(dt)
+}
+
+def getTimeDiffSeconds(strtDate, stpDate=null, methName=null) {
+	//LogTrace("[GetTimeDiffSeconds] StartDate: $strtDate | StopDate: ${stpDate ?: "Not Sent"} | MethodName: ${methName ?: "Not Sent"})")
+	try {
+		if(strtDate) {
+			//if(strtDate?.contains("dtNow")) { return 10000 }
+			def now = new Date()
+			def stopVal = stpDate ? stpDate.toString() : formatDt(now)
+			def startDt = Date.parse("E MMM dd HH:mm:ss z yyyy", strtDate)
+			def stopDt = Date.parse("E MMM dd HH:mm:ss z yyyy", stopVal)
+			def start = Date.parse("E MMM dd HH:mm:ss z yyyy", formatDt(startDt)).getTime()
+			def stop = Date.parse("E MMM dd HH:mm:ss z yyyy", stopVal).getTime()
+			def diff = (int) (long) (stop - start) / 1000
+			//LogTrace("[GetTimeDiffSeconds] Results for '$methName': ($diff seconds)")
+			return diff
+		} else { return null }
+	} catch (ex) {
+		log.warn "getTimeDiffSeconds error: Unable to parse datetime..."
+	}
+}
+
+>>>>>>> origin/master
 def getImgBase64(url,type) {
 	def params = [
 		uri: url,
@@ -423,6 +568,7 @@ def getFileBase64(url,preType,fileType) {
 def getCssData() {
 	def cssData = null
 	def htmlInfo = state?.htmlInfo
+<<<<<<< HEAD
 	if(htmlInfo?.cssUrl && htmlInfo?.cssVer) {
 		if(state?.cssData) {
 			if (state?.cssVer?.toInteger() == htmlInfo?.cssVer?.toInteger()) {
@@ -440,6 +586,14 @@ def getCssData() {
 			state?.cssData = cssData
 			state?.cssVer = htmlInfo?.cssVer
 		}
+=======
+	state?.cssData = null
+	if(htmlInfo?.cssUrl && htmlInfo?.cssVer) {
+		//LogAction("getCssData: CSS Data is Missing | Loading Data from Source...")
+		cssData = getFileBase64(htmlInfo.cssUrl, "text", "css")
+		state?.cssData = cssData
+		state?.cssVer = htmlInfo?.cssVer
+>>>>>>> origin/master
 	} else {
 		//LogAction("getCssData: No Stored CSS Data Found for Device... Loading for Static URL...")
 		cssData = getFileBase64(cssUrl(), "text", "css")
@@ -447,12 +601,21 @@ def getCssData() {
 	return cssData
 }
 
+<<<<<<< HEAD
 def cssUrl() { return "https://raw.githubusercontent.com/desertblade/ST-HTMLTile-Framework/master/css/smartthings.css" }
 
 def getHtml() {
 	try {
 		def updateAvail = !state.updateAvailable ? "" : "<h3>Device Update Available!</h3>"
 		def clientBl = state?.clientBl ? """<h3>Your Manager client has been blacklisted!\nPlease contact the Nest Manager developer to get the issue resolved!!!</h3>""" : ""
+=======
+def cssUrl()	 { return "https://raw.githubusercontent.com/tonesto7/nest-manager/master/Documents/css/ST-HTML.css" }
+
+def getHtml() {
+	try {
+		def updateAvail = !state.updateAvailable ? "" : """<div class="greenAlertBanner">Device Update Available!</div>"""
+		def clientBl = state?.clientBl ? """<div class="brightRedAlertBanner">Your Manager client has been blacklisted!\nPlease contact the Nest Manager developer to get the issue resolved!!!</div>""" : ""
+>>>>>>> origin/master
 
 		def mainHtml = """
 		<!DOCTYPE html>

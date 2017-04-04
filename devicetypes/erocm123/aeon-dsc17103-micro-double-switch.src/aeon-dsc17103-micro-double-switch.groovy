@@ -19,6 +19,10 @@ capability "Configuration"
 capability "Refresh"
 capability "Energy Meter"
 capability "Power Meter"
+<<<<<<< HEAD
+=======
+capability "Health Check"
+>>>>>>> origin/master
 
 attribute "switch1", "string"
 attribute "switch2", "string"
@@ -301,6 +305,14 @@ def refresh() {
 	delayBetween(cmds, 1000)
 }
 
+<<<<<<< HEAD
+=======
+def ping() {
+    log.debug "ping()"
+	refresh()
+}
+
+>>>>>>> origin/master
 def zwaveEvent(physicalgraph.zwave.commands.manufacturerspecificv2.ManufacturerSpecificReport cmd) {
 	def msr = String.format("%04X-%04X-%04X", cmd.manufacturerId, cmd.productTypeId, cmd.productId)
 	log.debug "msr: $msr"
@@ -324,6 +336,10 @@ def reset() {
 
 def configure() {
 	log.debug "configure() called"
+<<<<<<< HEAD
+=======
+    sendEvent(name: "checkInterval", value: 2 * 15 * 60 + 2 * 60, displayed: false, data: [protocol: "zwave", hubHardwareId: device.hub.hardwareID])
+>>>>>>> origin/master
     def cmds = []
     cmds << zwave.configurationV1.configurationSet(parameterNumber: 101, size: 4, scaledConfigurationValue: 4).format()
 	cmds << zwave.configurationV1.configurationSet(parameterNumber: 102, size: 4, scaledConfigurationValue: 8).format()

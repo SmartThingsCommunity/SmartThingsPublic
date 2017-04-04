@@ -16,6 +16,10 @@ metadata {
 	definition (name: "Remotec ZRC-90 Scene Master", namespace: "erocm123", author: "Eric Maycock") {
 		capability "Actuator"
 		capability "Button"
+<<<<<<< HEAD
+=======
+        capability "Holdable Button"
+>>>>>>> origin/master
 		capability "Configuration"
 		capability "Sensor"
         capability "Battery"

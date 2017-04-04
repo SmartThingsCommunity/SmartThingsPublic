@@ -31,6 +31,12 @@ preferences {
 	page(name: "mainPage")
     page(name: "configureProgramMain")
     page(name: "configureProgram")
+<<<<<<< HEAD
+=======
+    page(name: "exportProgram")
+    page(name: "importProgram")
+    page(name: "importProgramProcess")
+>>>>>>> origin/master
     page(name: "configureAction")
     page(name: "configurePDevice")
     page(name: "deletePDevice")
@@ -256,7 +262,10 @@ def configureProgramMain(){
    for (int i = 1; i <= 6; i++){
            def myDescription = ""
            if(settings["${state.currentDeviceId}_programs_${i}_name"] != null) myDescription = settings["${state.currentDeviceId}_programs_${i}_name"] 
+<<<<<<< HEAD
            
+=======
+>>>>>>> origin/master
               href "configureProgram", title:"Program $i", description: myDescription, params: [pnumber: i]
            }
            }
@@ -388,6 +397,36 @@ private getDeviceID(number) {
 
 def configureProgram(params){
    if (params.pnumber != null) state.currentProgram = params.pnumber.toInteger() //log.debug "$params.pbutton"
+<<<<<<< HEAD
+=======
+   if (settings["importMe"] != "" && settings["importMe"] != null) {
+      def t = settings["importMe"].split("_")
+      def numberOfActions = 0
+      app.updateSetting("${state.currentDeviceId}_programs_${state.currentProgram}_name", t[0].split(",")[0])
+      app.updateSetting("${state.currentDeviceId}_programs_${state.currentProgram}_off", t[0].split(",")[1])
+      app.updateSetting("${state.currentDeviceId}_programs_${state.currentProgram}_numberOfActions", t[0].split(",")[2])
+      app.updateSetting("${state.currentDeviceId}_programs_${state.currentProgram}_repeat", t[0].split(",")[3])
+      t[1].split(";").each() {
+         numberOfActions++
+         app.updateSetting("${state.currentDeviceId}_programs_${state.currentProgram}_${numberOfActions}_color", it.split("\\.")[0])
+         if (it.split("\\.")[0] != "Custom") {
+            app.updateSetting("${state.currentDeviceId}_programs_${state.currentProgram}_${numberOfActions}_lightLevel", it.split("\\.")[1])
+         } else {
+            app.updateSetting("${state.currentDeviceId}_programs_${state.currentProgram}_${numberOfActions}_custom", it.split("\\.")[1])
+         }
+         app.updateSetting("${state.currentDeviceId}_programs_${state.currentProgram}_${numberOfActions}_transition", it.split("\\.")[2])
+         if (it.split("\\.")[3].indexOf("-") < 0) {
+            app.updateSetting("${state.currentDeviceId}_programs_${state.currentProgram}_${numberOfActions}_random_duration", "false")
+            app.updateSetting("${state.currentDeviceId}_programs_${state.currentProgram}_${numberOfActions}_duration", it.split("\\.")[3])
+         } else {
+            app.updateSetting("${state.currentDeviceId}_programs_${state.currentProgram}_${numberOfActions}_random_duration", "true")
+            app.updateSetting("${state.currentDeviceId}_programs_${state.currentProgram}_${numberOfActions}_min_duration", it.split("\\.")[3].split("-")[0])
+            app.updateSetting("${state.currentDeviceId}_programs_${state.currentProgram}_${numberOfActions}_max_duration", it.split("\\.")[3].split("-")[1])
+         }
+      }
+   app.updateSetting("importMe", "")
+   }
+>>>>>>> origin/master
    dynamicPage(name: "configureProgram", title: "Configure the actions you would like the program to perform.", nextPage: null, uninstall: configured(), install: false) {
         section{
            input "${state.currentDeviceId}_programs_${state.currentProgram}_name", "text", title:"Program Name", required: false
@@ -426,9 +465,62 @@ def configureProgram(params){
         section("Repeat"){
            input "${state.currentDeviceId}_programs_${state.currentProgram}_repeat", "enum", title: "Number of times to repeat?", required: false, options: [["-1":"Forever"],[0:"0"],[1:"1"],[2:"2"],[3:"3"],[4:"4"],[5:"5"],[6:"6"],[7:"7"],[8:"8"],[9:"9"]]
         }
+<<<<<<< HEAD
      }
 }
 
+=======
+        section("Import/Export"){
+           href "exportProgram", title:"Export Program", description:"Export the program string"
+           href "importProgram", title:"Import Program", description:"Import a program string"
+           
+        }
+     }
+}
+
+def exportProgram(){
+   dynamicPage(name: "exportProgram", title: "Export the string for this program", nextPage: null) {
+		section {
+            def programString = ""
+			paragraph "Copy the string below to import into another program"
+            programString += settings["${state.currentDeviceId}_programs_${state.currentProgram}_name"] + ","
+            programString += settings["${state.currentDeviceId}_programs_${state.currentProgram}_off"] + ","
+            programString += settings["${state.currentDeviceId}_programs_${state.currentProgram}_numberOfActions"] + ","
+            programString += settings["${state.currentDeviceId}_programs_${state.currentProgram}_repeat"] + "_"
+            
+            for (int i = 1; i <= (settings["${state.currentDeviceId}_programs_${state.currentProgram}_numberOfActions"] as Integer); i++){
+               programString += settings["${state.currentDeviceId}_programs_${state.currentProgram}_${i}_color"] + "."
+               if (settings["${state.currentDeviceId}_programs_${state.currentProgram}_${i}_color"] == "Custom") {
+                  programString += settings["${state.currentDeviceId}_programs_${state.currentProgram}_${i}_custom"] + "."
+               } else {
+                  programString += settings["${state.currentDeviceId}_programs_${state.currentProgram}_${i}_lightLevel"] + "."
+               }
+               programString += settings["${state.currentDeviceId}_programs_${state.currentProgram}_${i}_transition"] + "."
+               if (settings["${state.currentDeviceId}_programs_${state.currentProgram}_${i}_random_duration"] == "true") {
+                  programString += settings["${state.currentDeviceId}_programs_${state.currentProgram}_${i}_min_duration"] + "-"
+                  programString += settings["${state.currentDeviceId}_programs_${state.currentProgram}_${i}_max_duration"] + ";"
+               } else {
+                  programString += settings["${state.currentDeviceId}_programs_${state.currentProgram}_${i}_duration"] + ";"
+               }
+            }
+            programString = programString.substring(0, programString.length() - 1)
+            
+            app.updateSetting("exportMe", programString)
+            input "exportMe", "text", title:"Program String", required: false
+		}
+    }
+}
+
+def importProgram(params){
+   dynamicPage(name: "importProgram", title: "Import a program", nextPage: null) {
+		section {
+			paragraph "Paste the program string below and hit done"
+            input "importMe", "text", title: "Import String", required: false
+		}
+    }
+}
+
+>>>>>>> origin/master
 def configureAction(params) {
     if (params.paction != null) state.currentAction = params.paction.toInteger() //log.debug "$params.pbutton"
     dynamicPage(name: "configureAction", title: "Choose the actions for Program${state.currentAction}.",
@@ -567,7 +659,11 @@ def getDevices() {
 void deviceDescriptionHandler(physicalgraph.device.HubResponse hubResponse) {
 	log.trace "description.xml response (application/xml)"
 	def body = hubResponse.xml
+<<<<<<< HEAD
 	if (body?.device?.modelName?.text().startsWith("SmartLife RGBW Controller")) {
+=======
+	if (body?.device?.modelName?.text().startsWith("SmartLife RGBW") || body?.device?.modelName?.text().startsWith("AriLux")) {
+>>>>>>> origin/master
 		def devices = getDevices()
 		def device = devices.find {it?.key?.contains(body?.device?.UDN?.text())}
 		if (device) {
@@ -619,8 +715,13 @@ def addDevices() {
     }
     
 def changeName(params){
+<<<<<<< HEAD
     def thisDevice = getChildDevice(params.did)
     thisDevice.label = settings["${params.did}_label"]
+=======
+    def thisDevice = getChildDevice(state.currentDeviceId)
+    thisDevice.label = settings["${state.currentDeviceId}_label"]
+>>>>>>> origin/master
 
     dynamicPage(name: "changeName", title: "Change Name Summary", nextPage: "mainPage") {
 	    section {
@@ -700,10 +801,16 @@ def virtualHandler(evt) {
   log.debug "virtualHandler called with event: deviceId ${evt.deviceId} name:${evt.name} source:${evt.source} value:${evt.value} isStateChange: ${evt.isStateChange()} isPhysical: ${evt.isPhysical()} isDigital: ${evt.isDigital()} data: ${evt.data} device: ${evt.device}"
   getChildDevices().each {
         if (evt.deviceId == it.id){
+<<<<<<< HEAD
         log.debug settings["${it.deviceNetworkId.split("/")[0]}_programs_${it.deviceNetworkId.split("/")[2]}_off"]
         if (evt.value == "off" && settings["${it.deviceNetworkId.split("/")[0]}_programs_${it.deviceNetworkId.split("/")[2]}_off"] == "true"){
                getChildDevice(it.deviceNetworkId.split("/")[0])."${evt.value}${it.deviceNetworkId.split("/")[2]}"(-1)
         }else{
+=======
+        if (evt.value == "off" && settings["${it.deviceNetworkId.split("/")[0]}_programs_${it.deviceNetworkId.split("/")[2]}_off"] == "true"){
+            getChildDevice(it.deviceNetworkId.split("/")[0])."${evt.value}${it.deviceNetworkId.split("/")[2]}"(-1)
+        } else {
+>>>>>>> origin/master
             getChildDevice(it.deviceNetworkId.split("/")[0])."${evt.value}${it.deviceNetworkId.split("/")[2]}"()
         }
      }   
@@ -716,7 +823,13 @@ def physicalHandler(evt) {
        if (evt.name == "switch${i}") {
                 getChildDevices().each {
                 if (evt.deviceId == it.id) {
+<<<<<<< HEAD
                       sendEvent(getChildDevice("${it.deviceNetworkId}/${app.id}/${i}"), [name:"switch", value:"$evt.value", type:"physical"])
+=======
+                    if(getChildDevice("${it.deviceNetworkId}/${app.id}/${i}")){
+                        sendEvent(getChildDevice("${it.deviceNetworkId}/${app.id}/${i}"), [name:"switch", value:"$evt.value", type:"physical"])
+                    }
+>>>>>>> origin/master
                 }
                  
 			}

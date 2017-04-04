@@ -13,7 +13,11 @@
  *  SmartLife RGBW Controller
  *
  *  Author: Eric Maycock (erocm123)
+<<<<<<< HEAD
  *  Date: 2016-08-26
+=======
+ *  Date: 2016-12-10
+>>>>>>> origin/master
  */
 
 import groovy.json.JsonSlurper
@@ -27,6 +31,10 @@ metadata {
 		capability "Refresh"
 		capability "Sensor"
         capability "Configuration"
+<<<<<<< HEAD
+=======
+        capability "Health Check"
+>>>>>>> origin/master
         
         (1..6).each { n ->
 			attribute "switch$n", "enum", ["on", "off"]
@@ -66,7 +74,11 @@ metadata {
         [["true":"fade"],["false":"flash"]])
         input("channels", "boolean", title:"Mutually Exclusive RGB & White.\nOnly allow one or the other", required:false, displayDuringSetup:true)
         input("powerOnState", "enum", title:"Boot Up State", description: "State when power is applied", required: false, displayDuringSetup: false, options: [[0:"Off"],[1:"On"]/*,[2:"Previous State"]*/])
+<<<<<<< HEAD
 
+=======
+        
+>>>>>>> origin/master
 		input("color", "enum", title: "Default Color", required: false, multiple:false, value: "Previous", options: [
                     ["Previous":"Previous"],
 					["Soft White":"Soft White - Default"],
@@ -74,10 +86,19 @@ metadata {
 					["Daylight":"Daylight - Energize"],
 					["Warm White":"Warm White - Relax"],
 					"Red","Green","Blue","Yellow","Orange","Purple","Pink","Cyan","Random","Custom"])
+<<<<<<< HEAD
                     
         input "custom", "text", title: "Custom Color in Hex (ie ffffff)\r\nIf \"Custom\" is chosen above", submitOnChange: false, required: false
 		
         input("level", "enum", title: "Default Level", required: false, value: 100, options: [[0:"Previous"],[10:"10%"],[20:"20%"],[30:"30%"],[40:"40%"],[50:"50%"],[60:"60%"],[70:"70%"],[80:"80%"],[90:"90%"],[100:"100%"]])
+=======
+
+        //if (color == "Custom"){            
+        input "custom", "text", title: "Custom Color in Hex (ie ffffff)\r\nIf \"Custom\" is chosen above", submitOnChange: false, required: false
+        //} else {
+        input("level", "enum", title: "Default Level", required: false, value: 100, options: [[0:"Previous"],[10:"10%"],[20:"20%"],[30:"30%"],[40:"40%"],[50:"50%"],[60:"60%"],[70:"70%"],[80:"80%"],[90:"90%"],[100:"100%"]])
+        //}
+>>>>>>> origin/master
 
         //input("override", "boolean", title:"Override detected IP Address", required: false, displayDuringSetup: false)
         //input("ip", "string", title:"IP Address", description: "192.168.1.150", required: false, displayDuringSetup: false)
@@ -86,8 +107,13 @@ metadata {
 	tiles (scale: 2){      
 		multiAttributeTile(name:"switch", type: "lighting", width: 6, height: 4, canChangeIcon: true){
 			tileAttribute ("device.switch", key: "PRIMARY_CONTROL") {
+<<<<<<< HEAD
 				attributeState "on", label:'${name}', action:"switch.off", icon:"st.lights.philips.hue-single", backgroundColor:"#79b821", nextState:"turningOff"
 				attributeState "off", label:'${name}', action:"switch.on", icon:"st.lights.philips.hue-single", backgroundColor:"#ffffff", nextState:"turningOn"
+=======
+				attributeState "off", label:'${name}', action:"switch.on", icon:"st.lights.philips.hue-single", backgroundColor:"#ffffff", nextState:"turningOn"
+                attributeState "on", label:'${name}', action:"switch.off", icon:"st.lights.philips.hue-single", backgroundColor:"#79b821", nextState:"turningOff"
+>>>>>>> origin/master
 				attributeState "turningOn", label:'${name}', action:"switch.off", icon:"st.lights.philips.hue-single", backgroundColor:"#79b821", nextState:"turningOff"
 				attributeState "turningOff", label:'${name}', action:"switch.on", icon:"st.lights.philips.hue-single", backgroundColor:"#ffffff", nextState:"turningOn"
 			}
@@ -159,12 +185,26 @@ metadata {
         valueTile("white2ValueTile", "device.white2Level", decoration: "flat", height: 1, width: 1) {
         	state "white2Level", label:'${currentValue}%'
         } 
+<<<<<<< HEAD
+=======
+        valueTile("ip", "ip", decoration: "flat", width: 2, height: 1) {
+    		state "ip", label:'IP Address\r\n${currentValue}'
+		}
+        valueTile("firmware", "firmware", decoration: "flat", width: 2, height: 1) {
+    		state "firmware", label:'Firmware ${currentValue}'
+		}
+>>>>>>> origin/master
         
         
         (1..6).each { n ->
 			standardTile("switch$n", "switch$n", canChangeIcon: true, width: 2, height: 2) {
+<<<<<<< HEAD
 				state "on", label: "$n", action: "off$n", icon: "st.switches.switch.on", backgroundColor: "#79b821"
 				state "off", label: "$n", action: "on$n", icon: "st.switches.switch.off", backgroundColor: "#ffffff"
+=======
+				state "off", label: "$n", action: "on$n", icon: "st.switches.switch.off", backgroundColor: "#ffffff"
+                state "on", label: "$n", action: "off$n", icon: "st.switches.switch.on", backgroundColor: "#79b821"
+>>>>>>> origin/master
 			}
 		}
     }
@@ -178,7 +218,11 @@ metadata {
              "white2", "white2SliderControl", "white2ValueTile",
              "switch1", "switch2", "switch3",
              "switch4", "switch5", "switch6",
+<<<<<<< HEAD
              "refresh", "configure" ])
+=======
+             "refresh", "configure", "ip", "firmware" ])
+>>>>>>> origin/master
 }
 
 def installed() {
@@ -194,6 +238,10 @@ def updated() {
 def configure() {
 	log.debug "configure()"
 	log.debug "Configuring Device For SmartThings Use"
+<<<<<<< HEAD
+=======
+    sendEvent(name: "checkInterval", value: 12 * 60, data: [protocol: "lan", hubHardwareId: device.hub.hardwareID], displayed: false)
+>>>>>>> origin/master
     def responses = []
     if (ip != null) state.dni = setDeviceNetworkId(ip, "80")
     state.hubIP = device.hub.getDataValue("localIP")
@@ -207,6 +255,7 @@ def configureDefault(){
     if(settings.color == "Previous") {
         return postAction("/config?dcolor=Previous")
     } else if(settings.color == "Random") {
+<<<<<<< HEAD
         return postAction("/config?dcolor=f~${getHexColor(settings.color)}")
     } else if(settings.color == "Custom") {
         return postAction("/config?dcolor=f~${settings.custom}")
@@ -215,14 +264,30 @@ def configureDefault(){
             return postAction("/config?dcolor=w~${getDimmedColor(getHexColor(settings.color), "100")}")
         } else {
             return postAction("/config?dcolor=w~${getDimmedColor(getHexColor(settings.color), settings.level)}")
+=======
+        return postAction("/config?dcolor=${transition == "false"? "d~" : "f~"}${getHexColor(settings.color)}")
+    } else if(settings.color == "Custom") {
+        return postAction("/config?dcolor=${transition == "false"? "d~" : "f~"}${settings.custom}")
+    } else if(settings.color == "Soft White" || settings.color == "Warm White") {
+        if (settings.level == null || settings.level == "0") {
+            return postAction("/config?dcolor=${transition == "false"? "x~" : "w~"}${getDimmedColor(getHexColor(settings.color), "100")}")
+        } else {
+            return postAction("/config?dcolor=${transition == "false"? "x~" : "w~"}${getDimmedColor(getHexColor(settings.color), settings.level)}")
+>>>>>>> origin/master
         }
     } else {
         if (settings.level == null || settings.color == null){
            return postAction("/config?dcolor=Previous")
         } else if (settings.level == null || settings.level == "0") {
+<<<<<<< HEAD
             return postAction("/config?dcolor=f~${getDimmedColor(getHexColor(settings.color), "100")}")
         } else {
             return postAction("/config?dcolor=f~${getDimmedColor(getHexColor(settings.color), settings.level)}")
+=======
+            return postAction("/config?dcolor=${transition == "false"? "d~" : "f~"}${getDimmedColor(getHexColor(settings.color), "100")}")
+        } else {
+            return postAction("/config?dcolor=${transition == "false"? "d~" : "f~"}${getDimmedColor(getHexColor(settings.color), settings.level)}")
+>>>>>>> origin/master
         }
     }
 }
@@ -238,10 +303,18 @@ def parse(description) {
     
     if(description == "updated") return
     def descMap = parseDescriptionAsMap(description)
+<<<<<<< HEAD
     //log.debug "descMap: ${descMap}"
     
     if (!state.configSuccess || state.configSuccess == "false") cmds << configureInstant(device.hub.getDataValue("localIP"), device.hub.getDataValue("localSrvPortTCP"))
     
+=======
+    
+    if (!state.configSuccess || state.configSuccess == "false") cmds << configureInstant(device.hub.getDataValue("localIP"), device.hub.getDataValue("localSrvPortTCP"), powerOnState)
+    
+    if (!device.currentValue("ip") || (device.currentValue("ip") != getDataValue("ip"))) sendEvent(name: 'ip', value: getDataValue("ip"))
+
+>>>>>>> origin/master
     if (!state.mac || state.mac != descMap["mac"]) {
 		log.debug "Mac address of device found ${descMap["mac"]}"
         updateDataValue("mac", descMap["mac"])
@@ -254,14 +327,24 @@ def parse(description) {
     def slurper = new JsonSlurper()
     def result = slurper.parseText(body)
     
+<<<<<<< HEAD
     //log.debug "result: ${result}"
     
+=======
+>>>>>>> origin/master
     if (result.containsKey("power")) {
         events << createEvent(name: "switch", value: result.power)
         toggleTiles("all")
     }
     if (result.containsKey("rgb")) {
        events << createEvent(name:"color", value:"#$result.rgb")
+<<<<<<< HEAD
+=======
+
+       // only store the previous value if the response did not come from a power-off command
+       if (result.power != "off")
+         state.previousRGB = result.rgb
+>>>>>>> origin/master
     }
     if (result.containsKey("r")) {
        events << createEvent(name:"redLevel", value: Integer.parseInt(result.r,16)/255 * 100 as Integer, displayed: false)
@@ -294,6 +377,13 @@ def parse(description) {
        } else {
     	  events << createEvent(name:"white1", value: "off", displayed: false)
        }
+<<<<<<< HEAD
+=======
+
+       // only store the previous value if the response did not come from a power-off command
+       if (result.power != "off")
+          state.previousW1 = result.w1
+>>>>>>> origin/master
     }
     if (result.containsKey("w2")) {
        events << createEvent(name:"white2Level", value: Integer.parseInt(result.w2,16)/255 * 100 as Integer, displayed: false)
@@ -302,6 +392,16 @@ def parse(description) {
        } else {
     	  events << createEvent(name:"white2", value: "off", displayed: false)
        }
+<<<<<<< HEAD
+=======
+
+       // only store the previous value if the response did not come from a power-off command
+       if (result.power != "off")
+          state.previousW2 = result.w2
+    }
+    if (result.containsKey("version")) {
+       events << createEvent(name:"firmware", value: result.version + "\r\n" + result.date, displayed: false)
+>>>>>>> origin/master
     }
 
     if (result.containsKey("success")) {
@@ -361,9 +461,15 @@ def setLevel(level) {
 
 def setLevel(level, duration) {
 	log.debug "setLevel() level = ${level}"
+<<<<<<< HEAD
      if(level > 100) level = 100
      if (level == 0) { off() }
 	 else if (device.latestValue("switch") == "off") { on() }
+=======
+    if(level > 100) level = 100
+    if (level == 0) { off() }
+    else if (device.latestValue("switch") == "off") { on() }
+>>>>>>> origin/master
 	sendEvent(name: "level", value: level)
     sendEvent(name: "setLevel", value: level, displayed: false)
 	setColor(aLevel: level)
@@ -386,11 +492,23 @@ def getWhite(value) {
 def setColor(value) {
     log.debug "setColor being called with ${value}"
     def uri
+<<<<<<< HEAD
 
     if ( !(value.hex) && (value.saturation) && (value.hue)) {
 		def rgb = huesatToRGB(value.hue as Integer, value.saturation as Integer)
         value.hex = rgbToHex([r:rgb[0], g:rgb[1], b:rgb[2]])
     } 
+=======
+    def validValue = true
+
+    if ( !(value.hex) && ((value.saturation) && (value.hue))) {
+        def hue = (value.hue != null) ? value.hue : 13
+		def saturation = (value.saturation != null) ? value.saturation : 13
+		def rgb = huesatToRGB(hue as Integer, saturation as Integer)
+        value.hex = rgbToHex([r:rgb[0], g:rgb[1], b:rgb[2]])
+    } 
+    
+>>>>>>> origin/master
     if (value.hue == 23 && value.saturation == 56) {
        log.debug "setting color Soft White"
        def whiteLevel = getWhite(value.level)
@@ -406,7 +524,11 @@ def setColor(value) {
     else if (value.hue == 53 && value.saturation == 91) {
        log.debug "setting color Daylight"
        def whiteLevel = getWhite(value.level)
+<<<<<<< HEAD
        uri = "/w1?value=${whiteLevel}"
+=======
+       uri = "/w2?value=${whiteLevel}"
+>>>>>>> origin/master
        state.previousColor = "${whiteLevel}"
     } 
     else if (value.hue == 20 && value.saturation == 80) {
@@ -423,6 +545,7 @@ def setColor(value) {
     }
 	else if (value.hex) {
        log.debug "setting color with hex"
+<<<<<<< HEAD
        def rgb = value.hex.findAll(/[0-9a-fA-F]{2}/).collect { Integer.parseInt(it, 16) }
        //def myred = rgb[0] >=128 ? 255 : 0
        //def mygreen = rgb[1] >=128 ? 255 : 0
@@ -445,19 +568,74 @@ def setColor(value) {
     else if (value.aLevel) {
        uri = "/rgb?value=${getDimmedColor(state.previousColor).substring(1)}"
        state.previousColor = "${getDimmedColor(state.previousColor).substring(1)}"
+=======
+       if (!value.hex ==~ /^\#([A-Fa-f0-9]){6}$/) {
+           log.debug "$value.hex is not valid"
+           validValue = false
+       } else {
+           def rgb = value.hex.findAll(/[0-9a-fA-F]{2}/).collect { Integer.parseInt(it, 16) }
+           def myred = rgb[0] < 40 ? 0 : rgb[0]
+           def mygreen = rgb[1] < 40 ? 0 : rgb[1]
+           def myblue = rgb[2] < 40 ? 0 : rgb[2]
+           def dimmedColor = getDimmedColor(rgbToHex([r:myred, g:mygreen, b:myblue]))
+           uri = "/rgb?value=${dimmedColor.substring(1)}"
+       }
+    }
+    else if (value.white) {
+       uri = "/w1?value=${value.white}"
+    }
+    else if (value.aLevel) {
+    	def actions = []
+        if (channels == "true") {
+           def skipColor = false
+           // Handle white channel dimmers if they're on or were not previously off (excluding power-off command)
+           if (device.currentValue("white1") == "on" || state.previousW1 != "00") {
+              actions.push(setWhite1Level(value.aLevel))
+              skipColor = true
+           }
+           if (device.currentValue("white2") == "on" || state.previousW2 != "00") {
+              actions.push(setWhite2Level(value.aLevel))
+              skipColor = true
+           }
+        if (skipColor == false) {
+        log.debug state.previousRGB
+           // if the device is currently on, scale the current RGB values; otherwise scale the previous setting
+           uri = "/rgb?value=${getDimmedColor(device.latestValue("switch") == "on" ? device.currentValue("color").substring(1) : state.previousRGB)}"
+           actions.push(postAction("$uri&channels=$channels&transition=$transition"))
+        }
+        } else {
+           // Handle white channel dimmers if they're on or were not previously off (excluding power-off command)
+           if (device.currentValue("white1") == "on" || state.previousW1 != "00")
+              actions.push(setWhite1Level(value.aLevel))
+           if (device.currentValue("white2") == "on" || state.previousW2 != "00")
+              actions.push(setWhite2Level(value.aLevel))
+        
+           // if the device is currently on, scale the current RGB values; otherwise scale the previous setting
+           uri = "/rgb?value=${getDimmedColor(device.latestValue("switch") == "on" ? device.currentValue("color").substring(1) : state.previousRGB)}"
+           actions.push(postAction("$uri&channels=$channels&transition=$transition"))
+        }
+        return actions
+>>>>>>> origin/master
     }
     else {
        // A valid color was not chosen. Setting to white
        uri = "/w1?value=ff"
+<<<<<<< HEAD
        state.previousColor = "ff"
     }
     
     if (uri != null) postAction("$uri&channels=$channels&transition=$transition")
+=======
+    }
+    
+    if (uri != null && validValue != false) postAction("$uri&channels=$channels&transition=$transition")
+>>>>>>> origin/master
 
 }
 
 private getDimmedColor(color, level) {
    if(color.size() > 2){
+<<<<<<< HEAD
       def rgb = color.findAll(/[0-9a-fA-F]{2}/).collect { Integer.parseInt(it, 16) }
       def myred = rgb[0]
       def mygreen = rgb[1]
@@ -469,17 +647,29 @@ private getDimmedColor(color, level) {
       def r = hex(c.r * (level.toInteger()/100))
       def g = hex(c.g * (level.toInteger()/100))
       def b = hex(c.b * (level.toInteger()/100))
+=======
+      def scaledColor = getScaledColor(color)
+      def rgb = scaledColor.findAll(/[0-9a-fA-F]{2}/).collect { Integer.parseInt(it, 16) }
+    
+      def r = hex(rgb[0] * (level.toInteger()/100))
+      def g = hex(rgb[1] * (level.toInteger()/100))
+      def b = hex(rgb[2] * (level.toInteger()/100))
+>>>>>>> origin/master
 
       return "${r + g + b}"
    }else{
       color = Integer.parseInt(color, 16)
       return hex(color * (level.toInteger()/100))
    }
+<<<<<<< HEAD
 
+=======
+>>>>>>> origin/master
 }
 
 private getDimmedColor(color) {
    if (device.latestValue("level")) {
+<<<<<<< HEAD
       def newLevel = device.latestValue("level")
       def colorHex = getScaledColor(color)
       def rgb = colorHex.findAll(/[0-9a-fA-F]{2}/).collect { Integer.parseInt(it, 16) }
@@ -495,6 +685,9 @@ private getDimmedColor(color) {
       def b = hex(c.b * (newLevel/100))
 
       return "#${r + g + b}"
+=======
+      getDimmedColor(color, device.latestValue("level"))
+>>>>>>> origin/master
    } else {
       return color
    }
@@ -504,11 +697,23 @@ def reset() {
 	log.debug "reset()"
 	setColor(white: "ff")
 }
+<<<<<<< HEAD
+=======
+
+>>>>>>> origin/master
 def refresh() {
 	log.debug "refresh()"
     postAction("/status")
 }
 
+<<<<<<< HEAD
+=======
+def ping() {
+    log.debug "ping()"
+    refresh()
+}
+
+>>>>>>> origin/master
 def setWhiteLevel(value) {
 	log.debug "setwhiteLevel: ${value}"
     def level = Math.min(value as Integer, 99)    
@@ -572,6 +777,10 @@ def sync(ip, port) {
     def existingPort = getDataValue("port")
     if (ip && ip != existingIp) {
         updateDataValue("ip", ip)
+<<<<<<< HEAD
+=======
+        sendEvent(name: 'ip', value: ip)
+>>>>>>> origin/master
     }
     if (port && port != existingPort) {
         updateDataValue("port", port)
@@ -634,7 +843,10 @@ private getHostAddress() {
 private String convertIPtoHex(ipAddress) { 
     String hex = ipAddress.tokenize( '.' ).collect {  String.format( '%02x', it.toInteger() ) }.join()
     return hex
+<<<<<<< HEAD
 
+=======
+>>>>>>> origin/master
 }
 
 private String convertPortToHex(port) {

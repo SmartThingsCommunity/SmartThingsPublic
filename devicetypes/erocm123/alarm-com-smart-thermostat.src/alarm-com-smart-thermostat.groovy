@@ -120,7 +120,11 @@ metadata {
 					[value: 90, color: "#ea3811"]
 				]
 		}
+<<<<<<< HEAD
 		controlTile("heatSliderControl", "device.heatingSetpoint", "slider", height: 2, width: 3, inactiveLabel: false, range:"(60..90)") {
+=======
+		controlTile("heatSliderControl", "device.heatingSetpoint", "slider", height: 2, width: 4, inactiveLabel: false, range:"(60..90)") {
+>>>>>>> origin/master
 			state "setHeatingSetpoint", action:"quickSetHeat", backgroundColor:"#d04e00"
 		}
 
@@ -141,7 +145,11 @@ metadata {
 					[value: 90, color: "#11c3ea"]
 				]
 		}
+<<<<<<< HEAD
 		controlTile("coolSliderControl", "device.coolingSetpoint", "slider", height: 2, width: 3, inactiveLabel: false, range:"(60..90)") {
+=======
+		controlTile("coolSliderControl", "device.coolingSetpoint", "slider", height: 2, width: 4, inactiveLabel: false, range:"(60..90)") {
+>>>>>>> origin/master
 			state "setCoolingSetpoint", action:"quickSetCool", backgroundColor: "#1e9cbb"
 		}
        
@@ -180,8 +188,13 @@ metadata {
 
 		main "temperature"
         details(["temperature", 
+<<<<<<< HEAD
         "heatingSetpoint", "heatLevelUp", "coolLevelUp", "coolingSetpoint", "heatLevelDown", "coolLevelDown", 
         "heatSliderControl", "coolSliderControl", 
+=======
+        "heatSliderControl", "heatingSetpoint", 
+        "coolSliderControl", "coolingSetpoint", 
+>>>>>>> origin/master
         "fanon", "fanauto", "fancir", 
         "modeoff", "modeheat", 
         "modecool", "modeauto",
@@ -249,8 +262,12 @@ def parse(String description)
     }
    
 	logging("Parse returned $result")
+<<<<<<< HEAD
     //cmds ? [result, response(commands(cmds))] : result
     result
+=======
+    if (cmds != []) return [ result, response(commands(cmds)) ] else return result
+>>>>>>> origin/master
 }
 
 def zwaveEvent(physicalgraph.zwave.commands.thermostatsetpointv2.ThermostatSetpointReport cmd)
@@ -538,10 +555,20 @@ def setHeatingSetpoint(Double degrees, Integer delay = 500) {
     } else {
     	convertedDegrees = degrees
     }
+<<<<<<< HEAD
 	commands([
 		zwave.thermostatSetpointV1.thermostatSetpointSet(setpointType: 1, scale: deviceScale, precision: p, scaledValue: convertedDegrees),
 		zwave.thermostatSetpointV1.thermostatSetpointGet(setpointType: 1)
 	], delay)
+=======
+    state.heat = convertedDegrees
+    if (device.currentValue("thermostatMode") == null || device.currentValue("thermostatMode") == "heat") { 
+		commands([
+			zwave.thermostatSetpointV1.thermostatSetpointSet(setpointType: 1, scale: deviceScale, precision: p, scaledValue: convertedDegrees),
+			zwave.thermostatSetpointV1.thermostatSetpointGet(setpointType: 1)
+		], delay)
+    }
+>>>>>>> origin/master
 }
 
 def coolLevelUp(){
@@ -585,10 +612,20 @@ def setCoolingSetpoint(Double degrees, Integer delay = 500) {
     } else {
     	convertedDegrees = degrees
     }
+<<<<<<< HEAD
 	commands([
 		zwave.thermostatSetpointV1.thermostatSetpointSet(setpointType: 2, scale: deviceScale, precision: p,  scaledValue: convertedDegrees),
 		zwave.thermostatSetpointV1.thermostatSetpointGet(setpointType: 2)
 	], delay)
+=======
+    state.cool = convertedDegrees
+    if (device.currentValue("thermostatMode") == null || device.currentValue("thermostatMode") == "cool") { 
+		commands([
+			zwave.thermostatSetpointV1.thermostatSetpointSet(setpointType: 2, scale: deviceScale, precision: p,  scaledValue: convertedDegrees),
+			zwave.thermostatSetpointV1.thermostatSetpointGet(setpointType: 2)
+		], delay)
+    }
+>>>>>>> origin/master
 }
 
 def modeoff() {
@@ -603,6 +640,11 @@ def modeheat() {
 	logging("Setting thermostat mode to HEAT.")
 	commands([
 		zwave.thermostatModeV2.thermostatModeSet(mode: 1),
+<<<<<<< HEAD
+=======
+        zwave.thermostatSetpointV1.thermostatSetpointSet(setpointType: 1, scale: 1, precision: 1,  scaledValue: state.heat),
+		zwave.thermostatSetpointV1.thermostatSetpointGet(setpointType: 1),
+>>>>>>> origin/master
 		zwave.thermostatModeV2.thermostatModeGet()
 	])
 }
@@ -611,6 +653,11 @@ def modecool() {
 	logging("Setting thermostat mode to COOL.")
 	commands([
 		zwave.thermostatModeV2.thermostatModeSet(mode: 2),
+<<<<<<< HEAD
+=======
+        zwave.thermostatSetpointV1.thermostatSetpointSet(setpointType: 2, scale: 1, precision: 1,  scaledValue: state.cool),
+		zwave.thermostatSetpointV1.thermostatSetpointGet(setpointType: 2),
+>>>>>>> origin/master
 		zwave.thermostatModeV2.thermostatModeGet()
 	])
 }
@@ -672,6 +719,12 @@ def configure() {
     def cmds = []
 
     cmds = update_needed_settings()    
+<<<<<<< HEAD
+=======
+    
+    cmds << zwave.thermostatModeV2.thermostatModeSupportedGet()
+	cmds << zwave.associationV1.associationSet(groupingIdentifier:1, nodeId:[zwaveHubNodeId])
+>>>>>>> origin/master
 
 	if(!device.currentValue("temperature") || device.currentValue("humidity")) cmds << zwave.sensorMultilevelV3.sensorMultilevelGet() // current temperature
 	if(!device.currentValue("coolingSetPoint")) cmds << zwave.thermostatSetpointV1.thermostatSetpointGet(setpointType: 1)
@@ -761,6 +814,10 @@ def generate_preferences(configuration_model)
    
     configuration.Value.each
     {
+<<<<<<< HEAD
+=======
+        if(it.@hidden != "true" && it.@disabled != "true"){
+>>>>>>> origin/master
         switch(it.@type)
         {   
             case ["byte","short","four","number"]:
@@ -792,7 +849,12 @@ def generate_preferences(configuration_model)
                     defaultValue: "${it.@value}",
                     displayDuringSetup: "${it.@displayDuringSetup}"
             break
+<<<<<<< HEAD
         }  
+=======
+        }
+        }
+>>>>>>> origin/master
     }
 }
 
@@ -874,14 +936,22 @@ Default: 0 (Normal)
     <Item label="Normal" value="0" />
     <Item label="Heat Pump" value="1" />
 </Value>
+<<<<<<< HEAD
 <Value type="byte" byteSize="1" index="2" label="Heat Stages" min="0" max="3" value="2" setting_type="zwave" fw="">
+=======
+<Value type="byte" byteSize="1" index="2" label="Heat Stages" min="0" max="3" value="2" setting_type="zwave" fw="" disabled="true">
+>>>>>>> origin/master
  <Help>
 Number of Heat Stages
 Range: 0 to 3
 Default: 2
 </Help>
 </Value>
+<<<<<<< HEAD
 <Value type="byte" byteSize="1" index="3" label="Number of Cool Stages" min="0" max="2" value="2" setting_type="zwave" fw="">
+=======
+<Value type="byte" byteSize="1" index="3" label="Number of Cool Stages" min="0" max="2" value="2" setting_type="zwave" fw="" disabled="true">
+>>>>>>> origin/master
  <Help>
 Cool Stages
 Range: 0 to 2
@@ -896,7 +966,11 @@ Default: 1 (Electric)
     <Item label="Fossil Fuel" value="0" />
     <Item label="Electric" value="1" />
 </Value>
+<<<<<<< HEAD
 <Value type="byte" byteSize="4" index="5" label="Calibration Temperature" min="-100" max="100" value="0" setting_type="zwave" fw="">
+=======
+<Value type="byte" byteSize="4" index="5" label="Calibration Temperature" min="-100" max="100" value="0" setting_type="zwave" fw="" disabled="true">
+>>>>>>> origin/master
  <Help>
 Calibration Temperature Range (in deg. F) Precision is tenths of a degree.
 Range: -100 to 100
@@ -910,35 +984,55 @@ Range: 0 to 30
 Default: 5
 </Help>
 </Value>
+<<<<<<< HEAD
 <Value type="byte" byteSize="4" index="7" label="Swing" min="0" max="30" value="0" setting_type="zwave" fw="">
+=======
+<Value type="byte" byteSize="4" index="7" label="Swing" min="0" max="30" value="0" setting_type="zwave" fw="" disabled="true">
+>>>>>>> origin/master
  <Help>
 Swing Range (in deg. F) Precision is tenths of a degree.
 Range: 0 to 30
 Default: 0
 </Help>
 </Value>
+<<<<<<< HEAD
 <Value type="byte" byteSize="1" index="8" label="Heat Staging Delay" min="1" max="60" value="10" setting_type="zwave" fw="">
+=======
+<Value type="byte" byteSize="1" index="8" label="Heat Staging Delay" min="1" max="60" value="10" setting_type="zwave" fw="" disabled="true">
+>>>>>>> origin/master
  <Help>
 Heat Staging Delay (in min)
 Range: 1 to 60
 Default: 10
 </Help>
 </Value>
+<<<<<<< HEAD
 <Value type="byte" byteSize="1" index="9" label="Cool Staging Delay" min="1" max="60" value="10" setting_type="zwave" fw="">
+=======
+<Value type="byte" byteSize="1" index="9" label="Cool Staging Delay" min="1" max="60" value="10" setting_type="zwave" fw="" disabled="true">
+>>>>>>> origin/master
  <Help>
 Cool Staging Delay (in min)
 Range: 1 to 60
 Default: 10
 </Help>
 </Value>
+<<<<<<< HEAD
 <Value type="byte" byteSize="4" index="10" label="Balance Setpoint" min="0" max="950" value="350" setting_type="zwave" fw="">
+=======
+<Value type="byte" byteSize="4" index="10" label="Balance Setpoint" min="0" max="950" value="350" setting_type="zwave" fw="" disabled="true">
+>>>>>>> origin/master
  <Help>
 Balance Setpont Range (in deg. F) Precision is tenths of a degree.
 Range: 0 to 950
 Default: 350
 </Help>
 </Value>
+<<<<<<< HEAD
 <Value type="list" byteSize="1" index="11" label="Recovery Settings" min="0" max="1" value="0" setting_type="zwave" fw="">
+=======
+<Value type="list" byteSize="1" index="11" label="Recovery Settings" min="0" max="1" value="0" setting_type="zwave" fw="" disabled="true">
+>>>>>>> origin/master
  <Help>
 Range: 0 to 1
 Default: 0 (Comfort)
@@ -946,21 +1040,33 @@ Default: 0 (Comfort)
     <Item label="Comfort" value="0" />
     <Item label="Efficient" value="1" />
 </Value>
+<<<<<<< HEAD
 <Value type="byte" byteSize="1" index="12" label="Fan Circulation Period" min="10" max="240" value="20" setting_type="zwave" fw="">
+=======
+<Value type="byte" byteSize="1" index="12" label="Fan Circulation Period" min="10" max="240" value="20" setting_type="zwave" fw="" disabled="true">
+>>>>>>> origin/master
  <Help>
 Fan Circulation Period (in min)
 Range: 10 to 240
 Default: 20
 </Help>
 </Value>
+<<<<<<< HEAD
 <Value type="byte" byteSize="1" index="13" label="Fan Circulation Duty Cycle" min="0" max="100" value="25" setting_type="zwave" fw="">
+=======
+<Value type="byte" byteSize="1" index="13" label="Fan Circulation Duty Cycle" min="0" max="100" value="25" setting_type="zwave" fw="" disabled="true">
+>>>>>>> origin/master
  <Help>
 Duty Cycle (percentage)
 Range: 0 to 100
 Default: 25
 </Help>
 </Value>
+<<<<<<< HEAD
 <Value type="byte" byteSize="2" index="14" label="Fan Purge Time" min="1" max="3600" value="60" setting_type="zwave" fw="">
+=======
+<Value type="byte" byteSize="2" index="14" label="Fan Purge Time" min="1" max="3600" value="60" setting_type="zwave" fw="" disabled="true">
+>>>>>>> origin/master
  <Help>
 Purge Time (in s)
 Range: 1 to 3600
@@ -1003,21 +1109,33 @@ Default: 0 (Disabled)
     <Item label="Disable" value="0" />
     <Item label="Enable" value="1" />
 </Value>
+<<<<<<< HEAD
 <Value type="byte" byteSize="1" index="20" label="Compressor Delay" min="0" max="60" value="5" setting_type="zwave" fw="">
+=======
+<Value type="byte" byteSize="1" index="20" label="Compressor Delay" min="0" max="60" value="5" setting_type="zwave" fw="" disabled="true">
+>>>>>>> origin/master
  <Help>
 Compressor Delay (in min)
 Range: 0 to 60
 Default: 5
 </Help>
 </Value>
+<<<<<<< HEAD
 <Value type="byte" byteSize="1" index="21" label="Demand Response Period" min="10" max="240" value="10" setting_type="zwave" fw="">
+=======
+<Value type="byte" byteSize="1" index="21" label="Demand Response Period" min="10" max="240" value="10" setting_type="zwave" fw="" disabled="true">
+>>>>>>> origin/master
  <Help>
 Demand Response Period (in min)
 Range: 10 to 240
 Default: 10
 </Help>
 </Value>
+<<<<<<< HEAD
 <Value type="byte" byteSize="1" index="22" label="Demand Response Duty Cycle" min="0" max="100" value="25" setting_type="zwave" fw="">
+=======
+<Value type="byte" byteSize="1" index="22" label="Demand Response Duty Cycle" min="0" max="100" value="25" setting_type="zwave" fw="" disabled="true">
+>>>>>>> origin/master
  <Help>
 Demand Response Duty Cycle (percentage)
 Range: 0 to 100
@@ -1045,7 +1163,11 @@ Default: 15 (Off, Heat, Cool, Auto)
     <Item label="Off, Heat, Cool, Emergency Heat" value="23" />
     <Item label="Off, Heat, Emergency Heat" value="19" />
 </Value>
+<<<<<<< HEAD
 <Value type="list" byteSize="1" index="25" label="Configurable Terminal Setting" min="0" max="3" value="0" setting_type="zwave" fw="">
+=======
+<Value type="list" byteSize="1" index="25" label="Configurable Terminal Setting" min="0" max="3" value="0" setting_type="zwave" fw="" disabled="true">
+>>>>>>> origin/master
  <Help>
 Range: 0 to 3
 Default: 0 (Disabled)
@@ -1077,7 +1199,11 @@ Range: 0 to 100
 Default: 15
 </Help>
 </Value>
+<<<<<<< HEAD
 <Value type="list" byteSize="1" index="30" label="Remote Temperature Enable" min="0" max="1" value="0" setting_type="zwave" fw="">
+=======
+<Value type="list" byteSize="1" index="30" label="Remote Temperature Enable" min="0" max="1" value="0" setting_type="zwave" fw="" disabled="true">
+>>>>>>> origin/master
  <Help>
 Range: 0 to 1
 Default: 0 (Disabled)
@@ -1106,7 +1232,11 @@ Range: 5 to 20
 Default: 10
 </Help>
 </Value>
+<<<<<<< HEAD
 <Value type="list" byteSize="1" index="34" label="O/B Select" min="0" max="1" value="1" setting_type="zwave" fw="">
+=======
+<Value type="list" byteSize="1" index="34" label="O/B Select" min="0" max="1" value="1" setting_type="zwave" fw="" disabled="true">
+>>>>>>> origin/master
  <Help>
 Range: 0 to 1
 Default: 1 (O/B Terminal acts as O terminal, closed when heating)
@@ -1114,7 +1244,11 @@ Default: 1 (O/B Terminal acts as O terminal, closed when heating)
     <Item label="O/B Terminal acts as B terminal, closed when cooling" value="0" />
     <Item label="O/B Terminal acts as O terminal, closed when heating" value="1" />
 </Value>
+<<<<<<< HEAD
 <Value type="list" byteSize="1" index="35" label="Z-Wave Echo Association Reports" min="0" max="1" value="0" setting_type="zwave" fw="">
+=======
+<Value type="list" byteSize="1" index="35" label="Z-Wave Echo Association Reports" min="0" max="1" value="0" setting_type="zwave" fw="" disabled="true">
+>>>>>>> origin/master
  <Help>
 Range: 0 to 1
 Default: 0 (Disabled)

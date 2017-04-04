@@ -27,14 +27,23 @@ metadata {
         capability "Configuration"
         capability "Temperature Measurement"
 		capability "Relative Humidity Measurement"
+<<<<<<< HEAD
         
         command "reboot"
+=======
+        capability "Health Check"
+        
+        command "reboot"
+                
+        attribute   "needUpdate", "string"
+>>>>>>> origin/master
 	}
 
 	simulator {
 	}
     
     preferences {
+<<<<<<< HEAD
         input("powerOnState", "enum", title:"Boot Up State", description: "State of the relay when it boots up", required: false, displayDuringSetup: false, options: [[0:"Off"],[1:"On"],[2:"Previous State"]])
         //input("scale", "enum", title:"Temperature Scale", description: "Choose the temperature scale", required: false, displayDuringSetup: false, options: [[true:"Fahrenheit"],[false:"Celsius"]])
         input("tempOffset", "number", title:"Temperature Offset", description: "Range: -99..99", range: "-99..99", required: false, displayDuringSetup: false)
@@ -43,6 +52,10 @@ metadata {
         //input("override", "boolean", title:"Override detected IP Address", required: false, displayDuringSetup: false)
         //input("ip", "string", title:"IP Address", description: "192.168.1.150", required: false, displayDuringSetup: false)
         //input("port", "string", title:"Port", description: "80", required: false, displayDuringSetup: false)
+=======
+        input description: "Once you change values on this page, the \"configuration\" icon will change orange until all configuration parameters are updated.", displayDuringSetup: false, type: "paragraph", element: "paragraph"
+		generate_preferences(configuration_model())
+>>>>>>> origin/master
 	}
 
 	tiles (scale: 2){      
@@ -94,6 +107,7 @@ def installed() {
 	configure()
 }
 
+<<<<<<< HEAD
 def updated() {
 	log.debug "updated()"
     
@@ -113,12 +127,48 @@ def configure() {
     def responses = []
     responses << getAction("/config?haip=${state.hubIP}&haport=${state.hubPort}&pos=${pos}&fahrenheit=${scale}")
     return response(responses)
+=======
+def configure() {
+    logging("configure()", 1)
+    def cmds = []
+    cmds = update_needed_settings()
+    if (cmds != []) cmds
+}
+
+def updated()
+{
+    logging("updated()", 1)
+    def cmds = [] 
+    cmds = update_needed_settings()
+    sendEvent(name: "checkInterval", value: 2 * 15 * 60 + 2 * 60, displayed: false, data: [protocol: "lan", hubHardwareId: device.hub.hardwareID])
+    sendEvent(name:"needUpdate", value: device.currentValue("needUpdate"), displayed:false, isStateChange: true)
+    if (state.realTemperature != null) sendEvent(name:"temperature", value: getAdjustedTemp(state.realTemperature))
+    if (state.realHumidity != null) sendEvent(name:"humidity", value: getAdjustedHumidity(state.realHumidity))
+    if (cmds != []) response(cmds)
+}
+
+private def logging(message, level) {
+    if (logLevel != "0"){
+    switch (logLevel) {
+       case "1":
+          if (level > 1)
+             log.debug "$message"
+       break
+       case "99":
+          log.debug "$message"
+       break
+    }
+    }
+>>>>>>> origin/master
 }
 
 def parse(description) {
 	//log.debug "Parsing: ${description}"
     def events = []
+<<<<<<< HEAD
     def cmds
+=======
+>>>>>>> origin/master
     def descMap = parseDescriptionAsMap(description)
     def body
     //log.debug "descMap: ${descMap}"
@@ -137,6 +187,7 @@ def parse(description) {
     def slurper = new JsonSlurper()
     def result = slurper.parseText(body)
     
+<<<<<<< HEAD
     log.debug "result: ${result}"
     
     if (result.containsKey("Sensors")) {
@@ -152,13 +203,23 @@ def parse(description) {
     }
     if (result.containsKey("pin")) {
         if (result.pin == 12) events << createEvent(name:"switch", value: (result.state.toInteger() == 0 ? 'off' : 'on'))
+=======
+    //log.debug "result: ${result}"
+    
+    if (result.containsKey("type")) {
+        if (result.type == "configuration")
+            events << update_current_properties(result)
+>>>>>>> origin/master
     }
     if (result.containsKey("power")) {
         events << createEvent(name: "switch", value: result.power)
     }
+<<<<<<< HEAD
     if (result.containsKey("success")) {
         if (result.success == "true") state.configured = true
     }
+=======
+>>>>>>> origin/master
     if (result.containsKey("uptime")) {
         state.uptime = result.uptime
     }
@@ -181,12 +242,16 @@ def parse(description) {
     } else {
         //log.debug "Response is not JSON: $body"
     }
+<<<<<<< HEAD
     } else {
         cmds = refresh()
+=======
+>>>>>>> origin/master
     }
     
     def hubInfoText = ""
     if (getDeviceDataByName("ip") != null && getDeviceDataByName("ip") != "") {
+<<<<<<< HEAD
         hubInfoText = "IP Address: ${getDeviceDataByName("ip")} - "
     }
     if (override == "true" && ip != null && ip != "") {
@@ -199,12 +264,27 @@ def parse(description) {
         hubInfoText = hubInfoText + "\r\n - Configured: Yes"
     } else {
         hubInfoText = hubInfoText + "\r\n - Configured: NO"
+=======
+        hubInfoText = "IP Address: ${getDeviceDataByName("ip")}"
+    }
+    if (state.uptime) {
+        hubInfoText = hubInfoText + "\r\nUptime: " + state.uptime
+    }
+    if (device.currentValue("needUpdate") == "NO") {
+        hubInfoText = hubInfoText + "\r\nConfigured: Yes"
+    } else {
+        hubInfoText = hubInfoText + "\r\nConfigured: NO"
+>>>>>>> origin/master
     }
     
     events << createEvent(name:"hubInfo", value:hubInfoText, displayed:false)
     
+<<<<<<< HEAD
     if (cmds) return cmds else return events
 
+=======
+    return events
+>>>>>>> origin/master
 }
 
 private getAdjustedTemp(value) {
@@ -266,6 +346,14 @@ def refresh() {
     return cmds
 }
 
+<<<<<<< HEAD
+=======
+def ping() {
+    log.debug "ping()"
+    refresh()
+}
+
+>>>>>>> origin/master
 private getAction(uri){ 
   updateDNI()
   
@@ -373,4 +461,162 @@ def sync(ip, port) {
     if (port && port != existingPort) {
         updateDataValue("port", port)
     }
+<<<<<<< HEAD
 }
+=======
+}
+
+def generate_preferences(configuration_model)
+{
+    def configuration = parseXml(configuration_model)
+   
+    configuration.Value.each
+    {
+        if(it.@hidden != "true" && it.@disabled != "true"){
+        switch(it.@type)
+        {   
+            case ["number"]:
+                input "${it.@index}", "number",
+                    title:"${it.@label}\n" + "${it.Help}",
+                    range: "${it.@min}..${it.@max}",
+                    defaultValue: "${it.@value}",
+                    displayDuringSetup: "${it.@displayDuringSetup}"
+            break
+            case "list":
+                def items = []
+                it.Item.each { items << ["${it.@value}":"${it.@label}"] }
+                input "${it.@index}", "enum",
+                    title:"${it.@label}\n" + "${it.Help}",
+                    defaultValue: "${it.@value}",
+                    displayDuringSetup: "${it.@displayDuringSetup}",
+                    options: items
+            break
+            case ["password"]:
+                input "${it.@index}", "password",
+                    title:"${it.@label}\n" + "${it.Help}",
+                    displayDuringSetup: "${it.@displayDuringSetup}"
+            break
+            case "decimal":
+               input "${it.@index}", "decimal",
+                    title:"${it.@label}\n" + "${it.Help}",
+                    range: "${it.@min}..${it.@max}",
+                    defaultValue: "${it.@value}",
+                    displayDuringSetup: "${it.@displayDuringSetup}"
+            break
+            case "boolean":
+               input "${it.@index}", "boolean",
+                    title:"${it.@label}\n" + "${it.Help}",
+                    defaultValue: "${it.@value}",
+                    displayDuringSetup: "${it.@displayDuringSetup}"
+            break
+        }
+        }
+    }
+}
+
+ /*  Code has elements from other community source @CyrilPeponnet (Z-Wave Parameter Sync). */
+
+def update_current_properties(cmd)
+{
+    def currentProperties = state.currentProperties ?: [:]
+    currentProperties."${cmd.name}" = cmd.value
+
+    if (settings."${cmd.name}" != null)
+    {
+        if (settings."${cmd.name}".toString() == cmd.value)
+        {
+            sendEvent(name:"needUpdate", value:"NO", displayed:false, isStateChange: true)
+        }
+        else
+        {
+            sendEvent(name:"needUpdate", value:"YES", displayed:false, isStateChange: true)
+        }
+    }
+    state.currentProperties = currentProperties
+}
+
+
+def update_needed_settings()
+{
+    def cmds = []
+    def currentProperties = state.currentProperties ?: [:]
+     
+    def configuration = parseXml(configuration_model())
+    def isUpdateNeeded = "NO"
+    
+    cmds << getAction("/configSet?name=haip&value=${device.hub.getDataValue("localIP")}")
+    cmds << getAction("/configSet?name=haport&value=${device.hub.getDataValue("localSrvPortTCP")}")
+    
+    configuration.Value.each
+    {     
+        if ("${it.@setting_type}" == "lan" && it.@disabled != "true"){
+            if (currentProperties."${it.@index}" == null)
+            {
+               if (it.@setonly == "true"){
+                  logging("Setting ${it.@index} will be updated to ${it.@value}", 2)
+                  cmds << getAction("/configSet?name=${it.@index}&value=${it.@value}")
+               } else {
+                  isUpdateNeeded = "YES"
+                  logging("Current value of setting ${it.@index} is unknown", 2)
+                  cmds << getAction("/configGet?name=${it.@index}")
+               }
+            }
+            else if ((settings."${it.@index}" != null || it.@hidden == "true") && currentProperties."${it.@index}" != (settings."${it.@index}"? settings."${it.@index}".toString() : "${it.@value}"))
+            { 
+                isUpdateNeeded = "YES"
+                logging("Setting ${it.@index} will be updated to ${settings."${it.@index}"}", 2)
+                cmds << getAction("/configSet?name=${it.@index}&value=${settings."${it.@index}"}")
+            } 
+        }
+    }
+    
+    sendEvent(name:"needUpdate", value: isUpdateNeeded, displayed:false, isStateChange: true)
+    return cmds
+}
+
+def configuration_model()
+{
+'''
+<configuration>
+<Value type="password" byteSize="1" index="password" label="Password" min="" max="" value="" setting_type="preference" fw="">
+<Help>
+</Help>
+</Value>
+<Value type="list" byteSize="1" index="pos" label="Boot Up State" min="0" max="2" value="0" setting_type="lan" fw="">
+<Help>
+Default: Off
+</Help>
+    <Item label="Off" value="0" />
+    <Item label="On" value="1" />
+    <Item label="Previous" value="2" />
+</Value>
+<Value type="number" byteSize="1" index="autooff" label="Auto Off" min="0" max="65536" value="0" setting_type="lan" fw="">
+<Help>
+Automatically turn the switch off after this many seconds.
+Range: 0 to 65536
+Default: 0 (Disabled)
+</Help>
+</Value>
+<Value type="number" byteSize="1" index="tempOffset" label="Temperature Offset" min="-99" max="99" value="0" setting_type="preference" fw="">
+<Help>
+Range: -99 to 99
+Default: 0
+</Help>
+</Value>
+<Value type="number" byteSize="1" index="humidityOffset" label="Humidity Offset" min="-50" max="50" value="0" setting_type="preference" fw="">
+<Help>
+Range: -50 to 50
+Default: 0
+</Help>
+</Value>
+<Value type="list" index="logLevel" label="Debug Logging Level?" value="0" setting_type="preference" fw="">
+<Help>
+</Help>
+    <Item label="None" value="0" />
+    <Item label="Reports" value="1" />
+    <Item label="All" value="99" />
+</Value>
+</configuration>
+'''
+}
+>>>>>>> origin/master

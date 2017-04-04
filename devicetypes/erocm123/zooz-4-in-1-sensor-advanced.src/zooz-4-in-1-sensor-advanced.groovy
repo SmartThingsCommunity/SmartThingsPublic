@@ -152,7 +152,11 @@ def parse(String description)
         break
 		case "updated":
         	log.debug "Update is hit when the device is paired."
+<<<<<<< HEAD
             result << response(zwave.wakeUpV1.wakeUpIntervalSet(seconds: 3600, nodeid:zwaveHubNodeId).format())
+=======
+            result << response(zwave.wakeUpV1.wakeUpIntervalSet(seconds: 43200, nodeid:zwaveHubNodeId).format())
+>>>>>>> origin/master
             result << response(zwave.batteryV1.batteryGet().format())
             result << response(zwave.versionV1.versionGet().format())
             result << response(zwave.manufacturerSpecificV2.manufacturerSpecificGet().format())
@@ -364,6 +368,15 @@ def sync_properties()
 
     def cmds = []
     
+<<<<<<< HEAD
+=======
+    if(state.wakeInterval == null || state.wakeInterval != 43200){
+        log.debug "Setting Wake Interval to 43200"
+        cmds << zwave.wakeUpV1.wakeUpIntervalSet(seconds: 43200, nodeid:zwaveHubNodeId)
+        cmds << zwave.wakeUpV1.wakeUpIntervalGet()
+    }
+    
+>>>>>>> origin/master
     configuration.Value.each
     {
         if ( "${it.@setting_type}" == "zwave" ) {
@@ -684,6 +697,10 @@ Default: Quick Blink on Temp/PIR
         <Item label="LED Off" value="1" />
         <Item label="Breathing" value="2" />
         <Item label="Quick Blink on Temp/PIR" value="3" />
+<<<<<<< HEAD
+=======
+        <Item label="Off for Temp, On with Motion" value="4" />
+>>>>>>> origin/master
   </Value>
   <Value type="short" byteSize="1" index="5" label="PIR reset time" min="1" max="255" value="3" setting_type="zwave">
     <Help>
@@ -729,8 +746,13 @@ Range: None
 Default: 0
 Note: 
 1. The calibration value = standard value - measure value.
+<<<<<<< HEAD
 E.g. If measure value =85.3F and the standard value = 83.2F, so the calibration value = 83.2F - 85.3F = -2.1F.
 If the measure value =60.1F and the standard value = 63.2F, so the calibration value = 63.2F - 60.1℃ = 3.1F. 
+=======
+E.g. If measure value = 85.3F and the standard value = 83.2F, so the calibration value = 83.2F - 85.3F = -2.1F.
+If the measure value = 60.1F and the standard value = 63.2F, so the calibration value = 63.2F - 60.1℃ = 3.1F. 
+>>>>>>> origin/master
     </Help>
   </Value>
   <Value type="byte" byteSize="1" index="303" label="Humidity offset" min="*" max="*" value="">

@@ -43,7 +43,7 @@ metadata {
 	tiles {
 		standardTile("presence", "device.presence", width: 2, height: 2, canChangeBackground: true) {
 			state "present", labelIcon:"st.presence.tile.present", backgroundColor:"#53a7c0"
-			state "not present", labelIcon:"st.presence.tile.not-present", backgroundColor:"#ffffff"
+			state "not present", labelIcon:"st.presence.tile.not-present", backgroundColor:"#ebeef2"
 		}
 		standardTile("beep", "device.beep", decoration: "flat") {
 			state "beep", label:'', action:"tone.beep", icon:"st.secondary.beep", backgroundColor:"#ffffff"
@@ -87,16 +87,27 @@ def beep() {
 	up to this long from the time you send the message to the time you hear a sound.
 	*/
 
+	// Used source endpoint of 0x02 because we are using smartthings manufacturer specific cluster.
 	[
 		"raw 0xFC05 {15 0A 11 00 00 15 01}",
+		"delay 200",
+		"send 0x$zigbee.deviceNetworkId 0x02 0x$zigbee.endpointId",
 		"delay 7000",
 		"raw 0xFC05 {15 0A 11 00 00 15 01}",
+		"delay 200",
+		"send 0x$zigbee.deviceNetworkId 0x02 0x$zigbee.endpointId",
 		"delay 7000",
 		"raw 0xFC05 {15 0A 11 00 00 15 01}",
+		"delay 200",
+		"send 0x$zigbee.deviceNetworkId 0x02 0x$zigbee.endpointId",
 		"delay 7000",
 		"raw 0xFC05 {15 0A 11 00 00 15 01}",
+		"delay 200",
+		"send 0x$zigbee.deviceNetworkId 0x02 0x$zigbee.endpointId",
 		"delay 7000",
-		"raw 0xFC05 {15 0A 11 00 00 15 01}"
+		"raw 0xFC05 {15 0A 11 00 00 15 01}",
+		"delay 200",
+		"send 0x$zigbee.deviceNetworkId 0x02 0x$zigbee.endpointId",
 	]
 }
 

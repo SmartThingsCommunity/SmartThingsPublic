@@ -227,7 +227,11 @@ def virtualHandler(evt) {
     getChildDevices().each {
        if (evt.deviceId == it.id) {
           def switchNumber = it.deviceNetworkId.split("/")[1]
+<<<<<<< HEAD
           if ((physical.typeName.toUpperCase().indexOf("FIBARO") >= 0 && physical.typeName.toUpperCase().indexOf("RGBW") >= 0) ||
+=======
+          if ((physical.typeName.toUpperCase().indexOf("FIBARO") >= 0 && physical.typeName.toUpperCase().indexOf("RGBW") >= 0 && !(physical.typeAuthor.toUpperCase().indexOf("LOMAS") >= 0)) ||
+>>>>>>> origin/master
           (physical.typeName.toUpperCase().indexOf("SMARTLIFE") >= 0 && physical.typeName.toUpperCase().indexOf("RGBW") >= 0)){
              switch (evt.value){
                 case "setLevel":
@@ -237,6 +241,20 @@ def virtualHandler(evt) {
                    physical."${getColor(switchNumber.toInteger())}${evt.value.capitalize()}"()
                 break
              }
+<<<<<<< HEAD
+=======
+          } else if (physical.typeName.toUpperCase().indexOf("FIBARO") >= 0 && physical.typeName.toUpperCase().indexOf("RGBW") >= 0) {
+             switch (evt.value){
+                case "setLevel":
+                   log.debug "setLevel${getColor(switchNumber.toInteger()).capitalize()}"
+                   physical."setLevel${getColor(switchNumber.toInteger()).capitalize()}"(it.currentValue("level"))
+                break
+                default:
+                log.debug "${evt.value}${getColor(switchNumber.toInteger()).capitalize()}"
+                   physical."${evt.value}${getColor(switchNumber.toInteger()).capitalize()}"()
+                break
+             }
+>>>>>>> origin/master
           } else {
              switch (evt.value){
                 case "setLevel":

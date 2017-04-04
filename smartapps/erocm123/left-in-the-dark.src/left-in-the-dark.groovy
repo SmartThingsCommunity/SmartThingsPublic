@@ -32,8 +32,14 @@ definition(
     author: "Eric Maycock (erocm123)",
     description: "Don't be left in the dark if motion inactivity has turned off a light with you still in the room.",
     category: "Convenience",
+<<<<<<< HEAD
     iconUrl: "https://s3.amazonaws.com/smartapp-icons/MyApps/Cat-MyApps.png",
     iconX2Url: "https://s3.amazonaws.com/smartapp-icons/MyApps/Cat-MyApps@2x.png"
+=======
+    iconUrl: "http://github.com/erocm123/SmartThingsPublic/raw/master/smartapps/erocm123/left-in-the-dark.src/left-in-the-dark-icon.png",
+    iconX2Url: "http://github.com/erocm123/SmartThingsPublic/raw/master/smartapps/erocm123/left-in-the-dark.src/left-in-the-dark-icon-2x.png",
+    iconX3Url: "http://github.com/erocm123/SmartThingsPublic/raw/master/smartapps/erocm123/left-in-the-dark.src/left-in-the-dark-icon-3x.png"
+>>>>>>> origin/master
 )
 
 preferences {

@@ -15,6 +15,8 @@
  *  Thanks to Chad Monroe @cmonroe and Patrick Stuart @pstuart
  *
  */
+//DEPRECATED - Using the generic DTH for this device. Users need to be moved before deleting this DTH
+
 metadata {
 	definition (name: "WeMo Bulb", namespace: "smartthings", author: "SmartThings") {
 	
@@ -25,7 +27,6 @@ metadata {
         capability "Switch"
 		capability "Switch Level"
 
-		fingerprint profileId: "0104", inClusters: "0000,0003,0004,0005,0006,0008,FF00", outClusters: "0019"
 	}
 
 	// simulator metadata
@@ -42,9 +43,9 @@ metadata {
 	// UI tile definitions
 	tiles {
 		standardTile("switch", "device.switch", width: 2, height: 2, canChangeIcon: true) {
-			state "on", label:'${name}', action:"switch.off", icon:"st.switches.switch.on", backgroundColor:"#79b821", nextState:"turningOff"
+			state "on", label:'${name}', action:"switch.off", icon:"st.switches.switch.on", backgroundColor:"#00A0DC", nextState:"turningOff"
 			state "off", label:'${name}', action:"switch.on", icon:"st.switches.switch.off", backgroundColor:"#ffffff", nextState:"turningOn"
-			state "turningOn", label:'${name}', action:"switch.off", icon:"st.switches.switch.on", backgroundColor:"#79b821", nextState:"turningOff"
+			state "turningOn", label:'${name}', action:"switch.off", icon:"st.switches.switch.on", backgroundColor:"#00A0DC", nextState:"turningOff"
 			state "turningOff", label:'${name}', action:"switch.on", icon:"st.switches.switch.off", backgroundColor:"#ffffff", nextState:"turningOn"
 		}
 		standardTile("refresh", "device.switch", inactiveLabel: false, decoration: "flat") {

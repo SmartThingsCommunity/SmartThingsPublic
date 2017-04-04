@@ -132,8 +132,13 @@ def deletePDevice(params){
 }
 
 def changeName(params){
+<<<<<<< HEAD
     def thisDevice = getChildDevice(params.did)
     thisDevice.label = settings["${params.did}_label"]
+=======
+    def thisDevice = getChildDevice(state.currentDeviceId)
+    thisDevice.label = settings["${state.currentDeviceId}_label"]
+>>>>>>> origin/master
 
     dynamicPage(name: "changeName", title: "Change Name Summary", nextPage: "mainPage") {
 	    section {
@@ -314,7 +319,11 @@ void deviceDescriptionHandler(physicalgraph.device.HubResponse hubResponse) {
 	log.trace "description.xml response (application/xml)"
 	def body = hubResponse.xml
     log.debug body?.device?.friendlyName?.text()
+<<<<<<< HEAD
 	if (body?.device?.modelName?.text().startsWith("Sonoff Wifi Switch") || body?.device?.modelName?.text().startsWith("Sonoff TH Wifi Switch")) {
+=======
+	if (body?.device?.modelName?.text().startsWith("Sonoff")) {
+>>>>>>> origin/master
 		def devices = getDevices()
 		def device = devices.find {it?.key?.contains(body?.device?.UDN?.text())}
 		if (device) {
@@ -350,7 +359,11 @@ def addDevices() {
                     "port": "" + Integer.parseInt(selectedDevice.value.deviceAddress,16)
                 ]
             ])
+<<<<<<< HEAD
             sectionText = sectionText + "Succesfully added Sonoff Wifi Switch with ip address ${convertHexToIP(selectedDevice.value.networkAddress)} \r\n"
+=======
+            sectionText = sectionText + "Succesfully added Sonoff device with ip address ${convertHexToIP(selectedDevice.value.networkAddress)} \r\n"
+>>>>>>> origin/master
         }
         
 	} 

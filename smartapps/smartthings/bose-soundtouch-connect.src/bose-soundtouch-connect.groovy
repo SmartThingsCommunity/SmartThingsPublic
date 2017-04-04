@@ -19,9 +19,10 @@
     author: "SmartThings",
     description: "Control your Bose SoundTouch speakers",
     category: "SmartThings Labs",
-    iconUrl: "https://s3.amazonaws.com/smartapp-icons/Convenience/Cat-Convenience.png",
-    iconX2Url: "https://s3.amazonaws.com/smartapp-icons/Convenience/Cat-Convenience@2x.png",
-    iconX3Url: "https://s3.amazonaws.com/smartapp-icons/Convenience/Cat-Convenience@2x.png"
+    iconUrl: "https://d3azp77rte0gip.cloudfront.net/smartapps/fcf1d93a-ba0b-4324-b96f-e5b5487dfaf5/images/BoseST_icon.png",
+    iconX2Url: "https://d3azp77rte0gip.cloudfront.net/smartapps/fcf1d93a-ba0b-4324-b96f-e5b5487dfaf5/images/BoseST_icon@2x.png",
+    iconX3Url: "https://d3azp77rte0gip.cloudfront.net/smartapps/fcf1d93a-ba0b-4324-b96f-e5b5487dfaf5/images/BoseST_icon@2x-1.png",
+    singleInstance: true
 )
 
 preferences {
@@ -103,7 +104,7 @@ def deviceDiscovery()
 
         return dynamicPage(name:"deviceDiscovery", title:"Discovery Started!", nextPage:"", refreshInterval:refreshInterval, install:true, uninstall: true) {
             section("Please wait while we discover your ${getDeviceName()}. Discovery can take five minutes or more, so sit back and relax! Select your device below once discovered.") {
-                input "selecteddevice", "enum", required:false, title:"Select ${getDeviceName()} (${numFound} found)", multiple:true, options:devices
+                input "selecteddevice", "enum", required:false, title:"Select ${getDeviceName()} (${numFound} found)", multiple:true, options:devices, submitOnChange: true
             }
         }
     }
@@ -195,6 +196,8 @@ def addDevice(){
             d = addChildDevice(getNameSpace(), getDeviceName(), dni, newDevice?.value.hub, [label:"${deviceName}"])
             d.boseSetDeviceID(newDevice.value.deviceID)
             log.trace "Created ${d.displayName} with id $dni"
+            // sync DTH with device, done here as it currently don't work from the DTH's installed() method
+            d.refresh()
         } else {
             log.trace "${d.displayName} with id $dni already exists"
         }
@@ -352,7 +355,7 @@ def onLocation(evt) {
     }
     else if (
         lanEvent.headers && lanEvent.body &&
-        lanEvent.headers."content-type".contains("xml")
+        lanEvent.headers."content-type"?.contains("xml")
         )
     {
         def parsers = getParsers()

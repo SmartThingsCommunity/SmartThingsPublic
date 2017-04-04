@@ -131,8 +131,14 @@ def getButtonSections(buttonNumber) {
 		section("Lights") {
 			input "lights_${buttonNumber}", "capability.switch", multiple: true, required: false, submitOnChange: true
 		}
+<<<<<<< HEAD
         section ("Enable Toggle?"){
             input "lights_${buttonNumber}_toggle", "bool", title: "Enable Toggle?", submitOnChange: true, defaultValue: true
+=======
+        section ("Toggle"){
+            input "lights_${buttonNumber}_toggle", "enum", title: "Toggle Type", submitOnChange: false, defaultValue: 0, options: [[0:"Off"],[1:"Single Light Turn On"],[2:"Single Light Turn Off"],[3:"Same Button"]]
+            //input "lights_${buttonNumber}_toggle_reverse", "bool", title: "Reverse Toggle Logic?", submitOnChange: true, defaultValue: false
+>>>>>>> origin/master
         }
         def lightsConfigured = settings["lights_${buttonNumber}"]
         if (lightsConfigured != null) {
@@ -263,6 +269,7 @@ def executeHandlers(buttonNumber) {
     def lightsConfigured = settings["lights_${buttonNumber}"]
     def toggle = false
 
+<<<<<<< HEAD
     if ((settings["lights_${buttonNumber}_toggle"])) {
        if (lightsConfigured != null) {
           //If another source turned the lights on or off, we need to do the opposite
@@ -274,6 +281,36 @@ def executeHandlers(buttonNumber) {
            }
            if (!lightOn) toggle = false
               else toggle = true
+=======
+    if (!(state.previousState) && state.previousScene == buttonNumber && (settings["lights_${buttonNumber}_toggle"] == "3")) {
+       log.debug "toggle 3"
+       toggle = true
+    } else if (settings["lights_${buttonNumber}_toggle"] == "1") {
+       log.debug "toggle 1"
+       if (lightsConfigured != null) {
+          //If another source turned the lights on or off, we need to do the opposite
+           def numberOfOnLights = 0
+           lightsConfigured.each { light ->
+              if (light.currentValue("switch") == "on") {
+                  numberOfOnLights++
+              }
+           }
+          if (numberOfOnLights == 0) toggle = false
+          else toggle = true
+       }
+    } else if (settings["lights_${buttonNumber}_toggle"] == "2") {
+       log.debug "toggle 2"
+       if (lightsConfigured != null) {
+          //If another source turned the lights on or off, we need to do the opposite
+           def numberOfOnLights = 0
+           lightsConfigured.each {light ->
+              if (light.currentValue("switch") == "on") {
+                  numberOfOnLights++
+              }
+           }
+           if (numberOfOnLights != lightsConfigured.size()) toggle = false
+           else toggle = true
+>>>>>>> origin/master
        }
     }
     if (lightsConfigured != null) {

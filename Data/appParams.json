@@ -1,0 +1,75 @@
+{
+    "help": {
+        "showHelp": true
+    },
+    "state": {
+        "stateVarVer": 2
+    },
+    "versions": {
+        "app": {
+            "ver": "4.5.2"
+        },
+        "thermostat": {
+            "ver": "4.5.1"
+        },
+        "protect": {
+            "ver": "4.5.0"
+        },
+        "camera": {
+            "ver": "2.5.0"
+        },
+        "presence": {
+            "ver": "4.5.0"
+        },
+        "weather": {
+            "ver": "4.5.1"
+        }
+    },
+    "token": {
+        "tokenNum": 4
+    },
+    "broadcast": {
+        "msgId": "",
+        "message": "",
+        "type": "info"
+    },
+    "updater": {
+        "updateVer": 1,
+        "updateMsg": "",
+        "updateDesc": "",
+        "updateType": "std",
+        "setupVersion": 2,
+        "versions": {
+            "app": {
+                "ver": "4.5.2"
+            },
+            "thermostat": {
+                "ver": "4.5.1"
+            },
+            "protect": {
+                "ver": "4.5.0"
+            },
+            "camera": {
+                "ver": "2.5.0"
+            },
+            "presence": {
+                "ver": "4.5.0"
+            },
+            "weather": {
+                "ver": "4.5.1"
+            }
+        }
+    },
+    "html": {
+        "cssVer": 1,
+        "cssUrl": "https://raw.githubusercontent.com/tonesto7/nest-manager/master/Documents/css/ST-HTML.css",
+        "chartJsVer": 1,
+        "chartJsUrl": "https://www.gstatic.com/charts/loader.js"
+    },
+    "database": {
+        "disableExceptions": true
+    },
+    "aaSupport": {
+        "enabled": true
+    }
+}

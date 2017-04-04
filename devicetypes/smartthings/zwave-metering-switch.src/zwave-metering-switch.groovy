@@ -21,6 +21,7 @@ metadata {
 		capability "Refresh"
 		capability "Configuration"
 		capability "Sensor"
+		capability "Light"
 
 		command "reset"
 
@@ -50,7 +51,7 @@ metadata {
 	// tile definitions
 	tiles {
 		standardTile("switch", "device.switch", width: 2, height: 2, canChangeIcon: true) {
-			state "on", label: '${name}', action: "switch.off", icon: "st.switches.switch.on", backgroundColor: "#79b821"
+			state "on", label: '${name}', action: "switch.off", icon: "st.switches.switch.on", backgroundColor: "#00A0DC"
 			state "off", label: '${name}', action: "switch.on", icon: "st.switches.switch.off", backgroundColor: "#ffffff"
 		}
 		valueTile("power", "device.power") {

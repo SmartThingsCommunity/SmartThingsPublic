@@ -39,7 +39,11 @@ command "on2"
 command "off2"
 command "reset"
 
+<<<<<<< HEAD
 fingerprint deviceId: "0x1001", inClusters:"0x86, 0x72, 0x85, 0x60, 0x8E, 0x25, 0x20, 0x70, 0x27"
+=======
+fingerprint deviceId: "0x1001", inClusters:"0x5E,0x86,0x72,0x59,0x73,0x22,0x56,0x32,0x71,0x98,0x7A,0x25,0x5A,0x85,0x70,0x8E,0x60,0x75,0x5B"
+>>>>>>> origin/master
 
 }
 
@@ -139,7 +143,10 @@ def zwaveEvent(physicalgraph.zwave.commands.basicv1.BasicSet cmd) {
 def zwaveEvent(physicalgraph.zwave.commands.switchbinaryv1.SwitchBinaryReport cmd)
 {
     log.debug "SwitchBinaryReport $cmd"
+<<<<<<< HEAD
     sendEvent(name: "switch", value: cmd.value ? "on" : "off", type: "digital")
+=======
+>>>>>>> origin/master
     def result = []
     result << zwave.multiChannelV3.multiChannelCmdEncap(sourceEndPoint:1, destinationEndPoint:1, commandClass:37, command:2)
     result << zwave.multiChannelV3.multiChannelCmdEncap(sourceEndPoint:1, destinationEndPoint:2, commandClass:37, command:2)
@@ -280,7 +287,10 @@ def zwaveEvent(physicalgraph.zwave.commands.configurationv2.ConfigurationReport 
 
 def refresh() {
 	def cmds = []
+<<<<<<< HEAD
     cmds << zwave.manufacturerSpecificV2.manufacturerSpecificGet()
+=======
+>>>>>>> origin/master
 	cmds << zwave.multiChannelV3.multiChannelCmdEncap(sourceEndPoint:1, destinationEndPoint:1, commandClass:37, command:2)
     cmds << zwave.multiChannelV3.multiChannelCmdEncap(sourceEndPoint:1, destinationEndPoint:2, commandClass:37, command:2)
     (1..2).each { endpoint ->
@@ -323,7 +333,11 @@ def zwaveEvent(physicalgraph.zwave.commands.centralscenev1.CentralSceneNotificat
         logging("Switch configured as Toggle")
         switch (cmd.sceneNumber) {
             // Toggle S1
+<<<<<<< HEAD
             case 10: // Single Press
+=======
+            case 1: // Single Press
+>>>>>>> origin/master
                 buttonEvent(1, "pushed")
             break
             case 11: // On to Off
@@ -540,6 +554,15 @@ def update_needed_settings()
     def configuration = parseXml(configuration_model())
     def isUpdateNeeded = "NO"
     
+<<<<<<< HEAD
+=======
+    if(!state.association4 || state.association4 == "" || state.association4 == "1"){
+       logging("Setting association group 4")
+       cmds << zwave.associationV2.associationSet(groupingIdentifier:4, nodeId:zwaveHubNodeId)
+       cmds << zwave.associationV2.associationGet(groupingIdentifier:4)
+    }
+    
+>>>>>>> origin/master
     configuration.Value.each
     {     
         if ("${it.@setting_type}" == "zwave"){
@@ -676,6 +699,7 @@ Default: 1 (Previous State)
         <Item label="Off" value="0" />
         <Item label="Previous State" value="1" />
   </Value>
+<<<<<<< HEAD
     <Value type="list" byteSize="1" index="20" label="Switch type" min="0" max="2" value="0" setting_type="zwave" fw="">
     <Help>
 Choose between momentary and toggle switch.
@@ -684,6 +708,91 @@ Default: 0 (Momentary)
     </Help>
     <Item label="Momentary" value="0" />
     <Item label="Toggle" value="1" />
+=======
+      <Value type="list" byteSize="1" index="10" label="First Channel - Operating Mode" min="0" max="5" value="0" setting_type="zwave" fw="">
+    <Help>
+This parameter allows you to choose the operating mode for the 1st channel controlled by the S1 switch.
+Range: 0~5
+Default: 0 (Standard)
+    </Help>
+        <Item label="Standard" value="0" />
+        <Item label="Delay On" value="1" />
+        <Item label="Delay Off" value="2" />
+        <Item label="Auto On" value="3" />
+        <Item label="Auto Off" value="4" />
+        <Item label="Flashing" value="5" />
+  </Value>
+        <Value type="list" byteSize="1" index="11" label="First Channel - Reaction For Delay/Auto" min="0" max="2" value="0" setting_type="zwave" fw="">
+    <Help>
+This parameter determines how the device in timed mode reacts to pushing the switch connected to the S1 terminal.
+Range: 0~2
+Default: 0 (Cancel)
+    </Help>
+        <Item label="Cancel" value="0" />
+        <Item label="No Reaction" value="1" />
+        <Item label="Reset" value="2" />
+  </Value>
+      <Value type="byte" byteSize="2" index="12" label="First Channel - Time Parameter for Delay/Auto" min="0" max="32000" value="50" setting_type="zwave" fw="">
+    <Help>
+This parameter allows to set time parameter used in timed modes. 
+Range: 0~32000 (0.1s, 1-32000s)
+Default: 50
+    </Help>
+  </Value>
+      <Value type="byte" byteSize="2" index="13" label="First Channel - Pulse Time For Flashing" min="1" max="32000" value="5" setting_type="zwave" fw="">
+    <Help>
+This parameter allows to set time of switching to opposite state in flashing mode.
+Range: 1~32000 (0.1s-3200.0s)
+Default: 5 (0.5s)
+    </Help>
+  </Value>
+        <Value type="list" byteSize="1" index="15" label="Second Channel - Operating Mode" min="0" max="5" value="0" setting_type="zwave" fw="">
+    <Help>
+This parameter allows you to choose the operating mode for the 2nd channel controlled by the S2 switch.
+Range: 0~5
+Default: 0 (Standard)
+    </Help>
+        <Item label="Standard" value="0" />
+        <Item label="Delay On" value="1" />
+        <Item label="Delay Off" value="2" />
+        <Item label="Auto On" value="3" />
+        <Item label="Auto Off" value="4" />
+        <Item label="Flashing" value="5" />
+  </Value>
+        <Value type="list" byteSize="1" index="16" label="Second Channel - Reaction For Delay/Auto" min="0" max="2" value="0" setting_type="zwave" fw="">
+    <Help>
+This parameter determines how the device in timed mode reacts to pushing the switch connected to the S2 terminal.
+Range: 0~2
+Default: 0 (Cancel)
+    </Help>
+        <Item label="Cancel" value="0" />
+        <Item label="No Reaction" value="1" />
+        <Item label="Reset" value="2" />
+  </Value>
+      <Value type="byte" byteSize="2" index="17" label="Second Channel - Time Parameter for Delay/Auto" min="0" max="32000" value="50" setting_type="zwave" fw="">
+    <Help>
+This parameter allows to set time parameter used in timed modes. 
+Range: 0~32000 (0.1s, 1-32000s)
+Default: 50
+    </Help>
+  </Value>
+      <Value type="byte" byteSize="2" index="18" label="Second Channel - Pulse Time For Flashing" min="1" max="32000" value="5" setting_type="zwave" fw="">
+    <Help>
+This parameter allows to set time of switching to opposite state in flashing mode.
+Range: 1~32000 (0.1s-3200.0s)
+Default: 5 (0.5s)
+    </Help>
+  </Value>
+    <Value type="list" byteSize="1" index="20" label="Switch type" min="0" max="2" value="2" setting_type="zwave" fw="">
+    <Help>
+Choose between momentary and toggle switch.
+Range: 0~2
+Default: 2 (Toggle)
+    </Help>
+    <Item label="Momentary" value="0" />
+    <Item label="Toggle (Open=On, Closed=Off)" value="1" />
+    <Item label="Toggle (On Switch Change)" value="2" />
+>>>>>>> origin/master
   </Value>
     <Value type="byte" byteSize="1" index="50" label="First Channel - Active power reports" min="0" max="100" value="10" setting_type="zwave" fw="">
     <Help>
