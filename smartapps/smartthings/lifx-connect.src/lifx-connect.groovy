@@ -19,8 +19,15 @@ definition(
 		singleInstance: true) {
 	appSetting "clientId"
 	appSetting "clientSecret"
+	appSetting "serverUrl" // See note below
 }
 
+// NOTE regarding OAuth settings. On NA01 (i.e. graph.api), NA01S, and NA01D the serverUrl app setting can be left
+// Blank. For other shards is should be set to the callback URL registered with LIFX, which is:
+//
+// Production  -- https://graph.api.smartthings.com
+// Staging     -- https://graph-na01s-useast1.smartthingsgdev.com
+// Development -- https://graph-na01d-useast1.smartthingsgdev.com
 
 preferences {
 	page(name: "Credentials", title: "LIFX", content: "authPage", install: true)
@@ -35,8 +42,8 @@ mappings {
 	path("/test") { action: [ GET: "oauthSuccess" ] }
 }
 
-def getServerUrl()               { return "https://graph.api.smartthings.com" }
-def getCallbackUrl()             { return "https://graph.api.smartthings.com/oauth/callback"}
+def getServerUrl()               { return  appSettings.serverUrl ?: apiServerUrl }
+def getCallbackUrl()             { return "${getServerUrl()}/oauth/callback" }
 def apiURL(path = '/') 			 { return "https://api.lifx.com/v1${path}" }
 def getSecretKey()               { return appSettings.secretKey }
 def getClientId()                { return appSettings.clientId }

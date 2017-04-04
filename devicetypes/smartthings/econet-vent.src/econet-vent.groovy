@@ -26,11 +26,13 @@ metadata {
 		capability "Sensor"
         capability "Polling"
         capability "Configuration"
+		// capability "Health Check"
 
 		command "open"
 		command "close"
 
 		fingerprint deviceId: "0x1100", inClusters: "0x26,0x72,0x86,0x77,0x80,0x20"
+		// fingerprint mfr:"0157", prod:"0100", model:"0100", deviceJoinName: "EcoNet Controls Z-Wave Vent"
 	}
 
 	simulator {
@@ -85,6 +87,8 @@ def parse(String description) {
 
 //send the command to stop polling
 def updated() {
+	// Device-Watch simply pings if no device events received for 32min(checkInterval)
+	// sendEvent(name: "checkInterval", value: 2 * 15 * 60 + 2 * 60, displayed: false, data: [protocol: "zwave", hubHardwareId: device.hub.hardwareID])
 	response("poll stop")
 }
 
@@ -167,6 +171,13 @@ def setLevel(value) {
 
 def setLevel(value, duration) {
 	setLevel(value)
+}
+
+/**
+ * PING is used by Device-Watch in attempt to reach the Device
+ * */
+def ping() {
+	refresh()
 }
 
 def refresh() {
