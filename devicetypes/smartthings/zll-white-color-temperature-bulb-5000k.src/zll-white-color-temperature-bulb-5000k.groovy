@@ -30,7 +30,7 @@ metadata {
         attribute "colorName", "string"
         command "setGenericName"
 
-        fingerprint profileId: "C05E", deviceId: "0220", inClusters: "0000, 0004, 0003, 0006, 0008, 0005, 0300", outClusters: "0019", manufacturer: "Eaton", model: "Halo_LT01", deviceJoinName: "Halo RL56 Wireless"
+        fingerprint profileId: "C05E", deviceId: "0220", inClusters: "0000, 0004, 0003, 0006, 0008, 0005, 0300", outClusters: "0019", manufacturer: "Eaton", model: "Halo_RL5601", deviceJoinName: "Halo RL56"
     }
 
     // UI tile definitions

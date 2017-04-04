@@ -12,7 +12,7 @@
  *
  */
 metadata {
-	definition (name: "Z-Wave Metering Switch", namespace: "smartthings", author: "SmartThings") {
+	definition (name: "Z-Wave Metering Switch", namespace: "smartthings", author: "SmartThings", ocfDeviceType: "oic.d.switch") {
 		capability "Energy Meter"
 		capability "Actuator"
 		capability "Switch"
@@ -22,10 +22,12 @@ metadata {
 		capability "Configuration"
 		capability "Sensor"
 		capability "Light"
+		capability "Health Check"
 
 		command "reset"
 
 		fingerprint inClusters: "0x25,0x32"
+		fingerprint mfr:"0086", prod:"0003", model:"0012", deviceJoinName: "Aeon Labs Micro Smart Switch"
 	}
 
 	// simulator metadata
@@ -73,6 +75,8 @@ metadata {
 }
 
 def updated() {
+	// Device-Watch simply pings if no device events received for 32min(checkInterval)
+	sendEvent(name: "checkInterval", value: 2 * 15 * 60 + 2 * 60, displayed: false, data: [protocol: "zwave", hubHardwareId: device.hub.hardwareID])
 	try {
 		if (!state.MSR) {
 			response(zwave.manufacturerSpecificV2.manufacturerSpecificGet().format())
@@ -82,7 +86,7 @@ def updated() {
 
 def parse(String description) {
 	def result = null
-	if(description == "updated") return 
+	if(description == "updated") return
 	def cmd = zwave.parse(description, [0x20: 1, 0x32: 1, 0x72: 2])
 	if (cmd) {
 		result = zwaveEvent(cmd)
@@ -177,6 +181,14 @@ def poll() {
 		zwave.meterV2.meterGet(scale: 0).format(),
 		zwave.meterV2.meterGet(scale: 2).format()
 	])
+}
+
+/**
+ * PING is used by Device-Watch in attempt to reach the Device
+ * */
+def ping() {
+	log.debug "ping() called"
+	refresh()
 }
 
 def refresh() {
