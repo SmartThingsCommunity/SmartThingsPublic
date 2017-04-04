@@ -1,3 +1,34 @@
+V5.0.0 (March 30th, 2017):
+▔▔▔▔▔▔▔▔▔▔▔
+Manager App:
+ • NEW: Name Changed to NST Manager
+ • NEW: Manager and Automations codebase has been split into two individual files.
+    • There is a fully automated process to migrate your existing automation to this new file and remove the old ones.
+ • NEW: Find Weather Locations using integrated Wunderground's search API.
+ • NEW: Token's are now redacted from all IDE logs to prevent them from being shared.
+ • NEW: Fresh New Notification UI right off the first page of the Manager.
+    The New UI goes with the new notification system to handle the following events:
+    • Nest API Errors and Rate-Limiting
+    • Failed Commands (A maximum of 5 msgs/per 10 minutes)
+    • Nest Location Home/Away Changes
+    • Device Health Issues (Disconnects, etc.)
+    • Get Reminded when you leave debug logging and remote diagnostics on for more than 24 hours.
+    • Nest Cam streaming On/Off alerts
+ • NEW: Control Watch-Dog Notifications from Manager
+ • UPDATED: Re-Structured the Managers Setting Area to simplify getting to what you need.
+ • UPDATED: Moved device preferences to the Manage Devices section.
+ • NEW: Tests on Nest Protects are auto-disabled after 15 minutes if they are left on.
+ • NEW: Added Toggle to disable all automations right from the Automation section under the Manager.
+ • NEW: Turn graphs and event history on/off in the Thermostat and Weather devices from the Manager.
+ • NEW: Added support to send Automation Event history and Who set eco to the Thermostat device. (Part of the new Thermostat UI).
+ • NEW: Added Hub to the install of all new devices to help support ST's Device history.
+ • NEW: Added Change logs the are shown when a new version is published .
+
+ Automations App:
+ • NEW: Humidity Control Automation;  Works with Switch controlled humidifiers (*** Requires a third-party DTH for HVAC humidifiers)
+ • FIXED: Fixed input status text to auto-sort by device name
+ • FIXED: There were dozen's of cleanups and bug-fixes
+
 V4.5.1 (January 26th, 2017):
 ▔▔▔▔▔▔▔▔▔▔▔
  • NEW: Added Presence sensors as a restriction for Thermostat schedules and schedule motion triggers.
@@ -64,4 +95,3 @@ V4.1.0 (November 19th, 2016):
 V4.0.0 (October 28th, 2016):
 ▔▔▔▔▔▔▔▔▔▔▔
  • V4.0.0 Release
- 

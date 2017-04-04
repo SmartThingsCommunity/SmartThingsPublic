@@ -1,0 +1,6 @@
+<p style="font-size: 15px;"><strong>V5.0.0 (March 30th, 2017):</strong><p>
+<hr noshade>
+<ul style="font-size: 12px; padding: 0 10px 0 10px; Margin: 0;">
+    <li><strong>NEW: </strong> All-New HTML design with new icons to indicate the current alarm status</li>
+    <li><strong>NEW: </strong> Device now determines the power source (Wired or Battery) type based on it's check in habit's.</li>
+</ul>

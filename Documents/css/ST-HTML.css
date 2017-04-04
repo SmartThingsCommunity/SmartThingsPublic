@@ -522,3 +522,22 @@ tr {
 .orangeText {
     color: orange;
 }
+
+.chgLog div {
+    padding: 0 5px 0 5px;
+    text-align: left;
+}
+
+.chgLog h3 {
+    background-color: transparent;
+    background: transparent;
+}
+
+.chgLog ul, li {
+    font-size: 12px;
+    padding: 0 10px 0 10px;
+    Margin: 0;
+}
+.chgLog p {
+    font-size: 12px;
+}

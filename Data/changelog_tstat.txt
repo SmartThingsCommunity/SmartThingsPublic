@@ -1,0 +1,11 @@
+<p style="font-size: 15px;"><strong>V5.0.0 (March 30th, 2017):</strong><p>
+<hr noshade>
+<ul style="font-size: 12px; padding: 0 10px 0 10px; Margin: 0;">
+    <li><strong>NEW: </strong> All-New HTML design with fluid swiping/tap to swipe friendly slides and refresh button to reload html content (Swiping/Refresh on iOS only).</li>
+    <li><strong>NEW: </strong> Automation Schedule info is now nicely displayed in the device interface.</li>
+    <li><strong>NEW: </strong> Added in WhoSetEco mode info (Ex. Which automation?, Was is it externally set?)</li>
+    <li><strong>NEW: </strong> Add automation event activity history to the device interface.</li>
+    <li><strong>FIXED: </strong> Cleaned out a lot of unneeded code.</li>
+    <li><strong>FIXED: </strong> Fixed AskAlexa Voice reports.</li>
+    <li><strong>FIXED: </strong> Dozens of optimizations and tweaks to make things more efficient.</li>
+</ul>

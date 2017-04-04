@@ -15,7 +15,7 @@
         "message": "",
         "type": "info",
         "devBannerMsg": {
-            "msgId": "7lVTfVFGjHA",
+            "msgId": "7lVTfVCjHA",
             "message": "You must obey me at all costs ;)",
             "type": "warn",
             "expireDt": "Wed Feb 15 00:00:00 EST 2017"
@@ -29,28 +29,31 @@
         "setupVersion": 2,
         "versions": {
             "app": {
-                "ver": "4.5.2"
+                "ver": "5.0.2"
+            },
+            "autoapp": {
+                "ver": "5.0.0"
             },
             "thermostat": {
-                "ver": "4.5.2"
+                "ver": "5.0.0"
             },
             "protect": {
-                "ver": "4.5.1"
+                "ver": "5.0.0"
             },
             "camera": {
-                "ver": "2.5.1"
+                "ver": "5.0.0"
             },
             "presence": {
-                "ver": "4.5.1"
+                "ver": "5.0.0"
             },
             "weather": {
-                "ver": "4.5.2"
+                "ver": "5.0.1"
             }
         }
     },
     "html": {
         "cssVer": 1,
-        "cssUrl": "https://raw.githubusercontent.com/tonesto7/nest-manager/master/Documents/css/ST-HTML.css",
+        "cssUrl": "https://raw.githubusercontent.com/tonesto7/nest-manager/master/Documents/css/ST-HTML.min.css",
         "chartJsVer": 1,
         "chartJsUrl": "https://www.gstatic.com/charts/loader.js"
     },
@@ -62,7 +65,8 @@
         "remoteDiagPath": "remoteDiagLogs"
     },
     "aaPrefs": {
-        "enAaMsgQueue": true
+        "enAaMsgQueue": true,
+        "enMultiQueue": false
     },
     "reportPrefs": {
         "disVoiceZoneRprt": false,
@@ -81,8 +85,8 @@
         "count": 8
     },
     "eventStreaming": {
-        "enabled": true,
-        "minServiceVer": "0.1.0"
+        "enabled": false,
+        "minVersion": "0.4.0"
     },
     "healthcheck": {
         "camTimeout": 120,
@@ -94,7 +98,7 @@
         "enabled": true
     },
     "devStatusPage": {
-        "enabled": true,
-        "path": "/Data/status_content.txt"
+        "enabled": false,
+        "path": ""
     }
 }
