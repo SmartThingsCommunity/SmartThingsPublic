@@ -20,7 +20,6 @@ metadata {
 		capability "Actuator"
         capability "Alarm"
         capability "Battery"
-		capability "Health Check"
         capability "Polling"
         capability "Refresh"
         capability "Sensor"
@@ -28,7 +27,6 @@ metadata {
 
 
 		fingerprint inClusters: "0x20,0x25,0x86,0x80,0x85,0x72,0x71"
-		fingerprint mfr:"0084", prod:"0313", model:"010B", deviceJoinName: "FortrezZ Siren Strobe Alarm"
 	}
 
 	simulator {
@@ -58,11 +56,6 @@ metadata {
 		main "alarm"
 		details(["alarm","off","battery","refresh"])
 	}
-}
-
-def updated(){
-// Device-Watch simply pings if no device events received for 32min(checkInterval)
-	sendEvent(name: "checkInterval", value: 2 * 15 * 60 + 2 * 60, displayed: false, data: [protocol: "zwave", hubHardwareId: device.hub.hardwareID])
 }
 
 def createEvents(physicalgraph.zwave.commands.batteryv1.BatteryReport cmd) {
@@ -124,13 +117,6 @@ def strobe() {
 
 def both() {
 	on()
-}
-
-/**
- * PING is used by Device-Watch in attempt to reach the Device
- * */
-def ping() {
-	refresh()
 }
 
 def refresh() {
