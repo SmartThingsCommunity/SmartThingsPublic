@@ -14,7 +14,7 @@
  *
  */
 metadata {
-	definition (name: "Fibaro Flood Sensor ZW5", namespace: "fibargroup", author: "Fibar Group S.A.") {
+	definition (name: "Fibaro Flood Sensor ZW5", namespace: "fibargroup", author: "Fibar Group S.A.", ocfDeviceType: "x.com.st.d.sensor.moisture") {
 		capability "Battery"
 		capability "Configuration"
 		capability "Sensor"
@@ -37,13 +37,13 @@ metadata {
 				attributeState("dry", icon:"st.alarm.water.dry", backgroundColor:"#ffffff")
 				attributeState("wet", icon:"st.alarm.water.wet", backgroundColor:"#00a0dc")
 			}
-			
+
 			tileAttribute("device.tamper", key:"SECONDARY_CONTROL") {
 				attributeState("active", label:'tamper active', backgroundColor:"#cccccc")
 				attributeState("inactive", label:'tamper inactive', backgroundColor:"#00A0DC")
 			}
 		}
-		
+
 		valueTile("temperature", "device.temperature", inactiveLabel: false, width: 2, height: 2) {
 			state "temperature", label:'${currentValue}°',
 			backgroundColors:[
@@ -130,14 +130,14 @@ def zwaveEvent(physicalgraph.zwave.commands.wakeupv2.WakeUpNotification cmd)
 	[event, response(cmds)]
 }
 
-def zwaveEvent(physicalgraph.zwave.commands.manufacturerspecificv2.ManufacturerSpecificReport cmd) { 
+def zwaveEvent(physicalgraph.zwave.commands.manufacturerspecificv2.ManufacturerSpecificReport cmd) {
 	log.debug "manufacturerId:   ${cmd.manufacturerId}"
 	log.debug "manufacturerName: ${cmd.manufacturerName}"
 	log.debug "productId:        ${cmd.productId}"
 	log.debug "productTypeId:    ${cmd.productTypeId}"
 }
 
-def zwaveEvent(physicalgraph.zwave.commands.manufacturerspecificv2.DeviceSpecificReport cmd) { 
+def zwaveEvent(physicalgraph.zwave.commands.manufacturerspecificv2.DeviceSpecificReport cmd) {
 	log.debug "deviceIdData:                ${cmd.deviceIdData}"
 	log.debug "deviceIdDataFormat:          ${cmd.deviceIdDataFormat}"
 	log.debug "deviceIdDataLengthIndicator: ${cmd.deviceIdDataLengthIndicator}"
