@@ -34,7 +34,7 @@ definition(
     description: "Control lights with buttons like the Aeon Labs Minimote or Enerwave ZWN-SC7.",
     category: "Convenience",
     iconUrl: "https://s3.amazonaws.com/smartapp-icons/MyApps/Cat-MyApps.png",
-    iconX2Url: "https://s3.amazonaws.com/smartapp-icons/MyApps/Cat-MyApps@2x.png"
+    iconX2Url: "https://s3.amazonaws.com/smartapp-icons/MyApps/Cat-MyApps@2x.png"png"
 )
 
 preferences {
@@ -50,7 +50,7 @@ preferences {
 }
 
 def selectButton() {
-	dynamicPage(name: "selectButton", title: "First, select your button device", nextPage: null, uninstall: configured(), install: true) {
+	dynamicPage(name: "selectButton", title: "First, select your button device", nextPage: null, uninstall: true, install: true) {
 		section {
 			input "buttonDevice", "capability.button", title: "Button", multiple: false, required: true, submitOnChange: true
 		}
@@ -68,7 +68,7 @@ def selectButton() {
                    } else {
                       configDescription = "Click to configure"
                    }
-                   href "configureButton", title:"Configure Button $i", description:"$configDescription", params: [pbutton: i]
+                   href "configureButton", title:"Configure Button $i", description:"$configDescription", params: [button: i]
                 }
         }
         
@@ -87,75 +87,89 @@ def selectButton() {
 }
 
 def configureButton(params) {
-    if (params.pbutton != null) state.currentButton = params.pbutton.toInteger() //log.debug "$params.pbutton"
+    if (params?.button || params?.params?.button) {
+      if (params.button) {
+         state.currentButton = params.button.toInteger()
+      } else {
+         state.currentButton = params.params.button.toInteger()
+      }
+    } 
     dynamicPage(name: "configureButton", title: "Choose the lights that you would like button ${state.currentButton} to control.",
-	uninstall: configured(), getButtonSections(state.currentButton))
+	uninstall: false, getButtonSections(state.currentButton))
 }
 
 def configureLight(params) {
-    if (params.pbutton != null) state.currentButton = params.pbutton.toInteger()
+    if (params?.lightId || params?.params?.lightId) {
+      if (params.lightId) {
+         state.lightId = params.lightId
+      } else {
+         state.lightId = params.params.lightId
+      }
+    }
+    def thisLight = settings["lights_${state.currentButton}"].find{it.id == state.lightId} 
+
     dynamicPage(name: "configureLight", uninstall: false, install: false) {
-        section ("$params.name") {
+       
+        section ("${thisLight}") {
             def switchType = "Switch"
-            if ("$params.capabilities".indexOf('Switch Level') >= 0) {
+            if (thisLight?.hasCapability("Switch Level")) {
             	switchType = "Dimmer"
             }
-            if ("$params.capabilities".indexOf('Color Control') >= 0) {
+            if (thisLight?.hasCapability("Color Control")) {
             	switchType = "Color"
             }
             switch(switchType) {
 				case ~/.*Switch.*/:
-                    input "lights_${params.buttonNumber}_${params.lightId}_power", "bool", title: "Turn the light on or off", submitOnChange: false
+                    input "lights_${state.currentButton}_${state.lightId}_power", "bool", title: "Turn the light on or off", submitOnChange: false
 					break
 				case ~/.*Dimmer.*/:
-                    input "lights_${params.buttonNumber}_${params.lightId}_power", "bool", title: "Turn the light on or off", submitOnChange: false
-                    input "lights_${params.buttonNumber}_${params.lightId}_lightLevel", "enum", title: "Light Level?", required: false, options: [[1:"1%"],[5:"5%"],[10:"10%"],[20:"20%"],[30:"30%"],[40:"40%"],[50:"50%"],[60:"60%"],[70:"70%"],[80:"80%"],[90:"90%"],[100:"100%"]]
+                    input "lights_${state.currentButton}_${state.lightId}_power", "bool", title: "Turn the light on or off", submitOnChange: false
+                    input "lights_${state.currentButton}_${state.lightId}_lightLevel", "number", title: "Light Level?", required: false, range: "1..100"
 					break
 				case ~/.*Color.*/:
-                    input "lights_${params.buttonNumber}_${params.lightId}_power", "bool", title: "Turn the light on or off", submitOnChange: false
-                    input "lights_${params.buttonNumber}_${params.lightId}_color", "enum", title: "Hue Color?", required: false, multiple:false, options: [
+                    input "lights_${state.currentButton}_${state.lightId}_power", "bool", title: "Turn the light on or off", submitOnChange: false
+                    input "lights_${state.currentButton}_${state.lightId}_color", "enum", title: "Hue Color?", required: false, multiple:false, options: [
 					["Soft White":"Soft White - Default"],
 					["White":"White - Concentrate"],
 					["Daylight":"Daylight - Energize"],
 					["Warm White":"Warm White - Relax"],
 					"Red","Green","Blue","Yellow","Orange","Purple","Pink","Random"]
-					input "lights_${params.buttonNumber}_${params.lightId}_lightLevel", "enum", title: "Light Level?", required: false, options: [[1:"1%"],[5:"5%"],[10:"10%"],[20:"20%"],[30:"30%"],[40:"40%"],[50:"50%"],[60:"60%"],[70:"70%"],[80:"80%"],[90:"90%"],[100:"100%"]]
+					input "lights_${state.currentButton}_${state.lightId}_lightLevel", "number", title: "Light Level?", required: false, range: "1..100"
 					break
             }
         }
     }
 }
 
-def getButtonSections(buttonNumber) {
+def getButtonSections(button) {
 	return {
 		section("Lights") {
-			input "lights_${buttonNumber}", "capability.switch", multiple: true, required: false, submitOnChange: true
+			input "lights_${state.currentButton}", "capability.switch", multiple: true, required: false, submitOnChange: true
 		}
         section ("Toggle"){
-            input "lights_${buttonNumber}_toggle", "enum", title: "Toggle Type", submitOnChange: false, defaultValue: 0, options: [[0:"Off"],[1:"Single Light Turn On"],[2:"Single Light Turn Off"],[3:"Same Button"]]
-            //input "lights_${buttonNumber}_toggle_reverse", "bool", title: "Reverse Toggle Logic?", submitOnChange: true, defaultValue: false
+            input "lights_${state.currentButton}_toggle", "enum", title: "Toggle Type", submitOnChange: false, defaultValue: 0, options: [[0:"None"],[1:"Single Light On, Turn All On"],[2:"Single Light Off, Turn All Off"],[3:"Same Button Pressed 2 or More Times in a Row"]]
         }
-        def lightsConfigured = settings["lights_${buttonNumber}"]
+        def lightsConfigured = settings["lights_${state.currentButton}"]
         if (lightsConfigured != null) {
         def map = [:]
         	lightsConfigured.each {light ->
                 def inDescription = "Click to Configure"
                 
-                if (settings["lights_${buttonNumber}_${light.id}_power"])
+                if (settings["lights_${state.currentButton}_${light.id}_power"])
                 	inDescription = "Power: on"
                 else
                     inDescription = "Power: off"
 
-                if (settings["lights_${buttonNumber}_${light.id}_lightLevel"] != null)
-                	inDescription = "$inDescription, Level: ${settings["lights_${buttonNumber}_${light.id}_lightLevel"]}"
+                if (settings["lights_${state.currentButton}_${light.id}_lightLevel"] != null)
+                	inDescription = "$inDescription, Level: ${settings["lights_${state.currentButton}_${light.id}_lightLevel"]}"
                     
-                if (settings["lights_${buttonNumber}_${light.id}_color"] != null)
-                	inDescription = "$inDescription, Color: ${settings["lights_${buttonNumber}_${light.id}_color"]}"
+                if (settings["lights_${state.currentButton}_${light.id}_color"] != null)
+                	inDescription = "$inDescription, Color: ${settings["lights_${state.currentButton}_${light.id}_color"]}"
                 
             	section ("$light"){
            			href(name: "Configure $light",
                  	page: "configureLight",
-                 	params: [ name: "$light", type: "$light.name", capabilities: "$light.capabilities", buttonNumber: "$buttonNumber", lightId: "$light.id" ],
+                 	params: [ lightId: "$light.id" ],
                  	description: "$inDescription")
            		}
                 
@@ -165,9 +179,8 @@ def getButtonSections(buttonNumber) {
                 
         }
         section("Master Switch") {
-           input "lights_${buttonNumber}_master_first", "enum", title: "Turn this switch on first", description: "", multiple: false, required: false, submitOnChange: false, options: map
-           input "lights_${buttonNumber}_master_last", "enum", title: "Turn this switch off last", description: "", multiple: false, required: false, submitOnChange: false, options: map
-           //input "lights_${buttonNumber}_master", "enum", title: "None", multiple: false, required: false, submitOnChange: false, options: [[10:"10%"],[20:"20%"],[30:"30%"],[40:"40%"],[50:"50%"],[60:"60%"],[70:"70%"],[80:"80%"],[90:"90%"],[100:"100%"]]
+           input "lights_${state.currentButton}_master_first", "enum", title: "Turn this switch on first", description: "", multiple: false, required: false, submitOnChange: false, options: map
+           input "lights_${state.currentButton}_master_last", "enum", title: "Turn this switch off last", description: "", multiple: false, required: false, submitOnChange: false, options: map
         }
         }
         
@@ -186,10 +199,6 @@ def updated() {
 
 def initialize() {
 	subscribe(buttonDevice, "button", buttonEvent)
-}
-
-def configured() {
-	return buttonDevice || buttonConfigured(1) || buttonConfigured(2) || buttonConfigured(3) || buttonConfigured(4) || buttonConfigured(5) || buttonConfigured(6) || buttonConfigured(7) || buttonConfigured(8)
 }
 
 def buttonConfigured(idx) {
@@ -225,32 +234,7 @@ def buttonEvent(evt){
         log.debug "This Event ID: ${evt.id}"
 
 		if(firstEventId == evt.id){
-			switch(buttonNumber) {
-				case ~/.*1.*/:
-					executeHandlers(1)
-					break
-				case ~/.*2.*/:
-					executeHandlers(2)
-					break
-				case ~/.*3.*/:
-					executeHandlers(3)
-					break
-				case ~/.*4.*/:
-					executeHandlers(4)
-					break
-                		case ~/.*5.*/:
-					executeHandlers(5)
-					break
-                		case ~/.*6.*/:
-					executeHandlers(6)
-					break
-                		case ~/.*7.*/:
-					executeHandlers(7)
-					break
-                		case ~/.*8.*/:
-					executeHandlers(8)
-					break
-			}
+			executeHandlers(buttonNumber)
 		} else if (firstEventId == 0) {
       		log.debug "No events found. Possible SmartThings latency"
     	} else {
@@ -264,7 +248,7 @@ def executeHandlers(buttonNumber) {
     def lightsConfigured = settings["lights_${buttonNumber}"]
     def toggle = false
 
-    if (!(state.previousState) && state.previousScene == buttonNumber && (settings["lights_${buttonNumber}_toggle"] == "3")) {
+    if ((settings["lights_${buttonNumber}_toggle"] == "3") && !(state.previousState) && state.previousScene == buttonNumber) {
        log.debug "toggle 3"
        toggle = true
     } else if (settings["lights_${buttonNumber}_toggle"] == "1") {
@@ -326,10 +310,10 @@ def setLight(light, buttonNumber, toggle, sequence = null) {
     def color
     
     def switchType = "Switch"
-    if ("$light.capabilities".indexOf('Switch Level') >= 0) {
+    if (light.hasCapability("Switch Level")) {
         switchType = "Dimmer"
     }
-    if ("$light.capabilities".indexOf('Color Control') >= 0) {
+    if (light.hasCapability("Color Control")) {
         switchType = "Color"
     }
     
@@ -361,23 +345,23 @@ def setLight(light, buttonNumber, toggle, sequence = null) {
 
                 switch(color) {
                     case "White":
-                    hueColor = 52
-                    saturation = 19
+                    hueColor = 63
+                    saturation = 28
                     colorTemperature = 8000
                     break;
                     case "Daylight":
-                    hueColor = 53
-                    saturation = 91
+                    hueColor = 63
+                    saturation = 43
                     colorTemperature = 6000
                     break;
                     case "Soft White":
-                    hueColor = 23
-                    saturation = 56
+                    hueColor = 5
+                    saturation = 4
                     colorTemperature = 3200
                     break;
                     case "Warm White":
-                    hueColor = 20
-                    saturation = 80 //83
+                    hueColor = 79
+                    saturation = 7
                     colorTemperature = 2500
                     break;
                     case "Blue":
@@ -410,19 +394,11 @@ def setLight(light, buttonNumber, toggle, sequence = null) {
                 def rgbValue = huesatToRGB(hueColor, saturation)
                 def hexValue = rgbToHex(r: rgbValue[0], g: rgbValue[1], b: rgbValue[2])
                 def colorValue
-                if (colorTemperature != null) {
-                    // Changing the amount of data that is sent because of hue device handler change
-                	// colorValue = [alpha: 1.0, red: rgbValue[0], green: rgbValue[1], blue: rgbValue[2], hex: hexValue, hue: hueColor as double, saturation: saturation, level: level as Integer ?: 100, colorTemperature: colorTemperature]
+                if (colorTemperature != null && light.typeName.toUpperCase().indexOf("LIFX") >= 0) {
                     colorValue = [hue: hueColor as Integer, saturation: saturation, level: level as Integer ?: 100, colorTemperature: colorTemperature]
-                    try{
-                       delayBetween(light.setColorTemperature(colorTemperature),
-                       light.setLevel(level as Integer ?: 100), 1000)
-                    }catch(e){
-                       light.setColor(colorValue)
-                    }
+                    delayBetween(light.setColorTemperature(colorTemperature),
+                    light.setLevel(level as Integer ?: 100), 1000)
                 } else {
-                    // Changing the amount of data that is sent because of hue device handler change
-                	// colorValue = [alpha: 1.0, red: rgbValue[0], green: rgbValue[1], blue: rgbValue[2], hex: hexValue, hue: hueColor as double, saturation: saturation, level: level as Integer ?: 100]
                     colorValue = [hue: hueColor as Integer, saturation: saturation, level: level as Integer ?: 100]
                     light.setColor(colorValue)
                 }
@@ -433,8 +409,6 @@ def setLight(light, buttonNumber, toggle, sequence = null) {
     else if(power == false && sequence != "first") {
     	light.off()
     }
-    
-    
 }
 
 // execution filter methods
