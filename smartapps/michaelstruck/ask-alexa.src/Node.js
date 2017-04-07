@@ -1,7 +1,7 @@
 /**
  *  Ask Alexa - Lambda Code
  *
- *  Version 1.2.3 - 2/9/17 Copyright © 2017 Michael Struck
+ *  Version 1.2.4 - 3/20/17 Copyright © 2017 Michael Struck
  *  Special thanks for Keith DeLong for code and assistance 
  *  
  *  Version 1.0.0 - Initial release
@@ -18,6 +18,7 @@
  *  Version 1.2.1 - Addition of the Snarky personality responses and change in macro password structure
  *  Version 1.2.2b - Addition of small translation items
  *  Version 1.2.3 - Added follow up to a missing PIN when required, updated copyright to 2017
+ *  Version 1.2.4 - Added routines for new message queue 
  * 
  *  Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except
  *  in compliance with the License. You may obtain a copy of the License at:
@@ -31,9 +32,9 @@
  */
 'use strict';
 exports.handler = function( event, context ) {
-    var versionTxt = '1.2.3';
-    var versionDate= '02/09/2017';
-    var versionNum = '123';
+    var versionTxt = '1.2.4';
+    var versionDate= '03/20/2017';
+    var versionNum = '124';
     var https = require( 'https' );
     // Paste app code here between the breaks------------------------------------------------
     var STappID = '';
@@ -86,6 +87,13 @@ exports.handler = function( event, context ) {
                     url += 'l?Type=' + Type;
                     process = true;
                     cardName = "SmartThings Help";
+                }
+                 else if (intentName == "MQOperation") {
+                    var Queue = event.request.intent.slots.Queue.value;
+                    var MQCmd = event.request.intent.slots.MQCmd.value;
+                    url += 'q?Queue=' + Queue + "&MQCmd=" + MQCmd;
+                    process = true;
+                    cardName = "SmartThings Message Queue";
                 }
                 else if (intentName == "MacroOperation") {
                     var Macro = event.request.intent.slots.Macro.value;
