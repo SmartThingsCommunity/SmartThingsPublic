@@ -54,22 +54,24 @@ def mainPage() {
 }
 
 def configurePDevice(params){
-   def currentDevice
-   getChildDevices().each {
-       if(it.deviceNetworkId == params.did){
-           state.currentDeviceId = it.deviceNetworkId
-           state.currentDisplayName = it.displayName
-       }      
-   }
+   if (params?.did || params?.params?.did) {
+      if (params.did) {
+         state.currentDeviceId = params.did
+         state.currentDisplayName = getChildDevice(params.did)?.displayName
+      } else {
+         state.currentDeviceId = params.params.did
+         state.currentDisplayName = getChildDevice(params.params.did)?.displayName
+      }
+   }  
    if (getChildDevice(state.currentDeviceId) != null) getChildDevice(state.currentDeviceId).configure()
    dynamicPage(name: "configurePDevice", title: "Configure Sonoff Switches created with this app", nextPage: null) {
 		section {
             app.updateSetting("${state.currentDeviceId}_label", getChildDevice(state.currentDeviceId).label)
             input "${state.currentDeviceId}_label", "text", title:"Device Name", description: "", required: false
-            href "changeName", title:"Change Device Name", description: "Edit the name above and click here to change it", params: [did: state.currentDeviceId]
+            href "changeName", title:"Change Device Name", description: "Edit the name above and click here to change it"
         }
         section {
-              href "deletePDevice", title:"Delete $state.currentDisplayName", description: "", params: [did: state.currentDeviceId]
+              href "deletePDevice", title:"Delete $state.currentDisplayName", description: ""
         }
    }
 }
@@ -78,7 +80,7 @@ def manuallyAdd(){
    dynamicPage(name: "manuallyAdd", title: "Manually add a Sonoff device", nextPage: "manuallyAddConfirm") {
 		section {
 			paragraph "This process will manually create a Sonoff device based on the entered IP address. The SmartApp needs to then communicate with the device to obtain additional information from it. Make sure the device is on and connected to your wifi network."
-            input "deviceType", "enum", title:"Device Type", description: "", required: false, options: ["Sonoff Wifi Switch","Sonoff TH Wifi Switch"]
+            input "deviceType", "enum", title:"Device Type", description: "", required: false, options: ["Sonoff Wifi Switch","Sonoff TH Wifi Switch","Sonoff POW Wifi Switch","Sonoff Dual Wifi Switch"]
             input "ipAddress", "text", title:"IP Address", description: "", required: false 
 		}
     }
@@ -111,7 +113,7 @@ def manuallyAddConfirm(){
     }
 }
 
-def deletePDevice(params){
+def deletePDevice(){
     try {
         unsubscribe()
         deleteChildDevice(state.currentDeviceId)
@@ -131,7 +133,7 @@ def deletePDevice(params){
     }
 }
 
-def changeName(params){
+def changeName(){
     def thisDevice = getChildDevice(state.currentDeviceId)
     thisDevice.label = settings["${state.currentDeviceId}_label"]
 
@@ -342,7 +344,16 @@ def addDevices() {
             log.debug selectedDevice
             log.debug "Creating Sonoff Switch with dni: ${selectedDevice.value.mac}"
             log.debug Integer.parseInt(selectedDevice.value.deviceAddress,16)
-            addChildDevice("erocm123", (selectedDevice?.value?.name?.startsWith("Sonoff TH") ? "Sonoff TH Wifi Switch" : "Sonoff Wifi Switch"), selectedDevice.value.mac, selectedDevice?.value.hub, [
+            def deviceHandlerName
+            if (selectedDevice?.value?.name?.startsWith("Sonoff TH"))
+                deviceHandlerName = "Sonoff TH Wifi Switch"
+            else if (selectedDevice?.value?.name?.startsWith("Sonoff POW"))
+                deviceHandlerName = "Sonoff POW Wifi Switch"
+            else if (selectedDevice?.value?.name?.startsWith("Sonoff Dual"))
+                deviceHandlerName = "Sonoff Dual Wifi Switch"
+            else 
+                deviceHandlerName = "Sonoff Wifi Switch"
+            addChildDevice("erocm123", deviceHandlerName, selectedDevice.value.mac, selectedDevice?.value.hub, [
                 "label": selectedDevice?.value?.name ?: "Sonoff Wifi Switch",
                 "data": [
                     "mac": selectedDevice.value.mac,
