@@ -34,7 +34,7 @@ definition(
     description: "Control lights with buttons like the Aeon Labs Minimote or Enerwave ZWN-SC7.",
     category: "Convenience",
     iconUrl: "https://s3.amazonaws.com/smartapp-icons/MyApps/Cat-MyApps.png",
-    iconX2Url: "https://s3.amazonaws.com/smartapp-icons/MyApps/Cat-MyApps@2x.png"png"
+    iconX2Url: "https://s3.amazonaws.com/smartapp-icons/MyApps/Cat-MyApps@2x.png"
 )
 
 preferences {
