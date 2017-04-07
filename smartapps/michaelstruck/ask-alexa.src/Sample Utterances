@@ -1,9 +1,3 @@
-ListOperation list {Type}
-ListOperation {Type}
-ListOperation about {Type}
-ListOperation for a list of {Type}
-ListOperation list
-
 DeviceOperation to {Operator} {Param} in the {Device}
 DeviceOperation to {Operator} {Param} in the {Device} level {Num}
 DeviceOperation to {Operator} {Param} level {Num} in the {Device}
@@ -11,8 +5,7 @@ DeviceOperation to {Operator} {Param} to level {Num} in the {Device}
 DeviceOperation to {Operator} {Param} in the {Device}
 DeviceOperation {Device} {Operator} {Param}
 DeviceOperation {Device} {Operator} {Param} level {Num}
-DeviceOperation {Device} {Operator} level {Num} {Param} 
-
+DeviceOperation {Device} {Operator} level {Num} {Param}
 DeviceOperation to turn {Operator} the {Device}
 DeviceOperation to turn {Operator} {Device}
 DeviceOperation to turn {Device} {Operator}
@@ -24,12 +17,11 @@ DeviceOperation {Operator} {Device} password {Num}
 DeviceOperation {Operator} {Device}
 DeviceOperation to {Operator} {Device}
 DeviceOperation {Operator} the {Device}
-
 DeviceOperation set {Device} to {Num}
 DeviceOperation {Device} to {Num}
 DeviceOperation {Device} {Num}
-DeviceOperation set the {Device} to {Num} 
-DeviceOperation to set {Device} to {Num} 
+DeviceOperation set the {Device} to {Num}
+DeviceOperation to set {Device} to {Num}
 DeviceOperation to set the {Device} to {Num}
 DeviceOperation {Device} {Num} percent
 DeviceOperation set {Device} to {Num} percent
@@ -38,10 +30,9 @@ DeviceOperation to set {Device} to {Num} percent
 DeviceOperation to set the {Device} to {Num} percent
 DeviceOperation to turn {Device} to {Num} percent
 DeviceOperation to turn the {Device} to {Num} percent
-DeviceOperation to turn {Device} to {Num} 
+DeviceOperation to turn {Device} to {Num}
 DeviceOperation to turn the {Device} to {Num}
-
-DeviceOperation turn {Device} {Param} 
+DeviceOperation turn {Device} {Param}
 DeviceOperation turn {Device} to {Param}
 DeviceOperation turn the {Device} {Param}
 DeviceOperation turn the {Device} to {Param}
@@ -56,8 +47,7 @@ DeviceOperation turn the {Device} to {Param} and {Num}
 DeviceOperation turn {Device} to {Param} and {Num}
 DeviceOperation turn {Device} to {Param} and {Num} percent
 DeviceOperation turn {Device} to {Param} and a brightess of {Num}
-
-DeviceOperation set {Device} {Param} 
+DeviceOperation set {Device} {Param}
 DeviceOperation set {Device} to {Param}
 DeviceOperation set the {Device} {Param}
 DeviceOperation set the {Device} to {Param}
@@ -72,8 +62,7 @@ DeviceOperation set the {Device} to {Param} and {Num}
 DeviceOperation set {Device} to {Param} and {Num}
 DeviceOperation set {Device} to {Param} and {Num} percent
 DeviceOperation set {Device} to {Param} and a brightess of {Num}
-
-DeviceOperation change {Device} {Param} 
+DeviceOperation change {Device} {Param}
 DeviceOperation change {Device} to {Param}
 DeviceOperation change the {Device} {Param}
 DeviceOperation change the {Device} to {Param}
@@ -88,7 +77,6 @@ DeviceOperation change the {Device} to {Param} and {Num}
 DeviceOperation change {Device} to {Param} and {Num}
 DeviceOperation change {Device} to {Param} and {Num} percent
 DeviceOperation change {Device} to {Param} and a brightess of {Num}
-
 DeviceOperation {Operator} {Device} by {Num}
 DeviceOperation {Operator} the {Device} by {Num}
 DeviceOperation turn {Device} {Operator} by {Num}
@@ -103,7 +91,6 @@ DeviceOperation {Operator} brightness of the {Device}
 DeviceOperation {Operator} level of the {Device}
 DeviceOperation {Operator} temperature of the {Device}
 DeviceOperation {Operator} volume of the {Device}
-
 DeviceOperation {Device} to {Operator}
 DeviceOperation turn {Device} {Operator}
 DeviceOperation turn {Device} to {Operator}
@@ -111,31 +98,28 @@ DeviceOperation set {Device} to {Operator}
 DeviceOperation to turn the {Device} to {Operator}
 DeviceOperation to set the {Device} to {Operator}
 DeviceOperation to tell the {Device} to {Operator}
-
 DeviceOperation set {Param} of {Device} to {Num} degrees
-DeviceOperation set {Param} of {Device} to {Num} 
+DeviceOperation set {Param} of {Device} to {Num}
 DeviceOperation set the {Param} of {Device} to {Num} degrees
-DeviceOperation set the {Param} of {Device} to {Num} 
+DeviceOperation set the {Param} of {Device} to {Num}
 DeviceOperation set {Param} setpoint of {Device} to {Num} degrees
-DeviceOperation set {Param} setpoint of {Device} to {Num} 
+DeviceOperation set {Param} setpoint of {Device} to {Num}
 DeviceOperation set the {Param} setpoint of {Device} to {Num} degrees
-DeviceOperation set the {Param} setpoint of {Device} to {Num} 
+DeviceOperation set the {Param} setpoint of {Device} to {Num}
 DeviceOperation to set {Param} setpoint of {Device} to {Num} degrees
-DeviceOperation to set {Param} setpoint of {Device} to {Num} 
+DeviceOperation to set {Param} setpoint of {Device} to {Num}
 DeviceOperation to set the {Param} setpoint of {Device} to {Num} degrees
-DeviceOperation to set the {Param} setpoint of {Device} to {Num} 
-
+DeviceOperation to set the {Param} setpoint of {Device} to {Num}
 DeviceOperation set {Device} {Param} to {Num} degrees
-DeviceOperation set {Device} {Param} to {Num} 
+DeviceOperation set {Device} {Param} to {Num}
 DeviceOperation to set {Device} {Param} to {Num} degrees
-DeviceOperation to set {Device} {Param} to {Num} 
+DeviceOperation to set {Device} {Param} to {Num}
 DeviceOperation set the {Device} {Param} to {Num} degrees
 DeviceOperation set the {Device} {Param} to {Num}
-DeviceOperation set the {Device} to {Num} 
+DeviceOperation set the {Device} to {Num}
 DeviceOperation set the {Device} to {Num} degrees
 DeviceOperation to set the {Device} {Param} to {Num} degrees
-DeviceOperation to set the {Device} {Param} to {Num} 
-
+DeviceOperation to set the {Device} {Param} to {Num}
 DeviceOperation to set the temperature of the {Device} to {Num} degrees
 DeviceOperation to set the temperature of the {Device} to {Num}
 DeviceOperation to set the temperature of {Device} to {Num} degrees
@@ -144,51 +128,17 @@ DeviceOperation to set the temperature to {Num} degrees in {Device}
 DeviceOperation to set the temperature to {Num} in {Device}
 DeviceOperation to set the temperature to {Num} degrees in the {Device}
 DeviceOperation to set the temperature to {Num} in the {Device}
-
 DeviceOperation turn {Device} {Param} mode to {Operator}
 DeviceOperation set {Device} {Param} to {Operator}
 DeviceOperation turn {Operator} {Device} {Param} mode
 DeviceOperation turn {Operator} {Device} to {Param}
 DeviceOperation set the {Device} to {Param} mode
-
 DeviceOperation to {Operator} {Param} on the {Device}
 DeviceOperation to {Operator} {Device} with {Param}
 DeviceOperation to {Operator} {Param} with {Device}
 DeviceOperation {Operator} {Device} {Param}
 DeviceOperation {Operator} {Param} {Device}
-DeviceOperation {Device} {Operator} {Param} 
-
-SmartHomeOperation to set {SHCmd} to {SHParam} password {SHNum}
-SmartHomeOperation to set the {SHCmd} to {SHParam} password {SHNum}
-SmartHomeOperation set the {SHCmd} to {SHParam} password {SHNum}
-SmartHomeOperation {SHCmd} status
-SmartHomeOperation status of {SHCmd}
-SmartHomeOperation the status of home {SHCmd}
-SmartHomeOperation {SHCmd} state
-SmartHomeOperation settings of {SHCmd}
-SmartHomeOperation run {SHCmd} {SHParam} password {SHNum}
-SmartHomeOperation run the {SHParam} {SHCmd} password {SHNum}
-SmartHomeOperation to run {SHCmd} {SHParam} password {SHNum}
-SmartHomeOperation what is the current {SHCmd}
-SmartHomeOperation the current {SHCmd}
-SmartHomeOperation to change the {SHCmd} to {SHParam} password {SHNum}
-SmartHomeOperation {SHParam} {SHCmd} password {SHNum}
-SmartHomeOperation {SHParam} password {SHNum}
-SmartHomeOperation {SHParam} 
-SmartHomeOperation {SHCmd}
-SmartHomeOperation execute the {SHParam} {SHCmd} password {SHNum}
-SmartHomeOperation about {SHCmd}
-SmartHomeOperation about the {SHCmd}
-SmartHomeOperation about the current {SHCmd}
-SmartHomeOperation what is the current {SHCmd}
-
-VersionOperation version
-VersionOperation tell me the version
-VersionOperation about the Ask Alexa smartapp
-VersionOperation about Ask Alexa
-VersionOperation about the smartapp version
-VersionOperation what is the current version
-
+DeviceOperation {Device} {Operator} {Param}
 DeviceOperation about {Device}
 DeviceOperation about {Device} {Operator}
 DeviceOperation about the {Device} {Operator}
@@ -205,7 +155,6 @@ DeviceOperation play the last {Num} {Operator} from {Device}
 DeviceOperation play the last {Num} {Operator} from the {Device}
 DeviceOperation to give me the last {Operator} for the {Device}
 DeviceOperation to give me the last {Num} {Operator} for the {Device}
-
 DeviceOperation what is the {Operator} of {Device}
 DeviceOperation what is the {Operator} of the {Device}
 DeviceOperation {Device} temperature
@@ -222,7 +171,10 @@ DeviceOperation how hot is it in the {Device}
 DeviceOperation how cold is it in the {Device}
 DeviceOperation how hot is the {Device}
 DeviceOperation how cold is the {Device}
-
+DeviceOperation is the {Device} locked
+DeviceOperation is the {Device} unlocked
+DeviceOperation is the {Device} open
+DeviceOperation is the {Device} closed
 MacroOperation set {Macro} to {MNum}
 MacroOperation {Macro} to {MNum}
 MacroOperation {Macro} {MNum}
@@ -240,7 +192,6 @@ MacroOperation to turn {Macro} to {MNum} percent
 MacroOperation to turn the {Macro} to {MNum} percent
 MacroOperation to turn {Macro} to {MNum}
 MacroOperation to turn the {Macro} to {MNum}
-
 MacroOperation to turn {MCmd} the {Macro}
 MacroOperation to turn {MCmd} {Macro}
 MacroOperation turn {MCmd} {Macro}
@@ -258,19 +209,17 @@ MacroOperation {MCmd} to {Macro}
 MacroOperation {MCmd} to {Macro} password {MPW}
 MacroOperation to {MCmd} the {Macro}
 MacroOperation {MCmd} {Macro} devices
-MacroOperation {MCmd} {Macro} 
+MacroOperation {MCmd} {Macro}
 MacroOperation to {MCmd} the {Macro} password {MPW}
-
 MacroOperation to turn {MCmd} the {Macro} and {MNum}
 MacroOperation to turn {Macro} {MCmd} {MNum}
 MacroOperation to turn the {Macro} {MCmd} and {MNum}
 MacroOperation to turn the {Macro} to {MNum} and {MCmd}
-MacroOperation {Macro} {MCmd} {MNum} 
+MacroOperation {Macro} {MCmd} {MNum}
 MacroOperation {Macro} to {MCmd} and {MNum}
 MacroOperation set {Macro} to {MCmd} {MNum}
 MacroOperation to set {Macro} to {MCmd} {MNum}
 MacroOperation to set the {Macro} to {MCmd} {MNum}
-
 MacroOperation {Macro}
 MacroOperation {Macro} password {MPW}
 MacroOperation {Macro} in {MNum} minute
@@ -296,10 +245,10 @@ MacroOperation reports {Macro}
 MacroOperation to report {Macro}
 MacroOperation play the {Macro}
 MacroOperation to play {Macro}
-MacroOperation to play the {Macro} 
+MacroOperation to play the {Macro}
 MacroOperation to give me the {Macro}
-MacroOperation to tell me the {Macro} 
-MacroOperation give me the {Macro} 
+MacroOperation to tell me the {Macro}
+MacroOperation give me the {Macro}
 MacroOperation execute the {Macro}
 MacroOperation execute the {Macro} password {MPW}
 MacroOperation report on the {Macro}
@@ -315,13 +264,11 @@ MacroOperation delay the {Macro} by {MNum} minute
 MacroOperation {Macro} by {MNum} minutes
 MacroOperation {Macro} by {MNum} minutes password {MPW}
 MacroOperation {Macro} by {MNum} minute
-
 MacroOperation {Cancel} {Macro}
 MacroOperation {Macro} {Cancel}
 MacroOperation {Cancel} {Macro} password {MPW}
 MacroOperation {Macro} {Cancel} password {MPW}
-
-MacroOperation turn {Macro} {MParam} 
+MacroOperation turn {Macro} {MParam}
 MacroOperation turn {Macro} to {MParam}
 MacroOperation turn the {Macro} {MParam}
 MacroOperation turn the {Macro} to {MParam}
@@ -339,8 +286,7 @@ MacroOperation turn the {Macro} to {MParam} and {MNum}
 MacroOperation turn {Macro} to {MParam} and {MNum}
 MacroOperation turn {Macro} to {MParam} and {MNum} percent
 MacroOperation turn {Macro} to {MParam} and a brightess of {MNum}
-
-MacroOperation change {Macro} {MParam} 
+MacroOperation change {Macro} {MParam}
 MacroOperation change {Macro} to {MParam}
 MacroOperation change the {Macro} {MParam}
 MacroOperation change the {Macro} to {MParam}
@@ -358,8 +304,7 @@ MacroOperation change the {Macro} to {MParam} and {MNum}
 MacroOperation change {Macro} to {MParam} and {MNum}
 MacroOperation change {Macro} to {MParam} and {MNum} percent
 MacroOperation change {Macro} to {MParam} and a brightess of {MNum}
-
-MacroOperation set {Macro} {MParam} 
+MacroOperation set {Macro} {MParam}
 MacroOperation set {Macro} to {MParam}
 MacroOperation set the {Macro} {MParam}
 MacroOperation set the {Macro} to {MParam}
@@ -377,34 +322,30 @@ MacroOperation set the {Macro} to {MParam} and {MNum}
 MacroOperation set {Macro} to {MParam} and {MNum}
 MacroOperation set {Macro} to {MParam} and {MNum} percent
 MacroOperation set {Macro} to {MParam} and a brightess of {MNum}
-
 MacroOperation {MCmd} the {Macro} by {MNum}
 MacroOperation {MCmd} the {Macro} by {MNum} percent
-
 MacroOperation set {MParam} of {Macro} to {MNum} degrees
-MacroOperation set {MParam} of {Macro} to {MNum} 
+MacroOperation set {MParam} of {Macro} to {MNum}
 MacroOperation set the {MParam} of {Macro} to {MNum} degrees
-MacroOperation set the {MParam} of {Macro} to {MNum} 
+MacroOperation set the {MParam} of {Macro} to {MNum}
 MacroOperation set {MParam} setpoint of {Macro} to {MNum} degrees
-MacroOperation set {MParam} setpoint of {Macro} to {MNum} 
+MacroOperation set {MParam} setpoint of {Macro} to {MNum}
 MacroOperation set the {MParam} setpoint of {Macro} to {MNum} degrees
-MacroOperation set the {MParam} setpoint of {Macro} to {MNum} 
+MacroOperation set the {MParam} setpoint of {Macro} to {MNum}
 MacroOperation to set {MParam} setpoint of {Macro} to {MNum} degrees
-MacroOperation to set {MParam} setpoint of {Macro} to {MNum} 
+MacroOperation to set {MParam} setpoint of {Macro} to {MNum}
 MacroOperation to set the {MParam} setpoint of {Macro} to {MNum} degrees
-MacroOperation to set the {MParam} setpoint of {Macro} to {MNum} 
-
+MacroOperation to set the {MParam} setpoint of {Macro} to {MNum}
 MacroOperation set {Macro} {MParam} to {MNum} degrees
-MacroOperation set {Macro} {MParam} to {MNum} 
+MacroOperation set {Macro} {MParam} to {MNum}
 MacroOperation to set {Macro} {MParam} to {MNum} degrees
-MacroOperation to set {Macro} {MParam} to {MNum} 
+MacroOperation to set {Macro} {MParam} to {MNum}
 MacroOperation set the {Macro} {MParam} to {MNum} degrees
 MacroOperation set the {Macro} {MParam} to {MNum}
-MacroOperation set the {Macro} to {MNum} 
+MacroOperation set the {Macro} to {MNum}
 MacroOperation set the {Macro} to {MNum} degrees
 MacroOperation to set the {Macro} {MParam} to {MNum} degrees
 MacroOperation to set the {Macro} {MParam} to {MNum}
-
 MacroOperation to set the temperature of {Macro} to {MNum} degrees
 MacroOperation to set the temperature of {Macro} to {MNum}
 MacroOperation to set the temperature of the {Macro} to {MNum} degrees
@@ -413,11 +354,62 @@ MacroOperation to set the temperature to {MNum} degrees in {Macro}
 MacroOperation to set the temperature to {MNum} in {Macro}
 MacroOperation to set the temperature to {MNum} degrees in the {Macro}
 MacroOperation to set the temperature to {MNum} in the {Macro}
-
 MacroOperation turn {Macro} {MParam} mode to {MCmd}
 MacroOperation set {Macro} {MParam} to {MCmd}
 MacroOperation turn {MCmd} {Macro} {MParam} mode
 MacroOperation turn {MCmd} {Macro} to {MParam}
 MacroOperation set the {Macro} to {MParam} mode
-
+ListOperation list {Type}
+ListOperation {Type}
+ListOperation about {Type}
+ListOperation for a list of {Type}
+ListOperation list
+VersionOperation version
+VersionOperation tell me the version
+VersionOperation about the Ask Alexa smartapp
+VersionOperation about Ask Alexa
+VersionOperation about the smartapp version
+VersionOperation what is the current version
+SmartHomeOperation to set {SHCmd} to {SHParam} password {SHNum}
+SmartHomeOperation to set the {SHCmd} to {SHParam} password {SHNum}
+SmartHomeOperation set the {SHCmd} to {SHParam} password {SHNum}
+SmartHomeOperation {SHCmd} status
+SmartHomeOperation status of {SHCmd}
+SmartHomeOperation the status of home {SHCmd}
+SmartHomeOperation {SHCmd} state
+SmartHomeOperation settings of {SHCmd}
+SmartHomeOperation run {SHCmd} {SHParam} password {SHNum}
+SmartHomeOperation run the {SHParam} {SHCmd} password {SHNum}
+SmartHomeOperation to run {SHCmd} {SHParam} password {SHNum}
+SmartHomeOperation what is the current {SHCmd}
+SmartHomeOperation the current {SHCmd}
+SmartHomeOperation to change the {SHCmd} to {SHParam} password {SHNum}
+SmartHomeOperation {SHParam} {SHCmd} password {SHNum}
+SmartHomeOperation {SHParam} password {SHNum}
+SmartHomeOperation {SHParam}
+SmartHomeOperation {SHCmd}
+SmartHomeOperation execute the {SHParam} {SHCmd} password {SHNum}
+SmartHomeOperation about {SHCmd}
+SmartHomeOperation about the {SHCmd}
+SmartHomeOperation about the current {SHCmd}
+SmartHomeOperation what is the current {SHCmd}
 FollowUpOperation {FType} {Data}
+MQOperation Messages
+MQOperation Message
+MQOperation {MQCmd}
+MQOperation {Queue}
+MQOperation {Queue} queue
+MQOperation {Queue} messages
+MQOperation {Queue} message
+MQOperation for {Queue} queue
+MQOperation for {Queue} messages
+MQOperation for {Queue} message
+MQOperation {MQCmd} messages
+MQOperation {MQCmd} message
+MQOperation {MQCmd} queue
+MQOperation {MQCmd} {Queue}
+MQOperation {MQCmd} {Queue} messages
+MQOperation {MQCmd} {Queue} message
+MQOperation {MQCmd} {Queue} queue
+MQOperation {MQCmd} messages in {Queue}
+MQOperation {MQCmd} messages in {Queue} queue
