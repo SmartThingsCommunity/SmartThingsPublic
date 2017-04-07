@@ -1,12 +1,12 @@
 /**
  *  Ask Alexa 
  *
- *  Version 2.2.4 - 4/6/17 Copyright © 2017 Michael Struck
+ *  Version 2.2.4a - 4/6/17 Copyright © 2017 Michael Struck
  *  Special thanks for Keith DeLong for overall code and assistance; Barry Burke for Weather Underground Integration; jhamstead for Ecobee climate modes, Yves Racine for My Ecobee thermostat tips
  * 
  *  Version information prior to 2.2.4 listed here: https://github.com/MichaelStruck/SmartThingsPublic/blob/master/smartapps/michaelstruck/ask-alexa.src/Ask%20Alexa%20Version%20History.md
  *
- *  Version 2.2.4 (4/6/17) Framework changes for extensions (new one: additional message queues), added additional notifications to message queues, change SHM model to conform with new SmartThings naming standard, new icon for custom color
+ *  Version 2.2.4a (4/6/17) Framework changes for extensions (new one: additional message queues), added additional notifications to message queues, change SHM model to conform with new SmartThings naming standard, new icon for custom color
  *
  *  Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except
  *  in compliance with the License. You may obtain a copy of the License at:
@@ -133,7 +133,7 @@ def pageMQGUI(){
         section { paragraph "Message Queues", image: imgURL() + "mailbox.png"}
         if(msgQueueGUI.contains("Primary Message Queue") && state.msgQueue.size()){
             state.msgQueue.sort({it.date})
-            state.msgQueue.reverse(msgQueueOrder as int? true : false)
+            if(msgQueueOrder) state.msgQueue.reverse(msgQueueOrder as int? true : false)
             state.msgQueue.each{
                 def msgData= timeDate(it.date)
                 msgRpt += "● ${msgData.msgDay} at ${msgData.msgTime} From: '${it.appName}' : '${it.msg}'\n"
@@ -1113,7 +1113,7 @@ def processBegin(){
     return ["OOD":OOD, "continue":contOption,"personality":persType, "SmartAppVer": versionLong(),"IName":invocationName,"pName":pName]
 }
 def sendJSON(outputTxt){
-    if (outputTxt && mqCounts(msgQueueNotify) && outputTxt[-3..-1] != "%M%") {
+    if (outputTxt && msgQueueNotify && mqCounts(msgQueueNotify) && outputTxt[-3..-1] != "%M%") {
         def msgCount = state.msgQueue.size(), msgS= msgCount==0 || msgCount>1 ? msgCount+ " messages" : msgCount+" message"
         def ending= outputTxt[-3..-1]
         outputTxt = outputTxt.replaceAll("${ending}", "Please note: ${mqCounts(msgQueueNotify)}. ${ending}")
@@ -1145,9 +1145,7 @@ def processFollowup(){
     }
     sendJSON(outputTxt)
 }
-def clearFollowup(evt){
-	state.cmdFollowup=""
-}
+def clearFollowup(evt){ state.cmdFollowup="" }
 def processDevice() {    
 	def dev = params.Device.toLowerCase().replaceAll("[^a-zA-Z0-9 ]", "") 	//Label of device
 	def op = params.Operator												//Operation to perform
@@ -1342,7 +1340,7 @@ def msgQueueReply(cmd,queue){
             else {
                 result = "You have " + msgCount + msgS + " in your primary message queue: "
                 state.msgQueue.sort({it.date})
-                state.msgQueue.reverse(msgQueueOrder as int? true : false)
+                if (msgQueueOrder) state.msgQueue.reverse(msgQueueOrder as int? true : false)
                 state.msgQueue.each{
                 	def msgData= timeDate(it.date)
                     result += "${msgData.msgDay} at ${msgData.msgTime}, '${it.appName}' posted the message: '${it.msg}'. "
@@ -3449,7 +3447,7 @@ def msgDeletePMQ(unit,value){
 def mqCounts(list){
     def msgList=[], msgCountTxt="",queS=""
     if (list){
-        if (list.contains("Primary Message Queue") && state.msgQueue.size()) msgList<<"Primary Message Queue"
+        if (list.contains("Primary Message Queue") && state.msgQueue && state.msgQueue.size()) msgList<<"Primary Message Queue"
         list.each{qID->
             def qNameRun = getAAMQ().find{it.id == qID}
             def qName =  qNameRun ? qNameRun.label : "Primary Message Queue"
@@ -3860,7 +3858,7 @@ private cheat(){
 //Version/Copyright/Information/Help-----------------------------------------------------------
 private textAppName() { return "Ask Alexa" }	
 private textVersion() {  
-    def version = "SmartApp Version: 2.2.4 (04/06/2017)", lambdaVersion = state.lambdaCode ? "\n" + state.lambdaCode : "", aaMQVer =""
+    def version = "SmartApp Version: 2.2.4a (04/06/2017)", lambdaVersion = state.lambdaCode ? "\n" + state.lambdaCode : "", aaMQVer =""
     if (getAAMQ().size()) getAAMQ().each { aaMQVer="\n"+it.textVersion() }
     return "${version}${aaMQVer}${lambdaVersion}"
 }
