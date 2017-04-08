@@ -146,10 +146,50 @@ def zwaveEvent(physicalgraph.zwave.commands.sensorbinaryv2.SensorBinaryReport cm
 	def childDevice = children.find{it.deviceNetworkId.endsWith("ep2")}
     switch (cmd.sensorValue) {
         case 0:
-            childDevice.sendEvent(name: "contact", value: "open")
+            switch(settings."i2")
+                {
+                    case "Motion Sensor Child Device":
+                        childDevice.sendEvent(name: "motion", value: "active")
+                    break
+                    case "Carbon Monoxide Detector Child Device":
+                        childDevice.sendEvent(name: "carbonMonoxide", value: "detected")
+                    break
+                    case "Carbon Dioxide Detector Child Device":
+                        childDevice.sendEvent(name: "carbonDioxide", value: "detected")
+                    break
+                    case "Water Sensor Child Device":
+                        childDevice.sendEvent(name: "water", value: "wet")
+                    break
+                    case "Smoke Detector Child Device":
+                        childDevice.sendEvent(name: "smoke", value: "detected")
+                    break
+                    case "Contact Sensor Child Device":
+                        childDevice.sendEvent(name: "contact", value: "open")
+                    break
+                }
         break
         case 255:
-            childDevice.sendEvent(name: "contact", value: "closed")
+            switch(settings."i2")
+                {
+			        case "Motion Sensor Child Device":
+                        childDevice.sendEvent(name: "motion", value: "inactive")
+                    break
+                    case "Carbon Monoxide Detector Child Device":
+                        childDevice.sendEvent(name: "carbonMonoxide", value: "clear")
+                    break
+                    case "Carbon Dioxide Detector Child Device":
+                        childDevice.sendEvent(name: "carbonDioxide", value: "clear")
+                    break
+                    case "Water Sensor Child Device":
+                        childDevice.sendEvent(name: "water", value: "dry")
+                    break
+                    case "Smoke Detector Child Device":
+                        childDevice.sendEvent(name: "smoke", value: "clear")
+                    break
+                    case "Contact Sensor Child Device":
+                        childDevice.sendEvent(name: "contact", value: "closed")
+                    break
+                }
         break
     }
 }
@@ -204,11 +244,17 @@ def updated()
 	}
 	else if (device.label != state.oldLabel) {
 		childDevices.each {
-			def newLabel = "${device.displayName} (CH${channelNumber(it.deviceNetworkId)})"
+			def newLabel = "${device.displayName} (i${channelNumber(it.deviceNetworkId)})"
 			it.setLabel(newLabel)
 		}
 		state.oldLabel = device.label
 	}
+    if (childDevices) {
+        def childDevice = childDevices.find{it.deviceNetworkId.endsWith("-i2")}
+        if (settings."i2" && settings."i2" != "Disabled" && childDevice.typeName != settings."i2") {
+            childDevice.setDeviceType(settings."i2")
+        }
+    }
     def cmds = [] 
     cmds = update_needed_settings()
     sendEvent(name: "checkInterval", value: 2 * 15 * 60 + 2 * 60, displayed: false, data: [protocol: "zwave", hubHardwareId: device.hub.hardwareID])
@@ -266,10 +312,12 @@ def update_current_properties(cmd)
     def currentProperties = state.currentProperties ?: [:]
     
     currentProperties."${cmd.parameterNumber}" = cmd.configurationValue
+    
+    def parameterSettings = parseXml(configuration_model()).Value.find{it.@index == "${cmd.parameterNumber}"}
 
-    if (settings."${cmd.parameterNumber}" != null)
+    if (settings."${cmd.parameterNumber}" != null || parameterSettings.@hidden == "true")
     {
-        if (settings."${cmd.parameterNumber}".toInteger() == convertParam("${cmd.parameterNumber}".toInteger(), cmd2Integer(cmd.configurationValue)))
+        if (convertParam(cmd.parameterNumber, parameterSettings.@hidden != "true"? settings."${cmd.parameterNumber}" : parameterSettings.@value) == cmd2Integer(cmd.configurationValue))
         {
             sendEvent(name:"needUpdate", value:"NO", displayed:false, isStateChange: true)
         }
@@ -289,10 +337,10 @@ def update_needed_settings()
      
     def configuration = parseXml(configuration_model())
     def isUpdateNeeded = "NO"
-    
+
     configuration.Value.each
     {     
-        if ("${it.@setting_type}" == "zwave"){
+        if ("${it.@setting_type}" == "zwave" && it.@disabled != "true"){
             if (currentProperties."${it.@index}" == null)
             {
                if (it.@setonly == "true"){
@@ -305,12 +353,11 @@ def update_needed_settings()
                   cmds << zwave.configurationV1.configurationGet(parameterNumber: it.@index.toInteger())
                }
             }
-            else if (settings."${it.@index}" != null && convertParam(it.@index.toInteger(), cmd2Integer(currentProperties."${it.@index}")) != settings."${it.@index}".toInteger())
+            else if ((settings."${it.@index}" != null || "${it.@hidden}" == "true") && cmd2Integer(currentProperties."${it.@index}") != convertParam(it.@index.toInteger(), "${it.@hidden}" != "true"? settings."${it.@index}" : "${it.@value}"))
             { 
                 isUpdateNeeded = "YES"
-
-                logging("Parameter ${it.@index} will be updated to " + settings."${it.@index}", 2)
-                def convertedConfigurationValue = convertParam(it.@index.toInteger(), settings."${it.@index}".toInteger())
+                logging("Parameter ${it.@index} will be updated to " + convertParam(it.@index.toInteger(), settings."${it.@index}"? settings."${it.@index}" : "${it.@value}"), 2)
+                def convertedConfigurationValue = convertParam(it.@index.toInteger(), settings."${it.@index}"? settings."${it.@index}" : "${it.@value}")
                 cmds << zwave.configurationV1.configurationSet(configurationValue: integer2Cmd(convertedConfigurationValue, it.@byteSize.toInteger()), parameterNumber: it.@index.toInteger(), size: it.@byteSize.toInteger())
                 cmds << zwave.configurationV1.configurationGet(parameterNumber: it.@index.toInteger())
             } 
@@ -428,6 +475,10 @@ private void createChildDevices() {
     }
 }
 
+private channelNumber(String dni) {
+	dni.split("-i")[-1] as Integer
+}
+
 private sendAlert() {
    sendEvent(
       descriptionText: "Child device creation failed. Please make sure that the \"Contact Sensor Child Device\" is installed and published.",
@@ -517,6 +568,19 @@ Default: Home Security; Motion Detection, unknown location
         <Item label="Heat Alarm; Overheat detected" value="5" />
         <Item label="Smoke Alarm; Smoke detected" value="6" />
         <Item label="Endpoint, I2 disabled" value="0" />
+</Value>
+<Value type="list" byteSize="1" index="i2" label="Enable / Disable Endpoint I2 or select Notification Type and Event" min="0" max="9" value="Contact Sensor Child Device" setting_type="preference" fw="">
+ <Help>
+Range: 0 to 6, 9
+Default: Home Security; Motion Detection, unknown location
+</Help>
+        <Item label="Disabled" value="Disabled" />
+        <Item label="Home Security; Motion Detection" value="Motion Sensor Child Device" />
+        <Item label="Carbon Monoxide; Carbon Monoxide detected" value="Carbon Monoxide Detector Child Device" />
+        <Item label="Carbon Dioxide; Carbon Dioxide detected" value="Carbon Dioxide Detector Child Device" />
+        <Item label="Water Alarm; Water Leak detected" value="Water Sensor Child Device" />
+        <Item label="Smoke Alarm; Smoke detected" value="Smoke Detector Child Device" />
+        <Item label="Sensor Binary" value="Contact Sensor Child Device" />
 </Value>
 <Value type="number" byteSize="2" index="110" label="Temperature sensor offset settings" min="-100" max="100" value="0" setting_type="zwave" fw="">
  <Help>
