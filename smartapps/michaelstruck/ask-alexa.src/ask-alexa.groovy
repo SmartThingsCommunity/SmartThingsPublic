@@ -3827,7 +3827,7 @@ private cheat(){
     if (getCheatDisplayList("presence") && deviceAlias) { result += "<br><u>Aliases</u><br>"; result += getCheatDisplayList("presence") +"<br>" }
     if (accelerationSel()) { result += "<h2><u>Acceleration Sensors (Valid Command: <b>"+ getList(accelVoc()) +"</b>)</u></h2>"; acceleration.each{ result += it.label +"<br>" } }
     if (getCheatDisplayList("acceleration") && deviceAlias) { result += "<br><u>Aliases</u><br>"; result += getCheatDisplayList("acceleration") +"<br>" }
-    if (motionSel()) { result += "<h2><u>Motion Sensors (Valid Command: <b>"+ getList(motionVoc()) +"</b>)</u></h2>"; motion.each{ result += it.label +"<br>" } }
+a    if (motionSel()) { result += "<h2><u>Motion Sensors (Valid Command: <b>"+ getList(motionVoc()) +"</b>)</u></h2>"; motion.each{ result += it.label +"<br>" } }
     if (getCheatDisplayList("motion") && deviceAlias) { result += "<br><u>Aliases</u><br>"; result += getCheatDisplayList("motion") +"<br>" }
     if (listModes) { result += "<h2><u>Modes (Valid Command: <b>change/status</b>)</u></h2>"; listModes.each{ result += it +"<br>" } }
     if (listModes && pwNeeded && modePW) {result += "<br>* Append '<i>password ${password}</i>' to activate your modes<br>" }
@@ -3865,7 +3865,7 @@ private textVersion() {
 private versionInt(){ return 224 }
 private LambdaReq() { return 124 }
 private mqReq() { return 100 }
-private versionLong(){ return "2.2.4" }
+private versionLong(){ return "2.2.4a" }
 private textCopyright() {return "Copyright © 2017 Michael Struck" }
 private textLicense() {
 	def text = "Licensed under the Apache License, Version 2.0 (the 'License'); you may not use this file except in compliance with the License. You may obtain a copy of the License at\n\n"+
