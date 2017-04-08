@@ -403,12 +403,12 @@ def updated()
 		state.oldLabel = device.label
 	}
     if (childDevices) {
-        def childDevice = childDevices.find{it.deviceNetworkId.endsWith("-i2")}
-        if (settings."i2" && childDevice.typeName != settings."i2") {
+        if (settings."i2" && settings."i2" != "Disabled"  && childDevice.typeName != settings."i2") {
+            def childDevice = childDevices.find{it.deviceNetworkId.endsWith("-i2")}
             childDevice.setDeviceType(settings."i2")
         }
-        childDevice = childDevices.find{it.deviceNetworkId.endsWith("-i3")}
-        if (settings."i3" && childDevice.typeName != settings."i3") {
+        if (settings."i3" && settings."i3" != "Disabled" && childDevice.typeName != settings."i3") {
+            def childDevice = childDevices.find{it.deviceNetworkId.endsWith("-i3")}
             childDevice.setDeviceType(settings."i3")
         }
     }
@@ -638,7 +638,7 @@ private void createChildDevices() {
 	state.oldLabel = device.label
     try {
 	   for (i in 2..3) {
-          addChildDevice("Contact Sensor Child Device", "${device.deviceNetworkId}-i${i}", null,
+          addChildDevice("Contact Sensor Child Device", "${device.deviceNetworkId}-i$-{i}", null,
 			 [completedSetup: true, label: "${device.displayName} (i${i})",
 		     isComponent: true, componentName: "i$i", componentLabel: "Input $i"])
 	   }
@@ -822,7 +822,7 @@ Default: Home Security; Motion Detection, unknown location
         <Item label="Smoke Alarm; Smoke detected" value="6" />
         <Item label="Sensor Binary" value="9" />
 </Value>
-<Value type="list" byteSize="1" index="i2" label="Enable / Disable Endpoint I2 or select Notification Type and Event" min="0" max="9" value="9" setting_type="preference" fw="">
+<Value type="list" byteSize="1" index="i2" label="Enable / Disable Endpoint I2 or select Notification Type and Event" min="0" max="9" value="Contact Sensor Child Device" setting_type="preference" fw="">
  <Help>
 Range: 0 to 6, 9
 Default: Home Security; Motion Detection, unknown location
@@ -835,7 +835,7 @@ Default: Home Security; Motion Detection, unknown location
         <Item label="Smoke Alarm; Smoke detected" value="Smoke Detector Child Device" />
         <Item label="Sensor Binary" value="Contact Sensor Child Device" />
 </Value>
-<Value type="list" byteSize="1" index="i3" label="Enable / Disable Endpoint I3 or select Notification Type and Event" min="0" max="9" value="9" setting_type="preference" fw="">
+<Value type="list" byteSize="1" index="i3" label="Enable / Disable Endpoint I3 or select Notification Type and Event" min="0" max="9" value="Contact Sensor Child Device" setting_type="preference" fw="">
  <Help>
 Range: 0 to 6, 9
 Default: Home Security; Motion Detection, unknown location
