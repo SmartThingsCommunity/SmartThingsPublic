@@ -3827,7 +3827,7 @@ private cheat(){
     if (getCheatDisplayList("presence") && deviceAlias) { result += "<br><u>Aliases</u><br>"; result += getCheatDisplayList("presence") +"<br>" }
     if (accelerationSel()) { result += "<h2><u>Acceleration Sensors (Valid Command: <b>"+ getList(accelVoc()) +"</b>)</u></h2>"; acceleration.each{ result += it.label +"<br>" } }
     if (getCheatDisplayList("acceleration") && deviceAlias) { result += "<br><u>Aliases</u><br>"; result += getCheatDisplayList("acceleration") +"<br>" }
-a    if (motionSel()) { result += "<h2><u>Motion Sensors (Valid Command: <b>"+ getList(motionVoc()) +"</b>)</u></h2>"; motion.each{ result += it.label +"<br>" } }
+    if (motionSel()) { result += "<h2><u>Motion Sensors (Valid Command: <b>"+ getList(motionVoc()) +"</b>)</u></h2>"; motion.each{ result += it.label +"<br>" } }
     if (getCheatDisplayList("motion") && deviceAlias) { result += "<br><u>Aliases</u><br>"; result += getCheatDisplayList("motion") +"<br>" }
     if (listModes) { result += "<h2><u>Modes (Valid Command: <b>change/status</b>)</u></h2>"; listModes.each{ result += it +"<br>" } }
     if (listModes && pwNeeded && modePW) {result += "<br>* Append '<i>password ${password}</i>' to activate your modes<br>" }
