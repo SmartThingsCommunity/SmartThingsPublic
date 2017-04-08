@@ -207,35 +207,119 @@ def zwaveEvent(physicalgraph.zwave.commands.associationv2.AssociationReport cmd)
 
 def zwaveEvent(physicalgraph.zwave.commands.sensorbinaryv2.SensorBinaryReport cmd) {
     logging("SensorBinaryReport: $cmd", 2)
-	def children = childDevices
-	def childDevice = children.find{it.deviceNetworkId.endsWith("ep2")}
-    switch (cmd.sensorValue) {
-        case 0:
-            childDevice.sendEvent(name: "contact", value: "open")
-        break
-        case 255:
-            childDevice.sendEvent(name: "contact", value: "closed")
-        break
-    }
 }
 
 def zwaveEvent(physicalgraph.zwave.commands.notificationv3.NotificationReport cmd) {
     logging("NotificationReport: $cmd", 2)
-	def children = childDevices
-	def childDevice = children.find{it.deviceNetworkId.endsWith("ep3")}
+    def result
+	
 	
 	if (cmd.notificationType == 2) {
+    def children = childDevices
+	def childDevice = children.find{it.deviceNetworkId.endsWith("-i2")}
 		switch (cmd.event) {
 			case 0:
-			    childDevice.sendEvent(name: "contact", value: "open")
+                switch(settings."i2")
+                {
+                    case "Motion Sensor Child Device":
+                        childDevice.sendEvent(name: "motion", value: "active")
+                    break
+                    case "Carbon Monoxide Detector Child Device":
+                        childDevice.sendEvent(name: "carbonMonoxide", value: "detected")
+                    break
+                    case "Carbon Dioxide Detector Child Device":
+                        childDevice.sendEvent(name: "carbonDioxide", value: "detected")
+                    break
+                    case "Water Sensor Child Device":
+                        childDevice.sendEvent(name: "water", value: "wet")
+                    break
+                    case "Smoke Detector Child Device":
+                        childDevice.sendEvent(name: "smoke", value: "detected")
+                    break
+                    case "Contact Sensor Child Device":
+                        childDevice.sendEvent(name: "contact", value: "open")
+                    break
+                }
 			break
 			case 2:
-			    childDevice.sendEvent(name: "contact", value: "closed")
+                switch(settings."i2")
+                {
+			        case "Motion Sensor Child Device":
+                        childDevice.sendEvent(name: "motion", value: "inactive")
+                    break
+                    case "Carbon Monoxide Detector Child Device":
+                        childDevice.sendEvent(name: "carbonMonoxide", value: "clear")
+                    break
+                    case "Carbon Dioxide Detector Child Device":
+                        childDevice.sendEvent(name: "carbonDioxide", value: "clear")
+                    break
+                    case "Water Sensor Child Device":
+                        childDevice.sendEvent(name: "water", value: "dry")
+                    break
+                    case "Smoke Detector Child Device":
+                        childDevice.sendEvent(name: "smoke", value: "clear")
+                    break
+                    case "Contact Sensor Child Device":
+                        childDevice.sendEvent(name: "contact", value: "closed")
+                    break
+                }
 			break
 		}
-	} else {
+	} 
+    else if (cmd.notificationType == 5) {
+    def children = childDevices
+	def childDevice = children.find{it.deviceNetworkId.endsWith("-i3")}
+		switch (cmd.event) {
+			case 0:
+                switch(settings."i3")
+                {
+                    case "Motion Sensor Child Device":
+                        childDevice.sendEvent(name: "motion", value: "active")
+                    break
+                    case "Carbon Monoxide Detector Child Device":
+                        childDevice.sendEvent(name: "carbonMonoxide", value: "detected")
+                    break
+                    case "Carbon Dioxide Detector Child Device":
+                        childDevice.sendEvent(name: "carbonDioxide", value: "detected")
+                    break
+                    case "Water Sensor Child Device":
+                        childDevice.sendEvent(name: "water", value: "wet")
+                    break
+                    case "Smoke Detector Child Device":
+                        childDevice.sendEvent(name: "smoke", value: "detected")
+                    break
+                    case "Contact Sensor Child Device":
+                        childDevice.sendEvent(name: "contact", value: "open")
+                    break
+                }
+			break
+			case 2:
+                switch(settings."i3")
+                {
+			        case "Motion Sensor Child Device":
+                        childDevice.sendEvent(name: "motion", value: "inactive")
+                    break
+                    case "Carbon Monoxide Detector Child Device":
+                        childDevice.sendEvent(name: "carbonMonoxide", value: "clear")
+                    break
+                    case "Carbon Dioxide Detector Child Device":
+                        childDevice.sendEvent(name: "carbonDioxide", value: "clear")
+                    break
+                    case "Water Sensor Child Device":
+                        childDevice.sendEvent(name: "water", value: "dry")
+                    break
+                    case "Smoke Detector Child Device":
+                        childDevice.sendEvent(name: "smoke", value: "clear")
+                    break
+                    case "Contact Sensor Child Device":
+                        childDevice.sendEvent(name: "contact", value: "closed")
+                    break
+                }
+			break
+		}
+	}else {
         logging("Need to handle this cmd.notificationType: ${cmd.notificationType}", 2)
-		result << createEvent(descriptionText: cmd.toString(), isStateChange: false)
+		result = createEvent(descriptionText: cmd.toString(), isStateChange: false)
 	}
 	result
 }
@@ -313,11 +397,21 @@ def updated()
 	}
 	else if (device.label != state.oldLabel) {
 		childDevices.each {
-			def newLabel = "${device.displayName} (CH${channelNumber(it.deviceNetworkId)})"
+			def newLabel = "${device.displayName} (i${channelNumber(it.deviceNetworkId)})"
 			it.setLabel(newLabel)
 		}
 		state.oldLabel = device.label
 	}
+    if (childDevices) {
+        def childDevice = childDevices.find{it.deviceNetworkId.endsWith("-i2")}
+        if (settings."i2" && childDevice.typeName != settings."i2") {
+            childDevice.setDeviceType(settings."i2")
+        }
+        childDevice = childDevices.find{it.deviceNetworkId.endsWith("-i3")}
+        if (settings."i3" && childDevice.typeName != settings."i3") {
+            childDevice.setDeviceType(settings."i3")
+        }
+    }
     def cmds = [] 
     cmds = update_needed_settings()
     sendEvent(name: "checkInterval", value: 2 * 15 * 60 + 2 * 60, displayed: false, data: [protocol: "zwave", hubHardwareId: device.hub.hardwareID])
@@ -375,10 +469,12 @@ def update_current_properties(cmd)
     def currentProperties = state.currentProperties ?: [:]
     
     currentProperties."${cmd.parameterNumber}" = cmd.configurationValue
+    
+    def parameterSettings = parseXml(configuration_model()).Value.find{it.@index == "${cmd.parameterNumber}"}
 
-    if (settings."${cmd.parameterNumber}" != null)
+    if (settings."${cmd.parameterNumber}" != null || parameterSettings.@hidden == "true")
     {
-        if (convertParam(cmd.parameterNumber, settings."${cmd.parameterNumber}") == cmd2Integer(cmd.configurationValue))
+        if (convertParam(cmd.parameterNumber, parameterSettings.@hidden != "true"? settings."${cmd.parameterNumber}" : parameterSettings.@value) == cmd2Integer(cmd.configurationValue))
         {
             sendEvent(name:"needUpdate", value:"NO", displayed:false, isStateChange: true)
         }
@@ -404,7 +500,12 @@ def update_needed_settings()
        cmds << zwave.associationV2.associationSet(groupingIdentifier:9, nodeId:zwaveHubNodeId)
        cmds << zwave.associationV2.associationGet(groupingIdentifier:9)
     }
-    
+    if(!state.association6 || state.association6 == "" || state.association6 != 1){
+       logging("Setting association group 6", 1)
+       cmds << zwave.associationV2.associationSet(groupingIdentifier:6, nodeId:zwaveHubNodeId)
+       cmds << zwave.associationV2.associationGet(groupingIdentifier:6)
+    }
+
     configuration.Value.each
     {     
         if ("${it.@setting_type}" == "zwave" && it.@disabled != "true"){
@@ -420,7 +521,7 @@ def update_needed_settings()
                   cmds << zwave.configurationV1.configurationGet(parameterNumber: it.@index.toInteger())
                }
             }
-            else if ((settings."${it.@index}" != null || "${it.@type}" == "hidden") && cmd2Integer(currentProperties."${it.@index}") != convertParam(it.@index.toInteger(), settings."${it.@index}"? settings."${it.@index}" : "${it.@value}"))
+            else if ((settings."${it.@index}" != null || "${it.@hidden}" == "true") && cmd2Integer(currentProperties."${it.@index}") != convertParam(it.@index.toInteger(), "${it.@hidden}" != "true"? settings."${it.@index}" : "${it.@value}"))
             { 
                 isUpdateNeeded = "YES"
                 logging("Parameter ${it.@index} will be updated to " + convertParam(it.@index.toInteger(), settings."${it.@index}"? settings."${it.@index}" : "${it.@value}"), 2)
@@ -527,6 +628,10 @@ private command(physicalgraph.zwave.Command cmd) {
 
 private commands(commands, delay=500) {
 	delayBetween(commands.collect{ command(it) }, delay)
+}
+
+private channelNumber(String dni) {
+	dni.split("-i")[-1] as Integer
 }
 
 private void createChildDevices() {
@@ -689,7 +794,7 @@ Range: 0 to 127
 Default: 0 (Dimming duration according to parameter 66)
 </Help>
 </Value>
-<Value type="list" byteSize="1" index="100" label="Enable / Disable Endpoint I2 or select Notification Type and Event" min="0" max="9" value="9" setting_type="zwave" fw="" hidden="true">
+<Value type="list" byteSize="1" index="100" label="Enable / Disable Endpoint I2 or select Notification Type and Event" min="0" max="9" value="2" setting_type="zwave" fw="" hidden="true">
  <Help>
 Range: 0 to 6, 9
 Default: Home Security; Motion Detection, unknown location
@@ -703,7 +808,7 @@ Default: Home Security; Motion Detection, unknown location
         <Item label="Smoke Alarm; Smoke detected" value="6" />
         <Item label="Sensor Binary" value="9" />
 </Value>
-<Value type="list" byteSize="1" index="101" label="Enable / Disable Endpoint I3 or select Notification Type and Event" min="0" max="9" value="9" setting_type="zwave" fw="" hidden="true">
+<Value type="list" byteSize="1" index="101" label="Enable / Disable Endpoint I3 or select Notification Type and Event" min="0" max="9" value="4" setting_type="zwave" fw="" hidden="true">
  <Help>
 Range: 0 to 6, 9
 Default: Home Security; Motion Detection, unknown location
@@ -716,6 +821,32 @@ Default: Home Security; Motion Detection, unknown location
         <Item label="Heat Alarm; Overheat detected" value="5" />
         <Item label="Smoke Alarm; Smoke detected" value="6" />
         <Item label="Sensor Binary" value="9" />
+</Value>
+<Value type="list" byteSize="1" index="i2" label="Enable / Disable Endpoint I2 or select Notification Type and Event" min="0" max="9" value="9" setting_type="preference" fw="">
+ <Help>
+Range: 0 to 6, 9
+Default: Home Security; Motion Detection, unknown location
+</Help>
+        <Item label="Disabled" value="Disabled" />
+        <Item label="Home Security; Motion Detection" value="Motion Sensor Child Device" />
+        <Item label="Carbon Monoxide; Carbon Monoxide detected" value="Carbon Monoxide Detector Child Device" />
+        <Item label="Carbon Dioxide; Carbon Dioxide detected" value="Carbon Dioxide Detector Child Device" />
+        <Item label="Water Alarm; Water Leak detected" value="Water Sensor Child Device" />
+        <Item label="Smoke Alarm; Smoke detected" value="Smoke Detector Child Device" />
+        <Item label="Sensor Binary" value="Contact Sensor Child Device" />
+</Value>
+<Value type="list" byteSize="1" index="i3" label="Enable / Disable Endpoint I3 or select Notification Type and Event" min="0" max="9" value="9" setting_type="preference" fw="">
+ <Help>
+Range: 0 to 6, 9
+Default: Home Security; Motion Detection, unknown location
+</Help>
+        <Item label="Disabled" value="Disabled" />
+        <Item label="Home Security; Motion Detection" value="Motion Sensor Child Device" />
+        <Item label="Carbon Monoxide; Carbon Monoxide detected" value="Carbon Monoxide Detector Child Device" />
+        <Item label="Carbon Dioxide; Carbon Dioxide detected" value="Carbon Dioxide Detector Child Device" />
+        <Item label="Water Alarm; Water Leak detected" value="Water Sensor Child Device" />
+        <Item label="Smoke Alarm; Smoke detected" value="Smoke Detector Child Device" />
+        <Item label="Sensor Binary" value="Contact Sensor Child Device" />
 </Value>
 <Value type="number" byteSize="2" index="110" label="Temperature sensor offset settings" min="-100" max="100" value="0" setting_type="zwave" fw="">
  <Help>
