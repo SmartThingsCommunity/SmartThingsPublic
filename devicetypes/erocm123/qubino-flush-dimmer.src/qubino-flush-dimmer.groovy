@@ -403,12 +403,12 @@ def updated()
 		state.oldLabel = device.label
 	}
     if (childDevices) {
-        if (settings."i2" && settings."i2" != "Disabled"  && childDevice.typeName != settings."i2") {
-            def childDevice = childDevices.find{it.deviceNetworkId.endsWith("-i2")}
+        def childDevice = childDevices.find{it.deviceNetworkId.endsWith("-i2")}
+        if (childDevice && settings."i2" && settings."i2" != "Disabled"  && childDevice.typeName != settings."i2") {
             childDevice.setDeviceType(settings."i2")
         }
-        if (settings."i3" && settings."i3" != "Disabled" && childDevice.typeName != settings."i3") {
-            def childDevice = childDevices.find{it.deviceNetworkId.endsWith("-i3")}
+        childDevice = childDevices.find{it.deviceNetworkId.endsWith("-i3")}
+        if (childDevice && settings."i3" && settings."i3" != "Disabled" && childDevice.typeName != settings."i3") {   
             childDevice.setDeviceType(settings."i3")
         }
     }
@@ -638,7 +638,7 @@ private void createChildDevices() {
 	state.oldLabel = device.label
     try {
 	   for (i in 2..3) {
-          addChildDevice("Contact Sensor Child Device", "${device.deviceNetworkId}-i$-{i}", null,
+          addChildDevice("erocm123", "Contact Sensor Child Device", "${device.deviceNetworkId}-i${i}", null,
 			 [completedSetup: true, label: "${device.displayName} (i${i})",
 		     isComponent: true, componentName: "i$i", componentLabel: "Input $i"])
 	   }
