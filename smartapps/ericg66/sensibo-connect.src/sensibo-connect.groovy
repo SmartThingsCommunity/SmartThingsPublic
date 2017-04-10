@@ -910,9 +910,16 @@ def pollChildren(PodUid)
         	 			tMode = setTemp.mode
                     }
 
-                    def battpourcentage = 100
-                    if (stat.batteryVoltage < 2850) battpourcentage = 10
-                    if (stat.batteryVoltage > 2850 && stat.batteryVoltage < 2950) battpourcentage = 50
+					def battpourcentage = 100
+                    def battVoltage = stat.batteryVoltage
+                    
+					if (battVoltage == null) 
+                    {
+                    	battVoltage = 3000
+                    }                    
+                    
+                    if (battVoltage < 2850) battpourcentage = 10
+                    if (battVoltage > 2850 && battVoltage < 2950) battpourcentage = 50
                     
 					def data = [
 						temperature: stemp,
@@ -927,7 +934,7 @@ def pollChildren(PodUid)
                         coolingSetpoint: setTemp.targetTemperature,
                         heatingSetpoint: setTemp.targetTemperature,
                         temperatureUnit : setTemp.temperatureUnit,
-                        voltage : stat.batteryVoltage,
+                        voltage : battVoltage,
                         swing : setTemp.swing,
                         battery : battpourcentage,
                         powerSource : setTemp.powerSource,
