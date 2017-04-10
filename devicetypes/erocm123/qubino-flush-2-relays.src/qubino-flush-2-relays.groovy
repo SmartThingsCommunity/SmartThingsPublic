@@ -32,19 +32,6 @@ metadata {
       capability "Temperature Measurement"
       capability "Health Check"
 
-      attribute "switch1", "string"
-      attribute "switch2", "string"
-      attribute "power1", "number"
-      attribute "energy1", "number"
-      attribute "power2", "number"
-      attribute "energy2", "number"
-
-      command "on1"
-      command "off1"
-      command "on2"
-      command "off2"
-      command "reset"
-
       fingerprint deviceId: "0x1001", inClusters:"0x5E,0x86,0x72,0x5A,0x73,0x20,0x27,0x25,0x32,0x60,0x85,0x8E,0x59,0x70", outClusters:"0x20"
    }
 
@@ -68,32 +55,6 @@ metadata {
            	   attributeState "statusText", label:'${currentValue}'       		
             }
 	}
-    /*
-	standardTile("switch1", "device.switch1",canChangeIcon: true, width: 2, height: 2, decoration: "flat") {
-		state "off", label:'switch1', action:"on1", icon:"st.switches.switch.off", backgroundColor:"#cccccc", nextState:"turningOn"
-		state "on", label:'switch1', action:"off1", icon:"st.switches.switch.on", backgroundColor:"#00a0dc", nextState:"turningOff"
-		state "turningOff", label:'switch1', action:"on1", icon:"st.switches.switch.off", backgroundColor:"#cccccc", nextState:"turningOn"
-		state "turningOn", label:'switch1', action:"off1", icon:"st.switches.switch.on", backgroundColor:"#00a0dc", nextState:"turningOff"  
-    }
-	standardTile("switch2", "device.switch2",canChangeIcon: true, width: 2, height: 2, decoration: "flat") {
-		state "off", label:'switch2', action:"on2", icon:"st.switches.switch.off", backgroundColor:"#cccccc", nextState:"turningOn"
-		state "on", label:'switch2', action:"off2", icon:"st.switches.switch.on", backgroundColor:"#00a0dc", nextState:"turningOff"
-		state "turningOff", label:'switch2', action:"on2", icon:"st.switches.switch.off", backgroundColor:"#cccccc", nextState:"turningOn"
-		state "turningOn", label:'switch2', action:"off2", icon:"st.switches.switch.on", backgroundColor:"#00a0dc", nextState:"turningOff"
-    }
-    valueTile("energy1", "device.energy1", decoration: "flat", width: 2, height: 2) {
-			state "default", label:'${currentValue} kWh'
-	}
-    valueTile("power1", "device.power1", decoration: "flat", width: 2, height: 2) {
-			state "default", label:'${currentValue} W'
-	}
-    valueTile("energy2", "device.energy2", decoration: "flat", width: 2, height: 2) {
-			state "default", label:'${currentValue} kWh'
-	}
-    valueTile("power2", "device.power2", decoration: "flat", width: 2, height: 2) {
-			state "default", label:'${currentValue} W'
-	}
-    */
     standardTile("refresh", "device.switch", inactiveLabel: false, decoration: "flat", width: 2, height: 2) {
 		state "default", label:"", action:"refresh.refresh", icon:"st.secondary.refresh"
     }
@@ -127,7 +88,7 @@ metadata {
 
     main(["switch","switch1", "switch2"])
     details(["switch",
-             childDeviceTiles("Output 1"),
+             childDeviceTiles("all"),
              "temperature","refresh","configure",
              "reset"
             ])
@@ -348,8 +309,10 @@ def updated()
 	}
 	else if (device.label != state.oldLabel) {
 		childDevices.each {
-			def newLabel = "${device.displayName} (CH${channelNumber(it.deviceNetworkId)})"
-			it.setLabel(newLabel)
+            if (it.label == "${state.oldLabel} (Q${channelNumber(it.deviceNetworkId)})") {
+			    def newLabel = "${device.displayName} (Q${channelNumber(it.deviceNetworkId)})"
+			    it.setLabel(newLabel)
+            }
 		}
 		state.oldLabel = device.label
 	}
