@@ -178,7 +178,7 @@ def updated() {
 def configure() {
 	log.debug "configure()"
     sendEvent(name: "checkInterval", value: 2 * 60 * 12 * 60 + 5 * 60, displayed: false, data: [protocol: "zwave", hubHardwareId: device.hub.hardwareID])
-    sendEvent(name: "numberOfButtons", value: 8, displayed: true)
+    sendEvent(name: "numberOfButtons", value: 16, displayed: true)
     state.isConfigured = "true"
 }
 
