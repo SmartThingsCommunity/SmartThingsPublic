@@ -251,7 +251,7 @@ def updated()
 	}
     if (childDevices) {
         def childDevice = childDevices.find{it.deviceNetworkId.endsWith("-i2")}
-        if (settings."i2" && settings."i2" != "Disabled" && childDevice.typeName != settings."i2") {
+        if (childDevice && settings."i2" && settings."i2" != "Disabled" && childDevice.typeName != settings."i2") {
             childDevice.setDeviceType(settings."i2")
         }
     }
