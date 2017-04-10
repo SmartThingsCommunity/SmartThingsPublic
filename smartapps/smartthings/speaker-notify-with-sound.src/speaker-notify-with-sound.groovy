@@ -21,13 +21,13 @@ definition(
 	author: "SmartThings",
 	description: "Play a sound or custom message through your Speaker when the mode changes or other events occur.",
 	category: "SmartThings Labs",
-	iconUrl: "https://s3.amazonaws.com/smartapp-icons/Partner/sonos.png",
-	iconX2Url: "https://s3.amazonaws.com/smartapp-icons/Partner/sonos@2x.png"
+	iconUrl: "http://cdn.device-icons.smartthings.com/Electronics/electronics16-icn.png",
+	iconX2Url: "http://cdn.device-icons.smartthings.com/Electronics/electronics16-icn@2x.png"
 )
 
 preferences {
 	page(name: "mainPage", title: "Play a message on your Speaker when something happens", install: true, uninstall: true)
-	page(name: "chooseTrack", title: "Select a song or station")
+	page(name: "changeVolume", title: "Enter volume level (%)")
 	page(name: "timeIntervalInput", title: "Only during a certain time") {
 		section {
 			input "starting", "time", title: "Starting", required: false
@@ -38,95 +38,119 @@ preferences {
 
 def mainPage() {
 	dynamicPage(name: "mainPage") {
-		def anythingSet = anythingSet()
-		if (anythingSet) {
-			section("Play message when"){
-				ifSet "motion", "capability.motionSensor", title: "Motion Here", required: false, multiple: true
-				ifSet "contact", "capability.contactSensor", title: "Contact Opens", required: false, multiple: true
-				ifSet "contactClosed", "capability.contactSensor", title: "Contact Closes", required: false, multiple: true
-				ifSet "acceleration", "capability.accelerationSensor", title: "Acceleration Detected", required: false, multiple: true
-				ifSet "mySwitch", "capability.switch", title: "Switch Turned On", required: false, multiple: true
-				ifSet "mySwitchOff", "capability.switch", title: "Switch Turned Off", required: false, multiple: true
-				ifSet "arrivalPresence", "capability.presenceSensor", title: "Arrival Of", required: false, multiple: true
-				ifSet "departurePresence", "capability.presenceSensor", title: "Departure Of", required: false, multiple: true
-				ifSet "smoke", "capability.smokeDetector", title: "Smoke Detected", required: false, multiple: true
-				ifSet "water", "capability.waterSensor", title: "Water Sensor Wet", required: false, multiple: true
-				ifSet "button1", "capability.button", title: "Button Press", required:false, multiple:true //remove from production
-				ifSet "triggerModes", "mode", title: "System Changes Mode", required: false, multiple: true
-				ifSet "timeOfDay", "time", title: "At a Scheduled Time", required: false
+		section {
+			// Select speaker
+			speakers()
+		}
+		// If speaker is selected...
+		if (sonos) {
+			def anythingSet = false
+			// Display selected triggers
+			section("Play when", hideable: true, hidden: true, hideWhenEmpty: true) {
+				anythingSet = triggers(true)
+			}
+			// Display triggers that can be selected
+			def hideable = anythingSet || app.installationState == "COMPLETE"
+			def sectionTitle = anythingSet ? "Select additional triggers" : "Play message when..."
+			section(sectionTitle, hideable: hideable, hidden: true, hideWhenEmpty: true) {
+				triggers(false)
+			}
+			// If a trigger is set, display actions to take
+			if(anythingSet) {
+				section {
+					action()
+				}
+			}
+			// If a trigger and an actions is set display more options
+			if (anythingSet && actionType) {
+				section("More options", hideable: true, hidden: true) {
+					input "resumePlaying", "bool", title: "Resume currently playing music after notification", required: false, defaultValue: true, submitOnChange: true
+					// TODO: As speakers may have different ways/options to save/play songs, add manufacturer check when all speakers have added manufacturer and model
+					def appManufacturer = sonos.currentState("manufacturer")
+//					if (appManufacturer?.value?.contains("Bose") || appManufacturer?.value?.contains("Sonos")) {
+					// For now, make sure this isn't displayed for Samsung speaker
+					if (!appManufacturer?.value?.contains("Samsung")) {
+						chooseTrack()
+					}
+					// Make sure volume input is in range
+					if (volume && ((1 > volume) || (100 < volume))) {
+						sendEvent(value:"Volume $volume, which is outside of allowed range (0-100)", eventType: "ALERT")
+						app.updateSetting("volume", "")
+						settings["volume"] = ""
+					}
+					// To be able to do range check of volume, need to display it on another page as 'submitOnChange: true'
+					// is causing StaleObjectStateException for 'typing' input fields
+					href "changeVolume", title: "Temporarily change volume", description: volume ?: "0-100%", state: volume ? "complete" : "incomplete"
+					input "frequency", "decimal", title: "Minimum time between actions (defaults to every event)", description: "Minutes", required: false
+					href "timeIntervalInput", title: "Only during a certain time", description: timeLabel ?: "Tap to set", state: timeLabel ? "complete" : "incomplete"
+					input "days", "enum", title: "Only on certain days of the week", multiple: true, required: false,
+						options: ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"], submitOnChange: true
+					if (settings.modes) {
+						input "modes", "mode", title: "Only when mode is", multiple: true, required: false, submitOnChange: true
+					}
+					input "oncePerDay", "bool", title: "Only once per day", required: false, defaultValue: false, submitOnChange: true
+				}
+				section([mobileOnly:true]) {
+					label title: "Assign a name", required: false
+					mode title: "Set for specific mode(s)", required: false, submitOnChange: true
+				}
 			}
 		}
-		def hideable = anythingSet || app.installationState == "COMPLETE"
-		def sectionTitle = anythingSet ? "Select additional triggers" : "Play message when..."
+	}
+}
 
-		section(sectionTitle, hideable: hideable, hidden: true){
-			ifUnset "motion", "capability.motionSensor", title: "Motion Here", required: false, multiple: true
-			ifUnset "contact", "capability.contactSensor", title: "Contact Opens", required: false, multiple: true
-			ifUnset "contactClosed", "capability.contactSensor", title: "Contact Closes", required: false, multiple: true
-			ifUnset "acceleration", "capability.accelerationSensor", title: "Acceleration Detected", required: false, multiple: true
-			ifUnset "mySwitch", "capability.switch", title: "Switch Turned On", required: false, multiple: true
-			ifUnset "mySwitchOff", "capability.switch", title: "Switch Turned Off", required: false, multiple: true
-			ifUnset "arrivalPresence", "capability.presenceSensor", title: "Arrival Of", required: false, multiple: true
-			ifUnset "departurePresence", "capability.presenceSensor", title: "Departure Of", required: false, multiple: true
-			ifUnset "smoke", "capability.smokeDetector", title: "Smoke Detected", required: false, multiple: true
-			ifUnset "water", "capability.waterSensor", title: "Water Sensor Wet", required: false, multiple: true
-			ifUnset "button1", "capability.button", title: "Button Press", required:false, multiple:true //remove from production
-			ifUnset "triggerModes", "mode", title: "System Changes Mode", description: "Select mode(s)", required: false, multiple: true
-			ifUnset "timeOfDay", "time", title: "At a Scheduled Time", required: false
-		}
-		section{
-			input "actionType", "enum", title: "Action?", required: true, defaultValue: "Bell 1", options: [
-				"Custom Message",
-				"Bell 1",
-				"Bell 2",
-				"Dogs Barking",
-				"Fire Alarm",
-				"The mail has arrived",
-				"A door opened",
-				"There is motion",
-				"Smartthings detected a flood",
-				"Smartthings detected smoke",
-				"Someone is arriving",
-				"Piano",
-				"Lightsaber"]
-			input "message","text",title:"Play this message", required:false, multiple: false
-		}
-		section {
-			input "sonos", "capability.musicPlayer", title: "On this Speaker player", required: true
-		}
-		section("More options", hideable: true, hidden: true) {
-			input "resumePlaying", "bool", title: "Resume currently playing music after notification", required: false, defaultValue: true
-			href "chooseTrack", title: "Or play this music or radio station", description: song ? state.selectedSong?.station : "Tap to set", state: song ? "complete" : "incomplete"
+def speakers() {
+	input "sonos", "capability.musicPlayer", title: "On this Speaker player", required: true, submitOnChange: true
 
-			input "volume", "number", title: "Temporarily change volume", description: "0-100%", required: false
-			input "frequency", "decimal", title: "Minimum time between actions (defaults to every event)", description: "Minutes", required: false
-			href "timeIntervalInput", title: "Only during a certain time", description: timeLabel ?: "Tap to set", state: timeLabel ? "complete" : "incomplete"
-			input "days", "enum", title: "Only on certain days of the week", multiple: true, required: false,
-				options: ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"]
-			if (settings.modes) {
-            	input "modes", "mode", title: "Only when mode is", multiple: true, required: false
-            }
-			input "oncePerDay", "bool", title: "Only once per day", required: false, defaultValue: false
-		}
-		section([mobileOnly:true]) {
-			label title: "Assign a name", required: false
-			mode title: "Set for specific mode(s)", required: false
+	if (!sonos || (sonos?.id != state.speakerId)) {
+		// No or New speaker -> reset speaker data
+		state.songOptions = null
+		state.selectedSong = null
+		state.speakerId = sonos?.id
+		app.updateSetting("song", "")
+		settings["song"] = ""
+	}
+	if (sonos) {
+		// Update list of songs to play
+		songOptions()
+	}
+}
+
+def action() {
+	if (sonos) {
+		input "actionType", "enum", title: "Play", required: true, options: [
+			"Custom Message",
+			"Bell 1",
+			"Bell 2",
+			"Dogs Barking",
+			"Fire Alarm",
+			"The mail has arrived",
+			"A door opened",
+			"There is motion",
+			"Smartthings detected a flood",
+			"Smartthings detected smoke",
+			"Someone is arriving",
+			"Piano",
+			"Lightsaber"], submitOnChange: true
+
+		if (actionType == "Custom Message") {
+			input "message","text",title:"Play this message", required:true, multiple: false
 		}
 	}
 }
 
 def chooseTrack() {
-	dynamicPage(name: "chooseTrack") {
-		section{
-			input "song","enum",title:"Play this track", required:true, multiple: false, options: songOptions()
-		}
+	input "song","enum",title:"Or play this music or radio station", required:false, description: song ? state.selectedSong?.station : "Tap to set", state: song ? "complete" : "incomplete", multiple: false, options: state.songOptions, submitOnChange: true
+
+	if (song?.trim()) {
+		saveSelectedSong()
 	}
+
 }
 
 private songOptions() {
-
+	def appManufacturer = sonos.currentState("manufacturer")
 	// Make sure current selection is in the set
-
 	def options = new LinkedHashSet()
 	if (state.selectedSong?.station) {
 		options << state.selectedSong.station
@@ -137,32 +161,61 @@ private songOptions() {
 	}
 
 	// Query for recent tracks
-	def states = sonos.statesSince("trackData", new Date(0), [max:30])
-	def dataMaps = states.collect{it.jsonValue}
-	options.addAll(dataMaps.collect{it.station})
-
-	log.trace "${options.size()} songs in list"
-	options.take(20) as List
+	if (appManufacturer?.value?.contains("Bose")) {
+		// Bose speaker, get preset chanels (1-6)
+		def preset
+		def notSet
+		for (int idx = 1; idx < 7; idx++) {
+			preset = sonos.currentState("station${idx}")?.value
+			notSet = "preset ${idx} not set"
+			// Don't display presets not currently set
+			if (preset && (preset.toLowerCase() != notSet)) {
+				options << preset
+			}
+		}
+		state.songOptions = options as List
+	} else {
+		// Until Sonos is updated with manufacturer data, assume Sonos speaker
+		def states = sonos.statesSince("trackData", new Date(0), [max:8])
+		def dataMaps = states.collect{it.jsonValue}
+		options.addAll(dataMaps.collect{it.station})
+		log.trace "${options.size()} songs in list"
+		state.songOptions = options.take(20) as List
+	}
 }
 
 private saveSelectedSong() {
 	try {
 		def thisSong = song
 		log.info "Looking for $thisSong"
-		def songs = sonos.statesSince("trackData", new Date(0), [max:30]).collect{it.jsonValue}
-		log.info "Searching ${songs.size()} records"
+		def appManufacturer = sonos.currentState("manufacturer")
+		if (appManufacturer?.value?.contains("Bose")) {
+			// Bose speaker, get preset chanels (1-6)
+			def preset
+			for (int idx = 1; idx < 7; idx++) {
+				preset = sonos.currentState("station${idx}")
+				if (thisSong == preset?.value) {
+					state.selectedSong = [name:"preset${idx}", station: thisSong]
+					break
+				}
+			}
+		} else {
+			// Until Sonos is updated with manufacturer data, assume Sonos speaker
+			def songs = sonos.statesSince("trackData", new Date(0), [max:30]).collect{it.jsonValue}
+			log.info "Searching ${songs.size()} records"
 
-		def data = songs.find {s -> s.station == thisSong}
-		log.info "Found ${data?.station}"
-		if (data) {
-			state.selectedSong = data
-			log.debug "Selected song = $state.selectedSong"
-		}
-		else if (song == state.selectedSong?.station) {
-			log.debug "Selected existing entry '$song', which is no longer in the last 20 list"
-		}
-		else {
-			log.warn "Selected song '$song' not found"
+			def data = songs.find {s -> s.station == thisSong}
+			log.info "Found ${data?.station}"
+			if (data) {
+				state.selectedSong = data
+				log.debug "Selected song = $state.selectedSong"
+			}
+			else if (song == state.selectedSong?.station) {
+				log.debug "Selected existing entry '$song', which is no longer in the last 20 list"
+			}
+			else {
+				log.warn "Selected song '$song' not found"
+			}
 		}
 	}
 	catch (Throwable t) {
@@ -170,25 +223,47 @@ private saveSelectedSong() {
 	}
 }
 
-private anythingSet() {
-	for (name in ["motion","contact","contactClosed","acceleration","mySwitch","mySwitchOff","arrivalPresence","departurePresence","smoke","water","button1","timeOfDay","triggerModes","timeOfDay"]) {
-		if (settings[name]) {
-			return true
+private changeVolume() {
+	dynamicPage(name: "changeVolume") {
+		section {
+			input "volume", "number", description: volume ?: "0-100%", required: false
 		}
 	}
-	return false
 }
 
-private ifUnset(Map options, String name, String capability) {
-	if (!settings[name]) {
-		input(options, name, capability)
-	}
+private displaySetting(boolean display, name) {
+	return ((display && settings[name]) || (!display && !settings[name]))
 }
 
-private ifSet(Map options, String name, String capability) {
-	if (settings[name]) {
-		input(options, name, capability)
+private triggers(boolean displayConfigured) {
+	boolean somethingSet = false
+	def sensors = [[name:"motion", title:"Motion Here"],
+					[name:"contact", title:"Contact Opens"],
+					[name:"contactClosed", capability:"capability.contactSensor", title:"Contact Closes"],
+					[name:"acceleration", title:"Acceleration Detected"],
+					[name:"mySwitch", capability:"capability.switch", title:"Switch Turned On"],
+					[name:"mySwitchOff", capability:"capability.switch", title: "Switch Turned Off"],
+					[name:"arrivalPresence", capability:"capability.presenceSensor", title: "Arrival Of"],
+					[name:"departurePresence", capability:"capability.presenceSensor", title: "Departure Of"],
+					[name:"smoke", capability:"capability.smokeDetector", title: "Smoke Detected"],
+					[name:"water", title: "Water Sensor Wet"],
+					[name:"button1", capability:"capability.button", title: "Button Press"]]
+	def events = [[name:"triggerModes", trigger:"mode", title: "System Changes Mode", multiple: true],
+					[name:"timeOfDay", trigger:"time", title: "At a Scheduled Time", multiple: false]]
+
+	for (item in sensors) {
+		if (displaySetting(displayConfigured, item.name)) {
+			somethingSet = true
+			input item.name, (item.capability ? item.capability : "capability.${item.name}Sensor"), hideWhenEmpty: true, title: item.title, required: false, multiple: true, submitOnChange: true
+		}
 	}
+	for (item in events) {
+		if (displaySetting(displayConfigured, item.name)) {
+			somethingSet = true
+			input item.name, item.trigger, title: item.title, multiple: item.multiple, required: false, submitOnChange: true
+		}
+	}
+	return somethingSet
 }
 
 def installed() {
@@ -225,10 +300,6 @@ def subscribeToEvents() {
 
 	if (timeOfDay) {
 		schedule(timeOfDay, scheduledTimeHandler)
-	}
-
-	if (song) {
-		saveSelectedSong()
 	}
 
 	loadText()
@@ -276,7 +347,7 @@ private takeAction(evt) {
 
 	log.trace "takeAction()"
 
-	if (song) {
+	if (song?.trim()) {
 		sonos.playSoundAndTrack(state.sound.uri, state.sound.duration, state.selectedSong, volume)
 	}
 	else if (resumePlaying){
