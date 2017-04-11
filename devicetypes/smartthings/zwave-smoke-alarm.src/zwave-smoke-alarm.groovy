@@ -53,7 +53,12 @@ metadata {
 	}
 }
 
-def updated(){
+def installed() {
+// Device checks in every hour, this interval allows us to miss one check-in notification before marking offline
+	sendEvent(name: "checkInterval", value: 2 * 60 * 60 + 2 * 60, displayed: false, data: [protocol: "zwave", hubHardwareId: device.hub.hardwareID])
+}
+
+def updated() {
 // Device checks in every hour, this interval allows us to miss one check-in notification before marking offline
 	sendEvent(name: "checkInterval", value: 2 * 60 * 60 + 2 * 60, displayed: false, data: [protocol: "zwave", hubHardwareId: device.hub.hardwareID])
 }
