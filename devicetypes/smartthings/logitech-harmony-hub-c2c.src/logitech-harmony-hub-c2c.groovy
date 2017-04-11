@@ -40,14 +40,18 @@ metadata {
 	}
 }
 
+def initialize() {
+	sendEvent(name: "DeviceWatch-Enroll", value: JsonOutput.toJson([protocol: "cloud", scheme:"untracked"]), displayed: false)
+}
+
 def installed() {
 	log.debug "installed()"
-	sendEvent(name: "DeviceWatch-Enroll", value: JsonOutput.toJson([protocol: "cloud", scheme:"untracked"]), displayed: false)
+	initialize()
 }
 
 def updated() {
 	log.debug "updated()"
-	sendEvent(name: "DeviceWatch-Enroll", value: JsonOutput.toJson([protocol: "cloud", scheme:"untracked"]), displayed: false)
+	initialize()
 }
 
 def startActivity(String activityId) {

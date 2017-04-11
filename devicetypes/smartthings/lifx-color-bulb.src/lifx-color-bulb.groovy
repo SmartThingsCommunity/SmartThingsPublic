@@ -64,8 +64,18 @@ metadata {
 	}
 }
 
+def initialize() {
+	sendEvent(name: "DeviceWatch-Enroll", value: "{\"protocol\": \"cloud\", \"scheme\":\"untracked\", \"hubHardwareId\": \"${device?.hub?.hardwareID}\"}", displayed: false)
+}
+
 void installed() {
-	sendEvent(name: "DeviceWatch-Enroll", value: "{\"protocol\": \"cloud\", \"scheme\":\"untracked\", \"hubHardwareId\": \"${device?.hub?.hardwareID}\"}")
+	log.debug "installed()"
+	initialize()
+}
+
+def updated() {
+	log.debug "updated()"
+	initialize()
 }
 
 // handle commands
