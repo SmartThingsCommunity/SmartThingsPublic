@@ -85,6 +85,11 @@ def parse(String description) {
     result
 }
 
+def installed() {
+	// Device-Watch simply pings if no device events received for 32min(checkInterval)
+	sendEvent(name: "checkInterval", value: 2 * 15 * 60 + 2 * 60, displayed: false, data: [protocol: "zwave", hubHardwareId: device.hub.hardwareID])
+}
+
 //send the command to stop polling
 def updated() {
 	// Device-Watch simply pings if no device events received for 32min(checkInterval)
