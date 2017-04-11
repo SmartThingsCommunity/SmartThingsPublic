@@ -17,7 +17,7 @@
  */
 
 metadata {
-	definition (name: "RGBW Light", namespace: "smartthings", author: "SmartThings") {
+	definition (name: "RGBW Light", namespace: "smartthings", author: "SmartThings", ocfDeviceType: "oic.d.light") {
 		capability "Switch Level"
 		capability "Color Control"
 		capability "Color Temperature"

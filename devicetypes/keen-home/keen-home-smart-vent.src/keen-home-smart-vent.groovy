@@ -11,7 +11,7 @@ metadata {
         capability "Sensor"
         capability "Temperature Measurement"
         capability "Battery"
-        // capability "Health Check"
+        capability "Health Check"
 
         command "getLevel"
         command "getOnOff"
@@ -476,7 +476,7 @@ def configure() {
 
     // Device-Watch allows 2 check-in misses from device + ping (plus 1 min lag time)
     // enrolls with default periodic reporting until newer 5 min interval is confirmed
-    // sendEvent(name: "checkInterval", value: 2 * 10 * 60 + 2 * 60, displayed: false, data: [protocol: "zigbee", hubHardwareId: device.hub.hardwareID])
+    sendEvent(name: "checkInterval", value: 2 * 10 * 60 + 2 * 60, displayed: false, data: [protocol: "zigbee", hubHardwareId: device.hub.hardwareID])
 
     // get ZigBee ID by hidden tile because that's the only way we can do it
     setZigBeeIdTile()
