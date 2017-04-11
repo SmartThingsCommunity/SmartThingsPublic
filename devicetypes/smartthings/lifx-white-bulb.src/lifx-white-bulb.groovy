@@ -5,7 +5,7 @@
  *
  */
 metadata {
-	definition (name: "LIFX White Bulb", namespace: "smartthings", author: "LIFX") {
+	definition (name: "LIFX White Bulb", namespace: "smartthings", author: "LIFX", ocfDeviceType: "oic.d.light") {
 		capability "Actuator"
 		capability "Color Temperature"
 		capability "Switch"
@@ -119,7 +119,7 @@ def off() {
 
 def refresh() {
 	log.debug "Executing 'refresh'"
-	
+
 	def resp = parent.apiGET("/lights/${selector()}")
 	if (resp.status == 404) {
 		state.online = false
