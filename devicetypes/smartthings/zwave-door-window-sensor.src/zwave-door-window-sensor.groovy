@@ -17,7 +17,7 @@
  */
 
 metadata {
-	definition (name: "Z-Wave Door/Window Sensor", namespace: "smartthings", author: "SmartThings") {
+	definition (name: "Z-Wave Door/Window Sensor", namespace: "smartthings", author: "SmartThings", ocfDeviceType: "x.com.st.d.sensor.contact") {
 		capability "Contact Sensor"
 		capability "Sensor"
 		capability "Battery"
@@ -77,6 +77,11 @@ def parse(String description) {
 	}
 	log.debug "parsed '$description' to $result"
 	return result
+}
+
+def installed() {
+	// Device-Watch simply pings if no device events received for 482min(checkInterval)
+	sendEvent(name: "checkInterval", value: 2 * 4 * 60 * 60 + 2 * 60, displayed: false, data: [protocol: "zwave", hubHardwareId: device.hub.hardwareID])
 }
 
 def updated() {

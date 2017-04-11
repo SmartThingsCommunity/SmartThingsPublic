@@ -12,7 +12,7 @@
  *
  */
 metadata {
-	definition (name: "Everspring Flood Sensor", namespace: "smartthings", author: "SmartThings") {
+	definition (name: "Everspring Flood Sensor", namespace: "smartthings", author: "SmartThings", ocfDeviceType: "x.com.st.d.sensor.moisture") {
 		capability "Water Sensor"
 		capability "Configuration"
 		capability "Sensor"
@@ -29,7 +29,7 @@ metadata {
 			status "battery ${i}%": new physicalgraph.zwave.Zwave().batteryV1.batteryReport(batteryLevel: i).incomingMessage()
 		}
 	}
-	
+
 	tiles(scale: 2) {
 		multiAttributeTile(name:"water", type: "generic", width: 6, height: 4){
 			tileAttribute ("device.water", key: "PRIMARY_CONTROL") {

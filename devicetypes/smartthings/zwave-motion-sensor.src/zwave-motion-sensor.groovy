@@ -17,7 +17,7 @@
  */
 
 metadata {
-	definition (name: "Z-Wave Motion Sensor", namespace: "smartthings", author: "SmartThings") {
+	definition (name: "Z-Wave Motion Sensor", namespace: "smartthings", author: "SmartThings", ocfDeviceType: "x.com.st.d.sensor.motion") {
 		capability "Motion Sensor"
 		capability "Sensor"
 		capability "Battery"
@@ -36,7 +36,7 @@ metadata {
 		status "inactive": "command: 3003, payload: 00"
 		status "active": "command: 3003, payload: FF"
 	}
-	
+
 	tiles {
 		standardTile("motion", "device.motion", width: 2, height: 2) {
 			state("active", label:'motion', icon:"st.motion.motion.active", backgroundColor:"#00A0DC")
@@ -51,7 +51,12 @@ metadata {
 	}
 }
 
-def updated(){
+def installed() {
+// Device wakes up every 4 hours, this interval allows us to miss one wakeup notification before marking offline
+	sendEvent(name: "checkInterval", value: 8 * 60 * 60 + 2 * 60, displayed: false, data: [protocol: "zwave", hubHardwareId: device.hub.hardwareID])
+}
+
+def updated() {
 // Device wakes up every 4 hours, this interval allows us to miss one wakeup notification before marking offline
 	sendEvent(name: "checkInterval", value: 8 * 60 * 60 + 2 * 60, displayed: false, data: [protocol: "zwave", hubHardwareId: device.hub.hardwareID])
 }

@@ -50,8 +50,17 @@ metadata {
     }
 }
 
-void installed() {
+def initialize() {
 	sendEvent(name: "DeviceWatch-Enroll", value: "{\"protocol\": \"LAN\", \"scheme\":\"untracked\", \"hubHardwareId\": \"${device.hub.hardwareID}\"}", displayed: false)
+}
+
+void installed() {
+	log.debug "installed()"
+	initialize()
+}
+
+def updated() {
+	initialize()
 }
 
 // parse events into attributes
