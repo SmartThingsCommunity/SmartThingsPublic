@@ -32,7 +32,7 @@ metadata {
 		fingerprint mfr:"0086", prod:"0002", model:"001D", deviceJoinName: "Aeon Labs Door/Window Sensor (Gen 5)"
 		fingerprint mfr:"014A", prod:"0001", model:"0002", deviceJoinName: "Ecolink Door/Window Sensor"
 		fingerprint mfr:"0086", prod:"0102", model:"0070", deviceJoinName:  "Aeon Labs Door/Window Sensor 6"
-
+		fingerprint mfr:"011A", prod:"0601", model:"0903", deviceJoinName: "Enerwave Magnetic Door/Window Sensor"
 	}
 
 	// simulator metadata
