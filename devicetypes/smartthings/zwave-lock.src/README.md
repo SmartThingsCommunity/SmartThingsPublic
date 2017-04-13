@@ -1,11 +1,10 @@
-# Z-Wave Switch
+# Z-Wave Lock
 
 Cloud Execution
 
 Works with: 
 
 * [Yale Key Free Touchscreen Deadbolt (YRD240)](https://www.smartthings.com/works-with-smartthings/yale/yale-key-free-touchscreen-deadbolt-yrd240)
-
 
 ## Table of contents
 
@@ -41,5 +40,3 @@ If the device doesn't pair when trying from the SmartThings mobile app, it is po
 Pairing needs to be tried again by placing the device closer to the hub.
 Instructions related to pairing, resetting and removing the device from SmartThings can be found in the following link:
 * [General Z-Wave/ZigBee Yale Lock Troubleshooting](https://support.smartthings.com/hc/en-us/articles/205138400-How-to-connect-Yale-locks)
-
-
