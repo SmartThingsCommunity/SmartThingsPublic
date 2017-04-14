@@ -36,7 +36,7 @@ definition(
 
 //Device Inputs
 preferences {
-	section("Allow <PLACEHOLDER: Your App Name> to control these things...") {
+	section("Allow OpenT2T to control these things...") {
 		input "contactSensors", "capability.contactSensor", title: "Which Contact Sensors", multiple: true, required: false, hideWhenEmpty: true
 		input "garageDoors", "capability.garageDoorControl", title: "Which Garage Doors?", multiple: true, required: false, hideWhenEmpty: true
  		input "locks", "capability.lock", title: "Which Locks?", multiple: true, required: false, hideWhenEmpty: true
