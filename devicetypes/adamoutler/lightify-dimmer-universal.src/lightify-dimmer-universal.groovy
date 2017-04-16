@@ -50,45 +50,47 @@
 *sets up variables
 */
 metadata {
- definition(name: "Lightify Dimming Switch- Zigbee", namespace: "adamoutler", author: "Adam Amber House") {
+ definition(name: "Lightify Dimmer- universal", namespace: "adamoutler", author: "Adam Amber House") {
   capability "Battery"
   capability "Button"
-  capability "Switch Level"
+  capability "switchLevel"
+  capability "switch"
   attribute 'state', "string"
   command "refresh"
   command "poll"
   command "toggle"
   command "configure"
   command "installed"
-  command "getInfo"
   fingerprint profileId: "0104", deviceId: "0001", inClusters: "0000, 0001, 0003, 0020, 0402, 0B05", outClusters: "0003, 0006, 0008, 0019", manufacturer: "OSRAM", model: "LIGHTIFY Dimming Switch", deviceJoinName: "OSRAM Lightify Dimming Switch"
  }
 
 
  simulator {
-  // Simulations are for loosers, work in production :D
+  // This comment takes the place of a simulator.  There is no simulator.  Deal with it. :D
  }
 
 
 preferences {
   section("Device1") {
-   input("device1", "string", title: "Device Network ID 1", description: "The Device Network Id", defaultValue: "", type: "capability.switch", required: false, displayDuringSetup: false)
+  // input(name: "buttonList", type: "capability.switch", title: "Which switch?", required: true)
+
+   input("device1", "string", title: "Device Network ID 1", description: "The Device Network Id", defaultValue: "03", type: "capability.switch", required: false, displayDuringSetup: false)
    input("end1", "string", title: "Device Endpoint ID 1", description: "endpointId from Data Section of device", defaultValue: "", required: false, displayDuringSetup: false)
   }
   section("Device2") {
-   input("device2", "string", title: "Device Network ID 2", description: "The Device Network Id", defaultValue: "", type: "capability.switch", required: false, displayDuringSetup: false)
+   input("device2", "string", title: "Device Network ID 2", description: "The Device Network Id", defaultValue: "03", type: "capability.switch", required: false, displayDuringSetup: false)
    input("end2", "string", title: "Device Endpoint ID 2", description: "endpointId from Data Section of device", defaultValue: "", required: false, displayDuringSetup: false)
   }
   section("Device3") {
-   input("device3", "string", title: "Device Network ID 3", description: "The Device Network Id", defaultValue: "", type: "capability.switch", required: false, displayDuringSetup: false)
+   input("device3", "string", title: "Device Network ID 3", description: "The Device Network Id", defaultValue: "03", type: "capability.switch", required: false, displayDuringSetup: false)
    input("end3", "string", title: "Device Endpoint ID 3", description: "endpointId from Data Section of device", defaultValue: "", required: false, displayDuringSetup: false)
   }
   section("Device4") {
-   input("device4", "string", title: "Device Network ID 4", description: "The Device Network Id", defaultValue: "", type: "capability.switch", required: false, displayDuringSetup: false)
+   input("device4", "string", title: "Device Network ID 4", description: "The Device Network Id", defaultValue: "03", type: "capability.switch", required: false, displayDuringSetup: false)
    input("end4", "string", title: "Device Endpoint ID 4", description: "endpointId from Data Section of device", defaultValue: "", required: false, displayDuringSetup: false)
   }
   section("Device5") {
-   input("device5", "string", title: "Device Network ID 5", description: "The Device Network Id", defaultValue: "", type: "capability.switch", required: false, displayDuringSetup: false)
+   input("device5", "string", title: "Device Network ID 5", description: "The Device Network Id", defaultValue: "03", type: "capability.switch", required: false, displayDuringSetup: false)
    input("end5", "string", title: "Device Endpoint ID 5", description: "endpointId from Data Section of device", defaultValue: "", required: false, displayDuringSetup: false)
   }
     section("Turn on this light") {
@@ -158,7 +160,7 @@ final ArrayList < String[] > getDevices() {
  if (devs == [null, null, null, null, null]) log.info("------No devices configured in $device preferences--------")
  String[] ends = [end1, end2, end3, end4, end5]
  ArrayList < String[] > list = new ArrayList < > ([])
- for (int i = 0; i < 4; i++) {
+ for (int i = 0; i < 5; i++) {
   if (devs[i] != null) {
    list.add([devs[i], ends[i]])
   }
@@ -215,6 +217,8 @@ Map handleMessage(String msgFromST) {
   case 8021:
    log.info("Networking Bind Response received!!!")
    state.buttonNumber=null
+    sendEvent(name: 'state',           unit:'on/off', type:'button',   value:"binding", data:buttonList)
+
    updateButtonState("Network binding complete!")
    state.boundnetwork=true
    return state
@@ -495,8 +499,10 @@ def setLevel(Double level, Double duration) {
  log.info("Brightness commanded to " + level + "%")
  state.brightness = (int) level
  def result = createStCommand(" 8 4 {" + getBrightnessHex(2) + " " + formatNumber((int) duration, 4) + "}")
+ log.info(state.on)
  if (state.on != "on") on()
  fireCommands(result.command) //send it to the hub for processing
+ result.command=null;
  reportOnState(true)
 }
 
@@ -563,7 +569,7 @@ def updateButtonState(def value) {
 *if on, turn off, if off, turn on.
 */
 def toggle() {
- Map command
+ def command
  if (state.on == "on") {
   log.debug(device.displayName + " toggled on")
   command = off()
@@ -572,7 +578,8 @@ def toggle() {
   log.debug(device.displayName + " toggled off")
  }
  log.debug(command)
- fireCommands(command.command)
+ //fireCommands(command.command)
+ return command;
 }
 
 /**
@@ -614,13 +621,13 @@ Map on() {
      log.info("myswitch:"+ myswitch)
  }
  
- if (onOffTapped()){
-    
- }
  state.lastAction=now()
  if (doubleTapped(true)) setLevel(100, 1000)
  reportOnState(true)
- return createStCommand("6 1 {}")
+ def cmd=createStCommand("6 1 {}")
+ fireCommands(cmd.command)
+ cmd.command=null;
+ return cmd
 }
 
 /**
@@ -629,11 +636,7 @@ Map on() {
 */
 Map off() {
  log.debug(device.displayName + " commanded off")
- if (onOffTapped()){
-    log.info("Lights turning off in 30 seconds")
-    runIn(30, "turnOffLights")
-    return getState()
- }
+
  state.lastAction=now()
  if (doubleTapped(false)){
     def value=on()
@@ -641,7 +644,10 @@ Map off() {
     return value
  }
  reportOnState(false)
- return createStCommand("6 0 {}")
+ def cmd=createStCommand("6 0 {}")
+ fireCommands(cmd.command)
+ cmd.command=null;
+ return cmd
 }
 
 
