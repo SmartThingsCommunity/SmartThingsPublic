@@ -63,6 +63,7 @@ def getInputs() {
     return inputList
 }
 
+
 //API external Endpoints
 mappings {
 	path("/devices") {
@@ -310,6 +311,7 @@ def locationEventHandler(evt) {
         break
     }
 }
+
 
 /*** Device Query/Update Functions  ***/
 
