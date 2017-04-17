@@ -1,7 +1,7 @@
 /**
  *  Ask Alexa - Lambda Code
  *
- *  Version 1.2.4 - 3/20/17 Copyright © 2017 Michael Struck
+ *  Version 1.2.5 - 4/12/17 Copyright © 2017 Michael Struck
  *  Special thanks for Keith DeLong for code and assistance 
  *  
  *  Version 1.0.0 - Initial release
@@ -18,7 +18,8 @@
  *  Version 1.2.1 - Addition of the Snarky personality responses and change in macro password structure
  *  Version 1.2.2b - Addition of small translation items
  *  Version 1.2.3 - Added follow up to a missing PIN when required, updated copyright to 2017
- *  Version 1.2.4 - Added routines for new message queue 
+ *  Version 1.2.4 - Added routines for new message queue
+ *  Version 1.2.5 - Changed some of the responses to align with the new Ask Alexa framework
  * 
  *  Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except
  *  in compliance with the License. You may obtain a copy of the License at:
@@ -32,9 +33,9 @@
  */
 'use strict';
 exports.handler = function( event, context ) {
-    var versionTxt = '1.2.4';
-    var versionDate= '03/20/2017';
-    var versionNum = '124';
+    var versionTxt = '1.2.5';
+    var versionDate= '04/12/2017';
+    var versionNum = '125';
     var https = require( 'https' );
     // Paste app code here between the breaks------------------------------------------------
     var STappID = '';
@@ -105,7 +106,7 @@ exports.handler = function( event, context ) {
                     if (Cancel) {MNum = 9999}
                     url += 'm?Macro=' + Macro + '&Param=' + MParam + '&Cmd=' + MCmd + '&Num=' + MNum + '&MPW=' + MPW;
                     process = true;
-                    cardName = "SmartThings Voice Macro";
+                    cardName = "SmartThings Macros/Extensions";
                 }
                 else if (intentName == "SmartHomeOperation") {
                     var SHCmd = event.request.intent.slots.SHCmd.value;
@@ -286,7 +287,7 @@ function responseNormal(respType){
                     ,"Ok. Let me know if you need anything later. ", " "];
     }
     else if (respType == "Yes" ){
-        responses = ["Ok%N%. Simply say what you want me to do with your SmartThings devices or macros. "
+        responses = ["Ok%N%. Simply say what you want me to do with your SmartThings environment. "
                     , "Ok. What would you like to do%N%? ", "Ok. Ready for your commands. ", "Ok. Go ahead. "];       
     }
     else if (respType == "Ending") {
@@ -330,7 +331,7 @@ function responseCourtesy(respType){
                     ,"Thank you%Nc% and let me know if you need anything later. ", " "];
     }
     else if (respType == "Yes" ){
-        responses = ["Great! Please say what you want me to do with your SmartThings devices or macros. "
+        responses = ["Great! Please say what you want me to do with your SmartThings environment. "
                     , "Thank you%N%, what would you like to do? ", "Excellent! Ready for your commands%N%. ", "Ok. Please go ahead. "];       
     }
     else if (respType == "Ending") {
