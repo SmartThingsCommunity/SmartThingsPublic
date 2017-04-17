@@ -2,9 +2,10 @@
  *  Ask Alexa Message Queue Extension
  *
  *  Copyright © 2017 Michael Struck
- *  Version 1.0.0 3/31/17
+ *  Version 1.0.1 4/12/17
  * 
- *  Version 1.0.0 - Initial release
+ *  Version 1.0.0 (3/31/17) - Initial release
+ *  Version 1.0.1 (4/12/17) - Refresh macro list after update from child app (for partner integration)
  *
  *  Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except
  *  in compliance with the License. You may obtain a copy of the License at:
@@ -89,7 +90,9 @@ def updated() {
 	unsubscribe() 
     initialize()
 }
-def initialize() { }
+def initialize() { 
+	sendLocationEvent(name: "askAlexaMQ", value: "refresh", data: [queues: parent.getMQListID(false)] , isStateChange: true, descriptionText: "Ask Alexa message queue list refresh")
+}
 //Main Handlers
 def msgHandler(date, descriptionText, unit, value) {
     if (!state.msgQueue) state.msgQueue=[]
@@ -172,6 +175,6 @@ def qDelete() {
 //Common Code
 def getOkToRun(){ def result = (!runMode || runMode.contains(location.mode)) && parent.getDayOk(runDay) && parent.getTimeOk(timeStart,timeEnd) && parent.getPeopleOk(runPeople,runPresAll) }
 //Version/Copyright/Information/Help
-private versionInt(){ return 100 }
+private versionInt(){ return 101 }
 private def textAppName() { return "Ask Alexa Message Queue" }	
-private def textVersion() { return "Message Queue Version: 1.0.0 (03/31/2017)" }
+private def textVersion() { return "Message Queue Version: 1.0.1 (04/12/2017)" }
