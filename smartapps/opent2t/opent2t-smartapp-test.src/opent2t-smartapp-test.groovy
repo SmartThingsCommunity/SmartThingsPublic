@@ -108,6 +108,12 @@ mappings {
 		]
 	}
 }
+
+def installed() {
+	log.debug "Installing with settings: ${settings}"
+	initialize()
+}
+
 def updated() {
 	log.debug "Updating with settings: ${settings}"
 	if(state.deviceSubscriptionMap == null){
@@ -115,7 +121,7 @@ def updated() {
 		log.debug "deviceSubscriptionMap created."
 	}
     if( state.locationSubscriptionMap == null){
-		state.locationSubscriptionMap = [:]
+		 state.locationSubscriptionMap = [:]
 		log.debug "locationSubscriptionMap created."
 	}
 	unsubscribe()
@@ -169,7 +175,7 @@ def registerDeviceChange() {
 			if(state.deviceSubscriptionMap[deviceId] == null){
 				state.deviceSubscriptionMap.put(deviceId, [subscriptionEndpt])
 				log.info "Added subscription URL: ${subscriptionEndpt} for ${myDevice.displayName}"
-			}else if (!state.deviceSubscriptionMap[deviceId].contains(subscriptionEndpt)){
+			} else if (!state.deviceSubscriptionMap[deviceId].contains(subscriptionEndpt)){
 				state.deviceSubscriptionMap[deviceId] << subscriptionEndpt
 				log.info "Added subscription URL: ${subscriptionEndpt} for ${myDevice.displayName}"
 			}
@@ -225,7 +231,7 @@ def registerDeviceGraph() {
     	if(state.locationSubscriptionMap[location.id] == null){
             state.locationSubscriptionMap.put(location.id, [subscriptionEndpt])
             log.info "Added subscription URL: ${subscriptionEndpt} for Location ${location.name}"
-        }else if (!state.locationSubscriptionMap[location.id].contains(subscriptionEndpt)){
+        } else if (!state.locationSubscriptionMap[location.id].contains(subscriptionEndpt)){
             state.locationSubscriptionMap[location.id] << subscriptionEndpt
             log.info "Added subscription URL: ${subscriptionEndpt} for Location ${location.name}"
         }
@@ -320,6 +326,7 @@ def locationEventHandler(evt) {
     }
 }
 
+
 /*** Device Query/Update Functions  ***/
 
 //Endpoints function: return all device data in json format
@@ -331,7 +338,7 @@ def getDevices() {
 			deviceData << [name: it.displayName, id: it.id, status:it.status, deviceType:deviceType, manufacturer:it.manufacturerName, model:it.modelName, attributes: deviceAttributeList(it, deviceType), locationMode: getLocationModeInfo()]
 		} else {
 			deviceData << [name: it.displayName, id: it.id, status:it.status, deviceType:deviceType, manufacturer:it.manufacturerName, model:it.modelName, attributes: deviceAttributeList(it, deviceType)]
-		}
+		} 
 	}
  
 	log.debug "getDevices, return: ${deviceData}"
@@ -434,15 +441,15 @@ private getDeviceType(device) {
 				//If the device also contains "Switch Level" capability, identify it as a "light" device.
 				if (capabilities.any{it.name.toLowerCase() == "switch level"}){
                 	
-					//If the device also contains "Power Meter" capability, identify it as a "dimmerSwitch" device.
-					if (capabilities.any{it.name.toLowerCase() == "power meter"}){
-						deviceType = "dimmerSwitch"
-						return deviceType
-					} else {
-						deviceType = "light"
-						return deviceType
-					}
-				}
+                    //If the device also contains "Power Meter" capability, identify it as a "dimmerSwitch" device.
+                    if (capabilities.any{it.name.toLowerCase() == "power meter"}){
+                        deviceType = "dimmerSwitch"
+                        return deviceType
+                    } else {
+                        deviceType = "light"
+                        return deviceType
+                    }
+                }
 				break
 			case "garageDoorControl":
 				deviceType = "garageDoor"
@@ -480,24 +487,24 @@ private deviceAttributeList(device, deviceType) {
 	def attributeList = [:]
 	def allAttributes = device.supportedAttributes
 	allAttributes.each { attribute ->
-    	try {
+        	try {
 			def currentState = device.currentState(attribute.name)
-			if(currentState != null ){
-				switch(attribute.name){
-					case 'temperature':
-						attributeList.putAll([ (attribute.name): currentState.value, 'temperatureScale':location.temperatureScale ])
-						break;
-					default:
-						attributeList.putAll([(attribute.name): currentState.value ])
-						break;
-				}
-				if( deviceType == "genericSensor" ){
-						def key = attribute.name + "_lastUpdated"
-						attributeList.putAll([ (key): currentState.isoDate ])
-				}
-			} else {
-				attributeList.putAll([ (attribute.name): null ]);
-			}
+            		if(currentState != null ){
+                		switch(attribute.name){
+                    		case 'temperature':
+                        		attributeList.putAll([ (attribute.name): currentState.value, 'temperatureScale':location.temperatureScale ])
+                        		break;
+	                    	default:
+        	                	attributeList.putAll([(attribute.name): currentState.value ])
+                	        	break;
+                		}
+                		if( deviceType == "genericSensor" ){
+                    			def key = attribute.name + "_lastUpdated"
+                			attributeList.putAll([ (key): currentState.isoDate ])
+                		}
+	            	} else {
+            			attributeList.putAll([ (attribute.name): null ]);
+            		}
 		} catch(e) {
 			attributeList.putAll([ (attribute.name): null ]);
 		}
