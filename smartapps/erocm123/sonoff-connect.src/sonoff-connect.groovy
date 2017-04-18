@@ -80,7 +80,7 @@ def manuallyAdd(){
    dynamicPage(name: "manuallyAdd", title: "Manually add a Sonoff device", nextPage: "manuallyAddConfirm") {
 		section {
 			paragraph "This process will manually create a Sonoff device based on the entered IP address. The SmartApp needs to then communicate with the device to obtain additional information from it. Make sure the device is on and connected to your wifi network."
-            input "deviceType", "enum", title:"Device Type", description: "", required: false, options: ["Sonoff Wifi Switch","Sonoff TH Wifi Switch","Sonoff POW Wifi Switch","Sonoff Dual Wifi Switch"]
+            input "deviceType", "enum", title:"Device Type", description: "", required: false, options: ["Sonoff Wifi Switch","Sonoff TH Wifi Switch","Sonoff POW Wifi Switch","Sonoff Dual Wifi Switch","Sonoff 4CH Wifi Switch"]
             input "ipAddress", "text", title:"IP Address", description: "", required: false 
 		}
     }
@@ -351,6 +351,8 @@ def addDevices() {
                 deviceHandlerName = "Sonoff POW Wifi Switch"
             else if (selectedDevice?.value?.name?.startsWith("Sonoff Dual"))
                 deviceHandlerName = "Sonoff Dual Wifi Switch"
+            else if (selectedDevice?.value?.name?.startsWith("Sonoff 4CH"))
+                deviceHandlerName = "Sonoff 4CH Wifi Switch"
             else 
                 deviceHandlerName = "Sonoff Wifi Switch"
             addChildDevice("erocm123", deviceHandlerName, selectedDevice.value.mac, selectedDevice?.value.hub, [
