@@ -29,17 +29,6 @@ capability "Health Check"
 capability "Button"
 capability "Holdable Button"
 
-attribute "switch1", "string"
-attribute "switch2", "string"
-attribute "power1", "number"
-attribute "energy1", "number"
-attribute "power2", "number"
-attribute "energy2", "number"
-
-command "on1"
-command "off1"
-command "on2"
-command "off2"
 command "reset"
 
 fingerprint deviceId: "0x1001", inClusters:"0x5E,0x86,0x72,0x59,0x73,0x22,0x56,0x32,0x71,0x98,0x7A,0x25,0x5A,0x85,0x70,0x8E,0x60,0x75,0x5B"
@@ -60,49 +49,24 @@ tiles(scale: 2){
            		attributeState "statusText", label:'${currentValue}'       		
             }
 	}
-	standardTile("switch1", "device.switch1",canChangeIcon: true, width: 2, height: 2, decoration: "flat") {
-		state "on", label: "switch1", action: "off1", icon: "st.switches.switch.on", backgroundColor: "#00a0dc"
-		state "off", label: "switch1", action: "on1", icon: "st.switches.switch.off", backgroundColor: "#cccccc"
-    }
-	standardTile("switch2", "device.switch2",canChangeIcon: true, width: 2, height: 2, decoration: "flat") {
-		state "on", label: "switch2", action: "off2", icon: "st.switches.switch.on", backgroundColor: "#00a0dc"
-		state "off", label: "switch2", action: "on2", icon: "st.switches.switch.off", backgroundColor: "#cccccc"
-    }
+    childDeviceTiles("all")
+	valueTile("power", "device.power", decoration: "flat", width: 2, height: 2) {
+			state "default", label:'${currentValue} W'
+	}
     valueTile("energy", "device.energy", decoration: "flat", width: 2, height: 2) {
 			state "default", label:'${currentValue} kWh'
-	}
-    valueTile("power", "device.power", decoration: "flat", width: 2, height: 2) {
-			state "default", label:'${currentValue} W'
-	}
-    valueTile("energy1", "device.energy1", decoration: "flat", width: 2, height: 2) {
-			state "default", label:'${currentValue} kWh'
-	}
-    valueTile("power1", "device.power1", decoration: "flat", width: 2, height: 2) {
-			state "default", label:'${currentValue} W'
-	}
-    valueTile("energy2", "device.energy2", decoration: "flat", width: 2, height: 2) {
-			state "default", label:'${currentValue} kWh'
-	}
-    valueTile("power2", "device.power2", decoration: "flat", width: 2, height: 2) {
-			state "default", label:'${currentValue} W'
 	}
     standardTile("refresh", "device.switch", inactiveLabel: false, decoration: "flat", width: 2, height: 2) {
 		state "default", label:"", action:"refresh.refresh", icon:"st.secondary.refresh"
     }
-
     standardTile("configure", "device.needUpdate", inactiveLabel: false, decoration: "flat", width: 2, height: 2) {
             state "NO" , label:'', action:"configuration.configure", icon:"st.secondary.configure"
             state "YES", label:'', action:"configuration.configure", icon:"https://github.com/erocm123/SmartThingsPublic/raw/master/devicetypes/erocm123/qubino-flush-1d-relay.src/configure@2x.png"
-        }
+    }
     standardTile("reset", "device.energy", inactiveLabel: false, decoration: "flat", width: 2, height: 2) {
 		state "default", label:'reset kWh', action:"reset"
 	}
 
-    main(["switch","switch1", "switch2"])
-    details(["switch",
-             "switch1","energy1","power1",
-             "switch2","energy2","power2",
-             "refresh","reset","configure"])
 }
     preferences {
         input description: "Once you change values on this page, the corner of the \"configuration\" icon will change orange until all configuration parameters are updated.", title: "Settings", displayDuringSetup: false, type: "paragraph", element: "paragraph"
@@ -119,6 +83,19 @@ def parse(String description) {
     } else {
         log.debug "Non-parsed event: ${description}"
     }
+    
+    def statusTextmsg = ""
+    
+    result.each {
+        if ((it instanceof Map) == true && it.find{ it.key == "name" }?.value == "power") {
+            statusTextmsg = "${it.value} W ${device.currentValue('energy')? device.currentValue('energy') : "0"} kWh"
+        }
+        if ((it instanceof Map) == true && it.find{ it.key == "name" }?.value == "energy") {
+            statusTextmsg = "${device.currentValue('power')? device.currentValue('power') : "0"} W ${it.value} kWh"
+        }
+    }
+    if (statusTextmsg != "") sendEvent(name:"statusText", value:statusTextmsg, displayed:false)
+
     return result
 }
 
@@ -136,43 +113,45 @@ def zwaveEvent(physicalgraph.zwave.commands.basicv1.BasicSet cmd) {
     response(secureSequence(result, 1000)) // returns the result of reponse()
 }
 
-def zwaveEvent(physicalgraph.zwave.commands.switchbinaryv1.SwitchBinaryReport cmd)
+def zwaveEvent(physicalgraph.zwave.commands.switchbinaryv1.SwitchBinaryReport cmd, ep=null)
 {
-    log.debug "SwitchBinaryReport $cmd"
-    def result = []
-    result << zwave.multiChannelV3.multiChannelCmdEncap(sourceEndPoint:1, destinationEndPoint:1, commandClass:37, command:2)
-    result << zwave.multiChannelV3.multiChannelCmdEncap(sourceEndPoint:1, destinationEndPoint:2, commandClass:37, command:2)
-    response(secureSequence(result, 1000)) // returns the result of reponse()
+    logging("SwitchBinaryReport ${cmd}")
+    if (ep) {
+        def childDevice = childDevices.find{it.deviceNetworkId == "$device.deviceNetworkId-ep$ep"}
+        if (childDevice)
+            childDevice.sendEvent(name: "switch", value: cmd.value ? "on" : "off")
+    } else {
+        def result = createEvent(name: "switch", value: cmd.value ? "on" : "off", type: "digital")
+        def cmds = []
+        cmds << encap(zwave.switchBinaryV1.switchBinaryGet(), 1)
+        cmds << encap(zwave.switchBinaryV1.switchBinaryGet(), 2)
+        return [result, response(secureSequence(cmds))] // returns the result of reponse()
+    }
 }
 
 def zwaveEvent(physicalgraph.zwave.commands.meterv3.MeterReport cmd, ep=null) {
-    log.debug "MeterReport $cmd Endpoint $ep"
+    logging("MeterReport $cmd : Endpoint: $ep")
     def result
-    def eName
-    def pName
     def cmds = []
-    if (ep) {
-       eName = "energy${ep}"
-       pName = "power${ep}"
+    if (cmd.scale == 0) {
+       result = [name: "energy", value: cmd.scaledMeterValue, unit: "kWh"]
+    } else if (cmd.scale == 1) {
+       result = [name: "energy", value: cmd.scaledMeterValue, unit: "kVAh"]
     } else {
-       eName = "energy"
-       pName = "power"
+       result = [name: "power", value: cmd.scaledMeterValue, unit: "W"]
+    }
+    if (ep) {
+       def childDevice = childDevices.find{it.deviceNetworkId == "$device.deviceNetworkId-ep$ep"}
+       if (childDevice)
+          childDevice.sendEvent(result)
+    } else {
        (1..2).each { endpoint ->
 			cmds << encap(zwave.meterV2.meterGet(scale: 0), endpoint)
             cmds << encap(zwave.meterV2.meterGet(scale: 2), endpoint)
 	   }
+       if (cmds != []) return [createEvent(result), response(secureSequence(cmds))]
+       else return createEvent(result)
     }
-    if (cmd.scale == 0) {
-        result = createEvent(name: eName, value: cmd.scaledMeterValue, unit: "kWh")
-    } else if (cmd.scale == 1) {
-        result = createEvent(name: eName, value: cmd.scaledMeterValue, unit: "kVAh")
-    } else {
-        result = createEvent(name: pName, value: cmd.scaledMeterValue, unit: "W")
-    }
-    
-    runIn(1, "updateStatus")
-    
-    cmds ? [result, response(secureSequence(cmds, 1000))] : result
 }
 
 private updateStatus(){
@@ -211,49 +190,11 @@ def zwaveEvent(physicalgraph.zwave.commands.multichannelv3.MultiChannelCapabilit
 }
 
 def zwaveEvent(physicalgraph.zwave.commands.multichannelv3.MultiChannelCmdEncap cmd) {
-   log.debug "MultiChannelCmdEncap $cmd"
-   def map = [ name: "switch$cmd.sourceEndPoint" ]
-   def encapsulatedCommand = cmd.encapsulatedCommand([0x32: 3])
-   if (encapsulatedCommand && cmd.commandClass == 50) {
-      zwaveEvent(encapsulatedCommand, cmd.sourceEndPoint)
-   } else {
-   if(cmd.parameter == [0] || cmd.parameter == [255]){
-   switch(cmd.commandClass) {
-      case 32:
-         if (cmd.parameter == [0]) {
-            map.value = "off"
-         }
-         if (cmd.parameter == [255]) {
-            map.value = "on"
-         }
-         createEvent(map)
-         break
-      case 37:
-         if (cmd.parameter == [0]) {
-            map.value = "off"
-         }
-         if (cmd.parameter == [255]) {
-            map.value = "on"
-         }
-         break
-    }
-    def events = [createEvent(map)]
-    if (map.value == "on") {
-            events += [createEvent([name: "switch", value: "on"])]
-    } else {
-         def allOff = true
-         (1..2).each { n ->
-             if (n != cmd.sourceEndPoint) {
-                 if (device.currentState("switch${n}").value != "off") allOff = false
-             }
-         }
-         if (allOff) {
-             events += [createEvent([name: "switch", value: "off"])]
-         }
-    }
-    events
-    }
-    }
+   logging("MultiChannelCmdEncap ${cmd}")
+   def encapsulatedCommand = cmd.encapsulatedCommand([0x32: 3, 0x25: 1, 0x20: 1])
+   if (encapsulatedCommand) {
+		zwaveEvent(encapsulatedCommand, cmd.sourceEndPoint as Integer)
+   }
 }
 
 def zwaveEvent(physicalgraph.zwave.commands.associationv2.AssociationReport cmd) {
@@ -279,9 +220,11 @@ def zwaveEvent(physicalgraph.zwave.commands.configurationv2.ConfigurationReport 
 
 def refresh() {
 	def cmds = []
-	cmds << zwave.multiChannelV3.multiChannelCmdEncap(sourceEndPoint:1, destinationEndPoint:1, commandClass:37, command:2)
-    cmds << zwave.multiChannelV3.multiChannelCmdEncap(sourceEndPoint:1, destinationEndPoint:2, commandClass:37, command:2)
+    cmds << zwave.switchBinaryV1.switchBinaryGet()
+    cmds << zwave.meterV2.meterGet(scale: 0)
+    cmds << zwave.meterV2.meterGet(scale: 2)
     (1..2).each { endpoint ->
+            cmds << encap(zwave.switchBinaryV1.switchBinaryGet(), endpoint)
 			cmds << encap(zwave.meterV2.meterGet(scale: 0), endpoint)
             cmds << encap(zwave.meterV2.meterGet(scale: 2), endpoint)
 	}
@@ -340,13 +283,24 @@ def updated()
 {
 	state.enableDebugging = settings.enableDebugging
     logging("updated() is being called")
+    if (!childDevices) {
+		createChildDevices()
+	}
+	else if (device.label != state.oldLabel) {
+		childDevices.each {
+            if (it.label == "${state.oldLabel} (S${channelNumber(it.deviceNetworkId)})") {
+			    def newLabel = "${device.displayName} (S${channelNumber(it.deviceNetworkId)})"
+			    it.setLabel(newLabel)
+            }
+		}
+		state.oldLabel = device.label
+	}
     sendEvent(name: "checkInterval", value: 2 * 30 * 60 + 2 * 60, displayed: false, data: [protocol: "zwave", hubHardwareId: device.hub.hardwareID])
     def cmds = update_needed_settings()
     
     sendEvent(name:"needUpdate", value: device.currentValue("needUpdate"), displayed:false, isStateChange: true)
     
     if (cmds != []) response(secureSequence(cmds))
-    //if (cmds != []) response(commands(cmds))
 }
 
 def on() { 
@@ -366,32 +320,29 @@ def off() {
     ], 1000)
 }
 
-def on1() {
-    secureSequence([
-        zwave.multiChannelV3.multiChannelCmdEncap(sourceEndPoint:1, destinationEndPoint:1, commandClass:37, command:1, parameter:[255]),
-        zwave.multiChannelV3.multiChannelCmdEncap(sourceEndPoint:1, destinationEndPoint:1, commandClass:37, command:2)
-    ], 1000)
+void childOn(String dni) {
+    logging("childOn($dni)")
+    def cmds = []
+    cmds << new physicalgraph.device.HubAction(secure(encap(zwave.basicV1.basicSet(value: 0xFF), channelNumber(dni))))
+    cmds << new physicalgraph.device.HubAction(secure(encap(zwave.switchBinaryV1.switchBinaryGet(), channelNumber(dni))))
+	sendHubCommand(cmds)
 }
 
-def off1() {
-    secureSequence([
-        zwave.multiChannelV3.multiChannelCmdEncap(sourceEndPoint:1, destinationEndPoint:1, commandClass:37, command:1, parameter:[0]),
-        zwave.multiChannelV3.multiChannelCmdEncap(sourceEndPoint:1, destinationEndPoint:1, commandClass:37, command:2)
-    ], 1000)
+void childOff(String dni) {
+    logging("childOff($dni)")
+	def cmds = []
+    cmds << new physicalgraph.device.HubAction(secure(encap(zwave.basicV1.basicSet(value: 0x00), channelNumber(dni))))
+    cmds << new physicalgraph.device.HubAction(secure(encap(zwave.switchBinaryV1.switchBinaryGet(), channelNumber(dni))))
+	sendHubCommand(cmds)
 }
 
-def on2() {
-    secureSequence([
-        zwave.multiChannelV3.multiChannelCmdEncap(sourceEndPoint:2, destinationEndPoint:2, commandClass:37, command:1, parameter:[255]),
-        zwave.multiChannelV3.multiChannelCmdEncap(sourceEndPoint:2, destinationEndPoint:2, commandClass:37, command:2)
-    ], 1000)
-}
-
-def off2() {
-    secureSequence([
-        zwave.multiChannelV3.multiChannelCmdEncap(sourceEndPoint:2, destinationEndPoint:2, commandClass:37, command:1, parameter:[0]),
-        zwave.multiChannelV3.multiChannelCmdEncap(sourceEndPoint:2, destinationEndPoint:2, commandClass:37, command:2)
-    ], 1000)
+void childRefresh(String dni) {
+    logging("childRefresh($dni)")
+	def cmds = []
+    cmds << new physicalgraph.device.HubAction(secure(encap(zwave.switchBinaryV1.switchBinaryGet(), channelNumber(dni))))
+    cmds << new physicalgraph.device.HubAction(secure(encap(zwave.meterV2.meterGet(scale: 0), channelNumber(dni))))
+    cmds << new physicalgraph.device.HubAction(secure(encap(zwave.meterV2.meterGet(scale: 2), channelNumber(dni))))
+	sendHubCommand(cmds)
 }
 
 private secure(physicalgraph.zwave.Command cmd) {
@@ -623,6 +574,33 @@ def zwaveEvent(physicalgraph.zwave.commands.crc16encapv1.Crc16Encap cmd) {
 	if (encapsulatedCommand) {
 		zwaveEvent(encapsulatedCommand)
 	}
+}
+
+private channelNumber(String dni) {
+	dni.split("-ep")[-1] as Integer
+}
+
+private void createChildDevices() {
+	state.oldLabel = device.label
+     try {
+        for (i in 1..2) {
+	       addChildDevice("Metering Switch Child Device", "${device.deviceNetworkId}-ep${i}", null,
+		      [completedSetup: true, label: "${device.displayName} (S${i})",
+		      isComponent: false, componentName: "ep$i", componentLabel: "Switch $i"])
+        }
+    } catch (e) {
+	    runIn(2, "sendAlert")
+    }
+}
+
+private sendAlert() {
+   sendEvent(
+      descriptionText: "Child device creation failed. Please make sure that the \"Metering Switch Child Device\" is installed and published.",
+	  eventType: "ALERT",
+	  name: "childDeviceCreation",
+	  value: "failed",
+	  displayed: true,
+   )
 }
 
 def configuration_model()
