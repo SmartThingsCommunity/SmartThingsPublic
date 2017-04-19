@@ -44,7 +44,7 @@ def settings() {
         name:       "settings",
         title:      "Thermostats and other devices",
         nextPage:   "pageSetup",
-        install: true,
+        install: false,
         uninstall: true
     ]
 
@@ -74,7 +74,7 @@ def settings() {
                 if(AltSensor_3){
                     input(name: "Sensor_3", type: "capability.temperatureMeasurement", title: "Pick a sensor", required: true, multiple: false, description: null, uninstall: true)
                 }
-                input(name: "Exception", type : "bool", title: "Make an exception for this device when a switch is on | setting to be completed in the next page", 
+                input(name: "ExceptionSW", type : "bool", title: "Make an exception for this device when a switch is on | setting to be completed in the next page", 
                       defaut: false, submitOnChange: true)
             }
             if(HowMany == 4) {
@@ -89,7 +89,6 @@ def settings() {
             }
 
             input(name: "contact", type:"capability.contactSensor", title: "select windows / contacts", multiple: true, required: true)
-
             input(name: "TimeBeforeClosing", type: "number", title: "after this amount of time in seconds", required: false, description: "default is 60 seconds", default: 60, uninstall: true, install: true)
             input(name: "CriticalTemp", type:"number", title: "but do not allow the temperature to fall bellow this value", required: true, decription: "set a safety value, default is 65", defaut: 65)
             input(name: "XtraTempSensor", type:"capability.temperatureMeasurement", title: "select a temperature sensor that will serve as reference", required: true)
@@ -99,8 +98,16 @@ def settings() {
         section("Open some windows when it's nor too hot nor too cool outside (beta: will run only once to prevent annoyances)"){
             input(name: "Actuators", type: "capability.switch", required: false, multiple: true, title: "select the switches that you want to control", submitOnChange: true)
             if(Actuators){
-                input(name: "OutsideTempLowThres", type: "number", title: "Outside temperature above which I open windows", required: true)
-                input(name: "OutsideTempHighThres", type: "number", title: "Outside temperature above which I keep windows closed", required: true)
+                input(name: "OutsideTempLowThres", type: "number", title: "Outside temperature above which I open windows", required: true, description: "Outside Temp's Low Threshold")
+                input(name: "OutsideTempHighThres", type: "number", title: "Outside temperature above which I keep windows closed", required: true, description: "Outside Temp's High Threshold")
+                input(name: "ExceptACMode1", type: "mode", title: "if location is in this mode, lower Outside Temp's High Threshold", required: false, multiple: false, submitOnChange: true)
+                if(ExceptACMode1){
+                    input(name: "ExceptHighThreshold1", type: "number", title: "pick an offset value for $ExceptACMode1 mode", required: true)
+                }
+                input(name: "ExceptACMode2", type: "mode", title: "if location is in this mode, lower Outside Temp's High Threshold", required: false, multiple: false, submitOnChange: true)
+                if(ExceptACMode2){
+                    input(name: "ExceptHighThreshold2", type: "number", title: "pick an offset value for $ExceptACMode2 mode", required: true)
+                }
                 input(name: "OffSet", type: "decimal", title: "You set Critical Temp at: ${CriticalTemp}. Close windows when inside temp is inferior or equal to this value + OffSet ", required: true, description: "Set OffSet Value")
                 paragraph "If within margin then open. But not if inside's temp is lower then heat setting minus offset. Reference is $XtraTempSensor"
                 def HasStop = Actuators?.hasCommand("stop") || Actuators?.hasCommand("Stop") 
@@ -119,7 +126,7 @@ def Modes(){
         name:       "Modes",
         title:      "Modes and temperatures",
         nextPage:   "pageSetup",
-        install: true,
+        install: false,
         uninstall: true
     ]
 
@@ -145,7 +152,7 @@ def Modes(){
                 input(name: "HSPH1", type: "decimal", title: "Set Heating temperature for $Thermostat_1 in $Home mode", required: true)
                 input(name: "CSPH1", type: "decimal", title: "Set Cooling temperature for $Thermostat_1 in $Home mode", required: true)
 
-                if(Exception){              
+                if(ExceptionSW){              
                     input(name: "CtrlSwtH", type: "capability.switch", title: "Make an exception When this switch is on", required: false, submitOnChange: true)
                     if(CtrlSwtH){
                         input(name: "AddDegrees", type: "decimal", title: "Add this amount of degrees to $Thermostat_1 heat setting in $Home mode", required: true)
@@ -171,7 +178,7 @@ def Modes(){
                 input(name: "HSPN1", type: "decimal", title: "Set Heating temperature for $Thermostat_1 in $Night mode", required: true)
                 input(name: "CSPN1", type: "decimal", title: "Set Cooling temperature for $Thermostat_1 in $Night mode", required: true)
 
-                if(Exception){              
+                if(ExceptionSW){              
                     input(name: "CtrlSwtN", type: "capability.switch", title: "When this switch is on", required: false, submitOnChange: true)
                     if(CtrlSwtN){
                         input(name: "AddDegrees", type: "decimal", title: "Add this amount of degrees to $Thermostat_1 heat setting in $Night mode", required: true)
@@ -205,7 +212,7 @@ def Modes(){
                     input(name: "HSPCust1_T1", type: "decimal", title: "Set Heating temperature for $Thermostat_1 in $CustomMode1 mode", required: true)
                     input(name: "CSPCust1_T1", type: "decimal", title: "Set Cooling temperature for $Thermostat_1 in $CustomMode1 mode", required: true)
 
-                    if(Exception){              
+                    if(ExceptionSW){              
                         input(name: "CtrlSwtCust1", type: "capability.switch", title: "When this switch is on", required: false, submitOnChange: true)
                         if(CtrlSwtCust1){
                             input(name: "AddDegrees", type: "decimal", title: "Add this amount of degrees to $Thermostat_1 heat setting in $CustomMode1 mode", required: true)
@@ -233,7 +240,7 @@ def Modes(){
                         input(name: "HSPCust2_T1", type: "decimal", title: "Set Heating temperature for $Thermostat_1 in $CustomMode2 mode", required: true)
                         input(name: "CSPCust2_T1", type: "decimal", title: "Set Cooling temperature for $Thermostat_1 in $CustomMode2 mode", required: true)
 
-                        if(Exception){              
+                        if(ExceptionSW){              
                             input(name: "CtrlSwtCust2", type: "capability.switch", title: "When this switch is on", required: false, submitOnChange: true)
                             if(CtrlSwtCust2){
                                 input(name: "AddDegrees", type: "decimal", title: "Add this amount of degrees to $Thermostat_1 heat setting in $CustomMode2 mode", required: true)
@@ -266,7 +273,8 @@ def installed() {
 }
 def updated() {
     atomicState.modeStartTime = now() 
-
+    state.WindowsAppOpened = false // needed at first to avoid false turning on when updated or mode changed
+    atomicState.ThermOff = false // allows units override in open windows modes
     log.debug "updated with settings = $settings $Modes"
     unsubscribe()
     unschedule()
@@ -347,7 +355,7 @@ def init() {
             //log.trace "$Thermostat_4 has switch capability, subscribing to ThermostatSwitchHandler events"
         } else { log.trace "no switch capability for $Thermostat_4" }
     }
-    if(Exception){
+    if(ExceptionSW){
         if(CtrlSwtH){
             subscribe(CtrlSwtH, "switch", switchHandler)
         }
@@ -364,6 +372,21 @@ def init() {
     }
     if(AltSensor_1 || AltSensor_2 || AltSensor_3){
         subscribe(OutsideSensor, "temperature", temperatureHandler)
+        if(AltSensor_1){
+            subscribe(Sensor_1, "temperature", temperatureHandler)
+            //log.debug "Subscription for alternative Sensor for $Sensor_1"
+
+        }
+        if(AltSensor_2){
+            subscribe(Sensor_2, "temperature", temperatureHandler)
+            //log.debug "Subscription for alternative Sensor for $Sensor_2"
+
+        }
+        if(AltSensor_3){
+            subscribe(Sensor_3, "temperature", temperatureHandler)
+            //log.debug "Subscription for alternative Sensor for $Sensor_3"
+
+        }
     }
     atomicState.doorsAreOpen = false
 
@@ -378,7 +401,7 @@ def init() {
     state.ThermostatOverriden = "none"
     atomicState.ThisIsManual = false
     atomicState.closed = true // windows management
-    atomicState.hasRun = 0 // windows management
+    //atomicState.hasRun = 0 // must not be reset here
 
     atomicState.messageSent = 0
 
@@ -391,7 +414,13 @@ def init() {
 def switchHandler(evt){
     log.debug "switchHandler : ${evt.device} is ${evt.value}"
 
-    TemperaturesModes()
+    if(ExceptionSW && evt.value == "on"){
+        atomicState.exception = true
+    } else {
+        atomicState.exception = false
+    }
+
+    runIn(10, TemperaturesModes)
 
 }
 def setpointHandler(evt){
@@ -417,20 +446,18 @@ def setpointHandler(evt){
         //def EventDevice = null 
         def AltSENSOR = false    
 
-
         log.info "Home modes are : $Home, Night modes are : $Night, Away mode is : $Away, CustomMode1 are : $CustomMode1, CustomMode2 are : $CustomMode2"
-
 
         log.debug "CurrMode is $CurrMode mode"
         // declare an integer value for the thermostat which has had its values modified
         def MapModesThermostats = ["${Thermostat_1}": "1" , "${Thermostat_2}": 2, "${Thermostat_3}": "3", 
                                    "${Thermostat_4}": "4"]
         def KeyValueForThisTherm = MapModesThermostats.find { it.key == "$evt.device"}
-        log.info "device is ------------------- $KeyValueForThisTherm.value"
+        //log.info "device is ------------------- $KeyValueForThisTherm.value"
         def ThermNumber = KeyValueForThisTherm.value
         ThermNumber = KeyValueForThisTherm.value.toInteger()
 
-        log.info "ThermNumber is ------------------- $ThermNumber"
+        //log.info "ThermNumber is ------------------- $ThermNumber"
 
         //array heat
         def HSPH = ["0","$HSPH1", "$HSPH2", "$HSPH3", "$HSPH4"]
@@ -442,11 +469,11 @@ def setpointHandler(evt){
         // declare an integer value for current mode
         def MapofIndexValues = [0: "0", "$Home": "1", "$Night": "2", "$Away": "3", "$CustomMode1": "4", "$CustomMode2": "5" ]   
         def ModeIndexValue = MapofIndexValues.find{ it.key == "$CurrMode"}
-        log.info "-----------------------------------------------------------------------------------------ModeIndexValue = $ModeIndexValue"
+        //log.info "-----------------------------------------------------------------------------------------ModeIndexValue = $ModeIndexValue"
         ModeIndexValue = ModeIndexValue.value
 
         ModeIndexValue = ModeIndexValue.toInteger()
-        log.info "-----------------------------------------------------------------------------------------ModeIndexValue = $ModeIndexValue"
+        //log.info "-----------------------------------------------------------------------------------------ModeIndexValue = $ModeIndexValue"
 
         //array cool
         def CSPH = ["0","$CSPH1", "$CSPH2", "$CSPH3", "$CSPH4"]
@@ -472,27 +499,29 @@ def setpointHandler(evt){
         if(evt.name == "heatingSetpoint"){              
             reference = Math.round(Double.parseDouble(RefHeat))
             reference = reference.toInteger()
-            log.debug "RefHeat was: $RefHeat"
-            log.debug "RefHeat is now converted to a reference as: $reference"
+            //log.debug "RefHeat was: $RefHeat"
+            //log.debug "RefHeat is now converted to a reference as: $reference"
 
         }
         else  if(evt.name == "coolingSetpoint"){ 
             reference = Math.round(Double.parseDouble(RefCool))
             reference = reference.toInteger()
-            log.debug "RefCool was: $RefCool"
-            log.debug "RefCool is now converted to a reference as: $reference"
+            //log.debug "RefCool was: $RefCool"
+            //log.debug "RefCool is now converted to a reference as: $reference"
         }
 
+        def ThisIsModeChange = atomicState.locationModeChange
+        def ExceptionState = atomicState.exception
+        def thisIsExceptionTemp = evt.displayName == "$Thermostat_1" && ExceptionState
+        log.debug "ExceptionSwitch?($thisIsExceptionTemp)"
         /// 
         def Value = Math.round(Double.parseDouble(evt.value))
         Value = Value.toInteger()
-        log.debug "Evt value to Integer is : $Value"
-        log.debug "reference Value is to be compared to is: $reference"
-
-        def ThisIsModeChange = atomicState.locationModeChange
+        //log.debug "Evt value to Integer is : $Value"
+        //log.debug "reference Value is to be compared to is: $reference"
 
 
-        if(Value == reference || ThisIsModeChange){  
+        if(Value == reference || ThisIsModeChange || thisIsExceptionTemp){  
             log.debug "NO SETPOINT OVERRIDE"
             atomicState.ThisIsManual = false
 
@@ -500,18 +529,20 @@ def setpointHandler(evt){
         else {       
             atomicState.ThisIsManual = true
 
-            log.debug "new Set Point for $evt.device is MANUAL ---------- OVERRIDE MODE ACTIVATED"
+            log.debug "MANUAL SETPOINT OVERRIDE for $evt.device"
         }
 
         //     
-        if(evt.displayName == "${Thermostat_1}")
+        if(evt.displayName == "${Thermostat_1}" && !thisIsExceptionTemp)
         {
             if(atomicState.ThisIsManual == true){
                 atomicState.T1_AppMgt = false
+                atomicState.T2_AppMgtSP = false
                 log.info "atomicState.T1_AppMgt set to $atomicState.T1_AppMgt"
             }
             else {
                 atomicState.T1_AppMgt = true
+                atomicState.T1_AppMgtSP = true
                 log.info "atomicState.T1_AppMgt set to $atomicState.T1_AppMgt"
             }
 
@@ -520,10 +551,13 @@ def setpointHandler(evt){
         {
             if(atomicState.ThisIsManual == true){
                 atomicState.T2_AppMgt = false
+                atomicState.T2_AppMgtSP = false
+                
                 log.info "atomicState.T2_AppMgt set to $atomicState.T2_AppMgt"
             }
             else {
                 atomicState.T2_AppMgt = true
+                atomicState.T2_AppMgtSP = true
                 log.info "atomicState.T2_AppMgt set to $atomicState.T2_AppMgt"
             }
         }
@@ -531,10 +565,12 @@ def setpointHandler(evt){
         {
             if(atomicState.ThisIsManual == true){
                 atomicState.T3_AppMgt = false
+                atomicState.T3_AppMgtSP = false
                 log.info "atomicState.T3_AppMgt set to $atomicState.T3_AppMgt"
             }
             else {
                 atomicState.T3_AppMgt = true
+                atomicState.T3_AppMgtSP = true
                 log.info "atomicState.T3_AppMgt set to $atomicState.T3_AppMgt"
             }
         }
@@ -542,25 +578,27 @@ def setpointHandler(evt){
         {
             if(atomicState.ThisIsManual == true){
                 atomicState.T4_AppMgt = false
+                atomicState.T4_AppMgtSP = false
                 log.info "atomicState.T4_AppMgt set to $atomicState.T4_AppMgt"
             }
             else {
                 atomicState.T4_AppMgt = true
+                atomicState.T4_AppMgtSP = true
                 log.info "atomicState.T4_AppMgt set to $atomicState.T4_AppMgt"
             }
         }   
         log.debug "RefHeat is: $RefHeat"
         log.debug "RefCool is: $RefCool"
         log.debug "reference is: $reference"
-        log.debug "SetPoint Change was Manual? ($atomicState.ThisIsManual) if false then should have $reference = $Value (unless location mode just changed)"
+        log.debug """SetPoint Change was Manual? ($atomicState.ThisIsManual) if false then should have $reference = $Value 
+(unless location mode just changed or Exception Switch is on)"""
         atomicState.RefHeat = RefHeat
         atomicState.RefCool = RefCool
-
     }
     else{
         log.debug "Not evaluating SETPOINT OVERRIDE because the command came from within the app itself"
     }
-    TemperaturesModes()
+    runIn(10, TemperaturesModes)
 }
 def ThermostatSwitchHandler(evt){
 
@@ -582,30 +620,43 @@ def ThermostatSwitchHandler(evt){
 
         def ShouldBe = WhichThermInvolved.value.toString()
 
-
+		// is the current SetPoint app managed or manually set?
+		def IsSpAppManagedMap = ["${Thermostat_1}": atomicState.T1_AppMgtSP, "${Thermostat_2}" : atomicState.T2_AppMgtSP, "${Thermostat_3}" : atomicState.T3_AppMgtSP, "${Thermostat_4}" : atomicState.T4_AppMgtSP]
+        def IsSpAppManaged = SPexceptionMap.findAll{it.key == "$evt.displayName"}
+        log.debug "IsSpAppManaged?($IsSpAppManaged)"
+        
+        // is current state app managed or manually set?
         log.debug " for $evt.device shoudlbe: evt.value($evt.value) =? ShouldBe($ShouldBe)"
-        def IdenticalShouldbe = evt.value == ShouldBe
+        def IdenticalShouldbe = evt.value == ShouldBe && IsSpAppManaged
         log.debug "IDENTICAL?($IdenticalShouldbe)"
 
+        def ExceptionState = atomicState.exception
+        def thisIsExceptionTemp = evt.displayName == "$Thermostat_1" && ExceptionState
+        log.debug "ExceptionSwitch?($thisIsExceptionTemp)"
+        
+        
+        
+        
         //make sure that  : 
         // 1) the thermostat DID effectively had its operating mode changed
         // 2) this change was not triggered by a home location change 
         // 3) or by the TemperaturesModes() loop
-        //
+        // 4) no setpoint exception
+        
         def ThereWasChange = ShouldBe != evt.value && !LocatioModeChange && !ChangedByApp
 
-        log.debug " Change($ThereWasChange) "
+        log.debug " Change($ThereWasChange)"
 
-        if(evt.displayName == "${Thermostat_1}"){
-            if(IdenticalShouldbe){
+        if(evt.displayName == "${Thermostat_1}" ){
+            if(IdenticalShouldbe || thisIsExceptionTemp ){
                 // manual override deactivated
                 log.debug "NO MANUAL OVERRIDE for $Thermostat_1"
                 atomicState.T1_AppMgt = true
 
 
             }
-            else if(!IdenticalShouldbe){
-                // command did not come from app so manual override is on
+            else if(!IdenticalShouldbe && !thisIsExceptionTemp ){
+                // command did not come from app so manual or set point is manual override is on
                 log.debug "MANUAL OVERRIDE for $Thermostat_1"
                 atomicState.T1_AppMgt = false
 
@@ -660,7 +711,7 @@ def ThermostatSwitchHandler(evt){
 
     }
     else { log.debug "CRITICAL MODE. NOT EVALUATING OVERRIDES" }
-    TemperaturesModes()
+    runIn(10, TemperaturesModes)
 }
 def temperatureHandler(evt) { 
 
@@ -735,8 +786,6 @@ def contactHandlerClosed(evt) {
     } 
 
     alldoorsareclosed()
-    TemperaturesModes()
-
 }
 def contactHandlerOpen(evt) {
     atomicState.doorsAreOpen = true
@@ -752,6 +801,7 @@ def contactHandlerOpen(evt) {
 def ChangedModeHandler(evt) {
 
     log.debug "mode changed to ${evt.value}"
+    atomicState.hasRun = 0 /// should be 0 set to 1 for tests
 
     updated()
 
@@ -760,7 +810,9 @@ def ChangedModeHandler(evt) {
 def TemperaturesModes(){
 
     log.trace "MAIN LOOP RUNNING"
-    pollThermostats()
+
+
+
     def doorsOk = alldoorsareclosed()
     if(doorsOk){
         def CurrMode = location.currentMode
@@ -775,8 +827,7 @@ def TemperaturesModes(){
         def CurrTemp4 = Thermostat_4?.currentTemperature
         def ThermState4 = Thermostat_4?.currentValue("thermostatMode") as String
 
-        log.trace """OVERRIDES VALUES : atomicState.T1_AppMgt : $atomicState.T1_AppMgt, atomicState.T2_AppMgt : $atomicState.T2_AppMgt, 
-atomicState.T3_AppMgt : $atomicState.T3_AppMgt, atomicState.T4_AppMgt : $atomicState.T4_AppMgt"""
+        log.trace """T1 : $atomicState.T1_AppMgt, T2 : $atomicState.T2_AppMgt, T3 : $atomicState.T3_AppMgt, T4 : $atomicState.T4_AppMgt"""
 
         // which HSP? 
         log.debug "CurrMode is $CurrMode mode"
@@ -793,9 +844,8 @@ atomicState.T3_AppMgt : $atomicState.T3_AppMgt, atomicState.T4_AppMgt : $atomicS
         // declare an integer value for current mode
         def MapofIndexValues = [0: "0", "$Home": "1", "$Night": "2", "$Away": "3", "$CustomMode1": "4", "$CustomMode2": "5" ]   
         def ModeIndexValue = MapofIndexValues.find{ it.key == "$location.currentMode"}
-        log.info "-----------------------------------------------------------------------------------------ModeIndexValue = $ModeIndexValue"
         ModeIndexValue = ModeIndexValue.value.toInteger()
-        log.info "-----------------------------------------------------------------------------------------ModeIndexValue = $ModeIndexValue"
+        //log.info "-----------------------------------------------------------------------------------------ModeIndexValue = $ModeIndexValue"
         HSP1 = HSP1[ModeIndexValue]
         HSP2 = HSP2[ModeIndexValue]
         HSP3 = HSP3[ModeIndexValue]
@@ -803,16 +853,13 @@ atomicState.T3_AppMgt : $atomicState.T3_AppMgt, atomicState.T4_AppMgt : $atomicS
         CSP1 = CSP1[ModeIndexValue]
         CSP2 = CSP2[ModeIndexValue]
         CSP3 = CSP3[ModeIndexValue]
-        CSP4 = CSP4[ModeIndexValue]     
-        def CtrlSwtch = ["null", "$CtrlSwtH", "$CtrlSwtN", "null", "$CtrlSwtCust1", "$CtrlSwtCust2"]       
-        def onSwitches = CtrlSwtch.findAll { switchVal ->
-            switchVal == "on" ? true : false
-        }
-        log.debug "${onSwitches.size()} out of ${CtrlSwtch.size()} switches are on"
-        def SwitchesOn = onSwitches != 0
-        //def CtrlSwtchDevice = [null, CtrlSwtH, CtrlSwtN, null, CtrlSwtCust1, CtrlSwtCust2]
-        //CtrlSwtchDevice = CtrlSwtchDevice[ModeIndexValue]
+        CSP4 = CSP4[ModeIndexValue]    
+        def CtrlSwtch = [null, CtrlSwtH, CtrlSwtN, null, CtrlSwtCust1, CtrlSwtCust2]
+        //def CtrlSwtch = ["null", "$CtrlSwtH", "$CtrlSwtN", "null", "$CtrlSwtCust1", "$CtrlSwtCust2"]       
+        CtrlSwtch = CtrlSwtch[ModeIndexValue]
 
+        def SwitchesOn = CtrlSwtch?.latestValue("switch").contains("on")
+        log.debug "SwitchesOn($SwitchesOn)"
         def HSP = ["0", "$HSP1", "$HSP2", "$HSP3", "$HSP4"]
         //log.debug "HSP LIST is $HSP"
         def HSPSet = 0
@@ -846,23 +893,15 @@ atomicState.T3_AppMgt : $atomicState.T3_AppMgt, atomicState.T4_AppMgt : $atomicS
             ThermState = ThermStateList[loopValue]
             ThermSet = Therm[loopValue]
             ThermSetDevice = ThermDeviceList[loopValue]
-            log.info "THERM DEVICE IS $ThermSetDevice"
+            //log.info "THERM DEVICE IS $ThermSetDevice"
             //ThermSetDevice = ThermSetDevice.value
             HSPSet = HSP[loopValue]
             HSPSet = HSPSet.toInteger()            
             CSPSet = CSP[loopValue]
             CSPSet = CSPSet.toInteger()
-            if(Exception){
-                if(ThermSet == "$Thermostat_1"){
-                    if(SwitchesOn)
-                    HSPSet = HSPSet + AddDegrees
-                    CSPSet = CSPSet + SubDegrees
-                    log.debug "$ThermSet SetPoints Exceptions active"
-                }
-            }
-            def AltSensorList = ["0", "AltSensor_1", "AltSensor_2", "AltSensor_3", "AltSensor_4"]
+            def AltSensorList = ["0", "AltSensor_1", "AltSensor_2", "AltSensor_3"]
             def currentAltLoop = AltSensorList[loopValue]
-            def AltSensorMap = ["AltSensor_1": "AlternativeSensor1", "AltSensor_2": "AlternativeSensor2", "AltSensor_3": "AlternativeSensor3", "AltSensor_4": "AlternativeSensor4"]
+            def AltSensorMap = ["AltSensor_1": "AlternativeSensor1", "AltSensor_2": "AlternativeSensor2", "AltSensor_3": "AlternativeSensor3"]
             def AltSensorToRun = AltSensorMap.find{ it.key == "$currentAltLoop"}
             AltSensorToRun = AltSensorToRun.value
             //log.info "current Alt loop value is $currentAltLoop : $AltSensorToRun"
@@ -872,29 +911,49 @@ atomicState.T3_AppMgt : $atomicState.T3_AppMgt, atomicState.T4_AppMgt : $atomicS
             def AppMgtList = ["0", atomicState.T1_AppMgt, atomicState.T2_AppMgt, atomicState.T3_AppMgt, atomicState.T4_AppMgt]
             def AppMgt = AppMgtList[loopValue]
             log.debug "AppMgt = $AppMgt"
-            if(AppMgt){
+            def ShouldCool = outsideTemp >= OutsideTempHighThres || CurrTemp >= CSPSet
+            log.debug "ShouldCool = $ShouldCool"
 
+            if(ExceptionSW){
+                if(ThermSet == "$Thermostat_1"){
+                    if(SwitchesOn)
+                    HSPSet = HSPSet + AddDegrees
+                    CSPSet = CSPSet + SubDegrees
+                    AppMgt = true
+                    log.debug "$ThermSet SetPoints ExceptionSW active and AppMgt set to $AppMgt (should read 'true') to avoid triggering override"                
+                }
+            }
+            if(AppMgt){
                 if(AltLoop){
                     log.debug "$ThermSet managed by $AltSensorToRun"
+                    if(loopValue == 1){
+                        AlternativeSensor1()
+                    }
+                    else if(loopValue == 2){
+                        AlternativeSensor2()
+                    }
+                    else if(loopValue == 3){
+                        AlternativeSensor3()
+                    }
                 } 
                 else {
                     log.debug "loading $CurrMode settings for $ThermSet"     
                     atomicState.withinApp = true
                     ThermSetDevice.setHeatingSetpoint(HSPSet)
                     ThermSetDevice.setCoolingSetpoint(CSPSet)
-                    if(CurrTemp > HSPSet && ThermState != "off"){
+                    if(CurrTemp > HSPSet && ThermState != "off" && !ShouldCool){
                         AppMgtTrue() // override test value
                         log.debug "$ThermSet TURNED OFF"      
                         LatestThermostatMode = "off"
                         ThermSetDevice.setThermostatMode("off") 
                     } 
-                    else if(outsideTemp >= CSPSet && ThermState != "cool"){
+                    else if(CurrTemp >= CSPSet && ThermState != "cool" && ShouldCool){
                         AppMgtTrue() 
                         log.debug "$ThermSet set to cool"
                         LatestThermostatMode = "cool"
                         ThermSetDevice.setThermostatMode("cool") 
                     }
-                    else if(CurrTemp < HSPSet && ThermState != "heat"){
+                    else if(CurrTemp < HSPSet && ThermState != "heat" && !ShouldCool){
                         AppMgtTrue()
                         log.debug "$ThermSet set to Heat"
                         LatestThermostatMode = "heat"
@@ -904,18 +963,20 @@ atomicState.T3_AppMgt : $atomicState.T3_AppMgt, atomicState.T4_AppMgt : $atomicS
                 }   
             }
             else {
-                log.debug "${ThermSet} in OVERRIDE MODE, doing nothing"
-                if(CurrTemp > HSPSet){
+
+                log.debug "${ThermSet} in OVERRIDE MODE, doing nothing -- AppMgt = $AppMgt"
+
+                if(CurrTemp > HSPSet && ThermState != "off" && !ShouldCool){
 
                     log.debug "$ThermSet SHOULD BE OFF"      
                     LatestThermostatMode = "off"
                 } 
-                else if(outsideTemp >= CSPSet){
+                else if(CurrTemp >= CSPSet && ThermState != "cool" && ShouldCool){
 
                     log.debug "$ThermSet SHOULD BE set to cool"
                     LatestThermostatMode = "cool"
                 }
-                else if(CurrTemp < HSPSet){
+                else if(CurrTemp < HSPSet && ThermState != "heat" && !ShouldCool){
 
                     log.debug "$ThermSet SHOULD BE set to Heat"
                     LatestThermostatMode = "heat"
@@ -1045,19 +1106,22 @@ def AlternativeSensor1(){
         def Overriden = state.ThermostatOverriden as String
         log.debug "OVERRIDEN IS $Overriden"
 
+        def ShouldCool = outsideTemp >= OutsideTempHighThres || CurrTemp >= CSPSet
+        log.debug "ShouldCool = $ShouldCool"
+
         if(atomicState.T1_AppMgt == true){
             // no setpoint override, no on/off override
-            if(SenTemp < DefaultSetHeat || OutsideTemp > SenTemp){
+            if(SenTemp < DefaultSetHeat || SenTemp > DefaultSetCool){
 
                 // set proper mode
-                if(SenTemp < DefaultSetHeat){
+                if(SenTemp < DefaultSetHeat && !ShouldCool){
 
                     Thermostat_1.setThermostatMode("heat") 
                     atomicState.LatestThermostatMode_T1 = "heat"
                     log.debug "$Thermostat_1 set to Heat"
                     atomicState.T2_AppMgt = true
                 }
-                else if(SenTemp > DefaultSetCool /* making sure it doesn't cool after heating --> */ && OutsideTemp > DefaultSetCool){
+                else if(SenTemp > DefaultSetCool && ShouldCool){
 
                     Thermostat_1.setThermostatMode("cool") 
                     atomicState.LatestThermostatMode_T1 = "cool"
@@ -1172,24 +1236,25 @@ def AlternativeSensor2(){
 
         log.trace "OVERRIDES VALUES (Alt loop2 at 1):  atomicState.T2_AppMgt : $atomicState.T2_AppMgt"
 
+        def ShouldCool = outsideTemp >= OutsideTempHighThres || CurrTemp >= CSPSet
+        log.debug "ShouldCool = $ShouldCool"
+
         if(atomicState.T2_AppMgt == true){
 
             // no setpoint override, no on/off override
             log.debug "evaluating for AlternativeSensor2"
-            if(SenTemp < DefaultSetHeat || OutsideTemp > SenTemp){
+            if(SenTemp < DefaultSetHeat || SenTemp > DefaultSetCool){
 
                 // set proper mode
 
-                if(SenTemp < DefaultSetHeat){
+                if(SenTemp < DefaultSetHeat && !ShouldCool){
 
                     Thermostat_2.setThermostatMode("heat") 
                     atomicState.LatestThermostatMode_T2 = "heat"              
                     log.debug "$Thermostat_2 set to Heat"
                     atomicState.T2_AppMgt = true
                 }
-
-                else if(SenTemp > DefaultSetCool /* making sure it doesn't cool after heating --> */ && OutsideTemp > DefaultSetCool){
-
+                else if(SenTemp > DefaultSetCool  && ShouldCool){
                     Thermostat_2.setThermostatMode("cool") 
                     atomicState.LatestThermostatMode_T2 = "cool"           
                     log.debug "$Thermostat_2 set to Cool"
@@ -1302,22 +1367,21 @@ def AlternativeSensor3(){
         def Overriden = state.ThermostatOverriden as String
         log.debug "OVERRIDEN IS $Overriden"
 
+        def ShouldCool = outsideTemp >= OutsideTempHighThres || CurrTemp >= CSPSet
+        log.debug "ShouldCool = $ShouldCool"
+
+
         if(atomicState.T3_AppMgt == true){
-            //(IsOn && atomicState.T3_AppMgt == false) if on but only due to previous app's command, then run
 
-            if(SenTemp < DefaultSetHeat || OutsideTemp > SenTemp){
-
-
+            if(SenTemp < DefaultSetHeat || SenTemp > DefaultSetCool){
                 // set proper mode
-                if(SenTemp < DefaultSetHeat){
-
+                if(SenTemp < DefaultSetHeat && !ShouldCool){
                     Thermostat_3.setThermostatMode("heat") 
                     atomicState.LatestThermostatMode_T3 = "heat"
                     log.debug "$Thermostat_3 set to Heat"
                     atomicState.T2_AppMgt = true
                 }
-                else if(SenTemp > DefaultSetCool /* making sure it doesn't cool after heating --> */ && OutsideTemp > DefaultSetCool){
-
+                else if(SenTemp > DefaultSetCool  && ShouldCool){
                     Thermostat_3.setThermostatMode("cool") 
                     atomicState.LatestThermostatMode_T3 = "cool"
                     log.debug "$Thermostat_3 set to Cool"
@@ -1366,34 +1430,40 @@ def alldoorsareclosed(){
 }
 def TurnOffThermostats() {
 
-    if(atomicState.CRITICAL == false){
-        log.debug "Turning off thermostats" 
-        Thermostat_1.setThermostatMode("off") 
-        atomicState.LatestThermostatMode = "off"
-        log.debug "$Thermostat_1  turned off"
-        // atomicState.T1_AppMgt = true
-        if(Thermostat_2){      
-            Thermostat_2.setThermostatMode("off") 
+    if(atomicState.ThermOff == false){
+        if(atomicState.CRITICAL == false){
+            log.debug "Turning off thermostats" 
+            Thermostat_1.setThermostatMode("off") 
             atomicState.LatestThermostatMode = "off"
-            log.debug "$Thermostat_2 turned off"
-            //     atomicState.T2_AppMgt = true
-        }
-        if(Thermostat_3){
-            Thermostat_3.setThermostatMode("off") 
-            atomicState.LatestThermostatMode = "off"
-            log.debug "$Thermostat_3 turned off"
-            //     atomicState.T3_AppMgt = true
-        }
-        if(Thermostat_4){
-            if(Thermostat_4.currentValue != atomicState.therm_4_CurrMode){
-                Thermostat_4.setThermostatMode("off") 
+            log.debug "$Thermostat_1  turned off"
+            // atomicState.T1_AppMgt = true
+            if(Thermostat_2){      
+                Thermostat_2.setThermostatMode("off") 
                 atomicState.LatestThermostatMode = "off"
-                log.debug "$Thermostat_4 turned off"
-                //        atomicState.T4_AppMgt = true
+                log.debug "$Thermostat_2 turned off"
+                //     atomicState.T2_AppMgt = true
+            }
+            if(Thermostat_3){
+                Thermostat_3.setThermostatMode("off") 
+                atomicState.LatestThermostatMode = "off"
+                log.debug "$Thermostat_3 turned off"
+                //     atomicState.T3_AppMgt = true
+            }
+            if(Thermostat_4){
+                if(Thermostat_4.currentValue != atomicState.therm_4_CurrMode){
+                    Thermostat_4.setThermostatMode("off") 
+                    atomicState.LatestThermostatMode = "off"
+                    log.debug "$Thermostat_4 turned off"
+                    //        atomicState.T4_AppMgt = true
+                }
             }
         }
+        else { 
+            log.debug "CRITICAL MODE, NOT TURNING OFF ANYTHING" 
+        }
+        atomicState.ThermOff = true
     }
-    else { log.debug "CRITICAL MODE, NOT TURNING OFF ANYTHING" }
+    log.debug "Thermostats already turned off, doing nothing"
 }
 
 def resetLocationChangeVariable(){
@@ -1405,13 +1475,36 @@ def resetOverride(){
 
 
 }
-def pollThermostats(){
+def polls(){
+
+    def MapofIndexValues = [0: "0", "$Home": "1", "$Night": "2", "$Away": "3", "$CustomMode1": "4", "$CustomMode2": "5" ]   
+    def ModeIndexValue = MapofIndexValues.find{ it.key == "$location.currentMode"}
+    ModeIndexValue = ModeIndexValue.value.toInteger()
+    def CtrlSwtch = [null, CtrlSwtH, CtrlSwtN, null, CtrlSwtCust1, CtrlSwtCust2]
+    //def CtrlSwtch = ["null", "$CtrlSwtH", "$CtrlSwtN", "null", "$CtrlSwtCust1", "$CtrlSwtCust2"]       
+    CtrlSwtch = CtrlSwtch[ModeIndexValue]
+    def CtrlSwtchPoll = CtrlSwtch?.hasCommand("poll")
+    def CtrlSwtchRefresh = CtrlSwtch?.hasCommand("refresh")
+
+    if(CtrlSwtchPoll){
+        CtrlSwtch?.poll()
+        log.debug "polling $CtrlSwtch"
+    }
+    else if(CtrlSwtchRefresh){
+        CtrlSwtch?.refresh()
+        log.debug "refreshing $CtrlSwtch"
+    }
+    else { log.debug "$CtrlSwtch does not support either poll() nor refresh() commands"
+         }
+
     if(Thermostat_1){
-        if(Thermostat_1.hasCommand("poll")){
+        def poll = Thermostat_1.hasCommand("poll")
+        def refresh = Thermostat_1.hasCommand("refresh")
+        if(poll){
             Thermostat_1.poll()
             log.debug "polling Thermostat_1"
         }
-        else if(Thermostat_1.hasCommand("refresh")){
+        else if(refresh){
             Thermostat_1.refresh()
             log.debug "refreshing Thermostat_1"
         }
@@ -1419,11 +1512,13 @@ def pollThermostats(){
              }
     }
     if(Thermostat_2){
-        if(Thermostat_2.hasCommand("poll")){
+        def poll = Thermostat_2.hasCommand("poll")
+        def refresh = Thermostat_2.hasCommand("refresh")
+        if(poll){
             Thermostat_2.poll()
             log.debug "polling Thermostat_2"
         }
-        else if(Thermostat_2.hasCommand("refresh")){
+        else if(refresh){
             Thermostat_2.refresh()
             log.debug "refreshing Thermostat_2"
         }
@@ -1431,11 +1526,13 @@ def pollThermostats(){
              }
     }
     if(Thermostat_3){
-        if(Thermostat_3.hasCommand("poll")){
+        def poll = Thermostat_3.hasCommand("poll")
+        def refresh = Thermostat_3.hasCommand("refresh")
+        if(poll){
             Thermostat_3.poll()
             log.debug "polling Thermostat_3"
         }
-        else if(Thermostat_3.hasCommand("refresh")){
+        else if(refresh){
             Thermostat_3.refresh()
             log.debug "refreshing Thermostat_3"
         }
@@ -1443,11 +1540,13 @@ def pollThermostats(){
              }
     }
     if(Thermostat_4){
-        if(Thermostat_4.hasCommand("poll")){
+        def poll = Thermostat_4.hasCommand("poll")
+        def refresh = Thermostat_4.hasCommand("refresh")
+        if(poll){
             Thermostat_4.poll()
             log.debug "polling Thermostat_4"
         }
-        else if(Thermostat_3.hasCommand("refresh")){
+        else if(refresh){
             Thermostat_4.refresh()
             log.debug "refreshing Thermostat_4"
         }
@@ -1455,11 +1554,13 @@ def pollThermostats(){
              }
     }
     if(OutsideSensor){
-        if(OutsideSensor.hasCommand("poll")){
+        def poll = OutsideSensor.hasCommand("poll")
+        def refresh = OutsideSensor.hasCommand("refresh")
+        if(poll){
             OutsideSensor.poll()
             log.debug "polling OutsideSensor"
         }
-        else if(OutsideSensor.hasCommand("refresh")){
+        else if(refresh){
             OutsideSensor.refresh()
             log.debug "refreshing OutsideSensor"
         }
@@ -1469,13 +1570,11 @@ def pollThermostats(){
 }
 def CheckWindows(){
 
-    def CurrentContacts = contact.latestValue
+    def CurrentContacts = contact.latestValue("contact")
     def ClosedContacts = CurrentContacts.findAll { AllcontactsClosed ->
         AllcontactsClosed == "closed" ? true : false
     }
     log.debug "${ClosedContacts.size()} windows/doors out of ${contact.size()} are closed"
-
-
     def ContactsOpen = contact.latestValue("contact").contains("open")
 
     log.debug "Contacts Opened?($ContactsOpen)"
@@ -1522,13 +1621,13 @@ def CheckWindows(){
                 runIn(OperatingTime, StopActuators)              
             }
         }
-        else { log.debug "Windows open already run, doing nothing" }
+        else { log.debug "Windows have already been opened by this app, doing nothing" }
     }
     else if (!OkToOpen && state.WindowsAppOpened == true) {
 
         Actuators?.off()
         log.debug "closing windows"
-        message = "It's too cold, I'm closing $Actuators. Operation time is $OperatingTime seconds"
+        message = "It's too cold, I'm closing $Actuators."
         log.info message 
         send(message)
         atomicState.closed = true
@@ -1538,7 +1637,7 @@ def CheckWindows(){
         state.WindowsAppClosed = true
         atomicState.messageSent = 0
     }
-    else if(atomicState.messageSent == 0 && ContactsOpen){ 
+    else if(atomicState.messageSent == 0 && ContactsOpen && state.WindowsAppOpened == true){ 
 
         message = "IMPORTANT MESSAGE $Actuators will not close again until you close them yourself!"
         log.info message
@@ -1548,19 +1647,33 @@ def CheckWindows(){
 
 }
 def OkToOpen(){
-
+    def CurrMode = location.currentMode
     def Inside = XtraTempSensor.currentValue("temperature") 
     def Outside = OutsideSensor.currentValue("temperature") 
-    def WithinOffSet = Inside >= CriticalTemp + OffSet
+    def WithinCriticalOffSet = Inside >= CriticalTemp + OffSet
     def closed = atomicState.closed
+    def OutsideTempHighThres = OutsideTempHighThres
+
+    if(ExceptACMode1 && CurrMode in ExceptACMode1){
+        def NewOutsideTempHighThres = OutsideTempHighThres - ExceptHighThreshold1
+        log.debug "Home is in $CurrMode mode, so new high outside's temp threshold is: $NewOutsideTempHighThres = $OutsideTempHighThres - $ExceptHighThreshold1" 
+        OutsideTempHighThres = NewOutsideTempHighThres
+    }
+    else if(ExceptACMode2 && CurrMode in ExceptACMode2){
+        OutsideTempHighThres = OutsideTempHighThres - ExceptHighThreshold2
+        log.debug "Home is in $CurrMode mode, so new high outside's temp threshold is: $NewOutsideTempHighThres = $OutsideTempHighThres - $ExceptHighThreshold2" 
+        OutsideTempHighThres = NewOutsideTempHighThres
+    }
+
     def OutSideWithinMargin = Outside >= OutsideTempLowThres && Outside <= OutsideTempHighThres
+
 
     log.info "Inside?($Inside), Outside?($Outside), Margin?(LowThres:$OutsideTempLowThres - HighThres:$OutsideTempHighThres) -----------------------------------"
     log.debug "closed?($closed)"
     log.debug "OutSideWithinMargin?($OutSideWithinMargin)"
-    log.debug "Inside is WithinOffSet?($WithinOffSet)"    
+    log.debug "Inside is WithinCriticalOffSet?($WithinCriticalOffSet)"    
 
-    def result = OutSideWithinMargin && WithinOffSet
+    def result = OutSideWithinMargin && WithinCriticalOffSet
 
     return result
 
@@ -1571,38 +1684,21 @@ def StopActuators(){
 private schedules() { 
 
     def scheduledTimeA = 1
-    def scheduledTimeB = 1
+    def scheduledTimeB = 5
+	
+    /*schedule("0 0/$scheduledTimeA * * * ?", TemperaturesModes)
+    log.debug "TemperaturesModes scheduled to run every $scheduledTimeA minutes"*/
+    
+    schedule("0 0/$scheduledTimeB * * * ?", polls)
+    log.debug "polls scheduled to run every $scheduledTimeB minutes"
 
-    if(AltSensor_1){
-        subscribe(Sensor_1, "temperature", temperatureHandler)
-        //log.debug "Subscription for alternative Sensor for $Sensor_1"
-        schedule("0 0/$scheduledTimeB * * * ?", AlternativeSensor1)
-        //log.debug "AlternativeSensor1 scheduled to run every $scheduledTimeB minutes"
-        AlternativeSensor1()
-    }
-    if(AltSensor_2){
-        subscribe(Sensor_2, "temperature", temperatureHandler)
-        //log.debug "Subscription for alternative Sensor for $Sensor_2"
-        schedule("0 0/$scheduledTimeB * * * ?", AlternativeSensor2)
-        //log.debug "AlternativeSensor2 scheduled to run every $scheduledTimeB minutes"
-        AlternativeSensor2()
-    }
-    if(AltSensor_3){
-        subscribe(Sensor_3, "temperature", temperatureHandler)
-        //log.debug "Subscription for alternative Sensor for $Sensor_3"
-        schedule("0 0/$scheduledTimeB * * * ?", AlternativeSensor3)
-        //log.debug "AlternativeSensor3 scheduled to run every $scheduledTimeB minutes"
-        AlternativeSensor3()
-    }
-    /* schedule("0 0/$scheduledTimeB * * * ?", TemperaturesModes)
-log.debug "TemperaturesModes scheduled to run every $scheduledTimeB minutes"
-*/
     if(Actuators){
         schedule("0 0/$scheduledTimeA * * * ?", CheckWindows)
         //log.debug "CheckWindows scheduled to run every $scheduledTimeA minutes"
         CheckWindows()
     }
-    //schedule("0 0/$scheduledTimeA * * * ?", UpdateShouldBe)
+    
+
 }
 
 private send(msg) {
@@ -1624,7 +1720,14 @@ private send(msg) {
     log.debug msg
 }
 
+// trash
 
+private trash(){
+    def onSwitches = CtrlSwtch.findAll { switchVal ->
+        switchVal == "on" ? true : false
+    }
+    log.debug "${onSwitches.size()} out of ${CtrlSwtch.size()} switches are on"
+    def SwitchesOn = onSwitches.size() != 0
 
-
+}
 
