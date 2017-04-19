@@ -1,4 +1,6 @@
 /**
+ *  Note: This handler requires the "Metering Switch Child Device" to be installed.
+ *
  *  Copyright 2016 Eric Maycock
  *
  *  Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except
@@ -13,7 +15,8 @@
  *  Fibaro FGS-223 Dual Relay
  *
  *  Author: Eric Maycock (erocm123)
- *  Date: 2016-10-25
+ *  
+ *  04/18/2017 - This handler requires the Metering Switch Child device to create the multiple switch endpoints.
  */
  
 metadata {
