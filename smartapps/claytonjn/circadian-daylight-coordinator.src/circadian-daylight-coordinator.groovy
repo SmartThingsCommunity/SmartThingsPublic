@@ -26,6 +26,7 @@
 * * The app doesn't calculate a true "Blue Hour" -- it just sets the lights to
 * 2700K (warm white) until your hub goes into Night mode
 *
+* Version 4.3: April 20, 2017 - Fix issue with manually setting sunrise/sunset time caused by day changes between time zones.
 * Version 4.2: September 17, 2016 - Fix for setting specific sunrise/sunset time.
 * Version 4.1: June 30, 2016 - Revamp initial setup flow, fix setting sunrise/sunset time, allow setting min/max brightness and color temp, don't require zip, round values to reduce updates
 * Version 4.0: June 13, 2016 - Complete re-write of app. Parent/Child setup; with new ct/brightness algorithms, separate handlers for scheduled and bulb events, and additional settings.
