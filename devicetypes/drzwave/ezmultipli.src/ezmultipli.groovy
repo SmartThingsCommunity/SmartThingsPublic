@@ -110,7 +110,6 @@ metadata {
 
 } // end metadata
 
-
 // Parse incoming device messages from device to generate events
 def parse(String description){
 	//log.debug "==> New Zwave Event: ${description}"
@@ -124,7 +123,7 @@ def parse(String description){
     
     def statusTextmsg = ""
     if (device.currentState('temperature') != null && device.currentState('illuminance') != null) {
-		statusTextmsg = "${device.currentState('temperature').value} ° - ${device.currentState('illuminance').value} ${(lum == "" || lum == null || lum == 1) ? "%" : "LUX"}"
+		statusTextmsg = "${device.currentState('temperature').value} ° - ${device.currentState('illuminance').value} ${(lum == 1) ? "%" : "LUX"}"
     	sendEvent("name":"statusText", "value":statusTextmsg, displayed:false)
 	}
     if (result != [null] && result != []) log.debug "Parse returned ${result}"
@@ -147,7 +146,7 @@ def zwaveEvent(physicalgraph.zwave.commands.sensormultilevelv5.SensorMultilevelR
 			break;
 		case 0x03 :				// SENSOR_TYPE_LUMINANCE_VERSION_1
 			map.value = cmd.scaledSensorValue.toInteger().toString()
-            if(lum == "" || lum == null || lum == 1) map.unit = "%"
+            if(lum == 1) map.unit = "%"
             else map.unit = "lux"
 			map.name = "illuminance"
 			log.debug "Luminance report"
@@ -182,7 +181,8 @@ def zwaveEvent(physicalgraph.zwave.commands.notificationv3.NotificationReport cm
 }
 
 def zwaveEvent(physicalgraph.zwave.commands.basicv1.BasicReport cmd) {
-    if (cmd.value == 0 && device.latestState("color").value != "#ffffff") {
+    // The EZMultiPli sets the color back to #ffffff on "off" or at init, so update the ST device to reflect this.
+    if (device.latestState("color") == null || (cmd.value == 0 && device.latestState("color").value != "#ffffff")) {
         sendEvent(name: "color", value: "#ffffff", displayed: true)
     }
     [name: "switch", value: cmd.value ? "on" : "off", type: "digital"]
@@ -275,12 +275,12 @@ def zwaveEvent(physicalgraph.zwave.Command cmd) {
 // ensure we are passing acceptable param values for LiteMin & TempMin configs
 def checkLiteTempInput(value) {
 	if (value == null) {
-    	value=60
+    	value=6
     }
     def liteTempVal = value.toInteger()
     switch (liteTempVal) {
       case { it < 0 }:
-        return 60			// bad value, set to default
+        return 6			// bad value, set to default
         break
       case { it > 127 }:
         return 127			// bad value, greater then MAX, set to MAX
@@ -293,12 +293,12 @@ def checkLiteTempInput(value) {
 // ensure we are passing acceptable param value for OnTime config
 def checkOnTimeInput(value) {
 	if (value == null) {
-    	value=10
+    	value=2
     }
     def onTimeVal = value.toInteger()
     switch (onTimeVal) {
       case { it < 0 }:
-        return 10			// bad value set to default
+        return 2			// bad value set to default
         break
       case { it > 127 }:
         return 127			// bad value, greater then MAX, set to MAX
