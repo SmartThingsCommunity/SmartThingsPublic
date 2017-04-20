@@ -100,7 +100,7 @@ preferences {
 def dimmingPreferences() {
     return dynamicPage(name: "dimmingPreferences", nextPage: "sleepPreferences", install: false, uninstall: true) {
         section {
-            paragraph "Dynamic Brightness automatically dims your lights based on natural light.";
+            paragraph "Dynamic Brightness automatically dims your lights to mimic natural light.";
             input "dBright", "bool", title: "Dynamic Brightness", required: false, defaultValue: false, submitOnChange: true
             if (dBright) {
                 input "bMin", "number", title: "Minimum Brightness (1-100)", required: true, defaultValue: 1
