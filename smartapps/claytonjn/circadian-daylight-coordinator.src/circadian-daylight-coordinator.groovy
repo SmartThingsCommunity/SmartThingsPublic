@@ -1,5 +1,5 @@
 /**
-* Circadian Daylight Coordinator 4.2
+* Circadian Daylight Coordinator 4.3
 *
 * This SmartApp synchronizes your color changing lights with perceived color
 * temperature of the sky throughout the day. This gives your environment a more
@@ -26,6 +26,7 @@
 * * The app doesn't calculate a true "Blue Hour" -- it just sets the lights to
 * 2700K (warm white) until your hub goes into Night mode
 *
+* Version 4.3: April 20, 2017 - Fix issue with manually setting sunrise/sunset time caused by day changes between time zones.
 * Version 4.2: September 17, 2016 - Fix for setting specific sunrise/sunset time.
 * Version 4.1: June 30, 2016 - Revamp initial setup flow, fix setting sunrise/sunset time, allow setting min/max brightness and color temp, don't require zip, round values to reduce updates
 * Version 4.0: June 13, 2016 - Complete re-write of app. Parent/Child setup; with new ct/brightness algorithms, separate handlers for scheduled and bulb events, and additional settings.
@@ -180,13 +181,15 @@ void setHandler(evt) {
     if (settings.lSunsetOffsetValue != NULL && settings.lSunsetOffsetValue != "" && settings.lSunsetOffsetValue != "0") { locationParameters.put("sunsetOffset", sunsetOffset) }
     def sunriseAndSunset = getSunriseAndSunset(locationParameters)
     if ((settings.lSunriseTime != NULL && settings.lSunriseTime != "") || (settings.lSunsetTime != NULL && settings.lSunsetTime != "")) {
-    	def nowDate = new Date()
+        def df = new java.text.SimpleDateFormat("yyyy-MM-dd")
+        df.setTimeZone(location.timeZone)
+        def nowDate = df.format(new Date())
         if (settings.lSunriseTime != NULL && settings.lSunriseTime != "") {
-            def todayLSunriseTime = nowDate.format("yyyy-MM-dd") + lSunriseTime.substring(10)
+            def todayLSunriseTime = nowDate + lSunriseTime.substring(10)
             sunriseAndSunset.sunrise = new Date().parse("yyyy-MM-dd'T'HH:mm:ss.SSSZ", todayLSunriseTime)
         }
     	if (settings.lSunsetTime != NULL && settings.lSunsetTime != "") {
-        	def todayLSunsetTime = nowDate.format("yyyy-MM-dd") + lSunsetTime.substring(10)
+        	def todayLSunsetTime = nowDate + lSunsetTime.substring(10)
         	sunriseAndSunset.sunset = new Date().parse("yyyy-MM-dd'T'HH:mm:ss.SSSZ", todayLSunsetTime)
 		}
     }

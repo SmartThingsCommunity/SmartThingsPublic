@@ -1,5 +1,5 @@
 /**
-* Circadian Daylight 4.1
+* Circadian Daylight 4.2
 *
 * This SmartApp synchronizes your color changing lights with perceived color
 * temperature of the sky throughout the day. This gives your environment a more
@@ -26,6 +26,7 @@
 * * The app doesn't calculate a true "Blue Hour" -- it just sets the lights to
 * 2700K (warm white) until your hub goes into Night mode
 *
+* Version 4.2: April 20, 2017 - Update Dynamic Brightness description
 * Version 4.1: June 30, 2016 - Fix checking mode, streamline bulb handlers, fix for allowing night brightness independant from sleep, change dimming bulbs to respect dynamic brightness setting, attempt to return to previous brightness after sleep, fix brightness algorighm.
 * Version 4.0: June 13, 2016 - Complete re-write of app. Parent/Child setup; with new ct/brightness algorithms, separate handlers for scheduled and bulb events, and additional settings.
 * Version 3.1: May 7, 2016 - Fix a bunch of copy/paste errors resulting in references to the wrong bulb types. No longer need to prevent CD from disabling itself.
@@ -100,7 +101,7 @@ preferences {
 def dimmingPreferences() {
     return dynamicPage(name: "dimmingPreferences", nextPage: "sleepPreferences", install: false, uninstall: true) {
         section {
-            paragraph "Dynamic Brightness automatically dims your lights based on natural light.";
+            paragraph "Dynamic Brightness automatically dims your lights to mimic natural light.";
             input "dBright", "bool", title: "Dynamic Brightness", required: false, defaultValue: false, submitOnChange: true
             if (dBright) {
                 input "bMin", "number", title: "Minimum Brightness (1-100)", required: true, defaultValue: 1
