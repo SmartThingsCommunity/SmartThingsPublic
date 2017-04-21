@@ -1,3 +1,5 @@
+import groovy.json.JsonOutput
+
 /**
  *  Copyright 2015 SmartThings
  *
@@ -19,6 +21,7 @@ metadata {
 		capability "Presence Sensor"
 		capability "Sensor"
 		capability "Battery"
+		capability "Health Check"
 
 		fingerprint profileId: "FC01", deviceId: "019A"
 		fingerprint profileId: "FC01", deviceId: "0131", inClusters: "0000,0003", outClusters: "0003"
@@ -109,6 +112,11 @@ def beep() {
 		"delay 200",
 		"send 0x$zigbee.deviceNetworkId 0x02 0x$zigbee.endpointId",
 	]
+}
+
+def installed() {
+	// Arrival sensors only goes OFFLINE when Hub is off
+	sendEvent(name: "DeviceWatch-Enroll", value: JsonOutput.toJson([protocol: "zigbee", scheme:"untracked"]), displayed: false)
 }
 
 def parse(String description) {
