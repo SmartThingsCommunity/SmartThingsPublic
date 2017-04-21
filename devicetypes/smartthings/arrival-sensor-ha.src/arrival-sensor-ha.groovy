@@ -1,3 +1,5 @@
+import groovy.json.JsonOutput
+
 /**
  *  Copyright 2017 SmartThings
  *
@@ -19,6 +21,7 @@ metadata {
         capability "Sensor"
         capability "Battery"
         capability "Configuration"
+        capability "Health Check"
 
         fingerprint inClusters: "0000,0001,0003,000F,0020", outClusters: "0003,0019",
                         manufacturer: "SmartThings", model: "tagv4", deviceJoinName: "Arrival Sensor"
@@ -62,6 +65,10 @@ def configure() {
     def cmds = zigbee.readAttribute(zigbee.POWER_CONFIGURATION_CLUSTER, 0x0020) + zigbee.batteryConfig(20, 20, 0x01)
     log.debug "configure -- cmds: ${cmds}"
     return cmds
+}
+
+def installed() {
+    sendEvent(name: "DeviceWatch-Enroll", value: JsonOutput.toJson([protocol: "zigbee", scheme:"untracked"]), displayed: false)
 }
 
 def beep() {
