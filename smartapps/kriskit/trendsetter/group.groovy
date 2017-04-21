@@ -25,26 +25,28 @@ definition(
     parent: "kriskit.trendsetter:Trend Setter")
     
 def version() {
-	return "1.1"
+	return "1.2"
 }
 
 def typeDefinitions() {
 	return [
         [
+        	id: "switch",
         	type: "switch", 
             singular: "Switch", 
             plural: "Switches", 
-            deviceType: "Switch Group Device",
+            groupDeviceType: "Switch Group Device",
             experimental: true,
             attributes: [
             		[name: "switch"]
             	]
         ],
         [
+        	id: "switchLevel",
         	type: "switchLevel", 
             singular: "Dimmer", 
             plural: "Dimmers", 
-            deviceType: "Dimmer Group Device",
+            groupDeviceType: "Dimmer Group Device",
             inherits: "switch",
             experimental: true,
             attributes: [
@@ -52,10 +54,23 @@ def typeDefinitions() {
             ]
         ],
         [
+        	id: "colorTemperature",
+        	type: "colorTemperature", 
+            singular: "Color Temperature Light", 
+            plural: "Color Temperature Lights", 
+            groupDeviceType: "Color Temperature Light Group Device",
+            inherits: "switchLevel",
+            experimental: true,
+            attributes: [
+            	[name: "colorTemperature"]
+            ]
+        ],
+        [
+        	id: "colorControl",
         	type: "colorControl",
             singular: "Colorful Light",
             plural: "Colorful Lights",
-            deviceType: "Colorful Light Group Device",
+            groupDeviceType: "Colorful Light Group Device",
             inherits: "switchLevel",
             attributes: [
             	[name: "hue"],
@@ -64,10 +79,23 @@ def typeDefinitions() {
             ]
         ],
         [
+        	id: "colorTempLight",
+        	type: "colorControl", 
+            singular: "Colorful Temperature Light", 
+            plural: "Colorful Temperature Lights", 
+            groupDeviceType: "Colorful Temperature Light Group Device",
+            inherits: "colorControl",
+            experimental: true,
+            attributes: [
+            	[name: "colorTemperature"]
+            ]
+        ],
+        [
+        	id: "powerMeter",
         	type: "powerMeter",
             singular: "Power Meter",
             plural: "Power Meters",
-            deviceType: "Power Meter Group Device",
+            groupDeviceType: "Power Meter Group Device",
             attributes: [
             	[name: "power"]
             ]
@@ -98,7 +126,7 @@ def configure() {
             section(title: controller == null ? "Grouping" : null) {
         		label title: "Group Name", required: true
             
-                input "devices", "capability.${deviceType}", title: "${definition.plural}", multiple: true, required: true, submitOnChange: controller != null
+                input "devices", "capability.${definition.type}", title: "${definition.plural}", multiple: true, required: true, submitOnChange: controller != null
 
                 if (selectedDevicesContainsController()) {
                     paragraph "WARNING: You have selected the controller ${definition.singular.toLowerCase()} for this group. This will likely cause unexpected behaviour.\n\nPlease uncheck the '${controller.displayName}' from the selected ${definition.plural.toLowerCase()}.", 
@@ -143,7 +171,7 @@ def installControllerDevice() {
 	def definition = getTypeDefinition()
 
 	log.debug "Installing switch group controller device..."
-	addChildDevice("kriskit.trendSetter", definition.deviceType, UUID.randomUUID().toString(), null, ["name": deviceName, "label": deviceName, completedSetup: true])
+	addChildDevice("kriskit.trendSetter", definition.groupDeviceType, UUID.randomUUID().toString(), null, ["name": deviceName, "label": deviceName, completedSetup: true])
 }
 
 def updated() {
@@ -249,7 +277,7 @@ def getTypeDefinitions() {
     
     definitions?.each { definition ->
     	if (definition.inherits)
-        	definition = mergeAttributes(definition, definitions.find { it.type == definition.inherits })
+        	definition = mergeAttributes(definition, definitions.find { it.id == definition.inherits })
     
     	result.push(definition)
     }
@@ -267,7 +295,7 @@ def mergeAttributes(definition, inheritedDefinition) {
     
     if (inheritedDefinition.inherits) {
     	def definitions = typeDefinitions()
-    	definition = mergeAttributes(definition, definitions.find { it.type == inheritedDefinition.inherits })
+    	definition = mergeAttributes(definition, definitions.find { it.id == inheritedDefinition.inherits })
 	}
     
     return definition
@@ -281,15 +309,15 @@ def getTypeDefinition() {
 	return getTypeDefinition(deviceType)
 }
 
-def getTypeDefinition(type) {
+def getTypeDefinition(id) {
 	return getTypeDefinitions().find {
-    	it.type == type
+    	it.id == id
     }
 }
 
 def getDeviceTypeOptions() {
 	return getTypeDefinitions().collect {
-    	["${it.type}": it.singular]
+    	["${it.id}": it.singular]
     }
 }
 
