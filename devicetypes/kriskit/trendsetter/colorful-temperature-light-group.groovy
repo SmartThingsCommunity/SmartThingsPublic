@@ -20,6 +20,7 @@ metadata {
 		capability "Switch"
 		capability "Switch Level"
         capability "Color Control"
+		capability "Color Temperature"
         
         command "adjustLevel"
 		command "adjustColorTemp"
