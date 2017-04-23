@@ -100,12 +100,12 @@ def parse(String description) {
 }
 
 def zwaveEvent(physicalgraph.zwave.commands.basicv1.BasicReport cmd) {
-    logging("BasicReport: $cmd", 2)
+    logging("BasicReport ${cmd}", 2)
     createEvent(name: "switch", value: cmd.value ? "on" : "off", type: "physical")
 }
 
 def zwaveEvent(physicalgraph.zwave.commands.switchbinaryv1.SwitchBinaryReport cmd) {
-    logging("SwitchBinaryReport: $cmd", 2)
+    logging("SwitchBinaryReport ${cmd}", 2)
     createEvent(name: "switch", value: cmd.value ? "on" : "off", type: "digital")
 }
 
@@ -128,7 +128,7 @@ def zwaveEvent(physicalgraph.zwave.commands.sensormultilevelv5.SensorMultilevelR
 }
 
 def zwaveEvent(physicalgraph.zwave.commands.manufacturerspecificv2.ManufacturerSpecificReport cmd) {
-    logging("ManufacturerSpecificReport: $cmd", 2)
+    logging("ManufacturerSpecificReport ${cmd}", 2)
     if (state.manufacturer != cmd.manufacturerName) {
         updateDataValue("manufacturer", cmd.manufacturerName)
     }
