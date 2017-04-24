@@ -73,7 +73,7 @@ def bridgeDiscovery(params = [:]) {
 	}
 
 	ssdpSubscribe()
-
+	log.trace "bridgeRefreshCount: $bridgeRefreshCount"
 	//bridge discovery request every 15 //25 seconds
 	if ((bridgeRefreshCount % 5) == 0) {
 		discoverBridges()
@@ -207,6 +207,7 @@ def bulbDiscovery() {
 }
 
 private discoverBridges() {
+	log.trace "Sending Hue Discovery message to the hub"
 	sendHubCommand(new physicalgraph.device.HubAction("lan discovery urn:schemas-upnp-org:device:basic:1", physicalgraph.device.Protocol.LAN))
 }
 

@@ -23,9 +23,9 @@ metadata {
 		capability "Health Check"
 		capability "Light"
 
-		fingerprint mfr:"0063", prod:"4457", deviceJoinName: "GE In-Wall Smart Dimmer "
-		fingerprint mfr:"0063", prod:"4944", deviceJoinName: "GE In-Wall Smart Dimmer "
-		fingerprint mfr:"0063", prod:"5044", deviceJoinName: "GE Plug-In Smart Dimmer "
+		fingerprint mfr:"0063", prod:"4457", deviceJoinName: "GE In-Wall Smart Dimmer"
+		fingerprint mfr:"0063", prod:"4944", deviceJoinName: "GE In-Wall Smart Dimmer"
+		fingerprint mfr:"0063", prod:"5044", deviceJoinName: "GE Plug-In Smart Dimmer"
 		fingerprint mfr:"0063", prod:"4944", model:"3034", deviceJoinName: "GE In-Wall Smart Fan Control"
 	}
 
@@ -82,6 +82,11 @@ metadata {
 		details(["switch", "level", "refresh"])
 
 	}
+}
+
+def installed() {
+	// Device-Watch simply pings if no device events received for 32min(checkInterval)
+	sendEvent(name: "checkInterval", value: 2 * 15 * 60 + 2 * 60, displayed: false, data: [protocol: "zwave", hubHardwareId: device.hub.hardwareID])
 }
 
 def updated(){

@@ -12,7 +12,7 @@
  *
  */
 metadata {
-	definition (name: "Z-Wave Dimmer Switch Generic", namespace: "smartthings", author: "SmartThings", ocfDeviceType: "oic.d.switch") {
+	definition (name: "Z-Wave Dimmer Switch Generic", namespace: "smartthings", author: "SmartThings", ocfDeviceType: "oic.d.light") {
 		capability "Switch Level"
 		capability "Actuator"
 		capability "Health Check"
@@ -76,6 +76,11 @@ metadata {
 		details(["switch", "level", "refresh"])
 
 	}
+}
+
+def installed(){
+// Device-Watch simply pings if no device events received for 32min(checkInterval)
+	sendEvent(name: "checkInterval", value: 2 * 15 * 60 + 2 * 60, displayed: false, data: [protocol: "zwave", hubHardwareId: device.hub.hardwareID])
 }
 
 def updated(){

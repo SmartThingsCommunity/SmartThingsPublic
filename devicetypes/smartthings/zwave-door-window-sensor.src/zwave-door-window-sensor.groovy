@@ -17,7 +17,7 @@
  */
 
 metadata {
-	definition (name: "Z-Wave Door/Window Sensor", namespace: "smartthings", author: "SmartThings") {
+	definition (name: "Z-Wave Door/Window Sensor", namespace: "smartthings", author: "SmartThings", ocfDeviceType: "x.com.st.d.sensor.contact") {
 		capability "Contact Sensor"
 		capability "Sensor"
 		capability "Battery"
@@ -30,6 +30,9 @@ metadata {
 		fingerprint deviceId: "0x0701", inClusters: "0x5E,0x86,0x72,0x98", outClusters: "0x5A,0x82"
 		fingerprint deviceId: "0x0701", inClusters: "0x5E,0x80,0x71,0x85,0x70,0x72,0x86,0x30,0x31,0x84,0x59,0x73,0x5A,0x8F,0x98,0x7A", outClusters:"0x20" // Philio multi+
 		fingerprint mfr:"0086", prod:"0002", model:"001D", deviceJoinName: "Aeon Labs Door/Window Sensor (Gen 5)"
+		fingerprint mfr:"014A", prod:"0001", model:"0002", deviceJoinName: "Ecolink Door/Window Sensor"
+		fingerprint mfr:"0086", prod:"0102", model:"0070", deviceJoinName:  "Aeon Labs Door/Window Sensor 6"
+		fingerprint mfr:"011A", prod:"0601", model:"0903", deviceJoinName: "Enerwave Magnetic Door/Window Sensor"
 	}
 
 	// simulator metadata
@@ -77,6 +80,11 @@ def parse(String description) {
 	}
 	log.debug "parsed '$description' to $result"
 	return result
+}
+
+def installed() {
+	// Device-Watch simply pings if no device events received for 482min(checkInterval)
+	sendEvent(name: "checkInterval", value: 2 * 4 * 60 * 60 + 2 * 60, displayed: false, data: [protocol: "zwave", hubHardwareId: device.hub.hardwareID])
 }
 
 def updated() {

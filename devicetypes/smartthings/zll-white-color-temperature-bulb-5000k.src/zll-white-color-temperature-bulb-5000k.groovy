@@ -16,7 +16,7 @@ import groovy.transform.Field
 @Field Boolean hasConfiguredHealthCheck = false
 
 metadata {
-    definition (name: "ZLL White Color Temperature Bulb 5000K", namespace: "smartthings", author: "SmartThings") {
+    definition (name: "ZLL White Color Temperature Bulb 5000K", namespace: "smartthings", author: "SmartThings", ocfDeviceType: "oic.d.light") {
 
         capability "Actuator"
         capability "Color Temperature"
@@ -101,7 +101,7 @@ def refresh() {
     if (!((device.getDataValue("manufacturer") == "Eaton") && (device.getDataValue("model") == "Halo_LT01"))) {
         cmds = cmds + zigbee.onOffConfig() + zigbee.levelConfig() + zigbee.colorTemperatureConfig()
     }
-    
+
 	cmds
 }
 

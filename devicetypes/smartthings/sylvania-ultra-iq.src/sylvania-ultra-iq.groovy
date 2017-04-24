@@ -15,7 +15,7 @@
 //DEPRECATED - Using the generic DTH for this device. Users need to be moved before deleting this DTH
 
 metadata {
-	definition (name: "Sylvania Ultra iQ", namespace:"smartthings", author: "SmartThings") {
+	definition (name: "Sylvania Ultra iQ", namespace:"smartthings", author: "SmartThings", ocfDeviceType: "oic.d.light") {
 		capability "Switch Level"
 		capability "Configuration"
 		capability "Switch"
