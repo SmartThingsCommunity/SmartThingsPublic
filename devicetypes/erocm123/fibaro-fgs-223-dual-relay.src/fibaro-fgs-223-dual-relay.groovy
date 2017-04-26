@@ -16,6 +16,7 @@
  *
  *  Author: Eric Maycock (erocm123)
  *  
+ *  04/25/2017 - Fix for combined energy & power reports & switch endpoints showing correct info.
  *  04/18/2017 - This handler requires the Metering Switch Child device to create the multiple switch endpoints.
  */
  
@@ -52,7 +53,6 @@ tiles(scale: 2){
            		attributeState "statusText", label:'${currentValue}'       		
             }
 	}
-    childDeviceTiles("all")
 	valueTile("power", "device.power", decoration: "flat", width: 2, height: 2) {
 			state "default", label:'${currentValue} W'
 	}
@@ -69,6 +69,10 @@ tiles(scale: 2){
     standardTile("reset", "device.energy", inactiveLabel: false, decoration: "flat", width: 2, height: 2) {
 		state "default", label:'reset kWh', action:"reset"
 	}
+    
+    main(["switch"])
+    details(["switch", childDeviceTiles("all"),
+             "refresh","reset","configure"])
 
 }
     preferences {
@@ -82,7 +86,7 @@ def parse(String description) {
     def cmd = zwave.parse(description)
     if (cmd) {
         result += zwaveEvent(cmd)
-        log.debug "Parsed ${cmd} to ${result.inspect()}"
+        //log.debug "Parsed ${cmd} to ${result.inspect()}"
     } else {
         log.debug "Non-parsed event: ${description}"
     }
@@ -107,33 +111,66 @@ def zwaveEvent(physicalgraph.zwave.commands.basicv1.BasicReport cmd)
     log.debug "BasicReport $cmd"
 }
 
-def zwaveEvent(physicalgraph.zwave.commands.basicv1.BasicSet cmd) {
-    log.debug "BasicSet $cmd"
-	sendEvent(name: "switch", value: cmd.value ? "on" : "off", type: "digital")
-    def result = []
-    result << zwave.multiChannelV3.multiChannelCmdEncap(sourceEndPoint:1, destinationEndPoint:1, commandClass:37, command:2)
-    result << zwave.multiChannelV3.multiChannelCmdEncap(sourceEndPoint:1, destinationEndPoint:2, commandClass:37, command:2)
-    response(secureSequence(result, 1000)) // returns the result of reponse()
+def zwaveEvent(physicalgraph.zwave.commands.basicv1.BasicSet cmd, ep=null) {
+    logging("BasicSet: $cmd : Endpoint: $ep")
+    if (ep) {
+    def event
+        childDevices.each { childDevice ->
+            if (childDevice.deviceNetworkId == "$device.deviceNetworkId-ep$ep") {
+                childDevice.sendEvent(name: "switch", value: cmd.value ? "on" : "off")
+            }
+        }
+        if (cmd.value) {
+            event = [createEvent([name: "switch", value: "on"])]
+        } else {
+            def allOff = true
+            childDevices.each { n ->
+               if (n.currentState("switch").value != "off") allOff = false
+            }
+            if (allOff) {
+               event = [createEvent([name: "switch", value: "off"])]
+            } else {
+               event = [createEvent([name: "switch", value: "on"])]
+            }
+        }
+        return event
+    }
 }
 
 def zwaveEvent(physicalgraph.zwave.commands.switchbinaryv1.SwitchBinaryReport cmd, ep=null)
 {
-    logging("SwitchBinaryReport ${cmd}")
+    logging("SwitchBinaryReport: $cmd : Endpoint: $ep")
     if (ep) {
-        def childDevice = childDevices.find{it.deviceNetworkId == "$device.deviceNetworkId-ep$ep"}
-        if (childDevice)
-            childDevice.sendEvent(name: "switch", value: cmd.value ? "on" : "off")
+    def event
+        childDevices.each { childDevice ->
+            if (childDevice.deviceNetworkId == "$device.deviceNetworkId-ep$ep") {
+                childDevice.sendEvent(name: "switch", value: cmd.value ? "on" : "off")
+            }
+        }
+        if (cmd.value) {
+            event = [createEvent([name: "switch", value: "on"])]
+        } else {
+            def allOff = true
+            childDevices.each { n ->
+               if (n.currentState("switch").value != "off") allOff = false
+            }
+            if (allOff) {
+               event = [createEvent([name: "switch", value: "off"])]
+            } else {
+               event = [createEvent([name: "switch", value: "on"])]
+            }
+        }
+        return event
     } else {
-        def result = createEvent(name: "switch", value: cmd.value ? "on" : "off", type: "digital")
         def cmds = []
         cmds << encap(zwave.switchBinaryV1.switchBinaryGet(), 1)
         cmds << encap(zwave.switchBinaryV1.switchBinaryGet(), 2)
-        return [result, response(secureSequence(cmds))] // returns the result of reponse()
+        return response(secureSequence(cmds)) // returns the result of reponse()
     }
 }
 
 def zwaveEvent(physicalgraph.zwave.commands.meterv3.MeterReport cmd, ep=null) {
-    logging("MeterReport $cmd : Endpoint: $ep")
+    logging("MeterReport: $cmd : Endpoint: $ep")
     def result
     def cmds = []
     if (cmd.scale == 0) {
@@ -147,13 +184,17 @@ def zwaveEvent(physicalgraph.zwave.commands.meterv3.MeterReport cmd, ep=null) {
        def childDevice = childDevices.find{it.deviceNetworkId == "$device.deviceNetworkId-ep$ep"}
        if (childDevice)
           childDevice.sendEvent(result)
+       def combinedValue = 0.00
+       childDevices.each {
+           combinedValue += it.currentValue(result.name)
+       }
+       return createEvent([name: result.name, value: combinedValue])
     } else {
        (1..2).each { endpoint ->
 			cmds << encap(zwave.meterV2.meterGet(scale: 0), endpoint)
             cmds << encap(zwave.meterV2.meterGet(scale: 2), endpoint)
 	   }
-       if (cmds != []) return [createEvent(result), response(secureSequence(cmds))]
-       else return createEvent(result)
+       return response(secureSequence(cmds))
     }
 }
 
@@ -175,7 +216,7 @@ private updateStatus(){
 
 def zwaveEvent(physicalgraph.zwave.commands.multichannelv3.MultiChannelCapabilityReport cmd) 
 {
-    log.debug "multichannelv3.MultiChannelCapabilityReport $cmd"
+    //log.debug "multichannelv3.MultiChannelCapabilityReport $cmd"
     if (cmd.endPoint == 2 ) {
         def currstate = device.currentState("switch2").getValue()
         if (currstate == "on")
@@ -193,7 +234,7 @@ def zwaveEvent(physicalgraph.zwave.commands.multichannelv3.MultiChannelCapabilit
 }
 
 def zwaveEvent(physicalgraph.zwave.commands.multichannelv3.MultiChannelCmdEncap cmd) {
-   logging("MultiChannelCmdEncap ${cmd}")
+   //logging("MultiChannelCmdEncap ${cmd}")
    def encapsulatedCommand = cmd.encapsulatedCommand([0x32: 3, 0x25: 1, 0x20: 1])
    if (encapsulatedCommand) {
 		zwaveEvent(encapsulatedCommand, cmd.sourceEndPoint as Integer)
@@ -236,8 +277,8 @@ def refresh() {
 
 def ping() {
 	def cmds = []
-	cmds << zwave.multiChannelV3.multiChannelCmdEncap(sourceEndPoint:1, destinationEndPoint:1, commandClass:37, command:2)
-    cmds << zwave.multiChannelV3.multiChannelCmdEncap(sourceEndPoint:1, destinationEndPoint:2, commandClass:37, command:2)
+    cmds << encap(zwave.switchBinaryV1.switchBinaryGet(), 1)
+    cmds << encap(zwave.switchBinaryV1.switchBinaryGet(), 2)
 	secureSequence(cmds, 1000)
 }
 
@@ -249,8 +290,8 @@ def zwaveEvent(physicalgraph.zwave.commands.manufacturerspecificv2.ManufacturerS
 
 def poll() {
 	def cmds = []
-	cmds << zwave.multiChannelV3.multiChannelCmdEncap(sourceEndPoint:1, destinationEndPoint:1, commandClass:37, command:2)
-    cmds << zwave.multiChannelV3.multiChannelCmdEncap(sourceEndPoint:1, destinationEndPoint:2, commandClass:37, command:2)
+    cmds << encap(zwave.switchBinaryV1.switchBinaryGet(), 1)
+    cmds << encap(zwave.switchBinaryV1.switchBinaryGet(), 2)
 	secureSequence(cmds, 1000)
 }
 
@@ -308,18 +349,18 @@ def updated()
 
 def on() { 
    secureSequence([
-        zwave.multiChannelV3.multiChannelCmdEncap(sourceEndPoint:1, destinationEndPoint:1, commandClass:37, command:1, parameter:[255]),
-        zwave.multiChannelV3.multiChannelCmdEncap(sourceEndPoint:2, destinationEndPoint:2, commandClass:37, command:1, parameter:[255]),
-        zwave.multiChannelV3.multiChannelCmdEncap(sourceEndPoint:1, destinationEndPoint:1, commandClass:37, command:2),
-        zwave.multiChannelV3.multiChannelCmdEncap(sourceEndPoint:2, destinationEndPoint:2, commandClass:37, command:2)
+        encap(zwave.basicV1.basicSet(value: 0xFF), 1),
+        encap(zwave.basicV1.basicSet(value: 0xFF), 2),
+        encap(zwave.switchBinaryV1.switchBinaryGet(), 1),
+        encap(zwave.switchBinaryV1.switchBinaryGet(), 2)
     ], 1000)
 }
 def off() {
    secureSequence([
-        zwave.multiChannelV3.multiChannelCmdEncap(sourceEndPoint:1, destinationEndPoint:1, commandClass:37, command:1, parameter:[0]),
-        zwave.multiChannelV3.multiChannelCmdEncap(sourceEndPoint:2, destinationEndPoint:2, commandClass:37, command:1, parameter:[0]),
-        zwave.multiChannelV3.multiChannelCmdEncap(sourceEndPoint:1, destinationEndPoint:1, commandClass:37, command:2),
-        zwave.multiChannelV3.multiChannelCmdEncap(sourceEndPoint:2, destinationEndPoint:2, commandClass:37, command:2)
+        encap(zwave.basicV1.basicSet(value: 0x00), 1),
+        encap(zwave.basicV1.basicSet(value: 0x00), 2),
+        encap(zwave.switchBinaryV1.switchBinaryGet(), 1),
+        encap(zwave.switchBinaryV1.switchBinaryGet(), 2)
     ], 1000)
 }
 
@@ -452,6 +493,11 @@ def update_needed_settings()
     
     sendEvent(name:"numberOfButtons", value:"5")
     
+    if(!state.association2 || state.association2 == "" || state.association2 == "1"){
+       logging("Setting association group 2")
+       cmds << zwave.associationV2.associationSet(groupingIdentifier:2, nodeId:zwaveHubNodeId)
+       cmds << zwave.associationV2.associationGet(groupingIdentifier:2)
+    }
     if(!state.association4 || state.association4 == "" || state.association4 == "1"){
        logging("Setting association group 4")
        cmds << zwave.associationV2.associationSet(groupingIdentifier:4, nodeId:zwaveHubNodeId)
