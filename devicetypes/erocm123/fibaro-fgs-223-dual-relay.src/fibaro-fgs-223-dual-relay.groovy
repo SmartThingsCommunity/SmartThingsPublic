@@ -186,7 +186,7 @@ def zwaveEvent(physicalgraph.zwave.commands.meterv3.MeterReport cmd, ep=null) {
           childDevice.sendEvent(result)
        def combinedValue = 0.00
        childDevices.each {
-           combinedValue += it.currentValue(result.name)
+           if(it.currentValue(result.name)) combinedValue += it.currentValue(result.name)
        }
        return createEvent([name: result.name, value: combinedValue])
     } else {
@@ -353,7 +353,7 @@ def on() {
         encap(zwave.basicV1.basicSet(value: 0xFF), 2),
         encap(zwave.switchBinaryV1.switchBinaryGet(), 1),
         encap(zwave.switchBinaryV1.switchBinaryGet(), 2)
-    ], 1000)
+    ])
 }
 def off() {
    secureSequence([
@@ -361,7 +361,7 @@ def off() {
         encap(zwave.basicV1.basicSet(value: 0x00), 2),
         encap(zwave.switchBinaryV1.switchBinaryGet(), 1),
         encap(zwave.switchBinaryV1.switchBinaryGet(), 2)
-    ], 1000)
+    ])
 }
 
 void childOn(String dni) {
@@ -369,7 +369,7 @@ void childOn(String dni) {
     def cmds = []
     cmds << new physicalgraph.device.HubAction(secure(encap(zwave.basicV1.basicSet(value: 0xFF), channelNumber(dni))))
     cmds << new physicalgraph.device.HubAction(secure(encap(zwave.switchBinaryV1.switchBinaryGet(), channelNumber(dni))))
-	sendHubCommand(cmds)
+	sendHubCommand(cmds, 1000)
 }
 
 void childOff(String dni) {
@@ -377,7 +377,7 @@ void childOff(String dni) {
 	def cmds = []
     cmds << new physicalgraph.device.HubAction(secure(encap(zwave.basicV1.basicSet(value: 0x00), channelNumber(dni))))
     cmds << new physicalgraph.device.HubAction(secure(encap(zwave.switchBinaryV1.switchBinaryGet(), channelNumber(dni))))
-	sendHubCommand(cmds)
+	sendHubCommand(cmds, 1000)
 }
 
 void childRefresh(String dni) {
@@ -386,14 +386,14 @@ void childRefresh(String dni) {
     cmds << new physicalgraph.device.HubAction(secure(encap(zwave.switchBinaryV1.switchBinaryGet(), channelNumber(dni))))
     cmds << new physicalgraph.device.HubAction(secure(encap(zwave.meterV2.meterGet(scale: 0), channelNumber(dni))))
     cmds << new physicalgraph.device.HubAction(secure(encap(zwave.meterV2.meterGet(scale: 2), channelNumber(dni))))
-	sendHubCommand(cmds)
+	sendHubCommand(cmds, 1000)
 }
 
 private secure(physicalgraph.zwave.Command cmd) {
 	zwave.securityV1.securityMessageEncapsulation().encapsulate(cmd).format()
 }
 
-private secureSequence(commands, delay=200) {
+private secureSequence(commands, delay=1000) {
 	delayBetween(commands.collect{ secure(it) }, delay)
 }
 
