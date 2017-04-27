@@ -1,12 +1,12 @@
 /**
  *
  *  Qubino Flush 1D Relay
- *   
- *	github: Eric Maycock (erocm123)
- *	Date: 2017-02-20
- *	Copyright Eric Maycock
  *
- *  Includes all configuration parameters and ease of advanced configuration. 
+ *  github: Eric Maycock (erocm123)
+ *  Date: 2017-02-20
+ *  Copyright Eric Maycock
+ *
+ *  Includes all configuration parameters and ease of advanced configuration.
  *
  *  Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except
  *  in compliance with the License. You may obtain a copy of the License at:
@@ -18,44 +18,42 @@
  *  for the specific language governing permissions and limitations under the License.
  *
  */
- 
-metadata {
 
-	definition (name: "Qubino Flush 1D Relay", namespace: "erocm123", author: "Eric Maycock") {
-		capability "Actuator"
-		capability "Switch"
-		capability "Polling"
-		capability "Refresh"
-		capability "Sensor"
-		capability "Relay Switch"
+metadata {
+    definition (name: "Qubino Flush 1D Relay", namespace: "erocm123", author: "Eric Maycock") {
+        capability "Actuator"
+        capability "Switch"
+        capability "Polling"
+        capability "Refresh"
+        capability "Sensor"
+        capability "Relay Switch"
         capability "Configuration"
         capability "Temperature Measurement"
         capability "Health Check"
 
-		fingerprint deviceId: "0x1001", inClusters: "0x5E,0x86,0x72,0x5A,0x73,0x20,0x27,0x25,0x85,0x8E,0x59,0x70", outClusters: "0x20"
-
-	}
-
-	simulator {
-	}
-    
-    preferences {
-        input description: "Once you change values on this page, the corner of the \"configuration\" icon will change orange until all configuration parameters are updated.", title: "Settings", displayDuringSetup: false, type: "paragraph", element: "paragraph"
-		generate_preferences(configuration_model())  
+        fingerprint deviceId: "0x1001", inClusters: "0x5E,0x86,0x72,0x5A,0x73,0x20,0x27,0x25,0x85,0x8E,0x59,0x70", outClusters: "0x20"
     }
 
-	tiles{
-        multiAttributeTile(name:"switch", type: "generic", width: 6, height: 4, canChangeIcon: true){
-			tileAttribute ("device.switch", key: "PRIMARY_CONTROL") {
-			   attributeState "off", label:'${name}', action:"switch.on", icon:"st.switches.switch.off", backgroundColor:"#ffffff", nextState:"turningOn"
-			   attributeState "on", label:'${name}', action:"switch.off", icon:"st.switches.switch.on", backgroundColor:"#00a0dc", nextState:"turningOff"
-			   attributeState "turningOff", label:'${name}', action:"switch.on", icon:"st.switches.switch.off", backgroundColor:"#ffffff", nextState:"turningOn"
-			   attributeState "turningOn", label:'${name}', action:"switch.off", icon:"st.switches.switch.on", backgroundColor:"#00a0dc", nextState:"turningOff"
-			}
-            tileAttribute ("statusText", key: "SECONDARY_CONTROL") {
-           		attributeState "statusText", label:'${currentValue}'       		
+    simulator {
+    }
+
+    preferences {
+        input description: "Once you change values on this page, the corner of the \"configuration\" icon will change orange until all configuration parameters are updated.", title: "Settings", displayDuringSetup: false, type: "paragraph", element: "paragraph"
+        generate_preferences(configuration_model())
+    }
+
+    tiles {
+        multiAttributeTile(name:"switch", type: "generic", width: 6, height: 4, canChangeIcon: true) {
+            tileAttribute ("device.switch", key: "PRIMARY_CONTROL") {
+                attributeState "off", label:'${name}', action:"switch.on", icon:"st.switches.switch.off", backgroundColor:"#ffffff", nextState:"turningOn"
+                attributeState "on", label:'${name}', action:"switch.off", icon:"st.switches.switch.on", backgroundColor:"#00a0dc", nextState:"turningOff"
+                attributeState "turningOff", label:'${name}', action:"switch.on", icon:"st.switches.switch.off", backgroundColor:"#ffffff", nextState:"turningOn"
+                attributeState "turningOn", label:'${name}', action:"switch.off", icon:"st.switches.switch.on", backgroundColor:"#00a0dc", nextState:"turningOff"
             }
-	    }
+            tileAttribute ("statusText", key: "SECONDARY_CONTROL") {
+                attributeState "statusText", label:'${currentValue}'
+            }
+        }
         childDeviceTiles("all")
         valueTile("temperature", "device.temperature", inactiveLabel: false, width: 2, height: 2) {
             state "temperature", label:'${currentValue}°',
@@ -64,169 +62,165 @@ metadata {
                 [value: 31, color: "#153591"],
                 [value: 44, color: "#1e9cbb"],
                 [value: 59, color: "#90d2a7"],
-				[value: 74, color: "#44b621"],
-				[value: 84, color: "#f1d801"],
-				[value: 95, color: "#d04e00"],
-				[value: 96, color: "#bc2323"]
-			]
+                [value: 74, color: "#44b621"],
+                [value: 84, color: "#f1d801"],
+                [value: 95, color: "#d04e00"],
+                [value: 96, color: "#bc2323"]
+            ]
         }
-		standardTile("refresh", "device.switch", inactiveLabel: false, decoration: "flat", width: 2, height: 2) {
-			state "default", label:'', action:"refresh.refresh", icon:"st.secondary.refresh"
-		}
+        standardTile("refresh", "device.switch", inactiveLabel: false, decoration: "flat", width: 2, height: 2) {
+            state "default", label:'', action:"refresh.refresh", icon:"st.secondary.refresh"
+        }
         standardTile("configure", "device.needUpdate", inactiveLabel: false, decoration: "flat", width: 2, height: 2) {
             state "NO" , label:'', action:"configuration.configure", icon:"st.secondary.configure"
             state "YES", label:'', action:"configuration.configure", icon:"https://github.com/erocm123/SmartThingsPublic/raw/master/devicetypes/erocm123/qubino-flush-1d-relay.src/configure@2x.png"
         }
-	}
+    }
 }
 
 def installed() {
     logging("installed()", 1)
-	command(zwave.manufacturerSpecificV1.manufacturerSpecificGet())
+    command(zwave.manufacturerSpecificV1.manufacturerSpecificGet())
     createChildDevices()
 }
 
 def parse(String description) {
-	def result = []
-	def cmd = zwave.parse(description, [0x20: 1, 0x70: 1])
-	if (cmd) {
-		result += zwaveEvent(cmd)
-	}
-	if (result?.name == 'hail' && hubFirmwareLessThan("000.011.00602")) {
-		result = [result, response(zwave.basicV1.basicGet())]
-		logging("Was hailed: requesting state update", 2)
-	} else {
+    def result = []
+    def cmd = zwave.parse(description, [0x20: 1, 0x70: 1])
+    if (cmd) {
+        result += zwaveEvent(cmd)
+    }
+    if (result?.name == 'hail' && hubFirmwareLessThan("000.011.00602")) {
+        result = [result, response(zwave.basicV1.basicGet())]
+        logging("Was hailed: requesting state update", 2)
+    } else {
         logging("Parse returned ${result?.descriptionText}", 1)
-	}
-	return result
+    }
+    return result
 }
 
 def zwaveEvent(physicalgraph.zwave.commands.basicv1.BasicReport cmd) {
-    logging("BasicReport: $cmd", 2)
-	createEvent(name: "switch", value: cmd.value ? "on" : "off", type: "physical")
+    logging("BasicReport ${cmd}", 2)
+    createEvent(name: "switch", value: cmd.value ? "on" : "off", type: "physical")
 }
 
 def zwaveEvent(physicalgraph.zwave.commands.switchbinaryv1.SwitchBinaryReport cmd) {
-    logging("SwitchBinaryReport: $cmd", 2)
-	createEvent(name: "switch", value: cmd.value ? "on" : "off", type: "digital")
+    logging("SwitchBinaryReport ${cmd}", 2)
+    createEvent(name: "switch", value: cmd.value ? "on" : "off", type: "digital")
 }
 
-def zwaveEvent(physicalgraph.zwave.commands.sensormultilevelv5.SensorMultilevelReport cmd)
-{
+def zwaveEvent(physicalgraph.zwave.commands.sensormultilevelv5.SensorMultilevelReport cmd) {
     logging("SensorMultilevelReport: $cmd", 2)
-	def map = [:]
-	switch (cmd.sensorType) {
-		case 1:
-			map.name = "temperature"
-			def cmdScale = cmd.scale == 1 ? "F" : "C"
-			map.value = convertTemperatureIfNeeded(cmd.scaledSensorValue, cmdScale, cmd.precision)
-			map.unit = getTemperatureScale()
+    def map = [:]
+    switch (cmd.sensorType) {
+        case 1:
+            map.name = "temperature"
+            def cmdScale = cmd.scale == 1 ? "F" : "C"
+            map.value = convertTemperatureIfNeeded(cmd.scaledSensorValue, cmdScale, cmd.precision)
+            map.unit = getTemperatureScale()
             logging("Temperature Report: $map.value", 2)
-			break;
-		default:
-			map.descriptionText = cmd.toString()
-	}
-    
+            break;
+        default:
+            map.descriptionText = cmd.toString()
+    }
+
     return createEvent(map)
 }
 
-
 def zwaveEvent(physicalgraph.zwave.commands.manufacturerspecificv2.ManufacturerSpecificReport cmd) {
-    logging("ManufacturerSpecificReport: $cmd", 2)
-	if (state.manufacturer != cmd.manufacturerName) {
-		updateDataValue("manufacturer", cmd.manufacturerName)
-	}
+    logging("ManufacturerSpecificReport ${cmd}", 2)
+    if (state.manufacturer != cmd.manufacturerName) {
+        updateDataValue("manufacturer", cmd.manufacturerName)
+    }
 
-	createEvent(name: "manufacturer", value: cmd.manufacturerName)
+    createEvent(name: "manufacturer", value: cmd.manufacturerName)
 }
 
 def zwaveEvent(physicalgraph.zwave.commands.sensorbinaryv2.SensorBinaryReport cmd) {
     logging("SensorBinaryReport: $cmd", 2)
-	def children = childDevices
-	def childDevice = children.find{it.deviceNetworkId.endsWith("ep2")}
+    def children = childDevices
+    def childDevice = children.find{it.deviceNetworkId.endsWith("ep2")}
     switch (cmd.sensorValue) {
         case 0:
-            switch(settings."i2")
-                {
-                    case "Motion Sensor Child Device":
-                        childDevice.sendEvent(name: "motion", value: "active")
+            switch(settings."i2") {
+                case "Motion Sensor Child Device":
+                    childDevice.sendEvent(name: "motion", value: "active")
                     break
-                    case "Carbon Monoxide Detector Child Device":
-                        childDevice.sendEvent(name: "carbonMonoxide", value: "detected")
+                case "Carbon Monoxide Detector Child Device":
+                    childDevice.sendEvent(name: "carbonMonoxide", value: "detected")
                     break
-                    case "Carbon Dioxide Detector Child Device":
-                        childDevice.sendEvent(name: "carbonDioxide", value: "detected")
+                case "Carbon Dioxide Detector Child Device":
+                    childDevice.sendEvent(name: "carbonDioxide", value: "detected")
                     break
-                    case "Water Sensor Child Device":
-                        childDevice.sendEvent(name: "water", value: "wet")
+                case "Water Sensor Child Device":
+                    childDevice.sendEvent(name: "water", value: "wet")
                     break
-                    case "Smoke Detector Child Device":
-                        childDevice.sendEvent(name: "smoke", value: "detected")
+                case "Smoke Detector Child Device":
+                    childDevice.sendEvent(name: "smoke", value: "detected")
                     break
-                    case "Contact Sensor Child Device":
-                        childDevice.sendEvent(name: "contact", value: "open")
+                case "Contact Sensor Child Device":
+                    childDevice.sendEvent(name: "contact", value: "open")
                     break
-                }
-        break
+            }
+            break
         case 255:
-            switch(settings."i2")
-                {
-			        case "Motion Sensor Child Device":
-                        childDevice.sendEvent(name: "motion", value: "inactive")
+            switch(settings."i2") {
+                case "Motion Sensor Child Device":
+                    childDevice.sendEvent(name: "motion", value: "inactive")
                     break
-                    case "Carbon Monoxide Detector Child Device":
-                        childDevice.sendEvent(name: "carbonMonoxide", value: "clear")
+                case "Carbon Monoxide Detector Child Device":
+                    childDevice.sendEvent(name: "carbonMonoxide", value: "clear")
                     break
-                    case "Carbon Dioxide Detector Child Device":
-                        childDevice.sendEvent(name: "carbonDioxide", value: "clear")
+                case "Carbon Dioxide Detector Child Device":
+                    childDevice.sendEvent(name: "carbonDioxide", value: "clear")
                     break
-                    case "Water Sensor Child Device":
-                        childDevice.sendEvent(name: "water", value: "dry")
+                case "Water Sensor Child Device":
+                    childDevice.sendEvent(name: "water", value: "dry")
                     break
-                    case "Smoke Detector Child Device":
-                        childDevice.sendEvent(name: "smoke", value: "clear")
+                case "Smoke Detector Child Device":
+                    childDevice.sendEvent(name: "smoke", value: "clear")
                     break
-                    case "Contact Sensor Child Device":
-                        childDevice.sendEvent(name: "contact", value: "closed")
+                case "Contact Sensor Child Device":
+                    childDevice.sendEvent(name: "contact", value: "closed")
                     break
-                }
-        break
+            }
+            break
     }
 }
 
 def zwaveEvent(physicalgraph.zwave.Command cmd) {
-	logging("$device.displayName: Unhandled: $cmd", 2)
-	[:]
+    logging("$device.displayName: Unhandled: $cmd", 2)
+    [:]
 }
 
 def on() {
     logging("on()", 1)
-	commands([
-		zwave.basicV1.basicSet(value: 0xFF),
-		zwave.switchBinaryV1.switchBinaryGet()
-	])
+    commands([
+        zwave.basicV1.basicSet(value: 0xFF),
+        zwave.switchBinaryV1.switchBinaryGet()
+    ])
 }
 
 def off() {
     logging("off()", 1)
-	commands([
-		zwave.basicV1.basicSet(value: 0x00),
-		zwave.switchBinaryV1.switchBinaryGet()
-	])
+    commands([
+        zwave.basicV1.basicSet(value: 0x00),
+        zwave.switchBinaryV1.switchBinaryGet()
+    ])
 }
 
 def poll() {
     logging("poll()", 1)
-	command(zwave.switchBinaryV1.switchBinaryGet())
+    command(zwave.switchBinaryV1.switchBinaryGet())
 }
 
 def refresh() {
     logging("refresh()", 1)
-	commands([
-		zwave.switchBinaryV1.switchBinaryGet(),
-		zwave.manufacturerSpecificV1.manufacturerSpecificGet(),
+    commands([
+        zwave.switchBinaryV1.switchBinaryGet(),
+        zwave.manufacturerSpecificV1.manufacturerSpecificGet(),
         zwave.sensorMultilevelV5.sensorMultilevelGet(sensorType:1, scale:1)
-	])
+    ])
 }
 
 def configure() {
@@ -236,93 +230,83 @@ def configure() {
     if (cmds != []) commands(cmds)
 }
 
-def updated()
-{
+def updated() {
     logging("updated()", 1)
     if (!childDevices) {
-		createChildDevices()
-	}
-	else if (device.label != state.oldLabel) {
-		childDevices.each {
-			def newLabel = "${device.displayName} (i${channelNumber(it.deviceNetworkId)})"
-			it.setLabel(newLabel)
-		}
-		state.oldLabel = device.label
-	}
+        createChildDevices()
+    } else if (device.label != state.oldLabel) {
+        childDevices.each {
+            def newLabel = "${device.displayName} (i${channelNumber(it.deviceNetworkId)})"
+            it.setLabel(newLabel)
+        }
+        state.oldLabel = device.label
+    }
     if (childDevices) {
         def childDevice = childDevices.find{it.deviceNetworkId.endsWith("-i2")}
         if (childDevice && settings."i2" && settings."i2" != "Disabled" && childDevice.typeName != settings."i2") {
             childDevice.setDeviceType(settings."i2")
         }
     }
-    def cmds = [] 
+    def cmds = []
     cmds = update_needed_settings()
     sendEvent(name: "checkInterval", value: 2 * 15 * 60 + 2 * 60, displayed: false, data: [protocol: "zwave", hubHardwareId: device.hub.hardwareID])
     sendEvent(name:"needUpdate", value: device.currentValue("needUpdate"), displayed:false, isStateChange: true)
     if (cmds != []) response(commands(cmds))
 }
 
-def generate_preferences(configuration_model)
-{
+def generate_preferences(configuration_model) {
     def configuration = parseXml(configuration_model)
-   
-    configuration.Value.each
-    {
-        if(it.@hidden != "true" && it.@disabled != "true"){
-        switch(it.@type)
-        {   
-            case ["number"]:
-                input "${it.@index}", "number",
-                    title:"${it.@label}\n" + "${it.Help}",
-                    range: "${it.@min}..${it.@max}",
-                    defaultValue: "${it.@value}",
-                    displayDuringSetup: "${it.@displayDuringSetup}"
-            break
-            case "list":
-                def items = []
-                it.Item.each { items << ["${it.@value}":"${it.@label}"] }
-                input "${it.@index}", "enum",
-                    title:"${it.@label}\n" + "${it.Help}",
-                    defaultValue: "${it.@value}",
-                    displayDuringSetup: "${it.@displayDuringSetup}",
-                    options: items
-            break
-            case "decimal":
-               input "${it.@index}", "decimal",
-                    title:"${it.@label}\n" + "${it.Help}",
-                    range: "${it.@min}..${it.@max}",
-                    defaultValue: "${it.@value}",
-                    displayDuringSetup: "${it.@displayDuringSetup}"
-            break
-            case "boolean":
-               input "${it.@index}", "boolean",
-                    title:"${it.@label}\n" + "${it.Help}",
-                    defaultValue: "${it.@value}",
-                    displayDuringSetup: "${it.@displayDuringSetup}"
-            break
-        }
+
+    configuration.Value.each {
+        if(it.@hidden != "true" && it.@disabled != "true") {
+            switch(it.@type) {
+                case ["number"]:
+                    input "${it.@index}", "number",
+                        title:"${it.@label}\n" + "${it.Help}",
+                        range: "${it.@min}..${it.@max}",
+                        defaultValue: "${it.@value}",
+                        displayDuringSetup: "${it.@displayDuringSetup}"
+                    break
+                case "list":
+                    def items = []
+                    it.Item.each { items << ["${it.@value}":"${it.@label}"] }
+                    input "${it.@index}", "enum",
+                        title:"${it.@label}\n" + "${it.Help}",
+                        defaultValue: "${it.@value}",
+                        displayDuringSetup: "${it.@displayDuringSetup}",
+                        options: items
+                    break
+                case "decimal":
+                    input "${it.@index}", "decimal",
+                        title:"${it.@label}\n" + "${it.Help}",
+                        range: "${it.@min}..${it.@max}",
+                        defaultValue: "${it.@value}",
+                        displayDuringSetup: "${it.@displayDuringSetup}"
+                    break
+                case "boolean":
+                    input "${it.@index}", "boolean",
+                        title:"${it.@label}\n" + "${it.Help}",
+                        defaultValue: "${it.@value}",
+                        displayDuringSetup: "${it.@displayDuringSetup}"
+                    break
+            }
         }
     }
 }
 
  /*  Code has elements from other community source @CyrilPeponnet (Z-Wave Parameter Sync). */
 
-def update_current_properties(cmd)
-{
+def update_current_properties(cmd) {
     def currentProperties = state.currentProperties ?: [:]
-    
+
     currentProperties."${cmd.parameterNumber}" = cmd.configurationValue
-    
+
     def parameterSettings = parseXml(configuration_model()).Value.find{it.@index == "${cmd.parameterNumber}"}
 
-    if (settings."${cmd.parameterNumber}" != null || parameterSettings.@hidden == "true")
-    {
-        if (convertParam(cmd.parameterNumber, parameterSettings.@hidden != "true"? settings."${cmd.parameterNumber}" : parameterSettings.@value) == cmd2Integer(cmd.configurationValue))
-        {
+    if (settings."${cmd.parameterNumber}" != null || parameterSettings.@hidden == "true") {
+        if (convertParam(cmd.parameterNumber, parameterSettings.@hidden != "true"? settings."${cmd.parameterNumber}" : parameterSettings.@value) == cmd2Integer(cmd.configurationValue)) {
             sendEvent(name:"needUpdate", value:"NO", displayed:false, isStateChange: true)
-        }
-        else
-        {
+        } else {
             sendEvent(name:"needUpdate", value:"YES", displayed:false, isStateChange: true)
         }
     }
@@ -330,167 +314,160 @@ def update_current_properties(cmd)
     state.currentProperties = currentProperties
 }
 
-def update_needed_settings()
-{
+def update_needed_settings() {
     def cmds = []
     def currentProperties = state.currentProperties ?: [:]
-     
+
     def configuration = parseXml(configuration_model())
     def isUpdateNeeded = "NO"
 
-    configuration.Value.each
-    {     
-        if ("${it.@setting_type}" == "zwave" && it.@disabled != "true"){
-            if (currentProperties."${it.@index}" == null)
-            {
-               if (it.@setonly == "true"){
-                  logging("Parameter ${it.@index} will be updated to " + convertParam(it.@index.toInteger(), settings."${it.@index}"? settings."${it.@index}" : "${it.@value}"), 2)
-                  def convertedConfigurationValue = convertParam(it.@index.toInteger(), settings."${it.@index}"? settings."${it.@index}" : "${it.@value}")
-                  cmds << zwave.configurationV1.configurationSet(configurationValue: integer2Cmd(convertedConfigurationValue, it.@byteSize.toInteger()), parameterNumber: it.@index.toInteger(), size: it.@byteSize.toInteger())
-               } else {
-                  isUpdateNeeded = "YES"
-                  logging("Current value of parameter ${it.@index} is unknown", 2)
-                  cmds << zwave.configurationV1.configurationGet(parameterNumber: it.@index.toInteger())
-               }
-            }
-            else if ((settings."${it.@index}" != null || "${it.@hidden}" == "true") && cmd2Integer(currentProperties."${it.@index}") != convertParam(it.@index.toInteger(), "${it.@hidden}" != "true"? settings."${it.@index}" : "${it.@value}"))
-            { 
+    configuration.Value.each {
+        if ("${it.@setting_type}" == "zwave" && it.@disabled != "true") {
+            if (currentProperties."${it.@index}" == null) {
+                if (it.@setonly == "true") {
+                    logging("Parameter ${it.@index} will be updated to " + convertParam(it.@index.toInteger(), settings."${it.@index}"? settings."${it.@index}" : "${it.@value}"), 2)
+                    def convertedConfigurationValue = convertParam(it.@index.toInteger(), settings."${it.@index}"? settings."${it.@index}" : "${it.@value}")
+                    cmds << zwave.configurationV1.configurationSet(configurationValue: integer2Cmd(convertedConfigurationValue, it.@byteSize.toInteger()), parameterNumber: it.@index.toInteger(), size: it.@byteSize.toInteger())
+                } else {
+                    isUpdateNeeded = "YES"
+                    logging("Current value of parameter ${it.@index} is unknown", 2)
+                    cmds << zwave.configurationV1.configurationGet(parameterNumber: it.@index.toInteger())
+                }
+            } else if ((settings."${it.@index}" != null || "${it.@hidden}" == "true") && cmd2Integer(currentProperties."${it.@index}") != convertParam(it.@index.toInteger(), "${it.@hidden}" != "true"? settings."${it.@index}" : "${it.@value}")) {
                 isUpdateNeeded = "YES"
                 logging("Parameter ${it.@index} will be updated to " + convertParam(it.@index.toInteger(), settings."${it.@index}"? settings."${it.@index}" : "${it.@value}"), 2)
                 def convertedConfigurationValue = convertParam(it.@index.toInteger(), settings."${it.@index}"? settings."${it.@index}" : "${it.@value}")
                 cmds << zwave.configurationV1.configurationSet(configurationValue: integer2Cmd(convertedConfigurationValue, it.@byteSize.toInteger()), parameterNumber: it.@index.toInteger(), size: it.@byteSize.toInteger())
                 cmds << zwave.configurationV1.configurationGet(parameterNumber: it.@index.toInteger())
-            } 
+            }
         }
     }
-    
+
     sendEvent(name:"needUpdate", value: isUpdateNeeded, displayed:false, isStateChange: true)
     return cmds
 }
 
 def convertParam(number, value) {
-   def parValue
-   switch (number){
-   case 110:
-      if (value < 0)
-         parValue = value * -1 + 1000
-      else 
-         parValue = value
-   break
-   default:
-      parValue = value
-   break
-   }
-   return parValue.toInteger()
+    def parValue
+    switch (number) {
+        case 110:
+            if (value < 0)
+                parValue = value * -1 + 1000
+            else
+                parValue = value
+            break
+        default:
+            parValue = value
+            break
+    }
+    return parValue.toInteger()
 }
 
 private def logging(message, level) {
-    if (logLevel != "0"){
-    switch (logLevel) {
-       case "1":
-          if (level > 1)
-             log.debug "$message"
-       break
-       case "99":
-          log.debug "$message"
-       break
-    }
+    if (logLevel != "0") {
+        switch (logLevel) {
+            case "1":
+                if (level > 1)
+                    log.debug "$message"
+                break
+            case "99":
+                log.debug "$message"
+                break
+        }
     }
 }
 
 /**
 * Convert 1 and 2 bytes values to integer
 */
-def cmd2Integer(array) { 
-
-switch(array.size()) {
-	case 1:
-		array[0]
-    break
-	case 2:
-    	((array[0] & 0xFF) << 8) | (array[1] & 0xFF)
-    break
-    case 3:
-    	((array[0] & 0xFF) << 16) | ((array[1] & 0xFF) << 8) | (array[2] & 0xFF)
-    break
-	case 4:
-    	((array[0] & 0xFF) << 24) | ((array[1] & 0xFF) << 16) | ((array[2] & 0xFF) << 8) | (array[3] & 0xFF)
-	break
+def cmd2Integer(array) {
+    switch(array.size()) {
+        case 1:
+            array[0]
+            break
+        case 2:
+            ((array[0] & 0xFF) << 8) | (array[1] & 0xFF)
+            break
+        case 3:
+            ((array[0] & 0xFF) << 16) | ((array[1] & 0xFF) << 8) | (array[2] & 0xFF)
+            break
+        case 4:
+            ((array[0] & 0xFF) << 24) | ((array[1] & 0xFF) << 16) | ((array[2] & 0xFF) << 8) | (array[3] & 0xFF)
+            break
     }
 }
 
 def integer2Cmd(value, size) {
-	switch(size) {
-	case 1:
-		[value]
-    break
-	case 2:
-    	def short value1   = value & 0xFF
-        def short value2 = (value >> 8) & 0xFF
-        [value2, value1]
-    break
-    case 3:
-    	def short value1   = value & 0xFF
-        def short value2 = (value >> 8) & 0xFF
-        def short value3 = (value >> 16) & 0xFF
-        [value3, value2, value1]
-    break
-	case 4:
-    	def short value1 = value & 0xFF
-        def short value2 = (value >> 8) & 0xFF
-        def short value3 = (value >> 16) & 0xFF
-        def short value4 = (value >> 24) & 0xFF
-		[value4, value3, value2, value1]
-	break
-	}
+    switch(size) {
+        case 1:
+            [value]
+            break
+        case 2:
+            def short value1 = value & 0xFF
+            def short value2 = (value >> 8) & 0xFF
+            [value2, value1]
+            break
+        case 3:
+            def short value1 = value & 0xFF
+            def short value2 = (value >> 8) & 0xFF
+            def short value3 = (value >> 16) & 0xFF
+            [value3, value2, value1]
+            break
+        case 4:
+            def short value1 = value & 0xFF
+            def short value2 = (value >> 8) & 0xFF
+            def short value3 = (value >> 16) & 0xFF
+            def short value4 = (value >> 24) & 0xFF
+            [value4, value3, value2, value1]
+            break
+    }
 }
 
 def zwaveEvent(physicalgraph.zwave.commands.configurationv1.ConfigurationReport cmd) {
-     update_current_properties(cmd)
-     logging("${device.displayName} parameter '${cmd.parameterNumber}' with a byte size of '${cmd.size}' is set to '${cmd2Integer(cmd.configurationValue)}'", 2)
+    update_current_properties(cmd)
+    logging("${device.displayName} parameter '${cmd.parameterNumber}' with a byte size of '${cmd.size}' is set to '${cmd2Integer(cmd.configurationValue)}'", 2)
 }
 
 private command(physicalgraph.zwave.Command cmd) {
-	if (state.sec) {
-		zwave.securityV1.securityMessageEncapsulation().encapsulate(cmd).format()
-	} else {
-		cmd.format()
-	}
+    if (state.sec) {
+        zwave.securityV1.securityMessageEncapsulation().encapsulate(cmd).format()
+    } else {
+        cmd.format()
+    }
 }
 
 private commands(commands, delay=500) {
-	delayBetween(commands.collect{ command(it) }, delay)
+    delayBetween(commands.collect{ command(it) }, delay)
 }
 
 private void createChildDevices() {
-	state.oldLabel = device.label
+    state.oldLabel = device.label
     try {
-	   for (i in 2..2) {
-          addChildDevice("Contact Sensor Child Device", "${device.deviceNetworkId}-i${i}", null,
-			 [completedSetup: true, label: "${device.displayName} (i${i})",
-		     isComponent: true, componentName: "i$i", componentLabel: "Input $i"])
-	   }
+        for (i in 2..2) {
+            addChildDevice("Contact Sensor Child Device", "${device.deviceNetworkId}-i${i}", null,
+                [completedSetup: true, label: "${device.displayName} (i${i})",
+                isComponent: true, componentName: "i$i", componentLabel: "Input $i"])
+        }
     } catch (e) {
-       runIn(2, "sendAlert")
+        runIn(2, "sendAlert")
     }
 }
 
 private channelNumber(String dni) {
-	dni.split("-i")[-1] as Integer
+    dni.split("-i")[-1] as Integer
 }
 
 private sendAlert() {
-   sendEvent(
-      descriptionText: "Child device creation failed. Please make sure that the \"Contact Sensor Child Device\" is installed and published.",
-	  eventType: "ALERT",
-	  name: "childDeviceCreation",
-	  value: "failed",
-	  displayed: true,
-   )
+    sendEvent(
+        descriptionText: "Child device creation failed. Please make sure that the \"Contact Sensor Child Device\" is installed and published.",
+        eventType: "ALERT",
+        name: "childDeviceCreation",
+        value: "failed",
+        displayed: true,
+    )
 }
 
-def configuration_model()
-{
+def configuration_model() {
 '''
 <configuration>
 <Value type="list" byteSize="1" index="1" label="Input 1 switch type" min="0" max="1" value="1" setting_type="zwave" fw="">
