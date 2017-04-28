@@ -1,5 +1,5 @@
 /**
- *  Copyright 2016 SmartThings
+ *  Copyright 2017 SmartThings
  *
  *  Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except
  *  in compliance with the License. You may obtain a copy of the License at:
@@ -78,6 +78,7 @@ private getATTRIBUTE_HUE() { 0x0000 }
 private getATTRIBUTE_SATURATION() { 0x0001 }
 private getHUE_COMMAND() { 0x00 }
 private getSATURATION_COMMAND() { 0x03 }
+private getMOVE_TO_HUE_AND_SATURATION_COMMAND() { 0x06 }
 private getCOLOR_CONTROL_CLUSTER() { 0x0300 }
 private getATTRIBUTE_COLOR_TEMPERATURE() { 0x0007 }
 
@@ -180,19 +181,27 @@ def setLevel(value) {
     zigbee.setLevel(value)
 }
 
+private getScaledHue(value) {
+    zigbee.convertToHexString(Math.round(value * 0xfe / 100.0), 2)
+}
+
+private getScaledSaturation(value) {
+    zigbee.convertToHexString(Math.round(value * 0xfe / 100.0), 2)
+}
+
 def setColor(value){
     log.trace "setColor($value)"
-    zigbee.on() + setHue(value.hue) + "delay 300" + setSaturation(value.saturation)
+    zigbee.on() +
+    zigbee.command(COLOR_CONTROL_CLUSTER, MOVE_TO_HUE_AND_SATURATION_COMMAND,
+        getScaledHue(value.hue), getScaledSaturation(value.saturation), "0000")
 }
 
 def setHue(value) {
-    def scaledHueValue = zigbee.convertToHexString(Math.round(value * 0xfe / 100.0), 2)
-    zigbee.command(COLOR_CONTROL_CLUSTER, HUE_COMMAND, scaledHueValue, "00", "0500")       //payload-> hue value, direction (00-> shortest distance), transition time (1/10th second) (0500 in U16 reads 5)
+    zigbee.command(COLOR_CONTROL_CLUSTER, HUE_COMMAND, getScaledHue(value), "00", "0000")
 }
 
 def setSaturation(value) {
-    def scaledSatValue = zigbee.convertToHexString(Math.round(value * 0xfe / 100.0), 2)
-    zigbee.command(COLOR_CONTROL_CLUSTER, SATURATION_COMMAND, scaledSatValue, "0500") + "delay 1000" + zigbee.readAttribute(COLOR_CONTROL_CLUSTER, ATTRIBUTE_SATURATION)
+    zigbee.command(COLOR_CONTROL_CLUSTER, SATURATION_COMMAND, getScaledSaturation(value), "0000")
 }
 
 def installed() {
