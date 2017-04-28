@@ -1,5 +1,5 @@
 /**
- *  Copyright 2016 SmartThings
+ *  Copyright 2017 SmartThings
  *
  *  Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except
  *  in compliance with the License. You may obtain a copy of the License at:
@@ -88,11 +88,11 @@ def parse(String description) {
 
         if (zigbeeMap?.clusterInt == COLOR_CONTROL_CLUSTER) {
             if(zigbeeMap.attrInt == ATTRIBUTE_HUE){  //Hue Attribute
-                def hueValue = Math.round(zigbee.convertHexToInt(zigbeeMap.value) / 255 * 360)
+                def hueValue = Math.round(zigbee.convertHexToInt(zigbeeMap.value) / 0xfe * 100)
                 sendEvent(name: "hue", value: hueValue, displayed:false)
             }
             else if(zigbeeMap.attrInt == ATTRIBUTE_SATURATION){ //Saturation Attribute
-                def saturationValue = Math.round(zigbee.convertHexToInt(zigbeeMap.value) / 255 * 100)
+                def saturationValue = Math.round(zigbee.convertHexToInt(zigbeeMap.value) / 0xfe * 100)
                 sendEvent(name: "saturation", value: saturationValue, displayed:false)
             }
         }
