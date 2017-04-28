@@ -142,7 +142,13 @@ def ping() {
 }
 
 def refresh() {
-    zigbee.onOffRefresh() + zigbee.levelRefresh() + zigbee.readAttribute(COLOR_CONTROL_CLUSTER, ATTRIBUTE_COLOR_TEMPERATURE) + zigbee.readAttribute(COLOR_CONTROL_CLUSTER, ATTRIBUTE_HUE) + zigbee.readAttribute(COLOR_CONTROL_CLUSTER, ATTRIBUTE_SATURATION) + zigbee.onOffConfig(0, 300) + zigbee.levelConfig() + zigbee.colorTemperatureConfig() + zigbee.configureReporting(COLOR_CONTROL_CLUSTER, ATTRIBUTE_HUE, DataType.UINT8, 1, 3600, 0x01) + zigbee.configureReporting(COLOR_CONTROL_CLUSTER, ATTRIBUTE_SATURATION, DataType.UINT8, 1, 3600, 0x01)
+    zigbee.onOffRefresh() +
+    zigbee.levelRefresh() +
+    zigbee.readAttribute(COLOR_CONTROL_CLUSTER, ATTRIBUTE_COLOR_TEMPERATURE) +
+    zigbee.readAttribute(COLOR_CONTROL_CLUSTER, ATTRIBUTE_HUE) +
+    zigbee.readAttribute(COLOR_CONTROL_CLUSTER, ATTRIBUTE_SATURATION) +
+    zigbee.onOffConfig(0, 300) +
+    zigbee.levelConfig()
 }
 
 def configure() {
@@ -157,7 +163,12 @@ def configure() {
 
 def setColorTemperature(value) {
     setGenericName(value)
-    zigbee.setColorTemperature(value)
+    value = value as Integer
+    def tempInMired = (1000000 / value) as Integer
+    def finalHex = zigbee.swapEndianHex(zigbee.convertToHexString(tempInMired, 4))
+
+    zigbee.command(COLOR_CONTROL_CLUSTER, 0x0A, "$finalHex 0000") +
+    zigbee.readAttribute(COLOR_CONTROL_CLUSTER, ATTRIBUTE_COLOR_TEMPERATURE)
 }
 
 //Naming based on the wiki article here: http://en.wikipedia.org/wiki/Color_temperature
@@ -193,15 +204,19 @@ def setColor(value){
     log.trace "setColor($value)"
     zigbee.on() +
     zigbee.command(COLOR_CONTROL_CLUSTER, MOVE_TO_HUE_AND_SATURATION_COMMAND,
-        getScaledHue(value.hue), getScaledSaturation(value.saturation), "0000")
+        getScaledHue(value.hue), getScaledSaturation(value.saturation), "0000") +
+    zigbee.readAttribute(COLOR_CONTROL_CLUSTER, ATTRIBUTE_HUE) +
+    zigbee.readAttribute(COLOR_CONTROL_CLUSTER, ATTRIBUTE_SATURATION)
 }
 
 def setHue(value) {
-    zigbee.command(COLOR_CONTROL_CLUSTER, HUE_COMMAND, getScaledHue(value), "00", "0000")
+    zigbee.command(COLOR_CONTROL_CLUSTER, HUE_COMMAND, getScaledHue(value), "00", "0000") +
+    zigbee.readAttribute(COLOR_CONTROL_CLUSTER, ATTRIBUTE_HUE)
 }
 
 def setSaturation(value) {
-    zigbee.command(COLOR_CONTROL_CLUSTER, SATURATION_COMMAND, getScaledSaturation(value), "0000")
+    zigbee.command(COLOR_CONTROL_CLUSTER, SATURATION_COMMAND, getScaledSaturation(value), "0000") +
+    zigbee.readAttribute(COLOR_CONTROL_CLUSTER, ATTRIBUTE_SATURATION)
 }
 
 def installed() {
