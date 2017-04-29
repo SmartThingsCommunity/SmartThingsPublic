@@ -91,9 +91,7 @@ preferences {
    input("device5", "string", title: "Device Network ID 5", description: "The Device Network Id", defaultValue: "", type: "capability.switch", required: false, displayDuringSetup: false)
    input("end5", "string", title: "Device Endpoint ID 5", description: "endpointId from Data Section of device", defaultValue: "", required: false, displayDuringSetup: false)
   }
-    section("Turn on this light") {
-        input "theswitch", "capability.switch", required: true
-    }
+    
  }
 
 
@@ -154,7 +152,7 @@ public String getInfo(){
  *returns: Arraylist<[address,endpoint]>
  */
 final ArrayList < String[] > getDevices() {
- String[] devs = [settings.device1, device2, device3, device4, device5]
+ String[] devs = [settings.device1, settings.device2, settings.device3, settings.device4, settings.device5]
  if (devs == [null, null, null, null, null]) log.info("------No devices configured in $device preferences--------")
  String[] ends = [end1, end2, end3, end4, end5]
  ArrayList < String[] > list = new ArrayList < > ([])
