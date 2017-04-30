@@ -29,7 +29,6 @@ preferences {
     page name: "settings"
     page name: "TemperaturesByMode"
 }
-
 def pageSetup() {
 
     def pageProperties = [
@@ -122,9 +121,15 @@ def TemperaturesByMode(){
     ]
 
     dynamicPage(pageProperties) {
-
+        def ModesSize = Modes.size()
         log.debug "Selected Modes are $Modes"
 
+        def Mode0 = Modes[0]
+        def Mode1 = Modes[1]
+        def Mode2 = Modes[2]
+        def Mode3 = Modes[3]
+        def Mode4 = Modes[4]
+        def Mode5 = Modes[5]	
 
         section("Set the desired temperatures..."){
             input "desireTempMode0", "decimal", title: "Desired Temp in $Mode0 mode", required: true
@@ -145,6 +150,12 @@ def TemperaturesByMode(){
             }
         }
     }
+    /*section("experimental section"){
+// create as many input fields than there are selected Modes// ??? :D
+
+
+
+}*/
 }
 
 def installed(){
@@ -173,12 +184,13 @@ def init(){
         subscribe(motion, "motion", motionHandler)
         log.debug "subscribed to motion events"
     }
-    state.HandlerIsScheduled = 0
-    state.override = 0
-    atomicState.OffbyApp = 1
+    atomicState.HandlerIsScheduled = false
+    atomicState.override = false
+    atomicState.ByApp = true
+    atomicState.Closed = true
 
     def scheduledTime = 1
-    state.HandlerIsScheduled = 1
+    atomicState.HandlerIsScheduled = true
     schedule("0 0/$scheduledTime * * * ?", temperatureHandler)
     log.debug "temperatureHandler scheduled to run every $scheduledTime minutes"
 
@@ -201,6 +213,8 @@ def init(){
 
     log.trace "Mode0: $Mode0, Mode1: $Mode1, Mode2: $Mode2, Mode3: $Mode3, Mode4: $Mode4, Mode5: $Mode5, "
 
+
+
     temperatureHandler()
 
 }
@@ -211,7 +225,7 @@ def ChangedModeHandler(evt){
 
     if(CurrMode in Modes){
         def scheduledTime = 1
-        state.HandlerIsScheduled = 1
+        atomicState.HandlerIsScheduled = true
         schedule("0 0/$scheduledTime * * * ?", temperatureHandler)
         log.debug "temperatureHandler scheduled to run every $scheduledTime minutes"
         temperatureHandler()
@@ -232,54 +246,81 @@ def ChangedModeHandler(evt){
     log.trace "Mode0: $Mode0, Mode1: $Mode1, Mode2: $Mode2, Mode3: $Mode3, Mode4: $Mode4, Mode5: $Mode5, "
     desiredTemp()
 }
-
 def switchHandler(evt){
 
+    log.debug "event SOURCE is $evt.source"
+
     log.debug "$evt.device is $evt.value"
-    log.debug "state.override = $state.override"
-    log.debug "atomicState.OffbyApp = $atomicState.OffbyApp"
+    log.debug "atomicState.override = $atomicState.override"
+    log.debug "atomicState.ByApp = $atomicState.ByApp"
 
     def CurrMode = location.currentMode
     def ModeOk = CurrMode in Modes
+    def desiredTemp = desiredTemp()
+
+    def AllClosed = atomicState.Closed
 
     // is this an override action? (manual push of a button)
     if(override){
 
-        if(evt.value == "off" && state.override == 0){
-            atomicState.OffbyApp = 1
-            log.debug "atomicState.OffbyApp value back to 1"
-        }
-        if(evt.value == "on" && !ModeOk){
-            // this is an on override. Keep on but turn on in an hour"
-            state.overrideWhileOutOfMode = 1
-            log.debug "state.overrideWhileOutOfMode = $state.overrideWhileOutOfMode"
-            log.info "OVERRIDE OUTSIDE OF MODE... $outlets will turn off in $timer minutes"
+        // override while windows open
+        if(evt.value == "on" && !AllClosed){
+            // this is an on override. Keep on but turn off on schedule"
+            atomicState.overrideWhileWindowsOpen = true
+            log.debug "atomicState.overrideWhileWindowsOpen = $atomicState.overrideWhileWindowsOpen"
+            log.info "OVERRIDE OUTSIDE WHILE WINDOWS OPEN... $outlets will turn off in $timer minutes"
             def timer = timer * 60
             runIn(timer, OffOutSideOfMode)
 
         }
-        else if(evt.value == "off" && !ModeOk){
-            state.overrideWhileOutOfMode = 0
-            log.debug "OVERRIDE outside of $Modes modes CANCELED"
+
+        // override while modes ok
+        if(ModeOk){
+            if(evt.value == "on" && atomicState.override == false && atomicState.ByApp == false){
+
+                log.debug "OVERRIDE MODE $outlets will turn off in $timer minutes"
+                atomicState.override = true
+
+                log.debug "atomicState.override = $atomicState.override"
+                log.debug "atomicState.ByApp = $atomicState.ByApp"
+                def timer = timer * 60
+                runIn(timer, justshutoff)
+            }
+            else if(evt.value == "off" && atomicState.override == true){
+
+                atomicState.override = false
+                log.debug "END OF OVERRIDE"
+            }
         }
-        else if(evt.value == "on" && state.override == 1 && state.overrideWhileOutOfMode == 0){
-            log.debug "OVERRIDE MODE CANCELED, resuming normal operation"
-            state.override = 0
-        }
-        else if (evt.value == "off" && state.override == 0 && atomicState.OffbyApp == 0){
-            log.debug "OVERRIDE MODE"
-            state.override = 1
-        }
-        else if(evt.value == "on" && atomicState.OffbyApp == 1 && state.override == 0){
-            atomicState.OffbyApp = 0
+        /// outside of modes
+
+        else {
+            if(evt.value == "off" && atomicState.override == true){
+
+                atomicState.override = false
+                log.debug "END OF OVERRIDE"
+            }
+
+            else if(evt.value == "on" && atomicState.override == false && atomicState.ByApp == false){
+                // this is an on override. Keep on but turn off on schedule"
+                atomicState.overrideWhileOutOfMode = true
+                log.debug "atomicState.overrideWhileOutOfMode = $atomicState.overrideWhileOutOfMode"
+                log.info "OVERRIDE OUTSIDE OF MODE... $outlets will turn off in $timer minutes"
+                def timer = timer * 60
+                runIn(timer, OffOutSideOfMode)
+
+            }       
+
         }
     } 
     else { 
         log.debug "NO OVERRIDE OPTION"
-        state.override = 0
-        atomicState.OffbyApp = 1
+        atomicState.override = false
+        atomicState.ByApp = true
     }
-
+    OnSwitches() 
+}
+def OnSwitches() {
     def currSwitches = outlets.currentSwitch
 
     def onSwitches = currSwitches.findAll { switchVal ->
@@ -290,37 +331,40 @@ def switchHandler(evt){
     atomicState.switchVal = onSwitches.size()
 
     log.debug "atomicState.switchVal = $atomicState.switchVal"
+
+    return onSwitches.size()
 }
 def temperatureHandler(evt){
+
     def CurrMode = location.currentMode
 
-    state.currentTemp = sensor.currentTemperature as double
+    atomicState.currentTemp = sensor.currentTemperature as double
         //log.debug "$sensor event is $evt.value" // this handler run according to a schedule so evt.value would return an error
-        log.debug "Current Temperature is ${state.currentTemp}°F"
+        log.debug "Current Temperature is ${atomicState.currentTemp}°F"
 
     Switches()
 
-    if(state.currenTemp > safety){
+    if(atomicState.currenTemp > safety){
         log.debug "EMERGENCY SHUT DOWN"
         OffOutSideOfMode()  
     }
     if(emergency){
-        if(state.currentTemp < emergency){
+        if(atomicState.currentTemp < emergency){
             outlets?.on()
-            state.override = 1
+            atomicState.override = true
             if(EmergTimer){
                 def timer = EmergTimer * 60
                 runIn(timer, justshutoff)
             }
         }
     }
-
+    //testloop()
 }
 def motionHandler(evt){
 
     log.debug "Motion is $evt.value"
     if(evt.value == "active"){
-        state.motion = 1
+        atomicState.motion = true
         Switches()
     }
     else if (evt.value == "inactive") {
@@ -330,200 +374,183 @@ def motionHandler(evt){
 
         if (isActive) {
 
-            state.motion = 1
+            atomicState.motion = true
             // switches will be triggered by temperature handler 
 
         }
         else {
-            state.motion = 0
+            atomicState.motion = false
         }
     }
 }
 def contactHandler(evt){
 
-    log.info "$evt.device is $evt.value"
+    log.info "$evt.device is $evt.value"  
+    def CurrentContacts = contacts.latestValue("contact")
+    def ClosedContacts = CurrentContacts.findAll { AllcontactsClosed ->
+        AllcontactsClosed == "closed" ? true : false
+    }
+    log.debug "${ClosedContacts.size()} windows/doors out of ${contacts.size()} are closed"
 
-    if(evt.value == "closed"){
-        if(contacts.latestValue("contacts").contains("open")){
-            atomicState.Closed = false
-            log.debug "Windows are open, turning off all switches"
-        }
-        else {
-            atomicState.Closed = true
-            log.debug "all contacts are closed, resuming operations"  
-        }
-    }
-    else if(evt.value == "open"){
-        log.debug "Some contacts are open, shutting down"
-        atomicState.Closed = false
-    }
+    def AllClosed = ClosedContacts.size() == contacts.size()
+    log.debug "All Closed?($AllClosed)"
+
+    atomicState.Closed = AllClosed
+    atomicState.overrideWhileWindowsOpen = false
+    atomicState.override = false
     Switches()
 }
-
-private Switches(){
+def Switches(){
 
     def CurrMode = location.currentMode
 
     def desiredTemp = desiredTemp()
 
+    OnSwitches() 
     def switchVal = atomicState.switchVal
     def totalOutlets = atomicState.totalOutlets
+    log.info "switchVal = $switchVal ; totalOutlets = $totalOutlets"
 
     if(!motion){
-        state.motion = 1
+        atomicState.motion = true
     }
-    log.debug "Switches() loop"
 
-    if(CurrMode in Modes){
-        if(state.motion == 1){
-            if (mode == "cool") {
-                // air conditioner
-                log.debug "evaluating cool. Desired temperature is $desiredTemp"    
-                if (state.currentTemp > desiredTemp) {
-                    if(state.override == 0){
-                        if(atomicState.Closed == true){
-
+    if(atomicState.Closed == true){
+        if(CurrMode in Modes){
+            if(atomicState.motion == true){
+                if (mode == "cool") {
+                    // air conditioner
+                    log.debug "evaluating cool. Desired temperature is $desiredTemp"    
+                    if (atomicState.currentTemp > desiredTemp) {
+                        if(atomicState.override == false){
                             if(switchVal != totalOutlets){
-                                // if out of override the app needs to know that not all outlets were turned back on, so it turns back on all the others
-
-                                log.debug "atomicState.OffbyApp = $atomicState.OffbyApp"
+                                // if just out of override the app needs to know that not all outlets were turned back on, so it turns back on the remaining ones
+                                atomicState.ByApp = true
+                                log.debug "atomicState.ByApp = $atomicState.ByApp"
                                 outlets?.on()
                                 log.debug "$outlets turned ON"
-                                state.outlet = "on"
                             }
                             else {
                                 log.debug "outlets already on, so doing nothing" 
                             }
+
                         }
-                        else { 
-                            // contacts are open
-                            if(switchVal != 0){
-                                atomicState.OffbyApp = 1
-                                log.debug "atomicState.OffbyApp = $atomicState.OffbyApp"
-                                outlets?.off()
-                                log.debug "$outlets turned OFF"
-                                state.outlet = "off"
-                            }
-                        }
-                    }
-                    else {log.debug "App in override mode, doing nothing"}
-                }
-                else {
-                    if(state.override == 0){
-                        atomicState.OffbyApp = 1
-                        log.debug "atomicState.OffbyApp = $atomicState.OffbyApp"
-                        outlets?.off()                   
-                        log.debug "$outlets turned OFF"
-                        state.outlet = "off"
+                        else {log.debug "App in override mode, doing nothing"}
                     }
                     else {
-                        log.debug "App in override mode, doing nothing"
+                        if(atomicState.override == false){
+                            atomicState.ByApp = true
+                            log.debug "atomicState.ByApp = $atomicState.ByApp"
+                            outlets?.off()                   
+                            log.debug "$outlets turned OFF"
+                        }
+                        else {
+                            log.debug "App in override mode, doing nothing"
+                        }
                     }
                 }
-            }
-            else {
-                // heater
-                log.debug "evaluating heat. Desired temperature is $desiredTemp"
-                if (state.currentTemp < desiredTemp) {
-                    if(state.override == 0){
+                else {
+                    // heater
+                    log.debug "evaluating heat. Desired temperature is $desiredTemp"
+                    if (atomicState.currentTemp < desiredTemp) {
+                        if(atomicState.override == false){
 
-                        if(atomicState.Closed == true){
 
                             log.debug "switchVal = $switchVal"
                             if(switchVal != totalOutlets){
                                 // if out of override the app needs to know that not all outlets were turned back on, so it turns back on all the others
-
-                                log.debug "atomicState.OffbyApp = $atomicState.OffbyApp"
+                                atomicState.ByApp = true
+                                log.debug "atomicState.ByApp = $atomicState.ByApp"
                                 outlets?.on()
                                 log.debug "$outlets turned ON"
-                                state.outlet = "on"
                             }
                             else {
                                 log.debug "outlets already on, so doing nothing"
                             }
+
                         }
-                        else { 
-                            // contacts are open
+                        else {log.debug "App in override mode, doing nothing"}
+                    }
+                    else {
+                        log.debug "temperature is above heat threshold"
+                        if(atomicState.override == false){
                             if(switchVal != 0){
-                                atomicState.OffbyApp = 1
-                                log.debug "atomicState.OffbyApp = $atomicState.OffbyApp"
+                                atomicState.ByApp = true
+                                log.debug "atomicState.ByApp = $atomicState.ByApp"
                                 outlets?.off()
                                 log.debug "$outlets turned OFF"
-                                state.outlet = "off"
+                            }
+                            else {
+                                log.debug "$outlets ALREADY OFF"
                             }
                         }
+                        else {
+                            log.debug "App in override mode, doing nothing"
+                        }
                     }
-                    else {log.debug "App in override mode, doing nothing"}
                 }
-                else {
-                    if(state.override == 0){
-                        if(switchVal != 0){
-                            atomicState.OffbyApp = 1
-                            log.debug "atomicState.OffbyApp = $atomicState.OffbyApp"
-
+            }
+            else {
+                if(motion){
+                    log.debug "no motion within time frame, turning off $outlets"
+                    if(atomicState.override == false){       
+                        if(atomicState.switchVal != 0){
+                            atomicState.ByApp = true
                             outlets?.off()
-                            log.debug "$outlets turned OFF"
-                            state.outlet = "off"
                         }
                         else {
                             log.debug "$outlets ALREADY OFF"
                         }
-                    }
+                    } 
                     else {
                         log.debug "App in override mode, doing nothing"
                     }
                 }
-            }
+                else {
+                    log.debug "Motion detection not selected by user, doing nothing"
+                }
+            }   
+        }
+        else if(atomicState.overrideWhileOutOfMode == true){
+            log.debug "Out of Modes OVERRIDE. Not turning off plugs"
         }
         else {
-            if(motion){
-                log.debug "no motion within time frame, turning off $outlets"
-                if(state.override == 0){       
-                    if(state.override == 0){
-                        if(atomicState.switchVal != 0){
-                            atomicState.OffbyApp = 1
-                            outlets?.off()
-                        }
-                        else {
-                            log.debug "$outlets ALREADY OFF"
-                        }
+            log.debug "Not in $Modes mode, making sure all outlets are off"
+            if(atomicState.override == false){
+                if(atomicState.switchVal != 0){             
+                    atomicState.ByApp = true
+                    outlets?.off()
+                }
+                else { 
+                    if(atomicState.HandlerIsScheduled != false){
+                        log.debug "unschedule()"
+                        unschedule()
+                        atomicState.HandlerIsScheduled = false
                     }
-                } 
-                else {
-                    log.debug "App in override mode, doing nothing"
+                    log.debug "Waiting for events"
                 }
             }
             else {
-                log.debug "Motion detection not selected by user, doing nothing"
+                log.debug "App in override mode, doing nothing"
             }
-        }   
-    }
-    else if(state.overrideWhileOutOfMode == 1){
-        log.debug "Out of Modes OVERRIDE. Not turning off plugs"
-    }
-    else {
-        log.debug "Not in $Modes mode, making sure all outlets are off"
-        if(state.override == 0){
-            if(atomicState.switchVal != 0){             
-                atomicState.OffbyApp = 1
-                outlets?.off()
-            }
-            else { 
-                if(state.HandlerIsScheduled != 0){
-                    log.debug "unschedule()"
-                    unschedule()
-                    state.HandlerIsScheduled = 0
-                }
-                log.debug "Waiting for events"
-            }
-        }
-        else {
-            log.debug "App in override mode, doing nothing"
-        }
 
+        }
     }
+    else { 
+        // contacts are open
+        if(switchVal != 0){
+            if(atomicState.overrideWhileWindowsOpen == false){
+                atomicState.ByApp = true
+                log.debug "atomicState.ByApp = $atomicState.ByApp"
+                outlets?.off()
+                log.debug "$outlets turned OFF"
+            }
+            else { log.debug "Override while windows open is active" }
+        }
+    }
+    runIn(10,ResetValues)
 }
-private hasBeenRecentMotion(){
+def hasBeenRecentMotion(){
     def isActive = false
     if (motion && minutes) {
         def deltaMinutes = minutes as Long
@@ -540,18 +567,23 @@ private hasBeenRecentMotion(){
     }
     isActive
 }
-private OffOutSideOfMode(){
-    state.overrideWhileOutOfMode = 0
-    log.debug "state.overrideWhileOutOfMode = $state.overrideWhileOutOfMode"
+def OffOutSideOfMode(){
+    atomicState.overrideWhileOutOfMode = false
+    atomicState.ByApp = true
+    log.debug "atomicState.overrideWhileWindowsOpen = $atomicState.overrideWhileWindowsOpen"
+    log.debug "atomicState.overrideWhileOutOfMode = $atomicState.overrideWhileOutOfMode"
     outlets?.off()
 
 }
-
 def desiredTemp(){
 
     def CurrMode = location.currentMode
 
-    def desiredTemp = 65 
+    def desiredTemp = 70 // default value in case the user missed this setting 
+
+    def CurrTemp = sensor.currentTemperature
+
+    log.info "Current temperature is $CurrTemp"
 
     if(CurrMode in Modes[0]){
         desiredTemp = desireTempMode0
@@ -578,12 +610,60 @@ def desiredTemp(){
         log.debug "Desired temp is now : $desiredTemp ---f------"
     }
     else { 
-        log.debug "Home is not in any selected modes"
+        log.debug "Home is not in any of the modes selected by user"
     }
     return desiredTemp
 }
-
 def justshutoff(){
     outlets?.off()
-    state.override = 0
+    atomicState.overrideWhileWindowsOpen = false
+    atomicState.override = false
+    atomicState.ByApp = true
+
+}
+def testloop(){
+
+    def CurrMode = location.currentMode
+
+    def Mode0 = Modes[0]
+    def Mode1 = Modes[1]
+    def Mode2 = Modes[2]
+    def Mode3 = Modes[3]
+    def Mode4 = Modes[4]
+    def Mode5 = Modes[5]
+    /// goal is to generate a map of all temps defined by users according to modes. 
+
+
+    // this works
+    def ModesMap = CurrMode ?: ["$Modes":"$desiredTemp"]
+
+    log.debug "TEMPERATURE MODE (TEST) = $ModesMap"
+    // now we have to find a way to generate a map of temps defined by the user in settings
+    def AlldesiredTemps = settings.findAll(){it.key ==~ /desireTempMode[0-9]/}.sort{it.key}
+    def ModesMapFULL = ["$Modes":"$AlldesiredTemps"]
+    log.info "-----------------------------------------------------------------------------------------AlldesiredTemps = $AlldesiredTemps"
+    log.info "-----------------------------------------------------------------------------------------ModesMapFULL = $ModesMapFULL"
+
+    // now assign a key number to each mode corresponding to desiredTemps 
+
+
+
+
+
+    // so we then can do something like this :  def ModesTemps = temps ?: ["$Modes":"$desiredTemp"]
+
+    //def test =  settings.findAll(){it.key ==~ /d[a-b]+[A-Z]+\b/}.sort{it.key}
+    //log.info "(TEST) = $test"
+    //settings.findAll(){it.key ==~ /g[0-9]+/}.sort{it.key}
+    //assert "desireTempMode1" ==~ "$test"
+    //desireTempMode" =~ ".*(d.*e).*").matches() 
+    //return settings.findAll(){it.key ==~ /g[0-9]+/}.sort{it.key}
+    // def test = settings.findAll(){it.key ==~ /g[0-9]+/}.sort{it.key}
+
+}
+
+def ResetValues(){
+    log.debug "RESET"
+    atomicState.ByApp = false
+
 }
