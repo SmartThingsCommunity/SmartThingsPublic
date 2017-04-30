@@ -34,7 +34,7 @@ preferences
 }
 
 metadata {
-	definition (name: "Android IP Camera", author: "Rob Landry", namespace: "roblandry") {
+	definition (name: "Android IP Camera Beta", author: "Alan Trussell", namespace: "alt") {
 		capability "Image Capture"
 		capability "Switch"
 		capability "Actuator"
@@ -230,8 +230,7 @@ def getSensors() {
 	]
 
 	log.debug "Params = ${params}"
-	def cToF(temp) {
-	return temp * 1.8 + 32
+
 	def theSensor
 	def theUnit
 	def theData
@@ -262,4 +261,6 @@ def getSensors() {
 	catch(e) { log.debug "$e" }
 }
 
-
+def cToF(temp) {
+	return temp * 1.8 + 32
+}
