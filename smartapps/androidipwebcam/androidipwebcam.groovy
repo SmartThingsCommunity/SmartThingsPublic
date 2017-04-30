@@ -39,7 +39,7 @@ metadata {
 		capability "Switch"
 		capability "Actuator"
 		capability "Battery"
-       	capability "Illuminance Measurement"
+       		capability "Illuminance Measurement"
 		capability "Temperature Measurement"
 
 		command "ledOn"
@@ -221,6 +221,10 @@ def poll() { refresh() }
 
 def refresh() { getSensors() }
 
+def cToF(temp) {
+	return temp * 1.8 + 32
+}
+
 def getSensors() {
 
 	def params = [
@@ -249,7 +253,7 @@ def getSensors() {
 						theUnit = "F"
 						theData = cToF(theData as Integer)
                     }
-                    if (theSensor == "light") {theSensor = "light"}
+                    			if (theSensor == "light") {theSensor = "light"}
 					
 					log.info "name: ${theSensor}, unit: ${theUnit}, value: ${theData as Integer}"
 					sendEvent(name:"${theSensor}", unit:"${theUnit}", value: theData as Integer)
@@ -261,6 +265,4 @@ def getSensors() {
 	catch(e) { log.debug "$e" }
 }
 
-def cToF(temp) {
-	return temp * 1.8 + 32
-}
+
