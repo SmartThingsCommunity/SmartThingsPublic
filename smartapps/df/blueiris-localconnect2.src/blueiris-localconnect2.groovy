@@ -10,10 +10,10 @@
  *  on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the License
  *  for the specific language governing permissions and limitations under the License.
  *
- *  BlueIris (LocalConnect)
+ *  BlueIris (LocalConnect2)
  *
- *  Author: df
- *  Date: 2015-12-30
+ *  Author: Nicolas Neverov
+ *  Date: 2017-04-30
  */
 
 
