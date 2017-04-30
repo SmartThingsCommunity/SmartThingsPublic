@@ -826,9 +826,6 @@ def ChangedModeHandler(evt) {
 def TemperaturesModes(){
 
     log.trace "MAIN LOOP RUNNING"
-
-
-
     def doorsOk = alldoorsareclosed()
     if(doorsOk){
         def CurrMode = location.currentMode
@@ -929,7 +926,7 @@ def TemperaturesModes(){
             def AppMgtList = ["0", atomicState.T1_AppMgt, atomicState.T2_AppMgt, atomicState.T3_AppMgt, atomicState.T4_AppMgt]
             def AppMgt = AppMgtList[loopValue]
             log.debug "AppMgt = $AppMgt"
-            def ShouldCool = outsideTemp >= OutsideTempHighThres || CurrTemp >= CSPSet
+            def ShouldCool = outsideTemp >= OutsideTempHighThres && CurrTemp >= CSPSet
             def ShouldHeat = outsideTemp <= OutsideTempLowThres || CurrTemp <= CSHSet
             if(ShouldCool && ShouldHeat) {
                 ShouldCool = false
@@ -976,7 +973,7 @@ def TemperaturesModes(){
                         LatestThermostatMode = "cool"
                         ThermSetDevice.setThermostatMode("cool") 
                     }
-                    else if(CurrTemp < HSPSet && ThermState != "heat" && !ShouldCool){
+                    else if(CurrTemp < HSPSet && ThermState != "heat" && ShouldHeat){
                         AppMgtTrue()
                         log.debug "$ThermSet set to Heat"
                         LatestThermostatMode = "heat"
@@ -1676,21 +1673,26 @@ def CheckWindows(){
         send(message)
         state.messageSent = state.messageSent + 1
     }
+    else if(ContactsOpen && state.WindowsAppOpened == false){
+    log.debug "WINDOWS MANUALLY OPENED"
+    }
 
 }
 def OkToOpen(){
 
     def CSPSet = atomicState.CSPSet
     def HSPSet = atomicState.HSPSet 
+     
     def CurrMode = location.currentMode
     def Inside = XtraTempSensor.currentValue("temperature") 
+    def CurrTemp = Inside
     def Outside = OutsideSensor.currentValue("temperature") 
     def outsideTemp = OutsideSensor.currentTemperature
     def WithinCriticalOffSet = Inside >= CriticalTemp + OffSet
     def closed = atomicState.closed
     //def OutsideTempHighThres = OutsideTempHighThres
 
-    def ShouldCool = outsideTemp >= OutsideTempHighThres || CurrTemp >= CSPSet
+    def ShouldCool = outsideTemp >= OutsideTempHighThres && CurrTemp >= CSPSet
     def ShouldHeat = outsideTemp <= OutsideTempLowThres || CurrTemp <= CSHSet
     if(ShouldCool && ShouldHeat) {
         ShouldCool = false
