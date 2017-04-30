@@ -1,4 +1,4 @@
-/** Android IP Camera
+/** Android IP Camera 02
  *
  *  Author: Rob Landry
  * 
@@ -39,6 +39,8 @@ metadata {
 		capability "Switch"
 		capability "Actuator"
 		capability "Battery"
+       	capability "Illuminance Measurement"
+		capability "Temperature Measurement"
 
 		command "ledOn"
 		command "ledOff"
@@ -97,7 +99,10 @@ metadata {
 		valueTile("battery", "device.battery", decoration: "flat", width: 1, height: 1) {
 			state "battery", label:'${currentValue}% battery', unit:""
 		}
-
+		
+        valueTile("light", "device.illuminance", decoration: "flat") {
+			state("light", label:'${currentValue} lux', unit:"${unit}")
+		}
 		main "camera"
 		details(["cameraDetails","camera","take","record","led","focus","overlay","nightVision","battery"])
 	}
@@ -225,7 +230,8 @@ def getSensors() {
 	]
 
 	log.debug "Params = ${params}"
-
+	def cToF(temp) {
+	return temp * 1.8 + 32
 	def theSensor
 	def theUnit
 	def theData
@@ -243,7 +249,9 @@ def getSensors() {
 						theSensor = "temperature"
 						theUnit = "F"
 						theData = cToF(theData as Integer)
-					}
+                    }
+                    if (theSensor == "light") {theSensor = "light"}
+					
 					log.info "name: ${theSensor}, unit: ${theUnit}, value: ${theData as Integer}"
 					sendEvent(name:"${theSensor}", unit:"${theUnit}", value: theData as Integer)
 				} else { theData = value.data[0][1] }
@@ -254,6 +262,4 @@ def getSensors() {
 	catch(e) { log.debug "$e" }
 }
 
-def cToF(temp) {
-	return temp * 1.8 + 32
-}
+
