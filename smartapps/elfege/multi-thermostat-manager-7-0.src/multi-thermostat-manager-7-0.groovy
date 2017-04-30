@@ -614,7 +614,6 @@ def setpointHandler(evt){
     }
     runIn(10, TemperaturesModes)
 }
-
 def ThermostatSwitchHandler(evt){
 
     log.debug "$evt.device set to $evt.value "
@@ -1764,16 +1763,5 @@ private send(msg) {
     }
 
     log.debug msg
-}
-
-// trash
-
-private trash(){
-    def onSwitches = CtrlSwtch.findAll { switchVal ->
-        switchVal == "on" ? true : false
-    }
-    log.debug "${onSwitches.size()} out of ${CtrlSwtch.size()} switches are on"
-    def SwitchesOn = onSwitches.size() != 0
-
 }
 
