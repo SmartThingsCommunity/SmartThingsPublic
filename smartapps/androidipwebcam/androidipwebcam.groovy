@@ -99,8 +99,7 @@ metadata {
 		valueTile("battery", "device.battery", decoration: "flat", width: 1, height: 1) {
 			state "battery", label:'${currentValue}% battery', unit:""
 		}
-		
-        valueTile("light", "device.illuminance", decoration: "flat") {
+		valueTile("light", "device.illuminance", decoration: "flat") {
 			state("light", label:'${currentValue} lux', unit:"${unit}")
 		}
 		main "camera"
