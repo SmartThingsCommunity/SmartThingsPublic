@@ -2,7 +2,8 @@ definition(
     name: " Multi Thermostat Manager 7.0",
     namespace: "ELFEGE",
     author: "ELFEGE",
-    description:  "Manage up to 4 thermostats, in parallel with these options: contact sensors, third party temperature sensor, modes, off override and temperature set point override",
+    description:  """Manage up to 4 thermostats, in parallel with these options: contact sensors, 
+    third party temperature sensor, modes, off override and temperature set point override""",
     category: "Green Living",
     iconUrl: "http://elfege.com/penrose.jpg",
     iconX2Url: "http://elfege.com/penrose.jpg"
