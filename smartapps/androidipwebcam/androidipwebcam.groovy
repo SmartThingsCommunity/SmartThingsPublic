@@ -253,7 +253,10 @@ def getSensors() {
 						theUnit = "F"
 						theData = cToF(theData as Integer)
                     }
-                    			if (theSensor == "light") {theSensor = "light"}
+					if (theSensor == "light") {
+						theSensor = "light"
+						theUnit = "lux"
+					}
 					
 					log.info "name: ${theSensor}, unit: ${theUnit}, value: ${theData as Integer}"
 					sendEvent(name:"${theSensor}", unit:"${theUnit}", value: theData as Integer)
