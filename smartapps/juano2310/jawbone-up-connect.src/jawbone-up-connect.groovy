@@ -35,7 +35,7 @@ mappings {
 	path("/oauth/callback") { action: [ GET: "callback" ] }
 }
 
-def getServerUrl() { return "https://graph.api.smartthings.com" }
+def getServerUrl() { return "https://graph-eu01-euwest1.api.smartthings.com" }
 def getBuildRedirectUrl() { "${serverUrl}/oauth/initialize?appId=${app.id}&access_token=${state.accessToken}&apiServerUrl=${apiServerUrl}" }
 def buildRedirectUrl(page) { return buildActionUrl(page) }
 
