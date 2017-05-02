@@ -191,6 +191,10 @@ private List<Map> parseAxis(List<Map> attrData) {
 	def y = hexToSignedInt(attrData.find { it.attrInt == 0x0013 }?.value)
 	def z = hexToSignedInt(attrData.find { it.attrInt == 0x0014 }?.value)
 
+	if ([x, y ,z].any { it == null }) {
+		return []
+	}
+
 	def xyzResults = [:]
 	if (device.getDataValue("manufacturer") == "SmartThings") {
 		// This mapping matches the current behavior of the Device Handler for the Centralite sensors
@@ -371,6 +375,10 @@ def updated() {
 }
 
 private hexToSignedInt(hexVal) {
+	if (!hexVal) {
+		return null
+	}
+
 	def unsignedVal = hexToInt(hexVal)
 	unsignedVal > 32767 ? unsignedVal - 65536 : unsignedVal
 }

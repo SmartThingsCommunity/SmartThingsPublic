@@ -1,4 +1,4 @@
-# Plant Link
+# Osotech Plant Link
 
 Cloud Execution
 
@@ -14,9 +14,7 @@ Works with:
 
 ## Capabilities
 
-* **Relative Humidity Measurement** - allows reading the relative humidity from devices that support it
 * **Sensor** - detects sensor events
-* **Battery** - defines device uses a battery
 * **Health Check** - indicates ability to get device health notifications
 
 ## Device Health
