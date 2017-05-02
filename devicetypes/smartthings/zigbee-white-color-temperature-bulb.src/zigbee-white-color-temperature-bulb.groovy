@@ -1,5 +1,5 @@
 /**
- *  Copyright 2015 SmartThings
+ *  Copyright 2017 SmartThings
  *
  *  Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except
  *  in compliance with the License. You may obtain a copy of the License at:
@@ -123,7 +123,11 @@ def ping() {
 }
 
 def refresh() {
-    zigbee.onOffRefresh() + zigbee.levelRefresh() + zigbee.colorTemperatureRefresh() + zigbee.onOffConfig(0, 300) + zigbee.levelConfig() + zigbee.colorTemperatureConfig()
+    zigbee.onOffRefresh() +
+    zigbee.levelRefresh() +
+    zigbee.colorTemperatureRefresh() +
+    zigbee.onOffConfig(0, 300) +
+    zigbee.levelConfig()
 }
 
 def configure() {
@@ -138,7 +142,12 @@ def configure() {
 
 def setColorTemperature(value) {
     setGenericName(value)
-    zigbee.setColorTemperature(value)
+	value = value as Integer
+    def tempInMired = (1000000 / value) as Integer
+    def finalHex = zigbee.swapEndianHex(zigbee.convertToHexString(tempInMired, 4))
+
+    zigbee.command(COLOR_CONTROL_CLUSTER, 0x0A, "$finalHex 0000") +
+    zigbee.readAttribute(COLOR_CONTROL_CLUSTER, ATTRIBUTE_COLOR_TEMPERATURE)
 }
 
 //Naming based on the wiki article here: http://en.wikipedia.org/wiki/Color_temperature
