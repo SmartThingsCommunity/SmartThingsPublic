@@ -30,6 +30,7 @@ preferences {
 	}
 	section("Select the heater or air conditioner outlet(s)... "){
 		input "outlets", "capability.switch", title: "Outlets", multiple: true
+		input "enforce", "bool", title: "Enforce Outlet State", required: true, defaultValue: false
 	}
 	section("Set the desired temperature..."){
 		input "setpoint", "decimal", title: "Set Temp"
@@ -50,6 +51,7 @@ preferences {
 
 def installed()
 {
+	state.lastTemp = null
 	subscribe(sensor, "temperature", temperatureHandler)
 	if (motion) {
 		subscribe(motion, "motion", motionHandler)
@@ -59,6 +61,7 @@ def installed()
 def updated()
 {
 	unsubscribe()
+	state.lastTemp = null // addresses bug where updated values do not take effect
 	subscribe(sensor, "temperature", temperatureHandler)
 	if (motion) {
 		subscribe(motion, "motion", motionHandler)
@@ -69,7 +72,8 @@ def temperatureHandler(evt)
 {
 	def isActive = hasBeenRecentMotion()
 	if (isActive || emergencySetpoint) {
-		evaluate(evt.doubleValue, isActive ? setpoint : emergencySetpoint)
+		evaluate(evt.doubleValue, state.lastTemp, isActive ? setpoint : emergencySetpoint)
+        state.lastTemp = evt.doubleValue
 	}
 	else {
 		outlets.off()
@@ -79,17 +83,19 @@ def temperatureHandler(evt)
 def motionHandler(evt)
 {
 	if (evt.value == "active") {
-		def lastTemp = sensor.currentTemperature
-		if (lastTemp != null) {
-			evaluate(lastTemp, setpoint)
+		def thisTemp = sensor.currentTemperature
+		if (thisTemp != null) {
+			evaluate(thisTemp, state.lastTemp, setpoint)
+			state.lastTemp = thisTemp
 		}
 	} else if (evt.value == "inactive") {
 		def isActive = hasBeenRecentMotion()
 		log.debug "INACTIVE($isActive)"
 		if (isActive || emergencySetpoint) {
-			def lastTemp = sensor.currentTemperature
+			def thisTemp = sensor.currentTemperature
 			if (lastTemp != null) {
-				evaluate(lastTemp, isActive ? setpoint : emergencySetpoint)
+				evaluate(thisTemp, state.lastTemp, isActive ? setpoint : emergencySetpoint)
+				state.lastTemp = thisTemp
 			}
 		}
 		else {
@@ -98,25 +104,25 @@ def motionHandler(evt)
 	}
 }
 
-private evaluate(currentTemp, desiredTemp)
+private evaluate(currentTemp, lastTemp, desiredTemp)
 {
-	log.debug "EVALUATE($currentTemp, $desiredTemp)"
 	def threshold = 1.0
+	log.debug "EVALUATE($currentTemp, $lastTemp, $desiredTemp)"
 	if (mode == "cool") {
 		// air conditioner
-		if (currentTemp - desiredTemp >= threshold) {
+		if ( (currentTemp - desiredTemp >= threshold) &&  ( (lastTemp <= desiredTemp) || (lastTemp == null) || enforce) ) {
 			outlets.on()
 		}
-		else if (desiredTemp - currentTemp >= threshold) {
+		if ( (desiredTemp - currentTemp >= threshold) &&  ( (lastTemp >= desiredTemp) || (lastTemp == null) || enforce) ) {
 			outlets.off()
 		}
 	}
 	else {
 		// heater
-		if (desiredTemp - currentTemp >= threshold) {
+		if ( (desiredTemp - currentTemp >= threshold) &&  ( (lastTemp >= desiredTemp) || (lastTemp == null) || enforce) ) {
 			outlets.on()
 		}
-		else if (currentTemp - desiredTemp >= threshold) {
+		if ( (currentTemp - desiredTemp >= threshold) &&  ( (lastTemp <= desiredTemp) || (lastTemp == null) || enforce) ) {
 			outlets.off()
 		}
 	}
@@ -140,4 +146,3 @@ private hasBeenRecentMotion()
 	}
 	isActive
 }
-
