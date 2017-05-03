@@ -178,7 +178,7 @@ def partition(String state, String partition, Map parameters) {
 }
 
 def away() {
-  parent.sendUrl('arm')
+  parent.sendUrl("arm?part=${device.deviceNetworkId[-1]}")
 }
 
 def autobypass() {
@@ -190,15 +190,15 @@ def bypassoff() {
 }
 
 def disarm() {
-  parent.sendUrl('disarm')
+  parent.sendUrl("disarm?part=${device.deviceNetworkId[-1]}")
 }
 
 def instant() {
-  parent.sendUrl('toggleinstant')
+  parent.sendUrl("toggleinstant?part=${device.deviceNetworkId[-1]}")
 }
 
 def night() {
-  parent.sendUrl('togglenight')
+  parent.sendUrl("togglenight?part=${device.deviceNetworkId[-1]}")
 }
 
 def nokey() {
@@ -240,13 +240,13 @@ def refresh() {
 }
 
 def reset() {
-  parent.sendUrl('reset')
+  parent.sendUrl("reset?part=${device.deviceNetworkId[-1]}")
 }
 
 def stay() {
-  parent.sendUrl('stayarm')
+  parent.sendUrl("stayarm?part=${device.deviceNetworkId[-1]}")
 }
 
 def togglechime() {
-  parent.sendUrl('togglechime')
+  parent.sendUrl("togglechime?part=${device.deviceNetworkId[-1]}")
 }

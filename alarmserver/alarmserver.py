@@ -651,31 +651,36 @@ class AlarmServer(asyncore.dispatcher):
         else:
             alarmcode=str(self._config.ALARMCODE)
 
+        if 'part' in query_array:
+            part=str(query_array['part'][0])
+        else:
+            part='1'
+
         if query.path == '/':
             channel.pushfile('index.html');
         elif query.path == '/api':
             channel.pushok(json.dumps(ALARMSTATE))
         elif query.path == '/api/alarm/arm':
             channel.pushok(json.dumps({'response' : 'Request to arm received'}))
-            self._envisalinkclient.send_command('030', '1')
+            self._envisalinkclient.send_command('030', part)
         elif query.path == '/api/alarm/stayarm':
             channel.pushok(json.dumps({'response' : 'Request to arm in stay received'}))
-            self._envisalinkclient.send_command('031', '1')
+            self._envisalinkclient.send_command('031', part)
         elif query.path == '/api/alarm/toggleinstant':
             channel.pushok(json.dumps({'response' : 'Request to toggle instant mode received'}))
-            self._envisalinkclient.send_command('032', '1')
+            self._envisalinkclient.send_command('032', part)
         elif query.path == '/api/alarm/instantarm':
             channel.pushok(json.dumps({'response' : 'Request to arm in instant mode received'}))
-            self._envisalinkclient.send_command('071', '1*9' + alarmcode + '#')
+            self._envisalinkclient.send_command('071', part + '*9' + alarmcode + '#')
         elif query.path == '/api/alarm/togglenight':
             channel.pushok(json.dumps({'response' : 'Request to toggle night mode received'}))
-            self._envisalinkclient.send_command('071', '1**#')
+            self._envisalinkclient.send_command('071', part + '**#')
         elif query.path == '/api/alarm/togglechime':
             channel.pushok(json.dumps({'response' : 'Request to toggle chime mode received'}))
-            self._envisalinkclient.send_command('071', '1*4#')
+            self._envisalinkclient.send_command('071', part + '*4#')
         elif query.path == '/api/alarm/armwithcode':
             channel.pushok(json.dumps({'response' : 'Request to arm with code received'}))
-            self._envisalinkclient.send_command('033', '1' + alarmcode)
+            self._envisalinkclient.send_command('033', part + alarmcode)
         elif query.path == '/api/alarm/bypass':
             try:
                 zones = str(query_array['zone'][0]).split(',')
@@ -683,7 +688,7 @@ class AlarmServer(asyncore.dispatcher):
                     if len(zone) == 1: zone = '0' + zone
                     alarmserver_logger("request to bypass zone %s" % zone)
                     channel.pushok(json.dumps({'response' : 'Request to bypass zone received'}))
-                    self._envisalinkclient.send_command('071', '1*1' + str(zone)+ '#')
+                    self._envisalinkclient.send_command('071', part + '*1' + str(zone)+ '#')
                     time.sleep(2)
             except:
                 channel.pushok(json.dumps({'response' : 'Request to bypass zone received but invalid zone given!'}))
@@ -697,21 +702,21 @@ class AlarmServer(asyncore.dispatcher):
                 channel.pushok(json.dumps({'response' : 'Request to panic received but invalid type given!'}))
         elif query.path == '/api/alarm/reset':
             channel.pushok(json.dumps({'response' : 'Request to reset sensors received'}))
-            self._envisalinkclient.send_command('071', '1*72#')
+            self._envisalinkclient.send_command('071', part + '*72#')
         elif query.path == '/api/alarm/refresh':
             channel.pushok(json.dumps({'response' : 'Request to refresh received'}))
             self._envisalinkclient.send_command('001', '')
             time.sleep(2)
-            self._envisalinkclient.send_command('071', '1*1#')
+            self._envisalinkclient.send_command('071', part + '*1#')
         elif query.path == '/api/pgm':
             channel.pushok(json.dumps({'response' : 'Request to trigger PGM'}))
             #self._envisalinkclient.send_command('020', '1' + str(query_array['pgmnum'][0]))
-            self._envisalinkclient.send_command('071', '1' + "*7" + str(query_array['pgmnum'][0]) + '#')
+            self._envisalinkclient.send_command('071', part + "*7" + str(query_array['pgmnum'][0]) + '#')
             #time.sleep(1)
-            #self._envisalinkclient.send_command('071', '1' + alarmcode)
+            #self._envisalinkclient.send_command('071', part + alarmcode)
         elif query.path == '/api/alarm/disarm':
             channel.pushok(json.dumps({'response' : 'Request to disarm received'}))
-            self._envisalinkclient.send_command('040', '1' + alarmcode)
+            self._envisalinkclient.send_command('040', part + alarmcode)
         elif query.path == '/api/config/eventtimeago':
             channel.pushok(json.dumps({'eventtimeago' : str(self._config.EVENTTIMEAGO)}))
         elif query.path == '/img/glyphicons-halflings.png':
