@@ -68,6 +68,11 @@ metadata {
     }
 }
 
+// Globals
+private getMOVE_TO_COLOR_TEMPERATURE_COMMAND() { 0x0A }
+private getCOLOR_CONTROL_CLUSTER() { 0x0300 }
+private getATTRIBUTE_COLOR_TEMPERATURE() { 0x0007 }
+
 // Parse incoming device messages to generate events
 def parse(String description) {
     log.debug "description is $description"
@@ -147,7 +152,7 @@ def setColorTemperature(value) {
     def tempInMired = (1000000 / value) as Integer
     def finalHex = zigbee.swapEndianHex(zigbee.convertToHexString(tempInMired, 4))
 
-    zigbee.command(COLOR_CONTROL_CLUSTER, 0x0A, "$finalHex 0000") +
+    zigbee.command(COLOR_CONTROL_CLUSTER, MOVE_TO_COLOR_TEMPERATURE_COMMAND, "$finalHex 0000") +
     zigbee.readAttribute(COLOR_CONTROL_CLUSTER, ATTRIBUTE_COLOR_TEMPERATURE)
 }
 
