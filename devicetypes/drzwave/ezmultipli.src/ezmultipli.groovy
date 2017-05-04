@@ -38,9 +38,9 @@ metadata {
     tiles (scale: 2){      
 		multiAttributeTile(name:"switch", type: "lighting", width: 6, height: 4, canChangeIcon: true){
 			tileAttribute ("device.switch", key: "PRIMARY_CONTROL", icon: "st.Lighting.light18") {
-				attributeState "on", label:'${name}', action:"switch.off", icon:"st.switches.light.on", backgroundColor:"#79b821", nextState:"turningOff"
+				attributeState "on", label:'${name}', action:"switch.off", icon:"st.switches.light.on", backgroundColor:"#00A0DC", nextState:"turningOff"
 				attributeState "off", label:'${name}', action:"switch.on", icon:"st.switches.light.off", backgroundColor:"#ffffff", nextState:"turningOn"
-				attributeState "turningOn", label:'${name}', icon:"st.switches.light.on", backgroundColor:"#79b821"
+				attributeState "turningOn", label:'${name}', icon:"st.switches.light.on", backgroundColor:"#00A0DC"
 				attributeState "turningOff", label:'${name}', icon:"st.switches.light.off", backgroundColor:"#ffffff"
 			}
 			tileAttribute ("device.color", key: "COLOR_CONTROL") {
@@ -52,20 +52,20 @@ metadata {
         }
 
 		standardTile("motion", "device.motion", width: 2, height: 2, canChangeIcon: true, canChangeBackground: true) {
-			state "active", label:'motion', icon:"st.motion.motion.active", backgroundColor:"#53a7c0"
-			state "inactive", label:'no motion', icon:"st.motion.motion.inactive", backgroundColor:"#ffffff"
+			state "active", label:'motion', icon:"st.motion.motion.active", backgroundColor:"#00A0DC"
+			state "inactive", label:'no motion', icon:"st.motion.motion.inactive", backgroundColor:"#cccccc"
 		}
 		valueTile("temperature", "device.temperature", width: 2, height: 2) {
 			state "temperature", label:'${currentValue}°', unit:"F", icon:"", // would be better if the units would switch to the desired units of the system (imperial or metric)
 			backgroundColors:[
-				[value: 0,  color: "#1010ff"], // blue=cold
-				[value: 65, color: "#a0a0f0"],
-				[value: 70, color: "#e0e050"],
-				[value: 75, color: "#f0d030"], // yellow
-				[value: 80, color: "#fbf020"],
-				[value: 85, color: "#fbdc01"],
-				[value: 90, color: "#fb3a01"],
-				[value: 95, color: "#fb0801"]  // red=hot
+				[value: 0,  color: "#153591"], // blue=cold
+				[value: 65, color: "#44b621"], // green
+				[value: 70, color: "#44b621"], // green
+				[value: 75, color: "#f1d801"], // yellow
+				[value: 80, color: "#f1d801"], // yellow
+				[value: 85, color: "#f1d801"], // yellow
+				[value: 90, color: "#d04e00"], // red
+				[value: 95, color: "#bc2323"]  // red=hot
 			]
 		}
 
