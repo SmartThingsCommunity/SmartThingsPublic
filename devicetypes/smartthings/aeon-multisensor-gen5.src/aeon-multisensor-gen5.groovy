@@ -84,7 +84,7 @@ metadata {
 			state "humidity", label:'${currentValue}% humidity', unit:""
 		}
 		valueTile("illuminance", "device.illuminance", inactiveLabel: false, width: 2, height: 2) {
-			state "luminosity", label:'${currentValue} ${unit}', unit:"lux"
+			state "luminosity", label:'${currentValue} lux', unit:""
 		}
 		valueTile("battery", "device.battery", inactiveLabel: false, decoration: "flat", width: 2, height: 2) {
 			state "battery", label:'${currentValue}% battery', unit:""
@@ -264,4 +264,3 @@ private secure(physicalgraph.zwave.Command cmd) {
 private secureSequence(commands, delay=200) {
 	delayBetween(commands.collect{ secure(it) }, delay)
 }
-
