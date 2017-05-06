@@ -1,13 +1,13 @@
 /**
  *  Ask Alexa 
  *
- *  Version 2.2.5 - 4/23/17 Copyright © 2017 Michael Struck
+ *  Version 2.2.5a - 4/23/17 Copyright © 2017 Michael Struck
  *  Special thanks for Keith DeLong for overall code and assistance; Barry Burke for Weather Underground Integration; jhamstead for Ecobee climate modes, Yves Racine for My Ecobee thermostat tips
  * 
  *  Version information prior to 2.2.4 listed here: https://github.com/MichaelStruck/SmartThingsPublic/blob/master/smartapps/michaelstruck/ask-alexa.src/Ask%20Alexa%20Version%20History.md
  *
  *  Version 2.2.4b (4/6/17) Framework changes for extensions (new one: additional message queues), added additional notifications to message queues, change SHM model to conform with new SmartThings naming standard, new icon for custom color
- *  Version 2.2.5 (4/23/17) Moved Weather/Voice reporting to an extension. Considerably sped up the execution of Ask Alexa! Created default Kelvin settings. Added "overwrite:[true/false]" parameter to message queue functions. Renamed Nest to NST Manager
+ *  Version 2.2.5a (4/23/17) Moved Weather/Voice reporting to an extension. Considerably sped up the execution of Ask Alexa! Created default Kelvin settings. Added "overwrite:[true/false]" parameter to message queue functions. Renamed Nest to NST Manager
  *
  *  Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except
  *  in compliance with the License. You may obtain a copy of the License at:
@@ -567,7 +567,7 @@ def pageDefaultValue(){
         	input "kSoftWhite", "number", title: "\"Soft White\" Value", defaultValue: 2700, required: false
             input "kWarmWhite", "number", title:"\"Warm White\" Value", defaultValue: 3500, required: false
             input "kCoolWhite" ,"number", title:"\"Cool White\" Value", defaultValue: 4500, required: false
-            input "kDayWhite" ,"number", title:"\"Daytime White\" Value", defaultValue: 6500, required: false
+            input "kDayWhite" ,"number", title:"\"Daylight White\" Value", defaultValue: 6500, required: false
         }
     }
 }
@@ -3070,7 +3070,7 @@ private cheat(){
 //Version/Copyright/Information/Help-----------------------------------------------------------
 private textAppName() { return "Ask Alexa" }	
 private textVersion() {  
-    def version = "SmartApp Version: 2.2.5 (04/23/2017)", lambdaVersion = state.lambdaCode ? "\n" + state.lambdaCode : "", aaMQVer ="", aaWRVer ="", aaVRVer=""
+    def version = "SmartApp Version: 2.2.5a (04/23/2017)", lambdaVersion = state.lambdaCode ? "\n" + state.lambdaCode : "", aaMQVer ="", aaWRVer ="", aaVRVer=""
     if (getAAMQ().size()) getAAMQ().each { aaMQVer="\n"+it.textVersion() }
     if (getWR().size()) getWR().each { aaWRVer="\n"+it.textVersion() }
     if (getVR().size()) getVR().each { aaVRVer="\n"+it.textVersion() }
@@ -3081,7 +3081,7 @@ private LambdaReq() { return 124 }
 private mqReq() { return 101 }
 private wrReq()  { return 100 }
 private vrReq()  { return 100 }
-private versionLong(){ return "2.2.5" }
+private versionLong(){ return "2.2.5a" }
 private textCopyright() {return "Copyright © 2017 Michael Struck" }
 private textLicense() {
 	def text = "Licensed under the Apache License, Version 2.0 (the 'License'); you may not use this file except in compliance with the License. You may obtain a copy of the License at\n\n"+
