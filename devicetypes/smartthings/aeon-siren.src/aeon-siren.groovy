@@ -20,10 +20,11 @@ metadata {
 	capability "Actuator"
 	capability "Alarm"
 	capability "Switch"
+	capability "Health Check"
 
 	command "test"
 
-	fingerprint deviceId: "0x1005", inClusters: "0x5E,0x98"
+	fingerprint deviceId: "0x1005", inClusters: "0x5E,0x98", deviceJoinName: "Aeon Labs Siren (Gen 5)"
  }
 
  simulator {
@@ -57,7 +58,15 @@ metadata {
  }
 }
 
+def installed() {
+// Device-Watch simply pings if no device events received for 32min(checkInterval)
+	sendEvent(name: "checkInterval", value: 2 * 15 * 60 + 2 * 60, displayed: false, data: [protocol: "zwave", hubHardwareId: device.hub.hardwareID])
+}
+
 def updated() {
+// Device-Watch simply pings if no device events received for 32min(checkInterval)
+	sendEvent(name: "checkInterval", value: 2 * 15 * 60 + 2 * 60, displayed: false, data: [protocol: "zwave", hubHardwareId: device.hub.hardwareID])
+
 	if(!state.sound) state.sound = 1
 	if(!state.volume) state.volume = 3
 
@@ -147,4 +156,11 @@ def test() {
 
 private secure(physicalgraph.zwave.Command cmd) {
 	zwave.securityV1.securityMessageEncapsulation().encapsulate(cmd).format()
+}
+
+/**
+ * PING is used by Device-Watch in attempt to reach the Device
+ * */
+def ping() {
+	secure(zwave.basicV1.basicGet())
 }

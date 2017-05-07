@@ -20,8 +20,12 @@ metadata {
 		capability "Configuration"
 		capability "Sensor"
 		capability "Battery"
+		capability "Health Check"
+
+		command "configureAfterSecure"
 
 		fingerprint deviceId: "0x0701", inClusters: "0x5E,0x86,0x72,0x59,0x85,0x73,0x71,0x84,0x80,0x30,0x31,0x70,0x98,0x7A", outClusters:"0x5A"
+		fingerprint mfr:"0086", prod:"0102", model:"004A", deviceJoinName: "Aeon Labs MultiSensor (Gen 5)"
 	}
 
 	simulator {
@@ -62,8 +66,8 @@ metadata {
 	tiles(scale: 2) {
 		multiAttributeTile(name:"motion", type: "generic", width: 6, height: 4){
 			tileAttribute ("device.motion", key: "PRIMARY_CONTROL") {
-				attributeState "active", label:'motion', icon:"st.motion.motion.active", backgroundColor:"#53a7c0"
-				attributeState "inactive", label:'no motion', icon:"st.motion.motion.inactive", backgroundColor:"#ffffff"
+				attributeState "active", label:'motion', icon:"st.motion.motion.active", backgroundColor:"#00a0dc"
+				attributeState "inactive", label:'no motion', icon:"st.motion.motion.inactive", backgroundColor:"#cccccc"
 			}
 		}
 		valueTile("temperature", "device.temperature", inactiveLabel: false, width: 2, height: 2) {
@@ -82,7 +86,7 @@ metadata {
 			state "humidity", label:'${currentValue}% humidity', unit:""
 		}
 		valueTile("illuminance", "device.illuminance", inactiveLabel: false, width: 2, height: 2) {
-			state "luminosity", label:'${currentValue} ${unit}', unit:"lux"
+			state "luminosity", label:'${currentValue} lux', unit:""
 		}
 		valueTile("battery", "device.battery", inactiveLabel: false, decoration: "flat", width: 2, height: 2) {
 			state "battery", label:'${currentValue}% battery', unit:""
@@ -94,6 +98,16 @@ metadata {
 		main(["motion", "temperature", "humidity", "illuminance"])
 		details(["motion", "temperature", "humidity", "illuminance", "battery", "configureAfterSecure"])
 	}
+}
+
+def installed(){
+// Device-Watch simply pings if no device events received for 32min(checkInterval)
+	sendEvent(name: "checkInterval", value: 2 * 15 * 60 + 2 * 60, displayed: false, data: [protocol: "zwave", hubHardwareId: device.hub.hardwareID])
+}
+
+def updated(){
+// Device-Watch simply pings if no device events received for 32min(checkInterval)
+	sendEvent(name: "checkInterval", value: 2 * 15 * 60 + 2 * 60, displayed: false, data: [protocol: "zwave", hubHardwareId: device.hub.hardwareID])
 }
 
 def parse(String description)
@@ -242,6 +256,13 @@ def configureAfterSecure() {
     secureSequence(request) + ["delay 20000", zwave.wakeUpV1.wakeUpNoMoreInformation().format()]
 }
 
+/**
+ * PING is used by Device-Watch in attempt to reach the Device
+ * */
+def ping() {
+	secure(zwave.batteryV1.batteryGet())
+}
+
 def configure() {
 	// log.debug "configure()"
     //["delay 30000"] + secure(zwave.securityV1.securityCommandsSupportedGet())
@@ -262,4 +283,3 @@ private secure(physicalgraph.zwave.Command cmd) {
 private secureSequence(commands, delay=200) {
 	delayBetween(commands.collect{ secure(it) }, delay)
 }
-

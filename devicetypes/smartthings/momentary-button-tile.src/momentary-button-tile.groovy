@@ -32,7 +32,7 @@ metadata {
 	tiles {
 		standardTile("switch", "device.switch", width: 2, height: 2, canChangeIcon: true) {
 			state "off", label: 'Push', action: "momentary.push", backgroundColor: "#ffffff", nextState: "on"
-			state "on", label: 'Push', action: "momentary.push", backgroundColor: "#53a7c0"
+			state "on", label: 'Push', action: "momentary.push", backgroundColor: "#00A0DC"
 		}
 		main "switch"
 		details "switch"
@@ -43,8 +43,8 @@ def parse(String description) {
 }
 
 def push() {
-	sendEvent(name: "switch", value: "on", isStateChange: true, display: false)
-	sendEvent(name: "switch", value: "off", isStateChange: true, display: false)
+	sendEvent(name: "switch", value: "on", isStateChange: true, displayed: false)
+	sendEvent(name: "switch", value: "off", isStateChange: true, displayed: false)
 	sendEvent(name: "momentary", value: "pushed", isStateChange: true)
 }
 

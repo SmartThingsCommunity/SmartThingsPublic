@@ -1,9 +1,11 @@
 /**
  * 	Color Coordinator 
- *  Version 1.0.0 - 7/4/15
+ *  Version 1.1.1 - 11/9/16
  *  By Michael Struck
  *
  *  1.0.0 - Initial release
+ *  1.1.0 - Fixed issue where master can be part of slaves. This causes a loop that impacts SmartThings. 
+ *  1.1.1 - Fix NPE being thrown for slave/master inputs being empty.
  *
  *
  *  Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except
@@ -31,27 +33,35 @@ preferences {
 }
 
 def mainPage() {
-	dynamicPage(name: "mainPage", title: "", install: true, uninstall: true) {
-		section("Master Light") {
-			input "master", "capability.colorControl", title: "Colored Light"
+	dynamicPage(name: "mainPage", title: "", install: true, uninstall: false) {
+		def masterInList = slaves?.id?.find{it==master?.id}
+        if (masterInList) {
+        	section ("**WARNING**"){
+            	paragraph "You have included the Master Light in the Slave Group. This will cause a loop in execution. Please remove this device from the Slave Group.", image: "https://raw.githubusercontent.com/MichaelStruck/SmartThingsPublic/master/img/caution.png"
+            }
+        }
+        section("Master Light") {
+			input "master", "capability.colorControl", title: "Colored Light", required: true
 		}
 		section("Lights that follow the master settings") {
-			input "slaves", "capability.colorControl", title: "Colored Lights",  multiple: true, required: false
+			input "slaves", "capability.colorControl", title: "Colored Lights",  multiple: true, required: true, submitOnChange: true
 		}
     	section([mobileOnly:true], "Options") {
-			label(title: "Assign a name", required: false)
+			input "randomYes", "bool",title: "When Master Turned On, Randomize Color", defaultValue: false
 			href "pageAbout", title: "About ${textAppName()}", description: "Tap to get application version, license and instructions"
         }
 	}
 }
 
-page(name: "pageAbout", title: "About ${textAppName()}") {
+page(name: "pageAbout", title: "About ${textAppName()}", uninstall: true) {
 	section {
     	paragraph "${textVersion()}\n${textCopyright()}\n\n${textLicense()}\n"
 	}
 	section("Instructions") {
 		paragraph textHelp()
 	}
+    section("Tap button below to remove application"){
+    }
 }
 
 def installed() {   
@@ -72,27 +82,61 @@ def init() {
 }
 //-----------------------------------
 def onOffHandler(evt){
-	if (master.currentValue("switch") == "on"){
-    	slaves?.on()
-    }
-    else {
-		slaves?.off()  
-    }
+	if (slaves && master) {
+		if (!slaves?.id.find{it==master?.id}){
+		if (master?.currentValue("switch") == "on"){
+		    if (randomYes) getRandomColorMaster()
+				else slaves?.on()
+		}
+		else {
+		    slaves?.off()  
+		}
+		}
+	}
 }
 
 def colorHandler(evt) {
-   	def dimLevel = master.currentValue("level")
-    def hueLevel = master.currentValue("hue")
-    def saturationLevel = master.currentValue("saturation")
+	if (slaves && master) {
+		if (!slaves?.id?.find{it==master?.id} && master?.currentValue("switch") == "on"){
+			log.debug "Changing Slave units H,S,L"
+		def dimLevel = master?.currentValue("level")
+		def hueLevel = master?.currentValue("hue")
+		def saturationLevel = master.currentValue("saturation")
+			def newValue = [hue: hueLevel, saturation: saturationLevel, level: dimLevel as Integer]
+		slaves?.setColor(newValue)
+		try {
+			log.debug "Changing Slave color temp"
+			def tempLevel = master?.currentValue("colorTemperature")
+			slaves?.setColorTemperature(tempLevel)
+		}
+			catch (e){
+			log.debug "Color temp for master --"
+		}
+		}
+	}
+}
+
+def getRandomColorMaster(){
+    def hueLevel = Math.floor(Math.random() *1000)
+    def saturationLevel = Math.floor(Math.random() * 100)
+    def dimLevel = master?.currentValue("level")
 	def newValue = [hue: hueLevel, saturation: saturationLevel, level: dimLevel as Integer]
-    slaves?.setColor(newValue)
+    log.debug hueLevel
+    log.debug saturationLevel
+    master.setColor(newValue)
+    slaves?.setColor(newValue)   
 }
 
 def tempHandler(evt){
-    if (evt.value != "--") {
-    	def tempLevel = master.currentValue("colorTemperature")
-    	slaves?.setColorTemperature(tempLevel)
-    }
+	if (slaves && master) {
+	    if (!slaves?.id?.find{it==master?.id} && master?.currentValue("switch") == "on"){
+		if (evt.value != "--") {
+		    log.debug "Changing Slave color temp based on Master change"
+		    def tempLevel = master.currentValue("colorTemperature")
+		    slaves?.setColorTemperature(tempLevel)
+		}
+		}
+	}
 }
 
 //Version/Copyright/Information/Help
@@ -102,11 +146,11 @@ private def textAppName() {
 }	
 
 private def textVersion() {
-    def text = "Version 1.0.0 (07/04/2015)"
+    def text = "Version 1.1.1 (12/13/2016)"
 }
 
 private def textCopyright() {
-    def text = "Copyright © 2015 Michael Struck"
+    def text = "Copyright © 2016 Michael Struck"
 }
 
 private def textLicense() {
@@ -128,5 +172,5 @@ private def textHelp() {
 	def text =
     	"This application will allow you to control the settings of multiple colored lights with one control. " +
         "Simply choose a master control light, and then choose the lights that will follow the settings of the master, "+
-        "including on/off conditions, hue, saturation, level and color temperature."
+        "including on/off conditions, hue, saturation, level and color temperature. Also includes a random color feature."
 }

@@ -15,6 +15,7 @@ metadata {
 	definition (name: "Aeon Minimote", namespace: "smartthings", author: "SmartThings") {
 		capability "Actuator"
 		capability "Button"
+		capability "Holdable Button"
 		capability "Configuration"
 		capability "Sensor"
 
@@ -106,4 +107,17 @@ def configure() {
 	def cmds = configurationCmds()
 	log.debug("Sending configuration: $cmds")
 	return cmds
+}
+
+
+def installed() {
+	initialize()
+}
+
+def updated() {
+	initialize()
+}
+
+def initialize() {
+	sendEvent(name: "numberOfButtons", value: 4)
 }

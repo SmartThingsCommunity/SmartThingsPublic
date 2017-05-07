@@ -15,6 +15,7 @@ metadata {
 	// Automatically generated. Make future change here.
 	definition (name: "Simulated Contact Sensor", namespace: "smartthings/testing", author: "bob") {
 		capability "Contact Sensor"
+		capability "Sensor"
 
 		command "open"
 		command "close"
@@ -27,8 +28,8 @@ metadata {
 
 	tiles {
 		standardTile("contact", "device.contact", width: 2, height: 2) {
-			state("closed", label:'${name}', icon:"st.contact.contact.closed", backgroundColor:"#79b821", action: "open")
-			state("open", label:'${name}', icon:"st.contact.contact.open", backgroundColor:"#ffa81e", action: "close")
+			state("closed", label:'${name}', icon:"st.contact.contact.closed", backgroundColor:"#00A0DC", action: "open")
+			state("open", label:'${name}', icon:"st.contact.contact.open", backgroundColor:"#e86d13", action: "close")
 		}
 		main "contact"
 		details "contact"
