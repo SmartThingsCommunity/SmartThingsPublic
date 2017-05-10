@@ -33,9 +33,11 @@ metadata {
 			state("closed", label:'Fridge', icon:"st.contact.contact.closed", backgroundColor:"#79b821")
 			state("open", label:'Fridge', icon:"st.contact.contact.open", backgroundColor:"#ffa81e")
 		}
-		standardTile("control", "device.contact", width: 1, height: 1, decoration: "flat") {
+        
+		standardTile("control", "device.contact", width: 2, height: 2, decoration: "flat") {
 			state("closed", label:'${name}', icon:"st.contact.contact.closed", action: "open")
 			state("open", label:'${name}', icon:"st.contact.contact.open", action: "close")
+           
 		}
 		main "contact"
 		details "contact"

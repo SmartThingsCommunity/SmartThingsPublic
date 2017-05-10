@@ -24,9 +24,9 @@ metadata {
 		command "setpointDown"
 	}
 
-	tiles {
+	tiles (scale: 1) {
 		valueTile("refrigerator", "device.temperature", width: 2, height: 2, canChangeBackground: true) {
-			state("temperature", label:'${currentValue}°', unit:"F",
+			state("temperature", label:'RFRG ${currentValue}°', unit:"F",
 					backgroundColors:[
 							[value: 0, color: "#153591"],
 							[value: 40, color: "#1e9cbb"],
@@ -35,7 +35,7 @@ metadata {
 			)
 		}
 		valueTile("freezer", "device.temperature", width: 2, height: 2, canChangeBackground: true) {
-			state("temperature", label:'${currentValue}°', unit:"F",
+			state("temperature", label:'FRZR ${currentValue}°', unit:"F",
 					backgroundColors:[
 							[value: 0, color: "#153591"],
 							[value: 5, color: "#1e9cbb"],
@@ -43,17 +43,19 @@ metadata {
 					]
 			)
 		}
-		valueTile("freezerSetpoint", "device.coolingSetpoint", inactiveLabel: false, decoration: "flat") {
-			state "setpoint", label:'Freezer Set: ${currentValue}°', unit:"F"
-		}
-		valueTile("refrigeratorSetpoint", "device.coolingSetpoint", inactiveLabel: false, decoration: "flat") {
-			state "heat", label:'Fridge Set: ${currentValue}°', unit:"F"
+        // Refrigerator Set Point display
+        valueTile("refrigeratorSetpoint", "device.coolingSetpoint", inactiveLabel: false, decoration: "flat") {
+			state "heat", label:'Set Fridge: ${currentValue}°', unit:"F"
 		}
 		standardTile("tempUp", "device.temperature", inactiveLabel: false, decoration: "flat") {
 			state "default", action:"tempUp", icon:"st.thermostat.thermostat-up"
 		}
 		standardTile("tempDown", "device.temperature", inactiveLabel: false, decoration: "flat") {
 			state "default", action:"tempDown", icon:"st.thermostat.thermostat-down"
+		}
+         // Freezer Set Point display
+		valueTile("freezerSetpoint", "device.coolingSetpoint", inactiveLabel: false, decoration: "flat") {
+			state "setpoint", label:'Set Freezer: ${currentValue}°', unit:"F"
 		}
 		standardTile("setpointUp", "device.coolingSetpoint", inactiveLabel: false, decoration: "flat") {
 			state "default", action:"setpointUp", icon:"st.thermostat.thermostat-up"
@@ -62,6 +64,7 @@ metadata {
 			state "default", action:"setpointDown", icon:"st.thermostat.thermostat-down"
 		}
 	}
+    main "refrigerator"
 }
 
 def installed() {
