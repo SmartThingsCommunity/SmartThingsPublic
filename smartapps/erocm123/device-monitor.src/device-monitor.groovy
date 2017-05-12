@@ -97,6 +97,9 @@ def pageMain() {
         uninstall: true
     ]
     
+    log.debug listOfMQs
+    sendLocationEvent(name: "AskAlexaMsgQueue", value: "Device Monitor", isStateChange: true, descriptionText: "This is a test", data: [queues: listOfMQs])
+    
     def helpPage = "Select devices that you wish to check with this SmartApp. These devices will get checked at the desired intervals and notifications will be sent based on the settings specified"
     
     return dynamicPage(pageProperties) {
@@ -143,7 +146,7 @@ def pageSettings() {
                 6: "3 Hours"
             ]
 
-            input "checkEvent", "boolean", title: "Run a check each time one of the selected devices sends an event?", required: false, submitOnChange: true, value: false
+            input "checkEvent", "bool", title: "Run a check each time one of the selected devices sends an event?", required: false, submitOnChange: true, value: false
             if (settings.checkEvent != null && checkEvent.toBoolean() == true) {
                 input "minimumCheck", "number", title: "Minimum time (in minutes) between checks. Useful if you use the above option and subscribe to many devices.", required: false, value: 15
             }
@@ -157,7 +160,7 @@ def pageSettings() {
         }
         
         section("Battery Settings") {
-        input "checkBattery", "boolean", title: "Check battery values?", required: false, submitOnChange: true, value: false
+        input "checkBattery", "bool", title: "Check battery values?", required: false, submitOnChange: true, value: false
             if (settings.checkBattery != null && checkBattery.toBoolean() == true) {
                 input "batteryThreshold", "number", title: "Be notified if battery is below this level.", required: false, value: 20
             }
@@ -167,14 +170,16 @@ def pageSettings() {
                 input "sendPushMessage", "enum", title: "Send a push notification?", metadata: [values: ["Yes", "No"]], required: false, value: "No"
                 input "phoneNumber", "phone", title: "Enter phone number to send text notification.", required: false
             }
-            input "deviceOnline", "boolean", title: "Send a notification if a device comes back online?", required: false, submitOnChange: false, value: false
-            input "askAlexa", "boolean", title: "Send notifications to Ask Alexa?", required: false, submitOnChange: false, value: false
+            input "deviceOnline", "bool", title: "Send a notification if a device comes back online?", required: false, submitOnChange: false, value: false
+            input "askAlexa", "bool", title: "Send notifications to Ask Alexa?", required: false, submitOnChange: true, value: false
+            if (askAlexa)
+                input "listOfMQs", "enum", title: "Ask Alexa Message Queues", options: state.askAlexaMQ, multiple: true, required: false
             input "resendTime", "time", title: "Send reminder alerts at this time each day", required: false
-            input "askAlexaRemind", "boolean", title: "Allow reminder alerts to be sent to Ask Alexa?", required: false, submitOnChange: false, value: false
+            input "askAlexaRemind", "bool", title: "Allow reminder alerts to be sent to Ask Alexa?", required: false, submitOnChange: false, value: false
         }
         section([title: "Other Options", mobileOnly: true]) {
-            input "checkHub", "boolean", title: "Send notification if hub goes offline?", required: false, submitOnChange: false, value: false
-            input "healthCheck", "boolean", title: "Use Online / Offline status if available?", required: false, submitOnChange: false, value: false
+            input "checkHub", "bool", title: "Send notification if hub goes offline?", required: false, submitOnChange: false, value: false
+            input "healthCheck", "bool", title: "Use Online / Offline status if available?", required: false, submitOnChange: false, value: false
             label title: "Assign a name for the app (optional)", required: false
         }    
     }
@@ -337,7 +342,7 @@ def runNowHandler(evt) {
 def eventCheck(evt = false) {
     //if (evt != false) log.debug "${evt.name} : ${evt.value}"
     if (allOk) {
-        if ((settings.checkEvent != null && settings.checkEvent.toBoolean()) || evt == false) {
+        if ((settings.checkEvent != null && settings.checkEvent) || evt == false) {
             if (settings.minimumCheck == null || settings.minimumCheck == "") settings.minimumCheck = 15
             if (atomicState.lastExe != null && now() - atomicState.lastExe > settings.minimumCheck * 60 * 1000) {
                 atomicState.lastExe = now()
@@ -434,7 +439,7 @@ def doCheck() {
             }
             if (dexclude == false){
                 def lastTime
-                if(it.status.toUpperCase() in ["ONLINE", "OFFLINE"] && healthCheck == "true" && it.getLastActivity() != null) {
+                if(it.status.toUpperCase() in ["ONLINE", "OFFLINE"] && healthCheck?.toBoolean() == true && it.getLastActivity() != null) {
                     lastTime = it.getLastActivity()
                 } else {
                     lastTime = it.events([all: true, max: 100]).find {
@@ -586,7 +591,7 @@ def doCheck() {
             def hublistMapDiff
             def hubOnlinelistMapDiff
 
-            if (checkHub == "true") {
+            if (checkHub.toBoolean() == true) {
                 if (location.hubs[0].status.toUpperCase() in ["INACTIVE", "DISCONNECTED"] ) {
                     hublistMap += [name: "${location.hubs[0].name}", id: "${location.hubs[0].id}"]
                 }
@@ -607,6 +612,8 @@ def doCheck() {
                 def text = ""
                 def check = ""
                 def notifications = []
+                def alexaOfflineNotifications = []
+                def alexaOnlineNotifications = []
 
                 if (delaylistCheckMapDiff) {
                     def notificationDelaylist = ""
@@ -622,6 +629,7 @@ def doCheck() {
                         b -> b["time"] as float <=> a["time"] as float
                     }).each {
                         notificationDelaylist += "${it.time} - ${it.name}\n"
+                        alexaOfflineNotifications << [name: it.name, time: it.time, id:it.id]
                     }
                     notifications += ["Devices delayed:\n${notificationDelaylist.trim()}"]
                 }
@@ -692,7 +700,7 @@ def doCheck() {
                 
                 if ((location.contactBookEnabled && recipients) || (sendPushMessage != "No") || (phoneNumber != "0")) {
                     notifications.each() {
-                        if (askAlexa != null && askAlexa.toBoolean() == true) sendLocationEvent(name: "AskAlexaMsgQueue", value: "Device Monitor", isStateChange: true, descriptionText: it)
+                        if (askAlexa != null && askAlexa.toBoolean() == true) sendLocationEvent(name: "AskAlexaMsgQueue", value: "Device Monitor", isStateChange: true, descriptionText: it, data: [queues: listOfMQs])
                         send(it)
                     }
                 }
@@ -792,6 +800,7 @@ def updated() {
 def initialize() {
     log.trace "Initializing Device Monitor"
     scheduleCheck()
+    subscribe(location, "askAlexaMQ", askAlexaMQHandler)
     subscribeDevices()
 }
 
@@ -960,7 +969,7 @@ def resend() {
 
         if ((location.contactBookEnabled && recipients) || (sendPushMessage != "No") || (phoneNumber != "0")) {
             notifications.each() {
-                if (askAlexaRemind != null && askAlexaRemind.toBoolean() == true) sendLocationEvent(name: "AskAlexaMsgQueue", value: "Device Monitor", isStateChange: true, descriptionText: it)
+                if (askAlexaRemind != null && askAlexaRemind.toBoolean() == true) sendLocationEvent(name: "AskAlexaMsgQueue", value: "Device Monitor", isStateChange: true, descriptionText: it, data: [queues: listOfMQs])
                 send(it)
             }
         }
@@ -996,12 +1005,15 @@ private send(message) {
     if (location.contactBookEnabled && recipients) {
         log.debug("Sending notifications to selected contacts...")
         sendNotificationToContacts(message, recipients)
-    } else if (sendPushMessage != "No") {
-        log.debug("Sending Push Notification...")
-        sendPush(message)
-    } else if (phoneNumber != "0") {
-        log.debug("Sending text message...")
-        sendSms(phoneNumber, message)
+    } else {
+        if (sendPushMessage != "No") {
+            log.debug("Sending Push Notification...")
+            sendPush(message)
+        } 
+        if (phoneNumber != "0") {
+            log.debug("Sending text message...")
+            sendSms(phoneNumber, message)
+        }
     }
 }
 
@@ -1053,4 +1065,13 @@ private hhmm(time, fmt = "h:mm a") {
 
 private timeIntervalLabel() {
     (starting && ending) ? hhmm(starting) + "-" + hhmm(ending, "h:mm a z"): ""
+}
+
+def askAlexaMQHandler(evt) {
+    if (!evt) return
+    switch (evt.value) {
+	    case "refresh":
+		    state.askAlexaMQ = evt.jsonData && evt.jsonData?.queues ?   evt.jsonData.queues : []
+        break
+    }
 }
