@@ -1,3 +1,7 @@
+import javax.crypto.Mac;
+import javax.crypto.spec.SecretKeySpec;
+import java.security.InvalidKeyException;
+
 definition(
     name: "OpenT2T SmartApp Test",
 		namespace: "opent2t",
@@ -102,14 +106,21 @@ def installed() {
 
 def updated() {
 	log.debug "Updating with settings: ${settings}"
-	if(state.deviceSubscriptionMap == null){
+	
+    //Initialize state variables if didn't exist.
+    if( state.deviceSubscriptionMap == null ){
 		state.deviceSubscriptionMap = [:]
 		log.debug "deviceSubscriptionMap created."
 	}
-    if( state.locationSubscriptionMap == null){
-		 state.locationSubscriptionMap = [:]
+    if( state.locationSubscriptionMap == null ){
+		state.locationSubscriptionMap = [:]
 		log.debug "locationSubscriptionMap created."
 	}
+    if(state.verificationKeyMap == null){
+    	state.verificationKeyMap = [:]
+		log.debug "verificationKeyMap created."
+    }
+    
 	unsubscribe()
 	registerAllDeviceSubscriptions()
 }
@@ -118,9 +129,11 @@ def initialize() {
 	log.debug "Initializing with settings: ${settings}"
 	state.deviceSubscriptionMap = [:]
 	log.debug "deviceSubscriptionMap created."
-	registerAllDeviceSubscriptions()
     state.locationSubscriptionMap = [:]
 	log.debug "locationSubscriptionMap created."
+    state.verificationKeyMap = [:]
+	log.debug "verificationKeyMap created."
+    registerAllDeviceSubscriptions()
 }
 
 /*** Subscription Functions  ***/
@@ -145,7 +158,8 @@ def registerChangeHandler(myList) {
 def registerDeviceChange() {
 	def subscriptionEndpt = params.subscriptionURL
 	def deviceId = params.deviceId
-	def myDevice = findDevice(deviceId)
+   	def myDevice = findDevice(deviceId)
+    
 	if( myDevice == null ){
 		httpError(404, "Cannot find device with device ID ${deviceId}.")
 	}
@@ -161,16 +175,22 @@ def registerDeviceChange() {
 			if(state.deviceSubscriptionMap[deviceId] == null){
 				state.deviceSubscriptionMap.put(deviceId, [subscriptionEndpt])
 				log.info "Added subscription URL: ${subscriptionEndpt} for ${myDevice.displayName}"
-			}else if (!state.deviceSubscriptionMap[deviceId].contains(subscriptionEndpt)){
+			} else if (!state.deviceSubscriptionMap[deviceId].contains(subscriptionEndpt)){
 				state.deviceSubscriptionMap[deviceId] << subscriptionEndpt
 				log.info "Added subscription URL: ${subscriptionEndpt} for ${myDevice.displayName}"
 			}
+            
+            if(params.key != null){
+            	state.verificationKeyMap[subscriptionEndpt] = params.key
+				log.info "Added verification key: ${params.key} for ${subscriptionEndpt}"
+            }
         }
 	} catch (e) {
 		httpError(500, "something went wrong: $e")
 	}
 
 	log.info "Current subscription map is ${state.deviceSubscriptionMap}"
+    log.info "Current verification key map is ${state.verificationKeyMap}"
 	return ["succeed"]
 }
 
@@ -192,6 +212,7 @@ def unregisterDeviceChange() {
 				} else {
 					state.deviceSubscriptionMap[deviceId].remove(subscriptionEndpt)
 				}
+                state.verificationKeyMap.remove(subscriptionEndpt)
 				log.info "Removed subscription URL: ${subscriptionEndpt} for ${myDevice.displayName}"
 			}
         } else {
@@ -202,13 +223,14 @@ def unregisterDeviceChange() {
 		httpError(500, "something went wrong: $e")
 	}
 
-	log.info "Current subscription map is ${state.deviceSubscriptionMap}" 
+	log.info "Current subscription map is ${state.deviceSubscriptionMap}"
+    log.info "Current verification key map is ${state.verificationKeyMap}"
 }
 
 //Endpoints function: Subscribe to device additiona/removal updated in a location
 def registerDeviceGraph() {
 	def subscriptionEndpt = params.subscriptionURL
-
+    
     if (subscriptionEndpt != null && subscriptionEndpt != "undefined"){
         subscribe(location, "DeviceCreated", locationEventHandler, [filterEvents: false])
         subscribe(location, "DeviceUpdated", locationEventHandler, [filterEvents: false])
@@ -216,12 +238,19 @@ def registerDeviceGraph() {
 
     	if(state.locationSubscriptionMap[location.id] == null){
             state.locationSubscriptionMap.put(location.id, [subscriptionEndpt])
-            log.info "Added subscription URL: ${subscriptionEndpt} for Location ${location.name}"
+			log.info "Added subscription URL: ${subscriptionEndpt} for Location ${location.name}"
         }else if (!state.locationSubscriptionMap[location.id].contains(subscriptionEndpt)){
             state.locationSubscriptionMap[location.id] << subscriptionEndpt
-            log.info "Added subscription URL: ${subscriptionEndpt} for Location ${location.name}"
+			log.info "Added subscription URL: ${subscriptionEndpt} for Location ${location.name}"
         }
+        
+        if(params.key != null){
+            state.verificationKeyMap[subscriptionEndpt] = params.key
+			log.info "Added verification key: ${params.key} for ${subscriptionEndpt}"
+        }
+        
         log.info "Current location subscription map is ${state.locationSubscriptionMap}"
+        log.info "Current verification key map is ${state.verificationKeyMap}"
         return ["succeed"]
     } else {
         httpError(400, "missing input parameter: subscriptionURL")
@@ -240,6 +269,7 @@ def unregisterDeviceGraph() {
 				} else {
 					state.locationSubscriptionMap[location.id].remove(subscriptionEndpt)
 				}
+                state.verificationKeyMap.remove(subscriptionEndpt)
 				log.info "Removed subscription URL: ${subscriptionEndpt} for Location ${location.name}"
 			}
         }else{
@@ -249,27 +279,39 @@ def unregisterDeviceGraph() {
 		httpError(500, "something went wrong: $e")
 	}
 
-	log.info "Current location subscription map is ${state.locationSubscriptionMap}" 
+	log.info "Current location subscription map is ${state.locationSubscriptionMap}"
+    log.info "Current verification key map is ${state.verificationKeyMap}"
 }
 
 //When events are triggered, send HTTP post to web socket servers
 def deviceEventHandler(evt) {
-	def evt_device = evt.device
-	def evt_deviceType = getDeviceType(evt_device)
-	def deviceInfo
-    
-	def params = [ body: [deviceName: evt_device.displayName, deviceId: evt_device.id,  locationId: location.id] ]
-    
-	if(evt.data != null){
-		def evtData = parseJson(evt.data)
-		log.info "Received event for ${evt_device.displayName}, data: ${evtData},  description: ${evt.descriptionText}"
+	def evtDevice = evt.device
+	def evtDeviceType = getDeviceType(evtDevice)
+	def deviceData = [];
+   	
+    if(evtDeviceType == "thermostat") {
+		deviceData = [name: evtDevice.displayName, id: evtDevice.id, status:evtDevice.status, deviceType:evtDeviceType, manufacturer:evtDevice.manufacturerName, model:evtDevice.modelName, attributes: deviceAttributeList(evtDevice, evtDeviceType), locationMode: getLocationModeInfo(), locationId: location.id ]
+	} else {
+		deviceData = [name: evtDevice.displayName, id: evtDevice.id, status:evtDevice.status, deviceType:evtDeviceType, manufacturer:evtDevice.manufacturerName, model:evtDevice.modelName, attributes: deviceAttributeList(evtDevice, evtDeviceType), locationId: location.id ]
 	}
     
+    if(evt.data != null){
+		def evtData = parseJson(evt.data)
+		log.info "Received event for ${evtDevice.displayName}, data: ${evtData},  description: ${evt.descriptionText}"
+	}
+    
+    def params = [ body: deviceData ]
+    
 	//send event to all subscriptions urls
-	log.debug "Current subscription urls for ${evt_device.displayName} is ${state.deviceSubscriptionMap[evt_device.id]}"
-	state.deviceSubscriptionMap[evt_device.id].each {
+	log.debug "Current subscription urls for ${evtDevice.displayName} is ${state.deviceSubscriptionMap[evtDevice.id]}"
+	state.deviceSubscriptionMap[evtDevice.id].each {
 		params.uri = "${it}"
+        if(state.verificationKeyMap[it] != null ){
+        	def key = state.verificationKeyMap[it]
+            params.header = [Signature: ComputHMACValue(key, groovy.json.JsonOutput.toJson(params.body))]
+        }
 		log.trace "POST URI: ${params.uri}"
+        log.trace "Header: ${params.header}"
 		log.trace "Payload: ${params.body}"
 		try{
 			httpPostJson(params) { resp ->
@@ -287,15 +329,22 @@ def locationEventHandler(evt) {
     switch(evt.name){
     	case "DeviceCreated":
         case "DeviceDeleted":
-        	def evt_device = evt.device
-            def evt_deviceType = getDeviceType(evt_device)
-        	log.info "DeviceName: ${evt_device.displayName}, DeviceID: ${evt_device.id}, deviceType: ${evt_deviceType}"
+        	def evtDevice = evt.device
+            def evtDeviceType = getDeviceType(evtDevice)
+            def params = [ body: [ eventType:evt.name, deviceId: evtDevice.id, locationId: location.id ] ]
             
-            def params = [ body: [ eventType:evt.name, deviceId: evt_device.id, locationId: location.id ] ]
-            
+            if (evt.name == "DeviceDeleted" && state.deviceSubscriptionMap[deviceId] != null){
+            	state.deviceSubscriptionMap.remove(evtDevice.id)
+            }
+        
             state.locationSubscriptionMap[location.id].each {
                 params.uri = "${it}"
+                if(state.verificationKeyMap[it] != null ){
+                    def key = state.verificationKeyMap[it]
+                    params.header = [Signature: ComputHMACValue(key, groovy.json.JsonOutput.toJson(params.body))]
+                }
                 log.trace "POST URI: ${params.uri}"
+				log.trace "Header: ${params.header}"
                 log.trace "Payload: ${params.body}"
                 try{
                     httpPostJson(params) { resp ->
@@ -312,6 +361,24 @@ def locationEventHandler(evt) {
     }
 }
 
+private ComputHMACValue(key, data){
+	try {
+    	log.debug "data hased: ${data}"
+        SecretKeySpec secretKeySpec = new SecretKeySpec(key.getBytes("UTF-8"), "HmacSHA1")
+		Mac mac = Mac.getInstance("HmacSHA1")
+		mac.init(secretKeySpec)
+		byte[] digest = mac.doFinal(data.getBytes("UTF-8"))
+		return byteArrayToString(digest)
+	} catch (InvalidKeyException e) {  
+     	log.error "Invalid key exception while converting to HMac SHA1"
+	}
+}
+
+private def byteArrayToString(byte[] data) {
+	BigInteger bigInteger = new BigInteger(1, data)
+    String hash = bigInteger.toString(16)
+	return hash
+}
 
 /*** Device Query/Update Functions  ***/
 
