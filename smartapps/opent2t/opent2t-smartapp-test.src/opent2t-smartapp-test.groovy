@@ -157,6 +157,17 @@ def registerAllDeviceSubscriptions() {
 	registerChangeHandler(inputs)
 }
 
+//Subscribe to events from a list of devices
+def registerChangeHandler(myList) {
+	myList.each { myDevice ->
+		def theAtts = myDevice.supportedAttributes
+		theAtts.each {att ->
+			subscribe(myDevice, att.name, deviceEventHandler)
+			log.info "Registering for ${myDevice.displayName}.${att.name}"
+		}
+	}
+}
+
 //Endpoints function: Subscribe to events from a specific device
 def registerDeviceChange() {
 	def subscriptionEndpt = params.subscriptionURL
