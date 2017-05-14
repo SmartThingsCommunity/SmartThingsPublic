@@ -31,6 +31,7 @@
  *
  *	Changelog:
  *
+ *  0.50 (05/02/2017) - add presence capability to simplify integration with cameras and SHM
  *  0.40 (03/23/2017) - set numberOfButtons attribute for those smart apps that rely on this
  *  0.30 (11/20/2016) - Removed non-operational battery capability; was preventing device display on 2.2.2 mobile app
  *  0.20 (08/02/2016) - Added preference option for allowed time between presses to eliminate duplicate notifications on some systems
@@ -44,6 +45,8 @@ metadata {
 		capability "Configuration"
         capability "Button"
 		capability "Refresh"
+        capability "Presence Sensor"
+
      
         command "enrollResponse"
  	   
@@ -205,6 +208,7 @@ private Map getDoorbellPressResult(cluster) {
 		       //log.debug ("BUTTON2 PRESS!")               
                result = [ name: 'button', value: "pushed", data: [buttonNumber: 2], isStateChange: true ]
                sendEvent([name: "button2", value: "2: ring"])
+               sendEvent([name: "presence", value: "present"])
                runIn(5, button2DisplayReset) 
             }
             state.lastButton2Updated = new Date().time	
@@ -216,6 +220,7 @@ private Map getDoorbellPressResult(cluster) {
 		       //log.debug ("BUTTON1 PRESS!")
                result = [ name: 'button', value: "pushed", data: [buttonNumber: 1], isStateChange: true]
                sendEvent ([name: "button1", value: "1: ring"])
+               sendEvent([name: "presence", value: "present"])
                runIn(5, button1DisplayReset) 
             }
             state.lastButton1Updated = new Date().time
@@ -227,10 +232,12 @@ private Map getDoorbellPressResult(cluster) {
 
 def button1DisplayReset() {
     sendEvent ([name: "button1", value: "1: silent"])
+    sendEvent([name: "presence", value: "not present"])
 }
 
 def button2DisplayReset() {
     sendEvent ([name: "button2", value: "2: silent"])
+    sendEvent([name: "presence", value: "not present"])
 }
 
 
