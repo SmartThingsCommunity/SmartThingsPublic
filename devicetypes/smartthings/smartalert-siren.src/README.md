@@ -4,7 +4,7 @@ Cloud Execution
 
 Works with:
 
-* [FortrezZ Siren Strobe Alarm](https://www.smartthings.com/works-with-smartthings/other/fortrezz-water-valve)
+* [FortrezZ Siren Strobe Alarm](https://www.smartthings.com/products/fortrezz-siren-strobe-alarm)
 
 ## Table of contents
 
