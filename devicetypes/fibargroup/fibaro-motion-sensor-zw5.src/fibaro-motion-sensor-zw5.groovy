@@ -34,8 +34,8 @@ metadata {
     tiles(scale: 2) {
     	multiAttributeTile(name:"FGMS", type:"lighting", width:6, height:4) {//with generic type secondary control text is not displayed in Android app
         	tileAttribute("device.motion", key:"PRIMARY_CONTROL") {
-            	attributeState("inactive", label:"no motion", icon:"st.motion.motion.inactive", backgroundColor:"#79b821")
-            	attributeState("active", label:"motion", icon:"st.motion.motion.active", backgroundColor:"#ffa81e")
+            	attributeState("inactive", label:"no motion", icon:"st.motion.motion.inactive", backgroundColor:"#cccccc")
+            	attributeState("active", label:"motion", icon:"st.motion.motion.active", backgroundColor:"#00A0DC")
             }
 
             tileAttribute("device.tamper", key:"SECONDARY_CONTROL") {

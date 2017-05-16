@@ -56,8 +56,8 @@ metadata {
 			state("closing", label:'${name}', icon:"st.doors.garage.garage-closing", backgroundColor:"#00A0DC")
 		}
 		standardTile("contact", "device.contact") {
-			state("open", label:'${name}', icon:"st.contact.contact.open", backgroundColor:"#ffa81e")
-			state("closed", label:'${name}', icon:"st.contact.contact.closed", backgroundColor:"#79b821")
+			state("open", label:'${name}', icon:"st.contact.contact.open", backgroundColor:"#e86d13")
+			state("closed", label:'${name}', icon:"st.contact.contact.closed", backgroundColor:"#00A0DC")
 		}
 		standardTile("acceleration", "device.acceleration", decoration: "flat") {
 			state("active", label:'${name}', icon:"st.motion.acceleration.active", backgroundColor:"#00A0DC")
