@@ -83,6 +83,9 @@ def parse(String description) {
             }
         }
         sendEvent(event)
+        //handle valve attribute
+        event.name = "valve"
+        sendEvent(event)
     }
     else {
         def descMap = zigbee.parseDescriptionAsMap(description)
