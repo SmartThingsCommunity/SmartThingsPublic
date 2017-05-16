@@ -103,7 +103,7 @@ metadata {
 		}
 
 		valueTile("illuminance", "device.illuminance", inactiveLabel: false, width: 2, height: 2) {
-			state "illuminance", label:'${currentValue} ${unit}', unit:"lux"
+			state "illuminance", label:'${currentValue} lux', unit:""
 		}
 
 		valueTile("ultravioletIndex", "device.ultravioletIndex", inactiveLabel: false, width: 2, height: 2) {
