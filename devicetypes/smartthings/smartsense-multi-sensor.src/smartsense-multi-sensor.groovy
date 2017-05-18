@@ -87,8 +87,8 @@ metadata {
 			state("closed", label: 'Closed', icon: "st.contact.contact.closed", backgroundColor: "#00a0dc")
 		}
 		standardTile("acceleration", "device.acceleration", width: 2, height: 2) {
-			state("active", label: 'Active', icon: "st.motion.acceleration.active", backgroundColor: "#53a7c0")
-			state("inactive", label: 'Inactive', icon: "st.motion.acceleration.inactive", backgroundColor: "#ffffff")
+			state("active", label: 'Active', icon: "st.motion.acceleration.active", backgroundColor: "#00a0dc")
+			state("inactive", label: 'Inactive', icon: "st.motion.acceleration.inactive", backgroundColor: "#cccccc")
 		}
 		valueTile("temperature", "device.temperature", width: 2, height: 2) {
 			state("temperature", label: '${currentValue}°',
