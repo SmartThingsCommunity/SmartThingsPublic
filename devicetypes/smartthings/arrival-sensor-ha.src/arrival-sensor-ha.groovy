@@ -72,6 +72,10 @@ def configure() {
     return cmds
 }
 
+def installed() {
+    sendEvent(name: "DeviceWatch-Enroll", value: JsonOutput.toJson([protocol: "zigbee", scheme:"untracked"]), displayed: false)
+}
+
 def beep() {
     log.debug "Sending Identify command to beep the sensor for 5 seconds"
     return zigbee.command(0x0003, 0x00, "0500")
