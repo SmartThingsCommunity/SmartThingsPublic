@@ -97,9 +97,6 @@ def pageMain() {
         uninstall: true
     ]
     
-    log.debug listOfMQs
-    sendLocationEvent(name: "AskAlexaMsgQueue", value: "Device Monitor", isStateChange: true, descriptionText: "This is a test", data: [queues: listOfMQs])
-    
     def helpPage = "Select devices that you wish to check with this SmartApp. These devices will get checked at the desired intervals and notifications will be sent based on the settings specified"
     
     return dynamicPage(pageProperties) {
@@ -172,8 +169,8 @@ def pageSettings() {
             }
             input "deviceOnline", "bool", title: "Send a notification if a device comes back online?", required: false, submitOnChange: false, value: false
             input "askAlexa", "bool", title: "Send notifications to Ask Alexa?", required: false, submitOnChange: true, value: false
-            if (askAlexa)
-                input "listOfMQs", "enum", title: "Ask Alexa Message Queues", options: state.askAlexaMQ, multiple: true, required: false
+            //if (askAlexa)
+            //    input "listOfMQs", "enum", title: "Ask Alexa Message Queues", options: state.askAlexaMQ, multiple: true, required: false
             input "resendTime", "time", title: "Send reminder alerts at this time each day", required: false
             input "askAlexaRemind", "bool", title: "Allow reminder alerts to be sent to Ask Alexa?", required: false, submitOnChange: false, value: false
         }
@@ -700,7 +697,12 @@ def doCheck() {
                 
                 if ((location.contactBookEnabled && recipients) || (sendPushMessage != "No") || (phoneNumber != "0")) {
                     notifications.each() {
-                        if (askAlexa != null && askAlexa.toBoolean() == true) sendLocationEvent(name: "AskAlexaMsgQueue", value: "Device Monitor", isStateChange: true, descriptionText: it, data: [queues: listOfMQs])
+                        if (askAlexa != null && askAlexa.toBoolean() == true) {
+                            def exMin = expire ? expire as int : 0
+                            def exSec=exMin * 60
+                            //if (listOfMQs) sendLocationEvent(name: "AskAlexaMsgQueue", value: "Device Monitor", isStateChange: true, descriptionText: it, unit:"1234", data: [queues: listOfMQs, overwrite:false ,expires:exSec, notifyOnly:false])
+                            /*else*/ sendLocationEvent(name: "AskAlexaMsgQueue", value: "Device Monitor", isStateChange: true, descriptionText: it, overwrite:false)
+                        }
                         send(it)
                     }
                 }
@@ -969,7 +971,10 @@ def resend() {
 
         if ((location.contactBookEnabled && recipients) || (sendPushMessage != "No") || (phoneNumber != "0")) {
             notifications.each() {
-                if (askAlexaRemind != null && askAlexaRemind.toBoolean() == true) sendLocationEvent(name: "AskAlexaMsgQueue", value: "Device Monitor", isStateChange: true, descriptionText: it, data: [queues: listOfMQs])
+                if (askAlexa != null && askAlexa.toBoolean() == true) {
+                    //if (listOfMQs) sendLocationEvent(name: "AskAlexaMsgQueue", value: "Device Monitor", isStateChange: true, descriptionText: it, unit:"", data: [queues: listOfMQs, overwrite:true])
+                    /*else*/ sendLocationEvent(name: "AskAlexaMsgQueue", value: "Device Monitor", isStateChange: true, descriptionText: it, overwrite:false)
+                }
                 send(it)
             }
         }
@@ -1072,6 +1077,7 @@ def askAlexaMQHandler(evt) {
     switch (evt.value) {
 	    case "refresh":
 		    state.askAlexaMQ = evt.jsonData && evt.jsonData?.queues ?   evt.jsonData.queues : []
+            log.debug "Received list of queues from Ask Alexa $state.askAlexaMQ"
         break
     }
 }
