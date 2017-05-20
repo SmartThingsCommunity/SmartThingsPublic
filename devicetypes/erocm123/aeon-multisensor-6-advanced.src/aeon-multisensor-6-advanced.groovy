@@ -57,7 +57,7 @@
 	tiles (scale: 2) {
 		multiAttributeTile(name:"main", type:"generic", width:6, height:4) {
 			tileAttribute("device.temperature", key: "PRIMARY_CONTROL") {
-            	attributeState "temperature",label:'${currentValue}°', icon:"st.motion.motion.inactive", backgroundColors:[
+            	attributeState "temperature",label:'${currentValue}°', backgroundColors:[
                 	[value: 31, color: "#153591"],
                     [value: 44, color: "#1e9cbb"],
                     [value: 59, color: "#90d2a7"],
@@ -75,17 +75,7 @@
                 state "inactive",label:'no motion',icon:"st.motion.motion.inactive",backgroundColor:"#ffffff"
                 state "active",label:'motion',icon:"st.motion.motion.active",backgroundColor:"#00a0dc"
 		}
-		valueTile("temperature","device.temperature", inactiveLabel: false, width: 2, height: 2) {
-            	state "temperature",label:'${currentValue}°',backgroundColors:[
-                	[value: 31, color: "#153591"],
-                    [value: 44, color: "#1e9cbb"],
-                    [value: 59, color: "#90d2a7"],
-					[value: 74, color: "#44b621"],
-					[value: 84, color: "#f1d801"],
-					[value: 95, color: "#d04e00"],
-					[value: 96, color: "#bc2323"]
-				]
-		}
+
 		valueTile("humidity","device.humidity", inactiveLabel: false, width: 2, height: 2) {
            	state "humidity",label:'RH ${currentValue} %'
 		}
@@ -477,6 +467,7 @@ def updated()
 def resetTamperAlert() {
     sendEvent(name: "tamper", value: "clear", descriptionText: "$device.displayName tamper cleared")
     sendEvent(name: "acceleration", value: "inactive", descriptionText: "$device.displayName tamper cleared")
+    sendEvent(name: "motion", value: "inactive", descriptionText: "$device.displayName motion has stopped")
 }
 
 def convertParam(number, value) {
@@ -983,7 +974,7 @@ Note:
 The unit of interval time is in seconds. Minimum interval time is 30 seconds when USB powered and 240 seconds (4 minutes) when battery powered.
     </Help>
   </Value>
-  <Value type="byte" byteSize="1" index="201" label="Temperature offset" min="*" max="*" value="">
+  <Value type="decimal" byteSize="1" index="201" label="Temperature offset" min="*" max="*" value="">
     <Help>
 Range: None
 Default: 0
