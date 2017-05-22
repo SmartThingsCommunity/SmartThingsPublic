@@ -178,7 +178,7 @@ private List<Map> handleAcceleration(descMap) {
 			result += parseAxis(descMap.additionalAttrs)
 		}
 	} else if (descMap.clusterInt == 0xFC02 && descMap.attrInt == 0x0012) {
-		def addAttrs = descMap.additionalAttrs
+		def addAttrs = descMap.additionalAttrs ?: []
 		addAttrs << ["attrInt": descMap.attrInt, "value": descMap.value]
 		result += parseAxis(addAttrs)
 	}
