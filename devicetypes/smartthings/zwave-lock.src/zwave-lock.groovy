@@ -37,12 +37,15 @@ metadata {
 		fingerprint mfr:"003B", prod:"6341", model:"0544", deviceJoinName: "Schlage Camelot Touchscreen Deadbolt Door Lock"
 		fingerprint mfr:"003B", prod:"6341", model:"5044", deviceJoinName: "Schlage Century Touchscreen Deadbolt Door Lock"
 		fingerprint mfr:"003B", prod:"634B", model:"504C", deviceJoinName: "Schlage Connected Keypad Lever Door Lock"
-		fingerprint mfr:"0129", prod:"0002", model:"0800", deviceJoinName: "Yale Touchscreen Deadbolt Door Lock" // YRD120
-		fingerprint mfr:"0129", prod:"0002", model:"0000", deviceJoinName: "Yale Touchscreen Deadbolt Door Lock" // YRD220, YRD240
-		fingerprint mfr:"0129", prod:"0002", model:"FFFF", deviceJoinName: "Yale Touchscreen Lever Door Lock" // YRD220
-		fingerprint mfr:"0129", prod:"0004", model:"0800", deviceJoinName: "Yale Push Button Deadbolt Door Lock" // YRD110
-		fingerprint mfr:"0129", prod:"0004", model:"0000", deviceJoinName: "Yale Push Button Deadbolt Door Lock" // YRD210
-		fingerprint mfr:"0129", prod:"0001", model:"0000", deviceJoinName: "Yale Push Button Lever Door Lock" // YRD210
+		// Yale mfr could be both 0109 or 0129 for prod < 0005
+		fingerprint mfr:"0109", prod:"0001", deviceJoinName: "Yale Push Button Lever Door Lock" // YRD210
+		fingerprint mfr:"0129", prod:"0001", deviceJoinName: "Yale Push Button Lever Door Lock" // YRD210
+		fingerprint mfr:"0109", prod:"0002", deviceJoinName: "Yale Touchscreen Deadbolt Door Lock" // YRD120, YRD220, YRD240
+		fingerprint mfr:"0129", prod:"0002", deviceJoinName: "Yale Touchscreen Deadbolt Door Lock" // YRD120, YRD220, YRD240
+		fingerprint mfr:"0109", prod:"0002", deviceJoinName: "Yale Touchscreen Lever Door Lock" // YRD220
+		fingerprint mfr:"0129", prod:"0002", deviceJoinName: "Yale Touchscreen Lever Door Lock" // YRD220
+		fingerprint mfr:"0109", prod:"0004", deviceJoinName: "Yale Push Button Deadbolt Door Lock" // YRD110, YRD210
+		fingerprint mfr:"0129", prod:"0004", deviceJoinName: "Yale Push Button Deadbolt Door Lock" // YRD110, YRD210
 		fingerprint mfr:"0129", prod:"8002", model:"0600", deviceJoinName: "Yale Assure Lock with Bluetooth"
 	}
 
