@@ -39,7 +39,7 @@ metadata {
 
     tiles(scale: 2) {
         multiAttributeTile(name:"valve", type: "generic", width: 6, height: 4, canChangeIcon: true){
-            tileAttribute ("device.contact", key: "PRIMARY_CONTROL") {
+            tileAttribute ("device.valve", key: "PRIMARY_CONTROL") {
                 attributeState "open", label: '${name}', action: "valve.close", icon: "st.valves.water.open", backgroundColor: "#00A0DC", nextState:"closing"
                 attributeState "closed", label: '${name}', action: "valve.open", icon: "st.valves.water.closed", backgroundColor: "#ffffff", nextState:"opening"
                 attributeState "opening", label: '${name}', action: "valve.close", icon: "st.valves.water.open", backgroundColor: "#00A0DC", nextState:"closing"
