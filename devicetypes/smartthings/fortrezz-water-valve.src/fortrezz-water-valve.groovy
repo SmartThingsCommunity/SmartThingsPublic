@@ -12,13 +12,13 @@
  *
  */
 metadata {
-	definition (name: "Fortrezz Water Valve", namespace: "smartthings", author: "SmartThings") {
+	definition (name: "Fortrezz Water Valve", namespace: "smartthings", author: "SmartThings", ocfDeviceType: "oic.d.watervalve") {
 		capability "Actuator"
 		capability "Health Check"
 		capability "Valve"
 		capability "Refresh"
 		capability "Sensor"
-        
+
 		fingerprint deviceId: "0x1000", inClusters: "0x25,0x72,0x86,0x71,0x22,0x70"
 		fingerprint mfr:"0084", prod:"0213", model:"0215", deviceJoinName: "FortrezZ Water Valve"
 	}
@@ -62,22 +62,23 @@ def updated(){
 
 def parse(String description) {
 	log.trace description
-	def result = null
 	def cmd = zwave.parse(description)
 	if (cmd) {
-		result = createEvent(zwaveEvent(cmd))
+		return zwaveEvent(cmd)
 	}
-	log.debug "Parse returned ${result?.descriptionText}"
-	return result
+	log.debug "Could not parse message"
+	return null
 }
 
 def zwaveEvent(physicalgraph.zwave.commands.switchbinaryv1.SwitchBinaryReport cmd) {
 	def value = cmd.value ? "closed" : "open"
-	[name: "contact", value: value, descriptionText: "$device.displayName valve is $value"]
+
+	return [createEventWithDebug([name: "contact", value: value, descriptionText: "$device.displayName valve is $value"]),
+			createEventWithDebug([name: "valve", value: value, descriptionText: "$device.displayName valve is $value"])]
 }
 
 def zwaveEvent(physicalgraph.zwave.Command cmd) {
-	[:] // Handles all Z-Wave commands we aren't interested in
+	return createEvent([:]) // Handles all Z-Wave commands we aren't interested in
 }
 
 def open() {
@@ -97,4 +98,10 @@ def ping() {
 
 def refresh() {
 	zwave.switchBinaryV1.switchBinaryGet().format()
+}
+
+def createEventWithDebug(eventMap) {
+	def event = createEvent(eventMap)
+	log.debug "Event created with ${event?.descriptionText}"
+	return event
 }
