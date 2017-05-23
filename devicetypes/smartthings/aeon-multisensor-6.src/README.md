@@ -1,10 +1,10 @@
-# Smartalert Siren
+# Aeon Multisensor 6
 
 Cloud Execution
 
-Works with:
+Works with: 
 
-* [FortrezZ Siren Strobe Alarm](https://www.smartthings.com/products/fortrezz-siren-strobe-alarm)
+* [Aeon Labs MultiSensor 6](https://www.smartthings.com/products/aeon-labs-multisensor-6)
 
 ## Table of contents
 
@@ -14,15 +14,19 @@ Works with:
 
 ## Capabilities
 
-* **Actuator** - represents that a Device has commands
-* **Switch** - can detect state (possible values: on/off)
+* **Motion Sensor** - can detect motion
+* **Temperature Measurement** - defines device measures current temperature
+* **Relative Humidity Measurement** - allow reading the relative humidity from devices that support it
+* **Illuminance Measurement** - gives the illuminance reading from devices that support it
+* **Ultraviolet Index** - gives the ability to get the ultraviolet index from devices that report it
+* **Configuration** - _configure()_ command called when device is installed or device preferences updated
 * **Sensor** - detects sensor events
-* **Alarm** - allows for interacting with devices that serve as alarms
+* **Battery** - defines device uses a battery
 * **Health Check** - indicates ability to get device health notifications
 
 ## Device Health
 
-FortrezZ Siren Strobe Alarm is polled by the hub.
+Aeon Labs MultiSensor 6 is polled by the hub.
 As of hubCore version 0.14.38 the hub sends up reports every 15 minutes regardless of whether the state changed.
 Device-Watch allows 2 check-in misses from device plus some lag time. So Check-in interval = (2*15 + 2)mins = 32 mins.
 Not to mention after going OFFLINE when the device is plugged back in, it might take a considerable amount of time for
@@ -36,4 +40,4 @@ it is not polled for 5 minutes by the hub. This can delay up the process of bein
 If the device doesn't pair when trying from the SmartThings mobile app, it is possible that the device is out of range.
 Pairing needs to be tried again by placing the device closer to the hub.
 Instructions related to pairing, resetting and removing the device from SmartThings can be found in the following link:
-* [FortrezZ Siren Strobe Alarm Troubleshooting Tips](https://support.smartthings.com/hc/en-us/articles/202294760-FortrezZ-Siren-Strobe-Alarm)
+* [Aeon Labs MultiSensor 6 Troubleshooting Tips](https://support.smartthings.com/hc/en-us/articles/206157226)

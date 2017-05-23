@@ -21,6 +21,7 @@ metadata {
 		capability "Battery"
 
 		fingerprint deviceId: "0x0101", inClusters: "0x86,0x72,0x70,0x80,0x84,0x85"
+		fingerprint mfr: "0086", prod: "0001", model: "0026", deviceJoinName: "Aeon Panic Button"
 	}
 
 	simulator {
@@ -130,5 +131,12 @@ def updated() {
 }
 
 def initialize() {
-	sendEvent(name: "numberOfButtons", value: 4)
+	def zwMap = getZwaveInfo()
+	def buttons = 4 // Default for Key Fob
+
+	// Only one button for Aeon Panic Button
+	if (zwMap && zwMap.mfr == "0086" && zwMap.prod == "0001" && zwMap.model == "0026") {
+		buttons = 1
+	}
+	sendEvent(name: "numberOfButtons", value: buttons)
 }

@@ -12,7 +12,7 @@
  *
  */
 metadata {
-	definition (name: "Z-Wave Water Valve", namespace: "smartthings", author: "SmartThings") {
+	definition (name: "Z-Wave Water Valve", namespace: "smartthings", author: "SmartThings", ocfDeviceType: "oic.d.watervalve") {
 		capability "Actuator"
 		capability "Valve"
 		capability "Polling"
@@ -59,18 +59,19 @@ def updated() {
 
 def parse(String description) {
 	log.trace "parse description : $description"
-	def result = null
 	def cmd = zwave.parse(description, [0x20: 1])
 	if (cmd) {
-		result = createEvent(zwaveEvent(cmd))
+		return zwaveEvent(cmd)
 	}
-	log.debug "Parse returned ${result?.descriptionText}"
-	return result
+	log.debug "Could not parse message"
+	return null
 }
 
 def zwaveEvent(physicalgraph.zwave.commands.basicv1.BasicReport cmd) {
-    def value = cmd.value == 0xFF ?  "open" : cmd.value == 0x00 ? "closed" : "unknown"
-    [name: "contact", value: value, descriptionText: "$device.displayName valve is $value"]
+	def value = cmd.value == 0xFF ?  "open" : cmd.value == 0x00 ? "closed" : "unknown"
+
+	return [createEventWithDebug([name: "contact", value: value, descriptionText: "$device.displayName valve is $value"]),
+			createEventWithDebug([name: "valve", value: value, descriptionText: "$device.displayName valve is $value"])]
 }
 
 def zwaveEvent(physicalgraph.zwave.commands.manufacturerspecificv2.ManufacturerSpecificReport cmd) {   //TODO should show MSR when device is discovered
@@ -80,20 +81,22 @@ def zwaveEvent(physicalgraph.zwave.commands.manufacturerspecificv2.ManufacturerS
     log.debug "productTypeId:    ${cmd.productTypeId}"
     def msr = String.format("%04X-%04X-%04X", cmd.manufacturerId, cmd.productTypeId, cmd.productId)
     updateDataValue("MSR", msr)
-    [descriptionText: "$device.displayName MSR: $msr", isStateChange: false]
+    return createEventWithDebug([descriptionText: "$device.displayName MSR: $msr", isStateChange: false])
 }
 
 def zwaveEvent(physicalgraph.zwave.commands.deviceresetlocallyv1.DeviceResetLocallyNotification cmd) {
-    [descriptionText: cmd.toString(), isStateChange: true, displayed: true]
+    return createEventWithDebug([descriptionText: cmd.toString(), isStateChange: true, displayed: true])
 }
 
 def zwaveEvent(physicalgraph.zwave.commands.switchbinaryv1.SwitchBinaryReport cmd) {
 	def value = cmd.value == 0xFF ?  "open" : cmd.value == 0x00 ? "closed" : "unknown"
-	[name: "contact", value: value, descriptionText: "$device.displayName valve is $value"]
+
+	return [createEventWithDebug([name: "contact", value: value, descriptionText: "$device.displayName valve is $value"]),
+			createEventWithDebug([name: "valve", value: value, descriptionText: "$device.displayName valve is $value"])]
 }
 
 def zwaveEvent(physicalgraph.zwave.Command cmd) {
-	[:] // Handles all Z-Wave commands we aren't interested in
+	return createEvent([:]) // Handles all Z-Wave commands we aren't interested in
 }
 
 def open() {
@@ -121,4 +124,10 @@ def refresh() {
         commands << zwave.manufacturerSpecificV1.manufacturerSpecificGet().format()
     }
     delayBetween(commands,100)
+}
+
+def createEventWithDebug(eventMap) {
+	def event = createEvent(eventMap)
+	log.debug "Event created with ${event?.descriptionText}"
+	return event
 }
