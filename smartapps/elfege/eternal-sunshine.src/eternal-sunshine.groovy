@@ -87,6 +87,7 @@ def Options() {
     return dynamicPage(pageProperties){
         section("Select Optional Rules") {    
             input "OnlyIfNotOff", "bool", title: "Run this app only if ${dimmer} isn't turned off", default: false, uninstall: true, install: true
+            paragraph = "This option also works with level setting: if you manually change the level, the app stops running until you turn off and on the light"
 
             paragraph "Below you can set a maximum value above which your lights won't be set. Useful after watching a movie or when you want your night mode to be more intimate..."        
             input "Partvalue", "bool", title: "optional: set a maximum light level?", required:false, default: false, submitOnChange: true, uninstall: true, install: true
@@ -114,7 +115,7 @@ def installed() {
     initialize()
 }
 def updated() {
-
+	
     log.debug "Updated with settings: ${settings}"
     unsubscribe()
     unschedule()
@@ -137,10 +138,28 @@ schedule("0 0/$runTime * * * ?", doubleCheck)
 log.debug "doubleCheck Scheduled to run every $runTime minutes"
 */
     state.luxvalue = 0 
+    state.donotOverride = true
+    //atomicState.LevelShouldBe = dimmer.currentValue("switchLevel")
+    //log.info "Current Dimmer's Value is: $atomicState.LevelShouldBe"
 }
 def switchSetLevelHandler(evt) {
     log.debug "dimmer set to $evt.integerValue   ----------------------------"
     log.debug "state.StopTheApp value is currently $state.StopTheApp" 
+    
+    def shouldBe = atomicState.LevelShouldBe
+    shouldBe = shouldBe.toInteger()
+    def DonotOverride = state.donotOverride
+    
+    if(!DonotOverride && atomicState.LevelShouldBe == evt.integerValue){
+    state.donotOverride = false // this is temporary until I get how to read current level dimmer and set it as shouldBe value at initialization. 
+    log.debug "NO OVERRIDE"
+    atomicState.LevelSetByApp = true 
+    }
+    else {
+    log.debug "MANUAL OVERRIDE. RESET VALUE IS : $shouldBe"
+    // need to send reset value as a push message. 
+    atomicState.LevelSetByApp = true 
+    }
 }
 def SwitchHandler(evt){ 
     log.debug "$dimmer currentSwitch evt value is $evt.value "
@@ -150,8 +169,13 @@ def SwitchHandler(evt){
 
     if(evt.value == "on"){
         state.StopTheApp = 0 
-        state.dimmerSW = 1
         log.debug "Now state.StopTheApp value set to $state.StopTheApp" 
+        state.dimmerSW = 1
+        if(atomicState.LevelSetByApp == false){ 
+        atomicState.LevelSetByApp = true
+        log.debug "LEVEL OVERRIDE CANCELED"
+        }
+        
     }
     else if(evt.value == "off"){
         if(state.dim != 0) { 
@@ -177,20 +201,22 @@ def illuminanceHandler(evt){
     state.luxvalue = evt.integerValue
     
      if(OnlyIfNotOff){
-        if(state.StopTheApp == 0) {
+        if(state.StopTheApp == 0 && atomicState.LevelSetByApp == true ) {
             DIM()
-            log.debug "DIM because state.StopTheApp = $state.StopTheApp"
+            log.debug """Dimming. 
+            state.StopTheApp = $state.StopTheApp
+            atomicState.LevelSetByApp = $atomicState.LevelSetByApp"""
 
         }
         else { 
 
-            log.debug "doing nothing because $dimmer was manually turned off "
+            log.debug "doing nothing because $dimmer was manually et or turned off"
         }
     }
     else {
         DIM()
         log.debug "DIM because no OnlyIfNotOff"
-    }
+    }   
 
 }
 def doubleCheck() { 
@@ -308,7 +334,10 @@ def DIM(){
     }
 }
 def SetDimmers(){
+
     dimmer.setLevel(state.dim) 
+    atomicState.LevelShouldBe = state.dim 
+    atomicState.LevelSetByApp = true 
 }
 private send(msg) {
     if (location.contactBookEnabled) {
