@@ -3,7 +3,7 @@ definition(
     namespace: "ELFEGE",
     author: "ELFEGE",
     description:  """Manage up to 4 thermostats, in parallel with these options: contact sensors, 
-    third party temperature sensor, modes, off override and temperature set point override""",
+third party temperature sensor, modes, off override and temperature set point override""",
     category: "Green Living",
     iconUrl: "http://elfege.com/penrose.jpg",
     iconX2Url: "http://elfege.com/penrose.jpg"
@@ -64,6 +64,9 @@ def settings() {
                 if(AltSensor_1){
                     input(name: "Sensor_1", type: "capability.temperatureMeasurement", title: "Pick a sensor", required: true, multiple: false, description: null, uninstall: true)
                 }
+                input(name: "NoTurnOffOnContact", type: "bool", title: "Do not turn off this unit upon contacts events", default: false, submitOnChange: true, description: "this is to be applied with a specific mode in the next section")
+
+
             }
             if(HowMany >= 2) {
                 input(name: "Thermostat_2", type: "capability.thermostat", title: "Thermostat 2 is $Thermostat_2", required: false, multiple: false, description: null, submitOnChange: true)
@@ -78,8 +81,7 @@ def settings() {
                 if(AltSensor_3){
                     input(name: "Sensor_3", type: "capability.temperatureMeasurement", title: "Pick a sensor", required: true, multiple: false, description: null, uninstall: true)
                 }
-                input(name: "ExceptionSW", type : "bool", title: "Make an exception for this device when a switch is on | setting to be completed in the next page", 
-                      defaut: false, submitOnChange: true)
+
             }
             if(HowMany == 4) {
                 input(name: "Thermostat_4", type: "capability.thermostat", title: "Thermostat 4 is $Thermostat_4", required: false, multiple: false, description: null, submitOnChange: true)
@@ -151,6 +153,14 @@ def Modes(){
                 input(name: "CustomMode2", type : "mode", title: "Select mode", multiple: false, required: false, submitOnChange: true)
             }
         }
+
+        if(NoTurnOffOnContact){
+            section("Exception Contacts: you selected $Thermostat_1 as one to not turn off when contacts are open. Now select under which modes you want this rule to apply "){
+                input(name: "DoNotTurnOffModes", type : "enum", title: "Select which modes", options: ["$Home", "$Night", "$Away", "$CustomMode1", "$CustomMode2"], multiple: true, required: true)
+                input(name: "UnlessThisContact", type : "capability.contactSensor", title: "unless this specific contact sensor is open", description: "Select a contact that IS NOT among those already selected", required: false)
+            }
+        }
+
 
         section("Thermostats temperatures for $Home Mode"){
             if(HowMany >= 1) {
@@ -292,6 +302,11 @@ def init() {
 
     subscribe(contact, "contact.open", contactHandlerOpen)
     subscribe(contact, "contact.closed", contactHandlerClosed)
+    if(UnlessThisContact){
+    subscribe(contact, "UnlessThisContact.open", contactHandlerOpen)
+    subscribe(contact, "UnlessThisContact.closed", contactHandlerClosed)
+    }
+    
     subscribe(XtraTempSensor, "temperature", temperatureHandler)
     subscribe(location, "mode", ChangedModeHandler)	
 
@@ -412,7 +427,7 @@ def init() {
     state.ThermostatOverriden = "none"
     atomicState.ThisIsManual = false
     atomicState.closed = true // windows management
-    //atomicState.hasRun = 0 // must not be reset here
+    // atomicState.hasRun = 0 // must not be reset here except for tests purpose
 
     atomicState.messageSent = 0
 
@@ -806,6 +821,15 @@ def contactHandlerOpen(evt) {
     atomicState.doorsAreOpen = true
     log.debug "$evt.device is now $evt.value" 
     log.debug "Turning off all thermostats in $TimeBeforeClosing seconds"
+    
+    if(UnlessThisContact){
+    contact.latestValue("UnlessThisContact").contains("open")
+    atomicState.UnlessThisContact = true
+    }
+    else {
+    atomicState.UnlessThisContact = false
+    }
+    
     runIn(TimeBeforeClosing, TurnOffThermostats)   
 
     if(Actuators){
@@ -1461,8 +1485,17 @@ def TurnOffThermostats() {
     if(atomicState.ThermOff == false){
         if(atomicState.CRITICAL == false){
             log.debug "Turning off thermostats" 
-            Thermostat_1.setThermostatMode("off") 
-            atomicState.LatestThermostatMode = "off"
+            def InExceptionContactMode = location.currentMode in DoNotTurnOffModes
+            def UnlessThisContact = atomicState.UnlessThisContact
+            if(!NoTurnOffOnContact || !InExceptionContactMode || UnlessThisContact){
+                Thermostat_1.setThermostatMode("off") 
+                atomicState.LatestThermostatMode = "off"
+            }
+            else {
+            	log.debug "Not turning off $Thermostat_1 because current mode is within exception modes selected by the user"
+                def ThermState1 = Thermostat_1?.currentValue("thermostatMode") as String
+                atomicState.LatestThermostatMode = ThermState1
+            }
             log.debug "$Thermostat_1  turned off"
             // atomicState.T1_AppMgt = true
             if(Thermostat_2){      
@@ -1673,7 +1706,7 @@ def CheckWindows(){
         state.messageSent = state.messageSent + 1
     }
     else if(ContactsOpen && state.WindowsAppOpened == false){
-    log.debug "WINDOWS MANUALLY OPENED"
+        log.debug "WINDOWS MANUALLY OPENED"
     }
 
 }
@@ -1681,7 +1714,7 @@ def OkToOpen(){
 
     def CSPSet = atomicState.CSPSet
     def HSPSet = atomicState.HSPSet 
-     
+
     def CurrMode = location.currentMode
     def Inside = XtraTempSensor.currentValue("temperature") 
     def CurrTemp = Inside
@@ -1689,7 +1722,7 @@ def OkToOpen(){
     def outsideTemp = OutsideSensor.currentTemperature
     def WithinCriticalOffSet = Inside >= CriticalTemp + OffSet
     def closed = atomicState.closed
-    //def OutsideTempHighThres = OutsideTempHighThres
+    def OutsideTempHighThres = OutsideTempHighThres
 
     def ShouldCool = outsideTemp >= OutsideTempHighThres && CurrTemp >= CSPSet
     def ShouldHeat = outsideTemp <= OutsideTempLowThres || CurrTemp <= CSHSet
