@@ -37,15 +37,12 @@ metadata {
 		fingerprint mfr:"003B", prod:"6341", model:"0544", deviceJoinName: "Schlage Camelot Touchscreen Deadbolt Door Lock"
 		fingerprint mfr:"003B", prod:"6341", model:"5044", deviceJoinName: "Schlage Century Touchscreen Deadbolt Door Lock"
 		fingerprint mfr:"003B", prod:"634B", model:"504C", deviceJoinName: "Schlage Connected Keypad Lever Door Lock"
-		// Yale mfr could be both 0109 or 0129 for prod < 0005
-		fingerprint mfr:"0109", prod:"0001", deviceJoinName: "Yale Push Button Lever Door Lock" // YRD210
-		fingerprint mfr:"0129", prod:"0001", deviceJoinName: "Yale Push Button Lever Door Lock" // YRD210
-		fingerprint mfr:"0109", prod:"0002", deviceJoinName: "Yale Touchscreen Deadbolt Door Lock" // YRD120, YRD220, YRD240
-		fingerprint mfr:"0129", prod:"0002", deviceJoinName: "Yale Touchscreen Deadbolt Door Lock" // YRD120, YRD220, YRD240
-		fingerprint mfr:"0109", prod:"0002", deviceJoinName: "Yale Touchscreen Lever Door Lock" // YRD220
-		fingerprint mfr:"0129", prod:"0002", deviceJoinName: "Yale Touchscreen Lever Door Lock" // YRD220
-		fingerprint mfr:"0109", prod:"0004", deviceJoinName: "Yale Push Button Deadbolt Door Lock" // YRD110, YRD210
-		fingerprint mfr:"0129", prod:"0004", deviceJoinName: "Yale Push Button Deadbolt Door Lock" // YRD110, YRD210
+		fingerprint mfr:"0129", prod:"0002", model:"0800", deviceJoinName: "Yale Touchscreen Deadbolt Door Lock" // YRD120
+		fingerprint mfr:"0129", prod:"0002", model:"0000", deviceJoinName: "Yale Touchscreen Deadbolt Door Lock" // YRD220, YRD240
+		fingerprint mfr:"0129", prod:"0002", model:"FFFF", deviceJoinName: "Yale Touchscreen Lever Door Lock" // YRD220
+		fingerprint mfr:"0129", prod:"0004", model:"0800", deviceJoinName: "Yale Push Button Deadbolt Door Lock" // YRD110
+		fingerprint mfr:"0129", prod:"0004", model:"0000", deviceJoinName: "Yale Push Button Deadbolt Door Lock" // YRD210
+		fingerprint mfr:"0129", prod:"0001", model:"0000", deviceJoinName: "Yale Push Button Lever Door Lock" // YRD210
 		fingerprint mfr:"0129", prod:"8002", model:"0600", deviceJoinName: "Yale Assure Lock with Bluetooth"
 	}
 
@@ -89,13 +86,13 @@ import physicalgraph.zwave.commands.doorlockv1.*
 import physicalgraph.zwave.commands.usercodev1.*
 
 def installed() {
-	// Device-Watch simply pings if no device events received for 32min(checkInterval)
-	sendEvent(name: "checkInterval", value: 2 * 15 * 60 + 2 * 60, displayed: false, data: [protocol: "zwave", hubHardwareId: device.hub.hardwareID])
+	// Device-Watch simply pings if no device events received for 60min(checkInterval)
+	sendEvent(name: "checkInterval", value: 2 * 60 * 60, displayed: false, data: [protocol: "zwave", hubHardwareId: device.hub.hardwareID])
 }
 
 def updated() {
-	// Device-Watch simply pings if no device events received for 32min(checkInterval)
-	sendEvent(name: "checkInterval", value: 2 * 15 * 60 + 2 * 60, displayed: false, data: [protocol: "zwave", hubHardwareId: device.hub.hardwareID])
+	// Device-Watch simply pings if no device events received for 60min(checkInterval)
+	sendEvent(name: "checkInterval", value: 2 * 60 * 60, displayed: false, data: [protocol: "zwave", hubHardwareId: device.hub.hardwareID])
 	try {
 		if (!state.init) {
 			state.init = true
@@ -113,11 +110,11 @@ def parse(String description) {
 			result = createEvent(descriptionText:description, displayed:false)
 		} else {
 			result = createEvent(
-				descriptionText: "This lock failed to complete the network security key exchange. If you are unable to control it via SmartThings, you must remove it from your network and add it again.",
-				eventType: "ALERT",
-				name: "secureInclusion",
-				value: "failed",
-				displayed: true,
+					descriptionText: "This lock failed to complete the network security key exchange. If you are unable to control it via SmartThings, you must remove it from your network and add it again.",
+					eventType: "ALERT",
+					name: "secureInclusion",
+					value: "failed",
+					displayed: true,
 			)
 		}
 	} else if (description == "updated") {
@@ -155,6 +152,10 @@ def zwaveEvent(physicalgraph.zwave.commands.securityv1.SecurityCommandsSupported
 
 def zwaveEvent(DoorLockOperationReport cmd) {
 	def result = []
+
+	unschedule("followupStateCheck")
+	unschedule("stateCheck")
+
 	def map = [ name: "lock" ]
 	if (cmd.doorLockMode == 0xFF) {
 		map.value = "locked"
@@ -355,7 +356,7 @@ def zwaveEvent(UserCodeReport cmd) {
 	def code = cmd.code
 	def map = [:]
 	if (cmd.userIdStatus == UserCodeReport.USER_ID_STATUS_OCCUPIED ||
-		(cmd.userIdStatus == UserCodeReport.USER_ID_STATUS_STATUS_NOT_AVAILABLE && cmd.user && code != "**********"))
+			(cmd.userIdStatus == UserCodeReport.USER_ID_STATUS_STATUS_NOT_AVAILABLE && cmd.user && code != "**********"))
 	{
 		if (code == "**********") {  // Schlage locks send us this instead of the real code
 			state.blankcodes = true
@@ -368,7 +369,7 @@ def zwaveEvent(UserCodeReport cmd) {
 			code = state["set$name"] ?: decrypt(state[name]) ?: "****"
 			state.remove("set$name".toString())
 		} else {
-			map = [ name: "codeReport", value: cmd.userIdentifier, data: [ code: code ] ]
+			map = [ name: "codeReport", value: cmd.userIdentifier, data: [ code: code ], isStateChange: true ]
 			map.descriptionText = "$device.displayName code $cmd.userIdentifier is set"
 			map.displayed = (cmd.userIdentifier != state.requestCode && cmd.userIdentifier != state.pollCode)
 			map.isStateChange = true
@@ -449,9 +450,9 @@ def zwaveEvent(physicalgraph.zwave.commands.timev1.TimeGet cmd) {
 	if(location.timeZone) now.timeZone = location.timeZone
 	result << createEvent(descriptionText: "$device.displayName requested time update", displayed: false)
 	result << response(secure(zwave.timeV1.timeReport(
-		hourLocalTime: now.get(Calendar.HOUR_OF_DAY),
-		minuteLocalTime: now.get(Calendar.MINUTE),
-		secondLocalTime: now.get(Calendar.SECOND)))
+			hourLocalTime: now.get(Calendar.HOUR_OF_DAY),
+			minuteLocalTime: now.get(Calendar.MINUTE),
+			secondLocalTime: now.get(Calendar.SECOND)))
 	)
 	result
 }
@@ -459,11 +460,12 @@ def zwaveEvent(physicalgraph.zwave.commands.timev1.TimeGet cmd) {
 def zwaveEvent(physicalgraph.zwave.commands.basicv1.BasicSet cmd) {
 	// The old Schlage locks use group 1 for basic control - we don't want that, so unsubscribe from group 1
 	def result = [ createEvent(name: "lock", value: cmd.value ? "unlocked" : "locked") ]
-	result << response(zwave.associationV1.associationRemove(groupingIdentifier:1, nodeId:zwaveHubNodeId))
-	if (state.assoc != zwaveHubNodeId) {
-		result << response(zwave.associationV1.associationGet(groupingIdentifier:2))
-	}
-	result
+	def cmds = [
+			zwave.associationV1.associationRemove(groupingIdentifier:1, nodeId:zwaveHubNodeId).format(),
+			"delay 1200",
+			zwave.associationV1.associationGet(groupingIdentifier:2).format()
+	]
+	[result, response(cmds)]
 }
 
 def zwaveEvent(physicalgraph.zwave.commands.batteryv1.BatteryReport cmd) {
@@ -501,8 +503,8 @@ def zwaveEvent(physicalgraph.zwave.commands.versionv1.VersionReport cmd) {
 
 def zwaveEvent(physicalgraph.zwave.commands.applicationstatusv1.ApplicationBusy cmd) {
 	def msg = cmd.status == 0 ? "try again later" :
-	          cmd.status == 1 ? "try again in $cmd.waitTime seconds" :
-	          cmd.status == 2 ? "request queued" : "sorry"
+			cmd.status == 1 ? "try again in $cmd.waitTime seconds" :
+					cmd.status == 2 ? "request queued" : "sorry"
 	createEvent(displayed: true, descriptionText: "$device.displayName is busy, $msg")
 }
 
@@ -516,8 +518,8 @@ def zwaveEvent(physicalgraph.zwave.Command cmd) {
 
 def lockAndCheck(doorLockMode) {
 	secureSequence([
-		zwave.doorLockV1.doorLockOperationSet(doorLockMode: doorLockMode),
-		zwave.doorLockV1.doorLockOperationGet()
+			zwave.doorLockV1.doorLockOperationSet(doorLockMode: doorLockMode),
+			zwave.doorLockV1.doorLockOperationGet()
 	], 4200)
 }
 
@@ -533,11 +535,18 @@ def unlockwtimeout() {
 	lockAndCheck(DoorLockOperationSet.DOOR_LOCK_MODE_DOOR_UNSECURED_WITH_TIMEOUT)
 }
 
-/**
- * PING is used by Device-Watch in attempt to reach the Device
- * */
 def ping() {
-	refresh()
+	runIn(30, followupStateCheck)
+	secure(zwave.doorLockV1.doorLockOperationGet())
+}
+
+def followupStateCheck() {
+	runEvery1Hour(stateCheck)
+	stateCheck()
+}
+
+def stateCheck() {
+	sendHubCommand(new physicalgraph.device.HubAction(secure(zwave.doorLockV1.doorLockOperationGet())))
 }
 
 def refresh() {
@@ -619,16 +628,16 @@ def setCode(codeNumber, code) {
 		}
 	}
 	secureSequence([
-		zwave.userCodeV1.userCodeSet(userIdentifier:codeNumber, userIdStatus:1, user:code),
-		zwave.userCodeV1.userCodeGet(userIdentifier:codeNumber)
+			zwave.userCodeV1.userCodeSet(userIdentifier:codeNumber, userIdStatus:1, user:code),
+			zwave.userCodeV1.userCodeGet(userIdentifier:codeNumber)
 	], 7000)
 }
 
 def deleteCode(codeNumber) {
 	log.debug "deleting code $codeNumber"
 	secureSequence([
-		zwave.userCodeV1.userCodeSet(userIdentifier:codeNumber, userIdStatus:0),
-		zwave.userCodeV1.userCodeGet(userIdentifier:codeNumber)
+			zwave.userCodeV1.userCodeSet(userIdentifier:codeNumber, userIdStatus:0),
+			zwave.userCodeV1.userCodeGet(userIdentifier:codeNumber)
 	], 7000)
 }
 
@@ -696,7 +705,7 @@ private allCodesDeleted() {
 		(1..state.codes).each { n ->
 			if (state["code$n"]) {
 				result << createEvent(name: "codeReport", value: n, data: [ code: "" ], descriptionText: "code $n was deleted",
-					displayed: false, isStateChange: true)
+						displayed: false, isStateChange: true)
 			}
 			state["code$n"] = ""
 		}
