@@ -20,6 +20,7 @@ metadata {
 		capability "Illuminance Measurement"
 		capability "Sensor"
 		capability "Battery"
+		capability "Health Check"
 
 		fingerprint deviceId: "0x2001", inClusters: "0x30,0x31,0x80,0x84,0x70,0x85,0x72,0x86"
 	}
@@ -91,6 +92,16 @@ metadata {
 		main(["motion", "temperature", "humidity", "illuminance"])
 		details(["motion", "temperature", "humidity", "illuminance", "battery", "configure"])
 	}
+}
+
+def installed(){
+// Device-Watch simply pings if no device events received for 32min(checkInterval)
+	sendEvent(name: "checkInterval", value: 2 * 15 * 60 + 2 * 60, displayed: false, data: [protocol: "zwave", hubHardwareId: device.hub.hardwareID])
+}
+
+def updated(){
+// Device-Watch simply pings if no device events received for 32min(checkInterval)
+	sendEvent(name: "checkInterval", value: 2 * 15 * 60 + 2 * 60, displayed: false, data: [protocol: "zwave", hubHardwareId: device.hub.hardwareID])
 }
 
 // Parse incoming device messages to generate events
@@ -177,6 +188,13 @@ def zwaveEvent(physicalgraph.zwave.commands.basicv1.BasicSet cmd) {
 def zwaveEvent(physicalgraph.zwave.Command cmd) {
 	log.debug "Catchall reached for cmd: ${cmd.toString()}}"
 	[:]
+}
+
+/**
+ * PING is used by Device-Watch in attempt to reach the Device
+ * */
+def ping() {
+	secure(zwave.batteryV1.batteryGet())
 }
 
 def configure() {
