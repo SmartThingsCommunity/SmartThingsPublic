@@ -1015,10 +1015,22 @@ private handlePoll(body) {
 	time11.add(Calendar.MINUTE, -11)
 	Calendar currentTime = Calendar.getInstance()
 
+	if (state.devicesToBeDeleted == null) {
+		state.devicesToBeDeleted = [:]
+	}
+	// Store all dnis found in the body here, used to determine if any devices should be removed
+	def existingBulbList = [:]
+
 	def bulbs = getChildDevices()
 	for (bulb in body) {
 		def device = bulbs.find { it.deviceNetworkId == "${app.id}/${bulb.key}" }
 		if (device) {
+			existingBulbList[device.deviceNetworkId] = true
+			if (state.devicesToBeDeleted[device.deviceNetworkId] != null) {
+				// Device was marked for deletion but has reappeared
+				state.devicesToBeDeleted.remove(it.deviceNetworkId)
+			}
+
 			if (bulb.value.state?.reachable) {
 				if (state.bulbs[bulb.key]?.online == false || state.bulbs[bulb.key]?.online == null) {
 					// light just came back online, notify device watch
@@ -1051,6 +1063,45 @@ private handlePoll(body) {
 			}
 		}
 	}
+
+	// Find all child devices missing from Hue bridge response (presumably deleted from bridge)
+	def devicesToRemove = getChildDevices().find {
+		if (it.getTypeName() != "Hue Bridge") {
+			existingBulbList[it?.deviceNetworkId] == null
+		}
+	}
+
+	// Only delete device if missing from two poll responses in a row to prevent accidental deletes
+	if (devicesToRemove != null) {
+		devicesToRemove?.each {
+			def dni = it.deviceNetworkId
+			if (state.devicesToBeDeleted[dni] == null) {
+				log.debug "Adding $it to delete queue since it no longer exists on Hue Bridge"
+				state.devicesToBeDeleted[dni] = true
+			} else if (state.devicesToBeDeleted[dni] == true) {
+				log.debug "Deleting $it since it no longer exists on Hue Bridge"
+				try {
+					// TODO Might want to change to force delete
+					deleteChildDevice(dni)
+					getHueBulbs().remove(dni.substring(dni.indexOf('/')+1))
+				} catch (e) {
+					log.warn "Failed to delete $it exception=$e"
+				}
+			}
+		}
+
+
+	}
+	// Clean up deviceToBeDeleted
+	def toClean = []
+	state.devicesToBeDeleted.each { deleteDevice ->
+		def d = getChildDevices().find { childDevice ->
+			deleteDevice.key == childDevice.deviceNetworkId
+		}
+		if (d == null)
+			toClean << deleteDevice.key
+	}
+	state.devicesToBeDeleted.keySet()?.removeAll(toClean)
 	return []
 }
 
