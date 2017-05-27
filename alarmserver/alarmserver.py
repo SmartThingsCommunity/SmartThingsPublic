@@ -128,10 +128,12 @@ class AlarmServerConfig():
         for i in range(1, MAXZONES+1):
             self.ZONENAMES[i]=self.read_config_var('zone'+str(i), 'name', False, 'str', True)
             type = self.read_config_var('zone'+str(i), 'type', False, 'str', True)
+            partition = self.read_config_var('zone'+str(i), 'partition', '1', 'str', True)
             if(self.ZONENAMES[i]!=False and type!=False):
                 self.ZONES[i] = {}
                 self.ZONES[i]['name'] = self.ZONENAMES[i]
                 self.ZONES[i]['type'] = type
+                self.ZONES[i]['partition'] = partition
 
         self.ALARMUSERNAMES={}
         for i in range(1, MAXALARMUSERS+1):
@@ -685,10 +687,11 @@ class AlarmServer(asyncore.dispatcher):
             try:
                 zones = str(query_array['zone'][0]).split(',')
                 for zone in zones:
+                    partition = str(self._config.ZONES[int(zone)]['partition'])
                     if len(zone) == 1: zone = '0' + zone
-                    alarmserver_logger("request to bypass zone %s" % zone)
+                    alarmserver_logger("request to bypass zone %s on partition %s" % (zone, partition))
                     channel.pushok(json.dumps({'response' : 'Request to bypass zone received'}))
-                    self._envisalinkclient.send_command('071', part + '*1' + str(zone)+ '#')
+                    self._envisalinkclient.send_command('071', partition + '*1' + str(zone) + '#')
                     time.sleep(2)
             except:
                 channel.pushok(json.dumps({'response' : 'Request to bypass zone received but invalid zone given!'}))
