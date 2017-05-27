@@ -16,7 +16,7 @@
  */
 definition(
     name: "Cycle Switch every 15 minutes.",
-    namespace: "lennyz71",
+    namespace: "LennyZ71",
     author: "Lenny Cunningham",
     description: "Cycle a switch on and off every 15 minutes.",
     category: "",
