@@ -24,15 +24,14 @@ metadata {
 	}
     
     tiles(scale: 2) {
-		multiAttributeTile(name:"contact", type: "generic", width: 6, height: 4){
-			tileAttribute ("device.contact", key: "PRIMARY_CONTROL") {
-                attributeState "closed", label:'', icon:"st.contact.contact.closed", backgroundColor:"#79b821"
-				attributeState "open", label:'', icon:"st.contact.contact.open", backgroundColor:"#ffa81e"
+		multiAttributeTile(name:"window", type: "generic", width: 6, height: 4){
+			tileAttribute ("device.window", key: "PRIMARY_CONTROL") {
+                attributeState "default", label:'', icon:"st.Home.home9", backgroundColor:"#79b821"
 			}
 		}
 
-		main "contact"
-		details(["contact", childDeviceTiles("all")])
+		main "window"
+		details(["window", childDeviceTiles("all")])
 	}
 }
 
@@ -81,12 +80,12 @@ def zwaveEvent(physicalgraph.zwave.commands.notificationv3.NotificationReport cm
     def lockChildDevice = childDevices.find{it.deviceNetworkId == "$device.deviceNetworkId-ep${ep}l"}
     if (!contactChildDevice) {
         log.debug "Child not found for endpoint. Creating one now"
-        addChildDevice("Contact Sensor Child Device", "${device.deviceNetworkId}-ep${ep}c", null,
+        contactChildDevice = addChildDevice("Contact Sensor Child Device", "${device.deviceNetworkId}-ep${ep}c", null,
                 [completedSetup: true, label: "${device.displayName} (C${ep})",
                 isComponent: false, componentName: "cep$ep", componentLabel: "Window $ep"])
     }
     if (!lockChildDevice) {
-        addChildDevice("Lock Child Device", "${device.deviceNetworkId}-ep${ep}l", null,
+        lockChildDevice = addChildDevice("Lock Child Device", "${device.deviceNetworkId}-ep${ep}l", null,
                 [completedSetup: true, label: "${device.displayName} (L${ep})",
                 isComponent: false, componentName: "lep$ep", componentLabel: "Window $ep"])
     }
@@ -96,6 +95,8 @@ def zwaveEvent(physicalgraph.zwave.commands.notificationv3.NotificationReport cm
     if (evtName == "contact")
         contactChildDevice.sendEvent(name: evtName, value: evtValue)
 }
+
+
 
 private List loadEndpointInfo() {
 	if (state.endpointInfo) {
