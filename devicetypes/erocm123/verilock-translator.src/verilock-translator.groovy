@@ -14,6 +14,8 @@
 metadata {
 	definition (name: "Verilock Translator", namespace: "erocm123", author: "Eric Maycock") {
 		capability "Refresh"
+        capability "Lock"
+        capability "Contact Sensor"
 		capability "Configuration"
 		capability "Sensor"
 		capability "Zw Multichannel"
@@ -24,14 +26,19 @@ metadata {
 	}
     
     tiles(scale: 2) {
-		multiAttributeTile(name:"window", type: "generic", width: 6, height: 4){
-			tileAttribute ("device.window", key: "PRIMARY_CONTROL") {
-                attributeState "default", label:'', icon:"st.Home.home9", backgroundColor:"#79b821"
+		multiAttributeTile(name:"contact", type: "generic", width: 6, height: 4){
+			tileAttribute ("device.contact", key: "PRIMARY_CONTROL") {
+                attributeState "closed", label:'${name}', icon:"st.contact.contact.closed", backgroundColor:"#00a0dc"
+				attributeState "open", label:'${name}', icon:"st.contact.contact.open", backgroundColor:"#e86d13"
 			}
+            tileAttribute ("lock", key: "SECONDARY_CONTROL") {
+                attributeState "locked", label:'LOCKED', icon:"st.locks.lock.locked", backgroundColor:"#00A0DC", nextState:"unlocking"
+			    attributeState "unlocked", label:'UNLOCKED', icon:"st.locks.lock.unlocked", backgroundColor:"#ffffff", nextState:"locking"
+            }
 		}
-
-		main "window"
-		details(["window", childDeviceTiles("all")])
+        
+		main "contact"
+		details(["contact", childDeviceTiles("all")])
 	}
 }
 
@@ -56,47 +63,54 @@ def zwaveEvent(physicalgraph.zwave.commands.wakeupv1.WakeUpNotification cmd) {
 
 def zwaveEvent(physicalgraph.zwave.commands.notificationv3.NotificationReport cmd, ep = null)
 {
-        def evtName
-        def evtValue
-        switch(cmd.event){
-            case 1:
-                evtName = "lock"
-                evtValue = "locked"
-            break;
-            case 2:
-                evtName = "lock"
-                evtValue = "unlocked"
-            break;
-            case 22:
-                evtName = "contact"
-                evtValue = "opened"
-            break;
-            case 23:
-                evtName = "contact"
-                evtValue = "closed"
-            break;
-        }
-    def contactChildDevice = childDevices.find{it.deviceNetworkId == "$device.deviceNetworkId-ep${ep}c"}
-    def lockChildDevice = childDevices.find{it.deviceNetworkId == "$device.deviceNetworkId-ep${ep}l"}
-    if (!contactChildDevice) {
+    def evtName
+    def evtValue
+    switch(cmd.event){
+        case 1:
+            evtName = "lock"
+            evtValue = "locked"
+        break;
+        case 2:
+            evtName = "lock"
+            evtValue = "unlocked"
+        break;
+        case 22:
+            evtName = "contact"
+            evtValue = "open"
+        break;
+        case 23:
+            evtName = "contact"
+            evtValue = "closed"
+        break;
+    }
+    def childDevice = childDevices.find{it.deviceNetworkId == "$device.deviceNetworkId-ep${ep}"}
+    if (!childDevice) {
         log.debug "Child not found for endpoint. Creating one now"
-        contactChildDevice = addChildDevice("Contact Sensor Child Device", "${device.deviceNetworkId}-ep${ep}c", null,
-                [completedSetup: true, label: "${device.displayName} (C${ep})",
-                isComponent: false, componentName: "cep$ep", componentLabel: "Window $ep"])
+        childDevice = addChildDevice("Lockable Door/Window Child Device", "${device.deviceNetworkId}-ep${ep}", null,
+                [completedSetup: true, label: "${device.displayName} Window ${ep}",
+                isComponent: false, componentName: "ep$ep", componentLabel: "Window $ep"])
     }
-    if (!lockChildDevice) {
-        lockChildDevice = addChildDevice("Lock Child Device", "${device.deviceNetworkId}-ep${ep}l", null,
-                [completedSetup: true, label: "${device.displayName} (L${ep})",
-                isComponent: false, componentName: "lep$ep", componentLabel: "Window $ep"])
+
+    childDevice.sendEvent(name: evtName, value: evtValue)
+        
+    def allLocked = true
+    def allClosed = true
+    childDevices.each { n ->
+       if (n.currentState("contact") && n.currentState("contact").value != "closed") allClosed = false
+       if (n.currentState("lock") && n.currentState("lock").value != "locked") allLocked = false
     }
-    
-    if (evtName == "lock")
-        lockChildDevice.sendEvent(name: evtName, value: evtValue)
-    if (evtName == "contact")
-        contactChildDevice.sendEvent(name: evtName, value: evtValue)
+    def events = []
+    if (allLocked) {
+       sendEvent([name: "lock", value: "locked"])
+    } else {
+       sendEvent([name: "lock", value: "unlocked"])
+    }
+    if (allClosed) {
+       sendEvent([name: "contact", value: "closed"])
+    } else {
+       sendEvent([name: "contact", value: "open"])
+    }
 }
-
-
 
 private List loadEndpointInfo() {
 	if (state.endpointInfo) {
@@ -109,7 +123,17 @@ private List loadEndpointInfo() {
 }
 
 def updated() {
+    childDevices.each {
+        if (it.label == "${state.oldLabel} ${channelNumber(it.deviceNetworkId)}") {
+		    def newLabel = "${device.displayName} ${channelNumber(it.deviceNetworkId)}"
+			it.setLabel(newLabel)
+        }
+	}
+	state.oldLabel = device.label
+}
 
+private channelNumber(String dni) {
+	dni.split("-ep")[-1] as Integer
 }
 
 def zwaveEvent(physicalgraph.zwave.commands.multichannelv3.MultiChannelEndPointReport cmd) {
