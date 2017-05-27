@@ -20,7 +20,7 @@ definition(
     namespace: "LennyZ71",
     author: "Lenny Cunningham",
     description: "Cycle a switch on and off every 'x' minutes. Choose how long the switch stays on for and how long it stays off for.",
-    category: "",
+    category: "Convenience",
     iconUrl: "https://s3.amazonaws.com/smartapp-icons/Meta/light_contact-outlet.png",
     iconX2Url: "https://s3.amazonaws.com/smartapp-icons/Meta/light_contact-outlet@2x.png"
 )
@@ -30,10 +30,10 @@ preferences {
 		input "switch1", "capability.switch"
 	}
     section("Automatically turn switch on for this long...") {
-        input "minutesOn", "number", title: "Delay (in minutes):", required: true
+        input "minutesOn", "number", title: "On time (in minutes):", required: true
     }
     section("Automatically turn switch off for this long...") {
-        input "minutesOff", "number", title: "Delay (in minutes):", required: true
+        input "minutesOff", "number", title: "Off time (in minutes):", required: true
     }
 }
 
