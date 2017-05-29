@@ -159,7 +159,7 @@ def Modes(){
         if(NoTurnOffOnContact){
             section("Exception Contacts: you selected $Thermostat_1 as one to not turn off when contacts are open. Now select under which modes you want this rule to apply "){
                 input(name: "DoNotTurnOffModes", type : "enum", title: "Select which modes", options: ["$Home", "$Night", "$Away", "$CustomMode1", "$CustomMode2"], multiple: true, required: true)
-                input(name: "UnlessThisContact", type : "capability.contactSensor", title: "unless this specific contact sensor is open", description: "Select a contact that IS NOT among those already selected", required: false)
+                input(name: "ContactException", type : "capability.contactSensor", multiple: true, title: "unless these specific contacts sensors are open", description: "Select a contact that IS NOT among those already selected", required: false)
             }
         }
 
@@ -297,6 +297,7 @@ def updated() {
     else {
         atomicState.WindowsAppOpened = false // needed at first to avoid false turning on when updated or mode changed
     }
+    atomicState.ContactException = false
     atomicState.ThermOff = false // allows units override in open windows modes
     log.debug "updated with settings = $settings $Modes"
     unsubscribe()
@@ -310,9 +311,10 @@ def init() {
 
     subscribe(contact, "contact.open", contactHandlerOpen)
     subscribe(contact, "contact.closed", contactHandlerClosed)
-    if(UnlessThisContact){
-        subscribe(contact, "UnlessThisContact.open", contactHandlerOpen)
-        subscribe(contact, "UnlessThisContact.closed", contactHandlerClosed)
+    
+    if(ContactException){
+        subscribe(contact, "ContactException.open", contactHandlerOpen)
+        subscribe(contact, "ContactException.closed", contactHandlerClosed)
     }
 
     subscribe(XtraTempSensor, "temperature", temperatureHandler)
@@ -647,26 +649,26 @@ def ThermostatSwitchHandler(evt){
         def CurrMode = location.currentMode
         def LocatioModeChange = atomicState.locationModeChange
         log.debug "Location Mode Changed?($LocatioModeChange)"
-		
+
 
         log.trace "Latest Thermostat ModeS : $atomicState.LatestThermostatMode_T1 | $atomicState.LatestThermostatMode_T2 | $atomicState.LatestThermostatMode_T3 | $atomicState.LatestThermostatMode_T4"
-        
+
         def ltm1 = atomicState.LatestThermostatMode_T1.toString()
         def ltm2 = atomicState.LatestThermostatMode_T2.toString()
         def ltm3 = atomicState.LatestThermostatMode_T3.toString()
         def ltm4 = atomicState.LatestThermostatMode_T4.toString()
-        
+
         def MapofShouldBe = ["$Thermostat_1": ltm1, "$Thermostat_2": ltm2, "$Thermostat_3": ltm3, "$Thermostat_4": ltm4]
         def WhichThermInvolved = MapofShouldBe.find{ it.key == "$evt.device"} 
-        
+
         log.debug "Map of ShouldBe : ${MapofShouldBe}"
         log.debug "ShouldBe Value : ${WhichThermInvolved.value}"
-        
+
         WhichThermInvolved = WhichThermInvolved.value
         def ShouldBe = WhichThermInvolved
         //ShouldBe = WhichThermInvolved.toString()
-        
-	  
+
+
 
         // is the current SetPoint app managed or manually set?
         def IsSpAppManagedMap = ["${Thermostat_1}": atomicState.T1_AppMgtSP, "${Thermostat_2}" : atomicState.T2_AppMgtSP, "${Thermostat_3}" : atomicState.T3_AppMgtSP, "${Thermostat_4}" : atomicState.T4_AppMgtSP]
@@ -833,6 +835,14 @@ def contactHandlerClosed(evt) {
         unschedule(TurnOffThermostats) // in case were closed within time frame
         updated() // reset to all default settings
     } 
+    
+    if(ContactException){
+        contact.latestValue("ContactException").contains("open")
+        atomicState.ContactException = true
+    }
+    else {
+        atomicState.ContactException = false
+    }
 
     alldoorsareclosed()
 }
@@ -841,12 +851,12 @@ def contactHandlerOpen(evt) {
     log.debug "$evt.device is now $evt.value" 
     log.debug "Turning off all thermostats in $TimeBeforeClosing seconds"
 
-    if(UnlessThisContact){
-        contact.latestValue("UnlessThisContact").contains("open")
-        atomicState.UnlessThisContact = true
+    if(ContactException){
+        contact.latestValue("ContactException").contains("open")
+        atomicState.ContactException = true
     }
     else {
-        atomicState.UnlessThisContact = false
+        atomicState.ContactException = false
     }
 
     runIn(TimeBeforeClosing, TurnOffThermostats)   
@@ -1506,14 +1516,19 @@ def alldoorsareclosed(){
         true
     }
 }
-def TurnOffThermostats() {
+def TurnOffThermostats(){
 
     if(atomicState.ThermOff == false){
         if(atomicState.CRITICAL == false){
             log.debug "Turning off thermostats" 
             def InExceptionContactMode = location.currentMode in DoNotTurnOffModes
-            def UnlessThisContact = atomicState.UnlessThisContact
-            if(!NoTurnOffOnContact || !InExceptionContactMode || UnlessThisContact){
+            def ContactExceptionIsOpen = true // needed to prevent exception error if this option wasn't picked
+            if(ContactException){
+            ContactExceptionIsOpen = ContactException.latestValue("ContactException").contains("open")
+			}
+            
+            log.debug "ContactExceptionIsOpen: $ContactExceptionIsOpen, InExceptionContactMode: $InExceptionContactMode, NoTurnOffOnContact: $NoTurnOffOnContact"
+            if(!NoTurnOffOnContact || !InExceptionContactMode || ContactExceptionIsOpen){
                 Thermostat_1.setThermostatMode("off") 
                 atomicState.LatestThermostatMode = "off"
             }
@@ -1658,10 +1673,13 @@ def polls(){
 def CheckWindows(){
 
     def CurrentContacts = contact.latestValue("contact")
+    log.debug "contact latest Value $CurrentContacts"
+    
     def ClosedContacts = CurrentContacts.findAll { AllcontactsClosed ->
         AllcontactsClosed == "closed" ? true : false
     }
     log.debug "${ClosedContacts.size()} windows/doors out of ${contact.size()} are closed"
+    
     def ContactsOpen = contact.latestValue("contact").contains("open")
 
     log.debug "Contacts Opened?($ContactsOpen)"
@@ -1752,10 +1770,13 @@ def OkToOpen(){
     def ExceptHighThreshold1 = ExceptHighThreshold1
 
     def ShouldCool = atomicState.ShouldCool || (outsideTemp >= OutsideTempHighThres && CurrTemp >= CSPSet)
-    def ShouldHeat = outsideTemp <= OutsideTempLowThres || CurrTemp <= HSPSet
+    def ShouldHeat = (outsideTemp <= OutsideTempLowThres || CurrTemp <= HSPSet) && !ShouldCool
     if(ShouldCool && ShouldHeat) {
         ShouldCool = false
     }
+    if(!ShouldCool && !ShouldHeat && CurrTemp >= CSPSet) {
+        ShouldCool = true
+    }        
 
     log.debug "ShouldCool = $ShouldCool"
     log.debug "ShouldHeat = $ShouldHeat"
