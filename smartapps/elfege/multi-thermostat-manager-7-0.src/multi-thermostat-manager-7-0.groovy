@@ -115,7 +115,9 @@ def settings() {
                     input(name: "ExceptHighThreshold2", type: "number", title: "pick an offset value for $ExceptACMode2 mode", required: true)
                 }
                 input(name: "OffSet", type: "decimal", title: "You set Critical Temp at: ${CriticalTemp}. Close windows when inside temp is inferior or equal to this value + OffSet ", required: true, description: "Set OffSet Value")
-                paragraph "If within margin then open. But not if inside's temp is lower then heat setting minus offset. Reference is $XtraTempSensor"
+                paragraph """If within margin then open except if inside's temp is lower then heat setting minus offset. Reference is $XtraTempSensor
+You may also chose to open windows at full lenght whenever outside's temperature allows it instead of only when cooling is required (see below)"""
+                input(name: "OpenWhenEverPermitted", type: "bool", title: "Open in full whenever it is nice outside?", default: false, submitOnChange: true)
                 def HasStop = Actuators?.hasCommand("stop") || Actuators?.hasCommand("Stop") 
                 if(HasStop){
                     input(name: "OperatingTime", type: "number", title: "Should I stop opening operation after this amount of time?", required: false, description: "time in seconds")
@@ -288,7 +290,13 @@ def installed() {
 }
 def updated() {
     atomicState.modeStartTime = now() 
-    state.WindowsAppOpened = false // needed at first to avoid false turning on when updated or mode changed
+    if(atomicState.doorsAreOpen){
+        atomicState.WindowsAppOpened = true // if there are open contacts then by default set a new update as if they were turned on by the app
+        // this will work even if they were manually turned on. No other way, so far. 
+    }
+    else {
+        atomicState.WindowsAppOpened = false // needed at first to avoid false turning on when updated or mode changed
+    }
     atomicState.ThermOff = false // allows units override in open windows modes
     log.debug "updated with settings = $settings $Modes"
     unsubscribe()
@@ -303,10 +311,10 @@ def init() {
     subscribe(contact, "contact.open", contactHandlerOpen)
     subscribe(contact, "contact.closed", contactHandlerClosed)
     if(UnlessThisContact){
-    subscribe(contact, "UnlessThisContact.open", contactHandlerOpen)
-    subscribe(contact, "UnlessThisContact.closed", contactHandlerClosed)
+        subscribe(contact, "UnlessThisContact.open", contactHandlerOpen)
+        subscribe(contact, "UnlessThisContact.closed", contactHandlerClosed)
     }
-    
+
     subscribe(XtraTempSensor, "temperature", temperatureHandler)
     subscribe(location, "mode", ChangedModeHandler)	
 
@@ -639,15 +647,26 @@ def ThermostatSwitchHandler(evt){
         def CurrMode = location.currentMode
         def LocatioModeChange = atomicState.locationModeChange
         log.debug "Location Mode Changed?($LocatioModeChange)"
-
+		
 
         log.trace "Latest Thermostat ModeS : $atomicState.LatestThermostatMode_T1 | $atomicState.LatestThermostatMode_T2 | $atomicState.LatestThermostatMode_T3 | $atomicState.LatestThermostatMode_T4"
-        def MapofShouldBe = ["$Thermostat_1": atomicState.LatestThermostatMode_T1, "$Thermostat_2": atomicState.LatestThermostatMode_T2, "$Thermostat_3": atomicState.LatestThermostatMode_T3, "$Thermostat_4": atomicState.LatestThermostatMode_T4]
+        
+        def ltm1 = atomicState.LatestThermostatMode_T1.toString()
+        def ltm2 = atomicState.LatestThermostatMode_T2.toString()
+        def ltm3 = atomicState.LatestThermostatMode_T3.toString()
+        def ltm4 = atomicState.LatestThermostatMode_T4.toString()
+        
+        def MapofShouldBe = ["$Thermostat_1": ltm1, "$Thermostat_2": ltm2, "$Thermostat_3": ltm3, "$Thermostat_4": ltm4]
         def WhichThermInvolved = MapofShouldBe.find{ it.key == "$evt.device"} 
-        def Shouldbe = WhichThermInvolved.value
-        log.debug "ShouldBe Values : ${WhichThermInvolved}"
-
-        def ShouldBe = WhichThermInvolved.value.toString()
+        
+        log.debug "Map of ShouldBe : ${MapofShouldBe}"
+        log.debug "ShouldBe Value : ${WhichThermInvolved.value}"
+        
+        WhichThermInvolved = WhichThermInvolved.value
+        def ShouldBe = WhichThermInvolved
+        //ShouldBe = WhichThermInvolved.toString()
+        
+	  
 
         // is the current SetPoint app managed or manually set?
         def IsSpAppManagedMap = ["${Thermostat_1}": atomicState.T1_AppMgtSP, "${Thermostat_2}" : atomicState.T2_AppMgtSP, "${Thermostat_3}" : atomicState.T3_AppMgtSP, "${Thermostat_4}" : atomicState.T4_AppMgtSP]
@@ -821,15 +840,15 @@ def contactHandlerOpen(evt) {
     atomicState.doorsAreOpen = true
     log.debug "$evt.device is now $evt.value" 
     log.debug "Turning off all thermostats in $TimeBeforeClosing seconds"
-    
+
     if(UnlessThisContact){
-    contact.latestValue("UnlessThisContact").contains("open")
-    atomicState.UnlessThisContact = true
+        contact.latestValue("UnlessThisContact").contains("open")
+        atomicState.UnlessThisContact = true
     }
     else {
-    atomicState.UnlessThisContact = false
+        atomicState.UnlessThisContact = false
     }
-    
+
     runIn(TimeBeforeClosing, TurnOffThermostats)   
 
     if(Actuators){
@@ -840,6 +859,7 @@ def contactHandlerOpen(evt) {
 def ChangedModeHandler(evt) {
 
     log.debug "mode changed to ${evt.value}"
+
     atomicState.hasRun = 0 /// should be 0 set to 1 for tests
 
     updated()
@@ -949,12 +969,16 @@ def TemperaturesModes(){
             def AppMgtList = ["0", atomicState.T1_AppMgt, atomicState.T2_AppMgt, atomicState.T3_AppMgt, atomicState.T4_AppMgt]
             def AppMgt = AppMgtList[loopValue]
             log.debug "AppMgt = $AppMgt"
-            def ShouldCool = outsideTemp >= OutsideTempHighThres && CurrTemp >= CSPSet
-            def ShouldHeat = outsideTemp <= OutsideTempLowThres || CurrTemp <= CSHSet
+            def ShouldCool = atomicState.ShouldCool || (outsideTemp >= OutsideTempHighThres && CurrTemp >= CSPSet)
+            def ShouldHeat = (outsideTemp <= OutsideTempLowThres || CurrTemp <= HSPSet) && !ShouldCool
             if(ShouldCool && ShouldHeat) {
                 ShouldCool = false
             }
-            log.debug "ShouldCool = $ShouldCool"
+            if(!ShouldCool && !ShouldHeat && CurrTemp >= CSPSet) {
+                ShouldCool = true
+            }        
+
+            log.debug "ShouldCool = $ShouldCool (Current Temperature Inside = $CurrTemp)"
             log.debug "ShouldHeat = $ShouldHeat"
 
             if(ExceptionSW){
@@ -995,12 +1019,14 @@ def TemperaturesModes(){
                         log.debug "$ThermSet set to cool"
                         LatestThermostatMode = "cool"
                         ThermSetDevice.setThermostatMode("cool") 
+                        atomicState.ShouldCool = true
                     }
                     else if(CurrTemp < HSPSet && ThermState != "heat" && ShouldHeat){
                         AppMgtTrue()
                         log.debug "$ThermSet set to Heat"
                         LatestThermostatMode = "heat"
                         ThermSetDevice.setThermostatMode("heat") 
+                        atomicState.ShouldCool = false
 
                     }   
                 }   
@@ -1492,7 +1518,7 @@ def TurnOffThermostats() {
                 atomicState.LatestThermostatMode = "off"
             }
             else {
-            	log.debug "Not turning off $Thermostat_1 because current mode is within exception modes selected by the user"
+                log.debug "Not turning off $Thermostat_1 because current mode is within exception modes selected by the user"
                 def ThermState1 = Thermostat_1?.currentValue("thermostatMode") as String
                 atomicState.LatestThermostatMode = ThermState1
             }
@@ -1655,11 +1681,11 @@ def CheckWindows(){
     def message = ""
 
     if(atomicState.hasRun == 0) {
-        state.WindowsAppOpened = false
+        atomicState.WindowsAppOpened = false
     }
 
-    log.debug "state.WindowsAppOpened($state.WindowsAppOpened)"
-    log.debug "state.WindowsAppClosed($state.WindowsAppClosed)"
+    log.debug "atomicState.WindowsAppOpened($atomicState.WindowsAppOpened)"
+    log.debug "atomicState.WindowsAppClosed($atomicState.WindowsAppClosed)"
     log.debug "atomicState.messageSent($atomicState.messageSent)"
     log.debug "atomicState.hasRun($atomicState.hasRun)"
 
@@ -1673,7 +1699,7 @@ def CheckWindows(){
             message = "Conditions permitting, I'm opening $Actuators. Operation time is $OperatingTime seconds"
             log.info message 
             send(message)
-            state.WindowsAppOpened = true // resets unless hasrun >= 1
+            atomicState.WindowsAppOpened = true // resets unless hasrun >= 1
             atomicState.hasRun = atomicState.hasRun + 1
             atomicState.messageSent = atomicState.messageSent + 1
 
@@ -1684,7 +1710,7 @@ def CheckWindows(){
         }
         else { log.debug "Windows have already been opened by this app, doing nothing" }
     }
-    else if (!OkToOpen && state.WindowsAppOpened == true) {
+    else if (!OkToOpen && atomicState.WindowsAppOpened == true) {
 
         Actuators?.off()
         log.debug "closing windows"
@@ -1694,18 +1720,18 @@ def CheckWindows(){
         atomicState.closed = true
         atomicState.hasRun = 0 // this is an integer beware of not replacing with bool
 
-        state.WindowsAppOpened = false
-        state.WindowsAppClosed = true
+        atomicState.WindowsAppOpened = false
+        atomicState.WindowsAppClosed = true
         atomicState.messageSent = 0
     }
-    else if(atomicState.messageSent == 0 && ContactsOpen && state.WindowsAppOpened == true){ 
+    else if(atomicState.messageSent == 0 && ContactsOpen && atomicState.WindowsAppOpened == true){ 
 
         message = "IMPORTANT MESSAGE $Actuators will not close again until you close them yourself!"
         log.info message
         send(message)
         state.messageSent = state.messageSent + 1
     }
-    else if(ContactsOpen && state.WindowsAppOpened == false){
+    else if(ContactsOpen && atomicState.WindowsAppOpened == false){
         log.debug "WINDOWS MANUALLY OPENED"
     }
 
@@ -1723,22 +1749,29 @@ def OkToOpen(){
     def WithinCriticalOffSet = Inside >= CriticalTemp + OffSet
     def closed = atomicState.closed
     def OutsideTempHighThres = OutsideTempHighThres
+    def ExceptHighThreshold1 = ExceptHighThreshold1
 
-    def ShouldCool = outsideTemp >= OutsideTempHighThres && CurrTemp >= CSPSet
-    def ShouldHeat = outsideTemp <= OutsideTempLowThres || CurrTemp <= CSHSet
+    def ShouldCool = atomicState.ShouldCool || (outsideTemp >= OutsideTempHighThres && CurrTemp >= CSPSet)
+    def ShouldHeat = outsideTemp <= OutsideTempLowThres || CurrTemp <= HSPSet
     if(ShouldCool && ShouldHeat) {
         ShouldCool = false
     }
+
     log.debug "ShouldCool = $ShouldCool"
     log.debug "ShouldHeat = $ShouldHeat"
 
+
     if(ExceptACMode1 && CurrMode in ExceptACMode1){
-        def NewOutsideTempHighThres = OutsideTempHighThres - ExceptHighThreshold1
+        def ToMinus = OutsideTempHighThres
+        //log.info "BEFORE CHANGE Inside?($Inside), Outside?($Outside), Margin?(LowThres:$OutsideTempLowThres - HighThres:$OutsideTempHighThres) -----------------------------------"
+        def NewOutsideTempHighThres = ToMinus - ExceptHighThreshold1
         log.debug "Home is in $CurrMode mode, so new high outside's temp threshold is: $NewOutsideTempHighThres = $OutsideTempHighThres - $ExceptHighThreshold1" 
         OutsideTempHighThres = NewOutsideTempHighThres
     }
     else if(ExceptACMode2 && CurrMode in ExceptACMode2){
-        OutsideTempHighThres = OutsideTempHighThres - ExceptHighThreshold2
+        def ToMinus = OutsideTempHighThres
+        //log.info "BEFORE CHANGE Inside?($Inside), Outside?($Outside), Margin?(LowThres:$OutsideTempLowThres - HighThres:$OutsideTempHighThres) -----------------------------------"
+        def NewOutsideTempHighThres = ToMinus - ExceptHighThreshold2
         log.debug "Home is in $CurrMode mode, so new high outside's temp threshold is: $NewOutsideTempHighThres = $OutsideTempHighThres - $ExceptHighThreshold2" 
         OutsideTempHighThres = NewOutsideTempHighThres
     }
@@ -1750,14 +1783,26 @@ def OkToOpen(){
     log.debug "closed?($closed)"
     log.debug "OutSideWithinMargin?($OutSideWithinMargin)"
     log.debug "Inside is WithinCriticalOffSet?($WithinCriticalOffSet)"    
+    log.debug "ShouldCool?($ShouldCool)"    
 
     def result = OutSideWithinMargin && WithinCriticalOffSet && ShouldCool
+
+    if(OutSideWithinMargin && WithinCriticalOffSet && OpenWhenEverPermitted && !ShouldCool){
+        result = true
+        state.OpenInFull = true
+    } 
+    else { 
+        state.OpenInFull = false
+    }
 
     return result
 
 }
 def StopActuators(){
-    Actuators?.stop()
+    def OpenInFull = state.OpenInFull
+    if(!OpenInFull){
+        Actuators?.stop()
+    }
 }
 private schedules() { 
 
