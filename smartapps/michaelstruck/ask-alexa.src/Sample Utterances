@@ -1,93 +1,211 @@
-DeviceOperation to {Operator} {Param} in the {Device}
-DeviceOperation to {Operator} {Param} in the {Device} level {Num}
-DeviceOperation to {Operator} {Param} level {Num} in the {Device}
-DeviceOperation to {Operator} {Param} to level {Num} in the {Device}
-DeviceOperation to {Operator} {Param} in the {Device}
+DeviceOperation {Device} {Num}
+DeviceOperation {Device} {Num} degrees
+DeviceOperation {Device} {Num} percent
+DeviceOperation {Device} to {Num}
+DeviceOperation {Device} to {Num} degrees
+DeviceOperation {Device} to {Num} percent
+DeviceOperation {Device} {Param}
+DeviceOperation {Device} to {Param}
+DeviceOperation {Device} to {Param} mode
+DeviceOperation {Device} {Param} to {Num}
+DeviceOperation {Device} {Param} to {Num} degrees
+DeviceOperation {Device} to {Param} and {Num}
+DeviceOperation {Device} to {Param} and {Num} percent
+DeviceOperation {Param} of {Device} to {Num}
+DeviceOperation {Param} of {Device} to {Num} degrees
+
+DeviceOperation set {Device} to {Num}
+DeviceOperation set {Device} to {Num} degrees
+DeviceOperation set {Device} to {Num} percent
+DeviceOperation set {Device} {Param}
+DeviceOperation set {Device} to {Param}
+DeviceOperation set {Device} to {Param} mode
+DeviceOperation set {Device} {Param} to {Num}
+DeviceOperation set {Device} {Param} to {Num} degrees
+DeviceOperation set {Device} to {Param} and {Num}
+DeviceOperation set {Device} to {Param} and {Num} percent
+DeviceOperation set {Param} of {Device} to {Num}
+DeviceOperation set {Param} of {Device} to {Num} degrees
+DeviceOperation set the {Device} to {Num}
+DeviceOperation set the {Device} to {Num} degrees
+DeviceOperation set the {Device} to {Num} percent
+DeviceOperation set the {Device} {Param}
+DeviceOperation set the {Device} to {Param}
+DeviceOperation set the {Device} to {Param} mode
+DeviceOperation set the {Device} {Param} to {Num}
+DeviceOperation set the {Device} {Param} to {Num} degrees
+DeviceOperation set the {Device} to {Param} and {Num}
+DeviceOperation set the {Device} to {Param} and {Num} percent
+DeviceOperation set the {Param} of {Device} to {Num}
+DeviceOperation set the {Param} of {Device} to {Num} degrees
+DeviceOperation to set {Device} to {Num}
+DeviceOperation to set {Device} to {Num} degrees
+DeviceOperation to set {Device} to {Num} percent
+DeviceOperation to set {Device} {Param}
+DeviceOperation to set {Device} to {Param}
+DeviceOperation to set {Device} to {Param} mode
+DeviceOperation to set {Device} {Param} to {Num}
+DeviceOperation to set {Device} {Param} to {Num} degrees
+DeviceOperation to set {Device} to {Param} and {Num}
+DeviceOperation to set {Device} to {Param} and {Num} percent
+DeviceOperation to set {Param} of {Device} to {Num}
+DeviceOperation to set {Param} of {Device} to {Num} degrees
+DeviceOperation to set the {Device} to {Num}
+DeviceOperation to set the {Device} to {Num} degrees
+DeviceOperation to set the {Device} to {Num} percent
+DeviceOperation to set the {Device} {Param}
+DeviceOperation to set the {Device} to {Param}
+DeviceOperation to set the {Device} to {Param} mode
+DeviceOperation to set the {Device} {Param} to {Num}
+DeviceOperation to set the {Device} {Param} to {Num} degrees
+DeviceOperation to set the {Device} to {Param} and {Num}
+DeviceOperation to set the {Device} to {Param} and {Num} percent
+DeviceOperation to set the {Param} of {Device} to {Num}
+DeviceOperation to set the {Param} of {Device} to {Num} degrees
+
+DeviceOperation to turn {Device} to {Num}
+DeviceOperation to turn {Device} to {Num} percent
+DeviceOperation to turn the {Device} to {Num}
+DeviceOperation to turn the {Device} to {Num} percent
+
+DeviceOperation {Device} {Operator}
+DeviceOperation {Device} to {Operator}
 DeviceOperation {Device} {Operator} {Param}
 DeviceOperation {Device} {Operator} {Param} level {Num}
 DeviceOperation {Device} {Operator} level {Num} {Param}
-DeviceOperation to turn {Operator} the {Device}
-DeviceOperation to turn {Operator} {Device}
-DeviceOperation to turn {Device} {Operator}
-DeviceOperation to turn the {Device} {Operator}
-DeviceOperation {Device} {Operator}
-DeviceOperation to {Operator} the {Device}
-DeviceOperation to {Operator} the {Device} password {Num}
-DeviceOperation {Operator} {Device} password {Num}
 DeviceOperation {Operator} {Device}
+DeviceOperation {Operator} {Device} by {Num}
+DeviceOperation {Operator} {Device} password {Num}
+DeviceOperation {Operator} {Device} {Param}
+DeviceOperation {Operator} {Param} {Device}
 DeviceOperation to {Operator} {Device}
+DeviceOperation to {Operator} {Device} with {Param}
+DeviceOperation to {Operator} {Param} in the {Device}
+DeviceOperation to {Operator} {Param} in the {Device} level {Num}
+DeviceOperation to {Operator} {Param} level {Num} in the {Device}
+DeviceOperation to {Operator} {Param} on the {Device}
+DeviceOperation to {Operator} {Param} to level {Num} in the {Device}
+DeviceOperation to {Operator} {Param} with {Device}
+
+DeviceOperation {Operator} brightness of the {Device}
+DeviceOperation {Operator} level of the {Device}
+DeviceOperation {Operator} of {Device}
+DeviceOperation {Operator} temperature of the {Device}
 DeviceOperation {Operator} the {Device}
-DeviceOperation set {Device} to {Num}
-DeviceOperation {Device} to {Num}
-DeviceOperation {Device} {Num}
-DeviceOperation set the {Device} to {Num}
-DeviceOperation to set {Device} to {Num}
-DeviceOperation to set the {Device} to {Num}
-DeviceOperation {Device} {Num} percent
-DeviceOperation set {Device} to {Num} percent
-DeviceOperation set the {Device} to {Num} percent
-DeviceOperation to set {Device} to {Num} percent
-DeviceOperation to set the {Device} to {Num} percent
-DeviceOperation to turn {Device} to {Num} percent
-DeviceOperation to turn the {Device} to {Num} percent
-DeviceOperation to turn {Device} to {Num}
-DeviceOperation to turn the {Device} to {Num}
-DeviceOperation turn {Device} {Param}
-DeviceOperation turn {Device} to {Param}
-DeviceOperation turn the {Device} {Param}
-DeviceOperation turn the {Device} to {Param}
-DeviceOperation turn the {Device} to the color {Param}
-DeviceOperation to turn the {Device} to {Param}
-DeviceOperation to turn the {Device} to the color of {Param}
-DeviceOperation turn the color of {Device} to {Param}
-DeviceOperation turn the color of the {Device} to {Param}
-DeviceOperation turn the color of {Device} to {Param} and set level to {Num}
-DeviceOperation turn the color of {Device} to {Param} and set level to {Num} percent
-DeviceOperation turn the color of {Device} to {Param} and set the level to {Num}
-DeviceOperation turn the color of {Device} to {Param} and set the level to {Num} percent
-DeviceOperation turn the {Device} to {Param} and {Num}
-DeviceOperation turn the {Device} to {Param} and {Num} percent
-DeviceOperation turn {Device} to {Param} and {Num}
-DeviceOperation turn {Device} to {Param} and {Num} percent
-DeviceOperation turn {Device} to {Param} and a brightess of {Num}
-DeviceOperation set {Device} {Param}
-DeviceOperation set {Device} to {Param}
-DeviceOperation set the {Device} {Param}
-DeviceOperation set the {Device} to {Param}
+DeviceOperation {Operator} the {Device} by {Num}
+DeviceOperation {Operator} volume of the {Device}
+DeviceOperation to {Operator} the {Device}
+DeviceOperation to {Operator} the {Device} brightness
+DeviceOperation to {Operator} the {Device} level
+DeviceOperation to {Operator} the {Device} password {Num}
+DeviceOperation to {Operator} the {Device} temperature
+DeviceOperation to {Operator} the {Device} {Param} temperature
+DeviceOperation to {Operator} the {Device} volume
+
+DeviceOperation set {Device} to {Operator}
+DeviceOperation set the {Device} to {Operator}
+DeviceOperation to set the {Device} to {Operator}
+DeviceOperation set {Device} {Param} to {Operator}
+DeviceOperation set the {Device} {Param} to {Operator}
+DeviceOperation to set the {Device} {Param} to {Operator}
+DeviceOperation turn {Device} {Operator}
+DeviceOperation turn {Device} to {Operator}
+DeviceOperation turn {Device} {Operator} by {Num}
+DeviceOperation turn {Device} {Param} mode to {Operator}
+DeviceOperation turn the {Device} {Operator} by {Num} percent
+DeviceOperation turn {Operator} {Device} to {Param}
+DeviceOperation turn {Operator} {Device} {Param} mode
+DeviceOperation to turn {Device} {Operator}
+DeviceOperation to turn {Operator} {Device}
+DeviceOperation to turn {Operator} the {Device}
+DeviceOperation to turn the {Device} {Operator}
+DeviceOperation to turn the {Device} to {Operator}
+DeviceOperation to tell the {Device} to {Operator}
+
+DeviceOperation {Device} to the color {Param}
+DeviceOperation {Device} to the color of {Param}
+DeviceOperation color of {Device} to {Param}
+DeviceOperation color of the {Device} to {Param}
+DeviceOperation {Device} to {Param} and a brightess of {Num}
+DeviceOperation {Device} to {Param} and a brightess of {Num} percent
+DeviceOperation {Device} to {Param} and set level to {Num}
+DeviceOperation {Device} to {Param} and set level to {Num} percent
+DeviceOperation {Device} to {Param} and set the level to {Num}
+DeviceOperation {Device} to {Param} and set the level to {Num} percent
+DeviceOperation color of {Device} to {Param} and a brightness of {Num}
+DeviceOperation color of {Device} to {Param} and a brightness of {Num} percent
+DeviceOperation color of {Device} to {Param} and set level to {Num}
+DeviceOperation color of {Device} to {Param} and set level to {Num} percent
+DeviceOperation color of {Device} to {Param} and set the level to {Num}
+DeviceOperation color of {Device} to {Param} and set the level to {Num} percent
+
+DeviceOperation set {Device} to the color {Param}
+DeviceOperation set {Device} to the color of {Param}
+DeviceOperation set color of {Device} to {Param}
+DeviceOperation set color of the {Device} to {Param}
 DeviceOperation set the {Device} to the color {Param}
-DeviceOperation to set the {Device} to {Param}
-DeviceOperation to set the {Device} to the color of {Param}
+DeviceOperation set the {Device} to the color of {Param}
 DeviceOperation set the color of {Device} to {Param}
 DeviceOperation set the color of the {Device} to {Param}
-DeviceOperation set the color of {Device} to {Param} and set level to {Num}
-DeviceOperation set the color of {Device} to {Param} and set level to {Num} percent
-DeviceOperation set the color of {Device} to {Param} and set the level to {Num}
-DeviceOperation set the color of {Device} to {Param} and set the level to {Num} percent
-DeviceOperation set the {Device} to {Param} and {Num}
-DeviceOperation set the {Device} to {Param} and {Num} percent
-DeviceOperation set {Device} to {Param} and {Num}
-DeviceOperation set {Device} to {Param} and {Num} percent
+DeviceOperation to set the {Device} to the color {Param}
+DeviceOperation to set the {Device} to the color of {Param}
+DeviceOperation to set the color of {Device} to {Param}
+DeviceOperation to set the color of the {Device} to {Param}
 DeviceOperation set {Device} to {Param} and a brightess of {Num}
 DeviceOperation set {Device} to {Param} and a brightess of {Num} percent
 DeviceOperation set {Device} to {Param} and set level to {Num}
 DeviceOperation set {Device} to {Param} and set level to {Num} percent
 DeviceOperation set {Device} to {Param} and set the level to {Num}
 DeviceOperation set {Device} to {Param} and set the level to {Num} percent
+DeviceOperation set color of {Device} to {Param} and a brightness of {Num}
+DeviceOperation set color of {Device} to {Param} and a brightness of {Num} percent
+DeviceOperation set color of {Device} to {Param} and set level to {Num}
+DeviceOperation set color of {Device} to {Param} and set level to {Num} percent
+DeviceOperation set color of {Device} to {Param} and set the level to {Num}
+DeviceOperation set color of {Device} to {Param} and set the level to {Num} percent
+DeviceOperation set the {Device} to {Param} and a brightess of {Num}
+DeviceOperation set the {Device} to {Param} and a brightess of {Num} percent
+DeviceOperation set the {Device} to {Param} and set level to {Num}
+DeviceOperation set the {Device} to {Param} and set level to {Num} percent
+DeviceOperation set the {Device} to {Param} and set the level to {Num}
+DeviceOperation set the {Device} to {Param} and set the level to {Num} percent
+DeviceOperation set the color of {Device} to {Param} and a brightness of {Num}
+DeviceOperation set the color of {Device} to {Param} and a brightness of {Num} percent
+DeviceOperation set the color of {Device} to {Param} and set level to {Num}
+DeviceOperation set the color of {Device} to {Param} and set level to {Num} percent
+DeviceOperation set the color of {Device} to {Param} and set the level to {Num}
+DeviceOperation set the color of {Device} to {Param} and set the level to {Num} percent
+DeviceOperation to set the {Device} to {Param} and a brightess of {Num}
+DeviceOperation to set the {Device} to {Param} and a brightess of {Num} percent
+DeviceOperation to set the {Device} to {Param} and set level to {Num}
+DeviceOperation to set the {Device} to {Param} and set level to {Num} percent
+DeviceOperation to set the {Device} to {Param} and set the level to {Num}
+DeviceOperation to set the {Device} to {Param} and set the level to {Num} percent
+DeviceOperation to set the color of {Device} to {Param} and a brightness of {Num}
+DeviceOperation to set the color of {Device} to {Param} and a brightness of {Num} percent
+DeviceOperation to set the color of {Device} to {Param} and to set level to {Num}
+DeviceOperation to set the color of {Device} to {Param} and to set level to {Num} percent
+DeviceOperation to set the color of {Device} to {Param} and to set the level to {Num}
+DeviceOperation to set the color of {Device} to {Param} and to set the level to {Num} percent
+
 DeviceOperation change {Device} {Param}
 DeviceOperation change {Device} to {Param}
+DeviceOperation change {Device} to the color {Param}
+DeviceOperation change {Device} to the color of {Param}
+DeviceOperation change color of {Device} to {Param}
+DeviceOperation change color of the {Device} to {Param}
 DeviceOperation change the {Device} {Param}
 DeviceOperation change the {Device} to {Param}
 DeviceOperation change the {Device} to the color {Param}
-DeviceOperation to change the {Device} to {Param}
-DeviceOperation to change the {Device} to the color of {Param}
+DeviceOperation change the {Device} to the color of {Param}
 DeviceOperation change the color of {Device} to {Param}
 DeviceOperation change the color of the {Device} to {Param}
-DeviceOperation change the color of {Device} to {Param} and set level to {Num}
-DeviceOperation change the color of {Device} to {Param} and set level to {Num} percent
-DeviceOperation change the color of {Device} to {Param} and set the level to {Num}
-DeviceOperation change the color of {Device} to {Param} and set the level to {Num} percent
-DeviceOperation change the {Device} to {Param} and {Num}
-DeviceOperation change the {Device} to {Param} and {Num} percent
+DeviceOperation to change the {Device} {Param}
+DeviceOperation to change the {Device} to {Param}
+DeviceOperation to change the {Device} to the color {Param}
+DeviceOperation to change the {Device} to the color of {Param}
+DeviceOperation to change the color of {Device} to {Param}
+DeviceOperation to change the color of the {Device} to {Param}
 DeviceOperation change {Device} to {Param} and {Num}
 DeviceOperation change {Device} to {Param} and {Num} percent
 DeviceOperation change {Device} to {Param} and a brightess of {Num}
@@ -96,123 +214,269 @@ DeviceOperation change {Device} to {Param} and set level to {Num}
 DeviceOperation change {Device} to {Param} and set level to {Num} percent
 DeviceOperation change {Device} to {Param} and set the level to {Num}
 DeviceOperation change {Device} to {Param} and set the level to {Num} percent
-DeviceOperation {Operator} {Device} by {Num}
-DeviceOperation {Operator} the {Device} by {Num}
-DeviceOperation turn {Device} {Operator} by {Num}
-DeviceOperation turn the {Device} {Operator} by {Num} percent
-DeviceOperation {Operator} the {Device}
-DeviceOperation to {Operator} the {Device} volume
-DeviceOperation to {Operator} the {Device} temperature
-DeviceOperation to {Operator} the {Device} {Param} temperature
-DeviceOperation to {Operator} the {Device} level
-DeviceOperation to {Operator} the {Device} brightness
-DeviceOperation {Operator} brightness of the {Device}
-DeviceOperation {Operator} level of the {Device}
-DeviceOperation {Operator} temperature of the {Device}
-DeviceOperation {Operator} volume of the {Device}
-DeviceOperation {Device} to {Operator}
-DeviceOperation turn {Device} {Operator}
-DeviceOperation turn {Device} to {Operator}
-DeviceOperation set {Device} to {Operator}
-DeviceOperation to turn the {Device} to {Operator}
-DeviceOperation to set the {Device} to {Operator}
-DeviceOperation to tell the {Device} to {Operator}
-DeviceOperation set {Param} of {Device} to {Num} degrees
-DeviceOperation set {Param} of {Device} to {Num}
-DeviceOperation set the {Param} of {Device} to {Num} degrees
-DeviceOperation set the {Param} of {Device} to {Num}
-DeviceOperation set {Param} setpoint of {Device} to {Num} degrees
+DeviceOperation change color of {Device} to {Param} and a brightness of {Num}
+DeviceOperation change color of {Device} to {Param} and a brightness of {Num} percent
+DeviceOperation change color of {Device} to {Param} and set level to {Num}
+DeviceOperation change color of {Device} to {Param} and set level to {Num} percent
+DeviceOperation change color of {Device} to {Param} and set the level to {Num}
+DeviceOperation change color of {Device} to {Param} and set the level to {Num} percent
+DeviceOperation change the {Device} to {Param} and {Num}
+DeviceOperation change the {Device} to {Param} and {Num} percent
+DeviceOperation change the {Device} to {Param} and a brightess of {Num}
+DeviceOperation change the {Device} to {Param} and a brightess of {Num} percent
+DeviceOperation change the {Device} to {Param} and set level to {Num}
+DeviceOperation change the {Device} to {Param} and set level to {Num} percent
+DeviceOperation change the {Device} to {Param} and set the level to {Num}
+DeviceOperation change the {Device} to {Param} and set the level to {Num} percent
+DeviceOperation change the color of {Device} to {Param} and a brightness of {Num}
+DeviceOperation change the color of {Device} to {Param} and a brightness of {Num} percent
+DeviceOperation change the color of {Device} to {Param} and set level to {Num}
+DeviceOperation change the color of {Device} to {Param} and set level to {Num} percent
+DeviceOperation change the color of {Device} to {Param} and set the level to {Num}
+DeviceOperation change the color of {Device} to {Param} and set the level to {Num} percent
+DeviceOperation to change the {Device} to {Param} and {Num}
+DeviceOperation to change the {Device} to {Param} and {Num} percent
+DeviceOperation to change the {Device} to {Param} and a brightess of {Num}
+DeviceOperation to change the {Device} to {Param} and a brightess of {Num} percent
+DeviceOperation to change the {Device} to {Param} and set level to {Num}
+DeviceOperation to change the {Device} to {Param} and set level to {Num} percent
+DeviceOperation to change the {Device} to {Param} and set the level to {Num}
+DeviceOperation to change the {Device} to {Param} and set the level to {Num} percent
+DeviceOperation to change the color of {Device} to {Param} and a brightness of {Num}
+DeviceOperation to change the color of {Device} to {Param} and a brightness of {Num} percent
+DeviceOperation to change the color of {Device} to {Param} and to set level to {Num}
+DeviceOperation to change the color of {Device} to {Param} and to set level to {Num} percent
+DeviceOperation to change the color of {Device} to {Param} and to set the level to {Num}
+DeviceOperation to change the color of {Device} to {Param} and to set the level to {Num} percent
+
+DeviceOperation turn {Device} {Param}
+DeviceOperation turn {Device} to {Param}
+DeviceOperation turn {Device} to the color {Param}
+DeviceOperation turn {Device} to the color of {Param}
+DeviceOperation turn color of {Device} to {Param}
+DeviceOperation turn color of the {Device} to {Param}
+DeviceOperation turn the {Device} {Param}
+DeviceOperation turn the {Device} to {Param}
+DeviceOperation turn the {Device} to the color {Param}
+DeviceOperation turn the {Device} to the color of {Param}
+DeviceOperation turn the color of {Device} to {Param}
+DeviceOperation turn the color of the {Device} to {Param}
+DeviceOperation to turn the {Device} {Param}
+DeviceOperation to turn the {Device} to {Param}
+DeviceOperation to turn the {Device} to the color {Param}
+DeviceOperation to turn the {Device} to the color of {Param}
+DeviceOperation to turn the color of {Device} to {Param}
+DeviceOperation to turn the color of the {Device} to {Param}
+DeviceOperation turn {Device} to {Param} and {Num}
+DeviceOperation turn {Device} to {Param} and {Num} percent
+DeviceOperation turn {Device} to {Param} and a brightess of {Num}
+DeviceOperation turn {Device} to {Param} and a brightess of {Num} percent
+DeviceOperation turn {Device} to {Param} and set level to {Num}
+DeviceOperation turn {Device} to {Param} and set level to {Num} percent
+DeviceOperation turn {Device} to {Param} and set the level to {Num}
+DeviceOperation turn {Device} to {Param} and set the level to {Num} percent
+DeviceOperation turn color of {Device} to {Param} and a brightness of {Num}
+DeviceOperation turn color of {Device} to {Param} and a brightness of {Num} percent
+DeviceOperation turn color of {Device} to {Param} and set level to {Num}
+DeviceOperation turn color of {Device} to {Param} and set level to {Num} percent
+DeviceOperation turn color of {Device} to {Param} and set the level to {Num}
+DeviceOperation turn color of {Device} to {Param} and set the level to {Num} percent
+DeviceOperation turn the {Device} to {Param} and {Num}
+DeviceOperation turn the {Device} to {Param} and {Num} percent
+DeviceOperation turn the {Device} to {Param} and a brightess of {Num}
+DeviceOperation turn the {Device} to {Param} and a brightess of {Num} percent
+DeviceOperation turn the {Device} to {Param} and set level to {Num}
+DeviceOperation turn the {Device} to {Param} and set level to {Num} percent
+DeviceOperation turn the {Device} to {Param} and set the level to {Num}
+DeviceOperation turn the {Device} to {Param} and set the level to {Num} percent
+DeviceOperation turn the color of {Device} to {Param} and a brightness of {Num}
+DeviceOperation turn the color of {Device} to {Param} and a brightness of {Num} percent
+DeviceOperation turn the color of {Device} to {Param} and set level to {Num}
+DeviceOperation turn the color of {Device} to {Param} and set level to {Num} percent
+DeviceOperation turn the color of {Device} to {Param} and set the level to {Num}
+DeviceOperation turn the color of {Device} to {Param} and set the level to {Num} percent
+DeviceOperation to turn the {Device} to {Param} and {Num}
+DeviceOperation to turn the {Device} to {Param} and {Num} percent
+DeviceOperation to turn the {Device} to {Param} and a brightess of {Num}
+DeviceOperation to turn the {Device} to {Param} and a brightess of {Num} percent
+DeviceOperation to turn the {Device} to {Param} and set level to {Num}
+DeviceOperation to turn the {Device} to {Param} and set level to {Num} percent
+DeviceOperation to turn the {Device} to {Param} and set the level to {Num}
+DeviceOperation to turn the {Device} to {Param} and set the level to {Num} percent
+DeviceOperation to turn the color of {Device} to {Param} and a brightness of {Num}
+DeviceOperation to turn the color of {Device} to {Param} and a brightness of {Num} percent
+DeviceOperation to turn the color of {Device} to {Param} and set level to {Num}
+DeviceOperation to turn the color of {Device} to {Param} and set level to {Num} percent
+DeviceOperation to turn the color of {Device} to {Param} and set the level to {Num}
+DeviceOperation to turn the color of {Device} to {Param} and set the level to {Num} percent
+
 DeviceOperation set {Param} setpoint of {Device} to {Num}
-DeviceOperation set the {Param} setpoint of {Device} to {Num} degrees
+DeviceOperation set {Param} setpoint of {Device} to {Num} degrees
 DeviceOperation set the {Param} setpoint of {Device} to {Num}
-DeviceOperation to set {Param} setpoint of {Device} to {Num} degrees
+DeviceOperation set the {Param} setpoint of {Device} to {Num} degrees
 DeviceOperation to set {Param} setpoint of {Device} to {Num}
-DeviceOperation to set the {Param} setpoint of {Device} to {Num} degrees
+DeviceOperation to set {Param} setpoint of {Device} to {Num} degrees
 DeviceOperation to set the {Param} setpoint of {Device} to {Num}
-DeviceOperation set {Device} {Param} to {Num} degrees
-DeviceOperation set {Device} {Param} to {Num}
-DeviceOperation to set {Device} {Param} to {Num} degrees
-DeviceOperation to set {Device} {Param} to {Num}
-DeviceOperation set the {Device} {Param} to {Num} degrees
-DeviceOperation set the {Device} {Param} to {Num}
-DeviceOperation set the {Device} to {Num}
-DeviceOperation set the {Device} to {Num} degrees
-DeviceOperation to set the {Device} {Param} to {Num} degrees
-DeviceOperation to set the {Device} {Param} to {Num}
-DeviceOperation to set the temperature of the {Device} to {Num} degrees
-DeviceOperation to set the temperature of the {Device} to {Num}
-DeviceOperation to set the temperature of {Device} to {Num} degrees
+DeviceOperation to set the {Param} setpoint of {Device} to {Num} degrees
+DeviceOperation set {Param} temp of {Device} to {Num}
+DeviceOperation set {Param} temp of {Device} to {Num} degrees
+DeviceOperation set the {Param} temp of {Device} to {Num}
+DeviceOperation set the {Param} temp of {Device} to {Num} degrees
+DeviceOperation to set {Param} temp of {Device} to {Num}
+DeviceOperation to set {Param} temp of {Device} to {Num} degrees
+DeviceOperation to set the {Param} temp of {Device} to {Num}
+DeviceOperation to set the {Param} temp of {Device} to {Num} degrees
+DeviceOperation set {Param} temperature of {Device} to {Num}
+DeviceOperation set {Param} temperature of {Device} to {Num} degrees
+DeviceOperation set the {Param} temperature of {Device} to {Num}
+DeviceOperation set the {Param} temperature of {Device} to {Num} degrees
+DeviceOperation to set {Param} temperature of {Device} to {Num}
+DeviceOperation to set {Param} temperature of {Device} to {Num} degrees
+DeviceOperation to set the {Param} temperature of {Device} to {Num}
+DeviceOperation to set the {Param} temperature of {Device} to {Num} degrees
+
+DeviceOperation to set the temp of {Device} to {Num}
+DeviceOperation to set the temp of {Device} to {Num} degrees
+DeviceOperation to set the temp of the {Device} to {Num}
+DeviceOperation to set the temp of the {Device} to {Num} degrees
+DeviceOperation to set the temp to {Num} in {Device}
+DeviceOperation to set the temp to {Num} in the {Device}
+DeviceOperation to set the temp to {Num} degrees in {Device}
+DeviceOperation to set the temp to {Num} degrees in the {Device}
 DeviceOperation to set the temperature of {Device} to {Num}
-DeviceOperation to set the temperature to {Num} degrees in {Device}
+DeviceOperation to set the temperature of {Device} to {Num} degrees
+DeviceOperation to set the temperature of the {Device} to {Num}
+DeviceOperation to set the temperature of the {Device} to {Num} degrees
 DeviceOperation to set the temperature to {Num} in {Device}
-DeviceOperation to set the temperature to {Num} degrees in the {Device}
 DeviceOperation to set the temperature to {Num} in the {Device}
-DeviceOperation turn {Device} {Param} mode to {Operator}
-DeviceOperation set {Device} {Param} to {Operator}
-DeviceOperation turn {Operator} {Device} {Param} mode
-DeviceOperation turn {Operator} {Device} to {Param}
-DeviceOperation set the {Device} to {Param} mode
-DeviceOperation to {Operator} {Param} on the {Device}
-DeviceOperation to {Operator} {Device} with {Param}
-DeviceOperation to {Operator} {Param} with {Device}
-DeviceOperation {Operator} {Device} {Param}
-DeviceOperation {Operator} {Param} {Device}
-DeviceOperation {Device} {Operator} {Param}
-DeviceOperation about {Device}
-DeviceOperation about {Device} {Operator}
-DeviceOperation about the {Device} {Operator}
-DeviceOperation about the {Device}
-DeviceOperation {Operator} of {Device}
-DeviceOperation the {Operator} of {Device}
-DeviceOperation for the {Operator} of {Device}
-DeviceOperation for the last {Num} {Operator} of {Device}
-DeviceOperation for the last {Num} {Operator} of the {Device}
-DeviceOperation for the last {Num} {Device} {Operator}
-DeviceOperation last {Num} {Operator} on {Device}
-DeviceOperation play the last {Num} {Operator} on {Device}
-DeviceOperation play the last {Num} {Operator} from {Device}
-DeviceOperation play the last {Num} {Operator} from the {Device}
-DeviceOperation to give me the last {Operator} for the {Device}
-DeviceOperation to give me the last {Num} {Operator} for the {Device}
-DeviceOperation what is the {Operator} of {Device}
-DeviceOperation what is the {Operator} of the {Device}
+DeviceOperation to set the temperature to {Num} degrees in {Device}
+DeviceOperation to set the temperature to {Num} degrees in the {Device}
+
+DeviceOperation {Device} temp
 DeviceOperation {Device} temperature
+DeviceOperation what is the {Device} temp
+DeviceOperation what is the {Device} temperature
+DeviceOperation what is the temp of {Device}
+DeviceOperation what is the temp of the {Device}
+DeviceOperation what is the temp in the {Device}
+DeviceOperation what is the temp for the {Device}
 DeviceOperation what is the temperature of {Device}
 DeviceOperation what is the temperature of the {Device}
 DeviceOperation what is the temperature in the {Device}
 DeviceOperation what is the temperature for the {Device}
+DeviceOperation how cold is the {Device}
+DeviceOperation how cold is it in the {Device}
+DeviceOperation how hot is the {Device}
+DeviceOperation how hot is it in the {Device}
+
+DeviceOperation about {Device}
+DeviceOperation about {Device} {Operator}
+DeviceOperation about the {Device}
+DeviceOperation about the {Device} {Operator}
+
 DeviceOperation for {Device} {Operator}
 DeviceOperation for {Operator} of {Device}
 DeviceOperation for {Operator} of the {Device}
 DeviceOperation for the {Operator} of {Device}
 DeviceOperation for the {Operator} of the {Device}
-DeviceOperation how hot is it in the {Device}
-DeviceOperation how cold is it in the {Device}
-DeviceOperation how hot is the {Device}
-DeviceOperation how cold is the {Device}
+DeviceOperation the {Operator} of {Device}
+DeviceOperation what is the {Operator} of {Device}
+DeviceOperation what is the {Operator} of the {Device}
+
+DeviceOperation last {Num} {Operator} on {Device}
+DeviceOperation for the last {Num} {Device} {Operator}
+DeviceOperation for the last {Num} {Operator} of {Device}
+DeviceOperation for the last {Num} {Operator} of the {Device}
+DeviceOperation play the last {Num} {Operator} from {Device}
+DeviceOperation play the last {Num} {Operator} from the {Device}
+DeviceOperation play the last {Num} {Operator} on {Device}
+DeviceOperation play the last {Num} {Operator} on the {Device}
+DeviceOperation to give me the last {Operator} for {Device}
+DeviceOperation to give me the last {Num} {Operator} for {Device}
+DeviceOperation to give me the last {Operator} for the {Device}
+DeviceOperation to give me the last {Num} {Operator} for the {Device}
+
+DeviceOperation is {Device} closed
+DeviceOperation is {Device} open
+DeviceOperation is {Device} locked
+DeviceOperation is {Device} unlocked
+DeviceOperation is the {Device} closed
+DeviceOperation is the {Device} open
 DeviceOperation is the {Device} locked
 DeviceOperation is the {Device} unlocked
-DeviceOperation is the {Device} open
-DeviceOperation is the {Device} closed
-MacroOperation set {Macro} to {MNum}
-MacroOperation {Macro} to {MNum}
+
+
 MacroOperation {Macro} {MNum}
+MacroOperation {Macro} {MNum} degrees
 MacroOperation {Macro} {MNum} percent
-MacroOperation set the level of {Macro} to {MNum} percent
-MacroOperation set the level of {Macro} to {MNum}
-MacroOperation set the {Macro} to {MNum}
-MacroOperation to set {Macro} to {MNum}
-MacroOperation to set the {Macro} to {MNum}
+MacroOperation {Macro} to {MNum}
+MacroOperation {Macro} to {MNum} degrees
+MacroOperation {Macro} to {MNum} percent
+MacroOperation {Macro} {MParam}
+MacroOperation {Macro} to {MParam}
+MacroOperation {Macro} to {MParam} mode
+MacroOperation {Macro} {MParam} to {MNum}
+MacroOperation {Macro} {MParam} to {MNum} degrees
+MacroOperation {Macro} to {MParam} and {MNum}
+MacroOperation {Macro} to {MParam} and {MNum} percent
+MacroOperation {MParam} of {Macro} to {MNum}
+MacroOperation {MParam} of {Macro} to {MNum} degrees
+
+MacroOperation set {Macro} to {MNum}
+MacroOperation set {Macro} to {MNum} degrees
 MacroOperation set {Macro} to {MNum} percent
+MacroOperation set {Macro} {MParam}
+MacroOperation set {Macro} to {MParam}
+MacroOperation set {Macro} to {MParam} mode
+MacroOperation set {Macro} {MParam} to {MNum}
+MacroOperation set {Macro} {MParam} to {MNum} degrees
+MacroOperation set {Macro} to {MParam} and {MNum}
+MacroOperation set {Macro} to {MParam} and {MNum} percent
+MacroOperation set {MParam} of {Macro} to {MNum}
+MacroOperation set {MParam} of {Macro} to {MNum} degrees
+MacroOperation set the {Macro} to {MNum}
+MacroOperation set the {Macro} to {MNum} degrees
 MacroOperation set the {Macro} to {MNum} percent
+MacroOperation set the {Macro} {MParam}
+MacroOperation set the {Macro} to {MParam}
+MacroOperation set the {Macro} to {MParam} mode
+MacroOperation set the {Macro} {MParam} to {MNum}
+MacroOperation set the {Macro} {MParam} to {MNum} degrees
+MacroOperation set the {Macro} to {MParam} and {MNum}
+MacroOperation set the {Macro} to {MParam} and {MNum} percent
+MacroOperation set the {MParam} of {Macro} to {MNum}
+MacroOperation set the {MParam} of {Macro} to {MNum} degrees
+MacroOperation to set {Macro} to {MNum}
+MacroOperation to set {Macro} to {MNum} degrees
 MacroOperation to set {Macro} to {MNum} percent
+MacroOperation to set {Macro} {MParam}
+MacroOperation to set {Macro} to {MParam}
+MacroOperation to set {Macro} to {MParam} mode
+MacroOperation to set {Macro} {MParam} to {MNum}
+MacroOperation to set {Macro} {MParam} to {MNum} degrees
+MacroOperation to set {Macro} to {MParam} and {MNum}
+MacroOperation to set {Macro} to {MParam} and {MNum} percent
+MacroOperation to set {MParam} of {Macro} to {MNum}
+MacroOperation to set {MParam} of {Macro} to {MNum} degrees
+MacroOperation to set the {Macro} to {MNum}
+MacroOperation to set the {Macro} to {MNum} degrees
 MacroOperation to set the {Macro} to {MNum} percent
-MacroOperation to turn {Macro} to {MNum} percent
-MacroOperation to turn the {Macro} to {MNum} percent
+MacroOperation to set the {Macro} {MParam}
+MacroOperation to set the {Macro} to {MParam}
+MacroOperation to set the {Macro} to {MParam} mode
+MacroOperation to set the {Macro} {MParam} to {MNum}
+MacroOperation to set the {Macro} {MParam} to {MNum} degrees
+MacroOperation to set the {Macro} to {MParam} and {MNum}
+MacroOperation to set the {Macro} to {MParam} and {MNum} percent
+MacroOperation to set the {MParam} of {Macro} to {MNum}
+MacroOperation to set the {MParam} of {Macro} to {MNum} degrees
+
 MacroOperation to turn {Macro} to {MNum}
+MacroOperation to turn {Macro} to {MNum} percent
 MacroOperation to turn the {Macro} to {MNum}
-MacroOperation to turn {MCmd} the {Macro}
+MacroOperation to turn the {Macro} to {MNum} percent
 MacroOperation to turn {MCmd} {Macro}
+MacroOperation to turn {MCmd} the {Macro}
 MacroOperation turn {MCmd} {Macro}
 MacroOperation to turn {Macro} {MCmd}
 MacroOperation turn the {Macro} {MCmd}
@@ -287,53 +551,91 @@ MacroOperation {Cancel} {Macro}
 MacroOperation {Macro} {Cancel}
 MacroOperation {Cancel} {Macro} password {MPW}
 MacroOperation {Macro} {Cancel} password {MPW}
-MacroOperation turn {Macro} {MParam}
-MacroOperation turn {Macro} to {MParam}
-MacroOperation turn the {Macro} {MParam}
-MacroOperation turn the {Macro} to {MParam}
-MacroOperation turn the {Macro} to the color {MParam}
-MacroOperation to turn the {Macro} to {MParam}
-MacroOperation to turn the {Macro} to the color of {MParam}
-MacroOperation turn the color of {Macro} to {MParam}
-MacroOperation turn the color of the {Macro} to {MParam}
-MacroOperation turn the color of {Macro} to {MParam} and set level to {MNum}
-MacroOperation turn the color of {Macro} to {MParam} and set level to {MNum} percent
-MacroOperation turn the color of {Macro} to {MParam} and set the level to {MNum}
-MacroOperation turn the color of {Macro} to {MParam} and set the level to {MNum} percent
-MacroOperation turn the color of {Macro} to {MParam} and {MCmd}
-MacroOperation turn the color of {Macro} to {MParam} and {MNum}
-MacroOperation turn the color of {Macro} to {MParam} and {MNum} percent
-MacroOperation turn the {Macro} to {MParam} and {MCmd}
-MacroOperation turn the {Macro} to {MParam} and {MNum}
-MacroOperation turn the {Macro} to {MParam} and {MNum} percent
-MacroOperation turn {Macro} to {MParam} and {MNum}
-MacroOperation turn {Macro} to {MParam} and {MNum} percent
-MacroOperation turn {Macro} to {MParam} and a brightess of {MNum}
-MacroOperation turn {Macro} to {MParam} and a brightess of {MNum} percent
-MacroOperation turn {Macro} to {MParam} and set level to {MNum}
-MacroOperation turn {Macro} to {MParam} and set level to {MNum} percent
-MacroOperation turn {Macro} to {MParam} and set the level to {MNum}
-MacroOperation turn {Macro} to {MParam} and set the level to {MNum} percent
+
+MacroOperation {Macro} to the color {MParam}
+MacroOperation {Macro} to the color of {MParam}
+MacroOperation color of {Macro} to {MParam}
+MacroOperation color of the {Macro} to {MParam}
+MacroOperation {Macro} to {MParam} and a brightess of {MNum}
+MacroOperation {Macro} to {MParam} and a brightess of {MNum} percent
+MacroOperation {Macro} to {MParam} and set level to {MNum}
+MacroOperation {Macro} to {MParam} and set level to {MNum} percent
+MacroOperation {Macro} to {MParam} and set the level to {MNum}
+MacroOperation {Macro} to {MParam} and set the level to {MNum} percent
+MacroOperation color of {Macro} to {MParam} and a brightness of {MNum}
+MacroOperation color of {Macro} to {MParam} and a brightness of {MNum} percent
+MacroOperation color of {Macro} to {MParam} and set level to {MNum}
+MacroOperation color of {Macro} to {MParam} and set level to {MNum} percent
+MacroOperation color of {Macro} to {MParam} and set the level to {MNum}
+MacroOperation color of {Macro} to {MParam} and set the level to {MNum} percent
+
+MacroOperation set {Macro} to the color {MParam}
+MacroOperation set {Macro} to the color of {MParam}
+MacroOperation set color of {Macro} to {MParam}
+MacroOperation set color of the {Macro} to {MParam}
+MacroOperation set the {Macro} to the color {MParam}
+MacroOperation set the {Macro} to the color of {MParam}
+MacroOperation set the color of {Macro} to {MParam}
+MacroOperation set the color of the {Macro} to {MParam}
+MacroOperation to set the {Macro} to the color {MParam}
+MacroOperation to set the {Macro} to the color of {MParam}
+MacroOperation to set the color of {Macro} to {MParam}
+MacroOperation to set the color of the {Macro} to {MParam}
+MacroOperation set {Macro} to {MParam} and a brightess of {MNum}
+MacroOperation set {Macro} to {MParam} and a brightess of {MNum} percent
+MacroOperation set {Macro} to {MParam} and set level to {MNum}
+MacroOperation set {Macro} to {MParam} and set level to {MNum} percent
+MacroOperation set {Macro} to {MParam} and set the level to {MNum}
+MacroOperation set {Macro} to {MParam} and set the level to {MNum} percent
+MacroOperation set color of {Macro} to {MParam} and a brightness of {MNum}
+MacroOperation set color of {Macro} to {MParam} and a brightness of {MNum} percent
+MacroOperation set color of {Macro} to {MParam} and set level to {MNum}
+MacroOperation set color of {Macro} to {MParam} and set level to {MNum} percent
+MacroOperation set color of {Macro} to {MParam} and set the level to {MNum}
+MacroOperation set color of {Macro} to {MParam} and set the level to {MNum} percent
+MacroOperation set the {Macro} to {MParam} and a brightess of {MNum}
+MacroOperation set the {Macro} to {MParam} and a brightess of {MNum} percent
+MacroOperation set the {Macro} to {MParam} and set level to {MNum}
+MacroOperation set the {Macro} to {MParam} and set level to {MNum} percent
+MacroOperation set the {Macro} to {MParam} and set the level to {MNum}
+MacroOperation set the {Macro} to {MParam} and set the level to {MNum} percent
+MacroOperation set the color of {Macro} to {MParam} and a brightness of {MNum}
+MacroOperation set the color of {Macro} to {MParam} and a brightness of {MNum} percent
+MacroOperation set the color of {Macro} to {MParam} and set level to {MNum}
+MacroOperation set the color of {Macro} to {MParam} and set level to {MNum} percent
+MacroOperation set the color of {Macro} to {MParam} and set the level to {MNum}
+MacroOperation set the color of {Macro} to {MParam} and set the level to {MNum} percent
+MacroOperation to set the {Macro} to {MParam} and a brightess of {MNum}
+MacroOperation to set the {Macro} to {MParam} and a brightess of {MNum} percent
+MacroOperation to set the {Macro} to {MParam} and set level to {MNum}
+MacroOperation to set the {Macro} to {MParam} and set level to {MNum} percent
+MacroOperation to set the {Macro} to {MParam} and set the level to {MNum}
+MacroOperation to set the {Macro} to {MParam} and set the level to {MNum} percent
+MacroOperation to set the color of {Macro} to {MParam} and a brightness of {MNum}
+MacroOperation to set the color of {Macro} to {MParam} and a brightness of {MNum} percent
+MacroOperation to set the color of {Macro} to {MParam} and to set level to {MNum}
+MacroOperation to set the color of {Macro} to {MParam} and to set level to {MNum} percent
+MacroOperation to set the color of {Macro} to {MParam} and to set the level to {MNum}
+MacroOperation to set the color of {Macro} to {MParam} and to set the level to {MNum} percent
 
 MacroOperation change {Macro} {MParam}
 MacroOperation change {Macro} to {MParam}
+MacroOperation change {Macro} to the color {MParam}
+MacroOperation change {Macro} to the color of {MParam}
+MacroOperation change color of {Macro} to {MParam}
+MacroOperation change color of the {Macro} to {MParam}
 MacroOperation change the {Macro} {MParam}
 MacroOperation change the {Macro} to {MParam}
 MacroOperation change the {Macro} to the color {MParam}
-MacroOperation to change the {Macro} to {MParam}
-MacroOperation to change the {Macro} to the color of {MParam}
+MacroOperation change the {Macro} to the color of {MParam}
 MacroOperation change the color of {Macro} to {MParam}
 MacroOperation change the color of the {Macro} to {MParam}
-MacroOperation change the color of {Macro} to {MParam} and set level to {MNum}
-MacroOperation change the color of {Macro} to {MParam} and set level to {MNum} percent
-MacroOperation change the color of {Macro} to {MParam} and set the level to {MNum}
-MacroOperation change the color of {Macro} to {MParam} and set the level to {MNum} percent
-MacroOperation change the color of {Macro} to {MParam} and {MCmd}
-MacroOperation change the color of {Macro} to {MParam} and {MNum} percent
-MacroOperation change the color of {Macro} to {MParam} and {MNum}
-MacroOperation change the {Macro} to {MParam} and {MCmd}
-MacroOperation change the {Macro} to {MParam} and {MNum}
-MacroOperation change the {Macro} to {MParam} and {MNum} percent
+MacroOperation to change the {Macro} {MParam}
+MacroOperation to change the {Macro} to {MParam}
+MacroOperation to change the {Macro} to the color {MParam}
+MacroOperation to change the {Macro} to the color of {MParam}
+MacroOperation to change the color of {Macro} to {MParam}
+MacroOperation to change the color of the {Macro} to {MParam}
 MacroOperation change {Macro} to {MParam} and {MNum}
 MacroOperation change {Macro} to {MParam} and {MNum} percent
 MacroOperation change {Macro} to {MParam} and a brightess of {MNum}
@@ -342,70 +644,166 @@ MacroOperation change {Macro} to {MParam} and set level to {MNum}
 MacroOperation change {Macro} to {MParam} and set level to {MNum} percent
 MacroOperation change {Macro} to {MParam} and set the level to {MNum}
 MacroOperation change {Macro} to {MParam} and set the level to {MNum} percent
-MacroOperation set {Macro} {MParam}
-MacroOperation set {Macro} to {MParam}
-MacroOperation set the {Macro} {MParam}
-MacroOperation set the {Macro} to {MParam}
-MacroOperation set the {Macro} to the color {MParam}
-MacroOperation to set the {Macro} to {MParam}
-MacroOperation to set the {Macro} to the color of {MParam}
-MacroOperation set the color of {Macro} to {MParam}
-MacroOperation set the color of the {Macro} to {MParam}
-MacroOperation set the color of {Macro} to {MParam} and set level to {MNum}
-MacroOperation set the color of {Macro} to {MParam} and set level to {MNum} percent
-MacroOperation set the color of {Macro} to {MParam} and set the level to {MNum}
-MacroOperation set the color of {Macro} to {MParam} and set the level to {MNum} percent
+MacroOperation change color of {Macro} to {MParam} and a brightness of {MNum}
+MacroOperation change color of {Macro} to {MParam} and a brightness of {MNum} percent
+MacroOperation change color of {Macro} to {MParam} and set level to {MNum}
+MacroOperation change color of {Macro} to {MParam} and set level to {MNum} percent
+MacroOperation change color of {Macro} to {MParam} and set the level to {MNum}
+MacroOperation change color of {Macro} to {MParam} and set the level to {MNum} percent
+MacroOperation change the {Macro} to {MParam} and {MNum}
+MacroOperation change the {Macro} to {MParam} and {MNum} percent
+MacroOperation change the {Macro} to {MParam} and a brightess of {MNum}
+MacroOperation change the {Macro} to {MParam} and a brightess of {MNum} percent
+MacroOperation change the {Macro} to {MParam} and set level to {MNum}
+MacroOperation change the {Macro} to {MParam} and set level to {MNum} percent
+MacroOperation change the {Macro} to {MParam} and set the level to {MNum}
+MacroOperation change the {Macro} to {MParam} and set the level to {MNum} percent
+MacroOperation change the color of {Macro} to {MParam} and a brightness of {MNum}
+MacroOperation change the color of {Macro} to {MParam} and a brightness of {MNum} percent
+MacroOperation change the color of {Macro} to {MParam} and set level to {MNum}
+MacroOperation change the color of {Macro} to {MParam} and set level to {MNum} percent
+MacroOperation change the color of {Macro} to {MParam} and set the level to {MNum}
+MacroOperation change the color of {Macro} to {MParam} and set the level to {MNum} percent
+MacroOperation to change the {Macro} to {MParam} and {MNum}
+MacroOperation to change the {Macro} to {MParam} and {MNum} percent
+MacroOperation to change the {Macro} to {MParam} and a brightess of {MNum}
+MacroOperation to change the {Macro} to {MParam} and a brightess of {MNum} percent
+MacroOperation to change the {Macro} to {MParam} and set level to {MNum}
+MacroOperation to change the {Macro} to {MParam} and set level to {MNum} percent
+MacroOperation to change the {Macro} to {MParam} and set the level to {MNum}
+MacroOperation to change the {Macro} to {MParam} and set the level to {MNum} percent
+MacroOperation to change the color of {Macro} to {MParam} and a brightness of {MNum}
+MacroOperation to change the color of {Macro} to {MParam} and a brightness of {MNum} percent
+MacroOperation to change the color of {Macro} to {MParam} and to set level to {MNum}
+MacroOperation to change the color of {Macro} to {MParam} and to set level to {MNum} percent
+MacroOperation to change the color of {Macro} to {MParam} and to set the level to {MNum}
+MacroOperation to change the color of {Macro} to {MParam} and to set the level to {MNum} percent
+
+MacroOperation turn {Macro} {MParam}
+MacroOperation turn {Macro} to {MParam}
+MacroOperation turn {Macro} to the color {MParam}
+MacroOperation turn {Macro} to the color of {MParam}
+MacroOperation turn color of {Macro} to {MParam}
+MacroOperation turn color of the {Macro} to {MParam}
+MacroOperation turn the {Macro} {MParam}
+MacroOperation turn the {Macro} to {MParam}
+MacroOperation turn the {Macro} to the color {MParam}
+MacroOperation turn the {Macro} to the color of {MParam}
+MacroOperation turn the color of {Macro} to {MParam}
+MacroOperation turn the color of the {Macro} to {MParam}
+MacroOperation to turn the {Macro} {MParam}
+MacroOperation to turn the {Macro} to {MParam}
+MacroOperation to turn the {Macro} to the color {MParam}
+MacroOperation to turn the {Macro} to the color of {MParam}
+MacroOperation to turn the color of {Macro} to {MParam}
+MacroOperation to turn the color of the {Macro} to {MParam}
+MacroOperation turn {Macro} to {MParam} and {MNum}
+MacroOperation turn {Macro} to {MParam} and {MNum} percent
+MacroOperation turn {Macro} to {MParam} and a brightess of {MNum}
+MacroOperation turn {Macro} to {MParam} and a brightess of {MNum} percent
+MacroOperation turn {Macro} to {MParam} and set level to {MNum}
+MacroOperation turn {Macro} to {MParam} and set level to {MNum} percent
+MacroOperation turn {Macro} to {MParam} and set the level to {MNum}
+MacroOperation turn {Macro} to {MParam} and set the level to {MNum} percent
+MacroOperation turn color of {Macro} to {MParam} and a brightness of {MNum}
+MacroOperation turn color of {Macro} to {MParam} and a brightness of {MNum} percent
+MacroOperation turn color of {Macro} to {MParam} and set level to {MNum}
+MacroOperation turn color of {Macro} to {MParam} and set level to {MNum} percent
+MacroOperation turn color of {Macro} to {MParam} and set the level to {MNum}
+MacroOperation turn color of {Macro} to {MParam} and set the level to {MNum} percent
+MacroOperation turn the {Macro} to {MParam} and {MNum}
+MacroOperation turn the {Macro} to {MParam} and {MNum} percent
+MacroOperation turn the {Macro} to {MParam} and a brightess of {MNum}
+MacroOperation turn the {Macro} to {MParam} and a brightess of {MNum} percent
+MacroOperation turn the {Macro} to {MParam} and set level to {MNum}
+MacroOperation turn the {Macro} to {MParam} and set level to {MNum} percent
+MacroOperation turn the {Macro} to {MParam} and set the level to {MNum}
+MacroOperation turn the {Macro} to {MParam} and set the level to {MNum} percent
+MacroOperation turn the color of {Macro} to {MParam} and a brightness of {MNum}
+MacroOperation turn the color of {Macro} to {MParam} and a brightness of {MNum} percent
+MacroOperation turn the color of {Macro} to {MParam} and set level to {MNum}
+MacroOperation turn the color of {Macro} to {MParam} and set level to {MNum} percent
+MacroOperation turn the color of {Macro} to {MParam} and set the level to {MNum}
+MacroOperation turn the color of {Macro} to {MParam} and set the level to {MNum} percent
+MacroOperation to turn the {Macro} to {MParam} and {MNum}
+MacroOperation to turn the {Macro} to {MParam} and {MNum} percent
+MacroOperation to turn the {Macro} to {MParam} and a brightess of {MNum}
+MacroOperation to turn the {Macro} to {MParam} and a brightess of {MNum} percent
+MacroOperation to turn the {Macro} to {MParam} and set level to {MNum}
+MacroOperation to turn the {Macro} to {MParam} and set level to {MNum} percent
+MacroOperation to turn the {Macro} to {MParam} and set the level to {MNum}
+MacroOperation to turn the {Macro} to {MParam} and set the level to {MNum} percent
+MacroOperation to turn the color of {Macro} to {MParam} and a brightness of {MNum}
+MacroOperation to turn the color of {Macro} to {MParam} and a brightness of {MNum} percent
+MacroOperation to turn the color of {Macro} to {MParam} and set level to {MNum}
+MacroOperation to turn the color of {Macro} to {MParam} and set level to {MNum} percent
+MacroOperation to turn the color of {Macro} to {MParam} and set the level to {MNum}
+MacroOperation to turn the color of {Macro} to {MParam} and set the level to {MNum} percent
+
+MacroOperation {Macro} to {MParam} and {MCmd}
+MacroOperation color of {Macro} to {MParam} and {MCmd}
+MacroOperation set {Macro} to {MParam} and {MCmd}
 MacroOperation set the color of {Macro} to {MParam} and {MCmd}
-MacroOperation set the color of {Macro} to {MParam} and {MNum}
-MacroOperation set the color of {Macro} to {MParam} and {MNum} percent
-MacroOperation set the {Macro} to {MParam} and {MCmd}
-MacroOperation set the {Macro} to {MParam} and {MNum}
-MacroOperation set the {Macro} to {MParam} and {MNum} percent
-MacroOperation set {Macro} to {MParam} and {MNum}
-MacroOperation set {Macro} to {MParam} and {MNum} percent
-MacroOperation set {Macro} to {MParam} and a brightess of {MNum}
-MacroOperation set {Macro} to {MParam} and a brightess of {MNum} percent
-MacroOperation set {Macro} to {MParam} and set level to {MNum}
-MacroOperation set {Macro} to {MParam} and set level to {MNum} percent
-MacroOperation set {Macro} to {MParam} and set the level to {MNum}
-MacroOperation set {Macro} to {MParam} and set the level to {MNum} percent
+MacroOperation change the {Macro} to {MParam} and {MCmd}
+MacroOperation change the color of {Macro} to {MParam} and {MCmd}
+MacroOperation turn the {Macro} to {MParam} and {MCmd}
+MacroOperation turn the color of {Macro} to {MParam} and {MCmd}
 MacroOperation {MCmd} the {Macro} by {MNum}
 MacroOperation {MCmd} the {Macro} by {MNum} percent
-MacroOperation set {MParam} of {Macro} to {MNum} degrees
-MacroOperation set {MParam} of {Macro} to {MNum}
-MacroOperation set the {MParam} of {Macro} to {MNum} degrees
-MacroOperation set the {MParam} of {Macro} to {MNum}
-MacroOperation set {MParam} setpoint of {Macro} to {MNum} degrees
+
+MacroOperation {MParam} setpoint of {Macro} to {MNum}
+MacroOperation {MParam} setpoint of {Macro} to {MNum} degrees
 MacroOperation set {MParam} setpoint of {Macro} to {MNum}
-MacroOperation set the {MParam} setpoint of {Macro} to {MNum} degrees
+MacroOperation set {MParam} setpoint of {Macro} to {MNum} degrees
 MacroOperation set the {MParam} setpoint of {Macro} to {MNum}
-MacroOperation to set {MParam} setpoint of {Macro} to {MNum} degrees
+MacroOperation set the {MParam} setpoint of {Macro} to {MNum} degrees
 MacroOperation to set {MParam} setpoint of {Macro} to {MNum}
-MacroOperation to set the {MParam} setpoint of {Macro} to {MNum} degrees
+MacroOperation to set {MParam} setpoint of {Macro} to {MNum} degrees
 MacroOperation to set the {MParam} setpoint of {Macro} to {MNum}
-MacroOperation set {Macro} {MParam} to {MNum} degrees
-MacroOperation set {Macro} {MParam} to {MNum}
-MacroOperation to set {Macro} {MParam} to {MNum} degrees
-MacroOperation to set {Macro} {MParam} to {MNum}
-MacroOperation set the {Macro} {MParam} to {MNum} degrees
-MacroOperation set the {Macro} {MParam} to {MNum}
-MacroOperation set the {Macro} to {MNum}
-MacroOperation set the {Macro} to {MNum} degrees
-MacroOperation to set the {Macro} {MParam} to {MNum} degrees
-MacroOperation to set the {Macro} {MParam} to {MNum}
-MacroOperation to set the temperature of {Macro} to {MNum} degrees
+MacroOperation to set the {MParam} setpoint of {Macro} to {MNum} degrees
+MacroOperation {MParam} temp of {Macro} to {MNum}
+MacroOperation {MParam} temp of {Macro} to {MNum} degrees
+MacroOperation set {MParam} temp of {Macro} to {MNum}
+MacroOperation set {MParam} temp of {Macro} to {MNum} degrees
+MacroOperation set the {MParam} temp of {Macro} to {MNum}
+MacroOperation set the {MParam} temp of {Macro} to {MNum} degrees
+MacroOperation to set {MParam} temp of {Macro} to {MNum}
+MacroOperation to set {MParam} temp of {Macro} to {MNum} degrees
+MacroOperation to set the {MParam} temp of {Macro} to {MNum}
+MacroOperation to set the {MParam} temp of {Macro} to {MNum} degrees
+MacroOperation {MParam} temperature of {Macro} to {MNum}
+MacroOperation {MParam} temperature of {Macro} to {MNum} degrees
+MacroOperation set {MParam} temperature of {Macro} to {MNum}
+MacroOperation set {MParam} temperature of {Macro} to {MNum} degrees
+MacroOperation set the {MParam} temperature of {Macro} to {MNum}
+MacroOperation set the {MParam} temperature of {Macro} to {MNum} degrees
+MacroOperation to set {MParam} temperature of {Macro} to {MNum}
+MacroOperation to set {MParam} temperature of {Macro} to {MNum} degrees
+MacroOperation to set the {MParam} temperature of {Macro} to {MNum}
+MacroOperation to set the {MParam} temperature of {Macro} to {MNum} degrees
+
+MacroOperation to set the temp of {Macro} to {MNum}
+MacroOperation to set the temp of {Macro} to {MNum} degrees
+MacroOperation to set the temp of the {Macro} to {MNum}
+MacroOperation to set the temp of the {Macro} to {MNum} degrees
+MacroOperation to set the temp to {MNum} in {Macro}
+MacroOperation to set the temp to {MNum} in the {Macro}
+MacroOperation to set the temp to {MNum} degrees in {Macro}
+MacroOperation to set the temp to {MNum} degrees in the {Macro}
 MacroOperation to set the temperature of {Macro} to {MNum}
-MacroOperation to set the temperature of the {Macro} to {MNum} degrees
+MacroOperation to set the temperature of {Macro} to {MNum} degrees
 MacroOperation to set the temperature of the {Macro} to {MNum}
-MacroOperation to set the temperature to {MNum} degrees in {Macro}
+MacroOperation to set the temperature of the {Macro} to {MNum} degrees
 MacroOperation to set the temperature to {MNum} in {Macro}
-MacroOperation to set the temperature to {MNum} degrees in the {Macro}
 MacroOperation to set the temperature to {MNum} in the {Macro}
+MacroOperation to set the temperature to {MNum} degrees in {Macro}
+MacroOperation to set the temperature to {MNum} degrees in the {Macro}
+
 MacroOperation turn {Macro} {MParam} mode to {MCmd}
 MacroOperation set {Macro} {MParam} to {MCmd}
 MacroOperation turn {MCmd} {Macro} {MParam} mode
 MacroOperation turn {MCmd} {Macro} to {MParam}
-MacroOperation set the {Macro} to {MParam} mode
+
 ListOperation list {Type}
 ListOperation {Type}
 ListOperation about {Type}
