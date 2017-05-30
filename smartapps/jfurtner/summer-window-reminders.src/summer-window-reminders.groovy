@@ -29,8 +29,7 @@ definition(
 
 preferences {
 	section('Options') {	
-    	label(title:'Name')
-        input 'modes', 'mode', title: 'Run when mode is', required: false//multiple: true,
+        input 'modes', 'mode', title: 'Run when mode is', required: false, multiple: true
     	input 'people', 
         	'capability.presenceSensor', 
         	title: 'Send push notification when any of these people present', 
@@ -39,15 +38,15 @@ preferences {
         //mode(name: 'modesToRunIn', title: 'Select mode(s) in which to execute', multiple: true, required: true)
         input 'hoursBetweenUpdates', 'number', 
         	title: 'Number of hours between updates', 
-            defaultValue:16,
+            defaultValue:1,
             range: '0..23',
             required: true
     }
 	section("Outside") {
-		input "outsideTemperature", "capability.temperatureMeasurement", required: true
+		input "outsideTemperature", "capability.temperatureMeasurement", title: 'Select exterior temperature sensor', required: true
 	}
     section("Inside") {
-    	input "insideTemperature", "capability.temperatureMeasurement", required: true
+    	input "insideTemperature", "capability.temperatureMeasurement", title: 'Select interior temperature sensor', required: true
     }
 }
 
@@ -67,40 +66,57 @@ def updated() {
 
 def initialize() {
 	log.debug 'smartapp init'
-	runEvery5Minutes(checkTemperature)
-    state.lastNotificationOutLTIn = initDate()
-    state.lastNotificationInLTOut = initDate()
+	runEvery1Minute(checkTemperature)
+    if (state.lastNotificationOutLTIn == null) {
+    	state.lastNotificationOutLTIn = initDate()
+    }
+    if (state.lastNotificationInLTOut == null) {
+    	state.lastNotificationInLTOut = initDate()
+    }
 }
 
 def initDate() {
-	return now() - 600000//86400000
+	return now() - 86400000
 }
 
-def checkTemperature(evt) {
-	def inValidMode = false
+def inValidMode() {
+	Boolean inValidMode = false
+    String curModeName = location.currentMode.name
     for (m in modes) {
-    	log.debug "Testing mode ${m}"
-    	if (location.mode == "${m}") {
+    	if (m == curModeName) {
         	inValidMode = true
             break
         }
     }
-    if (!inValidmode)
+    if (!inValidMode)
     {
-    	log.debug "Mode '${location.mode}' is not a valid mode (${modes})"
-    	return
+    	log.debug "Mode '${curModeName}' is not a valid mode. Valid modes:${modes}"
+        return false
     }
-    def anyonePresent = false;
+    
+    return true
+}
+
+def validPersonPresent() {
     for (person in people) {
         if (person.currentPresence == "present") {
-            anyonePresent = true
-            break
+        	log.debug "${person} present"
+        	return true
         }
     }
     if (!anyonePresent)
     {
         log.debug 'Not sending alert: no people present'
-        return
+        return false
+    }
+}
+
+def checkTemperature(evt) {
+	if (!inValidMode()) {
+    	return
+    }
+    if (!validPersonPresent) {
+    	return
     }
     log.debug 'Initialization'
     def msg = ''
@@ -126,7 +142,7 @@ def checkTemperature(evt) {
 
     log.debug "tests complete: m:${msg} l:${last}"
 
-    def addHours = hoursBetweenUpdates*180000//3600000
+    def addHours = hoursBetweenUpdates*3600000
     log.debug "Adding seconds: ${addHours}"
     last = last + addHours
     log.debug "times: l:${last} n:${nowDate}"
