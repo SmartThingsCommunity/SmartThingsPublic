@@ -1,7 +1,7 @@
 /**
  *  Ask Alexa - Lambda Code
  *
- *  Version 1.2.5 - 4/12/17 Copyright © 2017 Michael Struck
+ *  Version 1.2.6 - 5/30/17 Copyright © 2017 Michael Struck
  *  Special thanks for Keith DeLong for code and assistance 
  *  
  *  Version 1.0.0 - Initial release
@@ -20,6 +20,7 @@
  *  Version 1.2.3 - Added follow up to a missing PIN when required, updated copyright to 2017
  *  Version 1.2.4 - Added routines for new message queue
  *  Version 1.2.5 - Changed some of the responses to align with the new Ask Alexa framework
+ *  Version 1.2.6 - Added icon to skill's display card for Show device 
  * 
  *  Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except
  *  in compliance with the License. You may obtain a copy of the License at:
@@ -33,9 +34,9 @@
  */
 'use strict';
 exports.handler = function( event, context ) {
-    var versionTxt = '1.2.5';
-    var versionDate= '04/12/2017';
-    var versionNum = '125';
+    var versionTxt = '1.2.6';
+    var versionDate= '05/30/2017';
+    var versionNum = '126';
     var https = require( 'https' );
     // Paste app code here between the breaks------------------------------------------------
     var STappID = '';
@@ -246,9 +247,12 @@ function output( text, context, card, complete, pName) {
             text: text
         },
         card: {
-            type: "Simple",
+            type: "Standard",
             title: card,
-            content: text
+            text: text,
+            image: {
+                smallImageUrl: "https://raw.githubusercontent.com/MichaelStruck/SmartThingsPublic/master/img/AskAlexa512.png"
+                }
         },
     shouldEndSession: complete
     };
