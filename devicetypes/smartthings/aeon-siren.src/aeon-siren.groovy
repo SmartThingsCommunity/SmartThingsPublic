@@ -61,6 +61,8 @@ metadata {
 def installed() {
 // Device-Watch simply pings if no device events received for 32min(checkInterval)
 	sendEvent(name: "checkInterval", value: 2 * 15 * 60 + 2 * 60, displayed: false, data: [protocol: "zwave", hubHardwareId: device.hub.hardwareID])
+
+	response(secure(zwave.basicV1.basicGet()))
 }
 
 def updated() {

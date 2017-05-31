@@ -86,13 +86,13 @@ import physicalgraph.zwave.commands.doorlockv1.*
 import physicalgraph.zwave.commands.usercodev1.*
 
 def installed() {
-	// Device-Watch simply pings if no device events received for 32min(checkInterval)
-	sendEvent(name: "checkInterval", value: 2 * 15 * 60 + 2 * 60, displayed: false, data: [protocol: "zwave", hubHardwareId: device.hub.hardwareID])
+	// Device-Watch pings if no device events received for 1 hour (checkInterval)
+	sendEvent(name: "checkInterval", value: 1 * 60 * 60, displayed: false, data: [protocol: "zwave", hubHardwareId: device.hub.hardwareID])
 }
 
 def updated() {
-	// Device-Watch simply pings if no device events received for 32min(checkInterval)
-	sendEvent(name: "checkInterval", value: 2 * 15 * 60 + 2 * 60, displayed: false, data: [protocol: "zwave", hubHardwareId: device.hub.hardwareID])
+	// Device-Watch pings if no device events received for 1 hour (checkInterval)
+	sendEvent(name: "checkInterval", value: 1 * 60 * 60, displayed: false, data: [protocol: "zwave", hubHardwareId: device.hub.hardwareID])
 	try {
 		if (!state.init) {
 			state.init = true
@@ -152,6 +152,10 @@ def zwaveEvent(physicalgraph.zwave.commands.securityv1.SecurityCommandsSupported
 
 def zwaveEvent(DoorLockOperationReport cmd) {
 	def result = []
+
+	unschedule("followupStateCheck")
+	unschedule("stateCheck")
+
 	def map = [ name: "lock" ]
 	if (cmd.doorLockMode == 0xFF) {
 		map.value = "locked"
@@ -365,7 +369,7 @@ def zwaveEvent(UserCodeReport cmd) {
 			code = state["set$name"] ?: decrypt(state[name]) ?: "****"
 			state.remove("set$name".toString())
 		} else {
-			map = [ name: "codeReport", value: cmd.userIdentifier, data: [ code: code ] ]
+			map = [ name: "codeReport", value: cmd.userIdentifier, data: [ code: code ], isStateChange: true ]
 			map.descriptionText = "$device.displayName code $cmd.userIdentifier is set"
 			map.displayed = (cmd.userIdentifier != state.requestCode && cmd.userIdentifier != state.pollCode)
 			map.isStateChange = true
@@ -456,11 +460,12 @@ def zwaveEvent(physicalgraph.zwave.commands.timev1.TimeGet cmd) {
 def zwaveEvent(physicalgraph.zwave.commands.basicv1.BasicSet cmd) {
 	// The old Schlage locks use group 1 for basic control - we don't want that, so unsubscribe from group 1
 	def result = [ createEvent(name: "lock", value: cmd.value ? "unlocked" : "locked") ]
-	result << response(zwave.associationV1.associationRemove(groupingIdentifier:1, nodeId:zwaveHubNodeId))
-	if (state.assoc != zwaveHubNodeId) {
-		result << response(zwave.associationV1.associationGet(groupingIdentifier:2))
-	}
-	result
+	def cmds = [
+			zwave.associationV1.associationRemove(groupingIdentifier:1, nodeId:zwaveHubNodeId).format(),
+			"delay 1200",
+			zwave.associationV1.associationGet(groupingIdentifier:2).format()
+	]
+	[result, response(cmds)]
 }
 
 def zwaveEvent(physicalgraph.zwave.commands.batteryv1.BatteryReport cmd) {
@@ -530,11 +535,18 @@ def unlockwtimeout() {
 	lockAndCheck(DoorLockOperationSet.DOOR_LOCK_MODE_DOOR_UNSECURED_WITH_TIMEOUT)
 }
 
-/**
- * PING is used by Device-Watch in attempt to reach the Device
- * */
 def ping() {
-	refresh()
+	runIn(30, followupStateCheck)
+	secure(zwave.doorLockV1.doorLockOperationGet())
+}
+
+def followupStateCheck() {
+	runEvery1Hour(stateCheck)
+	stateCheck()
+}
+
+def stateCheck() {
+	sendHubCommand(new physicalgraph.device.HubAction(secure(zwave.doorLockV1.doorLockOperationGet())))
 }
 
 def refresh() {

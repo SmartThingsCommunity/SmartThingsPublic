@@ -14,12 +14,14 @@
 metadata {
 	definition (name: "Z-Wave Water Valve", namespace: "smartthings", author: "SmartThings", ocfDeviceType: "oic.d.watervalve") {
 		capability "Actuator"
+		capability "Health Check"
 		capability "Valve"
 		capability "Polling"
 		capability "Refresh"
 		capability "Sensor"
 
 		fingerprint deviceId: "0x1006", inClusters: "0x25"
+		fingerprint mfr:"0173", prod:"0003", model:"0002", deviceJoinName: "Leak Intelligence Leak Gopher Water Shutoff Valve"
 	}
 
 	// simulator metadata
@@ -35,7 +37,7 @@ metadata {
 	// tile definitions
 	tiles(scale: 2) {
 		multiAttributeTile(name:"valve", type: "generic", width: 6, height: 4, canChangeIcon: true){
-			tileAttribute ("device.contact", key: "PRIMARY_CONTROL") {
+			tileAttribute ("device.valve", key: "PRIMARY_CONTROL") {
 				attributeState "open", label: '${name}', action: "valve.close", icon: "st.valves.water.open", backgroundColor: "#00A0DC", nextState:"closing"
 				attributeState "closed", label: '${name}', action: "valve.open", icon: "st.valves.water.closed", backgroundColor: "#ffffff", nextState:"opening"
 				attributeState "opening", label: '${name}', action: "valve.close", icon: "st.valves.water.open", backgroundColor: "#00A0DC"
@@ -43,7 +45,7 @@ metadata {
 			}
 		}
 
-		standardTile("refresh", "device.contact", width: 2, height: 2, inactiveLabel: false, decoration: "flat") {
+		standardTile("refresh", "device.valve", width: 2, height: 2, inactiveLabel: false, decoration: "flat") {
 			state "default", label:'', action:"refresh.refresh", icon:"st.secondary.refresh"
 		}
 
@@ -53,7 +55,14 @@ metadata {
 
 }
 
+def installed() {
+	// Device-Watch simply pings if no device events received for 32min(checkInterval)
+	sendEvent(name: "checkInterval", value: 2 * 15 * 60 + 2 * 60, displayed: false, data: [protocol: "zwave", hubHardwareId: device.hub.hardwareID])
+}
+
 def updated() {
+	// Device-Watch simply pings if no device events received for 32min(checkInterval)
+	sendEvent(name: "checkInterval", value: 2 * 15 * 60 + 2 * 60, displayed: false, data: [protocol: "zwave", hubHardwareId: device.hub.hardwareID])
 	response(refresh())
 }
 
@@ -115,6 +124,13 @@ def close() {
 
 def poll() {
     zwave.switchBinaryV1.switchBinaryGet().format()
+}
+
+/**
+ * PING is used by Device-Watch in attempt to reach the Device
+ * */
+def ping() {
+	refresh()
 }
 
 def refresh() {
