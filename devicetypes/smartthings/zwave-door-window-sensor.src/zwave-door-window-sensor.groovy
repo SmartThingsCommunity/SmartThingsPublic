@@ -113,9 +113,9 @@ def updated() {
 
 def configure() {
 	commands([
-		zwave.manufacturerSpecificV2.manufacturerSpecificGet(),
-		zwave.batteryV1.batteryGet()
-	], 6000)
+		zwave.sensorBinaryV2.sensorBinaryGet(sensorType: zwave.sensorBinaryV2.SENSOR_TYPE_DOOR_WINDOW),
+		zwave.manufacturerSpecificV2.manufacturerSpecificGet()
+	], 1000)
 }
 
 def sensorValueEvent(value) {
@@ -190,11 +190,17 @@ def zwaveEvent(physicalgraph.zwave.commands.wakeupv1.WakeUpNotification cmd)
 		cmds << command(zwave.manufacturerSpecificV2.manufacturerSpecificGet())
 		cmds << "delay 1200"
 	}
+
+	if (device.currentValue("contact") == null) { // Incase our initial request didn't make it
+		cmds << command(zwave.sensorBinaryV2.sensorBinaryGet(sensorType: zwave.sensorBinaryV2.SENSOR_TYPE_DOOR_WINDOW))
+	}
+
 	if (!state.lastbat || now() - state.lastbat > 53*60*60*1000) {
 		cmds << command(zwave.batteryV1.batteryGet())
-	} else {
+	} else { // If we check the battery state we will send NoMoreInfo in the handler for BatteryReport so that we definitely get the report
 		cmds << zwave.wakeUpV1.wakeUpNoMoreInformation().format()
 	}
+
 	[event, response(cmds)]
 }
 
