@@ -3,7 +3,6 @@
  *  zooZ Mini Sensor
  *   
  *	github: Eric Maycock (erocm123)
- *	email: erocmail@gmail.com
  *	Date: 2016-10-05
  *	Copyright Eric Maycock
  *
@@ -589,11 +588,11 @@ Default: Disabled
         <Item label="Disable" value="0" />
         <Item label="Enable" value="1" />
   </Value>
-    <Value type="byte" byteSize="1" index="9" label="Light Report" min="0" max="255" value="100" setting_type="zwave">
+    <Value type="byte" byteSize="1" index="9" label="Light Report" min="0" max="255" value="20" setting_type="zwave">
     <Help>
 Light level change (in LUX) to be reported by the sensor to the controller
 Range: 0~255
-Default: 100
+Default: 20
     </Help>
   </Value>
       <Value type="list" byteSize="1" index="10" label="LED Notifications" min="0" max="1" value="1" setting_type="zwave">
