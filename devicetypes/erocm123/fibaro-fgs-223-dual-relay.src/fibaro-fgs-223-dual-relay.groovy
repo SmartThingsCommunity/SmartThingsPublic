@@ -141,7 +141,7 @@ def zwaveEvent(physicalgraph.zwave.commands.switchbinaryv1.SwitchBinaryReport cm
 {
     logging("SwitchBinaryReport: $cmd : Endpoint: $ep")
     if (ep) {
-    def event
+        def event
         childDevices.each { childDevice ->
             if (childDevice.deviceNetworkId == "$device.deviceNetworkId-ep$ep") {
                 childDevice.sendEvent(name: "switch", value: cmd.value ? "on" : "off")
@@ -243,7 +243,16 @@ def zwaveEvent(physicalgraph.zwave.commands.multichannelv3.MultiChannelCmdEncap 
 
 def zwaveEvent(physicalgraph.zwave.commands.associationv2.AssociationReport cmd) {
 	log.debug "AssociationReport $cmd"
-    state."association${cmd.groupingIdentifier}" = cmd.nodeId[0]
+    if (zwaveHubNodeId in cmd.nodeId) state."association${cmd.groupingIdentifier}" = true
+    else state."association${cmd.groupingIdentifier}" = false
+}
+
+def zwaveEvent(physicalgraph.zwave.commands.multichannelassociationv2.MultiChannelAssociationReport cmd) {
+	log.debug "MultiChannelAssociationReport $cmd"
+    if (cmd.groupingIdentifier == 1) {
+        if ([0,zwaveHubNodeId,1] == cmd.nodeId) state."associationMC${cmd.groupingIdentifier}" = true
+        else state."associationMC${cmd.groupingIdentifier}" = false
+    }
 }
 
 def zwaveEvent(physicalgraph.zwave.Command cmd) {
@@ -350,17 +359,13 @@ def updated()
 def on() { 
    secureSequence([
         encap(zwave.basicV1.basicSet(value: 0xFF), 1),
-        encap(zwave.basicV1.basicSet(value: 0xFF), 2),
-        encap(zwave.switchBinaryV1.switchBinaryGet(), 1),
-        encap(zwave.switchBinaryV1.switchBinaryGet(), 2)
+        encap(zwave.basicV1.basicSet(value: 0xFF), 2)
     ])
 }
 def off() {
    secureSequence([
         encap(zwave.basicV1.basicSet(value: 0x00), 1),
-        encap(zwave.basicV1.basicSet(value: 0x00), 2),
-        encap(zwave.switchBinaryV1.switchBinaryGet(), 1),
-        encap(zwave.switchBinaryV1.switchBinaryGet(), 2)
+        encap(zwave.basicV1.basicSet(value: 0x00), 2)
     ])
 }
 
@@ -368,7 +373,6 @@ void childOn(String dni) {
     logging("childOn($dni)")
     def cmds = []
     cmds << new physicalgraph.device.HubAction(secure(encap(zwave.basicV1.basicSet(value: 0xFF), channelNumber(dni))))
-    cmds << new physicalgraph.device.HubAction(secure(encap(zwave.switchBinaryV1.switchBinaryGet(), channelNumber(dni))))
 	sendHubCommand(cmds, 1000)
 }
 
@@ -376,7 +380,6 @@ void childOff(String dni) {
     logging("childOff($dni)")
 	def cmds = []
     cmds << new physicalgraph.device.HubAction(secure(encap(zwave.basicV1.basicSet(value: 0x00), channelNumber(dni))))
-    cmds << new physicalgraph.device.HubAction(secure(encap(zwave.switchBinaryV1.switchBinaryGet(), channelNumber(dni))))
 	sendHubCommand(cmds, 1000)
 }
 
@@ -393,7 +396,7 @@ private secure(physicalgraph.zwave.Command cmd) {
 	zwave.securityV1.securityMessageEncapsulation().encapsulate(cmd).format()
 }
 
-private secureSequence(commands, delay=1000) {
+private secureSequence(commands, delay=1500) {
 	delayBetween(commands.collect{ secure(it) }, delay)
 }
 
@@ -493,14 +496,20 @@ def update_needed_settings()
     
     sendEvent(name:"numberOfButtons", value:"5")
     
-    if(!state.association2 || state.association2 == "" || state.association2 == "1"){
-       logging("Setting association group 2")
-       cmds << zwave.associationV2.associationSet(groupingIdentifier:2, nodeId:zwaveHubNodeId)
+    if(!state.associationMC1) {
+       logging("Adding MultiChannel association group 1")
+       cmds << zwave.associationV2.associationRemove(groupingIdentifier: 1, nodeId: [])
+       cmds << zwave.multiChannelAssociationV2.multiChannelAssociationSet(groupingIdentifier: 1, nodeId: [0,zwaveHubNodeId,1])
+       cmds << zwave.multiChannelAssociationV2.multiChannelAssociationGet(groupingIdentifier: 1)
+    }
+    if(state.association2){
+       logging("Removing association group 2")
+       cmds << zwave.associationV2.associationRemove(groupingIdentifier:2, nodeId:zwaveHubNodeId)
        cmds << zwave.associationV2.associationGet(groupingIdentifier:2)
     }
-    if(!state.association4 || state.association4 == "" || state.association4 == "1"){
-       logging("Setting association group 4")
-       cmds << zwave.associationV2.associationSet(groupingIdentifier:4, nodeId:zwaveHubNodeId)
+    if(state.association4){
+       logging("Removing association group 4")
+       cmds << zwave.associationV2.associationRemove(groupingIdentifier:4, nodeId:zwaveHubNodeId)
        cmds << zwave.associationV2.associationGet(groupingIdentifier:4)
     }
     
