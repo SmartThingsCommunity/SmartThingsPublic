@@ -28,6 +28,8 @@
 		capability "Configuration"
 		capability "Sensor"
 		capability "Battery"
+        capability "Acceleration Sensor"
+        capability "Tamper Alert"
         capability "Health Check"
         
         attribute   "needUpdate", "string"
