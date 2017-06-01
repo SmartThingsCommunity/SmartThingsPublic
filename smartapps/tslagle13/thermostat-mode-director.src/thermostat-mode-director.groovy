@@ -9,6 +9,8 @@
  *		--Updated UI to make it look pretty.
  *	2015-06-01
  *  	--Added option for modes to trigger thermostat boost.
+ *  2015-09-01
+ *      -- Added contact book
  *
  *  Source code can be found here: https://github.com/tslagle13/SmartThings/blob/master/smartapps/tslagle13/vacation-lighting-director.groovy
  *
@@ -88,37 +90,37 @@ def directorSettings() {
         title:      "Low temp?",
         required:   true
     ]
-    
+
     def cold = [
         name:       "cold",
         type:       "enum",
         title:		"Mode?",
         metadata:   [values:["auto", "heat", "cool", "off"]]
     ]
-    
+
     def setHigh = [
         name:       "setHigh",
         type:       "decimal",
         title:      "High temp?",
         required:   true
     ]
-    
+
     def hot = [
         name:       "hot",
         type:       "enum",
         title:		"Mode?",
         metadata:   [values:["auto", "heat", "cool", "off"]]
     ]
-    
+
     def neutral = [
         name:       "neutral",
         type:       "enum",
         title:		"Mode?",
         metadata:   [values:["auto", "heat", "cool", "off"]]
     ]
-    
+
     def pageName = "Setup"
-    
+
     def pageProperties = [
         name:       "directorSettings",
         title:      "Setup",
@@ -145,7 +147,7 @@ def directorSettings() {
 			input neutral
 		}
     }
-    
+
 }
 
 def ThermostatandDoors() {
@@ -164,16 +166,16 @@ def ThermostatandDoors() {
         multiple:	true,
         required:   true
     ]
-    
+
     def turnOffDelay = [
         name:       "turnOffDelay",
         type:       "decimal",
         title:		"Number of minutes",
         required:	false
     ]
-    
+
     def pageName = "Thermostat and Doors"
-    
+
     def pageProperties = [
         name:       "ThermostatandDoors",
         title:      "Thermostat and Doors",
@@ -195,7 +197,7 @@ def ThermostatandDoors() {
 			input turnOffDelay
 		}
     }
-    
+
 }
 
 def ThermostatBoost() {
@@ -208,34 +210,34 @@ def ThermostatBoost() {
         required:   true
     ]
     def turnOnTherm = [
-        name: 		"turnOnTherm", 
-        type:		"enum", 
-        metadata: 	[values: ["cool", "heat"]], 
+        name: 		"turnOnTherm",
+        type:		"enum",
+        metadata: 	[values: ["cool", "heat"]],
         required: 	false
     ]
-    
+
     def modes1 = [
-        name:		"modes1", 
-        type:		"mode", 
-        title: 		"Put thermostat into boost mode when mode is...", 
-        multiple: 	true, 
+        name:		"modes1",
+        type:		"mode",
+        title: 		"Put thermostat into boost mode when mode is...",
+        multiple: 	true,
         required: 	false
     ]
-    
+
     def coolingTemp = [
         name:       "coolingTemp",
         type:       "decimal",
         title:		"Cooling Temp?",
         required:	false
     ]
-    
+
     def heatingTemp = [
         name:       "heatingTemp",
         type:       "decimal",
         title:		"Heating Temp?",
         required:	false
     ]
-    
+
     def turnOffDelay2 = [
         name:       "turnOffDelay2",
         type:       "decimal",
@@ -243,9 +245,9 @@ def ThermostatBoost() {
         required:	false,
         defaultValue:30
     ]
-    
+
     def pageName = "Thermostat Boost"
-    
+
     def pageProperties = [
         name:       "ThermostatBoost",
         title:      "Thermostat Boost",
@@ -275,7 +277,7 @@ def ThermostatBoost() {
    			input modes1
         }
     }
-    
+
 }
 
 // Show "Setup" page
@@ -283,20 +285,24 @@ def Settings() {
 
     def sendPushMessage = [
         name: 		"sendPushMessage",
-        type: 		"enum", 
-        title: 		"Send a push notification?", 
-        metadata:	[values:["Yes","No"]], 
-        required:	true, 
-        defaultValue: "Yes"
+        type: 		"bool",
+        title: 		"Send notifications?",
     ]
-    
-    def phoneNumber = [
-        name: 		"phoneNumber", 
-        type:		"phone", 
-        title: 		"Send SMS notifications to?", 
+
+    def recipients = [
+        name: 		"recipients",
+        type:		"contact",
+        title: 		"Send notifications too",
         required: 	false
     ]
-    
+
+     def phone = [
+        name: 		"phone",
+        type:		"phone",
+        title: 		"Send SMS as well?",
+        required: 	false
+    ]
+
     def days = [
         name:       "days",
         type:       "enum",
@@ -305,17 +311,17 @@ def Settings() {
         required:   false,
         options: ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"]
     ]
-    
+
     def modes = [
-        name:		"modes", 
-        type:		"mode", 
-        title: 		"Only when mode is", 
-        multiple: 	true, 
+        name:		"modes",
+        type:		"mode",
+        title: 		"Only when mode is",
+        multiple: 	true,
         required: 	false
     ]
-    
+
     def pageName = "Settings"
-    
+
     def pageProperties = [
         name:       "Settings",
         title:      "Settings",
@@ -327,15 +333,16 @@ def Settings() {
 
 		section( "Notifications" ) {
 			input sendPushMessage
-			input phoneNumber
+			input (recipients) { input phone }
+
 		}
 		section(title: "More options", hideable: true) {
 			href "timeIntervalInput", title: "Only during a certain time", description: getTimeLabel(starting, ending), state: greyedOutTime(starting, ending), refreshAfterSelection:true
 			input days
 			input modes
-		}    
+		}
     }
-    
+
 }
 
 def installed(){
@@ -416,16 +423,16 @@ if(thermostat1){
     state.currentCoolSetpoint1 = currentCoolSetpoint
     state.currentHeatSetpoint1 = currentHeatSetpoint
     state.currentMode1 = currentMode
-    
+
     	thermostat1."${mode}"()
     	thermostat1.setCoolingSetpoint(coolingTemp)
     	thermostat1.setHeatingSetpoint(heatingTemp)
-        
+
     thermoShutOffTrigger()
     //log.debug("current coolingsetpoint is ${state.currentCoolSetpoint1}")
     //log.debug("current heatingsetpoint is ${state.currentHeatSetpoint1}")
     //log.debug("current mode is ${state.currentMode1}")
-}    
+}
 }
 
 def modeBoostChange(evt) {
@@ -438,23 +445,23 @@ def modeBoostChange(evt) {
     	state.currentCoolSetpoint1 = currentCoolSetpoint
     	state.currentHeatSetpoint1 = currentHeatSetpoint
     	state.currentMode1 = currentMode
-    
+
     		thermostat1."${mode}"()
     		thermostat1.setCoolingSetpoint(coolingTemp)
     		thermostat1.setHeatingSetpoint(heatingTemp)
-        
+
     	log.debug("current coolingsetpoint is ${state.currentCoolSetpoint1}")
     	log.debug("current heatingsetpoint is ${state.currentHeatSetpoint1}")
     	log.debug("current mode is ${state.currentMode1}")
 	}
 	else{
 		thermoShutOff()
-    }    
+    }
 }
 
 def thermoShutOffTrigger() {
     //log.info("Starting timer to turn off thermostat")
-    def delay = (turnOffDelay2 != null && turnOffDelay2 != "") ? turnOffDelay2 * 60 : 60 
+    def delay = (turnOffDelay2 != null && turnOffDelay2 != "") ? turnOffDelay2 * 60 : 60
     state.turnOffTime = now()
 	log.debug ("Turn off delay is ${delay}")
     runIn(delay, "thermoShutOff")
@@ -468,7 +475,7 @@ def thermoShutOff(){
     	def coolSetpoint1 = coolSetpoint.replaceAll("\\]", "").replaceAll("\\[", "")
     	def heatSetpoint1 = heatSetpoint.replaceAll("\\]", "").replaceAll("\\[", "")
     	def mode1 = mode.replaceAll("\\]", "").replaceAll("\\[", "")
-    
+
 		state.lastStatus = null
 		//log.info("Returning thermostat back to normal")
 		thermostat1.setCoolingSetpoint("${coolSetpoint1}")
@@ -482,7 +489,7 @@ def doorCheck(evt){
 	if (!doorsOk){
 		log.debug("doors still open turning off ${thermostat}")
 		def msg = "I changed your thermostat mode to off because some doors are open"
-		
+
         if (state.lastStatus != "off"){
         	thermostat?.off()
 			sendMessage(msg)
@@ -499,11 +506,16 @@ def doorCheck(evt){
 }
 
 private sendMessage(msg){
-	if (sendPushMessage == "Yes") {
-		sendPush(msg)
-	}
-	if (phoneNumber != null) {
-		sendSms(phoneNumber, msg)
+	if (sendPushMessage) {
+    	if (recipients) {
+			sendNotificationToContacts(msg, recipients)
+        }
+        else {
+            sendPush(msg)
+        	if (phone){
+        		sendSms(phone, msg)
+            }
+        }
 	}
 }
 
@@ -548,14 +560,14 @@ private getTimeOk() {
 		def stop = timeToday(ending).time
 		result = start < stop ? currTime >= start && currTime <= stop : currTime <= stop || currTime >= start
 	}
-    
+
     else if (starting){
     	result = currTime >= start
     }
     else if (ending){
     	result = currTime <= stop
     }
-    
+
 	log.trace "timeOk = $result"
 	result
 }
@@ -563,7 +575,7 @@ private getTimeOk() {
 def getTimeLabel(starting, ending){
 
 	def timeLabel = "Tap to set"
-	
+
     if(starting && ending){
     	timeLabel = "Between" + " " + hhmm(starting) + " "  + "and" + " " +  hhmm(ending)
     }
@@ -586,7 +598,7 @@ private hhmm(time, fmt = "h:mm a")
 def greyedOut(){
 	def result = ""
     if (sensor) {
-    	result = "complete"	
+    	result = "complete"
     }
     result
 }
@@ -594,7 +606,7 @@ def greyedOut(){
 def greyedOutTherm(){
 	def result = ""
     if (thermostat) {
-    	result = "complete"	
+    	result = "complete"
     }
     result
 }
@@ -602,7 +614,7 @@ def greyedOutTherm(){
 def greyedOutTherm1(){
 	def result = ""
     if (thermostat1) {
-    	result = "complete"	
+    	result = "complete"
     }
     result
 }
@@ -610,7 +622,7 @@ def greyedOutTherm1(){
 def greyedOutSettings(){
 	def result = ""
     if (starting || ending || days || modes || sendPushMessage) {
-    	result = "complete"	
+    	result = "complete"
     }
     result
 }
@@ -618,7 +630,7 @@ def greyedOutSettings(){
 def greyedOutTime(starting, ending){
 	def result = ""
     if (starting || ending) {
-    	result = "complete"	
+    	result = "complete"
     }
     result
 }
@@ -637,7 +649,7 @@ private anyoneIsHome() {
 	
 page(name: "timeIntervalInput", title: "Only during a certain time", refreshAfterSelection:true) {
 		section {
-			input "starting", "time", title: "Starting (both are required)", required: false 
-			input "ending", "time", title: "Ending (both are required)", required: false 
+			input "starting", "time", title: "Starting (both are required)", required: false
+			input "ending", "time", title: "Ending (both are required)", required: false
 		}
         }
