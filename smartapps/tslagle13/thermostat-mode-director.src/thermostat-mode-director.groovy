@@ -9,6 +9,8 @@
  *		--Updated UI to make it look pretty.
  *	2015-06-01
  *  	--Added option for modes to trigger thermostat boost.
+ *  2015-09-01
+ *      -- Added contact book
  *
  *  Source code can be found here: https://github.com/tslagle13/SmartThings/blob/master/smartapps/tslagle13/vacation-lighting-director.groovy
  *
@@ -283,17 +285,21 @@ def Settings() {
 
     def sendPushMessage = [
         name: 		"sendPushMessage",
-        type: 		"enum", 
-        title: 		"Send a push notification?", 
-        metadata:	[values:["Yes","No"]], 
-        required:	true, 
-        defaultValue: "Yes"
+        type: 		"bool", 
+        title: 		"Send notifications?", 
     ]
     
-    def phoneNumber = [
-        name: 		"phoneNumber", 
+    def recipients = [
+        name: 		"recipients", 
+        type:		"contact", 
+        title: 		"Send notifications too", 
+        required: 	false
+    ]
+    
+     def phone = [
+        name: 		"phone", 
         type:		"phone", 
-        title: 		"Send SMS notifications to?", 
+        title: 		"Send SMS as well?", 
         required: 	false
     ]
     
@@ -327,7 +333,8 @@ def Settings() {
 
 		section( "Notifications" ) {
 			input sendPushMessage
-			input phoneNumber
+			input (recipients) { input phone }
+            
 		}
 		section(title: "More options", hideable: true) {
 			href "timeIntervalInput", title: "Only during a certain time", description: getTimeLabel(starting, ending), state: greyedOutTime(starting, ending), refreshAfterSelection:true
@@ -499,11 +506,16 @@ def doorCheck(evt){
 }
 
 private sendMessage(msg){
-	if (sendPushMessage == "Yes") {
-		sendPush(msg)
-	}
-	if (phoneNumber != null) {
-		sendSms(phoneNumber, msg)
+	if (sendPushMessage) {
+    	if (recipients) {
+			sendNotificationToContacts(msg, recipients)
+        }
+        else {
+            sendPush(msg)        
+        	if (phone){
+        		sendSms(phone, msg)
+            } 
+        }    
 	}
 }
 
