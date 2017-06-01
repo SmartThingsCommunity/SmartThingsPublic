@@ -91,7 +91,7 @@ metadata {
 	}
     
     preferences {
-       input name: "holdMode", type: "enum", title: "Multiple \"held\" events on botton hold? With this option, the controller will send a \"held\" event about every second while holding down a button. This allows you to set things up such as \"dimming\" in apps like Rule Machine.", defaultValue: "2", displayDuringSetup: true, required: false, options: [
+       input name: "holdMode", type: "enum", title: "Multiple \"held\" events on botton hold? With this option, the controller will send a \"held\" event about every second while holding down a button. If set to No it will send a \"held\" event a single time when the button is released.", defaultValue: "2", displayDuringSetup: true, required: false, options: [
                    "1":"Yes",
                    "2":"No"]
        input name: "debug", type: "boolean", title: "Enable Debug?", defaultValue: false, displayDuringSetup: false, required: false
