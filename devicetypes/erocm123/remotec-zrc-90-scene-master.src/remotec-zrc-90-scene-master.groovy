@@ -100,7 +100,7 @@ metadata {
 
 def parse(String description) {
 	def results = []
-    if (settings.debug == true) log.debug "${description}"
+     logging("${description}")
 	if (description.startsWith("Err")) {
 	    results = createEvent(descriptionText:description, displayed:true)
 	} else {
@@ -115,9 +115,9 @@ def parse(String description) {
 }
 
 def zwaveEvent(physicalgraph.zwave.commands.centralscenev1.CentralSceneNotification cmd) {
-        if (settings.debug == true) log.debug "keyAttributes: $cmd.keyAttributes"
-        if (settings.debug == true) log.debug "sceneNumber: $cmd.sceneNumber"
-        if (settings.debug == true) log.debug "sequenceNumber: $cmd.sequenceNumber"
+        logging("keyAttributes: $cmd.keyAttributes")
+        logging("sceneNumber: $cmd.sceneNumber")
+        logging("sequenceNumber: $cmd.sequenceNumber")
 
         sendEvent(name: "sequenceNumber", value: cmd.sequenceNumber, displayed:false)
         switch (cmd.keyAttributes) {
@@ -128,16 +128,21 @@ def zwaveEvent(physicalgraph.zwave.commands.centralscenev1.CentralSceneNotificat
               if (settings.holdMode == "2") buttonEvent(cmd.sceneNumber, "held")
            break
            case 2:
-              if (settings.holdMode == "1") buttonEvent(cmd.sceneNumber, "held")
+              if (!settings.holdMode || settings.holdMode == "1") buttonEvent(cmd.sceneNumber, "held")
            break
            case 3:
               buttonEvent(cmd.sceneNumber + 8, "pushed")
            break
            default:
-              if (settings.debug == true) log.debug "Unhandled CentralSceneNotification: ${cmd}"
+               logging("Unhandled CentralSceneNotification: ${cmd}")
            break
         }
 }
+
+private def logging(message) {
+    if (settings.debug == "true") log.debug "$message"
+}
+
 
 def zwaveEvent(physicalgraph.zwave.commands.wakeupv1.WakeUpNotification cmd) {
 	def results = [createEvent(descriptionText: "$device.displayName woke up", isStateChange: false)]
@@ -162,27 +167,27 @@ def zwaveEvent(physicalgraph.zwave.commands.batteryv1.BatteryReport cmd) {
 }
 
 def zwaveEvent(physicalgraph.zwave.Command cmd) {
-	log.debug "Unhandled zwaveEvent: ${cmd}"
+	logging("Unhandled zwaveEvent: ${cmd}")
 }
 
 def installed() {
-    log.debug "installed()"
+    logging("installed()")
     configure()
 }
 
 def updated() {
-    log.debug "updated()"
+    logging("updated()")
     configure()
 }
 
 def configure() {
-	log.debug "configure()"
+	logging("configure()")
     sendEvent(name: "checkInterval", value: 2 * 60 * 12 * 60 + 5 * 60, displayed: false, data: [protocol: "zwave", hubHardwareId: device.hub.hardwareID])
     sendEvent(name: "numberOfButtons", value: 16, displayed: true)
     state.isConfigured = "true"
 }
 
 def ping() {
-    log.debug "ping()"
-	log.debug "Battery Device - Not sending ping commands"
+    logging("ping()")
+	logging("Battery Device - Not sending ping commands")
 }
