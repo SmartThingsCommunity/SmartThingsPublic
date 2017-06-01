@@ -531,7 +531,7 @@ private getDimmedColor(color) {
    if (device.latestValue("level")) {
       getDimmedColor(color, device.latestValue("level"))
    } else {
-      return color
+      return color.replaceAll("#","")
    }
 }
 
