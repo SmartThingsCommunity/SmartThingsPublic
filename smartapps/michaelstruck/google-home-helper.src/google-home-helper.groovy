@@ -2,10 +2,10 @@
  *  Google Home Helper
  *
  *  Copyright © 2017 Michael Struck
- *  Version 1.0.1b 2/28/17
+ *  Version 1.0.1c 2/28/17
  *
  *  Version 1.0.0 (12/1/16) - Initial release
- *  Version 1.0.1b (2/28/17) - Added loop/pusle options for OSRAM DTH from gkl-sf
+ *  Version 1.0.1c (2/28/17) - Added loop/pusle options for OSRAM DTH from gkl-sf
  *
  *  Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except
  *  in compliance with the License. You may obtain a copy of the License at:
@@ -1172,7 +1172,7 @@ def getSwitchAbout(){ return "Created by Google Home Helper SmartApp" }
 //Version/Copyright/Information/Help
 private def textAppName() { return "Google Home Helper" }
 private def textVersion() {
-    def version = "SmartApp Version: 1.0.1b (02/28/2017)"
+    def version = "SmartApp Version: 1.0.1c (02/28/2017)"
     def deviceCount= getChildDevices().size()
     def deviceVersion = state.sw1Ver && deviceCount ? "\n${state.sw1Ver}": ""
     deviceVersion += state.sw2Ver && deviceCount ? "\n${state.sw2Ver}": ""
