@@ -110,7 +110,7 @@ def updated(){
 
 def getCommandClassVersions() {
 	[
-		0x20: 1,  /// Basic
+		0x20: 1,  // Basic
 		0x26: 1,  // SwitchMultilevel
 		0x56: 1,  // Crc16Encap
 		0x70: 1,  // Configuration
