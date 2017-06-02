@@ -3,9 +3,10 @@
  *  Special thanks to Barry Burke for Weather Underground Integration
  *
  *  Copyright © 2017 Michael Struck
- *  Version 1.0.0 4/28/17
+ *  Version 1.0.1 5/29/17
  * 
  *  Version 1.0.0 - Initial release
+ *  Version 1.0.1 - Updated icon, added restrictions
  *
  *  Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except
  *  in compliance with the License. You may obtain a copy of the License at:
@@ -24,9 +25,9 @@ definition(
     description: "Extension Application of Ask Alexa. Do not install directly from the Marketplace",
     category: "My Apps",
     parent: "MichaelStruck:Ask Alexa",
-    iconUrl: "https://raw.githubusercontent.com/MichaelStruck/SmartThingsPublic/master/smartapps/michaelstruck/ask-alexa-message-queue.src/ext.png",
-    iconX2Url: "https://raw.githubusercontent.com/MichaelStruck/SmartThingsPublic/master/smartapps/michaelstruck/ask-alexa-message-queue.src/ext@2x.png",
-    iconX3Url: "https://raw.githubusercontent.com/MichaelStruck/SmartThingsPublic/master/smartapps/michaelstruck/ask-alexa-message-queue.src/ext@2x.png",
+    iconUrl: "https://raw.githubusercontent.com/MichaelStruck/SmartThingsPublic/master/img/ext.png",
+    iconX2Url: "https://raw.githubusercontent.com/MichaelStruck/SmartThingsPublic/master/img/ext@2x.png",
+    iconX3Url: "https://raw.githubusercontent.com/MichaelStruck/SmartThingsPublic/master/img/ext@2x.png",
     )
 preferences {
     page name:"mainPage"
@@ -57,14 +58,28 @@ def mainPage() {
         	if (currWeatherSel() || foreWeatherSel() || voiceSunset || voiceSunrise || voiceMoon || voiceTide) input "voiceWeatherLoc", "bool", title: "Speak Location Of Weather Report/Forecast", defaultValue: false
             input "zipCode", "text", title: "Zip Code", required: false
             paragraph "Please Note:\nYour SmartThings location is currently set to: ${location.zipCode}. If you leave the area above blank the report will use your SmartThings location. " +
-            	"Enter a zip code above if you want to report on a different location.\n\nData obtained from Weather Underground."
+            	"Enter a zip code above if you want to report on a different location.\n\nData obtained from Weather Underground.", image: parent.imgURL() + "info.png"
 		}
         section ("Output options"){
             input "noteFeed", "bool", title: "Post To Notification Feed When Triggered", defaultValue: false, submitOnChange: true
             if (noteFeed) input "noteFeedData", "bool", title: "Include SmartApp's Response To Alexa", defaultValue: false
             if (parent.contMacro) input "overRideMsg", "bool", title: "Override Continuation Commands (Except Errors)" , defaultValue: false
         }
+        section("Restrictions", hideable: true, hidden: !(runDay || timeStart || timeEnd || runMode || runPeople)) {            
+			input "runDay", "enum", options: ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"], title: "Only Certain Days Of The Week...",  multiple: true, required: false, image: parent.imgURL() + "calendar.png", submitOnChange: true
+			href "timeIntervalInput", title: "Only During Certain Times...", description: parent.getTimeLabel(timeStart, timeEnd), state: (timeStart || timeEnd ? "complete":null), image: parent.imgURL() + "clock.png", submitOnChange: true
+			input "runMode", "mode", title: "Only In The Following Modes...", multiple: true, required: false, image: parent.imgURL() + "modes.png", submitOnChange: true
+            input "runPeople", "capability.presenceSensor", title: "Only When Present...", multiple: true, required: false, submitOnChange: true, image: parent.imgURL() + "people.png"
+			if (runPeople && runPeople.size()>1) input "runPresAll", "bool", title: "Off=Any Present; On=All Present", defaultValue: false
+            input "muteRestrictions", "bool", title: "Mute Restriction Messages In Extension Group", defaultValue: false
+        }
         section("Tap below to remove this message queue"){ }
+	}
+}
+page(name: "timeIntervalInput", title: "Only during a certain time") {
+	section {
+		input "timeStart", "time", title: "Starting", required: false
+		input "timeEnd", "time", title: "Ending", required: false
 	}
 }
 page(name: "pageExtAliases", title: "Enter alias names for this weather report"){
@@ -154,6 +169,7 @@ def extAliasState(){
     return count ? "complete" : null
 }
 //Child Common modules
+def getOkToRun(){ def result = (!runMode || runMode.contains(location.mode)) && parent.getDayOk(runDay) && parent.getTimeOk(timeStart,timeEnd) && parent.getPeopleOk(runPeople,runPresAll) }
 private currWeatherSel() { return voiceWeatherTemp || voiceWeatherHumid || voiceWeatherDew || voiceWeatherSolar || voiceWeatherVisiblity || voiceWeatherPrecip }
 private foreWeatherSel() { return voiceWeatherToday || voiceWeatherTonight || voiceWeatherTomorrow}
 def extAliasCount() { return 3 }
@@ -523,6 +539,6 @@ private tideInfo() {
     return msg		
 }
 //Version/Copyright/Information/Help
-private versionInt(){ return 100 }
+private versionInt(){ return 101 }
 private def textAppName() { return "Ask Alexa Weather Report" }	
-private def textVersion() { return "Weather Report Version: 1.0.0 (04/28/2017)" }
+private def textVersion() { return "Weather Report Version: 1.0.1 (05/29/2017)" }

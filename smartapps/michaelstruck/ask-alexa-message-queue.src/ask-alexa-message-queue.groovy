@@ -2,10 +2,12 @@
  *  Ask Alexa Message Queue Extension
  *
  *  Copyright © 2017 Michael Struck
- *  Version 1.0.1 4/12/17
+ *  Version 1.0.2 5/30/17
  * 
  *  Version 1.0.0 (3/31/17) - Initial release
  *  Version 1.0.1 (4/12/17) - Refresh macro list after update from child app (for partner integration)
+ *  Version 1.0.2 (5/30/17) - Added "overwrite:[true/false]" and "notifyOnly:[true/false] parameters to message queue functions, 
+ *  added sound effects alerting, Alexa notification placeholder, option to suppress time/date from Message Queue playback
  *
  *  Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except
  *  in compliance with the License. You may obtain a copy of the License at:
@@ -24,9 +26,9 @@ definition(
     description: "Extension Application of Ask Alexa. Do not install directly from the Marketplace",
     category: "My Apps",
     parent: "MichaelStruck:Ask Alexa",
-    iconUrl: "https://raw.githubusercontent.com/MichaelStruck/SmartThingsPublic/master/smartapps/michaelstruck/ask-alexa-message-queue.src/ext.png",
-    iconX2Url: "https://raw.githubusercontent.com/MichaelStruck/SmartThingsPublic/master/smartapps/michaelstruck/ask-alexa-message-queue.src/ext@2x.png",
-    iconX3Url: "https://raw.githubusercontent.com/MichaelStruck/SmartThingsPublic/master/smartapps/michaelstruck/ask-alexa-message-queue.src/ext@2x.png",
+    iconUrl: "https://raw.githubusercontent.com/MichaelStruck/SmartThingsPublic/master/img/ext.png",
+    iconX2Url: "https://raw.githubusercontent.com/MichaelStruck/SmartThingsPublic/master/img/ext@2x.png",
+    iconX3Url: "https://raw.githubusercontent.com/MichaelStruck/SmartThingsPublic/master/img/ext@2x.png",
     )
 preferences {
     page name:"mainPage"
@@ -37,27 +39,37 @@ def mainPage() {
         section {
         	label title:"Message Queue Name (Required)", required: true, image: parent.imgURL() + "mailbox.png"
         }   
-        section ("Message queue options"){ input "msgQueueOrder", "enum", title: "Message Play Back Order (Alexa)", options:[0:"Oldest to newest", 1:"Newest to oldest"], defaultValue: 0 }
-        section ("Message notification - Audio", hideable: true, hidden: !(mqSpeaker||mqSynth)){
-        	input "mqSpeaker", "capability.musicPlayer", title: "Choose Speakers", multiple: true, required: false, submitOnChange: true
-            if (mqSpeaker) input "mqVolume", "number", title: "Speaker Volume", description: "0-100%", required: false
-            input "mqSynth", "capability.speechSynthesis", title: "Choose Voice Synthesis Devices", multiple: true, required: false, hideWhenEmpty: true, submitOnChange: true
-            if (mqSpeaker) input "mqAlertType", "enum", title:"Notification Type...", options:[0: "Notification and Message", 1: "Notification Only", 2: "Message Only"], defaultValue:0
-			if (mqSpeaker || mqSynth) input "restrictAudio", "bool", title: "Apply Restrictions To Audio Notification", defaultValue: false, submitOnChange: true
+        section ("Message queue options"){ 
+        	input "msgQueueOrder", "enum", title: "Message Play Back Order (Alexa)", options:[0:"Oldest to newest", 1:"Newest to oldest"], defaultValue: 0 
+            input "msgQueueDateSuppress", "bool", title: "Remove Time/Date From Message Review", defaultValue: false
         }
-        section ("Message Notification - Visual", hideable: true, hidden:!(msgQueueNotifyLightsOn || msgQueueNotifycLightsOn)){
+        section ("Message notification - Alexa", hideable: true, hidden: true){
+			input "msgQueueNotifyAlexa", "bool", title: "Alexa Notifications (Audio and Visual)", defaultValue: false
+            paragraph "This function is not yet available - Coming soon!"            
+        }
+        section ("Message notification - audio", hideable: true, hidden: !(mqSpeaker||mqSynth)){
+        	input "mqSpeaker", "capability.musicPlayer", title: "Choose Speakers", multiple: true, required: false, submitOnChange: true
+            if (mqSpeaker) input "mqVolume", "number", title: "Speaker Volume", description: "0-100%", range:"0..100", required: false
+            input "mqSynth", "capability.speechSynthesis", title: "Choose Voice Synthesis Devices", multiple: true, required: false, hideWhenEmpty: true
+            if (mqSpeaker) input "mqAlertType", "enum", title:"Notification Type...",options:[0: "Verbal Notification and Message", 1: "Verbal Notification Only", 2: "Message Only", 3:"Notification Sound Effect"], defaultValue:0 , submitOnChange: true
+			if (mqSpeaker && mqAlertType != "3") input "mqAppendSound", "bool", title: "Prepend Sound To Verbal Notification", defaultValue: false, submitOnChange: true
+            if (mqSpeaker && (mqAlertType == "3" || mqAppendSound)) input "mqAlertSound", "enum", title: "Sound Effect", required: mqAlertType == "3" ? true : false, options: parent.soundFXList(), submitOnChange: true
+            if (mqSpeaker && (mqAlertType == "3" || mqAppendSound) && mqAlertSound=="custom") input "mqAlertCustom", "text", title:"URL/Location Of Custom Sound (Less Than 10 Seconds)...", required: false
+            if (mqSpeaker || mqSynth) input "restrictAudio", "bool", title: "Apply Restrictions To Audio Notification", defaultValue: false, submitOnChange: true
+		}
+        section ("Message notification - visual", hideable: true, hidden:!(msgQueueNotifyLightsOn || msgQueueNotifycLightsOn)){
             input "msgQueueNotifyLightsOn", "capability.switch", title: "Turn On Lights When Messages Present", required:false, multiple:true, submitOnChange: true
             input "msgQueueNotifycLightsOn", "capability.colorControl", title: "Turn On/Set Colored Lights When Messages Present", required:false, multiple:true, submitOnChange: true
             if (msgQueueNotifycLightsOn) {
             	input "msgQueueNotifyColor", "enum", title: "Set Color of Message Notification", options: parent.STColors().name, multiple:false, required:false
-            	input "msgQueueNotifyLevel", "number", title: "Set Level of Message Notification", defaultValue:50, required:false
+            	input "msgQueueNotifyLevel", "number", title: "Set Level of Message Notification", defaultValue:50, required:false, range: "0..100"
             }
             if (msgQueueNotifyLightsOn || msgQueueNotifycLightsOn) {
             	input "msgQueueNotifyLightsOff", "bool", title: "Turn Off Lights When Message Queue Empty", defaultValue: false
 				input "restrictVisual", "bool", title: "Apply Restrictions To Visual Notification", defaultValue: false, submitOnChange: true
             }
         }
-        section ("Message notification - Mobile", hideable: true, hidden:!(mqContacts||mqSMS||mqPush||mqFeed)){
+        section ("Message notification - mobile", hideable: true, hidden:!(mqContacts||mqSMS||mqPush||mqFeed)){
         	input ("mqContacts", "contact", title: "Send Notifications To...", required: false, submitOnChange: true) {
 				input "mqSMS", "phone", title: "Send SMS Message To (Phone Number)...", required: false, submitOnChange: true
 				input "mqPush", "bool", title: "Send Push Message", defaultValue: false, submitOnChange: true
@@ -66,7 +78,7 @@ def mainPage() {
         	if (mqFeed || mqSMS || mqPush || mqContacts) input "restrictMobile", "bool", title: "Apply Restrictions To Mobile Notification", defaultValue: false, submitOnChange: true
         }
         if (restrictMobile || restrictVisual || restrictAudio){
-            section("Message Queue Restrictions", hideable: true, hidden: !(runDay || timeStart || timeEnd || runMode || runPeople)) {            
+            section("Message queue restrictions", hideable: true, hidden: !(runDay || timeStart || timeEnd || runMode || runPeople)) {            
 				input "runDay", "enum", options: ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"], title: "Only Certain Days Of The Week...",  multiple: true, required: false, image: parent.imgURL() + "calendar.png"
 				href "timeIntervalInput", title: "Only During Certain Times...", description: parent.getTimeLabel(timeStart, timeEnd), state: (timeStart || timeEnd ? "complete":null), image: parent.imgURL() + "clock.png"
 				input "runMode", "mode", title: "Only In The Following Modes...", multiple: true, required: false, image: parent.imgURL() + "modes.png"
@@ -94,16 +106,24 @@ def initialize() {
 	sendLocationEvent(name: "askAlexaMQ", value: "refresh", data: [queues: parent.getMQListID(false)] , isStateChange: true, descriptionText: "Ask Alexa message queue list refresh")
 }
 //Main Handlers
-def msgHandler(date, descriptionText, unit, value) {
+def msgHandler(date, descriptionText, unit, value, overwrite, expires, notifyOnly, suppressTimeDate) {
     if (!state.msgQueue) state.msgQueue=[]
-    log.debug "New message added to the '${app.label}' message queue from: " + value
-	state.msgQueue<<["date":date.getTime(),"appName":value,"msg":descriptionText,"id":unit] 
+    if (overwrite && parent.msgQueueDelete && parent.msgQueueDelete.contains(app.id)) msgDeleteHandler(unit, value)
+    else if (overwrite) log.debug "An overwrite command was issued from '${value}', however, the option to allow deletions was not enabled for the '${app.label}' queue."
+    if (!notifyOnly) log.debug "New message added to the '${app.label}' message queue from: " + value
+	if (!notifyOnly) state.msgQueue<<["date":date.getTime(),"appName":value,"msg":descriptionText,"id":unit,"expires":expires,"suppressTimeDate": suppressTimeDate] 
     if (mqSpeaker && mqVolume && ((restrictAudio && getOkToRun())||!restrictAudio)) {
-    	def msgTxt= !mqAlertType ||mqAlertType as int ==0 || mqAlertType as int ==1 ? "New message received in the the '${app.label}' message queue from : " + value : ""
-		if (!mqAlertType || mqAlertType as int ==0 || mqAlertType as int==2 ) msgTxt += msgTxt ? ": "+ descriptionText : descriptionText
-        mqSpeaker?.setLevel(mqVolume as int)
-        def msg = textToSpeech (msgTxt, true)
-        mqSpeaker?.playTrack (msg.uri)
+		def msgVoice, msgSFX
+		if (mqAlertType ==~/0|1|2/) {
+			def msgTxt= !mqAlertType ||mqAlertType as int ==0 || mqAlertType as int ==1 ? "New message received in primary message queue from : " + value : ""
+			if (!mqAlertType || mqAlertType ==~/0|2/) msgTxt += msgTxt ? ": "+ descriptionText : descriptionText
+			msgVoice = textToSpeech (msgTxt, true)
+		}
+		if (mqAlertType == "3" || mqAppendSound) msgSFX = parent.sfxLookup(mqAlertSound)
+		mqSpeaker?.setLevel(mqVolume as int)            
+		if (mqAlertType != "3" && !mqAppendSound) mqSpeaker?.playTrack (msgVoice.uri)
+		if (mqAlertType == "3") mqSpeaker?.playTrack (msgSFX.uri)
+		if (mqAlertType != "3" && mqAppendSound)  mqSpeaker?.playSoundAndTrack(msgSFX.uri,msgSFX.duration,msgVoice.uri)
 	}
     if (mqSynth && ((restrictAudio && getOkToRun())||!restrictAudio)) mqSynth?.speak(msgTxt)
     if (mqPush || mqSMS || mqContacts && ((restrictMobile && getOkToRun())||!restrictMobile)){
@@ -134,7 +154,8 @@ def msgQueueReply(cmd){
 	log.debug "-'${app.label}' Message Queue Response-"
     log.debug "Message Queue Command: " + cmd
     String result = ""
-	def msgCount = state.msgQueue ? state.msgQueue.size() : 0, msgS= msgCount==0 || msgCount>1 ? " messages" : " message"
+	purgeMQ()
+    def msgCount = state.msgQueue ? state.msgQueue.size() : 0, msgS= msgCount==0 || msgCount>1 ? " messages" : " message"
 	if (cmd =~/play|open|undefined/){
       	if (msgCount==0) result = "You don't have any messages in the '${app.label}' queue. %M%"
         else {
@@ -142,8 +163,8 @@ def msgQueueReply(cmd){
             state.msgQueue.sort({it.date})
             state.msgQueue.reverse(msgQueueOrder as int? true : false)
             state.msgQueue.each{
-            	def msgData= parent.timeDate(it.date)
-            	result += "${msgData.msgDay} at ${msgData.msgTime}, '${it.appName}' posted the message: '${it.msg}'. "
+            	def msgData= parent.timeDate(it.date), msgTimeDate = msgQueueDateSuppress || it.suppressTimeDate ? "" : "${msgData.msgDay} at ${msgData.msgTime}, "
+            	result += "${msgTimeDate}'${it.appName}' posted the message: '${it.msg}'. "
 			}
 			result +="%M%"
 		}
@@ -156,7 +177,10 @@ def msgQueueReply(cmd){
     return result 
 }
 //Called from parent app
-def qSize(){return state.msgQueue ? state.msgQueue.size(): 0}
+def qSize(){
+	purgeMQ()
+    return state.msgQueue ? state.msgQueue.size(): 0
+}
 def MQGUI(){
     def msgRpt = ""
 	state.msgQueue.sort({it.date})
@@ -172,9 +196,16 @@ def qDelete() {
 	if (msgQueueNotifyLightsOn && msgQueueNotifyLightsOff) msgQueueNotifyLightsOn?.off()
     if (msgQueueNotifycLightsOn && msgQueueNotifyLightsOff) msgQueueNotifycLightsOn?.off()
 }
+def purgeMQ(){
+	if (!state.msgQueue) state.msgQueue=[]
+    log.debug "Ask Alexa is purging expired messages from the '${app.label}' Message Queue."	
+	state.msgQueue.removeAll{it.expires !=0 && now() > it.expires}
+    if (msgQueueNotifyLightsOn && msgQueueNotifyLightsOff) msgQueueNotifyLightsOn?.off()
+    if (msgQueueNotifycLightsOn && msgQueueNotifyLightsOff) msgQueueNotifycLightsOn?.off()
+}
 //Common Code
 def getOkToRun(){ def result = (!runMode || runMode.contains(location.mode)) && parent.getDayOk(runDay) && parent.getTimeOk(timeStart,timeEnd) && parent.getPeopleOk(runPeople,runPresAll) }
 //Version/Copyright/Information/Help
-private versionInt(){ return 101 }
+private versionInt(){ return 102 }
 private def textAppName() { return "Ask Alexa Message Queue" }	
-private def textVersion() { return "Message Queue Version: 1.0.1 (04/12/2017)" }
+private def textVersion() { return "Message Queue Version: 1.0.2 (05/30/2017)" }

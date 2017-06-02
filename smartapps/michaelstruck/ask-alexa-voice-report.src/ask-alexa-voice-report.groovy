@@ -2,9 +2,10 @@
  *  Ask Alexa Voice Report Extension
  *
  *  Copyright © 2017 Michael Struck
- *  Version 1.0.0 4/16/17
+ *  Version 1.0.1 5/29/17
  * 
  *  Version 1.0.0 - Initial release
+ *  Version 1.0.1 - Updated icon, added restricitions
  *
  *  Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except
  *  in compliance with the License. You may obtain a copy of the License at:
@@ -23,9 +24,9 @@ definition(
     description: "Extension Application of Ask Alexa. Do not install directly from the Marketplace",
     category: "My Apps",
     parent: "MichaelStruck:Ask Alexa",
-    iconUrl: "https://raw.githubusercontent.com/MichaelStruck/SmartThingsPublic/master/smartapps/michaelstruck/ask-alexa-message-queue.src/ext.png",
-    iconX2Url: "https://raw.githubusercontent.com/MichaelStruck/SmartThingsPublic/master/smartapps/michaelstruck/ask-alexa-message-queue.src/ext@2x.png",
-    iconX3Url: "https://raw.githubusercontent.com/MichaelStruck/SmartThingsPublic/master/smartapps/michaelstruck/ask-alexa-message-queue.src/ext@2x.png",
+    iconUrl: "https://raw.githubusercontent.com/MichaelStruck/SmartThingsPublic/master/img/ext.png",
+    iconX2Url: "https://raw.githubusercontent.com/MichaelStruck/SmartThingsPublic/master/img/ext@2x.png",
+    iconX3Url: "https://raw.githubusercontent.com/MichaelStruck/SmartThingsPublic/master/img/ext@2x.png",
     )
 preferences {
     page name:"mainPage"
@@ -65,6 +66,14 @@ def mainPage() {
             if (noteFeed) input "noteFeedData", "bool", title: "Include SmartApp's Response To Alexa", defaultValue: false
             if (parent.contMacro) input "overRideMsg", "bool", title: "Override Continuation Commands (Except Errors)" , defaultValue: false
         }
+        section("Restrictions", hideable: true, hidden: !(runDay || timeStart || timeEnd || runMode || runPeople)) {            
+			input "runDay", "enum", options: ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"], title: "Only Certain Days Of The Week...",  multiple: true, required: false, image: parent.imgURL() + "calendar.png", submitOnChange: true
+			href "timeIntervalInput", title: "Only During Certain Times...", description: parent.getTimeLabel(timeStart, timeEnd), state: (timeStart || timeEnd ? "complete":null), image: parent.imgURL() + "clock.png", submitOnChange: true
+			input "runMode", "mode", title: "Only In The Following Modes...", multiple: true, required: false, image: parent.imgURL() + "modes.png", submitOnChange: true
+            input "runPeople", "capability.presenceSensor", title: "Only When Present...", multiple: true, required: false, submitOnChange: true, image: parent.imgURL() + "people.png"
+			if (runPeople && runPeople.size()>1) input "runPresAll", "bool", title: "Off=Any Present; On=All Present", defaultValue: false
+            input "muteRestrictions", "bool", title: "Mute Restriction Messages In Extension Group", defaultValue: false
+        }
         if (parent.advReportOutput){
         	section("Advanced voice report filters"){
             	input "voiceRepFilter", "text", title: "Filter Report Output", description: "Delimit items with comma (ex. xxxxx,yyyyy,zzzzz)", required: false, capitalization: "sentences"
@@ -72,6 +81,12 @@ def mainPage() {
 			}
     	}
         section("Tap below to remove this message queue"){ }
+	}
+}
+page(name: "timeIntervalInput", title: "Only during a certain time") {
+	section {
+		input "timeStart", "time", title: "Starting", required: false
+		input "timeEnd", "time", title: "Ending", required: false
 	}
 }
 page(name: "pageExtAliases", title: "Enter alias names for this voice report"){
@@ -211,7 +226,7 @@ def pageOtherReports(){
     dynamicPage(name: "pageOtherReports", install: false, uninstall: false){
         section { paragraph "Include Other Reports", image: parent.imgURL() + "add.png" }
         section(" "){
-             input "otherReportsList", "enum", title: "Include The Following Reports", required: false, defaultValue: 20, options: parent.getMacroList("other", "${app.label}"), multiple: true
+             input "otherReportsList", "enum", title: "Include The Following Reports", required: false, options: parent.getMacroList("other", "${app.label}"), multiple: true
         }
     }
 }
@@ -279,6 +294,7 @@ def getOutput(){
     return outputTxt
 }
 //Child Common modules
+def getOkToRun(){ def result = (!runMode || runMode.contains(location.mode)) && parent.getDayOk(runDay) && parent.getTimeOk(timeStart,timeEnd) && parent.getPeopleOk(runPeople,runPresAll) }
 def extAliasCount() { return 3 }
 def extAliasDesc(){
 	def result =""
@@ -654,6 +670,6 @@ def getDesc(type){
     return result
 }
 //Version/Copyright/Information/Help
-private versionInt(){ return 100 }
+private versionInt(){ return 101 }
 private def textAppName() { return "Ask Alexa Voice Report" }	
-private def textVersion() { return "Voice Report Version: 1.0.0 (04/16/2017)" }
+private def textVersion() { return "Voice Report Version: 1.0.1 (05/29/2017)" }
