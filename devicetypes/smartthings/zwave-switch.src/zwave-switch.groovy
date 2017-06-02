@@ -89,9 +89,17 @@ def updated(){
     }
 }
 
+def getCommandClassVersions() {
+	[
+		0x20: 1,  // Basic
+		0x56: 1,  // Crc16Encap
+		0x70: 1,  // Configuration
+	]
+}
+
 def parse(String description) {
 	def result = null
-	def cmd = zwave.parse(description, [0x20: 1, 0x70: 1])
+	def cmd = zwave.parse(description, commandClassVersions)
 	if (cmd) {
 		result = createEvent(zwaveEvent(cmd))
 	}
@@ -136,6 +144,16 @@ def zwaveEvent(physicalgraph.zwave.commands.manufacturerspecificv2.ManufacturerS
 	updateDataValue("MSR", msr)
 	updateDataValue("manufacturer", cmd.manufacturerName)
 	createEvent([descriptionText: "$device.displayName MSR: $msr", isStateChange: false])
+}
+
+def zwaveEvent(physicalgraph.zwave.commands.crc16encapv1.Crc16Encap cmd) {
+	def versions = commandClassVersions
+	def version = versions[cmd.commandClass as Integer]
+	def ccObj = version ? zwave.commandClass(cmd.commandClass, version) : zwave.commandClass(cmd.commandClass)
+	def encapsulatedCommand = ccObj?.command(cmd.command)?.parse(cmd.data)
+	if (encapsulatedCommand) {
+		zwaveEvent(encapsulatedCommand)
+	}
 }
 
 
