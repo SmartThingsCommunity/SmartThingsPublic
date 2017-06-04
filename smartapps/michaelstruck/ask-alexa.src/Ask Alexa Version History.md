@@ -33,3 +33,6 @@
  *  Added increase/decrease commands to Control macro thermostat control; fixed Nest Present command, added speaker output for message queue incoming messages, along with GUI notification.
  *	Version 2.2.3a (3/9/17) Added GUI message queue,improved cheat sheet, added simulated presence sensor check in/check out functionality, modified security slots (To allow 'security' to be used as a noun and not a reserved word)
  *	Added the ability to output the Message Queue contents as part of the flash briefing setup.
+  *  Version 2.2.4b (4/6/17) Framework changes for extensions (new one: additional message queues), added additional notifications to message queues, change SHM model to conform with new SmartThings naming standard, new icon for custom color
+ *  Version 2.2.5a (4/23/17) Moved Weather/Voice reporting to an extension. Considerably sped up the execution of Ask Alexa! Created default Kelvin settings. Added "overwrite:[true/false]" parameter to message queue functions. Changed Nest to NST Manager
+ *  Version 2.2.6 (6/1/17) Added Schedules Extension, code fixes, added "expires:[seconds]" to message queue parameters that developers can use when publishing to Ask Alexa, added "%random#% to the list of variables in text fields
