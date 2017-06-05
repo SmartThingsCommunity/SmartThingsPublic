@@ -23,8 +23,6 @@ metadata {
 		capability "Configuration"
 		capability "Sensor"
         
-		attribute "numberOfButtons", "STRING"
-        
         // Virtual Button Attributes for defining button labels.
         attribute "lblPush1", "STRING"
         attribute "lblHold1", "STRING"
@@ -186,7 +184,7 @@ def configurationCmds() {
 def configure() {
 	// Set the number of buttons to 4
     // Updated value to standard per http://docs.smartthings.com/en/latest/capabilities-reference.html#button
-	sendEvent(name: "numberOfButtons", value: "4", displayed: false)
+	sendEvent(name: "numberOfButtons", value: 4, displayed: false)
 
 	def cmds = configurationCmds()
 	//log.debug("Sending configuration: $cmds")
