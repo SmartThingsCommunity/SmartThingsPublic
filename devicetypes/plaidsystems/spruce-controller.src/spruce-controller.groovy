@@ -110,6 +110,7 @@ metadata {
 		//fingerprint endpointId: '1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18', profileId: '0104', deviceId: '0002', deviceVersion: '00', inClusters: '0000,0003,0004,0005,0006,000F', outClusters: '0003, 0019', manufacturer: 'PLAID SYSTEMS', model: 'PS-SPRZ16-01'
 		//new release
         fingerprint endpointId: "1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18", profileId: "0104", deviceId: "0002", deviceVersion: "00", inClusters: "0000,0003,0004,0005,0006,0009,000A,000F", outClusters: "0003, 0019", manufacturer: "PLAID SYSTEMS", model: "PS-SPRZ16-01"
+		fingerprint endpointId: "1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18", profileId: "0104", deviceId: "0002", deviceVersion: "00", inClusters: "0000,0003,0004,0005,0006,0009,000A,000F", outClusters: "0003, 0006, 0019", manufacturer: "PLAID SYSTEMS", model: "PS-SPRWIFI16-01"
 		
 	}
 
@@ -137,14 +138,14 @@ metadata {
             attributeState 'raintoday', label: 'Rain Today', icon: 'http://www.plaidsystems.com/smartthings/st_rain.png', backgroundColor: '#d65fe3'
             attributeState 'rainy', label: 'Rain', icon: 'http://www.plaidsystems.com/smartthings/st_rain.png', backgroundColor: '#d65fe3'
             attributeState 'raintom', label: 'Rain Tomorrow', icon: 'http://www.plaidsystems.com/smartthings/st_rain.png', backgroundColor: '#d65fe3'
-            attributeState 'donewweek', label: 'Finished', icon: 'st.Outdoor.outdoor5', backgroundColor: '#00A0DC'
+            attributeState 'donewweek', label: 'Finished', icon: 'st.Outdoor.outdoor5', backgroundColor: '#52c435'
             attributeState 'skipping', label: 'Skip', icon: 'st.Outdoor.outdoor20', backgroundColor: '#46c2e8'
             attributeState 'moisture', label: 'Ready', icon: 'st.Weather.weather2', backgroundColor: '#46c2e8'
-            attributeState 'pause', label: 'PAUSE', icon: 'st.contact.contact.open', backgroundColor: '#e86d13'
-			attributeState 'delayed', label: 'Delayed', icon: 'st.contact.contact.open', backgroundColor: '#e86d13'
+            attributeState 'pause', label: 'PAUSE', icon: 'st.contact.contact.open', backgroundColor: '#f2a51f'
+			attributeState 'delayed', label: 'Delayed', icon: 'st.contact.contact.open', backgroundColor: '#f2a51f'
             attributeState 'active', label: 'Active', icon: 'st.Outdoor.outdoor12', backgroundColor: '#3DC72E'
             attributeState 'season', label: 'Adjust', icon: 'st.Outdoor.outdoor17', backgroundColor: '#ffb900'
-            attributeState 'disable', label: 'Off', icon: 'st.secondary.off', backgroundColor: '#cccccc'
+            attributeState 'disable', label: 'Off', icon: 'st.secondary.off', backgroundColor: '#888888'
             attributeState 'warning', label: 'Warning', icon: 'http://www.plaidsystems.com/smartthings/st_spruce_leaf_225_top_yellow.png'
             attributeState 'alarm', label: 'Alarm', icon: 'http://www.plaidsystems.com/smartthings/st_spruce_leaf_225_s_red.png', backgroundColor: '#e66565'
             }
@@ -179,67 +180,67 @@ metadata {
 		}
         standardTile('switch1', 'device.switch1', inactiveLabel: false) {			
 			state 'z1off', label: '1', action: 'z1on', icon: 'st.valves.water.closed', backgroundColor: '#ffffff'
-            state 'z1on', label: '1', action: 'z1off', icon: 'st.valves.water.open', backgroundColor: '#00A0DC'
+            state 'z1on', label: '1', action: 'z1off', icon: 'st.valves.water.open', backgroundColor: '#3DC72E'
 		}
         standardTile('switch2', 'device.switch2', inactiveLabel: false) {            
             state 'z2off', label: '2', action: 'z2on', icon: 'st.valves.water.closed', backgroundColor: '#ffffff'
-            state 'z2on', label: '2', action: 'z2off', icon: 'st.valves.water.open', backgroundColor: '#00A0DC'
+            state 'z2on', label: '2', action: 'z2off', icon: 'st.valves.water.open', backgroundColor: '#3DC72E'
 		}        
         standardTile('switch3', 'device.switch3', inactiveLabel: false) {			
 			state 'z3off', label: '3', action: 'z3on', icon: 'st.valves.water.closed', backgroundColor: '#ffffff'
-            state 'z3on', label: '3', action: 'z3off', icon: 'st.valves.water.open', backgroundColor: '#00A0DC'
+            state 'z3on', label: '3', action: 'z3off', icon: 'st.valves.water.open', backgroundColor: '#3DC72E'
 		}
         standardTile('switch4', 'device.switch4', inactiveLabel: false) {            
             state 'z4off', label: '4', action: 'z4on', icon: 'st.valves.water.closed', backgroundColor: '#ffffff'
-            state 'z4on', label: '4', action: 'z4off', icon: 'st.valves.water.open', backgroundColor: '#00A0DC'
+            state 'z4on', label: '4', action: 'z4off', icon: 'st.valves.water.open', backgroundColor: '#3DC72E'
 		}
         standardTile('switch5', 'device.switch5', inactiveLabel: false) {            
             state 'z5off', label: '5', action: 'z5on', icon: 'st.valves.water.closed', backgroundColor: '#ffffff'
-            state 'z5on', label: '5', action: 'z5off', icon: 'st.valves.water.open', backgroundColor: '#00A0DC'
+            state 'z5on', label: '5', action: 'z5off', icon: 'st.valves.water.open', backgroundColor: '#3DC72E'
 		}
 		standardTile('switch6', 'device.switch6', inactiveLabel: false) {            
             state 'z6off', label: '6', action: 'z6on', icon: 'st.valves.water.closed', backgroundColor: '#ffffff'
-            state 'z6on', label: '6', action: 'z6off', icon: 'st.valves.water.open', backgroundColor: '#00A0DC'
+            state 'z6on', label: '6', action: 'z6off', icon: 'st.valves.water.open', backgroundColor: '#3DC72E'
 		}
         standardTile('switch7', 'device.switch7', inactiveLabel: false) {            
             state 'z7off', label: '7', action: 'z7on', icon: 'st.valves.water.closed', backgroundColor: '#ffffff'
-            state 'z7on', label: '7', action: 'z7off', icon: 'st.valves.water.open', backgroundColor: '#00A0DC'
+            state 'z7on', label: '7', action: 'z7off', icon: 'st.valves.water.open', backgroundColor: '#3DC72E'
 		}
 		standardTile('switch8', 'device.switch8', inactiveLabel: false) {            
             state 'z8off', label: '8', action: 'z8on', icon: 'st.valves.water.closed', backgroundColor: '#ffffff'
-            state 'z8on', label: '8', action: 'z8off', icon: 'st.valves.water.open', backgroundColor: '#00A0DC'
+            state 'z8on', label: '8', action: 'z8off', icon: 'st.valves.water.open', backgroundColor: '#3DC72E'
 		}
         standardTile('switch9', 'device.switch9', inactiveLabel: false) {			
 			state 'z9off', label: '9', action: 'z9on', icon: 'st.valves.water.closed', backgroundColor: '#ffffff'
-            state 'z9on', label: '9', action: 'z9off', icon: 'st.valves.water.open', backgroundColor: '#00A0DC'
+            state 'z9on', label: '9', action: 'z9off', icon: 'st.valves.water.open', backgroundColor: '#3DC72E'
 		}
         standardTile('switch10', 'device.switch10', inactiveLabel: false) {            
             state 'z10off', label: '10', action: 'z10on', icon: 'st.valves.water.closed', backgroundColor: '#ffffff'
-            state 'z10on', label: '10', action: 'z10off', icon: 'st.valves.water.open', backgroundColor: '#00A0DC'
+            state 'z10on', label: '10', action: 'z10off', icon: 'st.valves.water.open', backgroundColor: '#3DC72E'
 		}        
         standardTile('switch11', 'device.switch11', inactiveLabel: false) {			
 			state 'z11off', label: '11', action: 'z11on', icon: 'st.valves.water.closed', backgroundColor: '#ffffff'
-            state 'z11on', label: '11', action: 'z11off', icon: 'st.valves.water.open', backgroundColor: '#00A0DC'
+            state 'z11on', label: '11', action: 'z11off', icon: 'st.valves.water.open', backgroundColor: '#3DC72E'
 		}
         standardTile('switch12', 'device.switch12', inactiveLabel: false) {            
             state 'z12off', label: '12', action: 'z12on', icon: 'st.valves.water.closed', backgroundColor: '#ffffff'
-            state 'z12on', label: '12', action: 'z12off', icon: 'st.valves.water.open', backgroundColor: '#00A0DC'
+            state 'z12on', label: '12', action: 'z12off', icon: 'st.valves.water.open', backgroundColor: '#3DC72E'
 		}
         standardTile('switch13', 'device.switch13', inactiveLabel: false) {            
             state 'z13off', label: '13', action: 'z13on', icon: 'st.valves.water.closed', backgroundColor: '#ffffff'
-            state 'z13on', label: '13', action: 'z13off', icon: 'st.valves.water.open', backgroundColor: '#00A0DC'
+            state 'z13on', label: '13', action: 'z13off', icon: 'st.valves.water.open', backgroundColor: '#3DC72E'
 		}
 		standardTile('switch14', 'device.switch14', inactiveLabel: false) {            
             state 'z14off', label: '14', action: 'z14on', icon: 'st.valves.water.closed', backgroundColor: '#ffffff'
-            state 'z14on', label: '14', action: 'z14off', icon: 'st.valves.water.open', backgroundColor: '#00A0DC'
+            state 'z14on', label: '14', action: 'z14off', icon: 'st.valves.water.open', backgroundColor: '#3DC72E'
 		}
         standardTile('switch15', 'device.switch15', inactiveLabel: false) {            
             state 'z15off', label: '15', action: 'z15on', icon: 'st.valves.water.closed', backgroundColor: '#ffffff'
-            state 'z15on', label: '15', action: 'z15off', icon: 'st.valves.water.open', backgroundColor: '#00A0DC'
+            state 'z15on', label: '15', action: 'z15off', icon: 'st.valves.water.open', backgroundColor: '#3DC72E'
 		}		
         standardTile('switch16', 'device.switch16', inactiveLabel: false) {            
             state 'z16off',  label: '16', action: 'z16on', icon: 'st.valves.water.closed', backgroundColor: '#ffffff'
-            state 'z16on',  label: '16', action: 'z16off', icon: 'st.valves.water.open', backgroundColor: '#00A0DC'
+            state 'z16on',  label: '16', action: 'z16off', icon: 'st.valves.water.open', backgroundColor: '#3DC72E'
 		}        
         standardTile('refresh', 'device.switch', inactiveLabel: false, decoration: 'flat') {
 			state 'default', action: 'refresh', icon:'st.secondary.refresh'//-icon'            
@@ -280,7 +281,7 @@ def levelUp(){
     if (newvalue >= 60) newvalue = 60
     def value = newvalue.toString()    
     log.debug value
-	sendEvent(name: 'minutes', value: "${value}", descriptionText: "Manual Time set to ${value}", display: false)    
+	sendEvent(name: 'minutes', value: "${value}", descriptionText: "Manual Time set to ${value}", displayed: false)    
 }
 
 def levelDown(){
@@ -288,7 +289,7 @@ def levelDown(){
     if (newvalue <= 0) newvalue = 1
     def value = newvalue.toString()    
     log.debug value
-	sendEvent(name: 'minutes', value: "${value}", descriptionText: "Manual Time set to ${value}", display: false)
+	sendEvent(name: 'minutes', value: "${value}", descriptionText: "Manual Time set to ${value}", displayed: false)
 }
 
 // Parse incoming device messages to generate events
@@ -400,10 +401,10 @@ def getAlarm(descMap){
 
 //status notify and change status
 def notify(String val, String txt){
-	sendEvent(name: 'status', value: val, descriptionText: txt, isStateChange: true, display: false)
+	sendEvent(name: 'status', value: val, descriptionText: txt, isStateChange: true, displayed: true)
     
     //String txtShort = txt.take(100)
-    sendEvent(name: 'tileMessage', value: txt, descriptionText: "", isStateChange: true, display: false)
+    sendEvent(name: 'tileMessage', value: txt, descriptionText: "", isStateChange: true, displayed: false)
 }
 
 def updated(){
@@ -422,7 +423,7 @@ def rain() {
 }
 
 def manualTime(value){	
-	sendEvent(name: 'minutes', value: "${value}", descriptionText: "Manual Time set to ${value}", display: false)
+	sendEvent(name: 'minutes', value: "${value}", descriptionText: "Manual Time set to ${value}", displayed: false)
 }
 
 def manual(){    
@@ -472,7 +473,7 @@ def writeTime(wEP, runTime){
 def configure() {
 	
     sendEvent(name: 'status', value: 'schedule', descriptionText: "Syncing settings to controller")
-    sendEvent(name: 'minutes', value: "10", descriptionText: "Manual Time set to 10 mins", display: false)
+    sendEvent(name: 'minutes', value: "10", descriptionText: "Manual Time set to 10 mins", displayed: true)
     sendEvent(name: 'tileMessage', value: 'Syncing settings to controller', descriptionText: 'Syncing settings to controller')
     config()    
 }
@@ -746,4 +747,3 @@ def z16on() {
 def z16off() {
 	"st cmd 0x${device.deviceNetworkId} 17 6 0 {}"    
 }
-

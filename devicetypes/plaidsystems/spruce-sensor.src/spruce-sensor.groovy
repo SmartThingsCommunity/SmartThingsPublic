@@ -17,7 +17,7 @@
  -remove polling and/or refresh(?)
  */
 metadata {
-	definition (name: "Spruce Sensor", namespace: "plaidsystems", author: "NCauffman") {
+	definition (name: "Spruce Sensor", namespace: "plaidsystems", author: "Plaid Systems") {
 		
 		capability "Configuration"
 		capability "Battery"
@@ -29,10 +29,12 @@ metadata {
         attribute "maxHum", "string"
         attribute "minHum", "string"        
         
+        command "configure"
         command "resetHumidity"
         command "refresh"
         
-        fingerprint profileId: "0104", inClusters: "0000,0001,0003,0402,0405", outClusters: "0003, 0019", manufacturer: "PLAID SYSTEMS", model: "PS-SPRZMS-01"
+        fingerprint profileId: "0104", inClusters: "0000,0001,0003,0402,0405", outClusters: "0003, 0019", manufacturer: "PLAID SYSTEMS", model: "PS-SPRZMS-01", deviceJoinName: "Spruce Sensor"
+        fingerprint profileId: "0104", inClusters: "0000,0001,0003,0402,0405", outClusters: "0003, 0019", manufacturer: "PLAID SYSTEMS", model: "PS-SPRZMS-SLP1", deviceJoinName: "Spruce Sensor"
 	}
 
 	preferences {
@@ -254,8 +256,7 @@ private Map getTemperatureResult(value) {
 	return [
 		name: 'temperature',
 		value: value,
-		descriptionText: descriptionText,
-		unit: temperatureScale
+		descriptionText: descriptionText
 	]
 }
 
