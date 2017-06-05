@@ -1,16 +1,17 @@
 metadata {
     definition(name: "Sonoff-Tasmota", namespace: "BrettSheleski", author: "Brett Sheleski") {
 		capability "Switch"
+		capability "Momentary"
 		capability "Polling"
 		capability "Refresh"
     }
 
 	// UI tile definitions
     tiles(scale: 2) {
-		multiAttributeTile(name:"switch", type: "lighting", width: 6, height: 4, canChangeIcon: true){
+		multiAttributeTile(name:"switch", type: "generic", width: 6, height: 4, canChangeIcon: true){
 			tileAttribute ("device.switch", key: "PRIMARY_CONTROL") {
-				attributeState "on", label: '${name}', action: "switch.off", icon: "st.switches.switch.on", backgroundColor: "#79b821"
-				attributeState "off", label: '${name}', action: "switch.on", icon: "st.switches.switch.off", backgroundColor: "#ffffff"
+				attributeState "on", label: '${name}', action: "momentary.push", icon: "st.switches.switch.on", backgroundColor: "#79b821"
+				attributeState "off", label: '${name}', action: "momentary.push", icon: "st.switches.switch.off", backgroundColor: "#ffffff"
 			}
 		}
 
@@ -78,11 +79,15 @@ def parseResult(String json){
 }
 
 def setSwitchState(Boolean on){
-	log.debug "The lights are " + (on ? "ON" : "OFF")
+	log.debug "The switch is " + (on ? "ON" : "OFF")
 
 	sendEvent(name: "switch", value: on ? "on" : "off");
 }
 
+def push(){
+	log.debug "PUSH"
+	toggle(); // push is just an alias for toggle
+}
 
 def toggle(){
 	log.debug "TOGGLE"
@@ -153,8 +158,6 @@ private def sendCommand(String command, String payload){
             HOST: "${ipAddress}:${port}"
         ]
     )
-
-    log.debug result
 
     return result
 }
