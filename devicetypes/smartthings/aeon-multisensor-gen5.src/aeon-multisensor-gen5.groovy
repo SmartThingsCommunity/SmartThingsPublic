@@ -22,8 +22,6 @@ metadata {
 		capability "Battery"
 		capability "Health Check"
 
-		command "configureAfterSecure"
-
 		fingerprint deviceId: "0x0701", inClusters: "0x5E,0x86,0x72,0x59,0x85,0x73,0x71,0x84,0x80,0x30,0x31,0x70,0x98,0x7A", outClusters:"0x5A"
 		fingerprint mfr:"0086", prod:"0102", model:"004A", deviceJoinName: "Aeon Labs MultiSensor (Gen 5)"
 	}
@@ -91,12 +89,12 @@ metadata {
 		valueTile("battery", "device.battery", inactiveLabel: false, decoration: "flat", width: 2, height: 2) {
 			state "battery", label:'${currentValue}% battery', unit:""
 		}
-        standardTile("configureAfterSecure", "device.configure", inactiveLabel: false, decoration: "flat", width: 2, height: 2) {
-			state "configure", label:'', action:"configureAfterSecure", icon:"st.secondary.configure"
+		standardTile("configure", "device.configure", inactiveLabel: false, decoration: "flat", width: 2, height: 2) {
+			state "configure", label:'', action:"configure", icon:"st.secondary.configure"
 		}
 
 		main(["motion", "temperature", "humidity", "illuminance"])
-		details(["motion", "temperature", "humidity", "illuminance", "battery", "configureAfterSecure"])
+		details(["motion", "temperature", "humidity", "illuminance", "battery", "configure"])
 	}
 }
 
@@ -131,8 +129,8 @@ def zwaveEvent(physicalgraph.zwave.commands.wakeupv1.WakeUpNotification cmd)
 
 	if (!isConfigured()) {
 		// we're still in the process of configuring a newly joined device
-		log.debug("not sending wakeUpNoMoreInformation yet")
-        result += response(configureAfterSecure())
+		log.debug("not sending wakeUpNoMoreInformation yet: late configure")
+		result += response(configure())
 	} else {
 		result += response(zwave.wakeUpV1.wakeUpNoMoreInformation())
 	}
@@ -148,11 +146,6 @@ def zwaveEvent(physicalgraph.zwave.commands.securityv1.SecurityMessageEncapsulat
 		log.warn "Unable to extract encapsulated cmd from $cmd"
 		createEvent(descriptionText: cmd.toString())
 	}
-}
-
-def zwaveEvent(physicalgraph.zwave.commands.securityv1.SecurityCommandsSupportedReport cmd) {
-    // log.debug "Received SecurityCommandsSupportedReport"
-	response(configureAfterSecure())
 }
 
 def zwaveEvent(physicalgraph.zwave.commands.batteryv1.BatteryReport cmd) {
@@ -226,36 +219,6 @@ def zwaveEvent(physicalgraph.zwave.Command cmd) {
 	createEvent(descriptionText: cmd.toString(), isStateChange: false)
 }
 
-def configureAfterSecure() {
-    // log.debug "configureAfterSecure()"
-
-    def request = [
-		// send temperature, humidity, and illuminance every 8 minutes
-		zwave.configurationV1.configurationSet(parameterNumber: 101, size: 4, scaledConfigurationValue: 128|64|32),
-		zwave.configurationV1.configurationSet(parameterNumber: 111, size: 4, scaledConfigurationValue: 8*60),
-
-		// send battery every 20 hours
-		zwave.configurationV1.configurationSet(parameterNumber: 102, size: 4, scaledConfigurationValue: 1),
-		zwave.configurationV1.configurationSet(parameterNumber: 112, size: 4, scaledConfigurationValue: 20*60*60),
-
-		// send no-motion report 60 seconds after motion stops
-		zwave.configurationV1.configurationSet(parameterNumber: 3, size: 2, scaledConfigurationValue: 60),
-
-		// send binary sensor report instead of basic set for motion
-		zwave.configurationV1.configurationSet(parameterNumber: 5, size: 1, scaledConfigurationValue: 2),
-
-		// disable notification-style motion events
-		zwave.notificationV3.notificationSet(notificationType: 7, notificationStatus: 0),
-
-		zwave.batteryV1.batteryGet(),
-		zwave.sensorBinaryV2.sensorBinaryGet(sensorType:0x0C)
-    ]
-	
-    setConfigured()
-	
-    secureSequence(request) + ["delay 20000", zwave.wakeUpV1.wakeUpNoMoreInformation().format()]
-}
-
 /**
  * PING is used by Device-Watch in attempt to reach the Device
  * */
@@ -265,7 +228,36 @@ def ping() {
 
 def configure() {
 	// log.debug "configure()"
-    //["delay 30000"] + secure(zwave.securityV1.securityCommandsSupportedGet())
+	def request = []
+	// send temperature, humidity, and illuminance every 8 minutes
+	request << zwave.configurationV1.configurationSet(parameterNumber: 101, size: 4, scaledConfigurationValue: 128|64|32)
+	request << zwave.configurationV1.configurationSet(parameterNumber: 111, size: 4, scaledConfigurationValue: 8*60)
+
+	// send battery every 20 hours
+	request << zwave.configurationV1.configurationSet(parameterNumber: 102, size: 4, scaledConfigurationValue: 1)
+	request << zwave.configurationV1.configurationSet(parameterNumber: 112, size: 4, scaledConfigurationValue: 20*60*60)
+
+	// send no-motion report 60 seconds after motion stops
+	request << zwave.configurationV1.configurationSet(parameterNumber: 3, size: 2, scaledConfigurationValue: 60)
+
+	// send binary sensor report instead of basic set for motion
+	request << zwave.configurationV1.configurationSet(parameterNumber: 5, size: 1, scaledConfigurationValue: 2)
+
+	// Turn on the Multisensor Gen5 PIR sensor
+	request << zwave.configurationV1.configurationSet(parameterNumber: 4, size: 1, scaledConfigurationValue: 1)
+
+	// disable notification-style motion events
+	request << zwave.notificationV3.notificationSet(notificationType: 7, notificationStatus: 0)
+
+	request << zwave.batteryV1.batteryGet()
+	request << zwave.sensorBinaryV2.sensorBinaryGet(sensorType: 0x0C) //motion
+	request << zwave.sensorMultilevelV5.sensorMultilevelGet(sensorType: 0x01) //temperature
+	request << zwave.sensorMultilevelV5.sensorMultilevelGet(sensorType: 0x03) //illuminance
+	request << zwave.sensorMultilevelV5.sensorMultilevelGet(sensorType: 0x05) //humidity
+
+	setConfigured()
+
+	secureSequence(request) + ["delay 20000", zwave.wakeUpV1.wakeUpNoMoreInformation().format()]
 }
 
 private setConfigured() {
