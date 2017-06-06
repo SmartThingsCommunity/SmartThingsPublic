@@ -85,11 +85,21 @@ metadata {
 	details(["switch", "power", "energy", "levelSliderControl", "refresh", "reset"])
 }
 
+def getCommandClassVersions() {
+	[
+		0x20: 1,  // Basic
+		0x26: 3,  // SwitchMultilevel
+		0x56: 1,  // Crc16Encap
+		0x70: 1,  // Configuration
+		0x32: 3,  // Meter
+	]
+}
+
 // parse events into attributes
 def parse(String description) {
 	def result = null
 	if (description != "updated") {
-		def cmd = zwave.parse(description, [0x20: 1, 0x26: 3, 0x70: 1, 0x32:3])
+		def cmd = zwave.parse(description, commandClassVersions)
 		if (cmd) {
 			result = zwaveEvent(cmd)
 	        log.debug("'$description' parsed to $result")
@@ -122,6 +132,21 @@ def zwaveEvent(physicalgraph.zwave.commands.basicv1.BasicSet cmd) {
 
 def zwaveEvent(physicalgraph.zwave.commands.switchmultilevelv3.SwitchMultilevelReport cmd) {
 	dimmerEvents(cmd)
+}
+
+def zwaveEvent(physicalgraph.zwave.commands.crc16encapv1.Crc16Encap cmd) {
+	def versions = commandClassVersions
+	def version = versions[cmd.commandClass as Integer]
+	def ccObj = version ? zwave.commandClass(cmd.commandClass, version) : zwave.commandClass(cmd.commandClass)
+	def encapsulatedCommand = ccObj?.command(cmd.command)?.parse(cmd.data)
+	if (encapsulatedCommand) {
+		zwaveEvent(encapsulatedCommand)
+	}
+}
+
+def zwaveEvent(physicalgraph.zwave.Command cmd) {
+	// Handles all Z-Wave commands we aren't interested in
+	[:]
 }
 
 def dimmerEvents(physicalgraph.zwave.Command cmd) {
