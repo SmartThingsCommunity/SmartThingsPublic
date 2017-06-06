@@ -26,7 +26,9 @@ metadata {
 		capability "Polling"
 		capability "Refresh"
 		capability "Health Check"
-		fingerprint manufacturer: "015D", prod: "0221", model: "251C"
+
+		fingerprint manufacturer: "015D", prod: "0221", model: "251C", deviceJoinName: "Show Home 2-Channel Smart Plug"
+		fingerprint manufacturer: "0312", prod: "B221", model: "251C", deviceJoinName: "Inovelli 2-Channel Smart Plug"
 	}
 	simulator {}
 	preferences {}
