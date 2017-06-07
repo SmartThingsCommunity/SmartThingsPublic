@@ -40,7 +40,8 @@ metadata {
         
         attribute "swing", "String"
         attribute "temperatureUnit","String"
-         attribute "productModel","String"
+        attribute "productModel","String"
+        attribute "firmwareVersion","String"
         
         command "switchFanLevel"
         command "switchMode"
@@ -91,15 +92,9 @@ metadata {
 				//])
     		}
             tileAttribute("device.targetTemperature", key: "VALUE_CONTROL") {
-    			//attributeState("default", action: "setTemperature")
-                //attributeState("VALUE_UP", action: "raiseCoolSetpoint")
-                //attributeState("VALUE_DOWN", action: "lowerCoolSetpoint")
                 attributeState("VALUE_UP", action: "raiseTemperature")
                 attributeState("VALUE_DOWN", action: "lowerTemperature")    			
   			}
-            //tileAttribute ("statusText", key: "SECONDARY_CONTROL") {
-			//	attributeState "statusText", label:'${currentValue}'
-			//}
             tileAttribute("device.humidity", key: "SECONDARY_CONTROL") {
    				attributeState("default", label:'${currentValue}%', unit:"%")
   			}
@@ -140,10 +135,7 @@ metadata {
   		}
         
 		valueTile("temperature", "device.temperature", width: 2, height: 2) {
-			state("temperature", label:'Temp: ${currentValue}',
-				backgroundColors:[
-				]
-			)
+			state("temperature", label:'Temp: ${currentValue}',backgroundColors:[])
 		}
         
 		valueTile("humidity", "device.humidity", width: 2, height: 2) {
@@ -159,13 +151,23 @@ metadata {
 					[value: 2700, color: "#CC0000"],
 					[value: 2800, color: "#FFFF00"],
 					[value: 2900, color: "#00FF00"]
-                    //[value: 20, color: "#CC0000"],
-					//[value: 40, color: "#FFFF00"],
-					//[value: 60, color: "#00FF00"]
                 ]
            )
         }
-            
+        
+        valueTile("firmwareVersion", "device.firmwareVersion", width: 2, height: 2) {
+			state("version", label:'Firmware: ${currentValue}',backgroundColors:[])
+		}
+        
+        valueTile("productModel", "device.productModel", width: 2, height: 2) {
+			state("mains", label:'Model: ${currentValue}',backgroundColors:[])
+		}
+        
+        valueTile("powerSource", "device.powerSource", width: 2, height: 2) {
+			state("mains", icon:"http://i130.photobucket.com/albums/p242/brutalboy_photos/cable-power-cord-plug-circle-512.png", label:'Source: ${currentValue}',backgroundColors:[])
+            state("battery", icon:"http://i130.photobucket.com/albums/p242/brutalboy_photos/battery.jpg", label:'Source: ${currentValue}',backgroundColors:[])
+		}
+        
         standardTile("switch", "device.switch", width: 2, height: 2, canChangeIcon: true) {
 			state "on", label:'${name}', action:"switch.off", icon:"st.switches.switch.on", backgroundColor:"#00a0dc"
 			state "off", label:'${name}', action:"switch.on", icon:"st.switches.switch.off", backgroundColor:"#ffffff"
@@ -208,11 +210,11 @@ metadata {
         }
         
         standardTile("refresh", "device.switch", inactiveLabel: false, decoration: "flat", width: 2, height: 2) {
-			state "default", label:'', action:"refresh.refresh", icon:"st.secondary.refresh"
+			state "default", label:"Refresh", action:"refresh.refresh", icon:"st.secondary.refresh"
 		}
 		       
 		main (["switch"])
-		details (["thermostatMulti","switch","fanLevel","mode","swing","voltage","refresh"])    
+		details (["thermostatMulti","switch","fanLevel","mode","swing","voltage","powerSource","firmwareVersion","productModel","refresh"])    
 	}
 }
 
