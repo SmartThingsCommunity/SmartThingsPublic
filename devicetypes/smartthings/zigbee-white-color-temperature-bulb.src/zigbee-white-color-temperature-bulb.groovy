@@ -124,7 +124,11 @@ def setLevel(value) {
  * PING is used by Device-Watch in attempt to reach the Device
  * */
 def ping() {
-    return zigbee.onOffRefresh()
+    def rejoinCmds = [
+            "st leave 0x${device.deviceNetworkId} {0000000000000000} 0 1"
+    ]
+
+    return rejoinCmds + zigbee.onOffRefresh()
 }
 
 def refresh() {
