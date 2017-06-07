@@ -740,8 +740,13 @@ def getACState(PodUid)
                         def OnOff = stat.acState.on ? "on" : "off"
                         stat.acState.on = OnOff
 						
-						def stemp = stat.acState.targetTemperature.toInteger()
-
+                        if (stat.acState.mode=="fan"){
+							stemp = stat.device.measurements.temperature.toInteger()
+						}
+						else {
+							stemp = stat.acState.targetTemperature.toInteger()
+						}
+					
                         def tMode                        
                         if (OnOff=="off") {
         					tMode = "off"
