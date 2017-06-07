@@ -33,11 +33,11 @@ preferences {
 	page(name: "SelectAPIKey", title: "API Key", content: "setAPIKey", nextPage: "deviceList", install: false, uninstall: true)
 	page(name: "deviceList", title: "Sensibo", content:"SensiboPodList", install:true, uninstall: true)
     page(name: "timePage")
+    page(name: "timePageEvent")
 }
 
 def getServerUrl() { "https://home.sensibo.com" }
 def getapikey() { apiKey }
-def TemperatureUnit() { return location.temperatureScale }
 
 def setAPIKey()
 {
@@ -59,7 +59,6 @@ def SensiboPodList()
 	log.debug "SensiboPodList()"
 
 	def stats = getSensiboPodList()
-
 	log.debug "device list: $stats"
     
 	def p = dynamicPage(name: "deviceList", title: "Select Your Sensibo Pod", uninstall: true) {
@@ -67,11 +66,19 @@ def SensiboPodList()
 			paragraph "Tap below to see the list of Sensibo Pods available in your Sensibo account and select the ones you want to connect to SmartThings."
 			input(name: "SelectedSensiboPods", title:"Pods", type: "enum", required:true, multiple:true, description: "Tap to choose",  metadata:[values:stats])
 		}
-        section("Notification") {
-            input "sendPushNotif", "bool",submitOnChange: true, required: false, title: "Send Push Notification on Sensibo Pod sensors?"
+
+        section("Receive Pod sensors infos") {
+        	input "boolnotifevery", "bool",submitOnChange: true, required: false, title: "Receive temperature, humidity and battery level notification every hour?"
+            href(name: "toTimePageEvent",
+                     page: "timePageEvent", title:"Only during a certain time", require: false)
         }
-        if (sendPushNotif) {
-            section("Select the temperature threshold",hideable: true) {
+
+        section("Alert on sensors (threshold)") {
+        	input "sendPushNotif", "bool",submitOnChange: true, required: false, title: "Receive alert on Sensibo Pod sensors based on threshold?"                       
+        }
+
+		if (sendPushNotif) {
+           section("Select the temperature threshold",hideable: true) {
             	input "minTemperature", "decimal", title: "Min Temperature",required:false
             	input "maxTemperature", "decimal", title: "Max Temperature",required:false }
             section("Select the humidity threshold",hideable: true) {
@@ -79,7 +86,6 @@ def SensiboPodList()
             	input "maxHumidity", "decimal", title: "Max Humidity level",required:false }              
          
         	section("How frequently?") {
-            	//input(name:"sfrequency", title:"Once within this number of minutes", type:"number", required:false)
         		input(name:"days", title: "Only on certain days of the week", type: "enum", required:false, multiple: true, options: ["Monday", "Tuesday", "Wednesday","Thursday","Friday","Saturday","Sunday"])
         	}
         	section("") {
@@ -87,6 +93,7 @@ def SensiboPodList()
                 	 page: "timePage", title:"Only during a certain time", require: false)
         	}
         }
+        
 	}
 	return p
 }
@@ -97,6 +104,16 @@ def timePage() {
       section("") {
         input(name: "startTime", title: "Starting at : ", required:false, multiple: false, type:"time",)
         input(name: "endTime", title: "Ending at : ", required:false, multiple: false, type:"time")
+      }
+   }
+}
+
+// page def must include a parameter for the params map!
+def timePageEvent() {
+    dynamicPage(name: "timePageEvent", uninstall: false, install: false, title: "Only during a certain time") {
+      section("") {
+        input(name: "startTimeEvent", title: "Starting at : ", required:false, multiple: false, type:"time",)
+        input(name: "endTimeEvent", title: "Ending at : ", required:false, multiple: false, type:"time")
       }
    }
 }
@@ -142,12 +159,19 @@ def installed() {
 
 	state.lastTemperaturePush = null
     state.lastHumidityPush = null
-    
+  
 	initialize()
     
     def d = getAllChildDevices()
 
-    if (sendPushNotif) {
+	if (boolnotifevery) {
+    	//runEvery1Hour("hournotification")
+        schedule("0 0 * * * ?", "hournotification")
+	}
+    
+    //subscribe(d,"temperatureUnit",eTempUnitHandler)
+    
+    if (sendPushNotif) { 
     	subscribe(d, "temperature", eTemperatureHandler)
         subscribe(d, "humidity", eHumidityHandler)
     }
@@ -165,10 +189,69 @@ def updated() {
     initialize()
     
     def d = getAllChildDevices()
+    
+    if (boolnotifevery) {
+    	//runEvery1Hour("hournotification")
+        schedule("0 0 * * * ?", "hournotification")
+	}
+    
+    //subscribe(d,"temperatureUnit",eTempUnitHandler)
+    
     if (sendPushNotif) {
     	subscribe(d, "temperature", eTemperatureHandler)
         subscribe(d, "humidity", eHumidityHandler)
     }
+}
+
+def hournotification() {
+	def hour = new Date()
+	def curHour = hour.format("HH:mm",location.timeZone)
+	def curDay = hour.format("EEEE",location.timeZone)
+	// Check the time Threshold
+    def stext = ""
+	if (startTimeEvent && endTimeEvent) {
+ 		def minHour = new Date().parse(smartThingsDateFormat(), startTimeEvent)
+    	def endHour = new Date().parse(smartThingsDateFormat(), endTimeEvent)
+
+    	def minHourstr = minHour.format("HH:mm",location.timeZone)
+    	def maxHourstr = endHour.format("HH:mm",location.timeZone)
+
+    	if (curHour >= minHourstr && curHour <= maxHourstr) 
+    	{
+    		def devices = getAllChildDevices()
+            devices.each { d ->
+                log.debug "Notification every hour for device: ${d.id}"
+                def currentPod = d.displayName
+                def currentTemperature = d.currentState("temperature").value
+                def currentHumidity = d.currentState("humidity").value
+                def currentBattery = d.currentState("voltage").value
+                def sunit = d.currentState("temperatureUnit").value
+                stext = "${currentPod} - Temperature: ${currentTemperature} ${sunit} Humidity: ${currentHumidity}% Battery: ${currentBattery}"    
+                
+                sendPush(stext)
+            }
+    	}
+    }
+    else {
+    	 	def devices = getAllChildDevices()
+            devices.each { d ->
+                log.debug "Notification every hour for device: ${d.id}"
+                def currentPod = d.displayName
+                def currentTemperature = d.currentState("temperature").value
+                def currentHumidity = d.currentState("humidity").value
+                def currentBattery = d.currentState("voltage").value
+                def sunit = d.currentState("temperatureUnit").value
+                stext = "${currentPod} - Temperature: ${currentTemperature} ${sunit} Humidity: ${currentHumidity}% Battery: ${currentBattery}"    
+                
+                sendPush(stext)
+            }
+    }
+}
+
+
+def eTempUnitHandler(evt)
+{
+	//refreshOneDevice(evt.device.displayName)
 }
 
 def eTemperatureHandler(evt){
@@ -351,21 +434,22 @@ def initialize() {
     log.debug "initialize"
 
 	def devices = SelectedSensiboPods.collect { dni ->
-
+		log.debug dni
 		def d = getChildDevice(dni)
 
 		if(!d)
 			{
                 
             	def name = getSensiboPodList().find( {key,value -> key == dni })
+				log.debug "Pod : ${name.value} - Hub : ${location.hubs[0].name} - Type : " +  getChildTypeName() + " - Namespace : " + getChildNamespace()
 
-				d = addChildDevice(getChildNamespace(), getChildTypeName(), dni,"", [
+				d = addChildDevice(getChildNamespace(), getChildTypeName(), dni, location.hubs[0].id, [
                 	"label" : "Pod ${name.value}",
                     "name" : "Pod ${name.value}"
                     ])
                 d.setIcon("on","on","http://i130.photobucket.com/albums/p242/brutalboy_photos/on_color_large_on.png")
-                d.setIcon("off","on","http://i130.photobucket.com/albums/p242/brutalboy_photos/on_color_large_off2.png")
-                d.save()
+                d.setIcon("off","on","http://i130.photobucket.com/albums/p242/brutalboy_photos/on_color_large.png")
+                d.save()              
                 
 				log.debug "created ${d.displayName} with id $dni"
 			}
@@ -399,6 +483,7 @@ def initialize() {
     pollHandler()
     
     refreshDevices()
+    
     runEvery5Minutes("refreshDevices")
 }
 
@@ -500,16 +585,17 @@ def pollChild( child )
 	return null
 }
 
-def setACStates(child,String PodUid, on, mode, targetTemperature, fanLevel)
+def setACStates(child,String PodUid, on, mode, targetTemperature, fanLevel, swingM, sUnit)
 {
-	log.debug "SetACStates ON: $on - MODE: $mode - Temp : $targetTemperature - FAN : $fanLevel"
+	log.debug "SetACStates ON: $on - MODE: $mode - Temp : $targetTemperature - FAN : $fanLevel - SWING MODE : $swingM"
     
     //Return false if no values was read from Sensibo API
     if (on == "--") { return false }
     
     def OnOff = (on == "on") ? true : false
+    if (swingM == null) swingM = "stopped"
     
-   	def jsonRequestBody = '{"acState":{"on": ' + OnOff.toString() + ',"mode": "' + mode + '","fanLevel": "' + fanLevel + '","targetTemperature": '+ targetTemperature + '}}'
+   	def jsonRequestBody = '{"acState":{"on": ' + OnOff.toString() + ',"mode": "' + mode + '","fanLevel": "' + fanLevel + '","targetTemperature": '+ targetTemperature + ',"swing": "' + swingM + '","temperatureUnit": "' + sUnit + '"}}'
     
     log.debug "Mode Request Body = ${jsonRequestBody}"
 	debugEvent ("Mode Request Body = ${jsonRequestBody}")
@@ -528,14 +614,12 @@ def setACStates(child,String PodUid, on, mode, targetTemperature, fanLevel)
         }
         else {
         	 tData.data.thermostatMode = mode
-             if (mode=="fan") {
-                tData.data.thermostatMode = "auto"
-             }
         }
         tData.data.targetTemperature = targetTemperature
         tData.data.coolingSetpoint = targetTemperature
         tData.data.heatingSetpoint = targetTemperature
-        tData.data.temperatureUnit = TemperatureUnit()
+        tData.data.temperatureUnit = sUnit
+        tData.data.swing = swingM
         tData.data.Error = "Success"
 	}
     else {
@@ -546,6 +630,87 @@ def setACStates(child,String PodUid, on, mode, targetTemperature, fanLevel)
 	return(result)
 }
 
+//Get the capabilities of the A/C Unit
+def getCapabilities(PodUid, mode)
+{
+	def data = [:]   
+	def pollParams = [
+    	uri: "${getServerUrl()}",
+    	path: "/api/v2/pods/${PodUid}",
+    	requestContentType: "application/json",
+    	query: [apiKey:"${getapikey()}", type:"json", fields:"remoteCapabilities,productModel"]]
+     try {
+
+     	 httpGet(pollParams) { resp ->
+
+         if (resp.data) {
+         		log.debug "Status : " + resp.status
+                if(resp.status == 200) {
+                	resp.data = [result: [remoteCapabilities: [modes: [heat: [swing: ["stopped", "fixedTop", "fixedMiddleTop", "fixedMiddle", "fixedMiddleBottom", "fixedBottom", "rangeTop", "rangeMiddle", "rangeBottom", "rangeFull"], temperatures: [C: ["isNative": true, "values": [16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30]], F: ["isNative": false, "values": [61, 63, 64, 66, 68, 70, 72, 73, 75, 77, 79, 81, 82, 84, 86]]], fanLevels: ["low", "medium", "high", "auto"]], fan: [swing: ["stopped", "fixedMiddleTop", "fixedMiddle", "fixedMiddleBottom", "fixedBottom", "rangeTop", "rangeMiddle", "rangeBottom", "rangeFull"], temperatures: [C: ["isNative": true, "values": [16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30]], F: ["isNative": false, "values": [61, 63, 64, 66, 68, 70, 72, 73, 75, 77, 79, 81, 82, 84, 86]]], fanLevels: ["low", "medium", "high", "auto"]], cool: [swing: ["stopped", "fixedTop", "fixedMiddleTop", "fixedMiddle", "fixedMiddleBottom", "fixedBottom", "rangeTop", "rangeMiddle", "rangeBottom", "rangeFull"], temperatures: ["C": ["isNative": true, "values": [16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30]], F: ["isNative": false, "values": [61, 63, 64, 66, 68, 70, 72, 73, 75, 77, 79, 81, 82, 84, 86]]], fanLevels: ["low", "high", "auto"]]]]]]
+                    switch (mode){
+                    	case "dry":
+                        	data = [
+                            	remoteCapabilities : resp.data.result.remoteCapabilities.modes.dry,
+                                productModel : resp.data.result.productModel
+                           	]	
+                        	break
+                        case "cool":
+                       		data = [
+                            	remoteCapabilities : resp.data.result.remoteCapabilities.modes.cool,
+                                productModel : resp.data.result.productModel
+                           	]	
+                        	break
+                        case "heat":
+                       		data = [
+                            	remoteCapabilities : resp.data.result.remoteCapabilities.modes.heat,
+                                productModel : resp.data.result.productModel
+                           	]	
+                        	break
+                        case "fan":
+                       		data = [
+                            	remoteCapabilities : resp.data.result.remoteCapabilities.modes.fan,
+                                productModel : resp.data.result.productModel
+                           	]	
+                        	break
+                        case "auto":
+                       		data = [
+                            	remoteCapabilities : resp.data.result.remoteCapabilities.modes.auto,
+                                productModel : resp.data.result.productModel
+                           	]	
+                        	break
+                        case "modes":
+                       		data = [
+                            	remoteCapabilities : resp.data.result.remoteCapabilities.modes,
+                                productModel : resp.data.result.productModel
+                           	]	
+                        	break                        
+                    }
+                    return data
+                }
+                else {
+                	log.debug "get remoteCapabilities Failed"
+                    
+                    data = [
+						remoteCapabilities : "",
+                        productModel : ""
+                    ]                    
+              		return data
+                }
+			}
+         }
+         return data
+     }
+     catch(Exception e) {     	
+        log.debug "get remoteCapabilities Failed"
+        
+        data = [
+        	remoteCapabilities : "",
+            productModel : ""
+        ]        
+     	return data
+     }
+}
+
 // Get the latest state from the Sensibo Pod
 def getACState(PodUid)
 {
@@ -554,7 +719,7 @@ def getACState(PodUid)
     	uri: "${getServerUrl()}",
     	path: "/api/v2/pods/${PodUid}/acStates",
     	requestContentType: "application/json",
-    	query: [apiKey:"${getapikey()}", type:"json", limit:1, fields:"status,acState"]]
+    	query: [apiKey:"${getapikey()}", type:"json", limit:1, fields:"status,acState,device"]]
     
     try {
        httpGet(pollParams) { resp ->
@@ -563,23 +728,25 @@ def getACState(PodUid)
 				debugEvent ("Response from Sensibo GET = ${resp.data}")
 				debugEvent ("Response Status = ${resp.status}")
 			}
-			//log.debug "xxxxxxxxxxxx Get Status " + resp.status
+			
 			if(resp.status == 200) {
             	resp.data.result.any { stat ->
                 	
                 	if (stat.status == "Success") {
-                    	//log.debug "xxxxxxxxxxxx Sensibo Status " + stat.status
+                    	
                         log.debug "get ACState Success"
-                        //log.debug stat.acState
+                        log.debug stat.acState
                         
                         def OnOff = stat.acState.on ? "on" : "off"
                         stat.acState.on = OnOff
 						
-						def stemp = stat.acState.targetTemperature.toInteger()
-
-						if (TemperatureUnit() == "F") {
-                    		stemp = Math.round(cToF(stemp))
-                    	}
+                        if (stat.acState.mode=="fan"){
+							stemp = stat.device.measurements.temperature.toInteger()
+						}
+						else {
+							stemp = stat.acState.targetTemperature.toInteger()
+						}
+					
                         def tMode                        
                         if (OnOff=="off") {
         					tMode = "off"
@@ -587,9 +754,11 @@ def getACState(PodUid)
 				        else {
         	 				tMode = stat.acState.mode
                         }
-                        if (tMode=="fan") {
-                        		tMode = "auto"
-        				}
+                        
+                        log.debug "product Model : " + stat.device.productModel
+                        def battery = stat.device.productModel == "skyv1" ? "battery" : "mains"
+                        
+                        log.debug "swing Mode :" + stat.acState.swing
                         data = [
                             targetTemperature : stemp,
                             fanLevel : stat.acState.fanLevel,
@@ -600,18 +769,21 @@ def getACState(PodUid)
                             thermostatFanMode : stat.acState.fanLevel,
                             coolingSetpoint : stemp,
                             heatingSetpoint : stemp,
-                            temperatureUnit : TemperatureUnit(),
+                            temperatureUnit : stat.acState.temperatureUnit,
+                            swing : stat.acState.swing,
+                            powerSource : battery,
+                            productModel : stat.device.productModel,
+                            firmwareVersion : stat.device.firmwareVersion,
                             Error : "Success"
                         ]
 
-                        log.debug "On: ${data.on} targetTemp: ${data.targetTemperature} fanLevel: ${data.fanLevel} mode: ${data.mode}"
+                        log.debug "On: ${data.on} targetTemp: ${data.targetTemperature} fanLevel: ${data.fanLevel} Thermostat mode: ${data.mode} swing: ${data.swing}"
                         return data
                 	}
                     else { log.debug "get ACState Failed"}
                }
            }
-           else
-           {
+           else {
            	  data = [
                  targetTemperature : "0",
                  fanLevel : "--",
@@ -622,7 +794,11 @@ def getACState(PodUid)
                  thermostatFanMode : "--",
                  coolingSetpoint : "0",
                  heatingSetpoint : "0",
-                 temperatureUnit : TemperatureUnit(),
+                 temperatureUnit : "",
+                 swing : "--",
+                 powerSource : "",
+                 productModel : "",
+                 firmwareVersion : "",
                  Error : "Failed"
 			  ]
               log.debug "get ACState Failed"
@@ -646,7 +822,11 @@ def getACState(PodUid)
             thermostatFanMode : "--",
             coolingSetpoint : "0",
             heatingSetpoint : "0",
-            temperatureUnit : TemperatureUnit(),
+            temperatureUnit : "",
+            swing : "--",
+            powerSource : "",
+            productModel : "",
+            firmwareVersion : "",
             Error : "Failed" 
 		]
         log.debug "get ACState Failed"
@@ -724,9 +904,9 @@ def pollChildren(PodUid)
 					
 					log.debug "updating dni $dni"
                     
-                    def stemp = stat.temperature.toDouble()
-                    if (TemperatureUnit() == "F") {
-                    	//stemp = Math.round(cToF(stemp))
+                    def stemp = stat.temperature.toDouble().round(1)
+
+                    if (setTemp.temperatureUnit == "F") {
                         stemp = cToF(stemp).round(1)
                     }
 
@@ -737,9 +917,18 @@ def pollChildren(PodUid)
 				    else {
         	 			tMode = setTemp.mode
                     }
-                    if (tMode=="fan") {
-                    	tMode = "auto"
-        			}
+
+					def battpourcentage = 100
+                    def battVoltage = stat.batteryVoltage
+                    
+					if (battVoltage == null) 
+                    {
+                    	battVoltage = 3000
+                    }                    
+                    
+                    if (battVoltage < 2850) battpourcentage = 10
+                    if (battVoltage > 2850 && battVoltage < 2950) battpourcentage = 50
+                    
 					def data = [
 						temperature: stemp,
 						humidity: stat.humidity,
@@ -752,9 +941,13 @@ def pollChildren(PodUid)
                         thermostatFanMode: setTemp.fanLevel,
                         coolingSetpoint: setTemp.targetTemperature,
                         heatingSetpoint: setTemp.targetTemperature,
-                        temperatureUnit : TemperatureUnit(),
-                        battvoltage : stat.batteryVoltage,
-                        //battery : stat.batteryVoltage,
+                        temperatureUnit : setTemp.temperatureUnit,
+                        voltage : battVoltage,
+                        swing : setTemp.swing,
+                        battery : battpourcentage,
+                        powerSource : setTemp.powerSource,
+                        productModel : setTemp.productModel,
+                        firmwareVersion : setTemp.firmwareVersion,
                         Error: setTemp.Error
 					]
                     
