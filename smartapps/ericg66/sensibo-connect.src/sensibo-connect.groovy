@@ -768,6 +768,7 @@ def getACState(PodUid)
                             swing : stat.acState.swing,
                             powerSource : battery,
                             productModel : stat.device.productModel,
+                            firmwareVersion : stat.device.firmwareVersion,
                             Error : "Success"
                         ]
 
@@ -792,6 +793,7 @@ def getACState(PodUid)
                  swing : "--",
                  powerSource : "",
                  productModel : "",
+                 firmwareVersion : "",
                  Error : "Failed"
 			  ]
               log.debug "get ACState Failed"
@@ -819,6 +821,7 @@ def getACState(PodUid)
             swing : "--",
             powerSource : "",
             productModel : "",
+            firmwareVersion : "",
             Error : "Failed" 
 		]
         log.debug "get ACState Failed"
@@ -896,7 +899,7 @@ def pollChildren(PodUid)
 					
 					log.debug "updating dni $dni"
                     
-                    def stemp = stat.temperature.toDouble()
+                    def stemp = stat.temperature.toDouble().round(1)
 
                     if (setTemp.temperatureUnit == "F") {
                         stemp = cToF(stemp).round(1)
@@ -939,6 +942,7 @@ def pollChildren(PodUid)
                         battery : battpourcentage,
                         powerSource : setTemp.powerSource,
                         productModel : setTemp.productModel,
+                        firmwareVersion : setTemp.firmwareVersion,
                         Error: setTemp.Error
 					]
                     
