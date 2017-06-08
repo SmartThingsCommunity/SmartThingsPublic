@@ -11,15 +11,16 @@
 */ 
 
 def clientVersion() {
-    return "01.02.01"
+    return "01.02.02"
 }
 
 /**
 * Schlage Lock Alarm Mode and Sensitivity Change and Monitor
 *
-* Author: RBoy
-* Copyright RBoy, redistribution of any changes or modified code is not allowed without permission
-* 2016-10-23 - Added ability to check for new code versions automatically once a week
+* Author: RBoy Apps
+* Copyright RBoy Apps, redistribution of any changes or modified code is not allowed without permission
+* 2017-5-26 - (v 01.02.02) Added ability to check for required device handler and notify user and sms now uses * to separate numbers
+* 2016-10-23 - Added ability to check for new code versions automatically once a week and check for required device handler
 * 2016-9-26 - Fix for broken ST phrases returning null data
 * 2016-8-17 - Added workaround for ST contact address book bug
 * 2016-7-22 - Added support for contact address book for customers who have this feature enabled
@@ -30,9 +31,9 @@ def clientVersion() {
 
 definition(
     name: "Schlage Lock Alarm Mode and Sensitivity Change and Monitor",
-    namespace: "RBoy",
-    author: "RBoy",
-    description: "This SmartApp is used to control the custom Schalge Z-Wave Lock RBoy Device to modify the Alarm mode and sensitivity based on changes to hub mode and routines modes. It also monitors for alarms on the lock",
+    namespace: "rboy",
+    author: "RBoy Apps",
+    description: "This SmartApp is used to control the Schalge Locks to modify the Alarm mode and sensitivity based on changes to hub mode and routines modes. It also monitors for alarms on the lock",
     category: "Safety & Security",
     iconUrl: "https://s3.amazonaws.com/smartapp-icons/SafetyAndSecurity/App-AudioVisualSmokeAlarm.png",
     iconX2Url: "https://s3.amazonaws.com/smartapp-icons/SafetyAndSecurity/App-AudioVisualSmokeAlarm@2x.png",
@@ -48,10 +49,16 @@ def mainPage() {
     dynamicPage(name: "mainPage", title: "Schlage Lock Alarm Mode and Sensitivity Change/Monitor v${clientVersion()}", install: true, uninstall: true) {    
         section("About") {
             paragraph "This SmartApp is used to control the Schalge Z-Wave Locks and modify the Alarm mode and Sensitivity based on changes to hub mode and routines. It can also monitor for Alarm events and alert the user"
-            paragraph "NOTE: This SmartApp will only with Schlage Z-Wave locks using the custom RBoy Schlage Z-Wave Lock With Alarms Device type."
+            paragraph "NOTE: This SmartApp will only with Schlage Z-Wave locks using the RBoy Apps Universal Enhanced Z-Wave Lock With Alarms Device type."
         }
 
         section("Schlage locks to configure") {
+            for (lock in locks) {
+                if (!lock?.hasAttribute('sensitive')) { // For now only custom DH supports sensitivity and alarm
+                    def msg = "$lock IS NOT USING THE 'Universal Enhanced Z-Wave Lock With Alarms' DEVICE HANDLER, PLEASE REMOVE THE LOCK FROM THE MONITOR LIST OR UPDATE THE DEVICE HANDLER!"
+                    paragraph title: msg, required: true, ""
+                }
+            }
             input "locks", "capability.lock", title:"Select Schlage Locks to Monitor", multiple:true, required:true, submitOnChange: true
         }
 
@@ -64,7 +71,7 @@ def mainPage() {
             paragraph "Enable Alarm notifications/actions only when operating in the following modes."
             input name: "modeMonitor", title: "Monitor only when in this mode(s)", type: "mode", required: false, multiple: true
             input("recipients", "contact", title: "Send notifications to (optional)", multiple: true, required: false) {
-                paragraph "You can enter multiple phone numbers to send an SMS to by separating them with a '+'. E.g. 5551234567+4447654321"
+                paragraph "You can enter multiple phone numbers to send an SMS to by separating them with a '*'. E.g. 5551234567*4447654321"
                 input name: "sms", title: "Send SMS notification to (optional):", type: "phone", required: false
                 input "push", "bool", title: "Send Push Notification", required: false
             }
@@ -309,7 +316,7 @@ def turnOffLights() {
 
 private void sendText(number, message) {
     if (number) {
-        def phones = number.split("\\+")
+        def phones = number.split("\\*")
         for (phone in phones) {
             sendSms(phone, message)
         }
@@ -317,7 +324,7 @@ private void sendText(number, message) {
 }
 
 def checkForCodeUpdate(evt) {
-    log.trace "Getting latest version data from the RBoy server"
+    log.trace "Getting latest version data from the RBoy Apps server"
     
     def appName = "Schlage Lock Alarm Mode and Sensitivity Change and Monitor"
     def serverUrl = "http://smartthings.rboyapps.com"
@@ -328,7 +335,7 @@ def checkForCodeUpdate(evt) {
             uri: serverUrl,
             path: serverPath
         ]) { ret ->
-            log.trace "Received response from RBoyServer, headers=${ret.headers.'Content-Type'}, status=$ret.status"
+            log.trace "Received response from RBoy Apps Server, headers=${ret.headers.'Content-Type'}, status=$ret.status"
             //ret.headers.each {
             //    log.trace "${it.name} : ${it.value}"
             //}
@@ -339,7 +346,7 @@ def checkForCodeUpdate(evt) {
                 // Check for app version updates
                 def appVersion = ret.data?."$appName"
                 if (appVersion > clientVersion()) {
-                    def msg = "New version of app ${app.label} available: $appVersion, version: ${clientVersion()}.\nPlease visit $serverUrl to get the latest version."
+                    def msg = "New version of app ${app.label} available: $appVersion, current version: ${clientVersion()}.\nPlease visit $serverUrl to get the latest version."
                     log.info msg
                     if (!disableUpdateNotifications) {
                         sendPush(msg)
@@ -349,10 +356,7 @@ def checkForCodeUpdate(evt) {
                 }
                 
                 // Check device handler version updates
-                def caps = 
-                [ locks,
-                 alarms,
-                 lights ]
+                def caps = [ locks, alarms, lights ]
                 caps?.each {
                     def devices = it?.findAll { it.hasAttribute("codeVersion") }
                     for (device in devices) {
@@ -360,7 +364,7 @@ def checkForCodeUpdate(evt) {
                             def deviceName = device?.currentValue("dhName")
                             def deviceVersion = ret.data?."$deviceName"
                             if (deviceVersion && (deviceVersion > device?.currentValue("codeVersion"))) {
-                                def msg = "New version of device ${device?.displayName} available: $deviceVersion, version: ${device?.currentValue("codeVersion")}.\nPlease visit $serverUrl to get the latest version."
+                                def msg = "New version of device ${device?.displayName} available: $deviceVersion, current version: ${device?.currentValue("codeVersion")}.\nPlease visit $serverUrl to get the latest version."
                                 log.info msg
                                 if (!disableUpdateNotifications) {
                                     sendPush(msg)

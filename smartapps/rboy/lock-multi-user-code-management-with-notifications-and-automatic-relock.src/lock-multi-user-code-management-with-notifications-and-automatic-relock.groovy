@@ -11,16 +11,19 @@
 */ 
 
 def clientVersion() {
-    return "05.05.01"
+    return "05.06.00"
 }
 
 /**
 * Add and remove multiple user codes for locks with Scheduling and notification options and local actions
 *
-* Copyright RBoy
+* Copyright RBoy Apps
 * Redistribution of any changes or code is not allowed without permission
 *
 * Change Log:
+* 2017-5-31 - (v05.06.06) Code hardering to avoid platform race conditions for one time codes, improved deadbolt automatic unlocking for Schlage locks, added support for playing back on audio systems, added support for bluetooth
+* 2017-5-29 - (v05.05.03) Bugfix for unlocking and locking without codes throwing an error
+* 2017-5-26 - (v05.05.02) Due to ST phone changes, now separate multiple SMS numbers with a *
 * 2017-4-19 - (v05.05.01) Patch for reporting Master Codes
 * 2017-4-11 - (v05.05.00) Added ability to select Chimes for when doors are opened and closed, improved user interface/text, added user presence based notifications
 * 2017-4-11 - (v05.04.01) Fixed grammar for messages
@@ -122,7 +125,7 @@ def clientVersion() {
 definition(
     name: "Lock multi user code management with notifications and automatic relock",
     namespace: "rboy",
-    author: "RBoy",
+    author: "RBoy Apps",
     description: "Add and Delete Multiple User Codes for Locks with Scheduling and Notifications",
     category: "Safety & Security",
     iconUrl: "https://s3.amazonaws.com/smartapp-icons/Allstate/lock_it_when_i_leave.png",
@@ -152,14 +155,22 @@ def setupApp() {
             input name: "maxUserNames", title: "Number of users", type: "number", required: true, multiple: false
         }
 
-        section {
+        section("General Settings") {
             // Unlock actions for all users (global)
             def hrefParams = [
                 user: null, 
                 passed: true 
             ]
-            href(name: "unlockActions", params: hrefParams, title: "Click here to define actions when doors are locked/unlocked by users", page: "unlockLockActionsPage", description: "", required: false)
-            href(name: "relockDoor", title: "Click here to define actions when doors are opened/closed", page: "relockDoorPage", description: "", required: false)
+            href(name: "unlockActions", params: hrefParams, title: "Click here to define general actions and notifications when doors are locked/unlocked by users", page: "unlockLockActionsPage", description: "", required: false)
+            href(name: "relockDoor", title: "Click here to define actions and notifications when doors are opened/closed", page: "relockDoorPage", description: "", required: false)
+
+            input("recipients", "contact", title: "Send notifications to", multiple: true, required: false) {
+                paragraph "You can enter multiple phone numbers to send an SMS to by separating them with a '*'. E.g. 5551234567*+448747654321"
+                input name: "sms", title: "Send SMS notification to (optional):", type: "phone", required: false
+                paragraph "Enable the below option if you DON'T want push notifications on your SmartThings phone app."
+                input name: "disableAllNotify", title: "Disable all push notifications", type: "bool", defaultValue: "false", required: true
+            }
+            input name: "audioDevices", title: "Play notifications on these devices", type: "capability.audioNotification", required: false, multiple: true
         }
 
         section() {
@@ -255,7 +266,7 @@ def unlockLockActionsPage(params) {
         }
         section {
             if (user) { // User specific override options
-                paragraph "Enabling user specific actions will override over any general/lock specific lock/unlock actions defined on the first page"
+                paragraph "Enabling user specific actions and notifications will override over the general actions defined on the first page"
                 input "userOverrideUnlockActions${user}", "bool", title: "Define specific actions for $name", required: true,  submitOnChange: true
                 if (!settings."userOverrideUnlockActions${user}") { // Check if user has enabled specific override actions then show menu
                     showActions = false
@@ -401,15 +412,6 @@ def usersPage() {
             sendPush "Hub location/timezone not set, using ${timeZone.getDisplayName()} timezone. Please set Hub location and timezone for the codes to work accurately"
             section("INVALID HUB LOCATION") {
                 paragraph title: "Hub location/timezone not set, using ${timeZone.getDisplayName()} timezone. Please set Hub location and timezone for the codes to work accurately", required: true, ""
-            }
-        }
-
-        section("Notification Options") {
-            input("recipients", "contact", title: "Send notifications to (optional)", multiple: true, required: false) {
-                paragraph "You can enter multiple phone numbers to send an SMS to by separating them with a ';'. E.g. 5551234567;+448747654321"
-                input name: "sms", title: "Send SMS notification to (optional):", type: "phone", required: false
-                paragraph "Enable the below option if you DON'T want push notifications on your SmartThings phone app."
-                input name: "disableAllNotify", title: "Disable all push notifications", type: "bool", defaultValue: "false", required: true
             }
         }
 
@@ -759,7 +761,7 @@ def appTouch() {
         state.tempTrackDeleteCodes[lock.id] = [] // List of temp codes to track while initializing
         state.updateLockList.add(lock.id) // reset the state for each lock to be processed with update
         state.expiredLockList.add(lock.id) // reset the state for each lock to be processed with expired
-        log.trace "Added $lock id ${lock.id} to unprocessed locks update list ${state.updateLockList} and expire list ${state.expiredLockList}"
+        //log.trace "Added $lock id ${lock.id} to unprocessed locks update list ${state.updateLockList} and expire list ${state.expiredLockList}"
     }
     state.updateNextCode = 1 // set next code to be set for the update loop
     state.expiredNextCode = 1 // set next code to be set for the expired loop
@@ -795,7 +797,6 @@ def changeHandler(evt) {
 def sensorHandler(evt) {
     log.trace "Event name $evt.name, value $evt.value, device $evt.displayName"
 
-    def data = []
     def sensor = evt.device
 
     def lock = locks.find { settings."sensor${it}"?.id == sensor.id } // Find the lock for this sensor, match by ID and not objects
@@ -807,7 +808,7 @@ def sensorHandler(evt) {
                 log.debug "Relocking ${lock} immediately in 3 seconds"
                 def immediatelocks = atomicState.immediateLocks ?: [] // We need to deference the atomicState object each time and it may contain a null if it's empty so we need to allocate a new object, https://community.smartthings.com/t/atomicstate-not-working/27827/6?u=rboy
                 if (!immediatelocks.contains(lock.id)) { // Don't re add the same lock again
-                    log.trace "Adding ${lock.id} to the list of immediate locks"
+                    //log.trace "Adding ${lock.id} to the list of immediate locks"
                     immediatelocks.add(lock.id) // Atomic to ensure we get upto date info here
                     atomicState.immediateLocks = immediatelocks // Set it back, we can't work direct on atomicState
                 }
@@ -815,7 +816,7 @@ def sensorHandler(evt) {
             } else if (settings."relockAfter${lock}") {
                 log.debug "Scheduling ${lock} to lock in ${settings."relockAfter${lock}"} minutes"
                 def reLocks = atomicState.reLocks ?: [:] // We need to deference the atomicState object each time and it may contain a null if it's empty so we need to allocate a new object, https://community.smartthings.com/t/atomicstate-not-working/27827/6?u=rboy
-                log.trace "Adding ${lock.id} to the list of relocks"
+                //log.trace "Adding ${lock.id} to the list of relocks"
                 reLocks[lock.id] = now() // Atomic to ensure we get upto date info here, Update and Add work the same way here so we don't need to check before adding/updating
                 atomicState.reLocks = reLocks // Set it back, we can't work direct on atomicState
                 reLockDoor() // Call relock door it'll take of delaying the lock as required
@@ -838,7 +839,7 @@ def sensorHandler(evt) {
         if (settings."openNotify${lock}") {
             if (!settings."openNotifyModes${lock}" || (location.modes?.find{it.name == settings."openNotifyModes${lock}"})) {
                 log.debug "Scheduling ${lock} to notify user of open door in ${settings."openNotifyTimeout${lock}"} minutes"
-                log.trace "Updating ${lock.id} timestamp in the list of notifyOpenDoors"
+                //log.trace "Updating ${lock.id} timestamp in the list of notifyOpenDoors"
                 def notifyOpenDoors = atomicState.notifyOpenDoors ?: [:] // We need to deference the atomicState object each time and it may contain a null if it's empty so we need to allocate a new object, https://community.smartthings.com/t/atomicstate-not-working/27827/6?u=rboy
                 notifyOpenDoors[lock.id] = now() // Atomic to ensure we get upto date info here, Update and Add work the same way here so we don't need to check before adding/updating
                 atomicState.notifyOpenDoors = notifyOpenDoors // Set it back, we can't work direct on atomicState
@@ -860,10 +861,10 @@ def unLockDoor() {
         log.info "UnLocking the door ${lock} immediately"
         lock.unlock() // unlock it
         def unlocks = atomicState.unLocks // We need to deference the atomicState object each time, https://community.smartthings.com/t/atomicstate-not-working/27827/6?u=rboy
-        log.trace "Removing ${lockid} from the list of pending unlocks"
+        //log.trace "Removing ${lockid} from the list of pending unlocks"
         unlocks.remove(lockid) // We are done with this lock, remove it from the list
         atomicState.unLocks = unlocks // set it back to atomicState
-        log.trace "Checking for any pending door unlocks in 3 seconds"
+        //log.trace "Checking for any pending door unlocks in 3 seconds"
         startTimer(3, unLockDoor) // Next immediate door lock in 3 seconds (give it some time for the mesh network)
         return // We're done here
     }
@@ -879,10 +880,10 @@ def immediateLockDoor() {
         log.info "Locking the door ${lock} immediately"
         lock.lock() // lock it
         def immediatelocks = atomicState.immediateLocks // We need to deference the atomicState object each time, https://community.smartthings.com/t/atomicstate-not-working/27827/6?u=rboy
-        log.trace "Removing ${lockid} from the list of pending immediate locks"
+        //log.trace "Removing ${lockid} from the list of pending immediate locks"
         immediatelocks.remove(lockid) // We are done with this lock, remove it from the list
         atomicState.immediateLocks = immediatelocks // set it back to atomicState
-        log.trace "Checking for any pending immediate door locks in 3 seconds"
+        //log.trace "Checking for any pending immediate door locks in 3 seconds"
         startTimer(3, immediateLockDoor) // Next immediate door lock in 3 seconds (give it some time for the mesh network)
         return // We're done here
     }
@@ -903,11 +904,11 @@ def reLockDoor() {
             if (lockSensor.latestValue("contact") == "closed") {
                 log.info "Sensor ${lockSensor} is reporting door ${lock} is closed, locking the door"
                 lock.lock() // lock it
-                log.trace "Removing ${lockid} from the list of pending relocks"
+                //log.trace "Removing ${lockid} from the list of pending relocks"
                 def reLocks = atomicState.reLocks // We need to deference the atomicState object each time, https://community.smartthings.com/t/atomicstate-not-working/27827/6?u=rboy
                 reLocks.remove(lockid) // We are done with this lock, remove it from the list
                 atomicState.reLocks = reLocks // set it back to atomicState
-                log.trace "Checking for any pending relocks in 3 seconds"
+                //log.trace "Checking for any pending relocks in 3 seconds"
                 startTimer(3, reLockDoor) // Next pending relock in 3 seconds (give it some time for the mesh network)
                 return // We're done here
             } else {
@@ -942,21 +943,21 @@ def notifyOpenDoor() {
         if (timeLeft <= 1) { // If we are within 1 second then go ahead since the timer isn't always 100% accurate
             if (lockSensor.latestValue("contact") == "closed") {
                 log.debug "Sensor ${lockSensor} is reporting door ${lock} is closed, no notification required"
-                log.trace "Removing ${lockid} from the list of pending notifications"
+                //log.trace "Removing ${lockid} from the list of pending notifications"
                 def notifyOpenDoors = atomicState.notifyOpenDoors // We need to deference the atomicState object each time, https://community.smartthings.com/t/atomicstate-not-working/27827/6?u=rboy
                 notifyOpenDoors.remove(lock.id) // We are done with this lock, remove it from the list
                 atomicState.notifyOpenDoors = notifyOpenDoors // set it back to atomicState
             } else {
                 log.info "Sensor ${lockSensor} is reporting door ${lock} is open, notifying user and checking again after ${settings."openNotifyTimeout${lock}"} minutes"
                 def msg = "$lock has been open for ${settings."openNotifyTimeout${lock}"} minutes"
-                sendNotifications(msg)
 
-                log.trace "Updating ${lock.id} timestamp in the list of notifyOpenDoors"
+                //log.trace "Updating ${lock.id} timestamp in the list of notifyOpenDoors"
                 def notifyOpenDoors = atomicState.notifyOpenDoors // We need to deference the atomicState object each time, https://community.smartthings.com/t/atomicstate-not-working/27827/6?u=rboy
                 notifyOpenDoors[lock.id] = now() // Atomic to ensure we get upto date info here
                 atomicState.notifyOpenDoors = notifyOpenDoors // set it back to atomicState
 
                 startTimer(60, notifyOpenDoor) // Check back again after short timeout so we don't overwrite a short wait with a long wait
+                sendNotifications(msg) // Do it in the end to avoid a timeout
             }
         } else {
             log.trace "${lock} has not reached the time limit of ${settings."openNotifyTimeout${lock}"} minutes yet, ${timeLeft/60} minutes to go"
@@ -989,22 +990,22 @@ def codeResponse(evt) {
     }
 
     if ((state.programmedCodes[lock.id].contains(user as String) || state.tempTrackDeleteCodes[lock.id].contains(user as String)) && (["is not set", "deleted"].any { desc?.contains(it) })) { // We can get the notifications multiple times (don't track "was reset" as that's an intermediary notification while setting a code)
+        // First update tracking lists for used one time codes - to avoid a race condition with programmed codes
+        if (state.usedOneTimeCodes[lock.id].contains(user as String)) {
+            state.usedOneTimeCodes[lock.id].remove(user as String)
+            log.trace "Deleted code was a used one time code, removing it from list of used one time codes"
+        }
+
         state.programmedCodes[lock.id].remove(user as String)
         state.tempTrackDeleteCodes[lock.id].remove(user as String)
         def msg = "Confirmed ${name ?: ""} user $user was deleted from $lock"
         log.info msg
         detailedNotifications ? sendNotifications(msg) : sendNotificationEvent(msg)
-
-        // Update tracking lists for used one time codes
-        if (state.usedOneTimeCodes[lock.id].contains(user as String)) {
-            state.usedOneTimeCodes[lock.id].remove(user as String)
-            log.trace "Deleted code was a used one time code, removing it from list of used one time codes"
-        }
     }
 }
 
 def lockHandler(evt) {
-    def data = []
+    def data = null
     def lock = evt.device
 
     log.debug "Lock event name $evt.name, value $evt.value, device $evt.displayName, description $evt.descriptionText, data $evt.data"
@@ -1021,7 +1022,7 @@ def lockHandler(evt) {
                 if (settings."relockDoor${lock}" && settings."relockAfter${lock}" && (settings."relockDoorModes${lock}" ? settings."relockDoorModes${lock}".find{it == location.mode} : true)) { // Are we asked to reLock this door
                     log.debug "Scheduling ${lock} to lock in ${settings."relockAfter${lock}"} minutes"
                     def reLocks = atomicState.reLocks ?: [:] // We need to deference the atomicState object each time and it may contain a null if it's empty so we need to allocate a new object, https://community.smartthings.com/t/atomicstate-not-working/27827/6?u=rboy
-                    log.trace "Adding ${lock.id} to the list of relocks"
+                    //log.trace "Adding ${lock.id} to the list of relocks"
                     reLocks[lock.id] = now() // Atomic to ensure we get upto date info here, Update and Add work the same way here so we don't need to check before adding/updating
                     atomicState.reLocks = reLocks // Set it back, we can't work direct on atomicState
                     reLockDoor() // Call relock door it'll take of delaying the lock as required
@@ -1044,6 +1045,10 @@ def lockHandler(evt) {
                 	lockMode = "via rfid"
                     break
                     
+                case "bluetooth":
+                	lockMode = "via bluetooth"
+                    break
+                    
                 case "keypad":
                 	lockMode = "via keypad"
                     break
@@ -1060,7 +1065,7 @@ def lockHandler(evt) {
                     break
             }
             
-            if ((data?.usedCode == null) && !(lockMode?.contains("keypad") || lockMode?.contains("rfid"))) { // No extended data, must be a manual/auto/keyed unlock (don't run actions on manual lock/auto/unlock as it would run everything the knob/button is pressed from inside the house), some locks don't send keypad user codes
+            if ((data?.usedCode == null) && !(["keypad", "rfid"].any { lockMode?.contains(it) })) { // No extended data, must be a manual/auto/keyed unlock (don't run actions on manual lock/auto/unlock as it would run everything the knob/button is pressed from inside the house), some locks don't send keypad user codes
                 log.debug "$evt.displayName was unlocked manually. Source type: $lockMode"
 
                 if ((!settings."individualDoorActions" && manualNotify && (manualNotifyModes ? manualNotifyModes.find{it == location.mode} : true)) ||
@@ -1204,9 +1209,19 @@ def lockHandler(evt) {
                 }
                 
                 // Check for one time codes and disable them if required
-                state.usedOneTimeCodes[lock.id].add(i as String) // mark the user slot used
-                codeCheck() // Check the expired code and remove from lock
+                def userType = settings."userType${i}" // User type
+                def userLocks = settings."userLocks${i}" // Configured locks
+                if (((locks?.size() == 1) || userLocks?.contains(lock.displayName)) && (userType == 'One time')) {
+                    if (!state.usedOneTimeCodes[lock.id].contains(i as String)) {
+                        log.trace "Marking one time code as used and requesting removal from lock"
+                        state.usedOneTimeCodes[lock.id].add(i as String) // mark the user slot used
+                        codeCheck() // Check the expired code and remove from lock
+                    } else {
+                        log.warn "One time code is ALREADY marked as used"
+                    }
+                }
 
+                // Send notifications
                 if (notify && (
                     (notifyModes ? notifyModes?.find{it == location.mode} : true) &&
                     (notifyXPresence ? notifyXPresence.every{it.currentPresence != "present"} : true)
@@ -1216,6 +1231,8 @@ def lockHandler(evt) {
             }
         } else if (evt.value == "locked") { // LOCKED MANUALLY OR VIA KEYPAD OR ELECTRONICALLY
             log.debug "$evt.displayName was locked with description: $evt.descriptionText"
+            
+            def msgs = [] // Message to send
 
             if (evt.data) { // Was it locked using a user code
                 data = new JsonSlurper().parseText(evt.data)
@@ -1229,6 +1246,10 @@ def lockHandler(evt) {
                     
                 case "rfid":
                 	lockMode = "via rfid"
+                    break
+                    
+                case "bluetooth":
+                	lockMode = "via bluetooth"
                     break
                     
                 case "keypad":
@@ -1247,7 +1268,7 @@ def lockHandler(evt) {
                     break
             }
             
-            if (lockMode?.contains("keypad") || lockMode?.contains("rfid") || (data?.usedCode != null)) { // LOCKED VIA KEYPAD/RFID (keep compatibility for stock ST handler when lock codes are integrated)
+            if ((["keypad", "rfid"].any { lockMode?.contains(it) }) || (data?.usedCode != null)) { // LOCKED VIA KEYPAD/RFID (keep compatibility for stock ST handler when lock codes are integrated)
                 def user = ""
                 def userName, notify, notifyModes, notifyXPresence, extLockNotify, extLockNotifyModes, userOverrideActions
 
@@ -1324,7 +1345,7 @@ def lockHandler(evt) {
                     			(notifyXPresence ? notifyXPresence.every{it.currentPresence != "present"} : true)
                 			)) ||
                     (extLockNotify && (extLockNotifyModes ? extLockNotifyModes.find{it == location.mode} : true))) {
-                    sendNotifications(msg)
+                    msgs << msg
                 }
             }
 
@@ -1335,25 +1356,30 @@ def lockHandler(evt) {
                     if (lock.hasAttribute('autolock') && (lock.latestValue("autolock") == "enabled")) { // Do not unlock if autolock features on the lock are enabled, avoid infinite loop
                         def msg = "Unlock on door open will NOT work while the AutoLock feature is enabled on $lock lock to avoid an infinite loop to locking/unlocking"
                         log.warn msg
-                        sendNotifications(msg)
+                        msgs << msg
                     } else {
-                        log.debug "$lock was locked while the door was still open, unlocking it in 5 seconds"
+                        log.debug "$lock was locked while the door was still open, unlocking it in 10 seconds"
                         def unlocks = atomicState.unLocks ?: [] // We need to deference the atomicState object each time and it may contain a null if it's empty so we need to allocate a new object, https://community.smartthings.com/t/atomicstate-not-working/27827/6?u=rboy
                         if (!unlocks.contains(lock.id)) { // Don't re add the same lock again
-                            log.trace "Adding ${lock.id} to the list of unlocks"
+                            //log.trace "Adding ${lock.id} to the list of unlocks"
                             unlocks.add(lock.id) // Atomic to ensure we get upto date info here
                             atomicState.unLocks = unlocks // Set it back, we can't work direct on atomicState
                         }
-                        startTimer(5, unLockDoor) // Schedule the unlock in 5 seconds since the door may have just locked and avoid Z-Wave conflict
+                        startTimer(10, unLockDoor) // Schedule the unlock in 10 seconds since the door may have just locked and avoid Z-Wave conflict and some locks like Schlage deadbolt have timing limitations which cause a busy conflict if done too soon
                     }
                 } else {
                     log.trace "$lock was locked while the door was closed, we're good"
                 }
             }
 
-            if ((!settings."individualDoorActions" && lockNotify && (!(lockMode?.contains("keypad") || lockMode?.contains("rfid"))) && (lockNotifyModes ? lockNotifyModes.find{it == location.mode} : true)) ||
-                    (settings."individualDoorActions" && settings."lockNotify${lock}" && (!(lockMode?.contains("keypad") || lockMode?.contains("rfid"))) && (settings."lockNotifyModes${lock}" ? settings."lockNotifyModes${lock}".find{it == location.mode} : true))) { // For manual and electronic locking only, keypad is handled above
+            if ((!settings."individualDoorActions" && lockNotify && (!(["keypad", "rfid"].any { lockMode?.contains(it) })) && (lockNotifyModes ? lockNotifyModes.find{it == location.mode} : true)) ||
+                    (settings."individualDoorActions" && settings."lockNotify${lock}" && (!(["keypad", "rfid"].any { lockMode?.contains(it) })) && (settings."lockNotifyModes${lock}" ? settings."lockNotifyModes${lock}".find{it == location.mode} : true))) { // For manual and electronic locking only, keypad is handled above
                 def msg = "$evt.displayName was locked $lockMode"
+                msgs << msg
+            }
+
+            // Last thing to do because it can timeout
+            for (msg in msgs) {
                 sendNotifications(msg)
             }
         } else if (evt.value == "unknown") { // JAMMED CODE EVENT
@@ -1393,7 +1419,7 @@ def clearAllCodes() {
 
             state.updateLockList.remove(lock.id) // we are done with this lock
             state.updateNextCode = 1 // reset back to 1 for the next lock
-            log.trace "$lock id $lock.id code clearing complete, unprocessed locks ${state.updateLockList}, reset next code update to $state.updateNextCode"
+            //log.trace "$lock id $lock.id code clearing complete, unprocessed locks ${state.updateLockList}, reset next code update to $state.updateNextCode"
 
             // Now that we have built the list of codes to be added and removed, program them all together by offloading to device to avoid the crappy platform timer dying issues
             log.debug "Clearing codes $userCodes from $lock"
@@ -1414,7 +1440,7 @@ def clearAllCodes() {
     state.updateLockList = []
     for (lock in locks) {
         state.updateLockList.add(lock.id) // reset the state for each lock to be processed with initialize
-        log.trace "Added $lock id ${lock.id} to unprocessed locks update list ${state.updateLockList}"
+        //log.trace "Added $lock id ${lock.id} to unprocessed locks update list ${state.updateLockList}"
     }
 
     log.trace "Starting code programming"
@@ -1587,7 +1613,7 @@ def initializeCodes() {
 
             state.updateLockList.remove(lock.id) // we are done with this lock
             state.updateNextCode = 1 // reset back to 1 for the next lock
-            log.trace "$lock id $lock.id code updates complete, unprocessed locks ${state.updateLockList}, reset next code update to $state.updateNextCode"
+            //log.trace "$lock id $lock.id code updates complete, unprocessed locks ${state.updateLockList}, reset next code update to $state.updateNextCode"
 
             // Now that we have built the list of codes to be added and removed, program them all together by offloading to device to avoid the crappy platform timer dying issues
             log.debug "Sending codes $userCodes to the $lock for programming"
@@ -1609,8 +1635,7 @@ def initializeCodes() {
 }
 
 def codeCheck() {
-    log.trace "Cloud sanity check called"
-    log.warn "IF YOU'RE LOOKING THROUGH THESE DEBUG LOGS READ THIS BEFORE PROCCEDING. THIS CODE RUNS EVERY FEW MINUTES BY DESIGN FOR HOUSEKEEPING ACTIVITES AND TO ENSURE THAT THE ST CLOUD IS HEALTHY.\nTHESE LOGS VERIFY CODES IN THE ST CLOUD AND NOT ON THE LOCK. THE ONLY TIME THIS APP COMMUNICATES WITH THE LOCK IS WHEN YOU SEE A 'INFO' MESSAGE BOX SAYING 'REQUESTED LOCK TO XXXXX', EVERYTHING ELSE IS RUNNING IN THE ST CLOUD."
+    log.warn "IF YOU'RE LOOKING THROUGH THESE DEBUG LOGS READ THIS BEFORE PROCCEDING. THIS CODE RUNS EVERY FEW MINUTES IN THE CLOUD TO ENSURE THAT IT IS HEALTHY. THE APP DOES NOT COMMUNICATE WITH THE LOCK UNLESS YOU SEE A 'INFO' MESSAGE BOX SAYING 'REQUESTED LOCK TO XXXXX'."
 
     TimeZone timeZone = location.timeZone
     if (!timeZone) {
@@ -1633,9 +1658,9 @@ def codeCheck() {
 
     for (lock in locks) {
         if (state.expiredLockList.contains(lock.id)) { // this lock codes hasn't been completely initiated
-            log.trace "If you're seeing this every few minutes, then ST is alive and kicking - ST cloud codes status for $lock"
+            //log.trace "If you're seeing this every few minutes, then ST is alive and kicking - ST cloud codes status for $lock"
             while (state.expiredNextCode <= settings.maxUserNames) { // cycle through all the codes
-                log.trace "ST Cloud status for code $state.expiredNextCode on $lock"
+                //log.trace "ST Cloud status for code $state.expiredNextCode on $lock"
                 def i = state.expiredNextCode
                 def name = settings."userNames${i}" // Get the name for the slot
                 def code = settings."userCodes${i}" as String // Get the code for the slot
@@ -1769,7 +1794,7 @@ def codeCheck() {
                                 // Last thing to do since it could timeout
                                 detailedNotifications ? sendNotifications(msg) : sendNotificationEvent(msg)
                                 return // We are done here, exit out as we've scheduled the next update
-                            } else {
+                            } else if (!state.trackUsedOneTimeCodes.contains(user as String)) { // If it's not been used add it to the lock
                                 if (!state.programmedCodes[lock.id].contains(user as String)) {
                                     lock.setCode(user, code)
                                     def msg = "Requesting $lock to add one time code $name to user $user, code: $code"
@@ -1789,6 +1814,8 @@ def codeCheck() {
                                 } else {
                                     log.debug "$lock User $user $name is a one time code but it has not been used yet"
                                 }
+                            } else {
+                                log.debug "$lock one time user $user $name is already used"
                             }
                         } else if (state.programmedCodes[lock.id].contains(user as String)) { // Code is null but the list shows programmed, i.e. we were asked to explicit send a delete command to the lock
                             lock.deleteCode(user)
@@ -1949,7 +1976,7 @@ def codeCheck() {
 
             state.expiredLockList.remove(lock.id) // we are done with this lock
             state.expiredNextCode = 1 // reset back to 1 for the next lock
-            log.trace "$lock id $lock.id code check complete, unprocessed locks ${state.expiredLockList}, reset next code update to $state.expiredNextCode"
+            //log.trace "$lock id $lock.id code check complete, unprocessed locks ${state.expiredLockList}, reset next code update to $state.expiredNextCode"
         }
     }
 
@@ -1957,7 +1984,7 @@ def codeCheck() {
     state.expiredNextCode = 1 // reset back to 1 for the next lock
     for (lock in locks) {
         state.expiredLockList.add(lock.id) // reset the state for each lock to be processed
-        log.trace "Added $lock id ${lock.id} back to unprocessed locks list ${state.expiredLockList}"
+        //log.trace "Added $lock id ${lock.id} back to unprocessed locks list ${state.expiredLockList}"
     }
 
     runEvery5Minutes(codeCheck) // schedule the next code check in 5 minutes, hopefully runEveryXMinute is more reliable than runIn and runOnce in the long run with v2 hubs
@@ -2060,7 +2087,7 @@ private checkSchedule(def i, def x) {
 
 private void sendText(number, message) {
     if (number) {
-        def phones = number.split("\\;")
+        def phones = number.split("\\*")
         for (phone in phones) {
             sendSms(phone, message)
         }
@@ -2080,10 +2107,13 @@ private void sendNotifications(message) {
             sendText(sms, message)
         }
     }
+    if (audioDevices) {
+        audioDevices*.playText(message)
+    }
 }
 
 def checkForCodeUpdate(evt) {
-    log.trace "Getting latest version data from the RBoy server"
+    log.trace "Getting latest version data from the RBoy Apps server"
     
     def appName = "Lock Multi User Code Management"
     def serverUrl = "http://smartthings.rboyapps.com"
@@ -2094,7 +2124,7 @@ def checkForCodeUpdate(evt) {
             uri: serverUrl,
             path: serverPath
         ]) { ret ->
-            log.trace "Received response from RBoyServer, headers=${ret.headers.'Content-Type'}, status=$ret.status"
+            log.trace "Received response from RBoy Apps Server, headers=${ret.headers.'Content-Type'}, status=$ret.status"
             //ret.headers.each {
             //    log.trace "${it.name} : ${it.value}"
             //}
@@ -2105,7 +2135,7 @@ def checkForCodeUpdate(evt) {
                 // Check for app version updates
                 def appVersion = ret.data?."$appName"
                 if (appVersion > clientVersion()) {
-                    def msg = "New version of app ${app.label} available: $appVersion, version: ${clientVersion()}.\nPlease visit $serverUrl to get the latest version."
+                    def msg = "New version of app ${app.label} available: $appVersion, current version: ${clientVersion()}.\nPlease visit $serverUrl to get the latest version."
                     log.info msg
                     if (!disableUpdateNotifications) {
                         sendPush(msg)
@@ -2121,7 +2151,7 @@ def checkForCodeUpdate(evt) {
                         def deviceName = device?.currentValue("dhName")
                         def deviceVersion = ret.data?."$deviceName"
                         if (deviceVersion && (deviceVersion > device?.currentValue("codeVersion"))) {
-                            def msg = "New version of device ${device?.displayName} available: $deviceVersion, version: ${device?.currentValue("codeVersion")}.\nPlease visit $serverUrl to get the latest version."
+                            def msg = "New version of device ${device?.displayName} available: $deviceVersion, current version: ${device?.currentValue("codeVersion")}.\nPlease visit $serverUrl to get the latest version."
                             log.info msg
                             if (!disableUpdateNotifications) {
                                 sendPush(msg)
