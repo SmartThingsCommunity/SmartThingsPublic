@@ -77,7 +77,11 @@ def unlockDoor(){
 }
 
 def doorHandler(evt){
-    if ((contact.latestValue("contact") == "open") && (evt.value == "locked")) { // If the door is open and a person locks the door then...  
+
+    if ((contact.latestValue("contact") == "open")) {
+        unschedule( lockDoor )
+    }
+    else if ((contact.latestValue("contact") == "open") && (evt.value == "locked")) { // If the door is open and a person locks the door then...  
         //def delay = (secondsLater) // runIn uses seconds
         runIn( secondsLater, unlockDoor )   // ...schedule (in minutes) to unlock...  We don't want the door to be closed while the lock is engaged. 
     }
